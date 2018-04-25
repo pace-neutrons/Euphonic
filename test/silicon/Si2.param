@@ -1,0 +1,7 @@
+task		bandstructure ! The TASK keyword instructs CASTEP what to do
+xc_functional   LDA           ! Which exchange-correlation functional to use.
+basis_precision MEDIUM        ! Choose high cut-off COARSE/MEDIUM/FINE/PRECISE
+fix_occupancy   true          ! Treat the system as an insulator
+opt_strategy    speed         ! Choose algorithms for best speed at expense of memory.
+num_dump_cycles 0             ! Don't write unwanted ".wvfn" files.
+write_formatted_density TRUE  ! Write out a density file that we can view using (e.g.) Jmol.
