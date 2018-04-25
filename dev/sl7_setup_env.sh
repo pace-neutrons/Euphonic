@@ -16,16 +16,16 @@ source ~/.bash_profile # Reload shell vars
 sudo yum install -y gcc
 
 # Install Python versions
-pip install --upgrade pip
 pyenv install 2.7.13
 pyenv install 3.6.0
 pyenv global 2.7.13 # Set pyenv version
+pip install --upgrade pip
 
 # Install Jupyter
 pip install jupyter
 
 # Start the notebook
-jupyter notebook --ip=`hostname` &
+jupyter notebook --ip=`hostname` --notebook-dir=../src &
 
 # Set up environments for Python 2 and 3
 py_vers=("2.7.13" "3.6.0")
@@ -34,7 +34,7 @@ do
     env_name="disp_dos_$ver"
 
     # Create environment
-    echo "pyenv virtualenv $ver $env_name"
+    pyenv virtualenv $ver $env_name
 
     # Install packages in environment
     source ~/.bash_profile # Reload shell vars
