@@ -97,19 +97,23 @@ def read_dot_bands(bands_file):
 
 def calc_abscissa(qpts, recip_latt):
     """
-    Calculates the abscissa (x-coordinate) for every q-point for plotting,
-    based on the distance between q-points
+    Calculates the distance between q-points (for the plot x-coordinate)
     """
 
-    KV_TOL = 0.001
-
-    # Get difference between q-points. Note: length is nqpts - 1
+    # Get distance between q-points in each dimension. Note: length is nqpts - 1
     delta = np.diff(qpts, axis=0)
-    # Get sum of differences between delta and nearest integer for each q-point
+
+    # Determine how close delta is to being an integer. As q = q + G where G is a reciprocal
+    # lattice vector based on {1,0,0},{0,1,0},{0,0,1}, this is used to determine whether 2
+    # q-points are equivalent ie. they differ by a multiple of the reciprocal lattice vector
     delta_rem = np.sum(np.abs(delta - np.rint(delta)), axis=1)
 
-    # Determine whether to calculate modq based on tolerances
-    calc_modq = np.logical_not(np.logical_and(np.sum(np.abs(delta), axis=1) > KV_TOL, delta_rem < KV_TOL))
+    # Create a boolean array that determines whether to calculate the distance between q-points,
+    # taking into account q-point equivalence. If delta is more than the tolerance, but delta_rem
+    # is less than the tolerance, the q-points differ by G so are equivalent and the distance
+    # shouldn't be calculated
+    KVEC_TOL = 0.001
+    calc_modq = np.logical_not(np.logical_and(np.sum(np.abs(delta), axis=1) > KVEC_TOL, delta_rem < KVEC_TOL))
 
     # Multiply each delta by the reciprocal lattice to get delta in cartesian coords
     deltaq = np.einsum('ji,kj->ki', recip_latt, delta)
@@ -130,8 +134,6 @@ def reciprocal_lattice(unit_cell):
     """
     Calculates the reciprocal lattice from a unit cell
     """
-    print(np.array(unit_cell))
-    print(np.linalg.det(unit_cell))
 
     a = np.array(unit_cell[0])
     b = np.array(unit_cell[1])
