@@ -25,7 +25,7 @@ pip install --upgrade pip
 pip install jupyter
 
 # Start the notebook
-jupyter notebook --ip=`hostname` --notebook-dir=../src &
+jupyter notebook --ip=`hostname` --notebook-dir=../casteppy &
 
 # Set up environments for Python 2 and 3
 py_vers=("2.7.13" "3.6.0")
