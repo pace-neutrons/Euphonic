@@ -9,7 +9,8 @@ import argparse
 
 def main():
     args = parse_arguments()
-    freq_up, freq_down, kpts, fermi, weights, cell = read_dot_bands(args.filename)
+    with open(args.filename, 'r') as f:
+        freq_up, freq_down, kpts, fermi, weights, cell = read_dot_bands(f)
 
     recip_latt = reciprocal_lattice(cell)
     abscissa = calc_abscissa(kpts, recip_latt)
@@ -36,14 +37,14 @@ def parse_arguments():
                         action="store_true")
     return parser.parse_args()
 
-def read_dot_bands(bands_file):
+def read_dot_bands(f):
     """
     Reads band structure from a *.bands file
 
     Parameters
     ----------
-    bands_file : str
-        The *.bands file containing the data
+    f : file object
+        File object in read mode for the *.bands file containing the data
 
     Returns
     -------
@@ -62,7 +63,6 @@ def read_dot_bands(bands_file):
     cell: list of floats
         3 x 3 list of the unit cell vectors 
     """
-    f = open(bands_file, 'r')
     n_kpts = int(f.readline().split()[3]) # Read number of k-points
     n_spins = int(f.readline().split()[4]) # Read number of spin components
     f.readline() # Skip number of electrons line
@@ -92,7 +92,6 @@ def read_dot_bands(bands_file):
                 elif spin == 2:
                     freq_down[kpt, k] = freq
 
-    f.close()
     return freq_up, freq_down, kpts, fermi, weights, cell
 
 def calc_abscissa(qpts, recip_latt):
