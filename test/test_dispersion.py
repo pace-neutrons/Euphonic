@@ -25,10 +25,20 @@ class TestReciprocalLatticeCalculation(unittest.TestCase):
 
         npt.assert_allclose(recip, expected_recip)
 
+    def test_iron(self):
+        recip = disp.reciprocal_lattice([[-2.708355,  2.708355,  2.708355],
+                                         [ 2.708355, -2.708355,  2.708355],
+                                         [ 2.708355,  2.708355, -2.708355]])
+        expected_recip = [[0., 1.15996339, 1.15996339],
+                          [1.15996339, 0., 1.15996339],
+                          [1.15996339, 1.15996339, 0.]]
+        npt.assert_allclose(recip, expected_recip)
+
+
 class TestBandsFileRead(unittest.TestCase):
 
     def setUp(self):
-        content = '\n'.join([
+        content_iron = '\n'.join([
            u'Number of k-points   2',
             'Number of spin components 2',
             'Number of electrons  4.500     3.500',
@@ -69,34 +79,56 @@ class TestBandsFileRead(unittest.TestCase):
             '    0.24476910',
             '    0.39214129'
         ])
-        self.freq_up, self.freq_down, self.kpts, self.fermi, self.weights, self.cell =\
-            disp.read_dot_bands(StringIO(content))
+        iron = lambda:0 # Create trivial function object so attributes can be assigned to it
+        iron.freq_up, iron.freq_down, iron.kpts, iron.fermi, iron.weights, iron.cell =\
+            disp.read_dot_bands(StringIO(content_iron))
+        self.iron = iron
 
-    def test_freq_up_read(self):
+    def test_freq_up_read_iron(self):
         expected_freq_up = [[0.02278248, 0.02644693, 0.12383402, 0.15398152, 0.17125020, 0.43252010],
                             [0.02760952, 0.02644911, 0.12442671, 0.14597457, 0.16728951, 0.35463529]]
-        npt.assert_array_equal(self.freq_up, expected_freq_up)
+        npt.assert_array_equal(self.iron.freq_up, expected_freq_up)
 
-    def test_freq_down_read(self):
+    def test_freq_down_read_iron(self):
         expected_freq_down = [[0.08112495, 0.08345039, 0.19185076, 0.22763689, 0.24912308, 0.46511567],
                               [0.08778721, 0.08033338, 0.19288937, 0.21817779, 0.24476910, 0.39214129]]
-        npt.assert_array_equal(self.freq_down, expected_freq_down)
+        npt.assert_array_equal(self.iron.freq_down, expected_freq_down)
 
-    def test_kpts_read(self):
+    def test_kpts_read_iron(self):
         expected_kpts = [[-0.37500000, -0.45833333,  0.29166667],
                          [-0.37500000, -0.37500000,  0.29166667]]
-        npt.assert_array_equal(self.kpts, expected_kpts)
+        npt.assert_array_equal(self.iron.kpts, expected_kpts)
 
-    def test_fermi_read(self):
+    def test_fermi_read_iron(self):
         expected_fermi = [0.173319, 0.173319]
-        npt.assert_array_equal(self.fermi, expected_fermi)
+        npt.assert_array_equal(self.iron.fermi, expected_fermi)
 
-    def test_weights_read(self):
+    def test_weights_read_iron(self):
         expected_weights = [0.01388889, 0.01388889]
-        npt.assert_array_equal(self.weights, expected_weights)
+        npt.assert_array_equal(self.iron.weights, expected_weights)
 
-    def test_cell_read(self):
+    def test_cell_read_iron(self):
         expected_cell = [[-2.708355,  2.708355,  2.708355],
                          [ 2.708355, -2.708355,  2.708355],
                          [ 2.708355,  2.708355, -2.708355]]
-        npt.assert_array_equal(self.cell, expected_cell)
+        npt.assert_array_equal(self.iron.cell, expected_cell)
+
+class TestAbscissaCalculation(unittest.TestCase):
+
+    def test_iron(self):
+        recip = [[0., 1.15996339, 1.15996339],
+                 [1.15996339, 0., 1.15996339],
+                 [1.15996339, 1.15996339, 0.]]
+        qpts = [[-0.37500000, -0.45833333,  0.29166667],
+                [-0.37500000, -0.37500000,  0.29166667],
+                [-0.37500000, -0.37500000,  0.37500000],
+                [-0.37500000,  0.45833333, -0.20833333],
+                [-0.29166667, -0.45833333,  0.20833333],
+                [-0.29166667, -0.45833333,  0.29166667],
+                [-0.29166667, -0.37500000, -0.29166667],
+                [-0.29166667, -0.37500000,  0.04166667],
+                [-0.29166667, -0.37500000,  0.12500000],
+                [-0.29166667, -0.37500000,  0.29166667]]
+        expected_abscissa = [0., 0.13670299, 0.27340598, 1.48844879, 2.75618022,
+                             2.89288323, 3.78930474, 4.33611674, 4.47281973, 4.74622573]
+        npt.assert_allclose(disp.calc_abscissa(qpts, recip), expected_abscissa)
