@@ -38,7 +38,8 @@ class TestReciprocalLatticeCalculation(unittest.TestCase):
 class TestBandsFileRead(unittest.TestCase):
 
     def setUp(self):
-        content_iron = '\n'.join([
+        iron = lambda:0 # Create trivial function object so attributes can be assigned to it
+        iron.content = '\n'.join([
            u'Number of k-points   2',
             'Number of spin components 2',
             'Number of electrons  4.500     3.500',
@@ -79,39 +80,62 @@ class TestBandsFileRead(unittest.TestCase):
             '    0.24476910',
             '    0.39214129'
         ])
-        iron = lambda:0 # Create trivial function object so attributes can be assigned to it
+        iron.expected_freq_up = [[0.02278248, 0.02644693, 0.12383402, 0.15398152, 0.17125020, 0.43252010],
+                                 [0.02760952, 0.02644911, 0.12442671, 0.14597457, 0.16728951, 0.35463529]]
+        iron.expected_freq_down = [[0.08112495, 0.08345039, 0.19185076, 0.22763689, 0.24912308, 0.46511567],
+                                   [0.08778721, 0.08033338, 0.19288937, 0.21817779, 0.24476910, 0.39214129]]
+        iron.expected_kpts = [[-0.37500000, -0.45833333,  0.29166667],
+                              [-0.37500000, -0.37500000,  0.29166667]]
+        iron.expected_fermi = [0.173319, 0.173319]
+        iron.expected_weights = [0.01388889, 0.01388889]
+        iron.expected_cell = [[-2.708355,  2.708355,  2.708355],
+                              [ 2.708355, -2.708355,  2.708355],
+                              [ 2.708355,  2.708355, -2.708355]]
         iron.freq_up, iron.freq_down, iron.kpts, iron.fermi, iron.weights, iron.cell =\
-            disp.read_dot_bands(StringIO(content_iron))
+            disp.read_dot_bands(StringIO(iron.content), False, False)
         self.iron = iron
 
     def test_freq_up_read_iron(self):
-        expected_freq_up = [[0.02278248, 0.02644693, 0.12383402, 0.15398152, 0.17125020, 0.43252010],
-                            [0.02760952, 0.02644911, 0.12442671, 0.14597457, 0.16728951, 0.35463529]]
-        npt.assert_array_equal(self.iron.freq_up, expected_freq_up)
+        npt.assert_array_equal(self.iron.freq_up, self.iron.expected_freq_up)
 
     def test_freq_down_read_iron(self):
-        expected_freq_down = [[0.08112495, 0.08345039, 0.19185076, 0.22763689, 0.24912308, 0.46511567],
-                              [0.08778721, 0.08033338, 0.19288937, 0.21817779, 0.24476910, 0.39214129]]
-        npt.assert_array_equal(self.iron.freq_down, expected_freq_down)
+        npt.assert_array_equal(self.iron.freq_down, self.iron.expected_freq_down)
 
     def test_kpts_read_iron(self):
-        expected_kpts = [[-0.37500000, -0.45833333,  0.29166667],
-                         [-0.37500000, -0.37500000,  0.29166667]]
-        npt.assert_array_equal(self.iron.kpts, expected_kpts)
+        npt.assert_array_equal(self.iron.kpts, self.iron.expected_kpts)
 
     def test_fermi_read_iron(self):
-        expected_fermi = [0.173319, 0.173319]
-        npt.assert_array_equal(self.iron.fermi, expected_fermi)
+        npt.assert_array_equal(self.iron.fermi, self.iron.expected_fermi)
 
     def test_weights_read_iron(self):
-        expected_weights = [0.01388889, 0.01388889]
-        npt.assert_array_equal(self.iron.weights, expected_weights)
+        npt.assert_array_equal(self.iron.weights, self.iron.expected_weights)
 
     def test_cell_read_iron(self):
-        expected_cell = [[-2.708355,  2.708355,  2.708355],
-                         [ 2.708355, -2.708355,  2.708355],
-                         [ 2.708355,  2.708355, -2.708355]]
-        npt.assert_array_equal(self.iron.cell, expected_cell)
+        npt.assert_array_equal(self.iron.cell, self.iron.expected_cell)
+
+    def test_up_arg_freq_up_read_iron(self):
+        freq_up, freq_down, kpts, fermi, weights, cell =\
+            disp.read_dot_bands(StringIO(self.iron.content), True, False)
+        npt.assert_array_equal(freq_up, self.iron.expected_freq_up)
+
+    def test_up_arg_freq_down_read_iron(self):
+        freq_up, freq_down, kpts, fermi, weights, cell =\
+            disp.read_dot_bands(StringIO(self.iron.content), True, False)
+        self.assertEqual(freq_down, None)
+
+    def test_down_arg_freq_up_read_iron(self):
+        freq_up, freq_down, kpts, fermi, weights, cell =\
+            disp.read_dot_bands(StringIO(self.iron.content), False, True)
+        self.assertEqual(freq_up, None)
+
+    def test_down_arg_freq_down_read_iron(self):
+        freq_up, freq_down, kpts, fermi, weights, cell =\
+            disp.read_dot_bands(StringIO(self.iron.content), False, True)
+        npt.assert_array_equal(freq_down, self.iron.expected_freq_down)
+
+    def test_up_and_down_arg_exit(self):
+        with self.assertRaises(SystemExit):
+            disp.read_dot_bands(StringIO(self.iron.content), True, True)
 
 class TestAbscissaCalculation(unittest.TestCase):
 

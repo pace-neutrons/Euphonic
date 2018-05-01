@@ -4,13 +4,15 @@ data and output a matplotlib plot of the electronic or vibrational band structur
 """
 
 import numpy as np
+import matplotlib.pyplot as plt
+import sys
 import math
 import argparse
 
 def main():
     args = parse_arguments()
     with open(args.filename, 'r') as f:
-        freq_up, freq_down, kpts, fermi, weights, cell = read_dot_bands(f)
+        freq_up, freq_down, kpts, fermi, weights, cell = read_dot_bands(f, args.up, args.down)
 
     recip_latt = reciprocal_lattice(cell)
     abscissa = calc_abscissa(kpts, recip_latt)
@@ -30,21 +32,31 @@ def parse_arguments():
                         help="Read band-structure from *.castep or *.bands",
                         action="store_true")
     parser.add_argument("-up",
-                        help="Extract and plot only spin up from *.castep or *.bands",
+                        help="Extract and plot only spin up from *.castep or *.bands (incompatible with -down)",
                         action="store_true")
     parser.add_argument("-down",
-                        help="Extract and plot only spin down from *.castep or *.bands",
+                        help="Extract and plot only spin down from *.castep or *.bands (incompatible with -up)",
                         action="store_true")
-    return parser.parse_args()
 
-def read_dot_bands(f):
+    args = parser.parse_args()
+
+    if args.up and args.down:
+        sys.exit("Error: both mutually exclusive -up and -down arguments were supplied")
+
+    return args
+
+def read_dot_bands(f, up, down):
     """
     Reads band structure from a *.bands file
 
     Parameters
     ----------
     f : file object
-        File object in read mode for the *.bands file containing the data
+        File object in read mode for the .bands file containing the data
+    up : boolean
+        Read only spin up frequencies from the .bands file
+    down : boolean
+        Read only spin down frequencies from the .bands file
 
     Returns
     -------
@@ -54,13 +66,13 @@ def read_dot_bands(f):
     freq_down : list of floats
         M x N list of spin down band frequencies in eV, where M = number of k-points and
         N = number of bands, ordered according to increasing k-point number
-    kpts: list of floats
+    kpts : list of floats
         M x 3 list of k-point coordinates, where M = number of k-points
-    fermi: list of floats
+    fermi : list of floats
         List of length 1 or 2 containing the Fermi energy/energies in atomic units
-    weights: list of floats
+    weights : list of floats
         List of length M containing the weight for each k-point, where M = number of k-points
-    cell: list of floats
+    cell : list of floats
         3 x 3 list of the unit cell vectors 
     """
     n_kpts = int(f.readline().split()[3]) # Read number of k-points
@@ -71,8 +83,9 @@ def read_dot_bands(f):
     f.readline() # Skip unit cell vectors line
     cell = [[float(x) for x in f.readline().split()[0:3]] for i in range(3)] # Read cell vectors
 
-    freq_up = np.zeros((n_kpts, n_freqs))
-    freq_down = np.zeros((n_kpts, n_freqs))
+    freq_up = None
+    freq_down = None
+    freqs = np.zeros(n_freqs)
     kpts = np.zeros((n_kpts, 3))
     weights = np.zeros(n_kpts)
 
@@ -85,12 +98,25 @@ def read_dot_bands(f):
         for j in range(n_spins):
             spin = int(f.readline().split()[2])
 
+            if i == 0:
+                # Allocate spin up freqs as long as -down hasn't been specified
+                if spin == 1 and not down:
+                    freq_up = np.zeros((n_kpts, n_freqs))
+                # Allocate spin down freqs as long as -up hasn't been specified
+                if spin == 2 and not up:
+                    freq_down = np.zeros((n_kpts, n_freqs))
+
+            # Read frequencies
             for k in range(n_freqs):
-                freq = float(f.readline())
-                if spin == 1:
-                    freq_up[kpt, k] = freq
-                elif spin == 2:
-                    freq_down[kpt, k] = freq
+                freqs[k] = float(f.readline())
+            if spin == 1 and freq_up is not None:
+                freq_up[kpt, :] = freqs
+            elif spin == 2 and freq_down is not None:
+                freq_down[kpt, :] = freqs
+
+        if i == 0:
+            if freq_up is None and freq_down is None:
+                sys.exit("Error: requested spin not found in .bands file")
 
     return freq_up, freq_down, kpts, fermi, weights, cell
 
