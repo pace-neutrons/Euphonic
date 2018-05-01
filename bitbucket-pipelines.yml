@@ -1,0 +1,10 @@
+image: python:3.6.0
+pipelines:
+  default:
+    - step:
+        caches:
+          - pip
+        script:
+          - python -mpip install matplotlib
+          - python -mpip install numpy
+          - python -m unittest -v test.test_dispersion
