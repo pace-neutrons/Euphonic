@@ -8,11 +8,13 @@ import matplotlib.pyplot as plt
 import sys
 import math
 import argparse
+from pint import UnitRegistry
 
 def main():
     args = parse_arguments()
+
     with open(args.filename, 'r') as f:
-        freq_up, freq_down, kpts, fermi, weights, cell = read_dot_bands(f, args.up, args.down)
+        freq_up, freq_down, kpts, fermi, weights, cell = read_dot_bands(f, args.up, args.down, args.units)
 
     recip_latt = reciprocal_lattice(cell)
     abscissa = calc_abscissa(kpts, recip_latt)
@@ -31,6 +33,9 @@ def parse_arguments():
     parser.add_argument("-bs",
                         help="Read band-structure from *.castep or *.bands",
                         action="store_true")
+    parser.add_argument("-units",
+                        help="Convert frequencies to specified units for plotting",
+                        default="eV")
     spin_group = parser.add_mutually_exclusive_group()
     spin_group.add_argument("-up",
                             help="Extract and plot only spin up from *.castep or *.bands (incompatible with -down)",
@@ -43,7 +48,12 @@ def parse_arguments():
 
     return args
 
-def read_dot_bands(f, up, down):
+def set_up_unit_registry():
+    ureg = UnitRegistry()
+    ureg.define('rydberg = 13.605693009 * eV = Ry') # CODATA 2014
+    return ureg
+
+def read_dot_bands(f, up, down, units='eV'):
     """
     Reads band structure from a *.bands file
 
@@ -114,6 +124,12 @@ def read_dot_bands(f, up, down):
         if i == 0:
             if freq_up.size == 0 and freq_down.size == 0:
                 sys.exit("Error: requested spin not found in .bands file")
+
+    ureg = set_up_unit_registry()
+    freq_up = freq_up * ureg.eV
+    freq_up.ito(units, 'spectroscopy')
+    freq_down = freq_down * ureg.eV
+    freq_down.ito(units, 'spectroscopy')
 
     return freq_up, freq_down, kpts, fermi, weights, cell
 

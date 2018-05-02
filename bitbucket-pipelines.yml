@@ -8,6 +8,7 @@ pipelines:
         script:
           - python -mpip install matplotlib
           - python -mpip install numpy
+          - python -mpip install pint
           - python -m unittest -v test.test_dispersion
     - step:
         name: Python 2 test
@@ -17,4 +18,5 @@ pipelines:
         script:
           - python -mpip install matplotlib
           - python -mpip install numpy
+          - python -mpip install pint
           - python -m unittest -v test.test_dispersion

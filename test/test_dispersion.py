@@ -2,6 +2,7 @@ import unittest
 import math
 import numpy.testing as npt
 from io import StringIO
+from pint import UnitRegistry
 from casteppy import dispersion as disp
 
 class TestReciprocalLatticeCalculation(unittest.TestCase):
@@ -152,3 +153,14 @@ class TestAbscissaCalculation(unittest.TestCase):
         expected_abscissa = [0., 0.13670299, 0.27340598, 1.48844879, 2.75618022,
                              2.89288323, 3.78930474, 4.33611674, 4.47281973, 4.74622573]
         npt.assert_allclose(disp.calc_abscissa(qpts, recip), expected_abscissa)
+
+class TestUnitRegistrySetup(unittest.TestCase):
+
+    def test_returns_unit_registry(self):
+        self.assertIsInstance(disp.set_up_unit_registry(), type(UnitRegistry()))
+
+    def test_has_rydberg_units(self):
+        ureg = disp.set_up_unit_registry()
+        test_ev = 1 * ureg.Ry
+        test_ev.ito(ureg.eV)
+        self.assertEqual(test_ev.magnitude, 13.605693009)
