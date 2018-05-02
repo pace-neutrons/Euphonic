@@ -31,17 +31,15 @@ def parse_arguments():
     parser.add_argument("-bs",
                         help="Read band-structure from *.castep or *.bands",
                         action="store_true")
-    parser.add_argument("-up",
-                        help="Extract and plot only spin up from *.castep or *.bands (incompatible with -down)",
-                        action="store_true")
-    parser.add_argument("-down",
-                        help="Extract and plot only spin down from *.castep or *.bands (incompatible with -up)",
-                        action="store_true")
+    spin_group = parser.add_mutually_exclusive_group()
+    spin_group.add_argument("-up",
+                            help="Extract and plot only spin up from *.castep or *.bands (incompatible with -down)",
+                            action="store_true")
+    spin_group.add_argument("-down",
+                            help="Extract and plot only spin down from *.castep or *.bands (incompatible with -up)",
+                            action="store_true")
 
     args = parser.parse_args()
-
-    if args.up and args.down:
-        sys.exit("Error: both mutually exclusive -up and -down arguments were supplied")
 
     return args
 

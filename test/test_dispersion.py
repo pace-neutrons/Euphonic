@@ -133,10 +133,6 @@ class TestBandsFileRead(unittest.TestCase):
             disp.read_dot_bands(StringIO(self.iron.content), False, True)
         npt.assert_array_equal(freq_down, self.iron.expected_freq_down)
 
-    def test_up_and_down_arg_exit(self):
-        with self.assertRaises(SystemExit):
-            disp.read_dot_bands(StringIO(self.iron.content), True, True)
-
 class TestAbscissaCalculation(unittest.TestCase):
 
     def test_iron(self):
