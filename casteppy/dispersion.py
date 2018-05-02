@@ -73,16 +73,16 @@ def read_dot_bands(f, up, down):
     cell : list of floats
         3 x 3 list of the unit cell vectors 
     """
-    n_kpts = int(f.readline().split()[3]) # Read number of k-points
-    n_spins = int(f.readline().split()[4]) # Read number of spin components
+    n_kpts = int(f.readline().split()[3])
+    n_spins = int(f.readline().split()[4])
     f.readline() # Skip number of electrons line
-    n_freqs = int(f.readline().split()[3]) # Read number of eigenvalues
-    fermi = [float(x) for x in f.readline().split()[5:]] # Read number of eigenvalues
+    n_freqs = int(f.readline().split()[3])
+    fermi = [float(x) for x in f.readline().split()[5:]]
     f.readline() # Skip unit cell vectors line
-    cell = [[float(x) for x in f.readline().split()[0:3]] for i in range(3)] # Read cell vectors
+    cell = [[float(x) for x in f.readline().split()[0:3]] for i in range(3)]
 
-    freq_up = None
-    freq_down = None
+    freq_up = np.array([])
+    freq_down = np.array([])
     freqs = np.zeros(n_freqs)
     kpts = np.zeros((n_kpts, 3))
     weights = np.zeros(n_kpts)
@@ -96,24 +96,23 @@ def read_dot_bands(f, up, down):
         for j in range(n_spins):
             spin = int(f.readline().split()[2])
 
-            if i == 0:
-                # Allocate spin up freqs as long as -down hasn't been specified
-                if spin == 1 and not down:
-                    freq_up = np.zeros((n_kpts, n_freqs))
-                # Allocate spin down freqs as long as -up hasn't been specified
-                if spin == 2 and not up:
-                    freq_down = np.zeros((n_kpts, n_freqs))
-
             # Read frequencies
             for k in range(n_freqs):
                 freqs[k] = float(f.readline())
-            if spin == 1 and freq_up is not None:
+
+            # Allocate spin up freqs as long as -down hasn't been specified
+            if spin == 1 and not down:
+                if i == 0:
+                    freq_up = np.zeros((n_kpts, n_freqs))
                 freq_up[kpt, :] = freqs
-            elif spin == 2 and freq_down is not None:
+            # Allocate spin down freqs as long as -up hasn't been specified
+            elif spin == 2 and not up:
+                if i == 0:
+                    freq_down = np.zeros((n_kpts, n_freqs))
                 freq_down[kpt, :] = freqs
 
         if i == 0:
-            if freq_up is None and freq_down is None:
+            if freq_up.size == 0 and freq_down.size == 0:
                 sys.exit("Error: requested spin not found in .bands file")
 
     return freq_up, freq_down, kpts, fermi, weights, cell
