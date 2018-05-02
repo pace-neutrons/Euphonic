@@ -121,12 +121,12 @@ class TestBandsFileRead(unittest.TestCase):
     def test_up_arg_freq_down_read_iron(self):
         freq_up, freq_down, kpts, fermi, weights, cell =\
             disp.read_dot_bands(StringIO(self.iron.content), True, False)
-        self.assertEqual(freq_down, None)
+        self.assertEqual(freq_down.size, 0)
 
     def test_down_arg_freq_up_read_iron(self):
         freq_up, freq_down, kpts, fermi, weights, cell =\
             disp.read_dot_bands(StringIO(self.iron.content), False, True)
-        self.assertEqual(freq_up, None)
+        self.assertEqual(freq_up.size, 0)
 
     def test_down_arg_freq_down_read_iron(self):
         freq_up, freq_down, kpts, fermi, weights, cell =\
