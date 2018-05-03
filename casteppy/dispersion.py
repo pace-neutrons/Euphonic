@@ -22,6 +22,8 @@ def main():
     recip_latt = reciprocal_lattice(cell)
     abscissa = calc_abscissa(kpts, recip_latt)
 
+    plot_dispersion(abscissa, freq_up, freq_down, args.filename, args.units)
+
 
 def parse_arguments():
     parser = argparse.ArgumentParser(
@@ -212,6 +214,26 @@ def reciprocal_lattice(unit_cell):
     cstar = norm*axb
 
     return np.array([astar, bstar, cstar])
+
+
+def plot_dispersion(abscissa, freq_up, freq_down, filename, units):
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+
+    inverse_unit_index = units.find('/')
+    if inverse_unit_index > -1:
+        units = units[inverse_unit_index+1:]
+        ax.set_ylabel('Energy (' + units + r'$^{-1}$)')
+    else:
+        ax.set_ylabel('Energy (' + units + ')')
+    ax.ticklabel_format(style='sci', scilimits=(0, 2), axis='y')
+    ax.set_title(filename)
+
+    if freq_up.size != 0:
+        ax.plot(abscissa, freq_up)
+    if freq_down.size != 0:
+        ax.plot(abscissa, freq_down)
+    plt.show()
 
 
 if __name__ == '__main__':
