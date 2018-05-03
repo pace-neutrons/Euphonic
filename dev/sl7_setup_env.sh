@@ -15,6 +15,13 @@ source ~/.bash_profile # Reload shell vars
 # 'pyenv install' requires a C compiler
 sudo yum install -y gcc
 
+# Ensure tk-devel is installed otherwise pyenv doesn't build python with
+# tkinter which is required for matplotlib
+sudo yum install -y tk-devel
+
+# Need fonts to view matplotlib plots through Xming
+sudo yum install -y python-xvfbwrapper.noarch
+
 # Install Python versions
 pyenv install 2.7.13
 pyenv install 3.6.0
@@ -42,6 +49,8 @@ do
     pip install --upgrade pip
     pip install ipykernel
     python -mpip install matplotlib
+    python -mpip install numpy
+    python -mpip install pint
     # ** install any other required packages here **
     pyenv deactivate
 
