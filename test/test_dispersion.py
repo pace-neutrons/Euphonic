@@ -120,24 +120,43 @@ class TestBandsFileRead(unittest.TestCase):
         npt.assert_array_equal(self.iron.cell, self.iron.expected_cell)
 
     def test_up_arg_freq_up_read_iron(self):
-        freq_up, freq_down, kpts, fermi, weights, cell =\
-            disp.read_dot_bands(StringIO(self.iron.content), True, False)
+        freq_up = disp.read_dot_bands(
+            StringIO(self.iron.content), True, False)[0]
         npt.assert_array_equal(freq_up, self.iron.expected_freq_up)
 
     def test_up_arg_freq_down_read_iron(self):
-        freq_up, freq_down, kpts, fermi, weights, cell =\
-            disp.read_dot_bands(StringIO(self.iron.content), True, False)
+        freq_down = disp.read_dot_bands(
+            StringIO(self.iron.content), True, False)[1]
         self.assertEqual(freq_down.size, 0)
 
     def test_down_arg_freq_up_read_iron(self):
-        freq_up, freq_down, kpts, fermi, weights, cell =\
-            disp.read_dot_bands(StringIO(self.iron.content), False, True)
+        freq_up = disp.read_dot_bands(
+            StringIO(self.iron.content), False, True)[0]
         self.assertEqual(freq_up.size, 0)
 
     def test_down_arg_freq_down_read_iron(self):
-        freq_up, freq_down, kpts, fermi, weights, cell =\
-            disp.read_dot_bands(StringIO(self.iron.content), False, True)
+        freq_down = disp.read_dot_bands(
+            StringIO(self.iron.content), False, True)[1]
         npt.assert_array_equal(freq_down, self.iron.expected_freq_down)
+
+    def test_freq_up_cm_units_iron(self):
+        freq_up_cm = disp.read_dot_bands(
+            StringIO(self.iron.content), units='1/cm')[0]
+        expected_freq_up_cm = [[183.7530976, 213.30888075, 998.78875184,
+                                1241.94474319, 1381.22604363, 3488.50994925],
+                               [222.68580169, 213.32646363, 1003.56911919,
+                                1177.3643347, 1349.28092369 , 2860.32657793]]
+        npt.assert_allclose(freq_up_cm, expected_freq_up_cm)
+
+    def test_freq_down_cm_units_iron(self):
+        freq_down_cm = disp.read_dot_bands(
+            StringIO(self.iron.content), units='1/cm')[1]
+        expected_freq_down_cm = [[654.31686344, 673.07280236, 1547.3807692,
+                                  1836.01537959, 2009.313193, 3751.4109572 ],
+                                 [708.05161541, 647.93242068, 1555.75772398,
+                                  1759.72259121, 1974.19597521, 3162.83287569]]
+        npt.assert_allclose(freq_down_cm, expected_freq_down_cm)
+
 
 class TestAbscissaCalculation(unittest.TestCase):
 
@@ -160,6 +179,7 @@ class TestAbscissaCalculation(unittest.TestCase):
                              4.33611674, 4.47281973, 4.74622573]
         npt.assert_allclose(disp.calc_abscissa(qpts, recip),
                             expected_abscissa)
+
 
 class TestUnitRegistrySetup(unittest.TestCase):
 

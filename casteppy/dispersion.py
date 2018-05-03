@@ -65,7 +65,7 @@ def set_up_unit_registry():
     return ureg
 
 
-def read_dot_bands(f, up, down, units='eV'):
+def read_dot_bands(f, up=False, down=False, units='eV'):
     """
     Reads band structure from a *.bands file
 
