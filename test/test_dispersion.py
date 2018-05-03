@@ -98,7 +98,8 @@ class TestBandsFileRead(unittest.TestCase):
                               [ 2.708355, -2.708355,  2.708355],
                               [ 2.708355,  2.708355, -2.708355]]
         (iron.freq_up, iron.freq_down, iron.kpts, iron.fermi, iron.weights,
-            iron.cell) = disp.read_dot_bands(StringIO(iron.content), False, False)
+            iron.cell) = disp.read_dot_bands(
+                StringIO(iron.content), False, False, units='hartree')
         self.iron = iron
 
     def test_freq_up_read_iron(self):
@@ -121,40 +122,40 @@ class TestBandsFileRead(unittest.TestCase):
 
     def test_up_arg_freq_up_read_iron(self):
         freq_up = disp.read_dot_bands(
-            StringIO(self.iron.content), True, False)[0]
+            StringIO(self.iron.content), True, False, units='hartree')[0]
         npt.assert_array_equal(freq_up, self.iron.expected_freq_up)
 
     def test_up_arg_freq_down_read_iron(self):
         freq_down = disp.read_dot_bands(
-            StringIO(self.iron.content), True, False)[1]
+            StringIO(self.iron.content), True, False, units='hartree')[1]
         self.assertEqual(freq_down.size, 0)
 
     def test_down_arg_freq_up_read_iron(self):
         freq_up = disp.read_dot_bands(
-            StringIO(self.iron.content), False, True)[0]
+            StringIO(self.iron.content), False, True, units='hartree')[0]
         self.assertEqual(freq_up.size, 0)
 
     def test_down_arg_freq_down_read_iron(self):
         freq_down = disp.read_dot_bands(
-            StringIO(self.iron.content), False, True)[1]
+            StringIO(self.iron.content), False, True, units='hartree')[1]
         npt.assert_array_equal(freq_down, self.iron.expected_freq_down)
 
     def test_freq_up_cm_units_iron(self):
         freq_up_cm = disp.read_dot_bands(
             StringIO(self.iron.content), units='1/cm')[0]
-        expected_freq_up_cm = [[183.7530976, 213.30888075, 998.78875184,
-                                1241.94474319, 1381.22604363, 3488.50994925],
-                               [222.68580169, 213.32646363, 1003.56911919,
-                                1177.3643347, 1349.28092369 , 2860.32657793]]
+        expected_freq_up_cm = [[5000.17594, 5804.429679, 27178.423392,
+                                33795.034234, 37585.071062, 94927.180782],
+                               [6059.588667, 5804.908134, 27308.5038,
+                                32037.711995, 36715.800165, 77833.44239]]
         npt.assert_allclose(freq_up_cm, expected_freq_up_cm)
 
     def test_freq_down_cm_units_iron(self):
         freq_down_cm = disp.read_dot_bands(
             StringIO(self.iron.content), units='1/cm')[1]
-        expected_freq_down_cm = [[654.31686344, 673.07280236, 1547.3807692,
-                                  1836.01537959, 2009.313193, 3751.4109572 ],
-                                 [708.05161541, 647.93242068, 1555.75772398,
-                                  1759.72259121, 1974.19597521, 3162.83287569]]
+        expected_freq_down_cm = [[17804.86686, 18315.2419, 42106.370959,
+                                  49960.517927, 54676.191123, 102081.080835],
+                                 [19267.063783, 17631.137342, 42334.319485,
+                                  47884.485632, 53720.603056, 86065.057157]]
         npt.assert_allclose(freq_down_cm, expected_freq_down_cm)
 
 

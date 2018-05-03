@@ -61,7 +61,7 @@ def parse_arguments():
 
 def set_up_unit_registry():
     ureg = UnitRegistry()
-    ureg.define('rydberg = 13.605693009 * eV = Ry') # CODATA 2014
+    ureg.define('rydberg = 13.605693009*eV = Ry') # CODATA 2014
     return ureg
 
 
@@ -81,13 +81,13 @@ def read_dot_bands(f, up=False, down=False, units='eV'):
     Returns
     -------
     freq_up : list of floats
-        M x N list of spin up band frequencies in eV, where M = number of
-        k-points and N = number of bands, ordered according to increasing
-        k-point number
+        M x N list of spin up band frequencies in units specified by the
+        'units' argument, where M = number of k-points and N = number of
+        bands, ordered according to increasing k-point number
     freq_down : list of floats
-        M x N list of spin down band frequencies in eV, where M = number of
-        k-points and N = number of bands, ordered according to increasing
-        k-point number
+        M x N list of spin down band frequencies in units specified by the
+        'units' argument, where M = number of k-points and N = number of
+        bands, ordered according to increasing k-point number
     kpts : list of floats
         M x 3 list of k-point coordinates, where M = number of k-points
     fermi : list of floats
@@ -142,9 +142,9 @@ def read_dot_bands(f, up=False, down=False, units='eV'):
                 sys.exit('Error: requested spin not found in .bands file')
 
     ureg = set_up_unit_registry()
-    freq_up = freq_up * ureg.eV
+    freq_up = freq_up*ureg.hartree
     freq_up.ito(units, 'spectroscopy')
-    freq_down = freq_down * ureg.eV
+    freq_down = freq_down*ureg.hartree
     freq_down.ito(units, 'spectroscopy')
 
     return freq_up, freq_down, kpts, fermi, weights, cell
