@@ -16,8 +16,14 @@ def main():
     args = parse_arguments()
 
     with open(args.filename, 'r') as f:
-        freq_up, freq_down, kpts, fermi, weights, cell = read_dot_bands(
-            f, args.up, args.down, args.units)
+        if args.filename.endswith('.bands'):
+            freq_up, freq_down, kpts, fermi, weights, cell = read_dot_bands(
+                f, args.up, args.down, args.units)
+        elif args.filename.endswith('.phonon'):
+            freq_up, kpts, cell, cell_pos = read_dot_phonon(f, args.units)
+            freq_down = np.array([])
+        else:
+            sys.exit('Error: Please supply a .bands or .phonon file')
 
     recip_latt = reciprocal_lattice(cell)
     abscissa = calc_abscissa(kpts, recip_latt)
@@ -67,6 +73,89 @@ def set_up_unit_registry():
     return ureg
 
 
+def read_dot_phonon(f, units='1/cm'):
+    """
+    Reads band structure from a *.phonon file
+
+    Parameters
+    ----------
+    f : file object
+        File object in read mode for the .phonon file containing the data
+    up : boolean
+        Read only spin up frequencies from the .phonon file
+    down : boolean
+        Read only spin down frequencies from the .phonon file
+    units : string
+        String specifying the units of the output frequencies. For valid
+        values see the Pint docs: http://pint.readthedocs.io/en/0.8.1/
+
+    Returns
+    -------
+    freqs: list of floats
+        M x N list of phonon band frequencies in units specified by the
+        'units parameter, where M = number of q-points and N = number of
+        bands, ordered according to increasing q-point number
+    qpts : list of floats
+        M x 3 list of q-point coordinates, where M = number of q-points
+    cell : list of floats
+        3 x 3 list of the unit cell vectors
+    """
+    n_ions, n_branches, n_qpts, cell, cell_pos = read_dot_phonon_header(f)
+    qpts = np.zeros((n_qpts, 3))
+    freqs = np.zeros((n_qpts, n_branches))
+
+    for qpt in f:
+        qpt_line = qpt.split()
+        qpt_num = int(qpt_line[1]) - 1
+        qpts[qpt_num,:] = [float(x) for x in qpt_line[2:5]]
+        freqs_tmp = [float(f.readline().split()[1]) for i in range(n_branches)]
+        freqs[qpt_num,:] = freqs_tmp
+        # Skip eigenvectors and 2 label lines
+        [f.readline() for x in range(n_ions*n_branches + 2)]
+
+    ureg = set_up_unit_registry()
+    freqs = freqs*(1/ureg.cm)
+    freqs.ito(units, 'spectroscopy')
+
+    return freqs, qpts, cell, cell_pos
+
+
+def read_dot_phonon_header(f):
+    """
+    Reads the header of a *.phonon file
+
+    Parameters
+    ----------
+    f : file object
+        File object in read mode for the .phonon file containing the data
+
+    Returns
+    -------
+    n_ions : integer
+        The number of ions per unit cell
+    n_branches : integer
+        The number of phonon branches (3*n_ions)
+    n_qpts : integer
+        The number of q-points in the .phonon file
+    cell : list of floats
+        3 x 3 list of the unit cell vectors
+    cell_pos : list of floats
+        n_ions x 3 list of the fractional position of each atom within the
+        unit cell
+    """
+    f.readline() # Skip BEGIN header
+    n_ions = int(f.readline().split()[3])
+    n_branches = int(f.readline().split()[3])
+    n_qpts = int(f.readline().split()[3])
+    [f.readline() for x in range(4)] # Skip units and label lines
+    cell = [[float(x) for x in f.readline().split()[0:3]] for i in range(3)]
+    f.readline() # Skip fractional co-ordinates label
+    cell_pos = [[float(x) for x in f.readline().split()[1:4]]
+                 for i in range(n_ions)]
+    f.readline() # Skip END header line
+
+    return n_ions, n_branches, n_qpts, cell, cell_pos
+
 def read_dot_bands(f, up=False, down=False, units='eV'):
     """
     Reads band structure from a *.bands file
@@ -79,12 +168,15 @@ def read_dot_bands(f, up=False, down=False, units='eV'):
         Read only spin up frequencies from the .bands file
     down : boolean
         Read only spin down frequencies from the .bands file
+    units : string
+        String specifying the units of the output frequencies. For valid
+        values see the Pint docs: http://pint.readthedocs.io/en/0.8.1/
 
     Returns
     -------
     freq_up : list of floats
         M x N list of spin up band frequencies in units specified by the
-        'units' argument, where M = number of k-points and N = number of
+        'units' parameter, where M = number of k-points and N = number of
         bands, ordered according to increasing k-point number
     freq_down : list of floats
         M x N list of spin down band frequencies in units specified by the
@@ -115,11 +207,11 @@ def read_dot_bands(f, up=False, down=False, units='eV'):
     kpts = np.zeros((n_kpts, 3))
     weights = np.zeros(n_kpts)
 
-    for i in range(n_kpts):
-        line = f.readline().split()
-        kpt = int(line[1]) - 1
-        kpts[kpt,:] = [float(x) for x in line[2:5]]
-        weights[kpt] = float(line[5])
+    for i, kpt in enumerate(f):
+        kpt_line = kpt.split()
+        kpt_num = int(kpt_line[1]) - 1
+        kpts[kpt_num,:] = [float(x) for x in kpt_line[2:5]]
+        weights[kpt_num] = float(kpt_line[5])
 
         for j in range(n_spins):
             spin = int(f.readline().split()[2])
@@ -132,12 +224,12 @@ def read_dot_bands(f, up=False, down=False, units='eV'):
             if spin == 1 and not down:
                 if i == 0:
                     freq_up = np.zeros((n_kpts, n_freqs))
-                freq_up[kpt, :] = freqs
+                freq_up[kpt_num, :] = freqs
             # Allocate spin down freqs as long as -up hasn't been specified
             elif spin == 2 and not up:
                 if i == 0:
                     freq_down = np.zeros((n_kpts, n_freqs))
-                freq_down[kpt, :] = freqs
+                freq_down[kpt_num, :] = freqs
 
         if i == 0:
             if freq_up.size == 0 and freq_down.size == 0:
