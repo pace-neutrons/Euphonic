@@ -104,10 +104,14 @@ def read_dot_phonon(f, units='1/cm'):
     qpts = np.zeros((n_qpts, 3))
     freqs = np.zeros((n_qpts, n_branches))
 
-    for qpt in f:
-        qpt_line = qpt.split()
-        qpt_num = int(qpt_line[1]) - 1
-        qpts[qpt_num,:] = [float(x) for x in qpt_line[2:5]]
+    # Need to loop through file using while rather than number of k-points
+    # as sometimes points are duplicated
+    while True:
+        line = f.readline().split()
+        if not line:
+            break
+        qpt_num = int(line[1]) - 1
+        qpts[qpt_num,:] = [float(x) for x in line[2:5]]
         freqs_tmp = [float(f.readline().split()[1]) for i in range(n_branches)]
         freqs[qpt_num,:] = freqs_tmp
         # Skip eigenvectors and 2 label lines
@@ -207,11 +211,16 @@ def read_dot_bands(f, up=False, down=False, units='eV'):
     kpts = np.zeros((n_kpts, 3))
     weights = np.zeros(n_kpts)
 
-    for i, kpt in enumerate(f):
-        kpt_line = kpt.split()
-        kpt_num = int(kpt_line[1]) - 1
-        kpts[kpt_num,:] = [float(x) for x in kpt_line[2:5]]
-        weights[kpt_num] = float(kpt_line[5])
+    # Need to loop through file using while rather than number of k-points
+    # as sometimes points are duplicated
+    first_kpt = True
+    while True:
+        line = f.readline().split()
+        if not line:
+            break
+        kpt_num = int(line[1]) - 1
+        kpts[kpt_num,:] = [float(x) for x in line[2:5]]
+        weights[kpt_num] = float(line[5])
 
         for j in range(n_spins):
             spin = int(f.readline().split()[2])
@@ -222,18 +231,19 @@ def read_dot_bands(f, up=False, down=False, units='eV'):
 
             # Allocate spin up freqs as long as -down hasn't been specified
             if spin == 1 and not down:
-                if i == 0:
+                if first_kpt:
                     freq_up = np.zeros((n_kpts, n_freqs))
                 freq_up[kpt_num, :] = freqs
             # Allocate spin down freqs as long as -up hasn't been specified
             elif spin == 2 and not up:
-                if i == 0:
+                if first_kpt:
                     freq_down = np.zeros((n_kpts, n_freqs))
                 freq_down[kpt_num, :] = freqs
 
-        if i == 0:
+        if first_kpt:
             if freq_up.size == 0 and freq_down.size == 0:
                 sys.exit('Error: requested spin not found in .bands file')
+        first_kpt = False
 
     ureg = set_up_unit_registry()
     freq_up = freq_up*ureg.hartree
@@ -318,7 +328,7 @@ def plot_dispersion(abscissa, freq_up, freq_down, filename, units):
         ax.set_ylabel('Energy (' + units + r'$^{-1}$)')
     else:
         ax.set_ylabel('Energy (' + units + ')')
-    ax.ticklabel_format(style='sci', scilimits=(0, 2), axis='y')
+    ax.ticklabel_format(style='sci', scilimits=(-2, 2), axis='y')
     ax.set_title(filename)
 
     if freq_up.size != 0:

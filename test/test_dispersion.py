@@ -40,7 +40,7 @@ class TestPhononHeaderAndFileRead(unittest.TestCase):
         # Create trivial function object so attributes can be assigned to it
         NaH = lambda:0
         NaH.content = '\n'.join([
-            ' BEGIN header',
+           u' BEGIN header',
             ' Number of ions         2',
             ' Number of branches     6',
             ' Number of wavevectors  2',
