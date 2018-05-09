@@ -1,0 +1,10 @@
+task          	 : phonon
+xc_functional 	 : lda
+opt_strategy  	 : Speed
+num_dump_cycles  : 0
+cut_off_energy   : 550.0 eV
+fix_occupancy 	 : true
+metals_method 	 : dm
+phonon_sum_rule  : true
+calculate_raman  : false
+continuation     : default
