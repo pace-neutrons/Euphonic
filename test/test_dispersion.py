@@ -101,22 +101,22 @@ class TestPhononHeaderAndFileRead(unittest.TestCase):
         NaH.expected_n_ions = 2
         NaH.expected_n_branches = 6
         NaH.expected_n_qpts = 2
-        NaH.expected_cell = [[0.000000, 2.399500, 2.399500],
-                             [2.399500, 0.000000, 2.399500],
-                             [2.399500, 2.399500, 0.000000]]
-        NaH.expected_cell_pos = [[0.500000, 0.500000, 0.500000],
+        NaH.expected_cell_vec = [[0.000000, 2.399500, 2.399500],
+                                 [2.399500, 0.000000, 2.399500],
+                                 [2.399500, 2.399500, 0.000000]]
+        NaH.expected_ion_pos = [[0.500000, 0.500000, 0.500000],
                                  [0.000000, 0.000000, 0.000000]]
+        NaH.expected_ion_type = ['H', 'Na']
         NaH.expected_freqs = [[91.847109, 91.847109, 166.053018,
                                564.508299, 564.508299, 884.068976],
                               [132.031513, 154.825631, 206.213940,
                                642.513551, 690.303338, 832.120011]]
         NaH.expected_qpts = [[-0.250000, -0.250000, -0.250000],
                              [-0.250000, -0.500000, -0.500000]]
-        (NaH.n_ions, NaH.n_branches, NaH.n_qpts, NaH.cell,
-            NaH.cell_pos) = disp.read_dot_phonon_header(StringIO(NaH.content))
-        (NaH.freqs, NaH.qpts, NaH.cell_file,
-            NaH.cell_pos_file) = disp.read_dot_phonon(
-                StringIO(NaH.content))
+        (NaH.n_ions, NaH.n_branches, NaH.n_qpts, NaH.cell_vec, NaH.ion_pos,
+            NaH.ion_type) = disp.read_dot_phonon_header(StringIO(NaH.content))
+        (NaH.freqs, NaH.qpts, NaH.cell_vec_file, NaH.ion_pos_file,
+            NaH.ion_type_file) = disp.read_dot_phonon(StringIO(NaH.content))
         self.NaH = NaH
 
     def test_n_ions_read_nah(self):
@@ -128,11 +128,14 @@ class TestPhononHeaderAndFileRead(unittest.TestCase):
     def test_n_qpts_read_nah(self):
         self.assertEqual(self.NaH.n_qpts, self.NaH.expected_n_qpts)
 
-    def test_cell_read_nah(self):
-        npt.assert_array_equal(self.NaH.cell, self.NaH.expected_cell)
+    def test_cell_vec_read_nah(self):
+        npt.assert_array_equal(self.NaH.cell_vec, self.NaH.expected_cell_vec)
 
-    def test_cell_pos_read_nah(self):
-        npt.assert_array_equal(self.NaH.cell_pos, self.NaH.expected_cell_pos)
+    def test_ion_pos_read_nah(self):
+        npt.assert_array_equal(self.NaH.ion_pos, self.NaH.expected_ion_pos)
+
+    def test_ion_type_read_nah(self):
+        npt.assert_array_equal(self.NaH.ion_type, self.NaH.expected_ion_type)
 
     def test_freqs_read_nah(self):
         npt.assert_array_equal(self.NaH.freqs, self.NaH.expected_freqs)
@@ -140,11 +143,14 @@ class TestPhononHeaderAndFileRead(unittest.TestCase):
     def test_qpts_read_nah(self):
         npt.assert_array_equal(self.NaH.qpts, self.NaH.expected_qpts)
 
-    def test_cell_file_read_nah(self):
-        npt.assert_array_equal(self.NaH.cell_file, self.NaH.expected_cell)
+    def test_cell_vec_file_read_nah(self):
+        npt.assert_array_equal(self.NaH.cell_vec_file, self.NaH.expected_cell_vec)
 
-    def test_cell_pos_file_read_nah(self):
-        npt.assert_array_equal(self.NaH.cell_pos_file, self.NaH.expected_cell_pos)
+    def test_ion_pos_file_read_nah(self):
+        npt.assert_array_equal(self.NaH.ion_pos_file, self.NaH.expected_ion_pos)
+
+    def test_ion_type_file_read_nah(self):
+        npt.assert_array_equal(self.NaH.ion_type_file, self.NaH.expected_ion_type)
 
 class TestBandsFileRead(unittest.TestCase):
 
@@ -204,11 +210,11 @@ class TestBandsFileRead(unittest.TestCase):
                               [-0.37500000, -0.37500000,  0.29166667]]
         iron.expected_fermi = [0.173319, 0.173319]
         iron.expected_weights = [0.01388889, 0.01388889]
-        iron.expected_cell = [[-2.708355,  2.708355,  2.708355],
-                              [ 2.708355, -2.708355,  2.708355],
-                              [ 2.708355,  2.708355, -2.708355]]
+        iron.expected_cell_vec = [[-2.708355,  2.708355,  2.708355],
+                                  [ 2.708355, -2.708355,  2.708355],
+                                  [ 2.708355,  2.708355, -2.708355]]
         (iron.freq_up, iron.freq_down, iron.kpts, iron.fermi, iron.weights,
-            iron.cell) = disp.read_dot_bands(
+            iron.cell_vec) = disp.read_dot_bands(
                 StringIO(iron.content), False, False, units='hartree')
         self.iron = iron
 
@@ -227,8 +233,8 @@ class TestBandsFileRead(unittest.TestCase):
     def test_weights_read_iron(self):
         npt.assert_array_equal(self.iron.weights, self.iron.expected_weights)
 
-    def test_cell_read_iron(self):
-        npt.assert_array_equal(self.iron.cell, self.iron.expected_cell)
+    def test_cell_vec_read_iron(self):
+        npt.assert_array_equal(self.iron.cell_vec, self.iron.expected_cell_vec)
 
     def test_up_arg_freq_up_read_iron(self):
         freq_up = disp.read_dot_bands(

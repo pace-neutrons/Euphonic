@@ -17,15 +17,16 @@ def main():
 
     with open(args.filename, 'r') as f:
         if args.filename.endswith('.bands'):
-            freq_up, freq_down, kpts, fermi, weights, cell = read_dot_bands(
-                f, args.up, args.down, args.units)
+            (freq_up, freq_down, kpts, fermi, weights,
+                cell_vec) = read_dot_bands(f, args.up, args.down, args.units)
         elif args.filename.endswith('.phonon'):
-            freq_up, kpts, cell, cell_pos = read_dot_phonon(f, args.units)
+            freq_up, kpts, cell_vec, ion_pos, ion_type = read_dot_phonon(
+                f, args.units)
             freq_down = np.array([])
         else:
             sys.exit('Error: Please supply a .bands or .phonon file')
 
-    recip_latt = reciprocal_lattice(cell)
+    recip_latt = reciprocal_lattice(cell_vec)
     abscissa = calc_abscissa(kpts, recip_latt)
 
     plot_dispersion(abscissa, freq_up, freq_down, args.filename, args.units)
@@ -97,10 +98,17 @@ def read_dot_phonon(f, units='1/cm'):
         bands, ordered according to increasing q-point number
     qpts : list of floats
         M x 3 list of q-point coordinates, where M = number of q-points
-    cell : list of floats
+    cell_vec : list of floats
         3 x 3 list of the unit cell vectors
+    ion_pos : list of floats
+        n_ions x 3 list of the fractional position of each ion within the
+        unit cell
+    ion_type : list of strings
+        n_ions length list of the chemical symbols of each ion in the unit
+        cell. Ions are in the same order as in ion_pos
     """
-    n_ions, n_branches, n_qpts, cell, cell_pos = read_dot_phonon_header(f)
+    (n_ions, n_branches, n_qpts, cell_vec, ion_pos,
+        ion_type) = read_dot_phonon_header(f)
     qpts = np.zeros((n_qpts, 3))
     freqs = np.zeros((n_qpts, n_branches))
 
@@ -121,7 +129,7 @@ def read_dot_phonon(f, units='1/cm'):
     freqs = freqs*(1/ureg.cm)
     freqs.ito(units, 'spectroscopy')
 
-    return freqs, qpts, cell, cell_pos
+    return freqs, qpts, cell_vec, ion_pos, ion_type
 
 
 def read_dot_phonon_header(f):
@@ -141,24 +149,29 @@ def read_dot_phonon_header(f):
         The number of phonon branches (3*n_ions)
     n_qpts : integer
         The number of q-points in the .phonon file
-    cell : list of floats
+    cell_vec : list of floats
         3 x 3 list of the unit cell vectors
-    cell_pos : list of floats
-        n_ions x 3 list of the fractional position of each atom within the
+    ion_pos : list of floats
+        n_ions x 3 list of the fractional position of each ion within the
         unit cell
+    ion_type : list of strings
+        n_ions length list of the chemical symbols of each ion in the unit
+        cell. Ions are in the same order as in ion_pos
     """
     f.readline() # Skip BEGIN header
     n_ions = int(f.readline().split()[3])
     n_branches = int(f.readline().split()[3])
     n_qpts = int(f.readline().split()[3])
     [f.readline() for x in range(4)] # Skip units and label lines
-    cell = [[float(x) for x in f.readline().split()[0:3]] for i in range(3)]
+    cell_vec = [[float(x) for x in f.readline().split()[0:3]]
+        for i in range(3)]
     f.readline() # Skip fractional co-ordinates label
-    cell_pos = [[float(x) for x in f.readline().split()[1:4]]
-                 for i in range(n_ions)]
+    ion_info = [f.readline().split() for i in range(n_ions)]
+    ion_pos = [[float(x) for x in y[1:4]] for y in ion_info]
+    ion_type = [x[4] for x in ion_info]
     f.readline() # Skip END header line
 
-    return n_ions, n_branches, n_qpts, cell, cell_pos
+    return n_ions, n_branches, n_qpts, cell_vec, ion_pos, ion_type
 
 def read_dot_bands(f, up=False, down=False, units='eV'):
     """
@@ -194,7 +207,7 @@ def read_dot_bands(f, up=False, down=False, units='eV'):
     weights : list of floats
         List of length M containing the weight for each k-point, where
         M = number of k-points
-    cell : list of floats
+    cell_vec : list of floats
         3 x 3 list of the unit cell vectors 
     """
     n_kpts = int(f.readline().split()[3])
@@ -203,7 +216,8 @@ def read_dot_bands(f, up=False, down=False, units='eV'):
     n_freqs = int(f.readline().split()[3])
     fermi = [float(x) for x in f.readline().split()[5:]]
     f.readline() # Skip unit cell vectors line
-    cell = [[float(x) for x in f.readline().split()[0:3]] for i in range(3)]
+    cell_vec = [[float(x) for x in f.readline().split()[0:3]]
+        for i in range(3)]
 
     freq_up = np.array([])
     freq_down = np.array([])
@@ -251,7 +265,7 @@ def read_dot_bands(f, up=False, down=False, units='eV'):
     freq_down = freq_down*ureg.hartree
     freq_down.ito(units, 'spectroscopy')
 
-    return freq_up, freq_down, kpts, fermi, weights, cell
+    return freq_up, freq_down, kpts, fermi, weights, cell_vec
 
 
 def calc_abscissa(qpts, recip_latt):
