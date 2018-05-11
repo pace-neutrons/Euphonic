@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 import sys
 import math
 import argparse
+import seekpath
 from pint import UnitRegistry
 
 
@@ -23,13 +24,20 @@ def main():
             freq_up, kpts, cell_vec, ion_pos, ion_type = read_dot_phonon(
                 f, args.units)
             freq_down = np.array([])
+
+            labels, qpts_with_labels = recip_space_labels(
+                kpts, cell_vec, ion_pos, ion_type)
         else:
             sys.exit('Error: Please supply a .bands or .phonon file')
 
     recip_latt = reciprocal_lattice(cell_vec)
     abscissa = calc_abscissa(kpts, recip_latt)
 
-    plot_dispersion(abscissa, freq_up, freq_down, args.filename, args.units)
+    if labels.size > 0:
+        plot_dispersion(abscissa, freq_up, freq_down, args.filename, args.units,
+            xticks=abscissa[qpts_with_labels], xlabels=labels)
+    else:
+        plot_dispersion(abscissa, freq_up, freq_down, args.filename, args.units)
 
 
 def parse_arguments():
@@ -288,10 +296,10 @@ def calc_abscissa(qpts, recip_latt):
     # more than the tolerance, but delta_rem is less than the tolerance, the
     # q-points differ by G so are equivalent and the distance shouldn't be
     # calculated
-    KVEC_TOL = 0.001
+    TOL = 0.001
     calc_modq = np.logical_not(np.logical_and(
-        np.sum(np.abs(delta), axis=1) > KVEC_TOL,
-        delta_rem < KVEC_TOL))
+        np.sum(np.abs(delta), axis=1) > TOL,
+        delta_rem < TOL))
 
     # Multiply each delta by the reciprocal lattice to get delta in Cartesian
     deltaq = np.einsum('ji,kj->ki', recip_latt, delta)
@@ -307,6 +315,101 @@ def calc_abscissa(qpts, recip_latt):
     abscissa = np.cumsum(abscissa)
 
     return abscissa
+
+
+def recip_space_labels(qpts, cell_vec, ion_pos, ion_type):
+    """
+    Gets high symmetry point labels (e.g. GAMMA, X, L) for the q-points at
+    which the path through reciprocal space changes direction
+
+    Parameters
+    ----------
+    qpts : list of floats
+        N x 3 list of the q-point coordinates, where N = number of q-points
+    cell_vec : list of floats
+        3 x 3 list of the unit cell vectors
+    ion_pos : list of floats
+        n_ions x 3 list of the fractional position of each ion within the
+        unit cell
+    ion_type : list of strings
+        n_ions length list of the chemical symbols of each ion in the unit
+        cell. Ions are in the same order as in ion_pos
+
+    Returns
+    -------
+    labels : list of strings
+        List of the labels for each q-point at which the path through
+        reciprocal space changes direction
+    qpts_with_labels : list of integers
+        List of the indices of the q-points at which the path through
+        reciprocal space changes direction
+    """
+
+    # First and last q-points should always be labelled
+    qpt_has_label = np.concatenate(([True], direction_changed(qpts), [True]))
+    qpts_with_labels = np.where(qpt_has_label)[0]
+
+    # Get dict of high symmetry point labels to their coordinates for this
+    # space group
+    _, ion_num = np.unique(ion_type, return_inverse=True)
+    cell = (cell_vec, ion_pos, ion_num)
+    sym_label_to_coords = seekpath.get_path(cell)["point_coords"]
+
+    # Split dict into keys and values so labels can be looked up by comparing
+    # q-point coordinates with the dict values
+    label_keys = list(sym_label_to_coords)
+    # Ensure symmetry points in label_keys and label_values are in the same
+    # order (not guaranteed if using .values() function)
+    label_values = [sym_label_to_coords[x] for x in label_keys]
+
+    # Get labels for each q-point
+    labels = np.array([])
+    for qpt in qpts[qpts_with_labels]:
+        labels = np.append(labels, get_qpt_label(qpt, label_keys, label_values))
+
+    return labels, qpts_with_labels
+
+def get_qpt_label(qpt, labels, label_coords):
+    """
+    Takes a q-point, a list of high symmetry point labels and a list of high
+    symmetry point coordinates and returns a label for that q-point. Used for
+    labelling the dispersion plot x-axis
+    """
+
+    # Normalise qpt to [0,1]
+    qpt_norm = [x - math.floor(x) for x in qpt]
+
+    # Check for matching symmetry point coordinates (roll q-point coordinates
+    # if no match is found)
+    TOL = 1e-6
+    matching_label_indices = np.where((np.isclose(label_coords, qpt_norm, atol=TOL)).all(axis=1))[0]
+    if matching_label_indices.size == 0:
+        matching_label_indices = np.where((np.isclose(label_coords, np.roll(qpt_norm, 1), atol=TOL)).all(axis=1))[0]
+    if matching_label_indices.size == 0:
+        matching_label_indices = np.where((np.isclose(label_coords, np.roll(qpt_norm, 2), atol=TOL)).all(axis=1))[0]
+
+    label = "";
+    if matching_label_indices.size > 0:
+        label = labels[matching_label_indices[0]]
+
+    return label
+
+
+def direction_changed(qpts, tolerance=5e-6):
+    """
+    Takes a N length list of q-points and returns an N - 2 length list of
+    booleans indicating whether the direction has changed between each pair
+    of q-points
+    """
+
+    delta = np.diff(qpts, axis=0)
+
+    # Dot each delta with the previous delta
+    dot = np.einsum('ij,ij->i', delta[1:,:],delta[:-1,:])
+    modq = np.linalg.norm(delta, axis=1)
+    result = (np.abs(np.abs(dot) - modq[1:]*modq[:-1]) > tolerance)
+
+    return result
 
 
 def reciprocal_lattice(unit_cell):
@@ -332,10 +435,15 @@ def reciprocal_lattice(unit_cell):
     return np.array([astar, bstar, cstar])
 
 
-def plot_dispersion(abscissa, freq_up, freq_down, filename, units):
+def plot_dispersion(abscissa, freq_up, freq_down, filename, units, xticks=None,
+                    xlabels=None):
+    # Create figure
     fig = plt.figure()
     ax = fig.add_subplot(111)
+    ax.set_title(filename)
 
+    # Y-axis formatting
+    # Replace 1/cm with cm^-1
     inverse_unit_index = units.find('/')
     if inverse_unit_index > -1:
         units = units[inverse_unit_index+1:]
@@ -343,11 +451,17 @@ def plot_dispersion(abscissa, freq_up, freq_down, filename, units):
     else:
         ax.set_ylabel('Energy (' + units + ')')
     ax.ticklabel_format(style='sci', scilimits=(-2, 2), axis='y')
-    ax.set_title(filename)
 
-    if freq_up.size != 0:
+    # X-axis formatting
+    # Set high symmetry point x-axis ticks/labels
+    if xticks is not None:
+        ax.set_xticks(xticks)
+        ax.set_xticklabels(xlabels)
+        ax.xaxis.grid(True, which='major')
+
+    if freq_up.size > 0:
         ax.plot(abscissa, freq_up)
-    if freq_down.size != 0:
+    if freq_down.size > 0:
         ax.plot(abscissa, freq_down)
     plt.show()
 

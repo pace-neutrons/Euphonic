@@ -51,6 +51,7 @@ do
     python -mpip install matplotlib
     python -mpip install numpy
     python -mpip install pint
+    python -mpip install seekpath
     # ** install any other required packages here **
     pyenv deactivate
 
