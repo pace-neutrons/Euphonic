@@ -355,42 +355,61 @@ def recip_space_labels(qpts, cell_vec, ion_pos, ion_type):
     cell = (cell_vec, ion_pos, ion_num)
     sym_label_to_coords = seekpath.get_path(cell)["point_coords"]
 
-    # Split dict into keys and values so labels can be looked up by comparing
-    # q-point coordinates with the dict values
-    label_keys = list(sym_label_to_coords)
-    # Ensure symmetry points in label_keys and label_values are in the same
-    # order (not guaranteed if using .values() function)
-    label_values = [sym_label_to_coords[x] for x in label_keys]
-
     # Get labels for each q-point
     labels = np.array([])
+
     for qpt in qpts[qpts_with_labels]:
-        labels = np.append(labels, get_qpt_label(qpt, label_keys, label_values))
+        labels = np.append(labels, get_qpt_label(qpt, sym_label_to_coords))
 
     return labels, qpts_with_labels
 
-def get_qpt_label(qpt, labels, label_coords):
+def get_qpt_label(qpt, point_labels):
     """
-    Takes a q-point, a list of high symmetry point labels and a list of high
-    symmetry point coordinates and returns a label for that q-point. Used for
-    labelling the dispersion plot x-axis
+    Gets a label for a particular q-point, based on the high symmetry points
+    of a particular space group. Used for labelling the dispersion plot x-axis
+
+    Parameters
+    ----------
+    qpt : list of floats
+        3 dimensional coordinates of a q-point
+    point_labels : dictionary
+        A dictionary with N entries, relating high symmetry point lables (e.g.
+        'GAMMA', 'X'), to their 3-dimensional coordinates (e.g. [0.0, 0.0,
+        0.0]) where N = number of high symmetry points for a particular space
+        group
+
+    Returns
+    -------
+    label : string
+        The label for this q-point. If the q-point isn't a high symmetry point
+        label is just an empty string
     """
 
     # Normalise qpt to [0,1]
     qpt_norm = [x - math.floor(x) for x in qpt]
 
+    # Split dict into keys and values so labels can be looked up by comparing
+    # q-point coordinates with the dict values
+    labels = list(point_labels)
+    # Ensure symmetry points in label_keys and label_values are in the same
+    # order (not guaranteed if using .values() function)
+    label_coords = [point_labels[x] for x in labels]
+
     # Check for matching symmetry point coordinates (roll q-point coordinates
     # if no match is found)
     TOL = 1e-6
-    matching_label_indices = np.where((np.isclose(label_coords, qpt_norm, atol=TOL)).all(axis=1))[0]
-    if matching_label_indices.size == 0:
-        matching_label_indices = np.where((np.isclose(label_coords, np.roll(qpt_norm, 1), atol=TOL)).all(axis=1))[0]
-    if matching_label_indices.size == 0:
-        matching_label_indices = np.where((np.isclose(label_coords, np.roll(qpt_norm, 2), atol=TOL)).all(axis=1))[0]
+    matching_label_index = np.where((np.isclose(
+        label_coords, qpt_norm, atol=TOL)).all(axis=1))[0]
+    if matching_label_index.size == 0:
+        matching_label_index = np.where((np.isclose(
+            label_coords, np.roll(qpt_norm, 1), atol=TOL)).all(axis=1))[0]
+    if matching_label_index.size == 0:
+        matching_label_index = np.where((np.isclose(
+            label_coords, np.roll(qpt_norm, 2), atol=TOL)).all(axis=1))[0]
 
     label = "";
-    if matching_label_indices.size > 0:
-        label = labels[matching_label_indices[0]]
+    if matching_label_index.size > 0:
+        label = labels[matching_label_index[0]]
 
     return label
 
@@ -402,14 +421,18 @@ def direction_changed(qpts, tolerance=5e-6):
     of q-points
     """
 
+    # Get vectors between q-points
     delta = np.diff(qpts, axis=0)
 
-    # Dot each delta with the previous delta
-    dot = np.einsum('ij,ij->i', delta[1:,:],delta[:-1,:])
+    # Dot each vector with the next to determine the relative direction
+    dot = np.einsum('ij,ij->i', delta[1:,:], delta[:-1,:])
+    # Get magnitude of each vector
     modq = np.linalg.norm(delta, axis=1)
-    result = (np.abs(np.abs(dot) - modq[1:]*modq[:-1]) > tolerance)
+    # Determine how much the direction has changed (dot) relative to the
+    # vector sizes (modq)
+    direction_changed = (np.abs(np.abs(dot) - modq[1:]*modq[:-1]) > tolerance)
 
-    return result
+    return direction_changed
 
 
 def reciprocal_lattice(unit_cell):

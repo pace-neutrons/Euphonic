@@ -1,5 +1,7 @@
 import unittest
 import math
+import seekpath
+import numpy as np
 import numpy.testing as npt
 from io import StringIO
 from pint import UnitRegistry
@@ -309,3 +311,83 @@ class TestUnitRegistrySetup(unittest.TestCase):
         test_ev = 1 * ureg.Ry
         test_ev.ito(ureg.eV)
         self.assertEqual(test_ev.magnitude, 13.605693009)
+
+class TestDirectionChangedCalculation(unittest.TestCase):
+
+    def test_direction_changed_nah(self):
+        qpts = [[-0.25, -0.25, -0.25],
+                [-0.25, -0.50, -0.50],
+                [ 0.00, -0.25, -0.25],
+                [ 0.00,  0.00,  0.00],
+                [ 0.00, -0.50, -0.50],
+                [ 0.25,  0.00, -0.25],
+                [ 0.25, -0.50, -0.25],
+                [-0.50, -0.50, -0.50]]
+        expected_direction_changed = [True, True, False, True, True, True]
+        npt.assert_equal(disp.direction_changed(qpts),
+                         expected_direction_changed)
+
+class TestRecipSpaceLabels(unittest.TestCase):
+
+    def setUp(self):
+        # Create trivial function object so attributes can be assigned to it
+        NaH = lambda:0
+        NaH.cell_vec = [[0.0, 2.3995, 2.3995],
+                        [2.3995, 0.0, 2.3995],
+                        [2.3995, 2.3995, 0.0]]
+        NaH.ion_pos = [[0.5, 0.5, 0.5],
+                       [0.0, 0.0, 0.0]]
+        NaH.ion_type = ['H', 'Na']
+        NaH.qpts = np.array([[-0.25, -0.25, -0.25],
+                             [-0.25, -0.50, -0.50],
+                             [ 0.00, -0.25, -0.25],
+                             [ 0.00,  0.00,  0.00],
+                             [ 0.00, -0.50, -0.50],
+                             [ 0.25,  0.00, -0.25],
+                             [ 0.25, -0.50, -0.25],
+                             [-0.50, -0.50, -0.50]])
+        NaH.expected_labels = ['', '', '', 'X', '', 'W_2', 'L']
+        NaH.expected_qpts_with_labels = [0, 1, 2, 4, 5, 6, 7]
+        (NaH.labels, NaH.qpts_with_labels) = disp.recip_space_labels(
+            NaH.qpts, NaH.cell_vec, NaH.ion_pos, NaH.ion_type)
+        self.NaH = NaH
+
+    def test_labels_nah(self):
+        npt.assert_equal(self.NaH.labels, self.NaH.expected_labels)
+
+    def test_qpts_with_labels_nah(self):
+        npt.assert_equal(self.NaH.qpts_with_labels,
+                         self.NaH.expected_qpts_with_labels)
+
+class TestGetQptLabel(unittest.TestCase):
+
+    def setUp(self):
+        # Create trivial function object so attributes can be assigned to it
+        NaH = lambda:0
+        cell_vec = [[0.0, 2.3995, 2.3995],
+                    [2.3995, 0.0, 2.3995],
+                    [2.3995, 2.3995, 0.0]]
+        ion_pos = [[0.5, 0.5, 0.5],
+                   [0.0, 0.0, 0.0]]
+        ion_num = [1, 2]
+        cell = (cell_vec, ion_pos, ion_num)
+        NaH.point_labels = seekpath.get_path(cell)["point_coords"]
+        self.NaH = NaH
+
+    def test_gamma_pt_nah(self):
+        gamma_pt = [0.0, 0.0, 0.0]
+        expected_label = 'GAMMA'
+        self.assertEqual(disp.get_qpt_label(gamma_pt, self.NaH.point_labels),
+                         expected_label)
+
+    def test_x_pt_nah(self):
+        x_pt = [0.0, -0.5, -0.5]
+        expected_label = 'X'
+        self.assertEqual(disp.get_qpt_label(x_pt, self.NaH.point_labels),
+                         expected_label)
+
+    def test_w2_pt_nah(self):
+        w2_pt = [0.25, -0.5, -0.25]
+        expected_label = 'W_2'
+        self.assertEqual(disp.get_qpt_label(w2_pt, self.NaH.point_labels),
+                         expected_label)
