@@ -141,7 +141,7 @@ def read_input_file(f, units, up=False, down=False):
         try:
             with open(phonon_file, 'r') as pf:
                 ion_pos, ion_type = read_dot_phonon_header(pf)[4:6]
-        except FileNotFoundError:
+        except IOError:
             pass
 
     elif f.name.endswith('.phonon'):
@@ -581,11 +581,12 @@ def plot_dispersion(abscissa, freq_up, freq_down, filename, units, xticks=None,
     # Set high symmetry point x-axis ticks/labels
     if xticks is not None:
         ax.set_xticks(xticks)
-        ax.set_xticklabels(xlabels)
         ax.xaxis.grid(True, which='major')
-        # Rotate long tick labels
+        # Set labels (rotate long tick labels)
         if len(max(xlabels, key=len)) >= 11:
-            ax.tick_params(axis='x', labelrotation=90)
+            ax.set_xticklabels(xlabels, rotation=90)
+        else:
+            ax.set_xticklabels(xlabels)
     ax.set_xlim(left=0)
 
     # Plot frequencies and Fermi energy
