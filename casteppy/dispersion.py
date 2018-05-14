@@ -16,28 +16,22 @@ from pint import UnitRegistry
 def main():
     args = parse_arguments()
 
+    # Read data
     with open(args.filename, 'r') as f:
-        if args.filename.endswith('.bands'):
-            (freq_up, freq_down, kpts, fermi, weights,
-                cell_vec) = read_dot_bands(f, args.up, args.down, args.units)
-        elif args.filename.endswith('.phonon'):
-            freq_up, kpts, cell_vec, ion_pos, ion_type = read_dot_phonon(
-                f, args.units)
-            freq_down = np.array([])
+        (cell_vec, ion_pos, ion_type, kpts, weights, freqs, freq_down,
+            fermi) = read_input_file(f, args.units, args.up, args.down)
 
-            labels, qpts_with_labels = recip_space_labels(
-                kpts, cell_vec, ion_pos, ion_type)
-        else:
-            sys.exit('Error: Please supply a .bands or .phonon file')
-
+    # Get positions of k-points along x-axis
     recip_latt = reciprocal_lattice(cell_vec)
     abscissa = calc_abscissa(kpts, recip_latt)
 
-    if labels.size > 0:
-        plot_dispersion(abscissa, freq_up, freq_down, args.filename, args.units,
-            xticks=abscissa[qpts_with_labels], xlabels=labels)
-    else:
-        plot_dispersion(abscissa, freq_up, freq_down, args.filename, args.units)
+    # Get labels for high symmetry / fractional k-point coordinates
+    labels, qpts_with_labels = recip_space_labels(
+        kpts, cell_vec, ion_pos, ion_type)
+
+    plot_dispersion(abscissa, freqs, freq_down, args.filename, args.units,
+                    xticks=abscissa[qpts_with_labels], xlabels=labels,
+                    fermi=fermi)
 
 
 def parse_arguments():
@@ -82,6 +76,84 @@ def set_up_unit_registry():
     return ureg
 
 
+def read_input_file(f, units, up=False, down=False):
+    """
+    Reads data from a .bands, .phonon, or .castep_bin file. If the specified
+    file doesn't contain all the required data (e.g. ionic positions) looks in
+    other .bands, .phonon or .castep_bin files of the same structure name
+
+    Parameters
+    ----------
+    f : file object
+        File object in read mode for the .phonon file containing the data
+    units : string
+        String specifying the units of the output frequencies. For valid
+        values see the Pint docs: http://pint.readthedocs.io/en/0.8.1/
+    up : boolean
+        Read only spin up frequencies from the .bands file
+    down : boolean
+        Read only spin down frequencies from the .bands file
+
+    Returns
+    -------
+    cell_vec : list of floats
+        3 x 3 list of the unit cell vectors
+    ion_pos : list of floats
+        n_ions x 3 list of the fractional position of each ion within the
+        unit cell. If the ion positions can't be found, ion_pos is empty
+    ion_type : list of strings
+        n_ions length list of the chemical symbols of each ion in the unit
+        cell. Ions are in the same order as in ion_pos. If the ion types can't
+        be found, ion_type is empty
+    kpts : list of floats
+        M x 3 list of k-point coordinates, where M = number of k-points
+    weights : list of floats
+        List of length M containing the weight for each k-point, where
+        M = number of k-points
+    freqs : list of floats
+        M x N list of band frequencies in units specified by the
+        'units' parameter, where M = number of k-points and N = number of
+        bands. If there are 2 spin components, these are the spin up
+        frequencies. If -down is specified, freqs is empty
+    freq_down : list of floats
+        M x N list of spin down band frequencies in units specified by the
+        'units' parameter, where M = number of k-points and N = number of
+        bands. If there are no spin down frequencies, or if -up is specified
+        freq_down is empty
+    fermi : list of floats
+        List of length 1 or 2 containing the Fermi energy/energies in atomic
+        units. If the file doesn't contain the fermi energy, fermi is empty
+    """
+    ion_pos = []
+    ion_type = []
+    freqs = np.array([])
+    freq_down = np.array([])
+    fermi = []
+
+    dir_name = f.name[:f.name.rfind('/')]
+    structure_name = f.name[f.name.rfind('/') + 1:f.name.rfind('.')]
+
+    if f.name.endswith('.bands'):
+        (fermi, cell_vec, kpts, weights, freqs,
+            freq_down) = read_dot_bands(f, up, down, units)
+        # Try and get point group info by reading ionic positions from .phonon
+        phonon_file = dir_name + '/' + structure_name + '.phonon'
+        try:
+            with open(phonon_file, 'r') as pf:
+                ion_pos, ion_type = read_dot_phonon_header(pf)[4:6]
+        except FileNotFoundError:
+            pass
+
+    elif f.name.endswith('.phonon'):
+        (cell_vec, ion_pos, ion_type, kpts, weights,
+            freqs) = read_dot_phonon(f, units)
+
+    else:
+        sys.exit('Error: Please supply a .bands or .phonon file')
+
+    return cell_vec, ion_pos, ion_type, kpts, weights, freqs, freq_down, fermi
+
+
 def read_dot_phonon(f, units='1/cm'):
     """
     Reads band structure from a *.phonon file
@@ -100,12 +172,6 @@ def read_dot_phonon(f, units='1/cm'):
 
     Returns
     -------
-    freqs: list of floats
-        M x N list of phonon band frequencies in units specified by the
-        'units parameter, where M = number of q-points and N = number of
-        bands, ordered according to increasing q-point number
-    qpts : list of floats
-        M x 3 list of q-point coordinates, where M = number of q-points
     cell_vec : list of floats
         3 x 3 list of the unit cell vectors
     ion_pos : list of floats
@@ -114,10 +180,20 @@ def read_dot_phonon(f, units='1/cm'):
     ion_type : list of strings
         n_ions length list of the chemical symbols of each ion in the unit
         cell. Ions are in the same order as in ion_pos
+    qpts : list of floats
+        M x 3 list of q-point coordinates, where M = number of q-points
+    weights : list of floats
+        List of length M containing the weight for each q-point, where
+        M = number of q-points
+    freqs: list of floats
+        M x N list of phonon band frequencies in units specified by the
+        'units parameter, where M = number of q-points and N = number of
+        bands, ordered according to increasing q-point number
     """
     (n_ions, n_branches, n_qpts, cell_vec, ion_pos,
         ion_type) = read_dot_phonon_header(f)
     qpts = np.zeros((n_qpts, 3))
+    weights = np.zeros(n_qpts)
     freqs = np.zeros((n_qpts, n_branches))
 
     # Need to loop through file using while rather than number of k-points
@@ -128,6 +204,7 @@ def read_dot_phonon(f, units='1/cm'):
             break
         qpt_num = int(line[1]) - 1
         qpts[qpt_num,:] = [float(x) for x in line[2:5]]
+        weights[qpt_num] = float(line[5])
         freqs_tmp = [float(f.readline().split()[1]) for i in range(n_branches)]
         freqs[qpt_num,:] = freqs_tmp
         # Skip eigenvectors and 2 label lines
@@ -137,7 +214,7 @@ def read_dot_phonon(f, units='1/cm'):
     freqs = freqs*(1/ureg.cm)
     freqs.ito(units, 'spectroscopy')
 
-    return freqs, qpts, cell_vec, ion_pos, ion_type
+    return cell_vec, ion_pos, ion_type, qpts, weights, freqs
 
 
 def read_dot_phonon_header(f):
@@ -199,24 +276,24 @@ def read_dot_bands(f, up=False, down=False, units='eV'):
 
     Returns
     -------
+    fermi : list of floats
+        List of length 1 or 2 containing the Fermi energy/energies in atomic
+        units
+    cell_vec : list of floats
+        3 x 3 list of the unit cell vectors
+    kpts : list of floats
+        M x 3 list of k-point coordinates, where M = number of k-points
+    weights : list of floats
+        List of length M containing the weight for each k-point, where
+        M = number of k-points
     freq_up : list of floats
         M x N list of spin up band frequencies in units specified by the
         'units' parameter, where M = number of k-points and N = number of
         bands, ordered according to increasing k-point number
     freq_down : list of floats
         M x N list of spin down band frequencies in units specified by the
-        'units' argument, where M = number of k-points and N = number of
+        'units' parameter, where M = number of k-points and N = number of
         bands, ordered according to increasing k-point number
-    kpts : list of floats
-        M x 3 list of k-point coordinates, where M = number of k-points
-    fermi : list of floats
-        List of length 1 or 2 containing the Fermi energy/energies in atomic
-        units
-    weights : list of floats
-        List of length M containing the weight for each k-point, where
-        M = number of k-points
-    cell_vec : list of floats
-        3 x 3 list of the unit cell vectors 
     """
     n_kpts = int(f.readline().split()[3])
     n_spins = int(f.readline().split()[4])
@@ -273,7 +350,7 @@ def read_dot_bands(f, up=False, down=False, units='eV'):
     freq_down = freq_down*ureg.hartree
     freq_down.ito(units, 'spectroscopy')
 
-    return freq_up, freq_down, kpts, fermi, weights, cell_vec
+    return fermi, cell_vec, kpts, weights, freq_up, freq_down
 
 
 def calc_abscissa(qpts, recip_latt):
@@ -350,10 +427,15 @@ def recip_space_labels(qpts, cell_vec, ion_pos, ion_type):
     qpts_with_labels = np.where(qpt_has_label)[0]
 
     # Get dict of high symmetry point labels to their coordinates for this
-    # space group
-    _, ion_num = np.unique(ion_type, return_inverse=True)
-    cell = (cell_vec, ion_pos, ion_num)
-    sym_label_to_coords = seekpath.get_path(cell)["point_coords"]
+    # space group. If space group can't be determined use a generic dictionary
+    # of fractional points
+    sym_label_to_coords = {}
+    if len(ion_pos) > 0:
+        _, ion_num = np.unique(ion_type, return_inverse=True)
+        cell = (cell_vec, ion_pos, ion_num)
+        sym_label_to_coords = seekpath.get_path(cell)["point_coords"]
+    else:
+        sym_label_to_coords = generic_qpt_labels()
 
     # Get labels for each q-point
     labels = np.array([])
@@ -362,6 +444,26 @@ def recip_space_labels(qpts, cell_vec, ion_pos, ion_type):
         labels = np.append(labels, get_qpt_label(qpt, sym_label_to_coords))
 
     return labels, qpts_with_labels
+
+
+def generic_qpt_labels():
+    """
+    Returns a dictionary relating fractional q-point label strings to their
+    coordinates e.g. '1/4 1/2 1/4' = [0.25, 0.5, 0.25]. Used for labelling
+    q-points when the space group can't be calculated
+    """
+    label_strings = ['0', '1/4', '3/4', '1/2', '1/3', '2/3', '3/8', '5/8']
+    label_coords = [0., 0.25, 0.75, 0.5, 1./3., 2./3., 0.375, 0.625]
+
+    generic_labels = {}
+    for i, s1 in enumerate(label_strings):
+        for j, s2 in enumerate(label_strings):
+            for k, s3 in enumerate(label_strings):
+                key = s1 + ' ' + s2 + ' ' + s3
+                value = [label_coords[i], label_coords[j], label_coords[k]]
+                generic_labels[key] = value
+    return generic_labels
+
 
 def get_qpt_label(qpt, point_labels):
     """
@@ -407,7 +509,7 @@ def get_qpt_label(qpt, point_labels):
         matching_label_index = np.where((np.isclose(
             label_coords, np.roll(qpt_norm, 2), atol=TOL)).all(axis=1))[0]
 
-    label = "";
+    label = '';
     if matching_label_index.size > 0:
         label = labels[matching_label_index[0]]
 
@@ -459,7 +561,7 @@ def reciprocal_lattice(unit_cell):
 
 
 def plot_dispersion(abscissa, freq_up, freq_down, filename, units, xticks=None,
-                    xlabels=None):
+                    xlabels=None, fermi=[]):
     # Create figure
     fig = plt.figure()
     ax = fig.add_subplot(111)
@@ -481,11 +583,20 @@ def plot_dispersion(abscissa, freq_up, freq_down, filename, units, xticks=None,
         ax.set_xticks(xticks)
         ax.set_xticklabels(xlabels)
         ax.xaxis.grid(True, which='major')
+        # Rotate long tick labels
+        if len(max(xlabels, key=len)) >= 11:
+            ax.tick_params(axis='x', labelrotation=90)
+    ax.set_xlim(left=0)
 
+    # Plot frequencies and Fermi energy
     if freq_up.size > 0:
         ax.plot(abscissa, freq_up)
     if freq_down.size > 0:
         ax.plot(abscissa, freq_down)
+    if len(fermi) > 0:
+        ax.axhline(y=fermi[0], ls='dashed', c='k')
+
+    plt.tight_layout()
     plt.show()
 
 
