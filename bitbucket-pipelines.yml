@@ -9,6 +9,7 @@ pipelines:
           - python -mpip install matplotlib
           - python -mpip install numpy
           - python -mpip install pint
+          - python -mpip install seekpath
           - python -m unittest -v test.test_dispersion
     - step:
         name: Python 2 test
