@@ -7,37 +7,231 @@ from io import StringIO
 from pint import UnitRegistry
 from casteppy import dispersion as disp
 
-class TestReciprocalLatticeCalculation(unittest.TestCase):
 
-    def test_identity(self):
-        recip = disp.reciprocal_lattice([[1., 0., 0.],
-                                         [0., 1., 0.],
-                                         [0., 0., 1.]])
-        expected_recip = [[2*math.pi, 0., 0.],
-                          [0., 2*math.pi, 0.],
-                          [0., 0., 2*math.pi]]
-        npt.assert_allclose(recip, expected_recip)
+class TestSetUpUnitRegistry(unittest.TestCase):
 
-    def test_graphite(self):
-        recip = disp.reciprocal_lattice([[ 4.025915, -2.324363,  0.000000],
-                                         [-0.000000,  4.648726,  0.000000],
-                                         [ 0.000000,  0.000000, 12.850138]])
-        expected_recip = [[1.56068503860106, 0., 0.],
-                          [0.780342519300529, 1.3515929541082, 0.],
-                          [0., 0., 0.488958586061845]]
+    def test_returns_unit_registry(self):
+        self.assertIsInstance(disp.set_up_unit_registry(),
+                              type(UnitRegistry()))
 
-        npt.assert_allclose(recip, expected_recip)
+    def test_has_rydberg_units(self):
+        ureg = disp.set_up_unit_registry()
+        test_ev = 1 * ureg.Ry
+        test_ev.ito(ureg.eV)
+        self.assertEqual(test_ev.magnitude, 13.605693009)
 
-    def test_iron(self):
-        recip = disp.reciprocal_lattice([[-2.708355,  2.708355,  2.708355],
-                                         [ 2.708355, -2.708355,  2.708355],
-                                         [ 2.708355,  2.708355, -2.708355]])
-        expected_recip = [[0., 1.15996339, 1.15996339],
-                          [1.15996339, 0., 1.15996339],
-                          [1.15996339, 1.15996339, 0.]]
-        npt.assert_allclose(recip, expected_recip)
 
-class TestPhononHeaderAndFileRead(unittest.TestCase):
+class TestReadInputFileNaHBands(unittest.TestCase):
+
+    def setUp(self):
+        # Create trivial function object so attributes can be assigned to it
+        NaH_bands = lambda:0
+        # Need to use actual files here rather than simulating their content
+        # with StringIO, in order to test the way the read_input_file function
+        # searches for missing data (e.g. ion_pos) in other files
+        NaH_bands_file = 'test/NaH.bands'
+        units = 'hartree'
+        up = False
+        down = False
+
+        with open(NaH_bands_file, 'r') as f:
+            (NaH_bands.cell_vec, NaH_bands.ion_pos, NaH_bands.ion_type,
+                NaH_bands.kpts, NaH_bands.weights, NaH_bands.freqs,
+                NaH_bands.freq_down, NaH_bands.fermi) = disp.read_input_file(
+                    f, units, up, down)
+
+        NaH_bands.expected_cell_vec = [[0.000000, 4.534397, 4.534397],
+                                       [4.534397, 0.000000, 4.534397],
+                                       [4.534397, 4.534397, 0.000000]]
+        NaH_bands.expected_ion_pos = [[0.500000, 0.500000, 0.500000],
+                                      [0.000000, 0.000000, 0.000000]]
+        NaH_bands.expected_ion_type = ['H', 'Na']
+        NaH_bands.expected_kpts = [[-0.45833333, -0.37500000, -0.45833333],
+                                   [-0.45833333, -0.37500000, -0.20833333]]
+        NaH_bands.expected_weights = [0.00347222, 0.00694444]
+        NaH_bands.expected_freqs = [[-1.83230180, -0.83321119, -0.83021854,
+                                     -0.83016941, -0.04792334],
+                                    [-1.83229571, -0.83248269, -0.83078961,
+                                     -0.83036048, -0.05738470]]
+        NaH_bands.expected_freq_down = []
+        NaH_bands.expected_fermi = [-0.009615]
+        self.NaH_bands = NaH_bands
+
+    def test_cell_vec_read_nah_bands(self):
+        npt.assert_array_equal(self.NaH_bands.cell_vec,
+                               self.NaH_bands.expected_cell_vec)
+
+    def test_ion_pos_read_nah_bands(self):
+        npt.assert_array_equal(self.NaH_bands.ion_pos,
+                               self.NaH_bands.expected_ion_pos)
+
+    def test_ion_type_read_nah_bands(self):
+        npt.assert_array_equal(self.NaH_bands.ion_type,
+                               self.NaH_bands.expected_ion_type)
+
+    def test_kpts_read_nah_bands(self):
+        npt.assert_array_equal(self.NaH_bands.kpts,
+                               self.NaH_bands.expected_kpts)
+
+    def test_weights_read_nah_bands(self):
+        npt.assert_array_equal(self.NaH_bands.weights,
+                               self.NaH_bands.expected_weights)
+
+    def test_freqs_read_nah_bands(self):
+        npt.assert_array_equal(self.NaH_bands.freqs,
+                               self.NaH_bands.expected_freqs)
+
+    def test_freq_down_read_nah_bands(self):
+        npt.assert_array_equal(self.NaH_bands.freq_down,
+                               self.NaH_bands.expected_freq_down)
+
+    def test_fermi_read_nah_bands(self):
+        npt.assert_array_equal(self.NaH_bands.fermi,
+                               self.NaH_bands.expected_fermi)
+
+class TestReadInputFileNaHPhonon(unittest.TestCase):
+
+    def setUp(self):
+        # Create trivial function object so attributes can be assigned to it
+        NaH_phonon = lambda:0
+        # Need to use actual files here rather than simulating their content
+        # with StringIO, in order to test the way the read_input_file function
+        # searches for missing data (e.g. ion_pos) in other files
+        NaH_phonon_file = 'test/NaH.phonon'
+        units = '1/cm'
+        up = False
+        down = False
+
+        with open(NaH_phonon_file, 'r') as f:
+            (NaH_phonon.cell_vec, NaH_phonon.ion_pos, NaH_phonon.ion_type,
+                NaH_phonon.kpts, NaH_phonon.weights, NaH_phonon.freqs,
+                NaH_phonon.freq_down, NaH_phonon.fermi) = disp.read_input_file(
+                    f, units, up, down)
+
+        NaH_phonon.expected_cell_vec = [[0.000000, 2.399500, 2.399500],
+                                        [2.399500, 0.000000, 2.399500],
+                                        [2.399500, 2.399500, 0.000000]]
+        NaH_phonon.expected_ion_pos = [[0.500000, 0.500000, 0.500000],
+                                       [0.000000, 0.000000, 0.000000]]
+        NaH_phonon.expected_ion_type = ['H', 'Na']
+        NaH_phonon.expected_kpts = [[-0.250000, -0.250000, -0.250000],
+                                    [-0.250000, -0.500000, -0.500000]]
+        NaH_phonon.expected_weights = [0.125, 0.375]
+        NaH_phonon.expected_freqs = [[91.847109, 91.847109, 166.053018,
+                                      564.508299, 564.508299, 884.068976],
+                                     [132.031513, 154.825631, 206.213940,
+                                      642.513551, 690.303338, 832.120011]]
+        NaH_phonon.expected_freq_down = []
+        NaH_phonon.expected_fermi = []
+        self.NaH_phonon = NaH_phonon
+
+    def test_cell_vec_read_nah_phonon(self):
+        npt.assert_array_equal(self.NaH_phonon.cell_vec,
+                               self.NaH_phonon.expected_cell_vec)
+
+    def test_ion_pos_read_nah_phonon(self):
+        npt.assert_array_equal(self.NaH_phonon.ion_pos,
+                               self.NaH_phonon.expected_ion_pos)
+
+    def test_ion_type_read_nah_phonon(self):
+        npt.assert_array_equal(self.NaH_phonon.ion_type,
+                               self.NaH_phonon.expected_ion_type)
+
+    def test_kpts_read_nah_phonon(self):
+        npt.assert_array_equal(self.NaH_phonon.kpts,
+                               self.NaH_phonon.expected_kpts)
+
+    def test_weights_read_nah_phonon(self):
+        npt.assert_array_equal(self.NaH_phonon.weights,
+                               self.NaH_phonon.expected_weights)
+
+    def test_freqs_read_nah_phonon(self):
+        npt.assert_array_equal(self.NaH_phonon.freqs,
+                               self.NaH_phonon.expected_freqs)
+
+    def test_freq_down_read_nah_phonon(self):
+        npt.assert_array_equal(self.NaH_phonon.freq_down,
+                               self.NaH_phonon.expected_freq_down)
+
+    def test_fermi_read_nah_phonon(self):
+        npt.assert_array_equal(self.NaH_phonon.fermi,
+                               self.NaH_phonon.expected_fermi)
+
+
+class TestReadInputFileFeBands(unittest.TestCase):
+
+    def setUp(self):
+        # Create trivial function object so attributes can be assigned to it
+        Fe_bands = lambda:0
+        # Need to use actual files here rather than simulating their content
+        # with StringIO, in order to test the way the read_input_file function
+        # searches for missing data (e.g. ion_pos) in other files
+        Fe_bands_file = 'test/Fe.bands'
+        units = 'hartree'
+        up = False
+        down = False
+
+        with open(Fe_bands_file, 'r') as f:
+            (Fe_bands.cell_vec, Fe_bands.ion_pos, Fe_bands.ion_type,
+                Fe_bands.kpts, Fe_bands.weights, Fe_bands.freqs,
+                Fe_bands.freq_down, Fe_bands.fermi) = disp.read_input_file(
+                    f, units, up, down)
+
+        Fe_bands.expected_cell_vec = [[-2.708355,  2.708355,  2.708355],
+                                      [ 2.708355, -2.708355,  2.708355],
+                                      [ 2.708355,  2.708355, -2.708355]]
+
+        Fe_bands.expected_ion_pos = []
+        Fe_bands.expected_ion_type = []
+        Fe_bands.expected_kpts = [[-0.37500000, -0.45833333,  0.29166667],
+                                  [-0.37500000, -0.37500000,  0.29166667]]
+        Fe_bands.expected_weights = [0.01388889, 0.01388889]
+        Fe_bands.expected_freqs = [[0.02278248, 0.02644693, 0.12383402,
+                                    0.15398152, 0.17125020, 0.43252010],
+                                   [0.02760952, 0.02644911, 0.12442671,
+                                    0.14597457, 0.16728951, 0.35463529]]
+        Fe_bands.expected_freq_down = [[0.08112495, 0.08345039, 0.19185076,
+                                        0.22763689, 0.24912308, 0.46511567],
+                                       [0.08778721, 0.08033338, 0.19288937,
+                                        0.21817779, 0.24476910, 0.39214129]]
+        Fe_bands.expected_fermi = [0.173319, 0.173319]
+        self.Fe_bands = Fe_bands
+
+    def test_cell_vec_read_fe_bands(self):
+        npt.assert_array_equal(self.Fe_bands.cell_vec,
+                               self.Fe_bands.expected_cell_vec)
+
+    def test_ion_pos_read_fe_bands(self):
+        npt.assert_array_equal(self.Fe_bands.ion_pos,
+                               self.Fe_bands.expected_ion_pos)
+
+    def test_ion_type_read_fe_bands(self):
+        npt.assert_array_equal(self.Fe_bands.ion_type,
+                               self.Fe_bands.expected_ion_type)
+
+    def test_kpts_read_fe_bands(self):
+        npt.assert_array_equal(self.Fe_bands.kpts,
+                               self.Fe_bands.expected_kpts)
+
+    def test_weights_read_fe_bands(self):
+        npt.assert_array_equal(self.Fe_bands.weights,
+                               self.Fe_bands.expected_weights)
+
+    def test_freqs_read_fe_bands(self):
+        npt.assert_array_equal(self.Fe_bands.freqs,
+                               self.Fe_bands.expected_freqs)
+
+    def test_freq_down_read_fe_bands(self):
+        npt.assert_array_equal(self.Fe_bands.freq_down,
+                               self.Fe_bands.expected_freq_down)
+
+    def test_fermi_read_fe_bands(self):
+        npt.assert_array_equal(self.Fe_bands.fermi,
+                               self.Fe_bands.expected_fermi)
+
+
+class TestReadDotPhononAndHeader(unittest.TestCase):
+
     def setUp(self):
         # Create trivial function object so attributes can be assigned to it
         NaH = lambda:0
@@ -159,7 +353,7 @@ class TestPhononHeaderAndFileRead(unittest.TestCase):
     def test_ion_type_file_read_nah(self):
         npt.assert_array_equal(self.NaH.ion_type_file, self.NaH.expected_ion_type)
 
-class TestBandsFileRead(unittest.TestCase):
+class TestReadDotBands(unittest.TestCase):
 
     def setUp(self):
         # Create trivial function object so attributes can be assigned to it
@@ -282,7 +476,7 @@ class TestBandsFileRead(unittest.TestCase):
         npt.assert_allclose(freq_down_cm, expected_freq_down_cm)
 
 
-class TestAbscissaCalculation(unittest.TestCase):
+class TestCalcAbscissa(unittest.TestCase):
 
     def test_iron(self):
         recip = [[0., 1.15996339, 1.15996339],
@@ -304,33 +498,6 @@ class TestAbscissaCalculation(unittest.TestCase):
         npt.assert_allclose(disp.calc_abscissa(qpts, recip),
                             expected_abscissa)
 
-
-class TestUnitRegistrySetup(unittest.TestCase):
-
-    def test_returns_unit_registry(self):
-        self.assertIsInstance(disp.set_up_unit_registry(),
-                              type(UnitRegistry()))
-
-    def test_has_rydberg_units(self):
-        ureg = disp.set_up_unit_registry()
-        test_ev = 1 * ureg.Ry
-        test_ev.ito(ureg.eV)
-        self.assertEqual(test_ev.magnitude, 13.605693009)
-
-class TestDirectionChangedCalculation(unittest.TestCase):
-
-    def test_direction_changed_nah(self):
-        qpts = [[-0.25, -0.25, -0.25],
-                [-0.25, -0.50, -0.50],
-                [ 0.00, -0.25, -0.25],
-                [ 0.00,  0.00,  0.00],
-                [ 0.00, -0.50, -0.50],
-                [ 0.25,  0.00, -0.25],
-                [ 0.25, -0.50, -0.25],
-                [-0.50, -0.50, -0.50]]
-        expected_direction_changed = [True, True, False, True, True, True]
-        npt.assert_equal(disp.direction_changed(qpts),
-                         expected_direction_changed)
 
 class TestRecipSpaceLabels(unittest.TestCase):
 
@@ -364,6 +531,26 @@ class TestRecipSpaceLabels(unittest.TestCase):
         npt.assert_equal(self.NaH.qpts_with_labels,
                          self.NaH.expected_qpts_with_labels)
 
+
+class TestGenericQptLabels(unittest.TestCase):
+
+    def setUp(self):
+        self.generic_dict = disp.generic_qpt_labels()
+
+    def test_returns_dict(self):
+        self.assertIsInstance(self.generic_dict, dict)
+
+    def test_gamma_point(self):
+        key = '0 0 0'
+        expected_value = [0., 0., 0.]
+        npt.assert_array_equal(self.generic_dict[key], expected_value)
+
+    def test_mixed_point(self):
+        key = '5/8 1/3 3/8'
+        expected_value = [0.625, 1./3., 0.375]
+        npt.assert_allclose(self.generic_dict[key], expected_value)
+
+
 class TestGetQptLabel(unittest.TestCase):
 
     def setUp(self):
@@ -396,3 +583,50 @@ class TestGetQptLabel(unittest.TestCase):
         expected_label = 'W_2'
         self.assertEqual(disp.get_qpt_label(w2_pt, self.NaH.point_labels),
                          expected_label)
+
+
+class TestDirectionChanged(unittest.TestCase):
+
+    def test_direction_changed_nah(self):
+        qpts = [[-0.25, -0.25, -0.25],
+                [-0.25, -0.50, -0.50],
+                [ 0.00, -0.25, -0.25],
+                [ 0.00,  0.00,  0.00],
+                [ 0.00, -0.50, -0.50],
+                [ 0.25,  0.00, -0.25],
+                [ 0.25, -0.50, -0.25],
+                [-0.50, -0.50, -0.50]]
+        expected_direction_changed = [True, True, False, True, True, True]
+        npt.assert_equal(disp.direction_changed(qpts),
+                         expected_direction_changed)
+
+
+class TestReciprocalLattice(unittest.TestCase):
+
+    def test_identity(self):
+        recip = disp.reciprocal_lattice([[1., 0., 0.],
+                                         [0., 1., 0.],
+                                         [0., 0., 1.]])
+        expected_recip = [[2*math.pi, 0., 0.],
+                          [0., 2*math.pi, 0.],
+                          [0., 0., 2*math.pi]]
+        npt.assert_allclose(recip, expected_recip)
+
+    def test_graphite(self):
+        recip = disp.reciprocal_lattice([[ 4.025915, -2.324363,  0.000000],
+                                         [-0.000000,  4.648726,  0.000000],
+                                         [ 0.000000,  0.000000, 12.850138]])
+        expected_recip = [[1.56068503860106, 0., 0.],
+                          [0.780342519300529, 1.3515929541082, 0.],
+                          [0., 0., 0.488958586061845]]
+
+        npt.assert_allclose(recip, expected_recip)
+
+    def test_iron(self):
+        recip = disp.reciprocal_lattice([[-2.708355,  2.708355,  2.708355],
+                                         [ 2.708355, -2.708355,  2.708355],
+                                         [ 2.708355,  2.708355, -2.708355]])
+        expected_recip = [[0., 1.15996339, 1.15996339],
+                          [1.15996339, 0., 1.15996339],
+                          [1.15996339, 1.15996339, 0.]]
+        npt.assert_allclose(recip, expected_recip)

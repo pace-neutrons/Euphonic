@@ -130,8 +130,14 @@ def read_input_file(f, units, up=False, down=False):
     freq_down = np.array([])
     fermi = []
 
-    dir_name = f.name[:f.name.rfind('/')]
-    structure_name = f.name[f.name.rfind('/') + 1:f.name.rfind('.')]
+    # If file is in this directory
+    if f.name.rfind('/') == -1:
+        dir_name = '.'
+        structure_name = f.name[:f.name.rfind('.')]
+    # If file is in another directory
+    else:
+        dir_name = f.name[:f.name.rfind('/')]
+        structure_name = f.name[f.name.rfind('/') + 1:f.name.rfind('.')]
 
     if f.name.endswith('.bands'):
         (fermi, cell_vec, kpts, weights, freqs,
