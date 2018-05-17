@@ -37,7 +37,8 @@ class TestReadInputFileNaHBands(unittest.TestCase):
         with open(NaH_bands_file, 'r') as f:
             (NaH_bands.cell_vec, NaH_bands.ion_pos, NaH_bands.ion_type,
                 NaH_bands.kpts, NaH_bands.weights, NaH_bands.freqs,
-                NaH_bands.freq_down, NaH_bands.fermi) = disp.read_input_file(
+                NaH_bands.freq_down, NaH_bands.eigenvecs,
+                NaH_bands.fermi) = disp.read_input_file(
                     f, units, up, down)
 
         NaH_bands.expected_cell_vec = [[0.000000, 4.534397, 4.534397],
@@ -85,9 +86,13 @@ class TestReadInputFileNaHBands(unittest.TestCase):
         npt.assert_array_equal(self.NaH_bands.freq_down,
                                self.NaH_bands.expected_freq_down)
 
+    def test_eigenvecs_read_nah_bands(self):
+        npt.assert_array_equal(self.NaH_bands.eigenvecs, [])
+
     def test_fermi_read_nah_bands(self):
         npt.assert_array_equal(self.NaH_bands.fermi,
                                self.NaH_bands.expected_fermi)
+
 
 class TestReadInputFileNaHPhonon(unittest.TestCase):
 
@@ -101,12 +106,14 @@ class TestReadInputFileNaHPhonon(unittest.TestCase):
         units = '1/cm'
         up = False
         down = False
+        read_eigenvecs = True
 
         with open(NaH_phonon_file, 'r') as f:
             (NaH_phonon.cell_vec, NaH_phonon.ion_pos, NaH_phonon.ion_type,
                 NaH_phonon.kpts, NaH_phonon.weights, NaH_phonon.freqs,
-                NaH_phonon.freq_down, NaH_phonon.fermi) = disp.read_input_file(
-                    f, units, up, down)
+                NaH_phonon.freq_down, NaH_phonon.eigenvecs,
+                NaH_phonon.fermi) = disp.read_input_file(
+                    f, units, up, down, read_eigenvecs)
 
         NaH_phonon.expected_cell_vec = [[0.000000, 2.399500, 2.399500],
                                         [2.399500, 0.000000, 2.399500],
@@ -122,6 +129,79 @@ class TestReadInputFileNaHPhonon(unittest.TestCase):
                                      [132.031513, 154.825631, 206.213940,
                                       642.513551, 690.303338, 832.120011]]
         NaH_phonon.expected_freq_down = []
+        NaH_phonon.expected_eigenvecs = [[[-0.061613336996 - 0.060761142686*1j,
+                                           -0.005526816216 - 0.006379010526*1j,
+                                            0.067140153211 + 0.067140153211*1j],
+                                          [ 0.666530886823 - 0.004641603630*1j,
+                                            0.064846864124 + 0.004641603630*1j,
+                                           -0.731377750947 + 0.000000000000*1j],
+                                          [-0.043088481348 - 0.041294487960*1j,
+                                            0.074981829953 + 0.073187836565*1j,
+                                           -0.031893348605 - 0.031893348605*1j],
+                                          [ 0.459604449490 - 0.009771253020*1j,
+                                           -0.807028225834 + 0.009771253020*1j,
+                                            0.347423776344 + 0.000000000000*1j],
+                                          [-0.062303354995 - 0.062303354995*1j,
+                                           -0.062303354995 - 0.062303354995*1j,
+                                           -0.062303354995 - 0.062303354995*1j],
+                                          [ 0.570587344099 - 0.000000000000*1j,
+                                            0.570587344099 - 0.000000000000*1j,
+                                            0.570587344099 + 0.000000000000*1j],
+                                          [ 0.286272749085 + 0.286272749085*1j,
+                                            0.286272749085 + 0.286272749085*1j,
+                                           -0.572545498170 - 0.572545498170*1j],
+                                          [ 0.052559422840 - 0.000000000000*1j,
+                                            0.052559422840 + 0.000000000000*1j,
+                                           -0.105118845679 + 0.000000000000*1j],
+                                          [-0.459591797004 + 0.529611084985*1j,
+                                            0.459591797004 - 0.529611084985*1j,
+                                            0.000000000000 - 0.000000000000*1j],
+                                          [ 0.006427739587 + 0.090808385909*1j,
+                                           -0.006427739587 - 0.090808385909*1j,
+                                            0.000000000000 + 0.000000000000*1j],
+                                          [-0.403466180272 - 0.403466180272*1j,
+                                           -0.403466180272 - 0.403466180272*1j,
+                                           -0.403466180272 - 0.403466180272*1j],
+                                          [-0.088110249616 - 0.000000000000*1j,
+                                           -0.088110249616 - 0.000000000000*1j,
+                                           -0.088110249616 + 0.000000000000*1j]],
+                                         [[ 0.000000000000 + 0.000000000000*1j,
+                                            0.031866260273 - 0.031866260273*1j,
+                                           -0.031866260273 + 0.031866260273*1j],
+                                          [-0.000000000000 - 0.000000000000*1j,
+                                           -0.705669244698 + 0.000000000000*1j,
+                                            0.705669244698 + 0.000000000000*1j],
+                                          [-0.001780156891 + 0.001780156891*1j,
+                                           -0.012680513033 + 0.012680513033*1j,
+                                           -0.012680513033 + 0.012680513033*1j],
+                                          [-0.582237273385 + 0.000000000000*1j,
+                                            0.574608665929 - 0.000000000000*1j,
+                                            0.574608665929 + 0.000000000000*1j],
+                                          [-0.021184502078 + 0.021184502078*1j,
+                                           -0.011544287510 + 0.011544287510*1j,
+                                           -0.011544287510 + 0.011544287510*1j],
+                                          [ 0.812686635458 - 0.000000000000*1j,
+                                            0.411162853378 + 0.000000000000*1j,
+                                            0.411162853378 + 0.000000000000*1j],
+                                          [ 0.000000000000 + 0.000000000000*1j,
+                                           -0.498983508201 + 0.498983508201*1j,
+                                            0.498983508201 - 0.498983508201*1j],
+                                          [ 0.000000000000 + 0.000000000000*1j,
+                                           -0.045065697460 - 0.000000000000*1j,
+                                            0.045065697460 + 0.000000000000*1j],
+                                          [ 0.400389305548 - 0.400389305548*1j,
+                                           -0.412005183792 + 0.412005183792*1j,
+                                           -0.412005183792 + 0.412005183792*1j],
+                                          [ 0.009657696420 - 0.000000000000*1j,
+                                           -0.012050954709 + 0.000000000000*1j,
+                                           -0.012050954709 + 0.000000000000*1j],
+                                          [-0.582440084400 + 0.582440084400*1j,
+                                           -0.282767859813 + 0.282767859813*1j,
+                                           -0.282767859813 + 0.282767859813*1j],
+                                          [-0.021140457173 + 0.000000000000*1j,
+                                           -0.024995270201 - 0.000000000000*1j,
+                                           -0.024995270201 + 0.000000000000*1j]]]
+
         NaH_phonon.expected_fermi = []
         self.NaH_phonon = NaH_phonon
 
@@ -153,6 +233,10 @@ class TestReadInputFileNaHPhonon(unittest.TestCase):
         npt.assert_array_equal(self.NaH_phonon.freq_down,
                                self.NaH_phonon.expected_freq_down)
 
+    def test_eigenvecs_read_nah_phonon(self):
+        npt.assert_array_equal(self.NaH_phonon.eigenvecs,
+                               self.NaH_phonon.expected_eigenvecs)
+
     def test_fermi_read_nah_phonon(self):
         npt.assert_array_equal(self.NaH_phonon.fermi,
                                self.NaH_phonon.expected_fermi)
@@ -174,7 +258,8 @@ class TestReadInputFileFeBands(unittest.TestCase):
         with open(Fe_bands_file, 'r') as f:
             (Fe_bands.cell_vec, Fe_bands.ion_pos, Fe_bands.ion_type,
                 Fe_bands.kpts, Fe_bands.weights, Fe_bands.freqs,
-                Fe_bands.freq_down, Fe_bands.fermi) = disp.read_input_file(
+                Fe_bands.freq_down, Fe_bands.eigenvecs,
+                Fe_bands.fermi) = disp.read_input_file(
                     f, units, up, down)
 
         Fe_bands.expected_cell_vec = [[-2.708355,  2.708355,  2.708355],
@@ -224,6 +309,9 @@ class TestReadInputFileFeBands(unittest.TestCase):
     def test_freq_down_read_fe_bands(self):
         npt.assert_array_equal(self.Fe_bands.freq_down,
                                self.Fe_bands.expected_freq_down)
+
+    def test_eigenvecs_read_fe_bands(self):
+        npt.assert_array_equal(self.Fe_bands.eigenvecs, [])
 
     def test_fermi_read_fe_bands(self):
         npt.assert_array_equal(self.Fe_bands.fermi,
@@ -310,11 +398,83 @@ class TestReadDotPhononAndHeader(unittest.TestCase):
                                564.508299, 564.508299, 884.068976],
                               [132.031513, 154.825631, 206.213940,
                                642.513551, 690.303338, 832.120011]]
+        NaH.expected_eigenvecs = [[[-0.061613336996 - 0.060761142686*1j,
+                                    -0.005526816216 - 0.006379010526*1j,
+                                     0.067140153211 + 0.067140153211*1j],
+                                   [ 0.666530886823 - 0.004641603630*1j,
+                                     0.064846864124 + 0.004641603630*1j,
+                                    -0.731377750947 + 0.000000000000*1j],
+                                   [-0.043088481348 - 0.041294487960*1j,
+                                     0.074981829953 + 0.073187836565*1j,
+                                    -0.031893348605 - 0.031893348605*1j],
+                                   [ 0.459604449490 - 0.009771253020*1j,
+                                    -0.807028225834 + 0.009771253020*1j,
+                                     0.347423776344 + 0.000000000000*1j],
+                                   [-0.062303354995 - 0.062303354995*1j,
+                                    -0.062303354995 - 0.062303354995*1j,
+                                    -0.062303354995 - 0.062303354995*1j],
+                                   [ 0.570587344099 - 0.000000000000*1j,
+                                     0.570587344099 - 0.000000000000*1j,
+                                     0.570587344099 + 0.000000000000*1j],
+                                   [ 0.286272749085 + 0.286272749085*1j,
+                                     0.286272749085 + 0.286272749085*1j,
+                                    -0.572545498170 - 0.572545498170*1j],
+                                   [ 0.052559422840 - 0.000000000000*1j,
+                                     0.052559422840 + 0.000000000000*1j,
+                                    -0.105118845679 + 0.000000000000*1j],
+                                   [-0.459591797004 + 0.529611084985*1j,
+                                     0.459591797004 - 0.529611084985*1j,
+                                     0.000000000000 - 0.000000000000*1j],
+                                   [ 0.006427739587 + 0.090808385909*1j,
+                                    -0.006427739587 - 0.090808385909*1j,
+                                     0.000000000000 + 0.000000000000*1j],
+                                   [-0.403466180272 - 0.403466180272*1j,
+                                    -0.403466180272 - 0.403466180272*1j,
+                                    -0.403466180272 - 0.403466180272*1j],
+                                   [-0.088110249616 - 0.000000000000*1j,
+                                    -0.088110249616 - 0.000000000000*1j,
+                                    -0.088110249616 + 0.000000000000*1j]],
+                                  [[ 0.000000000000 + 0.000000000000*1j,
+                                     0.031866260273 - 0.031866260273*1j,
+                                    -0.031866260273 + 0.031866260273*1j],
+                                   [-0.000000000000 - 0.000000000000*1j,
+                                    -0.705669244698 + 0.000000000000*1j,
+                                     0.705669244698 + 0.000000000000*1j],
+                                   [-0.001780156891 + 0.001780156891*1j,
+                                    -0.012680513033 + 0.012680513033*1j,
+                                    -0.012680513033 + 0.012680513033*1j],
+                                   [-0.582237273385 + 0.000000000000*1j,
+                                     0.574608665929 - 0.000000000000*1j,
+                                     0.574608665929 + 0.000000000000*1j],
+                                   [-0.021184502078 + 0.021184502078*1j,
+                                    -0.011544287510 + 0.011544287510*1j,
+                                    -0.011544287510 + 0.011544287510*1j],
+                                   [ 0.812686635458 - 0.000000000000*1j,
+                                     0.411162853378 + 0.000000000000*1j,
+                                     0.411162853378 + 0.000000000000*1j],
+                                   [ 0.000000000000 + 0.000000000000*1j,
+                                    -0.498983508201 + 0.498983508201*1j,
+                                     0.498983508201 - 0.498983508201*1j],
+                                   [ 0.000000000000 + 0.000000000000*1j,
+                                    -0.045065697460 - 0.000000000000*1j,
+                                     0.045065697460 + 0.000000000000*1j],
+                                   [ 0.400389305548 - 0.400389305548*1j,
+                                    -0.412005183792 + 0.412005183792*1j,
+                                    -0.412005183792 + 0.412005183792*1j],
+                                   [ 0.009657696420 - 0.000000000000*1j,
+                                    -0.012050954709 + 0.000000000000*1j,
+                                    -0.012050954709 + 0.000000000000*1j],
+                                   [-0.582440084400 + 0.582440084400*1j,
+                                    -0.282767859813 + 0.282767859813*1j,
+                                    -0.282767859813 + 0.282767859813*1j],
+                                   [-0.021140457173 + 0.000000000000*1j,
+                                    -0.024995270201 - 0.000000000000*1j,
+                                    -0.024995270201 + 0.000000000000*1j]]]
         (NaH.n_ions, NaH.n_branches, NaH.n_qpts, NaH.cell_vec, NaH.ion_pos,
             NaH.ion_type) = disp.read_dot_phonon_header(StringIO(NaH.content))
         (NaH.cell_vec_file, NaH.ion_pos_file, NaH.ion_type_file, NaH.qpts,
-            NaH.weights, NaH.freqs) = disp.read_dot_phonon(
-                StringIO(NaH.content))
+            NaH.weights, NaH.freqs, NaH.eigenvecs) = disp.read_dot_phonon(
+                StringIO(NaH.content), read_eigenvecs=True)
         self.NaH = NaH
 
     def test_n_ions_read_nah(self):
@@ -344,6 +504,9 @@ class TestReadDotPhononAndHeader(unittest.TestCase):
     def test_freqs_read_nah(self):
         npt.assert_array_equal(self.NaH.freqs, self.NaH.expected_freqs)
 
+    def test_eigenvecs_read_nah(self):
+        npt.assert_array_equal(self.NaH.eigenvecs, self.NaH.expected_eigenvecs)
+
     def test_cell_vec_file_read_nah(self):
         npt.assert_array_equal(self.NaH.cell_vec_file, self.NaH.expected_cell_vec)
 
@@ -352,6 +515,7 @@ class TestReadDotPhononAndHeader(unittest.TestCase):
 
     def test_ion_type_file_read_nah(self):
         npt.assert_array_equal(self.NaH.ion_type_file, self.NaH.expected_ion_type)
+
 
 class TestReadDotBands(unittest.TestCase):
 

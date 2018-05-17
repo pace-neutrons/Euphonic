@@ -18,16 +18,18 @@ def main():
 
     # Read data
     with open(args.filename, 'r') as f:
-        (cell_vec, ion_pos, ion_type, kpts, weights, freqs, freq_down,
-            fermi) = read_input_file(f, args.units, args.up, args.down)
+        read_eigenvecs = args.reorder
+        (cell_vec, ion_pos, ion_type, qpts, weights, freqs, freq_down,
+            eigenvecs, fermi) = read_input_file(
+                f, args.units, args.up, args.down, read_eigenvecs)
 
     # Get positions of k-points along x-axis
     recip_latt = reciprocal_lattice(cell_vec)
-    abscissa = calc_abscissa(kpts, recip_latt)
+    abscissa = calc_abscissa(qpts, recip_latt)
 
-    # Get labels for high symmetry / fractional k-point coordinates
+    # Get labels for high symmetry / fractional q-point coordinates
     labels, qpts_with_labels = recip_space_labels(
-        kpts, cell_vec, ion_pos, ion_type)
+        qpts, cell_vec, ion_pos, ion_type)
 
     plot_dispersion(abscissa, freqs, freq_down, args.filename, args.units,
                     xticks=abscissa[qpts_with_labels], xlabels=labels,
@@ -48,13 +50,16 @@ def parse_arguments():
         action='store_true',
         help='Be verbose about progress')
     parser.add_argument(
-        '-bs',
-        action='store_true',
-        help='Read band-structure from *.castep or *.bands')
-    parser.add_argument(
         '-units',
         default='eV',
-        help='Convert frequencies to specified units for plotting')
+        help="""Convert frequencies to specified units for plotting (e.g
+                1/cm, Ry). Default: eV""")
+    parser.add_argument(
+        '-reorder',
+        action='store_true',
+        help="""Try to determine branch crossings from eigenvectors and
+                rearrange frequencies accordingly (only applicable if
+                using a .phonon file)""")
 
     spin_group = parser.add_mutually_exclusive_group()
     spin_group.add_argument(
@@ -76,7 +81,7 @@ def set_up_unit_registry():
     return ureg
 
 
-def read_input_file(f, units, up=False, down=False):
+def read_input_file(f, units, up=False, down=False, read_eigenvecs=False):
     """
     Reads data from a .bands, .phonon, or .castep_bin file. If the specified
     file doesn't contain all the required data (e.g. ionic positions) looks in
@@ -85,7 +90,7 @@ def read_input_file(f, units, up=False, down=False):
     Parameters
     ----------
     f : file object
-        File object in read mode for the .phonon file containing the data
+        File object in read mode for the file containing the data
     units : string
         String specifying the units of the output frequencies. For valid
         values see the Pint docs: http://pint.readthedocs.io/en/0.8.1/
@@ -93,6 +98,9 @@ def read_input_file(f, units, up=False, down=False):
         Read only spin up frequencies from the .bands file
     down : boolean
         Read only spin down frequencies from the .bands file
+    read_eigenvecs : boolean
+        Whether to read and store the eigenvectors (only applicable if
+        reading a .phonon file)
 
     Returns
     -------
@@ -105,21 +113,26 @@ def read_input_file(f, units, up=False, down=False):
         n_ions length list of the chemical symbols of each ion in the unit
         cell. Ions are in the same order as in ion_pos. If the ion types can't
         be found, ion_type is empty
-    kpts : list of floats
-        M x 3 list of k-point coordinates, where M = number of k-points
+    qpts : list of floats
+        M x 3 list of q-point coordinates, where M = number of q-points
     weights : list of floats
-        List of length M containing the weight for each k-point, where
-        M = number of k-points
+        List of length M containing the weight for each q-point, where
+        M = number of q-points
     freqs : list of floats
         M x N list of band frequencies in units specified by the
-        'units' parameter, where M = number of k-points and N = number of
+        'units' parameter, where M = number of q-points and N = number of
         bands. If there are 2 spin components, these are the spin up
         frequencies. If -down is specified, freqs is empty
     freq_down : list of floats
         M x N list of spin down band frequencies in units specified by the
-        'units' parameter, where M = number of k-points and N = number of
+        'units' parameter, where M = number of q-points and N = number of
         bands. If there are no spin down frequencies, or if -up is specified
         freq_down is empty
+    eigenvecs: list of complex floats
+        M x L x 3 list of the atomic displacements (dynamical matrix
+        eigenvectors), where M = number of q-points and
+        L = number of ions*number of bands. If read_eigenvecs is False,
+        eigenvecs is empty
     fermi : list of floats
         List of length 1 or 2 containing the Fermi energy/energies in atomic
         units. If the file doesn't contain the fermi energy, fermi is empty
@@ -128,6 +141,7 @@ def read_input_file(f, units, up=False, down=False):
     ion_type = []
     freqs = np.array([])
     freq_down = np.array([])
+    eigenvecs = np.array([])
     fermi = []
 
     # If file is in this directory
@@ -140,7 +154,7 @@ def read_input_file(f, units, up=False, down=False):
         structure_name = f.name[f.name.rfind('/') + 1:f.name.rfind('.')]
 
     if f.name.endswith('.bands'):
-        (fermi, cell_vec, kpts, weights, freqs,
+        (fermi, cell_vec, qpts, weights, freqs,
             freq_down) = read_dot_bands(f, up, down, units)
         # Try and get point group info by reading ionic positions from .phonon
         phonon_file = dir_name + '/' + structure_name + '.phonon'
@@ -151,16 +165,16 @@ def read_input_file(f, units, up=False, down=False):
             pass
 
     elif f.name.endswith('.phonon'):
-        (cell_vec, ion_pos, ion_type, kpts, weights,
-            freqs) = read_dot_phonon(f, units)
+        (cell_vec, ion_pos, ion_type, qpts, weights,
+            freqs, eigenvecs) = read_dot_phonon(f, units, read_eigenvecs)
 
     else:
         sys.exit('Error: Please supply a .bands or .phonon file')
 
-    return cell_vec, ion_pos, ion_type, kpts, weights, freqs, freq_down, fermi
+    return cell_vec, ion_pos, ion_type, qpts, weights, freqs, freq_down, eigenvecs, fermi
 
 
-def read_dot_phonon(f, units='1/cm'):
+def read_dot_phonon(f, units='1/cm', read_eigenvecs=False):
     """
     Reads band structure from a *.phonon file
 
@@ -168,13 +182,11 @@ def read_dot_phonon(f, units='1/cm'):
     ----------
     f : file object
         File object in read mode for the .phonon file containing the data
-    up : boolean
-        Read only spin up frequencies from the .phonon file
-    down : boolean
-        Read only spin down frequencies from the .phonon file
     units : string
         String specifying the units of the output frequencies. For valid
         values see the Pint docs: http://pint.readthedocs.io/en/0.8.1/
+    read_eigenvecs : boolean
+        Whether to read and store the eigenvectors
 
     Returns
     -------
@@ -195,15 +207,21 @@ def read_dot_phonon(f, units='1/cm'):
         M x N list of phonon band frequencies in units specified by the
         'units parameter, where M = number of q-points and N = number of
         bands, ordered according to increasing q-point number
+    eigenvecs: list of complex floats
+        M x L x 3 list of the atomic displacements (dynamical matrix
+        eigenvectors), where M = number of q-points and
+        L = number of ions*number of bands. Empty if read_eigenvecs is False
     """
     (n_ions, n_branches, n_qpts, cell_vec, ion_pos,
         ion_type) = read_dot_phonon_header(f)
     qpts = np.zeros((n_qpts, 3))
     weights = np.zeros(n_qpts)
     freqs = np.zeros((n_qpts, n_branches))
+    eigenvecs = np.array([])
 
-    # Need to loop through file using while rather than number of k-points
+    # Need to loop through file using while rather than number of q-points
     # as sometimes points are duplicated
+    first_qpt = True
     while True:
         line = f.readline().split()
         if not line:
@@ -211,16 +229,29 @@ def read_dot_phonon(f, units='1/cm'):
         qpt_num = int(line[1]) - 1
         qpts[qpt_num,:] = [float(x) for x in line[2:5]]
         weights[qpt_num] = float(line[5])
-        freqs_tmp = [float(f.readline().split()[1]) for i in range(n_branches)]
-        freqs[qpt_num,:] = freqs_tmp
-        # Skip eigenvectors and 2 label lines
-        [f.readline() for x in range(n_ions*n_branches + 2)]
+        freqs[qpt_num,:] = [float(f.readline().split()[1]) for i in range(n_branches)]
+        if read_eigenvecs:
+            if first_qpt:
+                 eigenvecs = np.zeros((n_qpts, n_branches*n_ions, 3),
+                                      dtype='complex128')
+            [f.readline() for x in range(2)] # Skip 2 label lines
+            lines = [f.readline().split()[2:]
+                for x in range(n_ions*n_branches)]
+            eigenvecs[qpt_num, :, :] = [[complex(float(x[0]), float(x[1])),
+                                         complex(float(x[2]), float(x[3])),
+                                         complex(float(x[4]), float(x[5]))]
+                                             for x in lines]
+        else:
+            # Don't bother reading eigenvectors
+            # Skip eigenvectors and 2 label lines
+            [f.readline() for x in range(n_ions*n_branches + 2)]
+        first_qpt = False
 
     ureg = set_up_unit_registry()
     freqs = freqs*(1/ureg.cm)
     freqs.ito(units, 'spectroscopy')
 
-    return cell_vec, ion_pos, ion_type, qpts, weights, freqs
+    return cell_vec, ion_pos, ion_type, qpts, weights, freqs, eigenvecs
 
 
 def read_dot_phonon_header(f):
