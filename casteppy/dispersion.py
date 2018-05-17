@@ -396,7 +396,7 @@ def read_dot_bands(f, up=False, down=False, units='eV'):
 
 def reorder_freqs(freqs, qpts, eigenvecs):
     """
-    Reorders frequencies in order to join branches
+    Reorders frequencies across q-points in order to join branches
 
     Parameters
     ----------
