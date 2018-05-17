@@ -23,7 +23,12 @@ def main():
             eigenvecs, fermi) = read_input_file(
                 f, args.units, args.up, args.down, read_eigenvecs)
 
-    # Get positions of k-points along x-axis
+    # Reorder frequencies if eigenvectors have been read and the flag
+    # has been set
+    if eigenvecs.size > 0 and args.reorder:
+        freqs = reorder_freqs(freqs, qpts, eigenvecs)
+
+    # Get positions of q-points along x-axis
     recip_latt = reciprocal_lattice(cell_vec)
     abscissa = calc_abscissa(qpts, recip_latt)
 
@@ -388,6 +393,71 @@ def read_dot_bands(f, up=False, down=False, units='eV'):
     freq_down.ito(units, 'spectroscopy')
 
     return fermi, cell_vec, kpts, weights, freq_up, freq_down
+
+def reorder_freqs(freqs, qpts, eigenvecs):
+    """
+    Reorders frequencies in order to join branches
+
+    Parameters
+    ----------
+    freqs: list of floats
+        M x N list of phonon band frequencies, where M = number of q-points
+        and N = number of bands, ordered according to increasing q-point number
+    qpts : list of floats
+        M x 3 list of q-point coordinates, where M = number of q-points
+    eigenvecs: list of complex floats
+        M x L x 3 list of the atomic displacements (dynamical matrix
+        eigenvectors), where M = number of q-points and
+        L = number of ions*number of bands
+
+    Returns
+    -------
+    ordered_freqs: list of floats
+        Ordered M x N list of phonon band frequencies, where M = number of
+        q-points and N = number of bands
+    """
+
+    n_qpts = qpts.shape[0]
+    n_branches = freqs.shape[1]
+    n_ions = int(eigenvecs.shape[1]/n_branches)
+    ordered_freqs = np.zeros((n_qpts,n_branches))
+    qmap = np.arange(n_branches)
+
+    # Only calculate qmap and reorder freqs if the direction hasn't changed
+    calculate_qmap = np.concatenate(([True], np.logical_not(
+        direction_changed(qpts))))
+    # Don't reorder first q-point
+    ordered_freqs[0,:] = freqs[0,:]
+    for i in range(1,n_qpts):
+        # Initialise q-point mapping for this q-point
+        qmap_tmp = np.arange(n_branches)
+        if calculate_qmap[i-1]:
+            # Loop over modes for the current and previous q-point, comparing
+            # eigenvectors for each ion
+            dot_mat = np.zeros((n_branches , n_branches))
+            for j1 in range(n_branches):
+                for j2 in range(n_branches):
+                    dot = 0
+                    for k in range(n_ions):
+                        dot = dot + np.vdot(eigenvecs[i-1, j2*n_ions + k, :], eigenvecs[i, j1*n_ions + k, :])
+                    dot_mat[j1][j2] = np.linalg.norm(dot)
+
+            # Find greates exp(-iqr)-weighted dot product
+            for j in range(n_branches):
+                max_i = (np.argmax(dot_mat))
+                mode = int(max_i/n_branches) # Modes are dot_mat rows
+                prev_mode = max_i%n_branches # Prev q-pt modes are columns
+                # Ensure modes aren't mapped more than once
+                dot_mat[mode, :] = 0
+                dot_mat[:, prev_mode] = 0
+                qmap_tmp[mode] = prev_mode
+        # Map q-points according to previous q-point mapping
+        qmap = qmap[qmap_tmp]
+
+        # Reorder frequencies
+        ordered_freqs[i,qmap] = freqs[i,:]
+
+    return ordered_freqs
 
 
 def calc_abscissa(qpts, recip_latt):
