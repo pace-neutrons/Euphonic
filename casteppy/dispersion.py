@@ -432,15 +432,22 @@ def reorder_freqs(freqs, qpts, eigenvecs):
         # Initialise q-point mapping for this q-point
         qmap_tmp = np.arange(n_branches)
         if calculate_qmap[i-1]:
-            # Loop over modes for the current and previous q-point, comparing
-            # eigenvectors for each ion
+            # Compare eigenvectors for each mode for this q-point with every
+            # mode for the previous q-point
             dot_mat = np.zeros((n_branches , n_branches))
             for j1 in range(n_branches):
+                # Calculate complex conjugated dot product of mode j1 for this
+                # q-point with all modes of the previous q-point
+                dots = np.multiply(
+                    np.conj(eigenvecs[i-1, :, :]),
+                    np.tile(eigenvecs[i, (j1*n_ions):((j1+1)*n_ions), :],
+                            (n_branches,1)))
+                dots = np.sum(dots, axis=1)
+                # Sum dot product over all ions for each mode of the previous
+                # q-point, and create matrix of dot products for each mode of
+                # this q-point with each mode of the previous q-point
                 for j2 in range(n_branches):
-                    dot = 0
-                    for k in range(n_ions):
-                        dot = dot + np.vdot(eigenvecs[i-1, j2*n_ions + k, :], eigenvecs[i, j1*n_ions + k, :])
-                    dot_mat[j1][j2] = np.linalg.norm(dot)
+                    dot_mat[j1,j2] = np.linalg.norm(np.sum(dots[j2*n_ions:(j2+1)*n_ions]))
 
             # Find greates exp(-iqr)-weighted dot product
             for j in range(n_branches):
