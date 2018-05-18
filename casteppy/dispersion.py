@@ -300,6 +300,7 @@ def read_dot_phonon_header(f):
 
     return n_ions, n_branches, n_qpts, cell_vec, ion_pos, ion_type
 
+
 def read_dot_bands(f, up=False, down=False, units='eV'):
     """
     Reads band structure from a *.bands file
@@ -394,6 +395,7 @@ def read_dot_bands(f, up=False, down=False, units='eV'):
 
     return fermi, cell_vec, kpts, weights, freq_up, freq_down
 
+
 def reorder_freqs(freqs, qpts, eigenvecs):
     """
     Reorders frequencies across q-points in order to join branches
@@ -434,20 +436,29 @@ def reorder_freqs(freqs, qpts, eigenvecs):
         if calculate_qmap[i-1]:
             # Compare eigenvectors for each mode for this q-point with every
             # mode for the previous q-point
-            dot_mat = np.zeros((n_branches , n_branches))
-            for j1 in range(n_branches):
-                # Calculate complex conjugated dot product of mode j1 for this
-                # q-point with all modes of the previous q-point
-                dots = np.multiply(
-                    np.conj(eigenvecs[i-1, :, :]),
-                    np.tile(eigenvecs[i, (j1*n_ions):((j1+1)*n_ions), :],
-                            (n_branches,1)))
-                dots = np.sum(dots, axis=1)
-                # Sum dot product over all ions for each mode of the previous
-                # q-point, and create matrix of dot products for each mode of
-                # this q-point with each mode of the previous q-point
-                for j2 in range(n_branches):
-                    dot_mat[j1,j2] = np.linalg.norm(np.sum(dots[j2*n_ions:(j2+1)*n_ions]))
+            # Reshape eigenvector arrays for this and previous q-point so that
+            # each mode is a row and each ion is a column, for efficient
+            # summing over modes later. Then explicitly broadcast arrays with
+            # repeat and tile to ensure correct multiplication of modes
+            current_eigenvecs = np.reshape(eigenvecs[i, :, :],
+                                           (n_branches, n_ions, 3))
+            current_eigenvecs = np.repeat(current_eigenvecs,
+                                          n_branches, axis=0)
+            prev_eigenvecs = np.reshape(eigenvecs[i-1, :, :],
+                                        (n_branches, n_ions, 3))
+            prev_eigenvecs = np.tile(prev_eigenvecs,
+                                     (n_branches, 1, 1))
+            # Compute complex conjugated dot product of every mode of this
+            # q-point with every mode of previous q-point, and sum the dot
+            # products over ions (i.e. multiply eigenvectors elementwise, then
+            # sum over the last 2 dimensions)
+            dots = np.absolute(np.einsum('ijk,ijk->i',
+                                         np.conj(prev_eigenvecs),
+                                         current_eigenvecs))
+
+            # Create matrix of dot products for each mode of this q-point with
+            # each mode of the previous q-point
+            dot_mat = np.reshape(dots, (n_branches, n_branches))
 
             # Find greates exp(-iqr)-weighted dot product
             for j in range(n_branches):
