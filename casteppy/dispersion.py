@@ -40,7 +40,7 @@ def main():
             if f.name.endswith('.bands'):
                 gwidth = 0.1*ureg.eV
             else:
-                gwidth = 0.0*(1/ureg.cm)
+                gwidth = 10.0*(1/ureg.cm)
             gwidth.ito(args.units, 'spectroscopy')
         else:
             gwidth = float(args.w)*ureg[args.units]
@@ -55,7 +55,10 @@ def main():
         # Reorder frequencies if eigenvectors have been read and the flag
         # has been set
         if eigenvecs.size > 0 and args.reorder:
-            freqs = reorder_freqs(freqs, qpts, eigenvecs)
+            if freqs.size > 0:
+                freqs = reorder_freqs(freqs, qpts, eigenvecs)
+            if freq_down.size > 0:
+                freq_down = reorder_freqs(freq_down, qpts, eigenvecs)
 
         # Get positions of q-points along x-axis
         recip_latt = reciprocal_lattice(cell_vec)
@@ -232,7 +235,8 @@ def read_input_file(f, ureg, units, up=False, down=False, read_eigenvecs=False):
     else:
         sys.exit('Error: Please supply a .bands or .phonon file')
 
-    return cell_vec, ion_pos, ion_type, qpts, weights, freqs, freq_down, eigenvecs, fermi
+    return (cell_vec, ion_pos, ion_type, qpts, weights, freqs, freq_down,
+            eigenvecs, fermi)
 
 
 def read_dot_phonon(f, ureg, units='1/cm', read_eigenvecs=False):
@@ -293,7 +297,8 @@ def read_dot_phonon(f, ureg, units='1/cm', read_eigenvecs=False):
         qpt_num = int(line[1]) - 1
         qpts[qpt_num,:] = [float(x) for x in line[2:5]]
         weights[qpt_num] = float(line[5])
-        freqs[qpt_num,:] = [float(f.readline().split()[1]) for i in range(n_branches)]
+        freqs[qpt_num,:] = [float(f.readline().split()[1])
+                            for i in range(n_branches)]
         if read_eigenvecs:
             if first_qpt:
                  eigenvecs = np.zeros((n_qpts, n_branches*n_ions, 3),
@@ -582,7 +587,7 @@ def calc_abscissa(qpts, recip_latt):
     return abscissa
 
 
-def calculate_dos(freqs, freq_down, weights, bwidth, gwidth, use_lorentz=False):
+def calculate_dos(freqs, freq_down, weights, bwidth, gwidth, lorentz=False):
     n_branches = freqs.shape[1]
     hist = np.array([])
     hist_down = np.array([])
@@ -598,37 +603,41 @@ def calculate_dos(freqs, freq_down, weights, bwidth, gwidth, use_lorentz=False):
 
     # Bin frequencies
     if freqs.size > 0:
-        hist, bin_edges = np.histogram(freqs.flatten(), bins, weights=freq_weights)
+        hist, bin_edges = np.histogram(freqs.flatten(), bins,
+                                       weights=freq_weights)
     if freq_down.size > 0:
-        hist_down, bin_edges = np.histogram(freq_down.flatten(), bins, weights=freq_weights)
+        hist_down, bin_edges = np.histogram(freq_down.flatten(), bins,
+                                            weights=freq_weights)
 
     # Only broaden if broadening is more than bin width
     if gwidth > bwidth:
         # Calculate broadening for adjacent nbin_broaden bins
-        if use_lorentz:
+        if lorentz:
             # 25 * Lorentzian FWHM
-            nbin_broaden = math.floor(25.0*gwidth/bwidth)
-            broadening = lorentzian(np.arange(-nbin_broaden, nbin_broaden)*bwidth, gwidth)
+            nbin_broaden = int(math.floor(25.0*gwidth/bwidth))
+            broadening = lorentzian(
+                np.arange(-nbin_broaden, nbin_broaden)*bwidth, gwidth)
         else:
             # 3 * Gaussian FWHM
-            nbin_broaden = math.floor(3.0*gwidth/bwidth)
+            nbin_broaden = int(math.floor(3.0*gwidth/bwidth))
             sigma = gwidth/(2*math.sqrt(2*math.log(2)))
-            broadening = gaussian(np.arange(-nbin_broaden, nbin_broaden)*bwidth, sigma)
+            broadening = gaussian(
+                np.arange(-nbin_broaden, nbin_broaden)*bwidth, sigma)
 
         if hist.size > 0:
             # Allow broadening beyond edge of bins
             dos = np.zeros(len(hist) + 2*nbin_broaden)
             for i, h in enumerate(hist):
-                # Broaden each hist bin with broadening function to adjacent bins
+                # Broaden each hist bin value to adjacent bins
                 bhist = h*broadening
-                dos[i:i+2*nbin_broaden] = dos[i:i+2*nbin_broaden] + bhist
+                dos[i:i+2*nbin_broaden] += bhist
             # Slice dos array to same size as bins
             dos = dos[nbin_broaden:-nbin_broaden]
         if hist_down.size > 0:
             dos_down = np.zeros(len(hist_down) + 2*nbin_broaden)
             for i, h in enumerate(hist_down):
                 bhist = h*broadening
-                dos_down[i:i+2*nbin_broaden] = dos_down[i:i+2*nbin_broaden] + bhist
+                dos_down[i:i+2*nbin_broaden] += bhist
             dos_down = dos_down[nbin_broaden:-nbin_broaden]
 
     else:
