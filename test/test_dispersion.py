@@ -33,13 +33,14 @@ class TestReadInputFileNaHBands(unittest.TestCase):
         units = 'hartree'
         up = False
         down = False
+        ureg = UnitRegistry()
 
         with open(NaH_bands_file, 'r') as f:
             (NaH_bands.cell_vec, NaH_bands.ion_pos, NaH_bands.ion_type,
                 NaH_bands.kpts, NaH_bands.weights, NaH_bands.freqs,
                 NaH_bands.freq_down, NaH_bands.eigenvecs,
                 NaH_bands.fermi) = disp.read_input_file(
-                    f, units, up, down)
+                    f, ureg, units, up, down)
 
         NaH_bands.expected_cell_vec = [[0.000000, 4.534397, 4.534397],
                                        [4.534397, 0.000000, 4.534397],
@@ -107,13 +108,14 @@ class TestReadInputFileNaHPhonon(unittest.TestCase):
         up = False
         down = False
         read_eigenvecs = True
+        ureg = UnitRegistry()
 
         with open(NaH_phonon_file, 'r') as f:
             (NaH_phonon.cell_vec, NaH_phonon.ion_pos, NaH_phonon.ion_type,
                 NaH_phonon.kpts, NaH_phonon.weights, NaH_phonon.freqs,
                 NaH_phonon.freq_down, NaH_phonon.eigenvecs,
                 NaH_phonon.fermi) = disp.read_input_file(
-                    f, units, up, down, read_eigenvecs)
+                    f, ureg, units, up, down, read_eigenvecs)
 
         NaH_phonon.expected_cell_vec = [[0.000000, 2.399500, 2.399500],
                                         [2.399500, 0.000000, 2.399500],
@@ -254,13 +256,14 @@ class TestReadInputFileFeBands(unittest.TestCase):
         units = 'hartree'
         up = False
         down = False
+        ureg = UnitRegistry()
 
         with open(Fe_bands_file, 'r') as f:
             (Fe_bands.cell_vec, Fe_bands.ion_pos, Fe_bands.ion_type,
                 Fe_bands.kpts, Fe_bands.weights, Fe_bands.freqs,
                 Fe_bands.freq_down, Fe_bands.eigenvecs,
                 Fe_bands.fermi) = disp.read_input_file(
-                    f, units, up, down)
+                    f, ureg, units, up, down)
 
         Fe_bands.expected_cell_vec = [[-2.708355,  2.708355,  2.708355],
                                       [ 2.708355, -2.708355,  2.708355],
@@ -321,6 +324,7 @@ class TestReadInputFileFeBands(unittest.TestCase):
 class TestReadDotPhononAndHeader(unittest.TestCase):
 
     def setUp(self):
+        self.ureg = UnitRegistry()
         # Create trivial function object so attributes can be assigned to it
         NaH = lambda:0
         NaH.content = '\n'.join([
@@ -474,7 +478,7 @@ class TestReadDotPhononAndHeader(unittest.TestCase):
             NaH.ion_type) = disp.read_dot_phonon_header(StringIO(NaH.content))
         (NaH.cell_vec_file, NaH.ion_pos_file, NaH.ion_type_file, NaH.qpts,
             NaH.weights, NaH.freqs, NaH.eigenvecs) = disp.read_dot_phonon(
-                StringIO(NaH.content), read_eigenvecs=True)
+                StringIO(NaH.content), self.ureg, read_eigenvecs=True)
         self.NaH = NaH
 
     def test_n_ions_read_nah(self):
@@ -520,6 +524,7 @@ class TestReadDotPhononAndHeader(unittest.TestCase):
 class TestReadDotBands(unittest.TestCase):
 
     def setUp(self):
+        self.ureg = UnitRegistry()
         # Create trivial function object so attributes can be assigned to it
         iron = lambda:0
         iron.content = '\n'.join([
@@ -580,7 +585,8 @@ class TestReadDotBands(unittest.TestCase):
                                     0.21817779, 0.24476910, 0.39214129]]
         (iron.fermi, iron.cell_vec, iron.kpts, iron.weights, iron.freq_up,
             iron.freq_down) = disp.read_dot_bands(
-                StringIO(iron.content), False, False, units='hartree')
+                StringIO(iron.content), self.ureg, False, False,
+                units='hartree')
         self.iron = iron
 
     def test_freq_up_read_iron(self):
@@ -603,27 +609,31 @@ class TestReadDotBands(unittest.TestCase):
 
     def test_up_arg_freq_up_read_iron(self):
         freq_up = disp.read_dot_bands(
-            StringIO(self.iron.content), True, False, units='hartree')[4]
+            StringIO(self.iron.content), self.ureg, True, False,
+            units='hartree')[4]
         npt.assert_array_equal(freq_up, self.iron.expected_freq_up)
 
     def test_up_arg_freq_down_read_iron(self):
         freq_down = disp.read_dot_bands(
-            StringIO(self.iron.content), True, False, units='hartree')[5]
+            StringIO(self.iron.content), self.ureg, True, False,
+            units='hartree')[5]
         self.assertEqual(freq_down.size, 0)
 
     def test_down_arg_freq_up_read_iron(self):
         freq_up = disp.read_dot_bands(
-            StringIO(self.iron.content), False, True, units='hartree')[4]
+            StringIO(self.iron.content), self.ureg, False, True,
+            units='hartree')[4]
         self.assertEqual(freq_up.size, 0)
 
     def test_down_arg_freq_down_read_iron(self):
         freq_down = disp.read_dot_bands(
-            StringIO(self.iron.content), False, True, units='hartree')[5]
+            StringIO(self.iron.content), self.ureg, False, True,
+            units='hartree')[5]
         npt.assert_array_equal(freq_down, self.iron.expected_freq_down)
 
     def test_freq_up_cm_units_iron(self):
         freq_up_cm = disp.read_dot_bands(
-            StringIO(self.iron.content), units='1/cm')[4]
+            StringIO(self.iron.content), self.ureg, units='1/cm')[4]
         expected_freq_up_cm = [[5000.17594, 5804.429679, 27178.423392,
                                 33795.034234, 37585.071062, 94927.180782],
                                [6059.588667, 5804.908134, 27308.5038,
@@ -632,7 +642,7 @@ class TestReadDotBands(unittest.TestCase):
 
     def test_freq_down_cm_units_iron(self):
         freq_down_cm = disp.read_dot_bands(
-            StringIO(self.iron.content), units='1/cm')[5]
+            StringIO(self.iron.content), self.ureg, units='1/cm')[5]
         expected_freq_down_cm = [[17804.86686, 18315.2419, 42106.370959,
                                   49960.517927, 54676.191123, 102081.080835],
                                  [19267.063783, 17631.137342, 42334.319485,
@@ -646,10 +656,11 @@ class TestReorderFreqs(unittest.TestCase):
         # This test reads eigenvector data from file. Not good practice but
         # testing reordering requires at least 3 q-points and it's too
         # cumbersome to explicity specify all the eigenvectors
+        ureg = UnitRegistry()
         filename = 'test/NaH-reorder-test.phonon'
         with open(filename, 'r') as f:
             (cell_vec, ion_pos, ion_type, qpts, weights, freqs,
-                eigenvecs) = disp.read_dot_phonon(f, read_eigenvecs=True)
+                eigenvecs) = disp.read_dot_phonon(f, ureg, read_eigenvecs=True)
         expected_reordered_freqs = [[ 91.847109,  91.847109, 166.053018,
                                      564.508299, 564.508299, 884.068976],
                                     [154.825631, 132.031513, 206.21394,
@@ -675,10 +686,11 @@ class TestReorderFreqs(unittest.TestCase):
         # This test reads eigenvector data from file. Not good practice but
         # testing reordering requires at least 3 q-points and it's too
         # cumbersome to explicity specify all the eigenvectors
+        ureg = UnitRegistry()
         filename = 'test/La2Zr2O7.phonon'
         with open(filename, 'r') as f:
             (cell_vec, ion_pos, ion_type, qpts, weights, freqs,
-                eigenvecs) = disp.read_dot_phonon(f, read_eigenvecs=True)
+                eigenvecs) = disp.read_dot_phonon(f, ureg, read_eigenvecs=True)
 
         expected_reordered_freqs =\
         [[65.062447,65.062447,70.408176,76.847761,76.847761,85.664054,

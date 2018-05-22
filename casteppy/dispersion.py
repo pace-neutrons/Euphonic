@@ -15,30 +15,59 @@ from pint import UnitRegistry
 
 def main():
     args = parse_arguments()
+    ureg = set_up_unit_registry()
 
     # Read data
     with open(args.filename, 'r') as f:
         read_eigenvecs = args.reorder
         (cell_vec, ion_pos, ion_type, qpts, weights, freqs, freq_down,
             eigenvecs, fermi) = read_input_file(
-                f, args.units, args.up, args.down, read_eigenvecs)
+                f, ureg, args.units, args.up, args.down, read_eigenvecs)
 
-    # Reorder frequencies if eigenvectors have been read and the flag
-    # has been set
-    if eigenvecs.size > 0 and args.reorder:
-        freqs = reorder_freqs(freqs, qpts, eigenvecs)
+    # Calculate and plot DOS
+    if args.dos:
+        # Set default DOS bin and broadening width based on whether it's
+        # electronic or vibrational
+        if args.b == None:
+            if f.name.endswith('.bands'):
+                bwidth = 0.05*ureg.eV
+            else:
+                bwidth = 1.0*(1/ureg.cm)
+            bwidth.ito(args.units, 'spectroscopy')
+        else:
+            bwidth = float(args.b)*ureg[args.units]
+        if args.w == None:
+            if f.name.endswith('.bands'):
+                gwidth = 0.1*ureg.eV
+            else:
+                gwidth = 0.0*(1/ureg.cm)
+            gwidth.ito(args.units, 'spectroscopy')
+        else:
+            gwidth = float(args.w)*ureg[args.units]
 
-    # Get positions of q-points along x-axis
-    recip_latt = reciprocal_lattice(cell_vec)
-    abscissa = calc_abscissa(qpts, recip_latt)
+        dos, dos_down, bins = calculate_dos(
+            freqs, freq_down, weights, bwidth.magnitude, gwidth.magnitude,
+            args.lorentz)
+        plot_dos(dos, dos_down, bins, args.filename, args.units, fermi=fermi)
 
-    # Get labels for high symmetry / fractional q-point coordinates
-    labels, qpts_with_labels = recip_space_labels(
-        qpts, cell_vec, ion_pos, ion_type)
+    # Calculate and plot dispersion
+    else:
+        # Reorder frequencies if eigenvectors have been read and the flag
+        # has been set
+        if eigenvecs.size > 0 and args.reorder:
+            freqs = reorder_freqs(freqs, qpts, eigenvecs)
 
-    plot_dispersion(abscissa, freqs, freq_down, args.filename, args.units,
-                    xticks=abscissa[qpts_with_labels], xlabels=labels,
-                    fermi=fermi)
+        # Get positions of q-points along x-axis
+        recip_latt = reciprocal_lattice(cell_vec)
+        abscissa = calc_abscissa(qpts, recip_latt)
+
+        # Get labels for high symmetry / fractional q-point coordinates
+        labels, qpts_with_labels = recip_space_labels(
+            qpts, cell_vec, ion_pos, ion_type)
+
+        plot_dispersion(abscissa, freqs, freq_down, args.filename, args.units,
+                        xticks=abscissa[qpts_with_labels], xlabels=labels,
+                        fermi=fermi)
 
 
 def parse_arguments():
@@ -76,6 +105,30 @@ def parse_arguments():
         action='store_true',
         help='Extract and plot only spin down from *.castep or *.bands')
 
+    dos_group = parser.add_argument_group(
+        'DOS Group',
+        'Arguments specific to plotting the density of states')
+    dos_group.add_argument(
+        '-dos',
+        action='store_true',
+        help='Plot density of states instead of a dispersion plot')
+    dos_group.add_argument(
+        '-w',
+        default=None,
+        help="""Set Gaussian/Lorentzian FWHM for broadening. Default: 0.1 eV
+                for electronic DOS, 10.0/cm for vibrational DOS""")
+    dos_group.add_argument(
+        '-b',
+        default=None,
+        help="""Set histogram resolution for binning (in units specified by
+                -units argument or default eV). Default: 0.05 eV for electronic
+                DOS, 1.0/cm for vibrational DOS""")
+    dos_group.add_argument(
+        '-lorentz',
+        action='store_true',
+        help='Use Lorentzian broadening instead of Gaussian')
+
+
     args = parser.parse_args()
     return args
 
@@ -86,7 +139,7 @@ def set_up_unit_registry():
     return ureg
 
 
-def read_input_file(f, units, up=False, down=False, read_eigenvecs=False):
+def read_input_file(f, ureg, units, up=False, down=False, read_eigenvecs=False):
     """
     Reads data from a .bands, .phonon, or .castep_bin file. If the specified
     file doesn't contain all the required data (e.g. ionic positions) looks in
@@ -96,6 +149,9 @@ def read_input_file(f, units, up=False, down=False, read_eigenvecs=False):
     ----------
     f : file object
         File object in read mode for the file containing the data
+    ureg : UnitRegistry
+        Unit registry (from Pint module) for converting frequencies and Fermi
+        energies to units specified by units argument
     units : string
         String specifying the units of the output frequencies. For valid
         values see the Pint docs: http://pint.readthedocs.io/en/0.8.1/
@@ -147,7 +203,7 @@ def read_input_file(f, units, up=False, down=False, read_eigenvecs=False):
     freqs = np.array([])
     freq_down = np.array([])
     eigenvecs = np.array([])
-    fermi = []
+    fermi = np.array([])
 
     # If file is in this directory
     if f.name.rfind('/') == -1:
@@ -160,7 +216,7 @@ def read_input_file(f, units, up=False, down=False, read_eigenvecs=False):
 
     if f.name.endswith('.bands'):
         (fermi, cell_vec, qpts, weights, freqs,
-            freq_down) = read_dot_bands(f, up, down, units)
+            freq_down) = read_dot_bands(f, ureg, up, down, units)
         # Try and get point group info by reading ionic positions from .phonon
         phonon_file = dir_name + '/' + structure_name + '.phonon'
         try:
@@ -171,7 +227,7 @@ def read_input_file(f, units, up=False, down=False, read_eigenvecs=False):
 
     elif f.name.endswith('.phonon'):
         (cell_vec, ion_pos, ion_type, qpts, weights,
-            freqs, eigenvecs) = read_dot_phonon(f, units, read_eigenvecs)
+            freqs, eigenvecs) = read_dot_phonon(f, ureg, units, read_eigenvecs)
 
     else:
         sys.exit('Error: Please supply a .bands or .phonon file')
@@ -179,7 +235,7 @@ def read_input_file(f, units, up=False, down=False, read_eigenvecs=False):
     return cell_vec, ion_pos, ion_type, qpts, weights, freqs, freq_down, eigenvecs, fermi
 
 
-def read_dot_phonon(f, units='1/cm', read_eigenvecs=False):
+def read_dot_phonon(f, ureg, units='1/cm', read_eigenvecs=False):
     """
     Reads band structure from a *.phonon file
 
@@ -187,6 +243,9 @@ def read_dot_phonon(f, units='1/cm', read_eigenvecs=False):
     ----------
     f : file object
         File object in read mode for the .phonon file containing the data
+    ureg : UnitRegistry
+        Unit registry (from Pint module) for converting frequencies to units
+        specified by units argument
     units : string
         String specifying the units of the output frequencies. For valid
         values see the Pint docs: http://pint.readthedocs.io/en/0.8.1/
@@ -301,7 +360,7 @@ def read_dot_phonon_header(f):
     return n_ions, n_branches, n_qpts, cell_vec, ion_pos, ion_type
 
 
-def read_dot_bands(f, up=False, down=False, units='eV'):
+def read_dot_bands(f, ureg, up=False, down=False, units='eV'):
     """
     Reads band structure from a *.bands file
 
@@ -309,6 +368,9 @@ def read_dot_bands(f, up=False, down=False, units='eV'):
     ----------
     f : file object
         File object in read mode for the .bands file containing the data
+    ureg : UnitRegistry
+        Unit registry (from Pint module) for converting frequencies and Fermi
+        energies to units specified by units argument
     up : boolean
         Read only spin up frequencies from the .bands file
     down : boolean
@@ -387,11 +449,12 @@ def read_dot_bands(f, up=False, down=False, units='eV'):
                 sys.exit('Error: requested spin not found in .bands file')
         first_kpt = False
 
-    ureg = set_up_unit_registry()
     freq_up = freq_up*ureg.hartree
     freq_up.ito(units, 'spectroscopy')
     freq_down = freq_down*ureg.hartree
     freq_down.ito(units, 'spectroscopy')
+    fermi = fermi*ureg.hartree
+    fermi.ito(units, 'spectroscopy')
 
     return fermi, cell_vec, kpts, weights, freq_up, freq_down
 
@@ -517,6 +580,70 @@ def calc_abscissa(qpts, recip_latt):
     abscissa = np.cumsum(abscissa)
 
     return abscissa
+
+
+def calculate_dos(freqs, freq_down, weights, bwidth, gwidth, use_lorentz=False):
+    n_branches = freqs.shape[1]
+    hist = np.array([])
+    hist_down = np.array([])
+    dos = np.array([])
+    dos_down = np.array([])
+
+    all_freqs = np.append(freqs, freq_down)
+    freq_max = np.amax(all_freqs)
+    freq_min = np.amin(all_freqs)
+
+    freq_weights = np.repeat(weights, n_branches)
+    bins = np.arange(freq_min, freq_max + bwidth, bwidth)
+
+    # Bin frequencies
+    if freqs.size > 0:
+        hist, bin_edges = np.histogram(freqs.flatten(), bins, weights=freq_weights)
+    if freq_down.size > 0:
+        hist_down, bin_edges = np.histogram(freq_down.flatten(), bins, weights=freq_weights)
+
+    # Only broaden if broadening is more than bin width
+    if gwidth > bwidth:
+        # Calculate broadening for adjacent nbin_broaden bins
+        if use_lorentz:
+            # 25 * Lorentzian FWHM
+            nbin_broaden = math.floor(25.0*gwidth/bwidth)
+            broadening = lorentzian(np.arange(-nbin_broaden, nbin_broaden)*bwidth, gwidth)
+        else:
+            # 3 * Gaussian FWHM
+            nbin_broaden = math.floor(3.0*gwidth/bwidth)
+            sigma = gwidth/(2*math.sqrt(2*math.log(2)))
+            broadening = gaussian(np.arange(-nbin_broaden, nbin_broaden)*bwidth, sigma)
+
+        if hist.size > 0:
+            # Allow broadening beyond edge of bins
+            dos = np.zeros(len(hist) + 2*nbin_broaden)
+            for i, h in enumerate(hist):
+                # Broaden each hist bin with broadening function to adjacent bins
+                bhist = h*broadening
+                dos[i:i+2*nbin_broaden] = dos[i:i+2*nbin_broaden] + bhist
+            # Slice dos array to same size as bins
+            dos = dos[nbin_broaden:-nbin_broaden]
+        if hist_down.size > 0:
+            dos_down = np.zeros(len(hist_down) + 2*nbin_broaden)
+            for i, h in enumerate(hist_down):
+                bhist = h*broadening
+                dos_down[i:i+2*nbin_broaden] = dos_down[i:i+2*nbin_broaden] + bhist
+            dos_down = dos_down[nbin_broaden:-nbin_broaden]
+
+    else:
+        dos = hist
+        dos_down = hist_down
+
+    return dos, dos_down, bins
+
+
+def gaussian(x, sigma):
+    return np.exp(-np.square(x)/(2*sigma**2))/(math.sqrt(2*math.pi)*sigma)
+
+
+def lorentzian(x, gamma):
+    return gamma/(2*math.pi*(np.square(x) + (gamma/2)**2))
 
 
 def recip_space_labels(qpts, cell_vec, ion_pos, ion_type):
@@ -687,6 +814,7 @@ def reciprocal_lattice(unit_cell):
 
 def plot_dispersion(abscissa, freq_up, freq_down, filename, units, xticks=None,
                     xlabels=None, fermi=[]):
+
     # Create figure
     fig = plt.figure()
     ax = fig.add_subplot(111)
@@ -719,12 +847,47 @@ def plot_dispersion(abscissa, freq_up, freq_down, filename, units, xticks=None,
         ax.plot(abscissa, freq_up)
     if freq_down.size > 0:
         ax.plot(abscissa, freq_down)
-    if len(fermi) > 0:
-        ax.axhline(y=fermi[0], ls='dashed', c='k')
+    if fermi.size > 0:
+        ax.axhline(y=fermi[0].magnitude, ls='dashed', c='k', label=r'$\epsilon_F$')
+        ax.legend()
 
     plt.tight_layout()
     plt.show()
 
+def plot_dos(dos, dos_down, bins, filename, units, fermi=[]):
+
+    # Create figure
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    ax.set_title(filename)
+
+    # X-axis label formatting
+    # Replace 1/cm with cm^-1
+    inverse_unit_index = units.find('/')
+    if inverse_unit_index > -1:
+        units = units[inverse_unit_index+1:]
+        ax.set_xlabel('Energy (' + units + r'$^{-1}$)')
+    else:
+        ax.set_xlabel('Energy (' + units + ')')
+    ax.set_ylabel('g(E)')
+    ax.minorticks_on()
+
+    # Calculate bin centers
+    bwidth = bins[1] - bins[0]
+    bin_centres = bins[:-1] + bwidth/2
+
+    # Plot dos and Fermi energy
+    if dos.size > 0:
+        ax.plot(bin_centres, dos, label='alpha')
+    if dos_down.size > 0:
+        ax.plot(bin_centres, dos_down, label='beta')
+    if fermi.size > 0:
+        ax.axvline(x=fermi[0].magnitude, ls='dashed', c='k', label=r'$\epsilon_F$')
+        ax.legend()
+    ax.set_ylim(bottom=0) # Need to set limits after plotting the data
+
+    plt.tight_layout()
+    plt.show()
 
 if __name__ == '__main__':
     main()
