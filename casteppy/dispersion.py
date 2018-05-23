@@ -21,8 +21,9 @@ def main():
     with open(args.filename, 'r') as f:
         read_eigenvecs = args.reorder
         (cell_vec, ion_pos, ion_type, qpts, weights, freqs, freq_down,
-            eigenvecs, fermi) = read_input_file(
-                f, ureg, args.units, args.up, args.down, read_eigenvecs)
+            i_intens, r_intens, eigenvecs, fermi) = read_input_file(
+                f, ureg, args.units, args.up, args.down, args.ir, args.raman,
+                read_eigenvecs)
 
     # Calculate and plot DOS
     if args.dos:
@@ -45,10 +46,17 @@ def main():
         else:
             gwidth = float(args.w)*ureg[args.units]
 
-        dos, dos_down, bins = calculate_dos(
-            freqs, freq_down, weights, bwidth.magnitude, gwidth.magnitude,
-            args.lorentz)
-        plot_dos(dos, dos_down, bins, args.filename, args.units, fermi=fermi)
+        if args.ir:
+            dos, dos_down, bins = calculate_dos(
+                freqs, freq_down, weights, bwidth.magnitude, gwidth.magnitude,
+                args.lorentz, intensities=i_intens)
+        else:
+            dos, dos_down, bins = calculate_dos(
+                freqs, freq_down, weights, bwidth.magnitude, gwidth.magnitude,
+                args.lorentz, intensities=i_test)
+
+        plot_dos(dos, dos_down, bins, args.filename, args.units, fermi=fermi,
+                 mirror=args.mirror)
 
     # Calculate and plot dispersion
     else:
@@ -116,6 +124,15 @@ def parse_arguments():
         action='store_true',
         help='Plot density of states instead of a dispersion plot')
     dos_group.add_argument(
+        '-ir',
+        action='store_true',
+        help='Extract IR intensities from .phonon and use to weight DOS')
+    dos_group.add_argument(
+        '-raman',
+        action='store_true',
+        help="""Extract Raman intensities from .phonon and calculate a Raman
+                spectrum""")
+    dos_group.add_argument(
         '-w',
         default=None,
         help="""Set Gaussian/Lorentzian FWHM for broadening. Default: 0.1 eV
@@ -130,6 +147,10 @@ def parse_arguments():
         '-lorentz',
         action='store_true',
         help='Use Lorentzian broadening instead of Gaussian')
+    dos_group.add_argument(
+        '-mirror',
+        action='store_true',
+        help='Plot spin down electronic DOS mirrored in the x axis')
 
 
     args = parser.parse_args()
@@ -142,7 +163,8 @@ def set_up_unit_registry():
     return ureg
 
 
-def read_input_file(f, ureg, units, up=False, down=False, read_eigenvecs=False):
+def read_input_file(f, ureg, units, up=False, down=False, ir=False,
+                    raman=False, read_eigenvecs=False):
     """
     Reads data from a .bands, .phonon, or .castep_bin file. If the specified
     file doesn't contain all the required data (e.g. ionic positions) looks in
@@ -162,6 +184,12 @@ def read_input_file(f, ureg, units, up=False, down=False, read_eigenvecs=False):
         Read only spin up frequencies from the .bands file
     down : boolean
         Read only spin down frequencies from the .bands file
+    ir : boolean
+        Whether to read and store IR intensities (only applicable if
+        reading a .phonon file)
+    raman : boolean
+        Whether to read and store Raman intensities (only applicable if
+        reading a .phonon file)
     read_eigenvecs : boolean
         Whether to read and store the eigenvectors (only applicable if
         reading a .phonon file)
@@ -192,6 +220,12 @@ def read_input_file(f, ureg, units, up=False, down=False, read_eigenvecs=False):
         'units' parameter, where M = number of q-points and N = number of
         bands. If there are no spin down frequencies, or if -up is specified
         freq_down is empty
+    i_intens: list of floats
+        M x N list of IR intensities, where M = number of q-points and
+        N = number of bands. Empty if no IR intensities in .phonon file
+    r_intens: list of floats
+        M x N list of Raman intensities, where M = number of q-points and
+        N = number of bands. Empty if no Raman intensities in .phonon file
     eigenvecs: list of complex floats
         M x L x 3 list of the atomic displacements (dynamical matrix
         eigenvectors), where M = number of q-points and
@@ -205,6 +239,8 @@ def read_input_file(f, ureg, units, up=False, down=False, read_eigenvecs=False):
     ion_type = []
     freqs = np.array([])
     freq_down = np.array([])
+    i_intens = np.array([])
+    r_intens = np.array([])
     eigenvecs = np.array([])
     fermi = np.array([])
 
@@ -229,17 +265,19 @@ def read_input_file(f, ureg, units, up=False, down=False, read_eigenvecs=False):
             pass
 
     elif f.name.endswith('.phonon'):
-        (cell_vec, ion_pos, ion_type, qpts, weights,
-            freqs, eigenvecs) = read_dot_phonon(f, ureg, units, read_eigenvecs)
+        (cell_vec, ion_pos, ion_type, qpts, weights, freqs, i_intens, r_intens,
+            eigenvecs) = read_dot_phonon(f, ureg, units, ir, raman,
+                                         read_eigenvecs)
 
     else:
         sys.exit('Error: Please supply a .bands or .phonon file')
 
     return (cell_vec, ion_pos, ion_type, qpts, weights, freqs, freq_down,
-            eigenvecs, fermi)
+            i_intens, r_intens, eigenvecs, fermi)
 
 
-def read_dot_phonon(f, ureg, units='1/cm', read_eigenvecs=False):
+def read_dot_phonon(f, ureg, units='1/cm', ir=False, raman=False,
+                    read_eigenvecs=False):
     """
     Reads band structure from a *.phonon file
 
@@ -255,6 +293,10 @@ def read_dot_phonon(f, ureg, units='1/cm', read_eigenvecs=False):
         values see the Pint docs: http://pint.readthedocs.io/en/0.8.1/
     read_eigenvecs : boolean
         Whether to read and store the eigenvectors
+    ir : boolean
+        Whether to read and store IR intensities
+    raman : boolean
+        Whether to read and store Raman intensities
 
     Returns
     -------
@@ -275,6 +317,12 @@ def read_dot_phonon(f, ureg, units='1/cm', read_eigenvecs=False):
         M x N list of phonon band frequencies in units specified by the
         'units parameter, where M = number of q-points and N = number of
         bands, ordered according to increasing q-point number
+    i_intens: list of floats
+        M x N list of IR intensities, where M = number of q-points and
+        N = number of bands. Empty if no IR intensities in .phonon file
+    r_intens: list of floats
+        M x N list of Raman intensities, where M = number of q-points and
+        N = number of bands. Empty if no Raman intensities in .phonon file
     eigenvecs: list of complex floats
         M x L x 3 list of the atomic displacements (dynamical matrix
         eigenvectors), where M = number of q-points and
@@ -282,14 +330,26 @@ def read_dot_phonon(f, ureg, units='1/cm', read_eigenvecs=False):
     """
     (n_ions, n_branches, n_qpts, cell_vec, ion_pos,
         ion_type) = read_dot_phonon_header(f)
+
     qpts = np.zeros((n_qpts, 3))
     weights = np.zeros(n_qpts)
     freqs = np.zeros((n_qpts, n_branches))
-    eigenvecs = np.array([])
+    if ir:
+        i_intens = np.zeros((n_qpts, n_branches))
+    else:
+        i_intens = np.array([])
+    if raman:
+        r_intens = np.zeros((n_qpts, n_branches))
+    else:
+        r_intens = np.array([])
+    if read_eigenvecs:
+        eigenvecs = np.zeros((n_qpts, n_branches*n_ions, 3),
+                             dtype='complex128')
+    else:
+        eigenvecs = np.array([])
 
     # Need to loop through file using while rather than number of q-points
     # as sometimes points are duplicated
-    first_qpt = True
     while True:
         line = f.readline().split()
         if not line:
@@ -297,12 +357,15 @@ def read_dot_phonon(f, ureg, units='1/cm', read_eigenvecs=False):
         qpt_num = int(line[1]) - 1
         qpts[qpt_num,:] = [float(x) for x in line[2:5]]
         weights[qpt_num] = float(line[5])
-        freqs[qpt_num,:] = [float(f.readline().split()[1])
-                            for i in range(n_branches)]
+
+        freq_lines = [f.readline().split() for i in range(n_branches)]
+        freqs[qpt_num, :] = [float(line[1]) for line in freq_lines]
+        if ir:
+            i_intens[qpt_num, :] = [float(line[2]) for line in freq_lines]
+        if raman:
+            r_intens[qpt_num, :] = [float(line[3]) for line in freq_lines]
+
         if read_eigenvecs:
-            if first_qpt:
-                 eigenvecs = np.zeros((n_qpts, n_branches*n_ions, 3),
-                                      dtype='complex128')
             [f.readline() for x in range(2)] # Skip 2 label lines
             lines = [f.readline().split()[2:]
                 for x in range(n_ions*n_branches)]
@@ -314,13 +377,13 @@ def read_dot_phonon(f, ureg, units='1/cm', read_eigenvecs=False):
             # Don't bother reading eigenvectors
             # Skip eigenvectors and 2 label lines
             [f.readline() for x in range(n_ions*n_branches + 2)]
-        first_qpt = False
 
     ureg = set_up_unit_registry()
     freqs = freqs*(1/ureg.cm)
     freqs.ito(units, 'spectroscopy')
 
-    return cell_vec, ion_pos, ion_type, qpts, weights, freqs, eigenvecs
+    return (cell_vec, ion_pos, ion_type, qpts, weights, freqs, i_intens,
+            r_intens, eigenvecs)
 
 
 def read_dot_phonon_header(f):
@@ -587,7 +650,7 @@ def calc_abscissa(qpts, recip_latt):
     return abscissa
 
 
-def calculate_dos(freqs, freq_down, weights, bwidth, gwidth, lorentz=False):
+def calculate_dos(freqs, freq_down, weights, bwidth, gwidth, lorentz=False, intensities=[]):
     """
     Calculates a density of states with Gaussian/Lorentzian broadening from a
     list of frequencies
@@ -627,20 +690,24 @@ def calculate_dos(freqs, freq_down, weights, bwidth, gwidth, lorentz=False):
         One dimensional list of the energy bin edges, in the same units as
         freqs/freq_down and determined by the max/min values of freqs/freq_down
     """
+
     n_branches = len(freqs[0]) if len(freqs) > 0 else len(freq_down[0])
     hist = np.array([])
     hist_down = np.array([])
     dos = np.array([])
     dos_down = np.array([])
 
+    # Calculate bin edges
     all_freqs = np.append(freqs, freq_down)
     freq_max = np.amax(all_freqs)
     freq_min = np.amin(all_freqs)
+    bins = np.arange(freq_min, freq_max + bwidth, bwidth)
 
-    # Repeat weights so it's the same shape as freqs (for histogram)
+    # Calculate weight for each q-point and branch
     freq_weights = np.repeat(np.array(weights)[:,np.newaxis],
                              n_branches, axis=1)
-    bins = np.arange(freq_min, freq_max + bwidth, bwidth)
+    if len(intensities) > 0:
+        freq_weights *= intensities
 
     # Bin frequencies
     if len(freqs) > 0:
@@ -894,9 +961,9 @@ def plot_dispersion(abscissa, freq_up, freq_down, filename, units, xticks=None,
 
     # Plot frequencies and Fermi energy
     if freq_up.size > 0:
-        ax.plot(abscissa, freq_up)
+        ax.plot(abscissa, freq_up, lw=1.0)
     if freq_down.size > 0:
-        ax.plot(abscissa, freq_down)
+        ax.plot(abscissa, freq_down, lw=1.0)
     if fermi.size > 0:
         ax.axhline(y=fermi[0].magnitude, ls='dashed', c='k', label=r'$\epsilon_F$')
         ax.legend()
@@ -904,7 +971,7 @@ def plot_dispersion(abscissa, freq_up, freq_down, filename, units, xticks=None,
     plt.tight_layout()
     plt.show()
 
-def plot_dos(dos, dos_down, bins, filename, units, fermi=[]):
+def plot_dos(dos, dos_down, bins, filename, units, fermi=[], mirror=False):
 
     # Create figure
     fig = plt.figure()
@@ -928,13 +995,18 @@ def plot_dos(dos, dos_down, bins, filename, units, fermi=[]):
 
     # Plot dos and Fermi energy
     if dos.size > 0:
-        ax.plot(bin_centres, dos, label='alpha')
+        ax.plot(bin_centres, dos, label='alpha', lw=1.0)
     if dos_down.size > 0:
-        ax.plot(bin_centres, dos_down, label='beta')
+        if mirror:
+            ax.plot(bin_centres, -dos_down, label='beta', lw=1.0)
+            ax.axhline(y=0, c='k', lw=1.0)
+        else:
+            ax.plot(bin_centres, dos_down, label='beta', lw=1.0)
     if fermi.size > 0:
         ax.axvline(x=fermi[0].magnitude, ls='dashed', c='k', label=r'$\epsilon_F$')
         ax.legend()
-    ax.set_ylim(bottom=0) # Need to set limits after plotting the data
+    if not mirror:
+        ax.set_ylim(bottom=0) # Need to set limits after plotting the data
 
     plt.tight_layout()
     plt.show()

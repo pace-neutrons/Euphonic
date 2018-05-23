@@ -38,8 +38,8 @@ class TestReadInputFileNaHBands(unittest.TestCase):
         with open(NaH_bands_file, 'r') as f:
             (NaH_bands.cell_vec, NaH_bands.ion_pos, NaH_bands.ion_type,
                 NaH_bands.kpts, NaH_bands.weights, NaH_bands.freqs,
-                NaH_bands.freq_down, NaH_bands.eigenvecs,
-                NaH_bands.fermi) = disp.read_input_file(
+                NaH_bands.freq_down, NaH_bands.i_intens, NaH_bands.r_intens,
+                NaH_bands.eigenvecs, NaH_bands.fermi) = disp.read_input_file(
                     f, ureg, units, up, down)
 
         NaH_bands.expected_cell_vec = [[0.000000, 4.534397, 4.534397],
@@ -107,15 +107,18 @@ class TestReadInputFileNaHPhonon(unittest.TestCase):
         units = '1/cm'
         up = False
         down = False
+        ir = False
+        raman = False
         read_eigenvecs = True
         ureg = UnitRegistry()
 
         with open(NaH_phonon_file, 'r') as f:
             (NaH_phonon.cell_vec, NaH_phonon.ion_pos, NaH_phonon.ion_type,
                 NaH_phonon.kpts, NaH_phonon.weights, NaH_phonon.freqs,
-                NaH_phonon.freq_down, NaH_phonon.eigenvecs,
+                NaH_phonon.freq_down, NaH_phonon.i_intens,
+                NaH_phonon.r_intens, NaH_phonon.eigenvecs,
                 NaH_phonon.fermi) = disp.read_input_file(
-                    f, ureg, units, up, down, read_eigenvecs)
+                    f, ureg, units, up, down, ir, raman, read_eigenvecs)
 
         NaH_phonon.expected_cell_vec = [[0.000000, 2.399500, 2.399500],
                                         [2.399500, 0.000000, 2.399500],
@@ -261,8 +264,8 @@ class TestReadInputFileFeBands(unittest.TestCase):
         with open(Fe_bands_file, 'r') as f:
             (Fe_bands.cell_vec, Fe_bands.ion_pos, Fe_bands.ion_type,
                 Fe_bands.kpts, Fe_bands.weights, Fe_bands.freqs,
-                Fe_bands.freq_down, Fe_bands.eigenvecs,
-                Fe_bands.fermi) = disp.read_input_file(
+                Fe_bands.freq_down, Fe_bands.i_intens, Fe_bands.r_intens,
+                Fe_bands.eigenvecs, Fe_bands.fermi) = disp.read_input_file(
                     f, ureg, units, up, down)
 
         Fe_bands.expected_cell_vec = [[-2.708355,  2.708355,  2.708355],
@@ -477,7 +480,8 @@ class TestReadDotPhononAndHeader(unittest.TestCase):
         (NaH.n_ions, NaH.n_branches, NaH.n_qpts, NaH.cell_vec, NaH.ion_pos,
             NaH.ion_type) = disp.read_dot_phonon_header(StringIO(NaH.content))
         (NaH.cell_vec_file, NaH.ion_pos_file, NaH.ion_type_file, NaH.qpts,
-            NaH.weights, NaH.freqs, NaH.eigenvecs) = disp.read_dot_phonon(
+            NaH.weights, NaH.freqs, NaH.i_intens, NaH.r_intens,
+            NaH.eigenvecs) = disp.read_dot_phonon(
                 StringIO(NaH.content), self.ureg, read_eigenvecs=True)
         self.NaH = NaH
 
@@ -659,8 +663,9 @@ class TestReorderFreqs(unittest.TestCase):
         ureg = UnitRegistry()
         filename = 'test/NaH-reorder-test.phonon'
         with open(filename, 'r') as f:
-            (cell_vec, ion_pos, ion_type, qpts, weights, freqs,
-                eigenvecs) = disp.read_dot_phonon(f, ureg, read_eigenvecs=True)
+            (cell_vec, ion_pos, ion_type, qpts, weights, freqs, i_intens,
+                r_intens, eigenvecs) = disp.read_dot_phonon(
+                    f, ureg, read_eigenvecs=True)
         expected_reordered_freqs = [[ 91.847109,  91.847109, 166.053018,
                                      564.508299, 564.508299, 884.068976],
                                     [154.825631, 132.031513, 206.21394,
@@ -689,8 +694,9 @@ class TestReorderFreqs(unittest.TestCase):
         ureg = UnitRegistry()
         filename = 'test/La2Zr2O7.phonon'
         with open(filename, 'r') as f:
-            (cell_vec, ion_pos, ion_type, qpts, weights, freqs,
-                eigenvecs) = disp.read_dot_phonon(f, ureg, read_eigenvecs=True)
+            (cell_vec, ion_pos, ion_type, qpts, weights, freqs, i_intens,
+                r_intens, eigenvecs) = disp.read_dot_phonon(
+                    f, ureg, read_eigenvecs=True)
 
         expected_reordered_freqs =\
         [[65.062447,65.062447,70.408176,76.847761,76.847761,85.664054,
