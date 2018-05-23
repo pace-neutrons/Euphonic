@@ -891,10 +891,7 @@ class TestCalculateDos(unittest.TestCase):
                         0.02777778, 0.01388889]
         iron.bwidth = 0.05
         iron.gwidth = 0.1
-        self.iron = iron
-
-    def test_dos_iron_gauss(self):
-        expected_dos =\
+        iron.expected_dos_gauss =\
         [2.20437428e-01, 4.48772892e-01, 7.52538648e-01, 5.32423726e-01,
          3.02050060e-01, 2.13306464e-01, 1.39663554e-01, 1.63610442e-01,
          2.69621331e-01, 4.72982611e-01, 3.91689064e-01, 2.20437459e-01,
@@ -956,14 +953,7 @@ class TestCalculateDos(unittest.TestCase):
          0.00000000e+00, 0.00000000e+00, 0.00000000e+00, 0.00000000e+00,
          0.00000000e+00, 0.00000000e+00, 0.00000000e+00, 0.00000000e+00,
          0.00000000e+00, 0.00000000e+00]
-        iron = self.iron
-        dos, dos_down, bins = disp.calculate_dos(
-            iron.freqs, iron.freq_down, iron.weights, iron.bwidth,
-            iron.gwidth, lorentz=False)
-        npt.assert_allclose(dos, expected_dos)
-
-    def test_dos_down_iron_gauss(self):
-        expected_dos_down =\
+        iron.expected_dos_down_gauss =\
         [0.00000000e+00, 0.00000000e+00, 0.00000000e+00, 0.00000000e+00,
          0.00000000e+00, 0.00000000e+00, 0.00000000e+00, 0.00000000e+00,
          0.00000000e+00, 0.00000000e+00, 0.00000000e+00, 0.00000000e+00,
@@ -1025,14 +1015,7 @@ class TestCalculateDos(unittest.TestCase):
          0.00000000e+00, 0.00000000e+00, 0.00000000e+00, 1.89869621e-12,
          3.88852984e-09, 1.99092728e-06, 2.54838692e-04, 8.15483814e-03,
          6.52387051e-02, 1.30477410e-01]
-        iron = self.iron
-        dos, dos_down, bins = disp.calculate_dos(
-            iron.freqs, iron.freq_down, iron.weights, iron.bwidth,
-            iron.gwidth, lorentz=False)
-        npt.assert_allclose(dos_down, expected_dos_down)
-
-    def test_dos_iron_lorentz(self):
-        expected_dos =\
+        iron.expected_dos_lorentz =\
         [2.36213697e-01, 3.40960260e-01, 5.59791268e-01, 4.05306050e-01,
          3.00598745e-01, 2.43092104e-01, 1.84501806e-01, 2.12440899e-01,
          2.41422709e-01, 3.74553522e-01, 3.00602608e-01, 2.18331410e-01,
@@ -1094,14 +1077,7 @@ class TestCalculateDos(unittest.TestCase):
          1.24786384e-03, 1.03781587e-03, 8.80373037e-04, 6.88366229e-04,
          5.60123022e-04, 4.87189378e-04, 4.28047121e-04, 3.44044435e-04,
          3.04894551e-04, 2.72059754e-04]
-        iron = self.iron
-        dos, dos_down, bins = disp.calculate_dos(
-            iron.freqs, iron.freq_down, iron.weights, iron.bwidth,
-            iron.gwidth, lorentz=True)
-        npt.assert_allclose(dos, expected_dos)
-
-    def test_dos_down_iron_lorentz(self):
-        expected_dos_down =\
+        iron.expected_dos_down_lorentz =\
         [0.0013475,  0.00146787, 0.00159829, 0.00170474, 0.00182271,
          0.00195399, 0.00217147, 0.00241002, 0.00260242, 0.00282077,
          0.00307032, 0.0033578, 0.00369198, 0.00408453, 0.00462199,
@@ -1151,12 +1127,103 @@ class TestCalculateDos(unittest.TestCase):
          0.00184827, 0.00190246, 0.00202124, 0.00222951, 0.00257251,
          0.00313605, 0.00409552, 0.0058497,  0.00944888, 0.0182532,
          0.0447449,  0.08892355]
+
+        self.iron = iron
+
+
+    def test_dos_iron_gauss_both(self):
         iron = self.iron
-        dos, dos_down, bins = disp.calculate_dos(
+        dos = disp.calculate_dos(
             iron.freqs, iron.freq_down, iron.weights, iron.bwidth,
-            iron.gwidth, lorentz=True)
-        diff = dos_down - np.array(expected_dos_down)
-        npt.assert_allclose(dos_down, expected_dos_down, atol=1e-8)
+            iron.gwidth, lorentz=False)[0]
+        npt.assert_allclose(dos, iron.expected_dos_gauss)
+
+    def test_dos_iron_gauss_both_ir(self):
+        iron = self.iron
+        ir_factor = 2.0
+        ir = np.full(np.array(iron.freqs).shape, ir_factor)
+        dos = disp.calculate_dos(
+            iron.freqs, iron.freq_down, iron.weights, iron.bwidth,
+            iron.gwidth, lorentz=False, intensities=ir)[0]
+        npt.assert_allclose(dos/ir_factor, iron.expected_dos_gauss)
+
+    def test_dos_iron_gauss_down(self):
+        iron = self.iron
+        dos = disp.calculate_dos(
+            [], iron.freq_down, iron.weights, iron.bwidth,
+            iron.gwidth, lorentz=False)[0]
+        self.assertEqual(dos.size, 0)
+
+    def test_dos_down_iron_gauss_both(self):
+        iron = self.iron
+        dos_down = disp.calculate_dos(
+            iron.freqs, iron.freq_down, iron.weights, iron.bwidth,
+            iron.gwidth, lorentz=False)[1]
+        npt.assert_allclose(dos_down, iron.expected_dos_down_gauss)
+
+    def test_dos_down_iron_gauss_both_ir(self):
+        iron = self.iron
+        ir_factor = 2.0
+        ir = np.full(np.array(iron.freq_down).shape, ir_factor)
+        dos_down = disp.calculate_dos(
+            iron.freqs, iron.freq_down, iron.weights, iron.bwidth,
+            iron.gwidth, lorentz=False, intensities=ir)[1]
+        npt.assert_allclose(dos_down/ir_factor, iron.expected_dos_down_gauss)
+
+    def test_dos_down_iron_gauss_up(self):
+        iron = self.iron
+        dos_down = disp.calculate_dos(
+            iron.freqs, [], iron.weights, iron.bwidth,
+            iron.gwidth, lorentz=False)[1]
+        self.assertEqual(dos_down.size, 0)
+
+    def test_dos_iron_lorentz_both(self):
+        iron = self.iron
+        dos = disp.calculate_dos(
+            iron.freqs, iron.freq_down, iron.weights, iron.bwidth,
+            iron.gwidth, lorentz=True)[0]
+        npt.assert_allclose(dos, iron.expected_dos_lorentz)
+
+    def test_dos_iron_lorentz_both_ir(self):
+        iron = self.iron
+        ir_factor = 2.0
+        ir = np.full(np.array(iron.freq_down).shape, ir_factor)
+        dos = disp.calculate_dos(
+            iron.freqs, iron.freq_down, iron.weights, iron.bwidth,
+            iron.gwidth, lorentz=True, intensities=ir)[0]
+        npt.assert_allclose(dos/ir_factor, iron.expected_dos_lorentz)
+
+    def test_dos_iron_lorentz_down(self):
+        iron = self.iron
+        dos = disp.calculate_dos(
+            [], iron.freq_down, iron.weights, iron.bwidth,
+            iron.gwidth, lorentz=True)[0]
+        self.assertEqual(dos.size, 0)
+
+    def test_dos_down_iron_lorentz_both(self):
+        iron = self.iron
+        dos_down = disp.calculate_dos(
+            iron.freqs, iron.freq_down, iron.weights, iron.bwidth,
+            iron.gwidth, lorentz=True)[1]
+        npt.assert_allclose(
+            dos_down, iron.expected_dos_down_lorentz, atol=1e-8)
+
+    def test_dos_down_iron_lorentz_both_ir(self):
+        iron = self.iron
+        ir_factor = 2.0
+        ir = np.full(np.array(iron.freq_down).shape, ir_factor)
+        dos_down = disp.calculate_dos(
+            iron.freqs, iron.freq_down, iron.weights, iron.bwidth,
+            iron.gwidth, lorentz=True, intensities=ir)[1]
+        npt.assert_allclose(
+            dos_down/ir_factor, iron.expected_dos_down_lorentz, atol=1e-8)
+
+    def test_dos_down_iron_lorentz_up(self):
+        iron = self.iron
+        dos_down = disp.calculate_dos(
+            iron.freqs, [], iron.weights, iron.bwidth,
+            iron.gwidth, lorentz=True)[1]
+        self.assertEqual(dos_down.size, 0)
 
 
 class TestRecipSpaceLabels(unittest.TestCase):
