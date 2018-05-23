@@ -588,7 +588,7 @@ def calc_abscissa(qpts, recip_latt):
 
 
 def calculate_dos(freqs, freq_down, weights, bwidth, gwidth, lorentz=False):
-    n_branches = freqs.shape[1]
+    n_branches = freqs.shape[1] if freqs.size > 0 else freq_down.shape[1]
     hist = np.array([])
     hist_down = np.array([])
     dos = np.array([])
