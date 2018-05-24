@@ -84,8 +84,8 @@ def main():
 def parse_arguments():
     parser = argparse.ArgumentParser(
         description="""Extract phonon or bandstructure data from .castep,
-                       .phonon or .bands files and prepare a band structure
-                       plot with matplotlib""")
+                       .phonon or .bands files and plot the band structure
+                       (default) or density of states with matplotlib""")
     parser.add_argument(
         'filename',
         help="""The .castep, .phonon or .bands file to extract the
@@ -99,12 +99,6 @@ def parse_arguments():
         default='eV',
         help="""Convert frequencies to specified units for plotting (e.g
                 1/cm, Ry). Default: eV""")
-    parser.add_argument(
-        '-reorder',
-        action='store_true',
-        help="""Try to determine branch crossings from eigenvectors and
-                rearrange frequencies accordingly (only applicable if
-                using a .phonon file)""")
 
     spin_group = parser.add_mutually_exclusive_group()
     spin_group.add_argument(
@@ -116,8 +110,18 @@ def parse_arguments():
         action='store_true',
         help='Extract and plot only spin down from *.castep or *.bands')
 
+    disp_group = parser.add_argument_group(
+        'Dispersion arguments',
+        'Arguments specific to plotting the band structure')
+    disp_group.add_argument(
+        '-reorder',
+        action='store_true',
+        help="""Try to determine branch crossings from eigenvectors and
+                rearrange frequencies accordingly (only applicable if
+                using a .phonon file)""")
+
     dos_group = parser.add_argument_group(
-        'DOS Group',
+        'DOS arguments',
         'Arguments specific to plotting the density of states')
     dos_group.add_argument(
         '-dos',
@@ -135,8 +139,9 @@ def parse_arguments():
     dos_group.add_argument(
         '-w',
         default=None,
-        help="""Set Gaussian/Lorentzian FWHM for broadening. Default: 0.1 eV
-                for electronic DOS, 10.0/cm for vibrational DOS""")
+        help="""Set Gaussian/Lorentzian FWHM for broadening (in units specified
+                by -units argument or default eV). Default: 0.1 eV for
+                electronic DOS, 10.0/cm for vibrational DOS""")
     dos_group.add_argument(
         '-b',
         default=None,
