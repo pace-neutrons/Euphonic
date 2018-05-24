@@ -53,10 +53,10 @@ def main():
         else:
             dos, dos_down, bins = calculate_dos(
                 freqs, freq_down, weights, bwidth.magnitude, gwidth.magnitude,
-                args.lorentz, intensities=i_test)
+                args.lorentz)
 
-        plot_dos(dos, dos_down, bins, args.filename, args.units, fermi=fermi,
-                 mirror=args.mirror)
+        fig = plot_dos(dos, dos_down, bins, args.units, args.filename, fermi=fermi,
+                       mirror=args.mirror)
 
     # Calculate and plot dispersion
     else:
@@ -76,9 +76,11 @@ def main():
         labels, qpts_with_labels = recip_space_labels(
             qpts, cell_vec, ion_pos, ion_type)
 
-        plot_dispersion(abscissa, freqs, freq_down, args.filename, args.units,
-                        xticks=abscissa[qpts_with_labels], xlabels=labels,
-                        fermi=fermi)
+        fig = plot_dispersion(abscissa, freqs, freq_down, args.units,
+                              args.filename, xticks=abscissa[qpts_with_labels],
+                              xlabels=labels, fermi=fermi)
+
+    plt.show()
 
 
 def parse_arguments():
@@ -186,18 +188,18 @@ def read_input_file(f, ureg, units, up=False, down=False, ir=False,
         String specifying the units of the output frequencies. For valid
         values see the Pint docs: http://pint.readthedocs.io/en/0.8.1/
     up : boolean
-        Read only spin up frequencies from the .bands file
+        Read only spin up frequencies from the .bands file. Default: False
     down : boolean
-        Read only spin down frequencies from the .bands file
+        Read only spin down frequencies from the .bands file. Default: False
     ir : boolean
         Whether to read and store IR intensities (only applicable if
-        reading a .phonon file)
+        reading a .phonon file). Default: False
     raman : boolean
         Whether to read and store Raman intensities (only applicable if
-        reading a .phonon file)
+        reading a .phonon file). Default: False
     read_eigenvecs : boolean
         Whether to read and store the eigenvectors (only applicable if
-        reading a .phonon file)
+        reading a .phonon file). Default: False
 
     Returns
     -------
@@ -295,13 +297,14 @@ def read_dot_phonon(f, ureg, units='1/cm', ir=False, raman=False,
         specified by units argument
     units : string
         String specifying the units of the output frequencies. For valid
-        values see the Pint docs: http://pint.readthedocs.io/en/0.8.1/
+        values see the Pint docs: http://pint.readthedocs.io/en/0.8.1/.
+        Default = '1/cm'
     read_eigenvecs : boolean
-        Whether to read and store the eigenvectors
+        Whether to read and store the eigenvectors. Default: False
     ir : boolean
-        Whether to read and store IR intensities
+        Whether to read and store IR intensities. Default: False
     raman : boolean
-        Whether to read and store Raman intensities
+        Whether to read and store Raman intensities. Default: False
 
     Returns
     -------
@@ -445,12 +448,13 @@ def read_dot_bands(f, ureg, up=False, down=False, units='eV'):
         Unit registry (from Pint module) for converting frequencies and Fermi
         energies to units specified by units argument
     up : boolean
-        Read only spin up frequencies from the .bands file
+        Read only spin up frequencies from the .bands file. Default: False
     down : boolean
-        Read only spin down frequencies from the .bands file
+        Read only spin down frequencies from the .bands file. Default: False
     units : string
         String specifying the units of the output frequencies. For valid
-        values see the Pint docs: http://pint.readthedocs.io/en/0.8.1/
+        values see the Pint docs: http://pint.readthedocs.io/en/0.8.1/.
+        Default: 'eV'
 
     Returns
     -------
@@ -679,7 +683,12 @@ def calculate_dos(freqs, freq_down, weights, bwidth, gwidth, lorentz=False, inte
         FWHM of Gaussian/Lorentzian for broadening the DOS bins. Set to 0 if
         no broadening is desired
     lorentz : boolean
-        Whether to use a Lorentzian or Gaussian broadening function
+        Whether to use a Lorentzian or Gaussian broadening function.
+        Default: False
+    intensities : list of floats
+        M x N list of IR intensities for each frequency, is used to weight the
+        DOS binning in addition to the weights parameter, where M = number of
+        q-points and N = number of bands. Default: []
 
     Returns
     -------
@@ -934,13 +943,54 @@ def reciprocal_lattice(unit_cell):
     return np.array([astar, bstar, cstar])
 
 
-def plot_dispersion(abscissa, freq_up, freq_down, filename, units, xticks=None,
+def plot_dispersion(abscissa, freq_up, freq_down, units, title='', xticks=None,
                     xlabels=None, fermi=[]):
+    """
+    Creates a Matplotlib figure of the band structure
+
+    Parameters
+    ----------
+    abscissa: list of floats
+        M length list of the position of each q-point along the x-axis based
+        on the distance between each q-point (can be calculated by the
+        calc_abscissa function), where M = number of q-points
+    freq_up : list of floats
+        M x N list of spin up band frequencies, where M = number of q-points
+        and N = number of bands, can be empty if only spin down frequencies are
+        present
+    freq_down : list of floats
+        M x N list of spin down band frequencies, where M = number of q-points
+        and N = number of bands, can be empty if only spin up frequencies are
+        present
+    units : string
+        String specifying the frequency units. Used for axis labels
+    title : string
+        The figure title. Default: ''
+    xticks : list of floats
+        List of floats specifying the x-axis tick label locations. Usually
+        they are located where the q-point direction changes, this can be
+        calculated using abscissa[qpts_with_labels], where abscissa has been
+        calculated from the calc_abscissa function, and qpts_with_labels from
+        the recip_space_labels function. Default: None
+    xlabels : list of strings
+        List of strings specifying the x-axis tick labels. Should be the same
+        length as xlabels, and can be calculated using the recip_space_labels
+        function. Default: None
+    fermi : list of floats
+        1 or 2 length list specifying the fermi energy/energies. Default: []
+
+    Returns
+    -------
+    fig : Matplotlib Figure
+        Figure containing subplot(s) containing the plotted band structure. If
+        there is a large gap between some q-points there will be multiple
+         q-points
+    """
 
     # Create figure
     fig = plt.figure()
     ax = fig.add_subplot(111)
-    ax.set_title(filename)
+    ax.set_title(title)
 
     # Y-axis formatting
     # Replace 1/cm with cm^-1
@@ -972,16 +1022,47 @@ def plot_dispersion(abscissa, freq_up, freq_down, filename, units, xticks=None,
     if fermi.size > 0:
         ax.axhline(y=fermi[0].magnitude, ls='dashed', c='k', label=r'$\epsilon_F$')
         ax.legend()
-
     plt.tight_layout()
-    plt.show()
 
-def plot_dos(dos, dos_down, bins, filename, units, fermi=[], mirror=False):
+    return fig
+
+
+def plot_dos(dos, dos_down, bins, units, title='', fermi=[], mirror=False):
+    """
+    Creates a Matplotlib figure of the density of states
+
+    Parameters
+    ----------
+    dos : list of floats
+        L - 1 length list of the spin up density of states for each bin, where
+        L is the lengh of the bins parameter. Can be empty if only spin down
+        frequencies are present
+    dos_down : list of floats
+        L - 1 length list of the spin down density of states for each bin,
+        where L is the lengh of the bins parameter. Can be empty if only spin
+        up frequencies are present
+    bins : list of floats
+        One dimensional list of the energy bin edges
+    units : string
+        String specifying the energy bin units. Used for axis labels
+    title : string
+        The figure title. Default: ''
+    fermi : list of floats
+        1 or 2 length list specifying the fermi energy/energies. Default: []
+    mirror : boolean
+        Whether to reflect the dos_down frequencies in the x-axis.
+        Default: False
+
+    Returns
+    -------
+    fig : Matplotlib Figure
+        Figure containing the subplot containing the plotted density of states
+    """
 
     # Create figure
     fig = plt.figure()
     ax = fig.add_subplot(111)
-    ax.set_title(filename)
+    ax.set_title(title)
 
     # X-axis label formatting
     # Replace 1/cm with cm^-1
@@ -1012,9 +1093,10 @@ def plot_dos(dos, dos_down, bins, filename, units, fermi=[], mirror=False):
         ax.legend()
     if not mirror:
         ax.set_ylim(bottom=0) # Need to set limits after plotting the data
-
     plt.tight_layout()
-    plt.show()
+
+    return fig
+
 
 if __name__ == '__main__':
     main()
