@@ -55,8 +55,8 @@ def main():
                 freqs, freq_down, weights, bwidth.magnitude, gwidth.magnitude,
                 args.lorentz)
 
-        fig = plot_dos(dos, dos_down, bins, args.units, args.filename, fermi=fermi,
-                       mirror=args.mirror)
+        fig = plot_dos(dos, dos_down, bins, args.units, args.filename,
+                       fermi=[f.magnitude for f in fermi], mirror=args.mirror)
 
     # Calculate and plot dispersion
     else:
@@ -78,7 +78,8 @@ def main():
 
         fig = plot_dispersion(abscissa, freqs, freq_down, args.units,
                               args.filename, xticks=abscissa[qpts_with_labels],
-                              xlabels=labels, fermi=fermi)
+                              xlabels=labels,
+                              fermi=[f.magnitude for f in fermi])
 
     plt.show()
 
@@ -982,9 +983,8 @@ def plot_dispersion(abscissa, freq_up, freq_down, units, title='', xticks=None,
     Returns
     -------
     fig : Matplotlib Figure
-        Figure containing subplot(s) containing the plotted band structure. If
-        there is a large gap between some q-points there will be multiple
-         q-points
+        Figure containing subplot(s) for the plotted band structure. If there
+        is a large gap between some q-points there will be multiple subplots
     """
 
     # Create figure
@@ -1015,12 +1015,16 @@ def plot_dispersion(abscissa, freq_up, freq_down, units, title='', xticks=None,
     ax.set_xlim(left=0)
 
     # Plot frequencies and Fermi energy
-    if freq_up.size > 0:
+    if len(freq_up) > 0:
         ax.plot(abscissa, freq_up, lw=1.0)
-    if freq_down.size > 0:
+    if len(freq_down) > 0:
         ax.plot(abscissa, freq_down, lw=1.0)
-    if fermi.size > 0:
-        ax.axhline(y=fermi[0].magnitude, ls='dashed', c='k', label=r'$\epsilon_F$')
+    if len(fermi) > 0:
+        for i, ef in enumerate(fermi):
+            if i == 0:
+                ax.axhline(y=ef, ls='dashed', c='k', label=r'$\epsilon_F$')
+            else:
+                ax.axhline(y=ef, ls='dashed', c='k')
         ax.legend()
     plt.tight_layout()
 
@@ -1080,17 +1084,21 @@ def plot_dos(dos, dos_down, bins, units, title='', fermi=[], mirror=False):
     bin_centres = bins[:-1] + bwidth/2
 
     # Plot dos and Fermi energy
-    if dos.size > 0:
+    if len(dos) > 0:
         ax.plot(bin_centres, dos, label='alpha', lw=1.0)
-    if dos_down.size > 0:
+    if len(dos_down) > 0:
         if mirror:
             ax.plot(bin_centres, -dos_down, label='beta', lw=1.0)
             ax.axhline(y=0, c='k', lw=1.0)
         else:
             ax.plot(bin_centres, dos_down, label='beta', lw=1.0)
-    if fermi.size > 0:
-        ax.axvline(x=fermi[0].magnitude, ls='dashed', c='k', label=r'$\epsilon_F$')
-        ax.legend()
+    if len(fermi) > 0:
+        for i, ef in enumerate(fermi):
+            if i == 0:
+                ax.axvline(x=ef, ls='dashed', c='k', label=r'$\epsilon_F$')
+            else:
+                ax.axvline(x=ef, ls='dashed', c='k')
+    ax.legend()
     if not mirror:
         ax.set_ylim(bottom=0) # Need to set limits after plotting the data
     plt.tight_layout()

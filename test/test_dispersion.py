@@ -1,10 +1,15 @@
 import unittest
 import math
 import seekpath
+import matplotlib
+# Need to set non-interactive backend before importing dispersion to avoid
+# DISPLAY requirement when testing plotting functions
+matplotlib.use('Agg')
 import numpy as np
 import numpy.testing as npt
 from io import StringIO
 from pint import UnitRegistry
+from matplotlib import figure
 from casteppy import dispersion as disp
 
 
@@ -1357,3 +1362,73 @@ class TestReciprocalLattice(unittest.TestCase):
                           [1.15996339, 0., 1.15996339],
                           [1.15996339, 1.15996339, 0.]]
         npt.assert_allclose(recip, expected_recip)
+
+class TestPlotDispersion(unittest.TestCase):
+
+    def setUp(self):
+        # Input values
+        self.abscissa = [0.0, 0.13, 0.27, 1.48, 2.75, 2.89]
+        self.freq_up = [[0.61, 0.71, 3.36, 4.19, 4.65, 11.76],
+                        [0.75, 0.71, 3.38, 3.97, 4.55, 9.65],
+                        [0.65, 0.57, 3.93, 3.93, 4.29, 9.30],
+                        [1.91, 0.68, 2.32, 4.60, 3.54, 6.92],
+                        [1.31, 0.83, 3.63, 4.72, 2.62, 9.91],
+                        [0.94, 0.70, 3.60, 4.76, 3.30, 9.84]]
+        self.freq_down = [[2.20, 2.27, 5.22, 6.19, 6.77, 12.65],
+                          [2.38, 2.18, 5.24, 5.93, 6.66, 10.67],
+                          [2.31, 2.03, 5.88, 5.88, 6.39, 10.28],
+                          [3.44, 8.40, 4.00, 6.71, 5.55, 1.92],
+                          [2.82, 2.36, 5.58, 6.85, 4.39, 10.95],
+                          [2.49, 2.24, 5.50, 6.91, 5.17, 10.86]]
+        self.units = 'eV'
+        self.title = 'Iron'
+        self.xticks = [0.0, 0.13, 0.27, 1.48, 2.75, 2.89]
+        self.xlabels = ['', '', '5/8 5/8 3/8', '', '', '']
+        self.fermi = [4.71, 4.71]
+
+        # Results
+        self.fig = disp.plot_dispersion(
+            self.abscissa, self.freq_up, self.freq_down, self.units,
+            self.title, self.xticks, self.xlabels, self.fermi)
+        self.ax = self.fig.axes[0]
+
+    def test_returns_fig(self):
+        self.assertIsInstance(self.fig, figure.Figure)
+
+    def test_freq_xaxis(self):
+        n_correct_x = 0
+        for line in self.ax.get_lines():
+            if np.array_equal(line.get_data()[0], self.abscissa):
+                n_correct_x += 1
+        # Check that there are as many lines with abscissa for the x-axis
+        # values as there are both freq_up and freq_down branches
+        self.assertEqual(n_correct_x, len(self.freq_up) + len(self.freq_down))
+
+    def test_freq_yaxis(self):
+        all_freq_branches = np.vstack((np.transpose(self.freq_up),
+                                       np.transpose(self.freq_down)))
+        n_correct_y = 0
+        line_data = [line.get_data()[1] for line in self.ax.get_lines()]
+        for branch in all_freq_branches:
+            for line in self.ax.get_lines():
+                if np.array_equal(line.get_data()[1], branch):
+                    n_correct_y += 1
+                    break
+        # Check that every branch has a matching y-axis line
+        self.assertEqual(n_correct_y, len(all_freq_branches))
+
+    def test_fermi_yaxis(self):
+        n_correct_y = 0
+        for ef in self.fermi:
+            for line in self.ax.get_lines():
+                if np.all(np.array(line.get_data()[1]) == ef):
+                    n_correct_y += 1
+                    break
+        self.assertEqual(n_correct_y, len(self.fermi))
+
+    def test_xaxis_tick_locs(self):
+        npt.assert_array_equal(self.ax.get_xticks(), self.xticks)
+
+    def test_xaxis_tick_labels(self):
+        ticklabels = [x.get_text() for x in self.ax.get_xticklabels()]
+        npt.assert_array_equal(ticklabels, self.xlabels)
