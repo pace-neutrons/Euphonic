@@ -1081,14 +1081,14 @@ def plot_dos(dos, dos_down, bins, units, title='', fermi=[], mirror=False):
 
     # Calculate bin centres
     bwidth = bins[1] - bins[0]
-    bin_centres = bins[:-1] + bwidth/2
+    bin_centres = [b + bwidth/2 for b in bins[:-1]]
 
     # Plot dos and Fermi energy
     if len(dos) > 0:
         ax.plot(bin_centres, dos, label='alpha', lw=1.0)
     if len(dos_down) > 0:
         if mirror:
-            ax.plot(bin_centres, -dos_down, label='beta', lw=1.0)
+            ax.plot(bin_centres, np.negative(dos_down), label='beta', lw=1.0)
             ax.axhline(y=0, c='k', lw=1.0)
         else:
             ax.plot(bin_centres, dos_down, label='beta', lw=1.0)

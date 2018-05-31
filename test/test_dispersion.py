@@ -1395,6 +1395,12 @@ class TestPlotDispersion(unittest.TestCase):
     def test_returns_fig(self):
         self.assertIsInstance(self.fig, figure.Figure)
 
+    def test_n_series(self):
+        n_series = (len(self.freq_up[0])
+                  + len(self.freq_down[0])
+                  + len(self.fermi))
+        self.assertEqual(len(self.ax.get_lines()), n_series)
+
     def test_freq_xaxis(self):
         n_correct_x = 0
         for line in self.ax.get_lines():
@@ -1408,7 +1414,6 @@ class TestPlotDispersion(unittest.TestCase):
         all_freq_branches = np.vstack((np.transpose(self.freq_up),
                                        np.transpose(self.freq_down)))
         n_correct_y = 0
-        line_data = [line.get_data()[1] for line in self.ax.get_lines()]
         for branch in all_freq_branches:
             for line in self.ax.get_lines():
                 if np.array_equal(line.get_data()[1], branch):
@@ -1432,3 +1437,151 @@ class TestPlotDispersion(unittest.TestCase):
     def test_xaxis_tick_labels(self):
         ticklabels = [x.get_text() for x in self.ax.get_xticklabels()]
         npt.assert_array_equal(ticklabels, self.xlabels)
+
+    def test_freq_up_empty(self):
+        # Test freq down is still plotted when freq_up is empty
+        fig = disp.plot_dispersion(
+            self.abscissa, [], self.freq_down, self.units,
+            self.title, self.xticks, self.xlabels, self.fermi)
+        n_correct_y = 0
+        for branch in np.transpose(self.freq_down):
+            for line in fig.axes[0].get_lines():
+                if np.array_equal(line.get_data()[1], branch):
+                    n_correct_y += 1
+                    break
+        # Check that every freq down branch has a matching y-axis line
+        self.assertEqual(n_correct_y, len(self.freq_down[0]))
+
+    def test_freq_down_empty(self):
+        # Test freq up is still plotted when freq_down is empty
+        fig = disp.plot_dispersion(
+            self.abscissa, self.freq_up, [], self.units,
+            self.title, self.xticks, self.xlabels, self.fermi)
+        n_correct_y = 0
+        for branch in np.transpose(self.freq_up):
+            for line in fig.axes[0].get_lines():
+                if np.array_equal(line.get_data()[1], branch):
+                    n_correct_y += 1
+                    break
+        # Check that every freq up branch has a matching y-axis line
+        self.assertEqual(n_correct_y, len(self.freq_up[0]))
+
+class TestPlotDos(unittest.TestCase):
+
+    def setUp(self):
+        # Input values
+        self.dos = [2.30e-01, 1.82e-01, 8.35e-02, 3.95e-02, 2.68e-02, 3.89e-02,
+                    6.15e-02, 6.75e-02, 6.55e-02, 5.12e-02, 3.60e-02, 2.80e-02,
+                    5.22e-02, 1.12e-01, 1.52e-01, 1.37e-01, 9.30e-02, 6.32e-02,
+                    7.92e-02, 1.32e-01, 1.53e-01, 8.88e-02, 2.26e-02, 2.43e-03,
+                    1.08e-04, 2.00e-06, 8.11e-07, 4.32e-05, 9.63e-04, 8.85e-03,
+                    3.35e-02, 5.22e-02, 3.35e-02, 8.85e-03, 9.63e-04, 4.32e-05,
+                    7.96e-07, 6.81e-09, 9.96e-08, 5.40e-06, 1.21e-04, 1.13e-03,
+                    4.71e-03, 1.19e-02, 2.98e-02, 6.07e-02, 6.91e-02, 3.79e-02,
+                    9.33e-03, 9.85e-04, 4.40e-05, 2.24e-05, 4.82e-04, 4.43e-03,
+                    1.67e-02, 2.61e-02, 1.67e-02, 4.43e-03, 4.82e-04, 2.16e-05,
+                    3.98e-07]
+        self.dos_down = [6.05e-09, 7.97e-07, 4.33e-05, 9.71e-04, 9.08e-03,
+                         3.72e-02, 8.06e-02, 1.37e-01, 1.84e-01, 1.47e-01,
+                         7.37e-02, 3.84e-02, 2.67e-02, 3.80e-02, 5.36e-02,
+                         4.24e-02, 4.28e-02, 5.76e-02, 5.03e-02, 3.55e-02,
+                         2.32e-02, 3.15e-02, 7.39e-02, 1.24e-01, 1.40e-01,
+                         1.11e-01, 7.48e-02, 5.04e-02, 5.22e-02, 8.75e-02,
+                         1.37e-01, 1.30e-01, 6.37e-02, 1.47e-02, 1.51e-03,
+                         1.09e-04, 9.64e-04, 8.85e-03, 3.35e-02, 5.22e-02,
+                         3.35e-02, 8.85e-03, 9.63e-04, 4.33e-05, 6.19e-06,
+                         1.21e-04, 1.13e-03, 4.71e-03, 1.19e-02, 2.98e-02,
+                         6.07e-02, 6.91e-02, 3.79e-02, 9.33e-03, 9.85e-04,
+                         4.40e-05, 2.24e-05, 4.82e-04, 4.43e-03, 1.67e-02,
+                         2.61e-02]
+        self.bins = [ 0.58,  0.78,  0.98,  1.18,  1.38,  1.58,  1.78,  1.98,
+                      2.18,  2.38,  2.58,  2.78,  2.98,  3.18,  3.38,  3.58,
+                      3.78,  3.98,  4.18,  4.38,  4.58,  4.78,  4.98,  5.18,
+                      5.38,  5.58,  5.78,  5.98,  6.18,  6.38,  6.58,  6.78,
+                      6.98,  7.18,  7.38,  7.58,  7.78,  7.98,  8.18,  8.38,
+                      8.58,  8.78,  8.98,  9.18,  9.38,  9.58,  9.78,  9.98,
+                      10.18, 10.38, 10.58, 10.78, 10.98, 11.18, 11.38, 11.58,
+                      11.78, 11.98, 12.18, 12.38, 12.58, 12.78]
+        self.units = 'eV'
+        self.title = 'Iron'
+        self.fermi = [4.71, 4.71]
+        self.mirror = False
+
+        # Results
+        self.fig = disp.plot_dos(
+            self.dos, self.dos_down, self.bins, self.units,
+            self.title, self.fermi, self.mirror)
+        self.ax = self.fig.axes[0]
+
+    def test_returns_fig(self):
+        self.assertIsInstance(self.fig, figure.Figure)
+
+    def test_n_series(self):
+        # 2 series, 1 for dos, 1 for dos_down
+        n_series = 2 + len(self.fermi)
+        self.assertEqual(len(self.ax.get_lines()), n_series)
+
+    def test_dos_xaxis(self):
+        bin_centres = np.array(self.bins[:-1]) + (self.bins[1]
+                                                - self.bins[0])/2
+        n_correct_x = 0
+        for line in self.ax.get_lines():
+            if np.array_equal(line.get_data()[0], bin_centres):
+                n_correct_x += 1
+        # Check there are exactly 2 lines with bin centres for the x-axis
+        # (1 for dos, 1 for dos_down)
+        self.assertEqual(n_correct_x, 2)
+
+    def test_dos_yaxis(self):
+        match = False
+        for line in self.ax.get_lines():
+            if np.array_equal(line.get_data()[1], self.dos):
+                match = True
+        self.assertTrue(match)
+
+    def test_dos_down_yaxis(self):
+        match = False
+        for line in self.ax.get_lines():
+            if np.array_equal(line.get_data()[1], self.dos_down):
+                match = True
+        self.assertTrue(match)
+
+    def test_fermi_xaxis(self):
+        n_correct_x = 0
+        for ef in self.fermi:
+            for line in self.ax.get_lines():
+                if np.all(np.array(line.get_data()[0]) == ef):
+                    n_correct_x += 1
+                    break
+        self.assertEqual(n_correct_x, len(self.fermi))
+
+    def test_mirror_true(self):
+        fig = disp.plot_dos(
+            self.dos, self.dos_down, self.bins, self.units,
+            self.title, self.fermi, mirror=True)
+        for line in fig.axes[0].get_lines():
+            if np.array_equal(line.get_data()[1], np.negative(self.dos_down)):
+                match = True
+        self.assertTrue(match)
+
+    def test_empty_dos(self):
+        # Test that dos_down is still plotted when dos is empty
+        fig = disp.plot_dos(
+            [], self.dos_down, self.bins, self.units,
+            self.title, self.fermi, self.mirror)
+        match = False
+        for line in fig.axes[0].get_lines():
+            if np.array_equal(line.get_data()[1], self.dos_down):
+                match = True
+        self.assertTrue(match)
+
+    def test_empty_dos_down(self):
+        # Test that dos is still plotted when dos is empty
+        fig = disp.plot_dos(
+            self.dos, [], self.bins, self.units,
+            self.title, self.fermi, self.mirror)
+        match = False
+        for line in fig.axes[0].get_lines():
+            if np.array_equal(line.get_data()[1], self.dos):
+                match = True
+        self.assertTrue(match)
