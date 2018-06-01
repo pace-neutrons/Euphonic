@@ -36,7 +36,7 @@ def main():
                 bwidth = 1.0*(1/ureg.cm)
             bwidth.ito(args.units, 'spectroscopy')
         else:
-            bwidth = float(args.b)*ureg[args.units]
+            bwidth = args.b*ureg[args.units]
         if args.w == None:
             if f.name.endswith('.bands'):
                 gwidth = 0.1*ureg.eV
@@ -44,7 +44,7 @@ def main():
                 gwidth = 10.0*(1/ureg.cm)
             gwidth.ito(args.units, 'spectroscopy')
         else:
-            gwidth = float(args.w)*ureg[args.units]
+            gwidth = args.w*ureg[args.units]
 
         if args.ir:
             dos, dos_down, bins = calculate_dos(
@@ -79,7 +79,8 @@ def main():
         fig = plot_dispersion(abscissa, freqs, freq_down, args.units,
                               args.filename, xticks=abscissa[qpts_with_labels],
                               xlabels=labels,
-                              fermi=[f.magnitude for f in fermi])
+                              fermi=[f.magnitude for f in fermi],
+                              btol=args.btol)
 
     plt.show()
 
@@ -122,6 +123,13 @@ def parse_arguments():
         help="""Try to determine branch crossings from eigenvectors and
                 rearrange frequencies accordingly (only applicable if
                 using a .phonon file)""")
+    disp_group.add_argument(
+        '-btol',
+        default=10.0,
+        type=float,
+        help="""The tolerance for plotting sections of reciprocal space on
+                different subplots, as a fraction of the median distance
+                between q-points """)
 
     dos_group = parser.add_argument_group(
         'DOS arguments',
@@ -142,12 +150,14 @@ def parse_arguments():
     dos_group.add_argument(
         '-w',
         default=None,
+        type=float,
         help="""Set Gaussian/Lorentzian FWHM for broadening (in units specified
                 by -units argument or default eV). Default: 0.1 eV for
                 electronic DOS, 10.0/cm for vibrational DOS""")
     dos_group.add_argument(
         '-b',
         default=None,
+        type=float,
         help="""Set histogram resolution for binning (in units specified by
                 -units argument or default eV). Default: 0.05 eV for electronic
                 DOS, 1.0/cm for vibrational DOS""")
@@ -945,7 +955,7 @@ def reciprocal_lattice(unit_cell):
 
 
 def plot_dispersion(abscissa, freq_up, freq_down, units, title='', xticks=None,
-                    xlabels=None, fermi=[]):
+                    xlabels=None, fermi=[], btol=10.0):
     """
     Creates a Matplotlib figure of the band structure
 
@@ -979,6 +989,10 @@ def plot_dispersion(abscissa, freq_up, freq_down, units, title='', xticks=None,
         function. Default: None
     fermi : list of floats
         1 or 2 length list specifying the fermi energy/energies. Default: []
+    btol : float
+        Determines the limit for plotting sections of reciprocal space on
+        different subplots, as a fraction of the median distance between
+        q-points
 
     Returns
     -------
@@ -987,46 +1001,75 @@ def plot_dispersion(abscissa, freq_up, freq_down, units, title='', xticks=None,
         is a large gap between some q-points there will be multiple subplots
     """
 
-    # Create figure
-    fig = plt.figure()
-    ax = fig.add_subplot(111)
-    ax.set_title(title)
+    # Determine reciprocal space coordinates that are far enough apart to be
+    # in separate subplots, and determine index limits
+    diff = np.diff(abscissa)
+    median = np.median(diff)
+    breakpoints = np.where(diff/median > btol)[0]
+    imin = np.concatenate(([0], breakpoints + 1))
+    imax = np.concatenate((breakpoints, [len(abscissa) - 1]))
 
-    # Y-axis formatting
+    # Calculate width ratios so that the x-scale is the same for each subplot
+    subplot_widths = [abscissa[imax[i]] - abscissa[imin[i]]
+                      for i in range(len(imax))]
+    #subplot_widths = abscissa[imax] - abscissa[imin]
+    gridspec = dict(width_ratios=[w/subplot_widths[0]
+                                  for w in subplot_widths])
+    # Create figure with correct number of subplots
+    n_subplots = len(breakpoints) + 1
+    fig, subplots = plt.subplots(1, n_subplots, sharey=True,
+                                 gridspec_kw=gridspec)
+    if n_subplots == 1:
+        # Ensure subplots is always an array
+        subplots = np.array([subplots])
+
+    # Y-axis formatting, only need to format y-axis for first subplot as they
+    # share the y-axis
     # Replace 1/cm with cm^-1
     inverse_unit_index = units.find('/')
     if inverse_unit_index > -1:
         units = units[inverse_unit_index+1:]
-        ax.set_ylabel('Energy (' + units + r'$^{-1}$)')
+        subplots[0].set_ylabel('Energy (' + units + r'$^{-1}$)')
     else:
-        ax.set_ylabel('Energy (' + units + ')')
-    ax.ticklabel_format(style='sci', scilimits=(-2, 2), axis='y')
+        subplots[0].set_ylabel('Energy (' + units + ')')
+    subplots[0].ticklabel_format(style='sci', scilimits=(-2, 2), axis='y')
 
-    # X-axis formatting
-    # Set high symmetry point x-axis ticks/labels
-    if xticks is not None:
-        ax.set_xticks(xticks)
-        ax.xaxis.grid(True, which='major')
-        # Set labels (rotate long tick labels)
-        if len(max(xlabels, key=len)) >= 11:
-            ax.set_xticklabels(xlabels, rotation=90)
-        else:
-            ax.set_xticklabels(xlabels)
-    ax.set_xlim(left=0)
-
-    # Plot frequencies and Fermi energy
-    if len(freq_up) > 0:
-        ax.plot(abscissa, freq_up, lw=1.0)
-    if len(freq_down) > 0:
-        ax.plot(abscissa, freq_down, lw=1.0)
-    if len(fermi) > 0:
-        for i, ef in enumerate(fermi):
-            if i == 0:
-                ax.axhline(y=ef, ls='dashed', c='k', label=r'$\epsilon_F$')
+    # Configure each subplot
+    for i, ax in enumerate(subplots):
+        # X-axis formatting
+        # Set high symmetry point x-axis ticks/labels
+        if xticks is not None:
+            ax.set_xticks(xticks)
+            ax.xaxis.grid(True, which='major')
+            # Rotate long tick labels
+            if len(max(xlabels, key=len)) >= 11:
+                ax.set_xticklabels(xlabels, rotation=90)
             else:
-                ax.axhline(y=ef, ls='dashed', c='k')
-        ax.legend()
-    plt.tight_layout()
+                ax.set_xticklabels(xlabels)
+        ax.set_xlim(left=abscissa[imin[i]], right=abscissa[imax[i]])
+
+        # Plot frequencies and Fermi energy
+        if len(freq_up) > 0:
+            ax.plot(abscissa[imin[i]:imax[i] + 1],
+                    freq_up[imin[i]:imax[i] + 1], lw=1.0)
+        if len(freq_down) > 0:
+            ax.plot(abscissa[imin[i]:imax[i] + 1],
+                    freq_down[imin[i]:imax[i] + 1], lw=1.0)
+        if len(fermi) > 0:
+            for i, ef in enumerate(fermi):
+                if i == 0:
+                    ax.axhline(y=ef, ls='dashed', c='k',
+                               label=r'$\epsilon_F$')
+                else:
+                    ax.axhline(y=ef, ls='dashed', c='k')
+
+    # Only set legend for last subplot, they all have the same legend labels
+    subplots[-1].legend()
+
+    # Make sure axis/figure titles aren't cut off. Rect is used to leave some
+    # space at the top of the figure for suptitle
+    fig.suptitle(title)
+    plt.tight_layout(rect=[0, 0.03, 1, 0.95])
 
     return fig
 
