@@ -82,7 +82,11 @@ def main():
                               fermi=[f.magnitude for f in fermi],
                               btol=args.btol)
 
-    plt.show()
+    # Save or show figure
+    if args.s:
+        plt.savefig(args.s)
+    else:
+        plt.show()
 
 
 def parse_arguments():
@@ -103,6 +107,10 @@ def parse_arguments():
         default='eV',
         help="""Convert frequencies to specified units for plotting (e.g
                 1/cm, Ry). Default: eV""")
+    parser.add_argument(
+        '-s',
+        default=None,
+        help='Save resulting plot to a file')
 
     spin_group = parser.add_mutually_exclusive_group()
     spin_group.add_argument(
