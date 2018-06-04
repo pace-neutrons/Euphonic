@@ -1408,7 +1408,8 @@ class TestPlotDispersion(unittest.TestCase):
                 n_correct_x += 1
         # Check that there are as many lines with abscissa for the x-axis
         # values as there are both freq_up and freq_down branches
-        self.assertEqual(n_correct_x, len(self.freq_up) + len(self.freq_down))
+        self.assertEqual(n_correct_x,
+                         len(self.freq_up[0]) + len(self.freq_down[0]))
 
     def test_freq_yaxis(self):
         all_freq_branches = np.vstack((np.transpose(self.freq_up),
@@ -1465,6 +1466,113 @@ class TestPlotDispersion(unittest.TestCase):
                     break
         # Check that every freq up branch has a matching y-axis line
         self.assertEqual(n_correct_y, len(self.freq_up[0]))
+
+class TestPlotDispersionWithBreak(unittest.TestCase):
+
+    def setUp(self):
+        # Input values
+        self.abscissa = [1.63, 1.76, 1.88, 2.01, 3.43, 3.55, 3.66, 3.78]
+        self.freq_up = [[0.98, 0.98, 2.65, 4.34, 4.34, 12.14],
+                        [0.51, 0.51, 3.55, 4.50, 4.50, 12.95],
+                        [0.24, 0.24, 4.39, 4.66, 4.66, 13.79],
+                        [0.09, 0.09, 4.64, 4.64, 4.64, 14.19],
+                        [0.08, 1.62, 3.90, 4.22, 5.01,  5.12],
+                        [0.03, 1.65, 3.81, 4.01, 4.43,  4.82],
+                        [-0.2, 1.78, 3.10, 3.90, 4.00,  4.43],
+                        [-0.9, 1.99, 2.49, 3.76, 3.91,  3.92]]
+        self.freq_down = [[2.52, 2.52, 4.29, 6.28, 6.28, 13.14],
+                          [2.07, 2.07, 5.35, 6.47, 6.47, 13.77],
+                          [1.80, 1.80, 6.34, 6.67, 6.67, 14.40],
+                          [1.66, 1.66, 6.67, 6.67, 6.67, 14.68],
+                          [1.30, 3.22, 5.51, 6.00, 6.45,  7.07],
+                          [1.16, 3.26, 4.98, 5.99, 6.25,  6.86],
+                          [0.65, 3.41, 4.22, 5.95, 6.22,  6.41],
+                          [-0.35, 3.65, 4.00, 5.82, 5.85, 6.13]]
+        self.units = 'eV'
+        self.title = 'Iron'
+        self.xticks = [0.00, 2.01, 3.43, 4.25, 5.55, 6.13]
+        self.xlabels = ['0 0 0', '1/2 1/2 1/2', '1/2 0 0', '0 0 0',
+                        '3/4 1/4 3/4', '1/2 0 0']
+        self.fermi = [0.17, 0.17]
+        #Index at which the abscissa/frequencies are split into subplots
+        self.breakpoint = 4
+
+        # Results
+        self.fig = disp.plot_dispersion(
+            self.abscissa, self.freq_up, self.freq_down, self.units,
+            self.title, self.xticks, self.xlabels, self.fermi)
+        self.subplots = self.fig.axes
+
+    def test_returns_fig(self):
+        self.assertIsInstance(self.fig, figure.Figure)
+
+    def test_has_2_subplots(self):
+        self.assertEqual(len(self.subplots), 2)
+
+    def test_freq_xaxis(self):
+        bp = self.breakpoint
+        # Check x-axis for each subplot separately
+        n_correct_x = np.array([0, 0])
+        for line in self.subplots[0].get_lines():
+            # Check x-axis for first plot, abscissa[0:4]
+            if np.array_equal(line.get_data()[0], self.abscissa[:bp]):
+                n_correct_x[0] += 1
+        for line in self.subplots[1].get_lines():
+            # Check x-axis for second plot, abscissa[4:]
+            if np.array_equal(line.get_data()[0], self.abscissa[bp:]):
+                n_correct_x[1] += 1
+        # Check that there are as many lines with abscissa for the x-axis
+        # values as there are both freq_up and freq_down branches
+        self.assertTrue(np.all(
+            n_correct_x == (len(self.freq_up[0]) + len(self.freq_down[0]))))
+
+    def test_freq_yaxis(self):
+        bp = self.breakpoint
+        all_freq_branches = np.vstack((np.transpose(self.freq_up),
+                                       np.transpose(self.freq_down)))
+        # Check y-axis for each subplot separately
+        n_correct_y = np.array([0, 0])
+        # Subplot 0
+        for branch in all_freq_branches[:, :bp]:
+            for line in self.subplots[0].get_lines():
+                if np.array_equal(line.get_data()[1], branch):
+                    n_correct_y[0] += 1
+                    break
+        # Subplot 1
+        for branch in all_freq_branches[:, bp:]:
+            for line in self.subplots[1].get_lines():
+                if np.array_equal(line.get_data()[1], branch):
+                    n_correct_y[1] += 1
+                    break
+        # Check that every branch has a matching y-axis line
+        self.assertTrue(np.all(n_correct_y == len(all_freq_branches)))
+
+    def test_fermi_yaxis(self):
+        n_correct_y = np.array([0, 0])
+        for ef in self.fermi:
+            # Subplot 0
+            for line in self.subplots[0].get_lines():
+                if np.all(np.array(line.get_data()[1]) == ef):
+                    n_correct_y[0] += 1
+                    break
+            # Subplot 1
+            for line in self.subplots[0].get_lines():
+                if np.all(np.array(line.get_data()[1]) == ef):
+                    n_correct_y[1] += 1
+                    break
+        self.assertTrue(np.all(n_correct_y == len(self.fermi)))
+
+    def test_xaxis_tick_locs(self):
+        for subplot in self.subplots:
+            npt.assert_array_equal(subplot.get_xticks(), self.xticks)
+
+    def test_xaxis_tick_labels(self):
+        ticklabels = [[xlabel.get_text()
+                         for xlabel in subplot.get_xticklabels()]
+                         for subplot in self.subplots]
+        for i, subplot in enumerate(self.subplots):
+            npt.assert_array_equal(ticklabels[i], self.xlabels)
+
 
 class TestPlotDos(unittest.TestCase):
 
