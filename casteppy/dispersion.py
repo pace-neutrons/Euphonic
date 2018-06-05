@@ -137,7 +137,7 @@ def parse_arguments():
         type=float,
         help="""The tolerance for plotting sections of reciprocal space on
                 different subplots, as a fraction of the median distance
-                between q-points """)
+                between q-points. Default: 10.0""")
 
     dos_group = parser.add_argument_group(
         'DOS arguments',
@@ -1072,7 +1072,8 @@ def plot_dispersion(abscissa, freq_up, freq_down, units, title='', xticks=None,
                     ax.axhline(y=ef, ls='dashed', c='k')
 
     # Only set legend for last subplot, they all have the same legend labels
-    subplots[-1].legend()
+    if len(fermi) > 0:
+        subplots[-1].legend()
 
     # Make sure axis/figure titles aren't cut off. Rect is used to leave some
     # space at the top of the figure for suptitle
