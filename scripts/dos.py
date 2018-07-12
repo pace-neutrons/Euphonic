@@ -1,22 +1,25 @@
 """
-Parse a *.castep, *.phonon or *.band output file from new CASTEP for
-vibrational frequency data and output a matplotlib plot of the electronic
-or vibrational band structure or dispersion.
+Parse a *.phonon or *.band CASTEP output file for electronic/vibrational
+frequency data and display or save a matplotlib plot of the electronic or
+vibrational band structure or dispersion.
 """
 
 import argparse
 import matplotlib.pyplot as plt
-import casteppy.general as cpy
+from casteppy.util import set_up_unit_registry
+from casteppy.parsers.general import read_input_file
+from casteppy.dos.dos import calculate_dos
+from casteppy.plot.dos import plot_dos
 
 
 def main():
     args = parse_arguments()
-    ureg = cpy.set_up_unit_registry()
+    ureg = set_up_unit_registry()
 
     # Read data
     with open(args.filename, 'r') as f:
         (cell_vec, ion_pos, ion_type, qpts, weights, freqs, freq_down,
-            i_intens, r_intens, eigenvecs, fermi) = cpy.read_input_file(
+            i_intens, r_intens, eigenvecs, fermi) = read_input_file(
                 f, ureg, args.units, args.up, args.down, args.ir, args.raman)
 
     # Calculate and plot DOS
@@ -40,16 +43,16 @@ def main():
         gwidth = args.w*ureg[args.units]
 
     if args.ir:
-        dos, dos_down, bins = cpy.calculate_dos(
+        dos, dos_down, bins = calculate_dos(
             freqs, freq_down, weights, bwidth.magnitude, gwidth.magnitude,
             args.lorentz, intensities=i_intens)
     else:
-        dos, dos_down, bins = cpy.calculate_dos(
+        dos, dos_down, bins = calculate_dos(
             freqs, freq_down, weights, bwidth.magnitude, gwidth.magnitude,
             args.lorentz)
 
-        fig = cpy.plot_dos(dos, dos_down, bins, args.units, args.filename,
-                       fermi=[f.magnitude for f in fermi], mirror=args.mirror)
+    fig = plot_dos(dos, dos_down, bins, args.units, args.filename,
+                   fermi=[f.magnitude for f in fermi], mirror=args.mirror)
 
     # Save or show figure
     if args.s:
@@ -60,17 +63,12 @@ def main():
 
 def parse_arguments():
     parser = argparse.ArgumentParser(
-        description="""Extract phonon or bandstructure data from .castep,
-                       .phonon or .bands files and plot the band structure
-                       (default) or density of states with matplotlib""")
+        description="""Extract phonon or bandstructure data from a .phonon or
+                       .bands file and plot the density of states with
+                       matplotlib""")
     parser.add_argument(
         'filename',
-        help="""The .castep, .phonon or .bands file to extract the
-                bandstructure data from""")
-    parser.add_argument(
-        '-v',
-        action='store_true',
-        help='Be verbose about progress')
+        help="""The .phonon or .bands file to extract the data from""")
     parser.add_argument(
         '-units',
         default='eV',

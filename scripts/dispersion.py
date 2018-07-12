@@ -1,22 +1,27 @@
 """
-Parse a *.castep, *.phonon or *.bands output file from new CASTEP for
-vibrational frequency data and output a matplotlib plot of the electronic
+Parse a *.phonon or *.bands CASTEP output file for electronic/vibrational
+frequency data and save or display a matplotlib plot of the electronic
 or vibrational band structure or dispersion.
 """
 
 import argparse
 import matplotlib.pyplot as plt
-import casteppy.general as cpy
+from casteppy.util import set_up_unit_registry, reciprocal_lattice
+from casteppy.parsers.general import read_input_file
+from casteppy.dispersion.dispersion import reorder_freqs
+from casteppy.plot.dispersion import (calc_abscissa, recip_space_labels,
+                                      plot_dispersion)
+
 
 def main():
     args = parse_arguments()
-    ureg = cpy.set_up_unit_registry()
+    ureg = set_up_unit_registry()
 
     # Read data
     with open(args.filename, 'r') as f:
         read_eigenvecs = args.reorder
         (cell_vec, ion_pos, ion_type, qpts, weights, freqs, freq_down,
-            i_intens, r_intens, eigenvecs, fermi) = cpy.read_input_file(
+            i_intens, r_intens, eigenvecs, fermi) = read_input_file(
                 f, ureg, args.units, args.up, args.down, False, False,
                 read_eigenvecs)
 
@@ -25,23 +30,23 @@ def main():
     # has been set
     if eigenvecs.size > 0 and args.reorder:
         if freqs.size > 0:
-            freqs = cpy.reorder_freqs(freqs, qpts, eigenvecs)
+            freqs = reorder_freqs(freqs, qpts, eigenvecs)
         if freq_down.size > 0:
-            freq_down = cpy.reorder_freqs(freq_down, qpts, eigenvecs)
+            freq_down = reorder_freqs(freq_down, qpts, eigenvecs)
 
     # Get positions of q-points along x-axis
-    recip_latt = cpy.reciprocal_lattice(cell_vec)
-    abscissa = cpy.calc_abscissa(qpts, recip_latt)
+    recip_latt = reciprocal_lattice(cell_vec)
+    abscissa = calc_abscissa(qpts, recip_latt)
 
     # Get labels for high symmetry / fractional q-point coordinates
-    labels, qpts_with_labels = cpy.recip_space_labels(
+    labels, qpts_with_labels = recip_space_labels(
         qpts, cell_vec, ion_pos, ion_type)
 
-    fig = cpy.plot_dispersion(abscissa, freqs, freq_down, args.units,
-                              args.filename, xticks=abscissa[qpts_with_labels],
-                              xlabels=labels,
-                              fermi=[f.magnitude for f in fermi],
-                              btol=args.btol)
+    fig = plot_dispersion(abscissa, freqs, freq_down, args.units,
+                          args.filename, xticks=abscissa[qpts_with_labels],
+                          xlabels=labels,
+                          fermi=[f.magnitude for f in fermi],
+                          btol=args.btol)
 
     # Save or show figure
     if args.s:
@@ -52,17 +57,12 @@ def main():
 
 def parse_arguments():
     parser = argparse.ArgumentParser(
-        description="""Extract phonon or bandstructure data from .castep,
-                       .phonon or .bands files and plot the band structure
-                       with matplotlib""")
+        description="""Extract phonon or bandstructure data from a .phonon or
+                       .bands file and plot the band structure with
+                       matplotlib""")
     parser.add_argument(
         'filename',
-        help="""The .castep, .phonon or .bands file to extract the
-                bandstructure data from""")
-    parser.add_argument(
-        '-v',
-        action='store_true',
-        help='Be verbose about progress')
+        help="""The .phonon or .bands file to extract the data from""")
     parser.add_argument(
         '-units',
         default='eV',
@@ -77,11 +77,11 @@ def parse_arguments():
     spin_group.add_argument(
         '-up',
         action='store_true',
-        help='Extract and plot only spin up from *.castep or *.bands')
+        help='Extract and plot only spin up from *.bands')
     spin_group.add_argument(
         '-down',
         action='store_true',
-        help='Extract and plot only spin down from *.castep or *.bands')
+        help='Extract and plot only spin down from *.bands')
 
     disp_group = parser.add_argument_group(
         'Dispersion arguments',
