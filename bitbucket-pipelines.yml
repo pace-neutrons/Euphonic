@@ -10,7 +10,7 @@ pipelines:
           - python -mpip install numpy
           - python -mpip install pint
           - python -mpip install seekpath
-          - python -m unittest -v test.test_dispersion
+          - python -m unittest discover -v test
     - step:
         name: Python 2 test
         image: python:2.7.13
@@ -21,4 +21,4 @@ pipelines:
           - python -mpip install numpy
           - python -mpip install pint
           - python -mpip install seekpath
-          - python -m unittest -v test.test_dispersion
+          - python -m unittest discover -v test
