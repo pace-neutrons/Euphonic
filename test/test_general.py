@@ -2,7 +2,7 @@ import unittest
 import math
 import seekpath
 import matplotlib
-# Need to set non-interactive backend before importing dispersion to avoid
+# Need to set non-interactive backend before importing casteppy to avoid
 # DISPLAY requirement when testing plotting functions
 matplotlib.use('Agg')
 import numpy as np
@@ -10,17 +10,17 @@ import numpy.testing as npt
 from io import StringIO
 from pint import UnitRegistry
 from matplotlib import figure
-from casteppy import dispersion as disp
+import casteppy.general as cpy
 
 
 class TestSetUpUnitRegistry(unittest.TestCase):
 
     def test_returns_unit_registry(self):
-        self.assertIsInstance(disp.set_up_unit_registry(),
+        self.assertIsInstance(cpy.set_up_unit_registry(),
                               type(UnitRegistry()))
 
     def test_has_rydberg_units(self):
-        ureg = disp.set_up_unit_registry()
+        ureg = cpy.set_up_unit_registry()
         test_ev = 1 * ureg.Ry
         test_ev.ito(ureg.eV)
         self.assertEqual(test_ev.magnitude, 13.605693009)
@@ -44,7 +44,7 @@ class TestReadInputFileNaHBands(unittest.TestCase):
             (NaH_bands.cell_vec, NaH_bands.ion_pos, NaH_bands.ion_type,
                 NaH_bands.kpts, NaH_bands.weights, NaH_bands.freqs,
                 NaH_bands.freq_down, NaH_bands.i_intens, NaH_bands.r_intens,
-                NaH_bands.eigenvecs, NaH_bands.fermi) = disp.read_input_file(
+                NaH_bands.eigenvecs, NaH_bands.fermi) = cpy.read_input_file(
                     f, ureg, units, up, down)
 
         NaH_bands.expected_cell_vec = [[0.000000, 4.534397, 4.534397],
@@ -122,7 +122,7 @@ class TestReadInputFileNaHPhonon(unittest.TestCase):
                 NaH_phonon.kpts, NaH_phonon.weights, NaH_phonon.freqs,
                 NaH_phonon.freq_down, NaH_phonon.i_intens,
                 NaH_phonon.r_intens, NaH_phonon.eigenvecs,
-                NaH_phonon.fermi) = disp.read_input_file(
+                NaH_phonon.fermi) = cpy.read_input_file(
                     f, ureg, units, up, down, ir, raman, read_eigenvecs)
 
         NaH_phonon.expected_cell_vec = [[0.000000, 2.399500, 2.399500],
@@ -270,7 +270,7 @@ class TestReadInputFileFeBands(unittest.TestCase):
             (Fe_bands.cell_vec, Fe_bands.ion_pos, Fe_bands.ion_type,
                 Fe_bands.kpts, Fe_bands.weights, Fe_bands.freqs,
                 Fe_bands.freq_down, Fe_bands.i_intens, Fe_bands.r_intens,
-                Fe_bands.eigenvecs, Fe_bands.fermi) = disp.read_input_file(
+                Fe_bands.eigenvecs, Fe_bands.fermi) = cpy.read_input_file(
                     f, ureg, units, up, down)
 
         Fe_bands.expected_cell_vec = [[-2.708355,  2.708355,  2.708355],
@@ -483,10 +483,10 @@ class TestReadDotPhononAndHeader(unittest.TestCase):
                                     -0.024995270201 - 0.000000000000*1j,
                                     -0.024995270201 + 0.000000000000*1j]]]
         (NaH.n_ions, NaH.n_branches, NaH.n_qpts, NaH.cell_vec, NaH.ion_pos,
-            NaH.ion_type) = disp.read_dot_phonon_header(StringIO(NaH.content))
+            NaH.ion_type) = cpy.read_dot_phonon_header(StringIO(NaH.content))
         (NaH.cell_vec_file, NaH.ion_pos_file, NaH.ion_type_file, NaH.qpts,
             NaH.weights, NaH.freqs, NaH.i_intens, NaH.r_intens,
-            NaH.eigenvecs) = disp.read_dot_phonon(
+            NaH.eigenvecs) = cpy.read_dot_phonon(
                 StringIO(NaH.content), self.ureg, read_eigenvecs=True)
         self.NaH = NaH
 
@@ -593,7 +593,7 @@ class TestReadDotBands(unittest.TestCase):
                                    [0.08778721, 0.08033338, 0.19288937,
                                     0.21817779, 0.24476910, 0.39214129]]
         (iron.fermi, iron.cell_vec, iron.kpts, iron.weights, iron.freq_up,
-            iron.freq_down) = disp.read_dot_bands(
+            iron.freq_down) = cpy.read_dot_bands(
                 StringIO(iron.content), self.ureg, False, False,
                 units='hartree')
         self.iron = iron
@@ -617,31 +617,31 @@ class TestReadDotBands(unittest.TestCase):
         npt.assert_array_equal(self.iron.cell_vec, self.iron.expected_cell_vec)
 
     def test_up_arg_freq_up_read_iron(self):
-        freq_up = disp.read_dot_bands(
+        freq_up = cpy.read_dot_bands(
             StringIO(self.iron.content), self.ureg, True, False,
             units='hartree')[4]
         npt.assert_array_equal(freq_up, self.iron.expected_freq_up)
 
     def test_up_arg_freq_down_read_iron(self):
-        freq_down = disp.read_dot_bands(
+        freq_down = cpy.read_dot_bands(
             StringIO(self.iron.content), self.ureg, True, False,
             units='hartree')[5]
         self.assertEqual(freq_down.size, 0)
 
     def test_down_arg_freq_up_read_iron(self):
-        freq_up = disp.read_dot_bands(
+        freq_up = cpy.read_dot_bands(
             StringIO(self.iron.content), self.ureg, False, True,
             units='hartree')[4]
         self.assertEqual(freq_up.size, 0)
 
     def test_down_arg_freq_down_read_iron(self):
-        freq_down = disp.read_dot_bands(
+        freq_down = cpy.read_dot_bands(
             StringIO(self.iron.content), self.ureg, False, True,
             units='hartree')[5]
         npt.assert_array_equal(freq_down, self.iron.expected_freq_down)
 
     def test_freq_up_cm_units_iron(self):
-        freq_up_cm = disp.read_dot_bands(
+        freq_up_cm = cpy.read_dot_bands(
             StringIO(self.iron.content), self.ureg, units='1/cm')[4]
         expected_freq_up_cm = [[5000.17594, 5804.429679, 27178.423392,
                                 33795.034234, 37585.071062, 94927.180782],
@@ -650,7 +650,7 @@ class TestReadDotBands(unittest.TestCase):
         npt.assert_allclose(freq_up_cm, expected_freq_up_cm)
 
     def test_freq_down_cm_units_iron(self):
-        freq_down_cm = disp.read_dot_bands(
+        freq_down_cm = cpy.read_dot_bands(
             StringIO(self.iron.content), self.ureg, units='1/cm')[5]
         expected_freq_down_cm = [[17804.86686, 18315.2419, 42106.370959,
                                   49960.517927, 54676.191123, 102081.080835],
@@ -669,7 +669,7 @@ class TestReorderFreqs(unittest.TestCase):
         filename = 'test/NaH-reorder-test.phonon'
         with open(filename, 'r') as f:
             (cell_vec, ion_pos, ion_type, qpts, weights, freqs, i_intens,
-                r_intens, eigenvecs) = disp.read_dot_phonon(
+                r_intens, eigenvecs) = cpy.read_dot_phonon(
                     f, ureg, read_eigenvecs=True)
         expected_reordered_freqs = [[ 91.847109,  91.847109, 166.053018,
                                      564.508299, 564.508299, 884.068976],
@@ -688,7 +688,7 @@ class TestReorderFreqs(unittest.TestCase):
                                      688.50786,  761.918164, 761.918164],
                                     [124.976823, 124.976823, 238.903818,
                                      593.189877, 593.189877, 873.903056]]
-        npt.assert_array_equal(disp.reorder_freqs(freqs, qpts, eigenvecs),
+        npt.assert_array_equal(cpy.reorder_freqs(freqs, qpts, eigenvecs),
                                 expected_reordered_freqs)
 
 
@@ -700,7 +700,7 @@ class TestReorderFreqs(unittest.TestCase):
         filename = 'test/La2Zr2O7.phonon'
         with open(filename, 'r') as f:
             (cell_vec, ion_pos, ion_type, qpts, weights, freqs, i_intens,
-                r_intens, eigenvecs) = disp.read_dot_phonon(
+                r_intens, eigenvecs) = cpy.read_dot_phonon(
                     f, ureg, read_eigenvecs=True)
 
         expected_reordered_freqs =\
@@ -820,7 +820,7 @@ class TestReorderFreqs(unittest.TestCase):
          349.637392,413.438689,479.806857,479.806857,463.608166,535.889622,
          535.889622,543.524255,550.815232,544.325882,544.325882,541.757933,
          552.630089,552.630089,508.677347,737.533584,736.042236,736.042236]]
-        npt.assert_array_equal(disp.reorder_freqs(freqs, qpts, eigenvecs),
+        npt.assert_array_equal(cpy.reorder_freqs(freqs, qpts, eigenvecs),
                                 expected_reordered_freqs)
 
 class TestCalcAbscissa(unittest.TestCase):
@@ -842,7 +842,7 @@ class TestCalcAbscissa(unittest.TestCase):
         expected_abscissa = [0., 0.13670299, 0.27340598, 1.48844879,
                              2.75618022, 2.89288323, 3.78930474,
                              4.33611674, 4.47281973, 4.74622573]
-        npt.assert_allclose(disp.calc_abscissa(qpts, recip),
+        npt.assert_allclose(cpy.calc_abscissa(qpts, recip),
                             expected_abscissa)
 
 
@@ -1138,7 +1138,7 @@ class TestCalculateDos(unittest.TestCase):
 
     def test_dos_iron_gauss_both(self):
         iron = self.iron
-        dos = disp.calculate_dos(
+        dos = cpy.calculate_dos(
             iron.freqs, iron.freq_down, iron.weights, iron.bwidth,
             iron.gwidth, lorentz=False)[0]
         npt.assert_allclose(dos, iron.expected_dos_gauss)
@@ -1147,21 +1147,21 @@ class TestCalculateDos(unittest.TestCase):
         iron = self.iron
         ir_factor = 2.0
         ir = np.full(np.array(iron.freqs).shape, ir_factor)
-        dos = disp.calculate_dos(
+        dos = cpy.calculate_dos(
             iron.freqs, iron.freq_down, iron.weights, iron.bwidth,
             iron.gwidth, lorentz=False, intensities=ir)[0]
         npt.assert_allclose(dos/ir_factor, iron.expected_dos_gauss)
 
     def test_dos_iron_gauss_down(self):
         iron = self.iron
-        dos = disp.calculate_dos(
+        dos = cpy.calculate_dos(
             [], iron.freq_down, iron.weights, iron.bwidth,
             iron.gwidth, lorentz=False)[0]
         self.assertEqual(dos.size, 0)
 
     def test_dos_down_iron_gauss_both(self):
         iron = self.iron
-        dos_down = disp.calculate_dos(
+        dos_down = cpy.calculate_dos(
             iron.freqs, iron.freq_down, iron.weights, iron.bwidth,
             iron.gwidth, lorentz=False)[1]
         npt.assert_allclose(dos_down, iron.expected_dos_down_gauss)
@@ -1170,21 +1170,21 @@ class TestCalculateDos(unittest.TestCase):
         iron = self.iron
         ir_factor = 2.0
         ir = np.full(np.array(iron.freq_down).shape, ir_factor)
-        dos_down = disp.calculate_dos(
+        dos_down = cpy.calculate_dos(
             iron.freqs, iron.freq_down, iron.weights, iron.bwidth,
             iron.gwidth, lorentz=False, intensities=ir)[1]
         npt.assert_allclose(dos_down/ir_factor, iron.expected_dos_down_gauss)
 
     def test_dos_down_iron_gauss_up(self):
         iron = self.iron
-        dos_down = disp.calculate_dos(
+        dos_down = cpy.calculate_dos(
             iron.freqs, [], iron.weights, iron.bwidth,
             iron.gwidth, lorentz=False)[1]
         self.assertEqual(dos_down.size, 0)
 
     def test_dos_iron_lorentz_both(self):
         iron = self.iron
-        dos = disp.calculate_dos(
+        dos = cpy.calculate_dos(
             iron.freqs, iron.freq_down, iron.weights, iron.bwidth,
             iron.gwidth, lorentz=True)[0]
         npt.assert_allclose(dos, iron.expected_dos_lorentz)
@@ -1193,21 +1193,21 @@ class TestCalculateDos(unittest.TestCase):
         iron = self.iron
         ir_factor = 2.0
         ir = np.full(np.array(iron.freq_down).shape, ir_factor)
-        dos = disp.calculate_dos(
+        dos = cpy.calculate_dos(
             iron.freqs, iron.freq_down, iron.weights, iron.bwidth,
             iron.gwidth, lorentz=True, intensities=ir)[0]
         npt.assert_allclose(dos/ir_factor, iron.expected_dos_lorentz)
 
     def test_dos_iron_lorentz_down(self):
         iron = self.iron
-        dos = disp.calculate_dos(
+        dos = cpy.calculate_dos(
             [], iron.freq_down, iron.weights, iron.bwidth,
             iron.gwidth, lorentz=True)[0]
         self.assertEqual(dos.size, 0)
 
     def test_dos_down_iron_lorentz_both(self):
         iron = self.iron
-        dos_down = disp.calculate_dos(
+        dos_down = cpy.calculate_dos(
             iron.freqs, iron.freq_down, iron.weights, iron.bwidth,
             iron.gwidth, lorentz=True)[1]
         npt.assert_allclose(
@@ -1217,7 +1217,7 @@ class TestCalculateDos(unittest.TestCase):
         iron = self.iron
         ir_factor = 2.0
         ir = np.full(np.array(iron.freq_down).shape, ir_factor)
-        dos_down = disp.calculate_dos(
+        dos_down = cpy.calculate_dos(
             iron.freqs, iron.freq_down, iron.weights, iron.bwidth,
             iron.gwidth, lorentz=True, intensities=ir)[1]
         npt.assert_allclose(
@@ -1225,7 +1225,7 @@ class TestCalculateDos(unittest.TestCase):
 
     def test_dos_down_iron_lorentz_up(self):
         iron = self.iron
-        dos_down = disp.calculate_dos(
+        dos_down = cpy.calculate_dos(
             iron.freqs, [], iron.weights, iron.bwidth,
             iron.gwidth, lorentz=True)[1]
         self.assertEqual(dos_down.size, 0)
@@ -1252,7 +1252,7 @@ class TestRecipSpaceLabels(unittest.TestCase):
                              [-0.50, -0.50, -0.50]])
         NaH.expected_labels = ['', '', '', 'X', '', 'W_2', 'L']
         NaH.expected_qpts_with_labels = [0, 1, 2, 4, 5, 6, 7]
-        (NaH.labels, NaH.qpts_with_labels) = disp.recip_space_labels(
+        (NaH.labels, NaH.qpts_with_labels) = cpy.recip_space_labels(
             NaH.qpts, NaH.cell_vec, NaH.ion_pos, NaH.ion_type)
         self.NaH = NaH
 
@@ -1267,7 +1267,7 @@ class TestRecipSpaceLabels(unittest.TestCase):
 class TestGenericQptLabels(unittest.TestCase):
 
     def setUp(self):
-        self.generic_dict = disp.generic_qpt_labels()
+        self.generic_dict = cpy.generic_qpt_labels()
 
     def test_returns_dict(self):
         self.assertIsInstance(self.generic_dict, dict)
@@ -1301,19 +1301,19 @@ class TestGetQptLabel(unittest.TestCase):
     def test_gamma_pt_nah(self):
         gamma_pt = [0.0, 0.0, 0.0]
         expected_label = 'GAMMA'
-        self.assertEqual(disp.get_qpt_label(gamma_pt, self.NaH.point_labels),
+        self.assertEqual(cpy.get_qpt_label(gamma_pt, self.NaH.point_labels),
                          expected_label)
 
     def test_x_pt_nah(self):
         x_pt = [0.0, -0.5, -0.5]
         expected_label = 'X'
-        self.assertEqual(disp.get_qpt_label(x_pt, self.NaH.point_labels),
+        self.assertEqual(cpy.get_qpt_label(x_pt, self.NaH.point_labels),
                          expected_label)
 
     def test_w2_pt_nah(self):
         w2_pt = [0.25, -0.5, -0.25]
         expected_label = 'W_2'
-        self.assertEqual(disp.get_qpt_label(w2_pt, self.NaH.point_labels),
+        self.assertEqual(cpy.get_qpt_label(w2_pt, self.NaH.point_labels),
                          expected_label)
 
 
@@ -1329,14 +1329,14 @@ class TestDirectionChanged(unittest.TestCase):
                 [ 0.25, -0.50, -0.25],
                 [-0.50, -0.50, -0.50]]
         expected_direction_changed = [True, True, False, True, True, True]
-        npt.assert_equal(disp.direction_changed(qpts),
+        npt.assert_equal(cpy.direction_changed(qpts),
                          expected_direction_changed)
 
 
 class TestReciprocalLattice(unittest.TestCase):
 
     def test_identity(self):
-        recip = disp.reciprocal_lattice([[1., 0., 0.],
+        recip = cpy.reciprocal_lattice([[1., 0., 0.],
                                          [0., 1., 0.],
                                          [0., 0., 1.]])
         expected_recip = [[2*math.pi, 0., 0.],
@@ -1345,7 +1345,7 @@ class TestReciprocalLattice(unittest.TestCase):
         npt.assert_allclose(recip, expected_recip)
 
     def test_graphite(self):
-        recip = disp.reciprocal_lattice([[ 4.025915, -2.324363,  0.000000],
+        recip = cpy.reciprocal_lattice([[ 4.025915, -2.324363,  0.000000],
                                          [-0.000000,  4.648726,  0.000000],
                                          [ 0.000000,  0.000000, 12.850138]])
         expected_recip = [[1.56068503860106, 0., 0.],
@@ -1355,7 +1355,7 @@ class TestReciprocalLattice(unittest.TestCase):
         npt.assert_allclose(recip, expected_recip)
 
     def test_iron(self):
-        recip = disp.reciprocal_lattice([[-2.708355,  2.708355,  2.708355],
+        recip = cpy.reciprocal_lattice([[-2.708355,  2.708355,  2.708355],
                                          [ 2.708355, -2.708355,  2.708355],
                                          [ 2.708355,  2.708355, -2.708355]])
         expected_recip = [[0., 1.15996339, 1.15996339],
@@ -1387,7 +1387,7 @@ class TestPlotDispersion(unittest.TestCase):
         self.fermi = [4.71, 4.71]
 
         # Results
-        self.fig = disp.plot_dispersion(
+        self.fig = cpy.plot_dispersion(
             self.abscissa, self.freq_up, self.freq_down, self.units,
             self.title, self.xticks, self.xlabels, self.fermi)
         self.ax = self.fig.axes[0]
@@ -1441,7 +1441,7 @@ class TestPlotDispersion(unittest.TestCase):
 
     def test_freq_up_empty(self):
         # Test freq down is still plotted when freq_up is empty
-        fig = disp.plot_dispersion(
+        fig = cpy.plot_dispersion(
             self.abscissa, [], self.freq_down, self.units,
             self.title, self.xticks, self.xlabels, self.fermi)
         n_correct_y = 0
@@ -1455,7 +1455,7 @@ class TestPlotDispersion(unittest.TestCase):
 
     def test_freq_down_empty(self):
         # Test freq up is still plotted when freq_down is empty
-        fig = disp.plot_dispersion(
+        fig = cpy.plot_dispersion(
             self.abscissa, self.freq_up, [], self.units,
             self.title, self.xticks, self.xlabels, self.fermi)
         n_correct_y = 0
@@ -1498,7 +1498,7 @@ class TestPlotDispersionWithBreak(unittest.TestCase):
         self.breakpoint = 4
 
         # Results
-        self.fig = disp.plot_dispersion(
+        self.fig = cpy.plot_dispersion(
             self.abscissa, self.freq_up, self.freq_down, self.units,
             self.title, self.xticks, self.xlabels, self.fermi)
         self.subplots = self.fig.axes
@@ -1616,7 +1616,7 @@ class TestPlotDos(unittest.TestCase):
         self.mirror = False
 
         # Results
-        self.fig = disp.plot_dos(
+        self.fig = cpy.plot_dos(
             self.dos, self.dos_down, self.bins, self.units,
             self.title, self.fermi, self.mirror)
         self.ax = self.fig.axes[0]
@@ -1664,7 +1664,7 @@ class TestPlotDos(unittest.TestCase):
         self.assertEqual(n_correct_x, len(self.fermi))
 
     def test_mirror_true(self):
-        fig = disp.plot_dos(
+        fig = cpy.plot_dos(
             self.dos, self.dos_down, self.bins, self.units,
             self.title, self.fermi, mirror=True)
         for line in fig.axes[0].get_lines():
@@ -1674,7 +1674,7 @@ class TestPlotDos(unittest.TestCase):
 
     def test_empty_dos(self):
         # Test that dos_down is still plotted when dos is empty
-        fig = disp.plot_dos(
+        fig = cpy.plot_dos(
             [], self.dos_down, self.bins, self.units,
             self.title, self.fermi, self.mirror)
         match = False
@@ -1685,7 +1685,7 @@ class TestPlotDos(unittest.TestCase):
 
     def test_empty_dos_down(self):
         # Test that dos is still plotted when dos is empty
-        fig = disp.plot_dos(
+        fig = cpy.plot_dos(
             self.dos, [], self.bins, self.units,
             self.title, self.fermi, self.mirror)
         match = False
