@@ -1,14 +1,14 @@
 try:
-    from setuptools import setup
+    from setuptools import setup, find_packages
 except ImportError:
-    from distutils.core import setup
+    from distutils.core import setup, find_packages
 
 setup(
     name='CastepPy',
     version='0.1dev',
     description="""Module to read CASTEP electronic/vibrational frequency data
-                   and output a dispersion/dos plot"""
-    packages=['casteppy'],
+                   and output a dispersion/dos plot""",
+    packages=find_packages(),
     install_requires=[
         'numpy>=1.9.1',
         'matplotlib>=1.4.2',
