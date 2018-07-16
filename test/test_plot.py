@@ -151,6 +151,10 @@ class TestPlotDispersion(unittest.TestCase):
             self.title, self.xticks, self.xlabels, self.fermi)
         self.ax = self.fig.axes[0]
 
+    def tearDown(self):
+        # Ensure figures are closed after tests
+        matplotlib.pyplot.close('all')
+
     def test_returns_fig(self):
         self.assertIsInstance(self.fig, figure.Figure)
 
@@ -261,6 +265,10 @@ class TestPlotDispersionWithBreak(unittest.TestCase):
             self.abscissa, self.freq_up, self.freq_down, self.units,
             self.title, self.xticks, self.xlabels, self.fermi)
         self.subplots = self.fig.axes
+
+    def tearDown(self):
+        # Ensure figures are closed after tests
+        matplotlib.pyplot.close('all')
 
     def test_returns_fig(self):
         self.assertIsInstance(self.fig, figure.Figure)
@@ -379,6 +387,10 @@ class TestPlotDos(unittest.TestCase):
             self.dos, self.dos_down, self.bins, self.units,
             self.title, self.fermi, self.mirror)
         self.ax = self.fig.axes[0]
+
+    def tearDown(self):
+        # Ensure figures are closed after tests
+        matplotlib.pyplot.close('all')
 
     def test_returns_fig(self):
         self.assertIsInstance(self.fig, figure.Figure)
