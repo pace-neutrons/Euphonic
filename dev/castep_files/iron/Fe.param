@@ -1,9 +1,0 @@
-task		bandstructure ! The TASK keyword instructs CASTEP what to do
-xc_functional   LDA           ! Which exchange-correlation functional to use.
-basis_precision MEDIUM        ! Choose high cut-off COARSE/MEDIUM/FINE/PRECISE
-fix_occupancy   false         ! Treat the system as an metal 
-opt_strategy    speed         ! Choose algorithms for best speed at expense of memory.
-num_dump_cycles 0             ! Don't write unwanted ".wvfn" files.
-spin            1             ! Set the spin in the original cell to 1.
-spin_polarised  true          ! Run a spin polarised calculation
-bs_nbands       6             ! number of bands to compute during the BS run

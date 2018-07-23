@@ -1,8 +1,0 @@
-task		bandstructure     ! The TASK keyword instructs CASTEP what to do
-xc_functional   LDA               ! Which exchange-correlation functional to use.
-cut_off_energy  120 eV            ! Planewave cutoff
-#basis_precision FINE             ! Choose high cut-off COARSE/MEDIUM/FINE/PRECISE
-fix_occupancy   false             ! Treat the system as an metal
-opt_strategy    speed             ! Choose algorithms for best speed at expense of memory.
-num_dump_cycles 0                 ! Don't write unwanted ".wvfn" files.
-spin_polarised  false             ! Don't allow magnetic spin density
