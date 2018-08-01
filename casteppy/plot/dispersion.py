@@ -2,7 +2,7 @@ import math
 import numpy as np
 import matplotlib.pyplot as plt
 import seekpath
-from casteppy.dispersion.dispersion import direction_changed
+from casteppy.util import (direction_changed, reciprocal_lattice)
 
 
 def calc_abscissa(qpts, recip_latt):
@@ -46,23 +46,16 @@ def calc_abscissa(qpts, recip_latt):
     return abscissa
 
 
-def recip_space_labels(qpts, cell_vec, ion_pos, ion_type):
+def recip_space_labels(data):
     """
     Gets high symmetry point labels (e.g. GAMMA, X, L) for the q-points at
     which the path through reciprocal space changes direction
 
     Parameters
     ----------
-    qpts : list of floats
-        N x 3 list of the q-point coordinates, where N = number of q-points
-    cell_vec : list of floats
-        3 x 3 list of the unit cell vectors
-    ion_pos : list of floats
-        n_ions x 3 list of the fractional position of each ion within the
-        unit cell
-    ion_type : list of strings
-        n_ions length list of the chemical symbols of each ion in the unit
-        cell. Ions are in the same order as in ion_pos
+    data: PhononData or BandsData object
+        Data object containing the cell vectors, q-points and optionally ion
+        types and coordinates (used for determining space group)
 
     Returns
     -------
@@ -75,16 +68,18 @@ def recip_space_labels(qpts, cell_vec, ion_pos, ion_type):
     """
 
     # First and last q-points should always be labelled
-    qpt_has_label = np.concatenate(([True], direction_changed(qpts), [True]))
+    qpt_has_label = np.concatenate(([True], direction_changed(data.qpts),
+                                    [True]))
     qpts_with_labels = np.where(qpt_has_label)[0]
 
     # Get dict of high symmetry point labels to their coordinates for this
     # space group. If space group can't be determined use a generic dictionary
     # of fractional points
     sym_label_to_coords = {}
-    if len(ion_pos) > 0:
-        _, ion_num = np.unique(ion_type, return_inverse=True)
-        cell = (cell_vec, ion_pos, ion_num)
+    if hasattr(data, 'ion_r'):
+        print('has ion_r')
+        _, ion_num = np.unique(data.ion_type, return_inverse=True)
+        cell = (data.cell_vec, data.ion_r, ion_num)
         sym_label_to_coords = seekpath.get_path(cell)["point_coords"]
     else:
         sym_label_to_coords = generic_qpt_labels()
@@ -92,7 +87,7 @@ def recip_space_labels(qpts, cell_vec, ion_pos, ion_type):
     # Get labels for each q-point
     labels = np.array([])
 
-    for qpt in qpts[qpts_with_labels]:
+    for qpt in data.qpts[qpts_with_labels]:
         labels = np.append(labels, get_qpt_label(qpt, sym_label_to_coords))
 
     return labels, qpts_with_labels
@@ -168,45 +163,25 @@ def get_qpt_label(qpt, point_labels):
     return label
 
 
-def plot_dispersion(abscissa, freq_up, freq_down, units, title='', xticks=None,
-                    xlabels=None, fermi=[], btol=10.0):
+def plot_dispersion(data, title='', btol=10.0, up=True, down=True):
     """
     Creates a Matplotlib figure of the band structure
 
     Parameters
     ----------
-    abscissa: list of floats
-        M length list of the position of each q-point along the x-axis based
-        on the distance between each q-point (can be calculated by the
-        calc_abscissa function), where M = number of q-points
-    freq_up : list of floats
-        M x N list of spin up band frequencies, where M = number of q-points
-        and N = number of bands, can be empty if only spin down frequencies are
-        present
-    freq_down : list of floats
-        M x N list of spin down band frequencies, where M = number of q-points
-        and N = number of bands, can be empty if only spin up frequencies are
-        present
-    units : string
-        String specifying the frequency units. Used for axis labels
-    title : string
+    data: PhononData or BandsData object
+        Data object containing the frequencies and other data required for
+        plotting (qpts, n_ions, cell_vecs)
+    title : string, optional
         The figure title. Default: ''
-    xticks : list of floats
-        List of floats specifying the x-axis tick label locations. Usually
-        they are located where the q-point direction changes, this can be
-        calculated using abscissa[qpts_with_labels], where abscissa has been
-        calculated from the calc_abscissa function, and qpts_with_labels from
-        the recip_space_labels function. Default: None
-    xlabels : list of strings
-        List of strings specifying the x-axis tick labels. Should be the same
-        length as xlabels, and can be calculated using the recip_space_labels
-        function. Default: None
-    fermi : list of floats
-        1 or 2 length list specifying the fermi energy/energies. Default: []
-    btol : float
+    btol : float, optional
         Determines the limit for plotting sections of reciprocal space on
         different subplots, as a fraction of the median distance between
-        q-points
+        q-points. Default: 10.0
+    up : boolean, optional
+        Whether to plot spin up frequencies (if applicable). Default: True
+    down : boolean, optional
+        Whether to plot spin down frequencies (if applicable). Default: True
 
     Returns
     -------
@@ -214,7 +189,8 @@ def plot_dispersion(abscissa, freq_up, freq_down, units, title='', xticks=None,
         Figure containing subplot(s) for the plotted band structure. If there
         is a large gap between some q-points there will be multiple subplots
     """
-
+    recip_latt = reciprocal_lattice(data.cell_vec)
+    abscissa = calc_abscissa(data.qpts, recip_latt)
     # Determine reciprocal space coordinates that are far enough apart to be
     # in separate subplots, and determine index limits
     diff = np.diff(abscissa)
@@ -226,7 +202,6 @@ def plot_dispersion(abscissa, freq_up, freq_down, units, title='', xticks=None,
     # Calculate width ratios so that the x-scale is the same for each subplot
     subplot_widths = [abscissa[imax[i]] - abscissa[imin[i]]
                       for i in range(len(imax))]
-    #subplot_widths = abscissa[imax] - abscissa[imin]
     gridspec = dict(width_ratios=[w/subplot_widths[0]
                                   for w in subplot_widths])
     # Create figure with correct number of subplots
@@ -240,37 +215,40 @@ def plot_dispersion(abscissa, freq_up, freq_down, units, title='', xticks=None,
     # Y-axis formatting, only need to format y-axis for first subplot as they
     # share the y-axis
     # Replace 1/cm with cm^-1
-    inverse_unit_index = units.find('/')
+    units_str = '{:~P}'.format(data.freqs.units)
+    inverse_unit_index = units_str.find('/')
     if inverse_unit_index > -1:
-        units = units[inverse_unit_index+1:]
-        subplots[0].set_ylabel('Energy (' + units + r'$^{-1}$)')
+        units_str = units_str[inverse_unit_index+1:]
+        subplots[0].set_ylabel('Energy (' + units_str + r'$^{-1}$)')
     else:
-        subplots[0].set_ylabel('Energy (' + units + ')')
+        subplots[0].set_ylabel('Energy (' + units_str + ')')
     subplots[0].ticklabel_format(style='sci', scilimits=(-2, 2), axis='y')
 
     # Configure each subplot
+    # Calculate x-axis (recip space) ticks and labels
+    xlabels, qpts_with_labels = recip_space_labels(data)
+    xticks = abscissa[qpts_with_labels]
     for i, ax in enumerate(subplots):
         # X-axis formatting
         # Set high symmetry point x-axis ticks/labels
-        if xticks is not None:
-            ax.set_xticks(xticks)
-            ax.xaxis.grid(True, which='major')
-            # Rotate long tick labels
-            if len(max(xlabels, key=len)) >= 11:
-                ax.set_xticklabels(xlabels, rotation=90)
-            else:
-                ax.set_xticklabels(xlabels)
+        ax.set_xticks(xticks)
+        ax.xaxis.grid(True, which='major')
+        # Rotate long tick labels
+        if len(max(xlabels, key=len)) >= 11:
+            ax.set_xticklabels(xlabels, rotation=90)
+        else:
+            ax.set_xticklabels(xlabels)
         ax.set_xlim(left=abscissa[imin[i]], right=abscissa[imax[i]])
 
         # Plot frequencies and Fermi energy
-        if len(freq_up) > 0:
+        if up:
             ax.plot(abscissa[imin[i]:imax[i] + 1],
-                    freq_up[imin[i]:imax[i] + 1], lw=1.0)
-        if len(freq_down) > 0:
+                    data.freqs[imin[i]:imax[i] + 1], lw=1.0)
+        if down and hasattr(data, 'freq_down') and len(data.freq_down) > 0:
             ax.plot(abscissa[imin[i]:imax[i] + 1],
-                    freq_down[imin[i]:imax[i] + 1], lw=1.0)
-        if len(fermi) > 0:
-            for i, ef in enumerate(fermi):
+                    data.freq_down[imin[i]:imax[i] + 1], lw=1.0)
+        if hasattr(data, 'fermi'):
+            for i, ef in enumerate(data.fermi.magnitude):
                 if i == 0:
                     ax.axhline(y=ef, ls='dashed', c='k',
                                label=r'$\epsilon_F$')
@@ -278,7 +256,7 @@ def plot_dispersion(abscissa, freq_up, freq_down, units, title='', xticks=None,
                     ax.axhline(y=ef, ls='dashed', c='k')
 
     # Only set legend for last subplot, they all have the same legend labels
-    if len(fermi) > 0:
+    if hasattr(data, 'fermi'):
         subplots[-1].legend()
 
     # Make sure axis/figure titles aren't cut off. Rect is used to leave some

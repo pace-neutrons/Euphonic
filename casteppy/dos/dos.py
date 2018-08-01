@@ -2,39 +2,31 @@ import math
 import numpy as np
 
 
-def calculate_dos(freqs, freq_down, weights, bwidth, gwidth, lorentz=False, intensities=[]):
+def calculate_dos(data, bwidth, gwidth, lorentz=False):
     """
-    Calculates a density of states with Gaussian/Lorentzian broadening from a
-    list of frequencies
+    Calculates a density of states with fixed width Gaussian/Lorentzian 
+    broadening from a PhononData or BandsData object and sets the bins and
+    dos/dos_down attributes
 
     Parameters
     ----------
-    freqs : list of floats
-        M x N list of spin up band frequencies, where M = number of q-points
-        and N = number of bands, can be empty if only spin down frequencies are
-        present
-    freq_down : list of floats
-        M x N list of spin down band frequencies, where M = number of q-points
-        and N = number of bands, can be empty if only spin up frequencies are
-        present
-    weights : list of floats
-        List of length M containing the weight for each q-point, where
-        M = number of q-points
+    data: PhononData or BandsData object
+        Data object containing the frequencies, weights, and optionally IR
+        intensities for bin weighting
     bwidth : float
         Width of each bin for the DOS, in the same units as freqs/freq_down
     gwidth : float
         FWHM of Gaussian/Lorentzian for broadening the DOS bins. Set to 0 if
         no broadening is desired
-    lorentz : boolean
+    lorentz : boolean, optional
         Whether to use a Lorentzian or Gaussian broadening function.
         Default: False
-    intensities : list of floats
-        M x N list of IR intensities for each frequency, is used to weight the
-        DOS binning in addition to the weights parameter, where M = number of
-        q-points and N = number of bands. Default: []
 
     Returns
     -------
+    bins : list of floats
+        One dimensional list of the energy bin edges, in the same units as
+        freqs/freq_down and determined by the max/min values of freqs/freq_down
     dos : list of floats
         L - 1 length list of the spin up density of states for each bin, where
         L is the lengh of the bins return value. Can be empty if only spin down
@@ -43,35 +35,33 @@ def calculate_dos(freqs, freq_down, weights, bwidth, gwidth, lorentz=False, inte
         L - 1 length list of the spin down density of states for each bin,
         where L is the lengh of the bins return value. Can be empty if only
         spin up frequencies are present
-    bins : list of floats
-        One dimensional list of the energy bin edges, in the same units as
-        freqs/freq_down and determined by the max/min values of freqs/freq_down
-    """
 
-    n_branches = len(freqs[0]) if len(freqs) > 0 else len(freq_down[0])
+    """
     hist = np.array([])
     hist_down = np.array([])
     dos = np.array([])
     dos_down = np.array([])
 
     # Calculate bin edges
-    all_freqs = np.append(freqs, freq_down)
+    if hasattr(data, 'freq_down') and len(data.freq_down) > 0:
+        all_freqs = np.append(data.freqs, data.freq_down)
+    else:
+        all_freqs = data.freqs
     freq_max = np.amax(all_freqs)
     freq_min = np.amin(all_freqs)
     bins = np.arange(freq_min, freq_max + bwidth, bwidth)
 
     # Calculate weight for each q-point and branch
-    freq_weights = np.repeat(np.array(weights)[:,np.newaxis],
-                             n_branches, axis=1)
-    if len(intensities) > 0:
-        freq_weights *= intensities
+    freq_weights = np.repeat(np.array(data.weights)[:,np.newaxis],
+                             data.n_branches, axis=1)
+    if hasattr(data, 'ir') and len(data.ir) > 0:
+        freq_weights *= data.ir
 
     # Bin frequencies
-    if len(freqs) > 0:
-        hist, bin_edges = np.histogram(freqs, bins,
-                                       weights=freq_weights)
-    if len(freq_down) > 0:
-        hist_down, bin_edges = np.histogram(freq_down, bins,
+    hist, bin_edges = np.histogram(data.freqs, bins,
+                                   weights=freq_weights)
+    if hasattr(data, 'freq_down') and len(data.freq_down) > 0:
+        hist_down, bin_edges = np.histogram(data.freq_down, bins,
                                             weights=freq_weights)
 
     # Only broaden if broadening is more than bin width
@@ -108,6 +98,13 @@ def calculate_dos(freqs, freq_down, weights, bwidth, gwidth, lorentz=False, inte
     else:
         dos = hist
         dos_down = hist_down
+
+    bins = bins*data.freqs.units
+
+    data.dos = dos
+    data.dos_bins = bins
+    if hasattr(data, 'freq_down'):
+        data.dos_down = dos_down
 
     return dos, dos_down, bins
 

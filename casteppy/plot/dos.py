@@ -2,31 +2,24 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-def plot_dos(dos, dos_down, bins, units, title='', fermi=[], mirror=False):
+def plot_dos(data, title='', mirror=False, up=True, down=True):
     """
     Creates a Matplotlib figure of the density of states
 
     Parameters
     ----------
-    dos : list of floats
-        L - 1 length list of the spin up density of states for each bin, where
-        L is the lengh of the bins parameter. Can be empty if only spin down
-        frequencies are present
-    dos_down : list of floats
-        L - 1 length list of the spin down density of states for each bin,
-        where L is the lengh of the bins parameter. Can be empty if only spin
-        up frequencies are present
-    bins : list of floats
-        One dimensional list of the energy bin edges
-    units : string
-        String specifying the energy bin units. Used for axis labels
+    data : PhononData or BandsData object
+        Data object for which calculate_dos has been called, containing dos
+        and dos_bins attributes for plotting
     title : string
         The figure title. Default: ''
-    fermi : list of floats
-        1 or 2 length list specifying the fermi energy/energies. Default: []
     mirror : boolean
         Whether to reflect the dos_down frequencies in the x-axis.
         Default: False
+    up : boolean, optional
+        Whether to plot spin up frequencies (if applicable). Default: True
+    down : boolean, optional
+        Whether to plot spin down frequencies (if applicable). Default: True
 
     Returns
     -------
@@ -41,37 +34,41 @@ def plot_dos(dos, dos_down, bins, units, title='', fermi=[], mirror=False):
 
     # X-axis label formatting
     # Replace 1/cm with cm^-1
-    inverse_unit_index = units.find('/')
+    units_str = '{:~P}'.format(data.dos_bins.units)
+    inverse_unit_index = units_str.find('/')
     if inverse_unit_index > -1:
-        units = units[inverse_unit_index+1:]
-        ax.set_xlabel('Energy (' + units + r'$^{-1}$)')
+        units_str = units_str[inverse_unit_index+1:]
+        ax.set_xlabel('Energy (' + units_str + r'$^{-1}$)')
     else:
-        ax.set_xlabel('Energy (' + units + ')')
+        ax.set_xlabel('Energy (' + units_str + ')')
     ax.set_ylabel('g(E)')
     ax.minorticks_on()
 
     # Calculate bin centres
-    bwidth = bins[1] - bins[0]
-    bin_centres = [b + bwidth/2 for b in bins[:-1]]
+    bwidth = data.dos_bins[1] - data.dos_bins[0]
+    #bin_centres = [b + bwidth/2 for b in data.dos_bins[:-1]]
+    #print bin_centres
+    bin_centres = data.dos_bins[:-1] + bwidth
 
     # Plot dos and Fermi energy
-    if len(dos) > 0:
-        ax.plot(bin_centres, dos, label='alpha', lw=1.0)
-    if len(dos_down) > 0:
+    if up:
+        ax.plot(bin_centres, data.dos, label='alpha', lw=1.0)
+    if down and hasattr(data, 'dos_down') and len(data.dos_down) > 0:
         if mirror:
-            ax.plot(bin_centres, np.negative(dos_down), label='beta', lw=1.0)
+            ax.plot(bin_centres, np.negative(data.dos_down), label='beta',
+                    lw=1.0)
             ax.axhline(y=0, c='k', lw=1.0)
         else:
-            ax.plot(bin_centres, dos_down, label='beta', lw=1.0)
-    if len(fermi) > 0:
-        for i, ef in enumerate(fermi):
+            ax.plot(bin_centres, data.dos_down, label='beta', lw=1.0)
+    if hasattr(data, 'fermi'):
+        for i, ef in enumerate(data.fermi.magnitude):
             if i == 0:
                 ax.axvline(x=ef, ls='dashed', c='k', label=r'$\epsilon_F$')
             else:
                 ax.axvline(x=ef, ls='dashed', c='k')
     ax.legend()
     if not mirror:
-        ax.set_ylim(bottom=0) # Need to set limits after plotting the data
+        ax.set_ylim(bottom=0)  # Need to set limits after plotting the data
     plt.tight_layout()
 
     return fig
