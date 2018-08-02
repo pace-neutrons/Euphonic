@@ -1,23 +1,150 @@
 import unittest
 import numpy.testing as npt
-from pint import UnitRegistry
-from casteppy.parsers.phonon import read_dot_phonon
-from casteppy.dispersion.dispersion import reorder_freqs, direction_changed
+import numpy as np
+from casteppy.data.phonon import PhononData
 
+
+class TestReadInputFileNaHPhonon(unittest.TestCase):
+
+    def setUp(self):
+        # Create trivial function object so attributes can be assigned to it
+        expctd_data = lambda:0
+        expctd_data.cell_vec = np.array([[0.000000, 2.399500, 2.399500],
+                                         [2.399500, 0.000000, 2.399500],
+                                         [2.399500, 2.399500, 0.000000]])
+        expctd_data.ion_r = np.array([[0.500000, 0.500000, 0.500000],
+                                        [0.000000, 0.000000, 0.000000]])
+        expctd_data.ion_type = np.array(['H', 'Na'])
+        expctd_data.qpts = np.array([[-0.250000, -0.250000, -0.250000],
+                                     [-0.250000, -0.500000, -0.500000]])
+        expctd_data.weights = np.array([0.125, 0.375])
+        expctd_data.freqs = np.array([[91.847109, 91.847109, 166.053018,
+                                       564.508299, 564.508299, 884.068976],
+                                      [132.031513, 154.825631, 206.213940,
+                                       642.513551, 690.303338, 832.120011]])
+        expctd_data.freq_down = np.array([])
+        expctd_data.eigenvecs = np.array([[[-0.061613336996 - 0.060761142686*1j,
+                                            -0.005526816216 - 0.006379010526*1j,
+                                             0.067140153211 + 0.067140153211*1j],
+                                           [ 0.666530886823 - 0.004641603630*1j,
+                                             0.064846864124 + 0.004641603630*1j,
+                                            -0.731377750947 + 0.000000000000*1j],
+                                           [-0.043088481348 - 0.041294487960*1j,
+                                             0.074981829953 + 0.073187836565*1j,
+                                            -0.031893348605 - 0.031893348605*1j],
+                                           [ 0.459604449490 - 0.009771253020*1j,
+                                            -0.807028225834 + 0.009771253020*1j,
+                                             0.347423776344 + 0.000000000000*1j],
+                                           [-0.062303354995 - 0.062303354995*1j,
+                                            -0.062303354995 - 0.062303354995*1j,
+                                            -0.062303354995 - 0.062303354995*1j],
+                                           [ 0.570587344099 - 0.000000000000*1j,
+                                             0.570587344099 - 0.000000000000*1j,
+                                             0.570587344099 + 0.000000000000*1j],
+                                           [ 0.286272749085 + 0.286272749085*1j,
+                                             0.286272749085 + 0.286272749085*1j,
+                                            -0.572545498170 - 0.572545498170*1j],
+                                           [ 0.052559422840 - 0.000000000000*1j,
+                                             0.052559422840 + 0.000000000000*1j,
+                                            -0.105118845679 + 0.000000000000*1j],
+                                           [-0.459591797004 + 0.529611084985*1j,
+                                             0.459591797004 - 0.529611084985*1j,
+                                             0.000000000000 - 0.000000000000*1j],
+                                           [ 0.006427739587 + 0.090808385909*1j,
+                                            -0.006427739587 - 0.090808385909*1j,
+                                             0.000000000000 + 0.000000000000*1j],
+                                           [-0.403466180272 - 0.403466180272*1j,
+                                            -0.403466180272 - 0.403466180272*1j,
+                                            -0.403466180272 - 0.403466180272*1j],
+                                           [-0.088110249616 - 0.000000000000*1j,
+                                            -0.088110249616 - 0.000000000000*1j,
+                                            -0.088110249616 + 0.000000000000*1j]],
+                                          [[ 0.000000000000 + 0.000000000000*1j,
+                                             0.031866260273 - 0.031866260273*1j,
+                                            -0.031866260273 + 0.031866260273*1j],
+                                           [-0.000000000000 - 0.000000000000*1j,
+                                            -0.705669244698 + 0.000000000000*1j,
+                                             0.705669244698 + 0.000000000000*1j],
+                                           [-0.001780156891 + 0.001780156891*1j,
+                                            -0.012680513033 + 0.012680513033*1j,
+                                            -0.012680513033 + 0.012680513033*1j],
+                                           [-0.582237273385 + 0.000000000000*1j,
+                                             0.574608665929 - 0.000000000000*1j,
+                                             0.574608665929 + 0.000000000000*1j],
+                                           [-0.021184502078 + 0.021184502078*1j,
+                                            -0.011544287510 + 0.011544287510*1j,
+                                            -0.011544287510 + 0.011544287510*1j],
+                                           [ 0.812686635458 - 0.000000000000*1j,
+                                             0.411162853378 + 0.000000000000*1j,
+                                             0.411162853378 + 0.000000000000*1j],
+                                           [ 0.000000000000 + 0.000000000000*1j,
+                                            -0.498983508201 + 0.498983508201*1j,
+                                             0.498983508201 - 0.498983508201*1j],
+                                           [ 0.000000000000 + 0.000000000000*1j,
+                                            -0.045065697460 - 0.000000000000*1j,
+                                             0.045065697460 + 0.000000000000*1j],
+                                           [ 0.400389305548 - 0.400389305548*1j,
+                                            -0.412005183792 + 0.412005183792*1j,
+                                            -0.412005183792 + 0.412005183792*1j],
+                                           [ 0.009657696420 - 0.000000000000*1j,
+                                            -0.012050954709 + 0.000000000000*1j,
+                                            -0.012050954709 + 0.000000000000*1j],
+                                           [-0.582440084400 + 0.582440084400*1j,
+                                            -0.282767859813 + 0.282767859813*1j,
+                                            -0.282767859813 + 0.282767859813*1j],
+                                           [-0.021140457173 + 0.000000000000*1j,
+                                            -0.024995270201 - 0.000000000000*1j,
+                                            -0.024995270201 + 0.000000000000*1j]]])
+        self.expctd_data = expctd_data
+
+        self.seedname = 'NaH'
+        self.path = 'test/data'
+        data = PhononData(self.seedname, self.path)
+        data.convert_e_units('1/cm')
+        data.convert_l_units('angstrom')
+        self.data = data
+
+    def test_cell_vec_read_nah_phonon(self):
+        npt.assert_allclose(self.data.cell_vec,
+                               self.expctd_data.cell_vec)
+
+    def test_ion_r_read_nah_phonon(self):
+        npt.assert_array_equal(self.data.ion_r,
+                               self.expctd_data.ion_r)
+
+    def test_ion_type_read_nah_phonon(self):
+        npt.assert_array_equal(self.data.ion_type,
+                               self.expctd_data.ion_type)
+
+    def test_qpts_read_nah_phonon(self):
+        npt.assert_array_equal(self.data.qpts,
+                               self.expctd_data.qpts)
+
+    def test_weights_read_nah_phonon(self):
+        npt.assert_array_equal(self.data.weights,
+                               self.expctd_data.weights)
+
+    def test_freqs_read_nah_phonon(self):
+        npt.assert_allclose(self.data.freqs,
+                               self.expctd_data.freqs)
+
+    def test_eigenvecs_read_nah_phonon(self):
+        npt.assert_array_equal(self.data.eigenvecs,
+                               self.expctd_data.eigenvecs)
+
+    def test_read_eigenvecs_false(self):
+        data = PhononData(self.seedname, self.path, read_eigenvecs=False)
+        npt.assert_array_equal(data.eigenvecs, [])
 
 class TestReorderFreqs(unittest.TestCase):
 
     def test_reorder_freqs_NaH(self):
-        # This test reads eigenvector data from file. Not good practice but
-        # testing reordering requires at least 3 q-points and it's too
-        # cumbersome to explicity specify all the eigenvectors
-        ureg = UnitRegistry()
-        filename = 'test/data/NaH-reorder-test.phonon'
-        with open(filename, 'r') as f:
-            (cell_vec, ion_pos, ion_type, qpts, weights, freqs, i_intens,
-                r_intens, eigenvecs) = read_dot_phonon(
-                    f, ureg, read_eigenvecs=True)
-        expected_reordered_freqs = [[ 91.847109,  91.847109, 166.053018,
+        seedname = 'NaH-reorder-test'
+        path = 'test/data'
+        data = PhononData(seedname, path)
+        data.convert_e_units('1/cm')
+        data.reorder_freqs()
+        expected_reordered_freqs = np.array([[ 91.847109,  91.847109, 166.053018,
                                      564.508299, 564.508299, 884.068976],
                                     [154.825631, 132.031513, 206.21394,
                                      642.513551, 690.303338, 832.120011],
@@ -33,24 +160,19 @@ class TestReorderFreqs(unittest.TestCase):
                                     [154.308477, 181.239973, 181.239973,
                                      688.50786,  761.918164, 761.918164],
                                     [124.976823, 124.976823, 238.903818,
-                                     593.189877, 593.189877, 873.903056]]
-        npt.assert_array_equal(reorder_freqs(freqs, qpts, eigenvecs),
-                                expected_reordered_freqs)
+                                     593.189877, 593.189877, 873.903056]])
+        npt.assert_allclose(data.freqs, expected_reordered_freqs)
 
 
     def test_reorder_freqs_LZO(self):
-        # This test reads eigenvector data from file. Not good practice but
-        # testing reordering requires at least 3 q-points and it's too
-        # cumbersome to explicity specify all the eigenvectors
-        ureg = UnitRegistry()
-        filename = 'test/data/La2Zr2O7.phonon'
-        with open(filename, 'r') as f:
-            (cell_vec, ion_pos, ion_type, qpts, weights, freqs, i_intens,
-                r_intens, eigenvecs) = read_dot_phonon(
-                    f, ureg, read_eigenvecs=True)
+        seedname = 'La2Zr2O7'
+        path = 'test/data'
+        data = PhononData(seedname, path)
+        data.convert_e_units('1/cm')
+        data.reorder_freqs()
 
         expected_reordered_freqs =\
-        [[65.062447,65.062447,70.408176,76.847761,76.847761,85.664054,
+        np.array([[65.062447,65.062447,70.408176,76.847761,76.847761,85.664054,
          109.121893,109.121893,117.920003,119.363588,128.637195,128.637195,
          155.905812,155.905812,160.906969,170.885818,172.820917,174.026075,
          178.344487,183.364621,183.364621,199.25343,199.25343,222.992334,
@@ -165,22 +287,5 @@ class TestReorderFreqs(unittest.TestCase):
          367.331006,398.738183,398.738183,398.433921,407.157219,407.157219,
          349.637392,413.438689,479.806857,479.806857,463.608166,535.889622,
          535.889622,543.524255,550.815232,544.325882,544.325882,541.757933,
-         552.630089,552.630089,508.677347,737.533584,736.042236,736.042236]]
-        npt.assert_array_equal(reorder_freqs(freqs, qpts, eigenvecs),
-                                expected_reordered_freqs)
-
-
-class TestDirectionChanged(unittest.TestCase):
-
-    def test_direction_changed_nah(self):
-        qpts = [[-0.25, -0.25, -0.25],
-                [-0.25, -0.50, -0.50],
-                [ 0.00, -0.25, -0.25],
-                [ 0.00,  0.00,  0.00],
-                [ 0.00, -0.50, -0.50],
-                [ 0.25,  0.00, -0.25],
-                [ 0.25, -0.50, -0.25],
-                [-0.50, -0.50, -0.50]]
-        expected_direction_changed = [True, True, False, True, True, True]
-        npt.assert_equal(direction_changed(qpts),
-                         expected_direction_changed)
+         552.630089,552.630089,508.677347,737.533584,736.042236,736.042236]])
+        npt.assert_allclose(data.freqs, expected_reordered_freqs)

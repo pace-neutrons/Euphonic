@@ -77,7 +77,6 @@ def recip_space_labels(data):
     # of fractional points
     sym_label_to_coords = {}
     if hasattr(data, 'ion_r'):
-        print('has ion_r')
         _, ion_num = np.unique(data.ion_type, return_inverse=True)
         cell = (data.cell_vec, data.ion_r, ion_num)
         sym_label_to_coords = seekpath.get_path(cell)["point_coords"]

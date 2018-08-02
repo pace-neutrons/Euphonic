@@ -16,7 +16,8 @@ def calculate_dos(data, bwidth, gwidth, lorentz=False):
     bwidth : float
         Width of each bin for the DOS, in the same units as freqs/freq_down
     gwidth : float
-        FWHM of Gaussian/Lorentzian for broadening the DOS bins. Set to 0 if
+        FWHM of Gaussian/Lorentzian for broadening the DOS bins, in the same
+        units as freqs/freq_down. Set to 0 if
         no broadening is desired
     lorentz : boolean, optional
         Whether to use a Lorentzian or Gaussian broadening function.

@@ -1,15 +1,19 @@
 import unittest
 import numpy as np
 import numpy.testing as npt
+from casteppy.util import set_up_unit_registry
 from casteppy.dos.dos import calculate_dos
 
 
 class TestCalculateDos(unittest.TestCase):
 
     def setUp(self):
+        ureg = set_up_unit_registry()
+
         # Create trivial function object so attributes can be assigned to it
         iron = lambda:0
-        iron.freqs = [[0.61994279, 0.71965754, 3.36969496,
+        data = lambda:0
+        data.freqs = np.array([[0.61994279, 0.71965754, 3.36969496,
                        4.19005014, 4.6599548, 11.76947015],
                       [0.75129323, 0.71971687, 3.38582288,
                        3.97216995, 4.55217895, 9.65011675],
@@ -28,8 +32,8 @@ class TestCalculateDos(unittest.TestCase):
                       [4.44163652, 9.09726117, 1.03032365,
                        3.73380313, 2.10271909, 1.6011567],
                       [4.38372743, 7.62127765, 0.80563191,
-                       3.47965126, 3.32296295, 1.06940083]]
-        iron.freq_down = [[2.2075221, 2.27080053, 5.22052453,
+                       3.47965126, 3.32296295, 1.06940083]])*ureg.hartree
+        data.freq_down = np.array([[2.2075221, 2.27080053, 5.22052453,
                            6.19431463, 6.77898358, 12.6564407],
                           [2.38881141, 2.18598238, 5.24878655,
                            5.93691943, 6.66050576, 10.67070688],
@@ -48,14 +52,16 @@ class TestCalculateDos(unittest.TestCase):
                           [10.33929618, 5.76769511, 2.47484074,
                            6.5454329,  3.77890382, 3.08910234],
                           [8.88541321, 5.37048973, 2.08710084,
-                           6.46498163, 5.18913947, 2.76060135]]
-        iron.weights = [0.01388889, 0.01388889, 0.00347222, 0.02777778,
+                           6.46498163, 5.18913947, 2.76060135]])*ureg.hartree
+        data.weights = np.array([0.01388889, 0.01388889, 0.00347222, 0.02777778,
                         0.01388889, 0.01388889, 0.01388889, 0.01388889,
-                        0.02777778, 0.01388889]
+                        0.02777778, 0.01388889])
+        data.n_branches = 6
+        iron.data = data
         iron.bwidth = 0.05
         iron.gwidth = 0.1
         iron.expected_dos_gauss =\
-        [2.20437428e-01, 4.48772892e-01, 7.52538648e-01, 5.32423726e-01,
+        np.array([2.20437428e-01, 4.48772892e-01, 7.52538648e-01, 5.32423726e-01,
          3.02050060e-01, 2.13306464e-01, 1.39663554e-01, 1.63610442e-01,
          2.69621331e-01, 4.72982611e-01, 3.91689064e-01, 2.20437459e-01,
          8.23129014e-02, 7.36543547e-02, 1.30734252e-01, 6.52407077e-02,
@@ -115,9 +121,9 @@ class TestCalculateDos(unittest.TestCase):
          3.88852984e-09, 0.00000000e+00, 0.00000000e+00, 0.00000000e+00,
          0.00000000e+00, 0.00000000e+00, 0.00000000e+00, 0.00000000e+00,
          0.00000000e+00, 0.00000000e+00, 0.00000000e+00, 0.00000000e+00,
-         0.00000000e+00, 0.00000000e+00]
+         0.00000000e+00, 0.00000000e+00])
         iron.expected_dos_down_gauss =\
-        [0.00000000e+00, 0.00000000e+00, 0.00000000e+00, 0.00000000e+00,
+        np.array([0.00000000e+00, 0.00000000e+00, 0.00000000e+00, 0.00000000e+00,
          0.00000000e+00, 0.00000000e+00, 0.00000000e+00, 0.00000000e+00,
          0.00000000e+00, 0.00000000e+00, 0.00000000e+00, 0.00000000e+00,
          0.00000000e+00, 0.00000000e+00, 0.00000000e+00, 0.00000000e+00,
@@ -177,9 +183,9 @@ class TestCalculateDos(unittest.TestCase):
          0.00000000e+00, 0.00000000e+00, 0.00000000e+00, 0.00000000e+00,
          0.00000000e+00, 0.00000000e+00, 0.00000000e+00, 1.89869621e-12,
          3.88852984e-09, 1.99092728e-06, 2.54838692e-04, 8.15483814e-03,
-         6.52387051e-02, 1.30477410e-01]
+         6.52387051e-02, 1.30477410e-01])
         iron.expected_dos_lorentz =\
-        [2.36213697e-01, 3.40960260e-01, 5.59791268e-01, 4.05306050e-01,
+        np.array([2.36213697e-01, 3.40960260e-01, 5.59791268e-01, 4.05306050e-01,
          3.00598745e-01, 2.43092104e-01, 1.84501806e-01, 2.12440899e-01,
          2.41422709e-01, 3.74553522e-01, 3.00602608e-01, 2.18331410e-01,
          1.26875982e-01, 1.06125833e-01, 1.33009500e-01, 8.27211557e-02,
@@ -239,9 +245,9 @@ class TestCalculateDos(unittest.TestCase):
          3.64453449e-03, 2.62239101e-03, 1.99069950e-03, 1.53756987e-03,
          1.24786384e-03, 1.03781587e-03, 8.80373037e-04, 6.88366229e-04,
          5.60123022e-04, 4.87189378e-04, 4.28047121e-04, 3.44044435e-04,
-         3.04894551e-04, 2.72059754e-04]
+         3.04894551e-04, 2.72059754e-04])
         iron.expected_dos_down_lorentz =\
-        [0.0013475,  0.00146787, 0.00159829, 0.00170474, 0.00182271,
+        np.array([0.0013475,  0.00146787, 0.00159829, 0.00170474, 0.00182271,
          0.00195399, 0.00217147, 0.00241002, 0.00260242, 0.00282077,
          0.00307032, 0.0033578, 0.00369198, 0.00408453, 0.00462199,
          0.00518793, 0.00588205, 0.00675157, 0.00794075, 0.00943199,
@@ -289,101 +295,55 @@ class TestCalculateDos(unittest.TestCase):
          0.00226771, 0.00209352, 0.00196792, 0.00188558, 0.00184495,
          0.00184827, 0.00190246, 0.00202124, 0.00222951, 0.00257251,
          0.00313605, 0.00409552, 0.0058497,  0.00944888, 0.0182532,
-         0.0447449,  0.08892355]
+         0.0447449,  0.08892355])
 
         self.iron = iron
 
 
-    def test_dos_iron_gauss_both(self):
+    def test_dos_up_iron_gauss(self):
         iron = self.iron
-        dos = calculate_dos(
-            iron.freqs, iron.freq_down, iron.weights, iron.bwidth,
-            iron.gwidth, lorentz=False)[0]
-        npt.assert_allclose(dos, iron.expected_dos_gauss)
+        calculate_dos(iron.data, iron.bwidth, iron.gwidth, lorentz=False)
+        npt.assert_allclose(iron.data.dos, iron.expected_dos_gauss)
 
-    def test_dos_iron_gauss_both_ir(self):
+    def test_dos_down_iron_gauss(self):
+        iron = self.iron
+        calculate_dos(iron.data, iron.bwidth, iron.gwidth, lorentz=False)
+        npt.assert_allclose(iron.data.dos_down, iron.expected_dos_down_gauss)
+
+    def test_dos_up_iron_gauss_ir(self):
         iron = self.iron
         ir_factor = 2.0
-        ir = np.full(np.array(iron.freqs).shape, ir_factor)
-        dos = calculate_dos(
-            iron.freqs, iron.freq_down, iron.weights, iron.bwidth,
-            iron.gwidth, lorentz=False, intensities=ir)[0]
-        npt.assert_allclose(dos/ir_factor, iron.expected_dos_gauss)
+        iron.data.ir = np.full(iron.data.freqs.shape, ir_factor)
+        calculate_dos(iron.data, iron.bwidth, iron.gwidth, lorentz=False)
+        npt.assert_allclose(iron.data.dos/ir_factor, iron.expected_dos_gauss)
 
-    def test_dos_iron_gauss_down(self):
-        iron = self.iron
-        dos = calculate_dos(
-            [], iron.freq_down, iron.weights, iron.bwidth,
-            iron.gwidth, lorentz=False)[0]
-        self.assertEqual(dos.size, 0)
-
-    def test_dos_down_iron_gauss_both(self):
-        iron = self.iron
-        dos_down = calculate_dos(
-            iron.freqs, iron.freq_down, iron.weights, iron.bwidth,
-            iron.gwidth, lorentz=False)[1]
-        npt.assert_allclose(dos_down, iron.expected_dos_down_gauss)
-
-    def test_dos_down_iron_gauss_both_ir(self):
+    def test_dos_down_iron_gauss_ir(self):
         iron = self.iron
         ir_factor = 2.0
-        ir = np.full(np.array(iron.freq_down).shape, ir_factor)
-        dos_down = calculate_dos(
-            iron.freqs, iron.freq_down, iron.weights, iron.bwidth,
-            iron.gwidth, lorentz=False, intensities=ir)[1]
-        npt.assert_allclose(dos_down/ir_factor, iron.expected_dos_down_gauss)
+        iron.data.ir = np.full(iron.data.freq_down.shape, ir_factor)
+        calculate_dos(iron.data, iron.bwidth, iron.gwidth, lorentz=False)
+        npt.assert_allclose(iron.data.dos_down/ir_factor, iron.expected_dos_down_gauss)
 
-    def test_dos_down_iron_gauss_up(self):
+    def test_dos_iron_lorentz(self):
         iron = self.iron
-        dos_down = calculate_dos(
-            iron.freqs, [], iron.weights, iron.bwidth,
-            iron.gwidth, lorentz=False)[1]
-        self.assertEqual(dos_down.size, 0)
+        calculate_dos(iron.data, iron.bwidth, iron.gwidth, lorentz=True)
+        npt.assert_allclose(iron.data.dos, iron.expected_dos_lorentz)
 
-    def test_dos_iron_lorentz_both(self):
+    def test_dos_down_iron_lorentz(self):
         iron = self.iron
-        dos = calculate_dos(
-            iron.freqs, iron.freq_down, iron.weights, iron.bwidth,
-            iron.gwidth, lorentz=True)[0]
-        npt.assert_allclose(dos, iron.expected_dos_lorentz)
+        calculate_dos(iron.data, iron.bwidth, iron.gwidth, lorentz=True)
+        npt.assert_allclose(iron.data.dos_down, iron.expected_dos_down_lorentz, atol=1e-08)
 
-    def test_dos_iron_lorentz_both_ir(self):
+    def test_dos_iron_lorentz_ir(self):
         iron = self.iron
         ir_factor = 2.0
-        ir = np.full(np.array(iron.freq_down).shape, ir_factor)
-        dos = calculate_dos(
-            iron.freqs, iron.freq_down, iron.weights, iron.bwidth,
-            iron.gwidth, lorentz=True, intensities=ir)[0]
-        npt.assert_allclose(dos/ir_factor, iron.expected_dos_lorentz)
+        iron.data.ir = np.full(iron.data.freqs.shape, ir_factor)
+        calculate_dos(iron.data, iron.bwidth, iron.gwidth, lorentz=True)
+        npt.assert_allclose(iron.data.dos/ir_factor, iron.expected_dos_lorentz)
 
-    def test_dos_iron_lorentz_down(self):
-        iron = self.iron
-        dos = calculate_dos(
-            [], iron.freq_down, iron.weights, iron.bwidth,
-            iron.gwidth, lorentz=True)[0]
-        self.assertEqual(dos.size, 0)
-
-    def test_dos_down_iron_lorentz_both(self):
-        iron = self.iron
-        dos_down = calculate_dos(
-            iron.freqs, iron.freq_down, iron.weights, iron.bwidth,
-            iron.gwidth, lorentz=True)[1]
-        npt.assert_allclose(
-            dos_down, iron.expected_dos_down_lorentz, atol=1e-8)
-
-    def test_dos_down_iron_lorentz_both_ir(self):
+    def test_dos_down_iron_lorentz_ir(self):
         iron = self.iron
         ir_factor = 2.0
-        ir = np.full(np.array(iron.freq_down).shape, ir_factor)
-        dos_down = calculate_dos(
-            iron.freqs, iron.freq_down, iron.weights, iron.bwidth,
-            iron.gwidth, lorentz=True, intensities=ir)[1]
-        npt.assert_allclose(
-            dos_down/ir_factor, iron.expected_dos_down_lorentz, atol=1e-8)
-
-    def test_dos_down_iron_lorentz_up(self):
-        iron = self.iron
-        dos_down = calculate_dos(
-            iron.freqs, [], iron.weights, iron.bwidth,
-            iron.gwidth, lorentz=True)[1]
-        self.assertEqual(dos_down.size, 0)
+        iron.data.ir = np.full(iron.data.freq_down.shape, ir_factor)
+        calculate_dos(iron.data, iron.bwidth, iron.gwidth, lorentz=True)
+        npt.assert_allclose(iron.data.dos_down/ir_factor, iron.expected_dos_down_lorentz, atol=1e-08)

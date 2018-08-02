@@ -20,12 +20,12 @@ class PhononData(Data):
         Number of q-points in the .phonon file
     cell_vec : list of floats
         3 x 3 list of the unit cell vectors. Default units Angstroms.
-    ion_pos : list of floats
+    ion_r : list of floats
         n_ions x 3 list of the fractional position of each ion within the
         unit cell
     ion_type : list of strings
         n_ions length list of the chemical symbols of each ion in the unit
-        cell. Ions are in the same order as in ion_pos
+        cell. Ions are in the same order as in ion_r
     qpts : list of floats
         M x 3 list of q-point coordinates, where M = number of q-points
     weights : list of floats
@@ -111,7 +111,7 @@ class PhononData(Data):
         read_raman : boolean
             Whether to read and store Raman intensities from the .phonon file
         """
-        (n_ions, n_branches, n_qpts, cell_vec, ion_pos,
+        (n_ions, n_branches, n_qpts, cell_vec, ion_r,
         ion_type) = self._read_phonon_header(f)
 
         qpts = np.zeros((n_qpts, 3))
@@ -136,14 +136,19 @@ class PhononData(Data):
 
             freq_lines = [f.readline().split() for i in range(n_branches)]
             freqs[qpt_num, :] = [float(line[1]) for line in freq_lines]
-            if read_ir and len(line) > 2:
+            ir_index = 2
+            raman_index = 3
+            if np.all(qpts[qpt_num] == 0.):
+                ir_index += 1
+                raman_index += 1
+            if read_ir and len(freq_lines[0]) > ir_index:
                 if first_qpt:
                     ir = np.zeros((n_qpts, n_branches))
-                ir[qpt_num, :] = [float(line[2]) for line in freq_lines]
-            if read_raman and len(line) > 3:
+                ir[qpt_num, :] = [float(line[ir_index]) for line in freq_lines]
+            if read_raman and len(freq_lines[0]) > raman_index:
                 if first_qpt:
                      raman = np.zeros((n_qpts, n_branches))
-                raman[qpt_num, :] = [float(line[3]) for line in freq_lines]
+                raman[qpt_num, :] = [float(line[raman_index]) for line in freq_lines]
 
             if read_eigenvecs:
                 [f.readline() for x in range(2)]  # Skip 2 label lines
@@ -170,7 +175,7 @@ class PhononData(Data):
         self.n_branches = n_branches
         self.n_qpts = n_qpts
         self.cell_vec = cell_vec
-        self.ion_pos = ion_pos
+        self.ion_r = ion_r
         self.ion_type = ion_type
         self.qpts = qpts
         self.weights = weights
@@ -199,12 +204,12 @@ class PhononData(Data):
             The number of q-points in the .phonon file
         cell_vec : list of floats
             3 x 3 list of the unit cell vectors
-        ion_pos : list of floats
+        ion_r : list of floats
             n_ions x 3 list of the fractional position of each ion within the
             unit cell
         ion_type : list of strings
             n_ions length list of the chemical symbols of each ion in the unit
-            cell. Ions are in the same order as in ion_pos
+            cell. Ions are in the same order as in ion_r
         """
         f.readline()  # Skip BEGIN header
         n_ions = int(f.readline().split()[3])
@@ -215,11 +220,11 @@ class PhononData(Data):
             for i in range(3)]
         f.readline()  # Skip fractional co-ordinates label
         ion_info = [f.readline().split() for i in range(n_ions)]
-        ion_pos = [[float(x) for x in y[1:4]] for y in ion_info]
+        ion_r = [[float(x) for x in y[1:4]] for y in ion_info]
         ion_type = [x[4] for x in ion_info]
         f.readline()  # Skip END header line
 
-        return n_ions, n_branches, n_qpts, cell_vec, ion_pos, ion_type
+        return n_ions, n_branches, n_qpts, cell_vec, ion_r, ion_type
 
 
     def reorder_freqs(self):

@@ -2,7 +2,8 @@ import unittest
 import math
 import numpy.testing as npt
 from pint import UnitRegistry
-from casteppy.util import set_up_unit_registry, reciprocal_lattice
+from casteppy.util import (set_up_unit_registry, reciprocal_lattice,
+                           direction_changed)
 
 
 class TestSetUpUnitRegistry(unittest.TestCase):
@@ -47,3 +48,18 @@ class TestReciprocalLattice(unittest.TestCase):
                           [1.15996339, 0., 1.15996339],
                           [1.15996339, 1.15996339, 0.]]
         npt.assert_allclose(recip, expected_recip)
+
+class TestDirectionChanged(unittest.TestCase):
+
+    def test_direction_changed_nah(self):
+        qpts = [[-0.25, -0.25, -0.25],
+                [-0.25, -0.50, -0.50],
+                [ 0.00, -0.25, -0.25],
+                [ 0.00,  0.00,  0.00],
+                [ 0.00, -0.50, -0.50],
+                [ 0.25,  0.00, -0.25],
+                [ 0.25, -0.50, -0.25],
+                [-0.50, -0.50, -0.50]]
+        expected_direction_changed = [True, True, False, True, True, True]
+        npt.assert_equal(direction_changed(qpts),
+                         expected_direction_changed)
