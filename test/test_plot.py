@@ -131,27 +131,33 @@ class TestPlotDispersion(unittest.TestCase):
         ureg = set_up_unit_registry()
         # Input values
         data = lambda:0
+        data.qpts = np.array([[0.00, 0.00, 0.00],
+                              [0.50, 0.50, 0.50],
+                              [0.50, 0.00, 0.00],
+                              [0.00, 0.00, 0.00],
+                              [0.75, 0.25, -0.25],
+                              [0.50, 0.00, 0.00]])
         data.cell_vec = np.array([[-2.708355,  2.708355,  2.708355],
                                   [ 2.708355, -2.708355,  2.708355],
                                   [ 2.708355,  2.708355, -2.708355]])*ureg.bohr
-        data.freqs = np.array([[0.61, 0.71, 3.36, 4.19, 4.65, 11.76],
-                                 [0.75, 0.71, 3.38, 3.97, 4.55, 9.65],
-                                 [0.65, 0.57, 3.93, 3.93, 4.29, 9.30],
-                                 [1.91, 0.68, 2.32, 4.60, 3.54, 6.92],
-                                 [1.31, 0.83, 3.63, 4.72, 2.62, 9.91],
-                                 [0.94, 0.70, 3.60, 4.76, 3.30, 9.84]])*ureg.hartree
-        data.freq_down = np.array([[2.20, 2.27, 5.22, 6.19, 6.77, 12.65],
-                                   [2.38, 2.18, 5.24, 5.93, 6.66, 10.67],
-                                   [2.31, 2.03, 5.88, 5.88, 6.39, 10.28],
-                                   [3.44, 8.40, 4.00, 6.71, 5.55, 1.92],
-                                   [2.82, 2.36, 5.58, 6.85, 4.39, 10.95],
-                                   [2.49, 2.24, 5.50, 6.91, 5.17, 10.86]])*ureg.hartree
-        data.fermi = np.array([4.71, 4.71])*ureg.hartree
+        data.freqs = np.array([[-0.13347765, 0.10487180, 0.10490012, 0.10490012, 0.14500191, 0.14500191],
+                               [ 0.00340273, 0.00340273, 0.17054412, 0.17058441, 0.17058441, 0.52151346],
+                               [ 0.00304837, 0.05950495, 0.14329865, 0.15504453, 0.18419962, 0.18802334],
+                               [-0.13347765, 0.10487180, 0.10490012, 0.10490012, 0.14500191, 0.14500191],
+                               [ 0.00563753, 0.06967796, 0.10706959, 0.10708863, 0.13043664, 0.18104762],
+                               [ 0.00304837, 0.05950495, 0.14329865, 0.15504453, 0.18419962, 0.18802334]])*ureg.hartree
+        data.freq_down = np.array([[-0.11824784, 0.16915727, 0.16915728, 0.16928803, 0.22527386, 0.22527386],
+                                   [ 0.06095869, 0.06095869, 0.24509240, 0.24509241, 0.24526573, 0.53965965],
+                                   [ 0.04785602, 0.11847222, 0.20247348, 0.22062826, 0.23694067, 0.25963579],
+                                   [-0.11824784, 0.16915727, 0.16915727, 0.16928803, 0.22527386, 0.22527386],
+                                   [ 0.03154524, 0.13717388, 0.17082060, 0.17090552, 0.20002066, 0.25224941],
+                                   [ 0.04785602, 0.11847221, 0.20247348, 0.22062826, 0.23694067, 0.25963579]])*ureg.hartree
+        data.fermi = np.array([0.169316, 0.169316])*ureg.hartree
         self.data = data
         self.title = 'Iron'
-        self.expected_abscissa = [0.0, 0.13, 0.27, 1.48, 2.75, 2.89]
-        self.expected_xticks = [0.0, 0.13, 0.27, 1.48, 2.75, 2.89]
-        self.expected_xlabels = ['', '', '5/8 5/8 3/8', '', '', '']
+        self.expected_abscissa = [0.0, 2.00911553, 3.42977475, 4.24999273, 5.54687123, 6.12685292]
+        self.expected_xticks = [0.0, 2.00911553, 3.42977475, 4.24999273, 5.54687123, 6.12685292]
+        self.expected_xlabels = ['0 0 0', '1/2 1/2 1/2', '1/2 0 0', '0 0 0', '3/4 1/4 3/4', '1/2 0 0']
 
         # Results
         self.fig = plot_dispersion(self.data, self.title)
@@ -173,7 +179,8 @@ class TestPlotDispersion(unittest.TestCase):
     def test_freq_xaxis(self):
         n_correct_x = 0
         for line in self.ax.get_lines():
-            if np.array_equal(line.get_data()[0], self.expected_abscissa):
+            if (len(line.get_data()[0]) == len(self.expected_abscissa) and
+                np.allclose(line.get_data()[0], self.expected_abscissa)):
                 n_correct_x += 1
         # Check that there are as many lines with abscissa for the x-axis
         # values as there are both freqs and freq_down branches
@@ -194,15 +201,15 @@ class TestPlotDispersion(unittest.TestCase):
 
     def test_fermi_yaxis(self):
         n_correct_y = 0
-        for ef in self.data.fermi:
+        for ef in self.data.fermi.magnitude:
             for line in self.ax.get_lines():
                 if np.all(np.array(line.get_data()[1]) == ef):
                     n_correct_y += 1
                     break
-        self.assertEqual(n_correct_y, len(self.fermi))
+        self.assertEqual(n_correct_y, len(self.data.fermi))
 
     def test_xaxis_tick_locs(self):
-        npt.assert_array_equal(self.ax.get_xticks(), self.expected_xticks)
+        npt.assert_allclose(self.ax.get_xticks(), self.expected_xticks)
 
     def test_xaxis_tick_labels(self):
         ticklabels = [x.get_text() for x in self.ax.get_xticklabels()]
@@ -210,36 +217,36 @@ class TestPlotDispersion(unittest.TestCase):
 
 
     def test_up_arg(self):
-        # Test freqs is plotted and freq_down isn't when up=True
+        # Test freqs is plotted and freq_down isn't when down=False
         fig = plot_dispersion(self.data, self.title, down=False)
         n_correct_y = 0
-        for branch in np.transpose(self.freqs):
+        for branch in np.transpose(self.data.freqs):
             for line in fig.axes[0].get_lines():
                 if np.array_equal(line.get_data()[1], branch):
                     n_correct_y += 1
                     break
         # Check that every freq up branch has a matching y-axis line
-        self.assertEqual(n_correct_y, len(self.freqs[0]))
+        self.assertEqual(n_correct_y, len(self.data.freqs[0]))
         # Check that freq_down isn't plotted i.e. there are only as many
         # series as there are freqs branches + fermi energies
         n_series = (len(self.data.freqs[0]) + len(self.data.fermi))
-        self.assertEqual(len(self.ax.get_lines()), n_series)
+        self.assertEqual(len(fig.axes[0].get_lines()), n_series)
 
     def test_down_arg(self):
-        # Test freq down is plotted and freqs isn't when down=True
+        # Test freq down is plotted and freqs isn't when up=False
         fig = plot_dispersion(self.data, self.title, up=False)
         n_correct_y = 0
-        for branch in np.transpose(self.freq_down):
+        for branch in np.transpose(self.data.freq_down):
             for line in fig.axes[0].get_lines():
                 if np.array_equal(line.get_data()[1], branch):
                     n_correct_y += 1
                     break
         # Check that every freq down branch has a matching y-axis line
-        self.assertEqual(n_correct_y, len(self.freq_down[0]))
+        self.assertEqual(n_correct_y, len(self.data.freq_down[0]))
         # Check that freqs isn't plotted i.e. there are only as many
         # series as there are freq_down branches + fermi energies
         n_series = (len(self.data.freq_down[0]) + len(self.data.fermi))
-        self.assertEqual(len(self.ax.get_lines()), n_series)
+        self.assertEqual(len(fig.axes[0].get_lines()), n_series)
 
 
 class TestPlotDispersionWithBreak(unittest.TestCase):
@@ -471,7 +478,6 @@ class TestPlotDos(unittest.TestCase):
         # Check that dos_down isn't plotted i.e. there are only series for
         # the fermi energies and dos
         n_series = len(self.data.fermi) + 1
-        print(self.ax.get_lines())
         self.assertEqual(len(self.ax.get_lines()), n_series)
 
     def test_down_only(self):

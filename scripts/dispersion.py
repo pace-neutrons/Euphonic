@@ -37,21 +37,6 @@ def main():
     else:
         fig = plot_dispersion(data, btol=args.btol)
 
-
-    # Get positions of q-points along x-axis
-#    recip_latt = reciprocal_lattice(cell_vec)
-#    abscissa = calc_abscissa(qpts, recip_latt)
-
-#    # Get labels for high symmetry / fractional q-point coordinates
- #   labels, qpts_with_labels = recip_space_labels(
- #       qpts, cell_vec, ion_pos, ion_type)
-
-#    fig = plot_dispersion(abscissa, freqs, freq_down, args.units,
-#                          args.filename, xticks=abscissa[qpts_with_labels],
-#                          xlabels=labels,
- #                         fermi=[f.magnitude for f in fermi],
- #                         btol=args.btol)
-
     # Save or show figure
     if args.s:
         plt.savefig(args.s)
