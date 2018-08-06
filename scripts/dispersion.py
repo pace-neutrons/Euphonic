@@ -5,48 +5,52 @@ or vibrational band structure or dispersion.
 """
 
 import argparse
+import os
 import matplotlib.pyplot as plt
-from casteppy.util import set_up_unit_registry, reciprocal_lattice
-from casteppy.parsers.general import read_input_file
-from casteppy.dispersion.dispersion import reorder_freqs
-from casteppy.plot.dispersion import (calc_abscissa, recip_space_labels,
-                                      plot_dispersion)
+from casteppy import ureg
+from casteppy.data.bands import BandsData
+from casteppy.data.phonon import PhononData
+from casteppy.plot.dispersion import plot_dispersion
 
 
 def main():
     args = parse_arguments()
-    ureg = set_up_unit_registry()
 
     # Read data
-    with open(args.filename, 'r') as f:
-        read_eigenvecs = args.reorder
-        (cell_vec, ion_pos, ion_type, qpts, weights, freqs, freq_down,
-            i_intens, r_intens, eigenvecs, fermi) = read_input_file(
-                f, ureg, args.units, args.up, args.down, False, False,
-                read_eigenvecs)
+    path, file = os.path.split(args.filename)
+    seedname = file[:file.rfind('.')]
+    if file.endswith('.bands'):
+        data = BandsData(seedname, path)
+    else:
+        data = PhononData(seedname, path, read_eigenvecs=args.reorder, read_ir=False)
+
+    data.convert_e_units(args.units)
 
     # Calculate and plot dispersion
-    # Reorder frequencies if eigenvectors have been read and the flag
-    # has been set
-    if eigenvecs.size > 0 and args.reorder:
-        if freqs.size > 0:
-            freqs = reorder_freqs(freqs, qpts, eigenvecs)
-        if freq_down.size > 0:
-            freq_down = reorder_freqs(freq_down, qpts, eigenvecs)
+    # Reorder frequencies if requested
+    if args.reorder:
+        data.reorder_freqs()
+    if args.up:
+        fig = plot_dispersion(data, btol=args.btol, down=False)
+    elif args.down:
+        fig = plot_dispersion(data, btol=args.btol, up=False)
+    else:
+        fig = plot_dispersion(data, btol=args.btol)
+
 
     # Get positions of q-points along x-axis
-    recip_latt = reciprocal_lattice(cell_vec)
-    abscissa = calc_abscissa(qpts, recip_latt)
+#    recip_latt = reciprocal_lattice(cell_vec)
+#    abscissa = calc_abscissa(qpts, recip_latt)
 
-    # Get labels for high symmetry / fractional q-point coordinates
-    labels, qpts_with_labels = recip_space_labels(
-        qpts, cell_vec, ion_pos, ion_type)
+#    # Get labels for high symmetry / fractional q-point coordinates
+ #   labels, qpts_with_labels = recip_space_labels(
+ #       qpts, cell_vec, ion_pos, ion_type)
 
-    fig = plot_dispersion(abscissa, freqs, freq_down, args.units,
-                          args.filename, xticks=abscissa[qpts_with_labels],
-                          xlabels=labels,
-                          fermi=[f.magnitude for f in fermi],
-                          btol=args.btol)
+#    fig = plot_dispersion(abscissa, freqs, freq_down, args.units,
+#                          args.filename, xticks=abscissa[qpts_with_labels],
+#                          xlabels=labels,
+ #                         fermi=[f.magnitude for f in fermi],
+ #                         btol=args.btol)
 
     # Save or show figure
     if args.s:

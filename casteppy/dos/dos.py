@@ -47,7 +47,7 @@ def calculate_dos(data, bwidth, gwidth, lorentz=False):
     if hasattr(data, 'freq_down') and len(data.freq_down) > 0:
         all_freqs = np.append(data.freqs, data.freq_down)
     else:
-        all_freqs = data.freqs
+        all_freqs = data.freqs.magnitude
     freq_max = np.amax(all_freqs)
     freq_min = np.amin(all_freqs)
     bins = np.arange(freq_min, freq_max + bwidth, bwidth)

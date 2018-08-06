@@ -5,28 +5,32 @@ vibrational band structure or dispersion.
 """
 
 import argparse
+import os
 import matplotlib.pyplot as plt
-from casteppy.util import set_up_unit_registry
-from casteppy.parsers.general import read_input_file
+from casteppy import ureg
+from casteppy.data.bands import BandsData
+from casteppy.data.phonon import PhononData
 from casteppy.dos.dos import calculate_dos
 from casteppy.plot.dos import plot_dos
 
 
 def main():
     args = parse_arguments()
-    ureg = set_up_unit_registry()
 
-    # Read data
-    with open(args.filename, 'r') as f:
-        (cell_vec, ion_pos, ion_type, qpts, weights, freqs, freq_down,
-            i_intens, r_intens, eigenvecs, fermi) = read_input_file(
-                f, ureg, args.units, args.up, args.down, args.ir, args.raman)
+    path, file = os.path.split(args.filename)
+    seedname = file[:file.rfind('.')]
+    if file.endswith('.bands'):
+        data = BandsData(seedname, path)
+    else:
+        data = PhononData(seedname, path, read_ir=args.ir, read_eigenvecs=False)
+
+    data.convert_e_units(args.units)
 
     # Calculate and plot DOS
     # Set default DOS bin and broadening width based on whether it's
     # electronic or vibrational
     if args.b == None:
-        if f.name.endswith('.bands'):
+        if file.endswith('.bands'):
             bwidth = 0.05*ureg.eV
         else:
             bwidth = 1.0*(1/ureg.cm)
@@ -34,7 +38,7 @@ def main():
     else:
         bwidth = args.b*ureg[args.units]
     if args.w == None:
-        if f.name.endswith('.bands'):
+        if file.endswith('.bands'):
             gwidth = 0.1*ureg.eV
         else:
             gwidth = 10.0*(1/ureg.cm)
@@ -42,17 +46,15 @@ def main():
     else:
         gwidth = args.w*ureg[args.units]
 
-    if args.ir:
-        dos, dos_down, bins = calculate_dos(
-            freqs, freq_down, weights, bwidth.magnitude, gwidth.magnitude,
-            args.lorentz, intensities=i_intens)
-    else:
-        dos, dos_down, bins = calculate_dos(
-            freqs, freq_down, weights, bwidth.magnitude, gwidth.magnitude,
-            args.lorentz)
+    calculate_dos(data, bwidth.magnitude, gwidth.magnitude, lorentz=args.lorentz)
 
-    fig = plot_dos(dos, dos_down, bins, args.units, args.filename,
-                   fermi=[f.magnitude for f in fermi], mirror=args.mirror)
+
+    if args.up:
+        fig = plot_dos(data, args.filename, mirror=args.mirror, down=False)
+    elif args.down:
+        fig = plot_dos(data, args.filename, mirror=args.mirror, up=False)
+    else:
+        fig = plot_dos(data, args.filename, mirror=args.mirror)
 
     # Save or show figure
     if args.s:
@@ -83,28 +85,24 @@ def parse_arguments():
     spin_group.add_argument(
         '-up',
         action='store_true',
-        help='Extract and plot only spin up from *.castep or *.bands')
+        help='Extract and plot only spin up from .bands')
     spin_group.add_argument(
         '-down',
         action='store_true',
-        help='Extract and plot only spin down from *.castep or *.bands')
+        help='Extract and plot only spin down from .bands')
 
     dos_group = parser.add_argument_group(
         'DOS arguments',
         'Arguments specific to plotting the density of states')
     dos_group.add_argument(
-        '-dos',
-        action='store_true',
-        help='Plot density of states instead of a dispersion plot')
-    dos_group.add_argument(
         '-ir',
         action='store_true',
         help='Extract IR intensities from .phonon and use to weight DOS')
-    dos_group.add_argument(
-        '-raman',
-        action='store_true',
-        help="""Extract Raman intensities from .phonon and calculate a Raman
-                spectrum""")
+#    dos_group.add_argument(
+#        '-raman',
+#        action='store_true',
+#        help="""Extract Raman intensities from .phonon and calculate a Raman
+#                spectrum""")
     dos_group.add_argument(
         '-w',
         default=None,
