@@ -1,7 +1,7 @@
 import os
 import sys
 import numpy as np
-from casteppy.util import set_up_unit_registry
+from casteppy import ureg
 from casteppy.util import direction_changed
 from casteppy.data.data import Data
 
@@ -165,8 +165,6 @@ class PhononData(Data):
             first_qpt = False
             line = f.readline().split()
 
-        ureg = set_up_unit_registry()
-
         freqs = freqs*(1/ureg.cm)
         freqs.ito('eV', 'spectroscopy')
         cell_vec = cell_vec*ureg.angstrom
@@ -296,8 +294,6 @@ class PhononData(Data):
 
             # Reorder frequencies
             ordered_freqs[i,qmap] = freqs[i,:]
-
-        ureg = set_up_unit_registry()
 
         ordered_freqs = ordered_freqs*freqs.units
         self.freqs = ordered_freqs

@@ -1,6 +1,6 @@
 import os
 import numpy as np
-from casteppy.util import set_up_unit_registry
+from casteppy import ureg
 from casteppy.data.data import Data
 
 class BandsData(Data):
@@ -130,8 +130,6 @@ class BandsData(Data):
 
             first_qpt = False
             line = f.readline().split()
-
-        ureg = set_up_unit_registry()
 
         freqs = freqs*ureg.hartree
         freqs.ito('eV')

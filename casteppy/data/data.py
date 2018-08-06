@@ -1,5 +1,3 @@
-from casteppy.util import set_up_unit_registry
-
 class Data(object):
     """
     A general superclass to store data read from CASTEP files
