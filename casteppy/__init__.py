@@ -1,3 +1,5 @@
-from util import set_up_unit_registry
+from pint import UnitRegistry
 
-ureg = set_up_unit_registry()
+ureg = UnitRegistry()
+ureg.define('rydberg = 13.605693009*eV = Ry') # CODATA 2014
+ureg.define('bohr = 0.52917721067*angstrom = a_0') # CODATA 2014

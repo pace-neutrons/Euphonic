@@ -2,13 +2,6 @@ import math
 import numpy as np
 from pint import UnitRegistry
 
-def set_up_unit_registry():
-    ureg = UnitRegistry()
-    ureg.define('rydberg = 13.605693009*eV = Ry') # CODATA 2014
-    ureg.define('bohr = 0.52917721067*angstrom = a_0') # CODATA 2014
-    return ureg
-
-
 def reciprocal_lattice(unit_cell):
     """
     Calculates the reciprocal lattice from a unit cell

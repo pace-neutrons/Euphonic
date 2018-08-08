@@ -7,7 +7,7 @@ matplotlib.use('Agg')
 import numpy as np
 import numpy.testing as npt
 from matplotlib import figure
-from casteppy.util import set_up_unit_registry
+from casteppy import ureg
 from casteppy.plot.dos import plot_dos
 from casteppy.plot.dispersion import (calc_abscissa, recip_space_labels,
                                       generic_qpt_labels, get_qpt_label, 
@@ -40,7 +40,6 @@ class TestCalcAbscissa(unittest.TestCase):
 class TestRecipSpaceLabels(unittest.TestCase):
 
     def setUp(self):
-        ureg = set_up_unit_registry()
         # Create trivial function object so attributes can be assigned to it
         NaH = lambda:0
         data = lambda:0
@@ -128,7 +127,6 @@ class TestGetQptLabel(unittest.TestCase):
 class TestPlotDispersion(unittest.TestCase):
 
     def setUp(self):
-        ureg = set_up_unit_registry()
         # Input values
         data = lambda:0
         data.qpts = np.array([[0.00, 0.00, 0.00],
@@ -251,7 +249,6 @@ class TestPlotDispersion(unittest.TestCase):
 class TestPlotDos(unittest.TestCase):
 
     def setUp(self):
-        ureg = set_up_unit_registry()
         data = lambda:0
         # Input values
         data.dos = np.array([2.30e-01, 1.82e-01, 8.35e-02, 3.95e-02, 2.68e-02, 3.89e-02,

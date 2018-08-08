@@ -1,15 +1,13 @@
 import unittest
 import numpy as np
 import numpy.testing as npt
-from casteppy.util import set_up_unit_registry
+from casteppy import ureg
 from casteppy.dos.dos import calculate_dos
 
 
 class TestCalculateDos(unittest.TestCase):
 
     def setUp(self):
-        ureg = set_up_unit_registry()
-
         # Create trivial function object so attributes can be assigned to it
         iron = lambda:0
         data = lambda:0

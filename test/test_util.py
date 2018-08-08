@@ -1,23 +1,7 @@
 import unittest
 import math
 import numpy.testing as npt
-from pint import UnitRegistry
-from casteppy.util import (set_up_unit_registry, reciprocal_lattice,
-                           direction_changed)
-
-
-class TestSetUpUnitRegistry(unittest.TestCase):
-
-    def test_returns_unit_registry(self):
-        self.assertIsInstance(set_up_unit_registry(),
-                              type(UnitRegistry()))
-
-    def test_has_rydberg_units(self):
-        ureg = set_up_unit_registry()
-        test_ev = 1 * ureg.Ry
-        test_ev.ito(ureg.eV)
-        self.assertEqual(test_ev.magnitude, 13.605693009)
-
+from casteppy.util import reciprocal_lattice, direction_changed
 
 class TestReciprocalLattice(unittest.TestCase):
 
