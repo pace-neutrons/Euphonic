@@ -46,9 +46,7 @@ def plot_dos(data, title='', mirror=False, up=True, down=True):
 
     # Calculate bin centres
     bwidth = data.dos_bins[1] - data.dos_bins[0]
-    #bin_centres = [b + bwidth/2 for b in data.dos_bins[:-1]]
-    #print bin_centres
-    bin_centres = data.dos_bins[:-1] + bwidth
+    bin_centres = data.dos_bins[:-1] + bwidth/2
 
     # Plot dos and Fermi energy
     if up:

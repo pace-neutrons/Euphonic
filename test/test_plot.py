@@ -248,125 +248,6 @@ class TestPlotDispersion(unittest.TestCase):
         n_series = (len(self.data.freq_down[0]) + len(self.data.fermi))
         self.assertEqual(len(fig.axes[0].get_lines()), n_series)
 
-
-class TestPlotDispersionWithBreak(unittest.TestCase):
-
-    def setUp(self):
-        ureg = set_up_unit_registry()
-        # Input values
-        data = lambda:0
-        data.cell_vec = np.array([[-2.708355,  2.708355,  2.708355],
-                                  [ 2.708355, -2.708355,  2.708355],
-                                  [ 2.708355,  2.708355, -2.708355]])*ureg.bohr
-        data.qpts = np.array([[0.0, 0.0, 0.0], [0.5, 0.5, 0.5],
-                              [0.5, 0.0, 0.0], [0.0, 0.0, 0.0],
-                              [0.75, 0.25, 0.75], [0.5, 0.0, 0.0]])
-        data.freqs = np.array([[0.98, 0.98, 2.65, 4.34, 4.34, 12.14],
-                               [0.51, 0.51, 3.55, 4.50, 4.50, 12.95],
-                               [0.24, 0.24, 4.39, 4.66, 4.66, 13.79],
-                               [0.09, 0.09, 4.64, 4.64, 4.64, 14.19],
-                               [0.08, 1.62, 3.90, 4.22, 5.01,  5.12],
-                               [0.03, 1.65, 3.81, 4.01, 4.43,  4.82],
-                               [-0.2, 1.78, 3.10, 3.90, 4.00,  4.43],
-                               [-0.9, 1.99, 2.49, 3.76, 3.91,  3.92]])*ureg.hartree
-        data.freq_down = np.array([[2.52, 2.52, 4.29, 6.28, 6.28, 13.14],
-                                   [2.07, 2.07, 5.35, 6.47, 6.47, 13.77],
-                                   [1.80, 1.80, 6.34, 6.67, 6.67, 14.40],
-                                   [1.66, 1.66, 6.67, 6.67, 6.67, 14.68],
-                                   [1.30, 3.22, 5.51, 6.00, 6.45,  7.07],
-                                   [1.16, 3.26, 4.98, 5.99, 6.25,  6.86],
-                                   [0.65, 3.41, 4.22, 5.95, 6.22,  6.41],
-                                   [-0.35, 3.65, 4.00, 5.82, 5.85, 6.13]])
-        data.fermi = np.array([0.17, 0.17])*ureg.hartree
-        self.data = data
-        self.title = 'Iron'
-        self.expected_abscissa = [1.63, 1.76, 1.88, 2.01, 3.43, 3.55, 3.66, 3.78]
-        self.expected_xticks = [0.00, 2.01, 3.43, 4.25, 5.55, 6.13]
-        self.expected_xlabels = ['0 0 0', '1/2 1/2 1/2', '1/2 0 0', '0 0 0',
-                                 '3/4 1/4 3/4', '1/2 0 0']
-        #Index at which the abscissa/frequencies are split into subplots
-        self.breakpoint = 4
-
-        # Results
-        self.fig = plot_dispersion(self.data, self.title)
-        self.subplots = self.fig.axes
-
-    def tearDown(self):
-        # Ensure figures are closed after tests
-        matplotlib.pyplot.close('all')
-
-    def test_returns_fig(self):
-        self.assertIsInstance(self.fig, figure.Figure)
-
-    def test_has_2_subplots(self):
-        self.assertEqual(len(self.subplots), 2)
-
-    def test_freq_xaxis(self):
-        bp = self.breakpoint
-        # Check x-axis for each subplot separately
-        n_correct_x = np.array([0, 0])
-        for line in self.subplots[0].get_lines():
-            # Check x-axis for first plot, abscissa[0:4]
-            if np.array_equal(line.get_data()[0], self.expected_abscissa[:bp]):
-                n_correct_x[0] += 1
-        for line in self.subplots[1].get_lines():
-            # Check x-axis for second plot, abscissa[4:]
-            if np.array_equal(line.get_data()[0], self.expected_abscissa[bp:]):
-                n_correct_x[1] += 1
-        # Check that there are as many lines with abscissa for the x-axis
-        # values as there are both freqs and freq_down branches
-        self.assertTrue(np.all(
-            n_correct_x == (len(self.data.freqs[0]) + len(
-                self.data.freq_down[0]))))
-
-    def test_freq_yaxis(self):
-        bp = self.breakpoint
-        all_freq_branches = np.vstack((np.transpose(self.data.freqs),
-                                       np.transpose(self.data.freq_down)))
-        # Check y-axis for each subplot separately
-        n_correct_y = np.array([0, 0])
-        # Subplot 0
-        for branch in all_freq_branches[:, :bp]:
-            for line in self.subplots[0].get_lines():
-                if np.array_equal(line.get_data()[1], branch):
-                    n_correct_y[0] += 1
-                    break
-        # Subplot 1
-        for branch in all_freq_branches[:, bp:]:
-            for line in self.subplots[1].get_lines():
-                if np.array_equal(line.get_data()[1], branch):
-                    n_correct_y[1] += 1
-                    break
-        # Check that every branch has a matching y-axis line
-        self.assertTrue(np.all(n_correct_y == len(all_freq_branches)))
-
-    def test_fermi_yaxis(self):
-        n_correct_y = np.array([0, 0])
-        for ef in self.data.fermi:
-            # Subplot 0
-            for line in self.subplots[0].get_lines():
-                if np.all(np.array(line.get_data()[1]) == ef):
-                    n_correct_y[0] += 1
-                    break
-            # Subplot 1
-            for line in self.subplots[0].get_lines():
-                if np.all(np.array(line.get_data()[1]) == ef):
-                    n_correct_y[1] += 1
-                    break
-        self.assertTrue(np.all(n_correct_y == len(self.data.fermi)))
-
-    def test_xaxis_tick_locs(self):
-        for subplot in self.subplots:
-            npt.assert_array_equal(subplot.get_xticks(), self.expected_xticks)
-
-    def test_xaxis_tick_labels(self):
-        ticklabels = [[xlabel.get_text()
-                         for xlabel in subplot.get_xticklabels()]
-                         for subplot in self.subplots]
-        for i, subplot in enumerate(self.subplots):
-            npt.assert_array_equal(ticklabels[i], self.expected_xlabels)
-
-
 class TestPlotDos(unittest.TestCase):
 
     def setUp(self):
@@ -427,8 +308,8 @@ class TestPlotDos(unittest.TestCase):
         self.assertEqual(len(self.ax.get_lines()), n_series)
 
     def test_dos_xaxis(self):
-        bin_centres = np.array(self.data.dos_bins[:-1]) + (self.data.dos_bins[1]
-                                                    - self.data.dos_bins[0])/2
+        bin_centres = self.data.dos_bins[:-1] + (self.data.dos_bins[1]
+                                               - self.data.dos_bins[0])/2
         n_correct_x = 0
         for line in self.ax.get_lines():
             if np.array_equal(line.get_data()[0], bin_centres):
@@ -455,7 +336,7 @@ class TestPlotDos(unittest.TestCase):
         n_correct_x = 0
         for ef in self.data.fermi:
             for line in self.ax.get_lines():
-                if np.all(np.array(line.get_data()[0]) == ef):
+                if np.all(np.array(line.get_data()[0]) == ef.magnitude):
                     n_correct_x += 1
                     break
         self.assertEqual(n_correct_x, len(self.data.fermi))
@@ -478,7 +359,7 @@ class TestPlotDos(unittest.TestCase):
         # Check that dos_down isn't plotted i.e. there are only series for
         # the fermi energies and dos
         n_series = len(self.data.fermi) + 1
-        self.assertEqual(len(self.ax.get_lines()), n_series)
+        self.assertEqual(len(fig.axes[0].get_lines()), n_series)
 
     def test_down_only(self):
         # Test that only dos_down plotted when up=False
@@ -491,5 +372,5 @@ class TestPlotDos(unittest.TestCase):
         # Check that dos isn't plotted i.e. there are only series for
         # the fermi energies and dos_down
         n_series = len(self.data.fermi) + 1
-        self.assertEqual(len(self.ax.get_lines()), n_series)
+        self.assertEqual(len(fig.axes[0].get_lines()), n_series)
 
