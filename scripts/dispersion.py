@@ -31,11 +31,11 @@ def main():
     if args.reorder:
         data.reorder_freqs()
     if args.up:
-        fig = plot_dispersion(data, btol=args.btol, down=False)
+        fig = plot_dispersion(data, args.filename, btol=args.btol, down=False)
     elif args.down:
-        fig = plot_dispersion(data, btol=args.btol, up=False)
+        fig = plot_dispersion(data, args.filename, btol=args.btol, up=False)
     else:
-        fig = plot_dispersion(data, btol=args.btol)
+        fig = plot_dispersion(data, args.filename, btol=args.btol)
 
     # Save or show figure
     if args.s:

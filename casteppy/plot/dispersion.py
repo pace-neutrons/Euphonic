@@ -226,6 +226,9 @@ def plot_dispersion(data, title='', btol=10.0, up=True, down=True):
     # Configure each subplot
     # Calculate x-axis (recip space) ticks and labels
     xlabels, qpts_with_labels = recip_space_labels(data)
+    for i, label in enumerate(xlabels):
+        if label == 'GAMMA':
+            xlabels[i] = r'$\Gamma$'
     xticks = abscissa[qpts_with_labels]
     for i, ax in enumerate(subplots):
         # X-axis formatting
