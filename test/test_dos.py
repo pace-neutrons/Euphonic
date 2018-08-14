@@ -2,7 +2,7 @@ import unittest
 import numpy as np
 import numpy.testing as npt
 from casteppy import ureg
-from casteppy.dos.dos import calculate_dos
+from casteppy.calculate.dos import calculate_dos
 
 
 class TestCalculateDos(unittest.TestCase):

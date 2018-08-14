@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 from casteppy import ureg
 from casteppy.data.bands import BandsData
 from casteppy.data.phonon import PhononData
-from casteppy.dos.dos import calculate_dos
+from casteppy.calculate.dos import calculate_dos
 from casteppy.plot.dos import plot_dos
 
 

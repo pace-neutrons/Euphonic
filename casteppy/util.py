@@ -1,6 +1,5 @@
 import math
 import numpy as np
-from pint import UnitRegistry
 
 def reciprocal_lattice(unit_cell):
     """

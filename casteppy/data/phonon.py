@@ -26,6 +26,9 @@ class PhononData(Data):
     ion_type : list of strings
         n_ions length list of the chemical symbols of each ion in the unit
         cell. Ions are in the same order as in ion_r
+    ion_mass : list of floats
+        n_ions length list of the mass of each ion in the unit cell in atomic
+        units. Default units amu.
     qpts : list of floats
         M x 3 list of q-point coordinates, where M = number of q-points
     weights : list of floats
@@ -42,9 +45,9 @@ class PhononData(Data):
         M x N list of Raman intensities, where M = number of q-points and
         N = number of branches. Empty if no Raman intensities in .phonon file
     eigenvecs: list of complex floats
-        M x L x 3 list of the atomic displacements (dynamical matrix
-        eigenvectors), where M = number of q-points and
-        L = number of ions*number of branches. Empty if read_eigenvecs is False
+        M x N x L x 3 list of the atomic displacements (dynamical matrix
+        eigenvectors), where M = number of q-points, N = number of branches
+        and L = number of ions. Empty if read_eigenvecs is False
     """
 
 
@@ -112,7 +115,7 @@ class PhononData(Data):
             Whether to read and store Raman intensities from the .phonon file
         """
         (n_ions, n_branches, n_qpts, cell_vec, ion_r,
-        ion_type) = self._read_phonon_header(f)
+        ion_type, ion_mass) = self._read_phonon_header(f)
 
         qpts = np.zeros((n_qpts, 3))
         weights = np.zeros(n_qpts)
@@ -120,7 +123,7 @@ class PhononData(Data):
         ir = np.array([])
         raman = np.array([])
         if read_eigenvecs:
-            eigenvecs = np.zeros((n_qpts, n_branches*n_ions, 3),
+            eigenvecs = np.zeros((n_qpts, n_branches, n_ions, 3),
                                  dtype='complex128')
         else:
             eigenvecs = np.array([])
@@ -144,20 +147,24 @@ class PhononData(Data):
             if read_ir and len(freq_lines[0]) > ir_index:
                 if first_qpt:
                     ir = np.zeros((n_qpts, n_branches))
-                ir[qpt_num, :] = [float(line[ir_index]) for line in freq_lines]
+                ir[qpt_num, :] = [float(
+                    line[ir_index]) for line in freq_lines]
             if read_raman and len(freq_lines[0]) > raman_index:
                 if first_qpt:
                      raman = np.zeros((n_qpts, n_branches))
-                raman[qpt_num, :] = [float(line[raman_index]) for line in freq_lines]
+                raman[qpt_num, :] = [float(
+                    line[raman_index]) for line in freq_lines]
 
             if read_eigenvecs:
                 [f.readline() for x in range(2)]  # Skip 2 label lines
-                lines = [f.readline().split()[2:]
-                    for x in range(n_ions*n_branches)]
-                eigenvecs[qpt_num, :, :] = [[complex(float(x[0]), float(x[1])),
-                                             complex(float(x[2]), float(x[3])),
-                                             complex(float(x[4]), float(x[5]))]
-                                                 for x in lines]
+                lines = np.array([f.readline().split()[2:]
+                    for x in range(n_ions*n_branches)]).astype(float)
+                lines_i = np.column_stack(([lines[:, 0] + lines[:, 1]*1j,
+                                            lines[:, 2] + lines[:, 3]*1j,
+                                            lines[:, 4] + lines[:, 5]*1j]))
+                for i in range(n_branches):
+                    eigenvecs[qpt_num, i, :, :] = lines_i[
+                        i*n_ions:(i+1)*n_ions, :]
             else:
                 # Don't bother reading eigenvectors
                 # Skip eigenvectors and 2 label lines
@@ -165,9 +172,10 @@ class PhononData(Data):
             first_qpt = False
             line = f.readline().split()
 
+        cell_vec = cell_vec*ureg.angstrom
+        ion_mass = ion_mass*ureg.amu
         freqs = freqs*(1/ureg.cm)
         freqs.ito('eV', 'spectroscopy')
-        cell_vec = cell_vec*ureg.angstrom
 
         self.n_ions = n_ions
         self.n_branches = n_branches
@@ -175,6 +183,7 @@ class PhononData(Data):
         self.cell_vec = cell_vec
         self.ion_r = ion_r
         self.ion_type = ion_type
+        self.ion_mass = ion_mass
         self.qpts = qpts
         self.weights = weights
         self.freqs = freqs
@@ -220,9 +229,10 @@ class PhononData(Data):
         ion_info = [f.readline().split() for i in range(n_ions)]
         ion_r = [[float(x) for x in y[1:4]] for y in ion_info]
         ion_type = [x[4] for x in ion_info]
+        ion_mass = [float(x[5]) for x in ion_info]
         f.readline()  # Skip END header line
 
-        return n_ions, n_branches, n_qpts, cell_vec, ion_r, ion_type
+        return n_ions, n_branches, n_qpts, cell_vec, ion_r, ion_type, ion_mass
 
 
     def reorder_freqs(self):
@@ -256,17 +266,11 @@ class PhononData(Data):
             if calculate_qmap[i-1]:
                 # Compare eigenvectors for each mode for this q-point with every
                 # mode for the previous q-point
-                # Reshape eigenvector arrays for this and previous q-point so that
-                # each mode is a row and each ion is a column, for efficient
-                # summing over modes later. Then explicitly broadcast arrays with
-                # repeat and tile to ensure correct multiplication of modes
-                current_eigenvecs = np.reshape(eigenvecs[i, :, :],
-                                               (n_branches, n_ions, 3))
-                current_eigenvecs = np.repeat(current_eigenvecs,
+                # Explicitly broadcast arrays with repeat and tile to ensure
+                # correct multiplication of modes
+                current_eigenvecs = np.repeat(eigenvecs[i, :, :, :],
                                               n_branches, axis=0)
-                prev_eigenvecs = np.reshape(eigenvecs[i-1, :, :],
-                                            (n_branches, n_ions, 3))
-                prev_eigenvecs = np.tile(prev_eigenvecs,
+                prev_eigenvecs = np.tile(eigenvecs[i-1, :, :, :],
                                          (n_branches, 1, 1))
                 # Compute complex conjugated dot product of every mode of this
                 # q-point with every mode of previous q-point, and sum the dot
