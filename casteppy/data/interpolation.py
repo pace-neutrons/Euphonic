@@ -112,7 +112,6 @@ class InterpolationData:
             data
         """
 
-
         def read_entry(file_obj, dtype=''):
             """
             Read a record from a Fortran binary file, including the beginning
@@ -148,8 +147,8 @@ class InterpolationData:
             if header.strip() == 'CELL%NUM_IONS':
                 n_ions = read_entry(file_obj, int_type)
             elif header.strip() == 'CELL%REAL_LATTICE':
-                cell_vec = np.reshape(
-                    read_entry(file_obj, float_type), (3, 3))
+                cell_vec = np.transpose(np.reshape(
+                    read_entry(file_obj, float_type), (3, 3)))
             elif header.strip() == 'CELL%NUM_SPECIES':
                 n_species= read_entry(file_obj, int_type)
             elif header.strip() == 'CELL%NUM_IONS_IN_SPECIES':
@@ -208,29 +207,84 @@ class InterpolationData:
         self.cell_origins = cell_origins
 
 
-    def calculate_supercell_images(self, lim):
-        self.supercell_images = np.zeros((self.n_ions, self.n_ions*self.n_cells_in_sc, (2*lim + 1)**3))
-        self.n_images = np.zeros((self.n_ions, self.n_ions*self.n_cells_in_sc))
+    def _calculate_supercell_images(self, lim):
+        n_ions = self.n_ions
+        cell_vec = self.cell_vec.to(ureg.bohr).magnitude
+        ion_r = self.ion_r
+        cell_origins = self.cell_origins
+        n_cells_in_sc = self.n_cells_in_sc
+        sc_matrix = self.sc_matrix
+
+        # List of points defining Wigner-Seitz cell
+        ws_frac = np.array([[0, 0, 0], [0, 0, 1], [0, 1, 0], [0, 1, 1],
+                            [0, 1, -1], [1, 0, 0], [1, 0, 1], [1, 0, -1],
+                            [1, 1, 0], [1, 1, 1], [1, 1, -1], [1, -1, 0],
+                            [1, -1, 1], [1, -1, -1]])
+        cutoff_scale = 1.0
+
+        # Calculate points of WS cell for this supercell
+        sc_vecs = np.matmul(sc_matrix, cell_vec)
+        ws_list = np.matmul(ws_frac, sc_vecs)
+        inv_ws_sq = 1.0/np.sum(np.square(ws_list[1:]), axis=1)
+
+        # Get Cartesian coords of supercell images and ions in supercell
+        sc_image_i = self._calculate_supercell_image_indices(lim)
+        sc_image_cart = np.matmul(sc_image_i, np.transpose(sc_vecs))
+        sc_ion_r = np.matmul(np.tile(ion_r, (n_cells_in_sc, 1)) + np.repeat(cell_origins, n_ions, axis=0), np.linalg.inv(sc_matrix))
+        sc_ion_cart = np.zeros((len(sc_image_i), 3))
+        for i in range(n_ions*n_cells_in_sc):
+            sc_ion_cart[i, :] = np.matmul(sc_ion_r[i, :], sc_vecs)
+
+        sc_images = np.zeros((self.n_ions, self.n_ions*self.n_cells_in_sc, (2*lim + 1)**3), dtype=np.int8)
+        n_images = np.zeros((self.n_ions, self.n_ions*self.n_cells_in_sc), dtype=np.int8)
+        for i in range(n_ions):
+            for j in range(n_ions*n_cells_in_sc):
+                # Get distance between ions in every supercell
+                dist = sc_ion_cart[i] - sc_ion_cart[j] - sc_image_cart
+                print('nio: ', i, ' nj: ', j)
+                for k in range(len(sc_image_i)):
+                    dist_ws_point = np.absolute(np.dot(ws_list[1:], dist[k, :])*inv_ws_sq)
+                    if np.max(dist_ws_point) <= (0.5*cutoff_scale + 0.001):
+                        sc_images[i, j, n_images[i, j]] = k
+                        n_images[i, j] += 1
+
+        self.sc_images = sc_images
+        self.n_images = n_images
+
+
+    def _calculate_supercell_image_indices(self, lim):
+        irange = range(-lim, lim + 1)
+        inum = 2*lim + 1
+        scx = np.repeat(irange, inum**2)
+        scy = np.tile(np.repeat(irange, inum), inum)
+        scz = np.tile(irange, inum**2)
+        return np.column_stack((scx, scy, scz))
 
 
     def calculate_fine_phonons(self, qpts):
-        force_constants = self.force_constants
+        force_constants = self.force_constants.magnitude
         sc_matrix = self.sc_matrix
         cell_origins = self.cell_origins
         n_cells_in_sc = self.n_cells_in_sc
         n_ions = self.n_ions
-        n_qpts = self.n_qpts
+        n_qpts = qpts.shape[0]
 
+        # Build list of supercell image indices
         lim = 2 # Supercell image limit
-        self.lim = lim
+        sc_image_i = self._calculate_supercell_image_indices(lim)
+        #print(sc_image_i)
 
         phases = np.zeros((n_cells_in_sc, 2*lim + 1, 2*lim + 1, 2*lim + 1), dtype=np.complex128)
-        if not hasattr(self, 'supercell_images'):
-            self.calculate_supercell_images(lim)
+        if not hasattr(self, 'sc_images'):
+            self._calculate_supercell_images(lim)
+
+        #sc_offset = np.dot(sc_image_i, np.transpose(sc_matrix))
+        #cell_offset = 
 
         # Calculate phase lookup
         lookup_i = range(2*lim + 1)
-        for qpt in qpts:
+        for i in range(n_qpts):
+            qpt = qpts[i, :]
             dyn_mat = np.zeros((n_ions, 3, n_ions, 3), dtype=np.complex128)
             for scx in range(-lim, lim + 1):
                 for scy in range(-lim, lim + 1):
@@ -252,7 +306,9 @@ class InterpolationData:
                     term = np.sum(phases[nc, :, :, :], )/phases[nc, :, :, :].size
                     dyn_mat[i, :, j, :] = dyn_mat[i, :, j, :] + term*force_constants[nc, 3*i:(3*i + 3), 3*j:(3*j + 3)]
 
-        self.eigenvalues = np.zeros((n_qpts, self.n_ions*3))
-        self.eigenvectors = np.zeros((n_qpts, self.n_ions*3, self.n_ions, 3))
+        self.n_qpts = n_qpts
+        self.qpts = qpts
+        self.freqs = np.zeros((n_qpts, n_ions*3))
+        self.eigenvecs = np.zeros((n_qpts, n_ions*3, n_ions, 3))
 
-        return self.eigenvalues, self.eigenvectors
+        return self.freqs, self.eigenvecs
