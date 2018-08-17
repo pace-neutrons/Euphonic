@@ -185,5 +185,6 @@ class BandsData(Data):
 
     def convert_e_units(self, units):
         super(BandsData, self).convert_e_units(units)
+        self.freqs.ito(units, 'spectroscopy')
         self.freq_down.ito(units, 'spectroscopy')
         self.fermi.ito(units, 'spectroscopy')

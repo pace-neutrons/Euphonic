@@ -301,3 +301,7 @@ class PhononData(Data):
 
         ordered_freqs = ordered_freqs*freqs.units
         self.freqs = ordered_freqs
+
+    def convert_e_units(self, units):
+        super(PhononData, self).convert_e_units(units)
+        self.freqs.ito(units, 'spectroscopy')

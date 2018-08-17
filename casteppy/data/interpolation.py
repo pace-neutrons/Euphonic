@@ -77,11 +77,12 @@ class InterpolationData:
 
         self.qpts = qpts
         self.n_qpts = len(qpts)
+        self.eigenvecs = np.array([])
+        energy_units = '{}'.format(self.force_constants.units).split('/')[0]
+        self.freqs = np.array([])*ureg[energy_units]
+
         if self.n_qpts > 0:
             self.calculate_fine_phonons(qpts)
-        else:
-            self.freqs = np.array([])
-            self.eigenvecs = np.array([])
 
 
     def _get_data(self, seedname, path):
@@ -119,16 +120,19 @@ class InterpolationData:
             """
             def record_mark_read(file_obj):
                 # Read 4 byte Fortran record marker
-                return struct.unpack('>i4', file_obj.read(4))[0]
+                return struct.unpack('>i', file_obj.read(4))[0]
 
             begin = record_mark_read(file_obj)
             if dtype:
                 n_bytes = int(dtype[-1])
-                n_elems = begin/n_bytes
+                n_elems = int(begin/n_bytes)
                 if n_elems > 1:
                     data = np.fromfile(file_obj, dtype=dtype, count=n_elems)
                 else:
-                    data = struct.unpack(dtype, file_obj.read(begin))[0]
+                    if 'i' in dtype:
+                        data = struct.unpack('>i', file_obj.read(begin))[0]
+                    elif 'f' in dtype:
+                        data = struct.unpack('>d', file_obj.read(begin))[0]
             else:
                 data = file_obj.read(begin)
             end = record_mark_read(file_obj)
@@ -142,26 +146,26 @@ class InterpolationData:
         float_type = '>f8'
 
         header = ''
-        while header.strip() != 'END':
+        while header.strip() != b'END':
             header = read_entry(file_obj)
-            if header.strip() == 'CELL%NUM_IONS':
+            if header.strip() == b'CELL%NUM_IONS':
                 n_ions = read_entry(file_obj, int_type)
-            elif header.strip() == 'CELL%REAL_LATTICE':
+            elif header.strip() == b'CELL%REAL_LATTICE':
                 cell_vec = np.transpose(np.reshape(
                     read_entry(file_obj, float_type), (3, 3)))
-            elif header.strip() == 'CELL%NUM_SPECIES':
+            elif header.strip() == b'CELL%NUM_SPECIES':
                 n_species= read_entry(file_obj, int_type)
-            elif header.strip() == 'CELL%NUM_IONS_IN_SPECIES':
+            elif header.strip() == b'CELL%NUM_IONS_IN_SPECIES':
                 n_ions_in_species = read_entry(file_obj, int_type)
-            elif header.strip() == 'CELL%IONIC_POSITIONS':
+            elif header.strip() == b'CELL%IONIC_POSITIONS':
                 max_ions_in_species = max(n_ions_in_species)
                 ion_r_tmp = np.reshape(read_entry(file_obj, float_type),
                                   (n_species, max_ions_in_species, 3))
-            elif header.strip() == 'CELL%SPECIES_MASS':
+            elif header.strip() == b'CELL%SPECIES_MASS':
                 ion_mass_tmp = read_entry(file_obj, float_type)
-            elif header.strip() == 'CELL%SPECIES_SYMBOL':
+            elif header.strip() == b'CELL%SPECIES_SYMBOL':
                 ion_type_tmp = [x.strip() for x in read_entry(file_obj, 'S8')]
-            elif header.strip() == 'FORCE_CON':
+            elif header.strip() == b'FORCE_CON':
                 sc_matrix = np.reshape(
                     read_entry(file_obj, int_type), (3, 3))
                 n_cells_in_sc = int(np.absolute(np.linalg.det(sc_matrix)))
@@ -269,7 +273,7 @@ class InterpolationData:
         n_branches = self.n_branches
         n_qpts = qpts.shape[0]
         freqs = np.zeros((n_qpts, n_branches))
-        eigenvecs = np.zeros((n_qpts, n_branches, n_ions, 3))
+        eigenvecs = np.zeros((n_qpts, n_branches, n_ions, 3), dtype=np.complex128)
 
         # Build list of all possible supercell image coordinates
         lim = 2 # Supercell image limit
@@ -304,17 +308,18 @@ class InterpolationData:
                     dyn_mat[3*i:(3*i + 3), 3*j:(3*j + 3)] = dyn_mat[3*i:(3*i + 3), 3*j:(3*j + 3)] + (term*force_constants[nc, 3*i:(3*i + 3), 3*j:(3*j + 3)])/n_sc_images[i, scj]
 
             evals, evecs = np.linalg.eigh(dyn_mat)
-            eigenvecs[qpt, :] = evecs
-            freqs[qpt, :] = np.sqrt(evals)
-
-
-
-        energy_units = '{}'.format(self.force_constants.units).split('/')[0]
-        freqs = np.sqrt(eigenvals)*ureg[energy_units]
+            eigenvecs[q, :] = np.reshape(evecs, (n_branches, n_ions, 3))
+            freqs[q, :] = np.sqrt(evals)
 
         self.n_qpts = n_qpts
         self.qpts = qpts
-        self.freqs = freqs*ureg[energy_units]
+        self.freqs = freqs*self.freqs.units
         self.eigenvecs = eigenvecs
 
         return self.freqs, self.eigenvecs
+
+    def convert_e_units(self, units):
+        super(InterpolationData, self).convert_e_units(units)
+
+        if hasattr(self, 'freqs'):
+            self.freqs.ito(units, 'spectroscopy')
