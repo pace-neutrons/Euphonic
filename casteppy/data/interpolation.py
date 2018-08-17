@@ -228,31 +228,30 @@ class InterpolationData:
         inv_ws_sq = 1.0/np.sum(np.square(ws_list[1:]), axis=1)
 
         # Get Cartesian coords of supercell images and ions in supercell
-        sc_image_i = self._calculate_supercell_image_indices(lim)
-        sc_image_cart = np.matmul(sc_image_i, np.transpose(sc_vecs))
+        sc_image_r = self._calculate_supercell_image_r(lim)
+        sc_image_cart = np.matmul(sc_image_r, np.transpose(sc_vecs))
         sc_ion_r = np.matmul(np.tile(ion_r, (n_cells_in_sc, 1)) + np.repeat(cell_origins, n_ions, axis=0), np.linalg.inv(sc_matrix))
-        sc_ion_cart = np.zeros((len(sc_image_i), 3))
+        sc_ion_cart = np.zeros((len(sc_image_r), 3))
         for i in range(n_ions*n_cells_in_sc):
             sc_ion_cart[i, :] = np.matmul(sc_ion_r[i, :], sc_vecs)
 
-        sc_images = np.zeros((self.n_ions, self.n_ions*self.n_cells_in_sc, (2*lim + 1)**3), dtype=np.int8)
-        n_images = np.zeros((self.n_ions, self.n_ions*self.n_cells_in_sc), dtype=np.int8)
+        sc_image_i = np.zeros((self.n_ions, self.n_ions*self.n_cells_in_sc, (2*lim + 1)**3), dtype=np.int8)
+        n_sc_images = np.zeros((self.n_ions, self.n_ions*self.n_cells_in_sc), dtype=np.int8)
         for i in range(n_ions):
             for j in range(n_ions*n_cells_in_sc):
                 # Get distance between ions in every supercell
                 dist = sc_ion_cart[i] - sc_ion_cart[j] - sc_image_cart
-                print('nio: ', i, ' nj: ', j)
-                for k in range(len(sc_image_i)):
+                for k in range(len(sc_image_r)):
                     dist_ws_point = np.absolute(np.dot(ws_list[1:], dist[k, :])*inv_ws_sq)
                     if np.max(dist_ws_point) <= (0.5*cutoff_scale + 0.001):
-                        sc_images[i, j, n_images[i, j]] = k
-                        n_images[i, j] += 1
+                        sc_image_i[i, j, n_sc_images[i, j]] = k
+                        n_sc_images[i, j] += 1
 
-        self.sc_images = sc_images
-        self.n_images = n_images
+        self.sc_image_i = sc_image_i
+        self.n_sc_images = n_sc_images
 
 
-    def _calculate_supercell_image_indices(self, lim):
+    def _calculate_supercell_image_r(self, lim):
         irange = range(-lim, lim + 1)
         inum = 2*lim + 1
         scx = np.repeat(irange, inum**2)
@@ -267,48 +266,55 @@ class InterpolationData:
         cell_origins = self.cell_origins
         n_cells_in_sc = self.n_cells_in_sc
         n_ions = self.n_ions
+        n_branches = self.n_branches
         n_qpts = qpts.shape[0]
+        freqs = np.zeros((n_qpts, n_branches))
+        eigenvecs = np.zeros((n_qpts, n_branches, n_ions, 3))
 
-        # Build list of supercell image indices
+        # Build list of all possible supercell image coordinates
         lim = 2 # Supercell image limit
-        sc_image_i = self._calculate_supercell_image_indices(lim)
-        #print(sc_image_i)
+        sc_image_r = self._calculate_supercell_image_r(lim)
+        phases = np.zeros((n_cells_in_sc, (2*lim + 1)**3), dtype=np.complex128)
 
-        phases = np.zeros((n_cells_in_sc, 2*lim + 1, 2*lim + 1, 2*lim + 1), dtype=np.complex128)
-        if not hasattr(self, 'sc_images'):
+        if not hasattr(self, 'sc_image_i'):
             self._calculate_supercell_images(lim)
-
-        #sc_offset = np.dot(sc_image_i, np.transpose(sc_matrix))
-        #cell_offset = 
+        n_sc_images = self.n_sc_images
+        sc_image_i = self.sc_image_i
 
         # Calculate phase lookup
         lookup_i = range(2*lim + 1)
-        for i in range(n_qpts):
-            qpt = qpts[i, :]
-            dyn_mat = np.zeros((n_ions, 3, n_ions, 3), dtype=np.complex128)
-            for scx in range(-lim, lim + 1):
-                for scy in range(-lim, lim + 1):
-                    for scz in range(-lim, lim + 1):
-                        sc_r = np.dot(np.transpose(sc_matrix), [scx, scy, scz])
-                        for nc in range(n_cells_in_sc):
-                            x = lookup_i[scx]
-                            y = lookup_i[scy]
-                            z = lookup_i[scz]
-                            cell_r = sc_r + cell_origins[nc, :]
-                            phase = 2*math.pi*np.dot(qpt, cell_r)
-                            phases[nc, x, y, z] = np.complex(math.cos(phase), math.sin(phase))
+        for q in range(n_qpts):
+            qpt = qpts[q, :]
+            dyn_mat = np.zeros((n_ions*3, n_ions*3), dtype=np.complex128)
+            for i in range(len(sc_image_r)):
+                sc_offset = np.dot(np.transpose(sc_matrix), sc_image_r[i, :])
+                for nc in range(n_cells_in_sc):
+                    cell_r = sc_offset + cell_origins[nc, :]
+                    phase = 2*math.pi*np.dot(qpt, cell_r)
+                    phases[nc, i] = np.complex(math.cos(phase), math.sin(phase))
 
             for i in range(n_ions):
                 for scj in range(n_ions*n_cells_in_sc):
-                    j = scj%n_ions
-                    nc = scj/n_ions
+                    j = int(scj%n_ions)
+                    nc = int(scj/n_ions)
                     # Cumulant method: sum phases for all supercell images and divide by number of images
-                    term = np.sum(phases[nc, :, :, :], )/phases[nc, :, :, :].size
-                    dyn_mat[i, :, j, :] = dyn_mat[i, :, j, :] + term*force_constants[nc, 3*i:(3*i + 3), 3*j:(3*j + 3)]
+                    term = 0.
+                    for img_i in range(n_sc_images[i, scj]):
+                        term = term + phases[nc, sc_image_i[i, scj, img_i]]
+                    dyn_mat[3*i:(3*i + 3), 3*j:(3*j + 3)] = dyn_mat[3*i:(3*i + 3), 3*j:(3*j + 3)] + (term*force_constants[nc, 3*i:(3*i + 3), 3*j:(3*j + 3)])/n_sc_images[i, scj]
+
+            evals, evecs = np.linalg.eigh(dyn_mat)
+            eigenvecs[qpt, :] = evecs
+            freqs[qpt, :] = np.sqrt(evals)
+
+
+
+        energy_units = '{}'.format(self.force_constants.units).split('/')[0]
+        freqs = np.sqrt(eigenvals)*ureg[energy_units]
 
         self.n_qpts = n_qpts
         self.qpts = qpts
-        self.freqs = np.zeros((n_qpts, n_ions*3))
-        self.eigenvecs = np.zeros((n_qpts, n_ions*3, n_ions, 3))
+        self.freqs = freqs*ureg[energy_units]
+        self.eigenvecs = eigenvecs
 
         return self.freqs, self.eigenvecs
