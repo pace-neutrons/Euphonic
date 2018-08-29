@@ -200,7 +200,7 @@ def output_grace(data, seedname='out', up=True, down=True):
         inverse_unit_index = units_str.find('/')
         if inverse_unit_index > -1:
             units_str = units_str[inverse_unit_index+1:]
-            yaxis_label = '\\f{{Symbol}}e\\f{{}} ({0}\S-1\N)'.format(units_str)
+            yaxis_label = '\\f{{Symbol}}e\\f{{}} ({0}\S-1\\N)'.format(units_str)
         else:
             yaxis_label = '\\f{{Symbol}}e\\f{{}} ({0})'.format(units_str)
         f.write('@yaxis  bar linewidth 2.0\n')

@@ -18,7 +18,7 @@ def main():
     # If neither -up nor -down specified, plot both
     if not args.up and not args.down:
         args.up = True
-	args.down = True
+        args.down = True
 
     # Read data
     path, file = os.path.split(args.filename)
@@ -65,8 +65,8 @@ def parse_arguments():
         help='Save resulting plot to a file')
     parser.add_argument(
         '-grace',
-	action='store_true',
-	help='Output a .agr Grace file')
+        action='store_true',
+        help='Output a .agr Grace file')
 
     spin_group = parser.add_mutually_exclusive_group()
     spin_group.add_argument(
