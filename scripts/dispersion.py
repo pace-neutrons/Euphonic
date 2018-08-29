@@ -10,11 +10,15 @@ import matplotlib.pyplot as plt
 from casteppy import ureg
 from casteppy.data.bands import BandsData
 from casteppy.data.phonon import PhononData
-from casteppy.plot.dispersion import plot_dispersion
+from casteppy.plot.dispersion import output_grace, plot_dispersion
 
 
 def main():
     args = parse_arguments()
+    # If neither -up nor -down specified, plot both
+    if not args.up and not args.down:
+        args.up = True
+	args.down = True
 
     # Read data
     path, file = os.path.split(args.filename)
@@ -26,22 +30,20 @@ def main():
 
     data.convert_e_units(args.units)
 
-    # Calculate and plot dispersion
     # Reorder frequencies if requested
     if args.reorder:
         data.reorder_freqs()
-    if args.up:
-        fig = plot_dispersion(data, args.filename, btol=args.btol, down=False)
-    elif args.down:
-        fig = plot_dispersion(data, args.filename, btol=args.btol, up=False)
-    else:
-        fig = plot_dispersion(data, args.filename, btol=args.btol)
 
-    # Save or show figure
-    if args.s:
-        plt.savefig(args.s)
+    # Plot
+    if args.grace:
+        output_grace(data, seedname, up=args.up, down=args.down)
     else:
-        plt.show()
+        fig = plot_dispersion(data, args.filename, btol=args.btol, up=args.up, down=args.down)
+        # Save or show Matplotlib figure
+        if args.s:
+            plt.savefig(args.s)
+        else:
+            plt.show()
 
 
 def parse_arguments():
@@ -59,8 +61,12 @@ def parse_arguments():
                 1/cm, Ry). Default: eV""")
     parser.add_argument(
         '-s',
-        default=None,
+        action='store_true',
         help='Save resulting plot to a file')
+    parser.add_argument(
+        '-grace',
+	action='store_true',
+	help='Output a .agr Grace file')
 
     spin_group = parser.add_mutually_exclusive_group()
     spin_group.add_argument(
