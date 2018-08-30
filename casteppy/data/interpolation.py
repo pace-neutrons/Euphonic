@@ -190,8 +190,10 @@ class InterpolationData:
         ion_type = []
         ion_mass = []
         for ion in range(n_species):
-            ion_type.extend([ion_type_tmp[ion] for i in range(n_ions_in_species[ion])])
-            ion_mass.extend([ion_mass_tmp[ion] for i in range(n_ions_in_species[ion])])
+            ion_type.extend([ion_type_tmp[ion] for i in
+                range(n_ions_in_species[ion])])
+            ion_mass.extend([ion_mass_tmp[ion] for i in
+                range(n_ions_in_species[ion])])
 
         cell_vec = cell_vec*ureg.bohr
         cell_vec.ito('angstrom')
@@ -209,6 +211,88 @@ class InterpolationData:
         self.n_cells_in_sc = n_cells_in_sc
         self.force_constants = force_constants
         self.cell_origins = cell_origins
+
+
+    def calculate_fine_phonons(self, qpts):
+        force_constants = self.force_constants.magnitude
+        sc_matrix = self.sc_matrix
+        cell_origins = self.cell_origins
+        n_cells_in_sc = self.n_cells_in_sc
+        n_ions = self.n_ions
+        n_branches = self.n_branches
+        n_qpts = qpts.shape[0]
+        freqs = np.zeros((n_qpts, n_branches))
+        eigenvecs = np.zeros((n_qpts, n_branches, n_ions, 3),
+                             dtype=np.complex128)
+
+        # Build list of all possible supercell image coordinates
+        lim = 2 # Supercell image limit
+        sc_image_r = self._calculate_supercell_image_r(lim)
+        phases = np.zeros((n_cells_in_sc, (2*lim + 1)**3),
+                           dtype=np.complex128)
+
+        if not hasattr(self, 'sc_image_i'):
+            self._calculate_supercell_images(lim)
+        n_sc_images = self.n_sc_images
+        sc_image_i = self.sc_image_i
+
+        # Calculate phase lookup
+        for q in range(n_qpts):
+            qpt = qpts[q, :]
+            dyn_mat = np.zeros((n_ions*3, n_ions*3), dtype=np.complex128)
+
+            phases = self._calculate_phases(lim, qpt, sc_image_r)
+
+            for i in range(n_ions):
+                for scj in range(n_ions*n_cells_in_sc):
+                    j = int(scj%n_ions)
+                    nc = int(scj/n_ions)
+                    # Cumulant method: sum phases for all supercell images and
+                    # divide by number of images
+                    term = 0.
+                    for img_i in range(n_sc_images[i, scj]):
+                        term = term + phases[nc, sc_image_i[i, scj, img_i]]
+                    dyn_mat[3*i:(3*i + 3), 3*j:(3*j + 3)] = (
+                        dyn_mat[3*i:(3*i + 3), 3*j:(3*j + 3)] +
+                        term*force_constants[nc, 3*i:(3*i + 3), 3*j:(3*j + 3)]
+                        /n_sc_images[i, scj])
+
+            evals, evecs = np.linalg.eigh(dyn_mat)
+            eigenvecs[q, :] = np.reshape(evecs, (n_branches, n_ions, 3))
+            freqs[q, :] = np.sqrt(evals)
+
+        self.n_qpts = n_qpts
+        self.qpts = qpts
+        self.freqs = freqs*self.freqs.units
+        self.eigenvecs = eigenvecs
+
+        return self.freqs, self.eigenvecs
+
+
+    def _calculate_supercell_image_r(self, lim):
+        irange = range(-lim, lim + 1)
+        inum = 2*lim + 1
+        scx = np.repeat(irange, inum**2)
+        scy = np.tile(np.repeat(irange, inum), inum)
+        scz = np.tile(irange, inum**2)
+        return np.column_stack((scx, scy, scz))
+
+
+    def _calculate_phases(self, lim, qpt, sc_image_r):
+        n_cells_in_sc = self.n_cells_in_sc
+        sc_matrix = self.sc_matrix
+        cell_origins = self.cell_origins
+
+        phases = np.zeros((n_cells_in_sc, (2*lim + 1)**3), dtype=np.complex128)
+        phase_i = np.zeros((n_cells_in_sc, (2*lim + 1)**3), dtype=np.float64)
+        for i in range(len(sc_image_r)):
+            sc_offset = np.matmul(np.transpose(sc_matrix), sc_image_r[i, :])
+            for nc in range(n_cells_in_sc):
+                cell_r = sc_offset + cell_origins[nc, :]
+                phase = 2*math.pi*np.dot(qpt, cell_r)
+                phases[nc, i] = np.complex(math.cos(phase), math.sin(phase))
+
+        return phases
 
 
     def _calculate_supercell_images(self, lim):
@@ -254,69 +338,6 @@ class InterpolationData:
         self.sc_image_i = sc_image_i
         self.n_sc_images = n_sc_images
 
-
-    def _calculate_supercell_image_r(self, lim):
-        irange = range(-lim, lim + 1)
-        inum = 2*lim + 1
-        scx = np.repeat(irange, inum**2)
-        scy = np.tile(np.repeat(irange, inum), inum)
-        scz = np.tile(irange, inum**2)
-        return np.column_stack((scx, scy, scz))
-
-
-    def calculate_fine_phonons(self, qpts):
-        force_constants = self.force_constants.magnitude
-        sc_matrix = self.sc_matrix
-        cell_origins = self.cell_origins
-        n_cells_in_sc = self.n_cells_in_sc
-        n_ions = self.n_ions
-        n_branches = self.n_branches
-        n_qpts = qpts.shape[0]
-        freqs = np.zeros((n_qpts, n_branches))
-        eigenvecs = np.zeros((n_qpts, n_branches, n_ions, 3), dtype=np.complex128)
-
-        # Build list of all possible supercell image coordinates
-        lim = 2 # Supercell image limit
-        sc_image_r = self._calculate_supercell_image_r(lim)
-        phases = np.zeros((n_cells_in_sc, (2*lim + 1)**3), dtype=np.complex128)
-
-        if not hasattr(self, 'sc_image_i'):
-            self._calculate_supercell_images(lim)
-        n_sc_images = self.n_sc_images
-        sc_image_i = self.sc_image_i
-
-        # Calculate phase lookup
-        lookup_i = range(2*lim + 1)
-        for q in range(n_qpts):
-            qpt = qpts[q, :]
-            dyn_mat = np.zeros((n_ions*3, n_ions*3), dtype=np.complex128)
-            for i in range(len(sc_image_r)):
-                sc_offset = np.dot(np.transpose(sc_matrix), sc_image_r[i, :])
-                for nc in range(n_cells_in_sc):
-                    cell_r = sc_offset + cell_origins[nc, :]
-                    phase = 2*math.pi*np.dot(qpt, cell_r)
-                    phases[nc, i] = np.complex(math.cos(phase), math.sin(phase))
-
-            for i in range(n_ions):
-                for scj in range(n_ions*n_cells_in_sc):
-                    j = int(scj%n_ions)
-                    nc = int(scj/n_ions)
-                    # Cumulant method: sum phases for all supercell images and divide by number of images
-                    term = 0.
-                    for img_i in range(n_sc_images[i, scj]):
-                        term = term + phases[nc, sc_image_i[i, scj, img_i]]
-                    dyn_mat[3*i:(3*i + 3), 3*j:(3*j + 3)] = dyn_mat[3*i:(3*i + 3), 3*j:(3*j + 3)] + (term*force_constants[nc, 3*i:(3*i + 3), 3*j:(3*j + 3)])/n_sc_images[i, scj]
-
-            evals, evecs = np.linalg.eigh(dyn_mat)
-            eigenvecs[q, :] = np.reshape(evecs, (n_branches, n_ions, 3))
-            freqs[q, :] = np.sqrt(evals)
-
-        self.n_qpts = n_qpts
-        self.qpts = qpts
-        self.freqs = freqs*self.freqs.units
-        self.eigenvecs = eigenvecs
-
-        return self.freqs, self.eigenvecs
 
     def convert_e_units(self, units):
         super(InterpolationData, self).convert_e_units(units)

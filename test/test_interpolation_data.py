@@ -111,7 +111,7 @@ class TestInterpolatePhonons(unittest.TestCase):
         data = InterpolationData(seedname, path)
         self.data = data
 
-    def test_calculate_supercell_image_r(self):
+    def test_calculate_supercell_image_r_lim_1(self):
         expected_image_r = np.array([[-1, -1, -1],
                                      [-1, -1,  0],
                                      [-1, -1,  1],
@@ -143,10 +143,42 @@ class TestInterpolatePhonons(unittest.TestCase):
         image_r = self.data._calculate_supercell_image_r(lim)
         npt.assert_equal(image_r, expected_image_r)
 
+    def test_calculate_supercell_image_r_lim_2(self):
+        expected_image_r = np.loadtxt('test/data/interpolation/sc_image_r.txt')
+        lim = 2
+        image_r = self.data._calculate_supercell_image_r(lim)
+        npt.assert_equal(image_r, expected_image_r)
+
+    def test_calculate_phases_qpt(self):
+        lim = 2
+        qpt = [-1, 9.35, 3.35]
+        sc_image_r = np.loadtxt('test/data/interpolation/sc_image_r.txt')
+
+        phase_data = np.loadtxt('test/data/interpolation/phases.txt')
+        nc = phase_data[:, 0].astype(int)
+        i = phase_data[:, 1].astype(int)
+        expected_phases = np.zeros((4, (2*lim + 1)**3), dtype=np.complex128)
+        expected_phases[nc, i] = (phase_data[:, 2].astype(float)
+                                  + phase_data[:, 3].astype(float)*1j)
+
+        phases = self.data._calculate_phases(lim, qpt, sc_image_r)
+        npt.assert_allclose(phases, expected_phases)
+
+    def test_calculate_phases_gamma_pt(self):
+        lim = 2
+        qpt = [0.0, 0.0, 0.0]
+        sc_image_r = np.loadtxt('test/data/interpolation/sc_image_r.txt')
+
+        expected_phases = np.zeros((4, (2*lim + 1)**3), dtype=np.complex128)
+        expected_phases = 1.0 + 0.0*1j
+
+        phases = self.data._calculate_phases(lim, qpt, sc_image_r)
+        npt.assert_equal(phases, expected_phases)
+
     def test_calculate_supercell_images_n_sc_images(self):
         # Supercell image calculation limit - 2 supercells in each direction
         lim = 2
-        image_data = np.loadtxt('test/data/supercell_images/n_sc_images.txt')
+        image_data = np.loadtxt('test/data/interpolation/n_sc_images.txt')
         i = image_data[:, 0].astype(int)
         j = image_data[:, 1].astype(int)
         n = image_data[:, 2].astype(int)
@@ -159,7 +191,7 @@ class TestInterpolatePhonons(unittest.TestCase):
     def test_calculate_supercell_images_sc_image_i(self):
         # Supercell image calculation limit - 2 supercells in each direction
         lim = 2
-        image_data = np.loadtxt('test/data/supercell_images/sc_image_i.txt')
+        image_data = np.loadtxt('test/data/interpolation/sc_image_i.txt')
         i = image_data[:, 0].astype(int)
         j = image_data[:, 1].astype(int)
         n = image_data[:, 2].astype(int)
