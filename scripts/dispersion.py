@@ -6,7 +6,6 @@ or vibrational band structure or dispersion.
 
 import argparse
 import os
-import matplotlib.pyplot as plt
 from casteppy import ureg
 from casteppy.data.bands import BandsData
 from casteppy.data.phonon import PhononData
@@ -39,11 +38,13 @@ def main():
         output_grace(data, seedname, up=args.up, down=args.down)
     else:
         fig = plot_dispersion(data, args.filename, btol=args.btol, up=args.up, down=args.down)
-        # Save or show Matplotlib figure
-        if args.s:
-            plt.savefig(args.s)
-        else:
-            plt.show()
+        if fig is not None:
+            import matplotlib.pyplot as plt
+            # Save or show Matplotlib figure
+            if args.s:
+                plt.savefig(args.s)
+            else:
+                plt.show()
 
 
 def parse_arguments():

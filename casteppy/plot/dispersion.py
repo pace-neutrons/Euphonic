@@ -1,6 +1,6 @@
 import math
+import sys
 import numpy as np
-import matplotlib.pyplot as plt
 import seekpath
 from casteppy.util import (direction_changed, reciprocal_lattice)
 
@@ -179,79 +179,119 @@ def output_grace(data, seedname='out', up=True, down=True):
     down : boolean, optional
         Whether to plot spin down frequencies (if applicable). Default: True
     """
+    try:
+        from PyGrace.grace import Grace
+    except ImportError:
+        print('PyGrace is not installed, attempting to write .agr Grace ' +
+              'file anyway. If using Python 2, you can install PyGrace ' +
+              'from https://github.com/pygrace/pygrace')
+
+    # Do calculations required for axis, tick labels etc.
     # Calculate distance along x axis
     recip_latt = reciprocal_lattice(data.cell_vec)
     abscissa = calc_abscissa(data.qpts, recip_latt)
     # Calculate x-axis (recip space) ticks and labels
     xlabels, qpts_with_labels = recip_space_labels(data)
 
-    with open(seedname + '.agr', 'w') as f:
-        f.write('@with g0\n')
-        f.write('@title "{0}"\n'.format(seedname))
-        f.write('@view 0.150000, 0.250000, 0.700000, 0.850000\n')
-        f.write('@world xmin 0\n')
-        f.write('@world xmax {0:.3f}\n'.format(abscissa[-1] + 0.002))
-        f.write('@world ymin 0\n')
-        f.write('@default linewidth 2.0\n')
-        f.write('@default char size 1.5\n')
-        f.write('@autoscale onread yaxes\n')
+    units_str = '{:~P}'.format(data.freqs.units)
+    inverse_unit_index = units_str.find('/')
+    if inverse_unit_index > -1:
+        units_str = units_str[inverse_unit_index+1:]
+        yaxis_label = '\\f{{Symbol}}e\\f{{}} ({0}\S-1\\N)'.format(units_str)
+    else:
+        yaxis_label = '\\f{{Symbol}}e\\f{{}} ({0})'.format(units_str)
+    # Format tick labels
+    for i, label in enumerate(xlabels):
+        if label == 'GAMMA':  # Format gamma symbol
+            label = '\\f{Symbol}G\\f{}'
 
-        units_str = '{:~P}'.format(data.freqs.units)
-        inverse_unit_index = units_str.find('/')
-        if inverse_unit_index > -1:
-            units_str = units_str[inverse_unit_index+1:]
-            yaxis_label = '\\f{{Symbol}}e\\f{{}} ({0}\S-1\\N)'.format(units_str)
-        else:
-            yaxis_label = '\\f{{Symbol}}e\\f{{}} ({0})'.format(units_str)
-        f.write('@yaxis  bar linewidth 2.0\n')
-        f.write('@yaxis label "{0}"\n'.format(yaxis_label))
-        f.write('@yaxis label char size 1.5\n')
-        f.write('@yaxis ticklabel char size 1.5\n')
+    if 'PyGrace' in sys.modules:
+        grace = Grace()
+        grace.background_fill = 'on'
+        graph = grace.add_graph()
+        graph.yaxis.label.text = yaxis_label
 
-        f.write('@xaxis  bar linewidth 2.0\n')
-        f.write('@xaxis label char size 1.5\n')
-        f.write('@xaxis tick major linewidth 1.6\n')
-        f.write('@xaxis tick major grid on\n')
-        f.write('@xaxis tick spec type both\n')
+        graph.xaxis.tick.set_spec_ticks(abscissa[qpts_with_labels].tolist(), [], xlabels.tolist())
+        graph.xaxis.tick.major_grid = 'on'
+        if len(max(xlabels, key=len)) >= 11:
+            graph.xaxis.ticklabel.configure(angle=315, char_size=1.0)
 
-        f.write('@xaxis tick spec {0:d}\n'.format(len(xlabels)))
-        # Rotate long tick labels
-        if len(max(xlabels, key=len)) <= 11:
-          f.write('@xaxis ticklabel char size 1.5\n')
-        else:
-          f.write('@xaxis ticklabel char size 1.0\n')
-          f.write('@xaxis ticklabel angle 315\n')
-
-        # Write tick labels
-        for i, label in enumerate(xlabels):
-            if label == 'GAMMA':  # Format gamma symbol
-                label = '\\f{Symbol}G\\f{}'
-            f.write('@xaxis tick major {0:d},{1:8.3f}\n'.format(i, abscissa[qpts_with_labels[i]]))
-            f.write('@xaxis ticklabel {0:d},"{1}"\n'.format(i, label))
-
-        # Write frequencies
         for i in range(data.n_branches):
-            #f.write('@ G0.S{0:d} line color 1\n'.format(i))
-            f.write('@target G0.S{0:d}\n'.format(i))
-            f.write('@type xy\n')
             if up:
-                for j, freq in enumerate(data.freqs[:, i].magnitude):
-                    f.write('{0:12.3f} {1:12.3f}\n'.format(abscissa[j], freq))
+                ds = graph.add_dataset(zip(abscissa, data.freqs[:, i].magnitude))
+                ds.line.configure(linewidth=2.0, color=i%16)
+                ds.symbol.shape = 0
             if down and hasattr(data, 'freq_down') and len(data.freq_down) > 0:
-                for j, freq in enumerate(data.freqs[:, i].magnitude):
-                    f.write('{0:12.3f} {1:12.3f}\n'.format(abscissa[j], freq))
-            f.write('&\n')
+                ds = graph.add_dataset(zip(abscissa, data.freq_down[:, i].magnitude))
+                ds.line.configure(linewidth=2.0, color=i%16)
+                ds.symbol.shape = 0
 
-        # Write Fermi level
         if hasattr(data, 'fermi'):
             for i, ef in enumerate(data.fermi.magnitude):
-                f.write('@ G0.S{0:d} line linestyle 3\n'.format(data.n_branches + i))
-                f.write('@ G0.S{0:d} line color 1\n'.format(data.n_branches + i))
-                f.write('@target G0.S{0:d}\n'.format(data.n_branches + i))
-                f.write('@type xy')
-                f.write('{0:12.3f} {0:12.3f}\n'.format(0, ef))
-                f.write('{0:12.3f} {0:12.3f}\n'.format(abscissa[-1], ef))
+                ds = graph.add_dataset(zip([0, abscissa[-1], [ef, ef]]))
+                ds.line.configure(linewidth=2.0, color=1, linestyle=3)
+
+        graph.set_world_to_limits()
+        grace.write_file(seedname + '.agr')
+
+    else:
+        with open(seedname + '.agr', 'w') as f:
+            f.write('@with g0\n')
+            f.write('@title "{0}"\n'.format(seedname))
+            f.write('@view 0.150000, 0.250000, 0.700000, 0.850000\n')
+            f.write('@world xmin 0\n')
+            f.write('@world xmax {0:.3f}\n'.format(abscissa[-1] + 0.002))
+            f.write('@world ymin 0\n')
+            f.write('@default linewidth 2.0\n')
+            f.write('@default char size 1.5\n')
+            f.write('@autoscale onread yaxes\n')
+
+            f.write('@yaxis  bar linewidth 2.0\n')
+            f.write('@yaxis label "{0}"\n'.format(yaxis_label))
+            f.write('@yaxis label char size 1.5\n')
+            f.write('@yaxis ticklabel char size 1.5\n')
+
+            f.write('@xaxis  bar linewidth 2.0\n')
+            f.write('@xaxis label char size 1.5\n')
+            f.write('@xaxis tick major linewidth 1.6\n')
+            f.write('@xaxis tick major grid on\n')
+            f.write('@xaxis tick spec type both\n')
+
+            f.write('@xaxis tick spec {0:d}\n'.format(len(xlabels)))
+            # Rotate long tick labels
+            if len(max(xlabels, key=len)) <= 11:
+                f.write('@xaxis ticklabel char size 1.5\n')
+            else:
+                f.write('@xaxis ticklabel char size 1.0\n')
+                f.write('@xaxis ticklabel angle 315\n')
+
+            for i, label in enumerate(xlabels):
+                f.write('@xaxis tick major {0:d},{1:8.3f}\n'.format(i, abscissa[qpts_with_labels[i]]))
+                f.write('@xaxis ticklabel {0:d},"{1}"\n'.format(i, label))
+
+            # Write frequencies
+            for i in range(data.n_branches):
+                #f.write('@ G0.S{0:d} line color 1\n'.format(i))
+                f.write('@target G0.S{0:d}\n'.format(i))
+                f.write('@type xy\n')
+                if up:
+                    for j, freq in enumerate(data.freqs[:, i].magnitude):
+                        f.write('{0: .15e} {1: .15e}\n'.format(abscissa[j], freq))
+                if down and hasattr(data, 'freq_down') and len(data.freq_down) > 0:
+                    for j, freq in enumerate(data.freqs[:, i].magnitude):
+                        f.write('{0: .15e} {1: .15e}\n'.format(abscissa[j], freq))
                 f.write('&\n')
+
+            # Write Fermi level
+            if hasattr(data, 'fermi'):
+                for i, ef in enumerate(data.fermi.magnitude):
+                    f.write('@ G0.S{0:d} line linestyle 3\n'.format(data.n_branches + i))
+                    f.write('@ G0.S{0:d} line color 1\n'.format(data.n_branches + i))
+                    f.write('@target G0.S{0:d}\n'.format(data.n_branches + i))
+                    f.write('@type xy')
+                    f.write('{0:12.3f} {0:12.3f}\n'.format(0, ef))
+                    f.write('{0:12.3f} {0:12.3f}\n'.format(abscissa[-1], ef))
+                    f.write('&\n')
 
 
 def plot_dispersion(data, title='', btol=10.0, up=True, down=True):
@@ -280,6 +320,15 @@ def plot_dispersion(data, title='', btol=10.0, up=True, down=True):
         Figure containing subplot(s) for the plotted band structure. If there
         is a large gap between some q-points there will be multiple subplots
     """
+    try:
+        import matplotlib.pyplot as plt
+    except ImportError:
+        print('Cannot plot dispersion with Matplotlib, Matplotlib is not ' +
+              'installed. To use this feature install CastepPy\'s optional ' +
+              'Matplotlib dependencies from the casteppy top directory: ' +
+              '\n\npip install --user .[matplotlib]')
+        return None
+
     recip_latt = reciprocal_lattice(data.cell_vec)
     abscissa = calc_abscissa(data.qpts, recip_latt)
     # Determine reciprocal space coordinates that are far enough apart to be

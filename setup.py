@@ -11,8 +11,10 @@ setup(
     packages=find_packages(),
     install_requires=[
         'numpy>=1.9.1',
-        'matplotlib>=1.4.2',
         'seekpath>=1.1.0',
         'pint>=0.8.0'
-    ]
+    ],
+    extras_require={
+        'matplotlib': ['matplotlib>=1.4.2']
+    }
 )
