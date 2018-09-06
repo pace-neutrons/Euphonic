@@ -215,6 +215,7 @@ class InterpolationData:
 
     def calculate_fine_phonons(self, qpts):
         force_constants = self.force_constants.magnitude
+        ion_mass = self.ion_mass.to('e_mass').magnitude
         sc_matrix = self.sc_matrix
         cell_origins = self.cell_origins
         n_cells_in_sc = self.n_cells_in_sc
@@ -249,14 +250,24 @@ class InterpolationData:
                     nc = int(scj/n_ions)
                     # Cumulant method: sum phases for all supercell images and
                     # divide by number of images
-                    term = 0.
+                    term = 0.0
                     for img_i in range(n_sc_images[i, scj]):
                         term = term + phases[nc, sc_image_i[i, scj, img_i]]
-                    dyn_mat[3*i:(3*i + 3), 3*j:(3*j + 3)] = (
-                        dyn_mat[3*i:(3*i + 3), 3*j:(3*j + 3)] +
-                        term*force_constants[nc, 3*i:(3*i + 3), 3*j:(3*j + 3)]
-                        /n_sc_images[i, scj])
+                    io = 3*i
+                    ie = 3*i + 3
+                    jo = 3*j
+                    je = 3*j + 3
+                    dyn_mat[io:ie, jo:je] += term*force_constants[
+                        nc, io:ie, jo:je]/n_sc_images[i, scj]
 
+            # Mass weight dynamical matrix
+            for i in range(n_ions):
+                for j in range(n_ions):
+                    io = 3*i
+                    ie = 3*i + 3
+                    jo = 3*j
+                    je = 3*j + 3
+                    dyn_mat[io:ie, jo:je] *= 1/math.sqrt(ion_mass[i]*ion_mass[j])
             evals, evecs = np.linalg.eigh(dyn_mat)
             eigenvecs[q, :] = np.reshape(evecs, (n_branches, n_ions, 3))
             freqs[q, :] = np.sqrt(evals)
@@ -284,7 +295,6 @@ class InterpolationData:
         cell_origins = self.cell_origins
 
         phases = np.zeros((n_cells_in_sc, (2*lim + 1)**3), dtype=np.complex128)
-        phase_i = np.zeros((n_cells_in_sc, (2*lim + 1)**3), dtype=np.float64)
         for i in range(len(sc_image_r)):
             sc_offset = np.matmul(np.transpose(sc_matrix), sc_image_r[i, :])
             for nc in range(n_cells_in_sc):
