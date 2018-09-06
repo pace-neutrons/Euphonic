@@ -6,7 +6,6 @@ or vibrational band structure or dispersion.
 
 import argparse
 import os
-from casteppy import ureg
 from casteppy.data.bands import BandsData
 from casteppy.data.phonon import PhononData
 from casteppy.plot.dispersion import output_grace, plot_dispersion

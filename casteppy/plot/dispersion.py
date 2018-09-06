@@ -228,7 +228,7 @@ def output_grace(data, seedname='out', up=True, down=True):
 
         if hasattr(data, 'fermi'):
             for i, ef in enumerate(data.fermi.magnitude):
-                ds = graph.add_dataset(zip([0, abscissa[-1], [ef, ef]]))
+                ds = graph.add_dataset(zip([0, abscissa[-1]], [ef, ef]))
                 ds.line.configure(linewidth=2.0, color=1, linestyle=3)
 
         graph.set_world_to_limits()
@@ -271,15 +271,19 @@ def output_grace(data, seedname='out', up=True, down=True):
 
             # Write frequencies
             for i in range(data.n_branches):
-                #f.write('@ G0.S{0:d} line color 1\n'.format(i))
-                f.write('@target G0.S{0:d}\n'.format(i))
-                f.write('@type xy\n')
+                n_sets = 0
                 if up:
+                    f.write('@target G0.S{0:d}\n'.format(n_sets))
+                    f.write('@type xy\n')
                     for j, freq in enumerate(data.freqs[:, i].magnitude):
                         f.write('{0: .15e} {1: .15e}\n'.format(abscissa[j], freq))
+                    n_sets += 1
                 if down and hasattr(data, 'freq_down') and len(data.freq_down) > 0:
-                    for j, freq in enumerate(data.freqs[:, i].magnitude):
+                    f.write('@target G0.S{0:d}\n'.format(n_sets))
+                    f.write('@type xy\n')
+                    for j, freq in enumerate(data.freq_down[:, i].magnitude):
                         f.write('{0: .15e} {1: .15e}\n'.format(abscissa[j], freq))
+                    n_sets += 1
                 f.write('&\n')
 
             # Write Fermi level
@@ -288,9 +292,9 @@ def output_grace(data, seedname='out', up=True, down=True):
                     f.write('@ G0.S{0:d} line linestyle 3\n'.format(data.n_branches + i))
                     f.write('@ G0.S{0:d} line color 1\n'.format(data.n_branches + i))
                     f.write('@target G0.S{0:d}\n'.format(data.n_branches + i))
-                    f.write('@type xy')
-                    f.write('{0:12.3f} {0:12.3f}\n'.format(0, ef))
-                    f.write('{0:12.3f} {0:12.3f}\n'.format(abscissa[-1], ef))
+                    f.write('@type xy\n')
+                    f.write('{0: .15e} {1: .15e}\n'.format(0, ef))
+                    f.write('{0: .15e} {1: .15e}\n'.format(abscissa[-1], ef))
                     f.write('&\n')
 
 
@@ -316,9 +320,11 @@ def plot_dispersion(data, title='', btol=10.0, up=True, down=True):
 
     Returns
     -------
-    fig : Matplotlib Figure
-        Figure containing subplot(s) for the plotted band structure. If there
-        is a large gap between some q-points there will be multiple subplots
+    fig : Matplotlib Figure or None
+        If matplotlib.pyplot can be imported, returns a Figure containing
+        subplot(s) for the plotted band structure, otherwise returns None.
+        If there is a large gap between some q-points there can be multiple
+        subplots.
     """
     try:
         import matplotlib.pyplot as plt

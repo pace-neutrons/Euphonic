@@ -11,11 +11,15 @@ from casteppy import ureg
 from casteppy.data.bands import BandsData
 from casteppy.data.phonon import PhononData
 from casteppy.calculate.dos import calculate_dos
-from casteppy.plot.dos import plot_dos
+from casteppy.plot.dos import plot_dos, output_grace
 
 
 def main():
     args = parse_arguments()
+    # If neither -up nor -down specified, plot both
+    if not args.up and not args.down:
+        args.up = True
+        args.down = True
 
     path, file = os.path.split(args.filename)
     seedname = file[:file.rfind('.')]
@@ -48,19 +52,17 @@ def main():
 
     calculate_dos(data, bwidth.magnitude, gwidth.magnitude, lorentz=args.lorentz)
 
-
-    if args.up:
-        fig = plot_dos(data, args.filename, mirror=args.mirror, down=False)
-    elif args.down:
-        fig = plot_dos(data, args.filename, mirror=args.mirror, up=False)
+    if args.grace:
+        output_grace(data, seedname, mirror=args.mirror, up=args.up, down=args.down)
     else:
-        fig = plot_dos(data, args.filename, mirror=args.mirror)
-
-    # Save or show figure
-    if args.s:
-        plt.savefig(args.s)
-    else:
-        plt.show()
+        fig = plot_dos(data, args.filename, mirror=args.mirror, up=args.up, down=args.down)
+        if fig is not None:
+            import matplotlib.pyplot as plt
+            # Save or show Matplotlib figure
+            if args.s:
+                plt.savefig(args.s)
+            else:
+                plt.show()
 
 
 def parse_arguments():
@@ -80,6 +82,10 @@ def parse_arguments():
         '-s',
         default=None,
         help='Save resulting plot to a file')
+    parser.add_argument(
+        '-grace',
+        action='store_true',
+        help='Output a .agr Grace file')
 
     spin_group = parser.add_mutually_exclusive_group()
     spin_group.add_argument(
