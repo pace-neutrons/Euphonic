@@ -4,8 +4,9 @@ import sys
 import os
 import numpy as np
 from casteppy import ureg
+from casteppy.data.data import Data
 
-class InterpolationData:
+class InterpolationData(Data):
     """
     A class to read the data required for a supercell phonon interpolation
     calculation from a .castep_bin file, and store any calculated
@@ -296,7 +297,7 @@ class InterpolationData:
 
         phases = np.zeros((n_cells_in_sc, (2*lim + 1)**3), dtype=np.complex128)
         for i in range(len(sc_image_r)):
-            sc_offset = np.matmul(np.transpose(sc_matrix), sc_image_r[i, :])
+            sc_offset = np.dot(np.transpose(sc_matrix), sc_image_r[i, :])
             for nc in range(n_cells_in_sc):
                 cell_r = sc_offset + cell_origins[nc, :]
                 phase = 2*math.pi*np.dot(qpt, cell_r)
@@ -321,17 +322,17 @@ class InterpolationData:
         cutoff_scale = 1.0
 
         # Calculate points of WS cell for this supercell
-        sc_vecs = np.matmul(sc_matrix, cell_vec)
-        ws_list = np.matmul(ws_frac, sc_vecs)
+        sc_vecs = np.dot(sc_matrix, cell_vec)
+        ws_list = np.dot(ws_frac, sc_vecs)
         inv_ws_sq = 1.0/np.sum(np.square(ws_list[1:]), axis=1)
 
         # Get Cartesian coords of supercell images and ions in supercell
         sc_image_r = self._calculate_supercell_image_r(lim)
-        sc_image_cart = np.matmul(sc_image_r, np.transpose(sc_vecs))
-        sc_ion_r = np.matmul(np.tile(ion_r, (n_cells_in_sc, 1)) + np.repeat(cell_origins, n_ions, axis=0), np.linalg.inv(sc_matrix))
+        sc_image_cart = np.dot(sc_image_r, np.transpose(sc_vecs))
+        sc_ion_r = np.dot(np.tile(ion_r, (n_cells_in_sc, 1)) + np.repeat(cell_origins, n_ions, axis=0), np.linalg.inv(sc_matrix))
         sc_ion_cart = np.zeros((len(sc_image_r), 3))
         for i in range(n_ions*n_cells_in_sc):
-            sc_ion_cart[i, :] = np.matmul(sc_ion_r[i, :], sc_vecs)
+            sc_ion_cart[i, :] = np.dot(sc_ion_r[i, :], sc_vecs)
 
         sc_image_i = np.zeros((self.n_ions, self.n_ions*self.n_cells_in_sc, (2*lim + 1)**3), dtype=np.int8)
         n_sc_images = np.zeros((self.n_ions, self.n_ions*self.n_cells_in_sc), dtype=np.int8)
