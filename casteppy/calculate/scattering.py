@@ -30,8 +30,8 @@ def structure_factor(data, scattering_lengths, T=5.0, scale=1.0):
     """
 
     # Convert any Pint quantities to pure magnitudes for performance
-    cell_vec = data.cell_vec.magnitude
-    freqs = data.freqs.magnitude
+    cell_vec = (data.cell_vec.to('angstrom')).magnitude
+    freqs = (data.freqs.to('meV')).magnitude
 
     # Get scattering lengths and calculate normalisation factor
     sl = [scattering_lengths[x] for x in data.ion_type]
