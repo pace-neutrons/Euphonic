@@ -214,8 +214,11 @@ class InterpolationData(Data):
         self.cell_origins = cell_origins
 
 
-    def calculate_fine_phonons(self, qpts):
-        force_constants = self.force_constants.magnitude
+    def calculate_fine_phonons(self, qpts, asr=False):
+        if asr:
+            force_constants = self._enforce_acoustic_sum_rule().magnitude
+        else:
+            force_constants = self.force_constants.magnitude
         ion_mass = self.ion_mass.to('e_mass').magnitude
         sc_matrix = self.sc_matrix
         cell_origins = self.cell_origins
@@ -280,6 +283,95 @@ class InterpolationData(Data):
 
         return self.freqs, self.eigenvecs
 
+
+    def _enforce_acoustic_sum_rule(self):
+        cell_vec = self.cell_vec
+        cell_origins = self.cell_origins
+        sc_matrix = self.sc_matrix
+        n_cells_in_sc = self.n_cells_in_sc
+        n_ions = self.n_ions
+        n_branches = self.n_branches
+
+        # Cell distances in supercell
+        cell_r = np.zeros((n_cells_in_sc, 3))
+        for nc in range(n_cells_in_sc):
+            cell_r[nc, :] = np.dot(np.transpose(self.cell_vec),
+                                   self.cell_origins[nc])
+        # Supercell lattice vectors
+        scell_vec = np.dot(sc_matrix, cell_vec)
+        cell_r_frac = np.dot(cell_r, np.linalg.inv(np.transpose(scell_vec)))
+        # Compute square matrix giving relative index of cells in sc
+        sc_relative_index = np.full((n_cells_in_sc, n_cells_in_sc), -1)
+        for nc in range(n_cells_in_sc):
+            for mc in range(n_cells_in_sc):
+                for kc in range(n_cells_in_sc):
+                    dist = cell_r_frac[mc] - cell_r_frac[nc] - cell_r_frac[kc]
+                    dist = dist - np.floor(dist + 0.5)
+                    tol = 1e-11
+                    if sum(np.abs(dist)) < tol:
+                        sc_relative_index[nc, mc] = kc
+                        break
+        if np.any(sc_relative_index == -1):
+            print('Error correcting FC matrix for acoustic sum rule,' +
+                  'supercell relative index couldn\'t be found. Returning' +
+                  'uncorrected FC matrix')
+            return self.force_constants
+
+        # Construct square FC matrix
+        n_ions_in_sc = n_ions*n_cells_in_sc
+        sq_fc = np.zeros((3*n_ions_in_sc, 3*n_ions_in_sc))
+        for i in range(n_ions_in_sc):
+            nci = i/n_ions
+            ii = i%n_ions
+            for j in range(n_ions_in_sc):
+                ncj = j/n_ions
+                jj = j%n_ions
+                sq_fc[3*i:(3*i + 3), 3*j:(3*j + 3)] = self.force_constants[
+                    sc_relative_index[nci, ncj],
+                    3*ii:(3*ii + 3), 3*jj:(3*jj + 3)]
+
+        # Find acoustic modes, they should have the sum of c of m amplitude
+        # squared = mass (note: have not actually included mass weighting
+        # here so assume mass = 1.0)
+        evals, evecs = np.linalg.eigh(sq_fc)
+        n_sc_branches = n_ions_in_sc*3
+        # Sum displacements for all ions in each branch
+        c_of_m_disp = np.sum(np.reshape(
+            np.transpose(evecs), (n_sc_branches, n_ions_in_sc, 3)), axis=1)
+        c_of_m_disp_sq = np.sum(np.abs(c_of_m_disp)**2, axis=1)
+        sensitivity = 0.5
+        sc_mass = 1.0*n_cells_in_sc
+        # Check number of acoustic modes
+        if np.sum(c_of_m_disp_sq > sensitivity*sc_mass) < 3:
+            print('Error correcting FC matrix for acoustic sum rule, could' +
+                  'not find 3 acoustic modes. Returning uncorrected FC matrix')
+            return self.force_constants
+        # Find indices of acoustic modes (3 largest c of m displacements)
+        ac_i = np.argsort(c_of_m_disp_sq)[-3:]
+        fc_tol = 1e-8*np.min(np.abs(evals))
+
+        for ac in ac_i:
+            for i in range(n_ions_in_sc):
+                for j in range(n_ions_in_sc):
+                    io = 3*i
+                    ie = 3*i + 3
+                    jo = 3*j
+                    je = 3*j + 3
+                    #sq_fc[io:ie, jo:je] = sq_fc[io:ie, jo:je] - (evals[ac] + fc_tol)*evecs[io:ie, ac]*evecs[jo:je, ac]
+                    sq_fc[io:ie, jo:je] = sq_fc[io:ie, jo:je] - (evals[ac] + fc_tol)*evecs[ac, io:ie]*evecs[ac, jo:je]
+
+        force_constants = np.zeros((n_cells_in_sc, 3*n_ions, 3*n_ions))
+        for i in range(n_ions_in_sc):
+            for j in range(n_ions):
+                nc = i/n_ions
+                io = 3*(i%n_ions)
+                ie = 3*(i%n_ions) + 3
+                jo = 3*j
+                je = 3*j + 3
+                force_constants[nc, io:ie, jo:je] = sq_fc[3*i:(3*i + 3), jo:je]
+        force_constants = force_constants*ureg.hartree/(ureg.bohr**2)
+
+        return force_constants
 
     def _calculate_supercell_image_r(self, lim):
         irange = range(-lim, lim + 1)
