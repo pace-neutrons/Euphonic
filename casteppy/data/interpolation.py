@@ -273,7 +273,7 @@ class InterpolationData(Data):
                     je = 3*j + 3
                     dyn_mat[io:ie, jo:je] *= 1/math.sqrt(ion_mass[i]*ion_mass[j])
             evals, evecs = np.linalg.eigh(dyn_mat)
-            eigenvecs[q, :] = np.reshape(evecs, (n_branches, n_ions, 3))
+            eigenvecs[q, :] = np.reshape(np.transpose(evecs), (n_branches, n_ions, 3))
             freqs[q, :] = np.sqrt(evals)
 
         self.n_qpts = n_qpts
