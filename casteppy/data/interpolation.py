@@ -338,9 +338,10 @@ class InterpolationData(Data):
         # here so assume mass = 1.0)
         evals, evecs = np.linalg.eigh(sq_fc)
         n_sc_branches = n_ions_in_sc*3
+        evec_reshape = np.reshape(
+            np.transpose(evecs), (n_sc_branches, n_ions_in_sc, 3))
         # Sum displacements for all ions in each branch
-        c_of_m_disp = np.sum(np.reshape(
-            np.transpose(evecs), (n_sc_branches, n_ions_in_sc, 3)), axis=1)
+        c_of_m_disp = np.sum(evec_reshape, axis=1)
         c_of_m_disp_sq = np.sum(np.abs(c_of_m_disp)**2, axis=1)
         sensitivity = 0.5
         sc_mass = 1.0*n_cells_in_sc
@@ -352,16 +353,14 @@ class InterpolationData(Data):
         # Find indices of acoustic modes (3 largest c of m displacements)
         ac_i = np.argsort(c_of_m_disp_sq)[-3:]
         fc_tol = 1e-8*np.min(np.abs(evals))
-
         for ac in ac_i:
             for i in range(n_ions_in_sc):
-                for j in range(n_ions_in_sc):
-                    io = 3*i
-                    ie = 3*i + 3
-                    jo = 3*j
-                    je = 3*j + 3
-                    #sq_fc[io:ie, jo:je] = sq_fc[io:ie, jo:je] - (evals[ac] + fc_tol)*evecs[io:ie, ac]*evecs[jo:je, ac]
-                    sq_fc[io:ie, jo:je] = sq_fc[io:ie, jo:je] - (evals[ac] + fc_tol)*evecs[ac, io:ie]*evecs[ac, jo:je]
+                for alpha in range(3):
+                    for j in range(n_ions_in_sc):
+                        for beta in range(3):
+                            sq_fc[i*3 + alpha, j*3 + beta] -= (fc_tol + evals[
+                                ac])*evec_reshape[ac, i, alpha]*evec_reshape[
+                                ac, j, beta]
 
         force_constants = np.zeros((n_cells_in_sc, 3*n_ions, 3*n_ions))
         for i in range(n_ions_in_sc):
@@ -372,7 +371,7 @@ class InterpolationData(Data):
                 jo = 3*j
                 je = 3*j + 3
                 force_constants[nc, io:ie, jo:je] = sq_fc[3*i:(3*i + 3), jo:je]
-        force_constants = force_constants*ureg.hartree/(ureg.bohr**2)
+        force_constants = force_constants*self.force_constants.units
 
         return force_constants
 
