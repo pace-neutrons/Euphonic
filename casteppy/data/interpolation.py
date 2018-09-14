@@ -324,10 +324,10 @@ class InterpolationData(Data):
         n_ions_in_sc = n_ions*n_cells_in_sc
         sq_fc = np.zeros((3*n_ions_in_sc, 3*n_ions_in_sc))
         for i in range(n_ions_in_sc):
-            nci = i/n_ions
+            nci = int(i/n_ions)
             ii = i%n_ions
             for j in range(n_ions_in_sc):
-                ncj = j/n_ions
+                ncj = int(j/n_ions)
                 jj = j%n_ions
                 sq_fc[3*i:(3*i + 3), 3*j:(3*j + 3)] = self.force_constants[
                     sc_relative_index[nci, ncj],
@@ -365,7 +365,7 @@ class InterpolationData(Data):
         force_constants = np.zeros((n_cells_in_sc, 3*n_ions, 3*n_ions))
         for i in range(n_ions_in_sc):
             for j in range(n_ions):
-                nc = i/n_ions
+                nc = int(i/n_ions)
                 io = 3*(i%n_ions)
                 ie = 3*(i%n_ions) + 3
                 jo = 3*j
