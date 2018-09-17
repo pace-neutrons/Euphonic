@@ -155,7 +155,7 @@ class InterpolationData(Data):
                 cell_vec = np.transpose(np.reshape(
                     read_entry(file_obj, float_type), (3, 3)))
             elif header.strip() == b'CELL%NUM_SPECIES':
-                n_species= read_entry(file_obj, int_type)
+                n_species = read_entry(file_obj, int_type)
             elif header.strip() == b'CELL%NUM_IONS_IN_SPECIES':
                 n_ions_in_species = read_entry(file_obj, int_type)
             elif header.strip() == b'CELL%IONIC_POSITIONS':
@@ -170,9 +170,15 @@ class InterpolationData(Data):
                 sc_matrix = np.reshape(
                     read_entry(file_obj, int_type), (3, 3))
                 n_cells_in_sc = int(np.absolute(np.linalg.det(sc_matrix)))
-                force_constants = np.reshape(
+                fc_tmp = np.reshape(
                     read_entry(file_obj, float_type),
-                    (n_cells_in_sc, 3*n_ions, 3*n_ions))
+                    (n_cells_in_sc*n_ions, 3, n_ions, 3))
+                fc_tmp = np.transpose(fc_tmp, axes=[2, 0, 1, 3])
+                force_constants = np.zeros(
+                    (n_ions, n_cells_in_sc*n_ions, 3, 3))
+                for nc in range(n_cells_in_sc):
+                    force_constants[:, nc*n_ions:(nc + 1)*n_ions] = np.transpose(
+                        fc_tmp[:, nc*n_ions:(nc + 1)*n_ions], axes=[1, 0, 2, 3])
                 cell_origins = np.reshape(
                     read_entry(file_obj, int_type), (n_cells_in_sc, 3))
                 fc_row = read_entry(file_obj, int_type)
@@ -247,7 +253,6 @@ class InterpolationData(Data):
             dyn_mat = np.zeros((n_ions*3, n_ions*3), dtype=np.complex128)
 
             phases = self._calculate_phases(lim, qpt, sc_image_r)
-
             for i in range(n_ions):
                 for scj in range(n_ions*n_cells_in_sc):
                     j = int(scj%n_ions)
@@ -261,8 +266,7 @@ class InterpolationData(Data):
                     ie = 3*i + 3
                     jo = 3*j
                     je = 3*j + 3
-                    dyn_mat[io:ie, jo:je] += term*force_constants[
-                        nc, io:ie, jo:je]/n_sc_images[i, scj]
+                    dyn_mat[io:ie, jo:je] += term*force_constants[i, scj]/n_sc_images[i, scj]
 
             # Mass weight dynamical matrix
             for i in range(n_ions):
@@ -277,7 +281,7 @@ class InterpolationData(Data):
             freqs[q, :] = np.sqrt(np.abs(evals))
             # Set imaginary frequencies to negative
             imag_freqs = np.where(evals < 0)
-            freqs[imag_freqs, :] *= -1
+            freqs[q, imag_freqs] *= -1
 
         self.n_qpts = n_qpts
         self.qpts = qpts
@@ -328,10 +332,8 @@ class InterpolationData(Data):
             ii = i%n_ions
             for j in range(n_ions_in_sc):
                 ncj = int(j/n_ions)
-                jj = j%n_ions
-                sq_fc[3*i:(3*i + 3), 3*j:(3*j + 3)] = self.force_constants[
-                    sc_relative_index[nci, ncj],
-                    3*ii:(3*ii + 3), 3*jj:(3*jj + 3)]
+                jj = sc_relative_index[nci, ncj]*n_ions + j%n_ions
+                sq_fc[3*i:(3*i + 3), 3*j:(3*j + 3)] = self.force_constants[ii, jj]
 
         # Find acoustic modes, they should have the sum of c of m amplitude
         # squared = mass (note: have not actually included mass weighting
@@ -362,17 +364,11 @@ class InterpolationData(Data):
                                 ac])*evec_reshape[ac, i, alpha]*evec_reshape[
                                 ac, j, beta]
 
-        force_constants = np.zeros((n_cells_in_sc, 3*n_ions, 3*n_ions))
-        for i in range(n_ions_in_sc):
-            for j in range(n_ions):
-                nc = int(i/n_ions)
-                io = 3*(i%n_ions)
-                ie = 3*(i%n_ions) + 3
-                jo = 3*j
-                je = 3*j + 3
-                force_constants[nc, io:ie, jo:je] = sq_fc[3*i:(3*i + 3), jo:je]
+        force_constants = np.zeros((n_ions, n_ions_in_sc, 3, 3))
+        for i in range(n_ions):
+            for j in range(n_ions_in_sc):
+                force_constants[i, j] = sq_fc[3*i:(3*i + 3), 3*j:3*j + 3]
         force_constants = force_constants*self.force_constants.units
-
         return force_constants
 
     def _calculate_supercell_image_r(self, lim):

@@ -98,11 +98,12 @@ class TestInputRead(unittest.TestCase):
                      self.expctd_data.n_cells_in_sc)
 
     def test_fc_mat_cell0_i0_j0_read(self):
-        npt.assert_allclose(self.data.force_constants[0, 0:3, 0:3],
+        npt.assert_allclose(self.data.force_constants[0, 0, :, :],
                             self.expctd_data.fc_mat_cell0_i0_j0)
 
     def test_fc_mat_cell3_i5_j10_read(self):
-        npt.assert_allclose(self.data.force_constants[3, 15:18, 30:33],
+        # 2nd fc index = cell*n_ions + j = 3*22 + 10 = 76
+        npt.assert_allclose(self.data.force_constants[5, 76, :, :],
                             self.expctd_data.fc_mat_cell3_i5_j10)
 
 class TestInterpolatePhonons(unittest.TestCase):
