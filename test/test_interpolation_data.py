@@ -1,4 +1,5 @@
 import unittest
+import os
 import numpy.testing as npt
 import numpy as np
 from casteppy import ureg
@@ -68,7 +69,7 @@ class TestInputRead(unittest.TestCase):
         self.expctd_data = expctd_data
 
         self.seedname = 'La2Zr2O7'
-        self.path = 'test/data'
+        self.path = os.path.join('test', 'data', 'interpolation')
         data = InterpolationData(self.seedname, self.path)
         self.data = data
 
@@ -106,12 +107,16 @@ class TestInputRead(unittest.TestCase):
         npt.assert_allclose(self.data.force_constants[5, 76, :, :],
                             self.expctd_data.fc_mat_cell3_i5_j10)
 
+    def test_fc_mat_read(self):
+        expected_fc_mat = np.load(os.path.join(self.path, 'fc_mat_no_asr.npy'))
+        npt.assert_allclose(self.data.force_constants, expected_fc_mat)
+
 class TestInterpolatePhonons(unittest.TestCase):
 
     def setUp(self):
         seedname = 'La2Zr2O7'
-        path = 'test/data'
-        data = InterpolationData(seedname, path)
+        self.path = os.path.join('test', 'data', 'interpolation')
+        data = InterpolationData(seedname, self.path)
         self.data = data
 
     def test_calculate_supercell_image_r_lim_1(self):
@@ -147,7 +152,7 @@ class TestInterpolatePhonons(unittest.TestCase):
         npt.assert_equal(image_r, expected_image_r)
 
     def test_calculate_supercell_image_r_lim_2(self):
-        expected_image_r = np.loadtxt('test/data/interpolation/sc_image_r.txt')
+        expected_image_r = np.loadtxt(os.path.join(self.path, 'sc_image_r.txt'))
         lim = 2
         image_r = self.data._calculate_supercell_image_r(lim)
         npt.assert_equal(image_r, expected_image_r)
@@ -155,9 +160,9 @@ class TestInterpolatePhonons(unittest.TestCase):
     def test_calculate_phases_qpt(self):
         lim = 2
         qpt = [-1, 9.35, 3.35]
-        sc_image_r = np.loadtxt('test/data/interpolation/sc_image_r.txt')
+        sc_image_r = np.loadtxt(os.path.join(self.path, 'sc_image_r.txt'))
 
-        phase_data = np.loadtxt('test/data/interpolation/phases.txt')
+        phase_data = np.loadtxt(os.path.join(self.path, 'phases.txt'))
         nc = phase_data[:, 0].astype(int)
         i = phase_data[:, 1].astype(int)
         expected_phases = np.zeros((4, (2*lim + 1)**3), dtype=np.complex128)
@@ -170,7 +175,7 @@ class TestInterpolatePhonons(unittest.TestCase):
     def test_calculate_phases_gamma_pt(self):
         lim = 2
         qpt = [0.0, 0.0, 0.0]
-        sc_image_r = np.loadtxt('test/data/interpolation/sc_image_r.txt')
+        sc_image_r = np.loadtxt(os.path.join(self.path, 'sc_image_r.txt'))
 
         expected_phases = np.zeros((4, (2*lim + 1)**3), dtype=np.complex128)
         expected_phases = 1.0 + 0.0*1j
@@ -181,7 +186,7 @@ class TestInterpolatePhonons(unittest.TestCase):
     def test_calculate_supercell_images_n_sc_images(self):
         # Supercell image calculation limit - 2 supercells in each direction
         lim = 2
-        image_data = np.loadtxt('test/data/interpolation/n_sc_images.txt')
+        image_data = np.loadtxt(os.path.join(self.path, 'n_sc_images.txt'))
         i = image_data[:, 0].astype(int)
         j = image_data[:, 1].astype(int)
         n = image_data[:, 2].astype(int)
@@ -194,7 +199,7 @@ class TestInterpolatePhonons(unittest.TestCase):
     def test_calculate_supercell_images_sc_image_i(self):
         # Supercell image calculation limit - 2 supercells in each direction
         lim = 2
-        image_data = np.loadtxt('test/data/interpolation/sc_image_i.txt')
+        image_data = np.loadtxt(os.path.join(self.path, 'sc_image_i.txt'))
         i = image_data[:, 0].astype(int)
         j = image_data[:, 1].astype(int)
         n = image_data[:, 2].astype(int)
@@ -303,3 +308,8 @@ class TestInterpolatePhonons(unittest.TestCase):
                                   0.0033651415, 0.0033651415, 0.0033698188]])*ureg.hartree
         self.data.calculate_fine_phonons(qpts, asr=True)
         npt.assert_allclose(self.data.freqs, expctd_freqs, rtol=1e-4)
+
+    def test_enforce_acoustic_sum_rule(self):
+        expected_fc_mat = np.load(os.path.join(self.path, 'fc_mat_asr.npy'))
+        fc_mat = self.data._enforce_acoustic_sum_rule().to(ureg.hartree/ureg.bohr**2)
+        npt.assert_allclose(fc_mat, expected_fc_mat, atol=1e-18)
