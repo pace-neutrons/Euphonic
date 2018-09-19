@@ -220,7 +220,7 @@ class InterpolationData(Data):
         self.cell_origins = cell_origins
 
 
-    def calculate_fine_phonons(self, qpts, asr=False):
+    def calculate_fine_phonons(self, qpts, asr=True):
         if asr:
             force_constants = self._enforce_acoustic_sum_rule().magnitude
         else:
@@ -239,46 +239,54 @@ class InterpolationData(Data):
         # Build list of all possible supercell image coordinates
         lim = 2 # Supercell image limit
         sc_image_r = self._calculate_supercell_image_r(lim)
-        phases = np.zeros((n_cells_in_sc, (2*lim + 1)**3),
-                           dtype=np.complex128)
 
+        # Construct list of supercell ion images
         if not hasattr(self, 'sc_image_i'):
             self._calculate_supercell_images(lim)
         n_sc_images = self.n_sc_images
+        max_sc_images = np.max(self.n_sc_images)
         sc_image_i = self.sc_image_i
+        # Precompute fc matrix weighted by number of supercell ion images
+        # (for cumulant method)
+        fc_img_weighted = force_constants/n_sc_images[
+            :, :, np.newaxis, np.newaxis]
+        # Precompute dynamical matrix mass weighting
+        masses = np.tile(np.repeat(ion_mass, 3), (3*n_ions, 1))
+        dyn_mat_weighting = 1/np.sqrt(masses*np.transpose(masses))
 
-        # Calculate phase lookup
         for q in range(n_qpts):
             qpt = qpts[q, :]
             dyn_mat = np.zeros((n_ions*3, n_ions*3), dtype=np.complex128)
 
             phases = self._calculate_phases(lim, qpt, sc_image_r)
-            for i in range(n_ions):
-                for scj in range(n_ions*n_cells_in_sc):
-                    j = int(scj%n_ions)
-                    nc = int(scj/n_ions)
-                    # Cumulant method: sum phases for all supercell images and
-                    # divide by number of images
-                    term = 0.0
-                    for img_i in range(n_sc_images[i, scj]):
-                        term = term + phases[nc, sc_image_i[i, scj, img_i]]
-                    io = 3*i
-                    ie = 3*i + 3
-                    jo = 3*j
-                    je = 3*j + 3
-                    dyn_mat[io:ie, jo:je] += term*force_constants[i, scj]/n_sc_images[i, scj]
+#            for i in range(n_ions):
+#                for scj in range(n_ions*n_cells_in_sc):
+#                    j = int(scj%n_ions)
+#                    nc = int(scj/n_ions)
+#                    # Cumulant method: sum phases for all supercell images and
+#                    # divide by number of images
+#                    phase_sum = np.sum(phases[nc, sc_image_i[i, scj, 0:n_sc_images[i, scj]]])
+#                    dyn_mat[3*i:3*i+3, 3*j:3*j+3] += phase_sum*fc_img_weighted[i, scj]
+
+            # Cumulant method: For each cell in the supercell, sum phases for
+            # all supercell images and multiply by image weighted fc matrix
+            # for each 3 x 3 ij displacement 
+            for nc in range(n_cells_in_sc):
+                phase_sum = np.sum(phases[nc, sc_image_i[:,
+                    nc*n_ions:(nc+1)*n_ions, 0:max_sc_images]], axis=2)
+                terms = np.einsum('ij,ijkl->ijkl',
+                                  phase_sum, 
+                                  fc_img_weighted[:, nc*n_ions:(nc+1)*n_ions])
+                dyn_mat += np.reshape(np.transpose(
+                    terms, axes=[0, 2, 1, 3]), (3*n_ions, 3*n_ions))
 
             # Mass weight dynamical matrix
-            for i in range(n_ions):
-                for j in range(n_ions):
-                    io = 3*i
-                    ie = 3*i + 3
-                    jo = 3*j
-                    je = 3*j + 3
-                    dyn_mat[io:ie, jo:je] *= 1/math.sqrt(ion_mass[i]*ion_mass[j])
+            dyn_mat *= dyn_mat_weighting
+
             evals, evecs = np.linalg.eigh(dyn_mat)
             eigenvecs[q, :] = np.reshape(np.transpose(evecs), (n_branches, n_ions, 3))
             freqs[q, :] = np.sqrt(np.abs(evals))
+
             # Set imaginary frequencies to negative
             imag_freqs = np.where(evals < 0)
             freqs[q, imag_freqs] *= -1
@@ -371,6 +379,7 @@ class InterpolationData(Data):
         force_constants = force_constants*self.force_constants.units
         return force_constants
 
+
     def _calculate_supercell_image_r(self, lim):
         irange = range(-lim, lim + 1)
         inum = 2*lim + 1
@@ -385,7 +394,8 @@ class InterpolationData(Data):
         sc_matrix = self.sc_matrix
         cell_origins = self.cell_origins
 
-        phases = np.zeros((n_cells_in_sc, (2*lim + 1)**3), dtype=np.complex128)
+        phases = np.zeros((n_cells_in_sc, len(sc_image_r) + 1),
+                          dtype=np.complex128)
         for i in range(len(sc_image_r)):
             sc_offset = np.dot(np.transpose(sc_matrix), sc_image_r[i, :])
             for nc in range(n_cells_in_sc):
@@ -419,19 +429,24 @@ class InterpolationData(Data):
         # Get Cartesian coords of supercell images and ions in supercell
         sc_image_r = self._calculate_supercell_image_r(lim)
         sc_image_cart = np.dot(sc_image_r, np.transpose(sc_vecs))
-        sc_ion_r = np.dot(np.tile(ion_r, (n_cells_in_sc, 1)) + np.repeat(cell_origins, n_ions, axis=0), np.linalg.inv(sc_matrix))
+        sc_ion_r = np.dot(np.tile(ion_r, (n_cells_in_sc, 1)) + np.repeat(
+            cell_origins, n_ions, axis=0), np.linalg.inv(sc_matrix))
         sc_ion_cart = np.zeros((len(sc_image_r), 3))
         for i in range(n_ions*n_cells_in_sc):
             sc_ion_cart[i, :] = np.dot(sc_ion_r[i, :], sc_vecs)
 
-        sc_image_i = np.zeros((self.n_ions, self.n_ions*self.n_cells_in_sc, (2*lim + 1)**3), dtype=np.int8)
-        n_sc_images = np.zeros((self.n_ions, self.n_ions*self.n_cells_in_sc), dtype=np.int8)
+        sc_image_i = np.full((self.n_ions, 
+                             self.n_ions*self.n_cells_in_sc,
+                             (2*lim + 1)**3), -1, dtype=np.int8)
+        n_sc_images = np.zeros((self.n_ions, self.n_ions*self.n_cells_in_sc),
+                               dtype=np.int8)
         for i in range(n_ions):
             for j in range(n_ions*n_cells_in_sc):
                 # Get distance between ions in every supercell
                 dist = sc_ion_cart[i] - sc_ion_cart[j] - sc_image_cart
                 for k in range(len(sc_image_r)):
-                    dist_ws_point = np.absolute(np.dot(ws_list[1:], dist[k, :])*inv_ws_sq)
+                    dist_ws_point = np.absolute(
+                        np.dot(ws_list[1:], dist[k, :])*inv_ws_sq)
                     if np.max(dist_ws_point) <= (0.5*cutoff_scale + 0.001):
                         sc_image_i[i, j, n_sc_images[i, j]] = k
                         n_sc_images[i, j] += 1

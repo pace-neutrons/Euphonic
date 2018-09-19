@@ -165,7 +165,7 @@ class TestInterpolatePhonons(unittest.TestCase):
         phase_data = np.loadtxt(os.path.join(self.path, 'phases.txt'))
         nc = phase_data[:, 0].astype(int)
         i = phase_data[:, 1].astype(int)
-        expected_phases = np.zeros((4, (2*lim + 1)**3), dtype=np.complex128)
+        expected_phases = np.zeros((4, (2*lim + 1)**3 + 1), dtype=np.complex128)
         expected_phases[nc, i] = (phase_data[:, 2].astype(float)
                                   + phase_data[:, 3].astype(float)*1j)
 
@@ -177,8 +177,12 @@ class TestInterpolatePhonons(unittest.TestCase):
         qpt = [0.0, 0.0, 0.0]
         sc_image_r = np.loadtxt(os.path.join(self.path, 'sc_image_r.txt'))
 
-        expected_phases = np.zeros((4, (2*lim + 1)**3), dtype=np.complex128)
-        expected_phases = 1.0 + 0.0*1j
+        expected_phases = np.zeros((4, (2*lim + 1)**3 + 1),
+                                   dtype=np.complex128)
+        # Last row of phases should always be zero, so that when summing
+        # supercell image phases for the cumulant method, if there isn't an
+        # image for that ion a phase of zero can be used
+        expected_phases[:, :-1] = 1.0 + 0.0*1j
 
         phases = self.data._calculate_phases(lim, qpt, sc_image_r)
         npt.assert_equal(phases, expected_phases)
@@ -204,7 +208,8 @@ class TestInterpolatePhonons(unittest.TestCase):
         j = image_data[:, 1].astype(int)
         n = image_data[:, 2].astype(int)
         sc_i = image_data[:, 3].astype(int)
-        expctd_sc_image_i = np.zeros((22, 88, (2*lim + 1)**3)) # size = n_ions X n_ions*n_cells_in_sc X max supercell images
+        # size = n_ions X n_ions*n_cells_in_sc X max supercell images
+        expctd_sc_image_i = np.full((22, 88, (2*lim + 1)**3), -1)
         expctd_sc_image_i[i, j, n] = sc_i
         self.data._calculate_supercell_images(lim)
         npt.assert_equal(self.data.sc_image_i, expctd_sc_image_i)
