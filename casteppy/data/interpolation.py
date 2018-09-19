@@ -165,7 +165,8 @@ class InterpolationData(Data):
             elif header.strip() == b'CELL%SPECIES_MASS':
                 ion_mass_tmp = read_entry(file_obj, float_type)
             elif header.strip() == b'CELL%SPECIES_SYMBOL':
-                ion_type_tmp = [x.strip() for x in read_entry(file_obj, 'S8')]
+                # Need to decode binary string for Python 3 compatibility
+                ion_type_tmp = [x.strip().decode('utf-8') for x in read_entry(file_obj, 'S8')]
             elif header.strip() == b'FORCE_CON':
                 sc_matrix = np.reshape(
                     read_entry(file_obj, int_type), (3, 3))
