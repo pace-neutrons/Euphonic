@@ -39,11 +39,10 @@ class TestInputRead(unittest.TestCase):
                                       [0.5, 0.0, 0.0],
                                       [0.0, 0.5, 0.0],
                                       [0.0, 0.0, 0.5]])
-        expctd_data.ion_type = np.array([x.encode('ascii') for x in
-                                        ['O', 'O', 'O', 'O', 'O', 'O', 'O',
+        expctd_data.ion_type = np.array(['O', 'O', 'O', 'O', 'O', 'O', 'O',
                                          'O', 'O', 'O', 'O', 'O', 'O', 'O',
                                          'Zr', 'Zr', 'Zr', 'Zr',
-                                         'La','La', 'La', 'La']])
+                                         'La','La', 'La', 'La'])
         expctd_data.ion_mass = np.array(
         [15.99939999, 15.99939999, 15.99939999, 15.99939999, 15.99939999,
          15.99939999, 15.99939999, 15.99939999, 15.99939999, 15.99939999,
