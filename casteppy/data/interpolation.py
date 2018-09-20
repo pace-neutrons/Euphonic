@@ -3,6 +3,7 @@ import struct
 import sys
 import os
 import numpy as np
+from scipy.linalg.lapack import zheev
 from casteppy import ureg
 from casteppy.data.data import Data
 
@@ -284,7 +285,11 @@ class InterpolationData(Data):
             # Mass weight dynamical matrix
             dyn_mat *= dyn_mat_weighting
 
-            evals, evecs = np.linalg.eigh(dyn_mat)
+            try:
+                evals, evecs = np.linalg.eigh(dyn_mat)
+            # Fall back to zheev if eigh fails (eigh calls zheevd)
+            except np.linalg.LinAlgError:
+                evals, evecs , info= zheev(dyn_mat)
             eigenvecs[q, :] = np.reshape(np.transpose(evecs), (n_branches, n_ions, 3))
             freqs[q, :] = np.sqrt(np.abs(evals))
 
