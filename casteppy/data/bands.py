@@ -15,25 +15,33 @@ class BandsData(Data):
         Number of spin components
     n_branches : int
         Number of electronic dispersion branches
-    fermi : list of floats
-        List of length 1 or 2 containing the Fermi energy/energies. Default
-        units eV
-    cell_vec : list of floats
-        3 x 3 list of the unit cell vectors. Default units Angstroms
-    qpts : list of floats
-        M x 3 list of k-point coordinates, where M = number of k-points
-    weights : list of floats
-        List of length M containing the weight for each k-point, where
-        M = number of k-points
-    freqs : list of floats
-        M x N list of spin up band frequencies, where
-        M = number of k-points and N = number of bands, ordered according to
-        increasing k-point number. Default units eV.
-    freq_down : list of floats
-        M x N list of spin down band frequencies, where
-        M = number of k-points and N = number of bands, ordered according to
-        increasing k-point number. Can be empty if there are no spin down
-        frequencies present in .bands file. Default units eV.
+    fermi : ndarray
+        The Fermi energy/energies. Default units eV
+        dtype = 'float'
+        shape = (n_spins,)
+    cell_vec : ndarray
+        The unit cell vectors. Default units Angstroms.
+        dtype = 'float'
+        shape = (3, 3)
+    qpts : ndarray
+        K-point coordinates
+        dtype = 'float'
+        shape = (n_qpts, 3)
+    weights : ndarray
+        The weight for each k-point
+        dtype = 'float'
+        shape = (n_qpts,)
+    freqs: ndarray
+        Band frequencies, ordered according to increasing k-point
+        number. Default units eV
+        dtype = 'float'
+        shape = (n_qpts, 3*n_ions)
+    freq_down: ndarray
+        Spin down band frequencies, ordered according to increasing k-point
+        number. Can be empty if there are no spin down frequencies present in
+        .bands file. Default units eV
+        dtype = 'float'
+        shape = (n_qpts, 3*n_ions)
     """
 
 
@@ -90,7 +98,7 @@ class BandsData(Data):
         n_spins = int(f.readline().split()[4])
         f.readline() # Skip number of electrons line
         n_branches = int(f.readline().split()[3])
-        fermi = [float(x) for x in f.readline().split()[5:]]
+        fermi = np.array([float(x) for x in f.readline().split()[5:]])
         f.readline() # Skip unit cell vectors line
         cell_vec = [[float(x) for x in f.readline().split()[0:3]]
             for i in range(3)]
@@ -184,6 +192,15 @@ class BandsData(Data):
         self.ion_type = ion_type
 
     def convert_e_units(self, units):
+        """
+        Convert energy units of relevant attributes in place e.g. freqs,
+        dos_bins
+
+        Parameters
+        ----------
+        units : str
+            The units to convert to e.g. 'hartree', 'eV'
+        """
         super(BandsData, self).convert_e_units(units)
         self.freqs.ito(units, 'spectroscopy')
         self.freq_down.ito(units, 'spectroscopy')

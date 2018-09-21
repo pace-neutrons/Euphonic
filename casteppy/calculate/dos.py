@@ -25,17 +25,20 @@ def calculate_dos(data, bwidth, gwidth, lorentz=False):
 
     Returns
     -------
-    bins : list of floats
+    bins : ndarray
         One dimensional list of the energy bin edges, in the same units as
         freqs/freq_down and determined by the max/min values of freqs/freq_down
-    dos : list of floats
-        L - 1 length list of the spin up density of states for each bin, where
-        L is the lengh of the bins return value. Can be empty if only spin down
-        frequencies are present
-    dos_down : list of floats
-        L - 1 length list of the spin down density of states for each bin,
-        where L is the lengh of the bins return value. Can be empty if only
+        dtype = 'float'
+        shape = (n_bins + 1,)
+    dos : ndarray
+        The spin up density of states for each bin
+        dtype = 'float'
+        shape = (n_bins,)
+    dos_down : ndarray
+        The spin down density of states for each bin. Can be empty if only
         spin up frequencies are present
+        dtype = 'float'
+        shape = (n_bins,)
 
     """
     hist = np.array([])

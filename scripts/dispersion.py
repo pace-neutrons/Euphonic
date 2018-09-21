@@ -8,6 +8,7 @@ import argparse
 import os
 from casteppy.data.bands import BandsData
 from casteppy.data.phonon import PhononData
+from casteppy.calculate.dispersion import reorder_freqs
 from casteppy.plot.dispersion import output_grace, plot_dispersion
 
 
@@ -30,7 +31,7 @@ def main():
 
     # Reorder frequencies if requested
     if args.reorder:
-        data.reorder_freqs()
+        reorder_freqs(data)
 
     # Plot
     if args.grace:

@@ -19,45 +19,69 @@ class InterpolationData(Data):
         Number of ions in the unit cell
     n_branches : int
         Number of phonon dispersion branches
-    cell_vec : list of floats
-        3 x 3 list of the unit cell vectors. Default units Angstroms.
-    ion_r : list of floats
-        n_ions x 3 list of the fractional position of each ion within the
-        unit cell
-    ion_type : list of strings
-        n_ions length list of the chemical symbols of each ion in the unit
-        cell. Ions are in the same order as in ion_r
-    ion_mass : list of floats
-        n_ions length list of the mass of each ion in the unit cell in atomic
-        units
+    cell_vec : ndarray
+        The unit cell vectors. Default units Angstroms.
+        dtype = 'float'
+        shape = (3, 3)
+    ion_r : ndarray
+        The fractional position of each ion within the unit cell
+        dtype = 'float'
+        shape = (n_ions, 3)
+    ion_type : ndarray
+        The chemical symbols of each ion in the unit cell. Ions are in the
+        same order as in ion_r
+        dtype = 'string'
+        shape = (n_ions,)
+    ion_mass : ndarray
+        The mass of each ion in the unit cell in atomic units
+        dtype = 'float'
+        shape = (n_ions,)
     n_cells_in_sc : int
         Number of cells in the supercell
-    sc_matrix : list of floats
-        3 x 3 list of the unit cell matrix
-    cell_origins : list of floats
-        K x 3 list of the locations of the unit cells within the supercell,
-        where K = number of cells in the supercell
-    force_constants : list of floats
-        K x 3*L x 3*L list of the force constants, where K = number of cells
-        in the supercell and L = number of ions. Default units atomic units
+    sc_matrix : ndarray
+        The supercell matrix
+        dtype = 'int'
+        shape = (3, 3)
+    cell_origins : ndarray
+        The locations of the unit cells within the supercell
+        dtype = 'int'
+        shape = (n_cells_in_sc, 3)
+    force_constants : ndarraylist of floats
+        Force constants matrix. Default units atomic units
+        dtype = 'float'
+        shape = (n_ions, n_ions*n_cells_in_sc, 3, 3)
     n_qpts : int
         Number of q-points used in the most recent interpolation calculation.
-        Default value is 0
-    qpts : list of floats
-        M x 3 list of coordinates of the q-points used for the most recent
-        interpolation calculation, where M = number of q-points. Is empty by
-        default
-    freqs: list of floats
-        M x N list of phonon frequencies from the most recent interpolation
-        calculation, where M = number of q-points and N = number of branches.
+        Default value 0
+    qpts : ndarray
+        Coordinates of the q-points used for the most recent interpolation
+        calculation. Is empty by default
+        dtype = 'float'
+        shape = (n_qpts, 3)
+    freqs: ndarray
+        Phonon frequencies from the most recent interpolation calculation.
         Default units eV. Is empty by default
-    eigenvecs: list of complex floats
-        M x N x L x 3 list of the atomic displacements (dynamical matrix
-        eigenvectors) from the most recent interpolation calculation, where
-        M = number of q-points, N = number of branches and L = number of ions.
-        Is empty by default
+        dtype = 'float'
+        shape = (n_qpts, 3*n_ions)
+    eigenvecs: ndarray
+        Atomic displacements (dynamical matrix eigenvectors) from the most
+        recent interpolation calculation. Is empty by default
+        dtype = 'complex'
+        shape = (n_qpts, 3*n_ions, n_ions, 3)
+    n_sc_images : ndarray
+        The number or periodic supercell images for each displacement of ion i
+        in the unit cell and ion j in the supercell. This attribute doesn't
+        exist until calculate_fine_phonons has been called
+        dtype = 'int'
+        shape = (n_ions, n_ions*n_cells_in_sc)
+    sc_image_i : ndarray
+        The index describing the supercell each of the periodic images resides
+        in. This is the index of the list of supercells as returned by
+        _calculate_supercell_image_r. This attribute doesn't exist until
+        calculate_fine_phonons has been called
+        dtype = 'int'
+        shape = (n_ions, n_ions*n_cells_in_sc, (2*lim + 1)**3)
     """
-
 
     def __init__(self, seedname, path='', qpts=np.array([])):
         """"
@@ -71,9 +95,10 @@ class InterpolationData(Data):
         path : str, optional
             Path to dir containing the .castep_bin file, if it is in another 
             directory
-        qpts : list of floats, optional
-            M x 3 list of q-point coordinates to use for an initial
-            interpolation calculation
+        qpts : ndarray, optional
+            Q-point coordinates to use for an initial interpolation calculation
+            dtype = 'float'
+            shape = (n_qpts, 3)
         """
         self._get_data(seedname, path)
 
@@ -196,12 +221,12 @@ class InterpolationData(Data):
                 ion_r[ion_begin[i]:ion_end[i], :] = ion_r_tmp[
                     i,:n_ions_in_species[i], :]
         # Get ion_type in correct form
-        ion_type = []
-        ion_mass = []
+        ion_type = np.array([])
+        ion_mass = np.array([])
         for ion in range(n_species):
-            ion_type.extend([ion_type_tmp[ion] for i in
+            ion_type = np.append(ion_type, [ion_type_tmp[ion] for i in
                 range(n_ions_in_species[ion])])
-            ion_mass.extend([ion_mass_tmp[ion] for i in
+            ion_mass = np.append(ion_mass, [ion_mass_tmp[ion] for i in
                 range(n_ions_in_species[ion])])
 
         cell_vec = cell_vec*ureg.bohr
@@ -223,6 +248,36 @@ class InterpolationData(Data):
 
 
     def calculate_fine_phonons(self, qpts, asr=True):
+        """
+        Calculate phonon frequencies and eigenvectors at specified q-points
+        from a supercell force constant matrix via interpolation, and set
+        InterpolationData freqs and eigenvecs attributes. For more information
+        on the method see section 2.5:
+        http://www.tcm.phy.cam.ac.uk/castep/Phonons_Guide/Castep_Phonons.html
+
+        Parameters
+        ----------
+        qpts : ndarray
+            The q-points to interpolate onto
+            dtype = 'float'
+            shape = (n_qpts, 3)
+        asr : boolean, optional, default True
+            Whether to apply an acoustic sum rule correction to the force
+            constant matrix
+
+        Returns
+        -------
+        freqs : ndarray
+            The phonon frequencies (same as set to InterpolationData.freqs)
+            dtype = 'float'
+            shape = (n_qpts, 3*n_ions)
+        eigenvecs : ndarray
+            The phonon eigenvectors (same as set to
+            InterpolationData.eigenvecs)
+            dtype = 'complex'
+            shape = (n_qpts, 3*n_ions, n_ions, 3)
+        """
+
         if asr:
             force_constants = self._enforce_acoustic_sum_rule().magnitude
         else:
@@ -260,15 +315,7 @@ class InterpolationData(Data):
             qpt = qpts[q, :]
             dyn_mat = np.zeros((n_ions*3, n_ions*3), dtype=np.complex128)
 
-            phases = self._calculate_phases(lim, qpt, sc_image_r)
-#            for i in range(n_ions):
-#                for scj in range(n_ions*n_cells_in_sc):
-#                    j = int(scj%n_ions)
-#                    nc = int(scj/n_ions)
-#                    # Cumulant method: sum phases for all supercell images and
-#                    # divide by number of images
-#                    phase_sum = np.sum(phases[nc, sc_image_i[i, scj, 0:n_sc_images[i, scj]]])
-#                    dyn_mat[3*i:3*i+3, 3*j:3*j+3] += phase_sum*fc_img_weighted[i, scj]
+            phases = self._calculate_phases(qpt, sc_image_r)
 
             # Cumulant method: For each cell in the supercell, sum phases for
             # all supercell images and multiply by image weighted fc matrix
@@ -306,6 +353,19 @@ class InterpolationData(Data):
 
 
     def _enforce_acoustic_sum_rule(self):
+        """
+        Apply a transformation to the force constants matrix so that it
+        satisfies the acousic sum rule. For more information on the method
+        see section 2.3.4:
+        http://www.tcm.phy.cam.ac.uk/castep/Phonons_Guide/Castep_Phonons.html
+
+        Returns
+        -------
+        force_constants : ndarray
+            The corrected force constants matrix
+            dtype = 'float'
+            shape = (n_ions, n_ions*n_cells_in_sc, 3, 3)
+        """
         cell_vec = self.cell_vec
         cell_origins = self.cell_origins
         sc_matrix = self.sc_matrix
@@ -387,15 +447,49 @@ class InterpolationData(Data):
 
 
     def _calculate_supercell_image_r(self, lim):
+        """
+        Calculate a list of all the possible supercell image coordinates up to
+        a certain limit
+
+        Parameters
+        ----------
+        lim : int
+            The supercell image limit
+
+        Returns
+        -------
+        sc_image_r : ndarray
+            A list of the possible supercell image coordinates
+            e.g. if lim = 2: [[-2, -2, -2], [-2, -2, -1] ... [2, 2, 2]]
+            dtype = 'int'
+            shape = ((2*lim + 1)**3, 3)
+
+        """
         irange = range(-lim, lim + 1)
         inum = 2*lim + 1
         scx = np.repeat(irange, inum**2)
         scy = np.tile(np.repeat(irange, inum), inum)
         scz = np.tile(irange, inum**2)
+
         return np.column_stack((scx, scy, scz))
 
 
-    def _calculate_phases(self, lim, qpt, sc_image_r):
+    def _calculate_phases(self, qpt, sc_image_r):
+        """
+        Calculate the dynamical matrix phase factor
+
+        Parameters
+        ----------
+        qpt : ndarray
+            The q-point to calculate the phase for
+            dtype = 'float'
+            shape = (3,)
+        sc_image_r : ndarray
+            A list of the supercell image coordinates to calculate the phases
+            for, as returned by _calculate_supercell_image_r
+            dtype = 'int'
+            shape = ((2*lim + 1)**3, 3)
+        """
         n_cells_in_sc = self.n_cells_in_sc
         sc_matrix = self.sc_matrix
         cell_origins = self.cell_origins
@@ -413,6 +507,18 @@ class InterpolationData(Data):
 
 
     def _calculate_supercell_images(self, lim):
+        """
+        For each displacement of ion i in the unit cell and ion j in the
+        supercell, calculate the number of supercell periodic images there are
+        and which supercells they reside in, and sets the sc_image_i and
+        n_sc_images InterpolationData attributes
+
+        Parameters
+        ----------
+        lim : int
+            The supercell image limit
+        """
+
         n_ions = self.n_ions
         cell_vec = self.cell_vec.to(ureg.bohr).magnitude
         ion_r = self.ion_r
@@ -462,6 +568,15 @@ class InterpolationData(Data):
 
 
     def convert_e_units(self, units):
+        """
+        Convert energy units of relevant attributes in place e.g. freqs,
+        dos_bins
+
+        Parameters
+        ----------
+        units : str
+            The units to convert to e.g. '1/cm', 'hartree', 'eV'
+        """
         super(InterpolationData, self).convert_e_units(units)
 
         if hasattr(self, 'freqs'):

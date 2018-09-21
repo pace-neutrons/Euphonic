@@ -18,36 +18,50 @@ class PhononData(Data):
         Number of phonon dispersion branches
     n_qpts : int
         Number of q-points in the .phonon file
-    cell_vec : list of floats
-        3 x 3 list of the unit cell vectors. Default units Angstroms.
-    ion_r : list of floats
-        n_ions x 3 list of the fractional position of each ion within the
-        unit cell
-    ion_type : list of strings
-        n_ions length list of the chemical symbols of each ion in the unit
-        cell. Ions are in the same order as in ion_r
-    ion_mass : list of floats
-        n_ions length list of the mass of each ion in the unit cell in atomic
-        units. Default units amu.
-    qpts : list of floats
-        M x 3 list of q-point coordinates, where M = number of q-points
-    weights : list of floats
-        List of length M containing the weight for each q-point, where
-        M = number of q-points
-    freqs: list of floats
-        M x N list of phonon frequencies, where M = number of q-points
-        and N = number of branches, ordered according to increasing q-point
-        number. Default units eV.
-    ir: list of floats
-        M x N list of IR intensities, where M = number of q-points and
-        N = number of branches. Empty if no IR intensities in .phonon file
-    raman: list of floats
-        M x N list of Raman intensities, where M = number of q-points and
-        N = number of branches. Empty if no Raman intensities in .phonon file
-    eigenvecs: list of complex floats
+    cell_vec : ndarray
+        The unit cell vectors. Default units Angstroms.
+        dtype = 'float'
+        shape = (3, 3)
+    ion_r : ndarray
+        The fractional position of each ion within the unit cell
+        dtype = 'float'
+        shape = (n_ions, 3)
+    ion_type : ndarray
+        The chemical symbols of each ion in the unit cell. Ions are in the
+        same order as in ion_r
+        dtype = 'string'
+        shape = (n_ions,)
+    ion_mass : ndarray
+        The mass of each ion in the unit cell in atomic units
+        dtype = 'float'
+        shape = (n_ions,)
+    qpts : ndarray
+        Q-point coordinates
+        dtype = 'float'
+        shape = (n_qpts, 3)
+    weights : ndarray
+        The weight for each q-point
+        dtype = 'float'
+        shape = (n_qpts,)
+    freqs: ndarray
+        Phonon frequencies, ordered according to increasing q-point
+        number. Default units eV
+        dtype = 'float'
+        shape = (n_qpts, 3*n_ions)
+    ir: ndarray
+        IR intensities, empty if no IR intensities in .phonon file
+        dtype = 'float'
+        shape = (n_qpts, 3*n_ions)
+    raman: ndarray
+        Raman intensities, empty if no Raman intensities in .phonon file
+        dtype = 'float'
+        shape = (n_qpts, 3*n_ions)
+    eigenvecs: ndarray
         M x N x L x 3 list of the atomic displacements (dynamical matrix
         eigenvectors), where M = number of q-points, N = number of branches
         and L = number of ions. Empty if read_eigenvecs is False
+        dtype = 'complex'
+        shape = (n_qpts, 3*n_ions, n_ions, 3)
     """
 
 
@@ -209,99 +223,50 @@ class PhononData(Data):
             The number of phonon branches (3*n_ions)
         n_qpts : integer
             The number of q-points in the .phonon file
-        cell_vec : list of floats
-            3 x 3 list of the unit cell vectors
-        ion_r : list of floats
-            n_ions x 3 list of the fractional position of each ion within the
-            unit cell
-        ion_type : list of strings
-            n_ions length list of the chemical symbols of each ion in the unit
-            cell. Ions are in the same order as in ion_r
+        cell_vec : ndarray
+            The unit cell vectors. Default units Angstroms.
+            dtype = 'float'
+            shape = (3, 3)
+        ion_r : ndarray
+            The fractional position of each ion within the unit cell
+            dtype = 'float'
+            shape = (n_ions, 3)
+        ion_type : ndarray
+            The chemical symbols of each ion in the unit cell. Ions are in the
+            same order as in ion_r
+            dtype = 'string'
+            shape = (n_ions,)
+        ion_mass : ndarray
+            The mass of each ion in the unit cell in atomic units
+            dtype = 'float'
+            shape = (n_ions,)
         """
         f.readline()  # Skip BEGIN header
         n_ions = int(f.readline().split()[3])
         n_branches = int(f.readline().split()[3])
         n_qpts = int(f.readline().split()[3])
         [f.readline() for x in range(4)]  # Skip units and label lines
-        cell_vec = [[float(x) for x in f.readline().split()[0:3]]
-            for i in range(3)]
+        cell_vec = np.array([[float(x) for x in f.readline().split()[0:3]]
+            for i in range(3)])
         f.readline()  # Skip fractional co-ordinates label
-        ion_info = [f.readline().split() for i in range(n_ions)]
-        ion_r = [[float(x) for x in y[1:4]] for y in ion_info]
-        ion_type = [x[4] for x in ion_info]
-        ion_mass = [float(x[5]) for x in ion_info]
+        ion_info = np.array([f.readline().split() for i in range(n_ions)])
+        ion_r = np.array([[float(x) for x in y[1:4]] for y in ion_info])
+        ion_type = np.array([x[4] for x in ion_info])
+        ion_mass = np.array([float(x[5]) for x in ion_info])
         f.readline()  # Skip END header line
 
         return n_ions, n_branches, n_qpts, cell_vec, ion_r, ion_type, ion_mass
 
 
-    def reorder_freqs(self):
-        """
-        Reorders frequencies across q-points in order to join branches, and sets
-        the freqs attribute to the newly ordered frequencies
-        """
-        n_qpts = self.n_qpts
-        n_branches = self.n_branches
-        n_ions = self.n_ions
-        qpts = self.qpts
-        freqs = self.freqs
-        eigenvecs = self.eigenvecs
-
-        if eigenvecs.size == 0:
-            print("""No eigenvectors in PhononData object, cannot reorder
-	             frequencies""")
-            return
-
-        ordered_freqs = np.zeros((n_qpts,n_branches))
-        qmap = np.arange(n_branches)
-
-        # Only calculate qmap and reorder freqs if the direction hasn't changed
-        calculate_qmap = np.concatenate(([True], np.logical_not(
-            direction_changed(qpts))))
-        # Don't reorder first q-point
-        ordered_freqs[0,:] = freqs[0,:]
-        for i in range(1,n_qpts):
-            # Initialise q-point mapping for this q-point
-            qmap_tmp = np.arange(n_branches)
-            if calculate_qmap[i-1]:
-                # Compare eigenvectors for each mode for this q-point with every
-                # mode for the previous q-point
-                # Explicitly broadcast arrays with repeat and tile to ensure
-                # correct multiplication of modes
-                current_eigenvecs = np.repeat(eigenvecs[i, :, :, :],
-                                              n_branches, axis=0)
-                prev_eigenvecs = np.tile(eigenvecs[i-1, :, :, :],
-                                         (n_branches, 1, 1))
-                # Compute complex conjugated dot product of every mode of this
-                # q-point with every mode of previous q-point, and sum the dot
-                # products over ions (i.e. multiply eigenvectors elementwise, then
-                # sum over the last 2 dimensions)
-                dots = np.absolute(np.einsum('ijk,ijk->i',
-                                             np.conj(prev_eigenvecs),
-                                             current_eigenvecs))
-
-                # Create matrix of dot products for each mode of this q-point with
-                # each mode of the previous q-point
-                dot_mat = np.reshape(dots, (n_branches, n_branches))
-
-                # Find greates exp(-iqr)-weighted dot product
-                for j in range(n_branches):
-                    max_i = (np.argmax(dot_mat))
-                    mode = int(max_i/n_branches) # Modes are dot_mat rows
-                    prev_mode = max_i%n_branches # Prev q-pt modes are columns
-                    # Ensure modes aren't mapped more than once
-                    dot_mat[mode, :] = 0
-                    dot_mat[:, prev_mode] = 0
-                    qmap_tmp[mode] = prev_mode
-            # Map q-points according to previous q-point mapping
-            qmap = qmap[qmap_tmp]
-
-            # Reorder frequencies
-            ordered_freqs[i,qmap] = freqs[i,:]
-
-        ordered_freqs = ordered_freqs*freqs.units
-        self.freqs = ordered_freqs
-
     def convert_e_units(self, units):
+        """
+        Convert energy units of relevant attributes in place e.g. freqs,
+        dos_bins
+
+        Parameters
+        ----------
+        units : str
+            The units to convert to e.g. '1/cm', 'hartree', 'eV'
+        """
         super(PhononData, self).convert_e_units(units)
         self.freqs.ito(units, 'spectroscopy')

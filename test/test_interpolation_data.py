@@ -168,7 +168,7 @@ class TestInterpolatePhonons(unittest.TestCase):
         expected_phases[nc, i] = (phase_data[:, 2].astype(float)
                                   + phase_data[:, 3].astype(float)*1j)
 
-        phases = self.data._calculate_phases(lim, qpt, sc_image_r)
+        phases = self.data._calculate_phases(qpt, sc_image_r)
         npt.assert_allclose(phases, expected_phases)
 
     def test_calculate_phases_gamma_pt(self):
@@ -183,7 +183,7 @@ class TestInterpolatePhonons(unittest.TestCase):
         # image for that ion a phase of zero can be used
         expected_phases[:, :-1] = 1.0 + 0.0*1j
 
-        phases = self.data._calculate_phases(lim, qpt, sc_image_r)
+        phases = self.data._calculate_phases(qpt, sc_image_r)
         npt.assert_equal(phases, expected_phases)
 
     def test_calculate_supercell_images_n_sc_images(self):

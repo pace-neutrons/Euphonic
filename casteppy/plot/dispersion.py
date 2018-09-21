@@ -59,12 +59,16 @@ def recip_space_labels(data):
 
     Returns
     -------
-    labels : list of strings
+    labels : ndarray
         List of the labels for each q-point at which the path through
         reciprocal space changes direction
-    qpts_with_labels : list of integers
+        dtype = 'string'
+        shape = (n_qpts_direction_changed,)
+    qpts_with_labels : ndarray
         List of the indices of the q-points at which the path through
         reciprocal space changes direction
+        dtype = 'int'
+        shape = (n_qpts_direction_changed,)
     """
 
     # First and last q-points should always be labelled
@@ -118,8 +122,10 @@ def get_qpt_label(qpt, point_labels):
 
     Parameters
     ----------
-    qpt : list of floats
+    qpt : ndarray
         3 dimensional coordinates of a q-point
+        dtype = 'float'
+        shape = (3,)
     point_labels : dictionary
         A dictionary with N entries, relating high symmetry point lables (e.g.
         'GAMMA', 'X'), to their 3-dimensional coordinates (e.g. [0.0, 0.0,

@@ -24,9 +24,10 @@ def structure_factor(data, scattering_lengths, T=5.0, scale=1.0):
 
     Returns
     -------
-    sf : list of floats
-        M length list of the dynamic structure factor for neutrons, where
-        M = number of q-points
+    sf : ndarray
+        The neutron dynamic structure factor for each q-point
+        dtype = 'float'
+        shape = (n_qpts,)
     """
 
     # Convert any Pint quantities to pure magnitudes for performance
@@ -70,17 +71,19 @@ def bose_factor(x, T):
 
     Parameters
     ----------
-    x : list of floats
-        M x N list of band energies, where M = number of q-points and
-        N = number of branches
+    x : ndarray
+        Phonon frequencies
+        dtype = 'float'
+        shape = (n_qpts, 3*n_ions)
     T : float
         Temperature in K
 
     Returns
     -------
-    bose : list of floats
-        M x N list, where M = number of q-points and
-        N = number of branches
+    bose : ndarray
+        Bose factor
+        dtype = 'float'
+        shape = (n_qpts, 3*n_ions)
     """
     kB = 8.6173324e-2
     bose = np.zeros(x.shape)
