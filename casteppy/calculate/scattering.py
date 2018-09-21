@@ -5,7 +5,7 @@ from casteppy.util import reciprocal_lattice
 
 def structure_factor(data, scattering_lengths, T=5.0, scale=1.0):
     """
-    Calculate the one phonon inelastic scattering for a list of k-points
+    Calculate the one phonon inelastic scattering for a list of q-points
     See M. Dove Structure and Dynamics Pg. 226
 
     Parameters
