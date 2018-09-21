@@ -10,7 +10,7 @@ pipelines:
           - python -mpip install numpy
           - python -mpip install pint
           - python -mpip install seekpath
-	  - python -mpip install scipy
+          - python -mpip install scipy
           - python -m unittest discover -v test
     - step:
         name: Python 2 test
@@ -22,5 +22,5 @@ pipelines:
           - python -mpip install numpy
           - python -mpip install pint
           - python -mpip install seekpath
-	  - python -mpip install scipy
+          - python -mpip install scipy
           - python -m unittest discover -v test
