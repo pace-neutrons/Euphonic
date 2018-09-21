@@ -158,3 +158,17 @@ class TestReorderFreqs(unittest.TestCase):
          535.889622,543.524255,550.815232,544.325882,544.325882,541.757933,
          552.630089,552.630089,508.677347,737.533584,736.042236,736.042236]])
         npt.assert_allclose(data.freqs, expected_reordered_freqs)
+
+    def test_multiple_reorder_freqs_has_no_effect_LZO(self):
+        # Test that when reorder_freqs is called more than once on the same
+        # object, the second time it has no effect, as the frequencies have
+        # already been reordered. This ensures the eigenvectors have also
+        # been reordered correctly.
+        seedname = 'La2Zr2O7'
+        path = 'test/data'
+        data = PhononData(seedname, path)
+        reorder_freqs(data)
+        reordered_freqs_1 = data.freqs
+        reorder_freqs(data)
+        reordered_freqs_2 = data.freqs
+        npt.assert_array_equal(reordered_freqs_1, reordered_freqs_2)
