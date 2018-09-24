@@ -159,31 +159,31 @@ class TestInterpolatePhonons(unittest.TestCase):
     def test_calculate_phases_qpt(self):
         lim = 2
         qpt = [-1, 9.35, 3.35]
-        sc_image_r = np.loadtxt(os.path.join(self.path, 'sc_image_r.txt'))
+        cell_r = np.loadtxt(os.path.join(self.path, 'cell_r.txt'))
 
         phase_data = np.loadtxt(os.path.join(self.path, 'phases.txt'))
         nc = phase_data[:, 0].astype(int)
         i = phase_data[:, 1].astype(int)
-        expected_phases = np.zeros((4, (2*lim + 1)**3 + 1), dtype=np.complex128)
-        expected_phases[nc, i] = (phase_data[:, 2].astype(float)
+        expected_phases = np.zeros((4*(2*lim + 1)**3 + 1), dtype=np.complex128)
+        expected_phases[:-1] = (phase_data[:, 2].astype(float)
                                   + phase_data[:, 3].astype(float)*1j)
 
-        phases = self.data._calculate_phases(qpt, sc_image_r)
+        phases = self.data._calculate_phases(qpt, cell_r)
         npt.assert_allclose(phases, expected_phases)
 
     def test_calculate_phases_gamma_pt(self):
         lim = 2
         qpt = [0.0, 0.0, 0.0]
-        sc_image_r = np.loadtxt(os.path.join(self.path, 'sc_image_r.txt'))
+        cell_r = np.loadtxt(os.path.join(self.path, 'cell_r.txt'))
 
-        expected_phases = np.zeros((4, (2*lim + 1)**3 + 1),
+        expected_phases = np.zeros((4*(2*lim + 1)**3 + 1),
                                    dtype=np.complex128)
         # Last row of phases should always be zero, so that when summing
         # supercell image phases for the cumulant method, if there isn't an
         # image for that ion a phase of zero can be used
-        expected_phases[:, :-1] = 1.0 + 0.0*1j
+        expected_phases[:-1] = 1.0 + 0.0*1j
 
-        phases = self.data._calculate_phases(qpt, sc_image_r)
+        phases = self.data._calculate_phases(qpt, cell_r)
         npt.assert_equal(phases, expected_phases)
 
     def test_calculate_supercell_images_n_sc_images(self):

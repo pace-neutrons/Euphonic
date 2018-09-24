@@ -83,6 +83,7 @@ class InterpolationData(Data):
         shape = (n_ions, n_ions*n_cells_in_sc, (2*lim + 1)**3)
     """
 
+
     def __init__(self, seedname, path='', qpts=np.array([])):
         """"
         Reads .castep_bin file, sets attributes, and calculates
@@ -296,6 +297,10 @@ class InterpolationData(Data):
         # Build list of all possible supercell image coordinates
         lim = 2 # Supercell image limit
         sc_image_r = self._calculate_supercell_image_r(lim)
+        # Calculate origin coordinates of each cell in each supercell image
+        sc_offsets = np.einsum('ji,kj->ki', sc_matrix, sc_image_r)
+        cell_r = np.tile(sc_offsets, (n_cells_in_sc, 1)) + np.repeat(
+            cell_origins, len(sc_image_r), axis=0)
 
         # Construct list of supercell ion images
         if not hasattr(self, 'sc_image_i'):
@@ -303,10 +308,12 @@ class InterpolationData(Data):
         n_sc_images = self.n_sc_images
         max_sc_images = np.max(self.n_sc_images)
         sc_image_i = self.sc_image_i
+
         # Precompute fc matrix weighted by number of supercell ion images
         # (for cumulant method)
         fc_img_weighted = force_constants/n_sc_images[
             :, :, np.newaxis, np.newaxis]
+
         # Precompute dynamical matrix mass weighting
         masses = np.tile(np.repeat(ion_mass, 3), (3*n_ions, 1))
         dyn_mat_weighting = 1/np.sqrt(masses*np.transpose(masses))
@@ -315,13 +322,13 @@ class InterpolationData(Data):
             qpt = qpts[q, :]
             dyn_mat = np.zeros((n_ions*3, n_ions*3), dtype=np.complex128)
 
-            phases = self._calculate_phases(qpt, sc_image_r)
-
             # Cumulant method: For each cell in the supercell, sum phases for
             # all supercell images and multiply by image weighted fc matrix
             # for each 3 x 3 ij displacement 
             for nc in range(n_cells_in_sc):
-                phase_sum = np.sum(phases[nc, sc_image_i[:,
+                phases = self._calculate_phases(
+                    qpt, cell_r[nc*len(sc_image_r):(nc+1)*len(sc_image_r)])
+                phase_sum = np.sum(phases[sc_image_i[:,
                     nc*n_ions:(nc+1)*n_ions, 0:max_sc_images]], axis=2)
                 terms = np.einsum('ij,ijkl->ijkl',
                                   phase_sum, 
@@ -336,7 +343,7 @@ class InterpolationData(Data):
                 evals, evecs = np.linalg.eigh(dyn_mat)
             # Fall back to zheev if eigh fails (eigh calls zheevd)
             except np.linalg.LinAlgError:
-                evals, evecs , info= zheev(dyn_mat)
+                evals, evecs, info= zheev(dyn_mat)
             eigenvecs[q, :] = np.reshape(np.transpose(evecs), (n_branches, n_ions, 3))
             freqs[q, :] = np.sqrt(np.abs(evals))
 
@@ -463,7 +470,6 @@ class InterpolationData(Data):
             e.g. if lim = 2: [[-2, -2, -2], [-2, -2, -1] ... [2, 2, 2]]
             dtype = 'int'
             shape = ((2*lim + 1)**3, 3)
-
         """
         irange = range(-lim, lim + 1)
         inum = 2*lim + 1
@@ -474,7 +480,7 @@ class InterpolationData(Data):
         return np.column_stack((scx, scy, scz))
 
 
-    def _calculate_phases(self, qpt, sc_image_r):
+    def _calculate_phases(self, qpt, cell_r):
         """
         Calculate the dynamical matrix phase factor
 
@@ -484,24 +490,25 @@ class InterpolationData(Data):
             The q-point to calculate the phase for
             dtype = 'float'
             shape = (3,)
-        sc_image_r : ndarray
-            A list of the supercell image coordinates to calculate the phases
-            for, as returned by _calculate_supercell_image_r
+        cell_r : ndarray
+            The cell coordinates to calculate the phase for. These are the
+            origin coordinates of a unit cell in each supercell image in
+            unit cell vector units
             dtype = 'int'
             shape = ((2*lim + 1)**3, 3)
-        """
-        n_cells_in_sc = self.n_cells_in_sc
-        sc_matrix = self.sc_matrix
-        cell_origins = self.cell_origins
 
-        phases = np.zeros((n_cells_in_sc, len(sc_image_r) + 1),
-                          dtype=np.complex128)
-        for i in range(len(sc_image_r)):
-            sc_offset = np.dot(np.transpose(sc_matrix), sc_image_r[i, :])
-            for nc in range(n_cells_in_sc):
-                cell_r = sc_offset + cell_origins[nc, :]
-                phase = 2*math.pi*np.dot(qpt, cell_r)
-                phases[nc, i] = np.complex(math.cos(phase), math.sin(phase))
+        Returns
+        -------
+        phases : ndarray
+            Phase factors exp(iq.r) for each cell coordinate in cell_r. The
+            last entry is a phase of 0 so that when summing supercell image
+            phases for the cumulant method, if there isn't an image for that
+            ion a phase of zero can be used
+            dtype = 'float'
+            shape = (cell_r + 1,)
+        """
+        phases = np.zeros(len(cell_r) + 1, dtype=np.complex128)
+        phases[:-1] = np.exp(2j*math.pi*np.einsum('ij,j->i', cell_r, qpt))
 
         return phases
 
