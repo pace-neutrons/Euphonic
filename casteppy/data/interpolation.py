@@ -161,6 +161,8 @@ class InterpolationData(Data):
                         data = struct.unpack('>i', file_obj.read(begin))[0]
                     elif 'f' in dtype:
                         data = struct.unpack('>d', file_obj.read(begin))[0]
+                    else:
+                        data = file_obj.read(begin)
             else:
                 data = file_obj.read(begin)
             end = record_mark_read(file_obj)
@@ -185,19 +187,27 @@ class InterpolationData(Data):
                 n_species = read_entry(file_obj, int_type)
             elif header.strip() == b'CELL%NUM_IONS_IN_SPECIES':
                 n_ions_in_species = read_entry(file_obj, int_type)
+                if n_species == 1:
+                    n_ions_in_species = np.array([n_ions_in_species])
             elif header.strip() == b'CELL%IONIC_POSITIONS':
                 max_ions_in_species = max(n_ions_in_species)
                 ion_r_tmp = np.reshape(read_entry(file_obj, float_type),
                                   (n_species, max_ions_in_species, 3))
             elif header.strip() == b'CELL%SPECIES_MASS':
                 ion_mass_tmp = read_entry(file_obj, float_type)
+                if n_species == 1:
+                    ion_mass_tmp = np.array([ion_mass_tmp])
             elif header.strip() == b'CELL%SPECIES_SYMBOL':
                 # Need to decode binary string for Python 3 compatibility
-                ion_type_tmp = [x.strip().decode('utf-8') for x in read_entry(file_obj, 'S8')]
+                if n_species == 1:
+                    ion_type_tmp = [read_entry(file_obj, 'S8').strip().decode('utf-8')]
+                else:
+                    ion_type_tmp = [x.strip().decode('utf-8') for x in read_entry(file_obj, 'S8')]
             elif header.strip() == b'FORCE_CON':
-                sc_matrix = np.reshape(
-                    read_entry(file_obj, int_type), (3, 3))
-                n_cells_in_sc = int(np.absolute(np.linalg.det(sc_matrix)))
+                sc_matrix = np.transpose(np.reshape(
+                    read_entry(file_obj, int_type), (3, 3)))
+                n_cells_in_sc = int(np.rint(np.absolute(
+                    np.linalg.det(sc_matrix))))
                 fc_tmp = np.reshape(
                     read_entry(file_obj, float_type),
                     (n_cells_in_sc*n_ions, 3, n_ions, 3))
@@ -400,8 +410,8 @@ class InterpolationData(Data):
                         sc_relative_index[nc, mc] = kc
                         break
         if np.any(sc_relative_index == -1):
-            print('Error correcting FC matrix for acoustic sum rule,' +
-                  'supercell relative index couldn\'t be found. Returning' +
+            print('Error correcting FC matrix for acoustic sum rule, ' +
+                  'supercell relative index couldn\'t be found. Returning ' +
                   'uncorrected FC matrix')
             return self.force_constants
 
@@ -550,7 +560,7 @@ class InterpolationData(Data):
         sc_image_cart = np.dot(sc_image_r, np.transpose(sc_vecs))
         sc_ion_r = np.dot(np.tile(ion_r, (n_cells_in_sc, 1)) + np.repeat(
             cell_origins, n_ions, axis=0), np.linalg.inv(sc_matrix))
-        sc_ion_cart = np.zeros((len(sc_image_r), 3))
+        sc_ion_cart = np.zeros((n_ions*n_cells_in_sc, 3))
         for i in range(n_ions*n_cells_in_sc):
             sc_ion_cart[i, :] = np.dot(sc_ion_r[i, :], sc_vecs)
 
