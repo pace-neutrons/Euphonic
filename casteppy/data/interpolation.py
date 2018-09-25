@@ -83,7 +83,6 @@ class InterpolationData(Data):
         shape = (n_ions, n_ions*n_cells_in_sc, (2*lim + 1)**3)
     """
 
-
     def __init__(self, seedname, path='', qpts=np.array([])):
         """"
         Reads .castep_bin file, sets attributes, and calculates
@@ -321,8 +320,10 @@ class InterpolationData(Data):
 
         # Precompute fc matrix weighted by number of supercell ion images
         # (for cumulant method)
-        fc_img_weighted = force_constants/n_sc_images[
-            :, :, np.newaxis, np.newaxis]
+        fc_img_weighted = np.divide(
+            force_constants,
+            n_sc_images[:, :, np.newaxis, np.newaxis],
+            where=n_sc_images[:, :, np.newaxis, np.newaxis] != 0)
 
         # Precompute dynamical matrix mass weighting
         masses = np.tile(np.repeat(ion_mass, 3), (3*n_ions, 1))
@@ -353,7 +354,8 @@ class InterpolationData(Data):
                 evals, evecs = np.linalg.eigh(dyn_mat)
             # Fall back to zheev if eigh fails (eigh calls zheevd)
             except np.linalg.LinAlgError:
-                evals, evecs, info= zheev(dyn_mat)
+                evals, evecs, info = zheev(dyn_mat)
+
             eigenvecs[q, :] = np.reshape(np.transpose(evecs), (n_branches, n_ions, 3))
             freqs[q, :] = np.sqrt(np.abs(evals))
 
@@ -557,7 +559,7 @@ class InterpolationData(Data):
 
         # Get Cartesian coords of supercell images and ions in supercell
         sc_image_r = self._calculate_supercell_image_r(lim)
-        sc_image_cart = np.dot(sc_image_r, np.transpose(sc_vecs))
+        sc_image_cart = np.einsum('ij,jk->ik', sc_image_r, sc_vecs)
         sc_ion_r = np.dot(np.tile(ion_r, (n_cells_in_sc, 1)) + np.repeat(
             cell_origins, n_ions, axis=0), np.linalg.inv(sc_matrix))
         sc_ion_cart = np.zeros((n_ions*n_cells_in_sc, 3))
