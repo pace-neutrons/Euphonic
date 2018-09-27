@@ -392,25 +392,18 @@ class InterpolationData(Data):
         n_ions = self.n_ions
         n_branches = self.n_branches
 
-        # Cell distances in supercell
-        cell_r = np.zeros((n_cells_in_sc, 3))
-        for nc in range(n_cells_in_sc):
-            cell_r[nc, :] = np.dot(np.transpose(self.cell_vec),
-                                   self.cell_origins[nc])
-        # Supercell lattice vectors
-        scell_vec = np.dot(sc_matrix, cell_vec)
-        cell_r_frac = np.dot(cell_r, np.linalg.inv(np.transpose(scell_vec)))
+        inv_sc_matrix = np.linalg.inv(np.transpose(sc_matrix))
         # Compute square matrix giving relative index of cells in sc
         sc_relative_index = np.full((n_cells_in_sc, n_cells_in_sc), -1)
         for nc in range(n_cells_in_sc):
             for mc in range(n_cells_in_sc):
                 for kc in range(n_cells_in_sc):
-                    dist = cell_r_frac[mc] - cell_r_frac[nc] - cell_r_frac[kc]
-                    dist = dist - np.floor(dist + 0.5)
-                    tol = 1e-11
-                    if sum(np.abs(dist)) < tol:
+                    offset = cell_origins[mc] - cell_origins[nc] - cell_origins[kc]
+                    dist = np.dot(inv_sc_matrix, offset)
+                    tol = 16
+                    if sum(abs(dist - np.round(dist, 0))) < tol*sys.float_info.epsilon:
                         sc_relative_index[nc, mc] = kc
-                        break
+
         if np.any(sc_relative_index == -1):
             print('Error correcting FC matrix for acoustic sum rule, ' +
                   'supercell relative index couldn\'t be found. Returning ' +
