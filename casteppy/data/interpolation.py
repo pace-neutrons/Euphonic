@@ -310,7 +310,6 @@ class InterpolationData(Data):
         sc_offsets = np.einsum('ji,kj->ki', sc_matrix, sc_image_r)
         cell_r = np.tile(sc_offsets, (n_cells_in_sc, 1)) + np.repeat(
             cell_origins, len(sc_image_r), axis=0)
-
         # Construct list of supercell ion images
         if not hasattr(self, 'sc_image_i'):
             self._calculate_supercell_images(lim)
@@ -339,6 +338,7 @@ class InterpolationData(Data):
             for nc in range(n_cells_in_sc):
                 phases = self._calculate_phases(
                     qpt, cell_r[nc*len(sc_image_r):(nc+1)*len(sc_image_r)])
+
                 phase_sum = np.sum(phases[sc_image_i[:,
                     nc*n_ions:(nc+1)*n_ions, 0:max_sc_images]], axis=2)
                 terms = np.einsum('ij,ijkl->ijkl',
@@ -533,7 +533,7 @@ class InterpolationData(Data):
 
         n_ions = self.n_ions
         cell_vec = self.cell_vec.to(ureg.bohr).magnitude
-        ion_r = self.ion_r
+        ion_r = self.ion_r - np.floor(self.ion_r)
         cell_origins = self.cell_origins
         n_cells_in_sc = self.n_cells_in_sc
         sc_matrix = self.sc_matrix
@@ -554,10 +554,8 @@ class InterpolationData(Data):
         sc_image_r = self._calculate_supercell_image_r(lim)
         sc_image_cart = np.einsum('ij,jk->ik', sc_image_r, sc_vecs)
         sc_ion_r = np.dot(np.tile(ion_r, (n_cells_in_sc, 1)) + np.repeat(
-            cell_origins, n_ions, axis=0), np.linalg.inv(sc_matrix))
-        sc_ion_cart = np.zeros((n_ions*n_cells_in_sc, 3))
-        for i in range(n_ions*n_cells_in_sc):
-            sc_ion_cart[i, :] = np.dot(sc_ion_r[i, :], sc_vecs)
+            cell_origins, n_ions, axis=0), np.linalg.inv(np.transpose(sc_matrix)))
+        sc_ion_cart = np.einsum('ij,jk->ik', sc_ion_r, sc_vecs)
 
         sc_image_i = np.full((self.n_ions, 
                              self.n_ions*self.n_cells_in_sc,
