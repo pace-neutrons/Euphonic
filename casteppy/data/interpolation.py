@@ -392,19 +392,21 @@ class InterpolationData(Data):
         n_ions = self.n_ions
         n_branches = self.n_branches
 
-        inv_sc_matrix = np.linalg.inv(np.transpose(sc_matrix))
         # Compute square matrix giving relative index of cells in sc
-        sc_relative_index = np.full((n_cells_in_sc, n_cells_in_sc), -1)
-        for nc in range(n_cells_in_sc):
-            for mc in range(n_cells_in_sc):
-                for kc in range(n_cells_in_sc):
-                    offset = cell_origins[mc] - cell_origins[nc] - cell_origins[kc]
-                    dist = np.dot(inv_sc_matrix, offset)
-                    tol = 16
-                    if sum(abs(dist - np.round(dist, 0))) < tol*sys.float_info.epsilon:
-                        sc_relative_index[nc, mc] = kc
-
-        if np.any(sc_relative_index == -1):
+        # Get all possible cell-cell vector combinations
+        inter_cell_vectors = (np.tile(cell_origins, (n_cells_in_sc, 1)) -
+                             np.repeat(cell_origins, n_cells_in_sc, axis=0))
+        # Compare cell-cell vectors with origin-cell vectors and determine
+        # which are equivalent
+        offset = (inter_cell_vectors[:, np.newaxis, :] -
+                 cell_origins[np.newaxis, :, :])
+        inv_sc_matrix = np.linalg.inv(np.transpose(sc_matrix))
+        dist = np.einsum('ijk,lk->ijl', offset, inv_sc_matrix)
+        dist_frac, _ = np.modf(dist)
+        dist_frac_sum = np.sum(np.abs(dist_frac), axis=2)
+        sc_relative_index = np.argmin(dist_frac_sum, axis=1)
+        if (np.any(dist_frac_sum[range(n_cells_in_sc**2), sc_relative_index])
+            > 16*sys.float_info.epsilon):
             print('Error correcting FC matrix for acoustic sum rule, ' +
                   'supercell relative index couldn\'t be found. Returning ' +
                   'uncorrected FC matrix')
@@ -413,13 +415,14 @@ class InterpolationData(Data):
         # Construct square FC matrix
         n_ions_in_sc = n_ions*n_cells_in_sc
         sq_fc = np.zeros((3*n_ions_in_sc, 3*n_ions_in_sc))
-        for i in range(n_ions_in_sc):
-            nci = int(i/n_ions)
-            ii = i%n_ions
-            for j in range(n_ions_in_sc):
-                ncj = int(j/n_ions)
-                jj = sc_relative_index[nci, ncj]*n_ions + j%n_ions
-                sq_fc[3*i:(3*i + 3), 3*j:(3*j + 3)] = self.force_constants[ii, jj]
+        for nc in range(n_cells_in_sc):
+            cell_indices = np.repeat(sc_relative_index[
+                nc*n_cells_in_sc:(nc+1)*n_cells_in_sc], n_ions)*n_ions
+            ion_indices = np.tile(range(n_ions), n_cells_in_sc)
+            fc_indices = cell_indices + ion_indices
+            sq_fc[3*nc*n_ions:3*(nc+1)*n_ions, :] = np.reshape(np.transpose(
+                self.force_constants[:, fc_indices],
+                axes=[0, 2, 1, 3]), (3*n_ions, 3*n_ions*n_cells_in_sc))
 
         # Find acoustic modes, they should have the sum of c of m amplitude
         # squared = mass (note: have not actually included mass weighting
@@ -440,15 +443,10 @@ class InterpolationData(Data):
             return self.force_constants
         # Find indices of acoustic modes (3 largest c of m displacements)
         ac_i = np.argsort(c_of_m_disp_sq)[-3:]
+        # Correct force constant matrix - set acoustic modes to almost zero
         fc_tol = 1e-8*np.min(np.abs(evals))
         for ac in ac_i:
-            for i in range(n_ions_in_sc):
-                for alpha in range(3):
-                    for j in range(n_ions_in_sc):
-                        for beta in range(3):
-                            sq_fc[i*3 + alpha, j*3 + beta] -= (fc_tol + evals[
-                                ac])*evec_reshape[ac, i, alpha]*evec_reshape[
-                                ac, j, beta]
+            sq_fc -= (fc_tol + evals[ac])*np.einsum('i,j->ij', evecs[:, ac], evecs[:, ac])
 
         force_constants = np.zeros((n_ions, n_ions_in_sc, 3, 3))
         for i in range(n_ions):
