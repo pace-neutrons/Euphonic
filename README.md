@@ -7,14 +7,18 @@ and density of states at arbitrary q-points via interpolation.
 The easiest way to install the CastepPy package is using `pip`. First clone this
 repository and cd into the top directory containing the `setup.py` script.
 
-Then do:
+This package does all plotting with Matplotlib, to install Casteppy with the
+optional Matplotlib dependency do:
+```
+pip install .[matplotlib]
+```
+Or to install for just your user:
+```
+pip install --user .[matplotlib]
+```
+If you only require the interpolation functionality, and don't need any of the Matplotlib plotting routines just do:
 ```
 pip install .
-```
-
-or to install for just your user:
-```
-pip install --user .
 ```
 
 ## Usage
@@ -41,7 +45,7 @@ For more details see the [Matplotlib docs](https://matplotlib.org/api/\_as_gen/m
 
 ### Python API
 For custom plots, or calculating dispersion/dos at arbitrary q-points, the Python
-API can be used.
+API can be used. For more detailed information, see the class/function docstrings.
 
 ##### Reading Data
 There are 3 different data classes, BandsData, PhononData and InterpolationData for
@@ -68,7 +72,9 @@ supercell method, the phonon frequencies and eigenvectors can be calculated at
 any q-point via interpolation.
 
 First, build a (n, 3) array of the q-points that you want to calculate for (where
-N = number of q-points). Then pass it as an argument to the
+n = number of q-points), a recommended path can be generated with 
+[SeeK-path](https://seekpath.readthedocs.io/en/latest/maindoc.html#), but can also
+be done manually. Then pass it as an argument to the
 InterpolationData.calculate_fine_phonons function. This function sets the
 InterpolationData freqs and eigenvecs attributes, but also returns freqs and
 eigenvecs so they may be stored elsewhere
@@ -76,13 +82,15 @@ eigenvecs so they may be stored elsewhere
 #!python
 
 from casteppy.data.interpolation import InterpolationData
-import numpy as np
+import seekpath as skp
 
 seedname = 'graphite'
 idata = InterpolationData(seedname)
 
-n = 100
-qpts = np.hstack((np.tile(0, (n, 1)), np.linspace(0, 0.5, n)[:, np.newaxis], np.tile(0, (n, 1))))
+numbers = [1, 1, 1, 1] # A list identifying unique ions in the unit cell
+structure = (idata.cell_vec, idata.ion_r, numbers)
+qpts = skp.get_explicit_k_path(structure)["explicit_kpoints_rel"]
+
 freqs, eigenvecs = idata.calculate_fine_phonons(qpts)
 ```
 
