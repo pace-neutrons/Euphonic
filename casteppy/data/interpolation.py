@@ -256,7 +256,6 @@ class InterpolationData(Data):
         self.force_constants = force_constants
         self.cell_origins = cell_origins
 
-
     def calculate_fine_phonons(self, qpts, asr=True):
         """
         Calculate phonon frequencies and eigenvectors at specified q-points
@@ -298,7 +297,7 @@ class InterpolationData(Data):
         n_cells_in_sc = self.n_cells_in_sc
         n_ions = self.n_ions
         n_branches = self.n_branches
-        n_qpts = qpts.shape[0]
+        n_qpts = len(qpts)
         freqs = np.zeros((n_qpts, n_branches))
         eigenvecs = np.zeros((n_qpts, n_branches, n_ions, 3),
                              dtype=np.complex128)
@@ -342,7 +341,7 @@ class InterpolationData(Data):
                 phase_sum = np.sum(phases[sc_image_i[:,
                     nc*n_ions:(nc+1)*n_ions, 0:max_sc_images]], axis=2)
                 terms = np.einsum('ij,ijkl->ijkl',
-                                  phase_sum, 
+                                  phase_sum,
                                   fc_img_weighted[:, nc*n_ions:(nc+1)*n_ions])
                 dyn_mat += np.reshape(np.transpose(
                     terms, axes=[0, 2, 1, 3]), (3*n_ions, 3*n_ions))
@@ -369,7 +368,6 @@ class InterpolationData(Data):
         self.eigenvecs = eigenvecs
 
         return self.freqs, self.eigenvecs
-
 
     def _enforce_acoustic_sum_rule(self):
         """
@@ -482,7 +480,6 @@ class InterpolationData(Data):
 
         return np.column_stack((scx, scy, scz))
 
-
     def _calculate_phases(self, qpt, cell_r):
         """
         Calculate the dynamical matrix phase factor
@@ -514,7 +511,6 @@ class InterpolationData(Data):
         phases[:-1] = np.exp(2j*math.pi*np.einsum('ij,j->i', cell_r, qpt))
 
         return phases
-
 
     def _calculate_supercell_images(self, lim):
         """

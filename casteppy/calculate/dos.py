@@ -56,10 +56,13 @@ def calculate_dos(data, bwidth, gwidth, lorentz=False):
     bins = np.arange(freq_min, freq_max + bwidth, bwidth)
 
     # Calculate weight for each q-point and branch
-    freq_weights = np.repeat(np.array(data.weights)[:,np.newaxis],
-                             data.n_branches, axis=1)
-    if hasattr(data, 'ir') and len(data.ir) > 0:
-        freq_weights *= data.ir
+    if hasattr(data, 'weights'):
+        freq_weights = np.repeat(np.array(data.weights)[:,np.newaxis],
+                                 data.n_branches, axis=1)
+        if hasattr(data, 'ir') and len(data.ir) > 0:
+            freq_weights *= data.ir
+    else:
+        freq_weights = np.full((data.n_qpts, data.n_branches), 1./data.n_qpts)
 
     # Bin frequencies
     hist, bin_edges = np.histogram(data.freqs, bins,
@@ -110,7 +113,7 @@ def calculate_dos(data, bwidth, gwidth, lorentz=False):
     if hasattr(data, 'freq_down'):
         data.dos_down = dos_down
 
-    return dos, dos_down, bins
+    return bins, dos, dos_down
 
 
 def gaussian(x, sigma):

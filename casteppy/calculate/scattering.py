@@ -25,9 +25,9 @@ def structure_factor(data, scattering_lengths, T=5.0, scale=1.0):
     Returns
     -------
     sf : ndarray
-        The neutron dynamic structure factor for each q-point
+        The neutron dynamic structure factor for each q-point and phonon branch
         dtype = 'float'
-        shape = (n_qpts,)
+        shape = (n_qpts, n_branches)
     """
 
     # Convert any Pint quantities to pure magnitudes for performance
