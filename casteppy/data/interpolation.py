@@ -256,6 +256,7 @@ class InterpolationData(Data):
         self.force_constants = force_constants
         self.cell_origins = cell_origins
 
+
     def calculate_fine_phonons(self, qpts, asr=True):
         """
         Calculate phonon frequencies and eigenvectors at specified q-points
@@ -369,6 +370,7 @@ class InterpolationData(Data):
 
         return self.freqs, self.eigenvecs
 
+
     def _enforce_acoustic_sum_rule(self):
         """
         Apply a transformation to the force constants matrix so that it
@@ -480,6 +482,7 @@ class InterpolationData(Data):
 
         return np.column_stack((scx, scy, scz))
 
+
     def _calculate_phases(self, qpt, cell_r):
         """
         Calculate the dynamical matrix phase factor
@@ -558,14 +561,15 @@ class InterpolationData(Data):
                                dtype=np.int8)
         for i in range(n_ions):
             for j in range(n_ions*n_cells_in_sc):
-                # Get distance between ions in every supercell
-                dist = sc_ion_cart[i] - sc_ion_cart[j] - sc_image_cart
-                for k in range(len(sc_image_r)):
-                    dist_ws_point = np.absolute(
-                        np.dot(ws_list[1:], dist[k, :])*inv_ws_sq)
-                    if np.max(dist_ws_point) <= (0.5*cutoff_scale + 0.001):
-                        sc_image_i[i, j, n_sc_images[i, j]] = k
-                        n_sc_images[i, j] += 1
+                # Get vector between ions in every supercell image
+                dists = sc_ion_cart[i] - sc_ion_cart[j] - sc_image_cart
+                # Compare ion-ion supercell vector and all ws point vectors
+                dist_ws_points = np.einsum('ij,kj->ik', dists, ws_list[1:])
+                dist_wsp_frac = np.absolute(np.einsum('ij,j->ij', dist_ws_points, inv_ws_sq))
+                # Count images if ion < half distance to all ws points
+                sc_images = np.where(np.amax(dist_wsp_frac, axis=1) <= (0.5*cutoff_scale + 0.001))[0]
+                sc_image_i[i, j, 0:len(sc_images)] = sc_images
+                n_sc_images[i, j] = len(sc_images)
 
         self.sc_image_i = sc_image_i
         self.n_sc_images = n_sc_images
