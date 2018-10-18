@@ -15,6 +15,8 @@ class InterpolationData(Data):
 
     Attributes
     ----------
+    seedname : str
+        Seedname specifying castep_bin file to read from
     n_ions : int
         Number of ions in the unit cell
     n_branches : int
@@ -23,6 +25,10 @@ class InterpolationData(Data):
         The unit cell vectors. Default units Angstroms.
         dtype = 'float'
         shape = (3, 3)
+    n_ions_in_species : ndarray
+        The number of ions in each species, in the same order as the species
+        in ion_type
+        shape = (n_species,)
     ion_r : ndarray
         The fractional position of each ion within the unit cell
         dtype = 'float'
@@ -102,6 +108,7 @@ class InterpolationData(Data):
         """
         self._get_data(seedname, path)
 
+        self.seedname = seedname
         self.qpts = qpts
         self.n_qpts = len(qpts)
         self.eigenvecs = np.array([])
@@ -248,6 +255,7 @@ class InterpolationData(Data):
         self.n_ions = n_ions
         self.n_branches = 3*n_ions
         self.cell_vec = cell_vec
+        self.n_ions_in_species = n_ions_in_species
         self.ion_r = ion_r
         self.ion_type = ion_type
         self.ion_mass = ion_mass

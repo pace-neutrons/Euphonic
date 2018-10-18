@@ -12,6 +12,8 @@ class PhononData(Data):
 
     Attributes
     ----------
+    seedname : str
+        Seedname specifying .phonon file to read from
     n_ions : int
         Number of ions in the unit cell
     n_branches : int
@@ -88,6 +90,7 @@ class PhononData(Data):
             Default: True
         """
         self._get_data(seedname, path, read_eigenvecs, read_ir, read_raman)
+        self.seedname = seedname
 
 
     def _get_data(self, seedname, path, read_eigenvecs, read_ir, read_raman):

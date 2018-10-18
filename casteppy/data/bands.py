@@ -9,6 +9,8 @@ class BandsData(Data):
 
     Attributes
     ----------
+    seedname : str
+        Seedname specifying .bands file to read from
     n_qpts : int
         Number of k-points in the .bands file
     n_spins : int
@@ -58,6 +60,7 @@ class BandsData(Data):
             directory
         """
         self._get_data(seedname, path)
+        self.seedname = seedname
 
 
     def _get_data(self, seedname, path=''):
