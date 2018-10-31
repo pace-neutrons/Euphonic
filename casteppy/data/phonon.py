@@ -187,7 +187,8 @@ class PhononData(Data):
                 # Skip eigenvectors and 2 label lines
                 [f.readline() for x in range(n_ions*n_branches + 2)]
             first_qpt = False
-            line = f.readline().split()
+            line = f.readline().replace('=', ' ')
+            line = line.split()
 
         cell_vec = cell_vec*ureg.angstrom
         ion_mass = ion_mass*ureg.amu
