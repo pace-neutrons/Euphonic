@@ -58,11 +58,62 @@ def structure_factor(data, scattering_lengths, T=5.0, scale=1.0):
     # Take mod squared and divide by frequency to get intensity
     sf = np.absolute(term*np.conj(term))/np.absolute(freqs)
 
-    # Multiply by bose factor and scale
-    sf = sf*bose_factor(freqs, T)*scale
-    sf = np.real(sf)
+    # Multiply by bose factor if temperature is defined
+    if T is not None:
+        sf = sf*bose_factor(freqs, T)
+
+    sf = np.real(sf*scale)
 
     return sf
+
+
+def sqw_map(data, ebins, scattering_lengths, T=5.0, scale=1.0):
+    """
+    Calculate S(Q, w) for each q-point contained in data and each bin defined
+    in ebins
+
+    Parameters
+    ----------
+    data : Data object
+        Data object containing frequencies, q-points, ion positions and types,
+        and eigenvectors required for the calculation
+    ebins : ndarray
+        The energy bin edges in meV
+    scattering_lengths : dictionary
+        Dictionary of spin and isotope averaged coherent scattering legnths
+        for each element in the structure e.g. {'O': 5.803, 'Zn': 5.680}
+    T : float, optional
+        The temperature to use when calculating the Bose factor. Default: 5K
+    scale : float, optional
+        Apply a multiplicative factor to the structure factor.
+        Default: 1.0
+
+    Returns
+    -------
+    sqw_map : ndarray
+        The intensity for each q-point and energy bin
+        dtype = 'float'
+        shape = (n_qpts, ebins - 1)
+    """
+
+    # Create initial sqw_map with an extra an energy bin either side, for any
+    # branches that fall outside the energy bin range
+    sqw_map = np.zeros((data.n_qpts, len(ebins) + 1))
+
+    freqs = (data.freqs.to('meV')).magnitude
+    sf = structure_factor(data, scattering_lengths, T=None, scale=scale)
+    p_intensity = np.real(sf*bose_factor(freqs, T))
+    n_intensity = np.real(sf*bose_factor(-freqs, T))
+
+    p_bin = np.digitize(freqs, ebins)
+    n_bin = np.digitize(-freqs, ebins)
+
+    # Sum intensities into bins
+    first_index = np.transpose(np.tile(range(data.n_qpts), (data.n_branches, 1)))
+    np.add.at(sqw_map, (first_index, p_bin), p_intensity)
+    np.add.at(sqw_map, (first_index, n_bin), n_intensity)
+
+    return sqw_map[:, 1:-1]
 
 
 def bose_factor(x, T):
