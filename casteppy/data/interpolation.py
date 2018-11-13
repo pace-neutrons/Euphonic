@@ -373,7 +373,8 @@ class InterpolationData(Data):
 
         self.n_qpts = n_qpts
         self.qpts = qpts
-        self.freqs = freqs*self.freqs.units
+        freqs = freqs*ureg.hartree
+        self.freqs = freqs.to(self.freqs.units)
         self.eigenvecs = eigenvecs
 
         return self.freqs, self.eigenvecs
