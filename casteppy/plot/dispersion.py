@@ -168,6 +168,77 @@ def get_qpt_label(qpt, point_labels):
     return label
 
 
+def plot_sqw_map(data, vmin=None, vmax=None, ratio=None):
+    """
+    Plots an q-E scattering plot using imshow
+
+    Parameters
+    ----------
+    data : PhononData or InterpolationData object
+        Data object for which sqw_map has been called, containing sqw_map
+        and sqw_ebins attributes for plotting
+    vmin : float, optional
+        Minimum of data range for colormap. See Matplotlib imshow docs
+        Default: None
+    vmax : float, optional
+        Maximum of data range for colormap. See Matplotlib imshow docs
+        Default: None
+    ratio : float, optional
+        Ratio of the size of the y and x axes. e.g. if ratio is 2, the y-axis
+        will be twice as long as the x-axis
+        Default: None
+
+    """
+    try:
+        import matplotlib.pyplot as plt
+    except ImportError:
+        print('Cannot plot S(q,w) map with Matplotlib, Matplotlib is not ' +
+              'installed. To use this feature install CastepPy\'s optional ' +
+              'Matplotlib dependencies from the casteppy top directory: ' +
+              '\n\npip install --user .[matplotlib]')
+        return None
+
+    ebins = data.sqw_ebins
+    fig, ax = plt.subplots(1, 1)
+    if ratio:
+        extent = [0, ratio, 0, 1]
+        ax.imshow(np.transpose(data.sqw_map), interpolation='none', origin='lower', extent=extent, vmin=vmin, vmax=vmax)
+    else:
+        im = ax.imshow(np.transpose(data.sqw_map), interpolation='none', origin='lower', vmin=vmin, vmax=vmax)
+        extent = im.get_extent()
+
+    # Calculate energy tick labels
+    ytick_spacing_opts = [20, 10, 5, 2, 1, 0.1]
+    min_n_yticks = 3
+    ytick_spacing = ytick_spacing_opts[np.argmax((ebins[-1] - ebins[0])/ytick_spacing_opts > min_n_yticks)]
+    ytick_min = np.ceil(ebins[0]/ytick_spacing)*ytick_spacing
+    ytick_max = np.ceil(ebins[-1]/ytick_spacing)*ytick_spacing
+    ylabels = np.arange(ytick_min, ytick_max, ytick_spacing)
+    yticks = extent[2] + (ylabels - ebins[0])/(ebins[-1] - ebins[0])*(extent[3] - extent[2])
+    ax.set_yticks(yticks)
+    ax.set_yticklabels(ylabels)
+    ax.set_ylabel('Energy (meV)')
+
+    # Calculate q-space ticks and labels
+    xlabels, qpts_with_labels = recip_space_labels(data)
+    for i, label in enumerate(xlabels):
+        if label == 'GAMMA':
+            xlabels[i] = r'$\Gamma$'
+    if np.all(xlabels == ''):
+        xlabels = data.qpts[qpts_with_labels, :]
+    xticks = extent[0] + (qpts_with_labels/(data.n_qpts - 1))*(extent[1] - extent[0])
+    # Set high symmetry point x-axis ticks/labels
+    ax.set_xticks(xticks)
+    ax.xaxis.grid(True, which='major')
+    # Rotate long tick labels
+    if len(max(xlabels, key=len)) >= 11:
+        ax.set_xticklabels(xlabels, rotation=90)
+    else:
+        ax.set_xticklabels(xlabels)
+
+    plt.show()
+
+
 def output_grace(data, seedname='out', up=True, down=True):
     """
     Creates a .agr Grace file of the band structure

@@ -1,5 +1,6 @@
 import math
 import numpy as np
+from scipy import signal
 from casteppy.util import reciprocal_lattice
 
 
@@ -67,10 +68,10 @@ def structure_factor(data, scattering_lengths, T=5.0, scale=1.0):
     return sf
 
 
-def sqw_map(data, ebins, scattering_lengths, T=5.0, scale=1.0):
+def sqw_map(data, ebins, scattering_lengths, T=5.0, scale=1.0, emix=-1, qmix=-1, ewidth=1.5, qwidth=0.1):
     """
     Calculate S(Q, w) for each q-point contained in data and each bin defined
-    in ebins
+    in ebins, and sets the sqw_map and sqw_ebins attributes of the data object
 
     Parameters
     ----------
@@ -87,6 +88,20 @@ def sqw_map(data, ebins, scattering_lengths, T=5.0, scale=1.0):
     scale : float, optional
         Apply a multiplicative factor to the structure factor.
         Default: 1.0
+    emix : float, optional
+        If between 0 and 1, describes the shape of the energy resolution
+        function. 0 is fully Gaussian, 1 is fully Lorentzian
+        Default: -1
+    ewidth : float, optional
+        The FWHM of the energy resolution function in meV
+        Default: 1.5
+    qmix : float, optional
+        If between 0 and 1, describes the shape of the q-vector resolution
+        function. 0 is fully Gaussian, 1 is fully Lorentzian
+        Default: -1
+    qwidth : float, optional
+        The FWHM of the q-vector resolution function
+        Default: 0.1
 
     Returns
     -------
@@ -113,7 +128,61 @@ def sqw_map(data, ebins, scattering_lengths, T=5.0, scale=1.0):
     np.add.at(sqw_map, (first_index, p_bin), p_intensity)
     np.add.at(sqw_map, (first_index, n_bin), n_intensity)
 
+    if emix >= 0 and emix <= 1:
+        eres = voigt(ebins, ewidth, emix)
+        eres_2d = np.zeros(sqw_map.shape)
+        eres_2d[int(sqw_map.shape[0]/2), 1:-1] = eres
+        sqw_map = signal.fftconvolve(eres_2d, sqw_map[:, 1:-1], 'same')
+
+    if qmix >= 0 and qmix <= 1:
+        qbin_width = np.linalg.norm(np.mean(np.diff(data.qpts, axis=0), axis=0))
+        qbins = np.linspace(0, qbin_width*data.n_qpts + qbin_width, data.n_qpts + 1)
+        qres = voigt(qbins, qwidth, qmix)
+        qres_2d = np.zeros(sqw_map.shape)
+        qres_2d[:, int(sqw_map.shape[1]/2)] = qres
+        sqw_map = signal.fftconvolve(qres_2d, sqw_map[:, 1:-1], 'same')
+
+    data.sqw_ebins = ebins
+    data.sqw_map = sqw_map
+
     return sqw_map[:, 1:-1]
+
+
+def voigt(ebins, width, mix, height=1.0):
+    """
+    Calcuate a pseudo-Voigt resolution function, a linear combination of
+    Lorentzian and Gaussian functions
+
+    Parameters
+    ----------
+    bins : ndarray
+        Bin edges to calculate the Voigt function for
+        dtype = 'float'
+        shape = (ebins,)
+    width : float
+        The FWHM of the Gauss/Lorentzian functions
+    mix : float
+        The Lorentzian/Gaussian mix. 0 is fully
+        Gaussian, 1 is fully Lorentzian
+
+    Returns
+    -------
+    voigt : ndarray
+        Voigt function for the centre of each bin
+        dtype = 'float'
+        shape = (bins - 1,)
+    """
+
+    ebin_width = np.mean(np.diff(ebins))
+    ebin_interval = ebins[-1] - ebins[0] - ebin_width
+    x = np.linspace(-ebin_interval/2, ebin_interval/2, len(ebins) - 1)
+    # Gauss FWHM = 2*sigma*sqrt(2*ln2)
+    sigma = width/(2*math.sqrt(2*math.log(2)))
+    gauss = np.exp(-0.5*(np.square(x/sigma)))
+
+    lorentz = 1/(1 + np.square(x/(0.5*width)))
+
+    return height*(mix*lorentz + (1 - mix)*gauss)
 
 
 def bose_factor(x, T):
