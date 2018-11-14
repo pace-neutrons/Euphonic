@@ -131,7 +131,12 @@ def sqw_map(data, ebins, scattering_lengths, T=5.0, scale=1.0, emix=-1, qmix=-1,
     if emix >= 0 and emix <= 1:
         eres = voigt(ebins, ewidth, emix)
         eres_2d = np.zeros(sqw_map.shape)
-        eres_2d[int(sqw_map.shape[0]/2), 1:-1] = eres
+        n_qpts = sqw_map.shape[0]
+        if n_qpts % 2 == 0:
+            eres_2d[n_qpts/2 - 1, 1:-1] = eres
+            eres_2d[n_qpts/2, 1:-1] = eres
+        else:
+            eres_2d[int(n_qpts/2), 1:-1] = eres
         sqw_map = signal.fftconvolve(eres_2d, sqw_map[:, 1:-1], 'same')
 
     if qmix >= 0 and qmix <= 1:
@@ -139,7 +144,12 @@ def sqw_map(data, ebins, scattering_lengths, T=5.0, scale=1.0, emix=-1, qmix=-1,
         qbins = np.linspace(0, qbin_width*data.n_qpts + qbin_width, data.n_qpts + 1)
         qres = voigt(qbins, qwidth, qmix)
         qres_2d = np.zeros(sqw_map.shape)
-        qres_2d[:, int(sqw_map.shape[1]/2)] = qres
+        n_ebins = sqw_map.shape[1]
+        if n_ebins % 2 == 0:
+            qres_2d[:, n_ebins/2 - 1] = qres
+            qres_2d[:, n_ebins/2] = qres
+        else:
+            qres_2d[:, int(n_ebins/2)] = qres
         sqw_map = signal.fftconvolve(qres_2d, sqw_map[:, 1:-1], 'same')
 
     data.sqw_ebins = ebins
