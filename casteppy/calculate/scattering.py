@@ -127,17 +127,18 @@ def sqw_map(data, ebins, scattering_lengths, T=5.0, scale=1.0, emix=-1, qmix=-1,
     first_index = np.transpose(np.tile(range(data.n_qpts), (data.n_branches, 1)))
     np.add.at(sqw_map, (first_index, p_bin), p_intensity)
     np.add.at(sqw_map, (first_index, n_bin), n_intensity)
+    sqw_map = sqw_map[:, 1:-1] # Exclude values outside ebin range
 
     if emix >= 0 and emix <= 1:
         eres = voigt(ebins, ewidth, emix)
         eres_2d = np.zeros(sqw_map.shape)
         n_qpts = sqw_map.shape[0]
         if n_qpts % 2 == 0:
-            eres_2d[n_qpts/2 - 1, 1:-1] = eres
-            eres_2d[n_qpts/2, 1:-1] = eres
+            eres_2d[n_qpts/2 - 1] = eres
+            eres_2d[n_qpts/2] = eres
         else:
-            eres_2d[int(n_qpts/2), 1:-1] = eres
-        sqw_map = signal.fftconvolve(eres_2d, sqw_map[:, 1:-1], 'same')
+            eres_2d[int(n_qpts/2)] = eres
+        sqw_map = signal.fftconvolve(eres_2d, sqw_map, 'same')
 
     if qmix >= 0 and qmix <= 1:
         qbin_width = np.linalg.norm(np.mean(np.diff(data.qpts, axis=0), axis=0))
@@ -150,12 +151,12 @@ def sqw_map(data, ebins, scattering_lengths, T=5.0, scale=1.0, emix=-1, qmix=-1,
             qres_2d[:, n_ebins/2] = qres
         else:
             qres_2d[:, int(n_ebins/2)] = qres
-        sqw_map = signal.fftconvolve(qres_2d, sqw_map[:, 1:-1], 'same')
+        sqw_map = signal.fftconvolve(qres_2d, sqw_map, 'same')
 
     data.sqw_ebins = ebins
     data.sqw_map = sqw_map
 
-    return sqw_map[:, 1:-1]
+    return sqw_map
 
 
 def voigt(ebins, width, mix, height=1.0):
