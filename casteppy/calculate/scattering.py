@@ -68,7 +68,7 @@ def structure_factor(data, scattering_lengths, T=5.0, scale=1.0):
     return sf
 
 
-def sqw_map(data, ebins, scattering_lengths, T=5.0, scale=1.0, emix=-1, qmix=-1, ewidth=1.5, qwidth=0.1):
+def sqw_map(data, ebins, scattering_lengths, T=5.0, scale=1.0, ewidth=0, qwidth=0):
     """
     Calculate S(Q, w) for each q-point contained in data and each bin defined
     in ebins, and sets the sqw_map and sqw_ebins attributes of the data object
@@ -88,19 +88,11 @@ def sqw_map(data, ebins, scattering_lengths, T=5.0, scale=1.0, emix=-1, qmix=-1,
     scale : float, optional
         Apply a multiplicative factor to the structure factor.
         Default: 1.0
-    emix : float, optional
-        If between 0 and 1, describes the shape of the energy resolution
-        function. 0 is fully Gaussian, 1 is fully Lorentzian
-        Default: -1
     ewidth : float, optional
-        The FWHM of the energy resolution function in meV
+        The FWHM of the Gaussian energy resolution function in meV
         Default: 1.5
-    qmix : float, optional
-        If between 0 and 1, describes the shape of the q-vector resolution
-        function. 0 is fully Gaussian, 1 is fully Lorentzian
-        Default: -1
     qwidth : float, optional
-        The FWHM of the q-vector resolution function
+        The FWHM of the Gaussian q-vector resolution function
         Default: 0.1
 
     Returns
@@ -124,34 +116,25 @@ def sqw_map(data, ebins, scattering_lengths, T=5.0, scale=1.0, emix=-1, qmix=-1,
     n_bin = np.digitize(-freqs, ebins)
 
     # Sum intensities into bins
-    first_index = np.transpose(np.tile(range(data.n_qpts), (data.n_branches, 1)))
+    first_index = np.transpose(
+        np.tile(range(data.n_qpts), (data.n_branches, 1)))
     np.add.at(sqw_map, (first_index, p_bin), p_intensity)
     np.add.at(sqw_map, (first_index, n_bin), n_intensity)
     sqw_map = sqw_map[:, 1:-1] # Exclude values outside ebin range
 
-    if emix >= 0 and emix <= 1:
-        eres = voigt(ebins, ewidth, emix)
-        eres_2d = np.zeros(sqw_map.shape)
-        n_qpts = sqw_map.shape[0]
-        if n_qpts % 2 == 0:
-            eres_2d[n_qpts/2 - 1] = eres
-            eres_2d[n_qpts/2] = eres
-        else:
-            eres_2d[int(n_qpts/2)] = eres
-        sqw_map = signal.fftconvolve(eres_2d, sqw_map, 'same')
-
-    if qmix >= 0 and qmix <= 1:
-        qbin_width = np.linalg.norm(np.mean(np.diff(data.qpts, axis=0), axis=0))
-        qbins = np.linspace(0, qbin_width*data.n_qpts + qbin_width, data.n_qpts + 1)
-        qres = voigt(qbins, qwidth, qmix)
-        qres_2d = np.zeros(sqw_map.shape)
-        n_ebins = sqw_map.shape[1]
-        if n_ebins % 2 == 0:
-            qres_2d[:, n_ebins/2 - 1] = qres
-            qres_2d[:, n_ebins/2] = qres
-        else:
-            qres_2d[:, int(n_ebins/2)] = qres
-        sqw_map = signal.fftconvolve(qres_2d, sqw_map, 'same')
+    if ewidth or qwidth:
+        qbin_width = np.linalg.norm(
+            np.mean(np.diff(data.qpts, axis=0), axis=0))
+        qbins = np.linspace(
+            0, qbin_width*data.n_qpts + qbin_width, data.n_qpts + 1)
+        # If no width has been set, make widths small enough to have
+        # effectively no broadening
+        if not qwidth:
+            qwidth = (qbins[1] - qbins[0])/10
+        if not ewidth:
+            ewidth = (ebins[1] - ebins[0])/10
+        sqw_map = signal.fftconvolve(sqw_map, np.transpose(
+            gaussian_2d(qbins, ebins, qwidth, ewidth)), 'same')
 
     data.sqw_ebins = ebins
     data.sqw_map = sqw_map
@@ -159,7 +142,58 @@ def sqw_map(data, ebins, scattering_lengths, T=5.0, scale=1.0, emix=-1, qmix=-1,
     return sqw_map
 
 
-def voigt(ebins, width, mix, height=1.0):
+def gaussian_2d(xbins, ybins, xwidth, ywidth, extent=6.0):
+    """
+    Calculate a 2D Gaussian probability density, with independent standard
+    deviations in x and y
+
+    Parameters
+    ----------
+    xbins : ndarray
+        Bin edges in x
+        dtype = 'float'
+        shape = (xbins,)
+    ybins : ndarray
+        Bin edges in y
+        dtype = 'float'
+        shape = (ybins,)
+    xwidth : float
+        The FWHM in x of the Gaussian function
+    ywidth : float
+        The FWHM in y of the Gaussian function
+    extent : float
+        How far out to calculate the Gaussian, in standard deviations
+
+    Returns
+    -------
+    gauss : ndarray
+        Gaussian probability density
+        dtype = 'float'
+        shape = (nxbins, nybins)
+    """
+    xbin_width = np.mean(np.diff(xbins))
+    ybin_width = np.mean(np.diff(ybins))
+
+    # Gauss FWHM = 2*sigma*sqrt(2*ln2)
+    xsigma = xwidth/(2*math.sqrt(2*math.log(2)))
+    ysigma = ywidth/(2*math.sqrt(2*math.log(2)))
+
+    # Ensure nbins is always odd, and each bin has the same approx width as
+    # original x/ybins
+    nxbins = int(np.ceil(2*extent*xsigma/xbin_width)/2)*2 + 1
+    nybins = int(np.ceil(2*extent*ysigma/ybin_width)/2)*2 + 1
+    x = np.linspace(-extent*xsigma, extent*xsigma, nxbins)
+    y = np.linspace(-extent*ysigma, extent*ysigma, nybins)
+
+    xgrid = np.tile(x, (len(y), 1))
+    ygrid = np.transpose(np.tile(y, (len(x), 1)))
+
+    gauss = np.exp(-0.5*(np.square(xgrid/xsigma) + np.square(ygrid/ysigma)))
+
+    return gauss
+
+
+def voigt(ebins, width, mix):
     """
     Calcuate a pseudo-Voigt resolution function, a linear combination of
     Lorentzian and Gaussian functions
