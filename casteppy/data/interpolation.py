@@ -265,7 +265,7 @@ class InterpolationData(Data):
         self.cell_origins = cell_origins
 
 
-    def calculate_fine_phonons(self, qpts, asr=True):
+    def calculate_fine_phonons(self, qpts, asr=True, precondition=False):
         """
         Calculate phonon frequencies and eigenvectors at specified q-points
         from a supercell force constant matrix via interpolation, and set
@@ -282,6 +282,9 @@ class InterpolationData(Data):
         asr : boolean, optional, default True
             Whether to apply an acoustic sum rule correction to the force
             constant matrix
+        precondition : boolean, optional, default False
+            Whether to precondition the dynamical matrix using the
+            eigenvectors from the previous q-point
 
         Returns
         -------
@@ -308,6 +311,7 @@ class InterpolationData(Data):
         n_branches = self.n_branches
         n_qpts = len(qpts)
         freqs = np.zeros((n_qpts, n_branches))
+        freqs_test = np.zeros((n_qpts, n_branches))
         eigenvecs = np.zeros((n_qpts, n_branches, n_ions, 3),
                              dtype=np.complex128)
 
@@ -336,6 +340,7 @@ class InterpolationData(Data):
         masses = np.tile(np.repeat(ion_mass, 3), (3*n_ions, 1))
         dyn_mat_weighting = 1/np.sqrt(masses*np.transpose(masses))
 
+        prev_evecs = np.identity(3*n_ions)
         for q in range(n_qpts):
             qpt = qpts[q, :]
             dyn_mat = np.zeros((n_ions*3, n_ions*3), dtype=np.complex128)
@@ -358,11 +363,15 @@ class InterpolationData(Data):
             # Mass weight dynamical matrix
             dyn_mat *= dyn_mat_weighting
 
+            if precondition:
+                dyn_mat = np.matmul(np.matmul(np.transpose(np.conj(prev_evecs)), dyn_mat), prev_evecs)
+
             try:
                 evals, evecs = np.linalg.eigh(dyn_mat)
             # Fall back to zheev if eigh fails (eigh calls zheevd)
             except np.linalg.LinAlgError:
                 evals, evecs, info = zheev(dyn_mat)
+            prev_evecs = evecs
 
             eigenvecs[q, :] = np.reshape(np.transpose(evecs), (n_branches, n_ions, 3))
             freqs[q, :] = np.sqrt(np.abs(evals))
