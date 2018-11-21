@@ -167,6 +167,22 @@ class TestInterpolatePhononsLZO(unittest.TestCase):
               0.0025499149, 0.0025499149, 0.0026935713,
               0.0033651415, 0.0033651415, 0.0033698188]])*ureg.hartree
 
+        self.unique_sc_i = np.loadtxt(os.path.join(
+          self.path, 'lzo_unique_sc_i.txt'), dtype=np.int32)
+        self.unique_cell_i = np.loadtxt(os.path.join(
+          self.path, 'lzo_unique_cell_i.txt'), dtype=np.int32)
+        self.unique_sc_offsets = [[] for i in range(3)]
+        with open(os.path.join(self.path, 'lzo_unique_sc_offsets.txt')) as f:
+            for i in range(3):
+                self.unique_sc_offsets[i] = [int(x)
+                    for x in f.readline().split()]
+        self.unique_cell_origins = [[] for i in range(3)]
+        with open(os.path.join(self.path, 'lzo_unique_cell_origins.txt')) as f:
+            for i in range(3):
+                self.unique_cell_origins[i] = [int(x)
+                    for x in f.readline().split()]
+
+
     def test_calculate_supercell_image_r_lim_1(self):
         expected_image_r = np.array([[-1, -1, -1],
                                      [-1, -1,  0],
@@ -206,34 +222,34 @@ class TestInterpolatePhononsLZO(unittest.TestCase):
         npt.assert_equal(image_r, expected_image_r)
 
     def test_calculate_phases_qpt(self):
-        lim = 2
-        qpt = [-1, 9.35, 3.35]
-        cell_r = np.loadtxt(os.path.join(self.path, 'lzo_cell_r.txt'))
+        qpt = np.array([-1, 9.35, 3.35])
 
-        phase_data = np.loadtxt(os.path.join(self.path, 'lzo_phases.txt'))
-        nc = phase_data[:, 0].astype(int)
-        i = phase_data[:, 1].astype(int)
-        expected_phases = np.zeros((4*(2*lim + 1)**3 + 1), dtype=np.complex128)
-        expected_phases[:-1] = (phase_data[:, 2].astype(float)
-                                  + phase_data[:, 3].astype(float)*1j)
+        sc_phases, cell_phases = self.data._calculate_phases(
+          qpt, self.unique_sc_offsets, self.unique_sc_i,
+          self.unique_cell_origins, self.unique_cell_i)
 
-        phases = self.data._calculate_phases(qpt, cell_r)
-        npt.assert_allclose(phases, expected_phases)
+        expected_sc_phases = np.loadtxt(os.path.join(
+          self.path, 'lzo_sc_phases.txt'), dtype=np.complex128)
+        expected_cell_phases = np.loadtxt(os.path.join(
+          self.path, 'lzo_cell_phases.txt'), dtype=np.complex128)
+
+        npt.assert_allclose(sc_phases, expected_sc_phases)
+        npt.assert_allclose(cell_phases, expected_cell_phases)
 
     def test_calculate_phases_gamma_pt(self):
-        lim = 2
-        qpt = [0.0, 0.0, 0.0]
-        cell_r = np.loadtxt(os.path.join(self.path, 'lzo_cell_r.txt'))
+        qpt = np.array([0.0, 0.0, 0.0])
 
-        expected_phases = np.zeros((4*(2*lim + 1)**3 + 1),
-                                   dtype=np.complex128)
-        # Last row of phases should always be zero, so that when summing
-        # supercell image phases for the cumulant method, if there isn't an
-        # image for that ion a phase of zero can be used
-        expected_phases[:-1] = 1.0 + 0.0*1j
+        sc_phases, cell_phases = self.data._calculate_phases(
+          qpt, self.unique_sc_offsets, self.unique_sc_i,
+          self.unique_cell_origins, self.unique_cell_i)
 
-        phases = self.data._calculate_phases(qpt, cell_r)
-        npt.assert_equal(phases, expected_phases)
+        expected_sc_phases = np.full(
+          len(self.unique_sc_i), 1.0 + 0.0*1j, dtype=np.complex128)
+        expected_cell_phases = np.full(
+          len(self.unique_cell_i), 1.0 + 0.0*1j, dtype=np.complex128)
+
+        npt.assert_equal(sc_phases, expected_sc_phases)
+        npt.assert_equal(cell_phases, expected_cell_phases)
 
     def test_calculate_supercell_images_n_sc_images(self):
         # Supercell image calculation limit - 2 supercells in each direction
@@ -420,35 +436,48 @@ class TestInterpolatePhononsGraphite(unittest.TestCase):
         data = InterpolationData(seedname, self.path)
         self.data = data
 
+        self.unique_sc_i = np.loadtxt(os.path.join(
+          self.path, 'graphite_unique_sc_i.txt'), dtype=np.int32)
+        self.unique_cell_i = np.loadtxt(os.path.join(
+          self.path, 'graphite_unique_cell_i.txt'), dtype=np.int32)
+        self.unique_sc_offsets = [[] for i in range(3)]
+        with open(os.path.join(self.path, 'graphite_unique_sc_offsets.txt')) as f:
+            for i in range(3):
+                self.unique_sc_offsets[i] = [int(x) for x in f.readline().split()]
+        self.unique_cell_origins = [[] for i in range(3)]
+        with open(os.path.join(self.path, 'graphite_unique_cell_origins.txt')) as f:
+            for i in range(3):
+                self.unique_cell_origins[i] = [int(x) for x in f.readline().split()]
+
     def test_calculate_phases_qpt(self):
-        lim = 2
-        qpt = [0.001949, 0.001949, 0.0]
-        cell_r = np.loadtxt(os.path.join(self.path, 'graphite_cell_r.txt'))
+        qpt = np.array([0.001949, 0.001949, 0.0])
 
-        phase_data = np.loadtxt(os.path.join(self.path, 'graphite_phases.txt'))
-        nc = phase_data[:, 0].astype(int)
-        i = phase_data[:, 1].astype(int)
-        expected_phases = np.zeros(len(cell_r) + 1, dtype=np.complex128)
-        expected_phases[:-1] = (phase_data[:, 2].astype(float)
-                                  + phase_data[:, 3].astype(float)*1j)
+        sc_phases, cell_phases = self.data._calculate_phases(
+            qpt, self.unique_sc_offsets, self.unique_sc_i,
+            self.unique_cell_origins, self.unique_cell_i)
 
-        phases = self.data._calculate_phases(qpt, cell_r)
-        npt.assert_allclose(phases, expected_phases)
+        expected_sc_phases = np.loadtxt(os.path.join(
+          self.path, 'graphite_sc_phases.txt'), dtype=np.complex128)
+        expected_cell_phases = np.loadtxt(os.path.join(
+          self.path, 'graphite_cell_phases.txt'), dtype=np.complex128)
+
+        npt.assert_allclose(sc_phases, expected_sc_phases)
+        npt.assert_allclose(cell_phases, expected_cell_phases)
 
     def test_calculate_phases_gamma_pt(self):
-        lim = 2
-        qpt = [0.0, 0.0, 0.0]
-        cell_r = np.loadtxt(os.path.join(self.path, 'graphite_cell_r.txt'))
+        qpt = np.array([0.0, 0.0, 0.0])
 
-        expected_phases = np.zeros((len(cell_r) + 1),
-                                   dtype=np.complex128)
-        # Last row of phases should always be zero, so that when summing
-        # supercell image phases for the cumulant method, if there isn't an
-        # image for that ion a phase of zero can be used
-        expected_phases[:-1] = 1.0 + 0.0*1j
+        sc_phases, cell_phases = self.data._calculate_phases(
+          qpt, self.unique_sc_offsets, self.unique_sc_i,
+          self.unique_cell_origins, self.unique_cell_i)
 
-        phases = self.data._calculate_phases(qpt, cell_r)
-        npt.assert_equal(phases, expected_phases)
+        expected_sc_phases = np.full(
+          len(self.unique_sc_i), 1.0 + 0.0*1j, dtype=np.complex128)
+        expected_cell_phases = np.full(
+          len(self.unique_cell_i), 1.0 + 0.0*1j, dtype=np.complex128)
+
+        npt.assert_equal(sc_phases, expected_sc_phases)
+        npt.assert_equal(cell_phases, expected_cell_phases)
 
     def test_calculate_supercell_images_n_sc_images(self):
         # Supercell image calculation limit - 2 supercells in each direction
@@ -461,7 +490,6 @@ class TestInterpolatePhononsGraphite(unittest.TestCase):
         expctd_n_images[i, j] = n
         self.data._calculate_supercell_images(lim)
         npt.assert_equal(self.data.n_sc_images, expctd_n_images)
-
 
     def test_calculate_supercell_images_sc_image_i(self):
         # Supercell image calculation limit - 2 supercells in each direction
