@@ -55,7 +55,7 @@ class InterpolationData(Data):
     force_constants : ndarraylist of floats
         Force constants matrix. Default units atomic units
         dtype = 'float'
-        shape = (n_ions, n_ions*n_cells_in_sc, 3, 3)
+        shape = (3*n_ions*n_cells_in_sc, 3*n_ions)
     n_qpts : int
         Number of q-points used in the most recent interpolation calculation.
         Default value 0
@@ -214,15 +214,10 @@ class InterpolationData(Data):
                     read_entry(file_obj, int_type), (3, 3)))
                 n_cells_in_sc = int(np.rint(np.absolute(
                     np.linalg.det(sc_matrix))))
-                fc_tmp = np.reshape(
-                    read_entry(file_obj, float_type),
-                    (n_cells_in_sc*n_ions, 3, n_ions, 3))
-                fc_tmp = np.transpose(fc_tmp, axes=[2, 0, 1, 3])
-                force_constants = np.zeros(
-                    (n_ions, n_cells_in_sc*n_ions, 3, 3))
-                for nc in range(n_cells_in_sc):
-                    force_constants[:, nc*n_ions:(nc + 1)*n_ions] = np.transpose(
-                        fc_tmp[:, nc*n_ions:(nc + 1)*n_ions], axes=[1, 0, 2, 3])
+                fc_tmp = read_entry(file_obj, float_type)
+                force_constants = np.transpose(np.reshape(
+                    fc_tmp, (n_ions*3, n_cells_in_sc*n_ions*3), order='F'))
+
                 cell_origins = np.reshape(
                     read_entry(file_obj, int_type), (n_cells_in_sc, 3))
                 fc_row = read_entry(file_obj, int_type)
@@ -345,10 +340,10 @@ class InterpolationData(Data):
 
         # Precompute fc matrix weighted by number of supercell ion images
         # (for cumulant method)
+        n_sc_images_repeat = np.transpose(
+            n_sc_images.repeat(3, axis=1).repeat(3, axis=0))
         fc_img_weighted = np.divide(
-            force_constants,
-            n_sc_images[:, :, np.newaxis, np.newaxis],
-            where=n_sc_images[:, :, np.newaxis, np.newaxis] != 0)
+            force_constants, n_sc_images_repeat, where=n_sc_images_repeat != 0)
 
         # Precompute dynamical matrix mass weighting
         masses = np.tile(np.repeat(ion_mass, 3), (3*n_ions, 1))
@@ -368,17 +363,21 @@ class InterpolationData(Data):
                 unique_cell_i)
             sc_phase_sum = np.sum(
                 sc_phases[sc_image_i[:, :, 0:max_sc_images]], axis=2)
+
             ij_phases = sc_phase_sum*np.tile(
                 np.repeat(cell_phases, n_ions), (n_ions, 1))
-            full_dyn_mat = np.einsum(
-                'ij,ijkl->ijkl', ij_phases, fc_img_weighted)
+            full_dyn_mat = np.transpose(
+                ij_phases.repeat(3, axis=1).repeat(3, axis=0))*fc_img_weighted
             for nc in range(n_cells_in_sc):
-                dyn_mat += np.reshape(np.transpose(
-                    full_dyn_mat[:, nc*n_ions:(nc+1)*n_ions],
-                    axes=[0, 2, 1, 3]), (3*n_ions, 3*n_ions))
+                dyn_mat += full_dyn_mat[3*nc*n_ions:3*(nc+1)*n_ions, :]
 
             # Mass weight dynamical matrix
             dyn_mat *= dyn_mat_weighting
+
+            # Need to transpose dyn_mat to have [i, j] ion indices, as it was
+            # formed by summing the force_constants matrix which has [j, i]
+            # indices
+            dyn_mat = np.transpose(dyn_mat)
 
             if precondition:
                 dyn_mat = np.matmul(np.matmul(np.transpose(
@@ -420,7 +419,7 @@ class InterpolationData(Data):
         force_constants : ndarray
             The corrected force constants matrix
             dtype = 'float'
-            shape = (n_ions, n_ions*n_cells_in_sc, 3, 3)
+            shape = (n_ions*n_cells_in_sc, 3*n_ions)
         """
         cell_vec = self.cell_vec
         cell_origins = self.cell_origins
@@ -452,14 +451,12 @@ class InterpolationData(Data):
         # Construct square FC matrix
         n_ions_in_sc = n_ions*n_cells_in_sc
         sq_fc = np.zeros((3*n_ions_in_sc, 3*n_ions_in_sc))
+
         for nc in range(n_cells_in_sc):
-            cell_indices = np.repeat(sc_relative_index[
-                nc*n_cells_in_sc:(nc+1)*n_cells_in_sc], n_ions)*n_ions
-            ion_indices = np.tile(range(n_ions), n_cells_in_sc)
-            fc_indices = cell_indices + ion_indices
-            sq_fc[3*nc*n_ions:3*(nc+1)*n_ions, :] = np.reshape(np.transpose(
-                self.force_constants[:, fc_indices],
-                axes=[0, 2, 1, 3]), (3*n_ions, 3*n_ions*n_cells_in_sc))
+            cell_indices = np.repeat(sc_relative_index[nc*n_cells_in_sc:(nc+1)*n_cells_in_sc], 3*n_ions)
+            ion_indices = np.tile(range(3*n_ions), n_cells_in_sc)
+            fc_indices = 3*n_ions*cell_indices + ion_indices
+            sq_fc[3*nc*n_ions:3*(nc+1)*n_ions, :] = np.transpose(self.force_constants[fc_indices, :])
 
         # Find acoustic modes, they should have the sum of c of m amplitude
         # squared = mass (note: have not actually included mass weighting
@@ -475,7 +472,7 @@ class InterpolationData(Data):
         sc_mass = 1.0*n_cells_in_sc
         # Check number of acoustic modes
         if np.sum(c_of_m_disp_sq > sensitivity*sc_mass) < 3:
-            print('Error correcting FC matrix for acoustic sum rule, could' +
+            print('Error correcting FC matrix for acoustic sum rule, could ' +
                   'not find 3 acoustic modes. Returning uncorrected FC matrix')
             return self.force_constants
         # Find indices of acoustic modes (3 largest c of m displacements)
@@ -485,11 +482,9 @@ class InterpolationData(Data):
         for ac in ac_i:
             sq_fc -= (fc_tol + evals[ac])*np.einsum('i,j->ij', evecs[:, ac], evecs[:, ac])
 
-        force_constants = np.zeros((n_ions, n_ions_in_sc, 3, 3))
-        for i in range(n_ions):
-            for j in range(n_ions_in_sc):
-                force_constants[i, j] = sq_fc[3*i:(3*i + 3), 3*j:3*j + 3]
+        force_constants = sq_fc[:, :3*n_ions]
         force_constants = force_constants*self.force_constants.units
+
         return force_constants
 
 
