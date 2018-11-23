@@ -55,12 +55,12 @@ class TestInputReadLZO(unittest.TestCase):
         expctd_data.n_cells_in_sc = 4
         expctd_data.fc_mat_cell0_i0_j0 = np.array(
             [[1.26492555e-01, -2.31204635e-31, -1.16997352e-13],
-             [-2.31204635e-31, 1.26492555e-01,  1.05181454e-30],
-             [-1.16997352e-13, 3.15544362e-30,  1.26492555e-01]])
+             [-2.31204635e-31, 1.26492555e-01,  3.15544362e-30],
+             [-1.16997352e-13, 1.05181454e-30,  1.26492555e-01]])
         expctd_data.fc_mat_cell3_i5_j10 = np.array(
-            [[-8.32394989e-04, -2.22156212e-03, 7.33617499e-05],
-             [-2.03285211e-03, -6.29315975e-04, 1.16282999e-03],
-             [ 3.55359333e-04,  1.21568713e-03, 5.22410338e-05]])
+            [[-8.32394989e-04, -2.03285211e-03, 3.55359333e-04],
+             [-2.22156212e-03, -6.29315975e-04, 1.21568713e-03],
+             [ 7.33617499e-05,  1.16282999e-03, 5.22410338e-05]])
         expctd_data.cell_origins = np.array([[0, 0, 0],
                                              [1, 0, 0],
                                              [0, 1, 0],
@@ -102,8 +102,9 @@ class TestInputReadLZO(unittest.TestCase):
                             self.expctd_data.fc_mat_cell0_i0_j0)
 
     def test_fc_mat_cell3_i5_j10_read(self):
+        # 1st fc index = 3*cell*n_ions + 3*j = 3*3*22 + 3*10 = 228
         npt.assert_allclose(self.data.force_constants[228:231, 15:18],
-                            np.transpose(self.expctd_data.fc_mat_cell3_i5_j10))
+                            self.expctd_data.fc_mat_cell3_i5_j10)
 
     def test_fc_mat_read(self):
         expected_fc_mat = np.load(os.path.join(self.path, 'lzo_fc_mat_no_asr.npy'))
@@ -295,7 +296,7 @@ class TestInterpolatePhononsLZO(unittest.TestCase):
         npt.assert_array_less(asr_diff/no_asr_diff, tol)
         # Test that on average the diff doesn't increase past a threshold
         tol = 1.1
-        self.assertTrue(np.mean(asr_diff/no_asr_diff) < 1.1)
+        self.assertTrue(np.mean(asr_diff/no_asr_diff) < tol)
         # Test that on average the acoustic frequencies are improved
         self.assertTrue(np.mean((asr_diff/no_asr_diff)[:, :3]) < 1.0)
 
@@ -327,8 +328,8 @@ class TestInputReadGraphite(unittest.TestCase):
                                           [0, 0, 2]])
         expctd_data.n_cells_in_sc = 98
         expctd_data.fc_mat_cell0_i0_j0 = np.array(
-            [[6.35111387E-01, 2.05998413E-18, 0.00000000E+00],
-             [2.76471554E-18, 6.35111387E-01, 0.00000000E+00],
+            [[6.35111387E-01, 2.76471554E-18, 0.00000000E+00],
+             [2.05998413E-18, 6.35111387E-01, 0.00000000E+00],
              [0.00000000E+00, 0.00000000E+00, 1.52513691E-01]])
         expctd_data.fc_mat_cell10_i2_j3 = np.array(
             [[ 4.60890816E-06, -4.31847743E-06, -6.64381977E-06],
@@ -389,9 +390,9 @@ class TestInputReadGraphite(unittest.TestCase):
                             self.expctd_data.fc_mat_cell0_i0_j0)
 
     def test_fc_mat_cell10_i2_j3read(self):
-        # 2nd fc index = cell*n_ions + j = 10*4 + 3 = 43
-        npt.assert_allclose(self.data.force_constants[126:129, 9:12],
-                            np.transpose(self.expctd_data.fc_mat_cell10_i2_j3))
+        # 1st fc index = 3*cell*n_ions + 3*j = 3*10*4 + 3 = 129
+        npt.assert_allclose(self.data.force_constants[129:132, 6:9],
+                            self.expctd_data.fc_mat_cell10_i2_j3)
 
     def test_fc_mat_read(self):
         expected_fc_mat = np.load(os.path.join(self.path, 'graphite_fc_mat_no_asr.npy'))
@@ -520,17 +521,13 @@ class TestInterpolatePhononsGraphite(unittest.TestCase):
         no_asr_freqs, _ = self.data.calculate_fine_phonons(self.qpts, asr=False)
         no_asr_diff = np.abs((no_asr_freqs - self.expctd_freqs)/self.expctd_freqs)
 
-        self.assertTrue(np.mean(asr_diff/no_asr_diff) < 1.1)
         # Test that max increase in diff is less than a certain tolerance
-        tol = 12.0
-        npt.assert_array_less(asr_diff/no_asr_diff, tol)
-        # Test that on average the diff doesn't increase past a threshold
         tol = 1.1
-        self.assertTrue(np.mean(asr_diff/no_asr_diff) < tol)
-        # Test that on average the acoustic frequency diff doesn't increase
-        # past a threshold
-        tol = 1.2
-        self.assertTrue(np.mean((asr_diff/no_asr_diff)[:, :3]) < tol)
+        npt.assert_array_less(asr_diff/no_asr_diff, tol)
+        # Test that on average the diff doesn't increase
+        self.assertTrue(np.mean(asr_diff/no_asr_diff) < 1.0)
+        # Test that on average the acoustic frequencies improve
+        self.assertTrue(np.mean((asr_diff/no_asr_diff)[:, :3]) < 1.0)
 
     def test_enforce_acoustic_sum_rule(self):
         expected_fc_mat = np.load(os.path.join(self.path, 'graphite_fc_mat_asr.npy'))

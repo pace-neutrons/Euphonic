@@ -214,9 +214,10 @@ class InterpolationData(Data):
                     read_entry(file_obj, int_type), (3, 3)))
                 n_cells_in_sc = int(np.rint(np.absolute(
                     np.linalg.det(sc_matrix))))
-                fc_tmp = read_entry(file_obj, float_type)
-                force_constants = np.transpose(np.reshape(
-                    fc_tmp, (n_ions*3, n_cells_in_sc*n_ions*3), order='F'))
+                fc_tmp = np.reshape(read_entry(file_obj, float_type),
+                                    (n_cells_in_sc, 3*n_ions, 3*n_ions))
+                fc_tmp = np.transpose(fc_tmp, axes=[0, 2, 1])
+                force_constants = np.reshape(fc_tmp, (3*n_cells_in_sc*n_ions, 3*n_ions))
 
                 cell_origins = np.reshape(
                     read_entry(file_obj, int_type), (n_cells_in_sc, 3))
