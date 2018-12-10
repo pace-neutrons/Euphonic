@@ -131,9 +131,14 @@ class InterpolationData(Data):
             Path to dir containing the .castep_bin file, if it is in another 
             directory
         """
-        file = os.path.join(path, seedname + '.castep_bin')
-        with open(file, 'rb') as f:
-            self._read_interpolation_data(f)
+        try:
+            file = os.path.join(path, seedname + '.castep_bin')
+            with open(file, 'rb') as f:
+                self._read_interpolation_data(f)
+        except IOError:
+           file = os.path.join(path, seedname + '.check')
+           with open(file, 'rb') as f:
+               self._read_interpolation_data(f)
 
 
     def _read_interpolation_data(self, file_obj):
@@ -214,15 +219,8 @@ class InterpolationData(Data):
                     read_entry(file_obj, int_type), (3, 3)))
                 n_cells_in_sc = int(np.rint(np.absolute(
                     np.linalg.det(sc_matrix))))
-                fc_tmp = np.reshape(
-                    read_entry(file_obj, float_type),
-                    (n_cells_in_sc*n_ions, 3, n_ions, 3))
-                fc_tmp = np.transpose(fc_tmp, axes=[2, 0, 1, 3])
-                force_constants = np.zeros(
-                    (n_ions, n_cells_in_sc*n_ions, 3, 3))
-                for nc in range(n_cells_in_sc):
-                    force_constants[:, nc*n_ions:(nc + 1)*n_ions] = np.transpose(
-                        fc_tmp[:, nc*n_ions:(nc + 1)*n_ions], axes=[1, 0, 2, 3])
+                force_constants = np.reshape(read_entry(file_obj, float_type),
+                                    (n_cells_in_sc*3*n_ions, 3*n_ions))
                 cell_origins = np.reshape(
                     read_entry(file_obj, int_type), (n_cells_in_sc, 3))
                 fc_row = read_entry(file_obj, int_type)
