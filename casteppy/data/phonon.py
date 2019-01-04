@@ -193,7 +193,7 @@ class PhononData(Data):
         cell_vec = cell_vec*ureg.angstrom
         ion_mass = ion_mass*ureg.amu
         freqs = freqs*(1/ureg.cm)
-        freqs.ito('eV', 'spectroscopy')
+        freqs.ito('meV', 'spectroscopy')
 
         self.n_ions = n_ions
         self.n_branches = n_branches

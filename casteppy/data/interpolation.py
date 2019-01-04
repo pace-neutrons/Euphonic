@@ -112,8 +112,7 @@ class InterpolationData(Data):
         self.qpts = qpts
         self.n_qpts = len(qpts)
         self.eigenvecs = np.array([])
-        energy_units = '{}'.format(self.force_constants.units).split('/')[0]
-        self.freqs = np.array([])*ureg[energy_units]
+        self.freqs = np.array([])*ureg.meV
 
         if self.n_qpts > 0:
             self.calculate_fine_phonons(qpts)

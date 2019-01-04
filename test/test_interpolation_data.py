@@ -280,16 +280,20 @@ class TestInterpolatePhononsLZO(unittest.TestCase):
 
     def test_calculate_fine_phonons_no_asr(self):
         self.data.calculate_fine_phonons(self.qpts, asr=False)
+        self.data.convert_e_units('hartree')
         npt.assert_allclose(self.data.freqs, self.expctd_freqs, rtol=1e-3)
 
     def test_calculate_fine_phonons_asr(self):
         self.data.calculate_fine_phonons(self.qpts, asr=True)
+        self.data.convert_e_units('hartree')
         npt.assert_allclose(self.data.freqs, self.expctd_freqs, rtol=1e-4)
 
     def test_asr_improves_freqs(self):
         asr_freqs, _ = self.data.calculate_fine_phonons(self.qpts, asr=True)
+        asr_freqs.ito(ureg.hartree)
         asr_diff = np.abs((asr_freqs - self.expctd_freqs)/self.expctd_freqs)
         no_asr_freqs, _ = self.data.calculate_fine_phonons(self.qpts, asr=False)
+        no_asr_freqs.ito(ureg.hartree)
         no_asr_diff = np.abs((no_asr_freqs - self.expctd_freqs)/self.expctd_freqs)
         # Test that max increase in diff is less than a certain threshold
         tol = 10.0
@@ -507,18 +511,22 @@ class TestInterpolatePhononsGraphite(unittest.TestCase):
 
     def test_calculate_fine_phonons_no_asr(self):
         self.data.calculate_fine_phonons(self.qpts, asr=False)
+        self.data.convert_e_units('hartree')
         # Don't test acoustic modes
         npt.assert_allclose(self.data.freqs[:, 3:], self.expctd_freqs[:, 3:], rtol=1e-2)
 
     def test_calculate_fine_phonons_asr(self):
         self.data.calculate_fine_phonons(self.qpts, asr=True)
+        self.data.convert_e_units('hartree')
         # Don't test acoustic modes
         npt.assert_allclose(self.data.freqs[:, 3:], self.expctd_freqs[:, 3:], rtol=1e-2)
 
     def test_asr_improves_freqs(self):
         asr_freqs, _ = self.data.calculate_fine_phonons(self.qpts, asr=True)
+        asr_freqs.ito(ureg.hartree)
         asr_diff = np.abs((asr_freqs - self.expctd_freqs)/self.expctd_freqs)
         no_asr_freqs, _ = self.data.calculate_fine_phonons(self.qpts, asr=False)
+        no_asr_freqs.ito(ureg.hartree)
         no_asr_diff = np.abs((no_asr_freqs - self.expctd_freqs)/self.expctd_freqs)
 
         # Test that max increase in diff is less than a certain tolerance
