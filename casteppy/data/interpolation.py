@@ -130,9 +130,14 @@ class InterpolationData(Data):
             Path to dir containing the .castep_bin file, if it is in another 
             directory
         """
-        file = os.path.join(path, seedname + '.castep_bin')
-        with open(file, 'rb') as f:
-            self._read_interpolation_data(f)
+        try:
+            file = os.path.join(path, seedname + '.castep_bin')
+            with open(file, 'rb') as f:
+                self._read_interpolation_data(f)
+        except IOError:
+           file = os.path.join(path, seedname + '.check')
+           with open(file, 'rb') as f:
+               self._read_interpolation_data(f)
 
 
     def _read_interpolation_data(self, file_obj):
@@ -215,7 +220,6 @@ class InterpolationData(Data):
                     np.linalg.det(sc_matrix))))
                 force_constants = np.reshape(read_entry(file_obj, float_type),
                                     (n_cells_in_sc*3*n_ions, 3*n_ions))
-
                 cell_origins = np.reshape(
                     read_entry(file_obj, int_type), (n_cells_in_sc, 3))
                 fc_row = read_entry(file_obj, int_type)
