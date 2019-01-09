@@ -60,7 +60,7 @@ def structure_factor(data, scattering_lengths, T=5.0, scale=1.0):
     sf = np.absolute(term*np.conj(term))/np.absolute(freqs)
 
     # Multiply by bose factor if temperature is defined
-    if T is not None:
+    if T > 0:
         sf = sf*bose_factor(freqs, T)
 
     sf = np.real(sf*scale)
@@ -109,8 +109,13 @@ def sqw_map(data, ebins, scattering_lengths, T=5.0, scale=1.0, ewidth=0, qwidth=
 
     freqs = (data.freqs.to('meV')).magnitude
     sf = structure_factor(data, scattering_lengths, T=None, scale=scale)
-    p_intensity = np.real(sf*bose_factor(freqs, T))
-    n_intensity = np.real(sf*bose_factor(-freqs, T))
+    if T > 0:
+        p_intensity = sf*bose_factor(freqs, T)
+        n_intensity = sf*bose_factor(-freqs, T)
+    else:
+        p_intensity = sf
+        n_intensity = sf
+
 
     p_bin = np.digitize(freqs, ebins)
     n_bin = np.digitize(-freqs, ebins)
