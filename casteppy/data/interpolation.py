@@ -253,7 +253,7 @@ class InterpolationData(Data):
         self.n_branches = 3*n_ions
         self.cell_vec = cell_vec
         self.n_ions_in_species = n_ions_in_species
-        self.ion_r = ion_r
+        self.ion_r = ion_r - np.floor(ion_r) # Normalise ion coordinates
         self.ion_type = ion_type
         self.ion_mass = ion_mass
         self.sc_matrix = sc_matrix
@@ -597,7 +597,7 @@ class InterpolationData(Data):
 
         n_ions = self.n_ions
         cell_vec = self.cell_vec.to(ureg.bohr).magnitude
-        ion_r = self.ion_r - np.floor(self.ion_r)
+        ion_r = self.ion_r
         cell_origins = self.cell_origins
         n_cells_in_sc = self.n_cells_in_sc
         sc_matrix = self.sc_matrix
