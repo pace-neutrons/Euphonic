@@ -1,11 +1,12 @@
 import math
 import numpy as np
 from scipy import signal
+from casteppy import ureg
 from casteppy.util import reciprocal_lattice
 from casteppy import ureg
 
 
-def structure_factor(data, scattering_lengths, T=5.0, scale=1.0):
+def structure_factor(data, scattering_lengths, T=5.0, scale=1.0, calc_bose=True, calc_dw=True, dw_grid=[5, 5, 5]):
     """
     Calculate the one phonon inelastic scattering for a list of q-points
     See M. Dove Structure and Dynamics Pg. 226
@@ -23,6 +24,10 @@ def structure_factor(data, scattering_lengths, T=5.0, scale=1.0):
     scale : float, optional
         Apply a multiplicative factor to the final structure factor.
         Default: 1.0
+    calc_bose : boolean, optional
+        Whether to calculate and apply the Bose factor. Default: True
+    calc_dw : boolean, optional
+        Whether to apply the Debye-Waller factor. Default: True
 
     Returns
     -------
@@ -57,6 +62,18 @@ def structure_factor(data, scattering_lengths, T=5.0, scale=1.0):
     # q-points
     eigenv_dot_q = np.einsum('ijkl,il->ijk', np.conj(data.eigenvecs), Q)
 
+    # Calculate Debye-Waller coefficients and multiply by Q
+    if calc_dw:
+        dw = dw_coeff(data, T, dw_grid)
+        dw_factor = np.exp(-np.einsum('jkl,ik,il->ij', dw, Q, Q))
+
+        term = np.einsum('ik,ijk,ik,k->ij', dw_factor, eigenv_dot_q, exp_factor, norm_factor)
+    else:
+        term = np.einsum('ijk,ik,k->ij', eigenv_dot_q, exp_factor, norm_factor)
+
+
+
+
     # Multiply normalisation factor, Q dot eigenvector and exp factor
     term = np.einsum('ijk,ik,k->ij', eigenv_dot_q, exp_factor, norm_factor)
 
@@ -64,13 +81,46 @@ def structure_factor(data, scattering_lengths, T=5.0, scale=1.0):
     sf = np.absolute(term*np.conj(term))/np.absolute(freqs)
 
     # Multiply by bose factor if temperature is defined
-    if T > 0:
+    if calc_bose:
         sf = sf*bose_factor(freqs, T)
 
     sf = np.real(sf*scale)
 
     return sf
 
+def dw_coeff(data, temperature, grid=[5, 5, 5]):
+
+    # Get constants as magnitudes for performance
+    hbar = (1*ureg.hbar).to('E_h*s').magnitude
+    kB = (1*ureg.k).to('E_h/K').magnitude
+    ion_mass = data.ion_mass.magnitude
+
+    # Generate q-point list
+    # Monkhorst-Pack grid: ur = (2r-qr-1)/2qr where r=1,2..,qr
+    qx = np.true_divide(2*(np.arange(grid[0]) + 1) - grid[0] - 1, 2*grid[0])
+    qx = np.repeat(qx, grid[1]*grid[2])
+    qy = np.true_divide(2*(np.arange(grid[1]) + 1) - grid[1] - 1, 2*grid[1])
+    qy = np.tile(np.repeat(qy, grid[2]), grid[0])
+    qz = np.true_divide(2*(np.arange(grid[2]) + 1) - grid[2] - 1, 2*grid[2])
+    qz = np.tile(qz, grid[0]*grid[1])
+    qgrid = np.column_stack((qx, qy, qz))
+
+    freqs, evecs = data.calculate_fine_phonons(qgrid, set_attrs=False)
+
+    freqs = freqs.to('E_h').magnitude
+
+    x = (hbar*freqs)/(2*kB*temperature)
+    freq_term = (np.cosh(x)/np.sinh(x))/freqs
+
+    evec_i = np.repeat(evecs[:, :, :, :, np.newaxis], 3, axis=4)
+    evec_j = np.repeat(evecs[:, :, :, np.newaxis, :], 3, axis=3)
+    evec_term = np.real(evec_i*np.conj(evec_j))
+
+    mass_term = hbar/(2*ion_mass)
+
+    dw = np.einsum('k,ijklm,ij->klm', mass_term, evec_term, freq_term)
+
+    return dw
 
 def sqw_map(data, ebins, scattering_lengths, T=5.0, scale=1.0, ewidth=0,
             qwidth=0):
@@ -89,7 +139,7 @@ def sqw_map(data, ebins, scattering_lengths, T=5.0, scale=1.0, ewidth=0,
         Dictionary of spin and isotope averaged coherent scattering legnths
         for each element in the structure e.g. {'O': 5.803, 'Zn': 5.680}
     T : float, optional
-        The temperature to use when calculating the Bose factor. Default: 5K
+        The temperature in Kelvin. Default: 5K
     scale : float, optional
         Apply a multiplicative factor to the structure factor.
         Default: 1.0
@@ -113,14 +163,13 @@ def sqw_map(data, ebins, scattering_lengths, T=5.0, scale=1.0, ewidth=0,
     sqw_map = np.zeros((data.n_qpts, len(ebins) + 1))
 
     freqs = (data.freqs.to('meV')).magnitude
-    sf = structure_factor(data, scattering_lengths, T=0, scale=scale)
+    sf = structure_factor(data, scattering_lengths, T=T, scale=scale, calc_bose=False)
     if T > 0:
         p_intensity = sf*bose_factor(freqs, T)
         n_intensity = sf*bose_factor(-freqs, T)
     else:
         p_intensity = sf
         n_intensity = sf
-
 
     p_bin = np.digitize(freqs, ebins)
     n_bin = np.digitize(-freqs, ebins)
@@ -247,7 +296,7 @@ def bose_factor(x, T):
     Parameters
     ----------
     x : ndarray
-        Phonon frequencies
+        Phonon frequencies in meV
         dtype = 'float'
         shape = (n_qpts, 3*n_ions)
     T : float
@@ -260,7 +309,7 @@ def bose_factor(x, T):
         dtype = 'float'
         shape = (n_qpts, 3*n_ions)
     """
-    kB = 8.6173324e-2
+    kB = (1*ureg.k).to('meV/K').magnitude
     bose = np.zeros(x.shape)
     bose[x > 0] = 1
     bose = bose + 1/(np.exp(np.absolute(x)/(kB*T)) - 1)

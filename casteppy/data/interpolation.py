@@ -274,12 +274,11 @@ class InterpolationData(Data):
                       '{:s}\n').format(file_obj.name))
 
 
-    def calculate_fine_phonons(self, qpts, asr=True, precondition=False):
+    def calculate_fine_phonons(self, qpts, asr=True, precondition=False, set_attrs=True):
         """
         Calculate phonon frequencies and eigenvectors at specified q-points
-        from a supercell force constant matrix via interpolation, and set
-        InterpolationData freqs and eigenvecs attributes. For more information
-        on the method see section 2.5:
+        from a supercell force constant matrix via interpolation. For more
+        information on the method see section 2.5:
         http://www.tcm.phy.cam.ac.uk/castep/Phonons_Guide/Castep_Phonons.html
 
         Parameters
@@ -294,6 +293,9 @@ class InterpolationData(Data):
         precondition : boolean, optional, default False
             Whether to precondition the dynamical matrix using the
             eigenvectors from the previous q-point
+        set_attrs : boolean, optional, default True
+            Whether to set the freqs, eigenvecs, qpts and n_qpts attributes of
+            the InterpolationData object to the newly calculated values
 
         Returns
         -------
@@ -413,13 +415,14 @@ class InterpolationData(Data):
             imag_freqs = np.where(evals < 0)
             freqs[q, imag_freqs] *= -1
 
-        self.n_qpts = n_qpts
-        self.qpts = qpts
-        freqs = freqs*ureg.hartree
-        self.freqs = freqs.to(self.freqs.units)
-        self.eigenvecs = eigenvecs
+        freqs = (freqs*ureg.hartree).to(self.freqs.units)
+        if set_attrs:
+            self.n_qpts = n_qpts
+            self.qpts = qpts
+            self.freqs = freqs
+            self.eigenvecs = eigenvecs
 
-        return self.freqs, self.eigenvecs
+        return freqs, eigenvecs
 
 
     def _enforce_acoustic_sum_rule(self):
