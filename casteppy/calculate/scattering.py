@@ -64,15 +64,11 @@ def structure_factor(data, scattering_lengths, T=5.0, scale=1.0, calc_bose=True,
 
     # Calculate Debye-Waller coefficients and multiply by Q
     if calc_dw:
-        dw = dw_coeff(data, T, dw_grid)
+        dw = dw_coeff(data, T, dw_grid).to('angstrom^2').magnitude
         dw_factor = np.exp(-np.einsum('jkl,ik,il->ij', dw, Q, Q))
-
         term = np.einsum('ik,ijk,ik,k->ij', dw_factor, eigenv_dot_q, exp_factor, norm_factor)
     else:
         term = np.einsum('ijk,ik,k->ij', eigenv_dot_q, exp_factor, norm_factor)
-
-
-
 
     # Multiply normalisation factor, Q dot eigenvector and exp factor
     term = np.einsum('ijk,ik,k->ij', eigenv_dot_q, exp_factor, norm_factor)
@@ -91,9 +87,8 @@ def structure_factor(data, scattering_lengths, T=5.0, scale=1.0, calc_bose=True,
 def dw_coeff(data, temperature, grid=[5, 5, 5]):
 
     # Get constants as magnitudes for performance
-    hbar = (1*ureg.hbar).to('E_h*s').magnitude
     kB = (1*ureg.k).to('E_h/K').magnitude
-    ion_mass = data.ion_mass.magnitude
+    ion_mass = ((data.ion_mass*(ureg.c)**2).to('E_h')).magnitude
 
     # Generate q-point list
     # Monkhorst-Pack grid: ur = (2r-qr-1)/2qr where r=1,2..,qr
@@ -108,17 +103,17 @@ def dw_coeff(data, temperature, grid=[5, 5, 5]):
     freqs, evecs = data.calculate_fine_phonons(qgrid, set_attrs=False)
 
     freqs = freqs.to('E_h').magnitude
-
-    x = (hbar*freqs)/(2*kB*temperature)
+    #x = (hbar*freqs)/(2*kB*temperature)
+    x = freqs/(2*kB*temperature)
     freq_term = (np.cosh(x)/np.sinh(x))/freqs
 
     evec_i = np.repeat(evecs[:, :, :, :, np.newaxis], 3, axis=4)
     evec_j = np.repeat(evecs[:, :, :, np.newaxis, :], 3, axis=3)
     evec_term = np.real(evec_i*np.conj(evec_j))
 
-    mass_term = hbar/(2*ion_mass)
+    mass_term = 1/(4*math.pi*ion_mass)
 
-    dw = np.einsum('k,ijklm,ij->klm', mass_term, evec_term, freq_term)
+    dw = np.einsum('k,ijklm,ij->klm', mass_term, evec_term, freq_term)*ureg('bohr^2')
 
     return dw
 
