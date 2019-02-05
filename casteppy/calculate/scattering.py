@@ -213,7 +213,8 @@ def sqw_map(data, ebins, scattering_lengths, T=5.0, scale=1.0, dw_grid=None,
 
     freqs = (data.freqs.to('meV')).magnitude
     sf = structure_factor(data, scattering_lengths, T=T, scale=scale,
-                          calc_bose=False)
+                          calc_bose=False, dw_grid=dw_grid,
+                          dw_seedname=dw_seedname)
     if T > 0:
         p_intensity = sf*bose_factor(freqs, T)
         n_intensity = sf*bose_factor(-freqs, T)
