@@ -64,6 +64,10 @@ class InterpolationData(Data):
         calculation. Is empty by default
         dtype = 'float'
         shape = (n_qpts, 3)
+    weights : ndarray
+        The weight for each q-point
+        dtype = 'float'
+        shape = (n_qpts,)
     freqs: ndarray
         Phonon frequencies from the most recent interpolation calculation.
         Default units eV. Is empty by default
@@ -415,10 +419,11 @@ class InterpolationData(Data):
             imag_freqs = np.where(evals < 0)
             freqs[q, imag_freqs] *= -1
 
-        freqs = (freqs*ureg.hartree).to(self.freqs.units)
+        freqs = (freqs*ureg.hartree).to(self.freqs.units, 'spectroscopy')
         if set_attrs:
             self.n_qpts = n_qpts
             self.qpts = qpts
+            self.weights = np.full(len(qpts), 1.0/n_qpts)
             self.freqs = freqs
             self.eigenvecs = eigenvecs
 

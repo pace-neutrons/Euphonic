@@ -2,11 +2,13 @@ import math
 import numpy as np
 from scipy import signal
 from casteppy import ureg
+from casteppy.data.phonon import PhononData
 from casteppy.util import reciprocal_lattice
 from casteppy import ureg
 
 
-def structure_factor(data, scattering_lengths, T=5.0, scale=1.0, calc_bose=True, calc_dw=True, dw_grid=[5, 5, 5]):
+def structure_factor(data, scattering_lengths, T=5.0, scale=1.0, calc_bose=True,
+                     dw_seedname=None, dw_grid=None):
     """
     Calculate the one phonon inelastic scattering for a list of q-points
     See M. Dove Structure and Dynamics Pg. 226
@@ -18,16 +20,22 @@ def structure_factor(data, scattering_lengths, T=5.0, scale=1.0, calc_bose=True,
         and eigenvectors required for the calculation
     scattering_lengths : dictionary
         Dictionary of spin and isotope averaged coherent scattering legnths
-        for each element in fm, e.g. {'O': 5.803, 'Zn': 5.680}
-    T : float, optional
-        The temperature to use when calculating the Bose factor. Default: 5K
-    scale : float, optional
+        for each element in the structure e.g. {'O': 5.803, 'Zn': 5.680}
+    T : float, optional, default 5.0
+        The temperature to use when calculating the Bose factor
+    scale : float, optional, default 1.0
         Apply a multiplicative factor to the final structure factor.
-        Default: 1.0
-    calc_bose : boolean, optional
-        Whether to calculate and apply the Bose factor. Default: True
-    calc_dw : boolean, optional
-        Whether to apply the Debye-Waller factor. Default: True
+    calc_bose : boolean, optional, default True
+        Whether to calculate and apply the Bose factor
+    dw_grid : ndarray, optional, default None
+        If set, will calculate the Debye-Waller factor on a Monkhorst-Pack
+        grid, e.g. [nh, nk, nl]. Only applciable to InterpolationData objects,
+        i.e. when using a .castep_bin file
+        dtype = 'float'
+        shape = (3,)
+    dw_seedname : string, optional, default None
+        If set, will calculate the Debye-Waller factor over the q-points in
+        the .phonon file with this seedname.
 
     Returns
     -------
@@ -50,8 +58,8 @@ def structure_factor(data, scattering_lengths, T=5.0, scale=1.0, calc_bose=True,
 
     # Calculate the exponential factor for all ions and q-points
     # ion_r in fractional coords, so Qdotr = 2pi*qh*rx + 2pi*qk*ry...
-    exp_factor = np.exp(1J*2*math.pi*np.einsum(
-        'ij,jk->ik', data.qpts, np.transpose(data.ion_r)))
+    exp_factor = np.exp(1J*2*math.pi*np.einsum('ij,kj->ik',
+                                               data.qpts, data.ion_r))
 
     # Eigenvectors are in Cartesian so need to convert hkl to Cartesian by
     # computing dot product with hkl and reciprocal lattice.
@@ -62,21 +70,26 @@ def structure_factor(data, scattering_lengths, T=5.0, scale=1.0, calc_bose=True,
     # q-points
     eigenv_dot_q = np.einsum('ijkl,il->ijk', np.conj(data.eigenvecs), Q)
 
-    # Calculate Debye-Waller coefficients and multiply by Q
-    if calc_dw:
-        dw = dw_coeff(data, T, dw_grid).to('angstrom^2').magnitude
-        dw_factor = np.exp(-np.einsum('jkl,ik,il->ij', dw, Q, Q))
-        term = np.einsum('ik,ijk,ik,k->ij', dw_factor, eigenv_dot_q, exp_factor, norm_factor)
-    else:
-        term = np.einsum('ijk,ik,k->ij', eigenv_dot_q, exp_factor, norm_factor)
+    # Calculate Debye-Waller factors
+    if dw_grid:
+        dw = dw_coeff(data, T, grid=dw_grid).to('angstrom^2').magnitude
+    elif dw_seedname:
+        dw_data = PhononData(dw_seedname)
+        dw = dw_coeff(dw_data, T).to('angstrom^2').magnitude
 
-    # Multiply normalisation factor, Q dot eigenvector and exp factor
-    term = np.einsum('ijk,ik,k->ij', eigenv_dot_q, exp_factor, norm_factor)
+    if dw_grid or dw_seedname:
+        dw_factor = np.exp(-np.einsum('jkl,ik,il->ij', dw, Q, Q))
+    else:
+        dw_factor = np.ones((data.n_qpts, data.n_ions))
+
+    # Multiply dw_factor, Q.eigenvector, exp factor and normalisation factor
+    term = np.einsum('ik,ijk,ik,k->ij',
+                     dw_factor, eigenv_dot_q, exp_factor, norm_factor)
 
     # Take mod squared and divide by frequency to get intensity
     sf = np.absolute(term*np.conj(term))/np.absolute(freqs)
 
-    # Multiply by bose factor if temperature is defined
+    # Multiply by Bose factor
     if calc_bose:
         sf = sf*bose_factor(freqs, T)
 
@@ -84,41 +97,76 @@ def structure_factor(data, scattering_lengths, T=5.0, scale=1.0, calc_bose=True,
 
     return sf
 
-def dw_coeff(data, temperature, grid=[5, 5, 5]):
 
-    # Get constants as magnitudes for performance
+def dw_coeff(data, temperature, grid=None):
+    """
+    Calculate the 3 x 3 Debye-Waller coefficients for each ion
+
+    Parameters
+    ----------
+    data : Data object
+        InterpolationData or PhononData object
+    temperature : float
+        Temperature in Kelvin
+    grid : ndarray, optional
+        If set, will calculate the Debye-Waller factor on a Monkhorst-Pack
+        grid, e.g. [nh, nk, nl]. Only applciable to InterpolationData objects.
+        If not set the Debye-Waller factor will be calculated over the
+        q-points already present in the input Data object
+        dtype = 'float'
+        shape = (3,)
+
+    Returns
+    -------
+    dw : ndarray
+        The DW coefficients for each ion
+        dtype = 'float'
+        shape = (n_ions, 3, 3) 
+    """
+    # Get values as magnitudes for performance
     kB = (1*ureg.k).to('E_h/K').magnitude
-    ion_mass = ((data.ion_mass*(ureg.c)**2).to('E_h')).magnitude
+    ion_mass = data.ion_mass.to('e_mass').magnitude
 
-    # Generate q-point list
-    # Monkhorst-Pack grid: ur = (2r-qr-1)/2qr where r=1,2..,qr
-    qx = np.true_divide(2*(np.arange(grid[0]) + 1) - grid[0] - 1, 2*grid[0])
-    qx = np.repeat(qx, grid[1]*grid[2])
-    qy = np.true_divide(2*(np.arange(grid[1]) + 1) - grid[1] - 1, 2*grid[1])
-    qy = np.tile(np.repeat(qy, grid[2]), grid[0])
-    qz = np.true_divide(2*(np.arange(grid[2]) + 1) - grid[2] - 1, 2*grid[2])
-    qz = np.tile(qz, grid[0]*grid[1])
-    qgrid = np.column_stack((qx, qy, qz))
+    if grid:
+        # Generate q-point list
+        # Monkhorst-Pack grid: ur = (2r-qr-1)/2qr where r=1,2..,qr
+        qh = np.true_divide(
+            2*(np.arange(grid[0]) + 1) - grid[0] - 1, 2*grid[0])
+        qh = np.repeat(qh, grid[1]*grid[2])
+        qk = np.true_divide(
+            2*(np.arange(grid[1]) + 1) - grid[1] - 1, 2*grid[1])
+        qk = np.tile(np.repeat(qk, grid[2]), grid[0])
+        ql = np.true_divide(
+            2*(np.arange(grid[2]) + 1) - grid[2] - 1, 2*grid[2])
+        ql = np.tile(ql, grid[0]*grid[1])
+        qgrid = np.column_stack((qh, qk, ql))
+        # Calculate frequencies and eigenvectors on MP grid
+        freqs, evecs = data.calculate_fine_phonons(qgrid, set_attrs=False)
+        weights = np.full(len(freqs), 1.0/len(freqs))
+    else:
+        freqs = data.freqs
+        evecs = data.eigenvecs
+        weights = data.weights
 
-    freqs, evecs = data.calculate_fine_phonons(qgrid, set_attrs=False)
-
-    freqs = freqs.to('E_h').magnitude
-    #x = (hbar*freqs)/(2*kB*temperature)
+    freqs = freqs.to('E_h', 'spectroscopy').magnitude
     x = freqs/(2*kB*temperature)
-    freq_term = (np.cosh(x)/np.sinh(x))/freqs
+    freq_term = 1/((2*math.pi)**2*freqs*np.tanh(x))
 
     evec_i = np.repeat(evecs[:, :, :, :, np.newaxis], 3, axis=4)
     evec_j = np.repeat(evecs[:, :, :, np.newaxis, :], 3, axis=3)
     evec_term = np.real(evec_i*np.conj(evec_j))
 
-    mass_term = 1/(4*math.pi*ion_mass)
+    mass_term = 1/(2*ion_mass)
 
-    dw = np.einsum('k,ijklm,ij->klm', mass_term, evec_term, freq_term)*ureg('bohr^2')
+    dw = (np.einsum('k,ijklm,ij,i->klm',
+                    mass_term, evec_term, freq_term, weights))
+    dw = dw/np.sum(weights)*ureg('bohr^2')
 
     return dw
 
-def sqw_map(data, ebins, scattering_lengths, T=5.0, scale=1.0, ewidth=0,
-            qwidth=0):
+
+def sqw_map(data, ebins, scattering_lengths, T=5.0, scale=1.0, dw_grid=None,
+            dw_seedname=None, ewidth=0, qwidth=0):
     """
     Calculate S(Q, w) for each q-point contained in data and each bin defined
     in ebins, and sets the sqw_map and sqw_ebins attributes of the data object
@@ -133,17 +181,23 @@ def sqw_map(data, ebins, scattering_lengths, T=5.0, scale=1.0, ewidth=0,
     scattering_lengths : dictionary
         Dictionary of spin and isotope averaged coherent scattering legnths
         for each element in the structure e.g. {'O': 5.803, 'Zn': 5.680}
-    T : float, optional
-        The temperature in Kelvin. Default: 5K
-    scale : float, optional
+    T : float, optional, default 5.0
+        The temperature in Kelvin
+    scale : float, optional, default 1.0
         Apply a multiplicative factor to the structure factor.
-        Default: 1.0
-    ewidth : float, optional
+    dw_grid : ndarray, optional, default None
+        If set, will calculate the Debye-Waller factor on a Monkhorst-Pack
+        grid, e.g. [nh, nk, nl]. Only applciable to InterpolationData objects,
+        i.e. when using a .castep_bin file
+        dtype = 'float'
+        shape = (3,)
+    dw_seedname : string, optional, default None
+        If set, will calculate the Debye-Waller factor over the q-points in
+        the .phonon file with this seedname.
+    ewidth : float, optional, default 1.5
         The FWHM of the Gaussian energy resolution function in meV
-        Default: 1.5
-    qwidth : float, optional
+    qwidth : float, optional, default 0.1
         The FWHM of the Gaussian q-vector resolution function
-        Default: 0.1
 
     Returns
     -------
@@ -158,7 +212,8 @@ def sqw_map(data, ebins, scattering_lengths, T=5.0, scale=1.0, ewidth=0,
     sqw_map = np.zeros((data.n_qpts, len(ebins) + 1))
 
     freqs = (data.freqs.to('meV')).magnitude
-    sf = structure_factor(data, scattering_lengths, T=T, scale=scale, calc_bose=False)
+    sf = structure_factor(data, scattering_lengths, T=T, scale=scale,
+                          calc_bose=False)
     if T > 0:
         p_intensity = sf*bose_factor(freqs, T)
         n_intensity = sf*bose_factor(-freqs, T)
