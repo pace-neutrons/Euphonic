@@ -72,13 +72,13 @@ def structure_factor(data, scattering_lengths, T=5.0, scale=1.0, calc_bose=True,
 
     # Calculate Debye-Waller factors
     if dw_grid:
-        dw = dw_coeff(data, T, grid=dw_grid).to('angstrom^2').magnitude
+        dw = dw_coeff(data, T, grid=dw_grid)
     elif dw_seedname:
         dw_data = PhononData(dw_seedname)
-        dw = dw_coeff(dw_data, T).to('angstrom^2').magnitude
+        dw = dw_coeff(dw_data, T)
 
     if dw_grid or dw_seedname:
-        dw_factor = np.exp(-np.einsum('jkl,ik,il->ij', dw, Q, Q))
+        dw_factor = np.exp(-np.einsum('jkl,ik,il->ij', dw, Q, Q)/2)
     else:
         dw_factor = np.ones((data.n_qpts, data.n_ions))
 
@@ -150,7 +150,7 @@ def dw_coeff(data, temperature, grid=None):
 
     freqs = freqs.to('E_h', 'spectroscopy').magnitude
     x = freqs/(2*kB*temperature)
-    freq_term = 1/((2*math.pi)**2*freqs*np.tanh(x))
+    freq_term = 1/(2*math.pi*freqs*np.tanh(x))
 
     evec_i = np.repeat(evecs[:, :, :, :, np.newaxis], 3, axis=4)
     evec_j = np.repeat(evecs[:, :, :, np.newaxis, :], 3, axis=3)
@@ -160,7 +160,7 @@ def dw_coeff(data, temperature, grid=None):
 
     dw = (np.einsum('k,ijklm,ij,i->klm',
                     mass_term, evec_term, freq_term, weights))
-    dw = dw/np.sum(weights)*ureg('bohr^2')
+    dw = dw/np.sum(weights)
 
     return dw
 
