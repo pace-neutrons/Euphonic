@@ -8,7 +8,7 @@ from casteppy import ureg
 
 
 def structure_factor(data, scattering_lengths, T=5.0, scale=1.0, calc_bose=True,
-                     dw_seedname=None, dw_grid=None):
+                     dw_seedname=None, dw_grid=None, test=False):
     """
     Calculate the one phonon inelastic scattering for a list of q-points
     See M. Dove Structure and Dynamics Pg. 226
@@ -72,7 +72,7 @@ def structure_factor(data, scattering_lengths, T=5.0, scale=1.0, calc_bose=True,
 
     # Calculate Debye-Waller factors
     if dw_grid:
-        dw = dw_coeff(data, T, grid=dw_grid)
+        dw = dw_coeff(data, T, grid=dw_grid, test=test)
     elif dw_seedname:
         dw_data = PhononData(dw_seedname)
         dw = dw_coeff(dw_data, T)
@@ -98,7 +98,7 @@ def structure_factor(data, scattering_lengths, T=5.0, scale=1.0, calc_bose=True,
     return sf
 
 
-def dw_coeff(data, temperature, grid=None):
+def dw_coeff(data, temperature, grid=None, test=False):
     """
     Calculate the 3 x 3 Debye-Waller coefficients for each ion
 
@@ -139,7 +139,10 @@ def dw_coeff(data, temperature, grid=None):
         ql = np.true_divide(
             2*(np.arange(grid[2]) + 1) - grid[2] - 1, 2*grid[2])
         ql = np.tile(ql, grid[0]*grid[1])
-        qgrid = np.column_stack((qh, qk, ql))
+        if test:
+            qgrid = np.loadtxt('qpts_rlu.txt')
+        else:
+            qgrid = np.column_stack((qh, qk, ql))
         # Calculate frequencies and eigenvectors on MP grid
         freqs, evecs = data.calculate_fine_phonons(qgrid, set_attrs=False)
         weights = np.full(len(freqs), 1.0/len(freqs))
@@ -150,6 +153,13 @@ def dw_coeff(data, temperature, grid=None):
         weights = data.weights
 
     mass_term = 1/(2*ion_mass)
+
+    # Determine q-points near the gamma point and mask out their acoustic
+    # modes due to the potentially large 1/frequency factor
+    TOL = 1e-8
+    is_small_q = np.sum(np.square(qgrid), axis=1) < TOL
+    freq_mask = np.ones(freqs.shape)
+    freq_mask[is_small_q, :3] = 0
 
     freqs = freqs.to('E_h', 'spectroscopy').magnitude
     x = freqs/(2*kB*temperature)
@@ -164,8 +174,9 @@ def dw_coeff(data, temperature, grid=None):
         evec_j = np.repeat(evecs[qi:qf, :, :, np.newaxis, :], 3, axis=3)
         evec_term = np.real(evec_i*np.conj(evec_j))
 
-        dw += (np.einsum('k,ijklm,ij,i->klm',
-                         mass_term, evec_term, freq_term[qi:qf], weights[qi:qf]))
+        dw += (np.einsum('i,k,ij,ij,ijklm->klm',
+                         weights[qi:qf], mass_term, freq_term[qi:qf],
+                         freq_mask[qi:qf], evec_term))
 
     dw = dw/np.sum(weights)
 
