@@ -8,7 +8,7 @@ from casteppy import ureg
 
 
 def structure_factor(data, scattering_lengths, T=5.0, scale=1.0, calc_bose=True,
-                     dw_seedname=None, dw_grid=None, test=False):
+                     dw_seedname=None, dw_grid=None):
     """
     Calculate the one phonon inelastic scattering for a list of q-points
     See M. Dove Structure and Dynamics Pg. 226
@@ -72,7 +72,7 @@ def structure_factor(data, scattering_lengths, T=5.0, scale=1.0, calc_bose=True,
 
     # Calculate Debye-Waller factors
     if dw_grid:
-        dw = dw_coeff(data, T, grid=dw_grid, test=test)
+        dw = dw_coeff(data, T, grid=dw_grid)
     elif dw_seedname:
         dw_data = PhononData(dw_seedname)
         dw = dw_coeff(dw_data, T)
@@ -98,7 +98,7 @@ def structure_factor(data, scattering_lengths, T=5.0, scale=1.0, calc_bose=True,
     return sf
 
 
-def dw_coeff(data, temperature, grid=None, test=False):
+def dw_coeff(data, temperature, grid=None):
     """
     Calculate the 3 x 3 Debye-Waller coefficients for each ion
 
@@ -139,10 +139,7 @@ def dw_coeff(data, temperature, grid=None, test=False):
         ql = np.true_divide(
             2*(np.arange(grid[2]) + 1) - grid[2] - 1, 2*grid[2])
         ql = np.tile(ql, grid[0]*grid[1])
-        if test:
-            qgrid = np.loadtxt('qpts_rlu.txt')
-        else:
-            qgrid = np.column_stack((qh, qk, ql))
+        qgrid = np.column_stack((qh, qk, ql))
         # Calculate frequencies and eigenvectors on MP grid
         freqs, evecs = data.calculate_fine_phonons(qgrid, set_attrs=False)
         weights = np.full(len(freqs), 1.0/len(freqs))
@@ -166,6 +163,7 @@ def dw_coeff(data, temperature, grid=None, test=False):
     freq_term = 1/(2*math.pi*freqs*np.tanh(x))
 
     dw = np.zeros((data.n_ions, 3, 3))
+    # Calculating the e.e* term is expensive, do in chunks
     chunk = 1000
     for i in range(int((len(qgrid) - 1)/chunk) + 1):
         qi = i*chunk
