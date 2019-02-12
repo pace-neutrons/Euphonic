@@ -144,22 +144,29 @@ def dw_coeff(data, temperature, grid=None):
         freqs, evecs = data.calculate_fine_phonons(qgrid, set_attrs=False)
         weights = np.full(len(freqs), 1.0/len(freqs))
     else:
+        qgrid = data.qpts
         freqs = data.freqs
         evecs = data.eigenvecs
         weights = data.weights
+
+    mass_term = 1/(2*ion_mass)
 
     freqs = freqs.to('E_h', 'spectroscopy').magnitude
     x = freqs/(2*kB*temperature)
     freq_term = 1/(2*math.pi*freqs*np.tanh(x))
 
-    evec_i = np.repeat(evecs[:, :, :, :, np.newaxis], 3, axis=4)
-    evec_j = np.repeat(evecs[:, :, :, np.newaxis, :], 3, axis=3)
-    evec_term = np.real(evec_i*np.conj(evec_j))
+    dw = np.zeros((data.n_ions, 3, 3))
+    chunk = 1000
+    for i in range(int((len(qgrid) - 1)/chunk) + 1):
+        qi = i*chunk
+        qf = min((i + 1)*chunk, len(qgrid))
+        evec_i = np.repeat(evecs[qi:qf, :, :, :, np.newaxis], 3, axis=4)
+        evec_j = np.repeat(evecs[qi:qf, :, :, np.newaxis, :], 3, axis=3)
+        evec_term = np.real(evec_i*np.conj(evec_j))
 
-    mass_term = 1/(2*ion_mass)
+        dw += (np.einsum('k,ijklm,ij,i->klm',
+                         mass_term, evec_term, freq_term[qi:qf], weights[qi:qf]))
 
-    dw = (np.einsum('k,ijklm,ij,i->klm',
-                    mass_term, evec_term, freq_term, weights))
     dw = dw/np.sum(weights)
 
     return dw
