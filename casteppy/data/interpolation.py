@@ -247,7 +247,6 @@ class InterpolationData(Data):
         cell_vec.ito('angstrom')
         ion_mass = ion_mass*ureg.e_mass
         ion_mass.ito('amu')
-        force_constants = force_constants*ureg.hartree/(ureg.bohr**2)
 
         self.n_ions = n_ions
         self.n_branches = 3*n_ions
@@ -256,10 +255,17 @@ class InterpolationData(Data):
         self.ion_r = ion_r - np.floor(ion_r) # Normalise ion coordinates
         self.ion_type = ion_type
         self.ion_mass = ion_mass
-        self.sc_matrix = sc_matrix
-        self.n_cells_in_sc = n_cells_in_sc
-        self.force_constants = force_constants
-        self.cell_origins = cell_origins
+
+        # Set attributes relating to 'FORCE_CON' block
+        try:
+            force_constants = force_constants*ureg.hartree/(ureg.bohr**2)
+            self.force_constants = force_constants
+            self.sc_matrix = sc_matrix
+            self.n_cells_in_sc = n_cells_in_sc
+            self.cell_origins = cell_origins
+        except UnboundLocalError:
+            sys.exit(('Error: force constants matrix could not be found in '
+                      '{:s}\n').format(file_obj.name))
 
 
     def calculate_fine_phonons(self, qpts, asr=True, precondition=False):
