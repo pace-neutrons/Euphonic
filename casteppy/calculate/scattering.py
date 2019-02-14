@@ -98,7 +98,7 @@ def structure_factor(data, scattering_lengths, T=5.0, scale=1.0, calc_bose=True,
     return sf
 
 
-def dw_coeff(data, temperature, grid=None):
+def dw_coeff(data, T, grid=None):
     """
     Calculate the 3 x 3 Debye-Waller coefficients for each ion
 
@@ -106,7 +106,7 @@ def dw_coeff(data, temperature, grid=None):
     ----------
     data : Data object
         InterpolationData or PhononData object
-    temperature : float
+    T : float
         Temperature in Kelvin
     grid : ndarray, optional
         If set, will calculate the Debye-Waller factor on a Monkhorst-Pack
@@ -159,8 +159,11 @@ def dw_coeff(data, temperature, grid=None):
     freq_mask[is_small_q, :3] = 0
 
     freqs = freqs.to('E_h', 'spectroscopy').magnitude
-    x = freqs/(2*kB*temperature)
-    freq_term = 1/(2*math.pi*freqs*np.tanh(x))
+    if T > 0:
+        x = freqs/(2*kB*T)
+        freq_term = 1/(2*math.pi*freqs*np.tanh(x))
+    else:
+        freq_term = 1/(2*math.pi*freqs)
 
     dw = np.zeros((data.n_ions, 3, 3))
     # Calculating the e.e* term is expensive, do in chunks
@@ -231,12 +234,9 @@ def sqw_map(data, ebins, scattering_lengths, T=5.0, scale=1.0, dw_grid=None,
     sf = structure_factor(data, scattering_lengths, T=T, scale=scale,
                           calc_bose=False, dw_grid=dw_grid,
                           dw_seedname=dw_seedname)
-    if T > 0:
-        p_intensity = sf*bose_factor(freqs, T)
-        n_intensity = sf*bose_factor(-freqs, T)
-    else:
-        p_intensity = sf
-        n_intensity = sf
+
+    p_intensity = sf*bose_factor(freqs, T)
+    n_intensity = sf*bose_factor(-freqs, T)
 
     p_bin = np.digitize(freqs, ebins)
     n_bin = np.digitize(-freqs, ebins)
@@ -379,7 +379,8 @@ def bose_factor(x, T):
     kB = (1*ureg.k).to('meV/K').magnitude
     bose = np.zeros(x.shape)
     bose[x > 0] = 1
-    bose = bose + 1/(np.exp(np.absolute(x)/(kB*T)) - 1)
+    if T > 0:
+        bose = bose + 1/(np.exp(np.absolute(x)/(kB*T)) - 1)
     return bose
 
 
