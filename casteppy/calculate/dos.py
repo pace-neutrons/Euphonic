@@ -46,11 +46,16 @@ def calculate_dos(data, bwidth, gwidth, lorentz=False):
     dos = np.array([])
     dos_down = np.array([])
 
+    # Convert freqs to magnitudes to avoid UnitStrippedWarning
+    freqs = data.freqs.magnitude
+    if hasattr(data, 'freq_down'): 
+        freq_down = data.freq_down.magnitude
+  
     # Calculate bin edges
-    if hasattr(data, 'freq_down') and len(data.freq_down) > 0:
-        all_freqs = np.append(data.freqs, data.freq_down)
+    if hasattr(data, 'freq_down') and len(freq_down) > 0:
+        all_freqs = np.append(freqs, freq_down)
     else:
-        all_freqs = data.freqs.magnitude
+        all_freqs = freqs
     freq_max = np.amax(all_freqs)
     freq_min = np.amin(all_freqs)
     bins = np.arange(freq_min, freq_max + bwidth, bwidth)
@@ -65,10 +70,10 @@ def calculate_dos(data, bwidth, gwidth, lorentz=False):
         freq_weights = np.full((data.n_qpts, data.n_branches), 1./data.n_qpts)
 
     # Bin frequencies
-    hist, bin_edges = np.histogram(data.freqs, bins,
+    hist, bin_edges = np.histogram(freqs, bins,
                                    weights=freq_weights)
-    if hasattr(data, 'freq_down') and len(data.freq_down) > 0:
-        hist_down, bin_edges = np.histogram(data.freq_down, bins,
+    if hasattr(data, 'freq_down') and len(freq_down) > 0:
+        hist_down, bin_edges = np.histogram(freq_down, bins,
                                             weights=freq_weights)
 
     # Only broaden if broadening is more than bin width

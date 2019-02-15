@@ -435,6 +435,7 @@ class InterpolationData(Data):
         n_cells_in_sc = self.n_cells_in_sc
         n_ions = self.n_ions
         n_branches = self.n_branches
+        force_constants = self.force_constants.magnitude
 
         # Compute square matrix giving relative index of cells in sc
         # Get all possible cell-cell vector combinations
@@ -461,11 +462,12 @@ class InterpolationData(Data):
         sq_fc = np.zeros((3*n_ions_in_sc, 3*n_ions_in_sc))
 
         for nc in range(n_cells_in_sc):
-            cell_indices = np.repeat(sc_relative_index[nc*n_cells_in_sc:(nc+1)*n_cells_in_sc], 3*n_ions)
+            cell_indices = np.repeat(sc_relative_index[
+                nc*n_cells_in_sc:(nc+1)*n_cells_in_sc], 3*n_ions)
             ion_indices = np.tile(range(3*n_ions), n_cells_in_sc)
             fc_indices = 3*n_ions*cell_indices + ion_indices
-            sq_fc[3*nc*n_ions:3*(nc+1)*n_ions, :] = np.transpose(self.force_constants[fc_indices, :])
-
+            sq_fc[3*nc*n_ions:3*(nc+1)*n_ions, :] = np.transpose(
+                force_constants[fc_indices, :])
         # Find acoustic modes, they should have the sum of c of m amplitude
         # squared = mass (note: have not actually included mass weighting
         # here so assume mass = 1.0)
@@ -488,12 +490,13 @@ class InterpolationData(Data):
         # Correct force constant matrix - set acoustic modes to almost zero
         fc_tol = 1e-8*np.min(np.abs(evals))
         for ac in ac_i:
-            sq_fc -= (fc_tol + evals[ac])*np.einsum('i,j->ij', evecs[:, ac], evecs[:, ac])
+            sq_fc -= (fc_tol + evals[ac])*np.einsum(
+                'i,j->ij', evecs[:, ac], evecs[:, ac])
 
-        force_constants = sq_fc[:, :3*n_ions]
-        force_constants = force_constants*self.force_constants.units
+        fc = sq_fc[:, :3*n_ions]
+        fc = fc*self.force_constants.units
 
-        return force_constants
+        return fc
 
 
     def _calculate_supercell_image_r(self, lim):

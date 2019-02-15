@@ -2,6 +2,7 @@ import math
 import numpy as np
 from scipy import signal
 from casteppy.util import reciprocal_lattice
+from casteppy import ureg
 
 
 def structure_factor(data, scattering_lengths, T=5.0, scale=1.0):
@@ -16,7 +17,7 @@ def structure_factor(data, scattering_lengths, T=5.0, scale=1.0):
         and eigenvectors required for the calculation
     scattering_lengths : dictionary
         Dictionary of spin and isotope averaged coherent scattering legnths
-        for each element in the structure e.g. {'O': 5.803, 'Zn': 5.680}
+        for each element in fm, e.g. {'O': 5.803, 'Zn': 5.680}
     T : float, optional
         The temperature to use when calculating the Bose factor. Default: 5K
     scale : float, optional
@@ -31,18 +32,21 @@ def structure_factor(data, scattering_lengths, T=5.0, scale=1.0):
         shape = (n_qpts, n_branches)
     """
 
+    sl = [scattering_lengths[x] for x in data.ion_type]
+
     # Convert any Pint quantities to pure magnitudes for performance
     cell_vec = (data.cell_vec.to('angstrom')).magnitude
     freqs = (data.freqs.to('meV')).magnitude
+    ion_mass = (data.ion_mass.to('amu')).magnitude
+    sl = (sl*ureg('fm').to('fm')).magnitude
 
-    # Get scattering lengths and calculate normalisation factor
-    sl = [scattering_lengths[x] for x in data.ion_type]
-    norm_factor = sl/np.sqrt(data.ion_mass)
+    # Calculate normalisation factor
+    norm_factor = sl/np.sqrt(ion_mass)
 
     # Calculate the exponential factor for all ions and q-points
     # ion_r in fractional coords, so Qdotr = 2pi*qh*rx + 2pi*qk*ry...
-    exp_factor = np.exp(1J*2*math.pi*np.einsum('ij,jk->ik',
-                                               data.qpts, np.transpose(data.ion_r)))
+    exp_factor = np.exp(1J*2*math.pi*np.einsum(
+        'ij,jk->ik', data.qpts, np.transpose(data.ion_r)))
 
     # Eigenvectors are in Cartesian so need to convert hkl to Cartesian by
     # computing dot product with hkl and reciprocal lattice.
@@ -68,7 +72,8 @@ def structure_factor(data, scattering_lengths, T=5.0, scale=1.0):
     return sf
 
 
-def sqw_map(data, ebins, scattering_lengths, T=5.0, scale=1.0, ewidth=0, qwidth=0):
+def sqw_map(data, ebins, scattering_lengths, T=5.0, scale=1.0, ewidth=0,
+            qwidth=0):
     """
     Calculate S(Q, w) for each q-point contained in data and each bin defined
     in ebins, and sets the sqw_map and sqw_ebins attributes of the data object

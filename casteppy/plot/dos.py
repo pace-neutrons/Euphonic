@@ -43,8 +43,9 @@ def output_grace(data, seedname='out', mirror=False, up=True, down=True):
     legend_labels = ['\\f{Symbol}a\\f{}', '\\f{Symbol}b\\f{}', '\\f{Symbol}e\\f{}\\sf\\N']
 
     # Calculate bin centres
-    bwidth = data.dos_bins[1] - data.dos_bins[0]
-    bin_centres = data.dos_bins[:-1] + bwidth/2
+    dos_bins = data.dos_bins.magnitude
+    bwidth = dos_bins[1] - dos_bins[0]
+    bin_centres = dos_bins[:-1] + bwidth/2
 
 
     if 'PyGrace' in sys.modules:
@@ -84,8 +85,8 @@ def output_grace(data, seedname='out', mirror=False, up=True, down=True):
         with open(seedname + '_dos.agr', 'w') as f:
             f.write('@with g0\n')
             f.write('@title "{0}"\n'.format(seedname))
-            f.write('@world xmin {0:.3f}\n'.format(data.dos_bins[0].magnitude))
-            f.write('@world xmax {0:.3f}\n'.format(data.dos_bins[-1].magnitude))
+            f.write('@world xmin {0:.3f}\n'.format(dos_bins[0].magnitude))
+            f.write('@world xmax {0:.3f}\n'.format(dos_bins[-1].magnitude))
             f.write('@view ymin 0.35\n')
             f.write('@view xmax 0.75\n')
             f.write('@legend 0.625, 0.825\n')
@@ -197,8 +198,9 @@ def plot_dos(data, title='', mirror=False, up=True, down=True):
     ax.minorticks_on()
 
     # Calculate bin centres
-    bwidth = data.dos_bins[1] - data.dos_bins[0]
-    bin_centres = data.dos_bins[:-1] + bwidth/2
+    dos_bins = data.dos_bins.magnitude
+    bwidth = dos_bins[1] - dos_bins[0]
+    bin_centres = dos_bins[:-1] + bwidth/2
 
     # Plot dos and Fermi energy
     if up:

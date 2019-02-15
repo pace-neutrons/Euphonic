@@ -82,7 +82,8 @@ def recip_space_labels(data):
     sym_label_to_coords = {}
     if hasattr(data, 'ion_r'):
         _, ion_num = np.unique(data.ion_type, return_inverse=True)
-        cell = (data.cell_vec, data.ion_r, ion_num)
+        cell_vec = (data.cell_vec.to('angstrom')).magnitude
+        cell = (cell_vec, data.ion_r, ion_num)
         sym_label_to_coords = seekpath.get_path(cell)["point_coords"]
     else:
         sym_label_to_coords = generic_qpt_labels()
@@ -266,7 +267,8 @@ def output_grace(data, seedname='out', up=True, down=True):
 
     # Do calculations required for axis, tick labels etc.
     # Calculate distance along x axis
-    recip_latt = reciprocal_lattice(data.cell_vec)
+    cell_vec = (data.cell_vec.to('angstrom').magnitude)
+    recip_latt = reciprocal_lattice(cell_vec)
     abscissa = calc_abscissa(data.qpts, recip_latt)
     # Calculate x-axis (recip space) ticks and labels
     xlabels, qpts_with_labels = recip_space_labels(data)
@@ -413,7 +415,9 @@ def plot_dispersion(data, title='', btol=10.0, up=True, down=True):
               '\n\npip install --user .[matplotlib]')
         return None
 
-    recip_latt = reciprocal_lattice(data.cell_vec)
+    cell_vec = (data.cell_vec.to('angstrom').magnitude)
+    recip_latt = reciprocal_lattice(cell_vec)
+
     abscissa = calc_abscissa(data.qpts, recip_latt)
     # Determine reciprocal space coordinates that are far enough apart to be
     # in separate subplots, and determine index limits
@@ -469,11 +473,13 @@ def plot_dispersion(data, title='', btol=10.0, up=True, down=True):
 
         # Plot frequencies and Fermi energy
         if up:
+            freqs = data.freqs.magnitude
             ax.plot(abscissa[imin[i]:imax[i] + 1],
-                    data.freqs[imin[i]:imax[i] + 1], lw=1.0)
+                    freqs[imin[i]:imax[i] + 1], lw=1.0)
         if down and hasattr(data, 'freq_down') and len(data.freq_down) > 0:
+            freq_down = data.freq_down.magnitude
             ax.plot(abscissa[imin[i]:imax[i] + 1],
-                    data.freq_down[imin[i]:imax[i] + 1], lw=1.0)
+                    freq_down[imin[i]:imax[i] + 1], lw=1.0)
         if hasattr(data, 'fermi'):
             for i, ef in enumerate(data.fermi.magnitude):
                 if i == 0:
