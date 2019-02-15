@@ -153,8 +153,8 @@ class TestPlotDispersion(unittest.TestCase):
         data.fermi = np.array([0.169316, 0.169316])*ureg.hartree
         self.data = data
         self.title = 'Iron'
-        self.expected_abscissa = [0.0, 2.00911553, 3.42977475, 4.24999273, 5.54687123, 6.12685292]
-        self.expected_xticks = [0.0, 2.00911553, 3.42977475, 4.24999273, 5.54687123, 6.12685292]
+        self.expected_abscissa = [0.0, 2.00911553, 3.42977475, 4.24999273, 5.54687123, 6.12685292]*ureg('1/bohr')
+        self.expected_xticks = [0.0, 2.00911553, 3.42977475, 4.24999273, 5.54687123, 6.12685292]*ureg('1/bohr')
         self.expected_xlabels = ['0 0 0', '1/2 1/2 1/2', '1/2 0 0', '0 0 0', '3/4 1/4 3/4', '1/2 0 0']
 
         # Results
@@ -176,9 +176,10 @@ class TestPlotDispersion(unittest.TestCase):
 
     def test_freq_xaxis(self):
         n_correct_x = 0
+        expected_abscissa = (self.expected_abscissa.to('1/angstrom')).magnitude
         for line in self.ax.get_lines():
-            if (len(line.get_data()[0]) == len(self.expected_abscissa) and
-                np.allclose(line.get_data()[0], self.expected_abscissa)):
+            if (len(line.get_data()[0]) == len(expected_abscissa) and
+                np.allclose(line.get_data()[0], expected_abscissa)):
                 n_correct_x += 1
         # Check that there are as many lines with abscissa for the x-axis
         # values as there are both freqs and freq_down branches
@@ -186,8 +187,9 @@ class TestPlotDispersion(unittest.TestCase):
                          len(self.data.freqs[0]) + len(self.data.freq_down[0]))
 
     def test_freq_yaxis(self):
-        all_freq_branches = np.vstack((np.transpose(self.data.freqs),
-                                       np.transpose(self.data.freq_down)))
+        all_freq_branches = np.vstack((
+            np.transpose(self.data.freqs.magnitude),
+            np.transpose(self.data.freq_down.magnitude)))
         n_correct_y = 0
         for branch in all_freq_branches:
             for line in self.ax.get_lines():
@@ -207,7 +209,8 @@ class TestPlotDispersion(unittest.TestCase):
         self.assertEqual(n_correct_y, len(self.data.fermi))
 
     def test_xaxis_tick_locs(self):
-        npt.assert_allclose(self.ax.get_xticks(), self.expected_xticks)
+        expected_xticks = (self.expected_xticks.to('1/angstrom')).magnitude
+        npt.assert_allclose(self.ax.get_xticks(), expected_xticks)
 
     def test_xaxis_tick_labels(self):
         ticklabels = [x.get_text() for x in self.ax.get_xticklabels()]
@@ -218,7 +221,8 @@ class TestPlotDispersion(unittest.TestCase):
         # Test freqs is plotted and freq_down isn't when down=False
         fig = plot_dispersion(self.data, self.title, down=False)
         n_correct_y = 0
-        for branch in np.transpose(self.data.freqs):
+        freqs = self.data.freqs.magnitude
+        for branch in np.transpose(freqs):
             for line in fig.axes[0].get_lines():
                 if np.array_equal(line.get_data()[1], branch):
                     n_correct_y += 1
@@ -234,7 +238,8 @@ class TestPlotDispersion(unittest.TestCase):
         # Test freq down is plotted and freqs isn't when up=False
         fig = plot_dispersion(self.data, self.title, up=False)
         n_correct_y = 0
-        for branch in np.transpose(self.data.freq_down):
+        freq_down = self.data.freq_down.magnitude
+        for branch in np.transpose(freq_down):
             for line in fig.axes[0].get_lines():
                 if np.array_equal(line.get_data()[1], branch):
                     n_correct_y += 1
@@ -305,8 +310,8 @@ class TestPlotDos(unittest.TestCase):
         self.assertEqual(len(self.ax.get_lines()), n_series)
 
     def test_dos_xaxis(self):
-        bin_centres = self.data.dos_bins[:-1] + (self.data.dos_bins[1]
-                                               - self.data.dos_bins[0])/2
+        bin_centres = (self.data.dos_bins[:-1] + (self.data.dos_bins[1]
+                       - self.data.dos_bins[0])/2).magnitude
         n_correct_x = 0
         for line in self.ax.get_lines():
             if np.array_equal(line.get_data()[0], bin_centres):
