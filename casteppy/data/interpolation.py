@@ -438,36 +438,46 @@ class InterpolationData(Data):
         force_constants = self.force_constants.magnitude
 
         # Compute square matrix giving relative index of cells in sc
-        # Get all possible cell-cell vector combinations
-        inter_cell_vectors = (np.tile(cell_origins, (n_cells_in_sc, 1)) -
-                             np.repeat(cell_origins, n_cells_in_sc, axis=0))
-        # Compare cell-cell vectors with origin-cell vectors and determine
-        # which are equivalent
-        offset = (inter_cell_vectors[:, np.newaxis, :] -
-                 cell_origins[np.newaxis, :, :])
-        inv_sc_matrix = np.linalg.inv(np.transpose(sc_matrix))
-        dist = np.einsum('ijk,lk->ijl', offset, inv_sc_matrix)
-        dist_frac, _ = np.modf(dist)
-        dist_frac_sum = np.sum(np.abs(dist_frac), axis=2)
-        sc_relative_index = np.argmin(dist_frac_sum, axis=1)
-        if (np.any(dist_frac_sum[range(n_cells_in_sc**2), sc_relative_index])
-            > 16*sys.float_info.epsilon):
-            print('Error correcting FC matrix for acoustic sum rule, ' +
-                  'supercell relative index couldn\'t be found. Returning ' +
-                  'uncorrected FC matrix')
-            return self.force_constants
-
-        # Construct square FC matrix
         n_ions_in_sc = n_ions*n_cells_in_sc
         sq_fc = np.zeros((3*n_ions_in_sc, 3*n_ions_in_sc))
-
+        inv_sc_matrix = np.linalg.inv(np.transpose(sc_matrix))
+        cell_origins_sc = np.einsum('ij,kj->ik', cell_origins, inv_sc_matrix)
         for nc in range(n_cells_in_sc):
-            cell_indices = np.repeat(sc_relative_index[
-                nc*n_cells_in_sc:(nc+1)*n_cells_in_sc], 3*n_ions)
+            # Get all possible cell-cell vector combinations
+            inter_cell_vectors = cell_origins_sc - np.tile(cell_origins_sc[nc],
+                                                           (n_cells_in_sc, 1))
+            # Compare cell-cell vectors with origin-cell vectors and determine
+            # which are equivalent
+            # Do calculation in chunks, so loop can be broken if all
+            # equivalent vectors have been found
+            N = 100
+            dist_min = np.full((n_cells_in_sc), sys.float_info.max)
+            sc_relative_index = np.zeros(n_cells_in_sc, dtype=np.int32)
+            for i in range(int((n_cells_in_sc - 1)/N) + 1):
+                ci = i*N
+                cf = min((i + 1)*N, n_cells_in_sc)
+                dist = (inter_cell_vectors[:, np.newaxis, :] -
+                        cell_origins_sc[np.newaxis, ci:cf, :])
+                dist_frac = dist - np.rint(dist)
+                dist_frac_sum = np.sum(np.abs(dist_frac), axis=2)
+                scri_current = np.argmin(dist_frac_sum, axis=1)
+                dist_min_current = dist_frac_sum[range(n_cells_in_sc), scri_current]
+                replace =  dist_min_current < dist_min
+                sc_relative_index[replace] = ci + scri_current[replace]
+                dist_min[replace] = dist_min_current[replace]
+                if np.all(dist_min <= 16*sys.float_info.epsilon):
+                    break
+            if (np.any(dist_min > 16*sys.float_info.epsilon)):
+                print('Error correcting FC matrix for acoustic sum rule, ' +
+                      'supercell relative index couldn\'t be found. Returning ' +
+                      'uncorrected FC matrix')
+                return self.force_constants
+            cell_indices = np.repeat(sc_relative_index, 3*n_ions)
             ion_indices = np.tile(range(3*n_ions), n_cells_in_sc)
             fc_indices = 3*n_ions*cell_indices + ion_indices
             sq_fc[3*nc*n_ions:3*(nc+1)*n_ions, :] = np.transpose(
                 force_constants[fc_indices, :])
+
         # Find acoustic modes, they should have the sum of c of m amplitude
         # squared = mass (note: have not actually included mass weighting
         # here so assume mass = 1.0)
