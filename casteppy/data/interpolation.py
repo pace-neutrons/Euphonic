@@ -52,7 +52,7 @@ class InterpolationData(Data):
         The locations of the unit cells within the supercell
         dtype = 'int'
         shape = (n_cells_in_sc, 3)
-    force_constants : ndarraylist of floats
+    force_constants : ndarray
         Force constants matrix. Default units atomic units
         dtype = 'float'
         shape = (3*n_ions*n_cells_in_sc, 3*n_ions)
@@ -87,6 +87,12 @@ class InterpolationData(Data):
         calculate_fine_phonons has been called
         dtype = 'int'
         shape = (n_ions, n_ions*n_cells_in_sc, (2*lim + 1)**3)
+    force_constants_asr : ndarray
+        Force constants matrix that has the acoustic sum rule applied. This
+        attribute doesn't exist until calculate_fine_phonons has been called
+        with asr=True. Default units atomic units
+        dtype = 'float'
+        shape = (3*n_ions*n_cells_in_sc, 3*n_ions)
     """
 
     def __init__(self, seedname, path='', qpts=np.array([])):
@@ -301,9 +307,10 @@ class InterpolationData(Data):
             dtype = 'complex'
             shape = (n_qpts, 3*n_ions, n_ions, 3)
         """
-
         if asr:
-            force_constants = self._enforce_acoustic_sum_rule().magnitude
+            if not hasattr(self, 'force_constants_asr'):
+                self.force_constants_asr = self._enforce_acoustic_sum_rule()
+            force_constants = self.force_constants_asr.magnitude
         else:
             force_constants = self.force_constants.magnitude
         ion_mass = self.ion_mass.to('e_mass').magnitude
