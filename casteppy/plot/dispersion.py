@@ -87,7 +87,6 @@ def recip_space_labels(data):
         sym_label_to_coords = seekpath.get_path(cell)["point_coords"]
     else:
         sym_label_to_coords = generic_qpt_labels()
-
     # Get labels for each q-point
     labels = np.array([])
 
@@ -201,22 +200,41 @@ def plot_sqw_map(data, vmin=None, vmax=None, ratio=None):
 
     ebins = data.sqw_ebins.astype(np.float64)
 
-    fig, ax = plt.subplots(1, 1)
+    # Calculate qbin edges
+    cell_vec = (data.cell_vec.to('angstrom').magnitude)
+    recip = reciprocal_lattice(cell_vec)
+    abscissa = calc_abscissa(data.qpts, recip)
+    qmid = (abscissa[1:] + abscissa[:-1])/2
+    qwidths = qmid + qmid[0]
+    qbins = np.concatenate(([0], qwidths, [2*qwidths[-1] - qwidths[-2]]))
+
     if ratio:
-        extent = [0, ratio, 0, 1]
-        ax.imshow(np.transpose(data.sqw_map), interpolation='none', origin='lower', extent=extent, vmin=vmin, vmax=vmax)
+        ymax = qbins[-1]/ratio
     else:
-        im = ax.imshow(np.transpose(data.sqw_map), interpolation='none', origin='lower', vmin=vmin, vmax=vmax)
-        extent = im.get_extent()
+        ymax = 1.0
+    if vmin is None:
+        vmin = np.amin(data.sqw_map)
+    if vmax is None:
+        vmax = np.amax(data.sqw_map)
+
+    fig, ax = plt.subplots(1, 1)
+    for i in range(data.n_qpts):
+        ax.imshow(np.transpose(data.sqw_map[i, np.newaxis]),
+                  interpolation='none', origin='lower',
+                  extent=[qbins[i], qbins[i+1], 0, ymax],
+                  vmin=vmin, vmax=vmax)
+    ax.set_ylim(0, ymax)
+    ax.set_xlim(qbins[0], qbins[-1])
 
     # Calculate energy tick labels
     ytick_spacing_opts = [100, 50, 20, 10, 5, 2, 1, 0.1]
     min_n_yticks = 3
-    ytick_spacing = ytick_spacing_opts[np.argmax((ebins[-1] - ebins[0])/ytick_spacing_opts > min_n_yticks)]
+    ytick_spacing = ytick_spacing_opts[np.argmax((
+        ebins[-1] - ebins[0])/ytick_spacing_opts > min_n_yticks)]
     ytick_min = np.ceil(ebins[0]/ytick_spacing)*ytick_spacing
     ytick_max = np.ceil(ebins[-1]/ytick_spacing)*ytick_spacing
     ylabels = np.arange(ytick_min, ytick_max, ytick_spacing)
-    yticks = extent[2] + (ylabels - ebins[0])/(ebins[-1] - ebins[0])*(extent[3] - extent[2])
+    yticks = (ylabels - ebins[0])/(ebins[-1] - ebins[0])*ymax
     ax.set_yticks(yticks)
     ax.set_yticklabels(ylabels)
     ax.set_ylabel('Energy (meV)')
@@ -228,7 +246,7 @@ def plot_sqw_map(data, vmin=None, vmax=None, ratio=None):
             xlabels[i] = r'$\Gamma$'
     if np.all(xlabels == ''):
         xlabels = data.qpts[qpts_with_labels, :]
-    xticks = extent[0] + (qpts_with_labels/(data.n_qpts - 1.0))*(extent[1] - extent[0])
+    xticks = (qbins[qpts_with_labels] + qbins[qpts_with_labels + 1])/2
     # Set high symmetry point x-axis ticks/labels
     ax.set_xticks(xticks)
     ax.xaxis.grid(True, which='major')
