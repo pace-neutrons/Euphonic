@@ -237,6 +237,11 @@ class InterpolationData(Data):
                 cell_origins = np.reshape(
                     read_entry(file_obj, int_type), (n_cells_in_sc, 3))
                 fc_row = read_entry(file_obj, int_type)
+            elif header.strip() == b'BORN_CHGS':
+                born = np.reshape(read_entry(file_obj, float_type), (n_ions, 3, 3))
+            elif header.strip() == b'DIELECTRIC':
+                dielectric = np.transpose(np.reshape(
+                    read_entry(file_obj, float_type), (3, 3)))
 
         # Get ion_r in correct form
         # CASTEP stores ion positions as 3D array (3,
@@ -281,8 +286,16 @@ class InterpolationData(Data):
             sys.exit(('Error: force constants matrix could not be found in '
                       '{:s}\n').format(file_obj.name))
 
+         # Set attributes relating to polar systems
+        try:
+            self.born = born*ureg.e
+            self.dielectric = dielectric
+        except UnboundLocalError:
+            pass
 
-    def calculate_fine_phonons(self, qpts, asr=True, precondition=False, set_attrs=True):
+
+    def calculate_fine_phonons(self, qpts, asr=True, precondition=False,
+                               set_attrs=True, dipole=True):
         """
         Calculate phonon frequencies and eigenvectors at specified q-points
         from a supercell force constant matrix via interpolation. For more
@@ -304,6 +317,10 @@ class InterpolationData(Data):
         set_attrs : boolean, optional, default True
             Whether to set the freqs, eigenvecs, qpts and n_qpts attributes of
             the InterpolationData object to the newly calculated values
+        dipole : boolean, optional, default True
+            Calculates the dipole tail correction to the dynamical matrix at
+            each q-point using the Ewald sum, if the Born charges and
+            dielectric permitivitty tensor are present.
 
         Returns
         -------
@@ -317,6 +334,8 @@ class InterpolationData(Data):
             dtype = 'complex'
             shape = (n_qpts, 3*n_ions, n_ions, 3)
         """
+        if not hasattr(self, 'born') or not hasattr(self, 'dielectric'):
+            dipole = False
         if asr:
             if not hasattr(self, 'force_constants_asr'):
                 self.force_constants_asr = self._enforce_acoustic_sum_rule()
@@ -404,6 +423,10 @@ class InterpolationData(Data):
             # indices
             dyn_mat = np.transpose(dyn_mat)
 
+            if dipole:
+                dipole_corr = self._calculate_dipole_correction(q)
+                dyn_mat += dipole_corr
+
             if precondition:
                 dyn_mat = np.matmul(np.matmul(np.transpose(
                     np.conj(prev_evecs)), dyn_mat), prev_evecs)
@@ -433,6 +456,29 @@ class InterpolationData(Data):
             self.eigenvecs = eigenvecs
 
         return freqs, eigenvecs
+
+
+    def _calculate_dipole_correction(self, q):
+        """
+        Calculate the long range correction to the dynamical matrix using the
+        Ewald sum
+
+        Parameters
+        ----------
+        q : ndarray
+            The q-point to calculate the correction for
+            dtype = 'float'
+            shape = (3,)
+
+        Returns
+        -------
+        corr : ndarray
+            The correction to the dynamical matrix
+            dtype = 'float'
+            shape = (3*n_ions, 3*n_ions)
+        """
+
+        return np.zeros((3*self.n_ions, 3*self.n_ions))
 
 
     def _enforce_acoustic_sum_rule(self):
