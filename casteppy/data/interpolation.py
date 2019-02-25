@@ -5,6 +5,7 @@ import os
 import numpy as np
 from scipy.linalg.lapack import zheev
 from casteppy import ureg
+from casteppy.util import reciprocal_lattice
 from casteppy.data.data import Data
 
 class InterpolationData(Data):
@@ -461,7 +462,7 @@ class InterpolationData(Data):
     def _calculate_dipole_correction(self, q):
         """
         Calculate the long range correction to the dynamical matrix using the
-        Ewald sum
+        Ewald sum, see eqs 72-74 from Gonze and Lee PRB 55, 10355 (1997)
 
         Parameters
         ----------
@@ -477,6 +478,63 @@ class InterpolationData(Data):
             dtype = 'float'
             shape = (3*n_ions, 3*n_ions)
         """
+        cell_vec = self.cell_vec.to('bohr').magnitude
+        recip = reciprocal_lattice(cell_vec)
+        n_ions = self.n_ions
+        ion_r = self.ion_r
+        born = self.born.magnitude
+        dielectric = self.dielectric
+        inv_dielectric = np.linalg.inv(dielectric)
+
+        # Calculate cutoffs
+        real_cutoff = 20.0
+        recip_cutoff = 20.0
+
+        # Calculate new realspace cells
+        a_mag = np.linalg.norm(cell_vec, axis=1)
+        eta = math.sqrt(math.pi)/np.amin(a_mag)
+        mean_a_mag = np.prod(a_mag)**(1.0/3)
+#        skew = np.amax(cell_xyz)/mean_cell_xyz
+        a = math.sqrt((real_cutoff/eta)**2 + np.sum(
+            np.sum(np.abs(cell_vec), axis=0)**2))
+        max_cells_xyz = (a/a_mag).astype(np.int32) + 1
+        n_cells_xyz = 2*max_cells_xyz + 1
+        n_cells_real = n_cells_xyz.prod()
+
+        # Calculate new reciprocal space cells
+        b_mag = np.linalg.norm(recip, axis=1)
+        b = math.sqrt((recip_cutoff*2*eta)**2 + np.sum(
+            np.sum(np.abs(recip), axis=0)**2))
+        max_cells_hkl = (b/b_mag).astype(np.int32) + 1
+        n_cells_hkl = 2*max_cells_hkl + 1
+        n_cells_recip = n_cells_hkl.prod()
+
+        nxyz = np.column_stack((
+            np.repeat(range(n_cells_xyz[0]), n_cells_xyz[1]*n_cells_xyz[2]),
+            np.repeat(np.tile(
+                range(n_cells_xyz[1]), n_cells_xyz[0]), n_cells_xyz[2]),
+            np.tile(range(n_cells_xyz[2]), n_cells_xyz[0]*n_cells_xyz[1])))
+        real_dr = np.einsum('ij,jk->ik', nxyz, cell_vec)
+
+        nhkl = np.column_stack((
+            np.repeat(range(n_cells_hkl[0]), n_cells_hkl[1]*n_cells_hkl[2]),
+            np.repeat(np.tile(
+                range(n_cells_hkl[1]), n_cells_hkl[0]), n_cells_hkl[2]),
+            np.tile(range(n_cells_hkl[2]), n_cells_hkl[0]*n_cells_hkl[1])))
+        recip_dg = np.einsum('ij,jk->ik', nhkl, recip)
+
+        # Use eta = lambda * |permittivity|**(1/6)?
+        eta =  eta*np.power(dielectric, 1.0/6)
+
+        for i in range(n_ions):
+            for j in range(n_ions):
+                a_diff = ion_r[i] - ion_r[j] + max_cells_xyz
+                r0 = np.einsum('ij,i->j', cell_vec, a_diff)
+                for k in range(n_cells_real):
+                    diff = r0 - real_dr[k]
+                    delta = np.einsum('ij,j->i', inv_dielectric, diff)
+                    # real_len_2 in CASTEP
+                    norm = np.sqrt()
 
         return np.zeros((3*self.n_ions, 3*self.n_ions))
 
