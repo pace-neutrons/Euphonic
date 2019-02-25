@@ -4,6 +4,7 @@ import sys
 import os
 import numpy as np
 from scipy.linalg.lapack import zheev
+from scipy.special import erfc
 from casteppy import ureg
 from casteppy.util import reciprocal_lattice
 from casteppy.data.data import Data
@@ -429,7 +430,7 @@ class InterpolationData(Data):
             dyn_mat = np.transpose(dyn_mat)
 
             if dipole:
-                dipole_corr = self._calculate_dipole_correction(q)
+                dipole_corr = self._calculate_dipole_correction(qpt)
                 dyn_mat += dipole_corr
 
             if precondition:
@@ -490,6 +491,7 @@ class InterpolationData(Data):
         born = self.born.magnitude
         dielectric = self.dielectric
         inv_dielectric = np.linalg.inv(dielectric)
+        epsilon = 1e-10
 
         # Calculate cutoffs
         real_cutoff = 20.0
@@ -529,17 +531,44 @@ class InterpolationData(Data):
         recip_dg = np.einsum('ij,jk->ik', nhkl, recip)
 
         # Use eta = lambda * |permittivity|**(1/6)?
-        eta =  eta*np.power(dielectric, 1.0/6)
+        eta =  eta*np.power(np.linalg.det(dielectric), 1.0/6)
 
+        # Calculate real space phase factor
+        phases = np.exp(2j*math.pi*np.einsum('i,ji->j', q, nxyz))
+        # Calculate real space term
+        H_ab = np.zeros((n_ions, n_ions, 3, 3))
+        H_ab_phase = np.zeros((n_ions, n_ions, 3, 3), dtype=np.complex128)
         for i in range(n_ions):
             for j in range(n_ions):
                 a_diff = ion_r[i] - ion_r[j] + max_cells_xyz
                 r0 = np.einsum('ij,i->j', cell_vec, a_diff)
+                H_tmp = np.zeros((3, 3)) # Castep rtemp_E2
+                H_phase_tmp = np.zeros((3, 3), dtype=np.complex128) # Castep ctemp_E2
                 for k in range(n_cells_real):
                     diff = r0 - real_dr[k]
+                    diff[diff < epsilon] = 0
                     delta = np.einsum('ij,j->i', inv_dielectric, diff)
-                    # real_len_2 in CASTEP
-                    norm = np.sqrt()
+                    norm = math.sqrt(np.sum(delta*diff)*(eta**2)) # Norm D
+                    if norm > epsilon and norm < real_cutoff:
+                        f1 = (eta**2)*(3*erfc(norm)/norm**5) + (2*np.exp(-norm**2))/(math.sqrt(math.pi)*norm**2)*(3/norm**2 + 2)
+                        f2 = erfc(norm)/norm**2 + (2*np.exp(-norm**2))/(math.sqrt(math.pi)*norm**2)
+                        delta_mat = np.einsum('i,j', delta, delta)
+                        H = f1*delta_mat + f2*inv_dielectric
+                        H_tmp += H
+                        H_phase_tmp += phases[k]*H
+                H_ab[i, j] = H_tmp # Castep real_diag_E2
+                H_ab_phase[i, j] = H_phase_tmp # Castep real_E2
+#        H_ab *= eta**3/math.sqrt(np.linalg.det(dielectric)) # Real diag E2 after scaling
+#        H_ab_phase *= eta**3/math.sqrt(np.linalg.det(dielectric)) # Real E2 after scaling
+
+        # Calculate reciprocal term
+        g0 = -np.einsum('ij,i->j', recip, max_cells_hkl)
+        for k in range(n_cells_recip):
+            diff = g0 + recip_dg[k]
+            recip_len = math.sqrt(np.sum(np.einsum('i,j', diff, diff)*dielectric))/eta
+            if recip_len > epsilon and recip_len < recip_cutoff:
+                phase = np.exp(2j*math.pi*(ion_r[i] - ion_r[j])*(nhkl[k] - max_cells_hkl))
+
 
         return np.zeros((3*self.n_ions, 3*self.n_ions))
 
