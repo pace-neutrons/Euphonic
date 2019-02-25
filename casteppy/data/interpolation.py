@@ -97,7 +97,7 @@ class InterpolationData(Data):
         with asr=True. Default units atomic units
         dtype = 'float'
         shape = (3*n_ions*n_cells_in_sc, 3*n_ions)
-    asr : ndarray
+    asr : boolean
         Stores whether the acoustic sum rule was used in the last phonon
         calculation. Ensures consistency of other calculations e.g. when
         calculating on a grid of phonons for the Debye-Waller factor
