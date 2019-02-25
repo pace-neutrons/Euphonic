@@ -102,6 +102,10 @@ class InterpolationData(Data):
         Stores whether the acoustic sum rule was used in the last phonon
         calculation. Ensures consistency of other calculations e.g. when
         calculating on a grid of phonons for the Debye-Waller factor
+    dipole : boolean
+        Stores whether the Ewald dipole tail correction was used in the last
+        phonon calculation. Ensures consistency of other calculations e.g.
+        when calculating on a grid of phonons for the Debye-Waller factor
     """
 
     def __init__(self, seedname, path='', qpts=np.array([])):
@@ -287,7 +291,7 @@ class InterpolationData(Data):
             sys.exit(('Error: force constants matrix could not be found in '
                       '{:s}\n').format(file_obj.name))
 
-         # Set attributes relating to polar systems
+         # Set attributes relating to dipoles
         try:
             self.born = born*ureg.e
             self.dielectric = dielectric
@@ -450,6 +454,7 @@ class InterpolationData(Data):
         freqs = (freqs*ureg.hartree).to(self.freqs.units, 'spectroscopy')
         if set_attrs:
             self.asr = asr
+            self.dipole = dipole
             self.n_qpts = n_qpts
             self.qpts = qpts
             self.weights = np.full(len(qpts), 1.0/n_qpts)
