@@ -141,7 +141,8 @@ def dw_coeff(data, T, grid=None):
         ql = np.tile(ql, grid[0]*grid[1])
         qgrid = np.column_stack((qh, qk, ql))
         # Calculate frequencies and eigenvectors on MP grid
-        freqs, evecs = data.calculate_fine_phonons(qgrid, set_attrs=False)
+        freqs, evecs = data.calculate_fine_phonons(qgrid, set_attrs=False,
+                                                   asr=data.asr)
         weights = np.full(len(freqs), 1.0/len(freqs))
     else:
         qgrid = data.qpts

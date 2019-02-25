@@ -97,6 +97,10 @@ class InterpolationData(Data):
         with asr=True. Default units atomic units
         dtype = 'float'
         shape = (3*n_ions*n_cells_in_sc, 3*n_ions)
+    asr : ndarray
+        Stores whether the acoustic sum rule was used in the last phonon
+        calculation. Ensures consistency of other calculations e.g. when
+        calculating on a grid of phonons for the Debye-Waller factor
     """
 
     def __init__(self, seedname, path='', qpts=np.array([])):
@@ -421,6 +425,7 @@ class InterpolationData(Data):
 
         freqs = (freqs*ureg.hartree).to(self.freqs.units, 'spectroscopy')
         if set_attrs:
+            self.asr = asr
             self.n_qpts = n_qpts
             self.qpts = qpts
             self.weights = np.full(len(qpts), 1.0/n_qpts)
