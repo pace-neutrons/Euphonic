@@ -491,6 +491,7 @@ class InterpolationData(Data):
         born = self.born.magnitude
         dielectric = self.dielectric
         inv_dielectric = np.linalg.inv(dielectric)
+        q_norm = q - np.rint(q) # Normalised q-pt
         epsilon = 1e-10
 
         # Calculate cutoffs
@@ -558,19 +559,70 @@ class InterpolationData(Data):
                         H_phase_tmp += phases[k]*H
                 H_ab[i, j] = H_tmp # Castep real_diag_E2
                 H_ab_phase[i, j] = H_phase_tmp # Castep real_E2
-#        H_ab *= eta**3/math.sqrt(np.linalg.det(dielectric)) # Real diag E2 after scaling
-#        H_ab_phase *= eta**3/math.sqrt(np.linalg.det(dielectric)) # Real E2 after scaling
+        H_ab *= eta**3/math.sqrt(np.linalg.det(dielectric)) # Real diag E2 after scaling
+        H_ab_phase *= eta**3/math.sqrt(np.linalg.det(dielectric)) # Real E2 after scaling
 
-        # Calculate reciprocal term
+        # Calculate diagonal reciprocal term
+        recip_diag_E2 = np.zeros((n_ions, n_ions, 3, 3), dtype=np.complex128)
         g0 = -np.einsum('ij,i->j', recip, max_cells_hkl)
         for k in range(n_cells_recip):
             diff = g0 + recip_dg[k]
             recip_len = math.sqrt(np.sum(np.einsum('i,j', diff, diff)*dielectric))/eta
             if recip_len > epsilon and recip_len < recip_cutoff:
-                phase = np.exp(2j*math.pi*(ion_r[i] - ion_r[j])*(nhkl[k] - max_cells_hkl))
+                for i in range(n_ions):
+                    for j in range(n_ions):
+                        phase = 2j*math.pi*np.sum((ion_r[i] - ion_r[j])*(nhkl[k] - max_cells_hkl))
+                        phase_exp = np.exp(phase)
+                        recip_diag_E2[i, j] += np.einsum('i,j', diff, diff)*phase*phase_exp
+        cell_volume = np.dot(cell_vec[0], np.cross(cell_vec[1], cell_vec[2]))
+        recip_diag_E2 *= math.pi/(cell_volume*eta**2)# After scaling
 
+#        # Calculate general reciprocal term
+        q_recip = np.dot(recip, q_norm)
+        recip_E2 = np.zeros((n_ions, n_ions, 3, 3), dtype=np.complex128)
+        for k in range(n_cells_recip):
+            diff = g0 + recip_dg[k]
+            diff_q = g0 + recip_dg[k] + q_recip
+            recip_len = math.sqrt(np.sum(np.einsum('i,j', diff_q, diff_q)*dielectric))/eta
+            if recip_len > epsilon and recip_len < recip_cutoff:
+                recip_exp = np.exp(-recip_len**2)/recip_len**2
+                for i in range(n_ions):
+                    for j in range(n_ions):
+                        phase_q = 2j*math.pi*np.sum((ion_r[i] - ion_r[j])*q_norm)
+                        phase = 2j*math.pi*np.sum((ion_r[i] - ion_r[j])*(nhkl[k] - max_cells_hkl))
+                        phase_exp = np.exp(phase + phase_q)
+                        recip_E2[i,j] += np.einsum('i,j', diff_q, diff_q)*phase_exp*recip_exp
+        recip_E2 *= math.pi/(cell_volume*eta**2)# After scaling
 
-        return np.zeros((3*self.n_ions, 3*self.n_ions))
+        E2 = np.zeros((n_ions, n_ions, 3, 3), dtype=np.complex128)
+        E2_diag = np.zeros((3, 3), dtype=np.complex128)
+        for i in range(n_ions):
+            E2_diag[:, :] = 0
+            for j in range(n_ions):
+                for a in range(3):
+                    for b in range(3):
+                        E2[i,j,a,b] = np.sum(
+                            np.einsum('i,j', born[i,a,:], born[j,b,:])
+                            *(recip_E2[i,j] - H_ab_phase[i,j]))
+                        E2_diag[a,b] += np.sum(
+                            np.einsum('i,j', born[i,a,:], born[j,b,:])
+                            *(recip_diag_E2[i,j] - H_ab[i,j]))
+
+            # Symmetrise diagonal and subtract
+            E2_diag = 0.5*(E2_diag + np.transpose(E2_diag))
+            E2[i,i] -= E2_diag
+
+        self.n_cells_xyz = n_cells_xyz
+        self.n_cells_hkl = n_cells_hkl
+        self.eta = eta
+        self.real_dr = real_dr
+        self.recip_dg = recip_dg
+        self.recip_E2 = recip_E2
+        self.H_ab_phase = H_ab_phase
+        self.recip_diag_E2 = recip_diag_E2
+        self.H_ab = H_ab
+
+        return np.reshape(np.transpose(E2, axes=[0, 2, 1, 3]), (3*n_ions, 3*n_ions))
 
 
     def _enforce_acoustic_sum_rule(self):
