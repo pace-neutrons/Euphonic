@@ -400,6 +400,8 @@ class InterpolationData(Data):
         dyn_mat_weighting = 1/np.sqrt(masses*np.transpose(masses))
 
         prev_evecs = np.identity(3*n_ions)
+        self.dyn_mats = np.zeros((n_qpts, 3*n_ions, 3*n_ions), dtype=np.complex128)
+        self.dipole_corrs = np.zeros((n_qpts, 3*n_ions, 3*n_ions), dtype=np.complex128)
         for q in range(n_qpts):
             qpt = qpts[q, :]
             dyn_mat = np.zeros((n_ions*3, n_ions*3), dtype=np.complex128)
@@ -428,9 +430,10 @@ class InterpolationData(Data):
             # formed by summing the force_constants matrix which has [j, i]
             # indices
             dyn_mat = np.transpose(dyn_mat)
-
             if dipole:
                 dipole_corr = self._calculate_dipole_correction(qpt)
+                self.dyn_mats[q] = dyn_mat
+                self.dipole_corrs[q] = dipole_corr
                 dyn_mat += dipole_corr
 
             if precondition:
@@ -517,50 +520,90 @@ class InterpolationData(Data):
         n_cells_hkl = 2*max_cells_hkl + 1
         n_cells_recip = n_cells_hkl.prod()
 
+#        nxyz = np.column_stack((
+#            np.repeat(range(n_cells_xyz[0]), n_cells_xyz[1]*n_cells_xyz[2]),
+#            np.repeat(np.tile(
+#                range(n_cells_xyz[1]), n_cells_xyz[0]), n_cells_xyz[2]),
+#            np.tile(range(n_cells_xyz[2]), n_cells_xyz[0]*n_cells_xyz[1])))
+#       Order like CASTEP
         nxyz = np.column_stack((
-            np.repeat(range(n_cells_xyz[0]), n_cells_xyz[1]*n_cells_xyz[2]),
+            np.tile(range(n_cells_xyz[0]), n_cells_xyz[2]*n_cells_xyz[1]),
             np.repeat(np.tile(
-                range(n_cells_xyz[1]), n_cells_xyz[0]), n_cells_xyz[2]),
-            np.tile(range(n_cells_xyz[2]), n_cells_xyz[0]*n_cells_xyz[1])))
+                range(n_cells_xyz[1]), n_cells_xyz[2]), n_cells_xyz[0]),
+            np.repeat(range(n_cells_xyz[2]), n_cells_xyz[1]*n_cells_xyz[0]),
+            ))
+        nxyz_phases = np.column_stack((
+            np.tile(range(max_cells_xyz[0], -max_cells_xyz[0] - 1, -1), n_cells_xyz[2]*n_cells_xyz[1]),
+            np.repeat(np.tile(
+                range(max_cells_xyz[1], -max_cells_xyz[1] - 1, -1), n_cells_xyz[2]), n_cells_xyz[0]),
+            np.repeat(range(max_cells_xyz[2], -max_cells_xyz[2] - 1, -1), n_cells_xyz[1]*n_cells_xyz[0]),
+            ))
         real_dr = np.einsum('ij,jk->ik', nxyz, cell_vec)
-
+#        nhkl = np.column_stack((
+#            np.repeat(range(n_cells_hkl[0]), n_cells_hkl[1]*n_cells_hkl[2]),
+#            np.repeat(np.tile(
+#                range(n_cells_hkl[1]), n_cells_hkl[0]), n_cells_hkl[2]),
+#            np.tile(range(n_cells_hkl[2]), n_cells_hkl[0]*n_cells_hkl[1])))
+#       Order like CASTEP
         nhkl = np.column_stack((
-            np.repeat(range(n_cells_hkl[0]), n_cells_hkl[1]*n_cells_hkl[2]),
+            np.tile(range(n_cells_hkl[0]), n_cells_hkl[2]*n_cells_hkl[1]),
             np.repeat(np.tile(
-                range(n_cells_hkl[1]), n_cells_hkl[0]), n_cells_hkl[2]),
-            np.tile(range(n_cells_hkl[2]), n_cells_hkl[0]*n_cells_hkl[1])))
+                range(n_cells_hkl[1]), n_cells_hkl[2]), n_cells_hkl[0]),
+            np.repeat(range(n_cells_hkl[2]), n_cells_hkl[1]*n_cells_hkl[0]),
+            ))
         recip_dg = np.einsum('ij,jk->ik', nhkl, recip)
 
         # Use eta = lambda * |permittivity|**(1/6)?
         eta =  eta*np.power(np.linalg.det(dielectric), 1.0/6)
 
-        # Calculate real space phase factor
-        phases = np.exp(2j*math.pi*np.einsum('i,ji->j', q, nxyz))
-        # Calculate real space term
+        # Calculate real space diagonal term
         H_ab = np.zeros((n_ions, n_ions, 3, 3))
-        H_ab_phase = np.zeros((n_ions, n_ions, 3, 3), dtype=np.complex128)
         for i in range(n_ions):
             for j in range(n_ions):
                 a_diff = ion_r[i] - ion_r[j] + max_cells_xyz
                 r0 = np.einsum('ij,i->j', cell_vec, a_diff)
-                H_tmp = np.zeros((3, 3)) # Castep rtemp_E2
-                H_phase_tmp = np.zeros((3, 3), dtype=np.complex128) # Castep ctemp_E2
                 for k in range(n_cells_real):
                     diff = r0 - real_dr[k]
-                    diff[diff < epsilon] = 0
                     delta = np.einsum('ij,j->i', inv_dielectric, diff)
-                    norm = math.sqrt(np.sum(delta*diff)*(eta**2)) # Norm D
+                    diff[np.absolute(diff) < epsilon] = 0
+                    norm_2 = np.sum(delta*diff)*(eta**2)
+                    norm = math.sqrt(norm_2) # Norm D
+                    norm_5 = norm*(norm_2**2)
                     if norm > epsilon and norm < real_cutoff:
-                        f1 = (eta**2)*(3*erfc(norm)/norm**5) + (2*np.exp(-norm**2))/(math.sqrt(math.pi)*norm**2)*(3/norm**2 + 2)
-                        f2 = erfc(norm)/norm**2 + (2*np.exp(-norm**2))/(math.sqrt(math.pi)*norm**2)
+                        f1 = (eta**2)*(3*erfc(norm)/norm_5 + (2*math.exp(-norm_2)*(3 + 2*norm_2))/(math.sqrt(math.pi)*norm_2**2))
+                        f2 = erfc(norm)/(norm*norm**2) + (2*np.exp(-norm_2))/(math.sqrt(math.pi)*norm_2)
                         delta_mat = np.einsum('i,j', delta, delta)
-                        H = f1*delta_mat + f2*inv_dielectric
-                        H_tmp += H
-                        H_phase_tmp += phases[k]*H
-                H_ab[i, j] = H_tmp # Castep real_diag_E2
-                H_ab_phase[i, j] = H_phase_tmp # Castep real_E2
+                        H_ab[i,j] += (f1*delta_mat - f2*inv_dielectric)
+                        self.rtemp_E2[i, j, k] = H_ab[i,j]
         H_ab *= eta**3/math.sqrt(np.linalg.det(dielectric)) # Real diag E2 after scaling
+
+        # Calculate real space phase factor
+        phases = np.exp(2j*math.pi*np.einsum('i,ji->j', q_norm, nxyz_phases))
+        self.phases = phases
+        # Calculate real space term
+        H_ab_phase = np.zeros((n_ions, n_ions, 3, 3), dtype=np.complex128)
+        for i in range(n_ions):
+            for j in range(i, n_ions):
+                a_diff = ion_r[j] - ion_r[i] + max_cells_xyz
+                r0 = np.einsum('ij,i->j', cell_vec, a_diff)
+                for k in range(n_cells_real):
+                    diff = r0 - real_dr[k]
+                    delta = np.einsum('ij,j->i', inv_dielectric, diff)
+                    diff[np.absolute(diff) < epsilon] = 0
+                    norm_2 = np.sum(delta*diff)*(eta**2)
+                    norm = math.sqrt(norm_2) # Norm D
+                    norm_5 = norm*(norm_2**2)
+                    if norm > epsilon and norm < real_cutoff:
+                        f1 = (eta**2)*(3*erfc(norm)/norm_5 + (2*math.exp(-norm_2)*(3 + 2*norm_2))/(math.sqrt(math.pi)*norm_2**2))
+                        f2 = erfc(norm)/(norm*norm**2) + (2*np.exp(-norm_2))/(math.sqrt(math.pi)*norm_2)
+                        delta_mat = np.einsum('i,j', delta, delta)
+                        H_ab_phase[i,j] += phases[k]*(f1*delta_mat - f2*inv_dielectric)
         H_ab_phase *= eta**3/math.sqrt(np.linalg.det(dielectric)) # Real E2 after scaling
+
+        # Fill in remaining entries by symmetry
+        for i in range(1, n_ions):
+            for j in range(i):
+                H_ab_phase[i, j] = np.conj(H_ab_phase[j,i])
 
         # Calculate diagonal reciprocal term
         recip_diag_E2 = np.zeros((n_ions, n_ions, 3, 3), dtype=np.complex128)
@@ -577,7 +620,7 @@ class InterpolationData(Data):
         cell_volume = np.dot(cell_vec[0], np.cross(cell_vec[1], cell_vec[2]))
         recip_diag_E2 *= math.pi/(cell_volume*eta**2)# After scaling
 
-#        # Calculate general reciprocal term
+        # Calculate general reciprocal term
         q_recip = np.dot(recip, q_norm)
         recip_E2 = np.zeros((n_ions, n_ions, 3, 3), dtype=np.complex128)
         for k in range(n_cells_recip):
@@ -614,6 +657,10 @@ class InterpolationData(Data):
 
         self.n_cells_xyz = n_cells_xyz
         self.n_cells_hkl = n_cells_hkl
+        self.max_cells_xyz = max_cells_xyz
+        self.max_cells_hkl = max_cells_hkl
+        self.nxyz = nxyz
+        self.nhkl = nhkl
         self.eta = eta
         self.real_dr = real_dr
         self.recip_dg = recip_dg
