@@ -245,7 +245,7 @@ def plot_sqw_map(data, vmin=None, vmax=None, ratio=None):
         if label == 'GAMMA':
             xlabels[i] = r'$\Gamma$'
     if np.all(xlabels == ''):
-        xlabels = data.qpts[qpts_with_labels, :]
+        xlabels = np.around(data.qpts[qpts_with_labels, :], decimals=2)
     xticks = (qbins[qpts_with_labels] + qbins[qpts_with_labels + 1])/2
     # Set high symmetry point x-axis ticks/labels
     ax.set_xticks(xticks)
@@ -477,7 +477,7 @@ def plot_dispersion(data, title='', btol=10.0, up=True, down=True):
         if label == 'GAMMA':
             xlabels[i] = r'$\Gamma$'
     if np.all(xlabels == ''):
-        xlabels = data.qpts[qpts_with_labels, :]
+        xlabels = np.around(data.qpts[qpts_with_labels, :], decimals=2)
     xticks = abscissa[qpts_with_labels]
     for i, ax in enumerate(subplots):
         # X-axis formatting
