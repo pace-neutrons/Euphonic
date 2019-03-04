@@ -18,7 +18,7 @@ def reorder_freqs(data):
     n_branches = data.n_branches
     n_ions = data.n_ions
     qpts = data.qpts
-    freqs = data.freqs
+    freqs = data.freqs.magnitude
     eigenvecs = data.eigenvecs
 
     if eigenvecs.size == 0:
@@ -78,6 +78,6 @@ def reorder_freqs(data):
         ordered_eigenvecs[i, qmap] = eigenvecs[i, :]
         ordered_freqs[i, qmap] = freqs[i, :]
 
-    ordered_freqs = ordered_freqs*freqs.units
+    ordered_freqs = ordered_freqs*data.freqs.units
     data.eigenvecs = ordered_eigenvecs
     data.freqs = ordered_freqs
