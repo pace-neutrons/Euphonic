@@ -574,7 +574,6 @@ class InterpolationData(Data):
                         f2 = erfc(norm)/(norm*norm**2) + (2*np.exp(-norm_2))/(math.sqrt(math.pi)*norm_2)
                         delta_mat = np.einsum('i,j', delta, delta)
                         H_ab[i,j] += (f1*delta_mat - f2*inv_dielectric)
-                        self.rtemp_E2[i, j, k] = H_ab[i,j]
         H_ab *= eta**3/math.sqrt(np.linalg.det(dielectric)) # Real diag E2 after scaling
 
         # Calculate real space phase factor
@@ -611,12 +610,15 @@ class InterpolationData(Data):
         for k in range(n_cells_recip):
             diff = g0 + recip_dg[k]
             recip_len = math.sqrt(np.sum(np.einsum('i,j', diff, diff)*dielectric))/eta
-            if recip_len > epsilon and recip_len < recip_cutoff:
+            k_len_2 = (np.sum(np.einsum('i,j', diff, diff)*dielectric))/(4*eta**2)
+            k_len = math.sqrt(k_len_2)
+            if k_len > epsilon and k_len < recip_cutoff:
+                recip_exp = np.exp(-k_len_2)/k_len_2
                 for i in range(n_ions):
                     for j in range(n_ions):
                         phase = 2j*math.pi*np.sum((ion_r[i] - ion_r[j])*(nhkl[k] - max_cells_hkl))
                         phase_exp = np.exp(phase)
-                        recip_diag_E2[i, j] += np.einsum('i,j', diff, diff)*phase*phase_exp
+                        recip_diag_E2[i, j] += np.einsum('i,j', diff, diff)*phase_exp*recip_exp
         cell_volume = np.dot(cell_vec[0], np.cross(cell_vec[1], cell_vec[2]))
         recip_diag_E2 *= math.pi/(cell_volume*eta**2)# After scaling
 
@@ -624,11 +626,11 @@ class InterpolationData(Data):
         q_recip = np.dot(recip, q_norm)
         recip_E2 = np.zeros((n_ions, n_ions, 3, 3), dtype=np.complex128)
         for k in range(n_cells_recip):
-            diff = g0 + recip_dg[k]
             diff_q = g0 + recip_dg[k] + q_recip
-            recip_len = math.sqrt(np.sum(np.einsum('i,j', diff_q, diff_q)*dielectric))/eta
-            if recip_len > epsilon and recip_len < recip_cutoff:
-                recip_exp = np.exp(-recip_len**2)/recip_len**2
+            k_len_2 = (np.sum(np.einsum('i,j', diff_q, diff_q)*dielectric))/(4*eta**2)
+            k_len = math.sqrt(k_len_2)
+            if k_len > epsilon and k_len < recip_cutoff:
+                recip_exp = np.exp(-k_len_2)/k_len_2
                 for i in range(n_ions):
                     for j in range(n_ions):
                         phase_q = 2j*math.pi*np.sum((ion_r[i] - ion_r[j])*q_norm)
