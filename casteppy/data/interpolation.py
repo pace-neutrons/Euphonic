@@ -400,8 +400,6 @@ class InterpolationData(Data):
         dyn_mat_weighting = 1/np.sqrt(masses*np.transpose(masses))
 
         prev_evecs = np.identity(3*n_ions)
-        self.dyn_mats = np.zeros((n_qpts, 3*n_ions, 3*n_ions), dtype=np.complex128)
-        self.dipole_corrs = np.zeros((n_qpts, 3*n_ions, 3*n_ions), dtype=np.complex128)
         for q in range(n_qpts):
             qpt = qpts[q, :]
             dyn_mat = np.zeros((n_ions*3, n_ions*3), dtype=np.complex128)
@@ -423,18 +421,17 @@ class InterpolationData(Data):
             for nc in range(n_cells_in_sc):
                 dyn_mat += full_dyn_mat[3*nc*n_ions:3*(nc+1)*n_ions, :]
 
-            # Mass weight dynamical matrix
-            dyn_mat *= dyn_mat_weighting
+            if dipole:
+                dipole_corr = self._calculate_dipole_correction(qpt)
+                dyn_mat += np.conj(dipole_corr)
 
             # Need to transpose dyn_mat to have [i, j] ion indices, as it was
             # formed by summing the force_constants matrix which has [j, i]
             # indices
             dyn_mat = np.transpose(dyn_mat)
-            if dipole:
-                dipole_corr = self._calculate_dipole_correction(qpt)
-                self.dyn_mats[q] = dyn_mat
-                self.dipole_corrs[q] = dipole_corr
-                dyn_mat += dipole_corr
+
+            # Mass weight dynamical matrix
+            dyn_mat *= dyn_mat_weighting
 
             if precondition:
                 dyn_mat = np.matmul(np.matmul(np.transpose(
@@ -520,40 +517,27 @@ class InterpolationData(Data):
         n_cells_hkl = 2*max_cells_hkl + 1
         n_cells_recip = n_cells_hkl.prod()
 
-#        nxyz = np.column_stack((
-#            np.repeat(range(n_cells_xyz[0]), n_cells_xyz[1]*n_cells_xyz[2]),
-#            np.repeat(np.tile(
-#                range(n_cells_xyz[1]), n_cells_xyz[0]), n_cells_xyz[2]),
-#            np.tile(range(n_cells_xyz[2]), n_cells_xyz[0]*n_cells_xyz[1])))
-#       Order like CASTEP
         nxyz = np.column_stack((
-            np.tile(range(n_cells_xyz[0]), n_cells_xyz[2]*n_cells_xyz[1]),
+            np.repeat(range(n_cells_xyz[0]), n_cells_xyz[1]*n_cells_xyz[2]),
             np.repeat(np.tile(
-                range(n_cells_xyz[1]), n_cells_xyz[2]), n_cells_xyz[0]),
-            np.repeat(range(n_cells_xyz[2]), n_cells_xyz[1]*n_cells_xyz[0]),
-            ))
+                range(n_cells_xyz[1]), n_cells_xyz[0]), n_cells_xyz[2]),
+            np.tile(range(n_cells_xyz[2]), n_cells_xyz[0]*n_cells_xyz[1])))
         nxyz_phases = np.column_stack((
-            np.tile(range(max_cells_xyz[0], -max_cells_xyz[0] - 1, -1), n_cells_xyz[2]*n_cells_xyz[1]),
-            np.repeat(np.tile(
-                range(max_cells_xyz[1], -max_cells_xyz[1] - 1, -1), n_cells_xyz[2]), n_cells_xyz[0]),
-            np.repeat(range(max_cells_xyz[2], -max_cells_xyz[2] - 1, -1), n_cells_xyz[1]*n_cells_xyz[0]),
-            ))
+            np.repeat(range(max_cells_xyz[0], -max_cells_xyz[0] - 1, -1),
+                      n_cells_xyz[1]*n_cells_xyz[2]),
+            np.repeat(np.tile(range(max_cells_xyz[1], -max_cells_xyz[1] - 1, -1),
+                              n_cells_xyz[0]), n_cells_xyz[2]),
+            np.tile(range(max_cells_xyz[2], -max_cells_xyz[2] - 1, -1),
+                    n_cells_xyz[0]*n_cells_xyz[1])))
         real_dr = np.einsum('ij,jk->ik', nxyz, cell_vec)
-#        nhkl = np.column_stack((
-#            np.repeat(range(n_cells_hkl[0]), n_cells_hkl[1]*n_cells_hkl[2]),
-#            np.repeat(np.tile(
-#                range(n_cells_hkl[1]), n_cells_hkl[0]), n_cells_hkl[2]),
-#            np.tile(range(n_cells_hkl[2]), n_cells_hkl[0]*n_cells_hkl[1])))
-#       Order like CASTEP
         nhkl = np.column_stack((
-            np.tile(range(n_cells_hkl[0]), n_cells_hkl[2]*n_cells_hkl[1]),
+            np.repeat(range(n_cells_hkl[0]), n_cells_hkl[1]*n_cells_hkl[2]),
             np.repeat(np.tile(
-                range(n_cells_hkl[1]), n_cells_hkl[2]), n_cells_hkl[0]),
-            np.repeat(range(n_cells_hkl[2]), n_cells_hkl[1]*n_cells_hkl[0]),
-            ))
+                range(n_cells_hkl[1]), n_cells_hkl[0]), n_cells_hkl[2]),
+            np.tile(range(n_cells_hkl[2]), n_cells_hkl[0]*n_cells_hkl[1])))
         recip_dg = np.einsum('ij,jk->ik', nhkl, recip)
 
-        # Use eta = lambda * |permittivity|**(1/6)?
+        # Use eta = lambda * |permittivity|**(1/6)
         eta =  eta*np.power(np.linalg.det(dielectric), 1.0/6)
 
         # Calculate real space diagonal term
@@ -570,15 +554,15 @@ class InterpolationData(Data):
                     norm = math.sqrt(norm_2) # Norm D
                     norm_5 = norm*(norm_2**2)
                     if norm > epsilon and norm < real_cutoff:
-                        f1 = (eta**2)*(3*erfc(norm)/norm_5 + (2*math.exp(-norm_2)*(3 + 2*norm_2))/(math.sqrt(math.pi)*norm_2**2))
+                        f1 = (eta**2)*(3*erfc(norm)/norm_5 +
+                            (2*math.exp(-norm_2)*(3 + 2*norm_2))/(math.sqrt(math.pi)*norm_2**2))
                         f2 = erfc(norm)/(norm*norm**2) + (2*np.exp(-norm_2))/(math.sqrt(math.pi)*norm_2)
                         delta_mat = np.einsum('i,j', delta, delta)
                         H_ab[i,j] += (f1*delta_mat - f2*inv_dielectric)
-        H_ab *= eta**3/math.sqrt(np.linalg.det(dielectric)) # Real diag E2 after scaling
+        H_ab *= eta**3/math.sqrt(np.linalg.det(dielectric))
 
         # Calculate real space phase factor
         phases = np.exp(2j*math.pi*np.einsum('i,ji->j', q_norm, nxyz_phases))
-        self.phases = phases
         # Calculate real space term
         H_ab_phase = np.zeros((n_ions, n_ions, 3, 3), dtype=np.complex128)
         for i in range(n_ions):
@@ -593,11 +577,12 @@ class InterpolationData(Data):
                     norm = math.sqrt(norm_2) # Norm D
                     norm_5 = norm*(norm_2**2)
                     if norm > epsilon and norm < real_cutoff:
-                        f1 = (eta**2)*(3*erfc(norm)/norm_5 + (2*math.exp(-norm_2)*(3 + 2*norm_2))/(math.sqrt(math.pi)*norm_2**2))
+                        f1 = (eta**2)*(3*erfc(norm)/norm_5 +
+                            (2*math.exp(-norm_2)*(3 + 2*norm_2))/(math.sqrt(math.pi)*norm_2**2))
                         f2 = erfc(norm)/(norm*norm**2) + (2*np.exp(-norm_2))/(math.sqrt(math.pi)*norm_2)
                         delta_mat = np.einsum('i,j', delta, delta)
                         H_ab_phase[i,j] += phases[k]*(f1*delta_mat - f2*inv_dielectric)
-        H_ab_phase *= eta**3/math.sqrt(np.linalg.det(dielectric)) # Real E2 after scaling
+        H_ab_phase *= eta**3/math.sqrt(np.linalg.det(dielectric))
 
         # Fill in remaining entries by symmetry
         for i in range(1, n_ions):
@@ -623,7 +608,7 @@ class InterpolationData(Data):
         recip_diag_E2 *= math.pi/(cell_volume*eta**2)# After scaling
 
         # Calculate general reciprocal term
-        q_recip = np.dot(recip, q_norm)
+        q_recip = np.dot(q_norm, recip)
         recip_E2 = np.zeros((n_ions, n_ions, 3, 3), dtype=np.complex128)
         for k in range(n_cells_recip):
             diff_q = g0 + recip_dg[k] + q_recip
@@ -632,12 +617,18 @@ class InterpolationData(Data):
             if k_len > epsilon and k_len < recip_cutoff:
                 recip_exp = np.exp(-k_len_2)/k_len_2
                 for i in range(n_ions):
-                    for j in range(n_ions):
+                    for j in range(i, n_ions):
                         phase_q = 2j*math.pi*np.sum((ion_r[i] - ion_r[j])*q_norm)
                         phase = 2j*math.pi*np.sum((ion_r[i] - ion_r[j])*(nhkl[k] - max_cells_hkl))
                         phase_exp = np.exp(phase + phase_q)
                         recip_E2[i,j] += np.einsum('i,j', diff_q, diff_q)*phase_exp*recip_exp
         recip_E2 *= math.pi/(cell_volume*eta**2)# After scaling
+
+        # Fill in remaining entries by symmetry
+        for i in range(1, n_ions):
+            for j in range(i):
+                H_ab_phase[i, j] = np.conj(H_ab_phase[j,i])
+                recip_E2[i, j] = np.conj(recip_E2[j,i])
 
         E2 = np.zeros((n_ions, n_ions, 3, 3), dtype=np.complex128)
         E2_diag = np.zeros((3, 3), dtype=np.complex128)
@@ -656,20 +647,6 @@ class InterpolationData(Data):
             # Symmetrise diagonal and subtract
             E2_diag = 0.5*(E2_diag + np.transpose(E2_diag))
             E2[i,i] -= E2_diag
-
-        self.n_cells_xyz = n_cells_xyz
-        self.n_cells_hkl = n_cells_hkl
-        self.max_cells_xyz = max_cells_xyz
-        self.max_cells_hkl = max_cells_hkl
-        self.nxyz = nxyz
-        self.nhkl = nhkl
-        self.eta = eta
-        self.real_dr = real_dr
-        self.recip_dg = recip_dg
-        self.recip_E2 = recip_E2
-        self.H_ab_phase = H_ab_phase
-        self.recip_diag_E2 = recip_diag_E2
-        self.H_ab = H_ab
 
         return np.reshape(np.transpose(E2, axes=[0, 2, 1, 3]), (3*n_ions, 3*n_ions))
 
