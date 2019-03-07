@@ -250,6 +250,9 @@ def plot_sqw_map(data, vmin=None, vmax=None, ratio=None):
     # Set high symmetry point x-axis ticks/labels
     ax.set_xticks(xticks)
     ax.xaxis.grid(True, which='major')
+    # Convert xlabels to list from Numpy array to avoid elementwise
+    # comparison FutureWarning when calling set_xticklabels
+    xlabels = xlabels.tolist()
     # Rotate long tick labels
     if len(max(xlabels, key=len)) >= 11:
         ax.set_xticklabels(xlabels, rotation=90)
@@ -484,6 +487,9 @@ def plot_dispersion(data, title='', btol=10.0, up=True, down=True):
         # Set high symmetry point x-axis ticks/labels
         ax.set_xticks(xticks)
         ax.xaxis.grid(True, which='major')
+        # Convert xlabels to list from Numpy array to avoid elementwise
+        # comparison FutureWarning when calling set_xticklabels
+        xlabels = xlabels.tolist()
         # Rotate long tick labels
         if len(max(xlabels, key=len)) >= 11:
             ax.set_xticklabels(xlabels, rotation=90)

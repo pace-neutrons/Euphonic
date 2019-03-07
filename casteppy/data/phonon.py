@@ -2,7 +2,6 @@ import os
 import sys
 import numpy as np
 from casteppy import ureg
-from casteppy.util import direction_changed
 from casteppy.data.data import Data
 
 

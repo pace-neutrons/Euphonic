@@ -16,7 +16,7 @@ class TestInputReadLZO(unittest.TestCase):
         expctd_data.cell_vec = np.array(
             [[7.58391282e+00, 1.84127921e-32, 0.00000000e+00],
              [3.79195641e+00, 3.79195641e+00, 5.36263618e+00],
-             [3.79195641e+00, -3.79195641e+00, 5.36263618e+00]])
+             [3.79195641e+00, -3.79195641e+00, 5.36263618e+00]])*ureg('angstrom')
         expctd_data.ion_r = np.array([[0.125, 0.125, 0.125],
                                       [0.875, 0.875, 0.875],
                                       [0.41861943, 0.41861943, 0.83138057],
@@ -48,19 +48,19 @@ class TestInputReadLZO(unittest.TestCase):
          15.99939999, 15.99939999, 15.99939999, 15.99939999, 15.99939999,
          15.99939999, 15.99939999, 15.99939999, 15.99939999, 91.22399997,
          91.22399997, 91.22399997, 91.22399997, 138.90549995,
-         138.90549995, 138.90549995, 138.90549995])
+         138.90549995, 138.90549995, 138.90549995])*ureg('amu')
         expctd_data.sc_matrix = np.array([[ 1, 1, -1],
                                           [ 1, -1, 1],
                                           [-1, 1, 1]])
         expctd_data.n_cells_in_sc = 4
         expctd_data.fc_mat_cell0_i0_j0 = np.array(
-            [[1.26492555e-01, -2.31204635e-31, -1.16997352e-13],
-             [-2.31204635e-31, 1.26492555e-01,  3.15544362e-30],
-             [-1.16997352e-13, 1.05181454e-30,  1.26492555e-01]])
+            [[ 1.26492555e-01, -2.31204635e-31, -1.16997352e-13],
+             [-2.31204635e-31,  1.26492555e-01,  1.05181454e-30],
+             [-1.16997352e-13,  3.15544362e-30,  1.26492555e-01]])*ureg('hartree/bohr**2')
         expctd_data.fc_mat_cell3_i5_j10 = np.array(
             [[-8.32394989e-04, -2.03285211e-03, 3.55359333e-04],
              [-2.22156212e-03, -6.29315975e-04, 1.21568713e-03],
-             [ 7.33617499e-05,  1.16282999e-03, 5.22410338e-05]])
+             [ 7.33617499e-05,  1.16282999e-03, 5.22410338e-05]])*ureg('hartree/bohr**2')
         expctd_data.cell_origins = np.array([[0, 0, 0],
                                              [1, 0, 0],
                                              [0, 1, 0],
@@ -79,7 +79,8 @@ class TestInputReadLZO(unittest.TestCase):
         self.assertEqual(self.data.n_branches, self.expctd_data.n_branches)
 
     def test_cell_vec_read(self):
-        npt.assert_allclose(self.data.cell_vec, self.expctd_data.cell_vec)
+        npt.assert_allclose(self.data.cell_vec.to('bohr').magnitude,
+                            self.expctd_data.cell_vec.to('bohr').magnitude)
 
     def test_ion_r_read(self):
         npt.assert_allclose(self.data.ion_r, self.expctd_data.ion_r)
@@ -88,27 +89,30 @@ class TestInputReadLZO(unittest.TestCase):
         npt.assert_array_equal(self.data.ion_type, self.expctd_data.ion_type)
 
     def test_ion_mass_read(self):
-        npt.assert_allclose(self.data.ion_mass, self.expctd_data.ion_mass)
+        npt.assert_allclose(self.data.ion_mass.to('amu').magnitude,
+                            self.expctd_data.ion_mass.to('amu').magnitude)
 
     def test_sc_matrix_read(self):
         npt.assert_allclose(self.data.sc_matrix, self.expctd_data.sc_matrix)
 
     def test_n_cells_in_sc_read(self):
         self.assertEqual(self.data.n_cells_in_sc,
-                     self.expctd_data.n_cells_in_sc)
+                         self.expctd_data.n_cells_in_sc)
 
     def test_fc_mat_cell0_i0_j0_read(self):
-        npt.assert_allclose(self.data.force_constants[0:3, 0:3],
-                            self.expctd_data.fc_mat_cell0_i0_j0)
+        npt.assert_allclose(self.data.force_constants[0:3, 0:3].magnitude,
+                            self.expctd_data.fc_mat_cell0_i0_j0.magnitude)
 
     def test_fc_mat_cell3_i5_j10_read(self):
         # 1st fc index = 3*cell*n_ions + 3*j = 3*3*22 + 3*10 = 228
-        npt.assert_allclose(self.data.force_constants[228:231, 15:18],
-                            self.expctd_data.fc_mat_cell3_i5_j10)
+        npt.assert_allclose(self.data.force_constants[228:231, 15:18].magnitude,
+                            self.expctd_data.fc_mat_cell3_i5_j10.magnitude)
 
     def test_fc_mat_read(self):
-        expected_fc_mat = np.load(os.path.join(self.path, 'lzo_fc_mat_no_asr.npy'))
-        npt.assert_allclose(self.data.force_constants, expected_fc_mat)
+        expected_fc_mat = np.load(os.path.join(
+            self.path, 'lzo_fc_mat_no_asr.npy'))*ureg('hartree/bohr**2')
+        npt.assert_allclose(self.data.force_constants.magnitude,
+                            expected_fc_mat.magnitude)
 
 
 class TestInterpolatePhononsLZO(unittest.TestCase):
@@ -120,53 +124,94 @@ class TestInterpolatePhononsLZO(unittest.TestCase):
         self.data = data
 
         self.qpts = np.array([[-1.00, 9.35, 3.35],
-                              [-1.00, 9.30, 3.30]])
-        self.expctd_freqs = np.array(
-            [[0.0002964463, 0.0002964463, 0.0003208033,
-              0.0003501442, 0.0003501442, 0.0003903142,
-              0.0004971960, 0.0004971960, 0.0005372831,
-              0.0005438606, 0.0005861142, 0.0005861142,
-              0.0007103592, 0.0007103592, 0.0007331462,
-              0.0007786131, 0.0007874301, 0.0007929212,
-              0.0008125973, 0.0008354708, 0.0008354708,
-              0.0009078655, 0.0009078655, 0.0010160279,
-              0.0010264260, 0.0010554380, 0.0011528116,
-              0.0012094889, 0.0012304152, 0.0012410381,
-              0.0012410381, 0.0012564502, 0.0013664021,
-              0.0013664021, 0.0014355540, 0.0014355540,
-              0.0014576131, 0.0015442769, 0.0015442769,
-              0.0015449045, 0.0015505596, 0.0015937747,
-              0.0017167580, 0.0017828415, 0.0017828415,
-              0.0018048098, 0.0018598041, 0.0018598041,
-              0.0018726136, 0.0019193752, 0.0020786720,
-              0.0020786720, 0.0022934815, 0.0024275690,
-              0.0024275690, 0.0024850294, 0.0025000806,
-              0.0025179334, 0.0025179334, 0.0025401035,
-              0.0025550180, 0.0025550180, 0.0028191045,
-              0.0033473131, 0.0033680460, 0.0033680460],
-             [0.0002824983, 0.0002824983, 0.0003072456,
-              0.0003230949, 0.0003230949, 0.0003983840,
-              0.0005007107, 0.0005007107, 0.0005054376,
-              0.0005222212, 0.0005887989, 0.0005887989,
-              0.0006746343, 0.0006861545, 0.0006861545,
-              0.0007556994, 0.0007616131, 0.0007690864,
-              0.0007737532, 0.0008536269, 0.0008536269,
-              0.0009203968, 0.0009203968, 0.0010084528,
-              0.0010433982, 0.0010561472, 0.0011814957,
-              0.0012049367, 0.0012309021, 0.0012309021,
-              0.0012705846, 0.0012715744, 0.0013684938,
-              0.0013684938, 0.0014212562, 0.0014212562,
-              0.0014500614, 0.0015262255, 0.0015262255,
-              0.0015416714, 0.0015525612, 0.0016222745,
-              0.0016979556, 0.0018021499, 0.0018021499,
-              0.0018150461, 0.0018516882, 0.0018516882,
-              0.0018554149, 0.0019187766, 0.0020983195,
-              0.0020983195, 0.0022159595, 0.0024316898,
-              0.0024316898, 0.0024829004, 0.0025025788,
-              0.0025093281, 0.0025093281, 0.0025424669,
-              0.0025499149, 0.0025499149, 0.0026935713,
-              0.0033651415, 0.0033651415, 0.0033698188]])*ureg.hartree
-
+                              [-1.00, 9.00, 3.00]])
+        self.expctd_freqs_asr = np.array([
+            [0.0002964449, 0.0002964449, 0.0003208033,
+             0.0003501419, 0.0003501419, 0.0003903141,
+             0.0004972138, 0.0004972138, 0.0005372809,
+             0.0005438643, 0.0005861166, 0.0005861166,
+             0.0007103804, 0.0007103804, 0.0007331639,
+             0.0007786131, 0.0007874376, 0.0007929211,
+             0.0008126016, 0.0008354861, 0.0008354861,
+             0.0009078731, 0.0009078731, 0.0010160378,
+             0.0010264374, 0.0010554444, 0.0011528145,
+             0.0012094888, 0.0012304278, 0.0012410548,
+             0.0012410548, 0.0012564500, 0.0013664070,
+             0.0013664070, 0.0014355566, 0.0014355566,
+             0.0014576129, 0.0015442745, 0.0015442745,
+             0.0015449039, 0.0015505652, 0.0015937746,
+             0.0017167608, 0.0017828465, 0.0017828465,
+             0.0018048096, 0.0018598080, 0.0018598080,
+             0.0018726170, 0.0019193824, 0.0020786777,
+             0.0020786777, 0.0022934801, 0.0024275754,
+             0.0024275754, 0.0024850292, 0.0025000804,
+             0.0025179345, 0.0025179345, 0.0025401087,
+             0.0025550191, 0.0025550191, 0.0028191070,
+             0.0033473173, 0.0033680501, 0.0033680501],
+            [-1.2527213902e-09, -1.2524650945e-09, -1.2522509615e-09,
+             2.5186476888e-04,  2.5186476888e-04,  2.5186476888e-04,
+             4.2115533128e-04,  4.2115533128e-04,  4.5919137201e-04,
+             4.5919137201e-04,  4.5919137201e-04,  6.0460911494e-04,
+             6.0460911494e-04,  6.0460911494e-04,  6.1121916807e-04,
+             6.1121916807e-04,  6.1121916807e-04,  6.8315329115e-04,
+             6.8315329115e-04,  8.9085325717e-04,  8.9085325717e-04,
+             8.9085325717e-04,  1.0237996415e-03,  1.0237996415e-03,
+             1.0237996415e-03,  1.1666034640e-03,  1.1744920636e-03,
+             1.1744920636e-03,  1.1744920636e-03,  1.2802064794e-03,
+             1.2802064794e-03,  1.2802064794e-03,  1.3122749877e-03,
+             1.4159439055e-03,  1.4159439055e-03,  1.4159439055e-03,
+             1.4813308344e-03,  1.4813308344e-03,  1.5084818310e-03,
+             1.5084818310e-03,  1.5084818310e-03,  1.5957863393e-03,
+             1.7192994802e-03,  1.7192994802e-03,  1.8119521571e-03,
+             1.8119521571e-03,  1.8119521571e-03,  1.8609709896e-03,
+             1.8609709896e-03,  1.8609709896e-03,  2.1913629570e-03,
+             2.2033452584e-03,  2.2033452584e-03,  2.2033452584e-03,
+             2.4420900293e-03,  2.4420900293e-03,  2.4420900293e-03,
+             2.4754830417e-03,  2.4754830417e-03,  2.4754830417e-03,
+             2.5106852083e-03,  2.5106852083e-03,  2.5106852083e-03,
+             3.3517193438e-03,  3.3517193438e-03,  3.3517193438e-03]])*ureg(
+                'hartree')
+        self.expctd_freqs_no_asr = np.array([
+            [0.0002964623, 0.0002964623, 0.0003208033, 0.000350174,
+             0.000350174,  0.0003903141, 0.0004972179, 0.0004972179,
+             0.0005372886, 0.0005438642, 0.0005861163, 0.0005861163,
+             0.0007103807, 0.0007103807, 0.0007331935, 0.0007786131,
+             0.0007874315, 0.0007929211, 0.0008126019, 0.0008354958,
+             0.0008354958, 0.000907874,  0.000907874,  0.0010160402,
+             0.0010264376, 0.0010554468, 0.0011528125, 0.0012094888,
+             0.0012304238, 0.0012410492, 0.0012410492, 0.00125645,
+             0.0013664066, 0.0013664066, 0.0014355603, 0.0014355603,
+             0.0014576129, 0.0015442837, 0.0015442837, 0.0015449061,
+             0.0015505634, 0.0015937746, 0.0017167601, 0.0017828448,
+             0.0017828448, 0.001804811,  0.0018598084, 0.0018598084,
+             0.0018726182, 0.0019193824, 0.0020786769, 0.0020786769,
+             0.002293487,  0.0024275755, 0.0024275755, 0.0024850292,
+             0.0025000804, 0.002517934,  0.002517934,  0.0025401063,
+             0.0025550198, 0.0025550198, 0.0028191102, 0.0033473155,
+             0.0033680501, 0.0033680501],
+            [1.2522582708e-05, 1.2522582708e-05, 1.2522582708e-05,
+             2.5186476888e-04, 2.5186476888e-04, 2.5186476888e-04,
+             4.2115533128e-04, 4.2115533128e-04, 4.5920462007e-04,
+             4.5920462007e-04, 4.5920462007e-04, 6.0462274991e-04,
+             6.0462274991e-04, 6.0462274991e-04, 6.1121916807e-04,
+             6.1121916807e-04, 6.1121916807e-04, 6.8315329115e-04,
+             6.8315329115e-04, 8.9089400855e-04, 8.9089400855e-04,
+             8.9089400855e-04, 1.0238000223e-03, 1.0238000223e-03,
+             1.0238000223e-03, 1.1666034640e-03, 1.1744920636e-03,
+             1.1744920636e-03, 1.1744920636e-03, 1.2802064794e-03,
+             1.2802064794e-03, 1.2802064794e-03, 1.3122749877e-03,
+             1.4159439055e-03, 1.4159439055e-03, 1.4159439055e-03,
+             1.4813308344e-03, 1.4813308344e-03, 1.5085078032e-03,
+             1.5085078032e-03, 1.5085078032e-03, 1.5957863393e-03,
+             1.7192994802e-03, 1.7192994802e-03, 1.8119544413e-03,
+             1.8119544413e-03, 1.8119544413e-03, 1.8609709896e-03,
+             1.8609709896e-03, 1.8609709896e-03, 2.1913629570e-03,
+             2.2033465408e-03, 2.2033465408e-03, 2.2033465408e-03,
+             2.4420900293e-03, 2.4420900293e-03, 2.4420900293e-03,
+             2.4754830417e-03, 2.4754830417e-03, 2.4754830417e-03,
+             2.5106852083e-03, 2.5106852083e-03, 2.5106852083e-03,
+             3.3517193438e-03, 3.3517193438e-03, 3.3517193438e-03]])*ureg(
+                'hartree')
         self.unique_sc_i = np.loadtxt(os.path.join(
           self.path, 'lzo_unique_sc_i.txt'), dtype=np.int32)
         self.unique_cell_i = np.loadtxt(os.path.join(
@@ -280,33 +325,20 @@ class TestInterpolatePhononsLZO(unittest.TestCase):
 
     def test_calculate_fine_phonons_no_asr(self):
         self.data.calculate_fine_phonons(self.qpts, asr=False)
-        self.data.convert_e_units('hartree')
-        npt.assert_allclose(self.data.freqs, self.expctd_freqs, rtol=1e-3)
+        npt.assert_allclose(self.data.freqs.to('hartree').magnitude,
+                            self.expctd_freqs_no_asr.to('hartree').magnitude,
+                            rtol=1e-6)
 
     def test_calculate_fine_phonons_asr(self):
         self.data.calculate_fine_phonons(self.qpts, asr=True)
-        self.data.convert_e_units('hartree')
-        npt.assert_allclose(self.data.freqs, self.expctd_freqs, rtol=1e-4)
-
-    def test_asr_improves_freqs(self):
-        asr_freqs, _ = self.data.calculate_fine_phonons(self.qpts, asr=True)
-        asr_freqs.ito(ureg.hartree)
-        asr_diff = np.abs((asr_freqs - self.expctd_freqs)/self.expctd_freqs)
-        no_asr_freqs, _ = self.data.calculate_fine_phonons(self.qpts, asr=False)
-        no_asr_freqs.ito(ureg.hartree)
-        no_asr_diff = np.abs((no_asr_freqs - self.expctd_freqs)/self.expctd_freqs)
-        # Test that max increase in diff is less than a certain threshold
-        tol = 10.0
-        npt.assert_array_less(asr_diff/no_asr_diff, tol)
-        # Test that on average the diff doesn't increase past a threshold
-        tol = 1.1
-        self.assertTrue(np.mean(asr_diff/no_asr_diff) < tol)
-        # Test that on average the acoustic frequencies are improved
-        self.assertTrue(np.mean((asr_diff/no_asr_diff)[:, :3]) < 1.0)
+        npt.assert_allclose(self.data.freqs.to('hartree').magnitude,
+                            self.expctd_freqs_asr.to('hartree').magnitude,
+                            rtol=1e-6)
 
     def test_enforce_acoustic_sum_rule(self):
         expected_fc_mat = np.load(os.path.join(self.path, 'lzo_fc_mat_asr.npy'))
-        fc_mat = self.data._enforce_acoustic_sum_rule().to(ureg.hartree/ureg.bohr**2)
+        fc_mat = self.data._enforce_acoustic_sum_rule().to(
+                ureg.hartree/ureg.bohr**2).magnitude
         npt.assert_allclose(fc_mat, expected_fc_mat, atol=1e-18)
 
 class TestInputReadGraphite(unittest.TestCase):
@@ -316,29 +348,31 @@ class TestInputReadGraphite(unittest.TestCase):
         expctd_data = lambda:0
         expctd_data.n_ions = 4
         expctd_data.n_branches = 12
-        expctd_data.cell_vec = np.array(
-            [[1.23158700E+00, -2.13317126E+00, 0.00000000E+00],
-             [1.23158700E+00,  2.13317126E+00, 0.00000000E+00],
-             [0.00000000E+00,  0.00000000E+00, 6.71000000E+00]])
+        expctd_data.cell_vec = np.array([
+            [1.23158700E+00, -2.13317126E+00, 0.00000000E+00],
+            [1.23158700E+00,  2.13317126E+00, 0.00000000E+00],
+            [0.00000000E+00,  0.00000000E+00, 6.71000000E+00]])*ureg('angstrom')
         expctd_data.ion_r = np.array([[ 0.000, 0.000, 0.250],
                                       [ 0.000, 0.000, 0.750],
-                                      [ 0.33333333,  0.66666666, 0.250],
-                                      [-0.33333333, -0.66666666, 0.750]])
+                                      [ 0.33333333, 0.66666667, 0.250],
+                                      [ 0.66666667, 0.33333333, 0.750]])
         expctd_data.ion_type = np.array(['C', 'C', 'C', 'C'])
         expctd_data.ion_mass = np.array([12.0107000, 12.0107000,
-                                         12.0107000, 12.0107000])
+                                         12.0107000, 12.0107000])*ureg('amu')
         expctd_data.sc_matrix = np.array([[7, 0, 0],
                                           [0, 7, 0],
                                           [0, 0, 2]])
         expctd_data.n_cells_in_sc = 98
-        expctd_data.fc_mat_cell0_i0_j0 = np.array(
-            [[6.35111387E-01, 2.76471554E-18, 0.00000000E+00],
-             [2.05998413E-18, 6.35111387E-01, 0.00000000E+00],
-             [0.00000000E+00, 0.00000000E+00, 1.52513691E-01]])
-        expctd_data.fc_mat_cell10_i2_j3 = np.array(
-            [[ 4.60890816E-06, -4.31847743E-06, -6.64381977E-06],
-             [-4.31847743E-06, -3.77640043E-07,  3.83581115E-06],
-             [-6.64381977E-06,  3.83581115E-06,  2.55906360E-05]])
+        expctd_data.fc_mat_cell0_i0_j0 = np.array([
+            [6.35111387e-01, 2.05998413e-18, 0.00000000e+00],
+            [2.76471554e-18, 6.35111387e-01, 0.00000000e+00],
+            [0.00000000e+00, 0.00000000e+00, 1.52513691e-01]])*ureg(
+                'hartree/bohr**2')
+        expctd_data.fc_mat_cell10_i2_j3 = np.array([
+            [-8.16784177e-05, -1.31832252e-05, -1.11904290e-05],
+            [-1.31832252e-05,  5.42461675e-05,  3.73913780e-06],
+            [-1.11904290e-05,  3.73913780e-06, -2.99013850e-05]])*ureg(
+                'hartree/bohr**2')
         expctd_data.cell_origins = np.array(
             [[0, 0, 0], [1, 0, 0], [2, 0, 0], [3, 0, 0], [4, 0, 0], [5, 0, 0],
              [6, 0, 0], [0, 1, 0], [1, 1, 0], [2, 1, 0], [3, 1, 0], [4, 1, 0],
@@ -371,7 +405,8 @@ class TestInputReadGraphite(unittest.TestCase):
         self.assertEqual(self.data.n_branches, self.expctd_data.n_branches)
 
     def test_cell_vec_read(self):
-        npt.assert_allclose(self.data.cell_vec, self.expctd_data.cell_vec)
+        npt.assert_allclose(self.data.cell_vec.to('bohr').magnitude,
+                            self.expctd_data.cell_vec.to('bohr').magnitude)
 
     def test_ion_r_read(self):
         npt.assert_allclose(self.data.ion_r, self.expctd_data.ion_r)
@@ -380,7 +415,8 @@ class TestInputReadGraphite(unittest.TestCase):
         npt.assert_array_equal(self.data.ion_type, self.expctd_data.ion_type)
 
     def test_ion_mass_read(self):
-        npt.assert_allclose(self.data.ion_mass, self.expctd_data.ion_mass)
+        npt.assert_allclose(self.data.ion_mass.magnitude,
+                            self.expctd_data.ion_mass.magnitude)
 
     def test_sc_matrix_read(self):
         npt.assert_allclose(self.data.sc_matrix, self.expctd_data.sc_matrix)
@@ -390,17 +426,19 @@ class TestInputReadGraphite(unittest.TestCase):
                      self.expctd_data.n_cells_in_sc)
 
     def test_fc_mat_cell0_i0_j0_read(self):
-        npt.assert_allclose(self.data.force_constants[0:3, 0:3],
-                            self.expctd_data.fc_mat_cell0_i0_j0)
+        npt.assert_allclose(self.data.force_constants[0:3, 0:3].magnitude,
+                            self.expctd_data.fc_mat_cell0_i0_j0.magnitude)
 
     def test_fc_mat_cell10_i2_j3read(self):
         # 1st fc index = 3*cell*n_ions + 3*j = 3*10*4 + 3 = 129
-        npt.assert_allclose(self.data.force_constants[129:132, 6:9],
-                            self.expctd_data.fc_mat_cell10_i2_j3)
+        npt.assert_allclose(self.data.force_constants[129:132, 6:9].magnitude,
+                            self.expctd_data.fc_mat_cell10_i2_j3.magnitude)
 
     def test_fc_mat_read(self):
-        expected_fc_mat = np.load(os.path.join(self.path, 'graphite_fc_mat_no_asr.npy'))
-        npt.assert_allclose(self.data.force_constants, expected_fc_mat)
+        expected_fc_mat = np.load(os.path.join(
+            self.path, 'graphite_fc_mat_no_asr.npy'))*ureg('hartree/bohr**2')
+        npt.assert_allclose(self.data.force_constants.magnitude,
+                            expected_fc_mat.magnitude)
 
 
 class TestInterpolatePhononsGraphite(unittest.TestCase):
@@ -415,28 +453,50 @@ class TestInterpolatePhononsGraphite(unittest.TestCase):
                               [0.50, 0.00, 0.00],
                               [0.25, 0.00, 0.00],
                               [0.00, 0.00, 0.50]])
-        self.expctd_freqs = np.array(
-            [[-0.0000000015, -0.0000000015, -0.0000000015,
-               0.0001836195,  0.0001836195,  0.0004331070,
-               0.0040094296,  0.0040298660,  0.0070857276,
-               0.0070857276,  0.0071044834,  0.0071044834],
-             [ 0.0000051662,  0.0000320749,  0.0000516792,
-               0.0001863292,  0.0001906117,  0.0004331440,
-               0.0040093924,  0.0040298244,  0.0070856322,
-               0.0070859652,  0.0071043782,  0.0071046914],
-             [ 0.0021681102,  0.0022111728,  0.0028193688,
-               0.0028197551,  0.0029049712,  0.0029141517,
-               0.0060277006,  0.0060316374,  0.0060977879,
-               0.0061104631,  0.0063230414,  0.0063262966],
-             [ 0.0007687109,  0.0008817142,  0.0021005259,
-               0.0021043483,  0.0035723512,  0.0035925796,
-               0.0037679569,  0.0037804530,  0.0066594318,
-               0.0066651470,  0.0072007019,  0.0072132360],
-             [ 0.0001406543,  0.0001406543,  0.0001406543,
-               0.0001406543,  0.0003230591,  0.0003230591,
-               0.0040222686,  0.0040222686,  0.0071591510,
-               0.0071591510,  0.0071591510,  0.0071591510]])*ureg.hartree
-
+        self.expctd_freqs_asr = np.array([
+            [-1.4954416353e-09, -1.4920078435e-09, -1.4801148666e-09,
+              1.8361944616e-04,  1.8361944616e-04,  4.3310694904e-04,
+              4.0094292783e-03,  4.0298656188e-03,  7.0857269505e-03,
+              7.0857269505e-03,  7.1044827434e-03,  7.1044827434e-03],
+            [ 5.1653999633e-06,  3.2069627188e-05,  5.1670788680e-05,
+              1.8632833975e-04,  1.9060943285e-04,  4.3314392040e-04,
+              4.0093920383e-03,  4.0298240624e-03,  7.0856315683e-03,
+              7.0859645028e-03,  7.1043776174e-03,  7.1046906727e-03],
+            [ 2.1681099868e-03,  2.2111725605e-03,  2.8193685159e-03,
+              2.8197548439e-03,  2.9049709255e-03,  2.9141514127e-03,
+              6.0277000188e-03,  6.0316368591e-03,  6.0977873315e-03,
+              6.1104625371e-03,  6.3230408313e-03,  6.3262959952e-03],
+            [ 7.6871083387e-04,  8.8171407452e-04,  2.1005257455e-03,
+              2.1043480758e-03,  3.5723508265e-03,  3.5925792804e-03,
+              3.7679565502e-03,  3.7804526590e-03,  6.6594311463e-03,
+              6.6651464071e-03,  7.2007012704e-03,  7.2132353835e-03],
+            [ 1.4065426444e-04,  1.4065426444e-04,  1.4065426444e-04,
+              1.4065426444e-04,  3.2305904460e-04,  3.2305904460e-04,
+              4.0222682768e-03,  4.0222682768e-03,  7.1591503492e-03,
+              7.1591503492e-03,  7.1591503492e-03,  7.1591503492e-03]])*ureg(
+                'hartree')
+        self.expctd_freqs_no_asr = np.array([
+            [-1.4947813885e-05, -1.4947813885e-05,  1.7871973126e-05,
+              1.8361944616e-04,  1.8361944616e-04,  4.3310694904e-04,
+              4.0094292783e-03,  4.0298656188e-03,  7.0857269505e-03,
+              7.0857269505e-03,  7.1044827434e-03,  7.1044827434e-03],
+            [ 1.8594596548e-05,  2.8377223801e-05,  4.9463914519e-05,
+              1.8632830014e-04,  1.9060940094e-04,  4.3314392073e-04,
+              4.0093920384e-03,  4.0298240625e-03,  7.0856315682e-03,
+              7.0859645027e-03,  7.1043776174e-03,  7.1046906727e-03],
+            [ 2.1681107372e-03,  2.2111728203e-03,  2.8193681109e-03,
+              2.8197547098e-03,  2.9049711018e-03,  2.9141516000e-03,
+              6.0276999661e-03,  6.0316367945e-03,  6.0977872708e-03,
+              6.1104623404e-03,  6.3230407709e-03,  6.3262959354e-03],
+            [ 7.6869781440e-04,  8.8171407111e-04,  2.1005260482e-03,
+              2.1043510112e-03,  3.5723508344e-03,  3.5925812023e-03,
+              3.7679565852e-03,  3.7804526859e-03,  6.6594311404e-03,
+              6.6651464171e-03,  7.2007012512e-03,  7.2132353897e-03],
+            [ 1.4065426444e-04,  1.4065426444e-04,  1.4065426444e-04,
+              1.4065426444e-04,  3.2305904460e-04,  3.2305904460e-04,
+              4.0222682768e-03,  4.0222682768e-03,  7.1591503492e-03,
+              7.1591503492e-03,  7.1591503492e-03,  7.1591503492e-03]])*ureg(
+                'hartree')
         data = InterpolationData(seedname, self.path)
         self.data = data
 
@@ -511,33 +571,16 @@ class TestInterpolatePhononsGraphite(unittest.TestCase):
 
     def test_calculate_fine_phonons_no_asr(self):
         self.data.calculate_fine_phonons(self.qpts, asr=False)
-        self.data.convert_e_units('hartree')
-        # Don't test acoustic modes
-        npt.assert_allclose(self.data.freqs[:, 3:], self.expctd_freqs[:, 3:], rtol=1e-2)
+        npt.assert_allclose(self.data.freqs.to('hartree').magnitude,
+                            self.expctd_freqs_no_asr.to('hartree').magnitude)
 
     def test_calculate_fine_phonons_asr(self):
         self.data.calculate_fine_phonons(self.qpts, asr=True)
-        self.data.convert_e_units('hartree')
-        # Don't test acoustic modes
-        npt.assert_allclose(self.data.freqs[:, 3:], self.expctd_freqs[:, 3:], rtol=1e-2)
-
-    def test_asr_improves_freqs(self):
-        asr_freqs, _ = self.data.calculate_fine_phonons(self.qpts, asr=True)
-        asr_freqs.ito(ureg.hartree)
-        asr_diff = np.abs((asr_freqs - self.expctd_freqs)/self.expctd_freqs)
-        no_asr_freqs, _ = self.data.calculate_fine_phonons(self.qpts, asr=False)
-        no_asr_freqs.ito(ureg.hartree)
-        no_asr_diff = np.abs((no_asr_freqs - self.expctd_freqs)/self.expctd_freqs)
-
-        # Test that max increase in diff is less than a certain tolerance
-        tol = 1.1
-        npt.assert_array_less(asr_diff/no_asr_diff, tol)
-        # Test that on average the diff doesn't increase
-        self.assertTrue(np.mean(asr_diff/no_asr_diff) < 1.0)
-        # Test that on average the acoustic frequencies improve
-        self.assertTrue(np.mean((asr_diff/no_asr_diff)[:, :3]) < 1.0)
+        npt.assert_allclose(self.data.freqs.to('hartree').magnitude,
+                            self.expctd_freqs_asr.to('hartree').magnitude)
 
     def test_enforce_acoustic_sum_rule(self):
         expected_fc_mat = np.load(os.path.join(self.path, 'graphite_fc_mat_asr.npy'))
-        fc_mat = self.data._enforce_acoustic_sum_rule().to(ureg.hartree/ureg.bohr**2)
+        fc_mat = self.data._enforce_acoustic_sum_rule().to(
+                ureg.hartree/ureg.bohr**2).magnitude
         npt.assert_allclose(fc_mat, expected_fc_mat, atol=1e-18)

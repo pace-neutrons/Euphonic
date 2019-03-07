@@ -11,14 +11,14 @@ pipelines:
           - python -mpip install pint
           - python -mpip install seekpath
           - python -mpip install scipy
-#          - python -m unittest discover -v test
-          - python -munittest -v test.test_dos
-          - python -munittest -v test.test_phonon_data
-          - python -munittest -v test.test_reorder_freqs
-          - python -munittest -v test.test_util
-          - python -munittest -v test.test_bands_data
-          - python -munittest -v test.test_plot
-          - python -munittest -v test.test_structure_factor
+          - python -m unittest discover -v test
+#          - python -munittest -v test.test_dos
+#          - python -munittest -v test.test_phonon_data
+#          - python -munittest -v test.test_reorder_freqs
+#          - python -munittest -v test.test_util
+#          - python -munittest -v test.test_bands_data
+#          - python -munittest -v test.test_plot
+#          - python -munittest -v test.test_structure_factor
     - step:
         name: Python 2 test
         image: python:2.7.13
@@ -30,11 +30,11 @@ pipelines:
           - python -mpip install pint
           - python -mpip install seekpath
           - python -mpip install scipy
-#          - python -m unittest discover -v test
-          - python -munittest -v test.test_dos
-          - python -munittest -v test.test_phonon_data
-          - python -munittest -v test.test_reorder_freqs
-          - python -munittest -v test.test_util
-          - python -munittest -v test.test_bands_data
-          - python -munittest -v test.test_plot
-          - python -munittest -v test.test_structure_factor
+          - python -m unittest discover -v test
+#          - python -munittest -v test.test_dos
+#          - python -munittest -v test.test_phonon_data
+#          - python -munittest -v test.test_reorder_freqs
+#          - python -munittest -v test.test_util
+#          - python -munittest -v test.test_bands_data
+#          - python -munittest -v test.test_plot
+#          - python -munittest -v test.test_structure_factor
