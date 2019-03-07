@@ -478,25 +478,6 @@ class InterpolationData(Data):
         Ewald sum, see eqs 72-74 from Gonze and Lee PRB 55, 10355 (1997)
         """
 
-    def _calculate_dipole_correction(self, q):
-        """
-        Calculate the long range correction to the dynamical matrix using the
-        Ewald sum, see eqs 72-74 from Gonze and Lee PRB 55, 10355 (1997)
-
-        Parameters
-        ----------
-        q : ndarray
-            The q-point to calculate the correction for
-            dtype = 'float'
-            shape = (3,)
-
-        Returns
-        -------
-        corr : ndarray
-            The correction to the dynamical matrix
-            dtype = 'float'
-            shape = (3*n_ions, 3*n_ions)
-        """
         cell_vec = self.cell_vec.to('bohr').magnitude
         recip = reciprocal_lattice(cell_vec)
         n_ions = self.n_ions
@@ -504,10 +485,9 @@ class InterpolationData(Data):
         born = self.born.magnitude
         dielectric = self.dielectric
         inv_dielectric = np.linalg.inv(dielectric)
-        q_norm = q - np.rint(q) # Normalised q-pt
         epsilon = 1e-10
 
-        # Calculate cutoffs
+        # Cutoffs
         real_cutoff = 20.0
         recip_cutoff = 20.0
 
@@ -540,11 +520,15 @@ class InterpolationData(Data):
         eta =  eta*np.power(np.linalg.det(dielectric), 1.0/6)
 
         # Calculate real space diagonal term
-        H_ab = np.zeros((n_ions, n_ions, 3, 3))
+        real_diag = np.zeros((n_ions, n_ions, 3, 3))
+        H_ab = np.zeros((n_ions, n_ions, n_cells_real, 3, 3))
+        real_in_range = np.zeros((n_ions, n_ions, n_cells_real), dtype=np.int32)
+        n_real_in_range = np.zeros((n_ions, n_ions), dtype=np.int32)
         for i in range(n_ions):
             for j in range(n_ions):
                 a_diff = ion_r[i] - ion_r[j] + max_cells_xyz
                 r0 = np.einsum('ij,i->j', cell_vec, a_diff)
+                n = 0
                 for k in range(n_cells_real):
                     diff = r0 - real_dr[k]
                     delta = np.einsum('ij,j->i', inv_dielectric, diff)
@@ -557,36 +541,91 @@ class InterpolationData(Data):
                             (2*math.exp(-norm_2)*(3 + 2*norm_2))/(math.sqrt(math.pi)*norm_2**2))
                         f2 = erfc(norm)/(norm*norm**2) + (2*np.exp(-norm_2))/(math.sqrt(math.pi)*norm_2)
                         delta_mat = np.einsum('i,j', delta, delta)
-                        H_ab[i,j] += (f1*delta_mat - f2*inv_dielectric)
-        H_ab *= eta**3/math.sqrt(np.linalg.det(dielectric))
+                        H_ab[i, j, n] = (f1*delta_mat - f2*inv_dielectric)
+                        real_in_range[i, j, n] = k
+                        n += 1
+                n_real_in_range[i, j] = n
+        real_diag = np.sum(H_ab, axis=2)
+        real_diag *= eta**3/math.sqrt(np.linalg.det(dielectric))
+
+        self.max_cells_xyz = max_cells_xyz
+        self.max_cells_hkl = max_cells_hkl
+        self.eta = eta
+
+        # Don't keep any entries beyond the cutoff
+        max_n_real_in_range = np.amax(n_real_in_range)
+        self.n_real_in_range = n_real_in_range
+        self.real_in_range = real_in_range[:, :, :max_n_real_in_range]
+        self.H_ab = H_ab[:, :, :max_n_real_in_range, :, :]
+        self.real_diag = real_diag
+
+
+    def _calculate_dipole_correction(self, q):
+        """
+        Calculate the long range correction to the dynamical matrix using the
+        Ewald sum, see eqs 72-74 from Gonze and Lee PRB 55, 10355 (1997)
+
+        Parameters
+        ----------
+        q : ndarray
+            The q-point to calculate the correction for
+            dtype = 'float'
+            shape = (3,)
+
+        Returns
+        -------
+        corr : ndarray
+            The correction to the dynamical matrix
+            dtype = 'float'
+            shape = (3*n_ions, 3*n_ions)
+        """
+        cell_vec = self.cell_vec.to('bohr').magnitude
+        recip = reciprocal_lattice(cell_vec)
+        n_ions = self.n_ions
+        ion_r = self.ion_r
+        born = self.born.magnitude
+        dielectric = self.dielectric
+        inv_dielectric = np.linalg.inv(dielectric)
+        eta = self.eta
+        max_cells_xyz = self.max_cells_xyz
+        max_cells_hkl = self.max_cells_hkl
+
+        q_norm = q - np.rint(q) # Normalised q-pt
+        epsilon = 1e-10
+
+        # Calculate cutoffs
+        real_cutoff = 20.0
+        recip_cutoff = 20.0
+
+        # Calculate new realspace cells
+        n_cells_xyz = 2*max_cells_xyz + 1
+        n_cells_real = n_cells_xyz.prod()
+        nxyz = self._get_all_origins(n_cells_xyz)
+        nxyz_phases = self._get_all_origins(
+            -max_cells_xyz - 1, min_xyz=max_cells_xyz, step=-1)
+
+        # Calculate new reciprocal space cells
+        n_cells_hkl = 2*max_cells_hkl + 1
+        n_cells_recip = n_cells_hkl.prod()
+        nhkl = self._get_all_origins(n_cells_hkl)
+        recip_dg = np.einsum('ij,jk->ik', nhkl, recip)
 
         # Calculate real space phase factor
         phases = np.exp(2j*math.pi*np.einsum('i,ji->j', q_norm, nxyz_phases))
         # Calculate real space term
-        H_ab_phase = np.zeros((n_ions, n_ions, 3, 3), dtype=np.complex128)
+        real_term = np.zeros((n_ions, n_ions, 3, 3), dtype=np.complex128)
         for i in range(n_ions):
             for j in range(i, n_ions):
-                a_diff = ion_r[j] - ion_r[i] + max_cells_xyz
-                r0 = np.einsum('ij,i->j', cell_vec, a_diff)
-                for k in range(n_cells_real):
-                    diff = r0 - real_dr[k]
-                    delta = np.einsum('ij,j->i', inv_dielectric, diff)
-                    diff[np.absolute(diff) < epsilon] = 0
-                    norm_2 = np.sum(delta*diff)*(eta**2)
-                    norm = math.sqrt(norm_2) # Norm D
-                    norm_5 = norm*(norm_2**2)
-                    if norm > epsilon and norm < real_cutoff:
-                        f1 = (eta**2)*(3*erfc(norm)/norm_5 +
-                            (2*math.exp(-norm_2)*(3 + 2*norm_2))/(math.sqrt(math.pi)*norm_2**2))
-                        f2 = erfc(norm)/(norm*norm**2) + (2*np.exp(-norm_2))/(math.sqrt(math.pi)*norm_2)
-                        delta_mat = np.einsum('i,j', delta, delta)
-                        H_ab_phase[i,j] += phases[k]*(f1*delta_mat - f2*inv_dielectric)
-        H_ab_phase *= eta**3/math.sqrt(np.linalg.det(dielectric))
+            # Note reverse i and j
+                for n in range(self.n_real_in_range[j,i]):
+                    k = self.real_in_range[j, i, n]
+                    real_term[i,j] += phases[k]*self.H_ab[j, i, n]
+        real_term *= eta**3/math.sqrt(np.linalg.det(dielectric))
 
         # Fill in remaining entries by symmetry
         for i in range(1, n_ions):
             for j in range(i):
-                H_ab_phase[i, j] = np.conj(H_ab_phase[j,i])
+                real_term[i, j] = np.conj(real_term[j,i])
 
         # Calculate diagonal reciprocal term
         recip_diag_E2 = np.zeros((n_ions, n_ions, 3, 3), dtype=np.complex128)
@@ -626,7 +665,7 @@ class InterpolationData(Data):
         # Fill in remaining entries by symmetry
         for i in range(1, n_ions):
             for j in range(i):
-                H_ab_phase[i, j] = np.conj(H_ab_phase[j,i])
+                real_term[i, j] = np.conj(real_term[j,i])
                 recip_E2[i, j] = np.conj(recip_E2[j,i])
 
         E2 = np.zeros((n_ions, n_ions, 3, 3), dtype=np.complex128)
@@ -638,10 +677,10 @@ class InterpolationData(Data):
                     for b in range(3):
                         E2[i,j,a,b] = np.sum(
                             np.einsum('i,j', born[i,a,:], born[j,b,:])
-                            *(recip_E2[i,j] - H_ab_phase[i,j]))
+                            *(recip_E2[i,j] - real_term[i,j]))
                         E2_diag[a,b] += np.sum(
                             np.einsum('i,j', born[i,a,:], born[j,b,:])
-                            *(recip_diag_E2[i,j] - H_ab[i,j]))
+                            *(recip_diag_E2[i,j] - self.real_diag[i,j]))
 
             # Symmetrise diagonal and subtract
             E2_diag = 0.5*(E2_diag + np.transpose(E2_diag))
