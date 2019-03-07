@@ -89,7 +89,7 @@ class InterpolationData(Data):
     sc_image_i : ndarray
         The index describing the supercell each of the periodic images resides
         in. This is the index of the list of supercells as returned by
-        _calculate_supercell_image_r. This attribute doesn't exist until
+        _get_all_origins. This attribute doesn't exist until
         calculate_fine_phonons has been called
         dtype = 'int'
         shape = (n_ions, n_ions*n_cells_in_sc, (2*lim + 1)**3)
@@ -340,14 +340,19 @@ class InterpolationData(Data):
             dtype = 'complex'
             shape = (n_qpts, 3*n_ions, n_ions, 3)
         """
-        if not hasattr(self, 'born') or not hasattr(self, 'dielectric'):
-            dipole = False
         if asr:
             if not hasattr(self, 'force_constants_asr'):
                 self.force_constants_asr = self._enforce_acoustic_sum_rule()
             force_constants = self.force_constants_asr.magnitude
         else:
             force_constants = self.force_constants.magnitude
+
+        if not hasattr(self, 'born') or not hasattr(self, 'dielectric'):
+            dipole = False
+
+        if dipole:
+            self._dipole_correction_init()
+
         ion_mass = self.ion_mass.to('e_mass').magnitude
         sc_matrix = self.sc_matrix
         cell_origins = self.cell_origins
@@ -362,7 +367,8 @@ class InterpolationData(Data):
 
         # Build list of all possible supercell image coordinates
         lim = 2 # Supercell image limit
-        sc_image_r = self._calculate_supercell_image_r(lim)
+        sc_image_r = self._get_all_origins(
+            np.repeat(lim, 3) + 1, min_xyz=-np.repeat(lim, 3))
         # Get a list of all the unique supercell image origins and cell origins
         # in x, y, z and how to rebuild them to minimise expensive phase
         # calculations later
@@ -465,6 +471,13 @@ class InterpolationData(Data):
         return freqs, eigenvecs
 
 
+    def _dipole_correction_init(self):
+        """
+        Calculate the q-independent parts of the long range correction to the
+        dynamical matrix for efficiency. The method used is based on the
+        Ewald sum, see eqs 72-74 from Gonze and Lee PRB 55, 10355 (1997)
+        """
+
     def _calculate_dipole_correction(self, q):
         """
         Calculate the long range correction to the dynamical matrix using the
@@ -508,6 +521,10 @@ class InterpolationData(Data):
         max_cells_xyz = (a/a_mag).astype(np.int32) + 1
         n_cells_xyz = 2*max_cells_xyz + 1
         n_cells_real = n_cells_xyz.prod()
+        nxyz = self._get_all_origins(n_cells_xyz)
+        nxyz_phases = self._get_all_origins(
+            -max_cells_xyz - 1, min_xyz=max_cells_xyz, step=-1)
+        real_dr = np.einsum('ij,jk->ik', nxyz, cell_vec)
 
         # Calculate new reciprocal space cells
         b_mag = np.linalg.norm(recip, axis=1)
@@ -516,25 +533,7 @@ class InterpolationData(Data):
         max_cells_hkl = (b/b_mag).astype(np.int32) + 1
         n_cells_hkl = 2*max_cells_hkl + 1
         n_cells_recip = n_cells_hkl.prod()
-
-        nxyz = np.column_stack((
-            np.repeat(range(n_cells_xyz[0]), n_cells_xyz[1]*n_cells_xyz[2]),
-            np.repeat(np.tile(
-                range(n_cells_xyz[1]), n_cells_xyz[0]), n_cells_xyz[2]),
-            np.tile(range(n_cells_xyz[2]), n_cells_xyz[0]*n_cells_xyz[1])))
-        nxyz_phases = np.column_stack((
-            np.repeat(range(max_cells_xyz[0], -max_cells_xyz[0] - 1, -1),
-                      n_cells_xyz[1]*n_cells_xyz[2]),
-            np.repeat(np.tile(range(max_cells_xyz[1], -max_cells_xyz[1] - 1, -1),
-                              n_cells_xyz[0]), n_cells_xyz[2]),
-            np.tile(range(max_cells_xyz[2], -max_cells_xyz[2] - 1, -1),
-                    n_cells_xyz[0]*n_cells_xyz[1])))
-        real_dr = np.einsum('ij,jk->ik', nxyz, cell_vec)
-        nhkl = np.column_stack((
-            np.repeat(range(n_cells_hkl[0]), n_cells_hkl[1]*n_cells_hkl[2]),
-            np.repeat(np.tile(
-                range(n_cells_hkl[1]), n_cells_hkl[0]), n_cells_hkl[2]),
-            np.tile(range(n_cells_hkl[2]), n_cells_hkl[0]*n_cells_hkl[1])))
+        nhkl = self._get_all_origins(n_cells_hkl)
         recip_dg = np.einsum('ij,jk->ik', nhkl, recip)
 
         # Use eta = lambda * |permittivity|**(1/6)
@@ -651,6 +650,39 @@ class InterpolationData(Data):
         return np.reshape(np.transpose(E2, axes=[0, 2, 1, 3]), (3*n_ions, 3*n_ions))
 
 
+    def _get_all_origins(self, max_xyz, min_xyz=[0, 0, 0], step=1):
+        """
+        Given the max/min number of cells in each direction, get a list of all
+        possible cell origins
+
+        Parameters
+        ----------
+        max_xyz : ndarray
+            The number of cells to count to in each direction
+            dtype = 'int'
+            shape = (3,)
+        min_xyz : ndarray, optional, default [0,0,0]
+            The cell number to count from in each direction
+            dtype = 'int'
+            shape = (3,)
+        step : integer, optional, default 1
+            The step between cells
+
+        Returns
+        -------
+        origins : ndarray
+            The cell origins
+            dtype = 'int'
+            shape = (prod(max_xyz - min_xyz)/step, 3)
+        """
+        diff = np.absolute(max_xyz - min_xyz)
+        nx = np.repeat(range(min_xyz[0], max_xyz[0], step), diff[1]*diff[2])
+        ny = np.repeat(np.tile(range(min_xyz[1], max_xyz[1], step), diff[0]),
+                       diff[2])
+        nz = np.tile(range(min_xyz[2], max_xyz[2], step), diff[0]*diff[1])
+
+        return np.column_stack((nx, ny, nz))
+
     def _enforce_acoustic_sum_rule(self):
         """
         Apply a transformation to the force constants matrix so that it
@@ -745,33 +777,6 @@ class InterpolationData(Data):
         return fc
 
 
-    def _calculate_supercell_image_r(self, lim):
-        """
-        Calculate a list of all the possible supercell image coordinates up to
-        a certain limit
-
-        Parameters
-        ----------
-        lim : int
-            The supercell image limit
-
-        Returns
-        -------
-        sc_image_r : ndarray
-            A list of the possible supercell image coordinates
-            e.g. if lim = 2: [[-2, -2, -2], [-2, -2, -1] ... [2, 2, 2]]
-            dtype = 'int'
-            shape = ((2*lim + 1)**3, 3)
-        """
-        irange = range(-lim, lim + 1)
-        inum = 2*lim + 1
-        scx = np.repeat(irange, inum**2)
-        scy = np.tile(np.repeat(irange, inum), inum)
-        scz = np.tile(irange, inum**2)
-
-        return np.column_stack((scx, scy, scz))
-
-
     def _calculate_phases(self, qpt, unique_sc_offsets, unique_sc_i, unique_cell_origins, unique_cell_i):
         """
         Calculate the phase factors for the supercell images and cells for a
@@ -788,7 +793,7 @@ class InterpolationData(Data):
             A list containing 3 lists of the unique supercell image offsets in
             each direction. The supercell offset is calculated by multiplying
             the supercell matrix by the supercell image indices (obtained by
-            _calculate_supercell_image_r()). A list of lists rather than a
+            _get_all_origins()). A list of lists rather than a
             Numpy array is used as the 3 lists are independent and their size
             is not known beforehand
         unique_sc_i : ndarray
@@ -870,10 +875,12 @@ class InterpolationData(Data):
         inv_ws_sq = 1.0/np.sum(np.square(ws_list[1:]), axis=1)
 
         # Get Cartesian coords of supercell images and ions in supercell
-        sc_image_r = self._calculate_supercell_image_r(lim)
+        sc_image_r = self._get_all_origins(
+            np.repeat(lim, 3) + 1, min_xyz=-np.repeat(lim, 3))
         sc_image_cart = np.einsum('ij,jk->ik', sc_image_r, sc_vecs)
-        sc_ion_r = np.dot(np.tile(ion_r, (n_cells_in_sc, 1)) + np.repeat(
-            cell_origins, n_ions, axis=0), np.linalg.inv(np.transpose(sc_matrix)))
+        sc_ion_r = np.dot((np.tile(ion_r, (n_cells_in_sc, 1))
+                           + np.repeat(cell_origins, n_ions, axis=0)),
+                          np.linalg.inv(np.transpose(sc_matrix)))
         sc_ion_cart = np.einsum('ij,jk->ik', sc_ion_r, sc_vecs)
 
         sc_image_i = np.full((self.n_ions, 
@@ -887,9 +894,11 @@ class InterpolationData(Data):
                 dists = sc_ion_cart[i] - sc_ion_cart[j] - sc_image_cart
                 # Compare ion-ion supercell vector and all ws point vectors
                 dist_ws_points = np.einsum('ij,kj->ik', dists, ws_list[1:])
-                dist_wsp_frac = np.absolute(np.einsum('ij,j->ij', dist_ws_points, inv_ws_sq))
+                dist_wsp_frac = np.absolute(
+                    np.einsum('ij,j->ij', dist_ws_points, inv_ws_sq))
                 # Count images if ion < half distance to all ws points
-                sc_images = np.where(np.amax(dist_wsp_frac, axis=1) <= (0.5*cutoff_scale + 0.001))[0]
+                sc_images = np.where((np.amax(dist_wsp_frac, axis=1)
+                                      <= (0.5*cutoff_scale + 0.001)))[0]
                 sc_image_i[i, j, 0:len(sc_images)] = sc_images
                 n_sc_images[i, j] = len(sc_images)
 

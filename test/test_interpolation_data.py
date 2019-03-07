@@ -228,7 +228,7 @@ class TestInterpolatePhononsLZO(unittest.TestCase):
                     for x in f.readline().split()]
 
 
-    def test_calculate_supercell_image_r_lim_1(self):
+    def test_get_all_origins_lim_1(self):
         expected_image_r = np.array([[-1, -1, -1],
                                      [-1, -1,  0],
                                      [-1, -1,  1],
@@ -257,13 +257,15 @@ class TestInterpolatePhononsLZO(unittest.TestCase):
                                      [ 1,  1,  0],
                                      [ 1,  1,  1]])
         lim = 1
-        image_r = self.data._calculate_supercell_image_r(lim)
+        image_r = self.data._get_all_origins(np.repeat(lim, 3) + 1,
+                                             min_xyz=-np.repeat(lim, 3))
         npt.assert_equal(image_r, expected_image_r)
 
-    def test_calculate_supercell_image_r_lim_2(self):
+    def test_get_all_origins_lim_2(self):
         expected_image_r = np.loadtxt(os.path.join(self.path, 'lzo_sc_image_r.txt'))
         lim = 2
-        image_r = self.data._calculate_supercell_image_r(lim)
+        image_r = self.data._get_all_origins(np.repeat(lim, 3) + 1,
+                                             min_xyz=-np.repeat(lim, 3))
         npt.assert_equal(image_r, expected_image_r)
 
     def test_calculate_phases_qpt(self):
