@@ -327,13 +327,13 @@ class TestInterpolatePhononsLZO(unittest.TestCase):
         self.data.calculate_fine_phonons(self.qpts, asr=False)
         npt.assert_allclose(self.data.freqs.to('hartree').magnitude,
                             self.expctd_freqs_no_asr.to('hartree').magnitude,
-                            rtol=1e-6)
+                            atol=1e-10)
 
     def test_calculate_fine_phonons_asr(self):
         self.data.calculate_fine_phonons(self.qpts, asr=True)
         npt.assert_allclose(self.data.freqs.to('hartree').magnitude,
                             self.expctd_freqs_asr.to('hartree').magnitude,
-                            rtol=1e-6)
+                            atol=1e-10)
 
     def test_enforce_acoustic_sum_rule(self):
         expected_fc_mat = np.load(os.path.join(self.path, 'lzo_fc_mat_asr.npy'))
@@ -572,12 +572,14 @@ class TestInterpolatePhononsGraphite(unittest.TestCase):
     def test_calculate_fine_phonons_no_asr(self):
         self.data.calculate_fine_phonons(self.qpts, asr=False)
         npt.assert_allclose(self.data.freqs.to('hartree').magnitude,
-                            self.expctd_freqs_no_asr.to('hartree').magnitude)
+                            self.expctd_freqs_no_asr.to('hartree').magnitude,
+                            atol=1e-10)
 
     def test_calculate_fine_phonons_asr(self):
         self.data.calculate_fine_phonons(self.qpts, asr=True)
         npt.assert_allclose(self.data.freqs.to('hartree').magnitude,
-                            self.expctd_freqs_asr.to('hartree').magnitude)
+                            self.expctd_freqs_asr.to('hartree').magnitude,
+                            atol=1e-10)
 
     def test_enforce_acoustic_sum_rule(self):
         expected_fc_mat = np.load(os.path.join(self.path, 'graphite_fc_mat_asr.npy'))
