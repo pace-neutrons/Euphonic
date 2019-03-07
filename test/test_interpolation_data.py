@@ -425,6 +425,10 @@ class TestInputReadGraphite(unittest.TestCase):
         self.assertEqual(self.data.n_cells_in_sc,
                      self.expctd_data.n_cells_in_sc)
 
+    def test_cell_origins_read(self):
+        npt.assert_allclose(self.data.cell_origins,
+                             self.expctd_data.cell_origins)
+
     def test_fc_mat_cell0_i0_j0_read(self):
         npt.assert_allclose(self.data.force_constants[0:3, 0:3].magnitude,
                             self.expctd_data.fc_mat_cell0_i0_j0.magnitude)
@@ -586,3 +590,188 @@ class TestInterpolatePhononsGraphite(unittest.TestCase):
         fc_mat = self.data._enforce_acoustic_sum_rule().to(
                 ureg.hartree/ureg.bohr**2).magnitude
         npt.assert_allclose(fc_mat, expected_fc_mat, atol=1e-18)
+
+
+class TestInputReadQuartz(unittest.TestCase):
+
+    def setUp(self):
+        # Create trivial function object so attributes can be assigned to it
+        expctd_data = lambda:0
+        expctd_data.n_ions = 9
+        expctd_data.n_branches = 27
+        expctd_data.cell_vec = np.array([
+            [2.42617588, -4.20225989,  0.00000000],
+            [2.42617588,  4.20225989,  0.00000000],
+            [0.00000000,  0.00000000,  5.35030451]])*ureg('angstrom')
+        expctd_data.ion_r = np.array([
+            [0.41170811, 0.27568186, 0.27940760],
+            [0.72431814, 0.13602626, 0.94607427],
+            [0.86397374, 0.58829189, 0.61274094],
+            [0.13602626, 0.72431814, 0.05392573],
+            [0.58829189, 0.86397374, 0.38725906],
+            [0.27568186, 0.41170811, 0.72059240],
+            [0.46496011, 0.00000000, 0.16666667],
+            [0.00000000, 0.46496011, 0.83333333],
+            [0.53503989, 0.53503989, 0.50000000]])
+        expctd_data.ion_type = np.array(
+            ['O', 'O', 'O', 'O', 'O', 'O', 'Si', 'Si', 'Si'])
+        expctd_data.ion_mass = np.array(
+            [15.9994000, 15.9994000, 15.9994000,
+             15.9994000, 15.9994000, 15.9994000,
+             28.0855000, 28.0855000, 28.0855000])*ureg('amu')
+        expctd_data.sc_matrix = np.array([[5, 0, 0],
+                                          [0, 5, 0],
+                                          [0, 0, 4]])
+        expctd_data.n_cells_in_sc = 100
+        expctd_data.fc_mat_cell0_i0_j0 = np.array([
+            [0.22324308, 0.29855096, 0.31240272],
+            [0.29855096, 0.43968813, 0.34437270],
+            [0.31240272, 0.34437270, 0.33448280]])*ureg('hartree/bohr**2')
+        expctd_data.fc_mat_cell10_i2_j3 = np.array([
+            [ 6.37874988e-05, 1.99404810e-08, -1.85830030e-05],
+            [-2.73116279e-04, 4.40511248e-04, -9.05395392e-05],
+            [-1.73624413e-04, 2.33322837e-04,  2.17526152e-05]])*ureg(
+                'hartree/bohr**2')
+        expctd_data.cell_origins = np.array(
+            [[0, 0, 0], [1, 0, 0], [2, 0, 0], [3, 0, 0], [4, 0, 0],
+             [0, 1, 0], [1, 1, 0], [2, 1, 0], [3, 1, 0], [4, 1, 0],
+             [0, 2, 0], [1, 2, 0], [2, 2, 0], [3, 2, 0], [4, 2, 0],
+             [0, 3, 0], [1, 3, 0], [2, 3, 0], [3, 3, 0], [4, 3, 0],
+             [0, 4, 0], [1, 4, 0], [2, 4, 0], [3, 4, 0], [4, 4, 0],
+             [0, 0, 1], [1, 0, 1], [2, 0, 1], [3, 0, 1], [4, 0, 1],
+             [0, 1, 1], [1, 1, 1], [2, 1, 1], [3, 1, 1], [4, 1, 1],
+             [0, 2, 1], [1, 2, 1], [2, 2, 1], [3, 2, 1], [4, 2, 1],
+             [0, 3, 1], [1, 3, 1], [2, 3, 1], [3, 3, 1], [4, 3, 1],
+             [0, 4, 1], [1, 4, 1], [2, 4, 1], [3, 4, 1], [4, 4, 1],
+             [0, 0, 2], [1, 0, 2], [2, 0, 2], [3, 0, 2], [4, 0, 2],
+             [0, 1, 2], [1, 1, 2], [2, 1, 2], [3, 1, 2], [4, 1, 2],
+             [0, 2, 2], [1, 2, 2], [2, 2, 2], [3, 2, 2], [4, 2, 2],
+             [0, 3, 2], [1, 3, 2], [2, 3, 2], [3, 3, 2], [4, 3, 2],
+             [0, 4, 2], [1, 4, 2], [2, 4, 2], [3, 4, 2], [4, 4, 2],
+             [0, 0, 3], [1, 0, 3], [2, 0, 3], [3, 0, 3], [4, 0, 3],
+             [0, 1, 3], [1, 1, 3], [2, 1, 3], [3, 1, 3], [4, 1, 3],
+             [0, 2, 3], [1, 2, 3], [2, 2, 3], [3, 2, 3], [4, 2, 3],
+             [0, 3, 3], [1, 3, 3], [2, 3, 3], [3, 3, 3], [4, 3, 3],
+             [0, 4, 3], [1, 4, 3], [2, 4, 3], [3, 4, 3], [4, 4, 3]])
+        expctd_data.born = np.array([
+            [[-1.43415314, -0.56480184, -0.51390346],
+             [-0.51017266, -1.90914488, -0.58504551],
+             [-0.44604816, -0.62037227, -1.73309837]],
+            [[-2.25587456,  0.03575158,  0.76361601],
+             [ 0.09038076, -1.08742347, -0.15253070],
+             [ 0.76028223, -0.07610290, -1.73309837]],
+            [[-1.32495121,  0.44710649, -0.24971254],
+             [ 0.50174463, -2.01837869,  0.73757621],
+             [-0.31423365,  0.69647517, -1.73309837]],
+            [[-2.25587456, -0.03575158, -0.76361601],
+             [-0.09038076, -1.08742347, -0.15253070],
+             [-0.76028223, -0.07610290, -1.73309837]],
+            [[-1.32495121, -0.44710649,  0.24971254],
+             [-0.50174463, -2.01837869,  0.73757621],
+             [ 0.31423365,  0.69647517, -1.73309837]],
+            [[-1.43415314,  0.56480184,  0.51390346],
+             [ 0.51017266, -1.90914488, -0.58504551],
+             [ 0.44604816, -0.62037227, -1.73309837]],
+            [[ 3.50466855,  0.27826283,  0.23601960],
+             [ 0.27826283,  3.18335830,  0.13626485],
+             [-0.27183190, -0.15694222,  3.46752205]],
+            [[ 3.50466855, -0.27826283, -0.23601960],
+             [-0.27826283,  3.18335830,  0.13626485],
+             [ 0.27183190, -0.15694222,  3.46752205]],
+            [[ 3.02266843,  0.00000000,  0.00000000],
+             [ 0.00000000,  3.66532367, -0.27253140],
+             [ 0.00000000,  0.31388444,  3.46752205]]])*ureg('e')
+        expctd_data.dielectric = np.array([
+            [2.49104301, 0.00000000, 0.00000000],
+            [0.00000000, 2.49104301, 0.00000000],
+            [0.00000000, 0.00000000, 2.52289805]])
+        self.expctd_data = expctd_data
+
+        self.seedname = 'quartz'
+        self.path = os.path.join('test', 'data', 'interpolation', 'quartz')
+        data = InterpolationData(self.seedname, self.path)
+        self.data = data
+
+    def test_n_ions_read(self):
+        self.assertEqual(self.data.n_ions, self.expctd_data.n_ions)
+
+    def test_n_branches_read(self):
+        self.assertEqual(self.data.n_branches, self.expctd_data.n_branches)
+
+    def test_cell_vec_read(self):
+        npt.assert_allclose(self.data.cell_vec.to('bohr').magnitude,
+                            self.expctd_data.cell_vec.to('bohr').magnitude)
+
+    def test_ion_r_read(self):
+        npt.assert_allclose(self.data.ion_r, self.expctd_data.ion_r)
+
+    def test_ion_type_read(self):
+        npt.assert_array_equal(self.data.ion_type, self.expctd_data.ion_type)
+
+    def test_ion_mass_read(self):
+        npt.assert_allclose(self.data.ion_mass.magnitude,
+                            self.expctd_data.ion_mass.magnitude)
+
+    def test_sc_matrix_read(self):
+        npt.assert_allclose(self.data.sc_matrix, self.expctd_data.sc_matrix)
+
+    def test_n_cells_in_sc_read(self):
+        self.assertEqual(self.data.n_cells_in_sc,
+                         self.expctd_data.n_cells_in_sc)
+
+    def test_cell_origins_read(self):
+        npt.assert_allclose(self.data.cell_origins,
+                             self.expctd_data.cell_origins)
+
+    def test_born_read(self):
+        npt.assert_allclose(self.data.born.magnitude,
+                             self.expctd_data.born.magnitude)
+
+    def test_dielctric_read(self):
+        npt.assert_allclose(self.data.dielectric,
+                             self.expctd_data.dielectric)
+
+    def test_fc_mat_cell0_i0_j0_read(self):
+        npt.assert_allclose(self.data.force_constants[0:3, 0:3].magnitude,
+                            self.expctd_data.fc_mat_cell0_i0_j0.magnitude)
+
+    def test_fc_mat_cell10_i2_j3read(self):
+        # 1st fc index = 3*cell*n_ions + 3*j = 3*10*4 + 3 = 129
+        npt.assert_allclose(self.data.force_constants[129:132, 6:9].magnitude,
+                            self.expctd_data.fc_mat_cell10_i2_j3.magnitude)
+
+    def test_fc_mat_read(self):
+        expected_fc_mat = np.load(os.path.join(
+            self.path, 'quartz_fc_mat_no_asr.npy'))*ureg('hartree/bohr**2')
+        npt.assert_allclose(self.data.force_constants.magnitude,
+                            expected_fc_mat.magnitude)
+
+
+class TestInterpolatePhononsQuartz(unittest.TestCase):
+
+    def setUp(self):
+        seedname = 'quartz'
+        self.path = os.path.join('test', 'data', 'interpolation', 'quartz')
+        self.qpts = np.array([[ 0.00, 0.00, 0.50],
+                              [-0.25, 0.50, 0.50]])
+        self.expctd_freqs_dipole = np.array([
+            [0.00021293, 0.00056589, 0.00056590, 0.00075771, 0.00083485,
+             0.00083485, 0.00092258, 0.00119698, 0.00119698, 0.00175516,
+             0.00182881, 0.00191025, 0.00191027, 0.00205705, 0.00205705,
+             0.00259491, 0.00259491, 0.00355700, 0.00358489, 0.00362570,
+             0.00362570, 0.00484908, 0.00492808, 0.00492808, 0.00505040,
+             0.00553676, 0.00553677],
+            [0.00029664, 0.00044691, 0.00045286, 0.00083218, 0.00085090,
+             0.00107911, 0.00122936, 0.00131583, 0.00142863, 0.00154578,
+             0.00166267, 0.00179816, 0.00189441, 0.00191534, 0.00205378,
+             0.00246936, 0.00278196, 0.00315079, 0.00370003, 0.00376130,
+             0.00380875, 0.00488787, 0.00490533, 0.00490608, 0.00526644,
+             0.00531051, 0.00540936]])*ureg('hartree')
+        data = InterpolationData(seedname, self.path)
+        self.data = data
+
+    def test_calculate_fine_phonons_dipole(self):
+        self.data.calculate_fine_phonons(self.qpts, asr=True, dipole=True)
+        npt.assert_allclose(self.data.freqs.to('hartree').magnitude,
+                            self.expctd_freqs_dipole.to('hartree').magnitude,
+                            atol=1e-8)
