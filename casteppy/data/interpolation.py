@@ -482,7 +482,6 @@ class InterpolationData(Data):
         recip = reciprocal_lattice(cell_vec)
         n_ions = self.n_ions
         ion_r = self.ion_r
-        born = self.born.magnitude
         dielectric = self.dielectric
         inv_dielectric = np.linalg.inv(dielectric)
         epsilon = 1e-10
@@ -548,6 +547,24 @@ class InterpolationData(Data):
         real_diag = np.sum(H_ab, axis=2)
         real_diag *= eta**3/math.sqrt(np.linalg.det(dielectric))
 
+        # Calculate reciprocal space diagonal term
+        recip_diag = np.zeros((n_ions, n_ions, 3, 3), dtype=np.complex128)
+        g0 = -np.einsum('ij,i->j', recip, max_cells_hkl)
+        for k in range(n_cells_recip):
+            diff = g0 + recip_dg[k]
+            recip_len = math.sqrt(np.sum(np.einsum('i,j', diff, diff)*dielectric))/eta
+            k_len_2 = (np.sum(np.einsum('i,j', diff, diff)*dielectric))/(4*eta**2)
+            k_len = math.sqrt(k_len_2)
+            if k_len > epsilon and k_len < recip_cutoff:
+                recip_exp = np.exp(-k_len_2)/k_len_2
+                for i in range(n_ions):
+                    for j in range(n_ions):
+                        phase = 2j*math.pi*np.sum((ion_r[i] - ion_r[j])*(nhkl[k] - max_cells_hkl))
+                        phase_exp = np.exp(phase)
+                        recip_diag[i, j] += np.einsum('i,j', diff, diff)*phase_exp*recip_exp
+        cell_volume = np.dot(cell_vec[0], np.cross(cell_vec[1], cell_vec[2]))
+        recip_diag *= math.pi/(cell_volume*eta**2)# After scaling
+
         self.max_cells_xyz = max_cells_xyz
         self.max_cells_hkl = max_cells_hkl
         self.eta = eta
@@ -558,6 +575,7 @@ class InterpolationData(Data):
         self.real_in_range = real_in_range[:, :, :max_n_real_in_range]
         self.H_ab = H_ab[:, :, :max_n_real_in_range, :, :]
         self.real_diag = real_diag
+        self.recip_diag = recip_diag
 
 
     def _calculate_dipole_correction(self, q):
@@ -609,6 +627,7 @@ class InterpolationData(Data):
         n_cells_recip = n_cells_hkl.prod()
         nhkl = self._get_all_origins(n_cells_hkl)
         recip_dg = np.einsum('ij,jk->ik', nhkl, recip)
+        g0 = -np.einsum('ij,i->j', recip, max_cells_hkl)
 
         # Calculate real space phase factor
         phases = np.exp(2j*math.pi*np.einsum('i,ji->j', q_norm, nxyz_phases))
@@ -627,24 +646,6 @@ class InterpolationData(Data):
             for j in range(i):
                 real_term[i, j] = np.conj(real_term[j,i])
 
-        # Calculate diagonal reciprocal term
-        recip_diag_E2 = np.zeros((n_ions, n_ions, 3, 3), dtype=np.complex128)
-        g0 = -np.einsum('ij,i->j', recip, max_cells_hkl)
-        for k in range(n_cells_recip):
-            diff = g0 + recip_dg[k]
-            recip_len = math.sqrt(np.sum(np.einsum('i,j', diff, diff)*dielectric))/eta
-            k_len_2 = (np.sum(np.einsum('i,j', diff, diff)*dielectric))/(4*eta**2)
-            k_len = math.sqrt(k_len_2)
-            if k_len > epsilon and k_len < recip_cutoff:
-                recip_exp = np.exp(-k_len_2)/k_len_2
-                for i in range(n_ions):
-                    for j in range(n_ions):
-                        phase = 2j*math.pi*np.sum((ion_r[i] - ion_r[j])*(nhkl[k] - max_cells_hkl))
-                        phase_exp = np.exp(phase)
-                        recip_diag_E2[i, j] += np.einsum('i,j', diff, diff)*phase_exp*recip_exp
-        cell_volume = np.dot(cell_vec[0], np.cross(cell_vec[1], cell_vec[2]))
-        recip_diag_E2 *= math.pi/(cell_volume*eta**2)# After scaling
-
         # Calculate general reciprocal term
         q_recip = np.dot(q_norm, recip)
         recip_E2 = np.zeros((n_ions, n_ions, 3, 3), dtype=np.complex128)
@@ -660,6 +661,7 @@ class InterpolationData(Data):
                         phase = 2j*math.pi*np.sum((ion_r[i] - ion_r[j])*(nhkl[k] - max_cells_hkl))
                         phase_exp = np.exp(phase + phase_q)
                         recip_E2[i,j] += np.einsum('i,j', diff_q, diff_q)*phase_exp*recip_exp
+        cell_volume = np.dot(cell_vec[0], np.cross(cell_vec[1], cell_vec[2]))
         recip_E2 *= math.pi/(cell_volume*eta**2)# After scaling
 
         # Fill in remaining entries by symmetry
@@ -680,7 +682,7 @@ class InterpolationData(Data):
                             *(recip_E2[i,j] - real_term[i,j]))
                         E2_diag[a,b] += np.sum(
                             np.einsum('i,j', born[i,a,:], born[j,b,:])
-                            *(recip_diag_E2[i,j] - self.real_diag[i,j]))
+                            *(self.recip_diag[i,j] - self.real_diag[i,j]))
 
             # Symmetrise diagonal and subtract
             E2_diag = 0.5*(E2_diag + np.transpose(E2_diag))
