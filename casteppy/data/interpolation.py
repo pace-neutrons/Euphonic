@@ -861,25 +861,8 @@ class InterpolationData(Data):
             sq_fc[3*nc*n_ions:3*(nc+1)*n_ions, :] = np.transpose(
                 force_constants[fc_indices, :])
 
-        # Find acoustic modes, they should have the sum of c of m amplitude
-        # squared = mass (note: have not actually included mass weighting
-        # here so assume mass = 1.0)
-        evals, evecs = np.linalg.eigh(sq_fc)
-        n_sc_branches = n_ions_in_sc*3
-        evec_reshape = np.reshape(
-            np.transpose(evecs), (n_sc_branches, n_ions_in_sc, 3))
-        # Sum displacements for all ions in each branch
-        c_of_m_disp = np.sum(evec_reshape, axis=1)
-        c_of_m_disp_sq = np.sum(np.abs(c_of_m_disp)**2, axis=1)
-        sensitivity = 0.5
-        sc_mass = 1.0*n_cells_in_sc
-        # Check number of acoustic modes
-        if np.sum(c_of_m_disp_sq > sensitivity*sc_mass) < 3:
-            print('Error correcting FC matrix for acoustic sum rule, could ' +
-                  'not find 3 acoustic modes. Returning uncorrected FC matrix')
-            return self.force_constants
-        # Find indices of acoustic modes (3 largest c of m displacements)
-        ac_i = np.argsort(c_of_m_disp_sq)[-3:]
+        ac_i, evals, evecs = self._find_acoustic_modes(sq_fc)
+
         # Correct force constant matrix - set acoustic modes to almost zero
         fc_tol = 1e-8*np.min(np.abs(evals))
         for ac in ac_i:
@@ -900,6 +883,56 @@ class InterpolationData(Data):
         eigenvectors. For more information see section 2.3.4:
         http://www.tcm.phy.cam.ac.uk/castep/Phonons_Guide/Castep_Phonons.html
         """
+
+    def _find_acoustic_modes(self, dyn_mat):
+        """
+        Find the acoustic modes from a dynamical matrix, they should have
+        the sum of c of m amplitude squared = mass (note: have not actually
+        included mass weighting here so assume mass = 1.0)
+
+        Parameters
+        ----------
+        dyn_mat : ndarray
+            A dynamical matrix
+            dtype = 'complex'
+            shape = (3*n_ions, 3*n_ions)
+
+        Returns
+        -------
+        ac_i : ndarray
+            The indices of the acoustic modes
+            dtype = 'int'
+            shape = (3,)
+        evals : ndarray
+            Dynamical matrix eigenvalues
+            dtype = 'float'
+            shape = (3*n_ions)
+        evecs : ndarray
+            Dynamical matrix eigenvectors
+            dtype = 'complex'
+            shape = (3*n_ions, n_ions, 3)
+        """
+        n_branches = dyn_mat.shape[0]
+        n_ions = int(n_branches/3)
+
+        evals, evecs = np.linalg.eigh(dyn_mat)
+        print(n_branches)
+        evec_reshape = np.reshape(
+            np.transpose(evecs), (n_branches, n_ions, 3))
+        # Sum displacements for all ions in each branch
+        c_of_m_disp = np.sum(evec_reshape, axis=1)
+        c_of_m_disp_sq = np.sum(np.abs(c_of_m_disp)**2, axis=1)
+        sensitivity = 0.5
+        sc_mass = 1.0*n_ions
+        # Check number of acoustic modes
+        if np.sum(c_of_m_disp_sq > sensitivity*sc_mass) < 3:
+            print('Error correcting FC matrix for acoustic sum rule, could ' +
+                  'not find 3 acoustic modes. Returning uncorrected FC matrix')
+            return self.force_constants
+        # Find indices of acoustic modes (3 largest c of m displacements)
+        ac_i = np.argsort(c_of_m_disp_sq)[-3:]
+
+        return ac_i, evals, evecs
 
 
     def _calculate_phases(self, q, unique_sc_offsets, unique_sc_i, unique_cell_origins, unique_cell_i):
