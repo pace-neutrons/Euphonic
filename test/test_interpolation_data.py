@@ -326,20 +326,20 @@ class TestInterpolatePhononsLZO(unittest.TestCase):
         npt.assert_equal(self.data.sc_image_i, expctd_sc_image_i)
 
     def test_calculate_fine_phonons_no_asr(self):
-        self.data.calculate_fine_phonons(self.qpts, asr=False)
+        self.data.calculate_fine_phonons(self.qpts)
         npt.assert_allclose(self.data.freqs.to('hartree').magnitude,
                             self.expctd_freqs_no_asr.to('hartree').magnitude,
                             atol=1e-10)
 
-    def test_calculate_fine_phonons_asr(self):
-        self.data.calculate_fine_phonons(self.qpts, asr=True)
+    def test_calculate_fine_phonons_realspace_asr(self):
+        self.data.calculate_fine_phonons(self.qpts, asr='realspace')
         npt.assert_allclose(self.data.freqs.to('hartree').magnitude,
                             self.expctd_freqs_asr.to('hartree').magnitude,
                             atol=1e-10)
 
-    def test_enforce_acoustic_sum_rule(self):
+    def test_enforce_realspace_acoustic_sum_rule(self):
         expected_fc_mat = np.load(os.path.join(self.path, 'lzo_fc_mat_asr.npy'))
-        fc_mat = self.data._enforce_acoustic_sum_rule().to(
+        fc_mat = self.data._enforce_realspace_asr().to(
                 ureg.hartree/ureg.bohr**2).magnitude
         npt.assert_allclose(fc_mat, expected_fc_mat, atol=1e-18)
 
@@ -576,20 +576,20 @@ class TestInterpolatePhononsGraphite(unittest.TestCase):
         npt.assert_equal(self.data.sc_image_i, expctd_sc_image_i)
 
     def test_calculate_fine_phonons_no_asr(self):
-        self.data.calculate_fine_phonons(self.qpts, asr=False)
+        self.data.calculate_fine_phonons(self.qpts)
         npt.assert_allclose(self.data.freqs.to('hartree').magnitude,
                             self.expctd_freqs_no_asr.to('hartree').magnitude,
                             atol=1e-10)
 
-    def test_calculate_fine_phonons_asr(self):
-        self.data.calculate_fine_phonons(self.qpts, asr=True)
+    def test_calculate_fine_phonons_realspace_asr(self):
+        self.data.calculate_fine_phonons(self.qpts, asr='realspace')
         npt.assert_allclose(self.data.freqs.to('hartree').magnitude,
                             self.expctd_freqs_asr.to('hartree').magnitude,
                             atol=1e-10)
 
-    def test_enforce_acoustic_sum_rule(self):
+    def test_enforce_realspace_acoustic_sum_rule(self):
         expected_fc_mat = np.load(os.path.join(self.path, 'graphite_fc_mat_asr.npy'))
-        fc_mat = self.data._enforce_acoustic_sum_rule().to(
+        fc_mat = self.data._enforce_realspace_asr().to(
                 ureg.hartree/ureg.bohr**2).magnitude
         npt.assert_allclose(fc_mat, expected_fc_mat, atol=1e-18)
 
@@ -773,7 +773,7 @@ class TestInterpolatePhononsQuartz(unittest.TestCase):
         self.data = data
 
     def test_calculate_fine_phonons_dipole(self):
-        self.data.calculate_fine_phonons(self.qpts, asr=True, dipole=True)
+        self.data.calculate_fine_phonons(self.qpts, asr='realspace', dipole=True)
         npt.assert_allclose(self.data.freqs.to('hartree').magnitude,
                             self.expctd_freqs_dipole.to('hartree').magnitude,
                             atol=1e-8)

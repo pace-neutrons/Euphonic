@@ -86,6 +86,11 @@ class InterpolationData(Data):
         exist until calculate_fine_phonons has been called
         dtype = 'int'
         shape = (n_ions, n_ions*n_cells_in_sc)
+    max_sc_images : int
+        The maximum number of periodic supercell images over all ij
+        displacements. This is required for efficiency when summing phases
+        over all images, so we only have to sum up to the maximum *actual*
+        images, not up to the maximum possible images
     sc_image_i : ndarray
         The index describing the supercell each of the periodic images resides
         in. This is the index of the list of supercells as returned by
@@ -300,7 +305,7 @@ class InterpolationData(Data):
             pass
 
 
-    def calculate_fine_phonons(self, qpts, asr=True, precondition=False,
+    def calculate_fine_phonons(self, qpts, asr=None, precondition=False,
                                set_attrs=True, dipole=True):
         """
         Calculate phonon frequencies and eigenvectors at specified q-points
@@ -314,9 +319,11 @@ class InterpolationData(Data):
             The q-points to interpolate onto
             dtype = 'float'
             shape = (n_qpts, 3)
-        asr : boolean, optional, default True
-            Whether to apply an acoustic sum rule correction to the force
-            constant matrix
+        asr : {‘realspace’, ‘reciprocal’}, optional, default None
+            Which acoustic sum rule correction to apply. 'realspace' applies
+            the correction to the force constant matrix in real space.
+            'reciprocal' applies the correction to the dynamical matrix at
+            every q-point
         precondition : boolean, optional, default False
             Whether to precondition the dynamical matrix using the
             eigenvectors from the previous q-point
@@ -340,16 +347,15 @@ class InterpolationData(Data):
             dtype = 'complex'
             shape = (n_qpts, 3*n_ions, n_ions, 3)
         """
-        if asr:
+        if asr == 'realspace':
             if not hasattr(self, 'force_constants_asr'):
-                self.force_constants_asr = self._enforce_acoustic_sum_rule()
+                self.force_constants_asr = self._enforce_realspace_asr()
             force_constants = self.force_constants_asr.magnitude
         else:
             force_constants = self.force_constants.magnitude
 
         if not hasattr(self, 'born') or not hasattr(self, 'dielectric'):
             dipole = False
-
         if dipole:
             self._dipole_correction_init()
 
@@ -382,16 +388,13 @@ class InterpolationData(Data):
                 sc_offsets[:, i], return_inverse=True)
             unique_cell_origins[i], unique_cell_i[:, i] = np.unique(
                 self.cell_origins[:, i], return_inverse=True)
-        # Make sc_phases 1 longer than necessary, so when summing phases for
-        # supercell images if there is no image, an index of -1 and hence
-        # phase of zero can be used
-        sc_phases = np.zeros(len(sc_image_r) + 1, dtype=np.complex128)
+
 
         # Construct list of supercell ion images
         if not hasattr(self, 'sc_image_i'):
             self._calculate_supercell_images(lim)
         n_sc_images = self.n_sc_images
-        max_sc_images = np.max(self.n_sc_images)
+        max_sc_images = self.max_sc_images
         sc_image_i = self.sc_image_i
 
         # Precompute fc matrix weighted by number of supercell ion images
@@ -405,36 +408,23 @@ class InterpolationData(Data):
         masses = np.tile(np.repeat(ion_mass, 3), (3*n_ions, 1))
         dyn_mat_weighting = 1/np.sqrt(masses*np.transpose(masses))
 
+        if asr == 'reciprocal':
+            dyn_mat_gamma = self._calculate_dyn_mat(
+                [0., 0., 0.], fc_img_weighted, unique_sc_offsets, unique_sc_i,
+                unique_cell_origins, unique_cell_i)
+            dyn_mat_gamma *= dyn_mat_weighting
+
         prev_evecs = np.identity(3*n_ions)
         for q in range(n_qpts):
             qpt = qpts[q, :]
-            dyn_mat = np.zeros((n_ions*3, n_ions*3), dtype=np.complex128)
 
-            # Cumulant method: for each ij ion-ion displacement sum phases for
-            # all possible supercell images, then multiply by the cell phases
-            # to account for j ions in different cells. Then multiply by the
-            # image weighted fc matrix for each 3 x 3 ij displacement
-            sc_phases[:-1], cell_phases = self._calculate_phases(
-                qpt, unique_sc_offsets, unique_sc_i, unique_cell_origins,
-                unique_cell_i)
-            sc_phase_sum = np.sum(
-                sc_phases[sc_image_i[:, :, 0:max_sc_images]], axis=2)
-
-            ij_phases = sc_phase_sum*np.tile(
-                np.repeat(cell_phases, n_ions), (n_ions, 1))
-            full_dyn_mat = np.transpose(
-                ij_phases.repeat(3, axis=1).repeat(3, axis=0))*fc_img_weighted
-            for nc in range(n_cells_in_sc):
-                dyn_mat += full_dyn_mat[3*nc*n_ions:3*(nc+1)*n_ions, :]
+            dyn_mat = self._calculate_dyn_mat(
+                qpt, fc_img_weighted, unique_sc_offsets, unique_sc_i,
+                unique_cell_origins, unique_cell_i)
 
             if dipole:
                 dipole_corr = self._calculate_dipole_correction(qpt)
-                dyn_mat += np.conj(dipole_corr)
-
-            # Need to transpose dyn_mat to have [i, j] ion indices, as it was
-            # formed by summing the force_constants matrix which has [j, i]
-            # indices
-            dyn_mat = np.transpose(dyn_mat)
+                dyn_mat += dipole_corr
 
             # Mass weight dynamical matrix
             dyn_mat *= dyn_mat_weighting
@@ -469,6 +459,89 @@ class InterpolationData(Data):
             self.eigenvecs = eigenvecs
 
         return freqs, eigenvecs
+
+
+    def _calculate_dyn_mat(self, q, fc_img_weighted, unique_sc_offsets,
+                           unique_sc_i, unique_cell_origins, unique_cell_i):
+        """
+        Calculate the non mass weighted dynamical matrix at a specified
+        q-point from the image weighted force constants matrix and the indices
+        specifying the periodic images. See eq. 1.5:
+        http://www.tcm.phy.cam.ac.uk/castep/Phonons_Guide/Castep_Phonons.html
+
+        Parameters
+        ----------
+        q : ndarray
+            The q-point to calculate the correction for
+            dtype = 'float'
+            shape = (3,)
+        fc_img_weighted : ndarray
+            The force constants matrix weighted by the number of supercell ion
+            images for each ij displacement
+            dtype = 'float'
+            shape = (3*n_ions*n_cells_in_sc, 3*n_ions)
+        unique_sc_offsets : list of lists of ints
+            A list containing 3 lists of the unique supercell image offsets in
+            each direction. The supercell offset is calculated by multiplying
+            the supercell matrix by the supercell image indices (obtained by
+            _get_all_origins()). A list of lists rather than a
+            Numpy array is used as the 3 lists are independent and their size
+            is not known beforehand
+        unique_sc_i : ndarray
+            The indices needed to reconstruct sc_offsets from the unique
+            values in unique_sc_offsets
+            dtype = 'int'
+            shape = ((2*lim + 1)**3, 3)
+        unique_cell_origins : list of lists of ints
+            A list containing 3 lists of the unique cell origins in each
+            direction. A list of lists rather than a Numpy array is used as
+            the 3 lists are independent and their size is not known beforehand
+        unique_sc_i : ndarray
+            The indices needed to reconstruct cell_origins from the unique
+            values in unique_cell_origins
+            dtype = 'int'
+            shape = (cell_origins, 3)
+
+        Returns
+        -------
+        dyn_mat : ndarray
+            The non mass weighted dynamical matrix at q
+            dtype = 'float'
+            shape = (3*n_ions, 3*n_ions)
+        """
+
+        n_ions = self.n_ions
+        n_cells_in_sc = self.n_cells_in_sc
+        sc_image_i = self.sc_image_i
+        max_sc_images = self.max_sc_images
+        dyn_mat = np.zeros((n_ions*3, n_ions*3), dtype=np.complex128)
+
+        # Cumulant method: for each ij ion-ion displacement sum phases for
+        # all possible supercell images, then multiply by the cell phases
+        # to account for j ions in different cells. Then multiply by the
+        # image weighted fc matrix for each 3 x 3 ij displacement
+
+        # Make sc_phases 1 longer than necessary, so when summing phases for
+        # supercell images if there is no image, an index of -1 and hence
+        # phase of zero can be used
+        sc_phases = np.zeros(len(unique_sc_i) + 1, dtype=np.complex128)
+        sc_phases[:-1], cell_phases = self._calculate_phases(
+            q, unique_sc_offsets, unique_sc_i, unique_cell_origins,
+            unique_cell_i)
+        sc_phase_sum = np.sum(
+            sc_phases[sc_image_i[:, :, 0:max_sc_images]], axis=2)
+
+        ij_phases = sc_phase_sum*np.tile(
+            np.repeat(cell_phases, n_ions), (n_ions, 1))
+        full_dyn_mat = np.transpose(
+            ij_phases.repeat(3, axis=1).repeat(3, axis=0))*fc_img_weighted
+        for nc in range(n_cells_in_sc):
+            dyn_mat += full_dyn_mat[3*nc*n_ions:3*(nc+1)*n_ions, :]
+
+        # Need to transpose dyn_mat to have [i, j] ion indices, as it was
+        # formed by summing the force_constants matrix which has [j, i]
+        # indices
+        return np.transpose(dyn_mat)
 
 
     def _dipole_correction_init(self):
@@ -724,11 +797,12 @@ class InterpolationData(Data):
 
         return np.column_stack((nx, ny, nz))
 
-    def _enforce_acoustic_sum_rule(self):
+    def _enforce_realspace_asr(self):
         """
         Apply a transformation to the force constants matrix so that it
-        satisfies the acousic sum rule. For more information on the method
-        see section 2.3.4:
+        satisfies the acousic sum rule. Diagonalise, shift the acoustic modes
+        to almost zero then construct the correction to the force constants
+        matrix using the eigenvectors. For more information see section 2.3.4:
         http://www.tcm.phy.cam.ac.uk/castep/Phonons_Guide/Castep_Phonons.html
 
         Returns
@@ -818,7 +892,17 @@ class InterpolationData(Data):
         return fc
 
 
-    def _calculate_phases(self, qpt, unique_sc_offsets, unique_sc_i, unique_cell_origins, unique_cell_i):
+    def _enforce_reciprocal_asr(self, dyn_mat_gamma, dyn_mat):
+        """
+        Apply a transformation to the dynamical matrix at so that it
+        satisfies the acousic sum rule. Diagonalise, shift the acoustic modes
+        to almost zero then reconstruct the dynamical matrix using the
+        eigenvectors. For more information see section 2.3.4:
+        http://www.tcm.phy.cam.ac.uk/castep/Phonons_Guide/Castep_Phonons.html
+        """
+
+
+    def _calculate_phases(self, q, unique_sc_offsets, unique_sc_i, unique_cell_origins, unique_cell_i):
         """
         Calculate the phase factors for the supercell images and cells for a
         single q-point. The unique supercell and cell origins indices are
@@ -826,7 +910,7 @@ class InterpolationData(Data):
 
         Parameters
         ----------
-        qpt : ndarray
+        q : ndarray
             The q-point to calculate the phase for
             dtype = 'float'
             shape = (3,)
@@ -870,7 +954,7 @@ class InterpolationData(Data):
         # calculations
         # exp(iq.r) = exp(iqh.ra)*exp(iqk.rb)*exp(iql.rc)
         #           = (exp(iqh)^ra)*(exp(iqk)^rb)*(exp(iql)^rc)
-        phase = np.exp(2j*math.pi*qpt)
+        phase = np.exp(2j*math.pi*q)
         sc_phases = np.ones(len(unique_sc_i), dtype=np.complex128)
         cell_phases = np.ones(len(unique_cell_i), dtype=np.complex128)
         for i in range(3):
@@ -887,8 +971,8 @@ class InterpolationData(Data):
         """
         For each displacement of ion i in the unit cell and ion j in the
         supercell, calculate the number of supercell periodic images there are
-        and which supercells they reside in, and sets the sc_image_i and
-        n_sc_images InterpolationData attributes
+        and which supercells they reside in, and sets the sc_image_i,
+        n_sc_images and max_sc_images InterpolationData attributes
 
         Parameters
         ----------
@@ -931,7 +1015,7 @@ class InterpolationData(Data):
                                dtype=np.int8)
         for i in range(n_ions):
             for j in range(n_ions*n_cells_in_sc):
-                # Get vector between ions in every supercell image
+                # Get vector between j in supercell image and i
                 dists = sc_ion_cart[i] - sc_ion_cart[j] - sc_image_cart
                 # Compare ion-ion supercell vector and all ws point vectors
                 dist_ws_points = np.einsum('ij,kj->ik', dists, ws_list[1:])
@@ -945,6 +1029,7 @@ class InterpolationData(Data):
 
         self.sc_image_i = sc_image_i
         self.n_sc_images = n_sc_images
+        self.max_sc_images = np.max(self.n_sc_images)
 
 
     def convert_e_units(self, units):
