@@ -319,7 +319,7 @@ class InterpolationData(Data):
             The q-points to interpolate onto
             dtype = 'float'
             shape = (n_qpts, 3)
-        asr : {‘realspace’, ‘reciprocal’}, optional, default None
+        asr : {'realspace', 'reciprocal'}, optional, default None
             Which acoustic sum rule correction to apply. 'realspace' applies
             the correction to the force constant matrix in real space.
             'reciprocal' applies the correction to the dynamical matrix at
