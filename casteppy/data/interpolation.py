@@ -409,10 +409,12 @@ class InterpolationData(Data):
         dyn_mat_weighting = 1/np.sqrt(masses*np.transpose(masses))
 
         if asr == 'reciprocal':
+            q_gamma = np.array([0., 0., 0.])
             dyn_mat_gamma = self._calculate_dyn_mat(
-                [0., 0., 0.], fc_img_weighted, unique_sc_offsets, unique_sc_i,
-                unique_cell_origins, unique_cell_i)
-            dyn_mat_gamma *= dyn_mat_weighting
+                q_gamma, fc_img_weighted, unique_sc_offsets,
+                unique_sc_i, unique_cell_origins, unique_cell_i)
+            if dipole:
+                dyn_mat_gamma += self._calculate_dipole_correction(q_gamma)
 
         prev_evecs = np.identity(3*n_ions)
         for q in range(n_qpts):
@@ -425,6 +427,9 @@ class InterpolationData(Data):
             if dipole:
                 dipole_corr = self._calculate_dipole_correction(qpt)
                 dyn_mat += dipole_corr
+
+            if asr == 'reciprocal':
+                dyn_mat = self._enforce_reciprocal_asr(dyn_mat_gamma, dyn_mat)
 
             # Mass weight dynamical matrix
             dyn_mat *= dyn_mat_weighting
@@ -844,16 +849,17 @@ class InterpolationData(Data):
                 dist_frac = dist - np.rint(dist)
                 dist_frac_sum = np.sum(np.abs(dist_frac), axis=2)
                 scri_current = np.argmin(dist_frac_sum, axis=1)
-                dist_min_current = dist_frac_sum[range(n_cells_in_sc), scri_current]
+                dist_min_current = dist_frac_sum[
+                    range(n_cells_in_sc), scri_current]
                 replace =  dist_min_current < dist_min
                 sc_relative_index[replace] = ci + scri_current[replace]
                 dist_min[replace] = dist_min_current[replace]
                 if np.all(dist_min <= 16*sys.float_info.epsilon):
                     break
             if (np.any(dist_min > 16*sys.float_info.epsilon)):
-                print('Error correcting FC matrix for acoustic sum rule, ' +
-                      'supercell relative index couldn\'t be found. Returning ' +
-                      'uncorrected FC matrix')
+                print(('Error correcting FC matrix for acoustic sum rule, '
+                       'supercell relative index couldn\'t be found. '
+                       'Returning uncorrected FC matrix'))
                 return self.force_constants
             cell_indices = np.repeat(sc_relative_index, 3*n_ions)
             ion_indices = np.tile(range(3*n_ions), n_cells_in_sc)
@@ -883,6 +889,16 @@ class InterpolationData(Data):
         eigenvectors. For more information see section 2.3.4:
         http://www.tcm.phy.cam.ac.uk/castep/Phonons_Guide/Castep_Phonons.html
         """
+        ac_i, evals, evecs = self._find_acoustic_modes(dyn_mat_gamma)
+        #tol = 1e-8*np.min(np.abs(evals))
+        tol = 0.01*ureg('amu/cm**2').to('e_mass/bohr**2').magnitude
+
+        for i, ac in enumerate(ac_i):
+            dyn_mat -= (tol*i + evals[ac])*np.einsum(
+                'i,j->ij', evecs[:, ac], evecs[:, ac])
+
+        return dyn_mat
+
 
     def _find_acoustic_modes(self, dyn_mat):
         """
@@ -916,7 +932,6 @@ class InterpolationData(Data):
         n_ions = int(n_branches/3)
 
         evals, evecs = np.linalg.eigh(dyn_mat)
-        print(n_branches)
         evec_reshape = np.reshape(
             np.transpose(evecs), (n_branches, n_ions, 3))
         # Sum displacements for all ions in each branch
@@ -926,8 +941,8 @@ class InterpolationData(Data):
         sc_mass = 1.0*n_ions
         # Check number of acoustic modes
         if np.sum(c_of_m_disp_sq > sensitivity*sc_mass) < 3:
-            print('Error correcting FC matrix for acoustic sum rule, could ' +
-                  'not find 3 acoustic modes. Returning uncorrected FC matrix')
+            print(('Error correcting for acoustic sum rule, could not find 3 '
+                   'acoustic modes. Returning uncorrected matrix'))
             return self.force_constants
         # Find indices of acoustic modes (3 largest c of m displacements)
         ac_i = np.argsort(c_of_m_disp_sq)[-3:]
