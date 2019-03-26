@@ -6,7 +6,7 @@ import numpy as np
 from scipy.linalg.lapack import zheev
 from scipy.special import erfc
 from casteppy import ureg
-from casteppy.util import reciprocal_lattice
+from casteppy.util import reciprocal_lattice, is_gamma
 from casteppy.data.data import Data
 
 class InterpolationData(Data):
@@ -72,14 +72,15 @@ class InterpolationData(Data):
         shape = (n_qpts,)
     freqs: ndarray
         Phonon frequencies from the most recent interpolation calculation.
-        Default units eV. Is empty by default
+        Default units meV. Is empty by default
         dtype = 'float'
         shape = (n_qpts, 3*n_ions)
     eigenvecs: ndarray
-        Atomic displacements (dynamical matrix eigenvectors) from the most
-        recent interpolation calculation. Is empty by default
+        Dynamical matrix eigenvectors from the most recent interpolation
+        calculation. Is empty by default
         dtype = 'complex'
         shape = (n_qpts, 3*n_ions, n_ions, 3)
+    n_gamma_pts : ndarray
     n_sc_images : ndarray
         The number or periodic supercell images for each displacement of ion i
         in the unit cell and ion j in the supercell. This attribute doesn't
@@ -112,6 +113,22 @@ class InterpolationData(Data):
         Stores whether the Ewald dipole tail correction was used in the last
         phonon calculation. Ensures consistency of other calculations e.g.
         when calculating on a grid of phonons for the Debye-Waller factor
+    split_i : ndarray
+        The q-point indices where there is LO-TO splitting, if applicable.
+        Otherwise empty.
+        dtype = 'int'
+        shape = (n_splits,)
+    split_freqs : ndarray
+        Holds the additional LO-TO split phonon frequencies for the q-points
+        specified in split_i. Empty if no LO-TO splitting. Default units meV
+        dtype = 'float'
+        shape = (n_splits, 3*n_ions)
+    split_eigenvecs : ndarray
+        Holds the additional LO-TO split dynamical matrix eigenvectors for the
+        q-points specified in split_i. Empty if no LO-TO splitting
+        dtype = 'complex'
+        shape = (n_splits, 3*n_ions, n_ions, 3)
+
     """
 
     def __init__(self, seedname, path='', qpts=np.array([])):
@@ -135,9 +152,13 @@ class InterpolationData(Data):
 
         self.seedname = seedname
         self.qpts = qpts
-        self.n_qpts = len(qpts)
+        self.n_qpts = 0
         self.eigenvecs = np.array([])
         self.freqs = np.array([])*ureg.meV
+
+        self.split_i = np.array([], dtype=np.int32)
+        self.split_eigenvecs = np.array([])
+        self.split_freqs = np.array([])*ureg.meV
 
         if self.n_qpts > 0:
             self.calculate_fine_phonons(qpts)
@@ -306,7 +327,7 @@ class InterpolationData(Data):
 
 
     def calculate_fine_phonons(self, qpts, asr=None, precondition=False,
-                               set_attrs=True, dipole=True):
+                               set_attrs=True, dipole=True, splitting=True):
         """
         Calculate phonon frequencies and eigenvectors at specified q-points
         from a supercell force constant matrix via interpolation. For more
@@ -334,6 +355,10 @@ class InterpolationData(Data):
             Calculates the dipole tail correction to the dynamical matrix at
             each q-point using the Ewald sum, if the Born charges and
             dielectric permitivitty tensor are present.
+        splitting : boolean, optional, default True
+            Whether to calculate the LO-TO splitting at the gamma points. Only
+            applied if dipole is True and the Born charges and dielectric
+            permitivitty tensor are present.
 
         Returns
         -------
@@ -356,7 +381,10 @@ class InterpolationData(Data):
 
         if not hasattr(self, 'born') or not hasattr(self, 'dielectric'):
             dipole = False
-        if dipole:
+        if not dipole:
+            splitting = False
+
+        if dipole and not hasattr(self, 'eta'):
             self._dipole_correction_init()
 
         ion_mass = self.ion_mass.to('e_mass').magnitude
@@ -370,6 +398,9 @@ class InterpolationData(Data):
         freqs_test = np.zeros((n_qpts, n_branches))
         eigenvecs = np.zeros((n_qpts, n_branches, n_ions, 3),
                              dtype=np.complex128)
+        split_i = np.array([], dtype=np.int32)
+        split_freqs = np.empty((0, n_branches))
+        split_eigenvecs = np.empty((0, n_branches, n_ions, 3))
 
         # Build list of all possible supercell image coordinates
         lim = 2 # Supercell image limit
@@ -431,29 +462,56 @@ class InterpolationData(Data):
             if asr == 'reciprocal':
                 dyn_mat = self._enforce_reciprocal_asr(dyn_mat_gamma, dyn_mat)
 
-            # Mass weight dynamical matrix
-            dyn_mat *= dyn_mat_weighting
+            # Calculate LO-TO splitting by calculating non-analytic correction
+            # to dynamical matrix
+            if splitting and is_gamma(qpt):
+                if q == 0:
+                    q_dirs = [qpts[1]]
+                elif q == (n_qpts - 1):
+                    q_dirs = [qpts[-2]]
+                else:
+                    q_dirs = [-qpts[q - 1], qpts[q + 1]]
+                na_corrs = np.zeros((len(q_dirs), 3*n_ions, 3*n_ions),
+                                    dtype=np.complex128)
+                for i, q_dir in enumerate(q_dirs):
+                    na_corrs[i] = self._calculate_gamma_correction(q_dir)
+            else:
+            # Correction is zero if not a gamma point or splitting = False
+                na_corrs = np.array([0])
 
-            if precondition:
-                dyn_mat = np.matmul(np.matmul(np.transpose(
-                    np.conj(prev_evecs)), dyn_mat), prev_evecs)
+            for i, na_corr in enumerate(na_corrs):
+                dyn_mat_corr = dyn_mat + na_corr
 
-            try:
-                evals, evecs = np.linalg.eigh(dyn_mat)
-            # Fall back to zheev if eigh fails (eigh calls zheevd)
-            except np.linalg.LinAlgError:
-                evals, evecs, info = zheev(dyn_mat)
-            prev_evecs = evecs
+                # Mass weight dynamical matrix
+                dyn_mat_corr *= dyn_mat_weighting
 
-            eigenvecs[q, :] = np.reshape(
-                np.transpose(evecs), (n_branches, n_ions, 3))
-            freqs[q, :] = np.sqrt(np.abs(evals))
+                if precondition:
+                    dyn_mat_corr = np.matmul(np.matmul(np.transpose(
+                        np.conj(prev_evecs)), dyn_mat_corr), prev_evecs)
 
-            # Set imaginary frequencies to negative
-            imag_freqs = np.where(evals < 0)
-            freqs[q, imag_freqs] *= -1
+                try:
+                    evals, evecs = np.linalg.eigh(dyn_mat_corr)
+                # Fall back to zheev if eigh fails (eigh calls zheevd)
+                except np.linalg.LinAlgError:
+                    evals, evecs, info = zheev(dyn_mat_corr)
+
+                prev_evecs = evecs
+                evecs = np.reshape(np.transpose(evecs), (n_branches, n_ions, 3))
+                # Set imaginary frequencies to negative
+                imag_freqs = np.where(evals < 0)
+                evals = np.sqrt(np.abs(evals))
+                evals[imag_freqs] *= -1
+
+                if i == 0:
+                    eigenvecs[q, :] = evecs
+                    freqs[q, :] = evals
+                else:
+                    split_i = np.concatenate((split_i, [q]))
+                    split_freqs = np.concatenate((split_freqs, evals[np.newaxis]))
+                    split_eigenvecs = np.concatenate((split_eigenvecs, evecs[np.newaxis]))
 
         freqs = (freqs*ureg.hartree).to(self.freqs.units, 'spectroscopy')
+        split_freqs = (split_freqs*ureg.hartree).to(self.split_freqs.units, 'spectroscopy')
         if set_attrs:
             self.asr = asr
             self.dipole = dipole
@@ -462,6 +520,10 @@ class InterpolationData(Data):
             self.weights = np.full(len(qpts), 1.0/n_qpts)
             self.freqs = freqs
             self.eigenvecs = eigenvecs
+
+            self.split_i = split_i
+            self.split_freqs = split_freqs
+            self.split_eigenvecs = split_eigenvecs
 
         return freqs, eigenvecs
 
@@ -511,7 +573,7 @@ class InterpolationData(Data):
         -------
         dyn_mat : ndarray
             The non mass weighted dynamical matrix at q
-            dtype = 'float'
+            dtype = 'complex'
             shape = (3*n_ions, 3*n_ions)
         """
 
@@ -672,7 +734,7 @@ class InterpolationData(Data):
         -------
         corr : ndarray
             The correction to the dynamical matrix
-            dtype = 'float'
+            dtype = 'complex'
             shape = (3*n_ions, 3*n_ions)
         """
         cell_vec = self.cell_vec.to('bohr').magnitude
@@ -769,6 +831,47 @@ class InterpolationData(Data):
         return np.reshape(np.transpose(E2, axes=[0, 2, 1, 3]), (3*n_ions, 3*n_ions))
 
 
+    def _calculate_gamma_correction(self, q_dir):
+        """
+        Calculate non-analytic correction to the dynamical matrix at q=0 for
+        a specified direction of approach. See Eq. 60 of X. Gonze and C. Lee,
+        PRB (1997) 55, 10355-10368.
+
+        Parameters
+        ----------
+        q_dir : ndarray
+            The direction along which q approaches 0, in reciprocal fractional
+            coordinates
+            dtype = 'float'
+            shape = (3,)
+
+        Returns
+        -------
+        na_corr : ndarray
+            The correction to the dynamical matrix
+            dtype = 'complex'
+            shape = (3*n_ions, 3*n_ions)
+        """
+        cell_vec = self.cell_vec.to('bohr').magnitude
+        n_ions = self.n_ions
+        born = self.born.magnitude
+        dielectric = self.dielectric
+
+        cell_volume = np.dot(cell_vec[0], np.cross(cell_vec[1], cell_vec[2]))
+        denominator = np.einsum('ij,i,j', dielectric, q_dir, q_dir)
+        factor = 4*math.pi/(cell_volume*denominator)
+
+        q_born_sum = np.einsum('ijk,k->ij', born, q_dir)
+        na_corr = np.zeros((3*n_ions, 3*n_ions), dtype=np.complex128)
+        for i in range(n_ions):
+            for j in range(n_ions):
+                na_corr[3*i:3*(i+1), 3*j:3*(j+1)] = np.einsum(
+                    'i,j->ij', q_born_sum[i], q_born_sum[j])
+        na_corr *= factor
+
+        return na_corr
+
+
     def _get_all_origins(self, max_xyz, min_xyz=[0, 0, 0], step=1):
         """
         Given the max/min number of cells in each direction, get a list of all
@@ -801,6 +904,7 @@ class InterpolationData(Data):
         nz = np.tile(range(min_xyz[2], max_xyz[2], step), diff[0]*diff[1])
 
         return np.column_stack((nx, ny, nz))
+
 
     def _enforce_realspace_asr(self):
         """
@@ -888,10 +992,27 @@ class InterpolationData(Data):
         to almost zero then reconstruct the dynamical matrix using the
         eigenvectors. For more information see section 2.3.4:
         http://www.tcm.phy.cam.ac.uk/castep/Phonons_Guide/Castep_Phonons.html
+
+        Parameters
+        ----------
+        dyn_mat_gamma : ndarray
+            The non mass-weighted dynamical matrix at q=0
+            dtype = 'complex'
+            shape = (3*n_ions, 3*n_ions)
+        dyn_mat : ndarray
+            The uncorrected, non mass-weighted dynamical matrix at q
+            dtype = 'complex'
+            shape = (3*n_ions, 3*n_ions)
+
+        Returns
+        -------
+        dyn_mat : ndarray
+            The corrected, non mass-weighted dynamical matrix at q
+            dtype = 'complex'
+            shape = (3*n_ions, 3*n_ions)
         """
         ac_i, evals, evecs = self._find_acoustic_modes(dyn_mat_gamma)
-        #tol = 1e-8*np.min(np.abs(evals))
-        tol = 0.01*ureg('amu/cm**2').to('e_mass/bohr**2').magnitude
+        tol = 1e-8*np.min(np.abs(evals))
 
         for i, ac in enumerate(ac_i):
             dyn_mat -= (tol*i + evals[ac])*np.einsum(
@@ -1094,3 +1215,4 @@ class InterpolationData(Data):
 
         if hasattr(self, 'freqs'):
             self.freqs.ito(units, 'spectroscopy')
+            self.split_freqs.ito(units, 'spectroscopy')

@@ -157,7 +157,7 @@ class PhononData(Data):
                                  dtype='complex128')
         else:
             eigenvecs = np.array([])
-        split_i = np.array([])
+        split_i = np.array([], dtype=np.int32)
         split_freqs = np.empty((0, n_branches))
         split_eigenvecs = np.empty((0, n_branches, n_ions, 3))
 
@@ -176,7 +176,7 @@ class PhononData(Data):
             if qpt_num != prev_qpt_num:
                 freqs[qpt_num, :] = tmp
             elif is_gamma(qpts[qpt_num]):
-                split_i = qpt_num
+                split_i = np.concatenate((split_i, [qpt_num]))
                 split_freqs = np.concatenate((split_freqs, tmp[np.newaxis]))
             ir_index = 2
             raman_index = 3
