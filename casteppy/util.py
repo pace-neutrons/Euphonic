@@ -43,3 +43,12 @@ def direction_changed(qpts, tolerance=5e-6):
     direction_changed = (np.abs(np.abs(dot) - modq[1:]*modq[:-1]) > tolerance)
 
     return direction_changed
+
+
+def is_gamma(qpt):
+    """
+    Determines whether the given q-point is a gamma point
+    """
+    tol = 1e-15
+
+    return np.sum(np.absolute(qpt)) < tol
