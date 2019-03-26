@@ -757,7 +757,12 @@ class TestInterpolatePhononsQuartz(unittest.TestCase):
         self.qpts = np.array([[ 0.00, 0.00, 0.00],
                               [ 0.00, 0.00, 0.50],
                               [-0.25, 0.50, 0.50]])
-        self.expctd_freqs_dipole_no_asr = np.array([
+
+        data = InterpolationData(seedname, self.path)
+        self.data = data
+
+    def test_calculate_fine_phonons_dipole_no_asr(self):
+        expctd_freqs = np.array([
             [-0.00009745, -0.00005474, -0.00005474, 0.00058293, 0.00058293,
               0.00101620,  0.00117558,  0.00117559, 0.00155134, 0.00157713,
               0.00172393,  0.00172393,  0.00200563, 0.00200563, 0.00209131,
@@ -776,7 +781,15 @@ class TestInterpolatePhononsQuartz(unittest.TestCase):
               0.00246936,  0.00278196,  0.00315079, 0.00370003, 0.00376130,
               0.00380875,  0.00488787,  0.00490533, 0.00490608, 0.00526644,
               0.00531051,  0.00540936]])*ureg('hartree')
-        self.expctd_freqs_dipole_recip_asr = np.array([
+        self.data.calculate_fine_phonons(
+            self.qpts, dipole=True, splitting=False)
+        npt.assert_allclose(
+            self.data.freqs.to('hartree').magnitude,
+            expctd_freqs.to('hartree').magnitude,
+            atol=1e-8)
+
+    def test_calculate_fine_phonons_dipole_recip_asr(self):
+        expctd_freqs = np.array([
             [-0.00000001, 0.00000000, 0.00000000, 0.00058293, 0.00058293,
               0.00101620, 0.00117558, 0.00117559, 0.00155134, 0.00157718,
               0.00172394, 0.00172394, 0.00200565, 0.00200565, 0.00209131,
@@ -795,21 +808,59 @@ class TestInterpolatePhononsQuartz(unittest.TestCase):
               0.00246941, 0.00278199, 0.00315087, 0.00370009, 0.00376137,
               0.00380880, 0.00488793, 0.00490540, 0.00490617, 0.00526645,
               0.00531057, 0.00540940]])*ureg('hartree')
-        data = InterpolationData(seedname, self.path)
-        self.data = data
-
-    def test_calculate_fine_phonons_dipole_no_asr(self):
         self.data.calculate_fine_phonons(
-            self.qpts, dipole=True)
+            self.qpts, asr='reciprocal', dipole=True, splitting=False)
         npt.assert_allclose(
             self.data.freqs.to('hartree').magnitude,
-            self.expctd_freqs_dipole_no_asr.to('hartree').magnitude,
+            expctd_freqs.to('hartree').magnitude,
             atol=1e-8)
 
-    def test_calculate_fine_phonons_dipole_recip_asr(self):
+    def test_calculate_fine_phonons_dipole_recip_asr_splitting(self):
+        qpts = np.array([[ 0.00, 0.00, 0.00],
+                         [ 0.00, 0.00, 0.50],
+                         [ 0.00, 0.00, 0.00],
+                         [-0.25, 0.50, 0.50]])
+        expctd_freqs = np.array([
+            [-0.00000001, -0.00000001, 0.00000134, 0.00058293, 0.00058293,
+              0.00101620,  0.00117558, 0.00117559, 0.00155134, 0.00168918,
+              0.00172394,  0.00172394, 0.00200565, 0.00200565, 0.00209131,
+              0.00245470,  0.00316467, 0.00316467, 0.00360268, 0.00363298,
+              0.00363298,  0.00487608, 0.00487608, 0.00495076, 0.00525430,
+              0.00525431,  0.00565964],
+            [ 0.00021598,  0.00056611, 0.00056686, 0.00075777, 0.00083532,
+              0.00083554,  0.00092328, 0.00119699, 0.00119903, 0.00175523,
+              0.00182882,  0.00191025, 0.00191045, 0.00205709, 0.00205738,
+              0.00259496,  0.00259505, 0.00355706, 0.00358489, 0.00362570,
+              0.00362572,  0.00484913, 0.00492809, 0.00492815, 0.00505041,
+              0.00553678,  0.00553679],
+            [-0.00000001, -0.00000001, 0.00000134, 0.00058293, 0.00058293,
+              0.00101620,  0.00117558, 0.00117559, 0.00155134, 0.00168918,
+              0.00172394,  0.00172394, 0.00200565, 0.00200565, 0.00209131,
+              0.00245470,  0.00316467, 0.00316467, 0.00360268, 0.00363298,
+              0.00363298,  0.00487608, 0.00487608, 0.00495076, 0.00525430,
+              0.00525431,  0.00565964],
+            [ 0.00029928,  0.00044784, 0.00045479, 0.00083284, 0.00085117,
+              0.00107950,  0.00122947, 0.00131602, 0.00142866, 0.00154594,
+              0.00166280,  0.00179836, 0.00189458, 0.00191540, 0.00205403,
+              0.00246941,  0.00278199, 0.00315087, 0.00370009, 0.00376137,
+              0.00380880,  0.00488793, 0.00490540, 0.00490617, 0.00526645,
+              0.00531057,  0.00540940]])*ureg('hartree')
+        expctd_split_freqs = np.array([
+            [-0.00000001, -0.00000001, 0.00000093, 0.00058293, 0.00058305,
+              0.00101620,  0.00117558, 0.00117967, 0.00155134, 0.00161358,
+              0.00172394,  0.00176372, 0.00200565, 0.00209027, 0.00209131,
+              0.00238641,  0.00316467, 0.00317281, 0.00354729, 0.00363298,
+              0.00367378,  0.00487608, 0.00490124, 0.00495076, 0.00524661,
+              0.00525431,  0.00563557]])*ureg('hartree')
+        expctd_split_i = np.array([2])
         self.data.calculate_fine_phonons(
-            self.qpts, asr='reciprocal', dipole=True)
+            qpts, asr='reciprocal', dipole=True, splitting=True)
+        npt.assert_array_equal(self.data.split_i, expctd_split_i)
         npt.assert_allclose(
             self.data.freqs.to('hartree').magnitude,
-            self.expctd_freqs_dipole_recip_asr.to('hartree').magnitude,
+            expctd_freqs.to('hartree').magnitude,
+            atol=1e-8)
+        npt.assert_allclose(
+            self.data.split_freqs.to('hartree').magnitude,
+            expctd_split_freqs.to('hartree').magnitude,
             atol=1e-8)
