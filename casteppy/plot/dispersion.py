@@ -501,24 +501,29 @@ def plot_dispersion(data, title='', btol=10.0, up=True, down=True):
         if up:
             # If there is LO-TO splitting, plot in sections
             if hasattr(data, 'split_i') and data.split_i.size > 0:
-                section_i = np.where(np.logical_and(data.split_i > imin[i], data.split_i < imax[i]))[0]
+                section_i = np.where(np.logical_and(
+                    data.split_i > imin[i], data.split_i < imax[i]))[0]
                 n_sections = section_i.size + 1
             else:
                 n_sections = 1
-
             if n_sections > 1:
                 split_i = data.split_i
-                section_edges = np.concatenate(([imin[i]], split_i[section_i], [imax[i]]))
+                section_edges = np.concatenate(
+                    ([imin[i]], split_i[section_i], [imax[i]]))
                 for n in range(n_sections):
-                    freqs = data.freqs[section_edges[n]:section_edges[n+1] + 1].magnitude
-                    if n == 0 and (imin[i] in split_i):
-                        # First point in this subplot is a split gamma point
-                        # Replace frequencies with split frequencies at gamma point
-                        freqs[0] = data.split_freqs[np.where(split_i == imin[i])].magnitude
+                    freqs = np.copy(data.freqs[
+                        section_edges[n]:section_edges[n+1] + 1].magnitude)
+                    if n == 0:
+                        if (imin[i] in split_i):
+                            # First point in this subplot is split gamma point
+                            # Replace freqs with split freqs at gamma point
+                            freqs[0] = data.split_freqs[
+                                np.where(split_i == imin[i])].magnitude
                     else:
-                        # Replace frequencies with split frequencies at gamma point
-                        freqs[0] = data.split_freqs[section_i[n - 1]].magnitude
-                    ax.plot(abscissa[section_edges[n]:section_edges[n+1] + 1], freqs, lw=1.0)
+                        # Replace freqs with split freqs at gamma point
+                        freqs[0] = data.split_freqs[section_i[n-1]].magnitude
+                    ax.plot(abscissa[section_edges[n]:section_edges[n+1] + 1],
+                            freqs, lw=1.0)
             else:
                 freqs = data.freqs.magnitude
                 ax.plot(abscissa[imin[i]:imax[i] + 1],
