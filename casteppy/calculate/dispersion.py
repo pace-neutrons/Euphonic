@@ -26,13 +26,22 @@ def reorder_freqs(data):
              frequencies""")
         return
 
-    ordered_freqs = np.zeros(data.freqs.shape)
-    ordered_eigenvecs = np.zeros(data.eigenvecs.shape, dtype=np.complex128)
+    ordered_freqs = np.zeros(freqs.shape)
+    ordered_eigenvecs = np.zeros(eigenvecs.shape, dtype=np.complex128)
     qmap = np.arange(n_branches)
 
     # Only calculate qmap and reorder freqs if the direction hasn't changed
+    # and there is no LO-TO splitting
     calculate_qmap = np.concatenate(([True], np.logical_not(
         direction_changed(qpts))))
+    if hasattr(data, 'split_i'):
+        split_freqs = data.split_freqs.magnitude
+        split_eigenvecs = data.split_eigenvecs
+        ordered_split_freqs = np.zeros(split_freqs.shape)
+        ordered_split_eigenvecs = np.zeros(
+            split_eigenvecs.shape, dtype=np.complex128)
+        calculate_qmap[data.split_i + 1] = False
+
     # Don't reorder first q-point
     ordered_freqs[0,:] = freqs[0,:]
     ordered_eigenvecs[0,:] = eigenvecs[0,:]
@@ -73,11 +82,20 @@ def reorder_freqs(data):
         # Map q-points according to previous q-point mapping
         qmap = qmap[qmap_tmp]
 
-        # Reorder frequencies and eigenvectors
         prev_evecs = curr_evecs
+
+        # Reorder frequencies and eigenvectors
         ordered_eigenvecs[i, qmap] = eigenvecs[i, :]
         ordered_freqs[i, qmap] = freqs[i, :]
+
+        if hasattr(data, 'split_i') and i in data.split_i:
+            idx = np.where(i == data.split_i)
+            ordered_split_eigenvecs[idx, qmap] = split_eigenvecs[idx]
+            ordered_split_freqs[idx, qmap] = split_freqs[idx]
 
     ordered_freqs = ordered_freqs*data.freqs.units
     data.eigenvecs = ordered_eigenvecs
     data.freqs = ordered_freqs
+    if hasattr(data, 'split_i'):
+        data.split_freqs = ordered_split_freqs*data.split_freqs.units
+        data.split_eigenvecs = ordered_split_eigenvecs
