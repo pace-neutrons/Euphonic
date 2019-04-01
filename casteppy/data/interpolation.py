@@ -4,7 +4,9 @@ import sys
 import os
 import numpy as np
 from scipy.linalg.lapack import zheev
+from scipy.special import erfc
 from casteppy import ureg
+from casteppy.util import reciprocal_lattice, is_gamma
 from casteppy.data.data import Data
 
 class InterpolationData(Data):
@@ -70,24 +72,30 @@ class InterpolationData(Data):
         shape = (n_qpts,)
     freqs: ndarray
         Phonon frequencies from the most recent interpolation calculation.
-        Default units eV. Is empty by default
+        Default units meV. Is empty by default
         dtype = 'float'
         shape = (n_qpts, 3*n_ions)
     eigenvecs: ndarray
-        Atomic displacements (dynamical matrix eigenvectors) from the most
-        recent interpolation calculation. Is empty by default
+        Dynamical matrix eigenvectors from the most recent interpolation
+        calculation. Is empty by default
         dtype = 'complex'
         shape = (n_qpts, 3*n_ions, n_ions, 3)
+    n_gamma_pts : ndarray
     n_sc_images : ndarray
         The number or periodic supercell images for each displacement of ion i
         in the unit cell and ion j in the supercell. This attribute doesn't
         exist until calculate_fine_phonons has been called
         dtype = 'int'
         shape = (n_ions, n_ions*n_cells_in_sc)
+    max_sc_images : int
+        The maximum number of periodic supercell images over all ij
+        displacements. This is required for efficiency when summing phases
+        over all images, so we only have to sum up to the maximum *actual*
+        images, not up to the maximum possible images
     sc_image_i : ndarray
         The index describing the supercell each of the periodic images resides
         in. This is the index of the list of supercells as returned by
-        _calculate_supercell_image_r. This attribute doesn't exist until
+        _get_all_origins. This attribute doesn't exist until
         calculate_fine_phonons has been called
         dtype = 'int'
         shape = (n_ions, n_ions*n_cells_in_sc, (2*lim + 1)**3)
@@ -101,6 +109,26 @@ class InterpolationData(Data):
         Stores whether the acoustic sum rule was used in the last phonon
         calculation. Ensures consistency of other calculations e.g. when
         calculating on a grid of phonons for the Debye-Waller factor
+    dipole : boolean
+        Stores whether the Ewald dipole tail correction was used in the last
+        phonon calculation. Ensures consistency of other calculations e.g.
+        when calculating on a grid of phonons for the Debye-Waller factor
+    split_i : ndarray
+        The q-point indices where there is LO-TO splitting, if applicable.
+        Otherwise empty.
+        dtype = 'int'
+        shape = (n_splits,)
+    split_freqs : ndarray
+        Holds the additional LO-TO split phonon frequencies for the q-points
+        specified in split_i. Empty if no LO-TO splitting. Default units meV
+        dtype = 'float'
+        shape = (n_splits, 3*n_ions)
+    split_eigenvecs : ndarray
+        Holds the additional LO-TO split dynamical matrix eigenvectors for the
+        q-points specified in split_i. Empty if no LO-TO splitting
+        dtype = 'complex'
+        shape = (n_splits, 3*n_ions, n_ions, 3)
+
     """
 
     def __init__(self, seedname, path='', qpts=np.array([])):
@@ -124,9 +152,13 @@ class InterpolationData(Data):
 
         self.seedname = seedname
         self.qpts = qpts
-        self.n_qpts = len(qpts)
+        self.n_qpts = 0
         self.eigenvecs = np.array([])
         self.freqs = np.array([])*ureg.meV
+
+        self.split_i = np.array([], dtype=np.int32)
+        self.split_eigenvecs = np.array([])
+        self.split_freqs = np.array([])*ureg.meV
 
         if self.n_qpts > 0:
             self.calculate_fine_phonons(qpts)
@@ -237,6 +269,11 @@ class InterpolationData(Data):
                 cell_origins = np.reshape(
                     read_entry(file_obj, int_type), (n_cells_in_sc, 3))
                 fc_row = read_entry(file_obj, int_type)
+            elif header.strip() == b'BORN_CHGS':
+                born = np.reshape(read_entry(file_obj, float_type), (n_ions, 3, 3))
+            elif header.strip() == b'DIELECTRIC':
+                dielectric = np.transpose(np.reshape(
+                    read_entry(file_obj, float_type), (3, 3)))
 
         # Get ion_r in correct form
         # CASTEP stores ion positions as 3D array (3,
@@ -281,8 +318,16 @@ class InterpolationData(Data):
             sys.exit(('Error: force constants matrix could not be found in '
                       '{:s}\n').format(file_obj.name))
 
+         # Set attributes relating to dipoles
+        try:
+            self.born = born*ureg.e
+            self.dielectric = dielectric
+        except UnboundLocalError:
+            pass
 
-    def calculate_fine_phonons(self, qpts, asr=True, precondition=False, set_attrs=True):
+
+    def calculate_fine_phonons(self, qpts, asr=None, precondition=False,
+                               set_attrs=True, dipole=True, splitting=True):
         """
         Calculate phonon frequencies and eigenvectors at specified q-points
         from a supercell force constant matrix via interpolation. For more
@@ -295,15 +340,25 @@ class InterpolationData(Data):
             The q-points to interpolate onto
             dtype = 'float'
             shape = (n_qpts, 3)
-        asr : boolean, optional, default True
-            Whether to apply an acoustic sum rule correction to the force
-            constant matrix
+        asr : {'realspace', 'reciprocal'}, optional, default None
+            Which acoustic sum rule correction to apply. 'realspace' applies
+            the correction to the force constant matrix in real space.
+            'reciprocal' applies the correction to the dynamical matrix at
+            every q-point
         precondition : boolean, optional, default False
             Whether to precondition the dynamical matrix using the
             eigenvectors from the previous q-point
         set_attrs : boolean, optional, default True
             Whether to set the freqs, eigenvecs, qpts and n_qpts attributes of
             the InterpolationData object to the newly calculated values
+        dipole : boolean, optional, default True
+            Calculates the dipole tail correction to the dynamical matrix at
+            each q-point using the Ewald sum, if the Born charges and
+            dielectric permitivitty tensor are present.
+        splitting : boolean, optional, default True
+            Whether to calculate the LO-TO splitting at the gamma points. Only
+            applied if dipole is True and the Born charges and dielectric
+            permitivitty tensor are present.
 
         Returns
         -------
@@ -317,12 +372,21 @@ class InterpolationData(Data):
             dtype = 'complex'
             shape = (n_qpts, 3*n_ions, n_ions, 3)
         """
-        if asr:
+        if asr == 'realspace':
             if not hasattr(self, 'force_constants_asr'):
-                self.force_constants_asr = self._enforce_acoustic_sum_rule()
+                self.force_constants_asr = self._enforce_realspace_asr()
             force_constants = self.force_constants_asr.magnitude
         else:
             force_constants = self.force_constants.magnitude
+
+        if not hasattr(self, 'born') or not hasattr(self, 'dielectric'):
+            dipole = False
+        if not dipole:
+            splitting = False
+
+        if dipole and not hasattr(self, 'eta'):
+            self._dipole_correction_init()
+
         ion_mass = self.ion_mass.to('e_mass').magnitude
         sc_matrix = self.sc_matrix
         cell_origins = self.cell_origins
@@ -334,10 +398,14 @@ class InterpolationData(Data):
         freqs_test = np.zeros((n_qpts, n_branches))
         eigenvecs = np.zeros((n_qpts, n_branches, n_ions, 3),
                              dtype=np.complex128)
+        split_i = np.array([], dtype=np.int32)
+        split_freqs = np.empty((0, n_branches))
+        split_eigenvecs = np.empty((0, n_branches, n_ions, 3))
 
         # Build list of all possible supercell image coordinates
         lim = 2 # Supercell image limit
-        sc_image_r = self._calculate_supercell_image_r(lim)
+        sc_image_r = self._get_all_origins(
+            np.repeat(lim, 3) + 1, min_xyz=-np.repeat(lim, 3))
         # Get a list of all the unique supercell image origins and cell origins
         # in x, y, z and how to rebuild them to minimise expensive phase
         # calculations later
@@ -351,16 +419,13 @@ class InterpolationData(Data):
                 sc_offsets[:, i], return_inverse=True)
             unique_cell_origins[i], unique_cell_i[:, i] = np.unique(
                 self.cell_origins[:, i], return_inverse=True)
-        # Make sc_phases 1 longer than necessary, so when summing phases for
-        # supercell images if there is no image, an index of -1 and hence
-        # phase of zero can be used
-        sc_phases = np.zeros(len(sc_image_r) + 1, dtype=np.complex128)
+
 
         # Construct list of supercell ion images
         if not hasattr(self, 'sc_image_i'):
             self._calculate_supercell_images(lim)
         n_sc_images = self.n_sc_images
-        max_sc_images = np.max(self.n_sc_images)
+        max_sc_images = self.max_sc_images
         sc_image_i = self.sc_image_i
 
         # Precompute fc matrix weighted by number of supercell ion images
@@ -374,72 +439,479 @@ class InterpolationData(Data):
         masses = np.tile(np.repeat(ion_mass, 3), (3*n_ions, 1))
         dyn_mat_weighting = 1/np.sqrt(masses*np.transpose(masses))
 
+        if asr == 'reciprocal':
+            q_gamma = np.array([0., 0., 0.])
+            dyn_mat_gamma = self._calculate_dyn_mat(
+                q_gamma, fc_img_weighted, unique_sc_offsets,
+                unique_sc_i, unique_cell_origins, unique_cell_i)
+            if dipole:
+                dyn_mat_gamma += self._calculate_dipole_correction(q_gamma)
+
         prev_evecs = np.identity(3*n_ions)
         for q in range(n_qpts):
             qpt = qpts[q, :]
-            dyn_mat = np.zeros((n_ions*3, n_ions*3), dtype=np.complex128)
 
-            # Cumulant method: for each ij ion-ion displacement sum phases for
-            # all possible supercell images, then multiply by the cell phases
-            # to account for j ions in different cells. Then multiply by the
-            # image weighted fc matrix for each 3 x 3 ij displacement
-            sc_phases[:-1], cell_phases = self._calculate_phases(
-                qpt, unique_sc_offsets, unique_sc_i, unique_cell_origins,
-                unique_cell_i)
-            sc_phase_sum = np.sum(
-                sc_phases[sc_image_i[:, :, 0:max_sc_images]], axis=2)
+            dyn_mat = self._calculate_dyn_mat(
+                qpt, fc_img_weighted, unique_sc_offsets, unique_sc_i,
+                unique_cell_origins, unique_cell_i)
 
-            ij_phases = sc_phase_sum*np.tile(
-                np.repeat(cell_phases, n_ions), (n_ions, 1))
-            full_dyn_mat = np.transpose(
-                ij_phases.repeat(3, axis=1).repeat(3, axis=0))*fc_img_weighted
-            for nc in range(n_cells_in_sc):
-                dyn_mat += full_dyn_mat[3*nc*n_ions:3*(nc+1)*n_ions, :]
+            if dipole:
+                dipole_corr = self._calculate_dipole_correction(qpt)
+                dyn_mat += dipole_corr
 
-            # Mass weight dynamical matrix
-            dyn_mat *= dyn_mat_weighting
+            if asr == 'reciprocal':
+                dyn_mat = self._enforce_reciprocal_asr(dyn_mat_gamma, dyn_mat)
 
-            # Need to transpose dyn_mat to have [i, j] ion indices, as it was
-            # formed by summing the force_constants matrix which has [j, i]
-            # indices
-            dyn_mat = np.transpose(dyn_mat)
+            # Calculate LO-TO splitting by calculating non-analytic correction
+            # to dynamical matrix
+            if splitting and is_gamma(qpt):
+                if q == 0:
+                    q_dirs = [qpts[1]]
+                elif q == (n_qpts - 1):
+                    q_dirs = [qpts[-2]]
+                else:
+                    q_dirs = [-qpts[q - 1], qpts[q + 1]]
+                na_corrs = np.zeros((len(q_dirs), 3*n_ions, 3*n_ions),
+                                    dtype=np.complex128)
+                for i, q_dir in enumerate(q_dirs):
+                    na_corrs[i] = self._calculate_gamma_correction(q_dir)
+            else:
+            # Correction is zero if not a gamma point or splitting = False
+                na_corrs = np.array([0])
 
-            if precondition:
-                dyn_mat = np.matmul(np.matmul(np.transpose(
-                    np.conj(prev_evecs)), dyn_mat), prev_evecs)
+            for i, na_corr in enumerate(na_corrs):
+                dyn_mat_corr = dyn_mat + na_corr
 
-            try:
-                evals, evecs = np.linalg.eigh(dyn_mat)
-            # Fall back to zheev if eigh fails (eigh calls zheevd)
-            except np.linalg.LinAlgError:
-                evals, evecs, info = zheev(dyn_mat)
-            prev_evecs = evecs
+                # Mass weight dynamical matrix
+                dyn_mat_corr *= dyn_mat_weighting
 
-            eigenvecs[q, :] = np.reshape(
-                np.transpose(evecs), (n_branches, n_ions, 3))
-            freqs[q, :] = np.sqrt(np.abs(evals))
+                if precondition:
+                    dyn_mat_corr = np.matmul(np.matmul(np.transpose(
+                        np.conj(prev_evecs)), dyn_mat_corr), prev_evecs)
 
-            # Set imaginary frequencies to negative
-            imag_freqs = np.where(evals < 0)
-            freqs[q, imag_freqs] *= -1
+                try:
+                    evals, evecs = np.linalg.eigh(dyn_mat_corr)
+                # Fall back to zheev if eigh fails (eigh calls zheevd)
+                except np.linalg.LinAlgError:
+                    evals, evecs, info = zheev(dyn_mat_corr)
+
+                prev_evecs = evecs
+                evecs = np.reshape(np.transpose(evecs), (n_branches, n_ions, 3))
+                # Set imaginary frequencies to negative
+                imag_freqs = np.where(evals < 0)
+                evals = np.sqrt(np.abs(evals))
+                evals[imag_freqs] *= -1
+
+                if i == 0:
+                    eigenvecs[q, :] = evecs
+                    freqs[q, :] = evals
+                else:
+                    split_i = np.concatenate((split_i, [q]))
+                    split_freqs = np.concatenate((split_freqs, evals[np.newaxis]))
+                    split_eigenvecs = np.concatenate((split_eigenvecs, evecs[np.newaxis]))
 
         freqs = (freqs*ureg.hartree).to(self.freqs.units, 'spectroscopy')
+        split_freqs = (split_freqs*ureg.hartree).to(self.split_freqs.units, 'spectroscopy')
         if set_attrs:
             self.asr = asr
+            self.dipole = dipole
             self.n_qpts = n_qpts
             self.qpts = qpts
             self.weights = np.full(len(qpts), 1.0/n_qpts)
             self.freqs = freqs
             self.eigenvecs = eigenvecs
 
+            self.split_i = split_i
+            self.split_freqs = split_freqs
+            self.split_eigenvecs = split_eigenvecs
+
         return freqs, eigenvecs
 
 
-    def _enforce_acoustic_sum_rule(self):
+    def _calculate_dyn_mat(self, q, fc_img_weighted, unique_sc_offsets,
+                           unique_sc_i, unique_cell_origins, unique_cell_i):
+        """
+        Calculate the non mass weighted dynamical matrix at a specified
+        q-point from the image weighted force constants matrix and the indices
+        specifying the periodic images. See eq. 1.5:
+        http://www.tcm.phy.cam.ac.uk/castep/Phonons_Guide/Castep_Phonons.html
+
+        Parameters
+        ----------
+        q : ndarray
+            The q-point to calculate the correction for
+            dtype = 'float'
+            shape = (3,)
+        fc_img_weighted : ndarray
+            The force constants matrix weighted by the number of supercell ion
+            images for each ij displacement
+            dtype = 'float'
+            shape = (3*n_ions*n_cells_in_sc, 3*n_ions)
+        unique_sc_offsets : list of lists of ints
+            A list containing 3 lists of the unique supercell image offsets in
+            each direction. The supercell offset is calculated by multiplying
+            the supercell matrix by the supercell image indices (obtained by
+            _get_all_origins()). A list of lists rather than a
+            Numpy array is used as the 3 lists are independent and their size
+            is not known beforehand
+        unique_sc_i : ndarray
+            The indices needed to reconstruct sc_offsets from the unique
+            values in unique_sc_offsets
+            dtype = 'int'
+            shape = ((2*lim + 1)**3, 3)
+        unique_cell_origins : list of lists of ints
+            A list containing 3 lists of the unique cell origins in each
+            direction. A list of lists rather than a Numpy array is used as
+            the 3 lists are independent and their size is not known beforehand
+        unique_sc_i : ndarray
+            The indices needed to reconstruct cell_origins from the unique
+            values in unique_cell_origins
+            dtype = 'int'
+            shape = (cell_origins, 3)
+
+        Returns
+        -------
+        dyn_mat : ndarray
+            The non mass weighted dynamical matrix at q
+            dtype = 'complex'
+            shape = (3*n_ions, 3*n_ions)
+        """
+
+        n_ions = self.n_ions
+        n_cells_in_sc = self.n_cells_in_sc
+        sc_image_i = self.sc_image_i
+        max_sc_images = self.max_sc_images
+        dyn_mat = np.zeros((n_ions*3, n_ions*3), dtype=np.complex128)
+
+        # Cumulant method: for each ij ion-ion displacement sum phases for
+        # all possible supercell images, then multiply by the cell phases
+        # to account for j ions in different cells. Then multiply by the
+        # image weighted fc matrix for each 3 x 3 ij displacement
+
+        # Make sc_phases 1 longer than necessary, so when summing phases for
+        # supercell images if there is no image, an index of -1 and hence
+        # phase of zero can be used
+        sc_phases = np.zeros(len(unique_sc_i) + 1, dtype=np.complex128)
+        sc_phases[:-1], cell_phases = self._calculate_phases(
+            q, unique_sc_offsets, unique_sc_i, unique_cell_origins,
+            unique_cell_i)
+        sc_phase_sum = np.sum(
+            sc_phases[sc_image_i[:, :, 0:max_sc_images]], axis=2)
+
+        ij_phases = sc_phase_sum*np.tile(
+            np.repeat(cell_phases, n_ions), (n_ions, 1))
+        full_dyn_mat = np.transpose(
+            ij_phases.repeat(3, axis=1).repeat(3, axis=0))*fc_img_weighted
+        for nc in range(n_cells_in_sc):
+            dyn_mat += full_dyn_mat[3*nc*n_ions:3*(nc+1)*n_ions, :]
+
+        # Need to transpose dyn_mat to have [i, j] ion indices, as it was
+        # formed by summing the force_constants matrix which has [j, i]
+        # indices
+        return np.transpose(dyn_mat)
+
+
+    def _dipole_correction_init(self):
+        """
+        Calculate the q-independent parts of the long range correction to the
+        dynamical matrix for efficiency. The method used is based on the
+        Ewald sum, see eqs 72-74 from Gonze and Lee PRB 55, 10355 (1997)
+        """
+
+        cell_vec = self.cell_vec.to('bohr').magnitude
+        recip = reciprocal_lattice(cell_vec)
+        n_ions = self.n_ions
+        ion_r = self.ion_r
+        dielectric = self.dielectric
+        inv_dielectric = np.linalg.inv(dielectric)
+        epsilon = 1e-10
+
+        # Cutoffs
+        real_cutoff = 20.0
+        recip_cutoff = 20.0
+
+        # Calculate new realspace cells
+        a_mag = np.linalg.norm(cell_vec, axis=1)
+        eta = math.sqrt(math.pi)/np.amin(a_mag)
+        mean_a_mag = np.prod(a_mag)**(1.0/3)
+#        skew = np.amax(cell_xyz)/mean_cell_xyz
+        a = math.sqrt((real_cutoff/eta)**2 + np.sum(
+            np.sum(np.abs(cell_vec), axis=0)**2))
+        max_cells_xyz = (a/a_mag).astype(np.int32) + 1
+        n_cells_xyz = 2*max_cells_xyz + 1
+        n_cells_real = n_cells_xyz.prod()
+        nxyz = self._get_all_origins(n_cells_xyz)
+        nxyz_phases = self._get_all_origins(
+            -max_cells_xyz - 1, min_xyz=max_cells_xyz, step=-1)
+        real_dr = np.einsum('ij,jk->ik', nxyz, cell_vec)
+
+        # Calculate new reciprocal space cells
+        b_mag = np.linalg.norm(recip, axis=1)
+        b = math.sqrt((recip_cutoff*2*eta)**2 + np.sum(
+            np.sum(np.abs(recip), axis=0)**2))
+        max_cells_hkl = (b/b_mag).astype(np.int32) + 1
+        n_cells_hkl = 2*max_cells_hkl + 1
+        n_cells_recip = n_cells_hkl.prod()
+        nhkl = self._get_all_origins(n_cells_hkl)
+        recip_dg = np.einsum('ij,jk->ik', nhkl, recip)
+
+        # Use eta = lambda * |permittivity|**(1/6)
+        eta =  eta*np.power(np.linalg.det(dielectric), 1.0/6)
+
+        # Calculate real space diagonal term
+        real_diag = np.zeros((n_ions, n_ions, 3, 3))
+        H_ab = np.zeros((n_ions, n_ions, n_cells_real, 3, 3))
+        real_in_range = np.zeros((n_ions, n_ions, n_cells_real), dtype=np.int32)
+        n_real_in_range = np.zeros((n_ions, n_ions), dtype=np.int32)
+        for i in range(n_ions):
+            for j in range(n_ions):
+                a_diff = ion_r[i] - ion_r[j] + max_cells_xyz
+                r0 = np.einsum('ij,i->j', cell_vec, a_diff)
+                n = 0
+                for k in range(n_cells_real):
+                    diff = r0 - real_dr[k]
+                    delta = np.einsum('ij,j->i', inv_dielectric, diff)
+                    diff[np.absolute(diff) < epsilon] = 0
+                    norm_2 = np.sum(delta*diff)*(eta**2)
+                    norm = math.sqrt(norm_2) # Norm D
+                    norm_5 = norm*(norm_2**2)
+                    if norm > epsilon and norm < real_cutoff:
+                        f1 = (eta**2)*(3*erfc(norm)/norm_5 +
+                            (2*math.exp(-norm_2)*(3 + 2*norm_2))/(math.sqrt(math.pi)*norm_2**2))
+                        f2 = erfc(norm)/(norm*norm**2) + (2*np.exp(-norm_2))/(math.sqrt(math.pi)*norm_2)
+                        delta_mat = np.einsum('i,j', delta, delta)
+                        H_ab[i, j, n] = (f1*delta_mat - f2*inv_dielectric)
+                        real_in_range[i, j, n] = k
+                        n += 1
+                n_real_in_range[i, j] = n
+        real_diag = np.sum(H_ab, axis=2)
+        real_diag *= eta**3/math.sqrt(np.linalg.det(dielectric))
+
+        # Calculate reciprocal space diagonal term
+        recip_diag = np.zeros((n_ions, n_ions, 3, 3), dtype=np.complex128)
+        g0 = -np.einsum('ij,i->j', recip, max_cells_hkl)
+        for k in range(n_cells_recip):
+            diff = g0 + recip_dg[k]
+            recip_len = math.sqrt(np.sum(np.einsum('i,j', diff, diff)*dielectric))/eta
+            k_len_2 = (np.sum(np.einsum('i,j', diff, diff)*dielectric))/(4*eta**2)
+            k_len = math.sqrt(k_len_2)
+            if k_len > epsilon and k_len < recip_cutoff:
+                recip_exp = np.exp(-k_len_2)/k_len_2
+                for i in range(n_ions):
+                    for j in range(n_ions):
+                        phase = 2j*math.pi*np.sum((ion_r[i] - ion_r[j])*(nhkl[k] - max_cells_hkl))
+                        phase_exp = np.exp(phase)
+                        recip_diag[i, j] += np.einsum('i,j', diff, diff)*phase_exp*recip_exp
+        cell_volume = np.dot(cell_vec[0], np.cross(cell_vec[1], cell_vec[2]))
+        recip_diag *= math.pi/(cell_volume*eta**2)# After scaling
+
+        self.max_cells_xyz = max_cells_xyz
+        self.max_cells_hkl = max_cells_hkl
+        self.eta = eta
+
+        # Don't keep any entries beyond the cutoff
+        max_n_real_in_range = np.amax(n_real_in_range)
+        self.n_real_in_range = n_real_in_range
+        self.real_in_range = real_in_range[:, :, :max_n_real_in_range]
+        self.H_ab = H_ab[:, :, :max_n_real_in_range, :, :]
+        self.real_diag = real_diag
+        self.recip_diag = recip_diag
+
+
+    def _calculate_dipole_correction(self, q):
+        """
+        Calculate the long range correction to the dynamical matrix using the
+        Ewald sum, see eqs 72-74 from Gonze and Lee PRB 55, 10355 (1997)
+
+        Parameters
+        ----------
+        q : ndarray
+            The q-point to calculate the correction for
+            dtype = 'float'
+            shape = (3,)
+
+        Returns
+        -------
+        corr : ndarray
+            The correction to the dynamical matrix
+            dtype = 'complex'
+            shape = (3*n_ions, 3*n_ions)
+        """
+        cell_vec = self.cell_vec.to('bohr').magnitude
+        recip = reciprocal_lattice(cell_vec)
+        n_ions = self.n_ions
+        ion_r = self.ion_r
+        born = self.born.magnitude
+        dielectric = self.dielectric
+        inv_dielectric = np.linalg.inv(dielectric)
+        eta = self.eta
+        max_cells_xyz = self.max_cells_xyz
+        max_cells_hkl = self.max_cells_hkl
+
+        q_norm = q - np.rint(q) # Normalised q-pt
+        epsilon = 1e-10
+
+        # Calculate cutoffs
+        real_cutoff = 20.0
+        recip_cutoff = 20.0
+
+        # Calculate new realspace cells
+        n_cells_xyz = 2*max_cells_xyz + 1
+        n_cells_real = n_cells_xyz.prod()
+        nxyz = self._get_all_origins(n_cells_xyz)
+        nxyz_phases = self._get_all_origins(
+            -max_cells_xyz - 1, min_xyz=max_cells_xyz, step=-1)
+
+        # Calculate new reciprocal space cells
+        n_cells_hkl = 2*max_cells_hkl + 1
+        n_cells_recip = n_cells_hkl.prod()
+        nhkl = self._get_all_origins(n_cells_hkl)
+        recip_dg = np.einsum('ij,jk->ik', nhkl, recip)
+        g0 = -np.einsum('ij,i->j', recip, max_cells_hkl)
+
+        # Calculate real space phase factor
+        phases = np.exp(2j*math.pi*np.einsum('i,ji->j', q_norm, nxyz_phases))
+        # Calculate real space term
+        real_term = np.zeros((n_ions, n_ions, 3, 3), dtype=np.complex128)
+        for i in range(n_ions):
+            for j in range(i, n_ions):
+            # Note reverse i and j
+                for n in range(self.n_real_in_range[j,i]):
+                    k = self.real_in_range[j, i, n]
+                    real_term[i,j] += phases[k]*self.H_ab[j, i, n]
+        real_term *= eta**3/math.sqrt(np.linalg.det(dielectric))
+
+        # Fill in remaining entries by symmetry
+        for i in range(1, n_ions):
+            for j in range(i):
+                real_term[i, j] = np.conj(real_term[j,i])
+
+        # Calculate general reciprocal term
+        q_recip = np.dot(q_norm, recip)
+        recip_E2 = np.zeros((n_ions, n_ions, 3, 3), dtype=np.complex128)
+        for k in range(n_cells_recip):
+            diff_q = g0 + recip_dg[k] + q_recip
+            k_len_2 = (np.sum(np.einsum('i,j', diff_q, diff_q)*dielectric))/(4*eta**2)
+            k_len = math.sqrt(k_len_2)
+            if k_len > epsilon and k_len < recip_cutoff:
+                recip_exp = np.exp(-k_len_2)/k_len_2
+                for i in range(n_ions):
+                    for j in range(i, n_ions):
+                        phase_q = 2j*math.pi*np.sum((ion_r[i] - ion_r[j])*q_norm)
+                        phase = 2j*math.pi*np.sum((ion_r[i] - ion_r[j])*(nhkl[k] - max_cells_hkl))
+                        phase_exp = np.exp(phase + phase_q)
+                        recip_E2[i,j] += np.einsum('i,j', diff_q, diff_q)*phase_exp*recip_exp
+        cell_volume = np.dot(cell_vec[0], np.cross(cell_vec[1], cell_vec[2]))
+        recip_E2 *= math.pi/(cell_volume*eta**2)# After scaling
+
+        # Fill in remaining entries by symmetry
+        for i in range(1, n_ions):
+            for j in range(i):
+                real_term[i, j] = np.conj(real_term[j,i])
+                recip_E2[i, j] = np.conj(recip_E2[j,i])
+
+        E2 = np.zeros((n_ions, n_ions, 3, 3), dtype=np.complex128)
+        E2_diag = np.zeros((3, 3), dtype=np.complex128)
+        for i in range(n_ions):
+            E2_diag[:, :] = 0
+            for j in range(n_ions):
+                for a in range(3):
+                    for b in range(3):
+                        E2[i,j,a,b] = np.sum(
+                            np.einsum('i,j', born[i,a,:], born[j,b,:])
+                            *(recip_E2[i,j] - real_term[i,j]))
+                        E2_diag[a,b] += np.sum(
+                            np.einsum('i,j', born[i,a,:], born[j,b,:])
+                            *(self.recip_diag[i,j] - self.real_diag[i,j]))
+
+            # Symmetrise diagonal and subtract
+            E2_diag = 0.5*(E2_diag + np.transpose(E2_diag))
+            E2[i,i] -= E2_diag
+
+        return np.reshape(np.transpose(E2, axes=[0, 2, 1, 3]), (3*n_ions, 3*n_ions))
+
+
+    def _calculate_gamma_correction(self, q_dir):
+        """
+        Calculate non-analytic correction to the dynamical matrix at q=0 for
+        a specified direction of approach. See Eq. 60 of X. Gonze and C. Lee,
+        PRB (1997) 55, 10355-10368.
+
+        Parameters
+        ----------
+        q_dir : ndarray
+            The direction along which q approaches 0, in reciprocal fractional
+            coordinates
+            dtype = 'float'
+            shape = (3,)
+
+        Returns
+        -------
+        na_corr : ndarray
+            The correction to the dynamical matrix
+            dtype = 'complex'
+            shape = (3*n_ions, 3*n_ions)
+        """
+        cell_vec = self.cell_vec.to('bohr').magnitude
+        n_ions = self.n_ions
+        born = self.born.magnitude
+        dielectric = self.dielectric
+
+        cell_volume = np.dot(cell_vec[0], np.cross(cell_vec[1], cell_vec[2]))
+        denominator = np.einsum('ij,i,j', dielectric, q_dir, q_dir)
+        factor = 4*math.pi/(cell_volume*denominator)
+
+        q_born_sum = np.einsum('ijk,k->ij', born, q_dir)
+        na_corr = np.zeros((3*n_ions, 3*n_ions), dtype=np.complex128)
+        for i in range(n_ions):
+            for j in range(n_ions):
+                na_corr[3*i:3*(i+1), 3*j:3*(j+1)] = np.einsum(
+                    'i,j->ij', q_born_sum[i], q_born_sum[j])
+        na_corr *= factor
+
+        return na_corr
+
+
+    def _get_all_origins(self, max_xyz, min_xyz=[0, 0, 0], step=1):
+        """
+        Given the max/min number of cells in each direction, get a list of all
+        possible cell origins
+
+        Parameters
+        ----------
+        max_xyz : ndarray
+            The number of cells to count to in each direction
+            dtype = 'int'
+            shape = (3,)
+        min_xyz : ndarray, optional, default [0,0,0]
+            The cell number to count from in each direction
+            dtype = 'int'
+            shape = (3,)
+        step : integer, optional, default 1
+            The step between cells
+
+        Returns
+        -------
+        origins : ndarray
+            The cell origins
+            dtype = 'int'
+            shape = (prod(max_xyz - min_xyz)/step, 3)
+        """
+        diff = np.absolute(max_xyz - min_xyz)
+        nx = np.repeat(range(min_xyz[0], max_xyz[0], step), diff[1]*diff[2])
+        ny = np.repeat(np.tile(range(min_xyz[1], max_xyz[1], step), diff[0]),
+                       diff[2])
+        nz = np.tile(range(min_xyz[2], max_xyz[2], step), diff[0]*diff[1])
+
+        return np.column_stack((nx, ny, nz))
+
+
+    def _enforce_realspace_asr(self):
         """
         Apply a transformation to the force constants matrix so that it
-        satisfies the acousic sum rule. For more information on the method
-        see section 2.3.4:
+        satisfies the acousic sum rule. Diagonalise, shift the acoustic modes
+        to almost zero then construct the correction to the force constants
+        matrix using the eigenvectors. For more information see section 2.3.4:
         http://www.tcm.phy.cam.ac.uk/castep/Phonons_Guide/Castep_Phonons.html
 
         Returns
@@ -481,16 +953,17 @@ class InterpolationData(Data):
                 dist_frac = dist - np.rint(dist)
                 dist_frac_sum = np.sum(np.abs(dist_frac), axis=2)
                 scri_current = np.argmin(dist_frac_sum, axis=1)
-                dist_min_current = dist_frac_sum[range(n_cells_in_sc), scri_current]
+                dist_min_current = dist_frac_sum[
+                    range(n_cells_in_sc), scri_current]
                 replace =  dist_min_current < dist_min
                 sc_relative_index[replace] = ci + scri_current[replace]
                 dist_min[replace] = dist_min_current[replace]
                 if np.all(dist_min <= 16*sys.float_info.epsilon):
                     break
             if (np.any(dist_min > 16*sys.float_info.epsilon)):
-                print('Error correcting FC matrix for acoustic sum rule, ' +
-                      'supercell relative index couldn\'t be found. Returning ' +
-                      'uncorrected FC matrix')
+                print(('Error correcting FC matrix for acoustic sum rule, '
+                       'supercell relative index couldn\'t be found. '
+                       'Returning uncorrected FC matrix'))
                 return self.force_constants
             cell_indices = np.repeat(sc_relative_index, 3*n_ions)
             ion_indices = np.tile(range(3*n_ions), n_cells_in_sc)
@@ -498,25 +971,8 @@ class InterpolationData(Data):
             sq_fc[3*nc*n_ions:3*(nc+1)*n_ions, :] = np.transpose(
                 force_constants[fc_indices, :])
 
-        # Find acoustic modes, they should have the sum of c of m amplitude
-        # squared = mass (note: have not actually included mass weighting
-        # here so assume mass = 1.0)
-        evals, evecs = np.linalg.eigh(sq_fc)
-        n_sc_branches = n_ions_in_sc*3
-        evec_reshape = np.reshape(
-            np.transpose(evecs), (n_sc_branches, n_ions_in_sc, 3))
-        # Sum displacements for all ions in each branch
-        c_of_m_disp = np.sum(evec_reshape, axis=1)
-        c_of_m_disp_sq = np.sum(np.abs(c_of_m_disp)**2, axis=1)
-        sensitivity = 0.5
-        sc_mass = 1.0*n_cells_in_sc
-        # Check number of acoustic modes
-        if np.sum(c_of_m_disp_sq > sensitivity*sc_mass) < 3:
-            print('Error correcting FC matrix for acoustic sum rule, could ' +
-                  'not find 3 acoustic modes. Returning uncorrected FC matrix')
-            return self.force_constants
-        # Find indices of acoustic modes (3 largest c of m displacements)
-        ac_i = np.argsort(c_of_m_disp_sq)[-3:]
+        ac_i, evals, evecs = self._find_acoustic_modes(sq_fc)
+
         # Correct force constant matrix - set acoustic modes to almost zero
         fc_tol = 1e-8*np.min(np.abs(evals))
         for ac in ac_i:
@@ -529,34 +985,93 @@ class InterpolationData(Data):
         return fc
 
 
-    def _calculate_supercell_image_r(self, lim):
+    def _enforce_reciprocal_asr(self, dyn_mat_gamma, dyn_mat):
         """
-        Calculate a list of all the possible supercell image coordinates up to
-        a certain limit
+        Apply a transformation to the dynamical matrix at so that it
+        satisfies the acousic sum rule. Diagonalise, shift the acoustic modes
+        to almost zero then reconstruct the dynamical matrix using the
+        eigenvectors. For more information see section 2.3.4:
+        http://www.tcm.phy.cam.ac.uk/castep/Phonons_Guide/Castep_Phonons.html
 
         Parameters
         ----------
-        lim : int
-            The supercell image limit
+        dyn_mat_gamma : ndarray
+            The non mass-weighted dynamical matrix at q=0
+            dtype = 'complex'
+            shape = (3*n_ions, 3*n_ions)
+        dyn_mat : ndarray
+            The uncorrected, non mass-weighted dynamical matrix at q
+            dtype = 'complex'
+            shape = (3*n_ions, 3*n_ions)
 
         Returns
         -------
-        sc_image_r : ndarray
-            A list of the possible supercell image coordinates
-            e.g. if lim = 2: [[-2, -2, -2], [-2, -2, -1] ... [2, 2, 2]]
-            dtype = 'int'
-            shape = ((2*lim + 1)**3, 3)
+        dyn_mat : ndarray
+            The corrected, non mass-weighted dynamical matrix at q
+            dtype = 'complex'
+            shape = (3*n_ions, 3*n_ions)
         """
-        irange = range(-lim, lim + 1)
-        inum = 2*lim + 1
-        scx = np.repeat(irange, inum**2)
-        scy = np.tile(np.repeat(irange, inum), inum)
-        scz = np.tile(irange, inum**2)
+        ac_i, evals, evecs = self._find_acoustic_modes(dyn_mat_gamma)
+        tol = 1e-8*np.min(np.abs(evals))
 
-        return np.column_stack((scx, scy, scz))
+        for i, ac in enumerate(ac_i):
+            dyn_mat -= (tol*i + evals[ac])*np.einsum(
+                'i,j->ij', evecs[:, ac], evecs[:, ac])
+
+        return dyn_mat
 
 
-    def _calculate_phases(self, qpt, unique_sc_offsets, unique_sc_i, unique_cell_origins, unique_cell_i):
+    def _find_acoustic_modes(self, dyn_mat):
+        """
+        Find the acoustic modes from a dynamical matrix, they should have
+        the sum of c of m amplitude squared = mass (note: have not actually
+        included mass weighting here so assume mass = 1.0)
+
+        Parameters
+        ----------
+        dyn_mat : ndarray
+            A dynamical matrix
+            dtype = 'complex'
+            shape = (3*n_ions, 3*n_ions)
+
+        Returns
+        -------
+        ac_i : ndarray
+            The indices of the acoustic modes
+            dtype = 'int'
+            shape = (3,)
+        evals : ndarray
+            Dynamical matrix eigenvalues
+            dtype = 'float'
+            shape = (3*n_ions)
+        evecs : ndarray
+            Dynamical matrix eigenvectors
+            dtype = 'complex'
+            shape = (3*n_ions, n_ions, 3)
+        """
+        n_branches = dyn_mat.shape[0]
+        n_ions = int(n_branches/3)
+
+        evals, evecs = np.linalg.eigh(dyn_mat)
+        evec_reshape = np.reshape(
+            np.transpose(evecs), (n_branches, n_ions, 3))
+        # Sum displacements for all ions in each branch
+        c_of_m_disp = np.sum(evec_reshape, axis=1)
+        c_of_m_disp_sq = np.sum(np.abs(c_of_m_disp)**2, axis=1)
+        sensitivity = 0.5
+        sc_mass = 1.0*n_ions
+        # Check number of acoustic modes
+        if np.sum(c_of_m_disp_sq > sensitivity*sc_mass) < 3:
+            print(('Error correcting for acoustic sum rule, could not find 3 '
+                   'acoustic modes. Returning uncorrected matrix'))
+            return self.force_constants
+        # Find indices of acoustic modes (3 largest c of m displacements)
+        ac_i = np.argsort(c_of_m_disp_sq)[-3:]
+
+        return ac_i, evals, evecs
+
+
+    def _calculate_phases(self, q, unique_sc_offsets, unique_sc_i, unique_cell_origins, unique_cell_i):
         """
         Calculate the phase factors for the supercell images and cells for a
         single q-point. The unique supercell and cell origins indices are
@@ -564,7 +1079,7 @@ class InterpolationData(Data):
 
         Parameters
         ----------
-        qpt : ndarray
+        q : ndarray
             The q-point to calculate the phase for
             dtype = 'float'
             shape = (3,)
@@ -572,7 +1087,7 @@ class InterpolationData(Data):
             A list containing 3 lists of the unique supercell image offsets in
             each direction. The supercell offset is calculated by multiplying
             the supercell matrix by the supercell image indices (obtained by
-            _calculate_supercell_image_r()). A list of lists rather than a
+            _get_all_origins()). A list of lists rather than a
             Numpy array is used as the 3 lists are independent and their size
             is not known beforehand
         unique_sc_i : ndarray
@@ -608,7 +1123,7 @@ class InterpolationData(Data):
         # calculations
         # exp(iq.r) = exp(iqh.ra)*exp(iqk.rb)*exp(iql.rc)
         #           = (exp(iqh)^ra)*(exp(iqk)^rb)*(exp(iql)^rc)
-        phase = np.exp(2j*math.pi*qpt)
+        phase = np.exp(2j*math.pi*q)
         sc_phases = np.ones(len(unique_sc_i), dtype=np.complex128)
         cell_phases = np.ones(len(unique_cell_i), dtype=np.complex128)
         for i in range(3):
@@ -625,8 +1140,8 @@ class InterpolationData(Data):
         """
         For each displacement of ion i in the unit cell and ion j in the
         supercell, calculate the number of supercell periodic images there are
-        and which supercells they reside in, and sets the sc_image_i and
-        n_sc_images InterpolationData attributes
+        and which supercells they reside in, and sets the sc_image_i,
+        n_sc_images and max_sc_images InterpolationData attributes
 
         Parameters
         ----------
@@ -654,10 +1169,12 @@ class InterpolationData(Data):
         inv_ws_sq = 1.0/np.sum(np.square(ws_list[1:]), axis=1)
 
         # Get Cartesian coords of supercell images and ions in supercell
-        sc_image_r = self._calculate_supercell_image_r(lim)
+        sc_image_r = self._get_all_origins(
+            np.repeat(lim, 3) + 1, min_xyz=-np.repeat(lim, 3))
         sc_image_cart = np.einsum('ij,jk->ik', sc_image_r, sc_vecs)
-        sc_ion_r = np.dot(np.tile(ion_r, (n_cells_in_sc, 1)) + np.repeat(
-            cell_origins, n_ions, axis=0), np.linalg.inv(np.transpose(sc_matrix)))
+        sc_ion_r = np.dot((np.tile(ion_r, (n_cells_in_sc, 1))
+                           + np.repeat(cell_origins, n_ions, axis=0)),
+                          np.linalg.inv(np.transpose(sc_matrix)))
         sc_ion_cart = np.einsum('ij,jk->ik', sc_ion_r, sc_vecs)
 
         sc_image_i = np.full((self.n_ions, 
@@ -667,18 +1184,21 @@ class InterpolationData(Data):
                                dtype=np.int8)
         for i in range(n_ions):
             for j in range(n_ions*n_cells_in_sc):
-                # Get vector between ions in every supercell image
+                # Get vector between j in supercell image and i
                 dists = sc_ion_cart[i] - sc_ion_cart[j] - sc_image_cart
                 # Compare ion-ion supercell vector and all ws point vectors
                 dist_ws_points = np.einsum('ij,kj->ik', dists, ws_list[1:])
-                dist_wsp_frac = np.absolute(np.einsum('ij,j->ij', dist_ws_points, inv_ws_sq))
+                dist_wsp_frac = np.absolute(
+                    np.einsum('ij,j->ij', dist_ws_points, inv_ws_sq))
                 # Count images if ion < half distance to all ws points
-                sc_images = np.where(np.amax(dist_wsp_frac, axis=1) <= (0.5*cutoff_scale + 0.001))[0]
+                sc_images = np.where((np.amax(dist_wsp_frac, axis=1)
+                                      <= (0.5*cutoff_scale + 0.001)))[0]
                 sc_image_i[i, j, 0:len(sc_images)] = sc_images
                 n_sc_images[i, j] = len(sc_images)
 
         self.sc_image_i = sc_image_i
         self.n_sc_images = n_sc_images
+        self.max_sc_images = np.max(self.n_sc_images)
 
 
     def convert_e_units(self, units):
@@ -695,3 +1215,4 @@ class InterpolationData(Data):
 
         if hasattr(self, 'freqs'):
             self.freqs.ito(units, 'spectroscopy')
+            self.split_freqs.ito(units, 'spectroscopy')

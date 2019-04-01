@@ -2,7 +2,7 @@ import os
 import sys
 import numpy as np
 from casteppy import ureg
-from casteppy.util import direction_changed
+from casteppy.util import is_gamma
 from casteppy.data.data import Data
 
 
@@ -47,7 +47,7 @@ class PhononData(Data):
         shape = (n_qpts,)
     freqs: ndarray
         Phonon frequencies, ordered according to increasing q-point
-        number. Default units eV
+        number. Default units meV
         dtype = 'float'
         shape = (n_qpts, 3*n_ions)
     ir: ndarray
@@ -59,11 +59,24 @@ class PhononData(Data):
         dtype = 'float'
         shape = (n_qpts, 3*n_ions)
     eigenvecs: ndarray
-        M x N x L x 3 list of the atomic displacements (dynamical matrix
-        eigenvectors), where M = number of q-points, N = number of branches
-        and L = number of ions. Empty if read_eigenvecs is False
+        Dynamical matrix eigenvectors. Empty if read_eigenvecs is False
         dtype = 'complex'
         shape = (n_qpts, 3*n_ions, n_ions, 3)
+    split_i : ndarray
+        The q-point indices where there is LO-TO splitting, if applicable.
+        Otherwise empty.
+        dtype = 'int'
+        shape = (n_splits,)
+    split_freqs : ndarray
+        Holds the additional LO-TO split phonon frequencies for the q-points
+        specified in split_i. Empty if no LO-TO splitting. Default units meV
+        dtype = 'float'
+        shape = (n_splits, 3*n_ions)
+    split_eigenvecs : ndarray
+        Holds the additional LO-TO split dynamical matrix eigenvectors for the
+        q-points specified in split_i. Empty if no LO-TO splitting
+        dtype = 'complex'
+        shape = (n_splits, 3*n_ions, n_ions, 3)
     """
 
 
@@ -144,21 +157,30 @@ class PhononData(Data):
                                  dtype='complex128')
         else:
             eigenvecs = np.array([])
+        split_i = np.array([], dtype=np.int32)
+        split_freqs = np.empty((0, n_branches))
+        split_eigenvecs = np.empty((0, n_branches, n_ions, 3))
 
         # Need to loop through file using while rather than number of q-points
         # as sometimes points are duplicated
         first_qpt = True
         line = f.readline().split()
+        prev_qpt_num = -1
         while line:
             qpt_num = int(line[1]) - 1
             qpts[qpt_num,:] = [float(x) for x in line[2:5]]
             weights[qpt_num] = float(line[5])
 
             freq_lines = [f.readline().split() for i in range(n_branches)]
-            freqs[qpt_num, :] = [float(line[1]) for line in freq_lines]
+            tmp = np.array([float(line[1]) for line in freq_lines])
+            if qpt_num != prev_qpt_num:
+                freqs[qpt_num, :] = tmp
+            elif is_gamma(qpts[qpt_num]):
+                split_i = np.concatenate((split_i, [qpt_num]))
+                split_freqs = np.concatenate((split_freqs, tmp[np.newaxis]))
             ir_index = 2
             raman_index = 3
-            if np.all(qpts[qpt_num] == 0.):
+            if is_gamma(qpts[qpt_num]):
                 ir_index += 1
                 raman_index += 1
             if read_ir and len(freq_lines[0]) > ir_index:
@@ -179,9 +201,13 @@ class PhononData(Data):
                 lines_i = np.column_stack(([lines[:, 0] + lines[:, 1]*1j,
                                             lines[:, 2] + lines[:, 3]*1j,
                                             lines[:, 4] + lines[:, 5]*1j]))
+                tmp = np.zeros((n_branches, n_ions, 3), dtype=np.complex128)
                 for i in range(n_branches):
-                    eigenvecs[qpt_num, i, :, :] = lines_i[
-                        i*n_ions:(i+1)*n_ions, :]
+                        tmp[i, :, :] = lines_i[i*n_ions:(i+1)*n_ions, :]
+                if qpt_num != prev_qpt_num:
+                    eigenvecs[qpt_num] = tmp
+                elif is_gamma(qpts[qpt_num]):
+                    split_eigenvecs = np.concatenate((split_eigenvecs, tmp[np.newaxis]))
             else:
                 # Don't bother reading eigenvectors
                 # Skip eigenvectors and 2 label lines
@@ -189,11 +215,14 @@ class PhononData(Data):
             first_qpt = False
             line = f.readline().replace('=', ' ')
             line = line.split()
+            prev_qpt_num = qpt_num
 
         cell_vec = cell_vec*ureg.angstrom
         ion_mass = ion_mass*ureg.amu
         freqs = freqs*(1/ureg.cm)
         freqs.ito('meV', 'spectroscopy')
+        split_freqs = split_freqs*(1/ureg.cm)
+        split_freqs.ito('meV', 'spectroscopy')
 
         self.n_ions = n_ions
         self.n_branches = n_branches
@@ -208,6 +237,10 @@ class PhononData(Data):
         self.ir = ir
         self.raman = raman
         self.eigenvecs = eigenvecs
+
+        self.split_i = split_i
+        self.split_freqs = split_freqs
+        self.split_eigenvecs = split_eigenvecs
 
 
     def _read_phonon_header(self, f):

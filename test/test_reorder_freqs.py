@@ -4,7 +4,6 @@ import numpy as np
 from casteppy.data.phonon import PhononData
 from casteppy.calculate.dispersion import reorder_freqs
 
-
 class TestReorderFreqs(unittest.TestCase):
 
     def test_reorder_freqs_NaH(self):
@@ -30,7 +29,7 @@ class TestReorderFreqs(unittest.TestCase):
                                      688.50786,  761.918164, 761.918164],
                                     [124.976823, 124.976823, 238.903818,
                                      593.189877, 593.189877, 873.903056]])
-        npt.assert_allclose(data.freqs, expected_reordered_freqs)
+        npt.assert_allclose(data.freqs.magnitude, expected_reordered_freqs)
 
 
     def test_reorder_freqs_LZO(self):
@@ -157,7 +156,7 @@ class TestReorderFreqs(unittest.TestCase):
          349.637392,413.438689,479.806857,479.806857,463.608166,535.889622,
          535.889622,543.524255,550.815232,544.325882,544.325882,541.757933,
          552.630089,552.630089,508.677347,737.533584,736.042236,736.042236]])
-        npt.assert_allclose(data.freqs, expected_reordered_freqs)
+        npt.assert_allclose(data.freqs.magnitude, expected_reordered_freqs)
 
     def test_multiple_reorder_freqs_has_no_effect_LZO(self):
         # Test that when reorder_freqs is called more than once on the same
@@ -168,7 +167,8 @@ class TestReorderFreqs(unittest.TestCase):
         path = 'test/data'
         data = PhononData(seedname, path)
         reorder_freqs(data)
-        reordered_freqs_1 = data.freqs
+        reordered_freqs_1 = data.freqs.magnitude
         reorder_freqs(data)
-        reordered_freqs_2 = data.freqs
+        reordered_freqs_2 = data.freqs.magnitude
+
         npt.assert_array_equal(reordered_freqs_1, reordered_freqs_2)
