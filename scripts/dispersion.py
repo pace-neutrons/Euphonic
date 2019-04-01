@@ -6,10 +6,10 @@ or vibrational band structure or dispersion.
 
 import argparse
 import os
-from casteppy.data.bands import BandsData
-from casteppy.data.phonon import PhononData
-from casteppy.calculate.dispersion import reorder_freqs
-from casteppy.plot.dispersion import output_grace, plot_dispersion
+from simphony.data.bands import BandsData
+from simphony.data.phonon import PhononData
+from simphony.calculate.dispersion import reorder_freqs
+from simphony.plot.dispersion import output_grace, plot_dispersion
 
 
 def main():

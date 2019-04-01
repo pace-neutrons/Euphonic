@@ -1,8 +1,8 @@
 import unittest
 import numpy.testing as npt
 import numpy as np
-from casteppy.data.phonon import PhononData
-from casteppy.calculate.dispersion import reorder_freqs
+from simphony.data.phonon import PhononData
+from simphony.calculate.dispersion import reorder_freqs
 
 class TestReorderFreqs(unittest.TestCase):
 

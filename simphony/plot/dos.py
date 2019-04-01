@@ -175,8 +175,8 @@ def plot_dos(data, title='', mirror=False, up=True, down=True):
         import matplotlib.pyplot as plt
     except ImportError:
         print('Cannot plot dispersion with Matplotlib, Matplotlib is not ' +
-              'installed. To use this feature install CastepPy\'s optional ' +
-              'Matplotlib dependencies from the casteppy top directory: ' +
+              'installed. To use this feature install SimPhony\'s optional ' +
+              'Matplotlib dependencies from the simphony top directory: ' +
               '\n\npip install --user .[matplotlib]')
         return None
 

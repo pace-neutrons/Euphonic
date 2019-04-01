@@ -2,8 +2,8 @@ import unittest
 import os
 import numpy.testing as npt
 import numpy as np
-from casteppy import ureg
-from casteppy.data.interpolation import InterpolationData
+from simphony import ureg
+from simphony.data.interpolation import InterpolationData
 
 
 class TestInputReadLZO(unittest.TestCase):

@@ -1,8 +1,8 @@
 import unittest
 import numpy.testing as npt
 import numpy as np
-from casteppy.data.phonon import PhononData
-from casteppy import ureg
+from simphony.data.phonon import PhononData
+from simphony import ureg
 
 
 class TestReadInputFileNaHPhonon(unittest.TestCase):

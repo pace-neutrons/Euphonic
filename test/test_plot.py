@@ -1,15 +1,15 @@
 import unittest
 import seekpath
 import matplotlib
-# Need to set non-interactive backend before importing casteppy to avoid
+# Need to set non-interactive backend before importing simphony to avoid
 # DISPLAY requirement when testing plotting functions
 matplotlib.use('Agg')
 import numpy as np
 import numpy.testing as npt
 from matplotlib import figure
-from casteppy import ureg
-from casteppy.plot.dos import plot_dos
-from casteppy.plot.dispersion import (calc_abscissa, recip_space_labels,
+from simphony import ureg
+from simphony.plot.dos import plot_dos
+from simphony.plot.dispersion import (calc_abscissa, recip_space_labels,
                                       generic_qpt_labels, get_qpt_label, 
                                       plot_dispersion)
 

@@ -5,9 +5,9 @@ import os
 import numpy as np
 from scipy.linalg.lapack import zheev
 from scipy.special import erfc
-from casteppy import ureg
-from casteppy.util import reciprocal_lattice, is_gamma
-from casteppy.data.data import Data
+from simphony import ureg
+from simphony.util import reciprocal_lattice, is_gamma
+from simphony.data.data import Data
 
 class InterpolationData(Data):
     """

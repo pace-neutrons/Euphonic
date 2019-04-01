@@ -1,10 +1,10 @@
 import math
 import numpy as np
 from scipy import signal
-from casteppy import ureg
-from casteppy.data.phonon import PhononData
-from casteppy.util import reciprocal_lattice
-from casteppy import ureg
+from simphony import ureg
+from simphony.data.phonon import PhononData
+from simphony.util import reciprocal_lattice
+from simphony import ureg
 
 
 def structure_factor(data, scattering_lengths, T=5.0, scale=1.0, calc_bose=True,

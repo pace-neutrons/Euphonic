@@ -1,8 +1,8 @@
 import unittest
 import numpy.testing as npt
 import numpy as np
-from casteppy.data.bands import BandsData
-from casteppy import ureg
+from simphony.data.bands import BandsData
+from simphony import ureg
 
 
 class TestBandsDataNaH(unittest.TestCase):

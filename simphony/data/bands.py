@@ -1,7 +1,7 @@
 import os
 import numpy as np
-from casteppy import ureg
-from casteppy.data.data import Data
+from simphony import ureg
+from simphony.data.data import Data
 
 class BandsData(Data):
     """

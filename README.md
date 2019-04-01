@@ -1,13 +1,13 @@
-# CastepPy
-CastepPy is a Python package which can plot dispersion and density of states from
+# SimPhony
+SimPhony is a Python package which can plot dispersion and density of states from
 existing CASTEP .bands or .phonon files. For phonons, it can also plot dispersion
 and density of states at arbitrary q-points via interpolation.
 
 ## Installation
-The easiest way to install the CastepPy package is using `pip`. First clone this
+The easiest way to install the SimPhony package is using `pip`. First clone this
 repository and cd into the top directory containing the `setup.py` script.
 
-This package does all plotting with Matplotlib, to install Casteppy with the
+This package does all plotting with Matplotlib, to install SimPhony with the
 optional Matplotlib dependency do:
 ```
 pip install .[matplotlib]
@@ -55,9 +55,9 @@ file will be read and the object will contain all the required data.
 ```
 #!python
 
-from casteppy.data.bands import BandsData
-from casteppy.data.phonon import PhononData
-from casteppy.data.interpolation import InterpolationData
+from simphony.data.bands import BandsData
+from simphony.data.phonon import PhononData
+from simphony.data.interpolation import InterpolationData
 
 seedname = 'graphite'
 path = 'data'
@@ -81,7 +81,7 @@ eigenvecs so they may be stored elsewhere
 ```
 #!python
 
-from casteppy.data.interpolation import InterpolationData
+from simphony.data.interpolation import InterpolationData
 import seekpath as skp
 
 seedname = 'graphite'
@@ -101,8 +101,8 @@ has the freqs and eigenvecs attributes set.
 ```
 #!python
 
-from casteppy.data.interpolation import InterpolationData
-from casteppy.calculate.scattering import structure_factor
+from simphony.data.interpolation import InterpolationData
+from simphony.calculate.scattering import structure_factor
 
 seedname = 'graphite'
 scattering_lengths = {'C': 6.646}
@@ -128,9 +128,9 @@ function:
 ```
 #!python
 
-from casteppy.data.phonon import PhononData
-from casteppy.calculate.dispersion import reorder_freqs
-from casteppy.plot.dispersion import plot_dispersion
+from simphony.data.phonon import PhononData
+from simphony.calculate.dispersion import reorder_freqs
+from simphony.plot.dispersion import plot_dispersion
 
 seedname = 'graphite'
 pdata = PhononData(seedname)
@@ -146,9 +146,9 @@ function, which works on any data object:
 ```
 #!python
 
-from casteppy.data.bands import BandsData
-from casteppy.calculate.dos import calculate_dos
-from casteppy.plot.dos import plot_dos
+from simphony.data.bands import BandsData
+from simphony.calculate.dos import calculate_dos
+from simphony.plot.dos import plot_dos
 
 seedname = 'graphite'
 bdata = BandsData(seedname)

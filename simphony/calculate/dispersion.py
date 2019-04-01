@@ -1,5 +1,5 @@
 import numpy as np
-from casteppy.util import direction_changed
+from simphony.util import direction_changed
 
 
 def reorder_freqs(data):

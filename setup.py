@@ -4,7 +4,7 @@ except ImportError:
     from distutils.core import setup, find_packages
 
 setup(
-    name='CastepPy',
+    name='SimPhony',
     version='0.1dev',
     description="""Module to read CASTEP electronic/vibrational frequency data
                    and output a dispersion/dos plot""",

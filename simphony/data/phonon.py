@@ -1,9 +1,9 @@
 import os
 import sys
 import numpy as np
-from casteppy import ureg
-from casteppy.util import is_gamma
-from casteppy.data.data import Data
+from simphony import ureg
+from simphony.util import is_gamma
+from simphony.data.data import Data
 
 
 class PhononData(Data):

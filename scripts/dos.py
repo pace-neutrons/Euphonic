@@ -7,11 +7,11 @@ vibrational band structure or dispersion.
 import argparse
 import os
 import matplotlib.pyplot as plt
-from casteppy import ureg
-from casteppy.data.bands import BandsData
-from casteppy.data.phonon import PhononData
-from casteppy.calculate.dos import calculate_dos
-from casteppy.plot.dos import plot_dos, output_grace
+from simphony import ureg
+from simphony.data.bands import BandsData
+from simphony.data.phonon import PhononData
+from simphony.calculate.dos import calculate_dos
+from simphony.plot.dos import plot_dos, output_grace
 
 
 def main():
