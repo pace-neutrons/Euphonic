@@ -20,9 +20,10 @@ def structure_factor(data, scattering_lengths, T=5.0, scale=1.0, calc_bose=True,
         and eigenvectors required for the calculation
     scattering_lengths : dictionary
         Dictionary of spin and isotope averaged coherent scattering legnths
-        for each element in the structure e.g. {'O': 5.803, 'Zn': 5.680}
+        for each element in the structure in fm e.g. {'O': 5.803, 'Zn': 5.680}
     T : float, optional, default 5.0
-        The temperature to use when calculating the Bose factor
+        The temperature in Kelvin to use when calculating the Bose and
+        Debye-Waller factors
     scale : float, optional, default 1.0
         Apply a multiplicative factor to the final structure factor.
     calc_bose : boolean, optional, default True
@@ -47,11 +48,11 @@ def structure_factor(data, scattering_lengths, T=5.0, scale=1.0, calc_bose=True,
 
     sl = [scattering_lengths[x] for x in data.ion_type]
 
-    # Convert any Pint quantities to pure magnitudes for performance
-    cell_vec = (data.cell_vec.to('angstrom')).magnitude
-    freqs = (data.freqs.to('meV')).magnitude
-    ion_mass = (data.ion_mass.to('amu')).magnitude
-    sl = (sl*ureg('fm').to('fm')).magnitude
+    # Convert units (use magnitudes for performance)
+    cell_vec = (data.cell_vec.to('bohr')).magnitude
+    freqs = (data.freqs.to('E_h', 'spectroscopy')).magnitude
+    ion_mass = (data.ion_mass.to('e_mass')).magnitude
+    sl = (sl*ureg('fm').to('bohr')).magnitude
 
     # Calculate normalisation factor
     norm_factor = sl/np.sqrt(ion_mass)
@@ -123,7 +124,8 @@ def dw_coeff(data, T, grid=None):
         dtype = 'float'
         shape = (n_ions, 3, 3) 
     """
-    # Get values as magnitudes for performance
+
+    # Convert units (use magnitudes for performance)
     kB = (1*ureg.k).to('E_h/K').magnitude
     ion_mass = data.ion_mass.to('e_mass').magnitude
 
@@ -162,9 +164,9 @@ def dw_coeff(data, T, grid=None):
     freqs = freqs.to('E_h', 'spectroscopy').magnitude
     if T > 0:
         x = freqs/(2*kB*T)
-        freq_term = 1/(2*math.pi*freqs*np.tanh(x))
+        freq_term = 1/(freqs*np.tanh(x))
     else:
-        freq_term = 1/(2*math.pi*freqs)
+        freq_term = 1/(freqs)
 
     dw = np.zeros((data.n_ions, 3, 3))
     # Calculating the e.e* term is expensive, do in chunks
@@ -185,8 +187,8 @@ def dw_coeff(data, T, grid=None):
     return dw
 
 
-def sqw_map(data, ebins, scattering_lengths, T=5.0, scale=1.0, dw_grid=None,
-            dw_seedname=None, ewidth=0, qwidth=0):
+def sqw_map(data, ebins, scattering_lengths, T=5.0, scale=1.0, calc_bose=True,
+            dw_grid=None, dw_seedname=None, ewidth=0, qwidth=0):
     """
     Calculate S(Q, w) for each q-point contained in data and each bin defined
     in ebins, and sets the sqw_map and sqw_ebins attributes of the data object
@@ -200,7 +202,7 @@ def sqw_map(data, ebins, scattering_lengths, T=5.0, scale=1.0, dw_grid=None,
         The energy bin edges in meV
     scattering_lengths : dictionary
         Dictionary of spin and isotope averaged coherent scattering legnths
-        for each element in the structure e.g. {'O': 5.803, 'Zn': 5.680}
+        for each element in the structure in fm e.g. {'O': 5.803, 'Zn': 5.680}
     T : float, optional, default 5.0
         The temperature in Kelvin
     scale : float, optional, default 1.0
@@ -227,17 +229,25 @@ def sqw_map(data, ebins, scattering_lengths, T=5.0, scale=1.0, dw_grid=None,
         shape = (n_qpts, ebins - 1)
     """
 
+    # Convert units (use magnitudes for performance)
+    freqs = (data.freqs.to('E_h', 'spectroscopy')).magnitude
+    ebins = (ebins*ureg('meV').to('E_h')).magnitude
+    ewidth = (ewidth*ureg('meV').to('E_h')).magnitude
+
     # Create initial sqw_map with an extra an energy bin either side, for any
     # branches that fall outside the energy bin range
     sqw_map = np.zeros((data.n_qpts, len(ebins) + 1))
 
-    freqs = (data.freqs.to('meV')).magnitude
+
     sf = structure_factor(data, scattering_lengths, T=T, scale=scale,
                           calc_bose=False, dw_grid=dw_grid,
                           dw_seedname=dw_seedname)
-
-    p_intensity = sf*bose_factor(freqs, T)
-    n_intensity = sf*bose_factor(-freqs, T)
+    if calc_bose:
+        p_intensity = sf*bose_factor(freqs, T)
+        n_intensity = sf*bose_factor(-freqs, T)
+    else:
+            p_intensity = sf
+            n_intensity = sf
 
     p_bin = np.digitize(freqs, ebins)
     n_bin = np.digitize(-freqs, ebins)
@@ -263,7 +273,7 @@ def sqw_map(data, ebins, scattering_lengths, T=5.0, scale=1.0, dw_grid=None,
         sqw_map = signal.fftconvolve(sqw_map, np.transpose(
             gaussian_2d(qbins, ebins, qwidth, ewidth)), 'same')
 
-    data.sqw_ebins = ebins
+    data.sqw_ebins = ebins*ureg('E_h').to(data.freqs.units, 'spectroscopy')
     data.sqw_map = sqw_map
 
     return sqw_map
@@ -364,7 +374,7 @@ def bose_factor(x, T):
     Parameters
     ----------
     x : ndarray
-        Phonon frequencies in meV
+        Phonon frequencies in Hartree
         dtype = 'float'
         shape = (n_qpts, 3*n_ions)
     T : float
@@ -377,24 +387,9 @@ def bose_factor(x, T):
         dtype = 'float'
         shape = (n_qpts, 3*n_ions)
     """
-    kB = (1*ureg.k).to('meV/K').magnitude
+    kB = (1*ureg.k).to('E_h/K').magnitude
     bose = np.zeros(x.shape)
     bose[x > 0] = 1
     if T > 0:
         bose = bose + 1/(np.exp(np.absolute(x)/(kB*T)) - 1)
     return bose
-
-
-def read_scattering_lengths(filename):
-    """
-    Read scattering lengths from a file, and return a dictionary mapping
-    element symbols to scattering lengths
-    """
-    sl_dict = {}
-    with open(filename, 'r') as f:
-        f.readline() # Skip header
-        for line in f:
-            linesplt = line.split()
-            sl_dict[linesplt[0]] = complex(linesplt[-1].strip('()')).real
-
-    return sl_dict

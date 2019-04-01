@@ -15,6 +15,9 @@ class Data(object):
         if hasattr(self, 'dos_bins'):
             self.dos_bins.ito(units, 'spectroscopy')
 
+        if hasattr(self, 'sqw_ebins'):
+            self.sqw_ebins.ito(units, 'spectroscopy')
+
 
     def convert_l_units(self, units):
         """

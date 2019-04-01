@@ -198,7 +198,8 @@ def plot_sqw_map(data, vmin=None, vmax=None, ratio=None):
               '\n\npip install --user .[matplotlib]')
         return None
 
-    ebins = data.sqw_ebins.astype(np.float64)
+    ebins = (data.sqw_ebins.to('meV', 'spectroscopy').magnitude).astype(
+        np.float64)
 
     # Calculate qbin edges
     cell_vec = (data.cell_vec.to('angstrom').magnitude)
