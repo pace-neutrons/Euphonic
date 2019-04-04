@@ -373,6 +373,7 @@ class InterpolationData(Data):
             dtype = 'complex'
             shape = (n_qpts, 3*n_ions, n_ions, 3)
         """
+        self.dyn_mats = np.zeros((len(qpts), 3*self.n_ions, 3*self.n_ions), dtype=np.complex128)
         if asr == 'realspace':
             if not hasattr(self, 'force_constants_asr'):
                 self.force_constants_asr = self._enforce_realspace_asr()
@@ -495,7 +496,7 @@ class InterpolationData(Data):
                 # Fall back to zheev if eigh fails (eigh calls zheevd)
                 except np.linalg.LinAlgError:
                     evals, evecs, info = zheev(dyn_mat_corr)
-
+                self.dyn_mats[q] = dyn_mat_corr
                 prev_evecs = evecs
                 evecs = np.reshape(np.transpose(evecs), (n_branches, n_ions, 3))
                 # Set imaginary frequencies to negative
@@ -642,9 +643,8 @@ class InterpolationData(Data):
         max_cells_xyz = (a/a_mag).astype(np.int32) + 1
         n_cells_xyz = 2*max_cells_xyz + 1
         n_cells_real = n_cells_xyz.prod()
-        nxyz = self._get_all_origins(n_cells_xyz)
-        nxyz_phases = self._get_all_origins(
-            -max_cells_xyz - 1, min_xyz=max_cells_xyz, step=-1)
+        nxyz = self._get_all_origins(
+            max_cells_xyz + 1, min_xyz=-max_cells_xyz)
         real_dr = np.einsum('ij,jk->ik', nxyz, cell_vec)
 
         # Calculate new reciprocal space cells
@@ -667,7 +667,7 @@ class InterpolationData(Data):
         n_real_in_range = np.zeros((n_ions, n_ions), dtype=np.int32)
         for i in range(n_ions):
             for j in range(n_ions):
-                a_diff = ion_r[i] - ion_r[j] + max_cells_xyz
+                a_diff = ion_r[i] - ion_r[j]
                 r0 = np.einsum('ij,i->j', cell_vec, a_diff)
                 n = 0
                 for k in range(n_cells_real):
@@ -760,9 +760,8 @@ class InterpolationData(Data):
         # Calculate new realspace cells
         n_cells_xyz = 2*max_cells_xyz + 1
         n_cells_real = n_cells_xyz.prod()
-        nxyz = self._get_all_origins(n_cells_xyz)
-        nxyz_phases = self._get_all_origins(
-            -max_cells_xyz - 1, min_xyz=max_cells_xyz, step=-1)
+        nxyz = self._get_all_origins(
+            max_cells_xyz + 1, min_xyz=-max_cells_xyz)
 
         # Calculate new reciprocal space cells
         n_cells_hkl = 2*max_cells_hkl + 1
@@ -772,15 +771,14 @@ class InterpolationData(Data):
         g0 = -np.einsum('ij,i->j', recip, max_cells_hkl)
 
         # Calculate real space phase factor
-        phases = np.exp(2j*math.pi*np.einsum('i,ji->j', q_norm, nxyz_phases))
+        phases = np.exp(2j*math.pi*np.einsum('i,ji->j', q_norm, nxyz))
         # Calculate real space term
         real_term = np.zeros((n_ions, n_ions, 3, 3), dtype=np.complex128)
         for i in range(n_ions):
             for j in range(i, n_ions):
-            # Note reverse i and j
-                for n in range(self.n_real_in_range[j,i]):
-                    k = self.real_in_range[j, i, n]
-                    real_term[i,j] += phases[k]*self.H_ab[j, i, n]
+                for n in range(self.n_real_in_range[i,j]):
+                    k = self.real_in_range[i, j, n]
+                    real_term[i,j] += phases[k]*self.H_ab[i, j, n]
         real_term *= eta**3/math.sqrt(np.linalg.det(dielectric))
 
         # Fill in remaining entries by symmetry
