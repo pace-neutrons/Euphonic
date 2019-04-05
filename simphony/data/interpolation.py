@@ -699,6 +699,9 @@ class InterpolationData(Data):
         real_q0 = np.sum(H_ab, axis=2)
         real_q0 *= eta**3/math.sqrt(np.linalg.det(dielectric))
 
+        # Calculate g-vector phases
+        gvec_dot_r = np.einsum('ij,kj->ik', gvecs, ion_r)
+        gvec_phases = np.exp(2j*math.pi*gvec_dot_r)
         # Calculate the q=0 reciprocal term
         recip_q0 = np.zeros((n_ions, n_ions, 3, 3), dtype=np.complex128)
         for k in range(n_cells_recip):
@@ -709,8 +712,7 @@ class InterpolationData(Data):
                 recip_exp = np.exp(-k_len_2)/k_len_2
                 for i in range(n_ions):
                     for j in range(n_ions):
-                        phase = 2j*math.pi*np.sum((ion_r[i] - ion_r[j])*gvecs[k])
-                        phase_exp = np.exp(phase)
+                        phase_exp = gvec_phases[k,i]/gvec_phases[k,j]
                         recip_q0[i,j] += (np.einsum(
                             'i,j', gvecs_cart[k], gvecs_cart[k])
                             *phase_exp*recip_exp)
@@ -739,6 +741,7 @@ class InterpolationData(Data):
         self.n_cells_in_range = n_cells_in_range
         self.cells_in_range = cells_in_range[:, :, :max_n_cells_in_range]
         self.H_ab = H_ab[:, :, :max_n_cells_in_range, :, :]
+        self.gvec_phases = gvec_phases
         self.dipole_q0 = dipole_q0
 
 
@@ -772,6 +775,7 @@ class InterpolationData(Data):
         eta_2 = eta**2
         max_cells_abc = self.max_cells_abc
         max_cells_hkl = self.max_cells_hkl
+        gvec_phases = self.gvec_phases
 
         q_norm = q - np.rint(q) # Normalised q-pt
         epsilon = 1e-10
@@ -794,19 +798,23 @@ class InterpolationData(Data):
         gvecs_cart = np.einsum('ij,jk->ik', gvecs, recip)
 
         # Calculate real space phase factor
-        phases = np.exp(2j*math.pi*np.einsum('i,ji->j', q_norm, cell_origins))
+        q_dot_ra = np.einsum('i,ji->j', q_norm, cell_origins)
+        real_phases = np.exp(2j*math.pi*q_dot_ra)
         # Calculate real space term
         real_dipole = np.zeros((n_ions, n_ions, 3, 3), dtype=np.complex128)
         for i in range(n_ions):
             for j in range(i, n_ions):
                 for n in range(self.n_cells_in_range[i,j]):
                     k = self.cells_in_range[i,j,n]
-                    real_dipole[i,j] += phases[k]*self.H_ab[i,j,n]
+                    real_dipole[i,j] += real_phases[k]*self.H_ab[i,j,n]
         real_dipole *= eta**3/math.sqrt(np.linalg.det(dielectric))
 
+        # Calculate q-point phases
+        q_dot_r = np.einsum('i,ji->j', q_norm, ion_r)
+        q_phases = np.exp(2j*math.pi*q_dot_r)
         # Calculate reciprocal term
-        q_recip = np.dot(q_norm, recip)
         recip_dipole = np.zeros((n_ions, n_ions, 3, 3), dtype=np.complex128)
+        q_recip = np.dot(q_norm, recip)
         for k in range(n_cells_recip):
             kvec = gvecs_cart[k] + q_recip
             k_len_2 = (np.sum(
@@ -816,10 +824,7 @@ class InterpolationData(Data):
                 recip_exp = np.exp(-k_len_2)/k_len_2
                 for i in range(n_ions):
                     for j in range(i, n_ions):
-                        rij = ion_r[i] - ion_r[j]
-                        phase_q = 2j*math.pi*np.sum(rij*q_norm)
-                        phase = 2j*math.pi*np.sum(rij*gvecs[k])
-                        phase_exp = np.exp(phase + phase_q)
+                        phase_exp = (gvec_phases[k,i]*q_phases[i])/(gvec_phases[k,j]*q_phases[j])
                         recip_dipole[i,j] += np.einsum(
                             'i,j', kvec, kvec)*phase_exp*recip_exp
         cell_volume = np.dot(cell_vec[0], np.cross(cell_vec[1], cell_vec[2]))
