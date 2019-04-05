@@ -702,20 +702,19 @@ class InterpolationData(Data):
         # Calculate g-vector phases
         gvec_dot_r = np.einsum('ij,kj->ik', gvecs, ion_r)
         gvec_phases = np.exp(2j*math.pi*gvec_dot_r)
+        # Calculate g-vector symmetric matrix
+        gvecs_ab = np.einsum('ij,ik->ijk', gvecs_cart, gvecs_cart)
         # Calculate the q=0 reciprocal term
         recip_q0 = np.zeros((n_ions, n_ions, 3, 3), dtype=np.complex128)
         for k in range(n_cells_recip):
-            k_len_2 = (np.sum(np.einsum(
-                'i,j', gvecs_cart[k], gvecs_cart[k])*dielectric))/(4*eta_2)
+            k_len_2 = (np.sum(gvecs_ab[k]*dielectric))/(4*eta_2)
             k_len = math.sqrt(k_len_2)
             if k_len > epsilon and k_len < recip_cutoff:
                 recip_exp = np.exp(-k_len_2)/k_len_2
                 for i in range(n_ions):
                     for j in range(n_ions):
                         phase_exp = gvec_phases[k,i]/gvec_phases[k,j]
-                        recip_q0[i,j] += (np.einsum(
-                            'i,j', gvecs_cart[k], gvecs_cart[k])
-                            *phase_exp*recip_exp)
+                        recip_q0[i,j] += (gvecs_ab[k]*phase_exp*recip_exp)
         cell_volume = np.dot(cell_vec[0], np.cross(cell_vec[1], cell_vec[2]))
         recip_q0 *= math.pi/(cell_volume*eta_2)
 
@@ -812,21 +811,22 @@ class InterpolationData(Data):
         # Calculate q-point phases
         q_dot_r = np.einsum('i,ji->j', q_norm, ion_r)
         q_phases = np.exp(2j*math.pi*q_dot_r)
+        q_cart = np.dot(q_norm, recip)
+
+        # Calculate k-vector symmetric matrix
+        kvecs = gvecs_cart + q_cart
+        kvecs_ab = np.einsum('ij,ik->ijk', kvecs, kvecs)
         # Calculate reciprocal term
         recip_dipole = np.zeros((n_ions, n_ions, 3, 3), dtype=np.complex128)
-        q_recip = np.dot(q_norm, recip)
         for k in range(n_cells_recip):
-            kvec = gvecs_cart[k] + q_recip
-            k_len_2 = (np.sum(
-                np.einsum('i,j', kvec, kvec)*dielectric))/(4*eta_2)
+            k_len_2 = (np.sum(kvecs_ab[k]*dielectric))/(4*eta_2)
             k_len = math.sqrt(k_len_2)
             if k_len > epsilon and k_len < recip_cutoff:
                 recip_exp = np.exp(-k_len_2)/k_len_2
                 for i in range(n_ions):
                     for j in range(i, n_ions):
                         phase_exp = (gvec_phases[k,i]*q_phases[i])/(gvec_phases[k,j]*q_phases[j])
-                        recip_dipole[i,j] += np.einsum(
-                            'i,j', kvec, kvec)*phase_exp*recip_exp
+                        recip_dipole[i,j] += kvecs_ab[k]*phase_exp*recip_exp
         cell_volume = np.dot(cell_vec[0], np.cross(cell_vec[1], cell_vec[2]))
         recip_dipole *= math.pi/(cell_volume*eta_2)
 
