@@ -677,25 +677,29 @@ class InterpolationData(Data):
                 rij_cart = ion_r_cart[i] - ion_r_cart[j]
                 rij_e = ion_r_e[i] - ion_r_e[j]
                 n = 0
-                for k in range(n_cells_tot):
-                    diff = rij_cart - cell_origins_cart[k]
-                    delta = rij_e - cell_origins_e[k]
-                    diff[np.absolute(diff) < epsilon] = 0
-                    norm_2 = np.einsum('i,i', delta, diff)*eta_2
-                    norm = math.sqrt(norm_2) # Norm D
-                    norm_5 = norm*(norm_2**2)
-                    if norm > epsilon and norm < real_cutoff:
-                        exp_norm_2 = math.exp(-norm_2)
-                        f1 = eta_2*(3*erfc(norm)/norm_5
-                             + (2*exp_norm_2*(3 + 2*norm_2))
-                             /(sqrt_pi*norm_2**2))
-                        f2 = (erfc(norm)/(norm*norm_2)
-                             + (2*exp_norm_2)/(sqrt_pi*norm_2))
-                        delta_mat = np.einsum('i,j', delta, delta)
-                        H_ab[i,j,n] = (f1*delta_mat - f2*inv_dielectric)
-                        cells_in_range[i,j,n] = k
-                        n += 1
-                n_cells_in_range[i,j] = n
+                diffs = rij_cart - cell_origins_cart
+                deltas = rij_e - cell_origins_e
+                norms_2 = np.einsum('ij,ij->i', deltas, diffs)*eta_2
+                norms = np.sqrt(norms_2)
+                idx = np.where(np.logical_and(norms > epsilon, norms < real_cutoff))[0]
+                n_cells_in_range[i,j] = len(idx)
+                cells_in_range[i,j,:len(idx)] = idx
+
+                # Reindex some already calculated values to only include
+                # cells in range
+                deltas = deltas[idx]
+                norms_2 = norms_2[idx]
+                norms = norms[idx]
+
+                # Calculate H_ab
+                exp_term = 2*np.exp(-norms_2)/(sqrt_pi*norms_2)
+                erfc_term = erfc(norms)/(norms*norms_2)
+                f1 = eta_2*(3*erfc_term/norms_2 + exp_term*(3/norms_2 + 2))
+                f2 = erfc_term + exp_term
+                delta_mats = np.einsum('ij,ik->ijk', deltas, deltas)
+                H_ab[i,j,:len(idx)] = (np.einsum('i,ijk->ijk', f1, delta_mats)
+                                       - np.einsum('i,jk->ijk',
+                                                   f2, inv_dielectric))
         real_q0 = np.sum(H_ab, axis=2)
         real_q0 *= eta**3/math.sqrt(np.linalg.det(dielectric))
 
