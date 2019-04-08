@@ -712,7 +712,7 @@ class InterpolationData(Data):
         # Calculate g-vector phases
         gvec_dot_r = np.einsum('ij,kj->ik', gvecs, ion_r)
         gvec_phases = np.exp(2j*math.pi*gvec_dot_r)
-        self.gvec_phases = np.copy(gvec_phases) # Assign before reindexing
+        self.gvec_phases = gvec_phases # Assign before reindexing
         # Calculate g-vector symmetric matrix
         gvecs_ab = np.einsum('ij,ik->ijk', gvecs_cart, gvecs_cart)
         # Calculate which reciprocal vectors are within the cutoff
@@ -789,6 +789,8 @@ class InterpolationData(Data):
         eta_2 = eta**2
         max_cells_abc = self.max_cells_abc
         max_cells_hkl = self.max_cells_hkl
+        H_ab = self.H_ab
+        cells_in_range = self.cells_in_range
         gvec_phases = self.gvec_phases
 
         q_norm = q - np.rint(q) # Normalised q-pt
@@ -811,16 +813,15 @@ class InterpolationData(Data):
             max_cells_hkl + 1, min_xyz=-max_cells_hkl)
         gvecs_cart = np.einsum('ij,jk->ik', gvecs, recip)
 
+        # Calculate real space term
+        real_dipole = np.zeros((n_ions, n_ions, 3, 3), dtype=np.complex128)
         # Calculate real space phase factor
         q_dot_ra = np.einsum('i,ji->j', q_norm, cell_origins)
         real_phases = np.exp(2j*math.pi*q_dot_ra)
-        # Calculate real space term
-        real_dipole = np.zeros((n_ions, n_ions, 3, 3), dtype=np.complex128)
         for i in range(n_ions):
             for j in range(i, n_ions):
-                for n in range(self.n_cells_in_range[i,j]):
-                    k = self.cells_in_range[i,j,n]
-                    real_dipole[i,j] += real_phases[k]*self.H_ab[i,j,n]
+                real_dipole[i,j] = np.einsum(
+                    'ijk,i->jk', H_ab[i,j], real_phases[cells_in_range[i,j]])
         real_dipole *= eta**3/math.sqrt(np.linalg.det(dielectric))
 
         # Calculate q-point phases
@@ -828,20 +829,27 @@ class InterpolationData(Data):
         q_phases = np.exp(2j*math.pi*q_dot_r)
         q_cart = np.dot(q_norm, recip)
 
+        # Calculate reciprocal term
+        recip_dipole = np.zeros((n_ions, n_ions, 3, 3), dtype=np.complex128)
         # Calculate k-vector symmetric matrix
         kvecs = gvecs_cart + q_cart
         kvecs_ab = np.einsum('ij,ik->ijk', kvecs, kvecs)
-        # Calculate reciprocal term
-        recip_dipole = np.zeros((n_ions, n_ions, 3, 3), dtype=np.complex128)
-        for k in range(n_cells_recip):
-            k_len_2 = (np.sum(kvecs_ab[k]*dielectric))/(4*eta_2)
-            k_len = math.sqrt(k_len_2)
-            if k_len > epsilon and k_len < recip_cutoff:
-                recip_exp = np.exp(-k_len_2)/k_len_2
-                for i in range(n_ions):
-                    for j in range(i, n_ions):
-                        phase_exp = (gvec_phases[k,i]*q_phases[i])/(gvec_phases[k,j]*q_phases[j])
-                        recip_dipole[i,j] += kvecs_ab[k]*phase_exp*recip_exp
+        # Calculate which reciprocal vectors are within the cutoff
+        k_len_2 = np.einsum('ijk,jk->i', kvecs_ab, dielectric)/(4*eta_2)
+        k_len = np.sqrt(k_len_2)
+        idx = np.where(np.logical_and(k_len > epsilon,
+                                      k_len < recip_cutoff))[0]
+        # Reindex to only include vectors within cutoff
+        k_len_2 = k_len_2[idx]
+        k_len = k_len[idx]
+        kvecs_ab = kvecs_ab[idx]
+        gvec_phases = gvec_phases[idx]
+        recip_exp = np.exp(-k_len_2)/k_len_2
+        for i in range(n_ions):
+            for j in range(i, n_ions):
+                phase_exp = (gvec_phases[:,i]*q_phases[i])/(gvec_phases[:,j]*q_phases[j])
+                recip_dipole[i,j] = np.einsum(
+                    'ijk,i,i->jk', kvecs_ab, phase_exp, recip_exp)
         cell_volume = np.dot(cell_vec[0], np.cross(cell_vec[1], cell_vec[2]))
         recip_dipole *= math.pi/(cell_volume*eta_2)
 
