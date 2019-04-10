@@ -844,12 +844,13 @@ class InterpolationData(Data):
         k_len = k_len[idx]
         kvecs_ab = kvecs_ab[idx]
         gvec_phases = gvec_phases[idx]
-        recip_exp = np.exp(-k_len_2)/k_len_2
+        recip_exp = np.einsum('ijk,i->ijk', kvecs_ab, np.exp(-k_len_2)/k_len_2)
         for i in range(n_ions):
             for j in range(i, n_ions):
-                phase_exp = (gvec_phases[:,i]*q_phases[i])/(gvec_phases[:,j]*q_phases[j])
+                phase_exp = ((gvec_phases[:,i]*q_phases[i])
+                             /(gvec_phases[:,j]*q_phases[j]))
                 recip_dipole[i,j] = np.einsum(
-                    'ijk,i,i->jk', kvecs_ab, phase_exp, recip_exp)
+                    'ijk,i->jk', recip_exp, phase_exp)
         cell_volume = np.dot(cell_vec[0], np.cross(cell_vec[1], cell_vec[2]))
         recip_dipole *= math.pi/(cell_volume*eta_2)
 
@@ -860,13 +861,12 @@ class InterpolationData(Data):
                 recip_dipole[i,j] = np.conj(recip_dipole[j,i])
 
         dipole = np.zeros((n_ions, n_ions, 3, 3), dtype=np.complex128)
+        dipole_tmp = recip_dipole - real_dipole
         for i in range(n_ions):
             for j in range(n_ions):
                 for a in range(3):
-                    for b in range(3):
-                        dipole[i,j,a,b] = np.sum(
-                            np.einsum('i,j', born[i,a,:], born[j,b,:])
-                            *(recip_dipole[i,j] - real_dipole[i,j]))
+                    dipole[i,j,a,:] = np.einsum('i,jk,ik->j', born[i,a,:],
+                                                born[j,:,:], dipole_tmp[i,j])
 
             dipole[i,i] -= self.dipole_q0[i]
 
