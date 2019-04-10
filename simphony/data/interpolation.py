@@ -9,6 +9,7 @@ from simphony import ureg
 from simphony.util import reciprocal_lattice, is_gamma
 from simphony.data.data import Data
 
+
 class InterpolationData(Data):
     """
     A class to read the data required for a supercell phonon interpolation
@@ -57,7 +58,7 @@ class InterpolationData(Data):
     force_constants : ndarray
         Force constants matrix. Default units atomic units
         dtype = 'float'
-        shape = (3*n_ions*n_cells_in_sc, 3*n_ions)
+        shape = (n_cells_in_sc, 3*n_ions, 3*n_ions)
     n_qpts : int
         Number of q-points used in the most recent interpolation calculation.
         Default value 0
@@ -86,7 +87,7 @@ class InterpolationData(Data):
         in the unit cell and ion j in the supercell. This attribute doesn't
         exist until calculate_fine_phonons has been called
         dtype = 'int'
-        shape = (n_ions, n_ions*n_cells_in_sc)
+        shape = (n_cells_in_sc, n_ions, n_ions)
     max_sc_images : int
         The maximum number of periodic supercell images over all ij
         displacements. This is required for efficiency when summing phases
@@ -98,13 +99,13 @@ class InterpolationData(Data):
         _get_all_origins. This attribute doesn't exist until
         calculate_fine_phonons has been called
         dtype = 'int'
-        shape = (n_ions, n_ions*n_cells_in_sc, (2*lim + 1)**3)
+        shape = (n_cells_in_sc, n_ions, n_ions, (2*lim + 1)**3)
     force_constants_asr : ndarray
         Force constants matrix that has the acoustic sum rule applied. This
         attribute doesn't exist until calculate_fine_phonons has been called
         with asr=True. Default units atomic units
         dtype = 'float'
-        shape = (3*n_ions*n_cells_in_sc, 3*n_ions)
+        shape = (n_cells_in_sc, 3*n_ions, 3*n_ions)
     asr : boolean
         Stores whether the acoustic sum rule was used in the last phonon
         calculation. Ensures consistency of other calculations e.g. when
@@ -265,7 +266,7 @@ class InterpolationData(Data):
                 n_cells_in_sc = int(np.rint(np.absolute(
                     np.linalg.det(sc_matrix))))
                 force_constants = np.reshape(read_entry(file_obj, float_type),
-                                    (n_cells_in_sc*3*n_ions, 3*n_ions))
+                                    (n_cells_in_sc, 3*n_ions, 3*n_ions))
                 cell_origins = np.reshape(
                     read_entry(file_obj, int_type), (n_cells_in_sc, 3))
                 fc_row = read_entry(file_obj, int_type)
@@ -431,7 +432,7 @@ class InterpolationData(Data):
         # Precompute fc matrix weighted by number of supercell ion images
         # (for cumulant method)
         n_sc_images_repeat = np.transpose(
-            n_sc_images.repeat(3, axis=1).repeat(3, axis=0))
+            n_sc_images.repeat(3, axis=2).repeat(3, axis=1), axes=[0,2,1])
         fc_img_weighted = np.divide(
             force_constants, n_sc_images_repeat, where=n_sc_images_repeat != 0)
 
@@ -595,15 +596,16 @@ class InterpolationData(Data):
         sc_phases[:-1], cell_phases = self._calculate_phases(
             q, unique_sc_offsets, unique_sc_i, unique_cell_origins,
             unique_cell_i)
-        sc_phase_sum = np.sum(
-            sc_phases[sc_image_i[:, :, 0:max_sc_images]], axis=2)
+        sc_phase_sum = np.sum(sc_phases[sc_image_i[:,:,:,0:max_sc_images]],
+                              axis=3)
 
-        ij_phases = sc_phase_sum*np.tile(
-            np.repeat(cell_phases, n_ions), (n_ions, 1))
-        full_dyn_mat = np.transpose(
-            ij_phases.repeat(3, axis=1).repeat(3, axis=0))*fc_img_weighted
-        for nc in range(n_cells_in_sc):
-            dyn_mat += full_dyn_mat[3*nc*n_ions:3*(nc+1)*n_ions, :]
+        ax = np.newaxis
+        ij_phases = cell_phases[:,ax,ax]*sc_phase_sum
+        full_dyn_mat = fc_img_weighted*(
+            np.transpose(ij_phases, axes=[0,2,1])
+            .repeat(3, axis=2)
+            .repeat(3, axis=1))
+        dyn_mat = np.sum(full_dyn_mat, axis=0)
 
         # Need to transpose dyn_mat to have [i, j] ion indices, as it was
         # formed by summing the force_constants matrix which has [j, i]
@@ -919,7 +921,7 @@ class InterpolationData(Data):
         force_constants : ndarray
             The corrected force constants matrix
             dtype = 'float'
-            shape = (n_ions*n_cells_in_sc, 3*n_ions)
+            shape = (n_cells_in_sc, 3*n_ions, 3*n_ions)
         """
         cell_vec = self.cell_vec
         cell_origins = self.cell_origins
@@ -928,6 +930,7 @@ class InterpolationData(Data):
         n_ions = self.n_ions
         n_branches = self.n_branches
         force_constants = self.force_constants.magnitude
+        ax = np.newaxis
 
         # Compute square matrix giving relative index of cells in sc
         n_ions_in_sc = n_ions*n_cells_in_sc
@@ -948,8 +951,8 @@ class InterpolationData(Data):
             for i in range(int((n_cells_in_sc - 1)/N) + 1):
                 ci = i*N
                 cf = min((i + 1)*N, n_cells_in_sc)
-                dist = (inter_cell_vectors[:, np.newaxis, :] -
-                        cell_origins_sc[np.newaxis, ci:cf, :])
+                dist = (inter_cell_vectors[:, ax, :] -
+                        cell_origins_sc[ax, ci:cf, :])
                 dist_frac = dist - np.rint(dist)
                 dist_frac_sum = np.sum(np.abs(dist_frac), axis=2)
                 scri_current = np.argmin(dist_frac_sum, axis=1)
@@ -965,11 +968,9 @@ class InterpolationData(Data):
                        'supercell relative index couldn\'t be found. '
                        'Returning uncorrected FC matrix'))
                 return self.force_constants
-            cell_indices = np.repeat(sc_relative_index, 3*n_ions)
-            ion_indices = np.tile(range(3*n_ions), n_cells_in_sc)
-            fc_indices = 3*n_ions*cell_indices + ion_indices
             sq_fc[3*nc*n_ions:3*(nc+1)*n_ions, :] = np.transpose(
-                force_constants[fc_indices, :])
+                np.reshape(force_constants[sc_relative_index],
+                           (3*n_cells_in_sc*n_ions, 3*n_ions)))
 
         ac_i, evals, evecs = self._find_acoustic_modes(sq_fc)
 
@@ -979,7 +980,8 @@ class InterpolationData(Data):
             sq_fc -= (fc_tol + evals[ac])*np.einsum(
                 'i,j->ij', evecs[:, ac], evecs[:, ac])
 
-        fc = sq_fc[:, :3*n_ions]
+        fc = np.reshape(sq_fc[:, :3*n_ions],
+                        (n_cells_in_sc, 3*n_ions, 3*n_ions))
         fc = fc*self.force_constants.units
 
         return fc
@@ -1099,7 +1101,7 @@ class InterpolationData(Data):
             A list containing 3 lists of the unique cell origins in each
             direction. A list of lists rather than a Numpy array is used as
             the 3 lists are independent and their size is not known beforehand
-        unique_sc_i : ndarray
+        unique_cell_i : ndarray
             The indices needed to reconstruct cell_origins from the unique
             values in unique_cell_origins
             dtype = 'int'
@@ -1172,29 +1174,32 @@ class InterpolationData(Data):
         sc_image_r = self._get_all_origins(
             np.repeat(lim, 3) + 1, min_xyz=-np.repeat(lim, 3))
         sc_image_cart = np.einsum('ij,jk->ik', sc_image_r, sc_vecs)
-        sc_ion_r = np.dot((np.tile(ion_r, (n_cells_in_sc, 1))
+        sc_ion_r_orig = np.dot((np.tile(ion_r, (n_cells_in_sc, 1))
                            + np.repeat(cell_origins, n_ions, axis=0)),
                           np.linalg.inv(np.transpose(sc_matrix)))
-        sc_ion_cart = np.einsum('ij,jk->ik', sc_ion_r, sc_vecs)
+        ax = np.newaxis
+        sc_ion_r = np.einsum('ijk,kl->ijl',
+                             cell_origins[:, ax, :] + ion_r[ax, :, :],
+                             np.linalg.inv(np.transpose(sc_matrix)))
+        sc_ion_cart = np.einsum('ijk,kl->ijl', sc_ion_r, sc_vecs)
 
-        sc_image_i = np.full((self.n_ions, 
-                             self.n_ions*self.n_cells_in_sc,
-                             (2*lim + 1)**3), -1, dtype=np.int8)
-        n_sc_images = np.zeros((self.n_ions, self.n_ions*self.n_cells_in_sc),
-                               dtype=np.int8)
-        for i in range(n_ions):
-            for j in range(n_ions*n_cells_in_sc):
-                # Get vector between j in supercell image and i
-                dists = sc_ion_cart[i] - sc_ion_cart[j] - sc_image_cart
-                # Compare ion-ion supercell vector and all ws point vectors
-                dist_ws_points = np.einsum('ij,kj->ik', dists, ws_list[1:])
-                dist_wsp_frac = np.absolute(
-                    np.einsum('ij,j->ij', dist_ws_points, inv_ws_sq))
-                # Count images if ion < half distance to all ws points
-                sc_images = np.where((np.amax(dist_wsp_frac, axis=1)
-                                      <= (0.5*cutoff_scale + 0.001)))[0]
-                sc_image_i[i, j, 0:len(sc_images)] = sc_images
-                n_sc_images[i, j] = len(sc_images)
+        sc_image_i = np.full((n_cells_in_sc, n_ions, n_ions, (2*lim + 1)**3),
+                             -1, dtype=np.int8)
+        n_sc_images = np.zeros((n_cells_in_sc, n_ions, n_ions), dtype=np.int8)
+        for nc in range(n_cells_in_sc):
+            for i in range(n_ions):
+                for j in range(n_ions):
+                    # Get vector between j in supercell image and i
+                    dists = sc_ion_cart[0,i] - sc_ion_cart[nc,j] - sc_image_cart
+                    # Compare ion-ion supercell vector and all ws point vectors
+                    dist_ws_points = np.einsum('ij,kj->ik', dists, ws_list[1:])
+                    dist_wsp_frac = np.absolute(
+                        np.einsum('ij,j->ij', dist_ws_points, inv_ws_sq))
+                    # Count images if ion < half distance to all ws points
+                    sc_images = np.where((np.amax(dist_wsp_frac, axis=1)
+                                          <= (0.5*cutoff_scale + 0.001)))[0]
+                    sc_image_i[nc,i,j,0:len(sc_images)] = sc_images
+                    n_sc_images[nc,i,j] = len(sc_images)
 
         self.sc_image_i = sc_image_i
         self.n_sc_images = n_sc_images

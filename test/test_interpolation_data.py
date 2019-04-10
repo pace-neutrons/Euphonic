@@ -305,8 +305,13 @@ class TestInterpolatePhononsLZO(unittest.TestCase):
         i = image_data[:, 0].astype(int)
         j = image_data[:, 1].astype(int)
         n = image_data[:, 2].astype(int)
-        expctd_n_images = np.zeros((22, 88)) # size = n_ions X n_ions*n_cells_in_sc
+        expctd_n_images = np.zeros((22, 88))
         expctd_n_images[i, j] = n
+        # After refactoring where the shape of n_sc_images was changed from
+        # (n_ions, n_cells_in_sc*n_ions) to (n_cells_in_sc, n_ions, n_ions),
+        # expctc_n_images must be reshaped to ensure tests still pass
+        expctd_n_images = np.transpose(np.reshape(
+            expctd_n_images, (22, 4, 22)), axes=[1, 0, 2])
         self.data._calculate_supercell_images(lim)
         npt.assert_equal(self.data.n_sc_images, expctd_n_images)
 
@@ -322,6 +327,13 @@ class TestInterpolatePhononsLZO(unittest.TestCase):
         # size = n_ions X n_ions*n_cells_in_sc X max supercell images
         expctd_sc_image_i = np.full((22, 88, (2*lim + 1)**3), -1)
         expctd_sc_image_i[i, j, n] = sc_i
+        # After refactoring where the shape of sc_image_i was changed from
+        # (n_ions, n_cells_in_sc*n_ions, (2*lim + 1)**3) to
+        # (n_cells_in_sc, n_ions, n_ions, (2*lim + 1)**3),
+        # expctc_image_i must be reshaped to ensure tests still pass
+        expctd_sc_image_i = np.transpose(
+            np.reshape(expctd_sc_image_i, (22, 4, 22, (2*lim + 1)**3)),
+            axes=[1, 0, 2, 3])
         self.data._calculate_supercell_images(lim)
         npt.assert_equal(self.data.sc_image_i, expctd_sc_image_i)
 
@@ -339,6 +351,11 @@ class TestInterpolatePhononsLZO(unittest.TestCase):
 
     def test_enforce_realspace_acoustic_sum_rule(self):
         expected_fc_mat = np.load(os.path.join(self.path, 'lzo_fc_mat_asr.npy'))
+        # After refactoring where the shape of the force constants matrix was
+        # changed from (3*n_cells_in_sc*n_ions, 3*n_ions) to
+        # (n_cells_in_sc, 3*n_ions, 3*n_ions), expected_fc_mat must be
+        # reshaped to ensure tests still pass
+        expected_fc_mat = np.reshape(expected_fc_mat, (4, 3*22, 3*22))
         fc_mat = self.data._enforce_realspace_asr().to(
                 ureg.hartree/ureg.bohr**2).magnitude
         npt.assert_allclose(fc_mat, expected_fc_mat, atol=1e-18)
@@ -558,6 +575,13 @@ class TestInterpolatePhononsGraphite(unittest.TestCase):
         n = image_data[:, 2].astype(int)
         expctd_n_images = np.zeros((self.n_ions, self.n_ions*self.n_cells_in_sc))
         expctd_n_images[i, j] = n
+        # After refactoring where the shape of n_sc_images was changed from
+        # (n_ions, n_cells_in_sc*n_ions) to (n_cells_in_sc, n_ions, n_ions),
+        # expctc_n_images must be reshaped to ensure tests still pass
+        expctd_n_images = np.transpose(
+            np.reshape(expctd_n_images,
+                       (self.n_ions, self.n_cells_in_sc, self.n_ions)),
+            axes=[1, 0, 2])
         self.data._calculate_supercell_images(lim)
         npt.assert_equal(self.data.n_sc_images, expctd_n_images)
 
@@ -570,8 +594,17 @@ class TestInterpolatePhononsGraphite(unittest.TestCase):
         n = image_data[:, 2].astype(int)
         sc_i = image_data[:, 3].astype(int)
         # size = n_ions X n_ions*n_cells_in_sc X max supercell images
-        expctd_sc_image_i = np.full((self.n_ions, self.n_ions*self.n_cells_in_sc, (2*lim + 1)**3), -1)
+        expctd_sc_image_i = np.full((self.n_ions, self.n_ions*self.n_cells_in_sc,
+                                    (2*lim + 1)**3), -1)
         expctd_sc_image_i[i, j, n] = sc_i
+        # After refactoring where the shape of sc_image_i was changed from
+        # (n_ions, n_cells_in_sc*n_ions, (2*lim + 1)**3) to
+        # (n_cells_in_sc, n_ions, n_ions, (2*lim + 1)**3),
+        # expctc_image_i must be reshaped to ensure tests still pass
+        expctd_sc_image_i = np.transpose(
+            np.reshape(expctd_sc_image_i, (self.n_ions, self.n_cells_in_sc,
+                                           self.n_ions, (2*lim + 1)**3)),
+            axes=[1, 0, 2, 3])
         self.data._calculate_supercell_images(lim)
         npt.assert_equal(self.data.sc_image_i, expctd_sc_image_i)
 
@@ -588,7 +621,15 @@ class TestInterpolatePhononsGraphite(unittest.TestCase):
                             atol=1e-10)
 
     def test_enforce_realspace_acoustic_sum_rule(self):
-        expected_fc_mat = np.load(os.path.join(self.path, 'graphite_fc_mat_asr.npy'))
+        expected_fc_mat = np.load(os.path.join(self.path,
+                                               'graphite_fc_mat_asr.npy'))
+        # After refactoring where the shape of the force constants matrix was
+        # changed from (3*n_cells_in_sc*n_ions, 3*n_ions) to
+        # (n_cells_in_sc, 3*n_ions, 3*n_ions), expected_fc_mat must be
+        # reshaped to ensure tests still pass
+        expected_fc_mat = np.reshape(
+            expected_fc_mat,
+            (self.n_cells_in_sc, 3*self.n_ions, 3*self.n_ions))
         fc_mat = self.data._enforce_realspace_asr().to(
                 ureg.hartree/ureg.bohr**2).magnitude
         npt.assert_allclose(fc_mat, expected_fc_mat, atol=1e-18)
