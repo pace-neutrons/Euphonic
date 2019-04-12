@@ -18,12 +18,16 @@ class TestStructureFactorPhononDataLZO(unittest.TestCase):
     def test_sf_T5(self):
         sf = structure_factor(self.data, self.scattering_lengths, T=5)
         expected_sf = np.loadtxt(self.sf_path + 'sf_T5.txt')
-        npt.assert_allclose(sf, expected_sf)
+        # Check sf are equal subject to a scale factor
+        scale = np.mean(sf/expected_sf)
+        npt.assert_allclose(sf, expected_sf*scale)
 
     def test_sf_T100(self):
         sf = structure_factor(self.data, self.scattering_lengths, T=100)
         expected_sf = np.loadtxt(self.sf_path + 'sf_T100.txt')
-        npt.assert_allclose(sf, expected_sf)
+        # Check sf are equal subject to a scale factor
+        scale = np.mean(sf/expected_sf)
+        npt.assert_allclose(sf, expected_sf*scale)
 
 class TestStructureFactorInterpolationDataLZO(unittest.TestCase):
 
@@ -42,9 +46,13 @@ class TestStructureFactorInterpolationDataLZO(unittest.TestCase):
     def test_sf_T5(self):
         sf = structure_factor(self.data, self.scattering_lengths, T=5)
         expected_sf = np.loadtxt(self.sf_path + 'sf_T5.txt')
-        npt.assert_allclose(sf[:,3:], expected_sf[:, 3:], atol=1e0)
+        # Check sf are equal subject to a scale factor
+        scale = np.mean(sf/expected_sf)
+        npt.assert_allclose(sf, expected_sf*scale, rtol=1e0)
 
     def test_sf_T100(self):
         sf = structure_factor(self.data, self.scattering_lengths, T=100)
         expected_sf = np.loadtxt(self.sf_path + 'sf_T100.txt')
-        npt.assert_allclose(sf[:,3:], expected_sf[:, 3:], atol=1e0)
+        # Check sf are equal subject to a scale factor
+        scale = np.mean(sf/expected_sf)
+        npt.assert_allclose(sf, expected_sf*scale, rtol=1e0)
