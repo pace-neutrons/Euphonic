@@ -168,7 +168,7 @@ def get_qpt_label(qpt, point_labels):
     return label
 
 
-def plot_sqw_map(data, vmin=None, vmax=None, ratio=None):
+def plot_sqw_map(data, vmin=None, vmax=None, ratio=None, cmap='viridis'):
     """
     Plots an q-E scattering plot using imshow
 
@@ -187,6 +187,8 @@ def plot_sqw_map(data, vmin=None, vmax=None, ratio=None):
         Ratio of the size of the y and x axes. e.g. if ratio is 2, the y-axis
         will be twice as long as the x-axis
         Default: None
+    cmap : string, optional, default 'viridis'
+        Which colormap to use, see Matplotlib docs
 
     Returns
     -------
@@ -236,7 +238,7 @@ def plot_sqw_map(data, vmin=None, vmax=None, ratio=None):
         ims[i] = ax.imshow(np.transpose(data.sqw_map[i, np.newaxis]),
                            interpolation='none', origin='lower',
                            extent=[qbins[i], qbins[i+1], 0, ymax],
-                           vmin=vmin, vmax=vmax)
+                           vmin=vmin, vmax=vmax, cmap=cmap)
     ax.set_ylim(0, ymax)
     ax.set_xlim(qbins[0], qbins[-1])
 
@@ -414,7 +416,8 @@ def output_grace(data, seedname='out', up=True, down=True):
                     f.write('&\n')
 
 
-def plot_dispersion(data, title='', btol=10.0, up=True, down=True):
+def plot_dispersion(data, title='', btol=10.0, up=True, down=True,
+                    **line_kwargs):
     """
     Creates a Matplotlib figure of the band structure
 
@@ -433,7 +436,9 @@ def plot_dispersion(data, title='', btol=10.0, up=True, down=True):
         Whether to plot spin up frequencies (if applicable). Default: True
     down : boolean, optional
         Whether to plot spin down frequencies (if applicable). Default: True
-
+    **line_kwargs : Line2D properties, optional
+        Used in the axes.plot command to specify properties like linewidth,
+        linestyle
     Returns
     -------
     fig : Matplotlib Figure or None
@@ -539,15 +544,15 @@ def plot_dispersion(data, title='', btol=10.0, up=True, down=True):
                         # Replace freqs with split freqs at gamma point
                         freqs[0] = data.split_freqs[section_i[n-1]].magnitude
                     ax.plot(abscissa[section_edges[n]:section_edges[n+1] + 1],
-                            freqs, lw=1.0)
+                            freqs, lw=1.0, **line_kwargs)
             else:
                 freqs = data.freqs.magnitude
                 ax.plot(abscissa[imin[i]:imax[i] + 1],
-                        freqs[imin[i]:imax[i] + 1], lw=1.0)
+                        freqs[imin[i]:imax[i] + 1], lw=1.0, **line_kwargs)
         if down and hasattr(data, 'freq_down') and len(data.freq_down) > 0:
             freq_down = data.freq_down.magnitude
             ax.plot(abscissa[imin[i]:imax[i] + 1],
-                    freq_down[imin[i]:imax[i] + 1], lw=1.0)
+                    freq_down[imin[i]:imax[i] + 1], lw=1.0, **line_kwargs)
         if hasattr(data, 'fermi'):
             for i, ef in enumerate(data.fermi.magnitude):
                 if i == 0:

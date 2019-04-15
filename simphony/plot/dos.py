@@ -145,7 +145,7 @@ def output_grace(data, seedname='out', mirror=False, up=True, down=True):
                     n_sets += 1
 
 
-def plot_dos(data, title='', mirror=False, up=True, down=True):
+def plot_dos(data, title='', mirror=False, up=True, down=True, **line_kwargs):
     """
     Creates a Matplotlib figure of the density of states
 
@@ -163,7 +163,9 @@ def plot_dos(data, title='', mirror=False, up=True, down=True):
         Whether to plot spin up dos (if applicable). Default: True
     down : boolean, optional
         Whether to plot spin down dos (if applicable). Default: True
-
+    **line_kwargs : matplotlib.line.Line2D properties, optional
+        Used in the axes.plot command to specify properties like linewidth,
+        linestyle
     Returns
     -------
     fig : Matplotlib Figure or None
@@ -204,14 +206,15 @@ def plot_dos(data, title='', mirror=False, up=True, down=True):
 
     # Plot dos and Fermi energy
     if up:
-        ax.plot(bin_centres, data.dos, label='alpha', lw=1.0)
+        ax.plot(bin_centres, data.dos, label='alpha', lw=1.0, **line_kwargs)
     if down and hasattr(data, 'dos_down') and len(data.dos_down) > 0:
         if mirror:
             ax.plot(bin_centres, np.negative(data.dos_down), label='beta',
-                    lw=1.0)
+                    lw=1.0, **line_kwargs)
             ax.axhline(y=0, c='k', lw=1.0)
         else:
-            ax.plot(bin_centres, data.dos_down, label='beta', lw=1.0)
+            ax.plot(bin_centres, data.dos_down, label='beta', lw=1.0,
+                    **line_kwargs)
     if hasattr(data, 'fermi'):
         for i, ef in enumerate(data.fermi.magnitude):
             if i == 0:
