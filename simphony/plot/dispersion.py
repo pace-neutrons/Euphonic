@@ -188,15 +188,27 @@ def plot_sqw_map(data, vmin=None, vmax=None, ratio=None):
         will be twice as long as the x-axis
         Default: None
 
+    Returns
+    -------
+    fig : Matplotlib Figure or None
+        If matplotlib.pyplot can be imported, is a Figure with a single
+        subplot, otherwise is None
+    ims : ndarray or None
+        If matplotlib.pyplot can be imported, is an array of AxesImage objects,
+        one for each q-point, for easier access to some attributes/functions.
+        Otherwise is None
+        dtype = 'matplotlib.image.AxesImage'
+        shape = (n_qpts,)
     """
     try:
+        import matplotlib as mpl
         import matplotlib.pyplot as plt
     except ImportError:
         print(('Cannot import Matplotlib to plot S(q,w) (maybe Matplotlib '
                'is not installed?). To install SimPhony\'s optional '
                'Matploblib dependencies, from the simphony top directory do: '
                '\n\npip install --user .[matplotlib]'))
-        return None
+        return None, None
 
     ebins = (data.sqw_ebins.to('meV', 'spectroscopy').magnitude).astype(
         np.float64)
@@ -219,11 +231,12 @@ def plot_sqw_map(data, vmin=None, vmax=None, ratio=None):
         vmax = np.amax(data.sqw_map)
 
     fig, ax = plt.subplots(1, 1)
+    ims = np.empty((data.n_qpts), dtype=mpl.image.AxesImage)
     for i in range(data.n_qpts):
-        ax.imshow(np.transpose(data.sqw_map[i, np.newaxis]),
-                  interpolation='none', origin='lower',
-                  extent=[qbins[i], qbins[i+1], 0, ymax],
-                  vmin=vmin, vmax=vmax)
+        ims[i] = ax.imshow(np.transpose(data.sqw_map[i, np.newaxis]),
+                           interpolation='none', origin='lower',
+                           extent=[qbins[i], qbins[i+1], 0, ymax],
+                           vmin=vmin, vmax=vmax)
     ax.set_ylim(0, ymax)
     ax.set_xlim(qbins[0], qbins[-1])
 
@@ -261,7 +274,7 @@ def plot_sqw_map(data, vmin=None, vmax=None, ratio=None):
     else:
         ax.set_xticklabels(xlabels)
 
-    plt.show()
+    return fig, ims
 
 
 def output_grace(data, seedname='out', up=True, down=True):
