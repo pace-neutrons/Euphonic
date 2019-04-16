@@ -326,6 +326,7 @@ class InterpolationData(Data):
         except UnboundLocalError:
             pass
 
+
     def calculate_fine_phonons(self, qpts, asr=None, precondition=False,
                                set_attrs=True, dipole=True, splitting=True):
         """
@@ -630,14 +631,17 @@ class InterpolationData(Data):
         epsilon = 1e-10
         sqrt_pi = math.sqrt(math.pi)
 
-        # Cutoffs
-        real_cutoff = 20.0
-        recip_cutoff = 20.0
+        # Calculate cutoffs
+        abc_mag = np.linalg.norm(cell_vec, axis=1)
+        mean_abc_mag = np.prod(abc_mag)**(1.0/3)
+        skew = np.amax(abc_mag)/mean_abc_mag
+        eta = (sqrt_pi/mean_abc_mag)*n_ions**(1.0/6)
+        precision = 50
+        recip_scale = 1.0
+        real_cutoff = math.sqrt(precision)*skew
+        recip_cutoff = recip_scale*math.sqrt(precision)*skew
 
         # Calculate realspace cells
-        abc_mag = np.linalg.norm(cell_vec, axis=1)
-        eta = math.sqrt(math.pi)/np.amin(abc_mag)
-        mean_abc_mag = np.prod(abc_mag)**(1.0/3)
         abc = math.sqrt((real_cutoff/eta)**2 + np.sum(
             np.sum(np.abs(cell_vec), axis=0)**2))
         max_cells_abc = (abc/abc_mag).astype(np.int32) + 1
@@ -648,10 +652,10 @@ class InterpolationData(Data):
         cell_origins_cart = np.einsum('ij,jk->ik', cell_origins, cell_vec)
 
         # Calculate reciprocal space vectors
-        b_mag = np.linalg.norm(recip, axis=1)
-        b = math.sqrt((recip_cutoff*2*eta)**2 + np.sum(
+        hkl_mag = np.linalg.norm(recip, axis=1)
+        hkl = math.sqrt((recip_cutoff*2*eta)**2 + np.sum(
             np.sum(np.abs(recip), axis=0)**2))
-        max_cells_hkl = (b/b_mag).astype(np.int32) + 1
+        max_cells_hkl = (hkl/hkl_mag).astype(np.int32) + 1
         n_cells_hkl = 2*max_cells_hkl + 1
         n_cells_recip = n_cells_hkl.prod()
         gvecs = self._get_all_origins(
@@ -661,7 +665,6 @@ class InterpolationData(Data):
         # Use eta = lambda * |permittivity|**(1/6)
         eta =  eta*np.power(np.linalg.det(dielectric), 1.0/6)
         eta_2 = eta**2
-
 
         # Calculate q=0 real space term
         real_q0 = np.zeros((n_ions, n_ions, 3, 3))
@@ -708,7 +711,6 @@ class InterpolationData(Data):
 
         # Calculate the q=0 reciprocal term
         recip_q0 = np.zeros((n_ions, n_ions, 3, 3), dtype=np.complex128)
-
         # Calculate g-vector phases
         gvec_dot_r = np.einsum('ij,kj->ik', gvecs, ion_r)
         gvec_phases = np.exp(2j*math.pi*gvec_dot_r)
@@ -749,6 +751,8 @@ class InterpolationData(Data):
 
         self.max_cells_abc = max_cells_abc
         self.max_cells_hkl = max_cells_hkl
+        self.gvecs_cart = gvecs_cart
+        self.recip_cutoff = recip_cutoff
         self.eta = eta
 
         # Don't keep any entries beyond the cutoff
@@ -789,16 +793,14 @@ class InterpolationData(Data):
         eta_2 = eta**2
         max_cells_abc = self.max_cells_abc
         max_cells_hkl = self.max_cells_hkl
+        recip_cutoff = self.recip_cutoff
         H_ab = self.H_ab
         cells_in_range = self.cells_in_range
         gvec_phases = self.gvec_phases
+        gvecs_cart = self.gvecs_cart
 
         q_norm = q - np.rint(q) # Normalised q-pt
         epsilon = 1e-10
-
-        # Calculate cutoffs
-        real_cutoff = 20.0
-        recip_cutoff = 20.0
 
         # Calculate realspace cells
         n_cells_abc = 2*max_cells_abc + 1
@@ -806,12 +808,6 @@ class InterpolationData(Data):
         cell_origins = self._get_all_origins(
             max_cells_abc + 1, min_xyz=-max_cells_abc)
 
-        # Calculate reciprocal space vectors
-        n_cells_hkl = 2*max_cells_hkl + 1
-        n_cells_recip = n_cells_hkl.prod()
-        gvecs = self._get_all_origins(
-            max_cells_hkl + 1, min_xyz=-max_cells_hkl)
-        gvecs_cart = np.einsum('ij,jk->ik', gvecs, recip)
 
         # Calculate real space term
         real_dipole = np.zeros((n_ions, n_ions, 3, 3), dtype=np.complex128)
@@ -824,13 +820,13 @@ class InterpolationData(Data):
                     'ijk,i->jk', H_ab[i,j], real_phases[cells_in_range[i,j]])
         real_dipole *= eta**3/math.sqrt(np.linalg.det(dielectric))
 
+
+        # Calculate reciprocal term
+        recip_dipole = np.zeros((n_ions, n_ions, 3, 3), dtype=np.complex128)
         # Calculate q-point phases
         q_dot_r = np.einsum('i,ji->j', q_norm, ion_r)
         q_phases = np.exp(2j*math.pi*q_dot_r)
         q_cart = np.dot(q_norm, recip)
-
-        # Calculate reciprocal term
-        recip_dipole = np.zeros((n_ions, n_ions, 3, 3), dtype=np.complex128)
         # Calculate k-vector symmetric matrix
         kvecs = gvecs_cart + q_cart
         kvecs_ab = np.einsum('ij,ik->ijk', kvecs, kvecs)
