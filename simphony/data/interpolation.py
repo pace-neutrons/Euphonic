@@ -899,6 +899,78 @@ class InterpolationData(Data):
 
         return na_corr
 
+
+    def _get_shell_origins(self, n):
+        """
+        Given the shell number, compute all the cell origins that lie in that
+        shell
+
+        Parameters
+        ----------
+        n : int
+            The shell number
+
+        Returns
+        -------
+        origins : ndarray
+            The cell origins
+            dtype = 'int'
+            shape = ((2*n + 1)**3 - (2*n + 1), 3)
+
+        """
+
+        # 2d coordinates in xy, xz, yz planes
+        xy = self._get_all_origins_2d([n+1,n+1], min_xy=[-n,-n])
+        xz = self._get_all_origins_2d([n+1,n], min_xy=[-n,-n+1])
+        yz = self._get_all_origins_2d([n,n], min_xy=[-n+1,-n+1])
+
+        # Convert to 3d coordinates for the 3 pairs of 2d planes
+        origins = np.zeros(((2*n+1)**3-(2*n-1)**3, 3), dtype=np.int32)
+        for i, ni in enumerate([-n, n]):
+            origins[i*len(xy):(i+1)*len(xy)] = np.column_stack(
+                (xy, np.repeat(ni, len(xy))))
+            io = 2*len(xy)
+            origins[io+i*len(xz):io+(i+1)*len(xz)] = np.column_stack(
+                (xz[:,0], np.repeat(ni, len(xz)), xz[:,1]))
+            io = 2*(len(xy) + len(xz))
+            origins[io+i*len(yz):io+(i+1)*len(yz)] = np.column_stack(
+                (np.repeat(ni, len(yz)), yz))
+
+        return origins
+
+
+    def _get_all_origins_2d(self, max_xy, min_xy=[0, 0], step=1):
+        """
+        Given the max/min number of cells in each direction, get a list of all
+        possible cell origins
+
+        Parameters
+        ----------
+        max_xy : ndarray
+            The number of cells to count to in each direction
+            dtype = 'int'
+            shape = (2,)
+        min_xy : ndarray, optional, default [0,0]
+            The cell number to count from in each direction
+            dtype = 'int'
+            shape = (2,)
+        step : integer, optional, default 1
+            The step between cells
+
+        Returns
+        -------
+        origins : ndarray
+            The cell origins
+            dtype = 'int'
+            shape = (prod(max_xy - min_xy)/step, 2)
+        """
+        diff = np.absolute(np.subtract(max_xy, min_xy))
+        nx = np.repeat(range(min_xy[0], max_xy[0], step), diff[1])
+        ny = np.tile(range(min_xy[1], max_xy[1], step), diff[0])
+
+        return np.column_stack((nx, ny))
+
+
     def _get_all_origins(self, max_xyz, min_xyz=[0, 0, 0], step=1):
         """
         Given the max/min number of cells in each direction, get a list of all
@@ -924,7 +996,7 @@ class InterpolationData(Data):
             dtype = 'int'
             shape = (prod(max_xyz - min_xyz)/step, 3)
         """
-        diff = np.absolute(max_xyz - min_xyz)
+        diff = np.absolute(np.subtract(max_xyz, min_xyz))
         nx = np.repeat(range(min_xyz[0], max_xyz[0], step), diff[1]*diff[2])
         ny = np.repeat(np.tile(range(min_xyz[1], max_xyz[1], step), diff[0]),
                        diff[2])
