@@ -628,21 +628,19 @@ class InterpolationData(Data):
         born = self.born.magnitude
         dielectric = self.dielectric
         inv_dielectric = np.linalg.inv(dielectric)
-        epsilon = 1e-10
         sqrt_pi = math.sqrt(math.pi)
 
-        # Calculate cutoffs
+        # Calculate real/recip weighting
         abc_mag = np.linalg.norm(cell_vec, axis=1)
         mean_abc_mag = np.prod(abc_mag)**(1.0/3)
         eta = (sqrt_pi/mean_abc_mag)*n_ions**(1.0/6)
-
-        # Set limits and tolerances
-        max_shells = 25
-        tol = 1e-25
-
         # Use eta = lambda * |permittivity|**(1/6)
         eta = eta*np.power(np.linalg.det(dielectric), 1.0/6)
         eta_2 = eta**2
+
+        # Set limits and tolerances
+        max_shells = 50
+        frac_tol = 1e-15
 
         # Calculate q=0 real space term
         real_q0 = np.zeros((n_ions, n_ions, 3, 3))
@@ -675,7 +673,11 @@ class InterpolationData(Data):
                     H_ab_tmp[:,i,j] = (np.einsum('i,ijk->ijk', f1, deltas_ab)
                                            - np.einsum('i,jk->ijk',
                                                        f2, inv_dielectric))
-            if np.amax(np.abs(H_ab_tmp)) > tol:
+            # End series when current terms are less than the fractional
+            # tolerance multiplied by the term for the cell at R=0
+            if n == 0:
+                r0_max = np.amax(H_ab_tmp)
+            if np.amax(np.abs(H_ab_tmp)) > frac_tol*r0_max:
                 H_ab = np.concatenate((H_ab, H_ab_tmp))
                 cells = np.concatenate((cells, cells_tmp))
             else:
@@ -698,13 +700,18 @@ class InterpolationData(Data):
             k_len_2 = np.einsum('ijk,jk->i', gvecs_ab, dielectric)/(4*eta_2)
             k_len = np.sqrt(k_len_2)
             recip_exp = np.exp(-k_len_2)/k_len_2
-            recip_q0_tmp = np.zeros((n_ions, n_ions, 3, 3), dtype=np.complex128)
+            recip_q0_tmp = np.zeros((n_ions, n_ions, 3, 3),
+                                    dtype=np.complex128)
             for i in range(n_ions):
                 for j in range(n_ions):
                     phase_exp = gvec_phases_tmp[:,i]/gvec_phases_tmp[:,j]
                     recip_q0_tmp[i,j] = np.einsum(
                         'ijk,i,i->jk', gvecs_ab, phase_exp, recip_exp)
-            if np.amax(np.abs(recip_q0_tmp)) > tol:
+            # End series when current terms are less than the fractional
+            # tolerance multiplied by the max term for the first shell
+            if n == 1:
+                first_shell_max = np.amax(recip_q0_tmp)
+            if np.amax(np.abs(recip_q0_tmp)) > frac_tol*first_shell_max:
                 gvecs_cart = np.concatenate((gvecs_cart, gvecs_cart_tmp))
                 gvec_phases = np.concatenate((gvec_phases, gvec_phases_tmp))
                 recip_q0 += recip_q0_tmp
@@ -762,12 +769,10 @@ class InterpolationData(Data):
         eta_2 = eta**2
         H_ab = self.H_ab
         cells = self.cells
-
-        epsilon = 1e-10
         q_norm = q - np.rint(q) # Normalised q-pt
 
         # Don't include G=0 vector if q=0
-        if np.sum(q_norm) < epsilon:
+        if np.sum(q_norm) < sys.float_info.epsilon:
             gvec_phases = self.gvec_phases[1:]
             gvecs_cart = self.gvecs_cart[1:]
         else:
