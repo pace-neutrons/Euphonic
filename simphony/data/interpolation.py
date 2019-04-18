@@ -638,18 +638,11 @@ class InterpolationData(Data):
         eta = (sqrt_pi/mean_abc_mag)*n_ions**(1.0/6)
         precision = 50
         recip_scale = 1.0
-        real_cutoff = math.sqrt(precision)*skew
         recip_cutoff = recip_scale*math.sqrt(precision)*skew
 
-        # Calculate realspace cells
-        abc = math.sqrt((real_cutoff/eta)**2 + np.sum(
-            np.sum(np.abs(cell_vec), axis=0)**2))
-        max_cells_abc = (abc/abc_mag).astype(np.int32) + 1
-        n_cells_abc = 2*max_cells_abc + 1
-        n_cells_tot = n_cells_abc.prod()
-        cell_origins = self._get_all_origins(
-            max_cells_abc + 1, min_xyz=-max_cells_abc)
-        cell_origins_cart = np.einsum('ij,jk->ik', cell_origins, cell_vec)
+        # Set realspace limits and tolerances
+        max_shells = 25
+        tol = 1e-20
 
         # Calculate reciprocal space vectors
         hkl_mag = np.linalg.norm(recip, axis=1)
@@ -664,46 +657,48 @@ class InterpolationData(Data):
         eta = eta*np.power(np.linalg.det(dielectric), 1.0/6)
         eta_2 = eta**2
 
+
         # Calculate q=0 real space term
         real_q0 = np.zeros((n_ions, n_ions, 3, 3))
-        H_ab = np.zeros((n_ions, n_ions, n_cells_tot, 3, 3))
-        cells_in_range = np.zeros((n_ions, n_ions, n_cells_tot),
-                                  dtype=np.int32)
-        n_cells_in_range = np.zeros((n_ions, n_ions), dtype=np.int32)
 
         ion_r_cart = np.einsum('ij,jk->ik', ion_r, cell_vec)
         ion_r_e = np.einsum('ij,jk->ik', ion_r_cart, inv_dielectric)
-        cell_origins_e = np.einsum(
-            'ij,jk->ik', cell_origins_cart, inv_dielectric)
-        for i in range(n_ions):
-            for j in range(n_ions):
-                rij_cart = ion_r_cart[i] - ion_r_cart[j]
-                rij_e = ion_r_e[i] - ion_r_e[j]
-                diffs = rij_cart - cell_origins_cart
-                deltas = rij_e - cell_origins_e
-                norms_2 = np.einsum('ij,ij->i', deltas, diffs)*eta_2
-                norms = np.sqrt(norms_2)
-                idx = np.where(np.logical_and(norms > epsilon,
-                                              norms < real_cutoff))[0]
-                n_cells_in_range[i, j] = len(idx)
-                cells_in_range[i, j, :len(idx)] = idx
+        H_ab = np.zeros((0, n_ions, n_ions, 3, 3))
+        cells = np.zeros((0, 3))
+        for n in range(max_shells):
+            if n == 0:
+                cells_tmp = np.array([[0,0,0]], dtype=np.int32)
+            else:
+                cells_tmp = self._get_shell_origins(n)
+            cells_cart = np.einsum('ij,jk->ik', cells_tmp, cell_vec)
+            cells_e = np.einsum(
+                'ij,jk->ik', cells_cart, inv_dielectric)
+            H_ab_tmp = np.zeros((len(cells_tmp), n_ions, n_ions, 3, 3))
+            for i in range(n_ions):
+                for j in range(n_ions):
+                    if n == 0 and i == j: continue
+                    rij_cart = ion_r_cart[i] - ion_r_cart[j]
+                    rij_e = ion_r_e[i] - ion_r_e[j]
+                    diffs = rij_cart - cells_cart
+                    deltas = rij_e - cells_e
+                    norms_2 = np.einsum('ij,ij->i', deltas, diffs)*eta_2
+                    norms = np.sqrt(norms_2)
 
-                # Reindex some already calculated values to only include
-                # cells in range
-                deltas = deltas[idx]
-                norms_2 = norms_2[idx]
-                norms = norms[idx]
-
-                # Calculate H_ab
-                exp_term = 2*np.exp(-norms_2)/(sqrt_pi*norms_2)
-                erfc_term = erfc(norms)/(norms*norms_2)
-                f1 = eta_2*(3*erfc_term/norms_2 + exp_term*(3/norms_2 + 2))
-                f2 = erfc_term + exp_term
-                deltas_ab = np.einsum('ij,ik->ijk', deltas, deltas)
-                H_ab[i, j, :len(idx)] = (
-                    np.einsum('i,ijk->ijk', f1, deltas_ab)
-                    - np.einsum('i,jk->ijk', f2, inv_dielectric))
-        real_q0 = np.sum(H_ab, axis=2)
+                    # Calculate H_ab
+                    exp_term = 2*np.exp(-norms_2)/(sqrt_pi*norms_2)
+                    erfc_term = erfc(norms)/(norms*norms_2)
+                    f1 = eta_2*(3*erfc_term/norms_2 + exp_term*(3/norms_2 + 2))
+                    f2 = erfc_term + exp_term
+                    deltas_ab = np.einsum('ij,ik->ijk', deltas, deltas)
+                    H_ab_tmp[:,i,j] = (np.einsum('i,ijk->ijk', f1, deltas_ab)
+                                           - np.einsum('i,jk->ijk',
+                                                       f2, inv_dielectric))
+            if np.amax(np.abs(H_ab_tmp)) > tol:
+                H_ab = np.concatenate((H_ab, H_ab_tmp))
+                cells = np.concatenate((cells, cells_tmp))
+            else:
+                break
+        real_q0 = np.sum(H_ab, axis=0)
         real_q0 *= eta**3/math.sqrt(np.linalg.det(dielectric))
 
         # Calculate the q=0 reciprocal term
@@ -746,17 +741,12 @@ class InterpolationData(Data):
             # Symmetrise
             dipole_q0[i] = 0.5*(dipole_q0[i] + np.transpose(dipole_q0[i]))
 
-        self.max_cells_abc = max_cells_abc
-        self.max_cells_hkl = max_cells_hkl
         self.gvecs_cart = gvecs_cart
         self.recip_cutoff = recip_cutoff
         self.eta = eta
 
-        # Don't keep any entries beyond the cutoff
-        max_n_cells_in_range = np.amax(n_cells_in_range)
-        self.n_cells_in_range = n_cells_in_range
-        self.cells_in_range = cells_in_range[:, :, :max_n_cells_in_range]
-        self.H_ab = H_ab[:, :, :max_n_cells_in_range, :, :]
+        self.H_ab = H_ab
+        self.cells = cells
         self.dipole_q0 = dipole_q0
 
     def _calculate_dipole_correction(self, q):
@@ -786,29 +776,24 @@ class InterpolationData(Data):
         dielectric = self.dielectric
         eta = self.eta
         eta_2 = eta**2
-        max_cells_abc = self.max_cells_abc
         recip_cutoff = self.recip_cutoff
         H_ab = self.H_ab
-        cells_in_range = self.cells_in_range
+        cells = self.cells
         gvec_phases = self.gvec_phases
         gvecs_cart = self.gvecs_cart
 
         q_norm = q - np.rint(q)  # Normalised q-pt
         epsilon = 1e-10
 
-        # Calculate realspace cells
-        cell_origins = self._get_all_origins(
-            max_cells_abc + 1, min_xyz=-max_cells_abc)
-
         # Calculate real space term
         real_dipole = np.zeros((n_ions, n_ions, 3, 3), dtype=np.complex128)
         # Calculate real space phase factor
-        q_dot_ra = np.einsum('i,ji->j', q_norm, cell_origins)
+        q_dot_ra = np.einsum('i,ji->j', q_norm, cells)
         real_phases = np.exp(2j*math.pi*q_dot_ra)
         for i in range(n_ions):
             for j in range(i, n_ions):
-                real_dipole[i, j] = np.einsum(
-                    'ijk,i->jk', H_ab[i, j], real_phases[cells_in_range[i, j]])
+                real_dipole[i,j] = np.einsum(
+                    'ijk,i->jk', H_ab[:,i,j], real_phases)
         real_dipole *= eta**3/math.sqrt(np.linalg.det(dielectric))
 
         # Calculate reciprocal term
