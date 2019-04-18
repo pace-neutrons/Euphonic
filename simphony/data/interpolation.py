@@ -2,6 +2,7 @@ import math
 import struct
 import sys
 import os
+import warnings
 import numpy as np
 from scipy.linalg.lapack import zheev
 from scipy.special import erfc
@@ -1008,8 +1009,13 @@ class InterpolationData(Data):
             sq_fc[3*nc*n_ions:3*(nc+1)*n_ions, :] = np.transpose(
                 np.reshape(force_constants[sc_relative_index],
                            (3*n_cells_in_sc*n_ions, 3*n_ions)))
-
-        ac_i, evals, evecs = self._find_acoustic_modes(sq_fc)
+        try:
+            ac_i, evals, evecs = self._find_acoustic_modes(sq_fc)
+        except:
+            warnings.warn(('\nError correcting for acoustic sum rule, could '
+                           'not find 3 acoustic modes.\nReturning uncorrected '
+                           'FC matrix'), stacklevel=2)
+            return self.force_constants
 
         # Correct force constant matrix - set acoustic modes to almost zero
         fc_tol = 1e-8*np.min(np.abs(evals))
@@ -1050,7 +1056,13 @@ class InterpolationData(Data):
             dtype = 'complex'
             shape = (3*n_ions, 3*n_ions)
         """
-        ac_i, evals, evecs = self._find_acoustic_modes(dyn_mat_gamma)
+        try:
+            ac_i, evals, evecs = self._find_acoustic_modes(dyn_mat_gamma)
+        except:
+            warnings.warn(('\nError correcting for acoustic sum rule, could '
+                           'not find 3 acoustic modes.\nReturning uncorrected '
+                           'dynamical matrix'), stacklevel=2)
+            return dyn_mat
         tol = 1e-8*np.min(np.abs(evals))
 
         for i, ac in enumerate(ac_i):
@@ -1101,9 +1113,7 @@ class InterpolationData(Data):
         sc_mass = 1.0*n_ions
         # Check number of acoustic modes
         if np.sum(c_of_m_disp_sq > sensitivity*sc_mass) < 3:
-            print(('Error correcting for acoustic sum rule, could not find 3 '
-                   'acoustic modes. Returning uncorrected matrix'))
-            return self.force_constants
+            raise Exception('Could not find 3 acoustic modes')
         # Find indices of acoustic modes (3 largest c of m displacements)
         ac_i = np.argsort(c_of_m_disp_sq)[-3:]
 
