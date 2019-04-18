@@ -634,42 +634,24 @@ class InterpolationData(Data):
         # Calculate cutoffs
         abc_mag = np.linalg.norm(cell_vec, axis=1)
         mean_abc_mag = np.prod(abc_mag)**(1.0/3)
-        skew = np.amax(abc_mag)/mean_abc_mag
         eta = (sqrt_pi/mean_abc_mag)*n_ions**(1.0/6)
-        precision = 50
-        recip_scale = 1.0
-        recip_cutoff = recip_scale*math.sqrt(precision)*skew
 
-        # Set realspace limits and tolerances
+        # Set limits and tolerances
         max_shells = 25
-        tol = 1e-20
-
-        # Calculate reciprocal space vectors
-        hkl_mag = np.linalg.norm(recip, axis=1)
-        hkl = math.sqrt((recip_cutoff*2*eta)**2 + np.sum(
-            np.sum(np.abs(recip), axis=0)**2))
-        max_cells_hkl = (hkl/hkl_mag).astype(np.int32) + 1
-        gvecs = self._get_all_origins(
-            max_cells_hkl + 1, min_xyz=-max_cells_hkl)
-        gvecs_cart = np.einsum('ij,jk->ik', gvecs, recip)
+        tol = 1e-25
 
         # Use eta = lambda * |permittivity|**(1/6)
         eta = eta*np.power(np.linalg.det(dielectric), 1.0/6)
         eta_2 = eta**2
 
-
         # Calculate q=0 real space term
         real_q0 = np.zeros((n_ions, n_ions, 3, 3))
-
-        ion_r_cart = np.einsum('ij,jk->ik', ion_r, cell_vec)
-        ion_r_e = np.einsum('ij,jk->ik', ion_r_cart, inv_dielectric)
         H_ab = np.zeros((0, n_ions, n_ions, 3, 3))
         cells = np.zeros((0, 3))
+        ion_r_cart = np.einsum('ij,jk->ik', ion_r, cell_vec)
+        ion_r_e = np.einsum('ij,jk->ik', ion_r_cart, inv_dielectric)
         for n in range(max_shells):
-            if n == 0:
-                cells_tmp = np.array([[0,0,0]], dtype=np.int32)
-            else:
-                cells_tmp = self._get_shell_origins(n)
+            cells_tmp = self._get_shell_origins(n)
             cells_cart = np.einsum('ij,jk->ik', cells_tmp, cell_vec)
             cells_e = np.einsum(
                 'ij,jk->ik', cells_cart, inv_dielectric)
@@ -703,28 +685,31 @@ class InterpolationData(Data):
 
         # Calculate the q=0 reciprocal term
         recip_q0 = np.zeros((n_ions, n_ions, 3, 3), dtype=np.complex128)
-        # Calculate g-vector phases
-        gvec_dot_r = np.einsum('ij,kj->ik', gvecs, ion_r)
-        gvec_phases = np.exp(2j*math.pi*gvec_dot_r)
-        self.gvec_phases = gvec_phases  # Assign before reindexing
-        # Calculate g-vector symmetric matrix
-        gvecs_ab = np.einsum('ij,ik->ijk', gvecs_cart, gvecs_cart)
-        # Calculate which reciprocal vectors are within the cutoff
-        k_len_2 = np.einsum('ijk,jk->i', gvecs_ab, dielectric)/(4*eta_2)
-        k_len = np.sqrt(k_len_2)
-        idx = np.where(np.logical_and(k_len > epsilon,
-                                      k_len < recip_cutoff))[0]
-        # Reindex to only include vectors within cutoff
-        k_len_2 = k_len_2[idx]
-        k_len = k_len[idx]
-        gvecs_ab = gvecs_ab[idx]
-        gvec_phases = gvec_phases[idx]
-        recip_exp = np.exp(-k_len_2)/k_len_2
-        for i in range(n_ions):
-            for j in range(n_ions):
-                phase_exp = gvec_phases[:, i]/gvec_phases[:, j]
-                recip_q0[i, j] = np.einsum(
-                    'ijk,i,i->jk', gvecs_ab, phase_exp, recip_exp)
+        # Add G = 0 vectors to list, for later calculations when q !=0,
+        # but don't calculate for q=0
+        gvecs_cart = np.array([[0., 0., 0.]])
+        gvec_phases = np.tile([1. + 0.j], (1, n_ions))
+        for n in range(1, max_shells):
+            gvecs = self._get_shell_origins(n)
+            gvecs_cart_tmp = np.einsum('ij,jk->ik', gvecs, recip)
+            gvec_dot_r = np.einsum('ij,kj->ik', gvecs, ion_r)
+            gvec_phases_tmp = np.exp(2j*math.pi*gvec_dot_r)
+            gvecs_ab = np.einsum('ij,ik->ijk', gvecs_cart_tmp, gvecs_cart_tmp)
+            k_len_2 = np.einsum('ijk,jk->i', gvecs_ab, dielectric)/(4*eta_2)
+            k_len = np.sqrt(k_len_2)
+            recip_exp = np.exp(-k_len_2)/k_len_2
+            recip_q0_tmp = np.zeros((n_ions, n_ions, 3, 3), dtype=np.complex128)
+            for i in range(n_ions):
+                for j in range(n_ions):
+                    phase_exp = gvec_phases_tmp[:,i]/gvec_phases_tmp[:,j]
+                    recip_q0_tmp[i,j] = np.einsum(
+                        'ijk,i,i->jk', gvecs_ab, phase_exp, recip_exp)
+            if np.amax(np.abs(recip_q0_tmp)) > tol:
+                gvecs_cart = np.concatenate((gvecs_cart, gvecs_cart_tmp))
+                gvec_phases = np.concatenate((gvec_phases, gvec_phases_tmp))
+                recip_q0 += recip_q0_tmp
+            else:
+                break
         cell_volume = np.dot(cell_vec[0], np.cross(cell_vec[1], cell_vec[2]))
         recip_q0 *= math.pi/(cell_volume*eta_2)
 
@@ -741,12 +726,11 @@ class InterpolationData(Data):
             # Symmetrise
             dipole_q0[i] = 0.5*(dipole_q0[i] + np.transpose(dipole_q0[i]))
 
-        self.gvecs_cart = gvecs_cart
-        self.recip_cutoff = recip_cutoff
         self.eta = eta
-
         self.H_ab = H_ab
         self.cells = cells
+        self.gvecs_cart = gvecs_cart
+        self.gvec_phases = gvec_phases
         self.dipole_q0 = dipole_q0
 
     def _calculate_dipole_correction(self, q):
@@ -776,14 +760,19 @@ class InterpolationData(Data):
         dielectric = self.dielectric
         eta = self.eta
         eta_2 = eta**2
-        recip_cutoff = self.recip_cutoff
         H_ab = self.H_ab
         cells = self.cells
-        gvec_phases = self.gvec_phases
-        gvecs_cart = self.gvecs_cart
 
-        q_norm = q - np.rint(q)  # Normalised q-pt
         epsilon = 1e-10
+        q_norm = q - np.rint(q) # Normalised q-pt
+
+        # Don't include G=0 vector if q=0
+        if np.sum(q_norm) < epsilon:
+            gvec_phases = self.gvec_phases[1:]
+            gvecs_cart = self.gvecs_cart[1:]
+        else:
+            gvec_phases = self.gvec_phases
+            gvecs_cart = self.gvecs_cart
 
         # Calculate real space term
         real_dipole = np.zeros((n_ions, n_ions, 3, 3), dtype=np.complex128)
@@ -805,16 +794,8 @@ class InterpolationData(Data):
         # Calculate k-vector symmetric matrix
         kvecs = gvecs_cart + q_cart
         kvecs_ab = np.einsum('ij,ik->ijk', kvecs, kvecs)
-        # Calculate which reciprocal vectors are within the cutoff
         k_len_2 = np.einsum('ijk,jk->i', kvecs_ab, dielectric)/(4*eta_2)
         k_len = np.sqrt(k_len_2)
-        idx = np.where(np.logical_and(k_len > epsilon,
-                                      k_len < recip_cutoff))[0]
-        # Reindex to only include vectors within cutoff
-        k_len_2 = k_len_2[idx]
-        k_len = k_len[idx]
-        kvecs_ab = kvecs_ab[idx]
-        gvec_phases = gvec_phases[idx]
         recip_exp = np.einsum('ijk,i->ijk', kvecs_ab, np.exp(-k_len_2)/k_len_2)
         for i in range(n_ions):
             for j in range(i, n_ions):
@@ -831,15 +812,18 @@ class InterpolationData(Data):
                 real_dipole[i, j] = np.conj(real_dipole[j, i])
                 recip_dipole[i, j] = np.conj(recip_dipole[j, i])
 
+        # Multiply by Born charges and subtract q=0 from diagonal
         dipole = np.zeros((n_ions, n_ions, 3, 3), dtype=np.complex128)
         dipole_tmp = recip_dipole - real_dipole
         for i in range(n_ions):
             for j in range(n_ions):
                 for a in range(3):
-                    dipole[i, j, a, :] = np.einsum(
-                        'i,jk,ik->j', born[i, a, :],
-                        born[j, :, :], dipole_tmp[i, j])
-            dipole[i, i] -= self.dipole_q0[i]
+                    dipole[i,j,a,:] = np.einsum('i,jk,ik->j', born[i,a,:],
+                                                born[j,:,:], dipole_tmp[i,j])
+            dipole[i,i] -= self.dipole_q0[i]
+
+        return np.reshape(
+            np.transpose(dipole, axes=[0, 2, 1, 3]), (3*n_ions, 3*n_ions))
 
         return np.reshape(np.transpose(dipole, axes=[0, 2, 1, 3]),
                           (3*n_ions, 3*n_ions))
@@ -898,11 +882,14 @@ class InterpolationData(Data):
         Returns
         -------
         origins : ndarray
-            The cell origins
+            The cell origins. Note: if n = 0, origins = [[0, 0, 0]]
             dtype = 'int'
-            shape = ((2*n + 1)**3 - (2*n + 1), 3)
+            shape = ((2*n + 1)**3 - (2*n - 1)**3, 3)
 
         """
+
+        if n == 0:
+            return np.array([[0, 0, 0]], dtype=np.int32)
 
         # 2d coordinates in xy, xz, yz planes
         xy = self._get_all_origins_2d([n+1,n+1], min_xy=[-n,-n])
