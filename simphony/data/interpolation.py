@@ -1002,9 +1002,9 @@ class InterpolationData(Data):
                 if np.all(dist_min <= 16*sys.float_info.epsilon):
                     break
             if (np.any(dist_min > 16*sys.float_info.epsilon)):
-                print(('Error correcting FC matrix for acoustic sum rule, '
-                       'supercell relative index couldn\'t be found. '
-                       'Returning uncorrected FC matrix'))
+                warnings.warn(('Error correcting FC matrix for acoustic sum '
+                               'rule, supercell relative index couldn\'t be '
+                               'found. Returning uncorrected FC matrix'))
                 return self.force_constants
             sq_fc[3*nc*n_ions:3*(nc+1)*n_ions, :] = np.transpose(
                 np.reshape(force_constants[sc_relative_index],
