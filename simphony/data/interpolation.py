@@ -772,7 +772,7 @@ class InterpolationData(Data):
         q_norm = q - np.rint(q) # Normalised q-pt
 
         # Don't include G=0 vector if q=0
-        if np.sum(q_norm) < sys.float_info.epsilon:
+        if is_gamma(q_norm):
             gvec_phases = self.gvec_phases[1:]
             gvecs_cart = self.gvecs_cart[1:]
         else:
