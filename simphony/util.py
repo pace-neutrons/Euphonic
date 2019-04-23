@@ -51,4 +51,4 @@ def is_gamma(qpt):
     """
     tol = 1e-15
 
-    return np.sum(np.absolute(qpt)) < tol
+    return np.sum(np.absolute(qpt - np.rint(qpt))) < tol
