@@ -821,10 +821,8 @@ class InterpolationData(Data):
         dipole = np.zeros((n_ions, n_ions, 3, 3), dtype=np.complex128)
         dipole_tmp = recip_dipole - real_dipole
         for i in range(n_ions):
-            for j in range(n_ions):
-                for a in range(3):
-                    dipole[i,j,a,:] = np.einsum('i,jk,ik->j', born[i,a,:],
-                                                born[j,:,:], dipole_tmp[i,j])
+            dipole[i] = np.einsum('ij,klm,kjm->kil',
+                                  born[i], born, dipole_tmp[i])
             dipole[i,i] -= self.dipole_q0[i]
 
         return np.reshape(
