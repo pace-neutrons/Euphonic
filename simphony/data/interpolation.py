@@ -89,18 +89,13 @@ class InterpolationData(Data):
         exist until calculate_fine_phonons has been called
         dtype = 'int'
         shape = (n_cells_in_sc, n_ions, n_ions)
-    max_sc_images : int
-        The maximum number of periodic supercell images over all ij
-        displacements. This is required for efficiency when summing phases
-        over all images, so we only have to sum up to the maximum *actual*
-        images, not up to the maximum possible images
     sc_image_i : ndarray
         The index describing the supercell each of the periodic images resides
         in. This is the index of the list of supercells as returned by
         _get_all_origins. This attribute doesn't exist until
         calculate_fine_phonons has been called
         dtype = 'int'
-        shape = (n_cells_in_sc, n_ions, n_ions, (2*lim + 1)**3)
+        shape = (n_cells_in_sc, n_ions, n_ions, max(n_sc_images))
     force_constants_asr : ndarray
         Force constants matrix that has the acoustic sum rule applied. This
         attribute doesn't exist until calculate_fine_phonons has been called
@@ -374,7 +369,6 @@ class InterpolationData(Data):
             dtype = 'complex'
             shape = (n_qpts, 3*n_ions, n_ions, 3)
         """
-        self.dyn_mats = np.zeros((len(qpts), 3*self.n_ions, 3*self.n_ions), dtype=np.complex128)
         if asr == 'realspace':
             if not hasattr(self, 'force_constants_asr'):
                 self.force_constants_asr = self._enforce_realspace_asr()
@@ -428,8 +422,6 @@ class InterpolationData(Data):
         if not hasattr(self, 'sc_image_i'):
             self._calculate_supercell_images(lim)
         n_sc_images = self.n_sc_images
-        max_sc_images = self.max_sc_images
-        sc_image_i = self.sc_image_i
 
         # Precompute fc matrix weighted by number of supercell ion images
         # (for cumulant method)
@@ -497,7 +489,6 @@ class InterpolationData(Data):
                 # Fall back to zheev if eigh fails (eigh calls zheevd)
                 except np.linalg.LinAlgError:
                     evals, evecs, info = zheev(dyn_mat_corr)
-                self.dyn_mats[q] = dyn_mat_corr
                 prev_evecs = evecs
                 evecs = np.reshape(np.transpose(evecs), (n_branches, n_ions, 3))
                 # Set imaginary frequencies to negative
@@ -583,7 +574,6 @@ class InterpolationData(Data):
         n_ions = self.n_ions
         n_cells_in_sc = self.n_cells_in_sc
         sc_image_i = self.sc_image_i
-        max_sc_images = self.max_sc_images
         dyn_mat = np.zeros((n_ions*3, n_ions*3), dtype=np.complex128)
 
         # Cumulant method: for each ij ion-ion displacement sum phases for
@@ -598,9 +588,8 @@ class InterpolationData(Data):
         sc_phases[:-1], cell_phases = self._calculate_phases(
             q, unique_sc_offsets, unique_sc_i, unique_cell_origins,
             unique_cell_i)
-        sc_phase_sum = np.sum(sc_phases[sc_image_i[:,:,:,0:max_sc_images]],
+        sc_phase_sum = np.sum(sc_phases[sc_image_i],
                               axis=3)
-
         ax = np.newaxis
         ij_phases = cell_phases[:,ax,ax]*sc_phase_sum
         full_dyn_mat = fc_img_weighted*(
@@ -1190,7 +1179,7 @@ class InterpolationData(Data):
         For each displacement of ion i in the unit cell and ion j in the
         supercell, calculate the number of supercell periodic images there are
         and which supercells they reside in, and sets the sc_image_i,
-        n_sc_images and max_sc_images InterpolationData attributes
+        and n_sc_images InterpolationData attributes
 
         Parameters
         ----------
@@ -1245,9 +1234,11 @@ class InterpolationData(Data):
                     sc_image_i[nc,i,j,0:len(sc_images)] = sc_images
                     n_sc_images[nc,i,j] = len(sc_images)
 
-        self.sc_image_i = sc_image_i
         self.n_sc_images = n_sc_images
-        self.max_sc_images = np.max(self.n_sc_images)
+        # Truncate sc_image_i to the maximum ACTUAL images rather than the
+        # maximum possible images to avoid storing and summing over
+        # nonexistent images
+        self.sc_image_i = sc_image_i[:,:,:,:np.max(n_sc_images)]
 
 
     def convert_e_units(self, units):
