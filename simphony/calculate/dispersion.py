@@ -12,11 +12,10 @@ def reorder_freqs(data):
     ----------
     data: PhononData or InterpolationData object
         Data object containing the frequencies, eigenvectors and q-points
-        required for reordering 
+        required for reordering
     """
     n_qpts = data.n_qpts
     n_branches = data.n_branches
-    n_ions = data.n_ions
     qpts = data.qpts
     freqs = data.freqs.magnitude
     eigenvecs = data.eigenvecs
@@ -43,10 +42,10 @@ def reorder_freqs(data):
         calculate_qmap[data.split_i + 1] = False
 
     # Don't reorder first q-point
-    ordered_freqs[0,:] = freqs[0,:]
-    ordered_eigenvecs[0,:] = eigenvecs[0,:]
+    ordered_freqs[0, :] = freqs[0, :]
+    ordered_eigenvecs[0, :] = eigenvecs[0, :]
     prev_evecs = eigenvecs[0, :, :, :]
-    for i in range(1,n_qpts):
+    for i in range(1, n_qpts):
         # Initialise q-point mapping for this q-point
         qmap_tmp = np.arange(n_branches)
         # Compare eigenvectors for each mode for this q-point with every
@@ -73,8 +72,8 @@ def reorder_freqs(data):
             # Find greates exp(-iqr)-weighted dot product
             for j in range(n_branches):
                 max_i = (np.argmax(dot_mat))
-                mode = int(max_i/n_branches) # Modes are dot_mat rows
-                prev_mode = max_i%n_branches # Prev q-pt modes are columns
+                mode = int(max_i/n_branches)  # Modes are dot_mat rows
+                prev_mode = max_i % n_branches  # Prev q-pt modes are columns
                 # Ensure modes aren't mapped more than once
                 dot_mat[mode, :] = 0
                 dot_mat[:, prev_mode] = 0

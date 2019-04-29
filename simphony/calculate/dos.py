@@ -4,7 +4,7 @@ import numpy as np
 
 def calculate_dos(data, bwidth, gwidth, lorentz=False):
     """
-    Calculates a density of states with fixed width Gaussian/Lorentzian 
+    Calculates a density of states with fixed width Gaussian/Lorentzian
     broadening from a PhononData or BandsData object and sets the bins and
     dos/dos_down attributes
 
@@ -48,9 +48,9 @@ def calculate_dos(data, bwidth, gwidth, lorentz=False):
 
     # Convert freqs to magnitudes to avoid UnitStrippedWarning
     freqs = data.freqs.magnitude
-    if hasattr(data, 'freq_down'): 
+    if hasattr(data, 'freq_down'):
         freq_down = data.freq_down.magnitude
-  
+
     # Calculate bin edges
     if hasattr(data, 'freq_down') and len(freq_down) > 0:
         all_freqs = np.append(freqs, freq_down)
@@ -62,7 +62,7 @@ def calculate_dos(data, bwidth, gwidth, lorentz=False):
 
     # Calculate weight for each q-point and branch
     if hasattr(data, 'weights'):
-        freq_weights = np.repeat(np.array(data.weights)[:,np.newaxis],
+        freq_weights = np.repeat(np.array(data.weights)[:, np.newaxis],
                                  data.n_branches, axis=1)
         if hasattr(data, 'ir') and len(data.ir) > 0:
             freq_weights *= data.ir

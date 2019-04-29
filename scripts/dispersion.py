@@ -25,7 +25,8 @@ def main():
     if file.endswith('.bands'):
         data = BandsData(seedname, path)
     else:
-        data = PhononData(seedname, path, read_eigenvecs=args.reorder, read_ir=False)
+        data = PhononData(seedname, path, read_eigenvecs=args.reorder,
+                          read_ir=False)
 
     data.convert_e_units(args.units)
 
@@ -37,7 +38,8 @@ def main():
     if args.grace:
         output_grace(data, seedname, up=args.up, down=args.down)
     else:
-        fig = plot_dispersion(data, args.filename, btol=args.btol, up=args.up, down=args.down)
+        fig = plot_dispersion(data, args.filename, btol=args.btol, up=args.up,
+                              down=args.down)
         if fig is not None:
             import matplotlib.pyplot as plt
             # Save or show Matplotlib figure
@@ -98,6 +100,7 @@ def parse_arguments():
 
     args = parser.parse_args()
     return args
+
 
 if __name__ == '__main__':
     main()

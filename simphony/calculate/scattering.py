@@ -1,14 +1,13 @@
 import math
 import numpy as np
 from scipy import signal
-from simphony import ureg
 from simphony.data.phonon import PhononData
 from simphony.util import reciprocal_lattice
 from simphony import ureg
 
 
-def structure_factor(data, scattering_lengths, T=5.0, scale=1.0, calc_bose=True,
-                     dw_seedname=None, dw_grid=None):
+def structure_factor(data, scattering_lengths, T=5.0, scale=1.0,
+                     calc_bose=True, dw_seedname=None, dw_grid=None):
     """
     Calculate the one phonon inelastic scattering for a list of q-points
     See M. Dove Structure and Dynamics Pg. 226
@@ -122,7 +121,7 @@ def dw_coeff(data, T, grid=None):
     dw : ndarray
         The DW coefficients for each ion
         dtype = 'float'
-        shape = (n_ions, 3, 3) 
+        shape = (n_ions, 3, 3)
     """
 
     # Convert units (use magnitudes for performance)
@@ -238,7 +237,6 @@ def sqw_map(data, ebins, scattering_lengths, T=5.0, scale=1.0, calc_bose=True,
     # branches that fall outside the energy bin range
     sqw_map = np.zeros((data.n_qpts, len(ebins) + 1))
 
-
     sf = structure_factor(data, scattering_lengths, T=T, scale=scale,
                           calc_bose=False, dw_grid=dw_grid,
                           dw_seedname=dw_seedname)
@@ -257,7 +255,7 @@ def sqw_map(data, ebins, scattering_lengths, T=5.0, scale=1.0, calc_bose=True,
         np.tile(range(data.n_qpts), (data.n_branches, 1)))
     np.add.at(sqw_map, (first_index, p_bin), p_intensity)
     np.add.at(sqw_map, (first_index, n_bin), n_intensity)
-    sqw_map = sqw_map[:, 1:-1] # Exclude values outside ebin range
+    sqw_map = sqw_map[:, 1:-1]  # Exclude values outside ebin range
 
     if ewidth or qwidth:
         qbin_width = np.linalg.norm(
@@ -364,7 +362,7 @@ def voigt(ebins, width, mix):
 
     lorentz = 1/(1 + np.square(x/(0.5*width)))
 
-    return height*(mix*lorentz + (1 - mix)*gauss)
+    return (mix*lorentz + (1 - mix)*gauss)
 
 
 def bose_factor(x, T):

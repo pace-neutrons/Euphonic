@@ -1,6 +1,7 @@
 import math
 import numpy as np
 
+
 def reciprocal_lattice(unit_cell):
     """
     Calculates the reciprocal lattice from a unit cell
@@ -14,8 +15,8 @@ def reciprocal_lattice(unit_cell):
     cxa = np.cross(c, a)
     axb = np.cross(a, b)
 
-    adotbxc = np.vdot(a, bxc) # Unit cell volume
-    norm = 2*math.pi/adotbxc # Normalisation factor
+    adotbxc = np.vdot(a, bxc)  # Unit cell volume
+    norm = 2*math.pi/adotbxc  # Normalisation factor
 
     astar = norm*bxc
     bstar = norm*cxa
@@ -35,7 +36,7 @@ def direction_changed(qpts, tolerance=5e-6):
     delta = np.diff(qpts, axis=0)
 
     # Dot each vector with the next to determine the relative direction
-    dot = np.einsum('ij,ij->i', delta[1:,:], delta[:-1,:])
+    dot = np.einsum('ij,ij->i', delta[1:, :], delta[:-1, :])
     # Get magnitude of each vector
     modq = np.linalg.norm(delta, axis=1)
     # Determine how much the direction has changed (dot) relative to the

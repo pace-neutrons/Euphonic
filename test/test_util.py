@@ -3,6 +3,7 @@ import math
 import numpy.testing as npt
 from simphony.util import reciprocal_lattice, direction_changed
 
+
 class TestReciprocalLattice(unittest.TestCase):
 
     def test_identity(self):
@@ -15,9 +16,9 @@ class TestReciprocalLattice(unittest.TestCase):
         npt.assert_allclose(recip, expected_recip)
 
     def test_graphite(self):
-        recip = reciprocal_lattice([[ 4.025915, -2.324363,  0.000000],
-                                    [-0.000000,  4.648726,  0.000000],
-                                    [ 0.000000,  0.000000, 12.850138]])
+        recip = reciprocal_lattice([[4.025915, -2.324363, 0.000000],
+                                    [-0.000000, 4.648726, 0.000000],
+                                    [0.000000, 0.000000, 12.850138]])
         expected_recip = [[1.56068503860106, 0., 0.],
                           [0.780342519300529, 1.3515929541082, 0.],
                           [0., 0., 0.488958586061845]]
@@ -25,24 +26,25 @@ class TestReciprocalLattice(unittest.TestCase):
         npt.assert_allclose(recip, expected_recip)
 
     def test_iron(self):
-        recip = reciprocal_lattice([[-2.708355,  2.708355,  2.708355],
-                                    [ 2.708355, -2.708355,  2.708355],
-                                    [ 2.708355,  2.708355, -2.708355]])
+        recip = reciprocal_lattice([[-2.708355, 2.708355, 2.708355],
+                                    [2.708355, -2.708355, 2.708355],
+                                    [2.708355, 2.708355, -2.708355]])
         expected_recip = [[0., 1.15996339, 1.15996339],
                           [1.15996339, 0., 1.15996339],
                           [1.15996339, 1.15996339, 0.]]
         npt.assert_allclose(recip, expected_recip)
+
 
 class TestDirectionChanged(unittest.TestCase):
 
     def test_direction_changed_nah(self):
         qpts = [[-0.25, -0.25, -0.25],
                 [-0.25, -0.50, -0.50],
-                [ 0.00, -0.25, -0.25],
-                [ 0.00,  0.00,  0.00],
-                [ 0.00, -0.50, -0.50],
-                [ 0.25,  0.00, -0.25],
-                [ 0.25, -0.50, -0.25],
+                [0.00, -0.25, -0.25],
+                [0.00, 0.00, 0.00],
+                [0.00, -0.50, -0.50],
+                [0.25, 0.00, -0.25],
+                [0.25, -0.50, -0.25],
                 [-0.50, -0.50, -0.50]]
         expected_direction_changed = [True, True, False, True, True, True]
         npt.assert_equal(direction_changed(qpts),

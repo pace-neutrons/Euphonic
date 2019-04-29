@@ -161,7 +161,7 @@ def get_qpt_label(qpt, point_labels):
         matching_label_index = np.where((np.isclose(
             label_coords, np.roll(qpt_norm, 2), atol=TOL)).all(axis=1))[0]
 
-    label = '';
+    label = ''
     if matching_label_index.size > 0:
         label = labels[matching_label_index[0]]
 
@@ -329,19 +329,22 @@ def output_grace(data, seedname='out', up=True, down=True):
         graph = grace.add_graph()
         graph.yaxis.label.text = yaxis_label
 
-        graph.xaxis.tick.set_spec_ticks(abscissa[qpts_with_labels].tolist(), [], xlabels.tolist())
+        graph.xaxis.tick.set_spec_ticks(
+            abscissa[qpts_with_labels].tolist(), [], xlabels.tolist())
         graph.xaxis.tick.major_grid = 'on'
         if len(max(xlabels, key=len)) >= 11:
             graph.xaxis.ticklabel.configure(angle=315, char_size=1.0)
 
         for i in range(data.n_branches):
             if up:
-                ds = graph.add_dataset(zip(abscissa, data.freqs[:, i].magnitude))
-                ds.line.configure(linewidth=2.0, color=i%16)
+                ds = graph.add_dataset(
+                    zip(abscissa, data.freqs[:, i].magnitude))
+                ds.line.configure(linewidth=2.0, color=i % 16)
                 ds.symbol.shape = 0
             if down and hasattr(data, 'freq_down') and len(data.freq_down) > 0:
-                ds = graph.add_dataset(zip(abscissa, data.freq_down[:, i].magnitude))
-                ds.line.configure(linewidth=2.0, color=i%16)
+                ds = graph.add_dataset(
+                    zip(abscissa, data.freq_down[:, i].magnitude))
+                ds.line.configure(linewidth=2.0, color=i % 16)
                 ds.symbol.shape = 0
 
         if hasattr(data, 'fermi'):
@@ -384,7 +387,8 @@ def output_grace(data, seedname='out', up=True, down=True):
                 f.write('@xaxis ticklabel angle 315\n')
 
             for i, label in enumerate(xlabels):
-                f.write('@xaxis tick major {0:d},{1:8.3f}\n'.format(i, abscissa[qpts_with_labels[i]]))
+                f.write('@xaxis tick major {0:d},{1:8.3f}\n'
+                        .format(i, abscissa[qpts_with_labels[i]]))
                 f.write('@xaxis ticklabel {0:d},"{1}"\n'.format(i, label))
 
             # Write frequencies
@@ -394,21 +398,26 @@ def output_grace(data, seedname='out', up=True, down=True):
                     f.write('@target G0.S{0:d}\n'.format(n_sets))
                     f.write('@type xy\n')
                     for j, freq in enumerate(data.freqs[:, i].magnitude):
-                        f.write('{0: .15e} {1: .15e}\n'.format(abscissa[j], freq))
+                        f.write('{0: .15e} {1: .15e}\n'
+                                .format(abscissa[j], freq))
                     n_sets += 1
-                if down and hasattr(data, 'freq_down') and len(data.freq_down) > 0:
+                if (down and hasattr(data, 'freq_down') and
+                        len(data.freq_down) > 0):
                     f.write('@target G0.S{0:d}\n'.format(n_sets))
                     f.write('@type xy\n')
                     for j, freq in enumerate(data.freq_down[:, i].magnitude):
-                        f.write('{0: .15e} {1: .15e}\n'.format(abscissa[j], freq))
+                        f.write('{0: .15e} {1: .15e}\n'
+                                .format(abscissa[j], freq))
                     n_sets += 1
                 f.write('&\n')
 
             # Write Fermi level
             if hasattr(data, 'fermi'):
                 for i, ef in enumerate(data.fermi.magnitude):
-                    f.write('@ G0.S{0:d} line linestyle 3\n'.format(data.n_branches + i))
-                    f.write('@ G0.S{0:d} line color 1\n'.format(data.n_branches + i))
+                    f.write('@ G0.S{0:d} line linestyle 3\n'.
+                            format(data.n_branches + i))
+                    f.write('@ G0.S{0:d} line color 1\n'
+                            .format(data.n_branches + i))
                     f.write('@target G0.S{0:d}\n'.format(data.n_branches + i))
                     f.write('@type xy\n')
                     f.write('{0: .15e} {1: .15e}\n'.format(0, ef))

@@ -29,6 +29,7 @@ class TestStructureFactorPhononDataLZO(unittest.TestCase):
         scale = np.mean(sf/expected_sf)
         npt.assert_allclose(sf, expected_sf*scale)
 
+
 class TestStructureFactorInterpolationDataLZO(unittest.TestCase):
 
     def setUp(self):

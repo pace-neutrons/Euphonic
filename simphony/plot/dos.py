@@ -40,13 +40,13 @@ def output_grace(data, seedname='out', mirror=False, up=True, down=True):
     else:
         xaxis_label = 'Energy ({0})'.format(units_str)
     yaxis_label = 'g(E)'
-    legend_labels = ['\\f{Symbol}a\\f{}', '\\f{Symbol}b\\f{}', '\\f{Symbol}e\\f{}\\sf\\N']
+    legend_labels = ['\\f{Symbol}a\\f{}', '\\f{Symbol}b\\f{}',
+                     '\\f{Symbol}e\\f{}\\sf\\N']
 
     # Calculate bin centres
     dos_bins = data.dos_bins.magnitude
     bwidth = dos_bins[1] - dos_bins[0]
     bin_centres = dos_bins[:-1] + bwidth/2
-
 
     if 'PyGrace' in sys.modules:
         grace = Grace()
@@ -56,23 +56,32 @@ def output_grace(data, seedname='out', mirror=False, up=True, down=True):
         graph.xaxis.label.text = xaxis_label
 
         if up:
-            ds = graph.add_dataset(zip(bin_centres.magnitude, data.dos), legend=legend_labels[0])
+            ds = graph.add_dataset(
+                zip(bin_centres.magnitude, data.dos), legend=legend_labels[0])
             ds.line.configure(linewidth=2.0, color=2)
             ds.symbol.shape = 0
         if down and hasattr(data, 'dos_down') and len(data.dos_down) > 0:
             if mirror:
-                ds = graph.add_dataset(zip(bin_centres.magnitude, np.negative(data.dos_down)), legend=legend_labels[1])
+                ds = graph.add_dataset(
+                    zip(bin_centres.magnitude, np.negative(data.dos_down)),
+                    legend=legend_labels[1])
             else:
-                ds = graph.add_dataset(zip(bin_centres.magnitude, data.dos_down), legend=legend_labels[1])
+                ds = graph.add_dataset(
+                    zip(bin_centres.magnitude, data.dos_down),
+                    legend=legend_labels[1])
             ds.line.configure(linewidth=2.0, color=4)
             ds.symbol.shape = 0
 
         if hasattr(data, 'fermi'):
             for i, ef in enumerate(data.fermi.magnitude):
                 if mirror:
-                    ds = graph.add_dataset(zip([ef, ef], [-np.max(data.dos_down), np.max(data.dos)]))
+                    ds = graph.add_dataset(
+                        zip([ef, ef],
+                            [-np.max(data.dos_down), np.max(data.dos)]))
                 else:
-                    ds = graph.add_dataset(zip([ef, ef], [0, np.max([np.max(data.dos), np.max(data.dos_down)])]))
+                    ds = graph.add_dataset(
+                        zip([ef, ef], [0, np.max([np.max(data.dos),
+                                                  np.max(data.dos_down)])]))
                 if i == 0:
                     ds.configure(legend=legend_labels[2])
                 ds.line.configure(linewidth=2.0, color=1, linestyle=3)
@@ -104,7 +113,8 @@ def output_grace(data, seedname='out', mirror=False, up=True, down=True):
             # Write dos
             n_sets = 0
             if up:
-                f.write('@G0.S{0:d} legend "{1}"\n'.format(n_sets, legend_labels[0]))
+                f.write('@G0.S{0:d} legend "{1}"\n'
+                        .format(n_sets, legend_labels[0]))
                 f.write('@G0.S{0:d} line color 2\n'.format(n_sets))
                 f.write('@target G0.S{0:d}\n'.format(n_sets))
                 f.write('@type xy\n')
@@ -113,16 +123,19 @@ def output_grace(data, seedname='out', mirror=False, up=True, down=True):
                 f.write('&\n')
                 n_sets += 1
             if down and hasattr(data, 'dos_down') and len(data.dos_down) > 0:
-                f.write('@G0.S{0:d} legend "{1}"\n'.format(n_sets, legend_labels[1]))
+                f.write('@G0.S{0:d} legend "{1}"\n'
+                        .format(n_sets, legend_labels[1]))
                 f.write('@G0.S{0:d} line color 4\n'.format(n_sets))
                 f.write('@target G0.S{0:d}\n'.format(n_sets))
                 f.write('@type xy\n')
                 if mirror:
                     for i, x in enumerate(bin_centres.magnitude):
-                        f.write('{0: .15e} {1: .15e}\n'.format(x, -data.dos_down[i]))
+                        f.write('{0: .15e} {1: .15e}\n'
+                                .format(x, -data.dos_down[i]))
                 else:
                     for i, x in enumerate(bin_centres.magnitude):
-                        f.write('{0: .15e} {1: .15e}\n'.format(x, data.dos_down[i]))
+                        f.write('{0: .15e} {1: .15e}\n'
+                                .format(x, data.dos_down[i]))
                 f.write('&\n')
                 n_sets += 1
 
@@ -130,17 +143,22 @@ def output_grace(data, seedname='out', mirror=False, up=True, down=True):
             if hasattr(data, 'fermi'):
                 for i, ef in enumerate(data.fermi.magnitude):
                     if i == 0:
-                        f.write('@G0.S{0:d} legend "{1}"\n'.format(n_sets, legend_labels[2]))
+                        f.write('@G0.S{0:d} legend "{1}"\n'
+                                .format(n_sets, legend_labels[2]))
                     f.write('@G0.S{0:d} line linestyle 3\n'.format(n_sets))
                     f.write('@G0.S{0:d} line color 1\n'.format(n_sets))
                     f.write('@target G0.S{0:d}\n'.format(n_sets))
                     f.write('@type xy\n')
                     if mirror:
-                        f.write('{0: .15e} {1: .15e}\n'.format(ef, -np.max(data.dos_down)))
-                        f.write('{0: .15e} {1: .15e}\n'.format(ef, np.max(data.dos)))
+                        f.write('{0: .15e} {1: .15e}\n'
+                                .format(ef, -np.max(data.dos_down)))
+                        f.write('{0: .15e} {1: .15e}\n'
+                                .format(ef, np.max(data.dos)))
                     else:
                         f.write('{0: .15e} {1: .15e}\n'.format(ef, 0))
-                        f.write('{0: .15e} {1: .15e}\n'.format(ef, np.max([np.max(data.dos), np.max(data.dos_down)])))
+                        f.write('{0: .15e} {1: .15e}\n'
+                                .format(ef, np.max([np.max(data.dos),
+                                                    np.max(data.dos_down)])))
                     f.write('&\n')
                     n_sets += 1
 

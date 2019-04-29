@@ -3,6 +3,7 @@ import numpy as np
 from simphony import ureg
 from simphony.data.data import Data
 
+
 class BandsData(Data):
     """
     A class to read and store data from a .bands file
@@ -46,7 +47,6 @@ class BandsData(Data):
         shape = (n_qpts, 3*n_ions)
     """
 
-
     def __init__(self, seedname, path=''):
         """"
         Reads .bands file and sets attributes
@@ -56,12 +56,11 @@ class BandsData(Data):
         seedname : str
             Name of .bands file to read
         path : str, optional
-            Path to dir containing the .bands file, if it is in another 
+            Path to dir containing the .bands file, if it is in another
             directory
         """
         self._get_data(seedname, path)
         self.seedname = seedname
-
 
     def _get_data(self, seedname, path=''):
         """"
@@ -72,7 +71,7 @@ class BandsData(Data):
         seedname : str
             Name of .bands file to read
         path : str, optional
-            Path to dir containing the .bands file, if it is in another 
+            Path to dir containing the .bands file, if it is in another
             directory
         """
         file = os.path.join(path, seedname + '.bands')
@@ -87,7 +86,6 @@ class BandsData(Data):
         except IOError:
             pass
 
-
     def _read_bands_data(self, f):
         """
         Reads data from .bands file and sets attributes
@@ -99,12 +97,12 @@ class BandsData(Data):
         """
         n_qpts = int(f.readline().split()[3])
         n_spins = int(f.readline().split()[4])
-        f.readline() # Skip number of electrons line
+        f.readline()  # Skip number of electrons line
         n_branches = int(f.readline().split()[3])
         fermi = np.array([float(x) for x in f.readline().split()[5:]])
-        f.readline() # Skip unit cell vectors line
+        f.readline()  # Skip unit cell vectors line
         cell_vec = [[float(x) for x in f.readline().split()[0:3]]
-            for i in range(3)]
+                    for i in range(3)]
 
         freqs = np.array([])
         freq_down = np.array([])
@@ -118,12 +116,12 @@ class BandsData(Data):
         line = f.readline().split()
         while line:
             qpt_num = int(line[1]) - 1
-            qpts[qpt_num,:] = [float(x) for x in line[2:5]]
+            qpts[qpt_num, :] = [float(x) for x in line[2:5]]
             weights[qpt_num] = float(line[5])
 
             for j in range(n_spins):
                 spin = int(f.readline().split()[2])
-    
+
                 # Read frequencies
                 for k in range(n_branches):
                     freqs_qpt[k] = float(f.readline())
@@ -161,7 +159,6 @@ class BandsData(Data):
         self.freqs = freqs
         self.freq_down = freq_down
 
-
     def _read_castep_data(self, f):
         """
         Reads extra data from .castep file (ionic species, coords) and sets
@@ -179,15 +176,15 @@ class BandsData(Data):
             if all([n_ions_read, ion_info_read]):
                 break
             if 'Total number of ions in cell' in line:
-                 n_ions = int(line.split()[-1])
-                 n_ions_read = True
+                n_ions = int(line.split()[-1])
+                n_ions_read = True
             if 'Fractional coordinates of atoms' in line:
-                 f.readline() # Skip uvw line
-                 f.readline() # Skip --- line
-                 ion_info = [f.readline().split() for i in range(n_ions)]
-                 ion_r = np.array([[float(x) for x in line[-4:-1]] 
-                                    for line in ion_info])
-                 ion_type = np.array([x[1] for x in ion_info])
+                f.readline()  # Skip uvw line
+                f.readline()  # Skip --- line
+                ion_info = [f.readline().split() for i in range(n_ions)]
+                ion_r = np.array([[float(x) for x in line[-4:-1]]
+                                  for line in ion_info])
+                ion_type = np.array([x[1] for x in ion_info])
             line = f.readline()
 
         self.n_ions = n_ions

@@ -18,7 +18,6 @@ class Data(object):
         if hasattr(self, 'sqw_ebins'):
             self.sqw_ebins.ito(units, 'spectroscopy')
 
-
     def convert_l_units(self, units):
         """
         Convert length units of relevant attributes in place e.g. cell_vec

@@ -6,7 +6,6 @@ vibrational band structure or dispersion.
 
 import argparse
 import os
-import matplotlib.pyplot as plt
 from simphony import ureg
 from simphony.data.bands import BandsData
 from simphony.data.phonon import PhononData
@@ -26,14 +25,15 @@ def main():
     if file.endswith('.bands'):
         data = BandsData(seedname, path)
     else:
-        data = PhononData(seedname, path, read_ir=args.ir, read_eigenvecs=False)
+        data = PhononData(seedname, path, read_ir=args.ir,
+                          read_eigenvecs=False)
 
     data.convert_e_units(args.units)
 
     # Calculate and plot DOS
     # Set default DOS bin and broadening width based on whether it's
     # electronic or vibrational
-    if args.b == None:
+    if args.b is None:
         if file.endswith('.bands'):
             bwidth = 0.05*ureg.eV
         else:
@@ -41,7 +41,7 @@ def main():
         bwidth.ito(args.units, 'spectroscopy')
     else:
         bwidth = args.b*ureg[args.units]
-    if args.w == None:
+    if args.w is None:
         if file.endswith('.bands'):
             gwidth = 0.1*ureg.eV
         else:
@@ -50,12 +50,15 @@ def main():
     else:
         gwidth = args.w*ureg[args.units]
 
-    calculate_dos(data, bwidth.magnitude, gwidth.magnitude, lorentz=args.lorentz)
+    calculate_dos(data, bwidth.magnitude, gwidth.magnitude,
+                  lorentz=args.lorentz)
 
     if args.grace:
-        output_grace(data, seedname, mirror=args.mirror, up=args.up, down=args.down)
+        output_grace(data, seedname, mirror=args.mirror, up=args.up,
+                     down=args.down)
     else:
-        fig = plot_dos(data, args.filename, mirror=args.mirror, up=args.up, down=args.down)
+        fig = plot_dos(data, args.filename, mirror=args.mirror, up=args.up,
+                       down=args.down)
         if fig is not None:
             import matplotlib.pyplot as plt
             # Save or show Matplotlib figure
@@ -131,7 +134,6 @@ def parse_arguments():
         '-mirror',
         action='store_true',
         help='Plot spin down electronic DOS mirrored in the x axis')
-
 
     args = parser.parse_args()
     return args
