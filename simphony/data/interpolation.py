@@ -656,7 +656,8 @@ class InterpolationData(Data):
             H_ab_tmp = np.zeros((len(cells_tmp), n_ions, n_ions, 3, 3))
             for i in range(n_ions):
                 for j in range(n_ions):
-                    if n == 0 and i == j: continue
+                    if n == 0 and i == j:
+                        continue
                     rij_cart = ion_r_cart[i] - ion_r_cart[j]
                     rij_e = ion_r_e[i] - ion_r_e[j]
                     diffs = rij_cart - cells_cart
@@ -670,9 +671,9 @@ class InterpolationData(Data):
                     f1 = eta_2*(3*erfc_term/norms_2 + exp_term*(3/norms_2 + 2))
                     f2 = erfc_term + exp_term
                     deltas_ab = np.einsum('ij,ik->ijk', deltas, deltas)
-                    H_ab_tmp[:,i,j] = (np.einsum('i,ijk->ijk', f1, deltas_ab)
-                                           - np.einsum('i,jk->ijk',
-                                                       f2, inv_dielectric))
+                    H_ab_tmp[:, i, j] = (np.einsum('i,ijk->ijk', f1, deltas_ab)
+                                         - np.einsum('i,jk->ijk',
+                                                     f2, inv_dielectric))
             # End series when current terms are less than the fractional
             # tolerance multiplied by the term for the cell at R=0
             if n == 0:
@@ -698,14 +699,13 @@ class InterpolationData(Data):
             gvec_phases_tmp = np.exp(2j*math.pi*gvec_dot_r)
             gvecs_ab = np.einsum('ij,ik->ijk', gvecs_cart_tmp, gvecs_cart_tmp)
             k_len_2 = np.einsum('ijk,jk->i', gvecs_ab, dielectric)/(4*eta_2)
-            k_len = np.sqrt(k_len_2)
             recip_exp = np.exp(-k_len_2)/k_len_2
             recip_q0_tmp = np.zeros((n_ions, n_ions, 3, 3),
                                     dtype=np.complex128)
             for i in range(n_ions):
                 for j in range(n_ions):
-                    phase_exp = gvec_phases_tmp[:,i]/gvec_phases_tmp[:,j]
-                    recip_q0_tmp[i,j] = np.einsum(
+                    phase_exp = gvec_phases_tmp[:, i]/gvec_phases_tmp[:, j]
+                    recip_q0_tmp[i, j] = np.einsum(
                         'ijk,i,i->jk', gvecs_ab, phase_exp, recip_exp)
             # End series when current terms are less than the fractional
             # tolerance multiplied by the max term for the first shell
@@ -769,7 +769,7 @@ class InterpolationData(Data):
         eta_2 = eta**2
         H_ab = self.H_ab
         cells = self.cells
-        q_norm = q - np.rint(q) # Normalised q-pt
+        q_norm = q - np.rint(q)  # Normalised q-pt
 
         # Don't include G=0 vector if q=0
         if is_gamma(q_norm):
@@ -786,8 +786,8 @@ class InterpolationData(Data):
         real_phases = np.exp(2j*math.pi*q_dot_ra)
         for i in range(n_ions):
             for j in range(i, n_ions):
-                real_dipole[i,j] = np.einsum(
-                    'ijk,i->jk', H_ab[:,i,j], real_phases)
+                real_dipole[i, j] = np.einsum(
+                    'ijk,i->jk', H_ab[:, i, j], real_phases)
         real_dipole *= eta**3/math.sqrt(np.linalg.det(dielectric))
 
         # Calculate reciprocal term
@@ -800,7 +800,6 @@ class InterpolationData(Data):
         kvecs = gvecs_cart + q_cart
         kvecs_ab = np.einsum('ij,ik->ijk', kvecs, kvecs)
         k_len_2 = np.einsum('ijk,jk->i', kvecs_ab, dielectric)/(4*eta_2)
-        k_len = np.sqrt(k_len_2)
         recip_exp = np.einsum('ijk,i->ijk', kvecs_ab, np.exp(-k_len_2)/k_len_2)
         for i in range(n_ions):
             for j in range(i, n_ions):
@@ -823,7 +822,7 @@ class InterpolationData(Data):
         for i in range(n_ions):
             dipole[i] = np.einsum('ij,klm,kjm->kil',
                                   born[i], born, dipole_tmp[i])
-            dipole[i,i] -= self.dipole_q0[i]
+            dipole[i, i] -= self.dipole_q0[i]
 
         return np.reshape(
             np.transpose(dipole, axes=[0, 2, 1, 3]), (3*n_ions, 3*n_ions))
@@ -871,7 +870,6 @@ class InterpolationData(Data):
 
         return na_corr
 
-
     def _get_shell_origins(self, n):
         """
         Given the shell number, compute all the cell origins that lie in that
@@ -899,25 +897,24 @@ class InterpolationData(Data):
         # the xz plane has (2*n + 1) - 2 rows in z, rather than
         # (2*n + 1). The yz plane also has (2*n + 1) - 2 rows in z and
         # (2*n + 1) - 2 columns in y
-        xy = self._get_all_origins([n+1,n+1,1], min_xyz=[-n,-n,0])
-        xz = self._get_all_origins([n+1,1,n], min_xyz=[-n,0,-n+1])
-        yz = self._get_all_origins([1,n,n], min_xyz=[0,-n+1,-n+1])
+        xy = self._get_all_origins([n+1, n+1, 1], min_xyz=[-n, -n, 0])
+        xz = self._get_all_origins([n+1, 1, n], min_xyz=[-n, 0, -n+1])
+        yz = self._get_all_origins([1, n, n], min_xyz=[0, -n+1, -n+1])
 
         # Offset each plane by n and -n to get the 6 planes that make up the
         # shell
         origins = np.zeros(((2*n+1)**3-(2*n-1)**3, 3), dtype=np.int32)
         for i, ni in enumerate([-n, n]):
             origins[i*len(xy):(i+1)*len(xy)] = xy
-            origins[i*len(xy):(i+1)*len(xy),2] = ni
+            origins[i*len(xy):(i+1)*len(xy), 2] = ni
             io = 2*len(xy)
             origins[io+i*len(xz):io+(i+1)*len(xz)] = xz
-            origins[io+i*len(xz):io+(i+1)*len(xz),1] = ni
+            origins[io+i*len(xz):io+(i+1)*len(xz), 1] = ni
             io = 2*(len(xy) + len(xz))
             origins[io+i*len(yz):io+(i+1)*len(yz)] = yz
-            origins[io+i*len(yz):io+(i+1)*len(yz),0] = ni
+            origins[io+i*len(yz):io+(i+1)*len(yz), 0] = ni
 
         return origins
-
 
     def _get_all_origins(self, max_xyz, min_xyz=[0, 0, 0], step=1):
         """
