@@ -9,6 +9,7 @@ from scipy.special import erfc
 from simphony import ureg
 from simphony.util import reciprocal_lattice, is_gamma
 from simphony.data.data import Data
+import pdb
 
 
 class InterpolationData(Data):
@@ -1176,6 +1177,7 @@ class InterpolationData(Data):
         cell_origins = self.cell_origins
         n_cells_in_sc = self.n_cells_in_sc
         sc_matrix = self.sc_matrix
+        ax = np.newaxis
 
         # List of points defining Wigner-Seitz cell
         ws_frac = np.array([[0, 0, 0], [0, 0, 1], [0, 1, 0], [0, 1, 1],
@@ -1188,12 +1190,12 @@ class InterpolationData(Data):
         sc_vecs = np.dot(sc_matrix, cell_vec)
         ws_list = np.dot(ws_frac, sc_vecs)
         inv_ws_sq = 1.0/np.sum(np.square(ws_list[1:]), axis=1)
+        ws_list_norm = ws_list[1:]*inv_ws_sq[:, ax]
 
         # Get Cartesian coords of supercell images and ions in supercell
         sc_image_r = self._get_all_origins(
             np.repeat(lim, 3) + 1, min_xyz=-np.repeat(lim, 3))
         sc_image_cart = np.einsum('ij,jk->ik', sc_image_r, sc_vecs)
-        ax = np.newaxis
         sc_ion_r = np.einsum('ijk,kl->ijl',
                              cell_origins[:, ax, :] + ion_r[ax, :, :],
                              np.linalg.inv(np.transpose(sc_matrix)))
@@ -1202,22 +1204,43 @@ class InterpolationData(Data):
         sc_image_i = np.full((n_cells_in_sc, n_ions, n_ions, (2*lim + 1)**3),
                              -1, dtype=np.int8)
         n_sc_images = np.zeros((n_cells_in_sc, n_ions, n_ions), dtype=np.int8)
-        for nc in range(n_cells_in_sc):
-            for i in range(n_ions):
-                for j in range(n_ions):
-                    # Get vector between j in supercell image and i
-                    dists = (sc_ion_cart[0, i]
-                             - sc_ion_cart[nc, j]
-                             - sc_image_cart)
-                    # Compare ion-ion supercell vector and all ws point vectors
-                    dist_ws_points = np.einsum('ij,kj->ik', dists, ws_list[1:])
-                    dist_wsp_frac = np.absolute(
-                        np.einsum('ij,j->ij', dist_ws_points, inv_ws_sq))
-                    # Count images if ion < half distance to all ws points
-                    sc_images = np.where((np.amax(dist_wsp_frac, axis=1)
-                                          <= (0.5*cutoff_scale + 0.001)))[0]
-                    sc_image_i[nc, i, j, 0:len(sc_images)] = sc_images
-                    n_sc_images[nc, i, j] = len(sc_images)
+
+        # Ordering of loops here is for efficiency:
+        # ions in unit cell -> periodic supercell images -> WS points
+        # This is so the ion-ion vectors in each loop will be similar,
+        # so they are more likely to pass/fail the WS check together
+        # so the last loop can be broken early
+        for i in range(n_ions):
+            rij = sc_ion_cart[0, i] - sc_ion_cart
+            for im, sc_r in enumerate(sc_image_cart):
+                # Get vector between j in supercell image and i in unit cell
+                dists = rij - sc_r
+                # Only want to include images where ion < halfway to ALL ws
+                # points, so compare vector to all ws points
+                for n, wsp in enumerate(ws_list_norm):
+                    dist_wsp = np.absolute(np.sum(dists*wsp, axis=-1))
+                    if n == 0:
+                        nc_idx, nj_idx = np.where(
+                            dist_wsp <= ((0.5*cutoff_scale + 0.001)))
+                        # Reindex dists to remove elements where the ion is
+                        # > halfway to WS point, to avoid wasted computation
+                        dists = dists[nc_idx, nj_idx]
+                    else:
+                        # After first reindex, dists is now 1D so need to
+                        # reindex like this instead
+                        idx = np.where(
+                            dist_wsp <= ((0.5*cutoff_scale + 0.001)))[0]
+                        nc_idx = nc_idx[idx]
+                        nj_idx = nj_idx[idx]
+                        dists = dists[idx]
+                    if len(nc_idx) == 0:
+                        break
+                    # If ion-ion vector has been < halfway to all WS points,
+                    # this is a valid image! Save it
+                    if n == len(ws_list_norm) - 1:
+                        n_im_idx = n_sc_images[nc_idx, i, nj_idx]
+                        sc_image_i[nc_idx, i, nj_idx, n_im_idx] = im
+                        n_sc_images[nc_idx, i, nj_idx] += 1
 
         self.n_sc_images = n_sc_images
         # Truncate sc_image_i to the maximum ACTUAL images rather than the
