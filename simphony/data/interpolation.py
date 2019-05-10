@@ -1046,7 +1046,8 @@ class InterpolationData(Data):
             dtype = 'complex'
             shape = (3*n_ions, 3*n_ions)
         """
-        tol = 1e-8*np.min(np.abs(g_evals))
+        tol = (ureg('amu').to('e_mass')
+               *0.1*ureg('1/cm').to('1/bohr')**2).magnitude
 
         for i, ac in enumerate(ac_i):
             dyn_mat -= (tol*i + g_evals[ac])*np.einsum(
