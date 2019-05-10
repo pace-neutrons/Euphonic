@@ -9,7 +9,6 @@ from scipy.special import erfc
 from simphony import ureg
 from simphony.util import reciprocal_lattice, is_gamma
 from simphony.data.data import Data
-import pdb
 
 
 class InterpolationData(Data):
@@ -442,6 +441,14 @@ class InterpolationData(Data):
                 unique_sc_i, unique_cell_origins, unique_cell_i)
             if dipole:
                 dyn_mat_gamma += self._calculate_dipole_correction(q_gamma)
+            try:
+                ac_i, g_evals, g_evecs = self._find_acoustic_modes(
+                    dyn_mat_gamma)
+            except Exception:
+                warnings.warn(('\nError correcting for acoustic sum rule, '
+                               'could not find 3 acoustic modes.\nReturning '
+                               'uncorrected dynamical matrix'), stacklevel=2)
+                asr = None
 
         prev_evecs = np.identity(3*n_ions)
         for q in range(n_qpts):
@@ -456,7 +463,8 @@ class InterpolationData(Data):
                 dyn_mat += dipole_corr
 
             if asr == 'reciprocal':
-                dyn_mat = self._enforce_reciprocal_asr(dyn_mat_gamma, dyn_mat)
+                dyn_mat = self._enforce_reciprocal_asr(
+                    dyn_mat, ac_i, g_evals, g_evecs)
 
             # Calculate LO-TO splitting by calculating non-analytic correction
             # to dynamical matrix
@@ -1005,7 +1013,7 @@ class InterpolationData(Data):
 
         return fc
 
-    def _enforce_reciprocal_asr(self, dyn_mat_gamma, dyn_mat):
+    def _enforce_reciprocal_asr(self, dyn_mat, ac_i, g_evals, g_evecs):
         """
         Apply a transformation to the dynamical matrix at so that it
         satisfies the acousic sum rule. Diagonalise, shift the acoustic modes
@@ -1015,15 +1023,22 @@ class InterpolationData(Data):
 
         Parameters
         ----------
-        dyn_mat_gamma : ndarray
-            The non mass-weighted dynamical matrix at q=0
-            dtype = 'complex'
-            shape = (3*n_ions, 3*n_ions)
         dyn_mat : ndarray
             The uncorrected, non mass-weighted dynamical matrix at q
             dtype = 'complex'
             shape = (3*n_ions, 3*n_ions)
-
+        ac_i : ndarray
+            The indices of the acoustic modes at the gamma point
+            dtype = 'int'
+            shape = (3,)
+        g_evals : ndarray
+            Dynamical matrix eigenvalues at gamma
+            dtype = 'float'
+            shape = (3*n_ions)
+        g_evecs : ndarray
+            Dynamical matrix eigenvectors at gamma
+            dtype = 'complex'
+            shape = (3*n_ions, n_ions, 3)
         Returns
         -------
         dyn_mat : ndarray
@@ -1031,18 +1046,11 @@ class InterpolationData(Data):
             dtype = 'complex'
             shape = (3*n_ions, 3*n_ions)
         """
-        try:
-            ac_i, evals, evecs = self._find_acoustic_modes(dyn_mat_gamma)
-        except Exception:
-            warnings.warn(('\nError correcting for acoustic sum rule, could '
-                           'not find 3 acoustic modes.\nReturning uncorrected '
-                           'dynamical matrix'), stacklevel=2)
-            return dyn_mat
-        tol = 1e-8*np.min(np.abs(evals))
+        tol = 1e-8*np.min(np.abs(g_evals))
 
         for i, ac in enumerate(ac_i):
-            dyn_mat -= (tol*i + evals[ac])*np.einsum(
-                'i,j->ij', evecs[:, ac], evecs[:, ac])
+            dyn_mat -= (tol*i + g_evals[ac])*np.einsum(
+                'i,j->ij', g_evecs[:, ac], g_evecs[:, ac])
 
         return dyn_mat
 
