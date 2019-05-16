@@ -677,7 +677,7 @@ class InterpolationData(Data):
             # End series when current terms are less than the fractional
             # tolerance multiplied by the term for the cell at R=0
             if n == 0:
-                r0_max = np.amax(H_ab_tmp)
+                r0_max = np.amax(np.abs(H_ab_tmp))
             if np.amax(np.abs(H_ab_tmp)) > frac_tol*r0_max:
                 H_ab = np.concatenate((H_ab, H_ab_tmp))
                 cells = np.concatenate((cells, cells_tmp))
@@ -710,7 +710,7 @@ class InterpolationData(Data):
             # End series when current terms are less than the fractional
             # tolerance multiplied by the max term for the first shell
             if n == 1:
-                first_shell_max = np.amax(recip_q0_tmp)
+                first_shell_max = np.amax(np.abs(recip_q0_tmp))
             if np.amax(np.abs(recip_q0_tmp)) > frac_tol*first_shell_max:
                 gvecs_cart = np.concatenate((gvecs_cart, gvecs_cart_tmp))
                 gvec_phases = np.concatenate((gvec_phases, gvec_phases_tmp))
