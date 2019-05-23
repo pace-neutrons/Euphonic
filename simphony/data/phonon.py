@@ -1,4 +1,5 @@
 import os
+import re
 import numpy as np
 from simphony import ureg
 from simphony.util import is_gamma
@@ -160,12 +161,15 @@ class PhononData(Data):
         # Need to loop through file using while rather than number of q-points
         # as sometimes points are duplicated
         first_qpt = True
-        line = f.readline().split()
+        qpt_line = f.readline()
         prev_qpt_num = -1
-        while line:
-            qpt_num = int(line[1]) - 1
-            qpts[qpt_num, :] = [float(x) for x in line[2:5]]
-            weights[qpt_num] = float(line[5])
+        qpt_num_patt = re.compile('q-pt=\s*(\d+)')
+        float_patt = re.compile('-?\d+\.\d+')
+        while qpt_line:
+            qpt_num = int(re.search(qpt_num_patt, qpt_line).group(1)) - 1
+            floats = re.findall(float_patt, qpt_line)
+            qpts[qpt_num] = [float(x) for x in floats[:3]]
+            weights[qpt_num] = float(floats[3])
 
             freq_lines = [f.readline().split() for i in range(n_branches)]
             tmp = np.array([float(line[1]) for line in freq_lines])
@@ -211,8 +215,7 @@ class PhononData(Data):
                 # Skip eigenvectors and 2 label lines
                 [f.readline() for x in range(n_ions*n_branches + 2)]
             first_qpt = False
-            line = f.readline().replace('=', ' ')
-            line = line.split()
+            qpt_line = f.readline()
             prev_qpt_num = qpt_num
 
         cell_vec = cell_vec*ureg.angstrom
