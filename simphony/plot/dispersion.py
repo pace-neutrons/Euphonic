@@ -244,7 +244,7 @@ def plot_sqw_map(data, vmin=None, vmax=None, ratio=None, cmap='viridis'):
 
     # Calculate energy tick labels
     ytick_spacing_opts = [100, 50, 20, 10, 5, 2, 1, 0.1]
-    min_n_yticks = 3
+    min_n_yticks = 5
     ytick_spacing = ytick_spacing_opts[np.argmax((
         ebins[-1] - ebins[0])/ytick_spacing_opts > min_n_yticks)]
     ytick_min = np.ceil(ebins[0]/ytick_spacing)*ytick_spacing
