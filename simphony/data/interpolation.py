@@ -326,8 +326,9 @@ class InterpolationData(Data):
         except UnboundLocalError:
             pass
 
-    def calculate_fine_phonons(self, qpts, asr=None, precondition=False,
-                               set_attrs=True, dipole=True, splitting=True):
+    def calculate_fine_phonons(
+        self, qpts, asr=None, precondition=False, set_attrs=True, dipole=True,
+            eta_scale=1.0, splitting=True):
         """
         Calculate phonon frequencies and eigenvectors at specified q-points
         from a supercell force constant matrix via interpolation. For more
@@ -355,6 +356,9 @@ class InterpolationData(Data):
             Calculates the dipole tail correction to the dynamical matrix at
             each q-point using the Ewald sum, if the Born charges and
             dielectric permitivitty tensor are present.
+        eta_scale : float, optional, default 1.0
+            Changes the cutoff in real/reciprocal space for the dipole Ewald
+            sum. A higher value uses more reciprocal terms
         splitting : boolean, optional, default True
             Whether to calculate the LO-TO splitting at the gamma points. Only
             applied if dipole is True and the Born charges and dielectric
@@ -384,8 +388,9 @@ class InterpolationData(Data):
         if not dipole:
             splitting = False
 
-        if dipole and not hasattr(self, 'eta'):
-            self._dipole_correction_init()
+        if dipole and (not hasattr(self, 'eta_scale') or
+                       eta_scale != self.eta_scale):
+            self._dipole_correction_init(eta_scale)
 
         ion_mass = self.ion_mass.to('e_mass').magnitude
         sc_matrix = self.sc_matrix
@@ -614,11 +619,17 @@ class InterpolationData(Data):
         # indices
         return np.transpose(dyn_mat)
 
-    def _dipole_correction_init(self):
+    def _dipole_correction_init(self, eta_scale=1.0):
         """
         Calculate the q-independent parts of the long range correction to the
         dynamical matrix for efficiency. The method used is based on the
         Ewald sum, see eqs 72-74 from Gonze and Lee PRB 55, 10355 (1997)
+
+        Parameters
+        ----------
+        eta_scale : float, optional, default 1.0
+            Changes the cutoff in real/reciprocal space for the dipole Ewald
+            sum. A higher value uses more reciprocal terms
         """
 
         cell_vec = self.cell_vec.to('bohr').magnitude
@@ -635,7 +646,7 @@ class InterpolationData(Data):
         mean_abc_mag = np.prod(abc_mag)**(1.0/3)
         eta = (sqrt_pi/mean_abc_mag)*n_ions**(1.0/6)
         # Use eta = lambda * |permittivity|**(1/6)
-        eta = eta*np.power(np.linalg.det(dielectric), 1.0/6)
+        eta = eta*np.power(np.linalg.det(dielectric), 1.0/6)*eta_scale
         eta_2 = eta**2
 
         # Set limits and tolerances
@@ -733,6 +744,7 @@ class InterpolationData(Data):
             # Symmetrise
             dipole_q0[i] = 0.5*(dipole_q0[i] + np.transpose(dipole_q0[i]))
 
+        self.eta_scale = eta_scale
         self.eta = eta
         self.H_ab = H_ab
         self.cells = cells
