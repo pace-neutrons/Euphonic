@@ -29,10 +29,6 @@ class InterpolationData(Data):
         The unit cell vectors. Default units Angstroms.
         dtype = 'float'
         shape = (3, 3)
-    n_ions_in_species : ndarray
-        The number of ions in each species, in the same order as the species
-        in ion_type
-        shape = (n_species,)
     ion_r : ndarray
         The fractional position of each ion within the unit cell
         dtype = 'float'
@@ -199,7 +195,11 @@ class InterpolationData(Data):
             """
             def record_mark_read(file_obj):
                 # Read 4 byte Fortran record marker
-                return struct.unpack('>i', file_obj.read(4))[0]
+                rawdata = file_obj.read(4)
+                if rawdata == b'':
+                    sys.exit("""Problem reading binary file: unexpected EOF
+                                reached""")
+                return struct.unpack('>i', rawdata)[0]
 
             begin = record_mark_read(file_obj)
             if dtype:
@@ -223,39 +223,74 @@ class InterpolationData(Data):
 
             return data
 
+        def read_cell(file_obj, int_type, float_type):
+            header = ''
+            while header.strip() != b'END_UNIT_CELL':
+                header = read_entry(file_obj)
+                if header.strip() == b'CELL%NUM_IONS':
+                    n_ions = read_entry(file_obj, int_type)
+                elif header.strip() == b'CELL%REAL_LATTICE':
+                    cell_vec = np.transpose(np.reshape(
+                        read_entry(file_obj, float_type), (3, 3)))
+                elif header.strip() == b'CELL%NUM_SPECIES':
+                    n_species = read_entry(file_obj, int_type)
+                elif header.strip() == b'CELL%NUM_IONS_IN_SPECIES':
+                    n_ions_in_species = read_entry(file_obj, int_type)
+                    if n_species == 1:
+                        n_ions_in_species = np.array([n_ions_in_species])
+                elif header.strip() == b'CELL%IONIC_POSITIONS':
+                    max_ions_in_species = max(n_ions_in_species)
+                    ion_r_tmp = np.reshape(read_entry(file_obj, float_type),
+                                           (n_species, max_ions_in_species, 3))
+                elif header.strip() == b'CELL%SPECIES_MASS':
+                    ion_mass_tmp = read_entry(file_obj, float_type)
+                    if n_species == 1:
+                        ion_mass_tmp = np.array([ion_mass_tmp])
+                elif header.strip() == b'CELL%SPECIES_SYMBOL':
+                    # Need to decode binary string for Python 3 compatibility
+                    if n_species == 1:
+                        ion_type_tmp = [read_entry(file_obj, 'S8')
+                                        .strip().decode('utf-8')]
+                    else:
+                        ion_type_tmp = [x.strip().decode('utf-8')
+                                        for x in read_entry(file_obj, 'S8')]
+            # Get ion_r in correct form
+            # CASTEP stores ion positions as 3D array (3,
+            # max_ions_in_species, n_species) so need to slice data to get
+            # correct information
+            ion_begin = np.insert(np.cumsum(n_ions_in_species[:-1]), 0, 0)
+            ion_end = np.cumsum(n_ions_in_species)
+            ion_r = np.zeros((n_ions, 3))
+            for i in range(n_species):
+                ion_r[ion_begin[i]:ion_end[i], :] = ion_r_tmp[
+                    i, :n_ions_in_species[i], :]
+            # Get ion_type in correct form
+            ion_type = np.array([])
+            ion_mass = np.array([])
+            for ion in range(n_species):
+                ion_type = np.append(
+                    ion_type,
+                    [ion_type_tmp[ion] for i in range(n_ions_in_species[ion])])
+                ion_mass = np.append(
+                    ion_mass,
+                    [ion_mass_tmp[ion] for i in range(n_ions_in_species[ion])])
+
+            return n_ions, cell_vec, ion_r, ion_mass, ion_type
+
         int_type = '>i4'
         float_type = '>f8'
-
         header = ''
+        first_cell_read = True
         while header.strip() != b'END':
             header = read_entry(file_obj)
-            if header.strip() == b'CELL%NUM_IONS':
-                n_ions = read_entry(file_obj, int_type)
-            elif header.strip() == b'CELL%REAL_LATTICE':
-                cell_vec = np.transpose(np.reshape(
-                    read_entry(file_obj, float_type), (3, 3)))
-            elif header.strip() == b'CELL%NUM_SPECIES':
-                n_species = read_entry(file_obj, int_type)
-            elif header.strip() == b'CELL%NUM_IONS_IN_SPECIES':
-                n_ions_in_species = read_entry(file_obj, int_type)
-                if n_species == 1:
-                    n_ions_in_species = np.array([n_ions_in_species])
-            elif header.strip() == b'CELL%IONIC_POSITIONS':
-                max_ions_in_species = max(n_ions_in_species)
-                ion_r_tmp = np.reshape(read_entry(file_obj, float_type),
-                                       (n_species, max_ions_in_species, 3))
-            elif header.strip() == b'CELL%SPECIES_MASS':
-                ion_mass_tmp = read_entry(file_obj, float_type)
-                if n_species == 1:
-                    ion_mass_tmp = np.array([ion_mass_tmp])
-            elif header.strip() == b'CELL%SPECIES_SYMBOL':
-                # Need to decode binary string for Python 3 compatibility
-                if n_species == 1:
-                    ion_type_tmp = [read_entry(file_obj, 'S8')
-                                    .strip().decode('utf-8')]
-                else:
-                    ion_type_tmp = [x.strip().decode('utf-8')
-                                    for x in read_entry(file_obj, 'S8')]
+            if header.strip() == b'BEGIN_UNIT_CELL':
+                # CASTEP writes the cell twice: the first is the geometry
+                # optimised cell, the second is the original cell. We only
+                # want the geometry optimised cell.
+                if first_cell_read:
+                    n_ions, cell_vec, ion_r, ion_mass, ion_type = read_cell(
+                        file_obj, int_type, float_type)
+                    first_cell_read = False
             elif header.strip() == b'FORCE_CON':
                 sc_matrix = np.transpose(np.reshape(
                     read_entry(file_obj, int_type), (3, 3)))
@@ -274,26 +309,6 @@ class InterpolationData(Data):
                 dielectric = np.transpose(np.reshape(
                     read_entry(file_obj, float_type), (3, 3)))
 
-        # Get ion_r in correct form
-        # CASTEP stores ion positions as 3D array (3,
-        # max_ions_in_species, n_species) so need to slice data to get
-        # correct information
-        ion_begin = np.insert(np.cumsum(n_ions_in_species[:-1]), 0, 0)
-        ion_end = np.cumsum(n_ions_in_species)
-        ion_r = np.zeros((n_ions, 3))
-        for i in range(n_species):
-                ion_r[ion_begin[i]:ion_end[i], :] = ion_r_tmp[
-                    i, :n_ions_in_species[i], :]
-        # Get ion_type in correct form
-        ion_type = np.array([])
-        ion_mass = np.array([])
-        for ion in range(n_species):
-            ion_type = np.append(
-                ion_type,
-                [ion_type_tmp[ion] for i in range(n_ions_in_species[ion])])
-            ion_mass = np.append(
-                ion_mass,
-                [ion_mass_tmp[ion] for i in range(n_ions_in_species[ion])])
 
         cell_vec = cell_vec*ureg.bohr
         cell_vec.ito('angstrom')
@@ -303,7 +318,6 @@ class InterpolationData(Data):
         self.n_ions = n_ions
         self.n_branches = 3*n_ions
         self.cell_vec = cell_vec
-        self.n_ions_in_species = n_ions_in_species
         self.ion_r = ion_r - np.floor(ion_r)  # Normalise ion coordinates
         self.ion_type = ion_type
         self.ion_mass = ion_mass
