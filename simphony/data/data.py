@@ -59,14 +59,16 @@ class Data(object):
             dos_bins = dos_bins.to(self.freqs.units).magnitude
         except AttributeError:
             pass
+        try:
+            gwidth = gwidth.to(self.freqs.units).magnitude
+        except AttributeError:
+            pass
 
         # Bin frequencies
         if weights is None:
             weights = np.repeat(self.weights[:, np.newaxis], self.n_branches,
                                 axis=1)
-            hist, bin_edges = np.histogram(freqs, dos_bins, weights=weights)
-        else:
-            hist, bin_edges = np.histogram(freqs, dos_bins, weights=weights)
+        hist, bin_edges = np.histogram(freqs, dos_bins, weights=weights)
 
         bwidth = np.mean(np.diff(dos_bins))
         # Only broaden if broadening is more than bin width

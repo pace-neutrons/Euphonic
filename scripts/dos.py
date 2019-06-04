@@ -6,10 +6,10 @@ vibrational band structure or dispersion.
 
 import argparse
 import os
+import numpy as np
 from simphony import ureg
 from simphony.data.bands import BandsData
 from simphony.data.phonon import PhononData
-from simphony.calculate.dos import calculate_dos
 from simphony.plot.dos import plot_dos, output_grace
 
 
@@ -49,9 +49,19 @@ def main():
         gwidth.ito(args.units, 'spectroscopy')
     else:
         gwidth = args.w*ureg[args.units]
-
-    calculate_dos(data, bwidth.magnitude, gwidth.magnitude,
-                  lorentz=args.lorentz)
+    if args.ir:
+        weights = data.ir*np.repeat(
+            data.weights[:, np.newaxis], data.n_branches, axis=1)
+    else:
+        weights = None
+    if isinstance(data, BandsData):
+        all_freqs = np.append(data.freqs.magnitude, data.freq_down.magnitude)
+    else:
+        all_freqs = data.freqs.magnitude
+    bwidth = bwidth.magnitude
+    dos_bins = np.arange(all_freqs.min(), all_freqs.max() + bwidth, bwidth)
+    data.calculate_dos(dos_bins, gwidth, lorentz=args.lorentz,
+                       weights=weights)
 
     if args.grace:
         output_grace(data, seedname, mirror=args.mirror, up=args.up,
