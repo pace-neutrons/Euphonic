@@ -53,3 +53,11 @@ def is_gamma(qpt):
     tol = 1e-15
 
     return np.sum(np.absolute(qpt - np.rint(qpt))) < tol
+
+
+def gaussian(x, sigma):
+    return np.exp(-np.square(x)/(2*sigma**2))/(math.sqrt(2*math.pi)*sigma)
+
+
+def lorentzian(x, gamma):
+    return gamma/(2*math.pi*(np.square(x) + (gamma/2)**2))

@@ -191,6 +191,62 @@ class BandsData(Data):
         self.ion_r = ion_r
         self.ion_type = ion_type
 
+    def calculate_dos(self, dos_bins, gwidth, lorentz=False,
+                      weights=None, set_attrs=True):
+        """
+        Calculates a density of states with fixed width Gaussian/Lorentzian
+        broadening. Extends the Data.calculate_dos function and has the same
+        input parameters, but additionally calculates DOS for spin down
+        frequencies
+
+        Parameters
+        ----------
+        dos_bins : ndarray
+            The energy bin edges to use for calculating the DOS, in the same
+            units as freqs
+            dtype = 'float'
+            shape = (n_ebins + 1,)
+        gwidth : float
+            FWHM of Gaussian/Lorentzian for broadening the DOS bins, in the
+            same units as freqs. Set to 0 if
+            no broadening is desired
+        lorentz : boolean, optional
+            Whether to use a Lorentzian or Gaussian broadening function.
+            Default: False
+        weights : ndarray, optional
+            The weights to use for each q-points and branch. If unspecified,
+            uses the q-point weights stored in the Data object
+            dtype = 'float'
+            shape = (n_qpts, n_branches)
+        set_attrs : boolean, optional, default True
+            Whether to set the dos, dos_down and dos_bins attributes to the
+            newly calculated values
+
+        Returns
+        -------
+        dos : ndarray
+            The spin up density of states for each bin
+            dtype = 'float'
+            shape = (n_ebins,)
+        dos_down : ndarray
+            The spin down density of states for each bin
+            dtype = 'float'
+            shape = (n_ebins,)
+        """
+        dos = super().calculate_dos(dos_bins, gwidth, lorentz=lorentz,
+                                    weights=weights, set_attrs=set_attrs)
+
+        if self.freq_down.size > 0:
+            dos_down = super().calculate_dos(
+                dos_bins, gwidth, lorentz=lorentz, weights=weights,
+                set_attrs=False, _freqs=self.freq_down)
+        else:
+            dos_down = np.array([])
+        if set_attrs:
+            self.dos_down = dos_down
+
+        return dos, dos_down
+
     def convert_e_units(self, units):
         """
         Convert energy units of relevant attributes in place e.g. freqs,
@@ -202,6 +258,5 @@ class BandsData(Data):
             The units to convert to e.g. 'hartree', 'eV'
         """
         super(BandsData, self).convert_e_units(units)
-        self.freqs.ito(units, 'spectroscopy')
         self.freq_down.ito(units, 'spectroscopy')
         self.fermi.ito(units, 'spectroscopy')

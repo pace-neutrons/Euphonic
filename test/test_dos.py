@@ -1,8 +1,9 @@
 import unittest
 import numpy as np
 import numpy.testing as npt
+from unittest.mock import Mock
 from simphony import ureg
-from simphony.calculate.dos import calculate_dos
+from simphony.data.bands import BandsData
 
 
 class TestCalculateDos(unittest.TestCase):
@@ -10,57 +11,119 @@ class TestCalculateDos(unittest.TestCase):
     def setUp(self):
         # Create trivial function object so attributes can be assigned to it
         iron = type('', (), {})()
-        data = type('', (), {})()
-        data.freqs = np.array(
-            [[0.61994279, 0.71965754, 3.36969496,
-              4.19005014, 4.6599548, 11.76947015],
-             [0.75129323, 0.71971687, 3.38582288,
-              3.97216995, 4.55217895, 9.65011675],
-             [0.6597925, 0.57831182, 3.93864281,
-              3.93873641, 4.29865403, 9.30585629],
-             [1.91623131, 0.68094255, 2.32844159,
-              4.60528713, 3.54545356, 6.92907803],
-             [1.31309482, 0.83883714, 3.63675863,
-              4.72910328, 2.62995079, 9.91107037],
-             [0.94849194, 0.70136796, 3.60521438,
-              4.76928334, 3.30697109, 9.84672389],
-             [4.09669468, 9.87219429, 2.03982814,
-              4.2007423, 1.66974108, 1.08526588],
-             [4.21879869, 10.03489224, 1.14830785,
-              3.98517346, 1.64518417, 1.969158],
-             [4.44163652, 9.09726117, 1.03032365,
-              3.73380313, 2.10271909, 1.6011567],
-             [4.38372743, 7.62127765, 0.80563191,
-              3.47965126, 3.32296295, 1.06940083]])*ureg.hartree
-        data.freq_down = np.array(
-            [[2.2075221, 2.27080053, 5.22052453,
-              6.19431463, 6.77898358, 12.6564407],
-             [2.38881141, 2.18598238, 5.24878655,
-              5.93691943, 6.66050576, 10.67070688],
-             [2.31515727, 2.03424572, 5.88946115,
-              5.88693158, 6.39890777, 10.28803347],
-             [3.44111831, 8.40982789, 4.00526716,
-              6.7185675, 5.55451977, 1.92028853],
-             [2.82460361, 2.36408714, 5.5877661,
-              6.85656976, 4.39400517, 10.95945204],
-             [2.4933306, 2.2438063, 5.50581874,
-              6.91045619, 5.17588562, 10.86601713],
-             [11.13142744, 6.42438252, 3.42254246,
-              6.29084184, 3.13545502, 2.57103189],
-             [11.23283365, 6.10962655, 2.61564386,
-              6.36839401, 3.21634358, 3.39038677],
-             [10.33929618, 5.76769511, 2.47484074,
-              6.5454329, 3.77890382, 3.08910234],
-             [8.88541321, 5.37048973, 2.08710084,
-              6.46498163, 5.18913947, 2.76060135]])*ureg.hartree
-        data.weights = np.array(
-            [0.01388889, 0.01388889, 0.00347222, 0.02777778,
-             0.01388889, 0.01388889, 0.01388889, 0.01388889,
-             0.02777778, 0.01388889])
-        data.n_branches = 6
-        iron.data = data
-        iron.bwidth = 0.05
+        mock_data = Mock(
+            spec=BandsData,
+            freqs=np.array(
+                [[0.61994279, 0.71965754, 3.36969496,
+                  4.19005014, 4.6599548, 11.76947015],
+                 [0.75129323, 0.71971687, 3.38582288,
+                  3.97216995, 4.55217895, 9.65011675],
+                 [0.6597925, 0.57831182, 3.93864281,
+                  3.93873641, 4.29865403, 9.30585629],
+                 [1.91623131, 0.68094255, 2.32844159,
+                  4.60528713, 3.54545356, 6.92907803],
+                 [1.31309482, 0.83883714, 3.63675863,
+                  4.72910328, 2.62995079, 9.91107037],
+                 [0.94849194, 0.70136796, 3.60521438,
+                  4.76928334, 3.30697109, 9.84672389],
+                 [4.09669468, 9.87219429, 2.03982814,
+                  4.2007423, 1.66974108, 1.08526588],
+                 [4.21879869, 10.03489224, 1.14830785,
+                  3.98517346, 1.64518417, 1.969158],
+                 [4.44163652, 9.09726117, 1.03032365,
+                  3.73380313, 2.10271909, 1.6011567],
+                 [4.38372743, 7.62127765, 0.80563191,
+                  3.47965126, 3.32296295, 1.06940083]])*ureg.hartree,
+            freq_down=np.array(
+                [[2.2075221, 2.27080053, 5.22052453,
+                  6.19431463, 6.77898358, 12.6564407],
+                 [2.38881141, 2.18598238, 5.24878655,
+                  5.93691943, 6.66050576, 10.67070688],
+                 [2.31515727, 2.03424572, 5.88946115,
+                  5.88693158, 6.39890777, 10.28803347],
+                 [3.44111831, 8.40982789, 4.00526716,
+                  6.7185675, 5.55451977, 1.92028853],
+                 [2.82460361, 2.36408714, 5.5877661,
+                  6.85656976, 4.39400517, 10.95945204],
+                 [2.4933306, 2.2438063, 5.50581874,
+                  6.91045619, 5.17588562, 10.86601713],
+                 [11.13142744, 6.42438252, 3.42254246,
+                  6.29084184, 3.13545502, 2.57103189],
+                 [11.23283365, 6.10962655, 2.61564386,
+                  6.36839401, 3.21634358, 3.39038677],
+                 [10.33929618, 5.76769511, 2.47484074,
+                  6.5454329, 3.77890382, 3.08910234],
+                 [8.88541321, 5.37048973, 2.08710084,
+                  6.46498163, 5.18913947, 2.76060135]])*ureg.hartree,
+            weights=np.array(
+                [0.01388889, 0.01388889, 0.00347222, 0.02777778,
+                 0.01388889, 0.01388889, 0.01388889, 0.01388889,
+                 0.02777778, 0.01388889]),
+            n_branches=6)
+        iron.mock_data = mock_data
         iron.gwidth = 0.1
+        iron.dos_bins = np.array(
+            [0.57831182, 0.62831182, 0.67831182, 0.72831182,
+             0.77831182, 0.82831182, 0.87831182, 0.92831182,
+             0.97831182, 1.02831182, 1.07831182, 1.12831182,
+             1.17831182, 1.22831182, 1.27831182, 1.32831182,
+             1.37831182, 1.42831182, 1.47831182, 1.52831182,
+             1.57831182, 1.62831182, 1.67831182, 1.72831182,
+             1.77831182, 1.82831182, 1.87831182, 1.92831182,
+             1.97831182, 2.02831182, 2.07831182, 2.12831182,
+             2.17831182, 2.22831182, 2.27831182, 2.32831182,
+             2.37831182, 2.42831182, 2.47831182, 2.52831182,
+             2.57831182, 2.62831182, 2.67831182, 2.72831182,
+             2.77831182, 2.82831182, 2.87831182, 2.92831182,
+             2.97831182, 3.02831182, 3.07831182, 3.12831182,
+             3.17831182, 3.22831182, 3.27831182, 3.32831182,
+             3.37831182, 3.42831182, 3.47831182, 3.52831182,
+             3.57831182, 3.62831182, 3.67831182, 3.72831182,
+             3.77831182, 3.82831182, 3.87831182, 3.92831182,
+             3.97831182, 4.02831182, 4.07831182, 4.12831182,
+             4.17831182, 4.22831182, 4.27831182, 4.32831182,
+             4.37831182, 4.42831182, 4.47831182, 4.52831182,
+             4.57831182, 4.62831182, 4.67831182, 4.72831182,
+             4.77831182, 4.82831182, 4.87831182, 4.92831182,
+             4.97831182, 5.02831182, 5.07831182, 5.12831182,
+             5.17831182, 5.22831182, 5.27831182, 5.32831182,
+             5.37831182, 5.42831182, 5.47831182, 5.52831182,
+             5.57831182, 5.62831182, 5.67831182, 5.72831182,
+             5.77831182, 5.82831182, 5.87831182, 5.92831182,
+             5.97831182, 6.02831182, 6.07831182, 6.12831182,
+             6.17831182, 6.22831182, 6.27831182, 6.32831182,
+             6.37831182, 6.42831182, 6.47831182, 6.52831182,
+             6.57831182, 6.62831182, 6.67831182, 6.72831182,
+             6.77831182, 6.82831182, 6.87831182, 6.92831182,
+             6.97831182, 7.02831182, 7.07831182, 7.12831182,
+             7.17831182, 7.22831182, 7.27831182, 7.32831182,
+             7.37831182, 7.42831182, 7.47831182, 7.52831182,
+             7.57831182, 7.62831182, 7.67831182, 7.72831182,
+             7.77831182, 7.82831182, 7.87831182, 7.92831182,
+             7.97831182, 8.02831182, 8.07831182, 8.12831182,
+             8.17831182, 8.22831182, 8.27831182, 8.32831182,
+             8.37831182, 8.42831182, 8.47831182, 8.52831182,
+             8.57831182, 8.62831182, 8.67831182, 8.72831182,
+             8.77831182, 8.82831182, 8.87831182, 8.92831182,
+             8.97831182, 9.02831182, 9.07831182, 9.12831182,
+             9.17831182, 9.22831182, 9.27831182, 9.32831182,
+             9.37831182, 9.42831182, 9.47831182, 9.52831182,
+             9.57831182, 9.62831182, 9.67831182, 9.72831182,
+             9.77831182, 9.82831182, 9.87831182, 9.92831182,
+             9.97831182, 10.02831182, 10.07831182, 10.12831182,
+             10.17831182, 10.22831182, 10.27831182, 10.32831182,
+             10.37831182, 10.42831182, 10.47831182, 10.52831182,
+             10.57831182, 10.62831182, 10.67831182, 10.72831182,
+             10.77831182, 10.82831182, 10.87831182, 10.92831182,
+             10.97831182, 11.02831182, 11.07831182, 11.12831182,
+             11.17831182, 11.22831182, 11.27831182, 11.32831182,
+             11.37831182, 11.42831182, 11.47831182, 11.52831182,
+             11.57831182, 11.62831182, 11.67831182, 11.72831182,
+             11.77831182, 11.82831182, 11.87831182, 11.92831182,
+             11.97831182, 12.02831182, 12.07831182, 12.12831182,
+             12.17831182, 12.22831182, 12.27831182, 12.32831182,
+             12.37831182, 12.42831182, 12.47831182, 12.52831182,
+             12.57831182, 12.62831182, 12.67831182])
         iron.expected_dos_gauss = np.array(
             [2.20437428e-01, 4.48772892e-01, 7.52538648e-01, 5.32423726e-01,
              3.02050060e-01, 2.13306464e-01, 1.39663554e-01, 1.63610442e-01,
@@ -302,51 +365,65 @@ class TestCalculateDos(unittest.TestCase):
 
     def test_dos_up_iron_gauss(self):
         iron = self.iron
-        calculate_dos(iron.data, iron.bwidth, iron.gwidth, lorentz=False)
-        npt.assert_allclose(iron.data.dos, iron.expected_dos_gauss)
+        BandsData.calculate_dos(
+            iron.mock_data, iron.dos_bins, iron.gwidth, lorentz=False)
+        npt.assert_allclose(iron.mock_data.dos, iron.expected_dos_gauss)
 
     def test_dos_down_iron_gauss(self):
         iron = self.iron
-        calculate_dos(iron.data, iron.bwidth, iron.gwidth, lorentz=False)
-        npt.assert_allclose(iron.data.dos_down, iron.expected_dos_down_gauss)
+        BandsData.calculate_dos(
+            iron.mock_data, iron.dos_bins, iron.gwidth, lorentz=False)
+        npt.assert_allclose(
+            iron.mock_data.dos_down, iron.expected_dos_down_gauss)
 
-    def test_dos_up_iron_gauss_ir(self):
+    def test_dos_up_iron_gauss_weights(self):
         iron = self.iron
-        ir_factor = 2.0
-        iron.data.ir = np.full(iron.data.freqs.shape, ir_factor)
-        calculate_dos(iron.data, iron.bwidth, iron.gwidth, lorentz=False)
-        npt.assert_allclose(iron.data.dos/ir_factor, iron.expected_dos_gauss)
+        factor = 2.0
+        weights = np.repeat(factor*iron.mock_data.weights[:, np.newaxis],
+                            iron.mock_data.n_branches, axis=1)
+        BandsData.calculate_dos(iron.mock_data, iron.dos_bins, iron.gwidth,
+                                lorentz=False, weights=weights)
+        npt.assert_allclose(iron.mock_data.dos/factor, iron.expected_dos_gauss)
 
     def test_dos_down_iron_gauss_ir(self):
         iron = self.iron
-        ir_factor = 2.0
-        iron.data.ir = np.full(iron.data.freq_down.shape, ir_factor)
-        calculate_dos(iron.data, iron.bwidth, iron.gwidth, lorentz=False)
-        npt.assert_allclose(iron.data.dos_down/ir_factor,
+        factor = 2.0
+        weights = np.repeat(factor*iron.mock_data.weights[:, np.newaxis],
+                            iron.mock_data.n_branches, axis=1)
+        BandsData.calculate_dos(iron.mock_data, iron.dos_bins, iron.gwidth,
+                                lorentz=False, weights=weights)
+        npt.assert_allclose(iron.mock_data.dos_down/factor,
                             iron.expected_dos_down_gauss)
 
     def test_dos_iron_lorentz(self):
         iron = self.iron
-        calculate_dos(iron.data, iron.bwidth, iron.gwidth, lorentz=True)
-        npt.assert_allclose(iron.data.dos, iron.expected_dos_lorentz)
+        BandsData.calculate_dos(
+            iron.mock_data, iron.dos_bins, iron.gwidth, lorentz=True)
+        npt.assert_allclose(iron.mock_data.dos, iron.expected_dos_lorentz)
 
     def test_dos_down_iron_lorentz(self):
         iron = self.iron
-        calculate_dos(iron.data, iron.bwidth, iron.gwidth, lorentz=True)
-        npt.assert_allclose(iron.data.dos_down,
+        BandsData.calculate_dos(
+            iron.mock_data, iron.dos_bins, iron.gwidth, lorentz=True)
+        npt.assert_allclose(iron.mock_data.dos_down,
                             iron.expected_dos_down_lorentz, atol=1e-08)
 
     def test_dos_iron_lorentz_ir(self):
         iron = self.iron
-        ir_factor = 2.0
-        iron.data.ir = np.full(iron.data.freqs.shape, ir_factor)
-        calculate_dos(iron.data, iron.bwidth, iron.gwidth, lorentz=True)
-        npt.assert_allclose(iron.data.dos/ir_factor, iron.expected_dos_lorentz)
+        factor = 2.0
+        weights = np.repeat(factor*iron.mock_data.weights[:, np.newaxis],
+                            iron.mock_data.n_branches, axis=1)
+        BandsData.calculate_dos(iron.mock_data, iron.dos_bins, iron.gwidth,
+                                lorentz=True, weights=weights)
+        npt.assert_allclose(
+            iron.mock_data.dos/factor, iron.expected_dos_lorentz)
 
     def test_dos_down_iron_lorentz_ir(self):
         iron = self.iron
-        ir_factor = 2.0
-        iron.data.ir = np.full(iron.data.freq_down.shape, ir_factor)
-        calculate_dos(iron.data, iron.bwidth, iron.gwidth, lorentz=True)
-        npt.assert_allclose(iron.data.dos_down/ir_factor,
+        factor = 2.0
+        weights = np.repeat(factor*iron.mock_data.weights[:, np.newaxis],
+                            iron.mock_data.n_branches, axis=1)
+        BandsData.calculate_dos(iron.mock_data, iron.dos_bins, iron.gwidth,
+                                lorentz=True, weights=weights)
+        npt.assert_allclose(iron.mock_data.dos_down/factor,
                             iron.expected_dos_down_lorentz, atol=1e-08)
