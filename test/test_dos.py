@@ -1,7 +1,11 @@
 import unittest
 import numpy as np
 import numpy.testing as npt
-from unittest.mock import Mock
+# Before Python 3.3 mock is an external module
+try:
+    from unittest.mock import Mock
+except ImportError:
+    from mock import Mock
 from simphony import ureg
 from simphony.data.bands import BandsData
 

@@ -233,11 +233,12 @@ class BandsData(Data):
             dtype = 'float'
             shape = (n_ebins,)
         """
-        dos = super().calculate_dos(dos_bins, gwidth, lorentz=lorentz,
-                                    weights=weights, set_attrs=set_attrs)
+        dos = super(BandsData, self).calculate_dos(
+            dos_bins, gwidth, lorentz=lorentz, weights=weights,
+            set_attrs=set_attrs)
 
         if self.freq_down.size > 0:
-            dos_down = super().calculate_dos(
+            dos_down = super(BandsData, self).calculate_dos(
                 dos_bins, gwidth, lorentz=lorentz, weights=weights,
                 set_attrs=False, _freqs=self.freq_down)
         else:
