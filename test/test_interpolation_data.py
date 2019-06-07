@@ -325,7 +325,7 @@ class TestInterpolatePhononsLZO(unittest.TestCase):
         expctd_n_images = np.transpose(np.reshape(
             expctd_n_images, (22, 4, 22)), axes=[1, 0, 2])
         self.data._calculate_supercell_images(lim)
-        npt.assert_equal(self.data.n_sc_images, expctd_n_images)
+        npt.assert_equal(self.data._n_sc_images, expctd_n_images)
 
     def test_calculate_supercell_images_sc_image_i(self):
         # Supercell image calculation limit - 2 supercells in each direction
@@ -347,7 +347,7 @@ class TestInterpolatePhononsLZO(unittest.TestCase):
             np.reshape(expctd_sc_image_i, (22, 4, 22, max_n)),
             axes=[1, 0, 2, 3])
         self.data._calculate_supercell_images(lim)
-        npt.assert_equal(self.data.sc_image_i, expctd_sc_image_i)
+        npt.assert_equal(self.data._sc_image_i, expctd_sc_image_i)
 
     def test_calculate_fine_phonons_no_asr(self):
         self.data.calculate_fine_phonons(self.qpts)
@@ -611,7 +611,7 @@ class TestInterpolatePhononsGraphite(unittest.TestCase):
                        (self.n_ions, self.n_cells_in_sc, self.n_ions)),
             axes=[1, 0, 2])
         self.data._calculate_supercell_images(lim)
-        npt.assert_equal(self.data.n_sc_images, expctd_n_images)
+        npt.assert_equal(self.data._n_sc_images, expctd_n_images)
 
     def test_calculate_supercell_images_sc_image_i(self):
         # Supercell image calculation limit - 2 supercells in each direction
@@ -636,7 +636,7 @@ class TestInterpolatePhononsGraphite(unittest.TestCase):
                                            self.n_ions, max_n)),
             axes=[1, 0, 2, 3])
         self.data._calculate_supercell_images(lim)
-        npt.assert_equal(self.data.sc_image_i, expctd_sc_image_i)
+        npt.assert_equal(self.data._sc_image_i, expctd_sc_image_i)
 
     def test_calculate_fine_phonons_no_asr(self):
         self.data.calculate_fine_phonons(self.qpts)

@@ -80,28 +80,8 @@ class InterpolationData(PhononData):
         calculation. Is empty by default
         dtype = 'complex'
         shape = (n_qpts, 3*n_ions, n_ions, 3)
-    n_gamma_pts : ndarray
-    n_sc_images : ndarray
-        The number or periodic supercell images for each displacement of ion i
-        in the unit cell and ion j in the supercell. This attribute doesn't
-        exist until calculate_fine_phonons has been called
-        dtype = 'int'
-        shape = (n_cells_in_sc, n_ions, n_ions)
-    sc_image_i : ndarray
-        The index describing the supercell each of the periodic images resides
-        in. This is the index of the list of supercells as returned by
-        _get_all_origins. This attribute doesn't exist until
-        calculate_fine_phonons has been called
-        dtype = 'int'
-        shape = (n_cells_in_sc, n_ions, n_ions, max(n_sc_images))
-    force_constants_asr : ndarray
-        Force constants matrix that has the acoustic sum rule applied. This
-        attribute doesn't exist until calculate_fine_phonons has been called
-        with asr=True. Default units atomic units
-        dtype = 'float'
-        shape = (n_cells_in_sc, 3*n_ions, 3*n_ions)
-    asr : boolean
-        Stores whether the acoustic sum rule was used in the last phonon
+    asr : str
+        Stores which the acoustic sum rule, if any, was used in the last phonon
         calculation. Ensures consistency of other calculations e.g. when
         calculating on a grid of phonons for the Debye-Waller factor
     dipole : boolean
@@ -126,7 +106,8 @@ class InterpolationData(PhononData):
 
     """
 
-    def __init__(self, seedname, model='CASTEP', path='', qpts=np.array([])):
+    def __init__(self, seedname, model='CASTEP', path='', qpts=np.array([]),
+                 **kwargs):
         """"
         Calls functions to read the correct file(s) and sets InterpolationData
         attributes, additionally can calculate frequencies/eigenvectors at
@@ -145,13 +126,16 @@ class InterpolationData(PhononData):
             Q-point coordinates to use for an initial interpolation calculation
             dtype = 'float'
             shape = (n_qpts, 3)
+        **kwargs
+            If qpts has been specified, kwargs may be used to pass keyword
+            arguments to calculate_fine_phonons
         """
         self._get_data(seedname, model, path)
 
         self.seedname = seedname
         self.model = model
         self.qpts = qpts
-        self.n_qpts = 0
+        self.n_qpts = len(qpts)
         self.eigenvecs = np.array([])
         self.freqs = np.array([])*ureg.meV
 
@@ -160,7 +144,7 @@ class InterpolationData(PhononData):
         self.split_freqs = np.array([])*ureg.meV
 
         if self.n_qpts > 0:
-            self.calculate_fine_phonons(qpts)
+            self.calculate_fine_phonons(qpts, **kwargs)
 
     def _get_data(self, seedname, model, path):
         """"
@@ -256,7 +240,7 @@ class InterpolationData(PhononData):
             splitting = False
 
         if dipole and (not hasattr(self, 'eta_scale') or
-                       eta_scale != self.eta_scale):
+                       eta_scale != self._eta_scale):
             self._dipole_correction_init(eta_scale)
 
         ion_mass = self.ion_mass.to('e_mass').magnitude
@@ -293,7 +277,7 @@ class InterpolationData(PhononData):
         # Construct list of supercell ion images
         if not hasattr(self, 'sc_image_i'):
             self._calculate_supercell_images(lim)
-        n_sc_images = self.n_sc_images
+        n_sc_images = self._n_sc_images
 
         # Precompute fc matrix weighted by number of supercell ion images
         # (for cumulant method)
@@ -456,7 +440,7 @@ class InterpolationData(PhononData):
         """
 
         n_ions = self.n_ions
-        sc_image_i = self.sc_image_i
+        sc_image_i = self._sc_image_i
         dyn_mat = np.zeros((n_ions*3, n_ions*3), dtype=np.complex128)
 
         # Cumulant method: for each ij ion-ion displacement sum phases for
@@ -611,13 +595,13 @@ class InterpolationData(PhononData):
             # Symmetrise
             dipole_q0[i] = 0.5*(dipole_q0[i] + np.transpose(dipole_q0[i]))
 
-        self.eta_scale = eta_scale
-        self.eta = eta
-        self.H_ab = H_ab
-        self.cells = cells
-        self.gvecs_cart = gvecs_cart
-        self.gvec_phases = gvec_phases
-        self.dipole_q0 = dipole_q0
+        self._eta_scale = eta_scale
+        self._eta = eta
+        self._H_ab = H_ab
+        self._cells = cells
+        self._gvecs_cart = gvecs_cart
+        self._gvec_phases = gvec_phases
+        self._dipole_q0 = dipole_q0
 
     def _calculate_dipole_correction(self, q):
         """
@@ -644,19 +628,19 @@ class InterpolationData(PhononData):
         ion_r = self.ion_r
         born = self.born.magnitude
         dielectric = self.dielectric
-        eta = self.eta
+        eta = self._eta
         eta_2 = eta**2
-        H_ab = self.H_ab
-        cells = self.cells
+        H_ab = self._H_ab
+        cells = self._cells
         q_norm = q - np.rint(q)  # Normalised q-pt
 
         # Don't include G=0 vector if q=0
         if is_gamma(q_norm):
-            gvec_phases = self.gvec_phases[1:]
-            gvecs_cart = self.gvecs_cart[1:]
+            gvec_phases = self._gvec_phases[1:]
+            gvecs_cart = self._gvecs_cart[1:]
         else:
-            gvec_phases = self.gvec_phases
-            gvecs_cart = self.gvecs_cart
+            gvec_phases = self._gvec_phases
+            gvecs_cart = self._gvecs_cart
 
         # Calculate real space term
         real_dipole = np.zeros((n_ions, n_ions, 3, 3), dtype=np.complex128)
@@ -701,10 +685,7 @@ class InterpolationData(PhononData):
         for i in range(n_ions):
             dipole[i] = np.einsum('ij,klm,kjm->kil',
                                   born[i], born, dipole_tmp[i])
-            dipole[i, i] -= self.dipole_q0[i]
-
-        return np.reshape(
-            np.transpose(dipole, axes=[0, 2, 1, 3]), (3*n_ions, 3*n_ions))
+            dipole[i, i] -= self._dipole_q0[i]
 
         return np.reshape(np.transpose(dipole, axes=[0, 2, 1, 3]),
                           (3*n_ions, 3*n_ions))
@@ -1147,8 +1128,8 @@ class InterpolationData(PhononData):
                         sc_image_i[nc_idx, i, nj_idx, n_im_idx] = im
                         n_sc_images[nc_idx, i, nj_idx] += 1
 
-        self.n_sc_images = n_sc_images
+        self._n_sc_images = n_sc_images
         # Truncate sc_image_i to the maximum ACTUAL images rather than the
         # maximum possible images to avoid storing and summing over
         # nonexistent images
-        self.sc_image_i = sc_image_i[:, :, :, :np.max(n_sc_images)]
+        self._sc_image_i = sc_image_i[:, :, :, :np.max(n_sc_images)]
