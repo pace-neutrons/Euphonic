@@ -89,7 +89,7 @@ class PhononData(Data):
 
     def _get_data(self, seedname, model, path):
         """"
-        Opens the correct file for reading
+        Opens the correct file(s) for reading
 
         Parameters
         ----------

@@ -23,7 +23,7 @@ def main():
     path, file = os.path.split(args.filename)
     seedname = file[:file.rfind('.')]
     if file.endswith('.bands'):
-        data = BandsData(seedname, path)
+        data = BandsData(seedname, path=path)
     else:
         data = PhononData(seedname, path=path)
 
