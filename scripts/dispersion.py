@@ -25,8 +25,7 @@ def main():
     if file.endswith('.bands'):
         data = BandsData(seedname, path)
     else:
-        data = PhononData(seedname, path, read_eigenvecs=args.reorder,
-                          read_ir=False)
+        data = PhononData(seedname, path=path)
 
     data.convert_e_units(args.units)
 

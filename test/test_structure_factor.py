@@ -12,7 +12,7 @@ class TestStructureFactorPhononDataLZO(unittest.TestCase):
         seedname = 'La2Zr2O7'
         phonon_path = 'test/data/'
         self.sf_path = 'test/data/scattering/'
-        self.data = PhononData(seedname, phonon_path)
+        self.data = PhononData(seedname, path=phonon_path)
         self.scattering_lengths = {'La': 8.24, 'Zr': 7.16, 'O': 5.803}
 
     def test_sf_T5(self):
@@ -39,7 +39,7 @@ class TestStructureFactorInterpolationDataLZO(unittest.TestCase):
         phonon_path = 'test/data/'
         interpolation_path = 'test/data/interpolation/LZO'
         self.sf_path = 'test/data/scattering/'
-        pdata = PhononData(seedname, phonon_path)
+        pdata = PhononData(seedname, path=phonon_path)
         self.data = InterpolationData(seedname, interpolation_path)
         self.data.calculate_fine_phonons(pdata.qpts)
         self.scattering_lengths = {'La': 8.24, 'Zr': 7.16, 'O': 5.803}

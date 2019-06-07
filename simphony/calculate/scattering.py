@@ -2,7 +2,7 @@ import math
 import numpy as np
 from scipy import signal
 from simphony.data.phonon import PhononData
-from simphony.util import reciprocal_lattice
+from simphony.util import reciprocal_lattice, gaussian
 from simphony import ureg
 
 
@@ -323,10 +323,9 @@ def gaussian_2d(xbins, ybins, xwidth, ywidth, extent=6.0):
     xgrid = np.tile(x, (len(y), 1))
     ygrid = np.transpose(np.tile(y, (len(x), 1)))
 
-    gauss = np.exp(-0.5*(np.square(xgrid/xsigma) + np.square(ygrid/ysigma)))
+    gauss = gaussian(xgrid, xsigma)*gaussian(ygrid, ysigma)
 
     return gauss
-
 
 def voigt(ebins, width, mix):
     """

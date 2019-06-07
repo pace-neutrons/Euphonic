@@ -309,7 +309,6 @@ class InterpolationData(Data):
                 dielectric = np.transpose(np.reshape(
                     read_entry(file_obj, float_type), (3, 3)))
 
-
         cell_vec = cell_vec*ureg.bohr
         cell_vec.ito('angstrom')
         ion_mass = ion_mass*ureg.e_mass

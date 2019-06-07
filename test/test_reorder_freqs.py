@@ -10,7 +10,7 @@ class TestReorderFreqs(unittest.TestCase):
     def test_reorder_freqs_NaH(self):
         seedname = 'NaH-reorder-test'
         path = 'test/data'
-        data = PhononData(seedname, path)
+        data = PhononData(seedname, path=path)
         data.convert_e_units('1/cm')
         reorder_freqs(data)
         expected_reordered_freqs = np.array(
@@ -36,7 +36,7 @@ class TestReorderFreqs(unittest.TestCase):
     def test_reorder_freqs_LZO(self):
         seedname = 'La2Zr2O7'
         path = 'test/data'
-        data = PhononData(seedname, path)
+        data = PhononData(seedname, path=path)
         data.convert_e_units('1/cm')
         reorder_freqs(data)
 
@@ -190,7 +190,7 @@ class TestReorderFreqs(unittest.TestCase):
         # been reordered correctly.
         seedname = 'La2Zr2O7'
         path = 'test/data'
-        data = PhononData(seedname, path)
+        data = PhononData(seedname, path=path)
         reorder_freqs(data)
         reordered_freqs_1 = data.freqs.magnitude
         reorder_freqs(data)
