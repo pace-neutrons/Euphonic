@@ -1,5 +1,4 @@
 import math
-import struct
 import sys
 import os
 import warnings
@@ -8,19 +7,22 @@ from scipy.linalg.lapack import zheev
 from scipy.special import erfc
 from simphony import ureg
 from simphony.util import reciprocal_lattice, is_gamma
-from simphony.data.data import Data
+from simphony.data.phonon import PhononData
+from simphony._readers import _castep
 
 
-class InterpolationData(Data):
+class InterpolationData(PhononData):
     """
-    A class to read the data required for a supercell phonon interpolation
-    calculation from a .castep_bin file, and store any calculated
-    frequencies/eigenvectors
+    A class to read and store the data required for a phonon interpolation
+    calculation from model (e.g. CASTEP) output, and calculate phonon
+    frequencies/eigenvectors at arbitrary q-points via Fourier interpolation
 
     Attributes
     ----------
     seedname : str
         Seedname specifying castep_bin file to read from
+    model : str
+        Records what model the data came from
     n_ions : int
         Number of ions in the unit cell
     n_branches : int
@@ -124,26 +126,30 @@ class InterpolationData(Data):
 
     """
 
-    def __init__(self, seedname, path='', qpts=np.array([])):
+    def __init__(self, seedname, model='CASTEP', path='', qpts=np.array([])):
         """"
-        Reads .castep_bin file, sets attributes, and calculates
-        frequencies/eigenvectors at specific q-points if requested
+        Calls functions to read the correct file(s) and sets InterpolationData
+        attributes, additionally can calculate frequencies/eigenvectors at
+        specified q-points
 
         Parameters
         ----------
         seedname : str
-            Name of .castep_bin file to read
+            Seedname of file(s) to read
+        model : {'CASTEP'}, optional, default 'CASTEP'
+            Which model has been used. e.g. if seedname = 'quartz' and
+            model='CASTEP', the 'quartz.castep_bin' file will be read
         path : str, optional
-            Path to dir containing the .castep_bin file, if it is in another
-            directory
+            Path to dir containing the file(s), if in another directory
         qpts : ndarray, optional
             Q-point coordinates to use for an initial interpolation calculation
             dtype = 'float'
             shape = (n_qpts, 3)
         """
-        self._get_data(seedname, path)
+        self._get_data(seedname, model, path)
 
         self.seedname = seedname
+        self.model = model
         self.qpts = qpts
         self.n_qpts = 0
         self.eigenvecs = np.array([])
@@ -156,188 +162,36 @@ class InterpolationData(Data):
         if self.n_qpts > 0:
             self.calculate_fine_phonons(qpts)
 
-    def _get_data(self, seedname, path):
+    def _get_data(self, seedname, model, path):
         """"
-        Opens .castep_bin file for reading
+        Opens correct file(s) for reading
 
         Parameters
         ----------
         seedname : str
-            Name of .castep_bin file to read
-        path : str
-            Path to dir containing the .castep_bin file, if it is in another
-            directory
+            Seedname of file(s) to read
+        model : {'CASTEP'}, optional, default 'CASTEP'
+            Which model has been used. e.g. if seedname = 'quartz' and
+            model='CASTEP', the 'quartz.castep_bin' file will be read
+        path : str, optional
+            Path to dir containing the file(s), if in another directory
         """
-        try:
-            file = os.path.join(path, seedname + '.castep_bin')
-            with open(file, 'rb') as f:
-                self._read_interpolation_data(f)
-        except IOError:
-            file = os.path.join(path, seedname + '.check')
-            with open(file, 'rb') as f:
-                self._read_interpolation_data(f)
-
-    def _read_interpolation_data(self, file_obj):
-        """
-        Reads data from .castep_bin file and sets attributes
-
-        Parameters
-        ----------
-        f : file object
-            File object in read mode for the .castep_bin file containing the
-            data
-        """
-
-        def read_entry(file_obj, dtype=''):
-            """
-            Read a record from a Fortran binary file, including the beginning
-            and end record markers and the data inbetween
-            """
-            def record_mark_read(file_obj):
-                # Read 4 byte Fortran record marker
-                rawdata = file_obj.read(4)
-                if rawdata == b'':
-                    sys.exit("""Problem reading binary file: unexpected EOF
-                                reached""")
-                return struct.unpack('>i', rawdata)[0]
-
-            begin = record_mark_read(file_obj)
-            if dtype:
-                n_bytes = int(dtype[-1])
-                n_elems = int(begin/n_bytes)
-                if n_elems > 1:
-                    data = np.fromfile(file_obj, dtype=dtype, count=n_elems)
-                else:
-                    if 'i' in dtype:
-                        data = struct.unpack('>i', file_obj.read(begin))[0]
-                    elif 'f' in dtype:
-                        data = struct.unpack('>d', file_obj.read(begin))[0]
-                    else:
-                        data = file_obj.read(begin)
-            else:
-                data = file_obj.read(begin)
-            end = record_mark_read(file_obj)
-            if begin != end:
-                sys.exit("""Problem reading binary file: beginning and end
-                            record markers do not match""")
-
-            return data
-
-        def read_cell(file_obj, int_type, float_type):
-            header = ''
-            while header.strip() != b'END_UNIT_CELL':
-                header = read_entry(file_obj)
-                if header.strip() == b'CELL%NUM_IONS':
-                    n_ions = read_entry(file_obj, int_type)
-                elif header.strip() == b'CELL%REAL_LATTICE':
-                    cell_vec = np.transpose(np.reshape(
-                        read_entry(file_obj, float_type), (3, 3)))
-                elif header.strip() == b'CELL%NUM_SPECIES':
-                    n_species = read_entry(file_obj, int_type)
-                elif header.strip() == b'CELL%NUM_IONS_IN_SPECIES':
-                    n_ions_in_species = read_entry(file_obj, int_type)
-                    if n_species == 1:
-                        n_ions_in_species = np.array([n_ions_in_species])
-                elif header.strip() == b'CELL%IONIC_POSITIONS':
-                    max_ions_in_species = max(n_ions_in_species)
-                    ion_r_tmp = np.reshape(read_entry(file_obj, float_type),
-                                           (n_species, max_ions_in_species, 3))
-                elif header.strip() == b'CELL%SPECIES_MASS':
-                    ion_mass_tmp = read_entry(file_obj, float_type)
-                    if n_species == 1:
-                        ion_mass_tmp = np.array([ion_mass_tmp])
-                elif header.strip() == b'CELL%SPECIES_SYMBOL':
-                    # Need to decode binary string for Python 3 compatibility
-                    if n_species == 1:
-                        ion_type_tmp = [read_entry(file_obj, 'S8')
-                                        .strip().decode('utf-8')]
-                    else:
-                        ion_type_tmp = [x.strip().decode('utf-8')
-                                        for x in read_entry(file_obj, 'S8')]
-            # Get ion_r in correct form
-            # CASTEP stores ion positions as 3D array (3,
-            # max_ions_in_species, n_species) so need to slice data to get
-            # correct information
-            ion_begin = np.insert(np.cumsum(n_ions_in_species[:-1]), 0, 0)
-            ion_end = np.cumsum(n_ions_in_species)
-            ion_r = np.zeros((n_ions, 3))
-            for i in range(n_species):
-                ion_r[ion_begin[i]:ion_end[i], :] = ion_r_tmp[
-                    i, :n_ions_in_species[i], :]
-            # Get ion_type in correct form
-            ion_type = np.array([])
-            ion_mass = np.array([])
-            for ion in range(n_species):
-                ion_type = np.append(
-                    ion_type,
-                    [ion_type_tmp[ion] for i in range(n_ions_in_species[ion])])
-                ion_mass = np.append(
-                    ion_mass,
-                    [ion_mass_tmp[ion] for i in range(n_ions_in_species[ion])])
-
-            return n_ions, cell_vec, ion_r, ion_mass, ion_type
-
-        int_type = '>i4'
-        float_type = '>f8'
-        header = ''
-        first_cell_read = True
-        while header.strip() != b'END':
-            header = read_entry(file_obj)
-            if header.strip() == b'BEGIN_UNIT_CELL':
-                # CASTEP writes the cell twice: the first is the geometry
-                # optimised cell, the second is the original cell. We only
-                # want the geometry optimised cell.
-                if first_cell_read:
-                    n_ions, cell_vec, ion_r, ion_mass, ion_type = read_cell(
-                        file_obj, int_type, float_type)
-                    first_cell_read = False
-            elif header.strip() == b'FORCE_CON':
-                sc_matrix = np.transpose(np.reshape(
-                    read_entry(file_obj, int_type), (3, 3)))
-                n_cells_in_sc = int(np.rint(np.absolute(
-                    np.linalg.det(sc_matrix))))
-                force_constants = np.reshape(
-                    read_entry(file_obj, float_type),
-                    (n_cells_in_sc, 3*n_ions, 3*n_ions))
-                cell_origins = np.reshape(
-                    read_entry(file_obj, int_type), (n_cells_in_sc, 3))
-                fc_row = read_entry(file_obj, int_type)
-            elif header.strip() == b'BORN_CHGS':
-                born = np.reshape(
-                    read_entry(file_obj, float_type), (n_ions, 3, 3))
-            elif header.strip() == b'DIELECTRIC':
-                dielectric = np.transpose(np.reshape(
-                    read_entry(file_obj, float_type), (3, 3)))
-
-        cell_vec = cell_vec*ureg.bohr
-        cell_vec.ito('angstrom')
-        ion_mass = ion_mass*ureg.e_mass
-        ion_mass.ito('amu')
-
-        self.n_ions = n_ions
-        self.n_branches = 3*n_ions
-        self.cell_vec = cell_vec
-        self.ion_r = ion_r - np.floor(ion_r)  # Normalise ion coordinates
-        self.ion_type = ion_type
-        self.ion_mass = ion_mass
-
-        # Set attributes relating to 'FORCE_CON' block
-        try:
-            force_constants = force_constants*ureg.hartree/(ureg.bohr**2)
-            self.force_constants = force_constants
-            self.sc_matrix = sc_matrix
-            self.n_cells_in_sc = n_cells_in_sc
-            self.cell_origins = cell_origins
-        except UnboundLocalError:
-            sys.exit(('Error: force constants matrix could not be found in '
-                      '{:s}\n').format(file_obj.name))
-
-        # Set attributes relating to dipoles
-        try:
-            self.born = born*ureg.e
-            self.dielectric = dielectric
-        except UnboundLocalError:
-            pass
+        if model.lower() == 'castep':
+            try:
+                file = os.path.join(path, seedname + '.castep_bin')
+                with open(file, 'rb') as f:
+                    _castep._read_interpolation_data(self, f)
+            except IOError:
+                print(
+                    '{:s}.castep_bin file not found, trying to read {:s}.check'
+                    .format(seedname, seedname))
+                file = os.path.join(path, seedname + '.check')
+                with open(file, 'rb') as f:
+                    _castep._read_interpolation_data(self, f)
+        else:
+            raise ValueError(
+                "{:s} is not a valid model, please use one of {{'CASTEP'}}"
+                .format(model))
 
     def calculate_fine_phonons(
         self, qpts, asr=None, precondition=False, set_attrs=True, dipole=True,
@@ -1298,19 +1152,3 @@ class InterpolationData(Data):
         # maximum possible images to avoid storing and summing over
         # nonexistent images
         self.sc_image_i = sc_image_i[:, :, :, :np.max(n_sc_images)]
-
-    def convert_e_units(self, units):
-        """
-        Convert energy units of relevant attributes in place e.g. freqs,
-        dos_bins
-
-        Parameters
-        ----------
-        units : str
-            The units to convert to e.g. '1/cm', 'hartree', 'eV'
-        """
-        super(InterpolationData, self).convert_e_units(units)
-
-        if hasattr(self, 'freqs'):
-            self.freqs.ito(units, 'spectroscopy')
-            self.split_freqs.ito(units, 'spectroscopy')

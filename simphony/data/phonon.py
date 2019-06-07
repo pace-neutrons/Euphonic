@@ -12,6 +12,8 @@ class PhononData(Data):
     ----------
     seedname : str
         Seedname specifying file(s) to read from
+    model : str
+        Records what model the data came from
     n_ions : int
         Number of ions in the unit cell
     n_branches : int
@@ -86,6 +88,7 @@ class PhononData(Data):
         """
         self._get_data(seedname, model, path)
         self.seedname = seedname
+        self.model = model
 
     def _get_data(self, seedname, model, path):
         """"
@@ -121,5 +124,6 @@ class PhononData(Data):
             The units to convert to e.g. '1/cm', 'hartree', 'eV'
         """
         super(PhononData, self).convert_e_units(units)
+        self.split_freqs.ito(units, 'spectroscopy')
         if hasattr(self, 'sqw_ebins'):
             self.sqw_ebins.ito(units, 'spectroscopy')

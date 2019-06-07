@@ -13,6 +13,8 @@ class BandsData(Data):
     ----------
     seedname : str
         Seedname specifying file(s) to read from
+    model : str
+        Records what model the data came from
     n_qpts : int
         Number of k-points
     n_spins : int
@@ -65,6 +67,7 @@ class BandsData(Data):
         """
         self._get_data(seedname, model, path)
         self.seedname = seedname
+        self.model = model
 
     def _get_data(self, seedname, model, path):
         """"

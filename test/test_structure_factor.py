@@ -40,7 +40,7 @@ class TestStructureFactorInterpolationDataLZO(unittest.TestCase):
         interpolation_path = 'test/data/interpolation/LZO'
         self.sf_path = 'test/data/scattering/'
         pdata = PhononData(seedname, path=phonon_path)
-        self.data = InterpolationData(seedname, interpolation_path)
+        self.data = InterpolationData(seedname, path=interpolation_path)
         self.data.calculate_fine_phonons(pdata.qpts)
         self.scattering_lengths = {'La': 8.24, 'Zr': 7.16, 'O': 5.803}
 
