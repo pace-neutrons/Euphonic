@@ -1133,3 +1133,15 @@ class InterpolationData(PhononData):
         # maximum possible images to avoid storing and summing over
         # nonexistent images
         self._sc_image_i = sc_image_i[:, :, :, :np.max(n_sc_images)]
+
+    def reorder_freqs(self):
+        """
+        Reorders frequencies across q-points in order to join branches, and
+        sets the freqs and eigenvecs attributes to the newly ordered
+        frequencies
+        """
+        if self.n_qpts == 0:
+            print(('No frequencies in InterpolationData object, call '
+                   'calculate_fine_phonons before reordering frequencies'))
+            return
+        super(InterpolationData, self).reorder_freqs()

@@ -1,4 +1,6 @@
 import os
+import numpy as np
+from simphony.util import direction_changed
 from simphony.data.data import Data
 from simphony._readers import _castep
 
@@ -112,6 +114,92 @@ class PhononData(Data):
             raise ValueError(
                 "{:s} is not a valid model, please use one of {{'CASTEP'}}"
                 .format(model))
+
+    def reorder_freqs(self):
+        """
+        Reorders frequencies across q-points in order to join branches, and
+        sets the freqs and eigenvecs attributes to the newly ordered
+        frequencies
+        """
+        n_qpts = self.n_qpts
+        n_branches = self.n_branches
+        qpts = self.qpts
+        freqs = self.freqs.magnitude
+        eigenvecs = self.eigenvecs
+
+        ordered_freqs = np.zeros(freqs.shape)
+        ordered_eigenvecs = np.zeros(eigenvecs.shape, dtype=np.complex128)
+        qmap = np.arange(n_branches)
+
+        # Only calculate qmap and reorder freqs if the direction hasn't changed
+        # and there is no LO-TO splitting
+        calculate_qmap = np.concatenate(([True], np.logical_not(
+            direction_changed(qpts))))
+        if hasattr(self, 'split_i'):
+            split_freqs = self.split_freqs.magnitude
+            split_eigenvecs = self.split_eigenvecs
+            ordered_split_freqs = np.zeros(split_freqs.shape)
+            ordered_split_eigenvecs = np.zeros(
+                split_eigenvecs.shape, dtype=np.complex128)
+            calculate_qmap[self.split_i + 1] = False
+
+        # Don't reorder first q-point
+        ordered_freqs[0, :] = freqs[0, :]
+        ordered_eigenvecs[0, :] = eigenvecs[0, :]
+        prev_evecs = eigenvecs[0, :, :, :]
+        for i in range(1, n_qpts):
+            # Initialise q-point mapping for this q-point
+            qmap_tmp = np.arange(n_branches)
+            # Compare eigenvectors for each mode for this q-point with every
+            # mode for the previous q-point
+            # Explicitly broadcast arrays with repeat and tile to ensure
+            # correct multiplication of modes
+            curr_evecs = eigenvecs[i, :, :, :]
+            current_eigenvecs = np.repeat(curr_evecs, n_branches, axis=0)
+            prev_eigenvecs = np.tile(prev_evecs, (n_branches, 1, 1))
+
+            if calculate_qmap[i-1]:
+                # Compute complex conjugated dot product of every mode of this
+                # q-point with every mode of previous q-point, and sum the dot
+                # products over ions (i.e. multiply eigenvectors elementwise,
+                # then sum over the last 2 dimensions)
+                dots = np.absolute(np.einsum('ijk,ijk->i',
+                                             np.conj(prev_eigenvecs),
+                                             current_eigenvecs))
+
+                # Create matrix of dot products for each mode of this q-point
+                # with each mode of the previous q-point
+                dot_mat = np.reshape(dots, (n_branches, n_branches))
+
+                # Find greates exp(-iqr)-weighted dot product
+                for j in range(n_branches):
+                    max_i = (np.argmax(dot_mat))
+                    mode = int(max_i/n_branches)  # Modes are dot_mat rows
+                    prev_mode = max_i % n_branches  # Prev q-pt modes are cols
+                    # Ensure modes aren't mapped more than once
+                    dot_mat[mode, :] = 0
+                    dot_mat[:, prev_mode] = 0
+                    qmap_tmp[mode] = prev_mode
+            # Map q-points according to previous q-point mapping
+            qmap = qmap[qmap_tmp]
+
+            prev_evecs = curr_evecs
+
+            # Reorder frequencies and eigenvectors
+            ordered_eigenvecs[i, qmap] = eigenvecs[i, :]
+            ordered_freqs[i, qmap] = freqs[i, :]
+
+            if hasattr(self, 'split_i') and i in self.split_i:
+                idx = np.where(i == self.split_i)
+                ordered_split_eigenvecs[idx, qmap] = split_eigenvecs[idx]
+                ordered_split_freqs[idx, qmap] = split_freqs[idx]
+
+        ordered_freqs = ordered_freqs*self.freqs.units
+        self.eigenvecs = ordered_eigenvecs
+        self.freqs = ordered_freqs
+        if hasattr(self, 'split_i'):
+            self.split_freqs = ordered_split_freqs*self.split_freqs.units
+            self.split_eigenvecs = ordered_split_eigenvecs
 
     def convert_e_units(self, units):
         """

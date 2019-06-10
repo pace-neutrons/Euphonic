@@ -2,7 +2,6 @@ import unittest
 import numpy.testing as npt
 import numpy as np
 from simphony.data.phonon import PhononData
-from simphony.calculate.dispersion import reorder_freqs
 
 
 class TestReorderFreqs(unittest.TestCase):
@@ -12,7 +11,7 @@ class TestReorderFreqs(unittest.TestCase):
         path = 'test/data'
         data = PhononData(seedname, path=path)
         data.convert_e_units('1/cm')
-        reorder_freqs(data)
+        data.reorder_freqs()
         expected_reordered_freqs = np.array(
             [[91.847109, 91.847109, 166.053018,
               564.508299, 564.508299, 884.068976],
@@ -38,7 +37,7 @@ class TestReorderFreqs(unittest.TestCase):
         path = 'test/data'
         data = PhononData(seedname, path=path)
         data.convert_e_units('1/cm')
-        reorder_freqs(data)
+        data.reorder_freqs()
 
         expected_reordered_freqs = np.array(
             [[65.062447, 65.062447, 70.408176, 76.847761, 76.847761,
@@ -191,9 +190,9 @@ class TestReorderFreqs(unittest.TestCase):
         seedname = 'La2Zr2O7'
         path = 'test/data'
         data = PhononData(seedname, path=path)
-        reorder_freqs(data)
+        data.reorder_freqs()
         reordered_freqs_1 = data.freqs.magnitude
-        reorder_freqs(data)
+        data.reorder_freqs()
         reordered_freqs_2 = data.freqs.magnitude
 
         npt.assert_array_equal(reordered_freqs_1, reordered_freqs_2)
