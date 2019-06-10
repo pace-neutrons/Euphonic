@@ -1,12 +1,14 @@
 import unittest
+import warnings
 import numpy.testing as npt
 import numpy as np
+from simphony.data.interpolation import InterpolationData
 from simphony.data.phonon import PhononData
 
 
-class TestReorderFreqs(unittest.TestCase):
+class TestReorderFreqsNaH(unittest.TestCase):
 
-    def test_reorder_freqs_NaH(self):
+    def test_reorder_freqs(self):
         seedname = 'NaH-reorder-test'
         path = 'test/data'
         data = PhononData(seedname, path=path)
@@ -32,14 +34,20 @@ class TestReorderFreqs(unittest.TestCase):
               593.189877, 593.189877, 873.903056]])
         npt.assert_allclose(data.freqs.magnitude, expected_reordered_freqs)
 
-    def test_reorder_freqs_LZO(self):
-        seedname = 'La2Zr2O7'
-        path = 'test/data'
-        data = PhononData(seedname, path=path)
-        data.convert_e_units('1/cm')
-        data.reorder_freqs()
 
-        expected_reordered_freqs = np.array(
+class TestReorderFreqsLZO(unittest.TestCase):
+
+    def setUp(self):
+        # Create both PhononData and InterpolationData objs for testing
+        seedname = 'La2Zr2O7'
+        ppath = 'test/data'
+        self.pdata = PhononData(seedname, path=ppath)
+        self.pdata.convert_e_units('1/cm')
+        ipath = 'test/data/interpolation/LZO'
+        self.idata = InterpolationData(seedname, path=ipath)
+        self.idata.convert_e_units('1/cm')
+
+        self.expected_reordered_freqs = np.array(
             [[65.062447, 65.062447, 70.408176, 76.847761, 76.847761,
               85.664054, 109.121893, 109.121893, 117.920003, 119.363588,
               128.637195, 128.637195, 155.905812, 155.905812, 160.906969,
@@ -180,7 +188,26 @@ class TestReorderFreqs(unittest.TestCase):
               543.524255, 550.815232, 544.325882, 544.325882, 541.757933,
               552.630089, 552.630089, 508.677347, 737.533584, 736.042236,
               736.042236]])
-        npt.assert_allclose(data.freqs.magnitude, expected_reordered_freqs)
+
+    def test_reorder_freqs_phonon_data(self):
+        self.pdata.reorder_freqs()
+        npt.assert_allclose(self.pdata.freqs.magnitude,
+                            self.expected_reordered_freqs)
+
+    def test_reorder_freqs_interpolation_data(self):
+        self.idata.calculate_fine_phonons(self.pdata.qpts, asr='realspace')
+        self.idata.reorder_freqs()
+        # Set atol = 0.02 as this is the max difference between the
+        # interpolated phonon freqs and phonons read from .phonon file
+        npt.assert_allclose(self.idata.freqs.magnitude,
+                            self.expected_reordered_freqs, atol=0.02)
+
+    def test_empty_interpolation_data_raises_warning(self):
+        # Test that trying to call reorder on an empty object raises a warning
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+            self.idata.reorder_freqs()
+            assert issubclass(w[-1].category, UserWarning)
 
     def test_multiple_reorder_freqs_has_no_effect_LZO(self):
         # Test that when reorder_freqs is called more than once on the same

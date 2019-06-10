@@ -1141,7 +1141,9 @@ class InterpolationData(PhononData):
         frequencies
         """
         if self.n_qpts == 0:
-            print(('No frequencies in InterpolationData object, call '
-                   'calculate_fine_phonons before reordering frequencies'))
+            warnings.warn(
+                ('No frequencies in InterpolationData object, call '
+                 'calculate_fine_phonons before reordering frequencies'),
+                stacklevel=2)
             return
         super(InterpolationData, self).reorder_freqs()
