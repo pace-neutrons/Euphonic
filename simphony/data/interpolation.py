@@ -6,16 +6,17 @@ import numpy as np
 from scipy.linalg.lapack import zheev
 from scipy.special import erfc
 from simphony import ureg
-from simphony.util import reciprocal_lattice, is_gamma
+from simphony.util import reciprocal_lattice, is_gamma, mp_grid
 from simphony.data.phonon import PhononData
 from simphony._readers import _castep
 
 
 class InterpolationData(PhononData):
     """
-    A class to read and store the data required for a phonon interpolation
-    calculation from model (e.g. CASTEP) output, and calculate phonon
-    frequencies/eigenvectors at arbitrary q-points via Fourier interpolation
+    Extends PhononData. A class to read and store the data required for a
+    phonon interpolation calculation from model (e.g. CASTEP) output, and
+    calculate phonon frequencies/eigenvectors at arbitrary q-points via
+    Fourier interpolation
 
     Attributes
     ----------
@@ -1147,3 +1148,65 @@ class InterpolationData(PhononData):
                 stacklevel=2)
             return
         super(InterpolationData, self).reorder_freqs()
+
+    def structure_factor(self, scattering_lengths, dw_arg=None, **kwargs):
+        """
+        Calculate the one phonon inelastic scattering at each q-point
+        See M. Dove Structure and Dynamics Pg. 226
+
+        Parameters
+        ----------
+        scattering_lengths : dictionary
+            Dictionary of spin and isotope averaged coherent scattering legnths
+            for each element in the structure in fm e.g.
+            {'O': 5.803, 'Zn': 5.680}
+        dw_arg : ndarray, optional, default None
+            If set, will calculate the Debye-Waller factor on a Monkhorst-Pack
+            grid
+            dtype = 'float'
+            shape = (3,)
+        **kwargs
+            Passes keyword arguments to PhononData.structure_factor, if dw_arg
+            is an ndarray, it can also pass arguments to
+            calculate_fine_phonons when calculating phonons on the grid
+
+        Returns
+        -------
+        sf : ndarray
+            The structure factor for each q-point and phonon branch
+            dtype = 'float'
+            shape = (n_qpts, n_branches)
+        """
+        if self.n_qpts == 0:
+            warnings.warn(
+                ('No frequencies in InterpolationData object, call '
+                 'calculate_fine_phonons before calling structure_factor'),
+                stacklevel=2)
+            return
+        sf = super(InterpolationData, self).structure_factor(
+            scattering_lengths, dw_arg=dw_arg, **kwargs)
+
+        return sf
+
+    def _get_dw_data(self, dw_arg, **kwargs):
+        """
+        Return Data object containing eigenvalues, vectors at the points where
+        the Debye-Waller factor should be calculated, based on dw_arg
+
+        Parameters
+        ----------
+        dw_arg : str or shape (3,) ndarray
+            If dw_arg is just a string, assume it's a seedname of a PhononData
+            file, and read it. Otherwise calculate phonons on the specified
+            MxNxL grid
+        **kwargs
+            Get passed to the PhononData initialisation if dw_arg is a string,
+            to the InterpolationData initialisation otherwise
+        """
+        if isinstance(dw_arg, str):
+            return super(InterpolationData, self)._get_dw_data(
+                dw_arg, **kwargs)
+        else:
+            qgrid = mp_grid(dw_arg)
+            return InterpolationData(self.seedname, model=self.model,
+                                     qpts=qgrid, **kwargs)

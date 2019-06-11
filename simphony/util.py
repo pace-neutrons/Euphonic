@@ -1,5 +1,6 @@
 import math
 import numpy as np
+from simphony import ureg
 
 
 def reciprocal_lattice(unit_cell):
@@ -61,3 +62,112 @@ def gaussian(x, sigma):
 
 def lorentzian(x, gamma):
     return gamma/(2*math.pi*(np.square(x) + (gamma/2)**2))
+
+
+def gaussian_2d(xbins, ybins, xwidth, ywidth, extent=6.0):
+    """
+    Calculate a 2D Gaussian probability density, with independent standard
+    deviations in x and y
+
+    Parameters
+    ----------
+    xbins : ndarray
+        Bin edges in x
+        dtype = 'float'
+        shape = (xbins,)
+    ybins : ndarray
+        Bin edges in y
+        dtype = 'float'
+        shape = (ybins,)
+    xwidth : float
+        The FWHM in x of the Gaussian function
+    ywidth : float
+        The FWHM in y of the Gaussian function
+    extent : float
+        How far out to calculate the Gaussian, in standard deviations
+
+    Returns
+    -------
+    gauss : ndarray
+        Gaussian probability density
+        dtype = 'float'
+        shape = (nxbins, nybins)
+    """
+    xbin_width = np.mean(np.diff(xbins))
+    ybin_width = np.mean(np.diff(ybins))
+
+    # Gauss FWHM = 2*sigma*sqrt(2*ln2)
+    xsigma = xwidth/(2*math.sqrt(2*math.log(2)))
+    ysigma = ywidth/(2*math.sqrt(2*math.log(2)))
+
+    # Ensure nbins is always odd, and each bin has the same approx width as
+    # original x/ybins
+    nxbins = int(np.ceil(2*extent*xsigma/xbin_width)/2)*2 + 1
+    nybins = int(np.ceil(2*extent*ysigma/ybin_width)/2)*2 + 1
+    x = np.linspace(-extent*xsigma, extent*xsigma, nxbins)
+    y = np.linspace(-extent*ysigma, extent*ysigma, nybins)
+
+    xgrid = np.tile(x, (len(y), 1))
+    ygrid = np.transpose(np.tile(y, (len(x), 1)))
+
+    gauss = gaussian(xgrid, xsigma)*gaussian(ygrid, ysigma)
+
+    return gauss
+
+
+def mp_grid(grid):
+    """
+    Returns the q-points on a MxNxL Monkhorst-Pack grid specified by grid
+
+    Parameters
+    ----------
+    grid : ndarray
+        Length 3 array specifying the number of points in each direction
+        dtype = 'int'
+        shape = (3,)
+
+    Returns
+    -------
+    qgrid : ndarray
+        Q-points on an MP grid
+        dtype = 'float'
+        shape = (M*N*L, 3)
+    """
+
+    # Monkhorst-Pack grid: ur = (2r-qr-1)/2qr where r=1,2..,qr
+    qh = np.true_divide(
+        2*(np.arange(grid[0]) + 1) - grid[0] - 1, 2*grid[0])
+    qh = np.repeat(qh, grid[1]*grid[2])
+    qk = np.true_divide(
+        2*(np.arange(grid[1]) + 1) - grid[1] - 1, 2*grid[1])
+    qk = np.tile(np.repeat(qk, grid[2]), grid[0])
+    ql = np.true_divide(
+        2*(np.arange(grid[2]) + 1) - grid[2] - 1, 2*grid[2])
+    ql = np.tile(ql, grid[0]*grid[1])
+    return np.column_stack((qh, qk, ql))
+
+
+def bose_factor(x, T):
+    """
+    Calculate the Bose factor
+    Parameters
+    ----------
+    x : ndarray
+        Phonon frequencies in Hartree
+        dtype = 'float'
+        shape = (n_qpts, 3*n_ions)
+    T : float
+        Temperature in K
+    Returns
+    -------
+    bose : ndarray
+        Bose factor
+        dtype = 'float'
+        shape = (n_qpts, 3*n_ions)
+    """
+    kB = (1*ureg.k).to('E_h/K').magnitude
+    bose = np.zeros(x.shape)
+    bose[x > 0] = 1
+    if T > 0:
+        bose = bose + 1/(np.exp(np.absolute(x)/(kB*T)) - 1)
+    return bose

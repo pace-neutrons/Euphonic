@@ -1,6 +1,8 @@
 import os
+import math
 import numpy as np
-from simphony.util import direction_changed
+from simphony import ureg
+from simphony.util import direction_changed, reciprocal_lattice, bose_factor
 from simphony.data.data import Data
 from simphony._readers import _castep
 
@@ -215,3 +217,160 @@ class PhononData(Data):
         self.split_freqs.ito(units, 'spectroscopy')
         if hasattr(self, 'sqw_ebins'):
             self.sqw_ebins.ito(units, 'spectroscopy')
+
+    def structure_factor(self, scattering_lengths, T=5.0, scale=1.0,
+                         calc_bose=True, dw_arg=None, **kwargs):
+        """
+        Calculate the one phonon inelastic scattering at each q-point
+        See M. Dove Structure and Dynamics Pg. 226
+
+        Parameters
+        ----------
+        scattering_lengths : dictionary
+            Dictionary of spin and isotope averaged coherent scattering legnths
+            for each element in the structure in fm e.g.
+            {'O': 5.803, 'Zn': 5.680}
+        T : float, optional, default 5.0
+            The temperature in Kelvin to use when calculating the Bose and
+            Debye-Waller factors
+        scale : float, optional, default 1.0
+            Apply a multiplicative factor to the final structure factor.
+        calc_bose : boolean, optional, default True
+            Whether to calculate and apply the Bose factor
+        dw_arg : string, optional, default None
+            If set, will calculate the Debye-Waller factor over the q-points in
+            the .phonon file with this seedname.
+
+        Returns
+        -------
+        sf : ndarray
+            The structure factor for each q-point and phonon branch
+            dtype = 'float'
+            shape = (n_qpts, n_branches)
+        """
+        sl = [scattering_lengths[x] for x in self.ion_type]
+
+        # Convert units (use magnitudes for performance)
+        cell_vec = (self.cell_vec.to('bohr')).magnitude
+        freqs = (self.freqs.to('E_h', 'spectroscopy')).magnitude
+        ion_mass = (self.ion_mass.to('e_mass')).magnitude
+        sl = (sl*ureg('fm').to('bohr')).magnitude
+
+        # Calculate normalisation factor
+        norm_factor = sl/np.sqrt(ion_mass)
+
+        # Calculate the exponential factor for all ions and q-points
+        # ion_r in fractional coords, so Qdotr = 2pi*qh*rx + 2pi*qk*ry...
+        exp_factor = np.exp(1J*2*math.pi*np.einsum('ij,kj->ik',
+                                                   self.qpts, self.ion_r))
+
+        # Eigenvectors are in Cartesian so need to convert hkl to Cartesian by
+        # computing the dot product with hkl and reciprocal lattice
+        recip = reciprocal_lattice(cell_vec)
+        Q = np.einsum('ij,jk->ik', self.qpts, recip)
+
+        # Calculate dot product of Q and eigenvectors for all branches, ions
+        # and q-points
+        eigenv_dot_q = np.einsum('ijkl,il->ijk', np.conj(self.eigenvecs), Q)
+
+        # Calculate Debye-Waller factors
+        if dw_arg:
+            dw_data = self._get_dw_data(dw_arg, **kwargs)
+            dw = self._dw_coeff(dw_data, T)
+            dw_factor = np.exp(-np.einsum('jkl,ik,il->ij', dw, Q, Q)/2)
+            exp_factor *= dw_factor
+
+        # Multiply Q.eigenvector, exp factor and normalisation factor
+        term = np.einsum('ijk,ik,k->ij', eigenv_dot_q, exp_factor, norm_factor)
+
+        # Take mod squared and divide by frequency to get intensity
+        sf = np.absolute(term*np.conj(term))/np.absolute(freqs)
+
+        # Multiply by Bose factor
+        if calc_bose:
+            sf = sf*bose_factor(freqs, T)
+
+        sf = np.real(sf*scale)
+
+        return sf
+
+    def _get_dw_data(self, dw_seedname, **kwargs):
+        """
+        Returns the PhononData object containing the q-points over which to
+        calculate the Debye-Waller factor. This function exists so it can be
+        overidden by the InterpolationData object when calculating the DW
+        factor on a grid
+
+        Parameters
+        ----------
+        dw_seedname : string
+            The seedname of the PhononData object to create
+        **kwargs
+            Get passed to the PhononData initialisation
+        Returns
+        -------
+        dw_data : PhononData
+            The PhononData object with dw_seedname
+        """
+        return PhononData(dw_seedname, **kwargs)
+
+    def _dw_coeff(self, data, T):
+        """
+        Calculate the 3 x 3 Debye-Waller coefficients for each ion
+
+        Parameters
+        ----------
+        data : PhononData object
+            PhononData object containing the q-point grid to calculate the DW
+            factor over
+        T : float
+            Temperature in Kelvin
+
+        Returns
+        -------
+        dw : ndarray
+            The DW coefficients for each ion
+            dtype = 'float'
+            shape = (n_ions, 3, 3)
+        """
+
+        # Convert units (use magnitudes for performance)
+        kB = (1*ureg.k).to('E_h/K').magnitude
+        ion_mass = data.ion_mass.to('e_mass').magnitude
+        freqs = data.freqs.to('E_h', 'spectroscopy').magnitude
+        qpts = data.qpts
+        evecs = data.eigenvecs
+        weights = data.weights
+
+        mass_term = 1/(2*ion_mass)
+
+        # Determine q-points near the gamma point and mask out their acoustic
+        # modes due to the potentially large 1/frequency factor
+        TOL = 1e-8
+        is_small_q = np.sum(np.square(qpts), axis=1) < TOL
+        freq_mask = np.ones(freqs.shape)
+        freq_mask[is_small_q, :3] = 0
+
+        if T > 0:
+            x = freqs/(2*kB*T)
+            freq_term = 1/(freqs*np.tanh(x))
+        else:
+            freq_term = 1/(freqs)
+
+        dw = np.zeros((data.n_ions, 3, 3))
+        # Calculating the e.e* term is expensive, do in chunks
+        chunk = 1000
+        for i in range(int((len(qpts) - 1)/chunk) + 1):
+            qi = i*chunk
+            qf = min((i + 1)*chunk, len(qpts))
+            evec_i = np.repeat(evecs[qi:qf, :, :, :, np.newaxis], 3, axis=4)
+            evec_j = np.repeat(evecs[qi:qf, :, :, np.newaxis, :], 3, axis=3)
+            evec_term = np.real(evec_i*np.conj(evec_j))
+
+            dw += (np.einsum('i,k,ij,ij,ijklm->klm',
+                             weights[qi:qf], mass_term, freq_term[qi:qf],
+                             freq_mask[qi:qf], evec_term))
+
+        dw = dw/np.sum(weights)
+
+        return dw
