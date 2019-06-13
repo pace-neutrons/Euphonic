@@ -1149,7 +1149,8 @@ class InterpolationData(PhononData):
             return
         super(InterpolationData, self).reorder_freqs()
 
-    def structure_factor(self, scattering_lengths, dw_arg=None, **kwargs):
+    def calculate_structure_factor(self, scattering_lengths, dw_arg=None,
+                                   **kwargs):
         """
         Calculate the one phonon inelastic scattering at each q-point
         See M. Dove Structure and Dynamics Pg. 226
@@ -1166,8 +1167,8 @@ class InterpolationData(PhononData):
             dtype = 'float'
             shape = (3,)
         **kwargs
-            Passes keyword arguments to PhononData.structure_factor, if dw_arg
-            is an ndarray, it can also pass arguments to
+            Passes keyword arguments to PhononData.calculate_structure_factor,
+            if dw_arg is an ndarray, it can also pass arguments to
             calculate_fine_phonons when calculating phonons on the grid
 
         Returns
@@ -1180,10 +1181,11 @@ class InterpolationData(PhononData):
         if self.n_qpts == 0:
             warnings.warn(
                 ('No frequencies in InterpolationData object, call '
-                 'calculate_fine_phonons before calling structure_factor'),
+                 'calculate_fine_phonons before calling '
+                 'calculate_structure_factor'),
                 stacklevel=2)
-            return
-        sf = super(InterpolationData, self).structure_factor(
+            return None
+        sf = super(InterpolationData, self).calculate_structure_factor(
             scattering_lengths, dw_arg=dw_arg, **kwargs)
 
         return sf

@@ -218,8 +218,8 @@ class PhononData(Data):
         if hasattr(self, 'sqw_ebins'):
             self.sqw_ebins.ito(units, 'spectroscopy')
 
-    def structure_factor(self, scattering_lengths, T=5.0, scale=1.0,
-                         calc_bose=True, dw_arg=None, **kwargs):
+    def calculate_structure_factor(self, scattering_lengths, T=5.0, scale=1.0,
+                                   calc_bose=True, dw_arg=None, **kwargs):
         """
         Calculate the one phonon inelastic scattering at each q-point
         See M. Dove Structure and Dynamics Pg. 226
@@ -240,6 +240,9 @@ class PhononData(Data):
         dw_arg : string, optional, default None
             If set, will calculate the Debye-Waller factor over the q-points in
             the .phonon file with this seedname.
+        **kwargs
+            If dw_arg has been set, passes keyword arguments to initialisation
+            of the PhononData object for the Debye-Waller calculation
 
         Returns
         -------
@@ -374,3 +377,70 @@ class PhononData(Data):
         dw = dw/np.sum(weights)
 
         return dw
+
+    def calculate_sqw_map(self, scattering_lengths, ebins, set_attrs=True,
+                          calc_bose=True, **kwargs):
+        """
+        Calculate the structure factor for each q-point contained in data, and
+        bin according to ebins to create a S(Q,w) map
+
+        Parameters
+        ----------
+        scattering_lengths : dictionary
+            Dictionary of spin and isotope averaged coherent scattering legnths
+            for each element in the structure in fm e.g.
+            {'O': 5.803, 'Zn': 5.680}
+        ebins : ndarray
+            The energy bin edges in the same units as PhononData.freqs
+        set_attrs : boolean, optional, default True
+            Whether to set the sqw and sqw_ebins attributes of this object
+        calc_bose : boolean, optional, default True
+            Whether to calculate and apply the Bose factor
+        **kwargs
+            Passes keyword arguments on to
+            PhononData.calculate_structure_factor
+
+        Returns
+        -------
+        sqw_map : ndarray
+            The intensity for each q-point and energy bin
+            dtype = 'float'
+            shape = (n_qpts, ebins - 1)
+        """
+
+        # Convert units (use magnitudes for performance)
+        freqs = (self.freqs.to('E_h', 'spectroscopy')).magnitude
+        ebins = ((ebins*self.freqs.units).to('E_h')).magnitude
+
+        # Create initial sqw_map with an extra an energy bin either side, for
+        # any branches that fall outside the energy bin range
+        sqw_map = np.zeros((self.n_qpts, len(ebins) + 1))
+        sf = self.calculate_structure_factor(
+            scattering_lengths, calc_bose=False, **kwargs)
+        if calc_bose:
+            if 'T' in kwargs:
+                T = kwargs['T']
+            else:
+                T = 5.0
+            p_intensity = sf*bose_factor(freqs, T)
+            n_intensity = sf*bose_factor(-freqs, T)
+        else:
+            p_intensity = sf
+            n_intensity = sf
+
+        p_bin = np.digitize(freqs, ebins)
+        n_bin = np.digitize(-freqs, ebins)
+
+        # Sum intensities into bins
+        first_index = np.transpose(
+            np.tile(range(self.n_qpts), (self.n_branches, 1)))
+        np.add.at(sqw_map, (first_index, p_bin), p_intensity)
+        np.add.at(sqw_map, (first_index, n_bin), n_intensity)
+        sqw_map = sqw_map[:, 1:-1]  # Exclude values outside ebin range
+
+        if set_attrs:
+            self.sqw_ebins = ebins*ureg('E_h').to(
+                self.freqs.units, 'spectroscopy')
+            self.sqw_map = sqw_map
+
+        return sqw_map

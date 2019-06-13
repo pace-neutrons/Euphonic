@@ -2,7 +2,8 @@ import math
 import sys
 import numpy as np
 import seekpath
-from simphony.util import (direction_changed, reciprocal_lattice)
+from scipy import signal
+from simphony.util import direction_changed, reciprocal_lattice, gaussian_2d
 
 
 def calc_abscissa(qpts, recip_latt):
@@ -168,7 +169,8 @@ def get_qpt_label(qpt, point_labels):
     return label
 
 
-def plot_sqw_map(data, vmin=None, vmax=None, ratio=None, cmap='viridis'):
+def plot_sqw_map(data, vmin=None, vmax=None, ratio=None, ewidth=0, qwidth=0,
+                 cmap='viridis'):
     """
     Plots an q-E scattering plot using imshow
 
@@ -187,6 +189,11 @@ def plot_sqw_map(data, vmin=None, vmax=None, ratio=None, cmap='viridis'):
         Ratio of the size of the y and x axes. e.g. if ratio is 2, the y-axis
         will be twice as long as the x-axis
         Default: None
+    ewidth : float, optional, default 0
+        The FWHM of the Gaussian energy resolution function in the same units
+        as freqs
+    qwidth : float, optional, default 0
+        The FWHM of the Gaussian q-vector resolution function
     cmap : string, optional, default 'viridis'
         Which colormap to use, see Matplotlib docs
 
@@ -212,8 +219,23 @@ def plot_sqw_map(data, vmin=None, vmax=None, ratio=None, cmap='viridis'):
                '\n\npip install --user .[matplotlib]'))
         return None, None
 
-    ebins = (data.sqw_ebins.to('meV', 'spectroscopy').magnitude).astype(
-        np.float64)
+    ebins = data.sqw_ebins.magnitude
+    # Apply broadening
+    if ewidth or qwidth:
+        qbin_width = np.linalg.norm(
+            np.mean(np.diff(data.qpts, axis=0), axis=0))
+        qbins = np.linspace(
+            0, qbin_width*data.n_qpts + qbin_width, data.n_qpts + 1)
+        # If no width has been set, make widths small enough to have
+        # effectively no broadening
+        if not qwidth:
+            qwidth = (qbins[1] - qbins[0])/10
+        if not ewidth:
+            ewidth = (ebins[1] - ebins[0])/10
+        sqw_map = signal.fftconvolve(data.sqw_map, np.transpose(
+            gaussian_2d(qbins, data.sqw_ebins, qwidth, ewidth)), 'same')
+    else:
+        sqw_map = data.sqw_map
 
     # Calculate qbin edges
     cell_vec = (data.cell_vec.to('angstrom').magnitude)
@@ -228,14 +250,14 @@ def plot_sqw_map(data, vmin=None, vmax=None, ratio=None, cmap='viridis'):
     else:
         ymax = 1.0
     if vmin is None:
-        vmin = np.amin(data.sqw_map)
+        vmin = np.amin(sqw_map)
     if vmax is None:
-        vmax = np.amax(data.sqw_map)
+        vmax = np.amax(sqw_map)
 
     fig, ax = plt.subplots(1, 1)
     ims = np.empty((data.n_qpts), dtype=mpl.image.AxesImage)
     for i in range(data.n_qpts):
-        ims[i] = ax.imshow(np.transpose(data.sqw_map[i, np.newaxis]),
+        ims[i] = ax.imshow(np.transpose(sqw_map[i, np.newaxis]),
                            interpolation='none', origin='lower',
                            extent=[qbins[i], qbins[i+1], 0, ymax],
                            vmin=vmin, vmax=vmax, cmap=cmap)
@@ -253,7 +275,13 @@ def plot_sqw_map(data, vmin=None, vmax=None, ratio=None, cmap='viridis'):
     yticks = (ylabels - ebins[0])/(ebins[-1] - ebins[0])*ymax
     ax.set_yticks(yticks)
     ax.set_yticklabels(ylabels)
-    ax.set_ylabel('Energy (meV)')
+    units_str = '{:~P}'.format(data.freqs.units)
+    inverse_unit_index = units_str.find('/')
+    if inverse_unit_index > -1:
+        units_str = units_str[inverse_unit_index+1:]
+        ax.set_ylabel('Energy (' + units_str + r'$^{-1}$)')
+    else:
+        ax.set_ylabel('Energy (' + units_str + ')')
 
     # Calculate q-space ticks and labels
     xlabels, qpts_with_labels = recip_space_labels(data)
