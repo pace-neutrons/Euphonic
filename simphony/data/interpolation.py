@@ -1212,3 +1212,41 @@ class InterpolationData(PhononData):
             qgrid = mp_grid(dw_arg)
             return InterpolationData(self.seedname, model=self.model,
                                      qpts=qgrid, **kwargs)
+
+    def calculate_sqw_map(self, scattering_lengths, ebins, **kwargs):
+        """
+        Calculate the structure factor for each q-point contained in data, and
+        bin according to ebins to create a S(Q,w) map
+
+        Parameters
+        ----------
+        scattering_lengths : dictionary
+            Dictionary of spin and isotope averaged coherent scattering legnths
+            for each element in the structure in fm e.g.
+            {'O': 5.803, 'Zn': 5.680}
+        ebins : ndarray
+            The energy bin edges in the same units as freqs
+            dtype = 'float'
+            shape = (n_ebins + 1)
+        **kwargs
+            Passes keyword arguments on to
+            PhononData.calculate_sqw_map
+
+        Returns
+        -------
+        sqw_map : ndarray
+            The intensity for each q-point and energy bin
+            dtype = 'float'
+            shape = (n_qpts, n_ebins)
+        """
+        if self.n_qpts == 0:
+            warnings.warn(
+                ('No frequencies in InterpolationData object, call '
+                 'calculate_fine_phonons before calling '
+                 'calculate_sqw_map'),
+                stacklevel=2)
+            return None
+        sqw_map = super(InterpolationData, self).calculate_sqw_map(
+            scattering_lengths, ebins, **kwargs)
+
+        return sqw_map

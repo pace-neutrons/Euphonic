@@ -155,8 +155,6 @@ def _read_phonon_data(data, f):
     data.qpts = qpts
     data.weights = weights
     data.freqs = freqs
-    data.ir = ir
-    data.raman = raman
     data.eigenvecs = eigenvecs
 
     data.split_i = split_i
