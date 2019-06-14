@@ -1,6 +1,5 @@
 import math
 import sys
-import os
 import warnings
 import numpy as np
 from scipy.linalg.lapack import zheev
@@ -149,7 +148,8 @@ class InterpolationData(PhononData):
 
     def _get_data(self, seedname, model, path):
         """"
-        Opens correct file(s) for reading
+        Calls the correct reader to get the required data, and sets the
+        PhononData attributes
 
         Parameters
         ----------
@@ -162,21 +162,28 @@ class InterpolationData(PhononData):
             Path to dir containing the file(s), if in another directory
         """
         if model.lower() == 'castep':
-            try:
-                file = os.path.join(path, seedname + '.castep_bin')
-                with open(file, 'rb') as f:
-                    _castep._read_interpolation_data(self, f)
-            except IOError:
-                print(
-                    '{:s}.castep_bin file not found, trying to read {:s}.check'
-                    .format(seedname, seedname))
-                file = os.path.join(path, seedname + '.check')
-                with open(file, 'rb') as f:
-                    _castep._read_interpolation_data(self, f)
+            data = _castep._read_interpolation_data(seedname, path)
         else:
             raise ValueError(
                 "{:s} is not a valid model, please use one of {{'CASTEP'}}"
                 .format(model))
+
+        self.n_ions = data['n_ions']
+        self.n_branches = data['n_branches']
+        self.cell_vec = data['cell_vec']
+        self.ion_r = data['ion_r']
+        self.ion_type = data['ion_type']
+        self.ion_mass = data['ion_mass']
+        self.force_constants = data['force_constants']
+        self.sc_matrix = data['sc_matrix']
+        self.n_cells_in_sc = data['n_cells_in_sc']
+        self.cell_origins = data['cell_origins']
+
+        try:
+            self.born = data['born']
+            self.dielectric = data['dielectric']
+        except KeyError:
+            pass
 
     def calculate_fine_phonons(
         self, qpts, asr=None, precondition=False, set_attrs=True, dipole=True,

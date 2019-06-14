@@ -1,4 +1,3 @@
-import os
 import numpy as np
 from simphony.data.data import Data
 from simphony._readers import _castep
@@ -71,7 +70,8 @@ class BandsData(Data):
 
     def _get_data(self, seedname, model, path):
         """"
-        Opens the correct file(s) for reading
+        Calls the correct reader to get the required data, and sets the
+        BandsData attributes
 
         Parameters
         ----------
@@ -84,21 +84,28 @@ class BandsData(Data):
             Path to dir containing the file(s), if in another directory
         """
         if model.lower() == 'castep':
-            file = os.path.join(path, seedname + '.bands')
-            with open(file, 'r') as f:
-                _castep._read_bands_data(self, f)
-
-            # Try to get extra data (ionic species, coords) from .castep file
-            castep_file = os.path.join(path, seedname + '.castep')
-            try:
-                with open(castep_file, 'r') as f:
-                    _castep._read_castep_data(self, f)
-            except IOError:
-                pass
+            data = _castep._read_bands_data(seedname, path)
         else:
             raise ValueError(
                 "{:s} is not a valid model, please use one of {{'CASTEP'}}"
                 .format(model))
+
+        self.n_qpts = data['n_qpts']
+        self.n_spins = data['n_spins']
+        self.n_branches = data['n_branches']
+        self.fermi = data['fermi']
+        self.cell_vec = data['cell_vec']
+        self.qpts = data['qpts']
+        self.weights = data['weights']
+        self.freqs = data['freqs']
+        self.freq_down = data['freq_down']
+
+        try:
+            self.n_ions = data['n_ions']
+            self.ion_r = data['ion_r']
+            self.ion_type = data['ion_type']
+        except KeyError:
+            pass
 
     def calculate_dos(self, dos_bins, gwidth, lorentz=False,
                       weights=None, set_attrs=True):

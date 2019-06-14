@@ -1,4 +1,3 @@
-import os
 import math
 import numpy as np
 from simphony import ureg
@@ -96,7 +95,8 @@ class PhononData(Data):
 
     def _get_data(self, seedname, model, path):
         """"
-        Opens the correct file(s) for reading
+        Calls the correct reader to get the required data, and sets the
+        PhononData attributes
 
         Parameters
         ----------
@@ -109,13 +109,26 @@ class PhononData(Data):
             Path to dir containing the file(s), if in another directory
         """
         if model.lower() == 'castep':
-            file = os.path.join(path, seedname + '.phonon')
-            with open(file, 'r') as f:
-                _castep._read_phonon_data(self, f)
+            data = _castep._read_phonon_data(seedname, path)
         else:
             raise ValueError(
                 "{:s} is not a valid model, please use one of {{'CASTEP'}}"
                 .format(model))
+
+        self.n_ions = data['n_ions']
+        self.n_branches = data['n_branches']
+        self.n_qpts = data['n_qpts']
+        self.cell_vec = data['cell_vec']
+        self.ion_r = data['ion_r']
+        self.ion_type = data['ion_type']
+        self.ion_mass = data['ion_mass']
+        self.qpts = data['qpts']
+        self.weights = data['weights']
+        self.freqs = data['freqs']
+        self.eigenvecs = data['eigenvecs']
+        self.split_i = data['split_i']
+        self.split_freqs = data['split_freqs']
+        self.split_eigenvecs = data['split_eigenvecs']
 
     def reorder_freqs(self):
         """
