@@ -71,14 +71,10 @@ def gaussian_2d(xbins, ybins, xwidth, ywidth, extent=6.0):
 
     Parameters
     ----------
-    xbins : ndarray
+    xbins : (xbins,) float ndarray
         Bin edges in x
-        dtype = 'float'
-        shape = (xbins,)
-    ybins : ndarray
+    ybins : (ybins,) float ndarray
         Bin edges in y
-        dtype = 'float'
-        shape = (ybins,)
     xwidth : float
         The FWHM in x of the Gaussian function
     ywidth : float
@@ -88,10 +84,8 @@ def gaussian_2d(xbins, ybins, xwidth, ywidth, extent=6.0):
 
     Returns
     -------
-    gauss : ndarray
+    gauss : (nxbins, nybins) float ndarray
         Gaussian probability density
-        dtype = 'float'
-        shape = (nxbins, nybins)
     """
     xbin_width = np.mean(np.diff(xbins))
     ybin_width = np.mean(np.diff(ybins))
@@ -121,17 +115,13 @@ def mp_grid(grid):
 
     Parameters
     ----------
-    grid : ndarray
+    grid : (3,) int ndarray
         Length 3 array specifying the number of points in each direction
-        dtype = 'int'
-        shape = (3,)
 
     Returns
     -------
-    qgrid : ndarray
+    qgrid : (M*N*L, 3) float ndarray
         Q-points on an MP grid
-        dtype = 'float'
-        shape = (M*N*L, 3)
     """
 
     # Monkhorst-Pack grid: ur = (2r-qr-1)/2qr where r=1,2..,qr
@@ -150,20 +140,18 @@ def mp_grid(grid):
 def bose_factor(x, T):
     """
     Calculate the Bose factor
+
     Parameters
     ----------
-    x : ndarray
+    x : (n_qpts, 3*n_ions) float ndarray
         Phonon frequencies in Hartree
-        dtype = 'float'
-        shape = (n_qpts, 3*n_ions)
     T : float
         Temperature in K
+
     Returns
     -------
-    bose : ndarray
+    bose : (n_qpts, 3*n_ions) float ndarray
         Bose factor
-        dtype = 'float'
-        shape = (n_qpts, 3*n_ions)
     """
     kB = (1*ureg.k).to('E_h/K').magnitude
     bose = np.zeros(x.shape)

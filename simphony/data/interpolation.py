@@ -27,59 +27,37 @@ class InterpolationData(PhononData):
         Number of ions in the unit cell
     n_branches : int
         Number of phonon dispersion branches
-    cell_vec : ndarray
-        The unit cell vectors. Default units Angstroms.
-        dtype = 'float'
-        shape = (3, 3)
-    ion_r : ndarray
+    cell_vec : (3, 3) float ndarray
+        The unit cell vectors. Default units Angstroms
+    ion_r : (n_ions,3) float ndarray
         The fractional position of each ion within the unit cell
-        dtype = 'float'
-        shape = (n_ions, 3)
-    ion_type : ndarray
+    ion_type : (n_ions,) string ndarray
         The chemical symbols of each ion in the unit cell. Ions are in the
         same order as in ion_r
-        dtype = 'string'
-        shape = (n_ions,)
-    ion_mass : ndarray
+    ion_mass : (n_ions,) float ndarray
         The mass of each ion in the unit cell in atomic units
-        dtype = 'float'
-        shape = (n_ions,)
     n_cells_in_sc : int
         Number of cells in the supercell
-    sc_matrix : ndarray
+    sc_matrix : (3, 3) int ndarray
         The supercell matrix
-        dtype = 'int'
-        shape = (3, 3)
-    cell_origins : ndarray
+    cell_origins : (n_cells_in_sc, 3) int ndarray
         The locations of the unit cells within the supercell
-        dtype = 'int'
-        shape = (n_cells_in_sc, 3)
-    force_constants : ndarray
+    force_constants : (n_cells_in_sc, 3*n_ions, 3*n_ions) float ndarray
         Force constants matrix. Default units atomic units
-        dtype = 'float'
-        shape = (n_cells_in_sc, 3*n_ions, 3*n_ions)
     n_qpts : int
         Number of q-points used in the most recent interpolation calculation.
         Default value 0
-    qpts : ndarray
+    qpts : (n_qpts, 3) float ndarray
         Coordinates of the q-points used for the most recent interpolation
         calculation. Is empty by default
-        dtype = 'float'
-        shape = (n_qpts, 3)
-    weights : ndarray
+    weights : (n_qpts,) float ndarray
         The weight for each q-point
-        dtype = 'float'
-        shape = (n_qpts,)
-    freqs: ndarray
+    freqs: (n_qpts, 3*n_ions) float ndarray
         Phonon frequencies from the most recent interpolation calculation.
         Default units meV. Is empty by default
-        dtype = 'float'
-        shape = (n_qpts, 3*n_ions)
-    eigenvecs: ndarray
+    eigenvecs: (n_qpts, 3*n_ions, n_ions, 3) complex ndarray
         Dynamical matrix eigenvectors from the most recent interpolation
         calculation. Is empty by default
-        dtype = 'complex'
-        shape = (n_qpts, 3*n_ions, n_ions, 3)
     asr : str
         Stores which the acoustic sum rule, if any, was used in the last phonon
         calculation. Ensures consistency of other calculations e.g. when
@@ -88,27 +66,21 @@ class InterpolationData(PhononData):
         Stores whether the Ewald dipole tail correction was used in the last
         phonon calculation. Ensures consistency of other calculations e.g.
         when calculating on a grid of phonons for the Debye-Waller factor
-    split_i : ndarray
+    split_i : (n_splits,) int ndarray
         The q-point indices where there is LO-TO splitting, if applicable.
         Otherwise empty.
-        dtype = 'int'
-        shape = (n_splits,)
-    split_freqs : ndarray
+    split_freqs : (n_splits, 3*n_ions) float ndarray
         Holds the additional LO-TO split phonon frequencies for the q-points
         specified in split_i. Empty if no LO-TO splitting. Default units meV
-        dtype = 'float'
-        shape = (n_splits, 3*n_ions)
-    split_eigenvecs : ndarray
+    split_eigenvecs : (n_splits, 3*n_ions, n_ions, 3) complex ndarray
         Holds the additional LO-TO split dynamical matrix eigenvectors for the
         q-points specified in split_i. Empty if no LO-TO splitting
-        dtype = 'complex'
-        shape = (n_splits, 3*n_ions, n_ions, 3)
 
     """
 
     def __init__(self, seedname, model='CASTEP', path='', qpts=np.array([]),
                  **kwargs):
-        """"
+        """
         Calls functions to read the correct file(s) and sets InterpolationData
         attributes, additionally can calculate frequencies/eigenvectors at
         specified q-points
@@ -122,10 +94,8 @@ class InterpolationData(PhononData):
             model='CASTEP', the 'quartz.castep_bin' file will be read
         path : str, optional
             Path to dir containing the file(s), if in another directory
-        qpts : ndarray, optional
+        qpts : (n_qpts, 3) float ndarray, optional
             Q-point coordinates to use for an initial interpolation calculation
-            dtype = 'float'
-            shape = (n_qpts, 3)
         **kwargs
             If qpts has been specified, kwargs may be used to pass keyword
             arguments to calculate_fine_phonons
@@ -196,10 +166,8 @@ class InterpolationData(PhononData):
 
         Parameters
         ----------
-        qpts : ndarray
+        qpts : (n_qpts, 3) float ndarray
             The q-points to interpolate onto
-            dtype = 'float'
-            shape = (n_qpts, 3)
         asr : {'realspace', 'reciprocal'}, optional, default None
             Which acoustic sum rule correction to apply. 'realspace' applies
             the correction to the force constant matrix in real space.
@@ -225,15 +193,11 @@ class InterpolationData(PhononData):
 
         Returns
         -------
-        freqs : ndarray
+        freqs : (n_qpts, 3*n_ions) float ndarray
             The phonon frequencies (same as set to InterpolationData.freqs)
-            dtype = 'float'
-            shape = (n_qpts, 3*n_ions)
-        eigenvecs : ndarray
+        eigenvecs : (n_qpts, 3*n_ions, n_ions, 3) complex ndarray
             The phonon eigenvectors (same as set to
             InterpolationData.eigenvecs)
-            dtype = 'complex'
-            shape = (n_qpts, 3*n_ions, n_ions, 3)
         """
         if asr == 'realspace':
             if not hasattr(self, 'force_constants_asr'):
@@ -408,15 +372,11 @@ class InterpolationData(PhononData):
 
         Parameters
         ----------
-        q : ndarray
+        q : (3,) float ndarray
             The q-point to calculate the correction for
-            dtype = 'float'
-            shape = (3,)
-        fc_img_weighted : ndarray
+        fc_img_weighted : (n_cells_in_sc, 3*n_ions, 3*n_ions) float ndarray
             The force constants matrix weighted by the number of supercell ion
             images for each ij displacement
-            dtype = 'float'
-            shape = (3*n_ions*n_cells_in_sc, 3*n_ions)
         unique_sc_offsets : list of lists of ints
             A list containing 3 lists of the unique supercell image offsets in
             each direction. The supercell offset is calculated by multiplying
@@ -424,27 +384,21 @@ class InterpolationData(PhononData):
             _get_all_origins()). A list of lists rather than a
             Numpy array is used as the 3 lists are independent and their size
             is not known beforehand
-        unique_sc_i : ndarray
+        unique_sc_i : ((2*lim + 1)**3, 3) int ndarray
             The indices needed to reconstruct sc_offsets from the unique
             values in unique_sc_offsets
-            dtype = 'int'
-            shape = ((2*lim + 1)**3, 3)
         unique_cell_origins : list of lists of ints
             A list containing 3 lists of the unique cell origins in each
             direction. A list of lists rather than a Numpy array is used as
             the 3 lists are independent and their size is not known beforehand
-        unique_sc_i : ndarray
+        unique_sc_i : (cell_origins, 3) int ndarray
             The indices needed to reconstruct cell_origins from the unique
             values in unique_cell_origins
-            dtype = 'int'
-            shape = (cell_origins, 3)
 
         Returns
         -------
-        dyn_mat : ndarray
+        dyn_mat : (3*n_ions, 3*n_ions) complex ndarray
             The non mass weighted dynamical matrix at q
-            dtype = 'complex'
-            shape = (3*n_ions, 3*n_ions)
         """
 
         n_ions = self.n_ions
@@ -618,17 +572,13 @@ class InterpolationData(PhononData):
 
         Parameters
         ----------
-        q : ndarray
+        q : (3,) float ndarray
             The q-point to calculate the correction for
-            dtype = 'float'
-            shape = (3,)
 
         Returns
         -------
-        corr : ndarray
+        corr : (3*n_ions, 3*n_ions) complex ndarray
             The correction to the dynamical matrix
-            dtype = 'complex'
-            shape = (3*n_ions, 3*n_ions)
         """
         cell_vec = self.cell_vec.to('bohr').magnitude
         recip = reciprocal_lattice(cell_vec)
@@ -706,18 +656,14 @@ class InterpolationData(PhononData):
 
         Parameters
         ----------
-        q_dir : ndarray
+        q_dir : (3,) float ndarray
             The direction along which q approaches 0, in reciprocal fractional
             coordinates
-            dtype = 'float'
-            shape = (3,)
 
         Returns
         -------
-        na_corr : ndarray
+        na_corr : (3*n_ions, 3*n_ions) complex ndarray
             The correction to the dynamical matrix
-            dtype = 'complex'
-            shape = (3*n_ions, 3*n_ions)
         """
         cell_vec = self.cell_vec.to('bohr').magnitude
         n_ions = self.n_ions
@@ -750,10 +696,8 @@ class InterpolationData(PhononData):
 
         Returns
         -------
-        origins : ndarray
+        origins : ((2*n + 1)**3 - (2*n - 1)**3, 3) int ndarray
             The cell origins. Note: if n = 0, origins = [[0, 0, 0]]
-            dtype = 'int'
-            shape = ((2*n + 1)**3 - (2*n - 1)**3, 3)
 
         """
 
@@ -791,23 +735,17 @@ class InterpolationData(PhononData):
 
         Parameters
         ----------
-        max_xyz : ndarray
+        max_xyz : (3,) int ndarray
             The number of cells to count to in each direction
-            dtype = 'int'
-            shape = (3,)
-        min_xyz : ndarray, optional, default [0,0,0]
+        min_xyz : (3,) int ndarray, optional, default [0,0,0]
             The cell number to count from in each direction
-            dtype = 'int'
-            shape = (3,)
         step : integer, optional, default 1
             The step between cells
 
         Returns
         -------
-        origins : ndarray
+        origins : (prod(max_xyz - min_xyz)/step, 3) int ndarray
             The cell origins
-            dtype = 'int'
-            shape = (prod(max_xyz - min_xyz)/step, 3)
         """
         diff = np.absolute(np.subtract(max_xyz, min_xyz))
         nx = np.repeat(range(min_xyz[0], max_xyz[0], step), diff[1]*diff[2])
@@ -827,10 +765,8 @@ class InterpolationData(PhononData):
 
         Returns
         -------
-        force_constants : ndarray
+        force_constants : (n_cells_in_sc, 3*n_ions, 3*n_ions) float ndarray
             The corrected force constants matrix
-            dtype = 'float'
-            shape = (n_cells_in_sc, 3*n_ions, 3*n_ions)
         """
         cell_origins = self.cell_origins
         sc_matrix = self.sc_matrix
@@ -908,28 +844,19 @@ class InterpolationData(PhononData):
 
         Parameters
         ----------
-        dyn_mat : ndarray
+        dyn_mat : (3*n_ions, 3*n_ions) complex ndarray
             The uncorrected, non mass-weighted dynamical matrix at q
-            dtype = 'complex'
-            shape = (3*n_ions, 3*n_ions)
-        ac_i : ndarray
+        ac_i : (3,) int ndarray
             The indices of the acoustic modes at the gamma point
-            dtype = 'int'
-            shape = (3,)
-        g_evals : ndarray
+        g_evals : (3*n_ions,) float ndarray
             Dynamical matrix eigenvalues at gamma
-            dtype = 'float'
-            shape = (3*n_ions)
-        g_evecs : ndarray
+        g_evecs : (3*n_ions, n_ions, 3) complex ndarray
             Dynamical matrix eigenvectors at gamma
-            dtype = 'complex'
-            shape = (3*n_ions, n_ions, 3)
+
         Returns
         -------
-        dyn_mat : ndarray
+        dyn_mat : (3*n_ions, 3*n_ions) complex ndarray
             The corrected, non mass-weighted dynamical matrix at q
-            dtype = 'complex'
-            shape = (3*n_ions, 3*n_ions)
         """
         tol = (ureg('amu').to('e_mass')
                *0.1*ureg('1/cm').to('1/bohr')**2).magnitude
@@ -948,25 +875,17 @@ class InterpolationData(PhononData):
 
         Parameters
         ----------
-        dyn_mat : ndarray
+        dyn_mat : (3*n_ions, 3*n_ions) complex ndarray
             A dynamical matrix
-            dtype = 'complex'
-            shape = (3*n_ions, 3*n_ions)
 
         Returns
         -------
-        ac_i : ndarray
+        ac_i : (3,) int ndarray
             The indices of the acoustic modes
-            dtype = 'int'
-            shape = (3,)
-        evals : ndarray
+        evals : (3*n_ions) float ndarray
             Dynamical matrix eigenvalues
-            dtype = 'float'
-            shape = (3*n_ions)
-        evecs : ndarray
+        evecs : (3*n_ions, n_ions, 3) complex ndarray
             Dynamical matrix eigenvectors
-            dtype = 'complex'
-            shape = (3*n_ions, n_ions, 3)
         """
         n_branches = dyn_mat.shape[0]
         n_ions = int(n_branches/3)
@@ -996,10 +915,8 @@ class InterpolationData(PhononData):
 
         Parameters
         ----------
-        q : ndarray
+        q : (3,) float ndarray
             The q-point to calculate the phase for
-            dtype = 'float'
-            shape = (3,)
         unique_sc_offsets : list of lists of ints
             A list containing 3 lists of the unique supercell image offsets in
             each direction. The supercell offset is calculated by multiplying
@@ -1007,32 +924,24 @@ class InterpolationData(PhononData):
             _get_all_origins()). A list of lists rather than a
             Numpy array is used as the 3 lists are independent and their size
             is not known beforehand
-        unique_sc_i : ndarray
+        unique_sc_i : ((2*lim + 1)**3, 3) int ndarray
             The indices needed to reconstruct sc_offsets from the unique
             values in unique_sc_offsets
-            dtype = 'int'
-            shape = ((2*lim + 1)**3, 3)
         unique_cell_origins : list of lists of ints
             A list containing 3 lists of the unique cell origins in each
             direction. A list of lists rather than a Numpy array is used as
             the 3 lists are independent and their size is not known beforehand
-        unique_cell_i : ndarray
+        unique_cell_i : (cell_origins, 3) int ndarray
             The indices needed to reconstruct cell_origins from the unique
             values in unique_cell_origins
-            dtype = 'int'
-            shape = (cell_origins, 3)
 
         Returns
         -------
-        sc_phases : ndarray
+        sc_phases : (unique_sc_i,) float ndarray
             Phase factors exp(iq.r) for each supercell image coordinate in
             sc_offsets
-            dtype = 'float'
-            shape = (unique_sc_i,)
-        cell_phases : ndarray
+        cell_phases : (unique_cell_i,) float ndarray
             Phase factors exp(iq.r) for each cell coordinate in the supercell
-            dtype = 'float'
-            shape = (unique_cell_i,)
         """
 
         # Only calculate exp(iq) once, then raise to power to get the phase at
@@ -1168,11 +1077,9 @@ class InterpolationData(PhononData):
             Dictionary of spin and isotope averaged coherent scattering legnths
             for each element in the structure in fm e.g.
             {'O': 5.803, 'Zn': 5.680}
-        dw_arg : ndarray, optional, default None
+        dw_arg : (3,) float ndarray, optional, default None
             If set, will calculate the Debye-Waller factor on a Monkhorst-Pack
             grid
-            dtype = 'float'
-            shape = (3,)
         **kwargs
             Passes keyword arguments to PhononData.calculate_structure_factor,
             if dw_arg is an ndarray, it can also pass arguments to
@@ -1180,10 +1087,8 @@ class InterpolationData(PhononData):
 
         Returns
         -------
-        sf : ndarray
+        sf : (n_qpts, n_branches) float ndarray
             The structure factor for each q-point and phonon branch
-            dtype = 'float'
-            shape = (n_qpts, n_branches)
         """
         if self.n_qpts == 0:
             warnings.warn(
@@ -1204,7 +1109,7 @@ class InterpolationData(PhononData):
 
         Parameters
         ----------
-        dw_arg : str or shape (3,) ndarray
+        dw_arg : str or (3,) int ndarray
             If dw_arg is just a string, assume it's a seedname of a PhononData
             file, and read it. Otherwise calculate phonons on the specified
             MxNxL grid
@@ -1231,10 +1136,8 @@ class InterpolationData(PhononData):
             Dictionary of spin and isotope averaged coherent scattering legnths
             for each element in the structure in fm e.g.
             {'O': 5.803, 'Zn': 5.680}
-        ebins : ndarray
+        ebins : (n_ebins + 1) float ndarray
             The energy bin edges in the same units as freqs
-            dtype = 'float'
-            shape = (n_ebins + 1)
         **kwargs
             Passes keyword arguments on to
             PhononData.calculate_sqw_map
@@ -1243,8 +1146,6 @@ class InterpolationData(PhononData):
         -------
         sqw_map : ndarray
             The intensity for each q-point and energy bin
-            dtype = 'float'
-            shape = (n_qpts, n_ebins)
         """
         if self.n_qpts == 0:
             warnings.warn(

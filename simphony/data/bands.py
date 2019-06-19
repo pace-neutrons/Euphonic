@@ -20,33 +20,21 @@ class BandsData(Data):
         Number of spin components
     n_branches : int
         Number of electronic dispersion branches
-    fermi : ndarray
+    fermi : (n_spins,) float ndarray
         The Fermi energy/energies. Default units eV
-        dtype = 'float'
-        shape = (n_spins,)
-    cell_vec : ndarray
-        The unit cell vectors. Default units Angstroms.
-        dtype = 'float'
-        shape = (3, 3)
-    qpts : ndarray
+    cell_vec : (3, 3) float ndarray
+        The unit cell vectors. Default units Angstroms
+    qpts : (n_qpts, 3) float ndarray
         K-point coordinates
-        dtype = 'float'
-        shape = (n_qpts, 3)
-    weights : ndarray
+    weights : (n_qpts,) float ndarray
         The weight for each k-point
-        dtype = 'float'
-        shape = (n_qpts,)
-    freqs: ndarray
+    freqs: (n_qpts, 3*n_ions) float ndarray
         Band frequencies, ordered according to increasing k-point
         number. Default units eV
-        dtype = 'float'
-        shape = (n_qpts, 3*n_ions)
-    freq_down: ndarray
+    freq_down: (n_qpts, 3*n_ions) float ndarray
         Spin down band frequencies, ordered according to increasing k-point
         number. Can be empty if there are no spin down frequencies present.
         Default units eV
-        dtype = 'float'
-        shape = (n_qpts, 3*n_ions)
     """
 
     def __init__(self, seedname, model='CASTEP', path=''):
@@ -117,11 +105,9 @@ class BandsData(Data):
 
         Parameters
         ----------
-        dos_bins : ndarray
+        dos_bins : (n_ebins + 1,) float ndarray
             The energy bin edges to use for calculating the DOS, in the same
             units as freqs
-            dtype = 'float'
-            shape = (n_ebins + 1,)
         gwidth : float
             FWHM of Gaussian/Lorentzian for broadening the DOS bins, in the
             same units as freqs. Set to 0 if
@@ -129,25 +115,19 @@ class BandsData(Data):
         lorentz : boolean, optional
             Whether to use a Lorentzian or Gaussian broadening function.
             Default: False
-        weights : ndarray, optional
+        weights : (n_qpts, n_branches) float ndarray, optional
             The weights to use for each q-points and branch. If unspecified,
             uses the q-point weights stored in the Data object
-            dtype = 'float'
-            shape = (n_qpts, n_branches)
         set_attrs : boolean, optional, default True
             Whether to set the dos, dos_down and dos_bins attributes to the
             newly calculated values
 
         Returns
         -------
-        dos : ndarray
+        dos : (n_ebins,) float ndarray
             The spin up density of states for each bin
-            dtype = 'float'
-            shape = (n_ebins,)
-        dos_down : ndarray
+        dos_down : (n_ebins,) float ndarray
             The spin down density of states for each bin
-            dtype = 'float'
-            shape = (n_ebins,)
         """
         dos = super(BandsData, self).calculate_dos(
             dos_bins, gwidth, lorentz=lorentz, weights=weights,

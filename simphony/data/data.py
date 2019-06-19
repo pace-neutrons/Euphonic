@@ -18,11 +18,9 @@ class Data(object):
 
         Parameters
         ----------
-        dos_bins : ndarray
+        dos_bins : (n_ebins + 1,) float ndarray
             The energy bin edges to use for calculating the DOS, in the same
             units as freqs
-            dtype = 'float'
-            shape = (n_ebins + 1,)
         gwidth : float
             FWHM of Gaussian/Lorentzian for broadening the DOS bins, in the
             same units as freqs. Set to 0 if
@@ -30,21 +28,17 @@ class Data(object):
         lorentz : boolean, optional
             Whether to use a Lorentzian or Gaussian broadening function.
             Default: False
-        weights : ndarray, optional
+        weights : (n_qpts, n_branches) float ndarray, optional
             The weights to use for each q-points and branch. If unspecified,
             uses the q-point weights stored in the Data object
-            dtype = 'float'
-            shape = (n_qpts, n_branches)
         set_attrs : boolean, optional, default True
             Whether to set the dos and dos_bins attributes to the newly
             calculated values
 
         Returns
         -------
-        dos : ndarray
+        dos : (n_ebins,) float ndarray
             The density of states for each bin
-            dtype = 'float'
-            shape = (n_ebins,)
         """
 
         # Convert quantities to magnitudes

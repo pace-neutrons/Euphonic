@@ -60,16 +60,12 @@ def recip_space_labels(data):
 
     Returns
     -------
-    labels : ndarray
+    labels : (n_qpts_direction_changed,) string ndarray
         List of the labels for each q-point at which the path through
         reciprocal space changes direction
-        dtype = 'string'
-        shape = (n_qpts_direction_changed,)
-    qpts_with_labels : ndarray
+    qpts_with_labels : (n_qpts_direction_changed,) int ndarray
         List of the indices of the q-points at which the path through
         reciprocal space changes direction
-        dtype = 'int'
-        shape = (n_qpts_direction_changed,)
     """
 
     # First and last q-points should always be labelled
@@ -123,10 +119,8 @@ def get_qpt_label(qpt, point_labels):
 
     Parameters
     ----------
-    qpt : ndarray
+    qpt : (3,) float ndarray
         3 dimensional coordinates of a q-point
-        dtype = 'float'
-        shape = (3,)
     point_labels : dictionary
         A dictionary with N entries, relating high symmetry point lables (e.g.
         'GAMMA', 'X'), to their 3-dimensional coordinates (e.g. [0.0, 0.0,
@@ -202,12 +196,10 @@ def plot_sqw_map(data, vmin=None, vmax=None, ratio=None, ewidth=0, qwidth=0,
     fig : Matplotlib Figure or None
         If matplotlib.pyplot can be imported, is a Figure with a single
         subplot, otherwise is None
-    ims : ndarray or None
+    ims : (n_qpts,) 'matplotlib.image.AxesImage' ndarray or None
         If matplotlib.pyplot can be imported, is an array of AxesImage objects,
         one for each q-point, for easier access to some attributes/functions.
         Otherwise is None
-        dtype = 'matplotlib.image.AxesImage'
-        shape = (n_qpts,)
     """
     try:
         import matplotlib as mpl

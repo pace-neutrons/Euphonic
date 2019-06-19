@@ -23,59 +23,37 @@ class PhononData(Data):
         Number of phonon dispersion branches
     n_qpts : int
         Number of q-points in the .phonon file
-    cell_vec : ndarray
-        The unit cell vectors. Default units Angstroms.
-        dtype = 'float'
-        shape = (3, 3)
-    ion_r : ndarray
+    cell_vec : (3, 3) float ndarray
+        The unit cell vectors. Default units Angstroms
+    ion_r : (n_ions, 3) float ndarray
         The fractional position of each ion within the unit cell
-        dtype = 'float'
-        shape = (n_ions, 3)
-    ion_type : ndarray
+    ion_type : (n_ions,) string ndarray
         The chemical symbols of each ion in the unit cell. Ions are in the
         same order as in ion_r
-        dtype = 'string'
-        shape = (n_ions,)
-    ion_mass : ndarray
+    ion_mass : (n_ions,) float ndarray
         The mass of each ion in the unit cell in atomic units
-        dtype = 'float'
-        shape = (n_ions,)
-    qpts : ndarray
+    qpts : (n_qpts, 3) float ndarray
         Q-point coordinates
-        dtype = 'float'
-        shape = (n_qpts, 3)
-    weights : ndarray
+    weights : (n_qpts,) float ndarray
         The weight for each q-point
-        dtype = 'float'
-        shape = (n_qpts,)
-    freqs: ndarray
+    freqs: (n_qpts, 3*n_ions) float ndarray
         Phonon frequencies, ordered according to increasing q-point
         number. Default units meV
-        dtype = 'float'
-        shape = (n_qpts, 3*n_ions)
-    eigenvecs: ndarray
+    eigenvecs: (n_qpts, 3*n_ions, n_ions, 3) complex ndarray
         Dynamical matrix eigenvectors. Empty if read_eigenvecs is False
-        dtype = 'complex'
-        shape = (n_qpts, 3*n_ions, n_ions, 3)
-    split_i : ndarray
+    split_i : (n_splits,) int ndarray
         The q-point indices where there is LO-TO splitting, if applicable.
         Otherwise empty.
-        dtype = 'int'
-        shape = (n_splits,)
-    split_freqs : ndarray
+    split_freqs : (n_splits, 3*n_ions) float ndarray
         Holds the additional LO-TO split phonon frequencies for the q-points
         specified in split_i. Empty if no LO-TO splitting. Default units meV
-        dtype = 'float'
-        shape = (n_splits, 3*n_ions)
-    split_eigenvecs : ndarray
+    split_eigenvecs : (n_splits, 3*n_ions, n_ions, 3) complex ndarray
         Holds the additional LO-TO split dynamical matrix eigenvectors for the
         q-points specified in split_i. Empty if no LO-TO splitting
-        dtype = 'complex'
-        shape = (n_splits, 3*n_ions, n_ions, 3)
     """
 
     def __init__(self, seedname, model='CASTEP', path=''):
-        """"
+        """
         Calls functions to read the correct file(s) and sets PhononData
         attributes
 
@@ -259,10 +237,8 @@ class PhononData(Data):
 
         Returns
         -------
-        sf : ndarray
+        sf : (n_qpts, n_branches) float ndarray
             The structure factor for each q-point and phonon branch
-            dtype = 'float'
-            shape = (n_qpts, n_branches)
         """
         sl = [scattering_lengths[x] for x in self.ion_type]
 
@@ -344,10 +320,8 @@ class PhononData(Data):
 
         Returns
         -------
-        dw : ndarray
+        dw : (n_ions, 3, 3) float ndarray
             The DW coefficients for each ion
-            dtype = 'float'
-            shape = (n_ions, 3, 3)
         """
 
         # Convert units (use magnitudes for performance)
@@ -403,7 +377,7 @@ class PhononData(Data):
             Dictionary of spin and isotope averaged coherent scattering legnths
             for each element in the structure in fm e.g.
             {'O': 5.803, 'Zn': 5.680}
-        ebins : ndarray
+        ebins : (n_ebins + 1,) float ndarray
             The energy bin edges in the same units as PhononData.freqs
         set_attrs : boolean, optional, default True
             Whether to set the sqw and sqw_ebins attributes of this object
@@ -415,10 +389,8 @@ class PhononData(Data):
 
         Returns
         -------
-        sqw_map : ndarray
+        sqw_map : (n_qpts, n_ebins) float ndarray
             The intensity for each q-point and energy bin
-            dtype = 'float'
-            shape = (n_qpts, ebins - 1)
         """
 
         # Convert units (use magnitudes for performance)

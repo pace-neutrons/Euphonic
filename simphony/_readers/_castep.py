@@ -133,23 +133,15 @@ def _read_phonon_header(f):
         The number of phonon branches (3*n_ions)
     n_qpts : integer
         The number of q-points in the .phonon file
-    cell_vec : ndarray
+    cell_vec : (3, 3) float ndarray
         The unit cell vectors in Angstroms.
-        dtype = 'float'
-        shape = (3, 3)
-    ion_r : ndarray
+    ion_r : (n_ions, 3) float ndarray
         The fractional position of each ion within the unit cell
-        dtype = 'float'
-        shape = (n_ions, 3)
-    ion_type : ndarray
+    ion_type : (n_ions,) string ndarray
         The chemical symbols of each ion in the unit cell. Ions are in the
         same order as in ion_r
-        dtype = 'string'
-        shape = (n_ions,)
-    ion_mass : ndarray
+    ion_mass : (n_ions,) float ndarray
         The mass of each ion in the unit cell in atomic units
-        dtype = 'float'
-        shape = (n_ions,)
     """
     f.readline()  # Skip BEGIN header
     n_ions = int(f.readline().split()[3])
@@ -277,23 +269,15 @@ def _read_cell(file_obj, int_type, float_type):
     -------
     n_ions : int
         Number of ions in the unit cell
-    cell_vec : ndarray
+    cell_vec : (3, 3) float ndarray
         The unit cell vectors in bohr
-        dtype = 'float'
-        shape = (3, 3)
-    ion_r : ndarray
+    ion_r : (n_ions, 3) float ndarray
         The fractional position of each ion within the unit cell
-        dtype = 'float'
-        shape = (n_ions, 3)
-    ion_mass : ndarray
+    ion_mass : (n_ions,) float ndarray
         The mass of each ion in the unit cell in amu
-        dtype = 'float'
-        shape = (n_ions,)
-    ion_type : ndarray
+    ion_type : (n_ions,) string ndarray
         The chemical symbols of each ion in the unit cell. Ions are in the
         same order as in ion_r
-        dtype = 'string'
-        shape = (n_ions,)
     """
     header = ''
     while header.strip() != b'END_UNIT_CELL':
@@ -503,15 +487,11 @@ def _read_castep_data(seedname, path):
     -------
     n_ions : int
         Number of ions in the unit cell
-    ion_r : ndarray
+    ion_r : (n_ions, 3) float ndarray
         The fractional position of each ion within the unit cell
-        dtype = 'float'
-        shape = (n_ions, 3)
-    ion_type : ndarray
+    ion_type : (n_ions,) string ndarray
         The chemical symbols of each ion in the unit cell. Ions are in the
         same order as in ion_r
-        dtype = 'string'
-        shape = (n_ions,)
     """
     n_ions_read = False
     ion_info_read = False
