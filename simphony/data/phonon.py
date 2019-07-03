@@ -346,16 +346,17 @@ class PhononData(Data):
             freq_term = 1/(freqs*np.tanh(x))
         else:
             freq_term = 1/(freqs)
-
         dw = np.zeros((data.n_ions, 3, 3))
         # Calculating the e.e* term is expensive, do in chunks
         chunk = 1000
         for i in range(int((len(qpts) - 1)/chunk) + 1):
             qi = i*chunk
             qf = min((i + 1)*chunk, len(qpts))
-            evec_i = np.repeat(evecs[qi:qf, :, :, :, np.newaxis], 3, axis=4)
-            evec_j = np.repeat(evecs[qi:qf, :, :, np.newaxis, :], 3, axis=3)
-            evec_term = np.real(evec_i*np.conj(evec_j))
+
+            evec_term = np.real(
+                np.einsum('ijkl,ijkm->ijklm',
+                          evecs[qi:qf],
+                          np.conj(evecs[qi:qf])))
 
             dw += (np.einsum('i,k,ij,ij,ijklm->klm',
                              weights[qi:qf], mass_term, freq_term[qi:qf],

@@ -164,7 +164,7 @@ def get_qpt_label(qpt, point_labels):
 
 
 def plot_sqw_map(data, vmin=None, vmax=None, ratio=None, ewidth=0, qwidth=0,
-                 cmap='viridis'):
+                 cmap='viridis', title=''):
     """
     Plots an q-E scattering plot using imshow
 
@@ -190,6 +190,8 @@ def plot_sqw_map(data, vmin=None, vmax=None, ratio=None, ewidth=0, qwidth=0,
         The FWHM of the Gaussian q-vector resolution function
     cmap : string, optional, default 'viridis'
         Which colormap to use, see Matplotlib docs
+    title : string, optional
+        The figure title. Default: ''
 
     Returns
     -------
@@ -225,7 +227,7 @@ def plot_sqw_map(data, vmin=None, vmax=None, ratio=None, ewidth=0, qwidth=0,
         if not ewidth:
             ewidth = (ebins[1] - ebins[0])/10
         sqw_map = signal.fftconvolve(data.sqw_map, np.transpose(
-            gaussian_2d(qbins, data.sqw_ebins, qwidth, ewidth)), 'same')
+            gaussian_2d(qbins, ebins, qwidth, ewidth)), 'same')
     else:
         sqw_map = data.sqw_map
 
@@ -295,6 +297,8 @@ def plot_sqw_map(data, vmin=None, vmax=None, ratio=None, ewidth=0, qwidth=0,
         ax.set_xticklabels(xlabels, rotation=90)
     else:
         ax.set_xticklabels(xlabels)
+
+    fig.suptitle(title)
 
     return fig, ims
 
