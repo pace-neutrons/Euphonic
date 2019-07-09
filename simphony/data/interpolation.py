@@ -326,6 +326,7 @@ class InterpolationData(PhononData):
                 # Fall back to zheev if eigh fails (eigh calls zheevd)
                 except np.linalg.LinAlgError:
                     evals, evecs, info = zheev(dyn_mat_corr)
+
                 prev_evecs = evecs
                 evecs = np.reshape(np.transpose(evecs),
                                    (n_branches, n_ions, 3))
@@ -453,6 +454,8 @@ class InterpolationData(PhononData):
         dielectric = self.dielectric
         inv_dielectric = np.linalg.inv(dielectric)
         sqrt_pi = math.sqrt(math.pi)
+        # No. of independent i, j ion entries (for symmetry optimisation)
+        n_elems = np.sum(range(1, n_ions + 1))
 
         # Calculate real/recip weighting
         abc_mag = np.linalg.norm(cell_vec, axis=1)
@@ -467,8 +470,8 @@ class InterpolationData(PhononData):
         frac_tol = 1e-15
 
         # Calculate q=0 real space term
-        real_q0 = np.zeros((n_ions, n_ions, 3, 3))
-        H_ab = np.zeros((0, n_ions, n_ions, 3, 3))
+        real_q0 = np.zeros((n_elems, 3, 3))
+        H_ab = np.zeros((0, n_elems, 3, 3))
         cells = np.zeros((0, 3))
         ion_r_cart = np.einsum('ij,jk->ik', ion_r, cell_vec)
         ion_r_e = np.einsum('ij,jk->ik', ion_r_cart, inv_dielectric)
@@ -477,9 +480,11 @@ class InterpolationData(PhononData):
             cells_cart = np.einsum('ij,jk->ik', cells_tmp, cell_vec)
             cells_e = np.einsum(
                 'ij,jk->ik', cells_cart, inv_dielectric)
-            H_ab_tmp = np.zeros((len(cells_tmp), n_ions, n_ions, 3, 3))
+            H_ab_tmp = np.zeros((len(cells_tmp), n_elems, 3, 3))
+            idx = -1
             for i in range(n_ions):
-                for j in range(n_ions):
+                for j in range(i, n_ions):
+                    idx += 1
                     if n == 0 and i == j:
                         continue
                     rij_cart = ion_r_cart[i] - ion_r_cart[j]
@@ -495,9 +500,9 @@ class InterpolationData(PhononData):
                     f1 = eta_2*(3*erfc_term/norms_2 + exp_term*(3/norms_2 + 2))
                     f2 = erfc_term + exp_term
                     deltas_ab = np.einsum('ij,ik->ijk', deltas, deltas)
-                    H_ab_tmp[:, i, j] = (np.einsum('i,ijk->ijk', f1, deltas_ab)
-                                         - np.einsum('i,jk->ijk',
-                                                     f2, inv_dielectric))
+                    H_ab_tmp[:, idx] = (np.einsum('i,ijk->ijk', f1, deltas_ab)
+                                        - np.einsum('i,jk->ijk',
+                                                    f2, inv_dielectric))
             # End series when current terms are less than the fractional
             # tolerance multiplied by the term for the cell at R=0
             if n == 0:
@@ -511,7 +516,7 @@ class InterpolationData(PhononData):
         real_q0 *= eta**3/math.sqrt(np.linalg.det(dielectric))
 
         # Calculate the q=0 reciprocal term
-        recip_q0 = np.zeros((n_ions, n_ions, 3, 3), dtype=np.complex128)
+        recip_q0 = np.zeros((n_elems, 3, 3), dtype=np.complex128)
         # Add G = 0 vectors to list, for later calculations when q !=0,
         # but don't calculate for q=0
         gvecs_cart = np.array([[0., 0., 0.]])
@@ -524,13 +529,14 @@ class InterpolationData(PhononData):
             gvecs_ab = np.einsum('ij,ik->ijk', gvecs_cart_tmp, gvecs_cart_tmp)
             k_len_2 = np.einsum('ijk,jk->i', gvecs_ab, dielectric)/(4*eta_2)
             recip_exp = np.exp(-k_len_2)/k_len_2
-            recip_q0_tmp = np.zeros((n_ions, n_ions, 3, 3),
-                                    dtype=np.complex128)
+            recip_q0_tmp = np.zeros((n_elems, 3, 3), dtype=np.complex128)
+            idx = 0
             for i in range(n_ions):
-                for j in range(n_ions):
+                for j in range(i, n_ions):
                     phase_exp = gvec_phases_tmp[:, i]/gvec_phases_tmp[:, j]
-                    recip_q0_tmp[i, j] = np.einsum(
+                    recip_q0_tmp[idx] = np.einsum(
                         'ijk,i,i->jk', gvecs_ab, phase_exp, recip_exp)
+                    idx += 1
             # End series when current terms are less than the fractional
             # tolerance multiplied by the max term for the first shell
             if n == 1:
@@ -547,14 +553,23 @@ class InterpolationData(PhononData):
         # Calculate the q=0 correction, to be subtracted from the corrected
         # diagonal at each q
         dipole_q0 = np.zeros((n_ions, 3, 3), dtype=np.complex128)
+        idx = 0
         for i in range(n_ions):
-            for j in range(n_ions):
+            for j in range(i, n_ions):
                 for a in range(3):
                     for b in range(3):
+                        dipole_tmp = recip_q0[idx] - real_q0[idx]
                         dipole_q0[i, a, b] += np.sum(
                             np.einsum('i,j', born[i, a, :], born[j, b, :])
-                            *(recip_q0[i, j] - real_q0[i, j]))
-            # Symmetrise
+                            *dipole_tmp)
+                        if i != j:
+                            # Calculate j entries here to account for j loop
+                            # only being over range(i, n_ions)
+                            dipole_q0[j, a, b] += np.sum(
+                                np.einsum('i,j', born[j, a, :], born[i, b, :])
+                                *np.conj(dipole_tmp))
+                idx += 1
+            # Symmetrise 3x3
             dipole_q0[i] = 0.5*(dipole_q0[i] + np.transpose(dipole_q0[i]))
 
         self._eta_scale = eta_scale
@@ -605,10 +620,12 @@ class InterpolationData(PhononData):
         # Calculate real space phase factor
         q_dot_ra = np.einsum('i,ji->j', q_norm, cells)
         real_phases = np.exp(2j*math.pi*q_dot_ra)
+        idx = 0
         for i in range(n_ions):
             for j in range(i, n_ions):
                 real_dipole[i, j] = np.einsum(
-                    'ijk,i->jk', H_ab[:, i, j], real_phases)
+                    'ijk,i->jk', H_ab[:, idx], real_phases)
+                idx += 1
         real_dipole *= eta**3/math.sqrt(np.linalg.det(dielectric))
 
         # Calculate reciprocal term
@@ -621,17 +638,25 @@ class InterpolationData(PhononData):
         kvecs = gvecs_cart + q_cart
         kvecs_ab = np.einsum('ij,ik->ijk', kvecs, kvecs)
         k_len_2 = np.einsum('ijk,jk->i', kvecs_ab, dielectric)/(4*eta_2)
-        recip_exp = np.einsum('ijk,i->ijk', kvecs_ab, np.exp(-k_len_2)/k_len_2)
+        kvecs_ab_compact = np.zeros((len(kvecs), 6))
+        idx_u = np.triu_indices(3)
+        for i in range(len(kvecs)):
+            kvecs_ab_compact[i] = kvecs_ab[i, idx_u[0], idx_u[1]]
+        recip_exp = np.einsum('ij,i->ij', kvecs_ab_compact,
+                              np.exp(-k_len_2)/k_len_2)
         for i in range(n_ions):
             for j in range(i, n_ions):
                 phase_exp = ((gvec_phases[:, i]*q_phases[i])
                              /(gvec_phases[:, j]*q_phases[j]))
-                recip_dipole[i, j] = np.einsum(
-                    'ijk,i->jk', recip_exp, phase_exp)
+                recip_dipole_tmp = np.einsum('ij,i->j', recip_exp, phase_exp)
+                recip_dipole[i, j, idx_u[0], idx_u[1]] = recip_dipole_tmp
         cell_volume = np.dot(cell_vec[0], np.cross(cell_vec[1], cell_vec[2]))
         recip_dipole *= math.pi/(cell_volume*eta_2)
 
         # Fill in remaining entries by symmetry
+        for a in range(1, 3):
+            for b in range(a):
+                recip_dipole[:, :, a, b] = recip_dipole[:, :, b, a]
         for i in range(1, n_ions):
             for j in range(i):
                 real_dipole[i, j] = np.conj(real_dipole[j, i])

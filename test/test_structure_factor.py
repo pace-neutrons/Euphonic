@@ -248,10 +248,10 @@ class TestStructureFactorInterpolationDataQuartz(unittest.TestCase):
         gamma_qpts = [16]  # Index of gamma pts in qpts array
         npt.assert_allclose(np.delete(sf_sum, gamma_qpts, axis=0),
                             np.delete(expected_sf_sum, gamma_qpts, axis=0),
-                            rtol=7e-4)
+                            rtol=7e-4, atol=3e-16)
         npt.assert_allclose(sf_sum[gamma_qpts, 3:],
                             expected_sf_sum[gamma_qpts, 3:],
-                            rtol=8e-6)
+                            rtol=8e-6, atol=2e-14)
 
     def test_sf_T0_dw_grid(self):
         sf = self.data.calculate_structure_factor(
@@ -274,10 +274,10 @@ class TestStructureFactorInterpolationDataQuartz(unittest.TestCase):
         gamma_qpts = [16]
         npt.assert_allclose(np.delete(sf_sum, gamma_qpts, axis=0),
                             np.delete(expected_sf_sum, gamma_qpts, axis=0),
-                            rtol=2e-3)
+                            rtol=2e-3, atol=3e-16)
         npt.assert_allclose(sf_sum[gamma_qpts, 3:],
                             expected_sf_sum[gamma_qpts, 3:],
-                            rtol=8e-6)
+                            rtol=8e-6, atol=2e-14)
 
     def test_sf_T100(self):
         sf = self.data.calculate_structure_factor(
@@ -299,10 +299,10 @@ class TestStructureFactorInterpolationDataQuartz(unittest.TestCase):
         gamma_qpts = [16]
         npt.assert_allclose(np.delete(sf_sum, gamma_qpts, axis=0),
                             np.delete(expected_sf_sum, gamma_qpts, axis=0),
-                            rtol=7e-4)
+                            rtol=7e-4, atol=3e-16)
         npt.assert_allclose(sf_sum[gamma_qpts, 3:],
                             expected_sf_sum[gamma_qpts, 3:],
-                            rtol=8e-6)
+                            rtol=8e-6, atol=2e-14)
 
     def test_sf_T100_dw_grid(self):
         sf = self.data.calculate_structure_factor(
@@ -326,7 +326,7 @@ class TestStructureFactorInterpolationDataQuartz(unittest.TestCase):
         gamma_qpts = [16]
         npt.assert_allclose(np.delete(sf_sum, gamma_qpts, axis=0),
                             np.delete(expected_sf_sum, gamma_qpts, axis=0),
-                            rtol=7e-4)
+                            rtol=7e-4, atol=3e-16)
         npt.assert_allclose(sf_sum[gamma_qpts, 3:],
                             expected_sf_sum[gamma_qpts, 3:],
-                            rtol=8e-6)
+                            rtol=8e-6, atol=2e-14)
