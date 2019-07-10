@@ -16,7 +16,7 @@ class TestSqwMapPhononDataLZO(unittest.TestCase):
         seedname = 'La2Zr2O7'
         phonon_path = 'test/data/'
         self.sqw_path = 'test/data/sqw_map/'
-        self.sf_path = 'test/data/structure_factor/'
+        self.sf_path = 'test/data/structure_factor/LZO/'
         self.data = PhononData(seedname, path=phonon_path)
         self.scattering_lengths = {'La': 8.24, 'Zr': 7.16, 'O': 5.803}
         self.ebins = np.arange(0, 100, 1.)
@@ -58,7 +58,7 @@ class TestSqwMapPhononDataLZO(unittest.TestCase):
 
 class TestSqwMapInterpolationDataLZO(unittest.TestCase):
 
-    sf_path = 'test/data/structure_factor/'
+    sf_path = 'test/data/structure_factor/LZO/'
 
     def setUp(self):
         self.seedname = 'La2Zr2O7'
