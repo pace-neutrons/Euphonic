@@ -6,8 +6,8 @@ try:
     import unittest.mock as mock
 except ImportError:
     import mock
-from simphony.data.phonon import PhononData
-from simphony.data.interpolation import InterpolationData
+from euphonic.data.phonon import PhononData
+from euphonic.data.interpolation import InterpolationData
 
 
 class TestSqwMapPhononDataLZO(unittest.TestCase):
@@ -74,7 +74,7 @@ class TestSqwMapInterpolationDataLZO(unittest.TestCase):
 
     # Mock the calculate_structure_factor function and return a value from a
     # file because we're only testing sqw_map here
-    @mock.patch('simphony.data.phonon.PhononData.calculate_structure_factor',
+    @mock.patch('euphonic.data.phonon.PhononData.calculate_structure_factor',
                 return_value=np.loadtxt(sf_path + 'sf_idata_T5.txt'))
     def test_sqw_T5(self, calculate_structure_factor_function):
         self.data.calculate_sqw_map(self.scattering_lengths, self.ebins, T=5)
@@ -84,7 +84,7 @@ class TestSqwMapInterpolationDataLZO(unittest.TestCase):
         # Mask out first few energy bins to avoid testing unstable Bragg peaks
         npt.assert_allclose(self.data.sqw_map[:, 5], expected_sqw_map[:, 5])
 
-    @mock.patch('simphony.data.phonon.PhononData.calculate_structure_factor',
+    @mock.patch('euphonic.data.phonon.PhononData.calculate_structure_factor',
                 return_value=np.loadtxt(sf_path + 'sf_idata_T100.txt'))
     def test_sqw_T100(self, calculate_structure_factor_function):
         self.data.calculate_sqw_map(self.scattering_lengths, self.ebins, T=100)
@@ -93,7 +93,7 @@ class TestSqwMapInterpolationDataLZO(unittest.TestCase):
         expected_sqw_map = np.loadtxt(self.sqw_path + 'sqw_map_idata_T100.txt')
         npt.assert_allclose(self.data.sqw_map[:, 5], expected_sqw_map[:, 5])
 
-    @mock.patch('simphony.data.phonon.PhononData.calculate_structure_factor',
+    @mock.patch('euphonic.data.phonon.PhononData.calculate_structure_factor',
                 return_value=np.loadtxt(sf_path + 'sf_idata_T100.txt'))
     def test_sqw_arguments_passed(self, calculate_structure_factor_function):
         self.data.calculate_sqw_map(

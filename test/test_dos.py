@@ -6,8 +6,8 @@ try:
     from unittest.mock import Mock
 except ImportError:
     from mock import Mock
-from simphony import ureg
-from simphony.data.bands import BandsData
+from euphonic import ureg
+from euphonic.data.bands import BandsData
 
 
 class TestCalculateDos(unittest.TestCase):

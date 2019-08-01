@@ -1,6 +1,6 @@
 import math
 import numpy as np
-from simphony.util import gaussian, lorentzian
+from euphonic.util import gaussian, lorentzian
 
 
 class Data(object):

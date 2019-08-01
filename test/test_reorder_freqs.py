@@ -2,8 +2,8 @@ import unittest
 import warnings
 import numpy.testing as npt
 import numpy as np
-from simphony.data.interpolation import InterpolationData
-from simphony.data.phonon import PhononData
+from euphonic.data.interpolation import InterpolationData
+from euphonic.data.phonon import PhononData
 
 
 class TestReorderFreqsNaH(unittest.TestCase):

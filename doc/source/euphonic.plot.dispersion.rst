@@ -1,7 +1,7 @@
-simphony.plot.dispersion module
+euphonic.plot.dispersion module
 ===============================
 
-.. automodule:: simphony.plot.dispersion
+.. automodule:: euphonic.plot.dispersion
    :members:
    :undoc-members:
    :show-inheritance:

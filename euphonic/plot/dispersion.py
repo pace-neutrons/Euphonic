@@ -3,7 +3,7 @@ import sys
 import numpy as np
 import seekpath
 from scipy import signal
-from simphony.util import direction_changed, reciprocal_lattice, gaussian_2d
+from euphonic.util import direction_changed, reciprocal_lattice, gaussian_2d
 
 
 def calc_abscissa(qpts, recip_latt):
@@ -208,8 +208,8 @@ def plot_sqw_map(data, vmin=None, vmax=None, ratio=None, ewidth=0, qwidth=0,
         import matplotlib.pyplot as plt
     except ImportError:
         print(('Cannot import Matplotlib to plot S(q,w) (maybe Matplotlib '
-               'is not installed?). To install SimPhony\'s optional '
-               'Matploblib dependencies, from the simphony top directory do: '
+               'is not installed?). To install Euphonic\'s optional '
+               'Matploblib dependencies, from the euphonic top directory do: '
                '\n\npip install --user .[matplotlib]'))
         return None, None
 
@@ -484,8 +484,8 @@ def plot_dispersion(data, title='', btol=10.0, up=True, down=True,
         import matplotlib.pyplot as plt
     except ImportError:
         print(('Cannot import Matplotlib to plot dispersion (maybe Matplotlib '
-               'is not installed?). To install SimPhony\'s optional '
-               'Matploblib dependencies, from the simphony top directory do: '
+               'is not installed?). To install Euphonic\'s optional '
+               'Matploblib dependencies, from the euphonic top directory do: '
                '\n\npip install --user .[matplotlib]'))
         return None
 

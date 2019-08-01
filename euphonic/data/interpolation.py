@@ -4,10 +4,10 @@ import warnings
 import numpy as np
 from scipy.linalg.lapack import zheev
 from scipy.special import erfc
-from simphony import ureg
-from simphony.util import reciprocal_lattice, is_gamma, mp_grid
-from simphony.data.phonon import PhononData
-from simphony._readers import _castep
+from euphonic import ureg
+from euphonic.util import reciprocal_lattice, is_gamma, mp_grid
+from euphonic.data.phonon import PhononData
+from euphonic._readers import _castep
 
 
 class InterpolationData(PhononData):

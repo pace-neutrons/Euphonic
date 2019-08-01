@@ -195,8 +195,8 @@ def plot_dos(data, title='', mirror=False, up=True, down=True, **line_kwargs):
         import matplotlib.pyplot as plt
     except ImportError:
         print('Cannot plot dispersion with Matplotlib, Matplotlib is not ' +
-              'installed. To use this feature install SimPhony\'s optional ' +
-              'Matplotlib dependencies from the simphony top directory: ' +
+              'installed. To use this feature install Euphonic\'s optional ' +
+              'Matplotlib dependencies from the euphonic top directory: ' +
               '\n\npip install --user .[matplotlib]')
         return None
 

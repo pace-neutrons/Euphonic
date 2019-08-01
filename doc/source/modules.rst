@@ -1,7 +1,7 @@
-simphony
+euphonic
 ========
 
 .. toctree::
    :maxdepth: 4
 
-   simphony
+   euphonic

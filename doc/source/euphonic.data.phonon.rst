@@ -1,7 +1,7 @@
-simphony.data.phonon module
+euphonic.data.phonon module
 ===========================
 
-.. automodule:: simphony.data.phonon
+.. automodule:: euphonic.data.phonon
    :members:
    :undoc-members:
    :show-inheritance:

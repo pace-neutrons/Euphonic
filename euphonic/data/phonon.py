@@ -1,9 +1,9 @@
 import math
 import numpy as np
-from simphony import ureg
-from simphony.util import direction_changed, reciprocal_lattice, bose_factor
-from simphony.data.data import Data
-from simphony._readers import _castep
+from euphonic import ureg
+from euphonic.util import direction_changed, reciprocal_lattice, bose_factor
+from euphonic.data.data import Data
+from euphonic._readers import _castep
 
 
 class PhononData(Data):

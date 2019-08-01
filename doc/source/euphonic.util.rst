@@ -1,7 +1,7 @@
-simphony.util module
+euphonic.util module
 ====================
 
-.. automodule:: simphony.util
+.. automodule:: euphonic.util
    :members:
    :undoc-members:
    :show-inheritance:

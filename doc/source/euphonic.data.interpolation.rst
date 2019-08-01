@@ -1,7 +1,7 @@
-simphony.data.interpolation module
+euphonic.data.interpolation module
 ==================================
 
-.. automodule:: simphony.data.interpolation
+.. automodule:: euphonic.data.interpolation
    :members:
    :undoc-members:
    :show-inheritance:

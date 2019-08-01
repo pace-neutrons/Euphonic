@@ -1,4 +1,4 @@
-simphony package
+euphonic package
 ================
 
 Subpackages
@@ -6,20 +6,20 @@ Subpackages
 
 .. toctree::
 
-   simphony.data
-   simphony.plot
+   euphonic.data
+   euphonic.plot
 
 Submodules
 ----------
 
 .. toctree::
 
-   simphony.util
+   euphonic.util
 
 Module contents
 ---------------
 
-.. automodule:: simphony
+.. automodule:: euphonic
    :members:
    :undoc-members:
    :show-inheritance:

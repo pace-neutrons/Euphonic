@@ -7,10 +7,10 @@ vibrational band structure or dispersion.
 import argparse
 import os
 import numpy as np
-from simphony import ureg
-from simphony.data.bands import BandsData
-from simphony.data.phonon import PhononData
-from simphony.plot.dos import plot_dos, output_grace
+from euphonic import ureg
+from euphonic.data.bands import BandsData
+from euphonic.data.phonon import PhononData
+from euphonic.plot.dos import plot_dos, output_grace
 
 
 def main():

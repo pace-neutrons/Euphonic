@@ -1,4 +1,4 @@
-simphony.plot package
+euphonic.plot package
 =====================
 
 Submodules
@@ -6,13 +6,13 @@ Submodules
 
 .. toctree::
 
-   simphony.plot.dispersion
-   simphony.plot.dos
+   euphonic.plot.dispersion
+   euphonic.plot.dos
 
 Module contents
 ---------------
 
-.. automodule:: simphony.plot
+.. automodule:: euphonic.plot
    :members:
    :undoc-members:
    :show-inheritance:

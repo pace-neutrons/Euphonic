@@ -1,7 +1,7 @@
-simphony.data.bands module
+euphonic.data.bands module
 ==========================
 
-.. automodule:: simphony.data.bands
+.. automodule:: euphonic.data.bands
    :members:
    :undoc-members:
    :show-inheritance:

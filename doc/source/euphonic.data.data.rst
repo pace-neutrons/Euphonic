@@ -1,7 +1,7 @@
-simphony.data.data module
+euphonic.data.data module
 =========================
 
-.. automodule:: simphony.data.data
+.. automodule:: euphonic.data.data
    :members:
    :undoc-members:
    :show-inheritance:

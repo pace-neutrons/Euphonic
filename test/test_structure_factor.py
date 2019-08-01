@@ -2,8 +2,8 @@ import unittest
 import warnings
 import numpy.testing as npt
 import numpy as np
-from simphony.data.phonon import PhononData
-from simphony.data.interpolation import InterpolationData
+from euphonic.data.phonon import PhononData
+from euphonic.data.interpolation import InterpolationData
 
 
 class TestStructureFactorPhononDataLZO(unittest.TestCase):

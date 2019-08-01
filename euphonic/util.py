@@ -1,6 +1,6 @@
 import math
 import numpy as np
-from simphony import ureg
+from euphonic import ureg
 
 
 def reciprocal_lattice(unit_cell):

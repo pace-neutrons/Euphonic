@@ -2,8 +2,8 @@ import re
 import os
 import struct
 import numpy as np
-from simphony import ureg
-from simphony.util import is_gamma
+from euphonic import ureg
+from euphonic.util import is_gamma
 
 
 def _read_phonon_data(seedname, path):

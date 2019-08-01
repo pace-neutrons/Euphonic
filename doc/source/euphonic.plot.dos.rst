@@ -1,7 +1,7 @@
-simphony.plot.dos module
+euphonic.plot.dos module
 ========================
 
-.. automodule:: simphony.plot.dos
+.. automodule:: euphonic.plot.dos
    :members:
    :undoc-members:
    :show-inheritance:

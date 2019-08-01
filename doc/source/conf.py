@@ -11,8 +11,8 @@
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
 
-# Ensure the simphony source directory is on the path. Otherwise it can
-# quietly document the current Python's installed SimPhony, which we don't want!
+# Ensure the euphonic source directory is on the path. Otherwise it can
+# quietly document the current Python's installed Euphonic, which we don't want!
 import os
 import sys
 sys.path.insert(0, os.path.abspath('../..'))
@@ -20,7 +20,7 @@ sys.path.insert(0, os.path.abspath('../..'))
 
 # -- Project information -----------------------------------------------------
 
-project = 'SimPhony'
+project = 'Euphonic'
 copyright = '2019, Rebecca Fair'
 author = 'Rebecca Fair'
 

@@ -1,6 +1,6 @@
 import numpy as np
-from simphony.data.data import Data
-from simphony._readers import _castep
+from euphonic.data.data import Data
+from euphonic._readers import _castep
 
 
 class BandsData(Data):
