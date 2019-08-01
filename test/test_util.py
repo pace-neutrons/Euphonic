@@ -1,7 +1,7 @@
 import unittest
 import math
 import numpy.testing as npt
-from simphony.util import reciprocal_lattice, direction_changed
+from euphonic.util import reciprocal_lattice, direction_changed
 
 
 class TestReciprocalLattice(unittest.TestCase):

@@ -6,10 +6,10 @@ or vibrational band structure or dispersion.
 
 import argparse
 import os
-from simphony.data.bands import BandsData
-from simphony.data.phonon import PhononData
-from simphony.calculate.dispersion import reorder_freqs
-from simphony.plot.dispersion import output_grace, plot_dispersion
+from euphonic.data.bands import BandsData
+from euphonic.data.phonon import PhononData
+from euphonic.calculate.dispersion import reorder_freqs
+from euphonic.plot.dispersion import output_grace, plot_dispersion
 
 
 def main():

@@ -1,8 +1,8 @@
 import unittest
 import numpy as np
 import numpy.testing as npt
-from simphony import ureg
-from simphony.calculate.dos import calculate_dos
+from euphonic import ureg
+from euphonic.calculate.dos import calculate_dos
 
 
 class TestCalculateDos(unittest.TestCase):

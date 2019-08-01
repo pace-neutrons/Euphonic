@@ -6,11 +6,11 @@ vibrational band structure or dispersion.
 
 import argparse
 import os
-from simphony import ureg
-from simphony.data.bands import BandsData
-from simphony.data.phonon import PhononData
-from simphony.calculate.dos import calculate_dos
-from simphony.plot.dos import plot_dos, output_grace
+from euphonic import ureg
+from euphonic.data.bands import BandsData
+from euphonic.data.phonon import PhononData
+from euphonic.calculate.dos import calculate_dos
+from euphonic.plot.dos import plot_dos, output_grace
 
 
 def main():

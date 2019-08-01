@@ -1,9 +1,9 @@
 import os
 import re
 import numpy as np
-from simphony import ureg
-from simphony.util import is_gamma
-from simphony.data.data import Data
+from euphonic import ureg
+from euphonic.util import is_gamma
+from euphonic.data.data import Data
 
 
 class PhononData(Data):

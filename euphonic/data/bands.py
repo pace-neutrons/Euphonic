@@ -1,7 +1,7 @@
 import os
 import numpy as np
-from simphony import ureg
-from simphony.data.data import Data
+from euphonic import ureg
+from euphonic.data.data import Data
 
 
 class BandsData(Data):

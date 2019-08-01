@@ -1,8 +1,8 @@
 import unittest
 import numpy.testing as npt
 import numpy as np
-from simphony.data.phonon import PhononData
-from simphony.calculate.dispersion import reorder_freqs
+from euphonic.data.phonon import PhononData
+from euphonic.calculate.dispersion import reorder_freqs
 
 
 class TestReorderFreqs(unittest.TestCase):
