@@ -1,7 +1,7 @@
 import math
 import numpy as np
 from euphonic import ureg
-from euphonic.util import direction_changed, reciprocal_lattice, bose_factor
+from euphonic.util import direction_changed, bose_factor
 from euphonic.data.data import Data
 from euphonic._readers import _castep
 
@@ -25,6 +25,8 @@ class PhononData(Data):
         Number of q-points in the .phonon file
     cell_vec : (3, 3) float ndarray
         The unit cell vectors. Default units Angstroms
+    recip_vec : (3, 3) float ndarray
+        The reciprocal lattice vectors. Default units inverse Angstroms
     ion_r : (n_ions, 3) float ndarray
         The fractional position of each ion within the unit cell
     ion_type : (n_ions,) string ndarray
@@ -97,6 +99,7 @@ class PhononData(Data):
         self.n_branches = data['n_branches']
         self.n_qpts = data['n_qpts']
         self.cell_vec = data['cell_vec']
+        self.recip_vec = data['recip_vec']
         self.ion_r = data['ion_r']
         self.ion_type = data['ion_type']
         self.ion_mass = data['ion_mass']
@@ -243,7 +246,7 @@ class PhononData(Data):
         sl = [scattering_lengths[x] for x in self.ion_type]
 
         # Convert units (use magnitudes for performance)
-        cell_vec = (self.cell_vec.to('bohr')).magnitude
+        recip = (self.recip_vec.to('1/bohr')).magnitude
         freqs = (self.freqs.to('E_h', 'spectroscopy')).magnitude
         ion_mass = (self.ion_mass.to('e_mass')).magnitude
         sl = (sl*ureg('fm').to('bohr')).magnitude
@@ -258,7 +261,6 @@ class PhononData(Data):
 
         # Eigenvectors are in Cartesian so need to convert hkl to Cartesian by
         # computing the dot product with hkl and reciprocal lattice
-        recip = reciprocal_lattice(cell_vec)
         Q = np.einsum('ij,jk->ik', self.qpts, recip)
 
         # Calculate dot product of Q and eigenvectors for all branches, ions

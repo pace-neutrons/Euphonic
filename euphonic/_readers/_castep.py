@@ -3,7 +3,7 @@ import os
 import struct
 import numpy as np
 from euphonic import ureg
-from euphonic.util import is_gamma
+from euphonic.util import reciprocal_lattice, is_gamma
 
 
 def _read_phonon_data(seedname, path):
@@ -21,8 +21,9 @@ def _read_phonon_data(seedname, path):
     -------
     data_dict : dict
         A dict with the following keys: 'n_ions', 'n_branches', 'n_qpts'
-        'cell_vec', 'ion_r', 'ion_type', 'ion_mass', 'qpts', 'weights',
-        'freqs', 'eigenvecs', 'split_i', 'split_freqs', 'split_eigenvecs'
+        'cell_vec', 'recip_vec', 'ion_r', 'ion_type', 'ion_mass', 'qpts',
+        'weights', 'freqs', 'eigenvecs', 'split_i', 'split_freqs',
+        'split_eigenvecs'
     """
     file = os.path.join(path, seedname + '.phonon')
     with open(file, 'r') as f:
@@ -101,6 +102,7 @@ def _read_phonon_data(seedname, path):
     data_dict['n_branches'] = n_branches
     data_dict['n_qpts'] = n_qpts
     data_dict['cell_vec'] = cell_vec*ureg.angstrom
+    data_dict['recip_vec'] = reciprocal_lattice(cell_vec)/ureg.angstrom
     data_dict['ion_r'] = ion_r
     data_dict['ion_type'] = ion_type
     data_dict['ion_mass'] = ion_mass*ureg.amu
@@ -175,9 +177,9 @@ def _read_interpolation_data(seedname, path):
     -------
     data_dict : dict
         A dict with the following keys: 'n_ions', 'n_branches', 'cell_vec',
-        'ion_r', 'ion_type', 'ion_mass', 'force_constants', 'sc_matrix',
-        'n_cells_in_sc' and 'cell_origins'. Also contains 'born' and
-        'dielectric' if they are present in the .castep_bin or .check file
+        'recip_vec', 'ion_r', 'ion_type', 'ion_mass', 'force_constants',
+        'sc_matrix', 'n_cells_in_sc' and 'cell_origins'. Also contains 'born'
+        and 'dielectric' if they are present in the .castep_bin or .check file
     """
     file = os.path.join(path, seedname + '.castep_bin')
     if not os.path.isfile(file):
@@ -223,6 +225,8 @@ def _read_interpolation_data(seedname, path):
     data_dict['n_ions'] = n_ions
     data_dict['n_branches'] = 3*n_ions
     data_dict['cell_vec'] = (cell_vec*ureg.bohr).to('angstrom')
+    data_dict['recip_vec'] = ((reciprocal_lattice(cell_vec)/ureg.bohr)
+                              .to('1/angstrom'))
     data_dict['ion_r'] = ion_r - np.floor(ion_r)  # Normalise ion coordinates
     data_dict['ion_type'] = ion_type
     data_dict['ion_mass'] = (ion_mass*ureg.e_mass).to('amu')
@@ -402,9 +406,9 @@ def _read_bands_data(seedname, path):
     -------
     data_dict : dict
         A dict with the following keys: 'n_qpts', 'n_spins', 'n_branches',
-        'fermi', 'cell_vec', 'qpts', 'weights', 'freqs', 'freq_down'. If a
-        .castep file is available to read, the keys 'n_ions', 'ion_r' and
-        'ion_type' are also present.
+        'fermi', 'cell_vec', 'recip_vec', 'qpts', 'weights', 'freqs',
+        'freq_down'. If a .castep file is available to read, the keys 'n_ions',
+        'ion_r' and 'ion_type' are also present.
     """
 
     file = os.path.join(path, seedname + '.bands')
@@ -455,6 +459,8 @@ def _read_bands_data(seedname, path):
     data_dict['n_branches'] = n_branches
     data_dict['fermi'] = (fermi*ureg.hartree).to('eV')
     data_dict['cell_vec'] = (cell_vec*ureg.bohr).to('angstrom')
+    data_dict['recip_vec'] = ((reciprocal_lattice(cell_vec)/ureg.bohr)
+                              .to('1/angstrom'))
     data_dict['qpts'] = qpts
     data_dict['weights'] = weights
     data_dict['freqs'] = (freqs*ureg.hartree).to('eV')

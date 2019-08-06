@@ -5,7 +5,7 @@ import numpy as np
 from scipy.linalg.lapack import zheev
 from scipy.special import erfc
 from euphonic import ureg
-from euphonic.util import reciprocal_lattice, is_gamma, mp_grid
+from euphonic.util import is_gamma, mp_grid
 from euphonic.data.phonon import PhononData
 from euphonic._readers import _castep
 
@@ -29,6 +29,8 @@ class InterpolationData(PhononData):
         Number of phonon dispersion branches
     cell_vec : (3, 3) float ndarray
         The unit cell vectors. Default units Angstroms
+    recip_vec : (3, 3) float ndarray
+        The reciprocal lattice vectors. Default units inverse Angstroms
     ion_r : (n_ions,3) float ndarray
         The fractional position of each ion within the unit cell
     ion_type : (n_ions,) string ndarray
@@ -141,6 +143,7 @@ class InterpolationData(PhononData):
         self.n_ions = data['n_ions']
         self.n_branches = data['n_branches']
         self.cell_vec = data['cell_vec']
+        self.recip_vec = data['recip_vec']
         self.ion_r = data['ion_r']
         self.ion_type = data['ion_type']
         self.ion_mass = data['ion_mass']
@@ -447,7 +450,7 @@ class InterpolationData(PhononData):
         """
 
         cell_vec = self.cell_vec.to('bohr').magnitude
-        recip = reciprocal_lattice(cell_vec)
+        recip = self.recip_vec.to('1/bohr').magnitude
         n_ions = self.n_ions
         ion_r = self.ion_r
         born = self.born.magnitude
@@ -576,6 +579,12 @@ class InterpolationData(PhononData):
         self._gvecs_cart = gvecs_cart
         self._gvec_phases = gvec_phases
         self._dipole_q0 = dipole_q0
+        # Store cell/recip vectors as magnitudes so they don't have to be
+        # converted inside _calculate_dipole_correction at every q-point as
+        # this has high overhead
+        self._cell_vec_bohr = self.cell_vec.to('bohr').magnitude
+        self._recip_bohr = self.recip_vec.to('1/bohr').magnitude
+
 
     def _calculate_dipole_correction(self, q):
         """
@@ -592,8 +601,8 @@ class InterpolationData(PhononData):
         corr : (3*n_ions, 3*n_ions) complex ndarray
             The correction to the dynamical matrix
         """
-        cell_vec = self.cell_vec.to('bohr').magnitude
-        recip = reciprocal_lattice(cell_vec)
+        cell_vec = self._cell_vec_bohr
+        recip = self._recip_bohr
         n_ions = self.n_ions
         ion_r = self.ion_r
         born = self.born.magnitude
@@ -617,11 +626,9 @@ class InterpolationData(PhononData):
         # Calculate real space phase factor
         q_dot_ra = np.einsum('i,ji->j', q_norm, cells)
         real_phases = np.exp(2j*math.pi*q_dot_ra)
-        for i in range(n_ions):
-            idx = np.sum(range(n_ions - i, n_ions), dtype=np.int32)
-            for j in range(i, n_ions):
-                real_dipole[i, j] = np.einsum(
-                    'ijk,i->jk', H_ab[:, idx + j], real_phases)
+        real_dipole_tmp = np.einsum('i,ijkl->jkl', real_phases, H_ab)
+        idx_u = np.triu_indices(n_ions)
+        real_dipole[idx_u] = real_dipole_tmp
         real_dipole *= eta**3/math.sqrt(np.linalg.det(dielectric))
 
         # Calculate reciprocal term
@@ -636,19 +643,20 @@ class InterpolationData(PhononData):
         k_len_2 = np.einsum('ijk,jk->i', kvecs_ab, dielectric)/(4*eta_2)
         recip_exp = np.einsum('ijk,i->ijk', kvecs_ab, np.exp(-k_len_2)/k_len_2)
         for i in range(n_ions):
-            for j in range(i, n_ions):
-                phase_exp = ((gvec_phases[:, i]*q_phases[i])
-                             /(gvec_phases[:, j]*q_phases[j]))
-                recip_dipole[i, j] = np.einsum(
-                    'ijk,i->jk', recip_exp, phase_exp)
+                phase_exp = ((gvec_phases[:, i, None]*q_phases[i])
+                             /(gvec_phases[:, i:]*q_phases[i:]))
+                recip_dipole[i, i:] = np.einsum(
+                    'ikl,ij->jkl', recip_exp, phase_exp)
         cell_volume = np.dot(cell_vec[0], np.cross(cell_vec[1], cell_vec[2]))
         recip_dipole *= math.pi/(cell_volume*eta_2)
 
         # Fill in remaining entries by symmetry
-        for i in range(1, n_ions):
-            for j in range(i):
-                real_dipole[i, j] = np.conj(real_dipole[j, i])
-                recip_dipole[i, j] = np.conj(recip_dipole[j, i])
+        # Mask so we don't count diagonal twice
+        mask = np.tri(n_ions, k=-1)[:, :, np.newaxis, np.newaxis]
+        real_dipole = real_dipole + mask*np.conj(
+            np.transpose(real_dipole, axes=[1, 0, 2, 3]))
+        recip_dipole = recip_dipole + mask*np.conj(
+            np.transpose(recip_dipole, axes=[1, 0, 2, 3]))
 
         # Multiply by Born charges and subtract q=0 from diagonal
         dipole = np.zeros((n_ions, n_ions, 3, 3), dtype=np.complex128)

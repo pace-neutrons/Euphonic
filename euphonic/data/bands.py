@@ -24,6 +24,8 @@ class BandsData(Data):
         The Fermi energy/energies. Default units eV
     cell_vec : (3, 3) float ndarray
         The unit cell vectors. Default units Angstroms
+    recip_vec : (3, 3) float ndarray
+        The reciprocal lattice vectors. Default units inverse Angstroms
     qpts : (n_qpts, 3) float ndarray
         K-point coordinates
     weights : (n_qpts,) float ndarray
