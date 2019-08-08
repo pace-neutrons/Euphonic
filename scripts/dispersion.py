@@ -8,7 +8,6 @@ import argparse
 import os
 from euphonic.data.bands import BandsData
 from euphonic.data.phonon import PhononData
-from euphonic.calculate.dispersion import reorder_freqs
 from euphonic.plot.dispersion import output_grace, plot_dispersion
 
 
@@ -31,7 +30,7 @@ def main():
 
     # Reorder frequencies if requested
     if args.reorder:
-        reorder_freqs(data)
+        data.reorder_freqs()
 
     # Plot
     if args.grace:
