@@ -176,9 +176,6 @@ class InterpolationData(PhononData):
             the correction to the force constant matrix in real space.
             'reciprocal' applies the correction to the dynamical matrix at
             every q-point
-        precondition : boolean, optional, default False
-            Whether to precondition the dynamical matrix using the
-            eigenvectors from the previous q-point
         set_attrs : boolean, optional, default True
             Whether to set the freqs, eigenvecs, qpts and n_qpts attributes of
             the InterpolationData object to the newly calculated values
@@ -265,6 +262,8 @@ class InterpolationData(PhononData):
         masses = np.tile(np.repeat(ion_mass, 3), (3*n_ions, 1))
         dyn_mat_weighting = 1/np.sqrt(masses*np.transpose(masses))
 
+        # Find eigenvalues/vectors at gamma for reciprocal ASR
+        ac_i = g_evals = g_evecs = None
         if asr == 'reciprocal':
             q_gamma = np.array([0., 0., 0.])
             dyn_mat_gamma = self._calculate_dyn_mat(
@@ -281,72 +280,19 @@ class InterpolationData(PhononData):
                                'uncorrected dynamical matrix'), stacklevel=2)
                 asr = None
 
-        prev_evecs = np.identity(3*n_ions)
         for q in range(n_qpts):
             qpt = qpts[q, :]
-
-            dyn_mat = self._calculate_dyn_mat(
-                qpt, fc_img_weighted, unique_sc_offsets, unique_sc_i,
-                unique_cell_origins, unique_cell_i)
-
-            if dipole:
-                dipole_corr = self._calculate_dipole_correction(qpt)
-                dyn_mat += dipole_corr
-
-            if asr == 'reciprocal':
-                dyn_mat = self._enforce_reciprocal_asr(
-                    dyn_mat, ac_i, g_evals, g_evecs)
-
-            # Calculate LO-TO splitting by calculating non-analytic correction
-            # to dynamical matrix
-            if splitting and is_gamma(qpt) and len(qpts) > 1:
-                if q == 0:
-                    q_dirs = [qpts[1]]
-                elif q == (n_qpts - 1):
-                    q_dirs = [qpts[-2]]
-                else:
-                    q_dirs = [-qpts[q - 1], qpts[q + 1]]
-                na_corrs = np.zeros((len(q_dirs), 3*n_ions, 3*n_ions),
-                                    dtype=np.complex128)
-                for i, q_dir in enumerate(q_dirs):
-                    na_corrs[i] = self._calculate_gamma_correction(q_dir)
-            else:
-                # Correction is zero if not a gamma point or splitting = False
-                na_corrs = np.array([0])
-
-            for i, na_corr in enumerate(na_corrs):
-                dyn_mat_corr = dyn_mat + na_corr
-
-                # Mass weight dynamical matrix
-                dyn_mat_corr *= dyn_mat_weighting
-
-                if precondition:
-                    dyn_mat_corr = np.matmul(np.matmul(np.transpose(
-                        np.conj(prev_evecs)), dyn_mat_corr), prev_evecs)
-
-                try:
-                    evals, evecs = np.linalg.eigh(dyn_mat_corr)
-                # Fall back to zheev if eigh fails (eigh calls zheevd)
-                except np.linalg.LinAlgError:
-                    evals, evecs, info = zheev(dyn_mat_corr)
-
-                prev_evecs = evecs
-                evecs = np.reshape(np.transpose(evecs),
-                                   (n_branches, n_ions, 3))
-                # Set imaginary frequencies to negative
-                imag_freqs = np.where(evals < 0)
-                evals = np.sqrt(np.abs(evals))
-                evals[imag_freqs] *= -1
-
-                if i == 0:
-                    eigenvecs[q, :] = evecs
-                    freqs[q, :] = evals
-                else:
-                    split_i = np.concatenate((split_i, [q]))
-                    ax = np.newaxis
-                    split_freqs = np.concatenate((split_freqs, evals[ax]))
-                    split_eigenvecs = np.concatenate(
-                        (split_eigenvecs, evecs[ax]))
+            freqs[q], eigenvecs[q], sfreqs, sevecs =\
+                self._calculate_phonons_at_q(
+                    q, qpts, n_ions, fc_img_weighted, unique_sc_offsets, unique_sc_i,
+                    unique_cell_origins, unique_cell_i, ac_i, g_evals,
+                    g_evecs, dyn_mat_weighting, dipole, asr, splitting)
+            if sfreqs is not None:
+                split_i = np.concatenate((split_i, [q]))
+                ax = np.newaxis
+                split_freqs = np.concatenate((split_freqs, sfreqs[ax]))
+                split_eigenvecs = np.concatenate(
+                    (split_eigenvecs, sevecs[ax]))
 
         freqs = (freqs*ureg.hartree).to(self.freqs.units, 'spectroscopy')
         split_freqs = (split_freqs*ureg.hartree).to(
@@ -365,6 +311,77 @@ class InterpolationData(PhononData):
             self.split_eigenvecs = split_eigenvecs
 
         return freqs, eigenvecs
+
+
+    def _calculate_phonons_at_q(
+        self, q, qpts, n_ions, fc_img_weighted, unique_sc_offsets, unique_sc_i,
+            unique_cell_origins, unique_cell_i, ac_i, g_evals, g_evecs,
+            dyn_mat_weighting, dipole, asr, splitting):
+        """
+        Given a q-point and some precalculated q-independent values, calculate
+        and diagonalise the dynamical matrix and return the frequencies and
+        eigenvalues. Optionally also includes the Ewald dipole sum correction
+        and LO-TO splitting
+        """
+        qpt = qpts[q]
+        dyn_mat = self._calculate_dyn_mat(
+            qpt, fc_img_weighted, unique_sc_offsets, unique_sc_i,
+            unique_cell_origins, unique_cell_i)
+
+        if dipole:
+            dipole_corr = self._calculate_dipole_correction(qpt)
+            dyn_mat += dipole_corr
+
+        if asr == 'reciprocal':
+            dyn_mat = self._enforce_reciprocal_asr(
+                dyn_mat, ac_i, g_evals, g_evecs)
+
+        # Calculate LO-TO splitting by calculating non-analytic correction
+        # to dynamical matrix
+        if splitting and is_gamma(qpt):
+            if q == 0:
+                q_dirs = [qpts[1]]
+            elif q == (len(qpts) - 1):
+                q_dirs = [qpts[-2]]
+            else:
+                q_dirs = [-qpts[q - 1], qpts[q + 1]]
+            na_corrs = np.zeros((len(q_dirs), 3*n_ions, 3*n_ions),
+                                dtype=np.complex128)
+            for i, q_dir in enumerate(q_dirs):
+                na_corrs[i] = self._calculate_gamma_correction(q_dir)
+        else:
+            # Correction is zero if not a gamma point or splitting = False
+            na_corrs = np.array([0])
+
+        sfreqs = sevecs = None
+        for i, na_corr in enumerate(na_corrs):
+            dyn_mat_corr = dyn_mat + na_corr
+
+            # Mass weight dynamical matrix
+            dyn_mat_corr *= dyn_mat_weighting
+
+            try:
+                evals, evecs = np.linalg.eigh(dyn_mat_corr)
+            # Fall back to zheev if eigh fails (eigh calls zheevd)
+            except np.linalg.LinAlgError:
+                evals, evecs, info = zheev(dyn_mat_corr)
+
+            evecs = np.reshape(np.transpose(evecs),
+                               (3*n_ions, n_ions, 3))
+            # Set imaginary frequencies to negative
+            imag_freqs = np.where(evals < 0)
+            evals = np.sqrt(np.abs(evals))
+            evals[imag_freqs] *= -1
+
+            if i == 0:
+                freqs = evals
+                eigenvecs = evecs
+            else:
+                sfreqs = evals
+                sevecs = evecs
+
+        return freqs, eigenvecs, sfreqs, sevecs
+
 
     def _calculate_dyn_mat(self, q, fc_img_weighted, unique_sc_offsets,
                            unique_sc_i, unique_cell_origins, unique_cell_i):
