@@ -109,14 +109,25 @@ class InterpolationData(PhononData):
         self.qpts = qpts
         self.n_qpts = len(qpts)
         self.eigenvecs = np.array([])
-        self.freqs = np.array([])*ureg.meV
+        self._freqs = np.array([])
 
         self.split_i = np.array([], dtype=np.int32)
         self.split_eigenvecs = np.array([])
-        self.split_freqs = np.array([])*ureg.meV
+        self._split_freqs = np.array([])
+
+        self._l_units = 'angstrom'
+        self._e_units = 'meV'
 
         if self.n_qpts > 0:
             self.calculate_fine_phonons(qpts, **kwargs)
+
+    @property
+    def force_constants(self):
+        return self._force_constants*ureg('hartree/bohr**2')
+
+    @property
+    def born(self):
+        return self._born*ureg('e')
 
     def _get_data(self, seedname, model, path):
         """"
@@ -142,18 +153,18 @@ class InterpolationData(PhononData):
 
         self.n_ions = data['n_ions']
         self.n_branches = data['n_branches']
-        self.cell_vec = data['cell_vec']
-        self.recip_vec = data['recip_vec']
+        self._cell_vec = data['cell_vec']
+        self._recip_vec = data['recip_vec']
         self.ion_r = data['ion_r']
         self.ion_type = data['ion_type']
-        self.ion_mass = data['ion_mass']
-        self.force_constants = data['force_constants']
+        self._ion_mass = data['ion_mass']
+        self._force_constants = data['force_constants']
         self.sc_matrix = data['sc_matrix']
         self.n_cells_in_sc = data['n_cells_in_sc']
         self.cell_origins = data['cell_origins']
 
         try:
-            self.born = data['born']
+            self._born = data['born']
             self.dielectric = data['dielectric']
         except KeyError:
             pass
@@ -200,11 +211,11 @@ class InterpolationData(PhononData):
             InterpolationData.eigenvecs)
         """
         if asr == 'realspace':
-            if not hasattr(self, 'force_constants_asr'):
-                self.force_constants_asr = self._enforce_realspace_asr()
-            force_constants = self.force_constants_asr.magnitude
+            if not hasattr(self, '_force_constants_asr'):
+                self._force_constants_asr = self._enforce_realspace_asr()
+            force_constants = self._force_constants_asr
         else:
-            force_constants = self.force_constants.magnitude
+            force_constants = self._force_constants
 
         if not hasattr(self, 'born') or not hasattr(self, 'dielectric'):
             dipole = False
@@ -215,7 +226,7 @@ class InterpolationData(PhononData):
                        eta_scale != self._eta_scale):
             self._dipole_correction_init(eta_scale)
 
-        ion_mass = self.ion_mass.to('e_mass').magnitude
+        ion_mass = self._ion_mass
         sc_matrix = self.sc_matrix
         cell_origins = self.cell_origins
         n_ions = self.n_ions
@@ -280,13 +291,13 @@ class InterpolationData(PhononData):
                                'uncorrected dynamical matrix'), stacklevel=2)
                 asr = None
 
+        data = (qpts, n_ions, fc_img_weighted, unique_sc_offsets, unique_sc_i,
+                unique_cell_origins, unique_cell_i, ac_i, g_evals,
+                g_evecs, dyn_mat_weighting, dipole, asr, splitting)
+
         for q in range(n_qpts):
-            qpt = qpts[q, :]
-            freqs[q], eigenvecs[q], sfreqs, sevecs =\
-                self._calculate_phonons_at_q(
-                    q, qpts, n_ions, fc_img_weighted, unique_sc_offsets, unique_sc_i,
-                    unique_cell_origins, unique_cell_i, ac_i, g_evals,
-                    g_evecs, dyn_mat_weighting, dipole, asr, splitting)
+            freqs[q], eigenvecs[q], sfreqs, sevecs = \
+                self._calculate_phonons_at_q(q, data)
             if sfreqs is not None:
                 split_i = np.concatenate((split_i, [q]))
                 ax = np.newaxis
@@ -294,35 +305,31 @@ class InterpolationData(PhononData):
                 split_eigenvecs = np.concatenate(
                     (split_eigenvecs, sevecs[ax]))
 
-        freqs = (freqs*ureg.hartree).to(self.freqs.units, 'spectroscopy')
-        split_freqs = (split_freqs*ureg.hartree).to(
-            self.split_freqs.units, 'spectroscopy')
         if set_attrs:
             self.asr = asr
             self.dipole = dipole
             self.n_qpts = n_qpts
             self.qpts = qpts
             self.weights = np.full(len(qpts), 1.0/n_qpts)
-            self.freqs = freqs
+            self._freqs = freqs
             self.eigenvecs = eigenvecs
 
             self.split_i = split_i
-            self.split_freqs = split_freqs
+            self._split_freqs = split_freqs
             self.split_eigenvecs = split_eigenvecs
 
         return freqs, eigenvecs
 
-
-    def _calculate_phonons_at_q(
-        self, q, qpts, n_ions, fc_img_weighted, unique_sc_offsets, unique_sc_i,
-            unique_cell_origins, unique_cell_i, ac_i, g_evals, g_evecs,
-            dyn_mat_weighting, dipole, asr, splitting):
+    def _calculate_phonons_at_q(self, q, data):
         """
         Given a q-point and some precalculated q-independent values, calculate
         and diagonalise the dynamical matrix and return the frequencies and
         eigenvalues. Optionally also includes the Ewald dipole sum correction
         and LO-TO splitting
         """
+        (qpts, n_ions, fc_img_weighted, unique_sc_offsets, unique_sc_i,
+         unique_cell_origins, unique_cell_i, ac_i, g_evals,
+         g_evecs, dyn_mat_weighting, dipole, asr, splitting) = data
         qpt = qpts[q]
         dyn_mat = self._calculate_dyn_mat(
             qpt, fc_img_weighted, unique_sc_offsets, unique_sc_i,
@@ -381,7 +388,6 @@ class InterpolationData(PhononData):
                 sevecs = evecs
 
         return freqs, eigenvecs, sfreqs, sevecs
-
 
     def _calculate_dyn_mat(self, q, fc_img_weighted, unique_sc_offsets,
                            unique_sc_i, unique_cell_origins, unique_cell_i):
@@ -466,11 +472,11 @@ class InterpolationData(PhononData):
             sum. A higher value uses more reciprocal terms
         """
 
-        cell_vec = self.cell_vec.to('bohr').magnitude
-        recip = self.recip_vec.to('1/bohr').magnitude
+        cell_vec = self._cell_vec
+        recip = self._recip_vec
         n_ions = self.n_ions
         ion_r = self.ion_r
-        born = self.born.magnitude
+        born = self._born
         dielectric = self.dielectric
         inv_dielectric = np.linalg.inv(dielectric)
         sqrt_pi = math.sqrt(math.pi)
@@ -596,11 +602,6 @@ class InterpolationData(PhononData):
         self._gvecs_cart = gvecs_cart
         self._gvec_phases = gvec_phases
         self._dipole_q0 = dipole_q0
-        # Store cell/recip vectors as magnitudes so they don't have to be
-        # converted inside _calculate_dipole_correction at every q-point as
-        # this has high overhead
-        self._cell_vec_bohr = self.cell_vec.to('bohr').magnitude
-        self._recip_bohr = self.recip_vec.to('1/bohr').magnitude
 
 
     def _calculate_dipole_correction(self, q):
@@ -618,11 +619,11 @@ class InterpolationData(PhononData):
         corr : (3*n_ions, 3*n_ions) complex ndarray
             The correction to the dynamical matrix
         """
-        cell_vec = self._cell_vec_bohr
-        recip = self._recip_bohr
+        cell_vec = self._cell_vec
+        recip = self._recip_vec
         n_ions = self.n_ions
         ion_r = self.ion_r
-        born = self.born.magnitude
+        born = self._born
         dielectric = self.dielectric
         eta = self._eta
         eta_2 = eta**2
@@ -703,9 +704,9 @@ class InterpolationData(PhononData):
         na_corr : (3*n_ions, 3*n_ions) complex ndarray
             The correction to the dynamical matrix
         """
-        cell_vec = self.cell_vec.to('bohr').magnitude
+        cell_vec = self._cell_vec
         n_ions = self.n_ions
-        born = self.born.magnitude
+        born = self._born
         dielectric = self.dielectric
 
         cell_volume = np.dot(cell_vec[0], np.cross(cell_vec[1], cell_vec[2]))
@@ -810,7 +811,7 @@ class InterpolationData(PhononData):
         sc_matrix = self.sc_matrix
         n_cells_in_sc = self.n_cells_in_sc
         n_ions = self.n_ions
-        force_constants = self.force_constants.magnitude
+        force_constants = self._force_constants
         ax = np.newaxis
 
         # Compute square matrix giving relative index of cells in sc
@@ -868,7 +869,6 @@ class InterpolationData(PhononData):
 
         fc = np.reshape(sq_fc[:, :3*n_ions],
                         (n_cells_in_sc, 3*n_ions, 3*n_ions))
-        fc = fc*self.force_constants.units
 
         return fc
 
@@ -896,8 +896,9 @@ class InterpolationData(PhononData):
         dyn_mat : (3*n_ions, 3*n_ions) complex ndarray
             The corrected, non mass-weighted dynamical matrix at q
         """
-        tol = (ureg('amu').to('e_mass')
-               *0.1*ureg('1/cm').to('1/bohr')**2).magnitude
+#        tol = (ureg('amu').to('e_mass')
+#               *0.1*ureg('1/cm').to('1/bohr')**2).magnitude
+        tol = 5e-15
 
         for i, ac in enumerate(ac_i):
             dyn_mat -= (tol*i + g_evals[ac])*np.einsum(
@@ -1013,7 +1014,7 @@ class InterpolationData(PhononData):
         """
 
         n_ions = self.n_ions
-        cell_vec = self.cell_vec.to(ureg.bohr).magnitude
+        cell_vec = self._cell_vec
         ion_r = self.ion_r
         cell_origins = self.cell_origins
         n_cells_in_sc = self.n_cells_in_sc

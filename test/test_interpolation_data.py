@@ -369,8 +369,7 @@ class TestInterpolatePhononsLZO(unittest.TestCase):
         # (n_cells_in_sc, 3*n_ions, 3*n_ions), expected_fc_mat must be
         # reshaped to ensure tests still pass
         expected_fc_mat = np.reshape(expected_fc_mat, (4, 3*22, 3*22))
-        fc_mat = self.data._enforce_realspace_asr().to(
-            ureg.hartree/ureg.bohr**2).magnitude
+        fc_mat = self.data._enforce_realspace_asr()
         npt.assert_allclose(fc_mat, expected_fc_mat, atol=1e-18)
 
 
@@ -660,8 +659,7 @@ class TestInterpolatePhononsGraphite(unittest.TestCase):
         expected_fc_mat = np.reshape(
             expected_fc_mat,
             (self.n_cells_in_sc, 3*self.n_ions, 3*self.n_ions))
-        fc_mat = self.data._enforce_realspace_asr().to(
-            ureg.hartree/ureg.bohr**2).magnitude
+        fc_mat = self.data._enforce_realspace_asr()
         npt.assert_allclose(fc_mat, expected_fc_mat, atol=1e-18)
 
 

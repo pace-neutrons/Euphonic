@@ -1,5 +1,6 @@
 import math
 import numpy as np
+from euphonic import ureg
 from euphonic.util import gaussian, lorentzian
 
 
@@ -10,7 +11,11 @@ class Data(object):
     CASTEP .bands and .phonon file data)
     """
 
-    def calculate_dos(self, dos_bins, gwidth, lorentz=False, weights=None,
+    @property
+    def dos_bins(self):
+        return self._dos_bins*ureg('E_h').to(self._e_units, 'spectroscopy')
+
+    def calculate_dos(self, dos_bins, gwidth=0, lorentz=False, weights=None,
                       set_attrs=True, _freqs=None):
         """
         Calculates a density of states with fixed width Gaussian/Lorentzian
@@ -21,10 +26,9 @@ class Data(object):
         dos_bins : (n_ebins + 1,) float ndarray
             The energy bin edges to use for calculating the DOS, in the same
             units as freqs
-        gwidth : float
+        gwidth : float, optional, default 0
             FWHM of Gaussian/Lorentzian for broadening the DOS bins, in the
-            same units as freqs. Set to 0 if
-            no broadening is desired
+            same units as freqs
         lorentz : boolean, optional
             Whether to use a Lorentzian or Gaussian broadening function.
             Default: False
@@ -41,22 +45,22 @@ class Data(object):
             The density of states for each bin
         """
 
-        # Convert quantities to magnitudes
         # Use freqs in data if _freqs aren't specified
+        if _freqs is not None:
+            freqs = _freqs
+        else:
+            freqs = self._freqs
+
+        # Convert dos_bins to Hartree. If no units are specified, assume
+        # dos_bins is in same units as freqs
         try:
-            freqs = _freqs.magnitude
+            dos_bins = dos_bins.to(self._e_units).magnitude
         except AttributeError:
-            freqs = self.freqs.magnitude
-        # Convert dos_bins units to same units as freqs. If no units are
-        # specified, assume dos_bins is in same units as freqs
+            dos_bins = (dos_bins*ureg(self._e_units).to('E_h')).magnitude
         try:
-            dos_bins = dos_bins.to(self.freqs.units).magnitude
+            gwidth = gwidth.to(self._e_units).magnitude
         except AttributeError:
-            pass
-        try:
-            gwidth = gwidth.to(self.freqs.units).magnitude
-        except AttributeError:
-            pass
+            gwidth = (gwidth*ureg(self._e_units).to('E_h')).magnitude
 
         # Bin frequencies
         if weights is None:
@@ -94,30 +98,30 @@ class Data(object):
 
         if set_attrs:
             self.dos = dos
-            self.dos_bins = dos_bins*self.freqs.units
+            self._dos_bins = dos_bins
 
         return dos
 
     def convert_e_units(self, units):
         """
-        Convert energy units of relevant attributes in place e.g. dos_bins
+        Redefine the units to be used when displaying values with energy units
+        e.g. freqs
 
         Parameters
         ----------
         units : str
-            The units to convert to e.g. '1/cm', 'hartree', 'eV'
+            The units to use e.g. '1/cm', 'hartree', 'eV'
         """
-        self.freqs.ito(units, 'spectroscopy')
-        if hasattr(self, 'dos_bins'):
-            self.dos_bins.ito(units, 'spectroscopy')
+        self._e_units = units
 
     def convert_l_units(self, units):
         """
-        Convert length units of relevant attributes in place e.g. cell_vec
+        Redefine the units to be used when displaying value with length units
+        e.g. cell_vec
 
         Parameters
         ----------
         units : str
-            The units to convert to e.g. 'angstrom', 'bohr'
+            The units to use e.g. 'angstrom', 'bohr'
         """
-        self.cell_vec.ito(units)
+        self._l_units = units

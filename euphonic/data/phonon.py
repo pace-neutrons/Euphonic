@@ -73,6 +73,33 @@ class PhononData(Data):
         self.seedname = seedname
         self.model = model
 
+        self._l_units = 'angstrom'
+        self._e_units = 'meV'
+
+    @property
+    def cell_vec(self):
+        return self._cell_vec*ureg('bohr').to(self._l_units)
+
+    @property
+    def recip_vec(self):
+        return self._recip_vec*ureg('1/bohr').to('1/' + self._l_units)
+
+    @property
+    def ion_mass(self):
+        return self._ion_mass*ureg('e_mass').to('amu')
+
+    @property
+    def freqs(self):
+        return self._freqs*ureg('E_h').to(self._e_units, 'spectroscopy')
+
+    @property
+    def split_freqs(self):
+        return self._split_freqs*ureg('E_h').to(self._e_units, 'spectroscopy')
+
+    @property
+    def sqw_ebins(self):
+        return self._sqw_ebins*ureg('E_h').to(self._e_units, 'spectroscopy')
+
     def _get_data(self, seedname, model, path):
         """"
         Calls the correct reader to get the required data, and sets the
@@ -98,17 +125,17 @@ class PhononData(Data):
         self.n_ions = data['n_ions']
         self.n_branches = data['n_branches']
         self.n_qpts = data['n_qpts']
-        self.cell_vec = data['cell_vec']
-        self.recip_vec = data['recip_vec']
+        self._cell_vec = data['cell_vec']
+        self._recip_vec = data['recip_vec']
         self.ion_r = data['ion_r']
         self.ion_type = data['ion_type']
-        self.ion_mass = data['ion_mass']
+        self._ion_mass = data['ion_mass']
         self.qpts = data['qpts']
         self.weights = data['weights']
-        self.freqs = data['freqs']
+        self._freqs = data['freqs']
         self.eigenvecs = data['eigenvecs']
         self.split_i = data['split_i']
-        self.split_freqs = data['split_freqs']
+        self._split_freqs = data['split_freqs']
         self.split_eigenvecs = data['split_eigenvecs']
 
     def reorder_freqs(self):
@@ -120,7 +147,7 @@ class PhononData(Data):
         n_qpts = self.n_qpts
         n_branches = self.n_branches
         qpts = self.qpts
-        freqs = self.freqs.magnitude
+        freqs = self._freqs
         eigenvecs = self.eigenvecs
 
         ordered_freqs = np.zeros(freqs.shape)
@@ -131,8 +158,8 @@ class PhononData(Data):
         # and there is no LO-TO splitting
         calculate_qmap = np.concatenate(([True], np.logical_not(
             direction_changed(qpts))))
-        if hasattr(self, 'split_i'):
-            split_freqs = self.split_freqs.magnitude
+        if len(self.split_i) > 0:
+            split_freqs = self._split_freqs
             split_eigenvecs = self.split_eigenvecs
             ordered_split_freqs = np.zeros(split_freqs.shape)
             ordered_split_eigenvecs = np.zeros(
@@ -185,32 +212,16 @@ class PhononData(Data):
             ordered_eigenvecs[i, qmap] = eigenvecs[i, :]
             ordered_freqs[i, qmap] = freqs[i, :]
 
-            if hasattr(self, 'split_i') and i in self.split_i:
+            if i in self.split_i:
                 idx = np.where(i == self.split_i)
                 ordered_split_eigenvecs[idx, qmap] = split_eigenvecs[idx]
                 ordered_split_freqs[idx, qmap] = split_freqs[idx]
 
-        ordered_freqs = ordered_freqs*self.freqs.units
         self.eigenvecs = ordered_eigenvecs
-        self.freqs = ordered_freqs
-        if hasattr(self, 'split_i'):
-            self.split_freqs = ordered_split_freqs*self.split_freqs.units
+        self._freqs = ordered_freqs
+        if len(self.split_i) > 0:
+            self._split_freqs = ordered_split_freqs
             self.split_eigenvecs = ordered_split_eigenvecs
-
-    def convert_e_units(self, units):
-        """
-        Convert energy units of relevant attributes in place e.g. freqs,
-        dos_bins
-
-        Parameters
-        ----------
-        units : str
-            The units to convert to e.g. '1/cm', 'hartree', 'eV'
-        """
-        super(PhononData, self).convert_e_units(units)
-        self.split_freqs.ito(units, 'spectroscopy')
-        if hasattr(self, 'sqw_ebins'):
-            self.sqw_ebins.ito(units, 'spectroscopy')
 
     def calculate_structure_factor(self, scattering_lengths, T=5.0, scale=1.0,
                                    calc_bose=True, dw_arg=None, **kwargs):
@@ -245,10 +256,10 @@ class PhononData(Data):
         """
         sl = [scattering_lengths[x] for x in self.ion_type]
 
-        # Convert units (use magnitudes for performance)
-        recip = (self.recip_vec.to('1/bohr')).magnitude
-        freqs = (self.freqs.to('E_h', 'spectroscopy')).magnitude
-        ion_mass = (self.ion_mass.to('e_mass')).magnitude
+        # Convert units
+        recip = self._recip_vec
+        freqs = self._freqs
+        ion_mass = self._ion_mass
         sl = (sl*ureg('fm').to('bohr')).magnitude
 
         # Calculate normalisation factor
@@ -326,10 +337,10 @@ class PhononData(Data):
             The DW coefficients for each ion
         """
 
-        # Convert units (use magnitudes for performance)
+        # Convert units
         kB = (1*ureg.k).to('E_h/K').magnitude
-        ion_mass = data.ion_mass.to('e_mass').magnitude
-        freqs = data.freqs.to('E_h', 'spectroscopy').magnitude
+        ion_mass = data._ion_mass
+        freqs = data._freqs
         qpts = data.qpts
         evecs = data.eigenvecs
         weights = data.weights
@@ -396,9 +407,9 @@ class PhononData(Data):
             The intensity for each q-point and energy bin
         """
 
-        # Convert units (use magnitudes for performance)
-        freqs = (self.freqs.to('E_h', 'spectroscopy')).magnitude
-        ebins = ((ebins*self.freqs.units).to('E_h')).magnitude
+        # Convert units
+        freqs = self._freqs
+        ebins = (ebins*ureg(self._e_units).to('E_h')).magnitude
 
         # Create initial sqw_map with an extra an energy bin either side, for
         # any branches that fall outside the energy bin range
@@ -427,8 +438,7 @@ class PhononData(Data):
         sqw_map = sqw_map[:, 1:-1]  # Exclude values outside ebin range
 
         if set_attrs:
-            self.sqw_ebins = ebins*ureg('E_h').to(
-                self.freqs.units, 'spectroscopy')
+            self._sqw_ebins = ebins
             self.sqw_map = sqw_map
 
         return sqw_map
