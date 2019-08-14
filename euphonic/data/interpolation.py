@@ -1,6 +1,8 @@
 import math
 import sys
 import warnings
+from multiprocessing import Pool
+from functools import partial
 import numpy as np
 from scipy.linalg.lapack import zheev
 from scipy.special import erfc
@@ -8,6 +10,11 @@ from euphonic import ureg
 from euphonic.util import is_gamma, mp_grid
 from euphonic.data.phonon import PhononData
 from euphonic._readers import _castep
+
+
+def _pickle_method(m):
+    class_self = m.im_class if m.im_self is None else m.im_self
+    return getattr, (class_self, m.im_func.func_name)
 
 
 class InterpolationData(PhononData):
@@ -171,7 +178,7 @@ class InterpolationData(PhononData):
 
     def calculate_fine_phonons(
         self, qpts, asr=None, precondition=False, set_attrs=True, dipole=True,
-            eta_scale=1.0, splitting=True):
+            eta_scale=1.0, splitting=True, nprocs=1):
         """
         Calculate phonon frequencies and eigenvectors at specified q-points
         from a supercell force constant matrix via interpolation. For more
@@ -232,12 +239,6 @@ class InterpolationData(PhononData):
         n_ions = self.n_ions
         n_branches = self.n_branches
         n_qpts = len(qpts)
-        freqs = np.zeros((n_qpts, n_branches))
-        eigenvecs = np.zeros((n_qpts, n_branches, n_ions, 3),
-                             dtype=np.complex128)
-        split_i = np.array([], dtype=np.int32)
-        split_freqs = np.empty((0, n_branches))
-        split_eigenvecs = np.empty((0, n_branches, n_ions, 3))
 
         # Build list of all possible supercell image coordinates
         lim = 2  # Supercell image limit
@@ -295,15 +296,16 @@ class InterpolationData(PhononData):
                 unique_cell_origins, unique_cell_i, ac_i, g_evals,
                 g_evecs, dyn_mat_weighting, dipole, asr, splitting)
 
-        for q in range(n_qpts):
-            freqs[q], eigenvecs[q], sfreqs, sevecs = \
-                self._calculate_phonons_at_q(q, data)
-            if sfreqs is not None:
-                split_i = np.concatenate((split_i, [q]))
-                ax = np.newaxis
-                split_freqs = np.concatenate((split_freqs, sfreqs[ax]))
-                split_eigenvecs = np.concatenate(
-                    (split_eigenvecs, sevecs[ax]))
+
+        pool = Pool(processes=nprocs)
+        results = pool.map(partial(self._calculate_phonons_at_q, data=data), range(n_qpts))
+        freqs, eigenvecs, split_freqs, split_eigenvecs, split_i = zip(*results)
+        freqs = np.stack(freqs, axis=0)
+        eigenvecs = np.stack(eigenvecs, axis=0)
+        split_i = np.concatenate(split_i)
+        if len(split_i > 0):
+            split_freqs = np.concatenate(split_freqs)
+            split_eigenvecs = np.concatenate(split_eigenvecs)
 
         if set_attrs:
             self.asr = asr
@@ -360,7 +362,9 @@ class InterpolationData(PhononData):
             # Correction is zero if not a gamma point or splitting = False
             na_corrs = np.array([0])
 
-        sfreqs = sevecs = None
+        split_i = np.empty((0,), dtype=np.int32)
+        sfreqs = np.empty((0, 3*n_ions))
+        sevecs = np.empty((0, 3*n_ions, n_ions, 3))
         for i, na_corr in enumerate(na_corrs):
             dyn_mat_corr = dyn_mat + na_corr
 
@@ -384,10 +388,11 @@ class InterpolationData(PhononData):
                 freqs = evals
                 eigenvecs = evecs
             else:
-                sfreqs = evals
-                sevecs = evecs
+                split_i = np.concatenate((split_i, [q]))
+                sfreqs = np.concatenate((sfreqs, [evals]))
+                sevecs = np.concatenate((sevecs, [evecs]))
 
-        return freqs, eigenvecs, sfreqs, sevecs
+        return freqs, eigenvecs, sfreqs, sevecs, split_i
 
     def _calculate_dyn_mat(self, q, fc_img_weighted, unique_sc_offsets,
                            unique_sc_i, unique_cell_origins, unique_cell_i):
