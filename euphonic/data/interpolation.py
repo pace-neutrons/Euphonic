@@ -217,6 +217,22 @@ class InterpolationData(PhononData):
             The phonon eigenvectors (same as set to
             InterpolationData.eigenvecs)
         """
+        try:
+            pool = Pool(processes=nprocs)
+        except RuntimeError:
+            warnings.warn(('\nA RuntimeError was raised when initialising the '
+                           'multiprocessing Pool. This is probably due to '
+                           'calling calculate_fine_phonons with '
+                           'multiprocessing outside of a __main__ block on '
+                           'Windows. This error is caught here to prevent '
+                           'processes recursively being spawned, but don\'t '
+                           'rely on it! See \'Safe importing of main '
+                           'module\' : https://docs.python.org/3.7/library/mul'
+                           'tiprocessing.html#the-spawn-and-forkserver-start-m'
+                           'ethods'), stacklevel=2)
+            return
+
+
         if asr == 'realspace':
             if not hasattr(self, '_force_constants_asr'):
                 self._force_constants_asr = self._enforce_realspace_asr()
@@ -296,9 +312,8 @@ class InterpolationData(PhononData):
                 unique_cell_origins, unique_cell_i, ac_i, g_evals,
                 g_evecs, dyn_mat_weighting, dipole, asr, splitting)
 
-
-        pool = Pool(processes=nprocs)
         results = pool.map(partial(self._calculate_phonons_at_q, data=data), range(n_qpts))
+        pool.close()
         freqs, eigenvecs, split_freqs, split_eigenvecs, split_i = zip(*results)
         freqs = np.stack(freqs, axis=0)
         eigenvecs = np.stack(eigenvecs, axis=0)
