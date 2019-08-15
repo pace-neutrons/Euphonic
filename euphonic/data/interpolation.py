@@ -1,8 +1,6 @@
 import math
 import sys
 import warnings
-from multiprocessing import Pool
-from functools import partial
 import numpy as np
 from scipy.linalg.lapack import zheev
 from scipy.special import erfc
@@ -12,9 +10,13 @@ from euphonic.data.phonon import PhononData
 from euphonic._readers import _castep
 
 
-def _pickle_method(m):
-    class_self = m.im_class if m.im_self is None else m.im_self
-    return getattr, (class_self, m.im_func.func_name)
+if sys.version_info[0] < 3:
+    import types
+    import copy_reg
+    def _pickle_method(m):
+        class_self = m.im_class if m.im_self is None else m.im_self
+        return getattr, (class_self, m.im_func.func_name)
+    copy_reg.pickle(types.MethodType, _pickle_method)
 
 
 class InterpolationData(PhononData):
@@ -113,19 +115,21 @@ class InterpolationData(PhononData):
 
         self.seedname = seedname
         self.model = model
-        self.qpts = qpts
-        self.n_qpts = len(qpts)
-        self.eigenvecs = np.array([])
-        self._freqs = np.array([])
+        self.n_qpts = 0
+        self.qpts = np.array([])
+        self._freqs = np.empty((0, 3*self.n_ions))
+        self.eigenvecs = np.empty((0, 3*self.n_ions, self.n_ions, 3),
+                                  dtype=np.complex128)
 
-        self.split_i = np.array([], dtype=np.int32)
-        self.split_eigenvecs = np.array([])
-        self._split_freqs = np.array([])
+        self.split_i = np.empty((0,), dtype=np.int32)
+        self._split_freqs = np.empty((0, 3*self.n_ions))
+        self.split_eigenvecs = np.empty((0, 3*self.n_ions, self.n_ions, 3),
+                                        dtype=np.complex128)
 
         self._l_units = 'angstrom'
         self._e_units = 'meV'
 
-        if self.n_qpts > 0:
+        if len(qpts) > 0:
             self.calculate_fine_phonons(qpts, **kwargs)
 
     @property
@@ -217,21 +221,60 @@ class InterpolationData(PhononData):
             The phonon eigenvectors (same as set to
             InterpolationData.eigenvecs)
         """
-        try:
-            pool = Pool(processes=nprocs)
-        except RuntimeError:
-            warnings.warn(('\nA RuntimeError was raised when initialising the '
-                           'multiprocessing Pool. This is probably due to '
-                           'calling calculate_fine_phonons with '
-                           'multiprocessing outside of a __main__ block on '
-                           'Windows. This error is caught here to prevent '
-                           'processes recursively being spawned, but don\'t '
-                           'rely on it! See \'Safe importing of main '
-                           'module\' : https://docs.python.org/3.7/library/mul'
-                           'tiprocessing.html#the-spawn-and-forkserver-start-m'
-                           'ethods'), stacklevel=2)
-            return
 
+        # Try to create a multiprocessing pool first, in case it fails
+        if nprocs > 1:
+            try:
+                from multiprocessing import Pool
+                from functools import partial
+                pool = Pool(processes=nprocs)
+            except RuntimeError:
+                warnings.warn(('\nA RuntimeError was raised when initialising '
+                               'the multiprocessing Pool. This is probably due'
+                               'to calling calculate_fine_phonons with multipr'
+                               'ocessing outside of a __main__ block on Window'
+                               's. This error is caught here to prevent proces'
+                               'ses recursively being spawned. The calculation'
+                               ' may or may not have worked, but don\'t rely o'
+                               'n it! See \'Safe importing of main module\' : '
+                               'https://docs.python.org/3.7/library/multiproce'
+                               'ssing.html#the-spawn-and-forkserver-start-meth'
+                               'ods'), stacklevel=2)
+                return
+
+        lim = 2  # Supercell image limit
+        # Construct list of supercell ion images
+        if not hasattr(self, 'sc_image_i'):
+            self._calculate_supercell_images(lim)
+
+        # Get a list of all the unique supercell image origins and cell origins
+        # in x, y, z and how to rebuild them to minimise expensive phase
+        # calculations later
+        sc_image_r = self._get_all_origins(
+            np.repeat(lim, 3) + 1, min_xyz=-np.repeat(lim, 3))
+        sc_offsets = np.einsum('ji,kj->ki', self.sc_matrix, sc_image_r)
+        unique_sc_offsets = [[] for i in range(3)]
+        unique_sc_i = np.zeros((len(sc_offsets), 3), dtype=np.int32)
+        unique_cell_origins = [[] for i in range(3)]
+        unique_cell_i = np.zeros((len(self.cell_origins), 3), dtype=np.int32)
+        for i in range(3):
+            unique_sc_offsets[i], unique_sc_i[:, i] = np.unique(
+                sc_offsets[:, i], return_inverse=True)
+            unique_cell_origins[i], unique_cell_i[:, i] = np.unique(
+                self.cell_origins[:, i], return_inverse=True)
+
+        # Precompute dynamical matrix mass weighting
+        masses = np.tile(np.repeat(self._ion_mass, 3), (3*self.n_ions, 1))
+        dyn_mat_weighting = 1/np.sqrt(masses*np.transpose(masses))
+
+        # Initialise dipole correction calculation to FC matrix if required
+        if not hasattr(self, 'born') or not hasattr(self, 'dielectric'):
+            dipole = False
+        if not dipole:
+            splitting = False
+        if dipole and (not hasattr(self, 'eta_scale') or
+                       eta_scale != self._eta_scale):
+            self._dipole_correction_init(eta_scale)
 
         if asr == 'realspace':
             if not hasattr(self, '_force_constants_asr'):
@@ -239,56 +282,13 @@ class InterpolationData(PhononData):
             force_constants = self._force_constants_asr
         else:
             force_constants = self._force_constants
-
-        if not hasattr(self, 'born') or not hasattr(self, 'dielectric'):
-            dipole = False
-        if not dipole:
-            splitting = False
-
-        if dipole and (not hasattr(self, 'eta_scale') or
-                       eta_scale != self._eta_scale):
-            self._dipole_correction_init(eta_scale)
-
-        ion_mass = self._ion_mass
-        sc_matrix = self.sc_matrix
-        cell_origins = self.cell_origins
-        n_ions = self.n_ions
-        n_branches = self.n_branches
-        n_qpts = len(qpts)
-
-        # Build list of all possible supercell image coordinates
-        lim = 2  # Supercell image limit
-        sc_image_r = self._get_all_origins(
-            np.repeat(lim, 3) + 1, min_xyz=-np.repeat(lim, 3))
-        # Get a list of all the unique supercell image origins and cell origins
-        # in x, y, z and how to rebuild them to minimise expensive phase
-        # calculations later
-        sc_offsets = np.einsum('ji,kj->ki', sc_matrix, sc_image_r)
-        unique_sc_offsets = [[] for i in range(3)]
-        unique_sc_i = np.zeros((len(sc_offsets), 3), dtype=np.int32)
-        unique_cell_origins = [[] for i in range(3)]
-        unique_cell_i = np.zeros((len(cell_origins), 3), dtype=np.int32)
-        for i in range(3):
-            unique_sc_offsets[i], unique_sc_i[:, i] = np.unique(
-                sc_offsets[:, i], return_inverse=True)
-            unique_cell_origins[i], unique_cell_i[:, i] = np.unique(
-                self.cell_origins[:, i], return_inverse=True)
-
-        # Construct list of supercell ion images
-        if not hasattr(self, 'sc_image_i'):
-            self._calculate_supercell_images(lim)
-        n_sc_images = self._n_sc_images
-
         # Precompute fc matrix weighted by number of supercell ion images
         # (for cumulant method)
         n_sc_images_repeat = np.transpose(
-            n_sc_images.repeat(3, axis=2).repeat(3, axis=1), axes=[0, 2, 1])
+            self._n_sc_images.repeat(3, axis=2).repeat(3, axis=1),
+            axes=[0, 2, 1])
         fc_img_weighted = np.divide(
             force_constants, n_sc_images_repeat, where=n_sc_images_repeat != 0)
-
-        # Precompute dynamical matrix mass weighting
-        masses = np.tile(np.repeat(ion_mass, 3), (3*n_ions, 1))
-        dyn_mat_weighting = 1/np.sqrt(masses*np.transpose(masses))
 
         # Find eigenvalues/vectors at gamma for reciprocal ASR
         ac_i = g_evals = g_evecs = None
@@ -308,26 +308,44 @@ class InterpolationData(PhononData):
                                'uncorrected dynamical matrix'), stacklevel=2)
                 asr = None
 
-        data = (qpts, n_ions, fc_img_weighted, unique_sc_offsets, unique_sc_i,
+
+        data = (qpts, fc_img_weighted, unique_sc_offsets, unique_sc_i,
                 unique_cell_origins, unique_cell_i, ac_i, g_evals,
                 g_evecs, dyn_mat_weighting, dipole, asr, splitting)
 
-        results = pool.map(partial(self._calculate_phonons_at_q, data=data), range(n_qpts))
-        pool.close()
-        freqs, eigenvecs, split_freqs, split_eigenvecs, split_i = zip(*results)
-        freqs = np.stack(freqs, axis=0)
-        eigenvecs = np.stack(eigenvecs, axis=0)
-        split_i = np.concatenate(split_i)
-        if len(split_i > 0):
-            split_freqs = np.concatenate(split_freqs)
-            split_eigenvecs = np.concatenate(split_eigenvecs)
+        if nprocs > 1:
+            results = pool.map(partial(self._calculate_phonons_at_q, data=data), range(len(qpts)))
+            pool.close()
+            freqs, eigenvecs, split_freqs, split_eigenvecs, split_i = zip(*results)
+            freqs = np.stack(freqs, axis=0)
+            eigenvecs = np.stack(eigenvecs, axis=0)
+            split_i = np.concatenate(split_i)
+            if len(split_i > 0):
+               split_freqs = np.concatenate(split_freqs)
+               split_eigenvecs = np.concatenate(split_eigenvecs)
+        else:
+            freqs = np.zeros((len(qpts), 3*self.n_ions))
+            eigenvecs = np.zeros((len(qpts), 3*self.n_ions, self.n_ions, 3),
+                             dtype=np.complex128)
+            split_i = np.empty((0,), dtype=np.int32)
+            split_freqs = np.empty((0, 3*self.n_ions))
+            split_eigenvecs = np.empty((0, 3*self.n_ions, self.n_ions, 3),
+                                       dtype=np.complex128)
+            for q in range(len(qpts)):
+                freqs[q], eigenvecs[q], sfreqs, sevecs, _ = \
+                self._calculate_phonons_at_q(q, data)
+                if len(sfreqs) > 0:
+                    split_i = np.concatenate((split_i, [q]))
+                    split_freqs = np.concatenate((split_freqs, sfreqs))
+                    split_eigenvecs = np.concatenate(
+                        (split_eigenvecs, sevecs))
 
         if set_attrs:
             self.asr = asr
             self.dipole = dipole
-            self.n_qpts = n_qpts
             self.qpts = qpts
-            self.weights = np.full(len(qpts), 1.0/n_qpts)
+            self.n_qpts = len(qpts)
+            self.weights = np.full(len(qpts), 1.0/len(qpts))
             self._freqs = freqs
             self.eigenvecs = eigenvecs
 
@@ -335,7 +353,7 @@ class InterpolationData(PhononData):
             self._split_freqs = split_freqs
             self.split_eigenvecs = split_eigenvecs
 
-        return freqs, eigenvecs
+        return self.freqs, eigenvecs
 
     def _calculate_phonons_at_q(self, q, data):
         """
@@ -344,10 +362,13 @@ class InterpolationData(PhononData):
         eigenvalues. Optionally also includes the Ewald dipole sum correction
         and LO-TO splitting
         """
-        (qpts, n_ions, fc_img_weighted, unique_sc_offsets, unique_sc_i,
+        (qpts, fc_img_weighted, unique_sc_offsets, unique_sc_i,
          unique_cell_origins, unique_cell_i, ac_i, g_evals,
          g_evecs, dyn_mat_weighting, dipole, asr, splitting) = data
+
         qpt = qpts[q]
+        n_ions = self.n_ions
+
         dyn_mat = self._calculate_dyn_mat(
             qpt, fc_img_weighted, unique_sc_offsets, unique_sc_i,
             unique_cell_origins, unique_cell_i)
