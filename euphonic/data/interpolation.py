@@ -222,6 +222,19 @@ class InterpolationData(PhononData):
             InterpolationData.eigenvecs)
         """
 
+        # Reset obj freqs/eigenvecs to zero to reduce memory usage in case of
+        # repeated calls to calculate_fine_phonons
+        if set_attrs:
+            self.qpts = np.array([])
+            self._freqs = np.empty((0, 3*self.n_ions))
+            self.eigenvecs = np.empty((0, 3*self.n_ions, self.n_ions, 3),
+                                      dtype=np.complex128)
+
+            self.split_i = np.empty((0,), dtype=np.int32)
+            self._split_freqs = np.empty((0, 3*self.n_ions))
+            self.split_eigenvecs = np.empty((0, 3*self.n_ions, self.n_ions, 3),
+                                            dtype=np.complex128)
+
         # Try to create a multiprocessing pool first, in case it fails
         if nprocs > 1:
             try:
@@ -316,6 +329,7 @@ class InterpolationData(PhononData):
         if nprocs > 1:
             results = pool.map(partial(self._calculate_phonons_at_q, data=data), range(len(qpts)))
             pool.close()
+            pool.join()
             freqs, eigenvecs, split_freqs, split_eigenvecs, split_i = zip(*results)
             freqs = np.stack(freqs, axis=0)
             eigenvecs = np.stack(eigenvecs, axis=0)
