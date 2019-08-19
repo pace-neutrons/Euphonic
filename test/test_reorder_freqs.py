@@ -202,6 +202,15 @@ class TestReorderFreqsLZO(unittest.TestCase):
         npt.assert_allclose(self.idata.freqs.magnitude,
                             self.expected_reordered_freqs, atol=0.02)
 
+    def test_reorder_freqs_interpolation_data_2procs(self):
+        self.idata.calculate_fine_phonons(self.pdata.qpts, asr='realspace',
+                                          nprocs=2)
+        self.idata.reorder_freqs()
+        # Set atol = 0.02 as this is the max difference between the
+        # interpolated phonon freqs and phonons read from .phonon file
+        npt.assert_allclose(self.idata.freqs.magnitude,
+                            self.expected_reordered_freqs, atol=0.02)
+
     def test_empty_interpolation_data_raises_warning(self):
         # Test that trying to call reorder on an empty object raises a warning
         with warnings.catch_warnings(record=True) as w:
