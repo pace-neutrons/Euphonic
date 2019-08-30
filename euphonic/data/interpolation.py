@@ -299,7 +299,7 @@ class InterpolationData(PhononData):
 
             # Calculate LO-TO splitting by calculating non-analytic correction
             # to dynamical matrix
-            if splitting and is_gamma(qpt):
+            if splitting and is_gamma(qpt) and len(qpts) > 1:
                 if q == 0:
                     q_dirs = [qpts[1]]
                 elif q == (n_qpts - 1):

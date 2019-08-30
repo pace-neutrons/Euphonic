@@ -69,8 +69,11 @@ def recip_space_labels(data):
     """
 
     # First and last q-points should always be labelled
-    qpt_has_label = np.concatenate(([True], direction_changed(data.qpts),
-                                    [True]))
+    if len(data.qpts) <= 2:
+        qpt_has_label = np.ones(len(data.qpts), dtype=bool)
+    else:
+        qpt_has_label = np.concatenate(([True], direction_changed(data.qpts),
+                                        [True]))
     qpts_with_labels = np.where(qpt_has_label)[0]
 
     # Get dict of high symmetry point labels to their coordinates for this
@@ -86,7 +89,6 @@ def recip_space_labels(data):
         sym_label_to_coords = generic_qpt_labels()
     # Get labels for each q-point
     labels = np.array([])
-
     for qpt in data.qpts[qpts_with_labels]:
         labels = np.append(labels, get_qpt_label(qpt, sym_label_to_coords))
 
