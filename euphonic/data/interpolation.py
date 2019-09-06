@@ -182,7 +182,7 @@ class InterpolationData(PhononData):
 
     def calculate_fine_phonons(
         self, qpts, asr=None, precondition=False, set_attrs=True, dipole=True,
-            eta_scale=1.0, splitting=True, nprocs=1):
+            eta_scale=1.0, splitting=True, nprocs=1, _qchunk=None):
         """
         Calculate phonon frequencies and eigenvectors at specified q-points
         from a supercell force constant matrix via interpolation. For more
@@ -212,6 +212,9 @@ class InterpolationData(PhononData):
             Whether to calculate the LO-TO splitting at the gamma points. Only
             applied if dipole is True and the Born charges and dielectric
             permitivitty tensor are present.
+        nprocs : integer, optional, default 1
+            If more than 1, uses Python's multiprocessing module to distribute
+            q-point calculations across processors
 
         Returns
         -------
@@ -326,25 +329,45 @@ class InterpolationData(PhononData):
                 unique_cell_origins, unique_cell_i, ac_i, g_evals,
                 g_evecs, dyn_mat_weighting, dipole, asr, splitting)
 
+        split_i = np.empty((0,), dtype=np.int32)
+        split_freqs = np.empty((0, 3*self.n_ions))
+        split_eigenvecs = np.empty((0, 3*self.n_ions, self.n_ions, 3),
+                                   dtype=np.complex128)
         if nprocs > 1:
-            results = pool.map(partial(self._calculate_phonons_at_q, data=data), range(len(qpts)))
+            freqs = np.empty((0, 3*self.n_ions))
+            eigenvecs = np.empty((0, 3*self.n_ions, self.n_ions, 3),
+                                 dtype=np.complex128)
+
+            if _qchunk is not None:
+                nchunks = int((len(qpts) - 1)/_qchunk) + 1
+            else:
+                nchunks = 1
+                _qchunk = len(qpts)
+            # Calculate in chunks if required, as pool.map raises a
+            # MaybeEncodingError if too much data (i.e. eigenvectors for too
+            # many q-points) are returned at once
+            for i in range(nchunks):
+                qi = i*_qchunk
+                qf = min((i + 1)*_qchunk, len(qpts))
+                results = pool.map(
+                    partial(self._calculate_phonons_at_q, data=data),
+                    range(qi, qf))
+                evals, evecs, sevals, sevecs, si = zip(*results)
+                freqs = np.concatenate((freqs, np.stack(evals, axis=0)))
+                eigenvecs = np.concatenate((eigenvecs,
+                                            np.stack(evecs, axis=0)))
+                split_i = np.concatenate((split_i, np.concatenate(si)))
+                if len(split_i > 0):
+                   split_freqs = np.concatenate((split_freqs,
+                                                 np.concatenate(sevals)))
+                   split_eigenvecs = np.concatenate((split_eigenvecs,
+                                                     np.concatenate(sevecs)))
             pool.close()
             pool.join()
-            freqs, eigenvecs, split_freqs, split_eigenvecs, split_i = zip(*results)
-            freqs = np.stack(freqs, axis=0)
-            eigenvecs = np.stack(eigenvecs, axis=0)
-            split_i = np.concatenate(split_i)
-            if len(split_i > 0):
-               split_freqs = np.concatenate(split_freqs)
-               split_eigenvecs = np.concatenate(split_eigenvecs)
         else:
             freqs = np.zeros((len(qpts), 3*self.n_ions))
             eigenvecs = np.zeros((len(qpts), 3*self.n_ions, self.n_ions, 3),
                              dtype=np.complex128)
-            split_i = np.empty((0,), dtype=np.int32)
-            split_freqs = np.empty((0, 3*self.n_ions))
-            split_eigenvecs = np.empty((0, 3*self.n_ions, self.n_ions, 3),
-                                       dtype=np.complex128)
             for q in range(len(qpts)):
                 freqs[q], eigenvecs[q], sfreqs, sevecs, _ = \
                 self._calculate_phonons_at_q(q, data)
