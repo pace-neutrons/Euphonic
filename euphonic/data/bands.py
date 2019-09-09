@@ -123,7 +123,7 @@ class BandsData(Data):
             pass
 
     def calculate_dos(self, dos_bins, gwidth, lorentz=False,
-                      weights=None, set_attrs=True):
+                      weights=None):
         """
         Calculates a density of states with fixed width Gaussian/Lorentzian
         broadening. Extends the Data.calculate_dos function and has the same
@@ -145,9 +145,6 @@ class BandsData(Data):
         weights : (n_qpts, n_branches) float ndarray, optional
             The weights to use for each q-points and branch. If unspecified,
             uses the q-point weights stored in the Data object
-        set_attrs : boolean, optional, default True
-            Whether to set the dos, dos_down and dos_bins attributes to the
-            newly calculated values
 
         Returns
         -------
@@ -157,16 +154,15 @@ class BandsData(Data):
             The spin down density of states for each bin
         """
         dos = super(BandsData, self).calculate_dos(
-            dos_bins, gwidth, lorentz=lorentz, weights=weights,
-            set_attrs=set_attrs)
+            dos_bins, gwidth, lorentz=lorentz, weights=weights)
 
         if self._freq_down.size > 0:
             dos_down = super(BandsData, self).calculate_dos(
                 dos_bins, gwidth, lorentz=lorentz, weights=weights,
-                set_attrs=False, _freqs=self._freq_down)
+                _freqs=self._freq_down)
         else:
             dos_down = np.array([])
-        if set_attrs:
-            self.dos_down = dos_down
+
+        self.dos_down = dos_down
 
         return dos, dos_down

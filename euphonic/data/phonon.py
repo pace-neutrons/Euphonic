@@ -379,8 +379,8 @@ class PhononData(Data):
 
         return dw
 
-    def calculate_sqw_map(self, scattering_lengths, ebins, set_attrs=True,
-                          calc_bose=True, **kwargs):
+    def calculate_sqw_map(self, scattering_lengths, ebins, calc_bose=True,
+                          **kwargs):
         """
         Calculate the structure factor for each q-point contained in data, and
         bin according to ebins to create a S(Q,w) map
@@ -393,8 +393,6 @@ class PhononData(Data):
             {'O': 5.803, 'Zn': 5.680}
         ebins : (n_ebins + 1,) float ndarray
             The energy bin edges in the same units as PhononData.freqs
-        set_attrs : boolean, optional, default True
-            Whether to set the sqw and sqw_ebins attributes of this object
         calc_bose : boolean, optional, default True
             Whether to calculate and apply the Bose factor
         **kwargs
@@ -437,8 +435,7 @@ class PhononData(Data):
         np.add.at(sqw_map, (first_index, n_bin), n_intensity)
         sqw_map = sqw_map[:, 1:-1]  # Exclude values outside ebin range
 
-        if set_attrs:
-            self._sqw_ebins = ebins
-            self.sqw_map = sqw_map
+        self._sqw_ebins = ebins
+        self.sqw_map = sqw_map
 
         return sqw_map

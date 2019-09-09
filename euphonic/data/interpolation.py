@@ -181,7 +181,7 @@ class InterpolationData(PhononData):
             pass
 
     def calculate_fine_phonons(
-        self, qpts, asr=None, precondition=False, set_attrs=True, dipole=True,
+        self, qpts, asr=None, precondition=False, dipole=True,
             eta_scale=1.0, splitting=True, nprocs=1, _qchunk=None):
         """
         Calculate phonon frequencies and eigenvectors at specified q-points
@@ -198,9 +198,6 @@ class InterpolationData(PhononData):
             the correction to the force constant matrix in real space.
             'reciprocal' applies the correction to the dynamical matrix at
             every q-point
-        set_attrs : boolean, optional, default True
-            Whether to set the freqs, eigenvecs, qpts and n_qpts attributes of
-            the InterpolationData object to the newly calculated values
         dipole : boolean, optional, default True
             Calculates the dipole tail correction to the dynamical matrix at
             each q-point using the Ewald sum, if the Born charges and
@@ -227,16 +224,15 @@ class InterpolationData(PhononData):
 
         # Reset obj freqs/eigenvecs to zero to reduce memory usage in case of
         # repeated calls to calculate_fine_phonons
-        if set_attrs:
-            self.qpts = np.array([])
-            self._freqs = np.empty((0, 3*self.n_ions))
-            self.eigenvecs = np.empty((0, 3*self.n_ions, self.n_ions, 3),
-                                      dtype=np.complex128)
+        self.qpts = np.array([])
+        self._freqs = np.empty((0, 3*self.n_ions))
+        self.eigenvecs = np.empty((0, 3*self.n_ions, self.n_ions, 3),
+                                  dtype=np.complex128)
 
-            self.split_i = np.empty((0,), dtype=np.int32)
-            self._split_freqs = np.empty((0, 3*self.n_ions))
-            self.split_eigenvecs = np.empty((0, 3*self.n_ions, self.n_ions, 3),
-                                            dtype=np.complex128)
+        self.split_i = np.empty((0,), dtype=np.int32)
+        self._split_freqs = np.empty((0, 3*self.n_ions))
+        self.split_eigenvecs = np.empty((0, 3*self.n_ions, self.n_ions, 3),
+                                        dtype=np.complex128)
 
         # Try to create a multiprocessing pool first, in case it fails
         if nprocs > 1:
@@ -377,18 +373,17 @@ class InterpolationData(PhononData):
                     split_eigenvecs = np.concatenate(
                         (split_eigenvecs, sevecs))
 
-        if set_attrs:
-            self.asr = asr
-            self.dipole = dipole
-            self.qpts = qpts
-            self.n_qpts = len(qpts)
-            self.weights = np.full(len(qpts), 1.0/len(qpts))
-            self._freqs = freqs
-            self.eigenvecs = eigenvecs
+        self.asr = asr
+        self.dipole = dipole
+        self.qpts = qpts
+        self.n_qpts = len(qpts)
+        self.weights = np.full(len(qpts), 1.0/len(qpts))
+        self._freqs = freqs
+        self.eigenvecs = eigenvecs
 
-            self.split_i = split_i
-            self._split_freqs = split_freqs
-            self.split_eigenvecs = split_eigenvecs
+        self.split_i = split_i
+        self._split_freqs = split_freqs
+        self.split_eigenvecs = split_eigenvecs
 
         return self.freqs, eigenvecs
 

@@ -16,7 +16,7 @@ class Data(object):
         return self._dos_bins*ureg('E_h').to(self._e_units, 'spectroscopy')
 
     def calculate_dos(self, dos_bins, gwidth=0, lorentz=False, weights=None,
-                      set_attrs=True, _freqs=None):
+                      _freqs=None):
         """
         Calculates a density of states with fixed width Gaussian/Lorentzian
         broadening
@@ -35,9 +35,6 @@ class Data(object):
         weights : (n_qpts, n_branches) float ndarray, optional
             The weights to use for each q-points and branch. If unspecified,
             uses the q-point weights stored in the Data object
-        set_attrs : boolean, optional, default True
-            Whether to set the dos and dos_bins attributes to the newly
-            calculated values
 
         Returns
         -------
@@ -45,7 +42,8 @@ class Data(object):
             The density of states for each bin
         """
 
-        # Use freqs in data if _freqs aren't specified
+        # Use freqs in data if _freqs aren't specified. This allows BandsData
+        # to calculate DOS for freqs_down too
         if _freqs is not None:
             freqs = _freqs
         else:
@@ -96,7 +94,9 @@ class Data(object):
         else:
             dos = hist
 
-        if set_attrs:
+        # Don't set self.dos if this is for freqs_down (i.e. if _freqs has
+        # been specified)
+        if _freqs is None:
             self.dos = dos
             self._dos_bins = dos_bins
 
