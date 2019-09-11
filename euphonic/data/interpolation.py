@@ -1224,11 +1224,22 @@ class InterpolationData(PhononData):
         # nonexistent images
         self._sc_image_i = sc_image_i[:, :, :, :np.max(n_sc_images)]
 
-    def reorder_freqs(self):
+    def reorder_freqs(self, **kwargs):
         """
-        Reorders frequencies across q-points in order to join branches, and
-        sets the freqs and eigenvecs attributes to the newly ordered
-        frequencies
+        By doing a dot product of eigenvectors at adjacent q-points,
+        determines which modes are most similar and creates a _mode_map
+        attribute in the Data object, which specifies which order the
+        frequencies should be in at each q-point. The branch ordering can be
+        seen when plotting dispersion
+
+        Parameters
+        ----------
+        reorder_gamma : bool, default True
+            Whether to reorder frequencies at gamma-equivalent points. If
+            an analytical correction has been applied at the gamma points
+            (i.e LO-TO splitting) mode assignments can be incorrect at
+            adjacent q-points where the correction hasn't been applied.
+            So you might not want to reorder at gamma for some materials
         """
         if self.n_qpts == 0:
             warnings.warn(
@@ -1236,7 +1247,7 @@ class InterpolationData(PhononData):
                  'calculate_fine_phonons before reordering frequencies'),
                 stacklevel=2)
             return
-        super(InterpolationData, self).reorder_freqs()
+        super(InterpolationData, self).reorder_freqs(**kwargs)
 
     def calculate_structure_factor(self, scattering_lengths, dw_arg=None,
                                    **kwargs):
