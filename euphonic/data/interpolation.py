@@ -117,9 +117,9 @@ class InterpolationData(PhononData):
         self.model = model
         self.n_qpts = 0
         self.qpts = np.array([])
-        self._freqs = np.empty((0, 3*self.n_ions))
-        self.eigenvecs = np.empty((0, 3*self.n_ions, self.n_ions, 3),
-                                  dtype=np.complex128)
+        self._reduced_freqs = np.empty((0, 3*self.n_ions))
+        self._reduced_eigenvecs = np.empty((0, 3*self.n_ions, self.n_ions, 3),
+                                           dtype=np.complex128)
 
         self.split_i = np.empty((0,), dtype=np.int32)
         self._split_freqs = np.empty((0, 3*self.n_ions))
@@ -131,6 +131,14 @@ class InterpolationData(PhononData):
 
         if len(qpts) > 0:
             self.calculate_fine_phonons(qpts, **kwargs)
+
+    @property
+    def _freqs(self):
+        return self._reduced_freqs[self._qpts_i]
+
+    @property
+    def eigenvecs(self):
+        return self._reduced_eigenvecs[self._qpts_i]
 
     @property
     def force_constants(self):
@@ -182,7 +190,8 @@ class InterpolationData(PhononData):
 
     def calculate_fine_phonons(
         self, qpts, asr=None, precondition=False, dipole=True,
-            eta_scale=1.0, splitting=True, nprocs=1, _qchunk=None):
+            eta_scale=1.0, splitting=True, reduce_qpts=True, nprocs=1,
+            _qchunk=None):
         """
         Calculate phonon frequencies and eigenvectors at specified q-points
         from a supercell force constant matrix via interpolation. For more
@@ -225,9 +234,9 @@ class InterpolationData(PhononData):
         # Reset obj freqs/eigenvecs to zero to reduce memory usage in case of
         # repeated calls to calculate_fine_phonons
         self.qpts = np.array([])
-        self._freqs = np.empty((0, 3*self.n_ions))
-        self.eigenvecs = np.empty((0, 3*self.n_ions, self.n_ions, 3),
-                                  dtype=np.complex128)
+        self._reduced_freqs = np.empty((0, 3*self.n_ions))
+        self._reduced_eigenvecs = np.empty((0, 3*self.n_ions, self.n_ions, 3),
+                                           dtype=np.complex128)
 
         self.split_i = np.empty((0,), dtype=np.int32)
         self._split_freqs = np.empty((0, 3*self.n_ions))
@@ -261,6 +270,36 @@ class InterpolationData(PhononData):
                                'ods'), stacklevel=2)
                 return
 
+        # Set default splitting params
+        if not hasattr(self, 'born') or not hasattr(self, 'dielectric'):
+            dipole = False
+        if not dipole:
+            splitting = False
+
+        if reduce_qpts:
+            norm_qpts = qpts - np.rint(qpts)
+            reduced_qpts, qpts_i = np.unique(norm_qpts, return_inverse=True,
+                                             axis=0)
+            n_rqpts = len(reduced_qpts)
+            # Special handling of gamma points - don't reduce gamma points if
+            # LO-TO splitting
+            gamma_i = np.where(is_gamma(qpts))[0]
+            n_gamma = len(gamma_i)
+            if splitting and n_gamma > 1:
+                # Replace any gamma points and their indices with new gamma
+                # points appended onto the reduced q-point array, so each
+                # gamma can have its own splitting
+                qpts_i[gamma_i[1:]] = range(n_rqpts, n_rqpts + n_gamma - 1)
+                reduced_qpts = np.append(reduced_qpts,
+                                         np.tile(np.array([0., 0., 0.,]),
+                                                 (n_gamma - 1, 1)),
+                                         axis=0)
+                n_rqpts = len(reduced_qpts)
+        else:
+            reduced_qpts = qpts
+            qpts_i = np.arange(0, len(qpts), dtype=np.int32)
+            n_rqpts = len(qpts)
+
         lim = 2  # Supercell image limit
         # Construct list of supercell ion images
         if not hasattr(self, 'sc_image_i'):
@@ -287,10 +326,6 @@ class InterpolationData(PhononData):
         dyn_mat_weighting = 1/np.sqrt(masses*np.transpose(masses))
 
         # Initialise dipole correction calculation to FC matrix if required
-        if not hasattr(self, 'born') or not hasattr(self, 'dielectric'):
-            dipole = False
-        if not dipole:
-            splitting = False
         if dipole and (not hasattr(self, 'eta_scale') or
                        eta_scale != self._eta_scale):
             self._dipole_correction_init(eta_scale)
@@ -329,30 +364,30 @@ class InterpolationData(PhononData):
 
 
         q_independent_args = (
-            qpts, fc_img_weighted, unique_sc_offsets, unique_sc_i,
-            unique_cell_origins, unique_cell_i, ac_i, g_evals, g_evecs,
-            dyn_mat_weighting, dipole, asr, splitting)
+            reduced_qpts, qpts_i, fc_img_weighted, unique_sc_offsets,
+            unique_sc_i, unique_cell_origins, unique_cell_i, ac_i, g_evals,
+            g_evecs, dyn_mat_weighting, dipole, asr, splitting)
 
         split_i = np.empty((0,), dtype=np.int32)
         split_freqs = np.empty((0, 3*self.n_ions))
         split_eigenvecs = np.empty((0, 3*self.n_ions, self.n_ions, 3),
                                    dtype=np.complex128)
         if nprocs > 1:
-            freqs = np.empty((0, 3*self.n_ions))
-            eigenvecs = np.empty((0, 3*self.n_ions, self.n_ions, 3),
-                                 dtype=np.complex128)
+            rfreqs = np.empty((0, 3*self.n_ions))
+            reigenvecs = np.empty((0, 3*self.n_ions, self.n_ions, 3),
+                                  dtype=np.complex128)
 
             if _qchunk is not None:
-                nchunks = int((len(qpts) - 1)/_qchunk) + 1
+                nchunks = int((n_rqpts - 1)/_qchunk) + 1
             else:
                 nchunks = 1
-                _qchunk = len(qpts)
-            # Calculate in chunks if required, as pool.map_async raises a
+                _qchunk = n_rqpts
+            # Calculate in chunks if required, as pool.map raises a
             # MaybeEncodingError if too much data (i.e. eigenvectors for too
             # many q-points) are returned at once
             for i in range(nchunks):
                 qi = i*_qchunk
-                qf = min((i + 1)*_qchunk, len(qpts))
+                qf = min((i + 1)*_qchunk, n_rqpts)
                 try:
                     callback = pool.map_async(
                         partial(self._calculate_phonons_at_q,
@@ -368,9 +403,9 @@ class InterpolationData(PhononData):
                     pool.terminate()
                     raise
                 evals, evecs, sevals, sevecs, si = zip(*results)
-                freqs = np.concatenate((freqs, np.stack(evals, axis=0)))
-                eigenvecs = np.concatenate((eigenvecs,
-                                            np.stack(evecs, axis=0)))
+                rfreqs = np.concatenate((rfreqs, np.stack(evals, axis=0)))
+                reigenvecs = np.concatenate((reigenvecs,
+                                             np.stack(evecs, axis=0)))
                 split_i = np.concatenate((split_i, np.concatenate(si)))
                 if len(split_i > 0):
                     split_freqs = np.concatenate((split_freqs,
@@ -380,14 +415,14 @@ class InterpolationData(PhononData):
             pool.close()
             pool.join()
         else:
-            freqs = np.zeros((len(qpts), 3*self.n_ions))
-            eigenvecs = np.zeros((len(qpts), 3*self.n_ions, self.n_ions, 3),
-                             dtype=np.complex128)
-            for q in range(len(qpts)):
-                freqs[q], eigenvecs[q], sfreqs, sevecs, _ = \
+            rfreqs = np.zeros((n_rqpts, 3*self.n_ions))
+            reigenvecs = np.zeros((n_rqpts, 3*self.n_ions, self.n_ions, 3),
+                                  dtype=np.complex128)
+            for q in range(n_rqpts):
+                rfreqs[q], reigenvecs[q], sfreqs, sevecs, si = \
                 self._calculate_phonons_at_q(q, q_independent_args)
                 if len(sfreqs) > 0:
-                    split_i = np.concatenate((split_i, [q]))
+                    split_i = np.concatenate((split_i, si))
                     split_freqs = np.concatenate((split_freqs, sfreqs))
                     split_eigenvecs = np.concatenate(
                         (split_eigenvecs, sevecs))
@@ -397,14 +432,16 @@ class InterpolationData(PhononData):
         self.qpts = qpts
         self.n_qpts = len(qpts)
         self.weights = np.full(len(qpts), 1.0/len(qpts))
-        self._freqs = freqs
-        self.eigenvecs = eigenvecs
+        self._reduced_freqs = rfreqs
+        self._reduced_eigenvecs = reigenvecs
+        self._reduced_qpts = reduced_qpts
+        self._qpts_i = qpts_i
 
         self.split_i = split_i
         self._split_freqs = split_freqs
         self.split_eigenvecs = split_eigenvecs
 
-        return self.freqs, eigenvecs
+        return self.freqs, self.eigenvecs
 
     def _calculate_phonons_at_q(self, q, args):
         """
@@ -413,11 +450,11 @@ class InterpolationData(PhononData):
         eigenvalues. Optionally also includes the Ewald dipole sum correction
         and LO-TO splitting
         """
-        (qpts, fc_img_weighted, unique_sc_offsets, unique_sc_i,
-         unique_cell_origins, unique_cell_i, ac_i, g_evals,
+        (reduced_qpts, qpts_i, fc_img_weighted, unique_sc_offsets,
+         unique_sc_i, unique_cell_origins, unique_cell_i, ac_i, g_evals,
          g_evecs, dyn_mat_weighting, dipole, asr, splitting) = args
 
-        qpt = qpts[q]
+        qpt = reduced_qpts[q]
         n_ions = self.n_ions
 
         dyn_mat = self._calculate_dyn_mat(
@@ -435,12 +472,17 @@ class InterpolationData(PhononData):
         # Calculate LO-TO splitting by calculating non-analytic correction
         # to dynamical matrix
         if splitting and is_gamma(qpt):
-            if q == 0:
-                q_dirs = [qpts[1]]
-            elif q == (len(qpts) - 1):
-                q_dirs = [qpts[-2]]
+            # If first q-point
+            if qpts_i[0] == q:
+                q_dirs = [reduced_qpts[qpts_i[1]]]
+            # If last q-point
+            elif qpts_i[-1] == q:
+                q_dirs = [reduced_qpts[qpts_i[-2]]]
             else:
-                q_dirs = [-qpts[q - 1], qpts[q + 1]]
+                # Find position in original qpts array (non reduced)
+                qpos = np.where(qpts_i==q)[0][0]
+                q_dirs = [-reduced_qpts[qpts_i[qpos - 1]],
+                           reduced_qpts[qpts_i[qpos + 1]]]
             na_corrs = np.zeros((len(q_dirs), 3*n_ions, 3*n_ions),
                                 dtype=np.complex128)
             for i, q_dir in enumerate(q_dirs):
@@ -475,7 +517,7 @@ class InterpolationData(PhononData):
                 freqs = evals
                 eigenvecs = evecs
             else:
-                split_i = np.concatenate((split_i, [q]))
+                split_i = np.concatenate((split_i, [np.where(qpts_i==q)[0][0]]))
                 sfreqs = np.concatenate((sfreqs, [evals]))
                 sevecs = np.concatenate((sevecs, [evecs]))
 
