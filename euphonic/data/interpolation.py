@@ -278,13 +278,20 @@ class InterpolationData(PhononData):
 
         if reduce_qpts:
             norm_qpts = qpts - np.rint(qpts)
+            # Ensure gamma points are exactly zero, otherwise you may have a
+            # case where small fp differences mean np.unique doesn't reduce
+            # them, yet they're all classified as gamma points. This causes
+            # indexing errors later when calculating q-directions as there are
+            # then points in reduced_qpts whose index isn't in qpts_i
+            gamma_i = np.where(is_gamma(qpts))[0]
+            n_gamma = len(gamma_i)
+            norm_qpts[gamma_i] = 0.
+
             reduced_qpts, qpts_i = np.unique(norm_qpts, return_inverse=True,
                                              axis=0)
             n_rqpts = len(reduced_qpts)
             # Special handling of gamma points - don't reduce gamma points if
             # LO-TO splitting
-            gamma_i = np.where(is_gamma(qpts))[0]
-            n_gamma = len(gamma_i)
             if splitting and n_gamma > 1:
                 # Replace any gamma points and their indices with new gamma
                 # points appended onto the reduced q-point array, so each
