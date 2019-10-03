@@ -2,6 +2,7 @@ import numpy as np
 from euphonic import ureg
 from euphonic.data.data import Data
 from euphonic._readers import _castep
+from euphonic._readers import _phonopy
 
 
 class BandsData(Data):
@@ -103,8 +104,19 @@ class BandsData(Data):
         path : str
             Path to dir containing the file(s), if in another directory
         """
+<<<<<<< HEAD
         data = _castep._read_bands_data(seedname, path)
         return self(data)
+=======
+        if model.lower() == 'castep':
+            data = _castep._read_bands_data(seedname, path)
+        elif model.lower() == 'phonopy':
+            data = _phonopy._read_bands_data(seedname, path)
+        else:
+            raise ValueError(
+                "{:s} is not a valid model, please use one of {{'CASTEP'}}"
+                .format(model))
+>>>>>>> 6d1334b... BandsData point to phonopy reader if model=='phonopy'
 
     def _set_data(self, data):
         self.n_qpts = data['n_qpts']
