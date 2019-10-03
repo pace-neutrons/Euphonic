@@ -30,8 +30,6 @@ def _read_bands_data(seedname='mesh', path='.'):
         'ion_r' and 'ion_type' are also present.
     """
 
-    #seedname = "band" # does not contain all required information
-
     if path:
         if not os.path.exists(path):
             raise FileNotFoundError(f'Phonopy seed path {path} does not exist.')
@@ -40,33 +38,8 @@ def _read_bands_data(seedname='mesh', path='.'):
         phonopy_files = os.listdir('.')
         raise NotImplementedError('handling empty path')
 
-    if seedname != 'mesh':
-        raise NotImplementedError('seedname format inconsistent with castep style. Extension is determined by phonopy output type hdf5/yaml.')
-
-    seed_files = [m for m in phonopy_files if seedname in m]
-
-    #TODO make this more clear, enforce yaml, hdf5 only?
-    # search for mesh files with any of these extensions
-    yaml_exts = ['.yaml', '.yml']
     hdf5_exts = ['.hdf5', '.he5', '.h5']
-
-    present_hdf5 = [[ext for ext in hdf5_exts if ext in name]
-                    for name in seed_files][0]
-    present_yaml = [[ext for ext in yaml_exts if ext in name]
-                    for name in seed_files][0]
-
-    use_hdf5 = False
-    use_yaml = False
-    if present_hdf5: # default to hdf5
-        seedname_ext = present_hdf5[0]
-        use_hdf5 = True
-    elif present_yaml:
-        seedname_ext = present_yaml[0]
-        use_yaml = True
-    else:
-        raise NotImplementedError('handling no yaml or hdf5 found')
-
-    bands_name = os.path.join(path, seedname + seedname_ext)
+    yaml_exts = ['.yaml', '.yml']
 
 
     def extract(bands_obj):
@@ -116,18 +89,38 @@ def _read_bands_data(seedname='mesh', path='.'):
 
         return data_dict
 
+    def open_hdf5(path, name):
+        try:
+            pathname = os.path.join(path, name)
+            with h5py.File(pathname) as hdf5_data:
+                return extract(hdf5_data)
+            print(f"Read success for {pathname}.")
+        except:
+            return False
 
-    if use_hdf5: #use hdf5
-        with h5py.File(bands_name) as hdf5_data:
-            return extract(hdf5_data)
-    elif use_yaml: #use yaml
-        with open(bands_name) as yaml_obj:
-            yaml_data = yaml.safe_load(yaml_obj)
-            return extract(yaml_data)
-    else:
-        raise NotImplementedError('handling no use_hdf5 / use_yaml')
-        return NotImplemented
+    def open_yaml(path, name):
+        try:
+            pathname = os.path.join(path, name)
+            with open(pathname) as yaml_obj:
+                yaml_data = yaml.safe_load(yaml_obj)
+                return extract(yaml_data)
+            print(f"Read success for {pathname}.")
+        except:
+            return False
 
+    #TODO demonstrate output variables as data_dict or leave hidden? 
+
+    # check hdf5 data
+    k = [open_hdf5(path, seedname + ext) for ext in hdf5_exts]
+    if any(k):
+        return next(item for item in k if item is not None)
+
+    # otherwise check yaml data
+    j = [open_yaml(path, seedname + ext) for ext in yaml_exts]
+    if any(j):
+        return next(item for item in j if item is not None)
+
+    return None
 
 
 def _read_phonon_data(seedname, path):
