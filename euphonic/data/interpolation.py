@@ -237,9 +237,16 @@ class InterpolationData(PhononData):
         # Try to create a multiprocessing pool first, in case it fails
         if nprocs > 1:
             try:
+                import signal
                 from multiprocessing import Pool
                 from functools import partial
+                # Temporarily remove SIGINT handler before creating pool, so
+                # child processes don't inherit it. Instead handle SIGINT
+                # (e.g. keyboard interrupts) from the main process only and
+                # terminate the pool before exiting
+                original_sigint_handler = signal.signal(signal.SIGINT, signal.SIG_IGN)
                 pool = Pool(processes=nprocs)
+                signal.signal(signal.SIGINT, original_sigint_handler)
             except RuntimeError:
                 warnings.warn(('\nA RuntimeError was raised when initialising '
                                'the multiprocessing Pool. This is probably due'
@@ -339,25 +346,32 @@ class InterpolationData(PhononData):
             else:
                 nchunks = 1
                 _qchunk = len(qpts)
-            # Calculate in chunks if required, as pool.map raises a
+            # Calculate in chunks if required, as pool.map_async raises a
             # MaybeEncodingError if too much data (i.e. eigenvectors for too
             # many q-points) are returned at once
             for i in range(nchunks):
                 qi = i*_qchunk
                 qf = min((i + 1)*_qchunk, len(qpts))
-                results = pool.map(
-                    partial(self._calculate_phonons_at_q, data=data),
-                    range(qi, qf))
+                try:
+                    callback = pool.map_async(
+                        partial(self._calculate_phonons_at_q, data=data),
+                        range(qi, qf))
+                    # Timeout is required otherwise get() ignores all signals
+                    results = callback.get(sys.float_info.max)
+                except KeyboardInterrupt:
+                    print('\nCaught keyboard interrupt, terminating workers')
+                    pool.terminate()
+                    raise
                 evals, evecs, sevals, sevecs, si = zip(*results)
                 freqs = np.concatenate((freqs, np.stack(evals, axis=0)))
                 eigenvecs = np.concatenate((eigenvecs,
                                             np.stack(evecs, axis=0)))
                 split_i = np.concatenate((split_i, np.concatenate(si)))
                 if len(split_i > 0):
-                   split_freqs = np.concatenate((split_freqs,
-                                                 np.concatenate(sevals)))
-                   split_eigenvecs = np.concatenate((split_eigenvecs,
-                                                     np.concatenate(sevecs)))
+                    split_freqs = np.concatenate((split_freqs,
+                                                  np.concatenate(sevals)))
+                    split_eigenvecs = np.concatenate((split_eigenvecs,
+                                                      np.concatenate(sevecs)))
             pool.close()
             pool.join()
         else:
