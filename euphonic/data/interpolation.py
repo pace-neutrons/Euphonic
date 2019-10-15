@@ -328,9 +328,10 @@ class InterpolationData(PhononData):
                 asr = None
 
 
-        data = (qpts, fc_img_weighted, unique_sc_offsets, unique_sc_i,
-                unique_cell_origins, unique_cell_i, ac_i, g_evals,
-                g_evecs, dyn_mat_weighting, dipole, asr, splitting)
+        q_independent_args = (
+            qpts, fc_img_weighted, unique_sc_offsets, unique_sc_i,
+            unique_cell_origins, unique_cell_i, ac_i, g_evals, g_evecs,
+            dyn_mat_weighting, dipole, asr, splitting)
 
         split_i = np.empty((0,), dtype=np.int32)
         split_freqs = np.empty((0, 3*self.n_ions))
@@ -354,7 +355,8 @@ class InterpolationData(PhononData):
                 qf = min((i + 1)*_qchunk, len(qpts))
                 try:
                     callback = pool.map_async(
-                        partial(self._calculate_phonons_at_q, data=data),
+                        partial(self._calculate_phonons_at_q,
+                                args=q_independent_args),
                         range(qi, qf))
                     if sys.version_info[0] < 3:
                         # Timeout required on Py2 or get() ignores all signals
@@ -383,7 +385,7 @@ class InterpolationData(PhononData):
                              dtype=np.complex128)
             for q in range(len(qpts)):
                 freqs[q], eigenvecs[q], sfreqs, sevecs, _ = \
-                self._calculate_phonons_at_q(q, data)
+                self._calculate_phonons_at_q(q, q_independent_args)
                 if len(sfreqs) > 0:
                     split_i = np.concatenate((split_i, [q]))
                     split_freqs = np.concatenate((split_freqs, sfreqs))
@@ -404,7 +406,7 @@ class InterpolationData(PhononData):
 
         return self.freqs, eigenvecs
 
-    def _calculate_phonons_at_q(self, q, data):
+    def _calculate_phonons_at_q(self, q, args):
         """
         Given a q-point and some precalculated q-independent values, calculate
         and diagonalise the dynamical matrix and return the frequencies and
@@ -413,7 +415,7 @@ class InterpolationData(PhononData):
         """
         (qpts, fc_img_weighted, unique_sc_offsets, unique_sc_i,
          unique_cell_origins, unique_cell_i, ac_i, g_evals,
-         g_evecs, dyn_mat_weighting, dipole, asr, splitting) = data
+         g_evecs, dyn_mat_weighting, dipole, asr, splitting) = args
 
         qpt = qpts[q]
         n_ions = self.n_ions
