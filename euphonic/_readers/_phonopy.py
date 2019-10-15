@@ -116,7 +116,7 @@ def _read_bands_data(seedname='mesh', path='.'):
                 return extract(hdf5_data)
             print(f"Read success for {pathname}.")
         except:
-            return False
+            return None
 
     def open_yaml(path, name):
         try:
@@ -126,7 +126,7 @@ def _read_bands_data(seedname='mesh', path='.'):
                 return extract(yaml_data)
             print(f"Read success for {pathname}.")
         except:
-            return False
+            return None
 
     #TODO demonstrate output variables as data_dict or leave hidden? 
     #TODO use next(iterator openfile), returns first non None.
