@@ -244,9 +244,9 @@ class InterpolationData(PhononData):
                 # child processes don't inherit it. Instead handle SIGINT
                 # (e.g. keyboard interrupts) from the main process only and
                 # terminate the pool before exiting
-                original_sigint_handler = signal.signal(signal.SIGINT, signal.SIG_IGN)
+                sigint_handler = signal.signal(signal.SIGINT, signal.SIG_IGN)
                 pool = Pool(processes=nprocs)
-                signal.signal(signal.SIGINT, original_sigint_handler)
+                signal.signal(signal.SIGINT, sigint_handler)
             except RuntimeError:
                 warnings.warn(('\nA RuntimeError was raised when initialising '
                                'the multiprocessing Pool. This is probably due'
@@ -356,8 +356,11 @@ class InterpolationData(PhononData):
                     callback = pool.map_async(
                         partial(self._calculate_phonons_at_q, data=data),
                         range(qi, qf))
-                    # Timeout is required otherwise get() ignores all signals
-                    results = callback.get(sys.float_info.max)
+                    if sys.version_info[0] < 3:
+                        # Timeout required on Py2 or get() ignores all signals
+                        results = callback.get(sys.float_info.max)
+                    else:
+                        results = callback.get()
                 except KeyboardInterrupt:
                     print('\nCaught keyboard interrupt, terminating workers')
                     pool.terminate()
