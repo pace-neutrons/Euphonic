@@ -32,7 +32,7 @@ def output_grace(data, seedname='out', mirror=False, up=True, down=True):
 
     # X-axis label formatting
     # Replace 1/cm with cm^-1
-    units_str = '{:~P}'.format(data.dos_bins.units)
+    units_str = data._e_units
     inverse_unit_index = units_str.find('/')
     if inverse_unit_index > -1:
         units_str = units_str[inverse_unit_index+1:]
@@ -207,7 +207,7 @@ def plot_dos(data, title='', mirror=False, up=True, down=True, **line_kwargs):
 
     # X-axis label formatting
     # Replace 1/cm with cm^-1
-    units_str = '{:~P}'.format(data.dos_bins.units)
+    units_str = data._e_units
     inverse_unit_index = units_str.find('/')
     if inverse_unit_index > -1:
         units_str = units_str[inverse_unit_index+1:]

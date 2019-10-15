@@ -101,18 +101,20 @@ def _read_phonon_data(seedname, path):
     data_dict['n_ions'] = n_ions
     data_dict['n_branches'] = n_branches
     data_dict['n_qpts'] = n_qpts
-    data_dict['cell_vec'] = cell_vec*ureg.angstrom
-    data_dict['recip_vec'] = reciprocal_lattice(cell_vec)/ureg.angstrom
+    data_dict['cell_vec'] = (cell_vec*ureg('angstrom').to('bohr')).magnitude
+    data_dict['recip_vec'] = ((reciprocal_lattice(cell_vec)/ureg.angstrom)
+                              .to('1/bohr')).magnitude
     data_dict['ion_r'] = ion_r
     data_dict['ion_type'] = ion_type
-    data_dict['ion_mass'] = ion_mass*ureg.amu
+    data_dict['ion_mass'] = ion_mass*(ureg('amu')).to('e_mass').magnitude
     data_dict['qpts'] = qpts
     data_dict['weights'] = weights
-    data_dict['freqs'] = (freqs*(1/ureg.cm)).to('meV', 'spectroscopy')
+    data_dict['freqs'] = ((freqs*(1/ureg.cm)).
+                          to('E_h', 'spectroscopy')).magnitude
     data_dict['eigenvecs'] = eigenvecs
     data_dict['split_i'] = split_i
-    data_dict['split_freqs'] = (split_freqs*(1/ureg.cm)).to(
-        'meV', 'spectroscopy')
+    data_dict['split_freqs'] = ((split_freqs*(1/ureg.cm))
+                                .to('E_h', 'spectroscopy')).magnitude
     data_dict['split_eigenvecs'] = split_eigenvecs
 
     return data_dict
@@ -224,17 +226,15 @@ def _read_interpolation_data(seedname, path):
     data_dict = {}
     data_dict['n_ions'] = n_ions
     data_dict['n_branches'] = 3*n_ions
-    data_dict['cell_vec'] = (cell_vec*ureg.bohr).to('angstrom')
-    data_dict['recip_vec'] = ((reciprocal_lattice(cell_vec)/ureg.bohr)
-                              .to('1/angstrom'))
+    data_dict['cell_vec'] = cell_vec
+    data_dict['recip_vec'] = reciprocal_lattice(cell_vec)
     data_dict['ion_r'] = ion_r - np.floor(ion_r)  # Normalise ion coordinates
     data_dict['ion_type'] = ion_type
-    data_dict['ion_mass'] = (ion_mass*ureg.e_mass).to('amu')
+    data_dict['ion_mass'] = ion_mass
 
     # Set entries relating to 'FORCE_CON' block
     try:
-        data_dict['force_constants'] = (force_constants
-                                        *ureg.hartree/(ureg.bohr**2))
+        data_dict['force_constants'] = force_constants
         data_dict['sc_matrix'] = sc_matrix
         data_dict['n_cells_in_sc'] = n_cells_in_sc
         data_dict['cell_origins'] = cell_origins
@@ -246,7 +246,7 @@ def _read_interpolation_data(seedname, path):
 
     # Set entries relating to dipoles
     try:
-        data_dict['born'] = born*ureg.e
+        data_dict['born'] = born
         data_dict['dielectric'] = dielectric
     except UnboundLocalError:
         pass
@@ -278,7 +278,7 @@ def _read_cell(file_obj, int_type, float_type):
     ion_r : (n_ions, 3) float ndarray
         The fractional position of each ion within the unit cell
     ion_mass : (n_ions,) float ndarray
-        The mass of each ion in the unit cell in amu
+        The mass of each ion in the unit cell in units of electron mass
     ion_type : (n_ions,) string ndarray
         The chemical symbols of each ion in the unit cell. Ions are in the
         same order as in ion_r
@@ -457,14 +457,13 @@ def _read_bands_data(seedname, path):
     data_dict['n_qpts'] = n_qpts
     data_dict['n_spins'] = n_spins
     data_dict['n_branches'] = n_branches
-    data_dict['fermi'] = (fermi*ureg.hartree).to('eV')
-    data_dict['cell_vec'] = (cell_vec*ureg.bohr).to('angstrom')
-    data_dict['recip_vec'] = ((reciprocal_lattice(cell_vec)/ureg.bohr)
-                              .to('1/angstrom'))
+    data_dict['fermi'] = fermi
+    data_dict['cell_vec'] = cell_vec
+    data_dict['recip_vec'] = reciprocal_lattice(cell_vec)
     data_dict['qpts'] = qpts
     data_dict['weights'] = weights
-    data_dict['freqs'] = (freqs*ureg.hartree).to('eV')
-    data_dict['freq_down'] = (freq_down*ureg.hartree).to('eV')
+    data_dict['freqs'] = freqs
+    data_dict['freq_down'] = freq_down
 
     # Try to get extra data (ionic species, coords) from .castep file
     try:

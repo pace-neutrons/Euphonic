@@ -49,11 +49,22 @@ def direction_changed(qpts, tolerance=5e-6):
 
 def is_gamma(qpt):
     """
-    Determines whether the given q-point is a gamma point
+    Determines whether the given point(s) are gamma points
+
+    Parameters
+    ----------
+    qpts: (3,) or (N, 3) float ndarray
+        The q-point or q-points
+
+    Returns
+    -------
+    isgamma: bool or (N,) bool ndarray
+        Whether the input q-points(s) are gamma points. Returns a scalar if
+        only 1 q-point is provided
     """
     tol = 1e-15
-
-    return np.sum(np.absolute(qpt - np.rint(qpt))) < tol
+    isgamma = np.sum(np.absolute(qpt - np.rint(qpt)), axis=-1) < tol
+    return isgamma
 
 
 def gaussian(x, sigma):

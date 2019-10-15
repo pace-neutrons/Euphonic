@@ -41,7 +41,7 @@ class TestStructureFactorPhononDataLZO(unittest.TestCase):
         npt.assert_allclose(sf, expected_sf)
 
 
-class TestStructureFactorInterpolationDataLZO(unittest.TestCase):
+class TestStructureFactorInterpolationDataLZOSerial(unittest.TestCase):
 
     def setUp(self):
         # Need to separately test SF calculation with interpolated phonon data
@@ -210,7 +210,24 @@ class TestStructureFactorInterpolationDataLZO(unittest.TestCase):
             assert issubclass(w[-1].category, UserWarning)
 
 
-class TestStructureFactorInterpolationDataQuartz(unittest.TestCase):
+class TestStructureFactorInterpolationDataLZOParallel(
+    TestStructureFactorInterpolationDataLZOSerial):
+
+    def setUp(self):
+        # Need to separately test SF calculation with interpolated phonon data
+        # to test eigenvector calculations
+        self.seedname = 'La2Zr2O7'
+        self.interpolation_path = 'test/data/interpolation/LZO'
+        self.sf_path = 'test/data/structure_factor/LZO/'
+        self.scattering_lengths = {'La': 8.24, 'Zr': 7.16, 'O': 5.803}
+        qpts = np.loadtxt(self.sf_path + 'qpts.txt')
+
+        self.data = InterpolationData(
+            self.seedname, path=self.interpolation_path)
+        self.data.calculate_fine_phonons(qpts, asr='realspace', nprocs=2)
+
+
+class TestStructureFactorInterpolationDataQuartzSerial(unittest.TestCase):
 
     def setUp(self):
         # Need to separately test SF calculation with interpolated phonon data
@@ -330,3 +347,19 @@ class TestStructureFactorInterpolationDataQuartz(unittest.TestCase):
         npt.assert_allclose(sf_sum[gamma_qpts, 3:],
                             expected_sf_sum[gamma_qpts, 3:],
                             rtol=8e-6, atol=3e-14)
+
+class TestStructureFactorInterpolationDataQuartzParallel(
+    TestStructureFactorInterpolationDataQuartzSerial):
+
+    def setUp(self):
+        # Need to separately test SF calculation with interpolated phonon data
+        # to test eigenvector calculations
+        self.seedname = 'quartz'
+        self.interpolation_path = 'test/data/interpolation/quartz'
+        self.sf_path = 'test/data/structure_factor/quartz/'
+        self.scattering_lengths = {'Si': 4.1491, 'O': 5.803}
+        qpts = np.loadtxt(self.sf_path + 'qpts.txt')
+
+        self.data = InterpolationData(
+            self.seedname, path=self.interpolation_path)
+        self.data.calculate_fine_phonons(qpts, asr='reciprocal', nprocs=2)

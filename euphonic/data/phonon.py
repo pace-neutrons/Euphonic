@@ -1,7 +1,7 @@
 import math
 import numpy as np
 from euphonic import ureg
-from euphonic.util import direction_changed, bose_factor
+from euphonic.util import direction_changed, bose_factor, is_gamma
 from euphonic.data.data import Data
 from euphonic._readers import _castep
 
@@ -73,6 +73,33 @@ class PhononData(Data):
         self.seedname = seedname
         self.model = model
 
+        self._l_units = 'angstrom'
+        self._e_units = 'meV'
+
+    @property
+    def cell_vec(self):
+        return self._cell_vec*ureg('bohr').to(self._l_units)
+
+    @property
+    def recip_vec(self):
+        return self._recip_vec*ureg('1/bohr').to('1/' + self._l_units)
+
+    @property
+    def ion_mass(self):
+        return self._ion_mass*ureg('e_mass').to('amu')
+
+    @property
+    def freqs(self):
+        return self._freqs*ureg('E_h').to(self._e_units, 'spectroscopy')
+
+    @property
+    def split_freqs(self):
+        return self._split_freqs*ureg('E_h').to(self._e_units, 'spectroscopy')
+
+    @property
+    def sqw_ebins(self):
+        return self._sqw_ebins*ureg('E_h').to(self._e_units, 'spectroscopy')
+
     def _get_data(self, seedname, model, path):
         """"
         Calls the correct reader to get the required data, and sets the
@@ -98,63 +125,68 @@ class PhononData(Data):
         self.n_ions = data['n_ions']
         self.n_branches = data['n_branches']
         self.n_qpts = data['n_qpts']
-        self.cell_vec = data['cell_vec']
-        self.recip_vec = data['recip_vec']
+        self._cell_vec = data['cell_vec']
+        self._recip_vec = data['recip_vec']
         self.ion_r = data['ion_r']
         self.ion_type = data['ion_type']
-        self.ion_mass = data['ion_mass']
+        self._ion_mass = data['ion_mass']
         self.qpts = data['qpts']
         self.weights = data['weights']
-        self.freqs = data['freqs']
+        self._freqs = data['freqs']
         self.eigenvecs = data['eigenvecs']
         self.split_i = data['split_i']
-        self.split_freqs = data['split_freqs']
+        self._split_freqs = data['split_freqs']
         self.split_eigenvecs = data['split_eigenvecs']
 
-    def reorder_freqs(self):
+    def reorder_freqs(self, reorder_gamma=True):
         """
-        Reorders frequencies across q-points in order to join branches, and
-        sets the freqs and eigenvecs attributes to the newly ordered
-        frequencies
+        By doing a dot product of eigenvectors at adjacent q-points,
+        determines which modes are most similar and creates a _mode_map
+        attribute in the Data object, which specifies which order the
+        frequencies should be in at each q-point. The branch ordering can be
+        seen when plotting dispersion
+
+        Parameters
+        ----------
+        reorder_gamma : bool, default True
+            Whether to reorder frequencies at gamma-equivalent points. If
+            an analytical correction has been applied at the gamma points
+            (i.e LO-TO splitting) mode assignments can be incorrect at
+            adjacent q-points where the correction hasn't been applied.
+            So you might not want to reorder at gamma for some materials
         """
         n_qpts = self.n_qpts
         n_branches = self.n_branches
         qpts = self.qpts
-        freqs = self.freqs.magnitude
         eigenvecs = self.eigenvecs
 
-        ordered_freqs = np.zeros(freqs.shape)
-        ordered_eigenvecs = np.zeros(eigenvecs.shape, dtype=np.complex128)
-        qmap = np.arange(n_branches)
+        # Initialise map, don't reorder first q-point
+        mode_map = np.zeros((n_qpts, n_branches), dtype=np.int32)
+        mode_map[0] = np.arange(n_branches)
 
-        # Only calculate qmap and reorder freqs if the direction hasn't changed
-        # and there is no LO-TO splitting
-        calculate_qmap = np.concatenate(([True], np.logical_not(
+        # Only calculate reordering if the direction hasn't
+        # changed
+        calc_reorder = np.concatenate(([True], np.logical_not(
             direction_changed(qpts))))
-        if hasattr(self, 'split_i'):
-            split_freqs = self.split_freqs.magnitude
-            split_eigenvecs = self.split_eigenvecs
-            ordered_split_freqs = np.zeros(split_freqs.shape)
-            ordered_split_eigenvecs = np.zeros(
-                split_eigenvecs.shape, dtype=np.complex128)
-            calculate_qmap[self.split_i + 1] = False
 
-        # Don't reorder first q-point
-        ordered_freqs[0, :] = freqs[0, :]
-        ordered_eigenvecs[0, :] = eigenvecs[0, :]
-        prev_evecs = eigenvecs[0, :, :, :]
+        if not reorder_gamma:
+            gamma_i = np.where(is_gamma(qpts))[0]
+            # Don't reorder at gamma
+            calc_reorder[gamma_i[gamma_i > 0] - 1] = False
+            # Or at the point after
+            calc_reorder[gamma_i[gamma_i < n_qpts - 1]] = False
+
         for i in range(1, n_qpts):
-            # Initialise q-point mapping for this q-point
-            qmap_tmp = np.arange(n_branches)
             # Compare eigenvectors for each mode for this q-point with every
             # mode for the previous q-point
             # Explicitly broadcast arrays with repeat and tile to ensure
             # correct multiplication of modes
             curr_evecs = eigenvecs[i, :, :, :]
+            prev_evecs = eigenvecs[i - 1, :, :, :]
             current_eigenvecs = np.repeat(curr_evecs, n_branches, axis=0)
             prev_eigenvecs = np.tile(prev_evecs, (n_branches, 1, 1))
 
-            if calculate_qmap[i-1]:
+            if calc_reorder[i-1]:
                 # Compute complex conjugated dot product of every mode of this
                 # q-point with every mode of previous q-point, and sum the dot
                 # products over ions (i.e. multiply eigenvectors elementwise,
@@ -167,7 +199,7 @@ class PhononData(Data):
                 # with each mode of the previous q-point
                 dot_mat = np.reshape(dots, (n_branches, n_branches))
 
-                # Find greates exp(-iqr)-weighted dot product
+                # Find greatest dot product
                 for j in range(n_branches):
                     max_i = (np.argmax(dot_mat))
                     mode = int(max_i/n_branches)  # Modes are dot_mat rows
@@ -175,42 +207,13 @@ class PhononData(Data):
                     # Ensure modes aren't mapped more than once
                     dot_mat[mode, :] = 0
                     dot_mat[:, prev_mode] = 0
-                    qmap_tmp[mode] = prev_mode
-            # Map q-points according to previous q-point mapping
-            qmap = qmap[qmap_tmp]
 
-            prev_evecs = curr_evecs
+                    prev_mode_idx = np.where(mode_map[i-1] == prev_mode)[0][0]
+                    mode_map[i, prev_mode_idx] = mode
+            else:
+                mode_map[i] = mode_map[i-1]
 
-            # Reorder frequencies and eigenvectors
-            ordered_eigenvecs[i, qmap] = eigenvecs[i, :]
-            ordered_freqs[i, qmap] = freqs[i, :]
-
-            if hasattr(self, 'split_i') and i in self.split_i:
-                idx = np.where(i == self.split_i)
-                ordered_split_eigenvecs[idx, qmap] = split_eigenvecs[idx]
-                ordered_split_freqs[idx, qmap] = split_freqs[idx]
-
-        ordered_freqs = ordered_freqs*self.freqs.units
-        self.eigenvecs = ordered_eigenvecs
-        self.freqs = ordered_freqs
-        if hasattr(self, 'split_i'):
-            self.split_freqs = ordered_split_freqs*self.split_freqs.units
-            self.split_eigenvecs = ordered_split_eigenvecs
-
-    def convert_e_units(self, units):
-        """
-        Convert energy units of relevant attributes in place e.g. freqs,
-        dos_bins
-
-        Parameters
-        ----------
-        units : str
-            The units to convert to e.g. '1/cm', 'hartree', 'eV'
-        """
-        super(PhononData, self).convert_e_units(units)
-        self.split_freqs.ito(units, 'spectroscopy')
-        if hasattr(self, 'sqw_ebins'):
-            self.sqw_ebins.ito(units, 'spectroscopy')
+        self._mode_map = mode_map
 
     def calculate_structure_factor(self, scattering_lengths, T=5.0, scale=1.0,
                                    calc_bose=True, dw_arg=None, **kwargs):
@@ -245,10 +248,10 @@ class PhononData(Data):
         """
         sl = [scattering_lengths[x] for x in self.ion_type]
 
-        # Convert units (use magnitudes for performance)
-        recip = (self.recip_vec.to('1/bohr')).magnitude
-        freqs = (self.freqs.to('E_h', 'spectroscopy')).magnitude
-        ion_mass = (self.ion_mass.to('e_mass')).magnitude
+        # Convert units
+        recip = self._recip_vec
+        freqs = self._freqs
+        ion_mass = self._ion_mass
         sl = (sl*ureg('fm').to('bohr')).magnitude
 
         # Calculate normalisation factor
@@ -326,10 +329,10 @@ class PhononData(Data):
             The DW coefficients for each ion
         """
 
-        # Convert units (use magnitudes for performance)
+        # Convert units
         kB = (1*ureg.k).to('E_h/K').magnitude
-        ion_mass = data.ion_mass.to('e_mass').magnitude
-        freqs = data.freqs.to('E_h', 'spectroscopy').magnitude
+        ion_mass = data._ion_mass
+        freqs = data._freqs
         qpts = data.qpts
         evecs = data.eigenvecs
         weights = data.weights
@@ -368,8 +371,8 @@ class PhononData(Data):
 
         return dw
 
-    def calculate_sqw_map(self, scattering_lengths, ebins, set_attrs=True,
-                          calc_bose=True, **kwargs):
+    def calculate_sqw_map(self, scattering_lengths, ebins, calc_bose=True,
+                          **kwargs):
         """
         Calculate the structure factor for each q-point contained in data, and
         bin according to ebins to create a S(Q,w) map
@@ -382,8 +385,6 @@ class PhononData(Data):
             {'O': 5.803, 'Zn': 5.680}
         ebins : (n_ebins + 1,) float ndarray
             The energy bin edges in the same units as PhononData.freqs
-        set_attrs : boolean, optional, default True
-            Whether to set the sqw and sqw_ebins attributes of this object
         calc_bose : boolean, optional, default True
             Whether to calculate and apply the Bose factor
         **kwargs
@@ -396,9 +397,9 @@ class PhononData(Data):
             The intensity for each q-point and energy bin
         """
 
-        # Convert units (use magnitudes for performance)
-        freqs = (self.freqs.to('E_h', 'spectroscopy')).magnitude
-        ebins = ((ebins*self.freqs.units).to('E_h')).magnitude
+        # Convert units
+        freqs = self._freqs
+        ebins = (ebins*ureg(self._e_units).to('E_h')).magnitude
 
         # Create initial sqw_map with an extra an energy bin either side, for
         # any branches that fall outside the energy bin range
@@ -426,9 +427,7 @@ class PhononData(Data):
         np.add.at(sqw_map, (first_index, n_bin), n_intensity)
         sqw_map = sqw_map[:, 1:-1]  # Exclude values outside ebin range
 
-        if set_attrs:
-            self.sqw_ebins = ebins*ureg('E_h').to(
-                self.freqs.units, 'spectroscopy')
-            self.sqw_map = sqw_map
+        self._sqw_ebins = ebins
+        self.sqw_map = sqw_map
 
         return sqw_map

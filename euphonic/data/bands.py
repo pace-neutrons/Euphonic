@@ -1,4 +1,5 @@
 import numpy as np
+from euphonic import ureg
 from euphonic.data.data import Data
 from euphonic._readers import _castep
 
@@ -58,6 +59,29 @@ class BandsData(Data):
         self.seedname = seedname
         self.model = model
 
+        self._l_units = 'angstrom'
+        self._e_units = 'eV'
+
+    @property
+    def cell_vec(self):
+        return self._cell_vec*ureg('bohr').to(self._l_units)
+
+    @property
+    def recip_vec(self):
+        return self._recip_vec*ureg('1/bohr').to('1/' + self._l_units)
+
+    @property
+    def freqs(self):
+        return self._freqs*ureg('hartree').to(self._e_units, 'spectroscopy')
+
+    @property
+    def freq_down(self):
+        return self._freq_down*ureg('hartree').to(self._e_units, 'spectroscopy')
+
+    @property
+    def fermi(self):
+        return self._fermi*ureg('hartree').to(self._e_units, 'spectroscopy')
+
     def _get_data(self, seedname, model, path):
         """"
         Calls the correct reader to get the required data, and sets the
@@ -83,12 +107,13 @@ class BandsData(Data):
         self.n_qpts = data['n_qpts']
         self.n_spins = data['n_spins']
         self.n_branches = data['n_branches']
-        self.fermi = data['fermi']
-        self.cell_vec = data['cell_vec']
+        self._fermi = data['fermi']
+        self._cell_vec = data['cell_vec']
+        self._recip_vec = data['recip_vec']
         self.qpts = data['qpts']
         self.weights = data['weights']
-        self.freqs = data['freqs']
-        self.freq_down = data['freq_down']
+        self._freqs = data['freqs']
+        self._freq_down = data['freq_down']
 
         try:
             self.n_ions = data['n_ions']
@@ -98,7 +123,7 @@ class BandsData(Data):
             pass
 
     def calculate_dos(self, dos_bins, gwidth, lorentz=False,
-                      weights=None, set_attrs=True):
+                      weights=None):
         """
         Calculates a density of states with fixed width Gaussian/Lorentzian
         broadening. Extends the Data.calculate_dos function and has the same
@@ -120,9 +145,6 @@ class BandsData(Data):
         weights : (n_qpts, n_branches) float ndarray, optional
             The weights to use for each q-points and branch. If unspecified,
             uses the q-point weights stored in the Data object
-        set_attrs : boolean, optional, default True
-            Whether to set the dos, dos_down and dos_bins attributes to the
-            newly calculated values
 
         Returns
         -------
@@ -132,30 +154,15 @@ class BandsData(Data):
             The spin down density of states for each bin
         """
         dos = super(BandsData, self).calculate_dos(
-            dos_bins, gwidth, lorentz=lorentz, weights=weights,
-            set_attrs=set_attrs)
+            dos_bins, gwidth, lorentz=lorentz, weights=weights)
 
-        if self.freq_down.size > 0:
+        if self._freq_down.size > 0:
             dos_down = super(BandsData, self).calculate_dos(
                 dos_bins, gwidth, lorentz=lorentz, weights=weights,
-                set_attrs=False, _freqs=self.freq_down)
+                _freqs=self._freq_down)
         else:
             dos_down = np.array([])
-        if set_attrs:
-            self.dos_down = dos_down
+
+        self.dos_down = dos_down
 
         return dos, dos_down
-
-    def convert_e_units(self, units):
-        """
-        Convert energy units of relevant attributes in place e.g. freqs,
-        dos_bins
-
-        Parameters
-        ----------
-        units : str
-            The units to convert to e.g. 'hartree', 'eV'
-        """
-        super(BandsData, self).convert_e_units(units)
-        self.freq_down.ito(units, 'spectroscopy')
-        self.fermi.ito(units, 'spectroscopy')

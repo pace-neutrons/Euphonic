@@ -130,6 +130,7 @@ class TestPlotDispersion(unittest.TestCase):
     def setUp(self):
         # Input values
         data = type('', (), {})()
+        data._e_units = 'E_h'
         data.qpts = np.array([[0.00, 0.00, 0.00],
                               [0.50, 0.50, 0.50],
                               [0.50, 0.00, 0.00],
@@ -152,7 +153,7 @@ class TestPlotDispersion(unittest.TestCase):
              [0.00563753, 0.06967796, 0.10706959,
               0.10708863, 0.13043664, 0.18104762],
              [0.00304837, 0.05950495, 0.14329865,
-              0.15504453, 0.18419962, 0.18802334]])*ureg('hartree')
+              0.15504453, 0.18419962, 0.18802334]])*ureg('E_h')
         data.freq_down = np.array(
             [[-0.11824784, 0.16915727, 0.16915728,
               0.16928803, 0.22527386, 0.22527386],
@@ -165,8 +166,8 @@ class TestPlotDispersion(unittest.TestCase):
              [0.03154524, 0.13717388, 0.17082060,
               0.17090552, 0.20002066, 0.25224941],
              [0.04785602, 0.11847221, 0.20247348,
-              0.22062826, 0.23694067, 0.25963579]])*ureg('hartree')
-        data.fermi = np.array([0.169316, 0.169316])*ureg('hartree')
+              0.22062826, 0.23694067, 0.25963579]])*ureg('E_h')
+        data.fermi = np.array([0.169316, 0.169316])*ureg('E_h')
         self.data = data
         self.title = 'Iron'
         self.expected_abscissa = [0.0, 2.00911553, 3.42977475, 4.24999273,
@@ -275,6 +276,7 @@ class TestPlotDos(unittest.TestCase):
     def setUp(self):
         data = type('', (), {})()
         # Input values
+        data._e_units = 'E_h'
         data.dos = np.array(
             [2.30e-01, 1.82e-01, 8.35e-02, 3.95e-02, 2.68e-02, 3.89e-02,
              6.15e-02, 6.75e-02, 6.55e-02, 5.12e-02, 3.60e-02, 2.80e-02,
@@ -309,8 +311,8 @@ class TestPlotDos(unittest.TestCase):
              6.98, 7.18, 7.38, 7.58, 7.78, 7.98, 8.18, 8.38,
              8.58, 8.78, 8.98, 9.18, 9.38, 9.58, 9.78, 9.98,
              10.18, 10.38, 10.58, 10.78, 10.98, 11.18, 11.38, 11.58,
-             11.78, 11.98, 12.18, 12.38, 12.58, 12.78])*ureg('hartree')
-        data.fermi = np.array([4.71, 4.71])*ureg('hartree')
+             11.78, 11.98, 12.18, 12.38, 12.58, 12.78])*ureg('E_h')
+        data.fermi = np.array([4.71, 4.71])*ureg('E_h')
         self.data = data
         self.title = 'Iron'
         self.mirror = False
