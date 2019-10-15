@@ -221,6 +221,10 @@ class InterpolationData(PhononData):
         nprocs : integer, optional, default 1
             If more than 1, uses Python's multiprocessing module to distribute
             q-point calculations across processors
+        reduce_qpts : boolean, optional, default False
+            Whether to use periodicity to reduce all q-points and only
+            calculate for unique q-points within the 1st BZ. This won't change
+            the output but could increase performance.
 
         Returns
         -------
