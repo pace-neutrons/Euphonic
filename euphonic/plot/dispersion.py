@@ -555,11 +555,14 @@ def plot_dispersion(data, title='', btol=10.0, up=True, down=True,
 
         # Plot frequencies and Fermi energy
         if up:
-            # If there is LO-TO splitting, plot in sections
             if hasattr(data, 'split_i') and data.split_i.size > 0:
                 split_i = data.split_i
+            else:
+                split_i = None
+            # If there is LO-TO splitting, plot in sections
+            if split_i is not None:
                 section_i = np.where(np.logical_and(
-                    data.split_i > imin[i], data.split_i < imax[i]))[0]
+                    split_i > imin[i], split_i < imax[i]))[0]
                 n_sections = section_i.size + 1
             else:
                 n_sections = 1
@@ -568,13 +571,13 @@ def plot_dispersion(data, title='', btol=10.0, up=True, down=True,
             if hasattr(data, '_mode_map'):
                 freqs = data.freqs.magnitude[
                     np.arange(len(data.qpts))[:, np.newaxis], data._mode_map]
-                if hasattr(data, 'split_i') and split_i.size > 0:
+                if split_i is not None:
                     split_freqs = data.split_freqs.magnitude[
                         np.arange(len(split_i))[:, np.newaxis],
                         data._mode_map[split_i]]
             else:
                 freqs = data.freqs.magnitude
-                if hasattr(data, 'split_i') and split_i.size > 0:
+                if split_i is not None:
                     split_freqs = data.split_freqs.magnitude
 
             if n_sections > 1:
