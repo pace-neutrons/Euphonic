@@ -1,7 +1,19 @@
+import numpy as np
+
 try:
-    from setuptools import setup, find_packages
+    from setuptools import setup, find_packages, Extension
 except ImportError:
-    from distutils.core import setup, find_packages
+    from distutils.core import setup, find_packages, Extension
+
+include_dirs = [np.get_include()]
+compile_args = ['/openmp']
+
+euphonic_extension = Extension(
+    'euphonic._euphonic',
+    extra_compile_args=compile_args,
+    sources=['c/_euphonic.c'],
+    include_dirs=include_dirs
+)
 
 with open('README.rst', 'r') as f:
     long_description = f.read()
@@ -36,5 +48,6 @@ setup(
     extras_require={
         'matplotlib': ['matplotlib>=1.4.2'],
     },
-    scripts=scripts
+    scripts=scripts,
+    ext_modules=[euphonic_extension]
 )
