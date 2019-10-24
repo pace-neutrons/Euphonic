@@ -204,7 +204,7 @@ class InterpolationData(PhononData):
     def calculate_fine_phonons(
         self, qpts, asr=None, precondition=False, dipole=True,
             eta_scale=1.0, splitting=True, reduce_qpts=True, nprocs=1,
-            _qchunk=None, nthreads=1):
+            _qchunk=None, use_c=False, nthreads=1):
         """
         Calculate phonon frequencies and eigenvectors at specified q-points
         from a supercell force constant matrix via interpolation. For more
@@ -434,26 +434,16 @@ class InterpolationData(PhononData):
             rfreqs = np.zeros((n_rqpts, 3*self.n_ions))
             reigenvecs = np.zeros((n_rqpts, 3*self.n_ions, self.n_ions, 3),
                                   dtype=np.complex128)
-            if nthreads == 1:
-                for q in range(n_rqpts):
-                    rfreqs[q], reigenvecs[q], sfreqs, sevecs, si = \
-                    self._calculate_phonons_at_q(q, q_independent_args)
-                    if len(sfreqs) > 0:
-                        split_i = np.concatenate((split_i, si))
-                        split_freqs = np.concatenate((split_freqs, sfreqs))
-                        split_eigenvecs = np.concatenate(
-                            (split_eigenvecs, sevecs))
-            else:
-                import euphonic._euphonic as euphonic_c
+            if use_c:
+                import euphonic_c
                 dmats = np.zeros((len(reduced_qpts), 3*self.n_ions, 3*self.n_ions), dtype=np.complex128)
                 lim = 2
                 sc_image_r = self._get_all_origins(
                     np.repeat(lim, 3) + 1, min_xyz=-np.repeat(lim, 3))
                 sc_offsets = np.einsum('ji,kj->ki', self.sc_matrix, sc_image_r)
-                fc_tmp = np.ascontiguousarray(np.transpose(fc_img_weighted, axes=[0, 2, 1]))
                 euphonic_c.calculate_dyn_mats(
-                    reduced_qpts, fc_tmp, self._n_sc_images, self._sc_image_i,
-                    self.cell_origins, sc_offsets, dmats)
+                    reduced_qpts, fc_img_weighted, self._n_sc_images, self._sc_image_i,
+                    self.cell_origins, sc_offsets, dmats, nthreads)
                 for q in range(n_rqpts):
                     # Mass weight dynamical matrix
                     dmats[q] *= dyn_mat_weighting
@@ -471,6 +461,15 @@ class InterpolationData(PhononData):
 
                     rfreqs[q] = evals
                     reigenvecs[q] = evecs
+            else:
+                for q in range(n_rqpts):
+                    rfreqs[q], reigenvecs[q], sfreqs, sevecs, si = \
+                    self._calculate_phonons_at_q(q, q_independent_args)
+                    if len(sfreqs) > 0:
+                        split_i = np.concatenate((split_i, si))
+                        split_freqs = np.concatenate((split_freqs, sfreqs))
+                        split_eigenvecs = np.concatenate(
+                            (split_eigenvecs, sevecs))
 
         self.asr = asr
         self.dipole = dipole

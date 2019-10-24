@@ -1,5 +1,6 @@
 #define PY_SSIZE_T_CLEAN
 #define NPY_NO_DEPRECATED_API NPY_1_9_API_VERSION
+#include <omp.h>
 #include <Python.h>
 #include <numpy/arrayobject.h>
 #include "dyn_mat.h"
@@ -20,6 +21,7 @@ static PyObject *calculate_dyn_mats(PyObject *self, PyObject *args) {
 //    char *asr;
 //    int splitting;
     PyArrayObject *py_dmats;
+    int nthreads = 1;
 
     // Define pointers to Python array data
     double *rqpts;
@@ -45,7 +47,7 @@ static PyObject *calculate_dyn_mats(PyObject *self, PyObject *args) {
     double *dmat;
     int dmat_elems;
 
-    if (!PyArg_ParseTuple(args, "O!O!O!O!O!O!O!",
+    if (!PyArg_ParseTuple(args, "O!O!O!O!O!O!O!i",
                           &PyArray_Type, &py_rqpts,
                           &PyArray_Type, &py_fc,
                           &PyArray_Type, &py_n_sc_ims,
@@ -59,7 +61,8 @@ static PyObject *calculate_dyn_mats(PyObject *self, PyObject *args) {
 //                          &dipole,
 //                          &asr,
 //                          &splitting,
-                          &PyArray_Type, &py_dmats)) {
+                          &PyArray_Type, &py_dmats,
+                          &nthreads)) {
         return NULL;
     }
 
@@ -81,9 +84,12 @@ static PyObject *calculate_dyn_mats(PyObject *self, PyObject *args) {
     nsc = PyArray_DIMS(py_sc_ogs)[0];
     maxims = PyArray_DIMS(py_sc_im_idx)[3];
 
+    dmat_elems = 2*9*nions*nions;
+
+    omp_set_num_threads(nthreads);
+    #pragma omp parallel for
     for (q = 0; q < nqpts; q++) {
         qpt = (rqpts + 3*q);
-        dmat_elems = 2*9*nions*nions;
         dmat = (dmats + q*dmat_elems);
         calculate_dyn_mat_at_q(qpt, nions, ncells, nsc, maxims, n_sc_ims, sc_im_idx,
             cell_ogs, sc_ogs, fc, dmat);
