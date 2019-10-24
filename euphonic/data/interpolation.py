@@ -204,7 +204,7 @@ class InterpolationData(PhononData):
     def calculate_fine_phonons(
         self, qpts, asr=None, precondition=False, dipole=True,
             eta_scale=1.0, splitting=True, reduce_qpts=True, nprocs=1,
-            _qchunk=None):
+            _qchunk=None, nthreads=1):
         """
         Calculate phonon frequencies and eigenvectors at specified q-points
         from a supercell force constant matrix via interpolation. For more
@@ -434,14 +434,43 @@ class InterpolationData(PhononData):
             rfreqs = np.zeros((n_rqpts, 3*self.n_ions))
             reigenvecs = np.zeros((n_rqpts, 3*self.n_ions, self.n_ions, 3),
                                   dtype=np.complex128)
-            for q in range(n_rqpts):
-                rfreqs[q], reigenvecs[q], sfreqs, sevecs, si = \
-                self._calculate_phonons_at_q(q, q_independent_args)
-                if len(sfreqs) > 0:
-                    split_i = np.concatenate((split_i, si))
-                    split_freqs = np.concatenate((split_freqs, sfreqs))
-                    split_eigenvecs = np.concatenate(
-                        (split_eigenvecs, sevecs))
+            if nthreads == 1:
+                for q in range(n_rqpts):
+                    rfreqs[q], reigenvecs[q], sfreqs, sevecs, si = \
+                    self._calculate_phonons_at_q(q, q_independent_args)
+                    if len(sfreqs) > 0:
+                        split_i = np.concatenate((split_i, si))
+                        split_freqs = np.concatenate((split_freqs, sfreqs))
+                        split_eigenvecs = np.concatenate(
+                            (split_eigenvecs, sevecs))
+            else:
+                import euphonic._euphonic as euphonic_c
+                dmats = np.zeros((len(reduced_qpts), 3*self.n_ions, 3*self.n_ions), dtype=np.complex128)
+                lim = 2
+                sc_image_r = self._get_all_origins(
+                    np.repeat(lim, 3) + 1, min_xyz=-np.repeat(lim, 3))
+                sc_offsets = np.einsum('ji,kj->ki', self.sc_matrix, sc_image_r)
+                fc_tmp = np.ascontiguousarray(np.transpose(fc_img_weighted, axes=[0, 2, 1]))
+                euphonic_c.calculate_dyn_mats(
+                    reduced_qpts, fc_tmp, self._n_sc_images, self._sc_image_i,
+                    self.cell_origins, sc_offsets, dmats)
+                for q in range(n_rqpts):
+                    # Mass weight dynamical matrix
+                    dmats[q] *= dyn_mat_weighting
+                    try:
+                        evals, evecs = np.linalg.eigh(dmats[q])
+                    # Fall back to zheev if eigh fails (eigh calls zheevd)
+                    except np.linalg.LinAlgError:
+                        evals, evecs, info = zheev(dmats[q])
+                    evecs = np.reshape(np.transpose(evecs),
+                                       (3*self.n_ions, self.n_ions, 3))
+                    # Set imaginary frequencies to negative
+                    imag_freqs = np.where(evals < 0)
+                    evals = np.sqrt(np.abs(evals))
+                    evals[imag_freqs] *= -1
+
+                    rfreqs[q] = evals
+                    reigenvecs[q] = evecs
 
         self.asr = asr
         self.dipole = dipole
@@ -1189,8 +1218,8 @@ class InterpolationData(PhononData):
         sc_ion_cart = np.einsum('ijk,kl->ijl', sc_ion_r, sc_vecs)
 
         sc_image_i = np.full((n_cells_in_sc, n_ions, n_ions, (2*lim + 1)**3),
-                             -1, dtype=np.int8)
-        n_sc_images = np.zeros((n_cells_in_sc, n_ions, n_ions), dtype=np.int8)
+                             -1, dtype=np.int32)
+        n_sc_images = np.zeros((n_cells_in_sc, n_ions, n_ions), dtype=np.int32)
 
         # Ordering of loops here is for efficiency:
         # ions in unit cell -> periodic supercell images -> WS points
@@ -1232,8 +1261,9 @@ class InterpolationData(PhononData):
         self._n_sc_images = n_sc_images
         # Truncate sc_image_i to the maximum ACTUAL images rather than the
         # maximum possible images to avoid storing and summing over
-        # nonexistent images
-        self._sc_image_i = sc_image_i[:, :, :, :np.max(n_sc_images)]
+        # nonexistent images. Also ensure still contiguous after slicing
+        self._sc_image_i = np.ascontiguousarray(
+            sc_image_i[:, :, :, :np.max(n_sc_images)])
 
     def reorder_freqs(self, **kwargs):
         """

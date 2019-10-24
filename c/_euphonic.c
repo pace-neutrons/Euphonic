@@ -2,88 +2,111 @@
 #define NPY_NO_DEPRECATED_API NPY_1_9_API_VERSION
 #include <Python.h>
 #include <numpy/arrayobject.h>
+#include "dyn_mat.h"
 
-static PyObject *calculate_phonons_at_q(PyObject *self, PyObject *args) {
-    // Define args
-    PyArrayObject *py_reduced_qpts;
-    PyArrayObject *py_qpts_i;
-    PyArrayObject *py_fc_img_weighted;
-    PyArrayObject *py_n_sc_images;
-    PyArrayObject *py_sc_image_i;
-    PyArrayObject *py_cell_origins;
-    PyArrayObject *py_sc_image_r;
-    PyArrayObject *py_ac_i;
-    PyArrayObject *py_g_evals;
-    PyArrayObject *py_g_evecs;
-    PyArrayObject *py_dyn_mat_weighting;
-    int dipole;
-    char *asr;
-    int splitting;
+static PyObject *calculate_dyn_mats(PyObject *self, PyObject *args) {
+    // Define input args
+    PyArrayObject *py_rqpts;
+    PyArrayObject *py_fc;
+    PyArrayObject *py_n_sc_ims;
+    PyArrayObject *py_sc_im_idx;
+    PyArrayObject *py_cell_ogs;
+    PyArrayObject *py_sc_ogs;
+//    PyArrayObject *py_ac_i;
+//    PyArrayObject *py_g_evals;
+//    PyArrayObject *py_g_evecs;
+//    PyArrayObject *py_dmat_weighting;
+//    int dipole;
+//    char *asr;
+//    int splitting;
+    PyArrayObject *py_dmats;
 
-    // Define pointers to array data
-    double *reduced_qpts;
-    int *qpts_i;
-    double *fc_img_weighted;
-    int *n_sc_images;
-    int *sc_image_i;
-    int *cell_origins;
-    int *sc_image_r;
-    int *ac_i;
-    double *g_evals;
-    double *g_evecs;
-    double *dyn_mat_weighting;
+    // Define pointers to Python array data
+    double *rqpts;
+    double *fc;
+    int *n_sc_ims;
+    int *sc_im_idx;
+    int *cell_ogs;
+    int *sc_ogs;
+//    int *ac_i;
+//    double *g_evals;
+//    double *g_evecs;
+//    double *dmat_weighting;
+    double *dmats;
 
-    if (!PyArg_ParseTuple(args, "O!O!O!O!O!O!O!O!O!O!O!isi",
-//    if (!PyArg_ParseTuple(args, "O!",
-                          &PyArray_Type, &py_reduced_qpts,
-                          &PyArray_Type, &py_qpts_i,
-                          &PyArray_Type, &py_fc_img_weighted,
-                          &PyArray_Type, &py_n_sc_images,
-                          &PyArray_Type, &py_sc_image_i,
-                          &PyArray_Type, &py_cell_origins,
-                          &PyArray_Type, &py_sc_image_r,
-                          &PyArray_Type, &py_ac_i,
-                          &PyArray_Type, &py_g_evals,
-                          &PyArray_Type, &py_g_evecs,
-                          &PyArray_Type, &py_dyn_mat_weighting,
-                          &dipole,
-                          &asr,
-                          &splitting)) {
+    // Other vars
+    int nions;
+    int ncells;
+    int nqpts;
+    int nsc;
+    int q;
+    int maxims;
+    double *qpt;
+    double *dmat;
+    int dmat_elems;
+
+    if (!PyArg_ParseTuple(args, "O!O!O!O!O!O!O!",
+                          &PyArray_Type, &py_rqpts,
+                          &PyArray_Type, &py_fc,
+                          &PyArray_Type, &py_n_sc_ims,
+                          &PyArray_Type, &py_sc_im_idx,
+                          &PyArray_Type, &py_cell_ogs,
+                          &PyArray_Type, &py_sc_ogs,
+//                          &PyArray_Type, &py_ac_i,
+//                          &PyArray_Type, &py_g_evals,
+//                          &PyArray_Type, &py_g_evecs,
+//                          &PyArray_Type, &py_dmat_weighting,
+//                          &dipole,
+//                          &asr,
+//                          &splitting,
+                          &PyArray_Type, &py_dmats)) {
         return NULL;
     }
 
-    reduced_qpts = (double*) PyArray_DATA(py_reduced_qpts);
-    qpts_i = (int*) PyArray_DATA(py_qpts_i);
-    fc_img_weighted = (double*) PyArray_DATA(py_fc_img_weighted);
-    n_sc_images = (int*) PyArray_DATA(py_n_sc_images);
-    sc_image_i = (int*) PyArray_DATA(py_sc_image_i);
-    cell_origins = (int*) PyArray_DATA(py_cell_origins);
-    sc_image_r = (int*) PyArray_DATA(py_sc_image_r);
-    ac_i = (int*) PyArray_DATA(py_ac_i);
-    g_evals = (double*) PyArray_DATA(py_g_evals);
-    g_evecs = (double*) PyArray_DATA(py_g_evecs);
-    dyn_mat_weighting = (double*) PyArray_DATA(py_dyn_mat_weighting);
+    rqpts = (double*) PyArray_DATA(py_rqpts);
+    fc = (double*) PyArray_DATA(py_fc);
+    n_sc_ims = (int*) PyArray_DATA(py_n_sc_ims);
+    sc_im_idx = (int*) PyArray_DATA(py_sc_im_idx);
+    cell_ogs = (int*) PyArray_DATA(py_cell_ogs);
+    sc_ogs = (int*) PyArray_DATA(py_sc_ogs);
+//    ac_i = (int*) PyArray_DATA(py_ac_i);
+//    g_evals = (double*) PyArray_DATA(py_g_evals);
+//    g_evecs = (double*) PyArray_DATA(py_g_evecs);
+//    dmat_weighting = (double*) PyArray_DATA(py_dmat_weighting);
+    dmats = (double*) PyArray_DATA(py_dmats);
+
+    nions = PyArray_DIMS(py_fc)[1]/3;
+    ncells = PyArray_DIMS(py_fc)[0];
+    nqpts = PyArray_DIMS(py_rqpts)[0];
+    nsc = PyArray_DIMS(py_sc_ogs)[0];
+    maxims = PyArray_DIMS(py_sc_im_idx)[3];
+
+    for (q = 0; q < nqpts; q++) {
+        qpt = (rqpts + 3*q);
+        dmat_elems = 2*9*nions*nions;
+        dmat = (dmats + q*dmat_elems);
+        calculate_dyn_mat_at_q(qpt, nions, ncells, nsc, maxims, n_sc_ims, sc_im_idx,
+            cell_ogs, sc_ogs, fc, dmat);
+    }
 
     return Py_None;
 
 }
 
 static PyMethodDef _euphonic_methods[] = {
-    {"calculate_phonons_at_q", calculate_phonons_at_q, METH_VARARGS, NULL},
+    {"calculate_dyn_mats", calculate_dyn_mats, METH_VARARGS, NULL},
     {NULL, NULL, 0, NULL}
 };
 
 static struct PyModuleDef _euphonic_module_def = {
     PyModuleDef_HEAD_INIT,
-//    "_euphonic",
-    "euphonic_c",
+    "_euphonic",
     NULL,
     -1,
     _euphonic_methods
 };
 
-//PyMODINIT_FUNC PyInit__euphonic(void) {
-PyMODINIT_FUNC PyInit_euphonic_c(void) {
+PyMODINIT_FUNC PyInit__euphonic(void) {
     import_array();
     return PyModule_Create(&_euphonic_module_def);
 }

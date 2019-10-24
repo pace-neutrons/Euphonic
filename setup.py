@@ -5,13 +5,14 @@ try:
 except ImportError:
     from distutils.core import setup, find_packages, Extension
 
-include_dirs = [np.get_include()]
+include_dirs = [np.get_include(), 'c']
+sources = ['c/_euphonic.c', 'c/dyn_mat.c']
 compile_args = ['/openmp']
 
 euphonic_extension = Extension(
     'euphonic._euphonic',
     extra_compile_args=compile_args,
-    sources=['c/_euphonic.c'],
+    sources=sources,
     include_dirs=include_dirs
 )
 
