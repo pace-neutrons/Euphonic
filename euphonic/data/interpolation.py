@@ -349,9 +349,8 @@ class InterpolationData(PhononData):
             force_constants = self._force_constants
         # Precompute fc matrix weighted by number of supercell ion images
         # (for cumulant method)
-        n_sc_images_repeat = np.transpose(
-            self._n_sc_images.repeat(3, axis=2).repeat(3, axis=1),
-            axes=[0, 2, 1])
+        n_sc_images_repeat = (self._n_sc_images.
+            repeat(3, axis=2).repeat(3, axis=1))
         fc_img_weighted = np.divide(
             force_constants, n_sc_images_repeat, where=n_sc_images_repeat != 0)
 
@@ -594,15 +593,10 @@ class InterpolationData(PhononData):
         ax = np.newaxis
         ij_phases = cell_phases[:, ax, ax]*sc_phase_sum
         full_dyn_mat = fc_img_weighted*(
-            np.transpose(ij_phases, axes=[0, 2, 1])
-            .repeat(3, axis=2)
-            .repeat(3, axis=1))
+            ij_phases.repeat(3, axis=2).repeat(3, axis=1))
         dyn_mat = np.sum(full_dyn_mat, axis=0)
 
-        # Need to transpose dyn_mat to have [i, j] ion indices, as it was
-        # formed by summing the force_constants matrix which has [j, i]
-        # indices
-        return np.transpose(dyn_mat)
+        return dyn_mat
 
     def _dipole_correction_init(self, eta_scale=1.0):
         """

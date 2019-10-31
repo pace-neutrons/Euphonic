@@ -56,10 +56,10 @@ class TestInputReadLZO(unittest.TestCase):
         expctd_data.n_cells_in_sc = 4
         expctd_data.fc_mat_cell0_i0_j0 = (np.array(
             [[1.26492555e-01, -2.31204635e-31, -1.16997352e-13],
-             [-2.31204635e-31, 1.26492555e-01, 1.05181454e-30],
-             [-1.16997352e-13, 3.15544362e-30, 1.26492555e-01]])
+             [-2.31204635e-31, 1.26492555e-01, 3.15544362e-30],
+             [-1.16997352e-13, 1.05181454e-30, 1.26492555e-01]])
             *ureg('hartree/bohr**2'))
-        expctd_data.fc_mat_cell3_i5_j10 = (np.array(
+        expctd_data.fc_mat_cell3_i10_j5 = (np.array(
             [[-8.32394989e-04, -2.03285211e-03, 3.55359333e-04],
              [-2.22156212e-03, -6.29315975e-04, 1.21568713e-03],
              [7.33617499e-05, 1.16282999e-03, 5.22410338e-05]])
@@ -106,23 +106,14 @@ class TestInputReadLZO(unittest.TestCase):
         npt.assert_allclose(self.data.force_constants[0, 0:3, 0:3].magnitude,
                             self.expctd_data.fc_mat_cell0_i0_j0.magnitude)
 
-    def test_fc_mat_cell3_i5_j10_read(self):
+    def test_fc_mat_cell3_i10_j5_read(self):
         npt.assert_allclose(
             self.data.force_constants[3, 30:33, 15:18].magnitude,
-            self.expctd_data.fc_mat_cell3_i5_j10.magnitude)
+            self.expctd_data.fc_mat_cell3_i10_j5.magnitude)
 
     def test_fc_mat_read(self):
         expected_fc_mat = np.load(os.path.join(
             self.path, 'lzo_fc_mat_no_asr.npy'))*ureg('hartree/bohr**2')
-        # After refactoring where the shape of the force constants matrix was
-        # changed from (3*n_cells_in_sc*n_ions, 3*n_ions) to
-        # (n_cells_in_sc, 3*n_ions, 3*n_ions), expected_fc_mat must be
-        # reshaped to ensure tests still pass
-        expected_fc_mat = np.reshape(
-            expected_fc_mat,
-            (self.expctd_data.n_cells_in_sc,
-             3*self.expctd_data.n_ions,
-             3*self.expctd_data.n_ions))
         npt.assert_allclose(self.data.force_constants.magnitude,
                             expected_fc_mat.magnitude)
 
@@ -321,7 +312,7 @@ class TestInterpolatePhononsLZO(unittest.TestCase):
         expctd_n_images[i, j] = n
         # After refactoring where the shape of n_sc_images was changed from
         # (n_ions, n_cells_in_sc*n_ions) to (n_cells_in_sc, n_ions, n_ions),
-        # expctc_n_images must be reshaped to ensure tests still pass
+        # expctd_n_images must be reshaped to ensure tests still pass
         expctd_n_images = np.transpose(np.reshape(
             expctd_n_images, (22, 4, 22)), axes=[1, 0, 2])
         self.data._calculate_supercell_images(lim)
@@ -342,7 +333,7 @@ class TestInterpolatePhononsLZO(unittest.TestCase):
         # After refactoring where the shape of sc_image_i was changed from
         # (n_ions, n_cells_in_sc*n_ions, (2*lim + 1)**3) to
         # (n_cells_in_sc, n_ions, n_ions, (2*lim + 1)**3),
-        # expctc_image_i must be reshaped to ensure tests still pass
+        # expctd_image_i must be reshaped to ensure tests still pass
         expctd_sc_image_i = np.transpose(
             np.reshape(expctd_sc_image_i, (22, 4, 22, max_n)),
             axes=[1, 0, 2, 3])
@@ -376,11 +367,6 @@ class TestInterpolatePhononsLZO(unittest.TestCase):
     def test_enforce_realspace_acoustic_sum_rule(self):
         expected_fc_mat = np.load(
             os.path.join(self.path, 'lzo_fc_mat_asr.npy'))
-        # After refactoring where the shape of the force constants matrix was
-        # changed from (3*n_cells_in_sc*n_ions, 3*n_ions) to
-        # (n_cells_in_sc, 3*n_ions, 3*n_ions), expected_fc_mat must be
-        # reshaped to ensure tests still pass
-        expected_fc_mat = np.reshape(expected_fc_mat, (4, 3*22, 3*22))
         fc_mat = self.data._enforce_realspace_asr()
         npt.assert_allclose(fc_mat, expected_fc_mat, atol=1e-18)
 
@@ -408,8 +394,8 @@ class TestInputReadGraphite(unittest.TestCase):
                                           [0, 0, 2]])
         expctd_data.n_cells_in_sc = 98
         expctd_data.fc_mat_cell0_i0_j0 = (np.array([
-            [6.35111387e-01, 2.05998413e-18, 0.00000000e+00],
-            [2.76471554e-18, 6.35111387e-01, 0.00000000e+00],
+            [6.35111387e-01, 2.76471554e-18, 0.00000000e+00],
+            [2.05998413e-18, 6.35111387e-01, 0.00000000e+00],
             [0.00000000e+00, 0.00000000e+00, 1.52513691e-01]])
             *ureg('hartree/bohr**2'))
         expctd_data.fc_mat_cell10_i2_j3 = (np.array([
@@ -478,21 +464,12 @@ class TestInputReadGraphite(unittest.TestCase):
                             self.expctd_data.fc_mat_cell0_i0_j0.magnitude)
 
     def test_fc_mat_cell10_i2_j3read(self):
-        npt.assert_allclose(self.data.force_constants[10, 9:12, 6:9].magnitude,
+        npt.assert_allclose(self.data.force_constants[10, 6:9, 9:12].magnitude,
                             self.expctd_data.fc_mat_cell10_i2_j3.magnitude)
 
     def test_fc_mat_read(self):
         expected_fc_mat = np.load(os.path.join(
             self.path, 'graphite_fc_mat_no_asr.npy'))*ureg('hartree/bohr**2')
-        # After refactoring where the shape of the force constants matrix was
-        # changed from (3*n_cells_in_sc*n_ions, 3*n_ions) to
-        # (n_cells_in_sc, 3*n_ions, 3*n_ions), expected_fc_mat must be
-        # reshaped to ensure tests still pass
-        expected_fc_mat = np.reshape(
-            expected_fc_mat,
-            (self.expctd_data.n_cells_in_sc,
-             3*self.expctd_data.n_ions,
-             3*self.expctd_data.n_ions))
         npt.assert_allclose(self.data.force_constants.magnitude,
                             expected_fc_mat.magnitude)
 
@@ -676,13 +653,6 @@ class TestInterpolatePhononsGraphite(unittest.TestCase):
     def test_enforce_realspace_acoustic_sum_rule(self):
         expected_fc_mat = np.load(os.path.join(self.path,
                                                'graphite_fc_mat_asr.npy'))
-        # After refactoring where the shape of the force constants matrix was
-        # changed from (3*n_cells_in_sc*n_ions, 3*n_ions) to
-        # (n_cells_in_sc, 3*n_ions, 3*n_ions), expected_fc_mat must be
-        # reshaped to ensure tests still pass
-        expected_fc_mat = np.reshape(
-            expected_fc_mat,
-            (self.n_cells_in_sc, 3*self.n_ions, 3*self.n_ions))
         fc_mat = self.data._enforce_realspace_asr()
         npt.assert_allclose(fc_mat, expected_fc_mat, atol=1e-18)
 
@@ -722,10 +692,10 @@ class TestInputReadQuartz(unittest.TestCase):
             [0.22324308, 0.29855096, 0.31240272],
             [0.29855096, 0.43968813, 0.34437270],
             [0.31240272, 0.34437270, 0.33448280]])*ureg('hartree/bohr**2')
-        expctd_data.fc_mat_cell10_i2_j3 = (np.array([
-            [6.37874988e-05, 1.99404810e-08, -1.85830030e-05],
-            [-2.73116279e-04, 4.40511248e-04, -9.05395392e-05],
-            [-1.73624413e-04, 2.33322837e-04, 2.17526152e-05]])
+        expctd_data.fc_mat_cell4_i2_j7 = (np.array([
+            [6.37874988e-05, -2.73116279e-04, -1.73624413e-04],
+            [1.99404810e-08, 4.40511248e-04, 2.33322837e-04],
+            [-1.85830030e-05, -9.05395392e-05, 2.17526152e-05]])
             *ureg('hartree/bohr**2'))
         expctd_data.cell_origins = np.array(
             [[0, 0, 0], [1, 0, 0], [2, 0, 0], [3, 0, 0], [4, 0, 0],
@@ -831,21 +801,12 @@ class TestInputReadQuartz(unittest.TestCase):
                             self.expctd_data.fc_mat_cell0_i0_j0.magnitude)
 
     def test_fc_mat_cell4_i2_j7read(self):
-        npt.assert_allclose(self.data.force_constants[4, 21:24, 6:9].magnitude,
-                            self.expctd_data.fc_mat_cell10_i2_j3.magnitude)
+        npt.assert_allclose(self.data.force_constants[4, 6:9, 21:24].magnitude,
+                            self.expctd_data.fc_mat_cell4_i2_j7.magnitude)
 
     def test_fc_mat_read(self):
         expected_fc_mat = np.load(os.path.join(
             self.path, 'quartz_fc_mat_no_asr.npy'))*ureg('hartree/bohr**2')
-        # After refactoring where the shape of the force constants matrix was
-        # changed from (3*n_cells_in_sc*n_ions, 3*n_ions) to
-        # (n_cells_in_sc, 3*n_ions, 3*n_ions), expected_fc_mat must be
-        # reshaped to ensure tests still pass
-        expected_fc_mat = np.reshape(
-            expected_fc_mat,
-            (self.expctd_data.n_cells_in_sc,
-             3*self.expctd_data.n_ions,
-             3*self.expctd_data.n_ions))
         npt.assert_allclose(self.data.force_constants.magnitude,
                             expected_fc_mat.magnitude)
 

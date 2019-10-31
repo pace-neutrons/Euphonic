@@ -210,9 +210,11 @@ def _read_interpolation_data(seedname, path):
                     _read_entry(f, int_type), (3, 3)))
                 n_cells_in_sc = int(np.rint(np.absolute(
                     np.linalg.det(sc_matrix))))
-                force_constants = np.reshape(
-                    _read_entry(f, float_type),
-                    (n_cells_in_sc, 3*n_ions, 3*n_ions))
+                # Transpose and reshape fc so it is indexed [nc, i, j]
+                force_constants = np.ascontiguousarray(np.transpose(
+                    np.reshape(_read_entry(f, float_type),
+                               (n_cells_in_sc, 3*n_ions, 3*n_ions)),
+                    axes=[0, 2, 1]))
                 cell_origins = np.reshape(
                     _read_entry(f, int_type), (n_cells_in_sc, 3))
                 fc_row = _read_entry(f, int_type)
