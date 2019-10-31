@@ -436,31 +436,14 @@ class InterpolationData(PhononData):
                                   dtype=np.complex128)
             if use_c:
                 import euphonic_c
-                dmats = np.zeros((len(reduced_qpts), 3*self.n_ions, 3*self.n_ions), dtype=np.complex128)
                 lim = 2
                 sc_image_r = self._get_all_origins(
                     np.repeat(lim, 3) + 1, min_xyz=-np.repeat(lim, 3))
                 sc_offsets = np.einsum('ji,kj->ki', self.sc_matrix, sc_image_r)
                 euphonic_c.calculate_dyn_mats(
-                    reduced_qpts, fc_img_weighted, self._n_sc_images, self._sc_image_i,
-                    self.cell_origins, sc_offsets, dmats, nthreads)
-                for q in range(n_rqpts):
-                    # Mass weight dynamical matrix
-                    dmats[q] *= dyn_mat_weighting
-                    try:
-                        evals, evecs = np.linalg.eigh(dmats[q])
-                    # Fall back to zheev if eigh fails (eigh calls zheevd)
-                    except np.linalg.LinAlgError:
-                        evals, evecs, info = zheev(dmats[q])
-                    evecs = np.reshape(np.transpose(evecs),
-                                       (3*self.n_ions, self.n_ions, 3))
-                    # Set imaginary frequencies to negative
-                    imag_freqs = np.where(evals < 0)
-                    evals = np.sqrt(np.abs(evals))
-                    evals[imag_freqs] *= -1
-
-                    rfreqs[q] = evals
-                    reigenvecs[q] = evecs
+                    reduced_qpts, fc_img_weighted, self._n_sc_images,
+                    self._sc_image_i, self.cell_origins, sc_offsets,
+                    dyn_mat_weighting, reigenvecs, rfreqs, nthreads)
             else:
                 for q in range(n_rqpts):
                     rfreqs[q], reigenvecs[q], sfreqs, sevecs, si = \
@@ -549,7 +532,6 @@ class InterpolationData(PhononData):
             # Fall back to zheev if eigh fails (eigh calls zheevd)
             except np.linalg.LinAlgError:
                 evals, evecs, info = zheev(dyn_mat_corr)
-
             evecs = np.reshape(np.transpose(evecs),
                                (3*n_ions, n_ions, 3))
             # Set imaginary frequencies to negative

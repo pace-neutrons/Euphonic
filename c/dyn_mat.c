@@ -1,19 +1,21 @@
 #define PY_SSIZE_T_CLEAN
 #define NPY_NO_DEPRECATED_API NPY_1_9_API_VERSION
 #include <math.h>
+#include <stdio.h>
+#include <Windows.h>
 
 #define PI 3.14159265358979323846
+
 
 void calculate_dyn_mat_at_q(const double *qpt, const int n_ions,
     const int n_cells, const int n_sc, const int max_ims,
     const int *n_sc_images, const int *sc_image_i, const int *cell_origins,
     const int *sc_origins, const double *fc_mat, double *dyn_mat) {
 
-    int i, j, n, nc, k, sc, ii, jj, idx, fc_elems;
+    int i, j, n, nc, k, sc, ii, jj, idx;
     double qdotr;
     double phase_r;
     double phase_i;
-    double tmp;
 
     // Array strides
     int s_n[2] = {n_ions*n_ions, n_ions}; // For n_sc_images
@@ -33,7 +35,7 @@ void calculate_dyn_mat_at_q(const double *qpt, const int n_ions,
                         qdotr += qpt[k]*(sc_origins[3*sc + k] + cell_origins[3*nc + k]);
                     }
                     phase_r += cos(2*PI*qdotr);
-                    phase_i += sin(2*PI*qdotr);
+                    phase_i -= sin(2*PI*qdotr);
                 }
                 for (ii = 0; ii < 3; ii++){
                     for (jj = 0; jj < 3; jj++){
@@ -47,5 +49,64 @@ void calculate_dyn_mat_at_q(const double *qpt, const int n_ions,
             } // nc
         } // j
     } // i
+}
 
+void mass_weight_dyn_mat(const double* dyn_mat_weighting, const int n_ions,
+    double* dyn_mat) {
+        int i, j;
+        for (i = 0; i < 9*n_ions*n_ions; i++) {
+            for (j = 0; j < 2; j++) {
+                dyn_mat[2*i + j] *= dyn_mat_weighting[i];
+            }
+        }
+    }
+
+int diagonalise_dyn_mat(const int n_ions, double* dyn_mat, double* eigenvalues,
+    void (*zheevdptr) (char*, char*, int*, double*, int*, double*, double*,
+    int*, double*, int*, int*, int*, int*)) {
+
+    char jobz = 'V';
+    char uplo = 'L';
+    int order = 3*n_ions;
+    int lda = order;
+    int lwork, lrwork, liwork = -1;
+    double *work, *rwork;
+    int *iwork;
+    int info;
+
+    // Query vars
+    double lworkopt, lrworkopt;
+    int liworkopt;
+
+    // Workspace query
+    (*zheevdptr)(&jobz, &uplo, &order, dyn_mat, &lda, eigenvalues, &lworkopt, &lwork,
+        &lrworkopt, &lrwork, &liworkopt, &liwork, &info);
+    lwork = (int)lworkopt;
+    lrwork = (int)lrworkopt;
+    liwork = liworkopt;
+
+    // Allocate work arrays
+    work = (double*)malloc(2*lwork*sizeof(double));
+    rwork = (double*)malloc(lrwork*sizeof(double));
+    iwork = (int*)malloc(liwork*sizeof(int));
+
+    (*zheevdptr)(&jobz, &uplo, &order, dyn_mat, &lda, eigenvalues, work, &lwork,
+        rwork, &lrwork, iwork, &liwork, &info);
+
+    free((void*)work);
+    free((void*)rwork);
+    free((void*)iwork);
+
+    if (info > 0) {
+        printf("Diagonalisation failed\n");
+    }
+}
+
+void evals_to_freqs(const int n_ions, double *eigenvalues) {
+    double tmp;
+    for (int i = 0; i < 3*n_ions; i++) {
+        // Set imaginary frequencies to negative
+        tmp = copysign(sqrt(fabs(eigenvalues[i])), eigenvalues[i]);
+        eigenvalues[i] = tmp;
+    }
 }

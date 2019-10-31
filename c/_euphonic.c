@@ -1,11 +1,28 @@
 #define PY_SSIZE_T_CLEAN
 #define NPY_NO_DEPRECATED_API NPY_1_9_API_VERSION
 #include <omp.h>
+#include <Windows.h>
 #include <Python.h>
 #include <numpy/arrayobject.h>
 #include "dyn_mat.h"
 
+typedef void (__cdecl *LibFunc)(char* jobz, char* uplo, int* n, double* a, int* lda,
+    double* w, double* work, int* lwork, double* rwork, int* lrwork,
+    int* iwork, int* liwork, int* info);
+
 static PyObject *calculate_dyn_mats(PyObject *self, PyObject *args) {
+
+    LibFunc zheevd;
+    HMODULE lib;
+    lib = LoadLibrary("libopenblas.IPBC74C7KURV7CB2PKT5Z5FNR3SIBV4J.gfortran-win_amd64.dll");
+    if (lib != NULL) {
+        printf("Loaded lib handle\n");
+    }
+    zheevd = (LibFunc) GetProcAddress(lib, "zheevd_");
+    if (zheevd != NULL) {
+        printf("Found zheevd\n");
+    }
+
     // Define input args
     PyArrayObject *py_rqpts;
     PyArrayObject *py_fc;
@@ -16,11 +33,12 @@ static PyObject *calculate_dyn_mats(PyObject *self, PyObject *args) {
 //    PyArrayObject *py_ac_i;
 //    PyArrayObject *py_g_evals;
 //    PyArrayObject *py_g_evecs;
-//    PyArrayObject *py_dmat_weighting;
+    PyArrayObject *py_dmat_weighting;
 //    int dipole;
 //    char *asr;
 //    int splitting;
     PyArrayObject *py_dmats;
+    PyArrayObject *py_evals;
     int nthreads = 1;
 
     // Define pointers to Python array data
@@ -33,8 +51,9 @@ static PyObject *calculate_dyn_mats(PyObject *self, PyObject *args) {
 //    int *ac_i;
 //    double *g_evals;
 //    double *g_evecs;
-//    double *dmat_weighting;
+    double *dmat_weighting;
     double *dmats;
+    double *evals;
 
     // Other vars
     int nions;
@@ -44,10 +63,10 @@ static PyObject *calculate_dyn_mats(PyObject *self, PyObject *args) {
     int q;
     int maxims;
     double *qpt;
-    double *dmat;
+    double *dmat, *eval;
     int dmat_elems;
 
-    if (!PyArg_ParseTuple(args, "O!O!O!O!O!O!O!i",
+    if (!PyArg_ParseTuple(args, "O!O!O!O!O!O!O!O!O!i",
                           &PyArray_Type, &py_rqpts,
                           &PyArray_Type, &py_fc,
                           &PyArray_Type, &py_n_sc_ims,
@@ -57,11 +76,12 @@ static PyObject *calculate_dyn_mats(PyObject *self, PyObject *args) {
 //                          &PyArray_Type, &py_ac_i,
 //                          &PyArray_Type, &py_g_evals,
 //                          &PyArray_Type, &py_g_evecs,
-//                          &PyArray_Type, &py_dmat_weighting,
+                          &PyArray_Type, &py_dmat_weighting,
 //                          &dipole,
 //                          &asr,
 //                          &splitting,
                           &PyArray_Type, &py_dmats,
+                          &PyArray_Type, &py_evals,
                           &nthreads)) {
         return NULL;
     }
@@ -75,8 +95,9 @@ static PyObject *calculate_dyn_mats(PyObject *self, PyObject *args) {
 //    ac_i = (int*) PyArray_DATA(py_ac_i);
 //    g_evals = (double*) PyArray_DATA(py_g_evals);
 //    g_evecs = (double*) PyArray_DATA(py_g_evecs);
-//    dmat_weighting = (double*) PyArray_DATA(py_dmat_weighting);
+    dmat_weighting = (double*) PyArray_DATA(py_dmat_weighting);
     dmats = (double*) PyArray_DATA(py_dmats);
+    evals = (double*) PyArray_DATA(py_evals);
 
     nions = PyArray_DIMS(py_fc)[1]/3;
     ncells = PyArray_DIMS(py_fc)[0];
@@ -91,8 +112,15 @@ static PyObject *calculate_dyn_mats(PyObject *self, PyObject *args) {
     for (q = 0; q < nqpts; q++) {
         qpt = (rqpts + 3*q);
         dmat = (dmats + q*dmat_elems);
+        eval = (evals + q*3*nions);
+
         calculate_dyn_mat_at_q(qpt, nions, ncells, nsc, maxims, n_sc_ims, sc_im_idx,
             cell_ogs, sc_ogs, fc, dmat);
+
+        mass_weight_dyn_mat(dmat_weighting, nions, dmat);
+
+        diagonalise_dyn_mat(nions, dmat, eval, zheevd);
+        evals_to_freqs(nions, eval);
     }
 
     return Py_None;
