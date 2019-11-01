@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+# -*- coding: UTF-8 -*-
 """
 Run and time the Ewald sum part of an interpolation calculation for a small
 number of q-points for different values of eta (this is the balance between

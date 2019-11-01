@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+# -*- coding: UTF-8 -*-
 """
 Parse a *.phonon or *.bands CASTEP output file for electronic/vibrational
 frequency data and save or display a matplotlib plot of the electronic
