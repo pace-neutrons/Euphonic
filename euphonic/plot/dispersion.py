@@ -1,5 +1,6 @@
 import math
 import sys
+import warnings
 import numpy as np
 import seekpath
 from scipy import signal
@@ -209,11 +210,11 @@ def plot_sqw_map(data, vmin=None, vmax=None, ratio=None, ewidth=0, qwidth=0,
         import matplotlib as mpl
         import matplotlib.pyplot as plt
     except ImportError:
-        print(('Cannot import Matplotlib to plot S(q,w) (maybe Matplotlib '
-               'is not installed?). To install Euphonic\'s optional '
-               'Matploblib dependencies, from the euphonic top directory do: '
-               '\n\npip install --user .[matplotlib]'))
-        return None, None
+        warnings.warn(('Cannot import Matplotlib to plot S(q,w) (maybe '
+                       'Matplotlib is not installed?). To install Euphonic\'s'
+                       ' optional Matplotlib dependency, try:\n\npip install'
+                       ' euphonic[matplotlib]\n'), stacklevel=2)
+        return
 
     ebins = data.sqw_ebins.magnitude
     # Apply broadening
@@ -325,9 +326,10 @@ def output_grace(data, seedname='out', up=True, down=True):
     try:
         from PyGrace.grace import Grace
     except ImportError:
-        print('PyGrace is not installed, attempting to write .agr Grace ' +
-              'file anyway. If using Python 2, you can install PyGrace ' +
-              'from https://github.com/pygrace/pygrace')
+        warnings.warn(('PyGrace is not installed, attempting to write .agr '
+                       'Grace file anyway. If using Python 2, you can install'
+                       ' PyGrace from https://github.com/pygrace/pygrace'),
+                      stacklevel=2)
 
     # Do calculations required for axis, tick labels etc.
     # Calculate distance along x axis
@@ -485,11 +487,11 @@ def plot_dispersion(data, title='', btol=10.0, up=True, down=True,
     try:
         import matplotlib.pyplot as plt
     except ImportError:
-        print(('Cannot import Matplotlib to plot dispersion (maybe Matplotlib '
-               'is not installed?). To install Euphonic\'s optional '
-               'Matploblib dependencies, from the euphonic top directory do: '
-               '\n\npip install --user .[matplotlib]'))
-        return None
+        warnings.warn(('Cannot import Matplotlib to plot dispersion (maybe '
+                       'Matplotlib is not installed?). To install Euphonic\'s'
+                       ' optional Matplotlib dependency, try:\n\npip install'
+                       ' euphonic[matplotlib]\n'), stacklevel=2)
+        return
 
     cell_vec = (data.cell_vec.to('angstrom').magnitude)
     recip_latt = reciprocal_lattice(cell_vec)

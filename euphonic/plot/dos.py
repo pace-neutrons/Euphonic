@@ -26,9 +26,10 @@ def output_grace(data, seedname='out', mirror=False, up=True, down=True):
     try:
         from PyGrace.grace import Grace
     except ImportError:
-        print('PyGrace is not installed, attempting to write .agr Grace ' +
-              'file anyway. If using Python 2, you can install PyGrace ' +
-              'from https://github.com/pygrace/pygrace')
+        warnings.warn(('PyGrace is not installed, attempting to write .agr '
+                       ' Grace file anyway. If using Python 2, you can install'
+                       'PyGrace from https://github.com/pygrace/pygrace'),
+                      stacklevel=2)
 
     # X-axis label formatting
     # Replace 1/cm with cm^-1
@@ -194,11 +195,10 @@ def plot_dos(data, title='', mirror=False, up=True, down=True, **line_kwargs):
     try:
         import matplotlib.pyplot as plt
     except ImportError:
-        print('Cannot plot dispersion with Matplotlib, Matplotlib is not ' +
-              'installed. To use this feature install Euphonic\'s optional ' +
-              'Matplotlib dependencies from the euphonic top directory: ' +
-              '\n\npip install --user .[matplotlib]')
-        return None
+        warnings.warn(('Cannot import Matplotlib to plot dos (maybe '
+                       'Matplotlib is not installed?). To install Euphonic\'s'
+                       ' optional Matplotlib dependency, try:\n\npip install'
+                       ' euphonic[matplotlib]\n'), stacklevel=2)
 
     # Create figure
     fig = plt.figure()
