@@ -9,140 +9,6 @@ from euphonic import ureg
 from euphonic.util import reciprocal_lattice, is_gamma
 
 
-def _read_bands_data(seedname='mesh', path='.'):
-    """
-    Reads data from a band.yaml file and
-    returns it in a dictionary
-
-    Parameters
-    ----------
-    seedname : str
-        Seedname of file(s) to read
-    path : str
-        Path to dir containing the file(s), if in another directory
-
-    Returns
-    -------
-    data_dict : dict
-        A dict with the following keys: 'n_qpts', 'n_spins', 'n_branches',
-        'fermi', 'cell_vec', 'recip_vec', 'qpts', 'weights', 'freqs',
-        'freq_down'. If a .castep file is available to read, the keys 'n_ions',
-        'ion_r' and 'ion_type' are also present.
-    """
-    #TODO fix documentation
-
-    # This defines unassigned defaults
-    data_dict = {}
-    data_dict['n_ions'] = None #n_ions
-    data_dict['n_branches'] = None #n_branches
-    data_dict['n_qpts'] = None #n_qpts
-    data_dict['cell_vec'] = None #cell_vec*ureg.angstrom
-    data_dict['recip_vec'] = None #reciprocal_lattice(cell_vec)/ureg.angstrom
-    data_dict['ion_r'] = None #ion_r
-    data_dict['ion_type'] = None #ion_type
-    data_dict['ion_mass'] = None #ion_mass*ureg.amu
-    data_dict['qpts'] = None #qpts
-    data_dict['weights'] = None #weights
-    data_dict['freqs'] = None #(freqs*(1/ureg.cm)).to('meV', 'spectroscopy')
-    data_dict['eigenvecs'] = None #eigenvecs
-    data_dict['split_i'] = None #split_i
-    data_dict['split_freqs'] = None #(split_freqs*(1/ureg.cm)).to('meV', 'spectroscopy')
-    data_dict['split_eigenvecs'] = None #split_eigenvecs
-
-    if path:
-        if not os.path.exists(path):
-            raise FileNotFoundError(f'Phonopy seed path {path} does not exist.')
-        phonopy_files = os.listdir(path)
-    else:
-        phonopy_files = os.listdir('.')
-        raise NotImplementedError('handling empty path')
-
-    hdf5_exts = ['.hdf5', '.he5', '.h5']
-    yaml_exts = ['.yaml', '.yml']
-
-
-    def extract(bands_obj):
-        n_qpts = bands_obj['nqpoint']
-        n_ions = bands_obj['natom']
-        cell_vec = bands_obj['lattice']
-        recip_vec = bands_obj['reciprocal_lattice']
-        qpts = [phon['q-position'] for phon in bands_obj['phonon']]
-
-        weights = [phon['weight'] for phon in bands_obj['phonon']]
-
-        phonon_data = [phon for phon in bands_obj['phonon']]
-        bands_data_each_qpt = [bands_data['band']
-                                for bands_data in phonon_data]
-
-        # The frequency for each band at each q-point
-        freqs = np.array([ [band_data['frequency']
-                                for band_data in bands_data]
-                                  for bands_data in bands_data_each_qpt])
-
-        # The eigenvector for each atom for each band at each q-point
-        eigenvecs = np.array([ [band_data['eigenvector']
-                                for band_data in bands_data]
-                                  for bands_data in bands_data_each_qpt]).view(np.complex128)
-
-        n_branches = freqs.shape[1]
-
-        ion_type = [ion['symbol'] for ion in bands_obj['points']]
-        ion_r = [ion['coordinates'] for ion in bands_obj['points']]
-        ion_mass = [ion['mass'] for ion in bands_obj['points']]
-
-        data_dict = {}
-        data_dict['n_qpts'] = n_qpts
-        data_dict['n_spins'] = NotImplemented #n_spins, electronic
-        data_dict['n_branches'] = n_branches
-        data_dict['fermi'] = NotImplemented #(fermi*ureg.hartree).to('eV')
-        data_dict['cell_vec'] = cell_vec #(cell_vec*ureg.bohr).to('angstrom')
-        data_dict['recip_vec'] = recip_vec #((reciprocal_lattice(cell_vec)/ureg.bohr).to('1/angstrom'))
-        data_dict['qpts'] = qpts
-        data_dict['weights'] = weights #weights
-        data_dict['freqs'] = freqs #(freqs*ureg.hartree).to('eV')
-        data_dict['freq_down'] = NotImplemented #(freq_down*ureg.hartree).to('eV'), electronic
-        #data_dict['eigenvecs'] = eigenvecs
-        data_dict['n_ions'] = n_ions
-        data_dict['ion_r'] = ion_r
-        data_dict['ion_type'] = ion_type
-
-        return data_dict
-
-    #TODO merge unassigned defaults with returned data_dict
-    def open_hdf5(path, name):
-        try:
-            pathname = os.path.join(path, name)
-            with h5py.File(pathname) as hdf5_data:
-                return extract(hdf5_data)
-            print(f"Read success for {pathname}.")
-        except:
-            return None
-
-    def open_yaml(path, name):
-        try:
-            pathname = os.path.join(path, name)
-            with open(pathname) as yaml_obj:
-                yaml_data = yaml.safe_load(yaml_obj)
-                return extract(yaml_data)
-            print(f"Read success for {pathname}.")
-        except:
-            return None
-
-    #TODO demonstrate output variables as data_dict or leave hidden? 
-    #TODO use next(iterator openfile), returns first non None.
-    #TODO design considerations
-    # check hdf5 data
-    k = [open_hdf5(path, seedname + ext) for ext in hdf5_exts]
-    if any(k):
-        return next(item for item in k if item is not None)
-
-    # otherwise check yaml data
-    j = [open_yaml(path, seedname + ext) for ext in yaml_exts]
-    if any(j):
-        return next(item for item in j if item is not None)
-
-    #TODO design considerations
-    return None
 
 
 def _read_phonon_data(seedname='mesh', path='.'):
@@ -529,4 +395,139 @@ def _read_entry(file_obj, dtype=''):
 
     return data
 
+
+def _read_bands_data(seedname='mesh', path='.'):
+    """
+    Reads data from a band.yaml file and
+    returns it in a dictionary
+
+    Parameters
+    ----------
+    seedname : str
+        Seedname of file(s) to read
+    path : str
+        Path to dir containing the file(s), if in another directory
+
+    Returns
+    -------
+    data_dict : dict
+        A dict with the following keys: 'n_qpts', 'n_spins', 'n_branches',
+        'fermi', 'cell_vec', 'recip_vec', 'qpts', 'weights', 'freqs',
+        'freq_down'. If a .castep file is available to read, the keys 'n_ions',
+        'ion_r' and 'ion_type' are also present.
+    """
+    #TODO fix documentation
+
+    # This defines unassigned defaults
+    data_dict = {}
+    data_dict['n_ions'] = None #n_ions
+    data_dict['n_branches'] = None #n_branches
+    data_dict['n_qpts'] = None #n_qpts
+    data_dict['cell_vec'] = None #cell_vec*ureg.angstrom
+    data_dict['recip_vec'] = None #reciprocal_lattice(cell_vec)/ureg.angstrom
+    data_dict['ion_r'] = None #ion_r
+    data_dict['ion_type'] = None #ion_type
+    data_dict['ion_mass'] = None #ion_mass*ureg.amu
+    data_dict['qpts'] = None #qpts
+    data_dict['weights'] = None #weights
+    data_dict['freqs'] = None #(freqs*(1/ureg.cm)).to('meV', 'spectroscopy')
+    data_dict['eigenvecs'] = None #eigenvecs
+    data_dict['split_i'] = None #split_i
+    data_dict['split_freqs'] = None #(split_freqs*(1/ureg.cm)).to('meV', 'spectroscopy')
+    data_dict['split_eigenvecs'] = None #split_eigenvecs
+
+    if path:
+        if not os.path.exists(path):
+            raise FileNotFoundError(f'Phonopy seed path {path} does not exist.')
+        phonopy_files = os.listdir(path)
+    else:
+        phonopy_files = os.listdir('.')
+        raise NotImplementedError('handling empty path')
+
+    hdf5_exts = ['.hdf5', '.he5', '.h5']
+    yaml_exts = ['.yaml', '.yml']
+
+
+    def extract(bands_obj):
+        n_qpts = bands_obj['nqpoint']
+        n_ions = bands_obj['natom']
+        cell_vec = bands_obj['lattice']
+        recip_vec = bands_obj['reciprocal_lattice']
+        qpts = [phon['q-position'] for phon in bands_obj['phonon']]
+
+        weights = [phon['weight'] for phon in bands_obj['phonon']]
+
+        phonon_data = [phon for phon in bands_obj['phonon']]
+        bands_data_each_qpt = [bands_data['band']
+                                for bands_data in phonon_data]
+
+        # The frequency for each band at each q-point
+        freqs = np.array([ [band_data['frequency']
+                                for band_data in bands_data]
+                                  for bands_data in bands_data_each_qpt])
+
+        # The eigenvector for each atom for each band at each q-point
+        eigenvecs = np.array([ [band_data['eigenvector']
+                                for band_data in bands_data]
+                                  for bands_data in bands_data_each_qpt]).view(np.complex128)
+
+        n_branches = freqs.shape[1]
+
+        ion_type = [ion['symbol'] for ion in bands_obj['points']]
+        ion_r = [ion['coordinates'] for ion in bands_obj['points']]
+        ion_mass = [ion['mass'] for ion in bands_obj['points']]
+
+        data_dict = {}
+        data_dict['n_qpts'] = n_qpts
+        data_dict['n_spins'] = NotImplemented #n_spins, electronic
+        data_dict['n_branches'] = n_branches
+        data_dict['fermi'] = NotImplemented #(fermi*ureg.hartree).to('eV')
+        data_dict['cell_vec'] = cell_vec #(cell_vec*ureg.bohr).to('angstrom')
+        data_dict['recip_vec'] = recip_vec #((reciprocal_lattice(cell_vec)/ureg.bohr).to('1/angstrom'))
+        data_dict['qpts'] = qpts
+        data_dict['weights'] = weights #weights
+        data_dict['freqs'] = freqs #(freqs*ureg.hartree).to('eV')
+        data_dict['freq_down'] = NotImplemented #(freq_down*ureg.hartree).to('eV'), electronic
+        #data_dict['eigenvecs'] = eigenvecs
+        data_dict['n_ions'] = n_ions
+        data_dict['ion_r'] = ion_r
+        data_dict['ion_type'] = ion_type
+
+        return data_dict
+
+    #TODO merge unassigned defaults with returned data_dict
+    def open_hdf5(path, name):
+        try:
+            pathname = os.path.join(path, name)
+            with h5py.File(pathname) as hdf5_data:
+                return extract(hdf5_data)
+            print(f"Read success for {pathname}.")
+        except:
+            return None
+
+    def open_yaml(path, name):
+        try:
+            pathname = os.path.join(path, name)
+            with open(pathname) as yaml_obj:
+                yaml_data = yaml.safe_load(yaml_obj)
+                return extract(yaml_data)
+            print(f"Read success for {pathname}.")
+        except:
+            return None
+
+    #TODO demonstrate output variables as data_dict or leave hidden? 
+    #TODO use next(iterator openfile), returns first non None.
+    #TODO design considerations
+    # check hdf5 data
+    k = [open_hdf5(path, seedname + ext) for ext in hdf5_exts]
+    if any(k):
+        return next(item for item in k if item is not None)
+
+    # otherwise check yaml data
+    j = [open_yaml(path, seedname + ext) for ext in yaml_exts]
+    if any(j):
+        return next(item for item in j if item is not None)
+
+    #TODO design considerations
+    return None
 
