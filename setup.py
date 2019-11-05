@@ -17,7 +17,7 @@ scripts = ['scripts/dispersion.py',
 
 setup(
     name='euphonic',
-    version='0.1dev2',
+    version='0.1dev3',
     author='Rebecca Fair',
     author_email='rebecca.fair@stfc.ac.uk',
     description=(

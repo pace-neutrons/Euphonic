@@ -250,16 +250,9 @@ class InterpolationData(PhononData):
         # Try to create a multiprocessing pool first, in case it fails
         if nprocs > 1:
             try:
-                import signal
                 from multiprocessing import Pool
                 from functools import partial
-                # Temporarily remove SIGINT handler before creating pool, so
-                # child processes don't inherit it. Instead handle SIGINT
-                # (e.g. keyboard interrupts) from the main process only and
-                # terminate the pool before exiting
-                sigint_handler = signal.signal(signal.SIGINT, signal.SIG_IGN)
                 pool = Pool(processes=nprocs)
-                signal.signal(signal.SIGINT, sigint_handler)
             except RuntimeError:
                 warnings.warn(('\nA RuntimeError was raised when initialising '
                                'the multiprocessing Pool. This is probably due'
