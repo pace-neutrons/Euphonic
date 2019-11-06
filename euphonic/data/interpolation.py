@@ -134,11 +134,17 @@ class InterpolationData(PhononData):
 
     @property
     def _freqs(self):
-        return self._reduced_freqs[self._qpts_i]
+        if len(self._reduced_freqs) > 0:
+            return self._reduced_freqs[self._qpts_i]
+        else:
+            return self._reduced_freqs
 
     @property
     def eigenvecs(self):
-        return self._reduced_eigenvecs[self._qpts_i]
+        if len(self._reduced_eigenvecs) > 0:
+            return self._reduced_eigenvecs[self._qpts_i]
+        else:
+            return self._reduced_eigenvecs
 
     @property
     def force_constants(self):
