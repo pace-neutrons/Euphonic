@@ -213,8 +213,8 @@ def plot_sqw_map(data, vmin=None, vmax=None, ratio=None, ewidth=0, qwidth=0,
         warnings.warn(('Cannot import Matplotlib to plot S(q,w) (maybe '
                        'Matplotlib is not installed?). To install Euphonic\'s'
                        ' optional Matplotlib dependency, try:\n\npip install'
-                       ' euphonic[matplotlib]\n'), stacklevel=2)
-        return
+                       ' euphonic[matplotlib]\n'))
+        raise
 
     ebins = data.sqw_ebins.magnitude
     # Apply broadening
@@ -490,8 +490,8 @@ def plot_dispersion(data, title='', btol=10.0, up=True, down=True,
         warnings.warn(('Cannot import Matplotlib to plot dispersion (maybe '
                        'Matplotlib is not installed?). To install Euphonic\'s'
                        ' optional Matplotlib dependency, try:\n\npip install'
-                       ' euphonic[matplotlib]\n'), stacklevel=2)
-        return
+                       ' euphonic[matplotlib]\n'))
+        raise
 
     cell_vec = (data.cell_vec.to('angstrom').magnitude)
     recip_latt = reciprocal_lattice(cell_vec)

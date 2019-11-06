@@ -198,7 +198,8 @@ def plot_dos(data, title='', mirror=False, up=True, down=True, **line_kwargs):
         warnings.warn(('Cannot import Matplotlib to plot dos (maybe '
                        'Matplotlib is not installed?). To install Euphonic\'s'
                        ' optional Matplotlib dependency, try:\n\npip install'
-                       ' euphonic[matplotlib]\n'), stacklevel=2)
+                       ' euphonic[matplotlib]\n'))
+        raise
 
     # Create figure
     fig = plt.figure()
