@@ -52,13 +52,13 @@ class Data(object):
         # Convert dos_bins to Hartree. If no units are specified, assume
         # dos_bins is in same units as freqs
         try:
-            dos_bins = dos_bins.to(self._e_units).magnitude
+            dos_bins = dos_bins.to('E_h', 'spectroscopy').magnitude
         except AttributeError:
-            dos_bins = (dos_bins*ureg(self._e_units).to('E_h')).magnitude
+            dos_bins = (dos_bins*ureg(self._e_units).to('E_h', 'spectroscopy')).magnitude
         try:
-            gwidth = gwidth.to(self._e_units).magnitude
+            gwidth = gwidth.to('E_h', 'spectroscopy').magnitude
         except AttributeError:
-            gwidth = (gwidth*ureg(self._e_units).to('E_h')).magnitude
+            gwidth = (gwidth*ureg(self._e_units).to('E_h', 'spectroscopy')).magnitude
 
         # Bin frequencies
         if weights is None:

@@ -50,19 +50,13 @@ def main():
         gwidth.ito(args.units, 'spectroscopy')
     else:
         gwidth = args.w*ureg[args.units]
-    if args.ir:
-        weights = data.ir*np.repeat(
-            data.weights[:, np.newaxis], data.n_branches, axis=1)
-    else:
-        weights = None
     if isinstance(data, BandsData):
         all_freqs = np.append(data.freqs.magnitude, data.freq_down.magnitude)
     else:
         all_freqs = data.freqs.magnitude
     bwidth = bwidth.magnitude
     dos_bins = np.arange(all_freqs.min(), all_freqs.max() + bwidth, bwidth)
-    data.calculate_dos(dos_bins, gwidth, lorentz=args.lorentz,
-                       weights=weights)
+    data.calculate_dos(dos_bins, gwidth, lorentz=args.lorentz)
 
     if args.grace:
         output_grace(data, seedname, mirror=args.mirror, up=args.up,
@@ -114,15 +108,6 @@ def parse_arguments():
     dos_group = parser.add_argument_group(
         'DOS arguments',
         'Arguments specific to plotting the density of states')
-    dos_group.add_argument(
-        '-ir',
-        action='store_true',
-        help='Extract IR intensities from .phonon and use to weight DOS')
-#    dos_group.add_argument(
-#        '-raman',
-#        action='store_true',
-#        help="""Extract Raman intensities from .phonon and calculate a Raman
-#                spectrum""")
     dos_group.add_argument(
         '-w',
         default=None,

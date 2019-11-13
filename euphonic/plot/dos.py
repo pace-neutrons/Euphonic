@@ -225,7 +225,11 @@ def plot_dos(data, title='', mirror=False, up=True, down=True, **line_kwargs):
 
     # Plot dos and Fermi energy
     if up:
-        ax.plot(bin_centres, data.dos, label='alpha', lw=1.0, **line_kwargs)
+        if hasattr(data, 'dos_down'):
+            label = 'alpha'
+        else:
+            label = None
+        ax.plot(bin_centres, data.dos, label=label, lw=1.0, **line_kwargs)
     if down and hasattr(data, 'dos_down') and len(data.dos_down) > 0:
         if mirror:
             ax.plot(bin_centres, np.negative(data.dos_down), label='beta',
@@ -240,7 +244,8 @@ def plot_dos(data, title='', mirror=False, up=True, down=True, **line_kwargs):
                 ax.axvline(x=ef, ls='dashed', c='k', label=r'$\epsilon_F$')
             else:
                 ax.axvline(x=ef, ls='dashed', c='k')
-    ax.legend()
+        ax.legend()
+
     if not mirror:
         ax.set_ylim(bottom=0)  # Need to set limits after plotting the data
     plt.tight_layout()
