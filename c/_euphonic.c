@@ -1,27 +1,46 @@
 #define PY_SSIZE_T_CLEAN
 #define NPY_NO_DEPRECATED_API NPY_1_9_API_VERSION
 #include <omp.h>
-#include <Windows.h>
 #include <Python.h>
 #include <numpy/arrayobject.h>
 #include "dyn_mat.h"
 
+#ifdef _WIN32
+#include <Windows.h>
 typedef void (__cdecl *LibFunc)(char* jobz, char* uplo, int* n, double* a, int* lda,
     double* w, double* work, int* lwork, double* rwork, int* lrwork,
     int* iwork, int* liwork, int* info);
+#else
+#include <dlfcn.h>
+#endif
 
 static PyObject *calculate_dyn_mats(PyObject *self, PyObject *args) {
 
+#ifdef _WIN32
     LibFunc zheevd;
     HMODULE lib;
     lib = LoadLibrary("libopenblas.IPBC74C7KURV7CB2PKT5Z5FNR3SIBV4J.gfortran-win_amd64.dll");
     if (lib != NULL) {
-        printf("Loaded lib handle\n");
+        printf("Loaded lib handle Win\n");
     }
     zheevd = (LibFunc) GetProcAddress(lib, "zheevd_");
     if (zheevd != NULL) {
+        printf("Found zheevd Win\n");
+    }
+#else
+    void *lib;
+    void (*zheevd)(char* jobz, char* uplo, int* n, double* a, int* lda,
+        double* w, double* work, int* lwork, double* rwork, int* lrwork,
+        int* iwork, int* liwork, int* info);
+    lib = dlopen("/home/mll13652/.local/lib/python2.7/site-packages/numpy/linalg/_umath_linalg.so", RTLD_LAZY);
+    if (lib != NULL) {
+        printf("Loaded lib handle\n");
+    }
+    zheevd = dlsym(lib, "zheevd_");
+    if (zheevd != NULL) {
         printf("Found zheevd\n");
     }
+#endif
 
     // Define input args
     PyArrayObject *py_rqpts;
@@ -123,8 +142,11 @@ static PyObject *calculate_dyn_mats(PyObject *self, PyObject *args) {
         evals_to_freqs(nions, eval);
     }
 
-    return Py_None;
+#ifdef linux
+    dlclose(lib);
+#endif
 
+    return Py_None;
 }
 
 static PyMethodDef _euphonic_methods[] = {
@@ -132,6 +154,7 @@ static PyMethodDef _euphonic_methods[] = {
     {NULL, NULL, 0, NULL}
 };
 
+#if PY_MAJOR_VERSION >= 3
 static struct PyModuleDef _euphonic_module_def = {
     PyModuleDef_HEAD_INIT,
     "_euphonic",
@@ -144,3 +167,9 @@ PyMODINIT_FUNC PyInit__euphonic(void) {
     import_array();
     return PyModule_Create(&_euphonic_module_def);
 }
+#else
+PyMODINIT_FUNC init_euphonic() {
+    import_array();
+    Py_InitModule3("_euphonic", _euphonic_methods, NULL);
+}
+#endif

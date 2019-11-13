@@ -1,3 +1,4 @@
+import os
 import numpy as np
 
 try:
@@ -7,13 +8,19 @@ except ImportError:
 
 include_dirs = [np.get_include(), 'c']
 sources = ['c/_euphonic.c', 'c/dyn_mat.c']
-compile_args = ['/openmp']
+if os.name == 'nt':  # Windows
+    compile_args = ['/openmp']
+    link_args = None
+elif os.environ['CC'] == 'gcc':
+    compile_args = ['-fopenmp']
+    link_args = ['-fopenmp']
 
 euphonic_extension = Extension(
     'euphonic._euphonic',
     extra_compile_args=compile_args,
-    sources=sources,
-    include_dirs=include_dirs
+    extra_link_args=link_args,
+    include_dirs=include_dirs,
+    sources=sources
 )
 
 with open('README.rst', 'r') as f:

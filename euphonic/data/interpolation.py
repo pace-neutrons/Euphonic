@@ -435,11 +435,12 @@ class InterpolationData(PhononData):
             reigenvecs = np.zeros((n_rqpts, 3*self.n_ions, self.n_ions, 3),
                                   dtype=np.complex128)
             if use_c:
-                import euphonic_c
+                import euphonic._euphonic as euphonic_c
                 lim = 2
                 sc_image_r = self._get_all_origins(
                     np.repeat(lim, 3) + 1, min_xyz=-np.repeat(lim, 3))
-                sc_offsets = np.einsum('ji,kj->ki', self.sc_matrix, sc_image_r)
+                sc_offsets = np.einsum(
+                    'ji,kj->ki', self.sc_matrix, sc_image_r).astype(np.int32)
                 euphonic_c.calculate_dyn_mats(
                     reduced_qpts, fc_img_weighted, self._n_sc_images,
                     self._sc_image_i, self.cell_origins, sc_offsets,

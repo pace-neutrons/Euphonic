@@ -2,10 +2,8 @@
 #define NPY_NO_DEPRECATED_API NPY_1_9_API_VERSION
 #include <math.h>
 #include <stdio.h>
-#include <Windows.h>
 
 #define PI 3.14159265358979323846
-
 
 void calculate_dyn_mat_at_q(const double *qpt, const int n_ions,
     const int n_cells, const int n_sc, const int max_ims,
@@ -100,11 +98,14 @@ int diagonalise_dyn_mat(const int n_ions, double* dyn_mat, double* eigenvalues,
     if (info > 0) {
         printf("Diagonalisation failed\n");
     }
+
+    return info;
 }
 
 void evals_to_freqs(const int n_ions, double *eigenvalues) {
+    int i;
     double tmp;
-    for (int i = 0; i < 3*n_ions; i++) {
+    for (i = 0; i < 3*n_ions; i++) {
         // Set imaginary frequencies to negative
         tmp = copysign(sqrt(fabs(eigenvalues[i])), eigenvalues[i]);
         eigenvalues[i] = tmp;
