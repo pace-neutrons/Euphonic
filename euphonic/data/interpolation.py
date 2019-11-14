@@ -444,7 +444,8 @@ class InterpolationData(PhononData):
                 euphonic_c.calculate_dyn_mats(
                     reduced_qpts, fc_img_weighted, self._n_sc_images,
                     self._sc_image_i, self.cell_origins, sc_offsets,
-                    dyn_mat_weighting, reigenvecs, rfreqs, nthreads)
+                    dyn_mat_weighting, reigenvecs, rfreqs, nthreads,
+                    np.get_include())
             else:
                 for q in range(n_rqpts):
                     rfreqs[q], reigenvecs[q], sfreqs, sevecs, si = \

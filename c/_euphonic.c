@@ -1,5 +1,6 @@
 #define PY_SSIZE_T_CLEAN
 #define NPY_NO_DEPRECATED_API NPY_1_9_API_VERSION
+#include <string.h>
 #include <omp.h>
 #include <Python.h>
 #include <numpy/arrayobject.h>
@@ -16,31 +17,6 @@ typedef void (__cdecl *LibFunc)(char* jobz, char* uplo, int* n, double* a, int* 
 
 static PyObject *calculate_dyn_mats(PyObject *self, PyObject *args) {
 
-#ifdef _WIN32
-    LibFunc zheevd;
-    HMODULE lib;
-    lib = LoadLibrary("libopenblas.IPBC74C7KURV7CB2PKT5Z5FNR3SIBV4J.gfortran-win_amd64.dll");
-    if (lib != NULL) {
-        printf("Loaded lib handle Win\n");
-    }
-    zheevd = (LibFunc) GetProcAddress(lib, "zheevd_");
-    if (zheevd != NULL) {
-        printf("Found zheevd Win\n");
-    }
-#else
-    void *lib;
-    void (*zheevd)(char* jobz, char* uplo, int* n, double* a, int* lda,
-        double* w, double* work, int* lwork, double* rwork, int* lrwork,
-        int* iwork, int* liwork, int* info);
-    lib = dlopen("/home/mll13652/.local/lib/python2.7/site-packages/numpy/linalg/_umath_linalg.so", RTLD_LAZY);
-    if (lib != NULL) {
-        printf("Loaded lib handle\n");
-    }
-    zheevd = dlsym(lib, "zheevd_");
-    if (zheevd != NULL) {
-        printf("Found zheevd\n");
-    }
-#endif
 
     // Define input args
     PyArrayObject *py_rqpts;
@@ -59,6 +35,7 @@ static PyObject *calculate_dyn_mats(PyObject *self, PyObject *args) {
     PyArrayObject *py_dmats;
     PyArrayObject *py_evals;
     int nthreads = 1;
+    const char *includedir;
 
     // Define pointers to Python array data
     double *rqpts;
@@ -83,7 +60,8 @@ static PyObject *calculate_dyn_mats(PyObject *self, PyObject *args) {
     int maxims;
     int dmat_elems;
 
-    if (!PyArg_ParseTuple(args, "O!O!O!O!O!O!O!O!O!i",
+    // Parse inputs
+    if (!PyArg_ParseTuple(args, "O!O!O!O!O!O!O!O!O!is",
                           &PyArray_Type, &py_rqpts,
                           &PyArray_Type, &py_fc,
                           &PyArray_Type, &py_n_sc_ims,
@@ -99,9 +77,38 @@ static PyObject *calculate_dyn_mats(PyObject *self, PyObject *args) {
 //                          &splitting,
                           &PyArray_Type, &py_dmats,
                           &PyArray_Type, &py_evals,
-                          &nthreads)) {
+                          &nthreads,
+                          &includedir)) {
         return NULL;
     }
+
+    // Load LAPACK funcs
+#ifdef _WIN32
+    LibFunc zheevd;
+    HMODULE lib;
+    lib = LoadLibrary("libopenblas.IPBC74C7KURV7CB2PKT5Z5FNR3SIBV4J.gfortran-win_amd64.dll");
+    if (lib != NULL) {
+        printf("Loaded lib handle Win\n");
+    }
+    zheevd = (LibFunc) GetProcAddress(lib, "zheevd_");
+    if (zheevd != NULL) {
+        printf("Found zheevd Win\n");
+    }
+#else
+    void *lib;
+    void (*zheevd)(char* jobz, char* uplo, int* n, double* a, int* lda,
+        double* w, double* work, int* lwork, double* rwork, int* lrwork,
+        int* iwork, int* liwork, int* info);
+    strcat(includedir, "/../../linalg/_umath_linalg.so");
+    lib = dlopen(includedir, RTLD_LAZY);
+    if (lib != NULL) {
+        printf("Loaded lib handle\n");
+    }
+    zheevd = dlsym(lib, "zheevd_");
+    if (zheevd != NULL) {
+        printf("Found zheevd\n");
+    }
+#endif
 
     rqpts = (double*) PyArray_DATA(py_rqpts);
     fc = (double*) PyArray_DATA(py_fc);
