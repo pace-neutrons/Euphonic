@@ -81,8 +81,6 @@ static PyObject *calculate_dyn_mats(PyObject *self, PyObject *args) {
     int nsc;
     int q;
     int maxims;
-    double *qpt;
-    double *dmat, *eval;
     int dmat_elems;
 
     if (!PyArg_ParseTuple(args, "O!O!O!O!O!O!O!O!O!i",
@@ -129,6 +127,7 @@ static PyObject *calculate_dyn_mats(PyObject *self, PyObject *args) {
     omp_set_num_threads(nthreads);
     #pragma omp parallel for
     for (q = 0; q < nqpts; q++) {
+        double *qpt, *dmat, *eval;
         qpt = (rqpts + 3*q);
         dmat = (dmats + q*dmat_elems);
         eval = (evals + q*3*nions);
