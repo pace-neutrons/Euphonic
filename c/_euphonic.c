@@ -1,6 +1,7 @@
 #define PY_SSIZE_T_CLEAN
 #define NPY_NO_DEPRECATED_API NPY_1_9_API_VERSION
 #include <string.h>
+#include <stdio.h>
 #include <omp.h>
 #include <Python.h>
 #include <numpy/arrayobject.h>
@@ -16,7 +17,6 @@ typedef void (__cdecl *LibFunc)(char* jobz, char* uplo, int* n, double* a, int* 
 #endif
 
 static PyObject *calculate_dyn_mats(PyObject *self, PyObject *args) {
-
 
     // Define input args
     PyArrayObject *py_rqpts;
@@ -86,7 +86,17 @@ static PyObject *calculate_dyn_mats(PyObject *self, PyObject *args) {
 #ifdef _WIN32
     LibFunc zheevd;
     HMODULE lib;
-    lib = LoadLibrary("libopenblas.IPBC74C7KURV7CB2PKT5Z5FNR3SIBV4J.gfortran-win_amd64.dll");
+    WIN32_FIND_DATA filedata;
+    HANDLE hfile;
+    const char *libdir = "\\..\\..\\..\\scipy\\extra-dll\\";
+    const char *fileglob = "libopenblas*dll";
+    char buf[300];
+    snprintf(buf, sizeof(buf), "%s%s%s", includedir, libdir, fileglob);
+    hfile = FindFirstFile(buf, &filedata);
+    if (hfile != INVALID_HANDLE_VALUE) {
+        printf("%s found\n", filedata.cFileName);
+    }
+    lib = LoadLibrary(filedata.cFileName);
     if (lib != NULL) {
         printf("Loaded lib handle Win\n");
     }
@@ -99,8 +109,9 @@ static PyObject *calculate_dyn_mats(PyObject *self, PyObject *args) {
     void (*zheevd)(char* jobz, char* uplo, int* n, double* a, int* lda,
         double* w, double* work, int* lwork, double* rwork, int* lrwork,
         int* iwork, int* liwork, int* info);
-    strcat(includedir, "/../../linalg/_umath_linalg.so");
-    lib = dlopen(includedir, RTLD_LAZY);
+    char buf[300];
+    snprintf(buf, sizeof(buf), "%s%s", includedir, "/../../linalg/_umath_linalg.so");
+    lib = dlopen(buf, RTLD_LAZY);
     if (lib != NULL) {
         printf("Loaded lib handle\n");
     }
@@ -148,7 +159,9 @@ static PyObject *calculate_dyn_mats(PyObject *self, PyObject *args) {
         evals_to_freqs(nions, eval);
     }
 
-#ifdef linux
+#ifdef _WIN32
+    FreeLibrary(lib);
+#else
     dlclose(lib);
 #endif
 
