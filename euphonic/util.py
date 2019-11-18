@@ -116,6 +116,7 @@ def gaussian_2d(xbins, ybins, xwidth, ywidth, extent=6.0):
     ygrid = np.transpose(np.tile(y, (len(x), 1)))
 
     gauss = gaussian(xgrid, xsigma)*gaussian(ygrid, ysigma)
+    gauss = gauss/np.sum(gauss) # Naively normalise
 
     return gauss
 
