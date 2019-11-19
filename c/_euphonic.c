@@ -14,6 +14,8 @@ typedef void (__cdecl *LibFunc)(char* jobz, char* uplo, int* n, double* a, int* 
     int* iwork, int* liwork, int* info);
 #else
 #include <dlfcn.h>
+#include <dirent.h>
+#include <glob.h>
 #endif
 
 static PyObject *calculate_dyn_mats(PyObject *self, PyObject *args) {
@@ -114,8 +116,33 @@ static PyObject *calculate_dyn_mats(PyObject *self, PyObject *args) {
     void (*zheevd)(char* jobz, char* uplo, int* n, double* a, int* lda,
         double* w, double* work, int* lwork, double* rwork, int* lrwork,
         int* iwork, int* liwork, int* info);
+    const char *libdir = "/../../linalg";
+    const char *fileglob = "/_umath_linalg*so";
+    glob_t globres;
     char buf[300];
-    snprintf(buf, sizeof(buf), "%s%s", includedir, "/../../linalg/_umath_linalg.so");
+    DIR *dir;
+    struct dirent *ent;
+
+    snprintf(buf, sizeof(buf), "%s%s", includedir, libdir);
+    dir = opendir(buf);
+    if (dir == NULL) {
+        PyErr_Format(PyExc_RuntimeError, "Could not open dir %s\n", buf);
+        return NULL;
+    }
+    while (ent = readdir(dir) != NULL) {
+        snprintf(buf, sizeof(buf), "%s%s%s", includedir, libdir, fileglob);
+        glob(buf, 0, NULL, &globres);
+        if (globres.gl_pathc > 0) {
+            break;
+        }
+    }
+    closedir(dir);
+    if (globres.gl_pathc == 0) {
+        PyErr_Format(PyExc_RuntimeError, "Glob failed: couldn't find %s\n", buf);
+        return NULL;
+    }
+
+    snprintf(buf, sizeof(buf), "%s/%s", buf, globres.gl_pathv[0]);
     lib = dlopen(buf, RTLD_LAZY);
     if (lib == NULL) {
         PyErr_Format(PyExc_RuntimeError, "Could not load lib handle %s\n", buf);
