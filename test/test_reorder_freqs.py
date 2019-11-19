@@ -1,3 +1,4 @@
+import os
 import unittest
 import numpy.testing as npt
 import numpy as np
@@ -9,7 +10,7 @@ class TestReorderFreqsNaH(unittest.TestCase):
 
     def test_reorder_freqs(self):
         seedname = 'NaH-reorder-test'
-        path = 'test/data'
+        path = 'data'
         data = PhononData.from_castep(seedname, path=path)
         data.convert_e_units('1/cm')
         data.reorder_freqs()
@@ -42,10 +43,10 @@ class TestReorderFreqsLZO(unittest.TestCase):
     def setUp(self):
         # Create both PhononData and InterpolationData objs for testing
         seedname = 'La2Zr2O7'
-        ppath = 'test/data'
+        ppath = 'data'
         self.pdata = PhononData.from_castep(seedname, path=ppath)
         self.pdata.convert_e_units('1/cm')
-        ipath = 'test/data/interpolation/LZO'
+        ipath = os.path.join('data', 'interpolation', 'LZO')
         self.idata = InterpolationData.from_castep(seedname, path=ipath)
         self.idata.convert_e_units('1/cm')
 
@@ -210,9 +211,21 @@ class TestReorderFreqsLZO(unittest.TestCase):
         npt.assert_allclose(reordered_freqs,
                             self.expected_reordered_freqs, atol=0.02)
 
-    def test_reorder_freqs_interpolation_data_2procs(self):
+    def test_reorder_freqs_interpolation_data_c(self):
         self.idata.calculate_fine_phonons(self.pdata.qpts, asr='realspace',
-                                          nprocs=2)
+                                          use_c=True)
+        self.idata.reorder_freqs()
+        freqs = self.idata.freqs.magnitude
+        reordered_freqs = freqs[np.arange(len(freqs))[:, np.newaxis],
+                                self.idata._mode_map]
+        # Set atol = 0.02 as this is the max difference between the
+        # interpolated phonon freqs and phonons read from .phonon file
+        npt.assert_allclose(reordered_freqs,
+                            self.expected_reordered_freqs, atol=0.02)
+
+    def test_reorder_freqs_interpolation_data_c_2threads(self):
+        self.idata.calculate_fine_phonons(self.pdata.qpts, asr='realspace',
+                                          use_c=True, n_threads=2)
         self.idata.reorder_freqs()
         freqs = self.idata.freqs.magnitude
         reordered_freqs = freqs[np.arange(len(freqs))[:, np.newaxis],

@@ -35,7 +35,7 @@ class TestBandsDataNaH(unittest.TestCase):
         self.expctd_data = expctd_data
 
         seedname = 'NaH'
-        path = 'test/data'
+        path = 'data'
         data = BandsData.from_castep(seedname, path=path)
         self.data = data
 
@@ -104,7 +104,7 @@ class TestBandsDataFe(unittest.TestCase):
         self.expctd_data = expctd_data
 
         seedname = 'Fe'
-        path = 'test/data'
+        path = 'data'
         data = BandsData.from_castep(seedname, path=path)
         self.data = data
 

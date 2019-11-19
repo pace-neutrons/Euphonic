@@ -1,3 +1,4 @@
+import os
 import unittest
 import math
 import numpy as np
@@ -55,5 +56,5 @@ class TestMPGrid(unittest.TestCase):
 
     def test_444_grid(self):
         qpts = mp_grid([4,4,4])
-        expected_qpts = np.loadtxt('test/data/qgrid_444.txt')
+        expected_qpts = np.loadtxt(os.path.join('data','qgrid_444.txt'))
         npt.assert_equal(qpts, expected_qpts)

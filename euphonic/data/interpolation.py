@@ -10,15 +10,6 @@ from euphonic.data.phonon import PhononData
 from euphonic._readers import _castep
 
 
-if sys.version_info[0] < 3:
-    import types
-    import copy_reg
-    def _pickle_method(m):
-        class_self = m.im_class if m.im_self is None else m.im_self
-        return getattr, (class_self, m.im_func.func_name)
-    copy_reg.pickle(types.MethodType, _pickle_method)
-
-
 class InterpolationData(PhononData):
     """
     Extends PhononData. A class to read and store the data required for a
@@ -203,8 +194,8 @@ class InterpolationData(PhononData):
 
     def calculate_fine_phonons(
         self, qpts, asr=None, precondition=False, dipole=True,
-            eta_scale=1.0, splitting=True, reduce_qpts=True, nprocs=1,
-            _qchunk=None, use_c=False, nthreads=1):
+            eta_scale=1.0, splitting=True, reduce_qpts=True, use_c=False,
+            n_threads=1):
         """
         Calculate phonon frequencies and eigenvectors at specified q-points
         from a supercell force constant matrix via interpolation. For more
@@ -231,13 +222,16 @@ class InterpolationData(PhononData):
             Whether to calculate the LO-TO splitting at the gamma points. Only
             applied if dipole is True and the Born charges and dielectric
             permitivitty tensor are present.
-        nprocs : integer, optional, default 1
-            If more than 1, uses Python's multiprocessing module to distribute
-            q-point calculations across processors
         reduce_qpts : boolean, optional, default False
             Whether to use periodicity to reduce all q-points and only
             calculate for unique q-points within the 1st BZ. This won't change
             the output but could increase performance.
+        use_c : boolean, optional, default False
+            Whether to use C instead of Python to calculate and diagonalise
+            the dynamical matrix
+        n_threads : boolean, optional, default True
+            The number of threads to use when looping over q-points in C. Only
+            applicable if use_c=True
 
         Returns
         -------
@@ -259,26 +253,6 @@ class InterpolationData(PhononData):
         self._split_freqs = np.empty((0, 3*self.n_ions))
         self.split_eigenvecs = np.empty((0, 3*self.n_ions, self.n_ions, 3),
                                         dtype=np.complex128)
-
-        # Try to create a multiprocessing pool first, in case it fails
-        if nprocs > 1:
-            try:
-                from multiprocessing import Pool
-                from functools import partial
-                pool = Pool(processes=nprocs)
-            except RuntimeError:
-                warnings.warn(('\nA RuntimeError was raised when initialising '
-                               'the multiprocessing Pool. This is probably due'
-                               'to calling calculate_fine_phonons with multipr'
-                               'ocessing outside of a __main__ block on Window'
-                               's. This error is caught here to prevent proces'
-                               'ses recursively being spawned. The calculation'
-                               ' may or may not have worked, but don\'t rely o'
-                               'n it! See \'Safe importing of main module\' : '
-                               'https://docs.python.org/3.7/library/multiproce'
-                               'ssing.html#the-spawn-and-forkserver-start-meth'
-                               'ods'), stacklevel=2)
-                return
 
         # Set default splitting params
         if not hasattr(self, 'born') or not hasattr(self, 'dielectric'):
@@ -327,7 +301,8 @@ class InterpolationData(PhononData):
         # calculations later
         sc_image_r = self._get_all_origins(
             np.repeat(lim, 3) + 1, min_xyz=-np.repeat(lim, 3))
-        sc_offsets = np.einsum('ji,kj->ki', self.sc_matrix, sc_image_r)
+        sc_offsets = np.einsum('ji,kj->ki', self.sc_matrix,
+                               sc_image_r).astype(np.int32)
         unique_sc_offsets = [[] for i in range(3)]
         unique_sc_i = np.zeros((len(sc_offsets), 3), dtype=np.int32)
         unique_cell_origins = [[] for i in range(3)]
@@ -360,101 +335,51 @@ class InterpolationData(PhononData):
         fc_img_weighted = np.divide(
             force_constants, n_sc_images_repeat, where=n_sc_images_repeat != 0)
 
-        # Find eigenvalues/vectors at gamma for reciprocal ASR
-        ac_i = g_evals = g_evecs = None
-        if asr == 'reciprocal':
-            q_gamma = np.array([0., 0., 0.])
-            dyn_mat_gamma = self._calculate_dyn_mat(
-                q_gamma, fc_img_weighted, unique_sc_offsets,
-                unique_sc_i, unique_cell_origins, unique_cell_i)
-            if dipole:
-                dyn_mat_gamma += self._calculate_dipole_correction(q_gamma)
-            try:
-                ac_i, g_evals, g_evecs = self._find_acoustic_modes(
-                    dyn_mat_gamma)
-            except Exception:
-                warnings.warn(('\nError correcting for acoustic sum rule, '
-                               'could not find 3 acoustic modes.\nReturning '
-                               'uncorrected dynamical matrix'), stacklevel=2)
-                asr = None
-
-
-        q_independent_args = (
-            reduced_qpts, qpts_i, fc_img_weighted, unique_sc_offsets,
-            unique_sc_i, unique_cell_origins, unique_cell_i, ac_i, g_evals,
-            g_evecs, dyn_mat_weighting, dipole, asr, splitting)
-
         split_i = np.empty((0,), dtype=np.int32)
         split_freqs = np.empty((0, 3*self.n_ions))
         split_eigenvecs = np.empty((0, 3*self.n_ions, self.n_ions, 3),
                                    dtype=np.complex128)
-        if nprocs > 1:
-            rfreqs = np.empty((0, 3*self.n_ions))
-            reigenvecs = np.empty((0, 3*self.n_ions, self.n_ions, 3),
+        rfreqs = np.zeros((n_rqpts, 3*self.n_ions))
+        reigenvecs = np.zeros((n_rqpts, 3*self.n_ions, self.n_ions, 3),
                                   dtype=np.complex128)
-
-            if _qchunk is not None:
-                nchunks = int((n_rqpts - 1)/_qchunk) + 1
-            else:
-                nchunks = 1
-                _qchunk = n_rqpts
-            # Calculate in chunks if required, as pool.map raises a
-            # MaybeEncodingError if too much data (i.e. eigenvectors for too
-            # many q-points) are returned at once
-            for i in range(nchunks):
-                qi = i*_qchunk
-                qf = min((i + 1)*_qchunk, n_rqpts)
-                try:
-                    callback = pool.map_async(
-                        partial(self._calculate_phonons_at_q,
-                                args=q_independent_args),
-                        range(qi, qf))
-                    if sys.version_info[0] < 3:
-                        # Timeout required on Py2 or get() ignores all signals
-                        results = callback.get(sys.float_info.max)
-                    else:
-                        results = callback.get()
-                except KeyboardInterrupt:
-                    print('\nCaught keyboard interrupt, terminating workers')
-                    pool.terminate()
-                    raise
-                evals, evecs, sevals, sevecs, si = zip(*results)
-                rfreqs = np.concatenate((rfreqs, np.stack(evals, axis=0)))
-                reigenvecs = np.concatenate((reigenvecs,
-                                             np.stack(evecs, axis=0)))
-                split_i = np.concatenate((split_i, np.concatenate(si)))
-                if len(split_i > 0):
-                    split_freqs = np.concatenate((split_freqs,
-                                                  np.concatenate(sevals)))
-                    split_eigenvecs = np.concatenate((split_eigenvecs,
-                                                      np.concatenate(sevecs)))
-            pool.close()
-            pool.join()
+        if use_c:
+            import euphonic._euphonic as euphonic_c
+            euphonic_c.calculate_dyn_mats(
+                reduced_qpts, fc_img_weighted, self._n_sc_images,
+                self._sc_image_i, self.cell_origins, sc_offsets,
+                dyn_mat_weighting, reigenvecs, rfreqs, n_threads,
+                np.get_include())
         else:
-            rfreqs = np.zeros((n_rqpts, 3*self.n_ions))
-            reigenvecs = np.zeros((n_rqpts, 3*self.n_ions, self.n_ions, 3),
-                                  dtype=np.complex128)
-            if use_c:
-                import euphonic._euphonic as euphonic_c
-                lim = 2
-                sc_image_r = self._get_all_origins(
-                    np.repeat(lim, 3) + 1, min_xyz=-np.repeat(lim, 3))
-                sc_offsets = np.einsum(
-                    'ji,kj->ki', self.sc_matrix, sc_image_r).astype(np.int32)
-                euphonic_c.calculate_dyn_mats(
-                    reduced_qpts, fc_img_weighted, self._n_sc_images,
-                    self._sc_image_i, self.cell_origins, sc_offsets,
-                    dyn_mat_weighting, reigenvecs, rfreqs, nthreads,
-                    np.get_include())
-            else:
-                for q in range(n_rqpts):
-                    rfreqs[q], reigenvecs[q], sfreqs, sevecs, si = \
-                    self._calculate_phonons_at_q(q, q_independent_args)
-                    if len(sfreqs) > 0:
-                        split_i = np.concatenate((split_i, si))
-                        split_freqs = np.concatenate((split_freqs, sfreqs))
-                        split_eigenvecs = np.concatenate(
-                            (split_eigenvecs, sevecs))
+            # Find eigenvalues/vectors at gamma for reciprocal ASR
+            ac_i = g_evals = g_evecs = None
+            if asr == 'reciprocal':
+                q_gamma = np.array([0., 0., 0.])
+                dyn_mat_gamma = self._calculate_dyn_mat(
+                    q_gamma, fc_img_weighted, unique_sc_offsets,
+                    unique_sc_i, unique_cell_origins, unique_cell_i)
+                if dipole:
+                    dyn_mat_gamma += self._calculate_dipole_correction(q_gamma)
+                try:
+                    ac_i, g_evals, g_evecs = self._find_acoustic_modes(
+                        dyn_mat_gamma)
+                except Exception:
+                    warnings.warn(('\nError correcting for acoustic sum rule, '
+                                   'could not find 3 acoustic modes.\nReturning '
+                                   'uncorrected dynamical matrix'), stacklevel=2)
+                    asr = None
+
+            q_independent_args = (
+                reduced_qpts, qpts_i, fc_img_weighted, unique_sc_offsets,
+                unique_sc_i, unique_cell_origins, unique_cell_i, ac_i,
+                g_evals, g_evecs, dyn_mat_weighting, dipole, asr, splitting)
+            for q in range(n_rqpts):
+                rfreqs[q], reigenvecs[q], sfreqs, sevecs, si = \
+                self._calculate_phonons_at_q(q, q_independent_args)
+                if len(sfreqs) > 0:
+                    split_i = np.concatenate((split_i, si))
+                    split_freqs = np.concatenate((split_freqs, sfreqs))
+                    split_eigenvecs = np.concatenate(
+                        (split_eigenvecs, sevecs))
 
         self.asr = asr
         self.dipole = dipole
