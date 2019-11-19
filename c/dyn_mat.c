@@ -2,6 +2,7 @@
 #define NPY_NO_DEPRECATED_API NPY_1_9_API_VERSION
 #include <math.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 #define PI 3.14159265358979323846
 

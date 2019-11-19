@@ -93,16 +93,21 @@ static PyObject *calculate_dyn_mats(PyObject *self, PyObject *args) {
     char buf[300];
     snprintf(buf, sizeof(buf), "%s%s%s", includedir, libdir, fileglob);
     hfile = FindFirstFile(buf, &filedata);
-    if (hfile != INVALID_HANDLE_VALUE) {
-        printf("%s found\n", filedata.cFileName);
+    if (hfile == INVALID_HANDLE_VALUE) {
+        PyErr_Format(PyExc_FileNotFoundError, "Could not find %s\n", buf);
+        return NULL;
     }
     lib = LoadLibrary(filedata.cFileName);
-    if (lib != NULL) {
-        printf("Loaded lib handle Win\n");
+    if (lib == NULL) {
+        PyErr_Format(PyExc_RuntimeError, "Could not load lib handle %s\n",
+                     filedata.cFileName);
+        return NULL;
     }
     zheevd = (LibFunc) GetProcAddress(lib, "zheevd_");
-    if (zheevd != NULL) {
-        printf("Found zheevd Win\n");
+    if (zheevd == NULL) {
+        PyErr_Format(PyExc_RuntimeError, "Could not find zheevd_ in %s\n",
+                     filedata.cFileName);
+        return NULL;
     }
 #else
     void *lib;
@@ -112,12 +117,14 @@ static PyObject *calculate_dyn_mats(PyObject *self, PyObject *args) {
     char buf[300];
     snprintf(buf, sizeof(buf), "%s%s", includedir, "/../../linalg/_umath_linalg.so");
     lib = dlopen(buf, RTLD_LAZY);
-    if (lib != NULL) {
-        printf("Loaded lib handle\n");
+    if (lib == NULL) {
+        PyErr_Format(PyExc_RuntimeError, "Could not load lib handle %s\n", buf);
+        return NULL;
     }
     zheevd = dlsym(lib, "zheevd_");
-    if (zheevd != NULL) {
-        printf("Found zheevd\n");
+    if (zheevd == NULL) {
+        PyErr_Format(PyExc_RuntimeError, "Could not find zheevd_ in %s\n", buf);
+        return NULL;
     }
 #endif
 
