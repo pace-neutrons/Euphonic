@@ -2,6 +2,7 @@ import math
 import sys
 import warnings
 import numpy as np
+import scipy
 from scipy.linalg.lapack import zheev
 from scipy.special import erfc
 from euphonic import ureg
@@ -348,7 +349,7 @@ class InterpolationData(PhononData):
                 reduced_qpts, fc_img_weighted, self._n_sc_images,
                 self._sc_image_i, self.cell_origins, sc_offsets,
                 dyn_mat_weighting, reigenvecs, rfreqs, n_threads,
-                np.get_include())
+                scipy.__path__[0])
         else:
             # Find eigenvalues/vectors at gamma for reciprocal ASR
             ac_i = g_evals = g_evecs = None

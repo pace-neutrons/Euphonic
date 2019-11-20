@@ -37,7 +37,7 @@ static PyObject *calculate_dyn_mats(PyObject *self, PyObject *args) {
     PyArrayObject *py_dmats;
     PyArrayObject *py_evals;
     int nthreads = 1;
-    const char *includedir;
+    const char *scipydir;
 
     // Define pointers to Python array data
     double *rqpts;
@@ -61,6 +61,7 @@ static PyObject *calculate_dyn_mats(PyObject *self, PyObject *args) {
     int q;
     int maxims;
     int dmat_elems;
+    int info;
 
     // Parse inputs
     if (!PyArg_ParseTuple(args, "O!O!O!O!O!O!O!O!O!is",
@@ -80,7 +81,7 @@ static PyObject *calculate_dyn_mats(PyObject *self, PyObject *args) {
                           &PyArray_Type, &py_dmats,
                           &PyArray_Type, &py_evals,
                           &nthreads,
-                          &includedir)) {
+                          &scipydir)) {
         return NULL;
     }
 
@@ -93,7 +94,7 @@ static PyObject *calculate_dyn_mats(PyObject *self, PyObject *args) {
     const char *libdir = "\\..\\..\\..\\scipy\\extra-dll\\";
     const char *fileglob = "libopenblas*dll";
     char buf[300];
-    snprintf(buf, sizeof(buf), "%s%s%s", includedir, libdir, fileglob);
+    snprintf(buf, sizeof(buf), "%s%s%s", scipydir, libdir, fileglob);
     hfile = FindFirstFile(buf, &filedata);
     if (hfile == INVALID_HANDLE_VALUE) {
         PyErr_Format(PyExc_FileNotFoundError, "Could not find %s\n", buf);
@@ -110,27 +111,26 @@ static PyObject *calculate_dyn_mats(PyObject *self, PyObject *args) {
         PyErr_Format(PyExc_RuntimeError, "Could not find zheevd_ in %s\n",
                      filedata.cFileName);
         return NULL;
-    }
 #else
     void *lib;
     void (*zheevd)(char* jobz, char* uplo, int* n, double* a, int* lda,
         double* w, double* work, int* lwork, double* rwork, int* lrwork,
         int* iwork, int* liwork, int* info);
-    const char *libdir = "/../../linalg";
-    const char *fileglob = "/_umath_linalg*so";
+    const char *libdir = "/linalg";
+    const char *fileglob = "/_flapack*so";
     glob_t globres;
     char buf[300];
     DIR *dir;
     struct dirent *ent;
 
-    snprintf(buf, sizeof(buf), "%s%s", includedir, libdir);
+    snprintf(buf, sizeof(buf), "%s%s", scipydir, libdir);
     dir = opendir(buf);
     if (dir == NULL) {
         PyErr_Format(PyExc_RuntimeError, "Could not open dir %s\n", buf);
         return NULL;
     }
     while (ent = readdir(dir) != NULL) {
-        snprintf(buf, sizeof(buf), "%s%s%s", includedir, libdir, fileglob);
+        snprintf(buf, sizeof(buf), "%s%s%s", scipydir, libdir, fileglob);
         glob(buf, 0, NULL, &globres);
         if (globres.gl_pathc > 0) {
             break;
@@ -189,7 +189,11 @@ static PyObject *calculate_dyn_mats(PyObject *self, PyObject *args) {
 
         mass_weight_dyn_mat(dmat_weighting, nions, dmat);
 
-        diagonalise_dyn_mat(nions, dmat, eval, zheevd);
+        info = diagonalise_dyn_mat_zheevd(nions, dmat, eval, zheevd);
+        if (info != 0) {
+            printf("INFO: Zheevd diagonalisation failed with info %i at "
+                   "q-point %f %f %f\n", info, qpt[0], qpt[1], qpt[2]);
+        }
         evals_to_freqs(nions, eval);
     }
 

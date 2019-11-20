@@ -60,7 +60,8 @@ void mass_weight_dyn_mat(const double* dyn_mat_weighting, const int n_ions,
         }
     }
 
-int diagonalise_dyn_mat(const int n_ions, double* dyn_mat, double* eigenvalues,
+int diagonalise_dyn_mat_zheevd(const int n_ions, double* dyn_mat,
+    double* eigenvalues,
     void (*zheevdptr) (char*, char*, int*, double*, int*, double*, double*,
     int*, double*, int*, int*, int*, int*)) {
 
@@ -80,6 +81,10 @@ int diagonalise_dyn_mat(const int n_ions, double* dyn_mat, double* eigenvalues,
     // Workspace query
     (*zheevdptr)(&jobz, &uplo, &order, dyn_mat, &lda, eigenvalues, &lworkopt, &lwork,
         &lrworkopt, &lrwork, &liworkopt, &liwork, &info);
+    if (info != 0) {
+        printf("Failed querying workspace\n");
+        return info;
+    }
     lwork = (int)lworkopt;
     lrwork = (int)lrworkopt;
     liwork = liworkopt;
@@ -95,10 +100,6 @@ int diagonalise_dyn_mat(const int n_ions, double* dyn_mat, double* eigenvalues,
     free((void*)work);
     free((void*)rwork);
     free((void*)iwork);
-
-    if (info > 0) {
-        printf("Diagonalisation failed\n");
-    }
 
     return info;
 }
