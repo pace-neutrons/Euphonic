@@ -336,6 +336,27 @@ class InterpolationData(PhononData):
         fc_img_weighted = np.divide(
             force_constants, n_sc_images_repeat, where=n_sc_images_repeat != 0)
 
+        # Find eigenvalues/vectors at gamma for reciprocal ASR
+        #ac_i = g_evals = g_evecs = None
+        ac_i = np.array([], dtype=np.int32)
+        g_evals = np.array([], dtype=np.float64)
+        g_evecs = np.array([], dtype=np.float64)
+        if asr == 'reciprocal':
+            q_gamma = np.array([0., 0., 0.])
+            dyn_mat_gamma = self._calculate_dyn_mat(
+                q_gamma, fc_img_weighted, unique_sc_offsets,
+                unique_sc_i, unique_cell_origins, unique_cell_i)
+            if dipole:
+                dyn_mat_gamma += self._calculate_dipole_correction(q_gamma)
+            try:
+                ac_i, g_evals, g_evecs = self._find_acoustic_modes(
+                    dyn_mat_gamma)
+            except Exception:
+                warnings.warn(('\nError correcting for acoustic sum rule, '
+                               'could not find 3 acoustic modes.\nReturning '
+                               'uncorrected dynamical matrix'), stacklevel=2)
+                asr = None
+
         split_i = np.empty((0,), dtype=np.int32)
         split_freqs = np.empty((0, 3*self.n_ions))
         split_eigenvecs = np.empty((0, 3*self.n_ions, self.n_ions, 3),
@@ -345,30 +366,16 @@ class InterpolationData(PhononData):
                                   dtype=np.complex128)
         if use_c:
             import euphonic._euphonic as euphonic_c
-            euphonic_c.calculate_dyn_mats(
-                reduced_qpts, fc_img_weighted, self._n_sc_images,
-                self._sc_image_i, self.cell_origins, sc_offsets,
-                dyn_mat_weighting, reigenvecs, rfreqs, n_threads,
+            reciprocal_asr = 1 if asr == 'reciprocal' else 0
+            # Note: g_evals comes straight from np.eigh, so the eigenvectors
+            # for each mode are columns. Transpose before passing to C so
+            # they are contiguous for simplicity
+            euphonic_c.calculate_phonons(
+                self, reduced_qpts, fc_img_weighted, sc_offsets,
+                ac_i, np.transpose(g_evals), g_evecs, dyn_mat_weighting,
+                reciprocal_asr, reigenvecs, rfreqs, n_threads,
                 scipy.__path__[0])
         else:
-            # Find eigenvalues/vectors at gamma for reciprocal ASR
-            ac_i = g_evals = g_evecs = None
-            if asr == 'reciprocal':
-                q_gamma = np.array([0., 0., 0.])
-                dyn_mat_gamma = self._calculate_dyn_mat(
-                    q_gamma, fc_img_weighted, unique_sc_offsets,
-                    unique_sc_i, unique_cell_origins, unique_cell_i)
-                if dipole:
-                    dyn_mat_gamma += self._calculate_dipole_correction(q_gamma)
-                try:
-                    ac_i, g_evals, g_evecs = self._find_acoustic_modes(
-                        dyn_mat_gamma)
-                except Exception:
-                    warnings.warn(('\nError correcting for acoustic sum rule, '
-                                   'could not find 3 acoustic modes.\nReturning '
-                                   'uncorrected dynamical matrix'), stacklevel=2)
-                    asr = None
-
             q_independent_args = (
                 reduced_qpts, qpts_i, fc_img_weighted, unique_sc_offsets,
                 unique_sc_i, unique_cell_origins, unique_cell_i, ac_i,

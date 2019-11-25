@@ -7,9 +7,9 @@
 #define PI 3.14159265358979323846
 
 void calculate_dyn_mat_at_q(const double *qpt, const int n_ions,
-    const int n_cells, const int n_sc, const int max_ims,
-    const int *n_sc_images, const int *sc_image_i, const int *cell_origins,
-    const int *sc_origins, const double *fc_mat, double *dyn_mat) {
+    const int n_cells, const const int max_ims, const int *n_sc_images,
+    const int *sc_image_i, const int *cell_origins, const int *sc_origins,
+    const double *fc_mat, double *dyn_mat) {
 
     int i, j, n, nc, k, sc, ii, jj, idx;
     double qdotr;
@@ -48,6 +48,24 @@ void calculate_dyn_mat_at_q(const double *qpt, const int n_ions,
             } // nc
         } // j
     } // i
+}
+
+void enforce_reciprocal_asr(const int *ac_i, const double *g_evals,
+    const double *g_evecs, const int n_ions, double *dyn_mat) {
+    const double tol = 1e-15;
+    double shift, shift_eval;
+    int i, j, k;
+/*
+    for (i = 0; i < 3; i++) { // Loop over acoustic modes
+        shift = i*tol;
+        for (j = 0; j < 3*n_ion; j++) {
+            shift_eval = shift + g_evals[j];
+            for (k = 0; k < 3*n_ions; k++) {
+            }
+        }
+    }
+*/
+
 }
 
 void mass_weight_dyn_mat(const double* dyn_mat_weighting, const int n_ions,
