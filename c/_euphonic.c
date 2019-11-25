@@ -27,9 +27,7 @@ static PyObject *calculate_phonons(PyObject *self, PyObject *args) {
     PyArrayObject *py_rqpts;
     PyArrayObject *py_fc;
     PyArrayObject *py_sc_ogs;
-    PyArrayObject *py_ac_i;
-    PyArrayObject *py_g_evals;
-    PyArrayObject *py_g_evecs;
+    PyArrayObject *py_asr_correction;
     PyArrayObject *py_dmat_weighting;
     PyArrayObject *py_dmats;
     PyArrayObject *py_evals;
@@ -47,9 +45,7 @@ static PyObject *calculate_phonons(PyObject *self, PyObject *args) {
     double *rqpts;
     double *fc;
     int *sc_ogs;
-    int *ac_i;
-    double *g_evals;
-    double *g_evecs;
+    double *asr_correction;
     double *dmat_weighting;
     double *dmats;
     double *evals;
@@ -61,19 +57,17 @@ static PyObject *calculate_phonons(PyObject *self, PyObject *args) {
     int ncells;
     int nqpts;
     int q;
-    int maxims;
+    int max_ims;
     int dmat_elems;
     int info;
 
     // Parse inputs
-    if (!PyArg_ParseTuple(args, "OO!O!O!O!O!O!O!iO!O!is",
+    if (!PyArg_ParseTuple(args, "OO!O!O!O!O!iO!O!is",
                           &py_idata,
                           &PyArray_Type, &py_rqpts,
                           &PyArray_Type, &py_fc,
                           &PyArray_Type, &py_sc_ogs,
-                          &PyArray_Type, &py_ac_i,
-                          &PyArray_Type, &py_g_evals,
-                          &PyArray_Type, &py_g_evecs,
+                          &PyArray_Type, &py_asr_correction,
                           &PyArray_Type, &py_dmat_weighting,
                           &reciprocal_asr,
                           &PyArray_Type, &py_dmats,
@@ -162,14 +156,11 @@ static PyObject *calculate_phonons(PyObject *self, PyObject *args) {
     }
 #endif
 
-
     // Point to Python array data
     rqpts = (double*) PyArray_DATA(py_rqpts);
     fc = (double*) PyArray_DATA(py_fc);
     sc_ogs = (int*) PyArray_DATA(py_sc_ogs);
-    ac_i = (int*) PyArray_DATA(py_ac_i);
-    g_evals = (double*) PyArray_DATA(py_g_evals);
-    g_evecs = (double*) PyArray_DATA(py_g_evecs);
+    asr_correction = (double*) PyArray_DATA(py_asr_correction);
     dmat_weighting = (double*) PyArray_DATA(py_dmat_weighting);
     dmats = (double*) PyArray_DATA(py_dmats);
     evals = (double*) PyArray_DATA(py_evals);
@@ -178,7 +169,7 @@ static PyObject *calculate_phonons(PyObject *self, PyObject *args) {
     n_sc_ims = (int*) PyArray_DATA(py_n_sc_ims);
     sc_im_idx = (int*) PyArray_DATA(py_sc_im_idx);
     cell_ogs = (int*) PyArray_DATA(py_cell_ogs);
-    maxims = PyArray_DIMS(py_sc_im_idx)[3];
+    max_ims = PyArray_DIMS(py_sc_im_idx)[3];
     dmat_elems = 2*9*nions*nions;
 
     omp_set_num_threads(nthreads);
@@ -189,11 +180,11 @@ static PyObject *calculate_phonons(PyObject *self, PyObject *args) {
         dmat = (dmats + q*dmat_elems);
         eval = (evals + q*3*nions);
 
-        calculate_dyn_mat_at_q(qpt, nions, ncells, maxims, n_sc_ims, sc_im_idx,
+        calculate_dyn_mat_at_q(qpt, nions, ncells, max_ims, n_sc_ims, sc_im_idx,
             cell_ogs, sc_ogs, fc, dmat);
 
         if (reciprocal_asr) {
-            enforce_reciprocal_asr(ac_i, g_evals, g_evecs, nions, dmat);
+            add_arrays(dmat_elems, asr_correction, dmat);
         }
 
         mass_weight_dyn_mat(dmat_weighting, nions, dmat);

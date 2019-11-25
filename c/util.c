@@ -36,3 +36,10 @@ int int_from_pyobj(PyObject *obj, const char *attr_name, int *result) {
     }
     return 0;
 }
+
+void add_arrays(const int size, const double *arr1, double *arr2) {
+    int i;
+    for (i = 0; i < size; i++) {
+        arr2[i] += arr1[i];
+    }
+}

@@ -336,25 +336,18 @@ class InterpolationData(PhononData):
         fc_img_weighted = np.divide(
             force_constants, n_sc_images_repeat, where=n_sc_images_repeat != 0)
 
-        # Find eigenvalues/vectors at gamma for reciprocal ASR
-        #ac_i = g_evals = g_evecs = None
-        ac_i = np.array([], dtype=np.int32)
-        g_evals = np.array([], dtype=np.float64)
-        g_evecs = np.array([], dtype=np.float64)
+        recip_asr_correction = np.array([], dtype=np.complex128)
         if asr == 'reciprocal':
+            # Calculate dyn mat at gamma for reciprocal ASR
             q_gamma = np.array([0., 0., 0.])
             dyn_mat_gamma = self._calculate_dyn_mat(
                 q_gamma, fc_img_weighted, unique_sc_offsets,
                 unique_sc_i, unique_cell_origins, unique_cell_i)
             if dipole:
                 dyn_mat_gamma += self._calculate_dipole_correction(q_gamma)
-            try:
-                ac_i, g_evals, g_evecs = self._find_acoustic_modes(
-                    dyn_mat_gamma)
-            except Exception:
-                warnings.warn(('\nError correcting for acoustic sum rule, '
-                               'could not find 3 acoustic modes.\nReturning '
-                               'uncorrected dynamical matrix'), stacklevel=2)
+            recip_asr_correction = self._enforce_reciprocal_asr(dyn_mat_gamma)
+            if len(recip_asr_correction) == 0:
+                # Finding acoustic modes failed
                 asr = None
 
         split_i = np.empty((0,), dtype=np.int32)
@@ -367,19 +360,16 @@ class InterpolationData(PhononData):
         if use_c:
             import euphonic._euphonic as euphonic_c
             reciprocal_asr = 1 if asr == 'reciprocal' else 0
-            # Note: g_evals comes straight from np.eigh, so the eigenvectors
-            # for each mode are columns. Transpose before passing to C so
-            # they are contiguous for simplicity
             euphonic_c.calculate_phonons(
                 self, reduced_qpts, fc_img_weighted, sc_offsets,
-                ac_i, np.transpose(g_evals), g_evecs, dyn_mat_weighting,
-                reciprocal_asr, reigenvecs, rfreqs, n_threads,
-                scipy.__path__[0])
+                recip_asr_correction, dyn_mat_weighting, reciprocal_asr,
+                reigenvecs, rfreqs, n_threads, scipy.__path__[0])
         else:
             q_independent_args = (
                 reduced_qpts, qpts_i, fc_img_weighted, unique_sc_offsets,
-                unique_sc_i, unique_cell_origins, unique_cell_i, ac_i,
-                g_evals, g_evecs, dyn_mat_weighting, dipole, asr, splitting)
+                unique_sc_i, unique_cell_origins, unique_cell_i,
+                recip_asr_correction, dyn_mat_weighting, dipole, asr,
+                splitting)
             for q in range(n_rqpts):
                 rfreqs[q], reigenvecs[q], sfreqs, sevecs, si = \
                 self._calculate_phonons_at_q(q, q_independent_args)
@@ -413,8 +403,9 @@ class InterpolationData(PhononData):
         and LO-TO splitting
         """
         (reduced_qpts, qpts_i, fc_img_weighted, unique_sc_offsets,
-         unique_sc_i, unique_cell_origins, unique_cell_i, ac_i, g_evals,
-         g_evecs, dyn_mat_weighting, dipole, asr, splitting) = args
+         unique_sc_i, unique_cell_origins, unique_cell_i,
+         recip_asr_correction, dyn_mat_weighting, dipole, asr,
+         splitting) = args
 
         qpt = reduced_qpts[q]
         n_ions = self.n_ions
@@ -428,8 +419,7 @@ class InterpolationData(PhononData):
             dyn_mat += dipole_corr
 
         if asr == 'reciprocal':
-            dyn_mat = self._enforce_reciprocal_asr(
-                dyn_mat, ac_i, g_evals, g_evecs)
+            dyn_mat += recip_asr_correction
 
         # Calculate LO-TO splitting by calculating non-analytic correction
         # to dynamical matrix
@@ -962,39 +952,45 @@ class InterpolationData(PhononData):
 
         return fc
 
-    def _enforce_reciprocal_asr(self, dyn_mat, ac_i, g_evals, g_evecs):
+    def _enforce_reciprocal_asr(self, dyn_mat_gamma):
         """
-        Apply a transformation to the dynamical matrix at so that it
-        satisfies the acousic sum rule. Diagonalise, shift the acoustic modes
-        to almost zero then reconstruct the dynamical matrix using the
-        eigenvectors. For more information see section 2.3.4:
+        Calculate the correction to the dynamical matrix that would have to be
+        applied to satisfy the acousic sum rule. Diagonalise the gamma-point
+        dynamical matrix, shift the acoustic modes to almost zero then
+        reconstruct the dynamical matrix using the eigenvectors. For more
+        information see section 2.3.4:
         http://www.tcm.phy.cam.ac.uk/castep/Phonons_Guide/Castep_Phonons.html
 
         Parameters
         ----------
-        dyn_mat : (3*n_ions, 3*n_ions) complex ndarray
-            The uncorrected, non mass-weighted dynamical matrix at q
-        ac_i : (3,) int ndarray
-            The indices of the acoustic modes at the gamma point
-        g_evals : (3*n_ions,) float ndarray
-            Dynamical matrix eigenvalues at gamma
-        g_evecs : (3*n_ions, n_ions, 3) complex ndarray
-            Dynamical matrix eigenvectors at gamma
+        dyn_mat_gamma : (3*n_ions, 3*n_ions) complex ndarray
+            The non mass-weighted dynamical matrix at gamma
 
         Returns
         -------
-        dyn_mat : (3*n_ions, 3*n_ions) complex ndarray
-            The corrected, non mass-weighted dynamical matrix at q
+        dyn_mat : (3*n_ions, 3*n_ions) complex ndarray or empty array
+            The corrected, non mass-weighted dynamical matrix at q. Returns
+            empty array (np.array([])) if finding the 3 acoustic modes fails
         """
 #        tol = (ureg('amu').to('e_mass')
 #               *0.1*ureg('1/cm').to('1/bohr')**2).magnitude
         tol = 5e-15
 
+        try:
+            ac_i, g_evals, g_evecs = self._find_acoustic_modes(dyn_mat_gamma)
+        except Exception:
+            warnings.warn(('\nError correcting for acoustic sum rule, '
+                           'could not find 3 acoustic modes.\nNot '
+                           'correcting dynamical matrix'), stacklevel=2)
+            return np.array([], dtype=np.complex128)
+
+        recip_asr_correction = np.zeros((3*self.n_ions, 3*self.n_ions),
+                                        dtype=np.complex128)
         for i, ac in enumerate(ac_i):
-            dyn_mat -= (tol*i + g_evals[ac])*np.einsum(
+            recip_asr_correction -= (tol*i + g_evals[ac])*np.einsum(
                 'i,j->ij', g_evecs[:, ac], g_evecs[:, ac])
 
-        return dyn_mat
+        return recip_asr_correction
 
     def _find_acoustic_modes(self, dyn_mat):
         """
