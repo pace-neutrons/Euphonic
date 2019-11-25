@@ -23,7 +23,7 @@ void calculate_dyn_mat_at_q(const double *qpt, const int n_ions,
     int s_fc = 9*n_ions*n_ions; // For fc_mat
 
     for (i = 0; i < n_ions; i++) {
-        for (j = 0; j < n_ions; j++) {
+        for (j = i; j < n_ions; j++) {
             for (nc = 0; nc < n_cells; nc++){
                 phase_r = 0;
                 phase_i = 0;
