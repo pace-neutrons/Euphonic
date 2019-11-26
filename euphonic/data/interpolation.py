@@ -89,8 +89,7 @@ class InterpolationData(PhononData):
 
     """
 
-    def __init__(self, seedname, model='CASTEP', path='', qpts=np.array([]),
-                 **kwargs):
+    def __init__(self, data, **kwargs):
         """
         Calls functions to read the correct file(s) and sets InterpolationData
         attributes, additionally can calculate frequencies/eigenvectors at
@@ -112,8 +111,16 @@ class InterpolationData(PhononData):
             arguments to calculate_fine_phonons
         """
 
-        self.seedname = seedname
-        self.model = model
+        self._set_data(data)
+
+        if 'seedname' in kwargs.keys():
+            self.seedname = kwargs['seedname']
+
+        if 'model' in kwargs.keys():
+            self.model = kwargs['model']
+        else:
+            self.model = 'CASTEP'
+
         self.n_qpts = 0
         self.qpts = np.array([])
         self._reduced_freqs = np.empty((0, 3*self.n_ions))
@@ -128,8 +135,8 @@ class InterpolationData(PhononData):
         self._l_units = 'angstrom'
         self._e_units = 'meV'
 
-        if len(qpts) > 0:
-            self.calculate_fine_phonons(qpts, **kwargs)
+        #if len(qpts) > 0:
+            #self.calculate_fine_phonons(qpts, **kwargs)
 
     @property
     def _freqs(self):
@@ -155,16 +162,9 @@ class InterpolationData(PhononData):
 
 
     @classmethod
-    def from_castep(**kwargs):
-        if 'seedname' not in kwargs.keys():
-            raise TypeError("Argument 'seedname' required to load CASTEP data.")
-
-        seedname = kwargs['seedname']
-        path = kwargs['path']
-
+    def from_castep(seedname, path=''):
         data = _castep._read_interpolation_data(seedname, path)
-        return self(seedname, model='castep')._set_data(data)
-
+        return self(data, seedname=seedname, model='castep')
 
     def _set_data(self, data):
         self.n_ions = data['n_ions']
