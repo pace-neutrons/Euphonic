@@ -55,7 +55,7 @@ class BandsData(Data):
         path : str, optional
             Path to dir containing the file(s), if in another directory
         """
-        self._get_data(seedname, model, path)
+
         self.seedname = seedname
         self.model = model
 
@@ -81,6 +81,37 @@ class BandsData(Data):
     @property
     def fermi(self):
         return self._fermi*ureg('hartree').to(self._e_units, 'spectroscopy')
+
+    @classmethod
+    def from_castep(**kwargs):
+        if 'seedname' not in kwargs.keys():
+            raise TypeError("Argument 'seedname' required to load CASTEP data.")
+
+        seedname = kwargs['seedname']
+        path = kwargs['path']
+
+        data = _castep._read_bands_data(seedname, path)
+        return self(seedname, model='castep')._set_data(data)
+
+    def _set_data(self, data):
+        self.n_qpts = data['n_qpts']
+        self.n_spins = data['n_spins']
+        self.n_branches = data['n_branches']
+        self._fermi = data['fermi']
+        self._cell_vec = data['cell_vec']
+        self._recip_vec = data['recip_vec']
+        self.qpts = data['qpts']
+        self.weights = data['weights']
+        self._freqs = data['freqs']
+        self._freq_down = data['freq_down']
+
+        try:
+            self.n_ions = data['n_ions']
+            self.ion_r = data['ion_r']
+            self.ion_type = data['ion_type']
+        except KeyError:
+            pass
+
 
     def _get_data(self, seedname, model, path):
         """"
