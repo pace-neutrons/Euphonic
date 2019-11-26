@@ -359,6 +359,17 @@ class InterpolationData(PhononData):
                                   dtype=np.complex128)
         if use_c:
             import euphonic._euphonic as euphonic_c
+            from euphonic.util import (_ensure_contiguous_args,
+                                       _ensure_contiguous_attrs)
+            # Make sure all arrays are contiguous before calling C
+            (reduced_qpts, fc_img_weighted, sc_offsets, recip_asr_correction,
+                dyn_mat_weighting, reigenvecs, rfreqs) = \
+                    _ensure_contiguous_args(
+                        reduced_qpts, fc_img_weighted, sc_offsets,
+                        recip_asr_correction, dyn_mat_weighting, reigenvecs,
+                        rfreqs)
+            attrs = ['_n_sc_images', '_sc_image_i', 'cell_origins']
+            _ensure_contiguous_attrs(self, attrs)
             reciprocal_asr = 1 if asr == 'reciprocal' else 0
             euphonic_c.calculate_phonons(
                 self, reduced_qpts, fc_img_weighted, sc_offsets,
@@ -1173,9 +1184,8 @@ class InterpolationData(PhononData):
         self._n_sc_images = n_sc_images
         # Truncate sc_image_i to the maximum ACTUAL images rather than the
         # maximum possible images to avoid storing and summing over
-        # nonexistent images. Also ensure still contiguous after slicing
-        self._sc_image_i = np.ascontiguousarray(
-            sc_image_i[:, :, :, :np.max(n_sc_images)])
+        # nonexistent images
+        self._sc_image_i = sc_image_i[:, :, :, :np.max(n_sc_images)]
 
     def reorder_freqs(self, **kwargs):
         """
