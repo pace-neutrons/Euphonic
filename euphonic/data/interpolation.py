@@ -369,12 +369,14 @@ class InterpolationData(PhononData):
                         recip_asr_correction, dyn_mat_weighting, reigenvecs,
                         rfreqs)
             attrs = ['_n_sc_images', '_sc_image_i', 'cell_origins']
-            _ensure_contiguous_attrs(self, attrs)
+            dipole_attrs = ['_cell_vec', '_recip_vec', 'ion_r', '_born',
+                            'dielectric', '_H_ab', '_cells']
+            _ensure_contiguous_attrs(self, attrs, opt_attrs=dipole_attrs)
             reciprocal_asr = 1 if asr == 'reciprocal' else 0
             euphonic_c.calculate_phonons(
                 self, reduced_qpts, fc_img_weighted, sc_offsets,
                 recip_asr_correction, dyn_mat_weighting, reciprocal_asr,
-                reigenvecs, rfreqs, n_threads, scipy.__path__[0])
+                dipole, reigenvecs, rfreqs, n_threads, scipy.__path__[0])
         else:
             q_independent_args = (
                 reduced_qpts, qpts_i, fc_img_weighted, unique_sc_offsets,

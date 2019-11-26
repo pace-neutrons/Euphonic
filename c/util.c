@@ -37,6 +37,21 @@ int int_from_pyobj(PyObject *obj, const char *attr_name, int *result) {
     return 0;
 }
 
+int double_from_pyobj(PyObject *obj, const char *attr_name,
+                         double *result) {
+/* Given a PyObject and the name of one of its attributes, read a double
+ * from that attribute and store it in the address pointed to by result */
+    PyObject *tmp;
+    attr_from_pyobj(obj, attr_name, &tmp);
+    if (PyFloat_Check(tmp)) {
+        *result = (double) PyFloat_AsDouble(tmp);
+    } else {
+        printf("Incorrect type for %s\n", attr_name);
+        return 1;
+    }
+    return 0;
+}
+
 void add_arrays(const int size, const double *arr1, double *arr2) {
     int i;
     for (i = 0; i < size; i++) {

@@ -32,6 +32,7 @@ static PyObject *calculate_phonons(PyObject *self, PyObject *args) {
     PyArrayObject *py_dmats;
     PyArrayObject *py_evals;
     int reciprocal_asr;
+    int dipole;
     int nthreads = 1;
     const char *scipydir;
 
@@ -40,6 +41,15 @@ static PyObject *calculate_phonons(PyObject *self, PyObject *args) {
     PyArrayObject *py_n_sc_ims;
     PyArrayObject *py_sc_im_idx;
     PyArrayObject *py_cell_ogs;
+    // Extra vars only required if dipole = True
+    PyArrayObject *py_cell_vec;
+    PyArrayObject *py_recip_vec;
+    PyArrayObject *py_ion_r;
+    PyArrayObject *py_born;
+    PyArrayObject *py_dielectric;
+    double eta;
+    PyArrayObject *py_H_ab;
+    PyArrayObject *py_dipole_cells;
 
     // Define pointers to Python array data
     double *rqpts;
@@ -52,6 +62,14 @@ static PyObject *calculate_phonons(PyObject *self, PyObject *args) {
     int *n_sc_ims;
     int *sc_im_idx;
     int *cell_ogs;
+    // Extra vars only required if dipole = True
+    double *cell_vec;
+    double *recip_vec;
+    double *ion_r;
+    double *born;
+    double *dielectric;
+    double *H_ab;
+    double *dipole_cells;
 
     // Other vars
     int ncells;
@@ -62,7 +80,7 @@ static PyObject *calculate_phonons(PyObject *self, PyObject *args) {
     int info;
 
     // Parse inputs
-    if (!PyArg_ParseTuple(args, "OO!O!O!O!O!iO!O!is",
+    if (!PyArg_ParseTuple(args, "OO!O!O!O!O!iiO!O!is",
                           &py_idata,
                           &PyArray_Type, &py_rqpts,
                           &PyArray_Type, &py_fc,
@@ -70,6 +88,7 @@ static PyObject *calculate_phonons(PyObject *self, PyObject *args) {
                           &PyArray_Type, &py_asr_correction,
                           &PyArray_Type, &py_dmat_weighting,
                           &reciprocal_asr,
+                          &dipole,
                           &PyArray_Type, &py_dmats,
                           &PyArray_Type, &py_evals,
                           &nthreads,
@@ -78,13 +97,27 @@ static PyObject *calculate_phonons(PyObject *self, PyObject *args) {
     }
 
     // Get rest of vars from InterpolationData object
-    if(int_from_pyobj(py_idata, "n_ions", &nions) ||
+    if (int_from_pyobj(py_idata, "n_ions", &nions) ||
         attr_from_pyobj(py_idata, "_n_sc_images", &py_n_sc_ims) ||
         attr_from_pyobj(py_idata, "_sc_image_i", &py_sc_im_idx) ||
         attr_from_pyobj(py_idata, "cell_origins", &py_cell_ogs)) {
             PyErr_Format(PyExc_RuntimeError,
                          "Failed to read attributes from object\n");
             return NULL;
+    }
+    if (dipole) {
+        if (attr_from_pyobj(py_idata, "_cell_vec", &py_cell_vec) ||
+            attr_from_pyobj(py_idata, "_recip_vec", &py_recip_vec) ||
+            attr_from_pyobj(py_idata, "ion_r", &py_ion_r) ||
+            attr_from_pyobj(py_idata, "_born", &py_born) ||
+            attr_from_pyobj(py_idata, "dielectric", &py_dielectric) ||
+            double_from_pyobj(py_idata, "_eta", &eta) ||
+            attr_from_pyobj(py_idata, "_H_ab", &py_H_ab) ||
+            attr_from_pyobj(py_idata, "_cells", &py_dipole_cells)) {
+                PyErr_Format(PyExc_RuntimeError,
+                             "Failed to read dipole attributes from object\n");
+                return NULL;
+        }
     }
 
     // Load LAPACK funcs
@@ -171,6 +204,15 @@ static PyObject *calculate_phonons(PyObject *self, PyObject *args) {
     cell_ogs = (int*) PyArray_DATA(py_cell_ogs);
     max_ims = PyArray_DIMS(py_sc_im_idx)[3];
     dmat_elems = 2*9*nions*nions;
+    if (dipole) {
+        cell_vec = (double*) PyArray_DATA(py_cell_vec);
+        recip_vec = (double*) PyArray_DATA(py_recip_vec);
+        ion_r = (double*) PyArray_DATA(py_ion_r);
+        born = (double*) PyArray_DATA(py_born);
+        dielectric = (double*) PyArray_DATA(py_dielectric);
+        H_ab = (double*) PyArray_DATA(py_H_ab);
+        dipole_cells = (double*) PyArray_DATA(py_dipole_cells);
+    }
 
     omp_set_num_threads(nthreads);
     #pragma omp parallel for
