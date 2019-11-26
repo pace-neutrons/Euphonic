@@ -40,7 +40,7 @@ class BandsData(Data):
         Default units eV
     """
 
-    def __init__(self, seedname, model='CASTEP', path=''):
+    def __init__(self, data, **kwargs):
         """"
         Calls functions to read the correct file(s) and sets BandsData
         attributes
@@ -56,8 +56,15 @@ class BandsData(Data):
             Path to dir containing the file(s), if in another directory
         """
 
-        self.seedname = seedname
-        self.model = model
+        self._set_data(data)
+
+        if 'seedname' in kwargs.keys():
+            self.seedname = kwargs['seedname']
+
+        if 'model' in kwargs.keys():
+            self.model = kwargs['model']
+        else:
+            self.model = 'CASTEP'
 
         self._l_units = 'angstrom'
         self._e_units = 'eV'
@@ -83,15 +90,9 @@ class BandsData(Data):
         return self._fermi*ureg('hartree').to(self._e_units, 'spectroscopy')
 
     @classmethod
-    def from_castep(**kwargs):
-        if 'seedname' not in kwargs.keys():
-            raise TypeError("Argument 'seedname' required to load CASTEP data.")
-
-        seedname = kwargs['seedname']
-        path = kwargs['path']
-
+    def from_castep(seedname, path=''):
         data = _castep._read_bands_data(seedname, path)
-        return self(seedname, model='castep')._set_data(data)
+        return self(data, seedname=seedname, model='castep')
 
     def _set_data(self, data):
         self.n_qpts = data['n_qpts']
