@@ -16,6 +16,7 @@ from euphonic.util import reciprocal_lattice, is_gamma
 #TODO separate necessary, conditional, and optional variable getting processes
 #TODO appropriate error responses
 #TODO parse hdf5 file with p2s_map
+#TODO find the units for a given file set
 
 #TODO
 def _convert_units(data_dict):
@@ -26,6 +27,8 @@ def _match_seed(path='.', seed='*'):
     """DOC
     Search target path for seed with standard yaml and hdf5 extensions.
     """
+
+    #TODO remove filechecking redundancy
 
     HDF5_EXT = '.hdf5' # ['.hdf5', '.he5', '.h5'] phonopy currently defaults to hdf5
     YAML_EXT = '.yaml' # ['.yaml', '.yml'] phonopy currently defaults to yaml
@@ -147,14 +150,14 @@ def _read_phonon_data(path='.', seedname='mesh'):
     file = _match_seed(path='.', seed=seed)
 
     try:
-        with h5py.File(file, 'r') as hdf5_data:
-            return _extract_phonon_data(hdf5_data)
+        with h5py.File(file, 'r') as hdf5o:
+            return _extract_phonon_data(hdf5o)
     except:
         pass
 
     try:
-        with open(file, 'r') as yaml_obj:
-            yaml_data = yaml.safe_load(yaml_obj)
+        with open(file, 'r') as ymlo:
+            yaml_data = yaml.safe_load(ymlo)
             return _extract_phonon_data(yaml_data)
     except:
         pass
@@ -196,8 +199,8 @@ def _match_disp(path='.', seed='phonopy_disp.yaml'):
     file = os.path.join(path, seed)
 
     try:
-        with open(file, 'r') as disp:
-            disp_contents = yaml.safe_load(disp)
+        with open(file, 'r') as dspo:
+            disp_contents = yaml.safe_load(dspo)
         create_disp = disp_contents['phonopy']['configuration']['create_displacements']
 
         if create_disp != '.true.':
@@ -264,6 +267,7 @@ def _match_born(path='.', seed='BORN'):
 
     return born_file
 
+
 def _extract_force_constants(fc_object):
     # TODO
     """ DOC
@@ -275,6 +279,7 @@ def _extract_force_constants(fc_object):
     k_lines = [narr.split() for narr in
                 [line for line in fc_object.read().split('\n') if line]]
 
+    # convert string numerals as float/int
     for l_i, line in enumerate(k_lines):
         #TODO better way to read values with correct type:
         # switching between coordinates and indices every 4 lines.
@@ -320,15 +325,7 @@ def _extract_force_constants(fc_object):
     inds = np.array(inds)
     dims = np.array(dims)
 
-    print('before reshaping')
-    print(fc[0:4])
-    print(fc.shape)
-
     fc_resh = _reshape_fc(fc, inds, dims)
-
-    print('after reshaping')
-    print(fc_resh[0:4])
-    print(fc_resh.shape)
 
     return fc_resh
 
@@ -514,40 +511,24 @@ def _reshape_fc(fc, inds, dims):
 
     # supercell index, atom index sc, Fi, Fj
     fc_resh = np.zeros([n_cells, n_ions, n_ions, 3, 3])
-    #inds_resh = np.zeros([n_cells, n_ions, n_ions])
 
-    
-    for i, j, k in inds: #TODO Valid indexing?
-        print(i,j,k)
-        # label unit cell index
-        pci_ind = (j - 1) % n_ions
+    # Reshape to arrange FC sub matrices by cell index,
+    # atom_i index, atom_j index
 
-        # label target atom
-        pcj_ind = (k - 1) % n_ions
+    for i, j, k in inds: 
+        # index within primitive cell
+        pci_ind = (j-1) // n_cells
 
-        # label target cell
-        scj_ind = (k - 1) // n_ions
+        # target index within primitive cell
+        pcj_ind = (k-1) // n_cells
 
-        #print(pci_ind, scj_ind, pcj_ind, '|', j, k)
+        # target cell index within sc
+        scj_ind = (k-1)  % n_cells
 
-        #inds_resh[scj_ind, pci_ind, pcj_ind] = np.array(
-                                            #[scj_ind, pci_ind, pcj_ind])
-        #inds_resh = None
-
-        #print(f'an element {i}')
-        #print(fc[i,:,:])
         fc_resh[scj_ind, pci_ind, pcj_ind, :, :] = fc[i, :, :]
 
-        #print(f'[{scj_ind}, {pci_ind}, {pcj_ind}, :, :]', end='')
-
-    #TODO check naive reshape, correct arrangement?
-    #fc_euph = np.ascontiguousarray(fc_resh.reshape([10,24,24]))
-    #fc_euph = np.ascontiguousarray(
-                #fc_resh.reshape([n_cells,3*n_ions,3*n_ions]))
-    fc_euph = fc_resh.reshape([n_cells, 3*n_ions, 3*n_ions])
-
-
-    #inds_euph = inds_resh.reshape([8,24])
+    # tile nxnx3x3 matrices into 3nx3n 
+    fc_euph = fc_resh.transpose([0,1,3,2,4]).reshape([n_cells, 3*n_ions, 3*n_ions])
 
     return fc_euph
 
@@ -582,46 +563,36 @@ def _read_interpolation_data(path='.', qpointsseed='qpoints',
     born_file = _match_born(path=path, seed=bornseed)
 
     # load data from qpoint mode output file
-    try: #DEBUG
-        with h5py.File(qpoints_file, 'r') as hdf5_data:
-            qpoint_dict = _extract_qpoints_data(hdf5_data)
+    try:
+        print(qpoints_file)
+        with h5py.File(qpoints_file, 'r') as hdf5o:
+            qpoint_dict = _extract_qpoints_data(hdf5o)
     except Exception as e:
-        print(e)
         pass
 
-    #try:
-    with open(qpoints_file) as yaml_obj:
-        yaml_data = yaml.safe_load(yaml_obj)
-        qpoint_dict =  _extract_qpoints_data(yaml_data)
+    try:
+        with open(qpoints_file) as ymlo:
+            yaml_data = yaml.safe_load(ymlo)
+            qpoint_dict =  _extract_qpoints_data(yaml_data)
+    except Exception as e:
+        pass
 
-    #except Exception as e:
-        #print(e)
-        #pass
+    try: #NOTE This might be done more concisely from just ppyaml_dict
+        print(ppyaml_file)
+        with open(ppyaml_file, 'r') as ppo:
+            ppyaml_data = yaml.safe_load(ppo)
+            ppyaml_dict = _extract_ppyaml(ppyaml_data)
+    except Exception as e: # differentiate "find" from "load"
+        print(f"Failed to load summary file {ppyaml_file}.")
+        print(e)
 
-    print(qpoints_file)
-
-
-    #DEBUG
-    #try: #NOTE This might be done more concisely from just ppyaml_dict
-    with open(ppyaml_file, 'r') as ppo:
-        ppyaml_data = yaml.safe_load(ppo)
-        ppyaml_dict = _extract_ppyaml(ppyaml_data)
-    #except:
-        #print(f"Error loading summary file {ppyaml_file}.")
-        #print(e)
-
-    print(ppyaml_file)
-
-    #DEBUG
-    #try:
-    with open(disp_file, 'r') as disp:
-        disp_dict = yaml.safe_load(disp)
-    #except Exception as e:
-        #print(f"Error loading displacements summary file {disp_file}.")
-        #print(e)
-
-    print(disp_file)
-
+    try:
+        print(disp_file)
+        with open(disp_file, 'r') as dspo:
+            disp_dict = yaml.safe_load(dspo)
+    except Exception as e:
+        print(f"Failed to load displacements summary file {disp_file}.")
+        print(e)
 
     # check summary_file for force_constants, dielectric_constant, 
     # born_effective_charge
@@ -629,12 +600,11 @@ def _read_interpolation_data(path='.', qpointsseed='qpoints',
         #TODO reshape without indices
         force_constants = ppyaml_dict['force_constants']
     else:
-        #DEBUG
-        #try:
-        with open(fc_file, 'r') as fco:
-            force_constants = _extract_force_constants(fco)
-        #except:
-            #pass
+        try:
+            with open(fc_file, 'r') as fco:
+                force_constants = _extract_force_constants(fco)
+        except:
+            pass
 
     try:
         with open(born_file, 'r') as born:
@@ -658,7 +628,8 @@ def _read_interpolation_data(path='.', qpointsseed='qpoints',
         except:
             pass
 
-
+    # Unit conversion
+    #TODO see how Phonopy handles units: same as calculator, or standard internal unit?
     data_dict = {}
     data_dict['n_ions'] = qpoint_dict['n_ions'] #n_ions
     data_dict['n_branches'] = qpoint_dict['n_branches'] #3*n_ions #TODO
@@ -686,7 +657,7 @@ def _read_interpolation_data(path='.', qpointsseed='qpoints',
         data_dict['born'] = born #born*ureg.e
         data_dict['dielectric'] = dielectric #dielectric
     except UnboundLocalError:
-        print('No bec or dielectric') #TODO remove
+        print('No bec or dielectric') #TODO remove when fixed soft fail error 
         pass
 
     data_dict['dynamical_matrix'] = qpoint_dict['dynamical_matrix']
@@ -764,8 +735,7 @@ def _read_bands_data(path='.', seedname='mesh'):
         'ion_r' and 'ion_type' are also present.
     """
 
-    # This defines unassigned defaults
-    """"
+    """ define unassigned defaults
     data_dict = {}
     data_dict['n_ions'] = None #n_ions
     data_dict['n_branches'] = None #n_branches
@@ -787,14 +757,14 @@ def _read_bands_data(path='.', seedname='mesh'):
     file = _match_seed(path='.', seed=seed)
 
     try:
-        with h5py.File(file, 'r') as hdf5_data:
-            return _extract_bands_data(hdf5_data)
+        with h5py.File(file, 'r') as hdf5o:
+            return _extract_bands_data(hdf5o)
     except:
         pass
 
     try:
-        with open(file, 'r') as yaml_obj:
-            yaml_data = yaml.safe_load(yaml_obj)
+        with open(file, 'r') as ymlo:
+            yaml_data = yaml.safe_load(ymlo)
             return _extract_bands_data(yaml_data)
     except:
         pass
