@@ -69,12 +69,13 @@ class PhononData(Data):
         path : str, optional
             Path to dir containing the file(s), if in another directory
         """
-        self._get_data(seedname, model, path)
+
         self.seedname = seedname
         self.model = model
 
         self._l_units = 'angstrom'
         self._e_units = 'meV'
+
 
     @property
     def cell_vec(self):
@@ -99,6 +100,34 @@ class PhononData(Data):
     @property
     def sqw_ebins(self):
         return self._sqw_ebins*ureg('E_h').to(self._e_units, 'spectroscopy')
+
+    @classmethod
+    def from_castep(**kwargs):
+        if 'seedname' not in kwargs.keys():
+            raise TypeError("Argument 'seedname' required to load CASTEP data.")
+
+        seedname = kwargs['seedname']
+        path = kwargs['path']
+
+        data = _castep._read_phonon_data(seedname, path)
+        return self(seedname, model='castep')._set_data(data)
+
+    def _set_data(self, data):
+        self.n_ions = data['n_ions']
+        self.n_branches = data['n_branches']
+        self.n_qpts = data['n_qpts']
+        self._cell_vec = data['cell_vec']
+        self._recip_vec = data['recip_vec']
+        self.ion_r = data['ion_r']
+        self.ion_type = data['ion_type']
+        self._ion_mass = data['ion_mass']
+        self.qpts = data['qpts']
+        self.weights = data['weights']
+        self._freqs = data['freqs']
+        self.eigenvecs = data['eigenvecs']
+        self.split_i = data['split_i']
+        self._split_freqs = data['split_freqs']
+        self.split_eigenvecs = data['split_eigenvecs']
 
     def _get_data(self, seedname, model, path):
         """"

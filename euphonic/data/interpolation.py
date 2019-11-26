@@ -111,7 +111,6 @@ class InterpolationData(PhononData):
             If qpts has been specified, kwargs may be used to pass keyword
             arguments to calculate_fine_phonons
         """
-        self._get_data(seedname, model, path)
 
         self.seedname = seedname
         self.model = model
@@ -153,6 +152,38 @@ class InterpolationData(PhononData):
     @property
     def born(self):
         return self._born*ureg('e')
+
+
+    @classmethod
+    def from_castep(**kwargs):
+        if 'seedname' not in kwargs.keys():
+            raise TypeError("Argument 'seedname' required to load CASTEP data.")
+
+        seedname = kwargs['seedname']
+        path = kwargs['path']
+
+        data = _castep._read_interpolation_data(seedname, path)
+        return self(seedname, model='castep')._set_data(data)
+
+
+    def _set_data(self, data):
+        self.n_ions = data['n_ions']
+        self.n_branches = data['n_branches']
+        self._cell_vec = data['cell_vec']
+        self._recip_vec = data['recip_vec']
+        self.ion_r = data['ion_r']
+        self.ion_type = data['ion_type']
+        self._ion_mass = data['ion_mass']
+        self._force_constants = data['force_constants']
+        self.sc_matrix = data['sc_matrix']
+        self.n_cells_in_sc = data['n_cells_in_sc']
+        self.cell_origins = data['cell_origins']
+
+        try:
+            self._born = data['born']
+            self.dielectric = data['dielectric']
+        except KeyError:
+            pass
 
     def _get_data(self, seedname, model, path):
         """"
