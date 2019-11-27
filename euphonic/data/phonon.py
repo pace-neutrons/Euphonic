@@ -61,13 +61,15 @@ class PhononData(Data):
 
         Parameters
         ----------
+        data : dict
+            A dict containing the following keys: n_ions, n_branches, n_qpts,
+            cell_vec, recip_vec, ion_r, ion_type, ion_mass, qpts, weights,
+            freqs, eigenvecs, split_i, split_freqs, split_eigenvecs.
         seedname : str
             Seedname of file(s) to read
-        model : {'CASTEP'}, optional, default 'CASTEP'
+        model : {'CASTEP', 'PHONOPY'}, optional, default None
             Which model has been used. e.g. if seedname = 'quartz' and
             model='CASTEP', the 'quartz.phonon' file will be read
-        path : str, optional
-            Path to dir containing the file(s), if in another directory
         """
 
         self._set_data(data)
