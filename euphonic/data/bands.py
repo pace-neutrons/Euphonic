@@ -89,6 +89,16 @@ class BandsData(Data):
 
     @classmethod
     def from_castep(seedname, path=''):
+        """
+        Calls the CASTEP bands data reader and sets the BandsData attributes
+
+        Parameters
+        ----------
+        seedname : str
+            Seedname of file(s) to read
+        path : str
+            Path to dir containing the file(s), if in another directory
+        """
         data = _castep._read_bands_data(seedname, path)
         return self(data, seedname=seedname, model='castep')
 
@@ -111,46 +121,6 @@ class BandsData(Data):
         except KeyError:
             pass
 
-
-    def _get_data(self, seedname, model, path):
-        """"
-        Calls the correct reader to get the required data, and sets the
-        BandsData attributes
-
-        Parameters
-        ----------
-        seedname : str
-            Seedname of file(s) to read
-        model : {'CASTEP'}, optional, default 'CASTEP'
-            Which model has been used. e.g. if seedname = 'Fe' and
-            model='CASTEP', the 'Fe.bands' file will be read
-        path : str
-            Path to dir containing the file(s), if in another directory
-        """
-        if model.lower() == 'castep':
-            data = _castep._read_bands_data(seedname, path)
-        else:
-            raise ValueError(
-                "{:s} is not a valid model, please use one of {{'CASTEP'}}"
-                .format(model))
-
-        self.n_qpts = data['n_qpts']
-        self.n_spins = data['n_spins']
-        self.n_branches = data['n_branches']
-        self._fermi = data['fermi']
-        self._cell_vec = data['cell_vec']
-        self._recip_vec = data['recip_vec']
-        self.qpts = data['qpts']
-        self.weights = data['weights']
-        self._freqs = data['freqs']
-        self._freq_down = data['freq_down']
-
-        try:
-            self.n_ions = data['n_ions']
-            self.ion_r = data['ion_r']
-            self.ion_type = data['ion_type']
-        except KeyError:
-            pass
 
     def calculate_dos(self, dos_bins, gwidth, lorentz=False,
                       weights=None):

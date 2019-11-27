@@ -108,6 +108,16 @@ class PhononData(Data):
 
     @classmethod
     def from_castep(seedname, path=''):
+        """
+        Calls the CASTEP phonon data reader and sets the PhononData attributes.
+
+        Parameters
+        ----------
+        seedname : str
+            Seedname of file(s) to read
+        path : str
+            Path to dir containing the file(s), if in another directory
+        """
         data = _castep._read_phonon_data(seedname, path)
         return self(data, seedname=seedname, model='castep')
 
@@ -128,43 +138,6 @@ class PhononData(Data):
         self._split_freqs = data['split_freqs']
         self.split_eigenvecs = data['split_eigenvecs']
 
-    def _get_data(self, seedname, model, path):
-        """"
-        Calls the correct reader to get the required data, and sets the
-        PhononData attributes
-
-        Parameters
-        ----------
-        seedname : str
-            Seedname of file(s) to read
-        model : {'CASTEP'}, optional, default 'CASTEP'
-            Which model has been used. e.g. if seedname = 'quartz' and
-            model='CASTEP', the 'quartz.phonon' file will be read
-        path : str
-            Path to dir containing the file(s), if in another directory
-        """
-        if model.lower() == 'castep':
-            data = _castep._read_phonon_data(seedname, path)
-        else:
-            raise ValueError(
-                "{:s} is not a valid model, please use one of {{'CASTEP'}}"
-                .format(model))
-
-        self.n_ions = data['n_ions']
-        self.n_branches = data['n_branches']
-        self.n_qpts = data['n_qpts']
-        self._cell_vec = data['cell_vec']
-        self._recip_vec = data['recip_vec']
-        self.ion_r = data['ion_r']
-        self.ion_type = data['ion_type']
-        self._ion_mass = data['ion_mass']
-        self.qpts = data['qpts']
-        self.weights = data['weights']
-        self._freqs = data['freqs']
-        self.eigenvecs = data['eigenvecs']
-        self.split_i = data['split_i']
-        self._split_freqs = data['split_freqs']
-        self.split_eigenvecs = data['split_eigenvecs']
 
     def reorder_freqs(self, reorder_gamma=True):
         """

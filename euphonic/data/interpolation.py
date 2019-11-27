@@ -158,9 +158,18 @@ class InterpolationData(PhononData):
     def born(self):
         return self._born*ureg('e')
 
-
     @classmethod
     def from_castep(seedname, path=''):
+        """
+        Calls the CASTEP interpolation data reader and sets the InerpolationData attributes.
+
+        Parameters
+        ----------
+        seedname : str
+            Seedname of file(s) to read
+        path : str, optional
+            Path to dir containing the file(s), if in another directory
+        """
         data = _castep._read_interpolation_data(seedname, path)
         return self(data, seedname=seedname, model='castep')
 
@@ -183,45 +192,6 @@ class InterpolationData(PhononData):
         except KeyError:
             pass
 
-    def _get_data(self, seedname, model, path):
-        """"
-        Calls the correct reader to get the required data, and sets the
-        PhononData attributes
-
-        Parameters
-        ----------
-        seedname : str
-            Seedname of file(s) to read
-        model : {'CASTEP'}, optional, default 'CASTEP'
-            Which model has been used. e.g. if seedname = 'quartz' and
-            model='CASTEP', the 'quartz.castep_bin' file will be read
-        path : str, optional
-            Path to dir containing the file(s), if in another directory
-        """
-        if model.lower() == 'castep':
-            data = _castep._read_interpolation_data(seedname, path)
-        else:
-            raise ValueError(
-                "{:s} is not a valid model, please use one of {{'CASTEP'}}"
-                .format(model))
-
-        self.n_ions = data['n_ions']
-        self.n_branches = data['n_branches']
-        self._cell_vec = data['cell_vec']
-        self._recip_vec = data['recip_vec']
-        self.ion_r = data['ion_r']
-        self.ion_type = data['ion_type']
-        self._ion_mass = data['ion_mass']
-        self._force_constants = data['force_constants']
-        self.sc_matrix = data['sc_matrix']
-        self.n_cells_in_sc = data['n_cells_in_sc']
-        self.cell_origins = data['cell_origins']
-
-        try:
-            self._born = data['born']
-            self.dielectric = data['dielectric']
-        except KeyError:
-            pass
 
     def calculate_fine_phonons(
         self, qpts, asr=None, precondition=False, dipole=True,
