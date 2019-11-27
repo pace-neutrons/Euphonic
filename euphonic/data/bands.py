@@ -41,19 +41,21 @@ class BandsData(Data):
     """
 
     def __init__(self, data, **kwargs):
-        """"
+        """
         Calls functions to read the correct file(s) and sets BandsData
         attributes
 
         Parameters
         ----------
+        data : dict
+            A dict containing the following keys: n_qpts, n_spins,
+            n_branches, fermi, cell_vec, recip_vec, qpts, weights,
+            freqs, freq_down, and optional: n_ions, ion_r, ion_type.
         seedname : str
             Seedname of file(s) to read
-        model : {'CASTEP'}, optional, default 'CASTEP'
+        model : {'CASTEP', 'PHONOPY'}, optional, default None
             Which model has been used. e.g. if seedname = 'Fe' and
             model='CASTEP', the 'Fe.bands' file will be read
-        path : str, optional
-            Path to dir containing the file(s), if in another directory
         """
 
         self._set_data(data)

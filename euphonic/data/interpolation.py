@@ -97,18 +97,15 @@ class InterpolationData(PhononData):
 
         Parameters
         ----------
+        data : dict
+            A dict containing the following keys: n_ions, n_branches, cell_vec,
+            ion_r, ion_type, ion_mass, force_constants, sc_matrix, n_cells_in_sc,
+            cell_origins, and optional: born, dielectric.
         seedname : str
             Seedname of file(s) to read
-        model : {'CASTEP'}, optional, default 'CASTEP'
+        model : {'CASTEP', 'PHONOPY'}, optional, default None
             Which model has been used. e.g. if seedname = 'quartz' and
             model='CASTEP', the 'quartz.castep_bin' file will be read
-        path : str, optional
-            Path to dir containing the file(s), if in another directory
-        qpts : (n_qpts, 3) float ndarray, optional
-            Q-point coordinates to use for an initial interpolation calculation
-        **kwargs
-            If qpts has been specified, kwargs may be used to pass keyword
-            arguments to calculate_fine_phonons
         """
 
         self._set_data(data)
@@ -133,8 +130,6 @@ class InterpolationData(PhononData):
         self._l_units = 'angstrom'
         self._e_units = 'meV'
 
-        #if len(qpts) > 0:
-            #self.calculate_fine_phonons(qpts, **kwargs)
 
     @property
     def _freqs(self):
