@@ -128,25 +128,6 @@ def _read_phonon_data(path='.', seedname='mesh'):
         'split_eigenvecs'
     """
 
-    """
-    data_dict = {}
-    data_dict['n_ions'] = None #n_ions
-    data_dict['n_branches'] = None #n_branches
-    data_dict['n_qpts'] = None #n_qpts
-    data_dict['cell_vec'] = None #cell_vec*ureg.angstrom
-    data_dict['recip_vec'] = None #reciprocal_lattice(cell_vec)/ureg.angstrom
-    data_dict['ion_r'] = None #ion_r
-    data_dict['ion_type'] = None #ion_type
-    data_dict['ion_mass'] = None #ion_mass*ureg.amu
-    data_dict['qpts'] = None #qpts
-    data_dict['weights'] = None #weights
-    data_dict['freqs'] = None #(freqs*(1/ureg.cm)).to('meV', 'spectroscopy')
-    data_dict['eigenvecs'] = None #eigenvecs
-    data_dict['split_i'] = None #split_i
-    data_dict['split_freqs'] = None #(split_freqs*(1/ureg.cm)).to('meV', 'spectroscopy')
-    data_dict['split_eigenvecs'] = None #split_eigenvecs
-    """
-
     file = _match_seed(path='.', seed=seed)
 
     try:
@@ -162,9 +143,24 @@ def _read_phonon_data(path='.', seedname='mesh'):
     except:
         pass
 
-    #TODO unpack data for unit conversion and easy reading 
+    data_dict = {} #TODO unpack returned values, add units
+    data_dict['n_ions'] = None #n_ions
+    data_dict['n_branches'] = None #n_branches
+    data_dict['n_qpts'] = None #n_qpts
+    data_dict['cell_vec'] = None #cell_vec*ureg.angstrom
+    data_dict['recip_vec'] = None #reciprocal_lattice(cell_vec)/ureg.angstrom
+    data_dict['ion_r'] = None #ion_r
+    data_dict['ion_type'] = None #ion_type
+    data_dict['ion_mass'] = None #ion_mass*ureg.amu
+    data_dict['qpts'] = None #qpts
+    data_dict['weights'] = None #weights
+    data_dict['freqs'] = None #(freqs*(1/ureg.cm)).to('meV', 'spectroscopy')
+    data_dict['eigenvecs'] = None #eigenvecs
+    data_dict['split_i'] = None #split_i
+    data_dict['split_freqs'] = None #(split_freqs*(1/ureg.cm)).to('meV', 'spectroscopy')
+    data_dict['split_eigenvecs'] = None #split_eigenvecs
 
-    return None
+    return data_dict
 
 
 
