@@ -77,8 +77,6 @@ class PhononData(Data):
 
         if 'model' in kwargs.keys():
             self.model = kwargs['model']
-        else:
-            self.model = 'CASTEP'
 
         self._l_units = 'angstrom'
         self._e_units = 'meV'

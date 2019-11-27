@@ -118,8 +118,6 @@ class InterpolationData(PhononData):
 
         if 'model' in kwargs.keys():
             self.model = kwargs['model']
-        else:
-            self.model = 'CASTEP'
 
         self.n_qpts = 0
         self.qpts = np.array([])
