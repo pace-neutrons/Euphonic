@@ -3,6 +3,8 @@
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+#include "util.h"
 
 #define PI 3.14159265358979323846
 
@@ -49,6 +51,67 @@ void calculate_dyn_mat_at_q(const double *qpt, const int n_ions,
             } // nc
         } // j
     } // i
+}
+
+void calculate_dipole_correction(const double *qpt, const int n_ions,
+    const double *cell_vec, const double *recip, const double *ion_r,
+    const double *born, const double *dielectric, const double *H_ab,
+    const double *cells, const int n_dcells, const double *gvec_phases,
+    const double *gvecs_cart, int n_gvecs, const double eta, double *corr) {
+
+    double qpt_norm[3];
+    double q_cart[3];
+    double qdotr;
+    double phase[2];
+    const double *H_ab_ptr;
+    double det_e;
+    int size = 2*9*n_ions*n_ions;
+    int i, j, a, b, nc;
+
+    // Normalise q-point
+    for (a = 0; a < 3; a++) {
+        qpt_norm[a] = qpt[a] - round(qpt[a]);
+    }
+
+    // Don't include G=0 vector if q=0
+    if (is_gamma(qpt_norm)) {
+        gvec_phases += 18;
+        gvecs_cart += 3;
+        n_gvecs--;
+    }
+
+    // Calculate realspace term
+    // Realspace phase factor
+    memset(corr, 0, 2*9*n_ions*n_ions*sizeof(double));
+    H_ab_ptr = H_ab;
+    int idx;
+    for (nc = 0; nc < n_dcells; nc++) {
+        qdotr = 0;
+        for (a = 0; a < 3; a++) {
+            qdotr += qpt[a]*cells[3*nc + a];
+        }
+        phase[0] = cos(2*PI*qdotr);
+        phase[1] = sin(2*PI*qdotr);
+
+        for (i = 0; i < n_ions; i++) {
+            for (j = i; j < n_ions; j++) {
+                for (a = 0; a < 3; a++) {
+                    for (b = 0; b < 3; b++) {
+                        idx = 2*(3*(3*i + a)*n_ions + 3*j + b);
+                        corr[idx] += phase[0]*(*H_ab_ptr);
+                        corr[idx] += phase[1]*(*H_ab_ptr);
+                        H_ab_ptr++;
+                    } // b
+                } // a
+            } // j
+        } // i
+    } // nc
+    det_e = det_array(dielectric);
+    multiply_array(size, pow(eta, 3)/sqrt(det_e), corr);
+
+    for (i = 0; i < size; i++) {
+        corr[i] = 0;
+    }
 }
 
 void mass_weight_dyn_mat(const double* dyn_mat_weighting, const int n_ions,

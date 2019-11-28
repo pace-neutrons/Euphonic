@@ -7,7 +7,7 @@ except ImportError:
     from distutils.core import setup, find_packages, Extension
 
 include_dirs = [np.get_include(), 'c']
-sources = ['c/_euphonic.c', 'c/dyn_mat.c', 'c/util.c']
+sources = ['c/_euphonic.c', 'c/dyn_mat.c', 'c/util.c', 'c/py_util.c']
 if os.name == 'nt':  # Windows
     compile_args = ['/openmp']
     link_args = None

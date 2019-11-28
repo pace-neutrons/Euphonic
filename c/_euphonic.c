@@ -7,6 +7,7 @@
 #include <Python.h>
 #include <numpy/arrayobject.h>
 #include "dyn_mat.h"
+#include "py_util.h"
 #include "util.h"
 
 #ifdef _WIN32
@@ -37,7 +38,7 @@ static PyObject *calculate_phonons(PyObject *self, PyObject *args) {
     const char *scipydir;
 
     // Define vars to be obtained from InterpolationData attributes
-    int nions;
+    int n_ions;
     PyArrayObject *py_n_sc_ims;
     PyArrayObject *py_sc_im_idx;
     PyArrayObject *py_cell_ogs;
@@ -50,6 +51,8 @@ static PyObject *calculate_phonons(PyObject *self, PyObject *args) {
     double eta;
     PyArrayObject *py_H_ab;
     PyArrayObject *py_dipole_cells;
+    PyArrayObject *py_gvec_phases;
+    PyArrayObject *py_gvecs_cart;
 
     // Define pointers to Python array data
     double *rqpts;
@@ -70,14 +73,20 @@ static PyObject *calculate_phonons(PyObject *self, PyObject *args) {
     double *dielectric;
     double *H_ab;
     double *dipole_cells;
+    double *gvec_phases;
+    double *gvecs_cart;
+    double *dipole_corr;
 
     // Other vars
-    int ncells;
+    int n_cells;
     int nqpts;
     int q;
     int max_ims;
     int dmat_elems;
     int info;
+    // Extra vars only required if dipole = True
+    int n_dipole_cells;
+    int n_gvecs;
 
     // Parse inputs
     if (!PyArg_ParseTuple(args, "OO!O!O!O!O!iiO!O!is",
@@ -97,7 +106,7 @@ static PyObject *calculate_phonons(PyObject *self, PyObject *args) {
     }
 
     // Get rest of vars from InterpolationData object
-    if (int_from_pyobj(py_idata, "n_ions", &nions) ||
+    if (int_from_pyobj(py_idata, "n_ions", &n_ions) ||
         attr_from_pyobj(py_idata, "_n_sc_images", &py_n_sc_ims) ||
         attr_from_pyobj(py_idata, "_sc_image_i", &py_sc_im_idx) ||
         attr_from_pyobj(py_idata, "cell_origins", &py_cell_ogs)) {
@@ -113,7 +122,9 @@ static PyObject *calculate_phonons(PyObject *self, PyObject *args) {
             attr_from_pyobj(py_idata, "dielectric", &py_dielectric) ||
             double_from_pyobj(py_idata, "_eta", &eta) ||
             attr_from_pyobj(py_idata, "_H_ab", &py_H_ab) ||
-            attr_from_pyobj(py_idata, "_cells", &py_dipole_cells)) {
+            attr_from_pyobj(py_idata, "_cells", &py_dipole_cells) ||
+            attr_from_pyobj(py_idata, "_gvec_phases", &py_gvec_phases) ||
+            attr_from_pyobj(py_idata, "_gvecs_cart", &py_gvecs_cart)) {
                 PyErr_Format(PyExc_RuntimeError,
                              "Failed to read dipole attributes from object\n");
                 return NULL;
@@ -197,13 +208,13 @@ static PyObject *calculate_phonons(PyObject *self, PyObject *args) {
     dmat_weighting = (double*) PyArray_DATA(py_dmat_weighting);
     dmats = (double*) PyArray_DATA(py_dmats);
     evals = (double*) PyArray_DATA(py_evals);
-    ncells = PyArray_DIMS(py_fc)[0];
-    nqpts = PyArray_DIMS(py_rqpts)[0];
     n_sc_ims = (int*) PyArray_DATA(py_n_sc_ims);
     sc_im_idx = (int*) PyArray_DATA(py_sc_im_idx);
     cell_ogs = (int*) PyArray_DATA(py_cell_ogs);
+    n_cells = PyArray_DIMS(py_fc)[0];
+    nqpts = PyArray_DIMS(py_rqpts)[0];
     max_ims = PyArray_DIMS(py_sc_im_idx)[3];
-    dmat_elems = 2*9*nions*nions;
+    dmat_elems = 2*9*n_ions*n_ions;
     if (dipole) {
         cell_vec = (double*) PyArray_DATA(py_cell_vec);
         recip_vec = (double*) PyArray_DATA(py_recip_vec);
@@ -212,31 +223,50 @@ static PyObject *calculate_phonons(PyObject *self, PyObject *args) {
         dielectric = (double*) PyArray_DATA(py_dielectric);
         H_ab = (double*) PyArray_DATA(py_H_ab);
         dipole_cells = (double*) PyArray_DATA(py_dipole_cells);
+        gvec_phases = (double*) PyArray_DATA(py_gvec_phases);
+        gvecs_cart = (double*) PyArray_DATA(py_gvecs_cart);
+        n_dipole_cells = PyArray_DIMS(py_dipole_cells)[0];
+        n_gvecs = PyArray_DIMS(py_gvec_phases)[0];
     }
-
+    printf("n dipole cells: %i\n", n_dipole_cells);
+    printf("n gvecs: %i\n", n_gvecs);
     omp_set_num_threads(nthreads);
-    #pragma omp parallel for
-    for (q = 0; q < nqpts; q++) {
-        double *qpt, *dmat, *eval;
-        qpt = (rqpts + 3*q);
-        dmat = (dmats + q*dmat_elems);
-        eval = (evals + q*3*nions);
-
-        calculate_dyn_mat_at_q(qpt, nions, ncells, max_ims, n_sc_ims, sc_im_idx,
-            cell_ogs, sc_ogs, fc, dmat);
-
-        if (reciprocal_asr) {
-            add_arrays(dmat_elems, asr_correction, dmat);
+    #pragma omp parallel
+    {
+        if (dipole) {
+            dipole_corr = (double*) malloc(dmat_elems*sizeof(double));
         }
+        #pragma omp for
+        for (q = 0; q < nqpts; q++) {
+            double *qpt, *dmat, *eval;
+            qpt = (rqpts + 3*q);
+            dmat = (dmats + q*dmat_elems);
+            eval = (evals + q*3*n_ions);
 
-        mass_weight_dyn_mat(dmat_weighting, nions, dmat);
+            calculate_dyn_mat_at_q(qpt, n_ions, n_cells, max_ims, n_sc_ims,
+                sc_im_idx, cell_ogs, sc_ogs, fc, dmat);
 
-        info = diagonalise_dyn_mat_zheevd(nions, dmat, eval, zheevd);
-        if (info != 0) {
-            printf("INFO: Zheevd diagonalisation failed with info %i at "
-                   "q-point %f %f %f\n", info, qpt[0], qpt[1], qpt[2]);
+            if (dipole) {
+                calculate_dipole_correction(qpt, n_ions, cell_vec, recip_vec,
+                    ion_r, born, dielectric, H_ab, dipole_cells,
+                    n_dipole_cells, gvec_phases, gvecs_cart, n_gvecs,
+                    eta, dipole_corr);
+                add_arrays(dmat_elems, dipole_corr, dmat);
+            }
+
+            if (reciprocal_asr) {
+                add_arrays(dmat_elems, asr_correction, dmat);
+            }
+
+            mass_weight_dyn_mat(dmat_weighting, n_ions, dmat);
+
+            info = diagonalise_dyn_mat_zheevd(n_ions, dmat, eval, zheevd);
+            if (info != 0) {
+                printf("INFO: Zheevd diagonalisation failed with info %i at "
+                       "q-point %f %f %f\n", info, qpt[0], qpt[1], qpt[2]);
+            }
+            evals_to_freqs(n_ions, eval);
         }
-        evals_to_freqs(nions, eval);
     }
 
 #ifdef _WIN32
