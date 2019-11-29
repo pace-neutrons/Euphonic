@@ -60,18 +60,19 @@ void calculate_dipole_correction(const double *qpt, const int n_ions,
     const double *gvecs_cart, int n_gvecs, const double eta, double *corr) {
 
     double qpt_norm[3];
-    double q_cart[3];
+    double q_cart[3] = {0, 0, 0};
     double qdotr;
     double phase[2];
     const double *H_ab_ptr;
     double det_e;
     int size = 2*9*n_ions*n_ions;
-    int i, j, a, b, nc;
+    int i, j, a, b, nc, ng;
 
     // Normalise q-point
     for (a = 0; a < 3; a++) {
         qpt_norm[a] = qpt[a] - round(qpt[a]);
     }
+
 
     // Don't include G=0 vector if q=0
     if (is_gamma(qpt_norm)) {
@@ -81,7 +82,6 @@ void calculate_dipole_correction(const double *qpt, const int n_ions,
     }
 
     // Calculate realspace term
-    // Realspace phase factor
     memset(corr, 0, 2*9*n_ions*n_ions*sizeof(double));
     H_ab_ptr = H_ab;
     int idx;
@@ -98,8 +98,8 @@ void calculate_dipole_correction(const double *qpt, const int n_ions,
                 for (a = 0; a < 3; a++) {
                     for (b = 0; b < 3; b++) {
                         idx = 2*(3*(3*i + a)*n_ions + 3*j + b);
-                        corr[idx] += phase[0]*(*H_ab_ptr);
-                        corr[idx] += phase[1]*(*H_ab_ptr);
+                        corr[idx] -= phase[0]*(*H_ab_ptr);
+                        corr[idx] -= phase[1]*(*H_ab_ptr);
                         H_ab_ptr++;
                     } // b
                 } // a
@@ -108,6 +108,78 @@ void calculate_dipole_correction(const double *qpt, const int n_ions,
     } // nc
     det_e = det_array(dielectric);
     multiply_array(size, pow(eta, 3)/sqrt(det_e), corr);
+
+    // Precalculate some values for reciprocal space term
+    // Calculate dielectric/4(eta^2) factor
+    double diel_eta[9];
+    for (a = 0; a < 9; a++) {
+        diel_eta[a] = dielectric[a]/(4*pow(eta, 2));
+    }
+    // Calculate q in Cartesian coords
+    for (a = 0; a < 3; a++) {
+        for (b = 0; b < 3; b++) {
+            q_cart[a] += qpt_norm[b]*recip[3*b + a];
+        }
+    }
+    // Calculate q-point phases
+    double *q_phases;
+    q_phases = (double*)malloc(2*n_ions*sizeof(double));
+    for (i = 0; i < n_ions; i++) {
+        qdotr = 0;
+        for (a = 0; a < 3; a++) {
+            qdotr += qpt[a]*ion_r[3*i + a];
+        }
+        q_phases[2*i] = cos(2*PI*qdotr);
+        q_phases[2*i + 1] = sin(2*PI*qdotr);
+    }
+    // Calculate reciprocal term multiplication factor
+    double fac = PI/(cell_volume(cell_vec)*pow(eta, 2));
+    // Calculate reciprocal term
+    double kvec[3];
+    double k_ab_exp[9];
+    double k_len_2;
+    double gq_phase_ri[2];
+    double gq_phase_rj[2];
+    double gq_phase_rij[2];
+    double *recip_dipole;
+    recip_dipole = (double*)calloc(size, sizeof(double));
+    for (ng = 0; ng < n_gvecs; ng++) {
+
+        for (a = 0; a < 3; a++) {
+            kvec[a] = gvecs_cart[3*ng + a] + q_cart[a];
+        }
+        k_len_2 = 0;
+        for (a = 0; a < 3; a++) {
+            for (b = 0; b < 3; b++) {
+                idx= 3*a + b;
+                k_ab_exp[idx] = kvec[a]*kvec[b];
+                k_len_2 += k_ab_exp[idx]*diel_eta[idx];
+            }
+        }
+        multiply_array(9, exp(-k_len_2)/k_len_2, k_ab_exp);
+
+        for (i = 0; i < n_ions; i++) {
+            idx = 2*(ng*n_ions + i);
+            multiply_complex((gvec_phases + idx), (q_phases + 2*i), gq_phase_ri);
+            for (j = i; j < n_ions; j++) {
+                idx = 2*(ng*n_ions + j);
+                multiply_complex((gvec_phases +idx), (q_phases + 2*j), gq_phase_rj);
+                // To divide by gq_phase_rj, multiply by complex conj
+                gq_phase_rj[1] *= -1;
+                multiply_complex(gq_phase_ri, gq_phase_rj, gq_phase_rij);
+                for (a = 0; a < 3; a++) {
+                    for (b = 0; b < 3; b++) {
+                        idx = 2*(3*(3*i + a)*n_ions + 3*j + b);
+                        corr[idx] += fac*gq_phase_rij[0]*k_ab_exp[3*a + b];
+                        corr[idx + 1] += fac*gq_phase_rij[1]*k_ab_exp[3*a + b];
+                    }
+                }
+            }
+        }
+
+
+    }
+    free((void*)q_phases);
 
     for (i = 0; i < size; i++) {
         corr[i] = 0;

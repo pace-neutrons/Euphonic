@@ -4,6 +4,8 @@
 void add_arrays(const int size, const double *arr1, double *arr2);
 void multiply_array(const int size, const double scalar, double *arr);
 double det_array(const double arr[9]);
-int is_gamma(const double *qpt);
+int is_gamma(const double qpt[3]);
+double cell_volume(const double cell_vec[9]);
+void multiply_complex(const double c1[2], const double c2[2], double *result);
 
 #endif
