@@ -18,6 +18,11 @@ void calculate_dyn_mat_at_q(const double *qpt, const int n_ions,
     double phase_r;
     double phase_i;
 
+    // Note: C calculated dynamical matrix uses e^-i(q.r) convention, whereas
+    // Python uses the e^i(q.r) convention. This differing convention is used
+    // because Scipy defines the Fortran interface to zheevd so expects Fortran
+    // ordering (dyn mat is Hermitian so transpose = complex conjugate)
+
     // Array strides
     int s_n[2] = {n_ions*n_ions, n_ions}; // For n_sc_images
     // For sc_image_i
@@ -46,11 +51,11 @@ void calculate_dyn_mat_at_q(const double *qpt, const int n_ions,
                         dyn_mat[2*idx] += phase_r*fc_mat[nc*s_fc + idx];
                         // Imaginary part
                         dyn_mat[2*idx + 1] += phase_i*fc_mat[nc*s_fc + idx];
-                    } // jj
-                } // ii
-            } // nc
-        } // j
-    } // i
+                    }
+                }
+            }
+        }
+    }
 }
 
 void calculate_dipole_correction(const double *qpt, const int n_ions,
@@ -74,7 +79,6 @@ void calculate_dipole_correction(const double *qpt, const int n_ions,
         qpt_norm[a] = qpt[a] - round(qpt[a]);
     }
 
-
     // Don't include G=0 vector if q=0
     if (is_gamma(qpt_norm)) {
         gvec_phases += 18;
@@ -92,7 +96,7 @@ void calculate_dipole_correction(const double *qpt, const int n_ions,
             qdotr += qpt_norm[a]*cells[3*nc + a];
         }
         phase[0] = cos(2*PI*qdotr);
-        phase[1] = sin(2*PI*qdotr);
+        phase[1] = -sin(2*PI*qdotr);
 
         for (i = 0; i < n_ions; i++) {
             for (j = i; j < n_ions; j++) {
@@ -102,11 +106,11 @@ void calculate_dipole_correction(const double *qpt, const int n_ions,
                         corr[idx] -= phase[0]*(*H_ab_ptr);
                         corr[idx + 1] -= phase[1]*(*H_ab_ptr);
                         H_ab_ptr++;
-                    } // b
-                } // a
-            } // j
-        } // i
-    } // nc
+                    }
+                }
+            }
+        }
+    }
     det_e = det_array(dielectric);
     multiply_array(size, pow(eta, 3)/sqrt(det_e), corr);
 
@@ -131,7 +135,7 @@ void calculate_dipole_correction(const double *qpt, const int n_ions,
             qdotr += qpt[a]*ion_r[3*i + a];
         }
         q_phases[2*i] = cos(2*PI*qdotr);
-        q_phases[2*i + 1] = sin(2*PI*qdotr);
+        q_phases[2*i + 1] = -sin(2*PI*qdotr);
     }
     // Calculate reciprocal term multiplication factor
     double fac = PI/(cell_volume(cell_vec)*pow(eta, 2));
@@ -142,8 +146,6 @@ void calculate_dipole_correction(const double *qpt, const int n_ions,
     double gq_phase_ri[2];
     double gq_phase_rj[2];
     double gq_phase_rij[2];
-    double *recip_dipole;
-    recip_dipole = (double*)calloc(size, sizeof(double));
     for (ng = 0; ng < n_gvecs; ng++) {
 
         for (a = 0; a < 3; a++) {
@@ -161,13 +163,14 @@ void calculate_dipole_correction(const double *qpt, const int n_ions,
 
         for (i = 0; i < n_ions; i++) {
             idx = 2*(ng*n_ions + i);
-            multiply_complex((gvec_phases + idx), (q_phases + 2*i), gq_phase_ri);
+            // Due to differing phase conventions in Python/C, as gvec_phases
+            // was precalculated in Python, must use the complex conj
+            cmult_conj((q_phases + 2*i), (gvec_phases + idx), gq_phase_ri);
             for (j = i; j < n_ions; j++) {
                 idx = 2*(ng*n_ions + j);
-                multiply_complex((gvec_phases +idx), (q_phases + 2*j), gq_phase_rj);
+                cmult_conj((q_phases + 2*j), (gvec_phases + idx), gq_phase_rj);
                 // To divide by gq_phase_rj, multiply by complex conj
-                gq_phase_rj[1] *= -1;
-                multiply_complex(gq_phase_ri, gq_phase_rj, gq_phase_rij);
+                cmult_conj(gq_phase_ri, gq_phase_rj, gq_phase_rij);
                 for (a = 0; a < 3; a++) {
                     for (b = 0; b < 3; b++) {
                         idx = 2*(3*(3*i + a)*n_ions + 3*j + b);
@@ -177,8 +180,6 @@ void calculate_dipole_correction(const double *qpt, const int n_ions,
                 }
             }
         }
-
-
     }
     free((void*)q_phases);
 
