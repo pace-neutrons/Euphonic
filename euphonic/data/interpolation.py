@@ -371,7 +371,7 @@ class InterpolationData(PhononData):
             attrs = ['_n_sc_images', '_sc_image_i', 'cell_origins']
             dipole_attrs = ['_cell_vec', '_recip_vec', 'ion_r', '_born',
                             'dielectric', '_H_ab', '_cells', '_gvec_phases',
-                            '_gvecs_cart']
+                            '_gvecs_cart', '_dipole_q0']
             _ensure_contiguous_attrs(self, attrs, opt_attrs=dipole_attrs)
             reciprocal_asr = 1 if asr == 'reciprocal' else 0
             euphonic_c.calculate_phonons(

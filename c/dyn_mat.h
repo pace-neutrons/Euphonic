@@ -10,7 +10,8 @@ void calculate_dipole_correction(const double *qpt, const int n_ions,
     const double *cell_vec, const double *recip, const double *ion_r,
     const double *born, const double *dielectric, const double *H_ab,
     const double *cells, const int n_dcells, const double *gvec_phases,
-    const double *gvecs_cart, int n_gvecs, const double eta, double *corr);
+    const double *gvecs_cart, int n_gvecs, const double *dipole_q0,
+    const double eta, double *corr);
 
 void mass_weight_dyn_mat(const double* dyn_mat_weighting, const int n_ions,
     double* dyn_mat);

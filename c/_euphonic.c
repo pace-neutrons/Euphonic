@@ -53,6 +53,7 @@ static PyObject *calculate_phonons(PyObject *self, PyObject *args) {
     PyArrayObject *py_dipole_cells;
     PyArrayObject *py_gvec_phases;
     PyArrayObject *py_gvecs_cart;
+    PyArrayObject *py_dipole_q0;
 
     // Define pointers to Python array data
     double *rqpts;
@@ -75,6 +76,7 @@ static PyObject *calculate_phonons(PyObject *self, PyObject *args) {
     double *dipole_cells;
     double *gvec_phases;
     double *gvecs_cart;
+    double *dipole_q0;
     double *dipole_corr;
 
     // Other vars
@@ -124,7 +126,8 @@ static PyObject *calculate_phonons(PyObject *self, PyObject *args) {
             attr_from_pyobj(py_idata, "_H_ab", &py_H_ab) ||
             attr_from_pyobj(py_idata, "_cells", &py_dipole_cells) ||
             attr_from_pyobj(py_idata, "_gvec_phases", &py_gvec_phases) ||
-            attr_from_pyobj(py_idata, "_gvecs_cart", &py_gvecs_cart)) {
+            attr_from_pyobj(py_idata, "_gvecs_cart", &py_gvecs_cart) ||
+            attr_from_pyobj(py_idata, "_dipole_q0", &py_dipole_q0)) {
                 PyErr_Format(PyExc_RuntimeError,
                              "Failed to read dipole attributes from object\n");
                 return NULL;
@@ -225,6 +228,7 @@ static PyObject *calculate_phonons(PyObject *self, PyObject *args) {
         dipole_cells = (double*) PyArray_DATA(py_dipole_cells);
         gvec_phases = (double*) PyArray_DATA(py_gvec_phases);
         gvecs_cart = (double*) PyArray_DATA(py_gvecs_cart);
+        dipole_q0 = (double*) PyArray_DATA(py_dipole_q0);
         n_dipole_cells = PyArray_DIMS(py_dipole_cells)[0];
         n_gvecs = PyArray_DIMS(py_gvec_phases)[0];
     }
@@ -250,7 +254,7 @@ static PyObject *calculate_phonons(PyObject *self, PyObject *args) {
                 calculate_dipole_correction(qpt, n_ions, cell_vec, recip_vec,
                     ion_r, born, dielectric, H_ab, dipole_cells,
                     n_dipole_cells, gvec_phases, gvecs_cart, n_gvecs,
-                    eta, dipole_corr);
+                    dipole_q0, eta, dipole_corr);
                 add_arrays(dmat_elems, dipole_corr, dmat);
             }
 

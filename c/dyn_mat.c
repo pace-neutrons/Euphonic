@@ -57,7 +57,8 @@ void calculate_dipole_correction(const double *qpt, const int n_ions,
     const double *cell_vec, const double *recip, const double *ion_r,
     const double *born, const double *dielectric, const double *H_ab,
     const double *cells, const int n_dcells, const double *gvec_phases,
-    const double *gvecs_cart, int n_gvecs, const double eta, double *corr) {
+    const double *gvecs_cart, int n_gvecs, const double *dipole_q0,
+    const double eta, double *corr) {
 
     double qpt_norm[3];
     double q_cart[3] = {0, 0, 0};
@@ -66,7 +67,7 @@ void calculate_dipole_correction(const double *qpt, const int n_ions,
     const double *H_ab_ptr;
     double det_e;
     int size = 2*9*n_ions*n_ions;
-    int i, j, a, b, nc, ng;
+    int i, j, a, b, aa, bb, nc, ng;
 
     // Normalise q-point
     for (a = 0; a < 3; a++) {
@@ -181,9 +182,45 @@ void calculate_dipole_correction(const double *qpt, const int n_ions,
     }
     free((void*)q_phases);
 
-    for (i = 0; i < size; i++) {
-        corr[i] = 0;
+    // Multiply in born charges
+    double corr_tmp[18];
+    double born_fac;
+    for (i = 0; i < n_ions; i++) {
+        for (j = i; j < n_ions; j++) {
+            memset(corr_tmp, 0, 18*sizeof(double));
+            for (a = 0; a < 3; a++) {
+                for (b = 0; b < 3; b++) {
+                    for (aa = 0; aa < 3; aa++) {
+                        for (bb = 0; bb < 3; bb++) {
+                            idx = 2*(3*(3*i + aa)*n_ions + 3*j + bb);
+                            born_fac = born[9*i + 3*a + aa]*born[9*j + 3*b + bb];
+                            corr_tmp[6*a + 2*b] += born_fac*corr[idx];
+                            corr_tmp[6*a + 2*b + 1] += born_fac*corr[idx + 1];
+                        }
+                    }
+                }
+            }
+
+            for (a = 0; a < 3; a++) {
+                for (b = 0; b < 3; b++) {
+                    idx = 2*(3*(3*i + a)*n_ions + 3*j + b);
+                    corr[idx] = corr_tmp[6*a + 2*b];
+                    corr[idx + 1] = corr_tmp[6*a + 2*b + 1];
+                }
+            }
+
+        }
+
+        // Subtract q=0 correction from diagonal
+        for (a = 0; a < 3; a++) {
+            for (b = 0; b < 3; b++) {
+                idx = 2*(3*(3*i + a)*n_ions + 3*i + b);
+                corr[idx] -= dipole_q0[18*i + 6*a + 2*b];
+                corr[idx + 1] -= dipole_q0[18*i + 6*a + 2*b + 1];
+            }
+        }
     }
+
 }
 
 void mass_weight_dyn_mat(const double* dyn_mat_weighting, const int n_ions,
