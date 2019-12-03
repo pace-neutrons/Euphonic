@@ -245,14 +245,15 @@ class InterpolationData(PhononData):
 
         # Reset obj freqs/eigenvecs to zero to reduce memory usage in case of
         # repeated calls to calculate_fine_phonons
+        n_ions = self.n_ions
         self.qpts = np.array([])
-        self._reduced_freqs = np.empty((0, 3*self.n_ions))
-        self._reduced_eigenvecs = np.empty((0, 3*self.n_ions, self.n_ions, 3),
+        self._reduced_freqs = np.empty((0, 3*n_ions))
+        self._reduced_eigenvecs = np.empty((0, 3*n_ions, n_ions, 3),
                                            dtype=np.complex128)
 
         self.split_i = np.empty((0,), dtype=np.int32)
-        self._split_freqs = np.empty((0, 3*self.n_ions))
-        self.split_eigenvecs = np.empty((0, 3*self.n_ions, self.n_ions, 3),
+        self._split_freqs = np.empty((0, 3*n_ions))
+        self.split_eigenvecs = np.empty((0, 3*n_ions, n_ions, 3),
                                         dtype=np.complex128)
 
         # Set default splitting params
@@ -315,7 +316,7 @@ class InterpolationData(PhononData):
                 self.cell_origins[:, i], return_inverse=True)
 
         # Precompute dynamical matrix mass weighting
-        masses = np.tile(np.repeat(self._ion_mass, 3), (3*self.n_ions, 1))
+        masses = np.tile(np.repeat(self._ion_mass, 3), (3*n_ions, 1))
         dyn_mat_weighting = 1/np.sqrt(masses*np.transpose(masses))
 
         # Initialise dipole correction calculation to FC matrix if required
@@ -351,23 +352,30 @@ class InterpolationData(PhononData):
                 asr = None
 
         split_i = np.empty((0,), dtype=np.int32)
-        split_freqs = np.empty((0, 3*self.n_ions))
-        split_eigenvecs = np.empty((0, 3*self.n_ions, self.n_ions, 3),
+        split_freqs = np.empty((0, 3*n_ions))
+        split_eigenvecs = np.empty((0, 3*n_ions, n_ions, 3),
                                    dtype=np.complex128)
-        rfreqs = np.zeros((n_rqpts, 3*self.n_ions))
-        reigenvecs = np.zeros((n_rqpts, 3*self.n_ions, self.n_ions, 3),
+        rfreqs = np.zeros((n_rqpts, 3*n_ions))
+        reigenvecs = np.zeros((n_rqpts, 3*n_ions, n_ions, 3),
                                   dtype=np.complex128)
         if use_c:
             import euphonic._euphonic as euphonic_c
             from euphonic.util import (_ensure_contiguous_args,
                                        _ensure_contiguous_attrs)
+            if splitting:
+                gamma_i = np.where(is_gamma(reduced_qpts))[0]
+                split_i = gamma_i[np.logical_and(gamma_i > 0,
+                                                 gamma_i < len(qpts))]
+                split_freqs = np.zeros((len(split_i), 3*n_ions))
+                split_eigenvecs = np.zeros((len(split_i), 3*n_ions, n_ions, 3),
+                                           dtype=np.complex128)
             # Make sure all arrays are contiguous before calling C
-            (reduced_qpts, fc_img_weighted, sc_offsets, recip_asr_correction,
-                dyn_mat_weighting, reigenvecs, rfreqs) = \
-                    _ensure_contiguous_args(
-                        reduced_qpts, fc_img_weighted, sc_offsets,
-                        recip_asr_correction, dyn_mat_weighting, reigenvecs,
-                        rfreqs)
+            (reduced_qpts, qpts_i, fc_img_weighted, sc_offsets, recip_asr_correction,
+                dyn_mat_weighting, rfreqs, reigenvecs, split_freqs, split_eigenvecs,
+                split_i) = _ensure_contiguous_args(
+                    reduced_qpts, qpts_i, fc_img_weighted, sc_offsets,
+                    recip_asr_correction, dyn_mat_weighting, rfreqs,
+                    reigenvecs, split_freqs, split_eigenvecs, split_i)
             attrs = ['_n_sc_images', '_sc_image_i', 'cell_origins']
             dipole_attrs = ['_cell_vec', '_recip_vec', 'ion_r', '_born',
                             'dielectric', '_H_ab', '_cells', '_gvec_phases',
@@ -375,9 +383,10 @@ class InterpolationData(PhononData):
             _ensure_contiguous_attrs(self, attrs, opt_attrs=dipole_attrs)
             reciprocal_asr = 1 if asr == 'reciprocal' else 0
             euphonic_c.calculate_phonons(
-                self, reduced_qpts, fc_img_weighted, sc_offsets,
+                self, reduced_qpts, qpts_i, fc_img_weighted, sc_offsets,
                 recip_asr_correction, dyn_mat_weighting, reciprocal_asr,
-                dipole, reigenvecs, rfreqs, n_threads, scipy.__path__[0])
+                dipole, rfreqs, reigenvecs, split_freqs, split_eigenvecs,
+                split_i, n_threads, scipy.__path__[0])
         else:
             q_independent_args = (
                 reduced_qpts, qpts_i, fc_img_weighted, unique_sc_offsets,

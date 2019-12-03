@@ -26,12 +26,16 @@ static PyObject *calculate_phonons(PyObject *self, PyObject *args) {
     // Define input args
     PyObject *py_idata; // InterpolationData instance
     PyArrayObject *py_rqpts;
+    PyArrayObject *py_qpts_i;
     PyArrayObject *py_fc;
     PyArrayObject *py_sc_ogs;
     PyArrayObject *py_asr_correction;
     PyArrayObject *py_dmat_weighting;
-    PyArrayObject *py_dmats;
     PyArrayObject *py_evals;
+    PyArrayObject *py_dmats;
+    PyArrayObject *py_split_evals;
+    PyArrayObject *py_split_evecs;
+    PyArrayObject *py_split_i;
     int reciprocal_asr;
     int dipole;
     int nthreads = 1;
@@ -57,12 +61,16 @@ static PyObject *calculate_phonons(PyObject *self, PyObject *args) {
 
     // Define pointers to Python array data
     double *rqpts;
+    int *qpts_i;
     double *fc;
     int *sc_ogs;
     double *asr_correction;
     double *dmat_weighting;
-    double *dmats;
     double *evals;
+    double *dmats;
+    double *split_evals;
+    double *split_evecs;
+    int *split_i;
     int *n_sc_ims;
     int *sc_im_idx;
     int *cell_ogs;
@@ -90,17 +98,21 @@ static PyObject *calculate_phonons(PyObject *self, PyObject *args) {
     int n_gvecs;
 
     // Parse inputs
-    if (!PyArg_ParseTuple(args, "OO!O!O!O!O!iiO!O!is",
+    if (!PyArg_ParseTuple(args, "OO!O!O!O!O!O!iiO!O!O!O!O!is",
                           &py_idata,
                           &PyArray_Type, &py_rqpts,
+                          &PyArray_Type, &py_qpts_i,
                           &PyArray_Type, &py_fc,
                           &PyArray_Type, &py_sc_ogs,
                           &PyArray_Type, &py_asr_correction,
                           &PyArray_Type, &py_dmat_weighting,
                           &reciprocal_asr,
                           &dipole,
-                          &PyArray_Type, &py_dmats,
                           &PyArray_Type, &py_evals,
+                          &PyArray_Type, &py_dmats,
+                          &PyArray_Type, &py_split_evals,
+                          &PyArray_Type, &py_split_evecs,
+                          &PyArray_Type, &py_split_i,
                           &nthreads,
                           &scipydir)) {
         return NULL;
@@ -204,12 +216,16 @@ static PyObject *calculate_phonons(PyObject *self, PyObject *args) {
 
     // Point to Python array data
     rqpts = (double*) PyArray_DATA(py_rqpts);
+    qpts_i = (int*) PyArray_DATA(py_qpts_i);
     fc = (double*) PyArray_DATA(py_fc);
     sc_ogs = (int*) PyArray_DATA(py_sc_ogs);
     asr_correction = (double*) PyArray_DATA(py_asr_correction);
     dmat_weighting = (double*) PyArray_DATA(py_dmat_weighting);
-    dmats = (double*) PyArray_DATA(py_dmats);
     evals = (double*) PyArray_DATA(py_evals);
+    dmats = (double*) PyArray_DATA(py_dmats);
+    split_evals = (double*) PyArray_DATA(py_split_evals);
+    split_evecs = (double*) PyArray_DATA(py_split_evecs);
+    split_i = (double*) PyArray_DATA(py_split_i);
     n_sc_ims = (int*) PyArray_DATA(py_n_sc_ims);
     sc_im_idx = (int*) PyArray_DATA(py_sc_im_idx);
     cell_ogs = (int*) PyArray_DATA(py_cell_ogs);
