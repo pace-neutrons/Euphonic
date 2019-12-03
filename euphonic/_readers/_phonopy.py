@@ -9,21 +9,15 @@ import numpy as np
 from euphonic import ureg
 from euphonic.util import reciprocal_lattice, is_gamma
 
-#TODO documentation / docstrings
-#TODO test _extract_*_data
-#TODO test _read_*_data
-#TODO phonopy unit conversion, search phonopy.yaml for 'physical_unit'
-#TODO separate necessary, conditional, and optional variable getting processes
-#TODO appropriate error responses
-#TODO parse hdf5 file with p2s_map
-#TODO find the units for a given file set
-
-#TODO
 def _convert_units(data_dict):
+    #TODO
+    """ DOC
+
+    """
+
     pass
 
 def _match_seed(path='.', seed='*'):
-    # TODO
     """DOC
     Search target path for seed with standard yaml and hdf5 extensions.
     """
@@ -48,23 +42,33 @@ def _match_seed(path='.', seed='*'):
     else:
         return None
 
-    #TODO open file to check formatting, fallback if fail
-
-    # check that final name exists
     if os.path.exists(file):
         return file
     else:
         return None
 
 def _extract_phonon_data(data_object):
-    #TODO
     """ DOC
+    Search a given data object (dict or hdf5) for phonon data.
+
+    Parameters
+    ----------
+    data_object : dict, hdf5 (, other key:value addressable object)
+        The Phonopy data object which contains phonon data.
+
+    Returns
+    -------
+    data_dict : dict
+        A dict with the following keys: 'n_ions', 'n_branches', 'n_qpts'
+        'cell_vec', 'recip_vec', 'ion_r', 'ion_type', 'ion_mass', 'qpts',
+        'weights', 'freqs', 'eigenvecs'. The return data has original
+        Phonopy units.
     """
 
-    n_qpts = data_objec['nqpoint']
-    n_ions = data_objec['natom']
-    cell_vec = data_objec['lattice']
-    recip_vec = data_objec['reciprocal_lattice']
+    n_qpts = data_object['nqpoint']
+    n_ions = data_object['natom']
+    cell_vec = data_object['lattice']
+    recip_vec = data_object['reciprocal_lattice']
     qpts = [phon['q-position'] for phon in data_object['phonon']]
 
     weights = [phon['weight'] for phon in data_object['phonon']]
@@ -89,7 +93,6 @@ def _extract_phonon_data(data_object):
     ion_r = [ion['coordinates'] for ion in data_object['points']]
     ion_mass = [ion['mass'] for ion in data_object['points']]
 
-    #TODO supply units
     data_dict = {}
     data_dict['n_qpts'] = n_qpts
     data_dict['n_spins'] = NotImplemented #n_spins, electronic
@@ -108,7 +111,7 @@ def _extract_phonon_data(data_object):
 
     return data_dict
 
-def _read_phonon_data(path='.', seedname='mesh'):
+def _read_phonon_data(path='.', phononseed='mesh', ppyamlseed='phonopy.yaml'):
     """
     Reads data from a mesh.yaml/hdf5 file and returns it in a dictionary
 
@@ -125,50 +128,65 @@ def _read_phonon_data(path='.', seedname='mesh'):
         A dict with the following keys: 'n_ions', 'n_branches', 'n_qpts'
         'cell_vec', 'recip_vec', 'ion_r', 'ion_type', 'ion_mass', 'qpts',
         'weights', 'freqs', 'eigenvecs', 'split_i', 'split_freqs',
-        'split_eigenvecs'
+        'split_eigenvecs'. The return data has Euphonic default units.
     """
 
-    file = _match_seed(path='.', seed=seed)
+    phonon_file = _match_seed(path=path, seed=phononseed)
+    ppyaml_file = _match_ppyaml(path=path, seed=ppyamlseed)
 
     try:
-        with h5py.File(file, 'r') as hdf5o:
-            return _extract_phonon_data(hdf5o)
+        with h5py.File(phonon_file, 'r') as hdf5o:
+            phonon_data = _extract_phonon_data(hdf5o)
     except:
         pass
 
     try:
-        with open(file, 'r') as ymlo:
+        with open(phonon_file, 'r') as ymlo:
             yaml_data = yaml.safe_load(ymlo)
-            return _extract_phonon_data(yaml_data)
+            phonon_data = _extract_phonon_data(yaml_data)
     except:
         pass
 
-    data_dict = {} #TODO unpack returned values, add units
-    data_dict['n_ions'] = None #n_ions
-    data_dict['n_branches'] = None #n_branches
-    data_dict['n_qpts'] = None #n_qpts
-    data_dict['cell_vec'] = None #cell_vec*ureg.angstrom
-    data_dict['recip_vec'] = None #reciprocal_lattice(cell_vec)/ureg.angstrom
-    data_dict['ion_r'] = None #ion_r
-    data_dict['ion_type'] = None #ion_type
-    data_dict['ion_mass'] = None #ion_mass*ureg.amu
-    data_dict['qpts'] = None #qpts
-    data_dict['weights'] = None #weights
-    data_dict['freqs'] = None #(freqs*(1/ureg.cm)).to('meV', 'spectroscopy')
-    data_dict['eigenvecs'] = None #eigenvecs
-    data_dict['split_i'] = None #split_i
-    data_dict['split_freqs'] = None #(split_freqs*(1/ureg.cm)).to('meV', 'spectroscopy')
-    data_dict['split_eigenvecs'] = None #split_eigenvecs
+    # Extract units
+    try:
+        with open(ppyaml_file, 'r') as ppo:
+            yaml_data = yaml.safe_load(ppo)
+            units = _extract_physical_units(yaml_data)
+    except:
+        pass
+
+    # Handle units
+    ulength = ureg(units['length'].lower()).to('bohr')
+    #urlength = 1/ureg(units['length'].lower()).to('1/bohr')
+    umass = ureg(units['atomic_mass'].lower()).to('e_mass')
+    ufreq = units['frequency_unit_conversion_factor']*ureg('THz')\
+                                .to('E_h', 'spectroscopy').magnitude
+
+    data_dict = {}
+    data_dict['n_ions'] = phonon_data['n_ions']
+    data_dict['n_branches'] = phonon_data['n_branches']
+    data_dict['n_qpts'] = phonon_data['n_qpts']
+    data_dict['cell_vec'] = (phonon_data['cell_vec']*ulength).magnitude
+    data_dict['recip_vec'] = (phonon_data['recip_vec']/ulength).magnitude
+    data_dict['ion_r'] = phonon_data['ion_r']
+    data_dict['ion_type'] = phonon_data['ion_type']
+    data_dict['ion_mass'] = (phonon_data['ion_mass']*umass).magnitude
+    data_dict['qpts'] = phonon_data['qpts']
+    data_dict['weights'] = phonon_data['weights']
+    data_dict['freqs'] = (phonon_data['freqs']*ufreq).magnitude
+    data_dict['eigenvecs'] = phonon_data['eigenvecs'] #TODO Scaling
+    data_dict['split_i'] = NotImplemented
+    data_dict['split_freqs'] = NotImplemented
+    data_dict['split_eigenvecs'] = NotImplemented
 
     return data_dict
 
 
 
 def _match_ppyaml(path='.', seed='phonopy.yaml'):
-    # TODO
     """ DOC
-    Search for the output summary generated by phonopy at the end of the
-    workflow when using the cli.
+    Search for the output summary file generated by Phonopy at the
+    end of the workflow when using the cli.
     """
 
     file = os.path.join(path, seed)
@@ -186,10 +204,22 @@ def _match_ppyaml(path='.', seed='phonopy.yaml'):
         return None
 
 def _match_disp(path='.', seed='phonopy_disp.yaml'):
-    # TODO
     """ DOC
-    Search for the atom displacements summary generated by phonopy at
+    Search for the atom displacements summary generated by Phonopy at
     the start of the workflow when using the cli.
+
+    Parameters
+    ----------
+    path : str
+        Path to directory containing target displacements file.
+    seed : str
+        Filename of target displacements file, default : phonopy_disp.yaml.
+
+    Returns
+    ----------
+    file : str
+        Filename of existing file matching specification of displacements
+        file. Returns None if no file is found.
     """
 
     file = os.path.join(path, seed)
@@ -210,10 +240,24 @@ def _match_disp(path='.', seed='phonopy_disp.yaml'):
         return None
 
 def _match_fc(path='.', seed='FORCE_CONSTANTS'):
-    # TODO
     """ DOC
-    Name 'FORCE_CONSTANTS' is default in Phonopy, but in some cases
-    renamed to e.g. FORCE_CONSTANTS_NaCl to distinguish between them.
+    Search for the force constants file generated by Phonopy during
+    the pre-process. The --write-fc flag or equivalent must be set
+    in Phonopy for the file to be made available.
+
+    Parameters
+    ----------
+    path : str
+        Path to directory containing target force constants file.
+    seed : str
+        Filename of target force constants file,
+        default : FORCE_CONSTANTS.
+
+    Returns
+    ----------
+    file : str
+        Filename of existing file matching specification of force
+        constants file. Returns None if no file is found.
     """
 
     #TODO match glob for FORCE_CONSTANTS*
@@ -247,10 +291,22 @@ def _match_fc(path='.', seed='FORCE_CONSTANTS'):
         return None
 
 def _match_born(path='.', seed='BORN'):
-    # TODO
     """ DOC
-    Name BORN is default in Phonopy, but in some cases they're
-    renamed to e.g. BORN_NaCl to distinguish between them.
+    Search for the born file created by the user during the
+    pre-process when using non-analytical term correction (nac).
+
+    Parameters
+    ----------
+    path : str
+        Path to directory containing target born file.
+    seed : str
+        File basename of target born file, default : BORN.
+
+    Returns
+    ----------
+    file : str
+        Filename of existing file matching specification of born
+        file. Returns None if no file is found.
     """
 
     born_file = os.path.join(path, seed)
@@ -333,7 +389,7 @@ def _extract_born(born_object):
     charge from BORN file
     """
 
-    # ignore blank lines #TODO split('') or split(' ')
+    # ignore blank lines 
     k_lines = [narr.split() for narr in
                 [line for line in born_object.read().split(' ') if line]]
 
@@ -384,14 +440,47 @@ def _get_fc_ppyaml(ppyaml):
         if fc_format == 'compact':
             fc = np.array(fc_entry['elements'])
         elif fc_format == 'full': # Truncate to compact size.
-            #TODO check that 'full' is the label given
             fc = np.array(fc_entry['elements'])[:, 0:fc_dims[0]]
         return _reshape_fc(fc, inds, fc_dims)
 
+
+def _extract_physical_units(ppyaml):
+    #TODO
+    """ DOC
+    Retrieve physical units from phonopy summary file object.
+    """
+
+    if 'physical_unit' in ppyaml.keys():
+        units = ppyaml['physical_unit']
+
+    if 'phonopy' in ppyaml.keys():
+        if 'frequency_unit_conversion_factor' in ppyaml['phonopy']:
+            units['frequency_unit_conversion_factor'] =\
+                ppyaml['phonopy']['frequency_unit_conversion_factor']
+
+        if 'nac_unit_conversion_factor' in ppyaml['phonopy']:
+            units['nac_unit_conversion_factor'] =\
+                ppyaml['phonopy']['nac_unit_conversion_factor']
+
+    return units
+
+
+
 def _extract_ppyaml(ppyaml):
-    # TODO
-    """DOC
-    Read phonopy.yaml.
+    """ DOC
+    Read phonopy.yaml for summary data produced during the Phonopy
+    post-process.
+
+    Parameters
+    ----------
+    ppyaml : dict, hdf5
+        The Phonopy data object which contains phonon data.
+
+    Returns
+    ----------
+    ppyaml_dict : dict
+        A dict containing: sc_matrix, n_cells_in_sc, n_ions, cell_vec,
+        ion_r, ion_mass, ion_type, n_ions, cell_origins.
     """
     n = lambda: None
     n.sc_matrix = np.array(ppyaml['supercell_matrix'])
@@ -435,6 +524,8 @@ def _extract_ppyaml(ppyaml):
     n.cell_origins = cell_origins
     n.sc_ion_r_ucell = sc_ion_r_ucell
 
+    n.units = ppyaml['physical_unit']
+
     ppyaml_dict = {}
     ppyaml_dict['n_ions'] = n.n_ions
     ppyaml_dict['cell_vec'] = n.cell_vec
@@ -447,6 +538,8 @@ def _extract_ppyaml(ppyaml):
     ppyaml_dict['cell_origins'] = n.cell_origins
     ppyaml_dict['sc_matrix'] = n.sc_matrix
     ppyaml_dict['n_cells_in_sc'] = n.n_cells_in_sc
+
+    ppyaml_dict['units'] = n.units
 
     if 'force_constants' in ppyaml.keys():
         ppyaml_dict['force_constants'] = _get_fc_ppyaml(ppyaml)
@@ -483,7 +576,7 @@ def _extract_qpoints_data(data_object):
     n_branches = freqs.shape[1]
 
     data_dict = {}
-    data_dict['dynamical_matrix'] = dyn_mat_data #TODO remove dynamical matrix if not necessary
+    #data_dict['dynamical_matrix'] = dyn_mat_data 
     data_dict['n_ions'] = n_ions
     data_dict['n_qpts'] = n_qpts
     data_dict['n_branches'] = n_branches
@@ -532,6 +625,7 @@ def _reshape_fc(fc, inds, dims):
 def _read_interpolation_data(path='.', qpointsseed='qpoints',
                             dispseed='phonopy_disp.yaml', ppyamlseed='phonopy.yaml',
                                 bornseed='BORN', fcseed='FORCE_CONSTANTS'):
+    #TODO
     """
     Reads data from a qpoints.yaml file and returns it in a dictionary
 
@@ -624,24 +718,49 @@ def _read_interpolation_data(path='.', qpointsseed='qpoints',
         except:
             pass
 
-    # Unit conversion
-    #TODO see how Phonopy handles units: same as calculator, or standard internal unit?
+
+    # Extract units
+    try:
+        with open(ppyaml_file, 'r') as ppo:
+            yaml_data = yaml.safe_load(ppo)
+            units = _extract_physical_units(yaml_data)
+    except:
+        pass
+
+    if 'frequency_unit_conversion_factor' not in units:
+        # nowhere to check, warn 
+        pass
+
+    if 'nac_unit_conversion_factor' not in units:
+        # check BORN
+        pass
+
+    # TODO Unit conversion factors
+    ulength = ureg(units['length'].lower()).to('bohr').magnitude
+    umass = ureg(units['atomic_mass'].lower()).to('e_mass').magnitude
+    ufreq = (ureg('THz')*units['frequency_unit_conversion_factor'])\
+                .to('E_h', 'spectroscopy').magnitude
+
+    # Check force constants string so that it matches format required for ureg
+    ufc_str = units['force_constants'].replace('Angstrom', 'angstrom').magnitude
+    ufc = ureg(ufc_str).to('hartree/bohr^2').magnitude
+
     data_dict = {}
     data_dict['n_ions'] = qpoint_dict['n_ions'] #n_ions
-    data_dict['n_branches'] = qpoint_dict['n_branches'] #3*n_ions #TODO
-    data_dict['cell_vec'] = ppyaml_dict['cell_vec'] #(cell_vec*ureg.bohr).to('angstrom')
-    data_dict['recip_vec'] = qpoint_dict['recip_vec'] #((reciprocal_lattice(cell_vec)/ureg.bohr).to('1/angstrom'))
+    data_dict['n_branches'] = qpoint_dict['n_branches'] #3*n_ions 
+    data_dict['cell_vec'] = ppyaml_dict['cell_vec']*ulength #(cell_vec*ureg.bohr).to('angstrom')
+    data_dict['recip_vec'] = qpoint_dict['recip_vec']/ulength #((reciprocal_lattice(cell_vec)/ureg.bohr).to('1/angstrom'))
 
-    data_dict['ion_r'] = ppyaml_dict['ion_r'] #ion_r - np.floor(ion_r)  # Normalise ion coordinates
+    data_dict['ion_r'] = ppyaml_dict['ion_r'].ulength #ion_r - np.floor(ion_r)  # Normalise ion coordinates
     data_dict['ion_type'] = ppyaml_dict['ion_type'] #ion_type
-    data_dict['ion_mass'] = ppyaml_dict['ion_mass'] #(ion_mass*ureg.e_mass).to('amu')
+    data_dict['ion_mass'] = ppyaml_dict['ion_mass']*umass #(ion_mass*ureg.e_mass).to('amu')
 
     # Set entries relating to 'FORCE_CONSTANTS' block
     try:
-        data_dict['force_constants'] = force_constants #(force_constants*ureg.hartree/(ureg.bohr**2))
+        data_dict['force_constants'] = force_constants*ufc #(force_constants*ureg.hartree/(ureg.bohr**2))
         data_dict['sc_matrix'] = ppyaml_dict['sc_matrix'] #sc_matrix
-        data_dict['n_cells_in_sc'] = np.int(np.round(np.linalg.det(np.array(ppyaml_dict['sc_matrix'])))) 
-        data_dict['cell_origins'] = ppyaml_dict['cell_origins'] #cell_origins
+        data_dict['n_cells_in_sc'] = np.int(np.round(np.linalg.det(np.array(ppyaml_dict['sc_matrix']))))
+        data_dict['cell_origins'] = ppyaml_dict['cell_origins']*ulength #cell_origins
     except NameError:
         raise Exception((
             'Force constants matrix could not be found in {:s} or {:s}. '
@@ -650,8 +769,13 @@ def _read_interpolation_data(path='.', qpointsseed='qpoints',
 
     # Set entries relating to dipoles
     try:
-        data_dict['born'] = born #born*ureg.e
-        data_dict['dielectric'] = dielectric #dielectric
+        if 'nac_unit_conversion_factor' in units:
+            unac = ureg[units['nac_unit_conversion_factor']].magnitude
+        else:
+            unac = 1
+
+        data_dict['born'] = born*unac #born*ureg.e
+        data_dict['dielectric'] = dielectric*unac #dielectric
     except UnboundLocalError:
         print('No bec or dielectric') #TODO remove when fixed soft fail error 
         pass
