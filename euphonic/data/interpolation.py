@@ -107,6 +107,11 @@ class InterpolationData(PhononData):
             Which model has been used. e.g. if seedname = 'quartz' and
             model='CASTEP', the 'quartz.castep_bin' file will be read
         """
+        if type(data) is str:
+            # Feature removed error ('post deprecation' error)
+            raise Exception('The old interface is now replaced by',
+                            'BandsData.read_castep(seedname).',
+                            '(Please see documentation for more information.)')
 
         self._set_data(data)
 
