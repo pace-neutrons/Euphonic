@@ -132,7 +132,7 @@ void calculate_dipole_correction(const double *qpt, const int n_ions,
     for (i = 0; i < n_ions; i++) {
         qdotr = 0;
         for (a = 0; a < 3; a++) {
-            qdotr += qpt[a]*ion_r[3*i + a];
+            qdotr += qpt_norm[a]*ion_r[3*i + a];
         }
         q_phases[2*i] = cos(2*PI*qdotr);
         q_phases[2*i + 1] = -sin(2*PI*qdotr);
