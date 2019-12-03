@@ -62,16 +62,17 @@ void calculate_dipole_correction(const double *qpt, const int n_ions,
     const double *cell_vec, const double *recip, const double *ion_r,
     const double *born, const double *dielectric, const double *H_ab,
     const double *cells, const int n_dcells, const double *gvec_phases,
-    const double *gvecs_cart, int n_gvecs, const double *dipole_q0,
+    const double *gvecs_cart, const int n_gvecs, const double *dipole_q0,
     const double eta, double *corr) {
 
-    double qpt_norm[3];
+    int size = 2*9*n_ions*n_ions;
     double q_cart[3] = {0, 0, 0};
+    double qpt_norm[3];
     double qdotr;
     double phase[2];
     const double *H_ab_ptr;
     double det_e;
-    int size = 2*9*n_ions*n_ions;
+    int n_gvecs_local;
     int i, j, a, b, aa, bb, nc, ng;
 
     // Normalise q-point
@@ -80,10 +81,11 @@ void calculate_dipole_correction(const double *qpt, const int n_ions,
     }
 
     // Don't include G=0 vector if q=0
+    n_gvecs_local = n_gvecs;
     if (is_gamma(qpt_norm)) {
         gvec_phases += 18;
         gvecs_cart += 3;
-        n_gvecs--;
+        n_gvecs_local--;
     }
 
     // Calculate realspace term
@@ -146,7 +148,7 @@ void calculate_dipole_correction(const double *qpt, const int n_ions,
     double gq_phase_ri[2];
     double gq_phase_rj[2];
     double gq_phase_rij[2];
-    for (ng = 0; ng < n_gvecs; ng++) {
+    for (ng = 0; ng < n_gvecs_local; ng++) {
 
         for (a = 0; a < 3; a++) {
             kvec[a] = gvecs_cart[3*ng + a] + q_cart[a];

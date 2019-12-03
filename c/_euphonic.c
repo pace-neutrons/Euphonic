@@ -77,7 +77,6 @@ static PyObject *calculate_phonons(PyObject *self, PyObject *args) {
     double *gvec_phases;
     double *gvecs_cart;
     double *dipole_q0;
-    double *dipole_corr;
 
     // Other vars
     int n_cells;
@@ -232,11 +231,11 @@ static PyObject *calculate_phonons(PyObject *self, PyObject *args) {
         n_dipole_cells = PyArray_DIMS(py_dipole_cells)[0];
         n_gvecs = PyArray_DIMS(py_gvec_phases)[0];
     }
-    printf("n dipole cells: %i\n", n_dipole_cells);
-    printf("n gvecs: %i\n", n_gvecs);
+
     omp_set_num_threads(nthreads);
     #pragma omp parallel
     {
+        double *dipole_corr;
         if (dipole) {
             dipole_corr = (double*) malloc(dmat_elems*sizeof(double));
         }
