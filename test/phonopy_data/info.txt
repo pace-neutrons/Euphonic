@@ -1,0 +1,1 @@
+- POSCAR is the VASP structure file.
