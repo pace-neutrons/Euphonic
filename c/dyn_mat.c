@@ -73,7 +73,7 @@ void calculate_dipole_correction(const double *qpt, const int n_ions,
     const double *H_ab_ptr;
     double det_e;
     int n_gvecs_local;
-    int i, j, a, b, aa, bb, nc, ng;
+    int i, j, a, b, aa, bb, nc, ng, idx;
 
     // Normalise q-point
     for (a = 0; a < 3; a++) {
@@ -91,7 +91,6 @@ void calculate_dipole_correction(const double *qpt, const int n_ions,
     // Calculate realspace term
     memset(corr, 0, 2*9*n_ions*n_ions*sizeof(double));
     H_ab_ptr = H_ab;
-    int idx;
     for (nc = 0; nc < n_dcells; nc++) {
         qdotr = 0;
         for (a = 0; a < 3; a++) {
@@ -227,23 +226,53 @@ void calculate_dipole_correction(const double *qpt, const int n_ions,
 }
 
 void calculate_gamma_correction(const double q_dir[3], const int n_ions,
+    const double *cell_vec, const double *born, const double *dielectric,
     double *corr) {
-    int size = 2*9*n_ions*n_ions;
-    int i;
 
-    for (i = 0; i < size; i++) {
-        corr[i] = 0;
+    int i, j, a, b, idx;
+    double fac, denominator;
+    double *q_born_sum;
+
+    denominator = 0;
+    for (a = 0; a < 3; a++) {
+        for (b = 0; b < 3; b++) {
+           denominator += dielectric[3*a + b]*q_dir[a]*q_dir[b];
+        }
     }
+    fac = (4*PI)/(cell_volume(cell_vec)*denominator);
+
+    q_born_sum = (double*)calloc(3*n_ions, sizeof(double));
+    memset(q_born_sum, 0, 3*n_ions*sizeof(double));
+    for (i = 0; i < n_ions; i++) {
+        for (a = 0; a < 3; a++) {
+            for (b = 0; b < 3; b++) {
+                q_born_sum[3*i + a] += born[9*i + 3*a + b]*q_dir[b];
+            }
+        }
+    }
+
+    for (i = 0; i < n_ions; i++) {
+        for (j = i; j < n_ions; j++) {
+            for (a = 0; a < 3; a++) {
+                for (b = 0; b < 3; b++) {
+                    idx = 2*(3*(3*i + a)*n_ions + 3*j + b);
+                    corr[idx] = fac*q_born_sum[3*i + a]*q_born_sum[3*j + b];
+                }
+            }
+        }
+    }
+    free((void*)q_born_sum);
 }
 
 void mass_weight_dyn_mat(const double* dyn_mat_weighting, const int n_ions,
     double* dyn_mat) {
-        int i, j;
-        for (i = 0; i < 9*n_ions*n_ions; i++) {
-            for (j = 0; j < 2; j++) {
-                dyn_mat[2*i + j] *= dyn_mat_weighting[i];
-            }
+
+    int i, j;
+    for (i = 0; i < 9*n_ions*n_ions; i++) {
+        for (j = 0; j < 2; j++) {
+            dyn_mat[2*i + j] *= dyn_mat_weighting[i];
         }
+    }
 }
 
 int diagonalise_dyn_mat_zheevd(const int n_ions, const double qpt[3],

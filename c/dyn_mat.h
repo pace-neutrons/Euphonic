@@ -14,6 +14,7 @@ void calculate_dipole_correction(const double *qpt, const int n_ions,
     const double eta, double *corr);
 
 void calculate_gamma_correction(const double q_dir[3], const int n_ions,
+    const double *cell_vec, const double *born, const double *dielectric,
     double *corr);
 
 void mass_weight_dyn_mat(const double *dyn_mat_weighting, const int n_ions,

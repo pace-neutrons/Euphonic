@@ -328,7 +328,8 @@ static PyObject *calculate_phonons(PyObject *self, PyObject *args) {
                    split_evec = (split_evecs + splitpos*dmat_elems);
                    split_eval = (split_evals + splitpos*3*n_ions);
                    copy_array(dmat_elems, dmat, split_evec);
-                   calculate_gamma_correction(q_dir, n_ions, corr);
+                   calculate_gamma_correction(q_dir, n_ions, cell_vec, born,
+                       dielectric, corr);
                    add_arrays(dmat_elems, corr, split_evec);
                    mass_weight_dyn_mat(dmat_weighting, n_ions, split_evec);
                    diagonalise_dyn_mat_zheevd(n_ions, qpt, split_evec, split_eval, zheevd);
@@ -338,7 +339,8 @@ static PyObject *calculate_phonons(PyObject *self, PyObject *args) {
                        q_dir[i] = -rqpts[3*qpts_i[qpos - 1] + i];
                    }
                }
-               calculate_gamma_correction(q_dir, n_ions, corr);
+               calculate_gamma_correction(q_dir, n_ions, cell_vec, born,
+                   dielectric, corr);
                add_arrays(dmat_elems, corr, dmat);
             }
 

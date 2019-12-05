@@ -401,47 +401,47 @@ class TestStructureFactorInterpolationDataQuartzSerial(unittest.TestCase):
                             expected_sf_sum[gamma_qpts, 3:],
                             rtol=8e-6, atol=3e-14)
 
-#class TestStructureFactorInterpolationDataQuartzSerialC(
-#    TestStructureFactorInterpolationDataQuartzSerial):
-#
-#    def setUp(self):
-#        # Need to separately test SF calculation with interpolated phonon data
-#        # to test eigenvector calculations
-#        self.seedname = 'quartz'
-#        self.interpolation_path = os.path.join('data', 'interpolation', 'quartz')
-#        self.sf_path = os.path.join('data', 'structure_factor', 'quartz')
-#        self.scattering_lengths = {'Si': 4.1491, 'O': 5.803}
-#        qpts = np.loadtxt(os.path.join(self.sf_path, 'qpts.txt'))
-#
-#        self.data = InterpolationData.from_castep(
-#            self.seedname, path=self.interpolation_path)
-#        self.data.calculate_fine_phonons(qpts, asr='reciprocal', use_c=True)
-#
-#        # InterpolationData object for DW grid
-#        self.dw_data = InterpolationData.from_castep(
-#            self.seedname, path=self.interpolation_path)
-#        self.dw_data.calculate_fine_phonons(
-#            np.loadtxt('test/data/qgrid_444.txt'), asr='reciprocal')
+class TestStructureFactorInterpolationDataQuartzSerialC(
+    TestStructureFactorInterpolationDataQuartzSerial):
 
-#class TestStructureFactorInterpolationDataQuartzParallelC(
-#    TestStructureFactorInterpolationDataQuartzSerial):
-#
-#    def setUp(self):
-#        # Need to separately test SF calculation with interpolated phonon data
-#        # to test eigenvector calculations
-#        self.seedname = 'quartz'
-#        self.interpolation_path = os.path.join('data', 'interpolation', 'quartz')
-#        self.sf_path = os.path.join('data', 'structure_factor', 'quartz')
-#        self.scattering_lengths = {'Si': 4.1491, 'O': 5.803}
-#        qpts = np.loadtxt(os.path.join(self.sf_path, 'qpts.txt'))
-#
-#        self.data = InterpolationData.from_castep(
-#            self.seedname, path=self.interpolation_path)
-#        self.data.calculate_fine_phonons(qpts, asr='reciprocal', use_c=True,
-#                                         n_threads=2)
-#
-#        # InterpolationData object for DW grid
-#        self.dw_data = InterpolationData.from_castep(
-#            self.seedname, path=self.interpolation_path)
-#        self.dw_data.calculate_fine_phonons(
-#            np.loadtxt('test/data/qgrid_444.txt'), asr='reciprocal')
+    def setUp(self):
+        # Need to separately test SF calculation with interpolated phonon data
+        # to test eigenvector calculations
+        self.seedname = 'quartz'
+        self.interpolation_path = os.path.join('data', 'interpolation', 'quartz')
+        self.sf_path = os.path.join('data', 'structure_factor', 'quartz')
+        self.scattering_lengths = {'Si': 4.1491, 'O': 5.803}
+        qpts = np.loadtxt(os.path.join(self.sf_path, 'qpts.txt'))
+
+        self.data = InterpolationData.from_castep(
+            self.seedname, path=self.interpolation_path)
+        self.data.calculate_fine_phonons(qpts, asr='reciprocal', use_c=True)
+
+        # InterpolationData object for DW grid
+        self.dw_data = InterpolationData.from_castep(
+            self.seedname, path=self.interpolation_path)
+        self.dw_data.calculate_fine_phonons(
+            np.loadtxt('test/data/qgrid_444.txt'), asr='reciprocal')
+
+class TestStructureFactorInterpolationDataQuartzParallelC(
+    TestStructureFactorInterpolationDataQuartzSerial):
+
+    def setUp(self):
+        # Need to separately test SF calculation with interpolated phonon data
+        # to test eigenvector calculations
+        self.seedname = 'quartz'
+        self.interpolation_path = os.path.join('data', 'interpolation', 'quartz')
+        self.sf_path = os.path.join('data', 'structure_factor', 'quartz')
+        self.scattering_lengths = {'Si': 4.1491, 'O': 5.803}
+        qpts = np.loadtxt(os.path.join(self.sf_path, 'qpts.txt'))
+
+        self.data = InterpolationData.from_castep(
+            self.seedname, path=self.interpolation_path)
+        self.data.calculate_fine_phonons(qpts, asr='reciprocal', use_c=True,
+                                         n_threads=2)
+
+        # InterpolationData object for DW grid
+        self.dw_data = InterpolationData.from_castep(
+            self.seedname, path=self.interpolation_path)
+        self.dw_data.calculate_fine_phonons(
+            np.loadtxt('test/data/qgrid_444.txt'), asr='reciprocal')
