@@ -226,6 +226,16 @@ void calculate_dipole_correction(const double *qpt, const int n_ions,
 
 }
 
+void calculate_gamma_correction(const double q_dir[3], const int n_ions,
+    double *corr) {
+    int size = 2*9*n_ions*n_ions;
+    int i;
+
+    for (i = 0; i < size; i++) {
+        corr[i] = 0;
+    }
+}
+
 void mass_weight_dyn_mat(const double* dyn_mat_weighting, const int n_ions,
     double* dyn_mat) {
         int i, j;
@@ -234,10 +244,10 @@ void mass_weight_dyn_mat(const double* dyn_mat_weighting, const int n_ions,
                 dyn_mat[2*i + j] *= dyn_mat_weighting[i];
             }
         }
-    }
+}
 
-int diagonalise_dyn_mat_zheevd(const int n_ions, double* dyn_mat,
-    double* eigenvalues,
+int diagonalise_dyn_mat_zheevd(const int n_ions, const double qpt[3],
+    double* dyn_mat, double* eigenvalues,
     void (*zheevdptr) (char*, char*, int*, double*, int*, double*, double*,
     int*, double*, int*, int*, int*, int*)) {
 
@@ -258,7 +268,8 @@ int diagonalise_dyn_mat_zheevd(const int n_ions, double* dyn_mat,
     (*zheevdptr)(&jobz, &uplo, &order, dyn_mat, &lda, eigenvalues, &lworkopt, &lwork,
         &lrworkopt, &lrwork, &liworkopt, &liwork, &info);
     if (info != 0) {
-        printf("Failed querying workspace\n");
+        printf("INFO: Zheevd failed querying workspace with info %i at "
+               "q-point %f %f %f\n", info, qpt[0], qpt[1], qpt[2]);
         return info;
     }
     lwork = (int)lworkopt;
@@ -276,6 +287,11 @@ int diagonalise_dyn_mat_zheevd(const int n_ions, double* dyn_mat,
     free((void*)work);
     free((void*)rwork);
     free((void*)iwork);
+
+    if (info != 0) {
+       printf("INFO: Zheevd diagonalisation failed with info %i at "
+              "q-point %f %f %f\n", info, qpt[0], qpt[1], qpt[2]);
+    }
 
     return info;
 }

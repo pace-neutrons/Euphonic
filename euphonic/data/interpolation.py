@@ -363,7 +363,7 @@ class InterpolationData(PhononData):
             from euphonic.util import (_ensure_contiguous_args,
                                        _ensure_contiguous_attrs)
             if splitting:
-                gamma_i = np.where(is_gamma(reduced_qpts))[0]
+                gamma_i = np.where(is_gamma(qpts))[0]
                 split_i = gamma_i[np.logical_and(gamma_i > 0,
                                                  gamma_i < len(qpts))]
                 split_freqs = np.zeros((len(split_i), 3*n_ions))
@@ -384,9 +384,9 @@ class InterpolationData(PhononData):
             reciprocal_asr = 1 if asr == 'reciprocal' else 0
             euphonic_c.calculate_phonons(
                 self, reduced_qpts, qpts_i, fc_img_weighted, sc_offsets,
-                recip_asr_correction, dyn_mat_weighting, reciprocal_asr,
-                dipole, rfreqs, reigenvecs, split_freqs, split_eigenvecs,
-                split_i, n_threads, scipy.__path__[0])
+                recip_asr_correction, dyn_mat_weighting, dipole,
+                reciprocal_asr, splitting, rfreqs, reigenvecs, split_freqs,
+                split_eigenvecs, split_i, n_threads, scipy.__path__[0])
         else:
             q_independent_args = (
                 reduced_qpts, qpts_i, fc_img_weighted, unique_sc_offsets,

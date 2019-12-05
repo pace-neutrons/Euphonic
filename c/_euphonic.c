@@ -36,8 +36,9 @@ static PyObject *calculate_phonons(PyObject *self, PyObject *args) {
     PyArrayObject *py_split_evals;
     PyArrayObject *py_split_evecs;
     PyArrayObject *py_split_i;
-    int reciprocal_asr;
     int dipole;
+    int reciprocal_asr;
+    int splitting;
     int nthreads = 1;
     const char *scipydir;
 
@@ -88,17 +89,19 @@ static PyObject *calculate_phonons(PyObject *self, PyObject *args) {
 
     // Other vars
     int n_cells;
-    int nqpts;
-    int q;
+    int n_rqpts;
+    int n_qpts;
+    int q, i, qpos, splitpos;
     int max_ims;
     int dmat_elems;
-    int info;
+    int n_splits;
     // Extra vars only required if dipole = True
     int n_dipole_cells;
     int n_gvecs;
+    double q_dir[3];
 
     // Parse inputs
-    if (!PyArg_ParseTuple(args, "OO!O!O!O!O!O!iiO!O!O!O!O!is",
+    if (!PyArg_ParseTuple(args, "OO!O!O!O!O!O!iiiO!O!O!O!O!is",
                           &py_idata,
                           &PyArray_Type, &py_rqpts,
                           &PyArray_Type, &py_qpts_i,
@@ -106,8 +109,9 @@ static PyObject *calculate_phonons(PyObject *self, PyObject *args) {
                           &PyArray_Type, &py_sc_ogs,
                           &PyArray_Type, &py_asr_correction,
                           &PyArray_Type, &py_dmat_weighting,
-                          &reciprocal_asr,
                           &dipole,
+                          &reciprocal_asr,
+                          &splitting,
                           &PyArray_Type, &py_evals,
                           &PyArray_Type, &py_dmats,
                           &PyArray_Type, &py_split_evals,
@@ -225,12 +229,14 @@ static PyObject *calculate_phonons(PyObject *self, PyObject *args) {
     dmats = (double*) PyArray_DATA(py_dmats);
     split_evals = (double*) PyArray_DATA(py_split_evals);
     split_evecs = (double*) PyArray_DATA(py_split_evecs);
-    split_i = (double*) PyArray_DATA(py_split_i);
+    split_i = (int*) PyArray_DATA(py_split_i);
+    n_splits = PyArray_DIMS(py_split_i)[0];
     n_sc_ims = (int*) PyArray_DATA(py_n_sc_ims);
     sc_im_idx = (int*) PyArray_DATA(py_sc_im_idx);
     cell_ogs = (int*) PyArray_DATA(py_cell_ogs);
     n_cells = PyArray_DIMS(py_fc)[0];
-    nqpts = PyArray_DIMS(py_rqpts)[0];
+    n_rqpts = PyArray_DIMS(py_rqpts)[0];
+    n_qpts = PyArray_DIMS(py_qpts_i)[0];
     max_ims = PyArray_DIMS(py_sc_im_idx)[3];
     dmat_elems = 2*9*n_ions*n_ions;
     if (dipole) {
@@ -251,12 +257,12 @@ static PyObject *calculate_phonons(PyObject *self, PyObject *args) {
     omp_set_num_threads(nthreads);
     #pragma omp parallel
     {
-        double *dipole_corr;
+        double *corr;
         if (dipole) {
-            dipole_corr = (double*) malloc(dmat_elems*sizeof(double));
+            corr = (double*) malloc(dmat_elems*sizeof(double));
         }
         #pragma omp for
-        for (q = 0; q < nqpts; q++) {
+        for (q = 0; q < n_rqpts; q++) {
             double *qpt, *dmat, *eval;
             qpt = (rqpts + 3*q);
             dmat = (dmats + q*dmat_elems);
@@ -269,21 +275,75 @@ static PyObject *calculate_phonons(PyObject *self, PyObject *args) {
                 calculate_dipole_correction(qpt, n_ions, cell_vec, recip_vec,
                     ion_r, born, dielectric, H_ab, dipole_cells,
                     n_dipole_cells, gvec_phases, gvecs_cart, n_gvecs,
-                    dipole_q0, eta, dipole_corr);
-                add_arrays(dmat_elems, dipole_corr, dmat);
+                    dipole_q0, eta, corr);
+                add_arrays(dmat_elems, corr, dmat);
             }
 
             if (reciprocal_asr) {
                 add_arrays(dmat_elems, asr_correction, dmat);
             }
 
-            mass_weight_dyn_mat(dmat_weighting, n_ions, dmat);
-
-            info = diagonalise_dyn_mat_zheevd(n_ions, dmat, eval, zheevd);
-            if (info != 0) {
-                printf("INFO: Zheevd diagonalisation failed with info %i at "
-                       "q-point %f %f %f\n", info, qpt[0], qpt[1], qpt[2]);
+            // Calculate non-analytical correction for LO-TO splitting
+            if (splitting > 0 && is_gamma(qpt)) {
+               // If first q-point
+               if (qpts_i[0] == q) {
+                   for (i = 0; i < 3; i++) {
+                       q_dir[i] = rqpts[3*qpts_i[1] + i];
+                   }
+               // If last q-point
+               } else if (qpts_i[n_qpts - 1] == q) {
+                   for (i = 0; i < 3; i++) {
+                       q_dir[i] = rqpts[3*qpts_i[n_qpts - 2] + i];
+                   }
+               // If q-point isn't first or last, will split in 2 directions,
+               // so calculate split_freqs, split_evecs
+               } else {
+                   // Find position in non-reduced qpts array to determine
+                   // direction
+                   qpos = -1;
+                   for (i = 0; i < n_qpts; i++) {
+                       if (qpts_i[i] == q) {
+                           qpos = i;
+                           break;
+                       }
+                   }
+                   // Find qpos location in split_i
+                   splitpos = -1;
+                   for (i = 0; i < n_splits; i++) {
+                       if (split_i[i] == qpos) {
+                           splitpos = i;
+                           break;
+                       }
+                   }
+                   if (splitpos == -1) {
+                       printf("Failed to find location of reduced q-point %i "
+                              "in split_i, not calculating eigenvals/vecs "
+                              "for this gamma point\n", q);
+                       continue;
+                   }
+                   for (i = 0; i < 3; i++) {
+                       q_dir[i] = rqpts[3*qpts_i[qpos + 1] + i];
+                   }
+                   double *split_evec, *split_eval;
+                   split_evec = (split_evecs + splitpos*dmat_elems);
+                   split_eval = (split_evals + splitpos*3*n_ions);
+                   copy_array(dmat_elems, dmat, split_evec);
+                   calculate_gamma_correction(q_dir, n_ions, corr);
+                   add_arrays(dmat_elems, corr, split_evec);
+                   mass_weight_dyn_mat(dmat_weighting, n_ions, split_evec);
+                   diagonalise_dyn_mat_zheevd(n_ions, qpt, split_evec, split_eval, zheevd);
+                   evals_to_freqs(n_ions, split_eval);
+                   // Finally calculate other q-direction
+                   for (i = 0; i < 3; i++) {
+                       q_dir[i] = -rqpts[3*qpts_i[qpos - 1] + i];
+                   }
+               }
+               calculate_gamma_correction(q_dir, n_ions, corr);
+               add_arrays(dmat_elems, corr, dmat);
             }
+
+            mass_weight_dyn_mat(dmat_weighting, n_ions, dmat);
+            diagonalise_dyn_mat_zheevd(n_ions, qpt, dmat, eval, zheevd);
             evals_to_freqs(n_ions, eval);
         }
     }

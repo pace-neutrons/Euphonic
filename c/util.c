@@ -14,6 +14,13 @@ void multiply_array(const int size, const double scalar, double *arr) {
     }
 }
 
+void copy_array(const int size, const double *arr, double *copy) {
+    int i;
+    for (i = 0; i < size; i++) {
+        copy[i] = arr[i];
+    }
+}
+
 double det_array(const double arr[9]) {
    double det;
    det = arr[0]*(arr[4]*arr[8] - arr[7]*arr[5]) +

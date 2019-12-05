@@ -13,11 +13,14 @@ void calculate_dipole_correction(const double *qpt, const int n_ions,
     const double *gvecs_cart, const int n_gvecs, const double *dipole_q0,
     const double eta, double *corr);
 
-void mass_weight_dyn_mat(const double* dyn_mat_weighting, const int n_ions,
-    double* dyn_mat);
+void calculate_gamma_correction(const double q_dir[3], const int n_ions,
+    double *corr);
 
-int diagonalise_dyn_mat_zheevd(const int n_ions, double* dyn_mat,
-    double* eigenvalues,
+void mass_weight_dyn_mat(const double *dyn_mat_weighting, const int n_ions,
+    double *dyn_mat);
+
+int diagonalise_dyn_mat_zheevd(const int n_ions, const double qpt[3],
+    double *dyn_mat, double *eigenvalues,
     void (*zheevdptr) (char*, char*, int*, double*, int*, double*, double*,
     int*, double*, int*, int*, int*, int*));
 
