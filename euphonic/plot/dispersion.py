@@ -220,7 +220,7 @@ def plot_sqw_map(data, vmin=None, vmax=None, ratio=None, ewidth=0, qwidth=0,
     # Apply broadening
     if ewidth or qwidth:
         qbin_width = np.linalg.norm(
-            np.mean(np.diff(data.qpts, axis=0), axis=0))
+            np.mean(np.absolute(np.diff(data.qpts, axis=0)), axis=0))
         qbins = np.linspace(
             0, qbin_width*data.n_qpts + qbin_width, data.n_qpts + 1)
         # If no width has been set, make widths small enough to have
