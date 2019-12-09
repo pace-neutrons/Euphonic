@@ -122,8 +122,19 @@ class PhononData(Data):
         path : str
             Path to dir containing the file(s), if in another directory
         """
+<<<<<<< HEAD
         data = _castep._read_phonon_data(seedname, path)
         return self(data)
+=======
+        if model.lower() == 'castep':
+            data = _castep._read_phonon_data(seedname, path)
+        elif model.lower() == 'phonopy':
+            data = _phonopy._read_phonon_data(path)
+        else:
+            raise ValueError(
+                "{:s} is not a valid model, please use one of {{'CASTEP'}}"
+                .format(model))
+>>>>>>> 26dd06c... Temporary fix find default Phonopy files in path.
 
     def _set_data(self, data):
         self.n_ions = data['n_ions']
