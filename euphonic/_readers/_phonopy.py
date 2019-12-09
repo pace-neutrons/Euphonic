@@ -47,6 +47,15 @@ def _match_seed(path='.', seed='*'):
     else:
         return None
 
+def _convert_weights(weights):
+
+    weights = np.array(weights)
+    total_weight = weights.sum()
+
+    norm_weights = weights / total_weight
+
+    return list(norm_weights)
+
 def _extract_phonon_data(data_object):
     """ DOC
     Search a given data object (dict or hdf5) for phonon data.
@@ -71,7 +80,7 @@ def _extract_phonon_data(data_object):
     recip_vec = data_object['reciprocal_lattice']
     qpts = [phon['q-position'] for phon in data_object['phonon']]
 
-    weights = [phon['weight'] for phon in data_object['phonon']]
+    weights = _convert_weights([phon['weight'] for phon in data_object['phonon']])
 
     phonon_data = [phon for phon in data_object['phonon']]
     bands_data_each_qpt = [bands_data['band']
@@ -108,6 +117,7 @@ def _extract_phonon_data(data_object):
     data_dict['n_ions'] = n_ions
     data_dict['ion_r'] = ion_r
     data_dict['ion_type'] = ion_type
+    data_dict['ion_mass'] = ion_mass
 
     return data_dict
 
@@ -160,7 +170,7 @@ def _read_phonon_data(path='.', phononseed='mesh', ppyamlseed='phonopy.yaml'):
     #urlength = 1/ureg(units['length'].lower()).to('1/bohr')
     umass = ureg(units['atomic_mass'].lower()).to('e_mass')
     ufreq = units['frequency_unit_conversion_factor']*ureg('THz')\
-                                .to('E_h', 'spectroscopy').magnitude
+                                .to('E_h', 'spectroscopy')
 
     data_dict = {}
     data_dict['n_ions'] = phonon_data['n_ions']
