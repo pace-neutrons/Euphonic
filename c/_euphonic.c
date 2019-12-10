@@ -12,9 +12,6 @@
 
 #ifdef _WIN32
 #include <Windows.h>
-typedef void (__cdecl *LibFunc)(char* jobz, char* uplo, int* n, double* a, int* lda,
-    double* w, double* work, int* lwork, double* rwork, int* lrwork,
-    int* iwork, int* liwork, int* info);
 #else
 #include <dlfcn.h>
 #include <dirent.h>
@@ -151,11 +148,14 @@ static PyObject *calculate_phonons(PyObject *self, PyObject *args) {
 
     // Load LAPACK funcs
 #ifdef _WIN32
+    typedef void (__cdecl *LibFunc)(char* jobz, char* uplo, int* n, double* a, int* lda,
+        double* w, double* work, int* lwork, double* rwork, int* lrwork,
+        int* iwork, int* liwork, int* info);
     LibFunc zheevd;
     HMODULE lib;
     WIN32_FIND_DATA filedata;
     HANDLE hfile;
-    const char *libdir = "\\..\\..\\..\\scipy\\extra-dll\\";
+    const char *libdir = "\\extra-dll\\";
     const char *fileglob = "libopenblas*dll";
     char buf[300];
     snprintf(buf, sizeof(buf), "%s%s%s", scipydir, libdir, fileglob);
@@ -174,7 +174,9 @@ static PyObject *calculate_phonons(PyObject *self, PyObject *args) {
     if (zheevd == NULL) {
         PyErr_Format(PyExc_RuntimeError, "Could not find zheevd_ in %s\n",
                      filedata.cFileName);
+        FreeLibrary(lib);
         return NULL;
+    }
 #else
     void *lib;
     void (*zheevd)(char* jobz, char* uplo, int* n, double* a, int* lda,
@@ -214,6 +216,7 @@ static PyObject *calculate_phonons(PyObject *self, PyObject *args) {
     zheevd = dlsym(lib, "zheevd_");
     if (zheevd == NULL) {
         PyErr_Format(PyExc_RuntimeError, "Could not find zheevd_ in %s\n", buf);
+        dlclose(lib);
         return NULL;
     }
 #endif
@@ -284,7 +287,7 @@ static PyObject *calculate_phonons(PyObject *self, PyObject *args) {
             }
 
             // Calculate non-analytical correction for LO-TO splitting
-            if (splitting > 0 && is_gamma(qpt)) {
+            if (splitting && is_gamma(qpt)) {
                // If first q-point
                if (qpts_i[0] == q) {
                    for (i = 0; i < 3; i++) {
