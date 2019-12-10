@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "lib_funcs.h"
 #include "util.h"
 
 #define PI 3.14159265358979323846
@@ -276,9 +277,7 @@ void mass_weight_dyn_mat(const double* dyn_mat_weighting, const int n_ions,
 }
 
 int diagonalise_dyn_mat_zheevd(const int n_ions, const double qpt[3],
-    double* dyn_mat, double* eigenvalues,
-    void (*zheevdptr) (char*, char*, int*, double*, int*, double*, double*,
-    int*, double*, int*, int*, int*, int*)) {
+    double* dyn_mat, double* eigenvalues, ZheevdFunc zheevdptr) {
 
     char jobz = 'V';
     char uplo = 'L';

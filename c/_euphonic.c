@@ -2,21 +2,14 @@
 #define NPY_NO_DEPRECATED_API NPY_1_9_API_VERSION
 #define PY_ARRAY_UNIQUE_SYMBOL EUPHONIC_NPY_ARRAY_API
 #include <string.h>
-#include <stdio.h>
 #include <omp.h>
 #include <Python.h>
 #include <numpy/arrayobject.h>
+#include "lib_funcs.h"
+#include "load_libs.h"
 #include "dyn_mat.h"
 #include "py_util.h"
 #include "util.h"
-
-#ifdef _WIN32
-#include <Windows.h>
-#else
-#include <dlfcn.h>
-#include <dirent.h>
-#include <glob.h>
-#endif
 
 static PyObject *calculate_phonons(PyObject *self, PyObject *args) {
 
@@ -36,8 +29,8 @@ static PyObject *calculate_phonons(PyObject *self, PyObject *args) {
     int dipole;
     int reciprocal_asr;
     int splitting;
-    int nthreads = 1;
-    const char *scipydir;
+    int n_threads = 1;
+    const char *scipy_dir;
 
     // Define vars to be obtained from InterpolationData attributes
     int n_ions;
@@ -114,8 +107,8 @@ static PyObject *calculate_phonons(PyObject *self, PyObject *args) {
                           &PyArray_Type, &py_split_evals,
                           &PyArray_Type, &py_split_evecs,
                           &PyArray_Type, &py_split_i,
-                          &nthreads,
-                          &scipydir)) {
+                          &n_threads,
+                          &scipy_dir)) {
         return NULL;
     }
 
@@ -145,81 +138,6 @@ static PyObject *calculate_phonons(PyObject *self, PyObject *args) {
                 return NULL;
         }
     }
-
-    // Load LAPACK funcs
-#ifdef _WIN32
-    typedef void (__cdecl *LibFunc)(char* jobz, char* uplo, int* n, double* a, int* lda,
-        double* w, double* work, int* lwork, double* rwork, int* lrwork,
-        int* iwork, int* liwork, int* info);
-    LibFunc zheevd;
-    HMODULE lib;
-    WIN32_FIND_DATA filedata;
-    HANDLE hfile;
-    const char *libdir = "\\extra-dll\\";
-    const char *fileglob = "libopenblas*dll";
-    char buf[300];
-    snprintf(buf, sizeof(buf), "%s%s%s", scipydir, libdir, fileglob);
-    hfile = FindFirstFile(buf, &filedata);
-    if (hfile == INVALID_HANDLE_VALUE) {
-        PyErr_Format(PyExc_FileNotFoundError, "Could not find %s\n", buf);
-        return NULL;
-    }
-    lib = LoadLibrary(filedata.cFileName);
-    if (lib == NULL) {
-        PyErr_Format(PyExc_RuntimeError, "Could not load lib handle %s\n",
-                     filedata.cFileName);
-        return NULL;
-    }
-    zheevd = (LibFunc) GetProcAddress(lib, "zheevd_");
-    if (zheevd == NULL) {
-        PyErr_Format(PyExc_RuntimeError, "Could not find zheevd_ in %s\n",
-                     filedata.cFileName);
-        FreeLibrary(lib);
-        return NULL;
-    }
-#else
-    void *lib;
-    void (*zheevd)(char* jobz, char* uplo, int* n, double* a, int* lda,
-        double* w, double* work, int* lwork, double* rwork, int* lrwork,
-        int* iwork, int* liwork, int* info);
-    const char *libdir = "/linalg";
-    const char *fileglob = "/_flapack*so";
-    glob_t globres;
-    char buf[300];
-    DIR *dir;
-
-    snprintf(buf, sizeof(buf), "%s%s", scipydir, libdir);
-    dir = opendir(buf);
-    if (dir == NULL) {
-        PyErr_Format(PyExc_RuntimeError, "Could not open dir %s\n", buf);
-        return NULL;
-    }
-    while (readdir(dir) != NULL) {
-        snprintf(buf, sizeof(buf), "%s%s%s", scipydir, libdir, fileglob);
-        glob(buf, 0, NULL, &globres);
-        if (globres.gl_pathc > 0) {
-            break;
-        }
-    }
-    closedir(dir);
-    if (globres.gl_pathc == 0) {
-        PyErr_Format(PyExc_RuntimeError, "Glob failed: couldn't find %s\n", buf);
-        return NULL;
-    }
-
-    snprintf(buf, sizeof(buf), "%s/%s", buf, globres.gl_pathv[0]);
-    lib = dlopen(buf, RTLD_LAZY);
-    if (lib == NULL) {
-        PyErr_Format(PyExc_RuntimeError, "Could not load lib handle %s\n", buf);
-        return NULL;
-    }
-    zheevd = dlsym(lib, "zheevd_");
-    if (zheevd == NULL) {
-        PyErr_Format(PyExc_RuntimeError, "Could not find zheevd_ in %s\n", buf);
-        dlclose(lib);
-        return NULL;
-    }
-#endif
 
     // Point to Python array data
     rqpts = (double*) PyArray_DATA(py_rqpts);
@@ -257,7 +175,15 @@ static PyObject *calculate_phonons(PyObject *self, PyObject *args) {
         n_gvecs = PyArray_DIMS(py_gvec_phases)[0];
     }
 
-    omp_set_num_threads(nthreads);
+    // Load library functions
+    ZheevdFunc zheevd;
+    zheevd = get_zheevd(scipy_dir);
+    if (zheevd == NULL) {
+        PyErr_Format(PyExc_RuntimeError, "Could not load zheevd function\n");
+        return NULL;
+    }
+
+    omp_set_num_threads(n_threads);
     #pragma omp parallel
     {
         double *corr;
@@ -352,12 +278,6 @@ static PyObject *calculate_phonons(PyObject *self, PyObject *args) {
             evals_to_freqs(n_ions, eval);
         }
     }
-
-#ifdef _WIN32
-    FreeLibrary(lib);
-#else
-    dlclose(lib);
-#endif
 
     return Py_None;
 }
