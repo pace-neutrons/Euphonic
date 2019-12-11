@@ -114,7 +114,7 @@ class PhononData(Data):
         return self._sqw_ebins*ureg('E_h').to(self._e_units, 'spectroscopy')
 
     @classmethod
-    def from_castep(seedname, path=''):
+    def from_castep(self, seedname, path=''):
         """
         Calls the CASTEP phonon data reader and sets the PhononData attributes.
 

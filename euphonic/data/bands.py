@@ -95,7 +95,7 @@ class BandsData(Data):
         return self._fermi*ureg('hartree').to(self._e_units, 'spectroscopy')
 
     @classmethod
-    def from_castep(seedname, path=''):
+    def from_castep(self, seedname, path=''):
         """
         Calls the CASTEP bands data reader and sets the BandsData attributes
 

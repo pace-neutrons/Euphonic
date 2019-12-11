@@ -159,7 +159,7 @@ class InterpolationData(PhononData):
         return self._born*ureg('e')
 
     @classmethod
-    def from_castep(seedname, path=''):
+    def from_castep(self, seedname, path=''):
         """
         Calls the CASTEP interpolation data reader and sets the InerpolationData attributes.
 
