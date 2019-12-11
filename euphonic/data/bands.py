@@ -60,7 +60,7 @@ class BandsData(Data):
         if type(data) is str:
             # Feature removed error ('post deprecation' error)
             raise Exception('The old interface is now replaced by',
-                            'BandsData.read_castep(seedname).',
+                            'BandsData.from_castep(seedname, path="<path>").',
                             '(Please see documentation for more information.)')
 
         self._set_data(data)
