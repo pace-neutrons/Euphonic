@@ -358,10 +358,20 @@ class InterpolationData(PhononData):
         rfreqs = np.zeros((n_rqpts, 3*n_ions))
         reigenvecs = np.zeros((n_rqpts, 3*n_ions, n_ions, 3),
                                   dtype=np.complex128)
-        if use_c:
-            import euphonic._euphonic as euphonic_c
-            from euphonic.util import (_ensure_contiguous_args,
-                                       _ensure_contiguous_attrs)
+        try:
+            if use_c:
+                try:
+                    import euphonic._euphonic as euphonic_c
+                    from euphonic.util import (_ensure_contiguous_args,
+                                               _ensure_contiguous_attrs)
+                except ImportError:
+                    warnings.warn(('use_c=True is set, but the Euphonic\'s C '
+                                   'extension couldn\'t be imported, it may '
+                                   'not have been installed. Falling back to '
+                                   'pure Python calculation'), stacklevel=2)
+                    raise
+            else:
+                raise ImportError
             if splitting:
                 gamma_i = np.where(is_gamma(qpts))[0]
                 split_i = gamma_i[np.logical_and(gamma_i > 0,
@@ -387,7 +397,7 @@ class InterpolationData(PhononData):
                 recip_asr_correction, dyn_mat_weighting, dipole,
                 reciprocal_asr, splitting, rfreqs, reigenvecs, split_freqs,
                 split_eigenvecs, split_i, n_threads, scipy.__path__[0])
-        else:
+        except ImportError:
             q_independent_args = (
                 reduced_qpts, qpts_i, fc_img_weighted, unique_sc_offsets,
                 unique_sc_i, unique_cell_origins, unique_cell_i,
