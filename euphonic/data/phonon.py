@@ -317,7 +317,10 @@ class PhononData(Data):
         dw_data : PhononData
             The PhononData object with dw_seedname
         """
-        return PhononData(dw_seedname, **kwargs)
+        if self.model == 'castep':
+            return PhononData.from_castep(dw_seedname, **kwargs)
+        else:
+            raise Exception('Unknown Model.')
 
     def _dw_coeff(self, data, T):
         """

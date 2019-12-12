@@ -122,7 +122,11 @@ class InterpolationData(PhononData):
             self.model = kwargs['model']
 
         self.n_qpts = 0
-        self.qpts = np.array([])
+        if 'qpts' in kwargs.keys():
+            self.qpts = kwargs['qpts']
+        else:
+            self.qpts = np.array([])
+
         self._reduced_freqs = np.empty((0, 3*self.n_ions))
         self._reduced_eigenvecs = np.empty((0, 3*self.n_ions, self.n_ions, 3),
                                            dtype=np.complex128)
@@ -159,7 +163,7 @@ class InterpolationData(PhononData):
         return self._born*ureg('e')
 
     @classmethod
-    def from_castep(self, seedname, path=''):
+    def from_castep(self, seedname, path='', **kwargs):
         """
         Calls the CASTEP interpolation data reader and sets the InerpolationData attributes.
 
@@ -171,7 +175,7 @@ class InterpolationData(PhononData):
             Path to dir containing the file(s), if in another directory
         """
         data = _castep._read_interpolation_data(seedname, path)
-        return self(data, seedname=seedname, model='castep')
+        return self(data, seedname=seedname, model='castep', **kwargs)
 
     def _set_data(self, data):
         self.n_ions = data['n_ions']
@@ -1316,8 +1320,12 @@ class InterpolationData(PhononData):
                 dw_arg, **kwargs)
         else:
             qgrid = mp_grid(dw_arg)
-            return InterpolationData(self.seedname, model=self.model,
-                                     qpts=qgrid, **kwargs)
+            if self.model == 'castep':
+                idata = InterpolationData.from_castep(self.seedname, **kwargs)
+                idata.calculate_fine_phonons(qgrid)
+                return idata
+            else:
+                raise Exception('Unknown Model.')
 
     def calculate_sqw_map(self, scattering_lengths, ebins, **kwargs):
         """
