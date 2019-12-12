@@ -17,7 +17,7 @@ class TestSqwMapPhononDataLZO(unittest.TestCase):
         phonon_path = 'test/data/'
         self.sqw_path = 'test/data/sqw_map/'
         self.sf_path = 'test/data/structure_factor/LZO/'
-        self.data = PhononData(seedname, path=phonon_path)
+        self.data = PhononData.from_castep(seedname, path=phonon_path)
         self.scattering_lengths = {'La': 8.24, 'Zr': 7.16, 'O': 5.803}
         self.ebins = np.arange(0, 100, 1.)
 
@@ -65,8 +65,8 @@ class TestSqwMapInterpolationDataLZOSerial(unittest.TestCase):
         phonon_path = 'test/data/'
         self.interpolation_path = 'test/data/interpolation/LZO'
         self.sqw_path = 'test/data/sqw_map/'
-        pdata = PhononData(self.seedname, path=phonon_path)
-        self.data = InterpolationData(
+        pdata = PhononData.from_castep(self.seedname, path=phonon_path)
+        self.data = InterpolationData.from_castep(
             self.seedname, path=self.interpolation_path)
         self.data.calculate_fine_phonons(pdata.qpts, asr='realspace')
         self.scattering_lengths = {'La': 8.24, 'Zr': 7.16, 'O': 5.803}
@@ -118,8 +118,8 @@ class TestSqwMapInterpolationDataLZOParallel(
         phonon_path = 'test/data/'
         self.interpolation_path = 'test/data/interpolation/LZO'
         self.sqw_path = 'test/data/sqw_map/'
-        pdata = PhononData(self.seedname, path=phonon_path)
-        self.data = InterpolationData(
+        pdata = PhononData.from_castep(self.seedname, path=phonon_path)
+        self.data = InterpolationData.from_castep(
             self.seedname, path=self.interpolation_path)
         self.data.calculate_fine_phonons(pdata.qpts, asr='realspace', nprocs=2)
         self.scattering_lengths = {'La': 8.24, 'Zr': 7.16, 'O': 5.803}

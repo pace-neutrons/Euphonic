@@ -12,7 +12,7 @@ class TestStructureFactorPhononDataLZO(unittest.TestCase):
         seedname = 'La2Zr2O7'
         phonon_path = 'test/data/'
         self.sf_path = 'test/data/structure_factor/LZO/'
-        self.data = PhononData(seedname, path=phonon_path)
+        self.data = PhononData.from_castep(seedname, path=phonon_path)
         self.scattering_lengths = {'La': 8.24, 'Zr': 7.16, 'O': 5.803}
 
     def test_sf_T5(self):
@@ -52,7 +52,7 @@ class TestStructureFactorInterpolationDataLZOSerial(unittest.TestCase):
         self.scattering_lengths = {'La': 8.24, 'Zr': 7.16, 'O': 5.803}
         qpts = np.loadtxt(self.sf_path + 'qpts.txt')
 
-        self.data = InterpolationData(
+        self.data = InterpolationData.from_castep(
             self.seedname, path=self.interpolation_path)
         self.data.calculate_fine_phonons(qpts, asr='realspace')
 
@@ -200,7 +200,7 @@ class TestStructureFactorInterpolationDataLZOSerial(unittest.TestCase):
                             rtol=5e-3, atol=1e-12)
 
     def test_empty_interpolation_data_raises_warning(self):
-        empty_data = InterpolationData(
+        empty_data = InterpolationData.from_castep(
             self.seedname, path=self.interpolation_path)
         # Test that trying to call structure factor on an empty object
         # raises a warning
@@ -222,7 +222,7 @@ class TestStructureFactorInterpolationDataLZOParallel(
         self.scattering_lengths = {'La': 8.24, 'Zr': 7.16, 'O': 5.803}
         qpts = np.loadtxt(self.sf_path + 'qpts.txt')
 
-        self.data = InterpolationData(
+        self.data = InterpolationData.from_castep(
             self.seedname, path=self.interpolation_path)
         self.data.calculate_fine_phonons(qpts, asr='realspace', nprocs=2)
 
@@ -238,7 +238,7 @@ class TestStructureFactorInterpolationDataQuartzSerial(unittest.TestCase):
         self.scattering_lengths = {'Si': 4.1491, 'O': 5.803}
         qpts = np.loadtxt(self.sf_path + 'qpts.txt')
 
-        self.data = InterpolationData(
+        self.data = InterpolationData.from_castep(
             self.seedname, path=self.interpolation_path)
         self.data.calculate_fine_phonons(qpts, asr='reciprocal')
 
@@ -360,6 +360,6 @@ class TestStructureFactorInterpolationDataQuartzParallel(
         self.scattering_lengths = {'Si': 4.1491, 'O': 5.803}
         qpts = np.loadtxt(self.sf_path + 'qpts.txt')
 
-        self.data = InterpolationData(
+        self.data = InterpolationData.from_castep(
             self.seedname, path=self.interpolation_path)
         self.data.calculate_fine_phonons(qpts, asr='reciprocal', nprocs=2)

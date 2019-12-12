@@ -36,7 +36,7 @@ class TestBandsDataNaH(unittest.TestCase):
 
         seedname = 'NaH'
         path = 'test/data'
-        data = BandsData(seedname, path=path)
+        data = BandsData.from_castep(seedname, path=path)
         self.data = data
 
     def test_cell_vec_read_nah_bands(self):
@@ -105,7 +105,7 @@ class TestBandsDataFe(unittest.TestCase):
 
         seedname = 'Fe'
         path = 'test/data'
-        data = BandsData(seedname, path=path)
+        data = BandsData.from_castep(seedname, path=path)
         self.data = data
 
     def test_cell_vec_read_fe_bands(self):
