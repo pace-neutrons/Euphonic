@@ -1,5 +1,4 @@
-euphonic.data.bands module
-==========================
+.. _bands_data:
 
 .. automodule:: euphonic.data.bands
    :members:
