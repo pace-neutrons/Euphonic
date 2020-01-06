@@ -59,7 +59,8 @@ html_theme = 'sphinx_rtd_theme'
 html_static_path = ['_static']
 
 # Autodoc settings
-autodoc_member_order='bysource'
+autodoc_member_order = 'bysource'
+add_module_names = False
 # Configure Autodoc's autodoc-skip-member event to not skip __init__ methods
 def skip(app, what, name, obj, would_skip, options):
     if name == "__init__":
