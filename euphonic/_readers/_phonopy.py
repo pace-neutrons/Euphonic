@@ -51,7 +51,7 @@ def _match_file(path='.', name='*'):
         return None
 
 def _convert_weights(weights):
-    """ DOC convert atom weights to normalised convention."""
+    """ DOC convert atom weights to CASTEP normalised convention."""
 
     weights = np.array(weights)
     total_weight = weights.sum()
@@ -348,13 +348,12 @@ def _match_born(path='.', name='BORN'):
 
 
 def _extract_force_constants(fc_object):
-    # TODO
     """ DOC
     Parse, reshape, and convert FC from FORCE_CONSTANTS file.
 
     Parameters
     ----------
-    fc_object : file-like object
+    fc_object : dict-like object
         Object representing contents of FORCE_CONSTANTS.
 
     Returns
@@ -415,10 +414,19 @@ def _extract_force_constants(fc_object):
     return fc_resh
 
 def _extract_born(born_object):
-    # TODO
     """ DOC
     Parse and convert dielectric tensor and born effective
     charge from BORN file
+
+    Parameters
+    ----------
+    born_object : file-like object
+        Object representing contents of BORN
+
+    Returns
+    ----------
+    born_dict : float ndarray
+        Dict containing dielectric tensor and born effective charge
     """
 
     # ignore blank lines 
@@ -455,25 +463,40 @@ def _extract_born(born_object):
     return born_dict
 
 def _get_fc_summary(summary):
-        fc_entry = summary['force_constants']
+    """ DOC
+    Get force constants from phonopy yaml summary file.
 
-        fc_dims = fc_entry['shape']
-        fc_format = fc_entry['format']
+    Parameters
+    ----------
+    summary : dict
+        Dict containing contents of phonopy.yaml
 
-        K = [k for k in range(1,1+fc_dims[1])]
-        J = [j for j in range(1,1+fc_dims[0])]
+    Returns
+    ----------
+    units : dict
+        Dict containing force constants in Euphonic format.
+    """
 
-        inds = np.zeros([fc_dims[0]*fc_dims[1], 3]).astype(np.int)
-        for j in J:
-            for k in K:
-                i = (j-1)*fc_dims[1] + (k-1)
-                inds[i, :] = [i, j, k]
+    fc_entry = summary['force_constants']
 
-        if fc_format == 'compact':
-            fc = np.array(fc_entry['elements'])
-        elif fc_format == 'full': # Truncate to compact size.
-            fc = np.array(fc_entry['elements'])[:, 0:fc_dims[0]]
-        return _reshape_fc(fc, inds, fc_dims)
+    fc_dims = fc_entry['shape']
+    fc_format = fc_entry['format']
+
+    K = [k for k in range(1,1+fc_dims[1])]
+    J = [j for j in range(1,1+fc_dims[0])]
+
+    inds = np.zeros([fc_dims[0]*fc_dims[1], 3]).astype(np.int)
+    for j in J:
+        for k in K:
+            i = (j-1)*fc_dims[1] + (k-1)
+            inds[i, :] = [i, j, k]
+
+    if fc_format == 'compact':
+        fc = np.array(fc_entry['elements'])
+    elif fc_format == 'full': # Truncate to compact size.
+        fc = np.array(fc_entry['elements'])[:, 0:fc_dims[0]]
+
+    return _reshape_fc(fc, inds, fc_dims)
 
 def _extract_physical_units(summary):
     """ DOC
@@ -585,22 +608,32 @@ def _extract_summary(summary):
 
     return summary_dict
 
-def _extract_qpts_data(data_object):
-    # TODO
+def _extract_qpts_data(qpts_object):
     """ DOC
     Retrieve n_qpts, n_ions, recip_vec, qpts, etc from qpoint.yaml or
     qpoint.hdf5 which is created during a Phonopy qpoint session.
+
+    Parameters
+    ----------
+    qpts_object : dict-like object
+        The Phonopy data object which contains phonon data.
+
+    Returns
+    ----------
+    data_dict : dict
+        A dict containing: sc_matrix, n_cells_in_sc, n_ions, cell_vec,
+        ion_r, ion_mass, ion_type, n_ions, cell_origins.
     """
 
-    n_qpts = data_object['nqpoint']
-    n_ions = data_object['natom']
-    #cell_vec = data_object['lattice']
-    recip_vec = data_object['reciprocal_lattice']
-    qpts = [phon['q-position'] for phon in data_object['phonon']]
+    n_qpts = qpts_object['nqpoint']
+    n_ions = qpts_object['natom']
+    #cell_vec = qpts_object['lattice']
+    recip_vec = qpts_object['reciprocal_lattice']
+    qpts = [phon['q-position'] for phon in qpts_object['phonon']]
 
-    #weights = [phon['weight'] for phon in data_object['phonon']]
+    #weights = [phon['weight'] for phon in qpts_object['phonon']]
 
-    phonon_data = [phon for phon in data_object['phonon']]
+    phonon_data = [phon for phon in qpts_object['phonon']]
     bands_data_each_qpt = [bands_data['band']
                             for bands_data in phonon_data]
 
@@ -625,10 +658,21 @@ def _extract_qpts_data(data_object):
     return data_dict
 
 def _reshape_fc(fc, inds, dims):
-    # TODO
     """ DOC
     Reshape FORCE_CONSTANTS to conform to Euphonic format.
     Into [N_sc, 3*N_pc, 3*N_pc]
+
+    Parameters
+    ----------
+    fc : float ndarray
+        Force constants matrix  with Phonopy indexing
+    inds : int ndarray
+        Array of indices.
+    dims : (1, 2) int array
+
+    Returns
+    -------
+    fc_euph : float ndarray
     """
 
     n_ions = dims[0]
@@ -777,7 +821,6 @@ def _read_interpolation_data(path='.', qpts_file='qpoints',
         # check BORN
         pass
 
-    # TODO Unit conversion factors
     ulength = ureg(units['length'].lower()).to('bohr').magnitude
     umass = ureg(units['atomic_mass'].lower()).to('e_mass').magnitude
     ufreq = (ureg('THz')*units['frequency_unit_conversion_factor'])\
