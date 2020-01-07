@@ -55,22 +55,6 @@ frequencies/eigenvectors have already been calculated, using the
 ``calculate_structure_factor`` method. A dictionary of coherent neutron
 scattering lengths in fm must also be provided.
 
-**PhononData Example**
-
-.. code-block:: py
-
-   from euphonic.data.phonon import PhononData
-
-   # Read from NaH.phonon
-   pdata = PhononData('NaH')
-
-   # Calculate structure factor for each q-point in pdata. Structure factor is
-   # returned, but not stored in the Data object
-   scattering_lengths = {'Na': 3.630, 'H': -3.739}
-   sf = pdata.calculate_structure_factor(scattering_lengths, T=5)
-
-**InterpolationData Example**
-
 .. code-block:: py
 
     import seekpath
@@ -78,8 +62,7 @@ scattering lengths in fm must also be provided.
     from euphonic.data.interpolation import InterpolationData
 
     # Read quartz data from quartz.castep_bin
-    seedname = 'quartz'
-    idata = InterpolationData(seedname)
+    idata = InterpolationData('quartz')
 
     # Generate a recommended q-point path using seekpath
     _, unique_ions = np.unique(idata.ion_type, return_inverse=True)
@@ -89,7 +72,7 @@ scattering lengths in fm must also be provided.
     # Calculate frequencies/eigenvectors
     idata.calculate_fine_phonons(qpts, asr='reciprocal')
 
-   # Calculate structure factor for each q-point in pdata. Structure factor is
+   # Calculate structure factor for each q-point in idata. Structure factor is
    # returned, but not stored in the Data object
    scattering_lengths = {'Si': 4.1491, 'O': 5.803}
    sf = idata.calculate_structure_factor(scattering_lengths, T=5)

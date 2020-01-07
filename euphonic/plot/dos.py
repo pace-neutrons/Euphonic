@@ -8,7 +8,7 @@ def output_grace(data, seedname='out', mirror=False, up=True, down=True):
 
     Parameters
     ----------
-    data : PhononData or BandsData object
+    data : Data object
         Data object for which calculate_dos has been called, containing dos
         and dos_bins attributes for plotting
     seedname : string, optional
@@ -170,7 +170,7 @@ def plot_dos(data, title='', mirror=False, up=True, down=True, **line_kwargs):
 
     Parameters
     ----------
-    data : PhononData or BandsData object
+    data : Data object
         Data object for which calculate_dos has been called, containing dos
         and dos_bins attributes for plotting
     title : string
@@ -187,7 +187,7 @@ def plot_dos(data, title='', mirror=False, up=True, down=True, **line_kwargs):
         linestyle
     Returns
     -------
-    fig : Matplotlib Figure or None
+    fig : matplotlib.figure.Figure or None
         If matplotlib.pyplot can be imported, returns a Figure containing the
         subplot containing the plotted density of states, otherwise returns
         None

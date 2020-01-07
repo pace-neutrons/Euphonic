@@ -55,7 +55,7 @@ def recip_space_labels(data):
 
     Parameters
     ----------
-    data: PhononData or BandsData object
+    data: Data object
         Data object containing the cell vectors, q-points and optionally ion
         types and coordinates (used for determining space group)
 
@@ -198,7 +198,7 @@ def plot_sqw_map(data, vmin=None, vmax=None, ratio=None, ewidth=0, qwidth=0,
 
     Returns
     -------
-    fig : Matplotlib Figure or None
+    fig : matplotlib.figure.Figure or None
         If matplotlib.pyplot can be imported, is a Figure with a single
         subplot, otherwise is None
     ims : (n_qpts,) 'matplotlib.image.AxesImage' ndarray or None
@@ -312,7 +312,7 @@ def output_grace(data, seedname='out', up=True, down=True):
 
     Parameters
     ----------
-    data: PhononData or BandsData object
+    data: Data object
         Data object containing the frequencies and other data required for
         plotting (qpts, n_ions, cell_vecs)
     seedname : string, optional
@@ -460,7 +460,7 @@ def plot_dispersion(data, title='', btol=10.0, up=True, down=True,
 
     Parameters
     ----------
-    data: PhononData or BandsData object
+    data: Data object
         Data object containing the frequencies and other data required for
         plotting (qpts, n_ions, cell_vecs)
     title : string, optional
@@ -478,7 +478,7 @@ def plot_dispersion(data, title='', btol=10.0, up=True, down=True,
         linestyle
     Returns
     -------
-    fig : Matplotlib Figure or None
+    fig : matplotlib.figure.Figure or None
         If matplotlib.pyplot can be imported, returns a Figure containing
         subplot(s) for the plotted band structure, otherwise returns None.
         If there is a large gap between some q-points there can be multiple
