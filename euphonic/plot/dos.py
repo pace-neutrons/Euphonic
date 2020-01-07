@@ -15,7 +15,8 @@ def output_grace(data, seedname='out', mirror=False, up=True, down=True):
         Determines the figure title and output file name, seedname.agr.
         Default: 'out'
     mirror : boolean
-        Whether to reflect the dos_down frequencies in the x-axis.
+        Whether to reflect the dos_down frequencies in the x-axis (if
+        applicable)
         Default: False
     up : boolean, optional
         Whether to plot spin up dos (if applicable). Default: True
@@ -176,8 +177,8 @@ def plot_dos(data, title='', mirror=False, up=True, down=True, **line_kwargs):
     title : string
         The figure title. Default: ''
     mirror : boolean
-        Whether to reflect the dos_down frequencies in the x-axis.
-        Default: False
+        Whether to reflect the dos_down frequencies in the x-axis (if
+        applicable). Default: False
     up : boolean, optional
         Whether to plot spin up dos (if applicable). Default: True
     down : boolean, optional
