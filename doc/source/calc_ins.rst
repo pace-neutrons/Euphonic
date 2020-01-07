@@ -49,6 +49,79 @@ are the frequencies, :math:`\sum_{BZ}` is a sum over the 1st Brillouin Zone, and
 Usage
 -----
 
+The neutron structure factor can be calculated for each branch and q-point for
+both ``PhononData`` objects and ``InterpolationData`` objects for which
+frequencies/eigenvectors have already been calculated, using the
+``calculate_structure_factor`` method. A dictionary of coherent neutron
+scattering lengths in fm must also be provided.
+
+**PhononData Example**
+
+.. code-block:: py
+
+   from euphonic.data.phonon import PhononData
+
+   # Read from NaH.phonon
+   pdata = PhononData('NaH')
+
+   # Calculate structure factor for each q-point in pdata. Structure factor is
+   # returned, but not stored in the Data object
+   scattering_lengths = {'Na': 3.630, 'H': -3.739}
+   sf = pdata.calculate_structure_factor(scattering_lengths, T=5)
+
+**InterpolationData Example**
+
+.. code-block:: py
+
+    import seekpath
+    import numpy as np
+    from euphonic.data.interpolation import InterpolationData
+
+    # Read quartz data from quartz.castep_bin
+    seedname = 'quartz'
+    idata = InterpolationData(seedname)
+
+    # Generate a recommended q-point path using seekpath
+    _, unique_ions = np.unique(idata.ion_type, return_inverse=True)
+    structure = (idata.cell_vec.magnitude, idata.ion_r, unique_ions)
+    qpts = seekpath.get_explicit_k_path(structure)["explicit_kpoints_rel"]
+
+    # Calculate frequencies/eigenvectors
+    idata.calculate_fine_phonons(qpts, asr='reciprocal')
+
+   # Calculate structure factor for each q-point in pdata. Structure factor is
+   # returned, but not stored in the Data object
+   scattering_lengths = {'Si': 4.1491, 'O': 5.803}
+   sf = idata.calculate_structure_factor(scattering_lengths, T=5)
+
+Optional Keyword Arguments
+--------------------------
+
+**T**
+
+This is the temperature in Kelvin, and affects the Bose-Einstein distribution
+and the Debye-Waller factor. By default ``T=5``, but set ``T=0`` to ignore
+temperature effects.
+
+**scale**
+
+Apply a multiplicative factor to the final structure factor. By default
+``scale=1.0``
+
+**calc_bose**
+
+Whether to calculate and multiply by the value of the Bose distribution at each
+frequency. By default ``calc_bose=True``
+
+**dw_arg**
+
+This describes the grid on which to calculate the Debye-Waller factor. For
+``PhononData`` objects, it can be a string with the seedname of a .phonon file
+from which to read a grid of frequencies/eigenvectors e.g. ``dw_arg='NaH'``, or
+for ``InterpolationData`` objects can be a length 3 list describing a
+Monkhorst-Pack grid on which to calculate the Debye-Waller factor e.g.
+``dw_arg=[5,5,5]``
+
 Docstring
 ---------
 .. autofunction:: euphonic.data.interpolation.InterpolationData.calculate_structure_factor
