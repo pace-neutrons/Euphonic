@@ -633,10 +633,18 @@ def _read_interpolation_data(path='.', qpts_file='qpoints',
 
     Parameters
     ----------
-    seedname : str
-        Seedname of file(s) to read
     path : str
         Path to dir containing the file(s), if in another directory
+    qpts_file : str
+        Seedname of phonopy qpoints file
+    disp_file : str
+        Seedname of phonopy displacements file
+    summary_file : str
+        Seedname of phonopy user script summary file
+    born_file : str
+        Seedname of BORN file
+    fc_file : str
+        Seedname of FORCE_CONSTANTS file
 
     Returns
     -------
