@@ -628,9 +628,8 @@ def _reshape_fc(fc, inds, dims):
 def _read_interpolation_data(path='.', qpts_file='qpoints',
                             disp_file='phonopy_disp.yaml', summary_file='phonopy.yaml',
                                 born_file='BORN', fc_file='FORCE_CONSTANTS'):
-    #TODO
     """
-    Reads data from a qpoints.yaml file and returns it in a dictionary
+    Reads data from phonopy.yaml and qpoints files.
 
     Parameters
     ----------
@@ -670,7 +669,7 @@ def _read_interpolation_data(path='.', qpts_file='qpoints',
     except Exception as e:
         pass
 
-    try: #NOTE This might be done more concisely from just summary_dict
+    try:
         print(summary_file)
         with open(summary_file, 'r') as ppo:
             summary_data = yaml.safe_load(ppo)
@@ -743,6 +742,7 @@ def _read_interpolation_data(path='.', qpts_file='qpoints',
     umass = ureg(units['atomic_mass'].lower()).to('e_mass').magnitude
     ufreq = (ureg('THz')*units['frequency_unit_conversion_factor'])\
                 .to('E_h', 'spectroscopy').magnitude
+    unac = ureg[units['nac_unit_conversion_factor']].magnitude
 
     # Check force constants string so that it matches format required for ureg
     ufc_str = units['force_constants'].replace('Angstrom', 'angstrom').magnitude
@@ -772,11 +772,6 @@ def _read_interpolation_data(path='.', qpts_file='qpoints',
 
     # Set entries relating to dipoles
     try:
-        if 'nac_unit_conversion_factor' in units:
-            unac = ureg[units['nac_unit_conversion_factor']].magnitude
-        else:
-            unac = 1
-
         data_dict['born'] = born*unac #born*ureg.e
         data_dict['dielectric'] = dielectric*unac #dielectric
     except UnboundLocalError:
