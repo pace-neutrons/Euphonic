@@ -174,8 +174,8 @@ def plot_sqw_map(data, vmin=None, vmax=None, ratio=None, ewidth=0, qwidth=0,
     Parameters
     ----------
     data : PhononData or InterpolationData object
-        Data object for which sqw_map has been called, containing sqw_map
-        and sqw_ebins attributes for plotting
+        Data object for which calculate_sqw_map has been called, containing
+        sqw_map and sqw_ebins attributes for plotting
     vmin : float, optional
         Minimum of data range for colormap. See Matplotlib imshow docs
         Default: None
