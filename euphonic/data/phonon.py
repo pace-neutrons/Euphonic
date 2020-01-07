@@ -65,14 +65,14 @@ class PhononData(Data):
             A dict containing the following keys: n_ions, n_branches, n_qpts,
             cell_vec, recip_vec, ion_r, ion_type, ion_mass, qpts, weights,
             freqs, eigenvecs, split_i, split_freqs, split_eigenvecs.
-        seedname : str
-            Seedname of file(s) to read
-        model : {'CASTEP', 'PHONOPY'}, optional, default None
-            Which model has been used. e.g. if seedname = 'quartz' and
-            model='CASTEP', the 'quartz.phonon' file will be read
+        kwargs: optional
+            seedname : str
+                Seedname of file that is read
+            model : str, optional, default None
+                Which model has been used. e.g. if seedname = 'quartz' and
+                model='CASTEP', the 'quartz.phonon' file will be read
         """
         if type(data) is str:
-            # Feature removed error ('post deprecation' error)
             raise Exception('The old interface is now replaced by',
                             'PhononData.from_castep(seedname, path="<path>").',
                             '(Please see documentation for more information.)')
@@ -114,7 +114,7 @@ class PhononData(Data):
         return self._sqw_ebins*ureg('E_h').to(self._e_units, 'spectroscopy')
 
     @classmethod
-    def from_castep(self, seedname, path=''):
+    def from_castep(self, seedname, path='', **kwargs):
         """
         Calls the CASTEP phonon data reader and sets the PhononData attributes.
 
@@ -126,7 +126,7 @@ class PhononData(Data):
             Path to dir containing the file(s), if in another directory
         """
         data = _castep._read_phonon_data(seedname, path)
-        return self(data, seedname=seedname, model='castep')
+        return self(data, seedname=seedname, model='castep', **kwargs)
 
     def _set_data(self, data):
         self.n_ions = data['n_ions']

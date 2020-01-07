@@ -51,14 +51,14 @@ class BandsData(Data):
             A dict containing the following keys: n_qpts, n_spins,
             n_branches, fermi, cell_vec, recip_vec, qpts, weights,
             freqs, freq_down, and optional: n_ions, ion_r, ion_type.
-        seedname : str
-            Seedname of file(s) to read
-        model : {'CASTEP', 'PHONOPY'}, optional, default None
-            Which model has been used. e.g. if seedname = 'Fe' and
-            model='CASTEP', the 'Fe.bands' file will be read
+        kwargs: optional
+            seedname : str
+                Seedname of file(s) to read
+            model : str, optional, default None
+                Which model has been used. e.g. if seedname = 'Fe' and
+                model='CASTEP', the 'Fe.bands' file will be read
         """
         if type(data) is str:
-            # Feature removed error ('post deprecation' error)
             raise Exception('The old interface is now replaced by',
                             'BandsData.from_castep(seedname, path="<path>").',
                             '(Please see documentation for more information.)')
@@ -95,7 +95,7 @@ class BandsData(Data):
         return self._fermi*ureg('hartree').to(self._e_units, 'spectroscopy')
 
     @classmethod
-    def from_castep(self, seedname, path=''):
+    def from_castep(self, seedname, path='', **kwargs):
         """
         Calls the CASTEP bands data reader and sets the BandsData attributes
 
@@ -107,7 +107,7 @@ class BandsData(Data):
             Path to dir containing the file(s), if in another directory
         """
         data = _castep._read_bands_data(seedname, path)
-        return self(data, seedname=seedname, model='castep')
+        return self(data, seedname=seedname, model='castep', **kwargs)
 
     def _set_data(self, data):
         self.n_qpts = data['n_qpts']

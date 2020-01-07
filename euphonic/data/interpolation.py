@@ -101,15 +101,18 @@ class InterpolationData(PhononData):
             A dict containing the following keys: n_ions, n_branches, cell_vec,
             ion_r, ion_type, ion_mass, force_constants, sc_matrix, n_cells_in_sc,
             cell_origins, and optional: born, dielectric.
-        seedname : str
-            Seedname of file(s) to read
-        model : {'CASTEP', 'PHONOPY'}, optional, default None
-            Which model has been used. e.g. if seedname = 'quartz' and
-            model='CASTEP', the 'quartz.castep_bin' file will be read
+        kwargs: optional
+            seedname : str
+                Seedname of file that is read
+            model : str, optional, default None
+                Which model has been used. e.g. if seedname = 'quartz' and
+                model='CASTEP', the 'quartz.castep_bin' file will be read
+            qpts : float ndarray
+                Qpoints to interpolate.
+
         """
         if type(data) is str:
-            # Feature removed error ('post deprecation' error)
-            raise Exception('The old interface is now replaced by',
+            raise Exception('The old interface now takes the form:',
                             'InterpolationData.from_castep(seedname, path="<path>").',
                             '(Please see documentation for more information.)')
 
