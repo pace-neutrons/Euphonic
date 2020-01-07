@@ -17,6 +17,7 @@ Python API
 - :ref:`Plotting dispersion <plot_disp>`
 - :ref:`Plotting DOS <plot_dos>`
 - :ref:`Plotting S(Q,w) Maps <plot_sqw>`
+- :ref:`Units in Euphonic <units>`
 
 Scripts
 =======
