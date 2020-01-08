@@ -26,7 +26,7 @@ class TestSqwMapPhononDataLZO(unittest.TestCase):
 
         npt.assert_allclose(self.data.sqw_ebins.magnitude, self.ebins)
         expected_sqw_map = np.loadtxt(self.sqw_path + 'sqw_map_pdata_T5.txt')
-        npt.assert_allclose(self.data.sqw_map, expected_sqw_map)
+        npt.assert_allclose(self.data.sqw_map, expected_sqw_map, rtol=1e-6)
 
     def test_sqw_T5_dw(self):
         self.data.calculate_sqw_map(
@@ -36,14 +36,14 @@ class TestSqwMapPhononDataLZO(unittest.TestCase):
         npt.assert_allclose(self.data.sqw_ebins.magnitude, self.ebins)
         expected_sqw_map = np.loadtxt(
             self.sqw_path + 'sqw_map_pdata_T5_dw.txt')
-        npt.assert_allclose(self.data.sqw_map, expected_sqw_map)
+        npt.assert_allclose(self.data.sqw_map, expected_sqw_map, rtol=1e-6)
 
     def test_sqw_T100(self):
         self.data.calculate_sqw_map(self.scattering_lengths, self.ebins, T=100)
 
         npt.assert_allclose(self.data.sqw_ebins.magnitude, self.ebins)
         expected_sqw_map = np.loadtxt(self.sqw_path + 'sqw_map_pdata_T100.txt')
-        npt.assert_allclose(self.data.sqw_map, expected_sqw_map)
+        npt.assert_allclose(self.data.sqw_map, expected_sqw_map, rtol=1e-6)
 
     def test_sqw_T100_dw(self):
         self.data.calculate_sqw_map(
@@ -53,7 +53,7 @@ class TestSqwMapPhononDataLZO(unittest.TestCase):
         npt.assert_allclose(self.data.sqw_ebins.magnitude, self.ebins)
         expected_sqw_map = np.loadtxt(
             self.sqw_path + 'sqw_map_pdata_T100_dw.txt')
-        npt.assert_allclose(self.data.sqw_map, expected_sqw_map)
+        npt.assert_allclose(self.data.sqw_map, expected_sqw_map, rtol=1e-6)
 
 
 class TestSqwMapInterpolationDataLZOSerial(unittest.TestCase):

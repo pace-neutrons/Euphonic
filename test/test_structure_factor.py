@@ -18,27 +18,27 @@ class TestStructureFactorPhononDataLZO(unittest.TestCase):
     def test_sf_T5(self):
         sf = self.data.calculate_structure_factor(self.scattering_lengths, T=5)
         expected_sf = np.loadtxt(self.sf_path + 'sf_pdata_T5.txt')
-        npt.assert_allclose(sf, expected_sf)
+        npt.assert_allclose(sf, expected_sf, rtol=2e-7)
 
     def test_sf_T5_dw(self):
         sf = self.data.calculate_structure_factor(
             self.scattering_lengths, T=5, dw_arg='La2Zr2O7-grid',
             path=self.sf_path)
         expected_sf = np.loadtxt(self.sf_path + 'sf_pdata_dw_T5.txt')
-        npt.assert_allclose(sf, expected_sf)
+        npt.assert_allclose(sf, expected_sf, rtol=2e-7, atol=1e-18)
 
     def test_sf_T100(self):
         sf = self.data.calculate_structure_factor(
             self.scattering_lengths, T=100)
         expected_sf = np.loadtxt(self.sf_path + 'sf_pdata_T100.txt')
-        npt.assert_allclose(sf, expected_sf)
+        npt.assert_allclose(sf, expected_sf, rtol=2e-7)
 
     def test_sf_T100_dw(self):
         sf = self.data.calculate_structure_factor(
             self.scattering_lengths, T=100, dw_arg='La2Zr2O7-grid',
             path=self.sf_path)
         expected_sf = np.loadtxt(self.sf_path + 'sf_pdata_dw_T100.txt')
-        npt.assert_allclose(sf, expected_sf)
+        npt.assert_allclose(sf, expected_sf, rtol=2e-6)
 
 
 class TestStructureFactorInterpolationDataLZOSerial(unittest.TestCase):
@@ -125,7 +125,7 @@ class TestStructureFactorInterpolationDataLZOSerial(unittest.TestCase):
             expected_sf_sum[q, :len(unique_index)] = np.bincount(
                 unique_modes, expected_sf[q])
         npt.assert_allclose(np.delete(sf_sum, -3, axis=0),
-                            np.delete(expected_sf_sum, -3, axis=0))
+                            np.delete(expected_sf_sum, -3, axis=0), rtol=1e-6)
         npt.assert_allclose(sf_sum[-3, 3:], expected_sf_sum[-3, 3:],
                             rtol=5e-3, atol=1e-12)
 
@@ -171,7 +171,7 @@ class TestStructureFactorInterpolationDataLZOSerial(unittest.TestCase):
             expected_sf_sum[q, :len(unique_index)] = np.bincount(
                 unique_modes, expected_sf[q])
         npt.assert_allclose(np.delete(sf_sum, -3, axis=0),
-                            np.delete(expected_sf_sum, -3, axis=0))
+                            np.delete(expected_sf_sum, -3, axis=0), rtol=1e-6)
         npt.assert_allclose(sf_sum[-3, 3:], expected_sf_sum[-3, 3:],
                             rtol=5e-3, atol=1e-12)
 
@@ -195,7 +195,7 @@ class TestStructureFactorInterpolationDataLZOSerial(unittest.TestCase):
             expected_sf_sum[q, :len(unique_index)] = np.bincount(
                 unique_modes, expected_sf[q])
         npt.assert_allclose(np.delete(sf_sum, -3, axis=0),
-                            np.delete(expected_sf_sum, -3, axis=0))
+                            np.delete(expected_sf_sum, -3, axis=0), rtol=1e-6)
         npt.assert_allclose(sf_sum[-3, 3:], expected_sf_sum[-3, 3:],
                             rtol=5e-3, atol=1e-12)
 

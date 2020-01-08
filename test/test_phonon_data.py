@@ -120,8 +120,8 @@ class TestReadInputFileNaHPhonon(unittest.TestCase):
                                self.expctd_data.ion_type)
 
     def test_ion_mass_read_nah_phonon(self):
-        npt.assert_array_equal(self.data.ion_mass.to('amu').magnitude,
-                               self.expctd_data.ion_mass.to('amu').magnitude)
+        npt.assert_allclose(self.data.ion_mass.to('amu').magnitude,
+                            self.expctd_data.ion_mass.to('amu').magnitude)
 
     def test_qpts_read_nah_phonon(self):
         npt.assert_array_equal(self.data.qpts,
