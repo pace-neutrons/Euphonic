@@ -96,7 +96,7 @@ def get_parser():
         type=float,
         help=('The tolerance for plotting sections of reciprocal space on'
               ' different subplots, as a fraction of the median distance'
-              ' between q-points. Default: 10.0'))
+              ' between q-points'))
     return parser
 
 
