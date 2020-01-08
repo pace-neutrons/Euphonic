@@ -8,14 +8,15 @@ def output_grace(data, seedname='out', mirror=False, up=True, down=True):
 
     Parameters
     ----------
-    data : PhononData or BandsData object
+    data : Data object
         Data object for which calculate_dos has been called, containing dos
         and dos_bins attributes for plotting
     seedname : string, optional
         Determines the figure title and output file name, seedname.agr.
         Default: 'out'
     mirror : boolean
-        Whether to reflect the dos_down frequencies in the x-axis.
+        Whether to reflect the dos_down frequencies in the x-axis (if
+        applicable)
         Default: False
     up : boolean, optional
         Whether to plot spin up dos (if applicable). Default: True
@@ -170,14 +171,14 @@ def plot_dos(data, title='', mirror=False, up=True, down=True, **line_kwargs):
 
     Parameters
     ----------
-    data : PhononData or BandsData object
+    data : Data object
         Data object for which calculate_dos has been called, containing dos
         and dos_bins attributes for plotting
     title : string
         The figure title. Default: ''
     mirror : boolean
-        Whether to reflect the dos_down frequencies in the x-axis.
-        Default: False
+        Whether to reflect the dos_down frequencies in the x-axis (if
+        applicable). Default: False
     up : boolean, optional
         Whether to plot spin up dos (if applicable). Default: True
     down : boolean, optional
@@ -187,7 +188,7 @@ def plot_dos(data, title='', mirror=False, up=True, down=True, **line_kwargs):
         linestyle
     Returns
     -------
-    fig : Matplotlib Figure or None
+    fig : matplotlib.figure.Figure or None
         If matplotlib.pyplot can be imported, returns a Figure containing the
         subplot containing the plotted density of states, otherwise returns
         None

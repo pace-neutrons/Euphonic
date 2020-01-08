@@ -1265,13 +1265,20 @@ class InterpolationData(PhononData):
             Dictionary of spin and isotope averaged coherent scattering legnths
             for each element in the structure in fm e.g.
             {'O': 5.803, 'Zn': 5.680}
-        dw_arg : (3,) float ndarray, optional, default None
+        T : float, optional, default 5.0
+            The temperature in Kelvin to use when calculating the Bose and
+            Debye-Waller factors
+        scale : float, optional, default 1.0
+            Apply a multiplicative factor to the final structure factor.
+        calc_bose : boolean, optional, default True
+            Whether to calculate and apply the Bose factor
+        dw_arg : (3,) int ndarray, optional, default None
             If set, will calculate the Debye-Waller factor on a Monkhorst-Pack
             grid
         **kwargs
-            Passes keyword arguments to PhononData.calculate_structure_factor,
-            if dw_arg is an ndarray, it can also pass arguments to
-            calculate_fine_phonons when calculating phonons on the grid
+            If dw_arg has been set, passes keyword arguments to
+            InterpolationData.calculate_fine_phonons for calculating phonons on
+            a grid for the Debye-Waller calculation
 
         Returns
         -------

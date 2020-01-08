@@ -16,7 +16,8 @@ from euphonic.plot.dos import plot_dos, output_grace
 
 
 def main():
-    args = parse_arguments()
+    parser = get_parser()
+    args = parser.parse_args()
     # If neither -up nor -down specified, plot both
     if not args.up and not args.down:
         args.up = True
@@ -73,19 +74,19 @@ def main():
                 plt.show()
 
 
-def parse_arguments():
+def get_parser():
     parser = argparse.ArgumentParser(
-        description="""Extract phonon or bandstructure data from a .phonon or
-                       .bands file and plot the density of states with
-                       matplotlib""")
+        description=('Extract phonon or bandstructure data from a .phonon or'
+                     ' .bands file and plot the density of states with'
+                     ' matplotlib'))
     parser.add_argument(
         'filename',
-        help="""The .phonon or .bands file to extract the data from""")
+        help='The .phonon or .bands file to extract the data from')
     parser.add_argument(
         '-units',
         default='eV',
-        help="""Convert frequencies to specified units for plotting (e.g
-                1/cm, Ry). Default: eV""")
+        help=('Convert frequencies to specified units for plotting (e.g'
+              ' 1/cm, Ry)'))
     parser.add_argument(
         '-s',
         default=None,
@@ -112,16 +113,16 @@ def parse_arguments():
         '-w',
         default=None,
         type=float,
-        help="""Set Gaussian/Lorentzian FWHM for broadening (in units specified
-                by -units argument or default eV). Default: 0.1 eV for
-                electronic DOS, 10.0/cm for vibrational DOS""")
+        help=('Set Gaussian/Lorentzian FWHM for broadening (in units specified'
+              ' by -units argument or default eV). Default: 0.1 eV for'
+              ' electronic DOS, 10.0/cm for vibrational DOS'))
     dos_group.add_argument(
         '-b',
         default=None,
         type=float,
-        help="""Set histogram resolution for binning (in units specified by
-                -units argument or default eV). Default: 0.05 eV for electronic
-                DOS, 1.0/cm for vibrational DOS""")
+        help=('Set histogram resolution for binning (in units specified by'
+              ' -units argument or default eV). Default: 0.05 eV for'
+              ' electronic DOS, 1.0/cm for vibrational DOS'))
     dos_group.add_argument(
         '-lorentz',
         action='store_true',
@@ -131,8 +132,7 @@ def parse_arguments():
         action='store_true',
         help='Plot spin down electronic DOS mirrored in the x axis')
 
-    args = parser.parse_args()
-    return args
+    return parser
 
 
 if __name__ == '__main__':

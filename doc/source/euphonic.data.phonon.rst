@@ -1,5 +1,7 @@
-euphonic.data.phonon module
-===========================
+.. _phonon_data:
+
+PhononData
+----------
 
 .. automodule:: euphonic.data.phonon
    :members:

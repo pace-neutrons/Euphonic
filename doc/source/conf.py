@@ -21,7 +21,7 @@ sys.path.insert(0, os.path.abspath('../..'))
 # -- Project information -----------------------------------------------------
 
 project = 'Euphonic'
-copyright = '2019, Rebecca Fair'
+copyright = '2020, Rebecca Fair'
 author = 'Rebecca Fair'
 
 
@@ -32,7 +32,8 @@ author = 'Rebecca Fair'
 # ones.
 extensions = [
         'sphinx.ext.autodoc',
-        'sphinx.ext.napoleon'
+        'sphinx.ext.napoleon',
+        'sphinxarg.ext'
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -58,6 +59,9 @@ html_theme = 'sphinx_rtd_theme'
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ['_static']
 
+# Autodoc settings
+autodoc_member_order = 'bysource'
+add_module_names = False
 # Configure Autodoc's autodoc-skip-member event to not skip __init__ methods
 def skip(app, what, name, obj, would_skip, options):
     if name == "__init__":

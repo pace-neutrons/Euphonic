@@ -1,5 +1,7 @@
-euphonic.data.interpolation module
-==================================
+.. _interpolation_data:
+
+InterpolationData
+-----------------
 
 .. automodule:: euphonic.data.interpolation
    :members:
