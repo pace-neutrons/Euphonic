@@ -14,7 +14,8 @@ from euphonic.plot.dispersion import output_grace, plot_dispersion
 
 
 def main():
-    args = parse_arguments()
+    parser = get_parser()
+    args = parser.parse_args()
     # If neither -up nor -down specified, plot both
     if not args.up and not args.down:
         args.up = True
@@ -49,19 +50,18 @@ def main():
                 plt.show()
 
 
-def parse_arguments():
+def get_parser():
     parser = argparse.ArgumentParser(
-        description="""Extract phonon or bandstructure data from a .phonon or
-                       .bands file and plot the band structure with
-                       matplotlib""")
+        description=('Extract phonon or bandstructure data from a .phonon or'
+                     ' .bands file and plot the band structure with matplolib'))
     parser.add_argument(
         'filename',
-        help="""The .phonon or .bands file to extract the data from""")
+        help='The .phonon or .bands file to extract the data from')
     parser.add_argument(
         '-units',
         default='eV',
-        help="""Convert frequencies to specified units for plotting (e.g
-                1/cm, Ry). Default: eV""")
+        help=('Convert frequencies to specified units for plotting (e.g 1/cm,'
+              ' Ry)'))
     parser.add_argument(
         '-s',
         action='store_true',
@@ -87,19 +87,17 @@ def parse_arguments():
     disp_group.add_argument(
         '-reorder',
         action='store_true',
-        help="""Try to determine branch crossings from eigenvectors and
-                rearrange frequencies accordingly (only applicable if
-                using a .phonon file)""")
+        help=('Try to determine branch crossings from eigenvectors and'
+              ' rearrange frequencies accordingly (only applicable if using a'
+              ' .phonon file)'))
     disp_group.add_argument(
         '-btol',
         default=10.0,
         type=float,
-        help="""The tolerance for plotting sections of reciprocal space on
-                different subplots, as a fraction of the median distance
-                between q-points. Default: 10.0""")
-
-    args = parser.parse_args()
-    return args
+        help=('The tolerance for plotting sections of reciprocal space on'
+              ' different subplots, as a fraction of the median distance'
+              ' between q-points. Default: 10.0'))
+    return parser
 
 
 if __name__ == '__main__':

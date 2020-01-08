@@ -14,7 +14,8 @@ from euphonic.data.interpolation import InterpolationData
 
 
 def main():
-    args = parse_arguments()
+    parser = get_parser()
+    args = parser.parse_args()
 
     etas = np.arange(args.min, args.max + args.step/100, args.step)
     t_init = np.zeros(len(etas), dtype=np.float64)
@@ -48,7 +49,7 @@ def main():
     print((sfmt + ': ' + tfmt + ' ms\n').format('time/qpt', t_tot[opt]*1000/args.n))
 
 
-def parse_arguments():
+def get_parser():
     parser = argparse.ArgumentParser(
         description=('Run and time an interpolation calculation for a small '
                      'number of q-points for different values of eta to '
@@ -82,8 +83,7 @@ def parse_arguments():
         help='The difference between each eta to test'
     )
 
-    args = parser.parse_args()
-    return args
+    return parser
 
 
 if __name__ == '__main__':
