@@ -125,7 +125,7 @@ def _extract_phonon_data(data_object):
 
     return data_dict
 
-def _read_phonon_data(path='.', phonon_file='mesh', summary_file='phonopy.yaml'):
+def _read_phonon_data(path='.', phonon_file='mesh', summary_file='phonopy.yaml', **kwargs):
     """
     Reads data from a mesh.yaml/hdf5 file and returns it in a dictionary
 
@@ -704,7 +704,7 @@ def _reshape_fc(fc, inds, dims):
 
 def _read_interpolation_data(path='.', qpts_file='qpoints',
                             disp_file='phonopy_disp.yaml', summary_file='phonopy.yaml',
-                                born_file='BORN', fc_file='FORCE_CONSTANTS'):
+                                born_file='BORN', fc_file='FORCE_CONSTANTS', **kwargs):
     """
     Reads data from phonopy.yaml and qpoints files.
 

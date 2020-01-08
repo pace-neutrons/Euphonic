@@ -9,6 +9,7 @@ from euphonic import ureg
 from euphonic.util import is_gamma, mp_grid
 from euphonic.data.phonon import PhononData
 from euphonic._readers import _castep
+from euphonic._readers import _phonopy
 
 
 class InterpolationData(PhononData):
@@ -163,6 +164,33 @@ class InterpolationData(PhononData):
         """
         data = _castep._read_interpolation_data(seedname, path)
         return self(data)
+
+    @classmethod
+    def from_phonopy(path='', **kwargs):
+        """
+        Calls the CASTEP interpolation data reader and sets the InerpolationData attributes.
+
+        Parameters
+        ----------
+        path : str, optional
+            Path to dir containing the file(s), if in another directory
+
+        kwargs : optional
+            qpts_file : str
+                Seedname of phonopy qpoints file
+            disp_file : str
+                Seedname of phonopy displacements file
+            summary_file : str
+                Seedname of phonopy user script summary file
+            born_file : str
+                Seedname of BORN file
+            fc_file : str
+                Seedname of FORCE_CONSTANTS file
+        """
+
+        data = _phonopy._read_interpolation_data(path, **kwargs)
+        return self(data, model='phonopy', **kwargs)
+
 
     def _set_data(self, data):
         self.n_ions = data['n_ions']
