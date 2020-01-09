@@ -10,7 +10,7 @@ from euphonic import ureg
 from euphonic.util import reciprocal_lattice, is_gamma
 
 def _match_file(path='.', name='*'):
-    """DOC
+    """ DOC
     Search target path for seed with standard yaml and hdf5 extensions.
 
     Parameters
@@ -51,14 +51,26 @@ def _match_file(path='.', name='*'):
         return None
 
 def _convert_weights(weights):
-    """ DOC convert atom weights to CASTEP normalised convention."""
+    """ DOC
+    Convert atom weights to CASTEP normalised convention.
+
+    Parameters
+    ----------
+    weights : list
+        List of weights
+
+    Returns
+    ----------
+    norm_weights : list
+        List of normalised weights
+    """
 
     weights = np.array(weights)
     total_weight = weights.sum()
 
-    norm_weights = weights / total_weight
+    norm_weights = list(weights / total_weight)
 
-    return list(norm_weights)
+    return norm_weights
 
 def _extract_phonon_data(data_object):
     """ DOC
@@ -66,7 +78,7 @@ def _extract_phonon_data(data_object):
 
     Parameters
     ----------
-    data_object : dict, hdf5 (, other key:value addressable object)
+    data_object : dict-like
         The Phonopy data object which contains phonon data.
 
     Returns
