@@ -67,10 +67,9 @@ class PhononData(Data):
             freqs, eigenvecs, split_i, split_freqs, split_eigenvecs.
         kwargs: optional
             seedname : str
-                Seedname of file that is read
-            model : str, optional, default None
-                Which model has been used. e.g. if seedname = 'quartz' and
-                model='CASTEP', the 'quartz.phonon' file will be read
+                Seedname of file that was read
+            model : {'CASTEP'}, optional, default None
+                Which model has been used.
         """
         if type(data) is str:
             raise Exception('The old interface is now replaced by',
@@ -121,7 +120,8 @@ class PhononData(Data):
         Parameters
         ----------
         seedname : str
-            Seedname of file(s) to read
+            Seedname of file(s) to read e.g. if seedname = 'quartz' then
+            the 'quartz.phonon' file will be read
         path : str
             Path to dir containing the file(s), if in another directory
         """

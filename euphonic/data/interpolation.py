@@ -104,9 +104,8 @@ class InterpolationData(PhononData):
         kwargs: optional
             seedname : str
                 Seedname of file that is read
-            model : str, optional, default None
-                Which model has been used. e.g. if seedname = 'quartz' and
-                model='CASTEP', the 'quartz.castep_bin' file will be read
+            model : {'CASTEP'}, optional, default None
+                Which model has been used.
             qpts : float ndarray
                 Qpoints to interpolate.
 
@@ -173,7 +172,8 @@ class InterpolationData(PhononData):
         Parameters
         ----------
         seedname : str
-            Seedname of file(s) to read
+            Seedname of file(s) to read, e.g. if seedname = 'quartz'
+            the 'quartz.castep_bin' file will be read
         path : str, optional
             Path to dir containing the file(s), if in another directory
         """

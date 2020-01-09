@@ -54,9 +54,8 @@ class BandsData(Data):
         kwargs: optional
             seedname : str
                 Seedname of file(s) to read
-            model : str, optional, default None
-                Which model has been used. e.g. if seedname = 'Fe' and
-                model='CASTEP', the 'Fe.bands' file will be read
+            model : {'CASTEP'}, optional, default None
+                Which model has been used.
         """
         if type(data) is str:
             raise Exception('The old interface is now replaced by',
@@ -102,7 +101,8 @@ class BandsData(Data):
         Parameters
         ----------
         seedname : str
-            Seedname of file(s) to read
+            Seedname of file(s) to read e.g. if seedname = 'Fe' then 
+                the 'Fe.bands' file will be read
         path : str
             Path to dir containing the file(s), if in another directory
         """
