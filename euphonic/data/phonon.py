@@ -54,7 +54,7 @@ class PhononData(Data):
         q-points specified in split_i. Empty if no LO-TO splitting
     """
 
-    def __init__(self, data, **kwargs):
+    def __init__(self, data):
         """
         Calls functions to read the correct file(s) and sets PhononData
         attributes
@@ -65,11 +65,14 @@ class PhononData(Data):
             A dict containing the following keys: n_ions, n_branches, n_qpts,
             cell_vec, recip_vec, ion_r, ion_type, ion_mass, qpts, weights,
             freqs, eigenvecs, split_i, split_freqs, split_eigenvecs.
-        kwargs: optional
-            seedname : str
-                Seedname of file that was read
-            model : {'CASTEP'}, optional, default None
-                Which model has been used.
+            meta :
+                model:{'CASTEP'}
+                    Which model has been used
+                path : str, default ''
+                    Location of seed files on filesystem
+            meta (CASTEP) :
+                seedname : str
+                    Seedname of file that is read
         """
         if type(data) is str:
             raise Exception('The old interface is now replaced by',
@@ -77,12 +80,6 @@ class PhononData(Data):
                             '(Please see documentation for more information.)')
 
         self._set_data(data)
-
-        if 'seedname' in kwargs.keys():
-            self.seedname = kwargs['seedname']
-
-        if 'model' in kwargs.keys():
-            self.model = kwargs['model']
 
         self._l_units = 'angstrom'
         self._e_units = 'meV'
@@ -113,7 +110,7 @@ class PhononData(Data):
         return self._sqw_ebins*ureg('E_h').to(self._e_units, 'spectroscopy')
 
     @classmethod
-    def from_castep(self, seedname, path='', **kwargs):
+    def from_castep(self, seedname, path=''):
         """
         Calls the CASTEP phonon data reader and sets the PhononData attributes.
 
@@ -126,7 +123,7 @@ class PhononData(Data):
             Path to dir containing the file(s), if in another directory
         """
         data = _castep._read_phonon_data(seedname, path)
-        return self(data, seedname=seedname, model='castep', **kwargs)
+        return self(data)
 
     def _set_data(self, data):
         self.n_ions = data['n_ions']
@@ -144,6 +141,19 @@ class PhononData(Data):
         self.split_i = data['split_i']
         self._split_freqs = data['split_freqs']
         self.split_eigenvecs = data['split_eigenvecs']
+
+        try:
+            if data['model'].lower() == 'castep':
+                try:
+                    self.seedname = data['seedname']
+                    self.model = data['model']
+                    self.path = data['path']
+                except: #TODO warn
+                    self.seedname = None
+                    self.model = None
+                    self.path = ''
+        except: #TODO warn
+            pass
 
 
     def reorder_freqs(self, reorder_gamma=True):
@@ -318,7 +328,7 @@ class PhononData(Data):
             The PhononData object with dw_seedname
         """
         if self.model == 'castep':
-            return PhononData.from_castep(dw_seedname, **kwargs)
+            return PhononData.from_castep(dw_seedname, path=self.path)
         else:
             raise Exception('Unknown Model.')
 

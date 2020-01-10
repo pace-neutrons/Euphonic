@@ -40,7 +40,7 @@ class BandsData(Data):
         Default units eV
     """
 
-    def __init__(self, data, **kwargs):
+    def __init__(self, data):
         """
         Calls functions to read the correct file(s) and sets BandsData
         attributes
@@ -51,11 +51,14 @@ class BandsData(Data):
             A dict containing the following keys: n_qpts, n_spins,
             n_branches, fermi, cell_vec, recip_vec, qpts, weights,
             freqs, freq_down, and optional: n_ions, ion_r, ion_type.
-        kwargs: optional
-            seedname : str
-                Seedname of file(s) to read
-            model : {'CASTEP'}, optional, default None
-                Which model has been used.
+            meta :
+                model:{'CASTEP'}
+                    Which model has been used
+                path : str, default ''
+                    Location of seed files on filesystem
+            meta (CASTEP) :
+                seedname : str
+                    Seedname of file that is read
         """
         if type(data) is str:
             raise Exception('The old interface is now replaced by',
@@ -63,12 +66,6 @@ class BandsData(Data):
                             '(Please see documentation for more information.)')
 
         self._set_data(data)
-
-        if 'seedname' in kwargs.keys():
-            self.seedname = kwargs['seedname']
-
-        if 'model' in kwargs.keys():
-            self.model = kwargs['model']
 
         self._l_units = 'angstrom'
         self._e_units = 'eV'
@@ -126,6 +123,19 @@ class BandsData(Data):
             self.ion_r = data['ion_r']
             self.ion_type = data['ion_type']
         except KeyError:
+            pass
+
+        try:
+            if data['model'].lower() == 'castep':
+                try:
+                    self.seedname = data['seedname']
+                    self.model = data['model']
+                    self.path = data['path']
+                except: #TODO warn
+                    self.seedname = None
+                    self.model = None
+                    self.path = ''
+        except: #TODO warn
             pass
 
 

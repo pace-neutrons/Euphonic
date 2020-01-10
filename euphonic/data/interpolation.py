@@ -89,7 +89,7 @@ class InterpolationData(PhononData):
 
     """
 
-    def __init__(self, data, **kwargs):
+    def __init__(self, data):
         """
         Calls functions to read the correct file(s) and sets InterpolationData
         attributes, additionally can calculate frequencies/eigenvectors at
@@ -100,15 +100,15 @@ class InterpolationData(PhononData):
         data : dict
             A dict containing the following keys: n_ions, n_branches, cell_vec,
             ion_r, ion_type, ion_mass, force_constants, sc_matrix, n_cells_in_sc,
-            cell_origins, and optional: born, dielectric.
-        kwargs: optional
-            seedname : str
-                Seedname of file that is read
-            model : {'CASTEP'}, optional, default None
-                Which model has been used.
-            qpts : float ndarray
-                Qpoints to interpolate.
-
+            cell_origins, and optional : born, dielectric,
+            meta :
+                model : {'CASTEP'}
+                    Which model has been used
+                path : str, default ''
+                    Location of seed files on filesystem
+            meta (CASTEP) :
+                seedname : str
+                    Seedname of file that is read
         """
         if type(data) is str:
             raise Exception('The old interface now takes the form:',
@@ -117,17 +117,8 @@ class InterpolationData(PhononData):
 
         self._set_data(data)
 
-        if 'seedname' in kwargs.keys():
-            self.seedname = kwargs['seedname']
-
-        if 'model' in kwargs.keys():
-            self.model = kwargs['model']
-
         self.n_qpts = 0
-        if 'qpts' in kwargs.keys():
-            self.qpts = kwargs['qpts']
-        else:
-            self.qpts = np.array([])
+        self.qpts = np.array([])
 
         self._reduced_freqs = np.empty((0, 3*self.n_ions))
         self._reduced_eigenvecs = np.empty((0, 3*self.n_ions, self.n_ions, 3),
@@ -165,7 +156,7 @@ class InterpolationData(PhononData):
         return self._born*ureg('e')
 
     @classmethod
-    def from_castep(self, seedname, path='', **kwargs):
+    def from_castep(self, seedname, path=''):
         """
         Calls the CASTEP interpolation data reader and sets the InerpolationData attributes.
 
@@ -178,7 +169,7 @@ class InterpolationData(PhononData):
             Path to dir containing the file(s), if in another directory
         """
         data = _castep._read_interpolation_data(seedname, path)
-        return self(data, seedname=seedname, model='castep', **kwargs)
+        return self(data)
 
     def _set_data(self, data):
         self.n_ions = data['n_ions']
@@ -192,6 +183,19 @@ class InterpolationData(PhononData):
         self.sc_matrix = data['sc_matrix']
         self.n_cells_in_sc = data['n_cells_in_sc']
         self.cell_origins = data['cell_origins']
+
+        try:
+            if data['model'].lower() == 'castep':
+                try:
+                    self.seedname = data['seedname']
+                    self.model = data['model']
+                    self.path = data['path']
+                except: #TODO warn
+                    self.seedname = None
+                    self.model = None
+                    self.path = ''
+        except: #TODO warn
+            pass
 
         try:
             self._born = data['born']
@@ -1320,12 +1324,12 @@ class InterpolationData(PhononData):
         """
         if isinstance(dw_arg, str):
             return super(InterpolationData, self)._get_dw_data(
-                dw_arg, **kwargs)
+                dw_arg, self.path)
         else:
             qgrid = mp_grid(dw_arg)
-            if self.model == 'castep':
-                idata = InterpolationData.from_castep(self.seedname, **kwargs)
-                idata.calculate_fine_phonons(qgrid)
+            if self.model.lower() == 'castep':
+                idata = InterpolationData.from_castep(self.seedname, path=self.path)
+                idata.calculate_fine_phonons(qgrid, **kwargs)
                 return idata
             else:
                 raise Exception('Unknown Model.')

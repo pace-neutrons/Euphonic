@@ -24,6 +24,7 @@ def _read_phonon_data(seedname, path):
         'cell_vec', 'recip_vec', 'ion_r', 'ion_type', 'ion_mass', 'qpts',
         'weights', 'freqs', 'eigenvecs', 'split_i', 'split_freqs',
         'split_eigenvecs'
+        Meta information: 'seedname', 'path' and 'model'.
     """
     file = os.path.join(path, seedname + '.phonon')
     with open(file, 'r') as f:
@@ -117,6 +118,11 @@ def _read_phonon_data(seedname, path):
                                 .to('E_h', 'spectroscopy')).magnitude
     data_dict['split_eigenvecs'] = split_eigenvecs
 
+    # Meta information
+    data_dict['model'] = 'CASTEP'
+    data_dict['seedname'] = seedname
+    data_dict['path'] = path
+
     return data_dict
 
 
@@ -181,7 +187,8 @@ def _read_interpolation_data(seedname, path):
         A dict with the following keys: 'n_ions', 'n_branches', 'cell_vec',
         'recip_vec', 'ion_r', 'ion_type', 'ion_mass', 'force_constants',
         'sc_matrix', 'n_cells_in_sc' and 'cell_origins'. Also contains 'born'
-        and 'dielectric' if they are present in the .castep_bin or .check file
+        and 'dielectric' if they are present in the .castep_bin or .check file.
+        Meta information: 'seedname', 'path' and 'model'.
     """
     file = os.path.join(path, seedname + '.castep_bin')
     if not os.path.isfile(file):
@@ -252,6 +259,11 @@ def _read_interpolation_data(seedname, path):
         data_dict['dielectric'] = dielectric
     except UnboundLocalError:
         pass
+
+    # Meta information
+    data_dict['model'] = 'CASTEP'
+    data_dict['seedname'] = seedname
+    data_dict['path'] = path
 
     return data_dict
 
@@ -411,6 +423,7 @@ def _read_bands_data(seedname, path):
         'fermi', 'cell_vec', 'recip_vec', 'qpts', 'weights', 'freqs',
         'freq_down'. If a .castep file is available to read, the keys 'n_ions',
         'ion_r' and 'ion_type' are also present.
+        Meta information: 'seedname', 'path' and 'model'.
     """
 
     file = os.path.join(path, seedname + '.bands')
@@ -475,6 +488,12 @@ def _read_bands_data(seedname, path):
         data_dict['ion_type'] = ion_type
     except IOError:
         pass
+
+
+    # Meta information
+    data_dict['model'] = 'CASTEP'
+    data_dict['seedname'] = seedname
+    data_dict['path'] = path
 
     return data_dict
 
