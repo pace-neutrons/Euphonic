@@ -62,7 +62,7 @@ scattering lengths in fm must also be provided.
     from euphonic.data.interpolation import InterpolationData
 
     # Read quartz data from quartz.castep_bin
-    idata = InterpolationData('quartz')
+    idata = InterpolationData.from_castep('quartz')
 
     # Generate a recommended q-point path using seekpath
     _, unique_ions = np.unique(idata.ion_type, return_inverse=True)

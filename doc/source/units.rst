@@ -20,7 +20,7 @@ and ``convert_l_units`` methods of any of the ``Data`` objects.
 .. code-block:: py
 
    >>> from euphonic.data.phonon import PhononData
-   >>> pdata = PhononData('quartz')
+   >>> pdata = PhononData.from_castep('quartz')
    >>> pdata.freqs[0]
    <Quantity([  0.38193331   0.61106305   0.69303768  15.86537413  15.88218266
      27.64203018  31.98753254  32.21911407  42.20189648  42.90662972

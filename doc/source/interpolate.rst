@@ -57,7 +57,7 @@ paths.get_explicit_k_path>`_
 
     # Read quartz data from quartz.castep_bin
     seedname = 'quartz'
-    idata = InterpolationData(seedname)
+    idata = InterpolationData.from_castep(seedname)
 
     # Generate a recommended q-point path using seekpath
     _, unique_ions = np.unique(idata.ion_type, return_inverse=True)
