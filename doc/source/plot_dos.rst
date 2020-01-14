@@ -20,7 +20,7 @@ can be used to generate a Monkhorst-Pack grid of q-points to interpolate onto.
     from euphonic.util import mp_grid
 
     # Read quartz data from quartz.castep_bin
-    idata = InterpolationData('quartz')
+    idata = InterpolationData.from_castep('quartz')
 
     # Generate a grid of q-points
     qpts = mp_grid([10, 10, 10])

@@ -15,7 +15,7 @@ The force constants matrix and other required information is read from a
     from euphonic.data.interpolation import InterpolationData
 
     seedname = 'quartz'
-    idata = InterpolationData(seedname)
+    idata = InterpolationData.from_castep(seedname)
 
 By default CASTEP may not write the force constants, if you receive an error
 saying the force constants could not be read, set
@@ -32,7 +32,7 @@ Frequencies and eigenvectors for PhononData is read from a ``.phonon`` file.
     from euphonic.data.phonon import PhononData
 
     seedname = 'quartz'
-    pdata = PhononData(seedname)
+    pdata = PhononData.from_castep(seedname)
 
 BandsData
 ---------
@@ -43,4 +43,4 @@ Electronic fequencies can be read from a ``.bands`` file.
     from euphonic.data.bands import BandsData
 
     seedname = 'quartz'
-    bdata = BandsData(seedname)
+    bdata = BandsData.from_castep(seedname)

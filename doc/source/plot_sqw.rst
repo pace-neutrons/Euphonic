@@ -19,7 +19,7 @@ plotted with the ``plot_sqw_map`` function.
     from euphonic.plot.dispersion import plot_sqw_map
 
     # Read LZO data from La2Zr2O7.castep_bin
-    idata = InterpolationData('La2Zr2O7')
+    idata = InterpolationData.from_castep('La2Zr2O7')
 
     # Create a q-point path across multiple Brillouin Zones
     n = 500
