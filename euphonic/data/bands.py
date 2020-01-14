@@ -98,13 +98,13 @@ class BandsData(Data):
         Parameters
         ----------
         seedname : str
-            Seedname of file(s) to read e.g. if seedname = 'Fe' then 
+            Seedname of file(s) to read e.g. if seedname = 'Fe' then
                 the 'Fe.bands' file will be read
         path : str
             Path to dir containing the file(s), if in another directory
         """
         data = _castep._read_bands_data(seedname, path)
-        return self(data, seedname=seedname, model='castep', **kwargs)
+        return self(data)
 
     def _set_data(self, data):
         self.n_qpts = data['n_qpts']

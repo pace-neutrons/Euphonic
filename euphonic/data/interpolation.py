@@ -156,7 +156,7 @@ class InterpolationData(PhononData):
         return self._born*ureg('e')
 
     @classmethod
-    def from_castep(self, seedname, path=''):
+    def from_castep(self, seedname, path='', **kwargs):
         """
         Calls the CASTEP interpolation data reader and sets the InerpolationData attributes.
 
@@ -207,7 +207,7 @@ class InterpolationData(PhononData):
     def calculate_fine_phonons(
         self, qpts, asr=None, precondition=False, dipole=True,
             eta_scale=1.0, splitting=True, reduce_qpts=True, nprocs=1,
-            _qchunk=None):
+            _qchunk=None, **kwargs):
         """
         Calculate phonon frequencies and eigenvectors at specified q-points
         from a supercell force constant matrix via interpolation. For more
@@ -1324,15 +1324,15 @@ class InterpolationData(PhononData):
         """
         if isinstance(dw_arg, str):
             return super(InterpolationData, self)._get_dw_data(
-                dw_arg, self.path)
+                dw_arg, **kwargs)
         else:
             qgrid = mp_grid(dw_arg)
             if self.model.lower() == 'castep':
-                idata = InterpolationData.from_castep(self.seedname, path=self.path)
+                idata = InterpolationData.from_castep(self.seedname, **kwargs)
                 idata.calculate_fine_phonons(qgrid, **kwargs)
                 return idata
             else:
-                raise Exception('Unknown Model.')
+                raise Exception('Unknown model.')
 
     def calculate_sqw_map(self, scattering_lengths, ebins, **kwargs):
         """

@@ -110,7 +110,7 @@ class PhononData(Data):
         return self._sqw_ebins*ureg('E_h').to(self._e_units, 'spectroscopy')
 
     @classmethod
-    def from_castep(self, seedname, path=''):
+    def from_castep(self, seedname, path='', **kwargs):
         """
         Calls the CASTEP phonon data reader and sets the PhononData attributes.
 
@@ -327,10 +327,10 @@ class PhononData(Data):
         dw_data : PhononData
             The PhononData object with dw_seedname
         """
-        if self.model == 'castep':
-            return PhononData.from_castep(dw_seedname, path=self.path)
+        if self.model.lower() == 'castep':
+            return PhononData.from_castep(dw_seedname, **kwargs)
         else:
-            raise Exception('Unknown Model.')
+            raise Exception('Unknown model.')
 
     def _dw_coeff(self, data, T):
         """
