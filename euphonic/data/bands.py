@@ -126,16 +126,12 @@ class BandsData(Data):
             pass
 
         try:
+            self.model = data['model']
             if data['model'].lower() == 'castep':
-                try:
-                    self.seedname = data['seedname']
-                    self.model = data['model']
-                    self.path = data['path']
-                except: #TODO warn
-                    self.seedname = None
-                    self.model = None
-                    self.path = ''
-        except: #TODO warn
+                self.seedname = data['seedname']
+                self.model = data['model']
+                self.path = data['path']
+        except KeyError:
             pass
 
 

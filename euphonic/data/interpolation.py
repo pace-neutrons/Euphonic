@@ -185,21 +185,17 @@ class InterpolationData(PhononData):
         self.cell_origins = data['cell_origins']
 
         try:
-            if data['model'].lower() == 'castep':
-                try:
-                    self.seedname = data['seedname']
-                    self.model = data['model']
-                    self.path = data['path']
-                except: #TODO warn
-                    self.seedname = None
-                    self.model = None
-                    self.path = ''
-        except: #TODO warn
+            self._born = data['born']
+            self.dielectric = data['dielectric']
+        except KeyError:
             pass
 
         try:
-            self._born = data['born']
-            self.dielectric = data['dielectric']
+            self.model = data['model']
+            if data['model'].lower() == 'castep':
+                self.seedname = data['seedname']
+                self.model = data['model']
+                self.path = data['path']
         except KeyError:
             pass
 

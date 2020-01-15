@@ -143,18 +143,13 @@ class PhononData(Data):
         self.split_eigenvecs = data['split_eigenvecs']
 
         try:
+            self.model = data['model']
             if data['model'].lower() == 'castep':
-                try:
-                    self.seedname = data['seedname']
-                    self.model = data['model']
-                    self.path = data['path']
-                except: #TODO warn
-                    self.seedname = None
-                    self.model = None
-                    self.path = ''
-        except: #TODO warn
+                self.seedname = data['seedname']
+                self.model = data['model']
+                self.path = data['path']
+        except KeyError:
             pass
-
 
     def reorder_freqs(self, reorder_gamma=True):
         """
