@@ -156,7 +156,7 @@ class InterpolationData(PhononData):
         return self._born*ureg('e')
 
     @classmethod
-    def from_castep(self, seedname, path='', **kwargs):
+    def from_castep(self, seedname, path=''):
         """
         Calls the CASTEP interpolation data reader and sets the InerpolationData attributes.
 
@@ -203,7 +203,7 @@ class InterpolationData(PhononData):
     def calculate_fine_phonons(
         self, qpts, asr=None, precondition=False, dipole=True,
             eta_scale=1.0, splitting=True, reduce_qpts=True, nprocs=1,
-            _qchunk=None, **kwargs):
+            _qchunk=None):
         """
         Calculate phonon frequencies and eigenvectors at specified q-points
         from a supercell force constant matrix via interpolation. For more
@@ -1259,8 +1259,7 @@ class InterpolationData(PhononData):
             return
         super(InterpolationData, self).reorder_freqs(**kwargs)
 
-    def calculate_structure_factor(self, scattering_lengths, dw_arg=None,
-                                   **kwargs):
+    def calculate_structure_factor(self, scattering_lengths, **kwargs):
         """
         Calculate the one phonon inelastic scattering at each q-point
         See M. Dove Structure and Dynamics Pg. 226
@@ -1278,13 +1277,10 @@ class InterpolationData(PhononData):
             Apply a multiplicative factor to the final structure factor.
         calc_bose : boolean, optional, default True
             Whether to calculate and apply the Bose factor
-        dw_arg : (3,) int ndarray, optional, default None
-            If set, will calculate the Debye-Waller factor on a Monkhorst-Pack
-            grid
-        **kwargs
-            If dw_arg has been set, passes keyword arguments to
-            InterpolationData.calculate_fine_phonons for calculating phonons on
-            a grid for the Debye-Waller calculation
+        dw_data : InterpolationData or PhononData object
+            A PhononData or InterpolationData object with
+            frequencies/eigenvectors calculated on a q-grid over which the
+            Debye-Waller factor will be calculated
 
         Returns
         -------
@@ -1299,36 +1295,9 @@ class InterpolationData(PhononData):
                 stacklevel=2)
             return None
         sf = super(InterpolationData, self).calculate_structure_factor(
-            scattering_lengths, dw_arg=dw_arg, **kwargs)
+            scattering_lengths, **kwargs)
 
         return sf
-
-    def _get_dw_data(self, dw_arg, **kwargs):
-        """
-        Return Data object containing eigenvalues, vectors at the points where
-        the Debye-Waller factor should be calculated, based on dw_arg
-
-        Parameters
-        ----------
-        dw_arg : str or (3,) int ndarray
-            If dw_arg is just a string, assume it's a seedname of a PhononData
-            file, and read it. Otherwise calculate phonons on the specified
-            MxNxL grid
-        **kwargs
-            Get passed to the PhononData initialisation if dw_arg is a string,
-            to the InterpolationData initialisation otherwise
-        """
-        if isinstance(dw_arg, str):
-            return super(InterpolationData, self)._get_dw_data(
-                dw_arg, **kwargs)
-        else:
-            qgrid = mp_grid(dw_arg)
-            if self.model.lower() == 'castep':
-                idata = InterpolationData.from_castep(self.seedname, **kwargs)
-                idata.calculate_fine_phonons(qgrid, **kwargs)
-                return idata
-            else:
-                raise Exception('Unknown model.')
 
     def calculate_sqw_map(self, scattering_lengths, ebins, **kwargs):
         """

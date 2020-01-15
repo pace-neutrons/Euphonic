@@ -1,7 +1,8 @@
 import unittest
 import math
+import numpy as np
 import numpy.testing as npt
-from euphonic.util import reciprocal_lattice, direction_changed
+from euphonic.util import reciprocal_lattice, direction_changed, mp_grid
 
 
 class TestReciprocalLattice(unittest.TestCase):
@@ -49,3 +50,10 @@ class TestDirectionChanged(unittest.TestCase):
         expected_direction_changed = [True, True, False, True, True, True]
         npt.assert_equal(direction_changed(qpts),
                          expected_direction_changed)
+
+class TestMPGrid(unittest.TestCase):
+
+    def test_444_grid(self):
+        qpts = mp_grid([4,4,4])
+        expected_qpts = np.loadtxt('test/data/qgrid_444.txt')
+        npt.assert_equal(qpts, expected_qpts)

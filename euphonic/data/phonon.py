@@ -110,7 +110,7 @@ class PhononData(Data):
         return self._sqw_ebins*ureg('E_h').to(self._e_units, 'spectroscopy')
 
     @classmethod
-    def from_castep(self, seedname, path='', **kwargs):
+    def from_castep(self, seedname, path=''):
         """
         Calls the CASTEP phonon data reader and sets the PhononData attributes.
 
@@ -229,7 +229,7 @@ class PhononData(Data):
         self._mode_map = mode_map
 
     def calculate_structure_factor(self, scattering_lengths, T=5.0, scale=1.0,
-                                   calc_bose=True, dw_arg=None, **kwargs):
+                                   calc_bose=True, dw_data=None):
         """
         Calculate the one phonon inelastic scattering at each q-point
         See M. Dove Structure and Dynamics Pg. 226
@@ -247,12 +247,10 @@ class PhononData(Data):
             Apply a multiplicative factor to the final structure factor.
         calc_bose : boolean, optional, default True
             Whether to calculate and apply the Bose factor
-        dw_arg : string, optional, default None
-            If set, will calculate the Debye-Waller factor over the q-points in
-            the .phonon file with this seedname.
-        **kwargs
-            If dw_arg has been set, passes keyword arguments to initialisation
-            of the PhononData object for the Debye-Waller calculation
+        dw_data : InterpolationData or PhononData object
+            A PhononData or InterpolationData object with
+            frequencies/eigenvectors calculated on a q-grid over which the
+            Debye-Waller factor will be calculated
 
         Returns
         -------
@@ -284,8 +282,7 @@ class PhononData(Data):
         eigenv_dot_q = np.einsum('ijkl,il->ijk', np.conj(self.eigenvecs), Q)
 
         # Calculate Debye-Waller factors
-        if dw_arg:
-            dw_data = self._get_dw_data(dw_arg, **kwargs)
+        if dw_data:
             dw = self._dw_coeff(dw_data, T)
             dw_factor = np.exp(-np.einsum('jkl,ik,il->ij', dw, Q, Q)/2)
             exp_factor *= dw_factor
@@ -303,29 +300,6 @@ class PhononData(Data):
         sf = np.real(sf*scale)
 
         return sf
-
-    def _get_dw_data(self, dw_seedname, **kwargs):
-        """
-        Returns the PhononData object containing the q-points over which to
-        calculate the Debye-Waller factor. This function exists so it can be
-        overidden by the InterpolationData object when calculating the DW
-        factor on a grid
-
-        Parameters
-        ----------
-        dw_seedname : string
-            The seedname of the PhononData object to create
-        **kwargs
-            Get passed to the PhononData initialisation
-        Returns
-        -------
-        dw_data : PhononData
-            The PhononData object with dw_seedname
-        """
-        if self.model.lower() == 'castep':
-            return PhononData.from_castep(dw_seedname, **kwargs)
-        else:
-            raise Exception('Unknown model.')
 
     def _dw_coeff(self, data, T):
         """
