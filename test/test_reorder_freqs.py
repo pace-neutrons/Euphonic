@@ -11,7 +11,7 @@ class TestReorderFreqsNaH(unittest.TestCase):
     def test_reorder_freqs(self):
         seedname = 'NaH-reorder-test'
         path = 'test/data'
-        data = PhononData(seedname, path=path)
+        data = PhononData.from_castep(seedname, path=path)
         data.convert_e_units('1/cm')
         data.reorder_freqs()
         freqs = data.freqs.magnitude
@@ -44,10 +44,10 @@ class TestReorderFreqsLZO(unittest.TestCase):
         # Create both PhononData and InterpolationData objs for testing
         seedname = 'La2Zr2O7'
         ppath = 'test/data'
-        self.pdata = PhononData(seedname, path=ppath)
+        self.pdata = PhononData.from_castep(seedname, path=ppath)
         self.pdata.convert_e_units('1/cm')
         ipath = 'test/data/interpolation/LZO'
-        self.idata = InterpolationData(seedname, path=ipath)
+        self.idata = InterpolationData.from_castep(seedname, path=ipath)
         self.idata.convert_e_units('1/cm')
 
         self.expected_reordered_freqs = np.array(

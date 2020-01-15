@@ -25,9 +25,9 @@ def main():
     path, file = os.path.split(args.filename)
     seedname = file[:file.rfind('.')]
     if file.endswith('.bands'):
-        data = BandsData(seedname, path=path)
+        data = BandsData.from_castep(seedname, path=path)
     else:
-        data = PhononData(seedname, path=path)
+        data = PhononData.from_castep(seedname, path=path)
 
     data.convert_e_units(args.units)
 

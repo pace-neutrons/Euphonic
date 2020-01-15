@@ -21,7 +21,7 @@ def main():
     t_init = np.zeros(len(etas), dtype=np.float64)
     t_tot = np.zeros(len(etas), dtype=np.float64)
 
-    idata = InterpolationData(args.seedname)
+    idata = InterpolationData.from_castep(args.seedname)
     sfmt = '{:20s}'
     tfmt = '{: 3.2f}'
     etafmt = '{: 2.2f}'

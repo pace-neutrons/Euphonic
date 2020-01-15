@@ -20,7 +20,7 @@ frequencies can be reordered to correctly colour branches using the
     from euphonic.plot.dispersion import plot_dispersion
 
     # Read quartz data from quartz.castep_bin
-    idata = InterpolationData('quartz')
+    idata = InterpolationData.from_castep('quartz')
 
     # Generate a recommended q-point path using seekpath
     _, unique_ions = np.unique(idata.ion_type, return_inverse=True)

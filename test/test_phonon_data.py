@@ -104,7 +104,7 @@ class TestReadInputFileNaHPhonon(unittest.TestCase):
 
         self.seedname = 'NaH'
         self.path = 'test/data'
-        data = PhononData(self.seedname, path=self.path)
+        data = PhononData.from_castep(self.seedname, path=self.path)
         self.data = data
 
     def test_cell_vec_read_nah_phonon(self):
@@ -138,4 +138,4 @@ class TestReadInputFileNaHPhonon(unittest.TestCase):
 
     def test_eigenvecs_read_nah_phonon(self):
         npt.assert_array_equal(self.data.eigenvecs,
-                               self.expctd_data.eigenvecs)
+                                self.expctd_data.eigenvecs)
