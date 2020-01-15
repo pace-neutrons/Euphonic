@@ -1,5 +1,4 @@
 import unittest
-import warnings
 import numpy.testing as npt
 import numpy as np
 from euphonic.data.phonon import PhononData
@@ -206,16 +205,20 @@ class TestStructureFactorInterpolationDataLZOSerial(unittest.TestCase):
         npt.assert_allclose(sf_sum[-3, 3:], expected_sf_sum[-3, 3:],
                             rtol=5e-3, atol=1e-12)
 
-    def test_empty_interpolation_data_raises_warning(self):
+    def test_empty_interpolation_data_raises_exception(self):
         empty_data = InterpolationData.from_castep(
             self.seedname, path=self.interpolation_path)
         # Test that trying to call structure factor on an empty object
-        # raises a warning
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter("always")
-            empty_data.calculate_structure_factor(self.scattering_lengths)
-            assert issubclass(w[-1].category, UserWarning)
+        # raises an Exception
+        self.assertRaises(Exception, empty_data.calculate_structure_factor)
 
+    def test_incompatible_dw_arg_raises_exception(self):
+        quartz_data = InterpolationData.from_castep(
+            'quartz', path=self.interpolation_path + '/../quartz')
+        # Test that trying to call structure factor with a dw_arg for another
+        # material raises an Exception
+        self.assertRaises(Exception, self.data.calculate_structure_factor,
+            self.scattering_lengths, dw_data=quartz_data)
 
 class TestStructureFactorInterpolationDataLZOParallel(
     TestStructureFactorInterpolationDataLZOSerial):

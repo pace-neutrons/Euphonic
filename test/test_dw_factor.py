@@ -16,22 +16,20 @@ class TestDWFactorLZO(unittest.TestCase):
         dw = self.data._dw_coeff(5)
         expected_dw = np.reshape(np.loadtxt(self.dw_path + 'dw_T5.txt'),
                                  (self.data.n_ions, 3, 3))
-
         npt.assert_allclose(dw, expected_dw)
 
     def test_dw_T100(self):
         dw = self.data._dw_coeff(100)
         expected_dw = np.reshape(np.loadtxt(self.dw_path + 'dw_T100.txt'),
                                  (self.data.n_ions, 3, 3))
-
-        npt.assert_allclose(dw, expected_dw)
+        npt.assert_allclose(dw, expected_dw, rtol=5e-7)
 
 class TestDWFactorQuartz(unittest.TestCase):
 
     def setUp(self):
-        seedname = 'quartz'
-        path = 'test/data/interpolation/quartz'
-        self.data = InterpolationData.from_castep(seedname, path=path)
+        self.seedname = 'quartz'
+        self.path = 'test/data/interpolation/quartz'
+        self.data = InterpolationData.from_castep(self.seedname, path=self.path)
         qpts = np.loadtxt('test/data/qgrid_444.txt')
         self.data.calculate_fine_phonons(qpts, asr='reciprocal')
         self.dw_path = 'test/data/dw_factor/quartz/' 
@@ -40,12 +38,14 @@ class TestDWFactorQuartz(unittest.TestCase):
         dw = self.data._dw_coeff(5)
         expected_dw = np.reshape(np.loadtxt(self.dw_path + 'dw_T5.txt'),
                                  (self.data.n_ions, 3, 3))
-
-        npt.assert_allclose(dw, expected_dw)
+        npt.assert_allclose(dw, expected_dw, atol=2e-14)
 
     def test_dw_T100(self):
         dw = self.data._dw_coeff(100)
         expected_dw = np.reshape(np.loadtxt(self.dw_path + 'dw_T100.txt'),
                                  (self.data.n_ions, 3, 3))
+        npt.assert_allclose(dw, expected_dw, atol=5e-10)
 
-        npt.assert_allclose(dw, expected_dw)
+    def test_empty_idata_raises_exception(self):
+        empty_data = InterpolationData.from_castep(self.seedname, self.path)
+        self.assertRaises(Exception, empty_data._dw_coeff)

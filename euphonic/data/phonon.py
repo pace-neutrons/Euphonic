@@ -283,6 +283,12 @@ class PhononData(Data):
 
         # Calculate Debye-Waller factors
         if dw_data:
+            if dw_data.n_ions != self.n_ions:
+                raise Exception((
+                    'The Data object used as dw_data is not compatible with the'
+                    ' object that calculate_structure_factor has been called on'
+                    ' (they have a different number of ions). Is dw_data '
+                    'correct?'))
             dw = dw_data._dw_coeff(T)
             dw_factor = np.exp(-np.einsum('jkl,ik,il->ij', dw, Q, Q)/2)
             exp_factor *= dw_factor
