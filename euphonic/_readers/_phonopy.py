@@ -9,9 +9,10 @@ import numpy as np
 from euphonic import ureg
 from euphonic.util import reciprocal_lattice, is_gamma
 
+
 def _match_file(path='.', name='*'):
     """ DOC
-    Search target path for seed with standard yaml and hdf5 extensions.
+    Search target path for name with standard yaml and hdf5 extensions.
 
     Parameters
     ----------
@@ -30,7 +31,7 @@ def _match_file(path='.', name='*'):
     HDF5_EXT = '.hdf5' # ['.hdf5', '.he5', '.h5'] phonopy currently defaults to hdf5
     YAML_EXT = '.yaml' # ['.yaml', '.yml'] phonopy currently defaults to yaml
 
-    file_glob = os.path.join(path, seed + '.*')
+    file_glob = os.path.join(path, name + '.*')
     file_globs = glob.glob(file_glob)
 
     h5_matches = [name for name in file_globs if HDF5_EXT in name]
@@ -40,8 +41,8 @@ def _match_file(path='.', name='*'):
         file = h5_matches[0]
     elif yml_matches: # take the first yaml match
         file = yml_matches[0]
-    elif seed and seed != '*': # try just seed given by the user
-        file = os.path.join(path, seed)
+    elif name and name != '*': # try just name given by the user
+        file = os.path.join(path, name)
     else:
         return None
 
@@ -563,6 +564,7 @@ def _extract_summary(summary):
 
     n.p_n_ions = len(summary['primitive_cell']['points'])
     n.p_cell_vec = np.array(summary['primitive_cell']['lattice'])
+    n.p_recip_vec = np.array(summary['primitive_cell']['reciprocal_lattice'])
     n.p_ion_r = np.zeros((n.p_n_ions, 3))
     n.p_ion_mass = np.zeros(n.p_n_ions)
     n.p_ion_type = []
@@ -603,7 +605,6 @@ def _extract_summary(summary):
     summary_dict = {}
     summary_dict['n_ions'] = n.n_ions
     summary_dict['cell_vec'] = n.cell_vec
-    summary_dict['recip_vec'] = NotImplemented
 
     summary_dict['ion_r'] = n.ion_r
     summary_dict['ion_type'] = n.ion_type
@@ -618,7 +619,14 @@ def _extract_summary(summary):
     if 'force_constants' in summary.keys():
         summary_dict['force_constants'] = _get_fc_summary(summary)
 
+    if 'born_effective_charge' in summary.keys():
+        summary_dict['born_effective_charge'] = np.array(summary['born_effective_charge'])
+
+    if 'dielectric_constant' in summary.keys():
+        summary_dict['dielectric_constant'] = np.array(summary['dielectric_constant'])
+
     return summary_dict
+
 
 def _extract_qpts_data(qpts_object):
     """ DOC
@@ -640,8 +648,8 @@ def _extract_qpts_data(qpts_object):
     n_qpts = qpts_object['nqpoint']
     n_ions = qpts_object['natom']
     #cell_vec = qpts_object['lattice']
-    recip_vec = qpts_object['reciprocal_lattice']
-    qpts = [phon['q-position'] for phon in qpts_object['phonon']]
+    recip_vec = np.array(qpts_object['reciprocal_lattice'])
+    qpts = np.array([phon['q-position'] for phon in qpts_object['phonon']])
 
     #weights = [phon['weight'] for phon in qpts_object['phonon']]
 
@@ -659,7 +667,6 @@ def _extract_qpts_data(qpts_object):
     n_branches = freqs.shape[1]
 
     data_dict = {}
-    #data_dict['dynamical_matrix'] = dyn_mat_data 
     data_dict['n_ions'] = n_ions
     data_dict['n_qpts'] = n_qpts
     data_dict['n_branches'] = n_branches
@@ -697,7 +704,7 @@ def _reshape_fc(fc, inds, dims):
     # Reshape to arrange FC sub matrices by cell index,
     # atom_i index, atom_j index
 
-    for i, j, k in inds: 
+    for i, j, k in inds:
         # index within primitive cell
         pci_ind = (j-1) // n_cells
 
@@ -753,7 +760,6 @@ def _read_interpolation_data(path='.', qpts_file='qpoints',
 
     # load data from qpoint mode output file
     try:
-        print(qpts_file)
         with h5py.File(qpts_file, 'r') as hdf5o:
             qpoint_dict = _extract_qpts_data(hdf5o)
     except Exception as e:
@@ -767,7 +773,6 @@ def _read_interpolation_data(path='.', qpts_file='qpoints',
         pass
 
     try:
-        print(summary_file)
         with open(summary_file, 'r') as ppo:
             summary_data = yaml.safe_load(ppo)
             summary_dict = _extract_summary(summary_data)
@@ -776,7 +781,6 @@ def _read_interpolation_data(path='.', qpts_file='qpoints',
         print(e)
 
     try:
-        print(disp_file)
         with open(disp_file, 'r') as dspo:
             disp_dict = yaml.safe_load(dspo)
     except Exception as e:
@@ -804,7 +808,7 @@ def _read_interpolation_data(path='.', qpts_file='qpoints',
         dielectric_constant = summary_dict['dielectric_constant']
     else:
         try:
-            dielectric = born_dict['dielectric_constant']
+            dielectric_constant = born_dict['dielectric_constant']
         except:
             pass
 
@@ -812,10 +816,9 @@ def _read_interpolation_data(path='.', qpts_file='qpoints',
         born_effective_charge = summary_dict['born_effective_charge']
     else:
         try:
-            born = born_dict['born_effective_charge']
+            born_effective_charge = born_dict['born_effective_charge']
         except:
             pass
-
 
     # Extract units
     try:
@@ -826,35 +829,39 @@ def _read_interpolation_data(path='.', qpts_file='qpoints',
         pass
 
     if 'frequency_unit_conversion_factor' not in units:
-        # nowhere to check, warn 
-        pass
+        #TODO decide what to set for default value vs warn
+        # Nowhere else to check for fucf
+        units['frequency_unit_conversion_factor'] = None
 
     if 'nac_unit_conversion_factor' not in units:
-        # check BORN
-        pass
+        try: # Check BORN
+            with open(born_file, 'r') as bbo:
+                units['nac_unit_conversion_factor'] = int(bbo.readline())
+        except:
+            units['nac_unit_conversion_factor'] = None
 
     ulength = ureg(units['length'].lower()).to('bohr').magnitude
     umass = ureg(units['atomic_mass'].lower()).to('e_mass').magnitude
     ufreq = (ureg('THz')*units['frequency_unit_conversion_factor'])\
                 .to('E_h', 'spectroscopy').magnitude
-    unac = ureg[units['nac_unit_conversion_factor']].magnitude
+    unac = units['nac_unit_conversion_factor']
 
     # Check force constants string so that it matches format required for ureg
-    ufc_str = units['force_constants'].replace('Angstrom', 'angstrom').magnitude
+    ufc_str = units['force_constants'].replace('Angstrom', 'angstrom')
     ufc = ureg(ufc_str).to('hartree/bohr^2').magnitude
 
+    #TODO tidy comments
     data_dict = {}
-    data_dict['n_ions'] = qpoint_dict['n_ions'] #n_ions
-    data_dict['n_branches'] = qpoint_dict['n_branches'] #3*n_ions 
+    data_dict['n_ions'] = summary_dict['n_ions'] #n_ions
+    data_dict['n_branches'] = 3*summary_dict['n_ions'] #3*n_ions
     data_dict['cell_vec'] = summary_dict['cell_vec']*ulength #(cell_vec*ureg.bohr).to('angstrom')
-    data_dict['recip_vec'] = qpoint_dict['recip_vec']/ulength #((reciprocal_lattice(cell_vec)/ureg.bohr).to('1/angstrom'))
+    data_dict['recip_vec'] = reciprocal_lattice(summary_dict['cell_vec']*ulength) # qpoint_dict['recip_vec']/ulength #((reciprocal_lattice(cell_vec)/ureg.bohr).to('1/angstrom'))
 
-    data_dict['ion_r'] = summary_dict['ion_r'].ulength #ion_r - np.floor(ion_r)  # Normalise ion coordinates
+    data_dict['ion_r'] = summary_dict['ion_r']*ulength #ion_r - np.floor(ion_r)  # Normalise ion coordinates
     data_dict['ion_type'] = summary_dict['ion_type'] #ion_type
     data_dict['ion_mass'] = summary_dict['ion_mass']*umass #(ion_mass*ureg.e_mass).to('amu')
 
-    # Set entries relating to 'FORCE_CONSTANTS' block
-    try:
+    try: # Set entries relating to 'FORCE_CONSTANTS' block
         data_dict['force_constants'] = force_constants*ufc #(force_constants*ureg.hartree/(ureg.bohr**2))
         data_dict['sc_matrix'] = summary_dict['sc_matrix'] #sc_matrix
         data_dict['n_cells_in_sc'] = np.int(np.round(np.linalg.det(np.array(summary_dict['sc_matrix']))))
@@ -865,15 +872,12 @@ def _read_interpolation_data(path='.', qpts_file='qpoints',
             'Ensure WRITE_FC: true or --write-fc has been set when running '
             'Phonopy').format(summary_file, fc_file))
 
-    # Set entries relating to dipoles
-    try:
-        data_dict['born'] = born*unac #born*ureg.e
-        data_dict['dielectric'] = dielectric*unac #dielectric
+    try: # Set entries relating to dipoles
+        data_dict['born'] = born_effective_charge*unac #born*ureg.e
+        data_dict['dielectric'] = dielectric_constant*unac #dielectric
     except UnboundLocalError:
         print('No bec or dielectric') #TODO Warn if either are not found.
         pass
-
-    data_dict['dynamical_matrix'] = qpoint_dict['dynamical_matrix']
 
     return data_dict
 
