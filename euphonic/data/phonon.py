@@ -283,7 +283,7 @@ class PhononData(Data):
 
         # Calculate Debye-Waller factors
         if dw_data:
-            dw = self._dw_coeff(dw_data, T)
+            dw = dw_data._dw_coeff(T)
             dw_factor = np.exp(-np.einsum('jkl,ik,il->ij', dw, Q, Q)/2)
             exp_factor *= dw_factor
 
@@ -301,15 +301,13 @@ class PhononData(Data):
 
         return sf
 
-    def _dw_coeff(self, data, T):
+    def _dw_coeff(self, T):
         """
-        Calculate the 3 x 3 Debye-Waller coefficients for each ion
+        Calculate the 3 x 3 Debye-Waller coefficients for each ion over the
+        q-points contained in this object
 
         Parameters
         ----------
-        data : PhononData object
-            PhononData object containing the q-point grid to calculate the DW
-            factor over
         T : float
             Temperature in Kelvin
 
@@ -321,11 +319,12 @@ class PhononData(Data):
 
         # Convert units
         kB = (1*ureg.k).to('E_h/K').magnitude
-        ion_mass = data._ion_mass
-        freqs = data._freqs
-        qpts = data.qpts
-        evecs = data.eigenvecs
-        weights = data.weights
+        n_ions = self.n_ions
+        ion_mass = self._ion_mass
+        freqs = self._freqs
+        qpts = self.qpts
+        evecs = self.eigenvecs
+        weights = self.weights
 
         mass_term = 1/(2*ion_mass)
 
@@ -341,7 +340,7 @@ class PhononData(Data):
             freq_term = 1/(freqs*np.tanh(x))
         else:
             freq_term = 1/(freqs)
-        dw = np.zeros((data.n_ions, 3, 3))
+        dw = np.zeros((n_ions, 3, 3))
         # Calculating the e.e* term is expensive, do in chunks
         chunk = 1000
         for i in range(int((len(qpts) - 1)/chunk) + 1):
