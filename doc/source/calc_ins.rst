@@ -55,11 +55,17 @@ frequencies/eigenvectors have already been calculated, using the
 ``calculate_structure_factor`` method. A dictionary of coherent neutron
 scattering lengths in fm must also be provided.
 
+Calculation of the Debye-Waller factor is optional, to calculate it a
+``PhononData/InterpolationData`` object with the phonons calculated on a q-point
+grid must be provided as the ``dw_data`` keyword argument to
+``calculate_structure_factor``. See below example:
+
 .. code-block:: py
 
     import seekpath
     import numpy as np
     from euphonic.data.interpolation import InterpolationData
+    from euphonic.util import mp_grid
 
     # Read quartz data from quartz.castep_bin
     idata = InterpolationData.from_castep('quartz')
@@ -69,13 +75,21 @@ scattering lengths in fm must also be provided.
     structure = (idata.cell_vec.magnitude, idata.ion_r, unique_ions)
     qpts = seekpath.get_explicit_k_path(structure)["explicit_kpoints_rel"]
 
-    # Calculate frequencies/eigenvectors
+    # Calculate frequencies/eigenvectors for the q-point path
     idata.calculate_fine_phonons(qpts, asr='reciprocal')
 
-   # Calculate structure factor for each q-point in idata. Structure factor is
-   # returned, but not stored in the Data object
-   scattering_lengths = {'Si': 4.1491, 'O': 5.803}
-   sf = idata.calculate_structure_factor(scattering_lengths, T=5)
+    # For the DW calculation, generate and calculate frequencies/eigenvectors on
+    # a grid (generate a Monkhorst-Pack grid of q-points using the mp-grid
+    # helper function)
+    q_grid = mp_grid([5,5,5])
+    dw_idata = InterpolationData.from_castep('quartz')
+    dw_idata.calculate_fine_phonons(q_grid, asr='reciprocal')
+
+    # Calculate structure factor for each q-point in idata. Structure factor is
+    # returned, but not stored in the Data object
+    scattering_lengths = {'Si': 4.1491, 'O': 5.803}
+    sf = idata.calculate_structure_factor(scattering_lengths, T=5,
+                                          dw_data=dw_idata)
 
 Optional Keyword Arguments
 --------------------------
@@ -96,14 +110,12 @@ Apply a multiplicative factor to the final structure factor. By default
 Whether to calculate and multiply by the value of the Bose distribution at each
 frequency. By default ``calc_bose=True``
 
-**dw_arg**
+**dw_data**
 
-This describes the grid on which to calculate the Debye-Waller factor. For
-``PhononData`` objects, it can be a string with the seedname of a .phonon file
-from which to read a grid of frequencies/eigenvectors e.g. ``dw_arg='NaH'``, or
-for ``InterpolationData`` objects can be a length 3 list describing a
-Monkhorst-Pack grid on which to calculate the Debye-Waller factor e.g.
-``dw_arg=[5,5,5]``
+This is a ``PhononData`` or ``InterpolationData`` object with
+frequencies/eigenvectors calculated on a grid of q-points. The grid density
+required to get a good convergence of the Debye-Waller factor depends on the
+material and some trial and error may be required to get good convergence
 
 Docstring
 ---------

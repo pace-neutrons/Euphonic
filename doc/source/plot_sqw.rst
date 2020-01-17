@@ -17,6 +17,7 @@ plotted with the ``plot_sqw_map`` function.
     import numpy as np
     from euphonic.data.interpolation import InterpolationData
     from euphonic.plot.dispersion import plot_sqw_map
+    from euphonic.util import mp_grid
 
     # Read LZO data from La2Zr2O7.castep_bin
     idata = InterpolationData.from_castep('La2Zr2O7')
@@ -31,17 +32,22 @@ plotted with the ``plot_sqw_map`` function.
     # Calculate frequencies/eigenvectors
     idata.calculate_fine_phonons(qpts, asr='reciprocal')
 
-   # Calculate S(Q, w) map. It returns an sqw_map, and gets stored in the
-   # sqw_map attribute of the Data object
-   scattering_lengths = {'La': 8.24, 'Zr': 7.16, 'O': 5.803}
-   ebins = np.arange(5, 105, 0.25)
-   sqw_map = idata.calculate_sqw_map(scattering_lengths, ebins,
-                                     dw_arg=[5,5,5], T=300)
+    # Calculate phonons on a grid for the Debye-Waller calculation
+    q_grid = mp_grid([5,5,5])
+    dw_idata = InterpolationData.from_castep('La2Zr2O7')
+    dw_idata.calculate_fine_phonons(q_grid, asr='reciprocal')
 
-   # Plot S(Q, w) map. It returns a matplotlib.figure.Figure, and a list of
-   # matplotlib.image.AxesImage objects, which can be used to tweak the plot
-   fig, ims = plot_sqw_map(idata, ratio=1.0, vmax=5e-9, ewidth=1.0)
-   fig.show()
+    # Calculate S(Q, w) map. It returns an sqw_map, and gets stored in the
+    # sqw_map attribute of the Data object
+    scattering_lengths = {'La': 8.24, 'Zr': 7.16, 'O': 5.803}
+    ebins = np.arange(5, 105, 0.25)
+    sqw_map = idata.calculate_sqw_map(scattering_lengths, ebins,
+                                      dw_data=dw_idata, T=300)
+
+    # Plot S(Q, w) map. It returns a matplotlib.figure.Figure, and a list of
+    # matplotlib.image.AxesImage objects, which can be used to tweak the plot
+    fig, ims = plot_sqw_map(idata, ratio=1.0, vmax=5e-9, ewidth=1.0)
+    fig.show()
 
 .. image:: figures/lzo_sqw.png
    :align: center
