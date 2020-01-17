@@ -141,7 +141,7 @@ class TestSqwMapInterpolationDataLZOParallelC(
         phonon_path = 'data/'
         self.interpolation_path = os.path.join('data', 'interpolation', 'LZO')
         self.sqw_path = os.path.join('data', 'sqw_map')
-        pdata = PhononData(self.seedname, path=phonon_path)
+        pdata = PhononData.from_castep(self.seedname, path=phonon_path)
         self.data = InterpolationData.from_castep(
             self.seedname, path=self.interpolation_path)
         self.data.calculate_fine_phonons(pdata.qpts, asr='realspace',

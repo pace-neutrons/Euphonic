@@ -72,7 +72,7 @@ class TestStructureFactorInterpolationDataLZOSerial(unittest.TestCase):
         self.dw_idata = InterpolationData.from_castep(
             self.seedname, path=self.interpolation_path)
         self.dw_idata.calculate_fine_phonons(
-            np.loadtxt('test/data/qgrid_444.txt'), asr='realspace')
+            np.loadtxt(os.path.join('data', 'qgrid_444.txt')), asr='realspace')
 
         # PhononData object for DW grid
         self.dw_pdata = PhononData.from_castep(
@@ -249,6 +249,18 @@ class TestStructureFactorInterpolationDataLZOSerialC(
             self.seedname, path=self.interpolation_path)
         self.data.calculate_fine_phonons(qpts, asr='realspace', use_c=True)
 
+        # InterpolationData object for DW grid
+        self.dw_idata = InterpolationData.from_castep(
+            self.seedname, path=self.interpolation_path)
+        self.dw_idata.calculate_fine_phonons(
+            np.loadtxt(os.path.join('data', 'qgrid_444.txt')), asr='realspace',
+            use_c=True)
+
+        # PhononData object for DW grid
+        self.dw_pdata = PhononData.from_castep(
+            'La2Zr2O7-grid', path=self.sf_path)
+
+
 class TestStructureFactorInterpolationDataLZOParallelC(
     TestStructureFactorInterpolationDataLZOSerial):
 
@@ -270,7 +282,8 @@ class TestStructureFactorInterpolationDataLZOParallelC(
         self.dw_idata = InterpolationData.from_castep(
             self.seedname, path=self.interpolation_path)
         self.dw_idata.calculate_fine_phonons(
-            np.loadtxt('test/data/qgrid_444.txt'), asr='realspace')
+            np.loadtxt(os.path.join('data', 'qgrid_444.txt')), asr='realspace',
+            use_c=True)
 
         # PhononData object for DW grid
         self.dw_pdata = PhononData.from_castep(
@@ -295,7 +308,7 @@ class TestStructureFactorInterpolationDataQuartzSerial(unittest.TestCase):
         self.dw_data = InterpolationData.from_castep(
             self.seedname, path=self.interpolation_path)
         self.dw_data.calculate_fine_phonons(
-            np.loadtxt('test/data/qgrid_444.txt'), asr='reciprocal')
+            np.loadtxt(os.path.join('data', 'qgrid_444.txt')), asr='reciprocal')
 
     def test_sf_T0(self):
         sf = self.data.calculate_structure_factor(self.scattering_lengths, T=0)
@@ -421,7 +434,7 @@ class TestStructureFactorInterpolationDataQuartzSerialC(
         self.dw_data = InterpolationData.from_castep(
             self.seedname, path=self.interpolation_path)
         self.dw_data.calculate_fine_phonons(
-            np.loadtxt('test/data/qgrid_444.txt'), asr='reciprocal')
+            np.loadtxt(os.path.join('data', 'qgrid_444.txt')), asr='reciprocal')
 
 class TestStructureFactorInterpolationDataQuartzParallelC(
     TestStructureFactorInterpolationDataQuartzSerial):
@@ -444,4 +457,4 @@ class TestStructureFactorInterpolationDataQuartzParallelC(
         self.dw_data = InterpolationData.from_castep(
             self.seedname, path=self.interpolation_path)
         self.dw_data.calculate_fine_phonons(
-            np.loadtxt('test/data/qgrid_444.txt'), asr='reciprocal')
+            np.loadtxt(os.path.join('data', 'qgrid_444.txt')), asr='reciprocal')
