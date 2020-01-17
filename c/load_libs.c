@@ -16,15 +16,29 @@ ZheevdFunc get_zheevd(const char *scipy_dir) {
     HMODULE lib;
     WIN32_FIND_DATA filedata;
     HANDLE hfile;
-    const char *libdir = "\\extra-dll\\";
+    int i;
+    const char *libdirs[2];
+    libdirs[0] = "\\extra-dll\\";
+    libdirs[1] = "\\..\\numpy\\.libs\\";
+    const int ndirs = sizeof(libdirs)/sizeof(libdirs[0]);
     const char *fileglob = "libopenblas*dll";
     char buf[300];
-    snprintf(buf, sizeof(buf), "%s%s%s", scipy_dir, libdir, fileglob);
-    hfile = FindFirstFile(buf, &filedata);
-    if (hfile == INVALID_HANDLE_VALUE) {
-        printf("Could not find %s\n", buf);
-        return NULL;
+    for (i = 0; i < ndirs; i++) {
+        snprintf(buf, sizeof(buf), "%s%s%s", scipy_dir, libdirs[i], fileglob);
+        hfile = FindFirstFile(buf, &filedata);
+        if (hfile != INVALID_HANDLE_VALUE) {
+            break;
+        }
+        // libopenblas.dll file should have been found by this point, if not
+        // print all searched dirs and return null
+        if (i == ndirs - 1) {
+            for (i = 0; i < ndirs; i++) {
+                printf("Could not find %s\n", buf);
+            }
+            return NULL;
+        }
     }
+
     lib = LoadLibrary(filedata.cFileName);
     if (lib == NULL) {
         printf("Could not load lib handle %s\n", filedata.cFileName);
