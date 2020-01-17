@@ -1,9 +1,9 @@
 import unittest
-import warnings
 import numpy.testing as npt
 import numpy as np
 from euphonic.data.phonon import PhononData
 from euphonic.data.interpolation import InterpolationData
+
 
 
 class TestStructureFactorPhononDataLZO(unittest.TestCase):
@@ -14,6 +14,8 @@ class TestStructureFactorPhononDataLZO(unittest.TestCase):
         self.sf_path = 'test/data/structure_factor/LZO/'
         self.data = PhononData.from_castep(seedname, path=phonon_path)
         self.scattering_lengths = {'La': 8.24, 'Zr': 7.16, 'O': 5.803}
+        self.dw_data = PhononData.from_castep(
+            'La2Zr2O7-grid', path=self.sf_path)
 
     def test_sf_T5(self):
         sf = self.data.calculate_structure_factor(self.scattering_lengths, T=5)
@@ -22,8 +24,7 @@ class TestStructureFactorPhononDataLZO(unittest.TestCase):
 
     def test_sf_T5_dw(self):
         sf = self.data.calculate_structure_factor(
-            self.scattering_lengths, T=5, dw_arg='La2Zr2O7-grid',
-            path=self.sf_path)
+            self.scattering_lengths, T=5, dw_data=self.dw_data)
         expected_sf = np.loadtxt(self.sf_path + 'sf_pdata_dw_T5.txt')
         npt.assert_allclose(sf, expected_sf, rtol=2e-7, atol=1e-18)
 
@@ -35,8 +36,7 @@ class TestStructureFactorPhononDataLZO(unittest.TestCase):
 
     def test_sf_T100_dw(self):
         sf = self.data.calculate_structure_factor(
-            self.scattering_lengths, T=100, dw_arg='La2Zr2O7-grid',
-            path=self.sf_path)
+            self.scattering_lengths, T=100, dw_data=self.dw_data)
         expected_sf = np.loadtxt(self.sf_path + 'sf_pdata_dw_T100.txt')
         npt.assert_allclose(sf, expected_sf, rtol=2e-6)
 
@@ -55,6 +55,16 @@ class TestStructureFactorInterpolationDataLZOSerial(unittest.TestCase):
         self.data = InterpolationData.from_castep(
             self.seedname, path=self.interpolation_path)
         self.data.calculate_fine_phonons(qpts, asr='realspace')
+
+        # InterpolationData object for DW grid
+        self.dw_idata = InterpolationData.from_castep(
+            self.seedname, path=self.interpolation_path)
+        self.dw_idata.calculate_fine_phonons(
+            np.loadtxt('test/data/qgrid_444.txt'), asr='realspace')
+
+        # PhononData object for DW grid
+        self.dw_pdata = PhononData.from_castep(
+            'La2Zr2O7-grid', path=self.sf_path)
 
     def test_sf_T5(self):
         sf = self.data.calculate_structure_factor(self.scattering_lengths, T=5)
@@ -82,10 +92,9 @@ class TestStructureFactorInterpolationDataLZOSerial(unittest.TestCase):
         npt.assert_allclose(sf_sum[-3, 3:], expected_sf_sum[-3, 3:],
                             rtol=5e-3, atol=1e-12)
 
-    def test_sf_T5_dw_grid(self):
+    def test_sf_T5_dw_idata(self):
         sf = self.data.calculate_structure_factor(
-            self.scattering_lengths, T=5, dw_arg=[4, 4, 4],
-            path=self.interpolation_path, asr='realspace')
+            self.scattering_lengths, T=5, dw_data=self.dw_idata)
         expected_sf = np.loadtxt(
             self.sf_path + 'sf_idata_dw_grid_T5.txt')
         sf_sum = np.zeros(sf.shape)
@@ -105,10 +114,9 @@ class TestStructureFactorInterpolationDataLZOSerial(unittest.TestCase):
         npt.assert_allclose(sf_sum[-3, 3:], expected_sf_sum[-3, 3:],
                             rtol=5e-3, atol=1e-12)
 
-    def test_sf_T5_dw_seedname(self):
+    def test_sf_T5_dw_pdata(self):
         sf = self.data.calculate_structure_factor(
-            self.scattering_lengths, T=5, dw_arg='La2Zr2O7-grid',
-            path=self.sf_path)
+            self.scattering_lengths, T=5, dw_data=self.dw_pdata)
         expected_sf = np.loadtxt(
             self.sf_path + 'sf_idata_dw_seedname_T5.txt')
 
@@ -151,10 +159,9 @@ class TestStructureFactorInterpolationDataLZOSerial(unittest.TestCase):
         npt.assert_allclose(sf_sum[-3, 3:], expected_sf_sum[-3, 3:],
                             rtol=5e-3, atol=1e-12)
 
-    def test_sf_T100_dw_grid(self):
+    def test_sf_T100_dw_idata(self):
         sf = self.data.calculate_structure_factor(
-            self.scattering_lengths, T=100, dw_arg=[4, 4, 4],
-            path=self.interpolation_path, asr='realspace')
+            self.scattering_lengths, T=100, dw_data=self.dw_idata)
         expected_sf = np.loadtxt(
             self.sf_path + 'sf_idata_dw_grid_T100.txt')
 
@@ -175,10 +182,9 @@ class TestStructureFactorInterpolationDataLZOSerial(unittest.TestCase):
         npt.assert_allclose(sf_sum[-3, 3:], expected_sf_sum[-3, 3:],
                             rtol=5e-3, atol=1e-12)
 
-    def test_sf_T100_dw_seedname(self):
+    def test_sf_T100_dw_pdata(self):
         sf = self.data.calculate_structure_factor(
-            self.scattering_lengths, T=100, dw_arg='La2Zr2O7-grid',
-            path=self.sf_path)
+            self.scattering_lengths, T=100, dw_data=self.dw_pdata)
         expected_sf = np.loadtxt(
             self.sf_path + 'sf_idata_dw_seedname_T100.txt')
 
@@ -199,16 +205,20 @@ class TestStructureFactorInterpolationDataLZOSerial(unittest.TestCase):
         npt.assert_allclose(sf_sum[-3, 3:], expected_sf_sum[-3, 3:],
                             rtol=5e-3, atol=1e-12)
 
-    def test_empty_interpolation_data_raises_warning(self):
+    def test_empty_interpolation_data_raises_exception(self):
         empty_data = InterpolationData.from_castep(
             self.seedname, path=self.interpolation_path)
         # Test that trying to call structure factor on an empty object
-        # raises a warning
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter("always")
-            empty_data.calculate_structure_factor(self.scattering_lengths)
-            assert issubclass(w[-1].category, UserWarning)
+        # raises an Exception
+        self.assertRaises(Exception, empty_data.calculate_structure_factor)
 
+    def test_incompatible_dw_arg_raises_exception(self):
+        quartz_data = InterpolationData.from_castep(
+            'quartz', path=self.interpolation_path + '/../quartz')
+        # Test that trying to call structure factor with a dw_arg for another
+        # material raises an Exception
+        self.assertRaises(Exception, self.data.calculate_structure_factor,
+            self.scattering_lengths, dw_data=quartz_data)
 
 class TestStructureFactorInterpolationDataLZOParallel(
     TestStructureFactorInterpolationDataLZOSerial):
@@ -226,6 +236,15 @@ class TestStructureFactorInterpolationDataLZOParallel(
             self.seedname, path=self.interpolation_path)
         self.data.calculate_fine_phonons(qpts, asr='realspace', nprocs=2)
 
+        # InterpolationData object for DW grid
+        self.dw_idata = InterpolationData.from_castep(
+            self.seedname, path=self.interpolation_path)
+        self.dw_idata.calculate_fine_phonons(
+            np.loadtxt('test/data/qgrid_444.txt'), asr='realspace')
+
+        # PhononData object for DW grid
+        self.dw_pdata = PhononData.from_castep(
+            'La2Zr2O7-grid', path=self.sf_path)
 
 class TestStructureFactorInterpolationDataQuartzSerial(unittest.TestCase):
 
@@ -241,6 +260,12 @@ class TestStructureFactorInterpolationDataQuartzSerial(unittest.TestCase):
         self.data = InterpolationData.from_castep(
             self.seedname, path=self.interpolation_path)
         self.data.calculate_fine_phonons(qpts, asr='reciprocal')
+
+        # InterpolationData object for DW grid
+        self.dw_data = InterpolationData.from_castep(
+            self.seedname, path=self.interpolation_path)
+        self.dw_data.calculate_fine_phonons(
+            np.loadtxt('test/data/qgrid_444.txt'), asr='reciprocal')
 
     def test_sf_T0(self):
         sf = self.data.calculate_structure_factor(self.scattering_lengths, T=0)
@@ -272,8 +297,7 @@ class TestStructureFactorInterpolationDataQuartzSerial(unittest.TestCase):
 
     def test_sf_T0_dw_grid(self):
         sf = self.data.calculate_structure_factor(
-            self.scattering_lengths, T=0, dw_arg=[4, 4, 4],
-            path=self.interpolation_path, asr='reciprocal')
+            self.scattering_lengths, T=0, dw_data=self.dw_data)
         expected_sf = np.loadtxt(
             self.sf_path + 'sf_idata_dw_grid_T0.txt')
         sf_sum = np.zeros(sf.shape)
@@ -323,8 +347,7 @@ class TestStructureFactorInterpolationDataQuartzSerial(unittest.TestCase):
 
     def test_sf_T100_dw_grid(self):
         sf = self.data.calculate_structure_factor(
-            self.scattering_lengths, T=100, dw_arg=[4, 4, 4],
-            path=self.interpolation_path, asr='reciprocal')
+            self.scattering_lengths, T=100, dw_data=self.dw_data)
         expected_sf = np.loadtxt(
             self.sf_path + 'sf_idata_dw_grid_T100.txt')
 
@@ -363,3 +386,9 @@ class TestStructureFactorInterpolationDataQuartzParallel(
         self.data = InterpolationData.from_castep(
             self.seedname, path=self.interpolation_path)
         self.data.calculate_fine_phonons(qpts, asr='reciprocal', nprocs=2)
+
+        # InterpolationData object for DW grid
+        self.dw_data = InterpolationData.from_castep(
+            self.seedname, path=self.interpolation_path)
+        self.dw_data.calculate_fine_phonons(
+            np.loadtxt('test/data/qgrid_444.txt'), asr='reciprocal')

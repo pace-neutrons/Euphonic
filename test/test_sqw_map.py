@@ -21,6 +21,10 @@ class TestSqwMapPhononDataLZO(unittest.TestCase):
         self.scattering_lengths = {'La': 8.24, 'Zr': 7.16, 'O': 5.803}
         self.ebins = np.arange(0, 100, 1.)
 
+        # PhononData object for DW grid
+        self.dw_data = PhononData.from_castep(
+            'La2Zr2O7-grid', path=self.sf_path)
+
     def test_sqw_T5(self):
         self.data.calculate_sqw_map(self.scattering_lengths, self.ebins, T=5)
 
@@ -30,8 +34,7 @@ class TestSqwMapPhononDataLZO(unittest.TestCase):
 
     def test_sqw_T5_dw(self):
         self.data.calculate_sqw_map(
-            self.scattering_lengths, self.ebins, T=5, dw_arg='La2Zr2O7-grid',
-            path=self.sf_path)
+            self.scattering_lengths, self.ebins, T=5, dw_data=self.dw_data)
 
         npt.assert_allclose(self.data.sqw_ebins.magnitude, self.ebins)
         expected_sqw_map = np.loadtxt(
@@ -47,8 +50,7 @@ class TestSqwMapPhononDataLZO(unittest.TestCase):
 
     def test_sqw_T100_dw(self):
         self.data.calculate_sqw_map(
-            self.scattering_lengths, self.ebins, T=100, dw_arg='La2Zr2O7-grid',
-            path=self.sf_path)
+            self.scattering_lengths, self.ebins, T=100, dw_data=self.dw_data)
 
         npt.assert_allclose(self.data.sqw_ebins.magnitude, self.ebins)
         expected_sqw_map = np.loadtxt(
@@ -97,8 +99,7 @@ class TestSqwMapInterpolationDataLZOSerial(unittest.TestCase):
                 return_value=np.loadtxt(sf_path + 'sf_idata_T100.txt'))
     def test_sqw_arguments_passed(self, calculate_structure_factor_function):
         self.data.calculate_sqw_map(
-            self.scattering_lengths, self.ebins, T=100, dw_arg=[4, 4, 4],
-            asr='reciprocal', model='CASTEP')
+            self.scattering_lengths, self.ebins, T=100, dw_data='dw_data')
         sf_args, sf_kwargs = calculate_structure_factor_function.call_args
 
         # Check calculate_structure_factor was called with the correct args
@@ -106,9 +107,7 @@ class TestSqwMapInterpolationDataLZOSerial(unittest.TestCase):
         self.assertEqual(sf_args[0], self.scattering_lengths)
         self.assertEqual(sf_kwargs['T'], 100)
         self.assertEqual(sf_kwargs['calc_bose'], False)
-        self.assertEqual(sf_kwargs['dw_arg'], [4, 4, 4])
-        self.assertEqual(sf_kwargs['asr'], 'reciprocal')
-        self.assertEqual(sf_kwargs['model'], 'CASTEP')
+        self.assertEqual(sf_kwargs['dw_data'], 'dw_data')
 
 class TestSqwMapInterpolationDataLZOParallel(
     TestSqwMapInterpolationDataLZOSerial):

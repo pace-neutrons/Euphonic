@@ -110,7 +110,7 @@ class PhononData(Data):
         return self._sqw_ebins*ureg('E_h').to(self._e_units, 'spectroscopy')
 
     @classmethod
-    def from_castep(self, seedname, path='', **kwargs):
+    def from_castep(self, seedname, path=''):
         """
         Calls the CASTEP phonon data reader and sets the PhononData attributes.
 
@@ -229,7 +229,7 @@ class PhononData(Data):
         self._mode_map = mode_map
 
     def calculate_structure_factor(self, scattering_lengths, T=5.0, scale=1.0,
-                                   calc_bose=True, dw_arg=None, **kwargs):
+                                   calc_bose=True, dw_data=None):
         """
         Calculate the one phonon inelastic scattering at each q-point
         See M. Dove Structure and Dynamics Pg. 226
@@ -247,12 +247,10 @@ class PhononData(Data):
             Apply a multiplicative factor to the final structure factor.
         calc_bose : boolean, optional, default True
             Whether to calculate and apply the Bose factor
-        dw_arg : string, optional, default None
-            If set, will calculate the Debye-Waller factor over the q-points in
-            the .phonon file with this seedname.
-        **kwargs
-            If dw_arg has been set, passes keyword arguments to initialisation
-            of the PhononData object for the Debye-Waller calculation
+        dw_data : InterpolationData or PhononData object
+            A PhononData or InterpolationData object with
+            frequencies/eigenvectors calculated on a q-grid over which the
+            Debye-Waller factor will be calculated
 
         Returns
         -------
@@ -284,9 +282,14 @@ class PhononData(Data):
         eigenv_dot_q = np.einsum('ijkl,il->ijk', np.conj(self.eigenvecs), Q)
 
         # Calculate Debye-Waller factors
-        if dw_arg:
-            dw_data = self._get_dw_data(dw_arg, **kwargs)
-            dw = self._dw_coeff(dw_data, T)
+        if dw_data:
+            if dw_data.n_ions != self.n_ions:
+                raise Exception((
+                    'The Data object used as dw_data is not compatible with the'
+                    ' object that calculate_structure_factor has been called on'
+                    ' (they have a different number of ions). Is dw_data '
+                    'correct?'))
+            dw = dw_data._dw_coeff(T)
             dw_factor = np.exp(-np.einsum('jkl,ik,il->ij', dw, Q, Q)/2)
             exp_factor *= dw_factor
 
@@ -304,38 +307,13 @@ class PhononData(Data):
 
         return sf
 
-    def _get_dw_data(self, dw_seedname, **kwargs):
+    def _dw_coeff(self, T):
         """
-        Returns the PhononData object containing the q-points over which to
-        calculate the Debye-Waller factor. This function exists so it can be
-        overidden by the InterpolationData object when calculating the DW
-        factor on a grid
+        Calculate the 3 x 3 Debye-Waller coefficients for each ion over the
+        q-points contained in this object
 
         Parameters
         ----------
-        dw_seedname : string
-            The seedname of the PhononData object to create
-        **kwargs
-            Get passed to the PhononData initialisation
-        Returns
-        -------
-        dw_data : PhononData
-            The PhononData object with dw_seedname
-        """
-        if self.model.lower() == 'castep':
-            return PhononData.from_castep(dw_seedname, **kwargs)
-        else:
-            raise Exception('Unknown model.')
-
-    def _dw_coeff(self, data, T):
-        """
-        Calculate the 3 x 3 Debye-Waller coefficients for each ion
-
-        Parameters
-        ----------
-        data : PhononData object
-            PhononData object containing the q-point grid to calculate the DW
-            factor over
         T : float
             Temperature in Kelvin
 
@@ -347,11 +325,12 @@ class PhononData(Data):
 
         # Convert units
         kB = (1*ureg.k).to('E_h/K').magnitude
-        ion_mass = data._ion_mass
-        freqs = data._freqs
-        qpts = data.qpts
-        evecs = data.eigenvecs
-        weights = data.weights
+        n_ions = self.n_ions
+        ion_mass = self._ion_mass
+        freqs = self._freqs
+        qpts = self.qpts
+        evecs = self.eigenvecs
+        weights = self.weights
 
         mass_term = 1/(2*ion_mass)
 
@@ -367,7 +346,7 @@ class PhononData(Data):
             freq_term = 1/(freqs*np.tanh(x))
         else:
             freq_term = 1/(freqs)
-        dw = np.zeros((data.n_ions, 3, 3))
+        dw = np.zeros((n_ions, 3, 3))
         # Calculating the e.e* term is expensive, do in chunks
         chunk = 1000
         for i in range(int((len(qpts) - 1)/chunk) + 1):

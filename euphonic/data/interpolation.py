@@ -99,8 +99,8 @@ class InterpolationData(PhononData):
         ----------
         data : dict
             A dict containing the following keys: n_ions, n_branches, cell_vec,
-            ion_r, ion_type, ion_mass, force_constants, sc_matrix, n_cells_in_sc,
-            cell_origins, and optional : born, dielectric,
+            ion_r, ion_type, ion_mass, force_constants, sc_matrix,
+            n_cells_in_sc, cell_origins, and optional : born, dielectric
             meta :
                 model : {'CASTEP'}
                     Which model has been used
@@ -111,14 +111,15 @@ class InterpolationData(PhononData):
                     Seedname of file that is read
         """
         if type(data) is str:
-            raise Exception('The old interface now takes the form:',
-                            'InterpolationData.from_castep(seedname, path="<path>").',
-                            '(Please see documentation for more information.)')
+            raise Exception((
+                'The old interface now takes the form:'
+                'InterpolationData.from_castep(seedname, path="<path>").'
+                '(Please see documentation for more information.)'))
 
         self._set_data(data)
 
         self.n_qpts = 0
-        self.qpts = np.array([])
+        self.qpts = np.empty((0, 3))
 
         self._reduced_freqs = np.empty((0, 3*self.n_ions))
         self._reduced_eigenvecs = np.empty((0, 3*self.n_ions, self.n_ions, 3),
@@ -156,7 +157,7 @@ class InterpolationData(PhononData):
         return self._born*ureg('e')
 
     @classmethod
-    def from_castep(self, seedname, path='', **kwargs):
+    def from_castep(self, seedname, path=''):
         """
         Calls the CASTEP interpolation data reader and sets the InerpolationData attributes.
 
@@ -203,7 +204,7 @@ class InterpolationData(PhononData):
     def calculate_fine_phonons(
         self, qpts, asr=None, precondition=False, dipole=True,
             eta_scale=1.0, splitting=True, reduce_qpts=True, nprocs=1,
-            _qchunk=None, **kwargs):
+            _qchunk=None):
         """
         Calculate phonon frequencies and eigenvectors at specified q-points
         from a supercell force constant matrix via interpolation. For more
@@ -1252,15 +1253,12 @@ class InterpolationData(PhononData):
             So you might not want to reorder at gamma for some materials
         """
         if self.n_qpts == 0:
-            warnings.warn(
-                ('No frequencies in InterpolationData object, call '
-                 'calculate_fine_phonons before reordering frequencies'),
-                stacklevel=2)
-            return
+            raise Exception((
+                'No frequencies in InterpolationData object, call '
+                'calculate_fine_phonons before reordering frequencies'))
         super(InterpolationData, self).reorder_freqs(**kwargs)
 
-    def calculate_structure_factor(self, scattering_lengths, dw_arg=None,
-                                   **kwargs):
+    def calculate_structure_factor(self, scattering_lengths, **kwargs):
         """
         Calculate the one phonon inelastic scattering at each q-point
         See M. Dove Structure and Dynamics Pg. 226
@@ -1278,13 +1276,10 @@ class InterpolationData(PhononData):
             Apply a multiplicative factor to the final structure factor.
         calc_bose : boolean, optional, default True
             Whether to calculate and apply the Bose factor
-        dw_arg : (3,) int ndarray, optional, default None
-            If set, will calculate the Debye-Waller factor on a Monkhorst-Pack
-            grid
-        **kwargs
-            If dw_arg has been set, passes keyword arguments to
-            InterpolationData.calculate_fine_phonons for calculating phonons on
-            a grid for the Debye-Waller calculation
+        dw_data : InterpolationData or PhononData object
+            A PhononData or InterpolationData object with
+            frequencies/eigenvectors calculated on a q-grid over which the
+            Debye-Waller factor will be calculated
 
         Returns
         -------
@@ -1292,43 +1287,38 @@ class InterpolationData(PhononData):
             The structure factor for each q-point and phonon branch
         """
         if self.n_qpts == 0:
-            warnings.warn(
-                ('No frequencies in InterpolationData object, call '
-                 'calculate_fine_phonons before calling '
-                 'calculate_structure_factor'),
-                stacklevel=2)
-            return None
+            raise Exception((
+                'No frequencies in InterpolationData object, call '
+                'calculate_fine_phonons before calling '
+                'calculate_structure_factor'))
         sf = super(InterpolationData, self).calculate_structure_factor(
-            scattering_lengths, dw_arg=dw_arg, **kwargs)
+            scattering_lengths, **kwargs)
 
         return sf
 
-    def _get_dw_data(self, dw_arg, **kwargs):
+    def _dw_coeff(self, T):
         """
-        Return Data object containing eigenvalues, vectors at the points where
-        the Debye-Waller factor should be calculated, based on dw_arg
+        Calculate the 3 x 3 Debye-Waller coefficients for each ion over the
+        q-points contained in this object
 
         Parameters
         ----------
-        dw_arg : str or (3,) int ndarray
-            If dw_arg is just a string, assume it's a seedname of a PhononData
-            file, and read it. Otherwise calculate phonons on the specified
-            MxNxL grid
-        **kwargs
-            Get passed to the PhononData initialisation if dw_arg is a string,
-            to the InterpolationData initialisation otherwise
+        T : float
+            Temperature in Kelvin
+
+        Returns
+        -------
+        dw : (n_ions, 3, 3) float ndarray
+            The DW coefficients for each ion
         """
-        if isinstance(dw_arg, str):
-            return super(InterpolationData, self)._get_dw_data(
-                dw_arg, **kwargs)
-        else:
-            qgrid = mp_grid(dw_arg)
-            if self.model.lower() == 'castep':
-                idata = InterpolationData.from_castep(self.seedname, **kwargs)
-                idata.calculate_fine_phonons(qgrid, **kwargs)
-                return idata
-            else:
-                raise Exception('Unknown model.')
+        if self.n_qpts == 0:
+            raise Exception((
+                'No frequencies in InterpolationData object, call '
+                'calculate_fine_phonons before using object as a dw_data '
+                'keyword argument to calculate_structure_factor'))
+        dw = super(InterpolationData, self)._dw_coeff(T)
+
+        return dw
 
     def calculate_sqw_map(self, scattering_lengths, ebins, **kwargs):
         """
@@ -1353,12 +1343,10 @@ class InterpolationData(PhononData):
             The intensity for each q-point and energy bin
         """
         if self.n_qpts == 0:
-            warnings.warn(
-                ('No frequencies in InterpolationData object, call '
-                 'calculate_fine_phonons before calling '
-                 'calculate_sqw_map'),
-                stacklevel=2)
-            return None
+            raise Exception((
+                'No frequencies in InterpolationData object, call '
+                'calculate_fine_phonons before calling '
+                'calculate_sqw_map'))
         sqw_map = super(InterpolationData, self).calculate_sqw_map(
             scattering_lengths, ebins, **kwargs)
 

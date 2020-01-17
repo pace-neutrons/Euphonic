@@ -1,5 +1,4 @@
 import unittest
-import warnings
 import numpy.testing as npt
 import numpy as np
 from euphonic.data.interpolation import InterpolationData
@@ -223,12 +222,9 @@ class TestReorderFreqsLZO(unittest.TestCase):
         npt.assert_allclose(reordered_freqs,
                             self.expected_reordered_freqs, atol=0.02)
 
-    def test_empty_interpolation_data_raises_warning(self):
-        # Test that trying to call reorder on an empty object raises a warning
-        with warnings.catch_warnings(record=True) as w:
-            warnings.simplefilter("always")
-            self.idata.reorder_freqs()
-            assert issubclass(w[-1].category, UserWarning)
+    def test_empty_interpolation_data_raises_exception(self):
+        # Test that trying to call reorder on an empty object raises Exception
+        self.assertRaises(Exception, self.idata.reorder_freqs)
 
     def test_reorder_freqs_interpolation_data_reorder_gamma_false(self):
         expected_freqs_gamma_false = np.array(
