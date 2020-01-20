@@ -126,6 +126,21 @@ keeps track of which q-points are equivalent, and frequencies and eigenvectors
 can still be accessed as normal with the same indices as the input q-point list.
 This is turned on by default, but can be turned off using ``reduce_qpts=False``
 
+**use_c**
+
+Whether to use the optional C extension to calculate phonon frequencies and
+eigenvectors, using C enables multithreading and is likely to increase
+performance. If ``use_c=True`` and the Euphonic C extension hasn't been
+installed, it will print a warning and fall back to the pure Python calculation.
+By default ``use_c=False``
+
+**n_threads**
+
+When ``use_c=True`` the phonon frequency/eigenvector calculation can be
+parallelised over q-points using OpenMP threads. The number of threads should be
+set to the number of cores on your machine, by default no multithreading is used
+(``n_threads=1``)
+
 Docstring
 ---------
 .. autofunction:: euphonic.data.interpolation.InterpolationData.calculate_fine_phonons

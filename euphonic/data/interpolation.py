@@ -230,7 +230,7 @@ class InterpolationData(PhononData):
         use_c : boolean, optional, default False
             Whether to use C instead of Python to calculate and diagonalise
             the dynamical matrix
-        n_threads : boolean, optional, default True
+        n_threads : int, optional, default 1
             The number of threads to use when looping over q-points in C. Only
             applicable if use_c=True
 

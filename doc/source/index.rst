@@ -45,7 +45,40 @@ Matplotlib plotting routines just use:
 
     pip install .
 
+Installing the C extension (optional)
+=====================================
+Euphonic has an optional C extension, which can lead to increased performance
+and enable use of multiple cores when interpolating phonons. By default
+Euphonic will attempt to install this extension, but will print a warning and
+fall back to the pure Python version
+if this fails.
 
+**Windows**
+
+On Windows, the C extension can be compiled with the Microsoft Visual Studio
+Compiler, which can be downloaded with
+`Visual Studio <https://visualstudio.microsoft.com/downloads/>`_. If downloaded
+to a standard location your command line software may pick it up automatically,
+or you may need to manually add the compiler executable (``cl.exe``) to your
+path. The Euphonic extension should then be installed automatically when using
+the same pip commands as above.
+
+**Linux**
+
+The recommended compiler is ``gcc`` (currently tested with ``4.8.5``), first the
+environment variable ``CC`` must be set to the gcc compiler:
+
+.. code-block::  bash
+
+    export CC=gcc
+
+Then the Euphonic extension will be automatically installed when using the same
+pip commands as above. If installing the C extension is failing, you can
+investigate by increasing pip's verbosity with the ``-vvv`` flag:
+
+.. code-block:: bash
+
+    pip install -vvv euphonic
 
 .. toctree::
    :hidden:
