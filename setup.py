@@ -1,5 +1,4 @@
 import os
-import numpy as np
 
 try:
     from setuptools import setup, find_packages, Extension
@@ -9,6 +8,7 @@ except ImportError:
 def run_setup(build_c=True):
 
     if build_c:
+        import numpy as np
         include_dirs = [np.get_include(), 'c']
         sources = ['c/_euphonic.c', 'c/dyn_mat.c', 'c/util.c', 'c/py_util.c',
                    'c/load_libs.c']
