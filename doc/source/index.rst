@@ -50,8 +50,13 @@ Installing the C extension (optional)
 Euphonic has an optional C extension, which can lead to increased performance
 and enable use of multiple cores when interpolating phonons. By default
 Euphonic will attempt to install this extension, but will print a warning and
-fall back to the pure Python version
-if this fails.
+fall back to the pure Python version if this fails. To determine if the C
+extension is installing properly and investigate any problems, it is best to
+increase pip's verbosity:
+
+.. code-block:: bash
+
+    pip install -vvv euphonic
 
 **Windows**
 
@@ -65,20 +70,10 @@ the same pip commands as above.
 
 **Linux**
 
-The recommended compiler is ``gcc`` (currently tested with ``4.8.5``), first the
-environment variable ``CC`` must be set to the gcc compiler:
+You should have a version of ``gcc`` on your path (currently tested with
+``4.8.5``). If ``gcc`` can be found the Euphonic extension will be automatically
+installed when using the same pip commands as above.
 
-.. code-block::  bash
-
-    export CC=gcc
-
-Then the Euphonic extension will be automatically installed when using the same
-pip commands as above. If installing the C extension is failing, you can
-investigate by increasing pip's verbosity with the ``-vvv`` flag:
-
-.. code-block:: bash
-
-    pip install -vvv euphonic
 
 .. toctree::
    :hidden:

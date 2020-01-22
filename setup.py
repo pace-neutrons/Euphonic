@@ -1,4 +1,4 @@
-import os
+from euphonic import __version__
 
 try:
     from setuptools import setup, find_packages, Extension
@@ -8,6 +8,7 @@ except ImportError:
 def run_setup(build_c=True):
 
     if build_c:
+        import os
         import numpy as np
         include_dirs = [np.get_include(), 'c']
         sources = ['c/_euphonic.c', 'c/dyn_mat.c', 'c/util.c', 'c/py_util.c',
@@ -48,7 +49,7 @@ def run_setup(build_c=True):
 
     setup(
         name='euphonic',
-        version='0.1dev3',
+        version=__version__,
         author='Rebecca Fair',
         author_email='rebecca.fair@stfc.ac.uk',
         description=(
