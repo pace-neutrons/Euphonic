@@ -5,7 +5,6 @@
 #include <omp.h>
 #include <Python.h>
 #include <numpy/arrayobject.h>
-#include "lib_funcs.h"
 #include "load_libs.h"
 #include "dyn_mat.h"
 #include "py_util.h"

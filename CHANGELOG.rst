@@ -1,5 +1,13 @@
-`Unreleased <https://github.com/pace-neutrons/Euphonic/compare/v0.2.0...HEAD>`_
+`Unreleased <https://github.com/pace-neutrons/Euphonic/compare/v0.2.1...HEAD>`_
 ----------
+
+`v0.2.1 <https://github.com/pace-neutrons/Euphonic/compare/v0.2.0...v0.2.1>`_
+------
+
+- Bug fixes:
+
+  - Cannot easily upload C header files to PyPI without an accompanying source
+    file, so refactor C files to avoid this
 
 `v0.2.0 <https://github.com/pace-neutrons/Euphonic/compare/v0.1-dev3...v0.2.0>`_
 ------

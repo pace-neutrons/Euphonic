@@ -4,8 +4,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "lib_funcs.h"
 #include "util.h"
+#include "load_libs.h"
 
 #define PI 3.14159265358979323846
 
