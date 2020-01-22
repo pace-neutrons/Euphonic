@@ -387,6 +387,10 @@ def _read_entry(file_obj, dtype=''):
         n_elems = int(begin/n_bytes)
         if n_elems > 1:
             data = np.fromfile(file_obj, dtype=dtype, count=n_elems)
+            if 'i' in dtype:
+                data = data.astype(np.int32)
+            elif 'f' in dtype:
+                data = data.astype(np.float64)
         else:
             if 'i' in dtype:
                 data = struct.unpack('>i', file_obj.read(begin))[0]

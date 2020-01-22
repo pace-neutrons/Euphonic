@@ -171,3 +171,81 @@ def bose_factor(x, T):
     if T > 0:
         bose = bose + 1/(np.exp(np.absolute(x)/(kB*T)) - 1)
     return bose
+
+
+def _ensure_contiguous_attrs(obj, required_attrs, opt_attrs=[]):
+    """
+    Make sure all listed attributes of obj are C Contiguous and of the correct
+    type (int32, float64, complex128). This should only be used internally,
+    and called before any calls to Euphonic C extension functions
+
+    Parameters
+    ----------
+    obj : Object
+        The object that will have it's attributes checked
+    required_attrs : list of strings
+        The attributes of obj to be checked. They should all be Numpy arrays
+    opt_attrs : list of strings, default []
+        The attributes of obj to be checked, but if they don't exist will not
+        throw an error. e.g. Depending on the material InterpolationData
+        objects may or may not have 'born' defined
+    """
+    for attr_name in required_attrs:
+        attr = getattr(obj, attr_name)
+        attr = attr.astype(_get_dtype(attr), order='C', copy=False)
+        setattr(obj, attr_name, attr)
+
+    for attr_name in opt_attrs:
+        try:
+            attr = getattr(obj, attr_name)
+            attr = attr.astype(_get_dtype(attr), order='C', copy=False)
+            setattr(obj, attr_name, attr)
+        except AttributeError:
+            pass
+
+
+def _ensure_contiguous_args(*args):
+    """
+    Make sure all arguments are C Contiguous and of the correct type (int32,
+    float64, complex128). This should only be used internally, and called
+    before any calls to Euphonic C extension functions
+    Example use: arr1, arr2 = _ensure_contiguous_args(arr1, arr2)
+
+    Parameters
+    ----------
+    *args : any number of ndarrays
+        The Numpy arrays to be checked
+
+    Returns
+    -------
+    args_contiguous : the same number of ndarrays as args
+        The same as the provided args, but all contiguous.
+    """
+    args = list(args)
+    for i in range(len(args)):
+        args[i] = args[i].astype(_get_dtype(args[i]), order='C', copy=False)
+
+    return args
+
+
+def _get_dtype(arr):
+   """
+   Get the Numpy dtype that should be used for the input array
+
+   Parameters
+   ----------
+   arr : ndarray
+       The Numpy array to get the type of
+
+   Returns
+   -------
+   dtype : Numpy dtype
+       The type the array should be
+   """
+   if np.issubdtype(arr.dtype, np.integer):
+       return np.int32
+   elif np.issubdtype(arr.dtype, np.floating):
+       return np.float64
+   elif np.issubdtype(arr.dtype, np.complexfloating):
+       return np.complex128
+   return None
