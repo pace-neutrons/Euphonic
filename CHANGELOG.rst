@@ -1,5 +1,12 @@
-`Unreleased <https://github.com/pace-neutrons/Euphonic/compare/v0.2.1...HEAD>`_
+`Unreleased <https://github.com/pace-neutrons/Euphonic/compare/v0.2.2...HEAD>`_
 ----------
+
+`v0.2.2 <https://github.com/pace-neutrons/Euphonic/compare/v0.2.1...v0.2.2>`_
+------
+
+- Bug fixes:
+
+  - Add MANIFEST.in for PyPI distribution
 
 `v0.2.1 <https://github.com/pace-neutrons/Euphonic/compare/v0.2.0...v0.2.1>`_
 ------

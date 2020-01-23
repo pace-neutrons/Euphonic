@@ -1,4 +1,4 @@
-__version__ = '0.2.1'
+__version__ = '0.2.2'
 
 try:
     # Create ureg here so it is only created once. However, this __init__.py

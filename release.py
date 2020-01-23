@@ -26,7 +26,7 @@ def release_github(test=True):
     changelog_ver = re.findall('\n`(v\d+\.\d+\.\S+)\s', changelog)[0]
     if setup_ver != changelog_ver:
         raise Exception('setup.py/changelog.rst version mismatch!')
-    desc = re.search('`v\d+\.\d+\.\S+.*?^-+\n(.*)^`v', changelog,
+    desc = re.search('`v\d+\.\d+\.\S+.*?^-+\n(.*?)^`v', changelog,
                      re.DOTALL | re.MULTILINE).groups()[0].strip()
 
     payload = {
