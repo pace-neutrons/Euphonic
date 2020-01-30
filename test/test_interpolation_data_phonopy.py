@@ -6,17 +6,21 @@ from euphonic import ureg
 from euphonic.data.interpolation import InterpolationData
 
 
-class TestInputReadQuartz(unittest.TestCase):
+class TestInputReadNaCL(unittest.TestCase):
 
     def setUp(self):
         # Create trivial function object so attributes can be assigned to it
         expctd_data = type('', (), {})()
-        expctd_data.n_ions = 9
-        expctd_data.n_branches = 27
+        expctd_data.n_ions = 8
+        expctd_data.n_branches = 24
+
+        #TODO cell vec
         expctd_data.cell_vec = np.array([
             [2.42617588, -4.20225989, 0.00000000],
             [2.42617588, 4.20225989, 0.00000000],
             [0.00000000, 0.00000000, 5.35030451]])*ureg('angstrom')
+
+        #TODO ion r
         expctd_data.ion_r = np.array([
             [0.41170811, 0.27568186, 0.27940760],
             [0.72431814, 0.13602626, 0.94607427],
@@ -27,25 +31,37 @@ class TestInputReadQuartz(unittest.TestCase):
             [0.46496011, 0.00000000, 0.16666667],
             [0.00000000, 0.46496011, 0.83333333],
             [0.53503989, 0.53503989, 0.50000000]])
+
         expctd_data.ion_type = np.array(
-            ['O', 'O', 'O', 'O', 'O', 'O', 'Si', 'Si', 'Si'])
+            ['Na', 'Na', 'Na', 'Na', 'Cl', 'Cl', 'Cl', 'Cl'])
+
+        #TODO ion mass
         expctd_data.ion_mass = np.array(
             [15.9994000, 15.9994000, 15.9994000,
              15.9994000, 15.9994000, 15.9994000,
              28.0855000, 28.0855000, 28.0855000])*ureg('amu')
+
+        #TODO sc matrix
         expctd_data.sc_matrix = np.array([[5, 0, 0],
                                           [0, 5, 0],
                                           [0, 0, 4]])
+        #TODO n cells in sc
         expctd_data.n_cells_in_sc = 100
+
+        #TODO fc mat cell0 i0 j0
         expctd_data.fc_mat_cell0_i0_j0 = np.array([
             [0.22324308, 0.29855096, 0.31240272],
             [0.29855096, 0.43968813, 0.34437270],
             [0.31240272, 0.34437270, 0.33448280]])*ureg('hartree/bohr**2')
+
+        #TODO fc mat cell 10 i2 j3
         expctd_data.fc_mat_cell10_i2_j3 = (np.array([
             [6.37874988e-05, 1.99404810e-08, -1.85830030e-05],
             [-2.73116279e-04, 4.40511248e-04, -9.05395392e-05],
             [-1.73624413e-04, 2.33322837e-04, 2.17526152e-05]])
             *ureg('hartree/bohr**2'))
+
+        #TODO cell origins
         expctd_data.cell_origins = np.array(
             [[0, 0, 0], [1, 0, 0], [2, 0, 0], [3, 0, 0], [4, 0, 0],
              [0, 1, 0], [1, 1, 0], [2, 1, 0], [3, 1, 0], [4, 1, 0],
@@ -67,6 +83,8 @@ class TestInputReadQuartz(unittest.TestCase):
              [0, 2, 3], [1, 2, 3], [2, 2, 3], [3, 2, 3], [4, 2, 3],
              [0, 3, 3], [1, 3, 3], [2, 3, 3], [3, 3, 3], [4, 3, 3],
              [0, 4, 3], [1, 4, 3], [2, 4, 3], [3, 4, 3], [4, 4, 3]])
+
+        #TODO born effective charge
         expctd_data.born = np.array([
             [[-1.43415314, -0.56480184, -0.51390346],
              [-0.51017266, -1.90914488, -0.58504551],
@@ -95,14 +113,17 @@ class TestInputReadQuartz(unittest.TestCase):
             [[3.02266843, 0.00000000, 0.00000000],
              [0.00000000, 3.66532367, -0.27253140],
              [0.00000000, 0.31388444, 3.46752205]]])*ureg('e')
+
+        #TODO dielectric constant
         expctd_data.dielectric = np.array([
             [2.49104301, 0.00000000, 0.00000000],
             [0.00000000, 2.49104301, 0.00000000],
             [0.00000000, 0.00000000, 2.52289805]])
+
         self.expctd_data = expctd_data
 
-        self.seedname = 'quartz'
-        self.path = os.path.join('test', 'data', 'interpolation', 'quartz')
+        self.seedname = 'NaCl'
+        self.path = os.path.join('test', 'phonopy_data')
         data = InterpolationData(self.seedname, path=self.path, model='phonopy')
         self.data = data
 
@@ -155,11 +176,13 @@ class TestInputReadQuartz(unittest.TestCase):
 
     def test_fc_mat_read(self):
         expected_fc_mat = np.load(os.path.join(
-            self.path, 'quartz_fc_mat_no_asr.npy'))*ureg('hartree/bohr**2')
+            self.path, 'nacl_fc_mat.npy'))*ureg('hartree/bohr**2')
         # After refactoring where the shape of the force constants matrix was
         # changed from (3*n_cells_in_sc*n_ions, 3*n_ions) to
         # (n_cells_in_sc, 3*n_ions, 3*n_ions), expected_fc_mat must be
         # reshaped to ensure tests still pass
+
+        #TODO reshape
         expected_fc_mat = np.reshape(
             expected_fc_mat,
             (self.expctd_data.n_cells_in_sc,
