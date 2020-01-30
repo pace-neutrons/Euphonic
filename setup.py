@@ -65,7 +65,7 @@ def run_setup(build_c=True):
             'seekpath>=1.1.0',
             'pint>=0.8.0',
             'h5py>=2.9.0',
-            'PyYAML>=5.1.2'
+            'PyYAML>=5.1.2',
         ],
         extras_require={
             'matplotlib': ['matplotlib>=1.4.2'],
