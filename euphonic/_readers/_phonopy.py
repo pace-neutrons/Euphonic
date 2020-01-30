@@ -93,9 +93,9 @@ def _extract_phonon_data(data_object):
 
     n_qpts = data_object['nqpoint']
     n_ions = data_object['natom']
-    cell_vec = data_object['lattice']
-    recip_vec = data_object['reciprocal_lattice']
-    qpts = [phon['q-position'] for phon in data_object['phonon']]
+    cell_vec = np.array(data_object['lattice'])
+    recip_vec = np.array(data_object['reciprocal_lattice'])
+    qpts = np.array([phon['q-position'] for phon in data_object['phonon']])
 
     weights = _convert_weights([phon['weight'] for phon in data_object['phonon']])
 
@@ -104,7 +104,7 @@ def _extract_phonon_data(data_object):
                             for bands_data in phonon_data]
 
     # The frequency for each band at each q-point
-    freqs = np.array([ [band_data['frequency']
+    freqs = np.array([[band_data['frequency']
                             for band_data in bands_data]
                               for bands_data in bands_data_each_qpt])
 
@@ -116,8 +116,8 @@ def _extract_phonon_data(data_object):
     n_branches = freqs.shape[1]
 
     ion_type = [ion['symbol'] for ion in data_object['points']]
-    ion_r = [ion['coordinates'] for ion in data_object['points']]
-    ion_mass = [ion['mass'] for ion in data_object['points']]
+    ion_r = np.array([ion['coordinates'] for ion in data_object['points']])
+    ion_mass = np.array([ion['mass'] for ion in data_object['points']])
 
     data_dict = {}
     data_dict['n_qpts'] = n_qpts
@@ -527,8 +527,6 @@ def _reshape_fc(fc, n_ions, n_cells):
             i = (j-1)*sc_n_ions + (k-1)
             inds[i, :] = [i, j, k]
 
-    #TODO incorporate p2s_map
-
     # Indices: sc index, ion index in sc, Fi, Fj
     fc_resh = np.zeros([n_cells, n_ions, n_ions, 3, 3])
 
@@ -647,64 +645,43 @@ def _extract_summary(summary):
         A dict containing: sc_matrix, n_cells_in_sc, n_ions, cell_vec,
         ion_r, ion_mass, ion_type, n_ions, cell_origins.
     """
-    n = lambda: None
-    n.sc_matrix = np.array(summary['supercell_matrix'])
-    #n.p_matrix = np.array(summary['primitive_matrix']) # Not found
-    n.n_cells_in_sc = int(np.rint(np.absolute(np.linalg.det(n.sc_matrix))))
 
-    n.p_n_ions = len(summary['primitive_cell']['points'])
-    n.p_cell_vec = np.array(summary['primitive_cell']['lattice'])
-    n.p_recip_vec = np.array(summary['primitive_cell']['reciprocal_lattice'])
-    n.p_ion_r = np.zeros((n.p_n_ions, 3))
-    n.p_ion_mass = np.zeros(n.p_n_ions)
-    n.p_ion_type = []
-    for i in range(n.p_n_ions):
-        n.p_ion_mass[i] = summary['primitive_cell']['points'][i]['mass']
-        n.p_ion_r[i] = summary['primitive_cell']['points'][i]['coordinates']
-        n.p_ion_type.append(summary['primitive_cell']['points'][i]['symbol'])
+    n_ions = len(summary['unit_cell']['points'])
+    cell_vec = np.array(summary['unit_cell']['lattice'])
+    ion_r = np.zeros((n_ions, 3))
+    ion_mass = np.zeros(n_ions)
+    ion_type = []
+    for i in range(n_ions):
+        ion_mass[i] = summary['unit_cell']['points'][i]['mass']
+        ion_r[i] = summary['unit_cell']['points'][i]['coordinates']
+        ion_type.append(summary['unit_cell']['points'][i]['symbol'])
 
-    n.n_ions = len(summary['unit_cell']['points'])
-    n.cell_vec = np.array(summary['unit_cell']['lattice'])
-    n.ion_r = np.zeros((n.n_ions, 3))
-    n.ion_mass = np.zeros(n.n_ions)
-    n.ion_type = []
-    for i in range(n.n_ions):
-        n.ion_mass[i] = summary['unit_cell']['points'][i]['mass']
-        n.ion_r[i] = summary['unit_cell']['points'][i]['coordinates']
-        n.ion_type.append(summary['unit_cell']['points'][i]['symbol'])
-
-    n.sc_n_ions = len(summary['supercell']['points'])
-    n.sc_cell_vec = np.array(summary['supercell']['lattice'])
-    n.sc_ion_r = np.zeros((n.sc_n_ions, 3))
-    n.sc_ion_mass = np.zeros(n.sc_n_ions)
-    n.sc_ion_type = []
-    for i in range(n.sc_n_ions):
-        n.sc_ion_mass[i] = summary['supercell']['points'][i]['mass']
-        n.sc_ion_r[i] = summary['supercell']['points'][i]['coordinates']
-        n.sc_ion_type.append(summary['supercell']['points'][i]['symbol'])
+    n_cells_in_sc = int(np.rint(np.absolute(np.linalg.det(sc_matrix))))
+    sc_matrix = np.array(summary['supercell_matrix'])
+    sc_n_ions = len(summary['supercell']['points'])
+    sc_ion_r = np.zeros((sc_n_ions, 3))
+    for i in range(sc_n_ions):
+        sc_ion_r[i] = summary['supercell']['points'][i]['coordinates']
 
     # Coordinates of supercell ions in fractional coords of the unit cell
-    sc_ion_r_ucell = np.einsum('ij,jk->ij', n.sc_ion_r, n.sc_matrix)
-    cell_origins = sc_ion_r_ucell[:n.n_ions] - n.ion_r[0]
+    sc_ion_r_ucell = np.einsum('ij,jk->ij', sc_ion_r, sc_matrix)
+    cell_origins = sc_ion_r_ucell[:n_ions] - ion_r[0]
 
-    n.cell_origins = cell_origins
-    n.sc_ion_r_ucell = sc_ion_r_ucell
-
-    n.units = summary['physical_unit']
+    units = summary['physical_unit']
 
     summary_dict = {}
-    summary_dict['n_ions'] = n.n_ions
-    summary_dict['cell_vec'] = n.cell_vec
+    summary_dict['n_ions'] = n_ions
+    summary_dict['cell_vec'] = cell_vec
 
-    summary_dict['ion_r'] = n.ion_r
-    summary_dict['ion_type'] = n.ion_type
-    summary_dict['ion_mass'] = n.ion_mass
+    summary_dict['ion_r'] = ion_r
+    summary_dict['ion_type'] = ion_type
+    summary_dict['ion_mass'] = ion_mass
 
-    summary_dict['cell_origins'] = n.cell_origins
-    summary_dict['sc_matrix'] = n.sc_matrix
-    summary_dict['n_cells_in_sc'] = n.n_cells_in_sc
+    summary_dict['cell_origins'] = cell_origins
+    summary_dict['sc_matrix'] = sc_matrix
+    summary_dict['n_cells_in_sc'] = n_cells_in_sc
 
-    summary_dict['units'] = n.units
+    summary_dict['units'] = units
 
     if 'force_constants' in summary.keys():
         summary_dict['force_constants'] = _extract_force_constants_summary(summary)
@@ -746,8 +723,6 @@ def _extract_qpts_data(qpts_object):
     phonon_data = [phon for phon in qpts_object['phonon']]
     bands_data_each_qpt = [bands_data['band']
                             for bands_data in phonon_data]
-
-    dyn_mat_data = [phon['dynamical_matrix'] for phon in phonon_data]
 
     # The frequency for each band at each q-point
     freqs = np.array([ [band_data['frequency']
@@ -920,7 +895,7 @@ def _read_interpolation_data(path='.', qpts_name='qpoints',
         data_dict['force_constants'] = force_constants*ufc #(force_constants*ureg.hartree/(ureg.bohr**2))
         data_dict['sc_matrix'] = summary_dict['sc_matrix'] #sc_matrix
         data_dict['n_cells_in_sc'] = np.int(np.round(np.linalg.det(np.array(summary_dict['sc_matrix']))))
-        data_dict['cell_origins'] = summary_dict['cell_origins']*ulength #cell_origins
+        data_dict['cell_origins'] = summary_dict['cell_origins'] #cell_origins
     except NameError:
         raise Exception((
             'Force constants matrix could not be found in {:s} or {:s}. '
