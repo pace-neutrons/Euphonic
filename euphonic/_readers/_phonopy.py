@@ -747,22 +747,22 @@ def _read_interpolation_data(path='.', qpts_name='qpoints',
                             disp_name='phonopy_disp.yaml', summary_name='phonopy.yaml',
                                 born_name='BORN', fc_name='FORCE_CONSTANTS'):
     """
-    Reads data from phonopy.yaml and qpoints files.
+    Reads data from Phonopy output files.
 
     Parameters
     ----------
     path : str
         Path to dir containing the file(s), if in another directory
     qpts_name : str
-        Seedname of phonopy qpoints file
+        Seedname of phonopy qpoints file, default qpoints
     disp_name : str
-        Seedname of phonopy displacements file
+        Seedname of phonopy displacements file, default phonopy_disp.yaml
     summary_name : str
-        Seedname of phonopy user script summary file
+        Seedname of phonopy user script summary file, default phonopy.yaml
     born_name : str
-        Seedname of BORN file
+        Seedname of born file, default BORN
     fc_name : str
-        Seedname of FORCE_CONSTANTS file
+        Seedname of force constants file, default FORCE_CONSTANTS/force_constants.hdf5
 
     Returns
     -------
@@ -773,7 +773,10 @@ def _read_interpolation_data(path='.', qpts_name='qpoints',
         and 'dielectric' if they are present in the .castep_bin or .check file
     """
 
-    # If name not found, returns None
+    #TODO success, warnings and errors for loading failures.
+
+
+    ## Detect Phonopy files:
     qpts_name = _match_phonopy_file(path=path, name=qpts_name)
     disp_name = _match_disp_file(path=path, name=disp_name)
     summary_name = _match_summary(path=path, name=summary_name)
@@ -781,28 +784,32 @@ def _read_interpolation_data(path='.', qpts_name='qpoints',
     fc_name = _match_force_constants_file(path=path, name=fc_name)
     born_name = _match_born_file(path=path, name=born_name)
 
-    # Load data from qpoint mode output file
-    try:
+
+    ## Load files:
+    # QPOINTS
+    try: # hdf5
         with h5py.File(qpts_name, 'r') as hdf5o:
             qpoint_dict = _extract_qpts_data(hdf5o)
     except Exception as e:
         pass
 
-    try:
+    try: # yaml
         with open(qpts_name) as ymlo:
             yaml_data = yaml.safe_load(ymlo)
             qpoint_dict =  _extract_qpts_data(yaml_data)
     except Exception as e:
         pass
 
-    try:
+    # SUMMARY
+    try: # yaml
         with open(summary_name, 'r') as ppo:
             summary_data = yaml.safe_load(ppo)
             summary_dict = _extract_summary(summary_data)
-    except Exception as e: # differentiate "find" from "load"
+    except Exception as e:
         print(f"Failed to load summary file {summary_name}.")
         print(e)
 
+    # DISPLACEMENTS
     try:
         with open(disp_name, 'r') as dspo:
             disp_dict = yaml.safe_load(dspo)
@@ -810,8 +817,7 @@ def _read_interpolation_data(path='.', qpts_name='qpoints',
         print(f"Failed to load displacements summary file {disp_name}.")
         print(e)
 
-    # check summary_name for force_constants, dielectric_constant, 
-    # born_effective_charge
+    # FORCE CONSTANTS
     if 'force_constants' in summary_dict.keys():
         force_constants = summary_dict['force_constants']
     else:
@@ -828,6 +834,7 @@ def _read_interpolation_data(path='.', qpts_name='qpoints',
             pass
 
 
+    # BORN
     try:
         with open(born_name, 'r') as born:
             born_dict = _extract_born(born)
@@ -850,7 +857,8 @@ def _read_interpolation_data(path='.', qpts_name='qpoints',
         except:
             pass
 
-    # Extract units
+
+    # UNITS
     try:
         with open(summary_name, 'r') as ppo:
             yaml_data = yaml.safe_load(ppo)
@@ -858,18 +866,20 @@ def _read_interpolation_data(path='.', qpts_name='qpoints',
     except:
         pass
 
+    # frequency
     if 'frequency_unit_conversion_factor' not in units:
-        #TODO decide what to set for default value vs warn
-        # Nowhere else to check for fucf
         units['frequency_unit_conversion_factor'] = None
 
+    # non-analytic correction
     if 'nac_unit_conversion_factor' not in units:
-        try: # Check BORN
+        try:
             with open(born_name, 'r') as bbo:
                 units['nac_unit_conversion_factor'] = int(bbo.readline())
         except:
             units['nac_unit_conversion_factor'] = None
 
+
+    # Construct unit conversion factors
     ulength = ureg(units['length'].lower()).to('bohr').magnitude
     umass = ureg(units['atomic_mass'].lower()).to('e_mass').magnitude
     ufreq = (ureg('THz')*units['frequency_unit_conversion_factor'])\
@@ -880,33 +890,32 @@ def _read_interpolation_data(path='.', qpts_name='qpoints',
     ufc_str = units['force_constants'].replace('Angstrom', 'angstrom')
     ufc = ureg(ufc_str).to('hartree/bohr^2').magnitude
 
-    #TODO tidy comments
     data_dict = {}
-    data_dict['n_ions'] = summary_dict['n_ions'] #n_ions
-    data_dict['n_branches'] = 3*summary_dict['n_ions'] #3*n_ions
-    data_dict['cell_vec'] = summary_dict['cell_vec']*ulength #(cell_vec*ureg.bohr).to('angstrom')
-    data_dict['recip_vec'] = reciprocal_lattice(summary_dict['cell_vec']*ulength) # qpoint_dict['recip_vec']/ulength #((reciprocal_lattice(cell_vec)/ureg.bohr).to('1/angstrom'))
+    data_dict['n_ions'] = summary_dict['n_ions']
+    data_dict['n_branches'] = 3*summary_dict['n_ions']
+    data_dict['cell_vec'] = summary_dict['cell_vec']*ulength
+    data_dict['recip_vec'] = reciprocal_lattice(summary_dict['cell_vec']*ulength)
 
-    data_dict['ion_r'] = summary_dict['ion_r']*ulength #ion_r - np.floor(ion_r)  # Normalise ion coordinates
-    data_dict['ion_type'] = summary_dict['ion_type'] #ion_type
-    data_dict['ion_mass'] = summary_dict['ion_mass']*umass #(ion_mass*ureg.e_mass).to('amu')
+    data_dict['ion_r'] = summary_dict['ion_r']*ulength
+    data_dict['ion_type'] = summary_dict['ion_type']
+    data_dict['ion_mass'] = summary_dict['ion_mass']*umass
 
-    try: # Set entries relating to 'FORCE_CONSTANTS' block
-        data_dict['force_constants'] = force_constants*ufc #(force_constants*ureg.hartree/(ureg.bohr**2))
-        data_dict['sc_matrix'] = summary_dict['sc_matrix'] #sc_matrix
+    try: # FORCE CONSTANTS
+        data_dict['force_constants'] = force_constants*ufc
+        data_dict['sc_matrix'] = summary_dict['sc_matrix']
         data_dict['n_cells_in_sc'] = np.int(np.round(np.linalg.det(np.array(summary_dict['sc_matrix']))))
-        data_dict['cell_origins'] = summary_dict['cell_origins'] #cell_origins
+        data_dict['cell_origins'] = summary_dict['cell_origins']
     except NameError:
         raise Exception((
             'Force constants matrix could not be found in {:s} or {:s}. '
             'Ensure WRITE_FC: true or --write-fc has been set when running '
             'Phonopy').format(summary_name, fc_name))
 
-    try: # Set entries relating to dipoles
-        data_dict['born'] = born_effective_charge*unac #born*ureg.e
-        data_dict['dielectric'] = dielectric_constant*unac #dielectric
+    try: # NAC
+        data_dict['born'] = born_effective_charge*unac
+        data_dict['dielectric'] = dielectric_constant*unac
     except UnboundLocalError:
-        print('No bec or dielectric') #TODO Warn if either are not found.
+        print('No bec or dielectric')
         pass
 
     return data_dict
