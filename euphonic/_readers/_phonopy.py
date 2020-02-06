@@ -160,20 +160,23 @@ def _read_phonon_data(path='.', phonon_name='mesh', summary_name='phonopy.yaml')
         'split_eigenvecs'. The return data has Euphonic default units.
     """
 
+    #TODO extract most from phonopy.yaml
+
+    #TODO fail on file not found error
     phonon_name = _match_phonopy_file(path=path, name=phonon_name)
     summary_name = _match_summary_file(path=path, name=summary_name)
 
     try:
         with h5py.File(phonon_name, 'r') as hdf5o:
             phonon_data = _extract_phonon_data(hdf5o)
-    except:
+    except FileNotFoundError:
         pass
 
     try:
         with open(phonon_name, 'r') as ymlo:
             yaml_data = yaml.safe_load(ymlo)
             phonon_data = _extract_phonon_data(yaml_data)
-    except:
+    except FileNotFoundError:
         pass
 
     # Extract units
@@ -181,12 +184,11 @@ def _read_phonon_data(path='.', phonon_name='mesh', summary_name='phonopy.yaml')
         with open(summary_name, 'r') as ppo:
             yaml_data = yaml.safe_load(ppo)
             units = _extract_physical_units(yaml_data)
-    except:
+    except FileNotFoundError:
         pass
 
     # Handle units
     ulength = ureg(units['length'].lower()).to('bohr')
-    #urlength = 1/ureg(units['length'].lower()).to('1/bohr')
     umass = ureg(units['atomic_mass'].lower()).to('e_mass')
     ufreq = units['frequency_unit_conversion_factor']*ureg('THz')\
                                 .to('E_h', 'spectroscopy')
@@ -204,9 +206,6 @@ def _read_phonon_data(path='.', phonon_name='mesh', summary_name='phonopy.yaml')
     data_dict['weights'] = phonon_data['weights']
     data_dict['freqs'] = (phonon_data['freqs']*ufreq).magnitude
     data_dict['eigenvecs'] = phonon_data['eigenvecs']
-    data_dict['split_i'] = NotImplemented
-    data_dict['split_freqs'] = NotImplemented
-    data_dict['split_eigenvecs'] = NotImplemented
 
     return data_dict
 
@@ -617,6 +616,8 @@ def _extract_physical_units(summary):
 
     if 'physical_unit' in summary.keys():
         units = summary['physical_unit']
+    else:
+        return None
 
     if 'phonopy' in summary.keys():
         if 'frequency_unit_conversion_factor' in summary['phonopy']:
@@ -691,6 +692,9 @@ def _extract_summary(summary):
 
     if 'dielectric_constant' in summary.keys():
         summary_dict['dielectric_constant'] = np.array(summary['dielectric_constant'])
+
+    if 'physical_unit' in summary.keys():
+        summary_dict['physical_units'] = _extract_physical_units(summary)
 
     return summary_dict
 
@@ -773,12 +777,11 @@ def _read_interpolation_data(path='.', qpts_name='qpoints',
         and 'dielectric' if they are present in the .castep_bin or .check file
     """
 
-    #TODO success, warnings and errors for loading failures.
+    #TODO skip on success.
+    #TODO warnings and errors for loading failures.
 
 
     ## Detect Phonopy files:
-    qpts_name = _match_phonopy_file(path=path, name=qpts_name)
-    disp_name = _match_disp_file(path=path, name=disp_name)
     summary_name = _match_summary(path=path, name=summary_name)
 
     fc_name = _match_force_constants_file(path=path, name=fc_name)
@@ -796,7 +799,7 @@ def _read_interpolation_data(path='.', qpts_name='qpoints',
     try: # yaml
         with open(qpts_name) as ymlo:
             yaml_data = yaml.safe_load(ymlo)
-            qpoint_dict =  _extract_qpts_data(yaml_data)
+            qpoint_dict = _extract_qpts_data(yaml_data)
     except Exception as e:
         pass
 
@@ -807,14 +810,6 @@ def _read_interpolation_data(path='.', qpts_name='qpoints',
             summary_dict = _extract_summary(summary_data)
     except Exception as e:
         print(f"Failed to load summary file {summary_name}.")
-        print(e)
-
-    # DISPLACEMENTS
-    try:
-        with open(disp_name, 'r') as dspo:
-            disp_dict = yaml.safe_load(dspo)
-    except Exception as e:
-        print(f"Failed to load displacements summary file {disp_name}.")
         print(e)
 
     # FORCE CONSTANTS
@@ -857,32 +852,13 @@ def _read_interpolation_data(path='.', qpts_name='qpoints',
         except:
             pass
 
-
     # UNITS
-    try:
-        with open(summary_name, 'r') as ppo:
-            yaml_data = yaml.safe_load(ppo)
-            units = _extract_physical_units(yaml_data)
-    except:
-        pass
-
-    # frequency
-    if 'frequency_unit_conversion_factor' not in units:
-        units['frequency_unit_conversion_factor'] = None
-
-    # non-analytic correction
-    if 'nac_unit_conversion_factor' not in units:
-        try:
-            with open(born_name, 'r') as bbo:
-                units['nac_unit_conversion_factor'] = int(bbo.readline())
-        except:
-            units['nac_unit_conversion_factor'] = None
-
+    if 'physical_unit' in summary_dict:
+        units = summary_dict['physical_unit']
 
     # Construct unit conversion factors
     ulength = ureg(units['length'].lower()).to('bohr').magnitude
     umass = ureg(units['atomic_mass'].lower()).to('e_mass').magnitude
-    ufreq = (ureg('THz')*units['frequency_unit_conversion_factor'])\
                 .to('E_h', 'spectroscopy').magnitude
     unac = units['nac_unit_conversion_factor']
 
@@ -912,8 +888,8 @@ def _read_interpolation_data(path='.', qpts_name='qpoints',
             'Phonopy').format(summary_name, fc_name))
 
     try: # NAC
-        data_dict['born'] = born_effective_charge*unac
-        data_dict['dielectric'] = dielectric_constant*unac
+        data_dict['born'] = born_effective_charge # *unac
+        data_dict['dielectric'] = dielectric_constant # *unac
     except UnboundLocalError:
         print('No bec or dielectric')
         pass
