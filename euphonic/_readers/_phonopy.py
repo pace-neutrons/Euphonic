@@ -17,7 +17,7 @@ def _match_phonopy_file(path='.', name='*'):
     Parameters
     ----------
     path : str
-        Path to directory containing target hdf5/yaml file.
+        Path to directory containing target yaml file.
     name : str
         Filename of target hdf5/yaml file.
 
@@ -50,6 +50,7 @@ def _match_phonopy_file(path='.', name='*'):
         return file
     else:
         return None
+
 
 def _convert_weights(weights):
     """ DOC
@@ -138,7 +139,7 @@ def _extract_phonon_data(data_object):
 
     return data_dict
 
-def _read_phonon_data(path='.', phonon_name='mesh', summary_name='phonopy.yaml'):
+def _read_phonon_data(path='.', phonon_name='mesh.hdf5', phonon_format=None, summary_name='phonopy.yaml'):
     """ DOC
     Reads data from a mesh.yaml/hdf5 file and returns it in a dictionary
 
@@ -160,32 +161,67 @@ def _read_phonon_data(path='.', phonon_name='mesh', summary_name='phonopy.yaml')
         'split_eigenvecs'. The return data has Euphonic default units.
     """
 
-    #TODO extract most from phonopy.yaml
+    phonon_pathname = os.path.join(path, phonon_name)
+    summary_pathname = os.path.join(path, summary_name)
 
-    #TODO fail on file not found error
-    phonon_name = _match_phonopy_file(path=path, name=phonon_name)
-    summary_name = _match_summary_file(path=path, name=summary_name)
+    phonon_ext = os.path.splitext(phonon_name)[1]
 
-    try:
-        with h5py.File(phonon_name, 'r') as hdf5o:
-            phonon_data = _extract_phonon_data(hdf5o)
-    except FileNotFoundError:
-        pass
+    if phonon_ext in ['.hdf5', '.hd5', '.h5']:
+        phonon_format = 'hdf5'
+    elif phonon_ext in ['.yaml', '.yml', '.yl']:
+        phonon_format = 'yaml'
+    else: # If exts not standard, detecting type
+        try: # HDF5
+            with h5py.File(phonon_pathname, 'r') as hdf5_file:
+                phonon_data = _extract_phonon_data(hdf5_file)
+            phonon_format = 'hdf5'
+        except:
+            pass
 
-    try:
-        with open(phonon_name, 'r') as ymlo:
-            yaml_data = yaml.safe_load(ymlo)
-            phonon_data = _extract_phonon_data(yaml_data)
-    except FileNotFoundError:
-        pass
+        try: # YAML
+            with open(phonon_pathname, 'r') as yaml_file:
+                phonon_data = yaml.safe_load(yaml_file)
+            phonon_format = 'yaml'
+        except:
+            pass
 
-    # Extract units
-    try:
-        with open(summary_name, 'r') as ppo:
-            yaml_data = yaml.safe_load(ppo)
-            units = _extract_physical_units(yaml_data)
-    except FileNotFoundError:
-        pass
+    if phonon_format == 'hdf5':
+        #TODO check for existence
+        try:
+            with h5py.File(phonon_pathname, 'r') as hdf5_file:
+                phonon_data = _extract_phonon_data(hdf5_file)
+        except OSError as ose:
+            if 'No such file or directory' in ose.__str__():
+                pass
+            else:
+                raise ose
+
+        try:
+            with open(summary_name, 'r') as summary_file:
+                summary_data = yaml.safe_load(summary_file)
+                units = _extract_physical_units(summary_data)
+        except FileNotFoundError:
+            pass
+
+    elif phonon_format == 'yaml':
+        try:
+            with open(summary_pathname, 'r') as phonon_file:
+                summary_data = yaml.safe_load(summary_file)
+                summary_dict = _extract_summary(summary_data)
+        except FileNotFoundError:
+            pass
+
+        try:
+            with open(phonon_pathname, 'r') as phonon_file:
+                phonon_data = yaml.safe_load(phonon_file)
+                phonon_dict = _extract_phonon_data(phonon_data)
+        except FileNotFoundError:
+            pass
+
+        units = summary_data['physical_units']
+        phonon_data.update(summary_data) #NOTE no-complaint loading policy
+    else:
+        raise Exception('Phonon data file format could not be determined.')
 
     # Handle units
     ulength = ureg(units['length'].lower()).to('bohr')
@@ -193,19 +229,20 @@ def _read_phonon_data(path='.', phonon_name='mesh', summary_name='phonopy.yaml')
     ufreq = units['frequency_unit_conversion_factor']*ureg('THz')\
                                 .to('E_h', 'spectroscopy')
 
+    # Create output object
     data_dict = {}
-    data_dict['n_ions'] = phonon_data['n_ions']
-    data_dict['n_branches'] = phonon_data['n_branches']
-    data_dict['n_qpts'] = phonon_data['n_qpts']
-    data_dict['cell_vec'] = (phonon_data['cell_vec']*ulength).magnitude
-    data_dict['recip_vec'] = (phonon_data['recip_vec']/ulength).magnitude
-    data_dict['ion_r'] = phonon_data['ion_r']
-    data_dict['ion_type'] = phonon_data['ion_type']
-    data_dict['ion_mass'] = (phonon_data['ion_mass']*umass).magnitude
-    data_dict['qpts'] = phonon_data['qpts']
-    data_dict['weights'] = phonon_data['weights']
-    data_dict['freqs'] = (phonon_data['freqs']*ufreq).magnitude
-    data_dict['eigenvecs'] = phonon_data['eigenvecs']
+    data_dict['n_ions'] = phonon_dict['n_ions']
+    data_dict['n_branches'] = phonon_dict['n_branches']
+    data_dict['n_qpts'] = phonon_dict['n_qpts']
+    data_dict['cell_vec'] = (phonon_dict['cell_vec']*ulength).magnitude
+    data_dict['recip_vec'] = (phonon_dict['recip_vec']/ulength).magnitude
+    data_dict['ion_r'] = phonon_dict['ion_r']
+    data_dict['ion_type'] = phonon_dict['ion_type']
+    data_dict['ion_mass'] = (phonon_dict['ion_mass']*umass).magnitude
+    data_dict['qpts'] = phonon_dict['qpts']
+    data_dict['weights'] = phonon_dict['weights']
+    data_dict['freqs'] = (phonon_dict['freqs']*ufreq).magnitude
+    data_dict['eigenvecs'] = phonon_dict['eigenvecs']
 
     return data_dict
 
@@ -329,7 +366,7 @@ def _match_force_constants_file(path='.', name='FORCE_CONSTANTS'):
 
         return None
 
-def _match_born_file(path='.', name='BORN'):
+def _check_born_file(path='.', name='BORN'):
     """ DOC
     Search for the born file created by the user during the
     pre-process when using non-analytical term correction (nac).
@@ -343,18 +380,11 @@ def _match_born_file(path='.', name='BORN'):
 
     Returns
     ----------
-    file : str
-        Filename of first file matching specification of born
-        file. Returns None if no file is found.
+    file : bool
+        Returns true if born file data is valid
     """
-    born_name = os.path.join(path, name)
-
-    if os.path.exists(born_name):
-        return born_name
-    else:
-        return None
-
-    return born_name
+    #TODO born formatting
+    return True
 
 
 def _extract_force_constants(fc_object):
@@ -547,6 +577,10 @@ def _reshape_fc(fc, n_ions, n_cells):
     # tile nxnx3x3 matrices into 3nx3n 
     fc_euph = fc_resh.transpose([0,1,3,2,4]).reshape([n_cells, 3*n_ions, 3*n_ions])
 
+    #TODO replace above
+    #fc_euph = np.reshape(np.transpose(np.reshape(fc, (n_cells, n_ions, n_ions, 3, 3)),
+                    #axes=[1,0,3,2,4]), (n_cells, 3*n_ions, 3*n_ions))
+
     return fc_euph
 
 def _extract_born(born_object):
@@ -657,8 +691,8 @@ def _extract_summary(summary):
         ion_r[i] = summary['unit_cell']['points'][i]['coordinates']
         ion_type.append(summary['unit_cell']['points'][i]['symbol'])
 
-    n_cells_in_sc = int(np.rint(np.absolute(np.linalg.det(sc_matrix))))
     sc_matrix = np.array(summary['supercell_matrix'])
+    n_cells_in_sc = int(np.rint(np.absolute(np.linalg.det(sc_matrix))))
     sc_n_ions = len(summary['supercell']['points'])
     sc_ion_r = np.zeros((sc_n_ions, 3))
     for i in range(sc_n_ions):
@@ -747,9 +781,10 @@ def _extract_qpts_data(qpts_object):
 
 
 
-def _read_interpolation_data(path='.', qpts_name='qpoints',
-                            disp_name='phonopy_disp.yaml', summary_name='phonopy.yaml',
-                                born_name='BORN', fc_name='FORCE_CONSTANTS'):
+def _read_interpolation_data(path='.', qpts_name='mesh.yaml', qpts_format=None,
+                            summary_name='phonopy.yaml',
+                            born_name='BORN', born_format=None,
+                                fc_name='FORCE_CONSTANTS', fc_format=None):
     """
     Reads data from Phonopy output files.
 
@@ -759,14 +794,16 @@ def _read_interpolation_data(path='.', qpts_name='qpoints',
         Path to dir containing the file(s), if in another directory
     qpts_name : str
         Seedname of phonopy qpoints file, default qpoints
-    disp_name : str
-        Seedname of phonopy displacements file, default phonopy_disp.yaml
     summary_name : str
         Seedname of phonopy user script summary file, default phonopy.yaml
     born_name : str
         Seedname of born file, default BORN
+    born_format : {str, None}
+        Format of file containing born data [None|'summary'], default None (BORN)
     fc_name : str
         Seedname of force constants file, default FORCE_CONSTANTS/force_constants.hdf5
+    fc_format : {str, None}
+        Format of file containing force constants data ['yaml'|'hdf5'], default 'hdf5'
 
     Returns
     -------
@@ -780,62 +817,75 @@ def _read_interpolation_data(path='.', qpts_name='qpoints',
     #TODO skip on success.
     #TODO warnings and errors for loading failures.
 
-
     ## Detect Phonopy files:
-    summary_name = _match_summary(path=path, name=summary_name)
 
-    fc_name = _match_force_constants_file(path=path, name=fc_name)
-    born_name = _match_born_file(path=path, name=born_name)
+    # TODO basic validity check of the target files
+    fc_pathname = _match_force_constants_file(path=path, name=fc_name)
+    born_pathname = _match_born_file(path=path, name=born_name)
+    summary_pathname = os.path.join(path, summary_name)
 
+    fc_ext = os.path.splitext(fc_name)[1]
+
+    if fc_name == summary_name or fc_format == 'summary':
+        fc_name = None
+
+    elif fc_ext in ['.hdf5', '.hd5', '.h5']:
+        fc_format = 'hdf5'
+
+    else: # If exts not standard, detecting type
+        try: # HDF5
+            with h5py.File(fc_pathname, 'r') as hdf5_data:
+                pass
+            phonon_format = 'hdf5'
+        except:
+            pass
+
+        try: # YAML
+            with open(fc_pathname, 'r') as fc_file:
+                fc_data = yaml.safe_load(fc_file)
+                if fc_data is None: # sometimes empty if misformatted
+                    raise Exception('Force constants data is not type yaml.')
+            phonon_format = 'yaml'
+        except:
+            pass
+
+    if fc_format == None:
+        raise Exception('Could not determine file format.')
 
     ## Load files:
-    # QPOINTS
-    try: # hdf5
-        with h5py.File(qpts_name, 'r') as hdf5o:
-            qpoint_dict = _extract_qpts_data(hdf5o)
-    except Exception as e:
-        pass
-
-    try: # yaml
-        with open(qpts_name) as ymlo:
-            yaml_data = yaml.safe_load(ymlo)
-            qpoint_dict = _extract_qpts_data(yaml_data)
-    except Exception as e:
-        pass
-
     # SUMMARY
     try: # yaml
-        with open(summary_name, 'r') as ppo:
-            summary_data = yaml.safe_load(ppo)
+        with open(summary_name, 'r') as summary_file:
+            summary_data = yaml.safe_load(summary_file)
             summary_dict = _extract_summary(summary_data)
     except Exception as e:
         print(f"Failed to load summary file {summary_name}.")
         print(e)
 
     # FORCE CONSTANTS
-    if 'force_constants' in summary_dict.keys():
+    if fc_format:
         force_constants = summary_dict['force_constants']
     else:
         try: # csv compact or full, returns compact
-            with open(fc_name, 'r') as fco:
-                force_constants = _extract_force_constants(fco)
+            with open(fc_name, 'r') as fc_file:
+                force_constants = _extract_force_constants(fc_file)
         except:
             pass
 
         try:
-            with h5py.File(fc_name, 'r') as fco:
-                force_constants =  _extract_force_constants_hdf5(fco)
+            with h5py.File(fc_name, 'r') as fc_file:
+                force_constants =  _extract_force_constants_hdf5(fc_file)
         except:
             pass
 
-
     # BORN
     try:
-        with open(born_name, 'r') as born:
-            born_dict = _extract_born(born)
+        with open(born_name, 'r') as born_file:
+            born_dict = _extract_born(born_file)
     except:
          pass
 
+    #TODO dielectric constant, and bec same treatment
     if 'dielectric_constant' in summary_dict.keys():
         dielectric_constant = summary_dict['dielectric_constant']
     else:
@@ -858,7 +908,7 @@ def _read_interpolation_data(path='.', qpts_name='qpoints',
 
     # Construct unit conversion factors
     ulength = ureg(units['length'].lower()).to('bohr').magnitude
-    umass = ureg(units['atomic_mass'].lower()).to('e_mass').magnitude
+    umass = ureg(units['atomic_mass'].lower()).to('e_mass').magnitude \
                 .to('E_h', 'spectroscopy').magnitude
     unac = units['nac_unit_conversion_factor']
 
@@ -872,7 +922,7 @@ def _read_interpolation_data(path='.', qpts_name='qpoints',
     data_dict['cell_vec'] = summary_dict['cell_vec']*ulength
     data_dict['recip_vec'] = reciprocal_lattice(summary_dict['cell_vec']*ulength)
 
-    data_dict['ion_r'] = summary_dict['ion_r']*ulength
+    data_dict['ion_r'] = summary_dict['ion_r']
     data_dict['ion_type'] = summary_dict['ion_type']
     data_dict['ion_mass'] = summary_dict['ion_mass']*umass
 
