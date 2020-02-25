@@ -6,7 +6,7 @@ from euphonic import ureg
 from euphonic.data.interpolation import InterpolationData
 
 
-class TestInputReadNaCL(unittest.TestCase):
+class TestInputReadNaCl(unittest.TestCase):
 
     def setUp(self):
         # Create trivial function object so attributes can be assigned to it
