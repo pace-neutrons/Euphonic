@@ -166,7 +166,9 @@ class InterpolationData(PhononData):
         return self(data)
 
     @classmethod
-    def from_phonopy(path='', **kwargs):
+    def from_phonopy(self, path='.', summary_name='phonopy.yaml',
+                    born_name='BORN', born_format=None,
+                        fc_name='FORCE_CONSTANTS', fc_format=None):
         """
         Calls the CASTEP interpolation data reader and sets the InerpolationData attributes.
 
@@ -176,10 +178,6 @@ class InterpolationData(PhononData):
             Path to dir containing the file(s), if in another directory
 
         kwargs : optional
-            qpts_file : str
-                Seedname of phonopy qpoints file
-            disp_file : str
-                Seedname of phonopy displacements file
             summary_file : str
                 Seedname of phonopy user script summary file
             born_file : str
@@ -187,9 +185,10 @@ class InterpolationData(PhononData):
             fc_file : str
                 Seedname of FORCE_CONSTANTS file
         """
-
-        data = _phonopy._read_interpolation_data(path, **kwargs)
-        return self(data, model='phonopy', **kwargs)
+        data = _phonopy._read_interpolation_data(path=path, summary_name=summary_name,
+                                            born_name=born_name, born_format=born_format,
+                                                fc_name=fc_name, fc_format=fc_format)
+        return self(data)
 
 
     def _set_data(self, data):
