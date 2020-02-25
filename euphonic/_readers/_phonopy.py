@@ -203,8 +203,8 @@ def _read_phonon_data(path='.', phonon_name='', phonon_format=None,
         units = summary_dict['physical_unit']
         ulength = ureg(units['length'].lower()).to('bohr').magnitude
         umass = ureg(units['atomic_mass'].lower()).to('e_mass').magnitude
-        ufreq = units['frequency_unit_conversion_factor']*ureg('THz')\ #TODO check unit conversion 1*
-                                .to('E_h', 'spectroscopy').magnitude
+        ufreq = units['frequency_unit_conversion_factor']*ureg('THz')\
+                                .to('E_h', 'spectroscopy').magnitude #TODO check unit conversion 1*
     except KeyError as ke:
         missing_unit = 'UNKNOWN UNIT'
 
@@ -481,8 +481,10 @@ def _extract_force_constants_summary(summary_object):
 
     return _reshape_fc(fc, n_ions, n_cells)
 
-
 def _reshape_fc(fc, n_ions, n_cells):
+    return np.reshape( np.transpose( np.reshape(fc, (n_ions, n_ions, n_cells, 3, 3)), axes=[2,0,3,1,4]), (n_cells, 3*n_ions, 3*n_ions))
+
+def _old_reshape_fc(fc, n_ions, n_cells):
     """ DOC
     Reshape FORCE_CONSTANTS to conform to Euphonic format.
     Into [N_sc, 3*N_pc, 3*N_pc]
