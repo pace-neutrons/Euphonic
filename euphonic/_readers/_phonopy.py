@@ -361,8 +361,48 @@ def _check_born_summary(filename):
     return False
 
 
-
 def _extract_force_constants(fc_object, n_ions, n_cells):
+    sc_block = n_ions*n_cells
+
+    data = np.array([])
+    datas = np.array([])
+
+    fc_dims =  [dim for dim in fc_object.readline().split()]
+    if len(fc_dims) == 1: # single shape specifier implies full format
+        is_full_fc = True
+        fc_dims = [fc_dims[0], fc_dims[0]]
+    elif fc_dims[0] == fc_dims[1]:
+        full_fc = True
+    else:
+        full_fc = False
+
+    first = True
+    skip_blocks = 0
+    max_rows = 3*n_ions*n_cells
+    for n_ion in range(n_ions):
+        skip_header = 4*skip_blocks*sc_block
+
+        data = np.genfromtxt(fc_object,
+                         skip_header=skip_header,
+                         max_rows=max_rows,
+                         usecols=(0,1,2),
+                         invalid_raise=False)
+
+        if full_fc:
+            skip_blocks = n_cells - 1
+
+        if first:
+            datas = data
+            first = False
+        else:
+            datas = np.concatenate([datas, data])
+
+    return np.reshape( np.transpose(
+            np.reshape(datas, (n_ions, n_ions, n_cells, 3, 3)),
+             axes=[2,0,3,1,4]), (n_cells, 3*n_ions, 3*n_ions))
+
+
+def _extract_force_constants_old(fc_object, n_ions, n_cells):
     """ DOC
     Parse, reshape, and convert FC from FORCE_CONSTANTS file.
 
