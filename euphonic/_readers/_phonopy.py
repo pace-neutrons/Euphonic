@@ -54,8 +54,11 @@ def _extract_phonon_data(phonon_data):
     #recip_vec = np.array(phonon_data['reciprocal_lattice'])
     qpts = np.array([phon['q-position'] for phon in phonon_data['phonon']])
 
-    #TODO not found in bands. cant find, give equal sum = 1
-    weights = _convert_weights([phon['weight'] for phon in phonon_data['phonon']])
+    try:
+        weights = _convert_weights([phon['weight'] for phon in phonon_data['phonon']])
+    except:
+        print('Warning: weights not found in phonon data file. Defaulting to equal weightings.')
+        weights = [1/len(qpts) for i in range(len(qpts))]
 
     phonons = [phon for phon in phonon_data['phonon']]
     bands_data_each_qpt = [bands_data['band']
@@ -72,10 +75,9 @@ def _extract_phonon_data(phonon_data):
     #TODO 
     #    phase changes need to be applied to eigenvecs to convert from phonopy
     #    indexing convention to euphonic convention.
-    eigenvecs = np.array([ [band_data['eigenvector']
+    eigenvecs = np.squeeze(np.array([ [band_data['eigenvector']
                             for band_data in bands_data]
-                              for bands_data in bands_data_each_qpt]).view(np.complex128)
-
+                              for bands_data in bands_data_each_qpt]).view(np.complex128))
 
     #ion_type = [ion['symbol'] for ion in phonon_data['points']]
     #ion_r = np.array([ion['coordinates'] for ion in phonon_data['points']])
@@ -360,7 +362,7 @@ def _check_born_summary(filename):
 
 
 
-def _extract_force_constants(fc_object):
+def _extract_force_constants(fc_object, n_ions, n_cells):
     """ DOC
     Parse, reshape, and convert FC from FORCE_CONSTANTS file.
 
@@ -372,13 +374,14 @@ def _extract_force_constants(fc_object):
     Returns
     ----------
     fc_resh : float ndarray
-        Force constants matrix reshaped into Euphonic sc-first format.
+        Force constants matrix reshaped into Euphonic shape format
+        (n_cells, 3*n_ions, 3*n_ions).
     """
-    fc_lines_all = [narr.split() for narr in
+    fc_lines_str = [narr.split() for narr in
                 [line for line in fc_object.read().split('\n') if line]]
 
     # convert string numerals as float/int
-    for l_i, line in enumerate(fc_lines_all):
+    for l_i, line in enumerate(fc_lines_str):
         try:
             fc_lines_all[l_i] = [np.int(i) for i in line]
             continue
@@ -388,19 +391,14 @@ def _extract_force_constants(fc_object):
         try:
             fc_lines_all[l_i] = [np.float(i) for i in line]
             continue
-        except:
-            pass
+        except ValueError as e:
+            raise Exception('Failed to parse line in force constants matrix.')
 
     fc_dims = fc_lines_all[0]
     fc_lines = fc_lines_all[1:]
 
     n_lines = len(fc_lines)
     n_entries = n_lines / 4
-
-    if n_entries != int(n_entries):
-        raise Exception('Incorrect file format.')
-    else:
-        n_entries = int(n_entries)
 
     if len(fc_dims) == 1: # single shape specifier implies full format
         is_full_fc = True
@@ -410,22 +408,14 @@ def _extract_force_constants(fc_object):
     else:
         is_full_fc = False
 
-    n_ions = 8 # fc_dims[0]
-    sc_n_ions = fc_dims[1]
-    n_cells = sc_n_ions // n_ions # not correct for 64 64
-
-    if is_full_fc:
-        p2s_map = [pi for pi in range(0, n_ions*n_cells, n_ions)]
-
     inds = []
     fc_vecs = np.zeros([n_entries, 3, 3], dtype=np.float)
 
     for sc_ion in range(n_entries):
         entry_ind = 4*sc_ion
 
-        # line 1
-        #    (i_entry, i_patom, i_satom)
-        inds.append([sc_ion] + fc_lines[entry_ind])
+        # line 1 (i_patom, i_satom)
+        inds.append(fc_lines[entry_ind])
 
         # lines 2-4
         for j in range(1,4):
@@ -435,6 +425,8 @@ def _extract_force_constants(fc_object):
     fc = np.array(fc_vecs)
 
     if is_full_fc: # FULL FC, convert down to COMPACT
+        p2s_map = [pi for pi in range(0, n_ions*n_cells, n_ions)]
+
         #TODO truncate full fc on read
 
         #TODO investigate how reshape is working
@@ -444,16 +436,13 @@ def _extract_force_constants(fc_object):
 
     return _reshape_fc(fc, n_ions, n_cells)
 
-def _extract_force_constants_hdf5(fc_object):
+def _extract_force_constants_hdf5(fc_object, n_ions, n_cells):
     fc = fc_object['force_constants'][:]
     p2s_map = list(fc_object['p2s_map']) # 'primitive' to supercell indexing
     physical_units = list(fc_object['physical_unit'])[0].decode('utf-8')
 
     if fc.shape[0] == fc.shape[1]: # FULL FC, convert down to COMPACT
         fc = fc[p2s_map, :, :, :]
-
-    n_ions = len(p2s_map)
-    n_cells = p2s_map[1]
 
     fc_unfolded = fc.reshape(n_ions*n_ions*n_cells, 3, 3)
     return _reshape_fc(fc_unfolded, n_ions, n_cells), physical_units
@@ -477,14 +466,15 @@ def _extract_force_constants_summary(summary_object):
     fc_dims = fc_entry['shape']
     fc_format = fc_entry['format']
 
-    n_ions = fc_dims[0]
-    n_cells = fc_dims[1] // n_ions # TODO if full, this is incorrect
+    sc_matrix = summary_object['supercell_matrix']
+    n_cells = int(np.rint(np.absolute(np.linalg.det(sc_matrix))))
+    n_ions = len(summary_object['unit_cell']['points'])
 
     if fc_format == 'compact':
         fc = np.array(fc_entry['elements'])
 
     elif fc_format == 'full': # FULL FC, convert down to COMPACT
-        p2s_map = [pi for pi in range(0, n_ions*n_cells, n_ions)]
+        p2s_map = [pi for pi in range(0, n_ions*n_cells, n_ions)] #TODO check
         fc = np.array(fc_entry['elements'])[p2s_map, :]
 
     return _reshape_fc(fc, n_ions, n_cells)
@@ -847,7 +837,7 @@ def _read_interpolation_data(path='.', summary_name='phonopy.yaml',
     if fc_format == 'hdf5':
         try:
             with h5py.File(fc_pathname, 'r') as fc_file:
-                force_constants =  _extract_force_constants_hdf5(fc_file)
+                force_constants =  _extract_force_constants_hdf5(fc_file, n_ions, n_cells)
         except:
             raise Exception((
                 f'Could not extract force constants from {fc_pathname}.'))
@@ -862,7 +852,7 @@ def _read_interpolation_data(path='.', summary_name='phonopy.yaml',
     elif fc_format == 'phonopy':
         try: # compact or full, returns compact
             with open(fc_pathname, 'r') as fc_file:
-                force_constants = _extract_force_constants(fc_file)
+                force_constants = _extract_force_constants(fc_file, n_ions, n_cells)
         except:
             raise Exception((
                 f'Could not extract force constants from {fc_pathname}.'))
