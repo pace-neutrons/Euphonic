@@ -66,19 +66,27 @@ def _extract_phonon_data(phonon_data):
                             for band_data in bands_data]
                               for bands_data in bands_data_each_qpt])
 
+    n_branches = freqs.shape[1]
+
     # The eigenvector for each atom for each band at each q-point
-    #TODO one extra axis size 1, remove np squeeze
+    #TODO 
+    #    phase changes need to be applied to eigenvecs to convert from phonopy
+    #    indexing convention to euphonic convention.
     eigenvecs = np.array([ [band_data['eigenvector']
                             for band_data in bands_data]
                               for bands_data in bands_data_each_qpt]).view(np.complex128)
 
-    #n_branches = freqs.shape[1]
 
     #ion_type = [ion['symbol'] for ion in phonon_data['points']]
     #ion_r = np.array([ion['coordinates'] for ion in phonon_data['points']])
     #ion_mass = np.array([ion['mass'] for ion in phonon_data['points']])
 
+    split_i = np.empty((0, n_branches))
+    split_freqs = np.empty((0, n_branches))
+    split_eigenvecs = np.empty((0, n_branches))
+
     data_dict = {}
+    # Data omitted because of redundancy with phonopy.yaml
     #data_dict['n_qpts'] = n_qpts
     #data_dict['n_branches'] = n_branches
     #data_dict['cell_vec'] = cell_vec
@@ -87,13 +95,13 @@ def _extract_phonon_data(phonon_data):
     #data_dict['ion_r'] = ion_r
     #data_dict['ion_type'] = ion_type
     #data_dict['ion_mass'] = ion_mass
-
     data_dict['qpts'] = qpts
     data_dict['weights'] = weights
     data_dict['freqs'] = freqs
     data_dict['eigenvecs'] = eigenvecs
-
-    #TODO implement empty split arrays: split_freqs = np.empty((0, n_branches))
+    data_dict['split_i'] = split_i
+    data_dict['split_freqs'] = split_freqs
+    data_dict['split_eigenvecs'] = split_eigenvecs
 
     return data_dict
 
