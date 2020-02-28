@@ -4,7 +4,7 @@ import struct
 import yaml
 import h5py
 import glob
-
+import warnings
 import numpy as np
 from euphonic import ureg
 from euphonic.util import reciprocal_lattice, is_gamma
@@ -213,8 +213,7 @@ def _read_phonon_data(path='.', phonon_name='', phonon_format=None,
         units = summary_dict['physical_unit']
         ulength = ureg(units['length'].lower()).to('bohr').magnitude
         umass = ureg(units['atomic_mass'].lower()).to('e_mass').magnitude
-        ufreq = units['frequency_unit_conversion_factor']*ureg('THz')\
-                                .to('E_h', 'spectroscopy').magnitude #TODO check unit conversion 1*
+        ufreq = ureg('THz').to('E_h', 'spectroscopy').magnitude
     except KeyError as ke:
         missing_unit = 'UNKNOWN UNIT'
 
@@ -246,6 +245,10 @@ def _read_phonon_data(path='.', phonon_name='', phonon_format=None,
     data_dict['weights'] = phonon_dict['weights']
     data_dict['freqs'] = phonon_dict['freqs']*ufreq
     data_dict['eigenvecs'] = phonon_dict['eigenvecs']
+    data_dict['split_i'] = phonon_dict['split_i']
+    data_dict['split_freqs'] = phonon_dict['split_freqs']
+    data_dict['split_eigenvecs'] = phonon_dict['split_eigenvecs']
+    #TODO add empty freq down?
 
     # Metadata
     data_dict['model'] = 'phonopy'
@@ -362,10 +365,11 @@ def _check_born_summary(filename):
 
 
 def _extract_force_constants(fc_object, n_ions, n_cells):
+    warnings.filterwarnings('ignore')
     sc_block = n_ions*n_cells
 
     data = np.array([])
-    datas = np.array([])
+    fc = np.array([])
 
     fc_dims =  [dim for dim in fc_object.readline().split()]
     if len(fc_dims) == 1: # single shape specifier implies full format
@@ -382,6 +386,8 @@ def _extract_force_constants(fc_object, n_ions, n_cells):
     for n_ion in range(n_ions):
         skip_header = 4*skip_blocks*sc_block
 
+        # Prints line fmt errors to stderr with invalid_raise=False
+        # stopped with warnings
         data = np.genfromtxt(fc_object,
                          skip_header=skip_header,
                          max_rows=max_rows,
@@ -392,15 +398,12 @@ def _extract_force_constants(fc_object, n_ions, n_cells):
             skip_blocks = n_cells - 1
 
         if first:
-            datas = data
+            fc = data
             first = False
         else:
-            datas = np.concatenate([datas, data])
+            fc = np.concatenate([fc, data])
 
-    return np.reshape( np.transpose(
-            np.reshape(datas, (n_ions, n_ions, n_cells, 3, 3)),
-             axes=[2,0,3,1,4]), (n_cells, 3*n_ions, 3*n_ions))
-
+    return _reshape_fc(fc, n_ions, n_cells)
 
 def _extract_force_constants_old(fc_object, n_ions, n_cells):
     """ DOC
@@ -467,12 +470,9 @@ def _extract_force_constants_old(fc_object, n_ions, n_cells):
     if is_full_fc: # FULL FC, convert down to COMPACT
         p2s_map = [pi for pi in range(0, n_ions*n_cells, n_ions)]
 
-        #TODO truncate full fc on read
-
-        #TODO investigate how reshape is working
-        fc_phonopy = fc.reshape([64,64,3,3])
+        fc_phonopy = fc.reshape([n_ions*n_cells, n_ions*n_cells, 3, 3])
         fc_reduced = fc_phonopy[p2s_map, :, :, :]
-        fc_unfolded = fc_reduced.reshape(n_ions*n_ions*n_cells, 3, 3)
+        fc = fc_reduced.reshape(-1, 3, 3)
 
     return _reshape_fc(fc, n_ions, n_cells)
 
@@ -485,7 +485,7 @@ def _extract_force_constants_hdf5(fc_object, n_ions, n_cells):
         fc = fc[p2s_map, :, :, :]
 
     fc_unfolded = fc.reshape(n_ions*n_ions*n_cells, 3, 3)
-    return _reshape_fc(fc_unfolded, n_ions, n_cells), physical_units
+    return _reshape_fc(fc_unfolded, n_ions, n_cells)
 
 def _extract_force_constants_summary(summary_object):
     """ DOC
@@ -520,7 +520,9 @@ def _extract_force_constants_summary(summary_object):
     return _reshape_fc(fc, n_ions, n_cells)
 
 def _reshape_fc(fc, n_ions, n_cells):
-    return np.reshape( np.transpose( np.reshape(fc, (n_ions, n_ions, n_cells, 3, 3)), axes=[2,0,3,1,4]), (n_cells, 3*n_ions, 3*n_ions))
+    return np.reshape( np.transpose(
+        np.reshape(fc, (n_ions, n_ions, n_cells, 3, 3)),
+        axes=[2,0,3,1,4]), (n_cells, 3*n_ions, 3*n_ions))
 
 def _old_reshape_fc(fc, n_ions, n_cells):
     """ DOC
@@ -541,7 +543,7 @@ def _old_reshape_fc(fc, n_ions, n_cells):
     fc_euph : float ndarray
     """
 
-    sc_n_ions = n_cells * n_ions
+    sc_n_ions = n_cells*n_ions
 
     # Construct convenient array of indices
     K = [k for k in range(1, 1 + sc_n_ions)]
@@ -660,7 +662,7 @@ def _extract_physical_units(summary_object):
 
     return units
 
-def _extract_summary(summary_object):
+def _extract_summary(summary_object, fc_extract=False):
     """ DOC
     Read phonopy.yaml for summary data produced during the Phonopy
     post-process.
@@ -676,7 +678,6 @@ def _extract_summary(summary_object):
         A dict containing: sc_matrix, n_cells_in_sc, n_ions, cell_vec,
         ion_r, ion_mass, ion_type, n_ions, cell_origins.
     """
-
     n_ions = len(summary_object['unit_cell']['points'])
     cell_vec = np.array(summary_object['unit_cell']['lattice'])
     ion_r = np.zeros((n_ions, 3))
@@ -710,7 +711,7 @@ def _extract_summary(summary_object):
     summary_dict['sc_matrix'] = sc_matrix
     summary_dict['n_cells_in_sc'] = n_cells_in_sc
 
-    if 'force_constants' in summary_object.keys():
+    if 'force_constants' in summary_object.keys() and fc_extract:
         summary_dict['force_constants'] = _extract_force_constants_summary(summary_object)
 
     if 'born_effective_charge' in summary_object.keys():
@@ -834,7 +835,6 @@ def _read_interpolation_data(path='.', summary_name='phonopy.yaml',
     else:
         raise Exception('Failure to establish born file format.')
 
-
     if born_format == 'phonopy':
         if not _check_born_file(born_pathname):
             raise Exception(f'Incorrect born formatting for {born_pathname}.')
@@ -842,17 +842,19 @@ def _read_interpolation_data(path='.', summary_name='phonopy.yaml',
         if not _check_born_summary(summary_pathname):
             raise Exception(f'Born data not present in {summary_pathname}.')
 
-
     ## Load files:
     # SUMMARY
     try: # yaml
+        if fc_format == 'yaml':
+            fc_extract = True
+        else:
+            fc_extract = False
+
         with open(summary_pathname, 'r') as summary_file:
             summary_data = yaml.safe_load(summary_file)
-            summary_dict = _extract_summary(summary_data)
+            summary_dict = _extract_summary(summary_data, fc_extract=fc_extract)
     except Exception as e:
-        #TODO
         raise Exception(f'Failed to load summary file {summary_name}.')
-
 
     # BORN
     if born_format == 'phonopy':
@@ -862,8 +864,8 @@ def _read_interpolation_data(path='.', summary_name='phonopy.yaml',
             dielectric_constant = born_dict['dielectric_constant']
             born_effective_charge = born_dict['born_effective_charge']
         except:
-            raise Exception((
-                f'Could not extract born data from {born_pathname}.'))
+            print(Exception((
+                f'Warning: Could not extract born data from {born_pathname}.')))
 
     elif born_format == 'yaml':
         try:
@@ -871,7 +873,7 @@ def _read_interpolation_data(path='.', summary_name='phonopy.yaml',
             born_effective_charge = summary_dict['born_effective_charge']
         except:
             raise Exception((
-                f'Could not extract born data from {born_pathname}.'))
+                f'Warning: Could not extract born data from {born_pathname}.'))
 
     # FORCE CONSTANTS
     if fc_format == 'hdf5':
@@ -890,6 +892,8 @@ def _read_interpolation_data(path='.', summary_name='phonopy.yaml',
                 f'Force constants not present in loaded summary data.'))
 
     elif fc_format == 'phonopy':
+        n_ions = summary_dict['n_ions']
+        n_cells = summary_dict['n_cells_in_sc']
         try: # compact or full, returns compact
             with open(fc_pathname, 'r') as fc_file:
                 force_constants = _extract_force_constants(fc_file, n_ions, n_cells)
@@ -897,18 +901,22 @@ def _read_interpolation_data(path='.', summary_name='phonopy.yaml',
             raise Exception((
                 f'Could not extract force constants from {fc_pathname}.'))
 
-
     # Construct unit conversion factors
     try:
         units = summary_dict['physical_unit']
         ulength = ureg(units['length'].lower()).to('bohr').magnitude
         umass = ureg(units['atomic_mass'].lower()).to('e_mass').magnitude
-        unac = units['nac_unit_conversion_factor']
+
+        try:
+            unac = units['nac_unit_conversion_factor']
+        except:
+            print(Exception(
+                f'Warning: Nac unit conversion factor not found.'))
 
         # Check force constants string so that it matches format required for ureg
         ufc_str = units['force_constants'].replace('Angstrom', 'angstrom')
         ufc = ureg(ufc_str).to('hartree/bohr^2').magnitude
-    except:
+    except Exception as ke:
         missing_unit = 'UNKNOWN'
 
         if 'physical_unit' in ke:
@@ -925,11 +933,11 @@ def _read_interpolation_data(path='.', summary_name='phonopy.yaml',
         if missing_unit == 'UNKOWN':
             raise Exception((
                 f'Unkown error while setting unit conversion factors.\n'
-                'Check output files and run configs for errors or missing data,\n'))
+                'Check output files and session configs for errors or missing data,\n'))
         else:
             raise Exception((
                 f'{missing_unit} missing from summary file {summary_pathname}.\n'
-                'Check output files and run configs for errors or missing data'))
+                'Check output files and session configs for errors or missing data'))
 
     data_dict = {}
     data_dict['n_ions'] = summary_dict['n_ions']
@@ -948,19 +956,25 @@ def _read_interpolation_data(path='.', summary_name='phonopy.yaml',
         data_dict['cell_origins'] = summary_dict['cell_origins']
     except NameError:
         raise Exception((
-            'Force constants matrix could not be found in {:s}. '
-            'Ensure WRITE_FC = .TRUE. or --write-fc has been set. '
+            'Force constants matrix could not be found in {:s}.\n'
+            'Ensure WRITE_FC = .TRUE. or --write-fc has been set.'
             ).format(fc_pathname))
 
     try: # NAC
         data_dict['born'] = born_effective_charge # *unac
     except UnboundLocalError as eb:
-        print('NOTE: Born effective charges not present.')
+        print('Warning: Born effective charges not present.')
 
     try:
         data_dict['dielectric'] = dielectric_constant # *unac
     except UnboundLocalError as eb:
-        print('NOTE: Dielectric tensor not present.')
+        print('Warning: Dielectric tensor not present.')
+
+    data_dict['model'] = 'phonopy'
+    data_dict['path'] = path
+    data_dict['born_name'] = born_name
+    data_dict['fc_name'] = fc_name
+    data_dict['summary_name'] = summary_name
 
     return data_dict
 

@@ -213,11 +213,18 @@ class InterpolationData(PhononData):
         try:
             self.model = data['model']
             if data['model'].lower() == 'castep':
+                self.model = data['model']
                 self.seedname = data['seedname']
+                self.path = data['path']
+            elif data['model'].lower() == 'phonopy':
                 self.model = data['model']
                 self.path = data['path']
+                self.born_name = data['born_name']
+                self.fc_name = data['fc_name']
+                self.summary_name = data['summary_name']
         except KeyError:
             pass
+
 
 
     def calculate_fine_phonons(
