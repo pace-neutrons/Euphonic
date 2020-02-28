@@ -256,6 +256,12 @@ def _read_phonon_data(path='.', phonon_name='', phonon_format=None,
     data_dict['phonon_format'] = phonon_format
     data_dict['summary_name'] = summary_name
 
+    # Metadata
+    data_dict['model'] = 'phonopy'
+    data_dict['phonon_name'] = phonon_name
+    data_dict['phonon_format'] = phonon_format
+    data_dict['summary_name'] = summary_name
+
     return data_dict
 
 
@@ -524,7 +530,7 @@ def _reshape_fc(fc, n_ions, n_cells):
         np.reshape(fc, (n_ions, n_ions, n_cells, 3, 3)),
         axes=[2,0,3,1,4]), (n_cells, 3*n_ions, 3*n_ions))
 
-def _old_reshape_fc(fc, n_ions, n_cells):
+def _reshape_fc_old(fc, n_ions, n_cells):
     """ DOC
     Reshape FORCE_CONSTANTS to conform to Euphonic format.
     Into [N_sc, 3*N_pc, 3*N_pc]
