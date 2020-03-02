@@ -48,7 +48,7 @@ def _extract_phonon_data(phonon_data):
         Phonopy units.
     """
 
-    #n_qpts = phonon_data['nqpoint']
+    n_qpts = phonon_data['nqpoint']
     #n_ions = phonon_data['natom']
     #cell_vec = np.array(phonon_data['lattice'])
     #recip_vec = np.array(phonon_data['reciprocal_lattice'])
@@ -86,10 +86,11 @@ def _extract_phonon_data(phonon_data):
     split_i = np.empty((0, n_branches))
     split_freqs = np.empty((0, n_branches))
     split_eigenvecs = np.empty((0, n_branches))
+    freq_down = np.empty((0, n_branches))
 
     data_dict = {}
     # Data omitted because of redundancy with phonopy.yaml
-    #data_dict['n_qpts'] = n_qpts
+    data_dict['n_qpts'] = n_qpts
     #data_dict['n_branches'] = n_branches
     #data_dict['cell_vec'] = cell_vec
     #data_dict['recip_vec'] = recip_vec
@@ -104,6 +105,7 @@ def _extract_phonon_data(phonon_data):
     data_dict['split_i'] = split_i
     data_dict['split_freqs'] = split_freqs
     data_dict['split_eigenvecs'] = split_eigenvecs
+    data_dict['freq_down'] = freq_down
 
     return data_dict
 
@@ -235,7 +237,7 @@ def _read_phonon_data(path='.', phonon_name='', phonon_format=None,
     data_dict = {}
     data_dict['n_ions'] = summary_dict['n_ions']
     data_dict['n_branches'] = summary_dict['n_ions'] * 3 #TODO
-    data_dict['n_qpts'] = phonon_dict['qpts'].shape[0]
+    data_dict['n_qpts'] = phonon_dict['n_qpts']
     data_dict['cell_vec'] = summary_dict['cell_vec']*ulength
     data_dict['recip_vec'] = reciprocal_lattice(summary_dict['cell_vec'])/ulength
     data_dict['ion_r'] = summary_dict['ion_r']
@@ -248,13 +250,8 @@ def _read_phonon_data(path='.', phonon_name='', phonon_format=None,
     data_dict['split_i'] = phonon_dict['split_i']
     data_dict['split_freqs'] = phonon_dict['split_freqs']
     data_dict['split_eigenvecs'] = phonon_dict['split_eigenvecs']
-    #TODO add empty freq down?
+    data_dict['freq_down'] = phonon_dict['freq_down']
 
-    # Metadata
-    data_dict['model'] = 'phonopy'
-    data_dict['phonon_name'] = phonon_name
-    data_dict['phonon_format'] = phonon_format
-    data_dict['summary_name'] = summary_name
 
     # Metadata
     data_dict['model'] = 'phonopy'
@@ -411,77 +408,6 @@ def _extract_force_constants(fc_object, n_ions, n_cells):
 
     return _reshape_fc(fc, n_ions, n_cells)
 
-def _extract_force_constants_old(fc_object, n_ions, n_cells):
-    """ DOC
-    Parse, reshape, and convert FC from FORCE_CONSTANTS file.
-
-    Parameters
-    ----------
-    fc_object : dict-like object
-        Object representing contents of FORCE_CONSTANTS.
-
-    Returns
-    ----------
-    fc_resh : float ndarray
-        Force constants matrix reshaped into Euphonic shape format
-        (n_cells, 3*n_ions, 3*n_ions).
-    """
-    fc_lines_str = [narr.split() for narr in
-                [line for line in fc_object.read().split('\n') if line]]
-
-    # convert string numerals as float/int
-    for l_i, line in enumerate(fc_lines_str):
-        try:
-            fc_lines_all[l_i] = [np.int(i) for i in line]
-            continue
-        except:
-            pass
-
-        try:
-            fc_lines_all[l_i] = [np.float(i) for i in line]
-            continue
-        except ValueError as e:
-            raise Exception('Failed to parse line in force constants matrix.')
-
-    fc_dims = fc_lines_all[0]
-    fc_lines = fc_lines_all[1:]
-
-    n_lines = len(fc_lines)
-    n_entries = n_lines / 4
-
-    if len(fc_dims) == 1: # single shape specifier implies full format
-        is_full_fc = True
-        fc_dims = [fc_dims[0], fc_dims[0]]
-    elif fc_dims[0] == fc_dims[1]:
-        is_full_fc = True
-    else:
-        is_full_fc = False
-
-    inds = []
-    fc_vecs = np.zeros([n_entries, 3, 3], dtype=np.float)
-
-    for sc_ion in range(n_entries):
-        entry_ind = 4*sc_ion
-
-        # line 1 (i_patom, i_satom)
-        inds.append(fc_lines[entry_ind])
-
-        # lines 2-4
-        for j in range(1,4):
-            row_in_entry = fc_lines[entry_ind + j]
-            fc_vecs[sc_ion, j-1, :] = row_in_entry
-
-    fc = np.array(fc_vecs)
-
-    if is_full_fc: # FULL FC, convert down to COMPACT
-        p2s_map = [pi for pi in range(0, n_ions*n_cells, n_ions)]
-
-        fc_phonopy = fc.reshape([n_ions*n_cells, n_ions*n_cells, 3, 3])
-        fc_reduced = fc_phonopy[p2s_map, :, :, :]
-        fc = fc_reduced.reshape(-1, 3, 3)
-
-    return _reshape_fc(fc, n_ions, n_cells)
-
 def _extract_force_constants_hdf5(fc_object, n_ions, n_cells):
     fc = fc_object['force_constants'][:]
     p2s_map = list(fc_object['p2s_map']) # 'primitive' to supercell indexing
@@ -529,64 +455,6 @@ def _reshape_fc(fc, n_ions, n_cells):
     return np.reshape( np.transpose(
         np.reshape(fc, (n_ions, n_ions, n_cells, 3, 3)),
         axes=[2,0,3,1,4]), (n_cells, 3*n_ions, 3*n_ions))
-
-def _reshape_fc_old(fc, n_ions, n_cells):
-    """ DOC
-    Reshape FORCE_CONSTANTS to conform to Euphonic format.
-    Into [N_sc, 3*N_pc, 3*N_pc]
-
-    Parameters
-    ----------
-    fc : float ndarray
-        Force constants matrix with Phonopy indexing
-    n_ions : int
-        Number of ions in unit cell
-    n_cells : int
-        Number of cells in supercell
-
-    Returns
-    -------
-    fc_euph : float ndarray
-    """
-
-    sc_n_ions = n_cells*n_ions
-
-    # Construct convenient array of indices
-    K = [k for k in range(1, 1 + sc_n_ions)]
-    J = [j for j in range(1, 1 + n_ions)]
-
-    inds = np.zeros([n_ions*sc_n_ions, 3]).astype(np.int)
-    for j in J:
-        for k in K:
-            i = (j-1)*sc_n_ions + (k-1)
-            inds[i, :] = [i, j, k]
-
-    # Indices: sc index, ion index in sc, Fi, Fj
-    fc_resh = np.zeros([n_cells, n_ions, n_ions, 3, 3])
-
-    # Reshape to arrange FC sub matrices by cell index,
-    # atom_i index, atom_j index
-
-    for i, j, k in inds:
-        # ion index within primitive cell
-        pci_ind = (j-1) // n_cells
-
-        # target ion index within primitive cell
-        pcj_ind = (k-1) // n_cells
-
-        # target cell index within sc
-        scj_ind = (k-1) % n_cells
-
-        fc_resh[scj_ind, pci_ind, pcj_ind, :, :] = fc[i, :, :]
-
-    # tile nxnx3x3 matrices into 3nx3n 
-    fc_euph = fc_resh.transpose([0,1,3,2,4]).reshape([n_cells, 3*n_ions, 3*n_ions])
-
-    #TODO replace above
-    #fc_euph = np.reshape(np.transpose(np.reshape(fc, (n_cells, n_ions, n_ions, 3, 3)),
-                    #axes=[1,0,3,2,4]), (n_cells, 3*n_ions, 3*n_ions))
-
-    return fc_euph
 
 def _extract_born(born_object):
     """ DOC
