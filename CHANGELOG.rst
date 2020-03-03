@@ -1,5 +1,8 @@
 `Unreleased <https://github.com/pace-neutrons/Euphonic/compare/v0.2.2...HEAD>`_
 ----------
+- Bug fixes:
+
+  - On reading CASTEP phonon file header information, switch from a fixed number of lines skipped to a search for a specific line, fixing issue `#23 <https://github.com/pace-neutrons/Euphonic/issues/23>`_
 
 `v0.2.2 <https://github.com/pace-neutrons/Euphonic/compare/v0.2.1...v0.2.2>`_
 ------
