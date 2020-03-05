@@ -167,7 +167,7 @@ class InterpolationData(PhononData):
 
     @classmethod
     def from_phonopy(self, path='.', summary_name='phonopy.yaml',
-                    born_name='BORN', born_format=None,
+                    born_name='BORN', born_format=None, read_born=False,
                         fc_name='FORCE_CONSTANTS', fc_format=None):
         """
         Calls the CASTEP interpolation data reader and sets the InerpolationData attributes.
@@ -187,7 +187,7 @@ class InterpolationData(PhononData):
         """
         data = _phonopy._read_interpolation_data(path=path, summary_name=summary_name,
                                             born_name=born_name, born_format=born_format,
-                                                fc_name=fc_name, fc_format=fc_format)
+                                            read_born=read_born, fc_name=fc_name, fc_format=fc_format)
         return self(data)
 
 
