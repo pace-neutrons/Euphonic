@@ -170,26 +170,36 @@ def _read_phonon_data(path='.', phonon_name='', phonon_format=None,
 
     phonon_ext = os.path.splitext(phonon_name)[1].strip('.')
 
+    if phonon_name == '':
+        raise Exception('phonon_name must be set (e.g. mesh.yaml, band.hdf5, outputdata.xyz)')
+
     hdf5_exts = ['hdf5', 'hd5', 'h5']
     yaml_exts = ['yaml', 'yml', 'yl']
-    if (phonon_format is None and phonon_ext in hdf5_exts) or\
-            (phonon_format in hdf5_exts):
-        phonon_format = 'hdf5'
-    elif (phonon_format is None and phonon_ext in yaml_exts) or\
-            (phonon_format in yaml_exts):
-        phonon_format = 'yaml'
-    elif phonon_ext is None:
-        if phonon_format is None:
+    if phonon_format is None:
+        if phonon_ext in hdf5_exts:
+            phonon_format = 'hdf5'
+
+        elif phonon_ext in yaml_exts:
+            phonon_format = 'yaml'
+
+        elif phonon_ext == '':
             raise Exception((
-                'Phonon file format is not set. '
+                'Phonon file format is not set and no file extension present.\n'
                 f'Please specify file format from {yaml_exts} or {hdf5_exts}'))
         else:
             raise Exception((
-                'Phonon file format not allowed. Please specify \n'
+                'Phonon file format not allowed. Please specify '
                 f'file format from {yaml_exts} or {hdf5_exts}'))
-    else:
-        raise Exception('Failure to establish phonon file format.')
+    elif phonon_format:
+        if phonon_format in hdf5_exts:
+            phonon_format = 'hdf5'
 
+        elif phonon_format in yaml_exts:
+            phonon_format = 'yaml'
+
+        else:
+            raise Exception((f'Failure to establish phonon file format with name: {phonon_name}, '\
+                    f'and format: {phonon_format}.'))
 
 
     if phonon_format == 'hdf5':
@@ -389,7 +399,7 @@ def _check_born_summary(filename):
             if 'born_effective_charge' in line:
                 bec_present = True
 
-            if 'dielectric_tensor' in line:
+            if 'dielectric_constant' in line:
                 dt_present = True
 
             if bec_present and dt_present:
@@ -658,7 +668,7 @@ def _check_fc_summary(filename):
 
 
 def _read_interpolation_data(path='.', summary_name='phonopy.yaml',
-                                born_name='BORN', born_format=None, read_born=False,
+                                born_name='BORN', born_format=None, read_born=True,
                                     fc_name='FORCE_CONSTANTS', fc_format=None):
     """
     Reads data from Phonopy output files.
@@ -699,24 +709,38 @@ def _read_interpolation_data(path='.', summary_name='phonopy.yaml',
     hdf5_exts = ['hdf5', 'hd5', 'h5']
     yaml_exts = ['yaml', 'yml', 'yl']
 
-    # hdf5
-    if (fc_format is None and fc_ext in hdf5_exts)\
-             or (fc_format in hdf5_exts):
-        fc_format = 'hdf5'
 
-    # phonopy FORCE_CONSTANTS
-    elif (fc_format == 'phonopy' or fc_format is None and not fc_ext)\
-            or (fc_pathname == summary_pathname):
-        fc_format = 'phonopy'
+    if fc_format is None: # check file extensions
+        # hdf5
+        if fc_ext in hdf5_exts:
+            fc_format = 'hdf5'
 
-    # summary file
-    elif (fc_format is None and fc_ext in yaml_exts)\
-            or (fc_format in yaml_exts):
-        fc_format = 'yaml'
+        # phonopy FORCE_CONSTANTS
+        elif not fc_ext:
+            fc_format = 'phonopy'
 
-    # otherwise
+        # summary phonopy.yaml
+        elif fc_ext in yaml_exts:
+            fc_format = 'yaml'
+
+        else:
+            raise Exception((f'Failure to establish force constants file format for name: {fc_name},\n'
+                    f'since fc_format is unset and extension: {fc_ext}, is not a recognised extension.'))
+
     else:
-        raise Exception('Failure to establish force constants file format.')
+        if fc_format == 'phonopy':
+            fc_format = 'phonopy'
+
+        elif fc_format in hdf5_exts:
+            fc_format = 'hdf5'
+
+        elif fc_format in yaml_exts:
+            fc_format = 'yaml'
+
+        else:
+            raise Exception((f'Failure to establish force constants file format for name: {fc_name},\n'
+                    f'since format: {fc_format}, is is not a recognised format.'))
+
 
     # text file formatting
     if fc_format == 'phonopy':
@@ -726,28 +750,39 @@ def _read_interpolation_data(path='.', summary_name='phonopy.yaml',
     elif fc_format == 'yaml':
         if not _check_fc_summary(summary_pathname):
             raise Exception((
-                f'Force constants not found in summary file {summary_pathname}'))
+                f'Force constants not found in summary file {summary_pathname}.'))
+
 
     # Check BORN (phonopy, or yaml summary)
     # summary file
     if read_born:
-        if (born_name == summary_name) or (born_format in yaml_exts):
-            born_format = 'yaml'
+        if born_format is None:
+            # assume born can only in same summary file
+            if born_name == summary_name:
+                born_format = 'yaml'
 
-        # phonopy BORN file
-        elif not born_ext and (born_format in [None,'','phonopy']):
-            born_format = 'phonopy'
+            # phonopy BORN file
+            elif not born_ext: # assume
+                born_format = 'phonopy'
 
-        # otherwise
+            else:
+                raise Exception((f'Failure to establish born file format for name: {born_name},\n'
+                    f'since born_format is unset and extension: {born_ext}, is not a recognised extension.'))
+
         else:
-            raise Exception('Failure to establish born file format.')
+            if born_format == 'phonopy':
+                if not _check_born_file(born_pathname):
+                    raise Exception(f'Incorrect born formatting for {born_pathname}.')
+                born_format = 'phonopy'
 
-        if born_format == 'phonopy':
-            if not _check_born_file(born_pathname):
-                raise Exception(f'Incorrect born formatting for {born_pathname}.')
-        elif born_format == 'yaml':
-            if not _check_born_summary(summary_pathname):
-                raise Exception(f'Born data not present in {summary_pathname}.')
+            elif born_format in yaml_exts:
+                if not _check_born_summary(summary_pathname):
+                    raise Exception(f'Born data not present in {summary_pathname}.')
+                born_format = 'yaml'
+
+            else:
+                raise Exception((f'Failure to establish born file format for name: {born_name},\n'
+                        f'and format: {born_format}, is not a recognised format.'))
 
     ## Load files:
     # SUMMARY
