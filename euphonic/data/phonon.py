@@ -65,15 +65,8 @@ class PhononData(Data):
         data : dict
             A dict containing the following keys: n_ions, n_branches, n_qpts,
             cell_vec, recip_vec, ion_r, ion_type, ion_mass, qpts, weights,
-            freqs, eigenvecs, split_i, split_freqs, split_eigenvecs.
-            meta :
-                model:{'CASTEP'}
-                    Which model has been used
-                path : str, default ''
-                    Location of seed files on filesystem
-            meta (CASTEP) :
-                seedname : str
-                    Seedname of file that is read
+            freqs, eigenvecs, split_i, split_freqs, split_eigenvecs, and
+            optional: metadata
         """
         if type(data) is str:
             raise Exception('The old interface is now replaced by',
@@ -125,10 +118,6 @@ class PhononData(Data):
         """
         data = _castep._read_phonon_data(seedname, path)
         pdata = self(data)
-
-        pdata.model = data['model']
-        pdata.path = data['path']
-        pdata.seedname = data['seedname']
         return pdata
 
     @classmethod
@@ -139,21 +128,18 @@ class PhononData(Data):
 
         Parameters
         ----------
-        seedname : str
-            Seedname of file(s) to read
         path : str
             Path to dir containing the file(s), if in another directory
+        phonon_name : str
+            Name of file containing phonon data
+        phonon_format : str {yaml, hdf5}
+            Format of file containing phonon data
+        summary_name : str
+            Seedname of phonopy summary file to read, default : phonopy.yaml
         """
         data = _phonopy._read_phonon_data(path=path, phonon_name=phonon_name,
-                        phonon_format=phonon_format, summary_name=summary_name)
+                            phonon_format=phonon_format, summary_name=summary_name)
         pdata = self(data)
-
-        #TODO metadata in dict?
-        pdata.model = 'phonopy'
-        pdata.path = path
-        pdata.phonon_name = data['phonon_name']
-        pdata.phonon_format = data['phonon_format']
-        pdata.summary_name = data['summary_name']
         return pdata
 
     def _set_data(self, data):
@@ -169,9 +155,14 @@ class PhononData(Data):
         self.weights = data['weights']
         self._freqs = data['freqs']
         self.eigenvecs = data['eigenvecs']
-        #self.split_i = data['split_i']
-        #self._split_freqs = data['split_freqs']
-        #self.split_eigenvecs = data['split_eigenvecs']
+        self.split_i = data['split_i']
+        self._split_freqs = data['split_freqs']
+        self.split_eigenvecs = data['split_eigenvecs']
+
+        try:
+            self.metadata = data['metadata']
+        except KeyError:
+            print('Could not find metadata while loading data.')
 
     def reorder_freqs(self, reorder_gamma=True):
         """

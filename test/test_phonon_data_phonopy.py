@@ -65,7 +65,7 @@ class TestReadNaClPhononQPoints(unittest.TestCase):
                   12.80530249, 13.86189376, 13.86189382, 15.64634206, 15.64634209,
                   15.83247592, 15.83247604, 18.05815279, 18.05815302, 18.92102697,
                   18.92102704, 19.11364648, 19.11364655, 19.58231829, 19.58231858,
-                  23.97564755, 23.9756476 , 25.51022627, 25.51022678]])*ureg('hartree')
+                  23.97564755, 23.9756476 , 25.51022627, 25.51022678]])*ureg('meV')
 
         expctd_data.eigenvecs = np.load(self.path + '/phonopy_eigenvecs.npy')
 
@@ -73,8 +73,11 @@ class TestReadNaClPhononQPoints(unittest.TestCase):
 
         self.expctd_data = expctd_data
 
-        self.data = PhononData.from_phonopy(path=self.path, phonon_name='qpoints.yaml')
-        self.data_hdf5 = PhononData.from_phonopy(path=self.path, phonon_name='qpoints.hdf5')
+        self.data = PhononData.from_phonopy(path=self.path,
+                            phonon_name='qpoints.yaml', summary_name='phonopy.yaml')
+
+        self.data_hdf5 = PhononData.from_phonopy(path=self.path,
+                            phonon_name='qpoints.hdf5', summary_name='phonopy.yaml')
 
     def test_n_qpts_read_nacl_phonon(self):
         npt.assert_equal(self.data.n_qpts,
@@ -101,7 +104,7 @@ class TestReadNaClPhononQPoints(unittest.TestCase):
                                self.expctd_data.ion_type)
 
     def test_ion_mass_read_nacl_phonon(self):
-        npt.assert_array_equal(self.data.ion_mass.to('amu').magnitude,
+        npt.assert_allclose(self.data.ion_mass.to('amu').magnitude,
                                self.expctd_data.ion_mass.to('amu').magnitude)
 
     def test_qpts_read_nacl_phonon(self):

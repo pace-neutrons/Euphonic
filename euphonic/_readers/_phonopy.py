@@ -57,7 +57,6 @@ def _extract_phonon_data(phonon_data):
     try:
         weights = _convert_weights([phon['weight'] for phon in phonon_data['phonon']])
     except:
-        print('Warning: weights not found in phonon data file. Defaulting to equal weightings.')
         weights = [1/len(qpts) for i in range(len(qpts))]
 
     phonons = [phon for phon in phonon_data['phonon']]
@@ -126,9 +125,7 @@ def _extract_phonon_data_hdf5(hdf5_file):
     try:
         weights = _convert_weights([phon['weight'] for phon in phonon_data['phonon']])
     except:
-        print('Warning: weights not found in phonon data file. Defaulting to equal weightings.')
         weights = [1/len(qpts) for i in range(len(qpts))]
-
 
     data_dict = {}
     data_dict['n_qpts'] = n_qpts
@@ -140,6 +137,7 @@ def _extract_phonon_data_hdf5(hdf5_file):
     data_dict['split_freqs'] = split_freqs
     data_dict['split_eigenvecs'] = split_eigenvecs
     data_dict['freq_down'] = freq_down
+
     return data_dict
 
 def _read_phonon_data(path='.', phonon_name='', phonon_format=None,
@@ -187,8 +185,9 @@ def _read_phonon_data(path='.', phonon_name='', phonon_format=None,
                 'Phonon file format is not set and no file extension present.\n'
                 f'Please specify file format from {yaml_exts} or {hdf5_exts}'))
         else:
-            raise Exception((f'Failure to establish phonon file format for name: {phonon_pathname},\n'
-                    f'since phonon_format is unset and extension: {phonon_ext}, is not a recognised extension.'))
+            raise Exception((
+                f'Failure to establish phonon file format for name: {phonon_pathname},\n'
+                f'since phonon_format is unset and extension: {phonon_ext}, is not a recognised extension.'))
     elif phonon_format:
         if phonon_format in hdf5_exts:
             phonon_format = 'hdf5'
@@ -197,8 +196,9 @@ def _read_phonon_data(path='.', phonon_name='', phonon_format=None,
             phonon_format = 'yaml'
 
         else:
-            raise Exception((f'Failure to establish phonon file format for name: {phonon_pathname},\n'
-                    f'since extension: {phonon_ext}, is not a recognised extension.'))
+            raise Exception((
+                f'Failure to establish phonon file format for name: {phonon_pathname},\n'
+                f'since extension: {phonon_ext}, is not a recognised extension.'))
 
 
     if phonon_format == 'hdf5':
@@ -295,12 +295,13 @@ def _read_phonon_data(path='.', phonon_name='', phonon_format=None,
     data_dict['freq_down'] = phonon_dict['freq_down']
 
 
-    # Metadata
-    data_dict['model'] = 'phonopy'
-    data_dict['phonon_name'] = phonon_name
-    data_dict['phonon_format'] = phonon_format
-    data_dict['summary_name'] = summary_name
+    metadata = type('', (), {})()
+    metadata.model = 'phonopy'
+    metadata.phonon_name = phonon_name
+    metadata.phonon_format = phonon_format
+    metadata.summary_name = summary_name
 
+    data_dict['metadata'] = metadata
     return data_dict
 
 
@@ -807,7 +808,7 @@ def _read_interpolation_data(path='.', summary_name='phonopy.yaml',
                 born_effective_charge = born_dict['born_effective_charge']
             except:
                 print(Exception((
-                    f'Warning: Could not extract born data from {born_name}.')))
+                    f'Could not extract born data from {born_name}.')))
 
         elif born_format == 'yaml':
             try:
@@ -815,7 +816,9 @@ def _read_interpolation_data(path='.', summary_name='phonopy.yaml',
                 born_effective_charge = summary_dict['born_effective_charge']
             except:
                 raise Exception((
-                    f'Warning: Could not extract born data from {born_pathname}.'))
+                    f'Could not extract born data from {born_pathname}.'))
+        else:
+            raise Exception('born format: {born_format} not allowed.')
 
     # FORCE CONSTANTS
     n_ions = summary_dict['n_ions']
@@ -906,20 +909,26 @@ def _read_interpolation_data(path='.', summary_name='phonopy.yaml',
 
     if read_born:
         try: # NAC
-            data_dict['born'] = born_effective_charge # *unac
+            data_dict['born'] = born_effective_charge
         except UnboundLocalError as eb:
             print('Warning: Born effective charges not present.')
 
         try:
-            data_dict['dielectric'] = dielectric_constant # *unac
+            data_dict['dielectric'] = dielectric_constant
         except UnboundLocalError as eb:
             print('Warning: Dielectric tensor not present.')
 
-    data_dict['model'] = 'phonopy'
-    data_dict['path'] = path
-    data_dict['born_name'] = born_name
-    data_dict['fc_name'] = fc_name
-    data_dict['summary_name'] = summary_name
+
+    metadata = type('', (), {})()
+    metadata.model = 'phonopy'
+    metadata.path = path
+    metadata.fc_name = fc_name
+    metadata.fc_format = fc_format
+    metadata.born_name = born_name
+    metadata.born_format = born_format
+    metadata.summary_name = summary_name
+
+    data_dict['metadata'] = metadata
 
     return data_dict
 

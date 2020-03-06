@@ -93,15 +93,7 @@ class InterpolationData(PhononData):
         data : dict
             A dict containing the following keys: n_ions, n_branches, cell_vec,
             ion_r, ion_type, ion_mass, force_constants, sc_matrix,
-            n_cells_in_sc, cell_origins, and optional : born, dielectric
-            meta :
-                model : {'CASTEP'}
-                    Which model has been used
-                path : str, default ''
-                    Location of seed files on filesystem
-            meta (CASTEP) :
-                seedname : str
-                    Seedname of file that is read
+            n_cells_in_sc, cell_origins, and optional : born, dielectric, metadata
         """
         if type(data) is str:
             raise Exception((
@@ -167,8 +159,8 @@ class InterpolationData(PhononData):
 
     @classmethod
     def from_phonopy(self, path='.', summary_name='phonopy.yaml',
-                    born_name='BORN', born_format=None, read_born=False,
-                        fc_name='FORCE_CONSTANTS', fc_format=None):
+                        fc_name='FORCE_CONSTANTS', fc_format=None,
+                        born_name='BORN', born_format=None, read_born=True):
         """
         Calls the CASTEP interpolation data reader and sets the InerpolationData attributes.
 
@@ -176,18 +168,22 @@ class InterpolationData(PhononData):
         ----------
         path : str, optional
             Path to dir containing the file(s), if in another directory
-
-        kwargs : optional
-            summary_file : str
-                Seedname of phonopy user script summary file
-            born_file : str
-                Seedname of BORN file
-            fc_file : str
-                Seedname of FORCE_CONSTANTS file
+        summary_name : str
+            Seedname of phonopy script summary file, default: phonopy.yaml
+        fc_name : str
+            Seedname of force constants file, default: FORCE_CONSTANTS
+        fc_format : str
+            Format of force constants file
+        born_name : str
+            Seedname of born file information, default: BORN
+        born_format : str
+            Format of born file information
+        read_born : bool
+            Choose whether to read born information, default: True
         """
         data = _phonopy._read_interpolation_data(path=path, summary_name=summary_name,
-                                            born_name=born_name, born_format=born_format,
-                                            read_born=read_born, fc_name=fc_name, fc_format=fc_format)
+                                        born_name=born_name, born_format=born_format,
+                                        read_born=read_born, fc_name=fc_name, fc_format=fc_format)
         return self(data)
 
 
@@ -211,20 +207,9 @@ class InterpolationData(PhononData):
             pass
 
         try:
-            self.model = data['model']
-            if data['model'].lower() == 'castep':
-                self.model = data['model']
-                self.seedname = data['seedname']
-                self.path = data['path']
-            elif data['model'].lower() == 'phonopy':
-                self.model = data['model']
-                self.path = data['path']
-                self.born_name = data['born_name']
-                self.fc_name = data['fc_name']
-                self.summary_name = data['summary_name']
+            self.metadata = data['metadata']
         except KeyError:
-            pass
-
+            print('Could not find metadata while loading data.')
 
 
     def calculate_fine_phonons(
