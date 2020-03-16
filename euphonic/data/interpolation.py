@@ -375,7 +375,7 @@ class InterpolationData(PhononData):
             if splitting:
                 gamma_i = np.where(is_gamma(qpts))[0]
                 split_i = gamma_i[np.logical_and(gamma_i > 0,
-                                                 gamma_i < len(qpts))]
+                                                 gamma_i < len(qpts) - 1)]
                 split_freqs = np.zeros((len(split_i), 3*n_ions))
                 split_eigenvecs = np.zeros((len(split_i), 3*n_ions, n_ions, 3),
                                            dtype=np.complex128)
@@ -821,13 +821,16 @@ class InterpolationData(PhononData):
         n_ions = self.n_ions
         born = self._born
         dielectric = self.dielectric
+        na_corr = np.zeros((3*n_ions, 3*n_ions), dtype=np.complex128)
+
+        if is_gamma(q_dir):
+            return na_corr
 
         cell_volume = np.dot(cell_vec[0], np.cross(cell_vec[1], cell_vec[2]))
         denominator = np.einsum('ij,i,j', dielectric, q_dir, q_dir)
         factor = 4*math.pi/(cell_volume*denominator)
 
         q_born_sum = np.einsum('ijk,k->ij', born, q_dir)
-        na_corr = np.zeros((3*n_ions, 3*n_ions), dtype=np.complex128)
         for i in range(n_ions):
             for j in range(n_ions):
                 na_corr[3*i:3*(i+1), 3*j:3*(j+1)] = np.einsum(
