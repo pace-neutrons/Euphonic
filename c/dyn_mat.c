@@ -234,6 +234,11 @@ void calculate_gamma_correction(const double q_dir[3], const int n_ions,
     double fac, denominator;
     double *q_born_sum;
 
+    if (is_gamma(q_dir)) {
+        memset(corr, 0, 2*9*n_ions*n_ions*sizeof(double));
+        return corr;
+    }
+
     denominator = 0;
     for (a = 0; a < 3; a++) {
         for (b = 0; b < 3; b++) {
