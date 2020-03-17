@@ -13,8 +13,13 @@ pipeline {
 
     parameters {
         string(
-            name: 'python_version', defaultValue: '3.6.0', 
+            name: 'PYTHON_VERSION', defaultValue: '3.6.0', 
             description: 'The version of python to build and test with'
+        )
+
+        string(
+            name: 'CONDA_VERSION', defaultValue: '3', 
+            description: 'The version of conda to set up the python environment with'
         )
     }
   
@@ -32,9 +37,9 @@ pipeline {
                 script {
                     if (isUnix()) {
                         sh """
-                            module load conda/3 &&
+                            module load conda/${params.CONDA_VERSION} &&
                             module load gcc &&
-                            conda create --name py python=${params.python_version} -y &&
+                            conda create --name py python=${params.PYTHON_VERSION} -y &&
                             conda activate py &&
                             export CC=gcc &&
                             python -m pip install --upgrade --user pip &&
@@ -52,6 +57,7 @@ pipeline {
                 script {
                     if (isUnix()) {
                         sh """
+                            module load conda/${params.CONDA_VERSION} &&
                             conda activate py &&
                             pushd test &&
                             python -m unittest discover -v . &&
