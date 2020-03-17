@@ -25,11 +25,7 @@ pipeline {
                 script {
                     if (isUnix()) {
                         sh '''
-                            ./build/conda_jenkins_build.sh
-                        '''
-                    } else {
-                        bat '''
-                            echo "TODO: set up windows and macOS nodes" 
+                            ./build_scripts/conda_jenkins_build.sh
                         '''
                     }
                 }
@@ -41,14 +37,9 @@ pipeline {
                 script {
                     if (isUnix()) {
                         sh '''
-                            module load python/\$PYTHON_VERSION &&
                             pushd Euphonic/test
                             python -m unittest discover -v .
                             popd
-                        '''
-                    } else {
-                        bat '''
-                            echo "TODO: set up windows and macOS nodes" 
                         '''
                     }
                 }
