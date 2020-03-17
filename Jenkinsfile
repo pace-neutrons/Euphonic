@@ -52,7 +52,8 @@ pipeline {
                 script {
                     if (isUnix()) {
                         sh """
-                            pushd Euphonic/test &&
+                            cd &&
+                            pushd test &&
                             python -m unittest discover -v . &&
                             popd
                         """
