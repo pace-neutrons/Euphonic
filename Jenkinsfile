@@ -1,5 +1,9 @@
 #!groovy
 
+versions = [[python_version: "2.7.11", conda_version: "2"], [python_version: "3.6.0", conda_version: "2"]]
+
+
+
 pipeline {
 
     // "sl7 && PACE Windows (Private)" for when windows is ready 
@@ -9,18 +13,6 @@ pipeline {
 
     triggers {
         pollSCM('H/2 * * * *')
-    }
-
-    parameters {
-        string(
-            name: 'PYTHON_VERSION', defaultValue: '3.6.0', 
-            description: 'The version of python to build and test with'
-        )
-
-        string(
-            name: 'CONDA_VERSION', defaultValue: '3', 
-            description: 'The version of conda to set up the python environment with'
-        )
     }
   
     stages {
@@ -33,36 +25,40 @@ pipeline {
         }
 
         stage("Build") {
-            steps {
-                script {
-                    if (isUnix()) {
-                        sh """
-                            module load conda/${params.CONDA_VERSION} &&
-                            module load gcc &&
-                            conda create --name py python=${params.PYTHON_VERSION} -y &&
-                            conda activate py &&
-                            export CC=gcc &&
-                            python -m pip install --upgrade --user pip &&
-                            python -m pip install --user numpy &&
-                            python -m pip install --user .[matplotlib] &&
-                            python -m pip install --user mock
-                        """
+           for (version in versions) {
+                steps {
+                    script {
+                        if (isUnix()) {
+                            sh """
+                                module load conda/${version['conda_version']} &&
+                                module load gcc &&
+                                conda create --name py${version['python_version']} python=${version['python_version']} -y &&
+                                conda activate py${version['python_version']} &&
+                                export CC=gcc &&
+                                python -m pip install --upgrade --user pip &&
+                                python -m pip install --user numpy &&
+                                python -m pip install --user .[matplotlib] &&
+                                python -m pip install --user mock
+                            """
+                        }
                     }
                 }
             }
         }
 
         stage("Test") {
-            steps {
-                script {
-                    if (isUnix()) {
-                        sh """
-                            module load conda/${params.CONDA_VERSION} &&
-                            conda activate py &&
-                            pushd test &&
-                            python -m unittest discover -v . &&
-                            popd
-                        """
+            for (version in versions) {
+                steps {
+                    script {
+                        if (isUnix()) {
+                            sh """
+                                module load conda/${version['conda_version']} &&
+                                conda activate py${version['python_version']} &&
+                                pushd test &&
+                                python -m unittest discover -v . &&
+                                popd
+                            """
+                        }
                     }
                 }
             }
