@@ -24,11 +24,12 @@ pipeline {
             steps {
                 script {
                     if (isUnix()) {
-                        sh '''
+                        sh """
+                            export PYTHON_VERSION=${params.python_version}
                             pushd build_scripts
-                            ./conda_jenkins_build.sh
+                            ./conda_jenkins_build.sh $PYTHON_VERSION
                             popd
-                        '''
+                        """
                     }
                 }
             }
@@ -38,11 +39,11 @@ pipeline {
             steps {
                 script {
                     if (isUnix()) {
-                        sh '''
+                        sh """
                             pushd Euphonic/test
                             python -m unittest discover -v .
                             popd
-                        '''
+                        """
                     }
                 }
             }

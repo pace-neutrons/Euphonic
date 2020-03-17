@@ -4,8 +4,8 @@ module load conda/3
 module load gcc
 
 
-conda create --name py3 python=3.6.0 -y
-conda activate py3
+conda create --name py python=$1 -y # $1 holds python version
+conda activate py
 
 export CC=gcc
 
