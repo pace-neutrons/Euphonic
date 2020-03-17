@@ -52,7 +52,7 @@ pipeline {
                 script {
                     if (isUnix()) {
                         sh """
-                            ls -l &&
+                            conda activate py &&
                             pushd test &&
                             python -m unittest discover -v . &&
                             popd
