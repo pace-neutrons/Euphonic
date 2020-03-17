@@ -32,18 +32,14 @@ pipeline {
                 script {
                     if (isUnix()) {
                         sh """
-                            module load conda/3
-                            module load gcc
-
-
-                            conda create --name py python=${params.python_version} -y
-                            conda activate py
-
-                            export CC=gcc
-
-                            python -m pip install --upgrade --user pip
-                            python -m pip install --user numpy
-                            python -m pip install --user .[matplotlib]
+                            module load conda/3 &&
+                            module load gcc &&
+                            conda create --name py python=${params.python_version} -y &&
+                            conda activate py &&
+                            export CC=gcc &&
+                            python -m pip install --upgrade --user pip &&
+                            python -m pip install --user numpy &&
+                            python -m pip install --user .[matplotlib] &&
                             python -m pip install --user mock
                         """
                     }
@@ -56,8 +52,8 @@ pipeline {
                 script {
                     if (isUnix()) {
                         sh """
-                            pushd Euphonic/test
-                            python -m unittest discover -v .
+                            pushd Euphonic/test &&
+                            python -m unittest discover -v . &&
                             popd
                         """
                     }
