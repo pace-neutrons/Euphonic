@@ -10,6 +10,13 @@ pipeline {
     triggers {
         pollSCM('H/2 * * * *')
     }
+
+    parameters {
+        string(
+            name: 'python_version', defaultValue: '3.6.0', 
+            description: 'The version of python to build and test with'
+        )
+    }
   
     stages {
 
@@ -29,7 +36,7 @@ pipeline {
                             module load gcc
 
 
-                            conda create --name py python=3.6.0 -y
+                            conda create --name py python=${params.python_version} -y
                             conda activate py
 
                             export CC=gcc
