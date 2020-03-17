@@ -32,31 +32,35 @@ pipeline {
         }
 
         stage("Build") {
-            execute_for_each_python_version(
-                """
-                    module load conda/${version['conda_version']} &&
-                    module load gcc &&
-                    conda create --name py${version['python_version']} python=${version['python_version']} -y &&
-                    conda activate py${version['python_version']} &&
-                    export CC=gcc &&
-                    python -m pip install --upgrade --user pip &&
-                    python -m pip install --user numpy &&
-                    python -m pip install --user .[matplotlib] &&
-                    python -m pip install --user mock
-                """
-            )
+            steps {
+                execute_for_each_python_version(
+                    """
+                        module load conda/${version['conda_version']} &&
+                        module load gcc &&
+                        conda create --name py${version['python_version']} python=${version['python_version']} -y &&
+                        conda activate py${version['python_version']} &&
+                        export CC=gcc &&
+                        python -m pip install --upgrade --user pip &&
+                        python -m pip install --user numpy &&
+                        python -m pip install --user .[matplotlib] &&
+                        python -m pip install --user mock
+                    """
+                )
+            }
         }
 
         stage("Test") {
-            execute_for_each_python_version(
-                """
-                    module load conda/${version['conda_version']} &&
-                    conda activate py${version['python_version']} &&
-                    pushd test &&
-                    python -m unittest discover -v . &&
-                    popd
-                """
-            )
+            steps {
+                execute_for_each_python_version(
+                    """
+                        module load conda/${version['conda_version']} &&
+                        conda activate py${version['python_version']} &&
+                        pushd test &&
+                        python -m unittest discover -v . &&
+                        popd
+                    """
+                )
+            }
         }
 
     }
