@@ -25,7 +25,9 @@ pipeline {
                 script {
                     if (isUnix()) {
                         sh '''
-                            ./build_scripts/conda_jenkins_build.sh
+                            pushd build_scripts
+                            ./conda_jenkins_build.sh
+                            popd
                         '''
                     }
                 }

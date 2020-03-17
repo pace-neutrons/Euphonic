@@ -1,3 +1,5 @@
+pushd ..
+
 module load conda/3
 module load gcc
 
@@ -11,3 +13,5 @@ python -m pip install --upgrade --user pip
 python -m pip install --user numpy
 python -m pip install --user .[matplotlib]
 python -m pip install --user mock
+
+popd
