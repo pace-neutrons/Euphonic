@@ -26,9 +26,19 @@ pipeline {
                     if (isUnix()) {
                         sh """
                             export PYTHON_VERSION=${params.python_version}
-                            pushd build_scripts
-                            ./conda_jenkins_build.sh $PYTHON_VERSION
-                            popd
+                            module load conda/3
+                            module load gcc
+
+
+                            conda create --name py python=$PYTHON_VERSION -y
+                            conda activate py
+
+                            export CC=gcc
+
+                            python -m pip install --upgrade --user pip
+                            python -m pip install --user numpy
+                            python -m pip install --user .[matplotlib]
+                            python -m pip install --user mock
                         """
                     }
                 }
