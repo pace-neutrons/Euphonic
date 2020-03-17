@@ -25,12 +25,11 @@ pipeline {
                 script {
                     if (isUnix()) {
                         sh """
-                            export PYTHON_VERSION=${params.python_version}
                             module load conda/3
                             module load gcc
 
 
-                            conda create --name py python=$PYTHON_VERSION -y
+                            conda create --name py python=3.6.0 -y
                             conda activate py
 
                             export CC=gcc
