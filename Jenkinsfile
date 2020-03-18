@@ -30,6 +30,7 @@ pipeline {
                             conda create --name py python=3.6.0 -y &&
                             conda activate py &&
                             python -m pip install --upgrade --user pip &&
+                            python -m pip install --user virtualenv &&
                             python -m pip install tox &&
                             export CC=gcc
                         """
