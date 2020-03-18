@@ -102,20 +102,22 @@ def _read_phonon_data(seedname, path):
     data_dict['n_ions'] = n_ions
     data_dict['n_branches'] = n_branches
     data_dict['n_qpts'] = n_qpts
-    data_dict['cell_vec'] = (cell_vec*ureg('angstrom').to('bohr')).magnitude
-    data_dict['recip_vec'] = ((reciprocal_lattice(cell_vec)/ureg.angstrom)
-                              .to('1/bohr')).magnitude
+    data_dict['cell_vec'] = (cell_vec*ureg('angstrom').to(
+        'INTERNAL_LENGTH_UNIT')).magnitude
+    data_dict['recip_vec'] = ((reciprocal_lattice(cell_vec)/ureg.angstrom).to(
+        '1/INTERNAL_LENGTH_UNIT')).magnitude
     data_dict['ion_r'] = ion_r
     data_dict['ion_type'] = ion_type
-    data_dict['ion_mass'] = ion_mass*(ureg('amu')).to('e_mass').magnitude
+    data_dict['ion_mass'] = ion_mass*(ureg('amu')).to(
+        'INTERNAL_MASS_UNIT').magnitude
     data_dict['qpts'] = qpts
     data_dict['weights'] = weights
-    data_dict['freqs'] = ((freqs*(1/ureg.cm)).
-                          to('E_h', 'spectroscopy')).magnitude
+    data_dict['freqs'] = ((freqs*(1/ureg.cm)).to(
+        'INTERNAL_ENERGY_UNIT', 'spectroscopy')).magnitude
     data_dict['eigenvecs'] = eigenvecs
     data_dict['split_i'] = split_i
-    data_dict['split_freqs'] = ((split_freqs*(1/ureg.cm))
-                                .to('E_h', 'spectroscopy')).magnitude
+    data_dict['split_freqs'] = ((split_freqs*(1/ureg.cm)).to(
+        'INTERNAL_ENERGY_UNIT', 'spectroscopy')).magnitude
     data_dict['split_eigenvecs'] = split_eigenvecs
 
 

@@ -73,23 +73,27 @@ class BandsData(Data):
 
     @property
     def cell_vec(self):
-        return self._cell_vec*ureg('bohr').to(self._l_units)
+        return self._cell_vec*ureg('INTERNAL_LENGTH_UNIT').to(self._l_units)
 
     @property
     def recip_vec(self):
-        return self._recip_vec*ureg('1/bohr').to('1/' + self._l_units)
+        return self._recip_vec*ureg(
+            '1/INTERNAL_LENGTH_UNIT').to('1/' + self._l_units)
 
     @property
     def freqs(self):
-        return self._freqs*ureg('hartree').to(self._e_units, 'spectroscopy')
+        return self._freqs*ureg(
+            'INTERNAL_ENERGY_UNIT').to(self._e_units, 'spectroscopy')
 
     @property
     def freq_down(self):
-        return self._freq_down*ureg('hartree').to(self._e_units, 'spectroscopy')
+        return self._freq_down*ureg(
+            'INTERNAL_ENERGY_UNIT').to(self._e_units, 'spectroscopy')
 
     @property
     def fermi(self):
-        return self._fermi*ureg('hartree').to(self._e_units, 'spectroscopy')
+        return self._fermi*ureg(
+            'INTERNAL_ENERGY_UNIT').to(self._e_units, 'spectroscopy')
 
     @classmethod
     def from_castep(self, seedname, path=''):

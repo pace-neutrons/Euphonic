@@ -81,27 +81,31 @@ class PhononData(Data):
 
     @property
     def cell_vec(self):
-        return self._cell_vec*ureg('bohr').to(self._l_units)
+        return self._cell_vec*ureg('INTERNAL_LENGTH_UNIT').to(self._l_units)
 
     @property
     def recip_vec(self):
-        return self._recip_vec*ureg('1/bohr').to('1/' + self._l_units)
+        return self._recip_vec*ureg(
+            '1/INTERNAL_LENGTH_UNIT').to('1/' + self._l_units)
 
     @property
     def ion_mass(self):
-        return self._ion_mass*ureg('e_mass').to('amu')
+        return self._ion_mass*ureg('INTERNAL_MASS_UNIT').to('amu')
 
     @property
     def freqs(self):
-        return self._freqs*ureg('E_h').to(self._e_units, 'spectroscopy')
+        return self._freqs*ureg(
+            'INTERNAL_ENERGY_UNIT').to(self._e_units, 'spectroscopy')
 
     @property
     def split_freqs(self):
-        return self._split_freqs*ureg('E_h').to(self._e_units, 'spectroscopy')
+        return self._split_freqs*ureg(
+            'INTERNAL_ENERGY_UNIT').to(self._e_units, 'spectroscopy')
 
     @property
     def sqw_ebins(self):
-        return self._sqw_ebins*ureg('E_h').to(self._e_units, 'spectroscopy')
+        return self._sqw_ebins*ureg(
+            'INTERNAL_ENERGY_UNIT').to(self._e_units, 'spectroscopy')
 
     @classmethod
     def from_castep(self, seedname, path=''):
