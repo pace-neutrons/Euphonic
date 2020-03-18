@@ -10,28 +10,6 @@ pipeline {
     triggers {
         pollSCM('H/2 * * * *')
     }
-
-    parameters {
-        string(
-            name: 'PYTHON3_VERSION', defaultValue: '3.6.0', 
-            description: 'The version of python 3 to build and test with'
-        )
-
-        string(
-            name: 'PYTHON2_VERSION', defaultValue: '2.7.11', 
-            description: 'The version of python 2 to build and test with'
-        )
-
-        string(
-            name: 'CONDA3_VERSION', defaultValue: '3', 
-            description: 'The version of conda to set up the python 3 environment with'
-        )
-
-        string(
-            name: 'CONDA2_VERSION', defaultValue: '2', 
-            description: 'The version of conda to set up the python 2 environment with'
-        )
-    }
   
     stages {
 
@@ -42,13 +20,18 @@ pipeline {
             }
         }
 
-        stage("Build") {
+        stage("Set up environment") {
             steps {
                 script {
                     if (isUnix()) {
                         sh """
-                            ./build_tools/jenkins_env_setup_linux.sh ${params.PYTHON3_VERSION} ${params.CONDA3_VERSION} &&
-                            ./build_tools/jenkins_env_setup_linux.sh ${params.PYTHON2_VERSION} ${params.CONDA2_VERSION}
+                            module load conda/3 &&
+                            module load gcc &&
+                            conda create --name py python=3.6.0 -y &&
+                            conda activate py &&
+                            python -m pip install --upgrade --user pip &&
+                            python -m pip install tox &&
+                            export CC=gcc
                         """
                     }
                 }
@@ -60,8 +43,9 @@ pipeline {
                 script {
                     if (isUnix()) {
                         sh """
-                            ./build_tools/activate_python_and_run_tests.sh ${params.PYTHON3_VERSION} ${params.CONDA3_VERSION} &&
-                            ./build_tools/activate_python_and_run_tests.sh ${params.PYTHON2_VERSION} ${params.CONDA2_VERSION}
+                            module load conda/3 &&
+                            conda activate py &&
+                            tox
                         """
                     }
                 }
