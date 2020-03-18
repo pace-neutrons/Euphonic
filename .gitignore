@@ -4,3 +4,4 @@
 build/
 dist/
 euphonic.egg-info/
+.tox
