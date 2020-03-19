@@ -2,7 +2,7 @@
 
 void setGitHubBuildStatus(String status, message) {
     script {
-        withCredentials([string(credentialsId: 'GitHub_API_Token',
+        withCredentials([string(credentialsId: 'Euphonic commit status',
                 variable: 'api_token')]) {
             if (isUnix()) {
                 sh """
