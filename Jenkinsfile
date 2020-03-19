@@ -12,7 +12,7 @@ void setGitHubBuildStatus(String status, message) {
                         "description": "${message}", \
                         "target_url": "$BUILD_URL", \
                         "context": "$JOB_BASE_NAME"}' \
-                    $PR_STATUSES_URL > /dev/null
+                    https://api.github.com/repos/pace-neutrons/Euphonic/statuses/${env.GIT_COMMIT}
                 """
             }
         }
