@@ -38,22 +38,14 @@ def post_github_status(String state, String message) {
   }
 }
 
-def setBuildStatus(String state, String message) {
-    script {
-        withCredentials([string(credentialsId: 'GitHub_API_Token',
-          variable: 'api_token')]) {
-
-        }
-    }
-    if (isUnix()) {
-        sh """
-            curl -XPOST -H "Authorization: token ${api_token}" https://api.github.com/repos/:pace-neutrons/:Euphonic/statuses/$(git rev-parse HEAD) -d "{
-                \"state\": \"success\",
-                \"target_url\": \"${BUILD_URL}\",
-                \"description\": \"The build has succeeded!\"
-            }"
-        """
-    }
+void setBuildStatus(String state, String message) {
+  step([
+      $class: "GitHubCommitStatusSetter",
+      reposSource: [$class: "ManuallyEnteredRepositorySource", url: "https://github.com/pace-neutrons/Euphonic"],
+      contextSource: [$class: "ManuallyEnteredCommitContextSource", context: "ci/jenkins/build-status"],
+      errorHandlers: [[$class: "ChangingBuildStatusErrorHandler", result: "UNSTABLE"]],
+      statusResultSource: [ $class: "ConditionalStatusResultSource", results: [[$class: "AnyBuildResult", message: message, state: state]] ]
+  ]);
 }
 
 pipeline {
