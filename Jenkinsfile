@@ -1,20 +1,40 @@
 #!groovy
 
+void setGitHubBuildStatus(String status, message) {
+    script {
+        withCredentials([string(credentialsId: 'GitHub_API_Token',
+                variable: 'api_token')]) {
+            if (isUnix()) {
+                sh """
+                    curl -H "Authorization: token ${api_token}" \
+                    --request POST \
+                    --data '{"state": "${status}", \
+                        "description": "${message}", \
+                        "target_url": "$BUILD_URL", \
+                        "context": "$JOB_BASE_NAME"}' \
+                    $PR_STATUSES_URL > /dev/null
+                """
+            }
+        }
+    }
+}
+
 pipeline {
 
-    // "sl7 && PACE Windows (Private)" for when windows is ready 
-    agent { 
-        label "sl7" 
+    // "sl7 && PACE Windows (Private)" for when windows is ready
+    agent {
+        label "sl7"
     }
 
     triggers {
         pollSCM('H/2 * * * *')
     }
-  
+
     stages {
 
         stage("Checkout") {
             steps {
+                setGitHubBuildStatus("PENDING", "Build and tests are starting...")
                 echo "Branch: ${env.BRANCH_NAME}"
                 checkout scm
             }
@@ -60,11 +80,11 @@ pipeline {
         }
 
         success {
-            githubNotify status: "SUCCES", description: "Build was successful"
+            setGitHubBuildStatus("SUCCESS", "Build and tests were successful")
         }
 
         unsuccessful {
-            githubNotify status: "FAILURE", description: "Build failed"
+            setGitHubBuildStatus("FAILUE", "Build or tests have failed")
         }
 
         cleanup {
