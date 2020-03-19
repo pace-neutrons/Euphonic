@@ -4,7 +4,7 @@ import warnings
 import numpy as np
 import seekpath
 from scipy import signal
-from euphonic.util import direction_changed, reciprocal_lattice, gaussian_2d
+from euphonic.util import direction_changed, gaussian_2d
 
 
 def calc_abscissa(qpts, recip_latt):
@@ -235,8 +235,7 @@ def plot_sqw_map(data, vmin=None, vmax=None, ratio=None, ewidth=0, qwidth=0,
         sqw_map = data.sqw_map
 
     # Calculate qbin edges
-    cell_vec = (data.cell_vec.to('angstrom').magnitude)
-    recip = reciprocal_lattice(cell_vec)
+    recip = data.crystal.reciprocal_cell().to('1/angstrom').magnitude
     abscissa = calc_abscissa(data.qpts, recip)
     qmid = (abscissa[1:] + abscissa[:-1])/2
     qwidths = qmid + qmid[0]
@@ -333,8 +332,7 @@ def output_grace(data, seedname='out', up=True, down=True):
 
     # Do calculations required for axis, tick labels etc.
     # Calculate distance along x axis
-    cell_vec = (data.cell_vec.to('angstrom').magnitude)
-    recip_latt = reciprocal_lattice(cell_vec)
+    recip_latt = data.crystal.reciprocal_cell().to('1/angstrom').magnitude
     abscissa = calc_abscissa(data.qpts, recip_latt)
     # Calculate x-axis (recip space) ticks and labels
     xlabels, qpts_with_labels = recip_space_labels(data)
@@ -493,9 +491,7 @@ def plot_dispersion(data, title='', btol=10.0, up=True, down=True,
                        ' euphonic[matplotlib]\n'))
         raise
 
-    cell_vec = (data.cell_vec.to('angstrom').magnitude)
-    recip_latt = reciprocal_lattice(cell_vec)
-
+    recip_latt = data.crystal.reciprocal_cell().to('1/angstrom').magnitude
     abscissa = calc_abscissa(data.qpts, recip_latt)
     # Determine reciprocal space coordinates that are far enough apart to be
     # in separate subplots, and determine index limits

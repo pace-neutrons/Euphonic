@@ -7,20 +7,19 @@ from euphonic.data.interpolation import InterpolationData
 from euphonic.util import get_all_origins
 from .utils import get_data_path
 
-
 class TestInputReadLZO(unittest.TestCase):
 
     def setUp(self):
         # Create trivial function object so attributes can be assigned to it
         expctd_data = type('', (), {})()
-        expctd_data.n_ions = 22
+        expctd_data.n_atoms = 22
         expctd_data.n_branches = 66
-        expctd_data.cell_vec = (np.array(
+        expctd_data.cell_vectors = (np.array(
             [[7.58391282e+00, 1.84127921e-32, 0.00000000e+00],
              [3.79195641e+00, 3.79195641e+00, 5.36263618e+00],
              [3.79195641e+00, -3.79195641e+00, 5.36263618e+00]])
             *ureg('angstrom'))
-        expctd_data.ion_r = np.array([[0.125, 0.125, 0.125],
+        expctd_data.atom_r = np.array([[0.125, 0.125, 0.125],
                                       [0.875, 0.875, 0.875],
                                       [0.41861943, 0.41861943, 0.83138057],
                                       [0.83138057, 0.83138057, 0.41861943],
@@ -42,11 +41,11 @@ class TestInputReadLZO(unittest.TestCase):
                                       [0.5, 0.0, 0.0],
                                       [0.0, 0.5, 0.0],
                                       [0.0, 0.0, 0.5]])
-        expctd_data.ion_type = np.array(['O', 'O', 'O', 'O', 'O', 'O', 'O',
+        expctd_data.atom_type = np.array(['O', 'O', 'O', 'O', 'O', 'O', 'O',
                                          'O', 'O', 'O', 'O', 'O', 'O', 'O',
                                          'Zr', 'Zr', 'Zr', 'Zr',
                                          'La', 'La', 'La', 'La'])
-        expctd_data.ion_mass = np.array(
+        expctd_data.atom_mass = np.array(
             [15.99939999, 15.99939999, 15.99939999, 15.99939999, 15.99939999,
              15.99939999, 15.99939999, 15.99939999, 15.99939999, 15.99939999,
              15.99939999, 15.99939999, 15.99939999, 15.99939999, 91.22399997,
@@ -77,25 +76,26 @@ class TestInputReadLZO(unittest.TestCase):
         data = InterpolationData.from_castep(self.seedname, path=self.path)
         self.data = data
 
-    def test_n_ions_read(self):
-        self.assertEqual(self.data.n_ions, self.expctd_data.n_ions)
+    def test_n_atoms_read(self):
+        self.assertEqual(self.data.crystal.n_atoms, self.expctd_data.n_atoms)
 
     def test_n_branches_read(self):
         self.assertEqual(self.data.n_branches, self.expctd_data.n_branches)
 
-    def test_cell_vec_read(self):
-        npt.assert_allclose(self.data.cell_vec.to('bohr').magnitude,
-                            self.expctd_data.cell_vec.to('bohr').magnitude)
+    def test_cell_vectors_read(self):
+        npt.assert_allclose(self.data.crystal.cell_vectors.to('bohr').magnitude,
+                            self.expctd_data.cell_vectors.to('bohr').magnitude)
 
-    def test_ion_r_read(self):
-        npt.assert_allclose(self.data.ion_r, self.expctd_data.ion_r)
+    def test_atom_r_read(self):
+        npt.assert_allclose(self.data.crystal.atom_r, self.expctd_data.atom_r)
 
-    def test_ion_type_read(self):
-        npt.assert_array_equal(self.data.ion_type, self.expctd_data.ion_type)
+    def test_atom_type_read(self):
+        npt.assert_array_equal(self.data.crystal.atom_type,
+                               self.expctd_data.atom_type)
 
-    def test_ion_mass_read(self):
-        npt.assert_allclose(self.data.ion_mass.to('amu').magnitude,
-                            self.expctd_data.ion_mass.to('amu').magnitude)
+    def test_atom_mass_read(self):
+        npt.assert_allclose(self.data.crystal.atom_mass.to('amu').magnitude,
+                            self.expctd_data.atom_mass.to('amu').magnitude)
 
     def test_sc_matrix_read(self):
         npt.assert_allclose(self.data.sc_matrix, self.expctd_data.sc_matrix)
@@ -313,7 +313,7 @@ class TestInterpolatePhononsLZO(unittest.TestCase):
         expctd_n_images = np.zeros((22, 88))
         expctd_n_images[i, j] = n
         # After refactoring where the shape of n_sc_images was changed from
-        # (n_ions, n_cells_in_sc*n_ions) to (n_cells_in_sc, n_ions, n_ions),
+        # (n_atoms, n_cells_in_sc*n_atoms) to (n_cells_in_sc, n_atoms, n_atoms),
         # expctd_n_images must be reshaped to ensure tests still pass
         expctd_n_images = np.transpose(np.reshape(
             expctd_n_images, (22, 4, 22)), axes=[1, 0, 2])
@@ -329,12 +329,12 @@ class TestInterpolatePhononsLZO(unittest.TestCase):
         n = image_data[:, 2].astype(int)
         sc_i = image_data[:, 3].astype(int)
         max_n = np.max(n) + 1
-        # size = n_ions X n_ions*n_cells_in_sc X max supercell images
+        # size = n_atoms X n_atoms*n_cells_in_sc X max supercell images
         expctd_sc_image_i = np.full((22, 88, max_n), -1)
         expctd_sc_image_i[i, j, n] = sc_i
         # After refactoring where the shape of sc_image_i was changed from
-        # (n_ions, n_cells_in_sc*n_ions, (2*lim + 1)**3) to
-        # (n_cells_in_sc, n_ions, n_ions, (2*lim + 1)**3),
+        # (n_atoms, n_cells_in_sc*n_atoms, (2*lim + 1)**3) to
+        # (n_cells_in_sc, n_atoms, n_atoms, (2*lim + 1)**3),
         # expctd_image_i must be reshaped to ensure tests still pass
         expctd_sc_image_i = np.transpose(
             np.reshape(expctd_sc_image_i, (22, 4, 22, max_n)),
@@ -349,13 +349,13 @@ class TestInterpolatePhononsLZO(unittest.TestCase):
                             atol=1e-10)
 
     def test_calculate_fine_phonons_no_asr_c(self):
-        self.data.calculate_fine_phonons(self.qpts, use_c=True, fall_back_on_python=False)
+        self.data.calculate_fine_phonons(self.qpts, use_c=True)
         npt.assert_allclose(self.data.freqs.to('hartree').magnitude,
                             self.expctd_freqs_no_asr.to('hartree').magnitude,
                             atol=1e-10)
 
     def test_calculate_fine_phonons_no_asr_c_2threads(self):
-        self.data.calculate_fine_phonons(self.qpts, use_c=True, n_threads=2, fall_back_on_python=False)
+        self.data.calculate_fine_phonons(self.qpts, use_c=True, n_threads=2)
         npt.assert_allclose(self.data.freqs.to('hartree').magnitude,
                             self.expctd_freqs_no_asr.to('hartree').magnitude,
                             atol=1e-10)
@@ -367,14 +367,14 @@ class TestInterpolatePhononsLZO(unittest.TestCase):
                             atol=1e-10)
 
     def test_calculate_fine_phonons_realspace_asr_c(self):
-        self.data.calculate_fine_phonons(self.qpts, asr='realspace', use_c=True, fall_back_on_python=False)
+        self.data.calculate_fine_phonons(self.qpts, asr='realspace', use_c=True)
         npt.assert_allclose(self.data.freqs.to('hartree').magnitude,
                             self.expctd_freqs_asr.to('hartree').magnitude,
                             atol=1e-10)
 
     def test_calculate_fine_phonons_realspace_asr_c_2threads(self):
         self.data.calculate_fine_phonons(self.qpts, asr='realspace',
-                                         use_c=True, n_threads=2, fall_back_on_python=False)
+                                         use_c=True, n_threads=2)
         npt.assert_allclose(self.data.freqs.to('hartree').magnitude,
                             self.expctd_freqs_asr.to('hartree').magnitude,
                             atol=1e-10)
@@ -391,18 +391,18 @@ class TestInputReadGraphite(unittest.TestCase):
     def setUp(self):
         # Create trivial function object so attributes can be assigned to it
         expctd_data = type('', (), {})()
-        expctd_data.n_ions = 4
+        expctd_data.n_atoms = 4
         expctd_data.n_branches = 12
-        expctd_data.cell_vec = np.array([
+        expctd_data.cell_vectors = np.array([
             [1.23158700E+00, -2.13317126E+00, 0.00000000E+00],
             [1.23158700E+00, 2.13317126E+00, 0.00000000E+00],
             [0.00000000E+00, 0.00000000E+00, 6.71000000E+00]])*ureg('angstrom')
-        expctd_data.ion_r = np.array([[0.000, 0.000, 0.250],
+        expctd_data.atom_r = np.array([[0.000, 0.000, 0.250],
                                       [0.000, 0.000, 0.750],
                                       [0.33333333, 0.66666667, 0.250],
                                       [0.66666667, 0.33333333, 0.750]])
-        expctd_data.ion_type = np.array(['C', 'C', 'C', 'C'])
-        expctd_data.ion_mass = np.array([12.0107000, 12.0107000,
+        expctd_data.atom_type = np.array(['C', 'C', 'C', 'C'])
+        expctd_data.atom_mass = np.array([12.0107000, 12.0107000,
                                          12.0107000, 12.0107000])*ureg('amu')
         expctd_data.sc_matrix = np.array([[7, 0, 0],
                                           [0, 7, 0],
@@ -443,25 +443,26 @@ class TestInputReadGraphite(unittest.TestCase):
         data = InterpolationData.from_castep(self.seedname, path=self.path)
         self.data = data
 
-    def test_n_ions_read(self):
-        self.assertEqual(self.data.n_ions, self.expctd_data.n_ions)
+    def test_n_atoms_read(self):
+        self.assertEqual(self.data.crystal.n_atoms, self.expctd_data.n_atoms)
 
     def test_n_branches_read(self):
         self.assertEqual(self.data.n_branches, self.expctd_data.n_branches)
 
-    def test_cell_vec_read(self):
-        npt.assert_allclose(self.data.cell_vec.to('bohr').magnitude,
-                            self.expctd_data.cell_vec.to('bohr').magnitude)
+    def test_cell_vectors_read(self):
+        npt.assert_allclose(self.data.crystal.cell_vectors.to('bohr').magnitude,
+                            self.expctd_data.cell_vectors.to('bohr').magnitude)
 
-    def test_ion_r_read(self):
-        npt.assert_allclose(self.data.ion_r, self.expctd_data.ion_r)
+    def test_atom_r_read(self):
+        npt.assert_allclose(self.data.crystal.atom_r, self.expctd_data.atom_r)
 
-    def test_ion_type_read(self):
-        npt.assert_array_equal(self.data.ion_type, self.expctd_data.ion_type)
+    def test_atom_type_read(self):
+        npt.assert_array_equal(self.data.crystal.atom_type,
+                               self.expctd_data.atom_type)
 
-    def test_ion_mass_read(self):
-        npt.assert_allclose(self.data.ion_mass.magnitude,
-                            self.expctd_data.ion_mass.magnitude)
+    def test_atom_mass_read(self):
+        npt.assert_allclose(self.data.crystal.atom_mass.magnitude,
+                            self.expctd_data.atom_mass.magnitude)
 
     def test_sc_matrix_read(self):
         npt.assert_allclose(self.data.sc_matrix, self.expctd_data.sc_matrix)
@@ -494,7 +495,7 @@ class TestInterpolatePhononsGraphite(unittest.TestCase):
     def setUp(self):
         seedname = 'graphite'
         self.path = os.path.join(get_data_path(), 'interpolation', 'graphite')
-        self.n_ions = 4
+        self.n_atoms = 4
         self.n_cells_in_sc = 98
         self.qpts = np.array([[0.00, 0.00, 0.00],
                               [0.001949, 0.001949, 0.00],
@@ -604,14 +605,14 @@ class TestInterpolatePhononsGraphite(unittest.TestCase):
         j = image_data[:, 1].astype(int)
         n = image_data[:, 2].astype(int)
         expctd_n_images = np.zeros(
-            (self.n_ions, self.n_ions*self.n_cells_in_sc))
+            (self.n_atoms, self.n_atoms*self.n_cells_in_sc))
         expctd_n_images[i, j] = n
         # After refactoring where the shape of n_sc_images was changed from
-        # (n_ions, n_cells_in_sc*n_ions) to (n_cells_in_sc, n_ions, n_ions),
+        # (n_atoms, n_cells_in_sc*n_atoms) to (n_cells_in_sc, n_atoms, n_atoms),
         # expctc_n_images must be reshaped to ensure tests still pass
         expctd_n_images = np.transpose(
             np.reshape(expctd_n_images,
-                       (self.n_ions, self.n_cells_in_sc, self.n_ions)),
+                       (self.n_atoms, self.n_cells_in_sc, self.n_atoms)),
             axes=[1, 0, 2])
         self.data._calculate_supercell_images(lim)
         npt.assert_equal(self.data._n_sc_images, expctd_n_images)
@@ -626,17 +627,17 @@ class TestInterpolatePhononsGraphite(unittest.TestCase):
         n = image_data[:, 2].astype(int)
         sc_i = image_data[:, 3].astype(int)
         max_n = np.max(n) + 1
-        # size = n_ions X n_ions*n_cells_in_sc X max supercell images
+        # size = n_atoms X n_atoms*n_cells_in_sc X max supercell images
         expctd_sc_image_i = np.full(
-            (self.n_ions, self.n_ions*self.n_cells_in_sc, max_n), -1)
+            (self.n_atoms, self.n_atoms*self.n_cells_in_sc, max_n), -1)
         expctd_sc_image_i[i, j, n] = sc_i
         # After refactoring where the shape of sc_image_i was changed from
-        # (n_ions, n_cells_in_sc*n_ions, (2*lim + 1)**3) to
-        # (n_cells_in_sc, n_ions, n_ions, (2*lim + 1)**3),
+        # (n_atoms, n_cells_in_sc*n_atoms, (2*lim + 1)**3) to
+        # (n_cells_in_sc, n_atoms, n_atoms, (2*lim + 1)**3),
         # expctc_image_i must be reshaped to ensure tests still pass
         expctd_sc_image_i = np.transpose(
-            np.reshape(expctd_sc_image_i, (self.n_ions, self.n_cells_in_sc,
-                                           self.n_ions, max_n)),
+            np.reshape(expctd_sc_image_i, (self.n_atoms, self.n_cells_in_sc,
+                                           self.n_atoms, max_n)),
             axes=[1, 0, 2, 3])
         self.data._calculate_supercell_images(lim)
         npt.assert_equal(self.data._sc_image_i, expctd_sc_image_i)
@@ -648,13 +649,13 @@ class TestInterpolatePhononsGraphite(unittest.TestCase):
                             atol=1e-10)
 
     def test_calculate_fine_phonons_no_asr_c(self):
-        self.data.calculate_fine_phonons(self.qpts, use_c=True, fall_back_on_python=False)
+        self.data.calculate_fine_phonons(self.qpts, use_c=True)
         npt.assert_allclose(self.data.freqs.to('hartree').magnitude,
                             self.expctd_freqs_no_asr.to('hartree').magnitude,
                             atol=1e-10)
 
     def test_calculate_fine_phonons_no_asr_c_2threads(self):
-        self.data.calculate_fine_phonons(self.qpts, use_c=True, n_threads=2, fall_back_on_python=False)
+        self.data.calculate_fine_phonons(self.qpts, use_c=True, n_threads=2)
         npt.assert_allclose(self.data.freqs.to('hartree').magnitude,
                             self.expctd_freqs_no_asr.to('hartree').magnitude,
                             atol=1e-10)
@@ -667,14 +668,14 @@ class TestInterpolatePhononsGraphite(unittest.TestCase):
 
     def test_calculate_fine_phonons_realspace_asr_c(self):
         self.data.calculate_fine_phonons(self.qpts, asr='realspace',
-                                         use_c=True, fall_back_on_python=False)
+                                         use_c=True)
         npt.assert_allclose(self.data.freqs.to('hartree').magnitude,
                             self.expctd_freqs_asr.to('hartree').magnitude,
                             atol=1e-10)
 
     def test_calculate_fine_phonons_realspace_asr_c_2threads(self):
         self.data.calculate_fine_phonons(self.qpts, asr='realspace',
-                                         use_c=True, n_threads=2, fall_back_on_python=False)
+                                         use_c=True, n_threads=2)
         npt.assert_allclose(self.data.freqs.to('hartree').magnitude,
                             self.expctd_freqs_asr.to('hartree').magnitude,
                             atol=1e-10)
@@ -691,13 +692,13 @@ class TestInputReadQuartz(unittest.TestCase):
     def setUp(self):
         # Create trivial function object so attributes can be assigned to it
         expctd_data = type('', (), {})()
-        expctd_data.n_ions = 9
+        expctd_data.n_atoms = 9
         expctd_data.n_branches = 27
-        expctd_data.cell_vec = np.array([
+        expctd_data.cell_vectors = np.array([
             [2.42617588, -4.20225989, 0.00000000],
             [2.42617588, 4.20225989, 0.00000000],
             [0.00000000, 0.00000000, 5.35030451]])*ureg('angstrom')
-        expctd_data.ion_r = np.array([
+        expctd_data.atom_r = np.array([
             [0.41170811, 0.27568186, 0.27940760],
             [0.72431814, 0.13602626, 0.94607427],
             [0.86397374, 0.58829189, 0.61274094],
@@ -707,9 +708,9 @@ class TestInputReadQuartz(unittest.TestCase):
             [0.46496011, 0.00000000, 0.16666667],
             [0.00000000, 0.46496011, 0.83333333],
             [0.53503989, 0.53503989, 0.50000000]])
-        expctd_data.ion_type = np.array(
+        expctd_data.atom_type = np.array(
             ['O', 'O', 'O', 'O', 'O', 'O', 'Si', 'Si', 'Si'])
-        expctd_data.ion_mass = np.array(
+        expctd_data.atom_mass = np.array(
             [15.9994000, 15.9994000, 15.9994000,
              15.9994000, 15.9994000, 15.9994000,
              28.0855000, 28.0855000, 28.0855000])*ureg('amu')
@@ -786,25 +787,26 @@ class TestInputReadQuartz(unittest.TestCase):
         data = InterpolationData.from_castep(self.seedname, path=self.path)
         self.data = data
 
-    def test_n_ions_read(self):
-        self.assertEqual(self.data.n_ions, self.expctd_data.n_ions)
+    def test_n_atoms_read(self):
+        self.assertEqual(self.data.crystal.n_atoms, self.expctd_data.n_atoms)
 
     def test_n_branches_read(self):
         self.assertEqual(self.data.n_branches, self.expctd_data.n_branches)
 
-    def test_cell_vec_read(self):
-        npt.assert_allclose(self.data.cell_vec.to('bohr').magnitude,
-                            self.expctd_data.cell_vec.to('bohr').magnitude)
+    def test_cell_vectors_read(self):
+        npt.assert_allclose(self.data.crystal.cell_vectors.to('bohr').magnitude,
+                            self.expctd_data.cell_vectors.to('bohr').magnitude)
 
-    def test_ion_r_read(self):
-        npt.assert_allclose(self.data.ion_r, self.expctd_data.ion_r)
+    def test_atom_r_read(self):
+        npt.assert_allclose(self.data.crystal.atom_r, self.expctd_data.atom_r)
 
-    def test_ion_type_read(self):
-        npt.assert_array_equal(self.data.ion_type, self.expctd_data.ion_type)
+    def test_atom_type_read(self):
+        npt.assert_array_equal(self.data.crystal.atom_type,
+                               self.expctd_data.atom_type)
 
-    def test_ion_mass_read(self):
-        npt.assert_allclose(self.data.ion_mass.magnitude,
-                            self.expctd_data.ion_mass.magnitude)
+    def test_atom_mass_read(self):
+        npt.assert_allclose(self.data.crystal.atom_mass.magnitude,
+                            self.expctd_data.atom_mass.magnitude)
 
     def test_sc_matrix_read(self):
         npt.assert_allclose(self.data.sc_matrix, self.expctd_data.sc_matrix)
@@ -1002,7 +1004,7 @@ class TestInterpolatePhononsQuartz(unittest.TestCase):
 
     def test_calculate_fine_phonons_dipole_no_asr_c(self):
         self.data.calculate_fine_phonons(
-            self.qpts, dipole=True, splitting=False, use_c=True, fall_back_on_python=False)
+            self.qpts, dipole=True, splitting=False, use_c=True)
         npt.assert_allclose(
             self.data.freqs.to('hartree').magnitude,
             self.expctd_freqs_no_asr.to('hartree').magnitude,
@@ -1010,7 +1012,7 @@ class TestInterpolatePhononsQuartz(unittest.TestCase):
 
     def test_calculate_fine_phonons_dipole_no_asr_c_2threads(self):
         self.data.calculate_fine_phonons(
-            self.qpts, dipole=True, splitting=False, use_c=True, n_threads=2, fall_back_on_python=False)
+            self.qpts, dipole=True, splitting=False, use_c=True, n_threads=2)
         npt.assert_allclose(
             self.data.freqs.to('hartree').magnitude,
             self.expctd_freqs_no_asr.to('hartree').magnitude,
@@ -1027,7 +1029,7 @@ class TestInterpolatePhononsQuartz(unittest.TestCase):
     def test_calculate_fine_phonons_dipole_recip_asr_c(self):
         self.data.calculate_fine_phonons(
             self.qpts, asr='reciprocal', dipole=True, splitting=False,
-            use_c=True, fall_back_on_python=False)
+            use_c=True)
         npt.assert_allclose(
             self.data.freqs.to('hartree').magnitude,
             self.expctd_freqs_asr.to('hartree').magnitude,
@@ -1036,7 +1038,7 @@ class TestInterpolatePhononsQuartz(unittest.TestCase):
     def test_calculate_fine_phonons_dipole_recip_asr_c_2threads(self):
         self.data.calculate_fine_phonons(
             self.qpts, asr='reciprocal', dipole=True, splitting=False,
-            use_c=True, n_threads=2, fall_back_on_python=False)
+            use_c=True, n_threads=2)
         npt.assert_allclose(
             self.data.freqs.to('hartree').magnitude,
             self.expctd_freqs_asr.to('hartree').magnitude,
@@ -1058,7 +1060,7 @@ class TestInterpolatePhononsQuartz(unittest.TestCase):
     def test_calculate_fine_phonons_dipole_recip_asr_split_c(self):
         self.data.calculate_fine_phonons(
             self.split_qpts, asr='reciprocal', dipole=True, splitting=True,
-            use_c=True, fall_back_on_python=False)
+            use_c=True)
         npt.assert_array_equal(self.data.split_i, self.expctd_split_i)
         npt.assert_allclose(
             self.data.freqs.to('hartree').magnitude,
@@ -1072,7 +1074,7 @@ class TestInterpolatePhononsQuartz(unittest.TestCase):
     def test_calculate_fine_phonons_dipole_recip_asr_split_c_2threads(self):
         self.data.calculate_fine_phonons(
             self.split_qpts, asr='reciprocal', dipole=True, splitting=True,
-            use_c=True, n_threads=2, fall_back_on_python=False)
+            use_c=True, n_threads=2)
         npt.assert_array_equal(self.data.split_i, self.expctd_split_i)
         npt.assert_allclose(
             self.data.freqs.to('hartree').magnitude,

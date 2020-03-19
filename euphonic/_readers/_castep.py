@@ -3,7 +3,7 @@ import os
 import struct
 import numpy as np
 from euphonic import ureg
-from euphonic.util import reciprocal_lattice, is_gamma
+from euphonic.util import is_gamma
 
 
 def _read_phonon_data(seedname, path):
@@ -20,8 +20,8 @@ def _read_phonon_data(seedname, path):
     Returns
     -------
     data_dict : dict
-        A dict with the following keys: 'n_ions', 'n_branches', 'n_qpts'
-        'cell_vec', 'recip_vec', 'ion_r', 'ion_type', 'ion_mass', 'qpts',
+        A dict with the following keys: 'n_atoms', 'n_branches', 'n_qpts'
+        'cell_vectors', 'atom_r', 'atom_type', 'atom_mass', 'qpts',
         'weights', 'freqs', 'eigenvecs', 'split_i', 'split_freqs',
         'split_eigenvecs'
         Meta information: 'seedname', 'path' and 'model'.
@@ -29,19 +29,19 @@ def _read_phonon_data(seedname, path):
     file = os.path.join(path, seedname + '.phonon')
     with open(file, 'r') as f:
 
-        (n_ions, n_branches, n_qpts, cell_vec, ion_r,
-         ion_type, ion_mass) = _read_phonon_header(f)
+        (n_atoms, n_branches, n_qpts, cell_vectors, atom_r,
+         atom_type, atom_mass) = _read_phonon_header(f)
 
         qpts = np.zeros((n_qpts, 3))
         weights = np.zeros(n_qpts)
         freqs = np.zeros((n_qpts, n_branches))
         ir = np.array([])
         raman = np.array([])
-        eigenvecs = np.zeros((n_qpts, n_branches, n_ions, 3),
+        eigenvecs = np.zeros((n_qpts, n_branches, n_atoms, 3),
                              dtype='complex128')
         split_i = np.array([], dtype=np.int32)
         split_freqs = np.empty((0, n_branches))
-        split_eigenvecs = np.empty((0, n_branches, n_ions, 3))
+        split_eigenvecs = np.empty((0, n_branches, n_atoms, 3))
 
         # Need to loop through file using while rather than number of q-points
         # as sometimes points are duplicated
@@ -81,14 +81,14 @@ def _read_phonon_data(seedname, path):
 
             [f.readline() for x in range(2)]  # Skip 2 label lines
             lines = np.array([f.readline().split()[2:]
-                              for x in range(n_ions*n_branches)],
+                              for x in range(n_atoms*n_branches)],
                              dtype=np.float64)
             lines_i = np.column_stack(([lines[:, 0] + lines[:, 1]*1j,
                                         lines[:, 2] + lines[:, 3]*1j,
                                         lines[:, 4] + lines[:, 5]*1j]))
-            tmp = np.zeros((n_branches, n_ions, 3), dtype=np.complex128)
+            tmp = np.zeros((n_branches, n_atoms, 3), dtype=np.complex128)
             for i in range(n_branches):
-                    tmp[i, :, :] = lines_i[i*n_ions:(i+1)*n_ions, :]
+                    tmp[i, :, :] = lines_i[i*n_atoms:(i+1)*n_atoms, :]
             if qpt_num != prev_qpt_num:
                 eigenvecs[qpt_num] = tmp
             elif is_gamma(qpts[qpt_num]):
@@ -99,16 +99,14 @@ def _read_phonon_data(seedname, path):
             prev_qpt_num = qpt_num
 
     data_dict = {}
-    data_dict['n_ions'] = n_ions
+    data_dict['n_atoms'] = n_atoms
     data_dict['n_branches'] = n_branches
     data_dict['n_qpts'] = n_qpts
-    data_dict['cell_vec'] = (cell_vec*ureg('angstrom').to(
+    data_dict['cell_vectors'] = (cell_vectors*ureg('angstrom').to(
         'INTERNAL_LENGTH_UNIT')).magnitude
-    data_dict['recip_vec'] = ((reciprocal_lattice(cell_vec)/ureg.angstrom).to(
-        '1/INTERNAL_LENGTH_UNIT')).magnitude
-    data_dict['ion_r'] = ion_r
-    data_dict['ion_type'] = ion_type
-    data_dict['ion_mass'] = ion_mass*(ureg('amu')).to(
+    data_dict['atom_r'] = atom_r
+    data_dict['atom_type'] = atom_type
+    data_dict['atom_mass'] = atom_mass*(ureg('amu')).to(
         'INTERNAL_MASS_UNIT').magnitude
     data_dict['qpts'] = qpts
     data_dict['weights'] = weights
@@ -141,38 +139,39 @@ def _read_phonon_header(f):
 
     Returns
     -------
-    n_ions : integer
-        The number of ions per unit cell
+    n_atoms : integer
+        The number of atoms per unit cell
     n_branches : integer
-        The number of phonon branches (3*n_ions)
+        The number of phonon branches (3*n_atoms)
     n_qpts : integer
         The number of q-points in the .phonon file
-    cell_vec : (3, 3) float ndarray
+    cell_vectors : (3, 3) float ndarray
         The unit cell vectors in Angstroms.
-    ion_r : (n_ions, 3) float ndarray
-        The fractional position of each ion within the unit cell
-    ion_type : (n_ions,) string ndarray
-        The chemical symbols of each ion in the unit cell. Ions are in the
-        same order as in ion_r
-    ion_mass : (n_ions,) float ndarray
-        The mass of each ion in the unit cell in atomic units
+    atom_r : (n_atoms, 3) float ndarray
+        The fractional position of each atom within the unit cell
+    atom_type : (n_atoms,) string ndarray
+        The chemical symbols of each atom in the unit cell. Atoms are in the
+        same order as in atom_r
+    atom_mass : (n_atoms,) float ndarray
+        The mass of each atom in the unit cell in atomic mass units
     """
     f.readline()  # Skip BEGIN header
-    n_ions = int(f.readline().split()[3])
+    n_atoms = int(f.readline().split()[3])
     n_branches = int(f.readline().split()[3])
     n_qpts = int(f.readline().split()[3])
     while not 'Unit cell vectors' in f.readline():
-        pass # skip lines up to and including one which starts 'Unit cell vectors'
-    cell_vec = np.array([[float(x) for x in f.readline().split()[0:3]]
+        pass
+    cell_vectors = np.array([[float(x) for x in f.readline().split()[0:3]]
                          for i in range(3)])
     f.readline()  # Skip fractional co-ordinates label
-    ion_info = np.array([f.readline().split() for i in range(n_ions)])
-    ion_r = np.array([[float(x) for x in y[1:4]] for y in ion_info])
-    ion_type = np.array([x[4] for x in ion_info])
-    ion_mass = np.array([float(x[5]) for x in ion_info])
+    atom_info = np.array([f.readline().split() for i in range(n_atoms)])
+    atom_r = np.array([[float(x) for x in y[1:4]] for y in atom_info])
+    atom_type = np.array([x[4] for x in atom_info])
+    atom_mass = np.array([float(x[5]) for x in atom_info])
     f.readline()  # Skip END header line
 
-    return n_ions, n_branches, n_qpts, cell_vec, ion_r, ion_type, ion_mass
+    return (n_atoms, n_branches, n_qpts, cell_vectors, atom_r, atom_type,
+            atom_mass)
 
 
 def _read_interpolation_data(seedname, path):
@@ -189,10 +188,10 @@ def _read_interpolation_data(seedname, path):
     Returns
     -------
     data_dict : dict
-        A dict with the following keys: 'n_ions', 'n_branches', 'cell_vec',
-        'recip_vec', 'ion_r', 'ion_type', 'ion_mass', 'force_constants',
-        'sc_matrix', 'n_cells_in_sc' and 'cell_origins'. Also contains 'born'
-        and 'dielectric' if they are present in the .castep_bin or .check file.
+        A dict with the following keys: 'n_atoms', 'n_branches', 'cell_vectors',
+        'atom_r', 'atom_type', 'atom_mass', 'force_constants', 'sc_matrix',
+        'n_cells_in_sc' and 'cell_origins'. Also contains 'born' and
+        'dielectric' if they are present in the .castep_bin or .check file.
         Meta information: 'seedname', 'path' and 'model'.
     """
     file = os.path.join(path, seedname + '.castep_bin')
@@ -214,8 +213,8 @@ def _read_interpolation_data(seedname, path):
                 # optimised cell, the second is the original cell. We only
                 # want the geometry optimised cell.
                 if first_cell_read:
-                    n_ions, cell_vec, ion_r, ion_mass, ion_type = _read_cell(
-                        f, int_type, float_type)
+                    (n_atoms, cell_vectors, atom_r, atom_mass,
+                    atom_type) = _read_cell(f, int_type, float_type)
                     first_cell_read = False
             elif header.strip() == b'FORCE_CON':
                 sc_matrix = np.transpose(np.reshape(
@@ -225,26 +224,25 @@ def _read_interpolation_data(seedname, path):
                 # Transpose and reshape fc so it is indexed [nc, i, j]
                 force_constants = np.ascontiguousarray(np.transpose(
                     np.reshape(_read_entry(f, float_type),
-                               (n_cells_in_sc, 3*n_ions, 3*n_ions)),
+                               (n_cells_in_sc, 3*n_atoms, 3*n_atoms)),
                     axes=[0, 2, 1]))
                 cell_origins = np.reshape(
                     _read_entry(f, int_type), (n_cells_in_sc, 3))
                 fc_row = _read_entry(f, int_type)
             elif header.strip() == b'BORN_CHGS':
                 born = np.reshape(
-                    _read_entry(f, float_type), (n_ions, 3, 3))
+                    _read_entry(f, float_type), (n_atoms, 3, 3))
             elif header.strip() == b'DIELECTRIC':
                 dielectric = np.transpose(np.reshape(
                     _read_entry(f, float_type), (3, 3)))
 
     data_dict = {}
-    data_dict['n_ions'] = n_ions
-    data_dict['n_branches'] = 3*n_ions
-    data_dict['cell_vec'] = cell_vec
-    data_dict['recip_vec'] = reciprocal_lattice(cell_vec)
-    data_dict['ion_r'] = ion_r - np.floor(ion_r)  # Normalise ion coordinates
-    data_dict['ion_type'] = ion_type
-    data_dict['ion_mass'] = ion_mass
+    data_dict['n_atoms'] = n_atoms
+    data_dict['n_branches'] = 3*n_atoms
+    data_dict['cell_vectors'] = cell_vectors
+    data_dict['atom_r'] = atom_r - np.floor(atom_r)  # Normalise ion coordinates
+    data_dict['atom_type'] = atom_type
+    data_dict['atom_mass'] = atom_mass
 
     # Set entries relating to 'FORCE_CON' block
     try:
@@ -292,70 +290,70 @@ def _read_cell(file_obj, int_type, float_type):
 
         Returns
     -------
-    n_ions : int
-        Number of ions in the unit cell
-    cell_vec : (3, 3) float ndarray
+    n_atoms : int
+        Number of atoms in the unit cell
+    cell_vectors : (3, 3) float ndarray
         The unit cell vectors in bohr
-    ion_r : (n_ions, 3) float ndarray
-        The fractional position of each ion within the unit cell
-    ion_mass : (n_ions,) float ndarray
-        The mass of each ion in the unit cell in units of electron mass
-    ion_type : (n_ions,) string ndarray
-        The chemical symbols of each ion in the unit cell. Ions are in the
-        same order as in ion_r
+    atom_r : (n_atoms, 3) float ndarray
+        The fractional position of each atom within the unit cell
+    atom_mass : (n_atoms,) float ndarray
+        The mass of each atom in the unit cell in units of electron mass
+    atom_type : (n_atoms,) string ndarray
+        The chemical symbols of each atom in the unit cell. Atoms are in the
+        same order as in atom_r
     """
     header = ''
     while header.strip() != b'END_UNIT_CELL':
         header = _read_entry(file_obj)
         if header.strip() == b'CELL%NUM_IONS':
-            n_ions = _read_entry(file_obj, int_type)
+            n_atoms = _read_entry(file_obj, int_type)
         elif header.strip() == b'CELL%REAL_LATTICE':
-            cell_vec = np.transpose(np.reshape(
+            cell_vectors = np.transpose(np.reshape(
                 _read_entry(file_obj, float_type), (3, 3)))
         elif header.strip() == b'CELL%NUM_SPECIES':
             n_species = _read_entry(file_obj, int_type)
         elif header.strip() == b'CELL%NUM_IONS_IN_SPECIES':
-            n_ions_in_species = _read_entry(file_obj, int_type)
+            n_atoms_in_species = _read_entry(file_obj, int_type)
             if n_species == 1:
-                n_ions_in_species = np.array([n_ions_in_species])
+                n_atoms_in_species = np.array([n_atoms_in_species])
         elif header.strip() == b'CELL%IONIC_POSITIONS':
-            max_ions_in_species = max(n_ions_in_species)
-            ion_r_tmp = np.reshape(_read_entry(file_obj, float_type),
-                                   (n_species, max_ions_in_species, 3))
+            max_atoms_in_species = max(n_atoms_in_species)
+            atom_r_tmp = np.reshape(_read_entry(file_obj, float_type),
+                                   (n_species, max_atoms_in_species, 3))
         elif header.strip() == b'CELL%SPECIES_MASS':
-            ion_mass_tmp = _read_entry(file_obj, float_type)
+            atom_mass_tmp = _read_entry(file_obj, float_type)
             if n_species == 1:
-                ion_mass_tmp = np.array([ion_mass_tmp])
+                atom_mass_tmp = np.array([atom_mass_tmp])
         elif header.strip() == b'CELL%SPECIES_SYMBOL':
             # Need to decode binary string for Python 3 compatibility
             if n_species == 1:
-                ion_type_tmp = [_read_entry(file_obj, 'S8')
+                atom_type_tmp = [_read_entry(file_obj, 'S8')
                                 .strip().decode('utf-8')]
             else:
-                ion_type_tmp = [x.strip().decode('utf-8')
+                atom_type_tmp = [x.strip().decode('utf-8')
                                 for x in _read_entry(file_obj, 'S8')]
-    # Get ion_r in correct form
-    # CASTEP stores ion positions as 3D array (3,
-    # max_ions_in_species, n_species) so need to slice data to get
+    # Get atom_r in correct form
+    # CASTEP stores atom positions as 3D array (3,
+    # max_atoms_in_species, n_species) so need to slice data to get
     # correct information
-    ion_begin = np.insert(np.cumsum(n_ions_in_species[:-1]), 0, 0)
-    ion_end = np.cumsum(n_ions_in_species)
-    ion_r = np.zeros((n_ions, 3))
+    atom_begin = np.insert(np.cumsum(n_atoms_in_species[:-1]), 0, 0)
+    atom_end = np.cumsum(n_atoms_in_species)
+    atom_r = np.zeros((n_atoms, 3))
     for i in range(n_species):
-        ion_r[ion_begin[i]:ion_end[i], :] = ion_r_tmp[
-            i, :n_ions_in_species[i], :]
-    # Get ion_type in correct form
-    ion_type = np.array([])
-    ion_mass = np.array([])
-    for ion in range(n_species):
-        ion_type = np.append(
-            ion_type,
-            [ion_type_tmp[ion] for i in range(n_ions_in_species[ion])])
-        ion_mass = np.append(
-            ion_mass,
-            [ion_mass_tmp[ion] for i in range(n_ions_in_species[ion])])
+        atom_r[atom_begin[i]:atom_end[i], :] = atom_r_tmp[
+            i, :n_atoms_in_species[i], :]
+    # Get atom_type in correct form
+    atom_type = np.array([])
+    atom_mass = np.array([])
+    for at in range(n_species):
+        atom_type = np.append(
+            atom_type,
+            [atom_type_tmp[at] for i in range(n_atoms_in_species[at])])
+        atom_mass = np.append(
+            atom_mass,
+            [atom_mass_tmp[at] for i in range(n_atoms_in_species[at])])
 
-    return n_ions, cell_vec, ion_r, ion_mass, ion_type
+    return n_atoms, cell_vectors, atom_r, atom_mass, atom_type
 
 
 def _read_entry(file_obj, dtype=''):

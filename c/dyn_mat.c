@@ -9,7 +9,7 @@
 
 #define PI 3.14159265358979323846
 
-void calculate_dyn_mat_at_q(const double *qpt, const int n_ions,
+void calculate_dyn_mat_at_q(const double *qpt, const int n_atoms,
     const int n_cells, const const int max_images, const int *n_sc_images,
     const int *sc_image_i, const int *cell_origins, const int *sc_origins,
     const double *fc_mat, double *dyn_mat) {
@@ -25,13 +25,13 @@ void calculate_dyn_mat_at_q(const double *qpt, const int n_ions,
     // ordering (dyn mat is Hermitian so transpose = complex conjugate)
 
     // Array strides
-    int s_n[2] = {n_ions*n_ions, n_ions}; // For n_sc_images
+    int s_n[2] = {n_atoms*n_atoms, n_atoms}; // For n_sc_images
     // For sc_image_i
-    int s_i[3] = {n_ions*n_ions*max_images, n_ions*max_images, max_images};
-    int s_fc = 9*n_ions*n_ions; // For fc_mat
+    int s_i[3] = {n_atoms*n_atoms*max_images, n_atoms*max_images, max_images};
+    int s_fc = 9*n_atoms*n_atoms; // For fc_mat
 
-    for (i = 0; i < n_ions; i++) {
-        for (j = i; j < n_ions; j++) {
+    for (i = 0; i < n_atoms; i++) {
+        for (j = i; j < n_atoms; j++) {
             for (nc = 0; nc < n_cells; nc++){
                 phase_r = 0;
                 phase_i = 0;
@@ -47,7 +47,7 @@ void calculate_dyn_mat_at_q(const double *qpt, const int n_ions,
                 }
                 for (ii = 0; ii < 3; ii++){
                     for (jj = 0; jj < 3; jj++){
-                        idx = (3*i+ii)*3*n_ions + 3*j + jj;
+                        idx = (3*i+ii)*3*n_atoms + 3*j + jj;
                         // Real part
                         dyn_mat[2*idx] += phase_r*fc_mat[nc*s_fc + idx];
                         // Imaginary part
@@ -59,14 +59,14 @@ void calculate_dyn_mat_at_q(const double *qpt, const int n_ions,
     }
 }
 
-void calculate_dipole_correction(const double *qpt, const int n_ions,
-    const double *cell_vec, const double *recip, const double *ion_r,
+void calculate_dipole_correction(const double *qpt, const int n_atoms,
+    const double *cell_vec, const double *recip, const double *atom_r,
     const double *born, const double *dielectric, const double *H_ab,
     const double *cells, const int n_dcells, const double *gvec_phases,
     const double *gvecs_cart, const int n_gvecs, const double *dipole_q0,
     const double eta, double *corr) {
 
-    int size = 2*9*n_ions*n_ions;
+    int size = 2*9*n_atoms*n_atoms;
     double q_cart[3] = {0, 0, 0};
     double qpt_norm[3];
     double qdotr;
@@ -90,7 +90,7 @@ void calculate_dipole_correction(const double *qpt, const int n_ions,
     }
 
     // Calculate realspace term
-    memset(corr, 0, 2*9*n_ions*n_ions*sizeof(double));
+    memset(corr, 0, 2*9*n_atoms*n_atoms*sizeof(double));
     H_ab_ptr = H_ab;
     for (nc = 0; nc < n_dcells; nc++) {
         qdotr = 0;
@@ -100,11 +100,11 @@ void calculate_dipole_correction(const double *qpt, const int n_ions,
         phase[0] = cos(2*PI*qdotr);
         phase[1] = -sin(2*PI*qdotr);
 
-        for (i = 0; i < n_ions; i++) {
-            for (j = i; j < n_ions; j++) {
+        for (i = 0; i < n_atoms; i++) {
+            for (j = i; j < n_atoms; j++) {
                 for (a = 0; a < 3; a++) {
                     for (b = 0; b < 3; b++) {
-                        idx = 2*(3*(3*i + a)*n_ions + 3*j + b);
+                        idx = 2*(3*(3*i + a)*n_atoms + 3*j + b);
                         corr[idx] -= phase[0]*(*H_ab_ptr);
                         corr[idx + 1] -= phase[1]*(*H_ab_ptr);
                         H_ab_ptr++;
@@ -130,11 +130,11 @@ void calculate_dipole_correction(const double *qpt, const int n_ions,
     }
     // Calculate q-point phases
     double *q_phases;
-    q_phases = (double*)malloc(2*n_ions*sizeof(double));
-    for (i = 0; i < n_ions; i++) {
+    q_phases = (double*)malloc(2*n_atoms*sizeof(double));
+    for (i = 0; i < n_atoms; i++) {
         qdotr = 0;
         for (a = 0; a < 3; a++) {
-            qdotr += qpt_norm[a]*ion_r[3*i + a];
+            qdotr += qpt_norm[a]*atom_r[3*i + a];
         }
         q_phases[2*i] = cos(2*PI*qdotr);
         q_phases[2*i + 1] = -sin(2*PI*qdotr);
@@ -163,19 +163,19 @@ void calculate_dipole_correction(const double *qpt, const int n_ions,
         }
         multiply_array(9, exp(-k_len_2)/k_len_2, k_ab_exp);
 
-        for (i = 0; i < n_ions; i++) {
-            idx = 2*(ng*n_ions + i);
+        for (i = 0; i < n_atoms; i++) {
+            idx = 2*(ng*n_atoms + i);
             // Due to differing phase conventions in Python/C, as gvec_phases
             // was precalculated in Python, must use the complex conj
             cmult_conj((q_phases + 2*i), (gvec_phases + idx), gq_phase_ri);
-            for (j = i; j < n_ions; j++) {
-                idx = 2*(ng*n_ions + j);
+            for (j = i; j < n_atoms; j++) {
+                idx = 2*(ng*n_atoms + j);
                 cmult_conj((q_phases + 2*j), (gvec_phases + idx), gq_phase_rj);
                 // To divide by gq_phase_rj, multiply by complex conj
                 cmult_conj(gq_phase_ri, gq_phase_rj, gq_phase_rij);
                 for (a = 0; a < 3; a++) {
                     for (b = 0; b < 3; b++) {
-                        idx = 2*(3*(3*i + a)*n_ions + 3*j + b);
+                        idx = 2*(3*(3*i + a)*n_atoms + 3*j + b);
                         corr[idx] += fac*gq_phase_rij[0]*k_ab_exp[3*a + b];
                         corr[idx + 1] += fac*gq_phase_rij[1]*k_ab_exp[3*a + b];
                     }
@@ -188,14 +188,14 @@ void calculate_dipole_correction(const double *qpt, const int n_ions,
     // Multiply in born charges
     double corr_tmp[18];
     double born_fac;
-    for (i = 0; i < n_ions; i++) {
-        for (j = i; j < n_ions; j++) {
+    for (i = 0; i < n_atoms; i++) {
+        for (j = i; j < n_atoms; j++) {
             memset(corr_tmp, 0, 18*sizeof(double));
             for (a = 0; a < 3; a++) {
                 for (b = 0; b < 3; b++) {
                     for (aa = 0; aa < 3; aa++) {
                         for (bb = 0; bb < 3; bb++) {
-                            idx = 2*(3*(3*i + aa)*n_ions + 3*j + bb);
+                            idx = 2*(3*(3*i + aa)*n_atoms + 3*j + bb);
                             born_fac = born[9*i + 3*a + aa]*born[9*j + 3*b + bb];
                             corr_tmp[6*a + 2*b] += born_fac*corr[idx];
                             corr_tmp[6*a + 2*b + 1] += born_fac*corr[idx + 1];
@@ -206,7 +206,7 @@ void calculate_dipole_correction(const double *qpt, const int n_ions,
 
             for (a = 0; a < 3; a++) {
                 for (b = 0; b < 3; b++) {
-                    idx = 2*(3*(3*i + a)*n_ions + 3*j + b);
+                    idx = 2*(3*(3*i + a)*n_atoms + 3*j + b);
                     corr[idx] = corr_tmp[6*a + 2*b];
                     corr[idx + 1] = corr_tmp[6*a + 2*b + 1];
                 }
@@ -217,7 +217,7 @@ void calculate_dipole_correction(const double *qpt, const int n_ions,
         // Subtract q=0 correction from diagonal
         for (a = 0; a < 3; a++) {
             for (b = 0; b < 3; b++) {
-                idx = 2*(3*(3*i + a)*n_ions + 3*i + b);
+                idx = 2*(3*(3*i + a)*n_atoms + 3*i + b);
                 corr[idx] -= dipole_q0[18*i + 6*a + 2*b];
                 corr[idx + 1] -= dipole_q0[18*i + 6*a + 2*b + 1];
             }
@@ -226,7 +226,7 @@ void calculate_dipole_correction(const double *qpt, const int n_ions,
 
 }
 
-void calculate_gamma_correction(const double q_dir[3], const int n_ions,
+void calculate_gamma_correction(const double q_dir[3], const int n_atoms,
     const double *cell_vec, const double *born, const double *dielectric,
     double *corr) {
 
@@ -235,7 +235,7 @@ void calculate_gamma_correction(const double q_dir[3], const int n_ions,
     double *q_born_sum;
 
     if (is_gamma(q_dir)) {
-        memset(corr, 0, 2*9*n_ions*n_ions*sizeof(double));
+        memset(corr, 0, 2*9*n_atoms*n_atoms*sizeof(double));
         return corr;
     }
 
@@ -247,9 +247,9 @@ void calculate_gamma_correction(const double q_dir[3], const int n_ions,
     }
     fac = (4*PI)/(cell_volume(cell_vec)*denominator);
 
-    q_born_sum = (double*)calloc(3*n_ions, sizeof(double));
-    memset(q_born_sum, 0, 3*n_ions*sizeof(double));
-    for (i = 0; i < n_ions; i++) {
+    q_born_sum = (double*)calloc(3*n_atoms, sizeof(double));
+    memset(q_born_sum, 0, 3*n_atoms*sizeof(double));
+    for (i = 0; i < n_atoms; i++) {
         for (a = 0; a < 3; a++) {
             for (b = 0; b < 3; b++) {
                 q_born_sum[3*i + a] += born[9*i + 3*a + b]*q_dir[b];
@@ -257,11 +257,11 @@ void calculate_gamma_correction(const double q_dir[3], const int n_ions,
         }
     }
 
-    for (i = 0; i < n_ions; i++) {
-        for (j = i; j < n_ions; j++) {
+    for (i = 0; i < n_atoms; i++) {
+        for (j = i; j < n_atoms; j++) {
             for (a = 0; a < 3; a++) {
                 for (b = 0; b < 3; b++) {
-                    idx = 2*(3*(3*i + a)*n_ions + 3*j + b);
+                    idx = 2*(3*(3*i + a)*n_atoms + 3*j + b);
                     corr[idx] = fac*q_born_sum[3*i + a]*q_born_sum[3*j + b];
                 }
             }
@@ -270,23 +270,23 @@ void calculate_gamma_correction(const double q_dir[3], const int n_ions,
     free((void*)q_born_sum);
 }
 
-void mass_weight_dyn_mat(const double* dyn_mat_weighting, const int n_ions,
+void mass_weight_dyn_mat(const double* dyn_mat_weighting, const int n_atoms,
     double* dyn_mat) {
 
     int i, j;
-    for (i = 0; i < 9*n_ions*n_ions; i++) {
+    for (i = 0; i < 9*n_atoms*n_atoms; i++) {
         for (j = 0; j < 2; j++) {
             dyn_mat[2*i + j] *= dyn_mat_weighting[i];
         }
     }
 }
 
-int diagonalise_dyn_mat_zheevd(const int n_ions, const double qpt[3],
+int diagonalise_dyn_mat_zheevd(const int n_atoms, const double qpt[3],
     double* dyn_mat, double* eigenvalues, ZheevdFunc zheevdptr) {
 
     char jobz = 'V';
     char uplo = 'L';
-    int order = 3*n_ions;
+    int order = 3*n_atoms;
     int lda = order;
     int lwork, lrwork, liwork = -1;
     double *work, *rwork;
@@ -329,10 +329,10 @@ int diagonalise_dyn_mat_zheevd(const int n_ions, const double qpt[3],
     return info;
 }
 
-void evals_to_freqs(const int n_ions, double *eigenvalues) {
+void evals_to_freqs(const int n_atoms, double *eigenvalues) {
     int i;
     double tmp;
-    for (i = 0; i < 3*n_ions; i++) {
+    for (i = 0; i < 3*n_atoms; i++) {
         // Set imaginary frequencies to negative
         tmp = copysign(sqrt(fabs(eigenvalues[i])), eigenvalues[i]);
         eigenvalues[i] = tmp;

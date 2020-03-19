@@ -1,6 +1,7 @@
 import math
 import numpy as np
 from euphonic import ureg
+from euphonic.crystal import Crystal
 from euphonic.util import direction_changed, bose_factor, is_gamma
 from euphonic.data.data import Data
 from euphonic._readers import _castep
@@ -18,39 +19,28 @@ class PhononData(Data):
         Seedname specifying file(s) to read from
     model : str
         Records what model the data came from
-    n_ions : int
-        Number of ions in the unit cell
+    crystal : Crystal
+        Lattice and atom information
     n_branches : int
         Number of phonon dispersion branches
     n_qpts : int
         Number of q-points in the .phonon file
-    cell_vec : (3, 3) float ndarray
-        The unit cell vectors. Default units Angstroms
-    recip_vec : (3, 3) float ndarray
-        The reciprocal lattice vectors. Default units inverse Angstroms
-    ion_r : (n_ions, 3) float ndarray
-        The fractional position of each ion within the unit cell
-    ion_type : (n_ions,) string ndarray
-        The chemical symbols of each ion in the unit cell. Ions are in the
-        same order as in ion_r
-    ion_mass : (n_ions,) float ndarray
-        The mass of each ion in the unit cell in atomic units
     qpts : (n_qpts, 3) float ndarray
         Q-point coordinates
     weights : (n_qpts,) float ndarray
         The weight for each q-point
-    freqs: (n_qpts, 3*n_ions) float ndarray
+    freqs: (n_qpts, 3*n_atoms) float ndarray
         Phonon frequencies, ordered according to increasing q-point
         number. Default units meV
-    eigenvecs: (n_qpts, 3*n_ions, n_ions, 3) complex ndarray
+    eigenvecs: (n_qpts, 3*n_atoms, n_atoms, 3) complex ndarray
         Dynamical matrix eigenvectors. Empty if read_eigenvecs is False
     split_i : (n_splits,) int ndarray
         The q-point indices where there is LO-TO splitting, if applicable.
         Otherwise empty.
-    split_freqs : (n_splits, 3*n_ions) float ndarray
+    split_freqs : (n_splits, 3*n_atoms) float ndarray
         Holds the additional LO-TO split phonon frequencies for the q-points
         specified in split_i. Empty if no LO-TO splitting. Default units meV
-    split_eigenvecs : (n_splits, 3*n_ions, n_ions, 3) complex ndarray
+    split_eigenvecs : (n_splits, 3*n_atoms, n_atoms, 3) complex ndarray
         Holds the additional LO-TO split dynamical matrix eigenvectors for the
         q-points specified in split_i. Empty if no LO-TO splitting
     """
@@ -63,34 +53,29 @@ class PhononData(Data):
         Parameters
         ----------
         data : dict
+<<<<<<< HEAD
             A dict containing the following keys: n_ions, n_branches, n_qpts,
             cell_vec, recip_vec, ion_r, ion_type, ion_mass, qpts, weights,
             freqs, eigenvecs, split_i, split_freqs, split_eigenvecs, and
             optional: metadata
+=======
+            A dict containing the following keys: n_atoms, n_branches, n_qpts,
+            cell_vectors, atom_r, atom_type, atom_mass, qpts, weights,
+            freqs, eigenvecs, split_i, split_freqs, split_eigenvecs.
+            meta :
+                model:{'CASTEP'}
+                    Which model has been used
+                path : str, default ''
+                    Location of seed files on filesystem
+            meta (CASTEP) :
+                seedname : str
+                    Seedname of file that is read
+>>>>>>> Add initial Crystal object
         """
-        if type(data) is str:
-            raise Exception('The old interface is now replaced by',
-                            'PhononData.from_castep(seedname, path="<path>").',
-                            '(Please see documentation for more information.)')
-
         self._set_data(data)
 
-        self._l_units = 'angstrom'
         self._e_units = 'meV'
 
-
-    @property
-    def cell_vec(self):
-        return self._cell_vec*ureg('INTERNAL_LENGTH_UNIT').to(self._l_units)
-
-    @property
-    def recip_vec(self):
-        return self._recip_vec*ureg(
-            '1/INTERNAL_LENGTH_UNIT').to('1/' + self._l_units)
-
-    @property
-    def ion_mass(self):
-        return self._ion_mass*ureg('INTERNAL_MASS_UNIT').to('amu')
 
     @property
     def freqs(self):
@@ -153,14 +138,14 @@ class PhononData(Data):
         return pdata
 
     def _set_data(self, data):
-        self.n_ions = data['n_ions']
+        data['atom_mass_unit'] = str(ureg.INTERNAL_MASS_UNIT)
+        data['cell_vectors_unit'] = str(ureg.INTERNAL_LENGTH_UNIT)
+        self.crystal = Crystal.from_dict(data)
+        self.crystal.atom_mass_unit = 'amu'
+        self.crystal.cell_vectors_unit = 'angstrom'
+
         self.n_branches = data['n_branches']
         self.n_qpts = data['n_qpts']
-        self._cell_vec = data['cell_vec']
-        self._recip_vec = data['recip_vec']
-        self.ion_r = data['ion_r']
-        self.ion_type = data['ion_type']
-        self._ion_mass = data['ion_mass']
         self.qpts = data['qpts']
         self.weights = data['weights']
         self._freqs = data['freqs']
@@ -225,7 +210,7 @@ class PhononData(Data):
             if calc_reorder[i-1]:
                 # Compute complex conjugated dot product of every mode of this
                 # q-point with every mode of previous q-point, and sum the dot
-                # products over ions (i.e. multiply eigenvectors elementwise,
+                # products over atoms (i.e. multiply eigenvectors elementwise,
                 # then sum over the last 2 dimensions)
                 dots = np.absolute(np.einsum('ijk,ijk->i',
                                              np.conj(prev_eigenvecs),
@@ -280,37 +265,33 @@ class PhononData(Data):
         sf : (n_qpts, n_branches) float ndarray
             The structure factor for each q-point and phonon branch
         """
-        sl = [scattering_lengths[x] for x in self.ion_type]
-
-        # Convert units
-        recip = self._recip_vec
-        freqs = self._freqs
-        ion_mass = self._ion_mass
+        sl = [scattering_lengths[x] for x in self.crystal.atom_type]
         sl = (sl*ureg('fm').to('bohr')).magnitude
 
         # Calculate normalisation factor
-        norm_factor = sl/np.sqrt(ion_mass)
+        norm_factor = sl/np.sqrt(self.crystal._atom_mass)
 
-        # Calculate the exponential factor for all ions and q-points
-        # ion_r in fractional coords, so Qdotr = 2pi*qh*rx + 2pi*qk*ry...
-        exp_factor = np.exp(1J*2*math.pi*np.einsum('ij,kj->ik',
-                                                   self.qpts, self.ion_r))
+        # Calculate the exponential factor for all atoms and q-points
+        # atom_r in fractional coords, so Qdotr = 2pi*qh*rx + 2pi*qk*ry...
+        exp_factor = np.exp(1J*2*math.pi*np.einsum(
+            'ij,kj->ik', self.qpts, self.crystal.atom_r))
 
         # Eigenvectors are in Cartesian so need to convert hkl to Cartesian by
         # computing the dot product with hkl and reciprocal lattice
+        recip = self.crystal.reciprocal_cell().to('1/bohr').magnitude
         Q = np.einsum('ij,jk->ik', self.qpts, recip)
 
-        # Calculate dot product of Q and eigenvectors for all branches, ions
+        # Calculate dot product of Q and eigenvectors for all branches, atoms
         # and q-points
         eigenv_dot_q = np.einsum('ijkl,il->ijk', np.conj(self.eigenvecs), Q)
 
         # Calculate Debye-Waller factors
         if dw_data:
-            if dw_data.n_ions != self.n_ions:
+            if dw_data.crystal.n_atoms != self.crystal.n_atoms:
                 raise Exception((
                     'The Data object used as dw_data is not compatible with the'
                     ' object that calculate_structure_factor has been called on'
-                    ' (they have a different number of ions). Is dw_data '
+                    ' (they have a different number of atoms). Is dw_data '
                     'correct?'))
             dw = dw_data._dw_coeff(T)
             dw_factor = np.exp(-np.einsum('jkl,ik,il->ij', dw, Q, Q)/2)
@@ -320,11 +301,11 @@ class PhononData(Data):
         term = np.einsum('ijk,ik,k->ij', eigenv_dot_q, exp_factor, norm_factor)
 
         # Take mod squared and divide by frequency to get intensity
-        sf = np.absolute(term*np.conj(term))/np.absolute(freqs)
+        sf = np.absolute(term*np.conj(term))/np.absolute(self._freqs)
 
         # Multiply by Bose factor
         if calc_bose:
-            sf = sf*bose_factor(freqs, T)
+            sf = sf*bose_factor(self._freqs, T)
 
         sf = np.real(sf*scale)
 
@@ -332,7 +313,7 @@ class PhononData(Data):
 
     def _dw_coeff(self, T):
         """
-        Calculate the 3 x 3 Debye-Waller coefficients for each ion over the
+        Calculate the 3 x 3 Debye-Waller coefficients for each atom over the
         q-points contained in this object
 
         Parameters
@@ -342,20 +323,20 @@ class PhononData(Data):
 
         Returns
         -------
-        dw : (n_ions, 3, 3) float ndarray
-            The DW coefficients for each ion
+        dw : (n_atoms, 3, 3) float ndarray
+            The DW coefficients for each atom
         """
 
         # Convert units
         kB = (1*ureg.k).to('E_h/K').magnitude
-        n_ions = self.n_ions
-        ion_mass = self._ion_mass
+        n_atoms = self.crystal.n_atoms
+        atom_mass = self.crystal._atom_mass
         freqs = self._freqs
         qpts = self.qpts
         evecs = self.eigenvecs
         weights = self.weights
 
-        mass_term = 1/(2*ion_mass)
+        mass_term = 1/(2*atom_mass)
 
         # Determine q-points near the gamma point and mask out their acoustic
         # modes due to the potentially large 1/frequency factor
@@ -369,7 +350,7 @@ class PhononData(Data):
             freq_term = 1/(freqs*np.tanh(x))
         else:
             freq_term = 1/(freqs)
-        dw = np.zeros((n_ions, 3, 3))
+        dw = np.zeros((n_atoms, 3, 3))
         # Calculating the e.e* term is expensive, do in chunks
         chunk = 1000
         for i in range(int((len(qpts) - 1)/chunk) + 1):

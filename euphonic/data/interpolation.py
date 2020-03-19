@@ -6,6 +6,7 @@ import scipy
 from scipy.linalg.lapack import zheev
 from scipy.special import erfc
 from euphonic import ureg
+from euphonic.crystal import Crystal
 from euphonic.util import is_gamma, mp_grid, get_all_origins
 from euphonic.data.phonon import PhononData
 from euphonic._readers import _castep
@@ -34,28 +35,17 @@ class InterpolationData(PhononData):
         Seedname specifying castep_bin file to read from
     model : str
         Records what model the data came from
-    n_ions : int
-        Number of ions in the unit cell
+    crystal : Crystal
+        Lattice and atom information
     n_branches : int
         Number of phonon dispersion branches
-    cell_vec : (3, 3) float ndarray
-        The unit cell vectors. Default units Angstroms
-    recip_vec : (3, 3) float ndarray
-        The reciprocal lattice vectors. Default units inverse Angstroms
-    ion_r : (n_ions,3) float ndarray
-        The fractional position of each ion within the unit cell
-    ion_type : (n_ions,) string ndarray
-        The chemical symbols of each ion in the unit cell. Ions are in the
-        same order as in ion_r
-    ion_mass : (n_ions,) float ndarray
-        The mass of each ion in the unit cell in atomic units
     n_cells_in_sc : int
         Number of cells in the supercell
     sc_matrix : (3, 3) int ndarray
         The supercell matrix
     cell_origins : (n_cells_in_sc, 3) int ndarray
         The locations of the unit cells within the supercell
-    force_constants : (n_cells_in_sc, 3*n_ions, 3*n_ions) float ndarray
+    force_constants : (n_cells_in_sc, 3*n_atoms, 3*n_atoms) float ndarray
         Force constants matrix. Default units atomic units
     n_qpts : int
         Number of q-points used in the most recent interpolation calculation.
@@ -65,10 +55,10 @@ class InterpolationData(PhononData):
         calculation. Is empty by default
     weights : (n_qpts,) float ndarray
         The weight for each q-point
-    freqs: (n_qpts, 3*n_ions) float ndarray
+    freqs: (n_qpts, 3*n_atoms) float ndarray
         Phonon frequencies from the most recent interpolation calculation.
         Default units meV. Is empty by default
-    eigenvecs: (n_qpts, 3*n_ions, n_ions, 3) complex ndarray
+    eigenvecs: (n_qpts, 3*n_atoms, n_atoms, 3) complex ndarray
         Dynamical matrix eigenvectors from the most recent interpolation
         calculation. Is empty by default
     asr : str
@@ -82,10 +72,10 @@ class InterpolationData(PhononData):
     split_i : (n_splits,) int ndarray
         The q-point indices where there is LO-TO splitting, if applicable.
         Otherwise empty.
-    split_freqs : (n_splits, 3*n_ions) float ndarray
+    split_freqs : (n_splits, 3*n_atoms) float ndarray
         Holds the additional LO-TO split phonon frequencies for the q-points
         specified in split_i. Empty if no LO-TO splitting. Default units meV
-    split_eigenvecs : (n_splits, 3*n_ions, n_ions, 3) complex ndarray
+    split_eigenvecs : (n_splits, 3*n_atoms, n_atoms, 3) complex ndarray
         Holds the additional LO-TO split dynamical matrix eigenvectors for the
         q-points specified in split_i. Empty if no LO-TO splitting
 
@@ -100,31 +90,26 @@ class InterpolationData(PhononData):
         Parameters
         ----------
         data : dict
-            A dict containing the following keys: n_ions, n_branches, cell_vec,
-            ion_r, ion_type, ion_mass, force_constants, sc_matrix,
-            n_cells_in_sc, cell_origins, and optional : born, dielectric, metadata
+            A dict containing the following keys: n_atoms, n_branches,
+            cell_vectors, atom_r, atom_type, atom_mass, force_constants,
+            sc_matrix, n_cells_in_sc, cell_origins, and optional : born,
+            dielectric
         """
-        if type(data) is str:
-            raise Exception((
-                'The old interface now takes the form:'
-                'InterpolationData.from_castep(seedname, path="<path>").'
-                '(Please see documentation for more information.)'))
-
         self._set_data(data)
 
         self.n_qpts = 0
         self.qpts = np.empty((0, 3))
 
-        self._reduced_freqs = np.empty((0, 3*self.n_ions))
-        self._reduced_eigenvecs = np.empty((0, 3*self.n_ions, self.n_ions, 3),
+        n_atoms = self.crystal.n_atoms
+        self._reduced_freqs = np.empty((0, 3*n_atoms))
+        self._reduced_eigenvecs = np.empty((0, 3*n_atoms, n_atoms, 3),
                                            dtype=np.complex128)
 
         self.split_i = np.empty((0,), dtype=np.int32)
-        self._split_freqs = np.empty((0, 3*self.n_ions))
-        self.split_eigenvecs = np.empty((0, 3*self.n_ions, self.n_ions, 3),
+        self._split_freqs = np.empty((0, 3*n_atoms))
+        self.split_eigenvecs = np.empty((0, 3*n_atoms, n_atoms, 3),
                                         dtype=np.complex128)
 
-        self._l_units = 'angstrom'
         self._e_units = 'meV'
 
 
@@ -202,13 +187,13 @@ class InterpolationData(PhononData):
 
 
     def _set_data(self, data):
-        self.n_ions = data['n_ions']
+        data['atom_mass_unit'] = str(ureg.INTERNAL_MASS_UNIT)
+        data['cell_vectors_unit'] = str(ureg.INTERNAL_LENGTH_UNIT)
+        self.crystal = Crystal.from_dict(data)
+        self.crystal.atom_mass_unit = 'amu'
+        self.crystal.cell_vectors_unit = 'angstrom'
+
         self.n_branches = data['n_branches']
-        self._cell_vec = data['cell_vec']
-        self._recip_vec = data['recip_vec']
-        self.ion_r = data['ion_r']
-        self.ion_type = data['ion_type']
-        self._ion_mass = data['ion_mass']
         self._force_constants = data['force_constants']
         self.sc_matrix = data['sc_matrix']
         self.n_cells_in_sc = data['n_cells_in_sc']
@@ -272,9 +257,9 @@ class InterpolationData(PhononData):
 
         Returns
         -------
-        freqs : (n_qpts, 3*n_ions) float ndarray
+        freqs : (n_qpts, 3*n_atoms) float ndarray
             The phonon frequencies (same as set to InterpolationData.freqs)
-        eigenvecs : (n_qpts, 3*n_ions, n_ions, 3) complex ndarray
+        eigenvecs : (n_qpts, 3*n_atoms, n_atoms, 3) complex ndarray
             The phonon eigenvectors (same as set to
             InterpolationData.eigenvecs)
 
@@ -286,15 +271,15 @@ class InterpolationData(PhononData):
 
         # Reset obj freqs/eigenvecs to zero to reduce memory usage in case of
         # repeated calls to calculate_fine_phonons
-        n_ions = self.n_ions
+        n_atoms = self.crystal.n_atoms
         self.qpts = np.array([])
-        self._reduced_freqs = np.empty((0, 3*n_ions))
-        self._reduced_eigenvecs = np.empty((0, 3*n_ions, n_ions, 3),
+        self._reduced_freqs = np.empty((0, 3*n_atoms))
+        self._reduced_eigenvecs = np.empty((0, 3*n_atoms, n_atoms, 3),
                                            dtype=np.complex128)
 
         self.split_i = np.empty((0,), dtype=np.int32)
-        self._split_freqs = np.empty((0, 3*n_ions))
-        self.split_eigenvecs = np.empty((0, 3*n_ions, n_ions, 3),
+        self._split_freqs = np.empty((0, 3*n_atoms))
+        self.split_eigenvecs = np.empty((0, 3*n_atoms, n_atoms, 3),
                                         dtype=np.complex128)
 
         # Set default splitting params
@@ -357,7 +342,8 @@ class InterpolationData(PhononData):
                 self.cell_origins[:, i], return_inverse=True)
 
         # Precompute dynamical matrix mass weighting
-        masses = np.tile(np.repeat(self._ion_mass, 3), (3*n_ions, 1))
+        atom_mass = self.crystal.atom_mass.to('electron_mass').magnitude
+        masses = np.tile(np.repeat(atom_mass, 3), (3*n_atoms, 1))
         dyn_mat_weighting = 1/np.sqrt(masses*np.transpose(masses))
 
         # Initialise dipole correction calculation to FC matrix if required
@@ -393,11 +379,11 @@ class InterpolationData(PhononData):
                 asr = None
 
         split_i = np.empty((0,), dtype=np.int32)
-        split_freqs = np.empty((0, 3*n_ions))
-        split_eigenvecs = np.empty((0, 3*n_ions, n_ions, 3),
+        split_freqs = np.empty((0, 3*n_atoms))
+        split_eigenvecs = np.empty((0, 3*n_atoms, n_atoms, 3),
                                    dtype=np.complex128)
-        rfreqs = np.zeros((n_rqpts, 3*n_ions))
-        reigenvecs = np.zeros((n_rqpts, 3*n_ions, n_ions, 3),
+        rfreqs = np.zeros((n_rqpts, 3*n_atoms))
+        reigenvecs = np.zeros((n_rqpts, 3*n_atoms, n_atoms, 3),
                                   dtype=np.complex128)
         try:
             if use_c:
@@ -417,27 +403,32 @@ class InterpolationData(PhononData):
                 gamma_i = np.where(is_gamma(qpts))[0]
                 split_i = gamma_i[np.logical_and(gamma_i > 0,
                                                  gamma_i < len(qpts) - 1)]
-                split_freqs = np.zeros((len(split_i), 3*n_ions))
-                split_eigenvecs = np.zeros((len(split_i), 3*n_ions, n_ions, 3),
+                split_freqs = np.zeros((len(split_i), 3*n_atoms))
+                split_eigenvecs = np.zeros((len(split_i), 3*n_atoms, n_atoms, 3),
                                            dtype=np.complex128)
             # Make sure all arrays are contiguous before calling C
-            (reduced_qpts, qpts_i, fc_img_weighted, sc_offsets, recip_asr_correction,
-                dyn_mat_weighting, rfreqs, reigenvecs, split_freqs, split_eigenvecs,
+            cell_vectors = self.crystal.cell_vectors.to('bohr').magnitude
+            recip_vectors = self.crystal.reciprocal_cell().to(
+                '1/bohr').magnitude
+            (cell_vectors, recip_vectors, reduced_qpts, qpts_i, fc_img_weighted,
+                sc_offsets, recip_asr_correction, dyn_mat_weighting, rfreqs,
+                reigenvecs, split_freqs, split_eigenvecs,
                 split_i) = _ensure_contiguous_args(
-                    reduced_qpts, qpts_i, fc_img_weighted, sc_offsets,
-                    recip_asr_correction, dyn_mat_weighting, rfreqs,
-                    reigenvecs, split_freqs, split_eigenvecs, split_i)
+                    cell_vectors, recip_vectors, reduced_qpts, qpts_i,
+                    fc_img_weighted, sc_offsets, recip_asr_correction,
+                    dyn_mat_weighting, rfreqs, reigenvecs, split_freqs,
+                    split_eigenvecs, split_i)
             attrs = ['_n_sc_images', '_sc_image_i', 'cell_origins']
-            dipole_attrs = ['_cell_vec', '_recip_vec', 'ion_r', '_born',
-                            'dielectric', '_H_ab', '_cells', '_gvec_phases',
-                            '_gvecs_cart', '_dipole_q0']
+            dipole_attrs = ['atom_r', '_born', 'dielectric', '_H_ab', '_cells',
+                            '_gvec_phases', '_gvecs_cart', '_dipole_q0']
             _ensure_contiguous_attrs(self, attrs, opt_attrs=dipole_attrs)
             reciprocal_asr = 1 if asr == 'reciprocal' else 0
             euphonic_c.calculate_phonons(
-                self, reduced_qpts, qpts_i, fc_img_weighted, sc_offsets,
-                recip_asr_correction, dyn_mat_weighting, dipole,
-                reciprocal_asr, splitting, rfreqs, reigenvecs, split_freqs,
-                split_eigenvecs, split_i, n_threads, scipy.__path__[0])
+                self, cell_vectors, recip_vectors, reduced_qpts, qpts_i,
+                fc_img_weighted, sc_offsets, recip_asr_correction,
+                dyn_mat_weighting, dipole, reciprocal_asr, splitting, rfreqs,
+                reigenvecs, split_freqs, split_eigenvecs, split_i, n_threads,
+                scipy.__path__[0])
         except ImportError:
             if not fall_back_on_python:
                 raise ImportCError('use_c=True is set, but the Euphonic\'s C '
@@ -489,7 +480,7 @@ class InterpolationData(PhononData):
          splitting) = args
 
         qpt = reduced_qpts[q]
-        n_ions = self.n_ions
+        n_atoms = self.crystal.n_atoms
 
         dyn_mat = self._calculate_dyn_mat(
             qpt, fc_img_weighted, unique_sc_offsets, unique_sc_i,
@@ -516,7 +507,7 @@ class InterpolationData(PhononData):
                 qpos = np.where(qpts_i==q)[0][0]
                 q_dirs = [-reduced_qpts[qpts_i[qpos - 1]],
                            reduced_qpts[qpts_i[qpos + 1]]]
-            na_corrs = np.zeros((len(q_dirs), 3*n_ions, 3*n_ions),
+            na_corrs = np.zeros((len(q_dirs), 3*n_atoms, 3*n_atoms),
                                 dtype=np.complex128)
             for i, q_dir in enumerate(q_dirs):
                 na_corrs[i] = self._calculate_gamma_correction(q_dir)
@@ -525,8 +516,8 @@ class InterpolationData(PhononData):
             na_corrs = np.array([0])
 
         split_i = np.empty((0,), dtype=np.int32)
-        sfreqs = np.empty((0, 3*n_ions))
-        sevecs = np.empty((0, 3*n_ions, n_ions, 3))
+        sfreqs = np.empty((0, 3*n_atoms))
+        sevecs = np.empty((0, 3*n_atoms, n_atoms, 3))
         for i, na_corr in enumerate(na_corrs):
             dyn_mat_corr = dyn_mat + na_corr
 
@@ -539,7 +530,7 @@ class InterpolationData(PhononData):
             except np.linalg.LinAlgError:
                 evals, evecs, info = zheev(dyn_mat_corr)
             evecs = np.reshape(np.transpose(evecs),
-                               (3*n_ions, n_ions, 3))
+                               (3*n_atoms, n_atoms, 3))
             # Set imaginary frequencies to negative
             imag_freqs = np.where(evals < 0)
             evals = np.sqrt(np.abs(evals))
@@ -567,7 +558,7 @@ class InterpolationData(PhononData):
         ----------
         q : (3,) float ndarray
             The q-point to calculate the correction for
-        fc_img_weighted : (n_cells_in_sc, 3*n_ions, 3*n_ions) float ndarray
+        fc_img_weighted : (n_cells_in_sc, 3*n_atoms, 3*n_atoms) float ndarray
             The force constants matrix weighted by the number of supercell ion
             images for each ij displacement
         unique_sc_offsets : list of lists of ints
@@ -590,13 +581,13 @@ class InterpolationData(PhononData):
 
         Returns
         -------
-        dyn_mat : (3*n_ions, 3*n_ions) complex ndarray
+        dyn_mat : (3*n_atoms, 3*n_atoms) complex ndarray
             The non mass weighted dynamical matrix at q
         """
 
-        n_ions = self.n_ions
+        n_atoms = self.crystal.n_atoms
         sc_image_i = self._sc_image_i
-        dyn_mat = np.zeros((n_ions*3, n_ions*3), dtype=np.complex128)
+        dyn_mat = np.zeros((n_atoms*3, n_atoms*3), dtype=np.complex128)
 
         # Cumulant method: for each ij ion-ion displacement sum phases for
         # all possible supercell images, then multiply by the cell phases
@@ -633,19 +624,19 @@ class InterpolationData(PhononData):
             sum. A higher value uses more reciprocal terms
         """
 
-        cell_vec = self._cell_vec
-        recip = self._recip_vec
-        n_ions = self.n_ions
-        ion_r = self.ion_r
+        cell_vectors = self.crystal.cell_vectors.to('bohr').magnitude
+        recip = self.crystal.reciprocal_cell().to('1/bohr').magnitude
+        n_atoms = self.crystal.n_atoms
+        atom_r = self.crystal.atom_r
         born = self._born
         dielectric = self.dielectric
         inv_dielectric = np.linalg.inv(dielectric)
         sqrt_pi = math.sqrt(math.pi)
 
         # Calculate real/recip weighting
-        abc_mag = np.linalg.norm(cell_vec, axis=1)
+        abc_mag = np.linalg.norm(cell_vectors, axis=1)
         mean_abc_mag = np.prod(abc_mag)**(1.0/3)
-        eta = (sqrt_pi/mean_abc_mag)*n_ions**(1.0/6)
+        eta = (sqrt_pi/mean_abc_mag)*n_atoms**(1.0/6)
         # Use eta = lambda * |permittivity|**(1/6)
         eta = eta*np.power(np.linalg.det(dielectric), 1.0/6)*eta_scale
         eta_2 = eta**2
@@ -655,27 +646,27 @@ class InterpolationData(PhononData):
         frac_tol = 1e-15
 
         # Calculate q=0 real space term
-        real_q0 = np.zeros((n_ions, n_ions, 3, 3))
+        real_q0 = np.zeros((n_atoms, n_atoms, 3, 3))
         # No. of independent i, j ion entries (to use i, j symmetry to
         # minimise size of stored H_ab)
-        n_elems = np.sum(range(1, n_ions + 1))
+        n_elems = np.sum(range(1, n_atoms + 1))
         H_ab = np.zeros((0, n_elems, 3, 3))
         cells = np.zeros((0, 3))
-        ion_r_cart = np.einsum('ij,jk->ik', ion_r, cell_vec)
-        ion_r_e = np.einsum('ij,jk->ik', ion_r_cart, inv_dielectric)
+        atom_r_cart = np.einsum('ij,jk->ik', atom_r, cell_vectors)
+        atom_r_e = np.einsum('ij,jk->ik', atom_r_cart, inv_dielectric)
         for n in range(max_shells):
             cells_tmp = self._get_shell_origins(n)
-            cells_cart = np.einsum('ij,jk->ik', cells_tmp, cell_vec)
+            cells_cart = np.einsum('ij,jk->ik', cells_tmp, cell_vectors)
             cells_e = np.einsum(
                 'ij,jk->ik', cells_cart, inv_dielectric)
             H_ab_tmp = np.zeros((len(cells_tmp), n_elems, 3, 3))
-            for i in range(n_ions):
-                idx = np.sum(range(n_ions - i, n_ions), dtype=np.int32)
-                for j in range(i, n_ions):
+            for i in range(n_atoms):
+                idx = np.sum(range(n_atoms - i, n_atoms), dtype=np.int32)
+                for j in range(i, n_atoms):
                     if n == 0 and i == j:
                         continue
-                    rij_cart = ion_r_cart[i] - ion_r_cart[j]
-                    rij_e = ion_r_e[i] - ion_r_e[j]
+                    rij_cart = atom_r_cart[i] - atom_r_cart[j]
+                    rij_e = atom_r_e[i] - atom_r_e[j]
                     diffs = rij_cart - cells_cart
                     deltas = rij_e - cells_e
                     norms_2 = np.einsum('ij,ij->i', deltas, diffs)*eta_2
@@ -700,27 +691,27 @@ class InterpolationData(PhononData):
             else:
                 break
         # Use compact H_ab to fill in upper triangular of the realspace term
-        real_q0[np.triu_indices(n_ions)] = np.sum(H_ab, axis=0)
+        real_q0[np.triu_indices(n_atoms)] = np.sum(H_ab, axis=0)
         real_q0 *= eta**3/math.sqrt(np.linalg.det(dielectric))
 
         # Calculate the q=0 reciprocal term
-        recip_q0 = np.zeros((n_ions, n_ions, 3, 3), dtype=np.complex128)
+        recip_q0 = np.zeros((n_atoms, n_atoms, 3, 3), dtype=np.complex128)
         # Add G = 0 vectors to list, for later calculations when q !=0,
         # but don't calculate for q=0
         gvecs_cart = np.array([[0., 0., 0.]])
-        gvec_phases = np.tile([1. + 0.j], (1, n_ions))
+        gvec_phases = np.tile([1. + 0.j], (1, n_atoms))
         for n in range(1, max_shells):
             gvecs = self._get_shell_origins(n)
             gvecs_cart_tmp = np.einsum('ij,jk->ik', gvecs, recip)
-            gvec_dot_r = np.einsum('ij,kj->ik', gvecs, ion_r)
+            gvec_dot_r = np.einsum('ij,kj->ik', gvecs, atom_r)
             gvec_phases_tmp = np.exp(2j*math.pi*gvec_dot_r)
             gvecs_ab = np.einsum('ij,ik->ijk', gvecs_cart_tmp, gvecs_cart_tmp)
             k_len_2 = np.einsum('ijk,jk->i', gvecs_ab, dielectric)/(4*eta_2)
             recip_exp = np.exp(-k_len_2)/k_len_2
-            recip_q0_tmp = np.zeros((n_ions, n_ions, 3, 3),
+            recip_q0_tmp = np.zeros((n_atoms, n_atoms, 3, 3),
                                     dtype=np.complex128)
-            for i in range(n_ions):
-                for j in range(i, n_ions):
+            for i in range(n_atoms):
+                for j in range(i, n_atoms):
                     phase_exp = gvec_phases_tmp[:, i]/gvec_phases_tmp[:, j]
                     recip_q0_tmp[i, j] = np.einsum(
                         'ijk,i,i->jk', gvecs_ab, phase_exp, recip_exp)
@@ -734,20 +725,21 @@ class InterpolationData(PhononData):
                 recip_q0 += recip_q0_tmp
             else:
                 break
-        cell_volume = np.dot(cell_vec[0], np.cross(cell_vec[1], cell_vec[2]))
-        recip_q0 *= math.pi/(cell_volume*eta_2)
+        vol = self.crystal.cell_volume().to('bohr**3').magnitude
+        #recip_q0 *= math.pi/(cell_volume*eta_2)
+        recip_q0 *= math.pi/(vol*eta_2)
 
         # Fill in remaining entries by symmetry
-        for i in range(1, n_ions):
+        for i in range(1, n_atoms):
             for j in range(i):
                 real_q0[i, j] = np.conj(real_q0[j, i])
                 recip_q0[i, j] = np.conj(recip_q0[j, i])
 
         # Calculate the q=0 correction, to be subtracted from the corrected
         # diagonal at each q
-        dipole_q0 = np.zeros((n_ions, 3, 3), dtype=np.complex128)
-        for i in range(n_ions):
-            for j in range(n_ions):
+        dipole_q0 = np.zeros((n_atoms, 3, 3), dtype=np.complex128)
+        for i in range(n_atoms):
+            for j in range(n_atoms):
                 for a in range(3):
                     for b in range(3):
                         dipole_q0[i, a, b] += np.sum(
@@ -777,13 +769,13 @@ class InterpolationData(PhononData):
 
         Returns
         -------
-        corr : (3*n_ions, 3*n_ions) complex ndarray
+        corr : (3*n_atoms, 3*n_atoms) complex ndarray
             The correction to the dynamical matrix
         """
-        cell_vec = self._cell_vec
-        recip = self._recip_vec
-        n_ions = self.n_ions
-        ion_r = self.ion_r
+        cell_vectors = self.crystal.cell_vectors.to('bohr').magnitude
+        recip = self.crystal.reciprocal_cell().to('1/bohr').magnitude
+        n_atoms = self.crystal.n_atoms
+        atom_r = self.crystal.atom_r
         born = self._born
         dielectric = self.dielectric
         eta = self._eta
@@ -801,19 +793,19 @@ class InterpolationData(PhononData):
             gvecs_cart = self._gvecs_cart
 
         # Calculate real space term
-        real_dipole = np.zeros((n_ions, n_ions, 3, 3), dtype=np.complex128)
+        real_dipole = np.zeros((n_atoms, n_atoms, 3, 3), dtype=np.complex128)
         # Calculate real space phase factor
         q_dot_ra = np.einsum('i,ji->j', q_norm, cells)
         real_phases = np.exp(2j*math.pi*q_dot_ra)
         real_dipole_tmp = np.einsum('i,ijkl->jkl', real_phases, H_ab)
-        idx_u = np.triu_indices(n_ions)
+        idx_u = np.triu_indices(n_atoms)
         real_dipole[idx_u] = real_dipole_tmp
         real_dipole *= eta**3/math.sqrt(np.linalg.det(dielectric))
 
         # Calculate reciprocal term
-        recip_dipole = np.zeros((n_ions, n_ions, 3, 3), dtype=np.complex128)
+        recip_dipole = np.zeros((n_atoms, n_atoms, 3, 3), dtype=np.complex128)
         # Calculate q-point phases
-        q_dot_r = np.einsum('i,ji->j', q_norm, ion_r)
+        q_dot_r = np.einsum('i,ji->j', q_norm, atom_r)
         q_phases = np.exp(2j*math.pi*q_dot_r)
         q_cart = np.dot(q_norm, recip)
         # Calculate k-vector symmetric matrix
@@ -821,32 +813,32 @@ class InterpolationData(PhononData):
         kvecs_ab = np.einsum('ij,ik->ijk', kvecs, kvecs)
         k_len_2 = np.einsum('ijk,jk->i', kvecs_ab, dielectric)/(4*eta_2)
         recip_exp = np.einsum('ijk,i->ijk', kvecs_ab, np.exp(-k_len_2)/k_len_2)
-        for i in range(n_ions):
+        for i in range(n_atoms):
                 phase_exp = ((gvec_phases[:, i, None]*q_phases[i])
                              /(gvec_phases[:, i:]*q_phases[i:]))
                 recip_dipole[i, i:] = np.einsum(
                     'ikl,ij->jkl', recip_exp, phase_exp)
-        cell_volume = np.dot(cell_vec[0], np.cross(cell_vec[1], cell_vec[2]))
+        cell_volume = np.dot(cell_vectors[0], np.cross(cell_vectors[1], cell_vectors[2]))
         recip_dipole *= math.pi/(cell_volume*eta_2)
 
         # Fill in remaining entries by symmetry
         # Mask so we don't count diagonal twice
-        mask = np.tri(n_ions, k=-1)[:, :, np.newaxis, np.newaxis]
+        mask = np.tri(n_atoms, k=-1)[:, :, np.newaxis, np.newaxis]
         real_dipole = real_dipole + mask*np.conj(
             np.transpose(real_dipole, axes=[1, 0, 2, 3]))
         recip_dipole = recip_dipole + mask*np.conj(
             np.transpose(recip_dipole, axes=[1, 0, 2, 3]))
 
         # Multiply by Born charges and subtract q=0 from diagonal
-        dipole = np.zeros((n_ions, n_ions, 3, 3), dtype=np.complex128)
+        dipole = np.zeros((n_atoms, n_atoms, 3, 3), dtype=np.complex128)
         dipole_tmp = recip_dipole - real_dipole
-        for i in range(n_ions):
+        for i in range(n_atoms):
             dipole[i] = np.einsum('ij,klm,kjm->kil',
                                   born[i], born, dipole_tmp[i])
             dipole[i, i] -= self._dipole_q0[i]
 
         return np.reshape(np.transpose(dipole, axes=[0, 2, 1, 3]),
-                          (3*n_ions, 3*n_ions))
+                          (3*n_atoms, 3*n_atoms))
 
     def _calculate_gamma_correction(self, q_dir):
         """
@@ -862,25 +854,25 @@ class InterpolationData(PhononData):
 
         Returns
         -------
-        na_corr : (3*n_ions, 3*n_ions) complex ndarray
+        na_corr : (3*n_atoms, 3*n_atoms) complex ndarray
             The correction to the dynamical matrix
         """
-        cell_vec = self._cell_vec
-        n_ions = self.n_ions
+        cell_vectors = self.crystal.cell_vectors.to('bohr').magnitude
+        n_atoms = self.crystal.n_atoms
         born = self._born
         dielectric = self.dielectric
-        na_corr = np.zeros((3*n_ions, 3*n_ions), dtype=np.complex128)
+        na_corr = np.zeros((3*n_atoms, 3*n_atoms), dtype=np.complex128)
 
         if is_gamma(q_dir):
             return na_corr
 
-        cell_volume = np.dot(cell_vec[0], np.cross(cell_vec[1], cell_vec[2]))
+        cell_volume = np.dot(cell_vectors[0], np.cross(cell_vectors[1], cell_vectors[2]))
         denominator = np.einsum('ij,i,j', dielectric, q_dir, q_dir)
         factor = 4*math.pi/(cell_volume*denominator)
 
         q_born_sum = np.einsum('ijk,k->ij', born, q_dir)
-        for i in range(n_ions):
-            for j in range(n_ions):
+        for i in range(n_atoms):
+            for j in range(n_atoms):
                 na_corr[3*i:3*(i+1), 3*j:3*(j+1)] = np.einsum(
                     'i,j->ij', q_born_sum[i], q_born_sum[j])
         na_corr *= factor
@@ -941,19 +933,19 @@ class InterpolationData(PhononData):
 
         Returns
         -------
-        force_constants : (n_cells_in_sc, 3*n_ions, 3*n_ions) float ndarray
+        force_constants : (n_cells_in_sc, 3*n_atoms, 3*n_atoms) float ndarray
             The corrected force constants matrix
         """
         cell_origins = self.cell_origins
         sc_matrix = self.sc_matrix
         n_cells_in_sc = self.n_cells_in_sc
-        n_ions = self.n_ions
+        n_atoms = self.crystal.n_atoms
         force_constants = self._force_constants
         ax = np.newaxis
 
         # Compute square matrix giving relative index of cells in sc
-        n_ions_in_sc = n_ions*n_cells_in_sc
-        sq_fc = np.zeros((3*n_ions_in_sc, 3*n_ions_in_sc))
+        n_atoms_in_sc = n_atoms*n_cells_in_sc
+        sq_fc = np.zeros((3*n_atoms_in_sc, 3*n_atoms_in_sc))
         inv_sc_matrix = np.linalg.inv(np.transpose(sc_matrix))
         cell_origins_sc = np.einsum('ij,kj->ik', cell_origins, inv_sc_matrix)
         for nc in range(n_cells_in_sc):
@@ -987,9 +979,9 @@ class InterpolationData(PhononData):
                                'rule, supercell relative index couldn\'t be '
                                'found. Returning uncorrected FC matrix'))
                 return self.force_constants
-            sq_fc[3*nc*n_ions:3*(nc+1)*n_ions, :] = np.transpose(
+            sq_fc[3*nc*n_atoms:3*(nc+1)*n_atoms, :] = np.transpose(
                 np.reshape(force_constants[sc_relative_index],
-                           (3*n_cells_in_sc*n_ions, 3*n_ions)))
+                           (3*n_cells_in_sc*n_atoms, 3*n_atoms)))
         try:
             ac_i, evals, evecs = self._find_acoustic_modes(sq_fc)
         except Exception:
@@ -1004,8 +996,8 @@ class InterpolationData(PhononData):
             sq_fc -= (fc_tol + evals[ac])*np.einsum(
                 'i,j->ij', evecs[:, ac], evecs[:, ac])
 
-        fc = np.reshape(sq_fc[:, :3*n_ions],
-                        (n_cells_in_sc, 3*n_ions, 3*n_ions))
+        fc = np.reshape(sq_fc[:, :3*n_atoms],
+                        (n_cells_in_sc, 3*n_atoms, 3*n_atoms))
 
         return fc
 
@@ -1020,12 +1012,12 @@ class InterpolationData(PhononData):
 
         Parameters
         ----------
-        dyn_mat_gamma : (3*n_ions, 3*n_ions) complex ndarray
+        dyn_mat_gamma : (3*n_atoms, 3*n_atoms) complex ndarray
             The non mass-weighted dynamical matrix at gamma
 
         Returns
         -------
-        dyn_mat : (3*n_ions, 3*n_ions) complex ndarray or empty array
+        dyn_mat : (3*n_atoms, 3*n_atoms) complex ndarray or empty array
             The corrected, non mass-weighted dynamical matrix at q. Returns
             empty array (np.array([])) if finding the 3 acoustic modes fails
         """
@@ -1041,7 +1033,8 @@ class InterpolationData(PhononData):
                            'correcting dynamical matrix'), stacklevel=2)
             return np.array([], dtype=np.complex128)
 
-        recip_asr_correction = np.zeros((3*self.n_ions, 3*self.n_ions),
+        n_atoms = self.crystal.n_atoms
+        recip_asr_correction = np.zeros((3*n_atoms, 3*n_atoms),
                                         dtype=np.complex128)
         for i, ac in enumerate(ac_i):
             recip_asr_correction -= (tol*i + g_evals[ac])*np.einsum(
@@ -1057,29 +1050,29 @@ class InterpolationData(PhononData):
 
         Parameters
         ----------
-        dyn_mat : (3*n_ions, 3*n_ions) complex ndarray
+        dyn_mat : (3*n_atoms, 3*n_atoms) complex ndarray
             A dynamical matrix
 
         Returns
         -------
         ac_i : (3,) int ndarray
             The indices of the acoustic modes
-        evals : (3*n_ions) float ndarray
+        evals : (3*n_atoms) float ndarray
             Dynamical matrix eigenvalues
-        evecs : (3*n_ions, n_ions, 3) complex ndarray
+        evecs : (3*n_atoms, n_atoms, 3) complex ndarray
             Dynamical matrix eigenvectors
         """
         n_branches = dyn_mat.shape[0]
-        n_ions = int(n_branches/3)
+        n_atoms = int(n_branches/3)
 
         evals, evecs = np.linalg.eigh(dyn_mat, UPLO='U')
         evec_reshape = np.reshape(
-            np.transpose(evecs), (n_branches, n_ions, 3))
+            np.transpose(evecs), (n_branches, n_atoms, 3))
         # Sum displacements for all ions in each branch
         c_of_m_disp = np.sum(evec_reshape, axis=1)
         c_of_m_disp_sq = np.sum(np.abs(c_of_m_disp)**2, axis=1)
         sensitivity = 0.5
-        sc_mass = 1.0*n_ions
+        sc_mass = 1.0*n_atoms
         # Check number of acoustic modes
         if np.sum(c_of_m_disp_sq > sensitivity*sc_mass) < 3:
             raise Exception('Could not find 3 acoustic modes')
@@ -1156,9 +1149,9 @@ class InterpolationData(PhononData):
             The supercell image limit
         """
 
-        n_ions = self.n_ions
-        cell_vec = self._cell_vec
-        ion_r = self.ion_r
+        n_atoms = self.crystal.n_atoms
+        cell_vectors = self.crystal.cell_vectors.to('bohr').magnitude
+        atom_r = self.crystal.atom_r
         cell_origins = self.cell_origins
         n_cells_in_sc = self.n_cells_in_sc
         sc_matrix = self.sc_matrix
@@ -1172,7 +1165,7 @@ class InterpolationData(PhononData):
         cutoff_scale = 1.0
 
         # Calculate points of WS cell for this supercell
-        sc_vecs = np.dot(sc_matrix, cell_vec)
+        sc_vecs = np.dot(sc_matrix, cell_vectors)
         ws_list = np.dot(ws_frac, sc_vecs)
         inv_ws_sq = 1.0/np.sum(np.square(ws_list[1:]), axis=1)
         ws_list_norm = ws_list[1:]*inv_ws_sq[:, ax]
@@ -1181,21 +1174,21 @@ class InterpolationData(PhononData):
         sc_image_r = get_all_origins(
             np.repeat(lim, 3) + 1, min_xyz=-np.repeat(lim, 3))
         sc_image_cart = np.einsum('ij,jk->ik', sc_image_r, sc_vecs)
-        sc_ion_r = np.einsum('ijk,kl->ijl',
-                             cell_origins[:, ax, :] + ion_r[ax, :, :],
+        sc_atom_r = np.einsum('ijk,kl->ijl',
+                             cell_origins[:, ax, :] + atom_r[ax, :, :],
                              np.linalg.inv(np.transpose(sc_matrix)))
-        sc_ion_cart = np.einsum('ijk,kl->ijl', sc_ion_r, sc_vecs)
+        sc_ion_cart = np.einsum('ijk,kl->ijl', sc_atom_r, sc_vecs)
 
-        sc_image_i = np.full((n_cells_in_sc, n_ions, n_ions, (2*lim + 1)**3),
+        sc_image_i = np.full((n_cells_in_sc, n_atoms, n_atoms, (2*lim + 1)**3),
                              -1, dtype=np.int32)
-        n_sc_images = np.zeros((n_cells_in_sc, n_ions, n_ions), dtype=np.int32)
+        n_sc_images = np.zeros((n_cells_in_sc, n_atoms, n_atoms), dtype=np.int32)
 
         # Ordering of loops here is for efficiency:
         # ions in unit cell -> periodic supercell images -> WS points
         # This is so the ion-ion vectors in each loop will be similar,
         # so they are more likely to pass/fail the WS check together
         # so the last loop can be broken early
-        for i in range(n_ions):
+        for i in range(n_atoms):
             rij = sc_ion_cart[0, i] - sc_ion_cart
             for im, sc_r in enumerate(sc_image_cart):
                 # Get vector between j in supercell image and i in unit cell
@@ -1306,7 +1299,7 @@ class InterpolationData(PhononData):
 
         Returns
         -------
-        dw : (n_ions, 3, 3) float ndarray
+        dw : (n_atoms, 3, 3) float ndarray
             The DW coefficients for each ion
         """
         if self.n_qpts == 0:

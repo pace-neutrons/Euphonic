@@ -113,15 +113,3 @@ class Data(object):
             The units to use e.g. '1/cm', 'hartree', 'eV'
         """
         self._e_units = units
-
-    def convert_l_units(self, units):
-        """
-        Redefine the units to be used when displaying value with length units
-        e.g. cell_vec
-
-        Parameters
-        ----------
-        units : str
-            The units to use e.g. 'angstrom', 'bohr'
-        """
-        self._l_units = units

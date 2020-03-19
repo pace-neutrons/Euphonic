@@ -3,29 +3,6 @@ import numpy as np
 from euphonic import ureg
 
 
-def reciprocal_lattice(unit_cell):
-    """
-    Calculates the reciprocal lattice from a unit cell
-    """
-
-    a = np.array(unit_cell[0])
-    b = np.array(unit_cell[1])
-    c = np.array(unit_cell[2])
-
-    bxc = np.cross(b, c)
-    cxa = np.cross(c, a)
-    axb = np.cross(a, b)
-
-    adotbxc = np.vdot(a, bxc)  # Unit cell volume
-    norm = 2*math.pi/adotbxc  # Normalisation factor
-
-    astar = norm*bxc
-    bstar = norm*cxa
-    cstar = norm*axb
-
-    return np.array([astar, bstar, cstar])
-
-
 def direction_changed(qpts, tolerance=5e-6):
     """
     Takes a N length list of q-points and returns an N - 2 length list of
@@ -171,6 +148,37 @@ def bose_factor(x, T):
     if T > 0:
         bose = bose + 1/(np.exp(np.absolute(x)/(kB*T)) - 1)
     return bose
+
+def _check_unit(input_unit, *valid_units):
+    """
+    Check that a unit string is of the correct type e.g.
+    check_unit('kg', '[mass]'). Is used to ensure any changes to unit strings
+    are valid
+
+    Parameters
+    ----------
+    input_unit : str
+        The unit string to be validated
+    *valid_units : str
+        Any number of potentially valid units. Any number is allowed because
+        some quantities e.g. phonon frequencies could both be represented by
+        1/[length] or [energy] depending on the convention
+        
+    Returns
+    -------
+    True
+        If input_unit is valid
+
+    Raises
+    ------
+    ValueError
+        If input_unit is not valid
+    """
+    for valid_unit in valid_units:
+        if ureg(input_unit).check(valid_unit):
+            return True 
+    raise ValueError(
+        'Invalid unit. Unit should be of type ' + str(valid_units))
 
 
 def get_all_origins(max_xyz, min_xyz=[0, 0, 0], step=1):
