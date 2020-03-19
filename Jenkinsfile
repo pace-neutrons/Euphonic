@@ -34,7 +34,7 @@ pipeline {
 
         stage("Checkout") {
             steps {
-                setGitHubBuildStatus("PENDING", "Build and tests are starting...")
+                setGitHubBuildStatus("pending", "Build and tests are starting...")
                 echo "Branch: ${env.BRANCH_NAME}"
                 checkout scm
             }
@@ -82,11 +82,11 @@ pipeline {
         }
 
         success {
-            setGitHubBuildStatus("SUCCESS", "Build and tests were successful")
+            setGitHubBuildStatus("success", "Build and tests were successful")
         }
 
         unsuccessful {
-            setGitHubBuildStatus("FAILURE", "Build or tests have failed")
+            setGitHubBuildStatus("failure", "Build or tests have failed")
         }
 
         cleanup {
