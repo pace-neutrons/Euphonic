@@ -369,6 +369,7 @@ class InterpolationData(PhononData):
                                    'extension couldn\'t be imported, it may '
                                    'not have been installed. Falling back to '
                                    'pure Python calculation'), stacklevel=2)
+                    print("Raise warning")
                     raise
             else:
                 raise ImportError

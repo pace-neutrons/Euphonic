@@ -2,6 +2,7 @@ import unittest
 import os
 import numpy.testing as npt
 import numpy as np
+import warnings
 from euphonic import ureg
 from euphonic.data.interpolation import InterpolationData
 
@@ -347,10 +348,14 @@ class TestInterpolatePhononsLZO(unittest.TestCase):
                             atol=1e-10)
 
     def test_calculate_fine_phonons_no_asr_c(self):
-        self.data.calculate_fine_phonons(self.qpts, use_c=True)
-        npt.assert_allclose(self.data.freqs.to('hartree').magnitude,
-                            self.expctd_freqs_no_asr.to('hartree').magnitude,
-                            atol=1e-10)
+        with warnings.catch_warnings(record=True) as warning_messages:
+            warnings.simplefilter("always")
+            self.data.calculate_fine_phonons(self.qpts, use_c=True)
+            for warning_message in warning_messages:
+                self.assertTrue("use_c=True" not in str(warning_message.message))
+            npt.assert_allclose(self.data.freqs.to('hartree').magnitude,
+                                self.expctd_freqs_no_asr.to('hartree').magnitude,
+                                atol=1e-10)
 
     def test_calculate_fine_phonons_no_asr_c_2threads(self):
         self.data.calculate_fine_phonons(self.qpts, use_c=True, n_threads=2)
