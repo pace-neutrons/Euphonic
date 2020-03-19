@@ -5,8 +5,7 @@ import numpy as np
 import scipy
 from scipy.linalg.lapack import zheev
 from scipy.special import erfc
-from euphonic import ureg
-from euphonic.crystal import Crystal
+from euphonic import ureg, Crystal
 from euphonic.util import is_gamma, mp_grid, get_all_origins
 from euphonic.data.phonon import PhononData
 from euphonic._readers import _castep

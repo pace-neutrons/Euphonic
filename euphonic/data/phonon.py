@@ -1,7 +1,6 @@
 import math
 import numpy as np
-from euphonic import ureg
-from euphonic.crystal import Crystal
+from euphonic import ureg, Crystal
 from euphonic.util import direction_changed, bose_factor, is_gamma
 from euphonic.data.data import Data
 from euphonic._readers import _castep

@@ -2,9 +2,8 @@ import os
 import unittest
 import numpy as np
 import numpy.testing as npt
-from euphonic import ureg
+from euphonic import ureg, Crystal
 from euphonic.util import direction_changed, mp_grid
-from euphonic.crystal import Crystal
 from helpers import mock_crystal
 from .utils import get_data_path
 
