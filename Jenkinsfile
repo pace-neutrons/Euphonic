@@ -26,6 +26,7 @@ pipeline {
                     if (isUnix()) {
                         sh """
                             module load conda/3 &&
+                            conda config --append channels free &&
                             module load gcc &&
                             conda create --name py python=3.6.0 -y &&
                             conda activate py &&
@@ -44,6 +45,7 @@ pipeline {
                     if (isUnix()) {
                         sh """
                             module load conda/3 &&
+                            conda config --append channels free
                             conda activate py &&
                             python -m tox
                         """
