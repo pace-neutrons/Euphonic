@@ -84,7 +84,7 @@ pipeline {
         }
 
         unsuccessful {
-            setGitHubBuildStatus("FAILUE", "Build or tests have failed")
+            setGitHubBuildStatus("FAILURE", "Build or tests have failed")
         }
 
         cleanup {
