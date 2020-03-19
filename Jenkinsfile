@@ -15,7 +15,6 @@ pipeline {
 
         stage("Checkout") {
             steps {
-                githubNotify status: "PENDING", description: "Build is starting..."
                 echo "Branch: ${env.BRANCH_NAME}"
                 checkout scm
             }
