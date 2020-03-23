@@ -11,6 +11,15 @@ from euphonic.data.phonon import PhononData
 from euphonic._readers import _castep
 
 
+class ImportCError(Exception):
+
+    def __init__(self, message):
+        self.message = message
+
+    def __str__(self):
+        return "ImportCError: {}".format(self.message)
+
+
 class InterpolationData(PhononData):
     """
     Extends PhononData. A class to read and store the data required for a
@@ -196,7 +205,7 @@ class InterpolationData(PhononData):
     def calculate_fine_phonons(
         self, qpts, asr=None, precondition=False, dipole=True,
             eta_scale=1.0, splitting=True, reduce_qpts=True, use_c=False,
-            n_threads=1):
+            n_threads=1, error_if_using_python=False):
         """
         Calculate phonon frequencies and eigenvectors at specified q-points
         from a supercell force constant matrix via interpolation. For more
@@ -367,9 +376,8 @@ class InterpolationData(PhononData):
                 except ImportError:
                     warnings.warn(('use_c=True is set, but the Euphonic\'s C '
                                    'extension couldn\'t be imported, it may '
-                                   'not have been installed. Falling back to '
-                                   'pure Python calculation'), stacklevel=2)
-                    print("Raise warning")
+                                   'not have been installed. Attempting to fall '
+                                   'back to pure Python calculation'), stacklevel=2)
                     raise
             else:
                 raise ImportError
@@ -399,19 +407,26 @@ class InterpolationData(PhononData):
                 reciprocal_asr, splitting, rfreqs, reigenvecs, split_freqs,
                 split_eigenvecs, split_i, n_threads, scipy.__path__[0])
         except ImportError:
-            q_independent_args = (
-                reduced_qpts, qpts_i, fc_img_weighted, unique_sc_offsets,
-                unique_sc_i, unique_cell_origins, unique_cell_i,
-                recip_asr_correction, dyn_mat_weighting, dipole, asr,
-                splitting)
-            for q in range(n_rqpts):
-                rfreqs[q], reigenvecs[q], sfreqs, sevecs, si = \
-                self._calculate_phonons_at_q(q, q_independent_args)
-                if len(sfreqs) > 0:
-                    split_i = np.concatenate((split_i, si))
-                    split_freqs = np.concatenate((split_freqs, sfreqs))
-                    split_eigenvecs = np.concatenate(
-                        (split_eigenvecs, sevecs))
+            if error_if_using_python:
+                raise ImportCError('use_c=True is set, but the Euphonic\'s C '
+                                   'extension couldn\'t be imported, it may '
+                                   'not have been installed. You have selected '
+                                   'not to fall back on Python, therefore we cannot '
+                                   'complete the calculation.')
+            else:
+                q_independent_args = (
+                    reduced_qpts, qpts_i, fc_img_weighted, unique_sc_offsets,
+                    unique_sc_i, unique_cell_origins, unique_cell_i,
+                    recip_asr_correction, dyn_mat_weighting, dipole, asr,
+                    splitting)
+                for q in range(n_rqpts):
+                    rfreqs[q], reigenvecs[q], sfreqs, sevecs, si = \
+                    self._calculate_phonons_at_q(q, q_independent_args)
+                    if len(sfreqs) > 0:
+                        split_i = np.concatenate((split_i, si))
+                        split_freqs = np.concatenate((split_freqs, sfreqs))
+                        split_eigenvecs = np.concatenate(
+                            (split_eigenvecs, sevecs))
 
         self.asr = asr
         self.dipole = dipole
