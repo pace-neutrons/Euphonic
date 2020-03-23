@@ -6,3 +6,4 @@ dist/
 euphonic.egg-info/
 .tox
 test/reports/
+static_code_analysis/reports/

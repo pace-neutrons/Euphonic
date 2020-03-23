@@ -51,7 +51,8 @@ pipeline {
                             conda create --name py python=3.6.0 -y &&
                             conda activate py &&
                             python -m pip install --upgrade --user pip &&
-                            python -m pip install tox &&
+                            python -m pip install tox=3.14.5 &&
+                            python -m pip install pylint=2.4.4 &&
                             export CC=gcc
                         """
                     }
@@ -65,7 +66,7 @@ pipeline {
                     if (isUnix()) {
                         sh """
                             module load conda/3 &&
-                            conda config --append channels free
+                            conda config --append channels free &&
                             conda activate py &&
                             python -m tox
                         """
@@ -74,11 +75,26 @@ pipeline {
             }
         }
 
+        stage("Static Code Analysis") {
+             script {
+                    if (isUnix()) {
+                        sh """
+                            module load conda/3 &&
+                            conda config --append channels free &&
+                            conda activate py &&
+                            python static_code_analysis/run_analysis.py
+                        """
+                    }
+                }
+        }
+
     }
 
     post {
         always {
             junit 'test/reports/**/*.xml'
+
+            recordIssues enabledForFailure: false, tool: pyLint(pattern: "static_code_analysis/reports/pylint_output.txt")
         }
 
         success {
