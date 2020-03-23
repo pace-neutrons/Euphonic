@@ -1,6 +1,6 @@
-import os
 import numpy as np
 from euphonic import ureg
+from euphonic.io import _obj_to_json_file, _obj_from_json_file
 from euphonic.util import _check_unit
 
 class Crystal(object):
@@ -24,10 +24,11 @@ class Crystal(object):
 
     def __init__(self, cell_vectors, n_atoms, atom_r, atom_type, atom_mass):
 
-        self._cell_vectors = cell_vectors.to(ureg.INTERNAL_LENGTH_UNIT).magnitude
+        self._cell_vectors = cell_vectors.to(
+            ureg.INTERNAL_LENGTH_UNIT).magnitude
         self.n_atoms = n_atoms
-        self.atom_r = atom_r
-        self.atom_type = atom_type
+        self.atom_r = np.array(atom_r)
+        self.atom_type = np.array(atom_type)
         self._atom_mass = atom_mass.to(ureg.INTERNAL_MASS_UNIT).magnitude
 
         self.cell_vectors_unit = str(cell_vectors.units)
@@ -88,9 +89,16 @@ class Crystal(object):
             'INTERNAL_MASS_UNIT').to(self.atom_mass_unit).magnitude
         return d
 
+    def to_json_file(self, filename):
+        _obj_to_json_file(self, filename)
+
     @classmethod
     def from_dict(cls, d):
         mu = d['atom_mass_unit']
         lu = d['cell_vectors_unit']
         return cls(d['cell_vectors']*ureg(lu), d['n_atoms'], d['atom_r'],
                    d['atom_type'], d['atom_mass']*ureg(mu))
+
+    @classmethod
+    def from_json_file(cls, filename):
+        return _obj_from_json_file(cls, filename)
