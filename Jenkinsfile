@@ -96,7 +96,39 @@ pipeline {
         always {
             junit 'test/reports/**/*.xml'
 
-            recordIssues enabledForFailure: false, tool: pyLint(pattern: "static_code_analysis/reports/pylint_output.txt")
+            step([
+                $class: 'ViolationsPublisher',
+                canComputeNew: false,
+                canResolveRelativePaths: false,
+                canRunOnFailed: false,
+                defaultEncoding: "",
+                failedNewAll: "",
+                failedNewHigh: "",
+                failedNewLow: "",
+                failedNewNormal: "",
+                failedTotalAll: "",
+                failedTotalHigh: "",
+                failedTotalLow: "",
+                failedTotalNormal: "",
+                healthy: "",
+                shouldDetectModules: false,
+                thresholdLimit: "",
+                unHealthy: "",
+                unstableNewAll: "",
+                unstableNewHigh: "",
+                unstableNewLow: "",
+                unstableNewNormal: "",
+                unstableTotalAll: "",
+                unstableTotalHigh: "",
+                unstableTotalLow: "",
+                unstableTotalNormal: "",
+                useDeltaValues: false,
+                usePreviousBuildAsReference: false,
+                useStableBuildAsReference: false,
+                violationConfigs: [
+                    [ pattern: 'static_code_analysis/reports/pylint_ouput.txt', parser: 'PYLINT', reporter: 'PyLint' ],
+                ]
+             ])
         }
 
         success {
