@@ -244,7 +244,7 @@ class InterpolationData(PhononData):
             applicable if use_c=True
         fall_back_on_python : boolean, optional, default True
             If we cannot use the C extension, fall back on using python if this
-            is true, else raise a ImportCError.
+            is true, else raise an ImportCError.
 
         Returns
         -------
