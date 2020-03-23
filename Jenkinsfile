@@ -76,7 +76,8 @@ pipeline {
         }
 
         stage("Static Code Analysis") {
-             script {
+            steps {
+                script {
                     if (isUnix()) {
                         sh """
                             module load conda/3 &&
@@ -86,6 +87,7 @@ pipeline {
                         """
                     }
                 }
+            }
         }
 
     }
