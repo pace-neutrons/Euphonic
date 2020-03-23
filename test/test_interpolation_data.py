@@ -348,13 +348,13 @@ class TestInterpolatePhononsLZO(unittest.TestCase):
                             atol=1e-10)
 
     def test_calculate_fine_phonons_no_asr_c(self):
-        self.data.calculate_fine_phonons(self.qpts, use_c=True, error_if_using_python=True)
+        self.data.calculate_fine_phonons(self.qpts, use_c=True, fall_back_on_python=False)
         npt.assert_allclose(self.data.freqs.to('hartree').magnitude,
                             self.expctd_freqs_no_asr.to('hartree').magnitude,
                             atol=1e-10)
 
     def test_calculate_fine_phonons_no_asr_c_2threads(self):
-        self.data.calculate_fine_phonons(self.qpts, use_c=True, n_threads=2, error_if_using_python=True)
+        self.data.calculate_fine_phonons(self.qpts, use_c=True, n_threads=2, fall_back_on_python=False)
         npt.assert_allclose(self.data.freqs.to('hartree').magnitude,
                             self.expctd_freqs_no_asr.to('hartree').magnitude,
                             atol=1e-10)
@@ -366,14 +366,14 @@ class TestInterpolatePhononsLZO(unittest.TestCase):
                             atol=1e-10)
 
     def test_calculate_fine_phonons_realspace_asr_c(self):
-        self.data.calculate_fine_phonons(self.qpts, asr='realspace', use_c=True, error_if_using_python=True)
+        self.data.calculate_fine_phonons(self.qpts, asr='realspace', use_c=True, fall_back_on_python=False)
         npt.assert_allclose(self.data.freqs.to('hartree').magnitude,
                             self.expctd_freqs_asr.to('hartree').magnitude,
                             atol=1e-10)
 
     def test_calculate_fine_phonons_realspace_asr_c_2threads(self):
         self.data.calculate_fine_phonons(self.qpts, asr='realspace',
-                                         use_c=True, n_threads=2, error_if_using_python=True)
+                                         use_c=True, n_threads=2, fall_back_on_python=False)
         npt.assert_allclose(self.data.freqs.to('hartree').magnitude,
                             self.expctd_freqs_asr.to('hartree').magnitude,
                             atol=1e-10)
@@ -647,13 +647,13 @@ class TestInterpolatePhononsGraphite(unittest.TestCase):
                             atol=1e-10)
 
     def test_calculate_fine_phonons_no_asr_c(self):
-        self.data.calculate_fine_phonons(self.qpts, use_c=True, error_if_using_python=True)
+        self.data.calculate_fine_phonons(self.qpts, use_c=True, fall_back_on_python=False)
         npt.assert_allclose(self.data.freqs.to('hartree').magnitude,
                             self.expctd_freqs_no_asr.to('hartree').magnitude,
                             atol=1e-10)
 
     def test_calculate_fine_phonons_no_asr_c_2threads(self):
-        self.data.calculate_fine_phonons(self.qpts, use_c=True, n_threads=2, error_if_using_python=True)
+        self.data.calculate_fine_phonons(self.qpts, use_c=True, n_threads=2, fall_back_on_python=False)
         npt.assert_allclose(self.data.freqs.to('hartree').magnitude,
                             self.expctd_freqs_no_asr.to('hartree').magnitude,
                             atol=1e-10)
@@ -666,14 +666,14 @@ class TestInterpolatePhononsGraphite(unittest.TestCase):
 
     def test_calculate_fine_phonons_realspace_asr_c(self):
         self.data.calculate_fine_phonons(self.qpts, asr='realspace',
-                                         use_c=True, error_if_using_python=True)
+                                         use_c=True, fall_back_on_python=False)
         npt.assert_allclose(self.data.freqs.to('hartree').magnitude,
                             self.expctd_freqs_asr.to('hartree').magnitude,
                             atol=1e-10)
 
     def test_calculate_fine_phonons_realspace_asr_c_2threads(self):
         self.data.calculate_fine_phonons(self.qpts, asr='realspace',
-                                         use_c=True, n_threads=2, error_if_using_python=True)
+                                         use_c=True, n_threads=2, fall_back_on_python=False)
         npt.assert_allclose(self.data.freqs.to('hartree').magnitude,
                             self.expctd_freqs_asr.to('hartree').magnitude,
                             atol=1e-10)
@@ -1001,7 +1001,7 @@ class TestInterpolatePhononsQuartz(unittest.TestCase):
 
     def test_calculate_fine_phonons_dipole_no_asr_c(self):
         self.data.calculate_fine_phonons(
-            self.qpts, dipole=True, splitting=False, use_c=True, error_if_using_python=True)
+            self.qpts, dipole=True, splitting=False, use_c=True, fall_back_on_python=False)
         npt.assert_allclose(
             self.data.freqs.to('hartree').magnitude,
             self.expctd_freqs_no_asr.to('hartree').magnitude,
@@ -1009,7 +1009,7 @@ class TestInterpolatePhononsQuartz(unittest.TestCase):
 
     def test_calculate_fine_phonons_dipole_no_asr_c_2threads(self):
         self.data.calculate_fine_phonons(
-            self.qpts, dipole=True, splitting=False, use_c=True, n_threads=2, error_if_using_python=True)
+            self.qpts, dipole=True, splitting=False, use_c=True, n_threads=2, fall_back_on_python=False)
         npt.assert_allclose(
             self.data.freqs.to('hartree').magnitude,
             self.expctd_freqs_no_asr.to('hartree').magnitude,
@@ -1026,7 +1026,7 @@ class TestInterpolatePhononsQuartz(unittest.TestCase):
     def test_calculate_fine_phonons_dipole_recip_asr_c(self):
         self.data.calculate_fine_phonons(
             self.qpts, asr='reciprocal', dipole=True, splitting=False,
-            use_c=True, error_if_using_python=True)
+            use_c=True, fall_back_on_python=False)
         npt.assert_allclose(
             self.data.freqs.to('hartree').magnitude,
             self.expctd_freqs_asr.to('hartree').magnitude,
@@ -1035,7 +1035,7 @@ class TestInterpolatePhononsQuartz(unittest.TestCase):
     def test_calculate_fine_phonons_dipole_recip_asr_c_2threads(self):
         self.data.calculate_fine_phonons(
             self.qpts, asr='reciprocal', dipole=True, splitting=False,
-            use_c=True, n_threads=2, error_if_using_python=True)
+            use_c=True, n_threads=2, fall_back_on_python=False)
         npt.assert_allclose(
             self.data.freqs.to('hartree').magnitude,
             self.expctd_freqs_asr.to('hartree').magnitude,
@@ -1057,7 +1057,7 @@ class TestInterpolatePhononsQuartz(unittest.TestCase):
     def test_calculate_fine_phonons_dipole_recip_asr_split_c(self):
         self.data.calculate_fine_phonons(
             self.split_qpts, asr='reciprocal', dipole=True, splitting=True,
-            use_c=True, error_if_using_python=True)
+            use_c=True, fall_back_on_python=False)
         npt.assert_array_equal(self.data.split_i, self.expctd_split_i)
         npt.assert_allclose(
             self.data.freqs.to('hartree').magnitude,
@@ -1071,7 +1071,7 @@ class TestInterpolatePhononsQuartz(unittest.TestCase):
     def test_calculate_fine_phonons_dipole_recip_asr_split_c_2threads(self):
         self.data.calculate_fine_phonons(
             self.split_qpts, asr='reciprocal', dipole=True, splitting=True,
-            use_c=True, n_threads=2, error_if_using_python=True)
+            use_c=True, n_threads=2, fall_back_on_python=False)
         npt.assert_array_equal(self.data.split_i, self.expctd_split_i)
         npt.assert_allclose(
             self.data.freqs.to('hartree').magnitude,

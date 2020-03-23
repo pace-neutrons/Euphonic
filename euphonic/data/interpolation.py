@@ -205,7 +205,7 @@ class InterpolationData(PhononData):
     def calculate_fine_phonons(
         self, qpts, asr=None, precondition=False, dipole=True,
             eta_scale=1.0, splitting=True, reduce_qpts=True, use_c=False,
-            n_threads=1, error_if_using_python=False):
+            n_threads=1, fall_back_on_python=True):
         """
         Calculate phonon frequencies and eigenvectors at specified q-points
         from a supercell force constant matrix via interpolation. For more
@@ -242,6 +242,9 @@ class InterpolationData(PhononData):
         n_threads : int, optional, default 1
             The number of threads to use when looping over q-points in C. Only
             applicable if use_c=True
+        fall_back_on_python : boolean, optional, default True
+            If we cannot use the C extension, fall back on using python if this
+            is true, else raise a ImportCError.
 
         Returns
         -------
@@ -250,6 +253,11 @@ class InterpolationData(PhononData):
         eigenvecs : (n_qpts, 3*n_ions, n_ions, 3) complex ndarray
             The phonon eigenvectors (same as set to
             InterpolationData.eigenvecs)
+
+        Raises
+        ------
+        ImportCError: If we have selected not to fall back on Python and cannot
+            use the C extension.
         """
 
         # Reset obj freqs/eigenvecs to zero to reduce memory usage in case of
@@ -407,7 +415,7 @@ class InterpolationData(PhononData):
                 reciprocal_asr, splitting, rfreqs, reigenvecs, split_freqs,
                 split_eigenvecs, split_i, n_threads, scipy.__path__[0])
         except ImportError:
-            if error_if_using_python:
+            if not fall_back_on_python:
                 raise ImportCError('use_c=True is set, but the Euphonic\'s C '
                                    'extension couldn\'t be imported, it may '
                                    'not have been installed. You have selected '
