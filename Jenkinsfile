@@ -86,6 +86,8 @@ pipeline {
                             python static_code_analysis/run_analysis.py
                         """
                     }
+                    def pylint_issues = scanForIssues tool: pyLint(pattern: "**/static_code_analysis/reports/pylint_output.txt")
+                    publishIssues issues: [pylint_issues]
                 }
             }
         }
@@ -95,9 +97,6 @@ pipeline {
     post {
         always {
             junit 'test/reports/**/*.xml'
-
-            def pylint_issues = scanForIssues tool: pyLint(pattern: "static_code_analysis/reports/pylint_output.txt")
-            publishIssues issues: [pylint_issues]
         }
 
         success {
