@@ -2,6 +2,7 @@ import os
 import unittest
 import numpy.testing as npt
 import numpy as np
+from parameterized import parameterized
 from euphonic.data.interpolation import InterpolationData
 from euphonic.data.phonon import PhononData
 
@@ -211,9 +212,10 @@ class TestReorderFreqsLZO(unittest.TestCase):
         npt.assert_allclose(reordered_freqs,
                             self.expected_reordered_freqs, atol=0.02)
 
-    def test_reorder_freqs_interpolation_data_c(self):
+    @parameterized.expand([(True,), (False,)])
+    def test_reorder_freqs_interpolation_data_c(self, test_c: bool):
         self.idata.calculate_fine_phonons(self.pdata.qpts, asr='realspace',
-                                          use_c=True, fall_back_on_python=False)
+                                          use_c=test_c, fall_back_on_python=not test_c)
         self.idata.reorder_freqs()
         freqs = self.idata.freqs.magnitude
         reordered_freqs = freqs[np.arange(len(freqs))[:, np.newaxis],
@@ -223,9 +225,10 @@ class TestReorderFreqsLZO(unittest.TestCase):
         npt.assert_allclose(reordered_freqs,
                             self.expected_reordered_freqs, atol=0.02)
 
-    def test_reorder_freqs_interpolation_data_c_2threads(self):
+    @parameterized.expand([(True,), (False,)])
+    def test_reorder_freqs_interpolation_data_c_2threads(self, test_c: bool):
         self.idata.calculate_fine_phonons(self.pdata.qpts, asr='realspace',
-                                          use_c=True, n_threads=2, fall_back_on_python=False)
+                                          use_c=test_c, n_threads=2, fall_back_on_python=not test_c)
         self.idata.reorder_freqs()
         freqs = self.idata.freqs.magnitude
         reordered_freqs = freqs[np.arange(len(freqs))[:, np.newaxis],
