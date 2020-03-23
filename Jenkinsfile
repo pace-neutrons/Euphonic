@@ -96,7 +96,8 @@ pipeline {
         always {
             junit 'test/reports/**/*.xml'
 
-            recordIssues enabledForFailure: false, tool: pyLint(pattern: "static_code_analysis/reports/pylint_output.txt")
+            def pylint_issues = scanForIssues tool: pyLint(pattern: "static_code_analysis/reports/pylint_output.txt")
+            publishIssues issues: [pylint_issues]
         }
 
         success {
