@@ -4,7 +4,7 @@ import math
 import numpy as np
 import numpy.testing as npt
 from euphonic.util import reciprocal_lattice, direction_changed, mp_grid
-from tests_and_analysis.test.utils import get_data_path
+from .utils import get_data_path
 
 
 class TestReciprocalLattice(unittest.TestCase):

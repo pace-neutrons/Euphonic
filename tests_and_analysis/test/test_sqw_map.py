@@ -9,7 +9,7 @@ except ImportError:
     import mock
 from euphonic.data.phonon import PhononData
 from euphonic.data.interpolation import InterpolationData
-from tests_and_analysis.test.utils import get_data_path
+from .utils import get_data_path
 
 
 class TestSqwMapPhononDataLZO(unittest.TestCase):

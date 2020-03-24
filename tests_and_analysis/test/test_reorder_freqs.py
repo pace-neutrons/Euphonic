@@ -4,7 +4,7 @@ import numpy.testing as npt
 import numpy as np
 from euphonic.data.interpolation import InterpolationData
 from euphonic.data.phonon import PhononData
-from tests_and_analysis.test.utils import get_data_path
+from .utils import get_data_path
 
 
 class TestReorderFreqsNaH(unittest.TestCase):

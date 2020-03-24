@@ -1,19 +1,13 @@
 import sys
 import os
-import unittest
-import xmlrunner
+import pytest
 
 if __name__ == "__main__":
 
-    # Discover tests
+    # Set output directory to the reports directory under this file's directory
     test_dir = os.path.dirname(os.path.abspath(__file__))
-    os.chdir(test_dir)
-    test_suite = unittest.TestLoader().discover(test_dir, pattern="test_*.py")
-
-    # Set output directory and run tests
-    high_verbosity = 2
-    xml_dir = os.path.join(test_dir, "reports")
-    ret_vals = xmlrunner.XMLTestRunner(output=xml_dir, verbosity=high_verbosity).run(test_suite)
+    xml_filepath = os.path.join(test_dir, "reports", "junit_report.xml")
+    test_exit_code = pytest.main(["-x", test_dir, "--junitxml={}".format(xml_filepath)])
 
     # Exit with a failure code if there are any errors or failures
-    sys.exit(bool(ret_vals.errors or ret_vals.failures))
+    sys.exit(test_exit_code)

@@ -4,7 +4,7 @@ import numpy.testing as npt
 import numpy as np
 from euphonic import ureg
 from euphonic.data.interpolation import InterpolationData
-from tests_and_analysis.test.utils import get_data_path
+from .utils import get_data_path
 
 
 class TestInputReadLZO(unittest.TestCase):
