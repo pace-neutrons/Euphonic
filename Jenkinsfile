@@ -52,7 +52,6 @@ pipeline {
                             conda activate py &&
                             python -m pip install --upgrade --user pip &&
                             python -m pip install tox &&
-                            python -m pip install coverage==5.0.4 &&
                             export CC=gcc
                         """
                     }
