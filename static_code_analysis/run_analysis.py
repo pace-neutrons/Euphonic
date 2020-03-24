@@ -1,7 +1,7 @@
 # Attributes to: https://stackoverflow.com/questions/2028268/invoking-pylint-programmatically
 
 from pylint import lint
-from pylint.reporters.text import TextReporter
+from pylint.reporters.text import ParseableTextReporter
 import os
 import sys
 
@@ -59,7 +59,7 @@ if __name__ == "__main__":
     pylint_output = LintOutput()
 
     # Run the linting
-    run = lint.Run(files_and_dirs+pylint_options, reporter=TextReporter(pylint_output), do_exit=False)
+    run = lint.Run(files_and_dirs+pylint_options, reporter=ParseableTextReporter(pylint_output), do_exit=False)
 
     # Write the lint output to file
     os.makedirs("reports", exist_ok=True)
