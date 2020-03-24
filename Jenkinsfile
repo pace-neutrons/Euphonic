@@ -51,6 +51,8 @@ pipeline {
                             conda create --name py python=3.6.0 -y &&
                             conda activate py &&
                             python -m pip install --upgrade --user pip &&
+                            python -m pip install numpy &&
+                            python -m pip install matplotlib &&
                             python -m pip install tox==3.14.5 &&
                             python -m pip install pylint==2.4.4 &&
                             export CC=gcc
