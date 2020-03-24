@@ -11,6 +11,14 @@
   - Fix issue saving plots to file with dispersion.py, see
     `#27 <https://github.com/pace-neutrons/Euphonic/issues/27>`_
 
+- Improvements:
+
+  - Add ``fall_back_on_python`` boolean keyword argument to
+    ``interpolation.InterpolationData.calculate_fine_phonons`` to control
+    whether the Python implementation is used as a fallback to the C
+    extension or not, see
+    `#35 <https://github.com/pace-neutrons/Euphonic/issues/35>`_
+
 `v0.2.2 <https://github.com/pace-neutrons/Euphonic/compare/v0.2.1...v0.2.2>`_
 ------
 
