@@ -4,6 +4,7 @@ import numpy.testing as npt
 import numpy as np
 from euphonic import ureg
 from euphonic.data.interpolation import InterpolationData
+from tests_and_analysis.test.utils import get_data_path
 
 
 class TestInputReadLZO(unittest.TestCase):
@@ -71,7 +72,7 @@ class TestInputReadLZO(unittest.TestCase):
         self.expctd_data = expctd_data
 
         self.seedname = 'La2Zr2O7'
-        self.path = os.path.join('data', 'interpolation', 'LZO')
+        self.path = os.path.join(get_data_path(), 'interpolation', 'LZO')
         data = InterpolationData.from_castep(self.seedname, path=self.path)
         self.data = data
 
@@ -122,7 +123,7 @@ class TestInterpolatePhononsLZO(unittest.TestCase):
 
     def setUp(self):
         seedname = 'La2Zr2O7'
-        self.path = os.path.join('data', 'interpolation', 'LZO')
+        self.path = os.path.join(get_data_path(), 'interpolation', 'LZO')
         data = InterpolationData.from_castep(seedname, path=self.path)
         self.data = data
 
@@ -437,7 +438,7 @@ class TestInputReadGraphite(unittest.TestCase):
         self.expctd_data = expctd_data
 
         self.seedname = 'graphite'
-        self.path = os.path.join('data', 'interpolation', 'graphite')
+        self.path = os.path.join(get_data_path(), 'interpolation', 'graphite')
         data = InterpolationData.from_castep(self.seedname, path=self.path)
         self.data = data
 
@@ -491,7 +492,7 @@ class TestInterpolatePhononsGraphite(unittest.TestCase):
 
     def setUp(self):
         seedname = 'graphite'
-        self.path = os.path.join('data', 'interpolation', 'graphite')
+        self.path = os.path.join(get_data_path(), 'interpolation', 'graphite')
         self.n_ions = 4
         self.n_cells_in_sc = 98
         self.qpts = np.array([[0.00, 0.00, 0.00],
@@ -780,7 +781,7 @@ class TestInputReadQuartz(unittest.TestCase):
         self.expctd_data = expctd_data
 
         self.seedname = 'quartz'
-        self.path = os.path.join('data', 'interpolation', 'quartz')
+        self.path = os.path.join(get_data_path(), 'interpolation', 'quartz')
         data = InterpolationData.from_castep(self.seedname, path=self.path)
         self.data = data
 
@@ -842,7 +843,7 @@ class TestInterpolatePhononsQuartz(unittest.TestCase):
 
     def setUp(self):
         seedname = 'quartz'
-        self.path = os.path.join('data', 'interpolation', 'quartz')
+        self.path = os.path.join(get_data_path(), 'interpolation', 'quartz')
         self.qpts = np.array([[0.00, 0.00, 0.00],
                               [0.00, 0.00, 0.50],
                               [-0.25, 0.50, 0.50],

@@ -3,6 +3,7 @@ import numpy.testing as npt
 import numpy as np
 from euphonic.data.bands import BandsData
 from euphonic import ureg
+from tests_and_analysis.test.utils import get_data_path
 
 
 class TestBandsDataNaH(unittest.TestCase):
@@ -35,7 +36,7 @@ class TestBandsDataNaH(unittest.TestCase):
         self.expctd_data = expctd_data
 
         seedname = 'NaH'
-        path = 'data'
+        path = get_data_path()
         data = BandsData.from_castep(seedname, path=path)
         self.data = data
 
@@ -104,7 +105,7 @@ class TestBandsDataFe(unittest.TestCase):
         self.expctd_data = expctd_data
 
         seedname = 'Fe'
-        path = 'data'
+        path = get_data_path()
         data = BandsData.from_castep(seedname, path=path)
         self.data = data
 

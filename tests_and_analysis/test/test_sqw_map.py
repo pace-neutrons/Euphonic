@@ -9,16 +9,17 @@ except ImportError:
     import mock
 from euphonic.data.phonon import PhononData
 from euphonic.data.interpolation import InterpolationData
+from tests_and_analysis.test.utils import get_data_path
 
 
 class TestSqwMapPhononDataLZO(unittest.TestCase):
 
     def setUp(self):
         seedname = 'La2Zr2O7'
-        phonon_path = 'data'
-        self.sqw_path = os.path.join('data', 'sqw_map')
-        self.sf_path = os.path.join('data', 'structure_factor', 'LZO')
-        self.data = PhononData.from_castep(seedname, path=phonon_path)
+        data_path = get_data_path()
+        self.sqw_path = os.path.join(data_path, 'sqw_map')
+        self.sf_path = os.path.join(data_path, 'structure_factor', 'LZO')
+        self.data = PhononData.from_castep(seedname, path=data_path)
         self.scattering_lengths = {'La': 8.24, 'Zr': 7.16, 'O': 5.803}
         self.ebins = np.arange(0, 100, 1.)
 
@@ -63,14 +64,14 @@ class TestSqwMapPhononDataLZO(unittest.TestCase):
 
 class TestSqwMapInterpolationDataLZOSerial(unittest.TestCase):
 
-    sf_path = os.path.join('data', 'structure_factor', 'LZO')
+    sf_path = os.path.join(get_data_path(), 'structure_factor', 'LZO')
 
     def setUp(self):
         self.seedname = 'La2Zr2O7'
-        phonon_path = 'data'
-        self.interpolation_path = os.path.join('data', 'interpolation', 'LZO')
-        self.sqw_path = os.path.join('data', 'sqw_map')
-        pdata = PhononData.from_castep(self.seedname, path=phonon_path)
+        data_path = get_data_path()
+        self.interpolation_path = os.path.join(data_path, 'interpolation', 'LZO')
+        self.sqw_path = os.path.join(data_path, 'sqw_map')
+        pdata = PhononData.from_castep(self.seedname, path=data_path)
         self.data = InterpolationData.from_castep(
             self.seedname, path=self.interpolation_path)
         self.data.calculate_fine_phonons(pdata.qpts, asr='realspace')
@@ -122,10 +123,10 @@ class TestSqwMapInterpolationDataLZOSerialC(
 
     def setUp(self):
         self.seedname = 'La2Zr2O7'
-        phonon_path = 'data'
-        self.interpolation_path = os.path.join('data', 'interpolation', 'LZO')
-        self.sqw_path = os.path.join('data', 'sqw_map')
-        pdata = PhononData.from_castep(self.seedname, path=phonon_path)
+        data_path = get_data_path()
+        self.interpolation_path = os.path.join(data_path, 'interpolation', 'LZO')
+        self.sqw_path = os.path.join(data_path, 'sqw_map')
+        pdata = PhononData.from_castep(self.seedname, path=data_path)
         self.data = InterpolationData.from_castep(
             self.seedname, path=self.interpolation_path)
         self.data.calculate_fine_phonons(pdata.qpts, asr='realspace',
@@ -138,10 +139,10 @@ class TestSqwMapInterpolationDataLZOParallelC(
 
     def setUp(self):
         self.seedname = 'La2Zr2O7'
-        phonon_path = 'data/'
-        self.interpolation_path = os.path.join('data', 'interpolation', 'LZO')
-        self.sqw_path = os.path.join('data', 'sqw_map')
-        pdata = PhononData.from_castep(self.seedname, path=phonon_path)
+        data_path = get_data_path()
+        self.interpolation_path = os.path.join(data_path, 'interpolation', 'LZO')
+        self.sqw_path = os.path.join(data_path, 'sqw_map')
+        pdata = PhononData.from_castep(self.seedname, path=data_path)
         self.data = InterpolationData.from_castep(
             self.seedname, path=self.interpolation_path)
         self.data.calculate_fine_phonons(pdata.qpts, asr='realspace',

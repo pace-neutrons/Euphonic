@@ -4,14 +4,17 @@ import numpy as np
 import numpy.testing as npt
 from euphonic.data.phonon import PhononData
 from euphonic.data.interpolation import InterpolationData
+from tests_and_analysis.test.utils import get_data_path
+
 
 class TestDWFactorLZO(unittest.TestCase):
 
     def setUp(self):
         seedname = 'La2Zr2O7-grid'
-        path = os.path.join('data', 'structure_factor', 'LZO')
+        data_path = get_data_path()
+        path = os.path.join(data_path, 'structure_factor', 'LZO')
         self.data = PhononData.from_castep(seedname, path=path)
-        self.dw_path = os.path.join('data','dw_factor', 'LZO')
+        self.dw_path = os.path.join(data_path, 'dw_factor', 'LZO')
 
     def test_dw_T5(self):
         dw = self.data._dw_coeff(5)
@@ -27,15 +30,17 @@ class TestDWFactorLZO(unittest.TestCase):
             (self.data.n_ions, 3, 3))
         npt.assert_allclose(dw, expected_dw, rtol=5e-7)
 
+
 class TestDWFactorQuartz(unittest.TestCase):
 
     def setUp(self):
         self.seedname = 'quartz'
-        self.path = os.path.join('data', 'interpolation', 'quartz')
+        data_path = get_data_path()
+        self.path = os.path.join(data_path, 'interpolation', 'quartz')
         self.data = InterpolationData.from_castep(self.seedname, path=self.path)
-        qpts = np.loadtxt(os.path.join('data', 'qgrid_444.txt'))
+        qpts = np.loadtxt(os.path.join(data_path, 'qgrid_444.txt'))
         self.data.calculate_fine_phonons(qpts, asr='reciprocal')
-        self.dw_path = os.path.join('data', 'dw_factor', 'quartz')
+        self.dw_path = os.path.join(data_path, 'dw_factor', 'quartz')
 
     def test_dw_T5(self):
         dw = self.data._dw_coeff(5)
