@@ -65,9 +65,27 @@ pipeline {
                     if (isUnix()) {
                         sh """
                             module load conda/3 &&
-                            conda config --append channels free
+                            conda config --append channels free &&
                             conda activate py &&
                             python -m tox
+                        """
+                    }
+                }
+            }
+        }
+
+        stage("PyPI Release Testing") {
+            when { tag "*" }
+            steps {
+                script {
+                    if (isUnix()) {
+                        sh """
+                            rm -rf .tox &&
+                            module load conda/3 &&
+                            conda config --append channels free &&
+                            conda activate py &&
+                            export EUPHONIC_VERSION="\$(python euphonic/get_version.py)" &&
+                            python -m tox -c release_tox.ini
                         """
                     }
                 }
