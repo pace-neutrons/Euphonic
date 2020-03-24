@@ -21,7 +21,6 @@ class LintOutput(object):
         string : str
             The string to write to the output
         """
-        print(string)
         self.content.append(string)
 
     def read(self):
@@ -65,6 +64,10 @@ if __name__ == "__main__":
     # Write the lint output to file
     os.makedirs("reports", exist_ok=True)
     pylint_output.write_to_file("reports/pylint_output.txt")
+
+    with open("reports/pylint_output.txt") as f:
+        for line in f.readlines():
+            print(line)
 
     # Move back to original directory
     os.chdir(original_cwd)
