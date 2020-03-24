@@ -83,10 +83,10 @@ pipeline {
                             module load conda/3 &&
                             conda config --append channels free &&
                             conda activate py &&
-                            python static_code_analysis/run_analysis.py
+                            python tests_and_analysis/static_code_analysis/run_analysis.py
                         """
                     }
-                    def pylint_issues = scanForIssues tool: pyLint(pattern: "static_code_analysis/reports/pylint_output.txt")
+                    def pylint_issues = scanForIssues tool: pyLint(pattern: "tests_and_analysis/static_code_analysis/reports/pylint_output.txt")
                     publishIssues issues: [pylint_issues]
                 }
             }
@@ -96,7 +96,7 @@ pipeline {
 
     post {
         always {
-            junit 'test/reports/**/*.xml'
+            junit 'tests_and_analysis/test/reports/**/*.xml'
         }
 
         success {

@@ -52,7 +52,7 @@ if __name__ == "__main__":
     pylint_options = ["-r", "n", "--rcfile=.pylintrc"]
 
     # The files and directories to lint
-    files_and_dirs = list(map(lambda file_or_dir: "../{}".format(file_or_dir),
+    files_and_dirs = list(map(lambda file_or_dir: "../../{}".format(file_or_dir),
                               ["euphonic", "scripts", "release.py", "setup.py"]))
 
     # Object to write pylint output to
