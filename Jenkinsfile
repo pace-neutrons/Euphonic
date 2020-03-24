@@ -51,7 +51,10 @@ pipeline {
                             conda create --name py python=3.6.0 -y &&
                             conda activate py &&
                             python -m pip install --upgrade --user pip &&
-                            python -m pip install tox &&
+                            python -m pip install numpy &&
+                            python -m pip install matplotlib &&
+                            python -m pip install tox==3.14.5 &&
+                            python -m pip install pylint==2.4.4 &&
                             export CC=gcc
                         """
                     }
@@ -92,11 +95,28 @@ pipeline {
             }
         }
 
+	stage("Static Code Analysis") {
+            steps {
+                script {
+                    if (isUnix()) {
+                        sh """
+                            module load conda/3 &&
+                            conda config --append channels free &&
+                            conda activate py &&
+                            python tests_and_analysis/static_code_analysis/run_analysis.py
+                        """
+                    }
+                    def pylint_issues = scanForIssues tool: pyLint(pattern: "tests_and_analysis/static_code_analysis/reports/pylint_output.txt")
+                    publishIssues issues: [pylint_issues]
+                }
+            }
+        }
+
     }
 
     post {
         always {
-            junit 'test/reports/**/*.xml'
+            junit 'tests_and_analysis/test/reports/**/*.xml'
         }
 
         success {
