@@ -213,7 +213,7 @@ class TestReorderFreqsLZO(unittest.TestCase):
 
     def test_reorder_freqs_interpolation_data_c(self):
         self.idata.calculate_fine_phonons(self.pdata.qpts, asr='realspace',
-                                          use_c=True)
+                                          use_c=True, fall_back_on_python=False)
         self.idata.reorder_freqs()
         freqs = self.idata.freqs.magnitude
         reordered_freqs = freqs[np.arange(len(freqs))[:, np.newaxis],
@@ -225,7 +225,7 @@ class TestReorderFreqsLZO(unittest.TestCase):
 
     def test_reorder_freqs_interpolation_data_c_2threads(self):
         self.idata.calculate_fine_phonons(self.pdata.qpts, asr='realspace',
-                                          use_c=True, n_threads=2)
+                                          use_c=True, n_threads=2, fall_back_on_python=False)
         self.idata.reorder_freqs()
         freqs = self.idata.freqs.magnitude
         reordered_freqs = freqs[np.arange(len(freqs))[:, np.newaxis],
