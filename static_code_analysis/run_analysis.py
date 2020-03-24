@@ -65,10 +65,6 @@ if __name__ == "__main__":
     os.makedirs("reports", exist_ok=True)
     pylint_output.write_to_file("reports/pylint_output.txt")
 
-    with open("reports/pylint_output.txt") as f:
-        for line in f.readlines():
-            print(line)
-
     # Move back to original directory
     os.chdir(original_cwd)
 
