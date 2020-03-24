@@ -247,14 +247,14 @@ class TestStructureFactorInterpolationDataLZOSerialC(
 
         self.data = InterpolationData.from_castep(
             self.seedname, path=self.interpolation_path)
-        self.data.calculate_fine_phonons(qpts, asr='realspace', use_c=True)
+        self.data.calculate_fine_phonons(qpts, asr='realspace', use_c=True, fall_back_on_python=False)
 
         # InterpolationData object for DW grid
         self.dw_idata = InterpolationData.from_castep(
             self.seedname, path=self.interpolation_path)
         self.dw_idata.calculate_fine_phonons(
             np.loadtxt(os.path.join('data', 'qgrid_444.txt')), asr='realspace',
-            use_c=True)
+            use_c=True, fall_back_on_python=False)
 
         # PhononData object for DW grid
         self.dw_pdata = PhononData.from_castep(
@@ -276,14 +276,14 @@ class TestStructureFactorInterpolationDataLZOParallelC(
         self.data = InterpolationData.from_castep(
             self.seedname, path=self.interpolation_path)
         self.data.calculate_fine_phonons(qpts, asr='realspace', use_c=True,
-                                         n_threads=2)
+                                         n_threads=2, fall_back_on_python=False)
 
         # InterpolationData object for DW grid
         self.dw_idata = InterpolationData.from_castep(
             self.seedname, path=self.interpolation_path)
         self.dw_idata.calculate_fine_phonons(
             np.loadtxt(os.path.join('data', 'qgrid_444.txt')), asr='realspace',
-            use_c=True)
+            use_c=True, fall_back_on_python=False)
 
         # PhononData object for DW grid
         self.dw_pdata = PhononData.from_castep(
@@ -428,7 +428,7 @@ class TestStructureFactorInterpolationDataQuartzSerialC(
 
         self.data = InterpolationData.from_castep(
             self.seedname, path=self.interpolation_path)
-        self.data.calculate_fine_phonons(qpts, asr='reciprocal', use_c=True)
+        self.data.calculate_fine_phonons(qpts, asr='reciprocal', use_c=True, fall_back_on_python=False)
 
         # InterpolationData object for DW grid
         self.dw_data = InterpolationData.from_castep(
@@ -451,7 +451,7 @@ class TestStructureFactorInterpolationDataQuartzParallelC(
         self.data = InterpolationData.from_castep(
             self.seedname, path=self.interpolation_path)
         self.data.calculate_fine_phonons(qpts, asr='reciprocal', use_c=True,
-                                         n_threads=2)
+                                         n_threads=2, fall_back_on_python=False)
 
         # InterpolationData object for DW grid
         self.dw_data = InterpolationData.from_castep(
