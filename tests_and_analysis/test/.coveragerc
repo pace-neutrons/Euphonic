@@ -1,0 +1,8 @@
+[run]
+branch = True
+source =
+    euphonic
+    scripts
+
+[xml]
+output = coverage_reports/coverage.xml

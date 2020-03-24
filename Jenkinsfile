@@ -52,6 +52,7 @@ pipeline {
                             conda activate py &&
                             python -m pip install --upgrade --user pip &&
                             python -m pip install tox &&
+                            python -m pip install coverage==5.0.4 &&
                             export CC=gcc
                         """
                     }
@@ -65,7 +66,7 @@ pipeline {
                     if (isUnix()) {
                         sh """
                             module load conda/3 &&
-                            conda config --append channels free
+                            conda config --append channels free &&
                             conda activate py &&
                             python -m tox
                         """
@@ -78,7 +79,9 @@ pipeline {
 
     post {
         always {
-            junit 'test/reports/**/*.xml'
+            junit 'tests_and_analysis/test/reports/**/*.xml'
+
+            publishCoverage adapters: [corbeturaAdapter('tests_and_analysis/test/coverage_reports/coverage.xml')]
         }
 
         success {

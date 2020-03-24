@@ -5,4 +5,6 @@ build/
 dist/
 euphonic.egg-info/
 .tox
-test/reports/
+tests_and_analysis/test/test_reports/
+tests_and_analysis/test/coverage_reports/
+.coverage
