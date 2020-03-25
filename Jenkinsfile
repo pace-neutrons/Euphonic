@@ -80,7 +80,7 @@ pipeline {
         always {
             junit 'tests_and_analysis/test/test_reports/**/*.xml'
 
-            publishCoverage adapters: [corbeturaAdapter('tests_and_analysis/test/coverage_reports/coverage.xml')]
+            publishCoverage adapters: [coberturaAdapter('tests_and_analysis/test/coverage_reports/coverage.xml')]
         }
 
         success {
