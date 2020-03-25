@@ -5,4 +5,4 @@ source =
     scripts
 
 [xml]
-output = coverage_reports/coverage.xml
+output = reports/coverage.xml
