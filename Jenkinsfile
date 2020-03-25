@@ -51,7 +51,10 @@ pipeline {
                             conda create --name py python=3.6.0 -y &&
                             conda activate py &&
                             python -m pip install --upgrade --user pip &&
-                            python -m pip install tox &&
+                            python -m pip install numpy &&
+                            python -m pip install matplotlib &&
+                            python -m pip install tox==3.14.5 &&
+                            python -m pip install pylint==2.4.4 &&
                             export CC=gcc
                         """
                     }
@@ -74,11 +77,46 @@ pipeline {
             }
         }
 
+        stage("PyPI Release Testing") {
+            when { tag "*" }
+            steps {
+                script {
+                    if (isUnix()) {
+                        sh """
+                            rm -rf .tox &&
+                            module load conda/3 &&
+                            conda config --append channels free &&
+                            conda activate py &&
+                            export EUPHONIC_VERSION="\$(python euphonic/get_version.py)" &&
+                            python -m tox -c release_tox.ini
+                        """
+                    }
+                }
+            }
+        }
+
+	stage("Static Code Analysis") {
+            steps {
+                script {
+                    if (isUnix()) {
+                        sh """
+                            module load conda/3 &&
+                            conda config --append channels free &&
+                            conda activate py &&
+                            python tests_and_analysis/static_code_analysis/run_analysis.py
+                        """
+                    }
+                    def pylint_issues = scanForIssues tool: pyLint(pattern: "tests_and_analysis/static_code_analysis/reports/pylint_output.txt")
+                    publishIssues issues: [pylint_issues]
+                }
+            }
+        }
+
     }
 
     post {
         always {
-            junit 'tests_and_analysis/test/test_reports/**/*.xml'
+            junit 'tests_and_analysis/test/reports/junit_report*.xml'
 
             publishCoverage adapters: [coberturaAdapter('tests_and_analysis/test/coverage_reports/coverage.xml')]
         }

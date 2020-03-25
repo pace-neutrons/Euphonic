@@ -17,7 +17,7 @@ if __name__ == "__main__":
 
     # Set output directory and run tests
     high_verbosity = 2
-    xml_dir = os.path.join(test_dir, "test_reports")
+    xml_dir = os.path.join(test_dir, "reports")
     ret_vals = xmlrunner.XMLTestRunner(output=xml_dir, verbosity=high_verbosity).run(test_suite)
 
     cov.stop()

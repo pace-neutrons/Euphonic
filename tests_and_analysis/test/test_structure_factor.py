@@ -13,15 +13,16 @@ import numpy.testing as npt
 import numpy as np
 from euphonic.data.phonon import PhononData
 from euphonic.data.interpolation import InterpolationData
+from .utils import get_data_path
 
 
 class TestStructureFactorPhononDataLZO(unittest.TestCase):
 
     def setUp(self):
         seedname = 'La2Zr2O7'
-        phonon_path = 'data'
-        self.sf_path = os.path.join('data', 'structure_factor', 'LZO')
-        self.data = PhononData.from_castep(seedname, path=phonon_path)
+        data_path = get_data_path()
+        self.sf_path = os.path.join(data_path, 'structure_factor', 'LZO')
+        self.data = PhononData.from_castep(seedname, path=data_path)
         self.scattering_lengths = {'La': 8.24, 'Zr': 7.16, 'O': 5.803}
         self.dw_data = PhononData.from_castep(
             'La2Zr2O7-grid', path=self.sf_path)
@@ -59,8 +60,9 @@ class TestStructureFactorInterpolationDataLZOSerial(unittest.TestCase):
         # Need to separately test SF calculation with interpolated phonon data
         # to test eigenvector calculations
         self.seedname = 'La2Zr2O7'
-        self.interpolation_path = os.path.join('data', 'interpolation', 'LZO')
-        self.sf_path = os.path.join('data', 'structure_factor' , 'LZO')
+        data_path = get_data_path()
+        self.interpolation_path = os.path.join(data_path, 'interpolation', 'LZO')
+        self.sf_path = os.path.join(data_path, 'structure_factor' , 'LZO')
         self.scattering_lengths = {'La': 8.24, 'Zr': 7.16, 'O': 5.803}
         qpts = np.loadtxt(os.path.join(self.sf_path, 'qpts.txt'))
 
@@ -72,7 +74,7 @@ class TestStructureFactorInterpolationDataLZOSerial(unittest.TestCase):
         self.dw_idata = InterpolationData.from_castep(
             self.seedname, path=self.interpolation_path)
         self.dw_idata.calculate_fine_phonons(
-            np.loadtxt(os.path.join('data', 'qgrid_444.txt')), asr='realspace')
+            np.loadtxt(os.path.join(data_path, 'qgrid_444.txt')), asr='realspace')
 
         # PhononData object for DW grid
         self.dw_pdata = PhononData.from_castep(
@@ -233,15 +235,16 @@ class TestStructureFactorInterpolationDataLZOSerial(unittest.TestCase):
         self.assertRaises(Exception, self.data.calculate_structure_factor,
             self.scattering_lengths, dw_data=quartz_data)
 
-class TestStructureFactorInterpolationDataLZOSerialC(
-    TestStructureFactorInterpolationDataLZOSerial):
+
+class TestStructureFactorInterpolationDataLZOSerialC(TestStructureFactorInterpolationDataLZOSerial):
 
     def setUp(self):
         # Need to separately test SF calculation with interpolated phonon data
         # to test eigenvector calculations
         self.seedname = 'La2Zr2O7'
-        self.interpolation_path = os.path.join('data', 'interpolation', 'LZO')
-        self.sf_path = os.path.join('data', 'structure_factor', 'LZO')
+        data_path = get_data_path()
+        self.interpolation_path = os.path.join(data_path, 'interpolation', 'LZO')
+        self.sf_path = os.path.join(data_path, 'structure_factor', 'LZO')
         self.scattering_lengths = {'La': 8.24, 'Zr': 7.16, 'O': 5.803}
         qpts = np.loadtxt(os.path.join(self.sf_path, 'qpts.txt'))
 
@@ -253,7 +256,7 @@ class TestStructureFactorInterpolationDataLZOSerialC(
         self.dw_idata = InterpolationData.from_castep(
             self.seedname, path=self.interpolation_path)
         self.dw_idata.calculate_fine_phonons(
-            np.loadtxt(os.path.join('data', 'qgrid_444.txt')), asr='realspace',
+            np.loadtxt(os.path.join(data_path, 'qgrid_444.txt')), asr='realspace',
             use_c=True, fall_back_on_python=False)
 
         # PhononData object for DW grid
@@ -261,15 +264,15 @@ class TestStructureFactorInterpolationDataLZOSerialC(
             'La2Zr2O7-grid', path=self.sf_path)
 
 
-class TestStructureFactorInterpolationDataLZOParallelC(
-    TestStructureFactorInterpolationDataLZOSerial):
+class TestStructureFactorInterpolationDataLZOParallelC(TestStructureFactorInterpolationDataLZOSerial):
 
     def setUp(self):
         # Need to separately test SF calculation with interpolated phonon data
         # to test eigenvector calculations
         self.seedname = 'La2Zr2O7'
-        self.interpolation_path = os.path.join('data', 'interpolation', 'LZO')
-        self.sf_path = os.path.join('data', 'structure_factor', 'LZO')
+        data_path = get_data_path()
+        self.interpolation_path = os.path.join(data_path, 'interpolation', 'LZO')
+        self.sf_path = os.path.join(data_path, 'structure_factor', 'LZO')
         self.scattering_lengths = {'La': 8.24, 'Zr': 7.16, 'O': 5.803}
         qpts = np.loadtxt(os.path.join(self.sf_path, 'qpts.txt'))
 
@@ -282,12 +285,13 @@ class TestStructureFactorInterpolationDataLZOParallelC(
         self.dw_idata = InterpolationData.from_castep(
             self.seedname, path=self.interpolation_path)
         self.dw_idata.calculate_fine_phonons(
-            np.loadtxt(os.path.join('data', 'qgrid_444.txt')), asr='realspace',
+            np.loadtxt(os.path.join(data_path, 'qgrid_444.txt')), asr='realspace',
             use_c=True, fall_back_on_python=False)
 
         # PhononData object for DW grid
         self.dw_pdata = PhononData.from_castep(
             'La2Zr2O7-grid', path=self.sf_path)
+
 
 class TestStructureFactorInterpolationDataQuartzSerial(unittest.TestCase):
 
@@ -295,8 +299,9 @@ class TestStructureFactorInterpolationDataQuartzSerial(unittest.TestCase):
         # Need to separately test SF calculation with interpolated phonon data
         # to test eigenvector calculations
         self.seedname = 'quartz'
-        self.interpolation_path = os.path.join('data', 'interpolation', 'quartz')
-        self.sf_path = os.path.join('data', 'structure_factor', 'quartz')
+        data_path = get_data_path()
+        self.interpolation_path = os.path.join(data_path, 'interpolation', 'quartz')
+        self.sf_path = os.path.join(data_path, 'structure_factor', 'quartz')
         self.scattering_lengths = {'Si': 4.1491, 'O': 5.803}
         qpts = np.loadtxt(os.path.join(self.sf_path, 'qpts.txt'))
 
@@ -308,7 +313,7 @@ class TestStructureFactorInterpolationDataQuartzSerial(unittest.TestCase):
         self.dw_data = InterpolationData.from_castep(
             self.seedname, path=self.interpolation_path)
         self.dw_data.calculate_fine_phonons(
-            np.loadtxt(os.path.join('data', 'qgrid_444.txt')), asr='reciprocal')
+            np.loadtxt(os.path.join(data_path, 'qgrid_444.txt')), asr='reciprocal')
 
     def test_sf_T0(self):
         sf = self.data.calculate_structure_factor(self.scattering_lengths, T=0)
@@ -414,15 +419,16 @@ class TestStructureFactorInterpolationDataQuartzSerial(unittest.TestCase):
                             expected_sf_sum[gamma_qpts, 3:],
                             rtol=8e-6, atol=3e-14)
 
-class TestStructureFactorInterpolationDataQuartzSerialC(
-    TestStructureFactorInterpolationDataQuartzSerial):
+
+class TestStructureFactorInterpolationDataQuartzSerialC(TestStructureFactorInterpolationDataQuartzSerial):
 
     def setUp(self):
         # Need to separately test SF calculation with interpolated phonon data
         # to test eigenvector calculations
         self.seedname = 'quartz'
-        self.interpolation_path = os.path.join('data', 'interpolation', 'quartz')
-        self.sf_path = os.path.join('data', 'structure_factor', 'quartz')
+        data_path = get_data_path()
+        self.interpolation_path = os.path.join(data_path, 'interpolation', 'quartz')
+        self.sf_path = os.path.join(data_path, 'structure_factor', 'quartz')
         self.scattering_lengths = {'Si': 4.1491, 'O': 5.803}
         qpts = np.loadtxt(os.path.join(self.sf_path, 'qpts.txt'))
 
@@ -434,17 +440,18 @@ class TestStructureFactorInterpolationDataQuartzSerialC(
         self.dw_data = InterpolationData.from_castep(
             self.seedname, path=self.interpolation_path)
         self.dw_data.calculate_fine_phonons(
-            np.loadtxt(os.path.join('data', 'qgrid_444.txt')), asr='reciprocal')
+            np.loadtxt(os.path.join(data_path, 'qgrid_444.txt')), asr='reciprocal')
 
-class TestStructureFactorInterpolationDataQuartzParallelC(
-    TestStructureFactorInterpolationDataQuartzSerial):
+
+class TestStructureFactorInterpolationDataQuartzParallelC(TestStructureFactorInterpolationDataQuartzSerial):
 
     def setUp(self):
         # Need to separately test SF calculation with interpolated phonon data
         # to test eigenvector calculations
         self.seedname = 'quartz'
-        self.interpolation_path = os.path.join('data', 'interpolation', 'quartz')
-        self.sf_path = os.path.join('data', 'structure_factor', 'quartz')
+        data_path = get_data_path()
+        self.interpolation_path = os.path.join(data_path, 'interpolation', 'quartz')
+        self.sf_path = os.path.join(data_path, 'structure_factor', 'quartz')
         self.scattering_lengths = {'Si': 4.1491, 'O': 5.803}
         qpts = np.loadtxt(os.path.join(self.sf_path, 'qpts.txt'))
 
@@ -457,4 +464,4 @@ class TestStructureFactorInterpolationDataQuartzParallelC(
         self.dw_data = InterpolationData.from_castep(
             self.seedname, path=self.interpolation_path)
         self.dw_data.calculate_fine_phonons(
-            np.loadtxt(os.path.join('data', 'qgrid_444.txt')), asr='reciprocal')
+            np.loadtxt(os.path.join(data_path, 'qgrid_444.txt')), asr='reciprocal')

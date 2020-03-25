@@ -4,13 +4,14 @@ import numpy.testing as npt
 import numpy as np
 from euphonic.data.interpolation import InterpolationData
 from euphonic.data.phonon import PhononData
+from .utils import get_data_path
 
 
 class TestReorderFreqsNaH(unittest.TestCase):
 
     def test_reorder_freqs(self):
         seedname = 'NaH-reorder-test'
-        path = 'data'
+        path = get_data_path()
         data = PhononData.from_castep(seedname, path=path)
         data.convert_e_units('1/cm')
         data.reorder_freqs()
@@ -43,10 +44,10 @@ class TestReorderFreqsLZO(unittest.TestCase):
     def setUp(self):
         # Create both PhononData and InterpolationData objs for testing
         seedname = 'La2Zr2O7'
-        ppath = 'data'
-        self.pdata = PhononData.from_castep(seedname, path=ppath)
+        data_path = get_data_path()
+        self.pdata = PhononData.from_castep(seedname, path=data_path)
         self.pdata.convert_e_units('1/cm')
-        ipath = os.path.join('data', 'interpolation', 'LZO')
+        ipath = os.path.join(data_path, 'interpolation', 'LZO')
         self.idata = InterpolationData.from_castep(seedname, path=ipath)
         self.idata.convert_e_units('1/cm')
 
