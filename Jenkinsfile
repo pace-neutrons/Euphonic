@@ -42,7 +42,7 @@ pipeline {
              silentResponse: false,
 
              regexpFilterText: '$ref',
-             regexpFilterExpression: 'refs/heads/' + env.BRANCH_NAME
+             regexpFilterExpression: 'refs/heads/' + env.GIT_BRANCH.split("/")[1]
         )
         pollSCM('')
     }
@@ -51,7 +51,6 @@ pipeline {
 
         stage("Checkout") {
             steps {
-                sh 'printenv'
                 setGitHubBuildStatus("pending", "Build and tests are starting...")
                 echo "Branch: ${env.BRANCH_NAME}"
                 checkout scm
