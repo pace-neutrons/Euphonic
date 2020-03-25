@@ -42,7 +42,7 @@ pipeline {
              silentResponse: false,
 
              regexpFilterText: '$ref',
-             regexpFilterExpression: 'refs/heads/' + env.GIT_BRANCH.split("/")[1]
+             regexpFilterExpression: 'refs/heads/' + "${env.GIT_BRANCH}".split("/")[1]
         )
         pollSCM('')
     }
