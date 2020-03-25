@@ -17,6 +17,7 @@ if __name__ == "__main__":
     # 0 is success, 1-5 are different forms of failure (see pytest docs for details)
     test_exit_code = pytest.main(["-x", test_dir, "--junitxml={}".format(xml_filepath)])
 
+    # Report coverage
     cov.stop()
     cov.xml_report()
 
