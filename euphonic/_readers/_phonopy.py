@@ -1,14 +1,16 @@
-import re
 import os
-import struct
-import yaml
-import h5py
-import glob
 import warnings
 import numpy as np
 from euphonic import ureg
 from euphonic.util import reciprocal_lattice, is_gamma
-
+try:
+    import yaml
+    import h5py
+except ImportError as e:
+    raise ImportError(('Cannot import yaml, h5py to read Phonopy files, maybe '
+                       'they are not installed. To install the optional '
+                       'dependencies for Euphonic\'s Phonopy reader, '
+                       'try:\n\npip install euphonic[phonopy_reader]\n')) from e
 
 
 def _convert_weights(weights):

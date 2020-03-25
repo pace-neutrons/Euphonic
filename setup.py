@@ -63,12 +63,11 @@ def run_setup(build_c=True):
             'numpy>=1.9.1',
             'scipy>=1.0.0',
             'seekpath>=1.1.0',
-            'pint>=0.8.0',
-            'h5py>=2.9.0',
-            'PyYAML>=5.1.2',
+            'pint>=0.8.0'
         ],
         extras_require={
             'matplotlib': ['matplotlib>=1.4.2'],
+            'phonopy_reader': ['h5py>=2.9.0', 'PyYAML>=5.1.2']
         },
         scripts=scripts,
         ext_modules=ext_modules
