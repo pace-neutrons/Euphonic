@@ -3,6 +3,3 @@ branch = True
 source =
     euphonic
     scripts
-
-[xml]
-output = reports/coverage.xml
