@@ -4,12 +4,13 @@ import numpy.testing as npt
 import numpy as np
 from euphonic import ureg
 from euphonic.data.interpolation import InterpolationData
+from .utils import get_data_path
 
 class TestReadInterpolationNaCl(unittest.TestCase):
 
     def setUp(self):
 
-        self.path = os.path.join('phonopy_data', 'interpolation')
+        self.path = os.path.join(get_data_path(), 'phonopy_data', 'interpolation')
 
         # Create trivial function object so attributes can be assigned to it
         expctd_data = type('', (), {})()
@@ -178,7 +179,7 @@ class TestReadInterpolationNaCl(unittest.TestCase):
 class TestInterpolatePhononsNaCl(unittest.TestCase):
 
     def setUp(self):
-        self.path = os.path.join('phonopy_data', 'interpolation')
+        self.path = os.path.join(get_data_path(), 'phonopy_data', 'interpolation')
 
         self.qpts = np.array(
                         [[0.00, 0.00, 0.00],

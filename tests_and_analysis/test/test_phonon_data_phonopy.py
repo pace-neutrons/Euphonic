@@ -4,11 +4,12 @@ import numpy.testing as npt
 import numpy as np
 from euphonic.data.phonon import PhononData
 from euphonic import ureg
+from .utils import get_data_path
 
 class TestReadNaClPhononQPoints(unittest.TestCase):
 
     def setUp(self):
-        self.path = os.path.join('phonopy_data', 'qpoints')
+        self.path = os.path.join(get_data_path(), 'phonopy_data', 'qpoints')
 
         # Create trivial function object so attributes can be assigned to it
         expctd_data = type('', (), {})()
