@@ -27,7 +27,26 @@ pipeline {
     }
 
     triggers {
-        pollSCM('H/2 * * * *')
+        withCredentials([string(credentialsId: 'GitHub_API_Token',
+                variable: 'api_token')]) {
+            GenericTrigger(
+                 genericVariables: [
+                    [key: 'ref', value: '$.ref']
+                 ],
+
+                 causeString: 'Triggered on $ref',
+
+                 token: '${api_token}',
+
+                 printContributedVariables: true,
+                 printPostContent: true,
+
+                 silentResponse: false,
+
+                 regexpFilterText: '$ref',
+                 regexpFilterExpression: 'refs/heads/' + BRANCH_NAME
+            )
+        }
     }
 
     stages {
