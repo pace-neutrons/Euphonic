@@ -116,7 +116,7 @@ pipeline {
 
     post {
         always {
-            junit 'tests_and_analysis/test/reports/**/*.xml'
+            junit 'tests_and_analysis/test/reports/junit_report.xml'
         }
 
         success {
