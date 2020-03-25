@@ -12,7 +12,7 @@ from euphonic.plot.dos import plot_dos
 from euphonic.plot.dispersion import (calc_abscissa, recip_space_labels,
                                       generic_qpt_labels, get_qpt_label,
                                       plot_dispersion)
-from helpers import mock_crystal
+from euphonic import Crystal
 
 
 class TestCalcAbscissa(unittest.TestCase):
@@ -138,10 +138,16 @@ class TestPlotDispersion(unittest.TestCase):
                               [0.00, 0.00, 0.00],
                               [0.75, 0.25, -0.25],
                               [0.50, 0.00, 0.00]])
-        data.crystal = mock_crystal(
-            np.array([[-2.708355, 2.708355, 2.708355],
-                      [2.708355, -2.708355, 2.708355],
-                      [2.708355, 2.708355, -2.708355]])*ureg('bohr'))
+        data.crystal = Crystal.from_dict({
+            'cell_vectors': np.array([[-2.708355, 2.708355, 2.708355],
+                                      [2.708355, -2.708355, 2.708355],
+                                      [2.708355, 2.708355, -2.708355]]),
+            'cell_vectors_unit': 'bohr',
+            'n_atoms': 1,
+            'atom_r': np.array([[0.,0.,0]]),
+            'atom_type': np.array(['test']),
+            'atom_mass': np.array([1]),
+            'atom_mass_unit': 'amu'})
         data.freqs = np.array(
             [[-0.13347765, 0.10487180, 0.10490012,
               0.10490012, 0.14500191, 0.14500191],

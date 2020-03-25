@@ -5,6 +5,7 @@ import numpy.testing as npt
 import numpy as np
 import pytest
 from euphonic import ureg, Crystal
+from .utils import get_data_path
 
 
 def quartz_attrs():
@@ -37,7 +38,7 @@ def quartz_attrs():
 quartz_json_file = 'crystal_quartz.json'
 
 def get_filepath(filename):
-    return os.path.join(os.path.dirname(__file__), 'test_files', 'crystal',
+    return os.path.join(get_data_path(), 'crystal',
                         filename)
 
 
