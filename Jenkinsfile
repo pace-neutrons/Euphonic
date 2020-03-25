@@ -21,7 +21,6 @@ void setGitHubBuildStatus(String status, message) {
 
 pipeline {
 
-    // "sl7 && PACE Windows (Private)" for when windows is ready
     agent {
         label "sl7"
     }
@@ -95,7 +94,7 @@ pipeline {
             }
         }
 
-	stage("Static Code Analysis") {
+	    stage("Static Code Analysis") {
             steps {
                 script {
                     if (isUnix()) {
@@ -116,7 +115,7 @@ pipeline {
 
     post {
         always {
-            junit 'tests_and_analysis/test/reports/junit_report.xml'
+            junit 'tests_and_analysis/test/reports/junit_report*.xml'
         }
 
         success {
