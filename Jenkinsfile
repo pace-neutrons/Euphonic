@@ -21,94 +21,116 @@ void setGitHubBuildStatus(String status, message) {
 
 pipeline {
 
-    agent {
-        label "sl7"
-    }
-
     triggers {
         pollSCM('H/2 * * * *')
     }
 
-    stages {
+    matrix {
 
-        stage("Checkout") {
-            steps {
-                setGitHubBuildStatus("pending", "Build and tests are starting...")
-                echo "Branch: ${env.BRANCH_NAME}"
-                checkout scm
+        axes {
+            axis {
+                name "PLATFORM"
+                values "sl7", "PACE Windows (Private)"
             }
         }
 
-        stage("Set up environment") {
-            steps {
-                script {
-                    if (isUnix()) {
-                        sh """
-                            module load conda/3 &&
-                            conda config --append channels free &&
-                            module load gcc &&
-                            conda create --name py python=3.6.0 -y &&
-                            conda activate py &&
-                            python -m pip install --upgrade --user pip &&
-                            python -m pip install numpy &&
-                            python -m pip install matplotlib &&
-                            python -m pip install tox==3.14.5 &&
-                            python -m pip install pylint==2.4.4 &&
-                            export CC=gcc
-                        """
-                    }
-                }
-            }
+        agent {
+            label "${PLATFORM}"
         }
 
-        stage("Test") {
-            steps {
-                script {
-                    if (isUnix()) {
-                        sh """
-                            module load conda/3 &&
-                            conda config --append channels free &&
-                            conda activate py &&
-                            python -m tox
-                        """
-                    }
-                }
-            }
-        }
+        stages {
 
-        stage("PyPI Release Testing") {
-            when { tag "*" }
-            steps {
-                script {
-                    if (isUnix()) {
-                        sh """
-                            rm -rf .tox &&
-                            module load conda/3 &&
-                            conda config --append channels free &&
-                            conda activate py &&
-                            export EUPHONIC_VERSION="\$(python euphonic/get_version.py)" &&
-                            python -m tox -c release_tox.ini
-                        """
-                    }
+            stage("Checkout") {
+                steps {
+                    setGitHubBuildStatus("pending", "Build and tests are starting...")
+                    echo "Branch: ${env.BRANCH_NAME}"
+                    checkout scm
                 }
             }
-        }
 
-	    stage("Static Code Analysis") {
-            steps {
-                script {
-                    if (isUnix()) {
-                        sh """
-                            module load conda/3 &&
-                            conda config --append channels free &&
-                            conda activate py &&
-                            python tests_and_analysis/static_code_analysis/run_analysis.py
-                        """
+            stage("Set up environment") {
+                steps {
+                    script {
+                        if (isUnix()) {
+                            sh """
+                                module load conda/3 &&
+                                conda config --append channels free &&
+                                module load gcc &&
+                                conda create --name py python=3.6.0 -y &&
+                                conda activate py &&
+                                python -m pip install --upgrade --user pip &&
+                                python -m pip install numpy &&
+                                python -m pip install matplotlib &&
+                                python -m pip install tox==3.14.5 &&
+                                python -m pip install pylint==2.4.4 &&
+                                export CC=gcc
+                            """
+                        } else {
+                            echo "Setting up env on windows"
+                        }
                     }
-                    def pylint_issues = scanForIssues tool: pyLint(pattern: "tests_and_analysis/static_code_analysis/reports/pylint_output.txt")
-                    publishIssues issues: [pylint_issues]
                 }
             }
+
+            stage("Test") {
+                steps {
+                    script {
+                        if (isUnix()) {
+                            sh """
+                                module load conda/3 &&
+                                conda config --append channels free &&
+                                conda activate py &&
+                                python -m tox
+                            """
+                        } else {
+                            echo "Testing on windows"
+                        }
+                    }
+                }
+            }
+
+            stage("PyPI Release Testing") {
+                when { tag "*" }
+                steps {
+                    script {
+                        if (isUnix()) {
+                            sh """
+                                rm -rf .tox &&
+                                module load conda/3 &&
+                                conda config --append channels free &&
+                                conda activate py &&
+                                export EUPHONIC_VERSION="\$(python euphonic/get_version.py)" &&
+                                python -m tox -c release_tox.ini
+                            """
+                        } else {
+                            echo "Release testing on windows"
+                        }
+                    }
+                }
+            }
+
+            stage("Static Code Analysis") {
+                when {
+                    expression {  "${PLATFORM}" == "sl7"  }
+                }
+                steps {
+                    script {
+                        if (isUnix()) {
+                            sh """
+                                module load conda/3 &&
+                                conda config --append channels free &&
+                                conda activate py &&
+                                python tests_and_analysis/static_code_analysis/run_analysis.py
+                            """
+                        } else {
+                            echo "Static code analysis on windows"
+                        }
+                        def pylint_issues = scanForIssues tool: pyLint(pattern: "tests_and_analysis/static_code_analysis/reports/pylint_output.txt")
+                        publishIssues issues: [pylint_issues]
+                    }
+                }
+            }
+
         }
 
     }
