@@ -1,3 +1,4 @@
+import json
 import os
 import unittest
 import numpy.testing as npt
@@ -33,9 +34,23 @@ def quartz_attrs():
             'amu')
     return expected_crystal
 
+quartz_json_file = 'crystal_quartz.json'
+
 def get_filepath(filename):
     return os.path.join(os.path.dirname(__file__), 'test_files', 'crystal',
                         filename)
+
+
+def dict_from_attrs(crystal_attrs):
+    d = {}
+    d['cell_vectors'] = crystal_attrs.cell_vectors.magnitude
+    d['cell_vectors_unit'] = str(crystal_attrs.cell_vectors.units)
+    d['n_atoms'] = crystal_attrs.n_atoms
+    d['atom_r'] = crystal_attrs.atom_r
+    d['atom_type'] = crystal_attrs.atom_type
+    d['atom_mass'] = crystal_attrs.atom_mass.magnitude
+    d['atom_mass_unit'] = str(crystal_attrs.atom_mass.units)
+    return d
 
 
 ################################################################################
@@ -57,78 +72,107 @@ def crystal_from_json_file(filename):
 
 
 def crystal_from_dict(crystal_attrs):
-    d = {}
-    d['cell_vectors'] = crystal_attrs.cell_vectors.magnitude
-    d['cell_vectors_unit'] = str(crystal_attrs.cell_vectors.units)
-    d['n_atoms'] = crystal_attrs.n_atoms
-    d['atom_r'] = crystal_attrs.atom_r
-    d['atom_type'] = crystal_attrs.atom_type
-    d['atom_mass'] = crystal_attrs.atom_mass.magnitude
-    d['atom_mass_unit'] = str(crystal_attrs.atom_mass.units)
+    d = dict_from_attrs(crystal_attrs)
     crystal = Crystal.from_dict(d)
     return crystal
 
 
-create_crystal_tests = [
+def check_crystal_attrs(crystal, expected_crystal):
+    npt.assert_allclose(crystal.cell_vectors.to('angstrom').magnitude,
+                        expected_crystal.cell_vectors.magnitude)
+    assert crystal.n_atoms == expected_crystal.n_atoms
+    npt.assert_equal(crystal.atom_r, expected_crystal.atom_r)
+    npt.assert_equal(crystal.atom_type, expected_crystal.atom_type)
+    npt.assert_allclose(crystal.atom_mass.to('amu').magnitude,
+                        expected_crystal.atom_mass.magnitude)
+
+
+crystal_create_tests = [
     pytest.param(crystal_from_constructor(quartz_attrs()), quartz_attrs(),
                  id='quartz_from_constructor'),
     pytest.param(crystal_from_dict(quartz_attrs()), quartz_attrs(),
                  id='quartz_from_dict'),
-    pytest.param(crystal_from_json_file('crystal_quartz.json'), quartz_attrs(),
-                 id='quartz_from_json_file')
-]
+    pytest.param(crystal_from_json_file(quartz_json_file), quartz_attrs(),
+                 id='quartz_from_json_file')]
 
 
-@pytest.mark.parametrize("crystal,expected_crystal_attrs", create_crystal_tests)
-def test_cell_vectors(crystal, expected_crystal_attrs):
-    npt.assert_allclose(crystal.cell_vectors.to('angstrom').magnitude,
-                        expected_crystal_attrs.cell_vectors.magnitude)
-
-
-@pytest.mark.parametrize("crystal,expected_crystal_attrs", create_crystal_tests)
-def test_n_atoms(crystal, expected_crystal_attrs):
-    assert crystal.n_atoms == expected_crystal_attrs.n_atoms
-
-
-@pytest.mark.parametrize("crystal,expected_crystal_attrs", create_crystal_tests)
-def test_atom_r(crystal, expected_crystal_attrs):
-    npt.assert_equal(crystal.atom_r,
-                     expected_crystal_attrs.atom_r)
-
-
-@pytest.mark.parametrize("crystal,expected_crystal_attrs", create_crystal_tests)
-def test_atom_type(crystal, expected_crystal_attrs):
-    npt.assert_equal(crystal.atom_type,
-                     expected_crystal_attrs.atom_type)
-
-
-@pytest.mark.parametrize("crystal,expected_crystal_attrs", create_crystal_tests)
-def test_atom_mass(crystal, expected_crystal_attrs):
-    npt.assert_allclose(crystal.atom_mass.to('amu').magnitude,
-                        expected_crystal_attrs.atom_mass.magnitude)
+@pytest.mark.parametrize("crystal,expected_crystal",
+                         crystal_create_tests)
+def test_crystal_create(crystal, expected_crystal):
+    check_crystal_attrs(crystal, expected_crystal)
 
 
 ################################################################################
 # Test object serialisation
 ################################################################################
-def crystal_to_dict():
-    pass
+def get_quartz_crystal():
+    return crystal_from_json_file(quartz_json_file)
+
+@pytest.fixture(
+    params=[
+    # Params: tuple of (Crystal, filetype)
+    (get_quartz_crystal(),'json')],
+    ids=[
+        'quartz_to_json'])
+def crystal_to_file(request, tmpdir):
+    output_file = str(tmpdir.join('tmp.test'))
+    if request.param[1] == 'json':
+        request.param[0].to_json_file(output_file)
+        output_crystal = Crystal.from_json_file(output_file)
+    return request.param[0], output_crystal
+
+def check_crystal_dict(cdict, expected_cdict):
+    npt.assert_allclose(cdict['cell_vectors'],
+                        expected_cdict['cell_vectors'])
+    assert ureg(cdict['cell_vectors_unit']) == ureg(
+        expected_cdict['cell_vectors_unit'])
+    assert cdict['n_atoms'] == cdict['n_atoms']
+    npt.assert_equal(cdict['atom_r'], expected_cdict['atom_r'])
+    npt.assert_equal(cdict['atom_type'], expected_cdict['atom_type'])
+    npt.assert_allclose(cdict['atom_mass'], expected_cdict['atom_mass'])
+    assert ureg(cdict['atom_mass_unit']) == ureg(
+        expected_cdict['atom_mass_unit'])
 
 
-def test_to_dict():
-    pass
+crystal_to_dict_tests = [
+    pytest.param(get_quartz_crystal().to_dict(),
+                 dict_from_attrs(quartz_attrs()),
+                 id='quartz_to_dict')]
+
+@pytest.mark.parametrize("cdict,expected_cdict", crystal_to_dict_tests)
+def test_crystal_to_dict(cdict, expected_cdict):
+    check_crystal_dict(cdict, expected_cdict)
 
 
-def test_to_json_file():
-    pass
+def test_crystal_to_file(crystal_to_file):
+    check_crystal_attrs(crystal_to_file[0], crystal_to_file[1])
 
 
 ################################################################################
 # Test object methods
 ################################################################################
-def test_reciprocal_cell():
-    pass
+quartz_reciprocal_cell = np.array([
+    [1.29487418, -0.74759597, 0.        ],
+    [1.29487418,  0.74759597, 0.        ],
+    [0.,          0.,         1.17436043]])*ureg('1/angstrom')
+
+@pytest.mark.parametrize("crystal,expected_recip", [
+    pytest.param(get_quartz_crystal(), quartz_reciprocal_cell,
+                 id='quartz_reciprocal_cell')
+])
+def test_reciprocal_cell(crystal, expected_recip):
+    recip = crystal.reciprocal_cell()
+    npt.assert_allclose(recip.to('1/angstrom').magnitude,
+                        expected_recip.to('1/angstrom').magnitude)
 
 
-def test_cell_volume():
-    pass
+quartz_cell_volume = 109.09721804482547*ureg('angstrom**3')
+
+@pytest.mark.parametrize("crystal,expected_vol", [
+    pytest.param(get_quartz_crystal(), quartz_cell_volume,
+                 id='quartz_cell_volume')
+])
+def test_cell_volume(crystal, expected_vol):
+    vol = crystal.cell_volume()
+    npt.assert_allclose(vol.to('angstrom**3').magnitude,
+                        expected_vol.to('angstrom**3').magnitude)
