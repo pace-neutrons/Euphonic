@@ -78,7 +78,7 @@ pipeline {
 
     post {
         always {
-            junit 'tests_and_analysis/test/reports/**/*.xml'
+            junit 'tests_and_analysis/test/test_reports/**/*.xml'
 
             publishCoverage adapters: [corbeturaAdapter('tests_and_analysis/test/coverage_reports/coverage.xml')]
         }
