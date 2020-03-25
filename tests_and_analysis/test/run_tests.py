@@ -6,8 +6,6 @@ import coverage
 if __name__ == "__main__":
 
     # Set output directory to the reports directory under this file's directory
-
-    # Discover tests
     test_dir = os.path.dirname(os.path.abspath(__file__))
     xml_filepath = os.path.join(test_dir, "reports", "junit_report.xml")
 
