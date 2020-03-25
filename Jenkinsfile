@@ -42,7 +42,7 @@ pipeline {
              silentResponse: false,
 
              regexpFilterText: '$ref',
-             regexpFilterExpression: 'refs/heads/' + env.GIT_LOCAL_BRANCH
+             regexpFilterExpression: 'refs/heads/' + env.BRANCH_NAME
         )
         pollSCM('')
     }
