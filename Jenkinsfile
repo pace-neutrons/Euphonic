@@ -44,6 +44,7 @@ pipeline {
              regexpFilterText: '$ref',
              regexpFilterExpression: 'refs/heads/${env.BRANCH_NAME}'
         )
+        pollSCM('')
     }
 
     stages {
