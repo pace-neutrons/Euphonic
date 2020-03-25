@@ -12,7 +12,7 @@ if __name__ == "__main__":
     coverage_xml_filepath = os.path.join(xml_dir, "coverage.xml")
 
     # Start recording coverage
-    cov = coverage.Coverage(config_file=".coveragerc")
+    cov = coverage.Coverage(config_file=os.path.join(test_dir, ".coveragerc"))
     cov.start()
 
     # Run tests and get the resulting exit code
