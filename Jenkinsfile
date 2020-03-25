@@ -51,6 +51,7 @@ pipeline {
 
         stage("Checkout") {
             steps {
+                sh 'printenv'
                 setGitHubBuildStatus("pending", "Build and tests are starting...")
                 echo "Branch: ${env.BRANCH_NAME}"
                 checkout scm
