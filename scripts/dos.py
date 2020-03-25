@@ -68,7 +68,7 @@ def main():
         if fig is not None:
             import matplotlib.pyplot as plt
             # Save or show Matplotlib figure
-            if args.s:
+            if args.s is not None:
                 plt.savefig(args.s)
             else:
                 plt.show()
@@ -90,7 +90,7 @@ def get_parser():
     parser.add_argument(
         '-s',
         default=None,
-        help='Save resulting plot to a file')
+        help='Save resulting plot to a file with this name')
     parser.add_argument(
         '-grace',
         action='store_true',

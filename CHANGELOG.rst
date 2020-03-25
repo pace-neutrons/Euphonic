@@ -1,6 +1,24 @@
 `Unreleased <https://github.com/pace-neutrons/Euphonic/compare/v0.2.2...HEAD>`_
 ----------
 
+- Bug fixes:
+
+  - On reading CASTEP phonon file header information, switch from a fixed
+    number of lines skipped to a search for a specific line, fixing issue
+    `#23 <https://github.com/pace-neutrons/Euphonic/issues/23>`_
+  - Fix NaN frequencies/eigenvectors for consecutive gamma points, see
+    `#25 <https://github.com/pace-neutrons/Euphonic/issues/25>`_
+  - Fix issue saving plots to file with dispersion.py, see
+    `#27 <https://github.com/pace-neutrons/Euphonic/issues/27>`_
+
+- Improvements:
+
+  - Add ``fall_back_on_python`` boolean keyword argument to
+    ``interpolation.InterpolationData.calculate_fine_phonons`` to control
+    whether the Python implementation is used as a fallback to the C
+    extension or not, see
+    `#35 <https://github.com/pace-neutrons/Euphonic/issues/35>`_
+
 `v0.2.2 <https://github.com/pace-neutrons/Euphonic/compare/v0.2.1...v0.2.2>`_
 ------
 

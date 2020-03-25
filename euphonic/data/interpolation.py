@@ -12,6 +12,15 @@ from euphonic._readers import _castep
 from euphonic._readers import _phonopy
 
 
+class ImportCError(Exception):
+
+    def __init__(self, message):
+        self.message = message
+
+    def __str__(self):
+        return "ImportCError: {}".format(self.message)
+
+
 class InterpolationData(PhononData):
     """
     Extends PhononData. A class to read and store the data required for a
@@ -215,7 +224,7 @@ class InterpolationData(PhononData):
     def calculate_fine_phonons(
         self, qpts, asr=None, precondition=False, dipole=True,
             eta_scale=1.0, splitting=True, reduce_qpts=True, use_c=False,
-            n_threads=1):
+            n_threads=1, fall_back_on_python=True):
         """
         Calculate phonon frequencies and eigenvectors at specified q-points
         from a supercell force constant matrix via interpolation. For more
@@ -252,6 +261,9 @@ class InterpolationData(PhononData):
         n_threads : int, optional, default 1
             The number of threads to use when looping over q-points in C. Only
             applicable if use_c=True
+        fall_back_on_python : boolean, optional, default True
+            If we cannot use the C extension, fall back on using python if this
+            is true, else raise an ImportCError.
 
         Returns
         -------
@@ -260,6 +272,11 @@ class InterpolationData(PhononData):
         eigenvecs : (n_qpts, 3*n_ions, n_ions, 3) complex ndarray
             The phonon eigenvectors (same as set to
             InterpolationData.eigenvecs)
+
+        Raises
+        ------
+        ImportCError: If we have selected not to fall back on Python and cannot
+            use the C extension.
         """
 
         # Reset obj freqs/eigenvecs to zero to reduce memory usage in case of
@@ -386,15 +403,15 @@ class InterpolationData(PhononData):
                 except ImportError:
                     warnings.warn(('use_c=True is set, but the Euphonic\'s C '
                                    'extension couldn\'t be imported, it may '
-                                   'not have been installed. Falling back to '
-                                   'pure Python calculation'), stacklevel=2)
+                                   'not have been installed. Attempting to fall '
+                                   'back to pure Python calculation'), stacklevel=2)
                     raise
             else:
                 raise ImportError
             if splitting:
                 gamma_i = np.where(is_gamma(qpts))[0]
                 split_i = gamma_i[np.logical_and(gamma_i > 0,
-                                                 gamma_i < len(qpts))]
+                                                 gamma_i < len(qpts) - 1)]
                 split_freqs = np.zeros((len(split_i), 3*n_ions))
                 split_eigenvecs = np.zeros((len(split_i), 3*n_ions, n_ions, 3),
                                            dtype=np.complex128)
@@ -417,19 +434,26 @@ class InterpolationData(PhononData):
                 reciprocal_asr, splitting, rfreqs, reigenvecs, split_freqs,
                 split_eigenvecs, split_i, n_threads, scipy.__path__[0])
         except ImportError:
-            q_independent_args = (
-                reduced_qpts, qpts_i, fc_img_weighted, unique_sc_offsets,
-                unique_sc_i, unique_cell_origins, unique_cell_i,
-                recip_asr_correction, dyn_mat_weighting, dipole, asr,
-                splitting)
-            for q in range(n_rqpts):
-                rfreqs[q], reigenvecs[q], sfreqs, sevecs, si = \
-                self._calculate_phonons_at_q(q, q_independent_args)
-                if len(sfreqs) > 0:
-                    split_i = np.concatenate((split_i, si))
-                    split_freqs = np.concatenate((split_freqs, sfreqs))
-                    split_eigenvecs = np.concatenate(
-                        (split_eigenvecs, sevecs))
+            if not fall_back_on_python:
+                raise ImportCError('use_c=True is set, but the Euphonic\'s C '
+                                   'extension couldn\'t be imported, it may '
+                                   'not have been installed. You have selected '
+                                   'not to fall back on Python, therefore we cannot '
+                                   'complete the calculation.')
+            else:
+                q_independent_args = (
+                    reduced_qpts, qpts_i, fc_img_weighted, unique_sc_offsets,
+                    unique_sc_i, unique_cell_origins, unique_cell_i,
+                    recip_asr_correction, dyn_mat_weighting, dipole, asr,
+                    splitting)
+                for q in range(n_rqpts):
+                    rfreqs[q], reigenvecs[q], sfreqs, sevecs, si = \
+                    self._calculate_phonons_at_q(q, q_independent_args)
+                    if len(sfreqs) > 0:
+                        split_i = np.concatenate((split_i, si))
+                        split_freqs = np.concatenate((split_freqs, sfreqs))
+                        split_eigenvecs = np.concatenate(
+                            (split_eigenvecs, sevecs))
 
         self.asr = asr
         self.dipole = dipole
@@ -840,13 +864,16 @@ class InterpolationData(PhononData):
         n_ions = self.n_ions
         born = self._born
         dielectric = self.dielectric
+        na_corr = np.zeros((3*n_ions, 3*n_ions), dtype=np.complex128)
+
+        if is_gamma(q_dir):
+            return na_corr
 
         cell_volume = np.dot(cell_vec[0], np.cross(cell_vec[1], cell_vec[2]))
         denominator = np.einsum('ij,i,j', dielectric, q_dir, q_dir)
         factor = 4*math.pi/(cell_volume*denominator)
 
         q_born_sum = np.einsum('ijk,k->ij', born, q_dir)
-        na_corr = np.zeros((3*n_ions, 3*n_ions), dtype=np.complex128)
         for i in range(n_ions):
             for j in range(n_ions):
                 na_corr[3*i:3*(i+1), 3*j:3*(j+1)] = np.einsum(

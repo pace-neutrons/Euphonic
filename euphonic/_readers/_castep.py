@@ -159,7 +159,8 @@ def _read_phonon_header(f):
     n_ions = int(f.readline().split()[3])
     n_branches = int(f.readline().split()[3])
     n_qpts = int(f.readline().split()[3])
-    [f.readline() for x in range(4)]  # Skip units and label lines
+    while not 'Unit cell vectors' in f.readline():
+        pass # skip lines up to and including one which starts 'Unit cell vectors'
     cell_vec = np.array([[float(x) for x in f.readline().split()[0:3]]
                          for i in range(3)])
     f.readline()  # Skip fractional co-ordinates label
