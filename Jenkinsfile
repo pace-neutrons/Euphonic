@@ -19,17 +19,16 @@ void setGitHubBuildStatus(String status, message) {
     }
 }
 
-def get_branch_name(){
-    FULL_PATH_BRANCH = "${sh(script:'git name-rev --name-only HEAD', returnStdout: true)}"
-    GIT_BRANCH = FULL_PATH_BRANCH.substring(FULL_PATH_BRANCH.lastIndexOf('/') + 1, FULL_PATH_BRANCH.length())
-    return GIT_BRANCH
-}
-
 pipeline {
 
     // "sl7 && PACE Windows (Private)" for when windows is ready
     agent {
         label "sl7"
+    }
+
+    environment {
+        FULL_PATH_BRANCH = "${sh(script:'git name-rev --name-only HEAD', returnStdout: true)}"
+        GIT_BRANCH = FULL_PATH_BRANCH.substring(FULL_PATH_BRANCH.lastIndexOf('/') + 1, FULL_PATH_BRANCH.length())
     }
 
     triggers {
@@ -48,7 +47,7 @@ pipeline {
              silentResponse: false,
 
              regexpFilterText: '$ref',
-             regexpFilterExpression: get_branch_name()
+             regexpFilterExpression: 'refs/head/' + env.GIT_BRANCH
         )
         pollSCM('')
     }
