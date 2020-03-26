@@ -50,6 +50,7 @@ pipeline {
             steps {
                 setGitHubBuildStatus("pending", "Build and tests are starting...")
                 echo "Branch: ${env.JOB_BASE_NAME}"
+                sh "mkdir -p unix"
                 checkout(
                     [
                         $class: 'GitSCM', branches: [[name: '${env.JOB_BASE_NAME}']],
@@ -69,7 +70,6 @@ pipeline {
             agent { label "sl7" }
             steps {
                 sh """
-                    mkdir -p unix &&
                     pushd unix &&
                     module load conda/3 &&
                     conda config --append channels free &&
@@ -103,6 +103,7 @@ pipeline {
 
         stage("PyPI Release Testing: UNIX environment"){
             agent { label "sl7" }
+            when { tag "*" }
             steps {
                 sh """
                     pushd unix &&
@@ -113,6 +114,34 @@ pipeline {
                     export EUPHONIC_VERSION="\$(python euphonic/get_version.py)" &&
                     python -m tox -c release_tox.ini &&
                     popd
+                """
+            }
+        }
+
+        stage("Set up: Windows environment") {
+            agent { label "PACE Windows (Private)" }
+            steps {
+                bat """
+                    echo "Setting up windows env"
+                """
+            }
+        }
+
+        stage("Test: Windows environment") {
+            agent { label "PACE Windows (Private)" }
+            steps {
+                bat """
+                    echo "Testing on windows env"
+                """
+            }
+        }
+
+        stage("PyPI Release Testing: Windows environment"){
+            agent { label "PACE Windows (Private)" }
+            when { tag "*" }
+            steps {
+                bat """
+                    echo "Release Testing on windows env"
                 """
             }
         }
