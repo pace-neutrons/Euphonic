@@ -73,7 +73,7 @@ pipeline {
                             python -m pip install matplotlib &&
                             python -m pip install tox==3.14.5 &&
                             python -m pip install pylint==2.4.4 &&
-                            export CC=gcc &&
+                            export CC=gcc
                         """
                     }
                 }
@@ -84,7 +84,7 @@ pipeline {
                             module load conda/3 &&
                             conda config --append channels free &&
                             conda activate py &&
-                            python -m tox &&
+                            python -m tox
                         """
                     }
                 }
@@ -98,7 +98,7 @@ pipeline {
                             conda config --append channels free &&
                             conda activate py &&
                             export EUPHONIC_VERSION="\$(python euphonic/get_version.py)" &&
-                            python -m tox -c release_tox.ini &&
+                            python -m tox -c release_tox.ini
                         """
                     }
                 }
