@@ -166,8 +166,10 @@ pipeline {
                     conda activate py &&
                     python tests_and_analysis/static_code_analysis/run_analysis.py
                 """
-                def pylint_issues = scanForIssues tool: pyLint(pattern: "tests_and_analysis/static_code_analysis/reports/pylint_output.txt")
-                publishIssues issues: [pylint_issues]
+                script {
+                    def pylint_issues = scanForIssues tool: pyLint(pattern: "tests_and_analysis/static_code_analysis/reports/pylint_output.txt")
+                    publishIssues issues: [pylint_issues]
+                }
             }
         }
     }
