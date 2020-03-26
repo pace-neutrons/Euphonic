@@ -50,13 +50,24 @@ pipeline {
             steps {
                 setGitHubBuildStatus("pending", "Build and tests are starting...")
                 echo "Branch: ${env.JOB_BASE_NAME}"
-                sh "mkdir -p unix"
                 checkout(
                     [
                         $class: 'GitSCM', branches: [[name: '${env.JOB_BASE_NAME}']],
                         doGenerateSubmoduleConfigurations: false,
                         extensions: [
                             [$class: 'RelativeTargetDirectory', relativeTargetDir: 'unix'],
+                            [$class: 'CleanBeforeCheckout'], [$class: 'WipeWorkspace']
+                        ],
+                        submoduleCfg: [],
+                        userRemoteConfigs: [[url: 'https://github.com/pace-neutrons/Euphonic']]
+                    ]
+                )
+                checkout(
+                    [
+                        $class: 'GitSCM', branches: [[name: '${env.JOB_BASE_NAME}']],
+                        doGenerateSubmoduleConfigurations: false,
+                        extensions: [
+                            [$class: 'RelativeTargetDirectory', relativeTargetDir: 'windows'],
                             [$class: 'CleanBeforeCheckout'], [$class: 'WipeWorkspace']
                         ],
                         submoduleCfg: [],
