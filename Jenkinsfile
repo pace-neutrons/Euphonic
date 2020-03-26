@@ -24,7 +24,24 @@ pipeline {
     agent none
 
     triggers {
-        pollSCM('H/2 * * * *')
+        GenericTrigger(
+             genericVariables: [
+                [key: 'ref', value: '$.ref']
+             ],
+
+             causeString: 'Triggered on $ref',
+
+             token: 'GitHub_API_Token',
+
+             printContributedVariables: true,
+             printPostContent: true,
+
+             silentResponse: false,
+
+             regexpFilterText: '$ref',
+             regexpFilterExpression: 'refs/head/' + env.JOB_BASE_NAME
+        )
+        pollSCM('')
     }
 
     stages {
