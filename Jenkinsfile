@@ -42,7 +42,7 @@ pipeline {
              silentResponse: false,
 
              regexpFilterText: '$ref',
-             regexpFilterExpression: 'refs/head/' + env.BRANCH_NAME
+             regexpFilterExpression: 'refs/head/' + env.JOB_BASE_NAME
         )
         pollSCM('')
     }
