@@ -7,7 +7,8 @@ if __name__ == "__main__":
     # Set output file to the reports directory under this file's directory
     test_dir = os.path.dirname(os.path.abspath(__file__))
     xml_filedir = os.path.join(test_dir, "reports")
-    os.mkdir(xml_filedir)
+    if not os.path.exists(xml_filedir):
+        os.mkdir(xml_filedir)
 
     # We may have reports from multiple platforms (windows, linux etc.)
     filename_prefix = "junit_report"
