@@ -46,114 +46,88 @@ pipeline {
 
     stages {
 
-        stage("Build") {
+        stage("Checkout") {
+            steps {
+                setGitHubBuildStatus("pending", "Build and tests are starting...")
+                echo "Branch: ${env.JOB_BASE_NAME}"
+                checkout(
+                    [
+                        $class: 'GitSCM', branches: [[name: '${env.JOB_BASE_NAME}']],
+                        doGenerateSubmoduleConfigurations: false,
+                        extensions: [
+                            [$class: 'RelativeTargetDirectory', relativeTargetDir: 'unix'],
+                            [$class: 'CleanBeforeCheckout'], [$class: 'WipeWorkspace']
+                        ],
+                        submoduleCfg: [],
+                        userRemoteConfigs: [[url: 'https://github.com/pace-neutrons/Euphonic']]
+                    ]
+                )
+            }
+        }
 
-            matrix {
+        stage("Set up: UNIX environment") {
+            agent { label "sl7" }
+            steps {
+                sh """
+                    mkdir -p unix &&
+                    pushd unix &&
+                    module load conda/3 &&
+                    conda config --append channels free &&
+                    module load gcc &&
+                    conda create --name py python=3.6.0 -y &&
+                    conda activate py &&
+                    python -m pip install --upgrade --user pip &&
+                    python -m pip install numpy &&
+                    python -m pip install matplotlib &&
+                    python -m pip install tox==3.14.5 &&
+                    python -m pip install pylint==2.4.4 &&
+                    export CC=gcc &&
+                    popd
+                """
+            }
+        }
 
-                axes {
-                    axis {
-                        name "PLATFORM"
-                        values "sl7", "PACE Windows (Private)"
-                    }
-                }
+        stage("Test: UNIX environment") {
+            agent { label "sl7" }
+            steps {
+                sh """
+                    pushd unix &&
+                    module load conda/3 &&
+                    conda config --append channels free &&
+                    conda activate py &&
+                    python -m tox &&
+                    popd
+                """
+            }
+        }
 
-                agent {
-                    label "${PLATFORM}"
-                }
+        stage("PyPI Release Testing: UNIX environment"){
+            agent { label "sl7" }
+            steps {
+                sh """
+                    pushd unix &&
+                    rm -rf .tox &&
+                    module load conda/3 &&
+                    conda config --append channels free &&
+                    conda activate py &&
+                    export EUPHONIC_VERSION="\$(python euphonic/get_version.py)" &&
+                    python -m tox -c release_tox.ini &&
+                    popd
+                """
+            }
+        }
 
-                stages {
-
-                    stage("Checkout") {
-                        steps {
-                            setGitHubBuildStatus("pending", "Build and tests are starting...")
-                            echo "Branch: ${env.BRANCH_NAME}"
-                            checkout scm
-                        }
-                    }
-
-                    stage("Set up environment") {
-                        steps {
-                            script {
-                                if (isUnix()) {
-                                    sh """
-                                        module load conda/3 &&
-                                        conda config --append channels free &&
-                                        module load gcc &&
-                                        conda create --name py python=3.6.0 -y &&
-                                        conda activate py &&
-                                        python -m pip install --upgrade --user pip &&
-                                        python -m pip install numpy &&
-                                        python -m pip install matplotlib &&
-                                        python -m pip install tox==3.14.5 &&
-                                        python -m pip install pylint==2.4.4 &&
-                                        export CC=gcc
-                                    """
-                                } else {
-                                    echo "Setting up env on windows"
-                                }
-                            }
-                        }
-                    }
-
-                    stage("Test") {
-                        steps {
-                            script {
-                                if (isUnix()) {
-                                    sh """
-                                        module load conda/3 &&
-                                        conda config --append channels free &&
-                                        conda activate py &&
-                                        python -m tox
-                                    """
-                                } else {
-                                    echo "Testing on windows"
-                                }
-                            }
-                        }
-                    }
-
-                    stage("PyPI Release Testing") {
-                        when { tag "*" }
-                        steps {
-                            script {
-                                if (isUnix()) {
-                                    sh """
-                                        rm -rf .tox &&
-                                        module load conda/3 &&
-                                        conda config --append channels free &&
-                                        conda activate py &&
-                                        export EUPHONIC_VERSION="\$(python euphonic/get_version.py)" &&
-                                        python -m tox -c release_tox.ini
-                                    """
-                                } else {
-                                    echo "Release testing on windows"
-                                }
-                            }
-                        }
-                    }
-
-                    stage("Static Code Analysis") {
-                        when {
-                            expression {  "${PLATFORM}" == "sl7"  }
-                        }
-                        steps {
-                            script {
-                                if (isUnix()) {
-                                    sh """
-                                        module load conda/3 &&
-                                        conda config --append channels free &&
-                                        conda activate py &&
-                                        python tests_and_analysis/static_code_analysis/run_analysis.py
-                                    """
-                                } else {
-                                    echo "Static code analysis on windows"
-                                }
-                                def pylint_issues = scanForIssues tool: pyLint(pattern: "tests_and_analysis/static_code_analysis/reports/pylint_output.txt")
-                                publishIssues issues: [pylint_issues]
-                            }
-                        }
-                    }
-                }
+        stage("Static Code Analysis") {
+            agent { label "sl7" }
+            steps {
+                sh """
+                    module load conda/3 &&
+                    conda config --append channels free &&
+                    conda activate py &&
+                    python tests_and_analysis/static_code_analysis/run_analysis.py
+                """
+                def pylint_issues = scanForIssues tool: pyLint(pattern: "tests_and_analysis/static_code_analysis/reports/pylint_output.txt")
+                publishIssues issues: [pylint_issues]
             }
         }
     }
