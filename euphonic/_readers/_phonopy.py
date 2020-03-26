@@ -290,7 +290,8 @@ def _read_phonon_data(path='.', phonon_name='', phonon_format=None,
     data_dict['qpts'] = phonon_dict['qpts']
     data_dict['weights'] = phonon_dict['weights']
     data_dict['freqs'] = phonon_dict['freqs']*ufreq
-    data_dict['eigenvecs'] = phonon_dict['eigenvecs']
+    data_dict['eigenvecs'] = convert_eigenvector_phases(phonon_dict,
+                                                        summary_dict)
     data_dict['split_i'] = phonon_dict['split_i']
     data_dict['split_freqs'] = phonon_dict['split_freqs']
     data_dict['split_eigenvecs'] = phonon_dict['split_eigenvecs']
@@ -305,6 +306,26 @@ def _read_phonon_data(path='.', phonon_name='', phonon_format=None,
 
     data_dict['metadata'] = metadata
     return data_dict
+
+
+def convert_eigenvector_phases(phonon_dict, summary_dict):
+    """
+    When interpolating the force constants matrix, Euphonic uses a phase
+    convention of e^iq.r_a, where r_a is the coordinate of each CELL in the
+    supercell, whereas Phonopy uses e^iq.r_k, where r_k is the coordinate of
+    each ATOM in the supercell. This must be accounted for when reading Phonopy
+    eigenvectors by applying a phase of e^-iq(r_k - r_k')
+    """
+    n_ions = summary_dict['n_ions']
+    ion_r = summary_dict['ion_r']
+    qpts = phonon_dict['qpts']
+
+    eigvecs = np.reshape(phonon_dict["eigenvecs"], (len(qpts), n_ions, 3, n_ions, 3))
+    na = np.newaxis
+    rk_diff = ion_r[:, na, :] - ion_r[na, :, :]
+    conversion = np.exp(-2j*np.pi*np.einsum('il,jkl->ijk', qpts, rk_diff))
+    eigvecs = np.einsum('ijklm,ijl->ijklm', eigvecs, conversion)
+    return np.reshape(eigvecs, (len(qpts), 3*n_ions, n_ions, 3))
 
 
 def _check_fc_file(filename):
