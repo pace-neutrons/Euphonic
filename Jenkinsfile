@@ -117,25 +117,8 @@ pipeline {
                         }
                     }
                 }
-
-                post {
-                    always {
-                        junit 'tests_and_analysis/test/reports/junit_report*.xml'
-                    }
-
-                    success {
-                        setGitHubBuildStatus("success", "Build and tests were successful")
-                    }
-
-                    unsuccessful {
-                        setGitHubBuildStatus("failure", "Build or tests have failed")
-                    }
-
-                    cleanup {
-                        deleteDir()
-                    }
-                }
             }
+
         }
 
         stage("Windows environment") {
@@ -175,25 +158,46 @@ pipeline {
                         """
                     }
                 }
-
-                post {
-                    always {
-                        junit 'tests_and_analysis/test/reports/junit_report*.xml'
-                    }
-
-                    success {
-                        setGitHubBuildStatus("success", "Build and tests were successful")
-                    }
-
-                    unsuccessful {
-                        setGitHubBuildStatus("failure", "Build or tests have failed")
-                    }
-
-                    cleanup {
-                        deleteDir()
-                    }
-                }
             }
         }
     }
+
+    post {
+        node("sl7"){
+            always {
+                junit 'tests_and_analysis/test/reports/junit_report*.xml'
+            }
+
+            success {
+                setGitHubBuildStatus("success", "Build and tests were successful")
+            }
+
+            unsuccessful {
+                setGitHubBuildStatus("failure", "Build or tests have failed")
+            }
+
+            cleanup {
+                deleteDir()
+            }
+        }
+
+        node("PACE Windows (Private)"){
+            always {
+                junit 'tests_and_analysis/test/reports/junit_report*.xml'
+            }
+
+            success {
+                setGitHubBuildStatus("success", "Build and tests were successful")
+            }
+
+            unsuccessful {
+                setGitHubBuildStatus("failure", "Build or tests have failed")
+            }
+
+            cleanup {
+                deleteDir()
+            }
+        }
+    }
+
 }
