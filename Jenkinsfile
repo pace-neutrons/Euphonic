@@ -163,38 +163,38 @@ pipeline {
     }
 
     post {
-        node("sl7"){
-            always {
+        always {
+            node("sl7"){
                 junit 'tests_and_analysis/test/reports/junit_report*.xml'
             }
-
-            success {
-                setGitHubBuildStatus("success", "Build and tests were successful")
-            }
-
-            unsuccessful {
-                setGitHubBuildStatus("failure", "Build or tests have failed")
-            }
-
-            cleanup {
-                deleteDir()
+            node("PACE Windows (Private)"){
+                junit 'tests_and_analysis/test/reports/junit_report*.xml'
             }
         }
 
-        node("PACE Windows (Private)"){
-            always {
-                junit 'tests_and_analysis/test/reports/junit_report*.xml'
-            }
-
-            success {
+        success {
+            node("sl7"){
                 setGitHubBuildStatus("success", "Build and tests were successful")
             }
+            node("PACE Windows (Private)"){
+                setGitHubBuildStatus("success", "Build and tests were successful")
+            }
+        }
 
-            unsuccessful {
+        unsuccessful {
+            node("sl7"){
                 setGitHubBuildStatus("failure", "Build or tests have failed")
             }
+            node("PACE Windows (Private)"){
+                setGitHubBuildStatus("success", "Build and tests were successful")
+            }
+        }
 
-            cleanup {
+        cleanup {
+            node("sl7"){
+                deleteDir()
+            }
+            node("PACE Windows (Private)"){
                 deleteDir()
             }
         }
