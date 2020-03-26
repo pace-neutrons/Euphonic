@@ -117,8 +117,25 @@ pipeline {
                         }
                     }
                 }
-            }
 
+                post {
+                    always {
+                        junit 'tests_and_analysis/test/reports/junit_report*.xml'
+                    }
+
+                    success {
+                        setGitHubBuildStatus("success", "Build and tests were successful")
+                    }
+
+                    unsuccessful {
+                        setGitHubBuildStatus("failure", "Build or tests have failed")
+                    }
+
+                    cleanup {
+                        deleteDir()
+                    }
+                }
+            }
         }
 
         stage("Windows environment") {
@@ -158,26 +175,25 @@ pipeline {
                         """
                     }
                 }
+
+                post {
+                    always {
+                        junit 'tests_and_analysis/test/reports/junit_report*.xml'
+                    }
+
+                    success {
+                        setGitHubBuildStatus("success", "Build and tests were successful")
+                    }
+
+                    unsuccessful {
+                        setGitHubBuildStatus("failure", "Build or tests have failed")
+                    }
+
+                    cleanup {
+                        deleteDir()
+                    }
+                }
             }
         }
     }
-
-    post {
-        always {
-            junit 'tests_and_analysis/test/reports/junit_report*.xml'
-        }
-
-        success {
-            setGitHubBuildStatus("success", "Build and tests were successful")
-        }
-
-        unsuccessful {
-            setGitHubBuildStatus("failure", "Build or tests have failed")
-        }
-
-        cleanup {
-            deleteDir()
-        }
-    }
-
 }
