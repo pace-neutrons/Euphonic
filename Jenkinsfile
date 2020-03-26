@@ -46,34 +46,12 @@ pipeline {
 
     stages {
 
-        stage("Checkout") {
+        stage("Checkout: UNIX environment") {
+            agent { label "sl7" }
             steps {
                 setGitHubBuildStatus("pending", "Build and tests are starting...")
                 echo "Branch: ${env.JOB_BASE_NAME}"
-                checkout(
-                    [
-                        $class: 'GitSCM', branches: [[name: '${env.JOB_BASE_NAME}']],
-                        doGenerateSubmoduleConfigurations: false,
-                        extensions: [
-                            [$class: 'RelativeTargetDirectory', relativeTargetDir: 'unix'],
-                            [$class: 'CleanBeforeCheckout'], [$class: 'WipeWorkspace']
-                        ],
-                        submoduleCfg: [],
-                        userRemoteConfigs: [[url: 'https://github.com/pace-neutrons/Euphonic']]
-                    ]
-                )
-                checkout(
-                    [
-                        $class: 'GitSCM', branches: [[name: '${env.JOB_BASE_NAME}']],
-                        doGenerateSubmoduleConfigurations: false,
-                        extensions: [
-                            [$class: 'RelativeTargetDirectory', relativeTargetDir: 'windows'],
-                            [$class: 'CleanBeforeCheckout'], [$class: 'WipeWorkspace']
-                        ],
-                        submoduleCfg: [],
-                        userRemoteConfigs: [[url: 'https://github.com/pace-neutrons/Euphonic']]
-                    ]
-                )
+                checkout scm
             }
         }
 
@@ -81,7 +59,6 @@ pipeline {
             agent { label "sl7" }
             steps {
                 sh """
-                    pushd unix &&
                     module load conda/3 &&
                     conda config --append channels free &&
                     module load gcc &&
@@ -93,7 +70,6 @@ pipeline {
                     python -m pip install tox==3.14.5 &&
                     python -m pip install pylint==2.4.4 &&
                     export CC=gcc &&
-                    popd
                 """
             }
         }
@@ -102,12 +78,10 @@ pipeline {
             agent { label "sl7" }
             steps {
                 sh """
-                    pushd unix &&
                     module load conda/3 &&
                     conda config --append channels free &&
                     conda activate py &&
                     python -m tox &&
-                    popd
                 """
             }
         }
@@ -117,15 +91,21 @@ pipeline {
             when { tag "*" }
             steps {
                 sh """
-                    pushd unix &&
                     rm -rf .tox &&
                     module load conda/3 &&
                     conda config --append channels free &&
                     conda activate py &&
                     export EUPHONIC_VERSION="\$(python euphonic/get_version.py)" &&
                     python -m tox -c release_tox.ini &&
-                    popd
                 """
+            }
+        }
+
+        stage("Checkout: Windows environment") {
+            agent { label "PACE Windows (Private)" }
+            steps {
+                echo "Branch: ${env.JOB_BASE_NAME}"
+                checkout scm
             }
         }
 
