@@ -132,7 +132,8 @@ pipeline {
                     steps {
                         checkout scm
                         bat """
-                            echo "Setting up windows env"
+                            set CONDA="C:\\Programming\\miniconda3\\_conda.exe"
+                            %CONDA% --version
                         """
                     }
                 }
