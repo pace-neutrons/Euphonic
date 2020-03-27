@@ -9,7 +9,7 @@ from .utils import get_data_path
 class TestReadNaClPhononQPoints(unittest.TestCase):
 
     def setUp(self):
-        self.path = os.path.join(get_data_path(), 'phonopy_data', 'qpoints')
+        self.path = os.path.join(get_data_path(), 'phonopy_data', 'NaCl', 'qpoints')
 
         # Create trivial function object so attributes can be assigned to it
         expctd_data = type('', (), {})()

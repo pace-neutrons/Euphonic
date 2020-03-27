@@ -10,7 +10,7 @@ class TestReadInterpolationNaCl(unittest.TestCase):
 
     def setUp(self):
 
-        self.path = os.path.join(get_data_path(), 'phonopy_data', 'interpolation')
+        self.path = os.path.join(get_data_path(), 'phonopy_data', 'NaCl', 'interpolation')
 
         # Create trivial function object so attributes can be assigned to it
         expctd_data = type('', (), {})()
@@ -179,7 +179,7 @@ class TestReadInterpolationNaCl(unittest.TestCase):
 class TestInterpolatePhononsNaCl(unittest.TestCase):
 
     def setUp(self):
-        self.path = os.path.join(get_data_path(), 'phonopy_data', 'interpolation')
+        self.path = os.path.join(get_data_path(), 'phonopy_data', 'NaCl', 'interpolation')
 
         self.qpts = np.array(
                         [[0.00, 0.00, 0.00],
