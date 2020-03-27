@@ -49,8 +49,10 @@ pipeline {
 
         stage("Notify") {
             agent { label "sl7" }
-            setGitHubBuildStatus("pending", "Build and tests are starting...")
-            echo "Branch: ${env.JOB_BASE_NAME}"
+            steps {
+                setGitHubBuildStatus("pending", "Build and tests are starting...")
+                echo "Branch: ${env.JOB_BASE_NAME}"
+            }
         }
 
         stage("UNIX environment") {
