@@ -46,22 +46,22 @@ pipeline {
 
     stages {
 
+
+        stage("Notify") {
+            agent { label "sl7" }
+            setGitHubBuildStatus("pending", "Build and tests are starting...")
+            echo "Branch: ${env.JOB_BASE_NAME}"
+        }
+
         stage("UNIX environment") {
 
             agent { label "sl7" }
 
             stages {
 
-                stage("Checkout: UNIX environment") {
-                    steps {
-                        setGitHubBuildStatus("pending", "Build and tests are starting...")
-                        echo "Branch: ${env.JOB_BASE_NAME}"
-                        checkout scm
-                    }
-                }
-
                 stage("Set up: UNIX environment") {
                     steps {
+                        checkout scm
                         sh """
                             module load conda/3 &&
                             conda config --append channels free &&
@@ -127,15 +127,9 @@ pipeline {
 
             stages {
 
-                stage("Checkout: Windows environment") {
-                    steps {
-                        echo "Branch: ${env.JOB_BASE_NAME}"
-                        checkout scm
-                    }
-                }
-
                 stage("Set up: Windows environment") {
                     steps {
+                        checkout scm
                         bat """
                             echo "Setting up windows env"
                         """
