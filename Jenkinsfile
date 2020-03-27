@@ -132,8 +132,14 @@ pipeline {
                     steps {
                         checkout scm
                         bat """
-                            set CONDA="C:\\Programming\\miniconda3\\condabin\\conda.bat"
-                            %CONDA% --version
+                            conda  config --append channels free
+                            conda create --name py python=3.6.0 -y
+                            conda activate py
+                            python -m pip install --upgrade --user pip
+                            python -m pip install numpy
+                            python -m pip install matplotlib
+                            python -m pip install tox==3.14.5
+                            python -m pip install pylint==2.4.4
                         """
                     }
                 }
@@ -141,7 +147,8 @@ pipeline {
                 stage("Test: Windows environment") {
                     steps {
                         bat """
-                            echo "Testing on windows env"
+                            conda activate py
+                            python -m tox
                         """
                     }
                 }
@@ -150,7 +157,10 @@ pipeline {
                     when { tag "*" }
                     steps {
                         bat """
-                            echo "Release Testing on windows env"
+                            rmdir /s /q .tox
+                            conda activate py
+                            set /p EUPHONIC_VERSION= < python euphonic/get_version.py
+                            python -m tox -c release_tox.ini
                         """
                     }
                 }
