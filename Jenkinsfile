@@ -132,7 +132,7 @@ pipeline {
                     steps {
                         checkout scm
                         bat """
-                            set CONDA="C:\\Programming\\miniconda3\\_conda.exe"
+                            set CONDA="C:\\Programming\\miniconda3\\condabin\\conda.bat"
                             %CONDA% --version
                         """
                     }
