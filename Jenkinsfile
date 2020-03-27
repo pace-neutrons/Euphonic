@@ -118,7 +118,6 @@ pipeline {
                     }
                 }
             }
-
         }
 
         stage("Windows environment") {
@@ -168,19 +167,19 @@ pipeline {
 
         success {
             node("sl7"){
-                setGitHubBuildStatus("success", "Build and tests were successful")
+                setGitHubBuildStatus("success", "Linux: Successful")
             }
             node("PACE Windows (Private)"){
-                setGitHubBuildStatus("success", "Build and tests were successful")
+                setGitHubBuildStatus("success", "Windows: Successful")
             }
         }
 
         unsuccessful {
             node("sl7"){
-                setGitHubBuildStatus("failure", "Build or tests have failed")
+                setGitHubBuildStatus("failure", "Linux: Unsuccessful")
             }
             node("PACE Windows (Private)"){
-                setGitHubBuildStatus("success", "Build and tests were successful")
+                setGitHubBuildStatus("success", "Windows: Unsuccessful")
             }
         }
 
