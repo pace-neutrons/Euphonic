@@ -2,8 +2,15 @@ import sys
 import os
 import pytest
 import coverage
+import argparse
 
 if __name__ == "__main__":
+
+    # Check whether the recording coverage has been requested
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--cov", action="store_true")
+    args_parsed = parser.parse_args()
+    do_record_coverage = args_parsed.cov
 
     # Set output directory to the reports directory under this file's directory
     test_dir = os.path.dirname(os.path.abspath(__file__))
@@ -11,17 +18,20 @@ if __name__ == "__main__":
     junit_xml_filepath = os.path.join(xml_dir, "junit_report.xml")
     coverage_xml_filepath = os.path.join(xml_dir, "coverage.xml")
 
-    # Start recording coverage
-    cov = coverage.Coverage(config_file=os.path.join(test_dir, ".coveragerc"))
-    cov.start()
+    # Start recording coverage if requested
+    cov = None
+    if do_record_coverage:
+        cov = coverage.Coverage(config_file=os.path.join(test_dir, ".coveragerc"))
+        cov.start()
 
     # Run tests and get the resulting exit code
     # 0 is success, 1-5 are different forms of failure (see pytest docs for details)
     test_exit_code = pytest.main(["-x", test_dir, "--junitxml={}".format(junit_xml_filepath)])
 
-    # Report coverage
-    cov.stop()
-    cov.xml_report(outfile=coverage_xml_filepath)
+    # Report coverage if requested
+    if do_record_coverage and cov is not None:
+        cov.stop()
+        cov.xml_report(outfile=coverage_xml_filepath)
 
     # Exit with a failure code if there are any errors or failures
     sys.exit(test_exit_code)

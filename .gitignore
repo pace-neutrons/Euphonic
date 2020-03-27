@@ -8,3 +8,4 @@ euphonic.egg-info/
 tests_and_analysis/test/reports/
 tests_and_analysis/static_code_analysis/reports/
 .coverage
+*.pyd
