@@ -638,7 +638,8 @@ def _extract_summary(summary_object, fc_extract=False):
 
     # Coordinates of supercell ions in fractional coords of the unit cell
     sc_ion_r_ucell = np.einsum('ij,jk->ij', sc_ion_r, sc_matrix)
-    cell_origins = np.array(sc_ion_r_ucell[:n_ions] - ion_r[0]).astype(np.int32)
+    cell_origins = np.rint(
+        sc_ion_r_ucell[:n_cells_in_sc] - ion_r[0]).astype(np.int32)
 
     summary_dict = {}
     summary_dict['n_ions'] = n_ions
