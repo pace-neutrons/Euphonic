@@ -132,9 +132,10 @@ pipeline {
                     steps {
                         checkout scm
                         bat """
-                            conda  config --append channels free
-                            conda create --name py python=3.6.0 -y
-                            conda activate py
+                            set CONDA="C:\\Programming\\miniconda3\\_conda.exe"
+                            %CONDA% config --append channels free
+                            %CONDA% create --name py python=3.6.0 -y
+                            %CONDA% activate py
                             python -m pip install --upgrade --user pip
                             python -m pip install numpy
                             python -m pip install matplotlib
@@ -147,7 +148,8 @@ pipeline {
                 stage("Test: Windows environment") {
                     steps {
                         bat """
-                            conda activate py
+                            set CONDA="C:\\Programming\\miniconda3\\_conda.exe"
+                            %CONDA% activate py
                             python -m tox
                         """
                     }
@@ -157,8 +159,9 @@ pipeline {
                     when { tag "*" }
                     steps {
                         bat """
+                            set CONDA="C:\\Programming\\miniconda3\\_conda.exe"
                             rmdir /s /q .tox
-                            conda activate py
+                            %CONDA% activate py
                             set /p EUPHONIC_VERSION= < python euphonic/get_version.py
                             python -m tox -c release_tox.ini
                         """
