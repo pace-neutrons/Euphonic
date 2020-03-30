@@ -84,7 +84,7 @@ void calculate_dipole_correction(const double *qpt, const int n_ions,
     // Don't include G=0 vector if q=0
     n_gvecs_local = n_gvecs;
     if (is_gamma(qpt_norm)) {
-        gvec_phases += 18;
+        gvec_phases += 2*n_ions;
         gvecs_cart += 3;
         n_gvecs_local--;
     }
