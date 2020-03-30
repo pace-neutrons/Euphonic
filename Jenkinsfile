@@ -132,7 +132,7 @@ pipeline {
                     steps {
                         checkout scm
                         bat """
-                            set CONDA="C:\\Programming\\miniconda3\\_conda.exe"
+                            set CONDA="C:\\Programming\\miniconda3\\condabin\\conda.bat"
                             %CONDA% config --append channels free
                             %CONDA% create --name py python=3.6.0 -y
                             %CONDA% activate py
@@ -148,7 +148,7 @@ pipeline {
                 stage("Test: Windows environment") {
                     steps {
                         bat """
-                            set CONDA="C:\\Programming\\miniconda3\\_conda.exe"
+                            set CONDA="C:\\Programming\\miniconda3\\condabin\\conda.bat"
                             %CONDA% activate py
                             python -m tox
                         """
@@ -159,7 +159,7 @@ pipeline {
                     when { tag "*" }
                     steps {
                         bat """
-                            set CONDA="C:\\Programming\\miniconda3\\_conda.exe"
+                            set CONDA="C:\\Programming\\miniconda3\\condabin\\conda.bat"
                             rmdir /s /q .tox
                             %CONDA% activate py
                             set /p EUPHONIC_VERSION= < python euphonic/get_version.py
