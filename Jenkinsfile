@@ -133,9 +133,9 @@ pipeline {
                         checkout scm
                         bat """
                             set CONDA="C:\\Programming\\miniconda3\\condabin\\conda.bat"
-                            %CONDA% config --append channels free
-                            %CONDA% create --name py python=3.6.0 -y
-                            %CONDA% activate py
+                            CALL %CONDA% config --append channels free
+                            CALL %CONDA% create --name py python=3.6.0 -y
+                            CALL %CONDA% activate py
                             python -m pip install --upgrade --user pip
                             python -m pip install numpy
                             python -m pip install matplotlib
@@ -149,7 +149,7 @@ pipeline {
                     steps {
                         bat """
                             set CONDA="C:\\Programming\\miniconda3\\condabin\\conda.bat"
-                            %CONDA% activate py
+                            CALL %CONDA% activate py
                             python -m tox
                         """
                     }
@@ -161,7 +161,7 @@ pipeline {
                         bat """
                             set CONDA="C:\\Programming\\miniconda3\\condabin\\conda.bat"
                             rmdir /s /q .tox
-                            %CONDA% activate py
+                            CALL %CONDA% activate py
                             set /p EUPHONIC_VERSION= < python euphonic/get_version.py
                             python -m tox -c release_tox.ini
                         """
