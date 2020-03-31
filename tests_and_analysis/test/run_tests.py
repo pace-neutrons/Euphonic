@@ -23,7 +23,7 @@ def _get_test_and_reports_dir() -> Tuple[str, str]:
     return test_dir, reports_dir
 
 
-def _get_parsed_args(test_dir: str) -> Tuple[bool, bool, str, Union[str, None]]:
+def _get_parsed_args(test_dir: str) -> Tuple[bool, bool, str, str]:
     """
     Get the arguments parsed to this script and return some formatted variables.
 
@@ -43,14 +43,14 @@ def _get_parsed_args(test_dir: str) -> Tuple[bool, bool, str, Union[str, None]]:
                         help="The test file to run", default=test_dir)
     parser.add_argument("-m", action="store", dest="markers_to_run",
                         help="Limit the test runs to only the specified markers "
-                             "e.g. \"unit\" or \"unit or integration\"", default=None)
+                             "e.g. \"unit\" or \"unit or integration\"", default="")
     args_parsed = parser.parse_args()
     return args_parsed.cov, args_parsed.report, args_parsed.test_file, \
            args_parsed.markers_to_run
 
 
 def _build_pytest_options(reports_dir: str, do_report_tests: bool, tests: str,
-                          markers: Union[str, None]) -> List[str]:
+                          markers: str) -> List[str]:
     """
     Build the options for pytest to use.
 
@@ -75,8 +75,7 @@ def _build_pytest_options(reports_dir: str, do_report_tests: bool, tests: str,
         junit_xml_filepath: str = os.path.join(reports_dir, "junit_report.xml")
         options.append("--junitxml={}".format(junit_xml_filepath))
     # Only run the specified markers
-    if markers is not None:
-        options.append("-m={}".format(markers))
+    options.append("-m={}".format(markers))
     return options
 
 
