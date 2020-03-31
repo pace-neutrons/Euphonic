@@ -13,8 +13,8 @@ import numpy as np
 from euphonic.data.interpolation import InterpolationData
 
 
-def calculate_optimum_eta(seedname: str, n: int = 100, min: float = 0.25, max: float = 1.5, step: float = 0.25,
-                          print_to_terminal: bool = False):
+def calculate_optimum_eta(seedname: str, eta_min: float = 0.25, eta_max: float = 1.5, eta_step: float = 0.25,
+                          n: int = 100, print_to_terminal: bool = False):
     """
     Calculate the optimum eta and other etas from the seedname castep_bin file.
 
@@ -22,14 +22,14 @@ def calculate_optimum_eta(seedname: str, n: int = 100, min: float = 0.25, max: f
     ----------
     seedname : str
         The name of the castep_bin file to calculate from
+    eta_min : float, optional, Default: 0.25
+        The minimum value of eta to test
+    eta_max : float, optional, Default: 1.5
+        The maximum value of eta to test
+    eta_step : float, optional, Default: 0.25
+        The difference between each eta to test
     n : int, optional, Default: 100
         The number of times to loop over q-points. A higher value will get a more reliable timing, but will take longer
-    min : float, optional, Default: 0.25
-        The minimum value of eta to test
-    max : float, optional, Default: 1.5
-        The maximum value of eta to test
-    step : float, optional, Default: 0.25
-        The difference between each eta to test
     print_to_terminal : bool, optional, Default: False
         Whether to print the outcome to terminal or not
 
@@ -39,7 +39,7 @@ def calculate_optimum_eta(seedname: str, n: int = 100, min: float = 0.25, max: f
         A tuple of the optimal eta, the time it took to initialise the optimal eta,
         the time per qpoint for the optimal eta, other etas, their initialisation times and their times per qpoint.
     """
-    etas = np.arange(min, max + step/100, step)
+    etas = np.arange(eta_min, eta_max + eta_step / 100, eta_step)
     t_init = np.zeros(len(etas), dtype=np.float64)
     t_tot = np.zeros(len(etas), dtype=np.float64)
 
