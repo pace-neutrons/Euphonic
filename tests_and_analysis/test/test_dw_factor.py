@@ -47,14 +47,14 @@ class TestDWFactorQuartz(unittest.TestCase):
         expected_dw = np.reshape(
             np.loadtxt(os.path.join(self.dw_path, 'dw_T5.txt')),
             (self.data.n_ions, 3, 3))
-        npt.assert_allclose(dw, expected_dw, atol=2e-14)
+        npt.assert_allclose(dw, expected_dw, atol=2e-8)
 
     def test_dw_T100(self):
         dw = self.data._dw_coeff(100)
         expected_dw = np.reshape(
             np.loadtxt(os.path.join(self.dw_path, 'dw_T100.txt')),
             (self.data.n_ions, 3, 3))
-        npt.assert_allclose(dw, expected_dw, atol=5e-10)
+        npt.assert_allclose(dw, expected_dw, atol=6e-8)
 
     def test_empty_idata_raises_exception(self):
         empty_data = InterpolationData.from_castep(self.seedname, self.path)

@@ -529,7 +529,7 @@ class InterpolationData(PhononData):
             dyn_mat_corr *= dyn_mat_weighting
 
             try:
-                evals, evecs = np.linalg.eigh(dyn_mat_corr)
+                evals, evecs = np.linalg.eigh(dyn_mat_corr, UPLO='U')
             # Fall back to zheev if eigh fails (eigh calls zheevd)
             except np.linalg.LinAlgError:
                 evals, evecs, info = zheev(dyn_mat_corr)
@@ -1094,7 +1094,7 @@ class InterpolationData(PhononData):
         n_branches = dyn_mat.shape[0]
         n_ions = int(n_branches/3)
 
-        evals, evecs = np.linalg.eigh(dyn_mat)
+        evals, evecs = np.linalg.eigh(dyn_mat, UPLO='U')
         evec_reshape = np.reshape(
             np.transpose(evecs), (n_branches, n_ions, 3))
         # Sum displacements for all ions in each branch
