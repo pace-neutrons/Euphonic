@@ -10,6 +10,8 @@
     `#25 <https://github.com/pace-neutrons/Euphonic/issues/25>`_
   - Fix issue saving plots to file with dispersion.py, see
     `#27 <https://github.com/pace-neutrons/Euphonic/issues/27>`_
+  - Fix incorrect frequencies at gamma point when using dipole correction
+    in C, `#45 <https://github.com/pace-neutrons/Euphonic/issues/45>`_
 
 - Improvements:
 
