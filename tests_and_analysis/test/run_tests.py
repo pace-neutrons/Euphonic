@@ -31,9 +31,9 @@ if __name__ == "__main__":
     # 0 is success, 1-5 are different forms of failure (see pytest docs for details)
     if do_report_results:
         junit_xml_filepath = os.path.join(xml_dir, "junit_report.xml")
-        test_exit_code = pytest.main(["-x", test_dir, "--junitxml={}".format(junit_xml_filepath)])
+        test_exit_code = pytest.main([test_dir, "--junitxml={}".format(junit_xml_filepath)])
     else:
-        test_exit_code = pytest.main(["-x", test_dir])
+        test_exit_code = pytest.main([test_dir])
 
     # Report coverage if requested
     if do_record_coverage and cov is not None:
