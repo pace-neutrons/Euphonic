@@ -61,7 +61,7 @@ pipeline {
 
             stages {
 
-                stage("Set up: UNIX environment") {
+                stage("Set up") {
                     steps {
                         checkout scm
                         sh """
@@ -80,7 +80,7 @@ pipeline {
                     }
                 }
 
-                stage("Test: UNIX environment") {
+                stage("Test") {
                     steps {
                         sh """
                             module load conda/3 &&
@@ -91,7 +91,7 @@ pipeline {
                     }
                 }
 
-                stage("PyPI Release Testing: UNIX environment"){
+                stage("PyPI Release Testing"){
                     when { tag "*" }
                     steps {
                         sh """
@@ -128,7 +128,7 @@ pipeline {
 
             stages {
 
-                stage("Set up: Windows environment") {
+                stage("Set up") {
                     steps {
                         checkout scm
                         bat """
@@ -145,10 +145,10 @@ pipeline {
                     }
                 }
 
-                stage("Test: Windows environment") {
+                stage("Test VS2017") {
                     steps {
                         bat """
-                            C:\\Programming\\VS2017\\Community\\VC\\Auxiliary\\Build\\vcvarsall.bat x86_amd64
+                            CALL C:\\Programming\\VS2017\\Community\\VC\\Auxiliary\\Build\\vcvarsall.bat x86_amd64
                             set CONDA="C:\\Programming\\miniconda3\\condabin\\conda.bat"
                             CALL %CONDA% activate py
                             python -m tox
@@ -156,11 +156,36 @@ pipeline {
                     }
                 }
 
-                stage("PyPI Release Testing: Windows environment"){
+                stage("Test VS2019") {
+                    steps {
+                        bat """
+                            CALL C:\\Programming\\Microsoft Visual Studio\\2019\\Community\\VC\\Auxiliary\\Build\\vcvars64.bat
+                            set CONDA="C:\\Programming\\miniconda3\\condabin\\conda.bat"
+                            CALL %CONDA% activate py
+                            python -m tox
+                        """
+                    }
+                }
+
+                stage("PyPI Release Testing VS2019"){
                     when { tag "*" }
                     steps {
                         bat """
-                            C:\\Programming\\VS2017\\Community\\VC\\Auxiliary\\Build\\vcvarsall.bat x86_amd64
+                            CALL C:\\Programming\\VS2017\\Community\\VC\\Auxiliary\\Build\\vcvarsall.bat x86_amd64
+                            set CONDA="C:\\Programming\\miniconda3\\condabin\\conda.bat"
+                            rmdir /s /q .tox
+                            CALL %CONDA% activate py
+                            set /p EUPHONIC_VERSION= < python euphonic/get_version.py
+                            python -m tox -c release_tox.ini
+                        """
+                    }
+                }
+
+                stage("PyPI Release Testing VS2017"){
+                    when { tag "*" }
+                    steps {
+                        bat """
+                            CALL C:\\Programming\\Microsoft Visual Studio\\2019\\Community\\VC\\Auxiliary\\Build\\vcvars64.bat
                             set CONDA="C:\\Programming\\miniconda3\\condabin\\conda.bat"
                             rmdir /s /q .tox
                             CALL %CONDA% activate py
