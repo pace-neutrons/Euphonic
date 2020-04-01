@@ -148,6 +148,7 @@ pipeline {
                 stage("Test: Windows environment") {
                     steps {
                         bat """
+                            C:\\Programming\\VS2015\\VC\\vcvarshall.bat
                             set CONDA="C:\\Programming\\miniconda3\\condabin\\conda.bat"
                             CALL %CONDA% activate py
                             python -m tox
@@ -159,6 +160,7 @@ pipeline {
                     when { tag "*" }
                     steps {
                         bat """
+                            C:\\Programming\\VS2015\\VC\\vcvarshall.bat
                             set CONDA="C:\\Programming\\miniconda3\\condabin\\conda.bat"
                             rmdir /s /q .tox
                             CALL %CONDA% activate py
