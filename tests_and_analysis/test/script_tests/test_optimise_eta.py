@@ -6,6 +6,7 @@ from tests_and_analysis.test.utils import get_data_path
 
 quartz_castep_bin = os.path.join(get_data_path(), "interpolation", "quartz", "quartz")
 
+
 @pytest.fixture
 def call_with_defaults_and_quartz():
     return calculate_optimum_eta(quartz_castep_bin)
@@ -40,7 +41,7 @@ def get_lowest_time_per_qpt_and_index(etas_time_per_qpts):
     return lowest_time_per_qpt, lowest_time_per_qpt_index
 
 
-@pytest.mark.unit
+@pytest.mark.integration
 def test_optimal_has_lowest_time_per_qpt(call_with_params_and_quartz):
     # Unpack data
     optimal_eta = call_with_params_and_quartz[0]
