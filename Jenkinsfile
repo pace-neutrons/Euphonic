@@ -148,7 +148,7 @@ pipeline {
                 stage("Test: Windows environment") {
                     steps {
                         bat """
-                            IF EXIST C:\\Programming\\VS2015\\VC\\bin SET PATH=%PATH%;C:\\Programming\\VS2015\\VC\\bin
+                            C:\\Programming\\VS2017\\Community\\VC\\Auxiliary\\Build\\vcvarsall.bat x86_amd64
                             set CONDA="C:\\Programming\\miniconda3\\condabin\\conda.bat"
                             CALL %CONDA% activate py
                             python -m tox
@@ -160,7 +160,7 @@ pipeline {
                     when { tag "*" }
                     steps {
                         bat """
-                            IF EXIST C:\\Programming\\VS2015\\VC\\bin SET PATH=%PATH%;C:\\Programming\\VS2015\\VC\\bin
+                            C:\\Programming\\VS2017\\Community\\VC\\Auxiliary\\Build\\vcvarsall.bat x86_amd64
                             set CONDA="C:\\Programming\\miniconda3\\condabin\\conda.bat"
                             rmdir /s /q .tox
                             CALL %CONDA% activate py
