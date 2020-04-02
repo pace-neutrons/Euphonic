@@ -88,7 +88,7 @@ class TestStructureFactorInterpolationDataNaClSerial(unittest.TestCase):
         sf_sum = np.zeros(sf.shape)
         expected_sf_sum = np.zeros(sf.shape)
         for q in range(self.data.n_qpts):
-            TOL = 1e-8
+            TOL = 5e-4
             diff = np.append(TOL + 1, np.diff(self.data.freqs[q].magnitude))
             unique_index = np.where(diff > TOL)[0]
             x = np.zeros(self.data.n_branches, dtype=np.int32)
@@ -102,8 +102,10 @@ class TestStructureFactorInterpolationDataNaClSerial(unittest.TestCase):
         # tolerances
         gi = self.gamma_idx
         npt.assert_allclose(np.delete(sf_sum, gi, axis=0),
-                            np.delete(expected_sf_sum, gi, axis=0))
-        npt.assert_allclose(sf_sum[gi, 3:], expected_sf_sum[gi, 3:])
+                            np.delete(expected_sf_sum, gi, axis=0),
+                            atol=1e-20)
+        npt.assert_allclose(sf_sum[gi, 3:], expected_sf_sum[gi, 3:],
+                            atol=1e-20)
 
     def test_sf_T5_dw_idata(self):
         sf = self.data.calculate_structure_factor(
@@ -113,7 +115,7 @@ class TestStructureFactorInterpolationDataNaClSerial(unittest.TestCase):
         sf_sum = np.zeros(sf.shape)
         expected_sf_sum = np.zeros(sf.shape)
         for q in range(self.data.n_qpts):
-            TOL = 1e-8
+            TOL = 5e-4
             diff = np.append(TOL + 1, np.diff(self.data.freqs[q].magnitude))
             unique_index = np.where(diff > TOL)[0]
             x = np.zeros(self.data.n_branches, dtype=np.int32)
@@ -124,9 +126,10 @@ class TestStructureFactorInterpolationDataNaClSerial(unittest.TestCase):
                 unique_modes, expected_sf[q])
         gi = self.gamma_idx
         npt.assert_allclose(np.delete(sf_sum, gi, axis=0),
-                            np.delete(expected_sf_sum, gi, axis=0))
+                            np.delete(expected_sf_sum, gi, axis=0),
+                            atol=1e-20)
         npt.assert_allclose(sf_sum[gi, 3:], expected_sf_sum[gi, 3:],
-                            rtol=5e-3, atol=1e-12)
+                            atol=1e-20)
 
     def test_sf_T5_dw_pdata(self):
         sf = self.data.calculate_structure_factor(
@@ -137,7 +140,7 @@ class TestStructureFactorInterpolationDataNaClSerial(unittest.TestCase):
         sf_sum = np.zeros(sf.shape)
         expected_sf_sum = np.zeros(sf.shape)
         for q in range(self.data.n_qpts):
-            TOL = 1e-8
+            TOL = 5e-4
             diff = np.append(TOL + 1, np.diff(self.data.freqs[q].magnitude))
             unique_index = np.where(diff > TOL)[0]
             x = np.zeros(self.data.n_branches, dtype=np.int32)
@@ -148,9 +151,10 @@ class TestStructureFactorInterpolationDataNaClSerial(unittest.TestCase):
                 unique_modes, expected_sf[q])
         gi = self.gamma_idx
         npt.assert_allclose(np.delete(sf_sum, gi, axis=0),
-                            np.delete(expected_sf_sum, gi, axis=0), rtol=1e-6)
+                            np.delete(expected_sf_sum, gi, axis=0),
+                            atol=1e-20)
         npt.assert_allclose(sf_sum[gi, 3:], expected_sf_sum[gi, 3:],
-                            rtol=5e-3, atol=1e-12)
+                            atol=1e-20)
 
     def test_sf_T100(self):
         sf = self.data.calculate_structure_factor(
@@ -161,7 +165,7 @@ class TestStructureFactorInterpolationDataNaClSerial(unittest.TestCase):
         sf_sum = np.zeros(sf.shape)
         expected_sf_sum = np.zeros(sf.shape)
         for q in range(self.data.n_qpts):
-            TOL = 1e-8
+            TOL = 5e-4
             diff = np.append(TOL + 1, np.diff(self.data.freqs[q].magnitude))
             unique_index = np.where(diff > TOL)[0]
             x = np.zeros(self.data.n_branches, dtype=np.int32)
@@ -172,9 +176,10 @@ class TestStructureFactorInterpolationDataNaClSerial(unittest.TestCase):
                 unique_modes, expected_sf[q])
         gi = self.gamma_idx
         npt.assert_allclose(np.delete(sf_sum, gi, axis=0),
-                            np.delete(expected_sf_sum, gi, axis=0))
+                            np.delete(expected_sf_sum, gi, axis=0),
+                            atol=1e-20)
         npt.assert_allclose(sf_sum[gi, 3:], expected_sf_sum[gi, 3:],
-                            rtol=5e-3, atol=1e-12)
+                            atol=1e-20)
 
     def test_sf_T100_dw_idata(self):
         sf = self.data.calculate_structure_factor(
@@ -185,7 +190,7 @@ class TestStructureFactorInterpolationDataNaClSerial(unittest.TestCase):
         sf_sum = np.zeros(sf.shape)
         expected_sf_sum = np.zeros(sf.shape)
         for q in range(self.data.n_qpts):
-            TOL = 1e-8
+            TOL = 5e-4
             diff = np.append(TOL + 1, np.diff(self.data.freqs[q].magnitude))
             unique_index = np.where(diff > TOL)[0]
             x = np.zeros(self.data.n_branches, dtype=np.int32)
@@ -196,9 +201,10 @@ class TestStructureFactorInterpolationDataNaClSerial(unittest.TestCase):
                 unique_modes, expected_sf[q])
         gi = self.gamma_idx
         npt.assert_allclose(np.delete(sf_sum, gi, axis=0),
-                            np.delete(expected_sf_sum, gi, axis=0), rtol=1e-6)
+                            np.delete(expected_sf_sum, gi, axis=0),
+                            atol=1e-20)
         npt.assert_allclose(sf_sum[gi, 3:], expected_sf_sum[gi, 3:],
-                            rtol=5e-3, atol=1e-12)
+                            atol=1e-20)
 
     def test_sf_T100_dw_pdata(self):
         sf = self.data.calculate_structure_factor(
@@ -209,7 +215,7 @@ class TestStructureFactorInterpolationDataNaClSerial(unittest.TestCase):
         sf_sum = np.zeros(sf.shape)
         expected_sf_sum = np.zeros(sf.shape)
         for q in range(self.data.n_qpts):
-            TOL = 1e-8
+            TOL = 5e-4
             diff = np.append(TOL + 1, np.diff(self.data.freqs[q].magnitude))
             unique_index = np.where(diff > TOL)[0]
             x = np.zeros(self.data.n_branches, dtype=np.int32)
@@ -220,75 +226,76 @@ class TestStructureFactorInterpolationDataNaClSerial(unittest.TestCase):
                 unique_modes, expected_sf[q])
         gi = self.gamma_idx
         npt.assert_allclose(np.delete(sf_sum, gi, axis=0),
-                            np.delete(expected_sf_sum, gi, axis=0), rtol=1e-6)
+                            np.delete(expected_sf_sum, gi, axis=0),
+                            atol=1e-20)
         npt.assert_allclose(sf_sum[gi, 3:], expected_sf_sum[gi, 3:],
-                            rtol=5e-3, atol=1e-12)
+                            atol=1e-20)
 
 
-#class TestStructureFactorInterpolationDataNaClSerialC(TestStructureFactorInterpolationDataNaClSerial):
-#
-#    def setUp(self):
-#        # Need to separately test SF calculation with interpolated phonon data
-#        # to test eigenvector calculations
-#        data_path = os.path.join(
-#            get_data_path(), 'phonopy_data', 'NaCl')
-#        self.interpolation_path = os.path.join(data_path, 'interpolation')
-#        self.sf_path = os.path.join(data_path, 'structure_factor')
-#        self.scattering_lengths = {'Na': 3.63, 'Cl': 9.577}
-#        qpts = np.array([[0., 0., 0.],
-#                         [0., 0., 0.5],
-#                         [-0.25, 0.5, 0.5],
-#                         [-0.151515, 0.575758, 0.5],
-#                         [1., 1., 1.]])
-#        self.gamma_idx = 4
-#
-#        self.data = InterpolationData.from_phonopy(
-#            path=self.interpolation_path, summary_name='phonopy.yaml')
-#        self.data.calculate_fine_phonons(qpts, asr='reciprocal', use_c=True,
-#                                         fall_back_on_python=False)
-#
-#        # InterpolationData object for DW grid
-#        self.dw_idata = InterpolationData.from_phonopy(
-#            path=self.interpolation_path, summary_name='phonopy.yaml')
-#        self.dw_idata.calculate_fine_phonons(
-#            np.loadtxt(os.path.join(get_data_path(), 'qgrid_444.txt')),
-#            asr='reciprocal', use_c=True, fall_back_on_python=False)
-#
-#        # PhononData object for DW grid
-#        self.dw_pdata = PhononData.from_phonopy(
-#            phonon_name='mesh.yaml', path=os.path.join(data_path, 'mesh'))
-#
-#
-#class TestStructureFactorInterpolationDataNaClParallelC(TestStructureFactorInterpolationDataNaClSerial):
-#
-#    def setUp(self):
-#        # Need to separately test SF calculation with interpolated phonon data
-#        # to test eigenvector calculations
-#        data_path = os.path.join(
-#            get_data_path(), 'phonopy_data', 'NaCl')
-#        self.interpolation_path = os.path.join(data_path, 'interpolation')
-#        self.sf_path = os.path.join(data_path, 'structure_factor')
-#        self.scattering_lengths = {'Na': 3.63, 'Cl': 9.577}
-#        qpts = np.array([[0., 0., 0.],
-#                         [0., 0., 0.5],
-#                         [-0.25, 0.5, 0.5],
-#                         [-0.151515, 0.575758, 0.5],
-#                         [1., 1., 1.]])
-#        self.gamma_idx = 4
-#
-#        self.data = InterpolationData.from_phonopy(
-#            path=self.interpolation_path, summary_name='phonopy.yaml')
-#        self.data.calculate_fine_phonons(qpts, asr='reciprocal', use_c=True,
-#                                         fall_back_on_python=False, n_threads=2)
-#
-#        # InterpolationData object for DW grid
-#        self.dw_idata = InterpolationData.from_phonopy(
-#            path=self.interpolation_path, summary_name='phonopy.yaml')
-#        self.dw_idata.calculate_fine_phonons(
-#            np.loadtxt(os.path.join(get_data_path(), 'qgrid_444.txt')),
-#            asr='reciprocal', use_c=True, fall_back_on_python=False,
-#            n_threads=2)
-#
-#        # PhononData object for DW grid
-#        self.dw_pdata = PhononData.from_phonopy(
-#            phonon_name='mesh.yaml', path=os.path.join(data_path, 'mesh'))
+class TestStructureFactorInterpolationDataNaClSerialC(TestStructureFactorInterpolationDataNaClSerial):
+
+    def setUp(self):
+        # Need to separately test SF calculation with interpolated phonon data
+        # to test eigenvector calculations
+        data_path = os.path.join(
+            get_data_path(), 'phonopy_data', 'NaCl')
+        self.interpolation_path = os.path.join(data_path, 'interpolation')
+        self.sf_path = os.path.join(data_path, 'structure_factor')
+        self.scattering_lengths = {'Na': 3.63, 'Cl': 9.577}
+        qpts = np.array([[0., 0., 0.],
+                         [0., 0., 0.5],
+                         [-0.25, 0.5, 0.5],
+                         [-0.151515, 0.575758, 0.5],
+                         [1., 1., 1.]])
+        self.gamma_idx = 4
+
+        self.data = InterpolationData.from_phonopy(
+            path=self.interpolation_path, summary_name='phonopy.yaml')
+        self.data.calculate_fine_phonons(qpts, asr='reciprocal', use_c=True,
+                                         fall_back_on_python=False)
+
+        # InterpolationData object for DW grid
+        self.dw_idata = InterpolationData.from_phonopy(
+            path=self.interpolation_path, summary_name='phonopy.yaml')
+        self.dw_idata.calculate_fine_phonons(
+            np.loadtxt(os.path.join(get_data_path(), 'qgrid_444.txt')),
+            asr='reciprocal', use_c=True, fall_back_on_python=False)
+
+        # PhononData object for DW grid
+        self.dw_pdata = PhononData.from_phonopy(
+            phonon_name='mesh.yaml', path=os.path.join(data_path, 'mesh'))
+
+
+class TestStructureFactorInterpolationDataNaClParallelC(TestStructureFactorInterpolationDataNaClSerial):
+
+    def setUp(self):
+        # Need to separately test SF calculation with interpolated phonon data
+        # to test eigenvector calculations
+        data_path = os.path.join(
+            get_data_path(), 'phonopy_data', 'NaCl')
+        self.interpolation_path = os.path.join(data_path, 'interpolation')
+        self.sf_path = os.path.join(data_path, 'structure_factor')
+        self.scattering_lengths = {'Na': 3.63, 'Cl': 9.577}
+        qpts = np.array([[0., 0., 0.],
+                         [0., 0., 0.5],
+                         [-0.25, 0.5, 0.5],
+                         [-0.151515, 0.575758, 0.5],
+                         [1., 1., 1.]])
+        self.gamma_idx = 4
+
+        self.data = InterpolationData.from_phonopy(
+            path=self.interpolation_path, summary_name='phonopy.yaml')
+        self.data.calculate_fine_phonons(qpts, asr='reciprocal', use_c=True,
+                                         fall_back_on_python=False, n_threads=2)
+
+        # InterpolationData object for DW grid
+        self.dw_idata = InterpolationData.from_phonopy(
+            path=self.interpolation_path, summary_name='phonopy.yaml')
+        self.dw_idata.calculate_fine_phonons(
+            np.loadtxt(os.path.join(get_data_path(), 'qgrid_444.txt')),
+            asr='reciprocal', use_c=True, fall_back_on_python=False,
+            n_threads=2)
+
+        # PhononData object for DW grid
+        self.dw_pdata = PhononData.from_phonopy(
+            phonon_name='mesh.yaml', path=os.path.join(data_path, 'mesh'))
