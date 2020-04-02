@@ -14,129 +14,111 @@ except ImportError as e:
 
 
 def _convert_weights(weights):
-    """ DOC
-    Convert atom weights to CASTEP normalised convention.
+    """
+    Convert q-point weights to normalised convention
 
     Parameters
     ----------
-    weights : list
-        List of weights
+    weights : (n_qpts,) float ndarray
+        Weights in Phonopy convention
 
     Returns
     ----------
-    norm_weights : list
-        List of normalised weights
+    norm_weights : (n_qpts,) float ndarray
+        Normalised weights
     """
-    weights = np.array(weights)
     total_weight = weights.sum()
-    norm_weights = list(weights / total_weight)
-    return norm_weights
+    return weights/total_weight
 
-def _extract_phonon_data(phonon_data):
-    """ DOC
-    Search a given data object (dict or hdf5) for phonon data.
+def _extract_phonon_data_yaml(phonon_data):
+    """
+    From a dictionary obtained from reading a mesh/band/qpoint.yaml file,
+    extract the relevant information as a dict of Numpy arrays. No unit
+    conversion is done at this point, so they are in the same units as the .yaml
+    file
 
     Parameters
     ----------
     phonon_data : dict
-        The Phonopy data object which contains phonon data.
+        Obtained from reading a Phonopy mesh/band/qpoint.yaml file
 
     Returns
     -------
     data_dict : dict
-        A dict with the following keys: 'n_ions', 'n_branches', 'n_qpts'
-        'cell_vec', 'recip_vec', 'ion_r', 'ion_type', 'ion_mass', 'qpts',
-        'weights', 'freqs', 'eigenvecs'. The return data has original
-        Phonopy units.
+        A dict with the following keys:
+            'qpts', 'freqs'
+        It may also have the following keys if they are present in the .yaml
+        file:
+            'eigenvecs', 'weights', 'cell_vec', 'ion_r', 'ion_mass', 'ion_type'
     """
 
-    n_qpts = phonon_data['nqpoint']
-    #n_ions = phonon_data['natom']
-    #cell_vec = np.array(phonon_data['lattice'])
-    #recip_vec = np.array(phonon_data['reciprocal_lattice'])
-    qpts = np.array([phon['q-position'] for phon in phonon_data['phonon']])
+    data_dict = {}
+    phonons = [phon for phon in phonon_data['phonon']]
+    bands_data_each_qpt = [bands_data['band'] for bands_data in phonons]
+
+    data_dict['qpts'] = np.array([phon['q-position'] for phon in phonons])
+    data_dict['freqs'] = np.array(
+        [[band_data['frequency'] for band_data in bands_data]
+            for bands_data in bands_data_each_qpt])
+    try:
+        data_dict['eigenvecs'] = np.squeeze(np.array(
+            [[band_data['eigenvector'] for band_data in bands_data]
+                for bands_data in bands_data_each_qpt]).view(np.complex128))
+    except KeyError:
+        pass
 
     try:
-        weights = _convert_weights([phon['weight'] for phon in phonon_data['phonon']])
-    except:
-        weights = [1/len(qpts) for i in range(len(qpts))]
+        data_dict['weights'] = np.array([phon['weight'] for phon in phonons])
+    except KeyError:
+        pass
 
-    phonons = [phon for phon in phonon_data['phonon']]
-    bands_data_each_qpt = [bands_data['band']
-                            for bands_data in phonons]
-
-    # The frequency for each band at each q-point
-    freqs = np.array([[band_data['frequency']
-                            for band_data in bands_data]
-                              for bands_data in bands_data_each_qpt])
-
-    n_branches = freqs.shape[1]
-
-    # The eigenvector for each atom for each band at each q-point
-    #TODO 
-    #    phase changes need to be applied to eigenvecs to convert from phonopy
-    #    indexing convention to euphonic convention.
-    eigenvecs = np.squeeze(np.array([ [band_data['eigenvector']
-                            for band_data in bands_data]
-                              for bands_data in bands_data_each_qpt]).view(np.complex128))
-
-    #ion_type = [ion['symbol'] for ion in phonon_data['points']]
-    #ion_r = np.array([ion['coordinates'] for ion in phonon_data['points']])
-    #ion_mass = np.array([ion['mass'] for ion in phonon_data['points']])
-
-    split_i = np.empty((0, n_branches))
-    split_freqs = np.empty((0, n_branches))
-    split_eigenvecs = np.empty((0, n_branches))
-    freq_down = np.empty((0, n_branches))
-
-    data_dict = {}
-    # Data omitted because of redundancy with phonopy.yaml
-    data_dict['n_qpts'] = n_qpts
-    #data_dict['n_branches'] = n_branches
-    #data_dict['cell_vec'] = cell_vec
-    #data_dict['recip_vec'] = recip_vec
-    #data_dict['n_ions'] = n_ions
-    #data_dict['ion_r'] = ion_r
-    #data_dict['ion_type'] = ion_type
-    #data_dict['ion_mass'] = ion_mass
-    data_dict['qpts'] = qpts
-    data_dict['weights'] = weights
-    data_dict['freqs'] = freqs
-    data_dict['eigenvecs'] = eigenvecs
-    data_dict['split_i'] = split_i
-    data_dict['split_freqs'] = split_freqs
-    data_dict['split_eigenvecs'] = split_eigenvecs
-    data_dict['freq_down'] = freq_down
+    try:
+        data_dict['cell_vec'] = np.array(phonon_data['lattice'])
+        data_dict['ion_r'] = np.array(
+            [ion['coordinates'] for ion in phonon_data['points']])
+        data_dict['ion_mass'] = np.array(
+            [ion['mass'] for ion in phonon_data['points']])
+        data_dict['ion_type'] = np.array(
+            [ion['symbol'] for ion in phonon_data['points']])
+    except KeyError:
+        pass
 
     return data_dict
 
 def _extract_phonon_data_hdf5(hdf5_file):
+    """
+    From a hdf5File obtained from reading a mesh/band/qpoint.hdf5 file,
+    extract the relevant information as a dict of Numpy arrays. No unit
+    conversion is done at this point, so they are in the same units as the
+    .hdf5 file
 
-    eigenvecs = hdf5_file['eigenvector'].value
-    freqs = hdf5_file['frequency'].value
-    qpts = hdf5_file['qpoint'].value
+    Parameters
+    ----------
+    hdf5_file : h5py.File
+        Obtained from reading a Phonopy mesh/band/qpoint.hdf5 file
 
-    n_qpts = qpts.shape[0]
-    n_branches = freqs.shape[1]
-
-    split_i = np.empty((0, n_branches))
-    split_freqs = np.empty((0, n_branches))
-    split_eigenvecs = np.empty((0, n_branches))
-
-    try:
-        weights = _convert_weights([phon['weight'] for phon in phonon_data['phonon']])
-    except:
-        weights = [1/len(qpts) for i in range(len(qpts))]
-
+    Returns
+    -------
+    data_dict : dict
+        A dict with the following keys:
+            'qpts', 'freqs'
+        It may also have the following keys if they are present in the .hdf5
+        file:
+            'eigenvecs', 'weights'
+    """
     data_dict = {}
-    data_dict['n_qpts'] = n_qpts
-    data_dict['qpts'] = qpts
-    data_dict['weights'] = weights
-    data_dict['freqs'] = freqs
-    data_dict['eigenvecs'] = eigenvecs
-    data_dict['split_i'] = split_i
-    data_dict['split_freqs'] = split_freqs
-    data_dict['split_eigenvecs'] = split_eigenvecs
+    data_dict['qpts'] = hdf5_file['qpoint'][()]
+    data_dict['freqs'] = hdf5_file['frequency'][()]
+    # Eigenvectors may not be present if users haven't set --eigvecs when
+    # running Phonopy
+    try:
+        data_dict['eigenvecs'] = hdf5_file['eigenvector'][()]
+    except KeyError:
+        pass
+    try:
+        data_dict['weights'] = hdf5_file['weight'][()]
+    except KeyError:
+        pass
 
     return data_dict
 
@@ -184,56 +166,71 @@ def _read_phonon_data(path='.', phonon_name='band.yaml', phonon_format=None,
     elif phonon_format in yaml_exts:
         with open(phonon_pathname, 'r') as yaml_file:
             phonon_data = yaml.safe_load(yaml_file)
-            phonon_dict = _extract_phonon_data(phonon_data)
+        phonon_dict = _extract_phonon_data_yaml(phonon_data)
     else:
         raise Exception((f'File format {phonon_format} of {phonon_name} is not '
                           'recognised'))
 
-    with open(summary_pathname, 'r') as summary_file:
-        summary_data = yaml.safe_load(summary_file)
-        summary_dict = _extract_summary(summary_data)
+    if not 'eigenvecs' in phonon_dict.keys():
+        raise Exception((f'Eigenvectors couldn\'t be foud in {phonon_pathname},'
+                          ' ensure --eigvecs was set when running Phonopy'))
+    # If weights not specified, assume equal weights
+    if not 'weights' in phonon_dict.keys():
+        n_qpts = len(phonon_dict['freqs'])
+        phonon_dict['weights'] = np.full(n_qpts, 1/n_qpts)
+    else:
+        phonon_dict['weights'] = _convert_weights(phonon_dict['weights'])
 
-    # Handle units
-    try:
-        units = summary_dict['physical_unit']
-        ulength = ureg(units['length'].lower()).to('bohr').magnitude
-        umass = ureg(units['atomic_mass'].lower()).to('e_mass').magnitude
-        ufreq = ureg('THz').to('E_h', 'spectroscopy').magnitude
-    except KeyError as ke:
-        missing_unit = 'UNKNOWN UNIT'
+    # Since units are not explicitly defined in mesh/band/qpoints.yaml/hdf5
+    # assume:
+    ulength = 'angstrom'
+    umass = 'amu'
+    ufreq = 'THz'
 
-        if 'physical_unit' in ke:
-            missing_unit = 'physical units'
-        if 'length' in ke:
-            missing_unit = 'length'
-        if 'atomic_mass' in ke:
-            missing_unit = 'atomic mass'
-        if 'frequency_unit_conversion_factor' in ke:
-            missing_unit = 'frequency factor'
-
-        raise Exception((
-            f'{missing_unit} missing from summary file {summary_pathname}.\n'
-            'Check output files and run configs for errors or missing data,\n'
-            'then rerun Phonopy with correct configs'))
+    crystal_keys = ['cell_vec', 'ion_r', 'ion_mass', 'ion_type']
+    # Check if crystal structure has been read from phonon_file, if not get
+    # structure from summary_file
+    if len(crystal_keys & phonon_dict.keys()) != len(crystal_keys):
+        with open(summary_pathname, 'r') as summary_file:
+            summary_data = yaml.safe_load(summary_file)
+            summary_dict = _extract_summary(summary_data)
+        phonon_dict['cell_vec'] = summary_dict['cell_vec']
+        phonon_dict['ion_r'] = summary_dict['ion_r']
+        phonon_dict['ion_mass'] = summary_dict['ion_mass']
+        phonon_dict['ion_type'] = summary_dict['ion_type']
+        # Overwrite assumed units if they are found in summary file
+        ulength = summary_dict['physical_unit']['length'].lower()
+        umass = summary_dict['physical_unit']['atomic_mass'].lower()
+        # Check phonon_file and summary_file are commensurate
+        if 3*len(phonon_dict['ion_r']) != len(phonon_dict['freqs'][0]):
+            raise Exception((f'Phonon file {phonon_pathname} not commensurate '
+                             f'with summary file {summary_pathname}. Please '
+                              'check contents'))
 
     # Output object
     data_dict = {}
-    data_dict['n_ions'] = summary_dict['n_ions']
-    data_dict['n_branches'] = 3*summary_dict['n_ions']
-    data_dict['n_qpts'] = phonon_dict['n_qpts']
-    data_dict['cell_vec'] = summary_dict['cell_vec']*ulength
-    data_dict['recip_vec'] = reciprocal_lattice(summary_dict['cell_vec'])/ulength
-    data_dict['ion_r'] = summary_dict['ion_r']
-    data_dict['ion_type'] = summary_dict['ion_type']
-    data_dict['ion_mass'] = summary_dict['ion_mass']*umass
+    n_ions = len(phonon_dict['ion_r'])
+    data_dict['n_ions'] = n_ions
+    data_dict['cell_vec'] = phonon_dict['cell_vec']*ureg(
+        ulength).to('bohr').magnitude
+    data_dict['recip_vec'] = (reciprocal_lattice(phonon_dict['cell_vec'])/ureg(
+        ulength)).to('1/bohr').magnitude
+    data_dict['ion_r'] = phonon_dict['ion_r']
+    data_dict['ion_type'] = phonon_dict['ion_type']
+    data_dict['ion_mass'] = phonon_dict['ion_mass']*ureg(
+        umass).to('e_mass').magnitude
+    n_qpts = len(phonon_dict['qpts'])
+    data_dict['n_qpts'] = n_qpts
     data_dict['qpts'] = phonon_dict['qpts']
     data_dict['weights'] = phonon_dict['weights']
-    data_dict['freqs'] = phonon_dict['freqs']*ufreq
-    data_dict['eigenvecs'] = convert_eigenvector_phases(phonon_dict,
-                                                        summary_dict)
-    data_dict['split_i'] = phonon_dict['split_i']
-    data_dict['split_freqs'] = phonon_dict['split_freqs']
-    data_dict['split_eigenvecs'] = phonon_dict['split_eigenvecs']
+    data_dict['n_branches'] = 3*n_ions
+    data_dict['freqs'] = phonon_dict['freqs']*ureg(
+        ufreq).to('hartree', 'spectroscopy').magnitude
+    data_dict['eigenvecs'] = convert_eigenvector_phases(phonon_dict)
+    data_dict['split_i'] = np.empty((0,), dtype=np.int32)
+    data_dict['split_freqs'] = np.empty((0, 3*n_ions))
+    data_dict['split_eigenvecs'] = np.empty((0, 3*n_ions, n_ions, 3),
+                                            dtype=np.complex128)
 
     metadata = type('', (), {})()
     metadata.model = 'phonopy'
@@ -245,7 +242,7 @@ def _read_phonon_data(path='.', phonon_name='band.yaml', phonon_format=None,
     return data_dict
 
 
-def convert_eigenvector_phases(phonon_dict, summary_dict):
+def convert_eigenvector_phases(phonon_dict):
     """
     When interpolating the force constants matrix, Euphonic uses a phase
     convention of e^iq.r_a, where r_a is the coordinate of each CELL in the
@@ -253,16 +250,18 @@ def convert_eigenvector_phases(phonon_dict, summary_dict):
     each ATOM in the supercell. This must be accounted for when reading Phonopy
     eigenvectors by applying a phase of e^-iq(r_k - r_k')
     """
-    n_ions = summary_dict['n_ions']
-    ion_r = summary_dict['ion_r']
+    ion_r = phonon_dict['ion_r']
+    n_ions = len(ion_r)
     qpts = phonon_dict['qpts']
+    n_qpts = len(qpts)
 
-    eigvecs = np.reshape(phonon_dict["eigenvecs"], (len(qpts), n_ions, 3, n_ions, 3))
+    eigvecs = np.reshape(phonon_dict["eigenvecs"],
+                         (n_qpts, n_ions, 3, n_ions, 3))
     na = np.newaxis
     rk_diff = ion_r[:, na, :] - ion_r[na, :, :]
     conversion = np.exp(-2j*np.pi*np.einsum('il,jkl->ijk', qpts, rk_diff))
     eigvecs = np.einsum('ijklm,ijl->ijklm', eigvecs, conversion)
-    return np.reshape(eigvecs, (len(qpts), 3*n_ions, n_ions, 3))
+    return np.reshape(eigvecs, (n_qpts, 3*n_ions, n_ions, 3))
 
 
 def _check_fc_file(filename):
@@ -560,11 +559,12 @@ def _extract_summary(summary_object, fc_extract=False):
     cell_vec = np.array(summary_object['unit_cell']['lattice'])
     ion_r = np.zeros((n_ions, 3))
     ion_mass = np.zeros(n_ions)
-    ion_type = []
+    ion_type = np.array([])
     for i in range(n_ions):
         ion_mass[i] = summary_object['unit_cell']['points'][i]['mass']
         ion_r[i] = summary_object['unit_cell']['points'][i]['coordinates']
-        ion_type.append(summary_object['unit_cell']['points'][i]['symbol'])
+        ion_type = np.append(
+            ion_type, summary_object['unit_cell']['points'][i]['symbol'])
 
     sc_matrix = np.array(summary_object['supercell_matrix'])
     n_cells_in_sc = int(np.rint(np.absolute(np.linalg.det(sc_matrix))))
