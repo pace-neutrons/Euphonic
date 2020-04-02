@@ -2,7 +2,7 @@
 
 def setGitHubBuildStatus(String status, String message, String context) {
     script {
-        withCredentials([string(credentialsId: 'GitHub_API_Token',
+        withCredentials([string(credentialsId: 'Euphonic_GitHub_API_Token',
                 variable: 'api_token')]) {
             if (isUnix()) {
                 sh """
@@ -41,7 +41,7 @@ pipeline {
 
              causeString: 'Triggered on $ref',
 
-             token: 'GitHub_API_Token',
+             token: 'Euphonic_GitHub_API_Token',
 
              printContributedVariables: true,
              printPostContent: true,
