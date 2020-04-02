@@ -18,12 +18,10 @@ class TestReadInterpolationNaCl(unittest.TestCase):
         expctd_data.n_ions = 8
         expctd_data.n_branches = 24
         expctd_data.n_qpts = 53
-
         expctd_data.cell_vec = np.array(
            [[5.69030148, 0.        , 0.        ],
             [0.        , 5.69030148, 0.        ],
             [0.        , 0.        , 5.69030148]])*ureg('angstrom')
-
         expctd_data.ion_r = np.array(
             [[0. , 0. , 0. ],
              [0. , 0.5, 0.5],
@@ -33,22 +31,16 @@ class TestReadInterpolationNaCl(unittest.TestCase):
              [0.5, 0. , 0. ],
              [0. , 0.5, 0. ],
              [0. , 0. , 0.5]])
-
         expctd_data.ion_type = np.array(
             ['Na', 'Na', 'Na', 'Na', 'Cl', 'Cl', 'Cl', 'Cl'])
-
         expctd_data.ion_mass = np.array(
                 [22.989769, 22.989769, 22.989769, 22.989769,
                  35.453, 35.453, 35.453   , 35.453   ])*ureg('amu')
-
         expctd_data.sc_matrix = np.array(
             [[2, 0, 0],
              [0, 2, 0],
              [0, 0, 2]])
-
         expctd_data.n_cells_in_sc = 8
-
-
         expctd_data.cell_origins = np.array(
             [[0., 0., 0.],
              [1., 0., 0.],
@@ -58,7 +50,6 @@ class TestReadInterpolationNaCl(unittest.TestCase):
              [1., 0., 1.],
              [0., 1., 1.],
              [1., 1., 1.]])
-
         expctd_data.born = np.array(
            [[[ 1.086875,  0.      ,  0.      ],
              [ 0.      ,  1.086875,  0.      ],
@@ -91,12 +82,10 @@ class TestReadInterpolationNaCl(unittest.TestCase):
             [[-1.086875,  0.      ,  0.      ],
              [ 0.      , -1.086875,  0.      ],
              [ 0.      ,  0.      , -1.086875]]])*ureg('e')
-
         expctd_data.dielectric = np.array(
             [[2.43533967, 0.        , 0.        ],
              [0.        , 2.43533967, 0.        ],
              [0.        , 0.        , 2.43533967]])
-
         expctd_data.force_constants = np.load(
             self.path +'/force_constants_hdf5.npy')*ureg('hartree/bohr**2')
         self.expctd_data = expctd_data
