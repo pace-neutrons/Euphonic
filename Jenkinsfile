@@ -18,15 +18,10 @@ def setGitHubBuildStatus(String status, String message, String context) {
                 """
             } else {
                 bat """
-                    curl -H "Authorization: token ${api_token}" \
-                    --request POST \
-                    --data '{ \
-                        "state": "${status}", \
-                        "description": "${context}: ${message}", \
-                        "target_url": "$BUILD_URL", \
-                        "context": "${env.JOB_BASE_NAME}${context}" \
-                    }' \
-                    https://api.github.com/repos/pace-neutrons/Euphonic/statuses/${env.GIT_COMMIT}
+                    set DATA="'{"state": "${status}", "description": "${context}: ${message}", "target_url": "$BUILD_URL", "context": "${env.JOB_BASE_NAME}${context}"}'"
+                    set HEADER="Authorization: token ${api_token}"
+                    set COMMIT_URL="https://api.github.com/repos/pace-neutrons/Euphonic/statuses/${env.GIT_COMMIT}"
+                    curl -H %HEADER --request POST --data %DATA% %COMMIT_URL%
                 """
             }
         }
