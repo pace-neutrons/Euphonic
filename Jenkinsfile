@@ -46,20 +46,19 @@ pipeline {
 
     stages {
 
-
-        stage("Notify") {
-            agent { label "sl7" }
-            steps {
-                setGitHubBuildStatus("pending", "Build and tests are starting...")
-                echo "Branch: ${env.JOB_BASE_NAME}"
-            }
-        }
-
         stage("UNIX environment") {
 
             agent { label "sl7" }
 
             stages {
+
+                stage("Notify") {
+                    agent { label "sl7" }
+                    steps {
+                        setGitHubBuildStatus("pending", "Build and tests are starting...")
+                        echo "Branch: ${env.JOB_BASE_NAME}"
+                    }
+                }
 
                 stage("Set up") {
                     steps {
@@ -119,6 +118,13 @@ pipeline {
                         }
                     }
                 }
+
+                stage("Post") {
+                    steps {
+                        // Report test results
+                        junit 'tests_and_analysis/test/reports/junit_report*.xml'
+                    }
+                }
             }
         }
 
@@ -169,19 +175,18 @@ pipeline {
                         """
                     }
                 }
+
+                stage("Post") {
+                    steps {
+                        // Report test results
+                        junit 'tests_and_analysis/test/reports/junit_report*.xml'
+                    }
+                }
             }
         }
     }
 
     post {
-        always {
-            node("sl7"){
-                junit 'tests_and_analysis/test/reports/junit_report*.xml'
-            }
-            node("PACE Windows (Private)"){
-                junit 'tests_and_analysis/test/reports/junit_report*.xml'
-            }
-        }
 
         success {
             node("sl7"){
