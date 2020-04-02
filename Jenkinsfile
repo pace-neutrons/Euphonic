@@ -12,16 +12,16 @@ def setGitHubBuildStatus(String status, String message, String context) {
                         "state": "${status}", \
                         "description": "${context}: ${message}", \
                         "target_url": "$BUILD_URL", \
-                        "context": "continuous-integration/jenkins/branch" \
+                        "context": "$JOB_BASE_NAME/${context}" \
                     }' \
                     https://api.github.com/repos/pace-neutrons/Euphonic/statuses/${env.GIT_COMMIT}
                 """
             } else {
                 bat """
-                    set CURL="C:\\Programming\\curl\\bin\\curl.exe"
-                    set DATA="{'state': '${status}', 'description': '${context}: ${message}', 'target_url': '$BUILD_URL', 'context': 'continuous-integration/jenkins/branch'}"
-                    set HEADER="Authorization: token ${api_token}"
-                    set COMMIT_URL="https://api.github.com/repos/pace-neutrons/Euphonic/statuses/${env.GIT_COMMIT}"
+                    set "CURL=C:\\Programming\\curl\\bin\\curl.exe"
+                    set "DATA={'state': '${status}', 'description': '${context}: ${message}', 'target_url': '$BUILD_URL', 'context': '$JOB_BASE_NAME/${context}'}"
+                    set "HEADER=Authorization: token ${api_token}"
+                    set "COMMIT_URL=https://api.github.com/repos/pace-neutrons/Euphonic/statuses/${env.GIT_COMMIT}"
                     %CURL% -H %HEADER% --request POST --data %DATA% %COMMIT_URL%
                 """
             }
