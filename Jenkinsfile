@@ -177,7 +177,7 @@ pipeline {
                         stage("Test VS2019") {
                             steps {
                                 bat """
-                                    CALL "C:\\Programming\\VS2017\\Community\\VC\\Auxiliary\\Build\\vcvarsall.bat"
+                                    CALL "C:\\Programming\\VS201\\Community\\VC\\Auxiliary\\Build\\vcvarsall.bat"
                                     set CONDA="C:\\Programming\\miniconda3\\condabin\\conda.bat"
                                     CALL %CONDA% activate py
                                     python -m tox
@@ -185,11 +185,11 @@ pipeline {
                             }
                         }
 
-                        stage("PyPI Release Testing VS2019"){
+                        stage("PyPI Release Testing VS2019") {
                             when { tag "*" }
                             steps {
                                 bat """
-                                    CALL "C:\\Programming\\VS2017\\Community\\VC\\Auxiliary\\Build\\vcvarsall.bat"
+                                    CALL "C:\\Programming\\VS2019\\Community\\VC\\Auxiliary\\Build\\vcvarsall.bat"
                                     set CONDA="C:\\Programming\\miniconda3\\condabin\\conda.bat"
                                     rmdir /s /q .tox
                                     CALL %CONDA% activate py
