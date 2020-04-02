@@ -53,9 +53,8 @@ pipeline {
             stages {
 
                 stage("Notify") {
-                    agent { label "sl7" }
                     steps {
-                        setGitHubBuildStatus("pending", "Build and tests are starting...")
+                        setGitHubBuildStatus("pending", "Linux: starting")
                         echo "Branch: ${env.JOB_BASE_NAME}"
                     }
                 }
@@ -81,7 +80,7 @@ pipeline {
 
                 stage("Test") {
                     steps {
-                        sh """
+                        sh"""
                             module load conda/3 &&
                             conda config --append channels free &&
                             conda activate py &&
@@ -90,7 +89,7 @@ pipeline {
                     }
                 }
 
-                stage("PyPI Release Testing"){
+                stage("PyPI Release Testing") {
                     when { tag "*" }
                     steps {
                         sh """
@@ -118,13 +117,26 @@ pipeline {
                         }
                     }
                 }
+            }
 
-                stage("Post") {
-                    steps {
-                        // Report test results
-                        junit 'tests_and_analysis/test/reports/junit_report*.xml'
-                    }
+            post {
+
+                always {
+                    junit 'tests_and_analysis/test/reports/junit_report*.xml'
                 }
+
+                success {
+                    setGitHubBuildStatus("success", "Linux: Successful")
+                }
+
+                unsuccessful {
+                    setGitHubBuildStatus("failure", "Linux: Unsuccessful")
+                }
+
+                cleanup {
+                    deleteDir()
+                }
+
             }
         }
 
@@ -133,6 +145,13 @@ pipeline {
             agent { label "PACE Windows (Private)" }
 
             stages {
+
+                stage("Notify") {
+                    steps {
+                        setGitHubBuildStatus("pending", "Windows: starting")
+                        echo "Branch: ${env.JOB_BASE_NAME}"
+                    }
+                }
 
                 stage("Set up") {
                     steps {
@@ -175,45 +194,27 @@ pipeline {
                         """
                     }
                 }
+            }
 
-                stage("Post") {
-                    steps {
-                        // Report test results
-                        junit 'tests_and_analysis/test/reports/junit_report*.xml'
-                    }
+            post {
+
+                always {
+                    junit 'tests_and_analysis/test/reports/junit_report*.xml'
                 }
+
+                success {
+                    setGitHubBuildStatus("success", "Windows: Successful")
+                }
+
+                unsuccessful {
+                    setGitHubBuildStatus("failure", "Windows: Unsuccessful")
+                }
+
+                cleanup {
+                    deleteDir()
+                }
+
             }
         }
     }
-
-    post {
-
-        success {
-            node("sl7"){
-                setGitHubBuildStatus("success", "Linux: Successful")
-            }
-            node("PACE Windows (Private)"){
-                setGitHubBuildStatus("success", "Windows: Successful")
-            }
-        }
-
-        unsuccessful {
-            node("sl7"){
-                setGitHubBuildStatus("failure", "Linux: Unsuccessful")
-            }
-            node("PACE Windows (Private)"){
-                setGitHubBuildStatus("success", "Windows: Unsuccessful")
-            }
-        }
-
-        cleanup {
-            node("sl7"){
-                deleteDir()
-            }
-            node("PACE Windows (Private)"){
-                deleteDir()
-            }
-        }
-    }
-
 }
