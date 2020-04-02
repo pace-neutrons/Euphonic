@@ -46,7 +46,7 @@ pipeline {
 
     stages {
 
-        stage("Different environments") {
+        stage("Parallel environments") {
 
             parallel {
 
@@ -177,7 +177,7 @@ pipeline {
                         stage("Test VS2019") {
                             steps {
                                 bat """
-                                    CALL C:\\Programming\\Microsoft Visual Studio\\2019\\Community\\VC\\Auxiliary\\Build\\vcvars64.bat
+                                    CALL "C:\\Programming\\VS2017\\Community\\VC\\Auxiliary\\Build\\vcvarsall.bat"
                                     set CONDA="C:\\Programming\\miniconda3\\condabin\\conda.bat"
                                     CALL %CONDA% activate py
                                     python -m tox
@@ -189,7 +189,7 @@ pipeline {
                             when { tag "*" }
                             steps {
                                 bat """
-                                    CALL C:\\Programming\\Microsoft Visual Studio\\2019\\Community\\VC\\Auxiliary\\Build\\vcvars64.bat
+                                    CALL "C:\\Programming\\VS2017\\Community\\VC\\Auxiliary\\Build\\vcvarsall.bat"
                                     set CONDA="C:\\Programming\\miniconda3\\condabin\\conda.bat"
                                     rmdir /s /q .tox
                                     CALL %CONDA% activate py
