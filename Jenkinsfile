@@ -10,7 +10,7 @@ def setGitHubBuildStatus(String status, String message, String context) {
                     --request POST \
                     --data '{ \
                         "state": "${status}", \
-                        "description": "${context}: ${message}", \
+                        "description": "${message} on ${context}", \
                         "target_url": "$BUILD_URL", \
                         "context": "jenkins/${context}" \
                     }' \
@@ -21,7 +21,7 @@ def setGitHubBuildStatus(String status, String message, String context) {
                     [Net.ServicePointManager]::SecurityProtocol = "tls12, tls11, tls"
                     \$payload = @{
                       "state" = "${status}";
-                      "description" = "${context}: ${message}";
+                      "description" = "${message} on ${context}";
                       "target_url" = "$BUILD_URL";
                       "context" = "jenkins/${context}"}
                     Invoke-RestMethod -URI "https://api.github.com/repos/pace-neutrons/Euphonic/statuses/${env.GIT_COMMIT}" \
