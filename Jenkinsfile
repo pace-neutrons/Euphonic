@@ -1,6 +1,6 @@
 #!groovy
 
-void setGitHubBuildStatus(String status, message) {
+void setGitHubBuildStatus(String status, message, context) {
     script {
         withCredentials([string(credentialsId: 'GitHub_API_Token',
                 variable: 'api_token')]) {
@@ -9,9 +9,9 @@ void setGitHubBuildStatus(String status, message) {
                     curl -H "Authorization: token ${api_token}" \
                     --request POST \
                     --data '{"state": "${status}", \
-                        "description": "${message}", \
+                        "description": "${context}: ${message}", \
                         "target_url": "$BUILD_URL", \
-                        "context": "$JOB_BASE_NAME"}' \
+                        "context": "$JOB_BASE_NAME${context}"}' \
                     https://api.github.com/repos/pace-neutrons/Euphonic/statuses/${env.GIT_COMMIT}
                 """
             }
@@ -58,7 +58,7 @@ pipeline {
 
                         stage("Notify") {
                             steps {
-                                setGitHubBuildStatus("pending", "Linux: starting")
+                                setGitHubBuildStatus("pending", "Starting", "Linux")
                                 echo "Branch: ${env.JOB_BASE_NAME}"
                             }
                         }
@@ -130,11 +130,11 @@ pipeline {
                         }
 
                         success {
-                            setGitHubBuildStatus("success", "Linux: Successful")
+                            setGitHubBuildStatus("success", "Successful", "Linux")
                         }
 
                         unsuccessful {
-                            setGitHubBuildStatus("failure", "Linux: Unsuccessful")
+                            setGitHubBuildStatus("failure", "Unsuccessful", "Linux")
                         }
 
                         cleanup {
@@ -152,7 +152,7 @@ pipeline {
 
                         stage("Notify") {
                             steps {
-                                setGitHubBuildStatus("pending", "Windows: starting")
+                                setGitHubBuildStatus("pending", "Starting", "Windows")
                                 echo "Branch: ${env.JOB_BASE_NAME}"
                             }
                         }
@@ -207,11 +207,11 @@ pipeline {
                         }
 
                         success {
-                            setGitHubBuildStatus("success", "Windows: Successful")
+                            setGitHubBuildStatus("success", "Successful", "Windows")
                         }
 
                         unsuccessful {
-                            setGitHubBuildStatus("failure", "Windows: Unsuccessful")
+                            setGitHubBuildStatus("failure", "Unsuccessful", "Windows")
                         }
 
                         cleanup {
