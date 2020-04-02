@@ -145,17 +145,6 @@ pipeline {
                     }
                 }
 
-                stage("Test VS2017") {
-                    steps {
-                        bat """
-                            CALL C:\\Programming\\VS2017\\Community\\VC\\Auxiliary\\Build\\vcvarsall.bat x86_amd64
-                            set CONDA="C:\\Programming\\miniconda3\\condabin\\conda.bat"
-                            CALL %CONDA% activate py
-                            python -m tox
-                        """
-                    }
-                }
-
                 stage("Test VS2019") {
                     steps {
                         bat """
@@ -168,20 +157,6 @@ pipeline {
                 }
 
                 stage("PyPI Release Testing VS2019"){
-                    when { tag "*" }
-                    steps {
-                        bat """
-                            CALL C:\\Programming\\VS2017\\Community\\VC\\Auxiliary\\Build\\vcvarsall.bat x86_amd64
-                            set CONDA="C:\\Programming\\miniconda3\\condabin\\conda.bat"
-                            rmdir /s /q .tox
-                            CALL %CONDA% activate py
-                            set /p EUPHONIC_VERSION= < python euphonic/get_version.py
-                            python -m tox -c release_tox.ini
-                        """
-                    }
-                }
-
-                stage("PyPI Release Testing VS2017"){
                     when { tag "*" }
                     steps {
                         bat """
