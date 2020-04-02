@@ -23,28 +23,28 @@ class TestStructureFactorPhononDataNaCl(unittest.TestCase):
     def test_sf_T5(self):
         sf = self.data.calculate_structure_factor(self.scattering_lengths, T=5)
         expected_sf = np.loadtxt(os.path.join(self.sf_path, 'sf_pdata_T5.txt'))
-        npt.assert_allclose(sf, expected_sf)
+        npt.assert_allclose(sf, expected_sf, atol=1e-24)
 
     def test_sf_T5_dw(self):
         sf = self.data.calculate_structure_factor(
             self.scattering_lengths, T=5, dw_data=self.dw_data)
         expected_sf = np.loadtxt(os.path.join(
             self.sf_path, 'sf_pdata_dw_T5.txt'))
-        npt.assert_allclose(sf, expected_sf)
+        npt.assert_allclose(sf, expected_sf, atol=1e-24)
 
     def test_sf_T100(self):
         sf = self.data.calculate_structure_factor(
             self.scattering_lengths, T=100)
         expected_sf = np.loadtxt(os.path.join(
             self.sf_path, 'sf_pdata_T100.txt'))
-        npt.assert_allclose(sf, expected_sf)
+        npt.assert_allclose(sf, expected_sf, atol=1e-24)
 
     def test_sf_T100_dw(self):
         sf = self.data.calculate_structure_factor(
             self.scattering_lengths, T=100, dw_data=self.dw_data)
         expected_sf = np.loadtxt(os.path.join(
             self.sf_path, 'sf_pdata_dw_T100.txt'))
-        npt.assert_allclose(sf, expected_sf)
+        npt.assert_allclose(sf, expected_sf, atol=1e-24)
 
 
 class TestStructureFactorInterpolationDataNaClSerial(unittest.TestCase):
