@@ -154,7 +154,7 @@ pipeline {
                         }
 
                         cleanup {
-                            deleteDir()
+                            cleanWs()
                         }
 
                     }
@@ -231,7 +231,7 @@ pipeline {
                         }
 
                         cleanup {
-                            deleteDir()
+                            cleanWs()
                         }
 
                     }
