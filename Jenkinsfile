@@ -12,7 +12,7 @@ def setGitHubBuildStatus(String status, String message, String context) {
                         "state": "${status}", \
                         "description": "${context}: ${message}", \
                         "target_url": "$BUILD_URL", \
-                        "context": "$JOB_BASE_NAME/${context}" \
+                        "context": "jenkins/${context}" \
                     }' \
                     https://api.github.com/repos/pace-neutrons/Euphonic/statuses/${env.GIT_COMMIT}
                 """
@@ -23,7 +23,7 @@ def setGitHubBuildStatus(String status, String message, String context) {
                       "state" = "${status}";
                       "description" = "${context}: ${message}";
                       "target_url" = "$BUILD_URL";
-                      "context" = "$JOB_BASE_NAME/${context}"}
+                      "context" = "jenkins/${context}"}
                     Invoke-RestMethod -URI "https://api.github.com/repos/pace-neutrons/Euphonic/statuses/${env.GIT_COMMIT}" \
                       -Headers @{Authorization = "token ${api_token}"} \
                       -Method 'POST' \
