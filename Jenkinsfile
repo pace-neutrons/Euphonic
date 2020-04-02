@@ -17,13 +17,19 @@ def setGitHubBuildStatus(String status, String message, String context) {
                     https://api.github.com/repos/pace-neutrons/Euphonic/statuses/${env.GIT_COMMIT}
                 """
             } else {
-                bat """
-                    set "CURL=C:\\Programming\\curl\\bin\\curl.exe"
-                    set "DATA={'state': '${status}', 'description': '${context}: ${message}', 'target_url': '$BUILD_URL', 'context': '$JOB_BASE_NAME/${context}'}"
-                    set "HEADER=Authorization: token ${api_token}"
-                    set "COMMIT_URL=https://api.github.com/repos/pace-neutrons/Euphonic/statuses/${env.GIT_COMMIT}"
-                    %CURL% -H %HEADER% --request POST --data %DATA% %COMMIT_URL%
-                """
+                powershell """
+                    [Net.ServicePointManager]::SecurityProtocol = "tls12, tls11, tls"
+                    \$payload = @{
+                      "state" = "${status}";
+                      "description" = "${context}: ${message}";
+                      "target_url" = "$BUILD_URL";
+                      "context" = "$JOB_BASE_NAME/${context}"}
+                    Invoke-RestMethod -URI "https://api.github.com/repos/pace-neutrons/Euphonic/statuses/${env.GIT_COMMIT}" \
+                      -Headers @{Authorization = "token ${api_token}"} \
+                      -Method 'POST' \
+                      -Body (\$payload|ConvertTo-JSON) \
+                      -ContentType "application/json"
+                  """
             }
         }
     }
