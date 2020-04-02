@@ -1,6 +1,6 @@
 #!groovy
 
-void setGitHubBuildStatus(String status, message, context) {
+def setGitHubBuildStatus(String status, String message, String context) {
     script {
         withCredentials([string(credentialsId: 'GitHub_API_Token',
                 variable: 'api_token')]) {
@@ -8,10 +8,24 @@ void setGitHubBuildStatus(String status, message, context) {
                 sh """
                     curl -H "Authorization: token ${api_token}" \
                     --request POST \
-                    --data '{"state": "${status}", \
+                    --data '{ \
+                        "state": "${status}", \
                         "description": "${context}: ${message}", \
                         "target_url": "$BUILD_URL", \
-                        "context": "${env.JOB_BASE_NAME}${context}"}' \
+                        "context": "${env.JOB_BASE_NAME}${context}" \
+                    }' \
+                    https://api.github.com/repos/pace-neutrons/Euphonic/statuses/${env.GIT_COMMIT}
+                """
+            } else {
+                bat """
+                    curl -H "Authorization: token ${api_token}" \
+                    --request POST \
+                    --data '{ \
+                        "state": "${status}", \
+                        "description": "${context}: ${message}", \
+                        "target_url": "$BUILD_URL", \
+                        "context": "${env.JOB_BASE_NAME}${context}" \
+                    }' \
                     https://api.github.com/repos/pace-neutrons/Euphonic/statuses/${env.GIT_COMMIT}
                 """
             }
