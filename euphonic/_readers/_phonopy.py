@@ -122,7 +122,6 @@ def _extract_phonon_data_hdf5(hdf5_file):
     split_i = np.empty((0, n_branches))
     split_freqs = np.empty((0, n_branches))
     split_eigenvecs = np.empty((0, n_branches))
-    freq_down = np.empty((0, n_branches))
 
     try:
         weights = _convert_weights([phon['weight'] for phon in phonon_data['phonon']])
@@ -138,23 +137,28 @@ def _extract_phonon_data_hdf5(hdf5_file):
     data_dict['split_i'] = split_i
     data_dict['split_freqs'] = split_freqs
     data_dict['split_eigenvecs'] = split_eigenvecs
-    data_dict['freq_down'] = freq_down
 
     return data_dict
 
-def _read_phonon_data(path='.', phonon_name='', phonon_format=None,
-                        summary_name='phonopy.yaml'):
-    """ DOC
-    Reads data from a mesh.yaml/hdf5 file and returns it in a dictionary
+def _read_phonon_data(path='.', phonon_name='band.yaml', phonon_format=None,
+                      summary_name='phonopy.yaml'):
+    """
+    Reads data from a Phonopy mesh/band/qpoints.yaml/hdf5 file and returns it
+    in a dictionary
 
     Parameters
     ----------
-    path : str
-        Path to dir containing the file(s), default : ./
-    phonon_name : str
-        Seedname of phonopy mesh file to read, default : mesh.yaml/mesh.hdf5
-    summary_name : str
-        Seedname of phonopy summary file to read, default : phonopy.yaml
+    path : str, optional, default '.'
+        Path to directory containing the file
+    phonon_name : str, optional, default 'band.yaml'
+        Name of Phonopy file including the frequencies and eigenvectors
+    phonon_format : {'yaml', 'hdf5'} str, optional, default None
+        Format of the phonon_name file if it isn't obvious from the phonon_name
+        extension
+    summary_name : str, optional, default 'phonopy.yaml'
+        Name of Phonopy summary file to read the crystal information from.
+        Crystal information in the phonon_name file takes priority, but if it
+        isn't present, crystal information is read from summary_name instead
 
     Returns
     -------
@@ -164,95 +168,30 @@ def _read_phonon_data(path='.', phonon_name='', phonon_format=None,
         'weights', 'freqs', 'eigenvecs', 'split_i', 'split_freqs',
         'split_eigenvecs'. The return data has Euphonic default units.
     """
-
     phonon_pathname = os.path.join(path, phonon_name)
     summary_pathname = os.path.join(path, summary_name)
-
-    phonon_ext = os.path.splitext(phonon_name)[1].strip('.')
-
-    if phonon_name == '':
-        raise Exception('phonon_name must be set (e.g. mesh.yaml, band.hdf5, outputdata.xyz)')
 
     hdf5_exts = ['hdf5', 'hd5', 'h5']
     yaml_exts = ['yaml', 'yml', 'yl']
     if phonon_format is None:
-        if phonon_ext in hdf5_exts:
-            phonon_format = 'hdf5'
+        phonon_format = os.path.splitext(phonon_name)[1].strip('.')
+        if phonon_format == '':
+            raise Exception(f'Format of {phonon_name} couldn\'t be determined')
 
-        elif phonon_ext in yaml_exts:
-            phonon_format = 'yaml'
-
-        elif phonon_ext == '':
-            raise Exception((
-                'Phonon file format is not set and no file extension present.\n'
-                f'Please specify file format from {yaml_exts} or {hdf5_exts}'))
-        else:
-            raise Exception((
-                f'Failure to establish phonon file format for name: {phonon_pathname},\n'
-                f'since phonon_format is unset and extension: {phonon_ext}, is not a recognised extension.'))
-    elif phonon_format:
-        if phonon_format in hdf5_exts:
-            phonon_format = 'hdf5'
-
-        elif phonon_format in yaml_exts:
-            phonon_format = 'yaml'
-
-        else:
-            raise Exception((
-                f'Failure to establish phonon file format for name: {phonon_pathname},\n'
-                f'since extension: {phonon_ext}, is not a recognised extension.'))
-
-
-    if phonon_format == 'hdf5':
-        try:
-            with h5py.File(phonon_pathname, 'r') as hdf5_file:
-                phonon_dict = _extract_phonon_data_hdf5(hdf5_file)
-        except OSError as ose:
-            if 'file or directory' in ose.__str__():
-                raise Exception((
-                        f'Could not find phonon file {phonon_pathname}'))
-            elif 'to open file' in ose.__str__():
-                raise Exception((
-                        f'Could not open phonon file {phonon_pathname}'))
-            else:
-                raise ose
-        except KeyError:
-            raise Exception((
-                f'Phonon file {phonon_pathname} missing data or not in correct format.'))
-
-    elif phonon_format == 'yaml':
-        try:
-            with open(phonon_pathname, 'r') as phonon_file:
-                phonon_data = yaml.safe_load(phonon_file)
-                phonon_dict = _extract_phonon_data(phonon_data)
-        except FileNotFoundError:
-            raise Exception(f'Phonon file {phonon_pathname} not found.')
-        except UnicodeDecodeError:
-            raise Exception((
-                f'Phonon file {phonon_pathname} could not be loaded.'
-                'Data type may be hdf5.'))
-        except KeyError:
-            raise Exception((
-                f'Phonon file {phonon_pathname} missing data or not in correct format.'))
+    if phonon_format in hdf5_exts:
+        with h5py.File(phonon_pathname, 'r') as hdf5_file:
+            phonon_dict = _extract_phonon_data_hdf5(hdf5_file)
+    elif phonon_format in yaml_exts:
+        with open(phonon_pathname, 'r') as yaml_file:
+            phonon_data = yaml.safe_load(yaml_file)
+            phonon_dict = _extract_phonon_data(phonon_data)
     else:
-        raise Exception(f'Phonon file format not currently supported: {phonon_format}.')
+        raise Exception((f'File format {phonon_format} of {phonon_name} is not '
+                          'recognised'))
 
-
-    try: # load summary file
-        with open(summary_pathname, 'r') as summary_file:
-            summary_data = yaml.safe_load(summary_file)
-            if type(summary_data) is not dict:
-                raise TypeError
-            summary_dict = _extract_summary(summary_data)
-
-    except FileNotFoundError:
-        raise Exception(f'Summary file {summary_pathname} not found.')
-
-    except TypeError:
-        raise Exception(('Summary file data in incorrect format; type must be dict'
-            'and not {type(summary_data)}.'))
-    except:
-        raise
+    with open(summary_pathname, 'r') as summary_file:
+        summary_data = yaml.safe_load(summary_file)
+        summary_dict = _extract_summary(summary_data)
 
     # Handle units
     try:
@@ -280,7 +219,7 @@ def _read_phonon_data(path='.', phonon_name='', phonon_format=None,
     # Output object
     data_dict = {}
     data_dict['n_ions'] = summary_dict['n_ions']
-    data_dict['n_branches'] = summary_dict['n_ions'] * 3 #TODO
+    data_dict['n_branches'] = 3*summary_dict['n_ions']
     data_dict['n_qpts'] = phonon_dict['n_qpts']
     data_dict['cell_vec'] = summary_dict['cell_vec']*ulength
     data_dict['recip_vec'] = reciprocal_lattice(summary_dict['cell_vec'])/ulength
@@ -295,8 +234,6 @@ def _read_phonon_data(path='.', phonon_name='', phonon_format=None,
     data_dict['split_i'] = phonon_dict['split_i']
     data_dict['split_freqs'] = phonon_dict['split_freqs']
     data_dict['split_eigenvecs'] = phonon_dict['split_eigenvecs']
-    data_dict['freq_down'] = phonon_dict['freq_down']
-
 
     metadata = type('', (), {})()
     metadata.model = 'phonopy'
