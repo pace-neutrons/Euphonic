@@ -80,7 +80,7 @@ pipeline {
 
                 stage("Test") {
                     steps {
-                        sh"""
+                        sh """
                             module load conda/3 &&
                             conda config --append channels free &&
                             conda activate py &&
