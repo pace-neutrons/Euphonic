@@ -464,18 +464,15 @@ def _extract_force_constants_summary(summary_object):
         Dict containing force constants in Euphonic format.
     """
     fc_entry = summary_object['force_constants']
-
     fc_dims = fc_entry['shape']
     fc_format = fc_entry['format']
 
-    sc_matrix = summary_object['supercell_matrix']
-    n_cells = int(np.rint(np.absolute(np.linalg.det(sc_matrix))))
-    n_ions = len(summary_object['unit_cell']['points'])
+    n_ions = fc_dims[0]
+    n_cells = int(np.rint(fc_dims[1]/fc_dims[0]))
 
     if fc_format == 'compact':
         fc = np.array(fc_entry['elements'])
-
-    elif fc_format == 'full': # FULL FC, convert down to COMPACT
+    elif fc_format == 'full':  # convert to compact
         p2s_map = [pi for pi in range(0, n_ions*n_cells, n_ions)]
         fc = np.array(fc_entry['elements']).reshape(
                 [n_ions*n_cells, n_ions, n_cells, 3, 3])[p2s_map, :, :, :, :]
@@ -483,7 +480,12 @@ def _extract_force_constants_summary(summary_object):
     return _reshape_fc(fc, n_ions, n_cells)
 
 def _reshape_fc(fc, n_ions, n_cells):
-    return np.reshape( np.transpose(
+    """
+    Reshape force constants from Phonopy convention
+    (n_ions, n_cells_in_sc*n_ions, 3, 3) to Euphonic convention
+    (n_cells_in_sc, 3*n_ions, 3*n_ions)
+    """
+    return np.reshape(np.transpose(
         np.reshape(fc, (n_ions, n_ions, n_cells, 3, 3)),
         axes=[2,0,3,1,4]), (n_cells, 3*n_ions, 3*n_ions))
 
@@ -552,26 +554,30 @@ def _extract_summary(summary_object, fc_extract=False):
         A dict containing: sc_matrix, n_cells_in_sc, n_ions, cell_vec,
         ion_r, ion_mass, ion_type, n_ions, cell_origins.
     """
-    n_ions = len(summary_object['unit_cell']['points'])
-    cell_vec = np.array(summary_object['unit_cell']['lattice'])
-    ion_r = np.zeros((n_ions, 3))
-    ion_mass = np.zeros(n_ions)
-    ion_type = np.array([])
-    for i in range(n_ions):
-        ion_mass[i] = summary_object['unit_cell']['points'][i]['mass']
-        ion_r[i] = summary_object['unit_cell']['points'][i]['coordinates']
-        ion_type = np.append(
-            ion_type, summary_object['unit_cell']['points'][i]['symbol'])
 
     sc_matrix = np.array(summary_object['supercell_matrix'])
+    if 'primitive_matrix' in summary_object.keys():
+        # Primitive cell has been used to generate force constants, account for
+        # this and ensure correct cell is returned
+        p_matrix = np.array(summary_object['primitive_matrix'])
+        sc_matrix = np.einsum('ij,jk->ik',
+                              np.rint(np.linalg.inv(p_matrix)).astype(np.int32),
+                              sc_matrix)
+        cell_vec, n_ions, ion_r, ion_mass, ion_type = _extract_crystal_data(
+            summary_object['primitive_cell'])
+    else:
+        cell_vec, n_ions, ion_r, ion_mass, ion_type = _extract_crystal_data(
+            summary_object['unit_cell'])
+
+    _, _, sion_r, _, _ = _extract_crystal_data(summary_object['supercell'])
     n_cells_in_sc = int(np.rint(np.absolute(np.linalg.det(sc_matrix))))
-    sc_n_ions = len(summary_object['supercell']['points'])
-    sc_ion_r = np.zeros((sc_n_ions, 3))
-    for i in range(sc_n_ions):
-        sc_ion_r[i] = summary_object['supercell']['points'][i]['coordinates']
+#    scn_ions = len(summary_object['supercell']['points'])
+#    scion_r = np.zeros((scn_ions, 3))
+#    for i in range(sc_n_ions):
+#        scion_r[i] = summary_object['supercell']['points'][i]['coordinates']
 
     # Coordinates of supercell ions in fractional coords of the unit cell
-    sc_ion_r_ucell = np.einsum('ij,jk->ij', sc_ion_r, sc_matrix)
+    sc_ion_r_ucell = np.einsum('ij,jk->ik', sion_r, sc_matrix)
     cell_origins = np.rint(
         sc_ion_r_ucell[:n_cells_in_sc] - ion_r[0]).astype(np.int32)
 
@@ -605,6 +611,41 @@ def _extract_summary(summary_object, fc_extract=False):
         pass
 
     return summary_dict
+
+def _extract_crystal_data(crystal):
+    """
+    Gets relevant data from a section of phonopy.yaml
+
+    Parameters
+    ----------
+    crystal : dict
+        Part of the dict obtained from reading a phonopy.yaml file. e.g.
+        summary_dict['unit_cell']
+
+    Returns
+    -------
+    cell_vec : (3,3) float ndarray
+        Cell vectors, in same units as in the phonopy.yaml file
+    n_ions : int
+        Number of ions
+    ion_r : (n_ions, 3) float ndarray
+        Fractional position of each ion
+    ion_mass : (n_ions,) float ndarray
+        Mass of each ion, in same units as in the phonopy.yaml file
+    ion_type : (n_ions,) str ndarray
+        String specifying the species of each ion
+    """
+    n_ions = len(crystal['points'])
+    cell_vec = np.array(crystal['lattice'])
+    ion_r = np.zeros((n_ions, 3))
+    ion_mass = np.zeros(n_ions)
+    ion_type = np.array([])
+    for i in range(n_ions):
+        ion_mass[i] = crystal['points'][i]['mass']
+        ion_r[i] = crystal['points'][i]['coordinates']
+        ion_type = np.append(ion_type, crystal['points'][i]['symbol'])
+    return cell_vec, n_ions, ion_r, ion_mass, ion_type
+
 
 def _check_fc_summary(filename):
     """
