@@ -997,7 +997,7 @@ class TestInterpolatePhononsQuartz(unittest.TestCase):
         npt.assert_allclose(
             self.data.freqs.to('hartree').magnitude,
             self.expctd_freqs_no_asr.to('hartree').magnitude,
-            atol=1e-8)
+            atol=2e-6)
 
     def test_calculate_fine_phonons_dipole_no_asr_c(self):
         self.data.calculate_fine_phonons(
@@ -1005,7 +1005,7 @@ class TestInterpolatePhononsQuartz(unittest.TestCase):
         npt.assert_allclose(
             self.data.freqs.to('hartree').magnitude,
             self.expctd_freqs_no_asr.to('hartree').magnitude,
-            atol=1e-8)
+            atol=2e-6)
 
     def test_calculate_fine_phonons_dipole_no_asr_c_2threads(self):
         self.data.calculate_fine_phonons(
@@ -1021,7 +1021,7 @@ class TestInterpolatePhononsQuartz(unittest.TestCase):
         npt.assert_allclose(
             self.data.freqs.to('hartree').magnitude,
             self.expctd_freqs_asr.to('hartree').magnitude,
-            atol=2e-6)
+            atol=5e-4)
 
     def test_calculate_fine_phonons_dipole_recip_asr_c(self):
         self.data.calculate_fine_phonons(
@@ -1030,7 +1030,7 @@ class TestInterpolatePhononsQuartz(unittest.TestCase):
         npt.assert_allclose(
             self.data.freqs.to('hartree').magnitude,
             self.expctd_freqs_asr.to('hartree').magnitude,
-            atol=2e-6)
+            atol=5e-4)
 
     def test_calculate_fine_phonons_dipole_recip_asr_c_2threads(self):
         self.data.calculate_fine_phonons(
@@ -1048,11 +1048,11 @@ class TestInterpolatePhononsQuartz(unittest.TestCase):
         npt.assert_allclose(
             self.data.freqs.to('hartree').magnitude,
             self.expctd_freqs_asr_splitting.to('hartree').magnitude,
-            atol=2e-6)
+            atol=5e-4)
         npt.assert_allclose(
             self.data.split_freqs.to('hartree').magnitude,
             self.expctd_split_freqs.to('hartree').magnitude,
-            atol=2e-6)
+            atol=5e-4)
 
     def test_calculate_fine_phonons_dipole_recip_asr_split_c(self):
         self.data.calculate_fine_phonons(
@@ -1076,8 +1076,8 @@ class TestInterpolatePhononsQuartz(unittest.TestCase):
         npt.assert_allclose(
             self.data.freqs.to('hartree').magnitude,
             self.expctd_freqs_asr_splitting.to('hartree').magnitude,
-            atol=2e-6)
+            atol=5e-4)
         npt.assert_allclose(
             self.data.split_freqs.to('hartree').magnitude,
             self.expctd_split_freqs.to('hartree').magnitude,
-            atol=2e-6)
+            atol=5e-4)
