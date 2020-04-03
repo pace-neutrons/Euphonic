@@ -89,8 +89,8 @@ class TestReadInterpolationNaCl(unittest.TestCase):
         expctd_data.force_constants = np.load(
             self.path +'/force_constants_hdf5.npy')*ureg('hartree/bohr**2')
         self.expctd_data = expctd_data
-        self.data = InterpolationData.from_phonopy(
-            path=self.path, fc_name='force_constants.hdf5')
+        self.summary_nofc = 'phonopy_nofc.yaml'
+        self.data = InterpolationData.from_phonopy(path=self.path)
 
         # Maximum difference in force constants read from plain text and hdf5
         # files
@@ -137,41 +137,38 @@ class TestReadInterpolationNaCl(unittest.TestCase):
 
     def test_fc_mat_read(self):
         npt.assert_allclose(self.data.force_constants.magnitude,
-                            self.expctd_data.force_constants.magnitude)
+                            self.expctd_data.force_constants.magnitude,
+                            atol = self.fc_tol)
 
     def test_fc_mat_read_fullfc(self):
         data_fullfc = InterpolationData.from_phonopy(
-            path=self.path, fc_name='full_force_constants.hdf5')
+            path=self.path, summary_name=self.summary_nofc,
+            fc_name='full_force_constants.hdf5')
         npt.assert_allclose(data_fullfc.force_constants.magnitude,
                             self.expctd_data.force_constants.magnitude)
 
     def test_fc_mat_read_FC(self):
         data_FC = InterpolationData.from_phonopy(
-            path=self.path, fc_name='FORCE_CONSTANTS')
+            path=self.path, summary_name=self.summary_nofc,
+            fc_name='FORCE_CONSTANTS')
         npt.assert_allclose(data_FC.force_constants.magnitude,
                             self.expctd_data.force_constants.magnitude,
                             atol=self.fc_tol)
 
     def test_fc_mat_read_FULLFC(self):
         data_FULLFC = InterpolationData.from_phonopy(
-            path=self.path, fc_name='FULL_FORCE_CONSTANTS')
+            path=self.path, summary_name=self.summary_nofc,
+            fc_name='FULL_FORCE_CONSTANTS')
         npt.assert_allclose(data_FULLFC.force_constants.magnitude,
                             self.expctd_data.force_constants.magnitude,
                             atol=self.fc_tol)
 
-    def test_fc_mat_read_fc_yaml(self):
-        data_fc_yaml = InterpolationData.from_phonopy(
-            path=self.path, fc_format='yaml')
-        npt.assert_allclose(data_fc_yaml.force_constants.magnitude,
-                            self.expctd_data.force_constants.magnitude,
-                            atol=self.fc_tol)
-
-    def test_fc_mat_read_fullfc_yaml(self):
-        data_fullfc_yaml = InterpolationData.from_phonopy(
-            path=self.path, fc_format='yaml')
-        npt.assert_allclose(data_fullfc_yaml.force_constants.magnitude,
-                            self.expctd_data.force_constants.magnitude,
-                            atol=self.fc_tol)
+    def test_born_read_BORN(self):
+        data_born = InterpolationData.from_phonopy(
+            path=self.path, summary_name='phonopy_nofc_noborn.yaml',
+            born_name='BORN')
+        npt.assert_allclose(data_born.born.magnitude,
+                            self.expctd_data.born.magnitude)
 
 
 class TestInterpolatePhononsNaCl(unittest.TestCase):
@@ -260,8 +257,7 @@ class TestInterpolatePhononsNaCl(unittest.TestCase):
              28.28732511, 28.28804436, 29.77604856, 29.77629323]])*ureg('meV')
 
         self.expctd_data = expctd_data
-        self.data = InterpolationData.from_phonopy(path=self.path,
-                            fc_name='force_constants.hdf5', read_born=True)
+        self.data = InterpolationData.from_phonopy(path=self.path)
 
     def test_calculate_fine_phonons_dipole_no_asr(self):
         self.data.calculate_fine_phonons(

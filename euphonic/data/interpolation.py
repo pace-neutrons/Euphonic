@@ -153,7 +153,7 @@ class InterpolationData(PhononData):
     @classmethod
     def from_castep(self, seedname, path=''):
         """
-        Calls the CASTEP interpolation data reader and sets the InerpolationData attributes.
+        Reads from a .castep_bin file
 
         Parameters
         ----------
@@ -168,31 +168,33 @@ class InterpolationData(PhononData):
 
     @classmethod
     def from_phonopy(self, path='.', summary_name='phonopy.yaml',
-                        fc_name='FORCE_CONSTANTS', fc_format=None,
-                        born_name='BORN', born_format=None, read_born=True):
+                     born_name=None, fc_name='FORCE_CONSTANTS', fc_format=None):
         """
-        Calls the CASTEP interpolation data reader and sets the InerpolationData attributes.
+        Reads from a Phonopy summary file (default phonopy.yaml), and optionally
+        Phonopy force constants and born files
 
         Parameters
         ----------
-        path : str, optional
-            Path to dir containing the file(s), if in another directory
-        summary_name : str
-            Seedname of phonopy script summary file, default: phonopy.yaml
-        fc_name : str
-            Seedname of force constants file, default: FORCE_CONSTANTS
-        fc_format : str
-            Format of force constants file
-        born_name : str
-            Seedname of born file information, default: BORN
-        born_format : str
-            Format of born file information
-        read_born : bool
-            Choose whether to read born information, default: True
+        path : str, optional, default '.'
+            Path to directory containing the file(s)
+        summary_name : str, optional, default 'phonopy.yaml'
+            Filename of phonopy summary file, default phonopy.yaml. By default
+            any information (e.g. force constants) read from this file takes
+            priority
+        born_name : str, optional, default None
+            Name of the Phonopy file containing born charges and dielectric
+            tensor (by convention in Phonopy this would be called BORN). Is
+            only read if Born charges can't be found in the summary_name file
+        fc_name : str, optional, default 'FORCE_CONSTANTS'
+            Name of file containing force constants. Is only read if force
+            constants can't be found in summary_name
+        fc_format : {'phonopy', 'hdf5'} str, optional, default None
+            Format of file containing force constants data. FORCE_CONSTANTS is
+            type 'phonopy'
         """
-        data = _phonopy._read_interpolation_data(path=path, summary_name=summary_name,
-                                        born_name=born_name, born_format=born_format,
-                                        read_born=read_born, fc_name=fc_name, fc_format=fc_format)
+        data = _phonopy._read_interpolation_data(
+            path=path, summary_name=summary_name, born_name=born_name,
+            fc_name=fc_name, fc_format=fc_format)
         return self(data)
 
 
