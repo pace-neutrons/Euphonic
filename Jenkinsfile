@@ -177,10 +177,9 @@ pipeline {
                             steps {
                                 checkout scm
                                 bat """
-                                    set CONDA="C:\\Programming\\miniconda3\\condabin\\conda.bat"
-                                    CALL %CONDA% config --append channels free
-                                    CALL %CONDA% create --name py python=3.6.0 -y
-                                    CALL %CONDA% activate py
+                                    conda config --append channels free
+                                    conda create --name py python=3.6.0 -y
+                                    conda activate py
                                     python -m pip install --upgrade --user pip
                                     python -m pip install numpy
                                     python -m pip install matplotlib
@@ -194,8 +193,7 @@ pipeline {
                             steps {
                                 bat """
                                     CALL "C:\\Programming\\VS2019_com\\VC\\Auxiliary\\Build\\vcvarsall.bat" x86_amd64
-                                    set CONDA="C:\\Programming\\miniconda3\\condabin\\conda.bat"
-                                    CALL %CONDA% activate py
+                                    conda activate py
                                     python -m tox
                                 """
                             }
@@ -206,9 +204,8 @@ pipeline {
                             steps {
                                 bat """
                                     CALL "C:\\Programming\\VS2019_com\\VC\\Auxiliary\\Build\\vcvarsall.bat" x86_amd64
-                                    set CONDA="C:\\Programming\\miniconda3\\condabin\\conda.bat"
                                     rmdir /s /q .tox
-                                    CALL %CONDA% activate py
+                                    conda activate py
                                     set /p EUPHONIC_VERSION= < python euphonic/get_version.py
                                     python -m tox -c release_tox.ini
                                 """
