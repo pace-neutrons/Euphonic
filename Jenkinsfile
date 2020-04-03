@@ -178,8 +178,8 @@ pipeline {
                             steps {
                                 checkout scm
                                 bat """
-                                    conda create --name py python=3.6.0 -y
-                                    conda activate py
+                                    CALL conda create --name py python=3.6.0 -y
+                                    CALL conda activate py
                                     python -m pip install --upgrade --user pip
                                     python -m pip install numpy
                                     python -m pip install matplotlib
@@ -193,7 +193,7 @@ pipeline {
                             steps {
                                 bat """
                                     CALL "%VS2019_VCVARSALL%" x86_amd64
-                                    conda activate py
+                                    CALL conda activate py
                                     python -m tox
                                 """
                             }
@@ -205,7 +205,7 @@ pipeline {
                                 bat """
                                     CALL "%VS2019_VCVARSALL%" x86_amd64
                                     rmdir /s /q .tox
-                                    conda activate py
+                                    CALL conda activate py
                                     set /p EUPHONIC_VERSION= < python euphonic/get_version.py
                                     python -m tox -c release_tox.ini
                                 """
