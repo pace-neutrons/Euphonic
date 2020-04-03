@@ -30,6 +30,7 @@ def _convert_weights(weights):
     total_weight = weights.sum()
     return weights/total_weight
 
+
 def _extract_phonon_data_yaml(phonon_data):
     """
     From a dictionary obtained from reading a mesh/band/qpoint.yaml file,
@@ -67,11 +68,13 @@ def _extract_phonon_data_yaml(phonon_data):
     except KeyError:
         pass
 
+    # Weights only present in mesh
     try:
         data_dict['weights'] = np.array([phon['weight'] for phon in phonons])
     except KeyError:
         pass
 
+    # Crystal information only appears to be present in mesh/band
     try:
         data_dict['cell_vec'] = np.array(phonon_data['lattice'])
         data_dict['ion_r'] = np.array(
@@ -106,21 +109,49 @@ def _extract_phonon_data_hdf5(hdf5_file):
         file:
             'eigenvecs', 'weights'
     """
-    data_dict = {}
-    data_dict['qpts'] = hdf5_file['qpoint'][()]
-    data_dict['freqs'] = hdf5_file['frequency'][()]
-    # Eigenvectors may not be present if users haven't set --eigvecs when
-    # running Phonopy
-    try:
-        data_dict['eigenvecs'] = hdf5_file['eigenvector'][()]
-    except KeyError:
-        pass
-    try:
-        data_dict['weights'] = hdf5_file['weight'][()]
-    except KeyError:
-        pass
+    if 'qpoint' in hdf5_file.keys():
+        data_dict = {}
+        data_dict['qpts'] = hdf5_file['qpoint'][()]
+        data_dict['freqs'] = hdf5_file['frequency'][()]
+        # Eigenvectors may not be present if users haven't set --eigvecs when
+        # running Phonopy
+        try:
+            data_dict['eigenvecs'] = hdf5_file['eigenvector'][()]
+        except KeyError:
+            pass
+        # Only mesh.hdf5 has weights
+        try:
+            data_dict['weights'] = hdf5_file['weight'][()]
+        except KeyError:
+            pass
+    # Is a band.hdf5 file - q-points are stored in 'path' and need special
+    # treatment
+    else:
+        data_dict = _extract_band_data_hdf5(hdf5_file)
 
     return data_dict
+
+def _extract_band_data_hdf5(hdf5_file):
+    """
+    Read data from a Phonopy band.hdf5 file. All information is stored in the
+    shape (n_paths, n_qpoints_in_path, x) rather than (n_qpts, x) so needs
+    special treatment
+    """
+    data_dict = {}
+    data_dict['qpts'] = hdf5_file['path'][()].reshape(
+        -1, hdf5_file['path'][()].shape[-1])
+    data_dict['freqs'] = hdf5_file['frequency'][()].reshape(
+        -1, hdf5_file['frequency'][()].shape[-1])
+    try:
+        # The last 2 dimensions of eigenvectors in bands.hdf5 are for some
+        # reason transposed compared to mesh/qpoints.hdf5, so also transpose to
+        # handle this
+        data_dict['eigenvecs'] = hdf5_file['eigenvector'][()].reshape(
+            -1, *hdf5_file['eigenvector'][()].shape[-2:]).transpose([0,2,1])
+    except KeyError:
+        pass
+    return data_dict
+
 
 def _read_phonon_data(path='.', phonon_name='band.yaml', phonon_format=None,
                       summary_name='phonopy.yaml'):
@@ -716,4 +747,3 @@ def _read_interpolation_data(path='.', summary_name='phonopy.yaml',
     data_dict['metadata'] = metadata
 
     return data_dict
-
