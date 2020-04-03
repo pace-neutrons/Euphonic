@@ -170,6 +170,7 @@ pipeline {
                             steps {
                                 setGitHubBuildStatus("pending", "Starting", "Windows")
                                 echo "Branch: ${env.JOB_BASE_NAME}"
+                                bat 'set'
                             }
                         }
 
@@ -177,7 +178,6 @@ pipeline {
                             steps {
                                 checkout scm
                                 bat """
-                                    conda config --append channels free
                                     conda create --name py python=3.6.0 -y
                                     conda activate py
                                     python -m pip install --upgrade --user pip
