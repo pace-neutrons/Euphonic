@@ -192,7 +192,7 @@ pipeline {
                         stage("Test VS2019") {
                             steps {
                                 bat """
-                                    CALL "C:\\Programming\\VS2019_com\\VC\\Auxiliary\\Build\\vcvarsall.bat" x86_amd64
+                                    CALL "%VS2019_VCVARSALL%" x86_amd64
                                     conda activate py
                                     python -m tox
                                 """
@@ -203,7 +203,7 @@ pipeline {
                             when { tag "*" }
                             steps {
                                 bat """
-                                    CALL "C:\\Programming\\VS2019_com\\VC\\Auxiliary\\Build\\vcvarsall.bat" x86_amd64
+                                    CALL "%VS2019_VCVARSALL%" x86_amd64
                                     rmdir /s /q .tox
                                     conda activate py
                                     set /p EUPHONIC_VERSION= < python euphonic/get_version.py
