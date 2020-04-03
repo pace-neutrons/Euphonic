@@ -68,7 +68,7 @@ pipeline {
                             conda create --name py python=3.6.0 -y &&
                             conda activate py &&
                             python -m pip install --upgrade --user pip &&
-                            python -m pip install -r tests_and_analysis/tox_requirements.txt &&
+                            python -m pip install -r tests_and_analysis/jenkins_requirements.txt &&
                             export CC=gcc
                         """
                     }
