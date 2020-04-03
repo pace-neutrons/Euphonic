@@ -62,6 +62,7 @@ pipeline {
 
     stages {
 
+<<<<<<< HEAD
         stage("Parallel environments") {
 
             parallel {
@@ -89,7 +90,10 @@ pipeline {
                                     conda create --name py python=3.6.0 -y &&
                                     conda activate py &&
                                     python -m pip install --upgrade --user pip &&
-                                    python -m pip install -r tests_and_analysis/jenkins_requirements.txt &&
+                                    python -m pip install numpy &&
+                                    python -m pip install matplotlib &&
+                                    python -m pip install tox==3.14.5 &&
+                                    python -m pip install pylint==2.4.4 &&
                                     export CC=gcc
                                 """
                             }
@@ -134,14 +138,36 @@ pipeline {
                                 }
                             }
                         }
+=======
+        stage("Checkout") {
+            steps {
+                setGitHubBuildStatus("pending", "Build and tests are starting...")
+                echo "Branch: ${env.BRANCH_NAME}"
+                checkout scm
+            }
+        }
+
+        stage("Set up environment") {
+            steps {
+                script {
+                    if (isUnix()) {
+                        sh """
+                            module load conda/3 &&
+                            conda config --append channels free &&
+                            module load gcc &&
+                            conda create --name py python=3.6.0 -y &&
+                            conda activate py &&
+                            python -m pip install --upgrade --user pip &&
+                            python -m pip install -r tests_and_analysis/jenkins_requirements.txt &&
+                            export CC=gcc
+                        """
+>>>>>>> master
                     }
 
                     post {
 
                         always {
                             junit 'tests_and_analysis/test/reports/junit_report*.xml'
-                        
-                            publishCoverage adapters: [coberturaAdapter('tests_and_analysis/test/reports/coverage.xml')]
                         }
 
                         success {
