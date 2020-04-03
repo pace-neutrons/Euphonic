@@ -217,8 +217,7 @@ def _read_phonon_data(path='.', phonon_name='band.yaml', phonon_format=None,
     # Convert units to atomic
     phonon_dict['cell_vec'] = phonon_dict['cell_vec']*ureg(
         ulength).to('bohr').magnitude
-    phonon_dict['recip_vec'] = (reciprocal_lattice(
-        phonon_dict['cell_vec'])/ureg(ulength)).to('1/bohr').magnitude
+    phonon_dict['recip_vec'] = reciprocal_lattice(phonon_dict['cell_vec'])
     phonon_dict['ion_mass'] = phonon_dict['ion_mass']*ureg(
         umass).to('e_mass').magnitude
     phonon_dict['freqs'] = phonon_dict['freqs']*ureg(
@@ -689,8 +688,7 @@ def _read_interpolation_data(path='.', summary_name='phonopy.yaml',
     data_dict['n_branches'] = 3*summary_dict['n_ions']
     data_dict['cell_vec'] = summary_dict['cell_vec']*ureg(
         ulength).to('bohr').magnitude
-    data_dict['recip_vec'] = (reciprocal_lattice(
-        summary_dict['cell_vec'])/ureg(ulength)).to('1/bohr').magnitude
+    data_dict['recip_vec'] = reciprocal_lattice(data_dict['cell_vec'])
     data_dict['ion_r'] = summary_dict['ion_r']
     data_dict['ion_type'] = summary_dict['ion_type']
     data_dict['ion_mass'] = summary_dict['ion_mass']*ureg(
