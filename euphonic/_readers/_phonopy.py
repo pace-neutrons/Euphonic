@@ -547,45 +547,37 @@ def _extract_summary(summary_object, fc_extract=False):
     ----------
     summary_object : dict-like object
         The Phonopy data object which contains phonon data.
+    fc_extract : bool, optional, default False
+        Whether to attempt to read force constants and related information from
+        summary_object
 
     Returns
     ----------
     summary_dict : dict
-        A dict containing: sc_matrix, n_cells_in_sc, n_ions, cell_vec,
-        ion_r, ion_mass, ion_type, n_ions, cell_origins.
+        A dict with the following keys: n_ions, cell_vec, ion_r, ion_type,
+        ion_mass, ulength, umass. Also optionally has the following keys:
+        sc_matrix, n_cells_in_sc, cell_origins, force_constants, ufc, born,
+        dielectric
     """
 
-    sc_matrix = np.array(summary_object['supercell_matrix'])
     if 'primitive_matrix' in summary_object.keys():
-        # Primitive cell has been used to generate force constants, account for
-        # this and ensure correct cell is returned
-        p_matrix = np.array(summary_object['primitive_matrix'])
-        sc_matrix = np.einsum('ij,jk->ik',
-                              np.rint(np.linalg.inv(p_matrix)).astype(np.int32),
-                              sc_matrix)
-        cell_vec, n_ions, ion_r, ion_mass, ion_type = _extract_crystal_data(
-            summary_object['primitive_cell'])
+        if fc_extract:
+            raise Exception(('Reading Phonopy force constants for the primitive'
+                             ' cell is not currently supported. Please rerun'
+                             ' Phonopy without setting PRIMITIVE_AXIS'))
+        else:
+            # Primitive cell has been used to calculate frequencies, account for
+            # this and ensure correct cell is returned
+            cell_vec, n_ions, ion_r, ion_mass, ion_type = _extract_crystal_data(
+                summary_object['primitive_cell'])
     else:
         cell_vec, n_ions, ion_r, ion_mass, ion_type = _extract_crystal_data(
             summary_object['unit_cell'])
-
-    _, _, sion_r, _, _ = _extract_crystal_data(summary_object['supercell'])
-    n_cells_in_sc = int(np.rint(np.absolute(np.linalg.det(sc_matrix))))
-#    scn_ions = len(summary_object['supercell']['points'])
-#    scion_r = np.zeros((scn_ions, 3))
-#    for i in range(sc_n_ions):
-#        scion_r[i] = summary_object['supercell']['points'][i]['coordinates']
-
-    # Coordinates of supercell ions in fractional coords of the unit cell
-    sc_ion_r_ucell = np.einsum('ij,jk->ik', sion_r, sc_matrix)
-    cell_origins = np.rint(
-        sc_ion_r_ucell[:n_cells_in_sc] - ion_r[0]).astype(np.int32)
 
     summary_dict = {}
     pu = summary_object['physical_unit']
     summary_dict['ulength'] = pu['length'].lower()
     summary_dict['umass'] = pu['atomic_mass'].lower()
-    summary_dict['ufc'] = pu['force_constants'].replace('Angstrom', 'angstrom')
 
     summary_dict['n_ions'] = n_ions
     summary_dict['cell_vec'] = cell_vec
@@ -593,24 +585,37 @@ def _extract_summary(summary_object, fc_extract=False):
     summary_dict['ion_type'] = ion_type
     summary_dict['ion_mass'] = ion_mass
 
-    summary_dict['cell_origins'] = cell_origins
-    summary_dict['sc_matrix'] = sc_matrix
-    summary_dict['n_cells_in_sc'] = n_cells_in_sc
+    if fc_extract:
+        sc_matrix = np.array(summary_object['supercell_matrix'])
+        _, _, sion_r, _, _ = _extract_crystal_data(summary_object['supercell'])
+        n_cells_in_sc = int(np.rint(np.absolute(np.linalg.det(sc_matrix))))
+        summary_dict['sc_matrix'] = sc_matrix
+        summary_dict['n_cells_in_sc'] = n_cells_in_sc
 
-    try:
-        summary_dict['force_constants'] = _extract_force_constants_summary(
-            summary_object)
-    except KeyError:
-        pass
+        # Coordinates of supercell ions in fractional coords of the unit cell
+        sc_ion_r_ucell = np.einsum('ij,jk->ik', sion_r, sc_matrix)
+        cell_origins = np.rint(
+            sc_ion_r_ucell[:n_cells_in_sc] - ion_r[0]).astype(np.int32)
+        summary_dict['cell_origins'] = cell_origins
 
-    try:
-        summary_dict['born'] = np.array(summary_object['born_effective_charge'])
-        summary_dict['dielectric'] = np.array(
-            summary_object['dielectric_constant'])
-    except KeyError:
-        pass
+        summary_dict['ufc'] = pu['force_constants'].replace(
+            'Angstrom', 'angstrom')
+        try:
+            summary_dict['force_constants'] = _extract_force_constants_summary(
+                summary_object)
+        except KeyError:
+            pass
+
+        try:
+            summary_dict['born'] = np.array(
+                summary_object['born_effective_charge'])
+            summary_dict['dielectric'] = np.array(
+                summary_object['dielectric_constant'])
+        except KeyError:
+            pass
 
     return summary_dict
+
 
 def _extract_crystal_data(crystal):
     """
