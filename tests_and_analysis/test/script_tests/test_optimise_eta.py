@@ -1,58 +1,122 @@
 import os
 import math
+from random import random
 import pytest
+from euphonic.data.interpolation import InterpolationData
 from scripts.optimise_eta import calculate_optimum_eta
 from tests_and_analysis.test.utils import get_data_path
+import time
 
 quartz_castep_bin = os.path.join(get_data_path(), "interpolation", "quartz", "quartz")
 
 
-@pytest.fixture
-def call_with_defaults_and_quartz():
-    return calculate_optimum_eta(quartz_castep_bin)
+class SharedCode:
+
+    @staticmethod
+    def get_lowest_time_per_qpt_and_index(etas_time_per_qpts):
+        # Search etas_time_per_qpts for lowest time
+        lowest_time_per_qpt = math.inf
+        lowest_time_per_qpt_index = None
+        for index, time_per_qpt in enumerate(etas_time_per_qpts):
+            if time_per_qpt < lowest_time_per_qpt:
+                lowest_time_per_qpt = time_per_qpt
+                lowest_time_per_qpt_index = index
+        return lowest_time_per_qpt, lowest_time_per_qpt_index
+
+    @staticmethod
+    def get_calculate_optimum_eta_kwargs():
+        return [
+            {},
+            {"eta_min": 0.25, "eta_max": 1.35, "eta_step": 0.2, "n": 20},
+            {"eta_min": -0.25, "eta_max": 1.75, "eta_step": 0.2, "n": 20}
+        ]
 
 
-# Regression test
+class MockTime:
+
+    def __init__(self):
+        self.last_time = 0
+
+    def get_time(self):
+        self.last_time += random()
+        return self.last_time
+
+
+class MockInterpolationData:
+
+    def _dipole_correction_init(self, *args, **kwargs):
+        pass
+
+    def _calculate_dipole_correction(self, *args, **kwargs):
+        pass
+
+
+@pytest.mark.unit
+class TestUnit:
+
+    # Run the fixture for multiple permutations of arguments
+    @pytest.fixture(params=SharedCode.get_calculate_optimum_eta_kwargs())
+    def call_with_params_and_quartz_unit(self, request, monkeypatch):
+        # Mock getting the data from a castep file
+        def mock_get_castep_data(_):
+            return MockInterpolationData()
+        monkeypatch.setattr(InterpolationData, "from_castep", mock_get_castep_data)
+
+        # Simulate time
+        time_manager: MockTime = MockTime()
+
+        def mock_time():
+            return time_manager.get_time()
+        monkeypatch.setattr(time, "time", mock_time)
+
+        kwargs = request.param
+        return calculate_optimum_eta(quartz_castep_bin, **kwargs)
+
+    def test_optimal_has_lowest_time_per_qpt(self, call_with_params_and_quartz_unit):
+        # Unpack data
+        optimal_eta = call_with_params_and_quartz_unit[0]
+        optimal_time_per_qpt = call_with_params_and_quartz_unit[2]
+        etas = call_with_params_and_quartz_unit[3]
+        etas_time_per_qpts = call_with_params_and_quartz_unit[5]
+
+        lowest_time_per_qpt, lowest_time_per_qpt_index = \
+            SharedCode.get_lowest_time_per_qpt_and_index(etas_time_per_qpts)
+
+        # Check optimal time per q-point is the lowest detected q-point
+        assert optimal_time_per_qpt == lowest_time_per_qpt
+        # Check eta from lowest detected q-point index matches our optimal q-point
+        assert etas[lowest_time_per_qpt_index] == optimal_eta
+
+
 @pytest.mark.integration
-def test_optimal_is_0_75(call_with_defaults_and_quartz):
-    optimal_eta = call_with_defaults_and_quartz[0]
-    assert optimal_eta == 0.75
+class TestIntegration:
 
+    @pytest.fixture
+    def call_with_defaults_and_quartz_integration(self):
+        return calculate_optimum_eta(quartz_castep_bin)
 
-# Create multiple fixtures to call with multiple selections of keyword args
-@pytest.fixture(params=[
-    {},
-    {"eta_min": 0.25, "eta_max": 1.35, "eta_step": 0.2, "n": 20},
-    {"eta_min": -0.25, "eta_max": 1.75, "eta_step": 0.2, "n": 20}
-])
-def call_with_params_and_quartz(request):
-    kwargs = request.param
-    return calculate_optimum_eta(quartz_castep_bin, **kwargs)
+    # Regression test
+    def test_optimal_is_0_75(self, call_with_defaults_and_quartz_integration):
+        optimal_eta = call_with_defaults_and_quartz_integration[0]
+        assert optimal_eta == 0.75
 
+    # Run the fixture for multiple permutations of arguments
+    @pytest.fixture(params=SharedCode.get_calculate_optimum_eta_kwargs())
+    def call_with_params_and_quartz_integration(self, request):
+        kwargs = request.param
+        return calculate_optimum_eta(quartz_castep_bin, **kwargs)
 
-def get_lowest_time_per_qpt_and_index(etas_time_per_qpts):
-    # Search etas_time_per_qpts for lowest time
-    lowest_time_per_qpt = math.inf
-    lowest_time_per_qpt_index = None
-    for index, time_per_qpt in enumerate(etas_time_per_qpts):
-        if time_per_qpt < lowest_time_per_qpt:
-            lowest_time_per_qpt = time_per_qpt
-            lowest_time_per_qpt_index = index
-    return lowest_time_per_qpt, lowest_time_per_qpt_index
+    def test_optimal_has_lowest_time_per_qpt(self, call_with_params_and_quartz_integration):
+        # Unpack data
+        optimal_eta = call_with_params_and_quartz_integration[0]
+        optimal_time_per_qpt = call_with_params_and_quartz_integration[2]
+        etas = call_with_params_and_quartz_integration[3]
+        etas_time_per_qpts = call_with_params_and_quartz_integration[5]
 
+        lowest_time_per_qpt, lowest_time_per_qpt_index = \
+            SharedCode.get_lowest_time_per_qpt_and_index(etas_time_per_qpts)
 
-@pytest.mark.integration
-def test_optimal_has_lowest_time_per_qpt(call_with_params_and_quartz):
-    # Unpack data
-    optimal_eta = call_with_params_and_quartz[0]
-    optimal_time_per_qpt = call_with_params_and_quartz[2]
-    etas = call_with_params_and_quartz[3]
-    etas_time_per_qpts = call_with_params_and_quartz[5]
-
-    lowest_time_per_qpt, lowest_time_per_qpt_index = \
-        get_lowest_time_per_qpt_and_index(etas_time_per_qpts)
-
-    # Check optimal time per q-point is the lowest detected q-point
-    assert optimal_time_per_qpt == lowest_time_per_qpt
-    # Check eta from lowest detected q-point index matches our optimal q-point
-    assert etas[lowest_time_per_qpt_index] == optimal_eta
+        # Check optimal time per q-point is the lowest detected q-point
+        assert optimal_time_per_qpt == lowest_time_per_qpt
+        # Check eta from lowest detected q-point index matches our optimal q-point
+        assert etas[lowest_time_per_qpt_index] == optimal_eta
