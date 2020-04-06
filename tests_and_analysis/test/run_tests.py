@@ -27,11 +27,18 @@ if __name__ == "__main__":
         cov = coverage.Coverage(config_file=coveragerc_filepath)
         cov.start()
 
+    # We may have multiple reports, so do not overwrite them
+    filename_prefix = "junit_report"
+    filenum = 0
+    for filename in os.listdir(xml_dir):
+        if filename_prefix in filename:
+            filenum += 1
+    xml_filepath = os.path.join(test_dir, "reports", "{}{}.xml".format(filename_prefix, filenum))
+
     # Run tests and get the resulting exit code
     # 0 is success, 1-5 are different forms of failure (see pytest docs for details)
     if do_report_results:
-        junit_xml_filepath = os.path.join(xml_dir, "junit_report.xml")
-        test_exit_code = pytest.main([test_dir, "--junitxml={}".format(junit_xml_filepath)])
+        test_exit_code = pytest.main([test_dir, "--junitxml={}".format(xml_filepath)])
     else:
         test_exit_code = pytest.main([test_dir])
 
