@@ -163,8 +163,6 @@ pipeline {
 
                     agent { label "PACE Windows (Private)" }
 
-                    options { disableConcurrentBuilds() }
-
                     stages {
 
                         stage("Notify") {
