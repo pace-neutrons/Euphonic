@@ -27,7 +27,7 @@ if __name__ == "__main__":
         cov = coverage.Coverage(config_file=coveragerc_filepath)
         cov.start()
 
-    # We may have reports from multiple platforms (windows, linux etc.)
+    # We may have multiple reports, so do not overwrite them
     filename_prefix = "junit_report"
     filenum = 0
     for filename in os.listdir(xml_dir):
