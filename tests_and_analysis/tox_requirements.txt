@@ -1,0 +1,4 @@
+mock
+numpy
+pytest==5.4.1
+coverage==5.0.4

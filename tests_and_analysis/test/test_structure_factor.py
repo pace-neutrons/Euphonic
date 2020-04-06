@@ -89,7 +89,7 @@ class TestStructureFactorInterpolationDataLZOSerial(unittest.TestCase):
         sf_sum = np.zeros(sf.shape)
         expected_sf_sum = np.zeros(sf.shape)
         for q in range(self.data.n_qpts):
-            TOL = 1e-8
+            TOL = 1e-4
             diff = np.append(TOL + 1, np.diff(self.data.freqs[q].magnitude))
             unique_index = np.where(diff > TOL)[0]
             x = np.zeros(self.data.n_branches, dtype=np.int32)
@@ -114,7 +114,7 @@ class TestStructureFactorInterpolationDataLZOSerial(unittest.TestCase):
         sf_sum = np.zeros(sf.shape)
         expected_sf_sum = np.zeros(sf.shape)
         for q in range(self.data.n_qpts):
-            TOL = 1e-8
+            TOL = 1e-4
             diff = np.append(TOL + 1, np.diff(self.data.freqs[q].magnitude))
             unique_index = np.where(diff > TOL)[0]
             x = np.zeros(self.data.n_branches, dtype=np.int32)
@@ -137,7 +137,7 @@ class TestStructureFactorInterpolationDataLZOSerial(unittest.TestCase):
         sf_sum = np.zeros(sf.shape)
         expected_sf_sum = np.zeros(sf.shape)
         for q in range(self.data.n_qpts):
-            TOL = 1e-8
+            TOL = 1e-4
             diff = np.append(TOL + 1, np.diff(self.data.freqs[q].magnitude))
             unique_index = np.where(diff > TOL)[0]
             x = np.zeros(self.data.n_branches, dtype=np.int32)
@@ -160,7 +160,7 @@ class TestStructureFactorInterpolationDataLZOSerial(unittest.TestCase):
         sf_sum = np.zeros(sf.shape)
         expected_sf_sum = np.zeros(sf.shape)
         for q in range(self.data.n_qpts):
-            TOL = 1e-8
+            TOL = 1e-4
             diff = np.append(TOL + 1, np.diff(self.data.freqs[q].magnitude))
             unique_index = np.where(diff > TOL)[0]
             x = np.zeros(self.data.n_branches, dtype=np.int32)
@@ -183,7 +183,7 @@ class TestStructureFactorInterpolationDataLZOSerial(unittest.TestCase):
         sf_sum = np.zeros(sf.shape)
         expected_sf_sum = np.zeros(sf.shape)
         for q in range(self.data.n_qpts):
-            TOL = 1e-8
+            TOL = 1e-4
             diff = np.append(TOL + 1, np.diff(self.data.freqs[q].magnitude))
             unique_index = np.where(diff > TOL)[0]
             x = np.zeros(self.data.n_branches, dtype=np.int32)
@@ -206,7 +206,7 @@ class TestStructureFactorInterpolationDataLZOSerial(unittest.TestCase):
         sf_sum = np.zeros(sf.shape)
         expected_sf_sum = np.zeros(sf.shape)
         for q in range(self.data.n_qpts):
-            TOL = 1e-8
+            TOL = 1e-4
             diff = np.append(TOL + 1, np.diff(self.data.freqs[q].magnitude))
             unique_index = np.where(diff > TOL)[0]
             x = np.zeros(self.data.n_branches, dtype=np.int32)
@@ -324,7 +324,7 @@ class TestStructureFactorInterpolationDataQuartzSerial(unittest.TestCase):
         sf_sum = np.zeros(sf.shape)
         expected_sf_sum = np.zeros(sf.shape)
         for q in range(self.data.n_qpts):
-            TOL = 1e-8
+            TOL = 5e-4
             diff = np.append(TOL + 1, np.diff(self.data.freqs[q].magnitude))
             unique_index = np.where(diff > TOL)[0]
             x = np.zeros(self.data.n_branches, dtype=np.int32)
@@ -338,10 +338,10 @@ class TestStructureFactorInterpolationDataQuartzSerial(unittest.TestCase):
         gamma_qpts = [16]  # Index of gamma pts in qpts array
         npt.assert_allclose(np.delete(sf_sum, gamma_qpts, axis=0),
                             np.delete(expected_sf_sum, gamma_qpts, axis=0),
-                            rtol=7e-4, atol=3e-16)
+                            rtol=7e-4, atol=2e-13)
         npt.assert_allclose(sf_sum[gamma_qpts, 3:],
                             expected_sf_sum[gamma_qpts, 3:],
-                            rtol=8e-6, atol=3e-14)
+                            rtol=4e-3, atol=1.1e-11)
 
     def test_sf_T0_dw_grid(self):
         sf = self.data.calculate_structure_factor(
@@ -351,7 +351,7 @@ class TestStructureFactorInterpolationDataQuartzSerial(unittest.TestCase):
         sf_sum = np.zeros(sf.shape)
         expected_sf_sum = np.zeros(sf.shape)
         for q in range(self.data.n_qpts):
-            TOL = 1e-8
+            TOL = 5e-4
             diff = np.append(TOL + 1, np.diff(self.data.freqs[q].magnitude))
             unique_index = np.where(diff > TOL)[0]
             x = np.zeros(self.data.n_branches, dtype=np.int32)
@@ -363,10 +363,10 @@ class TestStructureFactorInterpolationDataQuartzSerial(unittest.TestCase):
         gamma_qpts = [16]
         npt.assert_allclose(np.delete(sf_sum, gamma_qpts, axis=0),
                             np.delete(expected_sf_sum, gamma_qpts, axis=0),
-                            rtol=2e-3, atol=3e-16)
+                            rtol=2e-3, atol=2e-13)
         npt.assert_allclose(sf_sum[gamma_qpts, 3:],
                             expected_sf_sum[gamma_qpts, 3:],
-                            rtol=8e-6, atol=3e-14)
+                            rtol=4e-3, atol=1.1e-11)
 
     def test_sf_T100(self):
         sf = self.data.calculate_structure_factor(
@@ -376,7 +376,7 @@ class TestStructureFactorInterpolationDataQuartzSerial(unittest.TestCase):
         sf_sum = np.zeros(sf.shape)
         expected_sf_sum = np.zeros(sf.shape)
         for q in range(self.data.n_qpts):
-            TOL = 1e-8
+            TOL = 5e-4
             diff = np.append(TOL + 1, np.diff(self.data.freqs[q].magnitude))
             unique_index = np.where(diff > TOL)[0]
             x = np.zeros(self.data.n_branches, dtype=np.int32)
@@ -388,10 +388,10 @@ class TestStructureFactorInterpolationDataQuartzSerial(unittest.TestCase):
         gamma_qpts = [16]
         npt.assert_allclose(np.delete(sf_sum, gamma_qpts, axis=0),
                             np.delete(expected_sf_sum, gamma_qpts, axis=0),
-                            rtol=7e-4, atol=3e-16)
+                            rtol=7e-4, atol=2e-13)
         npt.assert_allclose(sf_sum[gamma_qpts, 3:],
                             expected_sf_sum[gamma_qpts, 3:],
-                            rtol=8e-6, atol=3e-14)
+                            rtol=4e-3, atol=1.1e-11)
 
     def test_sf_T100_dw_grid(self):
         sf = self.data.calculate_structure_factor(
@@ -402,7 +402,7 @@ class TestStructureFactorInterpolationDataQuartzSerial(unittest.TestCase):
         sf_sum = np.zeros(sf.shape)
         expected_sf_sum = np.zeros(sf.shape)
         for q in range(self.data.n_qpts):
-            TOL = 1e-8
+            TOL = 5e-4
             diff = np.append(TOL + 1, np.diff(self.data.freqs[q].magnitude))
             unique_index = np.where(diff > TOL)[0]
             x = np.zeros(self.data.n_branches, dtype=np.int32)
@@ -414,10 +414,10 @@ class TestStructureFactorInterpolationDataQuartzSerial(unittest.TestCase):
         gamma_qpts = [16]
         npt.assert_allclose(np.delete(sf_sum, gamma_qpts, axis=0),
                             np.delete(expected_sf_sum, gamma_qpts, axis=0),
-                            rtol=7e-4, atol=3e-16)
+                            rtol=7e-4, atol=2e-13)
         npt.assert_allclose(sf_sum[gamma_qpts, 3:],
                             expected_sf_sum[gamma_qpts, 3:],
-                            rtol=8e-6, atol=3e-14)
+                            rtol=4e-3, atol=1.1e-11)
 
 
 class TestStructureFactorInterpolationDataQuartzSerialC(TestStructureFactorInterpolationDataQuartzSerial):

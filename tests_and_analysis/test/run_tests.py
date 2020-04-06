@@ -72,7 +72,13 @@ def _build_pytest_options(reports_dir: str, do_report_tests: bool, tests: str,
     options: List[str] = ["-x", tests]
     # Add reporting of test results
     if do_report_tests:
-        junit_xml_filepath: str = os.path.join(reports_dir, "junit_report.xml")
+        # We may have multiple reports, so do not overwrite them
+        filename_prefix = "junit_report"
+        filenum = 0
+        for filename in os.listdir(reports_dir):
+            if filename_prefix in filename:
+                filenum += 1
+        junit_xml_filepath: str = os.path.join(test_dir, "reports", "{}{}.xml".format(filename_prefix, filenum))
         options.append("--junitxml={}".format(junit_xml_filepath))
     # Only run the specified markers
     options.append("-m={}".format(markers))
@@ -109,7 +115,7 @@ def run_tests(pytest_options: List[str], do_report_coverage: bool,
 
     # Run tests and get the resulting exit code
     # 0 is success, 1-5 are different forms of failure (see pytest docs for details)
-    test_exit_code: int = pytest.main(pytest_options)
+    test_exit_code = pytest.main(pytest_options)
 
     # Report coverage if requested
     if do_report_coverage and cov is not None:
