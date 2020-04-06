@@ -66,7 +66,7 @@ pipeline {
 
             parallel {
 
-                stage("UNIX environment") {
+                stage("Linux environment") {
 
                     agent { label "sl7" }
 
@@ -228,6 +228,33 @@ pipeline {
 
                         cleanup {
                             deleteDir()
+                        }
+
+                    }
+                }
+
+                stage("OSX environment") {
+
+                    agent { label "osx" }
+
+                    stages {
+
+                        stage("Notify") {
+                            steps {
+                                setGitHubBuildStatus("pending", "Starting", "OSX")
+                                echo "Branch: ${env.JOB_BASE_NAME}"
+                            }
+                        }
+
+                        stage("Set up") {
+                            steps {
+                                checkout scm
+                                sh """
+                                    module load python/3.6.0 &&
+                                    python -m pip install conda &&
+                                    conda --version
+                                """
+                            }
                         }
 
                     }
