@@ -1,12 +1,3 @@
-# Remove current directory from path, so when running tests it uses installed
-# euphonic, not from the ./euphonic foler (otherwise import euphonic._euphonic
-# as euphonic_c won't work so C tests can't run
-import sys
-try:
-    sys.path.remove('')
-except ValueError:
-    pass
-
 import os
 import unittest
 import numpy.testing as npt

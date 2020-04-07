@@ -12,6 +12,7 @@ Python API
 ==========
 - :ref:`Data Objects <data_objs>`
 - :ref:`Reading Data: CASTEP <read_castep>`
+- :ref:`Reading Data: Phonopy <read_phonopy>`
 - :ref:`Calculating Phonon Frequencies/Eigenvectors <interpolate>`
 - :ref:`Calculating INS Intensities <calc_ins>`
 - :ref:`Plotting dispersion <plot_disp>`

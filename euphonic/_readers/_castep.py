@@ -118,11 +118,13 @@ def _read_phonon_data(seedname, path):
                                 .to('E_h', 'spectroscopy')).magnitude
     data_dict['split_eigenvecs'] = split_eigenvecs
 
-    # Meta information
-    data_dict['model'] = 'CASTEP'
-    data_dict['seedname'] = seedname
-    data_dict['path'] = path
 
+    metadata = type('', (), {})()
+    metadata.model = 'CASTEP'
+    metadata.seedname = seedname
+    metadata.path = path
+
+    data_dict['metadata'] = metadata
     return data_dict
 
 
@@ -261,11 +263,13 @@ def _read_interpolation_data(seedname, path):
     except UnboundLocalError:
         pass
 
-    # Meta information
-    data_dict['model'] = 'CASTEP'
-    data_dict['seedname'] = seedname
-    data_dict['path'] = path
 
+    metadata = type('', (), {})()
+    metadata.model = 'CASTEP'
+    metadata.seedname = seedname
+    metadata.path = path
+
+    data_dict['metadata'] = metadata
     return data_dict
 
 
@@ -495,12 +499,14 @@ def _read_bands_data(seedname, path):
         pass
 
 
-    # Meta information
-    data_dict['model'] = 'CASTEP'
-    data_dict['seedname'] = seedname
-    data_dict['path'] = path
+    metadata = type('', (), {})()
+    metadata.model = 'CASTEP'
+    metadata.seedname = seedname
+    metadata.path = path
 
+    data_dict['metadata'] = metadata
     return data_dict
+
 
 
 def _read_castep_data(seedname, path):
