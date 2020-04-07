@@ -484,9 +484,11 @@ def _extract_summary(summary_object, fc_extract=False):
 
     if 'primitive_matrix' in summary_object.keys():
         if fc_extract:
-            raise Exception(('Reading Phonopy force constants for the primitive'
-                             ' cell is not currently supported. Please rerun'
-                             ' Phonopy without setting PRIMITIVE_AXIS'))
+            raise Exception(('Reading Phonopy force constants with '
+                             'PRIMITIVE_AXIS set is not currently supported. If'
+                             ' you wish to interpolate using the primitive cell'
+                             ', please rerun Phonopy using the primitive cell '
+                             'as your unit cell.'))
         else:
             # Primitive cell has been used to calculate frequencies, account for
             # this and ensure correct cell is returned

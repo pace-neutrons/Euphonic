@@ -44,12 +44,16 @@ charges can also be read from Phonopy plaintext or hdf5 files by specifying the
                                            fc_name='force_constants.hdf5',
                                            born_name='BORN')
 
+Currently, Phonopy's ``PRIMITIVE_AXIS`` setting is not supported when reading
+force constants. If you wish to interpolate using the primitive cell, please set
+this as your unit cell when running Phonopy.
+
 .. autofunction:: euphonic.data.interpolation.InterpolationData.from_phonopy
 
 PhononData
 ----------
 
-Note that Phonopy should be run with the ``--eigenvecs`` flag, or
+Note that Phonopy should be run with the ``--eigvecs`` flag, or
 ``EIGENVECTORS = .TRUE.`` for use with Euphonic.
 
 Using ``PhononData.from_phonopy`` Euphonic can read frequencies and eigenvectors
