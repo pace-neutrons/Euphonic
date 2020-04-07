@@ -25,7 +25,7 @@ to trigger the force constants to be written.
 PhononData
 ----------
 
-Frequencies and eigenvectors for PhononData is read from a ``.phonon`` file.
+Frequencies and eigenvectors for PhononData are read from a ``.phonon`` file.
 
 .. code-block:: py
 

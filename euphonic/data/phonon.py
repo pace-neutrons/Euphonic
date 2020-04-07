@@ -4,6 +4,7 @@ from euphonic import ureg
 from euphonic.util import direction_changed, bose_factor, is_gamma
 from euphonic.data.data import Data
 from euphonic._readers import _castep
+from euphonic._readers import _phonopy
 
 
 class PhononData(Data):
@@ -64,15 +65,8 @@ class PhononData(Data):
         data : dict
             A dict containing the following keys: n_ions, n_branches, n_qpts,
             cell_vec, recip_vec, ion_r, ion_type, ion_mass, qpts, weights,
-            freqs, eigenvecs, split_i, split_freqs, split_eigenvecs.
-            meta :
-                model:{'CASTEP'}
-                    Which model has been used
-                path : str, default ''
-                    Location of seed files on filesystem
-            meta (CASTEP) :
-                seedname : str
-                    Seedname of file that is read
+            freqs, eigenvecs, split_i, split_freqs, split_eigenvecs, and
+            optional: metadata
         """
         if type(data) is str:
             raise Exception('The old interface is now replaced by',
@@ -123,7 +117,36 @@ class PhononData(Data):
             Path to dir containing the file(s), if in another directory
         """
         data = _castep._read_phonon_data(seedname, path)
-        return self(data)
+        pdata = self(data)
+        return pdata
+
+    @classmethod
+    def from_phonopy(self, path='.', phonon_name='band.yaml',
+                     phonon_format=None, summary_name='phonopy.yaml'):
+        """
+        Reads precalculated phonon mode data from a Phonopy
+        mesh/band/qpoints.yaml/hdf5 file. May also read from phonopy.yaml for
+        structure information.
+
+        Parameters
+        ----------
+        path : str, optional, default '.'
+            Path to directory containing the file(s)
+        phonon_name : str, optional, default 'band.yaml'
+            Name of Phonopy file including the frequencies and eigenvectors
+        phonon_format : {'yaml', 'hdf5'} str, optional, default None
+            Format of the phonon_name file if it isn't obvious from the
+            phonon_name extension
+        summary_name : str, optional, default 'phonopy.yaml'
+            Name of Phonopy summary file to read the crystal information from.
+            Crystal information in the phonon_name file takes priority, but if
+            it isn't present, crystal information is read from summary_name
+            instead
+        """
+        data = _phonopy._read_phonon_data(path=path, phonon_name=phonon_name,
+                            phonon_format=phonon_format, summary_name=summary_name)
+        pdata = self(data)
+        return pdata
 
     def _set_data(self, data):
         self.n_ions = data['n_ions']
@@ -143,13 +166,9 @@ class PhononData(Data):
         self.split_eigenvecs = data['split_eigenvecs']
 
         try:
-            self.model = data['model']
-            if data['model'].lower() == 'castep':
-                self.seedname = data['seedname']
-                self.model = data['model']
-                self.path = data['path']
+            self.metadata = data['metadata']
         except KeyError:
-            pass
+            print('Could not find metadata while loading data.')
 
     def reorder_freqs(self, reorder_gamma=True):
         """

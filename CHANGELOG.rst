@@ -1,6 +1,20 @@
 `Unreleased <https://github.com/pace-neutrons/Euphonic/compare/v0.2.2...HEAD>`_
 ----------
 
+- New Features:
+
+  - Euphonic can now read Phonopy input! See
+    `docs <https://euphonic.readthedocs.io/en/latest/read_phonopy.html>`_
+    for details.
+
+- Improvements:
+
+  - Add ``fall_back_on_python`` boolean keyword argument to
+    ``interpolation.InterpolationData.calculate_fine_phonons`` to control
+    whether the Python implementation is used as a fallback to the C
+    extension or not, see
+    `#35 <https://github.com/pace-neutrons/Euphonic/issues/35>`_
+
 - Bug fixes:
 
   - On reading CASTEP phonon file header information, switch from a fixed
@@ -12,14 +26,6 @@
     `#27 <https://github.com/pace-neutrons/Euphonic/issues/27>`_
   - Fix incorrect frequencies at gamma point when using dipole correction
     in C, `#45 <https://github.com/pace-neutrons/Euphonic/issues/45>`_
-
-- Improvements:
-
-  - Add ``fall_back_on_python`` boolean keyword argument to
-    ``interpolation.InterpolationData.calculate_fine_phonons`` to control
-    whether the Python implementation is used as a fallback to the C
-    extension or not, see
-    `#35 <https://github.com/pace-neutrons/Euphonic/issues/35>`_
 
 `v0.2.2 <https://github.com/pace-neutrons/Euphonic/compare/v0.2.1...v0.2.2>`_
 ------

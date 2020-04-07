@@ -9,6 +9,7 @@ from euphonic import ureg
 from euphonic.util import is_gamma, mp_grid
 from euphonic.data.phonon import PhononData
 from euphonic._readers import _castep
+from euphonic._readers import _phonopy
 
 
 class ImportCError(Exception):
@@ -101,15 +102,7 @@ class InterpolationData(PhononData):
         data : dict
             A dict containing the following keys: n_ions, n_branches, cell_vec,
             ion_r, ion_type, ion_mass, force_constants, sc_matrix,
-            n_cells_in_sc, cell_origins, and optional : born, dielectric
-            meta :
-                model : {'CASTEP'}
-                    Which model has been used
-                path : str, default ''
-                    Location of seed files on filesystem
-            meta (CASTEP) :
-                seedname : str
-                    Seedname of file that is read
+            n_cells_in_sc, cell_origins, and optional : born, dielectric, metadata
         """
         if type(data) is str:
             raise Exception((
@@ -160,7 +153,7 @@ class InterpolationData(PhononData):
     @classmethod
     def from_castep(self, seedname, path=''):
         """
-        Calls the CASTEP interpolation data reader and sets the InerpolationData attributes.
+        Reads from a .castep_bin file
 
         Parameters
         ----------
@@ -172,6 +165,41 @@ class InterpolationData(PhononData):
         """
         data = _castep._read_interpolation_data(seedname, path)
         return self(data)
+
+    @classmethod
+    def from_phonopy(self, path='.', summary_name='phonopy.yaml',
+                     born_name=None, fc_name='FORCE_CONSTANTS', fc_format=None):
+        """
+        Reads data from the phonopy summary file (default phonopy.yaml) and
+        optionally born and force constants iles. Only attempts to read from
+        born or force constants files if these
+        can't be found in the summary file.
+
+        Parameters
+        ----------
+        path : str, optional, default '.'
+            Path to directory containing the file(s)
+        summary_name : str, optional, default 'phonpy.yaml'
+            Filename of phonopy summary file, default phonopy.yaml. By default
+            any information (e.g. force constants) read from this file takes
+            priority
+        born_name : str, optional, default None
+            Name of the Phonopy file containing born charges and dielectric
+            tensor (by convention in Phonopy this would be called BORN). Is only
+            read if Born charges can't be found in the summary_name file
+        fc_name : str, optional, default 'FORCE_CONSTANTS'
+            Name of file containing force constants. Is only read if force
+            constants can't be found in summary_name
+        fc_format : {'phonopy', 'hdf5'} str, optional, default None
+            Format of file containing force constants data. FORCE_CONSTANTS is
+            type 'phonopy'
+
+        """
+        data = _phonopy._read_interpolation_data(
+            path=path, summary_name=summary_name, born_name=born_name,
+            fc_name=fc_name, fc_format=fc_format)
+        return self(data)
+
 
     def _set_data(self, data):
         self.n_ions = data['n_ions']
@@ -193,13 +221,9 @@ class InterpolationData(PhononData):
             pass
 
         try:
-            self.model = data['model']
-            if data['model'].lower() == 'castep':
-                self.seedname = data['seedname']
-                self.model = data['model']
-                self.path = data['path']
+            self.metadata = data['metadata']
         except KeyError:
-            pass
+            print('Could not find metadata while loading data.')
 
 
     def calculate_fine_phonons(

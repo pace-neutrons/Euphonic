@@ -67,6 +67,7 @@ def run_setup(build_c=True):
         ],
         extras_require={
             'matplotlib': ['matplotlib>=1.4.2'],
+            'phonopy_reader': ['h5py>=2.9.0', 'PyYAML>=5.1.2']
         },
         scripts=scripts,
         ext_modules=ext_modules
