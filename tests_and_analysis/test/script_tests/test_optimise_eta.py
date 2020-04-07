@@ -58,16 +58,11 @@ class TestUnit:
     @pytest.fixture(params=SharedCode.get_calculate_optimum_eta_kwargs())
     def call_with_params_and_quartz_unit(self, request, monkeypatch):
         # Mock getting the data from a castep file
-        def mock_get_castep_data(_):
-            return MockInterpolationData()
-        monkeypatch.setattr(InterpolationData, "from_castep", mock_get_castep_data)
+        monkeypatch.setattr(InterpolationData, "from_castep", lambda *args, **kwargs: MockInterpolationData())
 
         # Simulate time
         time_manager: MockTime = MockTime()
-
-        def mock_time():
-            return time_manager.get_time()
-        monkeypatch.setattr(time, "time", mock_time)
+        monkeypatch.setattr(time, "time", lambda *args, **kwargs: time_manager.get_time())
 
         kwargs = request.param
         return calculate_optimum_eta(quartz_castep_bin, **kwargs)

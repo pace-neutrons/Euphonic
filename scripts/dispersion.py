@@ -8,14 +8,20 @@ or vibrational band structure or dispersion.
 
 import argparse
 import os
+
+from typing import List
+
 from euphonic.data.bands import BandsData
 from euphonic.data.phonon import PhononData
 from euphonic.plot.dispersion import output_grace, plot_dispersion
 
 
-def main():
+def main(params: List[str] = None):
     parser = get_parser()
-    args = parser.parse_args()
+    if params is None:
+        args = parser.parse_args()
+    else:
+        args = parser.parse_args(params)
     # If neither -up nor -down specified, plot both
     if not args.up and not args.down:
         args.up = True
