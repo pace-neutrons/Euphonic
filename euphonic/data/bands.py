@@ -2,6 +2,7 @@ import numpy as np
 from euphonic import ureg
 from euphonic.data.data import Data
 from euphonic._readers import _castep
+from euphonic._readers import _phonopy
 
 
 class BandsData(Data):
