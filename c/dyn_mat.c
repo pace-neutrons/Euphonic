@@ -10,7 +10,7 @@
 #define PI 3.14159265358979323846
 
 void calculate_dyn_mat_at_q(const double *qpt, const int n_atoms,
-    const int n_cells, const const int max_images, const int *n_sc_images,
+    const int n_cells, const int max_images, const int *n_sc_images,
     const int *sc_image_i, const int *cell_origins, const int *sc_origins,
     const double *fc_mat, double *dyn_mat) {
 
@@ -84,7 +84,7 @@ void calculate_dipole_correction(const double *qpt, const int n_atoms,
     // Don't include G=0 vector if q=0
     n_gvecs_local = n_gvecs;
     if (is_gamma(qpt_norm)) {
-        gvec_phases += 2*n_ions;
+        gvec_phases += 2*n_atoms;
         gvecs_cart += 3;
         n_gvecs_local--;
     }
@@ -236,7 +236,7 @@ void calculate_gamma_correction(const double q_dir[3], const int n_atoms,
 
     if (is_gamma(q_dir)) {
         memset(corr, 0, 2*9*n_atoms*n_atoms*sizeof(double));
-        return corr;
+        return;
     }
 
     denominator = 0;
