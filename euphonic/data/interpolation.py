@@ -170,27 +170,30 @@ class InterpolationData(PhononData):
     def from_phonopy(self, path='.', summary_name='phonopy.yaml',
                      born_name=None, fc_name='FORCE_CONSTANTS', fc_format=None):
         """
-        Reads from a Phonopy summary file (default phonopy.yaml), and optionally
-        Phonopy force constants and born files
+        Reads data from the phonopy summary file (default phonopy.yaml) and
+        optionally born and force constants iles. Only attempts to read from
+        born or force constants files if these
+        can't be found in the summary file.
 
         Parameters
         ----------
         path : str, optional, default '.'
             Path to directory containing the file(s)
-        summary_name : str, optional, default 'phonopy.yaml'
+        summary_name : str, optional, default 'phonpy.yaml'
             Filename of phonopy summary file, default phonopy.yaml. By default
             any information (e.g. force constants) read from this file takes
             priority
         born_name : str, optional, default None
             Name of the Phonopy file containing born charges and dielectric
-            tensor (by convention in Phonopy this would be called BORN). Is
-            only read if Born charges can't be found in the summary_name file
+            tensor (by convention in Phonopy this would be called BORN). Is only
+            read if Born charges can't be found in the summary_name file
         fc_name : str, optional, default 'FORCE_CONSTANTS'
             Name of file containing force constants. Is only read if force
             constants can't be found in summary_name
         fc_format : {'phonopy', 'hdf5'} str, optional, default None
             Format of file containing force constants data. FORCE_CONSTANTS is
             type 'phonopy'
+
         """
         data = _phonopy._read_interpolation_data(
             path=path, summary_name=summary_name, born_name=born_name,

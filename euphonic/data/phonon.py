@@ -121,21 +121,27 @@ class PhononData(Data):
         return pdata
 
     @classmethod
-    def from_phonopy(self, path='.', phonon_name='', phonon_format=None,
-                        summary_name='phonopy.yaml'):
+    def from_phonopy(self, path='.', phonon_name='band.yaml',
+                     phonon_format=None, summary_name='phonopy.yaml'):
         """
-        Calls the CASTEP phonon data reader and sets the PhononData attributes.
+        Reads precalculated phonon mode data from a Phonopy
+        mesh/band/qpoints.yaml/hdf5 file. May also read from phonopy.yaml for
+        structure information.
 
         Parameters
         ----------
-        path : str
-            Path to dir containing the file(s), if in another directory
-        phonon_name : str
-            Name of file containing phonon data
-        phonon_format : str {yaml, hdf5}
-            Format of file containing phonon data
-        summary_name : str
-            Seedname of phonopy summary file to read, default : phonopy.yaml
+        path : str, optional, default '.'
+            Path to directory containing the file(s)
+        phonon_name : str, optional, default 'band.yaml'
+            Name of Phonopy file including the frequencies and eigenvectors
+        phonon_format : {'yaml', 'hdf5'} str, optional, default None
+            Format of the phonon_name file if it isn't obvious from the
+            phonon_name extension
+        summary_name : str, optional, default 'phonopy.yaml'
+            Name of Phonopy summary file to read the crystal information from.
+            Crystal information in the phonon_name file takes priority, but if
+            it isn't present, crystal information is read from summary_name
+            instead
         """
         data = _phonopy._read_phonon_data(path=path, phonon_name=phonon_name,
                             phonon_format=phonon_format, summary_name=summary_name)

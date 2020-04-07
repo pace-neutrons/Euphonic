@@ -579,9 +579,8 @@ def _read_interpolation_data(path='.', summary_name='phonopy.yaml',
                              fc_format=None):
     """
     Reads data from the phonopy summary file (default phonopy.yaml) and
-    optionally born (default BORN) and force constants (default FORCE_CONSTANTS)
-    files. Only attempts to read from born or force constants files if these
-    can't be found in the summary file.
+    optionally born and force constants files. Only attempts to read from born
+    or force constants files if these can't be found in the summary file.
 
     Parameters
     ----------

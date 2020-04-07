@@ -8,20 +8,27 @@ constants matrix (e.g. from a .castep_bin file). Euphonic can also do
 simple plotting, and can plot dispersion and density of states from
 precalculated phonon frequencies (e.g. CASTEP .bands or .phonon).
 
-For more information, see the :ref:`tutorials <tutorials>`
+For more information on how to use Euphonic, see the
+:ref:`tutorials <tutorials>`
 
 Installation
 ============
 Pip
 ---
-To do plotting, you will also have to install the optional Matplotlib
-dependency alongside Euphonic:
+If you want to do plotting, or read Phonopy files, you will need to install the
+optional ``matplotlib`` and ``phonopy_reader`` extensions:
+
+.. code-block:: bash
+
+    pip install euphonic[matplotlib,phonopy_reader]
+
+The dependencies can also be installed individually:
 
 .. code-block:: bash
 
     pip install euphonic[matplotlib]
 
-If you only need the core calculations (no plotting) just use:
+If you don't require plotting or reading of Phonopy files, just use:
 
 .. code-block:: bash
 
@@ -32,14 +39,14 @@ Github
 To get the latest unreleased version, clone the Git repository at
 ``https://github.com/pace-neutrons/Euphonic`` and cd into the top directory
 containing the ``setup.py`` script.
-To install with the optional Matplotlib dependency use:
+To install with the optional Matplotlib dependency for plotting and pyyaml/h5py
+dependencies for reading Phonopy files use:
 
 .. code-block:: bash
 
-    pip install .[matplotlib]
+    pip install .[matplotlib,phonopy_reader]
 
-If you only require the interpolation functionality, and don't need any of the
-Matplotlib plotting routines just use:
+If you don't require plotting or reading of Phonopy files, just use:
 
 .. code-block:: bash
 
