@@ -15,14 +15,14 @@ class TestReadInterpolationNaCl(unittest.TestCase):
 
         # Create trivial function object so attributes can be assigned to it
         expctd_data = type('', (), {})()
-        expctd_data.n_ions = 8
+        expctd_data.n_atoms = 8
         expctd_data.n_branches = 24
         expctd_data.n_qpts = 53
-        expctd_data.cell_vec = np.array(
+        expctd_data.cell_vectors = np.array(
            [[5.69030148, 0.        , 0.        ],
             [0.        , 5.69030148, 0.        ],
             [0.        , 0.        , 5.69030148]])*ureg('angstrom')
-        expctd_data.ion_r = np.array(
+        expctd_data.atom_r = np.array(
             [[0. , 0. , 0. ],
              [0. , 0.5, 0.5],
              [0.5, 0. , 0.5],
@@ -31,9 +31,9 @@ class TestReadInterpolationNaCl(unittest.TestCase):
              [0.5, 0. , 0. ],
              [0. , 0.5, 0. ],
              [0. , 0. , 0.5]])
-        expctd_data.ion_type = np.array(
+        expctd_data.atom_type = np.array(
             ['Na', 'Na', 'Na', 'Na', 'Cl', 'Cl', 'Cl', 'Cl'])
-        expctd_data.ion_mass = np.array(
+        expctd_data.atom_mass = np.array(
                 [22.989769, 22.989769, 22.989769, 22.989769,
                  35.453, 35.453, 35.453   , 35.453   ])*ureg('amu')
         expctd_data.sc_matrix = np.array(
@@ -100,25 +100,26 @@ class TestReadInterpolationNaCl(unittest.TestCase):
         # files
         self.fc_tol = 7e-18
 
-    def test_n_ions_read(self):
-        self.assertEqual(self.data.n_ions, self.expctd_data.n_ions)
+    def test_n_atoms_read(self):
+        self.assertEqual(self.data.crystal.n_atoms, self.expctd_data.n_atoms)
 
     def test_n_branches_read(self):
         self.assertEqual(self.data.n_branches, self.expctd_data.n_branches)
 
-    def test_cell_vec_read(self):
-        npt.assert_allclose(self.data.cell_vec.to('bohr').magnitude,
-                            self.expctd_data.cell_vec.to('bohr').magnitude)
+    def test_cell_vectors_read(self):
+        npt.assert_allclose(self.data.crystal.cell_vectors.to('bohr').magnitude,
+                            self.expctd_data.cell_vectors.to('bohr').magnitude)
 
-    def test_ion_r_read(self):
-        npt.assert_allclose(self.data.ion_r, self.expctd_data.ion_r)
+    def test_atom_r_read(self):
+        npt.assert_allclose(self.data.crystal.atom_r, self.expctd_data.atom_r)
 
-    def test_ion_type_read(self):
-        npt.assert_array_equal(self.data.ion_type, self.expctd_data.ion_type)
+    def test_atom_type_read(self):
+        npt.assert_array_equal(self.data.crystal.atom_type,
+                               self.expctd_data.atom_type)
 
-    def test_ion_mass_read(self):
-        npt.assert_allclose(self.data.ion_mass.magnitude,
-                            self.expctd_data.ion_mass.magnitude, atol=1e-10)
+    def test_atom_mass_read(self):
+        npt.assert_allclose(self.data.crystal.atom_mass.magnitude,
+                            self.expctd_data.atom_mass.magnitude, atol=1e-10)
 
     def test_sc_matrix_read(self):
         npt.assert_allclose(self.data.sc_matrix, self.expctd_data.sc_matrix)

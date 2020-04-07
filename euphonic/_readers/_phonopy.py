@@ -2,7 +2,7 @@ import os
 import warnings
 import numpy as np
 from euphonic import ureg
-from euphonic.util import reciprocal_lattice, is_gamma, get_all_origins
+from euphonic.util import get_all_origins
 try:
     import yaml
     import h5py
@@ -50,7 +50,8 @@ def _extract_phonon_data_yaml(phonon_data):
             'qpts', 'freqs'
         It may also have the following keys if they are present in the .yaml
         file:
-            'eigenvecs', 'weights', 'cell_vec', 'ion_r', 'ion_mass', 'ion_type'
+            'eigenvecs', 'weights', 'cell_vectors', 'atom_r', 'atom_mass',
+            'atom_type'
     """
 
     data_dict = {}
@@ -76,13 +77,13 @@ def _extract_phonon_data_yaml(phonon_data):
 
     # Crystal information only appears to be present in mesh/band
     try:
-        data_dict['cell_vec'] = np.array(phonon_data['lattice'])
-        data_dict['ion_r'] = np.array(
-            [ion['coordinates'] for ion in phonon_data['points']])
-        data_dict['ion_mass'] = np.array(
-            [ion['mass'] for ion in phonon_data['points']])
-        data_dict['ion_type'] = np.array(
-            [ion['symbol'] for ion in phonon_data['points']])
+        data_dict['cell_vectors'] = np.array(phonon_data['lattice'])
+        data_dict['atom_r'] = np.array(
+            [atom['coordinates'] for atom in phonon_data['points']])
+        data_dict['atom_mass'] = np.array(
+            [atom['mass'] for atom in phonon_data['points']])
+        data_dict['atom_type'] = np.array(
+            [atom['symbol'] for atom in phonon_data['points']])
     except KeyError:
         pass
 
@@ -179,10 +180,10 @@ def _read_phonon_data(path='.', phonon_name='band.yaml', phonon_format=None,
     Returns
     -------
     data_dict : dict
-        A dict with the following keys: 'n_ions', 'n_branches', 'n_qpts'
-        'cell_vec', 'recip_vec', 'ion_r', 'ion_type', 'ion_mass', 'qpts',
-        'weights', 'freqs', 'eigenvecs', 'split_i', 'split_freqs',
-        'split_eigenvecs'. The returned data is in Hartree atomic units
+        A dict with the following keys: 'n_atoms', 'n_branches', 'n_qpts'
+        'cell_vectors', 'atom_r', 'atom_type', 'atom_mass', 'qpts', 'weights',
+        'freqs', 'eigenvecs', 'split_i', 'split_freqs', 'split_eigenvecs'. The
+        returned data is in Hartree atomic units
     """
     phonon_pathname = os.path.join(path, phonon_name)
     summary_pathname = os.path.join(path, summary_name)
@@ -215,30 +216,30 @@ def _read_phonon_data(path='.', phonon_name='band.yaml', phonon_format=None,
     umass = 'amu'
     ufreq = 'THz'
 
-    crystal_keys = ['cell_vec', 'ion_r', 'ion_mass', 'ion_type']
+    crystal_keys = ['cell_vectors', 'atom_r', 'atom_mass', 'atom_type']
     # Check if crystal structure has been read from phonon_file, if not get
     # structure from summary_file
     if len(crystal_keys & phonon_dict.keys()) != len(crystal_keys):
         with open(summary_pathname, 'r') as summary_file:
             summary_data = yaml.safe_load(summary_file)
         summary_dict = _extract_summary(summary_data)
-        phonon_dict['cell_vec'] = summary_dict['cell_vec']
-        phonon_dict['ion_r'] = summary_dict['ion_r']
-        phonon_dict['ion_mass'] = summary_dict['ion_mass']
-        phonon_dict['ion_type'] = summary_dict['ion_type']
+        phonon_dict['cell_vectors'] = summary_dict['cell_vectors']
+        phonon_dict['atom_r'] = summary_dict['atom_r']
+        phonon_dict['atom_mass'] = summary_dict['atom_mass']
+        phonon_dict['atom_type'] = summary_dict['atom_type']
         # Overwrite assumed units if they are found in summary file
         ulength = summary_dict['ulength']
         umass = summary_dict['umass']
         # Check phonon_file and summary_file are commensurate
-        if 3*len(phonon_dict['ion_r']) != len(phonon_dict['freqs'][0]):
+        if 3*len(phonon_dict['atom_r']) != len(phonon_dict['freqs'][0]):
             raise Exception((f'Phonon file {phonon_pathname} not commensurate '
                              f'with summary file {summary_pathname}. Please '
                               'check contents'))
 
     # Add extra derived keys
-    n_ions = len(phonon_dict['ion_r'])
-    phonon_dict['n_ions'] = n_ions
-    phonon_dict['n_branches'] = 3*n_ions
+    n_atoms = len(phonon_dict['atom_r'])
+    phonon_dict['n_atoms'] = n_atoms
+    phonon_dict['n_branches'] = 3*n_atoms
     n_qpts = len(phonon_dict['qpts'])
     phonon_dict['n_qpts'] = n_qpts
     # Convert Phonopy conventions to Euphonic conventions
@@ -248,18 +249,17 @@ def _read_phonon_data(path='.', phonon_name='band.yaml', phonon_format=None,
         phonon_dict['weights'] = np.full(n_qpts, 1)
     phonon_dict['weights'] = _convert_weights(phonon_dict['weights'])
     # Convert units to atomic
-    phonon_dict['cell_vec'] = phonon_dict['cell_vec']*ureg(
-        ulength).to('bohr').magnitude
-    phonon_dict['recip_vec'] = reciprocal_lattice(phonon_dict['cell_vec'])
-    phonon_dict['ion_mass'] = phonon_dict['ion_mass']*ureg(
-        umass).to('e_mass').magnitude
+    phonon_dict['cell_vectors'] = phonon_dict['cell_vectors']*ureg(
+        ulength).to('INTERNAL_LENGTH_UNIT').magnitude
+    phonon_dict['atom_mass'] = phonon_dict['atom_mass']*ureg(
+        umass).to('INTERNAL_MASS_UNIT').magnitude
     phonon_dict['freqs'] = phonon_dict['freqs']*ureg(
-        ufreq).to('hartree', 'spectroscopy').magnitude
+        ufreq).to('INTERNAL_ENERGY_UNIT', 'spectroscopy').magnitude
     # Reading LO-TO split frequencies from Phonopy files is currently not
     # supported, return empty arrays
     phonon_dict['split_i'] = np.empty((0,), dtype=np.int32)
-    phonon_dict['split_freqs'] = np.empty((0, 3*n_ions))
-    phonon_dict['split_eigenvecs'] = np.empty((0, 3*n_ions, n_ions, 3),
+    phonon_dict['split_freqs'] = np.empty((0, 3*n_atoms))
+    phonon_dict['split_eigenvecs'] = np.empty((0, 3*n_atoms, n_atoms, 3),
                                             dtype=np.complex128)
 
     metadata = type('', (), {})()
@@ -280,21 +280,21 @@ def convert_eigenvector_phases(phonon_dict):
     each ATOM in the supercell. This must be accounted for when reading Phonopy
     eigenvectors by applying a phase of e^-iq(r_k - r_k')
     """
-    ion_r = phonon_dict['ion_r']
-    n_ions = len(ion_r)
+    atom_r = phonon_dict['atom_r']
+    n_atoms = len(atom_r)
     qpts = phonon_dict['qpts']
     n_qpts = len(qpts)
 
     eigvecs = np.reshape(phonon_dict["eigenvecs"],
-                         (n_qpts, n_ions, 3, n_ions, 3))
+                         (n_qpts, n_atoms, 3, n_atoms, 3))
     na = np.newaxis
-    rk_diff = ion_r[:, na, :] - ion_r[na, :, :]
+    rk_diff = atom_r[:, na, :] - atom_r[na, :, :]
     conversion = np.exp(-2j*np.pi*np.einsum('il,jkl->ijk', qpts, rk_diff))
     eigvecs = np.einsum('ijklm,ijl->ijklm', eigvecs, conversion)
-    return np.reshape(eigvecs, (n_qpts, 3*n_ions, n_ions, 3))
+    return np.reshape(eigvecs, (n_qpts, 3*n_atoms, n_atoms, 3))
 
 
-def _extract_force_constants(fc_file, n_ions, n_cells, summary_name,
+def _extract_force_constants(fc_file, n_atoms, n_cells, summary_name,
                              cell_origins_map=None):
     """
     Reads force constants from a Phonopy FORCE_CONSTANTS file
@@ -303,14 +303,14 @@ def _extract_force_constants(fc_file, n_ions, n_cells, summary_name,
     ----------
     fc_file : File
         Opened File object
-    n_ions : int
-        Number of ions in the unit cell
+    n_atoms : int
+        Number of atoms in the unit cell
     n_cells : int
         Number of unit cells in the supercell
 
     Returns
     -------
-    fc : (n_cells, 3*n_ions, 3*n_ions) float ndarray
+    fc : (n_cells, 3*n_atoms, 3*n_atoms) float ndarray
         The force constants, in Euphonic convention
     """
 
@@ -320,43 +320,44 @@ def _extract_force_constants(fc_file, n_ions, n_cells, summary_name,
     fc_dims =  [int(dim) for dim in fc_file.readline().split()]
     if (len(fc_dims) == 1):  # single shape specifier implies full format
         fc_dims.append(fc_dims[0])
-    _check_fc_shape(fc_dims, n_ions, n_cells, fc_file.name, summary_name)
+    _check_fc_shape(fc_dims, n_atoms, n_cells, fc_file.name, summary_name)
     if fc_dims[0] == fc_dims[1]:
         full_fc = True
     else:
         full_fc = False
 
     skip_header = 0
-    for i in range(n_ions):
+    for i in range(n_atoms):
         if full_fc and i > 0:
             # Skip extra entries present in full matrix
-            skip_header = 4*(n_cells - 1)*n_ions*n_cells
+            skip_header = 4*(n_cells - 1)*n_atoms*n_cells
 
         # Skip rows without fc values using invalid_raise=False and ignoring
         # warning
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
             data = np.genfromtxt(fc_file, skip_header=skip_header,
-                                 max_rows=3*n_ions*n_cells, usecols=(0,1,2),
+                                 max_rows=3*n_atoms*n_cells, usecols=(0,1,2),
                                  invalid_raise=False)
         if i == 0:
             fc = data
         else:
             fc = np.concatenate([fc, data])
 
-    return _reshape_fc(fc, n_ions, n_cells, cell_origins_map)
+    return _reshape_fc(fc, n_atoms, n_cells, cell_origins_map)
 
 
-def _extract_force_constants_hdf5(fc_object, n_ions, n_cells, summary_name,
+def _extract_force_constants_hdf5(fc_object, n_atoms, n_cells, summary_name,
                                   cell_origins_map=None):
     fc = fc_object['force_constants'][:]
-    _check_fc_shape(fc.shape, n_ions, n_cells, fc_object.filename, summary_name)
+    _check_fc_shape(fc.shape, n_atoms, n_cells, fc_object.filename,
+                    summary_name)
     p2s_map = list(fc_object['p2s_map']) # 'primitive' to supercell indexing
     physical_units = list(fc_object['physical_unit'])[0].decode('utf-8')
     if fc.shape[0] == fc.shape[1]: # FULL FC, convert down to COMPACT
         fc = fc[p2s_map, :, :, :]
-    fc_unfolded = fc.reshape(n_ions*n_ions*n_cells, 3, 3)
-    return _reshape_fc(fc_unfolded, n_ions, n_cells, cell_origins_map)
+    fc_unfolded = fc.reshape(n_atoms*n_atoms*n_cells, 3, 3)
+    return _reshape_fc(fc_unfolded, n_atoms, n_cells, cell_origins_map)
 
 
 def _extract_force_constants_summary(summary_object, cell_origins_map=None):
@@ -382,29 +383,29 @@ def _extract_force_constants_summary(summary_object, cell_origins_map=None):
     fc_dims = fc_entry['shape']
     fc_format = fc_entry['format']
 
-    n_ions = fc_dims[0]
+    n_atoms = fc_dims[0]
     n_cells = int(np.rint(fc_dims[1]/fc_dims[0]))
 
     if fc_format == 'compact':
         fc = np.array(fc_entry['elements'])
     elif fc_format == 'full':  # convert to compact
-        p2s_map = [pi for pi in range(0, n_ions*n_cells, n_ions)]
+        p2s_map = [pi for pi in range(0, n_atoms*n_cells, n_atoms)]
         fc = np.array(fc_entry['elements']).reshape(
-                [n_ions*n_cells, n_ions, n_cells, 3, 3])[p2s_map, :, :, :, :]
+                [n_atoms*n_cells, n_atoms, n_cells, 3, 3])[p2s_map, :, :, :, :]
 
-    fc = _reshape_fc(fc, n_ions, n_cells, cell_origins_map)
+    fc = _reshape_fc(fc, n_atoms, n_cells, cell_origins_map)
     return fc
 
-def _reshape_fc(fc, n_ions, n_cells, cell_origins_map=None):
+def _reshape_fc(fc, n_atoms, n_cells, cell_origins_map=None):
     """
     Reshape force constants from Phonopy convention to Euphonic convention
 
     Parameters
     ----------
-    fc : (n_ions, n_cells, n_ions, 3, 3) float ndarray
+    fc : (n_atoms, n_cells, n_atoms, 3, 3) float ndarray
         Force constants matrix in Phonopy shape
-    n_ions : int
-        Number of ions in the unit cell
+    n_atoms : int
+        Number of atoms in the unit cell
     n_cells : int
         Number of cells in the supercell
     cell_origins_map : (n_atoms, n_cells) int ndarray, optional, default None
@@ -415,29 +416,30 @@ def _reshape_fc(fc, n_ions, n_cells, cell_origins_map=None):
 
     Returns
     -------
-    fc : (n_cells, 3*n_ions, 3*n_ions) float ndarray
+    fc : (n_cells, 3*n_atoms, 3*n_atoms) float ndarray
         Force constants matrix in Euphonic shape
     """
-    fc = np.reshape(fc, (n_ions, n_ions, n_cells, 3, 3))
+    fc = np.reshape(fc, (n_atoms, n_atoms, n_cells, 3, 3))
     if cell_origins_map is not None:
-        for i in range(n_ions):
+        for i in range(n_atoms):
          fc = fc[:, :, cell_origins_map[i], :, :]
 
     return np.reshape(np.transpose(
-        np.reshape(fc, (n_ions, n_ions, n_cells, 3, 3)),
-        axes=[2,0,3,1,4]), (n_cells, 3*n_ions, 3*n_ions))
+        np.reshape(fc, (n_atoms, n_atoms, n_cells, 3, 3)),
+        axes=[2,0,3,1,4]), (n_cells, 3*n_atoms, 3*n_atoms))
 
 
-def _check_fc_shape(fc_shape, n_ions, n_cells, fc_filename, summary_filename):
+def _check_fc_shape(fc_shape, n_atoms, n_cells, fc_filename, summary_filename):
     """
     Check if force constants has the correct shape
     """
-    if (not ((fc_shape[0] == n_ions or fc_shape[0] == n_cells*n_ions) and
-            fc_shape[1] == n_cells*n_ions)):
+    if (not ((fc_shape[0] == n_atoms or fc_shape[0] == n_cells*n_atoms) and
+            fc_shape[1] == n_cells*n_atoms)):
         raise Exception((f'Force constants matrix with shape {fc_shape} read '
                          f'from {fc_filename} is not compatible with crystal '
-                         f'read from {summary_filename} which has {n_ions} ions '
-                         f'in the cell, and {n_cells} cells in the supercell'))
+                         f'read from {summary_filename} which has {n_atoms} '
+                         f'atoms in the cell, and {n_cells} cells in the '
+                         f'supercell'))
 
 
 def _extract_born(born_object):
@@ -505,29 +507,29 @@ def _extract_summary(summary_object, fc_extract=False):
     Returns
     ----------
     summary_dict : dict
-        A dict with the following keys: n_ions, cell_vec, ion_r, ion_type,
-        ion_mass, ulength, umass. Also optionally has the following keys:
-        sc_matrix, n_cells_in_sc, cell_origins, cell_origins_map,
+        A dict with the following keys: n_atoms, cell_vectors, atom_r,
+        atom_type, atom_mass, ulength, umass. Also optionally has the following
+        keys: sc_matrix, n_cells_in_sc, cell_origins, cell_origins_map,
         force_constants, ufc, born, dielectric
     """
 
     if 'primitive_matrix' in summary_object.keys():
-        cell_vec, n_ions, ion_r, ion_mass, ion_type = _extract_crystal_data(
-            summary_object['primitive_cell'])
+        (cell_vectors, n_atoms, atom_r, atom_mass,
+            atom_type) = _extract_crystal_data(summary_object['primitive_cell'])
     else:
-        cell_vec, n_ions, ion_r, ion_mass, ion_type = _extract_crystal_data(
-            summary_object['unit_cell'])
+        (cell_vectors, n_atoms, atom_r, atom_mass,
+            atom_type) = _extract_crystal_data(summary_object['unit_cell'])
 
     summary_dict = {}
     pu = summary_object['physical_unit']
     summary_dict['ulength'] = pu['length'].lower()
     summary_dict['umass'] = pu['atomic_mass'].lower()
 
-    summary_dict['n_ions'] = n_ions
-    summary_dict['cell_vec'] = cell_vec
-    summary_dict['ion_r'] = ion_r
-    summary_dict['ion_type'] = ion_type
-    summary_dict['ion_mass'] = ion_mass
+    summary_dict['n_atoms'] = n_atoms
+    summary_dict['cell_vectors'] = cell_vectors
+    summary_dict['atom_r'] = atom_r
+    summary_dict['atom_type'] = atom_type
+    summary_dict['atom_mass'] = atom_mass
 
     if fc_extract:
         sc_matrix = np.array(summary_object['supercell_matrix'])
@@ -540,24 +542,24 @@ def _extract_summary(summary_object, fc_extract=False):
                 np.rint(np.linalg.inv(p_matrix)).astype(np.int32),
                 sc_matrix)
 
-        _, _, sion_r, _, _ = _extract_crystal_data(summary_object['supercell'])
+        _, _, satom_r, _, _ = _extract_crystal_data(summary_object['supercell'])
         n_cells_in_sc = int(np.rint(np.absolute(np.linalg.det(sc_matrix))))
         # Coords of supercell ions in fractional coords of the unit/prim cell
-        sc_ion_r_ucell = np.einsum('ij,jk->ik', sion_r, sc_matrix)
+        sc_atom_r_ucell = np.einsum('ij,jk->ik', satom_r, sc_matrix)
         cell_origins = np.rint((
-            sc_ion_r_ucell
-            - np.repeat(ion_r, n_cells_in_sc, axis=0))).astype(np.int32)
+            sc_atom_r_ucell
+            - np.repeat(atom_r, n_cells_in_sc, axis=0))).astype(np.int32)
         # For non-diagonal supercells, cell origins aren't always the same for
         # each atom, and the cell origins are sometimes outside the supercell.
         # Create a mapping of cell origins for atoms 1..n onto the equivalent
         # cell origins for atom 0, so the same cell origins can be used for all
         # atoms
-        cell_origins_map = np.zeros((n_ions, n_cells_in_sc), dtype=np.int32)
+        cell_origins_map = np.zeros((n_atoms, n_cells_in_sc), dtype=np.int32)
         # Get origins of adjacent supercells
         sc_origins =  get_all_origins([2,2,2], min_xyz=[-1,-1,-1])
         # Convert to unit cell fractional coordinates
         sc_origins_prim = np.einsum('ij,jk->ik', sc_origins, sc_matrix)
-        for i in range(n_ions):
+        for i in range(n_atoms):
             if np.all((
                     cell_origins[:n_cells_in_sc]
                     == cell_origins[i*n_cells_in_sc:(i+1)*n_cells_in_sc])):
@@ -619,27 +621,27 @@ def _extract_crystal_data(crystal):
 
     Returns
     -------
-    cell_vec : (3,3) float ndarray
+    cell_vectors : (3,3) float ndarray
         Cell vectors, in same units as in the phonopy.yaml file
-    n_ions : int
-        Number of ions
-    ion_r : (n_ions, 3) float ndarray
-        Fractional position of each ion
-    ion_mass : (n_ions,) float ndarray
-        Mass of each ion, in same units as in the phonopy.yaml file
-    ion_type : (n_ions,) str ndarray
-        String specifying the species of each ion
+    n_atoms : int
+        Number of atoms
+    atom_r : (n_atoms, 3) float ndarray
+        Fractional position of each atom
+    atom_mass : (n_atoms,) float ndarray
+        Mass of each atom, in same units as in the phonopy.yaml file
+    atom_type : (n_atoms,) str ndarray
+        String specifying the species of each atom
     """
-    n_ions = len(crystal['points'])
-    cell_vec = np.array(crystal['lattice'])
-    ion_r = np.zeros((n_ions, 3))
-    ion_mass = np.zeros(n_ions)
-    ion_type = np.array([])
-    for i in range(n_ions):
-        ion_mass[i] = crystal['points'][i]['mass']
-        ion_r[i] = crystal['points'][i]['coordinates']
-        ion_type = np.append(ion_type, crystal['points'][i]['symbol'])
-    return cell_vec, n_ions, ion_r, ion_mass, ion_type
+    n_atoms = len(crystal['points'])
+    cell_vectors = np.array(crystal['lattice'])
+    atom_r = np.zeros((n_atoms, 3))
+    atom_mass = np.zeros(n_atoms)
+    atom_type = np.array([])
+    for i in range(n_atoms):
+        atom_mass[i] = crystal['points'][i]['mass']
+        atom_r[i] = crystal['points'][i]['coordinates']
+        atom_type = np.append(atom_type, crystal['points'][i]['symbol'])
+    return cell_vectors, n_atoms, atom_r, atom_mass, atom_type
 
 
 def _read_interpolation_data(path='.', summary_name='phonopy.yaml',
@@ -671,10 +673,10 @@ def _read_interpolation_data(path='.', summary_name='phonopy.yaml',
     Returns
     -------
     data_dict : dict
-        A dict with the following keys: 'n_ions', 'n_branches', 'cell_vec',
-        'recip_vec', 'ion_r', 'ion_type', 'ion_mass', 'force_constants',
-        'sc_matrix', 'n_cells_in_sc' and 'cell_origins'. Also contains 'born'
-        and 'dielectric' if they are present in the .castep_bin or .check file
+        A dict with the following keys: 'n_atoms', 'n_branches', 'cell_vectors',
+        'atom_r', 'atom_type', 'atom_mass', 'force_constants', 'sc_matrix',
+        'n_cells_in_sc' and 'cell_origins'. Also contains 'born' and
+        'dielectric' if they are present in the .castep_bin or .check file
     """
     summary_pathname = os.path.join(path, summary_name)
 
@@ -692,18 +694,18 @@ def _read_interpolation_data(path='.', summary_name='phonopy.yaml',
         fc_pathname = os.path.join(path, fc_name)
         print((f'Force constants not found in {summary_pathname}, attempting '
                f'to read from {fc_pathname}'))
-        n_ions = summary_dict['n_ions']
+        n_atoms = summary_dict['n_atoms']
         n_cells = summary_dict['n_cells_in_sc']
         if fc_format == 'phonopy':
             with open(fc_pathname, 'r') as fc_file:
                 summary_dict['force_constants'] = _extract_force_constants(
-                    fc_file, n_ions, n_cells, summary_pathname,
+                    fc_file, n_atoms, n_cells, summary_pathname,
                     summary_dict['cell_origins_map'])
         elif fc_format in 'hdf5':
             with h5py.File(fc_pathname, 'r') as fc_file:
                 summary_dict[
                     'force_constants'] =  _extract_force_constants_hdf5(
-                        fc_file, n_ions, n_cells, summary_pathname,
+                        fc_file, n_atoms, n_cells, summary_pathname,
                         summary_dict['cell_origins_map'])
         else:
             raise Exception((f'Force constants file format {fc_format} of '
@@ -728,17 +730,16 @@ def _read_interpolation_data(path='.', summary_name='phonopy.yaml',
     ufc = summary_dict['ufc']
 
     data_dict = {}
-    data_dict['n_ions'] = summary_dict['n_ions']
-    data_dict['n_branches'] = 3*summary_dict['n_ions']
-    data_dict['cell_vec'] = summary_dict['cell_vec']*ureg(
-        ulength).to('bohr').magnitude
-    data_dict['recip_vec'] = reciprocal_lattice(data_dict['cell_vec'])
-    data_dict['ion_r'] = summary_dict['ion_r']
-    data_dict['ion_type'] = summary_dict['ion_type']
-    data_dict['ion_mass'] = summary_dict['ion_mass']*ureg(
-        umass).to('e_mass').magnitude
+    data_dict['n_atoms'] = summary_dict['n_atoms']
+    data_dict['n_branches'] = 3*summary_dict['n_atoms']
+    data_dict['cell_vectors'] = summary_dict['cell_vectors']*ureg(
+        ulength).to('INTERNAL_LENGTH_UNIT').magnitude
+    data_dict['atom_r'] = summary_dict['atom_r']
+    data_dict['atom_type'] = summary_dict['atom_type']
+    data_dict['atom_mass'] = summary_dict['atom_mass']*ureg(
+        umass).to('INTERNAL_MASS_UNIT').magnitude
     data_dict['force_constants'] = summary_dict['force_constants']*ureg(
-        ufc).to('hartree/bohr**2').magnitude
+        ufc).to('INTERNAL_ENERGY_UNIT/INTERNAL_LENGTH_UNIT**2').magnitude
     data_dict['sc_matrix'] = summary_dict['sc_matrix']
     data_dict['n_cells_in_sc'] = summary_dict['n_cells_in_sc']
     data_dict['cell_origins'] = summary_dict['cell_origins']

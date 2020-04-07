@@ -103,7 +103,7 @@ class TestStructureFactorInterpolationDataNaClSerial(unittest.TestCase):
         gi = self.gamma_idx
         npt.assert_allclose(np.delete(sf_sum, gi, axis=0),
                             np.delete(expected_sf_sum, gi, axis=0),
-                            atol=1e-20)
+                            atol=3e-18)
         npt.assert_allclose(sf_sum[gi, 3:], expected_sf_sum[gi, 3:],
                             atol=1e-20)
 
@@ -127,7 +127,7 @@ class TestStructureFactorInterpolationDataNaClSerial(unittest.TestCase):
         gi = self.gamma_idx
         npt.assert_allclose(np.delete(sf_sum, gi, axis=0),
                             np.delete(expected_sf_sum, gi, axis=0),
-                            atol=1e-20)
+                            atol=3e-18)
         npt.assert_allclose(sf_sum[gi, 3:], expected_sf_sum[gi, 3:],
                             atol=1e-20)
 
@@ -152,7 +152,7 @@ class TestStructureFactorInterpolationDataNaClSerial(unittest.TestCase):
         gi = self.gamma_idx
         npt.assert_allclose(np.delete(sf_sum, gi, axis=0),
                             np.delete(expected_sf_sum, gi, axis=0),
-                            atol=1e-20)
+                            atol=3e-18)
         npt.assert_allclose(sf_sum[gi, 3:], expected_sf_sum[gi, 3:],
                             atol=1e-20)
 
@@ -177,7 +177,7 @@ class TestStructureFactorInterpolationDataNaClSerial(unittest.TestCase):
         gi = self.gamma_idx
         npt.assert_allclose(np.delete(sf_sum, gi, axis=0),
                             np.delete(expected_sf_sum, gi, axis=0),
-                            atol=1e-20)
+                            atol=4e-18)
         npt.assert_allclose(sf_sum[gi, 3:], expected_sf_sum[gi, 3:],
                             atol=1e-20)
 
@@ -202,7 +202,7 @@ class TestStructureFactorInterpolationDataNaClSerial(unittest.TestCase):
         gi = self.gamma_idx
         npt.assert_allclose(np.delete(sf_sum, gi, axis=0),
                             np.delete(expected_sf_sum, gi, axis=0),
-                            atol=1e-20)
+                            atol=4e-18)
         npt.assert_allclose(sf_sum[gi, 3:], expected_sf_sum[gi, 3:],
                             atol=1e-20)
 
@@ -227,7 +227,7 @@ class TestStructureFactorInterpolationDataNaClSerial(unittest.TestCase):
         gi = self.gamma_idx
         npt.assert_allclose(np.delete(sf_sum, gi, axis=0),
                             np.delete(expected_sf_sum, gi, axis=0),
-                            atol=1e-20)
+                            atol=4e-18)
         npt.assert_allclose(sf_sum[gi, 3:], expected_sf_sum[gi, 3:],
                             atol=1e-20)
 
