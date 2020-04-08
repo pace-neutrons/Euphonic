@@ -2,4 +2,4 @@ mock
 numpy
 pytest==5.4.1
 coverage==5.0.4
-pytest-mock=3.0.0
+pytest-mock==3.0.0

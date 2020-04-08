@@ -114,7 +114,7 @@ pipeline {
                                     module load conda/3 &&
                                     conda config --append channels free &&
                                     conda activate py &&
-                                    export EUPHONIC_VERSION="\$(python euphonic/get_version.py)" &&
+                                    export EUPHONIC_VERSION="\$(python tests_and_analysis/tools/get_version.py)" &&
                                     python -m tox -c release_tox.ini
                                 """
                             }
@@ -202,7 +202,7 @@ pipeline {
                                     CALL "%VS2019_VCVARSALL%" x86_amd64
                                     rmdir /s /q .tox
                                     CALL conda activate py
-                                    set /p EUPHONIC_VERSION= < python euphonic/get_version.py
+                                    set /p EUPHONIC_VERSION= < python tests_and_analysis/tools/get_version.py
                                     python -m tox -c release_tox.ini
                                 """
                             }
