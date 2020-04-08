@@ -69,7 +69,7 @@ def _build_pytest_options(reports_dir: str, do_report_tests: bool, tests: str,
     -------
     List[str]: A list of options to run pytest with.
     """
-    options: List[str] = ["-x", tests]
+    options: List[str] = [tests]
     # Add reporting of test results
     if do_report_tests:
         # We may have multiple reports, so do not overwrite them

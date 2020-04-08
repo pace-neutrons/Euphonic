@@ -8,6 +8,7 @@ or vibrational band structure or dispersion.
 
 import argparse
 import os
+import warnings
 
 from typing import List
 
@@ -29,8 +30,9 @@ def main(params: List[str] = None):
 
     # Read data
     path, file = os.path.split(args.filename)
+    bands_file = file.endswith('.bands')
     seedname = file[:file.rfind('.')]
-    if file.endswith('.bands'):
+    if bands_file:
         data = BandsData.from_castep(seedname, path=path)
     else:
         data = PhononData.from_castep(seedname, path=path)
@@ -39,7 +41,10 @@ def main(params: List[str] = None):
 
     # Reorder frequencies if requested
     if args.reorder:
-        data.reorder_freqs()
+        if not bands_file:
+            data.reorder_freqs()
+        else:
+            warnings.warn("Cannot reorder bands data")
 
     # Plot
     if args.grace:
