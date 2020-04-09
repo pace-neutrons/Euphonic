@@ -1,13 +1,13 @@
 import math
 import numpy as np
 from euphonic import ureg, Crystal
-from euphonic.util import direction_changed, bose_factor, is_gamma
-from euphonic.data.data import Data
+from euphonic.util import (direction_changed, bose_factor, is_gamma, lorentzian,
+                           gaussian)
 from euphonic._readers import _castep
 from euphonic._readers import _phonopy
 
 
-class PhononData(Data):
+class PhononData(object):
     """
     A class to read and store vibrational data from model (e.g. CASTEP) output
     files
@@ -52,24 +52,10 @@ class PhononData(Data):
         Parameters
         ----------
         data : dict
-<<<<<<< HEAD
             A dict containing the following keys: n_ions, n_branches, n_qpts,
             cell_vec, recip_vec, ion_r, ion_type, ion_mass, qpts, weights,
             freqs, eigenvecs, split_i, split_freqs, split_eigenvecs, and
             optional: metadata
-=======
-            A dict containing the following keys: n_atoms, n_branches, n_qpts,
-            cell_vectors, atom_r, atom_type, atom_mass, qpts, weights,
-            freqs, eigenvecs, split_i, split_freqs, split_eigenvecs.
-            meta :
-                model:{'CASTEP'}
-                    Which model has been used
-                path : str, default ''
-                    Location of seed files on filesystem
-            meta (CASTEP) :
-                seedname : str
-                    Seedname of file that is read
->>>>>>> Add initial Crystal object
         """
         self._set_data(data)
 
@@ -90,6 +76,10 @@ class PhononData(Data):
     def sqw_ebins(self):
         return self._sqw_ebins*ureg(
             'INTERNAL_ENERGY_UNIT').to(self._e_units, 'spectroscopy')
+
+    @property
+    def dos_bins(self):
+        return self._dos_bins*ureg('E_h').to(self._e_units, 'spectroscopy')
 
     @classmethod
     def from_castep(self, seedname, path=''):
@@ -429,3 +419,83 @@ class PhononData(Data):
         self.sqw_map = sqw_map
 
         return sqw_map
+
+
+    def calculate_dos(self, dos_bins, gwidth=0, lorentz=False, weights=None):
+        """
+        Calculates a density of states with fixed width Gaussian/Lorentzian
+        broadening
+
+        Parameters
+        ----------
+        dos_bins : (n_ebins + 1,) float ndarray
+            The energy bin edges to use for calculating the DOS, in the same
+            units as freqs
+        gwidth : float, optional, default 0
+            FWHM of Gaussian/Lorentzian for broadening the DOS bins, in the
+            same units as freqs
+        lorentz : boolean, optional
+            Whether to use a Lorentzian or Gaussian broadening function.
+            Default: False
+        weights : (n_qpts, n_branches) float ndarray, optional
+            The weights to use for each q-points and branch. If unspecified,
+            uses the q-point weights stored in the Data object
+
+        Returns
+        -------
+        dos : (n_ebins,) float ndarray
+            The density of states for each bin
+        """
+
+        freqs = self._freqs
+        # Convert dos_bins to Hartree. If no units are specified, assume
+        # dos_bins is in same units as freqs
+        try:
+            dos_bins = dos_bins.to('E_h', 'spectroscopy').magnitude
+        except AttributeError:
+            dos_bins = (dos_bins*ureg(self._e_units).to(
+                'E_h', 'spectroscopy')).magnitude
+        try:
+            gwidth = gwidth.to('E_h', 'spectroscopy').magnitude
+        except AttributeError:
+            gwidth = (gwidth*ureg(self._e_units).to(
+                'E_h', 'spectroscopy')).magnitude
+
+        # Bin frequencies
+        if weights is None:
+            weights = np.repeat(self.weights[:, np.newaxis], self.n_branches,
+                                axis=1)
+        hist, bin_edges = np.histogram(freqs, dos_bins, weights=weights)
+
+        bwidth = np.mean(np.diff(dos_bins))
+        # Only broaden if broadening is more than bin width
+        if gwidth > bwidth:
+            # Calculate broadening for adjacent nbin_broaden bins
+            if lorentz:
+                # 25 * Lorentzian FWHM
+                nbin_broaden = int(math.floor(25.0*gwidth/bwidth))
+                broadening = lorentzian(
+                    np.arange(-nbin_broaden, nbin_broaden)*bwidth, gwidth)
+            else:
+                # 3 * Gaussian FWHM
+                nbin_broaden = int(math.floor(3.0*gwidth/bwidth))
+                sigma = gwidth/(2*math.sqrt(2*math.log(2)))
+                broadening = gaussian(
+                    np.arange(-nbin_broaden, nbin_broaden)*bwidth, sigma)
+
+            if hist.size > 0:
+                # Allow broadening beyond edge of bins
+                dos = np.zeros(len(hist) + 2*nbin_broaden)
+                for i, h in enumerate(hist):
+                    # Broaden each hist bin value to adjacent bins
+                    bhist = h*broadening
+                    dos[i:i+2*nbin_broaden] += bhist
+                # Slice dos array to same size as bins
+                dos = dos[nbin_broaden:-nbin_broaden]
+        else:
+            dos = hist
+
+        self.dos = dos
+        self._dos_bins = dos_bins
+
+        return dos
