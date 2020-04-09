@@ -22,11 +22,25 @@ class Crystal(object):
         The mass of each atom in the unit cell
     """
 
-    def __init__(self, cell_vectors, n_atoms, atom_r, atom_type, atom_mass):
+    def __init__(self, cell_vectors, atom_r, atom_type, atom_mass):
+        """
+        Parameters
+        ----------
+        cell_vectors : (3, 3) float Quantity
+            Cartesian unit cell vectors. cell_vectors[0] = a,
+            cell_vectors[:, 0] = x etc.
+        atom_r : (n_atoms, 3) float ndarray
+            The fractional position of each atom within the unit cell
+        atom_type : (n_atoms,) string ndarray
+            The chemical symbols of each atom in the unit cell. Atoms are in the
+            same order as in atom_r
+        atom_mass : (n_atoms,) float Quantity
+            The mass of each atom in the unit cell, in the same order as atom_r
+        """
 
         self._cell_vectors = cell_vectors.to(
             ureg.INTERNAL_LENGTH_UNIT).magnitude
-        self.n_atoms = n_atoms
+        self.n_atoms = len(atom_r)
         self.atom_r = np.array(atom_r)
         self.atom_type = np.array(atom_type)
         self._atom_mass = atom_mass.to(ureg.INTERNAL_MASS_UNIT).magnitude
@@ -96,7 +110,7 @@ class Crystal(object):
     def from_dict(cls, d):
         mu = d['atom_mass_unit']
         lu = d['cell_vectors_unit']
-        return cls(d['cell_vectors']*ureg(lu), d['n_atoms'], d['atom_r'],
+        return cls(d['cell_vectors']*ureg(lu), d['atom_r'],
                    d['atom_type'], d['atom_mass']*ureg(mu))
 
     @classmethod

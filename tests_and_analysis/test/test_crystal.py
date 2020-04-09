@@ -59,7 +59,6 @@ def dict_from_attrs(crystal_attrs):
 ################################################################################
 def crystal_from_constructor(crystal_attrs):
         crystal = Crystal(crystal_attrs.cell_vectors,
-                          crystal_attrs.n_atoms,
                           crystal_attrs.atom_r,
                           crystal_attrs.atom_type,
                           crystal_attrs.atom_mass)
