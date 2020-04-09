@@ -84,7 +84,7 @@ class TestReadInterpolationNaCl(unittest.TestCase):
         expctd_data.dielectric = np.array(
             [[2.43533967, 0.        , 0.        ],
              [0.        , 2.43533967, 0.        ],
-             [0.        , 0.        , 2.43533967]])
+             [0.        , 0.        , 2.43533967]])*ureg('e**2/(bohr*hartree)')
         expctd_data.force_constants = np.load(
             self.path +'/force_constants.npy')*ureg('hartree/bohr**2')
         expctd_data.primitive_force_constants = np.load(
@@ -133,8 +133,8 @@ class TestReadInterpolationNaCl(unittest.TestCase):
                             self.expctd_data.born.magnitude)
 
     def test_dielctric_read(self):
-        npt.assert_allclose(self.data.dielectric,
-                            self.expctd_data.dielectric)
+        npt.assert_allclose(self.data.dielectric.magnitude,
+                            self.expctd_data.dielectric.magnitude)
 
     def test_fc_mat_read(self):
         npt.assert_allclose(self.data.force_constants.magnitude,

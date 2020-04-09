@@ -770,7 +770,7 @@ class TestInputReadQuartz(unittest.TestCase):
         expctd_data.dielectric = np.array([
             [2.49104301, 0.00000000, 0.00000000],
             [0.00000000, 2.49104301, 0.00000000],
-            [0.00000000, 0.00000000, 2.52289805]])
+            [0.00000000, 0.00000000, 2.52289805]])*ureg('e**2/(bohr*hartree)')
         self.expctd_data = expctd_data
 
         self.seedname = 'quartz'
@@ -812,8 +812,8 @@ class TestInputReadQuartz(unittest.TestCase):
                             self.expctd_data.born.magnitude)
 
     def test_dielctric_read(self):
-        npt.assert_allclose(self.data.dielectric,
-                            self.expctd_data.dielectric)
+        npt.assert_allclose(self.data.dielectric.magnitude,
+                            self.expctd_data.dielectric.magnitude)
 
     def test_fc_mat_cell0_i0_j0_read(self):
         npt.assert_allclose(self.data.force_constants[0, 0:3, 0:3].magnitude,

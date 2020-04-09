@@ -157,7 +157,8 @@ def _extract_band_data_hdf5(hdf5_file):
 
 
 def _read_phonon_data(path='.', phonon_name='band.yaml', phonon_format=None,
-                      summary_name='phonopy.yaml'):
+                      summary_name='phonopy.yaml', cell_vectors_unit='angstrom',
+                      atom_mass_unit='amu', frequencies_unit='meV'):
     """
     Reads precalculated phonon mode data from a Phonopy
     mesh/band/qpoints.yaml/hdf5 file and returns it in a dictionary. May also
@@ -180,10 +181,10 @@ def _read_phonon_data(path='.', phonon_name='band.yaml', phonon_format=None,
     Returns
     -------
     data_dict : dict
-        A dict with the following keys: 'n_atoms', 'n_branches', 'n_qpts'
-        'cell_vectors', 'atom_r', 'atom_type', 'atom_mass', 'qpts', 'weights',
-        'freqs', 'eigenvecs', 'split_i', 'split_freqs', 'split_eigenvecs'. The
-        returned data is in Hartree atomic units
+        A dict with the following keys: 'n_atoms', 'cell_vectors',
+        'cell_vectors_unit', 'atom_r', 'atom_type', 'atom_mass',
+        'atom_mass_unit', 'qpts', 'weights', 'freqs', 'freqs_unit', 'eigenvecs'.
+        Also contains 'weights' if they are present in phonon_name
     """
     phonon_pathname = os.path.join(path, phonon_name)
     summary_pathname = os.path.join(path, summary_name)
@@ -239,7 +240,6 @@ def _read_phonon_data(path='.', phonon_name='band.yaml', phonon_format=None,
     # Add extra derived keys
     n_atoms = len(phonon_dict['atom_r'])
     phonon_dict['n_atoms'] = n_atoms
-    phonon_dict['n_branches'] = 3*n_atoms
     n_qpts = len(phonon_dict['qpts'])
     phonon_dict['n_qpts'] = n_qpts
     # Convert Phonopy conventions to Euphonic conventions
@@ -248,27 +248,16 @@ def _read_phonon_data(path='.', phonon_name='band.yaml', phonon_format=None,
     if not 'weights' in phonon_dict.keys():
         phonon_dict['weights'] = np.full(n_qpts, 1)
     phonon_dict['weights'] = _convert_weights(phonon_dict['weights'])
-    # Convert units to atomic
+    # Convert units
     phonon_dict['cell_vectors'] = phonon_dict['cell_vectors']*ureg(
-        ulength).to('INTERNAL_LENGTH_UNIT').magnitude
+        ulength).to(cell_vectors_unit).magnitude
+    phonon_dict['cell_vectors_unit'] = cell_vectors_unit
     phonon_dict['atom_mass'] = phonon_dict['atom_mass']*ureg(
-        umass).to('INTERNAL_MASS_UNIT').magnitude
+        umass).to(atom_mass_unit).magnitude
+    phonon_dict['atom_mass_unit'] = atom_mass_unit
     phonon_dict['freqs'] = phonon_dict['freqs']*ureg(
-        ufreq).to('INTERNAL_ENERGY_UNIT', 'spectroscopy').magnitude
-    # Reading LO-TO split frequencies from Phonopy files is currently not
-    # supported, return empty arrays
-    phonon_dict['split_i'] = np.empty((0,), dtype=np.int32)
-    phonon_dict['split_freqs'] = np.empty((0, 3*n_atoms))
-    phonon_dict['split_eigenvecs'] = np.empty((0, 3*n_atoms, n_atoms, 3),
-                                            dtype=np.complex128)
-
-    metadata = type('', (), {})()
-    metadata.model = 'phonopy'
-    metadata.phonon_name = phonon_name
-    metadata.phonon_format = phonon_format
-    metadata.summary_name = summary_name
-
-    phonon_dict['metadata'] = metadata
+        ufreq).to(frequencies_unit, 'spectroscopy').magnitude
+    phonon_dict['freqs_unit'] = frequencies_unit
     return phonon_dict
 
 
@@ -646,7 +635,11 @@ def _extract_crystal_data(crystal):
 
 def _read_interpolation_data(path='.', summary_name='phonopy.yaml',
                              born_name=None, fc_name='FORCE_CONSTANTS',
-                             fc_format=None):
+                             fc_format=None, cell_vectors_unit='angstrom',
+                             atom_mass_unit='amu',
+                             force_constants_unit='hartree/bohr**2',
+                             born_unit='e',
+                             dielectric_unit='(e**2)/(bohr*hartree)'):
     """
     Reads data from the phonopy summary file (default phonopy.yaml) and
     optionally born and force constants files. Only attempts to read from born
@@ -673,10 +666,12 @@ def _read_interpolation_data(path='.', summary_name='phonopy.yaml',
     Returns
     -------
     data_dict : dict
-        A dict with the following keys: 'n_atoms', 'n_branches', 'cell_vectors',
-        'atom_r', 'atom_type', 'atom_mass', 'force_constants', 'sc_matrix',
-        'n_cells_in_sc' and 'cell_origins'. Also contains 'born' and
-        'dielectric' if they are present in the .castep_bin or .check file
+        A dict with the following keys: 'n_atoms', 'cell_vectors',
+        'cell_vectors_unit', 'atom_r', 'atom_type', 'atom_mass',
+        'atom_mass_unit', 'force_constants', 'force_constants_unit',
+        'sc_matrix' and 'cell_origins'. Also contains 'born', 'born_unit',
+        'dielectric' and 'dielectric_unit' if they are present in the
+        .castep_bin or .check file
     """
     summary_pathname = os.path.join(path, summary_name)
 
@@ -731,33 +726,28 @@ def _read_interpolation_data(path='.', summary_name='phonopy.yaml',
 
     data_dict = {}
     data_dict['n_atoms'] = summary_dict['n_atoms']
-    data_dict['n_branches'] = 3*summary_dict['n_atoms']
     data_dict['cell_vectors'] = summary_dict['cell_vectors']*ureg(
-        ulength).to('INTERNAL_LENGTH_UNIT').magnitude
+        ulength).to(cell_vectors_unit).magnitude
+    data_dict['cell_vectors_unit'] = cell_vectors_unit
     data_dict['atom_r'] = summary_dict['atom_r']
     data_dict['atom_type'] = summary_dict['atom_type']
     data_dict['atom_mass'] = summary_dict['atom_mass']*ureg(
-        umass).to('INTERNAL_MASS_UNIT').magnitude
+        umass).to(atom_mass_unit).magnitude
+    data_dict['atom_mass_unit'] = atom_mass_unit
     data_dict['force_constants'] = summary_dict['force_constants']*ureg(
-        ufc).to('INTERNAL_ENERGY_UNIT/INTERNAL_LENGTH_UNIT**2').magnitude
+        ufc).to(force_constants_unit).magnitude
+    data_dict['force_constants_unit'] = force_constants_unit
     data_dict['sc_matrix'] = summary_dict['sc_matrix']
-    data_dict['n_cells_in_sc'] = summary_dict['n_cells_in_sc']
     data_dict['cell_origins'] = summary_dict['cell_origins']
 
     try:
-        data_dict['born'] = summary_dict['born']
-        data_dict['dielectric'] = summary_dict['dielectric']
+        data_dict['born'] = summary_dict['born']*ureg(
+            'e').to(born_unit).magnitude
+        data_dict['born_unit'] = born_unit
+        data_dict['dielectric'] = summary_dict['dielectric']*ureg(
+            'e**2/(hartree*bohr)').to(dielectric_unit).magnitude
+        data_dict['dielectric_unit'] = dielectric_unit
     except KeyError:
         pass
-
-    metadata = type('', (), {})()
-    metadata.model = 'phonopy'
-    metadata.path = path
-    metadata.fc_name = fc_name
-    metadata.fc_format = fc_format
-    metadata.born_name = born_name
-    metadata.summary_name = summary_name
-
-    data_dict['metadata'] = metadata
 
     return data_dict

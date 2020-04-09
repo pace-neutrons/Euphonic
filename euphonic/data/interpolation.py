@@ -1310,20 +1310,6 @@ class InterpolationData(PhononData):
             Path to dir containing the file(s), if in another directory
         """
         data = _castep._read_interpolation_data(seedname, path)
-
-        data['cell_vectors'] =  (
-            data['cell_vectors']*ureg.INTERNAL_LENGTH_UNIT).to(
-                ureg.DEFAULT_LENGTH_UNIT).magnitude
-        data['cell_vectors_unit'] = str(ureg.DEFAULT_LENGTH_UNIT)
-
-        data['atom_mass'] = (data['atom_mass']*ureg.INTERNAL_MASS_UNIT).to(
-            ureg.DEFAULT_MASS_UNIT).magnitude
-        data['atom_mass_unit'] = str(ureg.DEFAULT_MASS_UNIT)
-
-        data['force_constants_unit'] = 'hartree/bohr**2'
-        data['born_unit'] = 'e'
-        data['dielectric_unit'] = '(e**2)/(bohr*hartree)'
-
         return cls.from_dict(data)
 
     @classmethod
@@ -1358,17 +1344,4 @@ class InterpolationData(PhononData):
         data = _phonopy._read_interpolation_data(
             path=path, summary_name=summary_name, born_name=born_name,
             fc_name=fc_name, fc_format=fc_format)
-
-        data['cell_vectors'] =  (
-            data['cell_vectors']*ureg.INTERNAL_LENGTH_UNIT).to(
-                ureg.DEFAULT_LENGTH_UNIT).magnitude
-        data['cell_vectors_unit'] = str(ureg.DEFAULT_LENGTH_UNIT)
-
-        data['atom_mass'] = (data['atom_mass']*ureg.INTERNAL_MASS_UNIT).to(
-            ureg.DEFAULT_MASS_UNIT).magnitude
-        data['atom_mass_unit'] = str(ureg.DEFAULT_MASS_UNIT)
-
-        data['force_constants_unit'] = 'hartree/bohr**2'
-        data['born_unit'] = 'e'
-        data['dielectric_unit'] = '(e**2)/(bohr*hartree)'
         return cls.from_dict(data)

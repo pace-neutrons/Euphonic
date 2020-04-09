@@ -492,26 +492,6 @@ class PhononData(object):
             Path to dir containing the file(s), if in another directory
         """
         data = _castep._read_phonon_data(seedname, path)
-        data['cell_vectors'] =  (
-            data['cell_vectors']*ureg.INTERNAL_LENGTH_UNIT).to(
-                ureg.DEFAULT_LENGTH_UNIT).magnitude
-        data['cell_vectors_unit'] = str(ureg.DEFAULT_LENGTH_UNIT)
-
-        data['atom_mass'] = (data['atom_mass']*ureg.INTERNAL_MASS_UNIT).to(
-            ureg.DEFAULT_MASS_UNIT).magnitude
-        data['atom_mass_unit'] = str(ureg.DEFAULT_MASS_UNIT)
-
-        data['freqs'] = (data['freqs']*ureg.INTERNAL_ENERGY_UNIT).to(
-            ureg.mDEFAULT_ENERGY_UNIT, 'spectroscopy').magnitude
-        data['freqs_unit'] = str(ureg.mDEFAULT_ENERGY_UNIT)
-        if len(data['split_i']) > 0:
-            data['split_freqs'] = (
-                data['split_freqs']*ureg.INTERNAL_ENERGY_UNIT).to(
-                    ureg.mDEFAULT_ENERGY_UNIT, 'spectroscopy').magnitude
-        else:
-            data['split_i'] = None
-            data['split_freqs'] = None
-            data['split_eigenvecs'] = None
         return cls.from_dict(data)
 
     @classmethod
@@ -539,24 +519,4 @@ class PhononData(object):
         """
         data = _phonopy._read_phonon_data(path=path, phonon_name=phonon_name,
                             phonon_format=phonon_format, summary_name=summary_name)
-        data['cell_vectors'] =  (
-            data['cell_vectors']*ureg.INTERNAL_LENGTH_UNIT).to(
-                ureg.DEFAULT_LENGTH_UNIT).magnitude
-        data['cell_vectors_unit'] = str(ureg.DEFAULT_LENGTH_UNIT)
-
-        data['atom_mass'] = (data['atom_mass']*ureg.INTERNAL_MASS_UNIT).to(
-            ureg.DEFAULT_MASS_UNIT).magnitude
-        data['atom_mass_unit'] = str(ureg.DEFAULT_MASS_UNIT)
-
-        data['freqs'] = (data['freqs']*ureg.INTERNAL_ENERGY_UNIT).to(
-            ureg.mDEFAULT_ENERGY_UNIT, 'spectroscopy').magnitude
-        data['freqs_unit'] = str(ureg.mDEFAULT_ENERGY_UNIT)
-        if len(data['split_i']) > 0:
-            data['split_freqs'] = (
-                data['split_freqs']*ureg.INTERNAL_ENERGY_UNIT).to(
-                    ureg.mDEFAULT_ENERGY_UNIT, 'spectroscopy').magnitude
-        else:
-            data['split_i'] = None
-            data['split_freqs'] = None
-            data['split_eigenvecs'] = None
         return cls.from_dict(data)

@@ -6,7 +6,8 @@ from euphonic import ureg
 from euphonic.util import is_gamma
 
 
-def _read_phonon_data(seedname, path):
+def _read_phonon_data(seedname, path, cell_vectors_unit='angstrom',
+                      atom_mass_unit='amu', frequencies_unit='meV'):
     """
     Reads data from a .phonon file and returns it in a dictionary
 
@@ -20,11 +21,11 @@ def _read_phonon_data(seedname, path):
     Returns
     -------
     data_dict : dict
-        A dict with the following keys: 'n_atoms', 'n_branches', 'n_qpts'
-        'cell_vectors', 'atom_r', 'atom_type', 'atom_mass', 'qpts',
-        'weights', 'freqs', 'eigenvecs', 'split_i', 'split_freqs',
-        'split_eigenvecs'
-        Meta information: 'seedname', 'path' and 'model'.
+        A dict with the following keys: 'n_atoms', 'cell_vectors',
+        'cell_vectors_unit', 'atom_r', 'atom_type', 'atom_mass',
+        'atom_mass_unit', 'qpts', 'weights', 'freqs', 'freqs_unit', 'eigenvecs'
+        Also contains 'split_i', 'split_freqs', 'split_eigenvecs' if they are
+        present in the .phonon file
     """
     file = os.path.join(path, seedname + '.phonon')
     with open(file, 'r') as f:
@@ -100,31 +101,26 @@ def _read_phonon_data(seedname, path):
 
     data_dict = {}
     data_dict['n_atoms'] = n_atoms
-    data_dict['n_branches'] = n_branches
-    data_dict['n_qpts'] = n_qpts
     data_dict['cell_vectors'] = (cell_vectors*ureg('angstrom').to(
-        'INTERNAL_LENGTH_UNIT')).magnitude
+        cell_vectors_unit)).magnitude
+    data_dict['cell_vectors_unit'] = cell_vectors_unit
     data_dict['atom_r'] = atom_r
     data_dict['atom_type'] = atom_type
     data_dict['atom_mass'] = atom_mass*(ureg('amu')).to(
-        'INTERNAL_MASS_UNIT').magnitude
+        atom_mass_unit).magnitude
+    data_dict['atom_mass_unit'] = atom_mass_unit
     data_dict['qpts'] = qpts
     data_dict['weights'] = weights
     data_dict['freqs'] = ((freqs*(1/ureg.cm)).to(
-        'INTERNAL_ENERGY_UNIT', 'spectroscopy')).magnitude
+        frequencies_unit, 'spectroscopy')).magnitude
+    data_dict['freqs_unit'] = frequencies_unit
     data_dict['eigenvecs'] = eigenvecs
-    data_dict['split_i'] = split_i
-    data_dict['split_freqs'] = ((split_freqs*(1/ureg.cm)).to(
-        'INTERNAL_ENERGY_UNIT', 'spectroscopy')).magnitude
-    data_dict['split_eigenvecs'] = split_eigenvecs
+    if len(split_i) > 0:
+        data_dict['split_i'] = split_i
+        data_dict['split_freqs'] = ((split_freqs*(1/ureg.cm)).to(
+            frequencies_unit, 'spectroscopy')).magnitude
+        data_dict['split_eigenvecs'] = split_eigenvecs
 
-
-    metadata = type('', (), {})()
-    metadata.model = 'CASTEP'
-    metadata.seedname = seedname
-    metadata.path = path
-
-    data_dict['metadata'] = metadata
     return data_dict
 
 
@@ -174,7 +170,11 @@ def _read_phonon_header(f):
             atom_mass)
 
 
-def _read_interpolation_data(seedname, path):
+def _read_interpolation_data(seedname, path, cell_vectors_unit='angstrom',
+                             atom_mass_unit='amu',
+                             force_constants_unit='hartree/bohr**2',
+                             born_unit='e',
+                             dielectric_unit='(e**2)/(bohr*hartree)'):
     """
     Reads data from a .castep_bin or .check file and returns it in a dictionary
 
@@ -188,11 +188,12 @@ def _read_interpolation_data(seedname, path):
     Returns
     -------
     data_dict : dict
-        A dict with the following keys: 'n_atoms', 'n_branches', 'cell_vectors',
-        'atom_r', 'atom_type', 'atom_mass', 'force_constants', 'sc_matrix',
-        'n_cells_in_sc' and 'cell_origins'. Also contains 'born' and
-        'dielectric' if they are present in the .castep_bin or .check file.
-        Meta information: 'seedname', 'path' and 'model'.
+        A dict with the following keys: 'n_atoms', 'cell_vectors',
+        'cell_vectors_unit', 'atom_r', 'atom_type', 'atom_mass',
+        'atom_mass_unit', 'force_constants', 'force_constants_unit',
+        'sc_matrix' and 'cell_origins'. Also contains 'born', 'born_unit',
+        'dielectric' and 'dielectric_unit' if they are present in the
+        .castep_bin or .check file.
     """
     file = os.path.join(path, seedname + '.castep_bin')
     if not os.path.isfile(file):
@@ -238,17 +239,21 @@ def _read_interpolation_data(seedname, path):
 
     data_dict = {}
     data_dict['n_atoms'] = n_atoms
-    data_dict['n_branches'] = 3*n_atoms
-    data_dict['cell_vectors'] = cell_vectors
+    data_dict['cell_vectors'] = cell_vectors*ureg(
+        'bohr').to(cell_vectors_unit).magnitude
+    data_dict['cell_vectors_unit'] = cell_vectors_unit
     data_dict['atom_r'] = atom_r - np.floor(atom_r)  # Normalise ion coordinates
     data_dict['atom_type'] = atom_type
-    data_dict['atom_mass'] = atom_mass
+    data_dict['atom_mass'] = atom_mass*ureg(
+        'electron_mass').to(atom_mass_unit).magnitude
+    data_dict['atom_mass_unit'] = atom_mass_unit
 
     # Set entries relating to 'FORCE_CON' block
     try:
-        data_dict['force_constants'] = force_constants
+        data_dict['force_constants'] = force_constants*ureg(
+            'hartree/bohr**2').to(force_constants_unit).magnitude
+        data_dict['force_constants_unit'] = force_constants_unit
         data_dict['sc_matrix'] = sc_matrix
-        data_dict['n_cells_in_sc'] = n_cells_in_sc
         data_dict['cell_origins'] = cell_origins
     except NameError:
         raise Exception((
@@ -258,18 +263,14 @@ def _read_interpolation_data(seedname, path):
 
     # Set entries relating to dipoles
     try:
-        data_dict['born'] = born
-        data_dict['dielectric'] = dielectric
+        data_dict['born'] = born*ureg('e').to(born_unit).magnitude
+        data_dict['born_unit'] = born_unit
+        data_dict['dielectric'] = dielectric*ureg(
+            'e**2/(hartree*bohr)').to(dielectric_unit).magnitude
+        data_dict['dielectric_unit'] = dielectric_unit
     except UnboundLocalError:
         pass
 
-
-    metadata = type('', (), {})()
-    metadata.model = 'CASTEP'
-    metadata.seedname = seedname
-    metadata.path = path
-
-    data_dict['metadata'] = metadata
     return data_dict
 
 
