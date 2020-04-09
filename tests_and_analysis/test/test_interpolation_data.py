@@ -13,7 +13,6 @@ class TestInputReadLZO(unittest.TestCase):
         # Create trivial function object so attributes can be assigned to it
         expctd_data = type('', (), {})()
         expctd_data.n_atoms = 22
-        expctd_data.n_branches = 66
         expctd_data.cell_vectors = (np.array(
             [[7.58391282e+00, 1.84127921e-32, 0.00000000e+00],
              [3.79195641e+00, 3.79195641e+00, 5.36263618e+00],
@@ -78,9 +77,6 @@ class TestInputReadLZO(unittest.TestCase):
 
     def test_n_atoms_read(self):
         self.assertEqual(self.data.crystal.n_atoms, self.expctd_data.n_atoms)
-
-    def test_n_branches_read(self):
-        self.assertEqual(self.data.n_branches, self.expctd_data.n_branches)
 
     def test_cell_vectors_read(self):
         npt.assert_allclose(self.data.crystal.cell_vectors.to('bohr').magnitude,
@@ -392,7 +388,6 @@ class TestInputReadGraphite(unittest.TestCase):
         # Create trivial function object so attributes can be assigned to it
         expctd_data = type('', (), {})()
         expctd_data.n_atoms = 4
-        expctd_data.n_branches = 12
         expctd_data.cell_vectors = np.array([
             [1.23158700E+00, -2.13317126E+00, 0.00000000E+00],
             [1.23158700E+00, 2.13317126E+00, 0.00000000E+00],
@@ -445,9 +440,6 @@ class TestInputReadGraphite(unittest.TestCase):
 
     def test_n_atoms_read(self):
         self.assertEqual(self.data.crystal.n_atoms, self.expctd_data.n_atoms)
-
-    def test_n_branches_read(self):
-        self.assertEqual(self.data.n_branches, self.expctd_data.n_branches)
 
     def test_cell_vectors_read(self):
         npt.assert_allclose(self.data.crystal.cell_vectors.to('bohr').magnitude,
@@ -693,7 +685,6 @@ class TestInputReadQuartz(unittest.TestCase):
         # Create trivial function object so attributes can be assigned to it
         expctd_data = type('', (), {})()
         expctd_data.n_atoms = 9
-        expctd_data.n_branches = 27
         expctd_data.cell_vectors = np.array([
             [2.42617588, -4.20225989, 0.00000000],
             [2.42617588, 4.20225989, 0.00000000],
@@ -789,9 +780,6 @@ class TestInputReadQuartz(unittest.TestCase):
 
     def test_n_atoms_read(self):
         self.assertEqual(self.data.crystal.n_atoms, self.expctd_data.n_atoms)
-
-    def test_n_branches_read(self):
-        self.assertEqual(self.data.n_branches, self.expctd_data.n_branches)
 
     def test_cell_vectors_read(self):
         npt.assert_allclose(self.data.crystal.cell_vectors.to('bohr').magnitude,

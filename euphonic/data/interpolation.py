@@ -30,14 +30,8 @@ class InterpolationData(PhononData):
 
     Attributes
     ----------
-    seedname : str
-        Seedname specifying castep_bin file to read from
-    model : str
-        Records what model the data came from
     crystal : Crystal
         Lattice and atom information
-    n_branches : int
-        Number of phonon dispersion branches
     n_cells_in_sc : int
         Number of cells in the supercell
     sc_matrix : (3, 3) int ndarray
@@ -77,40 +71,49 @@ class InterpolationData(PhononData):
     split_eigenvecs : (n_splits, 3*n_atoms, n_atoms, 3) complex ndarray
         Holds the additional LO-TO split dynamical matrix eigenvectors for the
         q-points specified in split_i. Empty if no LO-TO splitting
-
     """
 
-    def __init__(self, data):
+    def __init__(self, crystal, force_constants, sc_matrix, cell_origins,
+                 born=None, dielectric=None):
         """
-        Calls functions to read the correct file(s) and sets InterpolationData
-        attributes, additionally can calculate frequencies/eigenvectors at
-        specified q-points
-
         Parameters
         ----------
-        data : dict
-            A dict containing the following keys: n_atoms, n_branches,
-            cell_vectors, atom_r, atom_type, atom_mass, force_constants,
-            sc_matrix, n_cells_in_sc, cell_origins, and optional : born,
-            dielectric
+        crystal : Crystal
+            Lattice and atom information
+        force_constants : (n_cells_in_sc, 3*n_atoms, 3*n_atoms) float Quantity
+            Force constants matrix
+        sc_matrix : (3, 3) int ndarray
+            The supercell matrix
+        cell_origins : (n_cells_in_sc, 3) int ndarray
+            The locations of the unit cells within the supercell
+        born : (n_atoms, 3, 3) float ndarray, optional, default None
+            The Born charges for each atom
+        dielectric : (3, 3) float ndarray, optional, default None
+            The dielectric permittivity tensor
         """
-        self._set_data(data)
+        self.crystal = crystal
+        self._force_constants = force_constants.to(
+            ureg.INTERNAL_ENERGY_UNIT/(ureg.INTERNAL_LENGTH_UNIT**2)).magnitude
+        self.force_constants_unit = str(force_constants.units)
+        self.sc_matrix = sc_matrix
+        self.cell_origins = cell_origins
+        self.n_cells_in_sc = len(cell_origins)
 
-        self.n_qpts = 0
-        self.qpts = np.empty((0, 3))
-
-        n_atoms = self.crystal.n_atoms
-        self._reduced_freqs = np.empty((0, 3*n_atoms))
-        self._reduced_eigenvecs = np.empty((0, 3*n_atoms, n_atoms, 3),
-                                           dtype=np.complex128)
-
-        self.split_i = np.empty((0,), dtype=np.int32)
-        self._split_freqs = np.empty((0, 3*n_atoms))
-        self.split_eigenvecs = np.empty((0, 3*n_atoms, n_atoms, 3),
-                                        dtype=np.complex128)
-
-        self._e_units = 'meV'
-
+        if born is not None:
+            self._born = born.to(ureg.INTERNAL_CHARGE_UNIT).magnitude
+            self.born_unit = str(born.units)
+            self._dielectric = dielectric.to(ureg(
+                '(INTERNAL_CHARGE_UNIT**2)/'
+                '(INTERNAL_LENGTH_UNIT*INTERNAL_ENERGY_UNIT)')).magnitude
+            self.dielectric_unit = str(dielectric.units)
+        else:
+            self._born = born
+            self.born_unit = str(ureg.INTERNAL_ENERGY_UNIT)
+            self._dielectric = dielectric
+            self.dielectric_unit = str(ureg((
+                '(INTERNAL_CHARGE_UNIT**2)/'
+                '(INTERNAL_LENGTH_UNIT*INTERNAL_ENERGY_UNIT)')))
+        self.freqs_unit = str(ureg.mDEFAULT_ENERGY_UNIT)
 
     @property
     def _freqs(self):
@@ -132,83 +135,20 @@ class InterpolationData(PhononData):
 
     @property
     def born(self):
-        return self._born*ureg('e')
+        if self._born is not None:
+            return self._born*ureg('INTERNAL_CHARGE_UNIT').to(self.born_unit)
+        else:
+            return None
 
-    @classmethod
-    def from_castep(self, seedname, path=''):
-        """
-        Reads from a .castep_bin file
-
-        Parameters
-        ----------
-        seedname : str
-            Seedname of file(s) to read, e.g. if seedname = 'quartz'
-            the 'quartz.castep_bin' file will be read
-        path : str, optional
-            Path to dir containing the file(s), if in another directory
-        """
-        data = _castep._read_interpolation_data(seedname, path)
-        return self(data)
-
-    @classmethod
-    def from_phonopy(self, path='.', summary_name='phonopy.yaml',
-                     born_name=None, fc_name='FORCE_CONSTANTS', fc_format=None):
-        """
-        Reads data from the phonopy summary file (default phonopy.yaml) and
-        optionally born and force constants iles. Only attempts to read from
-        born or force constants files if these
-        can't be found in the summary file.
-
-        Parameters
-        ----------
-        path : str, optional, default '.'
-            Path to directory containing the file(s)
-        summary_name : str, optional, default 'phonpy.yaml'
-            Filename of phonopy summary file, default phonopy.yaml. By default
-            any information (e.g. force constants) read from this file takes
-            priority
-        born_name : str, optional, default None
-            Name of the Phonopy file containing born charges and dielectric
-            tensor (by convention in Phonopy this would be called BORN). Is only
-            read if Born charges can't be found in the summary_name file
-        fc_name : str, optional, default 'FORCE_CONSTANTS'
-            Name of file containing force constants. Is only read if force
-            constants can't be found in summary_name
-        fc_format : {'phonopy', 'hdf5'} str, optional, default None
-            Format of file containing force constants data. FORCE_CONSTANTS is
-            type 'phonopy'
-
-        """
-        data = _phonopy._read_interpolation_data(
-            path=path, summary_name=summary_name, born_name=born_name,
-            fc_name=fc_name, fc_format=fc_format)
-        return self(data)
-
-
-    def _set_data(self, data):
-        data['atom_mass_unit'] = str(ureg.INTERNAL_MASS_UNIT)
-        data['cell_vectors_unit'] = str(ureg.INTERNAL_LENGTH_UNIT)
-        self.crystal = Crystal.from_dict(data)
-        self.crystal.atom_mass_unit = 'amu'
-        self.crystal.cell_vectors_unit = 'angstrom'
-
-        self.n_branches = data['n_branches']
-        self._force_constants = data['force_constants']
-        self.sc_matrix = data['sc_matrix']
-        self.n_cells_in_sc = data['n_cells_in_sc']
-        self.cell_origins = data['cell_origins']
-
-        try:
-            self._born = data['born']
-            self.dielectric = data['dielectric']
-        except KeyError:
-            pass
-
-        try:
-            self.metadata = data['metadata']
-        except KeyError:
-            print('Could not find metadata while loading data.')
-
+    @property
+    def dielectric(self):
+        if self._dielectric is not None:
+            return self._dielectric*ureg((
+                '(INTERNAL_CHARGE_UNIT**2)/'
+                '(INTERNAL_LENGTH_UNIT*INTERNAL_ENERGY_UNIT)')).to(
+                    self.dielectric_unit)
+        else:
+            return None
 
     def calculate_fine_phonons(
         self, qpts, asr=None, precondition=False, dipole=True,
@@ -282,7 +222,7 @@ class InterpolationData(PhononData):
                                         dtype=np.complex128)
 
         # Set default splitting params
-        if not hasattr(self, 'born') or not hasattr(self, 'dielectric'):
+        if self.born is None:
             dipole = False
         if not dipole:
             splitting = False
@@ -418,7 +358,7 @@ class InterpolationData(PhononData):
                     dyn_mat_weighting, rfreqs, reigenvecs, split_freqs,
                     split_eigenvecs, split_i)
             attrs = ['_n_sc_images', '_sc_image_i', 'cell_origins']
-            dipole_attrs = ['atom_r', '_born', 'dielectric', '_H_ab', '_cells',
+            dipole_attrs = ['atom_r', '_born', '_dielectric', '_H_ab', '_cells',
                             '_gvec_phases', '_gvecs_cart', '_dipole_q0']
             _ensure_contiguous_attrs(self, attrs, opt_attrs=dipole_attrs)
             reciprocal_asr = 1 if asr == 'reciprocal' else 0
@@ -628,7 +568,7 @@ class InterpolationData(PhononData):
         n_atoms = self.crystal.n_atoms
         atom_r = self.crystal.atom_r
         born = self._born
-        dielectric = self.dielectric
+        dielectric = self._dielectric
         inv_dielectric = np.linalg.inv(dielectric)
         sqrt_pi = math.sqrt(math.pi)
 
@@ -776,7 +716,7 @@ class InterpolationData(PhononData):
         n_atoms = self.crystal.n_atoms
         atom_r = self.crystal.atom_r
         born = self._born
-        dielectric = self.dielectric
+        dielectric = self._dielectric
         eta = self._eta
         eta_2 = eta**2
         H_ab = self._H_ab
@@ -859,7 +799,7 @@ class InterpolationData(PhononData):
         cell_vectors = self.crystal.cell_vectors.to('bohr').magnitude
         n_atoms = self.crystal.n_atoms
         born = self._born
-        dielectric = self.dielectric
+        dielectric = self._dielectric
         na_corr = np.zeros((3*n_atoms, 3*n_atoms), dtype=np.complex128)
 
         if is_gamma(q_dir):
@@ -1273,7 +1213,7 @@ class InterpolationData(PhononData):
 
         Returns
         -------
-        sf : (n_qpts, n_branches) float ndarray
+        sf : (n_qpts, 3*n_atoms) float ndarray
             The structure factor for each q-point and phonon branch
         """
         if self.n_qpts == 0:
@@ -1341,3 +1281,94 @@ class InterpolationData(PhononData):
             scattering_lengths, ebins, **kwargs)
 
         return sqw_map
+
+    @classmethod
+    def from_dict(cls, d):
+        crystal = Crystal.from_dict(d)
+        for key in ['born', 'dielectric']:
+            if not key in d.keys():
+                d[key] = None
+        d['force_constants'] = d['force_constants']*ureg(
+            d['force_constants_unit'])
+        if d['born'] is not None:
+            d['born'] = d['born']*ureg(d['born_unit'])
+            d['dielectric'] = d['dielectric']*ureg(d['dielectric_unit'])
+        return cls(crystal, d['force_constants'], d['sc_matrix'],
+                   d['cell_origins'], d['born'], d['dielectric'])
+
+    @classmethod
+    def from_castep(cls, seedname, path=''):
+        """
+        Reads from a .castep_bin file
+
+        Parameters
+        ----------
+        seedname : str
+            Seedname of file(s) to read, e.g. if seedname = 'quartz'
+            the 'quartz.castep_bin' file will be read
+        path : str, optional
+            Path to dir containing the file(s), if in another directory
+        """
+        data = _castep._read_interpolation_data(seedname, path)
+
+        data['cell_vectors'] =  (
+            data['cell_vectors']*ureg.INTERNAL_LENGTH_UNIT).to(
+                ureg.DEFAULT_LENGTH_UNIT).magnitude
+        data['cell_vectors_unit'] = str(ureg.DEFAULT_LENGTH_UNIT)
+
+        data['atom_mass'] = (data['atom_mass']*ureg.INTERNAL_MASS_UNIT).to(
+            ureg.DEFAULT_MASS_UNIT).magnitude
+        data['atom_mass_unit'] = str(ureg.DEFAULT_MASS_UNIT)
+
+        data['force_constants_unit'] = 'hartree/bohr**2'
+        data['born_unit'] = 'e'
+        data['dielectric_unit'] = '(e**2)/(bohr*hartree)'
+
+        return cls.from_dict(data)
+
+    @classmethod
+    def from_phonopy(cls, path='.', summary_name='phonopy.yaml',
+                     born_name=None, fc_name='FORCE_CONSTANTS', fc_format=None):
+        """
+        Reads data from the phonopy summary file (default phonopy.yaml) and
+        optionally born and force constants iles. Only attempts to read from
+        born or force constants files if these
+        can't be found in the summary file.
+
+        Parameters
+        ----------
+        path : str, optional, default '.'
+            Path to directory containing the file(s)
+        summary_name : str, optional, default 'phonpy.yaml'
+            Filename of phonopy summary file, default phonopy.yaml. By default
+            any information (e.g. force constants) read from this file takes
+            priority
+        born_name : str, optional, default None
+            Name of the Phonopy file containing born charges and dielectric
+            tensor (by convention in Phonopy this would be called BORN). Is only
+            read if Born charges can't be found in the summary_name file
+        fc_name : str, optional, default 'FORCE_CONSTANTS'
+            Name of file containing force constants. Is only read if force
+            constants can't be found in summary_name
+        fc_format : {'phonopy', 'hdf5'} str, optional, default None
+            Format of file containing force constants data. FORCE_CONSTANTS is
+            type 'phonopy'
+
+        """
+        data = _phonopy._read_interpolation_data(
+            path=path, summary_name=summary_name, born_name=born_name,
+            fc_name=fc_name, fc_format=fc_format)
+
+        data['cell_vectors'] =  (
+            data['cell_vectors']*ureg.INTERNAL_LENGTH_UNIT).to(
+                ureg.DEFAULT_LENGTH_UNIT).magnitude
+        data['cell_vectors_unit'] = str(ureg.DEFAULT_LENGTH_UNIT)
+
+        data['atom_mass'] = (data['atom_mass']*ureg.INTERNAL_MASS_UNIT).to(
+            ureg.DEFAULT_MASS_UNIT).magnitude
+        data['atom_mass_unit'] = str(ureg.DEFAULT_MASS_UNIT)
+
+        data['force_constants_unit'] = 'hartree/bohr**2'
+        data['born_unit'] = 'e'
+        data['dielectric_unit'] = '(e**2)/(bohr*hartree)'
+        return cls.from_dict(data)

@@ -16,7 +16,6 @@ class TestReadInterpolationNaCl(unittest.TestCase):
         # Create trivial function object so attributes can be assigned to it
         expctd_data = type('', (), {})()
         expctd_data.n_atoms = 8
-        expctd_data.n_branches = 24
         expctd_data.n_qpts = 53
         expctd_data.cell_vectors = np.array(
            [[5.69030148, 0.        , 0.        ],
@@ -102,9 +101,6 @@ class TestReadInterpolationNaCl(unittest.TestCase):
 
     def test_n_atoms_read(self):
         self.assertEqual(self.data.crystal.n_atoms, self.expctd_data.n_atoms)
-
-    def test_n_branches_read(self):
-        self.assertEqual(self.data.n_branches, self.expctd_data.n_branches)
 
     def test_cell_vectors_read(self):
         npt.assert_allclose(self.data.crystal.cell_vectors.to('bohr').magnitude,

@@ -91,7 +91,7 @@ class TestStructureFactorInterpolationDataNaClSerial(unittest.TestCase):
             TOL = 5e-4
             diff = np.append(TOL + 1, np.diff(self.data.freqs[q].magnitude))
             unique_index = np.where(diff > TOL)[0]
-            x = np.zeros(self.data.n_branches, dtype=np.int32)
+            x = np.zeros(3*self.data.crystal.n_atoms, dtype=np.int32)
             x[unique_index] = 1
             unique_modes = np.cumsum(x) - 1
             sf_sum[q, :len(unique_index)] = np.bincount(unique_modes, sf[q])
@@ -118,7 +118,7 @@ class TestStructureFactorInterpolationDataNaClSerial(unittest.TestCase):
             TOL = 5e-4
             diff = np.append(TOL + 1, np.diff(self.data.freqs[q].magnitude))
             unique_index = np.where(diff > TOL)[0]
-            x = np.zeros(self.data.n_branches, dtype=np.int32)
+            x = np.zeros(3*self.data.crystal.n_atoms, dtype=np.int32)
             x[unique_index] = 1
             unique_modes = np.cumsum(x) - 1
             sf_sum[q, :len(unique_index)] = np.bincount(unique_modes, sf[q])
@@ -143,7 +143,7 @@ class TestStructureFactorInterpolationDataNaClSerial(unittest.TestCase):
             TOL = 5e-4
             diff = np.append(TOL + 1, np.diff(self.data.freqs[q].magnitude))
             unique_index = np.where(diff > TOL)[0]
-            x = np.zeros(self.data.n_branches, dtype=np.int32)
+            x = np.zeros(3*self.data.crystal.n_atoms, dtype=np.int32)
             x[unique_index] = 1
             unique_modes = np.cumsum(x) - 1
             sf_sum[q, :len(unique_index)] = np.bincount(unique_modes, sf[q])
@@ -168,7 +168,7 @@ class TestStructureFactorInterpolationDataNaClSerial(unittest.TestCase):
             TOL = 5e-4
             diff = np.append(TOL + 1, np.diff(self.data.freqs[q].magnitude))
             unique_index = np.where(diff > TOL)[0]
-            x = np.zeros(self.data.n_branches, dtype=np.int32)
+            x = np.zeros(3*self.data.crystal.n_atoms, dtype=np.int32)
             x[unique_index] = 1
             unique_modes = np.cumsum(x) - 1
             sf_sum[q, :len(unique_index)] = np.bincount(unique_modes, sf[q])
@@ -193,7 +193,7 @@ class TestStructureFactorInterpolationDataNaClSerial(unittest.TestCase):
             TOL = 5e-4
             diff = np.append(TOL + 1, np.diff(self.data.freqs[q].magnitude))
             unique_index = np.where(diff > TOL)[0]
-            x = np.zeros(self.data.n_branches, dtype=np.int32)
+            x = np.zeros(3*self.data.crystal.n_atoms, dtype=np.int32)
             x[unique_index] = 1
             unique_modes = np.cumsum(x) - 1
             sf_sum[q, :len(unique_index)] = np.bincount(unique_modes, sf[q])
@@ -218,7 +218,7 @@ class TestStructureFactorInterpolationDataNaClSerial(unittest.TestCase):
             TOL = 5e-4
             diff = np.append(TOL + 1, np.diff(self.data.freqs[q].magnitude))
             unique_index = np.where(diff > TOL)[0]
-            x = np.zeros(self.data.n_branches, dtype=np.int32)
+            x = np.zeros(3*self.data.crystal.n_atoms, dtype=np.int32)
             x[unique_index] = 1
             unique_modes = np.cumsum(x) - 1
             sf_sum[q, :len(unique_index)] = np.bincount(unique_modes, sf[q])

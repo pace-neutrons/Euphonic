@@ -52,7 +52,8 @@ class TestStructureFactorInterpolationDataLZOSerial(unittest.TestCase):
         # to test eigenvector calculations
         self.seedname = 'La2Zr2O7'
         data_path = get_data_path()
-        self.interpolation_path = os.path.join(data_path, 'interpolation', 'LZO')
+        self.interpolation_path = os.path.join(
+            data_path, 'interpolation', 'LZO')
         self.sf_path = os.path.join(data_path, 'structure_factor' , 'LZO')
         self.scattering_lengths = {'La': 8.24, 'Zr': 7.16, 'O': 5.803}
         qpts = np.loadtxt(os.path.join(self.sf_path, 'qpts.txt'))
@@ -65,7 +66,8 @@ class TestStructureFactorInterpolationDataLZOSerial(unittest.TestCase):
         self.dw_idata = InterpolationData.from_castep(
             self.seedname, path=self.interpolation_path)
         self.dw_idata.calculate_fine_phonons(
-            np.loadtxt(os.path.join(data_path, 'qgrid_444.txt')), asr='realspace')
+            np.loadtxt(os.path.join(data_path, 'qgrid_444.txt')),
+            asr='realspace')
 
         # PhononData object for DW grid
         self.dw_pdata = PhononData.from_castep(
@@ -83,7 +85,7 @@ class TestStructureFactorInterpolationDataLZOSerial(unittest.TestCase):
             TOL = 1e-4
             diff = np.append(TOL + 1, np.diff(self.data.freqs[q].magnitude))
             unique_index = np.where(diff > TOL)[0]
-            x = np.zeros(self.data.n_branches, dtype=np.int32)
+            x = np.zeros(3*self.data.crystal.n_atoms, dtype=np.int32)
             x[unique_index] = 1
             unique_modes = np.cumsum(x) - 1
             sf_sum[q, :len(unique_index)] = np.bincount(unique_modes, sf[q])
@@ -108,7 +110,7 @@ class TestStructureFactorInterpolationDataLZOSerial(unittest.TestCase):
             TOL = 1e-4
             diff = np.append(TOL + 1, np.diff(self.data.freqs[q].magnitude))
             unique_index = np.where(diff > TOL)[0]
-            x = np.zeros(self.data.n_branches, dtype=np.int32)
+            x = np.zeros(3*self.data.crystal.n_atoms, dtype=np.int32)
             x[unique_index] = 1
             unique_modes = np.cumsum(x) - 1
             sf_sum[q, :len(unique_index)] = np.bincount(unique_modes, sf[q])
@@ -131,7 +133,7 @@ class TestStructureFactorInterpolationDataLZOSerial(unittest.TestCase):
             TOL = 1e-4
             diff = np.append(TOL + 1, np.diff(self.data.freqs[q].magnitude))
             unique_index = np.where(diff > TOL)[0]
-            x = np.zeros(self.data.n_branches, dtype=np.int32)
+            x = np.zeros(3*self.data.crystal.n_atoms, dtype=np.int32)
             x[unique_index] = 1
             unique_modes = np.cumsum(x) - 1
             sf_sum[q, :len(unique_index)] = np.bincount(unique_modes, sf[q])
@@ -154,7 +156,7 @@ class TestStructureFactorInterpolationDataLZOSerial(unittest.TestCase):
             TOL = 1e-4
             diff = np.append(TOL + 1, np.diff(self.data.freqs[q].magnitude))
             unique_index = np.where(diff > TOL)[0]
-            x = np.zeros(self.data.n_branches, dtype=np.int32)
+            x = np.zeros(3*self.data.crystal.n_atoms, dtype=np.int32)
             x[unique_index] = 1
             unique_modes = np.cumsum(x) - 1
             sf_sum[q, :len(unique_index)] = np.bincount(unique_modes, sf[q])
@@ -177,7 +179,7 @@ class TestStructureFactorInterpolationDataLZOSerial(unittest.TestCase):
             TOL = 1e-4
             diff = np.append(TOL + 1, np.diff(self.data.freqs[q].magnitude))
             unique_index = np.where(diff > TOL)[0]
-            x = np.zeros(self.data.n_branches, dtype=np.int32)
+            x = np.zeros(3*self.data.crystal.n_atoms, dtype=np.int32)
             x[unique_index] = 1
             unique_modes = np.cumsum(x) - 1
             sf_sum[q, :len(unique_index)] = np.bincount(unique_modes, sf[q])
@@ -200,7 +202,7 @@ class TestStructureFactorInterpolationDataLZOSerial(unittest.TestCase):
             TOL = 1e-4
             diff = np.append(TOL + 1, np.diff(self.data.freqs[q].magnitude))
             unique_index = np.where(diff > TOL)[0]
-            x = np.zeros(self.data.n_branches, dtype=np.int32)
+            x = np.zeros(3*self.data.crystal.n_atoms, dtype=np.int32)
             x[unique_index] = 1
             unique_modes = np.cumsum(x) - 1
             sf_sum[q, :len(unique_index)] = np.bincount(unique_modes, sf[q])
@@ -234,21 +236,23 @@ class TestStructureFactorInterpolationDataLZOSerialC(TestStructureFactorInterpol
         # to test eigenvector calculations
         self.seedname = 'La2Zr2O7'
         data_path = get_data_path()
-        self.interpolation_path = os.path.join(data_path, 'interpolation', 'LZO')
+        self.interpolation_path = os.path.join(
+            data_path, 'interpolation', 'LZO')
         self.sf_path = os.path.join(data_path, 'structure_factor', 'LZO')
         self.scattering_lengths = {'La': 8.24, 'Zr': 7.16, 'O': 5.803}
         qpts = np.loadtxt(os.path.join(self.sf_path, 'qpts.txt'))
 
         self.data = InterpolationData.from_castep(
             self.seedname, path=self.interpolation_path)
-        self.data.calculate_fine_phonons(qpts, asr='realspace', use_c=True, fall_back_on_python=False)
+        self.data.calculate_fine_phonons(
+            qpts, asr='realspace', use_c=True, fall_back_on_python=False)
 
         # InterpolationData object for DW grid
         self.dw_idata = InterpolationData.from_castep(
             self.seedname, path=self.interpolation_path)
         self.dw_idata.calculate_fine_phonons(
-            np.loadtxt(os.path.join(data_path, 'qgrid_444.txt')), asr='realspace',
-            use_c=True, fall_back_on_python=False)
+            np.loadtxt(os.path.join(data_path, 'qgrid_444.txt')),
+            asr='realspace', use_c=True, fall_back_on_python=False)
 
         # PhononData object for DW grid
         self.dw_pdata = PhononData.from_castep(
@@ -262,7 +266,8 @@ class TestStructureFactorInterpolationDataLZOParallelC(TestStructureFactorInterp
         # to test eigenvector calculations
         self.seedname = 'La2Zr2O7'
         data_path = get_data_path()
-        self.interpolation_path = os.path.join(data_path, 'interpolation', 'LZO')
+        self.interpolation_path = os.path.join(
+            data_path, 'interpolation', 'LZO')
         self.sf_path = os.path.join(data_path, 'structure_factor', 'LZO')
         self.scattering_lengths = {'La': 8.24, 'Zr': 7.16, 'O': 5.803}
         qpts = np.loadtxt(os.path.join(self.sf_path, 'qpts.txt'))
@@ -276,8 +281,8 @@ class TestStructureFactorInterpolationDataLZOParallelC(TestStructureFactorInterp
         self.dw_idata = InterpolationData.from_castep(
             self.seedname, path=self.interpolation_path)
         self.dw_idata.calculate_fine_phonons(
-            np.loadtxt(os.path.join(data_path, 'qgrid_444.txt')), asr='realspace',
-            use_c=True, fall_back_on_python=False)
+            np.loadtxt(os.path.join(data_path, 'qgrid_444.txt')),
+            asr='realspace', use_c=True, fall_back_on_python=False)
 
         # PhononData object for DW grid
         self.dw_pdata = PhononData.from_castep(
@@ -291,7 +296,8 @@ class TestStructureFactorInterpolationDataQuartzSerial(unittest.TestCase):
         # to test eigenvector calculations
         self.seedname = 'quartz'
         data_path = get_data_path()
-        self.interpolation_path = os.path.join(data_path, 'interpolation', 'quartz')
+        self.interpolation_path = os.path.join(
+            data_path, 'interpolation', 'quartz')
         self.sf_path = os.path.join(data_path, 'structure_factor', 'quartz')
         self.scattering_lengths = {'Si': 4.1491, 'O': 5.803}
         qpts = np.loadtxt(os.path.join(self.sf_path, 'qpts.txt'))
@@ -318,7 +324,7 @@ class TestStructureFactorInterpolationDataQuartzSerial(unittest.TestCase):
             TOL = 5e-4
             diff = np.append(TOL + 1, np.diff(self.data.freqs[q].magnitude))
             unique_index = np.where(diff > TOL)[0]
-            x = np.zeros(self.data.n_branches, dtype=np.int32)
+            x = np.zeros(3*self.data.crystal.n_atoms, dtype=np.int32)
             x[unique_index] = 1
             unique_modes = np.cumsum(x) - 1
             sf_sum[q, :len(unique_index)] = np.bincount(unique_modes, sf[q])
@@ -345,7 +351,7 @@ class TestStructureFactorInterpolationDataQuartzSerial(unittest.TestCase):
             TOL = 5e-4
             diff = np.append(TOL + 1, np.diff(self.data.freqs[q].magnitude))
             unique_index = np.where(diff > TOL)[0]
-            x = np.zeros(self.data.n_branches, dtype=np.int32)
+            x = np.zeros(3*self.data.crystal.n_atoms, dtype=np.int32)
             x[unique_index] = 1
             unique_modes = np.cumsum(x) - 1
             sf_sum[q, :len(unique_index)] = np.bincount(unique_modes, sf[q])
@@ -362,7 +368,8 @@ class TestStructureFactorInterpolationDataQuartzSerial(unittest.TestCase):
     def test_sf_T100(self):
         sf = self.data.calculate_structure_factor(
             self.scattering_lengths, T=100)
-        expected_sf = np.loadtxt(os.path.join(self.sf_path, 'sf_idata_T100.txt'))
+        expected_sf = np.loadtxt(
+            os.path.join(self.sf_path, 'sf_idata_T100.txt'))
 
         sf_sum = np.zeros(sf.shape)
         expected_sf_sum = np.zeros(sf.shape)
@@ -370,7 +377,7 @@ class TestStructureFactorInterpolationDataQuartzSerial(unittest.TestCase):
             TOL = 5e-4
             diff = np.append(TOL + 1, np.diff(self.data.freqs[q].magnitude))
             unique_index = np.where(diff > TOL)[0]
-            x = np.zeros(self.data.n_branches, dtype=np.int32)
+            x = np.zeros(3*self.data.crystal.n_atoms, dtype=np.int32)
             x[unique_index] = 1
             unique_modes = np.cumsum(x) - 1
             sf_sum[q, :len(unique_index)] = np.bincount(unique_modes, sf[q])
@@ -396,7 +403,7 @@ class TestStructureFactorInterpolationDataQuartzSerial(unittest.TestCase):
             TOL = 5e-4
             diff = np.append(TOL + 1, np.diff(self.data.freqs[q].magnitude))
             unique_index = np.where(diff > TOL)[0]
-            x = np.zeros(self.data.n_branches, dtype=np.int32)
+            x = np.zeros(3*self.data.crystal.n_atoms, dtype=np.int32)
             x[unique_index] = 1
             unique_modes = np.cumsum(x) - 1
             sf_sum[q, :len(unique_index)] = np.bincount(unique_modes, sf[q])
@@ -418,20 +425,23 @@ class TestStructureFactorInterpolationDataQuartzSerialC(TestStructureFactorInter
         # to test eigenvector calculations
         self.seedname = 'quartz'
         data_path = get_data_path()
-        self.interpolation_path = os.path.join(data_path, 'interpolation', 'quartz')
+        self.interpolation_path = os.path.join(
+            data_path, 'interpolation', 'quartz')
         self.sf_path = os.path.join(data_path, 'structure_factor', 'quartz')
         self.scattering_lengths = {'Si': 4.1491, 'O': 5.803}
         qpts = np.loadtxt(os.path.join(self.sf_path, 'qpts.txt'))
 
         self.data = InterpolationData.from_castep(
             self.seedname, path=self.interpolation_path)
-        self.data.calculate_fine_phonons(qpts, asr='reciprocal', use_c=True, fall_back_on_python=False)
+        self.data.calculate_fine_phonons(
+            qpts, asr='reciprocal', use_c=True, fall_back_on_python=False)
 
         # InterpolationData object for DW grid
         self.dw_data = InterpolationData.from_castep(
             self.seedname, path=self.interpolation_path)
         self.dw_data.calculate_fine_phonons(
-            np.loadtxt(os.path.join(data_path, 'qgrid_444.txt')), asr='reciprocal')
+            np.loadtxt(os.path.join(data_path, 'qgrid_444.txt')),
+            asr='reciprocal')
 
 
 class TestStructureFactorInterpolationDataQuartzParallelC(TestStructureFactorInterpolationDataQuartzSerial):
@@ -441,7 +451,8 @@ class TestStructureFactorInterpolationDataQuartzParallelC(TestStructureFactorInt
         # to test eigenvector calculations
         self.seedname = 'quartz'
         data_path = get_data_path()
-        self.interpolation_path = os.path.join(data_path, 'interpolation', 'quartz')
+        self.interpolation_path = os.path.join(
+            data_path, 'interpolation', 'quartz')
         self.sf_path = os.path.join(data_path, 'structure_factor', 'quartz')
         self.scattering_lengths = {'Si': 4.1491, 'O': 5.803}
         qpts = np.loadtxt(os.path.join(self.sf_path, 'qpts.txt'))
@@ -455,4 +466,5 @@ class TestStructureFactorInterpolationDataQuartzParallelC(TestStructureFactorInt
         self.dw_data = InterpolationData.from_castep(
             self.seedname, path=self.interpolation_path)
         self.dw_data.calculate_fine_phonons(
-            np.loadtxt(os.path.join(data_path, 'qgrid_444.txt')), asr='reciprocal')
+            np.loadtxt(os.path.join(data_path, 'qgrid_444.txt')),
+            asr='reciprocal')

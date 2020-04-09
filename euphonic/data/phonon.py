@@ -14,14 +14,8 @@ class PhononData(object):
 
     Attributes
     ----------
-    seedname : str
-        Seedname specifying file(s) to read from
-    model : str
-        Records what model the data came from
     crystal : Crystal
         Lattice and atom information
-    n_branches : int
-        Number of phonon dispersion branches
     n_qpts : int
         Number of q-points in the .phonon file
     qpts : (n_qpts, 3) float ndarray
@@ -44,109 +38,79 @@ class PhononData(object):
         q-points specified in split_i. Empty if no LO-TO splitting
     """
 
-    def __init__(self, data):
+    def __init__(self, crystal, qpts, freqs, eigenvecs, weights=None,
+                 split_i=None, split_freqs=None, split_eigenvecs=None):
         """
-        Calls functions to read the correct file(s) and sets PhononData
-        attributes
-
         Parameters
         ----------
-        data : dict
-            A dict containing the following keys: n_ions, n_branches, n_qpts,
-            cell_vec, recip_vec, ion_r, ion_type, ion_mass, qpts, weights,
-            freqs, eigenvecs, split_i, split_freqs, split_eigenvecs, and
-            optional: metadata
+        crystal : Crystal
+            Lattice and atom information
+        qpts : (n_qpts, 3) float ndarray
+            Q-point coordinates
+        freqs: (n_qpts, 3*n_atoms) float Quantity
+            Phonon frequencies, ordered according to increasing q-point
+            number. Default units meV
+        eigenvecs: (n_qpts, 3*n_atoms, n_atoms, 3) complex ndarray
+            Dynamical matrix eigenvectors. Empty if read_eigenvecs is False
+        weights : (n_qpts,) float ndarray, optional, default None
+            The weight for each q-point. If None, equal weights are assumed
+        split_i : (n_splits,) int ndarray, optional, default None
+            The q-point indices where there is LO-TO splitting, if applicable.
+            Otherwise empty.
+        split_freqs : (n_splits, 3*n_atoms) float Quantity, optional,
+                      default None
+            Holds the additional LO-TO split phonon frequencies for the q-points
+            specified in split_i. Empty if no LO-TO splitting.
+        split_eigenvecs : (n_splits, 3*n_atoms, n_atoms, 3) complex ndarray,
+                          optional, default None
+            Holds the additional LO-TO split dynamical matrix eigenvectors for
+            the q-points specified in split_i. Empty if no LO-TO splitting
+
         """
-        self._set_data(data)
+        self.crystal = crystal
+        self.qpts = qpts
+        self.n_qpts = len(qpts)
+        self._freqs = freqs.to(
+            ureg.INTERNAL_ENERGY_UNIT).magnitude
+        self.freqs_unit = str(freqs.units)
+        self.eigenvecs = eigenvecs
 
-        self._e_units = 'meV'
+        if weights is not None:
+            self.weights = weights
+        else:
+            self.weights = np.full(self.n_qpts, 1/self.n_qpts)
 
+        if split_i is not None:
+            self.split_i = split_i
+            self._split_freqs = split_freqs.to(
+                ureg.INTERNAL_ENERGY_UNIT).magnitude
+            self.split_eigenvecs = split_eigenvecs
+        else:
+            self.split_i = np.empty((0,), dtype=np.int32)
+            n_atoms = self.crystal.n_atoms
+            self._split_freqs = np.empty((0, 3*n_atoms))
+            self.split_eigenvecs = np.empty(
+                (0, 3*n_atoms, self.crystal.n_atoms, 3),
+                dtype=np.complex128)
 
     @property
     def freqs(self):
         return self._freqs*ureg(
-            'INTERNAL_ENERGY_UNIT').to(self._e_units, 'spectroscopy')
+            'INTERNAL_ENERGY_UNIT').to(self.freqs_unit, 'spectroscopy')
 
     @property
     def split_freqs(self):
         return self._split_freqs*ureg(
-            'INTERNAL_ENERGY_UNIT').to(self._e_units, 'spectroscopy')
+            'INTERNAL_ENERGY_UNIT').to(self.freqs_unit, 'spectroscopy')
 
     @property
     def sqw_ebins(self):
         return self._sqw_ebins*ureg(
-            'INTERNAL_ENERGY_UNIT').to(self._e_units, 'spectroscopy')
+            'INTERNAL_ENERGY_UNIT').to(self.freqs_unit, 'spectroscopy')
 
     @property
     def dos_bins(self):
-        return self._dos_bins*ureg('E_h').to(self._e_units, 'spectroscopy')
-
-    @classmethod
-    def from_castep(self, seedname, path=''):
-        """
-        Calls the CASTEP phonon data reader and sets the PhononData attributes.
-
-        Parameters
-        ----------
-        seedname : str
-            Seedname of file(s) to read e.g. if seedname = 'quartz' then
-            the 'quartz.phonon' file will be read
-        path : str
-            Path to dir containing the file(s), if in another directory
-        """
-        data = _castep._read_phonon_data(seedname, path)
-        pdata = self(data)
-        return pdata
-
-    @classmethod
-    def from_phonopy(self, path='.', phonon_name='band.yaml',
-                     phonon_format=None, summary_name='phonopy.yaml'):
-        """
-        Reads precalculated phonon mode data from a Phonopy
-        mesh/band/qpoints.yaml/hdf5 file. May also read from phonopy.yaml for
-        structure information.
-
-        Parameters
-        ----------
-        path : str, optional, default '.'
-            Path to directory containing the file(s)
-        phonon_name : str, optional, default 'band.yaml'
-            Name of Phonopy file including the frequencies and eigenvectors
-        phonon_format : {'yaml', 'hdf5'} str, optional, default None
-            Format of the phonon_name file if it isn't obvious from the
-            phonon_name extension
-        summary_name : str, optional, default 'phonopy.yaml'
-            Name of Phonopy summary file to read the crystal information from.
-            Crystal information in the phonon_name file takes priority, but if
-            it isn't present, crystal information is read from summary_name
-            instead
-        """
-        data = _phonopy._read_phonon_data(path=path, phonon_name=phonon_name,
-                            phonon_format=phonon_format, summary_name=summary_name)
-        pdata = self(data)
-        return pdata
-
-    def _set_data(self, data):
-        data['atom_mass_unit'] = str(ureg.INTERNAL_MASS_UNIT)
-        data['cell_vectors_unit'] = str(ureg.INTERNAL_LENGTH_UNIT)
-        self.crystal = Crystal.from_dict(data)
-        self.crystal.atom_mass_unit = 'amu'
-        self.crystal.cell_vectors_unit = 'angstrom'
-
-        self.n_branches = data['n_branches']
-        self.n_qpts = data['n_qpts']
-        self.qpts = data['qpts']
-        self.weights = data['weights']
-        self._freqs = data['freqs']
-        self.eigenvecs = data['eigenvecs']
-        self.split_i = data['split_i']
-        self._split_freqs = data['split_freqs']
-        self.split_eigenvecs = data['split_eigenvecs']
-
-        try:
-            self.metadata = data['metadata']
-        except KeyError:
-            print('Could not find metadata while loading data.')
+        return self._dos_bins*ureg('E_h').to(self.freqs_unit, 'spectroscopy')
 
     def reorder_freqs(self, reorder_gamma=True):
         """
@@ -166,7 +130,7 @@ class PhononData(object):
             So you might not want to reorder at gamma for some materials
         """
         n_qpts = self.n_qpts
-        n_branches = self.n_branches
+        n_branches = 3*self.crystal.n_atoms
         qpts = self.qpts
         eigenvecs = self.eigenvecs
 
@@ -251,7 +215,7 @@ class PhononData(object):
 
         Returns
         -------
-        sf : (n_qpts, n_branches) float ndarray
+        sf : (n_qpts, 3*n_atoms) float ndarray
             The structure factor for each q-point and phonon branch
         """
         sl = [scattering_lengths[x] for x in self.crystal.atom_type]
@@ -387,7 +351,7 @@ class PhononData(object):
 
         # Convert units
         freqs = self._freqs
-        ebins = (ebins*ureg(self._e_units).to('E_h')).magnitude
+        ebins = (ebins*ureg(self.freqs_unit).to('E_h')).magnitude
 
         # Create initial sqw_map with an extra an energy bin either side, for
         # any branches that fall outside the energy bin range
@@ -410,7 +374,7 @@ class PhononData(object):
 
         # Sum intensities into bins
         first_index = np.transpose(
-            np.tile(range(self.n_qpts), (self.n_branches, 1)))
+            np.tile(range(self.n_qpts), (3*self.crystal.n_atoms, 1)))
         np.add.at(sqw_map, (first_index, p_bin), p_intensity)
         np.add.at(sqw_map, (first_index, n_bin), n_intensity)
         sqw_map = sqw_map[:, 1:-1]  # Exclude values outside ebin range
@@ -437,8 +401,8 @@ class PhononData(object):
         lorentz : boolean, optional
             Whether to use a Lorentzian or Gaussian broadening function.
             Default: False
-        weights : (n_qpts, n_branches) float ndarray, optional
-            The weights to use for each q-points and branch. If unspecified,
+        weights : (n_qpts, 3*n_atoms) float ndarray, optional
+            The weights to use for each q-points and mode. If unspecified,
             uses the q-point weights stored in the Data object
 
         Returns
@@ -453,17 +417,18 @@ class PhononData(object):
         try:
             dos_bins = dos_bins.to('E_h', 'spectroscopy').magnitude
         except AttributeError:
-            dos_bins = (dos_bins*ureg(self._e_units).to(
+            dos_bins = (dos_bins*ureg(self.freqs_unit).to(
                 'E_h', 'spectroscopy')).magnitude
         try:
             gwidth = gwidth.to('E_h', 'spectroscopy').magnitude
         except AttributeError:
-            gwidth = (gwidth*ureg(self._e_units).to(
+            gwidth = (gwidth*ureg(self.freqs_unit).to(
                 'E_h', 'spectroscopy')).magnitude
 
         # Bin frequencies
         if weights is None:
-            weights = np.repeat(self.weights[:, np.newaxis], self.n_branches,
+            weights = np.repeat(self.weights[:, np.newaxis],
+                                3*self.crystal.n_atoms,
                                 axis=1)
         hist, bin_edges = np.histogram(freqs, dos_bins, weights=weights)
 
@@ -499,3 +464,99 @@ class PhononData(object):
         self._dos_bins = dos_bins
 
         return dos
+
+    @classmethod
+    def from_dict(cls, d):
+        crystal = Crystal.from_dict(d)
+        for key in ['weights', 'split_i', 'split_freqs', 'split_eigenvecs']:
+            if not key in d.keys():
+                d[key] = None
+        d['freqs'] = d['freqs']*ureg(d['freqs_unit'])
+        if d['split_freqs'] is not None:
+            d['split_freqs'] = d['split_freqs']*ureg(d['freqs_unit'])
+        return cls(crystal, d['qpts'], d['freqs'], d['eigenvecs'],
+                   d['weights'], d['split_i'], d['split_freqs'],
+                   d['split_eigenvecs'])
+
+    @classmethod
+    def from_castep(cls, seedname, path=''):
+        """
+        Reads precalculated phonon mode data from a CASTEP .phonon file
+
+        Parameters
+        ----------
+        seedname : str
+            Seedname of file(s) to read e.g. if seedname = 'quartz' then
+            the 'quartz.phonon' file will be read
+        path : str
+            Path to dir containing the file(s), if in another directory
+        """
+        data = _castep._read_phonon_data(seedname, path)
+        data['cell_vectors'] =  (
+            data['cell_vectors']*ureg.INTERNAL_LENGTH_UNIT).to(
+                ureg.DEFAULT_LENGTH_UNIT).magnitude
+        data['cell_vectors_unit'] = str(ureg.DEFAULT_LENGTH_UNIT)
+
+        data['atom_mass'] = (data['atom_mass']*ureg.INTERNAL_MASS_UNIT).to(
+            ureg.DEFAULT_MASS_UNIT).magnitude
+        data['atom_mass_unit'] = str(ureg.DEFAULT_MASS_UNIT)
+
+        data['freqs'] = (data['freqs']*ureg.INTERNAL_ENERGY_UNIT).to(
+            ureg.mDEFAULT_ENERGY_UNIT, 'spectroscopy').magnitude
+        data['freqs_unit'] = str(ureg.mDEFAULT_ENERGY_UNIT)
+        if len(data['split_i']) > 0:
+            data['split_freqs'] = (
+                data['split_freqs']*ureg.INTERNAL_ENERGY_UNIT).to(
+                    ureg.mDEFAULT_ENERGY_UNIT, 'spectroscopy').magnitude
+        else:
+            data['split_i'] = None
+            data['split_freqs'] = None
+            data['split_eigenvecs'] = None
+        return cls.from_dict(data)
+
+    @classmethod
+    def from_phonopy(cls, path='.', phonon_name='band.yaml',
+                     phonon_format=None, summary_name='phonopy.yaml'):
+        """
+        Reads precalculated phonon mode data from a Phonopy
+        mesh/band/qpoints.yaml/hdf5 file. May also read from phonopy.yaml for
+        structure information.
+
+        Parameters
+        ----------
+        path : str, optional, default '.'
+            Path to directory containing the file(s)
+        phonon_name : str, optional, default 'band.yaml'
+            Name of Phonopy file including the frequencies and eigenvectors
+        phonon_format : {'yaml', 'hdf5'} str, optional, default None
+            Format of the phonon_name file if it isn't obvious from the
+            phonon_name extension
+        summary_name : str, optional, default 'phonopy.yaml'
+            Name of Phonopy summary file to read the crystal information from.
+            Crystal information in the phonon_name file takes priority, but if
+            it isn't present, crystal information is read from summary_name
+            instead
+        """
+        data = _phonopy._read_phonon_data(path=path, phonon_name=phonon_name,
+                            phonon_format=phonon_format, summary_name=summary_name)
+        data['cell_vectors'] =  (
+            data['cell_vectors']*ureg.INTERNAL_LENGTH_UNIT).to(
+                ureg.DEFAULT_LENGTH_UNIT).magnitude
+        data['cell_vectors_unit'] = str(ureg.DEFAULT_LENGTH_UNIT)
+
+        data['atom_mass'] = (data['atom_mass']*ureg.INTERNAL_MASS_UNIT).to(
+            ureg.DEFAULT_MASS_UNIT).magnitude
+        data['atom_mass_unit'] = str(ureg.DEFAULT_MASS_UNIT)
+
+        data['freqs'] = (data['freqs']*ureg.INTERNAL_ENERGY_UNIT).to(
+            ureg.mDEFAULT_ENERGY_UNIT, 'spectroscopy').magnitude
+        data['freqs_unit'] = str(ureg.mDEFAULT_ENERGY_UNIT)
+        if len(data['split_i']) > 0:
+            data['split_freqs'] = (
+                data['split_freqs']*ureg.INTERNAL_ENERGY_UNIT).to(
+                    ureg.mDEFAULT_ENERGY_UNIT, 'spectroscopy').magnitude
+        else:
+            data['split_i'] = None
+            data['split_freqs'] = None
+            data['split_eigenvecs'] = None
+        return cls.from_dict(data)

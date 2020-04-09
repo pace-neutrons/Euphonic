@@ -80,9 +80,6 @@ class TestReadNaClPhononQPoints(unittest.TestCase):
     def test_n_atoms_read_nacl_phonon(self):
         npt.assert_equal(self.data.crystal.n_atoms, self.expctd_data.n_atoms)
 
-    def test_n_branches_read_nacl_phonon(self):
-        npt.assert_equal(self.data.n_branches, self.expctd_data.n_branches)
-
     def test_cell_vectors_read_nacl_phonon(self):
         npt.assert_allclose(self.data.crystal.cell_vectors.to('bohr').magnitude,
                             self.expctd_data.cell_vectors.to('bohr').magnitude)

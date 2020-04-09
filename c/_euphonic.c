@@ -127,7 +127,7 @@ static PyObject *calculate_phonons(PyObject *self, PyObject *args) {
     }
     if (dipole) {
         if (attr_from_pyobj(py_idata, "_born", &py_born) ||
-            attr_from_pyobj(py_idata, "dielectric", &py_dielectric) ||
+            attr_from_pyobj(py_idata, "_dielectric", &py_dielectric) ||
             double_from_pyobj(py_idata, "_eta", &eta) ||
             attr_from_pyobj(py_idata, "_H_ab", &py_H_ab) ||
             attr_from_pyobj(py_idata, "_cells", &py_dipole_cells) ||
