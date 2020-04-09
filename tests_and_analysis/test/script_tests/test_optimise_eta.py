@@ -6,6 +6,8 @@ from euphonic.data.interpolation import InterpolationData
 from scripts.optimise_eta import calculate_optimum_eta
 from tests_and_analysis.test.utils import get_data_path
 import time
+from unittest.mock import Mock
+
 
 quartz_castep_bin = os.path.join(get_data_path(), "interpolation", "quartz", "quartz")
 
@@ -58,6 +60,7 @@ class TestUnit:
     @pytest.fixture(params=SharedCode.get_calculate_optimum_eta_kwargs())
     def call_with_params_and_quartz_unit(self, request, monkeypatch):
         # Mock getting the data from a castep file
+        interpolation_data_mock = Mock()
         monkeypatch.setattr(InterpolationData, "from_castep", lambda *args, **kwargs: MockInterpolationData())
 
         # Simulate time

@@ -7,30 +7,24 @@ vibrational band structure or dispersion.
 """
 
 import argparse
-import os
 import numpy as np
 from euphonic import ureg
 from euphonic.data.bands import BandsData
-from euphonic.data.phonon import PhononData
 from euphonic.plot.dos import plot_dos, output_grace
+from typing import List
+
+from .utils import load_data_from_file, get_args_and_set_up_and_down, matplotlib_save_or_show
 
 
-def main():
+def main(params: List[str] = None):
     parser = get_parser()
-    args = parser.parse_args()
-    # If neither -up nor -down specified, plot both
-    if not args.up and not args.down:
-        args.up = True
-        args.down = True
+    args = get_args_and_set_up_and_down(parser, params)
 
-    path, file = os.path.split(args.filename)
-    seedname = file[:file.rfind('.')]
-    if file.endswith('.bands'):
-        data = BandsData.from_castep(seedname, path=path)
-    else:
-        data = PhononData.from_castep(seedname, path=path)
-
+    data, seedname, file = load_data_from_file(args.filename)
     data.convert_e_units(args.units)
+
+    print(args.b)
+    print(args.w)
 
     # Calculate and plot DOS
     # Set default DOS bin and broadening width based on whether it's
@@ -40,16 +34,20 @@ def main():
             bwidth = 0.05*ureg.eV
         else:
             bwidth = 1.0*(1/ureg.cm)
+        print("calling ito")
         bwidth.ito(args.units, 'spectroscopy')
     else:
+        print("Not calling ito")
         bwidth = args.b*ureg[args.units]
     if args.w is None:
         if file.endswith('.bands'):
             gwidth = 0.1*ureg.eV
         else:
             gwidth = 10.0*(1/ureg.cm)
+        print("calling ito")
         gwidth.ito(args.units, 'spectroscopy')
     else:
+        print("Not calling ito")
         gwidth = args.w*ureg[args.units]
     if isinstance(data, BandsData):
         all_freqs = np.append(data.freqs.magnitude, data.freq_down.magnitude)
@@ -66,12 +64,7 @@ def main():
         fig = plot_dos(data, args.filename, mirror=args.mirror, up=args.up,
                        down=args.down)
         if fig is not None:
-            import matplotlib.pyplot as plt
-            # Save or show Matplotlib figure
-            if args.s is not None:
-                plt.savefig(args.s)
-            else:
-                plt.show()
+            matplotlib_save_or_show(save_filename=args.s)
 
 
 def get_parser():

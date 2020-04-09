@@ -7,41 +7,25 @@ or vibrational band structure or dispersion.
 """
 
 import argparse
-import os
 import warnings
 
 from typing import List
 
-from euphonic.data.bands import BandsData
-from euphonic.data.phonon import PhononData
 from euphonic.plot.dispersion import output_grace, plot_dispersion
+
+from .utils import load_data_from_file, get_args_and_set_up_and_down, matplotlib_save_or_show
 
 
 def main(params: List[str] = None):
     parser = get_parser()
-    if params is None:
-        args = parser.parse_args()
-    else:
-        args = parser.parse_args(params)
-    # If neither -up nor -down specified, plot both
-    if not args.up and not args.down:
-        args.up = True
-        args.down = True
+    args = get_args_and_set_up_and_down(parser, params)
 
-    # Read data
-    path, file = os.path.split(args.filename)
-    bands_file = file.endswith('.bands')
-    seedname = file[:file.rfind('.')]
-    if bands_file:
-        data = BandsData.from_castep(seedname, path=path)
-    else:
-        data = PhononData.from_castep(seedname, path=path)
-
+    data, seedname, file = load_data_from_file(args.filename)
     data.convert_e_units(args.units)
 
     # Reorder frequencies if requested
     if args.reorder:
-        if not bands_file:
+        if not file.endswith(".bands"):
             data.reorder_freqs()
         else:
             warnings.warn("Cannot reorder bands data")
@@ -53,12 +37,7 @@ def main(params: List[str] = None):
         fig = plot_dispersion(data, args.filename, btol=args.btol, up=args.up,
                               down=args.down)
         if fig is not None:
-            import matplotlib.pyplot as plt
-            # Save or show Matplotlib figure
-            if args.s is not None:
-                plt.savefig(args.s)
-            else:
-                plt.show()
+            matplotlib_save_or_show(save_filename=args.s)
 
 
 def get_parser():
