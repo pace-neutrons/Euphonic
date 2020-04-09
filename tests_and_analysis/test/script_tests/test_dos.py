@@ -33,14 +33,15 @@ class TestUnit:
         mocker.patch("scripts.dos.ureg.Quantity.ito")
 
         # Mock oug calls to np arange
-        mocker.patch("scripts.dos.np.arange")
+        dos_bins_mock = Mock()
+        mocker.patch("scripts.dos.np.arange", return_value=dos_bins_mock)
 
         # Mock out calls to pyplot
         mocker.patch("matplotlib.pyplot")
 
         mocker.resetall()
 
-        return {"phonon_mock": phonon_mock, "fig_mock": fig_mock}
+        return {"phonon_mock": phonon_mock, "fig_mock": fig_mock, "dos_bins_mock": dos_bins_mock}
 
     def test_when_not_called_with_up_and_down_both_are_true(self, inject_mocks):
         scripts.dos.main([get_phonon_file()])
@@ -71,7 +72,29 @@ class TestUnit:
 
     @pytest.mark.parametrize("w_b", [[], ["-w 2.3"], ["-b 3.3"], ["-w 2.3", "-b 3.3"]])
     def test_when_called_with_w_and_or_b_then_ito_is_called_correctly(self, inject_mocks, w_b):
-        num_of_args = 2-len(w_b)
+        num_of_args = len(w_b)
         scripts.dos.main([get_phonon_file()] + w_b)
-        assert scripts.dos.ureg.Quantity.ito.call_count == num_of_args, \
-            "ito should be called once for each of -w and -b"
+        assert scripts.dos.ureg.Quantity.ito.call_count == 2-num_of_args, \
+            "ito should not be called for each time -w and -b is specified"
+
+    def test_when_called_then_np_arange_called_correctly(self, inject_mocks):
+        phonon_mock = inject_mocks["phonon_mock"]
+        scripts.dos.main([get_phonon_file()])
+        assert scripts.dos.np.arange.call_count == 1
+
+    def test_when_called_without_grace_but_save_then_saved(self, inject_mocks):
+        filename = "FileName.plot"
+        scripts.dos.main([get_phonon_file(), "-s={}".format(filename)])
+        assert matplotlib.pyplot.savefig.call_args[0][0] == filename, \
+            "When specifying -s and a filename, should use matplotlib function to save figure with the given name"
+
+    def test_when_called_without_grace_or_show_then_saved(self, inject_mocks):
+        scripts.dos.main([get_phonon_file()])
+        assert matplotlib.pyplot.show.call_count == 1, \
+            "When not specifying -grace or -s, then matplotlib function to show the plot should be called"
+
+    def test_when_called_with_grace_then_grace_and_not_saved_or_shown(self, inject_mocks):
+        scripts.dos.main([get_phonon_file(), "-grace"])
+        assert scripts.dos.output_grace.call_count == 1, \
+            "When specifying the -grace function, the euphonic output_grace function should be called"
+

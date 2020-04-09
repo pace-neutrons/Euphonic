@@ -23,9 +23,6 @@ def main(params: List[str] = None):
     data, seedname, file = load_data_from_file(args.filename)
     data.convert_e_units(args.units)
 
-    print(args.b)
-    print(args.w)
-
     # Calculate and plot DOS
     # Set default DOS bin and broadening width based on whether it's
     # electronic or vibrational
@@ -34,20 +31,16 @@ def main(params: List[str] = None):
             bwidth = 0.05*ureg.eV
         else:
             bwidth = 1.0*(1/ureg.cm)
-        print("calling ito")
         bwidth.ito(args.units, 'spectroscopy')
     else:
-        print("Not calling ito")
         bwidth = args.b*ureg[args.units]
     if args.w is None:
         if file.endswith('.bands'):
             gwidth = 0.1*ureg.eV
         else:
             gwidth = 10.0*(1/ureg.cm)
-        print("calling ito")
         gwidth.ito(args.units, 'spectroscopy')
     else:
-        print("Not calling ito")
         gwidth = args.w*ureg[args.units]
     if isinstance(data, BandsData):
         all_freqs = np.append(data.freqs.magnitude, data.freq_down.magnitude)
