@@ -43,10 +43,10 @@ def getGithubCommitAuthorEmail(){
             echo "Before email"
             //if (isUnix()) {
             email = sh script: """
-                module load python/3.6
+                jq --version &&
                 email = curl -H "Authorization: token ${api_token}" --request GET \
                     https://api.github.com/repos/pace-neutrons/Euphonic/commits/${env.GIT_COMMIT} | \
-                    | jq -r ".commit.author.email"
+                    | jq -r ".commit.author.email" &&
                 echo $email
             """, returnStdout: true
             /* } else {
