@@ -41,22 +41,25 @@ def getGithubCommitAuthorEmail(){
         withCredentials([string(credentialsId: 'Euphonic_GitHub_API_Token',
                 variable: 'api_token')]) {
             echo "Before email"
-            //if (isUnix()) {
-            email = sh script: """
-                jq --version &&
-                email = curl -H "Authorization: token ${api_token}" --request GET \
-                    https://api.github.com/repos/pace-neutrons/Euphonic/commits/${env.GIT_COMMIT} | \
-                    | jq -r ".commit.author.email" &&
-                echo $email
-            """, returnStdout: true
-            /* } else {
-                powershell """
+            if (isUnix()) {
+                email = sh script: """
+                    jq --version &&
+                    email = curl -H "Authorization: token ${api_token}" --request GET \
+                        https://api.github.com/repos/pace-neutrons/Euphonic/commits/${env.GIT_COMMIT} | \
+                        | jq -r ".commit.author.email" &&
+                    echo $email
+                """, returnStdout: true
+            } else {
+                email = powershell script: """
                     [Net.ServicePointManager]::SecurityProtocol = "tls12, tls11, tls"
-                    Invoke-RestMethod -URI "https://api.github.com/repos/pace-neutrons/Euphonic/commits/${env.GIT_COMMIT}" \
-                      -Headers @{Authorization = "token ${api_token}"} \
-                      -Method 'GET' \
-                  """
-            } */
+                    \$ email = \
+                        Invoke-RestMethod -URI "https://api.github.com/repos/pace-neutrons/Euphonic/commits/${env.GIT_COMMIT}" \
+                            -Headers @{Authorization = "token ${api_token}"} \
+                            -Method 'GET' | ConvertFrom-JSON | select -expand commit | select -expand author | \
+                            select email
+
+                  """, returnStdout: true
+            }
         }
     }
     return email.trim()
