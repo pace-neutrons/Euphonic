@@ -62,12 +62,13 @@ def get_dos_data_filepath_prefix() -> str:
 
 
 def _iter_regression_test_files(filepath_prefix: str, data_folder: str):
+    # Loop through files in data_folder
     for file in os.listdir(data_folder):
         file_full_path = os.path.join(data_folder, file)
-        print(file_full_path)
+        # Only accept those that start with filepath_prefix
         if file_full_path.startswith(filepath_prefix):
             filenum = file_full_path[len(filepath_prefix):][0]
-            print(file_full_path[len(filepath_prefix):])
+            # Return the number used in the file and the full path to the file
             yield int(filenum), file_full_path
 
 
