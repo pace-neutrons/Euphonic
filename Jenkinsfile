@@ -93,6 +93,7 @@ pipeline {
                                     python -m pip install -r tests_and_analysis/jenkins_requirements.txt &&
                                     export CC=gcc
                                 """
+                                sh "printenv"
                             }
                         }
 
