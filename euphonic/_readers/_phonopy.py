@@ -294,7 +294,8 @@ def convert_eigenvector_phases(phonon_dict):
     return np.reshape(eigvecs, (n_qpts, 3*n_ions, n_ions, 3))
 
 
-def _extract_force_constants(fc_file, n_ions, n_cells, summary_name):
+def _extract_force_constants(fc_file, n_ions, n_cells, summary_name,
+                             cell_origins_map=None):
     """
     Reads force constants from a Phonopy FORCE_CONSTANTS file
 
@@ -343,10 +344,11 @@ def _extract_force_constants(fc_file, n_ions, n_cells, summary_name):
         else:
             fc = np.concatenate([fc, data])
 
-    return _reshape_fc(fc, n_ions, n_cells)
+    return _reshape_fc(fc, n_ions, n_cells, cell_origins_map)
 
 
-def _extract_force_constants_hdf5(fc_object, n_ions, n_cells, summary_name):
+def _extract_force_constants_hdf5(fc_object, n_ions, n_cells, summary_name,
+                                  cell_origins_map=None):
     fc = fc_object['force_constants'][:]
     _check_fc_shape(fc.shape, n_ions, n_cells, fc_object.filename, summary_name)
     p2s_map = list(fc_object['p2s_map']) # 'primitive' to supercell indexing
@@ -354,7 +356,7 @@ def _extract_force_constants_hdf5(fc_object, n_ions, n_cells, summary_name):
     if fc.shape[0] == fc.shape[1]: # FULL FC, convert down to COMPACT
         fc = fc[p2s_map, :, :, :]
     fc_unfolded = fc.reshape(n_ions*n_ions*n_cells, 3, 3)
-    return _reshape_fc(fc_unfolded, n_ions, n_cells)
+    return _reshape_fc(fc_unfolded, n_ions, n_cells, cell_origins_map)
 
 
 def _extract_force_constants_summary(summary_object, cell_origins_map=None):
@@ -505,8 +507,8 @@ def _extract_summary(summary_object, fc_extract=False):
     summary_dict : dict
         A dict with the following keys: n_ions, cell_vec, ion_r, ion_type,
         ion_mass, ulength, umass. Also optionally has the following keys:
-        sc_matrix, n_cells_in_sc, cell_origins, force_constants, ufc, born,
-        dielectric
+        sc_matrix, n_cells_in_sc, cell_origins, cell_origins_map,
+        force_constants, ufc, born, dielectric
     """
 
     if 'primitive_matrix' in summary_object.keys():
@@ -584,6 +586,7 @@ def _extract_summary(summary_object, fc_extract=False):
         summary_dict['sc_matrix'] = sc_matrix
         summary_dict['n_cells_in_sc'] = n_cells_in_sc
         summary_dict['cell_origins'] = cell_origins[:n_cells_in_sc]
+        summary_dict['cell_origins_map'] = cell_origins_map
 
         summary_dict['ufc'] = pu['force_constants'].replace(
             'Angstrom', 'angstrom')
@@ -694,12 +697,14 @@ def _read_interpolation_data(path='.', summary_name='phonopy.yaml',
         if fc_format == 'phonopy':
             with open(fc_pathname, 'r') as fc_file:
                 summary_dict['force_constants'] = _extract_force_constants(
-                    fc_file, n_ions, n_cells, summary_pathname)
+                    fc_file, n_ions, n_cells, summary_pathname,
+                    summary_dict['cell_origins_map'])
         elif fc_format in 'hdf5':
             with h5py.File(fc_pathname, 'r') as fc_file:
                 summary_dict[
                     'force_constants'] =  _extract_force_constants_hdf5(
-                        fc_file, n_ions, n_cells, summary_pathname)
+                        fc_file, n_ions, n_cells, summary_pathname,
+                        summary_dict['cell_origins_map'])
         else:
             raise Exception((f'Force constants file format {fc_format} of '
                              f'{fc_name} is not recognised'))
