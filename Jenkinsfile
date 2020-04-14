@@ -52,12 +52,12 @@ def getGithubCommitAuthorEmail(){
             } else {
                 email = powershell script: """
                     [Net.ServicePointManager]::SecurityProtocol = "tls12, tls11, tls"
-                    \$ email = \
+                    \$email = \
                         Invoke-RestMethod -URI "https://api.github.com/repos/pace-neutrons/Euphonic/commits/${env.GIT_COMMIT}" \
                             -Headers @{Authorization = "token ${api_token}"} \
                             -Method 'GET' | ConvertFrom-JSON | select -expand commit | select -expand author | \
                             select email
-
+                    echo \$email
                   """, returnStdout: true
             }
         }
