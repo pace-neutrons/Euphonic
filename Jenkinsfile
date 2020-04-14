@@ -42,23 +42,31 @@ def getGithubCommitAuthorEmail(){
             if (isUnix()) {
                 email = sh script: """
                     jq --version &&
-                    payload = curl -H "Authorization: token ${api_token}" --request GET \
-                        https://api.github.com/repos/pace-neutrons/Euphonic/commits/${env.GIT_COMMIT}
-                    echo \$payload
-                    email = \$payload | jq -r ".commit.author.email" &&
-                    echo \$email
+                    payload=curl -H "Authorization: token ${api_token}" --request GET \
+                        https://api.github.com/repos/pace-neutrons/Euphonic/commits/${env.GIT_COMMIT} &&
+                    echo \$payload &&
+                    author_url=\$payload | jq -r ".author.url" &&
+                    emails=curl -H "Authorization: token ${api_token}" --request GET \
+                        \$author_url/emails &&
+                    echo \$emails &&
+                    email=\$emails | jq -r ".[0].email"
                 """, returnStdout: true
             } else {
                 email = powershell script: """
                     [Net.ServicePointManager]::SecurityProtocol = "tls12, tls11, tls"
-                    \$payload = \
-                        Invoke-RestMethod -URI "https://api.github.com/repos/pace-neutrons/Euphonic/commits/${env.GIT_COMMIT}" \
-                            -Headers @{Authorization = "token ${api_token}"} \
-                            -Method 'GET'
+                    \$payload = Invoke-RestMethod \
+                        -URI "https://api.github.com/repos/pace-neutrons/Euphonic/commits/${env.GIT_COMMIT}" \
+                        -Headers @{Authorization = "token ${api_token}"} \
+                        -Method 'GET'
                     echo \$payload
-                    \$email = \$payload | ConvertFrom-JSON | select -expand commit | select -expand author | \
+                    \$author_url = \$payload | ConvertFrom-JSON | select -expand author | select url | \
                             select email
-                    echo \$email
+                    echo \$author_url
+                    \$author_payload = Invoke-RestMethod \
+                        -URI "\$author_url/emails" \
+                        -Headers @{Authorization = "token ${api_token}"} \
+                        -Method 'GET'
+                    \$email =\$author_payload[0] | select email
                   """, returnStdout: true
             }
         }
