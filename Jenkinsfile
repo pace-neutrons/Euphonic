@@ -200,9 +200,9 @@ pipeline {
 
                         stage("Notify") {
                             steps {
+                                getGithubCommitAuthorEmail()
                                 setGitHubBuildStatus("pending", "Starting", "Windows")
                                 echo "Branch: ${env.JOB_BASE_NAME}"
-                                bat 'set'
                             }
                         }
 
