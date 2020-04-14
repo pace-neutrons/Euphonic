@@ -46,15 +46,6 @@ class MockTime:
         return self.last_time
 
 
-class MockInterpolationData:
-
-    def _dipole_correction_init(self, *args, **kwargs):
-        pass
-
-    def _calculate_dipole_correction(self, *args, **kwargs):
-        pass
-
-
 @pytest.mark.unit
 class TestUnit:
 
@@ -63,7 +54,7 @@ class TestUnit:
     def call_with_params_and_quartz_unit(self, request, monkeypatch):
         # Mock getting the data from a castep file
         interpolation_data_mock = Mock()
-        monkeypatch.setattr(InterpolationData, "from_castep", lambda *args, **kwargs: MockInterpolationData())
+        monkeypatch.setattr(InterpolationData, "from_castep", lambda *args, **kwargs: Mock())
 
         # Simulate time
         time_manager: MockTime = MockTime()
