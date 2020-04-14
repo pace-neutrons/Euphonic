@@ -2,7 +2,7 @@ import os
 import warnings
 import numpy as np
 from euphonic import ureg
-from euphonic.util import reciprocal_lattice, is_gamma
+from euphonic.util import reciprocal_lattice, is_gamma, get_all_origins
 try:
     import yaml
     import h5py
@@ -357,7 +357,7 @@ def _extract_force_constants_hdf5(fc_object, n_ions, n_cells, summary_name):
     return _reshape_fc(fc_unfolded, n_ions, n_cells)
 
 
-def _extract_force_constants_summary(summary_object):
+def _extract_force_constants_summary(summary_object, cell_origins_map=None):
     """
     Get force constants from phonopy yaml summary file.
 
@@ -365,6 +365,11 @@ def _extract_force_constants_summary(summary_object):
     ----------
     summary_object : dict
         Dict containing contents of phonopy.yaml
+    cell_origins_map : (n_atoms, n_cells) int ndarray, optional, default None
+        In the case of of non-diagonal supercell_matrices, the cell origins are
+        not the same for each atom. This is a map of the equivalent cell origins
+        for each atom, which is required to reorder the force constants matrix
+        so that all atoms in the unit cell share equivalent origins.
 
     Returns
     ----------
@@ -385,15 +390,37 @@ def _extract_force_constants_summary(summary_object):
         fc = np.array(fc_entry['elements']).reshape(
                 [n_ions*n_cells, n_ions, n_cells, 3, 3])[p2s_map, :, :, :, :]
 
-    return _reshape_fc(fc, n_ions, n_cells)
+    fc = _reshape_fc(fc, n_ions, n_cells, cell_origins_map)
+    return fc
 
+def _reshape_fc(fc, n_ions, n_cells, cell_origins_map=None):
+    """
+    Reshape force constants from Phonopy convention to Euphonic convention
 
-def _reshape_fc(fc, n_ions, n_cells):
+    Parameters
+    ----------
+    fc : (n_ions, n_cells, n_ions, 3, 3) float ndarray
+        Force constants matrix in Phonopy shape
+    n_ions : int
+        Number of ions in the unit cell
+    n_cells : int
+        Number of cells in the supercell
+    cell_origins_map : (n_atoms, n_cells) int ndarray, optional, default None
+        In the case of of non-diagonal supercell_matrices, the cell origins are
+        not the same for each atom. This is a map of the equivalent cell origins
+        for each atom, which is required to reorder the force constants matrix
+        so that all atoms in the unit cell share equivalent origins.
+
+    Returns
+    -------
+    fc : (n_cells, 3*n_ions, 3*n_ions) float ndarray
+        Force constants matrix in Euphonic shape
     """
-    Reshape force constants from Phonopy convention
-    (n_ions, n_cells_in_sc*n_ions, 3, 3) to Euphonic convention
-    (n_cells_in_sc, 3*n_ions, 3*n_ions)
-    """
+    fc = np.reshape(fc, (n_ions, n_ions, n_cells, 3, 3))
+    if cell_origins_map is not None:
+        for i in range(n_ions):
+         fc = fc[:, :, cell_origins_map[i], :, :]
+
     return np.reshape(np.transpose(
         np.reshape(fc, (n_ions, n_ions, n_cells, 3, 3)),
         axes=[2,0,3,1,4]), (n_cells, 3*n_ions, 3*n_ions))
@@ -510,6 +537,7 @@ def _extract_summary(summary_object, fc_extract=False):
                 'ij,jk->ik',
                 np.rint(np.linalg.inv(p_matrix)).astype(np.int32),
                 sc_matrix)
+
         _, _, sion_r, _, _ = _extract_crystal_data(summary_object['supercell'])
         n_cells_in_sc = int(np.rint(np.absolute(np.linalg.det(sc_matrix))))
         # Coords of supercell ions in fractional coords of the unit/prim cell
@@ -517,15 +545,42 @@ def _extract_summary(summary_object, fc_extract=False):
         cell_origins = np.rint((
             sc_ion_r_ucell
             - np.repeat(ion_r, n_cells_in_sc, axis=0))).astype(np.int32)
-        # Can't currently support non-diagonal supercells (i.e. when the cell
-        # origins aren't the same for each ion)
+        # For non-diagonal supercells, cell origins aren't always the same for
+        # each atom, and the cell origins are sometimes outside the supercell.
+        # Create a mapping of cell origins for atoms 1..n onto the equivalent
+        # cell origins for atom 0, so the same cell origins can be used for all
+        # atoms
+        cell_origins_map = np.zeros((n_ions, n_cells_in_sc), dtype=np.int32)
+        # Get origins of adjacent supercells
+        sc_origins =  get_all_origins([2,2,2], min_xyz=[-1,-1,-1])
+        # Convert to unit cell fractional coordinates
+        sc_origins_prim = np.einsum('ij,jk->ik', sc_origins, sc_matrix)
         for i in range(n_ions):
-            if not np.all((
+            if np.all((
                     cell_origins[:n_cells_in_sc]
                     == cell_origins[i*n_cells_in_sc:(i+1)*n_cells_in_sc])):
-                raise Exception(('Reading Phonopy force constants with '
-                                 'non-diagonal supercells is not currently '
-                                 'supported'))
+                # If the cell origins are the same for each atom, the mapping is
+                # simple
+                cell_origins_map[i] = np.arange(n_cells_in_sc)
+            else:
+                cell_origins_i = cell_origins[
+                    i*n_cells_in_sc:(i+1)*n_cells_in_sc]
+                # Find equivalent cell origin in all surrounding supercells
+                origin_in_scs = (cell_origins_i[:, np.newaxis, :]
+                                 - sc_origins_prim[np.newaxis, :, :])
+                for nc in range(n_cells_in_sc):
+                    # Determine which equivalent cell origin matches the cell
+                    # origins for atom 0
+                    co_map = np.where(
+                        (origin_in_scs == cell_origins[nc]).all(axis=2))[0]
+                    if len(co_map) == 0:
+                        raise Exception(('Couldn\'t determine cell origins for'
+                                         'force constants matrix'))
+                    elif len(co_map) > 1:
+                        raise Exception(('Multiple possible cell origins found'
+                                         'for force constants matrix'))
+                    cell_origins_map[i, co_map[0]] = nc
+
         summary_dict['sc_matrix'] = sc_matrix
         summary_dict['n_cells_in_sc'] = n_cells_in_sc
         summary_dict['cell_origins'] = cell_origins[:n_cells_in_sc]
@@ -534,7 +589,7 @@ def _extract_summary(summary_object, fc_extract=False):
             'Angstrom', 'angstrom')
         try:
             summary_dict['force_constants'] = _extract_force_constants_summary(
-                summary_object)
+                summary_object, cell_origins_map)
         except KeyError:
             pass
 

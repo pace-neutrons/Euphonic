@@ -173,6 +173,34 @@ def bose_factor(x, T):
     return bose
 
 
+def get_all_origins(max_xyz, min_xyz=[0, 0, 0], step=1):
+    """
+    Given the max/min number of cells in each direction, get a list of all
+    possible cell origins
+
+    Parameters
+    ----------
+    max_xyz : (3,) int ndarray
+        The number of cells to count to in each direction
+    min_xyz : (3,) int ndarray, optional, default [0,0,0]
+        The cell number to count from in each direction
+    step : integer, optional, default 1
+        The step between cells
+
+    Returns
+    -------
+    origins : (prod(max_xyz - min_xyz)/step, 3) int ndarray
+        The cell origins
+    """
+    diff = np.absolute(np.subtract(max_xyz, min_xyz))
+    nx = np.repeat(range(min_xyz[0], max_xyz[0], step), diff[1]*diff[2])
+    ny = np.repeat(np.tile(range(min_xyz[1], max_xyz[1], step), diff[0]),
+                   diff[2])
+    nz = np.tile(range(min_xyz[2], max_xyz[2], step), diff[0]*diff[1])
+
+    return np.column_stack((nx, ny, nz))
+
+
 def _ensure_contiguous_attrs(obj, required_attrs, opt_attrs=[]):
     """
     Make sure all listed attributes of obj are C Contiguous and of the correct
