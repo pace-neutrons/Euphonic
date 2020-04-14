@@ -35,6 +35,30 @@ def setGitHubBuildStatus(String status, String message, String context) {
     }
 }
 
+def getGithubCommitAuthorEmail(){
+    script {
+        withCredentials([string(credentialsId: 'Euphonic_GitHub_API_Token',
+                variable: 'api_token')]) {
+            //if (isUnix()) {
+            sh """
+                module load python/3.6
+                email = curl -H "Authorization: token ${api_token}" --request GET \
+                    https://api.github.com/repos/pace-neutrons/Euphonic/commits/${env.GIT_COMMIT} | \
+                    | jq -r ".commit.author.email"
+                echo $email
+            """
+            /* } else {
+                powershell """
+                    [Net.ServicePointManager]::SecurityProtocol = "tls12, tls11, tls"
+                    Invoke-RestMethod -URI "https://api.github.com/repos/pace-neutrons/Euphonic/commits/${env.GIT_COMMIT}" \
+                      -Headers @{Authorization = "token ${api_token}"} \
+                      -Method 'GET' \
+                  """
+            } */
+        }
+    }
+}
+
 pipeline {
 
     agent none
@@ -74,7 +98,7 @@ pipeline {
 
                         stage("Notify") {
                             steps {
-                                sh "printenv"
+                                getGithubCommitAuthorEmail()
                                 setGitHubBuildStatus("pending", "Starting", "Linux")
                                 echo "Branch: ${env.JOB_BASE_NAME}"
                             }
@@ -93,7 +117,7 @@ pipeline {
                                     python -m pip install -r tests_and_analysis/jenkins_requirements.txt &&
                                     export CC=gcc
                                 """
-                                sh "printenv"
+                                getGithubCommitAuthorEmail()
                             }
                         }
 
