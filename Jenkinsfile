@@ -42,11 +42,11 @@ def getGithubCommitAuthorEmail(){
             if (isUnix()) {
                 email = sh script: """
                     jq --version &&
-                    payload=$(curl -H "Authorization: token ${api_token}" --request GET \
+                    payload=\$(curl -H "Authorization: token ${api_token}" --request GET \
                         https://api.github.com/repos/pace-neutrons/Euphonic/commits/${env.GIT_COMMIT}) &&
                     echo \$payload &&
                     author_url=\$payload | jq -r ".author.url" &&
-                    emails=$(curl -H "Authorization: token ${api_token}" --request GET \$author_url/emails) &&
+                    emails=\$(curl -H "Authorization: token ${api_token}" --request GET \$author_url/emails) &&
                     echo \$emails &&
                     email=\$emails | jq -r ".[0].email"
                 """, returnStdout: true
