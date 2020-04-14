@@ -14,6 +14,9 @@ To use this functionality, ensure you have installed the optional ``pyyaml`` and
 InterpolationData
 -----------------
 
+Note: Currently, reading force constants from Phonopy is not supported for
+non-diagonal supercell or primitive matrices
+
 When using Phonopy with Euphonic, it is recommended that all the required data
 (force constants, crystal structure, born charges if applicable) be collected
 in a single ``phonopy.yaml`` file. This can be done by running Phonopy with the
@@ -44,17 +47,13 @@ charges can also be read from Phonopy plaintext or hdf5 files by specifying the
                                            fc_name='force_constants.hdf5',
                                            born_name='BORN')
 
-Currently, Phonopy's ``PRIMITIVE_AXIS`` setting is not supported when reading
-force constants. If you wish to interpolate using the primitive cell, please set
-this as your unit cell when running Phonopy.
-
 .. autofunction:: euphonic.data.interpolation.InterpolationData.from_phonopy
 
 PhononData
 ----------
 
-Note that Phonopy should be run with the ``--eigvecs`` flag, or
-``EIGENVECTORS = .TRUE.`` for use with Euphonic.
+Phonopy should be run with the ``--eigvecs`` flag, or ``EIGENVECTORS = .TRUE.``
+for use with Euphonic.
 
 Using ``PhononData.from_phonopy`` Euphonic can read frequencies and eigenvectors
 from Phonopy files with the following default names:

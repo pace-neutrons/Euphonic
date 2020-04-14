@@ -483,17 +483,8 @@ def _extract_summary(summary_object, fc_extract=False):
     """
 
     if 'primitive_matrix' in summary_object.keys():
-        if fc_extract:
-            raise Exception(('Reading Phonopy force constants with '
-                             'PRIMITIVE_AXIS set is not currently supported. If'
-                             ' you wish to interpolate using the primitive cell'
-                             ', please rerun Phonopy using the primitive cell '
-                             'as your unit cell.'))
-        else:
-            # Primitive cell has been used to calculate frequencies, account for
-            # this and ensure correct cell is returned
-            cell_vec, n_ions, ion_r, ion_mass, ion_type = _extract_crystal_data(
-                summary_object['primitive_cell'])
+        cell_vec, n_ions, ion_r, ion_mass, ion_type = _extract_crystal_data(
+            summary_object['primitive_cell'])
     else:
         cell_vec, n_ions, ion_r, ion_mass, ion_type = _extract_crystal_data(
             summary_object['unit_cell'])
@@ -511,16 +502,33 @@ def _extract_summary(summary_object, fc_extract=False):
 
     if fc_extract:
         sc_matrix = np.array(summary_object['supercell_matrix'])
+        if 'primitive_matrix' in summary_object.keys():
+            p_matrix = np.array(summary_object['primitive_matrix'])
+            sc_matrix = np.array(summary_object['supercell_matrix'])
+            # Matrix to convert from primitive to supercell
+            sc_matrix = np.einsum(
+                'ij,jk->ik',
+                np.rint(np.linalg.inv(p_matrix)).astype(np.int32),
+                sc_matrix)
         _, _, sion_r, _, _ = _extract_crystal_data(summary_object['supercell'])
         n_cells_in_sc = int(np.rint(np.absolute(np.linalg.det(sc_matrix))))
+        # Coords of supercell ions in fractional coords of the unit/prim cell
+        sc_ion_r_ucell = np.einsum('ij,jk->ik', sion_r, sc_matrix)
+        cell_origins = np.rint((
+            sc_ion_r_ucell
+            - np.repeat(ion_r, n_cells_in_sc, axis=0))).astype(np.int32)
+        # Can't currently support non-diagonal supercells (i.e. when the cell
+        # origins aren't the same for each ion)
+        for i in range(n_ions):
+            if not np.all((
+                    cell_origins[:n_cells_in_sc]
+                    == cell_origins[i*n_cells_in_sc:(i+1)*n_cells_in_sc])):
+                raise Exception(('Reading Phonopy force constants with '
+                                 'non-diagonal supercells is not currently '
+                                 'supported'))
         summary_dict['sc_matrix'] = sc_matrix
         summary_dict['n_cells_in_sc'] = n_cells_in_sc
-
-        # Coordinates of supercell ions in fractional coords of the unit cell
-        sc_ion_r_ucell = np.einsum('ij,jk->ik', sion_r, sc_matrix)
-        cell_origins = np.rint(
-            sc_ion_r_ucell[:n_cells_in_sc] - ion_r[0]).astype(np.int32)
-        summary_dict['cell_origins'] = cell_origins
+        summary_dict['cell_origins'] = cell_origins[:n_cells_in_sc]
 
         summary_dict['ufc'] = pu['force_constants'].replace(
             'Angstrom', 'angstrom')
