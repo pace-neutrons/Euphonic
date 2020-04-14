@@ -1,15 +1,15 @@
 import pytest
 import os
+import numpy as np
 # Required for mocking
 import matplotlib.pyplot
 from unittest.mock import Mock
 
 from ..utils import mock_has_method_call
-from .utils import get_phonon_file, get_dispersion_data_filepath_prefix, iter_dispersion_data_files
+from .utils import get_phonon_file, iter_dispersion_data_files
 
 import scripts.dispersion
 import scripts.utils
-import numpy as np
 
 
 @pytest.mark.unit

@@ -1,14 +1,15 @@
 import pytest
 import os
+import numpy as np
 # Required for mocking
 import matplotlib.pyplot
 from unittest.mock import Mock
-import numpy as np
 
 from ..utils import mock_has_method_call
 from .utils import get_phonon_file, iter_dos_data_files
 
 import scripts.dos
+import scripts.utils
 
 
 @pytest.mark.unit

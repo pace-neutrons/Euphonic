@@ -52,7 +52,7 @@ def get_dispersion_data_filepath_prefix() -> str:
     return _get_dos_or_dispersion_data_filepath_prefix(get_dispersion_data_folder())
 
 
-def get_dos_data_filepath_prefix():
+def get_dos_data_filepath_prefix() -> str:
     """
     Returns
     -------

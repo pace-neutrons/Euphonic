@@ -1,12 +1,14 @@
+import pytest
 import os
 import math
+# Required for mocking
 from random import random
-import pytest
+import time
+from unittest.mock import Mock
+
 from euphonic.data.interpolation import InterpolationData
 from scripts.optimise_eta import calculate_optimum_eta
 from tests_and_analysis.test.utils import get_data_path
-import time
-from unittest.mock import Mock
 
 
 quartz_castep_bin = os.path.join(get_data_path(), "interpolation", "quartz", "quartz")

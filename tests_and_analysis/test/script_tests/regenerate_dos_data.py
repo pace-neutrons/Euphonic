@@ -9,7 +9,7 @@ def regenerate_dos_data(_):
     # Generate current figure for us to retrieve with gcf
     scripts.dos.main([get_phonon_file()])
 
-    filepath_prefix = get_dos_data_filepath_prefix()
+    filepath_prefix: str = get_dos_data_filepath_prefix()
 
     # Retrieve with gcf and write to file
     write_plot_to_file_for_regression_testing(filepath_prefix)
