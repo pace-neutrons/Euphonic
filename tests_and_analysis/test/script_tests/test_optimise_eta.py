@@ -87,7 +87,7 @@ class TestUnit:
 
 
 @pytest.mark.integration
-class TestIntegration:
+class TestRegression:
 
     @pytest.fixture
     def call_with_defaults_and_quartz_integration(self):
@@ -97,6 +97,10 @@ class TestIntegration:
     def test_optimal_is_0_75(self, call_with_defaults_and_quartz_integration):
         optimal_eta = call_with_defaults_and_quartz_integration[0]
         assert optimal_eta == 0.75
+
+
+@pytest.mark.integration
+class TestIntegration:
 
     # Run the fixture for multiple permutations of arguments
     @pytest.fixture(params=SharedCode.get_calculate_optimum_eta_kwargs())

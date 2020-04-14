@@ -3,12 +3,12 @@ import os
 # Required for mocking
 import matplotlib.pyplot
 from unittest.mock import Mock
+import numpy as np
 
 from ..utils import mock_has_method_call
-from .utils import get_phonon_file
+from .utils import get_phonon_file, iter_dos_data_files
 
-import scripts
-import pint
+import scripts.dos
 
 
 @pytest.mark.unit
@@ -98,3 +98,22 @@ class TestUnit:
         assert scripts.dos.output_grace.call_count == 1, \
             "When specifying the -grace function, the euphonic output_grace function should be called"
 
+
+@pytest.mark.integration
+class TestRegression:
+
+    @pytest.fixture
+    def inject_mocks(self, mocker):
+        # Prevent calls to show so we can get the current figure using gcf()
+        mocker.patch("matplotlib.pyplot.show")
+
+        mocker.resetall()
+
+    def test_plots_produce_expected_xydata(self, inject_mocks):
+        scripts.dos.main([get_phonon_file()])
+
+        lines = matplotlib.pyplot.gcf().axes[0].lines
+
+        for filenum, file in iter_dos_data_files():
+            file_contents = np.genfromtxt(file, delimiter=",")
+            assert np.array_equal(file_contents, lines[filenum].get_xydata().T)

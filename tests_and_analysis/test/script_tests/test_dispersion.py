@@ -5,9 +5,11 @@ import matplotlib.pyplot
 from unittest.mock import Mock
 
 from ..utils import mock_has_method_call
-from .utils import get_phonon_file
+from .utils import get_phonon_file, get_dispersion_data_filepath_prefix, iter_dispersion_data_files
 
-import scripts
+import scripts.dispersion
+import scripts.utils
+import numpy as np
 
 
 @pytest.mark.unit
@@ -95,3 +97,23 @@ class TestUnit:
         units = "meV"
         scripts.dispersion.main([get_phonon_file(), "-units={}".format(units)])
         assert mock_has_method_call(inject_mocks["phonon_mock"], "convert_e_units", units)
+
+
+@pytest.mark.integration
+class TestRegression:
+
+    @pytest.fixture
+    def inject_mocks(self, mocker):
+        # Prevent calls to show so we can get the current figure using gcf()
+        mocker.patch("matplotlib.pyplot.show")
+
+        mocker.resetall()
+
+    def test_plots_produce_expected_xydata(self, inject_mocks):
+        scripts.dispersion.main([get_phonon_file()])
+
+        lines = matplotlib.pyplot.gcf().axes[0].lines
+
+        for filenum, file in iter_dispersion_data_files():
+            file_contents = np.genfromtxt(file, delimiter=",")
+            assert np.array_equal(file_contents, lines[filenum].get_xydata().T)
