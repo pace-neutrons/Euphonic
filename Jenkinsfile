@@ -53,7 +53,7 @@ def getGithubCommitAuthorEmail(){
                     \$commit_payload = Invoke-RestMethod \
                         -URI "https://api.github.com/repos/pace-neutrons/Euphonic/commits/${env.GIT_COMMIT}" \
                         -Headers @{Authorization = "token ${api_token}"} \
-                        -Method 'GET' | ConvertFrom-JSON
+                        -Method 'GET'
                     echo \$commit_payload
                     \$email = \$commit_payload.commit.author.email
                     echo \$email
