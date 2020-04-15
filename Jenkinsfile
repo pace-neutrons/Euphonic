@@ -35,34 +35,6 @@ def setGitHubBuildStatus(String status, String message, String context) {
     }
 }
 
-def getGithubCommitAuthorEmail(){
-    script {
-        withCredentials([string(credentialsId: 'Euphonic_GitHub_API_Token',
-                variable: 'api_token')]) {
-            if (isUnix()) {
-                email = sh script: """
-                    payload=\$(curl --silent -H "Authorization: token ${api_token}" --request GET \
-                        https://api.github.com/repos/pace-neutrons/Euphonic/commits/${env.GIT_COMMIT} > /dev/null) &&
-                    email=\$payload | jq -r ".commit.author.email" &&
-                    echo \$email
-                """, returnStdout: true
-            } else {
-                email = powershell script: """
-                    [Net.ServicePointManager]::SecurityProtocol = "tls12, tls11, tls"
-                    \$commit_payload = Invoke-RestMethod \
-                        -URI "https://api.github.com/repos/pace-neutrons/Euphonic/commits/${env.GIT_COMMIT}" \
-                        -Headers @{Authorization = "token ${api_token}"} \
-                        -Method 'GET'
-                    echo \$commit_payload
-                    \$email = \$commit_payload.commit.author.email
-                    echo \$email
-                  """, returnStdout: true
-            }
-        }
-    }
-    return email.trim()
-}
-
 pipeline {
 
     agent none
@@ -88,6 +60,10 @@ pipeline {
         pollSCM('')
     }
 
+    environment {
+        GITHUB_COMMIT_AUTHOR_EMAIL = sh(script: 'git --no-pager show -s --format=\'%ae\'', returnStdout: true).trim()
+    }
+
     stages {
 
         stage("Parallel environments") {
@@ -97,6 +73,10 @@ pipeline {
                 stage("UNIX environment") {
 
                     agent { label "sl7" }
+
+                    environment {
+                        CC = 'gcc'
+                    }
 
                     stages {
 
@@ -122,7 +102,6 @@ pipeline {
                                     conda activate py &&
                                     python -m pip install --upgrade --user pip &&
                                     python -m pip install -r tests_and_analysis/jenkins_requirements.txt &&
-                                    export CC=gcc
                                 """
                             }
                         }
@@ -259,6 +238,11 @@ pipeline {
 
                         unsuccessful {
                             setGitHubBuildStatus("failure", "Unsuccessful", "Windows")
+                            mail (
+                                to: "${env.GITHUB_COMMIT_AUTHOR_EMAIL}",
+                                subject: "Failed pipeline: ${env.JOB_BASE_NAME}",
+                                body: "See ${env.BUILD_URL}"
+                            )
                         }
 
                         cleanup {
