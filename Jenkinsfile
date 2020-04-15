@@ -41,9 +41,8 @@ def getGithubCommitAuthorEmail(){
                 variable: 'api_token')]) {
             if (isUnix()) {
                 email = sh script: """
-                    jq --version &&
-                    payload=\$(curl -H "Authorization: token ${api_token}" --request GET \
-                        https://api.github.com/repos/pace-neutrons/Euphonic/commits/${env.GIT_COMMIT}) &&
+                    payload=\$(curl --silent -H "Authorization: token ${api_token}" --request GET \
+                        https://api.github.com/repos/pace-neutrons/Euphonic/commits/${env.GIT_COMMIT} > /dev/null) &&
                     email=\$payload | jq -r ".commit.author.email" &&
                     echo \$email
                 """, returnStdout: true
@@ -103,7 +102,8 @@ pipeline {
 
                         stage("Notify") {
                             steps {
-                                getGithubCommitAuthorEmail()
+                                def email = getGithubCommitAuthorEmail()
+                                echo "$email"
                                 setGitHubBuildStatus("pending", "Starting", "Linux")
                                 echo "Branch: ${env.JOB_BASE_NAME}"
                             }
@@ -122,7 +122,6 @@ pipeline {
                                     python -m pip install -r tests_and_analysis/jenkins_requirements.txt &&
                                     export CC=gcc
                                 """
-                                getGithubCommitAuthorEmail()
                             }
                         }
 
@@ -198,7 +197,8 @@ pipeline {
 
                         stage("Notify") {
                             steps {
-                                getGithubCommitAuthorEmail()
+                                def email = getGithubCommitAuthorEmail()
+                                echo "$email"
                                 setGitHubBuildStatus("pending", "Starting", "Windows")
                                 echo "Branch: ${env.JOB_BASE_NAME}"
                             }
