@@ -44,28 +44,19 @@ def getGithubCommitAuthorEmail(){
                     jq --version &&
                     payload=\$(curl -H "Authorization: token ${api_token}" --request GET \
                         https://api.github.com/repos/pace-neutrons/Euphonic/commits/${env.GIT_COMMIT}) &&
-                    echo \$payload &&
-                    author_url=\$payload | jq -r ".author.url" &&
-                    emails=\$(curl -H "Authorization: token ${api_token}" --request GET \$author_url/emails) &&
-                    echo \$emails &&
-                    email=\$emails | jq -r ".[0].email"
+                    email=\$payload | jq -r ".commit.author.email" &&
+                    echo \$email
                 """, returnStdout: true
             } else {
                 email = powershell script: """
                     [Net.ServicePointManager]::SecurityProtocol = "tls12, tls11, tls"
-                    \$payload = Invoke-RestMethod \
+                    \$commit_payload = Invoke-RestMethod \
                         -URI "https://api.github.com/repos/pace-neutrons/Euphonic/commits/${env.GIT_COMMIT}" \
                         -Headers @{Authorization = "token ${api_token}"} \
-                        -Method 'GET'
-                    echo \$payload
-                    \$author_url = \$payload | ConvertFrom-JSON | select -expand author | select url | \
-                            select email
-                    echo \$author_url
-                    \$author_payload = Invoke-RestMethod \
-                        -URI "\$author_url/emails" \
-                        -Headers @{Authorization = "token ${api_token}"} \
-                        -Method 'GET'
-                    \$email =\$author_payload[0] | select email
+                        -Method 'GET' | ConvertFrom-JSON
+                    echo \$commit_payload
+                    \$email = \$commit_payload.commit.author.email
+                    echo \$email
                   """, returnStdout: true
             }
         }
