@@ -6,7 +6,7 @@ import scipy
 from scipy.linalg.lapack import zheev
 from scipy.special import erfc
 from euphonic import ureg
-from euphonic.util import is_gamma, mp_grid
+from euphonic.util import is_gamma, mp_grid, get_all_origins
 from euphonic.data.phonon import PhononData
 from euphonic._readers import _castep
 from euphonic._readers import _phonopy
@@ -342,7 +342,7 @@ class InterpolationData(PhononData):
         # Get a list of all the unique supercell image origins and cell origins
         # in x, y, z and how to rebuild them to minimise expensive phase
         # calculations later
-        sc_image_r = self._get_all_origins(
+        sc_image_r = get_all_origins(
             np.repeat(lim, 3) + 1, min_xyz=-np.repeat(lim, 3))
         sc_offsets = np.einsum('ji,kj->ki', self.sc_matrix,
                                sc_image_r).astype(np.int32)
@@ -912,9 +912,9 @@ class InterpolationData(PhononData):
         # the xz plane has (2*n + 1) - 2 rows in z, rather than
         # (2*n + 1). The yz plane also has (2*n + 1) - 2 rows in z and
         # (2*n + 1) - 2 columns in y
-        xy = self._get_all_origins([n+1, n+1, 1], min_xyz=[-n, -n, 0])
-        xz = self._get_all_origins([n+1, 1, n], min_xyz=[-n, 0, -n+1])
-        yz = self._get_all_origins([1, n, n], min_xyz=[0, -n+1, -n+1])
+        xy = get_all_origins([n+1, n+1, 1], min_xyz=[-n, -n, 0])
+        xz = get_all_origins([n+1, 1, n], min_xyz=[-n, 0, -n+1])
+        yz = get_all_origins([1, n, n], min_xyz=[0, -n+1, -n+1])
 
         # Offset each plane by n and -n to get the 6 planes that make up the
         # shell
@@ -930,33 +930,6 @@ class InterpolationData(PhononData):
             origins[io+i*len(yz):io+(i+1)*len(yz), 0] = ni
 
         return origins
-
-    def _get_all_origins(self, max_xyz, min_xyz=[0, 0, 0], step=1):
-        """
-        Given the max/min number of cells in each direction, get a list of all
-        possible cell origins
-
-        Parameters
-        ----------
-        max_xyz : (3,) int ndarray
-            The number of cells to count to in each direction
-        min_xyz : (3,) int ndarray, optional, default [0,0,0]
-            The cell number to count from in each direction
-        step : integer, optional, default 1
-            The step between cells
-
-        Returns
-        -------
-        origins : (prod(max_xyz - min_xyz)/step, 3) int ndarray
-            The cell origins
-        """
-        diff = np.absolute(np.subtract(max_xyz, min_xyz))
-        nx = np.repeat(range(min_xyz[0], max_xyz[0], step), diff[1]*diff[2])
-        ny = np.repeat(np.tile(range(min_xyz[1], max_xyz[1], step), diff[0]),
-                       diff[2])
-        nz = np.tile(range(min_xyz[2], max_xyz[2], step), diff[0]*diff[1])
-
-        return np.column_stack((nx, ny, nz))
 
     def _enforce_realspace_asr(self):
         """
@@ -1205,7 +1178,7 @@ class InterpolationData(PhononData):
         ws_list_norm = ws_list[1:]*inv_ws_sq[:, ax]
 
         # Get Cartesian coords of supercell images and ions in supercell
-        sc_image_r = self._get_all_origins(
+        sc_image_r = get_all_origins(
             np.repeat(lim, 3) + 1, min_xyz=-np.repeat(lim, 3))
         sc_image_cart = np.einsum('ij,jk->ik', sc_image_r, sc_vecs)
         sc_ion_r = np.einsum('ijk,kl->ijl',
