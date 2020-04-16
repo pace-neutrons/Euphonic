@@ -60,10 +60,6 @@ pipeline {
         pollSCM('')
     }
 
-    environment {
-        GITHUB_COMMIT_AUTHOR_EMAIL = sh(script: 'git --no-pager show -s --format=\'%ae\'', returnStdout: true).trim()
-    }
-
     stages {
 
         stage("Parallel environments") {
@@ -238,11 +234,6 @@ pipeline {
 
                         unsuccessful {
                             setGitHubBuildStatus("failure", "Unsuccessful", "Windows")
-                            mail (
-                                to: "${env.GITHUB_COMMIT_AUTHOR_EMAIL}",
-                                subject: "Failed pipeline: ${env.JOB_BASE_NAME}",
-                                body: "See ${env.BUILD_URL}"
-                            )
                         }
 
                         cleanup {
@@ -252,6 +243,17 @@ pipeline {
                     }
                 }
             }
+        }
+    }
+
+    post {
+        unsuccessful {
+            def email = sh(script: 'git --no-pager show -s --format=\'%ae\'', returnStdout: true).trim()
+            mail (
+                to: "$email",
+                subject: "Failed pipeline: ${env.JOB_BASE_NAME}",
+                body: "See ${env.BUILD_URL}"
+            )
         }
     }
 }
