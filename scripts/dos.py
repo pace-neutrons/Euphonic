@@ -13,7 +13,7 @@ from euphonic.data.bands import BandsData
 from euphonic.plot.dos import plot_dos, output_grace
 from typing import List
 
-from .utils import load_data_from_file, get_args_and_set_up_and_down, matplotlib_save_or_show
+from euphonic.script_utils import load_data_from_file, get_args_and_set_up_and_down, matplotlib_save_or_show
 
 
 def main(params: List[str] = None):

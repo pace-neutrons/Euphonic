@@ -13,7 +13,7 @@ from typing import List
 
 from euphonic.plot.dispersion import output_grace, plot_dispersion
 
-from .utils import load_data_from_file, get_args_and_set_up_and_down, matplotlib_save_or_show
+from euphonic.script_utils import load_data_from_file, get_args_and_set_up_and_down, matplotlib_save_or_show
 
 
 def main(params: List[str] = None):

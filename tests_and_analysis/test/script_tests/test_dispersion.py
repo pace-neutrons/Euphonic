@@ -9,7 +9,7 @@ from ..utils import mock_has_method_call
 from .utils import get_phonon_file, iter_dispersion_data_files
 
 import scripts.dispersion
-import scripts.utils
+import euphonic.script_utils
 
 
 @pytest.mark.unit
@@ -19,7 +19,7 @@ class TestUnit:
     def inject_mocks(self, mocker):
         # Mock out calls to the phonon data structure
         phonon_mock = Mock()
-        mocker.patch("scripts.utils.PhononData.from_castep", return_value=phonon_mock)
+        mocker.patch("euphonic.script_utils.PhononData.from_castep", return_value=phonon_mock)
 
         # Mock out calls to the output_grace function
         mocker.patch("scripts.dispersion.output_grace")
@@ -54,8 +54,8 @@ class TestUnit:
         phonon_file = get_phonon_file()
         path, filename = os.path.split(phonon_file)
         scripts.dispersion.main([phonon_file])
-        assert scripts.utils.PhononData.from_castep.call_args[0][0] == filename.split(".")[0]
-        assert scripts.utils.PhononData.from_castep.call_args[1]["path"] == path
+        assert euphonic.script_utils.PhononData.from_castep.call_args[0][0] == filename.split(".")[0]
+        assert euphonic.script_utils.PhononData.from_castep.call_args[1]["path"] == path
 
     def test_when_called_then_data_is_converted_to_units(self, inject_mocks):
         scripts.dispersion.main([get_phonon_file()])
