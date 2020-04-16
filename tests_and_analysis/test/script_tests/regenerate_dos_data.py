@@ -17,8 +17,7 @@ def regenerate_dos_data(_):
         # Retrieve with gcf and record data
         json_data[" ".join(dos_params)] = get_current_plot_lines_xydata()
 
-    json_filepath: str = get_dos_data_file()
-    with open(json_filepath, "w+") as json_file:
+    with open(get_dos_data_file(), "w+") as json_file:
         json.dump(json_data, json_file)
 
 
