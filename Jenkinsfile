@@ -248,12 +248,14 @@ pipeline {
 
     post {
         unsuccessful {
-            def email = sh(script: 'git --no-pager show -s --format=\'%ae\'', returnStdout: true).trim()
-            mail (
-                to: "$email",
-                subject: "Failed pipeline: ${env.JOB_BASE_NAME}",
-                body: "See ${env.BUILD_URL}"
-            )
+            script {
+                def email = sh(script: 'git --no-pager show -s --format=\'%ae\'', returnStdout: true).trim()
+                mail (
+                    to: "$email",
+                    subject: "Failed pipeline: ${env.JOB_BASE_NAME}",
+                    body: "See ${env.BUILD_URL}"
+                )
+            }
         }
     }
 }
