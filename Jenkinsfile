@@ -86,10 +86,6 @@ pipeline {
 
                     agent { label "sl7" }
 
-                    environment {
-                        CC = 'gcc'
-                    }
-
                     stages {
 
                         stage("Notify") {
@@ -111,6 +107,7 @@ pipeline {
                                     conda activate py &&
                                     python -m pip install --upgrade --user pip &&
                                     python -m pip install -r tests_and_analysis/jenkins_requirements.txt &&
+                                    export CC=gcc
                                 """
                             }
                         }
