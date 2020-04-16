@@ -72,47 +72,47 @@ class TestInputReadLZO(unittest.TestCase):
 
         self.seedname = 'La2Zr2O7'
         self.path = os.path.join(get_data_path(), 'interpolation', 'LZO')
-        data = InterpolationData.from_castep(self.seedname, path=self.path)
-        self.data = data
+        fc = InterpolationData.from_castep(self.seedname, path=self.path)
+        self.fc = fc
 
     def test_n_atoms_read(self):
-        self.assertEqual(self.data.crystal.n_atoms, self.expctd_data.n_atoms)
+        self.assertEqual(self.fc.crystal.n_atoms, self.expctd_data.n_atoms)
 
     def test_cell_vectors_read(self):
-        npt.assert_allclose(self.data.crystal.cell_vectors.to('bohr').magnitude,
+        npt.assert_allclose(self.fc.crystal.cell_vectors.to('bohr').magnitude,
                             self.expctd_data.cell_vectors.to('bohr').magnitude)
 
     def test_atom_r_read(self):
-        npt.assert_allclose(self.data.crystal.atom_r, self.expctd_data.atom_r)
+        npt.assert_allclose(self.fc.crystal.atom_r, self.expctd_data.atom_r)
 
     def test_atom_type_read(self):
-        npt.assert_array_equal(self.data.crystal.atom_type,
+        npt.assert_array_equal(self.fc.crystal.atom_type,
                                self.expctd_data.atom_type)
 
     def test_atom_mass_read(self):
-        npt.assert_allclose(self.data.crystal.atom_mass.to('amu').magnitude,
+        npt.assert_allclose(self.fc.crystal.atom_mass.to('amu').magnitude,
                             self.expctd_data.atom_mass.to('amu').magnitude)
 
     def test_sc_matrix_read(self):
-        npt.assert_allclose(self.data.sc_matrix, self.expctd_data.sc_matrix)
+        npt.assert_allclose(self.fc.sc_matrix, self.expctd_data.sc_matrix)
 
     def test_n_cells_in_sc_read(self):
-        self.assertEqual(self.data.n_cells_in_sc,
+        self.assertEqual(self.fc.n_cells_in_sc,
                          self.expctd_data.n_cells_in_sc)
 
     def test_fc_mat_cell0_i0_j0_read(self):
-        npt.assert_allclose(self.data.force_constants[0, 0:3, 0:3].magnitude,
+        npt.assert_allclose(self.fc.force_constants[0, 0:3, 0:3].magnitude,
                             self.expctd_data.fc_mat_cell0_i0_j0.magnitude)
 
     def test_fc_mat_cell3_i10_j5_read(self):
         npt.assert_allclose(
-            self.data.force_constants[3, 30:33, 15:18].magnitude,
+            self.fc.force_constants[3, 30:33, 15:18].magnitude,
             self.expctd_data.fc_mat_cell3_i10_j5.magnitude)
 
     def test_fc_mat_read(self):
         expected_fc_mat = np.load(os.path.join(
             self.path, 'lzo_fc_mat_no_asr.npy'))*ureg('hartree/bohr**2')
-        npt.assert_allclose(self.data.force_constants.magnitude,
+        npt.assert_allclose(self.fc.force_constants.magnitude,
                             expected_fc_mat.magnitude)
 
 
@@ -121,8 +121,8 @@ class TestInterpolatePhononsLZO(unittest.TestCase):
     def setUp(self):
         seedname = 'La2Zr2O7'
         self.path = os.path.join(get_data_path(), 'interpolation', 'LZO')
-        data = InterpolationData.from_castep(seedname, path=self.path)
-        self.data = data
+        fc = InterpolationData.from_castep(seedname, path=self.path)
+        self.fc = fc
 
         self.qpts = np.array([[-1.00, 9.35, 3.35],
                               [-1.00, 9.00, 3.00]])
@@ -272,7 +272,7 @@ class TestInterpolatePhononsLZO(unittest.TestCase):
     def test_calculate_phases_qpt(self):
         qpt = np.array([-1, 9.35, 3.35])
 
-        sc_phases, cell_phases = self.data._calculate_phases(
+        sc_phases, cell_phases = self.fc._calculate_phases(
             qpt, self.unique_sc_offsets, self.unique_sc_i,
             self.unique_cell_origins, self.unique_cell_i)
 
@@ -287,7 +287,7 @@ class TestInterpolatePhononsLZO(unittest.TestCase):
     def test_calculate_phases_gamma_pt(self):
         qpt = np.array([0.0, 0.0, 0.0])
 
-        sc_phases, cell_phases = self.data._calculate_phases(
+        sc_phases, cell_phases = self.fc._calculate_phases(
             qpt, self.unique_sc_offsets, self.unique_sc_i,
             self.unique_cell_origins, self.unique_cell_i)
 
@@ -313,8 +313,8 @@ class TestInterpolatePhononsLZO(unittest.TestCase):
         # expctd_n_images must be reshaped to ensure tests still pass
         expctd_n_images = np.transpose(np.reshape(
             expctd_n_images, (22, 4, 22)), axes=[1, 0, 2])
-        self.data._calculate_supercell_images(lim)
-        npt.assert_equal(self.data._n_sc_images, expctd_n_images)
+        self.fc._calculate_supercell_images(lim)
+        npt.assert_equal(self.fc._n_sc_images, expctd_n_images)
 
     def test_calculate_supercell_images_sc_image_i(self):
         # Supercell image calculation limit - 2 supercells in each direction
@@ -335,50 +335,52 @@ class TestInterpolatePhononsLZO(unittest.TestCase):
         expctd_sc_image_i = np.transpose(
             np.reshape(expctd_sc_image_i, (22, 4, 22, max_n)),
             axes=[1, 0, 2, 3])
-        self.data._calculate_supercell_images(lim)
-        npt.assert_equal(self.data._sc_image_i, expctd_sc_image_i)
+        self.fc._calculate_supercell_images(lim)
+        npt.assert_equal(self.fc._sc_image_i, expctd_sc_image_i)
 
     def test_calculate_fine_phonons_no_asr(self):
-        self.data.calculate_fine_phonons(self.qpts)
-        npt.assert_allclose(self.data.freqs.to('hartree').magnitude,
+        idata = self.fc.calculate_fine_phonons(self.qpts)
+        npt.assert_allclose(idata.freqs.to('hartree').magnitude,
                             self.expctd_freqs_no_asr.to('hartree').magnitude,
                             atol=1e-10)
 
     def test_calculate_fine_phonons_no_asr_c(self):
-        self.data.calculate_fine_phonons(self.qpts, use_c=True)
-        npt.assert_allclose(self.data.freqs.to('hartree').magnitude,
+        idata = self.fc.calculate_fine_phonons(self.qpts, use_c=True)
+        npt.assert_allclose(idata.freqs.to('hartree').magnitude,
                             self.expctd_freqs_no_asr.to('hartree').magnitude,
                             atol=1e-10)
 
     def test_calculate_fine_phonons_no_asr_c_2threads(self):
-        self.data.calculate_fine_phonons(self.qpts, use_c=True, n_threads=2)
-        npt.assert_allclose(self.data.freqs.to('hartree').magnitude,
+        idata = self.fc.calculate_fine_phonons(
+            self.qpts, use_c=True, n_threads=2)
+        npt.assert_allclose(idata.freqs.to('hartree').magnitude,
                             self.expctd_freqs_no_asr.to('hartree').magnitude,
                             atol=1e-10)
 
     def test_calculate_fine_phonons_realspace_asr(self):
-        self.data.calculate_fine_phonons(self.qpts, asr='realspace')
-        npt.assert_allclose(self.data.freqs.to('hartree').magnitude,
+        idata = self.fc.calculate_fine_phonons(self.qpts, asr='realspace')
+        npt.assert_allclose(idata.freqs.to('hartree').magnitude,
                             self.expctd_freqs_asr.to('hartree').magnitude,
                             atol=1e-10)
 
     def test_calculate_fine_phonons_realspace_asr_c(self):
-        self.data.calculate_fine_phonons(self.qpts, asr='realspace', use_c=True)
-        npt.assert_allclose(self.data.freqs.to('hartree').magnitude,
+        idata = self.fc.calculate_fine_phonons(
+            self.qpts, asr='realspace', use_c=True)
+        npt.assert_allclose(idata.freqs.to('hartree').magnitude,
                             self.expctd_freqs_asr.to('hartree').magnitude,
                             atol=1e-10)
 
     def test_calculate_fine_phonons_realspace_asr_c_2threads(self):
-        self.data.calculate_fine_phonons(self.qpts, asr='realspace',
-                                         use_c=True, n_threads=2)
-        npt.assert_allclose(self.data.freqs.to('hartree').magnitude,
+        idata = self.fc.calculate_fine_phonons(self.qpts, asr='realspace',
+                                                 use_c=True, n_threads=2)
+        npt.assert_allclose(idata.freqs.to('hartree').magnitude,
                             self.expctd_freqs_asr.to('hartree').magnitude,
                             atol=1e-10)
 
     def test_enforce_realspace_acoustic_sum_rule(self):
         expected_fc_mat = np.load(
             os.path.join(self.path, 'lzo_fc_mat_asr.npy'))
-        fc_mat = self.data._enforce_realspace_asr()
+        fc_mat = self.fc._enforce_realspace_asr()
         npt.assert_allclose(fc_mat, expected_fc_mat, atol=1e-18)
 
 
@@ -436,49 +438,49 @@ class TestInputReadGraphite(unittest.TestCase):
         self.seedname = 'graphite'
         self.path = os.path.join(get_data_path(), 'interpolation', 'graphite')
         data = InterpolationData.from_castep(self.seedname, path=self.path)
-        self.data = data
+        self.fc = data
 
     def test_n_atoms_read(self):
-        self.assertEqual(self.data.crystal.n_atoms, self.expctd_data.n_atoms)
+        self.assertEqual(self.fc.crystal.n_atoms, self.expctd_data.n_atoms)
 
     def test_cell_vectors_read(self):
-        npt.assert_allclose(self.data.crystal.cell_vectors.to('bohr').magnitude,
+        npt.assert_allclose(self.fc.crystal.cell_vectors.to('bohr').magnitude,
                             self.expctd_data.cell_vectors.to('bohr').magnitude)
 
     def test_atom_r_read(self):
-        npt.assert_allclose(self.data.crystal.atom_r, self.expctd_data.atom_r)
+        npt.assert_allclose(self.fc.crystal.atom_r, self.expctd_data.atom_r)
 
     def test_atom_type_read(self):
-        npt.assert_array_equal(self.data.crystal.atom_type,
+        npt.assert_array_equal(self.fc.crystal.atom_type,
                                self.expctd_data.atom_type)
 
     def test_atom_mass_read(self):
-        npt.assert_allclose(self.data.crystal.atom_mass.magnitude,
+        npt.assert_allclose(self.fc.crystal.atom_mass.magnitude,
                             self.expctd_data.atom_mass.magnitude)
 
     def test_sc_matrix_read(self):
-        npt.assert_allclose(self.data.sc_matrix, self.expctd_data.sc_matrix)
+        npt.assert_allclose(self.fc.sc_matrix, self.expctd_data.sc_matrix)
 
     def test_n_cells_in_sc_read(self):
-        self.assertEqual(self.data.n_cells_in_sc,
+        self.assertEqual(self.fc.n_cells_in_sc,
                          self.expctd_data.n_cells_in_sc)
 
     def test_cell_origins_read(self):
-        npt.assert_allclose(self.data.cell_origins,
+        npt.assert_allclose(self.fc.cell_origins,
                             self.expctd_data.cell_origins)
 
     def test_fc_mat_cell0_i0_j0_read(self):
-        npt.assert_allclose(self.data.force_constants[0, 0:3, 0:3].magnitude,
+        npt.assert_allclose(self.fc.force_constants[0, 0:3, 0:3].magnitude,
                             self.expctd_data.fc_mat_cell0_i0_j0.magnitude)
 
     def test_fc_mat_cell10_i2_j3read(self):
-        npt.assert_allclose(self.data.force_constants[10, 6:9, 9:12].magnitude,
+        npt.assert_allclose(self.fc.force_constants[10, 6:9, 9:12].magnitude,
                             self.expctd_data.fc_mat_cell10_i2_j3.magnitude)
 
     def test_fc_mat_read(self):
         expected_fc_mat = np.load(os.path.join(
             self.path, 'graphite_fc_mat_no_asr.npy'))*ureg('hartree/bohr**2')
-        npt.assert_allclose(self.data.force_constants.magnitude,
+        npt.assert_allclose(self.fc.force_constants.magnitude,
                             expected_fc_mat.magnitude)
 
 
@@ -538,8 +540,8 @@ class TestInterpolatePhononsGraphite(unittest.TestCase):
              4.0222682768e-03, 4.0222682768e-03, 7.1591503492e-03,
              7.1591503492e-03, 7.1591503492e-03, 7.1591503492e-03]])
             *ureg('hartree'))
-        data = InterpolationData.from_castep(seedname, path=self.path)
-        self.data = data
+        fc = InterpolationData.from_castep(seedname, path=self.path)
+        self.fc = fc
 
         self.unique_sc_i = np.loadtxt(os.path.join(
             self.path, 'graphite_unique_sc_i.txt'), dtype=np.int32)
@@ -561,7 +563,7 @@ class TestInterpolatePhononsGraphite(unittest.TestCase):
     def test_calculate_phases_qpt(self):
         qpt = np.array([0.001949, 0.001949, 0.0])
 
-        sc_phases, cell_phases = self.data._calculate_phases(
+        sc_phases, cell_phases = self.fc._calculate_phases(
             qpt, self.unique_sc_offsets, self.unique_sc_i,
             self.unique_cell_origins, self.unique_cell_i)
 
@@ -576,7 +578,7 @@ class TestInterpolatePhononsGraphite(unittest.TestCase):
     def test_calculate_phases_gamma_pt(self):
         qpt = np.array([0.0, 0.0, 0.0])
 
-        sc_phases, cell_phases = self.data._calculate_phases(
+        sc_phases, cell_phases = self.fc._calculate_phases(
             qpt, self.unique_sc_offsets, self.unique_sc_i,
             self.unique_cell_origins, self.unique_cell_i)
 
@@ -606,8 +608,8 @@ class TestInterpolatePhononsGraphite(unittest.TestCase):
             np.reshape(expctd_n_images,
                        (self.n_atoms, self.n_cells_in_sc, self.n_atoms)),
             axes=[1, 0, 2])
-        self.data._calculate_supercell_images(lim)
-        npt.assert_equal(self.data._n_sc_images, expctd_n_images)
+        self.fc._calculate_supercell_images(lim)
+        npt.assert_equal(self.fc._n_sc_images, expctd_n_images)
 
     def test_calculate_supercell_images_sc_image_i(self):
         # Supercell image calculation limit - 2 supercells in each direction
@@ -631,51 +633,52 @@ class TestInterpolatePhononsGraphite(unittest.TestCase):
             np.reshape(expctd_sc_image_i, (self.n_atoms, self.n_cells_in_sc,
                                            self.n_atoms, max_n)),
             axes=[1, 0, 2, 3])
-        self.data._calculate_supercell_images(lim)
-        npt.assert_equal(self.data._sc_image_i, expctd_sc_image_i)
+        self.fc._calculate_supercell_images(lim)
+        npt.assert_equal(self.fc._sc_image_i, expctd_sc_image_i)
 
     def test_calculate_fine_phonons_no_asr(self):
-        self.data.calculate_fine_phonons(self.qpts)
-        npt.assert_allclose(self.data.freqs.to('hartree').magnitude,
+        idata = self.fc.calculate_fine_phonons(self.qpts)
+        npt.assert_allclose(idata.freqs.to('hartree').magnitude,
                             self.expctd_freqs_no_asr.to('hartree').magnitude,
                             atol=1e-10)
 
     def test_calculate_fine_phonons_no_asr_c(self):
-        self.data.calculate_fine_phonons(self.qpts, use_c=True)
-        npt.assert_allclose(self.data.freqs.to('hartree').magnitude,
+        idata = self.fc.calculate_fine_phonons(self.qpts, use_c=True)
+        npt.assert_allclose(idata.freqs.to('hartree').magnitude,
                             self.expctd_freqs_no_asr.to('hartree').magnitude,
                             atol=1e-10)
 
     def test_calculate_fine_phonons_no_asr_c_2threads(self):
-        self.data.calculate_fine_phonons(self.qpts, use_c=True, n_threads=2)
-        npt.assert_allclose(self.data.freqs.to('hartree').magnitude,
+        idata = self.fc.calculate_fine_phonons(
+            self.qpts, use_c=True, n_threads=2)
+        npt.assert_allclose(idata.freqs.to('hartree').magnitude,
                             self.expctd_freqs_no_asr.to('hartree').magnitude,
                             atol=1e-10)
 
     def test_calculate_fine_phonons_realspace_asr(self):
-        self.data.calculate_fine_phonons(self.qpts, asr='realspace')
-        npt.assert_allclose(self.data.freqs.to('hartree').magnitude,
+        idata = self.fc.calculate_fine_phonons(self.qpts, asr='realspace')
+        npt.assert_allclose(idata.freqs.to('hartree').magnitude,
                             self.expctd_freqs_asr.to('hartree').magnitude,
                             atol=1e-10)
 
     def test_calculate_fine_phonons_realspace_asr_c(self):
-        self.data.calculate_fine_phonons(self.qpts, asr='realspace',
-                                         use_c=True)
-        npt.assert_allclose(self.data.freqs.to('hartree').magnitude,
+        idata = self.fc.calculate_fine_phonons(self.qpts, asr='realspace',
+                                                 use_c=True)
+        npt.assert_allclose(idata.freqs.to('hartree').magnitude,
                             self.expctd_freqs_asr.to('hartree').magnitude,
                             atol=1e-10)
 
     def test_calculate_fine_phonons_realspace_asr_c_2threads(self):
-        self.data.calculate_fine_phonons(self.qpts, asr='realspace',
-                                         use_c=True, n_threads=2)
-        npt.assert_allclose(self.data.freqs.to('hartree').magnitude,
+        idata = self.fc.calculate_fine_phonons(self.qpts, asr='realspace',
+                                                 use_c=True, n_threads=2)
+        npt.assert_allclose(idata.freqs.to('hartree').magnitude,
                             self.expctd_freqs_asr.to('hartree').magnitude,
                             atol=1e-10)
 
     def test_enforce_realspace_acoustic_sum_rule(self):
         expected_fc_mat = np.load(os.path.join(self.path,
                                                'graphite_fc_mat_asr.npy'))
-        fc_mat = self.data._enforce_realspace_asr()
+        fc_mat = self.fc._enforce_realspace_asr()
         npt.assert_allclose(fc_mat, expected_fc_mat, atol=1e-18)
 
 
@@ -775,58 +778,58 @@ class TestInputReadQuartz(unittest.TestCase):
 
         self.seedname = 'quartz'
         self.path = os.path.join(get_data_path(), 'interpolation', 'quartz')
-        data = InterpolationData.from_castep(self.seedname, path=self.path)
-        self.data = data
+        fc = InterpolationData.from_castep(self.seedname, path=self.path)
+        self.fc = fc
 
     def test_n_atoms_read(self):
-        self.assertEqual(self.data.crystal.n_atoms, self.expctd_data.n_atoms)
+        self.assertEqual(self.fc.crystal.n_atoms, self.expctd_data.n_atoms)
 
     def test_cell_vectors_read(self):
-        npt.assert_allclose(self.data.crystal.cell_vectors.to('bohr').magnitude,
+        npt.assert_allclose(self.fc.crystal.cell_vectors.to('bohr').magnitude,
                             self.expctd_data.cell_vectors.to('bohr').magnitude)
 
     def test_atom_r_read(self):
-        npt.assert_allclose(self.data.crystal.atom_r, self.expctd_data.atom_r)
+        npt.assert_allclose(self.fc.crystal.atom_r, self.expctd_data.atom_r)
 
     def test_atom_type_read(self):
-        npt.assert_array_equal(self.data.crystal.atom_type,
+        npt.assert_array_equal(self.fc.crystal.atom_type,
                                self.expctd_data.atom_type)
 
     def test_atom_mass_read(self):
-        npt.assert_allclose(self.data.crystal.atom_mass.magnitude,
+        npt.assert_allclose(self.fc.crystal.atom_mass.magnitude,
                             self.expctd_data.atom_mass.magnitude)
 
     def test_sc_matrix_read(self):
-        npt.assert_allclose(self.data.sc_matrix, self.expctd_data.sc_matrix)
+        npt.assert_allclose(self.fc.sc_matrix, self.expctd_data.sc_matrix)
 
     def test_n_cells_in_sc_read(self):
-        self.assertEqual(self.data.n_cells_in_sc,
+        self.assertEqual(self.fc.n_cells_in_sc,
                          self.expctd_data.n_cells_in_sc)
 
     def test_cell_origins_read(self):
-        npt.assert_allclose(self.data.cell_origins,
+        npt.assert_allclose(self.fc.cell_origins,
                             self.expctd_data.cell_origins)
 
     def test_born_read(self):
-        npt.assert_allclose(self.data.born.magnitude,
+        npt.assert_allclose(self.fc.born.magnitude,
                             self.expctd_data.born.magnitude)
 
     def test_dielctric_read(self):
-        npt.assert_allclose(self.data.dielectric.magnitude,
+        npt.assert_allclose(self.fc.dielectric.magnitude,
                             self.expctd_data.dielectric.magnitude)
 
     def test_fc_mat_cell0_i0_j0_read(self):
-        npt.assert_allclose(self.data.force_constants[0, 0:3, 0:3].magnitude,
+        npt.assert_allclose(self.fc.force_constants[0, 0:3, 0:3].magnitude,
                             self.expctd_data.fc_mat_cell0_i0_j0.magnitude)
 
     def test_fc_mat_cell4_i2_j7read(self):
-        npt.assert_allclose(self.data.force_constants[4, 6:9, 21:24].magnitude,
+        npt.assert_allclose(self.fc.force_constants[4, 6:9, 21:24].magnitude,
                             self.expctd_data.fc_mat_cell4_i2_j7.magnitude)
 
     def test_fc_mat_read(self):
         expected_fc_mat = np.load(os.path.join(
             self.path, 'quartz_fc_mat_no_asr.npy'))*ureg('hartree/bohr**2')
-        npt.assert_allclose(self.data.force_constants.magnitude,
+        npt.assert_allclose(self.fc.force_constants.magnitude,
                             expected_fc_mat.magnitude)
 
 
@@ -839,8 +842,8 @@ class TestInterpolatePhononsQuartz(unittest.TestCase):
                               [0.00, 0.00, 0.50],
                               [-0.25, 0.50, 0.50],
                               [-0.151515, 0.575758, 0.5]])
-        data = InterpolationData.from_castep(seedname, path=self.path)
-        self.data = data
+        fc = InterpolationData.from_castep(seedname, path=self.path)
+        self.fc = fc
         self.expctd_freqs_no_asr = np.array([
             [-0.00009745, -0.00005474, -0.00005474, 0.00058293, 0.00058293,
              0.00101620, 0.00117558, 0.00117559, 0.00155134, 0.00157713,
@@ -983,92 +986,92 @@ class TestInterpolatePhononsQuartz(unittest.TestCase):
         self.expctd_split_i = np.array([2,4,5,6])
 
     def test_calculate_fine_phonons_dipole_no_asr(self):
-        self.data.calculate_fine_phonons(
+        idata = self.fc.calculate_fine_phonons(
             self.qpts, dipole=True, splitting=False)
         npt.assert_allclose(
-            self.data.freqs.to('hartree').magnitude,
+            idata.freqs.to('hartree').magnitude,
             self.expctd_freqs_no_asr.to('hartree').magnitude,
             atol=2e-6)
 
     def test_calculate_fine_phonons_dipole_no_asr_c(self):
-        self.data.calculate_fine_phonons(
+        idata = self.fc.calculate_fine_phonons(
             self.qpts, dipole=True, splitting=False, use_c=True)
         npt.assert_allclose(
-            self.data.freqs.to('hartree').magnitude,
+            idata.freqs.to('hartree').magnitude,
             self.expctd_freqs_no_asr.to('hartree').magnitude,
             atol=2e-6)
 
     def test_calculate_fine_phonons_dipole_no_asr_c_2threads(self):
-        self.data.calculate_fine_phonons(
+        idata = self.fc.calculate_fine_phonons(
             self.qpts, dipole=True, splitting=False, use_c=True, n_threads=2)
         npt.assert_allclose(
-            self.data.freqs.to('hartree').magnitude,
+            idata.freqs.to('hartree').magnitude,
             self.expctd_freqs_no_asr.to('hartree').magnitude,
             atol=8e-8)
 
     def test_calculate_fine_phonons_dipole_recip_asr(self):
-        self.data.calculate_fine_phonons(
+        idata = self.fc.calculate_fine_phonons(
             self.qpts, asr='reciprocal', dipole=True, splitting=False)
         npt.assert_allclose(
-            self.data.freqs.to('hartree').magnitude,
+            idata.freqs.to('hartree').magnitude,
             self.expctd_freqs_asr.to('hartree').magnitude,
             atol=5e-4)
 
     def test_calculate_fine_phonons_dipole_recip_asr_c(self):
-        self.data.calculate_fine_phonons(
+        idata = self.fc.calculate_fine_phonons(
             self.qpts, asr='reciprocal', dipole=True, splitting=False,
             use_c=True)
         npt.assert_allclose(
-            self.data.freqs.to('hartree').magnitude,
+            idata.freqs.to('hartree').magnitude,
             self.expctd_freqs_asr.to('hartree').magnitude,
             atol=5e-4)
 
     def test_calculate_fine_phonons_dipole_recip_asr_c_2threads(self):
-        self.data.calculate_fine_phonons(
+        idata = self.fc.calculate_fine_phonons(
             self.qpts, asr='reciprocal', dipole=True, splitting=False,
             use_c=True, n_threads=2)
         npt.assert_allclose(
-            self.data.freqs.to('hartree').magnitude,
+            idata.freqs.to('hartree').magnitude,
             self.expctd_freqs_asr.to('hartree').magnitude,
             atol=5e-4)
 
     def test_calculate_fine_phonons_dipole_recip_asr_split(self):
-        self.data.calculate_fine_phonons(
+        idata = self.fc.calculate_fine_phonons(
             self.split_qpts, asr='reciprocal', dipole=True, splitting=True)
-        npt.assert_array_equal(self.data.split_i, self.expctd_split_i)
+        npt.assert_array_equal(idata.split_i, self.expctd_split_i)
         npt.assert_allclose(
-            self.data.freqs.to('hartree').magnitude,
+            idata.freqs.to('hartree').magnitude,
             self.expctd_freqs_asr_splitting.to('hartree').magnitude,
             atol=5e-4)
         npt.assert_allclose(
-            self.data.split_freqs.to('hartree').magnitude,
+            idata.split_freqs.to('hartree').magnitude,
             self.expctd_split_freqs.to('hartree').magnitude,
             atol=5e-4)
 
     def test_calculate_fine_phonons_dipole_recip_asr_split_c(self):
-        self.data.calculate_fine_phonons(
+        idata = self.fc.calculate_fine_phonons(
             self.split_qpts, asr='reciprocal', dipole=True, splitting=True,
             use_c=True)
-        npt.assert_array_equal(self.data.split_i, self.expctd_split_i)
+        npt.assert_array_equal(idata.split_i, self.expctd_split_i)
         npt.assert_allclose(
-            self.data.freqs.to('hartree').magnitude,
+            idata.freqs.to('hartree').magnitude,
             self.expctd_freqs_asr_splitting.to('hartree').magnitude,
             atol=5e-4)
         npt.assert_allclose(
-            self.data.split_freqs.to('hartree').magnitude,
+            idata.split_freqs.to('hartree').magnitude,
             self.expctd_split_freqs.to('hartree').magnitude,
             atol=5e-4)
 
     def test_calculate_fine_phonons_dipole_recip_asr_split_c_2threads(self):
-        self.data.calculate_fine_phonons(
+        idata = self.fc.calculate_fine_phonons(
             self.split_qpts, asr='reciprocal', dipole=True, splitting=True,
             use_c=True, n_threads=2)
-        npt.assert_array_equal(self.data.split_i, self.expctd_split_i)
+        npt.assert_array_equal(idata.split_i, self.expctd_split_i)
         npt.assert_allclose(
-            self.data.freqs.to('hartree').magnitude,
+            idata.freqs.to('hartree').magnitude,
             self.expctd_freqs_asr_splitting.to('hartree').magnitude,
             atol=5e-4)
         npt.assert_allclose(
-            self.data.split_freqs.to('hartree').magnitude,
+            idata.split_freqs.to('hartree').magnitude,
             self.expctd_split_freqs.to('hartree').magnitude,
             atol=5e-4)

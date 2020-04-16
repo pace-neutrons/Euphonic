@@ -37,9 +37,9 @@ class TestDWFactorQuartz(unittest.TestCase):
         self.seedname = 'quartz'
         data_path = get_data_path()
         self.path = os.path.join(data_path, 'interpolation', 'quartz')
-        self.data = InterpolationData.from_castep(self.seedname, path=self.path)
+        fc = InterpolationData.from_castep(self.seedname, path=self.path)
         qpts = np.loadtxt(os.path.join(data_path, 'qgrid_444.txt'))
-        self.data.calculate_fine_phonons(qpts, asr='reciprocal')
+        self.data = fc.calculate_fine_phonons(qpts, asr='reciprocal')
         self.dw_path = os.path.join(data_path, 'dw_factor', 'quartz')
 
     def test_dw_T5(self):
@@ -55,7 +55,3 @@ class TestDWFactorQuartz(unittest.TestCase):
             np.loadtxt(os.path.join(self.dw_path, 'dw_T100.txt')),
             (self.data.crystal.n_atoms, 3, 3))
         npt.assert_allclose(dw, expected_dw, atol=6e-8)
-
-    def test_empty_idata_raises_exception(self):
-        empty_data = InterpolationData.from_castep(self.seedname, self.path)
-        self.assertRaises(Exception, empty_data._dw_coeff)

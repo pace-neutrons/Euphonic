@@ -93,51 +93,51 @@ class TestReadInterpolationNaCl(unittest.TestCase):
         self.summary_nofc = 'phonopy_nofc.yaml'
         self.summary_prim = 'phonopy_prim.yaml'
         self.summary_prim_nofc = 'phonopy_prim_nofc.yaml'
-        self.data = InterpolationData.from_phonopy(path=self.path)
+        self.fc = InterpolationData.from_phonopy(path=self.path)
 
         # Maximum difference in force constants read from plain text and hdf5
         # files
         self.fc_tol = 7e-18
 
     def test_n_atoms_read(self):
-        self.assertEqual(self.data.crystal.n_atoms, self.expctd_data.n_atoms)
+        self.assertEqual(self.fc.crystal.n_atoms, self.expctd_data.n_atoms)
 
     def test_cell_vectors_read(self):
-        npt.assert_allclose(self.data.crystal.cell_vectors.to('bohr').magnitude,
+        npt.assert_allclose(self.fc.crystal.cell_vectors.to('bohr').magnitude,
                             self.expctd_data.cell_vectors.to('bohr').magnitude)
 
     def test_atom_r_read(self):
-        npt.assert_allclose(self.data.crystal.atom_r, self.expctd_data.atom_r)
+        npt.assert_allclose(self.fc.crystal.atom_r, self.expctd_data.atom_r)
 
     def test_atom_type_read(self):
-        npt.assert_array_equal(self.data.crystal.atom_type,
+        npt.assert_array_equal(self.fc.crystal.atom_type,
                                self.expctd_data.atom_type)
 
     def test_atom_mass_read(self):
-        npt.assert_allclose(self.data.crystal.atom_mass.magnitude,
+        npt.assert_allclose(self.fc.crystal.atom_mass.magnitude,
                             self.expctd_data.atom_mass.magnitude, atol=1e-10)
 
     def test_sc_matrix_read(self):
-        npt.assert_allclose(self.data.sc_matrix, self.expctd_data.sc_matrix)
+        npt.assert_allclose(self.fc.sc_matrix, self.expctd_data.sc_matrix)
 
     def test_n_cells_in_sc_read(self):
-        self.assertEqual(self.data.n_cells_in_sc,
+        self.assertEqual(self.fc.n_cells_in_sc,
                          self.expctd_data.n_cells_in_sc)
 
     def test_cell_origins_read(self):
-        npt.assert_allclose(self.data.cell_origins,
+        npt.assert_allclose(self.fc.cell_origins,
                             self.expctd_data.cell_origins)
 
     def test_born_read(self):
-        npt.assert_allclose(self.data.born.magnitude,
+        npt.assert_allclose(self.fc.born.magnitude,
                             self.expctd_data.born.magnitude)
 
     def test_dielctric_read(self):
-        npt.assert_allclose(self.data.dielectric.magnitude,
+        npt.assert_allclose(self.fc.dielectric.magnitude,
                             self.expctd_data.dielectric.magnitude)
 
     def test_fc_mat_read(self):
-        npt.assert_allclose(self.data.force_constants.magnitude,
+        npt.assert_allclose(self.fc.force_constants.magnitude,
                             self.expctd_data.force_constants.magnitude,
                             atol = self.fc_tol)
 
@@ -284,82 +284,82 @@ class TestInterpolatePhononsNaCl(unittest.TestCase):
              28.28732511, 28.28804436, 29.77604856, 29.77629323]])*ureg('meV')
 
         self.expctd_data = expctd_data
-        self.data = InterpolationData.from_phonopy(path=self.path)
+        self.fc = InterpolationData.from_phonopy(path=self.path)
 
     def test_calculate_fine_phonons_dipole_no_asr(self):
-        self.data.calculate_fine_phonons(
+        idata = self.fc.calculate_fine_phonons(
             self.qpts, dipole=True, splitting=False, asr=None)
         npt.assert_allclose(
-            self.data.freqs.to('hartree').magnitude,
+            idata.freqs.to('hartree').magnitude,
             self.expctd_data.freqs_dipole_no_asr.to('hartree').magnitude,
             atol=1e-8)
 
     def test_calculate_fine_phonons_dipole_no_asr_c(self):
-        self.data.calculate_fine_phonons(
+        idata = self.fc.calculate_fine_phonons(
             self.qpts, dipole=True, splitting=False, asr=None, use_c=True,
             fall_back_on_python=False)
         npt.assert_allclose(
-            self.data.freqs.to('hartree').magnitude,
+            idata.freqs.to('hartree').magnitude,
             self.expctd_data.freqs_dipole_no_asr.to('hartree').magnitude,
             atol=1e-8)
 
     def test_calculate_fine_phonons_dipole_no_asr_c_2threads(self):
-        self.data.calculate_fine_phonons(
+        idata = self.fc.calculate_fine_phonons(
             self.qpts, dipole=True, splitting=False, use_c=True,
             fall_back_on_python=False, n_threads=2)
         npt.assert_allclose(
-            self.data.freqs.to('hartree').magnitude,
+            idata.freqs.to('hartree').magnitude,
             self.expctd_data.freqs_dipole_no_asr.to('hartree').magnitude,
             atol=1e-8)
 
     def test_calculate_fine_phonons_dipole_recip_asr(self):
-        self.data.calculate_fine_phonons(
+        idata = self.fc.calculate_fine_phonons(
             self.qpts, dipole=True, splitting=False, asr='reciprocal')
         npt.assert_allclose(
-            self.data.freqs.to('hartree').magnitude,
+            idata.freqs.to('hartree').magnitude,
             self.expctd_data.freqs_dipole_recip_asr.to('hartree').magnitude,
             atol=1e-8)
 
     def test_calculate_fine_phonons_dipole_recip_asr_c(self):
-        self.data.calculate_fine_phonons(
+        idata = self.fc.calculate_fine_phonons(
             self.qpts, dipole=True, splitting=False, asr='reciprocal',
             use_c=True, fall_back_on_python=False)
         npt.assert_allclose(
-            self.data.freqs.to('hartree').magnitude,
+            idata.freqs.to('hartree').magnitude,
             self.expctd_data.freqs_dipole_recip_asr.to('hartree').magnitude,
             atol=1e-8)
 
     def test_calculate_fine_phonons_dipole_recip_asr_c_2threads(self):
-        self.data.calculate_fine_phonons(
+        idata = self.fc.calculate_fine_phonons(
             self.qpts, dipole=True, splitting=False, asr='reciprocal',
             use_c=True, fall_back_on_python=False, n_threads=2)
         npt.assert_allclose(
-            self.data.freqs.to('hartree').magnitude,
+            idata.freqs.to('hartree').magnitude,
             self.expctd_data.freqs_dipole_recip_asr.to('hartree').magnitude,
             atol=1e-8)
 
     def test_calculate_fine_phonons_dipole_realsp_asr(self):
-        self.data.calculate_fine_phonons(
+        idata = self.fc.calculate_fine_phonons(
             self.qpts, dipole=True, splitting=False, asr='realspace')
         npt.assert_allclose(
-            self.data.freqs.to('hartree').magnitude,
+            idata.freqs.to('hartree').magnitude,
             self.expctd_data.freqs_dipole_realsp_asr.to('hartree').magnitude,
             atol=1e-8)
 
     def test_calculate_fine_phonons_dipole_realsp_asr_c(self):
-        self.data.calculate_fine_phonons(
+        idata = self.fc.calculate_fine_phonons(
             self.qpts, dipole=True, splitting=False, asr='realspace',
             use_c=True, fall_back_on_python=False)
         npt.assert_allclose(
-            self.data.freqs.to('hartree').magnitude,
+            idata.freqs.to('hartree').magnitude,
             self.expctd_data.freqs_dipole_realsp_asr.to('hartree').magnitude,
             atol=1e-8)
 
     def test_calculate_fine_phonons_dipole_realsp_asr_c_2threads(self):
-        self.data.calculate_fine_phonons(
+        idata = self.fc.calculate_fine_phonons(
             self.qpts, dipole=True, splitting=False, asr='realspace',
             use_c=True, fall_back_on_python=False, n_threads=2)
         npt.assert_allclose(
-            self.data.freqs.to('hartree').magnitude,
+            idata.freqs.to('hartree').magnitude,
             self.expctd_data.freqs_dipole_realsp_asr.to('hartree').magnitude,
             atol=1e-8)

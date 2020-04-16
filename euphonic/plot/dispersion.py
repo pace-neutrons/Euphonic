@@ -271,7 +271,7 @@ def plot_sqw_map(data, vmin=None, vmax=None, ratio=None, ewidth=0, qwidth=0,
     yticks = (ylabels - ebins[0])/(ebins[-1] - ebins[0])*ymax
     ax.set_yticks(yticks)
     ax.set_yticklabels(ylabels)
-    units_str = data._e_units
+    units_str = data.freqs_unit
     inverse_unit_index = units_str.find('/')
     if inverse_unit_index > -1:
         units_str = units_str[inverse_unit_index+1:]
@@ -337,7 +337,7 @@ def output_grace(data, seedname='out', up=True, down=True):
     # Calculate x-axis (recip space) ticks and labels
     xlabels, qpts_with_labels = recip_space_labels(data)
 
-    units_str = data._e_units
+    units_str = data.freqs_unit
     inverse_unit_index = units_str.find('/')
     if inverse_unit_index > -1:
         units_str = units_str[inverse_unit_index+1:]
@@ -517,7 +517,7 @@ def plot_dispersion(data, title='', btol=10.0, up=True, down=True,
     # Y-axis formatting, only need to format y-axis for first subplot as they
     # share the y-axis
     # Replace 1/cm with cm^-1
-    units_str = data._e_units
+    units_str = data.freqs_unit
     inverse_unit_index = units_str.find('/')
     if inverse_unit_index > -1:
         units_str = units_str[inverse_unit_index+1:]

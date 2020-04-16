@@ -72,9 +72,9 @@ class TestSqwMapInterpolationDataLZOSerial(unittest.TestCase):
         self.interpolation_path = os.path.join(data_path, 'interpolation', 'LZO')
         self.sqw_path = os.path.join(data_path, 'sqw_map')
         pdata = PhononData.from_castep(self.seedname, path=data_path)
-        self.data = InterpolationData.from_castep(
+        fc = InterpolationData.from_castep(
             self.seedname, path=self.interpolation_path)
-        self.data.calculate_fine_phonons(pdata.qpts, asr='realspace')
+        self.data = fc.calculate_fine_phonons(pdata.qpts, asr='realspace')
         self.scattering_lengths = {'La': 8.24, 'Zr': 7.16, 'O': 5.803}
         self.ebins = np.arange(0, 100, 1.)
 
@@ -127,10 +127,11 @@ class TestSqwMapInterpolationDataLZOSerialC(
         self.interpolation_path = os.path.join(data_path, 'interpolation', 'LZO')
         self.sqw_path = os.path.join(data_path, 'sqw_map')
         pdata = PhononData.from_castep(self.seedname, path=data_path)
-        self.data = InterpolationData.from_castep(
+        fc = InterpolationData.from_castep(
             self.seedname, path=self.interpolation_path)
-        self.data.calculate_fine_phonons(pdata.qpts, asr='realspace',
-                                         use_c=True, fall_back_on_python=False)
+        self.data = fc.calculate_fine_phonons(
+            pdata.qpts, asr='realspace', use_c=True,
+            fall_back_on_python=False)
         self.scattering_lengths = {'La': 8.24, 'Zr': 7.16, 'O': 5.803}
         self.ebins = np.arange(0, 100, 1.)
 
@@ -143,10 +144,11 @@ class TestSqwMapInterpolationDataLZOParallelC(
         self.interpolation_path = os.path.join(data_path, 'interpolation', 'LZO')
         self.sqw_path = os.path.join(data_path, 'sqw_map')
         pdata = PhononData.from_castep(self.seedname, path=data_path)
-        self.data = InterpolationData.from_castep(
+        fc = InterpolationData.from_castep(
             self.seedname, path=self.interpolation_path)
-        self.data.calculate_fine_phonons(pdata.qpts, asr='realspace',
-                                         use_c=True, n_threads=2, fall_back_on_python=False)
+        self.data = fc.calculate_fine_phonons(
+            pdata.qpts, asr='realspace', use_c=True,
+            n_threads=2, fall_back_on_python=False)
         self.scattering_lengths = {'La': 8.24, 'Zr': 7.16, 'O': 5.803}
         self.ebins = np.arange(0, 100, 1.)
 

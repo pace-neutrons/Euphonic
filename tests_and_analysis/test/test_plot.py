@@ -131,7 +131,7 @@ class TestPlotDispersion(unittest.TestCase):
     def setUp(self):
         # Input values
         data = type('', (), {})()
-        data._e_units = 'E_h'
+        data.freqs_unit = 'E_h'
         data.qpts = np.array([[0.00, 0.00, 0.00],
                               [0.50, 0.50, 0.50],
                               [0.50, 0.00, 0.00],

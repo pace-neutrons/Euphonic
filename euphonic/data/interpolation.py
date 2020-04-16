@@ -21,12 +21,11 @@ class ImportCError(Exception):
         return "ImportCError: {}".format(self.message)
 
 
-class InterpolationData(PhononData):
+class InterpolationData(object):
     """
-    Extends PhononData. A class to read and store the data required for a
-    phonon interpolation calculation from model (e.g. CASTEP) output, and
-    calculate phonon frequencies/eigenvectors at arbitrary q-points via
-    Fourier interpolation
+    A class to read and store the data required for a phonon interpolation
+    calculation from model (e.g. CASTEP) output, and calculate phonon
+    frequencies/eigenvectors at arbitrary q-points via Fourier interpolation
 
     Attributes
     ----------
@@ -38,39 +37,12 @@ class InterpolationData(PhononData):
         The supercell matrix
     cell_origins : (n_cells_in_sc, 3) int ndarray
         The locations of the unit cells within the supercell
-    force_constants : (n_cells_in_sc, 3*n_atoms, 3*n_atoms) float ndarray
-        Force constants matrix. Default units atomic units
-    n_qpts : int
-        Number of q-points used in the most recent interpolation calculation.
-        Default value 0
-    qpts : (n_qpts, 3) float ndarray
-        Coordinates of the q-points used for the most recent interpolation
-        calculation. Is empty by default
-    weights : (n_qpts,) float ndarray
-        The weight for each q-point
-    freqs: (n_qpts, 3*n_atoms) float ndarray
-        Phonon frequencies from the most recent interpolation calculation.
-        Default units meV. Is empty by default
-    eigenvecs: (n_qpts, 3*n_atoms, n_atoms, 3) complex ndarray
-        Dynamical matrix eigenvectors from the most recent interpolation
-        calculation. Is empty by default
-    asr : str
-        Stores which the acoustic sum rule, if any, was used in the last phonon
-        calculation. Ensures consistency of other calculations e.g. when
-        calculating on a grid of phonons for the Debye-Waller factor
-    dipole : boolean
-        Stores whether the Ewald dipole tail correction was used in the last
-        phonon calculation. Ensures consistency of other calculations e.g.
-        when calculating on a grid of phonons for the Debye-Waller factor
-    split_i : (n_splits,) int ndarray
-        The q-point indices where there is LO-TO splitting, if applicable.
-        Otherwise empty.
-    split_freqs : (n_splits, 3*n_atoms) float ndarray
-        Holds the additional LO-TO split phonon frequencies for the q-points
-        specified in split_i. Empty if no LO-TO splitting. Default units meV
-    split_eigenvecs : (n_splits, 3*n_atoms, n_atoms, 3) complex ndarray
-        Holds the additional LO-TO split dynamical matrix eigenvectors for the
-        q-points specified in split_i. Empty if no LO-TO splitting
+    force_constants : (n_cells_in_sc, 3*n_atoms, 3*n_atoms) float Quantity
+        Force constants matrix
+    born : (n_atoms, 3, 3) float Quantity or None
+        The Born charges for each atom
+    dielectric : (3, 3) float Quantity or None
+        The dielectric permittivity tensor
     """
 
     def __init__(self, crystal, force_constants, sc_matrix, cell_origins,
@@ -93,7 +65,7 @@ class InterpolationData(PhononData):
         """
         self.crystal = crystal
         self._force_constants = force_constants.to(
-            ureg.INTERNAL_ENERGY_UNIT/(ureg.INTERNAL_LENGTH_UNIT**2)).magnitude
+            'INTERNAL_ENERGY_UNIT/INTERNAL_LENGTH_UNIT**2').magnitude
         self.force_constants_unit = str(force_constants.units)
         self.sc_matrix = sc_matrix
         self.cell_origins = cell_origins
@@ -113,25 +85,12 @@ class InterpolationData(PhononData):
             self.dielectric_unit = str(ureg((
                 '(INTERNAL_CHARGE_UNIT**2)/'
                 '(INTERNAL_LENGTH_UNIT*INTERNAL_ENERGY_UNIT)')))
-        self.freqs_unit = str(ureg.mDEFAULT_ENERGY_UNIT)
-
-    @property
-    def _freqs(self):
-        if len(self._reduced_freqs) > 0:
-            return self._reduced_freqs[self._qpts_i]
-        else:
-            return self._reduced_freqs
-
-    @property
-    def eigenvecs(self):
-        if len(self._reduced_eigenvecs) > 0:
-            return self._reduced_eigenvecs[self._qpts_i]
-        else:
-            return self._reduced_eigenvecs
 
     @property
     def force_constants(self):
-        return self._force_constants*ureg('hartree/bohr**2')
+        return self._force_constants*ureg(
+            'INTERNAL_ENERGY_UNIT/INTERNAL_LENGTH_UNIT**2').to(
+                self.force_constants_unit)
 
     @property
     def born(self):
@@ -152,8 +111,8 @@ class InterpolationData(PhononData):
 
     def calculate_fine_phonons(
         self, qpts, asr=None, precondition=False, dipole=True,
-            eta_scale=1.0, splitting=True, reduce_qpts=True, use_c=False,
-            n_threads=1, fall_back_on_python=True):
+        eta_scale=1.0, splitting=True, reduce_qpts=True, use_c=False,
+        n_threads=1, fall_back_on_python=True):
         """
         Calculate phonon frequencies and eigenvectors at specified q-points
         from a supercell force constant matrix via interpolation. For more
@@ -196,31 +155,15 @@ class InterpolationData(PhononData):
 
         Returns
         -------
-        freqs : (n_qpts, 3*n_atoms) float ndarray
-            The phonon frequencies (same as set to InterpolationData.freqs)
-        eigenvecs : (n_qpts, 3*n_atoms, n_atoms, 3) complex ndarray
-            The phonon eigenvectors (same as set to
-            InterpolationData.eigenvecs)
+        phonon_data : PhononData
+            A PhononData object containing the interpolated frequencies and
+            eigenvectors
 
         Raises
         ------
         ImportCError: If we have selected not to fall back on Python and cannot
             use the C extension.
         """
-
-        # Reset obj freqs/eigenvecs to zero to reduce memory usage in case of
-        # repeated calls to calculate_fine_phonons
-        n_atoms = self.crystal.n_atoms
-        self.qpts = np.array([])
-        self._reduced_freqs = np.empty((0, 3*n_atoms))
-        self._reduced_eigenvecs = np.empty((0, 3*n_atoms, n_atoms, 3),
-                                           dtype=np.complex128)
-
-        self.split_i = np.empty((0,), dtype=np.int32)
-        self._split_freqs = np.empty((0, 3*n_atoms))
-        self.split_eigenvecs = np.empty((0, 3*n_atoms, n_atoms, 3),
-                                        dtype=np.complex128)
-
         # Set default splitting params
         if self.born is None:
             dipole = False
@@ -282,6 +225,7 @@ class InterpolationData(PhononData):
 
         # Precompute dynamical matrix mass weighting
         atom_mass = self.crystal.atom_mass.to('electron_mass').magnitude
+        n_atoms = self.crystal.n_atoms
         masses = np.tile(np.repeat(atom_mass, 3), (3*n_atoms, 1))
         dyn_mat_weighting = 1/np.sqrt(masses*np.transpose(masses))
 
@@ -317,10 +261,10 @@ class InterpolationData(PhononData):
                 # Finding acoustic modes failed
                 asr = None
 
-        split_i = np.empty((0,), dtype=np.int32)
-        split_freqs = np.empty((0, 3*n_atoms))
-        split_eigenvecs = np.empty((0, 3*n_atoms, n_atoms, 3),
-                                   dtype=np.complex128)
+        split_i = None
+        split_freqs = None
+        split_eigenvecs = None
+
         rfreqs = np.zeros((n_rqpts, 3*n_atoms))
         reigenvecs = np.zeros((n_rqpts, 3*n_atoms, n_atoms, 3),
                                   dtype=np.complex128)
@@ -338,6 +282,21 @@ class InterpolationData(PhononData):
                     raise
             else:
                 raise ImportError
+            # Make sure all arrays are contiguous before calling C
+            cell_vectors = self.crystal.cell_vectors.to('bohr').magnitude
+            recip_vectors = self.crystal.reciprocal_cell().to(
+                '1/bohr').magnitude
+            (cell_vectors, recip_vectors, reduced_qpts, qpts_i, fc_img_weighted,
+                sc_offsets, recip_asr_correction, dyn_mat_weighting, rfreqs,
+                reigenvecs) = _ensure_contiguous_args(
+                    cell_vectors, recip_vectors, reduced_qpts, qpts_i,
+                    fc_img_weighted, sc_offsets, recip_asr_correction,
+                    dyn_mat_weighting, rfreqs, reigenvecs)
+            attrs = ['_n_sc_images', '_sc_image_i', 'cell_origins']
+            dipole_attrs = ['atom_r', '_born', '_dielectric', '_H_ab', '_cells',
+                            '_gvec_phases', '_gvecs_cart', '_dipole_q0']
+            _ensure_contiguous_attrs(self, attrs, opt_attrs=dipole_attrs)
+            reciprocal_asr = 1 if asr == 'reciprocal' else 0
             if splitting:
                 gamma_i = np.where(is_gamma(qpts))[0]
                 split_i = gamma_i[np.logical_and(gamma_i > 0,
@@ -345,29 +304,26 @@ class InterpolationData(PhononData):
                 split_freqs = np.zeros((len(split_i), 3*n_atoms))
                 split_eigenvecs = np.zeros((len(split_i), 3*n_atoms, n_atoms, 3),
                                            dtype=np.complex128)
-            # Make sure all arrays are contiguous before calling C
-            cell_vectors = self.crystal.cell_vectors.to('bohr').magnitude
-            recip_vectors = self.crystal.reciprocal_cell().to(
-                '1/bohr').magnitude
-            (cell_vectors, recip_vectors, reduced_qpts, qpts_i, fc_img_weighted,
-                sc_offsets, recip_asr_correction, dyn_mat_weighting, rfreqs,
-                reigenvecs, split_freqs, split_eigenvecs,
-                split_i) = _ensure_contiguous_args(
-                    cell_vectors, recip_vectors, reduced_qpts, qpts_i,
+                split_i, split_freqs, split_eigenvecs = _ensure_contiguous_args(
+                    split_i, split_freqs, split_eigenvecs)
+                euphonic_c.calculate_phonons(
+                    self, cell_vectors, recip_vectors, reduced_qpts, qpts_i,
                     fc_img_weighted, sc_offsets, recip_asr_correction,
-                    dyn_mat_weighting, rfreqs, reigenvecs, split_freqs,
-                    split_eigenvecs, split_i)
-            attrs = ['_n_sc_images', '_sc_image_i', 'cell_origins']
-            dipole_attrs = ['atom_r', '_born', '_dielectric', '_H_ab', '_cells',
-                            '_gvec_phases', '_gvecs_cart', '_dipole_q0']
-            _ensure_contiguous_attrs(self, attrs, opt_attrs=dipole_attrs)
-            reciprocal_asr = 1 if asr == 'reciprocal' else 0
-            euphonic_c.calculate_phonons(
-                self, cell_vectors, recip_vectors, reduced_qpts, qpts_i,
-                fc_img_weighted, sc_offsets, recip_asr_correction,
-                dyn_mat_weighting, dipole, reciprocal_asr, splitting, rfreqs,
-                reigenvecs, split_freqs, split_eigenvecs, split_i, n_threads,
-                scipy.__path__[0])
+                    dyn_mat_weighting, dipole, reciprocal_asr, splitting, rfreqs,
+                    reigenvecs, split_freqs, split_eigenvecs, split_i,
+                    n_threads, scipy.__path__[0])
+            else:
+                split_i_tmp = np.empty((0,), dtype=np.int32)
+                split_freqs_tmp = np.empty((0, 3*n_atoms))
+                split_eigenvecs_tmp = np.empty(
+                        (0, 3*n_atoms, self.crystal.n_atoms, 3),
+                        dtype=np.complex128)
+                euphonic_c.calculate_phonons(
+                    self, cell_vectors, recip_vectors, reduced_qpts, qpts_i,
+                    fc_img_weighted, sc_offsets, recip_asr_correction,
+                    dyn_mat_weighting, dipole, reciprocal_asr, splitting, rfreqs,
+                    reigenvecs, split_freqs_tmp, split_eigenvecs_tmp,
+                    split_i_tmp, n_threads, scipy.__path__[0])
         except ImportError:
             if not fall_back_on_python:
                 raise ImportCError('use_c=True is set, but the Euphonic\'s C '
@@ -385,26 +341,26 @@ class InterpolationData(PhononData):
                     rfreqs[q], reigenvecs[q], sfreqs, sevecs, si = \
                     self._calculate_phonons_at_q(q, q_independent_args)
                     if len(sfreqs) > 0:
+                        if split_i is None:
+                            split_i = np.empty((0,), dtype=np.int32)
+                            split_freqs = np.empty((0, 3*n_atoms))
+                            split_eigenvecs = np.empty(
+                                (0, 3*n_atoms, n_atoms, 3), dtype=np.complex128)
                         split_i = np.concatenate((split_i, si))
                         split_freqs = np.concatenate((split_freqs, sfreqs))
                         split_eigenvecs = np.concatenate(
                             (split_eigenvecs, sevecs))
 
-        self.asr = asr
-        self.dipole = dipole
-        self.qpts = qpts
-        self.n_qpts = len(qpts)
-        self.weights = np.full(len(qpts), 1.0/len(qpts))
-        self._reduced_freqs = rfreqs
-        self._reduced_eigenvecs = reigenvecs
-        self._reduced_qpts = reduced_qpts
-        self._qpts_i = qpts_i
+        freqs = rfreqs[qpts_i]*ureg('INTERNAL_ENERGY_UNIT').to(
+            'mDEFAULT_ENERGY_UNIT', 'spectroscopy')
+        if split_freqs is not None:
+            split_freqs = split_freqs*ureg('INTERNAL_ENERGY_UNIT').to(
+            'mDEFAULT_ENERGY_UNIT', 'spectroscopy')
 
-        self.split_i = split_i
-        self._split_freqs = split_freqs
-        self.split_eigenvecs = split_eigenvecs
-
-        return self.freqs, self.eigenvecs
+        return PhononData(
+            self.crystal, qpts, freqs, reigenvecs[qpts_i],
+            weights=np.full(len(qpts), 1.0/len(qpts)), split_i=split_i,
+            split_freqs=split_freqs, split_eigenvecs=split_eigenvecs)
 
     def _calculate_phonons_at_q(self, q, args):
         """
@@ -1164,123 +1120,6 @@ class InterpolationData(PhononData):
         # maximum possible images to avoid storing and summing over
         # nonexistent images
         self._sc_image_i = sc_image_i[:, :, :, :np.max(n_sc_images)]
-
-    def reorder_freqs(self, **kwargs):
-        """
-        By doing a dot product of eigenvectors at adjacent q-points,
-        determines which modes are most similar and creates a _mode_map
-        attribute in the Data object, which specifies which order the
-        frequencies should be in at each q-point. The branch ordering can be
-        seen when plotting dispersion
-
-        Parameters
-        ----------
-        reorder_gamma : bool, default True
-            Whether to reorder frequencies at gamma-equivalent points. If
-            an analytical correction has been applied at the gamma points
-            (i.e LO-TO splitting) mode assignments can be incorrect at
-            adjacent q-points where the correction hasn't been applied.
-            So you might not want to reorder at gamma for some materials
-        """
-        if self.n_qpts == 0:
-            raise Exception((
-                'No frequencies in InterpolationData object, call '
-                'calculate_fine_phonons before reordering frequencies'))
-        super(InterpolationData, self).reorder_freqs(**kwargs)
-
-    def calculate_structure_factor(self, scattering_lengths, **kwargs):
-        """
-        Calculate the one phonon inelastic scattering at each q-point
-        See M. Dove Structure and Dynamics Pg. 226
-
-        Parameters
-        ----------
-        scattering_lengths : dictionary
-            Dictionary of spin and isotope averaged coherent scattering legnths
-            for each element in the structure in fm e.g.
-            {'O': 5.803, 'Zn': 5.680}
-        T : float, optional, default 5.0
-            The temperature in Kelvin to use when calculating the Bose and
-            Debye-Waller factors
-        scale : float, optional, default 1.0
-            Apply a multiplicative factor to the final structure factor.
-        calc_bose : boolean, optional, default True
-            Whether to calculate and apply the Bose factor
-        dw_data : InterpolationData or PhononData object
-            A PhononData or InterpolationData object with
-            frequencies/eigenvectors calculated on a q-grid over which the
-            Debye-Waller factor will be calculated
-
-        Returns
-        -------
-        sf : (n_qpts, 3*n_atoms) float ndarray
-            The structure factor for each q-point and phonon branch
-        """
-        if self.n_qpts == 0:
-            raise Exception((
-                'No frequencies in InterpolationData object, call '
-                'calculate_fine_phonons before calling '
-                'calculate_structure_factor'))
-        sf = super(InterpolationData, self).calculate_structure_factor(
-            scattering_lengths, **kwargs)
-
-        return sf
-
-    def _dw_coeff(self, T):
-        """
-        Calculate the 3 x 3 Debye-Waller coefficients for each ion over the
-        q-points contained in this object
-
-        Parameters
-        ----------
-        T : float
-            Temperature in Kelvin
-
-        Returns
-        -------
-        dw : (n_atoms, 3, 3) float ndarray
-            The DW coefficients for each ion
-        """
-        if self.n_qpts == 0:
-            raise Exception((
-                'No frequencies in InterpolationData object, call '
-                'calculate_fine_phonons before using object as a dw_data '
-                'keyword argument to calculate_structure_factor'))
-        dw = super(InterpolationData, self)._dw_coeff(T)
-
-        return dw
-
-    def calculate_sqw_map(self, scattering_lengths, ebins, **kwargs):
-        """
-        Calculate the structure factor for each q-point contained in data, and
-        bin according to ebins to create a S(Q,w) map
-
-        Parameters
-        ----------
-        scattering_lengths : dictionary
-            Dictionary of spin and isotope averaged coherent scattering legnths
-            for each element in the structure in fm e.g.
-            {'O': 5.803, 'Zn': 5.680}
-        ebins : (n_ebins + 1) float ndarray
-            The energy bin edges in the same units as freqs
-        **kwargs
-            Passes keyword arguments on to
-            PhononData.calculate_sqw_map
-
-        Returns
-        -------
-        sqw_map : ndarray
-            The intensity for each q-point and energy bin
-        """
-        if self.n_qpts == 0:
-            raise Exception((
-                'No frequencies in InterpolationData object, call '
-                'calculate_fine_phonons before calling '
-                'calculate_sqw_map'))
-        sqw_map = super(InterpolationData, self).calculate_sqw_map(
-            scattering_lengths, ebins, **kwargs)
-
-        return sqw_map
 
     @classmethod
     def from_dict(cls, d):
