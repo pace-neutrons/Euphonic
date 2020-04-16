@@ -35,6 +35,22 @@ def setGitHubBuildStatus(String status, String message, String context) {
     }
 }
 
+def getGitCommitAuthorEmail() {
+    script {
+        withCredentials([string(credentialsId: 'Euphonic_GitHub_API_Token',
+                variable: 'api_token')]) {
+            return sh(
+                script: """
+                        payload=\$(curl --silent -H "Authorization: token ${api_token}" --request GET \
+                            https://api.github.com/repos/pace-neutrons/Euphonic/commits/${env.GIT_COMMIT} > /dev/null) &&
+                        email=\$payload | jq -r ".commit.author.email" &&
+                        echo \$email
+                    """,
+                returnStdout: true).trim()
+        }
+    }
+}
+
 pipeline {
 
     agent none
@@ -78,9 +94,6 @@ pipeline {
 
                         stage("Notify") {
                             steps {
-                                script {
-                                    def email = sh(script: 'git --no-pager show -s --format=\'%ae\'', returnStdout: true).trim()
-                                }
                                 echo "$email"
                                 setGitHubBuildStatus("pending", "Starting", "Linux")
                                 echo "Branch: ${env.JOB_BASE_NAME}"
@@ -245,11 +258,16 @@ pipeline {
 
     post {
         unsuccessful {
-            mail (
-                to: "$email",
-                subject: "Failed pipeline: ${env.JOB_BASE_NAME}",
-                body: "See ${env.BUILD_URL}"
-            )
+            node("sl7"){
+                script {
+                    def email = getGitCommitAuthorEmail()
+                    mail (
+                        to: "$email",
+                        subject: "Failed pipeline: ${env.JOB_BASE_NAME}",
+                        body: "See ${env.BUILD_URL}"
+                    )
+                }
+            }
         }
     }
 }
