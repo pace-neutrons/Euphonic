@@ -1,6 +1,6 @@
 import os
 from ..utils import get_data_path
-import numpy as np
+from typing import List
 # Required for mocking
 import matplotlib.pyplot
 
@@ -14,112 +14,53 @@ def get_phonon_file() -> str:
     return os.path.join(get_data_path(), "NaH.phonon")
 
 
-def get_dispersion_data_folder() -> str:
+def get_script_data_folder() -> str:
     """
     Returns
     -------
-    str: the directory containing all the regression test data for scripts/dispersion.py
+    str: The data folder for scripts testing data.
     """
-    folder = os.path.join(get_data_path(), "dispersion_script")
+    folder = os.path.join(get_data_path(), "script_data")
+    if not os.path.exists(folder):
+        os.mkdir(folder)
     return folder
 
 
-def get_dos_data_folder() -> str:
-    """
-    Returns
-    -------
-    str: the directory containing all the regression test data for scripts/dos.py
-    """
-    folder = os.path.join(get_data_path(), "dos_script")
-    return folder
-
-
-def _get_dos_or_dispersion_data_filepath_prefix(dos_or_dispersion_data_folder: str) -> str:
-    phonon_filename = os.path.split(get_phonon_file())[-1]
-    filename_prefix = phonon_filename.replace(".", "_") + "_line"
-    if not os.path.exists(dos_or_dispersion_data_folder):
-        os.mkdir(dos_or_dispersion_data_folder)
-    filepath_prefix = os.path.join(dos_or_dispersion_data_folder, filename_prefix)
-    return filepath_prefix
-
-
-def get_dispersion_data_filepath_prefix() -> str:
+def get_dispersion_data_file() -> str:
     """
     Returns
     -------
     str: a full path prefix of all dispersion regression test files.
     """
-    return _get_dos_or_dispersion_data_filepath_prefix(get_dispersion_data_folder())
+    return os.path.join(get_script_data_folder(), "dispersion.json")
 
 
-def get_dos_data_filepath_prefix() -> str:
+def get_dos_data_file() -> str:
     """
     Returns
     -------
     str: a full path prefix of all dos regression test files.
     """
-    return _get_dos_or_dispersion_data_filepath_prefix(get_dos_data_folder())
+    return os.path.join(get_script_data_folder(), "dos.json")
 
 
-def _iter_regression_test_files(filepath_prefix: str, data_folder: str):
-    # Loop through files in data_folder
-    for file in os.listdir(data_folder):
-        file_full_path = os.path.join(data_folder, file)
-        # Only accept those that start with filepath_prefix
-        if file_full_path.startswith(filepath_prefix):
-            filenum = file_full_path[len(filepath_prefix):][0]
-            # Return the number used in the file and the full path to the file
-            yield int(filenum), file_full_path
-
-
-def iter_dispersion_data_files():
+def get_current_plot_lines_xydata() -> List[List[List[float]]]:
     """
-    A generator function to get all the files
-     containing regression testing data for scripts/dispersion.py
-    Yields the number of the file and the full file path as a tuple.
+    Get the current matplotlib plot with gcf() and return the xydata of the lines of the plot
 
-    Examples
-    --------
-         >>> for filenum, file in iter_dispersion_data_files():
-         >>>   print(filenum)
-         >>>
-         >>> 0
-         >>> 1
+    Returns
+    -------
+    List[List[List[float]]]: The list of lines xy data from the current matplotlib plot.
     """
-    filepath_prefix = get_dispersion_data_filepath_prefix()
-    data_folder = get_dispersion_data_folder()
-    yield from _iter_regression_test_files(filepath_prefix, data_folder)
+    return [line.get_xydata().T.tolist() for line in matplotlib.pyplot.gcf().axes[0].lines]
 
 
-def iter_dos_data_files():
+def get_dos_params() -> List[List[str]]:
     """
-    A generator function to get all the files
-     containing regression testing data for scripts/dos.py
-    Yields the number of the file and the full file path as a tuple.
+    Get the parameters to run and test scripts/dos.py with.
 
-    Examples
-    --------
-         >>> for filenum, file in iter_dos_data_files():
-         >>>   print(filenum)
-         >>>
-         >>> 0
-         >>> 1
+    Returns
+    -------
+    List[str]: The parameters to run the script with
     """
-    filepath_prefix = get_dos_data_filepath_prefix()
-    data_folder = get_dos_data_folder()
-    yield from _iter_regression_test_files(filepath_prefix, data_folder)
-
-
-def write_plot_to_file_for_regression_testing(filepath_prefix: str):
-    """
-    Get the current matplotlib plot with gcf() and write the xydata of the lines of the plot
-     to separate csv files using the filepath_prefix parameter as a prefix and the
-      index of the line and .csv to complete the filename.
-
-    Parameters
-    ----------
-    filepath_prefix : str
-        A prefix to use to write the files e.g. C:/data
-    """
-    for index, line in enumerate(matplotlib.pyplot.gcf().axes[0].lines):
-        np.savetxt(filepath_prefix + str(index) + ".csv", line.get_xydata().T, delimiter=",")
+    return [[], ["-w 2.3"], ["-b 3.3"], ["-w 2.3", "-b 3.3"], ["-units=meV"], ["-lorentz"], ["-mirror"]]
