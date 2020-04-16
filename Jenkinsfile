@@ -78,9 +78,6 @@ pipeline {
 
                         stage("Notify") {
                             steps {
-                                script {
-                                    def email = getGithubCommitAuthorEmail()
-                                }
                                 echo "$email"
                                 setGitHubBuildStatus("pending", "Starting", "Linux")
                                 echo "Branch: ${env.JOB_BASE_NAME}"
@@ -174,9 +171,6 @@ pipeline {
 
                         stage("Notify") {
                             steps {
-                                script {
-                                    def email = getGithubCommitAuthorEmail()
-                                }
                                 echo "$email"
                                 setGitHubBuildStatus("pending", "Starting", "Windows")
                                 echo "Branch: ${env.JOB_BASE_NAME}"
@@ -248,13 +242,15 @@ pipeline {
 
     post {
         unsuccessful {
-            script {
-                def email = sh(script: 'git --no-pager show -s --format=\'%ae\'', returnStdout: true).trim()
-                mail (
-                    to: "$email",
-                    subject: "Failed pipeline: ${env.JOB_BASE_NAME}",
-                    body: "See ${env.BUILD_URL}"
-                )
+            node("sl7"){
+                script {
+                    def email = sh(script: 'git --no-pager show -s --format=\'%ae\'', returnStdout: true).trim()
+                    mail (
+                        to: "$email",
+                        subject: "Failed pipeline: ${env.JOB_BASE_NAME}",
+                        body: "See ${env.BUILD_URL}"
+                    )
+                }
             }
         }
     }
