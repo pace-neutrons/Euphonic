@@ -253,8 +253,9 @@ pipeline {
 
     post {
         unsuccessful {
-            node("sl7"){
+            node("sl7") {
                 script {
+                    sh "printenv"
                     def email = getGitCommitAuthorEmail()
                     mail (
                         to: "$email",
