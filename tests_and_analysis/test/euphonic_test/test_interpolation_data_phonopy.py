@@ -87,9 +87,13 @@ class TestReadInterpolationNaCl(unittest.TestCase):
              [0.        , 2.43533967, 0.        ],
              [0.        , 0.        , 2.43533967]])
         expctd_data.force_constants = np.load(
-            self.path +'/force_constants_hdf5.npy')*ureg('hartree/bohr**2')
+            self.path +'/force_constants.npy')*ureg('hartree/bohr**2')
+        expctd_data.primitive_force_constants = np.load(
+            self.path +'/primitive_force_constants.npy')*ureg('hartree/bohr**2')
         self.expctd_data = expctd_data
         self.summary_nofc = 'phonopy_nofc.yaml'
+        self.summary_prim = 'phonopy_prim.yaml'
+        self.summary_prim_nofc = 'phonopy_prim_nofc.yaml'
         self.data = InterpolationData.from_phonopy(path=self.path)
 
         # Maximum difference in force constants read from plain text and hdf5
@@ -169,6 +173,32 @@ class TestReadInterpolationNaCl(unittest.TestCase):
             born_name='BORN')
         npt.assert_allclose(data_born.born.magnitude,
                             self.expctd_data.born.magnitude)
+
+    def test_prim_fc_mat_read(self):
+        data = InterpolationData.from_phonopy(
+            path=self.path, summary_name=self.summary_prim)
+        npt.assert_allclose(
+            data.force_constants.magnitude,
+            self.expctd_data.primitive_force_constants.magnitude,
+            atol=self.fc_tol)
+
+    def test_prim_fc_mat_read_hdf5(self):
+        data = InterpolationData.from_phonopy(
+            path=self.path, summary_name=self.summary_prim_nofc,
+            fc_name='primitive_force_constants.hdf5')
+        npt.assert_allclose(
+            data.force_constants.magnitude,
+            self.expctd_data.primitive_force_constants.magnitude,
+            atol=self.fc_tol)
+
+    def test_prim_fc_mat_read_FC(self):
+        data = InterpolationData.from_phonopy(
+            path=self.path, summary_name=self.summary_prim_nofc,
+            fc_name='PRIMITIVE_FORCE_CONSTANTS')
+        npt.assert_allclose(
+            data.force_constants.magnitude,
+            self.expctd_data.primitive_force_constants.magnitude,
+            atol=self.fc_tol)
 
 
 class TestInterpolatePhononsNaCl(unittest.TestCase):

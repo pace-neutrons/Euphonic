@@ -14,9 +14,6 @@ To use this functionality, ensure you have installed the optional ``pyyaml`` and
 InterpolationData
 -----------------
 
-Note: Currently, reading force constants from Phonopy is not supported for
-non-diagonal supercell or primitive matrices
-
 When using Phonopy with Euphonic, it is recommended that all the required data
 (force constants, crystal structure, born charges if applicable) be collected
 in a single ``phonopy.yaml`` file. This can be done by running Phonopy with the
