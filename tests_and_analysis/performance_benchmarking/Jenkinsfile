@@ -1,10 +1,10 @@
 pipeline {
 
-    agent { label "scarf" }
+    agent { label "sl7" }
 
 /*
 
-    tiggers {
+    triggers {
         cron("* * * * 1")
     }
 
@@ -12,10 +12,17 @@ pipeline {
 
     stages {
 
-        stage("Notify") {
-            steps {
-                echo "Starting from SCARF"
-            }
+        stage("Benchmark"){
+            checkout scm
+            sh """
+                conda create --name py python=3.6.0 -y
+                conda activate py
+                python -m pip install --upgrade --user pip
+                python -m pip install numpy
+                CALL "%VS2019_VCVARSALL%" x86_amd64
+                python -m pip install .
+
+            """
         }
 
     }
