@@ -4,7 +4,7 @@ import numpy as np
 import numpy.testing as npt
 from euphonic import ureg, Crystal
 from euphonic.util import direction_changed, mp_grid
-from .utils import get_data_path
+from ..utils import get_data_path
 
 
 class TestDirectionChanged(unittest.TestCase):

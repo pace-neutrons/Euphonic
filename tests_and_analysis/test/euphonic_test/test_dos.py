@@ -2,7 +2,7 @@ import unittest
 import numpy as np
 import numpy.testing as npt
 from euphonic.data.phonon import PhononData
-from .utils import get_data_path
+from ..utils import get_data_path
 
 
 class TestCalculateDosQuartz(unittest.TestCase):

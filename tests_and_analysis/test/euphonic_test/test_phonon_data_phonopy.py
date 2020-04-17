@@ -4,7 +4,7 @@ import numpy.testing as npt
 import numpy as np
 from euphonic.data.phonon import PhononData
 from euphonic import ureg
-from .utils import get_data_path
+from ..utils import get_data_path
 
 class TestReadNaClPhononQPoints(unittest.TestCase):
 

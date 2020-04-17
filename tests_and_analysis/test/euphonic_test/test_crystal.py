@@ -5,7 +5,7 @@ import numpy.testing as npt
 import numpy as np
 import pytest
 from euphonic import ureg, Crystal
-from .utils import get_data_path
+from ..utils import get_data_path
 
 
 def quartz_attrs():
