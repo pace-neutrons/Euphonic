@@ -1,0 +1,22 @@
+pipeline {
+
+    agent { label "scarf" }
+
+/*
+
+    tiggers {
+        cron("* * * * 1")
+    }
+
+*/
+
+    stages {
+
+        stage("Notify") {
+            steps {
+                echo "Starting from SCARF"
+            }
+        }
+
+    }
+}
