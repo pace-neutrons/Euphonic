@@ -7,29 +7,20 @@ vibrational band structure or dispersion.
 """
 
 import argparse
-import os
 import numpy as np
 from euphonic import ureg
 from euphonic.data.bands import BandsData
-from euphonic.data.phonon import PhononData
 from euphonic.plot.dos import plot_dos, output_grace
+from typing import List
+
+from euphonic.script_utils import load_data_from_file, get_args_and_set_up_and_down, matplotlib_save_or_show
 
 
-def main():
+def main(params: List[str] = None):
     parser = get_parser()
-    args = parser.parse_args()
-    # If neither -up nor -down specified, plot both
-    if not args.up and not args.down:
-        args.up = True
-        args.down = True
+    args = get_args_and_set_up_and_down(parser, params)
 
-    path, file = os.path.split(args.filename)
-    seedname = file[:file.rfind('.')]
-    if file.endswith('.bands'):
-        data = BandsData.from_castep(seedname, path=path)
-    else:
-        data = PhononData.from_castep(seedname, path=path)
-
+    data, seedname, file = load_data_from_file(args.filename)
     data.convert_e_units(args.units)
 
     # Calculate and plot DOS
@@ -66,12 +57,7 @@ def main():
         fig = plot_dos(data, args.filename, mirror=args.mirror, up=args.up,
                        down=args.down)
         if fig is not None:
-            import matplotlib.pyplot as plt
-            # Save or show Matplotlib figure
-            if args.s is not None:
-                plt.savefig(args.s)
-            else:
-                plt.show()
+            matplotlib_save_or_show(save_filename=args.s)
 
 
 def get_parser():
