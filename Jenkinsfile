@@ -41,8 +41,8 @@ def getGitCommitAuthorEmail() {
                 variable: 'api_token')]) {
             return sh(
                 script: """
-                        payload=\$(curl --silent -H "Authorization: token ${api_token}" --request GET \
-                            https://api.github.com/repos/pace-neutrons/Euphonic/commits/${env.GIT_COMMIT} > /dev/null) &&
+                        payload=\$(curl -H "Authorization: token ${api_token}" --request GET \
+                            https://api.github.com/repos/pace-neutrons/Euphonic/commits/${env.GIT_COMMIT}) &&
                         email=\$payload | jq -r ".commit.author.email" &&
                         echo \$email
                     """,
