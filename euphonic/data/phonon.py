@@ -27,19 +27,9 @@ class PhononData(object):
         number. Default units meV
     eigenvecs: (n_qpts, 3*n_atoms, n_atoms, 3) complex ndarray
         Dynamical matrix eigenvectors. Empty if read_eigenvecs is False
-    split_i : (n_splits,) int ndarray
-        The q-point indices where there is LO-TO splitting, if applicable.
-        Otherwise empty.
-    split_freqs : (n_splits, 3*n_atoms) float ndarray
-        Holds the additional LO-TO split phonon frequencies for the q-points
-        specified in split_i. Empty if no LO-TO splitting. Default units meV
-    split_eigenvecs : (n_splits, 3*n_atoms, n_atoms, 3) complex ndarray
-        Holds the additional LO-TO split dynamical matrix eigenvectors for the
-        q-points specified in split_i. Empty if no LO-TO splitting
     """
 
-    def __init__(self, crystal, qpts, freqs, eigenvecs, weights=None,
-                 split_i=None, split_freqs=None, split_eigenvecs=None):
+    def __init__(self, crystal, qpts, freqs, eigenvecs, weights=None):
         """
         Parameters
         ----------
@@ -54,18 +44,6 @@ class PhononData(object):
             Dynamical matrix eigenvectors. Empty if read_eigenvecs is False
         weights : (n_qpts,) float ndarray, optional, default None
             The weight for each q-point. If None, equal weights are assumed
-        split_i : (n_splits,) int ndarray, optional, default None
-            The q-point indices where there is LO-TO splitting, if applicable.
-            Otherwise empty.
-        split_freqs : (n_splits, 3*n_atoms) float Quantity, optional,
-                      default None
-            Holds the additional LO-TO split phonon frequencies for the q-points
-            specified in split_i. Empty if no LO-TO splitting.
-        split_eigenvecs : (n_splits, 3*n_atoms, n_atoms, 3) complex ndarray,
-                          optional, default None
-            Holds the additional LO-TO split dynamical matrix eigenvectors for
-            the q-points specified in split_i. Empty if no LO-TO splitting
-
         """
         self.crystal = crystal
         self.qpts = qpts
@@ -80,27 +58,9 @@ class PhononData(object):
         else:
             self.weights = np.full(self.n_qpts, 1/self.n_qpts)
 
-        if split_i is not None:
-            self.split_i = split_i
-            self._split_freqs = split_freqs.to(
-                ureg.INTERNAL_ENERGY_UNIT).magnitude
-            self.split_eigenvecs = split_eigenvecs
-        else:
-            self.split_i = np.empty((0,), dtype=np.int32)
-            n_atoms = self.crystal.n_atoms
-            self._split_freqs = np.empty((0, 3*n_atoms))
-            self.split_eigenvecs = np.empty(
-                (0, 3*n_atoms, self.crystal.n_atoms, 3),
-                dtype=np.complex128)
-
     @property
     def freqs(self):
         return self._freqs*ureg(
-            'INTERNAL_ENERGY_UNIT').to(self.freqs_unit, 'spectroscopy')
-
-    @property
-    def split_freqs(self):
-        return self._split_freqs*ureg(
             'INTERNAL_ENERGY_UNIT').to(self.freqs_unit, 'spectroscopy')
 
     @property
@@ -468,15 +428,12 @@ class PhononData(object):
     @classmethod
     def from_dict(cls, d):
         crystal = Crystal.from_dict(d)
-        for key in ['weights', 'split_i', 'split_freqs', 'split_eigenvecs']:
+        for key in ['weights']:
             if not key in d.keys():
                 d[key] = None
         d['freqs'] = d['freqs']*ureg(d['freqs_unit'])
-        if d['split_freqs'] is not None:
-            d['split_freqs'] = d['split_freqs']*ureg(d['freqs_unit'])
         return cls(crystal, d['qpts'], d['freqs'], d['eigenvecs'],
-                   d['weights'], d['split_i'], d['split_freqs'],
-                   d['split_eigenvecs'])
+                   d['weights'])
 
     @classmethod
     def from_castep(cls, seedname, path=''):

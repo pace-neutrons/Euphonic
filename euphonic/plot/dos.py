@@ -165,7 +165,7 @@ def output_grace(data, seedname='out', mirror=False, up=True, down=True):
                     n_sets += 1
 
 
-def plot_dos(data, title='', mirror=False, up=True, down=True, **line_kwargs):
+def plot_dos(data, title='', **line_kwargs):
     """
     Creates a Matplotlib figure of the density of states
 
@@ -176,13 +176,6 @@ def plot_dos(data, title='', mirror=False, up=True, down=True, **line_kwargs):
         and dos_bins attributes for plotting
     title : string
         The figure title. Default: ''
-    mirror : boolean
-        Whether to reflect the dos_down frequencies in the x-axis (if
-        applicable). Default: False
-    up : boolean, optional
-        Whether to plot spin up dos (if applicable). Default: True
-    down : boolean, optional
-        Whether to plot spin down dos (if applicable). Default: True
     **line_kwargs : matplotlib.line.Line2D properties, optional
         Used in the axes.plot command to specify properties like linewidth,
         linestyle
@@ -224,31 +217,9 @@ def plot_dos(data, title='', mirror=False, up=True, down=True, **line_kwargs):
     bwidth = dos_bins[1] - dos_bins[0]
     bin_centres = dos_bins[:-1] + bwidth/2
 
-    # Plot dos and Fermi energy
-    if up:
-        if hasattr(data, 'dos_down'):
-            label = 'alpha'
-        else:
-            label = None
-        ax.plot(bin_centres, data.dos, label=label, lw=1.0, **line_kwargs)
-    if down and hasattr(data, 'dos_down') and len(data.dos_down) > 0:
-        if mirror:
-            ax.plot(bin_centres, np.negative(data.dos_down), label='beta',
-                    lw=1.0, **line_kwargs)
-            ax.axhline(y=0, c='k', lw=1.0)
-        else:
-            ax.plot(bin_centres, data.dos_down, label='beta', lw=1.0,
-                    **line_kwargs)
-    if hasattr(data, 'fermi'):
-        for i, ef in enumerate(data.fermi.magnitude):
-            if i == 0:
-                ax.axvline(x=ef, ls='dashed', c='k', label=r'$\epsilon_F$')
-            else:
-                ax.axvline(x=ef, ls='dashed', c='k')
-        ax.legend()
-
-    if not mirror:
-        ax.set_ylim(bottom=0)  # Need to set limits after plotting the data
+    # Plot dos
+    ax.plot(bin_centres, data.dos, lw=1.0, **line_kwargs)
+    ax.set_ylim(bottom=0)  # Need to set limits after plotting the data
     plt.tight_layout()
 
     return fig

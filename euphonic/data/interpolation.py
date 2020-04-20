@@ -111,8 +111,8 @@ class InterpolationData(object):
 
     def calculate_fine_phonons(
         self, qpts, asr=None, precondition=False, dipole=True,
-        eta_scale=1.0, splitting=True, reduce_qpts=True, use_c=False,
-        n_threads=1, fall_back_on_python=True):
+        eta_scale=1.0, splitting=True, insert_gamma=False, reduce_qpts=True,
+        use_c=False, n_threads=1, fall_back_on_python=True):
         """
         Calculate phonon frequencies and eigenvectors at specified q-points
         from a supercell force constant matrix via interpolation. For more
@@ -139,6 +139,12 @@ class InterpolationData(object):
             Whether to calculate the LO-TO splitting at the gamma points. Only
             applied if dipole is True and the Born charges and dielectric
             permitivitty tensor are present.
+        insert_gamma : boolean, optional, default False
+            If splitting is True, this will insert gamma points into qpts to
+            store the extra split frequencies. Note this means that the length
+            of qpts in the output PhononData object will not necessarily be the
+            same as the input qpts. If qpts already contains double gamma points
+            where you want split frequencies, leave this as False.
         reduce_qpts : boolean, optional, default False
             Whether to use periodicity to reduce all q-points and only
             calculate for unique q-points within the 1st BZ. This won't change
@@ -157,7 +163,9 @@ class InterpolationData(object):
         -------
         phonon_data : PhononData
             A PhononData object containing the interpolated frequencies and
-            eigenvectors
+            eigenvectors. Note that if there is LO-TO splitting, the number of
+            input q-points may not be the same as in the output PhononData
+            object
 
         Raises
         ------
@@ -169,6 +177,13 @@ class InterpolationData(object):
             dipole = False
         if not dipole:
             splitting = False
+
+        if splitting and insert_gamma:
+            # Duplicate gamma points where there is splitting
+            gamma_i = np.where(is_gamma(qpts))[0]
+            split_gamma = gamma_i[np.where(
+                np.logical_and(gamma_i > 0, gamma_i < len(qpts) - 1))]
+            qpts = np.insert(qpts, split_gamma, np.array([0., 0., 0.]), axis=0)
 
         if reduce_qpts:
             norm_qpts = qpts - np.rint(qpts)
@@ -261,10 +276,6 @@ class InterpolationData(object):
                 # Finding acoustic modes failed
                 asr = None
 
-        split_i = None
-        split_freqs = None
-        split_eigenvecs = None
-
         rfreqs = np.zeros((n_rqpts, 3*n_atoms))
         reigenvecs = np.zeros((n_rqpts, 3*n_atoms, n_atoms, 3),
                                   dtype=np.complex128)
@@ -278,7 +289,8 @@ class InterpolationData(object):
                     warnings.warn(('use_c=True is set, but the Euphonic\'s C '
                                    'extension couldn\'t be imported, it may '
                                    'not have been installed. Attempting to fall '
-                                   'back to pure Python calculation'), stacklevel=2)
+                                   'back to pure Python calculation'),
+                                   stacklevel=2)
                     raise
             else:
                 raise ImportError
@@ -297,40 +309,18 @@ class InterpolationData(object):
                             '_gvec_phases', '_gvecs_cart', '_dipole_q0']
             _ensure_contiguous_attrs(self, attrs, opt_attrs=dipole_attrs)
             reciprocal_asr = 1 if asr == 'reciprocal' else 0
-            if splitting:
-                gamma_i = np.where(is_gamma(qpts))[0]
-                split_i = gamma_i[np.logical_and(gamma_i > 0,
-                                                 gamma_i < len(qpts) - 1)]
-                split_freqs = np.zeros((len(split_i), 3*n_atoms))
-                split_eigenvecs = np.zeros((len(split_i), 3*n_atoms, n_atoms, 3),
-                                           dtype=np.complex128)
-                split_i, split_freqs, split_eigenvecs = _ensure_contiguous_args(
-                    split_i, split_freqs, split_eigenvecs)
-                euphonic_c.calculate_phonons(
-                    self, cell_vectors, recip_vectors, reduced_qpts, qpts_i,
-                    fc_img_weighted, sc_offsets, recip_asr_correction,
-                    dyn_mat_weighting, dipole, reciprocal_asr, splitting, rfreqs,
-                    reigenvecs, split_freqs, split_eigenvecs, split_i,
-                    n_threads, scipy.__path__[0])
-            else:
-                split_i_tmp = np.empty((0,), dtype=np.int32)
-                split_freqs_tmp = np.empty((0, 3*n_atoms))
-                split_eigenvecs_tmp = np.empty(
-                        (0, 3*n_atoms, self.crystal.n_atoms, 3),
-                        dtype=np.complex128)
-                euphonic_c.calculate_phonons(
-                    self, cell_vectors, recip_vectors, reduced_qpts, qpts_i,
-                    fc_img_weighted, sc_offsets, recip_asr_correction,
-                    dyn_mat_weighting, dipole, reciprocal_asr, splitting, rfreqs,
-                    reigenvecs, split_freqs_tmp, split_eigenvecs_tmp,
-                    split_i_tmp, n_threads, scipy.__path__[0])
+            euphonic_c.calculate_phonons(
+                self, cell_vectors, recip_vectors, reduced_qpts, qpts_i,
+                fc_img_weighted, sc_offsets, recip_asr_correction,
+                dyn_mat_weighting, dipole, reciprocal_asr, splitting, rfreqs,
+                reigenvecs, n_threads, scipy.__path__[0])
         except ImportError:
             if not fall_back_on_python:
                 raise ImportCError('use_c=True is set, but the Euphonic\'s C '
                                    'extension couldn\'t be imported, it may '
                                    'not have been installed. You have selected '
-                                   'not to fall back on Python, therefore we cannot '
-                                   'complete the calculation.')
+                                   'not to fall back on Python, therefore we '
+                                   'cannot complete the calculation.')
             else:
                 q_independent_args = (
                     reduced_qpts, qpts_i, fc_img_weighted, unique_sc_offsets,
@@ -338,29 +328,15 @@ class InterpolationData(object):
                     recip_asr_correction, dyn_mat_weighting, dipole, asr,
                     splitting)
                 for q in range(n_rqpts):
-                    rfreqs[q], reigenvecs[q], sfreqs, sevecs, si = \
-                    self._calculate_phonons_at_q(q, q_independent_args)
-                    if len(sfreqs) > 0:
-                        if split_i is None:
-                            split_i = np.empty((0,), dtype=np.int32)
-                            split_freqs = np.empty((0, 3*n_atoms))
-                            split_eigenvecs = np.empty(
-                                (0, 3*n_atoms, n_atoms, 3), dtype=np.complex128)
-                        split_i = np.concatenate((split_i, si))
-                        split_freqs = np.concatenate((split_freqs, sfreqs))
-                        split_eigenvecs = np.concatenate(
-                            (split_eigenvecs, sevecs))
+                    rfreqs[q], reigenvecs[q] = self._calculate_phonons_at_q(
+                        q, q_independent_args)
 
         freqs = rfreqs[qpts_i]*ureg('INTERNAL_ENERGY_UNIT').to(
-            'mDEFAULT_ENERGY_UNIT', 'spectroscopy')
-        if split_freqs is not None:
-            split_freqs = split_freqs*ureg('INTERNAL_ENERGY_UNIT').to(
             'mDEFAULT_ENERGY_UNIT', 'spectroscopy')
 
         return PhononData(
             self.crystal, qpts, freqs, reigenvecs[qpts_i],
-            weights=np.full(len(qpts), 1.0/len(qpts)), split_i=split_i,
-            split_freqs=split_freqs, split_eigenvecs=split_eigenvecs)
+            weights=np.full(len(qpts), 1.0/len(qpts)))
 
     def _calculate_phonons_at_q(self, q, args):
         """
@@ -393,53 +369,41 @@ class InterpolationData(object):
         if splitting and is_gamma(qpt):
             # If first q-point
             if qpts_i[0] == q:
-                q_dirs = [reduced_qpts[qpts_i[1]]]
+                q_dir = reduced_qpts[qpts_i[1]]
             # If last q-point
             elif qpts_i[-1] == q:
-                q_dirs = [reduced_qpts[qpts_i[-2]]]
+                q_dir = reduced_qpts[qpts_i[-2]]
             else:
                 # Find position in original qpts array (non reduced)
                 qpos = np.where(qpts_i==q)[0][0]
-                q_dirs = [-reduced_qpts[qpts_i[qpos - 1]],
-                           reduced_qpts[qpts_i[qpos + 1]]]
-            na_corrs = np.zeros((len(q_dirs), 3*n_atoms, 3*n_atoms),
-                                dtype=np.complex128)
-            for i, q_dir in enumerate(q_dirs):
-                na_corrs[i] = self._calculate_gamma_correction(q_dir)
+                # If splitting=True there should be an adjacent gamma point.
+                # Calculate splitting in whichever direction isn't gamma
+                q_dir = reduced_qpts[qpts_i[qpos + 1]]
+                if is_gamma(q_dir):
+                    q_dir = -reduced_qpts[qpts_i[qpos - 1]]
+            na_corr = self._calculate_gamma_correction(q_dir)
         else:
             # Correction is zero if not a gamma point or splitting = False
-            na_corrs = np.array([0])
+            na_corr = np.array([0])
 
-        split_i = np.empty((0,), dtype=np.int32)
-        sfreqs = np.empty((0, 3*n_atoms))
-        sevecs = np.empty((0, 3*n_atoms, n_atoms, 3))
-        for i, na_corr in enumerate(na_corrs):
-            dyn_mat_corr = dyn_mat + na_corr
+        dyn_mat += na_corr
 
-            # Mass weight dynamical matrix
-            dyn_mat_corr *= dyn_mat_weighting
+        # Mass weight dynamical matrix
+        dyn_mat *= dyn_mat_weighting
 
-            try:
-                evals, evecs = np.linalg.eigh(dyn_mat_corr, UPLO='U')
-            # Fall back to zheev if eigh fails (eigh calls zheevd)
-            except np.linalg.LinAlgError:
-                evals, evecs, info = zheev(dyn_mat_corr)
-            evecs = np.reshape(np.transpose(evecs),
-                               (3*n_atoms, n_atoms, 3))
-            # Set imaginary frequencies to negative
-            imag_freqs = np.where(evals < 0)
-            evals = np.sqrt(np.abs(evals))
-            evals[imag_freqs] *= -1
+        try:
+            evals, evecs = np.linalg.eigh(dyn_mat, UPLO='U')
+        # Fall back to zheev if eigh fails (eigh calls zheevd)
+        except np.linalg.LinAlgError:
+            evals, evecs, info = zheev(dyn_mat)
+        evecs = np.reshape(np.transpose(evecs),
+                           (3*n_atoms, n_atoms, 3))
+        # Set imaginary frequencies to negative
+        imag_freqs = np.where(evals < 0)
+        evals = np.sqrt(np.abs(evals))
+        evals[imag_freqs] *= -1
 
-            if i == 0:
-                freqs = evals
-                eigenvecs = evecs
-            else:
-                split_i = np.concatenate((split_i, [np.where(qpts_i==q)[0][0]]))
-                sfreqs = np.concatenate((sfreqs, [evals]))
-                sevecs = np.concatenate((sevecs, [evecs]))
-
-        return freqs, eigenvecs, sfreqs, sevecs, split_i
+        return evals, evecs
 
     def _calculate_dyn_mat(self, q, fc_img_weighted, unique_sc_offsets,
                            unique_sc_i, unique_cell_origins, unique_cell_i):

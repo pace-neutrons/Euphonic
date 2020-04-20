@@ -4,7 +4,7 @@ import warnings
 import numpy as np
 import seekpath
 from scipy import signal
-from euphonic.util import direction_changed, gaussian_2d
+from euphonic.util import direction_changed, gaussian_2d, is_gamma
 
 
 def calc_abscissa(qpts, recip_latt):
@@ -37,7 +37,7 @@ def calc_abscissa(qpts, recip_latt):
 
     # Get distance between q-points for all valid pairs of q-points
     modq = np.zeros(np.size(delta, axis=0))
-    modq[calc_modq] = np.sqrt(np.sum(np.square(deltaq), axis=1))
+    modq[calc_modq] = np.sqrt(np.sum(np.square(deltaq[calc_modq]), axis=1))
 
     # Prepend initial x axis value of 0
     abscissa = np.insert(modq, 0, 0.)
@@ -451,8 +451,7 @@ def output_grace(data, seedname='out', up=True, down=True):
                     f.write('&\n')
 
 
-def plot_dispersion(data, title='', btol=10.0, up=True, down=True,
-                    **line_kwargs):
+def plot_dispersion(data, title='', btol=10.0, **line_kwargs):
     """
     Creates a Matplotlib figure of the band structure
 
@@ -467,10 +466,6 @@ def plot_dispersion(data, title='', btol=10.0, up=True, down=True,
         Determines the limit for plotting sections of reciprocal space on
         different subplots, as a fraction of the median distance between
         q-points. Default: 10.0
-    up : boolean, optional
-        Whether to plot spin up frequencies (if applicable). Default: True
-    down : boolean, optional
-        Whether to plot spin down frequencies (if applicable). Default: True
     **line_kwargs : Line2D properties, optional
         Used in the axes.plot command to specify properties like linewidth,
         linestyle
@@ -535,6 +530,14 @@ def plot_dispersion(data, title='', btol=10.0, up=True, down=True,
     if np.all(xlabels == ''):
         xlabels = np.around(data.qpts[qpts_with_labels, :], decimals=2)
     xticks = abscissa[qpts_with_labels]
+
+    # Put frequencies in order if reorder_freqs() has been called
+    if hasattr(data, '_mode_map'):
+        freqs = data.freqs.magnitude[
+            np.arange(len(data.qpts))[:, np.newaxis], data._mode_map]
+    else:
+        freqs = data.freqs.magnitude
+
     for i, ax in enumerate(subplots):
         # X-axis formatting
         # Set high symmetry point x-axis ticks/labels
@@ -551,68 +554,27 @@ def plot_dispersion(data, title='', btol=10.0, up=True, down=True,
             ax.set_xticklabels(xlabels)
         ax.set_xlim(left=abscissa[imin[i]], right=abscissa[imax[i]])
 
-        # Plot frequencies and Fermi energy
-        if up:
-            if hasattr(data, 'split_i') and data.split_i.size > 0:
-                split_i = data.split_i
-            else:
-                split_i = None
-            # If there is LO-TO splitting, plot in sections
-            if split_i is not None:
-                section_i = np.where(np.logical_and(
-                    split_i > imin[i], split_i < imax[i]))[0]
-                n_sections = section_i.size + 1
-            else:
-                n_sections = 1
+        # If there is LO-TO splitting, plot in sections
+        qpts = data.qpts[imin[i]:imax[i] + 1]
+        gamma_i = np.where(is_gamma(qpts))[0] + imin[i]
+        diff = np.diff(gamma_i)
+        adjacent_gamma_i = np.where(diff == 1)[0]
+        if len(adjacent_gamma_i) > 0:
+            section_i = gamma_i[adjacent_gamma_i] + 1
+            n_sections = len(section_i) + 1
+        else:
+            n_sections = 1
 
-            # Put frequencies in order if reorder_freqs() has been called
-            if hasattr(data, '_mode_map'):
-                freqs = data.freqs.magnitude[
-                    np.arange(len(data.qpts))[:, np.newaxis], data._mode_map]
-                if split_i is not None:
-                    split_freqs = data.split_freqs.magnitude[
-                        np.arange(len(split_i))[:, np.newaxis],
-                        data._mode_map[split_i]]
-            else:
-                freqs = data.freqs.magnitude
-                if split_i is not None:
-                    split_freqs = data.split_freqs.magnitude
-
-            if n_sections > 1:
-                section_edges = np.concatenate(
-                    ([imin[i]], split_i[section_i], [imax[i]]))
-                for n in range(n_sections):
-                    plot_freqs = np.copy(
-                        freqs[section_edges[n]:section_edges[n+1] + 1])
-                    if n == 0:
-                        if (imin[i] in split_i):
-                            # First point in this subplot is split gamma point
-                            # Replace freqs with split freqs at gamma point
-                            split_idx = np.where(split_i == imin[i])[0][0]
-                            plot_freqs[0] = split_freqs[split_idx]
-                    else:
-                        # Replace freqs with split freqs at gamma point
-                        plot_freqs[0] = split_freqs[section_i[n-1]]
-                    ax.plot(abscissa[section_edges[n]:section_edges[n+1] + 1],
-                            plot_freqs, lw=1.0, **line_kwargs)
-            else:
-                ax.plot(abscissa[imin[i]:imax[i] + 1],
-                        freqs[imin[i]:imax[i] + 1], lw=1.0, **line_kwargs)
-        if down and hasattr(data, 'freq_down') and len(data.freq_down) > 0:
-            freq_down = data.freq_down.magnitude
+        if n_sections > 1:
+            section_edges = np.concatenate(
+                ([imin[i]], section_i, [imax[i] + 1]))
+            for n in range(n_sections):
+                ax.plot(abscissa[section_edges[n]:section_edges[n+1]],
+                        freqs[section_edges[n]:section_edges[n+1]],
+                        lw=1.0, **line_kwargs)
+        else:
             ax.plot(abscissa[imin[i]:imax[i] + 1],
-                    freq_down[imin[i]:imax[i] + 1], lw=1.0, **line_kwargs)
-        if hasattr(data, 'fermi'):
-            for i, ef in enumerate(data.fermi.magnitude):
-                if i == 0:
-                    ax.axhline(y=ef, ls='dashed', c='k',
-                               label=r'$\epsilon_F$')
-                else:
-                    ax.axhline(y=ef, ls='dashed', c='k')
-
-    # Only set legend for last subplot, they all have the same legend labels
-    if hasattr(data, 'fermi'):
-        subplots[-1].legend()
+                    freqs[imin[i]:imax[i] + 1], lw=1.0, **line_kwargs)
 
     # Make sure axis/figure titles aren't cut off. Rect is used to leave some
     # space at the top of the figure for suptitle

@@ -24,8 +24,6 @@ def _read_phonon_data(seedname, path, cell_vectors_unit='angstrom',
         A dict with the following keys: 'n_atoms', 'cell_vectors',
         'cell_vectors_unit', 'atom_r', 'atom_type', 'atom_mass',
         'atom_mass_unit', 'qpts', 'weights', 'freqs', 'freqs_unit', 'eigenvecs'
-        Also contains 'split_i', 'split_freqs', 'split_eigenvecs' if they are
-        present in the .phonon file
     """
     file = os.path.join(path, seedname + '.phonon')
     with open(file, 'r') as f:
@@ -98,6 +96,9 @@ def _read_phonon_data(seedname, path, cell_vectors_unit='angstrom',
             first_qpt = False
             qpt_line = f.readline()
             prev_qpt_num = qpt_num
+    freqs = np.insert(freqs, split_i + 1, split_freqs, axis=0)
+    eigenvecs = np.insert(eigenvecs, split_i + 1, split_eigenvecs, axis=0)
+    qpts = np.insert(qpts, split_i + 1, np.array([0., 0., 0.]), axis=0)
 
     data_dict = {}
     data_dict['n_atoms'] = n_atoms
@@ -115,11 +116,6 @@ def _read_phonon_data(seedname, path, cell_vectors_unit='angstrom',
         frequencies_unit, 'spectroscopy')).magnitude
     data_dict['freqs_unit'] = frequencies_unit
     data_dict['eigenvecs'] = eigenvecs
-    if len(split_i) > 0:
-        data_dict['split_i'] = split_i
-        data_dict['split_freqs'] = ((split_freqs*(1/ureg.cm)).to(
-            frequencies_unit, 'spectroscopy')).magnitude
-        data_dict['split_eigenvecs'] = split_eigenvecs
 
     return data_dict
 
