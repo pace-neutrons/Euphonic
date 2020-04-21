@@ -47,10 +47,10 @@ def _extract_phonon_data_yaml(phonon_data):
     -------
     data_dict : dict
         A dict with the following keys:
-            'qpts', 'freqs'
+            'qpts', 'frequencies'
         It may also have the following keys if they are present in the .yaml
         file:
-            'eigenvecs', 'weights', 'cell_vectors', 'atom_r', 'atom_mass',
+            'eigenvectors', 'weights', 'cell_vectors', 'atom_r', 'atom_mass',
             'atom_type'
     """
 
@@ -59,11 +59,11 @@ def _extract_phonon_data_yaml(phonon_data):
     bands_data_each_qpt = [bands_data['band'] for bands_data in phonons]
 
     data_dict['qpts'] = np.array([phon['q-position'] for phon in phonons])
-    data_dict['freqs'] = np.array(
+    data_dict['frequencies'] = np.array(
         [[band_data['frequency'] for band_data in bands_data]
             for bands_data in bands_data_each_qpt])
     try:
-        data_dict['eigenvecs'] = np.squeeze(np.array(
+        data_dict['eigenvectors'] = np.squeeze(np.array(
             [[band_data['eigenvector'] for band_data in bands_data]
                 for bands_data in bands_data_each_qpt]).view(np.complex128))
     except KeyError:
@@ -106,19 +106,19 @@ def _extract_phonon_data_hdf5(hdf5_file):
     -------
     data_dict : dict
         A dict with the following keys:
-            'qpts', 'freqs'
+            'qpts', 'frequencies'
         It may also have the following keys if they are present in the .hdf5
         file:
-            'eigenvecs', 'weights'
+            'eigenvectors', 'weights'
     """
     if 'qpoint' in hdf5_file.keys():
         data_dict = {}
         data_dict['qpts'] = hdf5_file['qpoint'][()]
-        data_dict['freqs'] = hdf5_file['frequency'][()]
+        data_dict['frequencies'] = hdf5_file['frequency'][()]
         # Eigenvectors may not be present if users haven't set --eigvecs when
         # running Phonopy
         try:
-            data_dict['eigenvecs'] = hdf5_file['eigenvector'][()]
+            data_dict['eigenvectors'] = hdf5_file['eigenvector'][()]
         except KeyError:
             pass
         # Only mesh.hdf5 has weights
@@ -143,13 +143,13 @@ def _extract_band_data_hdf5(hdf5_file):
     data_dict = {}
     data_dict['qpts'] = hdf5_file['path'][()].reshape(
         -1, hdf5_file['path'][()].shape[-1])
-    data_dict['freqs'] = hdf5_file['frequency'][()].reshape(
+    data_dict['frequencies'] = hdf5_file['frequency'][()].reshape(
         -1, hdf5_file['frequency'][()].shape[-1])
     try:
         # The last 2 dimensions of eigenvectors in bands.hdf5 are for some
         # reason transposed compared to mesh/qpoints.hdf5, so also transpose to
         # handle this
-        data_dict['eigenvecs'] = hdf5_file['eigenvector'][()].reshape(
+        data_dict['eigenvectors'] = hdf5_file['eigenvector'][()].reshape(
             -1, *hdf5_file['eigenvector'][()].shape[-2:]).transpose([0,2,1])
     except KeyError:
         pass
@@ -183,8 +183,8 @@ def _read_phonon_data(path='.', phonon_name='band.yaml', phonon_format=None,
     data_dict : dict
         A dict with the following keys: 'n_atoms', 'cell_vectors',
         'cell_vectors_unit', 'atom_r', 'atom_type', 'atom_mass',
-        'atom_mass_unit', 'qpts', 'weights', 'freqs', 'freqs_unit', 'eigenvecs'.
-        Also contains 'weights' if they are present in phonon_name
+        'atom_mass_unit', 'qpts', 'weights', 'frequencies', 'frequencies_unit',
+        'eigenvectors'.
     """
     phonon_pathname = os.path.join(path, phonon_name)
     summary_pathname = os.path.join(path, summary_name)
@@ -207,7 +207,7 @@ def _read_phonon_data(path='.', phonon_name='band.yaml', phonon_format=None,
         raise Exception((f'File format {phonon_format} of {phonon_name} is not '
                           'recognised'))
 
-    if not 'eigenvecs' in phonon_dict.keys():
+    if not 'eigenvectors' in phonon_dict.keys():
         raise Exception((f'Eigenvectors couldn\'t be foud in {phonon_pathname},'
                           ' ensure --eigvecs was set when running Phonopy'))
 
@@ -232,7 +232,7 @@ def _read_phonon_data(path='.', phonon_name='band.yaml', phonon_format=None,
         ulength = summary_dict['ulength']
         umass = summary_dict['umass']
         # Check phonon_file and summary_file are commensurate
-        if 3*len(phonon_dict['atom_r']) != len(phonon_dict['freqs'][0]):
+        if 3*len(phonon_dict['atom_r']) != len(phonon_dict['frequencies'][0]):
             raise Exception((f'Phonon file {phonon_pathname} not commensurate '
                              f'with summary file {summary_pathname}. Please '
                               'check contents'))
@@ -243,7 +243,7 @@ def _read_phonon_data(path='.', phonon_name='band.yaml', phonon_format=None,
     n_qpts = len(phonon_dict['qpts'])
     phonon_dict['n_qpts'] = n_qpts
     # Convert Phonopy conventions to Euphonic conventions
-    phonon_dict['eigenvecs'] = convert_eigenvector_phases(phonon_dict)
+    phonon_dict['eigenvectors'] = convert_eigenvector_phases(phonon_dict)
     # If weights not specified, assume equal weights
     if not 'weights' in phonon_dict.keys():
         phonon_dict['weights'] = np.full(n_qpts, 1)
@@ -255,9 +255,9 @@ def _read_phonon_data(path='.', phonon_name='band.yaml', phonon_format=None,
     phonon_dict['atom_mass'] = phonon_dict['atom_mass']*ureg(
         umass).to(atom_mass_unit).magnitude
     phonon_dict['atom_mass_unit'] = atom_mass_unit
-    phonon_dict['freqs'] = phonon_dict['freqs']*ureg(
+    phonon_dict['frequencies'] = phonon_dict['frequencies']*ureg(
         ufreq).to(frequencies_unit, 'spectroscopy').magnitude
-    phonon_dict['freqs_unit'] = frequencies_unit
+    phonon_dict['frequencies_unit'] = frequencies_unit
     return phonon_dict
 
 
@@ -274,7 +274,7 @@ def convert_eigenvector_phases(phonon_dict):
     qpts = phonon_dict['qpts']
     n_qpts = len(qpts)
 
-    eigvecs = np.reshape(phonon_dict["eigenvecs"],
+    eigvecs = np.reshape(phonon_dict['eigenvectors'],
                          (n_qpts, n_atoms, 3, n_atoms, 3))
     na = np.newaxis
     rk_diff = atom_r[:, na, :] - atom_r[na, :, :]

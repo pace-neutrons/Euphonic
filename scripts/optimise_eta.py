@@ -10,7 +10,7 @@ materials) to determine the optimal value
 import argparse
 import time
 import numpy as np
-from euphonic.data.interpolation import InterpolationData
+from euphonic import ForceConstants
 
 
 def calculate_optimum_eta(seedname: str, eta_min: float = 0.25, eta_max: float = 1.5, eta_step: float = 0.25,
@@ -43,7 +43,7 @@ def calculate_optimum_eta(seedname: str, eta_min: float = 0.25, eta_max: float =
     t_init = np.zeros(len(etas), dtype=np.float64)
     t_tot = np.zeros(len(etas), dtype=np.float64)
 
-    idata = InterpolationData.from_castep(seedname)
+    idata = ForceConstants.from_castep(seedname)
     sfmt = '{:20s}'
     tfmt = '{: 3.2f}'
     etafmt = '{: 2.2f}'
@@ -93,19 +93,19 @@ def get_parser():
               'get a more reliable timing, but will take longer')
     )
     parser.add_argument(
-        '--min',
+        '--eta_min',
         default=0.25,
         type=float,
         help='The minimum value of eta to test'
     )
     parser.add_argument(
-        '--max',
+        '--eta_max',
         default=1.5,
         type=float,
         help='The maximum value of eta to test'
     )
     parser.add_argument(
-        '--step',
+        '--eta_step',
         default=0.25,
         type=float,
         help='The difference between each eta to test'

@@ -182,7 +182,8 @@ class TestCalculateDosQuartz(unittest.TestCase):
     def test_dos_weights(self):
         factor = 2.0
         weights = np.full(
-            self.data.freqs.shape, factor)*self.data.weights[:, np.newaxis]
+            self.data.frequencies.shape,
+            factor)*self.data.weights[:, np.newaxis]
         self.data.calculate_dos(self.dos_bins, weights=weights)
         npt.assert_allclose(self.data.dos/factor,
                             self.expected_dos_no_broaden)

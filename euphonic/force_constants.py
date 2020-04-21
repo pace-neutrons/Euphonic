@@ -7,8 +7,8 @@ from scipy.linalg.lapack import zheev
 from scipy.special import erfc
 from euphonic import ureg, Crystal, QpointPhononModes
 from euphonic.util import is_gamma, mp_grid, get_all_origins
-from euphonic._readers import _castep
-from euphonic._readers import _phonopy
+from euphonic.readers import castep
+from euphonic.readers import phonopy
 
 
 class ImportCError(Exception):
@@ -1111,7 +1111,7 @@ class ForceConstants(object):
         path : str, optional
             Path to dir containing the file(s), if in another directory
         """
-        data = _castep._read_interpolation_data(seedname, path)
+        data = castep._read_interpolation_data(seedname, path)
         return cls.from_dict(data)
 
     @classmethod
@@ -1143,7 +1143,7 @@ class ForceConstants(object):
             type 'phonopy'
 
         """
-        data = _phonopy._read_interpolation_data(
+        data = phonopy._read_interpolation_data(
             path=path, summary_name=summary_name, born_name=born_name,
             fc_name=fc_name, fc_format=fc_format)
         return cls.from_dict(data)

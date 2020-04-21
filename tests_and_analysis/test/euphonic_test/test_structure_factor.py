@@ -82,7 +82,7 @@ class TestStructureFactorForceConstantsLZOSerial(unittest.TestCase):
         expected_sf_sum = np.zeros(sf.shape)
         for q in range(self.idata.n_qpts):
             TOL = 1e-4
-            diff = np.append(TOL + 1, np.diff(self.idata.freqs[q].magnitude))
+            diff = np.append(TOL + 1, np.diff(self.idata.frequencies[q].magnitude))
             unique_index = np.where(diff > TOL)[0]
             x = np.zeros(3*self.idata.crystal.n_atoms, dtype=np.int32)
             x[unique_index] = 1
@@ -107,7 +107,7 @@ class TestStructureFactorForceConstantsLZOSerial(unittest.TestCase):
         expected_sf_sum = np.zeros(sf.shape)
         for q in range(self.idata.n_qpts):
             TOL = 1e-4
-            diff = np.append(TOL + 1, np.diff(self.idata.freqs[q].magnitude))
+            diff = np.append(TOL + 1, np.diff(self.idata.frequencies[q].magnitude))
             unique_index = np.where(diff > TOL)[0]
             x = np.zeros(3*self.idata.crystal.n_atoms, dtype=np.int32)
             x[unique_index] = 1
@@ -130,7 +130,7 @@ class TestStructureFactorForceConstantsLZOSerial(unittest.TestCase):
         expected_sf_sum = np.zeros(sf.shape)
         for q in range(self.idata.n_qpts):
             TOL = 1e-4
-            diff = np.append(TOL + 1, np.diff(self.idata.freqs[q].magnitude))
+            diff = np.append(TOL + 1, np.diff(self.idata.frequencies[q].magnitude))
             unique_index = np.where(diff > TOL)[0]
             x = np.zeros(3*self.idata.crystal.n_atoms, dtype=np.int32)
             x[unique_index] = 1
@@ -153,7 +153,7 @@ class TestStructureFactorForceConstantsLZOSerial(unittest.TestCase):
         expected_sf_sum = np.zeros(sf.shape)
         for q in range(self.idata.n_qpts):
             TOL = 1e-4
-            diff = np.append(TOL + 1, np.diff(self.idata.freqs[q].magnitude))
+            diff = np.append(TOL + 1, np.diff(self.idata.frequencies[q].magnitude))
             unique_index = np.where(diff > TOL)[0]
             x = np.zeros(3*self.idata.crystal.n_atoms, dtype=np.int32)
             x[unique_index] = 1
@@ -176,7 +176,7 @@ class TestStructureFactorForceConstantsLZOSerial(unittest.TestCase):
         expected_sf_sum = np.zeros(sf.shape)
         for q in range(self.idata.n_qpts):
             TOL = 1e-4
-            diff = np.append(TOL + 1, np.diff(self.idata.freqs[q].magnitude))
+            diff = np.append(TOL + 1, np.diff(self.idata.frequencies[q].magnitude))
             unique_index = np.where(diff > TOL)[0]
             x = np.zeros(3*self.idata.crystal.n_atoms, dtype=np.int32)
             x[unique_index] = 1
@@ -199,7 +199,7 @@ class TestStructureFactorForceConstantsLZOSerial(unittest.TestCase):
         expected_sf_sum = np.zeros(sf.shape)
         for q in range(self.idata.n_qpts):
             TOL = 1e-4
-            diff = np.append(TOL + 1, np.diff(self.idata.freqs[q].magnitude))
+            diff = np.append(TOL + 1, np.diff(self.idata.frequencies[q].magnitude))
             unique_index = np.where(diff > TOL)[0]
             x = np.zeros(3*self.idata.crystal.n_atoms, dtype=np.int32)
             x[unique_index] = 1
@@ -315,7 +315,7 @@ class TestStructureFactorForceConstantsQuartzSerial(unittest.TestCase):
         expected_sf_sum = np.zeros(sf.shape)
         for q in range(self.idata.n_qpts):
             TOL = 5e-4
-            diff = np.append(TOL + 1, np.diff(self.idata.freqs[q].magnitude))
+            diff = np.append(TOL + 1, np.diff(self.idata.frequencies[q].magnitude))
             unique_index = np.where(diff > TOL)[0]
             x = np.zeros(3*self.idata.crystal.n_atoms, dtype=np.int32)
             x[unique_index] = 1
@@ -342,7 +342,7 @@ class TestStructureFactorForceConstantsQuartzSerial(unittest.TestCase):
         expected_sf_sum = np.zeros(sf.shape)
         for q in range(self.idata.n_qpts):
             TOL = 5e-4
-            diff = np.append(TOL + 1, np.diff(self.idata.freqs[q].magnitude))
+            diff = np.append(TOL + 1, np.diff(self.idata.frequencies[q].magnitude))
             unique_index = np.where(diff > TOL)[0]
             x = np.zeros(3*self.idata.crystal.n_atoms, dtype=np.int32)
             x[unique_index] = 1
@@ -368,7 +368,7 @@ class TestStructureFactorForceConstantsQuartzSerial(unittest.TestCase):
         expected_sf_sum = np.zeros(sf.shape)
         for q in range(self.idata.n_qpts):
             TOL = 5e-4
-            diff = np.append(TOL + 1, np.diff(self.idata.freqs[q].magnitude))
+            diff = np.append(TOL + 1, np.diff(self.idata.frequencies[q].magnitude))
             unique_index = np.where(diff > TOL)[0]
             x = np.zeros(3*self.idata.crystal.n_atoms, dtype=np.int32)
             x[unique_index] = 1
@@ -394,7 +394,7 @@ class TestStructureFactorForceConstantsQuartzSerial(unittest.TestCase):
         expected_sf_sum = np.zeros(sf.shape)
         for q in range(self.idata.n_qpts):
             TOL = 5e-4
-            diff = np.append(TOL + 1, np.diff(self.idata.freqs[q].magnitude))
+            diff = np.append(TOL + 1, np.diff(self.idata.frequencies[q].magnitude))
             unique_index = np.where(diff > TOL)[0]
             x = np.zeros(3*self.idata.crystal.n_atoms, dtype=np.int32)
             x[unique_index] = 1

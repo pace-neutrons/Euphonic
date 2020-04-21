@@ -130,7 +130,7 @@ class TestPlotDispersion(unittest.TestCase):
     def setUp(self):
         # Input values
         data = type('', (), {})()
-        data.freqs_unit = 'E_h'
+        data.frequencies_unit = 'E_h'
         data.qpts = np.array([[0.00, 0.00, 0.00],
                               [0.50, 0.50, 0.50],
                               [0.50, 0.00, 0.00],
@@ -147,7 +147,7 @@ class TestPlotDispersion(unittest.TestCase):
             'atom_type': np.array(['test']),
             'atom_mass': np.array([1]),
             'atom_mass_unit': 'amu'})
-        data.freqs = np.array(
+        data.frequencies = np.array(
             [[-0.13347765, 0.10487180, 0.10490012,
               0.10490012, 0.14500191, 0.14500191],
              [0.00340273, 0.00340273, 0.17054412,
@@ -181,7 +181,7 @@ class TestPlotDispersion(unittest.TestCase):
         self.assertIsInstance(self.fig, figure.Figure)
 
     def test_n_series(self):
-        n_series = len(self.data.freqs[0])
+        n_series = len(self.data.frequencies[0])
         self.assertEqual(len(self.ax.get_lines()), n_series)
 
     def test_freq_xaxis(self):
@@ -193,11 +193,11 @@ class TestPlotDispersion(unittest.TestCase):
                 n_correct_x += 1
         # Check that there are as many lines with abscissa for the x-axis
         # values as there are freqs branches
-        self.assertEqual(n_correct_x, len(self.data.freqs[0]))
+        self.assertEqual(n_correct_x, len(self.data.frequencies[0]))
 
     def test_freq_yaxis(self):
         n_correct_y = 0
-        freqs = self.data.freqs.magnitude
+        freqs = self.data.frequencies.magnitude
         for branch in freqs.transpose():
             for line in self.ax.get_lines():
                 if np.array_equal(line.get_data()[1], branch):
@@ -218,14 +218,14 @@ class TestPlotDispersion(unittest.TestCase):
         # Test freqs is plotted and fr
         fig = plot_dispersion(self.data, self.title)
         n_correct_y = 0
-        freqs = self.data.freqs.magnitude
+        freqs = self.data.frequencies.magnitude
         for branch in np.transpose(freqs):
             for line in fig.axes[0].get_lines():
                 if np.array_equal(line.get_data()[1], branch):
                     n_correct_y += 1
                     break
         # Check that every freq branch has a matching y-axis line
-        self.assertEqual(n_correct_y, len(self.data.freqs[0]))
+        self.assertEqual(n_correct_y, len(self.data.frequencies[0]))
 
 
 class TestPlotDos(unittest.TestCase):

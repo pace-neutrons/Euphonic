@@ -40,7 +40,7 @@ def run_setup(build_c=True):
 
     packages = ['euphonic',
                 'euphonic.plot',
-                'euphonic._readers']
+                'euphonic.readers']
 
     scripts = ['scripts/dispersion.py',
                'scripts/dos.py',

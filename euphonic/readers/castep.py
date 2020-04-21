@@ -23,7 +23,8 @@ def _read_phonon_data(seedname, path, cell_vectors_unit='angstrom',
     data_dict : dict
         A dict with the following keys: 'n_atoms', 'cell_vectors',
         'cell_vectors_unit', 'atom_r', 'atom_type', 'atom_mass',
-        'atom_mass_unit', 'qpts', 'weights', 'freqs', 'freqs_unit', 'eigenvecs'
+        'atom_mass_unit', 'qpts', 'weights', 'frequencies', 'frequencies_unit',
+        'eigenvectors'
     """
     file = os.path.join(path, seedname + '.phonon')
     with open(file, 'r') as f:
@@ -112,10 +113,10 @@ def _read_phonon_data(seedname, path, cell_vectors_unit='angstrom',
     data_dict['atom_mass_unit'] = atom_mass_unit
     data_dict['qpts'] = qpts
     data_dict['weights'] = weights
-    data_dict['freqs'] = ((freqs*(1/ureg.cm)).to(
+    data_dict['frequencies'] = ((freqs*(1/ureg.cm)).to(
         frequencies_unit, 'spectroscopy')).magnitude
-    data_dict['freqs_unit'] = frequencies_unit
-    data_dict['eigenvecs'] = eigenvecs
+    data_dict['frequencies_unit'] = frequencies_unit
+    data_dict['eigenvectors'] = eigenvecs
 
     return data_dict
 

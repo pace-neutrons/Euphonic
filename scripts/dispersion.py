@@ -26,7 +26,7 @@ def main(params: List[str] = None):
     # Reorder frequencies if requested
     if args.reorder:
         if not file.endswith(".bands"):
-            data.reorder_freqs()
+            data.reorder_frequencies()
         else:
             warnings.warn("Cannot reorder bands data")
 

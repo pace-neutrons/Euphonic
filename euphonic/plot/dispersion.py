@@ -188,7 +188,7 @@ def plot_sqw_map(data, vmin=None, vmax=None, ratio=None, ewidth=0, qwidth=0,
         Default: None
     ewidth : float, optional, default 0
         The FWHM of the Gaussian energy resolution function in the same units
-        as freqs
+        as frequencies
     qwidth : float, optional, default 0
         The FWHM of the Gaussian q-vector resolution function
     cmap : string, optional, default 'viridis'
@@ -271,7 +271,7 @@ def plot_sqw_map(data, vmin=None, vmax=None, ratio=None, ewidth=0, qwidth=0,
     yticks = (ylabels - ebins[0])/(ebins[-1] - ebins[0])*ymax
     ax.set_yticks(yticks)
     ax.set_yticklabels(ylabels)
-    units_str = data.freqs_unit
+    units_str = data.frequencies_unit
     inverse_unit_index = units_str.find('/')
     if inverse_unit_index > -1:
         units_str = units_str[inverse_unit_index+1:]
@@ -337,7 +337,7 @@ def output_grace(data, seedname='out', up=True, down=True):
     # Calculate x-axis (recip space) ticks and labels
     xlabels, qpts_with_labels = recip_space_labels(data)
 
-    units_str = data.freqs_unit
+    units_str = data.frequencies_unit
     inverse_unit_index = units_str.find('/')
     if inverse_unit_index > -1:
         units_str = units_str[inverse_unit_index+1:]
@@ -364,7 +364,7 @@ def output_grace(data, seedname='out', up=True, down=True):
         for i in range(data.n_branches):
             if up:
                 ds = graph.add_dataset(
-                    zip(abscissa, data.freqs[:, i].magnitude))
+                    zip(abscissa, data.frequencies[:, i].magnitude))
                 ds.line.configure(linewidth=2.0, color=i % 16)
                 ds.symbol.shape = 0
             if down and hasattr(data, 'freq_down') and len(data.freq_down) > 0:
@@ -423,7 +423,7 @@ def output_grace(data, seedname='out', up=True, down=True):
                 if up:
                     f.write('@target G0.S{0:d}\n'.format(n_sets))
                     f.write('@type xy\n')
-                    for j, freq in enumerate(data.freqs[:, i].magnitude):
+                    for j, freq in enumerate(data.frequencies[:, i].magnitude):
                         f.write('{0: .15e} {1: .15e}\n'
                                 .format(abscissa[j], freq))
                     n_sets += 1
@@ -512,7 +512,7 @@ def plot_dispersion(data, title='', btol=10.0, **line_kwargs):
     # Y-axis formatting, only need to format y-axis for first subplot as they
     # share the y-axis
     # Replace 1/cm with cm^-1
-    units_str = data.freqs_unit
+    units_str = data.frequencies_unit
     inverse_unit_index = units_str.find('/')
     if inverse_unit_index > -1:
         units_str = units_str[inverse_unit_index+1:]
@@ -531,12 +531,12 @@ def plot_dispersion(data, title='', btol=10.0, **line_kwargs):
         xlabels = np.around(data.qpts[qpts_with_labels, :], decimals=2)
     xticks = abscissa[qpts_with_labels]
 
-    # Put frequencies in order if reorder_freqs() has been called
+    # Put frequencies in order if reorder_frequencies() has been called
     if hasattr(data, '_mode_map'):
-        freqs = data.freqs.magnitude[
+        freqs = data.frequencies.magnitude[
             np.arange(len(data.qpts))[:, np.newaxis], data._mode_map]
     else:
-        freqs = data.freqs.magnitude
+        freqs = data.frequencies.magnitude
 
     for i, ax in enumerate(subplots):
         # X-axis formatting

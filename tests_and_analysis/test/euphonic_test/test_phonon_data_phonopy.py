@@ -103,8 +103,8 @@ class TestReadNaClPhononQPoints(unittest.TestCase):
 
     def test_freqs_read_nacl_phonon(self):
         npt.assert_allclose(
-            self.data.freqs.to('hartree', 'spectroscopy').magnitude,
+            self.data.frequencies.to('hartree', 'spectroscopy').magnitude,
             self.expctd_data.freqs.to('hartree', 'spectroscopy').magnitude)
 
     def test_eigenvecs_read_nacl_phonon(self):
-        npt.assert_allclose(self.data.eigenvecs, self.expctd_data.eigenvecs)
+        npt.assert_allclose(self.data.eigenvectors, self.expctd_data.eigenvecs)

@@ -9,7 +9,6 @@ vibrational band structure or dispersion.
 import argparse
 import numpy as np
 from euphonic import ureg
-from euphonic.data.bands import BandsData
 from euphonic.plot.dos import plot_dos, output_grace
 from typing import List
 
@@ -42,10 +41,10 @@ def main(params: List[str] = None):
         gwidth.ito(args.units, 'spectroscopy')
     else:
         gwidth = args.w*ureg[args.units]
-    if isinstance(data, BandsData):
-        all_freqs = np.append(data.freqs.magnitude, data.freq_down.magnitude)
-    else:
-        all_freqs = data.freqs.magnitude
+#    if isinstance(data, BandsData):
+#        all_freqs = np.append(data.freqs.magnitude, data.freq_down.magnitude)
+#    else:
+    all_freqs = data.frequencies.magnitude
     bwidth = bwidth.magnitude
     dos_bins = np.arange(all_freqs.min(), all_freqs.max() + bwidth, bwidth)
     data.calculate_dos(dos_bins, gwidth, lorentz=args.lorentz)

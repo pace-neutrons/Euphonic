@@ -211,12 +211,6 @@ class TestInterpolatePhononsNaCl(unittest.TestCase):
 
 
         expctd_data = type('', (), {})()
-        expctd_data.split_qpts = np.empty([])
-        expctd_data.split_freqs = np.empty([])*ureg('hartree')
-        expctd_data.split_i = np.empty([])
-        expctd_data.freqs_asr = np.empty([])
-        expctd_data.freqs_asr_splitting = np.empty([])
-
         expctd_data.freqs_dipole_no_asr = np.array([
             [1.68554227,  1.68554227,  1.68554227, 13.03834226, 13.03834226,
              13.03834226, 13.70911614, 13.70911614, 13.70911614, 13.70911614,
@@ -289,7 +283,7 @@ class TestInterpolatePhononsNaCl(unittest.TestCase):
         idata = self.fc.calculate_fine_phonons(
             self.qpts, dipole=True, splitting=False, asr=None)
         npt.assert_allclose(
-            idata.freqs.to('hartree').magnitude,
+            idata.frequencies.to('hartree').magnitude,
             self.expctd_data.freqs_dipole_no_asr.to('hartree').magnitude,
             atol=1e-8)
 
@@ -298,7 +292,7 @@ class TestInterpolatePhononsNaCl(unittest.TestCase):
             self.qpts, dipole=True, splitting=False, asr=None, use_c=True,
             fall_back_on_python=False)
         npt.assert_allclose(
-            idata.freqs.to('hartree').magnitude,
+            idata.frequencies.to('hartree').magnitude,
             self.expctd_data.freqs_dipole_no_asr.to('hartree').magnitude,
             atol=1e-8)
 
@@ -307,7 +301,7 @@ class TestInterpolatePhononsNaCl(unittest.TestCase):
             self.qpts, dipole=True, splitting=False, use_c=True,
             fall_back_on_python=False, n_threads=2)
         npt.assert_allclose(
-            idata.freqs.to('hartree').magnitude,
+            idata.frequencies.to('hartree').magnitude,
             self.expctd_data.freqs_dipole_no_asr.to('hartree').magnitude,
             atol=1e-8)
 
@@ -315,7 +309,7 @@ class TestInterpolatePhononsNaCl(unittest.TestCase):
         idata = self.fc.calculate_fine_phonons(
             self.qpts, dipole=True, splitting=False, asr='reciprocal')
         npt.assert_allclose(
-            idata.freqs.to('hartree').magnitude,
+            idata.frequencies.to('hartree').magnitude,
             self.expctd_data.freqs_dipole_recip_asr.to('hartree').magnitude,
             atol=1e-8)
 
@@ -324,7 +318,7 @@ class TestInterpolatePhononsNaCl(unittest.TestCase):
             self.qpts, dipole=True, splitting=False, asr='reciprocal',
             use_c=True, fall_back_on_python=False)
         npt.assert_allclose(
-            idata.freqs.to('hartree').magnitude,
+            idata.frequencies.to('hartree').magnitude,
             self.expctd_data.freqs_dipole_recip_asr.to('hartree').magnitude,
             atol=1e-8)
 
@@ -333,7 +327,7 @@ class TestInterpolatePhononsNaCl(unittest.TestCase):
             self.qpts, dipole=True, splitting=False, asr='reciprocal',
             use_c=True, fall_back_on_python=False, n_threads=2)
         npt.assert_allclose(
-            idata.freqs.to('hartree').magnitude,
+            idata.frequencies.to('hartree').magnitude,
             self.expctd_data.freqs_dipole_recip_asr.to('hartree').magnitude,
             atol=1e-8)
 
@@ -341,7 +335,7 @@ class TestInterpolatePhononsNaCl(unittest.TestCase):
         idata = self.fc.calculate_fine_phonons(
             self.qpts, dipole=True, splitting=False, asr='realspace')
         npt.assert_allclose(
-            idata.freqs.to('hartree').magnitude,
+            idata.frequencies.to('hartree').magnitude,
             self.expctd_data.freqs_dipole_realsp_asr.to('hartree').magnitude,
             atol=1e-8)
 
@@ -350,7 +344,7 @@ class TestInterpolatePhononsNaCl(unittest.TestCase):
             self.qpts, dipole=True, splitting=False, asr='realspace',
             use_c=True, fall_back_on_python=False)
         npt.assert_allclose(
-            idata.freqs.to('hartree').magnitude,
+            idata.frequencies.to('hartree').magnitude,
             self.expctd_data.freqs_dipole_realsp_asr.to('hartree').magnitude,
             atol=1e-8)
 
@@ -359,6 +353,6 @@ class TestInterpolatePhononsNaCl(unittest.TestCase):
             self.qpts, dipole=True, splitting=False, asr='realspace',
             use_c=True, fall_back_on_python=False, n_threads=2)
         npt.assert_allclose(
-            idata.freqs.to('hartree').magnitude,
+            idata.frequencies.to('hartree').magnitude,
             self.expctd_data.freqs_dipole_realsp_asr.to('hartree').magnitude,
             atol=1e-8)

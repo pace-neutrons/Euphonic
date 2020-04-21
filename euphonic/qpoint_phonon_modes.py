@@ -3,8 +3,8 @@ import numpy as np
 from euphonic import ureg, Crystal
 from euphonic.util import (direction_changed, bose_factor, is_gamma, lorentzian,
                            gaussian)
-from euphonic._readers import _castep
-from euphonic._readers import _phonopy
+from euphonic.readers import castep
+from euphonic.readers import phonopy
 
 
 class QpointPhononModes(object):
@@ -22,14 +22,14 @@ class QpointPhononModes(object):
         Q-point coordinates
     weights : (n_qpts,) float ndarray
         The weight for each q-point
-    freqs: (n_qpts, 3*n_atoms) float ndarray
+    frequencies: (n_qpts, 3*n_atoms) float ndarray
         Phonon frequencies, ordered according to increasing q-point
         number. Default units meV
-    eigenvecs: (n_qpts, 3*n_atoms, n_atoms, 3) complex ndarray
-        Dynamical matrix eigenvectors. Empty if read_eigenvecs is False
+    eigenvectors: (n_qpts, 3*n_atoms, n_atoms, 3) complex ndarray
+        Dynamical matrix eigenvectors
     """
 
-    def __init__(self, crystal, qpts, freqs, eigenvecs, weights=None):
+    def __init__(self, crystal, qpts, frequencies, eigenvectors, weights=None):
         """
         Parameters
         ----------
@@ -37,21 +37,21 @@ class QpointPhononModes(object):
             Lattice and atom information
         qpts : (n_qpts, 3) float ndarray
             Q-point coordinates
-        freqs: (n_qpts, 3*n_atoms) float Quantity
+        frequencies: (n_qpts, 3*n_atoms) float Quantity
             Phonon frequencies, ordered according to increasing q-point
             number. Default units meV
-        eigenvecs: (n_qpts, 3*n_atoms, n_atoms, 3) complex ndarray
-            Dynamical matrix eigenvectors. Empty if read_eigenvecs is False
+        eigenvectors: (n_qpts, 3*n_atoms, n_atoms, 3) complex ndarray
+            Dynamical matrix eigenvectors
         weights : (n_qpts,) float ndarray, optional, default None
             The weight for each q-point. If None, equal weights are assumed
         """
         self.crystal = crystal
         self.qpts = qpts
         self.n_qpts = len(qpts)
-        self._freqs = freqs.to(
+        self._frequencies = frequencies.to(
             ureg.INTERNAL_ENERGY_UNIT).magnitude
-        self.freqs_unit = str(freqs.units)
-        self.eigenvecs = eigenvecs
+        self.frequencies_unit = str(frequencies.units)
+        self.eigenvectors = eigenvectors
 
         if weights is not None:
             self.weights = weights
@@ -59,20 +59,21 @@ class QpointPhononModes(object):
             self.weights = np.full(self.n_qpts, 1/self.n_qpts)
 
     @property
-    def freqs(self):
-        return self._freqs*ureg(
-            'INTERNAL_ENERGY_UNIT').to(self.freqs_unit, 'spectroscopy')
+    def frequencies(self):
+        return self._frequencies*ureg(
+            'INTERNAL_ENERGY_UNIT').to(self.frequencies_unit, 'spectroscopy')
 
     @property
     def sqw_ebins(self):
         return self._sqw_ebins*ureg(
-            'INTERNAL_ENERGY_UNIT').to(self.freqs_unit, 'spectroscopy')
+            'INTERNAL_ENERGY_UNIT').to(self.frequencies_unit, 'spectroscopy')
 
     @property
     def dos_bins(self):
-        return self._dos_bins*ureg('E_h').to(self.freqs_unit, 'spectroscopy')
+        return self._dos_bins*ureg('E_h').to(self.frequencies_unit,
+                                             'spectroscopy')
 
-    def reorder_freqs(self, reorder_gamma=True):
+    def reorder_frequencies(self, reorder_gamma=True):
         """
         By doing a dot product of eigenvectors at adjacent q-points,
         determines which modes are most similar and creates a _mode_map
@@ -92,7 +93,7 @@ class QpointPhononModes(object):
         n_qpts = self.n_qpts
         n_branches = 3*self.crystal.n_atoms
         qpts = self.qpts
-        eigenvecs = self.eigenvecs
+        eigenvecs = self.eigenvectors
 
         # Initialise map, don't reorder first q-point
         mode_map = np.zeros((n_qpts, n_branches), dtype=np.int32)
@@ -195,7 +196,7 @@ class QpointPhononModes(object):
 
         # Calculate dot product of Q and eigenvectors for all branches, atoms
         # and q-points
-        eigenv_dot_q = np.einsum('ijkl,il->ijk', np.conj(self.eigenvecs), Q)
+        eigenv_dot_q = np.einsum('ijkl,il->ijk', np.conj(self.eigenvectors), Q)
 
         # Calculate Debye-Waller factors
         if dw_data:
@@ -213,11 +214,11 @@ class QpointPhononModes(object):
         term = np.einsum('ijk,ik,k->ij', eigenv_dot_q, exp_factor, norm_factor)
 
         # Take mod squared and divide by frequency to get intensity
-        sf = np.absolute(term*np.conj(term))/np.absolute(self._freqs)
+        sf = np.absolute(term*np.conj(term))/np.absolute(self._frequencies)
 
         # Multiply by Bose factor
         if calc_bose:
-            sf = sf*bose_factor(self._freqs, T)
+            sf = sf*bose_factor(self._frequencies, T)
 
         sf = np.real(sf*scale)
 
@@ -243,9 +244,9 @@ class QpointPhononModes(object):
         kB = (1*ureg.k).to('E_h/K').magnitude
         n_atoms = self.crystal.n_atoms
         atom_mass = self.crystal._atom_mass
-        freqs = self._freqs
+        freqs = self._frequencies
         qpts = self.qpts
-        evecs = self.eigenvecs
+        evecs = self.eigenvectors
         weights = self.weights
 
         mass_term = 1/(2*atom_mass)
@@ -295,7 +296,8 @@ class QpointPhononModes(object):
             for each element in the structure in fm e.g.
             {'O': 5.803, 'Zn': 5.680}
         ebins : (n_ebins + 1,) float ndarray
-            The energy bin edges in the same units as QpointPhononModes.freqs
+            The energy bin edges in the same units as
+            QpointPhononModes.frequencies
         calc_bose : boolean, optional, default True
             Whether to calculate and apply the Bose factor
         **kwargs
@@ -309,8 +311,8 @@ class QpointPhononModes(object):
         """
 
         # Convert units
-        freqs = self._freqs
-        ebins = (ebins*ureg(self.freqs_unit).to('E_h')).magnitude
+        freqs = self._frequencies
+        ebins = (ebins*ureg(self.frequencies_unit).to('E_h')).magnitude
 
         # Create initial sqw_map with an extra an energy bin either side, for
         # any branches that fall outside the energy bin range
@@ -353,10 +355,10 @@ class QpointPhononModes(object):
         ----------
         dos_bins : (n_ebins + 1,) float ndarray
             The energy bin edges to use for calculating the DOS, in the same
-            units as freqs
+            units as frequencies
         gwidth : float, optional, default 0
             FWHM of Gaussian/Lorentzian for broadening the DOS bins, in the
-            same units as freqs
+            same units as frequencies
         lorentz : boolean, optional
             Whether to use a Lorentzian or Gaussian broadening function.
             Default: False
@@ -370,18 +372,18 @@ class QpointPhononModes(object):
             The density of states for each bin
         """
 
-        freqs = self._freqs
+        freqs = self._frequencies
         # Convert dos_bins to Hartree. If no units are specified, assume
-        # dos_bins is in same units as freqs
+        # dos_bins is in same units as frequencies
         try:
             dos_bins = dos_bins.to('E_h', 'spectroscopy').magnitude
         except AttributeError:
-            dos_bins = (dos_bins*ureg(self.freqs_unit).to(
+            dos_bins = (dos_bins*ureg(self.frequencies_unit).to(
                 'E_h', 'spectroscopy')).magnitude
         try:
             gwidth = gwidth.to('E_h', 'spectroscopy').magnitude
         except AttributeError:
-            gwidth = (gwidth*ureg(self.freqs_unit).to(
+            gwidth = (gwidth*ureg(self.frequencies_unit).to(
                 'E_h', 'spectroscopy')).magnitude
 
         # Bin frequencies
@@ -430,8 +432,8 @@ class QpointPhononModes(object):
         for key in ['weights']:
             if not key in d.keys():
                 d[key] = None
-        d['freqs'] = d['freqs']*ureg(d['freqs_unit'])
-        return cls(crystal, d['qpts'], d['freqs'], d['eigenvecs'],
+        d['frequencies'] = d['frequencies']*ureg(d['frequencies_unit'])
+        return cls(crystal, d['qpts'], d['frequencies'], d['eigenvectors'],
                    d['weights'])
 
     @classmethod
@@ -447,7 +449,7 @@ class QpointPhononModes(object):
         path : str
             Path to dir containing the file(s), if in another directory
         """
-        data = _castep._read_phonon_data(seedname, path)
+        data = castep._read_phonon_data(seedname, path)
         return cls.from_dict(data)
 
     @classmethod
@@ -473,6 +475,6 @@ class QpointPhononModes(object):
             it isn't present, crystal information is read from summary_name
             instead
         """
-        data = _phonopy._read_phonon_data(path=path, phonon_name=phonon_name,
+        data = phonopy._read_phonon_data(path=path, phonon_name=phonon_name,
                             phonon_format=phonon_format, summary_name=summary_name)
         return cls.from_dict(data)
