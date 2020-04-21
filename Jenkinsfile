@@ -90,7 +90,9 @@ pipeline {
 
                         stage("Notify") {
                             steps {
-                                def email = getGitCommitAuthorEmail()
+                                script {
+                                    def email = getGitCommitAuthorEmail()
+                                }
                                 echo "$email"
                                 setGitHubBuildStatus("pending", "Starting", "Linux")
                                 echo "Branch: ${env.JOB_BASE_NAME}"
@@ -185,7 +187,9 @@ pipeline {
 
                         stage("Notify") {
                             steps {
-                                def email = getGitCommitAuthorEmail()
+                                script {
+                                    def email = getGitCommitAuthorEmail()
+                                }
                                 echo "$email"
                                 setGitHubBuildStatus("pending", "Starting", "Windows")
                                 echo "Branch: ${env.JOB_BASE_NAME}"
