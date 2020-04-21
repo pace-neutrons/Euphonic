@@ -3,7 +3,7 @@ import numpy.testing as npt
 import numpy as np
 from euphonic.data.bands import BandsData
 from euphonic import ureg
-from .utils import get_data_path
+from ..utils import get_data_path
 
 
 class TestBandsDataNaH(unittest.TestCase):

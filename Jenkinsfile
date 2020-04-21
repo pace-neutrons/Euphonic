@@ -114,7 +114,7 @@ pipeline {
                                     module load conda/3 &&
                                     conda config --append channels free &&
                                     conda activate py &&
-                                    export EUPHONIC_VERSION="\$(python euphonic/get_version.py)" &&
+                                    export EUPHONIC_VERSION="\$(python tests_and_analysis/tools/get_version.py)" &&
                                     python -m tox -c release_tox.ini
                                 """
                             }
@@ -180,10 +180,7 @@ pipeline {
                                     CALL conda create --name py python=3.6.0 -y
                                     CALL conda activate py
                                     python -m pip install --upgrade --user pip
-                                    python -m pip install numpy
-                                    python -m pip install matplotlib
-                                    python -m pip install tox==3.14.5
-                                    python -m pip install pylint==2.4.4
+                                    python -m pip install -r tests_and_analysis/jenkins_requirements.txt
                                 """
                             }
                         }
@@ -205,7 +202,7 @@ pipeline {
                                     CALL "%VS2019_VCVARSALL%" x86_amd64
                                     rmdir /s /q .tox
                                     CALL conda activate py
-                                    set /p EUPHONIC_VERSION= < python euphonic/get_version.py
+                                    set /p EUPHONIC_VERSION= < python tests_and_analysis/tools/get_version.py
                                     python -m tox -c release_tox.ini
                                 """
                             }
