@@ -45,7 +45,7 @@ def getGitCommitAuthorEmail() {
                             commit_url=\$(curl -s -H "Authorization: token ${api_token}" --request GET https://api.github.com/repos/pace-neutrons/Euphonic/git/ref/heads/${env.JOB_BASE_NAME} | jq ".object.url" | tr -d '"') &&
                             echo "\$commit_url" &&
                             email_payload=\$(curl -s -H "Authorization: token ${api_token}" --request GET \$commit_url) &&
-                            email=\$(\$email_payload |  jq '.commit.author.email' | tr -d '"') &&
+                            email=\$("\$email_payload" |  jq '.commit.author.email' | tr -d '"') &&
                             echo "\$email"
                         """,
                     returnStdout: true
