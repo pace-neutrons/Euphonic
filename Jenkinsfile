@@ -53,8 +53,11 @@ def getGitCommitAuthorEmail() {
                 return powershell(
                     script: """
                             [Net.ServicePointManager]::SecurityProtocol = "tls12, tls11, tls"
+                            echo "Test"
                             \$payload = Invoke-RestMethod -URI "https://api.github.com/repos/pace-neutrons/Euphonic/commits/${env.GIT_COMMIT}" -Headers @{Authorization = "token ${api_token}"} -Method 'GET'
+                            echo "\$payload"
                             echo \$payload.commit.author.email
+                            echo "Test £"
                         """,
                     returnStdout: true
                 )
