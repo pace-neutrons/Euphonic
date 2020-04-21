@@ -76,10 +76,6 @@ pipeline {
         pollSCM('')
     }
 
-    environment {
-        GIT_AUTHOR_EMAIL = getGitCommitAuthorEmail()
-    }
-
     stages {
 
         stage("Parallel environments") {
@@ -94,6 +90,8 @@ pipeline {
 
                         stage("Notify") {
                             steps {
+                                def email = getGitCommitAuthorEmail()
+                                echo "$email"
                                 setGitHubBuildStatus("pending", "Starting", "Linux")
                                 echo "Branch: ${env.JOB_BASE_NAME}"
                             }
@@ -187,6 +185,8 @@ pipeline {
 
                         stage("Notify") {
                             steps {
+                                def email = getGitCommitAuthorEmail()
+                                echo "$email"
                                 setGitHubBuildStatus("pending", "Starting", "Windows")
                                 echo "Branch: ${env.JOB_BASE_NAME}"
                             }
@@ -259,9 +259,8 @@ pipeline {
         unsuccessful {
             node("sl7") {
                 script {
-                    sh "printenv"
                     mail (
-                        to: "${env.GIT_AUTHOR_EMAIL}",
+                        to: "$email",
                         subject: "Failed pipeline: ${env.JOB_BASE_NAME}",
                         body: "See ${env.BUILD_URL}"
                     )
