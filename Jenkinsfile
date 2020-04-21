@@ -76,6 +76,10 @@ pipeline {
         pollSCM('')
     }
 
+    environment {
+        GIT_AUTHOR_EMAIL = getGitCommitAuthorEmail()
+    }
+
     stages {
 
         stage("Parallel environments") {
@@ -256,9 +260,8 @@ pipeline {
             node("sl7") {
                 script {
                     sh "printenv"
-                    def email = getGitCommitAuthorEmail()
                     mail (
-                        to: "$email",
+                        to: "${env.GIT_AUTHOR_EMAIL}",
                         subject: "Failed pipeline: ${env.JOB_BASE_NAME}",
                         body: "See ${env.BUILD_URL}"
                     )
