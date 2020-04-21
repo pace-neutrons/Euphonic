@@ -8,6 +8,9 @@ some useful helper scripts. See the links below for more information on how to
 read, interpolate and plot phonon frequencies, density of states and inelastic
 neutron scattering intensities.
 
+Note: There has been a major refactor since v0.2.2. The tutorials have been
+updated but see :ref:`here <refactor>` for refactor details.
+
 Python API
 ==========
 - :ref:`Data Objects <data_objs>`

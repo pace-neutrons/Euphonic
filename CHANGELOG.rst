@@ -1,6 +1,11 @@
 `Unreleased <https://github.com/pace-neutrons/Euphonic/compare/v0.2.2...HEAD>`_
 ----------
 
+- Major Refactor: There has been a major refactor, for see the latest
+  `docs <https://euphonic.readthedocs.io/en/latest>`_ for how to use, or
+  `here <https://euphonic.readthedocs.io/en/latest/refactor.rst>` for refactor
+  details.
+
 - New Features:
 
   - Euphonic can now read Phonopy input! See

@@ -4,7 +4,7 @@ from argparse import ArgumentParser
 from typing import List, Tuple
 
 
-def load_data_from_file(filename: str) -> Tuple[Data, str, str]:
+def load_data_from_file(filename: str) -> Tuple[QpointPhononModes, str, str]:
     """
     Load castep data from filename and return the data, seedname and file (without the path).
 
