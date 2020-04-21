@@ -47,8 +47,8 @@ def getGitCommitAuthorEmail() {
                                 |  jq '.commit.author.email' | tr -d '"') &&
                             echo "\$email"
                         """,
-                    returnStdout: true
-                ).trim()
+                    returnStatus: true
+                )
             } else {
                 error("Cannot get commit author in Windows")
             }
