@@ -39,14 +39,23 @@ def getGitCommitAuthorEmail() {
     script {
         withCredentials([string(credentialsId: 'Euphonic_GitHub_API_Token',
                 variable: 'api_token')]) {
-            return sh(
-                script: """
-                        payload=\$(curl -H "Authorization: token ${api_token}" --request GET \
-                            https://api.github.com/repos/pace-neutrons/Euphonic/commits/${env.GIT_COMMIT}) &&
-                        email=\$payload | jq -r ".commit.author.email" &&
-                        echo \$email
-                    """,
-                returnStdout: true).trim()
+            if(isUnix()) {
+                return sh(
+                    script: """
+                            echo "\$(curl -s -H "Authorization: token ${api_token}" --request GET \
+                                https://api.github.com/repos/pace-neutrons/Euphonic/commits/${env.GIT_COMMIT} \
+                                |  jq '.commit.author.email' | tr -d '"')"
+                        """,
+                    returnStdout: true).trim()
+            } else {
+                return powershell(
+                    script: """
+                            \$payload = Invoke-RestMethod -URI "https://api.github.com/repos/pace-neutrons/Euphonic/commits/${env.GIT_COMMIT}" -Headers @{Authorization = "token ${api_token}"} -Method 'GET'
+                            echo \$payload.commit.author.email
+                        """,
+                    returnStdout: true)
+                )
+            }
         }
     }
 }
