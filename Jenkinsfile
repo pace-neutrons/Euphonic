@@ -45,12 +45,14 @@ def getGitCommitAuthorEmail() {
                             echo "\$(curl -s -H "Authorization: token ${api_token}" --request GET \
                                 https://api.github.com/repos/pace-neutrons/Euphonic/commits/${env.GIT_COMMIT} \
                                 |  jq '.commit.author.email' | tr -d '"')"
+                            exit 0
                         """,
                     returnStdout: true
                 ).trim()
             } else {
                 return powershell(
                     script: """
+                            [Net.ServicePointManager]::SecurityProtocol = "tls12, tls11, tls"
                             \$payload = Invoke-RestMethod -URI "https://api.github.com/repos/pace-neutrons/Euphonic/commits/${env.GIT_COMMIT}" -Headers @{Authorization = "token ${api_token}"} -Method 'GET'
                             echo \$payload.commit.author.email
                         """,
