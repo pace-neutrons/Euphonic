@@ -5,9 +5,8 @@ import numpy as np
 import scipy
 from scipy.linalg.lapack import zheev
 from scipy.special import erfc
-from euphonic import ureg, Crystal
+from euphonic import ureg, Crystal, QpointPhononModes
 from euphonic.util import is_gamma, mp_grid, get_all_origins
-from euphonic.data.phonon import PhononData
 from euphonic._readers import _castep
 from euphonic._readers import _phonopy
 
@@ -21,7 +20,7 @@ class ImportCError(Exception):
         return "ImportCError: {}".format(self.message)
 
 
-class InterpolationData(object):
+class ForceConstants(object):
     """
     A class to read and store the data required for a phonon interpolation
     calculation from model (e.g. CASTEP) output, and calculate phonon
@@ -142,7 +141,7 @@ class InterpolationData(object):
         insert_gamma : boolean, optional, default False
             If splitting is True, this will insert gamma points into qpts to
             store the extra split frequencies. Note this means that the length
-            of qpts in the output PhononData object will not necessarily be the
+            of qpts in the output QpointPhononModes object will not necessarily be the
             same as the input qpts. If qpts already contains double gamma points
             where you want split frequencies, leave this as False.
         reduce_qpts : boolean, optional, default False
@@ -161,10 +160,10 @@ class InterpolationData(object):
 
         Returns
         -------
-        phonon_data : PhononData
-            A PhononData object containing the interpolated frequencies and
+        phonon_data : QpointPhononModes
+            A QpointPhononModes object containing the interpolated frequencies and
             eigenvectors. Note that if there is LO-TO splitting, the number of
-            input q-points may not be the same as in the output PhononData
+            input q-points may not be the same as in the output QpointPhononModes
             object
 
         Raises
@@ -334,7 +333,7 @@ class InterpolationData(object):
         freqs = rfreqs[qpts_i]*ureg('INTERNAL_ENERGY_UNIT').to(
             'mDEFAULT_ENERGY_UNIT', 'spectroscopy')
 
-        return PhononData(
+        return QpointPhononModes(
             self.crystal, qpts, freqs, reigenvecs[qpts_i],
             weights=np.full(len(qpts), 1.0/len(qpts)))
 
@@ -1000,7 +999,7 @@ class InterpolationData(object):
         For each displacement of ion i in the unit cell and ion j in the
         supercell, calculate the number of supercell periodic images there are
         and which supercells they reside in, and sets the sc_image_i,
-        and n_sc_images InterpolationData attributes
+        and n_sc_images ForceConstants attributes
 
         Parameters
         ----------

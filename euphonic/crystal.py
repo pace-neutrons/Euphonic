@@ -3,6 +3,7 @@ from euphonic import ureg
 from euphonic.io import _obj_to_json_file, _obj_from_json_file
 from euphonic.util import _check_unit
 
+
 class Crystal(object):
     """
     Stores lattice and atom information

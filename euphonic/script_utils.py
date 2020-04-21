@@ -1,7 +1,5 @@
 import os
-from euphonic.data.bands import BandsData
-from euphonic.data.phonon import PhononData
-from euphonic.data.data import Data
+from euphonic import QpointPhononModes
 from argparse import ArgumentParser
 from typing import List, Tuple
 
@@ -21,10 +19,7 @@ def load_data_from_file(filename: str) -> Tuple[Data, str, str]:
     """
     path, file = os.path.split(filename)
     seedname = file[:file.rfind('.')]
-    if file.endswith('.bands'):
-        data = BandsData.from_castep(seedname, path=path)
-    else:
-        data = PhononData.from_castep(seedname, path=path)
+    data = QpointPhononModes.from_castep(seedname, path=path)
     return data, seedname, file
 
 

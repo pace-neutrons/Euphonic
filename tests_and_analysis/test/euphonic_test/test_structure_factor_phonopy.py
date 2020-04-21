@@ -2,22 +2,21 @@ import os
 import unittest
 import numpy.testing as npt
 import numpy as np
-from euphonic.data.phonon import PhononData
-from euphonic.data.interpolation import InterpolationData
+from euphonic import ForceConstants, QpointPhononModes
 from ..utils import get_data_path
 
 
-class TestStructureFactorPhononDataNaCl(unittest.TestCase):
+class TestStructureFactorQpointPhononModesNaCl(unittest.TestCase):
 
     def setUp(self):
         data_path = os.path.join(
             get_data_path(), 'phonopy_data', 'NaCl')
         self.sf_path = os.path.join(data_path, 'structure_factor')
-        self.data = PhononData.from_phonopy(
+        self.data = QpointPhononModes.from_phonopy(
             path=os.path.join(data_path, 'qpoints'), phonon_name='qpoints.yaml',
             summary_name='phonopy.yaml')
         self.scattering_lengths = {'Na': 3.63, 'Cl': 9.577}
-        self.dw_data = PhononData.from_phonopy(
+        self.dw_data = QpointPhononModes.from_phonopy(
             phonon_name='mesh.yaml', path=os.path.join(data_path, 'mesh'))
 
     def test_sf_T5(self):
@@ -47,7 +46,7 @@ class TestStructureFactorPhononDataNaCl(unittest.TestCase):
         npt.assert_allclose(sf, expected_sf, atol=1e-24)
 
 
-class TestStructureFactorInterpolationDataNaClSerial(unittest.TestCase):
+class TestStructureFactorForceConstantsNaClSerial(unittest.TestCase):
 
     def setUp(self):
         # Need to separately test SF calculation with interpolated phonon data
@@ -64,19 +63,19 @@ class TestStructureFactorInterpolationDataNaClSerial(unittest.TestCase):
                          [1., 1., 1.]])
         self.gamma_idx = 4
 
-        fc = InterpolationData.from_phonopy(
+        fc = ForceConstants.from_phonopy(
             path=self.interpolation_path, summary_name='phonopy.yaml')
         self.idata = fc.calculate_fine_phonons(qpts, asr='reciprocal')
 
-        # InterpolationData object for DW grid
-        dw_fc = InterpolationData.from_phonopy(
+        # ForceConstants object for DW grid
+        dw_fc = ForceConstants.from_phonopy(
             path=self.interpolation_path, summary_name='phonopy.yaml')
         self.dw_idata = dw_fc.calculate_fine_phonons(
             np.loadtxt(os.path.join(get_data_path(), 'qgrid_444.txt')),
             asr='reciprocal')
 
-        # PhononData object for DW grid
-        self.dw_pdata = PhononData.from_phonopy(
+        # QpointPhononModes object for DW grid
+        self.dw_pdata = QpointPhononModes.from_phonopy(
             phonon_name='mesh.yaml', path=os.path.join(data_path, 'mesh'))
 
     def test_sf_T5(self):
@@ -232,7 +231,7 @@ class TestStructureFactorInterpolationDataNaClSerial(unittest.TestCase):
                             atol=1e-20)
 
 
-class TestStructureFactorInterpolationDataNaClSerialC(TestStructureFactorInterpolationDataNaClSerial):
+class TestStructureFactorForceConstantsNaClSerialC(TestStructureFactorForceConstantsNaClSerial):
 
     def setUp(self):
         # Need to separately test SF calculation with interpolated phonon data
@@ -249,24 +248,24 @@ class TestStructureFactorInterpolationDataNaClSerialC(TestStructureFactorInterpo
                          [1., 1., 1.]])
         self.gamma_idx = 4
 
-        fc = InterpolationData.from_phonopy(
+        fc = ForceConstants.from_phonopy(
             path=self.interpolation_path, summary_name='phonopy.yaml')
         self.idata = fc.calculate_fine_phonons(
             qpts, asr='reciprocal', use_c=True, fall_back_on_python=False)
 
-        # InterpolationData object for DW grid
-        dw_fc = InterpolationData.from_phonopy(
+        # ForceConstants object for DW grid
+        dw_fc = ForceConstants.from_phonopy(
             path=self.interpolation_path, summary_name='phonopy.yaml')
         self.dw_idata = dw_fc.calculate_fine_phonons(
             np.loadtxt(os.path.join(get_data_path(), 'qgrid_444.txt')),
             asr='reciprocal', use_c=True, fall_back_on_python=False)
 
-        # PhononData object for DW grid
-        self.dw_pdata = PhononData.from_phonopy(
+        # QpointPhononModes object for DW grid
+        self.dw_pdata = QpointPhononModes.from_phonopy(
             phonon_name='mesh.yaml', path=os.path.join(data_path, 'mesh'))
 
 
-class TestStructureFactorInterpolationDataNaClParallelC(TestStructureFactorInterpolationDataNaClSerial):
+class TestStructureFactorForceConstantsNaClParallelC(TestStructureFactorForceConstantsNaClSerial):
 
     def setUp(self):
         # Need to separately test SF calculation with interpolated phonon data
@@ -283,20 +282,20 @@ class TestStructureFactorInterpolationDataNaClParallelC(TestStructureFactorInter
                          [1., 1., 1.]])
         self.gamma_idx = 4
 
-        fc = InterpolationData.from_phonopy(
+        fc = ForceConstants.from_phonopy(
             path=self.interpolation_path, summary_name='phonopy.yaml')
         self.idata = fc.calculate_fine_phonons(
             qpts, asr='reciprocal', use_c=True, fall_back_on_python=False,
             n_threads=2)
 
-        # InterpolationData object for DW grid
-        dw_fc = InterpolationData.from_phonopy(
+        # ForceConstants object for DW grid
+        dw_fc = ForceConstants.from_phonopy(
             path=self.interpolation_path, summary_name='phonopy.yaml')
         self.dw_idata = dw_fc.calculate_fine_phonons(
             np.loadtxt(os.path.join(get_data_path(), 'qgrid_444.txt')),
             asr='reciprocal', use_c=True, fall_back_on_python=False,
             n_threads=2)
 
-        # PhononData object for DW grid
-        self.dw_pdata = PhononData.from_phonopy(
+        # QpointPhononModes object for DW grid
+        self.dw_pdata = QpointPhononModes.from_phonopy(
             phonon_name='mesh.yaml', path=os.path.join(data_path, 'mesh'))

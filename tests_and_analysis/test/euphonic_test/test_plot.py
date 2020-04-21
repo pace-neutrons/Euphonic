@@ -7,12 +7,11 @@ matplotlib.use('Agg')
 import numpy as np
 import numpy.testing as npt
 from matplotlib import figure
-from euphonic import ureg
+from euphonic import ureg, Crystal
 from euphonic.plot.dos import plot_dos
 from euphonic.plot.dispersion import (calc_abscissa, recip_space_labels,
                                       generic_qpt_labels, get_qpt_label,
                                       plot_dispersion)
-from euphonic import Crystal
 
 
 class TestCalcAbscissa(unittest.TestCase):

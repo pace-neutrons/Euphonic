@@ -13,7 +13,7 @@
 static PyObject *calculate_phonons(PyObject *self, PyObject *args) {
 
     // Define input args
-    PyObject *py_idata; // InterpolationData instance
+    PyObject *py_idata; // ForceConstants instance
     PyArrayObject *py_cell_vec;
     PyArrayObject *py_recip_vec;
     PyArrayObject *py_rqpts;
@@ -30,7 +30,7 @@ static PyObject *calculate_phonons(PyObject *self, PyObject *args) {
     int n_threads = 1;
     const char *scipy_dir;
 
-    // Define vars to be obtained from InterpolationData attributes
+    // Define vars to be obtained from ForceConstants attributes
     PyObject *py_crystal; // Crystal object
     PyArrayObject *py_n_sc_ims;
     PyArrayObject *py_sc_im_idx;
@@ -106,7 +106,7 @@ static PyObject *calculate_phonons(PyObject *self, PyObject *args) {
         return NULL;
     }
 
-    // Get rest of vars from InterpolationData object
+    // Get rest of vars from ForceConstants object
     if (attr_from_pyobj(py_idata, "crystal", &py_crystal) ||
         attr_from_pyobj(py_idata, "_n_sc_images", &py_n_sc_ims) ||
         attr_from_pyobj(py_idata, "_sc_image_i", &py_sc_im_idx) ||

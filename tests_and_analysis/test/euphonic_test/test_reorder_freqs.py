@@ -2,9 +2,7 @@ import os
 import unittest
 import numpy.testing as npt
 import numpy as np
-from euphonic import ureg
-from euphonic.data.interpolation import InterpolationData
-from euphonic.data.phonon import PhononData
+from euphonic import ureg, ForceConstants, QpointPhononModes
 from ..utils import get_data_path
 
 
@@ -13,7 +11,7 @@ class TestReorderFreqsNaH(unittest.TestCase):
     def test_reorder_freqs(self):
         seedname = 'NaH-reorder-test'
         path = get_data_path()
-        data = PhononData.from_castep(seedname, path=path)
+        data = QpointPhononModes.from_castep(seedname, path=path)
         data.reorder_freqs()
         freqs = data.freqs.magnitude
         reordered_freqs = freqs[np.arange(len(freqs))[:, np.newaxis],
@@ -47,12 +45,12 @@ class TestReorderFreqsNaH(unittest.TestCase):
 class TestReorderFreqsLZO(unittest.TestCase):
 
     def setUp(self):
-        # Create both PhononData and InterpolationData objs for testing
+        # Create both QpointPhononModes and ForceConstants objs for testing
         seedname = 'La2Zr2O7'
         data_path = get_data_path()
-        self.pdata = PhononData.from_castep(seedname, path=data_path)
+        self.pdata = QpointPhononModes.from_castep(seedname, path=data_path)
         ipath = os.path.join(data_path, 'interpolation', 'LZO')
-        self.fc = InterpolationData.from_castep(seedname, path=ipath)
+        self.fc = ForceConstants.from_castep(seedname, path=ipath)
 
         self.expected_reordered_freqs = np.array(
             [[65.062447, 65.062447, 70.408176, 76.847761, 76.847761,

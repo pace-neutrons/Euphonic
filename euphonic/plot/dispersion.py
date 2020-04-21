@@ -55,9 +55,9 @@ def recip_space_labels(data):
 
     Parameters
     ----------
-    data: Data object
-        Data object containing the cell vectors, q-points and optionally ion
-        types and coordinates (used for determining space group)
+    data: QpointPhononModes object
+        QpointPhononModes object containing the cell vectors, q-points and
+        optionally ion types and coordinates (used for determining space group)
 
     Returns
     -------
@@ -173,8 +173,8 @@ def plot_sqw_map(data, vmin=None, vmax=None, ratio=None, ewidth=0, qwidth=0,
 
     Parameters
     ----------
-    data : PhononData or InterpolationData object
-        Data object for which calculate_sqw_map has been called, containing
+    data : QpointPhononModes object
+        QpointPhononModes object for which calculate_sqw_map has been called, containing
         sqw_map and sqw_ebins attributes for plotting
     vmin : float, optional
         Minimum of data range for colormap. See Matplotlib imshow docs
@@ -311,8 +311,8 @@ def output_grace(data, seedname='out', up=True, down=True):
 
     Parameters
     ----------
-    data: Data object
-        Data object containing the frequencies and other data required for
+    data: QpointPhononModes object
+        QpointPhononModes object containing the frequencies and other data required for
         plotting (qpts, n_ions, cell_vecs)
     seedname : string, optional
         Determines the figure title and output file name, seedname.agr.
@@ -457,8 +457,8 @@ def plot_dispersion(data, title='', btol=10.0, **line_kwargs):
 
     Parameters
     ----------
-    data: Data object
-        Data object containing the frequencies and other data required for
+    data: QpointPhononModes object
+        QpointPhononModes object containing the frequencies and other data required for
         plotting (qpts, n_ions, cell_vecs)
     title : string, optional
         The figure title. Default: ''

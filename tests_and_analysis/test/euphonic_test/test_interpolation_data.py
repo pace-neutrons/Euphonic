@@ -2,8 +2,7 @@ import unittest
 import os
 import numpy.testing as npt
 import numpy as np
-from euphonic import ureg
-from euphonic.data.interpolation import InterpolationData
+from euphonic import ureg, ForceConstants
 from euphonic.util import get_all_origins
 from ..utils import get_data_path
 
@@ -72,7 +71,7 @@ class TestInputReadLZO(unittest.TestCase):
 
         self.seedname = 'La2Zr2O7'
         self.path = os.path.join(get_data_path(), 'interpolation', 'LZO')
-        fc = InterpolationData.from_castep(self.seedname, path=self.path)
+        fc = ForceConstants.from_castep(self.seedname, path=self.path)
         self.fc = fc
 
     def test_n_atoms_read(self):
@@ -121,7 +120,7 @@ class TestInterpolatePhononsLZO(unittest.TestCase):
     def setUp(self):
         seedname = 'La2Zr2O7'
         self.path = os.path.join(get_data_path(), 'interpolation', 'LZO')
-        fc = InterpolationData.from_castep(seedname, path=self.path)
+        fc = ForceConstants.from_castep(seedname, path=self.path)
         self.fc = fc
 
         self.qpts = np.array([[-1.00, 9.35, 3.35],
@@ -439,7 +438,7 @@ class TestInputReadGraphite(unittest.TestCase):
 
         self.seedname = 'graphite'
         self.path = os.path.join(get_data_path(), 'interpolation', 'graphite')
-        data = InterpolationData.from_castep(self.seedname, path=self.path)
+        data = ForceConstants.from_castep(self.seedname, path=self.path)
         self.fc = data
 
     def test_n_atoms_read(self):
@@ -542,7 +541,7 @@ class TestInterpolatePhononsGraphite(unittest.TestCase):
              4.0222682768e-03, 4.0222682768e-03, 7.1591503492e-03,
              7.1591503492e-03, 7.1591503492e-03, 7.1591503492e-03]])
             *ureg('hartree'))
-        fc = InterpolationData.from_castep(seedname, path=self.path)
+        fc = ForceConstants.from_castep(seedname, path=self.path)
         self.fc = fc
 
         self.unique_sc_i = np.loadtxt(os.path.join(
@@ -782,7 +781,7 @@ class TestInputReadQuartz(unittest.TestCase):
 
         self.seedname = 'quartz'
         self.path = os.path.join(get_data_path(), 'interpolation', 'quartz')
-        fc = InterpolationData.from_castep(self.seedname, path=self.path)
+        fc = ForceConstants.from_castep(self.seedname, path=self.path)
         self.fc = fc
 
     def test_n_atoms_read(self):
@@ -846,7 +845,7 @@ class TestInterpolatePhononsQuartz(unittest.TestCase):
                               [0.00, 0.00, 0.50],
                               [-0.25, 0.50, 0.50],
                               [-0.151515, 0.575758, 0.5]])
-        fc = InterpolationData.from_castep(seedname, path=self.path)
+        fc = ForceConstants.from_castep(seedname, path=self.path)
         self.fc = fc
         self.expctd_freqs_no_asr = np.array([
             [-0.00009745, -0.00005474, -0.00005474, 0.00058293, 0.00058293,

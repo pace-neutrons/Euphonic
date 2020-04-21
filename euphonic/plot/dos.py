@@ -8,8 +8,8 @@ def output_grace(data, seedname='out', mirror=False, up=True, down=True):
 
     Parameters
     ----------
-    data : Data object
-        Data object for which calculate_dos has been called, containing dos
+    data : QpointPhononModes object
+        QpointPhononModes object for which calculate_dos has been called, containing dos
         and dos_bins attributes for plotting
     seedname : string, optional
         Determines the figure title and output file name, seedname.agr.
@@ -171,9 +171,9 @@ def plot_dos(data, title='', **line_kwargs):
 
     Parameters
     ----------
-    data : Data object
-        Data object for which calculate_dos has been called, containing dos
-        and dos_bins attributes for plotting
+    data : QpointPhononModes object
+        QpointPhononModes object for which calculate_dos has been called,
+        containing dos and dos_bins attributes for plotting
     title : string
         The figure title. Default: ''
     **line_kwargs : matplotlib.line.Line2D properties, optional

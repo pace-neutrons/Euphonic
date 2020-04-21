@@ -7,24 +7,23 @@ try:
     import unittest.mock as mock
 except ImportError:
     import mock
-from euphonic.data.phonon import PhononData
-from euphonic.data.interpolation import InterpolationData
+from euphonic import ForceConstants, QpointPhononModes
 from ..utils import get_data_path
 
 
-class TestSqwMapPhononDataLZO(unittest.TestCase):
+class TestSqwMapQpointPhononModesLZO(unittest.TestCase):
 
     def setUp(self):
         seedname = 'La2Zr2O7'
         data_path = get_data_path()
         self.sqw_path = os.path.join(data_path, 'sqw_map')
         self.sf_path = os.path.join(data_path, 'structure_factor', 'LZO')
-        self.data = PhononData.from_castep(seedname, path=data_path)
+        self.data = QpointPhononModes.from_castep(seedname, path=data_path)
         self.scattering_lengths = {'La': 8.24, 'Zr': 7.16, 'O': 5.803}
         self.ebins = np.arange(0, 100, 1.)
 
-        # PhononData object for DW grid
-        self.dw_data = PhononData.from_castep(
+        # QpointPhononModes object for DW grid
+        self.dw_data = QpointPhononModes.from_castep(
             'La2Zr2O7-grid', path=self.sf_path)
 
     def test_sqw_T5(self):
@@ -62,7 +61,7 @@ class TestSqwMapPhononDataLZO(unittest.TestCase):
         npt.assert_allclose(self.data.sqw_map, expected_sqw_map, rtol=1e-6)
 
 
-class TestSqwMapInterpolationDataLZOSerial(unittest.TestCase):
+class TestSqwMapForceConstantsLZOSerial(unittest.TestCase):
 
     sf_path = os.path.join(get_data_path(), 'structure_factor', 'LZO')
 
@@ -71,8 +70,8 @@ class TestSqwMapInterpolationDataLZOSerial(unittest.TestCase):
         data_path = get_data_path()
         self.interpolation_path = os.path.join(data_path, 'interpolation', 'LZO')
         self.sqw_path = os.path.join(data_path, 'sqw_map')
-        pdata = PhononData.from_castep(self.seedname, path=data_path)
-        fc = InterpolationData.from_castep(
+        pdata = QpointPhononModes.from_castep(self.seedname, path=data_path)
+        fc = ForceConstants.from_castep(
             self.seedname, path=self.interpolation_path)
         self.data = fc.calculate_fine_phonons(pdata.qpts, asr='realspace')
         self.scattering_lengths = {'La': 8.24, 'Zr': 7.16, 'O': 5.803}
@@ -80,7 +79,7 @@ class TestSqwMapInterpolationDataLZOSerial(unittest.TestCase):
 
     # Mock the calculate_structure_factor function and return a value from a
     # file because we're only testing sqw_map here
-    @mock.patch('euphonic.data.phonon.PhononData.calculate_structure_factor',
+    @mock.patch('euphonic.QpointPhononModes.calculate_structure_factor',
                 return_value=np.loadtxt(os.path.join(
                     sf_path, 'sf_idata_T5.txt')))
     def test_sqw_T5(self, calculate_structure_factor_function):
@@ -92,7 +91,7 @@ class TestSqwMapInterpolationDataLZOSerial(unittest.TestCase):
         # Mask out first few energy bins to avoid testing unstable Bragg peaks
         npt.assert_allclose(self.data.sqw_map[:, 5], expected_sqw_map[:, 5])
 
-    @mock.patch('euphonic.data.phonon.PhononData.calculate_structure_factor',
+    @mock.patch('euphonic.QpointPhononModes.calculate_structure_factor',
                 return_value=np.loadtxt(os.path.join(
                     sf_path, 'sf_idata_T100.txt')))
     def test_sqw_T100(self, calculate_structure_factor_function):
@@ -103,7 +102,7 @@ class TestSqwMapInterpolationDataLZOSerial(unittest.TestCase):
             self.sqw_path, 'sqw_map_idata_T100.txt'))
         npt.assert_allclose(self.data.sqw_map[:, 5], expected_sqw_map[:, 5])
 
-    @mock.patch('euphonic.data.phonon.PhononData.calculate_structure_factor',
+    @mock.patch('euphonic.QpointPhononModes.calculate_structure_factor',
                 return_value=np.loadtxt(os.path.join(
                     sf_path, 'sf_idata_T100.txt')))
     def test_sqw_arguments_passed(self, calculate_structure_factor_function):
@@ -118,16 +117,16 @@ class TestSqwMapInterpolationDataLZOSerial(unittest.TestCase):
         self.assertEqual(sf_kwargs['calc_bose'], False)
         self.assertEqual(sf_kwargs['dw_data'], 'dw_data')
 
-class TestSqwMapInterpolationDataLZOSerialC(
-    TestSqwMapInterpolationDataLZOSerial):
+class TestSqwMapForceConstantsLZOSerialC(
+    TestSqwMapForceConstantsLZOSerial):
 
     def setUp(self):
         self.seedname = 'La2Zr2O7'
         data_path = get_data_path()
         self.interpolation_path = os.path.join(data_path, 'interpolation', 'LZO')
         self.sqw_path = os.path.join(data_path, 'sqw_map')
-        pdata = PhononData.from_castep(self.seedname, path=data_path)
-        fc = InterpolationData.from_castep(
+        pdata = QpointPhononModes.from_castep(self.seedname, path=data_path)
+        fc = ForceConstants.from_castep(
             self.seedname, path=self.interpolation_path)
         self.data = fc.calculate_fine_phonons(
             pdata.qpts, asr='realspace', use_c=True,
@@ -135,16 +134,16 @@ class TestSqwMapInterpolationDataLZOSerialC(
         self.scattering_lengths = {'La': 8.24, 'Zr': 7.16, 'O': 5.803}
         self.ebins = np.arange(0, 100, 1.)
 
-class TestSqwMapInterpolationDataLZOParallelC(
-    TestSqwMapInterpolationDataLZOSerial):
+class TestSqwMapForceConstantsLZOParallelC(
+    TestSqwMapForceConstantsLZOSerial):
 
     def setUp(self):
         self.seedname = 'La2Zr2O7'
         data_path = get_data_path()
         self.interpolation_path = os.path.join(data_path, 'interpolation', 'LZO')
         self.sqw_path = os.path.join(data_path, 'sqw_map')
-        pdata = PhononData.from_castep(self.seedname, path=data_path)
-        fc = InterpolationData.from_castep(
+        pdata = QpointPhononModes.from_castep(self.seedname, path=data_path)
+        fc = ForceConstants.from_castep(
             self.seedname, path=self.interpolation_path)
         self.data = fc.calculate_fine_phonons(
             pdata.qpts, asr='realspace', use_c=True,

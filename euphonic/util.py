@@ -223,7 +223,7 @@ def _ensure_contiguous_attrs(obj, required_attrs, opt_attrs=[]):
         The attributes of obj to be checked. They should all be Numpy arrays
     opt_attrs : list of strings, default []
         The attributes of obj to be checked, but if they don't exist will not
-        throw an error. e.g. Depending on the material InterpolationData
+        throw an error. e.g. Depending on the material ForceConstants
         objects may or may not have 'born' defined
     """
     for attr_name in required_attrs:

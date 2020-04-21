@@ -1,8 +1,7 @@
 import unittest
 import numpy.testing as npt
 import numpy as np
-from euphonic.data.phonon import PhononData
-from euphonic import ureg
+from euphonic import ureg, QpointPhononModes
 from ..utils import get_data_path
 
 
@@ -105,7 +104,7 @@ class TestReadInputFileNaHPhonon(unittest.TestCase):
 
         self.seedname = 'NaH'
         self.path = get_data_path()
-        data = PhononData.from_castep(self.seedname, path=self.path)
+        data = QpointPhononModes.from_castep(self.seedname, path=self.path)
         self.data = data
 
     def test_cell_vectors_read_nah_phonon(self):

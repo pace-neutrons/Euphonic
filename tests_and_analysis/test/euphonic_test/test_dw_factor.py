@@ -2,8 +2,7 @@ import os
 import unittest
 import numpy as np
 import numpy.testing as npt
-from euphonic.data.phonon import PhononData
-from euphonic.data.interpolation import InterpolationData
+from euphonic import ForceConstants, QpointPhononModes
 from ..utils import get_data_path
 
 
@@ -13,7 +12,7 @@ class TestDWFactorLZO(unittest.TestCase):
         seedname = 'La2Zr2O7-grid'
         data_path = get_data_path()
         path = os.path.join(data_path, 'structure_factor', 'LZO')
-        self.data = PhononData.from_castep(seedname, path=path)
+        self.data = QpointPhononModes.from_castep(seedname, path=path)
         self.dw_path = os.path.join(data_path, 'dw_factor', 'LZO')
 
     def test_dw_T5(self):
@@ -37,7 +36,7 @@ class TestDWFactorQuartz(unittest.TestCase):
         self.seedname = 'quartz'
         data_path = get_data_path()
         self.path = os.path.join(data_path, 'interpolation', 'quartz')
-        fc = InterpolationData.from_castep(self.seedname, path=self.path)
+        fc = ForceConstants.from_castep(self.seedname, path=self.path)
         qpts = np.loadtxt(os.path.join(data_path, 'qgrid_444.txt'))
         self.data = fc.calculate_fine_phonons(qpts, asr='reciprocal')
         self.dw_path = os.path.join(data_path, 'dw_factor', 'quartz')

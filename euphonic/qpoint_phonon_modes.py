@@ -7,7 +7,7 @@ from euphonic._readers import _castep
 from euphonic._readers import _phonopy
 
 
-class PhononData(object):
+class QpointPhononModes(object):
     """
     A class to read and store vibrational data from model (e.g. CASTEP) output
     files
@@ -168,10 +168,9 @@ class PhononData(object):
             Apply a multiplicative factor to the final structure factor.
         calc_bose : boolean, optional, default True
             Whether to calculate and apply the Bose factor
-        dw_data : InterpolationData or PhononData object
-            A PhononData or InterpolationData object with
-            frequencies/eigenvectors calculated on a q-grid over which the
-            Debye-Waller factor will be calculated
+        dw_data : QpointPhononModes
+            A QpointPhononModes object with frequencies/eigenvectors calculated
+            on a q-grid over which the Debye-Waller factor will be calculated
 
         Returns
         -------
@@ -296,12 +295,12 @@ class PhononData(object):
             for each element in the structure in fm e.g.
             {'O': 5.803, 'Zn': 5.680}
         ebins : (n_ebins + 1,) float ndarray
-            The energy bin edges in the same units as PhononData.freqs
+            The energy bin edges in the same units as QpointPhononModes.freqs
         calc_bose : boolean, optional, default True
             Whether to calculate and apply the Bose factor
         **kwargs
             Passes keyword arguments on to
-            PhononData.calculate_structure_factor
+            QpointPhononModes.calculate_structure_factor
 
         Returns
         -------

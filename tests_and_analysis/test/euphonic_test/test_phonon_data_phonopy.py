@@ -2,8 +2,7 @@ import os
 import unittest
 import numpy.testing as npt
 import numpy as np
-from euphonic.data.phonon import PhononData
-from euphonic import ureg
+from euphonic import ureg, QpointPhononModes
 from ..utils import get_data_path
 
 class TestReadNaClPhononQPoints(unittest.TestCase):
@@ -66,11 +65,11 @@ class TestReadNaClPhononQPoints(unittest.TestCase):
             os.path.join(self.path + '/phonopy_eigenvecs.npy'))
         self.expctd_data = expctd_data
 
-        self.data = PhononData.from_phonopy(
+        self.data = QpointPhononModes.from_phonopy(
             path=self.path, phonon_name='qpoints.yaml',
             summary_name='phonopy.yaml')
 
-        self.data_hdf5 = PhononData.from_phonopy(
+        self.data_hdf5 = QpointPhononModes.from_phonopy(
             path=self.path, phonon_name='qpoints.hdf5',
             summary_name='phonopy.yaml')
 

@@ -39,7 +39,6 @@ def run_setup(build_c=True):
         long_description = f.read()
 
     packages = ['euphonic',
-                'euphonic.data',
                 'euphonic.plot',
                 'euphonic._readers']
 
