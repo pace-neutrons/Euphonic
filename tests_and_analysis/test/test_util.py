@@ -60,6 +60,3 @@ class TestMPGrid(unittest.TestCase):
         qpts = mp_grid([4,4,4])
         expected_qpts = np.loadtxt(os.path.join(get_data_path(), 'qgrid_444.txt'))
         npt.assert_equal(qpts, expected_qpts)
-
-    def test_failure(self):
-        self.fail()

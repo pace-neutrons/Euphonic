@@ -40,6 +40,9 @@ class TestBandsDataNaH(unittest.TestCase):
         data = BandsData.from_castep(seedname, path=path)
         self.data = data
 
+    def test_failure(self):
+        self.fail()
+
     def test_cell_vec_read_nah_bands(self):
         npt.assert_allclose(self.data.cell_vec.to('bohr').magnitude,
                             self.expctd_data.cell_vec.to('bohr').magnitude)
