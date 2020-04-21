@@ -40,15 +40,7 @@ def getGitCommitAuthorEmail() {
         withCredentials([string(credentialsId: 'Euphonic_GitHub_API_Token',
                 variable: 'api_token')]) {
             if(isUnix()) {
-                return sh(
-                    script: """
-                            email=\$(curl -s -H "Authorization: token ${api_token}" --request GET \
-                                https://api.github.com/repos/pace-neutrons/Euphonic/commits/${env.GIT_COMMIT} \
-                                |  jq '.commit.author.email' | tr -d '"') &&
-                            echo "\$email"
-                        """,
-                    returnStdout: true
-                )
+                sh "printenv"
             } else {
                 error("Cannot get commit author in Windows")
             }
@@ -97,6 +89,7 @@ pipeline {
                             steps {
                                 script {
                                     def email = getGitCommitAuthorEmail()
+                                    echo "$email"
                                 }
                                 echo "$email"
                                 setGitHubBuildStatus("pending", "Starting", "Linux")
