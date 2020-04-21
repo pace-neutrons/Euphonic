@@ -44,8 +44,8 @@ def getGitCommitAuthorEmail() {
                     script: """
                             email=\$(curl -s -H "Authorization: token ${api_token}" --request GET \
                                 https://api.github.com/repos/pace-neutrons/Euphonic/commits/${env.GIT_COMMIT} \
-                                |  jq '.commit.author.email' | tr -d '"')" &&
-                            echo '\$email'
+                                |  jq '.commit.author.email' | tr -d '\"')" &&
+                            echo "\$email"
                         """,
                     returnStdout: true
                 ).trim()
