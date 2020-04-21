@@ -45,21 +45,12 @@ def getGitCommitAuthorEmail() {
                             email=\$(curl -s -H "Authorization: token ${api_token}" --request GET \
                                 https://api.github.com/repos/pace-neutrons/Euphonic/commits/${env.GIT_COMMIT} \
                                 |  jq '.commit.author.email' | tr -d '"')" &&
-                            echo "\$email"
+                            echo '\$email'
                         """,
                     returnStdout: true
                 ).trim()
             } else {
-                return powershell(
-                    script: """
-                            [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-                            \$payload = Invoke-RestMethod -URI "https://api.github.com/repos/pace-neutrons/Euphonic/commits/${env.GIT_COMMIT}" -Headers @{Authorization = "token ${api_token}"} -Method 'GET'
-                            echo "\$payload"
-                            echo \$payload.commit.author.email
-                            echo "Test"
-                        """,
-                    returnStdout: true
-                )
+                error("Cannot get commit author in Windows")
             }
         }
     }
@@ -193,7 +184,7 @@ pipeline {
                     }
                 }
 
-                stage("Windows environment") {
+                /* stage("Windows environment") {
 
                     agent { label "PACE Windows (Private)" }
 
@@ -201,10 +192,6 @@ pipeline {
 
                         stage("Notify") {
                             steps {
-                                script {
-                                    def email = getGitCommitAuthorEmail()
-                                }
-                                echo "$email"
                                 setGitHubBuildStatus("pending", "Starting", "Windows")
                                 echo "Branch: ${env.JOB_BASE_NAME}"
                             }
@@ -268,7 +255,7 @@ pipeline {
                         }
 
                     }
-                }
+                } */
             }
         }
     }
