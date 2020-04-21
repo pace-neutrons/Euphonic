@@ -14,6 +14,6 @@ module load python/3.6.5-gcc-4.8.5
 python -m pip install --user --upgrade pip
 python -m pip install --user -r requirements.txt 
 pushd ../..
-python -m pip install --user -e .[phonopy]
+python -m pip install --user -e .[phonopy_reader]
 popd
 python run_benchmark_tests.py
