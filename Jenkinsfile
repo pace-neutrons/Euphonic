@@ -42,9 +42,16 @@ def getGitCommitAuthorEmail() {
             if(isUnix()) {
                 return sh(
                     script: """
-                            commit_url="\$(curl -s -H "Authorization: token ${api_token}" --request GET https://api.github.com/repos/pace-neutrons/Euphonic/git/ref/heads/${env.JOB_BASE_NAME} | jq ".object.url" | tr -d '"')" &&
-                            echo "\$(curl -s -H "Authorization: token ${api_token}" --request GET \$commit_url |  jq '.author.email' | tr -d '"')"
-                        """,
+                        commit_url="\$(\\
+                            curl -s -H "Authorization: token ${api_token}" \\
+                            --request GET https://api.github.com/repos/pace-neutrons/Euphonic/git/ref/heads/${env.JOB_BASE_NAME} \\
+                            | jq ".object.url" | tr -d '"'\\
+                        )" &&
+                        echo "\$(\\
+                            curl -s -H "Authorization: token ${api_token}" \\
+                            --request GET \$commit_url |  jq '.author.email' | tr -d '"'\\
+                        )"
+                    """,
                     returnStdout: true
                 )
             } else {
@@ -93,6 +100,7 @@ pipeline {
 
                         stage("Notify") {
                             steps {
+                                error()
                                 setGitHubBuildStatus("pending", "Starting", "Linux")
                                 echo "Branch: ${env.JOB_BASE_NAME}"
                             }
@@ -186,6 +194,7 @@ pipeline {
 
                         stage("Notify") {
                             steps {
+                                error()
                                 setGitHubBuildStatus("pending", "Starting", "Windows")
                                 echo "Branch: ${env.JOB_BASE_NAME}"
                             }
