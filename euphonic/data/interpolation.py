@@ -225,7 +225,6 @@ class InterpolationData(PhononData):
         except KeyError:
             print('Could not find metadata while loading data.')
 
-
     def calculate_fine_phonons(
         self, qpts, asr=None, precondition=False, dipole=True,
             eta_scale=1.0, splitting=True, reduce_qpts=True, use_c=False,
@@ -1264,7 +1263,7 @@ class InterpolationData(PhononData):
         Parameters
         ----------
         scattering_lengths : dictionary
-            Dictionary of spin and isotope averaged coherent scattering legnths
+            Dictionary of spin and isotope averaged coherent scattering lengths
             for each element in the structure in fm e.g.
             {'O': 5.803, 'Zn': 5.680}
         T : float, optional, default 5.0
