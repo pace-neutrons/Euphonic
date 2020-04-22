@@ -1,8 +1,8 @@
 import math
 import numpy as np
-from euphonic import ureg, Crystal
-from euphonic.util import (direction_changed, bose_factor, is_gamma, lorentzian,
-                           gaussian)
+from euphonic import ureg, Crystal, DebyeWaller
+from euphonic.util import (direction_changed, _bose_factor, is_gamma,
+                           lorentzian, gaussian)
 from euphonic.readers import castep
 from euphonic.readers import phonopy
 
@@ -150,8 +150,8 @@ class QpointPhononModes(object):
 
         self._mode_map = mode_map
 
-    def calculate_structure_factor(self, scattering_lengths, T=5.0, scale=1.0,
-                                   calc_bose=True, dw_data=None):
+    def calculate_structure_factor(self, scattering_lengths, temperature=None,
+                                   scale=1.0, calc_bose=True, dw=None):
         """
         Calculate the one phonon inelastic scattering at each q-point
         See M. Dove Structure and Dynamics Pg. 226
@@ -162,16 +162,14 @@ class QpointPhononModes(object):
             Dictionary of spin and isotope averaged coherent scattering legnths
             for each element in the structure in fm e.g.
             {'O': 5.803, 'Zn': 5.680}
-        T : float, optional, default 5.0
-            The temperature in Kelvin to use when calculating the Bose and
-            Debye-Waller factors
-        scale : float, optional, default 1.0
-            Apply a multiplicative factor to the final structure factor.
         calc_bose : boolean, optional, default True
             Whether to calculate and apply the Bose factor
-        dw_data : QpointPhononModes
-            A QpointPhononModes object with frequencies/eigenvectors calculated
-            on a q-grid over which the Debye-Waller factor will be calculated
+        dw : DebyeWaller, default None
+            A DebyeWaller exponent object
+        temperature : float Quantity, default None
+            The temperature to use when calculating the Bose factor. Is only
+            required if dw=None, otherwise the temperature will be obtained from
+            the dw object
 
         Returns
         -------
@@ -199,45 +197,46 @@ class QpointPhononModes(object):
         eigenv_dot_q = np.einsum('ijkl,il->ijk', np.conj(self.eigenvectors), Q)
 
         # Calculate Debye-Waller factors
-        if dw_data:
-            if dw_data.crystal.n_atoms != self.crystal.n_atoms:
+        if dw:
+            if dw.crystal.n_atoms != self.crystal.n_atoms:
                 raise Exception((
-                    'The Data object used as dw_data is not compatible with the'
-                    ' object that calculate_structure_factor has been called on'
-                    ' (they have a different number of atoms). Is dw_data '
-                    'correct?'))
-            dw = dw_data._dw_coeff(T)
-            dw_factor = np.exp(-np.einsum('jkl,ik,il->ij', dw, Q, Q)/2)
+                    'The DebyeWaller object used as dw is not compatible with '
+                    'the QPointPhononModes object (they have a different number'
+                    ' of atoms). Is dw correct?'))
+            dw_factor = np.exp(-np.einsum('jkl,ik,il->ij',
+                                          dw._debye_waller, Q, Q))
             exp_factor *= dw_factor
 
         # Multiply Q.eigenvector, exp factor and normalisation factor
         term = np.einsum('ijk,ik,k->ij', eigenv_dot_q, exp_factor, norm_factor)
 
         # Take mod squared and divide by frequency to get intensity
-        sf = np.absolute(term*np.conj(term))/np.absolute(self._frequencies)
+        sf = np.real(
+            np.absolute(term*np.conj(term))/np.absolute(self._frequencies))
 
-        # Multiply by Bose factor
         if calc_bose:
-            sf = sf*bose_factor(self._frequencies, T)
-
-        sf = np.real(sf*scale)
+            if dw:
+                temperature = dw.temperature
+            if temperature is not None:
+                sf = sf*_bose_factor(self._frequencies,
+                                     temperature.to('K').magnitude)
 
         return sf
 
-    def _dw_coeff(self, T):
+    def calculate_debye_waller(self, temperature):
         """
-        Calculate the 3 x 3 Debye-Waller coefficients for each atom over the
+        Calculate the 3 x 3 Debye-Waller exponent for each atom over the
         q-points contained in this object
 
         Parameters
         ----------
-        T : float
-            Temperature in Kelvin
+        temperature : float Quantity
+            Temperature
 
         Returns
         -------
-        dw : (n_atoms, 3, 3) float ndarray
-            The DW coefficients for each atom
+        dw : DebyeWaller
+            An object containing the 3x3 Debye-Waller exponent for each ion
         """
 
         # Convert units
@@ -248,8 +247,9 @@ class QpointPhononModes(object):
         qpts = self.qpts
         evecs = self.eigenvectors
         weights = self.weights
+        temp = temperature.to('K').magnitude
 
-        mass_term = 1/(2*atom_mass)
+        mass_term = 1/(4*atom_mass)
 
         # Determine q-points near the gamma point and mask out their acoustic
         # modes due to the potentially large 1/frequency factor
@@ -258,8 +258,8 @@ class QpointPhononModes(object):
         freq_mask = np.ones(freqs.shape)
         freq_mask[is_small_q, :3] = 0
 
-        if T > 0:
-            x = freqs/(2*kB*T)
+        if temp > 0:
+            x = freqs/(2*kB*temp)
             freq_term = 1/(freqs*np.tanh(x))
         else:
             freq_term = 1/(freqs)
@@ -280,8 +280,10 @@ class QpointPhononModes(object):
                              freq_mask[qi:qf], evec_term))
 
         dw = dw/np.sum(weights)
+        dw *= ureg('INTERNAL_LENGTH_UNIT**2').to(
+            self.crystal.cell_vectors_unit + '**2')
 
-        return dw
+        return DebyeWaller(self.crystal, dw, temperature)
 
     def calculate_sqw_map(self, scattering_lengths, ebins, calc_bose=True,
                           **kwargs):
@@ -320,12 +322,15 @@ class QpointPhononModes(object):
         sf = self.calculate_structure_factor(
             scattering_lengths, calc_bose=False, **kwargs)
         if calc_bose:
-            if 'T' in kwargs:
-                T = kwargs['T']
+            if 'dw' in kwargs:
+                temp = kwargs['dw'].temperature
+            elif 'temperature' in kwargs:
+                temp = kwargs['temperature']
             else:
-                T = 5.0
-            p_intensity = sf*bose_factor(freqs, T)
-            n_intensity = sf*bose_factor(-freqs, T)
+                temp = None
+            if temp is not None:
+               p_intensity = sf*_bose_factor(freqs, temp.to('K').magnitude)
+               n_intensity = sf*_bose_factor(-freqs, temp.to('K').magnitude)
         else:
             p_intensity = sf
             n_intensity = sf

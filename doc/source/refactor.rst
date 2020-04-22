@@ -26,5 +26,8 @@ are:
 - Some attributes are now pint ``Quantity`` objects to ensure they have the
   correct units. e.g. ``ForceConstants.dielectric``
 - All objects have ``from_dict`` methods
+- New objects have been created to store data, rather than being stored as
+  arrays in the ForceConstants or QPointPhononModes objects. This includes
+  ``DebyeWaller``, ``StructureFactor``
 - ``BandsData`` and the ability to read CASTEP .bands files has been removed.
   This will be implemented in another project. Get in contact for details.

@@ -10,13 +10,15 @@ try:
     ureg.define('@alias electron_mass = INTERNAL_MASS_UNIT')
     ureg.define('@alias hartree = INTERNAL_ENERGY_UNIT')
     ureg.define('@alias elementary_charge = INTERNAL_CHARGE_UNIT')
+    ureg.define('@alias K = INTERNAL_TEMPERATURE_UNIT')
 
     ureg.define('@alias angstrom = DEFAULT_LENGTH_UNIT')
     ureg.define('@alias amu = DEFAULT_MASS_UNIT')
     ureg.define('@alias eV = DEFAULT_ENERGY_UNIT')
-    ureg.define('@alias elementary_charge = DEFAULT_CHARGE_UNIT')
+    ureg.define('@alias K = DEFAULT_TEMPERATURE_UNIT')
 
     from .crystal import Crystal
+    from .debye_waller import DebyeWaller
     from .qpoint_phonon_modes import QpointPhononModes
     from .force_constants import ForceConstants
 except ImportError:

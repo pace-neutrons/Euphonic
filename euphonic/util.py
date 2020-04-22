@@ -126,7 +126,7 @@ def mp_grid(grid):
     return np.column_stack((qh, qk, ql))
 
 
-def bose_factor(x, T):
+def _bose_factor(x, T):
     """
     Calculate the Bose factor
 

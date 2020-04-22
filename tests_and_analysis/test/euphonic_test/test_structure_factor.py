@@ -2,7 +2,7 @@ import os
 import unittest
 import numpy.testing as npt
 import numpy as np
-from euphonic import ForceConstants, QpointPhononModes
+from euphonic import ureg, ForceConstants, QpointPhononModes
 from ..utils import get_data_path
 
 
@@ -18,27 +18,30 @@ class TestStructureFactorQpointPhononModesLZO(unittest.TestCase):
             'La2Zr2O7-grid', path=self.sf_path)
 
     def test_sf_T5(self):
-        sf = self.data.calculate_structure_factor(self.scattering_lengths, T=5)
+        sf = self.data.calculate_structure_factor(
+            self.scattering_lengths, temperature=5*ureg('K'))
         expected_sf = np.loadtxt(os.path.join(self.sf_path, 'sf_pdata_T5.txt'))
         npt.assert_allclose(sf, expected_sf, rtol=2e-7)
 
     def test_sf_T5_dw(self):
+        dw5 = self.dw_data.calculate_debye_waller(5*ureg('K'))
         sf = self.data.calculate_structure_factor(
-            self.scattering_lengths, T=5, dw_data=self.dw_data)
+            self.scattering_lengths, dw=dw5)
         expected_sf = np.loadtxt(os.path.join(
             self.sf_path, 'sf_pdata_dw_T5.txt'))
         npt.assert_allclose(sf, expected_sf, rtol=2e-7, atol=1e-18)
 
     def test_sf_T100(self):
         sf = self.data.calculate_structure_factor(
-            self.scattering_lengths, T=100)
+            self.scattering_lengths, temperature=100*ureg('K'))
         expected_sf = np.loadtxt(os.path.join(
             self.sf_path, 'sf_pdata_T100.txt'))
         npt.assert_allclose(sf, expected_sf, rtol=2e-7)
 
     def test_sf_T100_dw(self):
+        dw100 = self.dw_data.calculate_debye_waller(100*ureg('K'))
         sf = self.data.calculate_structure_factor(
-            self.scattering_lengths, T=100, dw_data=self.dw_data)
+            self.scattering_lengths, dw=dw100)
         expected_sf = np.loadtxt(os.path.join(
             self.sf_path, 'sf_pdata_dw_T100.txt'))
         npt.assert_allclose(sf, expected_sf, rtol=2e-6)
@@ -72,8 +75,13 @@ class TestStructureFactorForceConstantsLZOSerial(unittest.TestCase):
         self.dw_pdata = QpointPhononModes.from_castep(
             'La2Zr2O7-grid', path=self.sf_path)
 
+        # Tolerance for assuming degenerate modes
+        self.TOL = 1e-4
+
+
     def test_sf_T5(self):
-        sf = self.idata.calculate_structure_factor(self.scattering_lengths, T=5)
+        sf = self.idata.calculate_structure_factor(self.scattering_lengths,
+                                                   temperature=5*ureg('K'))
         expected_sf = np.loadtxt(os.path.join(self.sf_path, 'sf_idata_T5.txt'))
 
         # Structure factors not necessarily equal due to degenerate modes
@@ -81,9 +89,9 @@ class TestStructureFactorForceConstantsLZOSerial(unittest.TestCase):
         sf_sum = np.zeros(sf.shape)
         expected_sf_sum = np.zeros(sf.shape)
         for q in range(self.idata.n_qpts):
-            TOL = 1e-4
-            diff = np.append(TOL + 1, np.diff(self.idata.frequencies[q].magnitude))
-            unique_index = np.where(diff > TOL)[0]
+            diff = np.append(self.TOL + 1,
+                             np.diff(self.idata.frequencies[q].magnitude))
+            unique_index = np.where(diff > self.TOL)[0]
             x = np.zeros(3*self.idata.crystal.n_atoms, dtype=np.int32)
             x[unique_index] = 1
             unique_modes = np.cumsum(x) - 1
@@ -99,16 +107,17 @@ class TestStructureFactorForceConstantsLZOSerial(unittest.TestCase):
                             rtol=5e-3, atol=1e-12)
 
     def test_sf_T5_dw_idata(self):
+        dw5 = self.dw_idata.calculate_debye_waller(5*ureg('K'))
         sf = self.idata.calculate_structure_factor(
-            self.scattering_lengths, T=5, dw_data=self.dw_idata)
+            self.scattering_lengths, dw=dw5)
         expected_sf = np.loadtxt(os.path.join(
             self.sf_path, 'sf_idata_dw_grid_T5.txt'))
         sf_sum = np.zeros(sf.shape)
         expected_sf_sum = np.zeros(sf.shape)
         for q in range(self.idata.n_qpts):
-            TOL = 1e-4
-            diff = np.append(TOL + 1, np.diff(self.idata.frequencies[q].magnitude))
-            unique_index = np.where(diff > TOL)[0]
+            diff = np.append(self.TOL + 1,
+                             np.diff(self.idata.frequencies[q].magnitude))
+            unique_index = np.where(diff > self.TOL)[0]
             x = np.zeros(3*self.idata.crystal.n_atoms, dtype=np.int32)
             x[unique_index] = 1
             unique_modes = np.cumsum(x) - 1
@@ -121,17 +130,18 @@ class TestStructureFactorForceConstantsLZOSerial(unittest.TestCase):
                             rtol=5e-3, atol=1e-12)
 
     def test_sf_T5_dw_pdata(self):
+        dw5 = self.dw_pdata.calculate_debye_waller(5*ureg('K'))
         sf = self.idata.calculate_structure_factor(
-            self.scattering_lengths, T=5, dw_data=self.dw_pdata)
+            self.scattering_lengths, dw=dw5)
         expected_sf = np.loadtxt(os.path.join(
             self.sf_path, 'sf_idata_dw_seedname_T5.txt'))
 
         sf_sum = np.zeros(sf.shape)
         expected_sf_sum = np.zeros(sf.shape)
         for q in range(self.idata.n_qpts):
-            TOL = 1e-4
-            diff = np.append(TOL + 1, np.diff(self.idata.frequencies[q].magnitude))
-            unique_index = np.where(diff > TOL)[0]
+            diff = np.append(self.TOL + 1,
+                             np.diff(self.idata.frequencies[q].magnitude))
+            unique_index = np.where(diff > self.TOL)[0]
             x = np.zeros(3*self.idata.crystal.n_atoms, dtype=np.int32)
             x[unique_index] = 1
             unique_modes = np.cumsum(x) - 1
@@ -145,16 +155,16 @@ class TestStructureFactorForceConstantsLZOSerial(unittest.TestCase):
 
     def test_sf_T100(self):
         sf = self.idata.calculate_structure_factor(
-            self.scattering_lengths, T=100)
+            self.scattering_lengths, temperature=100*ureg('K'))
         expected_sf = np.loadtxt(os.path.join(
             self.sf_path, 'sf_idata_T100.txt'))
 
         sf_sum = np.zeros(sf.shape)
         expected_sf_sum = np.zeros(sf.shape)
         for q in range(self.idata.n_qpts):
-            TOL = 1e-4
-            diff = np.append(TOL + 1, np.diff(self.idata.frequencies[q].magnitude))
-            unique_index = np.where(diff > TOL)[0]
+            diff = np.append(self.TOL + 1,
+                             np.diff(self.idata.frequencies[q].magnitude))
+            unique_index = np.where(diff > self.TOL)[0]
             x = np.zeros(3*self.idata.crystal.n_atoms, dtype=np.int32)
             x[unique_index] = 1
             unique_modes = np.cumsum(x) - 1
@@ -167,17 +177,18 @@ class TestStructureFactorForceConstantsLZOSerial(unittest.TestCase):
                             rtol=5e-3, atol=1e-12)
 
     def test_sf_T100_dw_idata(self):
+        dw100 = self.dw_idata.calculate_debye_waller(100*ureg('K'))
         sf = self.idata.calculate_structure_factor(
-            self.scattering_lengths, T=100, dw_data=self.dw_idata)
+            self.scattering_lengths, dw=dw100)
         expected_sf = np.loadtxt(os.path.join(
             self.sf_path, 'sf_idata_dw_grid_T100.txt'))
 
         sf_sum = np.zeros(sf.shape)
         expected_sf_sum = np.zeros(sf.shape)
         for q in range(self.idata.n_qpts):
-            TOL = 1e-4
-            diff = np.append(TOL + 1, np.diff(self.idata.frequencies[q].magnitude))
-            unique_index = np.where(diff > TOL)[0]
+            diff = np.append(self.TOL + 1,
+                             np.diff(self.idata.frequencies[q].magnitude))
+            unique_index = np.where(diff > self.TOL)[0]
             x = np.zeros(3*self.idata.crystal.n_atoms, dtype=np.int32)
             x[unique_index] = 1
             unique_modes = np.cumsum(x) - 1
@@ -190,17 +201,18 @@ class TestStructureFactorForceConstantsLZOSerial(unittest.TestCase):
                             rtol=5e-3, atol=1e-12)
 
     def test_sf_T100_dw_pdata(self):
+        dw100 = self.dw_pdata.calculate_debye_waller(100*ureg('K'))
         sf = self.idata.calculate_structure_factor(
-            self.scattering_lengths, T=100, dw_data=self.dw_pdata)
+            self.scattering_lengths, dw=dw100)
         expected_sf = np.loadtxt(os.path.join(
             self.sf_path, 'sf_idata_dw_seedname_T100.txt'))
 
         sf_sum = np.zeros(sf.shape)
         expected_sf_sum = np.zeros(sf.shape)
         for q in range(self.idata.n_qpts):
-            TOL = 1e-4
-            diff = np.append(TOL + 1, np.diff(self.idata.frequencies[q].magnitude))
-            unique_index = np.where(diff > TOL)[0]
+            diff = np.append(self.TOL + 1,
+                             np.diff(self.idata.frequencies[q].magnitude))
+            unique_index = np.where(diff > self.TOL)[0]
             x = np.zeros(3*self.idata.crystal.n_atoms, dtype=np.int32)
             x[unique_index] = 1
             unique_modes = np.cumsum(x) - 1
@@ -250,6 +262,9 @@ class TestStructureFactorForceConstantsLZOSerialC(TestStructureFactorForceConsta
         self.dw_pdata = QpointPhononModes.from_castep(
             'La2Zr2O7-grid', path=self.sf_path)
 
+        # Tolerance for assuming degenerate modes
+        self.TOL = 1e-4
+
 
 class TestStructureFactorForceConstantsLZOParallelC(TestStructureFactorForceConstantsLZOSerial):
 
@@ -281,6 +296,9 @@ class TestStructureFactorForceConstantsLZOParallelC(TestStructureFactorForceCons
         self.dw_pdata = QpointPhononModes.from_castep(
             'La2Zr2O7-grid', path=self.sf_path)
 
+        # Tolerance for assuming degenerate modes
+        self.TOL = 1e-4
+
 
 class TestStructureFactorForceConstantsQuartzSerial(unittest.TestCase):
 
@@ -305,8 +323,13 @@ class TestStructureFactorForceConstantsQuartzSerial(unittest.TestCase):
         self.dw_idata = dw_fc.calculate_fine_phonons(
             np.loadtxt(os.path.join(data_path, 'qgrid_444.txt')), asr='reciprocal')
 
+        # Tolerance for assuming degenerate modes - needs to be higher for
+        # Quartz due to symmetry
+        self.TOL = 0.05
+
     def test_sf_T0(self):
-        sf = self.idata.calculate_structure_factor(self.scattering_lengths, T=0)
+        sf = self.idata.calculate_structure_factor(
+            self.scattering_lengths, temperature=0*ureg('K'))
         expected_sf = np.loadtxt(os.path.join(self.sf_path, 'sf_idata_T0.txt'))
 
         # Structure factors not necessarily equal due to degenerate modes
@@ -314,9 +337,9 @@ class TestStructureFactorForceConstantsQuartzSerial(unittest.TestCase):
         sf_sum = np.zeros(sf.shape)
         expected_sf_sum = np.zeros(sf.shape)
         for q in range(self.idata.n_qpts):
-            TOL = 5e-4
-            diff = np.append(TOL + 1, np.diff(self.idata.frequencies[q].magnitude))
-            unique_index = np.where(diff > TOL)[0]
+            diff = np.append(self.TOL + 1,
+                             np.diff(self.idata.frequencies[q].magnitude))
+            unique_index = np.where(diff > self.TOL)[0]
             x = np.zeros(3*self.idata.crystal.n_atoms, dtype=np.int32)
             x[unique_index] = 1
             unique_modes = np.cumsum(x) - 1
@@ -334,16 +357,17 @@ class TestStructureFactorForceConstantsQuartzSerial(unittest.TestCase):
                             rtol=4e-3, atol=1.1e-11)
 
     def test_sf_T0_dw_grid(self):
+        dw0 = self.dw_idata.calculate_debye_waller(0*ureg('K'))
         sf = self.idata.calculate_structure_factor(
-            self.scattering_lengths, T=0, dw_data=self.dw_idata)
+            self.scattering_lengths, dw=dw0)
         expected_sf = np.loadtxt(os.path.join(
             self.sf_path, 'sf_idata_dw_grid_T0.txt'))
         sf_sum = np.zeros(sf.shape)
         expected_sf_sum = np.zeros(sf.shape)
         for q in range(self.idata.n_qpts):
-            TOL = 5e-4
-            diff = np.append(TOL + 1, np.diff(self.idata.frequencies[q].magnitude))
-            unique_index = np.where(diff > TOL)[0]
+            diff = np.append(self.TOL + 1,
+                             np.diff(self.idata.frequencies[q].magnitude))
+            unique_index = np.where(diff > self.TOL)[0]
             x = np.zeros(3*self.idata.crystal.n_atoms, dtype=np.int32)
             x[unique_index] = 1
             unique_modes = np.cumsum(x) - 1
@@ -360,16 +384,16 @@ class TestStructureFactorForceConstantsQuartzSerial(unittest.TestCase):
 
     def test_sf_T100(self):
         sf = self.idata.calculate_structure_factor(
-            self.scattering_lengths, T=100)
+            self.scattering_lengths, temperature=100*ureg('K'))
         expected_sf = np.loadtxt(
             os.path.join(self.sf_path, 'sf_idata_T100.txt'))
 
         sf_sum = np.zeros(sf.shape)
         expected_sf_sum = np.zeros(sf.shape)
         for q in range(self.idata.n_qpts):
-            TOL = 5e-4
-            diff = np.append(TOL + 1, np.diff(self.idata.frequencies[q].magnitude))
-            unique_index = np.where(diff > TOL)[0]
+            diff = np.append(self.TOL + 1,
+                             np.diff(self.idata.frequencies[q].magnitude))
+            unique_index = np.where(diff > self.TOL)[0]
             x = np.zeros(3*self.idata.crystal.n_atoms, dtype=np.int32)
             x[unique_index] = 1
             unique_modes = np.cumsum(x) - 1
@@ -385,17 +409,18 @@ class TestStructureFactorForceConstantsQuartzSerial(unittest.TestCase):
                             rtol=4e-3, atol=1.1e-11)
 
     def test_sf_T100_dw_grid(self):
+        dw100 = self.dw_idata.calculate_debye_waller(100*ureg('K'))
         sf = self.idata.calculate_structure_factor(
-            self.scattering_lengths, T=100, dw_data=self.dw_idata)
+            self.scattering_lengths, dw=dw100)
         expected_sf = np.loadtxt(os.path.join(
             self.sf_path, 'sf_idata_dw_grid_T100.txt'))
 
         sf_sum = np.zeros(sf.shape)
         expected_sf_sum = np.zeros(sf.shape)
         for q in range(self.idata.n_qpts):
-            TOL = 5e-4
-            diff = np.append(TOL + 1, np.diff(self.idata.frequencies[q].magnitude))
-            unique_index = np.where(diff > TOL)[0]
+            diff = np.append(self.TOL + 1,
+                             np.diff(self.idata.frequencies[q].magnitude))
+            unique_index = np.where(diff > self.TOL)[0]
             x = np.zeros(3*self.idata.crystal.n_atoms, dtype=np.int32)
             x[unique_index] = 1
             unique_modes = np.cumsum(x) - 1
@@ -436,6 +461,10 @@ class TestStructureFactorForceConstantsQuartzSerialC(TestStructureFactorForceCon
             np.loadtxt(os.path.join(data_path, 'qgrid_444.txt')),
             asr='reciprocal')
 
+        # Tolerance for assuming degenerate modes - needs to be higher for
+        # Quartz due to symmetry
+        self.TOL = 0.05
+
 
 class TestStructureFactorForceConstantsQuartzParallelC(TestStructureFactorForceConstantsQuartzSerial):
 
@@ -462,3 +491,8 @@ class TestStructureFactorForceConstantsQuartzParallelC(TestStructureFactorForceC
         self.dw_idata = dw_fc.calculate_fine_phonons(
             np.loadtxt(os.path.join(data_path, 'qgrid_444.txt')),
             asr='reciprocal')
+
+        # Tolerance for assuming degenerate modes - needs to be higher for
+        # Quartz due to symmetry
+        self.TOL = 0.05
+

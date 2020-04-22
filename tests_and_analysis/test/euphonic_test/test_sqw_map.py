@@ -2,12 +2,8 @@ import unittest
 import os
 import numpy.testing as npt
 import numpy as np
-# Before Python 3.3 mock is an external module
-try:
-    import unittest.mock as mock
-except ImportError:
-    import mock
-from euphonic import ForceConstants, QpointPhononModes
+import unittest.mock as mock
+from euphonic import ureg, ForceConstants, QpointPhononModes
 from ..utils import get_data_path
 
 
@@ -27,7 +23,8 @@ class TestSqwMapQpointPhononModesLZO(unittest.TestCase):
             'La2Zr2O7-grid', path=self.sf_path)
 
     def test_sqw_T5(self):
-        self.data.calculate_sqw_map(self.scattering_lengths, self.ebins, T=5)
+        self.data.calculate_sqw_map(
+            self.scattering_lengths, self.ebins, temperature=5*ureg('K'))
 
         npt.assert_allclose(self.data.sqw_ebins.magnitude, self.ebins)
         expected_sqw_map = np.loadtxt(os.path.join(
@@ -35,8 +32,9 @@ class TestSqwMapQpointPhononModesLZO(unittest.TestCase):
         npt.assert_allclose(self.data.sqw_map, expected_sqw_map, rtol=1e-6)
 
     def test_sqw_T5_dw(self):
+        dw5 = self.dw_data.calculate_debye_waller(5*ureg('K'))
         self.data.calculate_sqw_map(
-            self.scattering_lengths, self.ebins, T=5, dw_data=self.dw_data)
+            self.scattering_lengths, self.ebins, dw=dw5)
 
         npt.assert_allclose(self.data.sqw_ebins.magnitude, self.ebins)
         expected_sqw_map = np.loadtxt(os.path.join(
@@ -44,7 +42,8 @@ class TestSqwMapQpointPhononModesLZO(unittest.TestCase):
         npt.assert_allclose(self.data.sqw_map, expected_sqw_map, rtol=1e-6)
 
     def test_sqw_T100(self):
-        self.data.calculate_sqw_map(self.scattering_lengths, self.ebins, T=100)
+        self.data.calculate_sqw_map(
+            self.scattering_lengths, self.ebins, temperature=100*ureg('K'))
 
         npt.assert_allclose(self.data.sqw_ebins.magnitude, self.ebins)
         expected_sqw_map = np.loadtxt(os.path.join(
@@ -52,8 +51,9 @@ class TestSqwMapQpointPhononModesLZO(unittest.TestCase):
         npt.assert_allclose(self.data.sqw_map, expected_sqw_map, rtol=1e-6)
 
     def test_sqw_T100_dw(self):
+        dw100 = self.dw_data.calculate_debye_waller(100*ureg('K'))
         self.data.calculate_sqw_map(
-            self.scattering_lengths, self.ebins, T=100, dw_data=self.dw_data)
+            self.scattering_lengths, self.ebins, dw=dw100)
 
         npt.assert_allclose(self.data.sqw_ebins.magnitude, self.ebins)
         expected_sqw_map = np.loadtxt(os.path.join(
@@ -83,7 +83,8 @@ class TestSqwMapForceConstantsLZOSerial(unittest.TestCase):
                 return_value=np.loadtxt(os.path.join(
                     sf_path, 'sf_idata_T5.txt')))
     def test_sqw_T5(self, calculate_structure_factor_function):
-        self.data.calculate_sqw_map(self.scattering_lengths, self.ebins, T=5)
+        self.data.calculate_sqw_map(
+            self.scattering_lengths, self.ebins, temperature=5*ureg('K'))
 
         npt.assert_allclose(self.data.sqw_ebins.magnitude, self.ebins)
         expected_sqw_map = np.loadtxt(os.path.join(
@@ -95,7 +96,8 @@ class TestSqwMapForceConstantsLZOSerial(unittest.TestCase):
                 return_value=np.loadtxt(os.path.join(
                     sf_path, 'sf_idata_T100.txt')))
     def test_sqw_T100(self, calculate_structure_factor_function):
-        self.data.calculate_sqw_map(self.scattering_lengths, self.ebins, T=100)
+        self.data.calculate_sqw_map(
+            self.scattering_lengths, self.ebins, temperature=100*ureg('K'))
 
         npt.assert_allclose(self.data.sqw_ebins.magnitude, self.ebins)
         expected_sqw_map = np.loadtxt(os.path.join(
@@ -106,16 +108,19 @@ class TestSqwMapForceConstantsLZOSerial(unittest.TestCase):
                 return_value=np.loadtxt(os.path.join(
                     sf_path, 'sf_idata_T100.txt')))
     def test_sqw_arguments_passed(self, calculate_structure_factor_function):
+        temp = 100*ureg('K')
+        dw = self.data.calculate_debye_waller(100*ureg('K'))
         self.data.calculate_sqw_map(
-            self.scattering_lengths, self.ebins, T=100, dw_data='dw_data')
+            self.scattering_lengths, self.ebins, temperature=temp,
+            dw=dw)
         sf_args, sf_kwargs = calculate_structure_factor_function.call_args
 
         # Check calculate_structure_factor was called with the correct args
         # (make sure they were passed through from sqw_map)
         self.assertEqual(sf_args[0], self.scattering_lengths)
-        self.assertEqual(sf_kwargs['T'], 100)
+        self.assertEqual(sf_kwargs['temperature'], temp)
         self.assertEqual(sf_kwargs['calc_bose'], False)
-        self.assertEqual(sf_kwargs['dw_data'], 'dw_data')
+        self.assertEqual(sf_kwargs['dw'], dw)
 
 class TestSqwMapForceConstantsLZOSerialC(
     TestSqwMapForceConstantsLZOSerial):
