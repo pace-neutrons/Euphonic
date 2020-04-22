@@ -35,6 +35,32 @@ def setGitHubBuildStatus(String status, String message, String context) {
     }
 }
 
+def getGitCommitAuthorEmail() {
+    script {
+        withCredentials([string(credentialsId: 'Euphonic_GitHub_API_Token',
+                variable: 'api_token')]) {
+            if(isUnix()) {
+                return sh(
+                    script: """
+                        commit_url="\$(\\
+                            curl -s -H "Authorization: token ${api_token}" \\
+                            --request GET https://api.github.com/repos/pace-neutrons/Euphonic/git/ref/heads/${env.JOB_BASE_NAME} \\
+                            | jq ".object.url" | tr -d '"'\\
+                        )" &&
+                        echo "\$(\\
+                            curl -s -H "Authorization: token ${api_token}" \\
+                            --request GET \$commit_url |  jq '.author.email' | tr -d '"'\\
+                        )"
+                    """,
+                    returnStdout: true
+                )
+            } else {
+                error("Cannot get commit author in Windows")
+            }
+        }
+    }
+}
+
 pipeline {
 
     agent none
@@ -169,7 +195,6 @@ pipeline {
                             steps {
                                 setGitHubBuildStatus("pending", "Starting", "Windows")
                                 echo "Branch: ${env.JOB_BASE_NAME}"
-                                bat 'set'
                             }
                         }
 
@@ -228,6 +253,21 @@ pipeline {
                         }
 
                     }
+                }
+            }
+        }
+    }
+
+    post {
+        unsuccessful {
+            node("sl7") {
+                script {
+                    def email = getGitCommitAuthorEmail()
+                    mail (
+                        to: "$email",
+                        subject: "Failed pipeline: ${env.JOB_BASE_NAME}",
+                        body: "See ${env.BUILD_URL}"
+                    )
                 }
             }
         }
