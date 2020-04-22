@@ -100,7 +100,6 @@ pipeline {
 
                         stage("Notify") {
                             steps {
-                                error("Test")
                                 setGitHubBuildStatus("pending", "Starting", "Linux")
                                 echo "Branch: ${env.JOB_BASE_NAME}"
                             }
@@ -194,7 +193,6 @@ pipeline {
 
                         stage("Notify") {
                             steps {
-                                error("Test")
                                 setGitHubBuildStatus("pending", "Starting", "Windows")
                                 echo "Branch: ${env.JOB_BASE_NAME}"
                             }
