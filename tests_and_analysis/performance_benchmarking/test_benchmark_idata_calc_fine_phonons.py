@@ -9,7 +9,7 @@ from euphonic.data.interpolation import InterpolationData
 def run_calc_fine_phonons_benchmark(use_c: bool, data_path: str, seedname: str, qpts_npy_file: str,
                                     num_of_qpts: int, n_threads: int = 1, num_of_repeats: int = 5) -> float:
     """
-    Run a benchmark for the InterpolationData.calculate_fine_phonons method.
+    Get the average time for running the InterpolationData.calculate_fine_phonons with the given parameters.
 
     Parameters
     ----------
