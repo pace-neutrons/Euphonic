@@ -7,4 +7,4 @@ def get_data_path() -> str:
     -------
     str: The path to the data files for use in performance benchmarking
     """
-    return os.path.join(os.path.dirname(__file__), "data").replace("\\", "\\\\")
+    return os.path.join(os.path.dirname(__file__), "data")
