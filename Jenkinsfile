@@ -172,6 +172,7 @@ pipeline {
 
                             script {
                                 def email = getGitCommitAuthorEmail()
+                                echo "$email"
                                 mail (
                                     to: "$email",
                                     subject: "Failed pipeline: ${env.JOB_BASE_NAME}",
