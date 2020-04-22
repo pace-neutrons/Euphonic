@@ -5,7 +5,9 @@ import numpy as np
 import scipy
 from scipy.linalg.lapack import zheev
 from scipy.special import erfc
-from euphonic import ureg, Crystal, QpointPhononModes
+from euphonic import ureg
+from euphonic.crystal import Crystal
+from euphonic.qpoint_phonon_modes import QpointPhononModes
 from euphonic.util import is_gamma, mp_grid, get_all_origins
 from euphonic.readers import castep
 from euphonic.readers import phonopy
@@ -238,7 +240,7 @@ class ForceConstants(object):
                 self.cell_origins[:, i], return_inverse=True)
 
         # Precompute dynamical matrix mass weighting
-        atom_mass = self.crystal.atom_mass.to('electron_mass').magnitude
+        atom_mass = self.crystal._atom_mass
         n_atoms = self.crystal.n_atoms
         masses = np.tile(np.repeat(atom_mass, 3), (3*n_atoms, 1))
         dyn_mat_weighting = 1/np.sqrt(masses*np.transpose(masses))
@@ -294,7 +296,7 @@ class ForceConstants(object):
             else:
                 raise ImportError
             # Make sure all arrays are contiguous before calling C
-            cell_vectors = self.crystal.cell_vectors.to('bohr').magnitude
+            cell_vectors = self.crystal._cell_vectors
             recip_vectors = self.crystal.reciprocal_cell().to(
                 '1/bohr').magnitude
             (cell_vectors, recip_vectors, reduced_qpts, qpts_i, fc_img_weighted,
@@ -482,7 +484,7 @@ class ForceConstants(object):
             sum. A higher value uses more reciprocal terms
         """
 
-        cell_vectors = self.crystal.cell_vectors.to('bohr').magnitude
+        cell_vectors = self.crystal._cell_vectors
         recip = self.crystal.reciprocal_cell().to('1/bohr').magnitude
         n_atoms = self.crystal.n_atoms
         atom_r = self.crystal.atom_r
@@ -583,7 +585,7 @@ class ForceConstants(object):
                 recip_q0 += recip_q0_tmp
             else:
                 break
-        vol = self.crystal.cell_volume().to('bohr**3').magnitude
+        vol = self.crystal._cell_volume()
         #recip_q0 *= math.pi/(cell_volume*eta_2)
         recip_q0 *= math.pi/(vol*eta_2)
 
@@ -630,7 +632,7 @@ class ForceConstants(object):
         corr : (3*n_atoms, 3*n_atoms) complex ndarray
             The correction to the dynamical matrix
         """
-        cell_vectors = self.crystal.cell_vectors.to('bohr').magnitude
+        cell_vectors = self.crystal._cell_vectors
         recip = self.crystal.reciprocal_cell().to('1/bohr').magnitude
         n_atoms = self.crystal.n_atoms
         atom_r = self.crystal.atom_r
@@ -715,7 +717,7 @@ class ForceConstants(object):
         na_corr : (3*n_atoms, 3*n_atoms) complex ndarray
             The correction to the dynamical matrix
         """
-        cell_vectors = self.crystal.cell_vectors.to('bohr').magnitude
+        cell_vectors = self.crystal._cell_vectors
         n_atoms = self.crystal.n_atoms
         born = self._born
         dielectric = self._dielectric
@@ -1008,7 +1010,7 @@ class ForceConstants(object):
         """
 
         n_atoms = self.crystal.n_atoms
-        cell_vectors = self.crystal.cell_vectors.to('bohr').magnitude
+        cell_vectors = self.crystal._cell_vectors
         atom_r = self.crystal.atom_r
         cell_origins = self.cell_origins
         n_cells_in_sc = self.n_cells_in_sc

@@ -19,6 +19,7 @@ try:
 
     from .crystal import Crystal
     from .debye_waller import DebyeWaller
+    from .structure_factor import StructureFactor
     from .qpoint_phonon_modes import QpointPhononModes
     from .force_constants import ForceConstants
 except ImportError:

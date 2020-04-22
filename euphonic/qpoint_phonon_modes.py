@@ -1,6 +1,9 @@
 import math
 import numpy as np
-from euphonic import ureg, Crystal, DebyeWaller
+from euphonic import ureg
+from euphonic.crystal import Crystal
+from euphonic.debye_waller import DebyeWaller
+from euphonic.structure_factor import StructureFactor
 from euphonic.util import (direction_changed, _bose_factor, is_gamma,
                            lorentzian, gaussian)
 from euphonic.readers import castep
@@ -17,15 +20,14 @@ class QpointPhononModes(object):
     crystal : Crystal
         Lattice and atom information
     n_qpts : int
-        Number of q-points in the .phonon file
+        Number of q-points in the object
     qpts : (n_qpts, 3) float ndarray
-        Q-point coordinates
+        Q-point coordinates, in fractional coordinates of the reciprocal lattice
     weights : (n_qpts,) float ndarray
         The weight for each q-point
-    frequencies: (n_qpts, 3*n_atoms) float ndarray
-        Phonon frequencies, ordered according to increasing q-point
-        number. Default units meV
-    eigenvectors: (n_qpts, 3*n_atoms, n_atoms, 3) complex ndarray
+    frequencies: (n_qpts, 3*crystal.n_atoms) float Quantity
+        Phonon frequencies per q-point and mode
+    eigenvectors: (n_qpts, 3*crystal.n_atoms, crystal.n_atoms, 3) complex ndarray
         Dynamical matrix eigenvectors
     """
 
@@ -37,10 +39,10 @@ class QpointPhononModes(object):
             Lattice and atom information
         qpts : (n_qpts, 3) float ndarray
             Q-point coordinates
-        frequencies: (n_qpts, 3*n_atoms) float Quantity
+        frequencies: (n_qpts, 3*crystal.n_atoms) float Quantity
             Phonon frequencies, ordered according to increasing q-point
             number. Default units meV
-        eigenvectors: (n_qpts, 3*n_atoms, n_atoms, 3) complex ndarray
+        eigenvectors: (n_qpts, 3*crystal.n_atoms, crystal.n_atoms, 3) complex ndarray
             Dynamical matrix eigenvectors
         weights : (n_qpts,) float ndarray, optional, default None
             The weight for each q-point. If None, equal weights are assumed
@@ -153,8 +155,8 @@ class QpointPhononModes(object):
     def calculate_structure_factor(self, scattering_lengths, temperature=None,
                                    scale=1.0, calc_bose=True, dw=None):
         """
-        Calculate the one phonon inelastic scattering at each q-point
-        See M. Dove Structure and Dynamics Pg. 226
+        Calculate the one phonon inelastic scattering for neutrons at each
+        q-point. See M. Dove Structure and Dynamics Pg. 226
 
         Parameters
         ----------
@@ -173,11 +175,12 @@ class QpointPhononModes(object):
 
         Returns
         -------
-        sf : (n_qpts, 3*n_atoms) float ndarray
-            The structure factor for each q-point and phonon branch
+        sf : StructureFactor
+            An object containing the structure factor for each q-point and
+            phonon mode
         """
-        sl = [scattering_lengths[x] for x in self.crystal.atom_type]
-        sl = (sl*ureg('fm').to('bohr')).magnitude
+        sl = [scattering_lengths[x].to('INTERNAL_LENGTH_UNIT').magnitude
+                  for x in self.crystal.atom_type]
 
         # Calculate normalisation factor
         norm_factor = sl/np.sqrt(self.crystal._atom_mass)
@@ -189,7 +192,8 @@ class QpointPhononModes(object):
 
         # Eigenvectors are in Cartesian so need to convert hkl to Cartesian by
         # computing the dot product with hkl and reciprocal lattice
-        recip = self.crystal.reciprocal_cell().to('1/bohr').magnitude
+        recip = self.crystal.reciprocal_cell().to(
+            '1/INTERNAL_LENGTH_UNIT').magnitude
         Q = np.einsum('ij,jk->ik', self.qpts, recip)
 
         # Calculate dot product of Q and eigenvectors for all branches, atoms
@@ -202,7 +206,7 @@ class QpointPhononModes(object):
                 raise Exception((
                     'The DebyeWaller object used as dw is not compatible with '
                     'the QPointPhononModes object (they have a different number'
-                    ' of atoms). Is dw correct?'))
+                    ' of atoms)'))
             dw_factor = np.exp(-np.einsum('jkl,ik,il->ij',
                                           dw._debye_waller, Q, Q))
             exp_factor *= dw_factor
@@ -221,7 +225,10 @@ class QpointPhononModes(object):
                 sf = sf*_bose_factor(self._frequencies,
                                      temperature.to('K').magnitude)
 
-        return sf
+        return StructureFactor(
+            self.crystal, self.qpts, self.frequencies,
+            sf*ureg('INTERNAL_LENGTH_UNIT**2').to(
+                self.crystal.cell_vectors.units**2))
 
     def calculate_debye_waller(self, temperature):
         """
@@ -240,14 +247,15 @@ class QpointPhononModes(object):
         """
 
         # Convert units
-        kB = (1*ureg.k).to('E_h/K').magnitude
+        kB = (1*ureg.k).to(
+            'INTERNAL_ENERGY_UNIT/INTERNAL_TEMPERATURE_UNIT').magnitude
         n_atoms = self.crystal.n_atoms
         atom_mass = self.crystal._atom_mass
         freqs = self._frequencies
         qpts = self.qpts
         evecs = self.eigenvectors
         weights = self.weights
-        temp = temperature.to('K').magnitude
+        temp = temperature.to('INTERNAL_TEMPERATURE_UNIT').magnitude
 
         mass_term = 1/(4*atom_mass)
 
@@ -314,13 +322,15 @@ class QpointPhononModes(object):
 
         # Convert units
         freqs = self._frequencies
-        ebins = (ebins*ureg(self.frequencies_unit).to('E_h')).magnitude
+        ebins = (ebins*ureg(self.frequencies_unit).to(
+            'INTERNAL_ENERGY_UNIT')).magnitude
 
         # Create initial sqw_map with an extra an energy bin either side, for
         # any branches that fall outside the energy bin range
         sqw_map = np.zeros((self.n_qpts, len(ebins) + 1))
-        sf = self.calculate_structure_factor(
+        sf_obj = self.calculate_structure_factor(
             scattering_lengths, calc_bose=False, **kwargs)
+        sf = sf_obj._structure_factors
         if calc_bose:
             if 'dw' in kwargs:
                 temp = kwargs['dw'].temperature
