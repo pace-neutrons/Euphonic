@@ -169,16 +169,6 @@ pipeline {
 
                         unsuccessful {
                             setGitHubBuildStatus("failure", "Unsuccessful", "Linux")
-
-                            script {
-                                def email = getGitCommitAuthorEmail()
-                                echo "$email"
-                                mail (
-                                    to: "$email",
-                                    subject: "Failed pipeline: ${env.JOB_BASE_NAME}",
-                                    body: "See ${env.BUILD_URL}"
-                                )
-                            }
                         }
 
                         cleanup {
@@ -188,7 +178,7 @@ pipeline {
                     }
                 }
 
-                /* stage("Windows environment") {
+                stage("Windows environment") {
 
                     agent { label "PACE Windows (Private)" }
 
@@ -259,7 +249,22 @@ pipeline {
                         }
 
                     }
-                } */
+                }
+            }
+        }
+    }
+
+    post {
+        unsuccessful {
+            node("sl7") {
+                script {
+                    def email = getGitCommitAuthorEmail()
+                    mail (
+                        to: "$email",
+                        subject: "Failed pipeline: ${env.JOB_BASE_NAME}",
+                        body: "See ${env.BUILD_URL}"
+                    )
+                }
             }
         }
     }
