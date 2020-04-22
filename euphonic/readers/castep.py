@@ -35,49 +35,30 @@ def _read_phonon_data(seedname, path, cell_vectors_unit='angstrom',
         qpts = np.zeros((n_qpts, 3))
         weights = np.zeros(n_qpts)
         freqs = np.zeros((n_qpts, n_branches))
-        ir = np.array([])
-        raman = np.array([])
         eigenvecs = np.zeros((n_qpts, n_branches, n_atoms, 3),
                              dtype='complex128')
-        split_i = np.array([], dtype=np.int32)
-        split_freqs = np.empty((0, n_branches))
-        split_eigenvecs = np.empty((0, n_branches, n_atoms, 3))
 
         # Need to loop through file using while rather than number of q-points
         # as sometimes points are duplicated
-        first_qpt = True
         qpt_line = f.readline()
-        prev_qpt_num = -1
-        qpt_num_patt = re.compile('q-pt=\s*(\d+)')
         float_patt = re.compile('-?\d+\.\d+')
+        idx = 0
         while qpt_line:
-            qpt_num = int(re.search(qpt_num_patt, qpt_line).group(1)) - 1
             floats = re.findall(float_patt, qpt_line)
-            qpts[qpt_num] = [float(x) for x in floats[:3]]
-            weights[qpt_num] = float(floats[3])
+            qpt = [float(x) for x in floats[:3]]
+            qweight = float(floats[3])
 
             freq_lines = [f.readline().split() for i in range(n_branches)]
-            tmp = np.array([float(line[1]) for line in freq_lines])
-            if qpt_num != prev_qpt_num:
-                freqs[qpt_num, :] = tmp
-            elif is_gamma(qpts[qpt_num]):
-                split_i = np.concatenate((split_i, [qpt_num]))
-                split_freqs = np.concatenate((split_freqs, tmp[np.newaxis]))
+            qfreq = np.array([float(line[1]) for line in freq_lines])
             ir_index = 2
             raman_index = 3
-            if is_gamma(qpts[qpt_num]):
+            if is_gamma(qpt):
                 ir_index += 1
                 raman_index += 1
             if len(freq_lines[0]) > ir_index:
-                if first_qpt:
-                    ir = np.zeros((n_qpts, n_branches))
-                ir[qpt_num, :] = [float(
-                    line[ir_index]) for line in freq_lines]
+                qir = [float(line[ir_index]) for line in freq_lines]
             if len(freq_lines[0]) > raman_index:
-                if first_qpt:
-                    raman = np.zeros((n_qpts, n_branches))
-                raman[qpt_num, :] = [float(
-                    line[raman_index]) for line in freq_lines]
+                qraman = [float(line[raman_index]) for line in freq_lines]
 
             [f.readline() for x in range(2)]  # Skip 2 label lines
             lines = np.array([f.readline().split()[2:]
@@ -86,20 +67,23 @@ def _read_phonon_data(seedname, path, cell_vectors_unit='angstrom',
             lines_i = np.column_stack(([lines[:, 0] + lines[:, 1]*1j,
                                         lines[:, 2] + lines[:, 3]*1j,
                                         lines[:, 4] + lines[:, 5]*1j]))
-            tmp = np.zeros((n_branches, n_atoms, 3), dtype=np.complex128)
+            qeigenvec = np.zeros((n_branches, n_atoms, 3), dtype=np.complex128)
             for i in range(n_branches):
-                    tmp[i, :, :] = lines_i[i*n_atoms:(i+1)*n_atoms, :]
-            if qpt_num != prev_qpt_num:
-                eigenvecs[qpt_num] = tmp
-            elif is_gamma(qpts[qpt_num]):
-                split_eigenvecs = np.concatenate(
-                    (split_eigenvecs, tmp[np.newaxis]))
-            first_qpt = False
+                    qeigenvec[i, :, :] = lines_i[i*n_atoms:(i+1)*n_atoms, :]
             qpt_line = f.readline()
-            prev_qpt_num = qpt_num
-    freqs = np.insert(freqs, split_i + 1, split_freqs, axis=0)
-    eigenvecs = np.insert(eigenvecs, split_i + 1, split_eigenvecs, axis=0)
-    qpts = np.insert(qpts, split_i + 1, np.array([0., 0., 0.]), axis=0)
+            # Sometimes there are more than n_qpts q-points in the file due to
+            # LO-TO splitting
+            if idx < len(qpts):
+                qpts[idx] = qpt
+                freqs[idx] = qfreq
+                weights[idx] = qweight
+                eigenvecs[idx] = qeigenvec
+            else:
+                qpts = np.concatenate((qpts, [qpt]))
+                freqs = np.concatenate((freqs, [qfreq]))
+                weights = np.concatenate((weights, [qweight]))
+                eigenvecs = np.concatenate((eigenvecs, [qeigenvec]))
+            idx += 1
 
     data_dict = {}
     data_dict['n_atoms'] = n_atoms
