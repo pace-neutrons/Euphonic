@@ -48,7 +48,7 @@ def get_use_c_and_n_threads() -> List[Tuple[bool, List[int]]]:
     List[Tuple[bool, List[int]]]: A list of tuples which contain a first boolean element describing whetheror not to
      use c in the calcuations and a second element that is a list of the number of threads that should be tried
     """
-    return [(True, [1, 2, 4, 12, 24]), (False, [1])]
+    return [(True, [1, 2, 4, 8, 12, 16, 24]), (False, [1])]
 
 
 def get_qpts() -> np.ndarray:
