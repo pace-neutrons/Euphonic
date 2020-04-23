@@ -1,13 +1,12 @@
 import pytest
-import os
 import numpy as np
 from timeit import default_timer as timeittimer
-from .utils import get_data_path
+from utils import get_data_path, get_seednames, get_use_c_and_n_threads, get_qpts
 from euphonic.data.interpolation import InterpolationData
 
 
-def get_calc_fine_phonons_mean_runtime(use_c: bool, data_path: str, seedname: str, qpts_npy_file: str,
-                                       num_of_qpts: int, n_threads: int = 1, num_of_repeats: int = 5) -> float:
+def get_calc_fine_phonons_mean_runtime(use_c: bool, data_path: str, seedname: str,
+                                       n_threads: int = 1, num_of_repeats: int = 5) -> float:
     """
     Get the average time for running the InterpolationData.calculate_fine_phonons with the given parameters.
 
@@ -19,10 +18,6 @@ def get_calc_fine_phonons_mean_runtime(use_c: bool, data_path: str, seedname: st
         The path to the data (castep_bin file)
     seedname : str
         The name of the castep_bin file
-    qpts_npy_file : str
-        The string path to an npy file containing q-points
-    num_of_qpts : int
-        The number of q-points to run InterpolationData.calculate_fine_phonons against
     n_threads : int, optional, default 1
         The number of threads to use when looping over q-points in C. Only applicable if use_c=True
     num_of_repeats : int, optional, default 5
@@ -34,7 +29,7 @@ def get_calc_fine_phonons_mean_runtime(use_c: bool, data_path: str, seedname: st
     """
     # Setup
     idata = InterpolationData.from_castep(seedname, path=data_path)
-    qpts = np.load(qpts_npy_file)[:num_of_qpts]
+    qpts = get_qpts()
     if use_c:
         def calc_fine_phonons():
             idata.calculate_fine_phonons(qpts, use_c=True, fall_back_on_python=False, n_threads=n_threads,
@@ -65,14 +60,12 @@ def get_upper_bound_for_calc_fine_phonons() -> float:
     return 1.0
 
 
-@pytest.mark.parametrize("seedname", ["Nb-242424-s0.25", "quartz", "La2Zr2O7"])
-@pytest.mark.parametrize(("use_c", "n_threads_list"), [(True, [1, 2, 4, 12, 24]), (False, [1])])
+@pytest.mark.parametrize("seedname", get_seednames())
+@pytest.mark.parametrize(("use_c", "n_threads_list"), get_use_c_and_n_threads())
 def test_calc_fine_phonons(seedname, use_c, n_threads_list):
-    qpts_npy_file = os.path.join(get_data_path(), "qpts_10000.npy")
     for n_threads in n_threads_list:
         time = get_calc_fine_phonons_mean_runtime(use_c=use_c, data_path=get_data_path(), seedname=seedname,
-                                                  qpts_npy_file=qpts_npy_file, num_of_qpts=100, n_threads=n_threads,
-                                                  num_of_repeats=1)
+                                                  n_threads=n_threads, num_of_repeats=1)
         assert time <= get_upper_bound_for_calc_fine_phonons()
 
 
@@ -121,9 +114,7 @@ def get_upper_bound_for_calc_structure_factor() -> float:
 
 @pytest.mark.parametrize("seedname", ["Nb-242424-s0.25", "quartz", "La2Zr2O7"])
 def test_benchmark_calc_structure_factor(seedname):
-    qpts_npy_file = os.path.join(get_data_path(), "qpts_10000.npy")
-    num_of_qpts = 100
-    qpts = np.load(qpts_npy_file)[:num_of_qpts]
+    qpts = get_qpts()
     idata = InterpolationData.from_castep(seedname, path=get_data_path())
     idata.calculate_fine_phonons(qpts, use_c=True, fall_back_on_python=False, n_threads=5)
     time = get_calc_structure_factor_mean_runtime(idata, num_of_repeats=3)

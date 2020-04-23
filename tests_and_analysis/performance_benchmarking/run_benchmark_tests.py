@@ -1,7 +1,6 @@
 import os
 import pytest
 
-
 if __name__ == "__main__":
 
     test_dir = os.path.dirname(os.path.abspath(__file__))
