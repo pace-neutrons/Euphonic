@@ -9,7 +9,7 @@ class DebyeWaller(object):
     ----------
     crystal : Crystal
         Lattice and atom information
-    debye_waller : (n_ions, 3, 3) Quantity
+    debye_waller : (n_ions, 3, 3) float Quantity
         The anisotropic Debye-Waller exponent W_ab, where the Debye-Waller
         factor is exp(-W_ab*Q_a*Q_b) where a,b run over the 3 Cartesian
         directions

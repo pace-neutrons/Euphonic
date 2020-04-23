@@ -231,10 +231,9 @@ class TestPlotDispersion(unittest.TestCase):
 class TestPlotDos(unittest.TestCase):
 
     def setUp(self):
-        data = type('', (), {})()
+        dos = type('', (), {})()
         # Input values
-        data._e_units = 'E_h'
-        data.dos = np.array(
+        dos.y_data = np.array(
             [2.30e-01, 1.82e-01, 8.35e-02, 3.95e-02, 2.68e-02, 3.89e-02,
              6.15e-02, 6.75e-02, 6.55e-02, 5.12e-02, 3.60e-02, 2.80e-02,
              5.22e-02, 1.12e-01, 1.52e-01, 1.37e-01, 9.30e-02, 6.32e-02,
@@ -245,8 +244,8 @@ class TestPlotDos(unittest.TestCase):
              4.71e-03, 1.19e-02, 2.98e-02, 6.07e-02, 6.91e-02, 3.79e-02,
              9.33e-03, 9.85e-04, 4.40e-05, 2.24e-05, 4.82e-04, 4.43e-03,
              1.67e-02, 2.61e-02, 1.67e-02, 4.43e-03, 4.82e-04, 2.16e-05,
-             3.98e-07])
-        data.dos_bins = np.array(
+             3.98e-07])*ureg('E_h')
+        dos.x_bins = np.array(
             [0.58, 0.78, 0.98, 1.18, 1.38, 1.58, 1.78, 1.98,
              2.18, 2.38, 2.58, 2.78, 2.98, 3.18, 3.38, 3.58,
              3.78, 3.98, 4.18, 4.38, 4.58, 4.78, 4.98, 5.18,
@@ -255,12 +254,11 @@ class TestPlotDos(unittest.TestCase):
              8.58, 8.78, 8.98, 9.18, 9.38, 9.58, 9.78, 9.98,
              10.18, 10.38, 10.58, 10.78, 10.98, 11.18, 11.38, 11.58,
              11.78, 11.98, 12.18, 12.38, 12.58, 12.78])*ureg('E_h')
-        self.data = data
+        self.dos = dos
         self.title = 'Iron'
-        self.mirror = False
 
         # Results
-        self.fig = plot_dos(self.data, self.title)
+        self.fig = plot_dos(self.dos, title=self.title)
         self.ax = self.fig.axes[0]
 
     def tearDown(self):
@@ -275,12 +273,11 @@ class TestPlotDos(unittest.TestCase):
         self.assertEqual(len(self.ax.get_lines()), 1)
 
     def test_dos_xaxis(self):
-        bin_centres = (
-            self.data.dos_bins[:-1]
-            + (self.data.dos_bins[1] - self.data.dos_bins[0])/2).magnitude
+        x_bins = self.dos.x_bins.magnitude
+        bin_centres = x_bins[:-1] + 0.5*np.diff(x_bins)
         n_correct_x = 0
         for line in self.ax.get_lines():
-            if np.array_equal(line.get_data()[0], bin_centres):
+            if np.allclose(line.get_data()[0], bin_centres):
                 n_correct_x += 1
         # Check there is 1 line with bin centres for the x-axis
         self.assertEqual(n_correct_x, 1)
@@ -288,6 +285,6 @@ class TestPlotDos(unittest.TestCase):
     def test_dos_yaxis(self):
         match = False
         for line in self.ax.get_lines():
-            if np.array_equal(line.get_data()[1], self.data.dos):
+            if np.array_equal(line.get_data()[1], self.dos.y_data.magnitude):
                 match = True
         self.assertTrue(match)

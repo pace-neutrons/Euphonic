@@ -1,7 +1,7 @@
 import unittest
 import numpy as np
 import numpy.testing as npt
-from euphonic import QpointPhononModes
+from euphonic import ureg, QpointPhononModes
 from ..utils import get_data_path
 
 
@@ -10,8 +10,8 @@ class TestCalculateDosQuartz(unittest.TestCase):
         seedname = 'quartz-grid-666'
         path = get_data_path()
         self.data = QpointPhononModes.from_castep(seedname, path=path)
-        self.dos_bins = np.arange(0, 155, 0.75)
-        self.gwidth = 1.0
+        self.dos_bins = np.arange(0, 155, 0.75)*ureg('meV')
+        self.gwidth = 1.0*ureg('meV')
         self.expected_dos_no_broaden = np.array([
             0.00000000, 0.00000000, 0.00000000, 0.00925926, 0.00925926,
             0.00925926, 0.02777778, 0.02777778, 0.06481481, 0.07407407,
@@ -163,27 +163,18 @@ class TestCalculateDosQuartz(unittest.TestCase):
             3.00409120e+02, 2.77456469e+00])
 
     def test_dos_no_broaden(self):
-        self.data.calculate_dos(self.dos_bins)
-        npt.assert_allclose(self.data.dos,
+        dos = self.data.calculate_dos(self.dos_bins)
+        npt.assert_allclose(dos.y_data.magnitude,
                             self.expected_dos_no_broaden)
 
     def test_dos_gauss(self):
-        self.data.calculate_dos(self.dos_bins, gwidth=self.gwidth,
-                                lorentz=False)
-        npt.assert_allclose(self.data.dos,
+        dos = self.data.calculate_dos(self.dos_bins, gwidth=self.gwidth,
+                                      lorentz=False)
+        npt.assert_allclose(dos.y_data.magnitude,
                             self.expected_dos_gauss)
 
     def test_dos_lorentz(self):
-        self.data.calculate_dos(self.dos_bins, gwidth=self.gwidth,
-                                lorentz=False)
-        npt.assert_allclose(self.data.dos,
+        dos = self.data.calculate_dos(self.dos_bins, gwidth=self.gwidth,
+                                      lorentz=False)
+        npt.assert_allclose(dos.y_data.magnitude,
                             self.expected_dos_lorentz)
-
-    def test_dos_weights(self):
-        factor = 2.0
-        weights = np.full(
-            self.data.frequencies.shape,
-            factor)*self.data.weights[:, np.newaxis]
-        self.data.calculate_dos(self.dos_bins, weights=weights)
-        npt.assert_allclose(self.data.dos/factor,
-                            self.expected_dos_no_broaden)

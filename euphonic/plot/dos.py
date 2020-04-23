@@ -165,17 +165,20 @@ def output_grace(data, seedname='out', mirror=False, up=True, down=True):
                     n_sets += 1
 
 
-def plot_dos(data, title='', **line_kwargs):
+def plot_dos(spectrum, title='', x_label='', y_label='', **line_kwargs):
     """
     Creates a Matplotlib figure of the density of states
 
     Parameters
     ----------
-    data : QpointPhononModes object
-        QpointPhononModes object for which calculate_dos has been called,
-        containing dos and dos_bins attributes for plotting
-    title : string
-        The figure title. Default: ''
+    spectrum : Spectrum1D Object
+        Containing the DOS to plot
+    title : string, default ''
+        Plot title
+    x_label : string, default ''
+        X-axis label
+    y_label : string, default ''
+        Y-axis label
     **line_kwargs : matplotlib.line.Line2D properties, optional
         Used in the axes.plot command to specify properties like linewidth,
         linestyle
@@ -200,25 +203,16 @@ def plot_dos(data, title='', **line_kwargs):
     ax = fig.add_subplot(111)
     ax.set_title(title)
 
-    # X-axis label formatting
-    # Replace 1/cm with cm^-1
-    units_str = data._e_units
-    inverse_unit_index = units_str.find('/')
-    if inverse_unit_index > -1:
-        units_str = units_str[inverse_unit_index+1:]
-        ax.set_xlabel('Energy (' + units_str + r'$^{-1}$)')
-    else:
-        ax.set_xlabel('Energy (' + units_str + ')')
-    ax.set_ylabel('g(E)')
+    ax.set_xlabel(x_label)
+    ax.set_ylabel(y_label)
     ax.minorticks_on()
 
     # Calculate bin centres
-    dos_bins = data.dos_bins.magnitude
-    bwidth = dos_bins[1] - dos_bins[0]
-    bin_centres = dos_bins[:-1] + bwidth/2
+    x_bins = spectrum.x_bins.magnitude
+    bin_centres = x_bins[:-1] + 0.5*np.diff(x_bins)
 
     # Plot dos
-    ax.plot(bin_centres, data.dos, lw=1.0, **line_kwargs)
+    ax.plot(bin_centres, spectrum.y_data.magnitude, lw=1.0, **line_kwargs)
     ax.set_ylim(bottom=0)  # Need to set limits after plotting the data
     plt.tight_layout()
 

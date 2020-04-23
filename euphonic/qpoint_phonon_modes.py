@@ -2,6 +2,7 @@ import math
 import numpy as np
 from euphonic import ureg
 from euphonic.crystal import Crystal
+from euphonic.spectra import Spectrum1D
 from euphonic.debye_waller import DebyeWaller
 from euphonic.structure_factor import StructureFactor
 from euphonic.util import (direction_changed, _bose_factor, is_gamma,
@@ -361,25 +362,20 @@ class QpointPhononModes(object):
         return sqw_map
 
 
-    def calculate_dos(self, dos_bins, gwidth=0, lorentz=False, weights=None):
+    def calculate_dos(self, dos_bins, gwidth=0*ureg('E_h'), lorentz=False):
         """
         Calculates a density of states with fixed width Gaussian/Lorentzian
         broadening
 
         Parameters
         ----------
-        dos_bins : (n_ebins + 1,) float ndarray
-            The energy bin edges to use for calculating the DOS, in the same
-            units as frequencies
-        gwidth : float, optional, default 0
-            FWHM of Gaussian/Lorentzian for broadening the DOS bins, in the
-            same units as frequencies
+        dos_bins : (n_ebins + 1,) float Quantity
+            The energy bin edges to use for calculating the DOS
+        gwidth : float Quantity, optional, default 0
+            FWHM of Gaussian/Lorentzian for broadening the DOS bins
         lorentz : boolean, optional
             Whether to use a Lorentzian or Gaussian broadening function.
             Default: False
-        weights : (n_qpts, 3*n_atoms) float ndarray, optional
-            The weights to use for each q-points and mode. If unspecified,
-            uses the q-point weights stored in the Data object
 
         Returns
         -------
@@ -388,25 +384,15 @@ class QpointPhononModes(object):
         """
 
         freqs = self._frequencies
-        # Convert dos_bins to Hartree. If no units are specified, assume
-        # dos_bins is in same units as frequencies
-        try:
-            dos_bins = dos_bins.to('E_h', 'spectroscopy').magnitude
-        except AttributeError:
-            dos_bins = (dos_bins*ureg(self.frequencies_unit).to(
-                'E_h', 'spectroscopy')).magnitude
-        try:
-            gwidth = gwidth.to('E_h', 'spectroscopy').magnitude
-        except AttributeError:
-            gwidth = (gwidth*ureg(self.frequencies_unit).to(
-                'E_h', 'spectroscopy')).magnitude
+        dos_bins_unit = dos_bins.units
+        dos_bins = dos_bins.to(
+            'INTERNAL_ENERGY_UNIT', 'spectroscopy').magnitude
+        gwidth = gwidth.to('INTERNAL_ENERGY_UNIT', 'spectroscopy').magnitude
 
-        # Bin frequencies
-        if weights is None:
-            weights = np.repeat(self.weights[:, np.newaxis],
-                                3*self.crystal.n_atoms,
-                                axis=1)
-        hist, bin_edges = np.histogram(freqs, dos_bins, weights=weights)
+        weights = np.repeat(self.weights[:, np.newaxis],
+                            3*self.crystal.n_atoms,
+                            axis=1)
+        hist, _ = np.histogram(freqs, dos_bins, weights=weights)
 
         bwidth = np.mean(np.diff(dos_bins))
         # Only broaden if broadening is more than bin width
@@ -436,10 +422,9 @@ class QpointPhononModes(object):
         else:
             dos = hist
 
-        self.dos = dos
-        self._dos_bins = dos_bins
-
-        return dos
+        return Spectrum1D(
+            dos_bins*ureg('INTERNAL_ENERGY_UNIT').to(dos_bins_unit),
+            dos)
 
     @classmethod
     def from_dict(cls, d):

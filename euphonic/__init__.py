@@ -17,6 +17,7 @@ try:
     ureg.define('@alias eV = DEFAULT_ENERGY_UNIT')
     ureg.define('@alias K = DEFAULT_TEMPERATURE_UNIT')
 
+    from .spectra import Spectrum1D
     from .crystal import Crystal
     from .debye_waller import DebyeWaller
     from .structure_factor import StructureFactor
