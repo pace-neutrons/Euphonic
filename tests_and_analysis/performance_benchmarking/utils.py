@@ -59,3 +59,21 @@ def get_qpts() -> np.ndarray:
     """
     qpts_npy_file = os.path.join(get_data_path(), "qpts_10000.npy")
     return np.load(qpts_npy_file)[:10]
+
+
+def get_structure_factor_num_of_repeats() -> int:
+    """
+    Returns
+    -------
+    int: The amount of times to repeat InterpolationData.calculate_structure_factor runs.
+    """
+    return 10
+
+
+def get_fine_phonon_num_of_repeats() -> int:
+    """
+    Returns
+    -------
+    int: The amount of times to repeat InterpolationData.calculate_fine_phonons runs.
+    """
+    return 5

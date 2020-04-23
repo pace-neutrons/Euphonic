@@ -2,7 +2,8 @@ import pytest
 import numpy as np
 import json
 from timeit import default_timer as timeittimer
-from utils import get_data_path, get_seednames, get_use_c_and_n_threads, get_qpts, get_structure_factor_data_file
+from utils import get_data_path, get_seednames, get_use_c_and_n_threads, get_qpts, get_structure_factor_data_file, \
+    get_fine_phonon_data_file, get_fine_phonon_num_of_repeats, get_structure_factor_num_of_repeats
 from euphonic.data.interpolation import InterpolationData
 
 
@@ -46,10 +47,10 @@ def get_calc_fine_phonons_mean_runtime(use_c: bool, data_path: str, seedname: st
         end = timeittimer()
         times[repeat] = end - start
     # Return average
-    return np.mean(times)
+    return np.median(times)
 
 
-def get_upper_bound_for_calc_fine_phonons() -> float:
+def get_upper_bound_for_calc_fine_phonons(seedname: str, use_c: bool, n_threads: int) -> float:
     """
     Get the upper bound for benchmarking the InterpolationData.calculate_fine_phonons method.
 
@@ -58,16 +59,19 @@ def get_upper_bound_for_calc_fine_phonons() -> float:
     float : Fail the test if the average time for running the InterpolationData.calculate_fine_phonons
      method is longer than this value.
     """
-    return 1.0
+    with open(get_fine_phonon_data_file()) as json_file:
+        data = json.load(json_file)
+        return data[seedname][str(use_c).lower()][str(n_threads)] * 1.2
 
 
+@pytest.mark.flaky(reruns=5)
 @pytest.mark.parametrize("seedname", get_seednames())
 @pytest.mark.parametrize(("use_c", "n_threads_list"), get_use_c_and_n_threads())
 def test_calc_fine_phonons(seedname, use_c, n_threads_list):
     for n_threads in n_threads_list:
         time = get_calc_fine_phonons_mean_runtime(use_c=use_c, data_path=get_data_path(), seedname=seedname,
-                                                  n_threads=n_threads, num_of_repeats=1)
-        assert time <= get_upper_bound_for_calc_fine_phonons()
+                                                  n_threads=n_threads, num_of_repeats=get_fine_phonon_num_of_repeats())
+        assert time <= get_upper_bound_for_calc_fine_phonons(seedname=seedname, use_c=use_c, n_threads=n_threads)
 
 
 def get_calc_structure_factor_mean_runtime(idata: InterpolationData, num_of_repeats: int = 5) -> float:
@@ -98,7 +102,7 @@ def get_calc_structure_factor_mean_runtime(idata: InterpolationData, num_of_repe
         end = timeittimer()
         times[repeat] = end - start
     # Return average
-    return np.mean(times)
+    return np.median(times)
 
 
 def get_upper_bound_for_calc_structure_factor(seedname: str) -> float:
@@ -117,14 +121,14 @@ def get_upper_bound_for_calc_structure_factor(seedname: str) -> float:
     """
     with open(get_structure_factor_data_file()) as json_file:
         data = json.load(json_file)
-        print(data)
-        return data[seedname] * 1.1
+        return data[seedname] * 1.2
 
 
+@pytest.mark.flaky(reruns=5)
 @pytest.mark.parametrize("seedname", ["Nb-242424-s0.25", "quartz", "La2Zr2O7"])
 def test_benchmark_calc_structure_factor(seedname):
     qpts = get_qpts()
     idata = InterpolationData.from_castep(seedname, path=get_data_path())
     idata.calculate_fine_phonons(qpts, use_c=True, fall_back_on_python=False, n_threads=5)
-    time = get_calc_structure_factor_mean_runtime(idata, num_of_repeats=3)
+    time = get_calc_structure_factor_mean_runtime(idata, num_of_repeats=get_structure_factor_num_of_repeats())
     assert time <= get_upper_bound_for_calc_structure_factor(seedname)
