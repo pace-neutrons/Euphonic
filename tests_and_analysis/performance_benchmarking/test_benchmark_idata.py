@@ -1,7 +1,8 @@
 import pytest
 import numpy as np
+import json
 from timeit import default_timer as timeittimer
-from utils import get_data_path, get_seednames, get_use_c_and_n_threads, get_qpts
+from utils import get_data_path, get_seednames, get_use_c_and_n_threads, get_qpts, get_structure_factor_data_file
 from euphonic.data.interpolation import InterpolationData
 
 
@@ -48,7 +49,7 @@ def get_calc_fine_phonons_mean_runtime(use_c: bool, data_path: str, seedname: st
     return np.mean(times)
 
 
-def get_upper_bound_for_calc_fine_phonons(seedname: str, use_c: bool) -> float:
+def get_upper_bound_for_calc_fine_phonons() -> float:
     """
     Get the upper bound for benchmarking the InterpolationData.calculate_fine_phonons method.
 
@@ -100,16 +101,24 @@ def get_calc_structure_factor_mean_runtime(idata: InterpolationData, num_of_repe
     return np.mean(times)
 
 
-def get_upper_bound_for_calc_structure_factor() -> float:
+def get_upper_bound_for_calc_structure_factor(seedname: str) -> float:
     """
     Get the upper bound for benchmarking the InterpolationData.calculate_structure_factor method.
+
+    Parameters
+    ----------
+    seedname : str
+        The seedname of the upper bound we wish to get.
 
     Returns
     -------
     float : Fail the test if the average time for running the InterpolationData.calculate_structure_factor
-     method is longer than this value.
+     method is longer than this value, this is 10% above the recorded result.
     """
-    return 1.0
+    with open(get_structure_factor_data_file()) as json_file:
+        data = json.load(json_file)
+        print(data)
+        return data[seedname] * 1.1
 
 
 @pytest.mark.parametrize("seedname", ["Nb-242424-s0.25", "quartz", "La2Zr2O7"])
@@ -118,4 +127,4 @@ def test_benchmark_calc_structure_factor(seedname):
     idata = InterpolationData.from_castep(seedname, path=get_data_path())
     idata.calculate_fine_phonons(qpts, use_c=True, fall_back_on_python=False, n_threads=5)
     time = get_calc_structure_factor_mean_runtime(idata, num_of_repeats=3)
-    assert time <= get_upper_bound_for_calc_structure_factor()
+    assert time <= get_upper_bound_for_calc_structure_factor(seedname)
