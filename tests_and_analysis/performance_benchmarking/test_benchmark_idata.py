@@ -48,7 +48,7 @@ def get_calc_fine_phonons_mean_runtime(use_c: bool, data_path: str, seedname: st
     return np.mean(times)
 
 
-def get_upper_bound_for_calc_fine_phonons() -> float:
+def get_upper_bound_for_calc_fine_phonons(seedname: str, use_c: bool) -> float:
     """
     Get the upper bound for benchmarking the InterpolationData.calculate_fine_phonons method.
 

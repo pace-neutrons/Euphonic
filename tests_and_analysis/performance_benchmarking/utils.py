@@ -58,4 +58,4 @@ def get_qpts() -> np.ndarray:
     np.ndarray: A numpy array of 100 q-points
     """
     qpts_npy_file = os.path.join(get_data_path(), "qpts_10000.npy")
-    return np.load(qpts_npy_file)[:100]
+    return np.load(qpts_npy_file)[:10]

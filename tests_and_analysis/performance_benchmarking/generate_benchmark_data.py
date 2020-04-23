@@ -24,8 +24,10 @@ def generate_fine_phonons_data():
         if seedname not in data:
             data[seedname] = {}
         for n_threads in n_threads_list:
-            data[seedname]["({}, {})".format(use_c, n_threads)] = get_calc_fine_phonons_mean_runtime(
-                use_c=use_c, data_path=get_data_path(), seedname=seedname, num_of_repeats=100, n_threads=n_threads
+            if use_c not in data[seedname]:
+                data[seedname][use_c] = {}
+            data[seedname][use_c][n_threads] = get_calc_fine_phonons_mean_runtime(
+                use_c=use_c, data_path=get_data_path(), seedname=seedname, num_of_repeats=5, n_threads=n_threads
             )
     with open(get_fine_phonon_data_file(), "w+") as data_file:
         json.dump(data, data_file)
