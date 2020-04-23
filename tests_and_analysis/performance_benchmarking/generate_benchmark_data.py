@@ -1,6 +1,7 @@
 import json
 from itertools import product
-from utils import get_qpts, get_seednames, get_data_path, get_structure_factor_data_file, get_fine_phonon_data_file, get_use_c_and_n_threads
+from utils import get_qpts, get_seednames, get_data_path, get_structure_factor_data_file, get_fine_phonon_data_file,\
+    get_use_c_and_n_threads
 from euphonic.data.interpolation import InterpolationData
 from test_benchmark_idata import get_calc_structure_factor_mean_runtime, get_calc_fine_phonons_mean_runtime
 
@@ -20,8 +21,12 @@ def generate_structure_factor_data():
 def generate_fine_phonons_data():
     data = {}
     for seedname, (use_c, n_threads_list) in product(get_seednames(), get_use_c_and_n_threads()):
-        data[seedname] = {}
+        if seedname not in data:
+            data[seedname] = {}
         for n_threads in n_threads_list:
+            print(f"seedname={seedname}")
+            print(f"use_c={use_c}")
+            print(f"n_threads={n_threads}")
             data[seedname]["({}, {})".format(use_c, n_threads)] = get_calc_fine_phonons_mean_runtime(
                 use_c, get_data_path(), seedname, 100, n_threads
             )
