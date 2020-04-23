@@ -12,7 +12,7 @@ def generate_structure_factor_data():
     for seedname in get_seednames():
         idata = InterpolationData.from_castep(seedname, path=get_data_path())
         idata.calculate_fine_phonons(qpts, use_c=True, fall_back_on_python=False, n_threads=5)
-        time = get_calc_structure_factor_mean_runtime(idata, num_of_repeats=3)
+        time = get_calc_structure_factor_mean_runtime(idata=idata, num_of_repeats=3)
         data[seedname] = time
     with open(get_structure_factor_data_file(), "w+") as data_file:
         json.dump(data, data_file)
@@ -24,11 +24,8 @@ def generate_fine_phonons_data():
         if seedname not in data:
             data[seedname] = {}
         for n_threads in n_threads_list:
-            print(f"seedname={seedname}")
-            print(f"use_c={use_c}")
-            print(f"n_threads={n_threads}")
             data[seedname]["({}, {})".format(use_c, n_threads)] = get_calc_fine_phonons_mean_runtime(
-                use_c, get_data_path(), seedname, 100, n_threads
+                use_c=use_c, data_path=get_data_path(), seedname=seedname, num_of_repeats=100, n_threads=n_threads
             )
     with open(get_fine_phonon_data_file(), "w+") as data_file:
         json.dump(data, data_file)
