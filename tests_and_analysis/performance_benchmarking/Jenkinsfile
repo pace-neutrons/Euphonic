@@ -1,29 +1,38 @@
 pipeline {
 
-    agent { label "sl7" }
-
-/*
+    agent { label "scarf" }
 
     triggers {
         cron("* * * * 1")
     }
-
-*/
 
     stages {
 
         stage("Benchmark"){
             checkout scm
             sh """
-                conda create --name py python=3.6.0 -y
-                conda activate py
-                python -m pip install --upgrade --user pip
-                python -m pip install numpy
-                CALL "%VS2019_VCVARSALL%" x86_amd64
-                python -m pip install .
-
+                cd tests_and_analysis/performance_benchmarking &&
+                sbatch run_benchmark_tests.sbatch
             """
         }
 
+    }
+
+    post {
+        always {
+            junit 'reports/junit_report*.xml'
+        }
+
+        success {
+            setGitHubBuildStatus("success", "Successful", "Performance")
+        }
+
+        unsuccessful {
+            setGitHubBuildStatus("failure", "Unsuccessful", "Performance")
+        }
+
+        cleanup {
+            deleteDir()
+        }
     }
 }
