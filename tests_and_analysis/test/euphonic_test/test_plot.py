@@ -9,11 +9,10 @@ import numpy.testing as npt
 import pytest
 from matplotlib import figure
 from euphonic import ureg, Crystal
-from euphonic.plot.dos import plot_dos
-from euphonic.plot.dispersion import (calc_abscissa, recip_space_labels,
-                                      generic_qpt_labels, get_qpt_label,
-                                      plot_dispersion)
-
+from euphonic.legacy_plot.dispersion import (calc_abscissa, recip_space_labels,
+                                             generic_qpt_labels, get_qpt_label,
+                                             plot_dispersion)
+from euphonic.plot import plot
 
 class TestCalcAbscissa(unittest.TestCase):
 
@@ -259,7 +258,7 @@ class TestPlotDos(unittest.TestCase):
         self.title = 'Iron'
 
         # Results
-        self.fig = plot_dos(self.dos, title=self.title)
+        self.fig = plot(self.dos, title=self.title)
         self.ax = self.fig.axes[0]
 
     def tearDown(self):

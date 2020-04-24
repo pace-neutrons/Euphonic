@@ -1,6 +1,6 @@
 import numpy as np
 from euphonic import ureg, Spectrum2D
-from euphonic.plot.dispersion import calc_abscissa, recip_space_labels
+from euphonic.legacy_plot.dispersion import calc_abscissa, recip_space_labels
 from euphonic.util import _bose_factor
 
 class StructureFactor(object):
