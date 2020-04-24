@@ -88,11 +88,11 @@ pipeline {
         }
 
         success {
-            setGitHubBuildStatus("success", "Successful", "Performance")
+            setGitHubBuildStatus("success", "Passed performance tests", "Performance")
         }
 
         unsuccessful {
-            setGitHubBuildStatus("failure", "Unsuccessful", "Performance")
+            setGitHubBuildStatus("failure", "Failed performance tests", "Performance")
             script {
                 def email = getGitCommitAuthorEmail()
                 mail (
