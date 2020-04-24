@@ -154,7 +154,7 @@ class QpointPhononModes(object):
         self._mode_map = mode_map
 
     def calculate_structure_factor(self, scattering_lengths, temperature=None,
-                                   calc_bose=False, dw=None):
+                                   dw=None):
         """
         Calculate the one phonon inelastic scattering for neutrons at each
         q-point. See M. Dove Structure and Dynamics Pg. 226
@@ -165,8 +165,6 @@ class QpointPhononModes(object):
             Dictionary of spin and isotope averaged coherent scattering length
             for each element in the structure in fm e.g.
             {'O': 5.803*ureg('fm'), 'Zn': 5.680*ureg('fm')}
-        calc_bose : boolean, optional, default False
-            Whether to calculate and apply the Bose factor
         dw : DebyeWaller, default None
             A DebyeWaller exponent object
         temperature : float Quantity, default None
@@ -186,19 +184,6 @@ class QpointPhononModes(object):
             If a temperature is provided and isn't consistent with the
             temperature in the DebyeWaller object
         """
-        if calc_bose:
-            if not dw is None:
-                if (not temperature is None
-                        and not np.isclose(temperature, dw.temperature)):
-                    raise ValueError((
-                        'Temperature provided to calculate_structure_factor '
-                        '({:~P}) is not consistent with the temperature stored '
-                        'in DebyeWaller ({:~P})'.format(
-                            temperature, dw.temperature)))
-
-        if not dw is None:
-            temperature = dw.temperature
-
         sl = [scattering_lengths[x].to('INTERNAL_LENGTH_UNIT').magnitude
                   for x in self.crystal.atom_type]
 
@@ -222,6 +207,7 @@ class QpointPhononModes(object):
 
         # Calculate Debye-Waller factors
         if dw:
+            temperature = dw.temperature
             if dw.crystal.n_atoms != self.crystal.n_atoms:
                 raise Exception((
                     'The DebyeWaller object used as dw is not compatible with '
@@ -237,10 +223,6 @@ class QpointPhononModes(object):
         # Take mod squared and divide by frequency to get intensity
         sf = np.real(
             np.absolute(term*np.conj(term))/np.absolute(self._frequencies))
-
-        if calc_bose:
-            sf = sf*_bose_factor(self._frequencies,
-                                 temperature.to('K').magnitude)
 
         return StructureFactor(
             self.crystal, self.qpts, self.frequencies,

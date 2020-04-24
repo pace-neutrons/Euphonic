@@ -3,6 +3,7 @@ import unittest
 import numpy.testing as npt
 import numpy as np
 from euphonic import ureg, ForceConstants, QpointPhononModes
+from euphonic.util import _bose_factor
 from ..utils import get_data_path
 
 
@@ -20,24 +21,27 @@ class TestStructureFactorQpointPhononModesLZO(unittest.TestCase):
 
     def test_sf_T5(self):
         sf_obj = self.data.calculate_structure_factor(
-            self.scattering_lengths, temperature=5*ureg('K'), calc_bose=True)
-        sf = sf_obj.structure_factors.to('bohr**2').magnitude
+            self.scattering_lengths, temperature=5*ureg('K'))
+        bose = _bose_factor(sf_obj._frequencies, 5)
+        sf = sf_obj.structure_factors.to('bohr**2').magnitude*bose
         expected_sf = np.loadtxt(os.path.join(self.sf_path, 'sf_pdata_T5.txt'))
         npt.assert_allclose(sf, expected_sf, rtol=2e-7)
 
     def test_sf_T5_dw(self):
         dw5 = self.dw_data.calculate_debye_waller(5*ureg('K'))
         sf_obj = self.data.calculate_structure_factor(
-            self.scattering_lengths, dw=dw5, calc_bose=True)
-        sf = sf_obj.structure_factors.to('bohr**2').magnitude
+            self.scattering_lengths, dw=dw5)
+        bose = _bose_factor(sf_obj._frequencies, 5)
+        sf = sf_obj.structure_factors.to('bohr**2').magnitude*bose
         expected_sf = np.loadtxt(os.path.join(
             self.sf_path, 'sf_pdata_dw_T5.txt'))
         npt.assert_allclose(sf, expected_sf, rtol=2e-7, atol=1e-18)
 
     def test_sf_T100(self):
         sf_obj = self.data.calculate_structure_factor(
-            self.scattering_lengths, temperature=100*ureg('K'), calc_bose=True)
-        sf = sf_obj.structure_factors.to('bohr**2').magnitude
+            self.scattering_lengths, temperature=100*ureg('K'))
+        bose = _bose_factor(sf_obj._frequencies, 100)
+        sf = sf_obj.structure_factors.to('bohr**2').magnitude*bose
         expected_sf = np.loadtxt(os.path.join(
             self.sf_path, 'sf_pdata_T100.txt'))
         npt.assert_allclose(sf, expected_sf, rtol=2e-7)
@@ -45,8 +49,9 @@ class TestStructureFactorQpointPhononModesLZO(unittest.TestCase):
     def test_sf_T100_dw(self):
         dw100 = self.dw_data.calculate_debye_waller(100*ureg('K'))
         sf_obj = self.data.calculate_structure_factor(
-            self.scattering_lengths, dw=dw100, calc_bose=True)
-        sf = sf_obj.structure_factors.to('bohr**2').magnitude
+            self.scattering_lengths, dw=dw100)
+        bose = _bose_factor(sf_obj._frequencies, 100)
+        sf = sf_obj.structure_factors.to('bohr**2').magnitude*bose
         expected_sf = np.loadtxt(os.path.join(
             self.sf_path, 'sf_pdata_dw_T100.txt'))
         npt.assert_allclose(sf, expected_sf, rtol=2e-6)
@@ -87,8 +92,9 @@ class TestStructureFactorForceConstantsLZOSerial(unittest.TestCase):
 
     def test_sf_T5(self):
         sf_obj = self.idata.calculate_structure_factor(
-            self.scattering_lengths, temperature=5*ureg('K'), calc_bose=True)
-        sf = sf_obj.structure_factors.to('bohr**2').magnitude
+            self.scattering_lengths, temperature=5*ureg('K'))
+        bose = _bose_factor(sf_obj._frequencies, 5)
+        sf = sf_obj.structure_factors.to('bohr**2').magnitude*bose
         expected_sf = np.loadtxt(os.path.join(self.sf_path, 'sf_idata_T5.txt'))
 
         # Structure factors not necessarily equal due to degenerate modes
@@ -116,8 +122,9 @@ class TestStructureFactorForceConstantsLZOSerial(unittest.TestCase):
     def test_sf_T5_dw_idata(self):
         dw5 = self.dw_idata.calculate_debye_waller(5*ureg('K'))
         sf_obj = self.idata.calculate_structure_factor(
-            self.scattering_lengths, dw=dw5, calc_bose=True)
-        sf = sf_obj.structure_factors.to('bohr**2').magnitude
+            self.scattering_lengths, dw=dw5)
+        bose = _bose_factor(sf_obj._frequencies, 5)
+        sf = sf_obj.structure_factors.to('bohr**2').magnitude*bose
         expected_sf = np.loadtxt(os.path.join(
             self.sf_path, 'sf_idata_dw_grid_T5.txt'))
         sf_sum = np.zeros(sf.shape)
@@ -140,8 +147,9 @@ class TestStructureFactorForceConstantsLZOSerial(unittest.TestCase):
     def test_sf_T5_dw_pdata(self):
         dw5 = self.dw_pdata.calculate_debye_waller(5*ureg('K'))
         sf_obj = self.idata.calculate_structure_factor(
-            self.scattering_lengths, dw=dw5, calc_bose=True)
-        sf = sf_obj.structure_factors.to('bohr**2').magnitude
+            self.scattering_lengths, dw=dw5)
+        bose = _bose_factor(sf_obj._frequencies, 5)
+        sf = sf_obj.structure_factors.to('bohr**2').magnitude*bose
         expected_sf = np.loadtxt(os.path.join(
             self.sf_path, 'sf_idata_dw_seedname_T5.txt'))
 
@@ -164,8 +172,9 @@ class TestStructureFactorForceConstantsLZOSerial(unittest.TestCase):
 
     def test_sf_T100(self):
         sf_obj = self.idata.calculate_structure_factor(
-            self.scattering_lengths, temperature=100*ureg('K'), calc_bose=True)
-        sf = sf_obj.structure_factors.to('bohr**2').magnitude
+            self.scattering_lengths, temperature=100*ureg('K'))
+        bose = _bose_factor(sf_obj._frequencies, 100)
+        sf = sf_obj.structure_factors.to('bohr**2').magnitude*bose
         expected_sf = np.loadtxt(os.path.join(
             self.sf_path, 'sf_idata_T100.txt'))
 
@@ -189,8 +198,9 @@ class TestStructureFactorForceConstantsLZOSerial(unittest.TestCase):
     def test_sf_T100_dw_idata(self):
         dw100 = self.dw_idata.calculate_debye_waller(100*ureg('K'))
         sf_obj = self.idata.calculate_structure_factor(
-            self.scattering_lengths, dw=dw100, calc_bose=True)
-        sf = sf_obj.structure_factors.to('bohr**2').magnitude
+            self.scattering_lengths, dw=dw100)
+        bose = _bose_factor(sf_obj._frequencies, 100)
+        sf = sf_obj.structure_factors.to('bohr**2').magnitude*bose
         expected_sf = np.loadtxt(os.path.join(
             self.sf_path, 'sf_idata_dw_grid_T100.txt'))
 
@@ -214,8 +224,9 @@ class TestStructureFactorForceConstantsLZOSerial(unittest.TestCase):
     def test_sf_T100_dw_pdata(self):
         dw100 = self.dw_pdata.calculate_debye_waller(100*ureg('K'))
         sf_obj = self.idata.calculate_structure_factor(
-            self.scattering_lengths, dw=dw100, calc_bose=True)
-        sf = sf_obj.structure_factors.to('bohr**2').magnitude
+            self.scattering_lengths, dw=dw100)
+        bose = _bose_factor(sf_obj._frequencies, 100)
+        sf = sf_obj.structure_factors.to('bohr**2').magnitude*bose
         expected_sf = np.loadtxt(os.path.join(
             self.sf_path, 'sf_idata_dw_seedname_T100.txt'))
 
@@ -344,8 +355,9 @@ class TestStructureFactorForceConstantsQuartzSerial(unittest.TestCase):
 
     def test_sf_T0(self):
         sf_obj = self.idata.calculate_structure_factor(
-            self.scattering_lengths, temperature=0*ureg('K'), calc_bose=True)
-        sf = sf_obj.structure_factors.to('bohr**2').magnitude
+            self.scattering_lengths, temperature=0*ureg('K'))
+        bose = _bose_factor(sf_obj._frequencies, 0)
+        sf = sf_obj.structure_factors.to('bohr**2').magnitude*bose
         expected_sf = np.loadtxt(os.path.join(self.sf_path, 'sf_idata_T0.txt'))
 
         # Structure factors not necessarily equal due to degenerate modes
@@ -375,8 +387,9 @@ class TestStructureFactorForceConstantsQuartzSerial(unittest.TestCase):
     def test_sf_T0_dw_grid(self):
         dw0 = self.dw_idata.calculate_debye_waller(0*ureg('K'))
         sf_obj = self.idata.calculate_structure_factor(
-            self.scattering_lengths, dw=dw0, calc_bose=True)
-        sf = sf_obj.structure_factors.to('bohr**2').magnitude
+            self.scattering_lengths, dw=dw0)
+        bose = _bose_factor(sf_obj._frequencies, 0)
+        sf = sf_obj.structure_factors.to('bohr**2').magnitude*bose
         expected_sf = np.loadtxt(os.path.join(
             self.sf_path, 'sf_idata_dw_grid_T0.txt'))
         sf_sum = np.zeros(sf.shape)
@@ -401,8 +414,9 @@ class TestStructureFactorForceConstantsQuartzSerial(unittest.TestCase):
 
     def test_sf_T100(self):
         sf_obj = self.idata.calculate_structure_factor(
-            self.scattering_lengths, temperature=100*ureg('K'), calc_bose=True)
-        sf = sf_obj.structure_factors.to('bohr**2').magnitude
+            self.scattering_lengths, temperature=100*ureg('K'))
+        bose = _bose_factor(sf_obj._frequencies, 100)
+        sf = sf_obj.structure_factors.to('bohr**2').magnitude*bose
         expected_sf = np.loadtxt(
             os.path.join(self.sf_path, 'sf_idata_T100.txt'))
 
@@ -429,8 +443,9 @@ class TestStructureFactorForceConstantsQuartzSerial(unittest.TestCase):
     def test_sf_T100_dw_grid(self):
         dw100 = self.dw_idata.calculate_debye_waller(100*ureg('K'))
         sf_obj = self.idata.calculate_structure_factor(
-            self.scattering_lengths, dw=dw100, calc_bose=True)
-        sf = sf_obj.structure_factors.to('bohr**2').magnitude
+            self.scattering_lengths, dw=dw100)
+        bose = _bose_factor(sf_obj._frequencies, 100)
+        sf = sf_obj.structure_factors.to('bohr**2').magnitude*bose
         expected_sf = np.loadtxt(os.path.join(
             self.sf_path, 'sf_idata_dw_grid_T100.txt'))
 
