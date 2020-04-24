@@ -48,16 +48,20 @@ def calc_abscissa(qpts, recip_latt):
     return abscissa
 
 
-def recip_space_labels(data):
+def recip_space_labels(crystal, qpts, symmetry_labels=True):
     """
-    Gets high symmetry point labels (e.g. GAMMA, X, L) for the q-points at
+    Gets q-points point labels (e.g. GAMMA, X, L) for the q-points at
     which the path through reciprocal space changes direction
 
     Parameters
     ----------
-    data: QpointPhononModes object
-        QpointPhononModes object containing the cell vectors, q-points and
-        optionally ion types and coordinates (used for determining space group)
+    crystal : Crystal
+        The crystal to get high-symmetry labels for
+    qpts : (n_qpts, 3) float ndarray
+        The q-points to get labels for
+    symmetry_labels : boolean, optional, default True
+        Whether to use high-symmetry point labels (e.g. GAMMA, X, L). Otherwise
+        just uses generic labels (e.g. '0 0 0')
 
     Returns
     -------
@@ -70,10 +74,10 @@ def recip_space_labels(data):
     """
 
     # First and last q-points should always be labelled
-    if len(data.qpts) <= 2:
-        qpt_has_label = np.ones(len(data.qpts), dtype=bool)
+    if len(qpts) <= 2:
+        qpt_has_label = np.ones(len(qpts), dtype=bool)
     else:
-        qpt_has_label = np.concatenate(([True], direction_changed(data.qpts),
+        qpt_has_label = np.concatenate(([True], direction_changed(qpts),
                                         [True]))
     qpts_with_labels = np.where(qpt_has_label)[0]
 
@@ -81,16 +85,16 @@ def recip_space_labels(data):
     # space group. If space group can't be determined use a generic dictionary
     # of fractional points
     sym_label_to_coords = {}
-    if hasattr(data, 'ion_r'):
-        _, ion_num = np.unique(data.ion_type, return_inverse=True)
-        cell_vec = (data.cell_vec.to('angstrom')).magnitude
-        cell = (cell_vec, data.ion_r, ion_num)
+    if symmetry_labels:
+        _, atom_num = np.unique(crystal.atom_type, return_inverse=True)
+        cell_vectors = (crystal.cell_vectors.to('angstrom')).magnitude
+        cell = (cell_vectors, crystal.atom_r, atom_num)
         sym_label_to_coords = seekpath.get_path(cell)["point_coords"]
     else:
         sym_label_to_coords = generic_qpt_labels()
     # Get labels for each q-point
     labels = np.array([])
-    for qpt in data.qpts[qpts_with_labels]:
+    for qpt in qpts[qpts_with_labels]:
         labels = np.append(labels, get_qpt_label(qpt, sym_label_to_coords))
 
     return labels, qpts_with_labels
@@ -166,16 +170,15 @@ def get_qpt_label(qpt, point_labels):
     return label
 
 
-def plot_sqw_map(data, vmin=None, vmax=None, ratio=None, ewidth=0, qwidth=0,
+def plot_sqw_map(sqw_map, vmin=None, vmax=None, ratio=None, ewidth=0, qwidth=0,
                  cmap='viridis', title=''):
     """
     Plots an q-E scattering plot using imshow
 
     Parameters
     ----------
-    data : QpointPhononModes object
-        QpointPhononModes object for which calculate_sqw_map has been called, containing
-        sqw_map and sqw_ebins attributes for plotting
+    sqw_map : Spectrum2D
+        S(Q,w) map to plot
     vmin : float, optional
         Minimum of data range for colormap. See Matplotlib imshow docs
         Default: None
@@ -186,11 +189,10 @@ def plot_sqw_map(data, vmin=None, vmax=None, ratio=None, ewidth=0, qwidth=0,
         Ratio of the size of the y and x axes. e.g. if ratio is 2, the y-axis
         will be twice as long as the x-axis
         Default: None
-    ewidth : float, optional, default 0
+    ewidth : float Quantity, optional, default 0
         The FWHM of the Gaussian energy resolution function in the same units
-        as frequencies
-    qwidth : float, optional, default 0
-        The FWHM of the Gaussian q-vector resolution function
+    qwidth : float Quantity, optional, default 0
+        The FWHM of the Gaussian q resolution function (1/[length] units)
     cmap : string, optional, default 'viridis'
         Which colormap to use, see Matplotlib docs
     title : string, optional
@@ -216,44 +218,50 @@ def plot_sqw_map(data, vmin=None, vmax=None, ratio=None, ewidth=0, qwidth=0,
                        ' euphonic[matplotlib]\n'))
         raise
 
-    ebins = data.sqw_ebins.magnitude
+    ebins = sqw_map.y_bins.magnitude
+    qbins = sqw_map.x_bins.magnitude
     # Apply broadening
     if ewidth or qwidth:
-        qbin_width = np.linalg.norm(
-            np.mean(np.absolute(np.diff(data.qpts, axis=0)), axis=0))
-        qbins = np.linspace(
-            0, qbin_width*data.n_qpts + qbin_width, data.n_qpts + 1)
+#        qbin_width = np.linalg.norm(
+#            np.mean(np.absolute(np.diff(data.qpts, axis=0)), axis=0))
+#        qbins = np.linspace(
+#            0, qbin_width*data.n_qpts + qbin_width, data.n_qpts + 1)
         # If no width has been set, make widths small enough to have
         # effectively no broadening
-        if not qwidth:
+        if qwidth:
+            qwidth = qwidth.to(sqw_map.x_bins_unit).magnitude
+        else:
             qwidth = (qbins[1] - qbins[0])/10
-        if not ewidth:
+        if ewidth:
+            ewidth = ewidth.to(sqw_map.y_bins_unit).magnitude
+        else:
             ewidth = (ebins[1] - ebins[0])/10
-        sqw_map = signal.fftconvolve(data.sqw_map, np.transpose(
+        sqw = signal.fftconvolve(sqw_map.z_data.magnitude, np.transpose(
             gaussian_2d(qbins, ebins, qwidth, ewidth)), 'same')
     else:
-        sqw_map = data.sqw_map
+        sqw = sqw_map.z_data.magnitude
 
     # Calculate qbin edges
-    recip = data.crystal.reciprocal_cell().to('1/angstrom').magnitude
-    abscissa = calc_abscissa(data.qpts, recip)
-    qmid = (abscissa[1:] + abscissa[:-1])/2
-    qwidths = qmid + qmid[0]
-    qbins = np.concatenate(([0], qwidths, [2*qwidths[-1] - qwidths[-2]]))
+#    recip = data.crystal.reciprocal_cell().to('1/angstrom').magnitude
+#    abscissa = calc_abscissa(data.qpts, recip)
+#    qmid = (abscissa[1:] + abscissa[:-1])/2
+#    qwidths = qmid + qmid[0]
+#    qbins = np.concatenate(([0], qwidths, [2*qwidths[-1] - qwidths[-2]]))
 
     if ratio:
         ymax = qbins[-1]/ratio
     else:
         ymax = 1.0
     if vmin is None:
-        vmin = np.amin(sqw_map)
+        vmin = np.amin(sqw)
     if vmax is None:
-        vmax = np.amax(sqw_map)
+        vmax = np.amax(sqw)
 
     fig, ax = plt.subplots(1, 1)
-    ims = np.empty((data.n_qpts), dtype=mpl.image.AxesImage)
-    for i in range(data.n_qpts):
-        ims[i] = ax.imshow(np.transpose(sqw_map[i, np.newaxis]),
+    n_x_bins = len(qbins) - 1
+    ims = np.empty((n_x_bins), dtype=mpl.image.AxesImage)
+    for i in range(n_x_bins):
+        ims[i] = ax.imshow(np.transpose(sqw[i, np.newaxis]),
                            interpolation='none', origin='lower',
                            extent=[qbins[i], qbins[i+1], 0, ymax],
                            vmin=vmin, vmax=vmax, cmap=cmap)
@@ -271,34 +279,18 @@ def plot_sqw_map(data, vmin=None, vmax=None, ratio=None, ewidth=0, qwidth=0,
     yticks = (ylabels - ebins[0])/(ebins[-1] - ebins[0])*ymax
     ax.set_yticks(yticks)
     ax.set_yticklabels(ylabels)
-    units_str = data.frequencies_unit
-    inverse_unit_index = units_str.find('/')
-    if inverse_unit_index > -1:
-        units_str = units_str[inverse_unit_index+1:]
-        ax.set_ylabel('Energy (' + units_str + r'$^{-1}$)')
-    else:
-        ax.set_ylabel('Energy (' + units_str + ')')
+    ax.set_ylabel('Energy ({:~P}'.format(sqw_map.y_bins.units))
 
-    # Calculate q-space ticks and labels
-    xlabels, qpts_with_labels = recip_space_labels(data)
-    for i, label in enumerate(xlabels):
-        if label == 'GAMMA':
-            xlabels[i] = r'$\Gamma$'
-    if np.all(xlabels == ''):
-        xlabels = np.around(data.qpts[qpts_with_labels, :], decimals=2)
-    xticks = (qbins[qpts_with_labels] + qbins[qpts_with_labels + 1])/2
     # Set high symmetry point x-axis ticks/labels
-    ax.set_xticks(xticks)
+    locs, labels = [list(x) for x in zip(*sqw_map.x_tick_labels)]
+    qbin_centres = qbins[:-1] + 0.5*np.diff(qbins)
+    ax.set_xticks(qbin_centres[locs])
     ax.xaxis.grid(True, which='major')
-    # Convert xlabels to list from Numpy array to avoid elementwise
-    # comparison FutureWarning when calling set_xticklabels
-    if not isinstance(xlabels, list):
-        xlabels = xlabels.tolist()
     # Rotate long tick labels
-    if len(max(xlabels, key=len)) >= 11:
-        ax.set_xticklabels(xlabels, rotation=90)
+    if len(max(labels, key=len)) >= 11:
+        ax.set_xticklabels(labels, rotation=90)
     else:
-        ax.set_xticklabels(xlabels)
+        ax.set_xticklabels(labels)
 
     fig.suptitle(title)
 
@@ -335,7 +327,7 @@ def output_grace(data, seedname='out', up=True, down=True):
     recip_latt = data.crystal.reciprocal_cell().to('1/angstrom').magnitude
     abscissa = calc_abscissa(data.qpts, recip_latt)
     # Calculate x-axis (recip space) ticks and labels
-    xlabels, qpts_with_labels = recip_space_labels(data)
+    xlabels, qpts_with_labels = recip_space_labels(data.crystal, data.qpts)
 
     units_str = data.frequencies_unit
     inverse_unit_index = units_str.find('/')
@@ -523,7 +515,7 @@ def plot_dispersion(data, title='', btol=10.0, **line_kwargs):
 
     # Configure each subplot
     # Calculate x-axis (recip space) ticks and labels
-    xlabels, qpts_with_labels = recip_space_labels(data)
+    xlabels, qpts_with_labels = recip_space_labels(data.crystal, data.qpts)
     for i, label in enumerate(xlabels):
         if label == 'GAMMA':
             xlabels[i] = r'$\Gamma$'

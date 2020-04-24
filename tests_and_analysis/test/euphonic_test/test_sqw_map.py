@@ -18,49 +18,48 @@ class TestSqwMapQpointPhononModesLZO(unittest.TestCase):
         self.data = QpointPhononModes.from_castep(seedname, path=data_path)
         fm = ureg.fm
         self.scattering_lengths = {'La': 8.24*fm, 'Zr': 7.16*fm, 'O': 5.803*fm}
-        self.ebins = np.arange(0, 100, 1.)
+        self.ebins = np.arange(0, 100, 1.)*ureg('meV')
 
         # QpointPhononModes object for DW grid
         self.dw_data = QpointPhononModes.from_castep(
             'La2Zr2O7-grid', path=self.sf_path)
 
     def test_sqw_T5(self):
-        self.data.calculate_sqw_map(
-            self.scattering_lengths, self.ebins, temperature=5*ureg('K'))
-
-        npt.assert_allclose(self.data.sqw_ebins.magnitude, self.ebins)
+        sf = self.data.calculate_structure_factor(self.scattering_lengths)
+        sqw_map = sf.calculate_sqw_map(self.ebins, temperature=5*ureg('K'))
+        npt.assert_allclose(sqw_map.y_bins.magnitude, self.ebins)
         expected_sqw_map = np.loadtxt(os.path.join(
             self.sqw_path, 'sqw_map_pdata_T5.txt'))
-        npt.assert_allclose(self.data.sqw_map, expected_sqw_map, rtol=1e-6)
+        npt.assert_allclose(sqw_map.z_data.to('bohr**2').magnitude, expected_sqw_map, rtol=1e-6)
 
     def test_sqw_T5_dw(self):
         dw5 = self.dw_data.calculate_debye_waller(5*ureg('K'))
-        self.data.calculate_sqw_map(
-            self.scattering_lengths, self.ebins, dw=dw5)
+        sf = self.data.calculate_structure_factor(self.scattering_lengths, dw=dw5)
+        sqw_map = sf.calculate_sqw_map(self.ebins)
 
-        npt.assert_allclose(self.data.sqw_ebins.magnitude, self.ebins)
+        npt.assert_allclose(sqw_map.y_bins.magnitude, self.ebins)
         expected_sqw_map = np.loadtxt(os.path.join(
             self.sqw_path, 'sqw_map_pdata_T5_dw.txt'))
-        npt.assert_allclose(self.data.sqw_map, expected_sqw_map, rtol=1e-6)
+        npt.assert_allclose(sqw_map.z_data.to('bohr**2').magnitude, expected_sqw_map, rtol=1e-6)
 
     def test_sqw_T100(self):
-        self.data.calculate_sqw_map(
-            self.scattering_lengths, self.ebins, temperature=100*ureg('K'))
+        sf = self.data.calculate_structure_factor(self.scattering_lengths)
+        sqw_map = sf.calculate_sqw_map(self.ebins, temperature=100*ureg('K'))
 
-        npt.assert_allclose(self.data.sqw_ebins.magnitude, self.ebins)
+        npt.assert_allclose(sqw_map.y_bins.magnitude, self.ebins)
         expected_sqw_map = np.loadtxt(os.path.join(
             self.sqw_path, 'sqw_map_pdata_T100.txt'))
-        npt.assert_allclose(self.data.sqw_map, expected_sqw_map, rtol=1e-6)
+        npt.assert_allclose(sqw_map.z_data.to('bohr**2').magnitude, expected_sqw_map, rtol=1e-6)
 
     def test_sqw_T100_dw(self):
         dw100 = self.dw_data.calculate_debye_waller(100*ureg('K'))
-        self.data.calculate_sqw_map(
-            self.scattering_lengths, self.ebins, dw=dw100)
+        sf = self.data.calculate_structure_factor(self.scattering_lengths, dw=dw100)
+        sqw_map = sf.calculate_sqw_map(self.ebins)
 
-        npt.assert_allclose(self.data.sqw_ebins.magnitude, self.ebins)
+        npt.assert_allclose(sqw_map.y_bins.magnitude, self.ebins)
         expected_sqw_map = np.loadtxt(os.path.join(
             self.sqw_path, 'sqw_map_pdata_T100_dw.txt'))
-        npt.assert_allclose(self.data.sqw_map, expected_sqw_map, rtol=1e-6)
+        npt.assert_allclose(sqw_map.z_data.to('bohr**2').magnitude, expected_sqw_map, rtol=1e-6)
 
 
 class TestSqwMapForceConstantsLZOSerial(unittest.TestCase):

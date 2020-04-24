@@ -154,18 +154,18 @@ class QpointPhononModes(object):
         self._mode_map = mode_map
 
     def calculate_structure_factor(self, scattering_lengths, temperature=None,
-                                   scale=1.0, calc_bose=True, dw=None):
+                                   calc_bose=False, dw=None):
         """
         Calculate the one phonon inelastic scattering for neutrons at each
         q-point. See M. Dove Structure and Dynamics Pg. 226
 
         Parameters
         ----------
-        scattering_lengths : dictionary
-            Dictionary of spin and isotope averaged coherent scattering legnths
+        scattering_lengths : dictionary of float Quantity
+            Dictionary of spin and isotope averaged coherent scattering length
             for each element in the structure in fm e.g.
-            {'O': 5.803, 'Zn': 5.680}
-        calc_bose : boolean, optional, default True
+            {'O': 5.803*ureg('fm'), 'Zn': 5.680*ureg('fm')}
+        calc_bose : boolean, optional, default False
             Whether to calculate and apply the Bose factor
         dw : DebyeWaller, default None
             A DebyeWaller exponent object
@@ -179,7 +179,26 @@ class QpointPhononModes(object):
         sf : StructureFactor
             An object containing the structure factor for each q-point and
             phonon mode
+
+        Raises
+        ------
+        ValueError
+            If a temperature is provided and isn't consistent with the
+            temperature in the DebyeWaller object
         """
+        if calc_bose:
+            if not dw is None:
+                if (not temperature is None
+                        and not np.isclose(temperature, dw.temperature)):
+                    raise ValueError((
+                        'Temperature provided to calculate_structure_factor '
+                        '({:~P}) is not consistent with the temperature stored '
+                        'in DebyeWaller ({:~P})'.format(
+                            temperature, dw.temperature)))
+
+        if not dw is None:
+            temperature = dw.temperature
+
         sl = [scattering_lengths[x].to('INTERNAL_LENGTH_UNIT').magnitude
                   for x in self.crystal.atom_type]
 
@@ -220,16 +239,14 @@ class QpointPhononModes(object):
             np.absolute(term*np.conj(term))/np.absolute(self._frequencies))
 
         if calc_bose:
-            if dw:
-                temperature = dw.temperature
-            if temperature is not None:
-                sf = sf*_bose_factor(self._frequencies,
-                                     temperature.to('K').magnitude)
+            sf = sf*_bose_factor(self._frequencies,
+                                 temperature.to('K').magnitude)
 
         return StructureFactor(
             self.crystal, self.qpts, self.frequencies,
             sf*ureg('INTERNAL_LENGTH_UNIT**2').to(
-                self.crystal.cell_vectors.units**2))
+                self.crystal.cell_vectors.units**2),
+            temperature=temperature)
 
     def calculate_debye_waller(self, temperature):
         """
@@ -294,74 +311,6 @@ class QpointPhononModes(object):
 
         return DebyeWaller(self.crystal, dw, temperature)
 
-    def calculate_sqw_map(self, scattering_lengths, ebins, calc_bose=True,
-                          **kwargs):
-        """
-        Calculate the structure factor for each q-point contained in data, and
-        bin according to ebins to create a S(Q,w) map
-
-        Parameters
-        ----------
-        scattering_lengths : dictionary
-            Dictionary of spin and isotope averaged coherent scattering legnths
-            for each element in the structure in fm e.g.
-            {'O': 5.803, 'Zn': 5.680}
-        ebins : (n_ebins + 1,) float ndarray
-            The energy bin edges in the same units as
-            QpointPhononModes.frequencies
-        calc_bose : boolean, optional, default True
-            Whether to calculate and apply the Bose factor
-        **kwargs
-            Passes keyword arguments on to
-            QpointPhononModes.calculate_structure_factor
-
-        Returns
-        -------
-        sqw_map : (n_qpts, n_ebins) float ndarray
-            The intensity for each q-point and energy bin
-        """
-
-        # Convert units
-        freqs = self._frequencies
-        ebins = (ebins*ureg(self.frequencies_unit).to(
-            'INTERNAL_ENERGY_UNIT')).magnitude
-
-        # Create initial sqw_map with an extra an energy bin either side, for
-        # any branches that fall outside the energy bin range
-        sqw_map = np.zeros((self.n_qpts, len(ebins) + 1))
-        sf_obj = self.calculate_structure_factor(
-            scattering_lengths, calc_bose=False, **kwargs)
-        sf = sf_obj._structure_factors
-        if calc_bose:
-            if 'dw' in kwargs:
-                temp = kwargs['dw'].temperature
-            elif 'temperature' in kwargs:
-                temp = kwargs['temperature']
-            else:
-                temp = None
-            if temp is not None:
-               p_intensity = sf*_bose_factor(freqs, temp.to('K').magnitude)
-               n_intensity = sf*_bose_factor(-freqs, temp.to('K').magnitude)
-        else:
-            p_intensity = sf
-            n_intensity = sf
-
-        p_bin = np.digitize(freqs, ebins)
-        n_bin = np.digitize(-freqs, ebins)
-
-        # Sum intensities into bins
-        first_index = np.transpose(
-            np.tile(range(self.n_qpts), (3*self.crystal.n_atoms, 1)))
-        np.add.at(sqw_map, (first_index, p_bin), p_intensity)
-        np.add.at(sqw_map, (first_index, n_bin), n_intensity)
-        sqw_map = sqw_map[:, 1:-1]  # Exclude values outside ebin range
-
-        self._sqw_ebins = ebins
-        self.sqw_map = sqw_map
-
-        return sqw_map
-
-
     def calculate_dos(self, dos_bins, gwidth=0*ureg('E_h'), lorentz=False):
         """
         Calculates a density of states with fixed width Gaussian/Lorentzian
@@ -379,8 +328,9 @@ class QpointPhononModes(object):
 
         Returns
         -------
-        dos : (n_ebins,) float ndarray
-            The density of states for each bin
+        dos : Spectrum1D
+            A spectrum containing the energy bins on the x-axis and dos on the
+            y-axis
         """
 
         freqs = self._frequencies

@@ -149,6 +149,7 @@ def _bose_factor(x, T):
         bose = bose + 1/(np.exp(np.absolute(x)/(kB*T)) - 1)
     return bose
 
+
 def _check_unit(input_unit, *valid_units):
     """
     Check that a unit string is of the correct type e.g.
