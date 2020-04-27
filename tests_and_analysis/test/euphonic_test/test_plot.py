@@ -12,7 +12,7 @@ from euphonic import ureg, Crystal
 from euphonic.legacy_plot.dispersion import (calc_abscissa, recip_space_labels,
                                              generic_qpt_labels, get_qpt_label,
                                              plot_dispersion)
-from euphonic.plot import plot
+from euphonic.plot import plot_1d
 
 class TestCalcAbscissa(unittest.TestCase):
 
@@ -258,7 +258,7 @@ class TestPlotDos(unittest.TestCase):
         self.title = 'Iron'
 
         # Results
-        self.fig = plot(self.dos, title=self.title)
+        self.fig = plot_1d(self.dos, title=self.title)
         self.ax = self.fig.axes[0]
 
     def tearDown(self):

@@ -13,23 +13,15 @@ from scipy import signal
 from euphonic.util import gaussian_2d
 
 
-def plot(plot_obj, *args, **kwargs):
+def plot_1d(spectra, title='', x_label='', y_label='', y_min=None,
+            **line_kwargs):
     """
-    plot_obj : Spectrum1D or Spectrum2D object
-    """
-    if hasattr(plot_obj, 'z_data'):
-        return _plot_2d(plot_obj, *args, **kwargs)
-    else:
-        return _plot_1d(plot_obj, *args, **kwargs)
-
-
-def _plot_1d(spectrum, title='', x_label='', y_label='', **line_kwargs):
-    """
-    Creates a Matplotlib figure for a Spectrum1D object
+    Creates a Matplotlib figure for a Spectrum1D object, or multiple Spectrum1D
+    objects to be plotted on the same axes
 
     Parameters
     ----------
-    spectrum : Spectrum1D Object
+    spectra : Spectrum1D Object or list of Spectrum1D Objects
         Containing the 1D data to plot
     title : string, default ''
         Plot title
@@ -37,6 +29,9 @@ def _plot_1d(spectrum, title='', x_label='', y_label='', **line_kwargs):
         X-axis label
     y_label : string, default ''
         Y-axis label
+    y_min : float, default None
+        Minimum value on the y-axis. Can be useful to set y-axis minimum to 0
+        for energy, for example.
     **line_kwargs : matplotlib.line.Line2D properties, optional
         Used in the axes.plot command to specify properties like linewidth,
         linestyle
@@ -47,30 +42,31 @@ def _plot_1d(spectrum, title='', x_label='', y_label='', **line_kwargs):
         subplot containing the plotted density of states, otherwise returns
         None
     """
+    if not isinstance(spectra, list):
+        spectra = [spectra]
 
-    # Create figure
     fig = plt.figure()
     ax = fig.add_subplot(111)
     ax.set_title(title)
-
     ax.set_xlabel(x_label)
     ax.set_ylabel(y_label)
     ax.minorticks_on()
 
-    plot_x = spectrum.x_data.magnitude
-    if len(spectrum.x_data) == len(spectrum.y_data) + 1:
-        # Calculate bin centres
-        plot_x = plot_x[:-1] + 0.5*np.diff(plot_x)
+    for spectrum in spectra:
+        plot_x = spectrum.x_data.magnitude
+        if len(spectrum.x_data) == len(spectrum.y_data) + 1:
+            # Calculate bin centres
+            plot_x = plot_x[:-1] + 0.5*np.diff(plot_x)
+        ax.plot(plot_x, spectrum.y_data.magnitude, lw=1.0, **line_kwargs)
 
-    # Plot dos
-    ax.plot(plot_x, spectrum.y_data.magnitude, lw=1.0, **line_kwargs)
-    ax.set_ylim(bottom=0)  # Need to set limits after plotting the data
+    if y_min is not None:
+        ax.set_ylim(bottom=y_min)  # Need to set limits after plotting the data
     plt.tight_layout()
 
     return fig
 
 
-def _plot_2d(spectrum, vmin=None, vmax=None, ratio=None, x_width=0, y_width=0,
+def plot_2d(spectrum, vmin=None, vmax=None, ratio=None, x_width=0, y_width=0,
              cmap='viridis', title='', x_label='', y_label=''):
     """
     Creates a Matplotlib figure for a Spectrum2D object
