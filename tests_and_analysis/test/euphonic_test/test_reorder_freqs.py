@@ -14,8 +14,6 @@ class TestReorderFreqsNaH(unittest.TestCase):
         data = QpointPhononModes.from_castep(seedname, path=path)
         data.reorder_frequencies()
         freqs = data.frequencies.magnitude
-        reordered_freqs = freqs[np.arange(len(freqs))[:, np.newaxis],
-                                data._mode_map]
         expected_reordered_freqs = np.array(
             [[91.847109, 91.847109, 166.053018,
               564.508299, 564.508299, 884.068976],
@@ -38,7 +36,7 @@ class TestReorderFreqsNaH(unittest.TestCase):
              [124.976823, 124.976823, 238.903818,
               593.189877, 593.189877, 873.903056]])*ureg('1/cm')
         npt.assert_allclose(
-            reordered_freqs,
+            freqs,
             expected_reordered_freqs.to('meV', 'spectroscopy').magnitude)
 
 
@@ -197,22 +195,18 @@ class TestReorderFreqsLZO(unittest.TestCase):
     def test_reorder_frequencies_phonon_data(self):
         self.pdata.reorder_frequencies()
         freqs = self.pdata.frequencies.magnitude
-        reordered_freqs = freqs[np.arange(len(freqs))[:, np.newaxis],
-                                self.pdata._mode_map]
         npt.assert_allclose(
-            reordered_freqs,
+            freqs,
             self.expected_reordered_freqs.to('meV', 'spectroscopy').magnitude)
 
     def test_reorder_frequencies_interpolation_data(self):
         idata = self.fc.calculate_fine_phonons(self.pdata.qpts, asr='realspace')
         idata.reorder_frequencies()
         freqs = idata.frequencies.magnitude
-        reordered_freqs = freqs[np.arange(len(freqs))[:, np.newaxis],
-                                idata._mode_map]
         # Set atol = 3e-3 as this is the max difference between the
         # interpolated phonon freqs and phonons read from .phonon file
         npt.assert_allclose(
-            reordered_freqs,
+            freqs,
             self.expected_reordered_freqs.to('meV', 'spectroscopy').magnitude,
             atol=3e-3)
 
@@ -222,12 +216,10 @@ class TestReorderFreqsLZO(unittest.TestCase):
             fall_back_on_python=False)
         idata.reorder_frequencies()
         freqs = idata.frequencies.magnitude
-        reordered_freqs = freqs[np.arange(len(freqs))[:, np.newaxis],
-                                idata._mode_map]
         # Set atol = 3e-3 as this is the max difference between the
         # interpolated phonon freqs and phonons read from .phonon file
         npt.assert_allclose(
-            reordered_freqs,
+            freqs,
             self.expected_reordered_freqs.to('meV', 'spectroscopy').magnitude,
             atol=3e-3)
 
@@ -237,12 +229,10 @@ class TestReorderFreqsLZO(unittest.TestCase):
             fall_back_on_python=False)
         idata.reorder_frequencies()
         freqs = idata.frequencies.magnitude
-        reordered_freqs = freqs[np.arange(len(freqs))[:, np.newaxis],
-                                idata._mode_map]
         # Set atol = 3e-3 as this is the max difference between the
         # interpolated phonon freqs and phonons read from .phonon file
         npt.assert_allclose(
-            reordered_freqs,
+            freqs,
             self.expected_reordered_freqs.to('meV', 'spectroscopy').magnitude,
             atol=3e-3)
 
@@ -391,9 +381,9 @@ class TestReorderFreqsLZO(unittest.TestCase):
         idata = self.fc.calculate_fine_phonons(self.pdata.qpts, asr='realspace')
         idata.reorder_frequencies(reorder_gamma=False)
         freqs = idata.frequencies.magnitude
-        reordered_freqs = freqs[np.arange(len(freqs))[:, np.newaxis],
-                                idata._mode_map]
+#        reordered_freqs = freqs[np.arange(len(freqs))[:, np.newaxis],
+#                                idata._mode_map]
         npt.assert_allclose(
-            reordered_freqs,
+            freqs,
             expected_freqs_gamma_false.to('meV', 'spectroscopy').magnitude,
             atol=3e-3)

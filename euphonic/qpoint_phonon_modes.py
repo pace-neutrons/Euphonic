@@ -66,16 +66,6 @@ class QpointPhononModes(object):
         return self._frequencies*ureg(
             'INTERNAL_ENERGY_UNIT').to(self.frequencies_unit, 'spectroscopy')
 
-    @property
-    def sqw_ebins(self):
-        return self._sqw_ebins*ureg(
-            'INTERNAL_ENERGY_UNIT').to(self.frequencies_unit, 'spectroscopy')
-
-    @property
-    def dos_bins(self):
-        return self._dos_bins*ureg('E_h').to(self.frequencies_unit,
-                                             'spectroscopy')
-
     def reorder_frequencies(self, reorder_gamma=True):
         """
         By doing a dot product of eigenvectors at adjacent q-points,
@@ -151,7 +141,11 @@ class QpointPhononModes(object):
             else:
                 mode_map[i] = mode_map[i-1]
 
-        self._mode_map = mode_map
+        # Actually rearrange frequencies/eigenvectors
+        for i in range(n_qpts):
+            self._frequencies[i] = self._frequencies[i, mode_map[i]]
+            evec_tmp = np.copy(self.eigenvectors[i, mode_map[i]])
+            self.eigenvectors[i] = evec_tmp
 
     def calculate_structure_factor(self, scattering_lengths, temperature=None,
                                    dw=None):

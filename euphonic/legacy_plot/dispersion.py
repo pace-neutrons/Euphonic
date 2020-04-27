@@ -396,12 +396,7 @@ def plot_dispersion(data, title='', btol=10.0, **line_kwargs):
         xlabels = np.around(data.qpts[qpts_with_labels, :], decimals=2)
     xticks = abscissa[qpts_with_labels]
 
-    # Put frequencies in order if reorder_frequencies() has been called
-    if hasattr(data, '_mode_map'):
-        freqs = data.frequencies.magnitude[
-            np.arange(len(data.qpts))[:, np.newaxis], data._mode_map]
-    else:
-        freqs = data.frequencies.magnitude
+    freqs = data.frequencies.magnitude
 
     for i, ax in enumerate(subplots):
         # X-axis formatting
