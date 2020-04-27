@@ -142,11 +142,7 @@ class StructureFactor(object):
 
         # Calculate qbin edges
         recip = self.crystal.reciprocal_cell().to('1/angstrom').magnitude
-        abscissa = calc_abscissa(self.qpts, recip)
-        qmid = (abscissa[1:] + abscissa[:-1])/2
-        qwidths = qmid + qmid[0]
-        qbins = np.concatenate(
-            ([0], qwidths, [2*qwidths[-1] - qwidths[-2]]))*ureg('1/angstrom')
+        abscissa = calc_abscissa(self.qpts, recip)*ureg('1/angstrom')
 
         # Calculate q-space ticks and labels
         xlabels, qpts_with_labels = recip_space_labels(self.crystal, self.qpts)
@@ -155,8 +151,8 @@ class StructureFactor(object):
                 xlabels[i] = r'$\Gamma$'
         if np.all(xlabels == ''):
             xlabels = np.around(self.qpts[qpts_with_labels, :], decimals=2)
-
         x_tick_labels = list(zip(qpts_with_labels, xlabels))
 
-        return Spectrum2D(qbins, e_bins, sqw_map, x_tick_labels=x_tick_labels)
+        return Spectrum2D(abscissa, e_bins, sqw_map,
+                          x_tick_labels=x_tick_labels)
 

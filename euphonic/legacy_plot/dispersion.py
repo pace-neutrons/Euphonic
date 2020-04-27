@@ -218,35 +218,29 @@ def plot_sqw_map(sqw_map, vmin=None, vmax=None, ratio=None, ewidth=0, qwidth=0,
                        ' euphonic[matplotlib]\n'))
         raise
 
-    ebins = sqw_map.y_bins.magnitude
-    qbins = sqw_map.x_bins.magnitude
+    ebins = sqw_map.y_data.magnitude
+    # Calculate qbin edges
+    qbins = sqw_map.x_data.magnitude
+    if len(sqw_map.x_data) == len(sqw_map.z_data):
+        # Calculate bin edges
+        qbins = np.concatenate(
+            ([qbins[0]], (qbins[1:] + qbins[:-1])/2, [qbins[-1]]))
     # Apply broadening
     if ewidth or qwidth:
-#        qbin_width = np.linalg.norm(
-#            np.mean(np.absolute(np.diff(data.qpts, axis=0)), axis=0))
-#        qbins = np.linspace(
-#            0, qbin_width*data.n_qpts + qbin_width, data.n_qpts + 1)
         # If no width has been set, make widths small enough to have
         # effectively no broadening
         if qwidth:
-            qwidth = qwidth.to(sqw_map.x_bins_unit).magnitude
+            qwidth = qwidth.to(sqw_map.x_data_unit).magnitude
         else:
             qwidth = (qbins[1] - qbins[0])/10
         if ewidth:
-            ewidth = ewidth.to(sqw_map.y_bins_unit).magnitude
+            ewidth = ewidth.to(sqw_map.y_data_unit).magnitude
         else:
             ewidth = (ebins[1] - ebins[0])/10
         sqw = signal.fftconvolve(sqw_map.z_data.magnitude, np.transpose(
             gaussian_2d(qbins, ebins, qwidth, ewidth)), 'same')
     else:
         sqw = sqw_map.z_data.magnitude
-
-    # Calculate qbin edges
-#    recip = data.crystal.reciprocal_cell().to('1/angstrom').magnitude
-#    abscissa = calc_abscissa(data.qpts, recip)
-#    qmid = (abscissa[1:] + abscissa[:-1])/2
-#    qwidths = qmid + qmid[0]
-#    qbins = np.concatenate(([0], qwidths, [2*qwidths[-1] - qwidths[-2]]))
 
     if ratio:
         ymax = qbins[-1]/ratio
@@ -258,9 +252,9 @@ def plot_sqw_map(sqw_map, vmin=None, vmax=None, ratio=None, ewidth=0, qwidth=0,
         vmax = np.amax(sqw)
 
     fig, ax = plt.subplots(1, 1)
-    n_x_bins = len(qbins) - 1
-    ims = np.empty((n_x_bins), dtype=mpl.image.AxesImage)
-    for i in range(n_x_bins):
+    n_x_data = len(qbins) - 1
+    ims = np.empty((n_x_data), dtype=mpl.image.AxesImage)
+    for i in range(n_x_data):
         ims[i] = ax.imshow(np.transpose(sqw[i, np.newaxis]),
                            interpolation='none', origin='lower',
                            extent=[qbins[i], qbins[i+1], 0, ymax],
@@ -279,12 +273,11 @@ def plot_sqw_map(sqw_map, vmin=None, vmax=None, ratio=None, ewidth=0, qwidth=0,
     yticks = (ylabels - ebins[0])/(ebins[-1] - ebins[0])*ymax
     ax.set_yticks(yticks)
     ax.set_yticklabels(ylabels)
-    ax.set_ylabel('Energy ({:~P}'.format(sqw_map.y_bins.units))
+    ax.set_ylabel('Energy ({:~P}'.format(sqw_map.y_data.units))
 
     # Set high symmetry point x-axis ticks/labels
     locs, labels = [list(x) for x in zip(*sqw_map.x_tick_labels)]
-    qbin_centres = qbins[:-1] + 0.5*np.diff(qbins)
-    ax.set_xticks(qbin_centres[locs])
+    ax.set_xticks(sqw_map.x_data.magnitude[locs])
     ax.xaxis.grid(True, which='major')
     # Rotate long tick labels
     if len(max(labels, key=len)) >= 11:

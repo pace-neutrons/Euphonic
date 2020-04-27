@@ -245,7 +245,7 @@ class TestPlotDos(unittest.TestCase):
              9.33e-03, 9.85e-04, 4.40e-05, 2.24e-05, 4.82e-04, 4.43e-03,
              1.67e-02, 2.61e-02, 1.67e-02, 4.43e-03, 4.82e-04, 2.16e-05,
              3.98e-07])*ureg('E_h')
-        dos.x_bins = np.array(
+        dos.x_data = np.array(
             [0.58, 0.78, 0.98, 1.18, 1.38, 1.58, 1.78, 1.98,
              2.18, 2.38, 2.58, 2.78, 2.98, 3.18, 3.38, 3.58,
              3.78, 3.98, 4.18, 4.38, 4.58, 4.78, 4.98, 5.18,
@@ -273,8 +273,8 @@ class TestPlotDos(unittest.TestCase):
         self.assertEqual(len(self.ax.get_lines()), 1)
 
     def test_dos_xaxis(self):
-        x_bins = self.dos.x_bins.magnitude
-        bin_centres = x_bins[:-1] + 0.5*np.diff(x_bins)
+        x_data = self.dos.x_data.magnitude
+        bin_centres = x_data[:-1] + 0.5*np.diff(x_data)
         n_correct_x = 0
         for line in self.ax.get_lines():
             if np.allclose(line.get_data()[0], bin_centres):

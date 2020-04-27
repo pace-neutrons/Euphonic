@@ -1,4 +1,13 @@
 import numpy as np
+import warnings
+try:
+    import matplotlib.pyplot as plt
+except ImportError:
+    warnings.warn(('Cannot import Matplotliib for plotting (maybe Matplotlib '
+                   'is not installed?). To install Euphonic\'s optional '
+                   'Matplotlib dependency, try:\n\npip install '
+                   'euphonic[matplotlib]\n'))
+    raise
 
 
 def plot(plot_obj, *args, **kwargs):
@@ -6,6 +15,7 @@ def plot(plot_obj, *args, **kwargs):
     plot_obj : Spectrum1D or Spectrum2D object
     """
     return _plot_1d(plot_obj, *args, **kwargs)
+
 
 def _plot_1d(spectrum, title='', x_label='', y_label='', **line_kwargs):
     """
@@ -31,14 +41,6 @@ def _plot_1d(spectrum, title='', x_label='', y_label='', **line_kwargs):
         subplot containing the plotted density of states, otherwise returns
         None
     """
-    try:
-        import matplotlib.pyplot as plt
-    except ImportError:
-        warnings.warn(('Cannot import Matplotlib to plot dos (maybe '
-                       'Matplotlib is not installed?). To install Euphonic\'s'
-                       ' optional Matplotlib dependency, try:\n\npip install'
-                       ' euphonic[matplotlib]\n'))
-        raise
 
     # Create figure
     fig = plt.figure()
@@ -49,12 +51,13 @@ def _plot_1d(spectrum, title='', x_label='', y_label='', **line_kwargs):
     ax.set_ylabel(y_label)
     ax.minorticks_on()
 
-    # Calculate bin centres
-    x_bins = spectrum.x_bins.magnitude
-    bin_centres = x_bins[:-1] + 0.5*np.diff(x_bins)
+    plot_x = spectrum.x_data.magnitude
+    if len(spectrum.x_data) == len(spectrum.y_data) + 1:
+        # Calculate bin centres
+        plot_x = plot_x[:-1] + 0.5*np.diff(plot_x)
 
     # Plot dos
-    ax.plot(bin_centres, spectrum.y_data.magnitude, lw=1.0, **line_kwargs)
+    ax.plot(plot_x, spectrum.y_data.magnitude, lw=1.0, **line_kwargs)
     ax.set_ylim(bottom=0)  # Need to set limits after plotting the data
     plt.tight_layout()
 

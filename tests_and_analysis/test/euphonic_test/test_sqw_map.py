@@ -27,7 +27,7 @@ class TestSqwMapQpointPhononModesLZO(unittest.TestCase):
     def test_sqw_T5(self):
         sf = self.data.calculate_structure_factor(self.scattering_lengths)
         sqw_map = sf.calculate_sqw_map(self.ebins, temperature=5*ureg('K'))
-        npt.assert_allclose(sqw_map.y_bins.magnitude, self.ebins)
+        npt.assert_allclose(sqw_map.y_data.magnitude, self.ebins)
         expected_sqw_map = np.loadtxt(os.path.join(
             self.sqw_path, 'sqw_map_pdata_T5.txt'))
         npt.assert_allclose(sqw_map.z_data.to('bohr**2').magnitude, expected_sqw_map, rtol=1e-6)
@@ -37,7 +37,7 @@ class TestSqwMapQpointPhononModesLZO(unittest.TestCase):
         sf = self.data.calculate_structure_factor(self.scattering_lengths, dw=dw5)
         sqw_map = sf.calculate_sqw_map(self.ebins)
 
-        npt.assert_allclose(sqw_map.y_bins.magnitude, self.ebins)
+        npt.assert_allclose(sqw_map.y_data.magnitude, self.ebins)
         expected_sqw_map = np.loadtxt(os.path.join(
             self.sqw_path, 'sqw_map_pdata_T5_dw.txt'))
         npt.assert_allclose(sqw_map.z_data.to('bohr**2').magnitude, expected_sqw_map, rtol=1e-6)
@@ -46,7 +46,7 @@ class TestSqwMapQpointPhononModesLZO(unittest.TestCase):
         sf = self.data.calculate_structure_factor(self.scattering_lengths)
         sqw_map = sf.calculate_sqw_map(self.ebins, temperature=100*ureg('K'))
 
-        npt.assert_allclose(sqw_map.y_bins.magnitude, self.ebins)
+        npt.assert_allclose(sqw_map.y_data.magnitude, self.ebins)
         expected_sqw_map = np.loadtxt(os.path.join(
             self.sqw_path, 'sqw_map_pdata_T100.txt'))
         npt.assert_allclose(sqw_map.z_data.to('bohr**2').magnitude, expected_sqw_map, rtol=1e-6)
@@ -56,7 +56,7 @@ class TestSqwMapQpointPhononModesLZO(unittest.TestCase):
         sf = self.data.calculate_structure_factor(self.scattering_lengths, dw=dw100)
         sqw_map = sf.calculate_sqw_map(self.ebins)
 
-        npt.assert_allclose(sqw_map.y_bins.magnitude, self.ebins)
+        npt.assert_allclose(sqw_map.y_data.magnitude, self.ebins)
         expected_sqw_map = np.loadtxt(os.path.join(
             self.sqw_path, 'sqw_map_pdata_T100_dw.txt'))
         npt.assert_allclose(sqw_map.z_data.to('bohr**2').magnitude, expected_sqw_map, rtol=1e-6)
