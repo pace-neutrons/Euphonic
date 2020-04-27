@@ -43,3 +43,4 @@ def generate_fine_phonons_data():
 if __name__ == "__main__":
     generate_structure_factor_data()
     generate_fine_phonons_data()
+
