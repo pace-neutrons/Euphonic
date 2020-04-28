@@ -1,7 +1,6 @@
 import numpy as np
 from euphonic import ureg, Spectrum2D
-from euphonic.legacy_plot.dispersion import calc_abscissa, recip_space_labels
-from euphonic.util import _bose_factor
+from euphonic.util import get_qpoint_labels, _calc_abscissa, _bose_factor
 
 class StructureFactor(object):
     """
@@ -140,18 +139,9 @@ class StructureFactor(object):
         sqw_map = sqw_map[:, 1:-1]*ureg('INTERNAL_LENGTH_UNIT**2').to(
             self.structure_factors_unit)  # Exclude values outside ebin range
 
-        # Calculate qbin edges
-        recip = self.crystal.reciprocal_cell().to('1/angstrom').magnitude
-        abscissa = calc_abscissa(self.qpts, recip)*ureg('1/angstrom')
-
+        abscissa = _calc_abscissa(self.crystal, self.qpts)
         # Calculate q-space ticks and labels
-        xlabels, qpts_with_labels = recip_space_labels(self.crystal, self.qpts)
-        for i, label in enumerate(xlabels):
-            if label == 'GAMMA':
-                xlabels[i] = r'$\Gamma$'
-        if np.all(xlabels == ''):
-            xlabels = np.around(self.qpts[qpts_with_labels, :], decimals=2)
-        x_tick_labels = list(zip(qpts_with_labels, xlabels))
+        x_tick_labels = get_qpoint_labels(self.crystal, self.qpts)
 
         return Spectrum2D(abscissa, e_bins, sqw_map,
                           x_tick_labels=x_tick_labels)

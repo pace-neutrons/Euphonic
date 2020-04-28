@@ -10,8 +10,75 @@ except ImportError:
     raise
 import numpy as np
 from scipy import signal
-from euphonic.util import gaussian_2d
+from euphonic import ureg
+from euphonic.util import (gaussian_2d, is_gamma, get_qpoint_labels,
+                           _calc_abscissa)
 
+
+def plot_dispersion(phonons, title='', btol=10.0, **line_kwargs):
+    """
+    Creates a Matplotlib figure displaying phonon dispersion from a
+    QpointPhononModes object
+
+    Parameters
+    ----------
+    phonons : QpointPhononModes object
+    btol : float, optional
+        Determines the limit for plotting sections of reciprocal space on
+        different subplots, as a fraction of the median distance between
+        q-points. Default: 10.0
+    **line_kwargs : Line2D properties, optional
+        Used in the axes.plot command to specify properties like linewidth,
+        linestyle
+    """
+    abscissa = _calc_abscissa(phonons.crystal, phonons.qpts).magnitude
+    ibreak, gridspec_kw = _get_gridspec_kw(abscissa, btol)
+    # Create figure with correct number of subplots
+    n_subplots = len(ibreak) - 1
+    fig, subplots = plt.subplots(1, n_subplots, sharey=True,
+                                 gridspec_kw=gridspec_kw)
+    if n_subplots == 1:
+        # Ensure subplots is always an array
+        subplots = np.array([subplots])
+
+    # Configure each subplot
+    x_tick_labels = get_qpoint_labels(phonons.crystal, phonons.qpts)
+    freqs = phonons.frequencies.magnitude
+
+    for i, ax in enumerate(subplots):
+        _set_x_tick_labels(ax, x_tick_labels, abscissa*ureg('1/angstrom'))
+        ax.set_xlim(left=abscissa[ibreak[i]], right=abscissa[ibreak[i + 1] - 1])
+
+        # If there is LO-TO splitting, plot in sections
+        qpts = phonons.qpts[ibreak[i]:ibreak[i + 1]]
+        gamma_i = np.where(is_gamma(qpts))[0] + ibreak[i]
+        diff = np.diff(gamma_i)
+        adjacent_gamma_i = np.where(diff == 1)[0]
+        if len(adjacent_gamma_i) > 0:
+            section_i = gamma_i[adjacent_gamma_i] + 1
+            n_sections = len(section_i) + 1
+        else:
+            n_sections = 1
+
+        if n_sections > 1:
+            #section_edges = np.concatenate(
+            #    ([imin[i]], section_i, [imax[i] + 1]))
+            section_edges = np.concatenate(
+                ([ibreak[i]], section_i, [ibreak[i + 1]]))
+            for n in range(n_sections):
+                ax.plot(abscissa[section_edges[n]:section_edges[n+1]],
+                        freqs[section_edges[n]:section_edges[n+1]],
+                        lw=1.0, **line_kwargs)
+        else:
+            ax.plot(abscissa[ibreak[i]:ibreak[i + 1]],
+                    freqs[ibreak[i]:ibreak[i + 1]], lw=1.0, **line_kwargs)
+
+    # Make sure axis/figure titles aren't cut off. Rect is used to leave some
+    # space at the top of the figure for suptitle
+    fig.suptitle(title)
+    plt.tight_layout(rect=[0, 0.03, 1, 0.95])
+
+    return fig
 
 def plot_1d(spectra, title='', x_label='', y_label='', y_min=None,
             **line_kwargs):
@@ -37,10 +104,8 @@ def plot_1d(spectra, title='', x_label='', y_label='', y_min=None,
         linestyle
     Returns
     -------
-    fig : matplotlib.figure.Figure or None
-        If matplotlib.pyplot can be imported, returns a Figure containing the
-        subplot containing the plotted density of states, otherwise returns
-        None
+    fig : matplotlib.figure.Figure
+        The figure
     """
     if not isinstance(spectra, list):
         spectra = [spectra]
@@ -101,7 +166,7 @@ def plot_2d(spectrum, vmin=None, vmax=None, ratio=None, x_width=0, y_width=0,
     Returns
     -------
     fig : matplotlib.figure.Figure
-        A Figure with a single subplot
+        The figure
     ims : (n_qpts,) 'matplotlib.image.AxesImage' ndarray
         A Numpy.ndarray of AxesImage objects, one for each x-bin, for easier
         access to some attributes/functions
@@ -160,17 +225,9 @@ def plot_2d(spectrum, vmin=None, vmax=None, ratio=None, x_width=0, y_width=0,
                            extent=[x_bins[i], x_bins[i+1], 0, y_max],
                            vmin=vmin, vmax=vmax, cmap=cmap)
 
+    _set_x_tick_labels(ax, spectrum.x_tick_labels, spectrum.x_data)
     ax.set_yticks(y_tick_locs)
     ax.set_yticklabels(y_tick_labels)
-    if spectrum.x_tick_labels is not None:
-        locs, labels = [list(x) for x in zip(*spectrum.x_tick_labels)]
-        ax.set_xticks(spectrum.x_data.magnitude[locs])
-        ax.xaxis.grid(True, which='major')
-        # Rotate long tick labels
-        if len(max(labels, key=len)) >= 11:
-            ax.set_xticklabels(labels, rotation=90)
-        else:
-            ax.set_xticklabels(labels)
 
     ax.set_ylim(0, y_max)
     ax.set_xlim(x_bins[0], x_bins[-1])
@@ -179,3 +236,49 @@ def plot_2d(spectrum, vmin=None, vmax=None, ratio=None, x_width=0, y_width=0,
     fig.suptitle(title)
 
     return fig, ims
+
+def _set_x_tick_labels(ax, x_tick_labels, x_data):
+    if x_tick_labels is not None:
+        locs, labels = [list(x) for x in zip(*x_tick_labels)]
+        ax.set_xticks(x_data.magnitude[locs])
+        ax.xaxis.grid(True, which='major')
+        # Rotate long tick labels
+        if len(max(labels, key=len)) >= 11:
+            ax.set_xticklabels(labels, rotation=90)
+        else:
+            ax.set_xticklabels(labels)
+
+def _get_gridspec_kw(x_data, btol):
+    """
+    Creates a dictionary of gridspec_kw to be passed to
+    matplotlib.pyplot.subplots, describin
+
+    Parameters
+    ----------
+    x_data : (n_x_data,) float ndarray
+        The x_data points
+    btol : float, optional
+        Determines the limit for plotting sections of data on different
+        subplots, as a fraction of the median difference between x_data points
+
+    Returns
+    -------
+    ibreak : (n_subplots + 1,) int ndarray
+        Index limits of the x_data to plot on each subplot
+    gridspec_kw : dict
+        Contains key 'width_ratios' which is a list of subplot widths - required
+        so the x-scale is the same for each subplot
+    """
+    # Determine Coordinates that are far enough apart to be
+    # in separate subplots, and determine index limits
+    diff = np.diff(x_data)
+    median = np.median(diff)
+    breakpoints = np.where(diff/median > btol)[0]
+    ibreak = np.concatenate(([0], breakpoints + 1, [len(x_data)]))
+
+    # Calculate width ratios so that the x-scale is the same for each subplot
+    subplot_widths = [x_data[ibreak[i + 1] - 1] - x_data[ibreak[i]]
+                         for i in range(len(ibreak) - 1)]
+    gridspec_kw = dict(width_ratios=[w/subplot_widths[0]
+                                  for w in subplot_widths])
+    return ibreak, gridspec_kw

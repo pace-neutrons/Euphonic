@@ -1,5 +1,6 @@
 import math
 import numpy as np
+import seekpath
 from euphonic import ureg
 
 
@@ -126,6 +127,233 @@ def mp_grid(grid):
     return np.column_stack((qh, qk, ql))
 
 
+def get_all_origins(max_xyz, min_xyz=[0, 0, 0], step=1):
+    """
+    Given the max/min number of cells in each direction, get a list of all
+    possible cell origins
+
+    Parameters
+    ----------
+    max_xyz : (3,) int ndarray
+        The number of cells to count to in each direction
+    min_xyz : (3,) int ndarray, optional, default [0,0,0]
+        The cell number to count from in each direction
+    step : integer, optional, default 1
+        The step between cells
+
+    Returns
+    -------
+    origins : (prod(max_xyz - min_xyz)/step, 3) int ndarray
+        The cell origins
+    """
+    diff = np.absolute(np.subtract(max_xyz, min_xyz))
+    nx = np.repeat(range(min_xyz[0], max_xyz[0], step), diff[1]*diff[2])
+    ny = np.repeat(np.tile(range(min_xyz[1], max_xyz[1], step), diff[0]),
+                   diff[2])
+    nz = np.tile(range(min_xyz[2], max_xyz[2], step), diff[0]*diff[1])
+
+    return np.column_stack((nx, ny, nz))
+
+
+def get_qpoint_labels(crystal, qpts):
+    """
+    Gets q-points point labels (e.g. GAMMA, X, L) for the q-points at
+    which the path through reciprocal space changes direction
+
+    Parameters
+    ----------
+    crystal : Crystal
+        The crystal to get high-symmetry labels for
+    qpts : (n_qpts, 3) float ndarray
+        The q-points to get labels for
+
+    Returns
+    -------
+    x_tick_labels : list (int, string) tuples or None
+        Tick labels and the q-point indices that they apply to
+    """
+    xlabels, qpts_with_labels = _recip_space_labels(crystal, qpts)
+    for i, label in enumerate(xlabels):
+        if label == 'GAMMA':
+            xlabels[i] = r'$\Gamma$'
+    if np.all(xlabels == ''):
+        xlabels = np.around(qpts[qpts_with_labels, :], decimals=2)
+    return list(zip(qpts_with_labels, xlabels))
+
+
+def _calc_abscissa(crystal, qpts):
+    """
+    Calculates the distance between q-points (to use as a plot x-coordinate)
+
+    Parameters
+    ----------
+    crystal : Crystal
+        The crystal
+    qpts : (n_qpts, 3) float ndarray
+        The q-points to get the distance between, in reciprocal lattice units
+
+    abscissa : (n_qpts) float Quantity
+        The distance between q-points in 1/crystal.cell_vectors_unit
+    """
+    recip = crystal.reciprocal_cell().to('1/INTERNAL_LENGTH_UNIT').magnitude
+    # Get distance between q-points in each dimension
+    # Note: length is nqpts - 1
+    delta = np.diff(qpts, axis=0)
+
+    # Determine how close delta is to being an integer. As q = q + G where G
+    # is a reciprocal lattice vector based on {1,0,0},{0,1,0},{0,0,1}, this
+    # is used to determine whether 2 q-points are equivalent ie. they differ
+    # by a multiple of the reciprocal lattice vector
+    delta_rem = np.sum(np.abs(delta - np.rint(delta)), axis=1)
+
+    # Create a boolean array that determines whether to calculate the distance
+    # between q-points,taking into account q-point equivalence. If delta is
+    # more than the tolerance, but delta_rem is less than the tolerance, the
+    # q-points differ by G so are equivalent and the distance shouldn't be
+    # calculated
+    TOL = 0.001
+    calc_modq = np.logical_not(np.logical_and(
+        np.sum(np.abs(delta), axis=1) > TOL,
+        delta_rem < TOL))
+
+    # Multiply each delta by the reciprocal lattice to get delta in Cartesian
+    deltaq = np.einsum('ji,kj->ki', recip, delta)
+
+    # Get distance between q-points for all valid pairs of q-points
+    modq = np.zeros(np.size(delta, axis=0))
+    modq[calc_modq] = np.sqrt(np.sum(np.square(deltaq[calc_modq]), axis=1))
+
+    # Prepend initial x axis value of 0
+    abscissa = np.insert(modq, 0, 0.)
+
+    # Do cumulative some to get position along x axis
+    abscissa = np.cumsum(abscissa)
+    return abscissa*ureg('1/INTERNAL_LENGTH_UNIT').to(
+        1/ureg(crystal.cell_vectors_unit))
+
+
+def _recip_space_labels(crystal, qpts, symmetry_labels=True):
+    """
+    Gets q-points point labels (e.g. GAMMA, X, L) for the q-points at
+    which the path through reciprocal space changes direction
+
+    Parameters
+    ----------
+    crystal : Crystal
+        The crystal to get high-symmetry labels for
+    qpts : (n_qpts, 3) float ndarray
+        The q-points to get labels for
+    symmetry_labels : boolean, optional, default True
+        Whether to use high-symmetry point labels (e.g. GAMMA, X, L). Otherwise
+        just uses generic labels (e.g. '0 0 0')
+
+    Returns
+    -------
+    labels : (n_qpts_direction_changed,) string ndarray
+        List of the labels for each q-point at which the path through
+        reciprocal space changes direction
+    qpts_with_labels : (n_qpts_direction_changed,) int ndarray
+        List of the indices of the q-points at which the path through
+        reciprocal space changes direction
+    """
+
+    # First and last q-points should always be labelled
+    if len(qpts) <= 2:
+        qpt_has_label = np.ones(len(qpts), dtype=bool)
+    else:
+        qpt_has_label = np.concatenate(([True], direction_changed(qpts),
+                                        [True]))
+    qpts_with_labels = np.where(qpt_has_label)[0]
+
+    # Get dict of high symmetry point labels to their coordinates for this
+    # space group. If space group can't be determined use a generic dictionary
+    # of fractional points
+    sym_label_to_coords = {}
+    if symmetry_labels:
+        _, atom_num = np.unique(crystal.atom_type, return_inverse=True)
+        cell_vectors = (crystal.cell_vectors.to('angstrom')).magnitude
+        cell = (cell_vectors, crystal.atom_r, atom_num)
+        sym_label_to_coords = seekpath.get_path(cell)["point_coords"]
+    else:
+        sym_label_to_coords = _generic_qpt_labels()
+    # Get labels for each q-point
+    labels = np.array([])
+    for qpt in qpts[qpts_with_labels]:
+        labels = np.append(labels, _get_qpt_label(qpt, sym_label_to_coords))
+
+    return labels, qpts_with_labels
+
+
+def _generic_qpt_labels():
+    """
+    Returns a dictionary relating fractional q-point label strings to their
+    coordinates e.g. '1/4 1/2 1/4' = [0.25, 0.5, 0.25]. Used for labelling
+    q-points when the space group can't be calculated
+    """
+    label_strings = ['0', '1/4', '3/4', '1/2', '1/3', '2/3', '3/8', '5/8']
+    label_coords = [0., 0.25, 0.75, 0.5, 1./3., 2./3., 0.375, 0.625]
+
+    generic_labels = {}
+    for i, s1 in enumerate(label_strings):
+        for j, s2 in enumerate(label_strings):
+            for k, s3 in enumerate(label_strings):
+                key = s1 + ' ' + s2 + ' ' + s3
+                value = [label_coords[i], label_coords[j], label_coords[k]]
+                generic_labels[key] = value
+    return generic_labels
+
+
+def _get_qpt_label(qpt, point_labels):
+    """
+    Gets a label for a particular q-point, based on the high symmetry points
+    of a particular space group. Used for labelling the dispersion plot x-axis
+
+    Parameters
+    ----------
+    qpt : (3,) float ndarray
+        3 dimensional coordinates of a q-point
+    point_labels : dictionary
+        A dictionary with N entries, relating high symmetry point lables (e.g.
+        'GAMMA', 'X'), to their 3-dimensional coordinates (e.g. [0.0, 0.0,
+        0.0]) where N = number of high symmetry points for a particular space
+        group
+
+    Returns
+    -------
+    label : string
+        The label for this q-point. If the q-point isn't a high symmetry point
+        label is just an empty string
+    """
+
+    # Normalise qpt to [0,1]
+    qpt_norm = [x - math.floor(x) for x in qpt]
+
+    # Split dict into keys and values so labels can be looked up by comparing
+    # q-point coordinates with the dict values
+    labels = list(point_labels)
+    # Ensure symmetry points in label_keys and label_values are in the same
+    # order (not guaranteed if using .values() function)
+    label_coords = [point_labels[x] for x in labels]
+
+    # Check for matching symmetry point coordinates (roll q-point coordinates
+    # if no match is found)
+    TOL = 1e-6
+    matching_label_index = np.where((np.isclose(
+        label_coords, qpt_norm, atol=TOL)).all(axis=1))[0]
+    if matching_label_index.size == 0:
+        matching_label_index = np.where((np.isclose(
+            label_coords, np.roll(qpt_norm, 1), atol=TOL)).all(axis=1))[0]
+    if matching_label_index.size == 0:
+        matching_label_index = np.where((np.isclose(
+            label_coords, np.roll(qpt_norm, 2), atol=TOL)).all(axis=1))[0]
+
+    label = ''
+    if matching_label_index.size > 0:
+        label = labels[matching_label_index[0]]
+
+    return label
+
+
 def _bose_factor(x, T):
     """
     Calculate the Bose factor
@@ -180,34 +408,6 @@ def _check_unit(input_unit, *valid_units):
             return True 
     raise ValueError(
         'Invalid unit. Unit should be of type ' + str(valid_units))
-
-
-def get_all_origins(max_xyz, min_xyz=[0, 0, 0], step=1):
-    """
-    Given the max/min number of cells in each direction, get a list of all
-    possible cell origins
-
-    Parameters
-    ----------
-    max_xyz : (3,) int ndarray
-        The number of cells to count to in each direction
-    min_xyz : (3,) int ndarray, optional, default [0,0,0]
-        The cell number to count from in each direction
-    step : integer, optional, default 1
-        The step between cells
-
-    Returns
-    -------
-    origins : (prod(max_xyz - min_xyz)/step, 3) int ndarray
-        The cell origins
-    """
-    diff = np.absolute(np.subtract(max_xyz, min_xyz))
-    nx = np.repeat(range(min_xyz[0], max_xyz[0], step), diff[1]*diff[2])
-    ny = np.repeat(np.tile(range(min_xyz[1], max_xyz[1], step), diff[0]),
-                   diff[2])
-    nz = np.tile(range(min_xyz[2], max_xyz[2], step), diff[0]*diff[1])
-
-    return np.column_stack((nx, ny, nz))
 
 
 def _ensure_contiguous_attrs(obj, required_attrs, opt_attrs=[]):
