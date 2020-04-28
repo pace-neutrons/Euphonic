@@ -15,7 +15,7 @@ from euphonic.util import (gaussian_2d, is_gamma, get_qpoint_labels,
                            _calc_abscissa)
 
 
-def plot_dispersion(phonons, title='', btol=10.0, **line_kwargs):
+def plot_dispersion(phonons, btol=10.0, *args, **kwargs):
     """
     Creates a Matplotlib figure displaying phonon dispersion from a
     QpointPhononModes object
@@ -27,28 +27,28 @@ def plot_dispersion(phonons, title='', btol=10.0, **line_kwargs):
         Determines the limit for plotting sections of reciprocal space on
         different subplots, as a fraction of the median distance between
         q-points. Default: 10.0
-    **line_kwargs : Line2D properties, optional
-        Used in the axes.plot command to specify properties like linewidth,
-        linestyle
+    *args
+        Get passed to plot_1d
+    **kwargs
+        Get passed to plot_1d
     """
     qpts = phonons.qpts
-
     abscissa = _calc_abscissa(phonons.crystal, qpts)
     spectra = []
     x_tick_labels = get_qpoint_labels(phonons.crystal, qpts)
-    # If there is LO-TO splitting, plot in sections
-#    qpts = phonons.qpts[ibreak[i]:ibreak[i + 1]]
-#    gamma_i = np.where(is_gamma(qpts))[0] + ibreak[i]
-#    diff = np.diff(gamma_i)
-#    adjacent_gamma_i = np.where(diff == 1)[0]
-#    idx = np.concatenate(([0], gamma_i[adjacent_gamma_i] + 1, [len(qpts)]))
     for i in range(len(phonons._frequencies[0])):
-        spectra.append(Spectrum1D(abscissa, phonons.frequencies[:, i], x_tick_labels=x_tick_labels))
+        spectra.append(Spectrum1D(abscissa, phonons.frequencies[:, i],
+                       x_tick_labels=x_tick_labels))
+    # If there is LO-TO splitting, plot in sections
+    gamma_i = np.where(is_gamma(qpts))[0]
+    diff = np.diff(gamma_i)
+    idx = gamma_i[np.where(diff == 1)[0]] + 1  # Find idx of adjacent gamma pts
 
-    return plot_1d(spectra, btol=btol)
+    return plot_1d(spectra, btol=btol, _split_line_x_idx=idx, *args, **kwargs)
+
 
 def plot_1d(spectra, title='', x_label='', y_label='', y_min=None, btol=None,
-            **line_kwargs):
+            _split_line_x_idx=np.array([], dtype=np.int32), **line_kwargs):
     """
     Creates a Matplotlib figure for a Spectrum1D object, or multiple Spectrum1D
     objects to be plotted on the same axes
@@ -57,7 +57,7 @@ def plot_1d(spectra, title='', x_label='', y_label='', y_min=None, btol=None,
     ----------
     spectra : Spectrum1D Object or list of Spectrum1D Objects
         Containing the 1D data to plot. Note only the x_tick_labels in the first
-        specrum in the list will be used
+        spectrum in the list will be used
     title : string, default ''
         Plot title
     x_label : string, default ''
@@ -94,17 +94,27 @@ def plot_1d(spectra, title='', x_label='', y_label='', y_min=None, btol=None,
 
     subplots[0].set_ylabel(y_label)
     subplots[0].set_xlabel(x_label)
+    x_unit = spectra[0].x_data_unit
+    y_unit = spectra[0].y_data_unit
     for i, ax in enumerate(subplots):
         _set_x_tick_labels(ax, spectra[0].x_tick_labels, spectra[0].x_data)
         ax.set_xlim(left=spectra[0].x_data[ibreak[i]].magnitude,
                     right=spectra[0].x_data[ibreak[i + 1] - 1].magnitude)
         for spectrum in spectra:
-            plot_x = spectrum._get_bin_centres('x').magnitude
-            ax.plot(plot_x, spectrum.y_data.magnitude, lw=1.0, **line_kwargs)
-
+            plot_x = spectrum._get_bin_centres('x').to(x_unit).magnitude
+            plot_y = spectrum.y_data.to(y_unit).magnitude
+            # Don't join points where _split_line_x_idx has been defined
+            idx = np.concatenate(([0], _split_line_x_idx, [len(plot_x)]))
+            for j in range(len(idx) - 1):
+                # Ensure data from same spectrum is the same colour
+                if j == 0:
+                    color = None
+                else:
+                    color = p[-1].get_color()
+                p = ax.plot(plot_x[idx[j]:idx[j+1]], plot_y[idx[j]:idx[j+1]],
+                            color=color, **line_kwargs)
     if y_min is not None:
         ax.set_ylim(bottom=y_min)  # Need to set limits after plotting the data
-
     fig.suptitle(title)
     plt.tight_layout()
 
@@ -212,6 +222,7 @@ def plot_2d(spectrum, vmin=None, vmax=None, ratio=None, x_width=0, y_width=0,
     fig.suptitle(title)
 
     return fig, ims
+
 
 def _set_x_tick_labels(ax, x_tick_labels, x_data):
     if x_tick_labels is not None:

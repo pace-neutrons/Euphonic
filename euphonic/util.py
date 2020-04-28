@@ -261,8 +261,10 @@ def _recip_space_labels(crystal, qpts, symmetry_labels=True):
     if len(qpts) <= 2:
         qpt_has_label = np.ones(len(qpts), dtype=bool)
     else:
-        qpt_has_label = np.concatenate(([True], direction_changed(qpts),
-                                        [True]))
+        qpt_has_label = np.concatenate((
+            [True],
+            np.logical_or(direction_changed(qpts), is_gamma(qpts[1:-1])),
+            [True]))
     qpts_with_labels = np.where(qpt_has_label)[0]
 
     # Get dict of high symmetry point labels to their coordinates for this
