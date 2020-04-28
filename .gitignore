@@ -7,8 +7,10 @@ euphonic.egg-info/
 .tox
 tests_and_analysis/test/reports/
 tests_and_analysis/static_code_analysis/reports/
+tests_and_analysis/performance_benchmarking/reports/
 .coverage
 *.pyd
 *.log
 *.err
 *.so
+venv
