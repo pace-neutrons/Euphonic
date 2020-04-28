@@ -61,8 +61,6 @@ def plot_dispersion(phonons, title='', btol=10.0, **line_kwargs):
             n_sections = 1
 
         if n_sections > 1:
-            #section_edges = np.concatenate(
-            #    ([imin[i]], section_i, [imax[i] + 1]))
             section_edges = np.concatenate(
                 ([ibreak[i]], section_i, [ibreak[i + 1]]))
             for n in range(n_sections):
@@ -118,10 +116,7 @@ def plot_1d(spectra, title='', x_label='', y_label='', y_min=None,
     ax.minorticks_on()
 
     for spectrum in spectra:
-        plot_x = spectrum.x_data.magnitude
-        if len(spectrum.x_data) == len(spectrum.y_data) + 1:
-            # Calculate bin centres
-            plot_x = plot_x[:-1] + 0.5*np.diff(plot_x)
+        plot_x = spectrum._get_bin_centres('x').magnitude
         ax.plot(plot_x, spectrum.y_data.magnitude, lw=1.0, **line_kwargs)
 
     if y_min is not None:
@@ -172,12 +167,8 @@ def plot_2d(spectrum, vmin=None, vmax=None, ratio=None, x_width=0, y_width=0,
         access to some attributes/functions
     """
 
-    y_bins = spectrum.y_data.magnitude
-    x_bins = spectrum.x_data.magnitude
-    if len(spectrum.x_data) == len(spectrum.z_data):
-        # Calculate xbin edges
-        x_bins = np.concatenate(
-            ([x_bins[0]], (x_bins[1:] + x_bins[:-1])/2, [x_bins[-1]]))
+    x_bins = spectrum._get_bin_edges('x').magnitude
+    y_bins = spectrum._get_bin_edges('y').magnitude
     # Apply broadening
     if y_width or x_width:
         # If no width has been set, make widths small enough to have
@@ -251,7 +242,7 @@ def _set_x_tick_labels(ax, x_tick_labels, x_data):
 def _get_gridspec_kw(x_data, btol):
     """
     Creates a dictionary of gridspec_kw to be passed to
-    matplotlib.pyplot.subplots, describin
+    matplotlib.pyplot.subplots
 
     Parameters
     ----------

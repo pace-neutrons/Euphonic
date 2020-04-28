@@ -8,7 +8,7 @@ import numpy as np
 import numpy.testing as npt
 import pytest
 from matplotlib import figure
-from euphonic import ureg, Crystal
+from euphonic import ureg, Crystal, Spectrum1D
 from euphonic.util import (_calc_abscissa, _recip_space_labels,
                            _generic_qpt_labels, _get_qpt_label)
 from euphonic.plot import plot_1d, plot_dispersion
@@ -254,7 +254,7 @@ class TestPlotDos(unittest.TestCase):
              8.58, 8.78, 8.98, 9.18, 9.38, 9.58, 9.78, 9.98,
              10.18, 10.38, 10.58, 10.78, 10.98, 11.18, 11.38, 11.58,
              11.78, 11.98, 12.18, 12.38, 12.58, 12.78])*ureg('E_h')
-        self.dos = dos
+        self.dos = Spectrum1D(dos.x_data, dos.y_data)
         self.title = 'Iron'
 
         # Results
