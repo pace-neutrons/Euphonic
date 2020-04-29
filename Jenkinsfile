@@ -153,6 +153,7 @@ pipeline {
                                     conda config --append channels free &&
                                     conda activate py &&
                                     python -m pip install -r tests_and_analysis/tox_requirements.txt
+                                    python -m pip install -r tests_and_analysis/jenkins_requirements.txt
                                     python -m pip install -e '.[matplotlib,phonopy_reader]'
                                     python tests_and_analysis/static_code_analysis/run_analysis.py
                                 """
