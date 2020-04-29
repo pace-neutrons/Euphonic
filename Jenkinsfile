@@ -152,12 +152,10 @@ pipeline {
                                     module load conda/3 &&
                                     conda config --append channels free &&
                                     conda activate py &&
+                                    python -m pip install -r tests_and_analysis/jenkins_requirements.txt
+                                    python -m pip install -r tests_and_analysis/tox_requirements.txt
                                     python tests_and_analysis/static_code_analysis/run_analysis.py
                                 """
-                                script {
-                                    def pylint_issues = scanForIssues tool: pyLint(pattern: "tests_and_analysis/static_code_analysis/reports/pylint_output.txt")
-                                    publishIssues issues: [pylint_issues]
-                                }
                             }
                         }
                     }
@@ -168,6 +166,11 @@ pipeline {
                             junit 'tests_and_analysis/test/reports/junit_report*.xml'
                         
                             publishCoverage adapters: [coberturaAdapter('tests_and_analysis/test/reports/coverage.xml')]
+
+                            script {
+                                def pylint_issues = scanForIssues tool: pyLint(pattern: "tests_and_analysis/static_code_analysis/reports/pylint_output.txt")
+                                publishIssues issues: [pylint_issues]
+                            }
                         }
 
                         success {
