@@ -69,7 +69,7 @@ if __name__ == "__main__":
     os.chdir(original_cwd)
 
     # If we have a score lower than the threshold fail the linting
-    threshold = 7
+    threshold = 6
 
     score = round(run.linter.stats['global_note'], 2)
 
