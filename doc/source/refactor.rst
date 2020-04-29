@@ -16,11 +16,13 @@ are:
   top-level import e.g. ``from euphonic import ForceConstants``
 - ``PhononData`` has been renamed to ``QpointPhononModes`` and is now a
   top-level import e.g. ``from euphonic import QpointPhononModes``
+- ``InterpolationData.calculate_fine_phonons`` has been renamed to
+  ``ForceConstants.calculate_qpoint_phonon_modes``
 - LO-TO split frequencies are no longer contained in their own arrays
   (``split_freqs``, ``split_eigenvecs``, ``split_i``), instead gamma-points are
   duplicated in the main ``frequencies`` array
 - ``ForceConstants`` is no longer a subclass of ``QpointPhononModes``. When
-  ``ForceConstants.calculate_fine_phonons`` is called, a new
+  ``ForceConstants.calculate_qpoint_phonon_modes`` is called, a new
   ``QpointPhononModes`` object is returned, rather than writing the frequencies
   into the ``ForceConstants`` object.
 - Some attributes are now pint ``Quantity`` objects to ensure they have the

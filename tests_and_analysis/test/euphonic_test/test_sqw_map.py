@@ -74,7 +74,7 @@ class TestSqwMapForceConstantsLZOSerial(unittest.TestCase):
         pdata = QpointPhononModes.from_castep(self.seedname, path=data_path)
         fc = ForceConstants.from_castep(
             self.seedname, path=self.interpolation_path)
-        self.data = fc.calculate_fine_phonons(pdata.qpts, asr='realspace')
+        self.data = fc.calculate_qpoint_phonon_modes(pdata.qpts, asr='realspace')
         fm = ureg.fm
         self.scattering_lengths = {'La': 8.24*fm, 'Zr': 7.16*fm, 'O': 5.803*fm}
         self.ebins = np.arange(0, 100, 1.)
@@ -138,7 +138,7 @@ class TestSqwMapForceConstantsLZOSerialC(
         pdata = QpointPhononModes.from_castep(self.seedname, path=data_path)
         fc = ForceConstants.from_castep(
             self.seedname, path=self.interpolation_path)
-        self.data = fc.calculate_fine_phonons(
+        self.data = fc.calculate_qpoint_phonon_modes(
             pdata.qpts, asr='realspace', use_c=True,
             fall_back_on_python=False)
         fm = ureg.fm
@@ -156,7 +156,7 @@ class TestSqwMapForceConstantsLZOParallelC(
         pdata = QpointPhononModes.from_castep(self.seedname, path=data_path)
         fc = ForceConstants.from_castep(
             self.seedname, path=self.interpolation_path)
-        self.data = fc.calculate_fine_phonons(
+        self.data = fc.calculate_qpoint_phonon_modes(
             pdata.qpts, asr='realspace', use_c=True,
             n_threads=2, fall_back_on_python=False)
         fm = ureg.fm

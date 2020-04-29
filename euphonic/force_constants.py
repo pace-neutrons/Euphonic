@@ -110,7 +110,7 @@ class ForceConstants(object):
         else:
             return None
 
-    def calculate_fine_phonons(
+    def calculate_qpoint_phonon_modes(
         self, qpts, asr=None, precondition=False, dipole=True,
         eta_scale=1.0, splitting=True, insert_gamma=False, reduce_qpts=True,
         use_c=False, n_threads=1, fall_back_on_python=True):

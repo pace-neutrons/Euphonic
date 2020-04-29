@@ -279,16 +279,16 @@ class TestInterpolatePhononsNaCl(unittest.TestCase):
         self.expctd_data = expctd_data
         self.fc = ForceConstants.from_phonopy(path=self.path)
 
-    def test_calculate_fine_phonons_dipole_no_asr(self):
-        idata = self.fc.calculate_fine_phonons(
+    def test_calculate_qpoint_phonon_modes_dipole_no_asr(self):
+        idata = self.fc.calculate_qpoint_phonon_modes(
             self.qpts, dipole=True, splitting=False, asr=None)
         npt.assert_allclose(
             idata.frequencies.to('hartree').magnitude,
             self.expctd_data.freqs_dipole_no_asr.to('hartree').magnitude,
             atol=1e-8)
 
-    def test_calculate_fine_phonons_dipole_no_asr_c(self):
-        idata = self.fc.calculate_fine_phonons(
+    def test_calculate_qpoint_phonon_modes_dipole_no_asr_c(self):
+        idata = self.fc.calculate_qpoint_phonon_modes(
             self.qpts, dipole=True, splitting=False, asr=None, use_c=True,
             fall_back_on_python=False)
         npt.assert_allclose(
@@ -296,8 +296,8 @@ class TestInterpolatePhononsNaCl(unittest.TestCase):
             self.expctd_data.freqs_dipole_no_asr.to('hartree').magnitude,
             atol=1e-8)
 
-    def test_calculate_fine_phonons_dipole_no_asr_c_2threads(self):
-        idata = self.fc.calculate_fine_phonons(
+    def test_calculate_qpoint_phonon_modes_dipole_no_asr_c_2threads(self):
+        idata = self.fc.calculate_qpoint_phonon_modes(
             self.qpts, dipole=True, splitting=False, use_c=True,
             fall_back_on_python=False, n_threads=2)
         npt.assert_allclose(
@@ -305,16 +305,16 @@ class TestInterpolatePhononsNaCl(unittest.TestCase):
             self.expctd_data.freqs_dipole_no_asr.to('hartree').magnitude,
             atol=1e-8)
 
-    def test_calculate_fine_phonons_dipole_recip_asr(self):
-        idata = self.fc.calculate_fine_phonons(
+    def test_calculate_qpoint_phonon_modes_dipole_recip_asr(self):
+        idata = self.fc.calculate_qpoint_phonon_modes(
             self.qpts, dipole=True, splitting=False, asr='reciprocal')
         npt.assert_allclose(
             idata.frequencies.to('hartree').magnitude,
             self.expctd_data.freqs_dipole_recip_asr.to('hartree').magnitude,
             atol=1e-8)
 
-    def test_calculate_fine_phonons_dipole_recip_asr_c(self):
-        idata = self.fc.calculate_fine_phonons(
+    def test_calculate_qpoint_phonon_modes_dipole_recip_asr_c(self):
+        idata = self.fc.calculate_qpoint_phonon_modes(
             self.qpts, dipole=True, splitting=False, asr='reciprocal',
             use_c=True, fall_back_on_python=False)
         npt.assert_allclose(
@@ -322,8 +322,8 @@ class TestInterpolatePhononsNaCl(unittest.TestCase):
             self.expctd_data.freqs_dipole_recip_asr.to('hartree').magnitude,
             atol=1e-8)
 
-    def test_calculate_fine_phonons_dipole_recip_asr_c_2threads(self):
-        idata = self.fc.calculate_fine_phonons(
+    def test_calculate_qpoint_phonon_modes_dipole_recip_asr_c_2threads(self):
+        idata = self.fc.calculate_qpoint_phonon_modes(
             self.qpts, dipole=True, splitting=False, asr='reciprocal',
             use_c=True, fall_back_on_python=False, n_threads=2)
         npt.assert_allclose(
@@ -331,16 +331,16 @@ class TestInterpolatePhononsNaCl(unittest.TestCase):
             self.expctd_data.freqs_dipole_recip_asr.to('hartree').magnitude,
             atol=1e-8)
 
-    def test_calculate_fine_phonons_dipole_realsp_asr(self):
-        idata = self.fc.calculate_fine_phonons(
+    def test_calculate_qpoint_phonon_modes_dipole_realsp_asr(self):
+        idata = self.fc.calculate_qpoint_phonon_modes(
             self.qpts, dipole=True, splitting=False, asr='realspace')
         npt.assert_allclose(
             idata.frequencies.to('hartree').magnitude,
             self.expctd_data.freqs_dipole_realsp_asr.to('hartree').magnitude,
             atol=1e-8)
 
-    def test_calculate_fine_phonons_dipole_realsp_asr_c(self):
-        idata = self.fc.calculate_fine_phonons(
+    def test_calculate_qpoint_phonon_modes_dipole_realsp_asr_c(self):
+        idata = self.fc.calculate_qpoint_phonon_modes(
             self.qpts, dipole=True, splitting=False, asr='realspace',
             use_c=True, fall_back_on_python=False)
         npt.assert_allclose(
@@ -348,8 +348,8 @@ class TestInterpolatePhononsNaCl(unittest.TestCase):
             self.expctd_data.freqs_dipole_realsp_asr.to('hartree').magnitude,
             atol=1e-8)
 
-    def test_calculate_fine_phonons_dipole_realsp_asr_c_2threads(self):
-        idata = self.fc.calculate_fine_phonons(
+    def test_calculate_qpoint_phonon_modes_dipole_realsp_asr_c_2threads(self):
+        idata = self.fc.calculate_qpoint_phonon_modes(
             self.qpts, dipole=True, splitting=False, asr='realspace',
             use_c=True, fall_back_on_python=False, n_threads=2)
         npt.assert_allclose(

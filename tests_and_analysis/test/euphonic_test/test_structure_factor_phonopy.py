@@ -79,12 +79,12 @@ class TestStructureFactorForceConstantsNaClSerial(unittest.TestCase):
 
         fc = ForceConstants.from_phonopy(
             path=self.interpolation_path, summary_name='phonopy.yaml')
-        self.idata = fc.calculate_fine_phonons(qpts, asr='reciprocal')
+        self.idata = fc.calculate_qpoint_phonon_modes(qpts, asr='reciprocal')
 
         # ForceConstants object for DW grid
         dw_fc = ForceConstants.from_phonopy(
             path=self.interpolation_path, summary_name='phonopy.yaml')
-        self.dw_idata = dw_fc.calculate_fine_phonons(
+        self.dw_idata = dw_fc.calculate_qpoint_phonon_modes(
             np.loadtxt(os.path.join(get_data_path(), 'qgrid_444.txt')),
             asr='reciprocal')
 
@@ -282,13 +282,13 @@ class TestStructureFactorForceConstantsNaClSerialC(TestStructureFactorForceConst
 
         fc = ForceConstants.from_phonopy(
             path=self.interpolation_path, summary_name='phonopy.yaml')
-        self.idata = fc.calculate_fine_phonons(
+        self.idata = fc.calculate_qpoint_phonon_modes(
             qpts, asr='reciprocal', use_c=True, fall_back_on_python=False)
 
         # ForceConstants object for DW grid
         dw_fc = ForceConstants.from_phonopy(
             path=self.interpolation_path, summary_name='phonopy.yaml')
-        self.dw_idata = dw_fc.calculate_fine_phonons(
+        self.dw_idata = dw_fc.calculate_qpoint_phonon_modes(
             np.loadtxt(os.path.join(get_data_path(), 'qgrid_444.txt')),
             asr='reciprocal', use_c=True, fall_back_on_python=False)
 
@@ -317,14 +317,14 @@ class TestStructureFactorForceConstantsNaClParallelC(TestStructureFactorForceCon
 
         fc = ForceConstants.from_phonopy(
             path=self.interpolation_path, summary_name='phonopy.yaml')
-        self.idata = fc.calculate_fine_phonons(
+        self.idata = fc.calculate_qpoint_phonon_modes(
             qpts, asr='reciprocal', use_c=True, fall_back_on_python=False,
             n_threads=2)
 
         # ForceConstants object for DW grid
         dw_fc = ForceConstants.from_phonopy(
             path=self.interpolation_path, summary_name='phonopy.yaml')
-        self.dw_idata = dw_fc.calculate_fine_phonons(
+        self.dw_idata = dw_fc.calculate_qpoint_phonon_modes(
             np.loadtxt(os.path.join(get_data_path(), 'qgrid_444.txt')),
             asr='reciprocal', use_c=True, fall_back_on_python=False,
             n_threads=2)
