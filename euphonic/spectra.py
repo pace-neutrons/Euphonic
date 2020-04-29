@@ -1,5 +1,8 @@
+from copy import deepcopy
 import numpy as np
+from scipy import signal
 from euphonic import ureg
+from euphonic.util import _distribution_1d, _distribution_2d
 
 class Spectrum1D(object):
     """
@@ -28,6 +31,31 @@ class Spectrum1D(object):
     def y_data(self):
         return self._y_data*ureg(self._internal_y_data_unit).to(
             self.y_data_unit)
+
+    def broaden(self, x_width, shape='gauss'):
+        """
+        Broaden y_data and return a new broadened Spectrum1D object
+
+        Parameters
+        ----------
+        x_width : float Quantity
+            The broadening FWHM
+        shape : string, optional, default 'gauss'
+            The broadening shape, can be 'gauss' or 'lorentz'
+
+        Returns
+        -------
+        broadened_spectrum : Spectrum1D
+            A new Spectrum1D object with broadened y_data
+        """
+        broadening = _distribution_1d(self._get_bin_centres().magnitude,
+                                      x_width.to(self.x_data_unit).magnitude,
+                                      shape=shape)
+        y_broadened = signal.fftconvolve(
+            self.y_data.magnitude, broadening, mode='same')*ureg(
+                self.y_data_unit)
+        return Spectrum1D(
+            np.copy(self.x_data), y_broadened, deepcopy((self.x_tick_labels)))
 
     def _set_data(self, data, attr_name):
         if isinstance(data, np.ndarray):
@@ -86,6 +114,41 @@ class Spectrum2D(Spectrum1D):
     def z_data(self):
         return self._z_data*ureg(self._internal_z_data_unit).to(
             self.z_data_unit)
+
+    def broaden(self, x_width=None, y_width=None, shape='gauss'):
+        """
+        Broaden z_data and return a new broadened Spectrum2D object
+
+        Parameters
+        ----------
+        x_width : float Quantity, optional, default None
+            The broadening FWHM in x
+        y_width : float Quantity, optional, default None
+            The broadening FWHM in y
+        shape : string, optional, default 'gauss'
+            The broadening shape, can be 'gauss' or 'lorentz'
+
+        Returns
+        -------
+        broadened_spectrum : Spectrum2D
+            A new Spectrum2D object with broadened z_data
+        """
+        # If no width has been set, make widths small enough to have
+        # effectively no broadening
+        if x_width is None:
+            x_width = 0.1*(self.x_data[1] - self.x_data[0])
+        if y_width is None:
+            y_width = 0.1*(self.y_data[1] - self.y_data[0])
+        broadening = _distribution_2d(self._get_bin_centres('x').magnitude,
+                                      self._get_bin_centres('y').magnitude,
+                                      x_width.to(self.x_data_unit).magnitude,
+                                      y_width.to(self.y_data_unit).magnitude,
+                                      shape=shape)
+        z_broadened = signal.fftconvolve(
+            self.z_data.magnitude, np.transpose(broadening), mode='same')*ureg(
+                self.z_data_unit)
+        return Spectrum2D(np.copy(self.x_data), np.copy(self.y_data),
+                          z_broadened, deepcopy((self.x_tick_labels)))
 
     def _is_bin_edge(self, bin_ax, data_ax='z'):
         return super()._is_bin_edge(bin_ax, data_ax)

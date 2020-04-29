@@ -45,60 +45,6 @@ def is_gamma(qpt):
     return isgamma
 
 
-def gaussian(x, sigma):
-    return np.exp(-np.square(x)/(2*sigma**2))/(math.sqrt(2*math.pi)*sigma)
-
-
-def lorentzian(x, gamma):
-    return gamma/(2*math.pi*(np.square(x) + (gamma/2)**2))
-
-
-def gaussian_2d(xbins, ybins, xwidth, ywidth, extent=6.0):
-    """
-    Calculate a 2D Gaussian probability density, with independent standard
-    deviations in x and y
-
-    Parameters
-    ----------
-    xbins : (xbins,) float ndarray
-        Bin edges in x
-    ybins : (ybins,) float ndarray
-        Bin edges in y
-    xwidth : float
-        The FWHM in x of the Gaussian function
-    ywidth : float
-        The FWHM in y of the Gaussian function
-    extent : float
-        How far out to calculate the Gaussian, in standard deviations
-
-    Returns
-    -------
-    gauss : (nxbins, nybins) float ndarray
-        Gaussian probability density
-    """
-    xbin_width = np.mean(np.diff(xbins))
-    ybin_width = np.mean(np.diff(ybins))
-
-    # Gauss FWHM = 2*sigma*sqrt(2*ln2)
-    xsigma = xwidth/(2*math.sqrt(2*math.log(2)))
-    ysigma = ywidth/(2*math.sqrt(2*math.log(2)))
-
-    # Ensure nbins is always odd, and each bin has the same approx width as
-    # original x/ybins
-    nxbins = int(np.ceil(2*extent*xsigma/xbin_width)/2)*2 + 1
-    nybins = int(np.ceil(2*extent*ysigma/ybin_width)/2)*2 + 1
-    x = np.linspace(-extent*xsigma, extent*xsigma, nxbins)
-    y = np.linspace(-extent*ysigma, extent*ysigma, nybins)
-
-    xgrid = np.tile(x, (len(y), 1))
-    ygrid = np.transpose(np.tile(y, (len(x), 1)))
-
-    gauss = gaussian(xgrid, xsigma)*gaussian(ygrid, ysigma)
-    gauss = gauss/np.sum(gauss) # Naively normalise
-
-    return gauss
-
-
 def mp_grid(grid):
     """
     Returns the q-points on a MxNxL Monkhorst-Pack grid specified by grid
@@ -378,6 +324,88 @@ def _bose_factor(x, T):
     if T > 0:
         bose = bose + 1/(np.exp(np.absolute(x)/(kB*T)) - 1)
     return bose
+
+
+def _gaussian(x, sigma):
+    return np.exp(-np.square(x)/(2*sigma**2))/(math.sqrt(2*math.pi)*sigma)
+
+
+def _lorentzian(x, gamma):
+    return gamma/(2*math.pi*(np.square(x) + (gamma/2)**2))
+
+
+def _get_dist_bins(bins, fwhm, extent):
+    # Ensure nbins is always odd, and each bin has the same approx width as
+    # original x/ybins
+    bin_width = np.mean(np.diff(bins))
+    nbins = int(np.ceil(2*extent*fwhm/bin_width)/2)*2 + 1
+    width = extent*fwhm
+    # Prevent xbins from being too large. If user accidentally selects a very
+    # large broadening, xwidth and therefore xbins could be extremely large. But
+    # for most cases the original nxbins should be smaller
+    if nbins > len(bins):
+        nbins = int(len(bins)/2)*2 + 1
+        width = (bins[-1] - bins[0])/2
+    return np.linspace(-width, width, nbins)
+
+
+def _distribution_1d(xbins, xwidth, shape='gauss', extent=3.0):
+    x = _get_dist_bins(xbins, xwidth, extent)
+    if shape == 'gauss':
+        # Gauss FWHM = 2*sigma*sqrt(2*ln2)
+        xsigma = xwidth/(2*math.sqrt(2*math.log(2)))
+        dist = _gaussian(x, xsigma)
+    elif shape == 'lorentz':
+        dist = _lorentzian(x, xwidth)
+    else:
+        raise Exception(f'Distribution shape \'{shape}\' not recognised')
+    dist = dist/np.sum(dist) # Naively normalise
+    return dist
+
+
+def _distribution_2d(xbins, ybins, xwidth, ywidth, shape='gauss', extent=3.0):
+    """
+    Calculate a 2D Gaussian probability density, with independent standard
+    deviations in x and y
+
+    Parameters
+    ----------
+    xbins : (xbins,) float ndarray
+        Bin edges in x
+    ybins : (ybins,) float ndarray
+        Bin edges in y
+    xwidth : float
+        The FWHM in x of the Gaussian function
+    ywidth : float
+        The FWHM in y of the Gaussian function
+    extent : float
+        How far out to calculate the Gaussian, in standard deviations
+
+    Returns
+    -------
+    gauss : (nxbins, nybins) float ndarray
+        Gaussian probability density
+    """
+    x = _get_dist_bins(xbins, xwidth, extent)
+    y = _get_dist_bins(ybins, ywidth, extent)
+
+    if shape == 'gauss':
+        # Gauss FWHM = 2*sigma*sqrt(2*ln2)
+        xsigma = xwidth/(2*math.sqrt(2*math.log(2)))
+        ysigma = ywidth/(2*math.sqrt(2*math.log(2)))
+        xdist = _gaussian(x, xsigma)
+        ydist = _gaussian(y, ysigma)
+    elif shape == 'lorentz':
+        xdist = _lorentzian(x, xwidth)
+        ydist = _lorentzian(y, ywidth)
+    else:
+        raise Exception(f'Distribution shape \'{shape}\' not recognised')
+    xgrid = np.tile(xdist, (len(ydist), 1))
+    ygrid = np.transpose(np.tile(ydist, (len(xdist), 1)))
+    dist = xgrid*ygrid
+    dist = dist/np.sum(dist) # Naively normalise
+
+    return dist
 
 
 def _check_unit(input_unit, *valid_units):

@@ -28,6 +28,12 @@ are:
 - All objects have ``from_dict`` methods
 - New objects have been created to store data, rather than being stored as
   arrays in the ForceConstants or QPointPhononModes objects. This includes
-  ``DebyeWaller``, ``StructureFactor``
+  ``DebyeWaller`` and ``StructureFactor``
+- Density of states, and S(Q,w) are now stored in generic ``Spectrum1D`` and
+  ``Spectrum2D`` objects respectively
+- Any broadening is now performed by the ``SpectrumND`` objects and returns a
+  new, broadened ``SpectrumND`` object
+- DOS and S(Q,w) plotting is now done by generic ``plot_1d`` and ``plot_2d``
+  functions
 - ``BandsData`` and the ability to read CASTEP .bands files has been removed.
   This will be implemented in another project. Get in contact for details.

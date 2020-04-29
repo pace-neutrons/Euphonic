@@ -6,7 +6,7 @@ from euphonic.spectra import Spectrum1D
 from euphonic.debye_waller import DebyeWaller
 from euphonic.structure_factor import StructureFactor
 from euphonic.util import (direction_changed, _bose_factor, is_gamma,
-                           lorentzian, gaussian)
+                           _lorentzian, _gaussian)
 from euphonic.readers import castep
 from euphonic.readers import phonopy
 
@@ -287,20 +287,14 @@ class QpointPhononModes(object):
 
         return DebyeWaller(self.crystal, dw, temperature)
 
-    def calculate_dos(self, dos_bins, gwidth=0*ureg('E_h'), lorentz=False):
+    def calculate_dos(self, dos_bins):
         """
-        Calculates a density of states with fixed width Gaussian/Lorentzian
-        broadening
+        Calculates a density of states
 
         Parameters
         ----------
         dos_bins : (n_ebins + 1,) float Quantity
             The energy bin edges to use for calculating the DOS
-        gwidth : float Quantity, optional, default 0
-            FWHM of Gaussian/Lorentzian for broadening the DOS bins
-        lorentz : boolean, optional
-            Whether to use a Lorentzian or Gaussian broadening function.
-            Default: False
 
         Returns
         -------
@@ -313,40 +307,11 @@ class QpointPhononModes(object):
         dos_bins_unit = dos_bins.units
         dos_bins = dos_bins.to(
             'INTERNAL_ENERGY_UNIT', 'spectroscopy').magnitude
-        gwidth = gwidth.to('INTERNAL_ENERGY_UNIT', 'spectroscopy').magnitude
-
         weights = np.repeat(self.weights[:, np.newaxis],
                             3*self.crystal.n_atoms,
                             axis=1)
         hist, _ = np.histogram(freqs, dos_bins, weights=weights)
-
-        bwidth = np.mean(np.diff(dos_bins))
-        # Only broaden if broadening is more than bin width
-        if gwidth > bwidth:
-            # Calculate broadening for adjacent nbin_broaden bins
-            if lorentz:
-                # 25 * Lorentzian FWHM
-                nbin_broaden = int(math.floor(25.0*gwidth/bwidth))
-                broadening = lorentzian(
-                    np.arange(-nbin_broaden, nbin_broaden)*bwidth, gwidth)
-            else:
-                # 3 * Gaussian FWHM
-                nbin_broaden = int(math.floor(3.0*gwidth/bwidth))
-                sigma = gwidth/(2*math.sqrt(2*math.log(2)))
-                broadening = gaussian(
-                    np.arange(-nbin_broaden, nbin_broaden)*bwidth, sigma)
-
-            if hist.size > 0:
-                # Allow broadening beyond edge of bins
-                dos = np.zeros(len(hist) + 2*nbin_broaden)
-                for i, h in enumerate(hist):
-                    # Broaden each hist bin value to adjacent bins
-                    bhist = h*broadening
-                    dos[i:i+2*nbin_broaden] += bhist
-                # Slice dos array to same size as bins
-                dos = dos[nbin_broaden:-nbin_broaden]
-        else:
-            dos = hist
+        dos = hist
 
         return Spectrum1D(
             dos_bins*ureg('INTERNAL_ENERGY_UNIT').to(dos_bins_unit),

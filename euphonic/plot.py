@@ -11,8 +11,7 @@ except ImportError:
 import numpy as np
 from scipy import signal
 from euphonic import ureg, Spectrum1D
-from euphonic.util import (gaussian_2d, is_gamma, get_qpoint_labels,
-                           _calc_abscissa)
+from euphonic.util import is_gamma, get_qpoint_labels, _calc_abscissa
 
 
 def plot_dispersion(phonons, btol=10.0, *args, **kwargs):
@@ -140,10 +139,6 @@ def plot_2d(spectrum, vmin=None, vmax=None, ratio=None, x_width=0, y_width=0,
         Ratio of the size of the y and x axes. e.g. if ratio is 2, the y-axis
         will be twice as long as the x-axis
         Default: None
-    y_width : float Quantity, optional, default 0
-        The FWHM of the Gaussian resolution function in y
-    x_width : float Quantity, optional, default 0
-        The FWHM of the Gaussian resolution function in x
     cmap : string, optional, default 'viridis'
         Which colormap to use, see Matplotlib docs
     title : string, optional
@@ -164,22 +159,7 @@ def plot_2d(spectrum, vmin=None, vmax=None, ratio=None, x_width=0, y_width=0,
 
     x_bins = spectrum._get_bin_edges('x').magnitude
     y_bins = spectrum._get_bin_edges('y').magnitude
-    # Apply broadening
-    if y_width or x_width:
-        # If no width has been set, make widths small enough to have
-        # effectively no broadening
-        if x_width:
-            x_width = x_width.to(spectrum.x_data_unit).magnitude
-        else:
-            x_width = (x_bins[1] - x_bins[0])/10
-        if y_width:
-            y_width = y_width.to(spectrum.y_data_unit).magnitude
-        else:
-            y_width = (y_bins[1] - y_bins[0])/10
-        z_data = signal.fftconvolve(spectrum.z_data.magnitude, np.transpose(
-            gaussian_2d(x_bins, y_bins, x_width, y_width)), 'same')
-    else:
-        z_data = spectrum.z_data.magnitude
+    z_data = spectrum.z_data.magnitude
 
     if ratio:
         y_max = x_bins[-1]/ratio
