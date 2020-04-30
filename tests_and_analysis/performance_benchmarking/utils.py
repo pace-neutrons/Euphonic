@@ -13,30 +13,6 @@ def get_data_path() -> str:
     return os.path.join(os.path.dirname(__file__), "data")
 
 
-def get_structure_factor_data_file() -> str:
-    """
-    Returns
-    -------
-    str
-        The path to the data files containing benchmark bounding
-        data for the InterpolationData.calculate_structure_factor method
-    """
-    return os.path.join(get_data_path(), "structure_factor_benchmark_data.json")
-
-
-def get_fine_phonon_data_file() -> str:
-    """
-    Returns
-    -------
-    str
-        The path to the data files containing benchmark bounding data
-        for the InterpolationData.calculate_fine_phonons method
-    """
-    return os.path.join(
-        get_data_path(), "fine_phonons_benchmark_data.json"
-    )
-
-
 def get_seednames() -> List[str]:
     """
     Returns
@@ -68,26 +44,4 @@ def get_qpts() -> np.ndarray:
         A numpy array of 100 q-points
     """
     qpts_npy_file = os.path.join(get_data_path(), "qpts_10000.npy")
-    return np.load(qpts_npy_file)
-
-
-def get_structure_factor_num_of_repeats() -> int:
-    """
-    Returns
-    -------
-    int
-        The amount of times to repeat
-        InterpolationData.calculate_structure_factor runs.
-    """
-    return 10
-
-
-def get_fine_phonon_num_of_repeats() -> int:
-    """
-    Returns
-    -------
-    int
-        The amount of times to repeat
-        InterpolationData.calculate_fine_phonons runs.
-    """
-    return 5
+    return np.load(qpts_npy_file)[:10]
