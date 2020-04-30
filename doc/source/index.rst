@@ -15,6 +15,7 @@ Installation
 ============
 Pip
 ---
+
 If you want to do plotting, or read Phonopy files, you will need to install the
 optional ``matplotlib`` and ``phonopy_reader`` extensions:
 
@@ -87,3 +88,12 @@ installed when using the same pip commands as above.
    :maxdepth: 2
 
    tutorials
+
+**Mac OSX**
+
+Requires a brew install of the llvm-clang compiler,
+before running pip install run:
+
+.. code-block:: bash
+
+    brew install llvm
