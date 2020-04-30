@@ -110,8 +110,8 @@ def get_quartz_crystal():
 
 @pytest.fixture(
     params=[
-    # Params: tuple of (Crystal, filetype)
-    (get_quartz_crystal(),'json')],
+        # Params: tuple of (Crystal, filetype)
+        (get_quartz_crystal(),'json')],
     ids=[
         'quartz_to_json'])
 def crystal_to_file(request, tmpdir):

@@ -1,7 +1,8 @@
+import inspect
 import numpy as np
 from euphonic import ureg
 from euphonic.io import _obj_to_json_file, _obj_from_json_file
-from euphonic.util import _check_unit
+from euphonic.util import _check_unit, _check_shapes
 
 
 class Crystal(object):
@@ -38,12 +39,15 @@ class Crystal(object):
         atom_mass : (n_atoms,) float Quantity
             The mass of each atom in the unit cell, in the same order as atom_r
         """
-
+        n_atoms = len(atom_r)
+        _check_shapes([cell_vectors, atom_r, atom_type, atom_mass],
+                      [(3, 3), (n_atoms, 3), (n_atoms,), (n_atoms,)],
+                      inspect.getfullargspec(self.__init__)[0][1:])
         self._cell_vectors = cell_vectors.to(
             ureg.INTERNAL_LENGTH_UNIT).magnitude
-        self.n_atoms = len(atom_r)
-        self.atom_r = np.array(atom_r)
-        self.atom_type = np.array(atom_type)
+        self.n_atoms = n_atoms
+        self.atom_r = atom_r
+        self.atom_type = atom_type
         self._atom_mass = atom_mass.to(ureg.INTERNAL_MASS_UNIT).magnitude
 
         self.cell_vectors_unit = str(cell_vectors.units)

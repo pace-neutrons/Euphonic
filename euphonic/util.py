@@ -440,6 +440,36 @@ def _check_unit(input_unit, *valid_units):
         'Invalid unit. Unit should be of type ' + str(valid_units))
 
 
+def _check_shapes(arrs, shapes, names):
+    """
+    Make sure all the inputs are all arrays with the expected shapes
+
+    Parameters
+    ----------
+    arrs : list of np.ndarrays
+        The arrays to check
+    shapes : list of tuples
+        The expected shape of each array
+    names : list of strings
+        The name of each array
+
+    Raises
+    ------
+    TypeError
+        If one of the items in arrs isn't a np.ndarray
+    ValueError
+        If the array shapes don't match the expected shapes
+    """
+    for arr, shape, name in zip(arrs, shapes, names):
+        try:
+            if not arr.shape == shape:
+                raise ValueError((f'The shape of {name} {arr.shape} doesn\'t '
+                                  f'match the expected shape {shape}'))
+        except AttributeError:
+            raise TypeError((f'The type of {name} {type(arr)} doesn\'t match '
+                             f'the expected type {np.ndarray}'))
+
+
 def _ensure_contiguous_attrs(obj, required_attrs, opt_attrs=[]):
     """
     Make sure all listed attributes of obj are C Contiguous and of the correct
