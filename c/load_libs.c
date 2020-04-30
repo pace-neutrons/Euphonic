@@ -80,8 +80,7 @@ ZheevdFunc get_zheevd(const char *scipy_dir) {
         printf("Glob failed: couldn't find %s\n", buf);
         return NULL;
     }
-    
-    // snprintf(buf, sizeof(buf), "%s/%s", buf, globres.gl_pathv[0]);
+
     lib = dlopen(globres.gl_pathv[0], RTLD_LAZY);
     if (lib == NULL) {
         printf("Could not load lib handle %s. Error: %s\n", globres.gl_pathv[0], dlerror());

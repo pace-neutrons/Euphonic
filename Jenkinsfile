@@ -232,33 +232,6 @@ pipeline {
 
                     }
                 }
-
-                stage("OSX environment") {
-
-                    agent { label "osx" }
-
-                    stages {
-
-                        stage("Notify") {
-                            steps {
-                                setGitHubBuildStatus("pending", "Starting", "OSX")
-                                echo "Branch: ${env.JOB_BASE_NAME}"
-                            }
-                        }
-
-                        stage("Set up") {
-                            steps {
-                                checkout scm
-                                sh """
-                                    module load python/3.6 &&
-                                    python -m pip install conda &&
-                                    conda --version
-                                """
-                            }
-                        }
-
-                    }
-                }
             }
         }
     }
