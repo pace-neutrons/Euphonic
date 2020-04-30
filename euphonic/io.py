@@ -4,13 +4,22 @@ import numpy as np
 
 def _ndarray_to_list(dictionary):
     """
-    For a dictionary, convert all list key values to ndarrays
+    For a dictionary, convert all ndarray key values to lists
     """
     for key, val in dictionary.items():
         if isinstance(val, np.ndarray):
             dictionary[key] = val.tolist()
     return dictionary
 
+
+def _list_to_ndarray(dictionary):
+    """
+    For a dictionary, convert all list key values to ndarrays
+    """
+    for key, val in dictionary.items():
+        if isinstance(val, list):
+            dictionary[key] = np.array(val)
+    return dictionary
 
 def _obj_to_json_file(obj, filename):
     """
@@ -28,4 +37,4 @@ def _obj_from_json_file(cls, filename):
     """
     with open(filename, 'r') as f:
         obj_dict = json.loads(f.read())
-    return cls.from_dict(obj_dict)
+    return cls.from_dict(_list_to_ndarray(obj_dict))
