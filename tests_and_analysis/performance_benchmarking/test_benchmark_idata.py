@@ -1,6 +1,6 @@
 import pytest
 from utils import get_data_path, get_seednames,\
-    get_use_c_and_n_threads, get_qpts
+    get_qpts
 from euphonic.data.interpolation import InterpolationData
 
 
