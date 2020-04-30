@@ -2,7 +2,7 @@
 
 pipeline {
 
-    agent { label "scarf" }
+    agent { label "SCARF" }
 
     triggers {
         cron("* * * * 1")
