@@ -449,11 +449,16 @@ def _check_constructor_inputs(objs, types, shapes, names):
     ----------
     objs : list of objects
         The objects to check
-    types : list of types
-        The expected class of each input
+    types : list of types or lists of types
+        The expected class of each input. If multiple types are accepted, the
+        expected class can be a list of types. e.g.
+        types=[[list, np.ndarray], int]
     shapes : list of tuples
-        The expected shape of each object (if type = np.ndarray), if the object
-        isn't an array, provide an empty tuple ()
+        The expected shape of each object (if the object has a shape attribute)
+        If the shape of some dimensions don't matter, provide -1 for those
+        dimensions, or if none of the dimensions matter, provide an empty tuple
+        (). If multiple shapes are accepted, the expected shapes can be a list
+        of tuples. e.g. shapes=[[(n, 3), (n + 1, 3)], 3]
     names : list of strings
         The name of each array
 
@@ -465,13 +470,28 @@ def _check_constructor_inputs(objs, types, shapes, names):
         If an array shape don't match the expected shape
     """
     for obj, typ, shape, name in zip(objs, types, shapes, names):
-        if not isinstance(obj, typ):
+        if not isinstance(typ, list):
+            typ = [typ]
+        if not any(isinstance(obj, t) for t in typ):
             raise TypeError((f'The type of {name} {type(obj)} doesn\'t match '
-                             f'the expected type {typ}'))
-        if shape:
-            if not obj.shape == shape:
+                             f'the expected type(s) {typ}'))
+        if hasattr(obj, 'shape') and shape:
+            if not isinstance(shape, list):
+                shape = [shape]
+            if not any(obj.shape == _replace_dim(s, obj.shape) for s in shape):
                 raise ValueError((f'The shape of {name} {obj.shape} doesn\'t '
-                                  f'match the expected shape {shape}'))
+                                  f'match the expected shape(s) {shape}'))
+
+
+def _replace_dim(expected_shape, obj_shape):
+    # Allow -1 dimensions to be any size
+    idx = np.where(np.array(expected_shape) == -1)[0]
+    if len(idx) == 0 or len(expected_shape) != len(obj_shape):
+        return expected_shape
+    else:
+        expected_shape = np.array(expected_shape)
+        expected_shape[idx] = np.array(obj_shape)[idx]
+        return tuple(expected_shape)
 
 
 def _ensure_contiguous_attrs(obj, required_attrs, opt_attrs=[]):

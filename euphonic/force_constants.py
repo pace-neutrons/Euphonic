@@ -2,13 +2,14 @@ import math
 import sys
 import warnings
 import numpy as np
+from pint import Quantity
 import scipy
 from scipy.linalg.lapack import zheev
 from scipy.special import erfc
 from euphonic import ureg
 from euphonic.crystal import Crystal
 from euphonic.qpoint_phonon_modes import QpointPhononModes
-from euphonic.util import is_gamma, mp_grid, get_all_origins
+from euphonic.util import is_gamma, get_all_origins, _check_constructor_inputs
 from euphonic.readers import castep
 from euphonic.readers import phonopy
 
@@ -59,18 +60,31 @@ class ForceConstants(object):
             The supercell matrix
         cell_origins : (n_cells_in_sc, 3) int ndarray
             The locations of the unit cells within the supercell
-        born : (n_atoms, 3, 3) float ndarray, optional, default None
+        born : (n_atoms, 3, 3) float Quantity, optional, default None
             The Born charges for each atom
-        dielectric : (3, 3) float ndarray, optional, default None
+        dielectric : (3, 3) float Quantity, optional, default None
             The dielectric permittivity tensor
         """
+        # Check independent inputs first
+        _check_constructor_inputs(
+            [crystal, sc_matrix], [Crystal, np.ndarray], [(), (3, 3)],
+            ['crystal', 'sc_matrix'])
+        n_at = crystal.n_atoms
+        n_sc = int(np.rint(np.absolute(np.linalg.det(sc_matrix))))
+        # Now check other derived input shapes
+        _check_constructor_inputs(
+            [force_constants, cell_origins, born, dielectric],
+            [Quantity, np.ndarray, [Quantity, type(None)],
+                [Quantity, type(None)]],
+            [(n_sc, 3*n_at, 3*n_at), (n_sc, 3), (n_at, 3, 3), (3, 3)],
+            ['force_constants', 'cell_origins', 'born', 'dielectric'])
         self.crystal = crystal
         self._force_constants = force_constants.to(
             'INTERNAL_ENERGY_UNIT/INTERNAL_LENGTH_UNIT**2').magnitude
         self.force_constants_unit = str(force_constants.units)
         self.sc_matrix = sc_matrix
         self.cell_origins = cell_origins
-        self.n_cells_in_sc = len(cell_origins)
+        self.n_cells_in_sc = n_sc
 
         if born is not None:
             self._born = born.to(ureg.INTERNAL_CHARGE_UNIT).magnitude

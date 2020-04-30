@@ -2,7 +2,7 @@ import inspect
 import numpy as np
 from pint import Quantity
 from euphonic import ureg
-from euphonic.io import _obj_to_json_file, _obj_from_json_file
+from euphonic.io import _obj_to_json_file, _obj_from_json_file, _list_to_ndarray
 from euphonic.util import _check_unit, _check_constructor_inputs
 
 
@@ -116,6 +116,7 @@ class Crystal(object):
 
     @classmethod
     def from_dict(cls, d):
+        d = _list_to_ndarray(d)
         mu = d['atom_mass_unit']
         lu = d['cell_vectors_unit']
         return cls(d['cell_vectors']*ureg(lu), d['atom_r'],

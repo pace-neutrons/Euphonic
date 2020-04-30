@@ -1,8 +1,11 @@
 from copy import deepcopy
 import numpy as np
+from pint import Quantity
 from scipy import signal
 from euphonic import ureg
-from euphonic.util import _distribution_1d, _distribution_2d
+from euphonic.util import (_distribution_1d, _distribution_2d,
+                           _check_constructor_inputs)
+
 
 class Spectrum1D(object):
     """
@@ -18,6 +21,15 @@ class Spectrum1D(object):
         index in x_data the label should be applied to
     """
     def __init__(self, x_data, y_data, x_tick_labels=None):
+        _check_constructor_inputs(
+            [y_data, x_tick_labels],
+            [[Quantity, np.ndarray], [list, type(None)]],
+            [(-1,), ()],
+            ['y_data', 'x_tick_labels'])
+        ny = len(y_data)
+        _check_constructor_inputs(
+            [x_data], [[Quantity, np.ndarray]],
+            [[(ny,), (ny+1,)]], ['x_data'])
         self._set_data(x_data, 'x')
         self._set_data(y_data, 'y')
         self.x_tick_labels = x_tick_labels
@@ -98,8 +110,9 @@ class Spectrum2D(Spectrum1D):
     x_data : (n_x_data,) or (n_x_data + 1,) float Quantity
         The x_data points (if size (n_x_data,)) or x_data bin edges (if
         size (n_x_data + 1,))
-    y_data : (n_y_data + 1,) float Quantity
-        The y_data bin edges
+    y_data : (n_y_data,) or (n_y_data + 1,) float Quantity
+        The y_data bin points (if size (n_y_data,)) or y_data bin edges (if
+        size (n_y_data + 1,))
     z_data : (n_x_data, n_y_data) float Quantity
         The plot data in z
     x_tick_labels : list (int, string) tuples or None
@@ -107,7 +120,21 @@ class Spectrum2D(Spectrum1D):
         index in x_data the label should be applied to
     """
     def __init__(self, x_data, y_data, z_data, x_tick_labels=None):
-        super().__init__(x_data, y_data, x_tick_labels)
+        _check_constructor_inputs(
+            [z_data, x_tick_labels],
+            [[Quantity, np.ndarray], [list, type(None)]],
+            [(-1, -1), ()],
+            ['z_data', 'x_tick_labels'])
+        nx = z_data.shape[0]
+        ny = z_data.shape[1]
+        _check_constructor_inputs(
+            [x_data, y_data],
+            [[Quantity, np.ndarray], [Quantity, np.ndarray]],
+            [[(nx,), (nx + 1,)], [(ny,), (ny + 1,)]],
+            ['x_data', 'y_data'])
+        self._set_data(x_data, 'x')
+        self._set_data(y_data, 'y')
+        self.x_tick_labels = x_tick_labels
         self._set_data(z_data, 'z')
 
     @property

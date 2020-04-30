@@ -1,6 +1,8 @@
 import numpy as np
-from euphonic import ureg, Spectrum2D
-from euphonic.util import get_qpoint_labels, _calc_abscissa, _bose_factor
+from pint import Quantity
+from euphonic import ureg, Crystal, Spectrum2D
+from euphonic.util import (get_qpoint_labels, _calc_abscissa, _bose_factor,
+                           _check_constructor_inputs)
 
 class StructureFactor(object):
     """
@@ -19,9 +21,9 @@ class StructureFactor(object):
     structure_factors : (n_qpts, 3*crystal.n_atoms) float Quantity
         Structure factor per q-point and mode
     temperature : float Quantity or None
-        The temperature used to calculate any temperature-dependent parts of the
-        structure factor (e.g. Debye-Waller, Bose population factor). None if
-        no temperature-dependent effects have been applied
+        The temperature used to calculate any temperature-dependent parts of
+        the structure factor (e.g. Debye-Waller, Bose population factor). None
+        if no temperature-dependent effects have been applied
     """
 
     def __init__(self, crystal, qpts, frequencies, structure_factors,
@@ -38,7 +40,21 @@ class StructureFactor(object):
             Phonon frequencies per q-point and mode
         structure_factors: (n_qpts, 3*crystal.n_atoms) float Quantity
             Structure factor per q-point and mode
+        temperature : float Quantity or None
+            The temperature used to calculate any temperature-dependent parts
+            of the structure factor (e.g. Debye-Waller, Bose population factor)
+            None if no temperature-dependent effects have been applied
         """
+        _check_constructor_inputs(
+            [crystal, qpts], [Crystal, np.ndarray], [(), (-1, 3)],
+            ['crystal', 'qpts'])
+        n_at = crystal.n_atoms
+        n_qpts = len(qpts)
+        _check_constructor_inputs(
+            [frequencies, structure_factors, temperature],
+            [Quantity, Quantity, [Quantity, type(None)]],
+            [(n_qpts, 3*n_at), (n_qpts, 3*n_at), ()],
+            ['frequencies', 'structure_factors', 'temperature'])
         self.crystal = crystal
         self.qpts = qpts
         self.n_qpts = len(qpts)

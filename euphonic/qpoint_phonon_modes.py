@@ -1,12 +1,13 @@
 import math
 import numpy as np
+from pint import Quantity
 from euphonic import ureg
 from euphonic.crystal import Crystal
 from euphonic.spectra import Spectrum1D
 from euphonic.debye_waller import DebyeWaller
 from euphonic.structure_factor import StructureFactor
-from euphonic.util import (direction_changed, _bose_factor, is_gamma,
-                           _lorentzian, _gaussian)
+from euphonic.util import (direction_changed, is_gamma,
+                           _check_constructor_inputs)
 from euphonic.readers import castep
 from euphonic.readers import phonopy
 
@@ -48,9 +49,21 @@ class QpointPhononModes(object):
         weights : (n_qpts,) float ndarray, optional, default None
             The weight for each q-point. If None, equal weights are assumed
         """
+        # Check independent inputs first
+        _check_constructor_inputs(
+            [crystal, qpts], [Crystal, np.ndarray], [(), (-1, 3)],
+            ['crystal', 'qpts'])
+        n_at = crystal.n_atoms
+        n_qpts = len(qpts)
+        # Now check other derived input shapes
+        _check_constructor_inputs(
+            [frequencies, eigenvectors, weights],
+            [Quantity, np.ndarray, [np.ndarray, type(None)]],
+            [(n_qpts, 3*n_at), (n_qpts, 3*n_at, n_at, 3), (n_qpts,)],
+            ['frequencies', 'eigenvectors', 'weights'])
         self.crystal = crystal
         self.qpts = qpts
-        self.n_qpts = len(qpts)
+        self.n_qpts = n_qpts
         self._frequencies = frequencies.to(
             ureg.INTERNAL_ENERGY_UNIT).magnitude
         self.frequencies_unit = str(frequencies.units)

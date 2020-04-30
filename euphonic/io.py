@@ -37,4 +37,4 @@ def _obj_from_json_file(cls, filename):
     """
     with open(filename, 'r') as f:
         obj_dict = json.loads(f.read())
-    return cls.from_dict(_list_to_ndarray(obj_dict))
+    return cls.from_dict(obj_dict)

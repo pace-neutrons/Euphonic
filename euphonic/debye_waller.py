@@ -1,4 +1,7 @@
-from euphonic import ureg
+import inspect
+from pint import Quantity
+from euphonic import ureg, Crystal
+from euphonic.util import _check_constructor_inputs
 
 class DebyeWaller(object):
     """
@@ -23,13 +26,20 @@ class DebyeWaller(object):
         ----------
         crystal : Crystal
             Lattice and atom information
-        debye_waller : (n_ions, 3, 3) Quantity
-            The anisotropic Debye-Waller exponent W_ab, where the Debye-Waller
-            factor is exp(-W_ab*Q_a*Q_b) where a,b run over the 3 Cartesian
-            directions
+        debye_waller : (n_atoms, 3, 3) Quantity
+            The anisotropic Debye-Waller exponent W_ab for each atom, where the
+            Debye-Waller factor is exp(-W_ab*Q_a*Q_b) where a,b run over the 3
+            Cartesian directions
         temperature : float Quantity
             The temperature the Debye-Waller exponent was calculated at
         """
+        _check_constructor_inputs([crystal], [Crystal], [()], ['crystal'])
+        n_atoms = crystal.n_atoms
+        _check_constructor_inputs(
+            [debye_waller, temperature],
+            [Quantity, Quantity],
+            [(n_atoms, 3, 3), ()],
+            inspect.getfullargspec(self.__init__)[0][2:])
         self.crystal = crystal
         self._debye_waller = debye_waller.to(
             ureg.INTERNAL_LENGTH_UNIT**2).magnitude
