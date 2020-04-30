@@ -1,8 +1,9 @@
 import inspect
 import numpy as np
+from pint import Quantity
 from euphonic import ureg
 from euphonic.io import _obj_to_json_file, _obj_from_json_file
-from euphonic.util import _check_unit, _check_shapes
+from euphonic.util import _check_unit, _check_constructor_inputs
 
 
 class Crystal(object):
@@ -40,9 +41,11 @@ class Crystal(object):
             The mass of each atom in the unit cell, in the same order as atom_r
         """
         n_atoms = len(atom_r)
-        _check_shapes([cell_vectors, atom_r, atom_type, atom_mass],
-                      [(3, 3), (n_atoms, 3), (n_atoms,), (n_atoms,)],
-                      inspect.getfullargspec(self.__init__)[0][1:])
+        _check_constructor_inputs(
+            [cell_vectors, atom_r, atom_type, atom_mass],
+            [Quantity, np.ndarray, np.ndarray, Quantity],
+            [(3, 3), (n_atoms, 3), (n_atoms,), (n_atoms,)],
+            inspect.getfullargspec(self.__init__)[0][1:])
         self._cell_vectors = cell_vectors.to(
             ureg.INTERNAL_LENGTH_UNIT).magnitude
         self.n_atoms = n_atoms
