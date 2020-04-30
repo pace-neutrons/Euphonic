@@ -11,11 +11,13 @@ pipeline {
     stages {
 
         stage("Benchmark"){
-            checkout scm
-            sh """
-                cd tests_and_analysis/performance_benchmarking &&
-                sbatch run_benchmark_tests.sbatch
-            """
+            steps {
+                checkout scm
+                sh """
+                    cd tests_and_analysis/performance_benchmarking &&
+                    sbatch run_benchmark_tests.sbatch
+                """
+            }
         }
 
     }
