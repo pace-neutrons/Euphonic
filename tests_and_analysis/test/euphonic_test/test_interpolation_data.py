@@ -4,7 +4,8 @@ import numpy.testing as npt
 import numpy as np
 from euphonic import ureg
 from euphonic.data.interpolation import InterpolationData
-from .utils import get_data_path
+from euphonic.util import get_all_origins
+from ..utils import get_data_path
 
 
 class TestInputReadLZO(unittest.TestCase):
@@ -260,16 +261,16 @@ class TestInterpolatePhononsLZO(unittest.TestCase):
                                      [1, 1, 0],
                                      [1, 1, 1]])
         lim = 1
-        image_r = self.data._get_all_origins(np.repeat(lim, 3) + 1,
-                                             min_xyz=-np.repeat(lim, 3))
+        image_r = get_all_origins(np.repeat(lim, 3) + 1,
+                                  min_xyz=-np.repeat(lim, 3))
         npt.assert_equal(image_r, expected_image_r)
 
     def test_get_all_origins_lim_2(self):
         expected_image_r = np.loadtxt(
             os.path.join(self.path, 'lzo_sc_image_r.txt'))
         lim = 2
-        image_r = self.data._get_all_origins(np.repeat(lim, 3) + 1,
-                                             min_xyz=-np.repeat(lim, 3))
+        image_r = get_all_origins(np.repeat(lim, 3) + 1,
+                                  min_xyz=-np.repeat(lim, 3))
         npt.assert_equal(image_r, expected_image_r)
 
     def test_calculate_phases_qpt(self):

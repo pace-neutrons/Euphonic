@@ -18,9 +18,10 @@ The force constants matrix and other required information is read from a
     idata = InterpolationData.from_castep(seedname)
 
 By default CASTEP may not write the force constants, if you receive an error
-saying the force constants could not be read, set
-``PHONON_WRITE_FORCE_CONSTANTS: true`` in the ``.param`` file, and rerun CASTEP
-to trigger the force constants to be written.
+saying the force constants could not be read, in the ``.param`` file ensure a
+``PHONON_FINE_METHOD`` has been chosen e.g. ``PHONON_FINE_METHOD: interpolate``,
+and set ``PHONON_WRITE_FORCE_CONSTANTS: true``, then rerun CASTEP to trigger the
+force constants to be written.
 
 PhononData
 ----------

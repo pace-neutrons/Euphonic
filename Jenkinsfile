@@ -35,6 +35,32 @@ def setGitHubBuildStatus(String status, String message, String context) {
     }
 }
 
+def getGitCommitAuthorEmail() {
+    script {
+        withCredentials([string(credentialsId: 'Euphonic_GitHub_API_Token',
+                variable: 'api_token')]) {
+            if(isUnix()) {
+                return sh(
+                    script: """
+                        commit_url="\$(\\
+                            curl -s -H "Authorization: token ${api_token}" \\
+                            --request GET https://api.github.com/repos/pace-neutrons/Euphonic/git/ref/heads/${env.JOB_BASE_NAME} \\
+                            | jq ".object.url" | tr -d '"'\\
+                        )" &&
+                        echo "\$(\\
+                            curl -s -H "Authorization: token ${api_token}" \\
+                            --request GET \$commit_url |  jq '.author.email' | tr -d '"'\\
+                        )"
+                    """,
+                    returnStdout: true
+                )
+            } else {
+                error("Cannot get commit author in Windows")
+            }
+        }
+    }
+}
+
 pipeline {
 
     agent none
@@ -114,7 +140,7 @@ pipeline {
                                     module load conda/3 &&
                                     conda config --append channels free &&
                                     conda activate py &&
-                                    export EUPHONIC_VERSION="\$(python euphonic/get_version.py)" &&
+                                    export EUPHONIC_VERSION="\$(python tests_and_analysis/tools/get_version.py)" &&
                                     python -m tox -c release_tox.ini
                                 """
                             }
@@ -169,7 +195,6 @@ pipeline {
                             steps {
                                 setGitHubBuildStatus("pending", "Starting", "Windows")
                                 echo "Branch: ${env.JOB_BASE_NAME}"
-                                bat 'set'
                             }
                         }
 
@@ -180,10 +205,7 @@ pipeline {
                                     CALL conda create --name py python=3.6.0 -y
                                     CALL conda activate py
                                     python -m pip install --upgrade --user pip
-                                    python -m pip install numpy
-                                    python -m pip install matplotlib
-                                    python -m pip install tox==3.14.5
-                                    python -m pip install pylint==2.4.4
+                                    python -m pip install -r tests_and_analysis/jenkins_requirements.txt
                                 """
                             }
                         }
@@ -205,7 +227,7 @@ pipeline {
                                     CALL "%VS2019_VCVARSALL%" x86_amd64
                                     rmdir /s /q .tox
                                     CALL conda activate py
-                                    set /p EUPHONIC_VERSION= < python euphonic/get_version.py
+                                    set /p EUPHONIC_VERSION= < python tests_and_analysis/tools/get_version.py
                                     python -m tox -c release_tox.ini
                                 """
                             }
@@ -231,6 +253,21 @@ pipeline {
                         }
 
                     }
+                }
+            }
+        }
+    }
+
+    post {
+        unsuccessful {
+            node("sl7") {
+                script {
+                    def email = getGitCommitAuthorEmail()
+                    mail (
+                        to: "$email",
+                        subject: "Failed pipeline: ${env.JOB_BASE_NAME}",
+                        body: "See ${env.BUILD_URL}"
+                    )
                 }
             }
         }

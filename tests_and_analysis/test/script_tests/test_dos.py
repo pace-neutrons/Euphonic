@@ -1,0 +1,32 @@
+import pytest
+import numpy as np
+import json
+# Required for mocking
+import matplotlib.pyplot
+
+from .utils import get_phonon_file, get_dos_params, get_dos_data_file
+
+import scripts.dos
+
+
+@pytest.mark.integration
+class TestRegression:
+
+    @pytest.fixture
+    def inject_mocks(self, mocker):
+        # Prevent calls to show so we can get the current figure using gcf()
+        mocker.patch("matplotlib.pyplot.show")
+
+        mocker.resetall()
+
+    @pytest.mark.parametrize("dos_args", get_dos_params())
+    def test_plots_produce_expected_xydata(self, inject_mocks, dos_args):
+        scripts.dos.main([get_phonon_file()] + dos_args)
+
+        lines = matplotlib.pyplot.gcf().axes[0].lines
+
+        with open(get_dos_data_file()) as dos_json_file:
+            expected_lines = json.load(dos_json_file)[" ".join(dos_args)]
+
+        for index, line in enumerate(lines):
+            assert np.array_equal(line.get_xydata().T, np.array(expected_lines[index]))

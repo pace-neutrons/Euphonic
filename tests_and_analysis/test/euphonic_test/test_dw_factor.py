@@ -4,7 +4,7 @@ import numpy as np
 import numpy.testing as npt
 from euphonic.data.phonon import PhononData
 from euphonic.data.interpolation import InterpolationData
-from .utils import get_data_path
+from ..utils import get_data_path
 
 
 class TestDWFactorLZO(unittest.TestCase):

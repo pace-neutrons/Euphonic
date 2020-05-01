@@ -253,8 +253,8 @@ def _read_interpolation_data(seedname, path):
     except NameError:
         raise Exception((
             'Force constants matrix could not be found in {:s}.\n Ensure '
-            'PHONON_WRITE_FORCE_CONSTANTS: true has been set when running '
-            'CASTEP').format(file))
+            'PHONON_WRITE_FORCE_CONSTANTS: true and a PHONON_FINE_METHOD has '
+            'been chosen when running CASTEP').format(file))
 
     # Set entries relating to dipoles
     try:
