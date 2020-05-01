@@ -1,5 +1,6 @@
 #!groovy
 
+@Library("tests_and_analysis/getGitCommitAuthorEmail.groovy")
 pipeline {
 
     agent { label "PACE Windows (Private)" }
@@ -28,7 +29,7 @@ pipeline {
     stages {
 
         stage("Notify") {
-             utils = load "jenkins.groovy"
+            utils = load 'jenkins.groovy'
             steps {
                 checkout scm
                 echo "Branch: ${env.JOB_BASE_NAME}"
@@ -78,7 +79,7 @@ pipeline {
 
         unsuccessful {
             script {
-                def email = utils.getGitCommitAuthorEmail()
+                def email = getGitCommitAuthorEmail()
                 mail (
                     to: "$email",
                     subject: "Failed pipeline: ${env.JOB_BASE_NAME}",
