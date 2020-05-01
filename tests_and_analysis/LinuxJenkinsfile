@@ -28,16 +28,10 @@ pipeline {
     stages {
 
         stage("Notify") {
+            utils = load "jenkins.groovy"
             steps {
-                sh "pwd"
-                checkout scm
-                script {
-                    def rootdir = pwd()
-                    def utils = load "${rootdir}@script/jenkins.groovy"
-                    def setGitHubBuildStatus = utils.&setGitHubBuildStatus
-                    def getGitCommitAuthorEmail = utils.&getGitCommitAuthorEmail
-                }
-                setGitHubBuildStatus("pending", "Starting", "Linux")
+                sh "ls"
+                utils.setGitHubBuildStatus("pending", "Starting", "Linux")
                 echo "Branch: ${env.JOB_BASE_NAME}"
             }
         }
@@ -107,13 +101,13 @@ pipeline {
         }
 
         success {
-            setGitHubBuildStatus("success", "Successful", "Linux")
+            utils.setGitHubBuildStatus("success", "Successful", "Linux")
         }
 
         unsuccessful {
-            setGitHubBuildStatus("failure", "Unsuccessful", "Linux")
+            utils.setGitHubBuildStatus("failure", "Unsuccessful", "Linux")
             script {
-                    def email = getGitCommitAuthorEmail()
+                    def email = utils.getGitCommitAuthorEmail()
                     mail (
                         to: "$email",
                         subject: "Linux failed pipeline: ${env.JOB_BASE_NAME}",
