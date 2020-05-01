@@ -1,7 +1,7 @@
 #!groovy
 
-def setGitHubBuildStatus = library("tests_and_analysis/jenkins.groovy").setGitHubBuildStatus
-def getGitCommitAuthorEmail = library("tests_and_analysis/jenkins.groovy").getGitCommitAuthorEmail
+def setGitHubBuildStatus = library("jenkins.groovy").setGitHubBuildStatus
+def getGitCommitAuthorEmail = library("jenkins.groovy").getGitCommitAuthorEmail
 
 pipeline {
 
