@@ -1,7 +1,8 @@
 #!groovy
 
-@Library("tests_and_analysis/getGitCommitAuthorEmail.groovy")
-@Library("tests_and_analysis/setGitHubBuildStatus.groovy")
+def setGitHubBuildStatus = library("tests_and_analysis/jenkins.groovy").setGitHubBuildStatus
+def getGitCommitAuthorEmail = library("tests_and_analysis/jenkins.groovy").getGitCommitAuthorEmail
+
 pipeline {
 
     agent { label "sl7" }

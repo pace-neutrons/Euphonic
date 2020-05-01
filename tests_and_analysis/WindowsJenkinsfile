@@ -1,6 +1,8 @@
 #!groovy
 
-@Library("tests_and_analysis/getGitCommitAuthorEmail.groovy")
+def setGitHubBuildStatus = library("tests_and_analysis/jenkins.groovy").setGitHubBuildStatus
+def getGitCommitAuthorEmail = library("tests_and_analysis/jenkins.groovy").getGitCommitAuthorEmail
+
 pipeline {
 
     agent { label "PACE Windows (Private)" }
@@ -29,7 +31,6 @@ pipeline {
     stages {
 
         stage("Notify") {
-            utils = load 'jenkins.groovy'
             steps {
                 checkout scm
                 echo "Branch: ${env.JOB_BASE_NAME}"
