@@ -256,7 +256,7 @@ def _read_phonon_data(path='.', phonon_name='band.yaml', phonon_format=None,
         umass).to(atom_mass_unit).magnitude
     phonon_dict['atom_mass_unit'] = atom_mass_unit
     phonon_dict['frequencies'] = phonon_dict['frequencies']*ureg(
-        ufreq).to(frequencies_unit, 'spectroscopy').magnitude
+        ufreq).to(frequencies_unit).magnitude
     phonon_dict['frequencies_unit'] = frequencies_unit
     return phonon_dict
 

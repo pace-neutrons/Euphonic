@@ -408,38 +408,6 @@ def _distribution_2d(xbins, ybins, xwidth, ywidth, shape='gauss', extent=3.0):
     return dist
 
 
-def _check_unit(input_unit, *valid_units):
-    """
-    Check that a unit string is of the correct type e.g.
-    check_unit('kg', '[mass]'). Is used to ensure any changes to unit strings
-    are valid
-
-    Parameters
-    ----------
-    input_unit : str
-        The unit string to be validated
-    *valid_units : str
-        Any number of potentially valid units. Any number is allowed because
-        some quantities e.g. phonon frequencies could both be represented by
-        1/[length] or [energy] depending on the convention
-
-    Returns
-    -------
-    True
-        If input_unit is valid
-
-    Raises
-    ------
-    ValueError
-        If input_unit is not valid
-    """
-    for valid_unit in valid_units:
-        if ureg(input_unit).check(valid_unit):
-            return True 
-    raise ValueError(
-        'Invalid unit. Unit should be of type ' + str(valid_units))
-
-
 def _check_constructor_inputs(objs, types, shapes, names):
     """
     Make sure all the inputs are all the expected type, and if they are an

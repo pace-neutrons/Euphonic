@@ -6,6 +6,7 @@ try:
     # to fail as in this case pint might not be installed yet
     from pint import UnitRegistry
     ureg = UnitRegistry()
+    ureg.enable_contexts('spectroscopy')
     ureg.define('@alias bohr = INTERNAL_LENGTH_UNIT')
     ureg.define('@alias electron_mass = INTERNAL_MASS_UNIT')
     ureg.define('@alias hartree = INTERNAL_ENERGY_UNIT')

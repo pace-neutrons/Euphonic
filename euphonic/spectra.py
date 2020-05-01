@@ -44,6 +44,12 @@ class Spectrum1D(object):
         return self._y_data*ureg(self._internal_y_data_unit).to(
             self.y_data_unit)
 
+    def __setattr__(self, name, value):
+        if hasattr(self, name):
+            if name in ['x_data_unit', 'y_data_unit']:
+                ureg(getattr(self, name)).to(value)
+        super(Spectrum1D, self).__setattr__(name, value)
+
     def broaden(self, x_width, shape='gauss'):
         """
         Broaden y_data and return a new broadened Spectrum1D object
@@ -72,12 +78,12 @@ class Spectrum1D(object):
     def _set_data(self, data, attr_name):
         if isinstance(data, np.ndarray):
             setattr(self, f'_{attr_name}_data', data)
-            setattr(self, f'{attr_name}_data_unit', 'dimensionless')
             setattr(self, f'_internal_{attr_name}_data_unit', 'dimensionless')
+            setattr(self, f'{attr_name}_data_unit', 'dimensionless')
         else:
             setattr(self, f'_{attr_name}_data', data.magnitude)
-            setattr(self, f'{attr_name}_data_unit', str(data.units))
             setattr(self, f'_internal_{attr_name}_data_unit', str(data.units))
+            setattr(self, f'{attr_name}_data_unit', str(data.units))
 
     def _is_bin_edge(self, bin_ax, data_ax='y'):
         enum = {'x': 0, 'y': 1}
@@ -141,6 +147,12 @@ class Spectrum2D(Spectrum1D):
     def z_data(self):
         return self._z_data*ureg(self._internal_z_data_unit).to(
             self.z_data_unit)
+
+    def __setattr__(self, name, value):
+        if hasattr(self, name):
+            if name in ['z_data_unit']:
+                ureg(getattr(self, name)).to(value)
+        super(Spectrum2D, self).__setattr__(name, value)
 
     def broaden(self, x_width=None, y_width=None, shape='gauss'):
         """

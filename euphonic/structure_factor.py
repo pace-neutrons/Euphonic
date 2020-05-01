@@ -76,7 +76,7 @@ class StructureFactor(object):
     @property
     def frequencies(self):
         return self._frequencies*ureg(
-            'INTERNAL_ENERGY_UNIT').to(self.frequencies_unit, 'spectroscopy')
+            'INTERNAL_ENERGY_UNIT').to(self.frequencies_unit)
 
     @property
     def structure_factors(self):
@@ -86,11 +86,19 @@ class StructureFactor(object):
     @property
     def temperature(self):
         if self._temperature is not None:
-            return self._temperature*ureg('INTERNAL_TEMPERATURE_UNIT').to(
-                self.temperature_unit)
+            # See https://pint.readthedocs.io/en/latest/nonmult.html
+            return Quantity(self._temperature,
+                            ureg('INTERNAL_TEMPERATURE_UNIT')).to(
+                                self.temperature_unit)
         else:
             return None
 
+    def __setattr__(self, name, value):
+        if hasattr(self, name):
+            if name in ['frequencies_unit', 'structure_factors_unit',
+                        'temperature_unit']:
+                ureg(getattr(self, name)).to(value)
+        super(StructureFactor, self).__setattr__(name, value)
     def calculate_sqw_map(self, e_bins, calc_bose=True, temperature=None):
         """
         Bin the structure factor in energy to produce a a S(Q,w) map

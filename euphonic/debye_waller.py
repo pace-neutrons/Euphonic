@@ -56,5 +56,13 @@ class DebyeWaller(object):
 
     @property
     def temperature(self):
-        return self._temperature*ureg('INTERNAL_TEMPERATURE_UNIT').to(
-            self.temperature_unit)
+        # See https://pint.readthedocs.io/en/latest/nonmult.html
+        return Quantity(self._temperature,
+                        ureg('INTERNAL_TEMPERATURE_UNIT')).to(
+                            self.temperature_unit)
+
+    def __setattr__(self, name, value):
+        if hasattr(self, name):
+            if name in ['debye_waller_unit', 'temperature_unit']:
+                ureg(getattr(self, name)).to(value)
+        super(DebyeWaller, self).__setattr__(name, value)

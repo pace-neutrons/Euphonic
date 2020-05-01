@@ -95,7 +95,7 @@ class ForceConstants(object):
             self.dielectric_unit = str(dielectric.units)
         else:
             self._born = born
-            self.born_unit = str(ureg.INTERNAL_ENERGY_UNIT)
+            self.born_unit = str(ureg.INTERNAL_CHARGE_UNIT)
             self._dielectric = dielectric
             self.dielectric_unit = str(ureg((
                 '(INTERNAL_CHARGE_UNIT**2)/'
@@ -124,10 +124,17 @@ class ForceConstants(object):
         else:
             return None
 
+    def __setattr__(self, name, value):
+        if hasattr(self, name):
+            if name in ['force_constants_unit', 'born_unit',
+                        'dielectric_unit']:
+                ureg(getattr(self, name)).to(value)
+        super(ForceConstants, self).__setattr__(name, value)
+
     def calculate_qpoint_phonon_modes(
-        self, qpts, asr=None, precondition=False, dipole=True,
-        eta_scale=1.0, splitting=True, insert_gamma=False, reduce_qpts=True,
-        use_c=False, n_threads=1, fall_back_on_python=True):
+        self, qpts, asr=None, dipole=True, eta_scale=1.0, splitting=True,
+        insert_gamma=False, reduce_qpts=True, use_c=False, n_threads=1,
+        fall_back_on_python=True):
         """
         Calculate phonon frequencies and eigenvectors at specified q-points
         from a supercell force constant matrix via interpolation. For more
@@ -347,7 +354,7 @@ class ForceConstants(object):
                         q, q_independent_args)
 
         freqs = rfreqs[qpts_i]*ureg('INTERNAL_ENERGY_UNIT').to(
-            'mDEFAULT_ENERGY_UNIT', 'spectroscopy')
+            'mDEFAULT_ENERGY_UNIT')
 
         return QpointPhononModes(
             self.crystal, qpts, freqs, reigenvecs[qpts_i],

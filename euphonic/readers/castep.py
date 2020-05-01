@@ -98,7 +98,7 @@ def _read_phonon_data(seedname, path, cell_vectors_unit='angstrom',
     data_dict['qpts'] = qpts
     data_dict['weights'] = weights
     data_dict['frequencies'] = ((freqs*(1/ureg.cm)).to(
-        frequencies_unit, 'spectroscopy')).magnitude
+        frequencies_unit)).magnitude
     data_dict['frequencies_unit'] = frequencies_unit
     data_dict['eigenvectors'] = eigenvecs
 

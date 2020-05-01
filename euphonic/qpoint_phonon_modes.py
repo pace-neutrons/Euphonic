@@ -49,13 +49,11 @@ class QpointPhononModes(object):
         weights : (n_qpts,) float ndarray, optional, default None
             The weight for each q-point. If None, equal weights are assumed
         """
-        # Check independent inputs first
         _check_constructor_inputs(
             [crystal, qpts], [Crystal, np.ndarray], [(), (-1, 3)],
             ['crystal', 'qpts'])
         n_at = crystal.n_atoms
         n_qpts = len(qpts)
-        # Now check other derived input shapes
         _check_constructor_inputs(
             [frequencies, eigenvectors, weights],
             [Quantity, np.ndarray, [np.ndarray, type(None)]],
@@ -77,7 +75,13 @@ class QpointPhononModes(object):
     @property
     def frequencies(self):
         return self._frequencies*ureg(
-            'INTERNAL_ENERGY_UNIT').to(self.frequencies_unit, 'spectroscopy')
+            'INTERNAL_ENERGY_UNIT').to(self.frequencies_unit)
+
+    def __setattr__(self, name, value):
+        if hasattr(self, name):
+            if name in ['frequencies']:
+                ureg(getattr(self, name)).to(value)
+        super(QpointPhononModes, self).__setattr__(name, value)
 
     def reorder_frequencies(self, reorder_gamma=True):
         """
@@ -318,13 +322,11 @@ class QpointPhononModes(object):
 
         freqs = self._frequencies
         dos_bins_unit = dos_bins.units
-        dos_bins = dos_bins.to(
-            'INTERNAL_ENERGY_UNIT', 'spectroscopy').magnitude
+        dos_bins = dos_bins.to('INTERNAL_ENERGY_UNIT').magnitude
         weights = np.repeat(self.weights[:, np.newaxis],
                             3*self.crystal.n_atoms,
                             axis=1)
-        hist, _ = np.histogram(freqs, dos_bins, weights=weights)
-        dos = hist
+        dos, _ = np.histogram(freqs, dos_bins, weights=weights)
 
         return Spectrum1D(
             dos_bins*ureg('INTERNAL_ENERGY_UNIT').to(dos_bins_unit),
