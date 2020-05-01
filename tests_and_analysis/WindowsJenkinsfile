@@ -28,15 +28,9 @@ pipeline {
     stages {
 
         stage("Notify") {
+             utils = load "jenkins.groovy"
             steps {
                 checkout scm
-                script {
-                    def rootdir = pwd()
-                    def utils = load "${rootdir}@script/jenkins.groovy"
-                    def setGitHubBuildStatus = utils.&setGitHubBuildStatus
-                    def getGitCommitAuthorEmail = utils.&getGitCommitAuthorEmail
-                }
-                setGitHubBuildStatus("pending", "Starting", "Windows")
                 echo "Branch: ${env.JOB_BASE_NAME}"
             }
         }
@@ -82,14 +76,9 @@ pipeline {
             junit 'tests_and_analysis/test/reports/junit_report*.xml'
         }
 
-        success {
-            setGitHubBuildStatus("success", "Successful", "Windows")
-        }
-
         unsuccessful {
-            setGitHubBuildStatus("failure", "Unsuccessful", "Windows")
             script {
-                def email = getGitCommitAuthorEmail()
+                def email = utils.getGitCommitAuthorEmail()
                 mail (
                     to: "$email",
                     subject: "Failed pipeline: ${env.JOB_BASE_NAME}",
