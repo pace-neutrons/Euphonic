@@ -1,0 +1,130 @@
+#!groovy
+
+pipeline {
+
+    agent { label "sl7" }
+
+    triggers {
+        GenericTrigger(
+             genericVariables: [
+                [key: 'ref', value: '$.ref']
+             ],
+
+             causeString: 'Triggered on $ref',
+
+             token: 'Euphonic_GitHub_API_Token',
+
+             printContributedVariables: true,
+             printPostContent: true,
+
+             silentResponse: false,
+
+             regexpFilterText: '$ref',
+             regexpFilterExpression: 'refs/head/' + env.JOB_BASE_NAME
+        )
+        pollSCM('')
+    }
+
+    stages {
+
+        stage("Notify") {
+            steps {
+                sh "pwd"
+                checkout scm
+                script {
+                    def rootdir = pwd()
+                    def utils = load "${rootdir}@script/jenkins.groovy"
+                    def setGitHubBuildStatus = utils.&setGitHubBuildStatus
+                    def getGitCommitAuthorEmail = utils.&getGitCommitAuthorEmail
+                }
+                setGitHubBuildStatus("pending", "Starting", "Linux")
+                echo "Branch: ${env.JOB_BASE_NAME}"
+            }
+        }
+
+        stage("Set up") {
+            steps {
+                sh """
+                    module load conda/3 &&
+                    conda config --append channels free &&
+                    module load gcc &&
+                    conda create --name py python=3.6.0 -y &&
+                    conda activate py &&
+                    python -m pip install --upgrade --user pip &&
+                    python -m pip install -r tests_and_analysis/jenkins_requirements.txt &&
+                    export CC=gcc
+                """
+            }
+        }
+
+        stage("Test") {
+            steps {
+                sh """
+                    module load conda/3 &&
+                    conda config --append channels free &&
+                    conda activate py &&
+                    python -m tox
+                """
+            }
+        }
+
+        stage("PyPI Release Testing") {
+            when { tag "*" }
+            steps {
+                sh """
+                    rm -rf .tox &&
+                    module load conda/3 &&
+                    conda config --append channels free &&
+                    conda activate py &&
+                    export EUPHONIC_VERSION="\$(python tests_and_analysis/tools/get_version.py)" &&
+                    python -m tox -c release_tox.ini
+                """
+            }
+        }
+
+        stage("Static Code Analysis") {
+            steps {
+                sh """
+                    module load conda/3 &&
+                    conda config --append channels free &&
+                    conda activate py &&
+                    python tests_and_analysis/static_code_analysis/run_analysis.py
+                """
+                script {
+                    def pylint_issues = scanForIssues tool: pyLint(pattern: "tests_and_analysis/static_code_analysis/reports/pylint_output.txt")
+                    publishIssues issues: [pylint_issues]
+                }
+            }
+        }
+    }
+
+    post {
+
+        always {
+            junit 'tests_and_analysis/test/reports/junit_report*.xml'
+
+            publishCoverage adapters: [coberturaAdapter('tests_and_analysis/test/reports/coverage.xml')]
+        }
+
+        success {
+            setGitHubBuildStatus("success", "Successful", "Linux")
+        }
+
+        unsuccessful {
+            setGitHubBuildStatus("failure", "Unsuccessful", "Linux")
+            script {
+                    def email = getGitCommitAuthorEmail()
+                    mail (
+                        to: "$email",
+                        subject: "Linux failed pipeline: ${env.JOB_BASE_NAME}",
+                        body: "See ${env.BUILD_URL}"
+                    )
+                }
+        }
+
+        cleanup {
+            deleteDir()
+        }
+
+    }
+}

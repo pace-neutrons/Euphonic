@@ -1,0 +1,106 @@
+#!groovy
+
+pipeline {
+
+    agent { label "PACE Windows (Private)" }
+
+    triggers {
+        GenericTrigger(
+             genericVariables: [
+                [key: 'ref', value: '$.ref']
+             ],
+
+             causeString: 'Triggered on $ref',
+
+             token: 'Euphonic_GitHub_API_Token',
+
+             printContributedVariables: true,
+             printPostContent: true,
+
+             silentResponse: false,
+
+             regexpFilterText: '$ref',
+             regexpFilterExpression: 'refs/head/' + env.JOB_BASE_NAME
+        )
+        pollSCM('')
+    }
+
+    stages {
+
+        stage("Notify") {
+            steps {
+                checkout scm
+                script {
+                    def rootdir = pwd()
+                    def utils = load "${rootdir}@script/jenkins.groovy"
+                    def setGitHubBuildStatus = utils.&setGitHubBuildStatus
+                    def getGitCommitAuthorEmail = utils.&getGitCommitAuthorEmail
+                }
+                setGitHubBuildStatus("pending", "Starting", "Windows")
+                echo "Branch: ${env.JOB_BASE_NAME}"
+            }
+        }
+
+        stage("Set up") {
+            steps {
+                bat """
+                    CALL conda create --name py python=3.6.0 -y
+                    CALL conda activate py
+                    python -m pip install --upgrade --user pip
+                    python -m pip install -r tests_and_analysis/jenkins_requirements.txt
+                """
+            }
+        }
+
+        stage("Test VS2019") {
+            steps {
+                bat """
+                    CALL "%VS2019_VCVARSALL%" x86_amd64
+                    CALL conda activate py
+                    python -m tox
+                """
+            }
+        }
+
+        stage("PyPI Release Testing VS2019") {
+            when { tag "*" }
+            steps {
+                bat """
+                    CALL "%VS2019_VCVARSALL%" x86_amd64
+                    rmdir /s /q .tox
+                    CALL conda activate py
+                    set /p EUPHONIC_VERSION= < python tests_and_analysis/tools/get_version.py
+                    python -m tox -c release_tox.ini
+                """
+            }
+        }
+    }
+
+    post {
+
+        always {
+            junit 'tests_and_analysis/test/reports/junit_report*.xml'
+        }
+
+        success {
+            setGitHubBuildStatus("success", "Successful", "Windows")
+        }
+
+        unsuccessful {
+            setGitHubBuildStatus("failure", "Unsuccessful", "Windows")
+            script {
+                def email = getGitCommitAuthorEmail()
+                mail (
+                    to: "$email",
+                    subject: "Failed pipeline: ${env.JOB_BASE_NAME}",
+                    body: "See ${env.BUILD_URL}"
+                )
+            }
+        }
+
+        cleanup {
+            deleteDir()
+        }
+
+    }
+}
