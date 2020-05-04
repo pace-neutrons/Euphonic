@@ -5,7 +5,7 @@ pipeline {
     agent { label "SCARF" }
 
     triggers {
-        cron("* * * * 1")
+        cron("0 0 * * 0")
     }
 
     stages {
