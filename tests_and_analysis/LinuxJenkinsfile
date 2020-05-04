@@ -1,7 +1,6 @@
 #!groovy
 
-def setGitHubBuildStatus = library("jenkins.groovy").setGitHubBuildStatus
-def getGitCommitAuthorEmail = library("jenkins.groovy").getGitCommitAuthorEmail
+def utils = load 'tests_and_analysis/jenkins.groovy'
 
 pipeline {
 
@@ -34,7 +33,7 @@ pipeline {
             steps {
                 sh "ls"
                 script {
-                    setGitHubBuildStatus("pending", "Starting", "Linux")
+                    utils.setGitHubBuildStatus("pending", "Starting", "Linux")
                 }
                 echo "Branch: ${env.JOB_BASE_NAME}"
             }
@@ -106,14 +105,14 @@ pipeline {
 
         success {
             script {
-                setGitHubBuildStatus("success", "Successful", "Linux")
+                utils.setGitHubBuildStatus("success", "Successful", "Linux")
             }
         }
 
         unsuccessful {
             script {
-                setGitHubBuildStatus("failure", "Unsuccessful", "Linux")
-                def email = getGitCommitAuthorEmail()
+                utils.setGitHubBuildStatus("failure", "Unsuccessful", "Linux")
+                def email = utils.getGitCommitAuthorEmail()
                 mail (
                     to: "$email",
                     subject: "Linux failed pipeline: ${env.JOB_BASE_NAME}",
