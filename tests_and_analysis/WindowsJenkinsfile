@@ -3,11 +3,15 @@
 def getGitCommitAuthorEmail() {
     withCredentials([string(credentialsId: 'Euphonic_GitHub_API_Token',
             variable: 'api_token')]) {
-        String GITHUB_API_BRANCH_URL = "https://api.github.com/repos/pace-neutrons/Euphonic/git/ref/heads/${env.JOB_BASE_NAME}"
-        def branch_url_response = GITHUB_API_BRANCH_URL.toURL().getText(requestProperties: ['Authorization': "token ${api_token}"])
-        def commit_url = new JsonSlurper().parseText(branch_url_response).object.url
-        def commit_url_response = commit_url.toURL().getText(requestProperties: ['Authorization': "token ${api_token}"])
-        return new JsonSlurper().parseText(commit_url_response).author.email
+        powershell """
+            [Net.ServicePointManager]::SecurityProtocol = "tls12, tls11, tls"
+            \$branch_details = Invoke-RestMethod -URI "https://api.github.com/repos/pace-neutrons/Euphonic/git/ref/heads/${env.JOB_BASE_NAME}" \
+                -Headers @{Authorization = "token ${api_token}"} \
+                -Method 'GET' \
+                -ContentType "application/json"
+            \$latest_commit_url = \$branch_details.object.url
+            echo "\$latest_commit_url"
+        """
     }
 }
 
