@@ -124,6 +124,7 @@ def get_qpoint_labels(crystal, qpts):
             xlabels[i] = r'$\Gamma$'
     if np.all(xlabels == ''):
         xlabels = np.around(qpts[qpts_with_labels, :], decimals=2)
+    qpts_with_labels = [int(x) for x in qpts_with_labels.tolist()]
     return list(zip(qpts_with_labels, xlabels))
 
 

@@ -27,7 +27,8 @@ are:
   into the ``ForceConstants`` object.
 - Some attributes are now pint ``Quantity`` objects to ensure they have the
   correct units. e.g. ``ForceConstants.dielectric``
-- All objects have ``from_dict`` methods
+- All objects have ``from_dict``, ``to_dict``, ``from_json_file`` and
+  ``to_json_file``methods
 - New objects have been created to store data, rather than being stored as
   arrays in the ForceConstants or QPointPhononModes objects. This includes
   ``DebyeWaller`` and ``StructureFactor``

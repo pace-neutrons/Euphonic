@@ -12,6 +12,8 @@ from euphonic.qpoint_phonon_modes import QpointPhononModes
 from euphonic.util import is_gamma, get_all_origins, _check_constructor_inputs
 from euphonic.readers import castep
 from euphonic.readers import phonopy
+from euphonic.io import (_obj_to_json_file, _obj_from_json_file,
+                         _obj_to_dict, _process_dict)
 
 
 class ImportCError(Exception):
@@ -33,14 +35,14 @@ class ForceConstants(object):
     ----------
     crystal : Crystal
         Lattice and atom information
-    n_cells_in_sc : int
-        Number of cells in the supercell
-    sc_matrix : (3, 3) int ndarray
-        The supercell matrix
-    cell_origins : (n_cells_in_sc, 3) int ndarray
-        The locations of the unit cells within the supercell
     force_constants : (n_cells_in_sc, 3*n_atoms, 3*n_atoms) float Quantity
         Force constants matrix
+    sc_matrix : (3, 3) int ndarray
+        The supercell matrix
+    n_cells_in_sc : int
+        Number of cells in the supercell
+    cell_origins : (n_cells_in_sc, 3) int ndarray
+        The locations of the unit cells within the supercell
     born : (n_atoms, 3, 3) float Quantity or None
         The Born charges for each atom
     dielectric : (3, 3) float Quantity or None
@@ -1107,19 +1109,77 @@ class ForceConstants(object):
         # nonexistent images
         self._sc_image_i = sc_image_i[:, :, :, :np.max(n_sc_images)]
 
+    def to_dict(self):
+        """
+        Convert to a dictionary. See ForceConstants.from_dict for
+        details on keys/values
+
+        Returns
+        -------
+        dict
+        """
+        dout = _obj_to_dict(self, ['crystal', 'force_constants',
+                                   'n_cells_in_sc', 'sc_matrix',
+                                   'cell_origins', 'born',
+                                   'dielectric'])
+        return dout
+
+    def to_json_file(self, filename):
+        """
+        Write to a JSON file. JSON fields are equivalent to
+        ForceConstants.from_dict keys
+
+        Parameters
+        ----------
+        filename : str
+            Name of the JSON file to write to
+        """
+        _obj_to_json_file(self, filename)
+
     @classmethod
     def from_dict(cls, d):
-        crystal = Crystal.from_dict(d)
-        for key in ['born', 'dielectric']:
-            if not key in d.keys():
-                d[key] = None
-        d['force_constants'] = d['force_constants']*ureg(
-            d['force_constants_unit'])
-        if d['born'] is not None:
-            d['born'] = d['born']*ureg(d['born_unit'])
-            d['dielectric'] = d['dielectric']*ureg(d['dielectric_unit'])
-        return cls(crystal, d['force_constants'], d['sc_matrix'],
-                   d['cell_origins'], d['born'], d['dielectric'])
+        """
+        Convert a dictionary to a ForceConstants object
+
+        Parameters
+        ----------
+        d : dict
+            A dictionary with the following keys/values:
+                'crystal': dict, see Crystal.from_dict
+                'force_constants': (n_cells_in_sc, 3*crystal.n_atoms,
+                                    3*crystal.n_atoms) float ndarray
+                'force_constants_unit': str
+                'sc_matrix': (3,3) int ndarray
+                'cell_origins': (n_cells_in_sc, 3) int ndarray
+            There are also the following optional keys:
+                'born': (3*crystal.n_atoms, 3, 3) float ndarray
+                'born_unit': str
+                'dielectric': (3, 3) float ndarray
+                'dielectric_unit': str
+
+        Returns
+        -------
+        ForceConstants
+        """
+        crystal = Crystal.from_dict(d['crystal'])
+        d = _process_dict(
+            d, quantities=['force_constants', 'born', 'dielectric'],
+            optional=['born', 'dielectric'])
+        return ForceConstants(crystal, d['force_constants'], d['sc_matrix'],
+                              d['cell_origins'], d['born'], d['dielectric'])
+
+    @classmethod
+    def from_json_file(cls, filename):
+        """
+        Read from a JSON file. See ForceConstants.from_dict for required
+        fields
+
+        Parameters
+        ----------
+        filename : str
+            The file to read from
+        """
+        return _obj_from_json_file(cls, filename)
 
     @classmethod
     def from_castep(cls, seedname, path=''):

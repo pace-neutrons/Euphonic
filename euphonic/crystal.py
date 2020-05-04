@@ -2,7 +2,8 @@ import inspect
 import numpy as np
 from pint import Quantity
 from euphonic import ureg
-from euphonic.io import _obj_to_json_file, _obj_from_json_file, _list_to_ndarray
+from euphonic.io import (_obj_to_json_file, _obj_from_json_file,
+                         _obj_to_dict, _process_dict)
 from euphonic.util import _check_constructor_inputs
 
 
@@ -103,24 +104,62 @@ class Crystal(object):
         return np.dot(cv[0], np.cross(cv[1], cv[2]))
 
     def to_dict(self):
-        d = vars(self).copy()
-        d['cell_vectors'] = d.pop('_cell_vectors')*ureg(
-            'INTERNAL_LENGTH_UNIT').to(self.cell_vectors_unit).magnitude
-        d['atom_mass'] = d.pop('_atom_mass')*ureg(
-            'INTERNAL_MASS_UNIT').to(self.atom_mass_unit).magnitude
-        return d
+        """
+        Convert to a dictionary. See Crystal.from_dict for details on
+        keys/values
+
+        Returns
+        -------
+        dict
+        """
+        dout = _obj_to_dict(self, ['cell_vectors', 'n_atoms', 'atom_r',
+                                   'atom_type', 'atom_mass'])
+        return dout
 
     def to_json_file(self, filename):
+        """
+        Write to a JSON file. JSON fields are equivalent to
+        Crystal.from_dict keys
+
+        Parameters
+        ----------
+        filename : str
+            Name of the JSON file to write to
+        """
         _obj_to_json_file(self, filename)
 
     @classmethod
     def from_dict(cls, d):
-        d = _list_to_ndarray(d)
-        mu = d['atom_mass_unit']
-        lu = d['cell_vectors_unit']
-        return cls(d['cell_vectors']*ureg(lu), d['atom_r'],
-                   d['atom_type'], d['atom_mass']*ureg(mu))
+        """
+        Convert a dictionary to a Crystal object
+
+        Parameters
+        ----------
+        d : dict
+            A dictionary with the following keys/values:
+                'cell_vectors': (3, 3) float ndarray
+                'cell_vectors_unit': str
+                'atom_r': (n_atoms, 3) float ndarray
+                'atom_type': (n_atoms,) str ndarray
+                'atom_mass': (n_atoms,) float np.ndaaray
+                'atom_mass_unit': str
+
+        Returns
+        -------
+        Crystal
+        """
+        d = _process_dict(d, quantities=['cell_vectors', 'atom_mass'])
+        return Crystal(d['cell_vectors'], d['atom_r'], d['atom_type'],
+                       d['atom_mass'])
 
     @classmethod
     def from_json_file(cls, filename):
+        """
+        Read from a JSON file. See Crystal.from_dict for required fields
+
+        Parameters
+        ----------
+        filename : str
+            The file to read from
+        """
         return _obj_from_json_file(cls, filename)

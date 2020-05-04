@@ -3,6 +3,8 @@ from pint import Quantity
 from euphonic import ureg, Crystal, Spectrum2D
 from euphonic.util import (get_qpoint_labels, _calc_abscissa, _bose_factor,
                            _check_constructor_inputs)
+from euphonic.io import (_obj_to_json_file, _obj_from_json_file,
+                         _obj_to_dict, _process_dict)
 
 class StructureFactor(object):
     """
@@ -170,3 +172,70 @@ class StructureFactor(object):
         return Spectrum2D(abscissa, e_bins, sqw_map,
                           x_tick_labels=x_tick_labels)
 
+    def to_dict(self):
+        """
+        Convert to a dictionary. See StructureFactor.from_dict for
+        details on keys/values
+
+        Returns
+        -------
+        dict
+        """
+        dout = _obj_to_dict(self, ['crystal', 'n_qpts', 'qpts', 'frequencies',
+                                   'structure_factors', 'temperature'])
+        return dout
+
+    def to_json_file(self, filename):
+        """
+        Write to a JSON file. JSON fields are equivalent to
+        StructureFactor.from_dict keys
+
+        Parameters
+        ----------
+        filename : str
+            Name of the JSON file to write to
+        """
+        _obj_to_json_file(self, filename)
+
+    @classmethod
+    def from_dict(cls, d):
+        """
+        Convert a dictionary to a StructureFactor object
+
+        Parameters
+        ----------
+        d : dict
+            A dictionary with the following keys/values:
+                'crystal': dict, see Crystal.from_dict
+                'qpts': (n_qpts, 3) float ndarray
+                'frequencies': (n_qpts, 3*crystal.n_atoms) float ndarray
+                'frequencies_unit': str
+                'structure_factors': (n_qpts, 3*crystal.n_atoms) float ndarray
+                'structure_factors_unit': str
+            There are also the following optional keys:
+                'temperature': float
+                'temperature_unit': str
+
+        Returns
+        -------
+        StructureFactor
+        """
+        crystal = Crystal.from_dict(d['crystal'])
+        d = _process_dict(
+            d, quantities=['frequencies', 'structure_factors', 'temperature'],
+            optional=['temperature'])
+        return StructureFactor(crystal, d['qpts'], d['frequencies'],
+                               d['structure_factors'], d['temperature'])
+
+    @classmethod
+    def from_json_file(cls, filename):
+        """
+        Read from a JSON file. See StructureFactor.from_dict for required
+        fields
+
+        Parameters
+        ----------
+        filename : str
+            The file to read from
+        """
+        return _obj_from_json_file(cls, filename)

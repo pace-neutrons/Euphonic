@@ -86,15 +86,17 @@ def _read_phonon_data(seedname, path, cell_vectors_unit='angstrom',
             idx += 1
 
     data_dict = {}
-    data_dict['n_atoms'] = n_atoms
-    data_dict['cell_vectors'] = (cell_vectors*ureg('angstrom').to(
+    data_dict['crystal'] = {}
+    cry_dict = data_dict['crystal']
+    cry_dict['n_atoms'] = n_atoms
+    cry_dict['cell_vectors'] = (cell_vectors*ureg('angstrom').to(
         cell_vectors_unit)).magnitude
-    data_dict['cell_vectors_unit'] = cell_vectors_unit
-    data_dict['atom_r'] = atom_r
-    data_dict['atom_type'] = atom_type
-    data_dict['atom_mass'] = atom_mass*(ureg('amu')).to(
+    cry_dict['cell_vectors_unit'] = cell_vectors_unit
+    cry_dict['atom_r'] = atom_r
+    cry_dict['atom_type'] = atom_type
+    cry_dict['atom_mass'] = atom_mass*(ureg('amu')).to(
         atom_mass_unit).magnitude
-    data_dict['atom_mass_unit'] = atom_mass_unit
+    cry_dict['atom_mass_unit'] = atom_mass_unit
     data_dict['qpts'] = qpts
     data_dict['weights'] = weights
     data_dict['frequencies'] = ((freqs*(1/ureg.cm)).to(
@@ -219,15 +221,17 @@ def _read_interpolation_data(seedname, path, cell_vectors_unit='angstrom',
                     _read_entry(f, float_type), (3, 3)))
 
     data_dict = {}
-    data_dict['n_atoms'] = n_atoms
-    data_dict['cell_vectors'] = cell_vectors*ureg(
+    data_dict['crystal'] = {}
+    cry_dict = data_dict['crystal']
+    cry_dict['n_atoms'] = n_atoms
+    cry_dict['cell_vectors'] = cell_vectors*ureg(
         'bohr').to(cell_vectors_unit).magnitude
-    data_dict['cell_vectors_unit'] = cell_vectors_unit
-    data_dict['atom_r'] = atom_r - np.floor(atom_r)  # Normalise ion coordinates
-    data_dict['atom_type'] = atom_type
-    data_dict['atom_mass'] = atom_mass*ureg(
+    cry_dict['cell_vectors_unit'] = cell_vectors_unit
+    cry_dict['atom_r'] = atom_r - np.floor(atom_r)  # Normalise ion coordinates
+    cry_dict['atom_type'] = atom_type
+    cry_dict['atom_mass'] = atom_mass*ureg(
         'electron_mass').to(atom_mass_unit).magnitude
-    data_dict['atom_mass_unit'] = atom_mass_unit
+    cry_dict['atom_mass_unit'] = atom_mass_unit
 
     # Set entries relating to 'FORCE_CON' block
     try:

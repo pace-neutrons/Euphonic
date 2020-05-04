@@ -10,6 +10,8 @@ from euphonic.util import (direction_changed, is_gamma,
                            _check_constructor_inputs)
 from euphonic.readers import castep
 from euphonic.readers import phonopy
+from euphonic.io import (_obj_to_json_file, _obj_from_json_file,
+                         _obj_to_dict, _process_dict)
 
 
 class QpointPhononModes(object):
@@ -330,17 +332,73 @@ class QpointPhononModes(object):
 
         return Spectrum1D(
             dos_bins*ureg('INTERNAL_ENERGY_UNIT').to(dos_bins_unit),
-            dos)
+            dos*ureg('dimensionless'))
+
+    def to_dict(self):
+        """
+        Convert to a dictionary. See QpointPhononModes.from_dict for
+        details on keys/values
+
+        Returns
+        -------
+        dict
+        """
+        dout = _obj_to_dict(self, ['crystal', 'n_qpts', 'qpts', 'frequencies',
+                                   'eigenvectors', 'weights'])
+        return dout
+
+    def to_json_file(self, filename):
+        """
+        Write to a JSON file. JSON fields are equivalent to
+        QpointPhononModes.from_dict keys
+
+        Parameters
+        ----------
+        filename : str
+            Name of the JSON file to write to
+        """
+        _obj_to_json_file(self, filename)
 
     @classmethod
     def from_dict(cls, d):
-        crystal = Crystal.from_dict(d)
-        for key in ['weights']:
-            if not key in d.keys():
-                d[key] = None
-        d['frequencies'] = d['frequencies']*ureg(d['frequencies_unit'])
-        return cls(crystal, d['qpts'], d['frequencies'], d['eigenvectors'],
-                   d['weights'])
+        """
+        Convert a dictionary to a QpointPhononModes object
+
+        Parameters
+        ----------
+        d : dict
+            A dictionary with the following keys/values:
+                'crystal': dict, see Crystal.from_dict
+                'qpts': (n_qpts, 3) float ndarray
+                'frequencies': (n_qpts, 3*crystal.n_atoms) float ndarray
+                'frequencies_unit': str
+                'eigenvectors': (n_qpts, 3*crystal.n_atoms,
+                                 crystal.n_atoms, 3) complex ndarray
+            There are also the following optional keys:
+                'weights': (n_qpts,) float ndarray
+
+        Returns
+        -------
+        QpointPhononModes
+        """
+        crystal = Crystal.from_dict(d['crystal'])
+        d = _process_dict(d, quantities=['frequencies'], optional=['weights'])
+        return QpointPhononModes(crystal, d['qpts'], d['frequencies'],
+                                 d['eigenvectors'], d['weights'])
+
+    @classmethod
+    def from_json_file(cls, filename):
+        """
+        Read from a JSON file. See QpointPhononModes.from_dict for required
+        fields
+
+        Parameters
+        ----------
+        filename : str
+            The file to read from
+        """
+        return _obj_from_json_file(cls, filename,
+                                   type_dict={'eigenvectors': np.complex128})
 
     @classmethod
     def from_castep(cls, seedname, path=''):

@@ -237,28 +237,29 @@ def _read_phonon_data(path='.', phonon_name='band.yaml', phonon_format=None,
                              f'with summary file {summary_pathname}. Please '
                               'check contents'))
 
-    # Add extra derived keys
-    n_atoms = len(phonon_dict['atom_r'])
-    phonon_dict['n_atoms'] = n_atoms
-    n_qpts = len(phonon_dict['qpts'])
-    phonon_dict['n_qpts'] = n_qpts
-    # Convert Phonopy conventions to Euphonic conventions
-    phonon_dict['eigenvectors'] = convert_eigenvector_phases(phonon_dict)
-    # If weights not specified, assume equal weights
-    if not 'weights' in phonon_dict.keys():
-        phonon_dict['weights'] = np.full(n_qpts, 1)
-    phonon_dict['weights'] = _convert_weights(phonon_dict['weights'])
-    # Convert units
-    phonon_dict['cell_vectors'] = phonon_dict['cell_vectors']*ureg(
+    data_dict = {}
+    data_dict['crystal'] = {}
+    cry_dict = data_dict['crystal']
+    cry_dict['n_atoms'] = len(phonon_dict['atom_r'])
+    cry_dict['cell_vectors'] = phonon_dict['cell_vectors']*ureg(
         ulength).to(cell_vectors_unit).magnitude
-    phonon_dict['cell_vectors_unit'] = cell_vectors_unit
-    phonon_dict['atom_mass'] = phonon_dict['atom_mass']*ureg(
+    cry_dict['cell_vectors_unit'] = cell_vectors_unit
+    cry_dict['atom_r'] = phonon_dict['atom_r']
+    cry_dict['atom_type'] = phonon_dict['atom_type']
+    cry_dict['atom_mass'] = phonon_dict['atom_mass']*ureg(
         umass).to(atom_mass_unit).magnitude
-    phonon_dict['atom_mass_unit'] = atom_mass_unit
-    phonon_dict['frequencies'] = phonon_dict['frequencies']*ureg(
+    cry_dict['atom_mass_unit'] = atom_mass_unit
+    n_qpts = len(phonon_dict['qpts'])
+    data_dict['n_qpts'] = n_qpts
+    data_dict['qpts'] = phonon_dict['qpts']
+    data_dict['frequencies'] = phonon_dict['frequencies']*ureg(
         ufreq).to(frequencies_unit).magnitude
-    phonon_dict['frequencies_unit'] = frequencies_unit
-    return phonon_dict
+    data_dict['frequencies_unit'] = frequencies_unit
+    # Convert Phonopy conventions to Euphonic conventions
+    data_dict['eigenvectors'] = convert_eigenvector_phases(phonon_dict)
+    if 'weights' in phonon_dict.keys():
+        data_dict['weights'] = phonon_dict['weights']
+    return data_dict
 
 
 def convert_eigenvector_phases(phonon_dict):
@@ -725,15 +726,18 @@ def _read_interpolation_data(path='.', summary_name='phonopy.yaml',
     ufc = summary_dict['ufc']
 
     data_dict = {}
-    data_dict['n_atoms'] = summary_dict['n_atoms']
-    data_dict['cell_vectors'] = summary_dict['cell_vectors']*ureg(
+    data_dict['crystal'] = {}
+    cry_dict = data_dict['crystal']
+    cry_dict['cell_vectors'] = summary_dict['cell_vectors']*ureg(
         ulength).to(cell_vectors_unit).magnitude
-    data_dict['cell_vectors_unit'] = cell_vectors_unit
-    data_dict['atom_r'] = summary_dict['atom_r']
-    data_dict['atom_type'] = summary_dict['atom_type']
-    data_dict['atom_mass'] = summary_dict['atom_mass']*ureg(
+    cry_dict['cell_vectors_unit'] = cell_vectors_unit
+    # Normalise atom coordinates
+    cry_dict['atom_r'] = summary_dict['atom_r'] - np.floor(summary_dict['atom_r'])
+    cry_dict['atom_type'] = summary_dict['atom_type']
+    cry_dict['atom_mass'] = summary_dict['atom_mass']*ureg(
         umass).to(atom_mass_unit).magnitude
-    data_dict['atom_mass_unit'] = atom_mass_unit
+    cry_dict['atom_mass_unit'] = atom_mass_unit
+
     data_dict['force_constants'] = summary_dict['force_constants']*ureg(
         ufc).to(force_constants_unit).magnitude
     data_dict['force_constants_unit'] = force_constants_unit
