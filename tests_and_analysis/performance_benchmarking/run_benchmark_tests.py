@@ -11,7 +11,6 @@ if __name__ == "__main__":
     os.chdir(reports_dir)
     test_exit_code = pytest.main([
         test_dir,
-        "--benchmark-autosave",
-        "--benchmark-histogram"
+        "--benchmark-autosave"
     ])
     os.chdir("..")
