@@ -2,20 +2,22 @@
 
 pipeline {
 
-    agent { label "scarf" }
+    agent { label "SCARF" }
 
     triggers {
-        cron("* * * * 1")
+        cron("0 0 * * 0")
     }
 
     stages {
 
         stage("Benchmark"){
-            checkout scm
-            sh """
-                cd tests_and_analysis/performance_benchmarking &&
-                sbatch run_benchmark_tests.sbatch
-            """
+            steps {
+                checkout scm
+                sh """
+                    cd tests_and_analysis/performance_benchmarking &&
+                    sbatch run_benchmark_tests.sbatch
+                """
+            }
         }
 
     }
