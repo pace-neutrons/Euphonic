@@ -1,7 +1,5 @@
 #!groovy
 
-def utils = load 'tests_and_analysis/jenkins.groovy'
-
 pipeline {
 
     agent { label "sl7" }
@@ -31,8 +29,8 @@ pipeline {
 
         stage("Notify") {
             steps {
-                sh "ls"
                 script {
+                    def utils = load 'tests_and_analysis/jenkins.groovy'
                     utils.setGitHubBuildStatus("pending", "Starting", "Linux")
                 }
                 echo "Branch: ${env.JOB_BASE_NAME}"
