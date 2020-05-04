@@ -1,4 +1,5 @@
-# Attributes to: https://stackoverflow.com/questions/2028268/invoking-pylint-programmatically
+# Attributes to:
+# https://stackoverflow.com/questions/2028268/invoking-pylint-programmatically
 
 from pylint import lint
 from pylint.reporters.text import ParseableTextReporter
@@ -52,14 +53,22 @@ if __name__ == "__main__":
     pylint_options = ["-r", "n", "--rcfile=.pylintrc"]
 
     # The files and directories to lint
-    files_and_dirs = list(map(lambda file_or_dir: "../../{}".format(file_or_dir),
-                              ["euphonic", "scripts", "release.py", "setup.py"]))
+    files_and_dirs = list(
+        map(
+            lambda file_or_dir: "../../{}".format(file_or_dir),
+            ["euphonic", "scripts", "release.py", "setup.py"]
+        )
+    )
 
     # Object to write pylint output to
     pylint_output = LintOutput()
 
     # Run the linting
-    run = lint.Run(files_and_dirs+pylint_options, reporter=ParseableTextReporter(pylint_output), do_exit=False)
+    run = lint.Run(
+        files_and_dirs+pylint_options,
+        reporter=ParseableTextReporter(pylint_output),
+        do_exit=False
+    )
 
     # Write the lint output to file
     os.makedirs("reports", exist_ok=True)
@@ -69,11 +78,12 @@ if __name__ == "__main__":
     os.chdir(original_cwd)
 
     # If we have a score lower than the threshold fail the linting
-    threshold = 7
+    threshold = 2
 
     score = round(run.linter.stats['global_note'], 2)
 
     if score < threshold:
-        print("Score ({}) is less than threshold ({}). Analysis will report failure. "
+        print("Score ({}) is less than threshold ({})."
+              " Analysis will report failure. "
               "Correct issues or adjust threshold.".format(score, threshold))
         sys.exit(run.linter.msg_status)
