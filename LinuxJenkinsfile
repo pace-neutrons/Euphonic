@@ -1,5 +1,35 @@
 #!groovy
 
+def setGitHubBuildStatus(String status, String message, String context) {
+    script {
+        withCredentials([string(credentialsId: 'Euphonic_GitHub_API_Token',
+                variable: 'api_token')]) {
+            sh """
+                curl -H "Authorization: token ${api_token}" \
+                --request POST \
+                --data '{ \
+                    "state": "${status}", \
+                    "description": "${message} on ${context}", \
+                    "target_url": "$BUILD_URL", \
+                    "context": "jenkins/${context}" \
+                }' \
+                https://api.github.com/repos/pace-neutrons/Euphonic/statuses/${env.GIT_COMMIT}
+            """
+        }
+    }
+}
+
+def getGitCommitAuthorEmail() {
+    withCredentials([string(credentialsId: 'Euphonic_GitHub_API_Token',
+            variable: 'api_token')]) {
+        String GITHUB_API_BRANCH_URL = "https://api.github.com/repos/pace-neutrons/Euphonic/git/ref/heads/${env.JOB_BASE_NAME}"
+        def branch_url_response = GITHUB_API_BRANCH_URL.toURL().getText(requestProperties: ['Authorization': "token ${api_token}"])
+        def commit_url = new JsonSlurper().parseText(branch_url_response).object.url
+        def commit_url_response = commit_url.toURL().getText(requestProperties: ['Authorization': "token ${api_token}"])
+        return new JsonSlurper().parseText(commit_url_response).author.email
+    }
+}
+
 pipeline {
 
     agent { label "sl7" }
@@ -30,8 +60,7 @@ pipeline {
         stage("Notify") {
             steps {
                 script {
-                    def utils = load 'tests_and_analysis/jenkins.groovy'
-                    utils.setGitHubBuildStatus("pending", "Starting", "Linux")
+                    setGitHubBuildStatus("pending", "Starting", "Linux")
                 }
                 echo "Branch: ${env.JOB_BASE_NAME}"
             }
@@ -103,14 +132,14 @@ pipeline {
 
         success {
             script {
-                utils.setGitHubBuildStatus("success", "Successful", "Linux")
+                setGitHubBuildStatus("success", "Successful", "Linux")
             }
         }
 
         unsuccessful {
             script {
-                utils.setGitHubBuildStatus("failure", "Unsuccessful", "Linux")
-                def email = utils.getGitCommitAuthorEmail()
+                setGitHubBuildStatus("failure", "Unsuccessful", "Linux")
+                def email = getGitCommitAuthorEmail()
                 mail (
                     to: "$email",
                     subject: "Linux failed pipeline: ${env.JOB_BASE_NAME}",
