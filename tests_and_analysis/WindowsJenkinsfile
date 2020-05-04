@@ -19,6 +19,7 @@ def getGitCommitAuthorEmail() {
                 echo "\$commit_author_email"
             """,
             returnStdout: true
+        )
     }
 }
 
