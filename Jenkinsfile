@@ -92,7 +92,7 @@ pipeline {
 
             parallel {
 
-                stage("UNIX environment") {
+                stage("Linux environment") {
 
                     agent { label "sl7" }
 

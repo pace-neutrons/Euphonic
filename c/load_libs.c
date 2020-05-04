@@ -81,10 +81,9 @@ ZheevdFunc get_zheevd(const char *scipy_dir) {
         return NULL;
     }
 
-    snprintf(buf, sizeof(buf), "%s/%s", buf, globres.gl_pathv[0]);
-    lib = dlopen(buf, RTLD_LAZY);
+    lib = dlopen(globres.gl_pathv[0], RTLD_LAZY);
     if (lib == NULL) {
-        printf("Could not load lib handle %s\n", buf);
+        printf("Could not load lib handle %s. Error: %s\n", globres.gl_pathv[0], dlerror());
         return NULL;
     }
     zheevd = dlsym(lib, "zheevd_");
