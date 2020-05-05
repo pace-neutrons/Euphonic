@@ -105,6 +105,7 @@ class StructureFactor(object):
                         'temperature_unit']:
                 ureg(getattr(self, name)).to(value)
         super(StructureFactor, self).__setattr__(name, value)
+
     def calculate_sqw_map(self, e_bins, calc_bose=True, temperature=None):
         """
         Bin the structure factor in energy to produce a a S(Q,w) map

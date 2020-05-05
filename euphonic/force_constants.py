@@ -159,7 +159,9 @@ class ForceConstants(object):
             charges and dielectric permitivitty tensor are present.
         eta_scale : float, optional, default 1.0
             Changes the cutoff in real/reciprocal space for the dipole
-            Ewald sum. A higher value uses more reciprocal terms
+            Ewald sum. A higher value uses more reciprocal terms. If tuned
+            correctly this can result in performance improvements. See
+            scripts/optimise_eta.py for help on choosing a good eta_scale.
         splitting : boolean, optional, default True
             Whether to calculate the LO-TO splitting at the gamma
             points. Only applied if dipole is True and the Born charges
@@ -179,8 +181,8 @@ class ForceConstants(object):
             Whether to use C instead of Python to calculate and
             diagonalise the dynamical matrix
         n_threads : int, optional, default 1
-            The number of threads to use when looping over q-points in
-            C. Only applicable if use_c=True
+            The number of OpenMP threads to use when looping over
+            q-points in C. Only applicable if use_c=True
         fall_back_on_python : boolean, optional, default True
             If we cannot use the C extension, fall back on using python
             if this is true, else raise an ImportCError.

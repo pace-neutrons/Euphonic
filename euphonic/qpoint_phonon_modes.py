@@ -172,8 +172,7 @@ class QpointPhononModes(object):
             evec_tmp = np.copy(self.eigenvectors[i, mode_map[i]])
             self.eigenvectors[i] = evec_tmp
 
-    def calculate_structure_factor(self, scattering_lengths, temperature=None,
-                                   dw=None):
+    def calculate_structure_factor(self, scattering_lengths, dw=None):
         """
         Calculate the one phonon inelastic scattering for neutrons at
         each q-point. See M. Dove Structure and Dynamics Pg. 226
@@ -186,22 +185,12 @@ class QpointPhononModes(object):
             {'O': 5.803*ureg('fm'), 'Zn': 5.680*ureg('fm')}
         dw : DebyeWaller, default None
             A DebyeWaller exponent object
-        temperature : float Quantity, default None
-            The temperature to use when calculating the Bose factor. Is
-            only required if dw=None, otherwise the temperature will be
-            obtained from the dw object
 
         Returns
         -------
         sf : StructureFactor
             An object containing the structure factor for each q-point
             and phonon mode
-
-        Raises
-        ------
-        ValueError
-            If a temperature is provided and isn't consistent with the
-            temperature in the DebyeWaller object
         """
         sl = [scattering_lengths[x].to('INTERNAL_LENGTH_UNIT').magnitude
                   for x in self.crystal.atom_type]
@@ -225,6 +214,7 @@ class QpointPhononModes(object):
         eigenv_dot_q = np.einsum('ijkl,il->ijk', np.conj(self.eigenvectors), Q)
 
         # Calculate Debye-Waller factors
+        temperature = None
         if dw:
             temperature = dw.temperature
             if dw.crystal.n_atoms != self.crystal.n_atoms:
