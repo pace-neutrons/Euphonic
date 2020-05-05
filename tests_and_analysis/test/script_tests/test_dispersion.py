@@ -1,5 +1,6 @@
 import pytest
 import numpy as np
+import numpy.testing as npt
 import json
 # Required for mocking
 import matplotlib.pyplot
@@ -29,5 +30,5 @@ class TestRegression:
             expected_lines = json.load(
                 disp_json_file)[" ".join(dispersion_args)]
         for index, line in enumerate(lines):
-            assert np.array_equal(
+            npt.assert_allclose(
                 line.get_xydata().T, np.array(expected_lines[index]))
