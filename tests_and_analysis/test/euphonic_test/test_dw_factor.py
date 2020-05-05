@@ -9,10 +9,10 @@ from ..utils import get_data_path
 class TestDWFactorLZO(unittest.TestCase):
 
     def setUp(self):
-        seedname = 'La2Zr2O7-grid'
         data_path = get_data_path()
-        path = os.path.join(data_path, 'structure_factor', 'LZO')
-        self.data = QpointPhononModes.from_castep(seedname, path=path)
+        filename = os.path.join(data_path, 'structure_factor',
+                                'LZO', 'La2Zr2O7-grid.phonon')
+        self.data = QpointPhononModes.from_castep(filename)
         self.dw_path = os.path.join(data_path, 'dw_factor', 'LZO')
 
     def test_dw_T5(self):
@@ -40,10 +40,9 @@ class TestDWFactorLZO(unittest.TestCase):
 class TestDWFactorQuartz(unittest.TestCase):
 
     def setUp(self):
-        self.seedname = 'quartz'
         data_path = get_data_path()
-        self.path = os.path.join(data_path, 'interpolation', 'quartz')
-        fc = ForceConstants.from_castep(self.seedname, path=self.path)
+        self.filename = os.path.join(data_path, 'interpolation', 'quartz', 'quartz.castep_bin')
+        fc = ForceConstants.from_castep(self.filename)
         qpts = np.loadtxt(os.path.join(data_path, 'qgrid_444.txt'))
         self.data = fc.calculate_qpoint_phonon_modes(qpts, asr='reciprocal')
         self.dw_path = os.path.join(data_path, 'dw_factor', 'quartz')

@@ -13,11 +13,12 @@ class TestStructureFactorQpointPhononModesLZO(unittest.TestCase):
         seedname = 'La2Zr2O7'
         data_path = get_data_path()
         self.sf_path = os.path.join(data_path, 'structure_factor', 'LZO')
-        self.data = QpointPhononModes.from_castep(seedname, path=data_path)
+        self.data = QpointPhononModes.from_castep(
+            os.path.join(data_path, 'La2Zr2O7.phonon'))
         fm = ureg.fm
         self.scattering_lengths = {'La': 8.24*fm, 'Zr': 7.16*fm, 'O': 5.803*fm}
         self.dw_data = QpointPhononModes.from_castep(
-            'La2Zr2O7-grid', path=self.sf_path)
+            os.path.join(self.sf_path, 'La2Zr2O7-grid.phonon'))
 
     def test_sf_T5(self):
         sf_obj = self.data.calculate_structure_factor(
@@ -62,7 +63,6 @@ class TestStructureFactorForceConstantsLZOSerial(unittest.TestCase):
     def setUp(self):
         # Need to separately test SF calculation with interpolated phonon data
         # to test eigenvector calculations
-        self.seedname = 'La2Zr2O7'
         data_path = get_data_path()
         self.interpolation_path = os.path.join(
             data_path, 'interpolation', 'LZO')
@@ -71,20 +71,20 @@ class TestStructureFactorForceConstantsLZOSerial(unittest.TestCase):
         self.scattering_lengths = {'La': 8.24*fm, 'Zr': 7.16*fm, 'O': 5.803*fm}
         qpts = np.loadtxt(os.path.join(self.sf_path, 'qpts.txt'))
 
-        fc = ForceConstants.from_castep(
-            self.seedname, path=self.interpolation_path)
+        fc_filename = os.path.join(
+            self.interpolation_path, 'La2Zr2O7.castep_bin')
+        fc = ForceConstants.from_castep(fc_filename)
         self.idata = fc.calculate_qpoint_phonon_modes(qpts, asr='realspace')
 
         # ForceConstants object for DW grid
-        dw_fc = ForceConstants.from_castep(
-            self.seedname, path=self.interpolation_path)
+        dw_fc = ForceConstants.from_castep(fc_filename)
         self.dw_idata = dw_fc.calculate_qpoint_phonon_modes(
             np.loadtxt(os.path.join(data_path, 'qgrid_444.txt')),
             asr='realspace')
 
         # QpointPhononModes object for DW grid
         self.dw_pdata = QpointPhononModes.from_castep(
-            'La2Zr2O7-grid', path=self.sf_path)
+            os.path.join(self.sf_path, 'La2Zr2O7-grid.phonon'))
 
         # Tolerance for assuming degenerate modes
         self.TOL = 1e-4
@@ -248,8 +248,8 @@ class TestStructureFactorForceConstantsLZOSerial(unittest.TestCase):
                             rtol=5e-3, atol=1e-12)
 
     def test_incompatible_dw_arg_raises_exception(self):
-        quartz_data = ForceConstants.from_castep(
-            'quartz', path=self.interpolation_path + '/../quartz')
+        quartz_data = ForceConstants.from_castep(os.path.join(
+            self.interpolation_path, '../quartz', 'quartz.castep_bin'))
         # Test that trying to call structure factor with a dw_arg for another
         # material raises an Exception
         self.assertRaises(Exception, self.idata.calculate_structure_factor,
@@ -270,21 +270,21 @@ class TestStructureFactorForceConstantsLZOSerialC(TestStructureFactorForceConsta
         self.scattering_lengths = {'La': 8.24*fm, 'Zr': 7.16*fm, 'O': 5.803*fm}
         qpts = np.loadtxt(os.path.join(self.sf_path, 'qpts.txt'))
 
-        fc = ForceConstants.from_castep(
-            self.seedname, path=self.interpolation_path)
+        fc_filename = os.path.join(
+            self.interpolation_path, 'La2Zr2O7.castep_bin')
+        fc = ForceConstants.from_castep(fc_filename)
         self.idata = fc.calculate_qpoint_phonon_modes(
             qpts, asr='realspace', use_c=True, fall_back_on_python=False)
 
         # ForceConstants object for DW grid
-        dw_fc = ForceConstants.from_castep(
-            self.seedname, path=self.interpolation_path)
+        dw_fc = ForceConstants.from_castep(fc_filename)
         self.dw_idata = dw_fc.calculate_qpoint_phonon_modes(
             np.loadtxt(os.path.join(data_path, 'qgrid_444.txt')),
             asr='realspace', use_c=True, fall_back_on_python=False)
 
         # QpointPhononModes object for DW grid
         self.dw_pdata = QpointPhononModes.from_castep(
-            'La2Zr2O7-grid', path=self.sf_path)
+            os.path.join(self.sf_path, 'La2Zr2O7-grid.phonon'))
 
         # Tolerance for assuming degenerate modes
         self.TOL = 1e-4
@@ -304,22 +304,22 @@ class TestStructureFactorForceConstantsLZOParallelC(TestStructureFactorForceCons
         self.scattering_lengths = {'La': 8.24*fm, 'Zr': 7.16*fm, 'O': 5.803*fm}
         qpts = np.loadtxt(os.path.join(self.sf_path, 'qpts.txt'))
 
-        fc = ForceConstants.from_castep(
-            self.seedname, path=self.interpolation_path)
+        fc_filename = os.path.join(
+            self.interpolation_path, 'La2Zr2O7.castep_bin')
+        fc = ForceConstants.from_castep(fc_filename)
         self.idata = fc.calculate_qpoint_phonon_modes(
             qpts, asr='realspace', use_c=True, n_threads=2,
             fall_back_on_python=False)
 
         # ForceConstants object for DW grid
-        dw_fc = ForceConstants.from_castep(
-            self.seedname, path=self.interpolation_path)
+        dw_fc = ForceConstants.from_castep(fc_filename)
         self.dw_idata = dw_fc.calculate_qpoint_phonon_modes(
             np.loadtxt(os.path.join(data_path, 'qgrid_444.txt')),
             asr='realspace', use_c=True, fall_back_on_python=False)
 
         # QpointPhononModes object for DW grid
         self.dw_pdata = QpointPhononModes.from_castep(
-            'La2Zr2O7-grid', path=self.sf_path)
+            os.path.join(self.sf_path, 'La2Zr2O7-grid.phonon'))
 
         # Tolerance for assuming degenerate modes
         self.TOL = 1e-4
@@ -339,13 +339,13 @@ class TestStructureFactorForceConstantsQuartzSerial(unittest.TestCase):
         self.scattering_lengths = {'Si': 4.1491*fm, 'O': 5.803*fm}
         qpts = np.loadtxt(os.path.join(self.sf_path, 'qpts.txt'))
 
-        fc = ForceConstants.from_castep(
-            self.seedname, path=self.interpolation_path)
+        fc_filename = os.path.join(
+            self.interpolation_path, 'quartz.castep_bin')
+        fc = ForceConstants.from_castep(fc_filename)
         self.idata = fc.calculate_qpoint_phonon_modes(qpts, asr='reciprocal')
 
         # ForceConstants object for DW grid
-        dw_fc = ForceConstants.from_castep(
-            self.seedname, path=self.interpolation_path)
+        dw_fc = ForceConstants.from_castep(fc_filename)
         self.dw_idata = dw_fc.calculate_qpoint_phonon_modes(
             np.loadtxt(os.path.join(data_path, 'qgrid_444.txt')), asr='reciprocal')
 
@@ -484,14 +484,14 @@ class TestStructureFactorForceConstantsQuartzSerialC(TestStructureFactorForceCon
         self.scattering_lengths = {'Si': 4.1491*fm, 'O': 5.803*fm}
         qpts = np.loadtxt(os.path.join(self.sf_path, 'qpts.txt'))
 
-        fc = ForceConstants.from_castep(
-            self.seedname, path=self.interpolation_path)
+        fc_filename = os.path.join(
+            self.interpolation_path, 'quartz.castep_bin')
+        fc = ForceConstants.from_castep(fc_filename)
         self.idata = fc.calculate_qpoint_phonon_modes(
             qpts, asr='reciprocal', use_c=True, fall_back_on_python=False)
 
         # ForceConstants object for DW grid
-        dw_fc = ForceConstants.from_castep(
-            self.seedname, path=self.interpolation_path)
+        dw_fc = ForceConstants.from_castep(fc_filename)
         self.dw_idata = dw_fc.calculate_qpoint_phonon_modes(
             np.loadtxt(os.path.join(data_path, 'qgrid_444.txt')),
             asr='reciprocal')
@@ -515,15 +515,15 @@ class TestStructureFactorForceConstantsQuartzParallelC(TestStructureFactorForceC
         self.scattering_lengths = {'Si': 4.1491*fm, 'O': 5.803*fm}
         qpts = np.loadtxt(os.path.join(self.sf_path, 'qpts.txt'))
 
-        fc = ForceConstants.from_castep(
-            self.seedname, path=self.interpolation_path)
+        fc_filename = os.path.join(
+            self.interpolation_path, 'quartz.castep_bin')
+        fc = ForceConstants.from_castep(fc_filename)
         self.idata = fc.calculate_qpoint_phonon_modes(
             qpts, asr='reciprocal', use_c=True, n_threads=2,
             fall_back_on_python=False)
 
         # ForceConstants object for DW grid
-        dw_fc = ForceConstants.from_castep(
-            self.seedname, path=self.interpolation_path)
+        dw_fc = ForceConstants.from_castep(fc_filename)
         self.dw_idata = dw_fc.calculate_qpoint_phonon_modes(
             np.loadtxt(os.path.join(data_path, 'qgrid_444.txt')),
             asr='reciprocal')

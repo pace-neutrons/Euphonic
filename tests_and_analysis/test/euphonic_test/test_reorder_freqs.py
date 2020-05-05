@@ -9,9 +9,9 @@ from ..utils import get_data_path
 class TestReorderFreqsNaH(unittest.TestCase):
 
     def test_reorder_frequencies(self):
-        seedname = 'NaH-reorder-test'
         path = get_data_path()
-        data = QpointPhononModes.from_castep(seedname, path=path)
+        filename = os.path.join(path, 'NaH-reorder-test.phonon')
+        data = QpointPhononModes.from_castep(filename)
         data.reorder_frequencies()
         freqs = data.frequencies.magnitude
         expected_reordered_freqs = np.array(
@@ -44,11 +44,12 @@ class TestReorderFreqsLZO(unittest.TestCase):
 
     def setUp(self):
         # Create both QpointPhononModes and ForceConstants objs for testing
-        seedname = 'La2Zr2O7'
         data_path = get_data_path()
-        self.pdata = QpointPhononModes.from_castep(seedname, path=data_path)
+        self.pdata = QpointPhononModes.from_castep(
+            os.path.join(data_path, 'La2Zr2O7.phonon'))
         ipath = os.path.join(data_path, 'interpolation', 'LZO')
-        self.fc = ForceConstants.from_castep(seedname, path=ipath)
+        self.fc = ForceConstants.from_castep(
+            os.path.join(ipath, 'La2Zr2O7.castep_bin'))
 
         self.expected_reordered_freqs = np.array(
             [[65.062447, 65.062447, 70.408176, 76.847761, 76.847761,

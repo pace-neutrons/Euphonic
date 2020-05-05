@@ -15,14 +15,15 @@ class TestSqwMapQpointPhononModesLZO(unittest.TestCase):
         data_path = get_data_path()
         self.sqw_path = os.path.join(data_path, 'sqw_map')
         self.sf_path = os.path.join(data_path, 'structure_factor', 'LZO')
-        self.data = QpointPhononModes.from_castep(seedname, path=data_path)
+        self.data = QpointPhononModes.from_castep(
+            os.path.join(data_path, 'La2Zr2O7.phonon'))
         fm = ureg.fm
         self.scattering_lengths = {'La': 8.24*fm, 'Zr': 7.16*fm, 'O': 5.803*fm}
         self.ebins = np.arange(0, 100, 1.)*ureg('meV')
 
         # QpointPhononModes object for DW grid
         self.dw_data = QpointPhononModes.from_castep(
-            'La2Zr2O7-grid', path=self.sf_path)
+            os.path.join(self.sf_path, 'La2Zr2O7-grid.phonon'))
 
     def test_sqw_T5(self):
         sf = self.data.calculate_structure_factor(self.scattering_lengths)
@@ -67,13 +68,13 @@ class TestSqwMapForceConstantsLZOSerial(unittest.TestCase):
     sf_path = os.path.join(get_data_path(), 'structure_factor', 'LZO')
 
     def setUp(self):
-        self.seedname = 'La2Zr2O7'
         data_path = get_data_path()
         self.interpolation_path = os.path.join(data_path, 'interpolation', 'LZO')
         self.sqw_path = os.path.join(data_path, 'sqw_map')
-        pdata = QpointPhononModes.from_castep(self.seedname, path=data_path)
+        pdata = QpointPhononModes.from_castep(
+            os.path.join(data_path, 'La2Zr2O7.phonon'))
         fc = ForceConstants.from_castep(
-            self.seedname, path=self.interpolation_path)
+            os.path.join(interpolation_path, 'La2Zr2O7.castep_bin'))
         self.data = fc.calculate_qpoint_phonon_modes(pdata.qpts, asr='realspace')
         fm = ureg.fm
         self.scattering_lengths = {'La': 8.24*fm, 'Zr': 7.16*fm, 'O': 5.803*fm}
@@ -135,9 +136,10 @@ class TestSqwMapForceConstantsLZOSerialC(
         data_path = get_data_path()
         self.interpolation_path = os.path.join(data_path, 'interpolation', 'LZO')
         self.sqw_path = os.path.join(data_path, 'sqw_map')
-        pdata = QpointPhononModes.from_castep(self.seedname, path=data_path)
+        pdata = QpointPhononModes.from_castep(
+            os.path.join(data_path, 'La2Zr2O7.phonon'))
         fc = ForceConstants.from_castep(
-            self.seedname, path=self.interpolation_path)
+            os.path.join(interpolation_path, 'La2Zr2O7.castep_bin'))
         self.data = fc.calculate_qpoint_phonon_modes(
             pdata.qpts, asr='realspace', use_c=True,
             fall_back_on_python=False)
@@ -153,9 +155,10 @@ class TestSqwMapForceConstantsLZOParallelC(
         data_path = get_data_path()
         self.interpolation_path = os.path.join(data_path, 'interpolation', 'LZO')
         self.sqw_path = os.path.join(data_path, 'sqw_map')
-        pdata = QpointPhononModes.from_castep(self.seedname, path=data_path)
+        pdata = QpointPhononModes.from_castep(
+            os.path.join(data_path, 'La2Zr2O7.phonon'))
         fc = ForceConstants.from_castep(
-            self.seedname, path=self.interpolation_path)
+            os.path.join(interpolation_path, 'La2Zr2O7.castep_bin'))
         self.data = fc.calculate_qpoint_phonon_modes(
             pdata.qpts, asr='realspace', use_c=True,
             n_threads=2, fall_back_on_python=False)

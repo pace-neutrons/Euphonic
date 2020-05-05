@@ -1182,19 +1182,16 @@ class ForceConstants(object):
         return _obj_from_json_file(cls, filename)
 
     @classmethod
-    def from_castep(cls, seedname, path=''):
+    def from_castep(cls, filename):
         """
-        Reads from a .castep_bin file
+        Reads from a .castep_bin or .check file
 
         Parameters
         ----------
-        seedname : str
-            Seedname of file(s) to read, e.g. if seedname = 'quartz'
-            the 'quartz.castep_bin' file will be read
-        path : str, optional
-            Path to dir containing the file(s), if in another directory
+        filename : str
+            The path and name of the file to read
         """
-        data = castep._read_interpolation_data(seedname, path)
+        data = castep._read_interpolation_data(filename)
         return cls.from_dict(data)
 
     @classmethod

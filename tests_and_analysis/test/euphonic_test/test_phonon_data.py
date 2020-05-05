@@ -1,3 +1,4 @@
+import os
 import unittest
 import numpy.testing as npt
 import numpy as np
@@ -102,9 +103,9 @@ class TestReadInputFileNaHPhonon(unittest.TestCase):
                 -0.024995270201 + 0.000000000000*1j]]]])
         self.expctd_data = expctd_data
 
-        self.seedname = 'NaH'
         self.path = get_data_path()
-        data = QpointPhononModes.from_castep(self.seedname, path=self.path)
+        data = QpointPhononModes.from_castep(
+          os.path.join(self.path, 'NaH.phonon'))
         self.data = data
 
     def test_cell_vectors_read_nah_phonon(self):

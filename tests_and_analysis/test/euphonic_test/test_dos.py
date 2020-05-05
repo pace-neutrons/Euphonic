@@ -1,3 +1,4 @@
+import os
 import unittest
 import numpy as np
 import numpy.testing as npt
@@ -7,9 +8,9 @@ from ..utils import get_data_path
 
 class TestCalculateDosQuartz(unittest.TestCase):
     def setUp(self):
-        seedname = 'quartz-grid-666'
+        filename = 'quartz-grid-666.phonon'
         path = get_data_path()
-        self.data = QpointPhononModes.from_castep(seedname, path=path)
+        self.data = QpointPhononModes.from_castep(os.path.join(path, filename))
         self.dos_bins = np.arange(0, 155, 0.75)*ureg('meV')
         self.gwidth = 1.0*ureg('meV')
         self.expected_dos_no_broaden = np.array([

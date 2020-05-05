@@ -69,9 +69,9 @@ class TestInputReadLZO(unittest.TestCase):
                                              [0, 0, 1]])
         self.expctd_data = expctd_data
 
-        self.seedname = 'La2Zr2O7'
         self.path = os.path.join(get_data_path(), 'interpolation', 'LZO')
-        fc = ForceConstants.from_castep(self.seedname, path=self.path)
+        self.filename = os.path.join(self.path, 'La2Zr2O7.castep_bin')
+        fc = ForceConstants.from_castep(self.filename)
         self.fc = fc
 
     def test_n_atoms_read(self):
@@ -118,9 +118,9 @@ class TestInputReadLZO(unittest.TestCase):
 class TestInterpolatePhononsLZO(unittest.TestCase):
 
     def setUp(self):
-        seedname = 'La2Zr2O7'
         self.path = os.path.join(get_data_path(), 'interpolation', 'LZO')
-        fc = ForceConstants.from_castep(seedname, path=self.path)
+        filename = os.path.join(self.path, 'La2Zr2O7.castep_bin')
+        fc = ForceConstants.from_castep(filename)
         self.fc = fc
 
         self.qpts = np.array([[-1.00, 9.35, 3.35],
@@ -436,9 +436,9 @@ class TestInputReadGraphite(unittest.TestCase):
              [5, 6, 1], [6, 6, 1]])
         self.expctd_data = expctd_data
 
-        self.seedname = 'graphite'
         self.path = os.path.join(get_data_path(), 'interpolation', 'graphite')
-        data = ForceConstants.from_castep(self.seedname, path=self.path)
+        self.filename = os.path.join(self.path, 'graphite.castep_bin')
+        data = ForceConstants.from_castep(self.filename)
         self.fc = data
 
     def test_n_atoms_read(self):
@@ -488,7 +488,6 @@ class TestInputReadGraphite(unittest.TestCase):
 class TestInterpolatePhononsGraphite(unittest.TestCase):
 
     def setUp(self):
-        seedname = 'graphite'
         self.path = os.path.join(get_data_path(), 'interpolation', 'graphite')
         self.n_atoms = 4
         self.n_cells_in_sc = 98
@@ -541,7 +540,8 @@ class TestInterpolatePhononsGraphite(unittest.TestCase):
              4.0222682768e-03, 4.0222682768e-03, 7.1591503492e-03,
              7.1591503492e-03, 7.1591503492e-03, 7.1591503492e-03]])
             *ureg('hartree'))
-        fc = ForceConstants.from_castep(seedname, path=self.path)
+        filename = os.path.join(self.path, 'graphite.castep_bin')
+        fc = ForceConstants.from_castep(filename)
         self.fc = fc
 
         self.unique_sc_i = np.loadtxt(os.path.join(
@@ -779,9 +779,9 @@ class TestInputReadQuartz(unittest.TestCase):
             [0.00000000, 0.00000000, 2.52289805]])*ureg('e**2/(bohr*hartree)')
         self.expctd_data = expctd_data
 
-        self.seedname = 'quartz'
         self.path = os.path.join(get_data_path(), 'interpolation', 'quartz')
-        fc = ForceConstants.from_castep(self.seedname, path=self.path)
+        self.filename = os.path.join(self.path, 'quartz.castep_bin')
+        fc = ForceConstants.from_castep(self.filename)
         self.fc = fc
 
     def test_n_atoms_read(self):
@@ -839,13 +839,13 @@ class TestInputReadQuartz(unittest.TestCase):
 class TestInterpolatePhononsQuartz(unittest.TestCase):
 
     def setUp(self):
-        seedname = 'quartz'
         self.path = os.path.join(get_data_path(), 'interpolation', 'quartz')
         self.qpts = np.array([[0.00, 0.00, 0.00],
                               [0.00, 0.00, 0.50],
                               [-0.25, 0.50, 0.50],
                               [-0.151515, 0.575758, 0.5]])
-        fc = ForceConstants.from_castep(seedname, path=self.path)
+        filename = os.path.join(self.path, 'quartz.castep_bin')
+        fc = ForceConstants.from_castep(filename)
         self.fc = fc
         self.expctd_freqs_no_asr = np.array([
             [-0.00009745, -0.00005474, -0.00005474, 0.00058293, 0.00058293,

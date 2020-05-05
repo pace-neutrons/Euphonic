@@ -6,8 +6,7 @@ from typing import List, Tuple
 
 def load_data_from_file(filename: str) -> Tuple[QpointPhononModes, str, str]:
     """
-    Load castep data from filename and return the data, seedname and
-    file (without the path).
+    Load castep data from filename and return it
 
     Parameters
     ----------
@@ -16,12 +15,10 @@ def load_data_from_file(filename: str) -> Tuple[QpointPhononModes, str, str]:
 
     Returns
     -------
-    A tuple of data, seedname and file name (without the path)
+    QpointPhononmodes
     """
-    path, file = os.path.split(filename)
-    seedname = file[:file.rfind('.')]
-    data = QpointPhononModes.from_castep(seedname, path=path)
-    return data, seedname, file
+    data = QpointPhononModes.from_castep(filename)
+    return data
 
 
 def get_args(parser: ArgumentParser, params: List[str] = None):

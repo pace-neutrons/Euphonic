@@ -18,6 +18,10 @@ are:
   top-level import e.g. ``from euphonic import QpointPhononModes``
 - ``InterpolationData.calculate_fine_phonons`` has been renamed to
   ``ForceConstants.calculate_qpoint_phonon_modes``
+- The arguments for ``ForceConstants.from_castep`` and
+  ``QpointPhononModes.from_castep`` have changed. The full filename must be
+  specified and the file and path are no longer separate arguments e.g.
+  ``ForceConstants.from_castep('quartz/quartz.castep_bin')``
 - LO-TO split frequencies are no longer contained in their own arrays
   (``split_freqs``, ``split_eigenvecs``, ``split_i``), instead gamma-points are
   duplicated in the main ``frequencies`` array

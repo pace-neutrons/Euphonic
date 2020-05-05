@@ -13,15 +13,15 @@ import numpy as np
 from euphonic import ForceConstants
 
 
-def calculate_optimum_eta(seedname: str, eta_min: float = 0.25, eta_max: float = 1.5, eta_step: float = 0.25,
+def calculate_optimum_eta(filename: str, eta_min: float = 0.25, eta_max: float = 1.5, eta_step: float = 0.25,
                           n: int = 100, print_to_terminal: bool = False):
     """
-    Calculate the optimum eta and other etas from the seedname castep_bin file.
+    Calculate the optimum eta and other etas from the filename castep_bin file
 
     Parameters
     ----------
-    seedname : str
-        The name of the castep_bin file to calculate from
+    filename : str
+        The path and name of the .castep_bin/.check to read from
     eta_min : float, optional, Default: 0.25
         The minimum value of eta to test
     eta_max : float, optional, Default: 1.5
@@ -43,7 +43,7 @@ def calculate_optimum_eta(seedname: str, eta_min: float = 0.25, eta_max: float =
     t_init = np.zeros(len(etas), dtype=np.float64)
     t_tot = np.zeros(len(etas), dtype=np.float64)
 
-    idata = ForceConstants.from_castep(seedname)
+    idata = ForceConstants.from_castep(filename)
     sfmt = '{:20s}'
     tfmt = '{: 3.2f}'
     etafmt = '{: 2.2f}'
@@ -83,8 +83,8 @@ def get_parser():
                      'number of q-points for different values of eta to '
                      'determine eta\'s optimum value for this material'))
     parser.add_argument(
-        'seedname',
-        help='The seedname of the .castep_bin file to read from')
+        'filename',
+        help='The .castep_bin file to extract the data from')
     parser.add_argument(
         '-n',
         default=100,

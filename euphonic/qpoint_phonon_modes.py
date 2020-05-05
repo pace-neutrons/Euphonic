@@ -401,19 +401,16 @@ class QpointPhononModes(object):
                                    type_dict={'eigenvectors': np.complex128})
 
     @classmethod
-    def from_castep(cls, seedname, path=''):
+    def from_castep(cls, filename):
         """
         Reads precalculated phonon mode data from a CASTEP .phonon file
 
         Parameters
         ----------
-        seedname : str
-            Seedname of file(s) to read e.g. if seedname = 'quartz' then
-            the 'quartz.phonon' file will be read
-        path : str
-            Path to dir containing the file(s), if in another directory
+        filename : str
+            The path and name of the .phonon file to read
         """
-        data = castep._read_phonon_data(seedname, path)
+        data = castep._read_phonon_data(filename)
         return cls.from_dict(data)
 
     @classmethod

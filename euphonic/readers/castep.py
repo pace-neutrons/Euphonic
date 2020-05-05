@@ -6,17 +6,15 @@ from euphonic import ureg
 from euphonic.util import is_gamma
 
 
-def _read_phonon_data(seedname, path, cell_vectors_unit='angstrom',
+def _read_phonon_data(filename, cell_vectors_unit='angstrom',
                       atom_mass_unit='amu', frequencies_unit='meV'):
     """
     Reads data from a .phonon file and returns it in a dictionary
 
     Parameters
     ----------
-    seedname : str
-        Seedname of file(s) to read
-    path : str
-        Path to dir containing the file(s), if in another directory
+    filename : str
+        The path and name of the .phonon file to read
 
     Returns
     -------
@@ -26,8 +24,7 @@ def _read_phonon_data(seedname, path, cell_vectors_unit='angstrom',
         'atom_mass_unit', 'qpts', 'weights', 'frequencies', 'frequencies_unit',
         'eigenvectors'
     """
-    file = os.path.join(path, seedname + '.phonon')
-    with open(file, 'r') as f:
+    with open(filename, 'r') as f:
 
         (n_atoms, n_branches, n_qpts, cell_vectors, atom_r,
          atom_type, atom_mass) = _read_phonon_header(f)
@@ -153,20 +150,19 @@ def _read_phonon_header(f):
             atom_mass)
 
 
-def _read_interpolation_data(seedname, path, cell_vectors_unit='angstrom',
+def _read_interpolation_data(filename, cell_vectors_unit='angstrom',
                              atom_mass_unit='amu',
                              force_constants_unit='hartree/bohr**2',
                              born_unit='e',
                              dielectric_unit='(e**2)/(bohr*hartree)'):
     """
-    Reads data from a .castep_bin or .check file and returns it in a dictionary
+    Reads data from a .castep_bin or .check file and returns it in a
+    dictionary
 
     Parameters
     ----------
-    seedname : str
-        Seedname of file(s) to read
-    path : str
-        Path to dir containing the file(s), if in another directory
+    filename : str
+        The path and name of the file to read
 
     Returns
     -------
@@ -178,14 +174,7 @@ def _read_interpolation_data(seedname, path, cell_vectors_unit='angstrom',
         'dielectric' and 'dielectric_unit' if they are present in the
         .castep_bin or .check file.
     """
-    file = os.path.join(path, seedname + '.castep_bin')
-    if not os.path.isfile(file):
-        print(
-            '{:s}.castep_bin file not found, trying to read {:s}.check'
-            .format(seedname, seedname))
-        file = os.path.join(path, seedname + '.check')
-
-    with open(file, 'rb') as f:
+    with open(filename, 'rb') as f:
         int_type = '>i4'
         float_type = '>f8'
         header = ''

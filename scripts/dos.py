@@ -18,7 +18,7 @@ def main(params: List[str] = None):
     parser = get_parser()
     args = get_args(parser, params)
 
-    data, seedname, file = load_data_from_file(args.filename)
+    data = load_data_from_file(args.filename)
     data.frequencies_unit = args.unit
 
     # Calculate and plot DOS
