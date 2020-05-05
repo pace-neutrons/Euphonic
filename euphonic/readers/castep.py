@@ -21,8 +21,8 @@ def _read_phonon_data(filename, cell_vectors_unit='angstrom',
     data_dict : dict
         A dict with the following keys: 'n_atoms', 'cell_vectors',
         'cell_vectors_unit', 'atom_r', 'atom_type', 'atom_mass',
-        'atom_mass_unit', 'qpts', 'weights', 'frequencies', 'frequencies_unit',
-        'eigenvectors'
+        'atom_mass_unit', 'qpts', 'weights', 'frequencies',
+        'frequencies_unit', 'eigenvectors'
     """
     with open(filename, 'r') as f:
 
@@ -35,8 +35,8 @@ def _read_phonon_data(filename, cell_vectors_unit='angstrom',
         eigenvecs = np.zeros((n_qpts, n_branches, n_atoms, 3),
                              dtype='complex128')
 
-        # Need to loop through file using while rather than number of q-points
-        # as sometimes points are duplicated
+        # Need to loop through file using while rather than number of
+        # q-points as sometimes points are duplicated
         qpt_line = f.readline()
         float_patt = re.compile('-?\d+\.\d+')
         idx = 0
@@ -45,7 +45,8 @@ def _read_phonon_data(filename, cell_vectors_unit='angstrom',
             qpt = [float(x) for x in floats[:3]]
             qweight = float(floats[3])
 
-            freq_lines = [f.readline().split() for i in range(n_branches)]
+            freq_lines = [f.readline().split()
+                          for i in range(n_branches)]
             qfreq = np.array([float(line[1]) for line in freq_lines])
             ir_index = 2
             raman_index = 3
@@ -55,7 +56,8 @@ def _read_phonon_data(filename, cell_vectors_unit='angstrom',
             if len(freq_lines[0]) > ir_index:
                 qir = [float(line[ir_index]) for line in freq_lines]
             if len(freq_lines[0]) > raman_index:
-                qraman = [float(line[raman_index]) for line in freq_lines]
+                qraman = [float(line[raman_index])
+                          for line in freq_lines]
 
             [f.readline() for x in range(2)]  # Skip 2 label lines
             lines = np.array([f.readline().split()[2:]
@@ -64,12 +66,13 @@ def _read_phonon_data(filename, cell_vectors_unit='angstrom',
             lines_i = np.column_stack(([lines[:, 0] + lines[:, 1]*1j,
                                         lines[:, 2] + lines[:, 3]*1j,
                                         lines[:, 4] + lines[:, 5]*1j]))
-            qeigenvec = np.zeros((n_branches, n_atoms, 3), dtype=np.complex128)
+            qeigenvec = np.zeros((n_branches, n_atoms, 3),
+                                 dtype=np.complex128)
             for i in range(n_branches):
                     qeigenvec[i, :, :] = lines_i[i*n_atoms:(i+1)*n_atoms, :]
             qpt_line = f.readline()
-            # Sometimes there are more than n_qpts q-points in the file due to
-            # LO-TO splitting
+            # Sometimes there are more than n_qpts q-points in the file
+            # due to LO-TO splitting
             if idx < len(qpts):
                 qpts[idx] = qpt
                 freqs[idx] = qfreq
@@ -111,7 +114,8 @@ def _read_phonon_header(f):
     Parameters
     ----------
     f : file object
-        File object in read mode for the .phonon file containing the data
+        File object in read mode for the .phonon file containing the
+        data
 
     Returns
     -------
@@ -126,8 +130,8 @@ def _read_phonon_header(f):
     atom_r : (n_atoms, 3) float ndarray
         The fractional position of each atom within the unit cell
     atom_type : (n_atoms,) string ndarray
-        The chemical symbols of each atom in the unit cell. Atoms are in the
-        same order as in atom_r
+        The chemical symbols of each atom in the unit cell. Atoms are in
+        the same order as in atom_r
     atom_mass : (n_atoms,) float ndarray
         The mass of each atom in the unit cell in atomic mass units
     """
@@ -170,9 +174,9 @@ def _read_interpolation_data(filename, cell_vectors_unit='angstrom',
         A dict with the following keys: 'n_atoms', 'cell_vectors',
         'cell_vectors_unit', 'atom_r', 'atom_type', 'atom_mass',
         'atom_mass_unit', 'force_constants', 'force_constants_unit',
-        'sc_matrix' and 'cell_origins'. Also contains 'born', 'born_unit',
-        'dielectric' and 'dielectric_unit' if they are present in the
-        .castep_bin or .check file.
+        'sc_matrix' and 'cell_origins'. Also contains 'born',
+        'born_unit', 'dielectric' and 'dielectric_unit' if they are
+        present in the .castep_bin or .check file.
     """
     with open(filename, 'rb') as f:
         int_type = '>i4'
@@ -182,9 +186,9 @@ def _read_interpolation_data(filename, cell_vectors_unit='angstrom',
         while header.strip() != b'END':
             header = _read_entry(f)
             if header.strip() == b'BEGIN_UNIT_CELL':
-                # CASTEP writes the cell twice: the first is the geometry
-                # optimised cell, the second is the original cell. We only
-                # want the geometry optimised cell.
+                # CASTEP writes the cell twice: the first is the
+                # geometry optimised cell, the second is the original
+                # cell. We only want the geometry optimised cell.
                 if first_cell_read:
                     (n_atoms, cell_vectors, atom_r, atom_mass,
                     atom_type) = _read_cell(f, int_type, float_type)
@@ -216,7 +220,8 @@ def _read_interpolation_data(filename, cell_vectors_unit='angstrom',
     cry_dict['cell_vectors'] = cell_vectors*ureg(
         'bohr').to(cell_vectors_unit).magnitude
     cry_dict['cell_vectors_unit'] = cell_vectors_unit
-    cry_dict['atom_r'] = atom_r - np.floor(atom_r)  # Normalise ion coordinates
+    # Normalise atom coordinates
+    cry_dict['atom_r'] = atom_r - np.floor(atom_r)
     cry_dict['atom_type'] = atom_type
     cry_dict['atom_mass'] = atom_mass*ureg(
         'electron_mass').to(atom_mass_unit).magnitude
@@ -231,9 +236,9 @@ def _read_interpolation_data(filename, cell_vectors_unit='angstrom',
         data_dict['cell_origins'] = cell_origins
     except NameError:
         raise Exception((
-            'Force constants matrix could not be found in {:s}.\n Ensure '
-            'PHONON_WRITE_FORCE_CONSTANTS: true and a PHONON_FINE_METHOD has '
-            'been chosen when running CASTEP').format(file))
+            f'Force constants matrix could not be found in {filename}. '
+            f'\nEnsure PHONON_WRITE_FORCE_CONSTANTS: true and a '
+            f'PHONON_FINE_METHOD has been chosen when running CASTEP'))
 
     # Set entries relating to dipoles
     try:
@@ -257,11 +262,11 @@ def _read_cell(file_obj, int_type, float_type):
     f : file object
         File object in read mode for the .castep_bin or .check file
     int_type : str
-        Python struct format string describing the size and endian-ness of
-        ints in the file
+        Python struct format string describing the size and endian-ness
+        of ints in the file
     float_type : str
-        Python struct format string describing the size and endian-ness of
-        floats in the file
+        Python struct format string describing the size and endian-ness
+        of floats in the file
 
         Returns
     -------
@@ -274,8 +279,8 @@ def _read_cell(file_obj, int_type, float_type):
     atom_mass : (n_atoms,) float ndarray
         The mass of each atom in the unit cell in units of electron mass
     atom_type : (n_atoms,) string ndarray
-        The chemical symbols of each atom in the unit cell. Atoms are in the
-        same order as in atom_r
+        The chemical symbols of each atom in the unit cell. Atoms are in
+        the same order as in atom_r
     """
     header = ''
     while header.strip() != b'END_UNIT_CELL':
@@ -341,8 +346,8 @@ def _read_entry(file_obj, dtype=''):
     f : file object
         File object in read mode for the Fortran binary file
     dtype : str, optional, default ''
-        String determining what order and type to unpack the bytes as. See
-        'Format Strings' in Python struct documentation
+        String determining what order and type to unpack the bytes as.
+        See 'Format Strings' in Python struct documentation
 
     Returns
     -------

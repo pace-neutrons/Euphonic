@@ -20,8 +20,8 @@ class Crystal(object):
     atom_r : (n_atoms, 3) float ndarray
         The fractional position of each atom within the unit cell
     atom_type : (n_atoms,) string ndarray
-        The chemical symbols of each atom in the unit cell. Atoms are in the
-        same order as in atom_r
+        The chemical symbols of each atom in the unit cell. Atoms are in
+        the same order as in atom_r
     atom_mass : (n_atoms,) float Quantity
         The mass of each atom in the unit cell
     """
@@ -36,10 +36,11 @@ class Crystal(object):
         atom_r : (n_atoms, 3) float ndarray
             The fractional position of each atom within the unit cell
         atom_type : (n_atoms,) string ndarray
-            The chemical symbols of each atom in the unit cell. Atoms are in the
-            same order as in atom_r
+            The chemical symbols of each atom in the unit cell. Atoms
+            are in the same order as in atom_r
         atom_mass : (n_atoms,) float Quantity
-            The mass of each atom in the unit cell, in the same order as atom_r
+            The mass of each atom in the unit cell, in the same order as
+            atom_r
         """
         n_atoms = len(atom_r)
         _check_constructor_inputs(

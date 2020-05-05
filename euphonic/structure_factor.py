@@ -8,7 +8,8 @@ from euphonic.io import (_obj_to_json_file, _obj_from_json_file,
 
 class StructureFactor(object):
     """
-    Stores the structure factor calculated per q-point and per phonon mode
+    Stores the structure factor calculated per q-point and per phonon
+    mode
 
     Attributes
     ----------
@@ -17,15 +18,17 @@ class StructureFactor(object):
     n_qpts : int
         Number of q-points in the object
     qpts : (n_qpts, 3) float ndarray
-        Q-point coordinates, in fractional coordinates of the reciprocal lattice
+        Q-point coordinates, in fractional coordinates of the reciprocal
+        lattice
     frequencies : (n_qpts, 3*crystal.n_atoms) float Quantity
         Phonon frequencies per q-point and mode
     structure_factors : (n_qpts, 3*crystal.n_atoms) float Quantity
         Structure factor per q-point and mode
     temperature : float Quantity or None
-        The temperature used to calculate any temperature-dependent parts of
-        the structure factor (e.g. Debye-Waller, Bose population factor). None
-        if no temperature-dependent effects have been applied
+        The temperature used to calculate any temperature-dependent
+        parts of the structure factor (e.g. Debye-Waller, Bose
+        population factor). None if no temperature-dependent effects
+        have been applied
     """
 
     def __init__(self, crystal, qpts, frequencies, structure_factors,
@@ -36,16 +39,17 @@ class StructureFactor(object):
         crystal : Crystal
             Lattice and atom information
         qpts : (n_qpts, 3) float ndarray
-            Q-point coordinates, in fractional coordinates of the reciprocal
-            lattice
+            Q-point coordinates, in fractional coordinates of the
+            reciprocal lattice
         frequencies: (n_qpts, 3*crystal.n_atoms) float Quantity
             Phonon frequencies per q-point and mode
         structure_factors: (n_qpts, 3*crystal.n_atoms) float Quantity
             Structure factor per q-point and mode
         temperature : float Quantity or None
-            The temperature used to calculate any temperature-dependent parts
-            of the structure factor (e.g. Debye-Waller, Bose population factor)
-            None if no temperature-dependent effects have been applied
+            The temperature used to calculate any temperature-dependent
+            parts of the structure factor (e.g. Debye-Waller, Bose
+            population factor). None if no temperature-dependent effects
+            have been applied
         """
         _check_constructor_inputs(
             [crystal, qpts], [Crystal, np.ndarray], [(), (-1, 3)],
@@ -113,14 +117,14 @@ class StructureFactor(object):
             Whether to calculate and apply the Bose population factor
         temperature : float Quantity, default None
             The temperature to use to calculate the Bose factor. Is only
-            required if StructureFactor.temperature = None, otherwise the
-            temperature stored in StructureFactor will be used
+            required if StructureFactor.temperature = None, otherwise
+            the temperature stored in StructureFactor will be used
 
         Returns
         -------
         sqw_map : Spectrum2D
-            A spectrum containing the q-point bins on the x-axis, energy bins on
-            the y-axis and scattering intensities on the z-axis
+            A spectrum containing the q-point bins on the x-axis, energy
+            bins on the y-axis and scattering intensities on the z-axis
 
         Raises
         ------
@@ -134,8 +138,8 @@ class StructureFactor(object):
                         and not np.isclose(temperature, self.temperature)):
                     raise ValueError((
                         'Temperature provided to calculate_sqw_map '
-                        '({:~P}) is not consistent with the temperature stored '
-                        'in StructureFactor ({:~P})'.format(
+                        '({:~P}) is not consistent with the temperature'
+                        'stored in StructureFactor ({:~P})'.format(
                             temperature, self.temperature)))
                 temperature = self.temperature
 
@@ -143,13 +147,14 @@ class StructureFactor(object):
         freqs = self._frequencies
         e_bins_internal = e_bins.to('INTERNAL_ENERGY_UNIT').magnitude
 
-        # Create initial sqw_map with an extra an energy bin either side, for
-        # any branches that fall outside the energy bin range
+        # Create initial sqw_map with an extra an energy bin either
+        # side, for any branches that fall outside the energy bin range
         sqw_map = np.zeros((self.n_qpts, len(e_bins) + 1))
         sf = self._structure_factors
         if calc_bose and temperature is not None:
             p_intensity = sf*_bose_factor(freqs, temperature.to('K').magnitude)
-            n_intensity = sf*_bose_factor(-freqs, temperature.to('K').magnitude)
+            n_intensity = sf*_bose_factor(
+                -freqs, temperature.to('K').magnitude)
         else:
             p_intensity = sf
             n_intensity = sf
@@ -162,8 +167,9 @@ class StructureFactor(object):
             np.tile(range(self.n_qpts), (3*self.crystal.n_atoms, 1)))
         np.add.at(sqw_map, (first_index, p_bin), p_intensity)
         np.add.at(sqw_map, (first_index, n_bin), n_intensity)
+        # Exclude values outside ebin range
         sqw_map = sqw_map[:, 1:-1]*ureg('INTERNAL_LENGTH_UNIT**2').to(
-            self.structure_factors_unit)  # Exclude values outside ebin range
+            self.structure_factors_unit)
 
         abscissa = _calc_abscissa(self.crystal, self.qpts)
         # Calculate q-space ticks and labels

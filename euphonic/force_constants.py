@@ -27,9 +27,10 @@ class ImportCError(Exception):
 
 class ForceConstants(object):
     """
-    A class to read and store the data required for a phonon interpolation
-    calculation from model (e.g. CASTEP) output, and calculate phonon
-    frequencies/eigenvectors at arbitrary q-points via Fourier interpolation
+    A class to read and store the data required for a phonon
+    interpolation calculation from model (e.g. CASTEP) output,
+    and calculate phonon frequencies/eigenvectors at arbitrary q-points
+    via Fourier interpolation
 
     Attributes
     ----------
@@ -138,63 +139,66 @@ class ForceConstants(object):
         insert_gamma=False, reduce_qpts=True, use_c=False, n_threads=1,
         fall_back_on_python=True):
         """
-        Calculate phonon frequencies and eigenvectors at specified q-points
-        from a supercell force constant matrix via interpolation. For more
-        information on the method see section 2.5:
-        http://www.tcm.phy.cam.ac.uk/castep/Phonons_Guide/Castep_Phonons.html
+        Calculate phonon frequencies and eigenvectors at specified
+        q-points from a supercell force constant matrix via
+        interpolation. For more information on the method see section
+        2.5: http://www.tcm.phy.cam.ac.uk/castep/Phonons_Guide/Castep_Phonons.html
 
         Parameters
         ----------
         qpts : (n_qpts, 3) float ndarray
             The q-points to interpolate onto
         asr : {'realspace', 'reciprocal'}, optional, default None
-            Which acoustic sum rule correction to apply. 'realspace' applies
-            the correction to the force constant matrix in real space.
-            'reciprocal' applies the correction to the dynamical matrix at
-            every q-point
+            Which acoustic sum rule correction to apply. 'realspace'
+            applies the correction to the force constant matrix in real
+            space. 'reciprocal' applies the correction to the dynamical
+            matrix at every q-point
         dipole : boolean, optional, default True
-            Calculates the dipole tail correction to the dynamical matrix at
-            each q-point using the Ewald sum, if the Born charges and
-            dielectric permitivitty tensor are present.
+            Calculates the dipole tail correction to the dynamical
+            matrix at each q-point using the Ewald sum, if the Born
+            charges and dielectric permitivitty tensor are present.
         eta_scale : float, optional, default 1.0
-            Changes the cutoff in real/reciprocal space for the dipole Ewald
-            sum. A higher value uses more reciprocal terms
+            Changes the cutoff in real/reciprocal space for the dipole
+            Ewald sum. A higher value uses more reciprocal terms
         splitting : boolean, optional, default True
-            Whether to calculate the LO-TO splitting at the gamma points. Only
-            applied if dipole is True and the Born charges and dielectric
-            permitivitty tensor are present.
+            Whether to calculate the LO-TO splitting at the gamma
+            points. Only applied if dipole is True and the Born charges
+            and dielectric permitivitty tensor are present.
         insert_gamma : boolean, optional, default False
-            If splitting is True, this will insert gamma points into qpts to
-            store the extra split frequencies. Note this means that the length
-            of qpts in the output QpointPhononModes object will not necessarily be the
-            same as the input qpts. If qpts already contains double gamma points
-            where you want split frequencies, leave this as False.
+            If splitting is True, this will insert gamma points into
+            qpts to store the extra split frequencies. Note this means
+            that the length of qpts in the output QpointPhononModes
+            object will not necessarily be the same as the input qpts.
+            If qpts already contains double gamma points where you want
+            split frequencies, leave this as False.
         reduce_qpts : boolean, optional, default False
             Whether to use periodicity to reduce all q-points and only
-            calculate for unique q-points within the 1st BZ. This won't change
-            the output but could increase performance.
+            calculate for unique q-points within the 1st BZ. This won't
+            change the output but could increase performance.
         use_c : boolean, optional, default False
-            Whether to use C instead of Python to calculate and diagonalise
-            the dynamical matrix
+            Whether to use C instead of Python to calculate and
+            diagonalise the dynamical matrix
         n_threads : int, optional, default 1
-            The number of threads to use when looping over q-points in C. Only
-            applicable if use_c=True
+            The number of threads to use when looping over q-points in
+            C. Only applicable if use_c=True
         fall_back_on_python : boolean, optional, default True
-            If we cannot use the C extension, fall back on using python if this
-            is true, else raise an ImportCError.
+            If we cannot use the C extension, fall back on using python
+            if this is true, else raise an ImportCError.
 
         Returns
         -------
         phonon_data : QpointPhononModes
-            A QpointPhononModes object containing the interpolated frequencies and
-            eigenvectors. Note that if there is LO-TO splitting, the number of
-            input q-points may not be the same as in the output QpointPhononModes
+            A QpointPhononModes object containing the interpolated
+            frequencies and eigenvectors. Note that if there is LO-TO
+            splitting, the number of input q-points may not be the same
+            as in the output QpointPhononModes
             object
 
         Raises
         ------
-        ImportCError: If we have selected not to fall back on Python and cannot
-            use the C extension.
+        ImportCError
+            If we have selected not to fall back on Python and cannot
+            use the C extension
         """
         # Set default splitting params
         if self.born is None:
@@ -211,11 +215,12 @@ class ForceConstants(object):
 
         if reduce_qpts:
             norm_qpts = qpts - np.rint(qpts)
-            # Ensure gamma points are exactly zero, otherwise you may have a
-            # case where small fp differences mean np.unique doesn't reduce
-            # them, yet they're all classified as gamma points. This causes
-            # indexing errors later when calculating q-directions as there are
-            # then points in reduced_qpts whose index isn't in qpts_i
+            # Ensure gamma points are exactly zero, otherwise you may
+            # have a case where small fp differences mean np.unique
+            # doesn't reduce them, yet they're all classified as gamma
+            # points. This causes indexing errors later when calculating
+            # q-directions as there are then points in reduced_qpts
+            # whose index isn't in qpts_i
             gamma_i = np.where(is_gamma(qpts))[0]
             n_gamma = len(gamma_i)
             norm_qpts[gamma_i] = 0.
@@ -223,12 +228,12 @@ class ForceConstants(object):
             reduced_qpts, qpts_i = np.unique(norm_qpts, return_inverse=True,
                                              axis=0)
             n_rqpts = len(reduced_qpts)
-            # Special handling of gamma points - don't reduce gamma points if
-            # LO-TO splitting
+            # Special handling of gamma points - don't reduce gamma
+            # points if LO-TO splitting
             if splitting and n_gamma > 1:
-                # Replace any gamma points and their indices with new gamma
-                # points appended onto the reduced q-point array, so each
-                # gamma can have its own splitting
+                # Replace any gamma points and their indices with new
+                # gamma points appended onto the reduced q-point array,
+                # so each gamma can have its own splitting
                 qpts_i[gamma_i[1:]] = range(n_rqpts, n_rqpts + n_gamma - 1)
                 reduced_qpts = np.append(reduced_qpts,
                                          np.tile(np.array([0., 0., 0.,]),
@@ -245,9 +250,9 @@ class ForceConstants(object):
         if not hasattr(self, 'sc_image_i'):
             self._calculate_supercell_images(lim)
 
-        # Get a list of all the unique supercell image origins and cell origins
-        # in x, y, z and how to rebuild them to minimise expensive phase
-        # calculations later
+        # Get a list of all the unique supercell image origins and cell
+        # origins in x, y, z and how to rebuild them to minimise
+        # expensive phase calculations later
         sc_image_r = get_all_origins(
             np.repeat(lim, 3) + 1, min_xyz=-np.repeat(lim, 3))
         sc_offsets = np.einsum('ji,kj->ki', self.sc_matrix,
@@ -268,7 +273,7 @@ class ForceConstants(object):
         masses = np.tile(np.repeat(atom_mass, 3), (3*n_atoms, 1))
         dyn_mat_weighting = 1/np.sqrt(masses*np.transpose(masses))
 
-        # Initialise dipole correction calculation to FC matrix if required
+        # Initialise dipole correction calc to FC matrix if required
         if dipole and (not hasattr(self, 'eta_scale') or
                        eta_scale != self._eta_scale):
             self._dipole_correction_init(eta_scale)
@@ -279,8 +284,8 @@ class ForceConstants(object):
             force_constants = self._force_constants_asr
         else:
             force_constants = self._force_constants
-        # Precompute fc matrix weighted by number of supercell ion images
-        # (for cumulant method)
+        # Precompute fc matrix weighted by number of supercell atom
+        # images (for cumulant method)
         n_sc_images_repeat = (self._n_sc_images.
             repeat(3, axis=2).repeat(3, axis=1))
         fc_img_weighted = np.divide(
@@ -310,11 +315,11 @@ class ForceConstants(object):
                     from euphonic.util import (_ensure_contiguous_args,
                                                _ensure_contiguous_attrs)
                 except ImportError:
-                    warnings.warn(('use_c=True is set, but the Euphonic\'s C '
-                                   'extension couldn\'t be imported, it may '
-                                   'not have been installed. Attempting to fall '
-                                   'back to pure Python calculation'),
-                                   stacklevel=2)
+                    warnings.warn((
+                        'use_c=True is set, but the Euphonic\'s C '
+                        'extension couldn\'t be imported, it may not '
+                        'have been installed. Attempting to fall back '
+                        'to pure Python calculation'), stacklevel=2)
                     raise
             else:
                 raise ImportError
@@ -329,8 +334,9 @@ class ForceConstants(object):
                     fc_img_weighted, sc_offsets, recip_asr_correction,
                     dyn_mat_weighting, rfreqs, reigenvecs)
             attrs = ['_n_sc_images', '_sc_image_i', 'cell_origins']
-            dipole_attrs = ['atom_r', '_born', '_dielectric', '_H_ab', '_cells',
-                            '_gvec_phases', '_gvecs_cart', '_dipole_q0']
+            dipole_attrs = ['atom_r', '_born', '_dielectric', '_H_ab',
+                            '_cells', '_gvec_phases', '_gvecs_cart',
+                            '_dipole_q0']
             _ensure_contiguous_attrs(self, attrs, opt_attrs=dipole_attrs)
             reciprocal_asr = 1 if asr == 'reciprocal' else 0
             euphonic_c.calculate_phonons(
@@ -340,11 +346,12 @@ class ForceConstants(object):
                 reigenvecs, n_threads, scipy.__path__[0])
         except ImportError:
             if not fall_back_on_python:
-                raise ImportCError('use_c=True is set, but the Euphonic\'s C '
-                                   'extension couldn\'t be imported, it may '
-                                   'not have been installed. You have selected '
-                                   'not to fall back on Python, therefore we '
-                                   'cannot complete the calculation.')
+                raise ImportCError((
+                    'use_c=True is set, but the Euphonic\'s C extension'
+                    ' couldn\'t be imported, it may not have been '
+                    'installed. You have selected not to fall back on '
+                    'Python, therefore we cannot complete the '
+                    'calculation.'))
             else:
                 q_independent_args = (
                     reduced_qpts, qpts_i, fc_img_weighted, unique_sc_offsets,
@@ -364,10 +371,10 @@ class ForceConstants(object):
 
     def _calculate_phonons_at_q(self, q, args):
         """
-        Given a q-point and some precalculated q-independent values, calculate
-        and diagonalise the dynamical matrix and return the frequencies and
-        eigenvalues. Optionally also includes the Ewald dipole sum correction
-        and LO-TO splitting
+        Given a q-point and some precalculated q-independent values,
+        calculate and diagonalise the dynamical matrix and return the
+        frequencies and eigenvalues. Optionally also includes the Ewald
+        dipole sum correction and LO-TO splitting
         """
         (reduced_qpts, qpts_i, fc_img_weighted, unique_sc_offsets,
          unique_sc_i, unique_cell_origins, unique_cell_i,
@@ -388,8 +395,8 @@ class ForceConstants(object):
         if asr == 'reciprocal':
             dyn_mat += recip_asr_correction
 
-        # Calculate LO-TO splitting by calculating non-analytic correction
-        # to dynamical matrix
+        # Calculate LO-TO splitting by calculating non-analytic
+        # correction to dynamical matrix
         if splitting and is_gamma(qpt):
             # If first q-point
             if qpts_i[0] == q:
@@ -400,14 +407,15 @@ class ForceConstants(object):
             else:
                 # Find position in original qpts array (non reduced)
                 qpos = np.where(qpts_i==q)[0][0]
-                # If splitting=True there should be an adjacent gamma point.
-                # Calculate splitting in whichever direction isn't gamma
+                # If splitting=True there should be an adjacent gamma
+                # point. Calculate splitting in whichever direction
+                # isn't gamma
                 q_dir = reduced_qpts[qpts_i[qpos + 1]]
                 if is_gamma(q_dir):
                     q_dir = -reduced_qpts[qpts_i[qpos - 1]]
             na_corr = self._calculate_gamma_correction(q_dir)
         else:
-            # Correction is zero if not a gamma point or splitting = False
+            # Correction is zero if not a gamma point or splitting=False
             na_corr = np.array([0])
 
         dyn_mat += na_corr
@@ -433,8 +441,8 @@ class ForceConstants(object):
                            unique_sc_i, unique_cell_origins, unique_cell_i):
         """
         Calculate the non mass weighted dynamical matrix at a specified
-        q-point from the image weighted force constants matrix and the indices
-        specifying the periodic images. See eq. 1.5:
+        q-point from the image weighted force constants matrix and the
+        indices specifying the periodic images. See eq. 1.5:
         http://www.tcm.phy.cam.ac.uk/castep/Phonons_Guide/Castep_Phonons.html
 
         Parameters
@@ -442,25 +450,26 @@ class ForceConstants(object):
         q : (3,) float ndarray
             The q-point to calculate the correction for
         fc_img_weighted : (n_cells_in_sc, 3*n_atoms, 3*n_atoms) float ndarray
-            The force constants matrix weighted by the number of supercell ion
-            images for each ij displacement
+            The force constants matrix weighted by the number of
+            supercell atom images for each ij displacement
         unique_sc_offsets : list of lists of ints
-            A list containing 3 lists of the unique supercell image offsets in
-            each direction. The supercell offset is calculated by multiplying
-            the supercell matrix by the supercell image indices (obtained by
-            _get_all_origins()). A list of lists rather than a
-            Numpy array is used as the 3 lists are independent and their size
-            is not known beforehand
+            A list containing 3 lists of the unique supercell image
+            offsets in each direction. The supercell offset is
+            calculated by multiplying the supercell matrix by the
+            supercell image indices (obtained by _get_all_origins()). A
+            list of lists rather than a Numpy array is used as the 3
+            lists are independent and their size is not known beforehand
         unique_sc_i : ((2*lim + 1)**3, 3) int ndarray
             The indices needed to reconstruct sc_offsets from the unique
             values in unique_sc_offsets
         unique_cell_origins : list of lists of ints
             A list containing 3 lists of the unique cell origins in each
-            direction. A list of lists rather than a Numpy array is used as
-            the 3 lists are independent and their size is not known beforehand
+            direction. A list of lists rather than a Numpy array is used
+            as the 3 lists are independent and their size is not known
+            beforehand
         unique_sc_i : (cell_origins, 3) int ndarray
-            The indices needed to reconstruct cell_origins from the unique
-            values in unique_cell_origins
+            The indices needed to reconstruct cell_origins from the
+            unique values in unique_cell_origins
 
         Returns
         -------
@@ -472,14 +481,14 @@ class ForceConstants(object):
         sc_image_i = self._sc_image_i
         dyn_mat = np.zeros((n_atoms*3, n_atoms*3), dtype=np.complex128)
 
-        # Cumulant method: for each ij ion-ion displacement sum phases for
-        # all possible supercell images, then multiply by the cell phases
-        # to account for j ions in different cells. Then multiply by the
-        # image weighted fc matrix for each 3 x 3 ij displacement
+        # Cumulant method: for each ij ion-ion displacement sum phases
+        # for all possible supercell images, then multiply by the cell
+        # phases to account for j ions in different cells. Then multiply
+        # by the image weighted fc matrix for each 3 x 3 ij displacement
 
-        # Make sc_phases 1 longer than necessary, so when summing phases for
-        # supercell images if there is no image, an index of -1 and hence
-        # phase of zero can be used
+        # Make sc_phases 1 longer than necessary, so when summing phases
+        # for supercell images if there is no image, an index of -1 and
+        # hence phase of zero can be used
         sc_phases = np.zeros(len(unique_sc_i) + 1, dtype=np.complex128)
         sc_phases[:-1], cell_phases = self._calculate_phases(
             q, unique_sc_offsets, unique_sc_i, unique_cell_origins,
@@ -496,15 +505,16 @@ class ForceConstants(object):
 
     def _dipole_correction_init(self, eta_scale=1.0):
         """
-        Calculate the q-independent parts of the long range correction to the
-        dynamical matrix for efficiency. The method used is based on the
-        Ewald sum, see eqs 72-74 from Gonze and Lee PRB 55, 10355 (1997)
+        Calculate the q-independent parts of the long range correction
+        to the dynamical matrix for efficiency. The method used is based
+        on the Ewald sum, see eqs 72-74 from Gonze and Lee PRB 55, 10355
+        (1997)
 
         Parameters
         ----------
         eta_scale : float, optional, default 1.0
-            Changes the cutoff in real/reciprocal space for the dipole Ewald
-            sum. A higher value uses more reciprocal terms
+            Changes the cutoff in real/reciprocal space for the dipole
+            Ewald sum. A higher value uses more reciprocal terms
         """
 
         cell_vectors = self.crystal._cell_vectors
@@ -573,7 +583,7 @@ class ForceConstants(object):
                 cells = np.concatenate((cells, cells_tmp))
             else:
                 break
-        # Use compact H_ab to fill in upper triangular of the realspace term
+        # Use compact H_ab to fill in upper triangular of realspace term
         real_q0[np.triu_indices(n_atoms)] = np.sum(H_ab, axis=0)
         real_q0 *= eta**3/math.sqrt(np.linalg.det(dielectric))
 
@@ -618,8 +628,8 @@ class ForceConstants(object):
                 real_q0[i, j] = np.conj(real_q0[j, i])
                 recip_q0[i, j] = np.conj(recip_q0[j, i])
 
-        # Calculate the q=0 correction, to be subtracted from the corrected
-        # diagonal at each q
+        # Calculate the q=0 correction, to be subtracted from the
+        # corrected diagonal at each q
         dipole_q0 = np.zeros((n_atoms, 3, 3), dtype=np.complex128)
         for i in range(n_atoms):
             for j in range(n_atoms):
@@ -642,8 +652,9 @@ class ForceConstants(object):
 
     def _calculate_dipole_correction(self, q):
         """
-        Calculate the long range correction to the dynamical matrix using the
-        Ewald sum, see eqs 72-74 from Gonze and Lee PRB 55, 10355 (1997)
+        Calculate the long range correction to the dynamical matrix
+        using the Ewald sum, see eqs 72-74 from Gonze and Lee PRB 55,
+        10355 (1997)
 
         Parameters
         ----------
@@ -701,7 +712,7 @@ class ForceConstants(object):
                              /(gvec_phases[:, i:]*q_phases[i:]))
                 recip_dipole[i, i:] = np.einsum(
                     'ikl,ij->jkl', recip_exp, phase_exp)
-        cell_volume = np.dot(cell_vectors[0], np.cross(cell_vectors[1], cell_vectors[2]))
+        cell_volume = self.crystal._cell_volume()
         recip_dipole *= math.pi/(cell_volume*eta_2)
 
         # Fill in remaining entries by symmetry
@@ -725,15 +736,15 @@ class ForceConstants(object):
 
     def _calculate_gamma_correction(self, q_dir):
         """
-        Calculate non-analytic correction to the dynamical matrix at q=0 for
-        a specified direction of approach. See Eq. 60 of X. Gonze and C. Lee,
-        PRB (1997) 55, 10355-10368.
+        Calculate non-analytic correction to the dynamical matrix at q=0
+        for a specified direction of approach. See Eq. 60 of X. Gonze
+        and C. Lee, PRB (1997) 55, 10355-10368.
 
         Parameters
         ----------
         q_dir : (3,) float ndarray
-            The direction along which q approaches 0, in reciprocal fractional
-            coordinates
+            The direction along which q approaches 0, in reciprocal
+            fractional coordinates
 
         Returns
         -------
@@ -749,7 +760,7 @@ class ForceConstants(object):
         if is_gamma(q_dir):
             return na_corr
 
-        cell_volume = np.dot(cell_vectors[0], np.cross(cell_vectors[1], cell_vectors[2]))
+        cell_volume = self.crystal._cell_volume()
         denominator = np.einsum('ij,i,j', dielectric, q_dir, q_dir)
         factor = 4*math.pi/(cell_volume*denominator)
 
@@ -764,8 +775,8 @@ class ForceConstants(object):
 
     def _get_shell_origins(self, n):
         """
-        Given the shell number, compute all the cell origins that lie in that
-        shell
+        Given the shell number, compute all the cell origins that lie in
+        that shell
 
         Parameters
         ----------
@@ -782,17 +793,17 @@ class ForceConstants(object):
         if n == 0:
             return np.array([[0, 0, 0]], dtype=np.int32)
 
-        # Coordinates of cells in xy plane where z=0, xz plane where y=0, yz
-        # plane where x=0. Note: to avoid duplicating cells at the edges,
-        # the xz plane has (2*n + 1) - 2 rows in z, rather than
-        # (2*n + 1). The yz plane also has (2*n + 1) - 2 rows in z and
-        # (2*n + 1) - 2 columns in y
+        # Coordinates of cells in xy plane where z=0, xz plane where
+        # y=0, yz plane where x=0. Note: to avoid duplicating cells at
+        # the edges, the xz plane has (2*n + 1) - 2 rows in z, rather
+        # than (2*n + 1). The yz plane also has (2*n + 1) - 2 rows in z
+        # and (2*n + 1) - 2 columns in y
         xy = get_all_origins([n+1, n+1, 1], min_xyz=[-n, -n, 0])
         xz = get_all_origins([n+1, 1, n], min_xyz=[-n, 0, -n+1])
         yz = get_all_origins([1, n, n], min_xyz=[0, -n+1, -n+1])
 
-        # Offset each plane by n and -n to get the 6 planes that make up the
-        # shell
+        # Offset each plane by n and -n to get the 6 planes that make up
+        # the shell
         origins = np.zeros(((2*n+1)**3-(2*n-1)**3, 3), dtype=np.int32)
         for i, ni in enumerate([-n, n]):
             origins[i*len(xy):(i+1)*len(xy)] = xy
@@ -809,9 +820,10 @@ class ForceConstants(object):
     def _enforce_realspace_asr(self):
         """
         Apply a transformation to the force constants matrix so that it
-        satisfies the acousic sum rule. Diagonalise, shift the acoustic modes
-        to almost zero then construct the correction to the force constants
-        matrix using the eigenvectors. For more information see section 2.3.4:
+        satisfies the acousic sum rule. Diagonalise, shift the acoustic
+        modes to almost zero then construct the correction to the force
+        constants matrix using the eigenvectors. For more information
+        see section 2.3.4:
         http://www.tcm.phy.cam.ac.uk/castep/Phonons_Guide/Castep_Phonons.html
 
         Returns
@@ -835,8 +847,8 @@ class ForceConstants(object):
             # Get all possible cell-cell vector combinations
             inter_cell_vectors = cell_origins_sc - np.tile(cell_origins_sc[nc],
                                                            (n_cells_in_sc, 1))
-            # Compare cell-cell vectors with origin-cell vectors and determine
-            # which are equivalent
+            # Compare cell-cell vectors with origin-cell vectors and
+            # determine which are equivalent
             # Do calculation in chunks, so loop can be broken if all
             # equivalent vectors have been found
             N = 100
@@ -858,9 +870,10 @@ class ForceConstants(object):
                 if np.all(dist_min <= 16*sys.float_info.epsilon):
                     break
             if (np.any(dist_min > 16*sys.float_info.epsilon)):
-                warnings.warn(('Error correcting FC matrix for acoustic sum '
-                               'rule, supercell relative index couldn\'t be '
-                               'found. Returning uncorrected FC matrix'))
+                warnings.warn((
+                    'Error correcting FC matrix for acoustic sum rule, '
+                    'supercell relative index couldn\'t be found. '
+                    'Returning uncorrected FC matrix'))
                 return self.force_constants
             sq_fc[3*nc*n_atoms:3*(nc+1)*n_atoms, :] = np.transpose(
                 np.reshape(force_constants[sc_relative_index],
@@ -868,12 +881,13 @@ class ForceConstants(object):
         try:
             ac_i, evals, evecs = self._find_acoustic_modes(sq_fc)
         except Exception:
-            warnings.warn(('\nError correcting for acoustic sum rule, could '
-                           'not find 3 acoustic modes.\nReturning uncorrected '
-                           'FC matrix'), stacklevel=2)
+            warnings.warn((
+                '\nError correcting for acoustic sum rule, could not '
+                'find 3 acoustic modes.\nReturning uncorrected FC '
+                'matrix'), stacklevel=2)
             return self.force_constants
 
-        # Correct force constant matrix - set acoustic modes to almost zero
+        # Correct fc matrix - set acoustic modes to almost zero
         fc_tol = 1e-8*np.min(np.abs(evals))
         for ac in ac_i:
             sq_fc -= (fc_tol + evals[ac])*np.einsum(
@@ -886,11 +900,11 @@ class ForceConstants(object):
 
     def _enforce_reciprocal_asr(self, dyn_mat_gamma):
         """
-        Calculate the correction to the dynamical matrix that would have to be
-        applied to satisfy the acousic sum rule. Diagonalise the gamma-point
-        dynamical matrix, shift the acoustic modes to almost zero then
-        reconstruct the dynamical matrix using the eigenvectors. For more
-        information see section 2.3.4:
+        Calculate the correction to the dynamical matrix that would have
+        to be applied to satisfy the acousic sum rule. Diagonalise the
+        gamma-point dynamical matrix, shift the acoustic modes to almost
+        zero then reconstruct the dynamical matrix using the
+        eigenvectors. For more information see section 2.3.4:
         http://www.tcm.phy.cam.ac.uk/castep/Phonons_Guide/Castep_Phonons.html
 
         Parameters
@@ -901,15 +915,17 @@ class ForceConstants(object):
         Returns
         -------
         dyn_mat : (3*n_atoms, 3*n_atoms) complex ndarray or empty array
-            The corrected, non mass-weighted dynamical matrix at q. Returns
-            empty array (np.array([])) if finding the 3 acoustic modes fails
+            The corrected, non mass-weighted dynamical matrix at q.
+            Returns empty array (np.array([])) if finding the 3 acoustic
+            modes fails
         """
 #        tol = (ureg('amu').to('e_mass')
 #               *0.1*ureg('1/cm').to('1/bohr')**2).magnitude
         tol = 5e-15
 
         try:
-            ac_i, g_evals, g_evecs = self._find_acoustic_modes(dyn_mat_gamma)
+            ac_i, g_evals, g_evecs = self._find_acoustic_modes(
+                dyn_mat_gamma)
         except Exception:
             warnings.warn(('\nError correcting for acoustic sum rule, '
                            'could not find 3 acoustic modes.\nNot '
@@ -927,9 +943,9 @@ class ForceConstants(object):
 
     def _find_acoustic_modes(self, dyn_mat):
         """
-        Find the acoustic modes from a dynamical matrix, they should have
-        the sum of c of m amplitude squared = mass (note: have not actually
-        included mass weighting here so assume mass = 1.0)
+        Find the acoustic modes from a dynamical matrix, they should
+        have the sum of c of m amplitude squared = mass (note: have not
+        actually included mass weighting here so assume mass = 1.0)
 
         Parameters
         ----------
@@ -959,7 +975,7 @@ class ForceConstants(object):
         # Check number of acoustic modes
         if np.sum(c_of_m_disp_sq > sensitivity*sc_mass) < 3:
             raise Exception('Could not find 3 acoustic modes')
-        # Find indices of acoustic modes (3 largest c of m displacements)
+        # Find idx of acoustic modes (3 largest c of m displacements)
         ac_i = np.argsort(c_of_m_disp_sq)[-3:]
 
         return ac_i, evals, evecs
@@ -967,44 +983,47 @@ class ForceConstants(object):
     def _calculate_phases(self, q, unique_sc_offsets, unique_sc_i,
                           unique_cell_origins, unique_cell_i):
         """
-        Calculate the phase factors for the supercell images and cells for a
-        single q-point. The unique supercell and cell origins indices are
-        required to minimise expensive exp and power operations
+        Calculate the phase factors for the supercell images and cells
+        for a single q-point. The unique supercell and cell origins
+        indices are required to minimise expensive exp and power
+        operations
 
         Parameters
         ----------
         q : (3,) float ndarray
             The q-point to calculate the phase for
         unique_sc_offsets : list of lists of ints
-            A list containing 3 lists of the unique supercell image offsets in
-            each direction. The supercell offset is calculated by multiplying
-            the supercell matrix by the supercell image indices (obtained by
-            _get_all_origins()). A list of lists rather than a
-            Numpy array is used as the 3 lists are independent and their size
-            is not known beforehand
+            A list containing 3 lists of the unique supercell image
+            offsets in each direction. The supercell offset is
+            calculated by multiplying the supercell matrix by the
+            supercell image indices (obtained by _get_all_origins()). A
+            list of lists rather than a Numpy array is used as the 3
+            lists are independent and their size is not known beforehand
         unique_sc_i : ((2*lim + 1)**3, 3) int ndarray
             The indices needed to reconstruct sc_offsets from the unique
             values in unique_sc_offsets
         unique_cell_origins : list of lists of ints
             A list containing 3 lists of the unique cell origins in each
-            direction. A list of lists rather than a Numpy array is used as
-            the 3 lists are independent and their size is not known beforehand
+            direction. A list of lists rather than a Numpy array is used
+            as the 3 lists are independent and their size is not known
+            beforehand
         unique_cell_i : (cell_origins, 3) int ndarray
-            The indices needed to reconstruct cell_origins from the unique
-            values in unique_cell_origins
+            The indices needed to reconstruct cell_origins from the
+            unique values in unique_cell_origins
 
         Returns
         -------
         sc_phases : (unique_sc_i,) float ndarray
-            Phase factors exp(iq.r) for each supercell image coordinate in
-            sc_offsets
+            Phase factors exp(iq.r) for each supercell image coordinate
+            in sc_offsets
         cell_phases : (unique_cell_i,) float ndarray
-            Phase factors exp(iq.r) for each cell coordinate in the supercell
+            Phase factors exp(iq.r) for each cell coordinate in the
+            supercell
         """
 
-        # Only calculate exp(iq) once, then raise to power to get the phase at
-        # different supercell/cell coordinates to minimise expensive exp
-        # calculations
+        # Only calculate exp(iq) once, then raise to power to get the
+        # phase at different supercell/cell coordinates to minimise
+        # expensive exp calculations
         # exp(iq.r) = exp(iqh.ra)*exp(iqk.rb)*exp(iql.rc)
         #           = (exp(iqh)^ra)*(exp(iqk)^rb)*(exp(iql)^rc)
         phase = np.exp(2j*math.pi*q)
@@ -1022,9 +1041,9 @@ class ForceConstants(object):
     def _calculate_supercell_images(self, lim):
         """
         For each displacement of ion i in the unit cell and ion j in the
-        supercell, calculate the number of supercell periodic images there are
-        and which supercells they reside in, and sets the sc_image_i,
-        and n_sc_images ForceConstants attributes
+        supercell, calculate the number of supercell periodic images
+        there are and which supercells they reside in, and sets the
+        sc_image_i, and n_sc_images ForceConstants attributes
 
         Parameters
         ----------
@@ -1064,7 +1083,8 @@ class ForceConstants(object):
 
         sc_image_i = np.full((n_cells_in_sc, n_atoms, n_atoms, (2*lim + 1)**3),
                              -1, dtype=np.int32)
-        n_sc_images = np.zeros((n_cells_in_sc, n_atoms, n_atoms), dtype=np.int32)
+        n_sc_images = np.zeros((n_cells_in_sc, n_atoms, n_atoms),
+                               dtype=np.int32)
 
         # Ordering of loops here is for efficiency:
         # ions in unit cell -> periodic supercell images -> WS points
@@ -1074,21 +1094,21 @@ class ForceConstants(object):
         for i in range(n_atoms):
             rij = sc_ion_cart[0, i] - sc_ion_cart
             for im, sc_r in enumerate(sc_image_cart):
-                # Get vector between j in supercell image and i in unit cell
+                # Get vector between j in sc image and i in unit cell
                 dists = rij - sc_r
-                # Only want to include images where ion < halfway to ALL ws
-                # points, so compare vector to all ws points
+                # Only want to include images where ion < halfway to ALL
+                # ws points, so compare vector to all ws points
                 for n, wsp in enumerate(ws_list_norm):
                     dist_wsp = np.absolute(np.sum(dists*wsp, axis=-1))
                     if n == 0:
                         nc_idx, nj_idx = np.where(
                             dist_wsp <= ((0.5*cutoff_scale + 0.001)))
-                        # Reindex dists to remove elements where the ion is
-                        # > halfway to WS point, to avoid wasted computation
+                        # Reindex dists to remove elements where the ion
+                        # is > halfway to WS point for efficiency
                         dists = dists[nc_idx, nj_idx]
                     else:
-                        # After first reindex, dists is now 1D so need to
-                        # reindex like this instead
+                        # After first reindex, dists is now 1D so need
+                        # to reindex like this instead
                         idx = np.where(
                             dist_wsp <= ((0.5*cutoff_scale + 0.001)))[0]
                         nc_idx = nc_idx[idx]
@@ -1096,16 +1116,16 @@ class ForceConstants(object):
                         dists = dists[idx]
                     if len(nc_idx) == 0:
                         break
-                    # If ion-ion vector has been < halfway to all WS points,
-                    # this is a valid image! Save it
+                    # If ion-ion vector has been < halfway to all WS
+                    # points, this is a valid image! Save it
                     if n == len(ws_list_norm) - 1:
                         n_im_idx = n_sc_images[nc_idx, i, nj_idx]
                         sc_image_i[nc_idx, i, nj_idx, n_im_idx] = im
                         n_sc_images[nc_idx, i, nj_idx] += 1
 
         self._n_sc_images = n_sc_images
-        # Truncate sc_image_i to the maximum ACTUAL images rather than the
-        # maximum possible images to avoid storing and summing over
+        # Truncate sc_image_i to the maximum ACTUAL images rather than
+        # the maximum possible images to avoid storing and summing over
         # nonexistent images
         self._sc_image_i = sc_image_i[:, :, :, :np.max(n_sc_images)]
 
@@ -1196,31 +1216,33 @@ class ForceConstants(object):
 
     @classmethod
     def from_phonopy(cls, path='.', summary_name='phonopy.yaml',
-                     born_name=None, fc_name='FORCE_CONSTANTS', fc_format=None):
+                     born_name=None, fc_name='FORCE_CONSTANTS',
+                     fc_format=None):
         """
-        Reads data from the phonopy summary file (default phonopy.yaml) and
-        optionally born and force constants iles. Only attempts to read from
-        born or force constants files if these
-        can't be found in the summary file.
+        Reads data from the phonopy summary file (default phonopy.yaml)
+        and optionally born and force constants iles. Only attempts to
+        read from born or force constants files if these can't be found
+        in the summary file.
 
         Parameters
         ----------
         path : str, optional, default '.'
             Path to directory containing the file(s)
         summary_name : str, optional, default 'phonpy.yaml'
-            Filename of phonopy summary file, default phonopy.yaml. By default
-            any information (e.g. force constants) read from this file takes
-            priority
+            Filename of phonopy summary file, default phonopy.yaml. By
+            default any information (e.g. force constants) read from
+            this file takes priority
         born_name : str, optional, default None
-            Name of the Phonopy file containing born charges and dielectric
-            tensor (by convention in Phonopy this would be called BORN). Is only
-            read if Born charges can't be found in the summary_name file
+            Name of the Phonopy file containing born charges and
+            dielectric tensor (by convention in Phonopy this would be
+            called BORN). Is only read if Born charges can't be found in
+            the summary_name file
         fc_name : str, optional, default 'FORCE_CONSTANTS'
-            Name of file containing force constants. Is only read if force
-            constants can't be found in summary_name
+            Name of file containing force constants. Is only read if
+            force constants can't be found in summary_name
         fc_format : {'phonopy', 'hdf5'} str, optional, default None
-            Format of file containing force constants data. FORCE_CONSTANTS is
-            type 'phonopy'
+            Format of file containing force constants data.
+            FORCE_CONSTANTS is type 'phonopy'
 
         """
         data = phonopy._read_interpolation_data(

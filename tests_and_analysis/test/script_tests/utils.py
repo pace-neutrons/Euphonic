@@ -71,7 +71,8 @@ def get_dos_params() -> List[List[str]]:
     List[str]
         The parameters to run the script with
     """
-    return [[], ["-w 2.3"], ["-b 3.3"], ["-w 2.3", "-b 3.3"], ["-unit=meV"], ["-lorentz"]]
+    return [[], ["-w 2.3"], ["-b 3.3"], ["-w 2.3", "-b 3.3"],
+            ["-unit=meV"], ["-lorentz"]]
 
 
 def get_dispersion_params() -> List[List[str]]:

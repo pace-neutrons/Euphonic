@@ -21,21 +21,21 @@ class Spectrum1D(object):
     y_data : (n_x_data,) float Quantity
         The plot data in y
     x_tick_labels : list (int, string) tuples or None
-        Special tick labels e.g. for high-symmetry points. The int refers to
-        the index in x_data the label should be applied to
+        Special tick labels e.g. for high-symmetry points. The int
+        refers to the index in x_data the label should be applied to
     """
     def __init__(self, x_data, y_data, x_tick_labels=None):
         """
         Parameters
         ----------
         x_data : (n_x_data,) or (n_x_data + 1,) float Quantity
-            The x_data points (if size (n_x_data,)) or x_data bin edges (if
-            size (n_x_data + 1,))
+            The x_data points (if size (n_x_data,)) or x_data bin edges
+            (if size (n_x_data + 1,))
         y_data : (n_x_data,) float Quantity
             The plot data in y
         x_tick_labels : list (int, string) tuples or None
-            Special tick labels e.g. for high-symmetry points. The int refers
-            to the index in x_data the label should be applied to
+            Special tick labels e.g. for high-symmetry points. The int
+            refers to the index in x_data the label should be applied to
         """
         _check_constructor_inputs(
             [y_data, x_tick_labels],
@@ -192,29 +192,29 @@ class Spectrum2D(Spectrum1D):
         The x_data points (if size (n_x_data,)) or x_data bin edges (if
         size (n_x_data + 1,))
     y_data : (n_y_data,) or (n_y_data + 1,) float Quantity
-        The y_data bin points (if size (n_y_data,)) or y_data bin edges (if
-        size (n_y_data + 1,))
+        The y_data bin points (if size (n_y_data,)) or y_data bin edges
+        (if size (n_y_data + 1,))
     z_data : (n_x_data, n_y_data) float Quantity
         The plot data in z
     x_tick_labels : list (int, string) tuples or None
-        Special tick labels e.g. for high-symmetry points. The int refers to the
-        index in x_data the label should be applied to
+        Special tick labels e.g. for high-symmetry points. The int
+        refers to the index in x_data the label should be applied to
     """
     def __init__(self, x_data, y_data, z_data, x_tick_labels=None):
         """
         Attributes
         ----------
         x_data : (n_x_data,) or (n_x_data + 1,) float Quantity
-            The x_data points (if size (n_x_data,)) or x_data bin edges (if
-            size (n_x_data + 1,))
+            The x_data points (if size (n_x_data,)) or x_data bin edges
+            (if size (n_x_data + 1,))
         y_data : (n_y_data,) or (n_y_data + 1,) float Quantity
-            The y_data bin points (if size (n_y_data,)) or y_data bin edges (if
-            size (n_y_data + 1,))
+            The y_data bin points (if size (n_y_data,)) or y_data bin
+            edges (if size (n_y_data + 1,))
         z_data : (n_x_data, n_y_data) float Quantity
             The plot data in z
         x_tick_labels : list (int, string) tuples or None
-            Special tick labels e.g. for high-symmetry points. The int refers to the
-            index in x_data the label should be applied to
+            Special tick labels e.g. for high-symmetry points. The int
+            refers to the index in x_data the label should be applied to
         """
         _check_constructor_inputs(
             [z_data, x_tick_labels],

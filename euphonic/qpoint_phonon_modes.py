@@ -16,8 +16,8 @@ from euphonic.io import (_obj_to_json_file, _obj_from_json_file,
 
 class QpointPhononModes(object):
     """
-    A class to read and store vibrational data from model (e.g. CASTEP) output
-    files
+    A class to read and store vibrational data from model (e.g. CASTEP)
+    output files
 
     Attributes
     ----------
@@ -26,7 +26,8 @@ class QpointPhononModes(object):
     n_qpts : int
         Number of q-points in the object
     qpts : (n_qpts, 3) float ndarray
-        Q-point coordinates, in fractional coordinates of the reciprocal lattice
+        Q-point coordinates, in fractional coordinates of the reciprocal
+        lattice
     weights : (n_qpts,) float ndarray
         The weight for each q-point
     frequencies: (n_qpts, 3*crystal.n_atoms) float Quantity
@@ -49,7 +50,8 @@ class QpointPhononModes(object):
         eigenvectors: (n_qpts, 3*crystal.n_atoms, crystal.n_atoms, 3) complex ndarray
             Dynamical matrix eigenvectors
         weights : (n_qpts,) float ndarray, optional, default None
-            The weight for each q-point. If None, equal weights are assumed
+            The weight for each q-point. If None, equal weights are
+            assumed
         """
         _check_constructor_inputs(
             [crystal, qpts], [Crystal, np.ndarray], [(), (-1, 3)],
@@ -90,17 +92,18 @@ class QpointPhononModes(object):
         By doing a dot product of eigenvectors at adjacent q-points,
         determines which modes are most similar and creates a _mode_map
         attribute in the Data object, which specifies which order the
-        frequencies should be in at each q-point. The branch ordering can be
-        seen when plotting dispersion
+        frequencies should be in at each q-point. The branch ordering
+        can be seen when plotting dispersion
 
         Parameters
         ----------
         reorder_gamma : bool, default True
-            Whether to reorder frequencies at gamma-equivalent points. If
-            an analytical correction has been applied at the gamma points
-            (i.e LO-TO splitting) mode assignments can be incorrect at
-            adjacent q-points where the correction hasn't been applied.
-            So you might not want to reorder at gamma for some materials
+            Whether to reorder frequencies at gamma-equivalent points.
+            If an analytical correction has been applied at the gamma
+            points (i.e LO-TO splitting) mode assignments can be
+            incorrect at adjacent q-points where the correction hasn't
+            been applied. So you might not want to reorder at gamma for
+            some materials
         """
         n_qpts = self.n_qpts
         n_branches = 3*self.crystal.n_atoms
@@ -124,8 +127,8 @@ class QpointPhononModes(object):
             calc_reorder[gamma_i[gamma_i < n_qpts - 1]] = False
 
         for i in range(1, n_qpts):
-            # Compare eigenvectors for each mode for this q-point with every
-            # mode for the previous q-point
+            # Compare eigenvectors for each mode for this q-point with
+            # every mode for the previous q-point
             # Explicitly broadcast arrays with repeat and tile to ensure
             # correct multiplication of modes
             curr_evecs = eigenvecs[i, :, :, :]
@@ -134,23 +137,26 @@ class QpointPhononModes(object):
             prev_eigenvecs = np.tile(prev_evecs, (n_branches, 1, 1))
 
             if calc_reorder[i-1]:
-                # Compute complex conjugated dot product of every mode of this
-                # q-point with every mode of previous q-point, and sum the dot
-                # products over atoms (i.e. multiply eigenvectors elementwise,
-                # then sum over the last 2 dimensions)
+                # Compute complex conjugated dot product of every mode
+                # of this q-point with every mode of previous q-point,
+                # and sum the dot products over atoms (i.e. multiply
+                # eigenvectors elementwise, then sum over the last 2
+                # dimensions)
                 dots = np.absolute(np.einsum('ijk,ijk->i',
                                              np.conj(prev_eigenvecs),
                                              current_eigenvecs))
 
-                # Create matrix of dot products for each mode of this q-point
-                # with each mode of the previous q-point
+                # Create matrix of dot products for each mode of this
+                # q-point with each mode of the previous q-point
                 dot_mat = np.reshape(dots, (n_branches, n_branches))
 
                 # Find greatest dot product
                 for j in range(n_branches):
                     max_i = (np.argmax(dot_mat))
-                    mode = int(max_i/n_branches)  # Modes are dot_mat rows
-                    prev_mode = max_i % n_branches  # Prev q-pt modes are cols
+                    # Modes are dot_mat rows
+                    mode = int(max_i/n_branches)
+                    # Prev q-pt modes are columns
+                    prev_mode = max_i % n_branches
                     # Ensure modes aren't mapped more than once
                     dot_mat[mode, :] = 0
                     dot_mat[:, prev_mode] = 0
@@ -169,27 +175,27 @@ class QpointPhononModes(object):
     def calculate_structure_factor(self, scattering_lengths, temperature=None,
                                    dw=None):
         """
-        Calculate the one phonon inelastic scattering for neutrons at each
-        q-point. See M. Dove Structure and Dynamics Pg. 226
+        Calculate the one phonon inelastic scattering for neutrons at
+        each q-point. See M. Dove Structure and Dynamics Pg. 226
 
         Parameters
         ----------
         scattering_lengths : dictionary of float Quantity
-            Dictionary of spin and isotope averaged coherent scattering length
-            for each element in the structure in fm e.g.
+            Dictionary of spin and isotope averaged coherent scattering
+            length for each element in the structure in e.g.
             {'O': 5.803*ureg('fm'), 'Zn': 5.680*ureg('fm')}
         dw : DebyeWaller, default None
             A DebyeWaller exponent object
         temperature : float Quantity, default None
-            The temperature to use when calculating the Bose factor. Is only
-            required if dw=None, otherwise the temperature will be obtained from
-            the dw object
+            The temperature to use when calculating the Bose factor. Is
+            only required if dw=None, otherwise the temperature will be
+            obtained from the dw object
 
         Returns
         -------
         sf : StructureFactor
-            An object containing the structure factor for each q-point and
-            phonon mode
+            An object containing the structure factor for each q-point
+            and phonon mode
 
         Raises
         ------
@@ -203,19 +209,19 @@ class QpointPhononModes(object):
         # Calculate normalisation factor
         norm_factor = sl/np.sqrt(self.crystal._atom_mass)
 
-        # Calculate the exponential factor for all atoms and q-points
-        # atom_r in fractional coords, so Qdotr = 2pi*qh*rx + 2pi*qk*ry...
+        # Calculate the exp factor for all atoms and qpts atom_r is in
+        # fractional coords, so Qdotr = 2pi*qh*rx + 2pi*qk*ry...
         exp_factor = np.exp(1J*2*math.pi*np.einsum(
             'ij,kj->ik', self.qpts, self.crystal.atom_r))
 
-        # Eigenvectors are in Cartesian so need to convert hkl to Cartesian by
-        # computing the dot product with hkl and reciprocal lattice
+        # Eigenvectors are in Cartesian so need to convert hkl to
+        # Cartesian by computing dot with hkl and reciprocal lattice
         recip = self.crystal.reciprocal_cell().to(
             '1/INTERNAL_LENGTH_UNIT').magnitude
         Q = np.einsum('ij,jk->ik', self.qpts, recip)
 
-        # Calculate dot product of Q and eigenvectors for all branches, atoms
-        # and q-points
+        # Calculate dot product of Q and eigenvectors for all branches
+        # atoms and q-points
         eigenv_dot_q = np.einsum('ijkl,il->ijk', np.conj(self.eigenvectors), Q)
 
         # Calculate Debye-Waller factors
@@ -223,9 +229,9 @@ class QpointPhononModes(object):
             temperature = dw.temperature
             if dw.crystal.n_atoms != self.crystal.n_atoms:
                 raise Exception((
-                    'The DebyeWaller object used as dw is not compatible with '
-                    'the QPointPhononModes object (they have a different number'
-                    ' of atoms)'))
+                    'The DebyeWaller object used as dw is not '
+                    'compatible with the QPointPhononModes object (they'
+                    ' have a different number of atoms)'))
             dw_factor = np.exp(-np.einsum('jkl,ik,il->ij',
                                           dw._debye_waller, Q, Q))
             exp_factor *= dw_factor
@@ -256,7 +262,8 @@ class QpointPhononModes(object):
         Returns
         -------
         dw : DebyeWaller
-            An object containing the 3x3 Debye-Waller exponent for each ion
+            An object containing the 3x3 Debye-Waller exponent for each
+            atom
         """
 
         # Convert units
@@ -272,8 +279,8 @@ class QpointPhononModes(object):
 
         mass_term = 1/(4*atom_mass)
 
-        # Determine q-points near the gamma point and mask out their acoustic
-        # modes due to the potentially large 1/frequency factor
+        # Determine q-points near the gamma point and mask out their
+        # acoustic modes due to the potentially large 1/frequency factor
         TOL = 1e-8
         is_small_q = np.sum(np.square(qpts), axis=1) < TOL
         freq_mask = np.ones(freqs.shape)
@@ -318,8 +325,8 @@ class QpointPhononModes(object):
         Returns
         -------
         dos : Spectrum1D
-            A spectrum containing the energy bins on the x-axis and dos on the
-            y-axis
+            A spectrum containing the energy bins on the x-axis and dos
+            on the y-axis
         """
 
         freqs = self._frequencies
@@ -389,8 +396,8 @@ class QpointPhononModes(object):
     @classmethod
     def from_json_file(cls, filename):
         """
-        Read from a JSON file. See QpointPhononModes.from_dict for required
-        fields
+        Read from a JSON file. See QpointPhononModes.from_dict for
+        required fields
 
         Parameters
         ----------
@@ -418,24 +425,26 @@ class QpointPhononModes(object):
                      phonon_format=None, summary_name='phonopy.yaml'):
         """
         Reads precalculated phonon mode data from a Phonopy
-        mesh/band/qpoints.yaml/hdf5 file. May also read from phonopy.yaml for
-        structure information.
+        mesh/band/qpoints.yaml/hdf5 file. May also read from
+        phonopy.yaml for structure information.
 
         Parameters
         ----------
         path : str, optional, default '.'
             Path to directory containing the file(s)
         phonon_name : str, optional, default 'band.yaml'
-            Name of Phonopy file including the frequencies and eigenvectors
+            Name of Phonopy file including the frequencies and
+            eigenvectors
         phonon_format : {'yaml', 'hdf5'} str, optional, default None
             Format of the phonon_name file if it isn't obvious from the
             phonon_name extension
         summary_name : str, optional, default 'phonopy.yaml'
-            Name of Phonopy summary file to read the crystal information from.
-            Crystal information in the phonon_name file takes priority, but if
-            it isn't present, crystal information is read from summary_name
-            instead
+            Name of Phonopy summary file to read the crystal information
+            from. Crystal information in the phonon_name file takes
+            priority, but if it isn't present, crystal information is
+            read from summary_name instead
         """
-        data = phonopy._read_phonon_data(path=path, phonon_name=phonon_name,
-                            phonon_format=phonon_format, summary_name=summary_name)
+        data = phonopy._read_phonon_data(
+            path=path, phonon_name=phonon_name, phonon_format=phonon_format,
+            summary_name=summary_name)
         return cls.from_dict(data)
