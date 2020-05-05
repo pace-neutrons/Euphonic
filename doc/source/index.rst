@@ -15,6 +15,7 @@ Installation
 ============
 Pip
 ---
+
 If you want to do plotting, or read Phonopy files, you will need to install the
 optional ``matplotlib`` and ``phonopy_reader`` extensions:
 
@@ -80,6 +81,15 @@ the same pip commands as above.
 You should have a version of ``gcc`` on your path (currently tested with
 ``4.8.5``). If ``gcc`` can be found the Euphonic extension will be automatically
 installed when using the same pip commands as above.
+
+**Mac OSX**
+
+Requires a brew install of the llvm-clang compiler,
+before running pip install run:
+
+.. code-block:: bash
+
+    brew install llvm
 
 
 .. toctree::

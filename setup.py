@@ -10,13 +10,22 @@ def run_setup(build_c=True):
     if build_c:
         import os
         import numpy as np
+        from sys import platform
+        import subprocess
         include_dirs = [np.get_include(), 'c']
         sources = ['c/_euphonic.c', 'c/dyn_mat.c', 'c/util.c', 'c/py_util.c',
                    'c/load_libs.c']
-        if os.name == 'nt':
+        if platform == 'win32':
             # Windows - assume MSVC compiler
             compile_args = ['/openmp']
             link_args = None
+        elif platform == 'darwin':
+            # OSX - assume brew install llvm
+            brew_prefix_cmd_return = subprocess.run(["brew", "--prefix"], stdout=subprocess.PIPE)
+            brew_prefix = brew_prefix_cmd_return.stdout.decode("utf-8").strip()
+            os.environ['CC'] = '{}/opt/llvm/bin/clang'.format(brew_prefix)
+            compile_args = ['-fopenmp']
+            link_args = ['-L{}/opt/llvm/lib'.format(brew_prefix), '-fopenmp']
         else:
             # Linux - assume gcc
             os.environ['CC'] = 'gcc'
@@ -78,4 +87,5 @@ except:
     print(('Failed to build Euphonic C extension, installing pure Python '
            'version instead'))
     print('*'*79)
+    print("Unexpected error: {}".format(sys.exc_info()[0]))
     run_setup(build_c=False)
