@@ -48,6 +48,10 @@ pipeline {
         pollSCM('')
     }
 
+    options {
+        disableConcurrentBuilds()
+    }
+
     stages {
 
         stage("Notify") {
