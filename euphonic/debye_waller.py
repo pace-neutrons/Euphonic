@@ -103,11 +103,12 @@ class DebyeWaller(object):
         ----------
         d : dict
             A dictionary with the following keys/values:
-                'crystal': dict, see Crystal.from_dict
-                'debye_waller': (n_atoms, 3, 3) float ndarray
-                'debye_waller_unit': str
-                'temperature': float
-                'temperature_unit': str
+
+            - 'crystal': dict, see Crystal.from_dict
+            - 'debye_waller': (n_atoms, 3, 3) float ndarray
+            - 'debye_waller_unit': str
+            - 'temperature': float
+            - 'temperature_unit': str
 
         Returns
         -------

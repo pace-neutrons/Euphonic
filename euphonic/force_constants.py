@@ -1165,17 +1165,19 @@ class ForceConstants(object):
         ----------
         d : dict
             A dictionary with the following keys/values:
-                'crystal': dict, see Crystal.from_dict
-                'force_constants': (n_cells_in_sc, 3*crystal.n_atoms,
-                                    3*crystal.n_atoms) float ndarray
-                'force_constants_unit': str
-                'sc_matrix': (3,3) int ndarray
-                'cell_origins': (n_cells_in_sc, 3) int ndarray
+
+            - 'crystal': dict, see Crystal.from_dict
+            - 'force_constants': (n_cells_in_sc, 3*crystal.n_atoms, 3*crystal.n_atoms) float ndarray
+            - 'force_constants_unit': str
+            - 'sc_matrix': (3,3) int ndarray
+            - 'cell_origins': (n_cells_in_sc, 3) int ndarray
+
             There are also the following optional keys:
-                'born': (3*crystal.n_atoms, 3, 3) float ndarray
-                'born_unit': str
-                'dielectric': (3, 3) float ndarray
-                'dielectric_unit': str
+
+            - 'born': (3*crystal.n_atoms, 3, 3) float ndarray
+            - 'born_unit': str
+            - 'dielectric': (3, 3) float ndarray
+            - 'dielectric_unit': str
 
         Returns
         -------

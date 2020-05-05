@@ -375,14 +375,16 @@ class QpointPhononModes(object):
         ----------
         d : dict
             A dictionary with the following keys/values:
-                'crystal': dict, see Crystal.from_dict
-                'qpts': (n_qpts, 3) float ndarray
-                'frequencies': (n_qpts, 3*crystal.n_atoms) float ndarray
-                'frequencies_unit': str
-                'eigenvectors': (n_qpts, 3*crystal.n_atoms,
-                                 crystal.n_atoms, 3) complex ndarray
+
+            - 'crystal': dict, see Crystal.from_dict
+            - 'qpts': (n_qpts, 3) float ndarray
+            - 'frequencies': (n_qpts, 3*crystal.n_atoms) float ndarray
+            - 'frequencies_unit': str
+            - 'eigenvectors': (n_qpts, 3*crystal.n_atoms, crystal.n_atoms, 3) complex ndarray
+
             There are also the following optional keys:
-                'weights': (n_qpts,) float ndarray
+
+            - 'weights': (n_qpts,) float ndarray
 
         Returns
         -------

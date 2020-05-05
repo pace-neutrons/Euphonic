@@ -153,12 +153,15 @@ class Spectrum1D(object):
         ----------
         d : dict
             A dictionary with the following keys/values:
-                'x_data': (n_x_data,) or (n_x_data + 1,) float ndarray
-                'x_data_unit': str
-                'y_data': (n_x_data,) float ndarray
-                'y_data_unit': str
+
+            - 'x_data': (n_x_data,) or (n_x_data + 1,) float ndarray
+            - 'x_data_unit': str
+            - 'y_data': (n_x_data,) float ndarray
+            - 'y_data_unit': str
+
             There are also the following optional keys:
-                'x_tick_labels': list of (int, string) tuples
+
+            - 'x_tick_labels': list of (int, string) tuples
 
         Returns
         -------
@@ -305,14 +308,17 @@ class Spectrum2D(Spectrum1D):
         ----------
         d : dict
             A dictionary with the following keys/values:
-                'x_data': (n_x_data,) or (n_x_data + 1,) float ndarray
-                'x_data_unit': str
-                'y_data': (n_y_data,) or (n_y_data + 1,) float ndarray
-                'y_data_unit': str
-                'z_data': (n_x_data, n_y_data) float Quantity
-                'z_data_unit': str
+
+            - 'x_data': (n_x_data,) or (n_x_data + 1,) float ndarray
+            - 'x_data_unit': str
+            - 'y_data': (n_y_data,) or (n_y_data + 1,) float ndarray
+            - 'y_data_unit': str
+            - 'z_data': (n_x_data, n_y_data) float Quantity
+            - 'z_data_unit': str
+
             There are also the following optional keys:
-                'x_tick_labels': list of (int, string) tuples
+
+            - 'x_tick_labels': list of (int, string) tuples
 
         Returns
         -------

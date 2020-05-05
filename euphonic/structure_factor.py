@@ -212,15 +212,18 @@ class StructureFactor(object):
         ----------
         d : dict
             A dictionary with the following keys/values:
-                'crystal': dict, see Crystal.from_dict
-                'qpts': (n_qpts, 3) float ndarray
-                'frequencies': (n_qpts, 3*crystal.n_atoms) float ndarray
-                'frequencies_unit': str
-                'structure_factors': (n_qpts, 3*crystal.n_atoms) float ndarray
-                'structure_factors_unit': str
+
+            - 'crystal': dict, see Crystal.from_dict
+            - 'qpts': (n_qpts, 3) float ndarray
+            - 'frequencies': (n_qpts, 3*crystal.n_atoms) float ndarray
+            - 'frequencies_unit': str
+            - 'structure_factors': (n_qpts, 3*crystal.n_atoms) float ndarray
+            - 'structure_factors_unit': str
+
             There are also the following optional keys:
-                'temperature': float
-                'temperature_unit': str
+
+            - 'temperature': float
+            - 'temperature_unit': str
 
         Returns
         -------

@@ -138,12 +138,13 @@ class Crystal(object):
         ----------
         d : dict
             A dictionary with the following keys/values:
-                'cell_vectors': (3, 3) float ndarray
-                'cell_vectors_unit': str
-                'atom_r': (n_atoms, 3) float ndarray
-                'atom_type': (n_atoms,) str ndarray
-                'atom_mass': (n_atoms,) float np.ndaaray
-                'atom_mass_unit': str
+
+            - 'cell_vectors': (3, 3) float ndarray
+            - 'cell_vectors_unit': str
+            - 'atom_r': (n_atoms, 3) float ndarray
+            - 'atom_type': (n_atoms,) str ndarray
+            - 'atom_mass': (n_atoms,) float np.ndaaray
+            - 'atom_mass_unit': str
 
         Returns
         -------
