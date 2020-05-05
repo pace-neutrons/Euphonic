@@ -110,7 +110,7 @@ pipeline {
                 def email = getGitCommitAuthorEmail()
                 mail (
                     to: "$email",
-                    subject: "Failed pipeline: ${env.JOB_BASE_NAME}",
+                    subject: "Windows failed pipeline: ${env.JOB_BASE_NAME}",
                     body: "See ${env.BUILD_URL}"
                 )
             }
