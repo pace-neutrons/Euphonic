@@ -114,9 +114,8 @@ def plot_1d(spectra, title='', x_label='', y_label='', y_min=None, btol=None,
                             color=color, **line_kwargs)
     if y_min is not None:
         ax.set_ylim(bottom=y_min)  # Need to set limits after plotting the data
-    fig.suptitle(title)
-    plt.tight_layout()
 
+    fig.suptitle(title)
     return fig
 
 

@@ -81,7 +81,7 @@ class QpointPhononModes(object):
 
     def __setattr__(self, name, value):
         if hasattr(self, name):
-            if name in ['frequencies']:
+            if name in ['frequencies_unit']:
                 ureg(getattr(self, name)).to(value)
         super(QpointPhononModes, self).__setattr__(name, value)
 
