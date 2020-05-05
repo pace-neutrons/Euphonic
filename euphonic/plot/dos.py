@@ -1,5 +1,6 @@
 import sys
 import numpy as np
+import warnings
 
 
 def output_grace(data, seedname='out', mirror=False, up=True, down=True):
