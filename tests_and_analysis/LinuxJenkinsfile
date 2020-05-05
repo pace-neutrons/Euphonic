@@ -68,9 +68,7 @@ pipeline {
 
         stage("Notify") {
             steps {
-                script {
-                    setGitHubBuildStatus("pending", "Starting", "Linux")
-                }
+                setGitHubBuildStatus("pending", "Starting", "Linux")
                 echo "Branch: ${env.JOB_BASE_NAME}"
             }
         }

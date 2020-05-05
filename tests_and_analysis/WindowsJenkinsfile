@@ -52,9 +52,6 @@ pipeline {
 
         stage("Notify") {
             steps {
-                script {
-                    getGitCommitAuthorEmail()
-                }
                 checkout scm
                 echo "Branch: ${env.JOB_BASE_NAME}"
             }
