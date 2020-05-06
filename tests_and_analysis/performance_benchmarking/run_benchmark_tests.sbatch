@@ -23,6 +23,7 @@ pushd ../..
 python -m pip install -e .[matplotlib,phonopy_reader]
 popd
 python run_benchmark_tests.py
+python speedups.py -f reports/performance_benchmarks.json
 deactivate
 
 sudo /usr/local/bin/disable_no_turbo.sh
