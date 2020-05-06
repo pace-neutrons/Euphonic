@@ -8,17 +8,17 @@ from euphonic.io import (_obj_to_json_file, _obj_from_json_file,
 
 class DebyeWaller(object):
     """
-    Stores the (n_ions, 3, 3) anisotropic Debye-Waller exponent W_ab. To
-    be used in structure factor calculations
+    Stores the (n_ions, 3, 3) anisotropic Debye-Waller exponent
+    W_ab to be used in structure factor calculations
 
     Attributes
     ----------
     crystal : Crystal
         Lattice and atom information
     debye_waller : (n_ions, 3, 3) float Quantity
-        The anisotropic Debye-Waller exponent W_ab, where the
-        Debye-Waller factor is exp(-W_ab*Q_a*Q_b) where a,b run over the
-        3 Cartesian directions
+        The anisotropic Debye-Waller exponent W_ab for each atom, where
+        the Debye-Waller factor is exp(-W_ab*Q_a*Q_b) where a,b run over
+        the 3 Cartesian directions
     temperature : float Quantity
         The temperature the Debye-Waller exponent was calculated at
     """
@@ -129,5 +129,9 @@ class DebyeWaller(object):
         ----------
         filename : str
             The file to read from
+
+        Returns
+        -------
+        DebyeWaller
         """
         return _obj_from_json_file(cls, filename)

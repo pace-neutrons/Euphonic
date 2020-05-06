@@ -132,6 +132,27 @@ class StructureFactor(object):
         ValueError
             If a temperature is provided and isn't consistent with the
             temperature in the StructureFactor object
+
+        Notes
+        -----
+        StructureFactor.structure_factors is defined as
+        :math:`|F(Q, \\nu)|` per unit cell. To create an
+        :math:`S(Q,\\omega)` map, it is binned in energy and the Bose
+        factor is applied [1]_:
+
+        .. math::
+
+          S(Q, \\omega) = |F(Q, \\nu)|^2
+          (n_\\nu+\\frac{1}{2}\\pm\\frac{1}{2})
+          \\delta(\\omega\\mp\\omega_{q\\nu})
+
+        :math:`n_\\nu` is the Bose-Einstein distribution:
+
+        .. math::
+
+          n_\\nu = \\frac{1}{e^{\\frac{\\hbar\\omega_\\nu}{k_{B}T}} - 1}
+
+        .. [1] M.T. Dove, Structure and Dynamics, Oxford University Press, Oxford, 2003, 225-226
         """
         if calc_bose:
             if not self.temperature is None:
@@ -247,5 +268,9 @@ class StructureFactor(object):
         ----------
         filename : str
             The file to read from
+
+        Returns
+        -------
+        StructureFactor
         """
         return _obj_from_json_file(cls, filename)

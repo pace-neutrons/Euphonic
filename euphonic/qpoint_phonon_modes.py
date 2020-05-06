@@ -30,9 +30,9 @@ class QpointPhononModes(object):
         lattice
     weights : (n_qpts,) float ndarray
         The weight for each q-point
-    frequencies: (n_qpts, 3*crystal.n_atoms) float Quantity
+    frequencies : (n_qpts, 3*crystal.n_atoms) float Quantity
         Phonon frequencies per q-point and mode
-    eigenvectors: (n_qpts, 3*crystal.n_atoms, crystal.n_atoms, 3) complex ndarray
+    eigenvectors : (n_qpts, 3*crystal.n_atoms, crystal.n_atoms, 3) complex ndarray
         Dynamical matrix eigenvectors
     """
 
@@ -90,10 +90,8 @@ class QpointPhononModes(object):
     def reorder_frequencies(self, reorder_gamma=True):
         """
         By doing a dot product of eigenvectors at adjacent q-points,
-        determines which modes are most similar and creates a _mode_map
-        attribute in the Data object, which specifies which order the
-        frequencies should be in at each q-point. The branch ordering
-        can be seen when plotting dispersion
+        determines which modes are most similar and reorders the
+        frequencies at each q-point
 
         Parameters
         ----------
@@ -175,7 +173,7 @@ class QpointPhononModes(object):
     def calculate_structure_factor(self, scattering_lengths, dw=None):
         """
         Calculate the one phonon inelastic scattering for neutrons at
-        each q-point. See M. Dove Structure and Dynamics Pg. 226
+        each q-point
 
         Parameters
         ----------
@@ -191,6 +189,30 @@ class QpointPhononModes(object):
         sf : StructureFactor
             An object containing the structure factor for each q-point
             and phonon mode
+
+        Notes
+        -----
+
+        The structure factor is defined as [1]_:
+
+        .. math::
+
+          F(Q, \\nu) = \\frac{b_\\kappa}{M_{\\kappa}^{1/2}\\omega_{q\\nu}^{1/2}} \\
+          [Q\\cdot\\epsilon_{q\\nu\\kappa\\alpha}]e^{Q{\\cdot}r_\\kappa}e^{-W}
+
+        Where :math:`\\nu` runs over phonon modes, :math:`\\kappa` runs
+        over atoms, :math:`\\alpha` runs over the Cartesian directions,
+        :math:`b_\\kappa` is the coherent neutron scattering length,
+        :math:`M_{\\kappa}` is the atom mass, :math:`r_{\\kappa}` is the
+        vector to atom :math:`\\kappa` in the unit cell,
+        :math:`\\epsilon_{q\\nu\\kappa\\alpha}` are the eigevectors,
+        :math:`\\omega_{q\\nu}` are the frequencies and :math:`e^{-W}`
+        is the Debye-Waller factor. Note that a factor N for the
+        number of unit cells in the sample hasn't been included, so the
+        returned structure factor is per unit cell.
+
+        .. [1] M.T. Dove, Structure and Dynamics, Oxford University Press, Oxford, 2003, 225-226
+
         """
         sl = [scattering_lengths[x].to('INTERNAL_LENGTH_UNIT').magnitude
                   for x in self.crystal.atom_type]
@@ -254,6 +276,39 @@ class QpointPhononModes(object):
         dw : DebyeWaller
             An object containing the 3x3 Debye-Waller exponent for each
             atom
+
+        Notes
+        -----
+
+        As part of the structure factor calculation, the anisotropic
+        Debye-Waller factor is defined as:
+
+        .. math::
+
+          e^{-W} = e^{-\\sum_{\\alpha\\beta}\\frac{W^{\\kappa}_{\\alpha\\beta}Q_{\\alpha}Q_{\\beta}}{2}}
+
+        The Debye-Waller exponent is defined as
+        :math:`W^{\\kappa}_{\\alpha\\beta}` and is independent of Q, so
+        for efficiency can be precalculated to be used in the structure
+        factor calculation. The Debye-Waller exponent is calculated by [2]_
+
+        .. math::
+
+          W^{\\kappa}_{\\alpha\\beta} =
+          \\frac{1}{2N_{q}M_{\\kappa}}
+          \\sum_{BZ}\\frac{\\epsilon_{q\\nu\\kappa\\alpha}\\epsilon^{*}_{q\\nu\\kappa\\beta}}
+          {\\omega_{q\\nu}}
+          coth(\\frac{\\omega_{q\\nu}}{2k_BT})
+
+        Where :math:`\\nu` runs over phonon modes, :math:`\\kappa` runs
+        over atoms, :math:`\\alpha,\\beta` run over the Cartesian
+        directions, :math:`M_{\\kappa}` is the atom mass,
+        :math:`\\epsilon_{q\\nu\\kappa\\alpha}` are the eigenvectors,
+        :math:`\\omega_{q\\nu}` are the frequencies, :math:`\\sum_{BZ}`
+        is a sum over the 1st Brillouin Zone, and :math:`N_q` is the
+        number of q-point samples in the BZ.
+
+        .. [2] G.L. Squires, Introduction to the Theory of Thermal Neutron Scattering, Dover Publications, New York, 1996, 34-37
         """
 
         # Convert units

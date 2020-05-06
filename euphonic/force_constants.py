@@ -140,9 +140,7 @@ class ForceConstants(object):
         fall_back_on_python=True):
         """
         Calculate phonon frequencies and eigenvectors at specified
-        q-points from a supercell force constant matrix via
-        interpolation. For more information on the method see section
-        2.5: http://www.tcm.phy.cam.ac.uk/castep/Phonons_Guide/Castep_Phonons.html
+        q-points from a force constants matrix via Fourier interpolation
 
         Parameters
         ----------
@@ -189,11 +187,11 @@ class ForceConstants(object):
 
         Returns
         -------
-        phonon_data : QpointPhononModes
+        QpointPhononModes
             A QpointPhononModes object containing the interpolated
-            frequencies and eigenvectors. Note that if there is LO-TO
-            splitting, the number of input q-points may not be the same
-            as in the output QpointPhononModes
+            frequencies and eigenvectors at each q-point. Note that if
+            there is LO-TO splitting, and insert_gamma=True, the number
+            of input q-points may not be the same as in the output
             object
 
         Raises
@@ -201,6 +199,51 @@ class ForceConstants(object):
         ImportCError
             If we have selected not to fall back on Python and cannot
             use the C extension
+
+        Notes
+        -----
+        Phonon frequencies/eigenvectors are calculated at any q-point by
+        Fourier interpolation of a force constants matrix. The force
+        constants matrix is defined as [1]_:
+
+        .. math::
+
+          \\phi_{\\alpha, {\\alpha}'}^{\\kappa, {\\kappa}'} =
+          \\frac{\\delta^{2}E}{{\\delta}u_{\\kappa,\\alpha}{\\delta}u_{{\\kappa}',{\\alpha}'}}
+
+        Which gives the Dynamical matrix at q:
+
+        .. math::
+
+          D_{\\alpha, {\\alpha}'}^{\\kappa, {\\kappa}'}(q) =
+          \\frac{1}{\\sqrt{M_\\kappa M_{\\kappa '}}}
+          \\sum_{a}\\phi_{\\alpha, \\alpha '}^{\\kappa, \\kappa '}e^{-iq\\cdot r_a}
+
+        The eigenvalue equation for the dynamical matrix is then:
+
+        .. math::
+
+          D_{\\alpha, {\\alpha}'}^{\\kappa, {\\kappa}'}(q) \\epsilon_{q\\nu\\kappa\\alpha} =
+          \\omega_{q\\nu}^{2} \\epsilon_{q\\nu\\kappa\\alpha}
+
+        Where :math:`\\nu` runs over phonon modes, :math:`\\kappa` runs
+        over atoms, :math:`\\alpha` runs over the Cartesian directions,
+        :math:`a` runs over unit cells in the supercell,
+        :math:`u_{\\kappa, \\alpha}` is the displacement of atom
+        :math:`\\kappa` in direction :math:`\\alpha`,
+        :math:`M_{\\kappa}` is the mass of atom :math:`\\kappa`,
+        :math:`r_{a}` is the vector to the origin of cell :math:`a` in
+        the supercell, :math:`\epsilon_{q\\nu\\kappa\\alpha}` are the
+        eigevectors, and :math:`\\omega_{q\\nu}^{2}` are the frequencies
+        squared.
+
+        In polar materials, there is an additional long-ranged
+        correction to the force constants matrix (applied if
+        dipole=True) and a non-analytical correction at the gamma point
+        [2]_ (applied if splitting=True).
+
+        .. [1] M.T. Dove, Introduction to Lattice Dynamics, Cambridge University Press, Cambridge, 1993, 83-87
+        .. [2] X. Gonze, K. C. Charlier, D. C. Allan, M. P. Teter, Phys. Rev. B, 1994, 50, 13035-13038
         """
         # Set default splitting params
         if self.born is None:
@@ -1202,6 +1245,10 @@ class ForceConstants(object):
         ----------
         filename : str
             The file to read from
+
+        Returns
+        -------
+        ForceConstants
         """
         return _obj_from_json_file(cls, filename)
 
@@ -1214,6 +1261,10 @@ class ForceConstants(object):
         ----------
         filename : str
             The path and name of the file to read
+
+        Returns
+        -------
+        ForceConstants
         """
         data = castep._read_interpolation_data(filename)
         return cls.from_dict(data)
@@ -1224,7 +1275,7 @@ class ForceConstants(object):
                      fc_format=None):
         """
         Reads data from the phonopy summary file (default phonopy.yaml)
-        and optionally born and force constants iles. Only attempts to
+        and optionally born and force constants files. Only attempts to
         read from born or force constants files if these can't be found
         in the summary file.
 
@@ -1248,6 +1299,9 @@ class ForceConstants(object):
             Format of file containing force constants data.
             FORCE_CONSTANTS is type 'phonopy'
 
+        Returns
+        -------
+        ForceConstants
         """
         data = phonopy._read_interpolation_data(
             path=path, summary_name=summary_name, born_name=born_name,

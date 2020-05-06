@@ -372,28 +372,6 @@ def _distribution_1d(xbins, xwidth, shape='gauss', extent=3.0):
 
 
 def _distribution_2d(xbins, ybins, xwidth, ywidth, shape='gauss', extent=3.0):
-    """
-    Calculate a 2D Gaussian probability density, with independent
-    standard deviations in x and y
-
-    Parameters
-    ----------
-    xbins : (xbins,) float ndarray
-        Bin edges in x
-    ybins : (ybins,) float ndarray
-        Bin edges in y
-    xwidth : float
-        The FWHM in x of the Gaussian function
-    ywidth : float
-        The FWHM in y of the Gaussian function
-    extent : float
-        How far out to calculate the Gaussian, in standard deviations
-
-    Returns
-    -------
-    gauss : (nxbins, nybins) float ndarray
-        Gaussian probability density
-    """
     x = _get_dist_bins(xbins, xwidth, extent)
     y = _get_dist_bins(ybins, ywidth, extent)
 

@@ -74,8 +74,8 @@ class Spectrum1D(object):
         ----------
         x_width : float Quantity
             The broadening FWHM
-        shape : string, optional, default 'gauss'
-            The broadening shape, can be 'gauss' or 'lorentz'
+        shape : {'gauss', 'lorentz'}, optional, default 'gauss'
+            The broadening shape
 
         Returns
         -------
@@ -257,8 +257,8 @@ class Spectrum2D(Spectrum1D):
             The broadening FWHM in x
         y_width : float Quantity, optional, default None
             The broadening FWHM in y
-        shape : string, optional, default 'gauss'
-            The broadening shape, can be 'gauss' or 'lorentz'
+        shape : {'gauss', 'lorentz'}, optional, default 'gauss'
+            The broadening shape
 
         Returns
         -------
