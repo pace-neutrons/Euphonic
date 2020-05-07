@@ -163,5 +163,9 @@ class Crystal(object):
         ----------
         filename : str
             The file to read from
+
+        Returns
+        -------
+        Crystal
         """
         return _obj_from_json_file(cls, filename)

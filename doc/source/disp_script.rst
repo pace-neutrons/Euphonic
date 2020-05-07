@@ -5,7 +5,7 @@ dispersion.py Script
 ====================
 
 ``dispersion.py`` can be used to plot precalculated frequencies from a CASTEP
-``.phonon`` or ``.bands`` file. For example, to plot from a ``quartz.phonon``
+``.phonon`` file. For example, to plot from a ``quartz.phonon``
 file, run::
 
    dispersion.py quartz.phonon

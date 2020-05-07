@@ -21,7 +21,8 @@ def plot_dispersion(phonons, btol=10.0, *args, **kwargs):
 
     Parameters
     ----------
-    phonons : QpointPhononModes object
+    phonons : QpointPhononModes
+        Containing the q-points/frequencies to plot
     btol : float, optional, default 10.0
         Determines the limit for plotting sections of reciprocal space
         on different subplots, as a fraction of the median distance
@@ -56,7 +57,7 @@ def plot_1d(spectra, title='', x_label='', y_label='', y_min=None, labels=[],
 
     Parameters
     ----------
-    spectra : Spectrum1D Object or list of Spectrum1D Objects
+    spectra : Spectrum1D or list of Spectrum1D
         Containing the 1D data to plot. Note only the x_tick_labels in
         the first spectrum in the list will be used
     title : string, default ''
@@ -135,7 +136,7 @@ def plot_2d(spectrum, vmin=None, vmax=None, ratio=None, x_width=0, y_width=0,
 
     Parameters
     ----------
-    spectrum : Spectrum2D object
+    spectrum : Spectrum2D
         Containing the 2D data to plot
     vmin : float, optional
         Minimum of data range for colormap. See Matplotlib imshow docs

@@ -108,7 +108,8 @@ class StructureFactor(object):
 
     def calculate_sqw_map(self, e_bins, calc_bose=True, temperature=None):
         """
-        Bin the structure factor in energy to produce a a S(Q,w) map
+        Bin the structure factor in energy and apply the Bose population
+        factor to produce a a S(Q,w) map
 
         Parameters
         ----------

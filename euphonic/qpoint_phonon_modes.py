@@ -450,6 +450,10 @@ class QpointPhononModes(object):
         ----------
         filename : str
             The file to read from
+
+        Returns
+        -------
+        QpointPhononModes
         """
         return _obj_from_json_file(cls, filename,
                                    type_dict={'eigenvectors': np.complex128})
@@ -463,6 +467,10 @@ class QpointPhononModes(object):
         ----------
         filename : str
             The path and name of the .phonon file to read
+
+        Returns
+        -------
+        QpointPhononModes
         """
         data = castep._read_phonon_data(filename)
         return cls.from_dict(data)
@@ -490,6 +498,10 @@ class QpointPhononModes(object):
             from. Crystal information in the phonon_name file takes
             priority, but if it isn't present, crystal information is
             read from summary_name instead
+
+        Returns
+        -------
+        QpointPhononModes
         """
         data = phonopy._read_phonon_data(
             path=path, phonon_name=phonon_name, phonon_format=phonon_format,

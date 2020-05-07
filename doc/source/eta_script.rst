@@ -12,7 +12,7 @@ correction must be applied, which is computationally expensive. The correction
 is calculated using an Ewald sum, and the balance between the real and
 reciprocal sums can be tuned to reduce the computational cost without affecting
 the result. This is done with the ``eta_scale`` argument to
-``calculate_fine_phonons`` (see :ref:`here <interpolate>`).
+:py:meth:`ForceConstants.calculate_qpoint_phonon_modes <euphonic.force_constants.ForceConstants.calculate_qpoint_phonon_modes>`
 
 This script runs a calculation for a small test number of q-points (100 by
 default) repeatedly for different values of ``eta_scale``, and times both the
