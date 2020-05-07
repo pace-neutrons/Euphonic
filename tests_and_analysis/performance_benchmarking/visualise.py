@@ -1,3 +1,5 @@
+from typing import List, Dict
+
 import matplotlib.pyplot as plt
 import matplotlib.dates as dates
 import os
@@ -117,21 +119,30 @@ class MedianMachineFigure(Figure):
         self.tests[test][date] = time_taken
 
     def plot(self, figure_index: int):
-        last_func = None
+        dataframes: List[Dict] = self.build_dataframes()
+        self.plot_dataframes(dataframes, figure_index)
+
+    def build_dataframes(self) -> List[Dict]:
+        # Initialise
+        last_test_name = None
         x_axis = []
         y_axes = {}
         title = None
         dataframes = []
         for test in self.tests:
-            if last_func != test.split("[")[0]:
-                dataframe = {'x': x_axis, 'title': title}
-                dataframe.update(y_axes)
-                dataframes.append(dataframe)
+            test_name = test.split("[")[0]
+            test_params = test.split("[")[1][:-1]
+            # Detect if we have found an all new test to plot a figure for
+            if last_test_name != test_name:
+                if last_test_name is not None:
+                    dataframe = {'x': x_axis, 'title': title}
+                    dataframe.update(y_axes)
+                    dataframes.append(dataframe)
                 x_axis = []
                 y_axes = {}
                 title = "Performance over time\n {}\n {}".format(
-                    self.machine_info, test.split("[")[0])
-                last_func = test.split("[")[0]
+                    self.machine_info, test_name)
+                last_test_name = test_name
             y_axis = []
             new_x_axis = []
             for key, value in self.tests[test].items():
@@ -141,11 +152,14 @@ class MedianMachineFigure(Figure):
                 new_x_axis = new_x_axis[:index] + [key] + new_x_axis[index:]
                 y_axis = y_axis[:index] + [value] + y_axis[index:]
             x_axis = new_x_axis
-            y_axes[test.split("[")[1][:-1]] = y_axis
+            y_axes[test_params] = y_axis
         dataframe = {'x': x_axis, 'title': title}
         dataframe.update(y_axes)
         dataframes.append(dataframe)
-        for index, dataframe in enumerate(dataframes[1:]):
+        return dataframes
+
+    def plot_dataframes(self, dataframes: List[Dict], figure_index):
+        for index, dataframe in enumerate(dataframes):
             print(dataframe)
             plt.figure(figure_index + index)
             panda_dataframe = pd.DataFrame(dataframe)
