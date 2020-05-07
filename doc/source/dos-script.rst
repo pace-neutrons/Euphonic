@@ -1,4 +1,4 @@
-.. _dos_script:
+.. _dos-script:
 
 =============
 dos.py Script

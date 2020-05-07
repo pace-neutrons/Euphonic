@@ -26,9 +26,9 @@ Python API
 Helper Scripts
 ==============
 
-- :ref:`dispersion.py <disp_script>`
-- :ref:`dos.py <dos_script>`
-- :ref:`optimise_eta.py <eta_script>`
+- :ref:`dispersion.py <disp-script>`
+- :ref:`dos.py <dos-script>`
+- :ref:`optimise_eta.py <eta-script>`
 
 Examples
 ========

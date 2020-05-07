@@ -1,4 +1,4 @@
-.. _disp_script:
+.. _disp-script:
 
 ====================
 dispersion.py Script

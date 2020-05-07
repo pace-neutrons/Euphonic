@@ -1,4 +1,4 @@
-.. _eta_script:
+.. _eta-script:
 
 ======================
 optimise_eta.py Script
