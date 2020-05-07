@@ -23,12 +23,15 @@ Python API
 - :ref:`Plotting <plotting>`
 - :ref:`Units in Euphonic <units>`
 
-Example Scripts
-===============
-
 Helper Scripts
 ==============
 
 - :ref:`dispersion.py <disp_script>`
 - :ref:`dos.py <dos_script>`
 - :ref:`optimise_eta.py <eta_script>`
+
+Examples
+========
+
+There are some example Jupyter Notebooks at
+https://github.com/pace-neutrons/Euphonic/tree/master/tutorials
