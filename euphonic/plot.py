@@ -47,8 +47,9 @@ def plot_dispersion(phonons, btol=10.0, *args, **kwargs):
     return plot_1d(spectra, btol=btol, _split_line_x_idx=idx, *args, **kwargs)
 
 
-def plot_1d(spectra, title='', x_label='', y_label='', y_min=None, btol=None,
-            _split_line_x_idx=np.array([], dtype=np.int32), **line_kwargs):
+def plot_1d(spectra, title='', x_label='', y_label='', y_min=None, labels=[],
+            btol=None, _split_line_x_idx=np.array([], dtype=np.int32),
+            **line_kwargs):
     """
     Creates a Matplotlib figure for a Spectrum1D object, or multiple
     Spectrum1D objects to be plotted on the same axes
@@ -67,6 +68,8 @@ def plot_1d(spectra, title='', x_label='', y_label='', y_min=None, btol=None,
     y_min : float, default None
         Minimum value on the y-axis. Can be useful to set y-axis minimum
         to 0 for energy, for example.
+    labels : list of str, default []
+        Legend labels for spectra, in the same order as spectra
     btol : float, optional, default None
         If there are large gaps on the x-axis (e.g sections of
         reciprocal space) data can be plotted in sections on different
@@ -114,6 +117,9 @@ def plot_1d(spectra, title='', x_label='', y_label='', y_min=None, btol=None,
                     color = p[-1].get_color()
                 p = ax.plot(plot_x[idx[j]:idx[j+1]], plot_y[idx[j]:idx[j+1]],
                             color=color, **line_kwargs)
+        if i == 0 and len(labels) > 0:
+            ax.legend(labels)
+
     if y_min is not None:
         # Need to set limits after plotting the data
         ax.set_ylim(bottom=y_min)
