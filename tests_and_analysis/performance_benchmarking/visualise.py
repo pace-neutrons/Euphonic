@@ -6,46 +6,46 @@ from datetime import datetime
 import pandas as pd
 
 
-class Subplot:
+class Figure:
 
     def __init__(self, machine_info: str):
         self.machine_info = machine_info
-        self.test = {}
+        self.tests = {}
 
-    def add_test(self, func):
-        if func not in self.test:
-            self.test[func] = {}
+    def add_test(self, test):
+        if test not in self.tests:
+            self.tests[test] = {}
 
 
-class Subplots:
+class Figures:
 
     def __init__(self):
-        self.subplots = {}
+        self.figures = {}
 
     def plot(self, figure_index: int):
-        for subplot in self.subplots:
-            self.subplots[subplot].plot(figure_index)
+        for figure in self.figures:
+            self.figures[figure].plot(figure_index)
 
 
-class SpeedupMachineSubplot(Subplot):
+class SpeedupMachineFigure(Figure):
 
-    def add_speedup(self, func: str, n_threads: int, date: datetime.date,
+    def add_speedup(self, test: str, n_threads: int, date: datetime.date,
                     speedup: float):
-        self.add_n_threads(func, n_threads)
-        self.test[func][n_threads][date] = speedup
+        self.add_n_threads(test, n_threads)
+        self.tests[test][n_threads][date] = speedup
 
-    def add_n_threads(self, func: str, n_threads: int):
-        self.add_test(func)
-        if n_threads not in self.test[func]:
-            self.test[func][n_threads] = {}
+    def add_n_threads(self, test: str, n_threads: int):
+        self.add_test(test)
+        if n_threads not in self.tests[test]:
+            self.tests[test][n_threads] = {}
 
     def plot(self, figure_index: int):
         plt.figure(figure_index)
-        for func in self.test:
-            for n_threads in self.test[func]:
+        for test in self.tests:
+            for n_threads in self.tests[test]:
                 plt.plot(
-                    list(self.test[func][n_threads].keys()),
-                    list(self.test[func][n_threads].values()),
+                    list(self.tests[test][n_threads].keys()),
+                    list(self.tests[test][n_threads].values()),
                     label=str(n_threads)
                 )
         plt.gca().xaxis.set_major_formatter(dates.DateFormatter('%Y-%m-%d'))
@@ -57,17 +57,30 @@ class SpeedupMachineSubplot(Subplot):
         plt.gcf().autofmt_xdate()
 
 
-class SpeedupMachineSubplots(Subplots):
+class SpeedupMachineFigures(Figures):
 
     def add_subplot(self, machine_info: str):
-        if machine_info not in self.subplots:
-            self.subplots[machine_info] = SpeedupMachineSubplot(machine_info)
+        if machine_info not in self.figures:
+            self.figures[machine_info] = SpeedupMachineFigure(machine_info)
 
-    def get_subplot(self, machine_info: str) -> SpeedupMachineSubplot:
-        return self.subplots[machine_info]
+    def get_subplot(self, machine_info: str) -> SpeedupMachineFigure:
+        return self.figures[machine_info]
 
 
 def json_files(directory: str):
+    """
+    A generator for all JSON files stored in directory and it's subdirectories.
+
+    Parameters
+    ----------
+    directory: str
+        The top level directory to start the search from.
+
+    Yields
+    -------
+    str
+        A JSON file stored below in the directory structure
+    """
     for subdir, _, files in os.walk(directory):
         for file in files:
             if file.lower().endswith(".json"):
@@ -76,7 +89,7 @@ def json_files(directory: str):
 
 def plot_speedups(directory: str, figure_index: int):
     # Format data into threads for plot
-    subplots = SpeedupMachineSubplots()
+    subplots = SpeedupMachineFigures()
     for file in json_files(directory):
         data = json.load(open(file))
         if "speedups" in data:
@@ -97,11 +110,11 @@ def plot_speedups(directory: str, figure_index: int):
     subplots.plot(figure_index)
 
 
-class MedianMachineSubplot(Subplot):
+class MedianMachineFigure(Figure):
 
     def add_time_taken(self, test: str, date: datetime.date, time_taken: float):
         self.add_test(test)
-        self.test[test][date] = time_taken
+        self.tests[test][date] = time_taken
 
     def plot(self, figure_index: int):
         last_func = None
@@ -109,7 +122,7 @@ class MedianMachineSubplot(Subplot):
         y_axes = {}
         title = None
         dataframes = []
-        for test in self.test:
+        for test in self.tests:
             if last_func != test.split("[")[0]:
                 dataframe = {'x': x_axis, 'title': title}
                 dataframe.update(y_axes)
@@ -121,12 +134,12 @@ class MedianMachineSubplot(Subplot):
                 last_func = test.split("[")[0]
             y_axis = []
             new_x_axis = []
-            for key, value in self.test[test].items():
+            for key, value in self.tests[test].items():
                 index = 0
                 while index < len(x_axis) and key > x_axis[index]:
                     index += 1
-                new_x_axis.insert(index, key)
-                y_axis.insert(index, value)
+                new_x_axis = new_x_axis[:index] + [key] + new_x_axis[index:]
+                y_axis = y_axis[:index] + [value] + y_axis[index:]
             x_axis = new_x_axis
             y_axes[test.split("[")[1][:-1]] = y_axis
         dataframe = {'x': x_axis, 'title': title}
@@ -151,18 +164,18 @@ class MedianMachineSubplot(Subplot):
             plt.gcf().autofmt_xdate()
 
 
-class MedianMachineSubplots(Subplots):
+class MedianMachineFigures(Figures):
 
     def add_subplot(self, machine_info: str):
-        if machine_info not in self.subplots:
-            self.subplots[machine_info] = MedianMachineSubplot(machine_info)
+        if machine_info not in self.figures:
+            self.figures[machine_info] = MedianMachineFigure(machine_info)
 
-    def get_subplot(self, machine_info: str) -> MedianMachineSubplot:
-        return self.subplots[machine_info]
+    def get_subplot(self, machine_info: str) -> MedianMachineFigure:
+        return self.figures[machine_info]
 
 
 def plot_median_values(directory: str, figure_index: int):
-    plots = MedianMachineSubplots()
+    plots = MedianMachineFigures()
     for file in json_files(directory):
         data = json.load(open(file))
         if "benchmarks" in data:
