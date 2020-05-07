@@ -2,8 +2,7 @@ import os
 import unittest
 import numpy.testing as npt
 import numpy as np
-from euphonic.data.phonon import PhononData
-from euphonic import ureg
+from euphonic import ureg, QpointPhononModes
 from ..utils import get_data_path
 
 class TestReadNaClPhononQPoints(unittest.TestCase):
@@ -14,14 +13,14 @@ class TestReadNaClPhononQPoints(unittest.TestCase):
 
         # Create trivial function object so attributes can be assigned to it
         expctd_data = type('', (), {})()
-        expctd_data.n_ions = 8
+        expctd_data.n_atoms = 8
         expctd_data.n_branches = 24
         expctd_data.n_qpts = 4
-        expctd_data.cell_vec = np.array(
+        expctd_data.cell_vectors = np.array(
                [[5.69030148, 0.        , 0.        ],
                 [0.        , 5.69030148, 0.        ],
                 [0.        , 0.        , 5.69030148]])*ureg('angstrom')
-        expctd_data.ion_r = np.array(
+        expctd_data.atom_r = np.array(
                [[0. , 0. , 0. ],
                 [0. , 0.5, 0.5],
                 [0.5, 0. , 0.5],
@@ -30,9 +29,9 @@ class TestReadNaClPhononQPoints(unittest.TestCase):
                 [0.5, 0. , 0. ],
                 [0. , 0.5, 0. ],
                 [0. , 0. , 0.5]])
-        expctd_data.ion_type = np.array(['Na', 'Na', 'Na', 'Na',
+        expctd_data.atom_type = np.array(['Na', 'Na', 'Na', 'Na',
                                          'Cl', 'Cl', 'Cl', 'Cl'])
-        expctd_data.ion_mass = np.array([
+        expctd_data.atom_mass = np.array([
             22.989769, 22.989769, 22.989769, 22.989769,
             35.453000, 35.453000, 35.453000, 35.453000])*ureg('amu')
         expctd_data.qpts = np.array([
@@ -66,36 +65,35 @@ class TestReadNaClPhononQPoints(unittest.TestCase):
             os.path.join(self.path + '/phonopy_eigenvecs.npy'))
         self.expctd_data = expctd_data
 
-        self.data = PhononData.from_phonopy(
+        self.data = QpointPhononModes.from_phonopy(
             path=self.path, phonon_name='qpoints.yaml',
             summary_name='phonopy.yaml')
 
-        self.data_hdf5 = PhononData.from_phonopy(
+        self.data_hdf5 = QpointPhononModes.from_phonopy(
             path=self.path, phonon_name='qpoints.hdf5',
             summary_name='phonopy.yaml')
 
     def test_n_qpts_read_nacl_phonon(self):
         npt.assert_equal(self.data.n_qpts, self.expctd_data.n_qpts)
 
-    def test_n_ions_read_nacl_phonon(self):
-        npt.assert_equal(self.data.n_ions, self.expctd_data.n_ions)
+    def test_n_atoms_read_nacl_phonon(self):
+        npt.assert_equal(self.data.crystal.n_atoms, self.expctd_data.n_atoms)
 
-    def test_n_branches_read_nacl_phonon(self):
-        npt.assert_equal(self.data.n_branches, self.expctd_data.n_branches)
+    def test_cell_vectors_read_nacl_phonon(self):
+        npt.assert_allclose(self.data.crystal.cell_vectors.to('bohr').magnitude,
+                            self.expctd_data.cell_vectors.to('bohr').magnitude)
 
-    def test_cell_vec_read_nacl_phonon(self):
-        npt.assert_allclose(self.data.cell_vec.to('bohr').magnitude,
-                            self.expctd_data.cell_vec.to('bohr').magnitude)
+    def test_atom_r_read_nacl_phonon(self):
+        npt.assert_array_equal(self.data.crystal.atom_r,
+                               self.expctd_data.atom_r)
 
-    def test_ion_r_read_nacl_phonon(self):
-        npt.assert_array_equal(self.data.ion_r, self.expctd_data.ion_r)
+    def test_atom_type_read_nacl_phonon(self):
+        npt.assert_array_equal(self.data.crystal.atom_type,
+                               self.expctd_data.atom_type)
 
-    def test_ion_type_read_nacl_phonon(self):
-        npt.assert_array_equal(self.data.ion_type, self.expctd_data.ion_type)
-
-    def test_ion_mass_read_nacl_phonon(self):
-        npt.assert_allclose(self.data.ion_mass.to('amu').magnitude,
-                            self.expctd_data.ion_mass.to('amu').magnitude)
+    def test_atom_mass_read_nacl_phonon(self):
+        npt.assert_allclose(self.data.crystal.atom_mass.to('amu').magnitude,
+                            self.expctd_data.atom_mass.to('amu').magnitude)
 
     def test_qpts_read_nacl_phonon(self):
         npt.assert_array_equal(self.data.qpts, self.expctd_data.qpts)
@@ -105,8 +103,8 @@ class TestReadNaClPhononQPoints(unittest.TestCase):
 
     def test_freqs_read_nacl_phonon(self):
         npt.assert_allclose(
-            self.data.freqs.to('hartree', 'spectroscopy').magnitude,
+            self.data.frequencies.to('hartree', 'spectroscopy').magnitude,
             self.expctd_data.freqs.to('hartree', 'spectroscopy').magnitude)
 
     def test_eigenvecs_read_nacl_phonon(self):
-        npt.assert_allclose(self.data.eigenvecs, self.expctd_data.eigenvecs)
+        npt.assert_allclose(self.data.eigenvectors, self.expctd_data.eigenvecs)

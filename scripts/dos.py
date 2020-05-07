@@ -1,97 +1,69 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 """
-Parse a *.phonon or *.band CASTEP output file for electronic/vibrational
-frequency data and display or save a matplotlib plot of the electronic or
-vibrational band structure or dispersion.
+Parse a *.phonon CASTEP output file for vibrational frequency data and
+display or save a matplotlib plot of the density of states
 """
 
 import argparse
 import numpy as np
 from euphonic import ureg
-from euphonic.data.bands import BandsData
-from euphonic.plot.dos import plot_dos, output_grace
+from euphonic.plot import plot_1d
 from typing import List
-
-from euphonic.script_utils import load_data_from_file, get_args_and_set_up_and_down, matplotlib_save_or_show
+from euphonic.script_utils import (load_data_from_file, get_args,
+                                   matplotlib_save_or_show)
 
 
 def main(params: List[str] = None):
     parser = get_parser()
-    args = get_args_and_set_up_and_down(parser, params)
+    args = get_args(parser, params)
 
-    data, seedname, file = load_data_from_file(args.filename)
-    data.convert_e_units(args.units)
+    data = load_data_from_file(args.filename)
+    data.frequencies_unit = args.unit
 
     # Calculate and plot DOS
-    # Set default DOS bin and broadening width based on whether it's
-    # electronic or vibrational
     if args.b is None:
-        if file.endswith('.bands'):
-            bwidth = 0.05*ureg.eV
-        else:
-            bwidth = 1.0*(1/ureg.cm)
-        bwidth.ito(args.units, 'spectroscopy')
+        bwidth = 0.1*ureg('meV').to(args.unit)
     else:
-        bwidth = args.b*ureg[args.units]
-    if args.w is None:
-        if file.endswith('.bands'):
-            gwidth = 0.1*ureg.eV
-        else:
-            gwidth = 10.0*(1/ureg.cm)
-        gwidth.ito(args.units, 'spectroscopy')
-    else:
-        gwidth = args.w*ureg[args.units]
-    if isinstance(data, BandsData):
-        all_freqs = np.append(data.freqs.magnitude, data.freq_down.magnitude)
-    else:
-        all_freqs = data.freqs.magnitude
-    bwidth = bwidth.magnitude
-    dos_bins = np.arange(all_freqs.min(), all_freqs.max() + bwidth, bwidth)
-    data.calculate_dos(dos_bins, gwidth, lorentz=args.lorentz)
+        bwidth = args.b*ureg(data.frequencies_unit)
 
-    if args.grace:
-        output_grace(data, seedname, mirror=args.mirror, up=args.up,
-                     down=args.down)
+    if args.w is None:
+        gwidth = 1.0*ureg('meV').to(args.unit)
     else:
-        fig = plot_dos(data, args.filename, mirror=args.mirror, up=args.up,
-                       down=args.down)
-        if fig is not None:
-            matplotlib_save_or_show(save_filename=args.s)
+        gwidth = args.w*ureg(data.frequencies_unit)
+
+    freqs = data.frequencies.magnitude
+    dos_bins = np.arange(freqs.min(),
+                         freqs.max() + bwidth.magnitude,
+                         bwidth.magnitude)*ureg(data.frequencies_unit)
+    dos = data.calculate_dos(dos_bins)
+    if args.lorentz:
+        shape='lorentz'
+    else:
+        shape='gauss'
+    dos = dos.broaden(x_width=gwidth, shape=shape)
+
+    fig = plot_1d(dos, x_label=f'Energy ({dos.x_data.units:~P})',
+                  y_min=0, lw=1.0)
+    matplotlib_save_or_show(save_filename=args.s)
 
 
 def get_parser():
     parser = argparse.ArgumentParser(
-        description=('Extract phonon or bandstructure data from a .phonon or'
-                     ' .bands file and plot the density of states with'
-                     ' matplotlib'))
+        description=('Extract bandstructure data from a .phonon file '
+                     'and plot the density of states with matplotlib'))
     parser.add_argument(
         'filename',
-        help='The .phonon or .bands file to extract the data from')
+        help='The .phonon file to extract the data from')
     parser.add_argument(
-        '-units',
-        default='eV',
-        help=('Convert frequencies to specified units for plotting (e.g'
-              ' 1/cm, Ry)'))
+        '-unit',
+        default='meV',
+        help=('Convert frequencies to specified unit for plotting (e.g'
+              ' 1/cm)'))
     parser.add_argument(
         '-s',
         default=None,
         help='Save resulting plot to a file with this name')
-    parser.add_argument(
-        '-grace',
-        action='store_true',
-        help='Output a .agr Grace file')
-
-    spin_group = parser.add_mutually_exclusive_group()
-    spin_group.add_argument(
-        '-up',
-        action='store_true',
-        help='Extract and plot only spin up from .bands')
-    spin_group.add_argument(
-        '-down',
-        action='store_true',
-        help='Extract and plot only spin down from .bands')
-
     dos_group = parser.add_argument_group(
         'DOS arguments',
         'Arguments specific to plotting the density of states')
@@ -100,24 +72,17 @@ def get_parser():
         default=None,
         type=float,
         help=('Set Gaussian/Lorentzian FWHM for broadening (in units specified'
-              ' by -units argument or default eV). Default: 0.1 eV for'
-              ' electronic DOS, 10.0/cm for vibrational DOS'))
+              ' by -unit argument or default meV). Default: 1 meV'))
     dos_group.add_argument(
         '-b',
         default=None,
         type=float,
         help=('Set histogram resolution for binning (in units specified by'
-              ' -units argument or default eV). Default: 0.05 eV for'
-              ' electronic DOS, 1.0/cm for vibrational DOS'))
+              ' -unit argument or default meV). Default: 0.1 meV'))
     dos_group.add_argument(
         '-lorentz',
         action='store_true',
         help='Use Lorentzian broadening instead of Gaussian')
-    dos_group.add_argument(
-        '-mirror',
-        action='store_true',
-        help='Plot spin down electronic DOS mirrored in the x axis')
-
     return parser
 
 
