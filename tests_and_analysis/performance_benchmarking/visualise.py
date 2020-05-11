@@ -6,6 +6,7 @@ import json
 from datetime import datetime
 import pandas as pd
 from abc import abstractmethod, ABC
+import argparse
 
 
 class Figure(ABC):
@@ -504,7 +505,17 @@ def plot_median_values(directory: str, figure_index: int) -> int:
     return next_free_figure_index
 
 
+def get_dir() -> str:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-d", action="store", dest="dirname",
+                        help="The directory containing the historical"
+                             " benchmark data json files")
+    args_parsed = parser.parse_args()
+    return args_parsed.dirname
+
+
 if __name__ == "__main__":
-    median_value_starting_figure_index: int = plot_speedups("reports", 0)
-    plot_median_values("reports", median_value_starting_figure_index)
+    dirname = get_dir()
+    median_value_starting_figure_index: int = plot_speedups(dirname, 0)
+    plot_median_values(dirname, median_value_starting_figure_index)
     plt.show()
