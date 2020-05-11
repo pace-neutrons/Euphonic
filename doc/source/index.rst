@@ -13,6 +13,9 @@ For more information on how to use Euphonic, see the
 
 Installation
 ============
+
+Euphonic requires Python ``3.6``, ``3.7`` or ``3.8``
+
 Pip
 ---
 

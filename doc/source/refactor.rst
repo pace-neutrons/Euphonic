@@ -11,7 +11,7 @@ are:
 - Crystal parameters referencing ions have been renamed to atoms e.g.
   ``n_atoms``, ``atom_r``, ``atom_type``
 - Shortened names have been extended ``cell_vecs`` -> ``cell_vectors``,
-  ``eigenvecs``-> ``eigenvectors``, ``freqs``->``frequencies`` etc.
+  ``eigenvecs``-> ``eigenvectors``, ``freqs``-> ``frequencies`` etc.
 - ``InterpolationData`` has been renamed to ``ForceConstants`` and is now a
   top-level import e.g. ``from euphonic import ForceConstants``
 - ``PhononData`` has been renamed to ``QpointPhononModes`` and is now a

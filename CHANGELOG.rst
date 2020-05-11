@@ -1,15 +1,19 @@
 `Unreleased <https://github.com/pace-neutrons/Euphonic/compare/v0.2.2...HEAD>`_
 ----------
 
-- Major Refactor: There has been a major refactor, for see the latest
-  `docs <https://euphonic.readthedocs.io/en/latest>`_ for how to use, or
-  `here <https://euphonic.readthedocs.io/en/latest/refactor.rst>` for refactor
-  details.
+- Breaking Changes:
+
+  - There has been a major refactor, for see the latest
+    `docs <https://euphonic.readthedocs.io/en/latest>`_ for how to use, or
+    `here <https://euphonic.readthedocs.io/en/latest/refactor.html>`_ for
+    refactor details
+  - Python 2 is no longer supported. Supported Python versions are ``3.6``,
+    ``3.7`` and ``3.8``
 
 - New Features:
 
   - Euphonic can now read Phonopy input! See
-    `the docs <https://euphonic.readthedocs.io/en/latest/read_phonopy.html>`_
+    `the docs <https://euphonic.readthedocs.io/en/latest>`_
     for details.
 
 - Improvements:

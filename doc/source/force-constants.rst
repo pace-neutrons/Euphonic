@@ -57,11 +57,11 @@ charges can also be read from Phonopy plaintext or hdf5 files by specifying the
 
 .. code-block:: py
 
-  from euphonic.data import ForceConstants
+  from euphonic import ForceConstants
 
-  fc = InterpolationData.from_phonopy(path='NaCl',
-                                      fc_name='force_constants.hdf5',
-                                      born_name='BORN')
+  fc = ForceConstants.from_phonopy(path='NaCl',
+                                   fc_name='force_constants.hdf5',
+                                   born_name='BORN')
 
 Calculating phonon frequencies/eigenvectors
 -------------------------------------------

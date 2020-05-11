@@ -14,7 +14,7 @@ Plotting Dispersion
 ===================
 
 Phonon dispersion can be plotted straight from the q-points/frequencies in a
-:ref:`QpointPhononModes` object with
+:ref:`QpointPhononModes <qpoint-phonon-modes>` object with
 :py:meth:`euphonic.plot.plot_dispersion`. Extra arguments get passed to
 :py:meth:`plot_1d <euphonic.plot.plot_dispersion>`, for adding axis labels
 etc.:
