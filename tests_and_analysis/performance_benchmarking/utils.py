@@ -1,6 +1,6 @@
-import os
-from typing import List, Tuple
 import numpy as np
+import os
+from typing import List
 
 
 def get_data_path() -> str:

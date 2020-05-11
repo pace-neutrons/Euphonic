@@ -1,12 +1,12 @@
-from typing import List, Dict
+from abc import abstractmethod, ABC
+import argparse
+from datetime import datetime
+import json
 import matplotlib.pyplot as plt
 import matplotlib.dates as dates
 import os
-import json
-from datetime import datetime
 import pandas as pd
-from abc import abstractmethod, ABC
-import argparse
+from typing import List, Dict
 
 
 class Figure(ABC):
@@ -506,6 +506,14 @@ def plot_median_values(directory: str, figure_index: int) -> int:
 
 
 def get_dir() -> str:
+    """
+    Get the directory specified as an argument on the command line.
+
+    Returns
+    -------
+    str
+        The path of the directory
+    """
     parser = argparse.ArgumentParser()
     parser.add_argument("-d", action="store", dest="dirname",
                         help="The directory containing the historical"
