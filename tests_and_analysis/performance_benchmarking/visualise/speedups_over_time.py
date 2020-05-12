@@ -104,9 +104,10 @@ class SpeedupMachineFigure(Figure):
                 plt.ylabel("Speedup value (Ts/Tn)")
                 plt.title("Speedups over time\n {}\n {}, {}"
                           .format(self.machine_info, test, seedname))
-                plt.legend(title="Number of threads",
+                plt.legend(title="Threads",
                            loc='center left',
-                           bbox_to_anchor=(1, 0.5))
+                           bbox_to_anchor=(1, 0.5),
+                           fontsize="small")
                 plt.gcf().tight_layout()
                 plt.gcf().autofmt_xdate()
                 figure_index += 1

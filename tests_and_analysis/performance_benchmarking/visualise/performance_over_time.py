@@ -154,6 +154,7 @@ class MedianMachineFigure(Figure):
             # A trace for each combination of the test parameters
             # Vary linestyles
             linestyle_index = 0
+            index = 0
             for key in dataframe.keys():
                 if key != "x":
                     plt.plot(
@@ -161,17 +162,20 @@ class MedianMachineFigure(Figure):
                         data=dataframe,
                         linestyle=linestyle_tuple[linestyle_index]
                     )
-                    linestyle_index = \
-                        (linestyle_index + 1) % len(linestyle_tuple)
+                    if index % 6 == 5:
+                        linestyle_index = \
+                            (linestyle_index + 1) % len(linestyle_tuple)
+                    index += 1
             # Set figure display details
             plt.title(title)
             plt.gca().xaxis.set_major_formatter(dates.DateFormatter('%Y-%m-%d'))
             plt.gca().xaxis.set_major_locator(dates.DayLocator())
             plt.xlabel("Date")
             plt.ylabel("Time taken (seconds)")
-            plt.legend(title="Test Params",
+            plt.legend(title="Params",
                        loc='center left',
-                       bbox_to_anchor=(1, 0.5))
+                       bbox_to_anchor=(1, 0.5),
+                       fontsize="small")
             plt.gcf().tight_layout()
             plt.gcf().autofmt_xdate()
             figure_index += 1

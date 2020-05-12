@@ -34,9 +34,10 @@ def plot_speedups_for_file(filename: str, figure_index: int) -> int:
             plt.title("Speedups for {}\n {}".format(filename, test))
             # Create the legend to the right of the figure and shrink the
             # figure to account for that
-            plt.legend(title="Seedname/material",
+            plt.legend(title="Seedname",
                        loc='center left',
-                       bbox_to_anchor=(1, 0.5))
+                       bbox_to_anchor=(1, 0.5),
+                       fontsize="small")
             plt.gcf().tight_layout()
             figure_index += 1
     return figure_index
