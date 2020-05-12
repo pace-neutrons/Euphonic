@@ -42,7 +42,7 @@ class MedianMachineFigure(Figure):
         if params not in self.tests[test]:
             self.tests[test][params] = {}
 
-    def plot(self, figure_index: int) -> int:
+    def plot(self):
         """
         Plot the (possibly multiple) figures. One figure for each test with
         a line for each set of parameters of the test and a point
@@ -59,9 +59,7 @@ class MedianMachineFigure(Figure):
             The next free figure index to use after these plots.
         """
         dataframes: Dict[str, pd.DataFrame] = self.build_dataframes()
-        next_free_figure_index: int = \
-            self.plot_dataframes(dataframes, figure_index)
-        return next_free_figure_index
+        self.plot_dataframes(dataframes)
 
     def build_dataframes(self) -> Dict[str, pd.DataFrame]:
         """
@@ -128,8 +126,7 @@ class MedianMachineFigure(Figure):
         dataframe.update(y_axes)
         return pd.DataFrame(dataframe)
 
-    def plot_dataframes(self, dataframes: Dict[str, pd.DataFrame],
-                        figure_index: int) -> int:
+    def plot_dataframes(self, dataframes: Dict[str, pd.DataFrame]):
         """
         Plot a figure for each dataframe and use the dictionary
         key as the title. Each dataframe has an x axis with the key 'x'
@@ -140,24 +137,17 @@ class MedianMachineFigure(Figure):
         dataframes : Dict[str, pd.DataFrame]
             The key is the title of the figure to be and the
             value is the dataframe to plot for the figure.
-        figure_index : int
-            The index of the first figure to be plotted.
-
-        Returns
-        -------
-        int
-            The next free figure index to use after these plots.
         """
         # A plot for each test (dataframe)
         for title, dataframe in dataframes.items():
-            plt.figure(figure_index)
+            fig, subplots = plt.subplots()
             # A trace for each combination of the test parameters
             # Vary linestyles
             linestyle_index = 0
             index = 0
             for key in dataframe.keys():
                 if key != "x":
-                    plt.plot(
+                    subplots.plot(
                         'x', key,
                         data=dataframe,
                         linestyle=linestyle_tuple[linestyle_index]
@@ -167,19 +157,19 @@ class MedianMachineFigure(Figure):
                             (linestyle_index + 1) % len(linestyle_tuple)
                     index += 1
             # Set figure display details
-            plt.title(title)
-            plt.gca().xaxis.set_major_formatter(dates.DateFormatter('%Y-%m-%d'))
-            plt.gca().xaxis.set_major_locator(dates.DayLocator())
-            plt.xlabel("Date")
-            plt.ylabel("Time taken (seconds)")
-            plt.legend(title="Params",
-                       loc='center left',
-                       bbox_to_anchor=(1, 0.5),
-                       fontsize="small")
-            plt.gcf().tight_layout()
-            plt.gcf().autofmt_xdate()
-            figure_index += 1
-        return figure_index
+            subplots.set_title(title)
+            subplots.xaxis.set_major_formatter(dates.DateFormatter('%Y-%m-%d'))
+            subplots.xaxis.set_major_locator(dates.DayLocator())
+            subplots.set_xlabel("Date")
+            subplots.set_ylabel("Time taken (seconds)")
+            subplots.legend(
+                title="Params",
+                loc='center left',
+                bbox_to_anchor=(1, 0.5),
+                fontsize="small"
+            )
+            fig.tight_layout()
+            fig.autofmt_xdate()
 
 
 class MedianMachineFigures(Figures):
@@ -223,7 +213,7 @@ class MedianMachineFigures(Figures):
         return self.figures[machine_info]
 
 
-def plot_median_values(directory: str, figure_index: int) -> int:
+def plot_median_values(directory: str):
     """
     Plot and show a graph for each test displaying performance changes over
     time with a trace for each combination of parameters the test has run on.
@@ -235,13 +225,6 @@ def plot_median_values(directory: str, figure_index: int) -> int:
     ----------
     directory : str
         The directory under which the json files are stored.
-    figure_index : int
-        The index of the first figure to plot
-
-    Returns
-    -------
-    int
-        The next free figure index to use after these plots
     """
     plots = MedianMachineFigures()
     for file in json_files(directory):
@@ -260,5 +243,4 @@ def plot_median_values(directory: str, figure_index: int) -> int:
                     ).date(),
                     benchmark["stats"]["median"]
                 )
-    next_free_figure_index: int = plots.plot(figure_index)
-    return next_free_figure_index
+    plots.plot()

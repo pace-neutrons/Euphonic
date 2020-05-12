@@ -52,19 +52,9 @@ class Figure(ABC):
             self.tests[test] = {}
 
     @abstractmethod
-    def plot(self, figure_index: int) -> int:
+    def plot(self):
         """
         Plot the test performance over time held by this figure.
-
-        Parameters
-        ----------
-        figure_index : int
-            The index of the figure to plot
-
-        Returns
-        -------
-        int
-            The next free index to plot a figure on.
         """
         raise NotImplementedError
 
@@ -76,19 +66,9 @@ class Figures(ABC):
         # and the figure as the value
         self.figures: Dict[str, Figure] = {}
 
-    def plot(self, figure_index: int) -> int:
+    def plot(self):
         """
         Plot the figures currently held in this object.
-
-        Parameters
-        ----------
-        figure_index : int
-
-        Returns
-        -------
-        int
-            THe next free figure index after plotting the figures.
         """
         for figure in self.figures:
-            figure_index = self.figures[figure].plot(figure_index)
-        return figure_index
+            self.figures[figure].plot()

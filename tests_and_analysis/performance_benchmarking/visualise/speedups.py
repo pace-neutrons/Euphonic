@@ -2,7 +2,7 @@ import json
 import matplotlib.pyplot as plt
 
 
-def plot_speedups_for_file(filename: str, figure_index: int) -> int:
+def plot_speedups_for_file(filename: str):
     """
     Plot a figure for each test that has had speedups calculated for it in
     filename. There is a trace for each seedname used in the test.
@@ -11,33 +11,26 @@ def plot_speedups_for_file(filename: str, figure_index: int) -> int:
     ----------
     filename : str
         The file to get the calculated speedups from
-    figure_index : str
-        The index of the first figure to plot
-
-    Returns
-    -------
-    int
-        The next free figure index to use
     """
     data = json.load(open(filename))
     if "speedups" in data:
         for test in data["speedups"]:
-            plt.figure(figure_index)
+            fig, subplots = plt.subplots()
             for seedname in data["speedups"][test]:
-                plt.plot(
+                subplots.plot(
                     list(data["speedups"][test][seedname].keys()),
                     list(data["speedups"][test][seedname].values()),
                     label=seedname
                 )
-            plt.xlabel("Number of threads")
-            plt.ylabel("Speedup (Ts/Tp)")
-            plt.title("Speedups for {}\n {}".format(filename, test))
+            subplots.set_xlabel("Number of threads")
+            subplots.set_ylabel("Speedup (Ts/Tp)")
+            subplots.set_title("Speedups for {}\n {}".format(filename, test))
             # Create the legend to the right of the figure and shrink the
             # figure to account for that
-            plt.legend(title="Seedname",
-                       loc='center left',
-                       bbox_to_anchor=(1, 0.5),
-                       fontsize="small")
-            plt.gcf().tight_layout()
-            figure_index += 1
-    return figure_index
+            subplots.legend(
+                title="Seedname",
+                loc='center left',
+                bbox_to_anchor=(1, 0.5),
+                fontsize="small"
+            )
+            fig.tight_layout()

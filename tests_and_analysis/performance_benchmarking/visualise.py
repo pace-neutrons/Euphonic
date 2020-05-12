@@ -36,14 +36,12 @@ def get_parser() -> argparse.ArgumentParser:
 if __name__ == "__main__":
     parser = get_parser()
     args_parsed = parser.parse_args()
-    figure_index: int = 0
     if args_parsed.speedup_over_time_dir:
         figure_index = plot_speedups_over_time(
-            args_parsed.speedup_over_time_dir, figure_index
+            args_parsed.speedup_over_time_dir
         )
     if args_parsed.performance_dir:
-        figure_index = plot_median_values(args_parsed.performance_dir,
-                                          figure_index)
+        figure_index = plot_median_values(args_parsed.performance_dir)
     if args_parsed.speedup_file:
-        plot_speedups_for_file(args_parsed.speedup_file, figure_index)
+        plot_speedups_for_file(args_parsed.speedup_file)
     plt.show()

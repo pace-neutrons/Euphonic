@@ -71,47 +71,40 @@ class SpeedupMachineFigure(Figure):
         if n_threads not in self.tests[test][seedname]:
             self.tests[test][seedname][n_threads] = {}
 
-    def plot(self, figure_index: int):
+    def plot(self):
         """
         Plot the speedup performance over time across a range of threads.
-
-        Parameters
-        ----------
-        figure_index : int
-            The index of the figure to plot.
-
-        Returns
-        -------
-        int
-            The next free index for a figure to use
         """
         # Plot a figure for each test and seedname combination
         for test in self.tests:
             for seedname in self.tests[test]:
-                plt.figure(figure_index)
+                fig, subplots = plt.subplots()
                 # Plot a line on the figure for each number of threads
                 for n_threads in self.tests[test][seedname]:
-                    plt.plot(
+                    subplots.plot(
                         list(self.tests[test][seedname][n_threads].keys()),
                         list(self.tests[test][seedname][n_threads].values()),
                         label=str(n_threads)
                     )
                 # Format x axis to use dates
-                plt.gca().xaxis.set_major_formatter(dates.DateFormatter('%Y-%m-%d'))
-                plt.gca().xaxis.set_major_locator(dates.DayLocator())
+                subplots.xaxis.set_major_formatter(
+                    dates.DateFormatter('%Y-%m-%d')
+                )
+                subplots.xaxis.set_major_locator(dates.DayLocator())
                 # Label axes, title and legend correctly
-                plt.xlabel("Date")
-                plt.ylabel("Speedup value (Ts/Tn)")
-                plt.title("Speedups over time\n {}\n {}, {}"
-                          .format(self.machine_info, test, seedname))
-                plt.legend(title="Threads",
-                           loc='center left',
-                           bbox_to_anchor=(1, 0.5),
-                           fontsize="small")
-                plt.gcf().tight_layout()
-                plt.gcf().autofmt_xdate()
-                figure_index += 1
-        return figure_index
+                subplots.set_xlabel("Date")
+                subplots.set_ylabel("Speedup value (Ts/Tn)")
+                subplots.set_title("Speedups over time\n {}\n {}, {}".format(
+                    self.machine_info, test, seedname
+                ))
+                subplots.legend(
+                    title="Threads",
+                    loc='center left',
+                    bbox_to_anchor=(1, 0.5),
+                    fontsize="small"
+                )
+                fig.tight_layout()
+                fig.autofmt_xdate()
 
 
 class SpeedupMachineFigures(Figures):
@@ -153,7 +146,7 @@ class SpeedupMachineFigures(Figures):
         return self.figures[machine_info]
 
 
-def plot_speedups_over_time(directory: str, figure_index: int) -> int:
+def plot_speedups_over_time(directory: str):
     """
     Plot and show graphs displaying how speedups on different numbers of threads
      have changed over time using the data from the json files under the given
@@ -163,13 +156,6 @@ def plot_speedups_over_time(directory: str, figure_index: int) -> int:
     ----------
     directory : str
         The directory under which the json files are stored.
-    figure_index : int
-        The index of the first figure to plot
-
-    Returns
-    -------
-    int
-        The next free figure index after these plots
     """
     figures = SpeedupMachineFigures()
     for file in json_files(directory):
@@ -195,5 +181,4 @@ def plot_speedups_over_time(directory: str, figure_index: int) -> int:
                             ).date(),
                             data["speedups"][test][seedname][n_threads]
                         )
-    next_free_figure_index: int = figures.plot(figure_index)
-    return next_free_figure_index
+    figures.plot()
