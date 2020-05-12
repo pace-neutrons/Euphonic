@@ -1,9 +1,10 @@
 import argparse
 import json
 from typing import Dict
+import os
 
 
-def get_file() -> str:
+def get_file_or_dir() -> str:
     """
     Get the filename to calculate speedups of that has
      been specified on the command line.
@@ -14,10 +15,18 @@ def get_file() -> str:
         The filename to calculate speedups for.
     """
     parser = argparse.ArgumentParser()
-    parser.add_argument("-f", action="store", dest="filename",
-                        help="The file to speedrank")
+    dir_file_group = parser.add_mutually_exclusive_group()
+    dir_file_group.add_argument("-f", action="store", dest="filename",
+                                help="The file to calculate speedups for")
+    dir_file_group.add_argument("-d", action="store", dest="dirname",
+                                help="The directory containing files"
+                                     " to calculate speedups for",
+                                default="reports")
     args_parsed = parser.parse_args()
-    return args_parsed.filename
+    if args_parsed.filename:
+        return args_parsed.filename
+    else:
+        return args_parsed.dirname
 
 
 def median_value(benchmark: Dict) -> float:
@@ -37,7 +46,7 @@ def median_value(benchmark: Dict) -> float:
     return benchmark["stats"]["median"]
 
 
-def calculate_speedups(filename: str) -> Dict[str, Dict[int, float]]:
+def calculate_speedups(filename: str) -> Dict[str, Dict[str, Dict[int, float]]]:
     """
     Calculate speedups for the tests that are parameterised to
      use a number of different threads.
@@ -49,8 +58,10 @@ def calculate_speedups(filename: str) -> Dict[str, Dict[int, float]]:
 
     Returns
     -------
-    Dict[str, Dict[int, float]]
+    Dict[str, Dict[str, Dict[int, float]]]
         The keys of the top level dictionary are the name of the test.
+        The keys of the next level of the dictionary are the seednames
+         used in the tests.
         The keys of the next level dictionary are the number of threads used.
         The values are the speedups for the given test and number of threads.
     """
@@ -67,22 +78,27 @@ def calculate_speedups(filename: str) -> Dict[str, Dict[int, float]]:
             test = benchmark["name"].split("[")[0]
             if test not in speed_at_threads:
                 speed_at_threads[test] = {}
+            seedname = benchmark["params"]["seedname"]
+            if seedname not in speed_at_threads[test]:
+                speed_at_threads[test][seedname] = {}
             # At the given test and number of threads extract the
             # median time taken
-            speed_at_threads[test][benchmark["params"]["n_threads"]] = \
-                benchmark["stats"]["median"]
+            speed_at_threads[test][seedname][benchmark["params"]["n_threads"]] \
+                = benchmark["stats"]["median"]
     # Calculate the speedups from the formatted data
     speedups = {}
     for test in speed_at_threads:
         speedups[test] = {}
-        sequential_speed = speed_at_threads[test][1]
-        for n_threads in speed_at_threads[test]:
-            speedups[test][n_threads] = \
-                sequential_speed / speed_at_threads[test][n_threads]
+        for seedname in speed_at_threads[test]:
+            speedups[test][seedname] = {}
+            sequential_speed = speed_at_threads[test][seedname][1]
+            for n_threads in speed_at_threads[test][seedname]:
+                speedups[test][seedname][n_threads] = \
+                    sequential_speed / speed_at_threads[test][seedname][n_threads]
     return speedups
 
 
-def write_speedups(filename: str, speedups: Dict[str, Dict[int, float]]):
+def write_speedups(filename: str, speedups: Dict[str, Dict[str, Dict[int, float]]]):
     """
     Write the calculated speedups to the given json file in
     the "speedups" entry.
@@ -91,7 +107,7 @@ def write_speedups(filename: str, speedups: Dict[str, Dict[int, float]]):
     ----------
     filename : str
         The file to write the speedups to
-    speedups : Dict[str, Dict[int, float]]
+    speedups : Dict[str, Dict[str, Dict[int, float]]]
         The calculated speedups to write to file.
     """
     # Load in the data and update with the speedups
@@ -102,6 +118,14 @@ def write_speedups(filename: str, speedups: Dict[str, Dict[int, float]]):
 
 
 if __name__ == "__main__":
-    filename: str = get_file()
-    speedups: Dict[str, Dict[int, float]] = calculate_speedups(filename)
-    write_speedups(filename, speedups)
+    path: str = get_file_or_dir()
+    if os.path.isdir(path):
+        for filename in os.listdir(path):
+            filepath = os.path.join(path, filename)
+            speedups: Dict[str, Dict[str, Dict[int, float]]] = \
+                calculate_speedups(filepath)
+            write_speedups(filepath, speedups)
+    elif os.path.isfile(path):
+        speedups: Dict[str, Dict[str, Dict[int, float]]] = \
+            calculate_speedups(path)
+        write_speedups(path, speedups)
