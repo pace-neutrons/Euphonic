@@ -2,6 +2,7 @@ import argparse
 import matplotlib.pyplot as plt
 from visualise.performance_over_time import plot_median_values
 from visualise.speedups_over_time import plot_speedups_over_time
+from visualise.speedups import plot_speedups_for_file
 
 
 def get_parser() -> argparse.ArgumentParser:
@@ -14,27 +15,35 @@ def get_parser() -> argparse.ArgumentParser:
         The path of the directory
     """
     parser = argparse.ArgumentParser()
-    parser.add_argument("-d", action="store", dest="dirname",
-                        default="reports",
-                        help="The directory containing the historical"
-                             " benchmark data json files")
-    parser.add_argument("-st", "--speedup-over-time", action="store_true",
-                        dest="speedup_over_time",
+    parser.add_argument("-st", "--speedup-over-time", action="store",
+                        dest="speedup_over_time_dir",
                         help="Plot and show how the speedups data has changed"
-                             " over time")
-    parser.add_argument("-p", "--performance", action="store_true",
-                        dest="performance",
-                        help="Plot and show performance data")
+                             " over time for the files in the directory you"
+                             " have specified as part of this argument")
+    parser.add_argument("-p", "--performance", action="store",
+                        dest="performance_dir",
+                        help="Plot and show how performance data has changed"
+                             " over time for the files in the directory you"
+                             " have specified as part of this argument")
+    parser.add_argument("-sf", "--speedup-file", action="store",
+                        dest="speedup_file",
+                        help="Plot and show how using more threads affects the"
+                             " performance of functions across multiple"
+                             " different materials for the specified file")
     return parser
 
 
 if __name__ == "__main__":
     parser = get_parser()
     args_parsed = parser.parse_args()
-    dirname = args_parsed.dirname
     figure_index: int = 0
-    if args_parsed.speedup_over_time:
-        figure_index = plot_speedups_over_time(dirname, figure_index)
-    if args_parsed.performance:
-        plot_median_values(dirname, figure_index)
+    if args_parsed.speedup_over_time_dir:
+        figure_index = plot_speedups_over_time(
+            args_parsed.speedup_over_time_dir, figure_index
+        )
+    if args_parsed.performance_dir:
+        figure_index = plot_median_values(args_parsed.performance_dir,
+                                          figure_index)
+    if args_parsed.speedup_file:
+        plot_speedups_for_file(args_parsed.speedup_file, figure_index)
     plt.show()

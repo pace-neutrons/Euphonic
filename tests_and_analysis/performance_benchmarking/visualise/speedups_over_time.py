@@ -148,6 +148,7 @@ class SpeedupMachineFigures(Figures):
         """
         return self.figures[machine_info]
 
+
 def plot_speedups_over_time(directory: str, figure_index: int) -> int:
     """
     Plot and show graphs displaying how speedups on different numbers of threads
