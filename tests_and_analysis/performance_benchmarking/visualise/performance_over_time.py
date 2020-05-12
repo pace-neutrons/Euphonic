@@ -45,8 +45,8 @@ class MedianMachineFigure(Figure):
     def plot(self, figure_index: int) -> int:
         """
         Plot the (possibly multiple) figures. One figure for each test with
-         a line for each set of parameters of the test and a point
-          on each line for each date it has been run.
+        a line for each set of parameters of the test and a point
+        on each line for each date it has been run.
 
         Parameters
         ----------
@@ -66,7 +66,7 @@ class MedianMachineFigure(Figure):
     def build_dataframes(self) -> Dict[str, pd.DataFrame]:
         """
         Build a dataframe for each test. Each set of params has a new y_axis
-         points in the dataframe.
+        points in the dataframe.
 
         Returns
         -------
@@ -118,7 +118,7 @@ class MedianMachineFigure(Figure):
             The dates to plot on the x axis of the dataframe.
         y_axes : Dict[str, List[float]]
             The key is the parameters used when recording the time taken and
-             the values are the times taken at the corresponding x_axis dates.
+            the values are the times taken at the corresponding x_axis dates.
 
         Returns
         -------
@@ -132,14 +132,14 @@ class MedianMachineFigure(Figure):
                         figure_index: int) -> int:
         """
         Plot a figure for each dataframe and use the dictionary
-         key as the title. Each dataframe has an x axis with the key 'x'
-          and a number of y axis traces.
+        key as the title. Each dataframe has an x axis with the key 'x'
+        and a number of y axis traces.
 
         Parameters
         ----------
         dataframes : Dict[str, pd.DataFrame]
             The key is the title of the figure to be and the
-             value is the dataframe to plot for the figure.
+            value is the dataframe to plot for the figure.
         figure_index : int
             The index of the first figure to be plotted.
 
@@ -186,8 +186,8 @@ class MedianMachineFigures(Figures):
     def add_figure(self, machine_info: str):
         """
         Add a MedianMachine Figure to the figures stored in this object
-         with the given machine info (does not add another figure if there
-          is already one with the given machine information.
+        with the given machine info (does not add another figure if there
+        is already one with the given machine information.
 
         Parameters
         ----------
@@ -211,7 +211,7 @@ class MedianMachineFigures(Figures):
         -------
         MedianMachineFigure
             The figure which contains benchmark data that has been run
-             on the machine with the given information.
+            on the machine with the given information.
         """
         return self.figures[machine_info]
 
@@ -219,10 +219,10 @@ class MedianMachineFigures(Figures):
 def plot_median_values(directory: str, figure_index: int) -> int:
     """
     Plot and show a graph for each test displaying performance changes over
-     time with a trace for each combination of parameters the test has run on.
-      If the tests have been run on multiple different types of machines there
-       will be a separate figure for each type of machine. Data is taken from
-        json files under the given directory.
+    time with a trace for each combination of parameters the test has run on.
+    If the tests have been run on multiple different types of machines there
+    will be a separate figure for each type of machine. Data is taken from
+    json files under the given directory.
 
     Parameters
     ----------

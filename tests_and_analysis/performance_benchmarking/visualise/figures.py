@@ -40,8 +40,8 @@ class Figure(ABC):
     def add_test(self, test: str):
         """
         The figure has a set of tests (keys for the test dict)
-         for which we are recording the performance
-         over time. Add to this set of tests.
+        for which we are recording the performance
+        over time. Add to this set of tests.
 
         Parameters
         ----------

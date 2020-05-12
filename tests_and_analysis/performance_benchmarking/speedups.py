@@ -7,7 +7,7 @@ import os
 def get_file_or_dir() -> str:
     """
     Get the filename to calculate speedups of that has
-     been specified on the command line.
+    been specified on the command line.
 
     Returns
     -------
@@ -49,7 +49,7 @@ def median_value(benchmark: Dict) -> float:
 def calculate_speedups(filename: str) -> Dict[str, Dict[str, Dict[int, float]]]:
     """
     Calculate speedups for the tests that are parameterised to
-     use a number of different threads.
+    use a number of different threads.
 
     Parameters
     ----------
@@ -61,7 +61,7 @@ def calculate_speedups(filename: str) -> Dict[str, Dict[str, Dict[int, float]]]:
     Dict[str, Dict[str, Dict[int, float]]]
         The keys of the top level dictionary are the name of the test.
         The keys of the next level of the dictionary are the seednames
-         used in the tests.
+        used in the tests.
         The keys of the next level dictionary are the number of threads used.
         The values are the speedups for the given test and number of threads.
     """

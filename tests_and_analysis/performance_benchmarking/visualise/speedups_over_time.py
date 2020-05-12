@@ -13,7 +13,7 @@ class SpeedupMachineFigure(Figure):
                     speedup: float):
         """
         Add speedup data for a specific test, date of test
-         and number of threads.
+        and number of threads.
         If the number of threads and test hasn't been added yet, add them.
 
         Parameters
@@ -24,12 +24,12 @@ class SpeedupMachineFigure(Figure):
             The material the data comes from
         n_threads : int
             The number of threads the test was run with
-             and the speedup calculated with
+            and the speedup calculated with
         date : datetime.date
             The date the test was run on
         speedup : float
             The speedup value calculated by:
-             speed on 1 thread / speed on n_threads
+            speed on 1 thread / speed on n_threads
         """
         self.add_n_threads(test, seedname, n_threads)
         self.tests[test][seedname][n_threads][date] = speedup
@@ -52,16 +52,16 @@ class SpeedupMachineFigure(Figure):
     def add_n_threads(self, test: str, seedname: str, n_threads: int):
         """
         The given test has been run with the given number of
-         threads (n_threads).
+        threads (n_threads).
         Add n_threads as a key for the given test to record
-         speedup data against.
+        speedup data against.
         If the test is present, add it.
 
         Parameters
         ----------
         test : str
             The test that has been run with the given number
-             of threads (n_threads)
+            of threads (n_threads)
         seedname : str
             The material the data comes from
         n_threads : int
