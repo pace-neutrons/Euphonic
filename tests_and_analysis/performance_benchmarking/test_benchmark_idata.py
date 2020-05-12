@@ -8,7 +8,7 @@ from euphonic.data.interpolation import InterpolationData
 @pytest.mark.parametrize("seedname", get_seednames())
 @pytest.mark.parametrize("use_c", [True, False])
 @pytest.mark.parametrize("n_threads", [1, 2, 4, 8, 12, 16, 24])
-def test_calc_fine_phonons(seedname, use_c, n_threads, benchmark):
+def test_calculate_fine_phonons(seedname, use_c, n_threads, benchmark):
     # Set up
     idata = InterpolationData.from_castep(seedname, path=get_data_path())
     qpts = get_qpts()
@@ -30,7 +30,7 @@ def test_calc_fine_phonons(seedname, use_c, n_threads, benchmark):
 
 
 @pytest.mark.parametrize("seedname", get_seednames())
-def test_benchmark_calc_structure_factor(seedname, benchmark):
+def test_calculate_structure_factor(seedname, benchmark):
     # Set up
     qpts = get_qpts()
     idata = InterpolationData.from_castep(seedname, path=get_data_path())

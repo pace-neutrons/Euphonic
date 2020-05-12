@@ -169,7 +169,10 @@ class MedianMachineFigure(Figure):
             plt.gca().xaxis.set_major_locator(dates.DayLocator())
             plt.xlabel("Date")
             plt.ylabel("Time taken (seconds)")
-            plt.legend(title="Test Params")
+            plt.legend(title="Test Params",
+                       loc='center left',
+                       bbox_to_anchor=(1, 0.5))
+            plt.gcf().tight_layout()
             plt.gcf().autofmt_xdate()
             figure_index += 1
         return figure_index

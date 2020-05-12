@@ -16,6 +16,9 @@ def plot_speedups_for_file(filename: str, figure_index: int) -> int:
             plt.xlabel("Number of threads")
             plt.ylabel("Speedup (Ts/Tp)")
             plt.title("Speedups for {}\n {}".format(filename, test))
-            plt.legend(title="Seedname/material")
+            plt.legend(title="Seedname/material",
+                       loc='center left',
+                       bbox_to_anchor=(1, 0.5))
+            plt.gcf().tight_layout()
             figure_index += 1
     return figure_index
