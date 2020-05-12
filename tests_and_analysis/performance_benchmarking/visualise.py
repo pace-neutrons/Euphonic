@@ -76,7 +76,8 @@ class Figures(ABC):
 
 class SpeedupMachineFigure(Figure):
 
-    def add_speedup(self, test: str, n_threads: int, date: datetime.date,
+    def add_speedup(self, test: str, seedname: str,
+                    n_threads: int, date: datetime.date,
                     speedup: float):
         """
         Add speedup data for a specific test, date of test
@@ -87,6 +88,8 @@ class SpeedupMachineFigure(Figure):
         ----------
         test : str
             The name of the test this data is associated with
+        seedname : str
+            The material the data comes from
         n_threads : int
             The number of threads the test was run with
              and the speedup calculated with
@@ -96,10 +99,25 @@ class SpeedupMachineFigure(Figure):
             The speedup value calculated by:
              speed on 1 thread / speed on n_threads
         """
-        self.add_n_threads(test, n_threads)
-        self.tests[test][n_threads][date] = speedup
+        self.add_n_threads(test, seedname, n_threads)
+        self.tests[test][seedname][n_threads][date] = speedup
 
-    def add_n_threads(self, test: str, n_threads: int):
+    def add_seedname(self, test: str, seedname: str):
+        """
+        Add an entry for the seedname in the recorded data.
+
+        Parameters
+        ----------
+        test : str
+            The name of the test run with the seedname
+        seedname : str
+            The name of the material run with the test
+        """
+        self.add_test(test)
+        if seedname not in self.tests[test]:
+            self.tests[test][seedname] = {}
+
+    def add_n_threads(self, test: str, seedname: str, n_threads: int):
         """
         The given test has been run with the given number of
          threads (n_threads).
@@ -112,12 +130,14 @@ class SpeedupMachineFigure(Figure):
         test : str
             The test that has been run with the given number
              of threads (n_threads)
+        seedname : str
+            The material the data comes from
         n_threads : int
             A number of threads the test has been run with.
-=        """
-        self.add_test(test)
-        if n_threads not in self.tests[test]:
-            self.tests[test][n_threads] = {}
+        """
+        self.add_seedname(test, seedname)
+        if n_threads not in self.tests[test][seedname]:
+            self.tests[test][seedname][n_threads] = {}
 
     def plot(self, figure_index: int):
         """
@@ -133,27 +153,28 @@ class SpeedupMachineFigure(Figure):
         int
             The next free index for a figure to use
         """
-        # Plot a figure for each test
+        # Plot a figure for each test and seedname combination
         for test in self.tests:
-            plt.figure(figure_index)
-            # Plot a line on the figure for each number of threads
-            for n_threads in self.tests[test]:
-                plt.plot(
-                    list(self.tests[test][n_threads].keys()),
-                    list(self.tests[test][n_threads].values()),
-                    label=str(n_threads)
-                )
-            # Format x axis to use dates
-            plt.gca().xaxis.set_major_formatter(dates.DateFormatter('%Y-%m-%d'))
-            plt.gca().xaxis.set_major_locator(dates.DayLocator())
-            # Label axes, title and legend correctly
-            plt.xlabel("Date")
-            plt.ylabel("Speedup value (Ts/Tn)")
-            plt.title("Speedups over time\n {}\n {}"
-                      .format(self.machine_info, test))
-            plt.legend(title="Number of threads")
-            plt.gcf().autofmt_xdate()
-            figure_index += 1
+            for seedname in self.tests[test]:
+                plt.figure(figure_index)
+                # Plot a line on the figure for each number of threads
+                for n_threads in self.tests[test][seedname]:
+                    plt.plot(
+                        list(self.tests[test][seedname][n_threads].keys()),
+                        list(self.tests[test][seedname][n_threads].values()),
+                        label=str(n_threads)
+                    )
+                # Format x axis to use dates
+                plt.gca().xaxis.set_major_formatter(dates.DateFormatter('%Y-%m-%d'))
+                plt.gca().xaxis.set_major_locator(dates.DayLocator())
+                # Label axes, title and legend correctly
+                plt.xlabel("Date")
+                plt.ylabel("Speedup value (Ts/Tn)")
+                plt.title("Speedups over time\n {}\n {}, {}"
+                          .format(self.machine_info, test, seedname))
+                plt.legend(title="Number of threads")
+                plt.gcf().autofmt_xdate()
+                figure_index += 1
         return figure_index
 
 
@@ -242,20 +263,22 @@ def plot_speedups(directory: str, figure_index: int) -> int:
             # have been run on
             figures.add_figure(data["machine_info"]["cpu"]["brand"])
             for test in data["speedups"]:
-                for n_threads in data["speedups"][test]:
-                    # Add speedup data for each test and the number of
-                    # threads that have been used for the test
-                    figures.get_figure(
-                        data["machine_info"]["cpu"]["brand"]
-                    ).add_speedup(
-                        test,
-                        n_threads,
-                        datetime.strptime(
-                            data["datetime"].split("T")[0],
-                            '%Y-%m-%d'
-                        ).date(),
-                        data["speedups"][test][n_threads]
-                    )
+                for seedname in data["speedups"][test]:
+                    for n_threads in data["speedups"][test][seedname]:
+                        # Add speedup data for each test and the number of
+                        # threads that have been used for the test
+                        figures.get_figure(
+                            data["machine_info"]["cpu"]["brand"]
+                        ).add_speedup(
+                            test,
+                            seedname,
+                            n_threads,
+                            datetime.strptime(
+                                data["datetime"].split("T")[0],
+                                '%Y-%m-%d'
+                            ).date(),
+                            data["speedups"][test][seedname][n_threads]
+                        )
     next_free_figure_index: int = figures.plot(figure_index)
     return next_free_figure_index
 
