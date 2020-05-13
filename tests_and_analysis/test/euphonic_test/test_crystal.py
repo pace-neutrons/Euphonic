@@ -106,6 +106,12 @@ class SharedCode:
         )
 
     @staticmethod
+    def get_lzo_crystal():
+        return SharedCode.crystal_from_json_file(
+            SharedCode.get_lzo_json_file()
+        )
+
+    @staticmethod
     def get_quartz_reciprocal_cell():
         return np.array([
             [1.29487418, -0.74759597, 0.        ],
@@ -117,7 +123,7 @@ class SharedCode:
 @pytest.mark.unit
 class TestObjectCreation:
 
-    @pytest.fixture(params=[SharedCode.quartz_attrs()])
+    @pytest.fixture(params=[SharedCode.quartz_attrs(), SharedCode.lzo_attrs()])
     def crystal_from_constructor(self, request):
         crystal_attrs = request.param
         crystal = Crystal(
@@ -128,7 +134,7 @@ class TestObjectCreation:
         )
         return crystal, crystal_attrs
 
-    @pytest.fixture(params=[SharedCode.quartz_attrs()])
+    @pytest.fixture(params=[SharedCode.quartz_attrs(), SharedCode.lzo_attrs()])
     def crystal_from_dict(self, request):
         crystal_attrs = request.param
         d = crystal_attrs.to_dict()
@@ -136,13 +142,14 @@ class TestObjectCreation:
         return crystal, crystal_attrs
 
     @pytest.fixture(params=[
-        (SharedCode.get_quartz_json_file(), SharedCode.quartz_attrs())
+        (SharedCode.get_quartz_json_file(), SharedCode.quartz_attrs()),
+        (SharedCode.get_lzo_json_file(), SharedCode.lzo_attrs())
     ])
     def crystal_from_json_file(self, request):
         filename, crystal_attrs = request.param
         return SharedCode.crystal_from_json_file(filename), crystal_attrs
 
-    @pytest.fixture(params=[SharedCode.quartz_attrs()])
+    @pytest.fixture(params=[SharedCode.quartz_attrs(), SharedCode.lzo_attrs()])
     def crystal_from_dict(self, request):
         crystal_attrs = request.param
         d = crystal_attrs.to_dict()
@@ -162,7 +169,9 @@ class TestObjectCreation:
 @pytest.mark.unit
 class TestObjectSerialisation:
 
-    @pytest.fixture(params=[SharedCode.get_quartz_crystal()])
+    @pytest.fixture(params=[
+        SharedCode.get_quartz_crystal(), SharedCode.get_lzo_crystal()
+    ])
     def crystal_to_json_file(self, request, tmpdir):
         crystal = request.param
         # Serialise
@@ -177,7 +186,8 @@ class TestObjectSerialisation:
         SharedCode.check_crystal_attrs(crystal, deserialised_crystal)
 
     @pytest.fixture(params=[
-        (SharedCode.get_quartz_crystal(), SharedCode.quartz_attrs())
+        (SharedCode.get_quartz_crystal(), SharedCode.quartz_attrs()),
+        (SharedCode.get_lzo_crystal(), SharedCode.lzo_attrs())
     ])
     def crystal_to_dict(self, request):
         crystal, quartz_attributes = request.param
@@ -233,7 +243,7 @@ class TestObjectMethods:
     quartz_cell_volume = 109.09721804482547*ureg('angstrom**3')
 
     @pytest.mark.parametrize("crystal,expected_vol", [
-        pytest.param(SharedCode.get_quartz_crystal(), quartz_cell_volume)
+        (SharedCode.get_quartz_crystal(), quartz_cell_volume)
     ])
     def test_cell_volume(self, crystal, expected_vol):
         vol = crystal.cell_volume()
