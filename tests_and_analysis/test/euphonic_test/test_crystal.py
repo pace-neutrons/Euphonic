@@ -1,82 +1,77 @@
-import json
 import os
-import unittest
-import numpy.testing as npt
+import json
 import numpy as np
+import numpy.testing as npt
 import pytest
-from euphonic import ureg, Crystal
+
+from euphonic import Crystal, ureg
+
 from ..utils import get_data_path
 
 
 class ExpectedCrystal:
 
+    def __init__(self, crystal_json_file):
+        self.data = json.load(open(crystal_json_file))
+
     @property
     def cell_vectors(self) -> np.array:
-        return np.array([
-            [2.426176, -4.20226,   0.      ],
-            [2.426176,  4.20226,   0.      ],
-            [0.,        0.,        5.350304]
-        ])*ureg('angstrom')
+        return np.array(self.data["cell_vectors"]) * \
+               ureg(self.data["cell_vectors_unit"])
 
     @property
     def n_atoms(self) -> int:
-        return 9
+        return self.data["n_atoms"]
 
     @property
     def atom_r(self) -> np.array:
-        return np.array([
-            [0.411708, 0.275682, 0.279408],
-            [0.724318, 0.136026, 0.946074],
-            [0.863974, 0.588292, 0.612741],
-            [0.136026, 0.724318, 0.053926],
-            [0.588292, 0.863974, 0.387259],
-            [0.275682, 0.411708, 0.720592],
-            [0.46496 , 0.      , 0.166667],
-            [0.      , 0.46496 , 0.833333],
-            [0.53504 , 0.53504 , 0.5     ]
-        ])
+        return np.array(self.data["atom_r"])
 
     @property
     def atom_type(self) -> np.array:
         return np.array(
-            ['O', 'O', 'O', 'O', 'O', 'O', 'Si', 'Si', 'Si'],
+            self.data["atom_type"],
             dtype='<U2'
         )
 
     @property
     def atom_mass(self) -> np.array:
-        return np.array([
-            15.999400000000001, 15.999400000000001, 15.999400000000001,
-            15.999400000000001, 15.999400000000001, 15.999400000000001,
-            28.085500000000003, 28.085500000000003, 28.085500000000003
-        ])*ureg('amu')
+        return np.array(self.data["atom_mass"]) * \
+               ureg(self.data["atom_mass_unit"])
+
+    def to_dict(self):
+        d = {}
+        d['cell_vectors'] = self.cell_vectors.magnitude
+        d['cell_vectors_unit'] = str(self.cell_vectors.units)
+        d['n_atoms'] = self.n_atoms
+        d['atom_r'] = self.atom_r
+        d['atom_type'] = self.atom_type
+        d['atom_mass'] = self.atom_mass.magnitude
+        d['atom_mass_unit'] = str(self.atom_mass.units)
+        return d
 
 
 class SharedCode:
 
     @staticmethod
     def quartz_attrs():
-        return ExpectedCrystal()
+        return ExpectedCrystal(SharedCode.get_quartz_json_file())
+
+    @staticmethod
+    def lzo_attrs():
+        return ExpectedCrystal(SharedCode.get_lzo_json_file())
 
     @classmethod
     def get_quartz_json_file(cls):
         return cls.get_filepath('crystal_quartz.json')
 
     @classmethod
+    def get_lzo_json_file(cls):
+        return cls.get_filepath('crystal_lzo.json')
+
+    @classmethod
     def get_filepath(cls, filename):
         return os.path.join(get_data_path(), 'crystal', filename)
-
-    @staticmethod
-    def dict_from_attrs(crystal_attrs):
-        d = {}
-        d['cell_vectors'] = crystal_attrs.cell_vectors.magnitude
-        d['cell_vectors_unit'] = str(crystal_attrs.cell_vectors.units)
-        d['n_atoms'] = crystal_attrs.n_atoms
-        d['atom_r'] = crystal_attrs.atom_r
-        d['atom_type'] = crystal_attrs.atom_type
-        d['atom_mass'] = crystal_attrs.atom_mass.magnitude
-        d['atom_mass_unit'] = str(crystal_attrs.atom_mass.units)
-        return d
 
     @staticmethod
     def crystal_from_json_file(filename):
@@ -136,7 +131,7 @@ class TestObjectCreation:
     @pytest.fixture(params=[SharedCode.quartz_attrs()])
     def crystal_from_dict(self, request):
         crystal_attrs = request.param
-        d = SharedCode.dict_from_attrs(crystal_attrs)
+        d = crystal_attrs.to_dict()
         crystal = Crystal.from_dict(d)
         return crystal, crystal_attrs
 
@@ -150,7 +145,7 @@ class TestObjectCreation:
     @pytest.fixture(params=[SharedCode.quartz_attrs()])
     def crystal_from_dict(self, request):
         crystal_attrs = request.param
-        d = SharedCode.dict_from_attrs(crystal_attrs)
+        d = crystal_attrs.to_dict()
         crystal = Crystal.from_dict(d)
         return crystal, crystal_attrs
 
@@ -186,9 +181,8 @@ class TestObjectSerialisation:
     ])
     def crystal_to_dict(self, request):
         crystal, quartz_attributes = request.param
-        # Serialise
         serialised_crystal = crystal.to_dict()
-        return serialised_crystal, SharedCode.dict_from_attrs(quartz_attributes)
+        return serialised_crystal, quartz_attributes.to_dict()
 
     def check_crystal_dict(self, cdict, expected_cdict):
         npt.assert_allclose(
