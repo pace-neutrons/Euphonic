@@ -3,7 +3,7 @@ import unittest
 import numpy.testing as npt
 import numpy as np
 from euphonic import ureg, ForceConstants, QpointPhononModes
-from ..utils import get_data_path
+from tests_and_analysis.test.utils import get_data_path
 
 
 class TestReorderFreqsNaH(unittest.TestCase):

@@ -4,7 +4,7 @@ import numpy.testing as npt
 import numpy as np
 from euphonic import ureg, ForceConstants
 from euphonic.util import get_all_origins
-from ..utils import get_data_path
+from tests_and_analysis.test.utils import get_data_path
 
 class TestInputReadLZO(unittest.TestCase):
 

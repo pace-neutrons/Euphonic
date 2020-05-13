@@ -3,7 +3,7 @@ import unittest
 import numpy as np
 import numpy.testing as npt
 from euphonic import ureg, QpointPhononModes
-from ..utils import get_data_path
+from tests_and_analysis.test.utils import get_data_path
 
 
 class TestCalculateDosQuartz(unittest.TestCase):
