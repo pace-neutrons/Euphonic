@@ -84,6 +84,22 @@ class SharedCode:
         crystal = Crystal.from_json_file(filepath)
         return crystal
 
+    @staticmethod
+    def check_crystal_attrs(crystal, expected_crystal):
+        npt.assert_allclose(crystal.cell_vectors.to('angstrom').magnitude,
+                            expected_crystal.cell_vectors.magnitude)
+        assert crystal.n_atoms == expected_crystal.n_atoms
+        npt.assert_equal(crystal.atom_r, expected_crystal.atom_r)
+        npt.assert_equal(crystal.atom_type, expected_crystal.atom_type)
+        npt.assert_allclose(crystal.atom_mass.to('amu').magnitude,
+                            expected_crystal.atom_mass.magnitude)
+
+    @staticmethod
+    def get_quartz_crystal():
+        return SharedCode.crystal_from_json_file(
+            SharedCode.get_quartz_json_file()
+        )
+
 
 @pytest.mark.unit
 class TestObjectCreation:
@@ -109,9 +125,16 @@ class TestObjectCreation:
     @pytest.fixture(params=[
         (SharedCode.get_quartz_json_file(), SharedCode.quartz_attrs())
     ])
-    def crystal_from_dict(self, request):
+    def crystal_from_json_file(self, request):
         filename, crystal_attrs = request.param
         return SharedCode.crystal_from_json_file(filename), crystal_attrs
+
+    @pytest.fixture(params=[SharedCode.quartz_attrs()])
+    def crystal_from_dict(self, request):
+        crystal_attrs = request.param
+        d = SharedCode.dict_from_attrs(crystal_attrs)
+        crystal = Crystal.from_dict(d)
+        return crystal, crystal_attrs
 
     @pytest.mark.parametrize('crystal_creator', [
         pytest.lazy_fixture('crystal_from_constructor'),
@@ -120,68 +143,51 @@ class TestObjectCreation:
     ])
     def test_crystal_create(self, crystal_creator):
         crystal, expected_crystal = crystal_creator
-        npt.assert_allclose(crystal.cell_vectors.to('angstrom').magnitude,
-                            expected_crystal.cell_vectors.magnitude)
-        assert crystal.n_atoms == expected_crystal.n_atoms
-        npt.assert_equal(crystal.atom_r, expected_crystal.atom_r)
-        npt.assert_equal(crystal.atom_type, expected_crystal.atom_type)
-        npt.assert_allclose(crystal.atom_mass.to('amu').magnitude,
-                            expected_crystal.atom_mass.magnitude)
+        SharedCode.check_crystal_attrs(crystal, expected_crystal)
 
 
+@pytest.mark.unit
+class TestObjectSerialisation:
 
-################################################################################
-# Test object serialisation
-################################################################################
+    @pytest.fixture(params=[SharedCode.get_quartz_crystal()])
+    def crystal_to_json_file(self, request, tmpdir):
+        crystal = request.param
+        # Serialise
+        output_file = str(tmpdir.join('tmp.test'))
+        crystal.to_json_file(output_file)
+        # Deserialise
+        deserialised_crystal = Crystal.from_json_file(output_file)
+        return crystal, deserialised_crystal
 
-# @pytest.mark.unit
-# class TestObjectSerialisation:
-#
-#     def get_quartz_crystal(self):
-#         return SharedCode.crystal_from_json_file(SharedCode.get_quartz_json_file())
-#
-#     @pytest.fixture(
-#         params=[
-#             # Params: tuple of (Crystal, filetype)
-#             (get_quartz_crystal(),'json')],
-#         ids=[
-#             'quartz_to_json'])
-#     def crystal_to_file(self, request, tmpdir):
-#         output_file = str(tmpdir.join('tmp.test'))
-#         if request.param[1] == 'json':
-#             request.param[0].to_json_file(output_file)
-#             output_crystal = Crystal.from_json_file(output_file)
-#         return request.param[0], output_crystal
-#
-#     def check_crystal_dict(self, cdict, expected_cdict):
-#         npt.assert_allclose(cdict['cell_vectors'],
-#                             expected_cdict['cell_vectors'])
-#         assert ureg(cdict['cell_vectors_unit']) == ureg(
-#             expected_cdict['cell_vectors_unit'])
-#         assert cdict['n_atoms'] == cdict['n_atoms']
-#         npt.assert_equal(cdict['atom_r'], expected_cdict['atom_r'])
-#         npt.assert_equal(cdict['atom_type'], expected_cdict['atom_type'])
-#         npt.assert_allclose(cdict['atom_mass'], expected_cdict['atom_mass'])
-#         assert ureg(cdict['atom_mass_unit']) == ureg(
-#             expected_cdict['atom_mass_unit'])
-#
-#
-#     crystal_to_dict_tests = [
-#         pytest.param(get_quartz_crystal().to_dict(),
-#                      dict_from_attrs(quartz_attrs()),
-#                      id='quartz_to_dict')]
-#
-#     @pytest.mark.parametrize("crystal_serialiser", [
-#         pytest.lazy_fixture(crystal_to_dict_tests)
-#     ])
-#     def test_crystal_to_dict(self, crystal_serialiser):
-#         cdict, expected_cdict = crystal_serialiser
-#         check_crystal_dict(cdict, expected_cdict)
-#
-#
-#     def test_crystal_to_file(self, crystal_to_file):
-#         check_crystal_attrs(crystal_to_file[0], crystal_to_file[1])
-#
+    def test_crystal_to_file(self, crystal_to_json_file):
+        crystal, deserialised_crystal = crystal_to_json_file
+        SharedCode.check_crystal_attrs(crystal, deserialised_crystal)
+
+    @pytest.fixture(params=[
+        (SharedCode.get_quartz_crystal(), SharedCode.quartz_attrs())
+    ])
+    def crystal_to_dict(self, request):
+        crystal, quartz_attributes = request.param
+        # Serialise
+        serialised_crystal = crystal.to_dict()
+        return serialised_crystal, SharedCode.dict_from_attrs(quartz_attributes)
+
+    def check_crystal_dict(self, cdict, expected_cdict):
+        npt.assert_allclose(cdict['cell_vectors'],
+                            expected_cdict['cell_vectors'])
+        assert ureg(cdict['cell_vectors_unit']) == ureg(
+            expected_cdict['cell_vectors_unit'])
+        assert cdict['n_atoms'] == cdict['n_atoms']
+        npt.assert_equal(cdict['atom_r'], expected_cdict['atom_r'])
+        npt.assert_equal(cdict['atom_type'], expected_cdict['atom_type'])
+        npt.assert_allclose(cdict['atom_mass'], expected_cdict['atom_mass'])
+        assert ureg(cdict['atom_mass_unit']) == ureg(
+            expected_cdict['atom_mass_unit'])
+
+    def test_crystal_to_dict(self, crystal_to_dict):
+        cdict, expected_cdict = crystal_to_dict
+        self.check_crystal_dict(cdict, expected_cdict)
+
 #
 # ################################################################################
 # # Test object methods
