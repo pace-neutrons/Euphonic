@@ -83,9 +83,9 @@ def get_all_origins(max_xyz, min_xyz=[0, 0, 0], step=1):
     ----------
     max_xyz : (3,) int ndarray
         The number of cells to count to in each direction
-    min_xyz : (3,) int ndarray, optional, default [0,0,0]
+    min_xyz : (3,) int ndarray, optional
         The cell number to count from in each direction
-    step : integer, optional, default 1
+    step : integer, optional
         The step between cells
 
     Returns
@@ -194,7 +194,7 @@ def _recip_space_labels(crystal, qpts, symmetry_labels=True):
         The crystal to get high-symmetry labels for
     qpts : (n_qpts, 3) float ndarray
         The q-points to get labels for
-    symmetry_labels : boolean, optional, default True
+    symmetry_labels : boolean, optional
         Whether to use high-symmetry point labels (e.g. GAMMA, X, L).
         Otherwise just uses generic labels (e.g. '0 0 0')
 
@@ -465,7 +465,7 @@ def _ensure_contiguous_attrs(obj, required_attrs, opt_attrs=[]):
     required_attrs : list of strings
         The attributes of obj to be checked. They should all be Numpy
         arrays
-    opt_attrs : list of strings, default []
+    opt_attrs : list of strings, optional
         The attributes of obj to be checked, but if they don't exist
         will not throw an error. e.g. Depending on the material
         ForceConstants objects may or may not have 'born' defined
