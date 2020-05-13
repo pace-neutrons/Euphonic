@@ -86,13 +86,23 @@ class SharedCode:
 
     @staticmethod
     def check_crystal_attrs(crystal, expected_crystal):
-        npt.assert_allclose(crystal.cell_vectors.to('angstrom').magnitude,
-                            expected_crystal.cell_vectors.magnitude)
+        npt.assert_allclose(
+            crystal.cell_vectors.to('angstrom').magnitude,
+            expected_crystal.cell_vectors.magnitude
+        )
+        npt.assert_equal(
+            crystal.atom_r,
+            expected_crystal.atom_r
+        )
+        npt.assert_equal(
+            crystal.atom_type,
+            expected_crystal.atom_type
+        )
+        npt.assert_allclose(
+            crystal.atom_mass.to('amu').magnitude,
+            expected_crystal.atom_mass.magnitude
+        )
         assert crystal.n_atoms == expected_crystal.n_atoms
-        npt.assert_equal(crystal.atom_r, expected_crystal.atom_r)
-        npt.assert_equal(crystal.atom_type, expected_crystal.atom_type)
-        npt.assert_allclose(crystal.atom_mass.to('amu').magnitude,
-                            expected_crystal.atom_mass.magnitude)
 
     @staticmethod
     def get_quartz_crystal():
@@ -173,16 +183,27 @@ class TestObjectSerialisation:
         return serialised_crystal, SharedCode.dict_from_attrs(quartz_attributes)
 
     def check_crystal_dict(self, cdict, expected_cdict):
-        npt.assert_allclose(cdict['cell_vectors'],
-                            expected_cdict['cell_vectors'])
-        assert ureg(cdict['cell_vectors_unit']) == ureg(
-            expected_cdict['cell_vectors_unit'])
+        npt.assert_allclose(
+            cdict['cell_vectors'],
+            expected_cdict['cell_vectors']
+        )
+        npt.assert_equal(
+            cdict['atom_r'],
+            expected_cdict['atom_r']
+        )
+        npt.assert_equal(
+            cdict['atom_type'],
+            expected_cdict['atom_type']
+        )
+        npt.assert_allclose(
+            cdict['atom_mass'],
+            expected_cdict['atom_mass']
+        )
+        assert ureg(cdict['cell_vectors_unit']) == \
+            ureg(expected_cdict['cell_vectors_unit'])
         assert cdict['n_atoms'] == cdict['n_atoms']
-        npt.assert_equal(cdict['atom_r'], expected_cdict['atom_r'])
-        npt.assert_equal(cdict['atom_type'], expected_cdict['atom_type'])
-        npt.assert_allclose(cdict['atom_mass'], expected_cdict['atom_mass'])
-        assert ureg(cdict['atom_mass_unit']) == ureg(
-            expected_cdict['atom_mass_unit'])
+        assert ureg(cdict['atom_mass_unit']) == \
+            ureg(expected_cdict['atom_mass_unit'])
 
     def test_crystal_to_dict(self, crystal_to_dict):
         cdict, expected_cdict = crystal_to_dict
