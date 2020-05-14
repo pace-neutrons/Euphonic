@@ -1,4 +1,5 @@
 from .figures import Figures, Figure, linestyle_tuple, json_files
+from utils import get_seednames
 from datetime import datetime
 from typing import Dict, List
 import pandas as pd
@@ -143,19 +144,13 @@ class MedianMachineFigure(Figure):
             fig, subplots = plt.subplots()
             # A trace for each combination of the test parameters
             # Vary linestyles
-            linestyle_index = 0
-            index = 0
-            for key in dataframe.keys():
+            for i, key in enumerate(dataframe.keys()):
                 if key != "x":
                     subplots.plot(
                         'x', key,
                         data=dataframe,
-                        linestyle=linestyle_tuple[linestyle_index]
+                        linestyle=linestyle_tuple[i%len(get_seednames()) - 1]
                     )
-                    if index % 6 == 5:
-                        linestyle_index = \
-                            (linestyle_index + 1) % len(linestyle_tuple)
-                    index += 1
             # Set figure display details
             subplots.set_title(title)
             subplots.xaxis.set_major_formatter(dates.DateFormatter('%Y-%m-%d'))
