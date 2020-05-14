@@ -63,9 +63,9 @@ class ForceConstants(object):
             The supercell matrix
         cell_origins : (n_cells_in_sc, 3) int ndarray
             The locations of the unit cells within the supercell
-        born : (n_atoms, 3, 3) float Quantity, optional, default None
+        born : (n_atoms, 3, 3) float Quantity, optional
             The Born charges for each atom
-        dielectric : (3, 3) float Quantity, optional, default None
+        dielectric : (3, 3) float Quantity, optional
             The dielectric permittivity tensor
         """
         # Check independent inputs first
@@ -146,42 +146,42 @@ class ForceConstants(object):
         ----------
         qpts : (n_qpts, 3) float ndarray
             The q-points to interpolate onto
-        asr : {'realspace', 'reciprocal'}, optional, default None
+        asr : {'realspace', 'reciprocal'}, optional
             Which acoustic sum rule correction to apply. 'realspace'
             applies the correction to the force constant matrix in real
             space. 'reciprocal' applies the correction to the dynamical
             matrix at every q-point
-        dipole : boolean, optional, default True
+        dipole : boolean, optional
             Calculates the dipole tail correction to the dynamical
             matrix at each q-point using the Ewald sum, if the Born
             charges and dielectric permitivitty tensor are present.
-        eta_scale : float, optional, default 1.0
+        eta_scale : float, optional
             Changes the cutoff in real/reciprocal space for the dipole
             Ewald sum. A higher value uses more reciprocal terms. If tuned
             correctly this can result in performance improvements. See
             scripts/optimise_eta.py for help on choosing a good eta_scale.
-        splitting : boolean, optional, default True
+        splitting : boolean, optional
             Whether to calculate the LO-TO splitting at the gamma
             points. Only applied if dipole is True and the Born charges
             and dielectric permitivitty tensor are present.
-        insert_gamma : boolean, optional, default False
+        insert_gamma : boolean, optional
             If splitting is True, this will insert gamma points into
             qpts to store the extra split frequencies. Note this means
             that the length of qpts in the output QpointPhononModes
             object will not necessarily be the same as the input qpts.
             If qpts already contains double gamma points where you want
             split frequencies, leave this as False.
-        reduce_qpts : boolean, optional, default False
+        reduce_qpts : boolean, optional
             Whether to use periodicity to reduce all q-points and only
             calculate for unique q-points within the 1st BZ. This won't
             change the output but could increase performance.
-        use_c : boolean, optional, default False
+        use_c : boolean, optional
             Whether to use C instead of Python to calculate and
             diagonalise the dynamical matrix
-        n_threads : int, optional, default 1
+        n_threads : int, optional
             The number of OpenMP threads to use when looping over
             q-points in C. Only applicable if use_c=True
-        fall_back_on_python : boolean, optional, default True
+        fall_back_on_python : boolean, optional
             If we cannot use the C extension, fall back on using python
             if this is true, else raise an ImportCError.
 
@@ -557,7 +557,7 @@ class ForceConstants(object):
 
         Parameters
         ----------
-        eta_scale : float, optional, default 1.0
+        eta_scale : float, optional
             Changes the cutoff in real/reciprocal space for the dipole
             Ewald sum. A higher value uses more reciprocal terms
         """
@@ -1281,21 +1281,21 @@ class ForceConstants(object):
 
         Parameters
         ----------
-        path : str, optional, default '.'
+        path : str, optional
             Path to directory containing the file(s)
-        summary_name : str, optional, default 'phonpy.yaml'
+        summary_name : str, optional
             Filename of phonopy summary file, default phonopy.yaml. By
             default any information (e.g. force constants) read from
             this file takes priority
-        born_name : str, optional, default None
+        born_name : str, optional
             Name of the Phonopy file containing born charges and
             dielectric tensor (by convention in Phonopy this would be
             called BORN). Is only read if Born charges can't be found in
             the summary_name file
-        fc_name : str, optional, default 'FORCE_CONSTANTS'
+        fc_name : str, optional
             Name of file containing force constants. Is only read if
             force constants can't be found in summary_name
-        fc_format : {'phonopy', 'hdf5'} str, optional, default None
+        fc_format : {'phonopy', 'hdf5'} str, optional
             Format of file containing force constants data.
             FORCE_CONSTANTS is type 'phonopy'
 

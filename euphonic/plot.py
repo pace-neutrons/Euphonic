@@ -23,7 +23,7 @@ def plot_dispersion(phonons, btol=10.0, *args, **kwargs):
     ----------
     phonons : QpointPhononModes
         Containing the q-points/frequencies to plot
-    btol : float, optional, default 10.0
+    btol : float, optional
         Determines the limit for plotting sections of reciprocal space
         on different subplots, as a fraction of the median distance
         between q-points
@@ -60,18 +60,18 @@ def plot_1d(spectra, title='', x_label='', y_label='', y_min=None, labels=[],
     spectra : Spectrum1D or list of Spectrum1D
         Containing the 1D data to plot. Note only the x_tick_labels in
         the first spectrum in the list will be used
-    title : string, default ''
+    title : string, optional
         Plot title
-    x_label : string, default ''
+    x_label : string, optional
         X-axis label
-    y_label : string, default ''
+    y_label : string, optional
         Y-axis label
-    y_min : float, default None
+    y_min : float, optional
         Minimum value on the y-axis. Can be useful to set y-axis minimum
         to 0 for energy, for example.
-    labels : list of str, default []
+    labels : list of str, optional
         Legend labels for spectra, in the same order as spectra
-    btol : float, optional, default None
+    btol : float, optional
         If there are large gaps on the x-axis (e.g sections of
         reciprocal space) data can be plotted in sections on different
         subplots. btol is the limit for plotting on different subplots,
@@ -148,13 +148,13 @@ def plot_2d(spectrum, vmin=None, vmax=None, ratio=None, x_width=0, y_width=0,
         Ratio of the size of the y and x axes. e.g. if ratio is 2, the
         y-axis will be twice as long as the x-axis
         Default: None
-    cmap : string, optional, default 'viridis'
+    cmap : string, optional
         Which colormap to use, see Matplotlib docs
     title : string, optional
         The figure title. Default: ''
-    x_label : string, default ''
+    x_label : string, optional
         X-axis label
-    y_label : string, default ''
+    y_label : string, optional
         Y-axis label
 
     Returns
@@ -234,7 +234,7 @@ def _get_gridspec_kw(x_data, btol=None):
     ----------
     x_data : (n_x_data,) float ndarray
         The x_data points
-    btol : float, optional, default None
+    btol : float, optional
         Determines the limit for plotting sections of data on different
         subplots, as a fraction of the median difference between x_data
         points. If None all data will be on the same subplot

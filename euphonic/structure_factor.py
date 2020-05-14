@@ -115,9 +115,9 @@ class StructureFactor(object):
         ----------
         e_bins : (n_e_bins + 1,) float Quantity
             The energy bin edges
-        calc_bose : boolean, optional, default True
+        calc_bose : boolean, optional
             Whether to calculate and apply the Bose population factor
-        temperature : float Quantity, default None
+        temperature : float Quantity, optional
             The temperature to use to calculate the Bose factor. Is only
             required if StructureFactor.temperature = None, otherwise
             the temperature stored in StructureFactor will be used

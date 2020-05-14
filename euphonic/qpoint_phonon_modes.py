@@ -49,7 +49,7 @@ class QpointPhononModes(object):
             number. Default units meV
         eigenvectors: (n_qpts, 3*crystal.n_atoms, crystal.n_atoms, 3) complex ndarray
             Dynamical matrix eigenvectors
-        weights : (n_qpts,) float ndarray, optional, default None
+        weights : (n_qpts,) float ndarray, optional
             The weight for each q-point. If None, equal weights are
             assumed
         """
@@ -95,7 +95,7 @@ class QpointPhononModes(object):
 
         Parameters
         ----------
-        reorder_gamma : bool, default True
+        reorder_gamma : bool
             Whether to reorder frequencies at gamma-equivalent points.
             If an analytical correction has been applied at the gamma
             points (i.e LO-TO splitting) mode assignments can be
@@ -181,7 +181,7 @@ class QpointPhononModes(object):
             Dictionary of spin and isotope averaged coherent scattering
             length for each element in the structure in e.g.
             {'O': 5.803*ureg('fm'), 'Zn': 5.680*ureg('fm')}
-        dw : DebyeWaller, default None
+        dw : DebyeWaller
             A DebyeWaller exponent object
 
         Returns
@@ -485,15 +485,15 @@ class QpointPhononModes(object):
 
         Parameters
         ----------
-        path : str, optional, default '.'
+        path : str, optional
             Path to directory containing the file(s)
-        phonon_name : str, optional, default 'band.yaml'
+        phonon_name : str, optional
             Name of Phonopy file including the frequencies and
             eigenvectors
-        phonon_format : {'yaml', 'hdf5'} str, optional, default None
+        phonon_format : {'yaml', 'hdf5'} str, optional
             Format of the phonon_name file if it isn't obvious from the
             phonon_name extension
-        summary_name : str, optional, default 'phonopy.yaml'
+        summary_name : str, optional
             Name of Phonopy summary file to read the crystal information
             from. Crystal information in the phonon_name file takes
             priority, but if it isn't present, crystal information is
