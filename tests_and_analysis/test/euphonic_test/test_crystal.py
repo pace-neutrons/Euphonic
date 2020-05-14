@@ -227,11 +227,18 @@ class TestObjectMethods:
     quartz_reciprocal_cell = np.array([
         [1.29487418, -0.74759597, 0.],
         [1.29487418, 0.74759597, 0.],
-        [0., 0., 1.17436043]]
-    ) * ureg('1/angstrom')
+        [0., 0., 1.17436043]
+    ]) * ureg('1/angstrom')
+
+    lzo_reciprocal_cell = np.array([
+        [8.28488599e-01, 0.00000000e+00, -5.85829906e-01],
+        [-2.01146673e-33, 8.28488599e-01, 5.85829906e-01],
+        [2.01146673e-33, -8.28488599e-01, 5.85829906e-01]
+    ]) * ureg('1/angstrom')
 
     @pytest.mark.parametrize("crystal,expected_recip", [
-        (SharedCode.get_quartz_crystal(), quartz_reciprocal_cell)
+        (SharedCode.get_quartz_crystal(), quartz_reciprocal_cell),
+        (SharedCode.get_lzo_crystal(), lzo_reciprocal_cell)
     ])
     def test_reciprocal_cell(self, crystal, expected_recip):
         recip = crystal.reciprocal_cell()
@@ -240,10 +247,13 @@ class TestObjectMethods:
             expected_recip.to('1/angstrom').magnitude
         )
 
-    quartz_cell_volume = 109.09721804482547*ureg('angstrom**3')
+    quartz_cell_volume = 109.09721804482547 * ureg('angstrom**3')
+
+    lzo_cell_volume = 308.4359549515967 * ureg('angstrom**3')
 
     @pytest.mark.parametrize("crystal,expected_vol", [
-        (SharedCode.get_quartz_crystal(), quartz_cell_volume)
+        (SharedCode.get_quartz_crystal(), quartz_cell_volume),
+        (SharedCode.get_lzo_crystal(), lzo_cell_volume)
     ])
     def test_cell_volume(self, crystal, expected_vol):
         vol = crystal.cell_volume()
