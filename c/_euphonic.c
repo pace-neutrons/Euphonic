@@ -13,7 +13,9 @@
 static PyObject *calculate_phonons(PyObject *self, PyObject *args) {
 
     // Define input args
-    PyObject *py_idata; // InterpolationData instance
+    PyObject *py_idata; // ForceConstants instance
+    PyArrayObject *py_cell_vec;
+    PyArrayObject *py_recip_vec;
     PyArrayObject *py_rqpts;
     PyArrayObject *py_qpts_i;
     PyArrayObject *py_fc;
@@ -22,24 +24,18 @@ static PyObject *calculate_phonons(PyObject *self, PyObject *args) {
     PyArrayObject *py_dmat_weighting;
     PyArrayObject *py_evals;
     PyArrayObject *py_dmats;
-    PyArrayObject *py_split_evals;
-    PyArrayObject *py_split_evecs;
-    PyArrayObject *py_split_i;
     int dipole;
     int reciprocal_asr;
     int splitting;
     int n_threads = 1;
     const char *scipy_dir;
 
-    // Define vars to be obtained from InterpolationData attributes
-    int n_ions;
+    // Define vars to be obtained from ForceConstants attributes
+    PyObject *py_crystal; // Crystal object
     PyArrayObject *py_n_sc_ims;
     PyArrayObject *py_sc_im_idx;
     PyArrayObject *py_cell_ogs;
     // Extra vars only required if dipole = True
-    PyArrayObject *py_cell_vec;
-    PyArrayObject *py_recip_vec;
-    PyArrayObject *py_ion_r;
     PyArrayObject *py_born;
     PyArrayObject *py_dielectric;
     double eta;
@@ -49,7 +45,13 @@ static PyObject *calculate_phonons(PyObject *self, PyObject *args) {
     PyArrayObject *py_gvecs_cart;
     PyArrayObject *py_dipole_q0;
 
+    // Vars to be obtained from Crystal attributes
+    int n_atoms;
+    PyArrayObject *py_atom_r;
+
     // Define pointers to Python array data
+    double *cell_vec;
+    double *recip_vec;
     double *rqpts;
     int *qpts_i;
     double *fc;
@@ -58,16 +60,11 @@ static PyObject *calculate_phonons(PyObject *self, PyObject *args) {
     double *dmat_weighting;
     double *evals;
     double *dmats;
-    double *split_evals;
-    double *split_evecs;
-    int *split_i;
     int *n_sc_ims;
     int *sc_im_idx;
     int *cell_ogs;
     // Extra vars only required if dipole = True
-    double *cell_vec;
-    double *recip_vec;
-    double *ion_r;
+    double *atom_r;
     double *born;
     double *dielectric;
     double *H_ab;
@@ -80,18 +77,19 @@ static PyObject *calculate_phonons(PyObject *self, PyObject *args) {
     int n_cells;
     int n_rqpts;
     int n_qpts;
-    int q, i, qpos, splitpos;
+    int q, i, qpos;
     int max_ims;
     int dmat_elems;
-    int n_splits;
     // Extra vars only required if dipole = True
     int n_dipole_cells;
     int n_gvecs;
     double q_dir[3];
 
     // Parse inputs
-    if (!PyArg_ParseTuple(args, "OO!O!O!O!O!O!iiiO!O!O!O!O!is",
+    if (!PyArg_ParseTuple(args, "OO!O!O!O!O!O!O!O!iiiO!O!is",
                           &py_idata,
+                          &PyArray_Type, &py_cell_vec,
+                          &PyArray_Type, &py_recip_vec,
                           &PyArray_Type, &py_rqpts,
                           &PyArray_Type, &py_qpts_i,
                           &PyArray_Type, &py_fc,
@@ -103,16 +101,13 @@ static PyObject *calculate_phonons(PyObject *self, PyObject *args) {
                           &splitting,
                           &PyArray_Type, &py_evals,
                           &PyArray_Type, &py_dmats,
-                          &PyArray_Type, &py_split_evals,
-                          &PyArray_Type, &py_split_evecs,
-                          &PyArray_Type, &py_split_i,
                           &n_threads,
                           &scipy_dir)) {
         return NULL;
     }
 
-    // Get rest of vars from InterpolationData object
-    if (int_from_pyobj(py_idata, "n_ions", &n_ions) ||
+    // Get rest of vars from ForceConstants object
+    if (attr_from_pyobj(py_idata, "crystal", &py_crystal) ||
         attr_from_pyobj(py_idata, "_n_sc_images", &py_n_sc_ims) ||
         attr_from_pyobj(py_idata, "_sc_image_i", &py_sc_im_idx) ||
         attr_from_pyobj(py_idata, "cell_origins", &py_cell_ogs)) {
@@ -121,11 +116,8 @@ static PyObject *calculate_phonons(PyObject *self, PyObject *args) {
             return NULL;
     }
     if (dipole) {
-        if (attr_from_pyobj(py_idata, "_cell_vec", &py_cell_vec) ||
-            attr_from_pyobj(py_idata, "_recip_vec", &py_recip_vec) ||
-            attr_from_pyobj(py_idata, "ion_r", &py_ion_r) ||
-            attr_from_pyobj(py_idata, "_born", &py_born) ||
-            attr_from_pyobj(py_idata, "dielectric", &py_dielectric) ||
+        if (attr_from_pyobj(py_idata, "_born", &py_born) ||
+            attr_from_pyobj(py_idata, "_dielectric", &py_dielectric) ||
             double_from_pyobj(py_idata, "_eta", &eta) ||
             attr_from_pyobj(py_idata, "_H_ab", &py_H_ab) ||
             attr_from_pyobj(py_idata, "_cells", &py_dipole_cells) ||
@@ -137,8 +129,17 @@ static PyObject *calculate_phonons(PyObject *self, PyObject *args) {
                 return NULL;
         }
     }
+    // Get vars from Crystal object
+    if (int_from_pyobj(py_crystal, "n_atoms", &n_atoms) ||
+        attr_from_pyobj(py_crystal, "atom_r", &py_atom_r)) {
+            PyErr_Format(PyExc_RuntimeError,
+                         "Failed to read attributes from Crystal object\n");
+            return NULL;
+    }
 
     // Point to Python array data
+    cell_vec = (double*) PyArray_DATA(py_cell_vec);
+    recip_vec = (double*) PyArray_DATA(py_recip_vec);
     rqpts = (double*) PyArray_DATA(py_rqpts);
     qpts_i = (int*) PyArray_DATA(py_qpts_i);
     fc = (double*) PyArray_DATA(py_fc);
@@ -147,10 +148,6 @@ static PyObject *calculate_phonons(PyObject *self, PyObject *args) {
     dmat_weighting = (double*) PyArray_DATA(py_dmat_weighting);
     evals = (double*) PyArray_DATA(py_evals);
     dmats = (double*) PyArray_DATA(py_dmats);
-    split_evals = (double*) PyArray_DATA(py_split_evals);
-    split_evecs = (double*) PyArray_DATA(py_split_evecs);
-    split_i = (int*) PyArray_DATA(py_split_i);
-    n_splits = PyArray_DIMS(py_split_i)[0];
     n_sc_ims = (int*) PyArray_DATA(py_n_sc_ims);
     sc_im_idx = (int*) PyArray_DATA(py_sc_im_idx);
     cell_ogs = (int*) PyArray_DATA(py_cell_ogs);
@@ -158,11 +155,9 @@ static PyObject *calculate_phonons(PyObject *self, PyObject *args) {
     n_rqpts = PyArray_DIMS(py_rqpts)[0];
     n_qpts = PyArray_DIMS(py_qpts_i)[0];
     max_ims = PyArray_DIMS(py_sc_im_idx)[3];
-    dmat_elems = 2*9*n_ions*n_ions;
+    dmat_elems = 2*9*n_atoms*n_atoms;
     if (dipole) {
-        cell_vec = (double*) PyArray_DATA(py_cell_vec);
-        recip_vec = (double*) PyArray_DATA(py_recip_vec);
-        ion_r = (double*) PyArray_DATA(py_ion_r);
+        atom_r = (double*) PyArray_DATA(py_atom_r);
         born = (double*) PyArray_DATA(py_born);
         dielectric = (double*) PyArray_DATA(py_dielectric);
         H_ab = (double*) PyArray_DATA(py_H_ab);
@@ -194,14 +189,14 @@ static PyObject *calculate_phonons(PyObject *self, PyObject *args) {
             double *qpt, *dmat, *eval;
             qpt = (rqpts + 3*q);
             dmat = (dmats + q*dmat_elems);
-            eval = (evals + q*3*n_ions);
+            eval = (evals + q*3*n_atoms);
 
-            calculate_dyn_mat_at_q(qpt, n_ions, n_cells, max_ims, n_sc_ims,
+            calculate_dyn_mat_at_q(qpt, n_atoms, n_cells, max_ims, n_sc_ims,
                 sc_im_idx, cell_ogs, sc_ogs, fc, dmat);
 
             if (dipole) {
-                calculate_dipole_correction(qpt, n_ions, cell_vec, recip_vec,
-                    ion_r, born, dielectric, H_ab, dipole_cells,
+                calculate_dipole_correction(qpt, n_atoms, cell_vec, recip_vec,
+                    atom_r, born, dielectric, H_ab, dipole_cells,
                     n_dipole_cells, gvec_phases, gvecs_cart, n_gvecs,
                     dipole_q0, eta, corr);
                 add_arrays(dmat_elems, corr, dmat);
@@ -223,8 +218,6 @@ static PyObject *calculate_phonons(PyObject *self, PyObject *args) {
                    for (i = 0; i < 3; i++) {
                        q_dir[i] = rqpts[3*qpts_i[n_qpts - 2] + i];
                    }
-               // If q-point isn't first or last, will split in 2 directions,
-               // so calculate split_freqs, split_evecs
                } else {
                    // Find position in non-reduced qpts array to determine
                    // direction
@@ -235,46 +228,25 @@ static PyObject *calculate_phonons(PyObject *self, PyObject *args) {
                            break;
                        }
                    }
-                   // Find qpos location in split_i
-                   splitpos = -1;
-                   for (i = 0; i < n_splits; i++) {
-                       if (split_i[i] == qpos) {
-                           splitpos = i;
-                           break;
-                       }
-                   }
-                   if (splitpos == -1) {
-                       printf("Failed to find location of reduced q-point %i "
-                              "in split_i, not calculating eigenvals/vecs "
-                              "for this gamma point\n", q);
-                       continue;
-                   }
+                   // If splitting=True there should be an adjacent gamma point.
+                   // Calculate splitting in whichever direction isn't gamma
                    for (i = 0; i < 3; i++) {
                        q_dir[i] = rqpts[3*qpts_i[qpos + 1] + i];
                    }
-                   double *split_evec, *split_eval;
-                   split_evec = (split_evecs + splitpos*dmat_elems);
-                   split_eval = (split_evals + splitpos*3*n_ions);
-                   copy_array(dmat_elems, dmat, split_evec);
-                   calculate_gamma_correction(q_dir, n_ions, cell_vec, born,
-                       dielectric, corr);
-                   add_arrays(dmat_elems, corr, split_evec);
-                   mass_weight_dyn_mat(dmat_weighting, n_ions, split_evec);
-                   diagonalise_dyn_mat_zheevd(n_ions, qpt, split_evec, split_eval, zheevd);
-                   evals_to_freqs(n_ions, split_eval);
-                   // Finally calculate other q-direction
-                   for (i = 0; i < 3; i++) {
-                       q_dir[i] = -rqpts[3*qpts_i[qpos - 1] + i];
+                   if (is_gamma(q_dir)) {
+                       for (i = 0; i < 3; i++) {
+                           q_dir[i] = -rqpts[3*qpts_i[qpos - 1] + i];
+                       }
                    }
                }
-               calculate_gamma_correction(q_dir, n_ions, cell_vec, born,
+               calculate_gamma_correction(q_dir, n_atoms, cell_vec, born,
                    dielectric, corr);
                add_arrays(dmat_elems, corr, dmat);
             }
 
-            mass_weight_dyn_mat(dmat_weighting, n_ions, dmat);
-            diagonalise_dyn_mat_zheevd(n_ions, qpt, dmat, eval, zheevd);
-            evals_to_freqs(n_ions, eval);
+            mass_weight_dyn_mat(dmat_weighting, n_atoms, dmat);
+            diagonalise_dyn_mat_zheevd(n_atoms, qpt, dmat, eval, zheevd);
+            evals_to_freqs(n_atoms, eval);
         }
     }
 

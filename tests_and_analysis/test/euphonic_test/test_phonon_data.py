@@ -1,8 +1,8 @@
+import os
 import unittest
 import numpy.testing as npt
 import numpy as np
-from euphonic.data.phonon import PhononData
-from euphonic import ureg
+from euphonic import ureg, QpointPhononModes
 from ..utils import get_data_path
 
 
@@ -11,14 +11,14 @@ class TestReadInputFileNaHPhonon(unittest.TestCase):
     def setUp(self):
         # Create trivial function object so attributes can be assigned to it
         expctd_data = type('', (), {})()
-        expctd_data.cell_vec = np.array(
+        expctd_data.cell_vectors = np.array(
             [[0.000000, 2.399500, 2.399500],
              [2.399500, 0.000000, 2.399500],
              [2.399500, 2.399500, 0.000000]])*ureg('angstrom')
-        expctd_data.ion_r = np.array([[0.500000, 0.500000, 0.500000],
+        expctd_data.atom_r = np.array([[0.500000, 0.500000, 0.500000],
                                       [0.000000, 0.000000, 0.000000]])
-        expctd_data.ion_type = np.array(['H', 'Na'])
-        expctd_data.ion_mass = np.array([1.007940, 22.989770])*ureg('amu')
+        expctd_data.atom_type = np.array(['H', 'Na'])
+        expctd_data.atom_mass = np.array([1.007940, 22.989770])*ureg('amu')
         expctd_data.qpts = np.array([[-0.250000, -0.250000, -0.250000],
                                      [-0.250000, -0.500000, -0.500000]])
         expctd_data.weights = np.array([0.125, 0.375])
@@ -103,26 +103,26 @@ class TestReadInputFileNaHPhonon(unittest.TestCase):
                 -0.024995270201 + 0.000000000000*1j]]]])
         self.expctd_data = expctd_data
 
-        self.seedname = 'NaH'
         self.path = get_data_path()
-        data = PhononData.from_castep(self.seedname, path=self.path)
+        data = QpointPhononModes.from_castep(
+          os.path.join(self.path, 'NaH.phonon'))
         self.data = data
 
-    def test_cell_vec_read_nah_phonon(self):
-        npt.assert_allclose(self.data.cell_vec.to('bohr').magnitude,
-                            self.expctd_data.cell_vec.to('bohr').magnitude)
+    def test_cell_vectors_read_nah_phonon(self):
+        npt.assert_allclose(self.data.crystal.cell_vectors.to('bohr').magnitude,
+                            self.expctd_data.cell_vectors.to('bohr').magnitude)
 
-    def test_ion_r_read_nah_phonon(self):
-        npt.assert_array_equal(self.data.ion_r,
-                               self.expctd_data.ion_r)
+    def test_atom_r_read_nah_phonon(self):
+        npt.assert_array_equal(self.data.crystal.atom_r,
+                               self.expctd_data.atom_r)
 
-    def test_ion_type_read_nah_phonon(self):
-        npt.assert_array_equal(self.data.ion_type,
-                               self.expctd_data.ion_type)
+    def test_atom_type_read_nah_phonon(self):
+        npt.assert_array_equal(self.data.crystal.atom_type,
+                               self.expctd_data.atom_type)
 
-    def test_ion_mass_read_nah_phonon(self):
-        npt.assert_allclose(self.data.ion_mass.to('amu').magnitude,
-                            self.expctd_data.ion_mass.to('amu').magnitude)
+    def test_atom_mass_read_nah_phonon(self):
+        npt.assert_allclose(self.data.crystal.atom_mass.to('amu').magnitude,
+                            self.expctd_data.atom_mass.to('amu').magnitude)
 
     def test_qpts_read_nah_phonon(self):
         npt.assert_array_equal(self.data.qpts,
@@ -134,9 +134,9 @@ class TestReadInputFileNaHPhonon(unittest.TestCase):
 
     def test_freqs_read_nah_phonon(self):
         npt.assert_allclose(
-            self.data.freqs.to('hartree', 'spectroscopy').magnitude,
+            self.data.frequencies.to('hartree', 'spectroscopy').magnitude,
             self.expctd_data.freqs.to('hartree', 'spectroscopy').magnitude)
 
     def test_eigenvecs_read_nah_phonon(self):
-        npt.assert_array_equal(self.data.eigenvecs,
+        npt.assert_array_equal(self.data.eigenvectors,
                                self.expctd_data.eigenvecs)

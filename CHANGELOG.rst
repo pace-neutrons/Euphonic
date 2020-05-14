@@ -1,16 +1,25 @@
 `Unreleased <https://github.com/pace-neutrons/Euphonic/compare/v0.2.2...HEAD>`_
 ----------
 
+- Breaking Changes:
+
+  - There has been a major refactor, for see the latest
+    `docs <https://euphonic.readthedocs.io/en/latest>`_ for how to use, or
+    `here <https://euphonic.readthedocs.io/en/latest/refactor.html>`_ for
+    refactor details
+  - Python 2 is no longer supported. Supported Python versions are ``3.6``,
+    ``3.7`` and ``3.8``
+
 - New Features:
 
   - Euphonic can now read Phonopy input! See
-    `docs <https://euphonic.readthedocs.io/en/latest/read_phonopy.html>`_
+    `the docs <https://euphonic.readthedocs.io/en/latest>`_
     for details.
 
 - Improvements:
 
   - Add ``fall_back_on_python`` boolean keyword argument to
-    ``interpolation.InterpolationData.calculate_fine_phonons`` to control
+    ``ForceConstants.calculate_qpoint_phonon_modes`` to control
     whether the Python implementation is used as a fallback to the C
     extension or not, see
     `#35 <https://github.com/pace-neutrons/Euphonic/issues/35>`_

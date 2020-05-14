@@ -62,6 +62,11 @@ html_static_path = ['_static']
 # Autodoc settings
 autodoc_member_order = 'bysource'
 add_module_names = False
+
+# Napoleon docstring style settings
+napoleon_use_rtype = True
+napoleon_use_ivar = True
+
 # Configure Autodoc's autodoc-skip-member event to not skip __init__ methods
 def skip(app, what, name, obj, would_skip, options):
     if name == "__init__":

@@ -5,13 +5,13 @@ import math
 from random import random
 import time
 from unittest.mock import Mock
-
-from euphonic.data.interpolation import InterpolationData
+from euphonic import ForceConstants
 from scripts.optimise_eta import calculate_optimum_eta
 from tests_and_analysis.test.utils import get_data_path
 
 
-quartz_castep_bin = os.path.join(get_data_path(), "interpolation", "quartz", "quartz")
+quartz_castep_bin = os.path.join(
+    get_data_path(), "interpolation", "quartz", "quartz.castep_bin")
 
 
 class SharedCode:
@@ -32,7 +32,7 @@ class SharedCode:
         return [
             {},
             {"eta_min": 0.25, "eta_max": 1.35, "eta_step": 0.2, "n": 20},
-            {"eta_min": -0.25, "eta_max": 1.75, "eta_step": 0.2, "n": 20}
+            {"eta_min": 0.5, "eta_max": 1.75, "eta_step": 0.3, "n": 10}
         ]
 
 
@@ -53,17 +53,20 @@ class TestUnit:
     @pytest.fixture(params=SharedCode.get_calculate_optimum_eta_kwargs())
     def call_with_params_and_quartz_unit(self, request, monkeypatch):
         # Mock getting the data from a castep file
-        interpolation_data_mock = Mock()
-        monkeypatch.setattr(InterpolationData, "from_castep", lambda *args, **kwargs: Mock())
+        force_constants_mock = Mock()
+        monkeypatch.setattr(
+            ForceConstants, "from_castep", lambda *args, **kwargs: Mock())
 
         # Simulate time
         time_manager: MockTime = MockTime()
-        monkeypatch.setattr(time, "time", lambda *args, **kwargs: time_manager.get_time())
+        monkeypatch.setattr(
+            time, "time", lambda *args, **kwargs: time_manager.get_time())
 
         kwargs = request.param
         return calculate_optimum_eta(quartz_castep_bin, **kwargs)
 
-    def test_optimal_has_lowest_time_per_qpt(self, call_with_params_and_quartz_unit):
+    def test_optimal_has_lowest_time_per_qpt(
+            self, call_with_params_and_quartz_unit):
         # Unpack data
         optimal_eta = call_with_params_and_quartz_unit[0]
         optimal_time_per_qpt = call_with_params_and_quartz_unit[2]
@@ -75,7 +78,8 @@ class TestUnit:
 
         # Check optimal time per q-point is the lowest detected q-point
         assert optimal_time_per_qpt == lowest_time_per_qpt
-        # Check eta from lowest detected q-point index matches our optimal q-point
+        # Check eta from lowest detected q-point index matches our
+        # optimal q-point
         assert etas[lowest_time_per_qpt_index] == optimal_eta
 
 
@@ -101,7 +105,8 @@ class TestIntegration:
         kwargs = request.param
         return calculate_optimum_eta(quartz_castep_bin, **kwargs)
 
-    def test_optimal_has_lowest_time_per_qpt(self, call_with_params_and_quartz_integration):
+    def test_optimal_has_lowest_time_per_qpt(
+            self, call_with_params_and_quartz_integration):
         # Unpack data
         optimal_eta = call_with_params_and_quartz_integration[0]
         optimal_time_per_qpt = call_with_params_and_quartz_integration[2]
@@ -113,5 +118,6 @@ class TestIntegration:
 
         # Check optimal time per q-point is the lowest detected q-point
         assert optimal_time_per_qpt == lowest_time_per_qpt
-        # Check eta from lowest detected q-point index matches our optimal q-point
+        # Check eta from lowest detected q-point index matches our
+        # optimal q-point
         assert etas[lowest_time_per_qpt_index] == optimal_eta

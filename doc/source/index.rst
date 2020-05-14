@@ -6,33 +6,37 @@ Euphonic is a Python package that can efficiently calculate phonon
 bandstructures and inelastic neutron scattering intensities from a force
 constants matrix (e.g. from a .castep_bin file). Euphonic can also do
 simple plotting, and can plot dispersion and density of states from
-precalculated phonon frequencies (e.g. CASTEP .bands or .phonon).
+precalculated phonon frequencies (e.g. CASTEP .phonon files).
 
 For more information on how to use Euphonic, see the
 :ref:`tutorials <tutorials>`
 
 Installation
 ============
+
+Euphonic requires Python ``3.6``, ``3.7`` or ``3.8``
+
 Pip
 ---
+
 If you want to do plotting, or read Phonopy files, you will need to install the
 optional ``matplotlib`` and ``phonopy_reader`` extensions:
 
 .. code-block:: bash
 
-    pip install euphonic[matplotlib,phonopy_reader]
+  pip install euphonic[matplotlib,phonopy_reader]
 
 The dependencies can also be installed individually:
 
 .. code-block:: bash
 
-    pip install euphonic[matplotlib]
+  pip install euphonic[matplotlib]
 
 If you don't require plotting or reading of Phonopy files, just use:
 
 .. code-block:: bash
 
-    pip install euphonic
+  pip install euphonic
 
 Github
 ------
@@ -44,13 +48,13 @@ dependencies for reading Phonopy files use:
 
 .. code-block:: bash
 
-    pip install .[matplotlib,phonopy_reader]
+  pip install .[matplotlib,phonopy_reader]
 
 If you don't require plotting or reading of Phonopy files, just use:
 
 .. code-block:: bash
 
-    pip install .
+  pip install .
 
 Installing the C extension (optional)
 =====================================
@@ -63,7 +67,7 @@ increase pip's verbosity:
 
 .. code-block:: bash
 
-    pip install -vvv euphonic
+  pip install -vvv euphonic
 
 **Windows**
 
@@ -78,8 +82,17 @@ the same pip commands as above.
 **Linux**
 
 You should have a version of ``gcc`` on your path (currently tested with
-``4.8.5``). If ``gcc`` can be found the Euphonic extension will be automatically
-installed when using the same pip commands as above.
+``4.8.5``). If ``gcc`` can be found the Euphonic extension will be
+automatically installed when using the same pip commands as above.
+
+**Mac OSX**
+
+Requires a brew install of the llvm-clang compiler,
+before running pip install run:
+
+.. code-block:: bash
+
+  brew install llvm
 
 
 .. toctree::
