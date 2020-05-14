@@ -1,14 +1,14 @@
 import os
 import pytest
 from utils import get_data_path, get_seednames,\
-    get_qpts
+    get_qpts, get_threads
 
 from euphonic import ureg, ForceConstants
 
 
 @pytest.mark.parametrize("seedname", get_seednames())
 @pytest.mark.parametrize("use_c", [True, False])
-@pytest.mark.parametrize("n_threads", [1, 2, 4, 8, 12, 16, 24])
+@pytest.mark.parametrize("n_threads", get_threads())
 def test_calculate_qpoint_phonon_modes(seedname, use_c, n_threads, benchmark):
     # Set up
     fc = ForceConstants.from_castep(

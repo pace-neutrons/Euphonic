@@ -23,6 +23,16 @@ def get_seednames() -> List[str]:
     return ["Nb-242424-s0.25", "quartz", "La2Zr2O7"]
 
 
+def get_threads() -> List[int]:
+    """
+    Returns
+    -------
+    List[int]
+        A list of the number of threads to test with
+    """
+    return [1, 2, 4, 8, 12, 16, 24]
+
+
 def get_qpts() -> np.ndarray:
     """
     Returns
