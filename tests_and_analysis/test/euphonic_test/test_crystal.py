@@ -51,6 +51,9 @@ class ExpectedCrystal:
         d['atom_mass_unit'] = str(self.atom_mass.units)
         return d
 
+    def from_dict(self, dict):
+        self.data = dict
+
 
 def quartz_attrs():
     return ExpectedCrystal(get_quartz_json_file())
@@ -154,6 +157,48 @@ class TestObjectCreation:
     def test_crystal_create(self, crystal_creator):
         crystal, expected_crystal = crystal_creator
         check_crystal_attrs(crystal, expected_crystal)
+
+    @pytest.fixture(params=[
+        (
+            "cell_vectors",
+            np.array([[1.23, 2.45, 0.0], [3.45, 5.66, 7.22], [0.001, 4.55]]),
+            ValueError
+        ),
+        (
+                "cell_vectors",
+                np.array([
+                    [1.23, 2.45, 0.0],
+                    [3.45, "5.66", 7.22],
+                    [0.001, 4.55, "5.64"]
+                ]),
+                TypeError
+        ),
+        (
+            "atom_r",
+            np.array([[0.125, 0.125, 0.125], [0.875, 0.875, 0.875]]),
+            ValueError
+        ),
+        (
+            "atom_mass",
+            np.array([15.999399987607514, 15.999399987607514, 91.2239999293416]),
+            ValueError
+        ),
+        ("atom_type", np.array(["O", "Zr", "La"]), ValueError),
+        ("atom_mass_unit", "angstrom", TypeError),
+        ("cell_vectors_unit", "kg", TypeError),
+        ("atom_mass_unit", "", TypeError),
+        ("cell_vectors_unit", "", TypeError)
+    ])
+    def inject_faulty_dict_elements(self, request):
+        dict_key, dict_value, exception_type = request.param
+        d = quartz_attrs().to_dict()
+        d[dict_key] = dict_value
+        return d, exception_type
+
+    def test_faulty_dict_creation(self, inject_faulty_dict_elements):
+        faulty_dict, exception_type = inject_faulty_dict_elements
+        with pytest.raises(exception_type):
+            Crystal.from_dict(faulty_dict)
 
 
 @pytest.mark.unit
