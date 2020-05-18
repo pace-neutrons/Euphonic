@@ -4,10 +4,13 @@ import os
 import numpy as np
 import numpy.testing as npt
 import pytest
+from pint.quantity import Quantity
 
 from euphonic import Crystal, ureg
 
 from ..utils import get_data_path
+
+from euphonic.io import _process_dict
 
 
 class ExpectedCrystal:
@@ -16,7 +19,7 @@ class ExpectedCrystal:
         self.data = json.load(open(crystal_json_file))
 
     @property
-    def cell_vectors(self) -> np.array:
+    def cell_vectors(self) -> Quantity:
         return np.array(self.data["cell_vectors"]) * \
                ureg(self.data["cell_vectors_unit"])
 
@@ -36,7 +39,7 @@ class ExpectedCrystal:
         )
 
     @property
-    def atom_mass(self) -> np.array:
+    def atom_mass(self) -> Quantity:
         return np.array(self.data["atom_mass"]) * \
                ureg(self.data["atom_mass_unit"])
 
@@ -158,20 +161,11 @@ class TestObjectCreation:
         crystal, expected_crystal = crystal_creator
         check_crystal_attrs(crystal, expected_crystal)
 
-    @pytest.fixture(params=[
+    faulty_elements = [
         (
             "cell_vectors",
             np.array([[1.23, 2.45, 0.0], [3.45, 5.66, 7.22], [0.001, 4.55]]),
             ValueError
-        ),
-        (
-                "cell_vectors",
-                np.array([
-                    [1.23, 2.45, 0.0],
-                    [3.45, "5.66", 7.22],
-                    [0.001, 4.55, "5.64"]
-                ]),
-                TypeError
         ),
         (
             "atom_r",
@@ -188,17 +182,51 @@ class TestObjectCreation:
         ("cell_vectors_unit", "kg", TypeError),
         ("atom_mass_unit", "", TypeError),
         ("cell_vectors_unit", "", TypeError)
-    ])
+    ]
+
+    dict_specific_faulty_elements = [
+        (
+            "cell_vectors",
+            np.array([
+                [1.23, 2.45, 0.0],
+                [3.45, "5.66", 7.22],
+                [0.001, 4.55, "5.64"]
+            ]),
+            TypeError
+        ),
+    ]
+
+    @pytest.fixture(params=faulty_elements + dict_specific_faulty_elements)
     def inject_faulty_dict_elements(self, request):
-        dict_key, dict_value, exception_type = request.param
+        dict_key, dict_value, expected_exception = request.param
         d = quartz_attrs().to_dict()
         d[dict_key] = dict_value
-        return d, exception_type
+        return d, expected_exception
 
     def test_faulty_dict_creation(self, inject_faulty_dict_elements):
-        faulty_dict, exception_type = inject_faulty_dict_elements
-        with pytest.raises(exception_type):
+        faulty_dict, expected_exception = inject_faulty_dict_elements
+        with pytest.raises(expected_exception):
             Crystal.from_dict(faulty_dict)
+
+    @pytest.fixture(params=faulty_elements)
+    def inject_faulty_kwargs(self, request):
+        faulty_kwarg, faulty_value, expected_exception = request.param
+        kwargs = quartz_attrs().to_dict()
+        # Inject the faulty value
+        # Ensure we have a pint quantity not a numpy array
+        kwargs[faulty_kwarg] = faulty_value
+        # Convert to quantities and remove unrequired keys
+        for quantity in ["cell_vectors", "atom_mass"]:
+            quantity_unit = quantity + "_unit"
+            kwargs[quantity] *= ureg(kwargs[quantity_unit])
+            del kwargs[quantity_unit]
+        del kwargs["n_atoms"]
+        return kwargs, expected_exception
+
+    def test_fault_object_creation(self, inject_faulty_kwargs):
+        faulty_kwargs, expected_exception = inject_faulty_kwargs
+        with pytest.raises(expected_exception):
+            Crystal(**faulty_kwargs)
 
 
 @pytest.mark.unit
