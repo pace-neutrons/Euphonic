@@ -1,0 +1,5 @@
+pytest==5.4.1
+pytest-benchmark[histogram]==3.2.3
+numpy
+pandas==1.0.3
+matplotlib
