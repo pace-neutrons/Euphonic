@@ -215,7 +215,7 @@ class TestObjectCreation:
         # Inject the faulty value
         # Ensure we have a pint quantity not a numpy array
         kwargs[faulty_kwarg] = faulty_value
-        # Convert to quantities and remove unrequired keys
+        # Convert to quantities and remove keys that aren't required
         for quantity in ["cell_vectors", "atom_mass"]:
             quantity_unit = quantity + "_unit"
             kwargs[quantity] *= ureg(kwargs[quantity_unit])
