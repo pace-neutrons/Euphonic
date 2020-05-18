@@ -10,8 +10,6 @@ from euphonic import Crystal, ureg
 
 from ..utils import get_data_path
 
-from euphonic.io import _process_dict
-
 
 class ExpectedCrystal:
 
