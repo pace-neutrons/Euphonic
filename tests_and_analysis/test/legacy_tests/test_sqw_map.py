@@ -5,7 +5,7 @@ import numpy as np
 import unittest.mock as mock
 import pytest
 from euphonic import ureg, ForceConstants, QpointPhononModes
-from ..utils import get_data_path
+from tests_and_analysis.test.utils import get_data_path
 
 
 class TestSqwMapQpointPhononModesLZO(unittest.TestCase):
