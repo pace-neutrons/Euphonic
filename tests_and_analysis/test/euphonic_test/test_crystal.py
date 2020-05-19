@@ -12,6 +12,8 @@ from ..utils import get_data_path
 
 from collections import namedtuple
 
+from pint.errors import DimensionalityError
+
 ConstructorArgs = namedtuple(
     "ConstructorArgs",
     ["cell_vectors", "atom_r", "atom_type", "atom_mass"]
@@ -144,12 +146,7 @@ class TestObjectCreation:
     @pytest.fixture(params=[quartz_attrs(), lzo_attrs()])
     def crystal_from_constructor(self, request):
         crystal_attrs = request.param
-        crystal = Crystal(
-            crystal_attrs.cell_vectors,
-            crystal_attrs.atom_r,
-            crystal_attrs.atom_type,
-            crystal_attrs.atom_mass
-        )
+        crystal = Crystal(*crystal_attrs.to_constructor_args())
         return crystal, crystal_attrs
 
     @pytest.fixture(params=[quartz_attrs(), lzo_attrs()])
@@ -186,8 +183,20 @@ class TestObjectCreation:
     faulty_elements = [
         (
             "cell_vectors",
-            np.array([[1.23, 2.45, 0.0], [3.45, 5.66, 7.22], [0.001, 4.55]]),
+            np.array(
+                [[1.23, 2.45, 0.0], [3.45, 5.66, 7.22], [0.001, 4.55]]
+            ) * ureg("angstrom"),
             ValueError
+        ),
+        (
+            "cell_vectors",
+            quartz_attrs().cell_vectors.magnitude * ureg("kg"),
+            DimensionalityError
+        ),
+        (
+            "cell_vectors",
+            quartz_attrs().cell_vectors.magnitude * ureg(""),
+            DimensionalityError
         ),
         (
             "atom_r",
@@ -196,32 +205,32 @@ class TestObjectCreation:
         ),
         (
             "atom_mass",
-            np.array([15.999399987607514, 15.999399987607514, 91.2239999293416]),
+            np.array(
+                [15.999399987607514, 15.999399987607514, 91.2239999293416]
+            ) * ureg("unified_atomic_mass_unit"),
             ValueError
         ),
+        (
+            "atom_mass",
+            quartz_attrs().atom_mass.magnitude * ureg("angstrom"),
+            DimensionalityError
+        ),
+        (
+            "atom_mass",
+            quartz_attrs().atom_mass.magnitude * ureg(""),
+            DimensionalityError
+        ),
         ("atom_type", np.array(["O", "Zr", "La"]), ValueError),
-        ("atom_mass_unit", "angstrom", TypeError),
-        ("cell_vectors_unit", "kg", TypeError),
-        ("atom_mass_unit", "", TypeError),
-        ("cell_vectors_unit", "", TypeError)
     ]
 
     @pytest.fixture(params=faulty_elements)
     def inject_faulty_elements(self, request):
         faulty_arg, faulty_value, expected_exception = request.param
         crystal = quartz_attrs()
-        if faulty_arg in ["cell_vectors", "atom_mass"]:
-            # Ensure we have a pint quantity not a numpy array
-            faulty_value = faulty_value * getattr(crystal, faulty_arg).units
-        elif faulty_arg.endswith("_unit"):
-            # Convert a valid numpy array using the given units
-            faulty_unit = faulty_value
-            faulty_arg = faulty_arg.replace("_unit", "")
-            faulty_value = getattr(crystal, faulty_arg).magnitude * \
-                           ureg(faulty_unit)
         # Inject the faulty value and get a tuple of constructor arguments
         args = crystal.to_constructor_args(**{faulty_arg: faulty_value})
         return args, expected_exception
+
 
     def test_faulty_object_creation(self, inject_faulty_elements):
         faulty_kwargs, expected_exception = inject_faulty_elements
