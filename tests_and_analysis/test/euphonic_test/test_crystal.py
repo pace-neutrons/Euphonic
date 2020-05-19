@@ -10,6 +10,13 @@ from euphonic import Crystal, ureg
 
 from ..utils import get_data_path
 
+from collections import namedtuple
+
+ConstructorArgs = namedtuple(
+    "ConstructorArgs",
+    ["cell_vectors", "atom_r", "atom_type", "atom_mass"]
+)
+
 
 class ExpectedCrystal:
 
@@ -42,18 +49,35 @@ class ExpectedCrystal:
                ureg(self.data["atom_mass_unit"])
 
     def to_dict(self):
-        d = {}
-        d['cell_vectors'] = self.cell_vectors.magnitude
-        d['cell_vectors_unit'] = str(self.cell_vectors.units)
-        d['n_atoms'] = self.n_atoms
-        d['atom_r'] = self.atom_r
-        d['atom_type'] = self.atom_type
-        d['atom_mass'] = self.atom_mass.magnitude
-        d['atom_mass_unit'] = str(self.atom_mass.units)
-        return d
+        return {
+            'cell_vectors': self.cell_vectors.magnitude,
+            'cell_vectors_unit': str(self.cell_vectors.units),
+            'n_atoms': self.n_atoms,
+            'atom_r': self.atom_r,
+            'atom_type': self.atom_type,
+            'atom_mass': self.atom_mass.magnitude,
+            'atom_mass_unit': str(self.atom_mass.units)
+        }
 
     def from_dict(self, dict):
         self.data = dict
+
+    def to_constructor_args(self, cell_vectors=None, atom_r=None,
+                            atom_type=None, atom_mass=None):
+        if cell_vectors is None:
+            cell_vectors = self.cell_vectors
+        if atom_r is None:
+            atom_r = self.atom_r
+        if atom_type is None:
+            atom_type = self.atom_type
+        if atom_mass is None:
+            atom_mass = self.atom_mass
+        return ConstructorArgs(
+            cell_vectors,
+            atom_r,
+            atom_type,
+            atom_mass
+        )
 
 
 def quartz_attrs():
@@ -182,49 +206,27 @@ class TestObjectCreation:
         ("cell_vectors_unit", "", TypeError)
     ]
 
-    dict_specific_faulty_elements = [
-        (
-            "cell_vectors",
-            np.array([
-                [1.23, 2.45, 0.0],
-                [3.45, "5.66", 7.22],
-                [0.001, 4.55, "5.64"]
-            ]),
-            TypeError
-        ),
-    ]
-
-    @pytest.fixture(params=faulty_elements + dict_specific_faulty_elements)
-    def inject_faulty_dict_elements(self, request):
-        dict_key, dict_value, expected_exception = request.param
-        d = quartz_attrs().to_dict()
-        d[dict_key] = dict_value
-        return d, expected_exception
-
-    def test_faulty_dict_creation(self, inject_faulty_dict_elements):
-        faulty_dict, expected_exception = inject_faulty_dict_elements
-        with pytest.raises(expected_exception):
-            Crystal.from_dict(faulty_dict)
-
     @pytest.fixture(params=faulty_elements)
-    def inject_faulty_kwargs(self, request):
-        faulty_kwarg, faulty_value, expected_exception = request.param
-        kwargs = quartz_attrs().to_dict()
-        # Inject the faulty value
-        # Ensure we have a pint quantity not a numpy array
-        kwargs[faulty_kwarg] = faulty_value
-        # Convert to quantities and remove keys that aren't required
-        for quantity in ["cell_vectors", "atom_mass"]:
-            quantity_unit = quantity + "_unit"
-            kwargs[quantity] *= ureg(kwargs[quantity_unit])
-            del kwargs[quantity_unit]
-        del kwargs["n_atoms"]
-        return kwargs, expected_exception
+    def inject_faulty_elements(self, request):
+        faulty_arg, faulty_value, expected_exception = request.param
+        crystal = quartz_attrs()
+        if faulty_arg in ["cell_vectors", "atom_mass"]:
+            # Ensure we have a pint quantity not a numpy array
+            faulty_value = faulty_value * getattr(crystal, faulty_arg).units
+        elif faulty_arg.endswith("_unit"):
+            # Convert a valid numpy array using the given units
+            faulty_unit = faulty_value
+            faulty_arg = faulty_arg.replace("_unit", "")
+            faulty_value = getattr(crystal, faulty_arg).magnitude * \
+                           ureg(faulty_unit)
+        # Inject the faulty value and get a tuple of constructor arguments
+        args = crystal.to_constructor_args(**{faulty_arg: faulty_value})
+        return args, expected_exception
 
-    def test_fault_object_creation(self, inject_faulty_kwargs):
-        faulty_kwargs, expected_exception = inject_faulty_kwargs
+    def test_faulty_object_creation(self, inject_faulty_elements):
+        faulty_kwargs, expected_exception = inject_faulty_elements
         with pytest.raises(expected_exception):
-            Crystal(**faulty_kwargs)
+            Crystal(*faulty_kwargs)
 
 
 @pytest.mark.unit
