@@ -19,12 +19,16 @@ def get_parser() -> argparse.ArgumentParser:
                         dest="speedup_over_time_dir",
                         help="Plot and show how the speedups data has changed"
                              " over time for the files in the directory you"
-                             " have specified as part of this argument")
+                             " have specified as part of this argument."
+                             " Use SAN to plot from the SAN-storage (requires"
+                             " access rights to the SAN-storage area).")
     parser.add_argument("-p", "--performance", action="store",
                         dest="performance_dir",
                         help="Plot and show how performance data has changed"
                              " over time for the files in the directory you"
-                             " have specified as part of this argument")
+                             " have specified as part of this argument"
+                             " Use SAN to plot from the SAN-storage (requires"
+                             " access rights to the SAN-storage area).")
     parser.add_argument("-sf", "--speedup-file", action="store",
                         dest="speedup_file",
                         help="Plot and show how using more threads affects the"
@@ -37,10 +41,20 @@ if __name__ == "__main__":
     parser = get_parser()
     args_parsed = parser.parse_args()
     if args_parsed.speedup_over_time_dir:
+        if args_parsed.speedup_over_time_dir == "SAN":
+            args_parsed.speedup_over_time_dir = (
+                r'\\isis.cclrc.ac.uk\Shares\PACE_Project_Tool_Source'
+                r'\euphonic_performance_benchmarking'
+            )
         figure_index = plot_speedups_over_time(
             args_parsed.speedup_over_time_dir
         )
     if args_parsed.performance_dir:
+        if args_parsed.performance_dir == "SAN":
+            args_parsed.performance_dir = (
+                r'\\isis.cclrc.ac.uk\Shares\PACE_Project_Tool_Source'
+                r'\euphonic_performance_benchmarking'
+            )
         figure_index = plot_median_values(args_parsed.performance_dir)
     if args_parsed.speedup_file:
         plot_speedups_for_file(args_parsed.speedup_file)
