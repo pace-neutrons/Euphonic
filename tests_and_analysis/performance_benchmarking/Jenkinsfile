@@ -1,0 +1,30 @@
+#!groovy
+
+pipeline {
+
+    agent { label "SCARF" }
+
+    triggers {
+        cron("0 0 * * 0")
+    }
+
+    stages {
+
+        stage("Benchmark"){
+            steps {
+                checkout scm
+                sh """
+                    cd tests_and_analysis/performance_benchmarking &&
+                    sbatch run_benchmark_tests.sbatch
+                """
+            }
+        }
+
+    }
+
+    post {
+        cleanup {
+            deleteDir()
+        }
+    }
+}
