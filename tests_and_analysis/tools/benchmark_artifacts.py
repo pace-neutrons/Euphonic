@@ -4,6 +4,14 @@ from typing import Dict, Tuple, Union, List
 import os
 import json
 
+jenkins_api_help_string = (
+    "You can create a token on the Jenkins instance by clicking on"
+    "your username in the top right hand corner and going to " 
+    "configure. This token requires admin access to the "
+    "PACE-neutrons project, which can be requested "
+    "from ANVIL@stfc.ac.uk"
+)
+
 
 def get_parser():
     parser = argparse.ArgumentParser()
@@ -17,11 +25,7 @@ def get_parser():
     parser.add_argument(
         "-t", "--token", action="store", required=True, dest="token",
         help="An Anvil Jenkins api token generated with your account. "
-             "You can create a token on the Jenkins instance by clicking on"
-             "your username in the top right hand corner and going to "
-             "configure. This token requires admin access to the "
-             "PACE-neutrons project, which can be requested "
-             "from ANVIL@stfc.ac.uk"
+             "{}".format(jenkins_api_help_string)
     )
     # The location to copy artifacts to
     parser.add_argument(
@@ -112,64 +116,86 @@ def coerce_range(performance_benchmarking_response_json: Dict,
         return largest_possible_range
 
 
-def copy_artifacts(artifacts, jenkins_build_url, copy_to_location, timestamp,
-                   user_id, token):
+def copy_benchmark_json(artifacts: List[Dict[str, str]], jenkins_build_url: str,
+                        copy_to_location: str, timestamp: int,
+                        user_id: str, token: str):
+    """
+    Copy a performance_benchmarks.json artifact from a Jenkins build to the
+    given location in a directory with a name given by the timestamp.
+
+    Parameters
+    ----------
+    artifacts : List[Dict[int, Dict[str, str]]]
+        A list of artifacts from a Jenkins build including the
+        performance_benchmarks.json artifact. Each artifact has the
+        fields fileName and relativePath fields.
+    jenkins_build_url : str
+        The url of the Jenkins build the artifact is from and from which the
+        relativePath of the artifact follows.
+    copy_to_location : str
+        A directory to which to copy the artifacts to.
+    timestamp : int
+        The timestamp from the Jenkins build (gives the directory name
+        with which to write the json file to)
+    user_id : str
+        The Jenkins user id to use when pulling the artifact from Jenkins.
+    token : str
+        A Jenkins api token to user when pulling the artifact from Jenkins.
+    """
+    # Search for the performance_benchmarks.json artifact
     for artifact in artifacts:
         if "performance_benchmarks.json" == artifact["fileName"]:
+            # Get the json to write to file
             performance_benchmarks_json = requests.get(
                 jenkins_build_url + "artifact/" + artifact["relativePath"],
                 auth=(user_id, token)
             ).json()
-            # Write the json to file
+            # Locate where to copy the file to
             directory = os.path.join(copy_to_location, str(timestamp))
-            os.mkdir(directory)
-            json.dump(
-                performance_benchmarks_json,
-                open(
-                    os.path.join(directory, "performance_benchmarks.json"),
-                    "w+"
-                )
-            )
+            filepath = os.path.join(directory, "performance_benchmarks.json")
+            # No need to copy if the file already exists
+            if not os.path.exists(filepath):
+                os.mkdir(directory)
+                json.dump(performance_benchmarks_json, open(filepath, "w+"))
 
 
 if __name__ == "__main__":
+    # retrieve args
     args_parsed = get_parser().parse_args()
     user_id = args_parsed.user_id
     token = args_parsed.token
-    performance_benchmarking_response = requests.get(
+    copy_to_location = args_parsed.copy_to_location
+    # Get builds details
+    job_response = requests.get(
         "https://anvil.softeng-support.ac.uk/jenkins/job/"
         "PACE-neutrons/job/Euphonic/job/Performance Benchmarking/api/json/",
         auth=(user_id, token)
     )
-    if performance_benchmarking_response.status_code == 404:
+    # If we get a failure response error the script
+    if 100 <= job_response.status_code >= 300:
         raise Exception(
             """
-                404 status code, likely authentication has failed.
-                Please ensure the user_id and token used has admin access to 
-                the Anvil Jenkins PACE-neutrons project. You can request this 
-                from ANVIL@stfc.ac.uk
-            """
+                {} status code. Error when contacting Jenkins api.
+                If 404, it is likely authentication has failed. {}
+            """.format(job_response.status_code, jenkins_api_help_string)
         )
+    # Coerce the parsed range into the range of jobs available
     lower_bound, upper_bound = coerce_range(
-        performance_benchmarking_response.json(), args_parsed.range
+        job_response.json(), args_parsed.range
     )
-    copy_to_location = (r'\\isis.cclrc.ac.uk\Shares\PACE_Project_Tool_Source'
-                        r'\euphonic_performance_benchmarking')
-    for build in performance_benchmarking_response.json()["builds"]:
+    # Only get artifacts from builds within the given range
+    for build in job_response.json()["builds"]:
         if lower_bound <= build["number"] <= upper_bound:
+            # Get details from the build
             url = build["url"]
             build_response = requests.get(
-                url + "/api/json",
-                auth=(user_id, token)
+                url + "/api/json", auth=(user_id, token)
             )
+            # Copy artifact if build was successful
             if build_response.json()["result"] == "SUCCESS":
-                copy_artifacts(
+                copy_benchmark_json(
                     build_response.json()["artifacts"],
-                    url,
-                    copy_to_location,
+                    url, copy_to_location,
                     build_response.json()["timestamp"],
-                    user_id,
-                    token
+                    user_id, token
                 )
-
-
