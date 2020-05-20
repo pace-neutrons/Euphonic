@@ -8,7 +8,7 @@ from func_timeout import func_timeout, FunctionTimedOut
 jenkins_api_help_string = (
     "You can create a token on the Jenkins instance by clicking on "
     "your username in the top right hand corner and going to "
-    "configure. This token requires admin access to the "
+    "configure.\nThis token requires admin access to the "
     "PACE-neutrons project, which can be requested "
     "from ANVIL@stfc.ac.uk "
 )
@@ -195,16 +195,17 @@ if __name__ == "__main__":
     # If we get a failure response error the script
     if 100 <= job_response.status_code >= 300:
         raise Exception(
-            "{} status code. Error when contacting Jenkins api. "
-            "If 404, it is likely authentication has failed. "
+            "{} status code. Error when contacting Jenkins api.\n"
+            "If 404, it is likely authentication has failed.\n"
             "{} ".format(
                 job_response.status_code, jenkins_api_help_string
-            ).replace(". ", ".\n")
+            )
         )
     # Coerce the parsed range into the range of jobs available
     lower_bound, upper_bound = coerce_range(
         job_response.json(), args_parsed.range
     )
+    copied_artifact_builds = []
     # Only get artifacts from builds within the given range
     for build in job_response.json()["builds"]:
         if lower_bound <= build["number"] <= upper_bound:
@@ -220,3 +221,8 @@ if __name__ == "__main__":
                     copy_to_location, build_response.json()["timestamp"],
                     user_id, token
                 )
+                copied_artifact_builds.append(build["number"])
+    copied_artifact_builds.sort()
+    print("Success copied artifacts for builds: {}".format(
+        str(copied_artifact_builds)
+    ))
