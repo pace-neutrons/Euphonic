@@ -33,4 +33,3 @@ def plot_speedups_for_file(filename: str):
                 bbox_to_anchor=(1, 0.5),
                 fontsize="small"
             )
-            fig.tight_layout()

@@ -33,29 +33,30 @@ def get_parser() -> argparse.ArgumentParser:
                         dest="speedup_file",
                         help="Plot and show how using more threads affects the"
                              " performance of functions across multiple"
-                             " different materials for the specified file")
+                             " different materials for the specified file."
+                             " {SAN} is replace with the SAN-storage location"
+                             " automatically.")
     return parser
 
 
 if __name__ == "__main__":
     parser = get_parser()
     args_parsed = parser.parse_args()
+    san_location = (
+        r'\\isis.cclrc.ac.uk\Shares\PACE_Project_Tool_Source'
+        r'\euphonic_performance_benchmarking'
+    )
     if args_parsed.speedup_over_time_dir:
         if args_parsed.speedup_over_time_dir == "SAN":
-            args_parsed.speedup_over_time_dir = (
-                r'\\isis.cclrc.ac.uk\Shares\PACE_Project_Tool_Source'
-                r'\euphonic_performance_benchmarking'
-            )
+            args_parsed.speedup_over_time_dir = san_location
         figure_index = plot_speedups_over_time(
             args_parsed.speedup_over_time_dir
         )
     if args_parsed.performance_dir:
         if args_parsed.performance_dir == "SAN":
-            args_parsed.performance_dir = (
-                r'\\isis.cclrc.ac.uk\Shares\PACE_Project_Tool_Source'
-                r'\euphonic_performance_benchmarking'
-            )
+            args_parsed.performance_dir = san_location
         figure_index = plot_median_values(args_parsed.performance_dir)
     if args_parsed.speedup_file:
+        args_parsed.speedup_file = args_parsed.speedup_file.format(SAN=san_location)
         plot_speedups_for_file(args_parsed.speedup_file)
     plt.show()
