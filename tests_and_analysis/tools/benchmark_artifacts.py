@@ -3,13 +3,14 @@ import requests
 from typing import Dict, Tuple, Union, List
 import os
 import json
+from func_timeout import func_timeout, FunctionTimedOut
 
 jenkins_api_help_string = (
-    "You can create a token on the Jenkins instance by clicking on"
-    "your username in the top right hand corner and going to " 
+    "You can create a token on the Jenkins instance by clicking on "
+    "your username in the top right hand corner and going to "
     "configure. This token requires admin access to the "
     "PACE-neutrons project, which can be requested "
-    "from ANVIL@stfc.ac.uk"
+    "from ANVIL@stfc.ac.uk "
 )
 
 
@@ -116,6 +117,15 @@ def coerce_range(performance_benchmarking_response_json: Dict,
         return largest_possible_range
 
 
+def write_to_file(directory: str, filename: str,
+                  performance_benchmarks_json: str):
+    # No need to copy if the file already exists
+    if not os.path.exists(directory):
+        os.mkdir(directory)
+        filepath = os.path.join(directory, filename)
+        json.dump(performance_benchmarks_json, open(filepath, "w+"))
+
+
 def copy_benchmark_json(artifacts: List[Dict[str, str]], jenkins_build_url: str,
                         copy_to_location: str, timestamp: int,
                         user_id: str, token: str):
@@ -152,11 +162,22 @@ def copy_benchmark_json(artifacts: List[Dict[str, str]], jenkins_build_url: str,
             ).json()
             # Locate where to copy the file to
             directory = os.path.join(copy_to_location, str(timestamp))
-            filepath = os.path.join(directory, "performance_benchmarks.json")
-            # No need to copy if the file already exists
-            if not os.path.exists(filepath):
-                os.mkdir(directory)
-                json.dump(performance_benchmarks_json, open(filepath, "w+"))
+            filename = "performance_benchmarks.json"
+            # Checking file existence and writing takes a long time if
+            # you don't have permissions or aren't on the network.
+            # Timeout after two minutes and error to catch this case
+            try:
+                func_timeout(
+                    timeout=20, func=write_to_file,
+                    args=(directory, filename, performance_benchmarks_json)
+                )
+            except FunctionTimedOut:
+                print(
+                    "Timed out when attempting to write json file. "
+                    "Check you are on the network and have write access to {}. "
+                    "Is the VPN connected?".format(copy_to_location)
+                )
+                exit(1)
 
 
 if __name__ == "__main__":
@@ -174,10 +195,11 @@ if __name__ == "__main__":
     # If we get a failure response error the script
     if 100 <= job_response.status_code >= 300:
         raise Exception(
-            """
-                {} status code. Error when contacting Jenkins api.
-                If 404, it is likely authentication has failed. {}
-            """.format(job_response.status_code, jenkins_api_help_string)
+            "{} status code. Error when contacting Jenkins api. "
+            "If 404, it is likely authentication has failed. "
+            "{} ".format(
+                job_response.status_code, jenkins_api_help_string
+            ).replace(". ", ".\n")
         )
     # Coerce the parsed range into the range of jobs available
     lower_bound, upper_bound = coerce_range(
@@ -194,8 +216,7 @@ if __name__ == "__main__":
             # Copy artifact if build was successful
             if build_response.json()["result"] == "SUCCESS":
                 copy_benchmark_json(
-                    build_response.json()["artifacts"],
-                    url, copy_to_location,
-                    build_response.json()["timestamp"],
+                    build_response.json()["artifacts"], url,
+                    copy_to_location, build_response.json()["timestamp"],
                     user_id, token
                 )
