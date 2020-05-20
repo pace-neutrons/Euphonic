@@ -1,7 +1,7 @@
 #!groovy
 
 def getGitCommitAuthorEmail() {
-    withCredentials([string(credentialsId: 'Euphonic_GitHub_API_Token',
+    withCredentials([string(credentialsId: 'GitHub_API_Token',
             variable: 'api_token')]) {
         return powershell(
             script: """
@@ -35,7 +35,7 @@ pipeline {
 
              causeString: 'Triggered on $ref',
 
-             token: 'Euphonic_GitHub_API_Token',
+             token: 'GitHub_API_Token',
 
              printContributedVariables: true,
              printPostContent: true,
