@@ -3,3 +3,4 @@ pytest-benchmark[histogram]==3.2.3
 numpy
 pandas==1.0.3
 matplotlib
+func_timeout==4.3.5
