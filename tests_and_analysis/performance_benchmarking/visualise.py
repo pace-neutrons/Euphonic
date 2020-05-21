@@ -49,13 +49,18 @@ def call_plot(directory: str, san_location: str, plot_func, plot_args):
     # Replace {SAN} with san location
     directory = directory.format(SAN=san_location)
     # Check access
+    test_file = os.path.join(directory, "test.txt")
     try:
-        func_timeout(timeout=20, func=os.path.exists, args=[directory])
+        open(test_file, "w+")
         # We have access therefore plot
         plot_func(*plot_args)
-    except FunctionTimedOut:
+    except FileNotFoundError:
         print("Cannot access {}. Exiting.".format(directory))
-        exit(1)
+    finally:
+        try:
+            os.remove(test_file)
+        except FileNotFoundError:
+            pass
 
 
 if __name__ == "__main__":

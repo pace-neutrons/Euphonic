@@ -119,11 +119,23 @@ def coerce_range(performance_benchmarking_response_json: Dict,
 
 def write_to_file(directory: str, filename: str,
                   performance_benchmarks_json: str):
-    # No need to copy if the file already exists
-    if not os.path.exists(directory):
-        os.mkdir(directory)
-        filepath = os.path.join(directory, filename)
-        json.dump(performance_benchmarks_json, open(filepath, "w+"))
+    # Check access
+    test_file = os.path.join(directory, "test.txt")
+    try:
+        open(test_file, "w+")
+        # We have access therefore write
+        # No need to copy if the file already exists
+        if not os.path.exists(directory):
+            os.mkdir(directory)
+            filepath = os.path.join(directory, filename)
+            json.dump(performance_benchmarks_json, open(filepath, "w+"))
+    except FileNotFoundError:
+        print("Cannot access {}. Exiting.".format(directory))
+    finally:
+        try:
+            os.remove(test_file)
+        except FileNotFoundError:
+            pass
 
 
 def copy_benchmark_json(artifacts: List[Dict[str, str]], jenkins_build_url: str,
@@ -163,21 +175,7 @@ def copy_benchmark_json(artifacts: List[Dict[str, str]], jenkins_build_url: str,
             # Locate where to copy the file to
             directory = os.path.join(copy_to_location, str(timestamp))
             filename = "performance_benchmarks.json"
-            # Checking file existence and writing takes a long time if
-            # you don't have permissions or aren't on the network.
-            # Timeout after two minutes and error to catch this case
-            try:
-                func_timeout(
-                    timeout=20, func=write_to_file,
-                    args=(directory, filename, performance_benchmarks_json)
-                )
-            except FunctionTimedOut:
-                print(
-                    "Timed out when attempting to write json file. "
-                    "Check you are on the network and have write access to {}. "
-                    "Is the VPN connected?".format(copy_to_location)
-                )
-                exit(1)
+            write_to_file(directory, filename, performance_benchmarks_json)
 
 
 if __name__ == "__main__":
