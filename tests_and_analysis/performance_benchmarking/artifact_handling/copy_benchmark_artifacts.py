@@ -3,7 +3,7 @@ import requests
 from typing import Dict, Tuple, Union, List
 import os
 import json
-from ..utils import get_san_storage
+from tests_and_analysis.performance_benchmarking.utils import get_san_storage
 
 jenkins_api_help_string = (
     "You can create a token on the Jenkins instance by clicking on "
