@@ -39,3 +39,5 @@ class TestObjectCreation:
             get_data_path(), phonopy_args["path"]
         )
         ForceConstants.from_phonopy(**phonopy_args)
+
+
