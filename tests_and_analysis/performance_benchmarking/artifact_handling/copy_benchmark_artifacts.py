@@ -3,7 +3,7 @@ import requests
 from typing import Dict, Tuple, Union, List
 import os
 import json
-from func_timeout import func_timeout, FunctionTimedOut
+from ..utils import get_san_storage
 
 jenkins_api_help_string = (
     "You can create a token on the Jenkins instance by clicking on "
@@ -31,9 +31,9 @@ def get_parser():
     # The location to copy artifacts to
     parser.add_argument(
         "-c", "--copy-to-location", action="store", dest="copy_to_location",
-        type=str, default=(r'\\isis.cclrc.ac.uk\Shares\PACE_Project_Tool_Source'
-                           r'\euphonic_performance_benchmarking'),
-        help="The location to which you wish to copy your artifacts to"
+        type=str, default=get_san_storage(),
+        help="The location to which you wish to copy your artifacts to. "
+             "{SAN} is automatically converted to the SAN storage location."
     )
     # The url of the performance benchmarking job
     parser.add_argument(
@@ -183,7 +183,9 @@ if __name__ == "__main__":
     args_parsed = get_parser().parse_args()
     user_id = args_parsed.user_id
     token = args_parsed.token
-    copy_to_location = args_parsed.copy_to_location
+    copy_to_location = args_parsed.copy_to_location.format(
+        SAN=get_san_storage()
+    )
     # Get builds details
     job_response = requests.get(
         "https://anvil.softeng-support.ac.uk/jenkins/job/"

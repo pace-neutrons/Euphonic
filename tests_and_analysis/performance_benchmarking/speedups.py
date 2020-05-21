@@ -2,6 +2,7 @@ import argparse
 import json
 from typing import Dict
 import os
+from utils import get_san_storage
 
 
 def get_file_or_dir() -> str:
@@ -119,6 +120,7 @@ def write_speedups(filename: str, speedups: Dict[str, Dict[str, Dict[int, float]
 
 if __name__ == "__main__":
     path: str = get_file_or_dir()
+    path = path.format(SAN=get_san_storage())
     if os.path.isdir(path):
         for root, _, files in os.walk(path):
             for filename in files:
@@ -130,3 +132,9 @@ if __name__ == "__main__":
         speedups: Dict[str, Dict[str, Dict[int, float]]] = \
             calculate_speedups(path)
         write_speedups(path, speedups)
+    else:
+        print(
+            "{} is not a recognised file or directory. "
+            "If this is a network address you may"
+            " not have access to it.".format(path)
+        )

@@ -3,9 +3,8 @@ import matplotlib.pyplot as plt
 from visualise.performance_over_time import plot_median_values
 from visualise.speedups_over_time import plot_speedups_over_time
 from visualise.speedups import plot_speedups_for_file
-from func_timeout import func_timeout, FunctionTimedOut
 import os
-import multiprocessing
+from utils import get_san_storage
 
 
 def get_parser() -> argparse.ArgumentParser:
@@ -45,31 +44,23 @@ def get_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def call_plot(directory: str, san_location: str, plot_func, plot_args):
+def call_plot(dir_or_file: str, san_location: str, plot_func, plot_args):
     # Replace {SAN} with san location
-    directory = directory.format(SAN=san_location)
-    # Check access
-    test_file = os.path.join(directory, "test.txt")
-    try:
-        open(test_file, "w+")
-        # We have access therefore plot
+    dir_or_file = dir_or_file.format(SAN=san_location)
+    if os.path.isdir(dir_or_file) or os.path.isfile(dir_or_file):
         plot_func(*plot_args)
-    except FileNotFoundError:
-        print("Cannot access {}. Exiting.".format(directory))
-    finally:
-        try:
-            os.remove(test_file)
-        except FileNotFoundError:
-            pass
+    else:
+        print(
+            "{} is not a recognised file or directory. "
+            "If this is a network address you may"
+            " not have access to it.".format(dir_or_file)
+        )
 
 
 if __name__ == "__main__":
     parser = get_parser()
     args_parsed = parser.parse_args()
-    san_location = (
-        r'\\isis.cclrc.ac.uk\Shares\PACE_Project_Tool_Source'
-        r'\euphonic_performance_benchmarking'
-    )
+    san_location = get_san_storage()
     if args_parsed.speedup_over_time_dir:
         call_plot(
             args_parsed.speedup_over_time_dir, san_location,
