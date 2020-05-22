@@ -209,6 +209,7 @@ def plot_2d(spectrum, vmin=None, vmax=None, ratio=None, x_width=0, y_width=0,
     ax.set_xlabel(x_label)
     ax.set_ylabel(y_label)
     fig.suptitle(title)
+    fig.tight_layout()
 
     return fig, ims
 
