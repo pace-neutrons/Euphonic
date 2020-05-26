@@ -8,11 +8,12 @@ import json
 from tests_and_analysis.test.euphonic_test.test_crystal import (
     check_crystal_attrs
 )
+from slugify import slugify
 
 
 class ExpectedForceConstants:
 
-    def __init__(self, dirpath):
+    def __init__(self, dirpath: str, with_material: bool = True):
         """
         Collect data from files for comparison to real ForceConstants files.
 
@@ -21,12 +22,18 @@ class ExpectedForceConstants:
         dirpath : str
             The directory path containing the files with the force constants
             data in.
+        with_material : bool
+            True if the material is a prefix to the filename.
         """
         self.dirpath = dirpath
+        self.with_material = with_material
 
     def _get_file_from_dir_and_property(self, property_name: str) -> str:
         material = os.path.split(self.dirpath)[-1].lower()
-        filepath = os.path.join(self.dirpath, material + "_" + property_name)
+        if self.with_material:
+            filepath = os.path.join(self.dirpath, material + "_" + property_name)
+        else:
+            filepath = os.path.join(self.dirpath, property_name)
         for f in os.listdir(self.dirpath):
             f_path = os.path.join(self.dirpath, f)
             if filepath in f_path:
@@ -155,16 +162,45 @@ class TestObjectCreation:
         check_force_constant_attrs(fc, ExpectedForceConstants(dirpath))
 
     @pytest.mark.parametrize("phonopy_args", [
-        {"fc_name": "FORCE_CONSTANTS"},
-        {"fc_name": "FULL_FORCE_CONSTANTS"},
-        {"fc_name": "full_force_constants.hdf5"},
-        {"summary_name": "phonopy_nofc_noborn.yaml"}
+        {"summary_name": "phonopy.yaml"},
+        {
+            "summary_name": "phonopy_nofc.yaml", "fc_name": "FORCE_CONSTANTS"
+        },
+        {
+            "summary_name": "phonopy_nofc.yaml",
+            "fc_name": "FULL_FORCE_CONSTANTS"
+        },
+        {
+            "summary_name": "phonopy_prim.yaml",
+            "fc_name": "PRIMITIVE_FORCE_CONSTANTS"
+        },
+        {
+            "summary_name": "phonopy_nofc.yaml",
+            "fc_name": "full_force_constants.hdf5"
+        },
+        {
+            "summary_name": "phonopy_nofc.yaml",
+            "fc_name": "force_constants.hdf5"
+        },
+        {
+            "summary_name": "phonopy_nofc_noborn.yaml",
+            "born_name": "BORN"
+        },
+        {
+            "summary_name": "phonopy_prim_nofc.yaml",
+            "fc_name": "primitive_force_constants.hdf5"
+        }
     ])
     def test_creation_from_phonopy(self, phonopy_args):
+        dir = slugify(
+            "-".join(phonopy_args.keys()) + "-"
+            + "-".join(phonopy_args.values())
+        )
         phonopy_args["path"] = os.path.join(
             get_data_path(), 'phonopy_data', 'NaCl', 'interpolation'
         )
         fc = ForceConstants.from_phonopy(**phonopy_args)
-        # check_force_constant_attrs(fc)
-
-
+        expected_dirpath = os.path.join(phonopy_args["path"], dir)
+        check_force_constant_attrs(
+            fc, ExpectedForceConstants(expected_dirpath, with_material=False)
+        )
