@@ -144,8 +144,8 @@ class TestObjectCreation:
 
     @pytest.mark.parametrize("castep_bin_file", [
         os.path.join('LZO', 'La2Zr2O7.castep_bin'),
-        #os.path.join('graphite', 'graphite.castep_bin'),
-        #os.path.join('quartz', 'quartz.castep_bin')
+        os.path.join('graphite', 'graphite.castep_bin'),
+        os.path.join('quartz', 'quartz.castep_bin')
     ])
     def test_creation_from_castep(self, castep_bin_file):
         inter_dirpath = os.path.join(get_data_path(), 'interpolation')
