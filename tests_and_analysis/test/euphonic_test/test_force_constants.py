@@ -111,6 +111,23 @@ class ExpectedForceConstants:
             open(self._get_file_from_dir_and_property("properties", "json"))
         )["dielectric_unit"]
 
+    def to_dict(self):
+        d = {
+            'crystal': self.crystal.to_dict(),
+            'force_constants': self.force_constants,
+            'force_constants_unit': self.force_constants_unit,
+            'n_cells_in_sc': self.n_cells_in_sc,
+            'sc_matrix': self.sc_matrix,
+            'cell_origins': self.cell_origins,
+        }
+        if self.born.shape != ():
+            d["born"] = self.born
+            d["born_unit"] = self.born_unit
+        if self.dielectric.shape != ():
+            d["dielectric"] = self.dielectric
+            d["dielectric_unit"] = self.dielectric_unit
+        return d
+
 
 def check_force_constant_attrs(force_constants, expected_force_constants):
     npt.assert_allclose(
@@ -179,6 +196,20 @@ class TestObjectCreation:
         filepath = os.path.join(dirpath, json_file)
         fc = ForceConstants.from_json_file(filepath)
         check_force_constant_attrs(fc, ExpectedForceConstants(dirpath))
+
+    @pytest.mark.parametrize(("json_dir", "json_file"), [
+        ('LZO', 'lzo_force_constants.json'),
+        ('graphite', 'graphite_force_constants.json'),
+        ('quartz', 'quartz_force_constants.json')
+    ])
+    def test_creation_from_dict(self, json_dir, json_file):
+        dirpath = os.path.join(
+            get_data_path(), 'interpolation', json_dir
+        )
+        expected_fc = ExpectedForceConstants(dirpath)
+        print(expected_fc.to_dict())
+        fc = ForceConstants.from_dict(expected_fc.to_dict())
+        check_force_constant_attrs(fc, expected_fc)
 
     @pytest.mark.parametrize("phonopy_args", [
         {"summary_name": "phonopy.yaml"},
