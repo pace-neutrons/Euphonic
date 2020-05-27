@@ -28,15 +28,20 @@ class ExpectedForceConstants:
         self.dirpath = dirpath
         self.with_material = with_material
 
-    def _get_file_from_dir_and_property(self, property_name: str) -> str:
+    def _get_file_from_dir_and_property(self, property_name: str,
+                                        extension: str) -> str:
         material = os.path.split(self.dirpath)[-1].lower()
         if self.with_material:
-            filepath = os.path.join(self.dirpath, material + "_" + property_name)
+            filepath = os.path.join(
+                self.dirpath, material + "_" + property_name + "." + extension
+            )
         else:
-            filepath = os.path.join(self.dirpath, property_name)
+            filepath = os.path.join(
+                self.dirpath, property_name + "." + extension
+            )
         for f in os.listdir(self.dirpath):
             f_path = os.path.join(self.dirpath, f)
-            if filepath in f_path:
+            if filepath == f_path:
                 return f_path
         else:
             raise FileNotFoundError("Could not find " + filepath)
@@ -44,66 +49,66 @@ class ExpectedForceConstants:
     @property
     def force_constants(self):
         return np.load(
-            self._get_file_from_dir_and_property("force_constants"),
+            self._get_file_from_dir_and_property("force_constants", "npy"),
             allow_pickle=True
         )
 
     @property
     def sc_matrix(self):
         return np.load(
-            self._get_file_from_dir_and_property("sc_matrix"),
+            self._get_file_from_dir_and_property("sc_matrix", "npy"),
             allow_pickle=True
         )
 
     @property
     def cell_origins(self):
         return np.load(
-            self._get_file_from_dir_and_property("cell_origins"),
+            self._get_file_from_dir_and_property("cell_origins", "npy"),
             allow_pickle=True
         )
 
     @property
     def born(self):
         return np.load(
-            self._get_file_from_dir_and_property("born"),
+            self._get_file_from_dir_and_property("born", "npy"),
             allow_pickle=True
         )
 
     @property
     def dielectric(self):
         return np.load(
-            self._get_file_from_dir_and_property("dielectric"),
+            self._get_file_from_dir_and_property("dielectric", "npy"),
             allow_pickle=True
         )
 
     @property
     def crystal(self):
         return Crystal.from_json_file(
-            self._get_file_from_dir_and_property("crystal")
+            self._get_file_from_dir_and_property("crystal", "json")
         )
 
     @property
     def n_cells_in_sc(self):
         return json.load(
-            open(self._get_file_from_dir_and_property("properties"))
+            open(self._get_file_from_dir_and_property("properties", "json"))
         )["n_cells_in_sc"]
 
     @property
     def force_constants_unit(self):
         return json.load(
-            open(self._get_file_from_dir_and_property("properties"))
+            open(self._get_file_from_dir_and_property("properties", "json"))
         )["force_constants_unit"]
 
     @property
     def born_unit(self):
         return json.load(
-            open(self._get_file_from_dir_and_property("properties"))
+            open(self._get_file_from_dir_and_property("properties", "json"))
         )["born_unit"]
 
     @property
     def dielectric_unit(self):
         return json.load(
-            open(self._get_file_from_dir_and_property("properties"))
+            open(self._get_file_from_dir_and_property("properties", "json"))
         )["dielectric_unit"]
 
 
@@ -149,16 +154,30 @@ def check_force_constant_attrs(force_constants, expected_force_constants):
 @pytest.mark.unit
 class TestObjectCreation:
 
-    @pytest.mark.parametrize("castep_bin_file", [
-        os.path.join('LZO', 'La2Zr2O7.castep_bin'),
-        os.path.join('graphite', 'graphite.castep_bin'),
-        os.path.join('quartz', 'quartz.castep_bin')
+    @pytest.mark.parametrize(("castep_bin_dir", "castep_bin_file"), [
+        ('LZO', 'La2Zr2O7.castep_bin'),
+        ('graphite', 'graphite.castep_bin'),
+        ('quartz', 'quartz.castep_bin')
     ])
-    def test_creation_from_castep(self, castep_bin_file):
-        inter_dirpath = os.path.join(get_data_path(), 'interpolation')
-        dirpath = os.path.join(inter_dirpath, os.path.split(castep_bin_file)[0])
-        filepath = os.path.join(inter_dirpath, castep_bin_file)
+    def test_creation_from_castep(self, castep_bin_dir, castep_bin_file):
+        dirpath = os.path.join(
+            get_data_path(), 'interpolation', castep_bin_dir
+        )
+        filepath = os.path.join(dirpath,  castep_bin_file)
         fc = ForceConstants.from_castep(filepath)
+        check_force_constant_attrs(fc, ExpectedForceConstants(dirpath))
+
+    @pytest.mark.parametrize(("json_dir", "json_file"), [
+        ('LZO', 'lzo_force_constants.json'),
+        ('graphite', 'graphite_force_constants.json'),
+        ('quartz', 'quartz_force_constants.json')
+    ])
+    def test_creation_from_json(self, json_dir, json_file):
+        dirpath = os.path.join(
+            get_data_path(), 'interpolation', json_dir
+        )
+        filepath = os.path.join(dirpath, json_file)
+        fc = ForceConstants.from_json_file(filepath)
         check_force_constant_attrs(fc, ExpectedForceConstants(dirpath))
 
     @pytest.mark.parametrize("phonopy_args", [
