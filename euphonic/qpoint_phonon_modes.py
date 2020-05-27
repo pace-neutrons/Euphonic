@@ -10,6 +10,7 @@ from euphonic.util import (direction_changed, is_gamma,
                            _check_constructor_inputs)
 from euphonic.io import (_obj_to_json_file, _obj_from_json_file,
                          _obj_to_dict, _process_dict)
+from euphonic.readers import castep, phonopy
 
 
 class QpointPhononModes(object):
@@ -470,7 +471,6 @@ class QpointPhononModes(object):
         -------
         QpointPhononModes
         """
-        from euphonic.readers import castep
         data = castep._read_phonon_data(filename)
         return cls.from_dict(data)
 
@@ -502,7 +502,6 @@ class QpointPhononModes(object):
         -------
         QpointPhononModes
         """
-        from euphonic.readers import phonopy
         data = phonopy._read_phonon_data(
             path=path, phonon_name=phonon_name, phonon_format=phonon_format,
             summary_name=summary_name)

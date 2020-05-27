@@ -3,15 +3,21 @@ import warnings
 import numpy as np
 from euphonic import ureg
 from euphonic.util import get_all_origins
-try:
-    import yaml
-    import h5py
-except ImportError as e:
-    raise ImportError((
-        'Cannot import yaml, h5py to read Phonopy files, maybe they '
-        'are not installed. To install the optional dependencies for '
-        'Euphonic\'s Phonopy reader, try:\n\n'
-        'pip install euphonic[phonopy_reader]\n')) from e
+
+
+# h5py can't be called from Matlab, so import as late as possible to
+# minimise impact. Do the same with yaml for consistency
+class ImportPhonopyReaderError(ModuleNotFoundError):
+
+    def __init__(self):
+        self.message = (
+            '\n\nCannot import yaml, h5py to read Phonopy files, maybe '
+            'they are not installed. To install the optional '
+            'dependencies for Euphonic\'s Phonopy reader, try:\n\n'
+            'pip install euphonic[phonopy_reader]\n')
+
+    def __str__(self):
+        return self.message
 
 
 def _convert_weights(weights):
@@ -32,17 +38,16 @@ def _convert_weights(weights):
     return weights/total_weight
 
 
-def _extract_phonon_data_yaml(phonon_data):
+def _extract_phonon_data_yaml(filename):
     """
-    From a dictionary obtained from reading a mesh/band/qpoint.yaml
-    file, extract the relevant information as a dict of Numpy arrays.
-    No unit conversion is done at this point, so they are in the same
-    units as in the .yaml file
+    From a mesh/band/qpoint.yaml file, extract the relevant information
+    as a dict of Numpy arrays. No unit conversion is done at this point,
+    so they are in the same units as in the .yaml file
 
     Parameters
     ----------
-    phonon_data : dict
-        Obtained from reading a Phonopy mesh/band/qpoint.yaml file
+    filename : str
+        Path and name of the mesh/band/qpoint.yaml file
 
     Returns
     -------
@@ -54,6 +59,13 @@ def _extract_phonon_data_yaml(phonon_data):
             'eigenvectors', 'weights', 'cell_vectors', 'atom_r',
             'atom_mass', 'atom_type'
     """
+    try:
+        import yaml
+    except ModuleNotFoundError as e:
+        raise ImportPhonopyReaderError from e
+
+    with open(filename, 'r') as yaml_file:
+        phonon_data = yaml.safe_load(yaml_file)
 
     data_dict = {}
     phonons = [phon for phon in phonon_data['phonon']]
@@ -91,17 +103,16 @@ def _extract_phonon_data_yaml(phonon_data):
     return data_dict
 
 
-def _extract_phonon_data_hdf5(hdf5_file):
+def _extract_phonon_data_hdf5(filename):
     """
-    From a h5py.File obtained from reading a mesh/band/qpoint.hdf5 file,
-    extract the relevant information as a dict of Numpy arrays. No unit
-    conversion is done at this point, so they are in the same units as
-    in the .hdf5 file
+    From a mesh/band/qpoint.hdf5 file, extract the relevant information
+    as a dict of Numpy arrays. No unit conversion is done at this point,
+    so they are in the same units as in the .hdf5 file
 
     Parameters
     ----------
-    hdf5_file : h5py.File
-        Obtained from reading a Phonopy mesh/band/qpoint.hdf5 file
+    filename : str
+        Path and name of the mesh/band/qpoint.hdf5 file
 
     Returns
     -------
@@ -112,25 +123,31 @@ def _extract_phonon_data_hdf5(hdf5_file):
         .hdf5 file:
             'eigenvectors', 'weights'
     """
-    if 'qpoint' in hdf5_file.keys():
-        data_dict = {}
-        data_dict['qpts'] = hdf5_file['qpoint'][()]
-        data_dict['frequencies'] = hdf5_file['frequency'][()]
-        # Eigenvectors may not be present if users haven't set --eigvecs
-        # when running Phonopy
-        try:
-            data_dict['eigenvectors'] = hdf5_file['eigenvector'][()]
-        except KeyError:
-            pass
-        # Only mesh.hdf5 has weights
-        try:
-            data_dict['weights'] = hdf5_file['weight'][()]
-        except KeyError:
-            pass
-    # Is a band.hdf5 file - q-points are stored in 'path' and need
-    # special treatment
-    else:
-        data_dict = _extract_band_data_hdf5(hdf5_file)
+    try:
+        import h5py
+    except ModuleNotFoundError as e:
+        raise ImportPhonopyReaderError from e
+
+    with h5py.File(filename, 'r') as hdf5_file:
+        if 'qpoint' in hdf5_file.keys():
+            data_dict = {}
+            data_dict['qpts'] = hdf5_file['qpoint'][()]
+            data_dict['frequencies'] = hdf5_file['frequency'][()]
+            # Eigenvectors may not be present if users haven't set --eigvecs
+            # when running Phonopy
+            try:
+                data_dict['eigenvectors'] = hdf5_file['eigenvector'][()]
+            except KeyError:
+                pass
+            # Only mesh.hdf5 has weights
+            try:
+                data_dict['weights'] = hdf5_file['weight'][()]
+            except KeyError:
+                pass
+        # Is a band.hdf5 file - q-points are stored in 'path' and need
+        # special treatment
+        else:
+            data_dict = _extract_band_data_hdf5(hdf5_file)
 
     return data_dict
 
@@ -201,12 +218,9 @@ def _read_phonon_data(
                 f'Format of {phonon_name} couldn\'t be determined')
 
     if phonon_format in hdf5_exts:
-        with h5py.File(phonon_pathname, 'r') as hdf5_file:
-            phonon_dict = _extract_phonon_data_hdf5(hdf5_file)
+        phonon_dict = _extract_phonon_data_hdf5(phonon_pathname)
     elif phonon_format in yaml_exts:
-        with open(phonon_pathname, 'r') as yaml_file:
-            phonon_data = yaml.safe_load(yaml_file)
-        phonon_dict = _extract_phonon_data_yaml(phonon_data)
+        phonon_dict = _extract_phonon_data_yaml(phonon_pathname)
     else:
         raise Exception((f'File format {phonon_format} of {phonon_name}'
                          f' is not recognised'))
@@ -226,9 +240,7 @@ def _read_phonon_data(
     # Check if crystal structure has been read from phonon_file, if not
     # get structure from summary_file
     if len(crystal_keys & phonon_dict.keys()) != len(crystal_keys):
-        with open(summary_pathname, 'r') as summary_file:
-            summary_data = yaml.safe_load(summary_file)
-        summary_dict = _extract_summary(summary_data)
+        summary_dict = _extract_summary(summary_pathname)
         phonon_dict['cell_vectors'] = summary_dict['cell_vectors']
         phonon_dict['atom_r'] = summary_dict['atom_r']
         phonon_dict['atom_mass'] = summary_dict['atom_mass']
@@ -344,13 +356,19 @@ def _extract_force_constants(fc_file, n_atoms, n_cells, summary_name,
     return _reshape_fc(fc, n_atoms, n_cells, cell_origins_map)
 
 
-def _extract_force_constants_hdf5(fc_object, n_atoms, n_cells, summary_name,
+def _extract_force_constants_hdf5(filename, n_atoms, n_cells, summary_name,
                                   cell_origins_map=None):
-    fc = fc_object['force_constants'][:]
-    _check_fc_shape(fc.shape, n_atoms, n_cells, fc_object.filename,
-                    summary_name)
-    p2s_map = list(fc_object['p2s_map']) # 'primitive' to supercell indexing
-    physical_units = list(fc_object['physical_unit'])[0].decode('utf-8')
+    try:
+        import h5py
+    except ModuleNotFoundError as e:
+        raise ImportPhonopyReaderError from e
+
+    with h5py.File(filename, 'r') as fc_file:
+        fc = fc_file['force_constants'][:]
+        _check_fc_shape(fc.shape, n_atoms, n_cells, fc_file.filename,
+                        summary_name)
+        p2s_map = list(fc_file['p2s_map']) # 'primitive' to supercell indexing
+        physical_units = list(fc_file['physical_unit'])[0].decode('utf-8')
     if fc.shape[0] == fc.shape[1]: # FULL FC, convert down to COMPACT
         fc = fc[p2s_map, :, :, :]
     fc_unfolded = fc.reshape(n_atoms*n_atoms*n_cells, 3, 3)
@@ -491,15 +509,15 @@ def _extract_born(born_object):
     return born_dict
 
 
-def _extract_summary(summary_object, fc_extract=False):
+def _extract_summary(filename, fc_extract=False):
     """
     Read phonopy.yaml for summary data produced during the Phonopy
     post-process.
 
     Parameters
     ----------
-    summary_object : dict-like object
-        The Phonopy data object which contains phonon data.
+    filename : str
+        Path and name of the Phonopy summary file (usually phonopy.yaml)
     fc_extract : bool, optional, default False
         Whether to attempt to read force constants and related
         information from summary_object
@@ -512,6 +530,13 @@ def _extract_summary(summary_object, fc_extract=False):
         following keys: sc_matrix, n_cells_in_sc, cell_origins,
         cell_origins_map, force_constants, ufc, born, dielectric
     """
+    try:
+        import yaml
+    except ModuleNotFoundError as e:
+        raise ImportPhonopyReaderError from e
+
+    with open(filename, 'r') as summary_file:
+        summary_object = yaml.safe_load(summary_file)
 
     if 'primitive_matrix' in summary_object.keys():
         (cell_vectors, n_atoms, atom_r, atom_mass,
@@ -693,10 +718,7 @@ def _read_interpolation_data(path='.', summary_name='phonopy.yaml',
         present in phonopy.yaml
     """
     summary_pathname = os.path.join(path, summary_name)
-
-    with open(summary_pathname, 'r') as summary_file:
-        summary_data = yaml.safe_load(summary_file)
-        summary_dict = _extract_summary(summary_data, fc_extract=True)
+    summary_dict = _extract_summary(summary_pathname, fc_extract=True)
 
     # Only read force constants if it's not in summary file
     if not 'force_constants' in summary_dict:
@@ -716,11 +738,9 @@ def _read_interpolation_data(path='.', summary_name='phonopy.yaml',
                     fc_file, n_atoms, n_cells, summary_pathname,
                     summary_dict['cell_origins_map'])
         elif fc_format in 'hdf5':
-            with h5py.File(fc_pathname, 'r') as fc_file:
-                summary_dict[
-                    'force_constants'] =  _extract_force_constants_hdf5(
-                        fc_file, n_atoms, n_cells, summary_pathname,
-                        summary_dict['cell_origins_map'])
+            summary_dict['force_constants'] =  _extract_force_constants_hdf5(
+                fc_pathname, n_atoms, n_cells, summary_pathname,
+                summary_dict['cell_origins_map'])
         else:
             raise Exception((f'Force constants file format {fc_format} '
                              f'of {fc_name} is not recognised'))
