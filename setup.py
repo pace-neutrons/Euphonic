@@ -1,9 +1,9 @@
-from euphonic import __version__
-
+import versioneer
 try:
     from setuptools import setup, find_packages, Extension
 except ImportError:
     from distutils.core import setup, find_packages, Extension
+
 
 def run_setup(build_c=True):
 
@@ -57,7 +57,8 @@ def run_setup(build_c=True):
 
     setup(
         name='euphonic',
-        version=__version__,
+        version=versioneer.get_version(),
+        cmdclass=versioneer.get_cmdclass(),
         author='Rebecca Fair',
         author_email='rebecca.fair@stfc.ac.uk',
         description=(
@@ -81,6 +82,7 @@ def run_setup(build_c=True):
         scripts=scripts,
         ext_modules=ext_modules
     )
+
 
 try:
     run_setup()

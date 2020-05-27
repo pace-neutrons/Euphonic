@@ -1,4 +1,6 @@
-__version__ = '0.2.2'
+from ._version import get_versions
+__version__ = get_versions()['version']
+del get_versions
 
 try:
     # Create ureg here so it is only created once. However, this
@@ -27,3 +29,4 @@ try:
     from .force_constants import ForceConstants
 except ImportError:
     pass
+

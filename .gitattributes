@@ -1,0 +1,2 @@
+# Added by versioneer
+euphonic/_version.py export-subst
