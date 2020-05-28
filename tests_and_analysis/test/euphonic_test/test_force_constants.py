@@ -437,3 +437,54 @@ class TestObjectCreation:
         faulty_args, expected_exception = inject_faulty_elements
         with pytest.raises(expected_exception):
             ForceConstants(*faulty_args)
+
+    @pytest.fixture
+    def lzo_fc(self):
+        ExpectedData = namedtuple(
+            "ExpectedData", [
+                "fc_mat_cell0_i0_j0", "fc_mat_cell3_i10_j5", "fc_mat"
+            ]
+        )
+        fc_mat_cell0_i0_j0 = np.array(
+            [[1.26492555e-01, -2.31204635e-31, -1.16997352e-13],
+             [-2.31204635e-31, 1.26492555e-01, 3.15544362e-30],
+             [-1.16997352e-13, 1.05181454e-30, 1.26492555e-01]]
+        ) * ureg('hartree/bohr**2')
+        fc_mat_cell3_i10_j5 = np.array(
+            [[-8.32394989e-04, -2.03285211e-03, 3.55359333e-04],
+             [-2.22156212e-03, -6.29315975e-04, 1.21568713e-03],
+             [7.33617499e-05, 1.16282999e-03, 5.22410338e-05]]
+        ) * ureg('hartree/bohr**2')
+        path = os.path.join(get_data_path(), 'interpolation', 'LZO')
+        fc_mat = np.load(
+            os.path.join(path, 'lzo_fc_mat_no_asr.npy')
+        ) * ureg('hartree/bohr**2')
+        expected_data = ExpectedData(
+            fc_mat_cell0_i0_j0=fc_mat_cell0_i0_j0,
+            fc_mat_cell3_i10_j5=fc_mat_cell3_i10_j5,
+            fc_mat=fc_mat
+        )
+        filename = os.path.join(path, 'La2Zr2O7.castep_bin')
+        fc = ForceConstants.from_castep(filename)
+        return fc, expected_data
+
+    def test_fc_mat_cell0_i0_j0_read(self, lzo_fc):
+        fc, expected_data = lzo_fc
+        npt.assert_allclose(
+            fc.force_constants[0, 0:3, 0:3].magnitude,
+            expected_data.fc_mat_cell0_i0_j0.magnitude
+        )
+
+    def test_fc_mat_cell3_i10_j5_read(self, lzo_fc):
+        fc, expected_data = lzo_fc
+        npt.assert_allclose(
+            fc.force_constants[3, 30:33, 15:18].magnitude,
+            expected_data.fc_mat_cell3_i10_j5.magnitude
+        )
+
+    def test_fc_mat_read(self, lzo_fc):
+        fc, expected_data = lzo_fc
+        npt.assert_allclose(
+            fc.force_constants.magnitude,
+            expected_data.fc_mat.magnitude
+        )
