@@ -353,4 +353,87 @@ class TestObjectCreation:
         fc = ForceConstants(*args)
         check_force_constant_attrs(fc, expected_fc, **args._asdict())
 
+    faulty_elements = [
+        (
+            {
+                "sc_matrix": quartz_attrs().sc_matrix[:2]
+            },
+            ValueError
+        ),
+        (
+            {
+                "cell_origins": quartz_attrs().sc_matrix
+            },
+            ValueError
+        ),
+        (
+            {
+                "force_constants": quartz_attrs().force_constants[:2]
+            },
+            ValueError
+        ),
+        (
+            {
+                "born": quartz_attrs().born[:2]
+            },
+            ValueError
+        ),
+        (
+            {
+                "dielectric": quartz_attrs().dielectric[:2]
+            },
+            ValueError
+        ),
+        (
+            {
+                "sc_matrix": list(quartz_attrs().sc_matrix)
+            },
+            TypeError
+        ),
+        (
+            {
+                "cell_origins": quartz_attrs().sc_matrix * ureg.meter
+            },
+            TypeError
+        ),
+        (
+            {
+                "crystal": quartz_attrs().crystal.to_dict()
+            },
+            TypeError
+        ),
+        (
+            {
+                "force_constants": quartz_attrs().force_constants.magnitude
+            },
+            TypeError
+        ),
+        (
+            {
+                "born": list(quartz_attrs().born.magnitude)
+            },
+            TypeError
+        ),
+        (
+            {
+                "dielectric": quartz_attrs().dielectric.shape
+            },
+            TypeError
+        ),
+    ]
 
+    @pytest.fixture(params=faulty_elements)
+    def inject_faulty_elements(self, request):
+        faulty_args, expected_exception = request.param
+        test_data_dir = os.path.join(
+            get_data_path(), "interpolation", "quartz"
+        )
+        expected_fc = ExpectedForceConstants(test_data_dir)
+        # Inject the faulty value and get a tuple of constructor arguments
+        args = expected_fc.to_constructor_args(**faulty_args)
+        return args, expected_exception
+
+    def test_faulty_object_creation(self, inject_faulty_elements):
+        faulty_args, expected_exception = inject_faulty_elements
+        with pytest.raises(expected_exception):
+            ForceConstants(*faulty_args)
