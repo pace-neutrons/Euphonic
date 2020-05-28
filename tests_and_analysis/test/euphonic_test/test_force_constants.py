@@ -163,62 +163,129 @@ def check_force_constant_attrs(actual_force_constants, expected_force_constants,
                                born=None, born_unit=None,
                                dielectric=None, dielectric_unit=None,
                                n_cells_in_sc=None, force_constants_unit=None):
-    # Force constants
-    if force_constants is None:
-        force_constants = expected_force_constants.force_constants
+    check_fc_force_constants(
+        actual_force_constants, expected_force_constants,
+        force_constants, force_constants_unit
+    )
+    check_fc_sc_matrix(
+        actual_force_constants, expected_force_constants, sc_matrix
+    )
+    check_fc_cell_origins(
+        actual_force_constants, expected_force_constants, cell_origins
+    )
+    check_fc_born(
+        actual_force_constants, expected_force_constants,
+        born, born_unit
+    )
+    check_fc_dielectric(
+        actual_force_constants, expected_force_constants,
+        dielectric, dielectric_unit
+    )
+    check_fc_n_cells_in_sc(
+        actual_force_constants, expected_force_constants, n_cells_in_sc
+    )
+    check_fc_crystal(actual_force_constants, expected_force_constants, crystal)
+
+
+def check_fc_force_constants(actual_force_constants, expected_force_constants,
+                             overriding_force_constants=None,
+                             overriding_force_constants_unit=None):
+    # Allow override of expected force constants
+    force_constants = overriding_force_constants if \
+        overriding_force_constants is not None \
+        else expected_force_constants.force_constants
+    # Test values are sufficiently close
     npt.assert_allclose(
         actual_force_constants.force_constants.magnitude,
         force_constants.magnitude
     )
-    if force_constants_unit is None:
-        force_constants_unit = expected_force_constants.force_constants.units
+    # Allow override of units
+    force_constants_unit = overriding_force_constants_unit if \
+        overriding_force_constants_unit is not None \
+        else expected_force_constants.force_constants.units
+    # Test unit matches
     assert actual_force_constants.force_constants_unit == force_constants_unit
-    # sc matrix
-    if sc_matrix is None:
-        sc_matrix = expected_force_constants.sc_matrix
+
+
+def check_fc_sc_matrix(actual_force_constants, expected_force_constants,
+                       overriding_sc_matrix=None):
+    # Allow override
+    sc_matrix = overriding_sc_matrix if overriding_sc_matrix is not None \
+        else expected_force_constants.sc_matrix
+    # Test values are sufficiently close
     npt.assert_allclose(actual_force_constants.sc_matrix, sc_matrix)
-    # Cell origins
-    if cell_origins is None:
-        cell_origins = expected_force_constants.cell_origins
+
+
+def check_fc_cell_origins(actual_force_constants, expected_force_constants,
+                          overriding_cell_origins=None):
+    # Allow override
+    cell_origins = overriding_cell_origins if \
+        overriding_cell_origins is not None \
+        else expected_force_constants.cell_origins
+    # Test values are sufficiently close
     npt.assert_allclose(actual_force_constants.cell_origins, cell_origins)
-    # Born
-    if born is None:
-        born = expected_force_constants.born
+
+
+def check_fc_crystal(actual_force_constants, expected_force_constants,
+                     overriding_crystal=None):
+    # Allow override
+    crystal = overriding_crystal if overriding_crystal is not None \
+        else expected_force_constants.crystal
+    # Defer testing of Crystal
+    check_crystal_attrs(
+        actual_force_constants.crystal, crystal
+    )
+
+
+def check_fc_n_cells_in_sc(actual_force_constants, expected_force_constants,
+                           overriding_n_cells_in_sc=None):
+    # Allow override
+    n_cells_in_sc = overriding_n_cells_in_sc if \
+        overriding_n_cells_in_sc is not None \
+        else expected_force_constants.n_cells_in_sc
+    # Test
+    assert actual_force_constants.n_cells_in_sc == n_cells_in_sc
+
+
+def check_fc_dielectric(actual_force_constants, expected_force_constants,
+                        overriding_dielectric=None,
+                        overriding_dielectric_unit=None):
+    # Allow override
+    dielectric = overriding_dielectric if overriding_dielectric is not None \
+        else expected_force_constants.dielectric
+    # dielectric is optional, detect if option has data in
+    if actual_force_constants.dielectric is not None:
+        npt.assert_allclose(
+            actual_force_constants.dielectric.magnitude, dielectric.magnitude
+        )
+        # Allow override
+        dielectric_unit = overriding_dielectric_unit if \
+            overriding_dielectric_unit is not None \
+            else expected_force_constants.dielectric.units
+        assert actual_force_constants.dielectric_unit == dielectric_unit
+    else:
+        # Assert that dielectric also is none in expected
+        assert dielectric is None
+
+
+def check_fc_born(actual_force_constants, expected_force_constants,
+                  overriding_born=None, overriding_born_unit=None):
+    # Allow override
+    born = overriding_born if overriding_born is not None \
+        else expected_force_constants.born
+    # born is optional, detect if option has data in
     if actual_force_constants.born is not None:
         npt.assert_allclose(
             actual_force_constants.born.magnitude,
             born.magnitude
         )
-        if born_unit is None:
-            born_unit = born.units
-            print(born_unit)
-        else:
-            print("Is not none: " + str(born_unit))
+        # Allow override
+        born_unit = overriding_born_unit if overriding_born_unit is not None \
+            else born.units
         assert actual_force_constants.born_unit == born_unit
     else:
+        # Actual is none, check expected is the same
         assert born is None
-    # Dielectric
-    if dielectric is None:
-        dielectric = expected_force_constants.dielectric
-    if actual_force_constants.dielectric is not None:
-        npt.assert_allclose(
-            actual_force_constants.dielectric.magnitude, dielectric.magnitude
-        )
-        if dielectric_unit is None:
-            dielectric_unit = expected_force_constants.dielectric.units
-        assert actual_force_constants.dielectric_unit == dielectric_unit
-    else:
-        assert dielectric is None
-    # n_cells_in_sc
-    if n_cells_in_sc is None:
-        n_cells_in_sc = expected_force_constants.n_cells_in_sc
-    assert actual_force_constants.n_cells_in_sc == n_cells_in_sc
-    # Crystal
-    if crystal is None:
-        crystal = expected_force_constants.crystal
-    check_crystal_attrs(
-        actual_force_constants.crystal, crystal
-    )
 
 
 def quartz_attrs():
