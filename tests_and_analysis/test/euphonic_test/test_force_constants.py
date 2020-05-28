@@ -9,6 +9,17 @@ from tests_and_analysis.test.euphonic_test.test_crystal import (
     check_crystal_attrs
 )
 from slugify import slugify
+from collections import namedtuple
+from euphonic import ureg
+from contextlib import contextmanager
+
+ConstructorArgs = namedtuple(
+    "ConstructorArgs",
+    [
+        "crystal", "force_constants", "sc_matrix",
+        "cell_origins","born", "dielectric"
+    ]
+)
 
 
 class ExpectedForceConstants:
@@ -27,6 +38,48 @@ class ExpectedForceConstants:
         """
         self.dirpath = dirpath
         self.with_material = with_material
+        # Set up force constants
+        self._force_constants_unit = json.load(
+            open(self._get_file_from_dir_and_property("properties", "json"))
+        )["force_constants_unit"]
+        self._force_constants_mag = np.load(
+            self._get_file_from_dir_and_property("force_constants", "npy"),
+            allow_pickle=True
+        )
+        # Set up born
+        self._born_unit = json.load(
+            open(self._get_file_from_dir_and_property("properties", "json"))
+        )["born_unit"]
+        self._born_mag = np.load(
+            self._get_file_from_dir_and_property("born", "npy"),
+            allow_pickle=True
+        )
+        # Set up dielectric
+        self._dielectric_unit = json.load(
+            open(self._get_file_from_dir_and_property("properties", "json"))
+        )["dielectric_unit"]
+        self._dielectric_mag = np.load(
+            self._get_file_from_dir_and_property("dielectric", "npy"),
+            allow_pickle=True
+        )
+        # Set up sc_matrix
+        self.sc_matrix = np.load(
+            self._get_file_from_dir_and_property("sc_matrix", "npy"),
+            allow_pickle=True
+        )
+        # Set up cell origins
+        self.cell_origins = np.load(
+            self._get_file_from_dir_and_property("cell_origins", "npy"),
+            allow_pickle=True
+        )
+        # Set up crystal
+        self.crystal = Crystal.from_json_file(
+            self._get_file_from_dir_and_property("crystal", "json")
+        )
+        # Set up n_cells_in_sc
+        self.n_cells_in_sc = json.load(
+            open(self._get_file_from_dir_and_property("properties", "json"))
+        )["n_cells_in_sc"]
 
     def _get_file_from_dir_and_property(self, property_name: str,
                                         extension: str) -> str:
@@ -47,125 +100,140 @@ class ExpectedForceConstants:
             raise FileNotFoundError("Could not find " + filepath)
 
     @property
-    def force_constants(self):
-        return np.load(
-            self._get_file_from_dir_and_property("force_constants", "npy"),
-            allow_pickle=True
-        )
-
-    @property
-    def sc_matrix(self):
-        return np.load(
-            self._get_file_from_dir_and_property("sc_matrix", "npy"),
-            allow_pickle=True
-        )
-
-    @property
-    def cell_origins(self):
-        return np.load(
-            self._get_file_from_dir_and_property("cell_origins", "npy"),
-            allow_pickle=True
-        )
-
-    @property
     def born(self):
-        return np.load(
-            self._get_file_from_dir_and_property("born", "npy"),
-            allow_pickle=True
-        )
+        if self._born_mag.shape != ():
+            return self._born_mag * ureg(self._born_unit)
+        else:
+            return None
+
+    @property
+    def force_constants(self):
+        if self._force_constants_mag.shape != ():
+            return self._force_constants_mag * ureg(self._force_constants_unit)
+        else:
+            return None
 
     @property
     def dielectric(self):
-        return np.load(
-            self._get_file_from_dir_and_property("dielectric", "npy"),
-            allow_pickle=True
-        )
-
-    @property
-    def crystal(self):
-        return Crystal.from_json_file(
-            self._get_file_from_dir_and_property("crystal", "json")
-        )
-
-    @property
-    def n_cells_in_sc(self):
-        return json.load(
-            open(self._get_file_from_dir_and_property("properties", "json"))
-        )["n_cells_in_sc"]
-
-    @property
-    def force_constants_unit(self):
-        return json.load(
-            open(self._get_file_from_dir_and_property("properties", "json"))
-        )["force_constants_unit"]
-
-    @property
-    def born_unit(self):
-        return json.load(
-            open(self._get_file_from_dir_and_property("properties", "json"))
-        )["born_unit"]
-
-    @property
-    def dielectric_unit(self):
-        return json.load(
-            open(self._get_file_from_dir_and_property("properties", "json"))
-        )["dielectric_unit"]
+        if self._dielectric_mag.shape != ():
+            return self._dielectric_mag * ureg(self._dielectric_unit)
+        else:
+            return None
 
     def to_dict(self):
         d = {
             'crystal': self.crystal.to_dict(),
-            'force_constants': self.force_constants,
-            'force_constants_unit': self.force_constants_unit,
+            'force_constants': self.force_constants.magnitude,
+            'force_constants_unit': str(self.force_constants.units),
             'n_cells_in_sc': self.n_cells_in_sc,
             'sc_matrix': self.sc_matrix,
             'cell_origins': self.cell_origins,
         }
-        if self.born.shape != ():
-            d["born"] = self.born
-            d["born_unit"] = self.born_unit
-        if self.dielectric.shape != ():
-            d["dielectric"] = self.dielectric
-            d["dielectric_unit"] = self.dielectric_unit
+        if self.born is not None:
+            d["born"] = self.born.magnitude
+            d["born_unit"] = str(self.born.units)
+        if self.dielectric is not None:
+            d["dielectric"] = self.dielectric.magnitude
+            d["dielectric_unit"] = str(self.dielectric.units)
         return d
 
+    def to_constructor_args(self, crystal=None, force_constants=None,
+                            sc_matrix=None, cell_origins=None,
+                            born=None, dielectric=None):
+        if crystal is None:
+            crystal = self.crystal
+        if force_constants is None:
+            force_constants = self.force_constants
+        if sc_matrix is None:
+            sc_matrix = self.sc_matrix
+        if cell_origins is None:
+            cell_origins = self.cell_origins
+        if born is None:
+            born = self.born
+        if dielectric is None:
+            dielectric = self.dielectric
+        return ConstructorArgs(
+            crystal, force_constants, sc_matrix, cell_origins, born, dielectric
+        )
 
-def check_force_constant_attrs(force_constants, expected_force_constants):
+
+def check_force_constant_attrs(actual_force_constants, expected_force_constants,
+                               crystal=None, force_constants=None,
+                               sc_matrix=None, cell_origins=None,
+                               born=None, born_unit=None,
+                               dielectric=None, dielectric_unit=None,
+                               n_cells_in_sc=None, force_constants_unit=None):
+    # Force constants
+    if force_constants is None:
+        force_constants = expected_force_constants.force_constants
     npt.assert_allclose(
-        force_constants.force_constants.magnitude,
-        expected_force_constants.force_constants
+        actual_force_constants.force_constants.magnitude,
+        force_constants.magnitude
     )
-    npt.assert_allclose(
-        force_constants.sc_matrix,
-        expected_force_constants.sc_matrix
-    )
-    npt.assert_allclose(
-        force_constants.cell_origins,
-        expected_force_constants.cell_origins
-    )
-    if force_constants.born is not None:
+    if force_constants_unit is None:
+        force_constants_unit = expected_force_constants.force_constants.units
+    assert actual_force_constants.force_constants_unit == force_constants_unit
+    # sc matrix
+    if sc_matrix is None:
+        sc_matrix = expected_force_constants.sc_matrix
+    npt.assert_allclose(actual_force_constants.sc_matrix, sc_matrix)
+    # Cell origins
+    if cell_origins is None:
+        cell_origins = expected_force_constants.cell_origins
+    npt.assert_allclose(actual_force_constants.cell_origins, cell_origins)
+    # Born
+    if born is None:
+        born = expected_force_constants.born
+    if actual_force_constants.born is not None:
         npt.assert_allclose(
-            force_constants.born.magnitude,
-            expected_force_constants.born
+            actual_force_constants.born.magnitude,
+            born.magnitude
         )
+        if born_unit is None:
+            born_unit = born.units
+            print(born_unit)
+        else:
+            print("Is not none: " + str(born_unit))
+        assert actual_force_constants.born_unit == born_unit
     else:
-        assert expected_force_constants.born.item() is None
-    if force_constants.dielectric is not None:
+        assert born is None
+    # Dielectric
+    if dielectric is None:
+        dielectric = expected_force_constants.dielectric
+    if actual_force_constants.dielectric is not None:
         npt.assert_allclose(
-            force_constants.dielectric.magnitude,
-            expected_force_constants.dielectric
+            actual_force_constants.dielectric.magnitude, dielectric.magnitude
         )
+        if dielectric_unit is None:
+            dielectric_unit = expected_force_constants.dielectric.units
+        assert actual_force_constants.dielectric_unit == dielectric_unit
     else:
-        assert expected_force_constants.dielectric.item() is None
-    assert force_constants.n_cells_in_sc == \
-        expected_force_constants.n_cells_in_sc
-    assert force_constants.force_constants_unit == \
-        expected_force_constants.force_constants_unit
-    assert force_constants.born_unit == expected_force_constants.born_unit
-    assert force_constants.dielectric_unit == \
-        expected_force_constants.dielectric_unit
+        assert dielectric is None
+    # n_cells_in_sc
+    if n_cells_in_sc is None:
+        n_cells_in_sc = expected_force_constants.n_cells_in_sc
+    assert actual_force_constants.n_cells_in_sc == n_cells_in_sc
+    # Crystal
+    if crystal is None:
+        crystal = expected_force_constants.crystal
     check_crystal_attrs(
-        force_constants.crystal, expected_force_constants.crystal
+        actual_force_constants.crystal, crystal
     )
+
+
+def quartz_attrs():
+    test_data_dir = os.path.join(
+        get_data_path(), "interpolation", "quartz"
+    )
+    return ExpectedForceConstants(test_data_dir)
+
+
+@contextmanager
+def no_exception():
+    try:
+        yield
+    except Exception as e:
+        raise pytest.fail("Exception raised: " + str(e))
 
 
 @pytest.mark.unit
@@ -207,7 +275,6 @@ class TestObjectCreation:
             get_data_path(), 'interpolation', json_dir
         )
         expected_fc = ExpectedForceConstants(dirpath)
-        print(expected_fc.to_dict())
         fc = ForceConstants.from_dict(expected_fc.to_dict())
         check_force_constant_attrs(fc, expected_fc)
 
@@ -242,7 +309,7 @@ class TestObjectCreation:
         }
     ])
     def test_creation_from_phonopy(self, phonopy_args):
-        dir = slugify(
+        test_data_dir = slugify(
             "-".join(phonopy_args.keys()) + "-"
             + "-".join(phonopy_args.values())
         )
@@ -250,7 +317,40 @@ class TestObjectCreation:
             get_data_path(), 'phonopy_data', 'NaCl', 'interpolation'
         )
         fc = ForceConstants.from_phonopy(**phonopy_args)
-        expected_dirpath = os.path.join(phonopy_args["path"], dir)
+        expected_dirpath = os.path.join(phonopy_args["path"], test_data_dir)
         check_force_constant_attrs(
             fc, ExpectedForceConstants(expected_dirpath, with_material=False)
         )
+
+    correct_elements = [
+        (
+            {
+                "born": quartz_attrs().to_constructor_args().born,
+                "dielectric": None
+            }
+        ),
+        (
+            {
+                "born": None,
+                "dielectric": quartz_attrs().to_constructor_args().dielectric
+            }
+        )
+    ]
+
+    @pytest.fixture(params=correct_elements)
+    def inject_elements(self, request):
+        injected_args = request.param
+        test_data_dir = os.path.join(
+            get_data_path(), "interpolation", "quartz"
+        )
+        expected_fc = ExpectedForceConstants(test_data_dir)
+        # Inject the faulty value and get a tuple of constructor arguments
+        args = expected_fc.to_constructor_args(**injected_args)
+        return args, expected_fc
+
+    def test_correct_object_creation(self, inject_elements):
+        args, expected_fc = inject_elements
+        fc = ForceConstants(*args)
+        check_force_constant_attrs(fc, expected_fc, **args._asdict())
+
+
