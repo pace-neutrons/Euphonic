@@ -21,6 +21,10 @@ ConstructorArgs = namedtuple(
     ]
 )
 
+ExpectedData = namedtuple(
+    "ExpectedData", ["fc_mat_cell0_i0_j0", "fc_mat_celln"]
+)
+
 
 class ExpectedForceConstants:
 
@@ -505,40 +509,71 @@ class TestObjectCreation:
         with pytest.raises(expected_exception):
             ForceConstants(*faulty_args)
 
-    @pytest.fixture
-    def lzo_fc(self):
-        ExpectedData = namedtuple(
-            "ExpectedData", ["fc_mat_cell0_i0_j0", "fc_mat_cell3_i10_j5"]
+    @pytest.fixture(params=[
+        (
+            'LZO', 'La2Zr2O7.castep_bin',
+            np.array([
+                [1.26492555e-01, -2.31204635e-31, -1.16997352e-13],
+                [-2.31204635e-31, 1.26492555e-01, 3.15544362e-30],
+                [-1.16997352e-13, 1.05181454e-30, 1.26492555e-01]
+            ]) * ureg('hartree/bohr**2'),
+            [3, 30, 33, 15, 18],
+            np.array([
+                [-8.32394989e-04, -2.03285211e-03, 3.55359333e-04],
+                [-2.22156212e-03, -6.29315975e-04, 1.21568713e-03],
+                [7.33617499e-05, 1.16282999e-03, 5.22410338e-05]
+            ]) * ureg('hartree/bohr**2')
+        ),
+        (
+            'graphite', 'graphite.castep_bin',
+            np.array([
+                [6.35111387e-01, 2.76471554e-18, 0.00000000e+00],
+                [2.05998413e-18, 6.35111387e-01, 0.00000000e+00],
+                [0.00000000e+00, 0.00000000e+00, 1.52513691e-01]
+            ]) * ureg('hartree/bohr**2'),
+            [10, 6, 9, 9, 12],
+            np.array([
+                [-8.16784177e-05, -1.31832252e-05, -1.11904290e-05],
+                [-1.31832252e-05, 5.42461675e-05, 3.73913780e-06],
+                [-1.11904290e-05, 3.73913780e-06, -2.99013850e-05]
+            ]) * ureg('hartree/bohr**2')
+        ),
+        (
+            'quartz', 'quartz.castep_bin',
+            np.array([
+                [0.22324308, 0.29855096, 0.31240272],
+                [0.29855096, 0.43968813, 0.34437270],
+                [0.31240272, 0.34437270, 0.33448280]
+            ]) * ureg('hartree/bohr**2'),
+            [4, 6, 9, 21, 24],
+            np.array([
+                [6.37874988e-05, -2.73116279e-04, -1.73624413e-04],
+                [1.99404810e-08, 4.40511248e-04, 2.33322837e-04],
+                [-1.85830030e-05, -9.05395392e-05, 2.17526152e-05]
+            ]) * ureg('hartree/bohr**2')
         )
-        fc_mat_cell0_i0_j0 = np.array(
-            [[1.26492555e-01, -2.31204635e-31, -1.16997352e-13],
-             [-2.31204635e-31, 1.26492555e-01, 3.15544362e-30],
-             [-1.16997352e-13, 1.05181454e-30, 1.26492555e-01]]
-        ) * ureg('hartree/bohr**2')
-        fc_mat_cell3_i10_j5 = np.array(
-            [[-8.32394989e-04, -2.03285211e-03, 3.55359333e-04],
-             [-2.22156212e-03, -6.29315975e-04, 1.21568713e-03],
-             [7.33617499e-05, 1.16282999e-03, 5.22410338e-05]]
-        ) * ureg('hartree/bohr**2')
-        path = os.path.join(get_data_path(), 'interpolation', 'LZO')
+    ])
+    def fc_mat(self, request):
+        directory, filename, fc_mat_cell0_i0_j0, celln, fc_mat_celln = \
+            request.param
+        path = os.path.join(get_data_path(), 'interpolation', directory)
         expected_data = ExpectedData(
             fc_mat_cell0_i0_j0=fc_mat_cell0_i0_j0,
-            fc_mat_cell3_i10_j5=fc_mat_cell3_i10_j5
+            fc_mat_celln=fc_mat_celln
         )
-        filename = os.path.join(path, 'La2Zr2O7.castep_bin')
-        fc = ForceConstants.from_castep(filename)
-        return fc, expected_data
+        filepath = os.path.join(path, filename)
+        fc = ForceConstants.from_castep(filepath)
+        return fc, celln, expected_data
 
-    def test_fc_mat_cell0_i0_j0_read(self, lzo_fc):
-        fc, expected_data = lzo_fc
+    def test_fc_mat_cells(self, fc_mat):
+        fc, celln, expected_data = fc_mat
         npt.assert_allclose(
             fc.force_constants[0, 0:3, 0:3].magnitude,
             expected_data.fc_mat_cell0_i0_j0.magnitude
         )
-
-    def test_fc_mat_cell3_i10_j5_read(self, lzo_fc):
-        fc, expected_data = lzo_fc
         npt.assert_allclose(
-            fc.force_constants[3, 30:33, 15:18].magnitude,
-            expected_data.fc_mat_cell3_i10_j5.magnitude
+            fc.force_constants[
+                celln[0], celln[1]:celln[2], celln[3]:celln[4]
+            ].magnitude,
+            expected_data.fc_mat_celln.magnitude
         )
