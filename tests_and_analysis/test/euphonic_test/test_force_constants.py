@@ -441,9 +441,7 @@ class TestObjectCreation:
     @pytest.fixture
     def lzo_fc(self):
         ExpectedData = namedtuple(
-            "ExpectedData", [
-                "fc_mat_cell0_i0_j0", "fc_mat_cell3_i10_j5", "fc_mat"
-            ]
+            "ExpectedData", ["fc_mat_cell0_i0_j0", "fc_mat_cell3_i10_j5"]
         )
         fc_mat_cell0_i0_j0 = np.array(
             [[1.26492555e-01, -2.31204635e-31, -1.16997352e-13],
@@ -456,13 +454,9 @@ class TestObjectCreation:
              [7.33617499e-05, 1.16282999e-03, 5.22410338e-05]]
         ) * ureg('hartree/bohr**2')
         path = os.path.join(get_data_path(), 'interpolation', 'LZO')
-        fc_mat = np.load(
-            os.path.join(path, 'lzo_fc_mat_no_asr.npy')
-        ) * ureg('hartree/bohr**2')
         expected_data = ExpectedData(
             fc_mat_cell0_i0_j0=fc_mat_cell0_i0_j0,
-            fc_mat_cell3_i10_j5=fc_mat_cell3_i10_j5,
-            fc_mat=fc_mat
+            fc_mat_cell3_i10_j5=fc_mat_cell3_i10_j5
         )
         filename = os.path.join(path, 'La2Zr2O7.castep_bin')
         fc = ForceConstants.from_castep(filename)
@@ -480,11 +474,4 @@ class TestObjectCreation:
         npt.assert_allclose(
             fc.force_constants[3, 30:33, 15:18].magnitude,
             expected_data.fc_mat_cell3_i10_j5.magnitude
-        )
-
-    def test_fc_mat_read(self, lzo_fc):
-        fc, expected_data = lzo_fc
-        npt.assert_allclose(
-            fc.force_constants.magnitude,
-            expected_data.fc_mat.magnitude
         )
