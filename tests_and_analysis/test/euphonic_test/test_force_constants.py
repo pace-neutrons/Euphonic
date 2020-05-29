@@ -577,3 +577,65 @@ class TestObjectCreation:
             ].magnitude,
             expected_data.fc_mat_celln.magnitude
         )
+
+
+@pytest.mark.unit
+class TestInterpolatePhonons:
+
+    path = os.path.join(get_data_path(), 'interpolation', 'LZO')
+    unique_sc_i = np.loadtxt(
+        os.path.join(path, 'lzo_unique_sc_i.txt'), dtype=np.int32
+    )
+    unique_cell_i = np.loadtxt(
+        os.path.join(path, 'lzo_unique_cell_i.txt'), dtype=np.int32
+    )
+    unique_sc_offsets = [[] for _ in range(3)]
+    unique_cell_origins = [[] for _ in range(3)]
+
+    @pytest.fixture
+    def calculate_phases(self):
+        filename = os.path.join(self.path, 'La2Zr2O7.castep_bin')
+        with open(os.path.join(self.path, 'lzo_unique_sc_offsets.txt')) as f:
+            for i in range(3):
+                self.unique_sc_offsets[i] = [int(x)
+                                             for x in f.readline().split()]
+        with open(os.path.join(self.path, 'lzo_unique_cell_origins.txt')) as f:
+            for i in range(3):
+                self.unique_cell_origins[i] = [int(x)
+                                               for x in f.readline().split()]
+        return ForceConstants.from_castep(filename)
+
+    @pytest.mark.parametrize(
+        ("qpt", "expected_sc_phases", "expected_cell_phases"),
+        [
+            (
+                np.array([-1, 9.35, 3.35]),
+                np.loadtxt(
+                    os.path.join(path, 'lzo_sc_phases.txt'),
+                    dtype=np.complex128
+                ),
+                np.loadtxt(
+                    os.path.join(path, 'lzo_cell_phases.txt'),
+                    dtype=np.complex128
+                )
+            ),
+            (
+                np.array([0.0, 0.0, 0.0]),
+                np.full(
+                    len(unique_sc_i), 1.0 + 0.0 * 1j, dtype=np.complex128
+                ),
+                np.full(
+                    len(unique_cell_i), 1.0 + 0.0 * 1j, dtype=np.complex128
+                )
+            )
+        ]
+    )
+    def test_calculate_phases(self, calculate_phases, qpt,
+                              expected_sc_phases, expected_cell_phases):
+        fc = calculate_phases
+        sc_phases, cell_phases = fc._calculate_phases(
+            qpt, self.unique_sc_offsets, self.unique_sc_i,
+            self.unique_cell_origins, self.unique_cell_i
+        )
+        npt.assert_allclose(sc_phases, expected_sc_phases)
+        npt.assert_allclose(cell_phases, expected_cell_phases)
