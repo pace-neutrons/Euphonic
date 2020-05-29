@@ -309,27 +309,32 @@ def _get_qpt_label(qpt, point_labels):
     return label
 
 
-def _bose_factor(x, T):
+def _bose_factor(freqs, T, kB=None):
     """
     Calculate the Bose factor
 
     Parameters
     ----------
-    x : (n_qpts, 3*n_ions) float ndarray
-        Phonon frequencies in Hartree
+    freqs : (n_qpts, 3*n_ions) float ndarray
+        Phonon frequencies
     T : float
         Temperature in K
+    kB : float, default None
+        Boltzmann constant in units that agree with provided
+        frequencies/temperature. If not provided it is assumed
+        frequencies are in Hartree and temperature in K
 
     Returns
     -------
     bose : (n_qpts, 3*n_ions) float ndarray
         Bose factor
     """
-    kB = (1*ureg.k).to('E_h/K').magnitude
-    bose = np.zeros(x.shape)
-    bose[x > 0] = 1
+    if kB is None:
+        kB = (1*ureg.k).to('E_h/K').magnitude
+    bose = np.zeros(freqs.shape)
+    bose[freqs > 0] = 1
     if T > 0:
-        bose = bose + 1/(np.exp(np.absolute(x)/(kB*T)) - 1)
+        bose = bose + 1/(np.exp(np.absolute(freqs)/(kB*T)) - 1)
     return bose
 
 
