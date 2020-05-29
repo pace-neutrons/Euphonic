@@ -582,57 +582,101 @@ class TestObjectCreation:
 @pytest.mark.unit
 class TestInterpolatePhonons:
 
-    path = os.path.join(get_data_path(), 'interpolation', 'LZO')
-    unique_sc_i = np.loadtxt(
-        os.path.join(path, 'lzo_unique_sc_i.txt'), dtype=np.int32
-    )
-    unique_cell_i = np.loadtxt(
-        os.path.join(path, 'lzo_unique_cell_i.txt'), dtype=np.int32
-    )
+    path = os.path.join(get_data_path(), 'interpolation')
     unique_sc_offsets = [[] for _ in range(3)]
     unique_cell_origins = [[] for _ in range(3)]
 
-    @pytest.fixture
-    def calculate_phases(self):
-        filename = os.path.join(self.path, 'La2Zr2O7.castep_bin')
-        with open(os.path.join(self.path, 'lzo_unique_sc_offsets.txt')) as f:
+    graphite_unique_sc_i = np.loadtxt(os.path.join(
+        path, 'graphite', 'graphite_unique_sc_i.txt'), dtype=np.int32)
+    graphite_unique_cell_i = np.loadtxt(os.path.join(
+        path, 'graphite', 'graphite_unique_cell_i.txt'), dtype=np.int32)
+    lzo_unique_sc_i = np.loadtxt(os.path.join(
+        path, 'LZO', 'lzo_unique_sc_i.txt'), dtype=np.int32)
+    lzo_unique_cell_i = np.loadtxt(os.path.join(
+        path, 'LZO', 'lzo_unique_cell_i.txt'), dtype=np.int32)
+
+    @pytest.fixture(params=[
+        (
+            'LZO', 'La2Zr2O7.castep_bin',
+            np.array([-1, 9.35, 3.35]),
+            np.loadtxt(
+                os.path.join(path, 'LZO', 'lzo_sc_phases.txt'),
+                dtype=np.complex128
+            ),
+            np.loadtxt(
+                os.path.join(path, 'LZO', 'lzo_cell_phases.txt'),
+                dtype=np.complex128
+            )
+        ),
+        (
+            'LZO', 'La2Zr2O7.castep_bin',
+            np.array([0.0, 0.0, 0.0]),  # At gamma point
+            np.full(
+                len(lzo_unique_sc_i), 1.0 + 0.0 * 1j, dtype=np.complex128
+            ),
+            np.full(
+                len(lzo_unique_cell_i), 1.0 + 0.0 * 1j, dtype=np.complex128
+            )
+        ),
+        (
+            'graphite', 'graphite.castep_bin',
+            np.array([0.001949, 0.001949, 0.0]),
+            np.loadtxt(os.path.join(
+                path, 'graphite', 'graphite_sc_phases.txt'
+            ), dtype=np.complex128),
+            np.loadtxt(os.path.join(
+                path, 'graphite', 'graphite_cell_phases.txt'
+            ), dtype=np.complex128)
+        ),
+        (
+            'graphite', 'graphite.castep_bin',
+            np.array([0.0, 0.0, 0.0]),  # At gamma point
+            np.full(
+                len(graphite_unique_sc_i), 1.0 + 0.0 * 1j, dtype=np.complex128
+            ),
+            np.full(
+                len(graphite_unique_cell_i), 1.0 + 0.0 * 1j, dtype=np.complex128
+            )
+        )
+    ])
+    def calculate_phases(self, request):
+        material_name, castep_bin_file, qpt, expected_sc_phases, \
+            expected_cell_phases = request.param
+        lower_material = material_name.lower()
+        filename = os.path.join(self.path, material_name, castep_bin_file)
+        self.unique_sc_i = np.loadtxt(
+            os.path.join(
+                self.path, material_name,
+                '{}_unique_sc_i.txt'.format(lower_material)
+            ), dtype=np.int32
+        )
+        self.unique_cell_i = np.loadtxt(
+            os.path.join(
+                self.path, material_name,
+                '{}_unique_cell_i.txt'.format(lower_material)
+            ), dtype=np.int32
+        )
+        unique_offsets_filepath = os.path.join(
+            self.path, material_name,
+            '{}_unique_sc_offsets.txt'.format(lower_material)
+        )
+        with open(unique_offsets_filepath) as f:
             for i in range(3):
                 self.unique_sc_offsets[i] = [int(x)
                                              for x in f.readline().split()]
-        with open(os.path.join(self.path, 'lzo_unique_cell_origins.txt')) as f:
+        unique_cell_origins_filepath = os.path.join(
+            self.path, material_name,
+            '{}_unique_cell_origins.txt'.format(lower_material)
+        )
+        with open(unique_cell_origins_filepath) as f:
             for i in range(3):
                 self.unique_cell_origins[i] = [int(x)
                                                for x in f.readline().split()]
-        return ForceConstants.from_castep(filename)
+        return ForceConstants.from_castep(filename), qpt,\
+            expected_sc_phases, expected_cell_phases
 
-    @pytest.mark.parametrize(
-        ("qpt", "expected_sc_phases", "expected_cell_phases"),
-        [
-            (
-                np.array([-1, 9.35, 3.35]),
-                np.loadtxt(
-                    os.path.join(path, 'lzo_sc_phases.txt'),
-                    dtype=np.complex128
-                ),
-                np.loadtxt(
-                    os.path.join(path, 'lzo_cell_phases.txt'),
-                    dtype=np.complex128
-                )
-            ),
-            (
-                np.array([0.0, 0.0, 0.0]),
-                np.full(
-                    len(unique_sc_i), 1.0 + 0.0 * 1j, dtype=np.complex128
-                ),
-                np.full(
-                    len(unique_cell_i), 1.0 + 0.0 * 1j, dtype=np.complex128
-                )
-            )
-        ]
-    )
-    def test_calculate_phases(self, calculate_phases, qpt,
-                              expected_sc_phases, expected_cell_phases):
-        fc = calculate_phases
+    def test_calculate_phases(self, calculate_phases):
+        fc, qpt, expected_sc_phases, expected_cell_phases = calculate_phases
         sc_phases, cell_phases = fc._calculate_phases(
             qpt, self.unique_sc_offsets, self.unique_sc_i,
             self.unique_cell_origins, self.unique_cell_i
