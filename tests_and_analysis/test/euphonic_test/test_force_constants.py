@@ -686,6 +686,8 @@ class TestInterpolatePhonons:
 
     # Supercell image calculation limit - 2 supercells in each direction
     lim = 2
+    n_atoms = 4
+    n_cells_in_sc = 98
 
     def get_ijn_from_image_data(self, image_data):
         i = image_data[:, 0].astype(int)
@@ -712,6 +714,29 @@ class TestInterpolatePhonons:
             expected_n_images
 
     @pytest.fixture
+    def graphite_calculate_supercell_images_n_sc_images(self):
+        image_data = np.loadtxt(
+            os.path.join(self.path, 'graphite', 'graphite_n_sc_images.txt')
+        )
+        i, j, n = self.get_ijn_from_image_data(image_data)
+        expected_n_images = np.zeros(
+            (self.n_atoms, self.n_atoms * self.n_cells_in_sc))
+        expected_n_images[i, j] = n
+        # After refactoring where the shape of n_sc_images was changed from
+        # (n_atoms, n_cells_in_sc*n_atoms) to (n_cells_in_sc, n_atoms, n_atoms),
+        # expctc_n_images must be reshaped to ensure tests still pass
+        expected_n_images = np.transpose(
+            np.reshape(
+                expected_n_images,
+                (self.n_atoms, self.n_cells_in_sc, self.n_atoms)
+            ), axes=[1, 0, 2]
+        )
+        filename = os.path.join(self.path, 'graphite', 'graphite.castep_bin')
+        return ForceConstants.from_castep(filename), "_n_sc_images", \
+            expected_n_images
+
+
+    @pytest.fixture
     def lzo_calculate_supercell_images_sc_image_i(self):
         image_data = np.loadtxt(
             os.path.join(self.path, 'LZO', 'lzo_sc_image_i.txt')
@@ -734,9 +759,37 @@ class TestInterpolatePhonons:
         return ForceConstants.from_castep(filename), "_sc_image_i", \
             expected_sc_image_i
 
+    @pytest.fixture
+    def graphite_calculate_supercell_images_sc_image_i(self):
+        image_data = np.loadtxt(
+            os.path.join(self.path, 'graphite', 'graphite_sc_image_i.txt')
+        )
+        i, j, n = self.get_ijn_from_image_data(image_data)
+        sc_i = image_data[:, 3].astype(int)
+        max_n = np.max(n) + 1
+        # size = n_atoms X n_atoms*n_cells_in_sc X max supercell images
+        expected_sc_image_i = np.full(
+            (self.n_atoms, self.n_atoms * self.n_cells_in_sc, max_n), -1)
+        expected_sc_image_i[i, j, n] = sc_i
+        # After refactoring where the shape of sc_image_i was changed from
+        # (n_atoms, n_cells_in_sc*n_atoms, (2*lim + 1)**3) to
+        # (n_cells_in_sc, n_atoms, n_atoms, (2*lim + 1)**3),
+        # expctc_image_i must be reshaped to ensure tests still pass
+        expected_sc_image_i = np.transpose(
+            np.reshape(
+                expected_sc_image_i,
+                (self.n_atoms, self.n_cells_in_sc,self.n_atoms, max_n)
+            ), axes=[1, 0, 2, 3]
+        )
+        filename = os.path.join(self.path, 'graphite', 'graphite.castep_bin')
+        return ForceConstants.from_castep(filename), "_sc_image_i", \
+            expected_sc_image_i
+
     @pytest.mark.parametrize('calculate_supercell_images', [
         pytest.lazy_fixture('lzo_calculate_supercell_images_n_sc_images'),
-        pytest.lazy_fixture('lzo_calculate_supercell_images_sc_image_i')
+        pytest.lazy_fixture('lzo_calculate_supercell_images_sc_image_i'),
+        pytest.lazy_fixture('graphite_calculate_supercell_images_n_sc_images'),
+        pytest.lazy_fixture('graphite_calculate_supercell_images_sc_image_i')
     ])
     def test_calculate_supercell_images(self, calculate_supercell_images):
         fc, testing_attribute, expected_attribute_data = \
