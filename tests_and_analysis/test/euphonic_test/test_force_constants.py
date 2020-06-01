@@ -18,7 +18,7 @@ ConstructorArgs = namedtuple(
     "ConstructorArgs",
     [
         "crystal", "force_constants", "sc_matrix",
-        "cell_origins","born", "dielectric"
+        "cell_origins", "born", "dielectric"
     ]
 )
 
@@ -352,15 +352,11 @@ class TestObjectCreation:
 
     @pytest.mark.parametrize("phonopy_args", [
         {"summary_name": "phonopy.yaml"},
+        {"summary_name": "phonopy_prim.yaml"},
+        {"summary_name": "phonopy_nofc.yaml", "fc_name": "FORCE_CONSTANTS"},
+        {"summary_name": "phonopy_nofc.yaml","fc_name": "FULL_FORCE_CONSTANTS"},
         {
-            "summary_name": "phonopy_nofc.yaml", "fc_name": "FORCE_CONSTANTS"
-        },
-        {
-            "summary_name": "phonopy_nofc.yaml",
-            "fc_name": "FULL_FORCE_CONSTANTS"
-        },
-        {
-            "summary_name": "phonopy_prim.yaml",
+            "summary_name": "phonopy_prim_nofc.yaml",
             "fc_name": "PRIMITIVE_FORCE_CONSTANTS"
         },
         {
@@ -371,10 +367,7 @@ class TestObjectCreation:
             "summary_name": "phonopy_nofc.yaml",
             "fc_name": "force_constants.hdf5"
         },
-        {
-            "summary_name": "phonopy_nofc_noborn.yaml",
-            "born_name": "BORN"
-        },
+        {"summary_name": "phonopy_nofc_noborn.yaml", "born_name": "BORN"},
         {
             "summary_name": "phonopy_prim_nofc.yaml",
             "fc_name": "primitive_force_constants.hdf5"
@@ -1283,7 +1276,3 @@ class TestCalculateQPointPhononModes:
             test_expected_freqs.to('hartree').magnitude,
             atol=atol
         )
-
-
-
-
