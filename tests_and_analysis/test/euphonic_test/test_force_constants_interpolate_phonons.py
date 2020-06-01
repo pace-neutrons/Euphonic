@@ -6,6 +6,13 @@ from tests_and_analysis.test.utils import get_data_path
 from euphonic import ForceConstants
 
 
+def get_ijn_from_image_data(image_data):
+    i = image_data[:, 0].astype(int)
+    j = image_data[:, 1].astype(int)
+    n = image_data[:, 2].astype(int)
+    return i, j, n
+
+
 @pytest.mark.unit
 class TestInterpolatePhonons:
 
@@ -116,18 +123,12 @@ class TestInterpolatePhonons:
     n_atoms = 4
     n_cells_in_sc = 98
 
-    def get_ijn_from_image_data(self, image_data):
-        i = image_data[:, 0].astype(int)
-        j = image_data[:, 1].astype(int)
-        n = image_data[:, 2].astype(int)
-        return i, j, n
-
     @pytest.fixture
     def lzo_calculate_supercell_images_n_sc_images(self):
         image_data = np.loadtxt(
             os.path.join(self.path, 'LZO', 'lzo_n_sc_images.txt')
         )
-        i, j, n = self.get_ijn_from_image_data(image_data)
+        i, j, n = get_ijn_from_image_data(image_data)
         expected_n_images = np.zeros((22, 88))
         expected_n_images[i, j] = n
         # After refactoring where the shape of n_sc_images was changed from
@@ -145,7 +146,7 @@ class TestInterpolatePhonons:
         image_data = np.loadtxt(
             os.path.join(self.path, 'graphite', 'graphite_n_sc_images.txt')
         )
-        i, j, n = self.get_ijn_from_image_data(image_data)
+        i, j, n = get_ijn_from_image_data(image_data)
         expected_n_images = np.zeros(
             (self.n_atoms, self.n_atoms * self.n_cells_in_sc))
         expected_n_images[i, j] = n
@@ -167,7 +168,7 @@ class TestInterpolatePhonons:
         image_data = np.loadtxt(
             os.path.join(self.path, 'LZO', 'lzo_sc_image_i.txt')
         )
-        i, j, n = self.get_ijn_from_image_data(image_data)
+        i, j, n = get_ijn_from_image_data(image_data)
         sc_i = image_data[:, 3].astype(int)
         max_n = np.max(n) + 1
         # size = n_atoms X n_atoms*n_cells_in_sc X max supercell images
@@ -190,7 +191,7 @@ class TestInterpolatePhonons:
         image_data = np.loadtxt(
             os.path.join(self.path, 'graphite', 'graphite_sc_image_i.txt')
         )
-        i, j, n = self.get_ijn_from_image_data(image_data)
+        i, j, n = get_ijn_from_image_data(image_data)
         sc_i = image_data[:, 3].astype(int)
         max_n = np.max(n) + 1
         # size = n_atoms X n_atoms*n_cells_in_sc X max supercell images
