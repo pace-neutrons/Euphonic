@@ -30,7 +30,7 @@ def get_parser():
     # The location to copy artifacts to
     parser.add_argument(
         "-c", "--copy-to-location", action="store", dest="copy_to_location",
-        type=str,
+        type=str, required=True,
         help="The location to which you wish to copy your artifacts to."
     )
     # The url of the performance benchmarking job
