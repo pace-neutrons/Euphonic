@@ -10,10 +10,9 @@ from euphonic import ureg
 from euphonic.crystal import Crystal
 from euphonic.qpoint_phonon_modes import QpointPhononModes
 from euphonic.util import is_gamma, get_all_origins, _check_constructor_inputs
-from euphonic.readers import castep
-from euphonic.readers import phonopy
 from euphonic.io import (_obj_to_json_file, _obj_from_json_file,
                          _obj_to_dict, _process_dict)
+from euphonic.readers import castep, phonopy
 
 
 class ImportCError(Exception):
