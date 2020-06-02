@@ -120,12 +120,19 @@ def write_speedups(filename: str, speedups: Dict[str, Dict[str, Dict[int, float]
 if __name__ == "__main__":
     path: str = get_file_or_dir()
     if os.path.isdir(path):
-        for filename in os.listdir(path):
-            filepath = os.path.join(path, filename)
-            speedups: Dict[str, Dict[str, Dict[int, float]]] = \
-                calculate_speedups(filepath)
-            write_speedups(filepath, speedups)
+        for root, _, files in os.walk(path):
+            for filename in files:
+                filepath = os.path.join(root, filename)
+                speedups: Dict[str, Dict[str, Dict[int, float]]] = \
+                    calculate_speedups(filepath)
+                write_speedups(filepath, speedups)
     elif os.path.isfile(path):
         speedups: Dict[str, Dict[str, Dict[int, float]]] = \
             calculate_speedups(path)
         write_speedups(path, speedups)
+    else:
+        print(
+            "{} is not a recognised file or directory. "
+            "If this is a network address you may"
+            " not have access to it.".format(path)
+        )
