@@ -1,12 +1,14 @@
 #! /usr/bin/env python3
 import argparse
 import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
+from mpl_toolkits.mplot3d import Axes3D  # noqa: F401
 import numpy as np
 import euphonic.sampling
 
 choices_2d = {'golden-square'}
-choices_3d = {'golden-sphere', 'spherical-polar-grid'}
+choices_3d = {'golden-sphere',
+              'spherical-polar-grid', 'spherical-polar-improved'}
+
 
 def main():
     parser = argparse.ArgumentParser()
@@ -37,11 +39,16 @@ def main():
         ax.scatter(*zip(*euphonic.sampling.spherical_polar_grid(n_theta * 2,
                                                                 n_theta)),
                    marker='x')
+    elif args.sampling == 'spherical-polar-improved':
+        ax.scatter(
+            *zip(*euphonic.sampling.spherical_polar_improved(args.npts)),
+            marker='x')
 
     else:
         raise ValueError("Sampling type f{args.sampling} is not implemented.")
 
     plt.show()
+
 
 if __name__ == '__main__':
     main()
