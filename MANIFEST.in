@@ -1,3 +1,4 @@
 include c/*.h
+include c/*.c
 include versioneer.py
 include euphonic/_version.py

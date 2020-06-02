@@ -22,10 +22,13 @@ def main():
 def release_github(test=True):
     with open('CHANGELOG.rst') as f:
         changelog = f.read()
-    setup_ver = 'v' + __version__
+    euphonic_ver = 'v' + __version__
     changelog_ver = re.findall('\n`(v\d+\.\d+\.\S+)\s', changelog)[0]
-    if setup_ver != changelog_ver:
-        raise Exception('setup.py/changelog.rst version mismatch!')
+    if euphonic_ver != changelog_ver:
+        raise Exception((
+            f'euphonic.__version__/changelog.rst version mismatch! '
+            f'euphonic.__version__: {euphonic_ver} changelog.rst: '
+            f'{changelog_ver}'))
     desc = re.search('`v\d+\.\d+\.\S+.*?^-+\n(.*?)^`v', changelog,
                      re.DOTALL | re.MULTILINE).groups()[0].strip()
 
