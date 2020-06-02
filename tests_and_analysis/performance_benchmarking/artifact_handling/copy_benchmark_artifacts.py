@@ -117,23 +117,12 @@ def coerce_range(performance_benchmarking_response_json: Dict,
 
 def write_to_file(directory: str, filename: str,
                   performance_benchmarks_json: str):
-    # Check access
-    test_file = os.path.join(directory, "test.txt")
     try:
-        open(test_file, "w+")
-        # We have access therefore write
-        # No need to copy if the file already exists
-        if not os.path.exists(directory):
-            os.mkdir(directory)
-            filepath = os.path.join(directory, filename)
-            json.dump(performance_benchmarks_json, open(filepath, "w+"))
-    except FileNotFoundError:
-        print("Cannot access {}. Exiting.".format(directory))
-    finally:
-        try:
-            os.remove(test_file)
-        except FileNotFoundError:
-            pass
+        os.mkdir(directory)
+        filepath = os.path.join(directory, filename)
+        json.dump(performance_benchmarks_json, open(filepath, "w+"))
+    except FileExistsError:
+        pass
 
 
 def copy_benchmark_json(artifacts: List[Dict[str, str]], jenkins_build_url: str,
