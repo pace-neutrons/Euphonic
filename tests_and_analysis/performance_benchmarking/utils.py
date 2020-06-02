@@ -42,16 +42,3 @@ def get_qpts() -> np.ndarray:
     """
     qpts_npy_file = os.path.join(get_data_path(), "qpts_10000.npy")
     return np.load(qpts_npy_file)
-
-
-def get_san_storage() -> str:
-    """
-    Returns
-    -------
-    str
-        The server location of the SAN storage.
-    """
-    return (
-        r'\\isis.cclrc.ac.uk\Shares\PACE_Project_Tool_Source'
-        r'\euphonic_performance_benchmarking'
-    )
