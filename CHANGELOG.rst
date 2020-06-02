@@ -18,11 +18,13 @@
 
 - Improvements:
 
-  - Add ``fall_back_on_python`` boolean keyword argument to
+  - Added ``fall_back_on_python`` boolean keyword argument to
     ``ForceConstants.calculate_qpoint_phonon_modes`` to control
     whether the Python implementation is used as a fallback to the C
     extension or not, see
     `#35 <https://github.com/pace-neutrons/Euphonic/issues/35>`_
+  - Added ``--python-only`` option to ``setup.py`` to enable install
+    without the C extension
 
 - Bug fixes:
 
