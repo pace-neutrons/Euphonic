@@ -56,18 +56,14 @@ If you don't require plotting or reading of Phonopy files, just use:
 
   pip install .
 
-Installing the C extension (optional)
-=====================================
-Euphonic has an optional C extension, which can lead to increased performance
-and enable use of multiple cores when interpolating phonons. By default
-Euphonic will attempt to install this extension, but will print a warning and
-fall back to the pure Python version if this fails. To determine if the C
-extension is installing properly and investigate any problems, it is best to
-increase pip's verbosity:
+Installing the C extension
+==========================
 
-.. code-block:: bash
-
-  pip install -vvv euphonic
+By default, Euphonic will attempt to build and install the C extension,
+which can lead to increased performance and enable use of multiple cores when
+interpolating phonons. See below for information on installing the extension
+for different platforms. If you are having trouble installing the C extension
+and don't require it, see `Installing Euphonic without the C extension`_
 
 **Windows**
 
@@ -94,6 +90,21 @@ before running pip install run:
 
   brew install llvm
 
+Installing Euphonic without the C extension
+===========================================
+
+If you don't need the extra performance the C extension provides, you can
+install the Python parts only with:
+
+.. code-block:: bash
+
+  pip install --install-option="--python-only" euphonic
+
+Note that using this option disables the use of wheels which, if they haven't
+been installed already, actually makes installing other packages such as Numpy
+more difficult. The easiest way around this is running the usual install
+command first (which will install all the dependencies), then running again
+with the ``--install-option="--python-only"`` option.
 
 .. toctree::
    :hidden:
