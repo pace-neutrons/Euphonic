@@ -80,9 +80,11 @@ pipeline {
 
         stage("PyPI Release Testing VS2019") {
             steps {
-                def commit = bat(script: 'git rev-parse HEAD', returnStdout: true)?.trim()
-                def tag_with_v = bat(script: "git describe --tags ${commit}", returnStdout: true)?.trim()
-                def tag = tag_with_v.substring(1, tag_with_v.length())
+                script {
+                    def commit = bat(script: 'git rev-parse HEAD', returnStdout: true)?.trim()
+                    def tag_with_v = bat(script: "git describe --tags ${commit}", returnStdout: true)?.trim()
+                    def tag = tag_with_v.substring(1, tag_with_v.length())
+                }
                 bat """
                     CALL "%VS2019_VCVARSALL%" x86_amd64
                     rmdir /s /q .tox

@@ -101,9 +101,11 @@ pipeline {
 
         stage("PyPI Release Testing") {
             steps {
-                def commit = sh(script: 'git rev-parse HEAD', returnStdout: true)?.trim()
-                def tag_with_v = sh(script: "git describe --tags ${commit}", returnStdout: true)?.trim()
-                def tag = tag_with_v.substring(1, tag_with_v.length())
+                script {
+                    def commit = sh(script: 'git rev-parse HEAD', returnStdout: true)?.trim()
+                    def tag_with_v = sh(script: "git describe --tags ${commit}", returnStdout: true)?.trim()
+                    def tag = tag_with_v.substring(1, tag_with_v.length())
+                }
                 sh """
                     rm -rf .tox &&
                     module load conda/3 &&
