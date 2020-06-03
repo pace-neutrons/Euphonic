@@ -114,12 +114,13 @@ class TestObjectCreation:
         expected_fc = ExpectedForceConstants(test_data_dir)
         # Inject the faulty value and get a tuple of constructor arguments
         args = expected_fc.to_constructor_args(**injected_args)
+        expected_fc = ExpectedForceConstants(test_data_dir, args._asdict())
         return args, expected_fc
 
     def test_correct_object_creation(self, inject_elements):
         args, expected_fc = inject_elements
         fc = ForceConstants(*args)
-        check_force_constant_attrs(fc, expected_fc, **args._asdict())
+        check_force_constant_attrs(fc, expected_fc)
 
     faulty_elements = [
         (
