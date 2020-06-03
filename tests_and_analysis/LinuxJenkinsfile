@@ -101,15 +101,15 @@ pipeline {
 
         stage("PyPI Release Testing") {
             steps {
-                commit = sh(script: 'git rev-parse HEAD', returnStdout: true)?.trim()
-                tag_with_v = sh(script: "git describe --tags ${commit}", returnStdout: true)?.trim()
-                tag = tag_with_v.substring(1, tag_with_v.length())
+                def commit = sh(script: 'git rev-parse HEAD', returnStdout: true)?.trim()
+                def tag_with_v = sh(script: "git describe --tags ${commit}", returnStdout: true)?.trim()
+                def tag = tag_with_v.substring(1, tag_with_v.length())
                 sh """
                     rm -rf .tox &&
                     module load conda/3 &&
                     conda config --append channels free &&
                     conda activate py &&
-                    export EUPHONIC_VERSION="\$(python tests_and_analysis/tools/get_version.py)" &&
+                    export EUPHONIC_VERSION="${tag}" &&
                     python -m tox -c release_tox.ini
                 """
             }
