@@ -22,8 +22,10 @@ ConstructorArgs = namedtuple(
 
 class ExpectedCrystal:
 
-    def __init__(self, crystal_json_file):
+    def __init__(self, crystal_json_file, json_element: str = None):
         self.data = json.load(open(crystal_json_file))
+        if json_element is not None:
+            self.data = self.data[json_element]
 
     @property
     def cell_vectors(self) -> Quantity:

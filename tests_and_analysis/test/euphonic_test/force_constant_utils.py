@@ -28,113 +28,54 @@ ExpectedData = namedtuple(
 
 class ExpectedForceConstants:
 
-    def __init__(self, dirpath: str, with_material: bool = True,
-                 kwargs: Dict = {}):
+    def __init__(self, force_constants_json_file: str, kwargs: Dict = {}):
         """
         Collect data from files for comparison to real ForceConstants files.
 
         Parameters
         ----------
-        dirpath : str
-            The directory path containing the files with the force constants
-            data in.
-        with_material : bool
-            True if the material is a prefix to the filename.
+        force_constants_json_file : str
+            The json file containing all the information for the force constants
+            object.
         kwargs : Dict
             A dictionary of values to override values such as force constants
             from the file
         """
-        self.dirpath = dirpath
-        self.with_material = with_material
-        # Set up force constants
-        if "force_constants" in kwargs:
-            self._force_constants = kwargs["force_constants"]
-        else:
-            self._force_constants_unit = json.load(
-                open(self._get_file_from_dir_and_property("properties", "json"))
-            )["force_constants_unit"]
-            self._force_constants_mag = np.load(
-                self._get_file_from_dir_and_property("force_constants", "npy"),
-                allow_pickle=True
-            )
-        # Set up born
-        if "born" in kwargs:
-            self._born = kwargs["born"]
-        else:
-            self._born_unit = json.load(
-                open(self._get_file_from_dir_and_property("properties", "json"))
-            )["born_unit"]
-            self._born_mag = np.load(
-                self._get_file_from_dir_and_property("born", "npy"),
-                allow_pickle=True
-            )
-        # Set up dielectric
-        if "dielectric" in kwargs:
-            self._dielectric = kwargs["dielectric"]
-        else:
-            self._dielectric_unit = json.load(
-                open(self._get_file_from_dir_and_property("properties", "json"))
-            )["dielectric_unit"]
-            self._dielectric_mag = np.load(
-                self._get_file_from_dir_and_property("dielectric", "npy"),
-                allow_pickle=True
-            )
-        # Set up sc_matrix
-        if "sc_matrix" in kwargs:
-            self.sc_matrix = kwargs["sc_matrix"]
-        else:
-            self.sc_matrix = np.load(
-                self._get_file_from_dir_and_property("sc_matrix", "npy"),
-                allow_pickle=True
-            )
-        # Set up cell origins
-        if "cell_origins" in kwargs:
-            self.cell_origins = kwargs["cell_origins"]
-        else:
-            self.cell_origins = np.load(
-                self._get_file_from_dir_and_property("cell_origins", "npy"),
-                allow_pickle=True
-            )
-        # Set up crystal
-        if "crystal" in kwargs:
-            self.crystal = kwargs["crystal"]
-        else:
-            self.crystal = Crystal.from_json_file(
-                self._get_file_from_dir_and_property("crystal", "json")
-            )
-        # Set up n_cells_in_sc
-        if "n_cells_in_sc" in kwargs:
-            self.n_cells_in_sc = kwargs["n_cells_in_sc"]
-        else:
-            self.n_cells_in_sc = json.load(
-                open(self._get_file_from_dir_and_property("properties", "json"))
-            )["n_cells_in_sc"]
+        self._data = json.load(open(force_constants_json_file))
+        for attr_name, attr_value in kwargs.items():
+            setattr(self, "_" + attr_name, attr_value)
+        # Create crystal and sanitise the input lists into arrays and quantities
+        crystal_dict = self._data["crystal"]
+        cell_vectors = np.array(crystal_dict["cell_vectors"]) * \
+            ureg(crystal_dict["cell_vectors_unit"])
+        atom_r = np.array(crystal_dict["atom_r"])
+        atom_type = np.array(crystal_dict["atom_type"])
+        atom_mass = np.array(crystal_dict["atom_mass"]) * \
+            ureg(crystal_dict["atom_mass_unit"])
+        self.crystal = Crystal(cell_vectors, atom_r, atom_type, atom_mass)
 
-    def _get_file_from_dir_and_property(self, property_name: str,
-                                        extension: str) -> str:
-        material = os.path.split(self.dirpath)[-1].lower()
-        if self.with_material:
-            filepath = os.path.join(
-                self.dirpath, material + "_" + property_name + "." + extension
-            )
+    @property
+    def sc_matrix(self):
+        if hasattr(self, "_sc_matrix"):
+            return self._sc_matrix
         else:
-            filepath = os.path.join(
-                self.dirpath, property_name + "." + extension
-            )
-        for f in os.listdir(self.dirpath):
-            f_path = os.path.join(self.dirpath, f)
-            if filepath == f_path:
-                return f_path
+            return np.array(self._data["sc_matrix"])
+
+    @property
+    def cell_origins(self):
+        if hasattr(self, "_cell_origins"):
+            return self._cell_origins
         else:
-            raise FileNotFoundError("Could not find " + filepath)
+            return np.array(self._data["cell_origins"])
 
     @property
     def born(self):
         if hasattr(self, "_born"):
             return self._born
         else:
-            if self._born_mag.shape != ():
-                return self._born_mag * ureg(self._born_unit)
+            if self._data["born"] is not None:
+                return np.array(self._data["born"]) * \
+                       ureg(self._data["born_unit"])
             else:
                 return None
 
@@ -143,21 +84,26 @@ class ExpectedForceConstants:
         if hasattr(self, "_force_constants"):
             return self._force_constants
         else:
-            if self._force_constants_mag.shape != ():
-                return self._force_constants_mag * \
-                    ureg(self._force_constants_unit)
-            else:
-                return None
+            return np.array(self._data["force_constants"]) * \
+                   ureg(self._data["force_constants_unit"])
 
     @property
     def dielectric(self):
         if hasattr(self, "_dielectric"):
             return self._dielectric
         else:
-            if self._dielectric_mag.shape != ():
-                return self._dielectric_mag * ureg(self._dielectric_unit)
+            if self._data["dielectric"] is not None:
+                return np.array(self._data["dielectric"]) * \
+                       ureg(self._data["dielectric_unit"])
             else:
                 return None
+
+    @property
+    def n_cells_in_sc(self):
+        if hasattr(self, "_n_cells_in_sc"):
+            return self._n_cells_in_sc
+        else:
+            return self._data["n_cells_in_sc"]
 
     def to_dict(self):
         d = {
@@ -229,8 +175,7 @@ def check_force_constant_attrs(
     )
 
 
-def check_fc_dielectric(actual_force_constants, expected_force_constants,
-                        overriding_dielectric_unit=None):
+def check_fc_dielectric(actual_force_constants, expected_force_constants):
     # dielectric is optional, detect if option has data in
     if actual_force_constants.dielectric is not None:
         npt.assert_allclose(
@@ -244,8 +189,7 @@ def check_fc_dielectric(actual_force_constants, expected_force_constants,
         assert expected_force_constants.dielectric is None
 
 
-def check_fc_born(actual_force_constants, expected_force_constants,
-                  overriding_born=None, overriding_born_unit=None):
+def check_fc_born(actual_force_constants, expected_force_constants):
     # born is optional, detect if option has data in
     if actual_force_constants.born is not None:
         npt.assert_allclose(
@@ -260,10 +204,11 @@ def check_fc_born(actual_force_constants, expected_force_constants,
 
 
 def quartz_attrs():
-    test_data_dir = os.path.join(
-        get_data_path(), "interpolation", "quartz"
+    test_data_file = os.path.join(
+        get_data_path(), "interpolation",
+        "quartz", "quartz_force_constants.json"
     )
-    return ExpectedForceConstants(test_data_dir)
+    return ExpectedForceConstants(test_data_file)
 
 
 @contextmanager
