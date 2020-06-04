@@ -232,7 +232,7 @@ class ForceConstants(object):
         :math:`\\kappa` in direction :math:`\\alpha`,
         :math:`M_{\\kappa}` is the mass of atom :math:`\\kappa`,
         :math:`r_{a}` is the vector to the origin of cell :math:`a` in
-        the supercell, :math:`\epsilon_{q\\nu\\kappa\\alpha}` are the
+        the supercell, :math:`\\epsilon_{q\\nu\\kappa\\alpha}` are the
         eigevectors, and :math:`\\omega_{q\\nu}^{2}` are the frequencies
         squared.
 
