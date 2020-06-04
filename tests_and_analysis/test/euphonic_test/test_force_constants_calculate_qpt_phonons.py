@@ -197,70 +197,59 @@ class TestCalculateQPointPhononModes:
         material_name = "quartz"
         return fc, kwargs, material_name, key, atol
 
-    #
-    # phonopy_yaml_file = os.path.join(
-    #     get_data_path(), "phonopy_data", "NaCl", "force_constants"
-    # )
-    #
-    # @pytest.mark.parametrize(
-    #     ("kwargs"), [
-    #         {"dipole": True, "splitting": False},
-    #         {
-    #             "dipole": True, "splitting": False, "asr": None,
-    #             "use_c": True, "fall_back_on_python": False
-    #         },
-    #         {
-    #             "dipole": True, "splitting": False,
-    #             "use_c": True, "fall_back_on_python": False, "n_threads": 2
-    #         },
-    #         {"dipole": True, "splitting": False, "asr": 'reciprocal'},
-    #         {
-    #             "dipole": True, "splitting": False, "asr": 'reciprocal',
-    #             "use_c": True, "fall_back_on_python": False
-    #         },
-    #         {
-    #             "dipole": True, "splitting": False, "asr": 'reciprocal',
-    #             "use_c": True, "fall_back_on_python": False, "n_threads": 2
-    #         },
-    #         {"dipole": True, "splitting": False, "asr": 'realspace'},
-    #         {
-    #             "dipole": True, "splitting": False, "asr": 'realspace',
-    #             "use_c": True, "fall_back_on_python": False
-    #         },
-    #         {
-    #             "dipole": True, "splitting": False, "asr": 'realspace',
-    #             "use_c": True, "fall_back_on_python": False, "n_threads": 2
-    #         }
-    #     ]
-    # )
-    # def test_phonopy_calculate_qpoint_phonon_modes(self, kwargs):
-    #     fc = ForceConstants.from_phonopy(
-    #         path=self.phonopy_yaml_file, summary_name="phonopy.yaml"
-    #     )
-    #     if "asr" in kwargs and kwargs["asr"] == 'realspace':
-    #         expected_freqs = self.expected_freqs.\
-    #             get_expected_freqs("NaCl", "realsp_asr")
-    #     elif "asr" in kwargs and kwargs["asr"] == "reciprocal":
-    #         expected_freqs = self.expected_freqs.\
-    #             get_expected_freqs("NaCl", "recip_asr")
-    #     else:
-    #         expected_freqs = self.expected_freqs.\
-    #             get_expected_freqs("NaCl", "no_asr")
-    #     qpts = np.array([
-    #         [0.00, 0.00, 0.00],
-    #         [0.00, 0.00, 0.50],
-    #         [-0.25, 0.50, 0.50],
-    #         [-0.151515, 0.575758, 0.5]
-    #     ])
-    #     qpoint_phonon_modes = fc.calculate_qpoint_phonon_modes(qpts, **kwargs)
-    #     npt.assert_allclose(
-    #         qpoint_phonon_modes.frequencies.to('hartree').magnitude,
-    #         expected_freqs.to('hartree').magnitude,
-    #         atol=1e-8
-    #     )
+    nacl_yaml_dir = os.path.join(
+        get_data_path(), "phonopy_data", "NaCl", "force_constants"
+    )
+
+    @pytest.fixture(params=[
+            {"dipole": True, "splitting": False},
+            {
+                "dipole": True, "splitting": False,
+                "use_c": True, "fall_back_on_python": False
+            },
+            {
+                "dipole": True, "splitting": False,
+                "use_c": True, "fall_back_on_python": False, "n_threads": 2
+            },
+            {"dipole": True, "splitting": False, "asr": 'reciprocal'},
+            {
+                "dipole": True, "splitting": False, "asr": 'reciprocal',
+                "use_c": True, "fall_back_on_python": False
+            },
+            {
+                "dipole": True, "splitting": False, "asr": 'reciprocal',
+                "use_c": True, "fall_back_on_python": False, "n_threads": 2
+            },
+            {"dipole": True, "splitting": False, "asr": 'realspace'},
+            {
+                "dipole": True, "splitting": False, "asr": 'realspace',
+                "use_c": True, "fall_back_on_python": False
+            },
+            {
+                "dipole": True, "splitting": False, "asr": 'realspace',
+                "use_c": True, "fall_back_on_python": False, "n_threads": 2
+            }
+        ]
+    )
+    def create_from_nacl(self, request):
+        fc = ForceConstants.from_phonopy(
+            path=self.nacl_yaml_dir, summary_name="phonopy.yaml"
+        )
+        kwargs = request.param
+        key = kwargs["asr"] if "asr" in kwargs else "no_asr"
+        qpts = np.array([
+            [0.00, 0.00, 0.00],
+            [0.00, 0.00, 0.50],
+            [-0.25, 0.50, 0.50],
+            [-0.151515, 0.575758, 0.5]
+        ])
+        kwargs["qpts"] = qpts
+        atol = 1e-8
+        material_name = "NaCl"
+        return fc, kwargs, material_name, key, atol
 
     @pytest.mark.parametrize(("force_constants_creator"), [
-        # pytest.lazy_fixture("create_from_phonopy"),
+        pytest.lazy_fixture("create_from_nacl"),
         pytest.lazy_fixture("create_from_quartz"),
         pytest.lazy_fixture("create_from_lzo_and_graphite")
     ])

@@ -387,7 +387,7 @@
             ]
         ],
         "no_asr_unit": "millielectron_volt",
-        "realsp_asr": [
+        "realspace": [
             [
                 -1.60758061,
                 -1.60718395,
@@ -493,8 +493,8 @@
                 29.77527501
             ]
         ],
-        "realsp_asr_unit": "millielectron_volt",
-        "recip_asr": [
+        "realspace_unit": "millielectron_volt",
+        "reciprocal": [
             [
                 -1.183e-05,
                 -8.38e-06,
@@ -600,7 +600,7 @@
                 29.77629323
             ]
         ],
-        "recip_asr_unit": "millielectron_volt"
+        "reciprocal_unit": "millielectron_volt"
     },
     "graphite": {
         "asr": [
