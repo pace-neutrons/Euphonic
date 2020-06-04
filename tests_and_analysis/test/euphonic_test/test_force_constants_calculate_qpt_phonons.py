@@ -68,232 +68,236 @@ class TestCalculateQPointPhononModes:
     @pytest.fixture(
         params=list(itertools.product(materials, kwargs))
     )
-    def calculate_qpoint_phonon_modes(self, request):
+    def create_from_lzo_and_graphite(self, request):
         material, kwargs = request.param
         material_name, castep_bin_file, qpts = material
+        kwargs["qpts"] = qpts
         filename = os.path.join(self.path, material_name, castep_bin_file)
-        return ForceConstants.from_castep(filename), qpts, material_name, kwargs
+        fc = ForceConstants.from_castep(filename)
+        key = "asr" if "asr" in kwargs else "no_asr"
+        atol = 1e-10
+        return fc, kwargs, material_name, key, atol
 
-    def test_calculate_qpoint_phonon_modes(self, calculate_qpoint_phonon_modes):
-        fc, qpts, material_name, kwargs = calculate_qpoint_phonon_modes
-        qpoint_phonon_modes = fc.calculate_qpoint_phonon_modes(
-            qpts, **kwargs
-        )
-        if "asr" in kwargs:
-            test_expected_freqs = self.expected_freqs.\
-                get_expected_freqs(material_name, "asr")
-        else:
-            test_expected_freqs = self.expected_freqs.\
-                get_expected_freqs(material_name, "no_asr")
-        npt.assert_allclose(
-            qpoint_phonon_modes.frequencies.to('hartree').magnitude,
-            test_expected_freqs.to('hartree').magnitude,
-            atol=1e-10
-        )
+    # @pytest.mark.parametrize(
+    #     ("material_name", "castep_bin_file", "fc_mat_asr_file"),
+    #     [
+    #         ('graphite', 'graphite.castep_bin', 'graphite_fc_mat_asr.npy'),
+    #         ('LZO', 'La2Zr2O7.castep_bin', 'lzo_fc_mat_asr.npy')
+    #     ]
+    # )
+    # def test_enforce_realspace_acoustic_sum_rule(
+    #         self, material_name, castep_bin_file, fc_mat_asr_file):
+    #     castep_bin_filepath = os.path.join(
+    #         self.path, material_name, castep_bin_file
+    #     )
+    #     fc = ForceConstants.from_castep(castep_bin_filepath)
+    #     expected_fc_mat = np.load(
+    #         os.path.join(self.path, material_name, fc_mat_asr_file)
+    #     )
+    #     fc_mat = fc._enforce_realspace_asr()
+    #     npt.assert_allclose(fc_mat, expected_fc_mat, atol=1e-18)
+    #
+    # qpts = np.array([
+    #     [0.00, 0.00, 0.00],
+    #     [0.00, 0.00, 0.50],
+    #     [-0.25, 0.50, 0.50],
+    #     [-0.151515, 0.575758, 0.5]
+    # ])
+    # split_qpts = np.array([
+    #     [0.00, 0.00, 0.00],
+    #     [0.00, 0.00, 0.50],
+    #     [0.00, 0.00, 0.00],
+    #     [0.00, 0.00, 0.00],
+    #     [-0.25, 0.50, 0.50],
+    #     [0.00, 0.00, 0.00],
+    #     [0.00, 0.00, 0.00],
+    #     [0.00, 0.00, 0.00],
+    #     [0.00, 0.00, 0.00],
+    #     [0.00, 0.00, 0.00],
+    #     [0.00, 0.00, 0.00],
+    #     [-0.151515, 0.575758, 0.5],
+    #     [0.00, 0.00, 0.00]
+    # ])
+    # split_qpts_insert_gamma = np.array([
+    #     [0.00, 0.00, 0.00],
+    #     [0.00, 0.00, 0.50],
+    #     [0.00, 0.00, 0.00],
+    #     [-0.25, 0.50, 0.50],
+    #     [0.00, 0.00, 0.00],
+    #     [0.00, 0.00, 0.00],
+    #     [0.00, 0.00, 0.00],
+    #     [-0.151515, 0.575758, 0.5],
+    #     [0.00, 0.00, 0.00]
+    # ])
+    #
+    # quartz_test_data = [
+    #     (
+    #         {"qpts": qpts, "dipole": True, "splitting": False},
+    #         2e-6
+    #     ),
+    #     (
+    #         {
+    #             "qpts": qpts, "dipole": True, "splitting": False,
+    #             "use_c": True, "fall_back_on_python": False
+    #         },
+    #         2e-6
+    #     ),
+    #     (
+    #         {
+    #             "qpts": qpts, "dipole": True, "splitting": False, "use_c": True,
+    #             "n_threads": 2, "fall_back_on_python": False
+    #         },
+    #         8e-8
+    #     ),
+    #     (
+    #         {
+    #             "qpts": qpts, "asr": 'reciprocal',
+    #             "dipole": True, "splitting": False
+    #         },
+    #         5e-4
+    #     ),
+    #     (
+    #         {
+    #             "qpts": qpts, "asr": 'reciprocal', "dipole": True,
+    #             "splitting": False, "use_c": True, "fall_back_on_python": False
+    #         },
+    #         5e-4
+    #     ),
+    #     (
+    #         {
+    #             "qpts": qpts, "asr": 'reciprocal', "dipole": True,
+    #             "splitting": False, "use_c": True, "n_threads": 2,
+    #             "fall_back_on_python": False
+    #         },
+    #         5e-4
+    #     ),
+    #     (
+    #         {
+    #             "qpts": split_qpts, "asr": 'reciprocal',
+    #             "dipole": True, "splitting": True
+    #         },
+    #         5e-4
+    #     ),
+    #     (
+    #         {
+    #             "qpts": split_qpts, "asr": 'reciprocal', "dipole": True,
+    #             "splitting": True, "use_c": True, "fall_back_on_python": False
+    #         },
+    #         5e-4
+    #     ),
+    #     (
+    #         {
+    #             "qpts": split_qpts, "asr": 'reciprocal', "dipole": True,
+    #             "splitting": True, "use_c": True, "n_threads": 2,
+    #             "fall_back_on_python": False
+    #         },
+    #         5e-4
+    #     ),
+    #     (
+    #         {
+    #             "qpts": split_qpts_insert_gamma, "asr": 'reciprocal',
+    #             "dipole": True, "splitting": True, "insert_gamma": True
+    #         },
+    #         5e-4
+    #     )
+    # ]
+    #
+    # quartz_castep_bin_file = os.path.join(path, "quartz", "quartz.castep_bin")
+    #
+    # @pytest.mark.parametrize(("kwargs", "atol"), quartz_test_data)
+    # def test_quartz_calculate_qpoint_phonon_modes(self, kwargs, atol):
+    #     fc = ForceConstants.from_castep(self.quartz_castep_bin_file)
+    #     qpoint_phonon_modes = fc.calculate_qpoint_phonon_modes(**kwargs)
+    #     if "asr" in kwargs:
+    #         if "splitting" in kwargs and kwargs["splitting"]:
+    #             test_expected_freqs = self.expected_freqs.\
+    #                 get_expected_freqs("quartz", "asr_splitting")
+    #         else:
+    #             test_expected_freqs = self.expected_freqs.\
+    #                 get_expected_freqs("quartz", "asr")
+    #     else:
+    #         test_expected_freqs = self.expected_freqs\
+    #             .get_expected_freqs("quartz", "no_asr")
+    #     npt.assert_allclose(
+    #         qpoint_phonon_modes.frequencies.to('hartree').magnitude,
+    #         test_expected_freqs.to('hartree').magnitude,
+    #         atol=atol
+    #     )
+    #
+    # phonopy_yaml_file = os.path.join(
+    #     get_data_path(), "phonopy_data", "NaCl", "force_constants"
+    # )
+    #
+    # @pytest.mark.parametrize(
+    #     ("kwargs"), [
+    #         {"dipole": True, "splitting": False},
+    #         {
+    #             "dipole": True, "splitting": False, "asr": None,
+    #             "use_c": True, "fall_back_on_python": False
+    #         },
+    #         {
+    #             "dipole": True, "splitting": False,
+    #             "use_c": True, "fall_back_on_python": False, "n_threads": 2
+    #         },
+    #         {"dipole": True, "splitting": False, "asr": 'reciprocal'},
+    #         {
+    #             "dipole": True, "splitting": False, "asr": 'reciprocal',
+    #             "use_c": True, "fall_back_on_python": False
+    #         },
+    #         {
+    #             "dipole": True, "splitting": False, "asr": 'reciprocal',
+    #             "use_c": True, "fall_back_on_python": False, "n_threads": 2
+    #         },
+    #         {"dipole": True, "splitting": False, "asr": 'realspace'},
+    #         {
+    #             "dipole": True, "splitting": False, "asr": 'realspace',
+    #             "use_c": True, "fall_back_on_python": False
+    #         },
+    #         {
+    #             "dipole": True, "splitting": False, "asr": 'realspace',
+    #             "use_c": True, "fall_back_on_python": False, "n_threads": 2
+    #         }
+    #     ]
+    # )
+    # def test_phonopy_calculate_qpoint_phonon_modes(self, kwargs):
+    #     fc = ForceConstants.from_phonopy(
+    #         path=self.phonopy_yaml_file, summary_name="phonopy.yaml"
+    #     )
+    #     if "asr" in kwargs and kwargs["asr"] == 'realspace':
+    #         expected_freqs = self.expected_freqs.\
+    #             get_expected_freqs("NaCl", "realsp_asr")
+    #     elif "asr" in kwargs and kwargs["asr"] == "reciprocal":
+    #         expected_freqs = self.expected_freqs.\
+    #             get_expected_freqs("NaCl", "recip_asr")
+    #     else:
+    #         expected_freqs = self.expected_freqs.\
+    #             get_expected_freqs("NaCl", "no_asr")
+    #     qpts = np.array([
+    #         [0.00, 0.00, 0.00],
+    #         [0.00, 0.00, 0.50],
+    #         [-0.25, 0.50, 0.50],
+    #         [-0.151515, 0.575758, 0.5]
+    #     ])
+    #     qpoint_phonon_modes = fc.calculate_qpoint_phonon_modes(qpts, **kwargs)
+    #     npt.assert_allclose(
+    #         qpoint_phonon_modes.frequencies.to('hartree').magnitude,
+    #         expected_freqs.to('hartree').magnitude,
+    #         atol=1e-8
+    #     )
 
-    @pytest.mark.parametrize(
-        ("material_name", "castep_bin_file", "fc_mat_asr_file"),
-        [
-            ('graphite', 'graphite.castep_bin', 'graphite_fc_mat_asr.npy'),
-            ('LZO', 'La2Zr2O7.castep_bin', 'lzo_fc_mat_asr.npy')
-        ]
-    )
-    def test_enforce_realspace_acoustic_sum_rule(
-            self, material_name, castep_bin_file, fc_mat_asr_file):
-        castep_bin_filepath = os.path.join(
-            self.path, material_name, castep_bin_file
-        )
-        fc = ForceConstants.from_castep(castep_bin_filepath)
-        expected_fc_mat = np.load(
-            os.path.join(self.path, material_name, fc_mat_asr_file)
-        )
-        fc_mat = fc._enforce_realspace_asr()
-        npt.assert_allclose(fc_mat, expected_fc_mat, atol=1e-18)
-
-    qpts = np.array([
-        [0.00, 0.00, 0.00],
-        [0.00, 0.00, 0.50],
-        [-0.25, 0.50, 0.50],
-        [-0.151515, 0.575758, 0.5]
+    @pytest.mark.parametrize(("force_constants_creator"), [
+        # pytest.lazy_fixture("create_from_phonopy"),
+        # pytest.lazy_fixture("create_from_quartz"),
+        pytest.lazy_fixture("create_from_lzo_and_graphite")
     ])
-    split_qpts = np.array([
-        [0.00, 0.00, 0.00],
-        [0.00, 0.00, 0.50],
-        [0.00, 0.00, 0.00],
-        [0.00, 0.00, 0.00],
-        [-0.25, 0.50, 0.50],
-        [0.00, 0.00, 0.00],
-        [0.00, 0.00, 0.00],
-        [0.00, 0.00, 0.00],
-        [0.00, 0.00, 0.00],
-        [0.00, 0.00, 0.00],
-        [0.00, 0.00, 0.00],
-        [-0.151515, 0.575758, 0.5],
-        [0.00, 0.00, 0.00]
-    ])
-    split_qpts_insert_gamma = np.array([
-        [0.00, 0.00, 0.00],
-        [0.00, 0.00, 0.50],
-        [0.00, 0.00, 0.00],
-        [-0.25, 0.50, 0.50],
-        [0.00, 0.00, 0.00],
-        [0.00, 0.00, 0.00],
-        [0.00, 0.00, 0.00],
-        [-0.151515, 0.575758, 0.5],
-        [0.00, 0.00, 0.00]
-    ])
-
-    quartz_test_data = [
-        (
-            {"qpts": qpts, "dipole": True, "splitting": False},
-            2e-6
-        ),
-        (
-            {
-                "qpts": qpts, "dipole": True, "splitting": False,
-                "use_c": True, "fall_back_on_python": False
-            },
-            2e-6
-        ),
-        (
-            {
-                "qpts": qpts, "dipole": True, "splitting": False, "use_c": True,
-                "n_threads": 2, "fall_back_on_python": False
-            },
-            8e-8
-        ),
-        (
-            {
-                "qpts": qpts, "asr": 'reciprocal',
-                "dipole": True, "splitting": False
-            },
-            5e-4
-        ),
-        (
-            {
-                "qpts": qpts, "asr": 'reciprocal', "dipole": True,
-                "splitting": False, "use_c": True, "fall_back_on_python": False
-            },
-            5e-4
-        ),
-        (
-            {
-                "qpts": qpts, "asr": 'reciprocal', "dipole": True,
-                "splitting": False, "use_c": True, "n_threads": 2,
-                "fall_back_on_python": False
-            },
-            5e-4
-        ),
-        (
-            {
-                "qpts": split_qpts, "asr": 'reciprocal',
-                "dipole": True, "splitting": True
-            },
-            5e-4
-        ),
-        (
-            {
-                "qpts": split_qpts, "asr": 'reciprocal', "dipole": True,
-                "splitting": True, "use_c": True, "fall_back_on_python": False
-            },
-            5e-4
-        ),
-        (
-            {
-                "qpts": split_qpts, "asr": 'reciprocal', "dipole": True,
-                "splitting": True, "use_c": True, "n_threads": 2,
-                "fall_back_on_python": False
-            },
-            5e-4
-        ),
-        (
-            {
-                "qpts": split_qpts_insert_gamma, "asr": 'reciprocal',
-                "dipole": True, "splitting": True, "insert_gamma": True
-            },
-            5e-4
-        )
-    ]
-
-    quartz_castep_bin_file = os.path.join(path, "quartz", "quartz.castep_bin")
-
-    @pytest.mark.parametrize(("kwargs", "atol"), quartz_test_data)
-    def test_quartz_calculate_qpoint_phonon_modes(self, kwargs, atol):
-        fc = ForceConstants.from_castep(self.quartz_castep_bin_file)
+    def test_fc_calculate_qpoint_phonon_modes_expected_results(
+            self, force_constants_creator):
+        fc, kwargs, material, key, atol = force_constants_creator
         qpoint_phonon_modes = fc.calculate_qpoint_phonon_modes(**kwargs)
-        if "asr" in kwargs:
-            if "splitting" in kwargs and kwargs["splitting"]:
-                test_expected_freqs = self.expected_freqs.\
-                    get_expected_freqs("quartz", "asr_splitting")
-            else:
-                test_expected_freqs = self.expected_freqs.\
-                    get_expected_freqs("quartz", "asr")
-        else:
-            test_expected_freqs = self.expected_freqs\
-                .get_expected_freqs("quartz", "no_asr")
+        test_expected_freqs = self.expected_freqs.\
+            get_expected_freqs(material, key)
         npt.assert_allclose(
             qpoint_phonon_modes.frequencies.to('hartree').magnitude,
             test_expected_freqs.to('hartree').magnitude,
             atol=atol
-        )
-
-    phonopy_yaml_file = os.path.join(
-        get_data_path(), "phonopy_data", "NaCl", "force_constants"
-    )
-
-    @pytest.mark.parametrize(
-        ("kwargs"), [
-            {"dipole": True, "splitting": False},
-            {
-                "dipole": True, "splitting": False, "asr": None,
-                "use_c": True, "fall_back_on_python": False
-            },
-            {
-                "dipole": True, "splitting": False,
-                "use_c": True, "fall_back_on_python": False, "n_threads": 2
-            },
-            {"dipole": True, "splitting": False, "asr": 'reciprocal'},
-            {
-                "dipole": True, "splitting": False, "asr": 'reciprocal',
-                "use_c": True, "fall_back_on_python": False
-            },
-            {
-                "dipole": True, "splitting": False, "asr": 'reciprocal',
-                "use_c": True, "fall_back_on_python": False, "n_threads": 2
-            },
-            {"dipole": True, "splitting": False, "asr": 'realspace'},
-            {
-                "dipole": True, "splitting": False, "asr": 'realspace',
-                "use_c": True, "fall_back_on_python": False
-            },
-            {
-                "dipole": True, "splitting": False, "asr": 'realspace',
-                "use_c": True, "fall_back_on_python": False, "n_threads": 2
-            }
-        ]
-    )
-    def test_phonopy_calculate_qpoint_phonon_modes(self, kwargs):
-        fc = ForceConstants.from_phonopy(
-            path=self.phonopy_yaml_file, summary_name="phonopy.yaml"
-        )
-        if "asr" in kwargs and kwargs["asr"] == 'realspace':
-            expected_freqs = self.expected_freqs.\
-                get_expected_freqs("NaCl", "realsp_asr")
-        elif "asr" in kwargs and kwargs["asr"] == "reciprocal":
-            expected_freqs = self.expected_freqs.\
-                get_expected_freqs("NaCl", "recip_asr")
-        else:
-            expected_freqs = self.expected_freqs.\
-                get_expected_freqs("NaCl", "no_asr")
-        qpts = np.array([
-            [0.00, 0.00, 0.00],
-            [0.00, 0.00, 0.50],
-            [-0.25, 0.50, 0.50],
-            [-0.151515, 0.575758, 0.5]
-        ])
-        qpoint_phonon_modes = fc.calculate_qpoint_phonon_modes(qpts, **kwargs)
-        npt.assert_allclose(
-            qpoint_phonon_modes.frequencies.to('hartree').magnitude,
-            expected_freqs.to('hartree').magnitude,
-            atol=1e-8
         )
