@@ -9,17 +9,19 @@ from tests_and_analysis.test.euphonic_test.force_constant_utils import (
     ExpectedData
 )
 from slugify import slugify
+import itertools
 
 
 @pytest.mark.unit
 class TestObjectCreation:
 
-    @pytest.mark.parametrize(("castep_bin_dir", "castep_bin_file"), [
+    @pytest.fixture(params=[
         ('LZO', 'La2Zr2O7.castep_bin'),
         ('graphite', 'graphite.castep_bin'),
         ('quartz', 'quartz.castep_bin')
     ])
-    def test_creation_from_castep(self, castep_bin_dir, castep_bin_file):
+    def create_from_castep(self, request):
+        castep_bin_dir, castep_bin_file = request.param
         dirpath = os.path.join(
             get_data_path(), 'force_constants', castep_bin_dir
         )
@@ -27,36 +29,33 @@ class TestObjectCreation:
             dirpath, castep_bin_dir.lower() + "_force_constants.json"
         )
         castep_filepath = os.path.join(dirpath,  castep_bin_file)
+        expected_fc = ExpectedForceConstants(json_filepath)
         fc = ForceConstants.from_castep(castep_filepath)
-        check_force_constant_attrs(fc, ExpectedForceConstants(json_filepath))
+        return fc, expected_fc
 
-    @pytest.mark.parametrize(("json_dir", "json_file"), [
-        ('LZO', 'lzo_force_constants.json'),
-        ('graphite', 'graphite_force_constants.json'),
-        ('quartz', 'quartz_force_constants.json')
-    ])
-    def test_creation_from_json(self, json_dir, json_file):
-        json_filepath = os.path.join(
-            get_data_path(), 'force_constants', json_dir, json_file
-        )
-        fc = ForceConstants.from_json_file(json_filepath)
-        check_force_constant_attrs(fc, ExpectedForceConstants(json_filepath))
-
-    @pytest.mark.parametrize(("json_dir", "json_file"), [
-        ('LZO', 'lzo_force_constants.json'),
-        ('graphite', 'graphite_force_constants.json'),
-        ('quartz', 'quartz_force_constants.json')
-    ])
-    def test_creation_from_dict(self, json_dir, json_file):
-        dirpath = os.path.join(
+    @pytest.fixture(params=['LZO', 'graphite', 'quartz'])
+    def create_from_json(self, request):
+        material_name = request.param
+        json_file = os.path.join(
             get_data_path(), 'force_constants',
-            json_dir, json_dir.lower() + "_force_constants.json"
+            material_name, material_name.lower() + "_force_constants.json"
         )
-        expected_fc = ExpectedForceConstants(dirpath)
-        fc = ForceConstants.from_dict(expected_fc.to_dict())
-        check_force_constant_attrs(fc, expected_fc)
+        expected_fc = ExpectedForceConstants(json_file)
+        fc = ForceConstants.from_json_file(json_file)
+        return fc, expected_fc
 
-    @pytest.mark.parametrize("phonopy_args", [
+    @pytest.fixture(params=['LZO', 'graphite', 'quartz'])
+    def create_from_dict(self, request):
+        material_name = request.param
+        json_file = os.path.join(
+            get_data_path(), 'force_constants',
+            material_name, material_name.lower() + "_force_constants.json"
+        )
+        expected_fc = ExpectedForceConstants(json_file)
+        fc = ForceConstants.from_dict(expected_fc.to_dict())
+        return fc, expected_fc
+
+    @pytest.fixture(params=[
         {"summary_name": "phonopy.yaml"},
         {"summary_name": "phonopy_prim.yaml"},
         {"summary_name": "phonopy_nofc.yaml", "fc_name": "FORCE_CONSTANTS"},
@@ -79,20 +78,20 @@ class TestObjectCreation:
             "fc_name": "primitive_force_constants.hdf5"
         }
     ])
-    def test_creation_from_phonopy(self, phonopy_args):
+    def create_from_phonopy(self, request):
+        phonopy_args = request.param
         test_data_file = slugify(
             "-".join(phonopy_args.values())
         ) + ".json"
         phonopy_args["path"] = os.path.join(
             get_data_path(), 'phonopy_data', 'NaCl', 'force_constants'
         )
-        fc = ForceConstants.from_phonopy(**phonopy_args)
         expected_filepath = os.path.join(phonopy_args["path"], test_data_file)
-        check_force_constant_attrs(
-            fc, ExpectedForceConstants(expected_filepath)
-        )
+        expected_fc = ExpectedForceConstants(expected_filepath)
+        fc = ForceConstants.from_phonopy(**phonopy_args)
+        return fc, expected_fc
 
-    correct_elements = [
+    @pytest.fixture(params=[
         (
             {
                 "born": quartz_attrs().to_constructor_args().born,
@@ -105,9 +104,7 @@ class TestObjectCreation:
                 "dielectric": quartz_attrs().to_constructor_args().dielectric
             }
         )
-    ]
-
-    @pytest.fixture(params=correct_elements)
+    ])
     def inject_elements(self, request):
         injected_args = request.param
         test_data_file = os.path.join(
@@ -118,14 +115,21 @@ class TestObjectCreation:
         # Inject the faulty value and get a tuple of constructor arguments
         args = expected_fc.to_constructor_args(**injected_args)
         expected_fc = ExpectedForceConstants(test_data_file, args._asdict())
-        return args, expected_fc
-
-    def test_correct_object_creation(self, inject_elements):
-        args, expected_fc = inject_elements
         fc = ForceConstants(*args)
-        check_force_constant_attrs(fc, expected_fc)
+        return fc, expected_fc
 
-    faulty_elements = [
+    @pytest.mark.parametrize(("force_constants_creator"), [
+        pytest.lazy_fixture("inject_elements"),
+        pytest.lazy_fixture("create_from_dict"),
+        pytest.lazy_fixture("create_from_json"),
+        pytest.lazy_fixture("create_from_phonopy"),
+        pytest.lazy_fixture("create_from_castep")
+    ])
+    def test_correct_object_creation(self, force_constants_creator):
+        force_constants, expected_force_constants = force_constants_creator
+        check_force_constant_attrs(force_constants, expected_force_constants)
+
+    @pytest.fixture(params=[
         (
             {
                 "sc_matrix": quartz_attrs().sc_matrix[:2]
@@ -192,9 +196,7 @@ class TestObjectCreation:
             },
             TypeError
         ),
-    ]
-
-    @pytest.fixture(params=faulty_elements)
+    ])
     def inject_faulty_elements(self, request):
         faulty_args, expected_exception = request.param
         test_data_dir = os.path.join(
