@@ -4,7 +4,6 @@ import numpy.testing as npt
 from euphonic import ureg, ForceConstants
 import os
 from tests_and_analysis.test.utils import get_data_path
-import itertools
 import json
 
 
@@ -18,6 +17,86 @@ class ExpectedFrequencies:
             ureg(self.data[material][key + "_unit"])
 
 
+# Load lzo and graphite materials test data
+lzo_and_graphite_atol = 1e-10
+
+lzo_and_graphite_materials = [
+    {
+        "material": "LZO",
+        "json_file": os.path.join(
+            "force_constants", "LZO", 'lzo_force_constants.json'
+        ),
+        "qpts": np.array([
+            [-1.00, 9.35, 3.35],
+            [-1.00, 9.00, 3.00]
+        ]),
+        "atol": lzo_and_graphite_atol
+    },
+    {
+        "material": "graphite",
+        "json_file": os.path.join(
+            "force_constants", "graphite", "graphite_force_constants.json"
+        ),
+        "qpts": np.array([
+            [0.00, 0.00, 0.00],
+            [0.001949, 0.001949, 0.00],
+            [0.50, 0.00, 0.00],
+            [0.25, 0.00, 0.00],
+            [0.00, 0.00, 0.50]
+        ]),
+        "atol": lzo_and_graphite_atol
+    }
+]
+
+lzo_and_graphite_kwargs = [
+    {
+        "kwargs": {
+            "use_c": False, "fall_back_on_python": True, "n_threads": 1
+        },
+        "key": "no_asr"
+    },
+    {
+        "kwargs": {
+            "use_c": True, "fall_back_on_python": False, "n_threads": 1
+        },
+        "key": "no_asr"
+    },
+    {
+        "kwargs": {
+            "use_c": True, "fall_back_on_python": False, "n_threads": 2
+        },
+        "key": "no_asr"
+    },
+    {
+        "kwargs": {
+            "use_c": False, "fall_back_on_python": True,
+            "n_threads": 1, "asr": "realspace"
+        },
+        "key": "realspace"
+    },
+    {
+        "kwargs": {
+            "use_c": True, "fall_back_on_python": False,
+            "n_threads": 1, "asr": "realspace"
+        },
+        "key": "realspace"
+    },
+    {
+        "kwargs": {
+            "use_c": True, "fall_back_on_python": False,
+            "n_threads": 2, "asr": "realspace"
+        },
+        "key": "realspace"
+    }
+]
+
+lzo_and_graphite_test_data = [
+    {**material_json_qpts_atol, **kwargs_key}
+    for material_json_qpts_atol in lzo_and_graphite_materials
+    for kwargs_key in lzo_and_graphite_kwargs
+]
+
+
 @pytest.mark.integration
 class TestCalculateQPointPhononModes:
 
@@ -25,190 +104,154 @@ class TestCalculateQPointPhononModes:
         os.path.join(get_data_path(), "force_constants", "expected_freqs.json")
     )
 
-    lzo_and_graphite_materials = [
-        (
-            "LZO",
-            os.path.join("force_constants", "LZO", 'lzo_force_constants.json'),
-            np.array([  # Qpoints
-                [-1.00, 9.35, 3.35],
-                [-1.00, 9.00, 3.00]
-            ])
-        ),
-        (
-            "graphite",
-            os.path.join(
-                "force_constants", "graphite", "graphite_force_constants.json"
-            ),
-            np.array([  # Qpoints
-                [0.00, 0.00, 0.00],
-                [0.001949, 0.001949, 0.00],
-                [0.50, 0.00, 0.00],
-                [0.25, 0.00, 0.00],
-                [0.00, 0.00, 0.50]
-            ])
-        )
-    ]
+    # Load quartz material test data
 
-    lzo_and_graphite_atol = 1e-10
+    quartz_qpts = np.array([
+        [0.00, 0.00, 0.00],
+        [0.00, 0.00, 0.50],
+        [-0.25, 0.50, 0.50],
+        [-0.151515, 0.575758, 0.5]
+    ])
+    quartz_split_qpts = np.array([
+        [0.00, 0.00, 0.00],
+        [0.00, 0.00, 0.50],
+        [0.00, 0.00, 0.00],
+        [0.00, 0.00, 0.00],
+        [-0.25, 0.50, 0.50],
+        [0.00, 0.00, 0.00],
+        [0.00, 0.00, 0.00],
+        [0.00, 0.00, 0.00],
+        [0.00, 0.00, 0.00],
+        [0.00, 0.00, 0.00],
+        [0.00, 0.00, 0.00],
+        [-0.151515, 0.575758, 0.5],
+        [0.00, 0.00, 0.00]
+    ])
+    quartz_split_qpts_insert_gamma = np.array([
+        [0.00, 0.00, 0.00],
+        [0.00, 0.00, 0.50],
+        [0.00, 0.00, 0.00],
+        [-0.25, 0.50, 0.50],
+        [0.00, 0.00, 0.00],
+        [0.00, 0.00, 0.00],
+        [0.00, 0.00, 0.00],
+        [-0.151515, 0.575758, 0.5],
+        [0.00, 0.00, 0.00]
+    ])
 
-    lzo_and_graphite_kwargs_no_atol = [
-        {"use_c": False, "fall_back_on_python": True, "n_threads": 1},
-        {"use_c": True, "fall_back_on_python": False, "n_threads": 1},
-        {"use_c": True, "fall_back_on_python": False, "n_threads": 2},
+    quartz_kwargs_qpts_atol = [
         {
-            "use_c": False, "fall_back_on_python": True,
-            "n_threads": 1, "asr": "realspace"
+            "kwargs": {"dipole": True, "splitting": False},
+            "qpts": quartz_qpts,
+            "atol": 2e-6,
+            "key": "no_asr"
         },
         {
-            "use_c": True, "fall_back_on_python": False,
-            "n_threads": 1, "asr": "realspace"
+            "kwargs": {
+                "dipole": True, "splitting": False,
+                "use_c": True, "fall_back_on_python": False
+            },
+            "qpts": quartz_qpts,
+            "atol": 2e-6,
+            "key": "no_asr"
         },
         {
-            "use_c": True, "fall_back_on_python": False,
-            "n_threads": 2, "asr": "realspace"
+            "kwargs": {
+                "dipole": True, "splitting": False, "use_c": True,
+                "n_threads": 2, "fall_back_on_python": False
+            },
+            "qpts": quartz_qpts,
+            "atol": 8e-8,
+            "key": "no_asr"
+        },
+        {
+            "kwargs": {
+                "asr": 'reciprocal', "dipole": True, "splitting": False
+            },
+            "qpts": quartz_qpts,
+            "atol": 5e-4,
+            "key": "reciprocal"
+        },
+        {
+            "kwargs": {
+                "asr": 'reciprocal', "dipole": True,
+                "splitting": False, "use_c": True, "fall_back_on_python": False
+            },
+            "qpts": quartz_qpts,
+            "atol": 5e-4,
+            "key": "reciprocal"
+        },
+        {
+            "kwargs": {
+                "asr": 'reciprocal', "dipole": True,
+                "splitting": False, "use_c": True, "n_threads": 2,
+                "fall_back_on_python": False
+            },
+            "qpts": quartz_qpts,
+            "atol": 5e-4,
+            "key": "reciprocal"
+        },
+        {
+            "kwargs": {
+                "asr": 'reciprocal', "dipole": True, "splitting": True
+            },
+            "qpts": quartz_split_qpts,
+            "atol": 5e-4,
+            "key": "reciprocal_splitting"
+        },
+        {
+            "kwargs": {
+                "asr": 'reciprocal', "dipole": True,
+                "splitting": True, "use_c": True, "fall_back_on_python": False
+            },
+            "qpts": quartz_split_qpts,
+            "atol": 5e-4,
+            "key": "reciprocal_splitting"
+        },
+        {
+            "kwargs": {
+                "asr": 'reciprocal', "dipole": True,
+                "splitting": True, "use_c": True, "n_threads": 2,
+                "fall_back_on_python": False
+            },
+            "qpts": quartz_split_qpts,
+            "atol": 5e-4,
+            "key": "reciprocal_splitting"
+        },
+        {
+            "kwargs": {
+                "asr": 'reciprocal', "dipole": True,
+                "splitting": True, "insert_gamma": True
+            },
+            "qpts": quartz_split_qpts_insert_gamma,
+            "atol": 5e-4,
+            "key": "reciprocal_splitting"
         }
     ]
 
-    lzo_and_graphite_kwargs = [
-        (kwargs, 1e-10) for kwargs in lzo_and_graphite_kwargs_no_atol
+    quartz_test_data = [
+        {
+            "material": "quartz",
+            "json_file": os.path.join(
+                get_data_path(), "force_constants",
+                "quartz", "quartz_force_constants.json"
+            ),
+            **data_dict
+        } for data_dict in quartz_kwargs_qpts_atol
     ]
 
     @pytest.fixture(
-        params=
-        list(itertools.product(
-            lzo_and_graphite_materials, lzo_and_graphite_kwargs
-        ))
+        params=lzo_and_graphite_test_data + quartz_test_data
     )
     def create_fc_and_formulate_args(self, request):
-        material_and_qpts, kwargs_and_atol = request.param
-        kwargs, atol = kwargs_and_atol
-        material_name, json_file, qpts = material_and_qpts
-        kwargs["qpts"] = qpts
-        filename = os.path.join(get_data_path(), json_file)
+        test_data = request.param
+        kwargs = test_data["kwargs"]
+        kwargs["qpts"] = test_data["qpts"]
+        filename = os.path.join(get_data_path(), test_data["json_file"])
         fc = ForceConstants.from_json_file(filename)
-        key = "asr" if "asr" in kwargs else "no_asr"
-        atol = 1e-10
-        return fc, kwargs, material_name, key, atol
+        return fc, kwargs, test_data["material"], \
+            test_data["key"], test_data["atol"]
 
-    # qpts = np.array([
-    #     [0.00, 0.00, 0.00],
-    #     [0.00, 0.00, 0.50],
-    #     [-0.25, 0.50, 0.50],
-    #     [-0.151515, 0.575758, 0.5]
-    # ])
-    # split_qpts = np.array([
-    #     [0.00, 0.00, 0.00],
-    #     [0.00, 0.00, 0.50],
-    #     [0.00, 0.00, 0.00],
-    #     [0.00, 0.00, 0.00],
-    #     [-0.25, 0.50, 0.50],
-    #     [0.00, 0.00, 0.00],
-    #     [0.00, 0.00, 0.00],
-    #     [0.00, 0.00, 0.00],
-    #     [0.00, 0.00, 0.00],
-    #     [0.00, 0.00, 0.00],
-    #     [0.00, 0.00, 0.00],
-    #     [-0.151515, 0.575758, 0.5],
-    #     [0.00, 0.00, 0.00]
-    # ])
-    # split_qpts_insert_gamma = np.array([
-    #     [0.00, 0.00, 0.00],
-    #     [0.00, 0.00, 0.50],
-    #     [0.00, 0.00, 0.00],
-    #     [-0.25, 0.50, 0.50],
-    #     [0.00, 0.00, 0.00],
-    #     [0.00, 0.00, 0.00],
-    #     [0.00, 0.00, 0.00],
-    #     [-0.151515, 0.575758, 0.5],
-    #     [0.00, 0.00, 0.00]
-    # ])
-    #
-    # quartz_castep_bin_file = os.path.join(path, "quartz", "quartz.castep_bin")
-    #
-    # @pytest.fixture(params=[
-    #     (
-    #         {"qpts": qpts, "dipole": True, "splitting": False},
-    #         2e-6
-    #     ),
-    #     (
-    #         {
-    #             "qpts": qpts, "dipole": True, "splitting": False,
-    #             "use_c": True, "fall_back_on_python": False
-    #         },
-    #         2e-6
-    #     ),
-    #     (
-    #         {
-    #             "qpts": qpts, "dipole": True, "splitting": False, "use_c": True,
-    #             "n_threads": 2, "fall_back_on_python": False
-    #         },
-    #         8e-8
-    #     ),
-    #     (
-    #         {
-    #             "qpts": qpts, "asr": 'reciprocal',
-    #             "dipole": True, "splitting": False
-    #         },
-    #         5e-4
-    #     ),
-    #     (
-    #         {
-    #             "qpts": qpts, "asr": 'reciprocal', "dipole": True,
-    #             "splitting": False, "use_c": True, "fall_back_on_python": False
-    #         },
-    #         5e-4
-    #     ),
-    #     (
-    #         {
-    #             "qpts": qpts, "asr": 'reciprocal', "dipole": True,
-    #             "splitting": False, "use_c": True, "n_threads": 2,
-    #             "fall_back_on_python": False
-    #         },
-    #         5e-4
-    #     ),
-    #     (
-    #         {
-    #             "qpts": split_qpts, "asr": 'reciprocal',
-    #             "dipole": True, "splitting": True
-    #         },
-    #         5e-4
-    #     ),
-    #     (
-    #         {
-    #             "qpts": split_qpts, "asr": 'reciprocal', "dipole": True,
-    #             "splitting": True, "use_c": True, "fall_back_on_python": False
-    #         },
-    #         5e-4
-    #     ),
-    #     (
-    #         {
-    #             "qpts": split_qpts, "asr": 'reciprocal', "dipole": True,
-    #             "splitting": True, "use_c": True, "n_threads": 2,
-    #             "fall_back_on_python": False
-    #         },
-    #         5e-4
-    #     ),
-    #     (
-    #         {
-    #             "qpts": split_qpts_insert_gamma, "asr": 'reciprocal',
-    #             "dipole": True, "splitting": True, "insert_gamma": True
-    #         },
-    #         5e-4
-    #     )
-    # ])
-    # def create_from_quartz(self, request):
-    #     kwargs, atol = request.param
-    #     fc = ForceConstants.from_castep(self.quartz_castep_bin_file)
-    #     if "asr" in kwargs:
-    #         if "splitting" in kwargs and kwargs["splitting"]:
-    #             key = "asr_splitting"
-    #         else:
-    #             key = "asr"
-    #     else:
-    #         key = "no_asr"
-    #     material_name = "quartz"
-    #     return fc, kwargs, material_name, key, atol
-    #
     # nacl_yaml_dir = os.path.join(
     #     get_data_path(), "phonopy_data", "NaCl", "force_constants"
     # )
@@ -260,14 +303,9 @@ class TestCalculateQPointPhononModes:
     #     material_name = "NaCl"
     #     return fc, kwargs, material_name, key, atol
 
-    @pytest.mark.parametrize(("force_constants_creator"), [
-        # pytest.lazy_fixture("create_from_nacl"),
-        # pytest.lazy_fixture("create_from_quartz"),
-        pytest.lazy_fixture("create_fc_and_formulate_args")
-    ])
     def test_fc_calculate_qpoint_phonon_modes_expected_results(
-            self, force_constants_creator):
-        fc, kwargs, material, key, atol = force_constants_creator
+            self, create_fc_and_formulate_args):
+        fc, kwargs, material, key, atol = create_fc_and_formulate_args
         qpoint_phonon_modes = fc.calculate_qpoint_phonon_modes(**kwargs)
         test_expected_freqs = self.expected_freqs.\
             get_expected_freqs(material, key)

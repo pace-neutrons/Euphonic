@@ -1,6 +1,6 @@
 {
     "LZO": {
-        "asr": [
+        "realspace": [
             [
                 0.0002964449,
                 0.0002964449,
@@ -138,7 +138,7 @@
                 0.0033517193438
             ]
         ],
-        "asr_unit": "hartree",
+        "realspace_unit": "hartree",
         "no_asr": [
             [
                 0.0002964623,
@@ -603,7 +603,7 @@
         "reciprocal_unit": "millielectron_volt"
     },
     "graphite": {
-        "asr": [
+        "realspace": [
             [
                 -1.4954416353e-09,
                 -1.4920078435e-09,
@@ -675,7 +675,7 @@
                 0.0071591503492
             ]
         ],
-        "asr_unit": "hartree",
+        "realspace_unit": "hartree",
         "no_asr": [
             [
                 -1.4947813885e-05,
@@ -751,7 +751,7 @@
         "no_asr_unit": "hartree"
     },
     "quartz": {
-        "asr": [
+        "reciprocal": [
             [
                 0.0,
                 0.0,
@@ -869,7 +869,7 @@
                 0.00537398
             ]
         ],
-        "asr_splitting": [
+        "reciprocal_splitting": [
             [
                 0.0,
                 0.0,
@@ -1248,8 +1248,8 @@
                 0.00564028
             ]
         ],
-        "asr_splitting_unit": "hartree",
-        "asr_unit": "hartree",
+        "reciprocal_splitting_unit": "hartree",
+        "reciprocal_unit": "hartree",
         "no_asr": [
             [
                 -9.745e-05,
