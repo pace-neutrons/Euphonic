@@ -9,7 +9,6 @@ from tests_and_analysis.test.euphonic_test.force_constant_utils import (
     ExpectedData
 )
 from slugify import slugify
-import itertools
 
 
 @pytest.mark.unit
