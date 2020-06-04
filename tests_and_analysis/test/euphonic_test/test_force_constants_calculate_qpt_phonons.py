@@ -25,18 +25,20 @@ class TestCalculateQPointPhononModes:
         os.path.join(get_data_path(), "force_constants", "expected_freqs.json")
     )
 
-    path = os.path.join(get_data_path(), 'force_constants')
-
-    materials = [
+    lzo_and_graphite_materials = [
         (
-            "LZO", 'La2Zr2O7.castep_bin',
+            "LZO",
+            os.path.join("force_constants", "LZO", 'lzo_force_constants.json'),
             np.array([  # Qpoints
                 [-1.00, 9.35, 3.35],
                 [-1.00, 9.00, 3.00]
             ])
         ),
         (
-            "graphite", "graphite.castep_bin",
+            "graphite",
+            os.path.join(
+                "force_constants", "graphite", "graphite_force_constants.json"
+            ),
             np.array([  # Qpoints
                 [0.00, 0.00, 0.00],
                 [0.001949, 0.001949, 0.00],
@@ -47,7 +49,9 @@ class TestCalculateQPointPhononModes:
         )
     ]
 
-    kwargs = [
+    lzo_and_graphite_atol = 1e-10
+
+    lzo_and_graphite_kwargs_no_atol = [
         {"use_c": False, "fall_back_on_python": True, "n_threads": 1},
         {"use_c": True, "fall_back_on_python": False, "n_threads": 1},
         {"use_c": True, "fall_back_on_python": False, "n_threads": 2},
@@ -65,193 +69,201 @@ class TestCalculateQPointPhononModes:
         }
     ]
 
+    lzo_and_graphite_kwargs = [
+        (kwargs, 1e-10) for kwargs in lzo_and_graphite_kwargs_no_atol
+    ]
+
     @pytest.fixture(
-        params=list(itertools.product(materials, kwargs))
+        params=
+        list(itertools.product(
+            lzo_and_graphite_materials, lzo_and_graphite_kwargs
+        ))
     )
-    def create_from_lzo_and_graphite(self, request):
-        material, kwargs = request.param
-        material_name, castep_bin_file, qpts = material
+    def create_fc_and_formulate_args(self, request):
+        material_and_qpts, kwargs_and_atol = request.param
+        kwargs, atol = kwargs_and_atol
+        material_name, json_file, qpts = material_and_qpts
         kwargs["qpts"] = qpts
-        filename = os.path.join(self.path, material_name, castep_bin_file)
-        fc = ForceConstants.from_castep(filename)
+        filename = os.path.join(get_data_path(), json_file)
+        fc = ForceConstants.from_json_file(filename)
         key = "asr" if "asr" in kwargs else "no_asr"
         atol = 1e-10
         return fc, kwargs, material_name, key, atol
 
-    qpts = np.array([
-        [0.00, 0.00, 0.00],
-        [0.00, 0.00, 0.50],
-        [-0.25, 0.50, 0.50],
-        [-0.151515, 0.575758, 0.5]
-    ])
-    split_qpts = np.array([
-        [0.00, 0.00, 0.00],
-        [0.00, 0.00, 0.50],
-        [0.00, 0.00, 0.00],
-        [0.00, 0.00, 0.00],
-        [-0.25, 0.50, 0.50],
-        [0.00, 0.00, 0.00],
-        [0.00, 0.00, 0.00],
-        [0.00, 0.00, 0.00],
-        [0.00, 0.00, 0.00],
-        [0.00, 0.00, 0.00],
-        [0.00, 0.00, 0.00],
-        [-0.151515, 0.575758, 0.5],
-        [0.00, 0.00, 0.00]
-    ])
-    split_qpts_insert_gamma = np.array([
-        [0.00, 0.00, 0.00],
-        [0.00, 0.00, 0.50],
-        [0.00, 0.00, 0.00],
-        [-0.25, 0.50, 0.50],
-        [0.00, 0.00, 0.00],
-        [0.00, 0.00, 0.00],
-        [0.00, 0.00, 0.00],
-        [-0.151515, 0.575758, 0.5],
-        [0.00, 0.00, 0.00]
-    ])
-
-    quartz_castep_bin_file = os.path.join(path, "quartz", "quartz.castep_bin")
-
-    @pytest.fixture(params=[
-        (
-            {"qpts": qpts, "dipole": True, "splitting": False},
-            2e-6
-        ),
-        (
-            {
-                "qpts": qpts, "dipole": True, "splitting": False,
-                "use_c": True, "fall_back_on_python": False
-            },
-            2e-6
-        ),
-        (
-            {
-                "qpts": qpts, "dipole": True, "splitting": False, "use_c": True,
-                "n_threads": 2, "fall_back_on_python": False
-            },
-            8e-8
-        ),
-        (
-            {
-                "qpts": qpts, "asr": 'reciprocal',
-                "dipole": True, "splitting": False
-            },
-            5e-4
-        ),
-        (
-            {
-                "qpts": qpts, "asr": 'reciprocal', "dipole": True,
-                "splitting": False, "use_c": True, "fall_back_on_python": False
-            },
-            5e-4
-        ),
-        (
-            {
-                "qpts": qpts, "asr": 'reciprocal', "dipole": True,
-                "splitting": False, "use_c": True, "n_threads": 2,
-                "fall_back_on_python": False
-            },
-            5e-4
-        ),
-        (
-            {
-                "qpts": split_qpts, "asr": 'reciprocal',
-                "dipole": True, "splitting": True
-            },
-            5e-4
-        ),
-        (
-            {
-                "qpts": split_qpts, "asr": 'reciprocal', "dipole": True,
-                "splitting": True, "use_c": True, "fall_back_on_python": False
-            },
-            5e-4
-        ),
-        (
-            {
-                "qpts": split_qpts, "asr": 'reciprocal', "dipole": True,
-                "splitting": True, "use_c": True, "n_threads": 2,
-                "fall_back_on_python": False
-            },
-            5e-4
-        ),
-        (
-            {
-                "qpts": split_qpts_insert_gamma, "asr": 'reciprocal',
-                "dipole": True, "splitting": True, "insert_gamma": True
-            },
-            5e-4
-        )
-    ])
-    def create_from_quartz(self, request):
-        kwargs, atol = request.param
-        fc = ForceConstants.from_castep(self.quartz_castep_bin_file)
-        if "asr" in kwargs:
-            if "splitting" in kwargs and kwargs["splitting"]:
-                key = "asr_splitting"
-            else:
-                key = "asr"
-        else:
-            key = "no_asr"
-        material_name = "quartz"
-        return fc, kwargs, material_name, key, atol
-
-    nacl_yaml_dir = os.path.join(
-        get_data_path(), "phonopy_data", "NaCl", "force_constants"
-    )
-
-    @pytest.fixture(params=[
-            {"dipole": True, "splitting": False},
-            {
-                "dipole": True, "splitting": False,
-                "use_c": True, "fall_back_on_python": False
-            },
-            {
-                "dipole": True, "splitting": False,
-                "use_c": True, "fall_back_on_python": False, "n_threads": 2
-            },
-            {"dipole": True, "splitting": False, "asr": 'reciprocal'},
-            {
-                "dipole": True, "splitting": False, "asr": 'reciprocal',
-                "use_c": True, "fall_back_on_python": False
-            },
-            {
-                "dipole": True, "splitting": False, "asr": 'reciprocal',
-                "use_c": True, "fall_back_on_python": False, "n_threads": 2
-            },
-            {"dipole": True, "splitting": False, "asr": 'realspace'},
-            {
-                "dipole": True, "splitting": False, "asr": 'realspace',
-                "use_c": True, "fall_back_on_python": False
-            },
-            {
-                "dipole": True, "splitting": False, "asr": 'realspace',
-                "use_c": True, "fall_back_on_python": False, "n_threads": 2
-            }
-        ]
-    )
-    def create_from_nacl(self, request):
-        fc = ForceConstants.from_phonopy(
-            path=self.nacl_yaml_dir, summary_name="phonopy.yaml"
-        )
-        kwargs = request.param
-        key = kwargs["asr"] if "asr" in kwargs else "no_asr"
-        qpts = np.array([
-            [0.00, 0.00, 0.00],
-            [0.00, 0.00, 0.50],
-            [-0.25, 0.50, 0.50],
-            [-0.151515, 0.575758, 0.5]
-        ])
-        kwargs["qpts"] = qpts
-        atol = 1e-8
-        material_name = "NaCl"
-        return fc, kwargs, material_name, key, atol
+    # qpts = np.array([
+    #     [0.00, 0.00, 0.00],
+    #     [0.00, 0.00, 0.50],
+    #     [-0.25, 0.50, 0.50],
+    #     [-0.151515, 0.575758, 0.5]
+    # ])
+    # split_qpts = np.array([
+    #     [0.00, 0.00, 0.00],
+    #     [0.00, 0.00, 0.50],
+    #     [0.00, 0.00, 0.00],
+    #     [0.00, 0.00, 0.00],
+    #     [-0.25, 0.50, 0.50],
+    #     [0.00, 0.00, 0.00],
+    #     [0.00, 0.00, 0.00],
+    #     [0.00, 0.00, 0.00],
+    #     [0.00, 0.00, 0.00],
+    #     [0.00, 0.00, 0.00],
+    #     [0.00, 0.00, 0.00],
+    #     [-0.151515, 0.575758, 0.5],
+    #     [0.00, 0.00, 0.00]
+    # ])
+    # split_qpts_insert_gamma = np.array([
+    #     [0.00, 0.00, 0.00],
+    #     [0.00, 0.00, 0.50],
+    #     [0.00, 0.00, 0.00],
+    #     [-0.25, 0.50, 0.50],
+    #     [0.00, 0.00, 0.00],
+    #     [0.00, 0.00, 0.00],
+    #     [0.00, 0.00, 0.00],
+    #     [-0.151515, 0.575758, 0.5],
+    #     [0.00, 0.00, 0.00]
+    # ])
+    #
+    # quartz_castep_bin_file = os.path.join(path, "quartz", "quartz.castep_bin")
+    #
+    # @pytest.fixture(params=[
+    #     (
+    #         {"qpts": qpts, "dipole": True, "splitting": False},
+    #         2e-6
+    #     ),
+    #     (
+    #         {
+    #             "qpts": qpts, "dipole": True, "splitting": False,
+    #             "use_c": True, "fall_back_on_python": False
+    #         },
+    #         2e-6
+    #     ),
+    #     (
+    #         {
+    #             "qpts": qpts, "dipole": True, "splitting": False, "use_c": True,
+    #             "n_threads": 2, "fall_back_on_python": False
+    #         },
+    #         8e-8
+    #     ),
+    #     (
+    #         {
+    #             "qpts": qpts, "asr": 'reciprocal',
+    #             "dipole": True, "splitting": False
+    #         },
+    #         5e-4
+    #     ),
+    #     (
+    #         {
+    #             "qpts": qpts, "asr": 'reciprocal', "dipole": True,
+    #             "splitting": False, "use_c": True, "fall_back_on_python": False
+    #         },
+    #         5e-4
+    #     ),
+    #     (
+    #         {
+    #             "qpts": qpts, "asr": 'reciprocal', "dipole": True,
+    #             "splitting": False, "use_c": True, "n_threads": 2,
+    #             "fall_back_on_python": False
+    #         },
+    #         5e-4
+    #     ),
+    #     (
+    #         {
+    #             "qpts": split_qpts, "asr": 'reciprocal',
+    #             "dipole": True, "splitting": True
+    #         },
+    #         5e-4
+    #     ),
+    #     (
+    #         {
+    #             "qpts": split_qpts, "asr": 'reciprocal', "dipole": True,
+    #             "splitting": True, "use_c": True, "fall_back_on_python": False
+    #         },
+    #         5e-4
+    #     ),
+    #     (
+    #         {
+    #             "qpts": split_qpts, "asr": 'reciprocal', "dipole": True,
+    #             "splitting": True, "use_c": True, "n_threads": 2,
+    #             "fall_back_on_python": False
+    #         },
+    #         5e-4
+    #     ),
+    #     (
+    #         {
+    #             "qpts": split_qpts_insert_gamma, "asr": 'reciprocal',
+    #             "dipole": True, "splitting": True, "insert_gamma": True
+    #         },
+    #         5e-4
+    #     )
+    # ])
+    # def create_from_quartz(self, request):
+    #     kwargs, atol = request.param
+    #     fc = ForceConstants.from_castep(self.quartz_castep_bin_file)
+    #     if "asr" in kwargs:
+    #         if "splitting" in kwargs and kwargs["splitting"]:
+    #             key = "asr_splitting"
+    #         else:
+    #             key = "asr"
+    #     else:
+    #         key = "no_asr"
+    #     material_name = "quartz"
+    #     return fc, kwargs, material_name, key, atol
+    #
+    # nacl_yaml_dir = os.path.join(
+    #     get_data_path(), "phonopy_data", "NaCl", "force_constants"
+    # )
+    #
+    # @pytest.fixture(params=[
+    #         {"dipole": True, "splitting": False},
+    #         {
+    #             "dipole": True, "splitting": False,
+    #             "use_c": True, "fall_back_on_python": False
+    #         },
+    #         {
+    #             "dipole": True, "splitting": False,
+    #             "use_c": True, "fall_back_on_python": False, "n_threads": 2
+    #         },
+    #         {"dipole": True, "splitting": False, "asr": 'reciprocal'},
+    #         {
+    #             "dipole": True, "splitting": False, "asr": 'reciprocal',
+    #             "use_c": True, "fall_back_on_python": False
+    #         },
+    #         {
+    #             "dipole": True, "splitting": False, "asr": 'reciprocal',
+    #             "use_c": True, "fall_back_on_python": False, "n_threads": 2
+    #         },
+    #         {"dipole": True, "splitting": False, "asr": 'realspace'},
+    #         {
+    #             "dipole": True, "splitting": False, "asr": 'realspace',
+    #             "use_c": True, "fall_back_on_python": False
+    #         },
+    #         {
+    #             "dipole": True, "splitting": False, "asr": 'realspace',
+    #             "use_c": True, "fall_back_on_python": False, "n_threads": 2
+    #         }
+    #     ]
+    # )
+    # def create_from_nacl(self, request):
+    #     fc = ForceConstants.from_phonopy(
+    #         path=self.nacl_yaml_dir, summary_name="phonopy.yaml"
+    #     )
+    #     kwargs = request.param
+    #     key = kwargs["asr"] if "asr" in kwargs else "no_asr"
+    #     qpts = np.array([
+    #         [0.00, 0.00, 0.00],
+    #         [0.00, 0.00, 0.50],
+    #         [-0.25, 0.50, 0.50],
+    #         [-0.151515, 0.575758, 0.5]
+    #     ])
+    #     kwargs["qpts"] = qpts
+    #     atol = 1e-8
+    #     material_name = "NaCl"
+    #     return fc, kwargs, material_name, key, atol
 
     @pytest.mark.parametrize(("force_constants_creator"), [
-        pytest.lazy_fixture("create_from_nacl"),
-        pytest.lazy_fixture("create_from_quartz"),
-        pytest.lazy_fixture("create_from_lzo_and_graphite")
+        # pytest.lazy_fixture("create_from_nacl"),
+        # pytest.lazy_fixture("create_from_quartz"),
+        pytest.lazy_fixture("create_fc_and_formulate_args")
     ])
     def test_fc_calculate_qpoint_phonon_modes_expected_results(
             self, force_constants_creator):
