@@ -10,7 +10,7 @@ import itertools
 @pytest.mark.integration
 class TestCalculateQPointPhononModes:
 
-    path = os.path.join(get_data_path(), 'interpolation')
+    path = os.path.join(get_data_path(), 'force_constants')
 
     expected_freqs = {
         "LZO": {
@@ -492,7 +492,7 @@ class TestCalculateQPointPhononModes:
         )
 
     phonopy_yaml_file = os.path.join(
-        get_data_path(), "phonopy_data", "NaCl", "interpolation"
+        get_data_path(), "phonopy_data", "NaCl", "force_constants"
     )
 
     phonopy_expected_freqs = {

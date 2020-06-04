@@ -16,7 +16,7 @@ def get_ijn_from_image_data(image_data):
 @pytest.mark.unit
 class TestInterpolatePhonons:
 
-    path = os.path.join(get_data_path(), 'interpolation')
+    path = os.path.join(get_data_path(), 'force_constants')
     unique_sc_offsets = [[] for _ in range(3)]
     unique_cell_origins = [[] for _ in range(3)]
 

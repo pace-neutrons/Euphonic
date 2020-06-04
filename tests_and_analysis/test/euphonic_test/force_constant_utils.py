@@ -205,7 +205,7 @@ def check_fc_born(actual_force_constants, expected_force_constants):
 
 def quartz_attrs():
     test_data_file = os.path.join(
-        get_data_path(), "interpolation",
+        get_data_path(), "force_constants",
         "quartz", "quartz_force_constants.json"
     )
     return ExpectedForceConstants(test_data_file)

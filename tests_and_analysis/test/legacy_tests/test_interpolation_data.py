@@ -69,7 +69,7 @@ class TestInputReadLZO(unittest.TestCase):
                                              [0, 0, 1]])
         self.expctd_data = expctd_data
 
-        self.path = os.path.join(get_data_path(), 'interpolation', 'LZO')
+        self.path = os.path.join(get_data_path(), 'force_constants', 'LZO')
         self.filename = os.path.join(self.path, 'La2Zr2O7.castep_bin')
         fc = ForceConstants.from_castep(self.filename)
         self.fc = fc
@@ -118,7 +118,7 @@ class TestInputReadLZO(unittest.TestCase):
 class TestInterpolatePhononsLZO(unittest.TestCase):
 
     def setUp(self):
-        self.path = os.path.join(get_data_path(), 'interpolation', 'LZO')
+        self.path = os.path.join(get_data_path(), 'force_constants', 'LZO')
         filename = os.path.join(self.path, 'La2Zr2O7.castep_bin')
         fc = ForceConstants.from_castep(filename)
         self.fc = fc
@@ -436,7 +436,7 @@ class TestInputReadGraphite(unittest.TestCase):
              [5, 6, 1], [6, 6, 1]])
         self.expctd_data = expctd_data
 
-        self.path = os.path.join(get_data_path(), 'interpolation', 'graphite')
+        self.path = os.path.join(get_data_path(), 'force_constants', 'graphite')
         self.filename = os.path.join(self.path, 'graphite.castep_bin')
         data = ForceConstants.from_castep(self.filename)
         self.fc = data
@@ -488,7 +488,7 @@ class TestInputReadGraphite(unittest.TestCase):
 class TestInterpolatePhononsGraphite(unittest.TestCase):
 
     def setUp(self):
-        self.path = os.path.join(get_data_path(), 'interpolation', 'graphite')
+        self.path = os.path.join(get_data_path(), 'force_constants', 'graphite')
         self.n_atoms = 4
         self.n_cells_in_sc = 98
         self.qpts = np.array([[0.00, 0.00, 0.00],
@@ -779,7 +779,7 @@ class TestInputReadQuartz(unittest.TestCase):
             [0.00000000, 0.00000000, 2.52289805]])*ureg('e**2/(bohr*hartree)')
         self.expctd_data = expctd_data
 
-        self.path = os.path.join(get_data_path(), 'interpolation', 'quartz')
+        self.path = os.path.join(get_data_path(), 'force_constants', 'quartz')
         self.filename = os.path.join(self.path, 'quartz.castep_bin')
         fc = ForceConstants.from_castep(self.filename)
         self.fc = fc
@@ -839,7 +839,7 @@ class TestInputReadQuartz(unittest.TestCase):
 class TestInterpolatePhononsQuartz(unittest.TestCase):
 
     def setUp(self):
-        self.path = os.path.join(get_data_path(), 'interpolation', 'quartz')
+        self.path = os.path.join(get_data_path(), 'force_constants', 'quartz')
         self.qpts = np.array([[0.00, 0.00, 0.00],
                               [0.00, 0.00, 0.50],
                               [-0.25, 0.50, 0.50],

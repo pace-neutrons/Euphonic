@@ -11,7 +11,7 @@ from tests_and_analysis.test.utils import get_data_path
 
 
 quartz_castep_bin = os.path.join(
-    get_data_path(), "interpolation", "quartz", "quartz.castep_bin")
+    get_data_path(), "force_constants", "quartz", "quartz.castep_bin")
 
 
 class SharedCode:

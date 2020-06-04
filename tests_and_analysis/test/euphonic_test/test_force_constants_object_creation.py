@@ -21,7 +21,7 @@ class TestObjectCreation:
     ])
     def test_creation_from_castep(self, castep_bin_dir, castep_bin_file):
         dirpath = os.path.join(
-            get_data_path(), 'interpolation', castep_bin_dir
+            get_data_path(), 'force_constants', castep_bin_dir
         )
         json_filepath = os.path.join(
             dirpath, castep_bin_dir.lower() + "_force_constants.json"
@@ -37,7 +37,7 @@ class TestObjectCreation:
     ])
     def test_creation_from_json(self, json_dir, json_file):
         json_filepath = os.path.join(
-            get_data_path(), 'interpolation', json_dir, json_file
+            get_data_path(), 'force_constants', json_dir, json_file
         )
         fc = ForceConstants.from_json_file(json_filepath)
         check_force_constant_attrs(fc, ExpectedForceConstants(json_filepath))
@@ -49,7 +49,7 @@ class TestObjectCreation:
     ])
     def test_creation_from_dict(self, json_dir, json_file):
         dirpath = os.path.join(
-            get_data_path(), 'interpolation',
+            get_data_path(), 'force_constants',
             json_dir, json_dir.lower() + "_force_constants.json"
         )
         expected_fc = ExpectedForceConstants(dirpath)
@@ -85,7 +85,7 @@ class TestObjectCreation:
     #         + "-".join(phonopy_args.values())
     #     )
     #     phonopy_args["path"] = os.path.join(
-    #         get_data_path(), 'phonopy_data', 'NaCl', 'interpolation'
+    #         get_data_path(), 'phonopy_data', 'NaCl', 'force_constants'
     #     )
     #     fc = ForceConstants.from_phonopy(**phonopy_args)
     #     expected_dirpath = os.path.join(phonopy_args["path"], test_data_dir)
@@ -112,7 +112,7 @@ class TestObjectCreation:
     def inject_elements(self, request):
         injected_args = request.param
         test_data_file = os.path.join(
-            get_data_path(), "interpolation",
+            get_data_path(), "force_constants",
             "quartz", "quartz_force_constants.json"
         )
         expected_fc = ExpectedForceConstants(test_data_file)
@@ -199,7 +199,7 @@ class TestObjectCreation:
     def inject_faulty_elements(self, request):
         faulty_args, expected_exception = request.param
         test_data_dir = os.path.join(
-            get_data_path(), "interpolation",
+            get_data_path(), "force_constants",
             "quartz", "quartz_force_constants.json"
         )
         expected_fc = ExpectedForceConstants(test_data_dir)
@@ -259,7 +259,7 @@ class TestObjectCreation:
     def fc_mat(self, request):
         directory, filename, fc_mat_cell0_i0_j0, celln, fc_mat_celln = \
             request.param
-        path = os.path.join(get_data_path(), 'interpolation', directory)
+        path = os.path.join(get_data_path(), 'force_constants', directory)
         expected_data = ExpectedData(
             fc_mat_cell0_i0_j0=fc_mat_cell0_i0_j0,
             fc_mat_celln=fc_mat_celln
