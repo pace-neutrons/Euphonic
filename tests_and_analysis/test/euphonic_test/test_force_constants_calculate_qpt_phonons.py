@@ -78,24 +78,6 @@ class TestCalculateQPointPhononModes:
         atol = 1e-10
         return fc, kwargs, material_name, key, atol
 
-    # @pytest.mark.parametrize(
-    #     ("material_name", "castep_bin_file", "fc_mat_asr_file"),
-    #     [
-    #         ('graphite', 'graphite.castep_bin', 'graphite_fc_mat_asr.npy'),
-    #         ('LZO', 'La2Zr2O7.castep_bin', 'lzo_fc_mat_asr.npy')
-    #     ]
-    # )
-    # def test_enforce_realspace_acoustic_sum_rule(
-    #         self, material_name, castep_bin_file, fc_mat_asr_file):
-    #     castep_bin_filepath = os.path.join(
-    #         self.path, material_name, castep_bin_file
-    #     )
-    #     fc = ForceConstants.from_castep(castep_bin_filepath)
-    #     expected_fc_mat = np.load(
-    #         os.path.join(self.path, material_name, fc_mat_asr_file)
-    #     )
-    #     fc_mat = fc._enforce_realspace_asr()
-    #     npt.assert_allclose(fc_mat, expected_fc_mat, atol=1e-18)
     #
     # qpts = np.array([
     #     [0.00, 0.00, 0.00],
