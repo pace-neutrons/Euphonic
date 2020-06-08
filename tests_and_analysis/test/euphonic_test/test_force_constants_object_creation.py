@@ -2,11 +2,8 @@ import pytest
 import os
 from tests_and_analysis.test.utils import get_data_path
 from euphonic import ForceConstants, ureg
-import numpy as np
-import numpy.testing as npt
 from tests_and_analysis.test.euphonic_test.force_constant_utils import (
-    check_force_constant_attrs, ExpectedForceConstants, quartz_attrs,
-    ExpectedData
+    check_force_constant_attrs, ExpectedForceConstants, quartz_attrs
 )
 from slugify import slugify
 
