@@ -102,16 +102,17 @@ pipeline {
         stage("PyPI Release Testing") {
             steps {
                 script {
-                    def tag = sh(returnStdout: true, script: "git tag | tail -1").trim().replaceAll("v", "")
+                    def tags = sh(returnStdout: true, script: "git tag").split("/n")
+                    def tag = tags[tags.length-1].trim().replaceAll("v", "")
+                    sh """
+                        rm -rf .tox &&
+                        module load conda/3 &&
+                        conda config --append channels free &&
+                        conda activate py &&
+                        export EUPHONIC_VERSION="\${tag}" &&
+                        python -m tox -c release_tox.ini
+                    """
                 }
-                sh """
-                    rm -rf .tox &&
-                    module load conda/3 &&
-                    conda config --append channels free &&
-                    conda activate py &&
-                    export EUPHONIC_VERSION="${tag}" &&
-                    python -m tox -c release_tox.ini
-                """
             }
         }
 
