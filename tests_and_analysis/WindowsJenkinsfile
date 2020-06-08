@@ -81,7 +81,7 @@ pipeline {
         stage("PyPI Release Testing VS2019") {
             steps {
                 script {
-                    def tag = env.JOB_BASE_NAME.substring(1, env.JOB_BASE_NAME.length())
+                   def tag = sh(returnStdout: true, script: "git tag --sort version:refname | tail -1").trim().replaceAll("v", "")
                 }
                 bat """
                     rmdir /s /q .tox
