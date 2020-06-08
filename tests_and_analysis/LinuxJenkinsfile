@@ -103,6 +103,7 @@ pipeline {
             steps {
                 script {
                     def tag = env.JOB_BASE_NAME.trim().replaceAll("v", "")
+                    echo "$tag"
                     sh """
                         rm -rf .tox &&
                         module load conda/3 &&
