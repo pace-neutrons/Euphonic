@@ -57,7 +57,7 @@ pipeline {
             }
         }
 
-       stage("Set up") {
+        stage("Set up") {
             steps {
                 bat """
                     CALL conda create --name py python=3.6.0 -y
@@ -68,17 +68,18 @@ pipeline {
             }
         }
 
-        /* stage("Test VS2019") {
-            steps {
+        stage("Test VS2019") {
+           steps {
                 bat """
                     CALL "%VS2019_VCVARSALL%" x86_amd64
                     CALL conda activate py
                     python -m tox
                 """
             }
-        }*/
+        }
 
         stage("PyPI Release Testing VS2019") {
+            when { tag "*" }
             steps {
                 script {
                     def tag = env.JOB_BASE_NAME.replaceAll("v", "")

@@ -88,7 +88,7 @@ pipeline {
             }
         }
 
-        /*stage("Test") {
+        stage("Test") {
             steps {
                 sh """
                     module load conda/3 &&
@@ -97,13 +97,13 @@ pipeline {
                     python -m tox
                 """
             }
-        }*/
+        }
 
         stage("PyPI Release Testing") {
+            when { tag "*" }
             steps {
                 script {
                     def tag = env.JOB_BASE_NAME.trim().replaceAll("v", "")
-                    echo "$tag"
                     sh """
                         rm -rf .tox &&
                         module load conda/3 &&
