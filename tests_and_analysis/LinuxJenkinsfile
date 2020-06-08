@@ -102,8 +102,7 @@ pipeline {
         stage("PyPI Release Testing") {
             steps {
                 script {
-                    def tags = sh(returnStdout: true, script: "git tag").split("/n")
-                    def tag = tags[tags.length-1].trim().replaceAll("v", "")
+                    def tag = env.JOB_BASE_NAME.trim().replaceAll("v", "")
                     sh """
                         rm -rf .tox &&
                         module load conda/3 &&

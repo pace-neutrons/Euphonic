@@ -81,13 +81,8 @@ pipeline {
         stage("PyPI Release Testing VS2019") {
             steps {
                 script {
-                    def tags = bat(returnStdout: true, script: """
-                        @echo off
-                        git tag
-                    """)
-                    echo "$tags"
-                    tags = tags.split("/n")
-                    def tag = tags[tags.length-1].trim().replaceAll("v", "")
+                    def tag = env.JOB_BASE_NAME.replaceAll("v", "")
+                    echo "$tag"
                     bat """
                         rmdir /s /q .tox
                         CALL conda activate py
