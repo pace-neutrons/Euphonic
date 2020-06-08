@@ -109,7 +109,7 @@ pipeline {
                         module load conda/3 &&
                         conda config --append channels free &&
                         conda activate py &&
-                        export EUPHONIC_VERSION="\${tag}" &&
+                        export EUPHONIC_VERSION="$tag" &&
                         python -m tox -c release_tox.ini
                     """
                 }

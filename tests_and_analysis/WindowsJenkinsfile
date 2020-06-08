@@ -81,12 +81,12 @@ pipeline {
         stage("PyPI Release Testing VS2019") {
             steps {
                 script {
-                   def tags = bat(returnStdout: true, script: "git tag").split("/n")
-                   def tag = tags[tags.length-1].trim().replaceAll("v", "")
+                    def tags = bat(returnStdout: true, script: "git tag").split("/n")
+                    def tag = tags[tags.length-1].trim().replaceAll("v", "")
                     bat """
                         rmdir /s /q .tox
                         CALL conda activate py
-                        set /p EUPHONIC_VERSION="\${tag}"
+                        set /p EUPHONIC_VERSION="$tag"
                         python -m tox -c release_tox.ini
                     """
                 }
