@@ -57,7 +57,7 @@ pipeline {
             }
         }
 
-       /* stage("Set up") {
+       stage("Set up") {
             steps {
                 bat """
                     CALL conda create --name py python=3.6.0 -y
@@ -68,7 +68,7 @@ pipeline {
             }
         }
 
-        stage("Test VS2019") {
+        /* stage("Test VS2019") {
             steps {
                 bat """
                     CALL "%VS2019_VCVARSALL%" x86_amd64

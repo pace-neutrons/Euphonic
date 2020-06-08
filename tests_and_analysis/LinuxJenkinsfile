@@ -66,7 +66,7 @@ pipeline {
 
     stages {
 
-        /*stage("Notify") {
+        stage("Notify") {
             steps {
                 setGitHubBuildStatus("pending", "Starting", "Linux")
                 echo "Branch: ${env.JOB_BASE_NAME}"
@@ -88,7 +88,7 @@ pipeline {
             }
         }
 
-        stage("Test") {
+        /*stage("Test") {
             steps {
                 sh """
                     module load conda/3 &&
