@@ -84,7 +84,6 @@ pipeline {
                     def tag = env.JOB_BASE_NAME.substring(1, env.JOB_BASE_NAME.length())
                 }
                 bat """
-                    CALL "%VS2019_VCVARSALL%" x86_amd64
                     rmdir /s /q .tox
                     CALL conda activate py
                     set /p EUPHONIC_VERSION="${tag}"
