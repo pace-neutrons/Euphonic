@@ -81,7 +81,9 @@ pipeline {
         stage("PyPI Release Testing VS2019") {
             steps {
                 script {
-                    def tags = bat(returnStdout: true, script: "git tag").split("/n")
+                    def tags = bat(returnStdout: true, script: "git tag")
+                    echo "$tags"
+                    tags = tags.split("/n")
                     def tag = tags[tags.length-1].trim().replaceAll("v", "")
                     bat """
                         rmdir /s /q .tox
