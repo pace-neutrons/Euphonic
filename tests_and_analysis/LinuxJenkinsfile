@@ -102,7 +102,7 @@ pipeline {
         stage("PyPI Release Testing") {
             steps {
                 script {
-                    def tag = sh(returnStdout: true, script: "git tag --sort version:refname | tail -1").trim().replaceAll("v", "")
+                    def tag = sh(returnStdout: true, script: "git tag | tail -1").trim().replaceAll("v", "")
                 }
                 sh """
                     rm -rf .tox &&

@@ -78,10 +78,11 @@ pipeline {
             }
         }*/
 
-        stage("PyPI Release Testing VS2019") {
+       stage("PyPI Release Testing VS2019") {
             steps {
                 script {
-                   def tag = bat(returnStdout: true, script: "git tag --sort version:refname | tail -1").trim().replaceAll("v", "")
+                   def tags = bat(returnStdout: true, script: "git tag").split("/n")
+                   def tag = tags[tags.length-1].trim().replaceAll("v", "")
                 }
                 bat """
                     rmdir /s /q .tox
@@ -90,7 +91,7 @@ pipeline {
                     python -m tox -c release_tox.ini
                 """
             }
-        }
+       }
     }
 
     post {
