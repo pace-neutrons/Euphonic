@@ -224,8 +224,7 @@ quartz_test_data = [
     {
         "material": "quartz",
         "json_file": os.path.join(
-            get_data_path(), "force_constants",
-            "quartz", "quartz_force_constants.json"
+            "force_constants", "quartz", "quartz_force_constants.json"
         ),
         **data_dict
     } for data_dict in quartz_kwargs_qpts_atol
@@ -284,8 +283,7 @@ nacl_test_data = [
     {
         "material": "NaCl",
         "json_file": os.path.join(
-            get_data_path(), "phonopy_data", "NaCl",
-            "force_constants", "phonopy-yaml.json"
+            "phonopy_data", "NaCl", "force_constants", "phonopy-yaml.json"
         ),
         "atol": 1e-8,
         "qpts": np.array([
