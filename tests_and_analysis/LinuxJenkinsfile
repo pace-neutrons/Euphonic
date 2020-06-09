@@ -103,7 +103,7 @@ pipeline {
             when { tag "*" }
             steps {
                 script {
-                    def tag = env.JOB_BASE_NAME.trim().replaceAll("v", "")
+                    def tag = env.JOB_BASE_NAME.trim().substring(1) // Remove v from start
                     sh """
                         rm -rf .tox &&
                         module load conda/3 &&
