@@ -82,7 +82,11 @@ pipeline {
             when { tag "*" }
             steps {
                 script {
-                    def tag = env.JOB_BASE_NAME.substring(1) // Remove v from start
+                    if (env.JOB_BASE_NAME.startsWith("v") { // Remove v from start
+                        def tag = env.JOB_BASE_NAME.substring(1)
+                    } else {
+                        def tag = env.JOB_BASE_NAME
+                    }
                     bat """
                         rmdir /s /q .tox
                         CALL conda activate py
