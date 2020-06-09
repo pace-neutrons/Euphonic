@@ -69,7 +69,7 @@ pipeline {
         }
 
         stage("Test VS2019") {
-           steps {
+            steps {
                 bat """
                     CALL "%VS2019_VCVARSALL%" x86_amd64
                     CALL conda activate py
@@ -83,7 +83,6 @@ pipeline {
             steps {
                 script {
                     def tag = env.JOB_BASE_NAME.replaceAll("v", "")
-                    echo "$tag"
                     bat """
                         rmdir /s /q .tox
                         CALL conda activate py
