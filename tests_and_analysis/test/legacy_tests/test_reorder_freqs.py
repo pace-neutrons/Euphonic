@@ -47,7 +47,7 @@ class TestReorderFreqsLZO(unittest.TestCase):
         data_path = get_data_path()
         self.pdata = QpointPhononModes.from_castep(
             os.path.join(data_path, 'La2Zr2O7.phonon'))
-        ipath = os.path.join(data_path, 'interpolation', 'LZO')
+        ipath = os.path.join(data_path, 'force_constants', 'LZO')
         self.fc = ForceConstants.from_castep(
             os.path.join(ipath, 'La2Zr2O7.castep_bin'))
 

@@ -41,7 +41,7 @@ class TestDWFactorQuartz(unittest.TestCase):
 
     def setUp(self):
         data_path = get_data_path()
-        self.filename = os.path.join(data_path, 'interpolation', 'quartz', 'quartz.castep_bin')
+        self.filename = os.path.join(data_path, 'force_constants', 'quartz', 'quartz.castep_bin')
         fc = ForceConstants.from_castep(self.filename)
         qpts = np.loadtxt(os.path.join(data_path, 'qgrid_444.txt'))
         self.data = fc.calculate_qpoint_phonon_modes(qpts, asr='reciprocal')

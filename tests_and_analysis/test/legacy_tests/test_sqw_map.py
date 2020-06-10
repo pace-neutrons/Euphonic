@@ -69,7 +69,7 @@ class TestSqwMapForceConstantsLZOSerial(unittest.TestCase):
 
     def setUp(self):
         data_path = get_data_path()
-        self.interpolation_path = os.path.join(data_path, 'interpolation', 'LZO')
+        self.interpolation_path = os.path.join(data_path, 'force_constants', 'LZO')
         self.sqw_path = os.path.join(data_path, 'sqw_map')
         pdata = QpointPhononModes.from_castep(
             os.path.join(data_path, 'La2Zr2O7.phonon'))
@@ -134,7 +134,7 @@ class TestSqwMapForceConstantsLZOSerialC(
     def setUp(self):
         self.seedname = 'La2Zr2O7'
         data_path = get_data_path()
-        self.interpolation_path = os.path.join(data_path, 'interpolation', 'LZO')
+        self.interpolation_path = os.path.join(data_path, 'force_constants', 'LZO')
         self.sqw_path = os.path.join(data_path, 'sqw_map')
         pdata = QpointPhononModes.from_castep(
             os.path.join(data_path, 'La2Zr2O7.phonon'))
@@ -153,7 +153,7 @@ class TestSqwMapForceConstantsLZOParallelC(
     def setUp(self):
         self.seedname = 'La2Zr2O7'
         data_path = get_data_path()
-        self.interpolation_path = os.path.join(data_path, 'interpolation', 'LZO')
+        self.interpolation_path = os.path.join(data_path, 'force_constants', 'LZO')
         self.sqw_path = os.path.join(data_path, 'sqw_map')
         pdata = QpointPhononModes.from_castep(
             os.path.join(data_path, 'La2Zr2O7.phonon'))

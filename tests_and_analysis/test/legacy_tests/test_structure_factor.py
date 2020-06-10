@@ -65,7 +65,7 @@ class TestStructureFactorForceConstantsLZOSerial(unittest.TestCase):
         # to test eigenvector calculations
         data_path = get_data_path()
         self.interpolation_path = os.path.join(
-            data_path, 'interpolation', 'LZO')
+            data_path, 'force_constants', 'LZO')
         self.sf_path = os.path.join(data_path, 'structure_factor' , 'LZO')
         fm = ureg.fm
         self.scattering_lengths = {'La': 8.24*fm, 'Zr': 7.16*fm, 'O': 5.803*fm}
@@ -264,7 +264,7 @@ class TestStructureFactorForceConstantsLZOSerialC(TestStructureFactorForceConsta
         self.seedname = 'La2Zr2O7'
         data_path = get_data_path()
         self.interpolation_path = os.path.join(
-            data_path, 'interpolation', 'LZO')
+            data_path, 'force_constants', 'LZO')
         self.sf_path = os.path.join(data_path, 'structure_factor', 'LZO')
         fm = ureg.fm
         self.scattering_lengths = {'La': 8.24*fm, 'Zr': 7.16*fm, 'O': 5.803*fm}
@@ -298,7 +298,7 @@ class TestStructureFactorForceConstantsLZOParallelC(TestStructureFactorForceCons
         self.seedname = 'La2Zr2O7'
         data_path = get_data_path()
         self.interpolation_path = os.path.join(
-            data_path, 'interpolation', 'LZO')
+            data_path, 'force_constants', 'LZO')
         self.sf_path = os.path.join(data_path, 'structure_factor', 'LZO')
         fm = ureg.fm
         self.scattering_lengths = {'La': 8.24*fm, 'Zr': 7.16*fm, 'O': 5.803*fm}
@@ -333,7 +333,7 @@ class TestStructureFactorForceConstantsQuartzSerial(unittest.TestCase):
         self.seedname = 'quartz'
         data_path = get_data_path()
         self.interpolation_path = os.path.join(
-            data_path, 'interpolation', 'quartz')
+            data_path, 'force_constants', 'quartz')
         self.sf_path = os.path.join(data_path, 'structure_factor', 'quartz')
         fm = ureg.fm
         self.scattering_lengths = {'Si': 4.1491*fm, 'O': 5.803*fm}
@@ -478,7 +478,7 @@ class TestStructureFactorForceConstantsQuartzSerialC(TestStructureFactorForceCon
         self.seedname = 'quartz'
         data_path = get_data_path()
         self.interpolation_path = os.path.join(
-            data_path, 'interpolation', 'quartz')
+            data_path, 'force_constants', 'quartz')
         self.sf_path = os.path.join(data_path, 'structure_factor', 'quartz')
         fm = ureg.fm
         self.scattering_lengths = {'Si': 4.1491*fm, 'O': 5.803*fm}
@@ -509,7 +509,7 @@ class TestStructureFactorForceConstantsQuartzParallelC(TestStructureFactorForceC
         self.seedname = 'quartz'
         data_path = get_data_path()
         self.interpolation_path = os.path.join(
-            data_path, 'interpolation', 'quartz')
+            data_path, 'force_constants', 'quartz')
         self.sf_path = os.path.join(data_path, 'structure_factor', 'quartz')
         fm = ureg.fm
         self.scattering_lengths = {'Si': 4.1491*fm, 'O': 5.803*fm}

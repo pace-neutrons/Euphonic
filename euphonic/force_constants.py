@@ -232,7 +232,7 @@ class ForceConstants(object):
         :math:`\\kappa` in direction :math:`\\alpha`,
         :math:`M_{\\kappa}` is the mass of atom :math:`\\kappa`,
         :math:`r_{a}` is the vector to the origin of cell :math:`a` in
-        the supercell, :math:`\epsilon_{q\\nu\\kappa\\alpha}` are the
+        the supercell, :math:`\\epsilon_{q\\nu\\kappa\\alpha}` are the
         eigevectors, and :math:`\\omega_{q\\nu}^{2}` are the frequencies
         squared.
 
@@ -280,7 +280,7 @@ class ForceConstants(object):
                 # so each gamma can have its own splitting
                 qpts_i[gamma_i[1:]] = range(n_rqpts, n_rqpts + n_gamma - 1)
                 reduced_qpts = np.append(reduced_qpts,
-                                         np.tile(np.array([0., 0., 0.,]),
+                                         np.tile(np.array([0., 0., 0., ]),
                                                  (n_gamma - 1, 1)),
                                          axis=0)
                 n_rqpts = len(reduced_qpts)
@@ -330,8 +330,9 @@ class ForceConstants(object):
             force_constants = self._force_constants
         # Precompute fc matrix weighted by number of supercell atom
         # images (for cumulant method)
-        n_sc_images_repeat = (self._n_sc_images.
-            repeat(3, axis=2).repeat(3, axis=1))
+        n_sc_images_repeat = (
+            self._n_sc_images.repeat(3, axis=2).repeat(3, axis=1)
+        )
         fc_img_weighted = np.divide(
             force_constants, n_sc_images_repeat, where=n_sc_images_repeat != 0)
 
@@ -350,8 +351,9 @@ class ForceConstants(object):
                 asr = None
 
         rfreqs = np.zeros((n_rqpts, 3*n_atoms))
-        reigenvecs = np.zeros((n_rqpts, 3*n_atoms, n_atoms, 3),
-                                  dtype=np.complex128)
+        reigenvecs = np.zeros(
+            (n_rqpts, 3*n_atoms, n_atoms, 3), dtype=np.complex128
+        )
         try:
             if use_c:
                 try:
@@ -450,7 +452,7 @@ class ForceConstants(object):
                 q_dir = reduced_qpts[qpts_i[-2]]
             else:
                 # Find position in original qpts array (non reduced)
-                qpos = np.where(qpts_i==q)[0][0]
+                qpos = np.where(qpts_i == q)[0][0]
                 # If splitting=True there should be an adjacent gamma
                 # point. Calculate splitting in whichever direction
                 # isn't gamma
@@ -521,9 +523,7 @@ class ForceConstants(object):
             The non mass weighted dynamical matrix at q
         """
 
-        n_atoms = self.crystal.n_atoms
         sc_image_i = self._sc_image_i
-        dyn_mat = np.zeros((n_atoms*3, n_atoms*3), dtype=np.complex128)
 
         # Cumulant method: for each ij ion-ion displacement sum phases
         # for all possible supercell images, then multiply by the cell
@@ -663,7 +663,6 @@ class ForceConstants(object):
             else:
                 break
         vol = self.crystal._cell_volume()
-        #recip_q0 *= math.pi/(cell_volume*eta_2)
         recip_q0 *= math.pi/(vol*eta_2)
 
         # Fill in remaining entries by symmetry
@@ -693,7 +692,6 @@ class ForceConstants(object):
         self._gvec_phases = gvec_phases
         self._dipole_q0 = dipole_q0
 
-
     def _calculate_dipole_correction(self, q):
         """
         Calculate the long range correction to the dynamical matrix
@@ -710,7 +708,6 @@ class ForceConstants(object):
         corr : (3*n_atoms, 3*n_atoms) complex ndarray
             The correction to the dynamical matrix
         """
-        cell_vectors = self.crystal._cell_vectors
         recip = self.crystal.reciprocal_cell().to('1/bohr').magnitude
         n_atoms = self.crystal.n_atoms
         atom_r = self.crystal.atom_r
@@ -795,7 +792,6 @@ class ForceConstants(object):
         na_corr : (3*n_atoms, 3*n_atoms) complex ndarray
             The correction to the dynamical matrix
         """
-        cell_vectors = self.crystal._cell_vectors
         n_atoms = self.crystal.n_atoms
         born = self._born
         dielectric = self._dielectric
@@ -913,7 +909,7 @@ class ForceConstants(object):
                 dist_min[replace] = dist_min_current[replace]
                 if np.all(dist_min <= 16*sys.float_info.epsilon):
                     break
-            if (np.any(dist_min > 16*sys.float_info.epsilon)):
+            if np.any(dist_min > 16*sys.float_info.epsilon):
                 warnings.warn((
                     'Error correcting FC matrix for acoustic sum rule, '
                     'supercell relative index couldn\'t be found. '
@@ -963,8 +959,6 @@ class ForceConstants(object):
             Returns empty array (np.array([])) if finding the 3 acoustic
             modes fails
         """
-#        tol = (ureg('amu').to('e_mass')
-#               *0.1*ureg('1/cm').to('1/bohr')**2).magnitude
         tol = 5e-15
 
         try:
@@ -1146,7 +1140,8 @@ class ForceConstants(object):
                     dist_wsp = np.absolute(np.sum(dists*wsp, axis=-1))
                     if n == 0:
                         nc_idx, nj_idx = np.where(
-                            dist_wsp <= ((0.5*cutoff_scale + 0.001)))
+                            dist_wsp <= (0.5*cutoff_scale + 0.001)
+                        )
                         # Reindex dists to remove elements where the ion
                         # is > halfway to WS point for efficiency
                         dists = dists[nc_idx, nj_idx]
@@ -1154,7 +1149,8 @@ class ForceConstants(object):
                         # After first reindex, dists is now 1D so need
                         # to reindex like this instead
                         idx = np.where(
-                            dist_wsp <= ((0.5*cutoff_scale + 0.001)))[0]
+                            dist_wsp <= (0.5*cutoff_scale + 0.001)
+                        )[0]
                         nc_idx = nc_idx[idx]
                         nj_idx = nj_idx[idx]
                         dists = dists[idx]

@@ -66,7 +66,7 @@ class TestStructureFactorForceConstantsNaClSerial(unittest.TestCase):
         # to test eigenvector calculations
         data_path = os.path.join(
             get_data_path(), 'phonopy_data', 'NaCl')
-        self.interpolation_path = os.path.join(data_path, 'interpolation')
+        self.interpolation_path = os.path.join(data_path, 'force_constants')
         self.sf_path = os.path.join(data_path, 'structure_factor')
         fm = ureg.fm
         self.scattering_lengths = {'Na': 3.63*fm, 'Cl': 9.577*fm}
@@ -269,7 +269,7 @@ class TestStructureFactorForceConstantsNaClSerialC(TestStructureFactorForceConst
         # to test eigenvector calculations
         data_path = os.path.join(
             get_data_path(), 'phonopy_data', 'NaCl')
-        self.interpolation_path = os.path.join(data_path, 'interpolation')
+        self.interpolation_path = os.path.join(data_path, 'force_constants')
         self.sf_path = os.path.join(data_path, 'structure_factor')
         fm = ureg.fm
         self.scattering_lengths = {'Na': 3.63*fm, 'Cl': 9.577*fm}
@@ -304,7 +304,7 @@ class TestStructureFactorForceConstantsNaClParallelC(TestStructureFactorForceCon
         # to test eigenvector calculations
         data_path = os.path.join(
             get_data_path(), 'phonopy_data', 'NaCl')
-        self.interpolation_path = os.path.join(data_path, 'interpolation')
+        self.interpolation_path = os.path.join(data_path, 'force_constants')
         self.sf_path = os.path.join(data_path, 'structure_factor')
         fm = ureg.fm
         self.scattering_lengths = {'Na': 3.63*fm, 'Cl': 9.577*fm}
