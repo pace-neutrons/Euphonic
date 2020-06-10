@@ -81,13 +81,15 @@ pipeline {
         stage("PyPI Release Testing VS2019") {
             when { tag "*" }
             steps {
-                bat """
-                    CALL "%VS2019_VCVARSALL%" x86_amd64
-                    rmdir /s /q .tox
-                    CALL conda activate py
-                    set /p EUPHONIC_VERSION= < python tests_and_analysis/tools/get_version.py
-                    python -m tox -c release_tox.ini
-                """
+                script {
+                    def tag = env.JOB_BASE_NAME.substring(1)
+                    bat """
+                        rmdir /s /q .tox
+                        CALL conda activate py
+                        set /p EUPHONIC_VERSION="$tag"
+                        python -m tox -c release_tox.ini
+                    """
+                }
             }
         }
     }

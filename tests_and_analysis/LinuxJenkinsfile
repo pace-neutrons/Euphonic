@@ -102,14 +102,17 @@ pipeline {
         stage("PyPI Release Testing") {
             when { tag "*" }
             steps {
-                sh """
-                    rm -rf .tox &&
-                    module load conda/3 &&
-                    conda config --append channels free &&
-                    conda activate py &&
-                    export EUPHONIC_VERSION="\$(python tests_and_analysis/tools/get_version.py)" &&
-                    python -m tox -c release_tox.ini
-                """
+                script {
+                    def tag = env.JOB_BASE_NAME.substring(1)
+                    sh """
+                        rm -rf .tox &&
+                        module load conda/3 &&
+                        conda config --append channels free &&
+                        conda activate py &&
+                        export EUPHONIC_VERSION="$tag" &&
+                        python -m tox -c release_tox.ini
+                    """
+                }
             }
         }
 
