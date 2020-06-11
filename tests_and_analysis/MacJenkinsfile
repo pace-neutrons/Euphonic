@@ -57,6 +57,9 @@ pipeline {
         stage("Setup") {
             steps {
                 sh """
+                    pwd
+                    export PATH=\$PATH:/usr/local/anaconda3/bin
+                    pwd
                     conda create --name py python=3.7.7 -y
                     conda activate py
                     python -m pip install --upgrade --user pip
