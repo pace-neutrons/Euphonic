@@ -70,6 +70,7 @@ pipeline {
         stage("Test") {
             steps {
                 sh """
+                eval "\$(conda shell.bash hook)"
                     conda activate py
                     python -m tox
                 """
@@ -83,6 +84,7 @@ pipeline {
                     def tag = env.JOB_BASE_NAME.substring(1)
                     sh """
                         rm -rf .tox
+                        eval "\$(conda shell.bash hook)"
                         conda activate py
                         export EUPHONIC_VERSION="$tag"
                         python -m tox -c release_tox.ini
