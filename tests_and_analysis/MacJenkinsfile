@@ -1,3 +1,25 @@
+#!groovy
+
+def getGitCommitAuthorEmail() {
+    withCredentials([string(credentialsId: 'GitHub_API_Token',
+            variable: 'api_token')]) {
+        return sh(
+            script: """
+                commit_url="\$(\\
+                    curl -s -H "Authorization: token ${api_token}" \\
+                    --request GET https://api.github.com/repos/pace-neutrons/Euphonic/git/ref/heads/${env.JOB_BASE_NAME} \\
+                    | jq ".object.url" | tr -d '"'\\
+                )" &&
+                echo "\$(\\
+                    curl -s -H "Authorization: token ${api_token}" \\
+                    --request GET \$commit_url |  jq '.author.email' | tr -d '"'\\
+                )"
+            """,
+            returnStdout: true
+        )
+    }
+}
+
 pipeline {
     
     agent { label "PACE macOS" }
@@ -30,6 +52,63 @@ pipeline {
                 checkout scm
                 echo "Branch: ${env.JOB_BASE_NAME}"
             }
+        }
+
+        stage("Setup") {
+            steps {
+                sh """
+                    conda create --name py python=3.6.0 -y
+                    conda activate py
+                    python -m pip install --upgrade --user pip
+                    python -m pip install -r tests_and_analysis/jenkins_requirements.txt
+                """
+            }
+        }
+
+        stage("Test") {
+            steps {
+                sh """
+                    conda activate py
+                    python -m tox
+                """
+            }
+        }
+
+        stage("PyPI Release Testing VS2019") {
+            when { tag "*" }
+            steps {
+                script {
+                    def tag = env.JOB_BASE_NAME.substring(1)
+                    bat """
+                        rm -rf .tox
+                        conda activate py
+                        export EUPHONIC_VERSION="$tag"
+                        python -m tox -c release_tox.ini
+                    """
+                }
+            }
+        }
+    }
+
+    post {
+
+        always {
+            junit 'tests_and_analysis/test/reports/junit_report*.xml'
+        }
+
+        unsuccessful {
+            script {
+                def email = getGitCommitAuthorEmail()
+                mail (
+                    to: "$email",
+                    subject: "Mac failed pipeline: ${env.JOB_BASE_NAME}",
+                    body: "See ${env.BUILD_URL}"
+                )
+            }
+        }
+
+        cleanup {
+            deleteDir()
         }
 
     }
