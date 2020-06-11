@@ -137,7 +137,7 @@ class StructureFactor(object):
         Notes
         -----
         StructureFactor.structure_factors is defined as
-        :math:`|F(Q, \\nu)|` per unit cell. To create an
+        :math:`|F(Q, \\nu)|^2` per unit cell. To create an
         :math:`S(Q,\\omega)` map, it is binned in energy and the Bose
         factor is applied [1]_:
 

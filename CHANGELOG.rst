@@ -1,6 +1,11 @@
 `Unreleased <https://github.com/pace-neutrons/Euphonic/compare/v0.3.0...HEAD>`_
 ----------
 
+- Changes:
+
+  - Fixed structure factor formula in docs (``|F(Q, nu)|`` -> ``|F(Q, \\nu)|^2``
+    and ``e^(Q.r)`` -> ``e^(iQ.r)``)
+
 `v0.3.0 <https://github.com/pace-neutrons/Euphonic/compare/v0.2.2...v0.3.0>`_
 ----------
 

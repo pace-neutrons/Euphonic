@@ -192,12 +192,13 @@ class QpointPhononModes(object):
         Notes
         -----
 
-        The structure factor is defined as [1]_:
+        This function calculates :math:`|F(Q, \\nu)|^2` per unit cell, where
+        :math:`F(Q, \\nu)` is defined as [1]_:
 
         .. math::
 
           F(Q, \\nu) = \\frac{b_\\kappa}{M_{\\kappa}^{1/2}\\omega_{q\\nu}^{1/2}} \\
-          [Q\\cdot\\epsilon_{q\\nu\\kappa\\alpha}]e^{Q{\\cdot}r_\\kappa}e^{-W}
+          [Q\\cdot\\epsilon_{q\\nu\\kappa\\alpha}]e^{iQ{\\cdot}r_\\kappa}e^{-W}
 
         Where :math:`\\nu` runs over phonon modes, :math:`\\kappa` runs
         over atoms, :math:`\\alpha` runs over the Cartesian directions,
@@ -219,7 +220,7 @@ class QpointPhononModes(object):
         # Calculate normalisation factor
         norm_factor = sl/np.sqrt(self.crystal._atom_mass)
 
-        # Calculate the exp factor for all atoms and qpts atom_r is in
+        # Calculate the exp factor for all atoms and qpts. atom_r is in
         # fractional coords, so Qdotr = 2pi*qh*rx + 2pi*qk*ry...
         exp_factor = np.exp(1J*2*math.pi*np.einsum(
             'ij,kj->ik', self.qpts, self.crystal.atom_r))
