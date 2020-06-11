@@ -58,7 +58,7 @@ pipeline {
             steps {
                 sh """
                     export PATH=\$PATH:~/opt/anaconda3/bin
-                    eval "$(conda shell.bash hook)"
+                    eval "\$(conda shell.bash hook)"
                     conda create --name py python=3.7.7 -y
                     conda activate py
                     python -m pip install --upgrade --user pip
