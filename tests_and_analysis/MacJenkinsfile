@@ -58,6 +58,7 @@ pipeline {
             steps {
                 sh """
                     export PATH=\$PATH:/usr/local/anaconda3/bin
+                    ls -al ~/.conda
                     conda create --prefix ./py python=3.7.7 -y
                     conda activate ./py
                     python -m pip install --upgrade --user pip
