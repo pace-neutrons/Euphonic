@@ -59,7 +59,6 @@ pipeline {
                 sh """
                     export PATH=\$PATH:~/opt/anaconda3/bin
                     conda create --name py python=3.7.7 -y
-                    conda init bash
                     conda activate py
                     python -m pip install --upgrade --user pip
                     python -m pip install -r tests_and_analysis/jenkins_requirements.txt
