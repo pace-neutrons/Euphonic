@@ -57,10 +57,9 @@ pipeline {
         stage("Setup") {
             steps {
                 sh """
-                    export PATH=\$PATH:/usr/local/anaconda3/bin
-                    ls -al ~/.conda
-                    conda create --prefix ./py python=3.7.7 -y
-                    conda activate ./py
+                    export PATH=\$PATH:~/opt/anaconda3/bin
+                    conda create --name py python=3.7.7 -y
+                    conda activate py
                     python -m pip install --upgrade --user pip
                     python -m pip install -r tests_and_analysis/jenkins_requirements.txt
                 """
@@ -70,7 +69,7 @@ pipeline {
         stage("Test") {
             steps {
                 sh """
-                    conda activate ./py
+                    conda activate py
                     python -m tox
                 """
             }
@@ -83,7 +82,7 @@ pipeline {
                     def tag = env.JOB_BASE_NAME.substring(1)
                     sh """
                         rm -rf .tox
-                        conda activate ./py
+                        conda activate py
                         export EUPHONIC_VERSION="$tag"
                         python -m tox -c release_tox.ini
                     """
