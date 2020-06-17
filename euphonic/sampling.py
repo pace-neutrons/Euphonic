@@ -1,13 +1,15 @@
 """Functions for sampling properties in high-dimensional space"""
 from itertools import product
 import numpy as np
-from random import choice
 from typing import Iterator, Tuple
 
 _golden_ratio = (1 + np.sqrt(5)) / 2
 
+#  Keep in mind that at this stage the implementations are intended for testing
+#  and method development; clarity is prioritised over numerical efficiency
 
-def golden_square(npts: int, offset: bool = True
+
+def golden_square(npts: int, offset: bool = True, jitter: bool = False
                   ) -> Iterator[Tuple[float, float]]:
     """Yield a series of well-distributed points in 2-D unit square
 
@@ -15,12 +17,64 @@ def golden_square(npts: int, offset: bool = True
 
       (x_i, y_i) = (i / npts, (i / Phi) % 1)
 
+    Args:
+        npts: Number of points to distribute
+        offset: offset x-coordinates away from origin. (This is recommended for
+            spherical sampling by Marques et al. (2013))
+        jitter: randomly displace points by a distance of up to 1/(2 sqrt(N))
+
     Returns:
         Sequence of (x, y) pairs in range 0-1
     """
 
+    if offset:
+        offset = 1 / (2 * npts)
+    else:
+        offset = 0
+
     for i in range(npts):
-        yield (i / npts, (i / _golden_ratio) % 1)
+        if jitter:
+            displacement = (np.random.random(2) - 0.5) / np.sqrt(npts)
+            delta_x, delta_y = displacement
+        else:
+            delta_x, delta_y = (0, 0)
+
+        yield ((i / npts + delta_x + offset) % 1,
+               ((i / _golden_ratio) + delta_y) % 1)
+
+
+def regular_square(n_rows: int, n_cols: int,
+                   offset: bool = True, jitter: bool = False):
+    """Yield a regular grid of (x, y) points in 2-D unit square
+
+    Args:
+        n_rows: number of rows
+        n_cols: number of columns
+        offset: offset points to avoid origin
+        jitter: randomly displace each point within its "cell"
+
+    Returns:
+        sequence of (x, y) pairs in range 0-1
+    """
+
+    x_spacing, y_spacing = (1 / n_cols), (1 / n_rows)
+    x_sequence = np.arange(n_cols) * x_spacing
+    y_sequence = np.arange(n_rows) * y_spacing
+
+    if offset:
+        x_offset, y_offset = (x_spacing / 2), (y_spacing / 2)
+    else:
+        x_offset, y_offset = 0, 0
+
+    for x, y in product(x_sequence, y_sequence):
+        if jitter:
+            displacement = (np.random.random(2) - 0.5) * [x_spacing, y_spacing]
+            delta_x, delta_y = displacement
+        else:
+            delta_x, delta_y = 0, 0
+
+        yield (x + x_offset + delta_x,
+               y + y_offset + delta_y)
 
 
 def _spherical_polar_to_cartesian(phi, theta):
@@ -36,7 +90,7 @@ def _square_to_spherical_polar(x: float, y: float) -> Tuple[float, float]:
     return (phi, theta)
 
 
-def golden_sphere(npts: int, cartesian: bool = True
+def golden_sphere(npts: int, cartesian: bool = True, jitter: bool = False,
                   ) -> Iterator[Tuple[float, float, float]]:
     """Yield a series of 3D points on unit sphere surface
 
@@ -49,14 +103,14 @@ def golden_sphere(npts: int, cartesian: bool = True
         npts: Number of points at sphere surface
         cartesian: Yield points in Cartesian coordinates. If False, the 3-tuple
             points are given in spherical coordinates.
+        jitter: randomly displace points about their positions on surface
 
     Returns:
         Sequence of (x, y, z) coordinates (if cartesian=True) or
         (r, phi, theta) spherical coordinates.
     """
-    for x, y in golden_square(npts):
-        offset = 1 / (2 * npts)
-        phi, theta = _square_to_spherical_polar(x + offset, y)
+    for x, y in golden_square(npts, jitter=jitter):
+        phi, theta = _square_to_spherical_polar(x, y)
 
         if cartesian:
             yield _spherical_polar_to_cartesian(phi, theta)
@@ -64,7 +118,35 @@ def golden_sphere(npts: int, cartesian: bool = True
             yield (1, phi, theta)
 
 
-def spherical_polar_grid(n_phi, n_theta, cartesian: bool = True,
+def sphere_from_square_grid(n_rows: int, n_cols: int,
+                            cartesian: bool = True, jitter: bool = False
+                            ) -> Iterator[Tuple[float, float, float]]:
+    """Yield a series of 3D points on a unit sphere surface
+
+    The points are projected from a uniform 2-D grid
+
+    Args:
+        n_rows: number of rows in the Cartesian generating grid
+        n_theta: number of columns in the Cartesian generating grid
+        cartesian: Yield points in Cartesian coordinates. If False, instead
+            yield points in spherical coordinates.
+        jitter: randomly displace each point within its own "cell" of the grid
+
+    Returns:
+        Sequence of (x, y, z) coordinates (if cartesian=True) or
+        (r, phi, theta) spherical coordinates.
+    """
+    for x, y in regular_square(n_rows, n_cols, jitter=jitter):
+        phi, theta = _square_to_spherical_polar(x, y)
+
+        if cartesian:
+            yield _spherical_polar_to_cartesian(phi, theta)
+        else:
+            yield (1, phi, theta)
+
+
+def spherical_polar_grid(n_phi: int, n_theta: int,
+                         cartesian: bool = True, jitter: bool = False,
                          ) -> Iterator[Tuple[float, float, float]]:
     """Yield a series of 3D points on a unit sphere surface
 
@@ -75,25 +157,34 @@ def spherical_polar_grid(n_phi, n_theta, cartesian: bool = True,
         n_theta: number of lattitude-like rings of points dividing polar axis
         cartesian: Yield points in Cartesian coordinates. If False, instead
             yield points in spherical coordinates.
+        jitter: randomly displace each point within its own "cell" of the grid
 
     Returns:
         Sequence of (x, y, z) coordinates (if cartesian=True) or
         (r, phi, theta) spherical coordinates.
     """
     phi_sequence = np.linspace(-np.pi, np.pi, n_phi + 1)[:-1]
+    phi_spacing = phi_sequence[1] - phi_sequence[0]
 
     # Offset theta samples to avoid redundancy at pole
     theta_sequence = (np.linspace(0, np.pi, n_theta + 1)[:-1]
                       + np.pi / (2 * n_theta))
+    theta_spacing = theta_sequence[1] - theta_sequence[0]
 
     for phi, theta in product(phi_sequence, theta_sequence):
+        if jitter:
+            displacement = ((np.random.random(2) - 0.5)
+                            * [phi_spacing, theta_spacing])
+            phi, theta = [phi, theta] + displacement
+
         if cartesian:
             yield _spherical_polar_to_cartesian(phi, theta)
         else:
             yield (1, phi, theta)
 
 
-def spherical_polar_improved(npts, cartesian: bool = True
+def spherical_polar_improved(npts: int,
+                             cartesian: bool = True, jitter: bool = False,
                              ) -> Iterator[Tuple[float, float, float]]:
     """Yield a series of 3D points on a unit sphere surface
 
@@ -117,6 +208,8 @@ def spherical_polar_improved(npts, cartesian: bool = True
         npts: number of points at sphere surface
         cartesian: Yield points in Cartesian coordinates. If False, instead
             yield points in spherical coordinates.
+        jitter: randomly displace each point within its own "cell" of the
+            irregular grid
 
     Returns:
         Sequence of (x, y, z) coordinates (if cartesian=True) or
@@ -130,6 +223,7 @@ def spherical_polar_improved(npts, cartesian: bool = True
     # Offset theta samples to avoid redundancy at pole
     theta_sequence = (np.linspace(0, np.pi, n_theta + 1)[:-1]
                       + np.pi / (2 * n_theta))
+    theta_spacing = theta_sequence[1] - theta_sequence[0]
 
     # get the lengths of all theta bins and drop points in
     theta_circumferences = 2 * np.pi * np.abs(np.sin(theta_sequence))
@@ -138,9 +232,17 @@ def spherical_polar_improved(npts, cartesian: bool = True
     counts, _ = np.histogram(np.linspace(0, theta_circumferences.sum(), npts),
                              bins=bin_edges, density=False)
 
-    for theta, count in zip(theta_sequence, counts):
+    for row_theta, count in zip(theta_sequence, counts):
         phi_sequence = np.linspace(-np.pi, np.pi, count + 1)[:-1]
+        phi_spacing = phi_sequence[1] - phi_sequence[0]
         for phi in phi_sequence:
+            if jitter:
+                displacement = (np.random.random(2) - 0.5) * [phi_spacing,
+                                                              theta_spacing]
+                phi, theta = [phi, row_theta] + displacement
+            else:
+                theta = row_theta
+
             if cartesian:
                 yield _spherical_polar_to_cartesian(phi, theta)
             else:
@@ -175,4 +277,3 @@ def random_sphere(npts, cartesian: bool = True
             yield _spherical_polar_to_cartesian(phi, theta)
         else:
             yield (1, phi, theta)
-
