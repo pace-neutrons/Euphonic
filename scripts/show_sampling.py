@@ -7,7 +7,8 @@ import euphonic.sampling
 
 choices_2d = {'golden-square'}
 choices_3d = {'golden-sphere',
-              'spherical-polar-grid', 'spherical-polar-improved'}
+              'spherical-polar-grid', 'spherical-polar-improved',
+              'random-sphere'}
 
 
 def main():
@@ -43,7 +44,10 @@ def main():
         ax.scatter(
             *zip(*euphonic.sampling.spherical_polar_improved(args.npts)),
             marker='x')
-
+    elif args.sampling == 'random-sphere':
+        ax.scatter(
+            *zip(*euphonic.sampling.random_sphere(args.npts)),
+            marker='x')
     else:
         raise ValueError("Sampling type f{args.sampling} is not implemented.")
 
