@@ -1,8 +1,14 @@
 """Functions for averaging spectra in spherical q bins"""
 import numpy as np
-from euphonic import ForceConstants, QpointPhononModes, Spectrum1D, ureg
+from typing import Union
 
-sampling_choices = {'golden', }
+from euphonic import (DebyeWaller, ForceConstants, QpointPhononModes,
+                      Spectrum1D, StructureFactor)
+from euphonic import ureg
+from euphonic.util import mp_grid
+
+sampling_choices = {'golden', 'sphere-projected-grid', 'spherical-polar-grid',
+                    'spherical-polar-improved', 'random-sphere'}
 
 
 def sample_sphere_dos(fc: ForceConstants, q: float,
@@ -10,15 +16,12 @@ def sample_sphere_dos(fc: ForceConstants, q: float,
                       npts: int = 1000, jitter: bool = False,
                       energy_bins: np.ndarray = None
                       ) -> Spectrum1D:
-    """Sample a spectral property, averaging over a sphere of constant |q|
+    """Sample the phonon DOS, averaging over a sphere of constant |q|
 
     Args:
         fc: Force constant data for system
 
         q: scalar radius of sphere from which vector q samples are taken
-
-        spectrum: Spectral property to sample. (Case-insensitive) options are
-            "DOS" and "S".
 
         sampling: Sphere-sampling scheme. (Case-insensitive) options
             are:
@@ -50,6 +53,76 @@ def sample_sphere_dos(fc: ForceConstants, q: float,
 
     return phonons.calculate_dos(energy_bins)
 
+
+
+def sample_sphere_structure_factor(
+    fc: ForceConstants, q: float,
+    dw: DebyeWaller = None,
+    sampling: str = 'golden',
+    npts: int = 1000, jitter: bool = False,
+    energy_bins: np.ndarray = None,
+    scattering_lengths: Union[dict, str] = 'Sears1992',
+    ) -> StructureFactor:
+    """Sample the structure factor, averaging over a sphere of constant |q|
+
+    (Specifically, this is the one-phonon inelastic-scattering structure factor
+    as implemented in QpointPhononModes.calculate_structure_factor().)
+
+    Args:
+        fc: Force constant data for system
+
+        dw: Debye-Waller exponent used for evaluation of scattering
+            function. If not provided, this is generated automatically for 273K
+            over a 20x20x20 q-point mesh.
+
+        q: scalar radius of sphere from which vector q samples are taken
+
+        sampling: Sphere-sampling scheme. (Case-insensitive) options
+            are:
+
+            - 'golden': Fibonnaci-like sampling that steps regularly along one
+                  spherical coordinate while making irrational steps in the
+                  other
+
+        npts: Number of samples. Note that some sampling methods have
+            constraints on valid values and will round up as appropriate.
+
+        jitter: For non-random sampling schemes, apply an additional random
+            displacement to each point.
+
+        energy_bins: Preferred energy bin edges. If not provided, will setup
+            1000 bins (1001 bin edges) from 0 to 1.05 * [max energy]
+
+        scattering_lengths: Dict of neutron scattering lengths labelled by
+            element. If a string is provided, this selects coherent scattering
+            lengths from reference data by setting the 'label' argument of the
+            euphonic.util.get_reference_data() function.
+
+    Returns:
+        Structure factor sampled over sphere
+
+    """
+
+    if isinstance(scattering_lengths, str):
+        import euphonic.util
+        scattering_lengths = euphonic.util.get_reference_data(
+            prop='coherent_scattering_length',
+            label=scattering_lengths)  # type: dict
+
+    if dw is None:
+        dw_qpts = mp_grid([20, 20, 20])
+        dw_phonons = fc.calculate_qpoint_phonon_modes(dw_qpts)
+        dw = dw_phonons.calculate_debye_waller(273 * ureg('K')
+                                               )  # type: DebyeWaller
+
+    qpts = _get_qpts_sphere(npts, sampling=sampling, jitter=jitter)
+
+    phonons = fc.calculate_qpoint_phonon_modes(qpts)  # type: QpointPhononModes
+    s = phonons.calculate_structure_factor(scattering_lengths, dw=dw)
+
+    return s
+
+
 def _get_default_bins(phonons: QpointPhononModes,
                       nbins: int = 1000) -> np.ndarray:
     """Get a default set of energy bin edges for a set of phonon frequencies"""
@@ -68,7 +141,7 @@ def _get_qpts_sphere(npts: int,
 
     if sampling == 'golden':
         return np.asarray(list(golden_sphere(npts, jitter=jitter)))
-    elif sampling == 'sphere-from-square-grid':
+    elif sampling == 'sphere-projected-grid':
         n_cols = _check_gridpts(npts)
         return np.asarray(list(sphere_from_square_grid(n_cols * 2, n_cols,
                                                        jitter=jitter)))
