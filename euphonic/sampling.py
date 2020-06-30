@@ -28,9 +28,9 @@ def golden_square(npts: int, offset: bool = True, jitter: bool = False
     """
 
     if offset:
-        offset = 1 / (2 * npts)
+        x_offset = 1 / (2 * npts)
     else:
-        offset = 0
+        x_offset = 0
 
     for i in range(npts):
         if jitter:
@@ -39,7 +39,7 @@ def golden_square(npts: int, offset: bool = True, jitter: bool = False
         else:
             delta_x, delta_y = (0, 0)
 
-        yield ((i / npts + delta_x + offset) % 1,
+        yield ((i / npts + delta_x + x_offset) % 1,
                ((i / _golden_ratio) + delta_y) % 1)
 
 
