@@ -1,7 +1,13 @@
+import json
 import math
+
+from importlib_resources import open_text  # Backport for Python 3.6
 import numpy as np
+from pint import UndefinedUnitError
 import seekpath
+
 from euphonic import ureg
+import euphonic.data
 
 
 def direction_changed(qpts, tolerance=5e-6):
@@ -129,6 +135,50 @@ def get_qpoint_labels(crystal, qpts):
     qpts_with_labels = [int(x) for x in qpts_with_labels.tolist()]
     return list(zip(qpts_with_labels, xlabels))
 
+
+def get_reference_data(label='Sears1992', prop='coherent_scattering_length'):
+    _reference_data_files = {'coherent_scattering_length':
+                             {'Sears1992': 'sears-1992-bc.json'},
+                             'coherent_cross_section':
+                             {'BlueBook': 'mprt-cx.json'}}
+
+    if prop not in _reference_data_files:
+        raise ValueError(
+            f'No data files known for property "{prop}". '
+            f'Available properties: {_scattering_data_files.keys()}')
+    if label not in _reference_data_files[prop]:
+        raise ValueError(
+            f'No data labelled "{label}" for property "{prop}". '
+            f'Available data sets: {_scattering_data_files[prop].keys()}')
+
+    def custom_decode(dct):
+        if '__complex__' in dct:
+            return complex(dct['real'], dct['imag'])
+        return dct
+
+    filename = _reference_data_files[prop][label]
+    with open_text(euphonic.data, filename) as fd:
+        data = json.load(fd, object_hook=custom_decode)
+
+    unit_str = data.get('__units__')
+
+    if unit_str is None:
+        raise ValueError(f'Reference data file "{filename}" does not '
+                         'specify dimensions with "__units__" metadata.')
+
+    try:
+        unit = ureg[unit_str]
+
+    except UndefinedUnitError:
+        raise UndefinedUnitError(
+            f'Units "{unit_str}" from data file "{filename}" '
+            'are not supported by the Euphonic unit register.')
+
+    for key, value in data.items():
+        if isinstance(value, (float, complex)):
+            data[key] = value * unit
+
+    return data
 
 def _calc_abscissa(crystal, qpts):
     """
