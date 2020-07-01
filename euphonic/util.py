@@ -145,11 +145,11 @@ def get_reference_data(label='Sears1992', prop='coherent_scattering_length'):
     if prop not in _reference_data_files:
         raise ValueError(
             f'No data files known for property "{prop}". '
-            f'Available properties: {_scattering_data_files.keys()}')
+            f'Available properties: {_reference_data_files.keys()}')
     if label not in _reference_data_files[prop]:
         raise ValueError(
             f'No data labelled "{label}" for property "{prop}". '
-            f'Available data sets: {_scattering_data_files[prop].keys()}')
+            f'Available data sets: {_reference_data_files[prop].keys()}')
 
     def custom_decode(dct):
         if '__complex__' in dct:
