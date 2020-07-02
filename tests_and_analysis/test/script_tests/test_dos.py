@@ -1,7 +1,8 @@
+import json
+import sys
 import pytest
 import numpy as np
 import numpy.testing as npt
-import json
 # Required for mocking
 import matplotlib.pyplot
 from .utils import get_phonon_file, get_dos_params, get_dos_data_file
@@ -29,4 +30,5 @@ class TestRegression:
 
         for index, line in enumerate(lines):
             npt.assert_allclose(line.get_xydata().T,
-                                np.array(expected_lines[index]))
+                                np.array(expected_lines[index]),
+                                atol=sys.float_info.epsilon)
