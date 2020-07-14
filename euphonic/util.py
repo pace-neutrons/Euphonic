@@ -182,6 +182,7 @@ def get_reference_data(collection='Sears1992',
 
     return data
 
+
 def _calc_abscissa(crystal, qpts):
     """
     Calculates the distance between q-points (to use as a plot
@@ -425,7 +426,7 @@ def _distribution_1d(xbins, xwidth, shape='gauss', extent=3.0):
     else:
         raise Exception(
             f'Distribution shape \'{shape}\' not recognised')
-    dist = dist/np.sum(dist) # Naively normalise
+    dist = dist/np.sum(dist)  # Naively normalise
     return dist
 
 
@@ -448,7 +449,7 @@ def _distribution_2d(xbins, ybins, xwidth, ywidth, shape='gauss', extent=3.0):
     xgrid = np.tile(xdist, (len(ydist), 1))
     ygrid = np.transpose(np.tile(ydist, (len(xdist), 1)))
     dist = xgrid*ygrid
-    dist = dist/np.sum(dist) # Naively normalise
+    dist = dist/np.sum(dist)  # Naively normalise
 
     return dist
 
@@ -567,23 +568,23 @@ def _ensure_contiguous_args(*args):
 
 
 def _get_dtype(arr):
-   """
-   Get the Numpy dtype that should be used for the input array
+    """
+    Get the Numpy dtype that should be used for the input array
 
-   Parameters
-   ----------
-   arr : ndarray
-       The Numpy array to get the type of
+    Parameters
+    ----------
+    arr : ndarray
+        The Numpy array to get the type of
 
-   Returns
-   -------
-   dtype : Numpy dtype
-       The type the array should be
-   """
-   if np.issubdtype(arr.dtype, np.integer):
-       return np.int32
-   elif np.issubdtype(arr.dtype, np.floating):
-       return np.float64
-   elif np.issubdtype(arr.dtype, np.complexfloating):
-       return np.complex128
-   return None
+    Returns
+    -------
+    dtype : Numpy dtype
+        The type the array should be
+    """
+    if np.issubdtype(arr.dtype, np.integer):
+        return np.int32
+    elif np.issubdtype(arr.dtype, np.floating):
+        return np.float64
+    elif np.issubdtype(arr.dtype, np.complexfloating):
+        return np.complex128
+    return None
