@@ -136,27 +136,29 @@ def get_qpoint_labels(crystal, qpts):
     return list(zip(qpts_with_labels, xlabels))
 
 
-def get_reference_data(label='Sears1992', prop='coherent_scattering_length'):
+def get_reference_data(collection='Sears1992',
+                       physical_property='coherent_scattering_length'):
     _reference_data_files = {'coherent_scattering_length':
                              {'Sears1992': 'sears-1992-bc.json'},
                              'coherent_cross_section':
                              {'BlueBook': 'mprt-cx.json'}}
 
-    if prop not in _reference_data_files:
+    if physical_property not in _reference_data_files:
         raise ValueError(
-            f'No data files known for property "{prop}". '
+            f'No data files known for property "{physical_property}". '
             f'Available properties: {_reference_data_files.keys()}')
-    if label not in _reference_data_files[prop]:
+    if collection not in _reference_data_files[physical_property]:
         raise ValueError(
-            f'No data labelled "{label}" for property "{prop}". '
-            f'Available data sets: {_reference_data_files[prop].keys()}')
+            f'No such collection "{collection}" with property '
+            f'"{physical_property}". Available data sets: '
+            f'{_reference_data_files[physical_property].keys()}')
 
     def custom_decode(dct):
         if '__complex__' in dct:
             return complex(dct['real'], dct['imag'])
         return dct
 
-    filename = _reference_data_files[prop][label]
+    filename = _reference_data_files[physical_property][collection]
     with open_text(euphonic.data, filename) as fd:
         data = json.load(fd, object_hook=custom_decode)
 
