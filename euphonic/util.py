@@ -1,5 +1,6 @@
 import json
 import math
+import os.path
 
 from importlib_resources import open_text  # Backport for Python 3.6
 import numpy as np
@@ -141,19 +142,25 @@ def get_reference_data(collection='Sears1992',
     _reference_data_files = {'Sears1992': 'sears-1992.json',
                              'BlueBook': 'bluebook.json'}
 
-    if collection not in _reference_data_files:
-        raise ValueError(
-            f'No data files known for collection "{collection}". '
-            f'Available collections: {_reference_data_files.keys()}')
-
     def custom_decode(dct):
         if '__complex__' in dct:
             return complex(dct['real'], dct['imag'])
         return dct
 
-    filename = _reference_data_files[collection]
-    with open_text(euphonic.data, filename) as fd:
-        file_data = json.load(fd, object_hook=custom_decode)
+    if collection in _reference_data_files:
+        filename = _reference_data_files[collection]
+        with open_text(euphonic.data, filename) as fd:
+            file_data = json.load(fd, object_hook=custom_decode)
+
+    elif os.path.isfile(collection):
+        filename = collection
+        with open(filename) as fd:
+            file_data = json.load(fd, object_hook=custom_decode)
+    else:
+        raise ValueError(
+            f'No data files known for collection "{collection}". '
+            f'Available collections: '
+            + ', '.join(list(_reference_data_files)))
 
     if 'physical_property' not in file_data:
         raise AttributeError('Data file does not contain required key '
@@ -164,7 +171,7 @@ def get_reference_data(collection='Sears1992',
         raise ValueError(
             f'No such collection "{collection}" with property '
             f'"{physical_property}". Available properties for this collection'
-            ': ' ', '.join(file_data["physical_property"].keys()))
+            ': ' + ', '.join(list(file_data["physical_property"].keys())))
 
     unit_str = data.get('__units__')
     if unit_str is None:
