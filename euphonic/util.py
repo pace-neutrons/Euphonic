@@ -138,32 +138,35 @@ def get_qpoint_labels(crystal, qpts):
 
 def get_reference_data(collection='Sears1992',
                        physical_property='coherent_scattering_length'):
-    _reference_data_files = {'coherent_scattering_length':
-                             {'Sears1992': 'sears-1992-bc.json'},
-                             'coherent_cross_section':
-                             {'BlueBook': 'mprt-cx.json'}}
+    _reference_data_files = {'Sears1992': 'sears-1992.json',
+                             'BlueBook': 'bluebook.json'}
 
-    if physical_property not in _reference_data_files:
+    if collection not in _reference_data_files:
         raise ValueError(
-            f'No data files known for property "{physical_property}". '
-            f'Available properties: {_reference_data_files.keys()}')
-    if collection not in _reference_data_files[physical_property]:
-        raise ValueError(
-            f'No such collection "{collection}" with property '
-            f'"{physical_property}". Available data sets: '
-            f'{_reference_data_files[physical_property].keys()}')
+            f'No data files known for collection "{collection}". '
+            f'Available collections: {_reference_data_files.keys()}')
 
     def custom_decode(dct):
         if '__complex__' in dct:
             return complex(dct['real'], dct['imag'])
         return dct
 
-    filename = _reference_data_files[physical_property][collection]
+    filename = _reference_data_files[collection]
     with open_text(euphonic.data, filename) as fd:
-        data = json.load(fd, object_hook=custom_decode)
+        file_data = json.load(fd, object_hook=custom_decode)
+
+    if 'physical_property' not in file_data:
+        raise AttributeError('Data file does not contain required key '
+                             '"physical_property".')
+
+    data = file_data['physical_property'].get(physical_property)
+    if data is None:
+        raise ValueError(
+            f'No such collection "{collection}" with property '
+            f'"{physical_property}". Available properties for this collection'
+            ': ' ', '.join(file_data["physical_property"].keys()))
 
     unit_str = data.get('__units__')
-
     if unit_str is None:
         raise ValueError(f'Reference data file "{filename}" does not '
                          'specify dimensions with "__units__" metadata.')
