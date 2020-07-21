@@ -48,16 +48,22 @@ def _obj_to_dict(obj, attrs):
     dout = {}
     for attr in attrs:
         val = getattr(obj, attr)
-        if isinstance(val, np.ndarray):
-            val = np.copy(val)
-        elif isinstance(val, list):
-            val = val.copy()
+        # Don't write None values to dict
+        if val is None:
+            continue
 
-        if hasattr(val, 'to_dict'):
-            dout[attr] = val.to_dict()
+        if isinstance(val, np.ndarray):
+            dout[attr] = np.copy(val)
+        elif isinstance(val, list):
+            dout[attr] = val.copy()
         elif isinstance(val, Quantity):
-            dout[attr] = val.magnitude
+            if isinstance(val.magnitude, np.ndarray):
+                dout[attr] = np.copy(val.magnitude)
+            else:
+                dout[attr] = val.magnitude
             dout[attr + '_unit'] = str(val.units)
+        elif hasattr(val, 'to_dict'):
+            dout[attr] = val.to_dict()
         else:
             dout[attr] = val
     return dout

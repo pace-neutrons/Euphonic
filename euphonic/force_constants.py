@@ -289,6 +289,14 @@ class ForceConstants(object):
             qpts_i = np.arange(0, len(qpts), dtype=np.int32)
             n_rqpts = len(qpts)
 
+        # Get q-directions for non-analytical corrections
+        if splitting:
+            split_idx = np.where(is_gamma(reduced_qpts))[0]
+            q_dirs = self._get_q_dir(qpts, reduced_qpts, qpts_i, split_idx)
+        else:
+            split_idx = np.array([])
+            q_dirs = np.array([])
+
         lim = 2  # Supercell image limit
         # Construct list of supercell ion images
         if not hasattr(self, 'sc_image_i'):
@@ -373,11 +381,12 @@ class ForceConstants(object):
             cell_vectors = self.crystal._cell_vectors
             recip_vectors = self.crystal.reciprocal_cell().to(
                 '1/bohr').magnitude
-            (cell_vectors, recip_vectors, reduced_qpts, qpts_i, fc_img_weighted,
-                sc_offsets, recip_asr_correction, dyn_mat_weighting, rfreqs,
+            (cell_vectors, recip_vectors, reduced_qpts, split_idx, q_dirs,
+                fc_img_weighted, sc_offsets, recip_asr_correction,
+                dyn_mat_weighting, rfreqs,
                 reigenvecs) = _ensure_contiguous_args(
-                    cell_vectors, recip_vectors, reduced_qpts, qpts_i,
-                    fc_img_weighted, sc_offsets, recip_asr_correction,
+                    cell_vectors, recip_vectors, reduced_qpts, split_idx,
+                    q_dirs, fc_img_weighted, sc_offsets, recip_asr_correction,
                     dyn_mat_weighting, rfreqs, reigenvecs)
             attrs = ['_n_sc_images', '_sc_image_i', 'cell_origins']
             dipole_attrs = ['atom_r', '_born', '_dielectric', '_H_ab',
@@ -386,8 +395,8 @@ class ForceConstants(object):
             _ensure_contiguous_attrs(self, attrs, opt_attrs=dipole_attrs)
             reciprocal_asr = 1 if asr == 'reciprocal' else 0
             euphonic_c.calculate_phonons(
-                self, cell_vectors, recip_vectors, reduced_qpts, qpts_i,
-                fc_img_weighted, sc_offsets, recip_asr_correction,
+                self, cell_vectors, recip_vectors, reduced_qpts, split_idx,
+                q_dirs, fc_img_weighted, sc_offsets, recip_asr_correction,
                 dyn_mat_weighting, dipole, reciprocal_asr, splitting, rfreqs,
                 reigenvecs, n_threads, scipy.__path__[0])
         except ImportError:
@@ -400,10 +409,10 @@ class ForceConstants(object):
                     'calculation.'))
             else:
                 q_independent_args = (
-                    reduced_qpts, qpts_i, fc_img_weighted, unique_sc_offsets,
-                    unique_sc_i, unique_cell_origins, unique_cell_i,
-                    recip_asr_correction, dyn_mat_weighting, dipole, asr,
-                    splitting)
+                    reduced_qpts, split_idx, q_dirs, fc_img_weighted,
+                    unique_sc_offsets, unique_sc_i, unique_cell_origins,
+                    unique_cell_i, recip_asr_correction, dyn_mat_weighting,
+                    dipole, asr, splitting)
                 for q in range(n_rqpts):
                     rfreqs[q], reigenvecs[q] = self._calculate_phonons_at_q(
                         q, q_independent_args)
@@ -422,7 +431,7 @@ class ForceConstants(object):
         frequencies and eigenvalues. Optionally also includes the Ewald
         dipole sum correction and LO-TO splitting
         """
-        (reduced_qpts, qpts_i, fc_img_weighted, unique_sc_offsets,
+        (reduced_qpts, split_idx, q_dirs, fc_img_weighted, unique_sc_offsets,
          unique_sc_i, unique_cell_origins, unique_cell_i,
          recip_asr_correction, dyn_mat_weighting, dipole, asr,
          splitting) = args
@@ -444,22 +453,8 @@ class ForceConstants(object):
         # Calculate LO-TO splitting by calculating non-analytic
         # correction to dynamical matrix
         if splitting and is_gamma(qpt):
-            # If first q-point
-            if qpts_i[0] == q:
-                q_dir = reduced_qpts[qpts_i[1]]
-            # If last q-point
-            elif qpts_i[-1] == q:
-                q_dir = reduced_qpts[qpts_i[-2]]
-            else:
-                # Find position in original qpts array (non reduced)
-                qpos = np.where(qpts_i == q)[0][0]
-                # If splitting=True there should be an adjacent gamma
-                # point. Calculate splitting in whichever direction
-                # isn't gamma
-                q_dir = reduced_qpts[qpts_i[qpos + 1]]
-                if is_gamma(q_dir):
-                    q_dir = -reduced_qpts[qpts_i[qpos - 1]]
-            na_corr = self._calculate_gamma_correction(q_dir)
+            q_dir_idx = np.where(split_idx == q)[0][0]
+            na_corr = self._calculate_gamma_correction(q_dirs[q_dir_idx])
         else:
             # Correction is zero if not a gamma point or splitting=False
             na_corr = np.array([0])
@@ -774,6 +769,25 @@ class ForceConstants(object):
 
         return np.reshape(np.transpose(dipole, axes=[0, 2, 1, 3]),
                           (3*n_atoms, 3*n_atoms))
+
+    def _get_q_dir(self, qpts, reduced_qpts, qpts_i, gamma_idx):
+        q_dirs = np.zeros((len(gamma_idx), 3))
+        for i, idx in enumerate(gamma_idx):
+            idx_in_qpts = np.where(qpts_i == idx)[0]
+            # If first q-point
+            if idx_in_qpts == 0:
+                q_dirs[i] = qpts[1]
+            # If last q-point
+            elif idx_in_qpts == (len(qpts) - 1):
+                q_dirs[i] = qpts[-2]
+            else:
+                # If splitting=True there should be an adjacent gamma
+                # point. Calculate splitting in whichever direction
+                # isn't gamma
+                q_dirs[i] = qpts[idx_in_qpts + 1]
+                if is_gamma(q_dirs[i]):
+                    q_dirs[i] = -qpts[idx_in_qpts - 1]
+        return q_dirs
 
     def _calculate_gamma_correction(self, q_dir):
         """

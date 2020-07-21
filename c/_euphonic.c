@@ -17,7 +17,8 @@ static PyObject *calculate_phonons(PyObject *self, PyObject *args) {
     PyArrayObject *py_cell_vec;
     PyArrayObject *py_recip_vec;
     PyArrayObject *py_rqpts;
-    PyArrayObject *py_qpts_i;
+    PyArrayObject *py_split_idx;
+    PyArrayObject *py_q_dirs;
     PyArrayObject *py_fc;
     PyArrayObject *py_sc_ogs;
     PyArrayObject *py_asr_correction;
@@ -53,7 +54,8 @@ static PyObject *calculate_phonons(PyObject *self, PyObject *args) {
     double *cell_vec;
     double *recip_vec;
     double *rqpts;
-    int *qpts_i;
+    int *split_idx;
+    double *q_dirs;
     double *fc;
     int *sc_ogs;
     double *asr_correction;
@@ -76,22 +78,22 @@ static PyObject *calculate_phonons(PyObject *self, PyObject *args) {
     // Other vars
     int n_cells;
     int n_rqpts;
-    int n_qpts;
+    int n_split_qpts;
     int q, i, qpos;
     int max_ims;
     int dmat_elems;
     // Extra vars only required if dipole = True
     int n_dipole_cells;
     int n_gvecs;
-    double q_dir[3];
 
     // Parse inputs
-    if (!PyArg_ParseTuple(args, "OO!O!O!O!O!O!O!O!iiiO!O!is",
+    if (!PyArg_ParseTuple(args, "OO!O!O!O!O!O!O!O!O!iiiO!O!is",
                           &py_idata,
                           &PyArray_Type, &py_cell_vec,
                           &PyArray_Type, &py_recip_vec,
                           &PyArray_Type, &py_rqpts,
-                          &PyArray_Type, &py_qpts_i,
+                          &PyArray_Type, &py_split_idx,
+                          &PyArray_Type, &py_q_dirs,
                           &PyArray_Type, &py_fc,
                           &PyArray_Type, &py_sc_ogs,
                           &PyArray_Type, &py_asr_correction,
@@ -141,7 +143,8 @@ static PyObject *calculate_phonons(PyObject *self, PyObject *args) {
     cell_vec = (double*) PyArray_DATA(py_cell_vec);
     recip_vec = (double*) PyArray_DATA(py_recip_vec);
     rqpts = (double*) PyArray_DATA(py_rqpts);
-    qpts_i = (int*) PyArray_DATA(py_qpts_i);
+    split_idx = (int*) PyArray_DATA(py_split_idx);
+    q_dirs = (double*) PyArray_DATA(py_q_dirs);
     fc = (double*) PyArray_DATA(py_fc);
     sc_ogs = (int*) PyArray_DATA(py_sc_ogs);
     asr_correction = (double*) PyArray_DATA(py_asr_correction);
@@ -153,7 +156,7 @@ static PyObject *calculate_phonons(PyObject *self, PyObject *args) {
     cell_ogs = (int*) PyArray_DATA(py_cell_ogs);
     n_cells = PyArray_DIMS(py_fc)[0];
     n_rqpts = PyArray_DIMS(py_rqpts)[0];
-    n_qpts = PyArray_DIMS(py_qpts_i)[0];
+    n_split_qpts = PyArray_DIMS(py_split_idx)[0];
     max_ims = PyArray_DIMS(py_sc_im_idx)[3];
     dmat_elems = 2*9*n_atoms*n_atoms;
     if (dipole) {
@@ -208,40 +211,17 @@ static PyObject *calculate_phonons(PyObject *self, PyObject *args) {
 
             // Calculate non-analytical correction for LO-TO splitting
             if (splitting && is_gamma(qpt)) {
-               // If first q-point
-               if (qpts_i[0] == q) {
-                   for (i = 0; i < 3; i++) {
-                       q_dir[i] = rqpts[3*qpts_i[1] + i];
-                   }
-               // If last q-point
-               } else if (qpts_i[n_qpts - 1] == q) {
-                   for (i = 0; i < 3; i++) {
-                       q_dir[i] = rqpts[3*qpts_i[n_qpts - 2] + i];
-                   }
-               } else {
-                   // Find position in non-reduced qpts array to determine
-                   // direction
-                   qpos = -1;
-                   for (i = 0; i < n_qpts; i++) {
-                       if (qpts_i[i] == q) {
-                           qpos = i;
-                           break;
-                       }
-                   }
-                   // If splitting=True there should be an adjacent gamma point.
-                   // Calculate splitting in whichever direction isn't gamma
-                   for (i = 0; i < 3; i++) {
-                       q_dir[i] = rqpts[3*qpts_i[qpos + 1] + i];
-                   }
-                   if (is_gamma(q_dir)) {
-                       for (i = 0; i < 3; i++) {
-                           q_dir[i] = -rqpts[3*qpts_i[qpos - 1] + i];
-                       }
-                   }
-               }
-               calculate_gamma_correction(q_dir, n_atoms, cell_vec, born,
-                   dielectric, corr);
-               add_arrays(dmat_elems, corr, dmat);
+                // Find q-direction for this q-point
+                qpos = -1;
+                for (i = 0; i < n_split_qpts; i++) {
+                    if (split_idx[i] == q) {
+                        qpos = i;
+                        break;
+                    }
+                }
+                calculate_gamma_correction((q_dirs + 3*qpos), n_atoms, cell_vec, born,
+                    dielectric, corr);
+                add_arrays(dmat_elems, corr, dmat);
             }
 
             mass_weight_dyn_mat(dmat_weighting, n_atoms, dmat);

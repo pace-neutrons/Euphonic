@@ -1,5 +1,4 @@
 {
-    "born": null,
     "cell_origins": [
         [
             0,
@@ -548,7 +547,6 @@
         "cell_vectors_unit": "angstrom",
         "n_atoms": 4
     },
-    "dielectric": null,
     "force_constants": [
         [
             [

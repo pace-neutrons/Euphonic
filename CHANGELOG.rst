@@ -6,6 +6,15 @@
   - Fixed structure factor formula in docs (``|F(Q, nu)|`` -> ``|F(Q, \\nu)|^2``
     and ``e^(Q.r)`` -> ``e^(iQ.r)``)
 
+- Bug fixes:
+
+  - Fix ``'born':null`` in ``ForceConstants`` .json files when Born is not
+    present in the calculation (see
+    `c20679c <https://github.com/pace-neutrons/Euphonic/commit/c20679c>`_)
+  - Fix incorrect calculation of LO-TO splitting when ``reduce_qpts=True``,
+    as the 'reduced' q rather than the actual q was used as the q-direction
+    (see `3958072 <https://github.com/pace-neutrons/Euphonic/commit/3958072>`_)
+
 `v0.3.0 <https://github.com/pace-neutrons/Euphonic/compare/v0.2.2...v0.3.0>`_
 ----------
 

@@ -73,9 +73,7 @@ class TestStructureFactorForceConstantsNaClSerial(unittest.TestCase):
         qpts = np.array([[0., 0., 0.],
                          [0., 0., 0.5],
                          [-0.25, 0.5, 0.5],
-                         [-0.151515, 0.575758, 0.5],
-                         [1., 1., 1.]])
-        self.gamma_idx = 4
+                         [-0.151515, 0.575758, 0.5]])
 
         fc = ForceConstants.from_phonopy(
             path=self.interpolation_path, summary_name='phonopy.yaml')
@@ -116,12 +114,7 @@ class TestStructureFactorForceConstantsNaClSerial(unittest.TestCase):
         # Due to 1/w factor in structure factor, calculation can be unstable
         # at q=0. Test q=0 and non q=0 values separately with different
         # tolerances
-        gi = self.gamma_idx
-        npt.assert_allclose(np.delete(sf_sum, gi, axis=0),
-                            np.delete(expected_sf_sum, gi, axis=0),
-                            atol=3e-18)
-        npt.assert_allclose(sf_sum[gi, 3:], expected_sf_sum[gi, 3:],
-                            atol=1e-20)
+        npt.assert_allclose(sf_sum[:4], expected_sf_sum[:4], atol=3e-18)
 
     def test_sf_T5_dw_idata(self):
         dw5 = self.dw_idata.calculate_debye_waller(5*ureg('K'))
@@ -143,12 +136,7 @@ class TestStructureFactorForceConstantsNaClSerial(unittest.TestCase):
             sf_sum[q, :len(unique_index)] = np.bincount(unique_modes, sf[q])
             expected_sf_sum[q, :len(unique_index)] = np.bincount(
                 unique_modes, expected_sf[q])
-        gi = self.gamma_idx
-        npt.assert_allclose(np.delete(sf_sum, gi, axis=0),
-                            np.delete(expected_sf_sum, gi, axis=0),
-                            atol=3e-18)
-        npt.assert_allclose(sf_sum[gi, 3:], expected_sf_sum[gi, 3:],
-                            atol=1e-20)
+        npt.assert_allclose(sf_sum[:4], expected_sf_sum[:4], atol=3e-18)
 
     def test_sf_T5_dw_pdata(self):
         dw5 = self.dw_pdata.calculate_debye_waller(5*ureg('K'))
@@ -171,12 +159,7 @@ class TestStructureFactorForceConstantsNaClSerial(unittest.TestCase):
             sf_sum[q, :len(unique_index)] = np.bincount(unique_modes, sf[q])
             expected_sf_sum[q, :len(unique_index)] = np.bincount(
                 unique_modes, expected_sf[q])
-        gi = self.gamma_idx
-        npt.assert_allclose(np.delete(sf_sum, gi, axis=0),
-                            np.delete(expected_sf_sum, gi, axis=0),
-                            atol=3e-18)
-        npt.assert_allclose(sf_sum[gi, 3:], expected_sf_sum[gi, 3:],
-                            atol=1e-20)
+        npt.assert_allclose(sf_sum[:4], expected_sf_sum[:4], atol=3e-18)
 
     def test_sf_T100(self):
         sf_obj = self.idata.calculate_structure_factor(
@@ -198,12 +181,7 @@ class TestStructureFactorForceConstantsNaClSerial(unittest.TestCase):
             sf_sum[q, :len(unique_index)] = np.bincount(unique_modes, sf[q])
             expected_sf_sum[q, :len(unique_index)] = np.bincount(
                 unique_modes, expected_sf[q])
-        gi = self.gamma_idx
-        npt.assert_allclose(np.delete(sf_sum, gi, axis=0),
-                            np.delete(expected_sf_sum, gi, axis=0),
-                            atol=4e-18)
-        npt.assert_allclose(sf_sum[gi, 3:], expected_sf_sum[gi, 3:],
-                            atol=1e-20)
+        npt.assert_allclose(sf_sum[:4], expected_sf_sum[:4], atol=4e-18)
 
     def test_sf_T100_dw_idata(self):
         dw100 = self.dw_idata.calculate_debye_waller(100*ureg('K'))
@@ -226,12 +204,7 @@ class TestStructureFactorForceConstantsNaClSerial(unittest.TestCase):
             sf_sum[q, :len(unique_index)] = np.bincount(unique_modes, sf[q])
             expected_sf_sum[q, :len(unique_index)] = np.bincount(
                 unique_modes, expected_sf[q])
-        gi = self.gamma_idx
-        npt.assert_allclose(np.delete(sf_sum, gi, axis=0),
-                            np.delete(expected_sf_sum, gi, axis=0),
-                            atol=4e-18)
-        npt.assert_allclose(sf_sum[gi, 3:], expected_sf_sum[gi, 3:],
-                            atol=1e-20)
+        npt.assert_allclose(sf_sum[:4], expected_sf_sum[:4], atol=4e-18)
 
     def test_sf_T100_dw_pdata(self):
         dw100 = self.dw_pdata.calculate_debye_waller(100*ureg('K'))
@@ -254,12 +227,7 @@ class TestStructureFactorForceConstantsNaClSerial(unittest.TestCase):
             sf_sum[q, :len(unique_index)] = np.bincount(unique_modes, sf[q])
             expected_sf_sum[q, :len(unique_index)] = np.bincount(
                 unique_modes, expected_sf[q])
-        gi = self.gamma_idx
-        npt.assert_allclose(np.delete(sf_sum, gi, axis=0),
-                            np.delete(expected_sf_sum, gi, axis=0),
-                            atol=4e-18)
-        npt.assert_allclose(sf_sum[gi, 3:], expected_sf_sum[gi, 3:],
-                            atol=1e-20)
+        npt.assert_allclose(sf_sum[:4], expected_sf_sum[:4], atol=4e-18)
 
 
 class TestStructureFactorForceConstantsNaClSerialC(TestStructureFactorForceConstantsNaClSerial):
@@ -276,9 +244,7 @@ class TestStructureFactorForceConstantsNaClSerialC(TestStructureFactorForceConst
         qpts = np.array([[0., 0., 0.],
                          [0., 0., 0.5],
                          [-0.25, 0.5, 0.5],
-                         [-0.151515, 0.575758, 0.5],
-                         [1., 1., 1.]])
-        self.gamma_idx = 4
+                         [-0.151515, 0.575758, 0.5]])
 
         fc = ForceConstants.from_phonopy(
             path=self.interpolation_path, summary_name='phonopy.yaml')
@@ -311,9 +277,7 @@ class TestStructureFactorForceConstantsNaClParallelC(TestStructureFactorForceCon
         qpts = np.array([[0., 0., 0.],
                          [0., 0., 0.5],
                          [-0.25, 0.5, 0.5],
-                         [-0.151515, 0.575758, 0.5],
-                         [1., 1., 1.]])
-        self.gamma_idx = 4
+                         [-0.151515, 0.575758, 0.5]])
 
         fc = ForceConstants.from_phonopy(
             path=self.interpolation_path, summary_name='phonopy.yaml')
