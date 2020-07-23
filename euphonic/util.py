@@ -1,10 +1,11 @@
 import json
 import math
 import os.path
+from typing import Dict
 
 from importlib_resources import open_text  # Backport for Python 3.6
 import numpy as np
-from pint import UndefinedUnitError
+from pint import Quantity, UndefinedUnitError
 import seekpath
 
 from euphonic import ureg
@@ -137,8 +138,48 @@ def get_qpoint_labels(crystal, qpts):
     return list(zip(qpts_with_labels, xlabels))
 
 
-def get_reference_data(collection='Sears1992',
-                       physical_property='coherent_scattering_length'):
+def get_reference_data(collection: str = 'Sears1992',
+                       physical_property: str = 'coherent_scattering_length'
+                       ) -> Dict[str, Quantity]:
+    """
+    Get physical data as a dict of (possibly-complex) floats from reference
+    data.
+
+    Each "collection" refers to a JSON file which may contain any set of
+    properties, indexed by physical_property.
+
+    Properties are stored in JSON files, encoding a single dictionary with the
+    structure::
+
+      {"metadata1": "metadata1 text", "metadata2": ...,
+       "physical_properties": {"property1": {"__units__": "unit_str",
+                                             "H": H_property1_value,
+                                             "He": He_property1_value,
+                                             "Li": {"__complex__": true,
+                                                    "real": Li_property1_real,
+                                                    "imag": Li_property1_imag},
+                                             "Nh": None,
+                                             ...},
+                               "property2": ...}}
+
+    Parameters
+    ----------
+    collection : Identifier of data file; this may be an inbuilt data set
+        ("Sears1992" or "BlueBook") or a path to a JSON file
+        (e.g. "./my_custom_data.json").
+
+    physical_property : The name of the property for which data should be
+        extracted. This must match an entry of "physical_properties" in the
+        data file.
+
+    Returns
+    -------
+    Requested data as a dict with string keys and (possibly-complex) float
+    Quantity values. String or None items of the original data file will be
+    omitted.
+
+    """
+
     _reference_data_files = {'Sears1992': 'sears-1992.json',
                              'BlueBook': 'bluebook.json'}
 
@@ -186,11 +227,9 @@ def get_reference_data(collection='Sears1992',
             f'Units "{unit_str}" from data file "{filename}" '
             'are not supported by the Euphonic unit register.')
 
-    for key, value in data.items():
-        if isinstance(value, (float, complex)):
-            data[key] = value * unit
-
-    return data
+    return {key: value * unit
+            for key, value in data.items()
+            if isinstance(value, (float, complex))}
 
 
 def _calc_abscissa(crystal, qpts):
