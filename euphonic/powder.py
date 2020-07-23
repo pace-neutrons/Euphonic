@@ -106,8 +106,8 @@ def sample_sphere_structure_factor(
     if isinstance(scattering_lengths, str):
         import euphonic.util
         scattering_lengths = euphonic.util.get_reference_data(
-            prop='coherent_scattering_length',
-            label=scattering_lengths)  # type: dict
+            physical_property='coherent_scattering_length',
+            collection=scattering_lengths)  # type: dict
 
     if dw is None:
         dw_qpts = mp_grid([20, 20, 20])
