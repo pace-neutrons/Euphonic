@@ -74,6 +74,25 @@ class TestForceConstantsCalculateQPointPhononModes:
          [test_qpts, {'asr': 'reciprocal'}],
          'LZO_reciprocal_qpoint_phonon_modes.json')]
 
+    @pytest.fixture(params=['json', 'castep'])
+    def get_si2_fc(self, request):
+        if request.param == 'json':
+            return get_fc('Si2-sc-skew')
+        else:
+            return ForceConstants.from_castep(
+                os.path.join(get_fc_dir('Si2-sc-skew'),
+                             'Si2-sc-skew.castep_bin'))
+
+    si2_params = [
+        (pytest.lazy_fixture('get_si2_fc'), 'Si2-sc-skew',
+         [test_qpts, {}], 'Si2_no_asr_qpoint_phonon_modes.json'),
+        (pytest.lazy_fixture('get_si2_fc'), 'Si2-sc-skew',
+         [test_qpts, {'asr':'realspace'}],
+         'Si2_realspace_qpoint_phonon_modes.json'),
+        (pytest.lazy_fixture('get_si2_fc'), 'Si2-sc-skew',
+         [test_qpts, {'asr': 'reciprocal'}],
+         'Si2_reciprocal_qpoint_phonon_modes.json')]
+
 
     @pytest.fixture(params=['json', 'castep'])
     def get_quartz_fc(self, request):
@@ -118,7 +137,7 @@ class TestForceConstantsCalculateQPointPhononModes:
 
     @pytest.mark.parametrize(
         'fc, material, all_args, expected_qpoint_phonon_modes_file',
-        lzo_params + quartz_params + nacl_params)
+        lzo_params + quartz_params + nacl_params + si2_params)
     @pytest.mark.parametrize(
         'reduce_qpts, n_threads',
         [(False, 0), (True, 0), (True, 1), (True, 2)])

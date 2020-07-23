@@ -171,6 +171,7 @@ class TestForceConstantsCreation:
     @pytest.fixture(params=[
         ('LZO', 'La2Zr2O7.castep_bin'),
         ('graphite', 'graphite.castep_bin'),
+        ('Si2-sc-skew', 'Si2-sc-skew.castep_bin'),
         ('quartz', 'quartz.castep_bin')])
     def create_from_castep(self, request):
         material, castep_bin_file = request.param
@@ -179,7 +180,7 @@ class TestForceConstantsCreation:
         fc = ForceConstants.from_castep(castep_filepath)
         return fc, expected_fc
 
-    @pytest.fixture(params=['LZO', 'graphite', 'quartz'])
+    @pytest.fixture(params=['LZO', 'graphite', 'Si2-sc-skew', 'quartz'])
     def create_from_json(self, request):
         material = request.param
         expected_fc = get_expected_fc(material)

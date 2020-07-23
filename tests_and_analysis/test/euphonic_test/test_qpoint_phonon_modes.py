@@ -146,6 +146,8 @@ class TestQpointPhononModesCreation:
     @pytest.fixture(params=[
         ('LZO', 'La2Zr2O7.phonon',
          'LZO_from_castep_qpoint_phonon_modes.json'),
+        ('Si2-sc-skew', 'Si2-sc-skew.phonon',
+         'Si2-sc-skew_from_castep_qpoint_phonon_modes.json'),
         ('quartz', 'quartz_nosplit.phonon',
          'quartz_from_castep_qpoint_phonon_modes.json'),
         ('quartz', 'quartz_split_qpts.phonon',

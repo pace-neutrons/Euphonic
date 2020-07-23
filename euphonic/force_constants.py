@@ -307,8 +307,8 @@ class ForceConstants(object):
         # expensive phase calculations later
         sc_image_r = get_all_origins(
             np.repeat(lim, 3) + 1, min_xyz=-np.repeat(lim, 3))
-        sc_offsets = np.einsum('ji,kj->ki', self.sc_matrix,
-                               sc_image_r).astype(np.int32)
+        sc_offsets = np.einsum('ij,jk->ik', sc_image_r,
+                               self.sc_matrix).astype(np.int32)
         unique_sc_offsets = [[] for i in range(3)]
         unique_sc_i = np.zeros((len(sc_offsets), 3), dtype=np.int32)
         unique_cell_origins = [[] for i in range(3)]
@@ -1119,8 +1119,8 @@ class ForceConstants(object):
         cutoff_scale = 1.0
 
         # Calculate points of WS cell for this supercell
-        sc_vecs = np.dot(sc_matrix, cell_vectors)
-        ws_list = np.dot(ws_frac, sc_vecs)
+        sc_vecs = np.einsum('ji,ik->jk', sc_matrix, cell_vectors)
+        ws_list = np.einsum('ij,jk->ik', ws_frac, sc_vecs)
         inv_ws_sq = 1.0/np.sum(np.square(ws_list[1:]), axis=1)
         ws_list_norm = ws_list[1:]*inv_ws_sq[:, ax]
 
@@ -1128,10 +1128,9 @@ class ForceConstants(object):
         sc_image_r = get_all_origins(
             np.repeat(lim, 3) + 1, min_xyz=-np.repeat(lim, 3))
         sc_image_cart = np.einsum('ij,jk->ik', sc_image_r, sc_vecs)
-        sc_atom_r = np.einsum('ijk,kl->ijl',
-                             cell_origins[:, ax, :] + atom_r[ax, :, :],
-                             np.linalg.inv(np.transpose(sc_matrix)))
-        sc_ion_cart = np.einsum('ijk,kl->ijl', sc_atom_r, sc_vecs)
+        sc_atom_cart = np.einsum('ijk,kl->ijl',
+                                 cell_origins[:, ax, :] + atom_r[ax, :, :],
+                                 cell_vectors)
 
         sc_image_i = np.full((n_cells_in_sc, n_atoms, n_atoms, (2*lim + 1)**3),
                              -1, dtype=np.int32)
@@ -1144,7 +1143,7 @@ class ForceConstants(object):
         # so they are more likely to pass/fail the WS check together
         # so the last loop can be broken early
         for i in range(n_atoms):
-            rij = sc_ion_cart[0, i] - sc_ion_cart
+            rij = sc_atom_cart[0, i] - sc_atom_cart
             for im, sc_r in enumerate(sc_image_cart):
                 # Get vector between j in sc image and i in unit cell
                 dists = rij - sc_r

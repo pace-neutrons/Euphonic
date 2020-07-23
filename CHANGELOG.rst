@@ -14,6 +14,8 @@
   - Fix incorrect calculation of LO-TO splitting when ``reduce_qpts=True``,
     as the 'reduced' q rather than the actual q was used as the q-direction
     (see `3958072 <https://github.com/pace-neutrons/Euphonic/commit/3958072>`_)
+  - Fix interpolation for materials with non-symmetric supcercell matrices,
+    see `#81 <https://github.com/pace-neutrons/Euphonic/issues/81>`_
 
 `v0.3.0 <https://github.com/pace-neutrons/Euphonic/compare/v0.2.2...v0.3.0>`_
 ----------
