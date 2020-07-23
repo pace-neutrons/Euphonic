@@ -129,7 +129,7 @@ def plot_1d(spectra, title='', x_label='', y_label='', y_min=None, labels=[],
     return fig
 
 
-def plot_2d(spectrum, vmin=None, vmax=None, ratio=None, x_width=0, y_width=0,
+def plot_2d(spectrum, vmin=None, vmax=None, ratio=None,
             cmap='viridis', title='', x_label='', y_label=''):
     """
     Creates a Matplotlib figure for a Spectrum2D object
