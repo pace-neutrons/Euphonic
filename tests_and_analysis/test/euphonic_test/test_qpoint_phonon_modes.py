@@ -31,7 +31,7 @@ class ExpectedQpointPhononModes:
     @property
     def eigenvectors(self):
         n_atoms = self.crystal.n_atoms
-        evecs = np.array(self.data['eigenvectors'], dtype=np.float64) 
+        evecs = np.array(self.data['eigenvectors'], dtype=np.float64)
         return evecs.view(np.complex128).squeeze().reshape(
             (-1, 3*n_atoms, n_atoms, 3))
 
@@ -60,7 +60,7 @@ class ExpectedQpointPhononModes:
         if eigenvectors is None:
             eigenvectors = self.eigenvectors
         if weights is None:
-            weights= self.weights
+            weights = self.weights
 
         kwargs = {}
         # Allow setting weights=False to not include weights in kwargs, to test
@@ -129,6 +129,56 @@ def check_qpt_ph_modes(
         qpoint_phonon_modes.weights,
         expected_qpoint_phonon_modes.weights,
         atol=np.finfo(np.float64).eps)
+
+
+@pytest.mark.unit
+class TestCalculateStructureFactorUsingReferenceData:
+    @pytest.fixture
+    def quartz_modes(self):
+        return get_qpt_ph_modes('quartz')
+
+    @pytest.fixture
+    def fake_quartz_data(self):
+        return {
+            "description": "fake data for testing",
+            "physical_property": {"coherent_scattering_length":
+                                  {"__units__": "fm",
+                                   "Si": {"__complex__": True,
+                                          "real": 4.0, "imag": -0.70},
+                                   "O": 5.803}}}
+
+    @staticmethod
+    def _dump_data(data, tmpdir, filename):
+        filename = tmpdir.join(filename)
+        with open(filename, 'wt') as fd:
+            json.dump(data, fd)
+        return str(filename)
+
+    def test_structure_factor_with_named_ref(self, quartz_modes):
+        fm = ureg['fm']
+        sf_direct = quartz_modes.calculate_structure_factor(
+            scattering_lengths={'Si': 4.1491*fm, 'O': 5.803*fm})
+        sf_named = quartz_modes.calculate_structure_factor(
+            scattering_lengths='Sears1992')
+
+        aa2 = ureg['angstrom']**2
+        npt.assert_allclose(sf_direct.structure_factors.to(aa2).magnitude,
+                            sf_named.structure_factors.to(aa2).magnitude)
+
+    def test_structure_factor_with_file_ref(self, quartz_modes,
+                                            tmpdir, fake_quartz_data):
+        fm = ureg['fm']
+
+        filename = self._dump_data(fake_quartz_data, tmpdir, 'fake_data')
+
+        sf_direct = quartz_modes.calculate_structure_factor(
+            scattering_lengths={'Si': complex(4., -0.7)*fm, 'O': 5.803*fm})
+        sf_from_file = quartz_modes.calculate_structure_factor(
+            scattering_lengths=filename)
+
+        aa2 = ureg['angstrom']**2
+        npt.assert_allclose(sf_direct.structure_factors.to(aa2).magnitude,
+                            sf_from_file.structure_factors.to(aa2).magnitude)
 
 
 @pytest.mark.unit
