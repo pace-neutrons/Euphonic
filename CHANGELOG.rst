@@ -1,6 +1,16 @@
 `Unreleased <https://github.com/pace-neutrons/Euphonic/compare/v0.3.0...HEAD>`_
 ----------
 
+- New Features:
+
+  - A system has been added for reference data in JSON files. These
+    are accessed via ``euphonic.utils.get_reference_data`` and some
+    data has been added for coherent scattering lengths and cross-sections.
+    - This system has been made available to the
+      ``calculate_structure_factor()`` method; it is no longer
+      necessary to craft a data dict every time a program uses this
+      function.
+
 - Changes:
 
   - Fixed structure factor formula in docs (``|F(Q, nu)|`` -> ``|F(Q, \\nu)|^2``
