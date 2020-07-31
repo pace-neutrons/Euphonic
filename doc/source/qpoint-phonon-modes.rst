@@ -71,14 +71,29 @@ Calculating The Coherent Neutron Structure Factor
 
 The neutron structure factor can be calculated for each branch and q-point
 using :py:meth:`QpointPhononModes.calculate_structure_factor <euphonic.qpoint_phonon_modes.QpointPhononModes.calculate_structure_factor>`
-(see the docstring for algorithm details). A dictionary containing the coherent
-neutron scattering lengths for each atom must be provided. The units of each
-scattering length in the dictionary must be specified by providing them as a
-``pint.Quantity``, see :ref:`Units` for details. Inclusion of the
+(see the docstring for algorithm details).
+
+Scattering lengths
+^^^^^^^^^^^^^^^^^^
+The coherent scattering length is a physical property of the nucleus.
+To provide this data explicitly, the ``scattering_lengths`` argument can
+be set as a dictionary mapping each atom identity to a ``pint.Quantity``
+(see :ref:`Units` for details).
+
+Alternatively, this argument may be a string referring to a data file
+with the *coherent_scattering_length* property. (See :ref:`Reference Data <ref_data>` for details.)
+By default, :py:meth:`QpointPhononModes.calculate_structure_factor <euphonic.qpoint_phonon_modes.QpointPhononModes.calculate_structure_factor>` will use the ``"Sears1992"`` data set included in Euphonic.
+If you have a custom data file, this can be used instead.
+
+Debye-Waller factor
+^^^^^^^^^^^^^^^^^^^
+Inclusion of the
 Debye-Waller factor is optional, and can be provided in the ``dw`` keyword
 argument, see `Calculating The Debye-Waller Exponent`_. From this function a
 :ref:`StructureFactor<structure-factor>` object is returned.
 
+Example
+^^^^^^^
 The following example shows a full calculation from the force constants to the
 structure factor with Debye-Waller:
 
