@@ -19,8 +19,9 @@ Python API
 - :ref:`Density of States <dos>`
 - :ref:`Structure Factors <structure-factor>`
 - :ref:`Scattering Intensities <scattering-intensities>`
-- :ref:`Debye Waller <debye-waller>`
-- :ref:`Plotting <plotting>`
+- :ref:`Debye-Waller <debye-waller>`
+- :ref:`plotting`
+- :ref:`utils`
 - :ref:`Units in Euphonic <units>`
 
 Helper Scripts

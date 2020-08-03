@@ -1,7 +1,15 @@
+import json
 import math
+import os.path
+from typing import Dict
+
+from importlib_resources import open_text  # Backport for Python 3.6
 import numpy as np
+from pint import Quantity, UndefinedUnitError
 import seekpath
+
 from euphonic import ureg
+import euphonic.data
 
 
 def direction_changed(qpts, tolerance=5e-6):
@@ -128,6 +136,101 @@ def get_qpoint_labels(crystal, qpts):
             qpts[qpts_with_labels, :], decimals=2)]
     qpts_with_labels = [int(x) for x in qpts_with_labels.tolist()]
     return list(zip(qpts_with_labels, xlabels))
+
+
+def get_reference_data(collection: str = 'Sears1992',
+                       physical_property: str = 'coherent_scattering_length'
+                       ) -> Dict[str, Quantity]:
+    """
+    Get physical data as a dict of (possibly-complex) floats from reference
+    data.
+
+    Each "collection" refers to a JSON file which may contain any set of
+    properties, indexed by physical_property.
+
+    Properties are stored in JSON files, encoding a single dictionary with the
+    structure::
+
+      {"metadata1": "metadata1 text", "metadata2": ...,
+       "physical_properties": {"property1": {"__units__": "unit_str",
+                                             "H": H_property1_value,
+                                             "He": He_property1_value,
+                                             "Li": {"__complex__": true,
+                                                    "real": Li_property1_real,
+                                                    "imag": Li_property1_imag},
+                                             "Nh": None,
+                                             ...},
+                               "property2": ...}}
+
+    Parameters
+    ----------
+    collection
+        Identifier of data file; this may be an inbuilt data set ("Sears1992"
+        or "BlueBook") or a path to a JSON file (e.g. "./my_custom_data.json").
+
+    physical_property
+        The name of the property for which data should be extracted. This must
+        match an entry of "physical_properties" in the data file.
+
+    Returns
+    -------
+    Dict[str, Quantity]
+        Requested data as a dict with string keys and (possibly-complex)
+        float Quantity values. String or None items of the original data file
+        will be omitted.
+
+    """
+
+    _reference_data_files = {'Sears1992': 'sears-1992.json',
+                             'BlueBook': 'bluebook.json'}
+
+    def custom_decode(dct):
+        if '__complex__' in dct:
+            return complex(dct['real'], dct['imag'])
+        return dct
+
+    if collection in _reference_data_files:
+        filename = _reference_data_files[collection]
+        with open_text(euphonic.data, filename) as fd:
+            file_data = json.load(fd, object_hook=custom_decode)
+
+    elif os.path.isfile(collection):
+        filename = collection
+        with open(filename) as fd:
+            file_data = json.load(fd, object_hook=custom_decode)
+    else:
+        raise ValueError(
+            f'No data files known for collection "{collection}". '
+            f'Available collections: '
+            + ', '.join(list(_reference_data_files)))
+
+    if 'physical_property' not in file_data:
+        raise AttributeError('Data file does not contain required key '
+                             '"physical_property".')
+
+    data = file_data['physical_property'].get(physical_property)
+    if data is None:
+        raise ValueError(
+            f'No such collection "{collection}" with property '
+            f'"{physical_property}". Available properties for this collection'
+            ': ' + ', '.join(list(file_data["physical_property"].keys())))
+
+    unit_str = data.get('__units__')
+    if unit_str is None:
+        raise ValueError(f'Reference data file "{filename}" does not '
+                         'specify dimensions with "__units__" metadata.')
+
+    try:
+        unit = ureg[unit_str]
+
+    except UndefinedUnitError:
+        raise UndefinedUnitError(
+            f'Units "{unit_str}" from data file "{filename}" '
+            'are not supported by the Euphonic unit register.')
+
+    return {key: value * unit
+            for key, value in data.items()
+            if isinstance(value, (float, complex))}
 
 
 def _calc_abscissa(crystal, qpts):
@@ -373,7 +476,7 @@ def _distribution_1d(xbins, xwidth, shape='gauss', extent=3.0):
     else:
         raise Exception(
             f'Distribution shape \'{shape}\' not recognised')
-    dist = dist/np.sum(dist) # Naively normalise
+    dist = dist/np.sum(dist)  # Naively normalise
     return dist
 
 
@@ -396,7 +499,7 @@ def _distribution_2d(xbins, ybins, xwidth, ywidth, shape='gauss', extent=3.0):
     xgrid = np.tile(xdist, (len(ydist), 1))
     ygrid = np.transpose(np.tile(ydist, (len(xdist), 1)))
     dist = xgrid*ygrid
-    dist = dist/np.sum(dist) # Naively normalise
+    dist = dist/np.sum(dist)  # Naively normalise
 
     return dist
 
@@ -515,23 +618,23 @@ def _ensure_contiguous_args(*args):
 
 
 def _get_dtype(arr):
-   """
-   Get the Numpy dtype that should be used for the input array
+    """
+    Get the Numpy dtype that should be used for the input array
 
-   Parameters
-   ----------
-   arr : ndarray
-       The Numpy array to get the type of
+    Parameters
+    ----------
+    arr : ndarray
+        The Numpy array to get the type of
 
-   Returns
-   -------
-   dtype : Numpy dtype
-       The type the array should be
-   """
-   if np.issubdtype(arr.dtype, np.integer):
-       return np.int32
-   elif np.issubdtype(arr.dtype, np.floating):
-       return np.float64
-   elif np.issubdtype(arr.dtype, np.complexfloating):
-       return np.complex128
-   return None
+    Returns
+    -------
+    dtype : Numpy dtype
+        The type the array should be
+    """
+    if np.issubdtype(arr.dtype, np.integer):
+        return np.int32
+    elif np.issubdtype(arr.dtype, np.floating):
+        return np.float64
+    elif np.issubdtype(arr.dtype, np.complexfloating):
+        return np.complex128
+    return None

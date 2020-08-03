@@ -1,6 +1,8 @@
 import math
 import numpy as np
 from pint import Quantity
+from typing import Dict, Optional, Union
+
 from euphonic import ureg
 from euphonic.crystal import Crystal
 from euphonic.spectra import Spectrum1D
@@ -11,6 +13,7 @@ from euphonic.util import (direction_changed, is_gamma,
 from euphonic.io import (_obj_to_json_file, _obj_from_json_file,
                          _obj_to_dict, _process_dict)
 from euphonic.readers import castep, phonopy
+from euphonic.util import get_reference_data
 
 
 class QpointPhononModes(object):
@@ -169,19 +172,38 @@ class QpointPhononModes(object):
             evec_tmp = np.copy(self.eigenvectors[i, mode_map[i]])
             self.eigenvectors[i] = evec_tmp
 
-    def calculate_structure_factor(self, scattering_lengths, dw=None):
+    def calculate_structure_factor(self,
+        scattering_lengths: Union[str, Dict[str, Quantity]] = 'Sears1992',
+        dw: Optional[DebyeWaller] = None,
+        ) -> StructureFactor:
         """
         Calculate the one phonon inelastic scattering for neutrons at
         each q-point
 
         Parameters
         ----------
-        scattering_lengths : dictionary of float Quantity
-            Dictionary of spin and isotope averaged coherent scattering
-            length for each element in the structure in e.g.
-            {'O': 5.803*ureg('fm'), 'Zn': 5.680*ureg('fm')}
-        dw : DebyeWaller
-            A DebyeWaller exponent object
+        scattering_lengths
+            Dataset of coherent scattering length for each
+            element in the structure. This may be provided in 3 ways:
+
+            - A string naming an appropriate data collection packaged with
+              Euphonic (including the default value 'Sears1992'). This will be
+              passed to the ``collection`` argument of
+              :obj:`euphonic.util.get_reference_data()`.
+
+            - A string filename for a user's customised data file in the same
+              format as those packaged with Euphonic.
+
+            - An explicit dictionary of float Quantity, giving spin- and
+              isotope-averaged coherent scattering length for each element in
+              the structure, e.g.::
+
+                {'O': 5.803*ureg('fm'), 'Zn': 5.680*ureg('fm')}
+
+        dw
+            Data for thermal motion effects. Typically this is computed over a
+            converged Monkhort-Pack grid, which need not correspond to the
+            q-points of this QpointPhononModes object.
 
         Returns
         -------
@@ -214,8 +236,15 @@ class QpointPhononModes(object):
         .. [1] M.T. Dove, Structure and Dynamics, Oxford University Press, Oxford, 2003, 225-226
 
         """
-        sl = [scattering_lengths[x].to('INTERNAL_LENGTH_UNIT').magnitude
-                  for x in self.crystal.atom_type]
+        if isinstance(scattering_lengths, str):
+            scattering_length_data = get_reference_data(
+                collection=scattering_lengths,
+                physical_property='coherent_scattering_length')
+        elif isinstance(scattering_lengths, dict):
+            scattering_length_data = scattering_lengths
+
+        sl = [scattering_length_data[x].to('INTERNAL_LENGTH_UNIT').magnitude
+              for x in self.crystal.atom_type]
 
         # Calculate normalisation factor
         norm_factor = sl/np.sqrt(self.crystal._atom_mass)
