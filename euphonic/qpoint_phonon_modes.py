@@ -182,7 +182,8 @@ class QpointPhononModes(object):
 
         Parameters
         ----------
-        scattering_lengths : Dataset of coherent scattering length for each
+        scattering_lengths
+            Dataset of coherent scattering length for each
             element in the structure. This may be provided in 3 ways:
 
             - A string naming an appropriate data collection packaged with
@@ -199,7 +200,7 @@ class QpointPhononModes(object):
 
                 {'O': 5.803*ureg('fm'), 'Zn': 5.680*ureg('fm')}
 
-        dw : DebyeWaller
+        dw
             Data for thermal motion effects. Typically this is computed over a
             converged Monkhort-Pack grid, which need not correspond to the
             q-points of this QpointPhononModes object.

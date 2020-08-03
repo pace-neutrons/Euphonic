@@ -164,11 +164,11 @@ def get_reference_data(collection: str = 'Sears1992',
 
     Parameters
     ----------
-    collection:
+    collection
         Identifier of data file; this may be an inbuilt data set ("Sears1992"
         or "BlueBook") or a path to a JSON file (e.g. "./my_custom_data.json").
 
-    physical_property:
+    physical_property
         The name of the property for which data should be extracted. This must
         match an entry of "physical_properties" in the data file.
 

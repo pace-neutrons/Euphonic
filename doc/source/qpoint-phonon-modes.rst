@@ -70,8 +70,11 @@ Calculating The Coherent Neutron Structure Factor
 -------------------------------------------------
 
 The neutron structure factor can be calculated for each branch and q-point
-using :py:meth:`QpointPhononModes.calculate_structure_factor <euphonic.qpoint_phonon_modes.QpointPhononModes.calculate_structure_factor>`
-(see the docstring for algorithm details).
+using the
+:py:meth:`QpointPhononModes.calculate_structure_factor <euphonic.qpoint_phonon_modes.QpointPhononModes.calculate_structure_factor>`
+method, which returns a :ref:`StructureFactor<structure-factor>` object.
+(See the docstring for algorithm details.)
+
 
 Scattering lengths
 ^^^^^^^^^^^^^^^^^^
@@ -89,8 +92,7 @@ Debye-Waller factor
 ^^^^^^^^^^^^^^^^^^^
 Inclusion of the
 Debye-Waller factor is optional, and can be provided in the ``dw`` keyword
-argument, see `Calculating The Debye-Waller Exponent`_. From this function a
-:ref:`StructureFactor<structure-factor>` object is returned.
+argument, see `Calculating The Debye-Waller Exponent`_.
 
 Example
 ^^^^^^^
