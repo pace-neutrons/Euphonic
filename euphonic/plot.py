@@ -1,18 +1,26 @@
+from typing import Optional, Union
 import warnings
 
 try:
     import matplotlib as mpl
     import matplotlib.pyplot as plt
+    from matplotlib.axes import Axes
+    from matplotlib.figure import Figure
+    from matplotlib.colors import Normalize
+    from matplotlib.image import NonUniformImage
+
+
 except ImportError:
     warnings.warn((
         'Cannot import Matplotliib for plotting (maybe Matplotlib is '
         'not installed?). To install Euphonic\'s optional Matplotlib '
         'dependency, try:\n\npip install euphonic[matplotlib]\n'))
     raise
-import numpy as np
-from scipy import signal
 
-from euphonic import ureg, Spectrum1D
+import numpy as np
+
+from euphonic import ureg
+from euphonic.spectra import Spectrum1D, Spectrum2D
 from euphonic.util import is_gamma, get_qpoint_labels, _calc_abscissa
 
 
@@ -131,8 +139,56 @@ def plot_1d(spectra, title='', x_label='', y_label='', y_min=None, labels=[],
     return fig
 
 
+def _plot_2d_core(spectrum: Spectrum2D, ax: Axes,
+                  cmap: Union[str, mpl.colors.Colormap] = 'viridis',
+                  interpolation: str = 'nearest',
+                  norm: Optional[Normalize] = None,
+                  ) -> NonUniformImage:
+    """Plot Spectrum2D object to Axes
+
+    Parameters
+    ----------
+    spectrum
+        2D data object for plotting as NonUniformImage. The x_tick_labels
+        attribute will be used to mark labelled points.
+    ax
+        Matplotlib axes to which image will be drawn
+    cmap
+        Matplotlib colormap or registered colormap name
+    interpolation
+        Interpolation method: 'nearest' or 'bilinear' for a pixellated or
+        smooth result
+    norm
+        Matplotlib normalization object; set this in order to ensure separate
+        plots are on the same colour scale.
+
+    """
+    x_bins = spectrum._get_bin_edges('x').magnitude
+    y_bins = spectrum._get_bin_edges('y').magnitude
+    z_data = spectrum.z_data.magnitude.T
+
+    x_pts = (x_bins[:-1] + x_bins[1:]) / 2
+    y_pts = (y_bins[:-1] + y_bins[1:]) / 2
+
+    image = NonUniformImage(ax, interpolation=interpolation,
+                            extent=(min(x_bins), max(x_bins),
+                                    min(y_bins), max(y_bins)),
+                            cmap=cmap)
+    if norm is not None:
+        image.set_norm(norm)
+
+    image.set_data(x_pts, y_pts, z_data)
+    ax.images.append(image)
+    ax.set_xlim(min(x_bins), max(x_bins))
+    ax.set_ylim(min(y_bins), max(y_bins))
+
+    _set_x_tick_labels(ax, spectrum.x_tick_labels, spectrum.x_data)
+
+    return image
+
+
 def plot_2d(spectrum, vmin=None, vmax=None, ratio=None,
-            cmap='viridis', title='', x_label='', y_label=''):
+            cmap='viridis', title='', x_label='', y_label='') -> Figure:
     """
     Creates a Matplotlib figure for a Spectrum2D object
 
@@ -168,52 +224,17 @@ def plot_2d(spectrum, vmin=None, vmax=None, ratio=None,
         easier access to some attributes/functions
     """
 
-    x_bins = spectrum._get_bin_edges('x').magnitude
-    y_bins = spectrum._get_bin_edges('y').magnitude
-    z_data = spectrum.z_data.magnitude
-
-    if ratio:
-        y_max = x_bins[-1]/ratio
-    else:
-        y_max = 1.0
-    # Get 'correct' tick labels that can be applied after the plot has
-    # been scaled
-    # Create temporary figure to get automatic tick labels
-    fig_tmp, ax_tmp = plt.subplots(1,1)
-    ax_tmp.imshow(np.transpose(z_data[0, np.newaxis]), origin='lower',
-                  extent=[x_bins[0], x_bins[1], y_bins[0], y_bins[-1]])
-    y_ticks = ax_tmp.get_yticks()
-    plt.close(fig_tmp)
-    y_tick_labels = [str(tick) for tick in y_ticks]
-    # Locations on rescaled axis
-    y_tick_locs = (y_ticks - y_bins[0])/(y_bins[-1] - y_bins[0])*y_max
-
-    if vmin is None:
-        vmin = np.amin(z_data)
-    if vmax is None:
-        vmax = np.amax(z_data)
-
     fig, ax = plt.subplots(1, 1)
-    n_x_data = len(x_bins) - 1
-    ims = np.empty((n_x_data), dtype=mpl.image.AxesImage)
-    for i in range(n_x_data):
-        ims[i] = ax.imshow(np.transpose(z_data[i, np.newaxis]),
-                           interpolation='none', origin='lower',
-                           extent=[x_bins[i], x_bins[i+1], 0, y_max],
-                           vmin=vmin, vmax=vmax, cmap=cmap)
 
-    _set_x_tick_labels(ax, spectrum.x_tick_labels, spectrum.x_data)
-    ax.set_yticks(y_tick_locs)
-    ax.set_yticklabels(y_tick_labels)
+    norm = Normalize(vmin=vmin, vmax=vmax)
+    _plot_2d_core(spectrum, ax, cmap=cmap, norm=norm)
 
-    ax.set_ylim(0, y_max)
-    ax.set_xlim(x_bins[0], x_bins[-1])
     ax.set_xlabel(x_label)
     ax.set_ylabel(y_label)
     fig.suptitle(title)
     fig.tight_layout()
 
-    return fig, ims
+    return fig
 
 
 def _set_x_tick_labels(ax, x_tick_labels, x_data):
@@ -262,7 +283,7 @@ def _get_gridspec_kw(x_data, btol=None):
 
     # Get width ratios so that the x-scale is the same for each subplot
     subplot_widths = [x_data[ibreak[i + 1] - 1] - x_data[ibreak[i]]
-                         for i in range(len(ibreak) - 1)]
-    gridspec_kw = dict(width_ratios=[w/subplot_widths[0]
-                                  for w in subplot_widths])
+                      for i in range(len(ibreak) - 1)]
+    gridspec_kw = dict(width_ratios=[w / subplot_widths[0]
+                                     for w in subplot_widths])
     return ibreak, gridspec_kw
