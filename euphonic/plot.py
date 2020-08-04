@@ -1,4 +1,4 @@
-from typing import Optional, Union
+from typing import List, Optional, Tuple, Union
 import warnings
 
 try:
@@ -9,7 +9,6 @@ try:
     from matplotlib.colors import Normalize
     from matplotlib.image import NonUniformImage
 
-
 except ImportError:
     warnings.warn((
         'Cannot import Matplotliib for plotting (maybe Matplotlib is '
@@ -17,6 +16,7 @@ except ImportError:
         'dependency, try:\n\npip install euphonic[matplotlib]\n'))
     raise
 
+from pint import Quantity
 import numpy as np
 
 from euphonic import ureg
@@ -187,41 +187,35 @@ def _plot_2d_core(spectrum: Spectrum2D, ax: Axes,
     return image
 
 
-def plot_2d(spectrum, vmin=None, vmax=None, ratio=None,
-            cmap='viridis', title='', x_label='', y_label='') -> Figure:
+def plot_2d(spectrum: Spectrum2D,
+            vmin: Optional[float] = None,
+            vmax: Optional[float] = None,
+            cmap: Union[str, mpl.colors.Colormap] = 'viridis',
+            title: str = '', x_label: str = '', y_label: str = '') -> Figure:
     """
     Creates a Matplotlib figure for a Spectrum2D object
 
     Parameters
     ----------
-    spectrum : Spectrum2D
+    spectrum
         Containing the 2D data to plot
-    vmin : float, optional
+    vmin
         Minimum of data range for colormap. See Matplotlib imshow docs
-        Default: None
-    vmax : float, optional
+    vmax
         Maximum of data range for colormap. See Matplotlib imshow docs
-        Default: None
-    ratio : float, optional
-        Ratio of the size of the y and x axes. e.g. if ratio is 2, the
-        y-axis will be twice as long as the x-axis
-        Default: None
-    cmap : string, optional
+    cmap
         Which colormap to use, see Matplotlib docs
-    title : string, optional
-        The figure title. Default: ''
-    x_label : string, optional
+    title
+        Set a title for the Figure.
+    x_label
         X-axis label
-    y_label : string, optional
+    y_label
         Y-axis label
 
     Returns
     -------
     fig : matplotlib.figure.Figure
-        The figure
-    ims : (n_qpts,) 'matplotlib.image.AxesImage' ndarray
-        A Numpy.ndarray of AxesImage objects, one for each x-bin, for
-        easier access to some attributes/functions
+        The Figure instance
     """
 
     fig, ax = plt.subplots(1, 1)
@@ -237,10 +231,13 @@ def plot_2d(spectrum, vmin=None, vmax=None, ratio=None,
     return fig
 
 
-def _set_x_tick_labels(ax, x_tick_labels, x_data):
+def _set_x_tick_labels(ax: Axes,
+                       x_tick_labels: List[Tuple[int, str]],
+                       x_data: Quantity) -> None:
     if x_tick_labels is not None:
         locs, labels = [list(x) for x in zip(*x_tick_labels)]
-        ax.set_xticks(x_data.magnitude[locs])
+        x_values = x_data.magnitude  # type: np.ndarray
+        ax.set_xticks(x_values[locs])
         ax.xaxis.grid(True, which='major')
         # Rotate long tick labels
         if len(max(labels, key=len)) >= 11:
