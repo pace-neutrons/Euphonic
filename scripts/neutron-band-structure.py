@@ -30,6 +30,14 @@ def get_parser() -> argparse.ArgumentParser:
     parser.add_argument('--title', type=str, default=None)
     parser.add_argument('--cmap', type=str, default='viridis',
                         help='Matplotlib colormap')
+    parser.add_argument('--q-broadening', type=float, default=None,
+                        dest='gaussian_x',
+                        help='Width of Gaussian broadening on q axis in recip '
+                             'angstrom. (No broadening if unspecified.)')
+    parser.add_argument('--energy-broadening', type=float, default=None,
+                        dest='gaussian_y',
+                        help='Width of Gaussian broadening on energy axis in '
+                        'meV. (No broadening if unspecified.)')
     return parser
 
 
@@ -156,6 +164,12 @@ def main():
         if args.seekpath_labels:
             sqw.x_tick_labels = _get_tick_labels(region, bandpath,
                                                  special_point_indices)
+        if args.gaussian_x or args.gaussian_y:
+            sqw = sqw.broaden(x_width=(args.gaussian_x * ureg['1 / angstrom']
+                                       if args.gaussian_x else None),
+                              y_width=(args.gaussian_y * ureg['meV']
+                                       if args.gaussian_y else None))
+
         spectra.append(sqw)
 
     print(f"Plotting figure")
