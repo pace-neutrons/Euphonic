@@ -1,4 +1,4 @@
-from typing import List, Optional, Tuple, Union
+from typing import List, Optional, Sequence, Tuple, Union
 import warnings
 
 try:
@@ -187,7 +187,7 @@ def _plot_2d_core(spectrum: Spectrum2D, ax: Axes,
     return image
 
 
-def plot_2d(spectrum: Spectrum2D,
+def plot_2d(spectra: Union[Spectrum2D, Sequence[Spectrum2D]],
             vmin: Optional[float] = None,
             vmax: Optional[float] = None,
             cmap: Union[str, mpl.colors.Colormap] = 'viridis',
@@ -197,8 +197,11 @@ def plot_2d(spectrum: Spectrum2D,
 
     Parameters
     ----------
-    spectrum
-        Containing the 2D data to plot
+    spectra
+        Containing the 2D data to plot. If a sequence of Spectrum2D is given,
+        they will be plotted from right-to-left as separate subplots. This is
+        recommended for band structure/dispersion plots with discontinuous
+        regions.
     vmin
         Minimum of data range for colormap. See Matplotlib imshow docs
     vmax
@@ -218,13 +221,47 @@ def plot_2d(spectrum: Spectrum2D,
         The Figure instance
     """
 
-    fig, ax = plt.subplots(1, 1)
+    # Wrap a bare spectrum in list so treatment is consistent with sequences
+    if isinstance(spectra, Spectrum2D):
+        spectra = [spectra]
+
+    x_unit = spectra[0].x_data.units
+
+    def _get_q_range(data: Quantity) -> float:
+        dimensionless_data = data.to(x_unit).magnitude
+        return dimensionless_data[-1] - dimensionless_data[0]
+    widths = [_get_q_range(spectrum.x_data) for spectrum in spectra]
+
+    fig, axes = plt.subplots(ncols=len(spectra), nrows=1,
+                             gridspec_kw={'width_ratios': widths},
+                             sharey=True)
+
+    if not isinstance(axes, np.ndarray):  # Ensure axes are always iterable
+        axes = [axes]
+
+    intensity_unit = spectra[0].z_data.units
+
+    def _get_minmax_intensity(spectrum: Spectrum2D) -> float:
+        dimensionless_data = spectrum.z_data.to(intensity_unit).magnitude
+        assert isinstance(dimensionless_data, np.ndarray)
+        return np.min(dimensionless_data), np.max(dimensionless_data)
+    min_z_list, max_z_list = zip(*map(_get_minmax_intensity, spectra))
+    if vmin is None:
+        vmin = min(min_z_list)
+    if vmax is None:
+        vmax = max(max_z_list)
 
     norm = Normalize(vmin=vmin, vmax=vmax)
-    _plot_2d_core(spectrum, ax, cmap=cmap, norm=norm)
 
+    for spectrum, ax in zip(spectra, axes):
+        _plot_2d_core(spectrum, ax, cmap=cmap, norm=norm)
+
+    # Add an invisible large axis for common labels
+    ax = fig.add_subplot(111, frameon=False)
+    ax.tick_params(labelcolor="none", bottom=False, left=False)
     ax.set_xlabel(x_label)
     ax.set_ylabel(y_label)
+
     fig.suptitle(title)
     fig.tight_layout()
 

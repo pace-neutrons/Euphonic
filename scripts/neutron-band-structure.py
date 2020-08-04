@@ -23,6 +23,13 @@ def get_parser() -> argparse.ArgumentParser:
     parser.add_argument('--q-distance', type=float, default=0.025,
                         dest='q_distance',
                         help='Target distance between q-point samples')
+    parser.add_argument('--x-label', type=str, default=None,
+                        dest='x_label')
+    parser.add_argument('--y-label', type=str, default=None,
+                        dest='y_label')
+    parser.add_argument('--title', type=str, default=None)
+    parser.add_argument('--cmap', type=str, default='viridis',
+                        help='Matplotlib colormap')
     return parser
 
 
@@ -140,6 +147,7 @@ def main():
                         args.ebins) * ureg['meV']
 
     print("Computing structure factors and generating 2D maps")
+    spectra = []
     for region, modes in zip(regions, region_modes):
 
         structure_factor = modes.calculate_structure_factor()
@@ -148,11 +156,23 @@ def main():
         if args.seekpath_labels:
             sqw.x_tick_labels = _get_tick_labels(region, bandpath,
                                                  special_point_indices)
+        spectra.append(sqw)
 
-        print(f"Plotting figure")
-        euphonic.plot.plot_2d(sqw)
+    print(f"Plotting figure")
+    energy_units = str(spectra[0].y_data.units)
 
-        plt.show()
+    if args.y_label is None:
+        y_label = f"Energy / {energy_units}"
+    else:
+        y_label = args.y_label
+
+    euphonic.plot.plot_2d(spectra,
+                          cmap=args.cmap,
+                          x_label=args.x_label,
+                          y_label=y_label,
+                          title=args.title)
+
+    plt.show()
 
 
 if __name__ == '__main__':
