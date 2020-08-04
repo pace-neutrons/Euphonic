@@ -2,46 +2,28 @@
 import argparse
 import os
 
-import ase
 import euphonic
 from euphonic import ureg
 import euphonic.plot
 import matplotlib.pyplot as plt
 import numpy as np
+import seekpath
 
 
 def get_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser()
     parser.add_argument('file', type=str)
-    parser.add_argument('--qpoints', type=int, default=200)
     parser.add_argument('--ebins', type=int, default=200)
-    parser.add_argument('--ase-labels', action='store_true', dest='ase_labels',
-                        help="Get high-symmetry labels from ASE bandpath. "
-                             "Otherwise these are detected by Euphonic.")
+    parser.add_argument('--seekpath-labels', action='store_true',
+                        dest='seekpath_labels',
+                        help='Use the exact labels reported by Seekpath when '
+                             'constructing the band structure path. Otherwise,'
+                             ' use the labels detected by Euphonic.')
+    parser.add_argument('--q-distance', type=float, default=0.025,
+                        dest='q_distance',
+                        help='Target distance between q-point samples')
     return parser
 
-
-def get_special_point_indices(bandpath):
-    all_x, special_x, labels = bandpath.get_linear_kpoint_axis()
-
-    initial_list = all_x.searchsorted(special_x).tolist()
-    results = []
-    left_label = None
-    for (x_index, label) in zip(initial_list, labels):
-        if initial_list.count(x_index) == 1:
-            results.append((x_index, label))
-        elif initial_list.count(x_index) == 2:
-            # Index is repeated at jumps between BS segments
-            if left_label is None:
-                left_label = label
-            else:
-                right_label = label
-                results.append((x_index, f"{left_label}|{right_label}"))
-                left_label = None
-        else:
-            raise Exception()
-
-    return results
 
 def main():
     args = get_parser().parse_args()
@@ -53,31 +35,87 @@ def main():
     force_constants = euphonic.ForceConstants.from_phonopy(
         path=path, summary_name=summary_name)
 
-    print(f"Getting band path with {args.qpoints} q-points")
-    atoms = ase.Atoms(force_constants.crystal.atom_type,
-                      cell=force_constants.crystal.cell_vectors.to('angstrom').magnitude,
-                      scaled_positions=force_constants.crystal.atom_r)
-    bandpath = atoms.cell.bandpath(npoints=args.qpoints)
+    print(f"Getting band path")
+    # Seekpath needs a set of integer identities, while Crystal stores strings
+    # so we need to convert e.g. ['H', 'C', 'Cl', 'C'] -> [0, 1, 2, 1]
+    all_atom_types = list(set(force_constants.crystal.atom_type.tolist()))
+    atom_id_list = [all_atom_types.index(symbol)
+                    for symbol in force_constants.crystal.atom_type]
 
-    print(f"Computing phonon modes")
-    modes = force_constants.calculate_qpoint_phonon_modes(bandpath.kpts, reduce_qpts=False)
-    emin = np.min(modes.frequencies.magnitude) * modes.frequencies.units
-    emax = np.max(modes.frequencies.magnitude) * modes.frequencies.units
+    structure = (force_constants.crystal.cell_vectors.to('angstrom').magnitude,
+                 force_constants.crystal.atom_r,
+                 atom_id_list)
+
+    bandpath = seekpath.get_explicit_k_path(structure,
+                                            reference_distance=args.q_distance)
+
+    # Find break points between continuous spectra: wherever there are two
+    # adjacent labels
+    special_point_bools = np.fromiter(
+        map(bool, bandpath["explicit_kpoints_labels"]), dtype=bool)
+    # End points are always special even if unlabeled
+    special_point_bools[0] = special_point_bools[-1] = True
+
+    # [T F F T T F T] -> [F F T T F T] AND [T F F T T F] = [F F F T F F] -> 3,
+    break_points = (np.logical_and(special_point_bools[:-1],
+                                   special_point_bools[1:])
+                    .nonzero()[0].tolist())
+    if break_points:
+        print(f"Found {len(break_points)} regions in q-point path")
+
+    regions = []
+    start_point = 0
+    for break_point in break_points:
+        regions.append((start_point, break_point + 1))
+        start_point = break_point + 1
+    regions.append((start_point, len(special_point_bools)))
+
+    print("Computing phonon modes")
+    region_modes = []
+    for (start, end) in regions:
+        qpts = bandpath["explicit_kpoints_rel"][start:end]
+        region_modes.append(force_constants
+                            .calculate_qpoint_phonon_modes(qpts,
+                                                           reduce_qpts=False))
+
+    frequency_units = region_modes[0].frequencies.units
+    emin = min(np.min(modes.frequencies.magnitude)
+               for modes in region_modes) * frequency_units
+    emax = max(np.max(modes.frequencies.magnitude)
+               for modes in region_modes) * frequency_units
     ebins = np.linspace(emin.to('meV').magnitude, emax.to('meV').magnitude,
                         args.ebins) * ureg['meV']
 
     print(f"Computing structure factor")
-    structure_factor = modes.calculate_structure_factor()
+    structure_factors = []
+    for modes in region_modes:
+        structure_factors.append(modes.calculate_structure_factor())
 
     print(f"Compiling structure factor to 2D map")
-    sqw = structure_factor.calculate_sqw_map(ebins)
-    if args.ase_labels:
-        sqw.x_tick_labels = get_special_point_indices(bandpath)
+    special_point_indices = special_point_bools.nonzero()[0]
 
-    print(f"Plotting figure")    
-    euphonic.plot.plot_2d(sqw)
+    for (region_start, region_end), structure_factor in zip(regions,
+                                                            structure_factors):
+        sqw = structure_factor.calculate_sqw_map(ebins)
+        if args.seekpath_labels:
+            label_indices = special_point_indices[
+                np.logical_and(special_point_indices >= region_start,
+                               special_point_indices < region_end)]
 
-    plt.show()
+            labels = [bandpath["explicit_kpoints_labels"][i]
+                      for i in label_indices]
+            for i, label in enumerate(labels):
+                if label == 'GAMMA':
+                    labels[i] = r'$\Gamma$'
+
+            label_indices_shifted = [i - region_start for i in label_indices]
+            sqw.x_tick_labels = list(zip(label_indices_shifted, labels))
+
+        print(f"Plotting figure")
+        euphonic.plot.plot_2d(sqw)
+
+        plt.show()
+
 
 if __name__ == '__main__':
     main()
