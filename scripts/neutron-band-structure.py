@@ -173,10 +173,8 @@ def main():
         spectra.append(sqw)
 
     print(f"Plotting figure")
-    energy_units = str(spectra[0].y_data.units)
-
     if args.y_label is None:
-        y_label = f"Energy / {energy_units}"
+        y_label = f"Energy / {spectra[0].y_data.units:~P}"
     else:
         y_label = args.y_label
 
