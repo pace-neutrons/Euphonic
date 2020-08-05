@@ -9,8 +9,8 @@ import numpy as np
 from importlib_resources import open_text  # Backport for Python 3.6
 from pint import UndefinedUnitError
 
+from euphonic import Spectrum1D, ureg, Quantity
 import euphonic.data
-from euphonic import ureg, Quantity
 
 
 def direction_changed(qpts, tolerance=5e-6):
@@ -233,6 +233,37 @@ def get_reference_data(collection: str = 'Sears1992',
     return {key: value * unit
             for key, value in data.items()
             if isinstance(value, (float, complex))}
+
+
+def get_dispersion(phonons: 'QpointPhononModes') -> List[Spectrum1D]:
+    """
+    Creates a set of 1-D bands from phonon mode data
+
+    Bands follow the q-point order from the QpointPhononModes object, with
+    x-axis spacing corresponding to the absolute distances between q-points.
+    Discontinuities will appear as large jumps on the x-axis.
+
+    Parameters
+    ----------
+    phonons
+        Containing the q-points/frequencies to plot
+
+    Returns
+    -------
+    List[Spectrum1D]
+
+        A list of phonon bands represented as Spectrum1D objects
+    """
+    qpts = phonons.qpts
+    abscissa = _calc_abscissa(phonons.crystal.reciprocal_cell(), qpts)
+    spectra = []
+    x_tick_labels = get_qpoint_labels(qpts,
+                                      cell=phonons.crystal.to_spglib_cell())
+    for i in range(len(phonons._frequencies[0])):
+        spectra.append(Spectrum1D(abscissa, phonons.frequencies[:, i],
+                       x_tick_labels=x_tick_labels))
+
+    return spectra
 
 
 def _calc_abscissa(reciprocal_cell, qpts):
