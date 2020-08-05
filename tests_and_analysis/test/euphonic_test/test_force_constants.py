@@ -216,7 +216,8 @@ class TestForceConstantsCreation:
         # This must be done in a separate directory to the above tests,
         # again to avoid false positives
         ('NaCl_default', {}),
-        ('NaCl_prim', {'summary_name': 'phonopy_nacl.yaml'})])
+        ('NaCl_prim', {'summary_name': 'phonopy_nacl.yaml'}),
+        ('CaHgO2', {'summary_name': 'mp-1818-20180417.yaml'})])
     def create_from_phonopy(self, request):
         material, phonopy_args = request.param
         phonopy_args['path'] = get_fc_dir(material)

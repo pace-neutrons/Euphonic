@@ -6,10 +6,9 @@
   - A system has been added for reference data in JSON files. These
     are accessed via ``euphonic.utils.get_reference_data`` and some
     data has been added for coherent scattering lengths and cross-sections.
-    - This system has been made available to the
-      ``calculate_structure_factor()`` method; it is no longer
-      necessary to craft a data dict every time a program uses this
-      function.
+    This system has been made available to the
+    ``calculate_structure_factor()`` method; it is no longer necessary to
+    craft a data dict every time a program uses this function.
 
 - Changes:
 
@@ -26,6 +25,9 @@
     (see `3958072 <https://github.com/pace-neutrons/Euphonic/commit/3958072>`_)
   - Fix interpolation for materials with non-symmetric supcercell matrices,
     see `#81 <https://github.com/pace-neutrons/Euphonic/issues/81>`_
+  - Fix interpolation for force constants read from Phonopy for materials that
+    have a primitive matrix and more than 1 species, see
+    `#77 <https://github.com/pace-neutrons/Euphonic/issues/77>`_
 
 `v0.3.0 <https://github.com/pace-neutrons/Euphonic/compare/v0.2.2...v0.3.0>`_
 ----------

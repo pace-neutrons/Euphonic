@@ -1,5 +1,6 @@
 import json
 import math
+import sys
 import os.path
 from typing import Dict
 
@@ -502,6 +503,65 @@ def _distribution_2d(xbins, ybins, xwidth, ywidth, shape='gauss', extent=3.0):
     dist = dist/np.sum(dist)  # Naively normalise
 
     return dist
+
+
+def _get_supercell_relative_idx(cell_origins, sc_matrix):
+    """"
+    For each cell_origins[i] -> cell_origins[j] vector in the supercell,
+    gets the index n of the equivalent cell_origins[n] vector, where
+    supercell_relative_idx[i, j] = n. Is required for converting from a
+    compact to full force constants matrix
+
+    Parameters
+    ----------
+    cell_origins : (n_cells, 3) int ndarray
+        The vector to the origin of each cell in the supercell, in unit
+        cell fractional coordinates
+    sc_matrix : (3, 3) int ndarray
+        The matrix for converting from the unit cell to the supercell
+
+    Returns
+    -------
+    supercell_relative_idx : (n_cells, n_cells) in ndarray
+        The index n of the equivalent vector in cell_origins
+    """
+    n_cells = len(cell_origins)
+    ax = np.newaxis
+
+    # Get cell origins in supercell fractional coordinates
+    inv_sc_matrix = np.linalg.inv(np.transpose(sc_matrix))
+    cell_origins_sc = np.einsum('ij,kj->ik', cell_origins, inv_sc_matrix)
+    sc_relative_index = np.zeros((n_cells, n_cells), dtype=np.int32)
+    for nc in range(n_cells):
+        # Get vectors from cell origin for a particular cell to all
+        # other cell origins
+        inter_cell_vectors = (cell_origins_sc
+                              - np.tile(cell_origins_sc[nc], (n_cells, 1)))
+        # Compare cell-cell vectors with vectors from cell 0's cell
+        # origin to all other cell origins and determine which are
+        # equivalent
+        # Do calculation in chunks, so loop can be broken if all
+        # equivalent vectors have been found
+        N = 100
+        dist_min = np.full((n_cells), sys.float_info.max)
+        for i in range(int((n_cells - 1)/N) + 1):
+            ci = i*N
+            cf = min((i + 1)*N, n_cells)
+            dist = (inter_cell_vectors[:, ax, :]
+                    - cell_origins_sc[ax, ci:cf, :])
+            dist_frac = dist - np.rint(dist)
+            dist_frac_sum = np.sum(np.abs(dist_frac), axis=2)
+            scri_current = np.argmin(dist_frac_sum, axis=1)
+            dist_min_current = dist_frac_sum[
+                range(n_cells), scri_current]
+            replace = dist_min_current < dist_min
+            sc_relative_index[nc, replace] = ci + scri_current[replace]
+            dist_min[replace] = dist_min_current[replace]
+            if np.all(dist_min <= 16*sys.float_info.epsilon):
+                break
+        if np.any(dist_min > 16*sys.float_info.epsilon):
+            raise Exception('Couldn\'t find supercell relative index')
+    return sc_relative_index
 
 
 def _check_constructor_inputs(objs, types, shapes, names):

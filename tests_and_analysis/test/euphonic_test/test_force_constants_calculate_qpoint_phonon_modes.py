@@ -135,9 +135,24 @@ class TestForceConstantsCalculateQPointPhononModes:
          'NaCl_reciprocal_qpoint_phonon_modes.json')]
 
 
+    @pytest.fixture(params=['phonopy'])
+    def get_cahgo2_fc(self, request):
+        if request.param == 'json':
+            return get_fc('CaHgO2')
+        else:
+            return ForceConstants.from_phonopy(
+                path=get_fc_dir('CaHgO2'),
+                summary_name='mp-1818-20180417.yaml')
+
+    cahgo2_params = [
+        (pytest.lazy_fixture('get_cahgo2_fc'), 'CaHgO2',
+         [test_qpts, {'asr': 'reciprocal'}],
+         'CaHgO2_reciprocal_qpoint_phonon_modes.json')]
+
+
     @pytest.mark.parametrize(
         'fc, material, all_args, expected_qpoint_phonon_modes_file',
-        lzo_params + quartz_params + nacl_params + si2_params)
+        lzo_params + quartz_params + nacl_params + si2_params + cahgo2_params)
     @pytest.mark.parametrize(
         'reduce_qpts, n_threads',
         [(False, 0), (True, 0), (True, 1), (True, 2)])

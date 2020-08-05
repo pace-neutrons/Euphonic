@@ -1,15 +1,19 @@
 import math
 import sys
 import warnings
+
 import numpy as np
 from pint import Quantity
 import scipy
 from scipy.linalg.lapack import zheev
 from scipy.special import erfc
+
 from euphonic import ureg
 from euphonic.crystal import Crystal
 from euphonic.qpoint_phonon_modes import QpointPhononModes
-from euphonic.util import is_gamma, get_all_origins, _check_constructor_inputs
+from euphonic.util import (is_gamma, get_all_origins,
+                           _check_constructor_inputs,
+                           _get_supercell_relative_idx)
 from euphonic.io import (_obj_to_json_file, _obj_from_json_file,
                          _obj_to_dict, _process_dict)
 from euphonic.readers import castep, phonopy
@@ -885,53 +889,21 @@ class ForceConstants(object):
         force_constants : (n_cells_in_sc, 3*n_atoms, 3*n_atoms) float ndarray
             The corrected force constants matrix
         """
-        cell_origins = self.cell_origins
-        sc_matrix = self.sc_matrix
         n_cells_in_sc = self.n_cells_in_sc
         n_atoms = self.crystal.n_atoms
+        n_atoms_in_sc = n_cells_in_sc*n_atoms
         force_constants = self._force_constants
-        ax = np.newaxis
 
-        # Compute square matrix giving relative index of cells in sc
-        n_atoms_in_sc = n_atoms*n_cells_in_sc
+        sc_rel_idx = _get_supercell_relative_idx(self.cell_origins,
+                                                 self.sc_matrix)
+
+        # Compute square matrix from compact force constants
         sq_fc = np.zeros((3*n_atoms_in_sc, 3*n_atoms_in_sc))
-        inv_sc_matrix = np.linalg.inv(np.transpose(sc_matrix))
-        cell_origins_sc = np.einsum('ij,kj->ik', cell_origins, inv_sc_matrix)
         for nc in range(n_cells_in_sc):
-            # Get all possible cell-cell vector combinations
-            inter_cell_vectors = cell_origins_sc - np.tile(cell_origins_sc[nc],
-                                                           (n_cells_in_sc, 1))
-            # Compare cell-cell vectors with origin-cell vectors and
-            # determine which are equivalent
-            # Do calculation in chunks, so loop can be broken if all
-            # equivalent vectors have been found
-            N = 100
-            dist_min = np.full((n_cells_in_sc), sys.float_info.max)
-            sc_relative_index = np.zeros(n_cells_in_sc, dtype=np.int32)
-            for i in range(int((n_cells_in_sc - 1)/N) + 1):
-                ci = i*N
-                cf = min((i + 1)*N, n_cells_in_sc)
-                dist = (inter_cell_vectors[:, ax, :] -
-                        cell_origins_sc[ax, ci:cf, :])
-                dist_frac = dist - np.rint(dist)
-                dist_frac_sum = np.sum(np.abs(dist_frac), axis=2)
-                scri_current = np.argmin(dist_frac_sum, axis=1)
-                dist_min_current = dist_frac_sum[
-                    range(n_cells_in_sc), scri_current]
-                replace = dist_min_current < dist_min
-                sc_relative_index[replace] = ci + scri_current[replace]
-                dist_min[replace] = dist_min_current[replace]
-                if np.all(dist_min <= 16*sys.float_info.epsilon):
-                    break
-            if np.any(dist_min > 16*sys.float_info.epsilon):
-                warnings.warn((
-                    'Error correcting FC matrix for acoustic sum rule, '
-                    'supercell relative index couldn\'t be found. '
-                    'Returning uncorrected FC matrix'))
-                return self.force_constants
             sq_fc[3*nc*n_atoms:3*(nc+1)*n_atoms, :] = np.transpose(
-                np.reshape(force_constants[sc_relative_index],
+                np.reshape(force_constants[sc_rel_idx[nc]],
                            (3*n_cells_in_sc*n_atoms, 3*n_atoms)))
+
         try:
             ac_i, evals, evecs = self._find_acoustic_modes(sq_fc)
         except Exception:
