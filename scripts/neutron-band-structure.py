@@ -46,13 +46,12 @@ def get_seekpath_structure(crystal: euphonic.Crystal) -> Tuple[np.ndarray,
                                                                List[int]]:
     # Seekpath needs a set of integer identities, while Crystal stores strings
     # so we need to convert e.g. ['H', 'C', 'Cl', 'C'] -> [0, 1, 2, 1]
-    all_atom_types = list(set(crystal.atom_type.tolist()))
-    atom_id_list = [all_atom_types.index(symbol)
-                    for symbol in crystal.atom_type]
+    _, unique_inverse = np.unique(crystal.atom_type,
+                                  return_inverse=True)
 
     return (crystal.cell_vectors.to('angstrom').magnitude,
             crystal.atom_r,
-            atom_id_list)
+            unique_inverse.tolist())
 
 
 def _get_break_points(bandpath: dict) -> Tuple[List[Tuple[int, int]],

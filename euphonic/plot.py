@@ -163,12 +163,12 @@ def _plot_2d_core(spectrum: Spectrum2D, ax: Axes,
         plots are on the same colour scale.
 
     """
-    x_bins = spectrum._get_bin_edges('x').magnitude
-    y_bins = spectrum._get_bin_edges('y').magnitude
-    z_data = spectrum.z_data.magnitude.T
+    x_unit = spectrum.x_data_unit
+    y_unit = spectrum.y_data_unit
+    z_unit = spectrum.z_data_unit
 
-    x_pts = (x_bins[:-1] + x_bins[1:]) / 2
-    y_pts = (y_bins[:-1] + y_bins[1:]) / 2
+    x_bins = spectrum._get_bin_edges('x').to(x_unit).magnitude
+    y_bins = spectrum._get_bin_edges('y').to(y_unit).magnitude
 
     image = NonUniformImage(ax, interpolation=interpolation,
                             extent=(min(x_bins), max(x_bins),
@@ -177,7 +177,9 @@ def _plot_2d_core(spectrum: Spectrum2D, ax: Axes,
     if norm is not None:
         image.set_norm(norm)
 
-    image.set_data(x_pts, y_pts, z_data)
+    image.set_data(spectrum._get_bin_centres('x').to(x_unit).magnitude,
+                   spectrum._get_bin_centres('y').to(y_unit).magnitude,
+                   spectrum.z_data.to(z_unit).magnitude.T)
     ax.images.append(image)
     ax.set_xlim(min(x_bins), max(x_bins))
     ax.set_ylim(min(y_bins), max(y_bins))
