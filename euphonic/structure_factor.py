@@ -1,10 +1,12 @@
 import numpy as np
 from pint import Quantity
-from euphonic import ureg, Crystal, Spectrum2D
+from typing import Optional
+from euphonic import ureg, Crystal, Spectrum1D, Spectrum2D
 from euphonic.util import (get_qpoint_labels, _calc_abscissa, _bose_factor,
                            _check_constructor_inputs, _check_unit_conversion)
 from euphonic.io import (_obj_to_json_file, _obj_from_json_file,
                          _obj_to_dict, _process_dict)
+
 
 class StructureFactor(object):
     """
@@ -105,6 +107,41 @@ class StructureFactor(object):
                                 'temperature_unit'])
         super(StructureFactor, self).__setattr__(name, value)
 
+    def calculate_1d_average(self,
+                             e_bins: Quantity,
+                             calc_bose: Optional[bool] = True,
+                             temperature: Optional[Quantity] = None,
+                             weights: Optional[np.ndarray] = None):
+        """Bin structure factor in energy, flattening q to produce 1D spectrum
+
+        Bose population factor may be applied. The main purpose of this
+        function is to produce a powder-averaged spectrum.
+
+        Parameters
+        ----------
+        e_bins : (n_e_bins + 1,) float Quantity
+            The energy bin edges
+        calc_bose : boolean, optional
+            Whether to calculate and apply the Bose population factor
+        temperature : float Quantity, optional
+            The temperature to use to calculate the Bose factor. Is only
+            required if StructureFactor.temperature = None, otherwise
+            the temperature stored in StructureFactor will be used
+        weights
+            Dimensionless weights to be applied in averaging. For details of
+            how this argument is interpreted see docs for :func:`numpy.average`
+
+        Returns
+        -------
+        s_w : Spectrum1D
+            1-D neutron scattering spectrum, averaged over all sampled q-points
+        """
+        sqw_map = self._bose_corrected_structure_factor(
+            e_bins, calc_bose=calc_bose, temperature=temperature)
+
+        spectrum = np.average(sqw_map, axis=0, weights=weights)
+        return Spectrum1D(e_bins, spectrum)
+
     def calculate_sqw_map(self, e_bins, calc_bose=True, temperature=None):
         """
         Bin the structure factor in energy and apply the Bose population
@@ -152,11 +189,51 @@ class StructureFactor(object):
 
           n_\\nu = \\frac{1}{e^{\\frac{\\hbar\\omega_\\nu}{k_{B}T}} - 1}
 
-        .. [1] M.T. Dove, Structure and Dynamics, Oxford University Press, Oxford, 2003, 225-226
+        .. [1] M.T. Dove, Structure and Dynamics, Oxford University Press,
+               Oxford, 2003, 225-226
+        """
+
+        sqw_map = self._bose_corrected_structure_factor(
+            e_bins, calc_bose=calc_bose, temperature=temperature)
+
+        abscissa = _calc_abscissa(self.crystal, self.qpts)
+        # Calculate q-space ticks and labels
+        x_tick_labels = get_qpoint_labels(self.crystal, self.qpts)
+
+        return Spectrum2D(abscissa, e_bins, sqw_map,
+                          x_tick_labels=x_tick_labels)
+
+    def _bose_corrected_structure_factor(self, e_bins: Quantity,
+                                         calc_bose: bool = True,
+                                         temperature: Optional[Quantity] = None
+                                         ) -> Quantity:
+        """Bin structure factor in energy, return (Bose-populated) array
+
+        Parameters
+        ----------
+        e_bins : (n_e_bins + 1,) float Quantity
+            The energy bin edges
+        calc_bose
+            Whether to calculate and apply the Bose population factor
+        temperature
+            Temperature used to calculate the Bose factor. This is only
+            required if StructureFactor.temperature = None, otherwise
+            the temperature stored in StructureFactor will be used.
+
+        Returns
+        -------
+        Quantity
+            Scattering intensities as array over (qpt, energy)
+
+        Raises
+        ------
+        ValueError
+            If a temperature is provided and isn't consistent with the
+            temperature in the StructureFactor object
         """
         if calc_bose:
-            if not self.temperature is None:
-                if (not temperature is None
+            if self.temperature is not None:
+                if (temperature is not None
                         and not np.isclose(temperature, self.temperature)):
                     raise ValueError((
                         'Temperature provided to calculate_sqw_map '
@@ -193,12 +270,7 @@ class StructureFactor(object):
         sqw_map = sqw_map[:, 1:-1]*ureg('INTERNAL_LENGTH_UNIT**2').to(
             self.structure_factors_unit)
 
-        abscissa = _calc_abscissa(self.crystal, self.qpts)
-        # Calculate q-space ticks and labels
-        x_tick_labels = get_qpoint_labels(self.crystal, self.qpts)
-
-        return Spectrum2D(abscissa, e_bins, sqw_map,
-                          x_tick_labels=x_tick_labels)
+        return sqw_map
 
     def to_dict(self):
         """

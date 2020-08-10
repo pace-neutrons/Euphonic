@@ -1,9 +1,11 @@
 """Functions for averaging spectra in spherical q bins"""
+
 import numpy as np
+from pint import Quantity
 from typing import Union
 
 from euphonic import (DebyeWaller, ForceConstants, QpointPhononModes,
-                      Spectrum1D, StructureFactor)
+                      Spectrum1D)
 from euphonic import ureg
 from euphonic.util import mp_grid
 
@@ -54,15 +56,15 @@ def sample_sphere_dos(fc: ForceConstants, q: float,
     return phonons.calculate_dos(energy_bins)
 
 
-
 def sample_sphere_structure_factor(
     fc: ForceConstants, q: float,
     dw: DebyeWaller = None,
+    temperature: Quantity = 273. * ureg['K'],
     sampling: str = 'golden',
     npts: int = 1000, jitter: bool = False,
     energy_bins: np.ndarray = None,
-    scattering_lengths: Union[dict, str] = 'Sears1992',
-    ) -> StructureFactor:
+    scattering_lengths: Union[dict, str] = 'Sears1992'
+) -> Spectrum1D:
     """Sample the structure factor, averaging over a sphere of constant |q|
 
     (Specifically, this is the one-phonon inelastic-scattering structure factor
@@ -72,8 +74,10 @@ def sample_sphere_structure_factor(
         fc: Force constant data for system
 
         dw: Debye-Waller exponent used for evaluation of scattering
-            function. If not provided, this is generated automatically for 273K
+            function. If not provided, this is generated automatically
             over a 20x20x20 q-point mesh.
+
+        temperature: Temperature used for Debye-Waller
 
         q: scalar radius of sphere from which vector q samples are taken
 
@@ -99,7 +103,7 @@ def sample_sphere_structure_factor(
             euphonic.util.get_reference_data() function.
 
     Returns:
-        Structure factor sampled over sphere
+        Structure factor sampled over sphere and averaged to spectrum
 
     """
 
@@ -112,15 +116,19 @@ def sample_sphere_structure_factor(
     if dw is None:
         dw_qpts = mp_grid([20, 20, 20])
         dw_phonons = fc.calculate_qpoint_phonon_modes(dw_qpts)
-        dw = dw_phonons.calculate_debye_waller(273 * ureg('K')
+        dw = dw_phonons.calculate_debye_waller(temperature
                                                )  # type: DebyeWaller
 
     qpts = _get_qpts_sphere(npts, sampling=sampling, jitter=jitter)
 
     phonons = fc.calculate_qpoint_phonon_modes(qpts)  # type: QpointPhononModes
-    s = phonons.calculate_structure_factor(scattering_lengths, dw=dw)
+    if energy_bins is None:
+        energy_bins = _get_default_bins(phonons)
 
-    return s
+    s = phonons.calculate_structure_factor(
+        scattering_lengths=scattering_lengths, dw=dw)
+
+    return s.calculate_1d_average(energy_bins)
 
 
 def _get_default_bins(phonons: QpointPhononModes,
@@ -128,6 +136,7 @@ def _get_default_bins(phonons: QpointPhononModes,
     """Get a default set of energy bin edges for a set of phonon frequencies"""
     max_energy = np.max(phonons.frequencies) * 1.05
     return np.linspace(0, max_energy.magnitude, (nbins + 1)) * max_energy.units
+
 
 def _get_qpts_sphere(npts: int,
                      sampling: str = 'golden',
