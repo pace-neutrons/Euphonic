@@ -235,7 +235,7 @@ def get_reference_data(collection: str = 'Sears1992',
             if isinstance(value, (float, complex))}
 
 
-def get_dispersion(phonons: 'QpointPhononModes') -> List[Spectrum1D]:
+def get_dispersion(phonons: 'euphonic.QpointPhononModes') -> List[Spectrum1D]:
     """
     Creates a set of 1-D bands from phonon mode data
 

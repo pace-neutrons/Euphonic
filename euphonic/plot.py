@@ -24,7 +24,8 @@ from euphonic.spectra import Spectrum1D, Spectrum2D
 from euphonic.util import is_gamma, get_qpoint_labels, get_dispersion
 
 
-def plot_dispersion(phonons, btol=10.0, *args, **kwargs):
+def plot_dispersion(phonons: 'QpointPhononModes',
+                    btol: float = 10.0, *args, **kwargs) -> Figure:
     """
     Creates a Matplotlib figure displaying phonon dispersion from a
     QpointPhononModes object
@@ -53,47 +54,98 @@ def plot_dispersion(phonons, btol=10.0, *args, **kwargs):
     return plot_1d(spectra, btol=btol, _split_line_x_idx=idx, *args, **kwargs)
 
 
-def plot_1d(spectra, title='', x_label='', y_label='', y_min=None, labels=[],
-            btol=None, _split_line_x_idx=np.array([], dtype=np.int32),
-            **line_kwargs):
+def _plot_1d_core(spectra: Union[Sequence[Spectrum1D], Spectrum1D],
+                  ax: Axes,
+                  **mplargs) -> None:
+    """Plot a (collection of) 1D spectrum lines to matplotlib axis"""
+    if isinstance(spectra, Spectrum1D):
+        spectra = [spectra]
+    elif not (isinstance(spectra, Sequence)
+              and isinstance(spectra[0], Spectrum1D)):
+        raise TypeError("spectra should be a Spectrum1D or sequence of "
+                        "Spectrum1D")
+
+    x_unit = spectra[0].x_data_unit
+    y_unit = spectra[0].y_data_unit
+
+    for spectrum in spectra:
+        ax.plot(spectrum._get_bin_centres('x').to(x_unit).magnitude,
+                plot_y = spectrum.y_data.to(y_unit).magnitude,
+                **mplargs)
+
+    ax.set_xlim(left=spectra[0].x_data.to(x_unit).magnitude,
+                right=spectra[0].x_data.to(x_unit).magnitude)
+    _set_x_tick_labels(ax, spectra[0].x_tick_labels, spectra[0].x_data)
+
+
+def plot_1d(spectra: Union[Spectrum1D,
+                           Sequence[Spectrum1D],
+                           Sequence[Sequence[Spectrum1D]]],
+            title: str = '',
+            x_label: str = '',
+            y_label: str = '',
+            y_min: float = None,
+            labels: Optional[List[str]] = None,
+            btol: Optional[float] = None,
+            _split_line_x_idx: np.ndarray = np.array([], dtype=np.int32),
+            **line_kwargs) -> Figure:
     """
     Creates a Matplotlib figure for a Spectrum1D object, or multiple
     Spectrum1D objects to be plotted on the same axes
 
     Parameters
     ----------
-    spectra : Spectrum1D or list of Spectrum1D
-        Containing the 1D data to plot. Note only the x_tick_labels in
-        the first spectrum in the list will be used
-    title : string, optional
+    spectra
+        1D data to plot. Note only the x_tick_labels in
+        the first spectrum in the list will be used.
+
+        The nested list structure of spectra should be::
+
+            [[segment1_line1, segment1_line2, ...],
+             [segment2_line1, segment2_line2, ...]]
+
+        Where each segment will be plotted on a separate subplot. (This
+        approach is mainly used to handle discontinuities in Brillouin-zone
+        band structures, so the subplot widths will be based on the x-axis
+        ranges.)
+
+        If a list of Spectrum1D is provided this will be treated as::
+
+            [line1, line2, line3, line4]
+
+        and will be automatically split into segments if btol was set.
+
+        A "bare" Spectrum1D will be treated as a sequence of one Spectrum1D.
+    title
         Plot title
-    x_label : string, optional
+    x_label
         X-axis label
-    y_label : string, optional
+    y_label
         Y-axis label
-    y_min : float, optional
+    y_min
         Minimum value on the y-axis. Can be useful to set y-axis minimum
         to 0 for energy, for example.
-    labels : list of str, optional
+    labels
         Legend labels for spectra, in the same order as spectra
-    btol : float, optional
+    btol
         If there are large gaps on the x-axis (e.g sections of
         reciprocal space) data can be plotted in sections on different
         subplots. btol is the limit for plotting on different subplots,
         as a fraction of the median distance between points. Note that
         if multiple Spectrum1D objects have been provided, the axes will
         only be determined by the first spectrum in the list
-    **line_kwargs : matplotlib.line.Line2D properties, optional
+    **line_kwargs
+        matplotlib.line.Line2D properties, optional
         Used in the axes.plot command to specify properties like
         linewidth, linestyle
 
     Returns
     -------
     fig : matplotlib.figure.Figure
-        The figure
+
     """
-    if not isinstance(spectra, list):
-        spectra = [spectra]
+    if isinstance(spectra, Spectrum1D):
+        spectra = [[spectra]]
 
     ibreak, gridspec_kw = _get_gridspec_kw(spectra[0].x_data.magnitude, btol)
     n_subplots = len(ibreak) - 1
@@ -123,7 +175,7 @@ def plot_1d(spectra, title='', x_label='', y_label='', y_min=None, labels=[],
                     color = p[-1].get_color()
                 p = ax.plot(plot_x[idx[j]:idx[j+1]], plot_y[idx[j]:idx[j+1]],
                             color=color, **line_kwargs)
-        if i == 0 and len(labels) > 0:
+        if i == 0 and labels:
             ax.legend(labels)
 
     if y_min is not None:
