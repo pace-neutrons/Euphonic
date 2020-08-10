@@ -11,7 +11,7 @@ import seekpath
 import euphonic
 from euphonic import ureg
 import euphonic.plot
-
+from euphonic.util import get_dispersion
 
 def get_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser()
@@ -52,6 +52,9 @@ def get_parser() -> argparse.ArgumentParser:
                         dest='gaussian_y',
                         help='Width of Gaussian broadening on energy axis in '
                         'ENERGY_UNITS. (No broadening if unspecified.)')
+    parser.add_argument('--lines', action='store_true',
+                        help='Plot a conventional phonon band structure '
+                             'instead of coherent neutron spectrum.')
     return parser
 
 
@@ -203,31 +206,49 @@ def main():
     print("Computing structure factors and generating 2D maps")
     spectra = []
     for region, modes in zip(regions, region_modes):
-
-        structure_factor = modes.calculate_structure_factor()
-        sqw = structure_factor.calculate_sqw_map(ebins)
-
         if args.seekpath_labels:
-            sqw.x_tick_labels = _get_tick_labels(region, bandpath,
-                                                 special_point_indices)
-        if args.gaussian_x or args.gaussian_y:
-            sqw = sqw.broaden(x_width=(args.gaussian_x * recip_length_units
-                                       if args.gaussian_x else None),
-                              y_width=(args.gaussian_y * energy_units
-                                       if args.gaussian_y else None))
+            x_tick_labels = _get_tick_labels(region, bandpath,
+                                             special_point_indices)
+        else:
+            x_tick_labels = None
 
-        spectra.append(sqw)
+        if args.lines:
+            spectrum = get_dispersion(modes)
+            if x_tick_labels:
+                spectrum[0].x_tick_labels = x_tick_labels
+
+        else:
+            structure_factor = modes.calculate_structure_factor()
+            spectrum = structure_factor.calculate_sqw_map(ebins)
+            if x_tick_labels:
+                spectrum.x_tick_labels = x_tick_labels
+
+            if args.gaussian_x or args.gaussian_y:
+                spectrum = spectrum.broaden(
+                    x_width=(args.gaussian_x * ureg['1 / angstrom']
+                             if args.gaussian_x else None),
+                    y_width=(args.gaussian_y * ureg['meV']
+                             if args.gaussian_y else None))
+
+        spectra.append(spectrum)
 
     print(f"Plotting figure")
     if args.y_label is None:
-        y_label = f"Energy / {spectra[0].y_data.units:~P}"
+        if args.lines:
+            y_label = f"Energy / {spectra[0][0].y_data.units:~P}"
+        else:
+            y_label = f"Energy / {spectra[0].y_data.units:~P}"
     else:
         y_label = args.y_label
 
-    euphonic.plot.plot_2d(spectra,
-                          cmap=args.cmap,
-                          x_label=args.x_label,
-                          y_label=y_label,
-                          title=args.title)
+    if args.lines:
+        euphonic.plot.plot_1d(spectra, x_label=args.x_label, y_label=y_label)
+
+    else:
+        euphonic.plot.plot_2d(spectra,
+                              cmap=args.cmap,
+                              x_label=args.x_label,
+                              y_label=y_label,
+                              title=args.title)
 
     plt.show()
