@@ -1,9 +1,9 @@
 import versioneer
 try:
-    from setuptools import setup, find_packages, Extension
+    from setuptools import setup, Extension
     from setuptools.command.install import install
 except ImportError:
-    from distutils.core import setup, find_packages, Extension
+    from distutils.core import setup, Extension
     from distutils.command.install import install
 
 
@@ -62,7 +62,8 @@ def run_setup(build_c=True):
         long_description = f.read()
 
     packages = ['euphonic',
-                'euphonic.readers']
+                'euphonic.readers',
+                'euphonic.data']
 
     scripts = ['scripts/dispersion.py',
                'scripts/dos.py',
