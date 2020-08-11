@@ -181,4 +181,5 @@ class TestForceConstantsCalculateQPointPhononModes:
         check_qpt_ph_modes(qpoint_phonon_modes,
                            expected_qpoint_phonon_modes,
                            frequencies_atol=1e-4,
+                           frequencies_rtol=2e-5,
                            acoustic_gamma_atol=gamma_atol)

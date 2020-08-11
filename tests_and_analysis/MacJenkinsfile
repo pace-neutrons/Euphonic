@@ -5,6 +5,7 @@ def getGitCommitAuthorEmail() {
             variable: 'api_token')]) {
         return sh(
             script: """
+	        export PATH=\$PATH:/usr/local/bin
                 commit_url="\$(\\
                     curl -s -H "Authorization: token ${api_token}" \\
                     --request GET https://api.github.com/repos/pace-neutrons/Euphonic/git/ref/heads/${env.JOB_BASE_NAME} \\
@@ -70,6 +71,7 @@ pipeline {
         stage("Test") {
             steps {
                 sh """
+                    export PATH=\$PATH:~/opt/anaconda3/bin:/usr/local/bin
                     eval "\$(conda shell.bash hook)"
                     conda activate py
                     python -m tox
@@ -83,6 +85,7 @@ pipeline {
                 script {
                     def tag = env.JOB_BASE_NAME.substring(1)
                     sh """
+                        export PATH=\$PATH:~/opt/anaconda3/bin:/usr/local/bin
                         rm -rf .tox
                         eval "\$(conda shell.bash hook)"
                         conda activate py

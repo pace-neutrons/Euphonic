@@ -95,6 +95,7 @@ def get_qpt_ph_modes(material):
 def check_qpt_ph_modes(
         qpoint_phonon_modes, expected_qpoint_phonon_modes,
         frequencies_atol=np.finfo(np.float64).eps,
+        frequencies_rtol=1e-7,
         acoustic_gamma_atol=None):
     # Note this doesn't check the eigenvectors, as these cannot be directly
     # compared in the case of degenerate frequencies, and are better compared
@@ -123,7 +124,7 @@ def check_qpt_ph_modes(
     npt.assert_allclose(
         qpoint_phonon_modes.frequencies.magnitude[freqs_to_test],
         expected_qpoint_phonon_modes.frequencies.magnitude[freqs_to_test],
-        atol=frequencies_atol)
+        atol=frequencies_atol, rtol=frequencies_rtol)
 
     npt.assert_allclose(
         qpoint_phonon_modes.weights,
