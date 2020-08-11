@@ -69,6 +69,7 @@ pipeline {
         }
 
         stage("Test") {
+	    when { not { buildingTag() } }
             steps {
                 sh """
                     export PATH=\$PATH:~/opt/anaconda3/bin:/usr/local/bin
@@ -80,13 +81,12 @@ pipeline {
         }
 
         stage("PyPI Release Testing") {
-            when { tag "*" }
+            when { buildingTag() }
             steps {
                 script {
                     def tag = env.JOB_BASE_NAME.substring(1)
                     sh """
                         export PATH=\$PATH:~/opt/anaconda3/bin:/usr/local/bin
-                        rm -rf .tox
                         eval "\$(conda shell.bash hook)"
                         conda activate py
                         export EUPHONIC_VERSION="$tag"

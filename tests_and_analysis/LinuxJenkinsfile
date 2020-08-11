@@ -89,6 +89,7 @@ pipeline {
         }
 
         stage("Test") {
+            when { not { buildingTag() } }
             steps {
                 sh """
                     module load conda/3 &&
@@ -100,12 +101,11 @@ pipeline {
         }
 
         stage("PyPI Release Testing") {
-            when { tag "*" }
+            when { buildingTag() }
             steps {
                 script {
                     def tag = env.JOB_BASE_NAME.substring(1)
                     sh """
-                        rm -rf .tox &&
                         module load conda/3 &&
                         conda config --append channels free &&
                         conda activate py &&
