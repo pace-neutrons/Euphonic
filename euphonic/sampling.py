@@ -215,6 +215,8 @@ def spherical_polar_improved(npts: int,
         Sequence of (x, y, z) coordinates (if cartesian=True) or
         (r, phi, theta) spherical coordinates.
     """
+    if npts < 6:
+        raise ValueError("This sampling scheme has a minimum of 6 points")
 
     # round from the solution of
     # for neighbouring points
