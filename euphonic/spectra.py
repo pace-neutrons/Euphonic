@@ -39,12 +39,12 @@ class Spectrum1D(object):
         """
         _check_constructor_inputs(
             [y_data, x_tick_labels],
-            [[Quantity, np.ndarray], [list, type(None)]],
+            [Quantity, [list, type(None)]],
             [(-1,), ()],
             ['y_data', 'x_tick_labels'])
         ny = len(y_data)
         _check_constructor_inputs(
-            [x_data], [[Quantity, np.ndarray]],
+            [x_data], [Quantity],
             [[(ny,), (ny+1,)]], ['x_data'])
         self._set_data(x_data, 'x')
         self._set_data(y_data, 'y')
@@ -221,14 +221,14 @@ class Spectrum2D(Spectrum1D):
         """
         _check_constructor_inputs(
             [z_data, x_tick_labels],
-            [[Quantity, np.ndarray], [list, type(None)]],
+            [Quantity, [list, type(None)]],
             [(-1, -1), ()],
             ['z_data', 'x_tick_labels'])
         nx = z_data.shape[0]
         ny = z_data.shape[1]
         _check_constructor_inputs(
             [x_data, y_data],
-            [[Quantity, np.ndarray], [Quantity, np.ndarray]],
+            [Quantity, Quantity],
             [[(nx,), (nx + 1,)], [(ny,), (ny + 1,)]],
             ['x_data', 'y_data'])
         self._set_data(x_data, 'x')
