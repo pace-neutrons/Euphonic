@@ -4,7 +4,6 @@ import json
 import pytest
 import numpy as np
 import numpy.testing as npt
-from pint.errors import DimensionalityError
 
 from euphonic import ureg
 from euphonic.spectra import Spectrum1D
@@ -42,8 +41,6 @@ class ExpectedSpectrum1D:
                             x_tick_labels=None):
         if x_data is None:
             x_data = self.x_data
-        if y_data is None:
-            y_data = self.y_data
         if y_data is None:
             y_data = self.y_data
         if x_tick_labels is None:
@@ -96,6 +93,8 @@ def check_spectrum1d(actual_spectrum1d, expected_spectrum1d):
 @pytest.mark.unit
 class TestSpectrum1DCreation:
 
+    # As x_data can be either bin centres or edges, test both cases with
+    # xsqw_spectrum1d and xsq_bin_edges_spectrum1d
     @pytest.fixture(params=[
         get_expected_spectrum1d('quartz_666_dos.json'),
         get_expected_spectrum1d('xsq_spectrum1d.json'),
