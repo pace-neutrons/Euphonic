@@ -27,6 +27,8 @@ class ExpectedSpectrum1D:
     def x_tick_labels(self):
         if 'x_tick_labels' in self.data.keys():
             return [tuple(x) for x in self.data['x_tick_labels']]
+        else:
+            return None
 
     def to_dict(self):
         d = {'x_data': self.x_data.magnitude,
