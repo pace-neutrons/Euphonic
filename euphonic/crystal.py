@@ -70,7 +70,7 @@ class Crystal(object):
 
     def __setattr__(self, name, value):
         if hasattr(self, name):
-            if name in ['cell_vectors_unit', 'ion_mass_unit']:
+            if name in ['cell_vectors_unit', 'atom_mass_unit']:
                 ureg(getattr(self, name)).to(value)
         super(Crystal, self).__setattr__(name, value)
 

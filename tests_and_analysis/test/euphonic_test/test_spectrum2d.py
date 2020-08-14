@@ -4,6 +4,7 @@ import json
 import pytest
 import numpy as np
 import numpy.testing as npt
+from pint import DimensionalityError
 
 from euphonic import ureg
 from euphonic.spectra import Spectrum2D
@@ -233,6 +234,30 @@ class TestSpectrum2DSerialisation:
     def test_serialise_to_dict(self, serialise_to_dict):
         spec2d, expected_spec2d = serialise_to_dict
         check_spectrum2d(spec2d, expected_spec2d)
+
+
+@pytest.mark.unit
+class TestSpectrum2DUnitConversion:
+
+    @pytest.mark.parametrize('spectrum2d_file, unit_attr, unit_val', [
+        ('example_spectrum2d.json', 'x_data_unit', 'angstrom'),
+        ('quartz_bandstructure_sqw.json', 'y_data_unit', '1/cm'),
+        ('example_spectrum2d.json', 'z_data_unit', 'amu')])
+    def test_correct_unit_conversion(self, spectrum2d_file, unit_attr,
+                                     unit_val):
+        spec2d = get_spectrum2d(spectrum2d_file)
+        setattr(spec2d, unit_attr, unit_val)
+
+    @pytest.mark.parametrize('spectrum2d_file, unit_attr, unit_val, err', [
+        ('example_spectrum2d.json', 'x_data_unit', 'N', DimensionalityError),
+        ('example_spectrum2d.json', 'y_data_unit', 'kg', DimensionalityError),
+        ('example_spectrum2d.json', 'z_data_unit', 'm', DimensionalityError)])
+    def test_incorrect_unit_conversion(self, spectrum2d_file, unit_attr,
+                                       unit_val, err):
+        spec2d = get_spectrum2d(spectrum2d_file)
+        with pytest.raises(err):
+            setattr(spec2d, unit_attr, unit_val)
+
 
 @pytest.mark.unit
 class TestSpectrum2DMethods:
