@@ -12,7 +12,8 @@ from tests_and_analysis.test.utils import get_data_path
 class ExpectedForceConstants:
 
     def __init__(self, force_constants_json_file: str):
-        self.data = json.load(open(force_constants_json_file))
+        with open(force_constants_json_file) as fd:
+            self.data = json.load(fd)
 
     @property
     def crystal(self):

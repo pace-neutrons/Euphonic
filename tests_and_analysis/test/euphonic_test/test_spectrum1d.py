@@ -11,7 +11,8 @@ from tests_and_analysis.test.utils import get_data_path
 
 class ExpectedSpectrum1D:
     def __init__(self, spectrum1d_json_file: str):
-        self.data = json.load(open(spectrum1d_json_file))
+        with open(spectrum1d_json_file) as fd:
+            self.data = json.load(fd)
 
     @property
     def x_data(self):

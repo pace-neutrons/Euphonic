@@ -13,7 +13,8 @@ from tests_and_analysis.test.utils import get_data_path
 class ExpectedQpointPhononModes:
 
     def __init__(self, qpoint_phonon_modes_json_file: str):
-        self.data = json.load(open(qpoint_phonon_modes_json_file))
+        with open(qpoint_phonon_modes_json_file) as fd:
+            self.data = json.load(fd)
 
     @property
     def crystal(self):
