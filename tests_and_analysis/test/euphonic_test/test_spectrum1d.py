@@ -247,3 +247,32 @@ class TestSpectrum1DMethods:
         expected_broadened_spec1d = get_spectrum1d(broadened_spectrum1d_file)
         broadened_spec1d = spec1d.broaden(args[0], **args[1])
         check_spectrum1d(broadened_spec1d, expected_broadened_spec1d)
+
+    @pytest.mark.parametrize(
+        'spectrum1d_file, expected_bin_edges', [
+            ('xsq_spectrum1d.json',
+             np.array([0.5, 1., 2., 3., 4., 5., 6.25, 8., 10., 12., 14., 16.5,
+                       20., 24., 26.])*ureg('1/angstrom')),
+            ('xsq_bin_edges_spectrum1d.json',
+             np.array([0., 1., 2., 3., 4., 5., 6., 8., 10., 12., 14., 16., 20.,
+                       24., 28.])*ureg('1/angstrom'))])
+    def test_get_bin_edges(self, spectrum1d_file, expected_bin_edges):
+        spec1d = get_spectrum1d(spectrum1d_file)
+        bin_edges = spec1d._get_bin_edges()
+        assert bin_edges.units == expected_bin_edges.units
+        npt.assert_allclose(bin_edges.magnitude, expected_bin_edges.magnitude)
+
+    @pytest.mark.parametrize(
+        'spectrum1d_file, expected_bin_centres', [
+            ('xsq_spectrum1d.json',
+             np.array([0.5, 1.5, 2.5, 3.5, 4.5, 5.5, 7., 9., 11., 13., 15.,
+                       18., 22., 26.])*ureg('1/angstrom')),
+            ('xsq_bin_edges_spectrum1d.json',
+             np.array([0.5, 1.5, 2.5, 3.5, 4.5, 5.5, 7., 9., 11., 13., 15.,
+                       18., 22., 26.])*ureg('1/angstrom'))])
+    def test_get_bin_centres(self, spectrum1d_file, expected_bin_centres):
+        spec1d = get_spectrum1d(spectrum1d_file)
+        bin_centres = spec1d._get_bin_centres()
+        assert bin_centres.units == expected_bin_centres.units
+        npt.assert_allclose(bin_centres.magnitude,
+                            expected_bin_centres.magnitude)

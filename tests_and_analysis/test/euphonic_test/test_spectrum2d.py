@@ -264,21 +264,66 @@ class TestSpectrum2DMethods:
 
     @pytest.mark.parametrize(
         'args, spectrum2d_file, broadened_spectrum2d_file', [
-        (({'x_width': 0.1*ureg('1/angstrom')}),
-        'quartz_bandstructure_sqw.json',
-        'quartz_bandstructure_0.1ang_xbroaden_sqw.json'),
-        (({'y_width': 2*ureg('meV')}),
-        'quartz_bandstructure_sqw.json',
-        'quartz_bandstructure_2meV_ybroaden_sqw.json'),
-        (({'x_width': 0.1*ureg('1/angstrom'), 'y_width': 2*ureg('meV')}),
-        'quartz_bandstructure_sqw.json',
-        'quartz_bandstructure_2meV_0.1ang_xybroaden_sqw.json'),
-        (({'x_width': 0.1*ureg('1/angstrom'), 'y_width': 2*ureg('meV'),
-           'shape': 'lorentz'}),
-        'quartz_bandstructure_sqw.json',
-        'quartz_bandstructure_xybroaden_lorentz_sqw.json')])
+            (({'x_width': 0.1*ureg('1/angstrom')}),
+             'quartz_bandstructure_sqw.json',
+             'quartz_bandstructure_0.1ang_xbroaden_sqw.json'),
+            (({'y_width': 2*ureg('meV')}),
+             'quartz_bandstructure_sqw.json',
+             'quartz_bandstructure_2meV_ybroaden_sqw.json'),
+            (({'x_width': 0.1*ureg('1/angstrom'), 'y_width': 2*ureg('meV')}),
+             'quartz_bandstructure_sqw.json',
+             'quartz_bandstructure_2meV_0.1ang_xybroaden_sqw.json'),
+            (({'x_width': 0.1*ureg('1/angstrom'), 'y_width': 2*ureg('meV'),
+               'shape': 'lorentz'}),
+             'quartz_bandstructure_sqw.json',
+             'quartz_bandstructure_xybroaden_lorentz_sqw.json')])
     def test_broaden(self, args, spectrum2d_file, broadened_spectrum2d_file):
         spec2d = get_spectrum2d(spectrum2d_file)
         expected_broadened_spec2d = get_spectrum2d(broadened_spectrum2d_file)
         broadened_spec2d = spec2d.broaden(**args)
         check_spectrum2d(broadened_spec2d, expected_broadened_spec2d)
+
+    @pytest.mark.parametrize(
+        'spectrum2d_file, ax, expected_bin_edges', [
+            ('example_spectrum2d.json', 'x',
+             np.array([0., 0.5, 1.5, 2.5, 3.5, 4.5, 6., 8., 10., 12.,
+                       13.])*ureg('meter')),
+            ('example_xbin_edges_spectrum2d.json', 'x',
+             np.array([0., 1., 2., 3., 4., 5., 7., 9., 11.,
+                       13.])*ureg('meter')),
+            ('example_spectrum2d.json', 'y',
+             np.array([-2.5, -2.25, -1.75, -1.25, -0.75, -0.25, 0.5, 1.5, 2.5,
+                       3.5, 4.5, 5.5, 6.5, 7.5, 8.5, 9.5, 10.5, 11.5, 12.5,
+                       13.5, 14.5, 15.])*ureg('dimensionless')),
+            ('example_xybin_edges_spectrum2d.json', 'y',
+             np.array([-2.5, -2., -1.5, -1., -0.5, 0., 1., 2., 3., 4., 5., 6.,
+                       7., 8., 9., 10., 11., 12., 13., 14.,
+                       15.])*ureg('dimensionless'))])
+    def test_get_bin_edges(self, spectrum2d_file, ax, expected_bin_edges):
+        spec2d = get_spectrum2d(spectrum2d_file)
+        bin_edges = spec2d._get_bin_edges(bin_ax=ax)
+        assert bin_edges.units == expected_bin_edges.units
+        npt.assert_allclose(bin_edges.magnitude, expected_bin_edges.magnitude)
+
+    @pytest.mark.parametrize(
+        'spectrum2d_file, ax, expected_bin_centres', [
+            ('example_spectrum2d.json', 'x',
+             np.array([0., 1., 2., 3., 4., 5., 7., 9., 11.,
+                       13.])*ureg('meter')),
+            ('example_xbin_edges_spectrum2d.json', 'x',
+             np.array([0.5, 1.5, 2.5, 3.5, 4.5, 6., 8., 10.,
+                       12.])*ureg('meter')),
+            ('example_spectrum2d.json', 'y',
+             np.array([-2.5, -2., -1.5, -1., -0.5, 0., 1., 2., 3., 4., 5., 6.,
+                       7., 8., 9., 10., 11., 12., 13., 14.,
+                       15.])*ureg('dimensionless')),
+            ('example_xybin_edges_spectrum2d.json', 'y',
+             np.array([-2.25, -1.75, -1.25, -0.75, -0.25, 0.5, 1.5, 2.5, 3.5,
+                       4.5, 5.5, 6.5, 7.5, 8.5, 9.5, 10.5, 11.5, 12.5, 13.5,
+                       14.5])*ureg('dimensionless'))])
+    def test_get_bin_centres(self, spectrum2d_file, ax, expected_bin_centres):
+        spec2d = get_spectrum2d(spectrum2d_file)
+        bin_centres = spec2d._get_bin_centres(bin_ax=ax)
+        assert bin_centres.units == expected_bin_centres.units
+        npt.assert_allclose(bin_centres.magnitude,
+                            expected_bin_centres.magnitude)
