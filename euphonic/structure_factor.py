@@ -2,7 +2,7 @@ import numpy as np
 from pint import Quantity
 from euphonic import ureg, Crystal, Spectrum2D
 from euphonic.util import (get_qpoint_labels, _calc_abscissa, _bose_factor,
-                           _check_constructor_inputs)
+                           _check_constructor_inputs, _check_unit_conversion)
 from euphonic.io import (_obj_to_json_file, _obj_from_json_file,
                          _obj_to_dict, _process_dict)
 
@@ -100,10 +100,9 @@ class StructureFactor(object):
             return None
 
     def __setattr__(self, name, value):
-        if hasattr(self, name):
-            if name in ['frequencies_unit', 'structure_factors_unit',
-                        'temperature_unit']:
-                ureg(getattr(self, name)).to(value)
+        _check_unit_conversion(self, name, value,
+                               ['frequencies_unit', 'structure_factors_unit',
+                                'temperature_unit'])
         super(StructureFactor, self).__setattr__(name, value)
 
     def calculate_sqw_map(self, e_bins, calc_bose=True, temperature=None):

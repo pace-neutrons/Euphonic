@@ -4,7 +4,6 @@ import os
 import pytest
 import numpy as np
 import numpy.testing as npt
-from pint import DimensionalityError
 
 from euphonic import ForceConstants, Crystal, ureg
 from tests_and_analysis.test.euphonic_test.test_crystal import (
@@ -329,11 +328,12 @@ class TestForceConstantsUnitConversion:
                                      unit_val):
         fc = get_fc(material)
         setattr(fc, unit_attr, unit_val)
+        assert getattr(fc, unit_attr) == unit_val
 
     @pytest.mark.parametrize('material, unit_attr, unit_val, err', [
-        ('quartz', 'force_constants_unit', 'hartree', DimensionalityError),
-        ('quartz', 'dielectric_unit', 'angstrom', DimensionalityError),
-        ('quartz', 'born_unit', '1/cm', DimensionalityError)])
+        ('quartz', 'force_constants_unit', 'hartree', ValueError),
+        ('quartz', 'dielectric_unit', 'angstrom', ValueError),
+        ('quartz', 'born_unit', '1/cm', ValueError)])
     def test_incorrect_unit_conversion(self, material, unit_attr,
                                        unit_val, err):
         fc = get_fc(material)

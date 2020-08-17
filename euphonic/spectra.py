@@ -1,10 +1,12 @@
 from copy import deepcopy
-import numpy as np
+
 from pint import Quantity
 from scipy import signal
+import numpy as np
+
 from euphonic import ureg
 from euphonic.util import (_distribution_1d, _distribution_2d,
-                           _check_constructor_inputs)
+                           _check_constructor_inputs, _check_unit_conversion)
 from euphonic.io import (_obj_to_json_file, _obj_from_json_file,
                          _obj_to_dict, _process_dict)
 
@@ -61,9 +63,8 @@ class Spectrum1D(object):
             self.y_data_unit)
 
     def __setattr__(self, name, value):
-        if hasattr(self, name):
-            if name in ['x_data_unit', 'y_data_unit']:
-                ureg(getattr(self, name)).to(value)
+        _check_unit_conversion(self, name, value,
+                               ['x_data_unit', 'y_data_unit'])
         super(Spectrum1D, self).__setattr__(name, value)
 
     def broaden(self, x_width, shape='gauss'):
@@ -242,9 +243,8 @@ class Spectrum2D(Spectrum1D):
             self.z_data_unit)
 
     def __setattr__(self, name, value):
-        if hasattr(self, name):
-            if name in ['z_data_unit']:
-                ureg(getattr(self, name)).to(value)
+        _check_unit_conversion(self, name, value,
+                               ['z_data_unit'])
         super(Spectrum2D, self).__setattr__(name, value)
 
     def broaden(self, x_width=None, y_width=None, shape='gauss'):

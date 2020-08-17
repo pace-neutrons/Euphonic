@@ -13,6 +13,7 @@ from euphonic.crystal import Crystal
 from euphonic.qpoint_phonon_modes import QpointPhononModes
 from euphonic.util import (is_gamma, get_all_origins,
                            _check_constructor_inputs,
+                           _check_unit_conversion,
                            _get_supercell_relative_idx)
 from euphonic.io import (_obj_to_json_file, _obj_from_json_file,
                          _obj_to_dict, _process_dict)
@@ -131,10 +132,9 @@ class ForceConstants(object):
             return None
 
     def __setattr__(self, name, value):
-        if hasattr(self, name):
-            if name in ['force_constants_unit', 'born_unit',
-                        'dielectric_unit']:
-                ureg(getattr(self, name)).to(value)
+        _check_unit_conversion(self, name, value,
+                               ['force_constants_unit', 'born_unit',
+                                'dielectric_unit'])
         super(ForceConstants, self).__setattr__(name, value)
 
     def calculate_qpoint_phonon_modes(

@@ -316,9 +316,10 @@ class TestQpointPhononModesUnitConversion:
                                      unit_val):
         qpt_ph_modes = get_qpt_ph_modes(material)
         setattr(qpt_ph_modes, unit_attr, unit_val)
+        assert getattr(qpt_ph_modes, unit_attr) == unit_val
 
     @pytest.mark.parametrize('material, unit_attr, unit_val, err', [
-        ('quartz', 'frequencies_unit', 'kg', DimensionalityError)])
+        ('quartz', 'frequencies_unit', 'kg', ValueError)])
     def test_incorrect_unit_conversion(self, material, unit_attr,
                                        unit_val, err):
         qpt_ph_modes = get_qpt_ph_modes(material)

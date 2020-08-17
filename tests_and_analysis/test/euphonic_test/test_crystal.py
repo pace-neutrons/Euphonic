@@ -232,10 +232,11 @@ class TestCrystalUnitConversion:
                                      unit_val):
         crystal = get_crystal(material)
         setattr(crystal, unit_attr, unit_val)
+        assert getattr(crystal, unit_attr) == unit_val
 
     @pytest.mark.parametrize('material, unit_attr, unit_val, err', [
-        ('quartz', 'cell_vectors_unit', 'kg', DimensionalityError),
-        ('quartz', 'atom_mass_unit', 'bohr', DimensionalityError)])
+        ('quartz', 'cell_vectors_unit', 'kg', ValueError),
+        ('quartz', 'atom_mass_unit', 'bohr', ValueError)])
     def test_incorrect_unit_conversion(self, material, unit_attr,
                                        unit_val, err):
         crystal = get_crystal(material)
