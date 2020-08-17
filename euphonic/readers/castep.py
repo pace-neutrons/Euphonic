@@ -1,7 +1,8 @@
 import re
-import os
 import struct
+
 import numpy as np
+
 from euphonic import ureg
 from euphonic.util import is_gamma
 

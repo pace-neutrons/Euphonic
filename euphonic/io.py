@@ -1,8 +1,10 @@
 import copy
 import json
 import os
+
 import numpy as np
 from pint import Quantity
+
 from euphonic import ureg
 
 
