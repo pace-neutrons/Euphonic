@@ -1,10 +1,12 @@
 import inspect
+
 import numpy as np
 from pint import Quantity
+
 from euphonic import ureg
 from euphonic.io import (_obj_to_json_file, _obj_from_json_file,
                          _obj_to_dict, _process_dict)
-from euphonic.util import _check_constructor_inputs
+from euphonic.util import _check_constructor_inputs, _check_unit_conversion
 
 
 class Crystal(object):
@@ -69,9 +71,8 @@ class Crystal(object):
             self.atom_mass_unit)
 
     def __setattr__(self, name, value):
-        if hasattr(self, name):
-            if name in ['cell_vectors_unit', 'ion_mass_unit']:
-                ureg(getattr(self, name)).to(value)
+        _check_unit_conversion(self, name, value,
+                               ['cell_vectors_unit', 'atom_mass_unit'])
         super(Crystal, self).__setattr__(name, value)
 
     def reciprocal_cell(self):

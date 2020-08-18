@@ -1,4 +1,5 @@
 import warnings
+
 try:
     import matplotlib as mpl
     import matplotlib.pyplot as plt
@@ -10,6 +11,7 @@ except ImportError:
     raise
 import numpy as np
 from scipy import signal
+
 from euphonic import ureg, Spectrum1D
 from euphonic.util import is_gamma, get_qpoint_labels, _calc_abscissa
 

@@ -1,8 +1,10 @@
 import json
 import os
+
 import pytest
 import numpy as np
 import numpy.testing as npt
+
 from euphonic import ForceConstants, Crystal, ureg
 from tests_and_analysis.test.euphonic_test.test_crystal import (
     get_crystal, ExpectedCrystal, check_crystal)
@@ -12,7 +14,8 @@ from tests_and_analysis.test.utils import get_data_path
 class ExpectedForceConstants:
 
     def __init__(self, force_constants_json_file: str):
-        self.data = json.load(open(force_constants_json_file))
+        with open(force_constants_json_file) as fd:
+            self.data = json.load(fd)
 
     @property
     def crystal(self):
@@ -281,6 +284,7 @@ class TestForceConstantsCreation:
         with pytest.raises(expected_exception):
             ForceConstants(*faulty_args, **faulty_kwargs)
 
+
 @pytest.mark.unit
 class TestForceConstantsSerialisation:
 
@@ -311,3 +315,27 @@ class TestForceConstantsSerialisation:
     def test_serialise_to_dict(self, serialise_to_dict):
         fc, expected_fc = serialise_to_dict
         check_force_constants(fc, expected_fc)
+
+
+@pytest.mark.unit
+class TestForceConstantsUnitConversion:
+
+    @pytest.mark.parametrize('material, unit_attr, unit_val', [
+        ('quartz', 'force_constants_unit', 'hartree/bohr**2'),
+        ('quartz', 'dielectric_unit', 'e**2/(angstrom*eV)'),
+        ('quartz', 'born_unit', 'C')])
+    def test_correct_unit_conversion(self, material, unit_attr,
+                                     unit_val):
+        fc = get_fc(material)
+        setattr(fc, unit_attr, unit_val)
+        assert getattr(fc, unit_attr) == unit_val
+
+    @pytest.mark.parametrize('material, unit_attr, unit_val, err', [
+        ('quartz', 'force_constants_unit', 'hartree', ValueError),
+        ('quartz', 'dielectric_unit', 'angstrom', ValueError),
+        ('quartz', 'born_unit', '1/cm', ValueError)])
+    def test_incorrect_unit_conversion(self, material, unit_attr,
+                                       unit_val, err):
+        fc = get_fc(material)
+        with pytest.raises(err):
+            setattr(fc, unit_attr, unit_val)

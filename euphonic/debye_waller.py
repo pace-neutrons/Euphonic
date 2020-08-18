@@ -1,7 +1,9 @@
 import inspect
+
 from pint import Quantity
+
 from euphonic import ureg, Crystal
-from euphonic.util import _check_constructor_inputs
+from euphonic.util import _check_constructor_inputs, _check_unit_conversion
 from euphonic.io import (_obj_to_json_file, _obj_from_json_file,
                          _obj_to_dict, _process_dict)
 
@@ -65,9 +67,8 @@ class DebyeWaller(object):
                             self.temperature_unit)
 
     def __setattr__(self, name, value):
-        if hasattr(self, name):
-            if name in ['debye_waller_unit', 'temperature_unit']:
-                ureg(getattr(self, name)).to(value)
+        _check_unit_conversion(self, name, value,
+                               ['debye_waller_unit', 'temperature_unit'])
         super(DebyeWaller, self).__setattr__(name, value)
 
     def to_dict(self):

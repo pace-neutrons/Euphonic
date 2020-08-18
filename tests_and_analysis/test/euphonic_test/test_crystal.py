@@ -1,10 +1,11 @@
 import json
 import os
+
 import numpy as np
 import numpy.testing as npt
 import pytest
-from pint.quantity import Quantity
-from pint.errors import DimensionalityError
+from pint import Quantity, DimensionalityError
+
 from euphonic import Crystal, ureg
 from ..utils import get_data_path
 
@@ -219,6 +220,28 @@ class TestCrystalSerialisation:
     def test_serialise_to_dict(self, serialise_to_dict):
         crystal, expected_crystal = serialise_to_dict
         check_crystal(crystal, expected_crystal)
+
+
+@pytest.mark.unit
+class TestCrystalUnitConversion:
+
+    @pytest.mark.parametrize('material, unit_attr, unit_val', [
+        ('quartz', 'cell_vectors_unit', 'bohr'),
+        ('quartz', 'atom_mass_unit', 'kg')])
+    def test_correct_unit_conversion(self, material, unit_attr,
+                                     unit_val):
+        crystal = get_crystal(material)
+        setattr(crystal, unit_attr, unit_val)
+        assert getattr(crystal, unit_attr) == unit_val
+
+    @pytest.mark.parametrize('material, unit_attr, unit_val, err', [
+        ('quartz', 'cell_vectors_unit', 'kg', ValueError),
+        ('quartz', 'atom_mass_unit', 'bohr', ValueError)])
+    def test_incorrect_unit_conversion(self, material, unit_attr,
+                                       unit_val, err):
+        crystal = get_crystal(material)
+        with pytest.raises(err):
+            setattr(crystal, unit_attr, unit_val)
 
 
 @pytest.mark.unit

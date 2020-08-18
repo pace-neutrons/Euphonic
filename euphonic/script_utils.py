@@ -1,7 +1,8 @@
 import os
-from euphonic import QpointPhononModes
-from argparse import ArgumentParser
 from typing import List, Tuple
+from argparse import ArgumentParser
+
+from euphonic import QpointPhononModes
 
 
 def load_data_from_file(filename: str) -> QpointPhononModes:

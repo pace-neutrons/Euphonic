@@ -1,9 +1,11 @@
 import os
 import json
+
 import pytest
 import numpy as np
 import numpy.testing as npt
-from pint.errors import DimensionalityError
+from pint import DimensionalityError
+
 from euphonic import ureg, Crystal, QpointPhononModes
 from tests_and_analysis.test.euphonic_test.test_crystal import (
     ExpectedCrystal, get_crystal, check_crystal)
@@ -13,7 +15,8 @@ from tests_and_analysis.test.utils import get_data_path
 class ExpectedQpointPhononModes:
 
     def __init__(self, qpoint_phonon_modes_json_file: str):
-        self.data = json.load(open(qpoint_phonon_modes_json_file))
+        with open(qpoint_phonon_modes_json_file) as fd:
+            self.data = json.load(fd)
 
     @property
     def crystal(self):
@@ -302,3 +305,23 @@ class TestQpointPhononModesCreation:
         faulty_args, faulty_kwargs, expected_exception = inject_faulty_elements
         with pytest.raises(expected_exception):
             QpointPhononModes(*faulty_args, **faulty_kwargs)
+
+
+@pytest.mark.unit
+class TestQpointPhononModesUnitConversion:
+
+    @pytest.mark.parametrize('material, unit_attr, unit_val', [
+        ('quartz', 'frequencies_unit', '1/cm')])
+    def test_correct_unit_conversion(self, material, unit_attr,
+                                     unit_val):
+        qpt_ph_modes = get_qpt_ph_modes(material)
+        setattr(qpt_ph_modes, unit_attr, unit_val)
+        assert getattr(qpt_ph_modes, unit_attr) == unit_val
+
+    @pytest.mark.parametrize('material, unit_attr, unit_val, err', [
+        ('quartz', 'frequencies_unit', 'kg', ValueError)])
+    def test_incorrect_unit_conversion(self, material, unit_attr,
+                                       unit_val, err):
+        qpt_ph_modes = get_qpt_ph_modes(material)
+        with pytest.raises(err):
+            setattr(qpt_ph_modes, unit_attr, unit_val)

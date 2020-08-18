@@ -2,15 +2,15 @@ import json
 import math
 import sys
 import os.path
-from typing import Dict
+from typing import Dict, List, Any
 
-from importlib_resources import open_text  # Backport for Python 3.6
-import numpy as np
-from pint import Quantity, UndefinedUnitError
 import seekpath
+import numpy as np
+from importlib_resources import open_text  # Backport for Python 3.6
+from pint import Quantity, UndefinedUnitError, DimensionalityError
 
-from euphonic import ureg
 import euphonic.data
+from euphonic import ureg
 
 
 def direction_changed(qpts, tolerance=5e-6):
@@ -607,6 +607,40 @@ def _check_constructor_inputs(objs, types, shapes, names):
                 raise ValueError((
                     f'The shape of {name} {obj.shape} doesn\'t match '
                     f'the expected shape(s) {shape}'))
+
+
+def _check_unit_conversion(obj: object, attr_name: str, attr_value: Any,
+                           unit_attrs: List[str]) -> None:
+    """
+    If setting an attribute on an object that relates to the units of a
+    Quantity (e.g. 'frequencies_unit' in QpointPhononModes) check that
+    the unit conversion is valid before allowing the value to be set
+
+    Parameters
+    ----------
+    obj
+        The object to check
+    attr_name
+        The name of the attribute that is being set
+    attr_value
+        The new value of the attribute
+    unit_attrs
+        Only check the unit conversion if the attribute is one of
+        unit_attrs
+
+    Raises
+    ------
+    ValueError
+        If the unit conversion is not valid
+    """
+    if hasattr(obj, attr_name):
+        if attr_name in unit_attrs:
+            try:
+                _ = ureg(getattr(obj, attr_name)).to(attr_value)
+            except DimensionalityError:
+                raise ValueError((
+                    f'"{attr_value}" is not a known dimensionally-consistent '
+                    f'unit for "{attr_name}"'))
 
 
 def _replace_dim(expected_shape, obj_shape):
