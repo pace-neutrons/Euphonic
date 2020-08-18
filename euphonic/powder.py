@@ -46,7 +46,7 @@ def sample_sphere_dos(fc: ForceConstants, q: float,
 
     """
 
-    qpts = _get_qpts_sphere(npts, sampling=sampling, jitter=jitter)
+    qpts = _get_qpts_sphere(npts, sampling=sampling, jitter=jitter) * q
 
     phonons = fc.calculate_qpoint_phonon_modes(qpts)  # type: QpointPhononModes
 
