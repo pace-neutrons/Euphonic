@@ -4,7 +4,7 @@ import numpy as np
 from pint import Quantity
 from typing import Union
 
-from euphonic import (DebyeWaller, ForceConstants, QpointPhononModes,
+from euphonic import (Crystal, DebyeWaller, ForceConstants, QpointPhononModes,
                       Spectrum1D)
 from euphonic import ureg
 from euphonic.util import mp_grid
@@ -138,10 +138,37 @@ def _get_default_bins(phonons: QpointPhononModes,
     return np.linspace(0, max_energy.magnitude, (nbins + 1)) * max_energy.units
 
 
+def _qpts_cart_to_frac(qpts: Quantity,
+                       crystal: Crystal) -> np.ndarray:
+    """Convert a set of q-points from Cartesian to fractional coordinates
+
+    Parameters
+    ==========
+
+    qpts
+        Array of q-points in Cartesian coordinates.
+    crystal
+        Crystal structure determining reciprocal lattice
+
+    Returns
+    =======
+
+    Dimensionless array of q-points in fractional coordinates
+    """
+    lattice = crystal.reciprocal_cell()
+
+    return np.linalg.solve(lattice.to(ureg('1/INTERNAL_LENGTH_UNIT')).magnitude.T,
+                           qpts.to(ureg('1/INTERNAL_LENGTH_UNIT')).magnitude.T).T
+
+
 def _get_qpts_sphere(npts: int,
                      sampling: str = 'golden',
                      jitter: bool = False) -> np.ndarray:
-    """Get q-point coordinates according to specified sampling scheme"""
+    """Get q-point coordinates according to specified sampling scheme
+
+    Note that the return value is dimensionless; the sphere radius is unity.
+    To obtain Cartesian coordinates with units, multiply by a float Quantity.
+    """
 
     from euphonic.sampling import (golden_sphere, sphere_from_square_grid,
                                    spherical_polar_grid,
