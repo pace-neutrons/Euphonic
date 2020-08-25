@@ -5,7 +5,7 @@ import pytest
 import euphonic
 from euphonic import ureg, Crystal
 from euphonic.powder import (_get_qpts_sphere, _qpts_cart_to_frac,
-                             sample_sphere_dos)
+                             sample_sphere_dos, sample_sphere_structure_factor)
 
 sampling_functions = {
     'golden': 'euphonic.sampling.golden_sphere',
@@ -55,9 +55,6 @@ def test_get_qpts_sphere(mocker, random_qpts_array, jitter,
                                                 **sampling_kwargs)
 
 
-# def test_sample_sphere_structure_factor(mocker, random_qpts_array):
-#     mod_q = 1.2 * ureg('1 / angstrom')
-
 class TestSphereSampledProperties:
     @staticmethod
     def mock_get_qpts_sphere(mocker, return_qpts):
@@ -70,10 +67,18 @@ class TestSphereSampledProperties:
                             return_value=return_bins)
 
     @pytest.fixture
-    def mock_qpm(self, mocker):
+    def mock_s(self, mocker):
+        s = mocker.MagicMock()
+        s.configure_mock(**{'calculate_1d_average.return_value':
+                            'calculate_1d_average_return_value'})
+        return s
+
+    @pytest.fixture
+    def mock_qpm(self, mocker, mock_s):
         qpm = mocker.MagicMock()
         qpm.configure_mock(
-            **{'calculate_dos.return_value': 'calculate_dos_return_value'})
+            **{'calculate_dos.return_value': 'calculate_dos_return_value',
+               'calculate_structure_factor.return_value': mock_s})
         return qpm
 
     @pytest.fixture
@@ -98,17 +103,29 @@ class TestSphereSampledProperties:
     def test_sample_sphere_dos(self, mocker, mock_fc, mock_qpm,
                                random_qpts_array):
         mod_q = 1.2 * ureg('1 / angstrom')
-
         return_bins = np.linspace(1., 10., 5)
+        
+        # Dummy out functions called by sample_sphere_dos and tested elsewhere
         self.mock_get_default_bins(mocker, return_bins)
         self.mock_get_qpts_sphere(mocker, random_qpts_array)
 
         assert sample_sphere_dos(mock_fc, mod_q) == 'calculate_dos_return_value'
         npt.assert_almost_equal(random_qpts_array * mod_q.magnitude,
                                 mock_fc.calculate_qpoint_phonon_modes.call_args[0][0])
-
-        #mock_fc.calculate_qpoint_phonon_modes.assert_called_with(random_qpts_array)
         mock_qpm.calculate_dos.assert_called_with(return_bins)
+
+    @pytest.mark.unit
+    def test_sample_sphere_structure_factor(self, mocker, mock_fc, mock_qpm,
+                                            random_qpts_array):
+        mod_q = 1.2 * ureg('1 / angstrom')
+        return_bins = np.linspace(1., 10., 5)
+
+        # Dummy out functions called by sample_sphere_structure_factor
+        # that are tested elsewhere
+        self.mock_get_default_bins(mocker, return_bins)
+
+        assert (sample_sphere_structure_factor(mock_fc, mod_q)
+                == 'calculate_1d_average_return_value')
 
 
 class TestQpointConversion:

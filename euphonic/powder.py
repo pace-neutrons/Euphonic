@@ -127,6 +127,7 @@ def sample_sphere_structure_factor(
 
     phonons = fc.calculate_qpoint_phonon_modes(qpts_cart
                                                )  # type: QpointPhononModes
+
     if energy_bins is None:
         energy_bins = _get_default_bins(phonons)
 
