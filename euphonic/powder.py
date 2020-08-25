@@ -13,7 +13,8 @@ sampling_choices = {'golden', 'sphere-projected-grid', 'spherical-polar-grid',
                     'spherical-polar-improved', 'random-sphere'}
 
 
-def sample_sphere_dos(fc: ForceConstants, q: Quantity,
+def sample_sphere_dos(fc: ForceConstants,
+                      mod_q: Quantity,
                       sampling: str = 'golden',
                       npts: int = 1000, jitter: bool = False,
                       energy_bins: np.ndarray = None
@@ -23,8 +24,8 @@ def sample_sphere_dos(fc: ForceConstants, q: Quantity,
     Args:
         fc: Force constant data for system
 
-        q: radius of sphere from which vector q samples are taken (in units of
-            inverse length; usually 1/angstrom).
+        mod_q: radius of sphere from which vector q samples are taken (in units
+            of inverse length; usually 1/angstrom).
 
         sampling: Sphere-sampling scheme. (Case-insensitive) options
             are:
@@ -47,7 +48,8 @@ def sample_sphere_dos(fc: ForceConstants, q: Quantity,
 
     """
 
-    qpts_cart = _get_qpts_sphere(npts, sampling=sampling, jitter=jitter) * q
+    qpts_cart = _get_qpts_sphere(npts, sampling=sampling, jitter=jitter
+                                 ) * mod_q
     qpts_frac = _qpts_cart_to_frac(qpts_cart, fc.crystal)
 
     phonons = fc.calculate_qpoint_phonon_modes(qpts_frac
@@ -60,7 +62,8 @@ def sample_sphere_dos(fc: ForceConstants, q: Quantity,
 
 
 def sample_sphere_structure_factor(
-    fc: ForceConstants, q: float,
+    fc: ForceConstants,
+    mod_q: float,
     dw: DebyeWaller = None,
     temperature: Quantity = 273. * ureg['K'],
     sampling: str = 'golden',
@@ -76,13 +79,13 @@ def sample_sphere_structure_factor(
     Args:
         fc: Force constant data for system
 
+        mod_q: scalar radius of sphere from which vector q samples are taken
+
         dw: Debye-Waller exponent used for evaluation of scattering
             function. If not provided, this is generated automatically
             over a 20x20x20 q-point mesh.
 
         temperature: Temperature used for Debye-Waller
-
-        q: scalar radius of sphere from which vector q samples are taken
 
         sampling: Sphere-sampling scheme. (Case-insensitive) options
             are:
@@ -122,10 +125,12 @@ def sample_sphere_structure_factor(
         dw = dw_phonons.calculate_debye_waller(temperature
                                                )  # type: DebyeWaller
 
-    qpts_cart = _get_qpts_sphere(npts, sampling=sampling, jitter=jitter) * q
+    qpts_cart = _get_qpts_sphere(npts, sampling=sampling, jitter=jitter
+                                 ) * mod_q
+
     qpts_frac = _qpts_cart_to_frac(qpts_cart, fc.crystal)
 
-    phonons = fc.calculate_qpoint_phonon_modes(qpts_cart
+    phonons = fc.calculate_qpoint_phonon_modes(qpts_frac
                                                )  # type: QpointPhononModes
 
     if energy_bins is None:

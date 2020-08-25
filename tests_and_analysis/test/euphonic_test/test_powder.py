@@ -78,11 +78,17 @@ class TestSphereSampledProperties:
         return s
 
     @pytest.fixture
-    def mock_qpm(self, mocker, mock_s):
+    def mock_dw(self, mocker):
+        dw = mocker.MagicMock()
+        return dw
+
+    @pytest.fixture
+    def mock_qpm(self, mocker, mock_s, mock_dw):
         qpm = mocker.MagicMock()
         qpm.configure_mock(
             **{'calculate_dos.return_value': 'calculate_dos_return_value',
-               'calculate_structure_factor.return_value': mock_s})
+               'calculate_structure_factor.return_value': mock_s,
+               'calculate_debye_waller.return_value': mock_dw})
         return qpm
 
     @pytest.fixture
@@ -103,17 +109,23 @@ class TestSphereSampledProperties:
                'crystal': mock_crystal})
         return fc
 
+    # Some sample return values
+    _energy_bins = np.linspace(1., 10., 5)
+    _scattering_lengths = {'Si': 4. * ureg('fm')}
+
     @pytest.mark.unit
-    def test_sample_sphere_dos(self, mocker, mock_fc, mock_qpm,
-                               random_qpts_array):
+    @pytest.mark.parametrize('energy_bins', [_energy_bins, None])
+    def test_sample_sphere_dos(self,
+                               mocker, mock_fc, mock_qpm, random_qpts_array,
+                               energy_bins):
         mod_q = 1.2 * ureg('1 / angstrom')
-        return_bins = np.linspace(1., 10., 5)
+        return_bins = self._energy_bins
 
         # Dummy out functions called by sample_sphere_dos and tested elsewhere
         self.mock_get_default_bins(mocker, return_bins)
         self.mock_get_qpts_sphere(mocker, random_qpts_array)
 
-        assert (sample_sphere_dos(mock_fc, mod_q)
+        assert (sample_sphere_dos(mock_fc, mod_q, energy_bins=energy_bins)
                 == 'calculate_dos_return_value')
         npt.assert_almost_equal(
             random_qpts_array * mod_q.magnitude,
@@ -121,11 +133,30 @@ class TestSphereSampledProperties:
         mock_qpm.calculate_dos.assert_called_with(return_bins)
 
     @pytest.mark.unit
+    @pytest.mark.parametrize('options',
+                             [dict(mod_q=1.2 * ureg('1 / angstrom'),
+                                   npts=400, jitter=True,
+                                   sampling='golden',
+                                   energy_bins=_energy_bins,
+                                   scattering_lengths='Sears1992',
+                                   dw=None),
+                              dict(mod_q=2.3 * ureg('1 / angstrom'),
+                                   npts=1000, jitter=False,
+                                   sampling='spherical-polar-improved',
+                                   energy_bins=None,
+                                   scattering_lengths=_scattering_lengths,
+                                   dw='mock_dw')
+                               ])
     def test_sample_sphere_structure_factor(self, mocker, mock_fc, mock_qpm,
-                                            mock_s, random_qpts_array):
-        mod_q = 1.2 * ureg('1 / angstrom')
-        return_bins = np.linspace(1., 10., 5)
-        return_scattering_lengths = {'Si': 4. * ureg('fm')}
+                                            mock_s, mock_dw, random_qpts_array,
+                                            options):
+        # Make sure the same instance of mock DebyeWaller is used everywhere
+        if options['dw'] == 'mock_dw':
+            options['dw'] = mock_dw
+
+        # Fixed return values for dummy functions
+        return_bins = self._energy_bins
+        return_scattering_lengths = self._scattering_lengths
 
         # Dummy out functions called by sample_sphere_structure_factor
         # that are tested elsewhere
@@ -134,24 +165,33 @@ class TestSphereSampledProperties:
         get_ref_data = self.mock_get_reference_data(mocker,
                                                     return_scattering_lengths)
 
-        npts, sampling, jitter = 400, 'golden', True
         assert (sample_sphere_structure_factor(
-            mock_fc, mod_q, npts=400, sampling=sampling, jitter=jitter)
+            mock_fc, **options)
             == 'calculate_1d_average_return_value')
 
         # Check scattering lengths were looked up as expected
-        assert get_ref_data.call_args == (
-            (), {'physical_property': 'coherent_scattering_length',
-                 'collection': 'Sears1992'})
+        if isinstance(options['scattering_lengths'], str):
+            assert get_ref_data.call_args == (
+                (), {'physical_property': 'coherent_scattering_length',
+                     'collection': 'Sears1992'})
+        else:
+            assert isinstance(options['scattering_lengths'], dict)
 
         # Check qpts sphere called as expected
-        assert get_qpts_sphere.call_args == ((npts,), {'sampling': sampling,
-                                                       'jitter': jitter})
+        assert get_qpts_sphere.call_args == ((options['npts'],),
+                                             {'sampling': options['sampling'],
+                                              'jitter': options['jitter']})
 
         # Check expected list of qpoints was passed to forceconstants
+        # (fractional q = cart q because the lattice vectors are unit cube)
         npt.assert_almost_equal(
-            random_qpts_array * mod_q.magnitude,
-            mock_fc.calculate_qpoint_phonon_modes.call_args[0][0].magnitude)
+            random_qpts_array * options['mod_q'].magnitude,
+            mock_fc.calculate_qpoint_phonon_modes.call_args[0][0])
+
+        # Check structure factor args were as expected
+        assert (mock_qpm.calculate_structure_factor.call_args
+                == (tuple(), {'scattering_lengths': self._scattering_lengths,
+                              'dw': mock_dw}))
 
         # Check expected bins set for 1d averaging
         assert mock_s.calculate_1d_average.call_args == ((return_bins,),)
