@@ -65,6 +65,11 @@ class TestSphereSampledProperties:
         return mocker.patch('euphonic.powder._get_default_bins',
                             return_value=return_bins)
 
+    @staticmethod
+    def mock_get_reference_data(mocker, return_scattering_lengths):
+        return mocker.patch('euphonic.util.get_reference_data',
+                            return_value=return_scattering_lengths)
+
     @pytest.fixture
     def mock_s(self, mocker):
         s = mocker.MagicMock()
@@ -117,16 +122,39 @@ class TestSphereSampledProperties:
 
     @pytest.mark.unit
     def test_sample_sphere_structure_factor(self, mocker, mock_fc, mock_qpm,
-                                            random_qpts_array):
+                                            mock_s, random_qpts_array):
         mod_q = 1.2 * ureg('1 / angstrom')
         return_bins = np.linspace(1., 10., 5)
+        return_scattering_lengths = {'Si': 4. * ureg('fm')}
 
         # Dummy out functions called by sample_sphere_structure_factor
         # that are tested elsewhere
         self.mock_get_default_bins(mocker, return_bins)
+        get_qpts_sphere = self.mock_get_qpts_sphere(mocker, random_qpts_array)
+        get_ref_data = self.mock_get_reference_data(mocker,
+                                                    return_scattering_lengths)
 
-        assert (sample_sphere_structure_factor(mock_fc, mod_q)
-                == 'calculate_1d_average_return_value')
+        npts, sampling, jitter = 400, 'golden', True
+        assert (sample_sphere_structure_factor(
+            mock_fc, mod_q, npts=400, sampling=sampling, jitter=jitter)
+            == 'calculate_1d_average_return_value')
+
+        # Check scattering lengths were looked up as expected
+        assert get_ref_data.call_args == (
+            (), {'physical_property': 'coherent_scattering_length',
+                 'collection': 'Sears1992'})
+
+        # Check qpts sphere called as expected
+        assert get_qpts_sphere.call_args == ((npts,), {'sampling': sampling,
+                                                       'jitter': jitter})
+
+        # Check expected list of qpoints was passed to forceconstants
+        npt.assert_almost_equal(
+            random_qpts_array * mod_q.magnitude,
+            mock_fc.calculate_qpoint_phonon_modes.call_args[0][0].magnitude)
+
+        # Check expected bins set for 1d averaging
+        assert mock_s.calculate_1d_average.call_args == ((return_bins,),)
 
 
 class TestQpointConversion:
