@@ -2,7 +2,6 @@ import numpy as np
 import numpy.testing as npt
 import pytest
 
-import euphonic
 from euphonic import ureg, Crystal
 from euphonic.powder import (_get_qpts_sphere, _qpts_cart_to_frac,
                              sample_sphere_dos, sample_sphere_structure_factor)
@@ -104,14 +103,16 @@ class TestSphereSampledProperties:
                                random_qpts_array):
         mod_q = 1.2 * ureg('1 / angstrom')
         return_bins = np.linspace(1., 10., 5)
-        
+
         # Dummy out functions called by sample_sphere_dos and tested elsewhere
         self.mock_get_default_bins(mocker, return_bins)
         self.mock_get_qpts_sphere(mocker, random_qpts_array)
 
-        assert sample_sphere_dos(mock_fc, mod_q) == 'calculate_dos_return_value'
-        npt.assert_almost_equal(random_qpts_array * mod_q.magnitude,
-                                mock_fc.calculate_qpoint_phonon_modes.call_args[0][0])
+        assert (sample_sphere_dos(mock_fc, mod_q)
+                == 'calculate_dos_return_value')
+        npt.assert_almost_equal(
+            random_qpts_array * mod_q.magnitude,
+            mock_fc.calculate_qpoint_phonon_modes.call_args[0][0])
         mock_qpm.calculate_dos.assert_called_with(return_bins)
 
     @pytest.mark.unit
@@ -142,22 +143,25 @@ class TestQpointConversion:
         [[0., 0., 0.5], [1, 1, 0.1], [-1, 2., 0.0]]])
     def nontrivial_crystal(self, request):
         """Some arbitrary non-diagonal lattices"""
-        return Crystal(np.asarray(request.param, dtype=float) * ureg('angstrom'),
+        return Crystal(np.asarray(request.param, dtype=float
+                                  ) * ureg('angstrom'),
                        np.array([[0., 0., 0.]]),
                        np.array(['Si']), np.array([28.055]) * ureg('amu'))
 
     @pytest.fixture
     def trivial_qpts(self):
-        return {'frac': [[1, 0, 0], [0, 1, 0], [0, 0, 1],
-                         [0.5, 0.5, 0], [0, 0.5, 0.5]],
-                'cart': [[2 * np.pi, 0, 0], [0, np.pi, 0], [0, 0, 2 * np.pi / 3],
-                         [np.pi, np.pi / 2, 0], [0, np.pi / 2, np.pi / 3]]}
+        return {'frac': [[1, 0, 0], [0, 1, 0],
+                         [0, 0, 1], [0.5, 0.5, 0], [0, 0.5, 0.5]],
+                'cart': [[2 * np.pi, 0, 0], [0, np.pi, 0],
+                         [0, 0, 2 * np.pi / 3], [np.pi, np.pi / 2, 0],
+                         [0, np.pi / 2, np.pi / 3]]}
 
     @staticmethod
     @pytest.mark.unit
     def test_qpts_cart_to_frac_trivial(trivial_crystal, trivial_qpts):
-        """Check internal method for q-point conversion with a trivial example"""
-        cart_qpts = np.asarray(trivial_qpts['cart'], dtype=float) * ureg('1 / angstrom')
+        """Check internal method for q-point conversion with trivial example"""
+        cart_qpts = np.asarray(trivial_qpts['cart'], dtype=float
+                               ) * ureg('1 / angstrom')
         frac_qpts = np.asarray(trivial_qpts['frac'], dtype=float)
         calc_frac_qpts = _qpts_cart_to_frac(cart_qpts, trivial_crystal)
 
@@ -165,7 +169,8 @@ class TestQpointConversion:
 
     @staticmethod
     @pytest.mark.unit
-    def test_qpts_cart_to_frac_roundtrip(random_qpts_array, nontrivial_crystal):
+    def test_qpts_cart_to_frac_roundtrip(random_qpts_array,
+                                         nontrivial_crystal):
         frac_qpts = random_qpts_array
         cart_qpts = frac_qpts.dot(nontrivial_crystal.reciprocal_cell()
                                   .to('1 / angstrom').magnitude
