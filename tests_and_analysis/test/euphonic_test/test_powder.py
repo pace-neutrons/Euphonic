@@ -3,7 +3,8 @@ import numpy.testing as npt
 import pytest
 
 from euphonic import ureg, Crystal
-from euphonic.powder import (_get_qpts_sphere, _qpts_cart_to_frac,
+from euphonic.powder import (_get_default_bins, _get_qpts_sphere,
+                             _qpts_cart_to_frac,
                              sample_sphere_dos, sample_sphere_structure_factor)
 
 sampling_functions = {
@@ -30,6 +31,8 @@ def jitter(request):
                           # 31 pts rounded up to 2N^2 -> 4 cols, 8 rows
                           (31, 'sphere-projected-grid',
                            (8, 4), {'jitter': None}),
+                          (32, 'sphere-projected-grid',
+                           (8, 4), {'jitter': None}),
                           (31, 'spherical-polar-grid',
                            (8, 4), {'jitter': None}),
                           (13, 'spherical-polar-improved',
@@ -52,6 +55,21 @@ def test_get_qpts_sphere(mocker, random_qpts_array, jitter,
 
     mocked_sampling_function.assert_called_with(*sampling_args,
                                                 **sampling_kwargs)
+
+def test_get_qpts_sphere_error():
+    with pytest.raises(ValueError):
+        _get_qpts_sphere(100, sampling='not-a-real-method')
+
+
+@pytest.mark.parametrize('units', ['meV', '1 / cm'])
+def test_get_default_bins(mocker, units):
+    qpm = mocker.MagicMock()
+    qpm.frequencies = np.array([-1., 0.3, (10 / 1.05), 4.2]) * ureg(units)
+
+    default_bins = _get_default_bins(qpm, nbins=10)
+    assert default_bins.units == ureg(units)
+    npt.assert_almost_equal(default_bins.magnitude,
+                            [0., 1., 2., 3., 4., 5., 6., 7., 8., 9., 10.])
 
 
 class TestSphereSampledProperties:
