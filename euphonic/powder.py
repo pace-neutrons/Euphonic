@@ -13,7 +13,7 @@ sampling_choices = {'golden', 'sphere-projected-grid', 'spherical-polar-grid',
                     'spherical-polar-improved', 'random-sphere'}
 
 
-def sample_sphere_dos(fc: ForceConstants, q: float,
+def sample_sphere_dos(fc: ForceConstants, q: Quantity,
                       sampling: str = 'golden',
                       npts: int = 1000, jitter: bool = False,
                       energy_bins: np.ndarray = None
@@ -23,7 +23,8 @@ def sample_sphere_dos(fc: ForceConstants, q: float,
     Args:
         fc: Force constant data for system
 
-        q: scalar radius of sphere from which vector q samples are taken
+        q: radius of sphere from which vector q samples are taken (in units of
+            inverse length; usually 1/angstrom).
 
         sampling: Sphere-sampling scheme. (Case-insensitive) options
             are:
@@ -46,9 +47,11 @@ def sample_sphere_dos(fc: ForceConstants, q: float,
 
     """
 
-    qpts = _get_qpts_sphere(npts, sampling=sampling, jitter=jitter) * q
+    qpts_cart = _get_qpts_sphere(npts, sampling=sampling, jitter=jitter) * q
+    qpts_frac = _qpts_cart_to_frac(qpts_cart, fc.crystal)
 
-    phonons = fc.calculate_qpoint_phonon_modes(qpts)  # type: QpointPhononModes
+    phonons = fc.calculate_qpoint_phonon_modes(qpts_frac
+                                               )  # type: QpointPhononModes
 
     if energy_bins is None:
         energy_bins = _get_default_bins(phonons)
@@ -119,9 +122,11 @@ def sample_sphere_structure_factor(
         dw = dw_phonons.calculate_debye_waller(temperature
                                                )  # type: DebyeWaller
 
-    qpts = _get_qpts_sphere(npts, sampling=sampling, jitter=jitter)
+    qpts_cart = _get_qpts_sphere(npts, sampling=sampling, jitter=jitter) * q
+    qpts_frac = _qpts_cart_to_frac(qpts_cart, fc.crystal)
 
-    phonons = fc.calculate_qpoint_phonon_modes(qpts)  # type: QpointPhononModes
+    phonons = fc.calculate_qpoint_phonon_modes(qpts_cart
+                                               )  # type: QpointPhononModes
     if energy_bins is None:
         energy_bins = _get_default_bins(phonons)
 
@@ -157,8 +162,11 @@ def _qpts_cart_to_frac(qpts: Quantity,
     """
     lattice = crystal.reciprocal_cell()
 
-    return np.linalg.solve(lattice.to(ureg('1/INTERNAL_LENGTH_UNIT')).magnitude.T,
-                           qpts.to(ureg('1/INTERNAL_LENGTH_UNIT')).magnitude.T).T
+    return np.linalg.solve(lattice.to(ureg('1/INTERNAL_LENGTH_UNIT'))
+                           .magnitude.T,
+                           qpts.to(ureg('1/INTERNAL_LENGTH_UNIT'))
+                           .magnitude.T
+                           ).T
 
 
 def _get_qpts_sphere(npts: int,

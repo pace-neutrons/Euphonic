@@ -16,7 +16,7 @@ sampling_functions = {
 
 
 @pytest.fixture
-def random_qpts_list():
+def random_qpts_array():
     return np.random.random((4, 3))
 
 
@@ -37,11 +37,11 @@ def jitter(request):
                            (13,), {'jitter': None}),
                           (7, 'random-sphere', (7,), dict())]
                          )
-def test_get_qpts_sphere(mocker, random_qpts_list, jitter,
+def test_get_qpts_sphere(mocker, random_qpts_array, jitter,
                          npts, sampling, sampling_args, sampling_kwargs):
     """Check that functions from euphonic.sampling are called as expected"""
     mocked_sampling_function = mocker.patch(sampling_functions[sampling],
-                                            return_value=random_qpts_list,
+                                            return_value=random_qpts_array,
                                             autospec=True)
 
     if 'jitter' in sampling_kwargs:
@@ -49,34 +49,66 @@ def test_get_qpts_sphere(mocker, random_qpts_list, jitter,
 
     npt.assert_almost_equal(
         _get_qpts_sphere(npts, sampling=sampling, jitter=jitter),
-        random_qpts_list)
+        random_qpts_array)
 
     mocked_sampling_function.assert_called_with(*sampling_args,
                                                 **sampling_kwargs)
 
-def test_sample_sphere_dos(mocker, random_qpts_list):
-    mod_q = 1.2
-    return_bins = np.linspace(1., 10., 5)
 
-    mocked_get_qpts_sphere = mocker.patch('euphonic.powder._get_qpts_sphere',
-                                          return_value=random_qpts_list)
-    mocked_get_default_bins = mocker.patch('euphonic.powder._get_default_bins',
-                                           return_value=return_bins)
+# def test_sample_sphere_structure_factor(mocker, random_qpts_array):
+#     mod_q = 1.2 * ureg('1 / angstrom')
 
-    mock_qpm = mocker.MagicMock()
-    mock_qpm.configure_mock(
-        **{'calculate_dos.return_value': 'calculate_dos_return_value'})
+class TestSphereSampledProperties:
+    @staticmethod
+    def mock_get_qpts_sphere(mocker, return_qpts):
+        return mocker.patch('euphonic.powder._get_qpts_sphere',
+                            return_value=return_qpts)
 
-    mock_fc = mocker.MagicMock()
-    mock_fc.configure_mock(
-        **{'calculate_qpoint_phonon_modes.return_value': mock_qpm})
-    
-    assert sample_sphere_dos(mock_fc, mod_q) == 'calculate_dos_return_value'
-    npt.assert_almost_equal(random_qpts_list * mod_q,
-                            mock_fc.calculate_qpoint_phonon_modes.call_args[0][0])
+    @staticmethod
+    def mock_get_default_bins(mocker, return_bins):
+        return mocker.patch('euphonic.powder._get_default_bins',
+                            return_value=return_bins)
 
-    #mock_fc.calculate_qpoint_phonon_modes.assert_called_with(random_qpts_list)
-    mock_qpm.calculate_dos.assert_called_with(return_bins)
+    @pytest.fixture
+    def mock_qpm(self, mocker):
+        qpm = mocker.MagicMock()
+        qpm.configure_mock(
+            **{'calculate_dos.return_value': 'calculate_dos_return_value'})
+        return qpm
+
+    @pytest.fixture
+    def mock_crystal(self, mocker):
+        crystal = mocker.MagicMock()
+        crystal.configure_mock(
+            **{'reciprocal_cell.return_value': np.array([[1, 0, 0],
+                                                         [0, 1, 0],
+                                                         [0, 0, 1]])
+               * ureg('1 / angstrom')})
+        return crystal
+
+    @pytest.fixture
+    def mock_fc(self, mocker, mock_qpm, mock_crystal):
+        fc = mocker.MagicMock()
+        fc.configure_mock(
+            **{'calculate_qpoint_phonon_modes.return_value': mock_qpm,
+               'crystal': mock_crystal})
+        return fc
+
+    @pytest.mark.unit
+    def test_sample_sphere_dos(self, mocker, mock_fc, mock_qpm,
+                               random_qpts_array):
+        mod_q = 1.2 * ureg('1 / angstrom')
+
+        return_bins = np.linspace(1., 10., 5)
+        self.mock_get_default_bins(mocker, return_bins)
+        self.mock_get_qpts_sphere(mocker, random_qpts_array)
+
+        assert sample_sphere_dos(mock_fc, mod_q) == 'calculate_dos_return_value'
+        npt.assert_almost_equal(random_qpts_array * mod_q.magnitude,
+                                mock_fc.calculate_qpoint_phonon_modes.call_args[0][0])
+
+        #mock_fc.calculate_qpoint_phonon_modes.assert_called_with(random_qpts_array)
+        mock_qpm.calculate_dos.assert_called_with(return_bins)
 
 
 class TestQpointConversion:
@@ -105,6 +137,7 @@ class TestQpointConversion:
                          [np.pi, np.pi / 2, 0], [0, np.pi / 2, np.pi / 3]]}
 
     @staticmethod
+    @pytest.mark.unit
     def test_qpts_cart_to_frac_trivial(trivial_crystal, trivial_qpts):
         """Check internal method for q-point conversion with a trivial example"""
         cart_qpts = np.asarray(trivial_qpts['cart'], dtype=float) * ureg('1 / angstrom')
@@ -113,10 +146,10 @@ class TestQpointConversion:
 
         npt.assert_almost_equal(calc_frac_qpts, frac_qpts)
 
-
     @staticmethod
-    def test_qpts_cart_to_frac_roundtrip(random_qpts_list, nontrivial_crystal):
-        frac_qpts = random_qpts_list
+    @pytest.mark.unit
+    def test_qpts_cart_to_frac_roundtrip(random_qpts_array, nontrivial_crystal):
+        frac_qpts = random_qpts_array
         cart_qpts = frac_qpts.dot(nontrivial_crystal.reciprocal_cell()
                                   .to('1 / angstrom').magnitude
                                   ) * ureg('1 / angstrom')
