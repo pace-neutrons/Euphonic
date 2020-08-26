@@ -20,6 +20,7 @@ Python API
 - :ref:`Structure Factors <structure-factor>`
 - :ref:`Scattering Intensities <scattering-intensities>`
 - :ref:`Debye-Waller <debye-waller>`
+- :ref:`powder`
 - :ref:`plotting`
 - :ref:`utils`
 - :ref:`Units in Euphonic <units>`

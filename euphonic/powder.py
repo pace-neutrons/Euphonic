@@ -21,30 +21,60 @@ def sample_sphere_dos(fc: ForceConstants,
                       ) -> Spectrum1D:
     """Sample the phonon DOS, averaging over a sphere of constant |q|
 
-    Args:
-        fc: Force constant data for system
+    Parameters
+    ----------
 
-        mod_q: radius of sphere from which vector q samples are taken (in units
-            of inverse length; usually 1/angstrom).
+    fc
+        Force constant data for system
 
-        sampling: Sphere-sampling scheme. (Case-insensitive) options
-            are:
+    mod_q
+        radius of sphere from which vector q samples are taken (in units
+        of inverse length; usually 1/angstrom).
 
-            - 'golden': Fibonnaci-like sampling that steps regularly along one
-                  spherical coordinate while making irrational steps in the
-                  other
+    sampling
+        Sphere-sampling scheme. (Case-insensitive) options are:
 
-        npts: Number of samples. Note that some sampling methods have
-            constraints on valid values and will round up as appropriate.
+            - 'golden':
+                Fibonnaci-like sampling that steps regularly along one
+                spherical coordinate while making irrational steps in the
+                other
 
-        jitter: For non-random sampling schemes, apply an additional random
-            displacement to each point.
+            - 'sphere-projected-grid':
+                Regular 2-D square mesh projected onto
+                sphere. npts will be distributed as evenly as possible
+                (i.e. using twice as many 'longitude' as 'lattitude' lines),
+                rounding up if necessary.
 
-        energy_bins: Preferred energy bin edges. If not provided, will setup
-            1000 bins (1001 bin edges) from 0 to 1.05 * [max energy]
+            - 'spherical-polar-grid':
+                Mesh over regular subdivisions in spherical polar coordinates.
+                npts will be rounded up as necessary in the same scheme as for
+                sphere-projected-grid. 'Latitude' lines are evenly-spaced in z
 
-    Returns:
-        Spherical average spectrum
+            - 'spherical-polar-improved':
+                npts distributed as regularly as possible using spherical polar
+                coordinates: 'latitude' lines are evenly-spaced in z and points
+                are distributed among these rings to obtain most even spacing 
+                possible.
+
+            - 'random-sphere':
+                Points are distributed randomly in unit square and projected
+                onto sphere.
+
+    npts
+        Number of samples. Note that some sampling methods have
+        constraints on valid values and will round up as appropriate.
+
+    jitter
+        For non-random sampling schemes, apply an additional random
+        displacement to each point.
+
+    energy_bins
+        Preferred energy bin edges. If not provided, will setup
+        1000 bins (1001 bin edges) from 0 to 1.05 * [max energy]
+
+    Returns
+    -------
+    Spectrum1D
 
     """
 
@@ -76,40 +106,72 @@ def sample_sphere_structure_factor(
     (Specifically, this is the one-phonon inelastic-scattering structure factor
     as implemented in QpointPhononModes.calculate_structure_factor().)
 
-    Args:
-        fc: Force constant data for system
+    Parameters
+    ----------
 
-        mod_q: scalar radius of sphere from which vector q samples are taken
+    fc
+        Force constant data for system
 
-        dw: Debye-Waller exponent used for evaluation of scattering
-            function. If not provided, this is generated automatically
-            over a 20x20x20 q-point mesh.
+    mod_q
+        scalar radius of sphere from which vector q samples are taken
 
-        temperature: Temperature used for Debye-Waller
+    dw
+        Debye-Waller exponent used for evaluation of scattering function. If
+        not provided, this is generated automatically over a 20x20x20 q-point
+        mesh.
 
-        sampling: Sphere-sampling scheme. (Case-insensitive) options
-            are:
+    temperature
+        Temperature used for Debye-Waller
 
-            - 'golden': Fibonnaci-like sampling that steps regularly along one
-                  spherical coordinate while making irrational steps in the
-                  other
+    sampling
+        Sphere-sampling scheme. (Case-insensitive) options are:
+            - 'golden':
+                Fibonnaci-like sampling that steps regularly along one
+                spherical coordinate while making irrational steps in the
+                other
 
-        npts: Number of samples. Note that some sampling methods have
-            constraints on valid values and will round up as appropriate.
+            - 'sphere-projected-grid':
+                Regular 2-D square mesh projected onto
+                sphere. npts will be distributed as evenly as possible
+                (i.e. using twice as many 'longitude' as 'lattitude' lines),
+                rounding up if necessary.
 
-        jitter: For non-random sampling schemes, apply an additional random
+            - 'spherical-polar-grid':
+                Mesh over regular subdivisions in spherical polar coordinates.
+                npts will be rounded up as necessary in the same scheme as for
+                sphere-projected-grid. 'Latitude' lines are evenly-spaced in z
+
+            - 'spherical-polar-improved':
+                npts distributed as regularly as possible using spherical polar
+                coordinates: 'latitude' lines are evenly-spaced in z and points
+                are distributed among these rings to obtain most even spacing 
+                possible.
+
+            - 'random-sphere':
+                Points are distributed randomly in unit square and projected
+                onto sphere.
+
+    npts
+        Number of samples. Note that some sampling methods have constraints on
+            valid values and will round up as appropriate.
+
+    jitter
+        For non-random sampling schemes, apply an additional random
             displacement to each point.
 
-        energy_bins: Preferred energy bin edges. If not provided, will setup
-            1000 bins (1001 bin edges) from 0 to 1.05 * [max energy]
+    energy_bins
+        Preferred energy bin edges. If not provided, will setup 1000 bins (1001
+        bin edges) from 0 to 1.05 * [max energy]
 
-        scattering_lengths: Dict of neutron scattering lengths labelled by
-            element. If a string is provided, this selects coherent scattering
-            lengths from reference data by setting the 'label' argument of the
-            euphonic.util.get_reference_data() function.
+    scattering_lengths
+        Dict of neutron scattering lengths labelled by
+        element. If a string is provided, this selects coherent scattering
+        lengths from reference data by setting the 'label' argument of the
+        euphonic.util.get_reference_data() function.
 
-    Returns:
-        Structure factor sampled over sphere and averaged to spectrum
+    Returns
+    -------
+    Spectrum1D
 
     """
 
@@ -154,7 +216,7 @@ def _qpts_cart_to_frac(qpts: Quantity,
     """Convert a set of q-points from Cartesian to fractional coordinates
 
     Parameters
-    ==========
+    ----------
 
     qpts
         Array of q-points in Cartesian coordinates.
@@ -162,9 +224,9 @@ def _qpts_cart_to_frac(qpts: Quantity,
         Crystal structure determining reciprocal lattice
 
     Returns
-    =======
-
-    Dimensionless array of q-points in fractional coordinates
+    -------
+    np.ndarray
+        Dimensionless array of q-points in fractional coordinates
     """
     lattice = crystal.reciprocal_cell()
 
