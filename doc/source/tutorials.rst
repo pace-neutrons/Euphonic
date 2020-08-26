@@ -22,6 +22,7 @@ Python API
 - :ref:`Debye-Waller <debye-waller>`
 - :ref:`powder`
 - :ref:`plotting`
+- :ref:`sampling`
 - :ref:`utils`
 - :ref:`Units in Euphonic <units>`
 

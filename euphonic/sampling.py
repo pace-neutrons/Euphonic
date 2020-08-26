@@ -1,4 +1,8 @@
-"""Functions for sampling properties in high-dimensional space"""
+"""Functions for sampling properties in high-dimensional space.
+
+These are implemented in a generic way for application in euphonic.powder
+"""
+
 from itertools import product
 import numpy as np
 from typing import Iterator, Tuple
@@ -15,15 +19,24 @@ def golden_square(npts: int, offset: bool = True, jitter: bool = False
 
     These are obtained by the golden ratio method
 
-      (x_i, y_i) = (i / npts, (i / Phi) % 1)
+    (x_i, y_i) = (i / npts, (i / Phi) % 1)
 
-    Args:
-        npts: Number of points to distribute
-        offset: offset x-coordinates away from origin. (This is recommended for
-            spherical sampling by Marques et al. (2013))
-        jitter: randomly displace points by a distance of up to 1/(2 sqrt(N))
+    Parameters
+    ----------
+    npts
+        Number of points to distribute
 
-    Returns:
+    offset
+        Offset x-coordinates away from origin. (This is recommended for
+        spherical sampling by Marques et al. (2013))
+
+    jitter
+        Randomly displace points by a distance of up to 1/(2 sqrt(N))
+
+    Returns
+    -------
+    Iterator[Tuple[float, float]
+
         Sequence of (x, y) pairs in range 0-1
     """
 
@@ -44,16 +57,25 @@ def golden_square(npts: int, offset: bool = True, jitter: bool = False
 
 
 def regular_square(n_rows: int, n_cols: int,
-                   offset: bool = True, jitter: bool = False):
+                   offset: bool = True, jitter: bool = False
+                   ) -> Iterator[Tuple[float, float]]:
     """Yield a regular grid of (x, y) points in 2-D unit square
 
-    Args:
-        n_rows: number of rows
-        n_cols: number of columns
-        offset: offset points to avoid origin
-        jitter: randomly displace each point within its "cell"
+    Parameters
+    ----------
 
-    Returns:
+    n_rows
+        number of rows
+    n_cols
+        number of columns
+    offset
+        offset points to avoid origin
+    jitter
+        randomly displace each point within its "cell"
+
+    Returns
+    -------
+    Iterator[tuple[float, float]]
         sequence of (x, y) pairs in range 0-1
     """
 
@@ -99,13 +121,23 @@ def golden_sphere(npts: int, cartesian: bool = True, jitter: bool = False,
     The method is outlined for "Quasi-Monte Carlo" sampling by
     Marques et al. (2013) DOI:10.1111/cgf.12190
 
-    Args:
-        npts: Number of points at sphere surface
-        cartesian: Yield points in Cartesian coordinates. If False, the 3-tuple
-            points are given in spherical coordinates.
-        jitter: randomly displace points about their positions on surface
+    Parameters
+    ----------
 
-    Returns:
+    npts
+        Number of points at sphere surface
+
+    cartesian
+        Yield points in Cartesian coordinates. If False, the 3-tuple
+        points are given in spherical coordinates.
+
+    jitter
+        Randomly displace points about their positions on surface
+
+    Returns
+    -------
+    Iterator[Tuple[float, float, float]]
+
         Sequence of (x, y, z) coordinates (if cartesian=True) or
         (r, phi, theta) spherical coordinates.
     """
@@ -125,14 +157,22 @@ def sphere_from_square_grid(n_rows: int, n_cols: int,
 
     The points are projected from a uniform 2-D grid
 
-    Args:
-        n_rows: number of rows in the Cartesian generating grid
-        n_theta: number of columns in the Cartesian generating grid
-        cartesian: Yield points in Cartesian coordinates. If False, instead
-            yield points in spherical coordinates.
-        jitter: randomly displace each point within its own "cell" of the grid
+    Parameters
+    ----------
+    n_rows
+        Number of rows in the Cartesian generating grid
+    n_cols
+        Number of columns in the Cartesian generating grid
+    cartesian
+        Yield points in Cartesian coordinates. If False, instead yield points
+        in spherical coordinates.
+    jitter
+        Randomly displace each point within its own "cell" of the grid
 
-    Returns:
+    Returns
+    -------
+    Iterator[Tuple[float, float, float]]
+
         Sequence of (x, y, z) coordinates (if cartesian=True) or
         (r, phi, theta) spherical coordinates.
     """
@@ -152,14 +192,26 @@ def spherical_polar_grid(n_phi: int, n_theta: int,
 
     The points form a grid in spherical coordinates
 
-    Args:
-        n_phi: number of longitude-like radial subdivisions at poles
-        n_theta: number of lattitude-like rings of points dividing polar axis
-        cartesian: Yield points in Cartesian coordinates. If False, instead
-            yield points in spherical coordinates.
-        jitter: randomly displace each point within its own "cell" of the grid
+    Parameters
+    ----------
 
-    Returns:
+    n_phi
+        Number of longitude-like radial subdivisions at poles
+
+    n_theta
+        Number of lattitude-like rings of points dividing polar axis
+
+    cartesian
+        Yield points in Cartesian coordinates. If False, instead yield points
+        in spherical coordinates.
+
+    jitter
+        Randomly displace each point within its own "cell" of the grid
+
+    Returns
+    -------
+    Iterator[Tuple[float, float, float]]
+
         Sequence of (x, y, z) coordinates (if cartesian=True) or
         (r, phi, theta) spherical coordinates.
     """
@@ -204,16 +256,27 @@ def spherical_polar_improved(npts: int,
     is rounded down. The requested npts is then distributed between the
     constant-theta rings, according to their circumference.
 
-    Args:
-        npts: number of points at sphere surface
-        cartesian: Yield points in Cartesian coordinates. If False, instead
-            yield points in spherical coordinates.
-        jitter: randomly displace each point within its own "cell" of the
-            irregular grid
+    Parameters
+    ----------
 
-    Returns:
+    npts
+        Number of points at sphere surface
+
+    cartesian
+        Yield points in Cartesian coordinates. If False, instead yield points
+        in spherical coordinates.
+
+    jitter 
+        Randomly displace each point within its own "cell" of the irregular
+        grid
+
+    Returns
+    -------
+    Iterator[Tuple[float, float, float]]
+
         Sequence of (x, y, z) coordinates (if cartesian=True) or
         (r, phi, theta) spherical coordinates.
+
     """
     if npts < 6:
         raise ValueError("This sampling scheme has a minimum of 6 points")
@@ -260,12 +323,20 @@ def random_sphere(npts, cartesian: bool = True
     function from an even distribution over the range (-1, 1), to account for
     warping at the poles.
 
-    Args:
-        npts: number of points at sphere surface
-        cartesian: Yield points in Cartesian coordinates. If False, instead
-            yield points in spherical coordinates.
+    Parameters
+    ----------
 
-    Returns:
+    npts
+        Number of points at sphere surface
+
+    cartesian
+        Yield points in Cartesian coordinates. If False, instead yield points
+        in spherical coordinates.
+
+    Returns
+    -------
+    Iterator[Tuple[float, float, float]]
+
         Sequence of (x, y, z) coordinates (if cartesian=True) or
         (r, phi, theta) spherical coordinates.
     """
