@@ -4,8 +4,10 @@ These are implemented in a generic way for application in euphonic.powder
 """
 
 from itertools import product
-import numpy as np
 from typing import Iterator, Tuple
+
+import numpy as np
+
 
 _golden_ratio = (1 + np.sqrt(5)) / 2
 
@@ -240,21 +242,21 @@ def spherical_polar_improved(npts: int,
                              ) -> Iterator[Tuple[float, float, float]]:
     """Yield a series of 3D points on a unit sphere surface
 
-    The points form rings of common theta in polar coordinates. However, the
-    number of samples in each ring is scaled to achieve as uniform a sampling
-    density as possible.
+    The points form rings of common theta in polar coordinates. However,
+    the number of samples in each ring is scaled to achieve as uniform a
+    sampling density as possible.
 
-    Analytically we find that for evenly-divided theta, the average length of a
-    "latitude" line is 4.
+    Analytically we find that for evenly-divided theta, the average
+    length of a "latitude" line is 4.
 
-    To obtain parity between nearest-neighbours (NN) along each axis,
-    we solve (NN distance along theta) = (NN distance along phi):
+    To obtain parity between nearest-neighbours (NN) along each axis, we
+    solve (NN distance along theta) = (NN distance along phi):
 
     4 n_theta / npts = pi / n_theta
 
-    Exact solutions with integer npts will be an irrational number, so n_theta
-    is rounded down. The requested npts is then distributed between the
-    constant-theta rings, according to their circumference.
+    Exact solutions with integer npts will be an irrational number, so
+    n_theta is rounded down. The requested npts is then distributed
+    between the constant-theta rings, according to their circumference.
 
     Parameters
     ----------
@@ -263,12 +265,12 @@ def spherical_polar_improved(npts: int,
         Number of points at sphere surface
 
     cartesian
-        Yield points in Cartesian coordinates. If False, instead yield points
-        in spherical coordinates.
+        Yield points in Cartesian coordinates. If False, instead yield
+        points in spherical coordinates.
 
     jitter 
-        Randomly displace each point within its own "cell" of the irregular
-        grid
+        Randomly displace each point within its own "cell" of the
+        irregular grid
 
     Returns
     -------
@@ -277,7 +279,11 @@ def spherical_polar_improved(npts: int,
         Sequence of (x, y, z) coordinates (if cartesian=True) or
         (r, phi, theta) spherical coordinates.
 
-    """
+    Raises
+    ------
+    ValueError
+        If the number of points is not supported by this method
+        """
     if npts < 6:
         raise ValueError("This sampling scheme has a minimum of 6 points")
 
@@ -319,9 +325,9 @@ def random_sphere(npts, cartesian: bool = True
     """Yield a series of 3D points on a unit sphere surface
 
     Points are distributed randomly in polar coordinates: phi is
-    evenly-distributed from 0 to 2pi while theta is scaled with an arccos
-    function from an even distribution over the range (-1, 1), to account for
-    warping at the poles.
+    evenly-distributed from 0 to 2pi while theta is scaled with an
+    arccos function from an even distribution over the range (-1, 1), to
+    account for warping at the poles.
 
     Parameters
     ----------
@@ -330,8 +336,8 @@ def random_sphere(npts, cartesian: bool = True
         Number of points at sphere surface
 
     cartesian
-        Yield points in Cartesian coordinates. If False, instead yield points
-        in spherical coordinates.
+        Yield points in Cartesian coordinates. If False, instead yield
+        points in spherical coordinates.
 
     Returns
     -------
@@ -339,7 +345,7 @@ def random_sphere(npts, cartesian: bool = True
 
         Sequence of (x, y, z) coordinates (if cartesian=True) or
         (r, phi, theta) spherical coordinates.
-    """
+        """
 
     points = np.random.random((npts, 2))
 

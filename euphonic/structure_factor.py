@@ -111,7 +111,8 @@ class StructureFactor(object):
                              e_bins: Quantity,
                              calc_bose: Optional[bool] = True,
                              temperature: Optional[Quantity] = None,
-                             weights: Optional[np.ndarray] = None):
+                             weights: Optional[np.ndarray] = None
+                             ) -> Spectrum1D:
         """Bin structure factor in energy, flattening q to produce 1D spectrum
 
         Bose population factor may be applied. The main purpose of this

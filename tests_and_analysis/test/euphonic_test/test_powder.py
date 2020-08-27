@@ -83,9 +83,11 @@ class TestSphereSampledProperties:
         return mocker.patch('euphonic.powder._get_default_bins',
                             return_value=return_bins)
 
+    # This function is imported from euphonic.util, but needs to be patched
+    # within the euphonic.powder namespace
     @staticmethod
     def mock_get_reference_data(mocker, return_scattering_lengths):
-        return mocker.patch('euphonic.util.get_reference_data',
+        return mocker.patch('euphonic.powder.get_reference_data',
                             return_value=return_scattering_lengths)
 
     @pytest.fixture
