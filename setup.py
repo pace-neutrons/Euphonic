@@ -67,7 +67,8 @@ def run_setup(build_c=True):
 
     scripts = ['scripts/dispersion.py',
                'scripts/dos.py',
-               'scripts/optimise_eta.py']
+               'scripts/optimise_eta.py',
+               'scripts/neutron-band-structure.py']
 
     cmdclass = versioneer.get_cmdclass()
     cmdclass['install'] = InstallCommand
