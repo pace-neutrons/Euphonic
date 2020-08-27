@@ -1,6 +1,7 @@
 #! /usr/bin/env python3
 import argparse
 import os
+import pathlib
 from typing import List, Tuple
 
 import euphonic
@@ -13,7 +14,10 @@ import seekpath
 
 def get_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser()
-    parser.add_argument('file', type=str)
+    parser.add_argument('file', type=str,
+                        help=('File with force constants data. Supported '
+                              'formats: .yaml (Phonopy); .castep_bin, .check '
+                              '(Castep); .json (Euphonic)'))
     parser.add_argument('--ebins', type=int, default=200)
     parser.add_argument('--seekpath-labels', action='store_true',
                         dest='seekpath_labels',
@@ -67,16 +71,16 @@ def _get_break_points(bandpath: dict) -> Tuple[List[Tuple[int, int]],
     -------
     (break_points, special_point_indices)
 
-    ``break_points`` is a list of tuples identifying the boundaries of regions
-    with discontinuities between them, e.g.::
+    ``break_points`` is a list of tuples identifying the boundaries of
+    regions with discontinuities between them, e.g.::
 
       [(0, end1), (start2, end2), (start3, end3)]
 
-    for a band path with three segments. end3 should equal the index of the
-    last k-point in the full path.
+    for a band path with three segments. end3 should equal the index of
+    the last k-point in the full path.
 
-    ``special_point_indices`` is a list of locations for labelled points in the
-    full set of labels from Seekpath.
+    ``special_point_indices`` is a list of locations for labelled points
+    in the full set of labels from Seekpath.
 
     """
     # Find break points between continuous spectra: wherever there are two
@@ -111,6 +115,22 @@ def _get_tick_labels(region: Tuple[int, int],
     return list(zip(label_indices_shifted, labels))
 
 
+def force_constants_from_file(filename):
+    path = pathlib.Path(filename)
+    if path.suffix == '.yaml':
+        force_constants = euphonic.ForceConstants.from_phonopy(
+            path=path.parent, summary_name=path.name)
+    elif path.suffix in ('.castep_bin', '.check'):
+        force_constants = euphonic.ForceConstants.from_castep(filename)
+    elif path.suffix == '.json':
+        force_constants = euphonic.ForceConstants.from_json_file(filename)
+    else:
+        raise ValueError("File not recognised. Should have extension "
+                         ".yaml (phonopy), .castep_bin or .check "
+                         "(castep) or .json (JSON from Euphonic).")
+
+    return force_constants
+
 def main():
     args = get_parser().parse_args()
     filename = args.file
@@ -118,8 +138,7 @@ def main():
     path = os.path.dirname(filename)
 
     print(f"Reading force constants from {filename}")
-    force_constants = euphonic.ForceConstants.from_phonopy(
-        path=path, summary_name=summary_name)
+    force_constants = force_constants_from_file(filename)
 
     print(f"Getting band path")
     structure = get_seekpath_structure(force_constants.crystal)
