@@ -183,7 +183,9 @@ def main():
         start_point = break_point + 1
     regions.append((start_point, len(bandpath["explicit_kpoints_rel"])))
 
-    print("Computing phonon modes")
+    print("Computing phonon modes: {n_modes} modes across {n_qpts} q-points"
+          .format(n_modes=(force_constants.crystal.n_atoms * 3),
+                  n_qpts=len(bandpath["explicit_kpoints_rel"])))
     region_modes = []
     for (start, end) in regions:
         qpts = bandpath["explicit_kpoints_rel"][start:end]
