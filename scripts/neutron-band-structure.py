@@ -4,12 +4,14 @@ import os
 import pathlib
 from typing import List, Tuple
 
+import matplotlib.pyplot as plt
+import numpy as np
+from pint import UndefinedUnitError
+import seekpath
+
 import euphonic
 from euphonic import ureg
 import euphonic.plot
-import matplotlib.pyplot as plt
-import numpy as np
-import seekpath
 
 
 def get_parser() -> argparse.ArgumentParser:
@@ -18,30 +20,39 @@ def get_parser() -> argparse.ArgumentParser:
                         help=('File with force constants data. Supported '
                               'formats: .yaml (Phonopy); .castep_bin, .check '
                               '(Castep); .json (Euphonic)'))
-    parser.add_argument('--ebins', type=int, default=200)
+    parser.add_argument('--ebins', type=int, default=200,
+                        help='Number of energy bins on y-axis')
+    parser.add_argument('--q-distance', type=float, default=0.025,
+                        dest='q_distance',
+                        help=('Target distance between q-point samples in '
+                              '1/LENGTH_UNITS'))
+    parser.add_argument('--length-units', type=str, default='angstrom',
+                        dest='length_units',
+                        help=('Length units; these will be inverted to obtain'
+                              'units of distance between q-points (e.g. "bohr"'
+                              ' for bohr^-1).'))
+    parser.add_argument('--energy-units', dest='energy_units',
+                        type=str, default='meV', help='Energy units')
+    parser.add_argument('--x-label', type=str, default=None,
+                        dest='x_label')
+    parser.add_argument('--y-label', type=str, default=None,
+                        dest='y_label')
     parser.add_argument('--seekpath-labels', action='store_true',
                         dest='seekpath_labels',
                         help='Use the exact labels reported by Seekpath when '
                              'constructing the band structure path. Otherwise,'
                              ' use the labels detected by Euphonic.')
-    parser.add_argument('--q-distance', type=float, default=0.025,
-                        dest='q_distance',
-                        help='Target distance between q-point samples')
-    parser.add_argument('--x-label', type=str, default=None,
-                        dest='x_label')
-    parser.add_argument('--y-label', type=str, default=None,
-                        dest='y_label')
     parser.add_argument('--title', type=str, default=None)
     parser.add_argument('--cmap', type=str, default='viridis',
                         help='Matplotlib colormap')
     parser.add_argument('--q-broadening', type=float, default=None,
                         dest='gaussian_x',
                         help='Width of Gaussian broadening on q axis in recip '
-                             'angstrom. (No broadening if unspecified.)')
+                             'LENGTH_UNITS. (No broadening if unspecified.)')
     parser.add_argument('--energy-broadening', type=float, default=None,
                         dest='gaussian_y',
                         help='Width of Gaussian broadening on energy axis in '
-                        'meV. (No broadening if unspecified.)')
+                        'ENERGY_UNITS. (No broadening if unspecified.)')
     return parser
 
 
@@ -137,13 +148,29 @@ def main():
     summary_name = os.path.basename(filename)
     path = os.path.dirname(filename)
 
+    try:
+        length_units = ureg(args.length_units)
+    except UndefinedUnitError:
+        raise ValueError("Length unit not known. Euphonic uses Pint for units."
+                         " Try 'angstrom' or 'bohr'. Metric prefixes "
+                         "are also allowed, e.g 'nm'.")
+    recip_length_units = 1 / length_units
+    q_distance = args.q_distance * recip_length_units
+
+    try:
+        energy_units = ureg(args.energy_units)
+    except UndefinedUnitError:
+        raise ValueError("Energy unit not known. Euphonic uses Pint for units."
+                         " Try 'eV' or 'hartree'. Metric prefixes are also "
+                         "allowed, e.g 'meV' or 'fJ'.")
+
     print(f"Reading force constants from {filename}")
     force_constants = force_constants_from_file(filename)
 
     print(f"Getting band path")
     structure = get_seekpath_structure(force_constants.crystal)
-    bandpath = seekpath.get_explicit_k_path(structure,
-                                            reference_distance=args.q_distance)
+    bandpath = seekpath.get_explicit_k_path(
+        structure, reference_distance=q_distance.to('1 / angstrom').magnitude)
 
     break_points, special_point_indices = _get_break_points(bandpath)
     if break_points:
@@ -164,13 +191,13 @@ def main():
                             .calculate_qpoint_phonon_modes(qpts,
                                                            reduce_qpts=False))
 
-    frequency_units = region_modes[0].frequencies.units
-    emin = min(np.min(modes.frequencies.magnitude)
-               for modes in region_modes) * frequency_units
-    emax = max(np.max(modes.frequencies.magnitude)
-               for modes in region_modes) * frequency_units
-    ebins = np.linspace(emin.to('meV').magnitude, emax.to('meV').magnitude,
-                        args.ebins) * ureg['meV']
+    emin = min(np.min(modes.frequencies.to(energy_units).magnitude)
+               for modes in region_modes) * energy_units
+    emax = max(np.max(modes.frequencies.to(energy_units).magnitude)
+               for modes in region_modes) * energy_units
+    ebins = np.linspace(emin.magnitude,
+                        emax.magnitude,
+                        args.ebins) * energy_units
 
     print("Computing structure factors and generating 2D maps")
     spectra = []
@@ -183,9 +210,9 @@ def main():
             sqw.x_tick_labels = _get_tick_labels(region, bandpath,
                                                  special_point_indices)
         if args.gaussian_x or args.gaussian_y:
-            sqw = sqw.broaden(x_width=(args.gaussian_x * ureg['1 / angstrom']
+            sqw = sqw.broaden(x_width=(args.gaussian_x * recip_length_units
                                        if args.gaussian_x else None),
-                              y_width=(args.gaussian_y * ureg['meV']
+                              y_width=(args.gaussian_y * energy_units
                                        if args.gaussian_y else None))
 
         spectra.append(sqw)
