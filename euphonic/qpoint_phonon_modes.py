@@ -32,7 +32,7 @@ class QpointPhononModes(object):
         Q-point coordinates, in fractional coordinates of the reciprocal
         lattice
     weights : (n_qpts,) float ndarray
-        The weight for each q-point
+        The weight for each q-point, should sum to 1
     frequencies : (n_qpts, 3*crystal.n_atoms) float Quantity
         Phonon frequencies per q-point and mode
     eigenvectors : (n_qpts, 3*crystal.n_atoms, crystal.n_atoms, 3) complex ndarray
@@ -53,8 +53,8 @@ class QpointPhononModes(object):
         eigenvectors: (n_qpts, 3*crystal.n_atoms, crystal.n_atoms, 3) complex ndarray
             Dynamical matrix eigenvectors
         weights : (n_qpts,) float ndarray, optional
-            The weight for each q-point. If None, equal weights are
-            assumed
+            The weight for each q-point, should sum to 1. If None, equal
+            weights are assumed
         """
         _check_constructor_inputs(
             [crystal, qpts], [Crystal, np.ndarray], [(), (-1, 3)],

@@ -1,6 +1,13 @@
 `Unreleased <https://github.com/pace-neutrons/Euphonic/compare/v0.3.1...HEAD>`_
 ----------
 
+- New Features:
+
+  - Added `weights` as an argument to
+    `ForceConstants.calculate_qpoint_phonon_modes`, this will allow easier
+    use of symmetry reduction for calculating density of states, for example.
+
+
 `v0.3.1 <https://github.com/pace-neutrons/Euphonic/compare/v0.3.0...v0.3.1>`_
 ----------
 
