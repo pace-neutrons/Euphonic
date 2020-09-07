@@ -150,8 +150,8 @@ class ForceConstants(object):
         qpts : (n_qpts, 3) float ndarray
             The q-points to interpolate onto
         weights : (n_qpts,) float ndarray, optional
-            The weight for each q-point, should sum to 1. If not given,
-            equal weights are applied
+            The weight for each q-point. If not given, equal weights are
+            applied
         asr : {'realspace', 'reciprocal'}, optional
             Which acoustic sum rule correction to apply. 'realspace'
             applies the correction to the force constant matrix in real
