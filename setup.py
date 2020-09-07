@@ -67,7 +67,8 @@ def run_setup(build_c=True):
 
     scripts = ['scripts/dispersion.py',
                'scripts/dos.py',
-               'scripts/optimise_eta.py']
+               'scripts/optimise_eta.py',
+               'scripts/euphonic-sphere-sampling']
 
     cmdclass = versioneer.get_cmdclass()
     cmdclass['install'] = InstallCommand
