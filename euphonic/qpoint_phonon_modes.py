@@ -53,8 +53,8 @@ class QpointPhononModes(object):
         eigenvectors: (n_qpts, 3*crystal.n_atoms, crystal.n_atoms, 3) complex ndarray
             Dynamical matrix eigenvectors
         weights : (n_qpts,) float ndarray, optional
-            The weight for each q-point. If None, equal weights are
-            assumed
+            The weight for each q-point. If None, equal
+            weights are assumed
         """
         _check_constructor_inputs(
             [crystal, qpts], [Crystal, np.ndarray], [(), (-1, 3)],
@@ -408,7 +408,7 @@ class QpointPhononModes(object):
         dos_bins = dos_bins.to('INTERNAL_ENERGY_UNIT').magnitude
         weights = np.repeat(self.weights[:, np.newaxis],
                             3*self.crystal.n_atoms,
-                            axis=1)
+                            axis=1) / np.sum(self.weights)
         dos, _ = np.histogram(freqs, dos_bins, weights=weights)
 
         return Spectrum1D(

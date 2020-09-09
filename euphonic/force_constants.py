@@ -138,9 +138,9 @@ class ForceConstants(object):
         super(ForceConstants, self).__setattr__(name, value)
 
     def calculate_qpoint_phonon_modes(
-        self, qpts, asr=None, dipole=True, eta_scale=1.0, splitting=True,
-        insert_gamma=False, reduce_qpts=True, use_c=False, n_threads=1,
-        fall_back_on_python=True):
+            self, qpts, weights=None, asr=None, dipole=True, eta_scale=1.0,
+            splitting=True, insert_gamma=False, reduce_qpts=True, use_c=False,
+            n_threads=1, fall_back_on_python=True):
         """
         Calculate phonon frequencies and eigenvectors at specified
         q-points from a force constants matrix via Fourier interpolation
@@ -149,6 +149,9 @@ class ForceConstants(object):
         ----------
         qpts : (n_qpts, 3) float ndarray
             The q-points to interpolate onto
+        weights : (n_qpts,) float ndarray, optional
+            The weight for each q-point. If not given, equal weights are
+            applied
         asr : {'realspace', 'reciprocal'}, optional
             Which acoustic sum rule correction to apply. 'realspace'
             applies the correction to the force constant matrix in real
@@ -248,6 +251,12 @@ class ForceConstants(object):
         .. [1] M.T. Dove, Introduction to Lattice Dynamics, Cambridge University Press, Cambridge, 1993, 83-87
         .. [2] X. Gonze, K. C. Charlier, D. C. Allan, M. P. Teter, Phys. Rev. B, 1994, 50, 13035-13038
         """
+
+        # Check weights is of appropriate type and shape, to avoid doing all
+        # the interpolation only for it to fail creating QpointPhononModes
+        _check_constructor_inputs(
+            [weights], [[np.ndarray, type(None)]], [(len(qpts),)], ['weights'])
+
         # Set default splitting params
         if self.born is None:
             dipole = False
@@ -260,6 +269,16 @@ class ForceConstants(object):
             split_gamma = gamma_i[np.where(
                 np.logical_and(gamma_i > 0, gamma_i < len(qpts) - 1))]
             qpts = np.insert(qpts, split_gamma, np.array([0., 0., 0.]), axis=0)
+            # It doesn't necessarily make sense to use both weights
+            # (usually used for DOS) and splitting (usually used for
+            # bandstructures) but we need to handle this case anyway
+            # Where 1 q-point splits into 2, half the weight for each
+            if weights is not None:
+                # Don't change original array
+                weights = np.copy(weights)
+                weights[split_gamma] = weights[split_gamma]/2
+                weights = np.insert(weights, split_gamma,
+                                    weights[split_gamma])
 
         if reduce_qpts:
             norm_qpts = qpts - np.rint(qpts)
@@ -386,12 +405,12 @@ class ForceConstants(object):
             recip_vectors = self.crystal.reciprocal_cell().to(
                 '1/bohr').magnitude
             (cell_vectors, recip_vectors, reduced_qpts, split_idx, q_dirs,
-                fc_img_weighted, sc_offsets, recip_asr_correction,
-                dyn_mat_weighting, rfreqs,
-                reigenvecs) = _ensure_contiguous_args(
-                    cell_vectors, recip_vectors, reduced_qpts, split_idx,
-                    q_dirs, fc_img_weighted, sc_offsets, recip_asr_correction,
-                    dyn_mat_weighting, rfreqs, reigenvecs)
+             fc_img_weighted, sc_offsets, recip_asr_correction,
+             dyn_mat_weighting, rfreqs,
+             reigenvecs) = _ensure_contiguous_args(
+                 cell_vectors, recip_vectors, reduced_qpts, split_idx,
+                 q_dirs, fc_img_weighted, sc_offsets, recip_asr_correction,
+                 dyn_mat_weighting, rfreqs, reigenvecs)
             attrs = ['_n_sc_images', '_sc_image_i', 'cell_origins']
             dipole_attrs = ['atom_r', '_born', '_dielectric', '_H_ab',
                             '_cells', '_gvec_phases', '_gvecs_cart',
@@ -425,8 +444,7 @@ class ForceConstants(object):
             'mDEFAULT_ENERGY_UNIT')
 
         return QpointPhononModes(
-            self.crystal, qpts, freqs, reigenvecs[qpts_i],
-            weights=np.full(len(qpts), 1.0/len(qpts)))
+            self.crystal, qpts, freqs, reigenvecs[qpts_i], weights=weights)
 
     def _calculate_phonons_at_q(self, q, args):
         """

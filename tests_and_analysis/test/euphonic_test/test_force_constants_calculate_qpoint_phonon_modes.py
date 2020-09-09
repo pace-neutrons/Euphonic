@@ -183,3 +183,31 @@ class TestForceConstantsCalculateQPointPhononModes:
                            frequencies_atol=1e-4,
                            frequencies_rtol=2e-5,
                            acoustic_gamma_atol=gamma_atol)
+
+    weights = np.array([0.1, 0.05, 0.05, 0.2, 0.2, 0.15, 0.15, 0.2, 0.1])
+    weights_output_split_gamma = np.array([
+        0.1, 0.05, 0.025, 0.025, 0.2, 0.1, 0.1, 0.075, 0.075, 0.075, 0.075,
+        0.2, 0.1])
+
+    @pytest.mark.parametrize('fc, qpts, weights, expected_weights, kwargs', [
+        (get_fc('quartz'), test_qpts, weights, weights, {}),
+        (get_fc('quartz'), test_split_qpts_insert_gamma, weights,
+         weights_output_split_gamma, {'insert_gamma': True})])
+    def test_calculate_qpoint_phonon_modes_with_weights_sets_weights(
+            self, fc, qpts, weights, expected_weights, kwargs):
+        qpt_ph_modes_weighted = fc.calculate_qpoint_phonon_modes(
+            qpts, weights=weights, **kwargs)
+        npt.assert_allclose(qpt_ph_modes_weighted.weights, expected_weights)
+
+    @pytest.mark.parametrize('fc, qpts, weights, expected_weights, kwargs', [
+        (get_fc('quartz'), test_qpts, weights, weights, {}),
+        (get_fc('quartz'), test_split_qpts_insert_gamma, weights,
+         weights_output_split_gamma, {'insert_gamma': True})])
+    def test_calculate_qpoint_phonon_modes_with_weights_doesnt_change_result(
+            self, fc, qpts, weights, expected_weights, kwargs):
+        qpt_ph_modes_weighted = fc.calculate_qpoint_phonon_modes(
+            qpts, weights=weights, **kwargs)
+        qpt_ph_modes_unweighted = fc.calculate_qpoint_phonon_modes(
+            qpts, **kwargs)
+        qpt_ph_modes_unweighted.weights = expected_weights
+        check_qpt_ph_modes(qpt_ph_modes_weighted, qpt_ph_modes_unweighted)
