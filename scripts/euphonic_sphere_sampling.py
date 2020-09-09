@@ -1,9 +1,12 @@
 #! /usr/bin/env python3
 import argparse
+from typing import List
+
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D  # noqa: F401
 import numpy as np
 import euphonic.sampling
+from euphonic.script_utils import get_args, matplotlib_save_or_show
 
 choices_2d = {'golden-square', 'regular-square'}
 choices_3d = {'golden-sphere', 'sphere-from-square-grid',
@@ -11,14 +14,22 @@ choices_3d = {'golden-sphere', 'sphere-from-square-grid',
               'random-sphere'}
 
 
-def main():
+def get_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser()
     parser.add_argument('npts', type=int)
     parser.add_argument('sampling', type=str,
                         choices=(choices_2d | choices_3d))
     parser.add_argument('--jitter', action='store_true',
                         help='Apply local random displacements to points')
-    args = parser.parse_args()
+    parser.add_argument('-s', '--save-plot', default=None, type=str,
+                        dest='save_plot', metavar='OUTPUT_FILE',
+                        help='Save resulting plot to given filename')
+    return parser
+
+
+def main(params: List[str] = None) -> None:
+    parser = get_parser()
+    args = get_args(parser, params)
 
     if args.sampling in choices_2d:
         fig, ax = plt.subplots()
@@ -27,9 +38,9 @@ def main():
         ax = fig.add_subplot(111, projection='3d')
 
     if args.sampling == 'golden-square':
-        ax.plot(*zip(*euphonic.sampling.golden_square(args.npts,
-                                                      jitter=args.jitter)),
-                'o')
+        ax.scatter(*zip(*euphonic.sampling.golden_square(args.npts,
+                                                         jitter=args.jitter)),
+                   marker='o')
     elif args.sampling == 'regular-square':
         n_rows = int(np.ceil(np.sqrt(args.npts)))
         npts = n_rows**2
@@ -37,9 +48,9 @@ def main():
         if npts != args.npts:
             print("Requested npts ∉ {x^2, x ∈ Z, x > 1}; "
                   f"rounding up to {npts}.")
-        ax.plot(*zip(*euphonic.sampling.regular_square(n_rows, n_rows,
-                                                       jitter=args.jitter)),
-                'o')
+        ax.scatter(*zip(*euphonic.sampling.regular_square(n_rows, n_rows,
+                                                          jitter=args.jitter)),
+                   marker='o')
 
     elif args.sampling == 'golden-sphere':
         ax.scatter(*zip(*euphonic.sampling.golden_sphere(args.npts,
@@ -83,7 +94,7 @@ def main():
     else:
         raise ValueError("Sampling type f{args.sampling} is not implemented.")
 
-    plt.show()
+    matplotlib_save_or_show(save_filename=args.save_plot)
 
 
 if __name__ == '__main__':
