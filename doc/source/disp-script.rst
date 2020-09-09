@@ -20,7 +20,6 @@ Command Line Options
 --------------------
 
 .. argparse::
-   :filename: ../../scripts/dispersion.py
+   :module: euphonic.cli.dispersion
    :func: get_parser
-   :prog: dispersion.py
-
+   :prog: euphonic-dispersion

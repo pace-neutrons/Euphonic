@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 """
 Parse a *.phonon CASTEP output file for vibrational frequency data and
@@ -10,8 +9,8 @@ import numpy as np
 from euphonic import ureg
 from euphonic.plot import plot_1d
 from typing import List
-from euphonic.script_utils import (load_data_from_file, get_args,
-                                   matplotlib_save_or_show)
+from .utils import (load_data_from_file, get_args,
+                    matplotlib_save_or_show)
 
 
 def main(params: List[str] = None):
@@ -84,7 +83,3 @@ def get_parser():
         action='store_true',
         help='Use Lorentzian broadening instead of Gaussian')
     return parser
-
-
-if __name__ == '__main__':
-    main()

@@ -6,7 +6,7 @@ from random import random
 import time
 from unittest.mock import Mock
 from euphonic import ForceConstants
-from scripts.optimise_eta import calculate_optimum_eta
+from euphonic.cli.optimise_eta import calculate_optimum_eta
 from tests_and_analysis.test.utils import get_data_path
 
 

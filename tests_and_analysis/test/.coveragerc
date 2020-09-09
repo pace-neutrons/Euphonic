@@ -1,5 +1,3 @@
 [run]
 branch = True
-source =
-    euphonic
-    scripts
+source = euphonic

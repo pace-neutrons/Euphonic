@@ -1,4 +1,4 @@
-#! /usr/bin/env python3
+# -*- coding: UTF-8 -*-
 import argparse
 from typing import List
 
@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D  # noqa: F401
 import numpy as np
 import euphonic.sampling
-from euphonic.script_utils import get_args, matplotlib_save_or_show
+from .utils import get_args, matplotlib_save_or_show
 
 choices_2d = {'golden-square', 'regular-square'}
 choices_3d = {'golden-sphere', 'sphere-from-square-grid',
@@ -95,7 +95,3 @@ def main(params: List[str] = None) -> None:
         raise ValueError("Sampling type f{args.sampling} is not implemented.")
 
     matplotlib_save_or_show(save_filename=args.save_plot)
-
-
-if __name__ == '__main__':
-    main()

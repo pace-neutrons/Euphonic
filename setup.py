@@ -67,12 +67,6 @@ def run_setup(build_c=True):
 
     package_data = {'euphonic' : ['data/*.json']}
 
-    scripts = ['scripts/dispersion.py',
-               'scripts/dos.py',
-               'scripts/optimise_eta.py',
-               'scripts/euphonic_sphere_sampling.py']
-
-
     cmdclass = versioneer.get_cmdclass()
     cmdclass['install'] = InstallCommand
 
@@ -102,7 +96,11 @@ def run_setup(build_c=True):
             'matplotlib': ['matplotlib>=1.4.2'],
             'phonopy_reader': ['h5py>=2.9.0', 'PyYAML>=5.1.2']
         },
-        scripts=scripts
+        entry_points={'console_scripts': [
+            'euphonic-dispersion = euphonic.cli.dispersion:main',
+            'euphonic-dos = euphonic.cli.dos:main',
+            'euphonic-optimise-eta = euphonic.cli.optimise_eta:main',
+            'euphonic-sphere-sampling = euphonic.cli.sphere_sampling:main']}
     )
 
 run_setup()

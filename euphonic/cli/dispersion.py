@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 """
 Parse a *.phonon CASTEP output file for vibrational frequency data and
@@ -8,8 +7,8 @@ save or display a matplotlib plot of the vibrational dispersion
 import argparse
 from typing import List
 from euphonic.plot import plot_dispersion
-from euphonic.script_utils import (load_data_from_file, get_args,
-                                    matplotlib_save_or_show)
+from .utils import (load_data_from_file, get_args,
+                    matplotlib_save_or_show)
 
 
 def main(params: List[str] = None):
@@ -60,7 +59,3 @@ def get_parser():
               ' different subplots, as a fraction of the median distance'
               ' between q-points'))
     return parser
-
-
-if __name__ == '__main__':
-    main()

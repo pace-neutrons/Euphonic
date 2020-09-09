@@ -20,6 +20,6 @@ Command Line Options
 --------------------
 
 .. argparse::
-   :filename: ../../scripts/dos.py
+   :module: euphonic.cli.dos
    :func: get_parser
-   :prog: dos.py
+   :prog: euphonic-dos
