@@ -8,7 +8,7 @@ import matplotlib.pyplot
 from .utils import (get_sphere_sampling_params,
                     get_sphere_sampling_data_file,
                     get_current_plot_offsets)
-import scripts.euphonic_sphere_sampling
+import euphonic.cli.show_sampling
 
 
 @pytest.mark.integration
@@ -29,7 +29,7 @@ class TestRegression:
     def test_plots_produce_expected_xydata(
             self, inject_mocks, sampling_params):
         np.random.seed(0)
-        scripts.euphonic_sphere_sampling.main(sampling_params)
+        euphonic.cli.show_sampling.main(sampling_params)
 
         # For 3D plots, this will be a 2D projected position of visible points
         offsets = get_current_plot_offsets()

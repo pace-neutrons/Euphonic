@@ -100,7 +100,7 @@ def run_setup(build_c=True):
             'euphonic-dispersion = euphonic.cli.dispersion:main',
             'euphonic-dos = euphonic.cli.dos:main',
             'euphonic-optimise-eta = euphonic.cli.optimise_eta:main',
-            'euphonic-sphere-sampling = euphonic.cli.sphere_sampling:main']}
+            'euphonic-show-sampling = euphonic.cli.show_sampling:main']}
     )
 
 run_setup()
