@@ -8,6 +8,7 @@
     use of symmetry reduction for calculating density of states, for example.
   - Modules have been added to support spherical averaging from 3D
     q-points to mod(q)
+
     - euphonic.sampling provides pure functions for the generation of
       points on (2D) unit square and (3D) unit sphere surfaces.
     - A script is provided for visualisation of the different schemes
