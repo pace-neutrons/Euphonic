@@ -6,7 +6,19 @@
   - Added `weights` as an argument to
     `ForceConstants.calculate_qpoint_phonon_modes`, this will allow easier
     use of symmetry reduction for calculating density of states, for example.
-
+  - Modules have been added to support spherical averaging from 3D
+    q-points to mod(q)
+    - euphonic.sampling provides pure functions for the generation of
+      points on (2D) unit square and (3D) unit sphere surfaces.
+    - A script is provided for visualisation of the different schemes
+      implemented in euphonic.sampling. This is primarily intended for
+      education and debugging.
+    - euphonic.powder provides functions which, given force constants
+      data, can use these sampling methods to obtain
+      spherically-averaged phonon DOS and coherent structure factor
+      data as 1D spectrum objects. (It is anticipated that this module
+      will grow to include schemes beyond this average over a single
+      sphere.)
 
 `v0.3.1 <https://github.com/pace-neutrons/Euphonic/compare/v0.3.0...v0.3.1>`_
 ----------
