@@ -65,10 +65,13 @@ def run_setup(build_c=True):
                 'euphonic.readers',
                 'euphonic.data']
 
+    package_data = {'euphonic' : ['data/*.json']}
+
     scripts = ['scripts/dispersion.py',
                'scripts/dos.py',
                'scripts/optimise_eta.py',
                'scripts/euphonic_sphere_sampling.py']
+
 
     cmdclass = versioneer.get_cmdclass()
     cmdclass['install'] = InstallCommand
@@ -87,6 +90,7 @@ def run_setup(build_c=True):
         long_description_content_type='text/x-rst',
         url='https://github.com/pace-neutrons/Euphonic',
         packages=packages,
+        package_data=package_data,
         install_requires=[
             'numpy>=1.9.1',
             'scipy>=1.0.0',
