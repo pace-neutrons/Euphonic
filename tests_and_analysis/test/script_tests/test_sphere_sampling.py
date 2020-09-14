@@ -4,6 +4,7 @@ import pytest
 import numpy as np
 import numpy.testing as npt
 # Required for mocking
+import matplotlib.pyplot
 from .utils import (get_sphere_sampling_params,
                     get_sphere_sampling_data_file,
                     get_current_plot_offsets)
@@ -20,6 +21,10 @@ class TestRegression:
         mocker.patch("matplotlib.pyplot.show")
         mocker.resetall()
 
+    def teardown_method(self):
+        # Ensure figures are closed
+        matplotlib.pyplot.close('all')
+
     @pytest.mark.parametrize("sampling_params", get_sphere_sampling_params())
     def test_plots_produce_expected_xydata(
             self, inject_mocks, sampling_params):
@@ -35,3 +40,4 @@ class TestRegression:
 
         npt.assert_allclose(offsets, np.array(expected_offsets),
                             atol=sys.float_info.epsilon)
+    

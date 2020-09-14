@@ -7,7 +7,7 @@ import numpy.testing as npt
 
 from euphonic import ureg
 from euphonic.spectra import Spectrum2D
-from tests_and_analysis.test.utils import get_data_path
+from tests_and_analysis.test.utils import get_data_path, check_unit_conversion
 
 class ExpectedSpectrum2D:
     def __init__(self, spectrum2d_json_file: str):
@@ -238,15 +238,13 @@ class TestSpectrum2DSerialisation:
 @pytest.mark.unit
 class TestSpectrum2DUnitConversion:
 
-    @pytest.mark.parametrize('spectrum2d_file, unit_attr, unit_val', [
-        ('example_spectrum2d.json', 'x_data_unit', 'angstrom'),
-        ('quartz_bandstructure_sqw.json', 'y_data_unit', '1/cm'),
-        ('example_spectrum2d.json', 'z_data_unit', 'amu')])
-    def test_correct_unit_conversion(self, spectrum2d_file, unit_attr,
-                                     unit_val):
+    @pytest.mark.parametrize('spectrum2d_file, attr, unit_val', [
+        ('example_spectrum2d.json', 'x_data', 'angstrom'),
+        ('quartz_bandstructure_sqw.json', 'y_data', 'hartree'),
+        ('example_spectrum2d.json', 'z_data', 'amu')])
+    def test_correct_unit_conversion(self, spectrum2d_file, attr, unit_val):
         spec2d = get_spectrum2d(spectrum2d_file)
-        setattr(spec2d, unit_attr, unit_val)
-        assert getattr(spec2d, unit_attr) == unit_val
+        check_unit_conversion(spec2d, attr, unit_val)
 
     @pytest.mark.parametrize('spectrum2d_file, unit_attr, unit_val, err', [
         ('example_spectrum2d.json', 'x_data_unit', 'N', ValueError),
@@ -282,6 +280,11 @@ class TestSpectrum2DMethods:
         expected_broadened_spec2d = get_spectrum2d(broadened_spectrum2d_file)
         broadened_spec2d = spec2d.broaden(**args)
         check_spectrum2d(broadened_spec2d, expected_broadened_spec2d)
+
+    def test_broaden_invalid_shape_raises_value_error(self):
+        spec2d = get_spectrum2d('quartz_bandstructure_sqw.json')
+        with pytest.raises(ValueError):
+            spec2d.broaden(y_width=1*ureg('meV'), shape='unknown')
 
     @pytest.mark.parametrize(
         'spectrum2d_file, ax, expected_bin_edges', [

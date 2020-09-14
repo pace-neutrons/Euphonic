@@ -12,7 +12,8 @@ def get_phonon_file() -> str:
     str
         The full path to the NaH.phonon file
     """
-    return os.path.join(get_data_path(), "NaH.phonon")
+    return os.path.join(get_data_path(),
+                       'qpoint_phonon_modes', 'NaH', 'NaH.phonon')
 
 
 def get_script_data_folder() -> str:

@@ -7,9 +7,15 @@ import numpy.testing as npt
 from pint import DimensionalityError
 
 from euphonic import ureg, Crystal, QpointPhononModes
+from euphonic.readers.phonopy import ImportPhonopyReaderError
 from tests_and_analysis.test.euphonic_test.test_crystal import (
     ExpectedCrystal, get_crystal, check_crystal)
-from tests_and_analysis.test.utils import get_data_path
+from tests_and_analysis.test.euphonic_test.test_debye_waller import (
+    get_expected_dw, check_debye_waller)
+from tests_and_analysis.test.euphonic_test.test_spectrum1d import (
+    get_expected_spectrum1d, check_spectrum1d)
+from tests_and_analysis.test.utils import (
+    get_data_path, check_mode_values_at_qpts, check_unit_conversion)
 
 
 class ExpectedQpointPhononModes:
@@ -79,30 +85,29 @@ def get_qpt_ph_modes_dir(material):
 
 
 def get_json_file(material):
-    return os.path.join(get_qpt_ph_modes_dir(material),
-                        f'{material}_reciprocal_qpoint_phonon_modes.json')
+    return f'{material}_reciprocal_qpoint_phonon_modes.json'
 
 
 def get_expected_qpt_ph_modes(material):
-    return ExpectedQpointPhononModes(get_json_file(material))
+    return ExpectedQpointPhononModes(
+        os.path.join(get_qpt_ph_modes_dir(material), get_json_file(material)))
 
 
-def get_qpt_ph_modes_from_json_file(filepath):
-    return QpointPhononModes.from_json_file(filepath)
+def get_qpt_ph_modes_from_json(material, file):
+    return QpointPhononModes.from_json_file(
+        os.path.join(get_qpt_ph_modes_dir(material), file))
 
 
 def get_qpt_ph_modes(material):
-    return get_qpt_ph_modes_from_json_file(get_json_file(material))
+    return get_qpt_ph_modes_from_json(material, get_json_file(material))
 
 
 def check_qpt_ph_modes(
         qpoint_phonon_modes, expected_qpoint_phonon_modes,
         frequencies_atol=np.finfo(np.float64).eps,
         frequencies_rtol=1e-7,
-        acoustic_gamma_atol=None):
-    # Note this doesn't check the eigenvectors, as these cannot be directly
-    # compared in the case of degenerate frequencies, and are better compared
-    # by checking a resultant observable e.g. the structure factor
+        acoustic_gamma_atol=None,
+        check_evecs=False):
     check_crystal(qpoint_phonon_modes.crystal,
                   expected_qpoint_phonon_modes.crystal)
 
@@ -113,76 +118,30 @@ def check_qpt_ph_modes(
 
     assert (qpoint_phonon_modes.frequencies.units
             == expected_qpoint_phonon_modes.frequencies.units)
-    # Gamma point acoustic modes are near zero, so can be unstable and get
-    # special treatment
-    freqs_to_test = np.ones(qpoint_phonon_modes.frequencies.shape, dtype=bool)
-    if acoustic_gamma_atol:
-        qpts = expected_qpoint_phonon_modes.qpts
-        gamma_points = (np.sum(np.absolute(qpts - np.rint(qpts)), axis=-1)
-                        < 1e-10)
-        freqs_to_test[gamma_points, :3] = False
-        assert np.all(np.absolute(
-            (qpoint_phonon_modes.frequencies.magnitude[~freqs_to_test]
-             < acoustic_gamma_atol)))
-    npt.assert_allclose(
-        qpoint_phonon_modes.frequencies.magnitude[freqs_to_test],
-        expected_qpoint_phonon_modes.frequencies.magnitude[freqs_to_test],
-        atol=frequencies_atol, rtol=frequencies_rtol)
+    # Check frequencies
+    check_mode_values_at_qpts(
+        qpoint_phonon_modes.qpts,
+        qpoint_phonon_modes.frequencies.magnitude,
+        expected_qpoint_phonon_modes.frequencies.magnitude,
+        atol=frequencies_atol,
+        rtol=frequencies_rtol,
+        gamma_atol=acoustic_gamma_atol)
+
+    # Note by default the eigenvectors aren't checked, as these cannot
+    # be directly compared from different force constants calculations
+    # in the case of degenerate frequencies, and are better compared by
+    # checking a resultant observable such as the structure factor.
+    # However, it can be useful to test if eigenvectors read from a
+    # .phonon and .json are the same, for example.
+    if check_evecs:
+        npt.assert_allclose(qpoint_phonon_modes.eigenvectors,
+                            expected_qpoint_phonon_modes.eigenvectors,
+                            atol=np.finfo(np.complex128).eps)
 
     npt.assert_allclose(
         qpoint_phonon_modes.weights,
         expected_qpoint_phonon_modes.weights,
         atol=np.finfo(np.float64).eps)
-
-
-@pytest.mark.unit
-class TestCalculateStructureFactorUsingReferenceData:
-    @pytest.fixture
-    def quartz_modes(self):
-        return get_qpt_ph_modes('quartz')
-
-    @pytest.fixture
-    def fake_quartz_data(self):
-        return {
-            "description": "fake data for testing",
-            "physical_property": {"coherent_scattering_length":
-                                  {"__units__": "fm",
-                                   "Si": {"__complex__": True,
-                                          "real": 4.0, "imag": -0.70},
-                                   "O": 5.803}}}
-
-    @staticmethod
-    def _dump_data(data, tmpdir, filename):
-        filename = tmpdir.join(filename)
-        with open(filename, 'wt') as fd:
-            json.dump(data, fd)
-        return str(filename)
-
-    def test_structure_factor_with_named_ref(self, quartz_modes):
-        fm = ureg['fm']
-        sf_direct = quartz_modes.calculate_structure_factor(
-            scattering_lengths={'Si': 4.1491*fm, 'O': 5.803*fm})
-        sf_named = quartz_modes.calculate_structure_factor(
-            scattering_lengths='Sears1992')
-
-        aa2 = ureg['angstrom']**2
-        npt.assert_allclose(sf_direct.structure_factors.to(aa2).magnitude,
-                            sf_named.structure_factors.to(aa2).magnitude)
-
-    def test_structure_factor_with_file_ref(self, quartz_modes,
-                                            tmpdir, fake_quartz_data):
-        fm = ureg['fm']
-
-        filename = self._dump_data(fake_quartz_data, tmpdir, 'fake_data')
-
-        sf_direct = quartz_modes.calculate_structure_factor(
-            scattering_lengths={'Si': complex(4., -0.7)*fm, 'O': 5.803*fm})
-        sf_from_file = quartz_modes.calculate_structure_factor(
-            scattering_lengths=filename)
-
-        aa2 = ureg['angstrom']**2
-        npt.assert_allclose(sf_direct.structure_factors.to(aa2).magnitude,
-                            sf_from_file.structure_factors.to(aa2).magnitude)
 
 
 @pytest.mark.unit
@@ -194,6 +153,14 @@ class TestQpointPhononModesCreation:
     def create_from_constructor(self, request):
         expected_qpt_ph_modes = request.param
         args, kwargs = expected_qpt_ph_modes.to_constructor_args()
+        qpt_ph_modes = QpointPhononModes(*args, **kwargs)
+        return qpt_ph_modes, expected_qpt_ph_modes
+
+    @pytest.fixture(params=[get_expected_qpt_ph_modes('quartz'),
+                            get_expected_qpt_ph_modes('NaCl')])
+    def create_from_constructor_without_weights(self, request):
+        expected_qpt_ph_modes = request.param
+        args, kwargs = expected_qpt_ph_modes.to_constructor_args(weights=False)
         qpt_ph_modes = QpointPhononModes(*args, **kwargs)
         return qpt_ph_modes, expected_qpt_ph_modes
 
@@ -223,16 +190,27 @@ class TestQpointPhononModesCreation:
          'NaCl_band_hdf5_from_phonopy_qpoint_phonon_modes.json'),
         ('NaCl', 'mesh', {'summary_name': 'phonopy.yaml',
                           'phonon_name': 'mesh.yaml'},
-         'NaCl_mesh_from_phonopy_qpoint_phonon_modes.json'),
+         'NaCl_mesh_yaml_from_phonopy_qpoint_phonon_modes.json'),
         ('NaCl', 'mesh', {'summary_name': 'phonopy.yaml',
                           'phonon_name': 'mesh.hdf5'},
-         'NaCl_mesh_from_phonopy_qpoint_phonon_modes.json'),
+         'NaCl_mesh_hdf5_from_phonopy_qpoint_phonon_modes.json'),
         ('NaCl', 'qpoints', {'summary_name': 'phonopy.yaml',
                              'phonon_name': 'qpoints.yaml'},
-         'NaCl_qpoints_from_phonopy_qpoint_phonon_modes.json'),
+         'NaCl_qpoints_yaml_from_phonopy_qpoint_phonon_modes.json'),
+        ('NaCl', 'qpoints', {'summary_name': 'phonopy.yaml',
+                             'phonon_name': 'qpoints_yaml.test',
+                             'phonon_format': 'yaml'},
+         'NaCl_qpoints_yaml_from_phonopy_qpoint_phonon_modes.json'),
+        ('NaCl', 'qpoints', {'summary_name': 'phonopy.yaml',
+                             'phonon_name': 'qpoints_hdf5.test',
+                             'phonon_format': 'hdf5'},
+         'NaCl_qpoints_hdf5_from_phonopy_qpoint_phonon_modes.json'),
         ('NaCl', 'qpoints', {'summary_name': 'phonopy.yaml',
                              'phonon_name': 'qpoints.hdf5'},
-         'NaCl_qpoints_from_phonopy_qpoint_phonon_modes.json')])
+         'NaCl_qpoints_hdf5_from_phonopy_qpoint_phonon_modes.json'),
+        ('CaHgO2', '', {'summary_name': 'mp-7041-20180417.yaml',
+                        'phonon_name': 'qpoints.yaml'},
+         'CaHgO2_from_phonopy_qpoint_phonon_modes.json')])
     def create_from_phonopy(self, request):
         material, subdir, phonopy_args, json_file = request.param
         phonopy_args['path'] = os.path.join(get_qpt_ph_modes_dir(material),
@@ -246,8 +224,7 @@ class TestQpointPhononModesCreation:
     def create_from_json(self, request):
         material = request.param
         expected_qpt_ph_modes = get_expected_qpt_ph_modes(material)
-        qpt_ph_modes = QpointPhononModes.from_json_file(
-            get_json_file(material))
+        qpt_ph_modes = get_qpt_ph_modes(material)
         return qpt_ph_modes, expected_qpt_ph_modes
 
     @pytest.fixture(params=['LZO', 'quartz', 'NaCl'])
@@ -260,13 +237,15 @@ class TestQpointPhononModesCreation:
 
     @pytest.mark.parametrize(('qpt_ph_modes_creator'), [
         pytest.lazy_fixture('create_from_constructor'),
+        pytest.lazy_fixture('create_from_constructor_without_weights'),
         pytest.lazy_fixture('create_from_dict'),
         pytest.lazy_fixture('create_from_json'),
         pytest.lazy_fixture('create_from_castep'),
         pytest.lazy_fixture('create_from_phonopy')])
     def test_correct_object_creation(self, qpt_ph_modes_creator):
         qpt_ph_modes, expected_qpt_ph_modes = qpt_ph_modes_creator
-        check_qpt_ph_modes(qpt_ph_modes, expected_qpt_ph_modes)
+        check_qpt_ph_modes(qpt_ph_modes, expected_qpt_ph_modes,
+                           check_evecs=True)
 
     @pytest.fixture(params=[
         ('qpts',
@@ -307,16 +286,95 @@ class TestQpointPhononModesCreation:
             QpointPhononModes(*faulty_args, **faulty_kwargs)
 
 
+    @pytest.mark.parametrize('material, subdir, phonopy_args', [
+        ('NaCl', 'qpoints', {'summary_name': 'phonopy.yaml',
+                             'phonon_name': 'qpoints.yaml'}),
+        ('NaCl', 'qpoints', {'summary_name': 'phonopy.yaml',
+                             'phonon_name': 'qpoints.hdf5'})])
+    def test_create_from_phonopy_without_installed_modules_raises_err(
+            self, material, subdir, phonopy_args, mocker):
+        phonopy_args['path'] = os.path.join(get_qpt_ph_modes_dir(material),
+                                            subdir)
+        # Mock import of yaml, h5py to raise ModuleNotFoundError
+        import builtins
+        real_import = builtins.__import__
+        def mocked_import(name, *args, **kwargs):
+            if name == 'h5py' or name == 'yaml':
+                raise ModuleNotFoundError
+            return real_import(name, *args, **kwargs)
+        mocker.patch('builtins.__import__', side_effect=mocked_import)
+        with pytest.raises(ImportPhonopyReaderError):
+            QpointPhononModes.from_phonopy(**phonopy_args)
+
+    @pytest.mark.parametrize('material, subdir, phonopy_args, err', [
+        ('NaCl', 'qpoints', {'summary_name': 'phonopy.yaml',
+                             'phonon_name': 'qpoints_hdf5.test'},
+         ValueError),
+        ('NaCl', 'qpoints', {'summary_name': 'phonopy.yaml',
+                             'phonon_name': 'qpoints.hdf5',
+                             'phonon_format': 'nonsense'},
+         ValueError),
+        ('NaCl', 'qpoints', {'summary_name': 'phonopy.yaml',
+                             'phonon_name': 'qpoints_no_evec.yaml'},
+         RuntimeError),
+        ('NaCl', 'qpoints', {'summary_name': 'phonopy.yaml',
+                             'phonon_name': 'qpoints_no_evec.hdf5'},
+         RuntimeError),
+        ('NaCl', 'band', {'summary_name': 'phonopy.yaml',
+                          'phonon_name': 'band_no_evec.hdf5'},
+         RuntimeError),
+        ('NaCl', 'qpoints', {
+            'summary_name': '../../CaHgO2/mp-7041-20180417.yaml',
+            'phonon_name': 'qpoints.hdf5'},
+         ValueError)])
+    def test_create_from_phonopy_with_bad_inputs_raises_err(
+            self, material, subdir, phonopy_args, err):
+        phonopy_args['path'] = os.path.join(get_qpt_ph_modes_dir(material),
+                                            subdir)
+        with pytest.raises(err):
+            QpointPhononModes.from_phonopy(**phonopy_args)
+
+
+@pytest.mark.unit
+class TestQpointPhononModesSerialisation:
+
+    @pytest.fixture(params=['quartz', 'Si2-sc-skew', 'NaCl'])
+    def serialise_to_json_file(self, request, tmpdir):
+        qpt_ph_modes = get_qpt_ph_modes(request.param)
+        # Write to file then read back to test
+        output_file = str(tmpdir.join('tmp.test'))
+        qpt_ph_modes.to_json_file(output_file)
+        deserialised_qpt_ph_modes = QpointPhononModes.from_json_file(
+            output_file)
+        return qpt_ph_modes, deserialised_qpt_ph_modes
+
+    def test_serialise_to_file(self, serialise_to_json_file):
+        qpt_ph_modes, deserialised_qpt_ph_modes = serialise_to_json_file
+        check_qpt_ph_modes(qpt_ph_modes, deserialised_qpt_ph_modes,
+                           check_evecs=True)
+
+    @pytest.fixture(params=['quartz', 'Si2-sc-skew', 'NaCl'])
+    def serialise_to_dict(self, request):
+        qpt_ph_modes = get_qpt_ph_modes(request.param)
+        # Convert to dict, then back to object to test
+        qpt_ph_modes_dict = qpt_ph_modes.to_dict()
+        qpt_ph_modes_from_dict = QpointPhononModes.from_dict(qpt_ph_modes_dict)
+        return qpt_ph_modes, qpt_ph_modes_from_dict
+
+    def test_serialise_to_dict(self, serialise_to_dict):
+        qpt_ph_modes, qpt_ph_modes_from_dict = serialise_to_dict
+        check_qpt_ph_modes(qpt_ph_modes, qpt_ph_modes_from_dict,
+                           check_evecs=True)
+
+
 @pytest.mark.unit
 class TestQpointPhononModesUnitConversion:
 
-    @pytest.mark.parametrize('material, unit_attr, unit_val', [
-        ('quartz', 'frequencies_unit', '1/cm')])
-    def test_correct_unit_conversion(self, material, unit_attr,
-                                     unit_val):
+    @pytest.mark.parametrize('material, attr, unit_val', [
+        ('quartz', 'frequencies', '1/cm')])
+    def test_correct_unit_conversion(self, material, attr, unit_val):
         qpt_ph_modes = get_qpt_ph_modes(material)
-        setattr(qpt_ph_modes, unit_attr, unit_val)
-        assert getattr(qpt_ph_modes, unit_attr) == unit_val
+        check_unit_conversion(qpt_ph_modes, attr, unit_val)
 
     @pytest.mark.parametrize('material, unit_attr, unit_val, err', [
         ('quartz', 'frequencies_unit', 'kg', ValueError)])
@@ -325,3 +383,75 @@ class TestQpointPhononModesUnitConversion:
         qpt_ph_modes = get_qpt_ph_modes(material)
         with pytest.raises(err):
             setattr(qpt_ph_modes, unit_attr, unit_val)
+
+
+@pytest.mark.unit
+class TestQpointPhononModesReorderFrequencies:
+
+    @pytest.mark.parametrize(
+        'material, qpt_ph_modes_file, reordered_qpt_ph_modes_file, kwargs', [
+            ('LZO', 'La2Zr2O7_before_reorder_qpoint_phonon_modes.json',
+             'La2Zr2O7_after_reorder_qpoint_phonon_modes.json', {}),
+            ('quartz', 'quartz_before_reorder_qpoint_phonon_modes.json',
+             'quartz_after_reorder_nogamma_qpoint_phonon_modes.json',
+             {'reorder_gamma': False})])
+    def test_reorder_frequencies(self, material, qpt_ph_modes_file,
+                                 reordered_qpt_ph_modes_file, kwargs):
+        qpt_ph_modes = get_qpt_ph_modes_from_json(material, qpt_ph_modes_file)
+        qpt_ph_modes.reorder_frequencies(**kwargs)
+        expected_qpt_ph_modes = get_qpt_ph_modes_from_json(
+            material, reordered_qpt_ph_modes_file)
+        check_qpt_ph_modes(qpt_ph_modes, expected_qpt_ph_modes)
+
+
+@pytest.mark.unit
+class TestQpointPhononModesCalculateDebyeWaller:
+
+    @pytest.mark.parametrize(
+        'material, qpt_ph_modes_file, expected_dw_json, temperature', [
+            ('quartz', 'quartz-666-grid.phonon',
+             'quartz_666_0K_debye_waller.json', 0),
+            ('quartz', 'quartz-666-grid.phonon',
+             'quartz_666_300K_debye_waller.json', 300),
+            ('quartz', 'quartz-777-grid.phonon',
+             'quartz_777_300K_debye_waller.json', 300),
+            ('Si2-sc-skew', 'Si2-sc-skew-666-grid.phonon',
+             'Si2-sc-skew_666_300K_debye_waller.json', 300),
+            ('CaHgO2', 'CaHgO2-666-grid.yaml',
+             'CaHgO2_666_300K_debye_waller.json', 300)
+        ])
+    def test_calculate_debye_waller(self, material, qpt_ph_modes_file,
+                                    expected_dw_json, temperature):
+        filepath = os.path.join(get_qpt_ph_modes_dir(material),
+                                qpt_ph_modes_file)
+        if filepath.endswith('.phonon'):
+            qpt_ph_modes = QpointPhononModes.from_castep(filepath)
+        else:
+            qpt_ph_modes = QpointPhononModes.from_phonopy(phonon_name=filepath)
+
+        dw = qpt_ph_modes.calculate_debye_waller(temperature*ureg('K'))
+        expected_dw = get_expected_dw(material, expected_dw_json)
+        check_debye_waller(dw, expected_dw)
+
+
+@pytest.mark.unit
+class TestQpointPhononModesCalculateDos:
+
+    @pytest.mark.parametrize(
+        'material, qpt_ph_modes_file, expected_dos_json, ebins', [
+            ('quartz', 'quartz-666-grid.phonon',
+             'quartz_666_dos.json', np.arange(0, 155, 0.5)*ureg('meV')),
+            ('CaHgO2', 'CaHgO2-666-grid.yaml',
+             'CaHgO2_666_dos.json', np.arange(0, 95, 0.4)*ureg('meV'))
+        ])
+    def test_calculate_dos(self, material, qpt_ph_modes_file,
+                           expected_dos_json, ebins):
+        filepath = os.path.join(get_qpt_ph_modes_dir(material),
+                                qpt_ph_modes_file)
+        if filepath.endswith('.phonon'):
+            qpt_ph_modes = QpointPhononModes.from_castep(filepath)
+        else:
+            qpt_ph_modes = QpointPhononModes.from_phonopy(phonon_name=filepath)
+        dos = qpt_ph_modes.calculate_dos(ebins)
+        expected_dos = get_expected_spectrum1d(expected_dos_json)
+        check_spectrum1d(dos, expected_dos)

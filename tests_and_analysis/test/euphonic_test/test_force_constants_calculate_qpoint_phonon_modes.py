@@ -1,153 +1,91 @@
 import os
 import json
+
 import pytest
 import numpy as np
 import numpy.testing as npt
+
 from euphonic import ureg, ForceConstants
-from tests_and_analysis.test.utils import get_data_path
+from euphonic.force_constants import ImportCError
+from tests_and_analysis.test.utils import get_data_path, get_test_qpts
 from tests_and_analysis.test.euphonic_test.test_qpoint_phonon_modes import (
     ExpectedQpointPhononModes, check_qpt_ph_modes, get_qpt_ph_modes_dir)
 from tests_and_analysis.test.euphonic_test.test_force_constants import (
     get_fc, get_fc_dir)
 
 
-test_qpts = np.array([
-    [0.00, 0.00, 0.00],
-    [0.00, 0.00, 0.50],
-    [-0.25, 0.50, 0.50],
-    [-0.151515, 0.575758, 0.5],
-    [0.30, 0.00, 0.00],
-    [0.00, 0.40, 0.00],
-    [0.60, 0.00, 0.20],
-    [2.00, 2.00, 0.5],
-    [1.75, 0.50, 2.50]])
-
-
-test_split_qpts = np.array([
-    [0.00, 0.00, 0.00],
-    [0.00, 0.00, 0.50],
-    [0.00, 0.00, 0.00],
-    [0.00, 0.00, 0.00],
-    [-0.25, 0.50, 0.50],
-    [0.00, 0.00, 0.00],
-    [0.00, 0.00, 0.00],
-    [0.00, 0.00, 0.00],
-    [0.00, 0.00, 0.00],
-    [0.00, 0.00, 0.00],
-    [0.00, 0.00, 0.00],
-    [-0.151515, 0.575758, 0.5],
-    [0.00, 0.00, 0.00]
-])
-
-
-test_split_qpts_insert_gamma = np.array([
-    [0.00, 0.00, 0.00],
-    [0.00, 0.00, 0.50],
-    [0.00, 0.00, 0.00],
-    [-0.25, 0.50, 0.50],
-    [0.00, 0.00, 0.00],
-    [0.00, 0.00, 0.00],
-    [0.00, 0.00, 0.00],
-    [-0.151515, 0.575758, 0.5],
-    [0.00, 0.00, 0.00]
-])
-
-
 @pytest.mark.unit
 class TestForceConstantsCalculateQPointPhononModes:
 
-    @pytest.fixture(params=['json', 'castep'])
-    def get_lzo_fc(self, request):
-        if request.param == 'json':
-            return get_fc('LZO')
-        else:
-            return ForceConstants.from_castep(
-                os.path.join(get_fc_dir('LZO'), 'La2Zr2O7.castep_bin'))
+    def get_lzo_fc():
+        return ForceConstants.from_castep(
+            os.path.join(get_fc_dir('LZO'), 'La2Zr2O7.castep_bin'))
 
     lzo_params = [
-        (pytest.lazy_fixture('get_lzo_fc'), 'LZO',
-         [test_qpts, {}], 'LZO_no_asr_qpoint_phonon_modes.json'),
-        (pytest.lazy_fixture('get_lzo_fc'), 'LZO',
-         [test_qpts, {'asr':'realspace'}],
+        (get_lzo_fc(), 'LZO',
+         [get_test_qpts(), {}], 'LZO_no_asr_qpoint_phonon_modes.json'),
+        (get_lzo_fc(), 'LZO',
+         [get_test_qpts(), {'asr':'realspace'}],
          'LZO_realspace_qpoint_phonon_modes.json'),
-        (pytest.lazy_fixture('get_lzo_fc'), 'LZO',
-         [test_qpts, {'asr': 'reciprocal'}],
+        (get_lzo_fc(), 'LZO',
+         [get_test_qpts(), {'asr': 'reciprocal'}],
          'LZO_reciprocal_qpoint_phonon_modes.json')]
 
-    @pytest.fixture(params=['json', 'castep'])
-    def get_si2_fc(self, request):
-        if request.param == 'json':
-            return get_fc('Si2-sc-skew')
-        else:
-            return ForceConstants.from_castep(
-                os.path.join(get_fc_dir('Si2-sc-skew'),
-                             'Si2-sc-skew.castep_bin'))
+
+    def get_si2_fc():
+        return ForceConstants.from_castep(
+            os.path.join(get_fc_dir('Si2-sc-skew'),
+                         'Si2-sc-skew.castep_bin'))
 
     si2_params = [
-        (pytest.lazy_fixture('get_si2_fc'), 'Si2-sc-skew',
-         [test_qpts, {}], 'Si2_no_asr_qpoint_phonon_modes.json'),
-        (pytest.lazy_fixture('get_si2_fc'), 'Si2-sc-skew',
-         [test_qpts, {'asr':'realspace'}],
-         'Si2_realspace_qpoint_phonon_modes.json'),
-        (pytest.lazy_fixture('get_si2_fc'), 'Si2-sc-skew',
-         [test_qpts, {'asr': 'reciprocal'}],
-         'Si2_reciprocal_qpoint_phonon_modes.json')]
+        (get_si2_fc(), 'Si2-sc-skew',
+         [get_test_qpts(), {}], 'Si2-sc-skew_no_asr_qpoint_phonon_modes.json'),
+        (get_si2_fc(), 'Si2-sc-skew',
+         [get_test_qpts(), {'asr':'realspace'}],
+         'Si2-sc-skew_realspace_qpoint_phonon_modes.json'),
+        (get_si2_fc(), 'Si2-sc-skew',
+         [get_test_qpts(), {'asr': 'reciprocal'}],
+         'Si2-sc-skew_reciprocal_qpoint_phonon_modes.json')]
 
 
-    @pytest.fixture(params=['json', 'castep'])
-    def get_quartz_fc(self, request):
-        if request.param == 'json':
-            return get_fc('quartz')
-        else:
-            return ForceConstants.from_castep(
-                os.path.join(get_fc_dir('quartz'), 'quartz.castep_bin'))
+    def get_quartz_fc():
+        return ForceConstants.from_castep(
+            os.path.join(get_fc_dir('quartz'), 'quartz.castep_bin'))
 
     quartz_params = [
-        (pytest.lazy_fixture('get_quartz_fc'), 'quartz',
-         [test_qpts, {'asr': 'reciprocal', 'splitting': False}],
+        (get_quartz_fc(), 'quartz',
+         [get_test_qpts(), {'asr': 'reciprocal', 'splitting': False}],
          'quartz_reciprocal_qpoint_phonon_modes.json'),
-        (pytest.lazy_fixture('get_quartz_fc'), 'quartz',
-         [test_qpts, {'asr': 'reciprocal', 'splitting': False,
-                      'eta_scale': 0.75}],
+        (get_quartz_fc(), 'quartz',
+         [get_test_qpts(), {'asr': 'reciprocal', 'splitting': False,
+                            'eta_scale': 0.75}],
          'quartz_reciprocal_qpoint_phonon_modes.json'),
-        (pytest.lazy_fixture('get_quartz_fc'), 'quartz',
-         [test_split_qpts, {'asr': 'reciprocal', 'splitting': True,
-                            'insert_gamma': False}],
+        (get_quartz_fc(), 'quartz',
+         [get_test_qpts('split'), {'asr': 'reciprocal', 'splitting': True,
+                                   'insert_gamma': False}],
          'quartz_split_reciprocal_qpoint_phonon_modes.json'),
-        (pytest.lazy_fixture('get_quartz_fc'), 'quartz',
-         [test_split_qpts_insert_gamma,
-         {'asr': 'reciprocal', 'splitting': True, 'insert_gamma': True}],
+        (get_quartz_fc(), 'quartz',
+         [get_test_qpts('split_insert_gamma'),
+          {'asr': 'reciprocal', 'splitting': True, 'insert_gamma': True}],
          'quartz_split_reciprocal_qpoint_phonon_modes.json')]
 
 
-    @pytest.fixture(params=['json', 'phonopy'])
-    def get_nacl_fc(self, request):
-        if request.param == 'json':
-            return get_fc('NaCl')
-        else:
-            return ForceConstants.from_phonopy(
-                path=get_fc_dir('NaCl'),
-                summary_name='phonopy_nacl.yaml')
-
-    nacl_params = [
-        (pytest.lazy_fixture('get_nacl_fc'), 'NaCl',
-         [test_qpts, {'asr': 'reciprocal'}],
-         'NaCl_reciprocal_qpoint_phonon_modes.json')]
+    nacl_params = [(
+        ForceConstants.from_phonopy(
+            path=get_fc_dir('NaCl'),
+            summary_name='phonopy_nacl.yaml'),
+        'NaCl',
+        [get_test_qpts(), {'asr': 'reciprocal'}],
+        'NaCl_reciprocal_qpoint_phonon_modes.json')]
 
 
-    @pytest.fixture(params=['phonopy'])
-    def get_cahgo2_fc(self, request):
-        if request.param == 'json':
-            return get_fc('CaHgO2')
-        else:
-            return ForceConstants.from_phonopy(
-                path=get_fc_dir('CaHgO2'),
-                summary_name='mp-1818-20180417.yaml')
-
-    cahgo2_params = [
-        (pytest.lazy_fixture('get_cahgo2_fc'), 'CaHgO2',
-         [test_qpts, {'asr': 'reciprocal'}],
-         'CaHgO2_reciprocal_qpoint_phonon_modes.json')]
+    cahgo2_params = [(
+        ForceConstants.from_phonopy(
+            path=get_fc_dir('CaHgO2'),
+            summary_name='mp-7041-20180417.yaml'),
+        'CaHgO2',
+        [get_test_qpts(), {'asr': 'reciprocal'}],
+        'CaHgO2_reciprocal_qpoint_phonon_modes.json')]
 
 
     @pytest.mark.parametrize(
@@ -184,14 +122,25 @@ class TestForceConstantsCalculateQPointPhononModes:
                            frequencies_rtol=2e-5,
                            acoustic_gamma_atol=gamma_atol)
 
+    # ForceConstants stores some values (supercell image list, vectors
+    # for the Ewald sum) so check repeated calculations give the same
+    # result
+    def test_repeated_calculate_qpoint_phonon_modes_doesnt_change_result(self):
+        fc = get_fc('quartz')
+        qpt_ph_modes1 = fc.calculate_qpoint_phonon_modes(
+            get_test_qpts(), asr='realspace')
+        qpt_ph_modes2 = fc.calculate_qpoint_phonon_modes(
+            get_test_qpts(), asr='realspace')
+        check_qpt_ph_modes(qpt_ph_modes1, qpt_ph_modes2)
+
     weights = np.array([0.1, 0.05, 0.05, 0.2, 0.2, 0.15, 0.15, 0.2, 0.1])
     weights_output_split_gamma = np.array([
         0.1, 0.05, 0.025, 0.025, 0.2, 0.1, 0.1, 0.075, 0.075, 0.075, 0.075,
         0.2, 0.1])
 
     @pytest.mark.parametrize('fc, qpts, weights, expected_weights, kwargs', [
-        (get_fc('quartz'), test_qpts, weights, weights, {}),
-        (get_fc('quartz'), test_split_qpts_insert_gamma, weights,
+        (get_fc('quartz'), get_test_qpts(), weights, weights, {}),
+        (get_fc('quartz'), get_test_qpts('split_insert_gamma'), weights,
          weights_output_split_gamma, {'insert_gamma': True})])
     def test_calculate_qpoint_phonon_modes_with_weights_sets_weights(
             self, fc, qpts, weights, expected_weights, kwargs):
@@ -200,8 +149,8 @@ class TestForceConstantsCalculateQPointPhononModes:
         npt.assert_allclose(qpt_ph_modes_weighted.weights, expected_weights)
 
     @pytest.mark.parametrize('fc, qpts, weights, expected_weights, kwargs', [
-        (get_fc('quartz'), test_qpts, weights, weights, {}),
-        (get_fc('quartz'), test_split_qpts_insert_gamma, weights,
+        (get_fc('quartz'), get_test_qpts(), weights, weights, {}),
+        (get_fc('quartz'), get_test_qpts('split_insert_gamma'), weights,
          weights_output_split_gamma, {'insert_gamma': True})])
     def test_calculate_qpoint_phonon_modes_with_weights_doesnt_change_result(
             self, fc, qpts, weights, expected_weights, kwargs):
@@ -211,3 +160,32 @@ class TestForceConstantsCalculateQPointPhononModes:
             qpts, **kwargs)
         qpt_ph_modes_unweighted.weights = expected_weights
         check_qpt_ph_modes(qpt_ph_modes_weighted, qpt_ph_modes_unweighted)
+
+    @pytest.mark.parametrize('asr', ['realspace', 'reciprocal'])
+    def test_calc_qpt_ph_mds_asr_with_nonsense_fc_raises_warning(
+            self, asr):
+        fc = ForceConstants.from_json_file(
+            os.path.join(get_fc_dir('quartz'),
+                         'quartz_random_force_constants.json'))
+        with pytest.warns(UserWarning):
+            fc.calculate_qpoint_phonon_modes(get_test_qpts(), asr=asr)
+
+
+@pytest.mark.unit
+class TestForceConstantsCalculateQPointPhononModesWithoutCExtensionInstalled:
+    def test_calculate_qpoint_phonon_modes_with_use_c_true_raises_error(
+            self, mocker):
+        # Mock import of euphonic._euphonic to raise ImportError
+        import builtins
+        real_import = builtins.__import__
+        def mocked_import(name, *args, **kwargs):
+            if name == 'euphonic._euphonic':
+                raise ImportError
+            return real_import(name, *args, **kwargs)
+        mocker.patch('builtins.__import__', side_effect=mocked_import)
+
+        fc = get_fc('quartz')
+        with pytest.raises(ImportCError):
+            fc.calculate_qpoint_phonon_modes(get_test_qpts(),
+                                             use_c=True,
+                                             fall_back_on_python=False)

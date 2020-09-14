@@ -1,5 +1,7 @@
 import json
+
 import pytest
+from pint import UndefinedUnitError
 
 from euphonic import ureg
 from euphonic.util import get_reference_data
@@ -71,13 +73,37 @@ class TestReferenceData:
             get_reference_data(collection=filename,
                                physical_property='some_property')
 
+    def test_custom_file_unknown_units(self, tmpdir):
+        test_data_unknown_units = {
+            'physical_property': {
+                'some_property': {'H': 1, '__units__': 'nonsense'}}}
+        filename = self._dump_data(test_data_unknown_units, tmpdir,
+                                   'data_unknown_units.json')
+
+        with pytest.raises(ValueError):
+            get_reference_data(collection=filename,
+                               physical_property='some_property')
+
     def test_custom_file_wrong_property(self, tmpdir):
-        test_data_no_units = {'physical_property':
-                              {'size': {'cat': 1, '__units__': 'meter'},
-                               'weight': {'cat': 4, '__units__': 'kg'}}}
-        filename = self._dump_data(test_data_no_units, tmpdir,
+        test_data_wrong_property = {
+            'physical_property': {
+                'size': {'cat': 1, '__units__': 'meter'},
+                'weight': {'cat': 4, '__units__': 'kg'}}}
+        filename = self._dump_data(test_data_wrong_property, tmpdir,
                                    'data_with_size_and_weight.json')
 
         with pytest.raises(ValueError):
             get_reference_data(collection=filename,
                                physical_property='wrong_property')
+
+    def test_custom_file_no_physical_property(self, tmpdir):
+        test_data_no_physical_property = {
+            'not_physical_property': {
+                'size': {'cat': 1, '__units__': 'meter'},
+                'weight': {'cat': 4, '__units__': 'kg'}}}
+        filename = self._dump_data(test_data_no_physical_property, tmpdir,
+                                   'no_physical_property_data.json')
+
+        with pytest.raises(AttributeError):
+            get_reference_data(collection=filename,
+                               physical_property='size')

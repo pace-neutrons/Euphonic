@@ -21,6 +21,12 @@
       will grow to include schemes beyond this average over a single
       sphere.)
 
+- Bug fixes:
+
+  - Correctly convert from Phonopy's q-point weight convention to Euphonic's
+    when reading from mesh.yaml (see
+    `7509043 <https://github.com/pace-neutrons/Euphonic/commit/7509043>`_)
+
 `v0.3.1 <https://github.com/pace-neutrons/Euphonic/compare/v0.3.0...v0.3.1>`_
 ----------
 

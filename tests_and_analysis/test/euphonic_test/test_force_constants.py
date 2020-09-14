@@ -6,9 +6,10 @@ import numpy as np
 import numpy.testing as npt
 
 from euphonic import ForceConstants, Crystal, ureg
+from euphonic.readers.phonopy import ImportPhonopyReaderError
 from tests_and_analysis.test.euphonic_test.test_crystal import (
     get_crystal, ExpectedCrystal, check_crystal)
-from tests_and_analysis.test.utils import get_data_path
+from tests_and_analysis.test.utils import get_data_path, check_unit_conversion
 
 
 class ExpectedForceConstants:
@@ -183,7 +184,8 @@ class TestForceConstantsCreation:
         fc = ForceConstants.from_castep(castep_filepath)
         return fc, expected_fc
 
-    @pytest.fixture(params=['LZO', 'graphite', 'Si2-sc-skew', 'quartz'])
+    @pytest.fixture(params=['LZO', 'graphite', 'Si2-sc-skew', 'quartz',
+                            'CaHgO2', 'NaCl'])
     def create_from_json(self, request):
         material = request.param
         expected_fc = get_expected_fc(material)
@@ -203,24 +205,30 @@ class TestForceConstantsCreation:
         # FORCE_CONSTANTS) have been renamed from their defaults to
         # avoid a false positive
         ('NaCl', {'summary_name': 'phonopy_nacl.yaml'}),
+        ('NaCl', {'summary_name': 'phonopy_full_fc.yaml'}),
         ('NaCl', {'summary_name': 'phonopy_nofc.yaml',
                   'fc_name': 'FORCE_CONSTANTS_nacl'}),
         ('NaCl', {'summary_name': 'phonopy_nofc.yaml',
                   'fc_name': 'FULL_FORCE_CONSTANTS'}),
         ('NaCl', {'summary_name': 'phonopy_nofc.yaml',
+                  'fc_name': 'FULL_FORCE_CONSTANTS_single_number'}),
+        ('NaCl', {'summary_name': 'phonopy_nofc.yaml',
                   'fc_name': 'full_force_constants.hdf5'}),
         ('NaCl', {'summary_name': 'phonopy_nofc.yaml',
                   'fc_name': 'force_constants.hdf5'}),
+        ('NaCl', {'summary_name': 'phonopy_nofc.yaml',
+                  'fc_name': 'force_constants_hdf5.test',
+                  'fc_format': 'hdf5'}),
         ('NaCl', {'summary_name': 'phonopy_nofc_noborn.yaml',
                   'fc_name': 'FORCE_CONSTANTS_nacl',
-                  'born_name': 'BORN'}),
+                  'born_name': 'BORN_nacl'}),
         # Explicitly test the default behaviour (if fc/born aren't found
         # in phonopy.yaml they should be read from BORN, FORCE_CONSTANTS).
         # This must be done in a separate directory to the above tests,
         # again to avoid false positives
         ('NaCl_default', {}),
         ('NaCl_prim', {'summary_name': 'phonopy_nacl.yaml'}),
-        ('CaHgO2', {'summary_name': 'mp-1818-20180417.yaml'})])
+        ('CaHgO2', {'summary_name': 'mp-7041-20180417.yaml'})])
     def create_from_phonopy(self, request):
         material, phonopy_args = request.param
         phonopy_args['path'] = get_fc_dir(material)
@@ -284,6 +292,44 @@ class TestForceConstantsCreation:
         with pytest.raises(expected_exception):
             ForceConstants(*faulty_args, **faulty_kwargs)
 
+    @pytest.mark.parametrize('phonopy_args', [
+        ({'summary_name': 'phonopy_nofc.yaml',
+          'fc_name': 'force_constants.hdf5',
+          'path': get_fc_dir('NaCl')})])
+    def test_create_from_phonopy_without_installed_modules_raises_err(
+            self, phonopy_args, mocker):
+        # Mock import of yaml, h5py to raise ModuleNotFoundError
+        import builtins
+        real_import = builtins.__import__
+        def mocked_import(name, *args, **kwargs):
+            if name == 'h5py' or name == 'yaml':
+                raise ModuleNotFoundError
+            return real_import(name, *args, **kwargs)
+        mocker.patch('builtins.__import__', side_effect=mocked_import)
+        with pytest.raises(ImportPhonopyReaderError):
+            ForceConstants.from_phonopy(**phonopy_args)
+
+    @pytest.mark.parametrize('phonopy_args, err', [
+        ({'summary_name': 'phonopy_nofc.yaml',
+          'fc_name': 'force_constants.hdf5',
+          'path': get_fc_dir('NaCl'),
+          'fc_format': 'nonsense'},
+         ValueError),
+        ({'summary_name': '../CaHgO2/phonopy_nofc.yaml',
+          'fc_name': 'force_constants.hdf5',
+          'path': get_fc_dir('NaCl')},
+         ValueError)])
+    def test_create_from_phonopy_with_bad_inputs_raises_err(
+            self, phonopy_args, err):
+        with pytest.raises(err):
+            ForceConstants.from_phonopy(**phonopy_args)
+
+    def test_create_from_castep_with_no_fc_raises_runtime_error(self):
+        with pytest.raises(RuntimeError):
+            ForceConstants.from_castep(
+                os.path.join(get_fc_dir('h-BN'),
+                             'h-BN_no_force_constants.castep_bin'))
+
 
 @pytest.mark.unit
 class TestForceConstantsSerialisation:
@@ -320,15 +366,13 @@ class TestForceConstantsSerialisation:
 @pytest.mark.unit
 class TestForceConstantsUnitConversion:
 
-    @pytest.mark.parametrize('material, unit_attr, unit_val', [
-        ('quartz', 'force_constants_unit', 'hartree/bohr**2'),
-        ('quartz', 'dielectric_unit', 'e**2/(angstrom*eV)'),
-        ('quartz', 'born_unit', 'C')])
-    def test_correct_unit_conversion(self, material, unit_attr,
-                                     unit_val):
+    @pytest.mark.parametrize('material, attr, unit_val', [
+        ('quartz', 'force_constants', 'hartree/bohr**2'),
+        ('quartz', 'dielectric', 'e**2/(angstrom*eV)'),
+        ('quartz', 'born', 'C')])
+    def test_correct_unit_conversion(self, material, attr, unit_val):
         fc = get_fc(material)
-        setattr(fc, unit_attr, unit_val)
-        assert getattr(fc, unit_attr) == unit_val
+        check_unit_conversion(fc, attr, unit_val)
 
     @pytest.mark.parametrize('material, unit_attr, unit_val, err', [
         ('quartz', 'force_constants_unit', 'hartree', ValueError),

@@ -19,6 +19,10 @@ class TestRegression:
         mocker.patch("matplotlib.pyplot.show")
         mocker.resetall()
 
+    def teardown_method(self):
+        # Ensure figures are closed
+        matplotlib.pyplot.close('all')
+
     @pytest.mark.parametrize("dos_args", get_dos_params())
     def test_plots_produce_expected_xydata(self, inject_mocks, dos_args):
         scripts.dos.main([get_phonon_file()] + dos_args)

@@ -20,6 +20,10 @@ class TestRegression:
         mocker.patch("matplotlib.pyplot.show")
         mocker.resetall()
 
+    def teardown_method(self):
+        # Ensure figures are closed
+        matplotlib.pyplot.close('all')
+
     @pytest.mark.parametrize("dispersion_args", get_dispersion_params())
     def test_plots_produce_expected_xydata(
             self, inject_mocks, dispersion_args):

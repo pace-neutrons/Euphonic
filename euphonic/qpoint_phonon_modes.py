@@ -269,7 +269,7 @@ class QpointPhononModes(object):
         if dw:
             temperature = dw.temperature
             if dw.crystal.n_atoms != self.crystal.n_atoms:
-                raise Exception((
+                raise ValueError((
                     'The DebyeWaller object used as dw is not '
                     'compatible with the QPointPhononModes object (they'
                     ' have a different number of atoms)'))

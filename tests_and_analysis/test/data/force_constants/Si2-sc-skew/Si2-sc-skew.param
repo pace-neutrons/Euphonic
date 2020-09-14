@@ -1,0 +1,18 @@
+task               : phonon
+cut_off_energy     : 150 eV
+xc_functional      : lda
+fix_occupancy      : true
+iprint             : 3
+grid_scale         : 1.75
+opt_strategy       : speed
+elec_method        : dm
+phonon_method      : finitedisplacement
+phonon_fine_method : supercell
+phonon_write_force_constants : true
+write_checkpoint : true
+rand_seed          : 1234
+phonon_sum_rule    : t
+num_dump_cycles    : 0
+popn_write : minimal
+
+continuation : Si2-sc-skew.castep_bin

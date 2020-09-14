@@ -7,7 +7,7 @@ import numpy.testing as npt
 
 from euphonic import ureg
 from euphonic.spectra import Spectrum1D
-from tests_and_analysis.test.utils import get_data_path
+from tests_and_analysis.test.utils import get_data_path, check_unit_conversion
 
 class ExpectedSpectrum1D:
     def __init__(self, spectrum1d_json_file: str):
@@ -209,14 +209,12 @@ class TestSpectrum1DSerialisation:
 @pytest.mark.unit
 class TestSpectrum1DUnitConversion:
 
-    @pytest.mark.parametrize('spectrum1d_file, unit_attr, unit_val', [
-        ('xsq_spectrum1d.json', 'x_data_unit', '1/bohr'),
-        ('xsq_spectrum1d.json', 'y_data_unit', '1/cm')])
-    def test_correct_unit_conversion(self, spectrum1d_file, unit_attr,
-                                     unit_val):
+    @pytest.mark.parametrize('spectrum1d_file, attr, unit_val', [
+        ('xsq_spectrum1d.json', 'x_data', '1/bohr'),
+        ('xsq_spectrum1d.json', 'y_data', '1/cm')])
+    def test_correct_unit_conversion(self, spectrum1d_file, attr, unit_val):
         spec1d = get_spectrum1d(spectrum1d_file)
-        setattr(spec1d, unit_attr, unit_val)
-        assert getattr(spec1d, unit_attr) == unit_val
+        check_unit_conversion(spec1d, attr, unit_val)
 
     @pytest.mark.parametrize('spectrum1d_file, unit_attr, unit_val, err', [
         ('xsq_spectrum1d.json', 'x_data_unit', 'kg', ValueError),
@@ -247,6 +245,11 @@ class TestSpectrum1DMethods:
         expected_broadened_spec1d = get_spectrum1d(broadened_spectrum1d_file)
         broadened_spec1d = spec1d.broaden(args[0], **args[1])
         check_spectrum1d(broadened_spec1d, expected_broadened_spec1d)
+
+    def test_broaden_invalid_shape_raises_value_error(self):
+        spec1d = get_spectrum1d('quartz_666_dos.json')
+        with pytest.raises(ValueError):
+            spec1d.broaden(1*ureg('meV'), shape='unknown')
 
     @pytest.mark.parametrize(
         'spectrum1d_file, expected_bin_edges', [

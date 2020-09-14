@@ -21,12 +21,7 @@ from euphonic.readers import castep, phonopy
 
 
 class ImportCError(Exception):
-
-    def __init__(self, message):
-        self.message = message
-
-    def __str__(self):
-        return "ImportCError: {}".format(self.message)
+    pass
 
 
 class ForceConstants(object):
@@ -322,7 +317,7 @@ class ForceConstants(object):
 
         lim = 2  # Supercell image limit
         # Construct list of supercell ion images
-        if not hasattr(self, 'sc_image_i'):
+        if not hasattr(self, '_sc_image_i'):
             self._calculate_supercell_images(lim)
 
         # Get a list of all the unique supercell image origins and cell
@@ -428,8 +423,8 @@ class ForceConstants(object):
                     'use_c=True is set, but the Euphonic\'s C extension'
                     ' couldn\'t be imported, it may not have been '
                     'installed. You have selected not to fall back on '
-                    'Python, therefore we cannot complete the '
-                    'calculation.'))
+                    'Python, therefore the calculation can\'t be '
+                    'completed'))
             else:
                 q_independent_args = (
                     reduced_qpts, split_idx, q_dirs, fc_img_weighted,
@@ -486,11 +481,7 @@ class ForceConstants(object):
         # Mass weight dynamical matrix
         dyn_mat *= dyn_mat_weighting
 
-        try:
-            evals, evecs = np.linalg.eigh(dyn_mat, UPLO='U')
-        # Fall back to zheev if eigh fails (eigh calls zheevd)
-        except np.linalg.LinAlgError:
-            evals, evecs, info = zheev(dyn_mat)
+        evals, evecs = np.linalg.eigh(dyn_mat, UPLO='U')
         evecs = np.reshape(np.transpose(evecs),
                            (3*n_atoms, n_atoms, 3))
         # Set imaginary frequencies to negative
@@ -929,7 +920,7 @@ class ForceConstants(object):
                 '\nError correcting for acoustic sum rule, could not '
                 'find 3 acoustic modes.\nReturning uncorrected FC '
                 'matrix'), stacklevel=2)
-            return self.force_constants
+            return self._force_constants
 
         # Correct fc matrix - set acoustic modes to almost zero
         fc_tol = 1e-8*np.min(np.abs(evals))

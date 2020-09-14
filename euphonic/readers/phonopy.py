@@ -76,11 +76,11 @@ def _extract_phonon_data_yaml(filename):
     data_dict['qpts'] = np.array([phon['q-position'] for phon in phonons])
     data_dict['frequencies'] = np.array(
         [[band_data['frequency'] for band_data in bands_data]
-            for bands_data in bands_data_each_qpt])
+         for bands_data in bands_data_each_qpt])
     try:
         data_dict['eigenvectors'] = np.squeeze(np.array(
             [[band_data['eigenvector'] for band_data in bands_data]
-                for bands_data in bands_data_each_qpt]).view(np.complex128))
+             for bands_data in bands_data_each_qpt]).view(np.complex128))
     except KeyError:
         pass
 
@@ -215,22 +215,19 @@ def _read_phonon_data(
     yaml_exts = ['yaml', 'yml', 'yl']
     if phonon_format is None:
         phonon_format = os.path.splitext(phonon_name)[1].strip('.')
-        if phonon_format == '':
-            raise Exception(
-                f'Format of {phonon_name} couldn\'t be determined')
 
     if phonon_format in hdf5_exts:
         phonon_dict = _extract_phonon_data_hdf5(phonon_pathname)
     elif phonon_format in yaml_exts:
         phonon_dict = _extract_phonon_data_yaml(phonon_pathname)
     else:
-        raise Exception((f'File format {phonon_format} of {phonon_name}'
-                         f' is not recognised'))
+        raise ValueError((f'File format {phonon_format} of {phonon_name}'
+                          f' is not recognised'))
 
     if not 'eigenvectors' in phonon_dict.keys():
-        raise Exception((f'Eigenvectors couldn\'t be foud in '
-                         f'{phonon_pathname}, ensure --eigvecs was set '
-                         f'when running Phonopy'))
+        raise RuntimeError((f'Eigenvectors couldn\'t be found in '
+                            f'{phonon_pathname}, ensure --eigvecs was '
+                            f'set when running Phonopy'))
 
     # Since units are not explicitly defined in
     # mesh/band/qpoints.yaml/hdf5 assume:
@@ -252,9 +249,10 @@ def _read_phonon_data(
         umass = summary_dict['umass']
         # Check phonon_file and summary_file are commensurate
         if 3*len(phonon_dict['atom_r']) != len(phonon_dict['frequencies'][0]):
-            raise Exception((f'Phonon file {phonon_pathname} not commensurate '
-                             f'with summary file {summary_pathname}. Please '
-                              'check contents'))
+            raise ValueError((
+                f'Phonon file {phonon_pathname} not commensurate '
+                f'with summary file {summary_pathname}. Please '
+                'check contents'))
 
     data_dict = {}
     data_dict['crystal'] = {}
@@ -277,7 +275,7 @@ def _read_phonon_data(
     # Convert Phonopy conventions to Euphonic conventions
     data_dict['eigenvectors'] = convert_eigenvector_phases(phonon_dict)
     if 'weights' in phonon_dict.keys():
-        data_dict['weights'] = phonon_dict['weights']
+        data_dict['weights'] = _convert_weights(phonon_dict['weights'])
     return data_dict
 
 
@@ -329,7 +327,7 @@ def _extract_force_constants(fc_file, n_atoms, n_cells, summary_name,
 
     fc_dims =  [int(dim) for dim in fc_file.readline().split()]
     # single shape specifier implies full format
-    if (len(fc_dims) == 1):
+    if len(fc_dims) == 1:
         fc_dims.append(fc_dims[0])
     _check_fc_shape(fc_dims, n_atoms, n_cells, fc_file.name, summary_name)
     if fc_dims[0] == fc_dims[1]:
@@ -386,12 +384,16 @@ def _extract_force_constants_summary(summary_object, cell_origins_map,
     ----------
     summary_object : dict
         Dict containing contents of phonopy.yaml
-    cell_origins_map : (n_atoms, n_cells) int ndarray, optional, default None
+    cell_origins_map : (n_atoms*n_cells, 2) int ndarray
         In the case of of non-diagonal supercell_matrices, the cell
         origins are not the same for each atom. This is a map of the
         equivalent cell origins for each atom, which is required to
         reorder the force constants matrix so that all atoms in the unit
         cell share equivalent origins.
+    sc_relative_idx : (n_cells, n_cells) int ndarray
+        The index n of the equivalent vector in cell_origins for each
+        cell_origins[i] -> cell_origins[j] vector in the supercell.
+        See _get_supercell_relative_idx
 
     Returns
     ----------
@@ -399,18 +401,16 @@ def _extract_force_constants_summary(summary_object, cell_origins_map,
         Dict containing force constants in Euphonic format.
     """
     fc_entry = summary_object['force_constants']
-    fc_dims = fc_entry['shape']
     fc_format = fc_entry['format']
 
-    n_atoms = fc_dims[0]
-    n_cells = int(np.rint(fc_dims[1]/fc_dims[0]))
-
+    n_cells = sc_relative_idx.shape[0]
+    n_atoms = int(cell_origins_map.shape[0]/n_cells)
     if fc_format == 'compact':
         fc = np.array(fc_entry['elements'])
-    elif fc_format == 'full':  # convert to compact
+    else:  # convert to compact
         p2s_map = [pi for pi in range(0, n_atoms*n_cells, n_atoms)]
         fc = np.array(fc_entry['elements']).reshape(
-                [n_atoms*n_cells, n_atoms, n_cells, 3, 3])[p2s_map, :, :, :, :]
+            [n_atoms*n_cells, n_atoms, n_cells, 3, 3])[p2s_map, :, :, :, :]
 
     fc = _reshape_fc(fc, n_atoms, n_cells, cell_origins_map, sc_relative_idx)
     return fc
@@ -433,6 +433,10 @@ def _reshape_fc(fc, n_atoms, n_cells, cell_origins_map, sc_relative_idx):
         cells and atoms in Euphonic. The first column is the index of
         the equivalent atom in the unit cell, and the second column is
         the index of the cell in the supercell.
+    sc_relative_idx : (n_cells, n_cells) int ndarray
+        The index n of the equivalent vector in cell_origins for each
+        cell_origins[i] -> cell_origins[j] vector in the supercell.
+        See _get_supercell_relative_idx
 
     Returns
     -------
@@ -465,8 +469,8 @@ def _check_fc_shape(fc_shape, n_atoms, n_cells, fc_filename, summary_filename):
     Check if force constants has the correct shape
     """
     if (not ((fc_shape[0] == n_atoms or fc_shape[0] == n_cells*n_atoms) and
-            fc_shape[1] == n_cells*n_atoms)):
-        raise Exception((
+             fc_shape[1] == n_cells*n_atoms)):
+        raise ValueError((
             f'Force constants matrix with shape {fc_shape} read from '
             f'{fc_filename} is not compatible with crystal read from '
             f'{summary_filename} which has {n_atoms} atoms in the cell,'
@@ -488,7 +492,6 @@ def _extract_born(born_object):
     born_dict : float ndarray
         Dict containing dielectric tensor and born effective charge
     """
-
     born_lines_str = born_object.readlines()
     born_lines = [narr.split() for narr in born_lines_str]
 
@@ -765,8 +768,9 @@ def _read_interpolation_data(path='.', summary_name='phonopy.yaml',
                 summary_dict['cell_origins_map'],
                 summary_dict['sc_relative_idx'])
         else:
-            raise Exception((f'Force constants file format {fc_format} '
-                             f'of {fc_name} is not recognised'))
+            raise ValueError((
+                f'Force constants file format "{fc_format}" of '
+                f'"{fc_name}" is not recognised'))
 
     # Only read born/dielectric if they're not in summary file and the
     # user has specified a Born file
