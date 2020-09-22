@@ -75,6 +75,6 @@ Command Line Options
 --------------------
 
 .. argparse::
-   :filename: euphonic.cli.optimise_eta
+   :module: euphonic.cli.optimise_eta
    :func: get_parser
    :prog: euphonic-optimise-eta

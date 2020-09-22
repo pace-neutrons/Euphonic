@@ -5,8 +5,8 @@ euphonic-dos
 ============
 
 The ``euphonic-dos`` program can be used to plot a density of states
-from precalculated frequencies in a ``.phonon`` or ``.bands``
-file. For example, to plot DOS from a ``quartz.phonon`` file, run::
+from precalculated frequencies in a ``.phonon`` file. For example, to
+plot DOS from a ``quartz.phonon`` file, run::
 
    euphonic-dos quartz.phonon
 
