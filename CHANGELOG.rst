@@ -21,6 +21,16 @@
       will grow to include schemes beyond this average over a single
       sphere.)
 
+- Changes:
+
+  - The Scripts folder has been removed. Command-line tools are now
+    located in the euphonic.cli module. The entry-points are managed
+    in setup.py, and each tool has the prefix "euphonic-" to avoid
+    namespace clashes with other tools on the user's
+    computer. (e.g. euphonic-dos)
+  - From an interactive shell with tab-completion, one can find all
+    the euphonic tools by typing "euphonic-<TAB>".
+
 - Bug fixes:
 
   - Correctly convert from Phonopy's q-point weight convention to Euphonic's
