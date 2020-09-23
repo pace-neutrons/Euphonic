@@ -160,7 +160,8 @@ class ForceConstants(object):
             Changes the cutoff in real/reciprocal space for the dipole
             Ewald sum. A higher value uses more reciprocal terms. If tuned
             correctly this can result in performance improvements. See
-            scripts/optimise_eta.py for help on choosing a good eta_scale.
+            euphonic-optimise-eta program for help on choosing a good
+            eta_scale.
         splitting : boolean, optional
             Whether to calculate the LO-TO splitting at the gamma
             points. Only applied if dipole is True and the Born charges

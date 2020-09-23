@@ -1,6 +1,6 @@
 import json
 from unittest.mock import patch
-import scripts.dispersion
+import euphonic.cli.dispersion
 from tests_and_analysis.test.script_tests.utils import (
     get_phonon_file, get_dispersion_params, get_current_plot_lines_xydata,
     get_dispersion_data_file)
@@ -13,7 +13,7 @@ def regenerate_dispersion_data(_):
 
     for dispersion_params in get_dispersion_params():
         # Generate current figure for us to retrieve with gcf
-        scripts.dispersion.main([get_phonon_file()] + dispersion_params)
+        euphonic.cli.dispersion.main([get_phonon_file()] + dispersion_params)
 
         # Retrieve with gcf and write to file
         json_data[" ".join(

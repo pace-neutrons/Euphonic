@@ -29,9 +29,10 @@ Python API
 Helper Scripts
 ==============
 
-- :ref:`dispersion.py <disp-script>`
-- :ref:`dos.py <dos-script>`
-- :ref:`optimise_eta.py <eta-script>`
+- :ref:`euphonic-dispersion <disp-script>`
+- :ref:`euphonic-dos <dos-script>`
+- :ref:`euphonic-optimise-eta <eta-script>`
+- :ref:`euphonic-show-sampling <sampling-script>`
 
 Examples
 ========

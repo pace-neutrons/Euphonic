@@ -7,7 +7,7 @@ import numpy.testing as npt
 import matplotlib.pyplot
 from .utils import (get_phonon_file, get_dispersion_params,
                     get_dispersion_data_file)
-import scripts.dispersion
+import euphonic.cli.dispersion
 
 
 @pytest.mark.integration
@@ -27,7 +27,7 @@ class TestRegression:
     @pytest.mark.parametrize("dispersion_args", get_dispersion_params())
     def test_plots_produce_expected_xydata(
             self, inject_mocks, dispersion_args):
-        scripts.dispersion.main([get_phonon_file()] + dispersion_args)
+        euphonic.cli.dispersion.main([get_phonon_file()] + dispersion_args)
 
         lines = matplotlib.pyplot.gcf().axes[0].lines
 

@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 """
 Run and time the Ewald sum part of an interpolation calculation for a small
@@ -11,6 +10,14 @@ import argparse
 import time
 import numpy as np
 from euphonic import ForceConstants
+
+
+def main():
+    parser = get_parser()
+    args = parser.parse_args()
+    params = vars(args)
+    params.update({'print_to_terminal': True})
+    calculate_optimum_eta(**params)
 
 
 def calculate_optimum_eta(filename: str, eta_min: float = 0.25, eta_max: float = 1.5, eta_step: float = 0.25,
@@ -112,11 +119,3 @@ def get_parser():
     )
 
     return parser
-
-
-if __name__ == '__main__':
-    parser = get_parser()
-    args = parser.parse_args()
-    params = vars(args)
-    params.update({'print_to_terminal': True})
-    calculate_optimum_eta(**params)

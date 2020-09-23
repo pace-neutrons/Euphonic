@@ -90,7 +90,7 @@ def get_current_plot_offsets() -> List[List[float]]:
 
 def get_dos_params() -> List[List[str]]:
     """
-    Get the parameters to run and test scripts/dos.py with
+    Get the parameters to run and test euphonic-dos with
 
     Returns
     -------
@@ -103,7 +103,7 @@ def get_dos_params() -> List[List[str]]:
 
 def get_dispersion_params() -> List[List[str]]:
     """
-    Get the parameters to run and test scripts/dispersion.py with.
+    Get the parameters to run and test euphonic-dispersion with.
 
     Returns
     -------
@@ -115,7 +115,7 @@ def get_dispersion_params() -> List[List[str]]:
 
 def get_sphere_sampling_params() -> List[List[str]]:
     """
-    Get the parameters to run and test scripts/euphonic_sphere_sampling.py
+    Get the parameters to run and test euphonic-show-sampling
 
     Returns
     -------

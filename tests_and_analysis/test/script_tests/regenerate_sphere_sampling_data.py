@@ -2,7 +2,7 @@ import json
 from unittest.mock import patch
 import numpy
 
-import scripts.euphonic_sphere_sampling
+import euphonic.cli.show_sampling
 from tests_and_analysis.test.script_tests.utils import (
     get_sphere_sampling_params, get_sphere_sampling_data_file,
     get_current_plot_offsets)
@@ -18,7 +18,7 @@ def regenerate_sphere_sampling_data(_):
         numpy.random.seed(0)
 
         # Generate current figure for us to retrieve with gcf
-        scripts.euphonic_sphere_sampling.main(sampling_params)
+        euphonic.cli.show_sampling.main(sampling_params)
 
         # Retrieve with gcf and write to file
         json_data[" ".join(sampling_params)] = get_current_plot_offsets()
