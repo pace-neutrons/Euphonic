@@ -111,10 +111,8 @@ structure factor with Debye-Waller:
 
   # Generate a recommended q-point path to calculate the structure factor on
   # using seekpath
-  _, unique_atoms = np.unique(fc.crystal.atom_type, return_inverse=True)
-  structure = (fc.crystal.cell_vectors.magnitude,
-               fc.crystal.atom_r, unique_atoms)
-  qpts = seekpath.get_explicit_k_path(structure)["explicit_kpoints_rel"]
+  cell = crystal.to_spglib_cell()
+  qpts = seekpath.get_explicit_k_path(cell)["explicit_kpoints_rel"]
   # Calculate frequencies/eigenvectors for the q-point path
   phonons = fc.calculate_qpoint_phonon_modes(qpts, asr='reciprocal')
 

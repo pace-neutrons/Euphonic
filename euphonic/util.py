@@ -111,15 +111,16 @@ def get_all_origins(max_xyz, min_xyz=[0, 0, 0], step=1):
     return np.column_stack((nx, ny, nz))
 
 
-def get_qpoint_labels(crystal, qpts):
+def get_qpoint_labels(cell, qpts):
     """
     Gets q-points point labels (e.g. GAMMA, X, L) for the q-points at
     which the path through reciprocal space changes direction
 
     Parameters
     ----------
-    crystal : Crystal
-        The crystal to get high-symmetry labels for
+    cell : (list, list, list)
+        The cell structure as defined by spglib. Can be obtained by
+        Crystal.to_spglib_cell
     qpts : (n_qpts, 3) float ndarray
         The q-points to get labels for
 
@@ -128,7 +129,7 @@ def get_qpoint_labels(crystal, qpts):
     x_tick_labels : list (int, string) tuples or None
         Tick labels and the q-point indices that they apply to
     """
-    xlabels, qpts_with_labels = _recip_space_labels(crystal, qpts)
+    xlabels, qpts_with_labels = _recip_space_labels(cell, qpts)
     for i, label in enumerate(xlabels):
         if label == 'GAMMA':
             xlabels[i] = r'$\Gamma$'
@@ -287,15 +288,16 @@ def _calc_abscissa(crystal, qpts):
         1/ureg(crystal.cell_vectors_unit))
 
 
-def _recip_space_labels(crystal, qpts, symmetry_labels=True):
+def _recip_space_labels(cell, qpts, symmetry_labels=True):
     """
     Gets q-points point labels (e.g. GAMMA, X, L) for the q-points at
     which the path through reciprocal space changes direction
 
     Parameters
     ----------
-    crystal : Crystal
-        The crystal to get high-symmetry labels for
+    cell : (list, list, list)
+        The cell structure as defined by spglib. Can be obtained by
+        Crystal.to_spglib_cell
     qpts : (n_qpts, 3) float ndarray
         The q-points to get labels for
     symmetry_labels : boolean, optional
@@ -327,9 +329,6 @@ def _recip_space_labels(crystal, qpts, symmetry_labels=True):
     # dictionary of fractional points
     sym_label_to_coords = {}
     if symmetry_labels:
-        _, atom_num = np.unique(crystal.atom_type, return_inverse=True)
-        cell_vectors = (crystal.cell_vectors.to('angstrom')).magnitude
-        cell = (cell_vectors, crystal.atom_r, atom_num)
         sym_label_to_coords = seekpath.get_path(cell)["point_coords"]
     else:
         sym_label_to_coords = _generic_qpt_labels()

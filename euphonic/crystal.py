@@ -105,6 +105,24 @@ class Crystal(object):
         cv = self._cell_vectors
         return np.dot(cv[0], np.cross(cv[1], cv[2]))
 
+    def to_spglib_cell(self):
+        """
+        Convert to a 'cell' as defined by spglib
+
+        Returns
+        -------
+        cell : tuple of lists
+            cell = (lattice, positions, numbers), where lattice is the
+            lattice vectors, positions are the fractional atomic
+            positions, and numbers are integers distinguishing the
+            atomic species
+        """
+        _, unique_atoms = np.unique(self.atom_type, return_inverse=True)
+        cell = (self.cell_vectors.magnitude.tolist(),
+                self.atom_r.tolist(),
+                unique_atoms.tolist())
+        return cell
+
     def to_dict(self):
         """
         Convert to a dictionary. See Crystal.from_dict for details on

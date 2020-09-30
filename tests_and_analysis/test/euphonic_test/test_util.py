@@ -44,5 +44,5 @@ class TestGetQptLabels:
         np.array([[0.5, 0.5, 0.5], [0.0, 0.0, 0.5]]),
         [(0, ''), (1, 'A')])])
     def test_get_qpt_labels(self, crystal, qpts, expected_labels):
-        labels = get_qpoint_labels(crystal, qpts)
+        labels = get_qpoint_labels(crystal.to_spglib_cell(), qpts)
         assert labels == expected_labels
