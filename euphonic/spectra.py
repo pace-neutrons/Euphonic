@@ -5,10 +5,10 @@ from pint import Quantity
 from scipy import signal
 import numpy as np
 
-from euphonic import ureg
-from euphonic.util import _check_constructor_inputs, _check_unit_conversion
+from euphonic.validate import _check_constructor_inputs, _check_unit_conversion
 from euphonic.io import (_obj_to_json_file, _obj_from_json_file,
                          _obj_to_dict, _process_dict)
+from euphonic import ureg
 
 
 class Spectrum1D(object):

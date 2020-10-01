@@ -4,17 +4,12 @@ from typing import Dict, Optional, Union
 import numpy as np
 from pint import Quantity
 
-from euphonic import ureg
-from euphonic.crystal import Crystal
-from euphonic.spectra import Spectrum1D
-from euphonic.debye_waller import DebyeWaller
-from euphonic.structure_factor import StructureFactor
-from euphonic.util import (direction_changed, is_gamma,
-                           _check_constructor_inputs, _check_unit_conversion)
+from euphonic.validate import _check_constructor_inputs, _check_unit_conversion
 from euphonic.io import (_obj_to_json_file, _obj_from_json_file,
                          _obj_to_dict, _process_dict)
 from euphonic.readers import castep, phonopy
-from euphonic.util import get_reference_data
+from euphonic.util import direction_changed, is_gamma, get_reference_data
+from euphonic import ureg, Crystal, Spectrum1D, DebyeWaller, StructureFactor
 
 
 class QpointPhononModes(object):

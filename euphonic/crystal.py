@@ -3,10 +3,10 @@ import inspect
 import numpy as np
 from pint import Quantity
 
-from euphonic import ureg
+from euphonic.validate import _check_constructor_inputs, _check_unit_conversion
 from euphonic.io import (_obj_to_json_file, _obj_from_json_file,
                          _obj_to_dict, _process_dict)
-from euphonic.util import _check_constructor_inputs, _check_unit_conversion
+from euphonic import ureg
 
 
 class Crystal(object):

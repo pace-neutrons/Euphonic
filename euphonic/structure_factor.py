@@ -1,11 +1,13 @@
+from typing import Optional
+
 import numpy as np
 from pint import Quantity
-from typing import Optional
-from euphonic import ureg, Crystal, Spectrum1D, Spectrum2D
-from euphonic.util import (get_qpoint_labels, _calc_abscissa, _bose_factor,
-                           _check_constructor_inputs, _check_unit_conversion)
+
+from euphonic.validate import _check_constructor_inputs, _check_unit_conversion
 from euphonic.io import (_obj_to_json_file, _obj_from_json_file,
                          _obj_to_dict, _process_dict)
+from euphonic.util import get_qpoint_labels, _calc_abscissa, _bose_factor
+from euphonic import ureg, Spectrum1D, Spectrum2D, Crystal
 
 
 class StructureFactor(object):
