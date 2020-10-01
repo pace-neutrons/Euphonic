@@ -406,35 +406,6 @@ def _get_qpt_label(qpt, point_labels):
     return label
 
 
-def _bose_factor(freqs, T, kB=None):
-    """
-    Calculate the Bose factor
-
-    Parameters
-    ----------
-    freqs : (n_qpts, 3*n_ions) float ndarray
-        Phonon frequencies
-    T : float
-        Temperature in K
-    kB : float, default None
-        Boltzmann constant in units that agree with provided
-        frequencies/temperature. If not provided it is assumed
-        frequencies are in Hartree and temperature in K
-
-    Returns
-    -------
-    bose : (n_qpts, 3*n_ions) float ndarray
-        Bose factor
-    """
-    if kB is None:
-        kB = (1*ureg.k).to('E_h/K').magnitude
-    bose = np.zeros(freqs.shape)
-    bose[freqs > 0] = 1
-    if T > 0:
-        bose = bose + 1/(np.exp(np.absolute(freqs)/(kB*T)) - 1)
-    return bose
-
-
 def _get_supercell_relative_idx(cell_origins, sc_matrix):
     """"
     For each cell_origins[i] -> cell_origins[j] vector in the supercell,

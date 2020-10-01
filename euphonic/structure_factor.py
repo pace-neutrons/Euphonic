@@ -6,8 +6,12 @@ from pint import Quantity
 from euphonic.validate import _check_constructor_inputs, _check_unit_conversion
 from euphonic.io import (_obj_to_json_file, _obj_from_json_file,
                          _obj_to_dict, _process_dict)
-from euphonic.util import get_qpoint_labels, _calc_abscissa, _bose_factor
+from euphonic.util import get_qpoint_labels, _calc_abscissa
 from euphonic import ureg, Spectrum1D, Spectrum2D, Crystal
+
+
+class NoTemperatureError(Exception):
+    pass
 
 
 class StructureFactor(object):
@@ -228,24 +232,7 @@ class StructureFactor(object):
         -------
         Quantity
             Scattering intensities as array over (qpt, energy)
-
-        Raises
-        ------
-        ValueError
-            If a temperature is provided and isn't consistent with the
-            temperature in the StructureFactor object
         """
-        if calc_bose:
-            if self.temperature is not None:
-                if (temperature is not None
-                        and not np.isclose(temperature, self.temperature)):
-                    raise ValueError((
-                        'Temperature provided to calculate_sqw_map '
-                        '({:~P}) is not consistent with the temperature'
-                        'stored in StructureFactor ({:~P})'.format(
-                            temperature, self.temperature)))
-                temperature = self.temperature
-
         # Convert units
         freqs = self._frequencies
         e_bins_internal = e_bins.to('INTERNAL_ENERGY_UNIT').magnitude
@@ -254,13 +241,16 @@ class StructureFactor(object):
         # side, for any branches that fall outside the energy bin range
         sqw_map = np.zeros((self.n_qpts, len(e_bins) + 1))
         sf = self._structure_factors
-        if calc_bose and temperature is not None:
-            p_intensity = sf*_bose_factor(freqs, temperature.to('K').magnitude)
-            n_intensity = sf*_bose_factor(
-                -freqs, temperature.to('K').magnitude)
-        else:
-            p_intensity = sf
-            n_intensity = sf
+
+        p_intensity = sf
+        n_intensity = sf
+        if calc_bose:
+            try:
+                bose = self._bose_factor(temperature)
+                p_intensity = (1 + bose)*p_intensity
+                n_intensity = bose*n_intensity
+            except NoTemperatureError:
+                pass
 
         p_bin = np.digitize(freqs, e_bins_internal)
         n_bin = np.digitize(-freqs, e_bins_internal)
@@ -275,6 +265,55 @@ class StructureFactor(object):
             self.structure_factors_unit)
 
         return sqw_map
+
+    def _bose_factor(self, temperature=None):
+        """
+        Calculate the Bose factor for the frequencies stored in
+        StructureFactor
+
+        Parameters
+        ----------
+        temperature : Quantity
+            Temperature used to calculate the Bose factor. This is only
+            required if StructureFactor.temperature = None, otherwise
+            the temperature stored in StructureFactor will be used.
+
+        Returns
+        -------
+        bose : (n_qpts, 3*n_atoms) float ndarray
+            Bose factor
+
+        Raises
+        ------
+        ValueError
+            If a temperature is provided and isn't consistent with the
+            temperature in the StructureFactor object
+        NoTemperatureError
+            If a temperature isn't provided there is no temperature in
+            the StructureFactor object
+        """
+        if self.temperature is not None:
+            if (temperature is not None
+                    and not np.isclose(temperature, self.temperature)):
+                raise ValueError((
+                    'Temperature provided to calculate the Bose factor '
+                    '({:~P}) is not consistent with the temperature '
+                    'stored in StructureFactor ({:~P})'.format(
+                        temperature, self.temperature)))
+            temperature = self.temperature
+        if temperature is None:
+            raise NoTemperatureError(
+                'When calculating the Bose factor, no temperature was '
+                'provided, and no temperature could be found in '
+                'StructureFactor')
+        kB = (1*ureg.k).to('E_h/K').magnitude
+        temp = temperature.to('K').magnitude
+        bose = np.zeros(self._frequencies.shape)
+        if temperature > 0:
+            bose = 1/(np.exp(np.absolute(self._frequencies)/(kB*temp)) - 1)
+        else:
+            bose = 0
+        return bose
 
     def to_dict(self):
         """
