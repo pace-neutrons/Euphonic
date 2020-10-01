@@ -111,25 +111,26 @@ def get_all_origins(max_xyz, min_xyz=[0, 0, 0], step=1):
     return np.column_stack((nx, ny, nz))
 
 
-def get_qpoint_labels(cell, qpts):
+def get_qpoint_labels(qpts, cell=None):
     """
-    Gets q-points point labels (e.g. GAMMA, X, L) for the q-points at
-    which the path through reciprocal space changes direction
+    Gets q-point labels (e.g. GAMMA, X, L) for the q-points at which the
+    path through reciprocal space changes direction
 
     Parameters
     ----------
-    cell : (list, list, list)
-        The cell structure as defined by spglib. Can be obtained by
-        Crystal.to_spglib_cell
     qpts : (n_qpts, 3) float ndarray
         The q-points to get labels for
+    cell : (list, list, list), optional
+        The cell structure as defined by spglib. Can be obtained by
+        Crystal.to_spglib_cell. If not provided, the labels will be
+        generic e.g. '1/3 1/2 0' rather than high-symmetry point labels
 
     Returns
     -------
     x_tick_labels : list (int, string) tuples or None
         Tick labels and the q-point indices that they apply to
     """
-    xlabels, qpts_with_labels = _recip_space_labels(cell, qpts)
+    xlabels, qpts_with_labels = _recip_space_labels(qpts, cell=cell)
     for i, label in enumerate(xlabels):
         if label == 'GAMMA':
             xlabels[i] = r'$\Gamma$'
@@ -288,21 +289,19 @@ def _calc_abscissa(crystal, qpts):
         1/ureg(crystal.cell_vectors_unit))
 
 
-def _recip_space_labels(cell, qpts, symmetry_labels=True):
+def _recip_space_labels(qpts, cell=None):
     """
     Gets q-points point labels (e.g. GAMMA, X, L) for the q-points at
     which the path through reciprocal space changes direction
 
     Parameters
     ----------
-    cell : (list, list, list)
-        The cell structure as defined by spglib. Can be obtained by
-        Crystal.to_spglib_cell
     qpts : (n_qpts, 3) float ndarray
         The q-points to get labels for
-    symmetry_labels : boolean, optional
-        Whether to use high-symmetry point labels (e.g. GAMMA, X, L).
-        Otherwise just uses generic labels (e.g. '0 0 0')
+    cell : (list, list, list), optional
+        The cell structure as defined by spglib. Can be obtained by
+        Crystal.to_spglib_cell. If not provided, the labels will be
+        generic e.g. '1/3 1/2 0' rather than high-symmetry point labels
 
     Returns
     -------
@@ -324,11 +323,7 @@ def _recip_space_labels(cell, qpts, symmetry_labels=True):
             [True]))
     qpts_with_labels = np.where(qpt_has_label)[0]
 
-    # Get dict of high symmetry point labels to their coordinates for
-    # this space group. If space group can't be determined use a generic
-    # dictionary of fractional points
-    sym_label_to_coords = {}
-    if symmetry_labels:
+    if cell is not None:
         sym_label_to_coords = seekpath.get_path(cell)["point_coords"]
     else:
         sym_label_to_coords = _generic_qpt_labels()

@@ -201,8 +201,8 @@ class StructureFactor(object):
 
         abscissa = _calc_abscissa(self.crystal, self.qpts)
         # Calculate q-space ticks and labels
-        x_tick_labels = get_qpoint_labels(self.crystal.to_spglib_cell(),
-                                          self.qpts)
+        x_tick_labels = get_qpoint_labels(self.qpts,
+                                          cell=self.crystal.to_spglib_cell())
 
         return Spectrum2D(abscissa, e_bins, sqw_map,
                           x_tick_labels=x_tick_labels)

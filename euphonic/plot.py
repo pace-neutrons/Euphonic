@@ -37,7 +37,8 @@ def plot_dispersion(phonons, btol=10.0, *args, **kwargs):
     qpts = phonons.qpts
     abscissa = _calc_abscissa(phonons.crystal, qpts)
     spectra = []
-    x_tick_labels = get_qpoint_labels(phonons.crystal.to_spglib_cell(), qpts)
+    x_tick_labels = get_qpoint_labels(qpts,
+                                      cell=phonons.crystal.to_spglib_cell())
     for i in range(len(phonons._frequencies[0])):
         spectra.append(Spectrum1D(abscissa, phonons.frequencies[:, i],
                        x_tick_labels=x_tick_labels))
