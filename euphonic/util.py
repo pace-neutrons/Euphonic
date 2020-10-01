@@ -235,15 +235,16 @@ def get_reference_data(collection: str = 'Sears1992',
             if isinstance(value, (float, complex))}
 
 
-def _calc_abscissa(crystal, qpts):
+def _calc_abscissa(reciprocal_cell, qpts):
     """
-    Calculates the distance between q-points (to use as a plot
+    Calculates the distance between q-points (e.g. to use as a plot
     x-coordinate)
 
     Parameters
     ----------
-    crystal : Crystal
-        The crystal
+    reciprocal_cell : (3, 3) float Quantity
+        The reciprocal cell, can be calculated with
+        Crystal.reciprocal_cell
     qpts : (n_qpts, 3) float ndarray
         The q-points to get the distance between, in reciprocal lattice
         units
@@ -251,7 +252,7 @@ def _calc_abscissa(crystal, qpts):
     abscissa : (n_qpts) float Quantity
         The distance between q-points in 1/crystal.cell_vectors_unit
     """
-    recip = crystal.reciprocal_cell().to('1/INTERNAL_LENGTH_UNIT').magnitude
+    recip = reciprocal_cell.to('1/INTERNAL_LENGTH_UNIT').magnitude
     # Get distance between q-points in each dimension
     # Note: length is nqpts - 1
     delta = np.diff(qpts, axis=0)
@@ -283,10 +284,9 @@ def _calc_abscissa(crystal, qpts):
     # Prepend initial x axis value of 0
     abscissa = np.insert(modq, 0, 0.)
 
-    # Do cumulative some to get position along x axis
+    # Do cumulative sum to get position along x axis
     abscissa = np.cumsum(abscissa)
-    return abscissa*ureg('1/INTERNAL_LENGTH_UNIT').to(
-        1/ureg(crystal.cell_vectors_unit))
+    return abscissa*ureg('1/INTERNAL_LENGTH_UNIT').to(reciprocal_cell.units)
 
 
 def _recip_space_labels(qpts, cell=None):

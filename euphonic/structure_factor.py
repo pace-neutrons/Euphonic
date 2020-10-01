@@ -203,7 +203,7 @@ class StructureFactor(object):
         sqw_map = self._bose_corrected_structure_factor(
             e_bins, calc_bose=calc_bose, temperature=temperature)
 
-        abscissa = _calc_abscissa(self.crystal, self.qpts)
+        abscissa = _calc_abscissa(self.crystal.reciprocal_cell(), self.qpts)
         # Calculate q-space ticks and labels
         x_tick_labels = get_qpoint_labels(self.qpts,
                                           cell=self.crystal.to_spglib_cell())
