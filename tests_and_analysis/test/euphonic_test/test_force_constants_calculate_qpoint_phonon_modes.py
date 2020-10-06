@@ -133,6 +133,22 @@ class TestForceConstantsCalculateQPointPhononModes:
             get_test_qpts(), asr='realspace')
         check_qpt_ph_modes(qpt_ph_modes1, qpt_ph_modes2)
 
+    @pytest.mark.parametrize(
+        'fc, material, qpt, kwargs, expected_qpt_ph_modes_file',
+        [(get_fc('quartz'), 'quartz', np.array([[1., 1., 1.]]),
+         {'splitting': True}, 'quartz_single_qpoint_phonon_modes.json')])
+    def test_calculate_qpoint_phonon_modes_single_qpt(
+            self, fc, material, qpt, kwargs, expected_qpt_ph_modes_file):
+        qpoint_phonon_modes = fc.calculate_qpoint_phonon_modes(
+            qpt, **kwargs)
+        expected_qpoint_phonon_modes = ExpectedQpointPhononModes(
+            os.path.join(get_qpt_ph_modes_dir(material),
+                         expected_qpt_ph_modes_file))
+        check_qpt_ph_modes(qpoint_phonon_modes,
+                           expected_qpoint_phonon_modes,
+                           frequencies_atol=1e-4,
+                           frequencies_rtol=2e-5)
+
     weights = np.array([0.1, 0.05, 0.05, 0.2, 0.2, 0.15, 0.15, 0.2, 0.1])
     weights_output_split_gamma = np.array([
         0.1, 0.05, 0.025, 0.025, 0.2, 0.1, 0.1, 0.075, 0.075, 0.075, 0.075,

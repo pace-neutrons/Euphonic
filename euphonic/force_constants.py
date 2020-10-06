@@ -311,7 +311,7 @@ class ForceConstants(object):
         # Get q-directions for non-analytical corrections
         if splitting:
             split_idx = np.where(is_gamma(reduced_qpts))[0]
-            q_dirs = self._get_q_dir(qpts, reduced_qpts, qpts_i, split_idx)
+            q_dirs = self._get_q_dir(qpts, qpts_i, split_idx)
         else:
             split_idx = np.array([])
             q_dirs = np.array([])
@@ -784,23 +784,24 @@ class ForceConstants(object):
         return np.reshape(np.transpose(dipole, axes=[0, 2, 1, 3]),
                           (3*n_atoms, 3*n_atoms))
 
-    def _get_q_dir(self, qpts, reduced_qpts, qpts_i, gamma_idx):
+    def _get_q_dir(self, qpts, qpts_i, gamma_idx):
         q_dirs = np.zeros((len(gamma_idx), 3))
-        for i, idx in enumerate(gamma_idx):
-            idx_in_qpts = np.where(qpts_i == idx)[0]
-            # If first q-point
-            if idx_in_qpts == 0:
-                q_dirs[i] = qpts[1]
-            # If last q-point
-            elif idx_in_qpts == (len(qpts) - 1):
-                q_dirs[i] = qpts[-2]
-            else:
-                # If splitting=True there should be an adjacent gamma
-                # point. Calculate splitting in whichever direction
-                # isn't gamma
-                q_dirs[i] = qpts[idx_in_qpts + 1]
-                if is_gamma(q_dirs[i]):
-                    q_dirs[i] = -qpts[idx_in_qpts - 1]
+        if len(qpts) > 1:
+            for i, idx in enumerate(gamma_idx):
+                idx_in_qpts = np.where(qpts_i == idx)[0]
+                # If first q-point
+                if idx_in_qpts == 0:
+                    q_dirs[i] = qpts[1]
+                # If last q-point
+                elif idx_in_qpts == (len(qpts) - 1):
+                    q_dirs[i] = qpts[-2]
+                else:
+                    # If splitting=True there should be an adjacent gamma
+                    # point. Calculate splitting in whichever direction
+                    # isn't gamma
+                    q_dirs[i] = qpts[idx_in_qpts + 1]
+                    if is_gamma(q_dirs[i]):
+                        q_dirs[i] = -qpts[idx_in_qpts - 1]
         return q_dirs
 
     def _calculate_gamma_correction(self, q_dir):

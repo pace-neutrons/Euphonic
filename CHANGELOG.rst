@@ -36,6 +36,8 @@
   - Correctly convert from Phonopy's q-point weight convention to Euphonic's
     when reading from mesh.yaml (see
     `7509043 <https://github.com/pace-neutrons/Euphonic/commit/7509043>`_)
+  - Avoid IndexError in ``ForceConstants.calculate_qpoint_phonon_modes`` when
+    there is only one q-point (which is gamma) and ``splitting=True``
 
 `v0.3.1 <https://github.com/pace-neutrons/Euphonic/compare/v0.3.0...v0.3.1>`_
 ----------
