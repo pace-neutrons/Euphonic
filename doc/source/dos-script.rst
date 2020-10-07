@@ -1,18 +1,18 @@
 .. _dos-script:
 
-=============
-dos.py Script
-=============
+============
+euphonic-dos
+============
 
-``dos.py`` can be used to plot a density of states from precalculated
-frequencies in a ``.phonon`` or ``.bands`` file. For example, to plot DOS from a
-``quartz.phonon`` file, run::
+The ``euphonic-dos`` program can be used to plot a density of states
+from precalculated frequencies in a ``.phonon`` file. For example, to
+plot DOS from a ``quartz.phonon`` file, run::
 
-   dos.py quartz.phonon
+   euphonic-dos quartz.phonon
 
 To see all the command line options, run::
 
-   dos.py -h
+   euphonic-dos -h
 
 You can also see the available command line options below
 
@@ -20,6 +20,6 @@ Command Line Options
 --------------------
 
 .. argparse::
-   :filename: ../../scripts/dos.py
+   :module: euphonic.cli.dos
    :func: get_parser
-   :prog: dos.py
+   :prog: euphonic-dos

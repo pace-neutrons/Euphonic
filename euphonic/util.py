@@ -223,9 +223,8 @@ def get_reference_data(collection: str = 'Sears1992',
 
     try:
         unit = ureg[unit_str]
-
     except UndefinedUnitError:
-        raise UndefinedUnitError(
+        raise ValueError(
             f'Units "{unit_str}" from data file "{filename}" '
             'are not supported by the Euphonic unit register.')
 
@@ -475,7 +474,7 @@ def _distribution_1d(xbins, xwidth, shape='gauss', extent=3.0):
     elif shape == 'lorentz':
         dist = _lorentzian(x, xwidth)
     else:
-        raise Exception(
+        raise ValueError(
             f'Distribution shape \'{shape}\' not recognised')
     dist = dist/np.sum(dist)  # Naively normalise
     return dist
@@ -495,7 +494,7 @@ def _distribution_2d(xbins, ybins, xwidth, ywidth, shape='gauss', extent=3.0):
         xdist = _lorentzian(x, xwidth)
         ydist = _lorentzian(y, ywidth)
     else:
-        raise Exception(
+        raise ValueError(
             f'Distribution shape \'{shape}\' not recognised')
     xgrid = np.tile(xdist, (len(ydist), 1))
     ygrid = np.transpose(np.tile(ydist, (len(xdist), 1)))

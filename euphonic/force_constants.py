@@ -21,12 +21,7 @@ from euphonic.readers import castep, phonopy
 
 
 class ImportCError(Exception):
-
-    def __init__(self, message):
-        self.message = message
-
-    def __str__(self):
-        return "ImportCError: {}".format(self.message)
+    pass
 
 
 class ForceConstants(object):
@@ -138,9 +133,9 @@ class ForceConstants(object):
         super(ForceConstants, self).__setattr__(name, value)
 
     def calculate_qpoint_phonon_modes(
-        self, qpts, asr=None, dipole=True, eta_scale=1.0, splitting=True,
-        insert_gamma=False, reduce_qpts=True, use_c=False, n_threads=1,
-        fall_back_on_python=True):
+            self, qpts, weights=None, asr=None, dipole=True, eta_scale=1.0,
+            splitting=True, insert_gamma=False, reduce_qpts=True, use_c=False,
+            n_threads=1, fall_back_on_python=True):
         """
         Calculate phonon frequencies and eigenvectors at specified
         q-points from a force constants matrix via Fourier interpolation
@@ -149,6 +144,9 @@ class ForceConstants(object):
         ----------
         qpts : (n_qpts, 3) float ndarray
             The q-points to interpolate onto
+        weights : (n_qpts,) float ndarray, optional
+            The weight for each q-point. If not given, equal weights are
+            applied
         asr : {'realspace', 'reciprocal'}, optional
             Which acoustic sum rule correction to apply. 'realspace'
             applies the correction to the force constant matrix in real
@@ -162,7 +160,8 @@ class ForceConstants(object):
             Changes the cutoff in real/reciprocal space for the dipole
             Ewald sum. A higher value uses more reciprocal terms. If tuned
             correctly this can result in performance improvements. See
-            scripts/optimise_eta.py for help on choosing a good eta_scale.
+            euphonic-optimise-eta program for help on choosing a good
+            eta_scale.
         splitting : boolean, optional
             Whether to calculate the LO-TO splitting at the gamma
             points. Only applied if dipole is True and the Born charges
@@ -248,6 +247,12 @@ class ForceConstants(object):
         .. [1] M.T. Dove, Introduction to Lattice Dynamics, Cambridge University Press, Cambridge, 1993, 83-87
         .. [2] X. Gonze, K. C. Charlier, D. C. Allan, M. P. Teter, Phys. Rev. B, 1994, 50, 13035-13038
         """
+
+        # Check weights is of appropriate type and shape, to avoid doing all
+        # the interpolation only for it to fail creating QpointPhononModes
+        _check_constructor_inputs(
+            [weights], [[np.ndarray, type(None)]], [(len(qpts),)], ['weights'])
+
         # Set default splitting params
         if self.born is None:
             dipole = False
@@ -260,6 +265,16 @@ class ForceConstants(object):
             split_gamma = gamma_i[np.where(
                 np.logical_and(gamma_i > 0, gamma_i < len(qpts) - 1))]
             qpts = np.insert(qpts, split_gamma, np.array([0., 0., 0.]), axis=0)
+            # It doesn't necessarily make sense to use both weights
+            # (usually used for DOS) and splitting (usually used for
+            # bandstructures) but we need to handle this case anyway
+            # Where 1 q-point splits into 2, half the weight for each
+            if weights is not None:
+                # Don't change original array
+                weights = np.copy(weights)
+                weights[split_gamma] = weights[split_gamma]/2
+                weights = np.insert(weights, split_gamma,
+                                    weights[split_gamma])
 
         if reduce_qpts:
             norm_qpts = qpts - np.rint(qpts)
@@ -296,14 +311,14 @@ class ForceConstants(object):
         # Get q-directions for non-analytical corrections
         if splitting:
             split_idx = np.where(is_gamma(reduced_qpts))[0]
-            q_dirs = self._get_q_dir(qpts, reduced_qpts, qpts_i, split_idx)
+            q_dirs = self._get_q_dir(qpts, qpts_i, split_idx)
         else:
             split_idx = np.array([])
             q_dirs = np.array([])
 
         lim = 2  # Supercell image limit
         # Construct list of supercell ion images
-        if not hasattr(self, 'sc_image_i'):
+        if not hasattr(self, '_sc_image_i'):
             self._calculate_supercell_images(lim)
 
         # Get a list of all the unique supercell image origins and cell
@@ -386,12 +401,12 @@ class ForceConstants(object):
             recip_vectors = self.crystal.reciprocal_cell().to(
                 '1/bohr').magnitude
             (cell_vectors, recip_vectors, reduced_qpts, split_idx, q_dirs,
-                fc_img_weighted, sc_offsets, recip_asr_correction,
-                dyn_mat_weighting, rfreqs,
-                reigenvecs) = _ensure_contiguous_args(
-                    cell_vectors, recip_vectors, reduced_qpts, split_idx,
-                    q_dirs, fc_img_weighted, sc_offsets, recip_asr_correction,
-                    dyn_mat_weighting, rfreqs, reigenvecs)
+             fc_img_weighted, sc_offsets, recip_asr_correction,
+             dyn_mat_weighting, rfreqs,
+             reigenvecs) = _ensure_contiguous_args(
+                 cell_vectors, recip_vectors, reduced_qpts, split_idx,
+                 q_dirs, fc_img_weighted, sc_offsets, recip_asr_correction,
+                 dyn_mat_weighting, rfreqs, reigenvecs)
             attrs = ['_n_sc_images', '_sc_image_i', 'cell_origins']
             dipole_attrs = ['atom_r', '_born', '_dielectric', '_H_ab',
                             '_cells', '_gvec_phases', '_gvecs_cart',
@@ -409,8 +424,8 @@ class ForceConstants(object):
                     'use_c=True is set, but the Euphonic\'s C extension'
                     ' couldn\'t be imported, it may not have been '
                     'installed. You have selected not to fall back on '
-                    'Python, therefore we cannot complete the '
-                    'calculation.'))
+                    'Python, therefore the calculation can\'t be '
+                    'completed'))
             else:
                 q_independent_args = (
                     reduced_qpts, split_idx, q_dirs, fc_img_weighted,
@@ -425,8 +440,7 @@ class ForceConstants(object):
             'mDEFAULT_ENERGY_UNIT')
 
         return QpointPhononModes(
-            self.crystal, qpts, freqs, reigenvecs[qpts_i],
-            weights=np.full(len(qpts), 1.0/len(qpts)))
+            self.crystal, qpts, freqs, reigenvecs[qpts_i], weights=weights)
 
     def _calculate_phonons_at_q(self, q, args):
         """
@@ -468,11 +482,7 @@ class ForceConstants(object):
         # Mass weight dynamical matrix
         dyn_mat *= dyn_mat_weighting
 
-        try:
-            evals, evecs = np.linalg.eigh(dyn_mat, UPLO='U')
-        # Fall back to zheev if eigh fails (eigh calls zheevd)
-        except np.linalg.LinAlgError:
-            evals, evecs, info = zheev(dyn_mat)
+        evals, evecs = np.linalg.eigh(dyn_mat, UPLO='U')
         evecs = np.reshape(np.transpose(evecs),
                            (3*n_atoms, n_atoms, 3))
         # Set imaginary frequencies to negative
@@ -774,23 +784,24 @@ class ForceConstants(object):
         return np.reshape(np.transpose(dipole, axes=[0, 2, 1, 3]),
                           (3*n_atoms, 3*n_atoms))
 
-    def _get_q_dir(self, qpts, reduced_qpts, qpts_i, gamma_idx):
+    def _get_q_dir(self, qpts, qpts_i, gamma_idx):
         q_dirs = np.zeros((len(gamma_idx), 3))
-        for i, idx in enumerate(gamma_idx):
-            idx_in_qpts = np.where(qpts_i == idx)[0]
-            # If first q-point
-            if idx_in_qpts == 0:
-                q_dirs[i] = qpts[1]
-            # If last q-point
-            elif idx_in_qpts == (len(qpts) - 1):
-                q_dirs[i] = qpts[-2]
-            else:
-                # If splitting=True there should be an adjacent gamma
-                # point. Calculate splitting in whichever direction
-                # isn't gamma
-                q_dirs[i] = qpts[idx_in_qpts + 1]
-                if is_gamma(q_dirs[i]):
-                    q_dirs[i] = -qpts[idx_in_qpts - 1]
+        if len(qpts) > 1:
+            for i, idx in enumerate(gamma_idx):
+                idx_in_qpts = np.where(qpts_i == idx)[0]
+                # If first q-point
+                if idx_in_qpts == 0:
+                    q_dirs[i] = qpts[1]
+                # If last q-point
+                elif idx_in_qpts == (len(qpts) - 1):
+                    q_dirs[i] = qpts[-2]
+                else:
+                    # If splitting=True there should be an adjacent gamma
+                    # point. Calculate splitting in whichever direction
+                    # isn't gamma
+                    q_dirs[i] = qpts[idx_in_qpts + 1]
+                    if is_gamma(q_dirs[i]):
+                        q_dirs[i] = -qpts[idx_in_qpts - 1]
         return q_dirs
 
     def _calculate_gamma_correction(self, q_dir):
@@ -911,7 +922,7 @@ class ForceConstants(object):
                 '\nError correcting for acoustic sum rule, could not '
                 'find 3 acoustic modes.\nReturning uncorrected FC '
                 'matrix'), stacklevel=2)
-            return self.force_constants
+            return self._force_constants
 
         # Correct fc matrix - set acoustic modes to almost zero
         fc_tol = 1e-8*np.min(np.abs(evals))

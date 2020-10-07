@@ -70,7 +70,7 @@ def _read_phonon_data(filename, cell_vectors_unit='angstrom',
             qeigenvec = np.zeros((n_branches, n_atoms, 3),
                                  dtype=np.complex128)
             for i in range(n_branches):
-                    qeigenvec[i, :, :] = lines_i[i*n_atoms:(i+1)*n_atoms, :]
+                qeigenvec[i, :, :] = lines_i[i*n_atoms:(i+1)*n_atoms, :]
             qpt_line = f.readline()
             # Sometimes there are more than n_qpts q-points in the file
             # due to LO-TO splitting
@@ -236,7 +236,7 @@ def _read_interpolation_data(filename, cell_vectors_unit='angstrom',
         data_dict['sc_matrix'] = sc_matrix
         data_dict['cell_origins'] = cell_origins
     except NameError:
-        raise Exception((
+        raise RuntimeError((
             f'Force constants matrix could not be found in {filename}. '
             f'\nEnsure PHONON_WRITE_FORCE_CONSTANTS: true and a '
             f'PHONON_FINE_METHOD has been chosen when running CASTEP'))

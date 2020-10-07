@@ -20,16 +20,19 @@ Python API
 - :ref:`Structure Factors <structure-factor>`
 - :ref:`Scattering Intensities <scattering-intensities>`
 - :ref:`Debye-Waller <debye-waller>`
+- :ref:`powder`
 - :ref:`plotting`
+- :ref:`sampling`
 - :ref:`utils`
 - :ref:`Units in Euphonic <units>`
 
 Helper Scripts
 ==============
 
-- :ref:`dispersion.py <disp-script>`
-- :ref:`dos.py <dos-script>`
-- :ref:`optimise_eta.py <eta-script>`
+- :ref:`euphonic-dispersion <disp-script>`
+- :ref:`euphonic-dos <dos-script>`
+- :ref:`euphonic-optimise-eta <eta-script>`
+- :ref:`euphonic-show-sampling <sampling-script>`
 
 Examples
 ========

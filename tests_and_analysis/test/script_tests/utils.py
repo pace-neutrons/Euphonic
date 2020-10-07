@@ -12,7 +12,8 @@ def get_phonon_file() -> str:
     str
         The full path to the NaH.phonon file
     """
-    return os.path.join(get_data_path(), "NaH.phonon")
+    return os.path.join(get_data_path(),
+                       'qpoint_phonon_modes', 'NaH', 'NaH.phonon')
 
 
 def get_script_data_folder() -> str:
@@ -48,6 +49,16 @@ def get_dos_data_file() -> str:
     return os.path.join(get_script_data_folder(), "dos.json")
 
 
+def get_sphere_sampling_data_file() -> str:
+    """
+    Returns
+    -------
+    str
+        A full path prefix of all sampling script regression test files
+    """
+    return os.path.join(get_script_data_folder(), "sphere_sampling.json")
+
+
 def get_current_plot_lines_xydata() -> List[List[List[float]]]:
     """
     Get the current matplotlib plot with gcf() and return the xydata of
@@ -62,9 +73,24 @@ def get_current_plot_lines_xydata() -> List[List[List[float]]]:
             for line in matplotlib.pyplot.gcf().axes[0].lines]
 
 
+def get_current_plot_offsets() -> List[List[float]]:
+    """
+    Get the positions (offsets) from an active matplotlib scatter plot
+
+    This should work for both 2D and 3D scatter plots; in the 3D case these
+    offsets are based on 2D projections.
+
+    Returns
+    -------
+    List[List[float]]
+        Scatter plot offsets
+    """
+    return matplotlib.pyplot.gca().collections[0].get_offsets().data.tolist()
+
+
 def get_dos_params() -> List[List[str]]:
     """
-    Get the parameters to run and test scripts/dos.py with
+    Get the parameters to run and test euphonic-dos with
 
     Returns
     -------
@@ -77,7 +103,7 @@ def get_dos_params() -> List[List[str]]:
 
 def get_dispersion_params() -> List[List[str]]:
     """
-    Get the parameters to run and test scripts/dispersion.py with.
+    Get the parameters to run and test euphonic-dispersion with.
 
     Returns
     -------
@@ -85,3 +111,28 @@ def get_dispersion_params() -> List[List[str]]:
         The parameters to run the script with
     """
     return [[], ["-unit=meV"], ["-btol=5.0"], ["-reorder"]]
+
+
+def get_sphere_sampling_params() -> List[List[str]]:
+    """
+    Get the parameters to run and test euphonic-show-sampling
+
+    Returns
+    -------
+    List[str]
+        The parameters to run the script with
+    """
+    return [['27', 'golden-square'],
+            ['8', 'regular-square'],
+            ['9', 'regular-square'],
+            ['10', 'golden-sphere'],
+            ['10', 'golden-sphere', '--jitter'],
+            ['15', 'spherical-polar-grid'],
+            ['18', 'spherical-polar-grid', '--jitter'],
+            ['17', 'sphere-from-square-grid', '--jitter'],
+            ['18', 'sphere-from-square-grid'],
+            ['15', 'spherical-polar-improved'],
+            ['15', 'spherical-polar-improved', '--jitter'],
+            ['10', 'random-sphere'],
+            ['10', 'random-sphere', '--jitter']
+            ]

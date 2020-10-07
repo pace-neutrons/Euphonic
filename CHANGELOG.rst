@@ -1,6 +1,44 @@
 `Unreleased <https://github.com/pace-neutrons/Euphonic/compare/v0.3.1...HEAD>`_
 ----------
 
+- New Features:
+
+  - Added `weights` as an argument to
+    `ForceConstants.calculate_qpoint_phonon_modes`, this will allow easier
+    use of symmetry reduction for calculating density of states, for example.
+  - Modules have been added to support spherical averaging from 3D
+    q-points to mod(q)
+
+    - euphonic.sampling provides pure functions for the generation of
+      points on (2D) unit square and (3D) unit sphere surfaces.
+    - A script is provided for visualisation of the different schemes
+      implemented in euphonic.sampling. This is primarily intended for
+      education and debugging.
+    - euphonic.powder provides functions which, given force constants
+      data, can use these sampling methods to obtain
+      spherically-averaged phonon DOS and coherent structure factor
+      data as 1D spectrum objects. (It is anticipated that this module
+      will grow to include schemes beyond this average over a single
+      sphere.)
+
+- Changes:
+
+  - The Scripts folder has been removed. Command-line tools are now
+    located in the euphonic.cli module. The entry-points are managed
+    in setup.py, and each tool has the prefix "euphonic-" to avoid
+    namespace clashes with other tools on the user's
+    computer. (e.g. euphonic-dos)
+  - From an interactive shell with tab-completion, one can find all
+    the euphonic tools by typing "euphonic-<TAB>".
+
+- Bug fixes:
+
+  - Correctly convert from Phonopy's q-point weight convention to Euphonic's
+    when reading from mesh.yaml (see
+    `7509043 <https://github.com/pace-neutrons/Euphonic/commit/7509043>`_)
+  - Avoid IndexError in ``ForceConstants.calculate_qpoint_phonon_modes`` when
+    there is only one q-point (which is gamma) and ``splitting=True``
+
 `v0.3.1 <https://github.com/pace-neutrons/Euphonic/compare/v0.3.0...v0.3.1>`_
 ----------
 

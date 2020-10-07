@@ -62,13 +62,11 @@ def run_setup(build_c=True):
         long_description = f.read()
 
     packages = ['euphonic',
+                'euphonic.cli',
                 'euphonic.readers',
                 'euphonic.data']
 
-    scripts = ['scripts/dispersion.py',
-               'scripts/dos.py',
-               'scripts/optimise_eta.py',
-               'scripts/neutron-band-structure.py']
+    package_data = {'euphonic' : ['data/*.json']}
 
     cmdclass = versioneer.get_cmdclass()
     cmdclass['install'] = InstallCommand
@@ -87,6 +85,7 @@ def run_setup(build_c=True):
         long_description_content_type='text/x-rst',
         url='https://github.com/pace-neutrons/Euphonic',
         packages=packages,
+        package_data=package_data,
         install_requires=[
             'numpy>=1.9.1',
             'scipy>=1.0.0',
@@ -98,7 +97,13 @@ def run_setup(build_c=True):
             'matplotlib': ['matplotlib>=1.4.2'],
             'phonopy_reader': ['h5py>=2.9.0', 'PyYAML>=5.1.2']
         },
-        scripts=scripts
+        entry_points={'console_scripts': [
+            'euphonic-dispersion = euphonic.cli.dispersion:main',
+            'euphonic-dos = euphonic.cli.dos:main',
+            'euphonic-optimise-eta = euphonic.cli.optimise_eta:main',
+            'euphonic-show-sampling = euphonic.cli.show_sampling:main',
+            'euphonic-neutron-band-structure '
+            '= euphonic.cli.neutron_band_structure:main']}
     )
 
 run_setup()

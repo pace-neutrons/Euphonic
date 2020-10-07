@@ -1,10 +1,10 @@
 .. _eta-script:
 
-======================
-optimise_eta.py Script
-======================
+=====================
+euphonic-optimise-eta
+=====================
 
-This script is useful for users wanting to efficiently calculate phonon
+This program is useful for users wanting to efficiently calculate phonon
 frequencies on many q-points for polar materials.
 
 Polar materials have a long range force constants matrix, so an analytic
@@ -14,7 +14,7 @@ reciprocal sums can be tuned to reduce the computational cost without affecting
 the result. This is done with the ``eta_scale`` argument to
 :py:meth:`ForceConstants.calculate_qpoint_phonon_modes <euphonic.force_constants.ForceConstants.calculate_qpoint_phonon_modes>`
 
-This script runs a calculation for a small test number of q-points (100 by
+The program runs a calculation for a small test number of q-points (100 by
 default) repeatedly for different values of ``eta_scale``, and times both the
 initialisation time, and time per q-point. Euphonic precalculates as much of the
 correction as it can to minimise the calculation time per q-point, so although
@@ -24,12 +24,12 @@ be lower, which is what's important when calculating for many q-points.
 Usage
 -----
 
-Simply run the script on a ``.castep_bin`` file to get an output suggesting the
+Simply run the program on a ``.castep_bin`` file to get an output suggesting the
 optimum ``eta_scale``. For example, for ``quartz.castep_bin``:
 
 .. code-block:: bash
 
-   optimise_eta.py quartz
+   euphonic-optimise-eta quartz
 
    Results for eta  0.25
    Ewald init time     :  0.39 s
@@ -67,7 +67,7 @@ reciprocal sums.
 You can change the number of q-points to test, the minimum eta, maximum eta, and
 step size between eta values. To see the command line options, run::
 
-   optimise_eta.py -h
+   euphonic-optimise-eta -h
 
 Or see the command line options in more detail below
 
@@ -75,6 +75,6 @@ Command Line Options
 --------------------
 
 .. argparse::
-   :filename: ../../scripts/optimise_eta.py
+   :module: euphonic.cli.optimise_eta
    :func: get_parser
-   :prog: optimise_eta.py
+   :prog: euphonic-optimise-eta

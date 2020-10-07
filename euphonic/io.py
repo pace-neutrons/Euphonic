@@ -31,14 +31,11 @@ def _from_json_dict(dictionary, type_dict={}):
     """
     for key, val in dictionary.items():
         if isinstance(val, list):
-            if key in type_dict:
-                if type_dict[key] == tuple:
-                    dictionary[key] = [tuple(x) for x in val]
-                elif type_dict[key] == np.complex128:
-                    dictionary[key] = np.array(
-                        val, dtype=np.float64).view(np.complex128).squeeze()
-                else:
-                    dictionary[key] = np.array(val, dtype=type_dict[key])
+            if key in type_dict and type_dict[key] == tuple:
+                dictionary[key] = [tuple(x) for x in val]
+            elif key in type_dict and type_dict[key] == np.complex128:
+                dictionary[key] = np.array(
+                    val, dtype=np.float64).view(np.complex128).squeeze()
             else:
                 dictionary[key] = np.array(val)
         elif isinstance(val, dict):

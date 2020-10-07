@@ -7,7 +7,7 @@ import pytest
 from pint import Quantity, DimensionalityError
 
 from euphonic import Crystal, ureg
-from ..utils import get_data_path
+from tests_and_analysis.test.utils import get_data_path, check_unit_conversion
 
 
 class ExpectedCrystal:
@@ -148,8 +148,7 @@ class TestCrystalCreation:
     faulty_elements = [
         ('cell_vectors',
          np.array([[1.23, 2.45, 0.0],
-                   [3.45, 5.66, 7.22],
-                   [0.001, 4.55]])*ureg('angstrom'),
+                   [3.45, 5.66, 7.22]])*ureg('angstrom'),
          ValueError),
         ('cell_vectors',
          get_expected_crystal('quartz').cell_vectors.magnitude*ureg('kg'),
@@ -225,14 +224,13 @@ class TestCrystalSerialisation:
 @pytest.mark.unit
 class TestCrystalUnitConversion:
 
-    @pytest.mark.parametrize('material, unit_attr, unit_val', [
-        ('quartz', 'cell_vectors_unit', 'bohr'),
-        ('quartz', 'atom_mass_unit', 'kg')])
-    def test_correct_unit_conversion(self, material, unit_attr,
+    @pytest.mark.parametrize('material, attr, unit_val', [
+        ('quartz', 'cell_vectors', 'bohr'),
+        ('quartz', 'atom_mass', 'kg')])
+    def test_correct_unit_conversion(self, material, attr,
                                      unit_val):
         crystal = get_crystal(material)
-        setattr(crystal, unit_attr, unit_val)
-        assert getattr(crystal, unit_attr) == unit_val
+        check_unit_conversion(crystal, attr, unit_val)
 
     @pytest.mark.parametrize('material, unit_attr, unit_val, err', [
         ('quartz', 'cell_vectors_unit', 'kg', ValueError),
