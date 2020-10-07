@@ -1,5 +1,7 @@
-import math
+import collections
 from copy import deepcopy
+import math
+from typing import Optional, overload, Sequence, Tuple, TypeVar
 
 from scipy import signal
 import numpy as np
@@ -10,7 +12,7 @@ from euphonic.io import (_obj_to_json_file, _obj_from_json_file,
 from euphonic import ureg, Quantity
 
 
-class Spectrum1D(object):
+class Spectrum:
     """
     For storing generic 1D spectra e.g. density of states
 
@@ -64,11 +66,11 @@ class Spectrum1D(object):
     def __setattr__(self, name, value):
         _check_unit_conversion(self, name, value,
                                ['x_data_unit', 'y_data_unit'])
-        super(Spectrum1D, self).__setattr__(name, value)
+        super().__setattr__(name, value)
 
     def broaden(self, x_width, shape='gauss'):
         """
-        Broaden y_data and return a new broadened Spectrum1D object
+        Broaden y_data and return a new broadened spectrum object
 
         Parameters
         ----------
@@ -88,7 +90,7 @@ class Spectrum1D(object):
         y_broadened = signal.fftconvolve(
             self.y_data.magnitude, broadening, mode='same')*ureg(
                 self.y_data_unit)
-        return Spectrum1D(
+        return type(self)(
             np.copy(self.x_data.magnitude)*ureg(self.x_data_unit),
             y_broadened, deepcopy((self.x_tick_labels)))
 
@@ -120,8 +122,8 @@ class Spectrum1D(object):
     def _get_bin_centres(self, bin_ax='x'):
         is_bin_edge, bins, bins_units = self._is_bin_edge(bin_ax)
         if is_bin_edge:
-             bin_centres = bins[:-1] + 0.5*np.diff(bins)
-             return bin_centres*bins_units
+            bin_centres = bins[:-1] + 0.5*np.diff(bins)
+            return bin_centres*bins_units
         else:
             return bins*bins_units
 
@@ -174,7 +176,7 @@ class Spectrum1D(object):
         """
         d = _process_dict(d, quantities=['x_data', 'y_data'],
                           optional=['x_tick_labels'])
-        return Spectrum1D(d['x_data'], d['y_data'], d['x_tick_labels'])
+        return cls(d['x_data'], d['y_data'], d['x_tick_labels'])
 
     @classmethod
     def from_json_file(cls, filename):
@@ -190,7 +192,82 @@ class Spectrum1D(object):
         return _obj_from_json_file(cls, filename, type_dict)
 
 
-class Spectrum2D(Spectrum1D):
+class Spectrum1D(Spectrum):  # Give 1D spectra its own name so that
+    pass                     # isinstance(2d_spectrum, Spectrum1D) is False
+
+
+SC = TypeVar('SC', bound='Spectrum1DCollection')
+
+
+class Spectrum1DCollection(collections.abc.Sequence):
+    """A collection of Spectrum1D with common x_data and x_tick_labels
+
+    Intended for convenient storage of band structures, projected DOS
+    etc.  This object can be indexed or iterated to obtain individual
+    Spectrum1D.
+
+    x_data : (n_x_data,) or (n_x_data + 1,) float Quantity
+        The x_data points (if size (n_x_data,)) or x_data bin edges (if
+        size (n_x_data + 1,))
+    y_data : (n_entries, n_x_data) float Quantity
+        The plot data in y, in rows corresponding to separate 1D spectra
+    x_tick_labels : list (int, string) tuples or None
+        Special tick labels e.g. for high-symmetry points. The int
+        refers to the index in x_data the label should be applied to
+
+    """
+    def __init__(self, x_data: Quantity, y_data: Quantity,
+                 x_tick_labels: Optional[Sequence[Tuple[int, str]]] = None
+                 ) -> None:
+        self.x_data = x_data
+        self._y_data = y_data
+        self.x_tick_labels = x_tick_labels
+
+    def __len__(self):
+        return self._y_data.magnitude.shape[0]
+
+    @overload
+    def __getitem__(self, item: int) -> Spectrum1D:
+        ...
+
+    @overload  # noqa: F811
+    def __getitem__(self, item: slice) -> 'Spectrum1DCollection':
+        ...
+
+    def __getitem__(self, item):  # noqa: F811
+        if isinstance(item, int):
+            return Spectrum1D(self.x_data, self._y_data[item, :],
+                              x_tick_labels=self.x_tick_labels)
+        elif isinstance(item, slice):
+            return type(self)(self.x_data,
+                              self._y_data[slice, :],
+                              x_tick_labels=self.x_tick_labels)
+        else:
+            raise TypeError(f'Index "{item}" should be an integer or a slice')
+
+    @classmethod
+    def from_spectra(cls: SC, spectra: Sequence[Spectrum1D]) -> SC:
+        if len(spectra) < 1:
+            raise IndexError("At least one spectrum is needed for collection")
+
+        x_data = spectra[0].x_data
+        x_tick_labels = spectra[0].x_tick_labels
+        y_data_magnitude = np.empty((len(spectra), len(x_data.magnitude)))
+        y_data_magnitude[0, :] = spectra[0].y_data.magnitude
+        y_data_units = spectra[0].y_data.units
+
+        for i, spectrum in enumerate(spectra[1:]):
+            assert spectrum.y_data.units == y_data_units
+            assert spectrum.x_data == x_data
+            assert spectrum.x_tick_labels == x_tick_labels
+            y_data_magnitude[i + 1, :] = spectrum.y_data.magnitude
+
+        y_data = Quantity(y_data_magnitude, y_data_units)
+
+        return cls(x_data, y_data, x_tick_labels=x_tick_labels)
+
+
+class Spectrum2D(Spectrum):
     """
     For storing generic 2D spectra e.g. S(Q,w)
 
