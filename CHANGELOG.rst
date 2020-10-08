@@ -20,6 +20,7 @@
       data as 1D spectrum objects. (It is anticipated that this module
       will grow to include schemes beyond this average over a single
       sphere.)
+  - Added ``Crystal.to_spglib_cell`` convenience function
 
 - Changes:
 
@@ -30,6 +31,9 @@
     computer. (e.g. euphonic-dos)
   - From an interactive shell with tab-completion, one can find all
     the euphonic tools by typing "euphonic-<TAB>".
+  - Changed arguments for ``util.get_qpoint_labels(Crystal, qpts)``
+    to ``util.get_qpoint_labels(qpts, cell=None)`` where
+    ``cell = Crystal.to_spglib_cell()``
 
 - Bug fixes:
 

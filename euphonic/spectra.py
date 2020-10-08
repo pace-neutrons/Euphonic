@@ -1,14 +1,14 @@
+import math
 from copy import deepcopy
 
 from pint import Quantity
 from scipy import signal
 import numpy as np
 
-from euphonic import ureg
-from euphonic.util import (_distribution_1d, _distribution_2d,
-                           _check_constructor_inputs, _check_unit_conversion)
+from euphonic.validate import _check_constructor_inputs, _check_unit_conversion
 from euphonic.io import (_obj_to_json_file, _obj_from_json_file,
                          _obj_to_dict, _process_dict)
+from euphonic import ureg
 
 
 class Spectrum1D(object):
@@ -328,3 +328,66 @@ class Spectrum2D(Spectrum1D):
                           optional=['x_tick_labels'])
         return Spectrum2D(d['x_data'], d['y_data'], d['z_data'],
                           d['x_tick_labels'])
+
+
+def _gaussian(x, sigma):
+    return np.exp(-np.square(x)/(2*sigma**2))/(math.sqrt(2*math.pi)*sigma)
+
+
+def _lorentzian(x, gamma):
+    return gamma/(2*math.pi*(np.square(x) + (gamma/2)**2))
+
+
+def _get_dist_bins(bins, fwhm, extent):
+    # Ensure nbins is always odd, and each bin has the same approx width
+    # as original x/ybins
+    bin_width = np.mean(np.diff(bins))
+    nbins = int(np.ceil(2*extent*fwhm/bin_width)/2)*2 + 1
+    width = extent*fwhm
+    # Prevent xbins from being too large. If user accidentally selects a
+    # very large broadening, xwidth and therefore xbins could be
+    # extremely large. But for most cases the original nxbins should be
+    # smaller
+    if nbins > len(bins):
+        nbins = int(len(bins)/2)*2 + 1
+        width = (bins[-1] - bins[0])/2
+    return np.linspace(-width, width, nbins)
+
+
+def _distribution_1d(xbins, xwidth, shape='gauss', extent=3.0):
+    x = _get_dist_bins(xbins, xwidth, extent)
+    if shape == 'gauss':
+        # Gauss FWHM = 2*sigma*sqrt(2*ln2)
+        xsigma = xwidth/(2*math.sqrt(2*math.log(2)))
+        dist = _gaussian(x, xsigma)
+    elif shape == 'lorentz':
+        dist = _lorentzian(x, xwidth)
+    else:
+        raise ValueError(
+            f'Distribution shape \'{shape}\' not recognised')
+    dist = dist/np.sum(dist)  # Naively normalise
+    return dist
+
+
+def _distribution_2d(xbins, ybins, xwidth, ywidth, shape='gauss', extent=3.0):
+    x = _get_dist_bins(xbins, xwidth, extent)
+    y = _get_dist_bins(ybins, ywidth, extent)
+
+    if shape == 'gauss':
+        # Gauss FWHM = 2*sigma*sqrt(2*ln2)
+        xsigma = xwidth/(2*math.sqrt(2*math.log(2)))
+        ysigma = ywidth/(2*math.sqrt(2*math.log(2)))
+        xdist = _gaussian(x, xsigma)
+        ydist = _gaussian(y, ysigma)
+    elif shape == 'lorentz':
+        xdist = _lorentzian(x, xwidth)
+        ydist = _lorentzian(y, ywidth)
+    else:
+        raise ValueError(
+            f'Distribution shape \'{shape}\' not recognised')
+    xgrid = np.tile(xdist, (len(ydist), 1))
+    ygrid = np.transpose(np.tile(ydist, (len(xdist), 1)))
+    dist = xgrid*ygrid
+    dist = dist/np.sum(dist)  # Naively normalise
+
+    return dist

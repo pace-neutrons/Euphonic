@@ -39,10 +39,19 @@ class TestMPGrid:
 @pytest.mark.unit
 class TestGetQptLabels:
 
-    @pytest.mark.parametrize('crystal, qpts, expected_labels', [(
-        get_crystal('quartz'),
-        np.array([[0.5, 0.5, 0.5], [0.0, 0.0, 0.5]]),
-        [(0, ''), (1, 'A')])])
-    def test_get_qpt_labels(self, crystal, qpts, expected_labels):
-        labels = get_qpoint_labels(crystal, qpts)
+    @pytest.mark.parametrize('qpts, kwargs, expected_labels', [
+        (np.array([[0.5, 0.5, 0.5], [0.0, 0.0, 0.5]]),
+         {'cell': get_crystal('quartz').to_spglib_cell()},
+         [(0, ''), (1, 'A')]),
+        (np.array([[0.5, 0.5, 0.5], [0.4, 0.4, 0.5], [0.3, 0.3, 0.5],
+                   [0.2, 0.2, 0.5], [0.1, 0.1, 0.5], [0.0, 0.0, 0.5]]),
+         {'cell': get_crystal('quartz').to_spglib_cell()},
+         [(0, ''), (5, 'A')]),
+        (np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 0.1], [0.0, 0.0, 0.2],
+                   [0.0, 0.0, 0.3], [0.0, 0.0, 0.4], [0.0, 0.0, 0.5],
+                   [0.125, 0.25, 0.5], [0.25, 0.5, 0.5], [0.375, 0.75, 0.5]]),
+         {},
+         [(0, '0 0 0'), (5, '0 0 1/2'), (8, '3/8 3/4 1/2')])])
+    def test_get_qpt_labels(self, qpts, kwargs, expected_labels):
+        labels = get_qpoint_labels(qpts, **kwargs)
         assert labels == expected_labels

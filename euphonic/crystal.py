@@ -3,10 +3,10 @@ import inspect
 import numpy as np
 from pint import Quantity
 
-from euphonic import ureg
+from euphonic.validate import _check_constructor_inputs, _check_unit_conversion
 from euphonic.io import (_obj_to_json_file, _obj_from_json_file,
                          _obj_to_dict, _process_dict)
-from euphonic.util import _check_constructor_inputs, _check_unit_conversion
+from euphonic import ureg
 
 
 class Crystal(object):
@@ -104,6 +104,24 @@ class Crystal(object):
     def _cell_volume(self):
         cv = self._cell_vectors
         return np.dot(cv[0], np.cross(cv[1], cv[2]))
+
+    def to_spglib_cell(self):
+        """
+        Convert to a 'cell' as defined by spglib
+
+        Returns
+        -------
+        cell : tuple of lists
+            cell = (lattice, positions, numbers), where lattice is the
+            lattice vectors, positions are the fractional atomic
+            positions, and numbers are integers distinguishing the
+            atomic species
+        """
+        _, unique_atoms = np.unique(self.atom_type, return_inverse=True)
+        cell = (self.cell_vectors.magnitude.tolist(),
+                self.atom_r.tolist(),
+                unique_atoms.tolist())
+        return cell
 
     def to_dict(self):
         """

@@ -366,6 +366,9 @@ class TestStructureFactorCalculateSqwMap:
             ('CaHgO2', 'CaHgO2_300K_structure_factor.json',
              'CaHgO2_300K_bose_sqw.json',
              np.arange(0,95,0.4)*ureg('meV'), {'calc_bose': True}),
+            ('CaHgO2', 'CaHgO2_300K_structure_factor.json',
+             'CaHgO2_300K_bose_negative_e_sqw.json',
+             np.arange(-95,95,0.4)*ureg('meV'), {'calc_bose': True}),
             ('LZO', 'La2Zr2O7_cut_structure_factor.json',
              'La2Zr2O7_cut_sqw.json',
              np.arange(0,95)*ureg('meV'), {'calc_bose': 'False'})])
