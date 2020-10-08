@@ -7,7 +7,7 @@ from typing import Dict, List, Any
 import seekpath
 import numpy as np
 from importlib_resources import open_text  # Backport for Python 3.6
-from pint import Quantity, UndefinedUnitError, DimensionalityError
+from pint import Quantity, UndefinedUnitError
 
 import euphonic.data
 from euphonic import ureg
@@ -111,24 +111,26 @@ def get_all_origins(max_xyz, min_xyz=[0, 0, 0], step=1):
     return np.column_stack((nx, ny, nz))
 
 
-def get_qpoint_labels(crystal, qpts):
+def get_qpoint_labels(qpts, cell=None):
     """
-    Gets q-points point labels (e.g. GAMMA, X, L) for the q-points at
-    which the path through reciprocal space changes direction
+    Gets q-point labels (e.g. GAMMA, X, L) for the q-points at which the
+    path through reciprocal space changes direction
 
     Parameters
     ----------
-    crystal : Crystal
-        The crystal to get high-symmetry labels for
     qpts : (n_qpts, 3) float ndarray
         The q-points to get labels for
+    cell : (list, list, list), optional
+        The cell structure as defined by spglib. Can be obtained by
+        Crystal.to_spglib_cell. If not provided, the labels will be
+        generic e.g. '1/3 1/2 0' rather than high-symmetry point labels
 
     Returns
     -------
     x_tick_labels : list (int, string) tuples or None
         Tick labels and the q-point indices that they apply to
     """
-    xlabels, qpts_with_labels = _recip_space_labels(crystal, qpts)
+    xlabels, qpts_with_labels = _recip_space_labels(qpts, cell=cell)
     for i, label in enumerate(xlabels):
         if label == 'GAMMA':
             xlabels[i] = r'$\Gamma$'
@@ -233,15 +235,16 @@ def get_reference_data(collection: str = 'Sears1992',
             if isinstance(value, (float, complex))}
 
 
-def _calc_abscissa(crystal, qpts):
+def _calc_abscissa(reciprocal_cell, qpts):
     """
-    Calculates the distance between q-points (to use as a plot
+    Calculates the distance between q-points (e.g. to use as a plot
     x-coordinate)
 
     Parameters
     ----------
-    crystal : Crystal
-        The crystal
+    reciprocal_cell : (3, 3) float Quantity
+        The reciprocal cell, can be calculated with
+        Crystal.reciprocal_cell
     qpts : (n_qpts, 3) float ndarray
         The q-points to get the distance between, in reciprocal lattice
         units
@@ -249,7 +252,7 @@ def _calc_abscissa(crystal, qpts):
     abscissa : (n_qpts) float Quantity
         The distance between q-points in 1/crystal.cell_vectors_unit
     """
-    recip = crystal.reciprocal_cell().to('1/INTERNAL_LENGTH_UNIT').magnitude
+    recip = reciprocal_cell.to('1/INTERNAL_LENGTH_UNIT').magnitude
     # Get distance between q-points in each dimension
     # Note: length is nqpts - 1
     delta = np.diff(qpts, axis=0)
@@ -281,26 +284,24 @@ def _calc_abscissa(crystal, qpts):
     # Prepend initial x axis value of 0
     abscissa = np.insert(modq, 0, 0.)
 
-    # Do cumulative some to get position along x axis
+    # Do cumulative sum to get position along x axis
     abscissa = np.cumsum(abscissa)
-    return abscissa*ureg('1/INTERNAL_LENGTH_UNIT').to(
-        1/ureg(crystal.cell_vectors_unit))
+    return abscissa*ureg('1/INTERNAL_LENGTH_UNIT').to(reciprocal_cell.units)
 
 
-def _recip_space_labels(crystal, qpts, symmetry_labels=True):
+def _recip_space_labels(qpts, cell=None):
     """
     Gets q-points point labels (e.g. GAMMA, X, L) for the q-points at
     which the path through reciprocal space changes direction
 
     Parameters
     ----------
-    crystal : Crystal
-        The crystal to get high-symmetry labels for
     qpts : (n_qpts, 3) float ndarray
         The q-points to get labels for
-    symmetry_labels : boolean, optional
-        Whether to use high-symmetry point labels (e.g. GAMMA, X, L).
-        Otherwise just uses generic labels (e.g. '0 0 0')
+    cell : (list, list, list), optional
+        The cell structure as defined by spglib. Can be obtained by
+        Crystal.to_spglib_cell. If not provided, the labels will be
+        generic e.g. '1/3 1/2 0' rather than high-symmetry point labels
 
     Returns
     -------
@@ -322,14 +323,7 @@ def _recip_space_labels(crystal, qpts, symmetry_labels=True):
             [True]))
     qpts_with_labels = np.where(qpt_has_label)[0]
 
-    # Get dict of high symmetry point labels to their coordinates for
-    # this space group. If space group can't be determined use a generic
-    # dictionary of fractional points
-    sym_label_to_coords = {}
-    if symmetry_labels:
-        _, atom_num = np.unique(crystal.atom_type, return_inverse=True)
-        cell_vectors = (crystal.cell_vectors.to('angstrom')).magnitude
-        cell = (cell_vectors, crystal.atom_r, atom_num)
+    if cell is not None:
         sym_label_to_coords = seekpath.get_path(cell)["point_coords"]
     else:
         sym_label_to_coords = _generic_qpt_labels()
@@ -412,98 +406,6 @@ def _get_qpt_label(qpt, point_labels):
     return label
 
 
-def _bose_factor(freqs, T, kB=None):
-    """
-    Calculate the Bose factor
-
-    Parameters
-    ----------
-    freqs : (n_qpts, 3*n_ions) float ndarray
-        Phonon frequencies
-    T : float
-        Temperature in K
-    kB : float, default None
-        Boltzmann constant in units that agree with provided
-        frequencies/temperature. If not provided it is assumed
-        frequencies are in Hartree and temperature in K
-
-    Returns
-    -------
-    bose : (n_qpts, 3*n_ions) float ndarray
-        Bose factor
-    """
-    if kB is None:
-        kB = (1*ureg.k).to('E_h/K').magnitude
-    bose = np.zeros(freqs.shape)
-    bose[freqs > 0] = 1
-    if T > 0:
-        bose = bose + 1/(np.exp(np.absolute(freqs)/(kB*T)) - 1)
-    return bose
-
-
-def _gaussian(x, sigma):
-    return np.exp(-np.square(x)/(2*sigma**2))/(math.sqrt(2*math.pi)*sigma)
-
-
-def _lorentzian(x, gamma):
-    return gamma/(2*math.pi*(np.square(x) + (gamma/2)**2))
-
-
-def _get_dist_bins(bins, fwhm, extent):
-    # Ensure nbins is always odd, and each bin has the same approx width
-    # as original x/ybins
-    bin_width = np.mean(np.diff(bins))
-    nbins = int(np.ceil(2*extent*fwhm/bin_width)/2)*2 + 1
-    width = extent*fwhm
-    # Prevent xbins from being too large. If user accidentally selects a
-    # very large broadening, xwidth and therefore xbins could be
-    # extremely large. But for most cases the original nxbins should be
-    # smaller
-    if nbins > len(bins):
-        nbins = int(len(bins)/2)*2 + 1
-        width = (bins[-1] - bins[0])/2
-    return np.linspace(-width, width, nbins)
-
-
-def _distribution_1d(xbins, xwidth, shape='gauss', extent=3.0):
-    x = _get_dist_bins(xbins, xwidth, extent)
-    if shape == 'gauss':
-        # Gauss FWHM = 2*sigma*sqrt(2*ln2)
-        xsigma = xwidth/(2*math.sqrt(2*math.log(2)))
-        dist = _gaussian(x, xsigma)
-    elif shape == 'lorentz':
-        dist = _lorentzian(x, xwidth)
-    else:
-        raise ValueError(
-            f'Distribution shape \'{shape}\' not recognised')
-    dist = dist/np.sum(dist)  # Naively normalise
-    return dist
-
-
-def _distribution_2d(xbins, ybins, xwidth, ywidth, shape='gauss', extent=3.0):
-    x = _get_dist_bins(xbins, xwidth, extent)
-    y = _get_dist_bins(ybins, ywidth, extent)
-
-    if shape == 'gauss':
-        # Gauss FWHM = 2*sigma*sqrt(2*ln2)
-        xsigma = xwidth/(2*math.sqrt(2*math.log(2)))
-        ysigma = ywidth/(2*math.sqrt(2*math.log(2)))
-        xdist = _gaussian(x, xsigma)
-        ydist = _gaussian(y, ysigma)
-    elif shape == 'lorentz':
-        xdist = _lorentzian(x, xwidth)
-        ydist = _lorentzian(y, ywidth)
-    else:
-        raise ValueError(
-            f'Distribution shape \'{shape}\' not recognised')
-    xgrid = np.tile(xdist, (len(ydist), 1))
-    ygrid = np.transpose(np.tile(ydist, (len(xdist), 1)))
-    dist = xgrid*ygrid
-    dist = dist/np.sum(dist)  # Naively normalise
-
-    return dist
-
-
 def _get_supercell_relative_idx(cell_origins, sc_matrix):
     """"
     For each cell_origins[i] -> cell_origins[j] vector in the supercell,
@@ -561,173 +463,3 @@ def _get_supercell_relative_idx(cell_origins, sc_matrix):
         if np.any(dist_min > 16*sys.float_info.epsilon):
             raise Exception('Couldn\'t find supercell relative index')
     return sc_relative_index
-
-
-def _check_constructor_inputs(objs, types, shapes, names):
-    """
-    Make sure all the inputs are all the expected type, and if they are
-    an array, the correct shape
-
-    Parameters
-    ----------
-    objs : list of objects
-        The objects to check
-    types : list of types or lists of types
-        The expected class of each input. If multiple types are
-        accepted, the expected class can be a list of types. e.g.
-        types=[[list, np.ndarray], int]
-    shapes : list of tuples
-        The expected shape of each object (if the object has a shape
-        attribute). If the shape of some dimensions don't matter,
-        provide -1 for those dimensions, or if none of the dimensions
-        matter, provide an empty tuple (). If multiple shapes are
-        accepted, the expected shapes can be a list of tuples. e.g.
-        shapes=[[(n, 3), (n + 1, 3)], 3]
-    names : list of strings
-        The name of each array
-
-    Raises
-    ------
-    TypeError
-        If one of the items in objs isn't the correct type
-    ValueError
-        If an array shape don't match the expected shape
-    """
-    for obj, typ, shape, name in zip(objs, types, shapes, names):
-        if not isinstance(typ, list):
-            typ = [typ]
-        if not any(isinstance(obj, t) for t in typ):
-            raise TypeError((f'The type of {name} {type(obj)} doesn\'t '
-                             f'match the expected type(s) {typ}'))
-        if hasattr(obj, 'shape') and shape:
-            if not isinstance(shape, list):
-                shape = [shape]
-            if not any(obj.shape == _replace_dim(s, obj.shape) for s in shape):
-                raise ValueError((
-                    f'The shape of {name} {obj.shape} doesn\'t match '
-                    f'the expected shape(s) {shape}'))
-
-
-def _check_unit_conversion(obj: object, attr_name: str, attr_value: Any,
-                           unit_attrs: List[str]) -> None:
-    """
-    If setting an attribute on an object that relates to the units of a
-    Quantity (e.g. 'frequencies_unit' in QpointPhononModes) check that
-    the unit conversion is valid before allowing the value to be set
-
-    Parameters
-    ----------
-    obj
-        The object to check
-    attr_name
-        The name of the attribute that is being set
-    attr_value
-        The new value of the attribute
-    unit_attrs
-        Only check the unit conversion if the attribute is one of
-        unit_attrs
-
-    Raises
-    ------
-    ValueError
-        If the unit conversion is not valid
-    """
-    if hasattr(obj, attr_name):
-        if attr_name in unit_attrs:
-            try:
-                _ = ureg(getattr(obj, attr_name)).to(attr_value)
-            except DimensionalityError:
-                raise ValueError((
-                    f'"{attr_value}" is not a known dimensionally-consistent '
-                    f'unit for "{attr_name}"'))
-
-
-def _replace_dim(expected_shape, obj_shape):
-    # Allow -1 dimensions to be any size
-    idx = np.where(np.array(expected_shape) == -1)[0]
-    if len(idx) == 0 or len(expected_shape) != len(obj_shape):
-        return expected_shape
-    else:
-        expected_shape = np.array(expected_shape)
-        expected_shape[idx] = np.array(obj_shape)[idx]
-        return tuple(expected_shape)
-
-
-def _ensure_contiguous_attrs(obj, required_attrs, opt_attrs=[]):
-    """
-    Make sure all listed attributes of obj are C Contiguous and of the
-    correct type (int32, float64, complex128). This should only be used
-    internally, and called before any calls to Euphonic C extension
-    functions
-
-    Parameters
-    ----------
-    obj : Object
-        The object that will have it's attributes checked
-    required_attrs : list of strings
-        The attributes of obj to be checked. They should all be Numpy
-        arrays
-    opt_attrs : list of strings, optional
-        The attributes of obj to be checked, but if they don't exist
-        will not throw an error. e.g. Depending on the material
-        ForceConstants objects may or may not have 'born' defined
-    """
-    for attr_name in required_attrs:
-        attr = getattr(obj, attr_name)
-        attr = attr.astype(_get_dtype(attr), order='C', copy=False)
-        setattr(obj, attr_name, attr)
-
-    for attr_name in opt_attrs:
-        try:
-            attr = getattr(obj, attr_name)
-            attr = attr.astype(_get_dtype(attr), order='C', copy=False)
-            setattr(obj, attr_name, attr)
-        except AttributeError:
-            pass
-
-
-def _ensure_contiguous_args(*args):
-    """
-    Make sure all arguments are C Contiguous and of the correct type
-    (int32, float64, complex128). This should only be used internally,
-    and called before any calls to Euphonic C extension functions
-    Example use: arr1, arr2 = _ensure_contiguous_args(arr1, arr2)
-
-    Parameters
-    ----------
-    *args : any number of ndarrays
-        The Numpy arrays to be checked
-
-    Returns
-    -------
-    args_contiguous : the same number of ndarrays as args
-        The same as the provided args, but all contiguous.
-    """
-    args = list(args)
-    for i in range(len(args)):
-        args[i] = args[i].astype(_get_dtype(args[i]), order='C', copy=False)
-
-    return args
-
-
-def _get_dtype(arr):
-    """
-    Get the Numpy dtype that should be used for the input array
-
-    Parameters
-    ----------
-    arr : ndarray
-        The Numpy array to get the type of
-
-    Returns
-    -------
-    dtype : Numpy dtype
-        The type the array should be
-    """
-    if np.issubdtype(arr.dtype, np.integer):
-        return np.int32
-    elif np.issubdtype(arr.dtype, np.floating):
-        return np.float64
-    elif np.issubdtype(arr.dtype, np.complexfloating):
-        return np.complex128
-    return None
