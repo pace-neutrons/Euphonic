@@ -85,10 +85,12 @@ pipeline {
                 script {
                     def tag = env.JOB_BASE_NAME.substring(1)
                     bat """
+                        MOVE euphonic euphonic_local
                         CALL "%VS2019_VCVARSALL%" x86_amd64
                         CALL conda activate py
-                        set EUPHONIC_VERSION="$tag"
+                        set EUPHONIC_VERSION=${tag}
                         python -m tox -c release_tox.ini
+                        MOVE euphonic_local euphonic
                     """
                 }
             }
