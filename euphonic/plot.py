@@ -20,7 +20,7 @@ from pint import Quantity
 import numpy as np
 
 from euphonic import ureg
-from euphonic.spectra import Spectrum1D, Spectrum2D
+from euphonic.spectra import Spectrum1D, Spectrum1DCollection, Spectrum2D
 from euphonic.util import is_gamma, get_qpoint_labels, get_dispersion
 
 
@@ -54,18 +54,20 @@ def plot_dispersion(phonons: 'QpointPhononModes',
     return plot_1d(spectra, btol=btol, _split_line_x_idx=idx, *args, **kwargs)
 
 
-def _plot_1d_core(spectra: Union[Sequence[Spectrum1D], Spectrum1D],
+def _plot_1d_core(spectra: Union[Spectrum1D, Spectrum1DCollection],
                   ax: Axes,
                   **mplargs) -> None:
     """Plot a (collection of) 1D spectrum lines to matplotlib axis"""
     if isinstance(spectra, Spectrum1D):
-        spectra = [spectra]
-    elif not (isinstance(spectra, Sequence)
-              and isinstance(spectra[0], Spectrum1D)):
-        raise TypeError("spectra should be a Spectrum1D or sequence of "
-                        "Spectrum1D")
+        spectra = Spectrum1DCollection.from_spectra([spectra])
 
-    x_unit = spectra[0].x_data_unit
+    try:
+        assert isinstance(spectra, Spectrum1DCollection)
+    except AssertionError:
+        raise TypeError("spectra should be a Spectrum1D or "
+                        "Spectrum1DCollection")        
+
+    x_unit = spectra.x_data.units
     y_unit = spectra[0].y_data_unit
 
     for spectrum in spectra:
@@ -79,8 +81,9 @@ def _plot_1d_core(spectra: Union[Sequence[Spectrum1D], Spectrum1D],
 
 
 def plot_1d(spectra: Union[Spectrum1D,
+                           Spectrum1DCollection
                            Sequence[Spectrum1D],
-                           Sequence[Sequence[Spectrum1D]]],
+                           Sequence[Spectrum1DCollection]]],
             title: str = '',
             x_label: str = '',
             y_label: str = '',
@@ -96,26 +99,27 @@ def plot_1d(spectra: Union[Spectrum1D,
     Parameters
     ----------
     spectra
-        1D data to plot. Note only the x_tick_labels in
-        the first spectrum in the list will be used.
+        1D data to plot. Spectrum1D objects contain a single line, while
+        Spectrum1DCollection is suitable for plotting multiple lines 
+        simultaneously (e.g. band structures).
 
-        The nested list structure of spectra should be::
+        Data split across several regions should be provided as a sequence of
+        spectrum objects::
 
-            [[segment1_line1, segment1_line2, ...],
-             [segment2_line1, segment2_line2, ...]]
+            [Spectrum1D, Spectrum1D, ...]
+
+        or::
+
+            [Spectrum1DCollection, Spectrum1DCollection, ...]
 
         Where each segment will be plotted on a separate subplot. (This
         approach is mainly used to handle discontinuities in Brillouin-zone
         band structures, so the subplot widths will be based on the x-axis
         ranges.)
 
-        If a list of Spectrum1D is provided this will be treated as::
+        A singular Spectrum1D or Spectrum1DCollection will be automatically
+        split into segments if btol was set.
 
-            [line1, line2, line3, line4]
-
-        and will be automatically split into segments if btol was set.
-
-        A "bare" Spectrum1D will be treated as a sequence of one Spectrum1D.
     title
         Plot title
     x_label
@@ -144,8 +148,8 @@ def plot_1d(spectra: Union[Spectrum1D,
     fig : matplotlib.figure.Figure
 
     """
-    if isinstance(spectra, Spectrum1D):
-        spectra = [[spectra]]
+    if isinstance(spectra, (Spectrum1D, Spectrum1DCollection)):
+        spectra = [spectra]
 
     ibreak, gridspec_kw = _get_gridspec_kw(spectra[0].x_data.magnitude, btol)
     n_subplots = len(ibreak) - 1
