@@ -236,11 +236,12 @@ class Spectrum1DCollection(collections.abc.Sequence):
 
     def __getitem__(self, item):  # noqa: F811
         if isinstance(item, int):
-            return Spectrum1D(self.x_data, self._y_data[item, :],
+            return Spectrum1D(self.x_data,
+                              self._y_data[item, :],
                               x_tick_labels=self.x_tick_labels)
         elif isinstance(item, slice):
             return type(self)(self.x_data,
-                              self._y_data[slice, :],
+                              self._y_data[item, :],
                               x_tick_labels=self.x_tick_labels)
         else:
             raise TypeError(f'Index "{item}" should be an integer or a slice')
@@ -258,7 +259,8 @@ class Spectrum1DCollection(collections.abc.Sequence):
 
         for i, spectrum in enumerate(spectra[1:]):
             assert spectrum.y_data.units == y_data_units
-            assert spectrum.x_data == x_data
+            assert np.allclose(spectrum.x_data.magnitude, x_data.magnitude)
+            assert spectrum.x_data.units == x_data.units
             assert spectrum.x_tick_labels == x_tick_labels
             y_data_magnitude[i + 1, :] = spectrum.y_data.magnitude
 
