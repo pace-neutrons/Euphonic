@@ -329,36 +329,6 @@ def _read_frequency_block(
     return qpt, qweight, qfreq, extra
 
 
-def _read_cell_symmetry(filename):
-    with open(filename, 'rb') as f:
-        int_type = '>i4'
-        float_type = '>f8'
-        header = ''
-        first_sym_read = True
-        while header.strip() != b'END':
-            header = _read_entry(f)
-            if header.strip() == b'NUM_CRYSTAL_SYMMETRY_OPERATIONS':
-                # There are two sets of symmetry information for some reason
-                # hopefully the first one is what we want
-#                if first_sym_read:
-                if True:
-                    n_ops = _read_entry(f, int_type)
-                    first_sym_read = False
-                else:
-
-                    break
-            elif header.strip() == b'CRYSTAL_SYMMETRY_OPERATIONS':
-                ops = np.moveaxis(np.reshape(_read_entry(f, float_type), (n_ops, 3, 3)), 2, 1)
-            elif header.strip() == b'CRYSTAL_SYMMETRY_DISPS':
-                disps = np.reshape(_read_entry(f, float_type), (n_ops, 3))
-
-    data_dict = {}
-    data_dict['symmetry_operations'] = ops
-    data_dict['symmetry_disps'] = disps
-
-    return data_dict
-
-
 def read_interpolation_data(
         filename: str,
         cell_vectors_unit: str = 'angstrom',
