@@ -330,6 +330,25 @@ class TestForceConstantsCreation:
                 os.path.join(get_fc_dir('h-BN'),
                              'h-BN_no_force_constants.castep_bin'))
 
+    @pytest.mark.parametrize('material, phonopy_args', [
+        ('CaHgO2', {'summary_name': 'mp-7041-20180417.yaml'})])
+    def test_create_from_phonopy_without_cloader_is_ok(
+            self, material, phonopy_args, mocker):
+        # Mock 'from yaml import CLoader as Loader' to raise ImportError
+        import builtins
+        real_import = builtins.__import__
+        def mocked_import(name, globals, locals, fromlist, level):
+            if name == 'yaml':
+                if fromlist is not None and fromlist[0] == 'CSafeLoader':
+                    raise ImportError
+            return real_import(name, globals, locals, fromlist, level)
+        mocker.patch('builtins.__import__', side_effect=mocked_import)
+
+        phonopy_args['path'] = get_fc_dir(material)
+        fc = ForceConstants.from_phonopy(**phonopy_args)
+        expected_fc = get_expected_fc(material)
+        check_force_constants(fc, expected_fc)
+
 
 @pytest.mark.unit
 class TestForceConstantsSerialisation:

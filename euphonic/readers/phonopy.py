@@ -63,11 +63,15 @@ def _extract_phonon_data_yaml(filename):
     """
     try:
         import yaml
+        try:
+            from yaml import CSafeLoader as SafeLoader
+        except ImportError:
+            from yaml import SafeLoader
     except ModuleNotFoundError as e:
         raise ImportPhonopyReaderError from e
 
     with open(filename, 'r') as yaml_file:
-        phonon_data = yaml.safe_load(yaml_file)
+        phonon_data = yaml.load(yaml_file, Loader=SafeLoader)
 
     data_dict = {}
     phonons = [phon for phon in phonon_data['phonon']]
@@ -546,11 +550,15 @@ def _extract_summary(filename, fc_extract=False):
     """
     try:
         import yaml
+        try:
+            from yaml import CSafeLoader as SafeLoader
+        except ImportError:
+            from yaml import SafeLoader
     except ModuleNotFoundError as e:
         raise ImportPhonopyReaderError from e
 
     with open(filename, 'r') as summary_file:
-        summary_object = yaml.safe_load(summary_file)
+        summary_object = yaml.load(summary_file, Loader=SafeLoader)
 
     (cell_vectors, n_atoms, atom_r, atom_mass,
      atom_type, _) = _extract_crystal_data(summary_object['primitive_cell'])

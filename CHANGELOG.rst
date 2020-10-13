@@ -1,6 +1,11 @@
 `Unreleased <https://github.com/pace-neutrons/Euphonic/compare/v0.3.2...HEAD>`_
 ----------
 
+- Changes:
+
+  - ``yaml.CSafeLoader`` is now used instead of ``yaml.SafeLoader`` by
+    default, so Phonopy ``.yaml`` files should load faster
+
 `v0.3.2 <https://github.com/pace-neutrons/Euphonic/compare/v0.3.1...v0.3.2>`_
 ----------
 

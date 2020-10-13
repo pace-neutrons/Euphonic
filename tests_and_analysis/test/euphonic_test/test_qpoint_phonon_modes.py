@@ -334,6 +334,29 @@ class TestQpointPhononModesCreation:
         with pytest.raises(err):
             QpointPhononModes.from_phonopy(**phonopy_args)
 
+    @pytest.mark.parametrize('material, subdir, phonopy_args, json_file', [
+        ('CaHgO2', '', {'summary_name': 'mp-7041-20180417.yaml',
+                        'phonon_name': 'qpoints.yaml'},
+         'CaHgO2_from_phonopy_qpoint_phonon_modes.json')])
+    def test_create_from_phonopy_without_cloader_is_ok(
+            self, material, subdir, phonopy_args, json_file, mocker):
+        # Mock 'from yaml import CLoader as Loader' to raise ImportError
+        import builtins
+        real_import = builtins.__import__
+        def mocked_import(name, globals, locals, fromlist, level):
+            if name == 'yaml':
+                if fromlist is not None and fromlist[0] == 'CSafeLoader':
+                    raise ImportError
+            return real_import(name, globals, locals, fromlist, level)
+        mocker.patch('builtins.__import__', side_effect=mocked_import)
+
+        phonopy_args['path'] = os.path.join(get_qpt_ph_modes_dir(material),
+                                            subdir)
+        qpt_ph_modes = QpointPhononModes.from_phonopy(**phonopy_args)
+        json_path = os.path.join(phonopy_args['path'], json_file)
+        expected_qpt_ph_modes = ExpectedQpointPhononModes(json_path)
+        check_qpt_ph_modes(qpt_ph_modes, expected_qpt_ph_modes,
+                           check_evecs=True)
 
 @pytest.mark.unit
 class TestQpointPhononModesSerialisation:
