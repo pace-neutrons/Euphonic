@@ -146,7 +146,8 @@ class StructureFactor(object):
         sqw_map = self._bose_corrected_structure_factor(
             e_bins, calc_bose=calc_bose, temperature=temperature)
 
-        spectrum = np.average(sqw_map, axis=0, weights=weights)
+        spectrum = np.average(
+            sqw_map.magnitude, axis=0, weights=weights)*sqw_map.units
         return Spectrum1D(e_bins, spectrum)
 
     def calculate_sqw_map(self, e_bins, calc_bose=True, temperature=None):
