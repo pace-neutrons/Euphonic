@@ -127,7 +127,8 @@ def check_unit_conversion(obj, attr, unit):
         The unit to change attr to
     """
     unit_attr = attr + '_unit'
-    original_attr_value = np.copy(getattr(obj, attr))
+    original_attr_value = np.copy(
+        getattr(obj, attr).magnitude)*getattr(obj, attr).units
     setattr(obj, unit_attr, unit)
 
     # Check unit value (e.g. 'frequencies_unit') has changed
