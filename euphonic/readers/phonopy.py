@@ -306,15 +306,15 @@ def convert_eigenvector_phases(phonon_dict):
     return np.reshape(eigvecs, (n_qpts, 3*n_atoms, n_atoms, 3))
 
 
-def _extract_force_constants(fc_file, n_atoms, n_cells, summary_name,
+def _extract_force_constants(fc_pathname, n_atoms, n_cells, summary_name,
                              cell_origins_map, sc_relative_idx):
     """
     Reads force constants from a Phonopy FORCE_CONSTANTS file
 
     Parameters
     ----------
-    fc_file : File
-        Opened File object
+    fc_pathname : str
+        The FORCE_CONSTANTS file to read from
     n_atoms : int
         Number of atoms in the unit cell
     n_cells : int
@@ -326,36 +326,28 @@ def _extract_force_constants(fc_file, n_atoms, n_cells, summary_name,
         The force constants, in Euphonic convention
     """
 
-    data = np.array([])
-    fc = np.array([])
-
-    fc_dims =  [int(dim) for dim in fc_file.readline().split()]
+    with open(fc_pathname, 'r') as f:
+        fc_dims =  [int(dim) for dim in f.readline().split()]
     # single shape specifier implies full format
     if len(fc_dims) == 1:
         fc_dims.append(fc_dims[0])
-    _check_fc_shape(fc_dims, n_atoms, n_cells, fc_file.name, summary_name)
+    _check_fc_shape(fc_dims, n_atoms, n_cells, fc_pathname, summary_name)
     if fc_dims[0] == fc_dims[1]:
         full_fc = True
     else:
         full_fc = False
 
-    skip_header = 0
-    for i in range(n_atoms):
-        if full_fc and i > 0:
-            # Skip extra entries present in full matrix
-            skip_header = 4*(n_cells - 1)*n_atoms*n_cells
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        fc = np.genfromtxt(fc_pathname, skip_header=1,
+                           max_rows=4*(n_atoms*n_cells)**2, usecols=(0,1,2),
+                           invalid_raise=False)
+    if full_fc:
+        idx = np.array([np.arange(3*n_atoms*n_cells) + 3*i*n_atoms*n_cells**2
+                        for i in range(n_atoms)]).flatten()
+        fc = fc[idx]
 
-        # Skip rows without fc values using invalid_raise=False and
-        # ignoring warning
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore")
-            data = np.genfromtxt(fc_file, skip_header=skip_header,
-                                 max_rows=3*n_atoms*n_cells, usecols=(0,1,2),
-                                 invalid_raise=False)
-        if i == 0:
-            fc = data
-        else:
-            fc = np.concatenate([fc, data])
+    fc = fc.reshape((n_atoms, n_cells*n_atoms, 3, 3))
 
     return _reshape_fc(fc, n_atoms, n_cells, cell_origins_map, sc_relative_idx)
 
@@ -765,11 +757,10 @@ def _read_interpolation_data(path='.', summary_name='phonopy.yaml',
         n_atoms = summary_dict['n_atoms']
         n_cells = summary_dict['n_cells_in_sc']
         if fc_format == 'phonopy':
-            with open(fc_pathname, 'r') as fc_file:
-                summary_dict['force_constants'] = _extract_force_constants(
-                    fc_file, n_atoms, n_cells, summary_pathname,
-                    summary_dict['cell_origins_map'],
-                    summary_dict['sc_relative_idx'])
+            summary_dict['force_constants'] = _extract_force_constants(
+                fc_pathname, n_atoms, n_cells, summary_pathname,
+                summary_dict['cell_origins_map'],
+                summary_dict['sc_relative_idx'])
         elif fc_format in 'hdf5':
             summary_dict['force_constants'] =  _extract_force_constants_hdf5(
                 fc_pathname, n_atoms, n_cells, summary_pathname,
