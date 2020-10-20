@@ -9,6 +9,7 @@ from euphonic import ureg
 from euphonic.spectra import Spectrum1D
 from tests_and_analysis.test.utils import get_data_path, check_unit_conversion
 
+
 class ExpectedSpectrum1D:
     def __init__(self, spectrum1d_json_file: str):
         with open(spectrum1d_json_file) as fd:
@@ -224,6 +225,68 @@ class TestSpectrum1DUnitConversion:
         spec1d = get_spectrum1d(spectrum1d_file)
         with pytest.raises(err):
             setattr(spec1d, unit_attr, unit_val)
+
+
+@pytest.mark.unit
+class TestSpectrum1DSplitting:
+    _sine_spectrum_x = np.linspace(0, 10, 21)
+    _sine_spectrum = Spectrum1D(
+        _sine_spectrum_x * ureg('1/bohr'),
+        np.sin(_sine_spectrum_x) * ureg(None),
+        x_tick_labels=[(i, f'{xi:.1f}') for i, xi in enumerate(_sine_spectrum_x)])
+
+    sine_spectrum_data = {
+            'spectrum': _sine_spectrum,
+            'params': dict(indices=[2, 8]),
+            'expected_split_x': [[0., 0.5],
+                                 [1., 1.5, 2., 2.5, 3., 3.5],
+                                 np.linspace(4., 10., 13)],
+            'expected_split_y': [np.sin([0, 0.5]),
+                                 np.sin(np.linspace(1, 3.5, 6)),
+                                 np.sin(np.linspace(4., 10., 13))],
+            'expected_split_labels': [[(0, '0.0'), (1, '0.5')],
+                                      [(0, '1.0'), (1, '1.5'), (2, '2.0'),
+                                       (3, '2.5'), (4, '3.0'), (5, '3.5')],
+                                      [(i, f'{xi:.1f}')
+                                       for i, xi
+                                       in enumerate(np.linspace(4, 10, 13))]]
+            }
+
+    _band_split_x = [2., 3., 4., 24., 25., 26., 27., 50., 50.9]
+    _band_split_y = np.random.random(9).tolist()
+
+    _band_split_spectrum= Spectrum1D(_band_split_x * ureg('1/angstrom'),
+                                     _band_split_y * ureg(None),
+                                     x_tick_labels=[(0, 'A'), (2, 'B'),
+                                                    (3, 'C'), (4, 'D'), (6, 'E'),
+                                                    (7, 'F'), (8, 'G')])
+
+    band_split_data = {
+            'spectrum': _band_split_spectrum,
+            'params': dict(btol=10.),
+            'expected_split_x': [[2., 3., 4.],
+                                 [24., 25., 26., 27.], [50., 50.9]],
+            'expected_split_y': [_band_split_y[0:3],
+                                 _band_split_y[3:7],
+                                 _band_split_y[7:]],
+            'expected_split_labels': [[(0, 'A'), (2, 'B')],
+                                      [(0, 'C'), (1, 'D'), (3, 'E')],
+                                      [(0, 'F'), (1, 'G')]]
+         }
+
+    @pytest.mark.parametrize('spectrum_data', [sine_spectrum_data, band_split_data])
+    def test_split(self, spectrum_data):
+        full_spectrum = spectrum_data['spectrum']
+        spectra = full_spectrum.split(**spectrum_data['params'])
+        for spectrum, expected_x in zip(spectra,
+                                        spectrum_data['expected_split_x']):
+            npt.assert_allclose(spectrum.x_data.magnitude, expected_x)
+        for spectrum, expected_y in zip(spectra,
+                                        spectrum_data['expected_split_y']):
+            npt.assert_allclose(spectrum.y_data.magnitude, expected_y)
+        for spectrum, expected_labels in zip(
+                spectra, spectrum_data['expected_split_labels']):
+            assert spectrum.x_tick_labels == expected_labels
 
 
 @pytest.mark.unit
