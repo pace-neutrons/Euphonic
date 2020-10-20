@@ -3,6 +3,10 @@ import sys
 import pytest
 import numpy as np
 import numpy.testing as npt
+import matplotlib
+# Default mpl backend fails on system without $DISPLAY set for < 3.0.0
+if int(matplotlib.__version__.split('.')[0]) < 3:
+    matplotlib.use('Agg')
 # Required for mocking
 import matplotlib.pyplot
 from .utils import get_phonon_file, get_dos_params, get_dos_data_file
