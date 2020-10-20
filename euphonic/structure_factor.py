@@ -295,7 +295,8 @@ class StructureFactor(object):
         """
         if self.temperature is not None:
             if (temperature is not None
-                    and not np.isclose(temperature, self.temperature)):
+                    and not np.isclose(temperature.to('K').magnitude,
+                                       self.temperature.to('K').magnitude)):
                 raise ValueError((
                     'Temperature provided to calculate the Bose factor '
                     '({:~P}) is not consistent with the temperature '
