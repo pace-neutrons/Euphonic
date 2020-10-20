@@ -59,7 +59,8 @@ def _plot_1d_core(spectra: Union[Spectrum1D, Spectrum1DCollection],
                   **mplargs) -> None:
     """Plot a (collection of) 1D spectrum lines to matplotlib axis"""
     if isinstance(spectra, Spectrum1D):
-        spectra = Spectrum1DCollection.from_spectra([spectra])
+        return _plot_1d_core(Spectrum1DCollection.from_spectra([spectra]),
+                             ax=ax, **mplargs)
 
     try:
         assert isinstance(spectra, Spectrum1DCollection)
@@ -81,9 +82,9 @@ def _plot_1d_core(spectra: Union[Spectrum1D, Spectrum1DCollection],
 
 
 def plot_1d(spectra: Union[Spectrum1D,
-                           Spectrum1DCollection
+                           Spectrum1DCollection,
                            Sequence[Spectrum1D],
-                           Sequence[Spectrum1DCollection]]],
+                           Sequence[Spectrum1DCollection]],
             title: str = '',
             x_label: str = '',
             y_label: str = '',
