@@ -68,17 +68,14 @@ def _plot_1d_core(spectra: Union[Spectrum1D, Spectrum1DCollection],
         raise TypeError("spectra should be a Spectrum1D or "
                         "Spectrum1DCollection")        
 
-    x_unit = spectra.x_data.units
-    y_unit = spectra[0].y_data_unit
-
     for spectrum in spectra:
-        ax.plot(spectrum._get_bin_centres('x').to(x_unit).magnitude,
-                plot_y = spectrum.y_data.to(y_unit).magnitude,
+        ax.plot(spectrum._get_bin_centres('x').magnitude,
+                plot_y = spectrum.y_data.magnitude,
                 **mplargs)
 
-    ax.set_xlim(left=spectra[0].x_data.to(x_unit).magnitude,
-                right=spectra[0].x_data.to(x_unit).magnitude)
-    _set_x_tick_labels(ax, spectra[0].x_tick_labels, spectra[0].x_data)
+    ax.set_xlim(left=spectra[0].x_data.magnitude,
+                right=spectra[0].x_data.magnitude)
+    _set_x_tick_labels(ax, spectra.x_tick_labels, spectra.x_data)
 
 
 def plot_1d(spectra: Union[Spectrum1D,
@@ -151,6 +148,15 @@ def plot_1d(spectra: Union[Spectrum1D,
     """
     if isinstance(spectra, (Spectrum1D, Spectrum1DCollection)):
         spectra = [spectra]
+    else:
+        # Check units are consistent
+        for spectrum in spectra[1:]:
+            if spectrum.x_data_unit != spectra[0].x_data_unit:
+                raise ValueError("Something went wrong: x data units are not "
+                                 "consistent between spectrum subplots.")
+            if spectrum.y_data_unit != spectra[0].y_data_unit:
+                raise ValueError("Something went wrong: y data units are not "
+                                 "consistent between spectrum subplots.")
 
     ibreak, gridspec_kw = _get_gridspec_kw(spectra[0].x_data.magnitude, btol)
     n_subplots = len(ibreak) - 1
@@ -161,15 +167,14 @@ def plot_1d(spectra: Union[Spectrum1D,
 
     subplots[0].set_ylabel(y_label)
     subplots[0].set_xlabel(x_label)
-    x_unit = spectra[0].x_data_unit
-    y_unit = spectra[0].y_data_unit
+
     for i, ax in enumerate(subplots):
         _set_x_tick_labels(ax, spectra[0].x_tick_labels, spectra[0].x_data)
         ax.set_xlim(left=spectra[0].x_data[ibreak[i]].magnitude,
                     right=spectra[0].x_data[ibreak[i + 1] - 1].magnitude)
         for spectrum in spectra:
-            plot_x = spectrum._get_bin_centres('x').to(x_unit).magnitude
-            plot_y = spectrum.y_data.to(y_unit).magnitude
+            plot_x = spectrum._get_bin_centres('x').magnitude
+            plot_y = spectrum.y_data.magnitude
             # Don't join points where _split_line_x_idx has been defined
             idx = np.concatenate(([0], _split_line_x_idx, [len(plot_x)]))
             for j in range(len(idx) - 1):

@@ -2,7 +2,8 @@ from abc import ABC, abstractmethod
 import collections
 from copy import deepcopy
 import math
-from typing import Dict, Optional, overload, Sequence, Tuple, TypeVar, Union
+from typing import (Dict, List, Optional, overload,
+                    Sequence, Tuple, TypeVar, Union)
 
 from scipy import signal
 import numpy as np
@@ -106,6 +107,80 @@ class Spectrum(ABC):
         type_dict = {'x_tick_labels': tuple}
         return _obj_from_json_file(cls, filename, type_dict)
 
+    @abstractmethod
+    def _split_by_indices(self: S,
+                        indices: Union[Sequence[int], np.ndarray]) -> List[S]:
+        """Split data along x axis at given indices"""
+        ...
+
+    def _split_by_tol(self: S, btol: float = 10.0) -> List[S]:
+        """Split data along x-axis at detected breakpoints"""
+        diff = np.diff(self.x_data.magnitude)
+        median = np.median(diff)
+        breakpoints = np.where((diff / median) > btol)[0] + 1
+        return self._split_by_indices(breakpoints)
+
+    @staticmethod
+    def _ranges_from_indices(indices: Union[Sequence[int], np.ndarray]
+                             ) -> List[Tuple[int, int]]:
+        """Convert a series of breakpoints to a series of slice ranges"""
+        if len(indices) == 0:
+            ranges = [(0, None)]
+        else:
+            ranges = [(0, indices[0])]
+            if len(indices) > 1:
+                ranges = ranges + [(indices[i], indices[i+1])
+                                   for i in range(len(indices) - 1)]
+            ranges = ranges + [(indices[-1], None)]
+        return ranges
+
+    @staticmethod
+    def _cut_x_ticks(x_tick_labels: Union[List[Tuple[int, str]], None],
+                     x0: int,
+                     x1: Union[int, None]) -> List[Tuple[int, str]]:
+        """Crop and shift x labels to new x range"""
+        if x_tick_labels is None:
+            return None
+        else:
+            return [(x - x0, label) for (x, label) in x_tick_labels
+                    if (x >= x0) and ((x1 is None) or (x < x1))]
+
+    def split(self: S, indices: Union[Sequence[int], np.ndarray] = None,
+              btol: float = None) -> List[S]:
+        """Split to multiple spectra
+
+        Data may be split by index. Alternatively, x-axis data may be
+        split automatically by searching for unusually large gaps in
+        energy values.  These would usually correspond to disconnected
+        special-points in a band-structure diagram.
+
+        Parameters
+        ----------
+        indices:
+            positions in data of breakpoints
+        btol:
+            parameter used to identify breakpoints. This is a ratio
+            between the gap in values and the median gap between
+            neighbouring x-values. If neither indices nor btol is
+            specified, this is set to 10.0.
+
+        Returns
+        -------
+            Separated spectrum regions. If passed to the appropriate
+            functions in euphonic.plot this would be interpreted as a
+            series of subplots.
+
+        """
+
+        if indices is None:
+            if btol is None:
+                btol = 10.0
+            return self._split_by_tol(btol=btol)
+        else:
+            if btol is not None:
+                raise ValueError("Cannot set both indices and btol")
+            return self._split_by_indices(indices)
+
 
 class Spectrum1D(Spectrum):
     def __init__(self, x_data, y_data, x_tick_labels=None):
@@ -143,6 +218,16 @@ class Spectrum1D(Spectrum):
     def y_data(self):
         return self._y_data*ureg(self._internal_y_data_unit).to(
             self.y_data_unit)
+
+    def _split_by_indices(self: S,
+                        indices: Union[Sequence[int], np.ndarray]) -> List[S]:
+        """Split data along x-axis at given indices"""
+        ranges = self._ranges_from_indices(indices)
+
+        return [type(self)(self.x_data[x0:x1], self.y_data[x0:x1],
+                           x_tick_labels=self._cut_x_ticks(self.x_tick_labels,
+                                                           x0, x1))
+                           for x0, x1 in ranges]
 
     def to_dict(self):
         """
@@ -209,7 +294,7 @@ class Spectrum1D(Spectrum):
             y_broadened, deepcopy((self.x_tick_labels)))
 
 
-class Spectrum1DCollection(collections.abc.Sequence):
+class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
     """A collection of Spectrum1D with common x_data and x_tick_labels
 
     Intended for convenient storage of band structures, projected DOS
@@ -229,12 +314,44 @@ class Spectrum1DCollection(collections.abc.Sequence):
     def __init__(self, x_data: Quantity, y_data: Quantity,
                  x_tick_labels: Optional[Sequence[Tuple[int, str]]] = None
                  ) -> None:
-        self.x_data = x_data
-        self._y_data = y_data
+
+        _check_constructor_inputs(
+            [y_data, x_tick_labels],
+            [Quantity, [list, type(None)]],
+            [(-1,-1), ()],
+            ['y_data', 'x_tick_labels'])
+        ny = len(y_data[0])
+        _check_constructor_inputs(
+            [x_data], [Quantity],
+            [[(ny,), (ny+1,)]], ['x_data'])
+
+        self._set_data(x_data, 'x')
+        self._set_data(y_data, 'y')
         self.x_tick_labels = x_tick_labels
 
+    @property
+    def x_data(self):
+        return self._x_data*ureg(self._internal_x_data_unit).to(
+            self.x_data_unit)
+
+    @property
+    def y_data(self):
+        return self._y_data*ureg(self._internal_y_data_unit).to(
+            self.y_data_unit)
+
+    def _split_by_indices(self: S,
+                        indices: Union[Sequence[int], np.ndarray]) -> List[S]:
+        """Split data along x-axis at given indices"""
+
+        ranges = self._ranges_from_indices(indices)
+
+        return [type(self)(self.x_data[x0:x1], self.y_data[:, x0:x1],
+                           x_tick_labels=self._cut_x_ticks(self.x_tick_labels,
+                                                           x0, x1))
+                           for x0, x1 in ranges]
+
     def __len__(self):
-        return self._y_data.magnitude.shape[0]
+        return self.y_data.magnitude.shape[0]
 
     @overload
     def __getitem__(self, item: int) -> Spectrum1D:
@@ -247,11 +364,11 @@ class Spectrum1DCollection(collections.abc.Sequence):
     def __getitem__(self, item):  # noqa: F811
         if isinstance(item, int):
             return Spectrum1D(self.x_data,
-                              self._y_data[item, :],
+                              self.y_data[item, :],
                               x_tick_labels=self.x_tick_labels)
         elif isinstance(item, slice):
             return type(self)(self.x_data,
-                              self._y_data[item, :],
+                              self.y_data[item, :],
                               x_tick_labels=self.x_tick_labels)
         else:
             raise TypeError(f'Index "{item}" should be an integer or a slice')
@@ -278,6 +395,12 @@ class Spectrum1DCollection(collections.abc.Sequence):
 
         return cls(x_data, y_data, x_tick_labels=x_tick_labels)
 
+    def to_dict(self):
+        raise NotImplementedError()
+
+    @classmethod
+    def from_dict(d):
+        raise NotImplementedError()
 
 class Spectrum2D(Spectrum):
     """
@@ -349,6 +472,16 @@ class Spectrum2D(Spectrum):
         _check_unit_conversion(self, name, value,
                                ['z_data_unit'])
         super(Spectrum2D, self).__setattr__(name, value)
+
+    def _split_by_indices(self: S,
+                        indices: Union[Sequence[int], np.ndarray]) -> List[S]:
+        """Split data along x-axis at given indices"""
+        ranges = self._ranges_from_indices(indices)
+        return [type(self)(self.x_data[x0:x1], self.y_data,
+                           self.z_data[:, x0:x1],
+                           x_tick_labels=self._cut_x_ticks(self.x_tick_labels,
+                                                           x0, x1))
+                           for x0, x1 in ranges]
 
     def broaden(self, x_width=None, y_width=None, shape='gauss'):
         """
