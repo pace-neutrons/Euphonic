@@ -3,5 +3,5 @@ seekpath==1.1.0
 pint==0.10.1
 importlib_resources==1.3.0
 matplotlib==2.0.0
-h5py==2.9.0
-PyYAML==5.1.2
+h5py==2.7.0
+PyYAML==3.13
