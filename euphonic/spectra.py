@@ -1,7 +1,8 @@
+from abc import ABC, abstractmethod
 import collections
 from copy import deepcopy
 import math
-from typing import Optional, overload, Sequence, Tuple, TypeVar
+from typing import Dict, Optional, overload, Sequence, Tuple, TypeVar, Union
 
 from scipy import signal
 import numpy as np
@@ -12,7 +13,11 @@ from euphonic.io import (_obj_to_json_file, _obj_from_json_file,
 from euphonic import ureg, Quantity
 
 
-class Spectrum:
+S = TypeVar('S', bound='Spectrum')
+SC = TypeVar('SC', bound='Spectrum1DCollection')
+
+
+class Spectrum(ABC):
     """
     For storing generic 1D spectra e.g. density of states
 
@@ -27,6 +32,82 @@ class Spectrum:
         Special tick labels e.g. for high-symmetry points. The int
         refers to the index in x_data the label should be applied to
     """
+    def __setattr__(self, name, value):
+        _check_unit_conversion(self, name, value,
+                               ['x_data_unit', 'y_data_unit'])
+        super().__setattr__(name, value)
+
+    def _set_data(self, data, attr_name):
+        setattr(self, f'_{attr_name}_data',
+                np.array(data.magnitude, dtype=np.float64))
+        setattr(self, f'_internal_{attr_name}_data_unit', str(data.units))
+        setattr(self, f'{attr_name}_data_unit', str(data.units))
+
+    def _is_bin_edge(self, bin_ax, data_ax='y'):
+        enum = {'x': 0, 'y': 1}
+        bins = getattr(self, f'{bin_ax}_data')
+        data = getattr(self, f'{data_ax}_data')
+        if len(bins) == data.shape[enum[bin_ax]] + 1:
+            is_bin_edge = True
+        else:
+            is_bin_edge = False
+        return is_bin_edge, bins.magnitude, bins.units
+
+    def _get_bin_edges(self, bin_ax='x'):
+        is_bin_edge, bins, bins_units = self._is_bin_edge(bin_ax)
+        if is_bin_edge:
+            return bins*bins_units
+        else:
+            bin_edges = np.concatenate((
+                [bins[0]], (bins[1:] + bins[:-1])/2, [bins[-1]]))
+            return bin_edges*bins_units
+
+    def _get_bin_centres(self, bin_ax='x'):
+        is_bin_edge, bins, bins_units = self._is_bin_edge(bin_ax)
+        if is_bin_edge:
+            bin_centres = bins[:-1] + 0.5*np.diff(bins)
+            return bin_centres*bins_units
+        else:
+            return bins*bins_units
+
+    @abstractmethod
+    def to_dict(self) -> Dict[str, Union[float, np.ndarray]]:
+        """Write to dict using euphonic.io._obj_to_dict"""
+        ...
+
+    @classmethod
+    @abstractmethod
+    def from_dict(cls: S, d: Dict[str, Union[float, np.ndarray]]) -> S:
+        """Initialise a Spectrum object from dictionary"""
+        ...
+
+    def to_json_file(self, filename):
+        """
+        Write to a JSON file. JSON fields are equivalent to
+        from_dict keys
+
+        Parameters
+        ----------
+        filename : str
+            Name of the JSON file to write to
+        """
+        _obj_to_json_file(self, filename)
+
+    @classmethod
+    def from_json_file(cls, filename):
+        """
+        Read from a JSON file. See from_dict for required fields
+
+        Parameters
+        ----------
+        filename : str
+            The file to read from
+        """
+        type_dict = {'x_tick_labels': tuple}
+        return _obj_from_json_file(cls, filename, type_dict)
+
+
+class Spectrum1D(Spectrum):
     def __init__(self, x_data, y_data, x_tick_labels=None):
         """
         Parameters
@@ -63,10 +144,43 @@ class Spectrum:
         return self._y_data*ureg(self._internal_y_data_unit).to(
             self.y_data_unit)
 
-    def __setattr__(self, name, value):
-        _check_unit_conversion(self, name, value,
-                               ['x_data_unit', 'y_data_unit'])
-        super().__setattr__(name, value)
+    def to_dict(self):
+        """
+        Convert to a dictionary. See Spectrum1D.from_dict for details on
+        keys/values
+
+        Returns
+        -------
+        dict
+        """
+        return _obj_to_dict(self, ['x_data', 'y_data', 'x_tick_labels'])
+
+    @classmethod
+    def from_dict(cls: S, d) -> S:
+        """
+        Convert a dictionary to a Spectrum1D object
+
+        Parameters
+        ----------
+        d : dict
+            A dictionary with the following keys/values:
+
+            - 'x_data': (n_x_data,) or (n_x_data + 1,) float ndarray
+            - 'x_data_unit': str
+            - 'y_data': (n_x_data,) float ndarray
+            - 'y_data_unit': str
+
+            There are also the following optional keys:
+
+            - 'x_tick_labels': list of (int, string) tuples
+
+        Returns
+        -------
+        Spectrum1D
+        """
+        d = _process_dict(d, quantities=['x_data', 'y_data'],
+                          optional=['x_tick_labels'])
+        return cls(d['x_data'], d['y_data'], d['x_tick_labels'])
 
     def broaden(self, x_width, shape='gauss'):
         """
@@ -93,110 +207,6 @@ class Spectrum:
         return type(self)(
             np.copy(self.x_data.magnitude)*ureg(self.x_data_unit),
             y_broadened, deepcopy((self.x_tick_labels)))
-
-    def _set_data(self, data, attr_name):
-        setattr(self, f'_{attr_name}_data',
-                np.array(data.magnitude, dtype=np.float64))
-        setattr(self, f'_internal_{attr_name}_data_unit', str(data.units))
-        setattr(self, f'{attr_name}_data_unit', str(data.units))
-
-    def _is_bin_edge(self, bin_ax, data_ax='y'):
-        enum = {'x': 0, 'y': 1}
-        bins = getattr(self, f'{bin_ax}_data')
-        data = getattr(self, f'{data_ax}_data')
-        if len(bins) == data.shape[enum[bin_ax]] + 1:
-            is_bin_edge = True
-        else:
-            is_bin_edge = False
-        return is_bin_edge, bins.magnitude, bins.units
-
-    def _get_bin_edges(self, bin_ax='x'):
-        is_bin_edge, bins, bins_units = self._is_bin_edge(bin_ax)
-        if is_bin_edge:
-            return bins*bins_units
-        else:
-            bin_edges = np.concatenate((
-                [bins[0]], (bins[1:] + bins[:-1])/2, [bins[-1]]))
-            return bin_edges*bins_units
-
-    def _get_bin_centres(self, bin_ax='x'):
-        is_bin_edge, bins, bins_units = self._is_bin_edge(bin_ax)
-        if is_bin_edge:
-            bin_centres = bins[:-1] + 0.5*np.diff(bins)
-            return bin_centres*bins_units
-        else:
-            return bins*bins_units
-
-    def to_dict(self):
-        """
-        Convert to a dictionary. See Spectrum1D.from_dict for details on
-        keys/values
-
-        Returns
-        -------
-        dict
-        """
-        d = _obj_to_dict(self, ['x_data', 'y_data', 'x_tick_labels'])
-        return d
-
-    def to_json_file(self, filename):
-        """
-        Write to a JSON file. JSON fields are equivalent to
-        from_dict keys
-
-        Parameters
-        ----------
-        filename : str
-            Name of the JSON file to write to
-        """
-        _obj_to_json_file(self, filename)
-
-    @classmethod
-    def from_dict(cls, d):
-        """
-        Convert a dictionary to a Spectrum1D object
-
-        Parameters
-        ----------
-        d : dict
-            A dictionary with the following keys/values:
-
-            - 'x_data': (n_x_data,) or (n_x_data + 1,) float ndarray
-            - 'x_data_unit': str
-            - 'y_data': (n_x_data,) float ndarray
-            - 'y_data_unit': str
-
-            There are also the following optional keys:
-
-            - 'x_tick_labels': list of (int, string) tuples
-
-        Returns
-        -------
-        Spectrum1D
-        """
-        d = _process_dict(d, quantities=['x_data', 'y_data'],
-                          optional=['x_tick_labels'])
-        return cls(d['x_data'], d['y_data'], d['x_tick_labels'])
-
-    @classmethod
-    def from_json_file(cls, filename):
-        """
-        Read from a JSON file. See from_dict for required fields
-
-        Parameters
-        ----------
-        filename : str
-            The file to read from
-        """
-        type_dict = {'x_tick_labels': tuple}
-        return _obj_from_json_file(cls, filename, type_dict)
-
-
-class Spectrum1D(Spectrum):  # Give 1D spectra its own name so that
-    pass                     # isinstance(2d_spectrum, Spectrum1D) is False
-
-
-SC = TypeVar('SC', bound='Spectrum1DCollection')
 
 
 class Spectrum1DCollection(collections.abc.Sequence):
@@ -321,6 +331,16 @@ class Spectrum2D(Spectrum):
         self._set_data(z_data, 'z')
 
     @property
+    def x_data(self):
+        return self._x_data*ureg(self._internal_x_data_unit).to(
+            self.x_data_unit)
+
+    @property
+    def y_data(self):
+        return self._y_data*ureg(self._internal_y_data_unit).to(
+            self.y_data_unit)
+
+    @property
     def z_data(self):
         return self._z_data*ureg(self._internal_z_data_unit).to(
             self.z_data_unit)
@@ -379,10 +399,8 @@ class Spectrum2D(Spectrum):
         -------
         dict
         """
-        d1 = super().to_dict()
-        d2 = _obj_to_dict(self, ['z_data'])
-        d2.update(d1)
-        return d2
+        return _obj_to_dict(self, ['x_data', 'y_data', 'z_data',
+                                   'x_tick_labels'])
 
     @classmethod
     def from_dict(cls, d):
