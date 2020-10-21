@@ -11,7 +11,6 @@ import seekpath
 import euphonic
 from euphonic import ureg
 import euphonic.plot
-from euphonic.util import get_dispersion
 
 def get_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser()
@@ -213,7 +212,7 @@ def main():
             x_tick_labels = None
 
         if args.lines:
-            spectrum = get_dispersion(modes)
+            spectrum = modes.get_dispersion()
             if x_tick_labels:
                 spectrum[0].x_tick_labels = x_tick_labels
 

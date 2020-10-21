@@ -21,7 +21,7 @@ import numpy as np
 
 from euphonic import ureg
 from euphonic.spectra import Spectrum1D, Spectrum1DCollection, Spectrum2D
-from euphonic.util import is_gamma, get_qpoint_labels, get_dispersion
+from euphonic.util import is_gamma, get_qpoint_labels
 
 
 def plot_dispersion(phonons: 'QpointPhononModes',
@@ -43,15 +43,9 @@ def plot_dispersion(phonons: 'QpointPhononModes',
     **kwargs
         Get passed to plot_1d
     """
-    spectra = get_dispersion(phonons)
+    bands = phonons.get_dispersion()
 
-    # If there is LO-TO splitting, plot in sections
-    gamma_i = np.where(is_gamma(phonons.qpts))[0]
-    diff = np.diff(gamma_i)
-    # Find idx of adjacent gamma pts
-    idx = gamma_i[np.where(diff == 1)[0]] + 1
-
-    return plot_1d(spectra, btol=btol, _split_line_x_idx=idx, *args, **kwargs)
+    return plot_1d(bands.split(btol=btol), *args, **kwargs)
 
 
 def _plot_1d_core(spectra: Union[Spectrum1D, Spectrum1DCollection],
@@ -92,6 +86,7 @@ def _plot_1d_core(spectra: Union[Spectrum1D, Spectrum1DCollection],
 
     ax.set_xlim(left=min(spectra.x_data.magnitude),
                 right=max(spectra.x_data.magnitude))
+
     _set_x_tick_labels(ax, spectra.x_tick_labels, spectra.x_data)
 
 
@@ -104,8 +99,6 @@ def plot_1d(spectra: Union[Spectrum1D,
             y_label: str = '',
             y_min: float = None,
             labels: Optional[List[str]] = None,
-            btol: Optional[float] = None,
-            _split_line_x_idx: np.ndarray = np.array([], dtype=np.int32),
             **line_kwargs) -> Figure:
     """
     Creates a Matplotlib figure for a Spectrum1D object, or multiple
@@ -146,13 +139,6 @@ def plot_1d(spectra: Union[Spectrum1D,
         to 0 for energy, for example.
     labels
         Legend labels for spectra, in the same order as spectra
-    btol
-        If there are large gaps on the x-axis (e.g sections of
-        reciprocal space) data can be plotted in sections on different
-        subplots. btol is the limit for plotting on different subplots,
-        as a fraction of the median distance between points. Note that
-        if multiple Spectrum1D objects have been provided, the axes will
-        only be determined by the first spectrum in the list
     **line_kwargs
         matplotlib.line.Line2D properties, optional
         Used in the axes.plot command to specify properties like
@@ -175,20 +161,17 @@ def plot_1d(spectra: Union[Spectrum1D,
                 raise ValueError("Something went wrong: y data units are not "
                                  "consistent between spectrum subplots.")
 
-    ibreak, gridspec_kw = _get_gridspec_kw(spectra[0].x_data.magnitude, btol)
-    n_subplots = len(ibreak) - 1
-    fig, subplots = plt.subplots(1, n_subplots, sharey=True,
+    gridspec_kw = _get_gridspec_kw(spectra)
+    fig, subplots = plt.subplots(1, len(spectra), sharey=True,
                                  gridspec_kw=gridspec_kw)
-    if not isinstance(subplots, np.ndarray):  # if n_subplots = 1
+    if not isinstance(subplots, np.ndarray):  # if only one subplot
         subplots = np.array([subplots])
 
     subplots[0].set_ylabel(y_label)
     subplots[0].set_xlabel(x_label)
 
-    for i, ax in enumerate(subplots):
-        _set_x_tick_labels(ax, spectra[0].x_tick_labels, spectra[0].x_data)
-        for spectrum in spectra:
-            _plot_1d_core(spectrum, ax, **line_kwargs)
+    for i, (spectrum, ax) in enumerate(zip(spectra, subplots)):
+        _plot_1d_core(spectrum, ax, **line_kwargs)
 
         if i == 0 and labels:
             ax.legend(labels)
@@ -347,41 +330,27 @@ def _set_x_tick_labels(ax: Axes,
             ax.set_xticklabels(labels)
 
 
-def _get_gridspec_kw(x_data, btol=None):
+def _get_gridspec_kw(spectra: Sequence[Union[Spectrum1D,
+                                             Spectrum1DCollection]]):
     """
     Creates a dictionary of gridspec_kw to be passed to
     matplotlib.pyplot.subplots
 
     Parameters
     ----------
-    x_data : (n_x_data,) float ndarray
-        The x_data points
-    btol : float, optional
-        Determines the limit for plotting sections of data on different
-        subplots, as a fraction of the median difference between x_data
-        points. If None all data will be on the same subplot
+    spectra
+        series of spectral data containers corresponding to subplots
 
     Returns
     -------
-    ibreak : (n_subplots + 1,) int ndarray
-        Index limits of the x_data to plot on each subplot
     gridspec_kw : dict
         Contains key 'width_ratios' which is a list of subplot widths.
         Required so the x-scale is the same for each subplot
     """
-    # Determine Coordinates that are far enough apart to be
-    # in separate subplots, and determine index limits
-    diff = np.diff(x_data)
-    median = np.median(diff)
-    if btol is not None:
-        breakpoints = np.where(diff/median > btol)[0]
-    else:
-        breakpoints = np.array([], dtype=np.int32)
-    ibreak = np.concatenate(([0], breakpoints + 1, [len(x_data)]))
-
     # Get width ratios so that the x-scale is the same for each subplot
-    subplot_widths = [x_data[ibreak[i + 1] - 1] - x_data[ibreak[i]]
-                      for i in range(len(ibreak) - 1)]
+    subplot_widths = [max(spectrum.x_data.magnitude)
+                      - min(spectrum.x_data.magnitude)
+                      for spectrum in spectra]
     gridspec_kw = dict(width_ratios=[w / subplot_widths[0]
                                      for w in subplot_widths])
-    return ibreak, gridspec_kw
+    return gridspec_kw

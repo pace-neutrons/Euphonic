@@ -17,7 +17,7 @@ else:
 ureg.enable_contexts('spectroscopy')
 Quantity = ureg.Quantity
 
-from .spectra import Spectrum1D, Spectrum2D
+from .spectra import Spectrum1D, Spectrum1DCollection, Spectrum2D
 from .crystal import Crystal
 from .debye_waller import DebyeWaller
 from .structure_factor import StructureFactor
