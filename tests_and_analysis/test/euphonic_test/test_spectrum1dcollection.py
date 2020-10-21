@@ -58,7 +58,7 @@ class TestSpectrum1DCollectionCreation:
         sliced_collection = bands[1:3]
         assert isinstance(sliced_collection, Spectrum1DCollection)
         assert len(sliced_collection) == 2
-        
+
         for i in range(2):
             assert_quantity_allclose(sliced_collection[i].x_data, x_data)
             assert sliced_collection[i].x_tick_labels == x_tick_labels
@@ -91,4 +91,23 @@ class TestSpectrum1DCollectionCreation:
         for in_spec, out_spec in zip(spectra_1d, spectrum_collection):
             assert_quantity_allclose(in_spec.x_data, out_spec.x_data)
             assert in_spec.x_tick_labels == out_spec.x_tick_labels
-            assert_quantity_allclose(in_spec.y_data, out_spec.y_data)            
+            assert_quantity_allclose(in_spec.y_data, out_spec.y_data)
+
+        with pytest.raises(IndexError):
+            Spectrum1DCollection.from_spectra([])
+
+    def test_split(self):
+        x_data, y_data, x_tick_labels = sample_xy_data(n_spectra=4,
+                                                       n_energies=10)
+        bands = Spectrum1DCollection(x_data, y_data,
+                                     x_tick_labels=x_tick_labels)
+        split_bands = bands.split(indices=[3])
+        for spectrum in split_bands:
+            assert isinstance(spectrum, Spectrum1DCollection)
+
+        assert split_bands[0].x_data_unit == x_data.units
+        assert len(split_bands[0].x_data) == 3
+        assert len(split_bands[1].x_data) == 7
+
+        for i, spectrum in enumerate(split_bands[1]):
+            assert_quantity_allclose(spectrum.y_data, y_data[i, 3:])

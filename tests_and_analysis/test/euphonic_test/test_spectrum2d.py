@@ -258,6 +258,29 @@ class TestSpectrum2DUnitConversion:
 
 
 @pytest.mark.unit
+class TestSpectrum2DSplit:
+    def test_split(self):
+        spec2d = get_spectrum2d('example_spectrum2d.json')
+        split_spec2d = spec2d.split(indices=[4])
+
+        for spectrum in split_spec2d:
+            for attr in ('x_data_unit', 'y_data_unit', 'z_data_unit'):
+                assert getattr(spectrum, attr) == getattr(spec2d, attr)
+            npt.assert_allclose(spectrum.y_data.magnitude,
+                                spec2d.y_data.magnitude)
+
+        npt.assert_allclose(split_spec2d[0].x_data.magnitude,
+                            [0.0, 1.0, 2.0, 3.0])
+        npt.assert_allclose(split_spec2d[1].x_data.magnitude,
+                            [4.0, 5.0, 7.0, 9.0, 11.0, 13.0])
+
+        npt.assert_allclose(split_spec2d[0].z_data.magnitude,
+                            spec2d.z_data.magnitude[:4, :])
+        npt.assert_allclose(split_spec2d[1].z_data.magnitude,
+                            spec2d.z_data.magnitude[4:, :])
+
+
+@pytest.mark.unit
 class TestSpectrum2DMethods:
 
     @pytest.mark.parametrize(
