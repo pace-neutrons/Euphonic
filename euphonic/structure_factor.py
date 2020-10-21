@@ -1,13 +1,12 @@
 from typing import Optional
 
 import numpy as np
-from pint import Quantity
 
 from euphonic.validate import _check_constructor_inputs, _check_unit_conversion
 from euphonic.io import (_obj_to_json_file, _obj_from_json_file,
                          _obj_to_dict, _process_dict)
 from euphonic.util import get_qpoint_labels, _calc_abscissa
-from euphonic import ureg, Spectrum1D, Spectrum2D, Crystal
+from euphonic import ureg, Quantity, Spectrum1D, Spectrum2D, Crystal
 
 
 class NoTemperatureError(Exception):
@@ -72,29 +71,26 @@ class StructureFactor(object):
         self.crystal = crystal
         self.qpts = qpts
         self.n_qpts = len(qpts)
-        self._frequencies = frequencies.to(
-            ureg.INTERNAL_ENERGY_UNIT).magnitude
+        self._frequencies = frequencies.to(ureg.hartree).magnitude
         self.frequencies_unit = str(frequencies.units)
         self._structure_factors = structure_factors.to(
-            ureg.INTERNAL_LENGTH_UNIT**2).magnitude
+            ureg.bohr**2).magnitude
         self.structure_factors_unit = str(structure_factors.units)
 
         if temperature is not None:
-            self._temperature = temperature.to(
-                ureg.INTERNAL_TEMPERATURE_UNIT).magnitude
+            self._temperature = temperature.to(ureg.K).magnitude
             self.temperature_unit = str(temperature.units)
         else:
             self._temperature = None
-            self.temperature_unit = str(ureg.INTERNAL_TEMPERATURE_UNIT)
+            self.temperature_unit = str(ureg.K)
 
     @property
     def frequencies(self):
-        return self._frequencies*ureg(
-            'INTERNAL_ENERGY_UNIT').to(self.frequencies_unit)
+        return self._frequencies*ureg('hartree').to(self.frequencies_unit)
 
     @property
     def structure_factors(self):
-        return self._structure_factors*ureg('INTERNAL_LENGTH_UNIT**2').to(
+        return self._structure_factors*ureg('bohr**2').to(
             self.structure_factors_unit)
 
     @property
@@ -102,8 +98,7 @@ class StructureFactor(object):
         if self._temperature is not None:
             # See https://pint.readthedocs.io/en/latest/nonmult.html
             return Quantity(self._temperature,
-                            ureg('INTERNAL_TEMPERATURE_UNIT')).to(
-                                self.temperature_unit)
+                            ureg('K')).to(self.temperature_unit)
         else:
             return None
 
@@ -236,7 +231,7 @@ class StructureFactor(object):
         """
         # Convert units
         freqs = self._frequencies
-        e_bins_internal = e_bins.to('INTERNAL_ENERGY_UNIT').magnitude
+        e_bins_internal = e_bins.to('hartree').magnitude
 
         # Create initial sqw_map with an extra an energy bin either
         # side, for any branches that fall outside the energy bin range
@@ -262,7 +257,7 @@ class StructureFactor(object):
         np.add.at(sqw_map, (first_index, p_bin), p_intensity)
         np.add.at(sqw_map, (first_index, n_bin), n_intensity)
         # Exclude values outside ebin range
-        sqw_map = sqw_map[:, 1:-1]*ureg('INTERNAL_LENGTH_UNIT**2').to(
+        sqw_map = sqw_map[:, 1:-1]*ureg('bohr**2').to(
             self.structure_factors_unit)
 
         return sqw_map

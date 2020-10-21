@@ -32,8 +32,8 @@ def main(params: List[str] = None):
         gwidth = args.w*ureg(data.frequencies_unit)
 
     freqs = data.frequencies.magnitude
-    dos_bins = np.arange(freqs.min(),
-                         freqs.max() + bwidth.magnitude,
+    dos_bins = np.arange(freqs.min() - 0.5*bwidth.magnitude,
+                         freqs.max() + 0.5*bwidth.magnitude,
                          bwidth.magnitude)*ureg(data.frequencies_unit)
     dos = data.calculate_dos(dos_bins)
     if args.lorentz:

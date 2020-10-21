@@ -2,20 +2,20 @@ from ._version import get_versions
 __version__ = get_versions()['version']
 del get_versions
 
-# Create ureg here so it is only created once
+import pint
 from pint import UnitRegistry
-ureg = UnitRegistry()
-ureg.enable_contexts('spectroscopy')
-ureg.define('@alias bohr = INTERNAL_LENGTH_UNIT')
-ureg.define('@alias electron_mass = INTERNAL_MASS_UNIT')
-ureg.define('@alias hartree = INTERNAL_ENERGY_UNIT')
-ureg.define('@alias elementary_charge = INTERNAL_CHARGE_UNIT')
-ureg.define('@alias K = INTERNAL_TEMPERATURE_UNIT')
+from importlib_resources import files
 
-ureg.define('@alias angstrom = DEFAULT_LENGTH_UNIT')
-ureg.define('@alias amu = DEFAULT_MASS_UNIT')
-ureg.define('@alias eV = DEFAULT_ENERGY_UNIT')
-ureg.define('@alias K = DEFAULT_TEMPERATURE_UNIT')
+# Create ureg here so it is only created once
+pint_ver = [int(x) for x in pint.__version__.split('.')]
+if pint_ver[0] == 0 and pint_ver[1] < 10:
+    # Bohr, unified_atomic_mass_unit not defined in pint 0.9, so load
+    # pint 0.16.1 definition file
+    ureg = UnitRegistry(str(files('euphonic.data').joinpath('default_en.txt')))
+else:
+    ureg = UnitRegistry()
+ureg.enable_contexts('spectroscopy')
+Quantity = ureg.Quantity
 
 from .spectra import Spectrum1D, Spectrum2D
 from .crystal import Crystal

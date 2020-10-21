@@ -2,14 +2,14 @@ import math
 from typing import Dict, Optional, Union
 
 import numpy as np
-from pint import Quantity
 
 from euphonic.validate import _check_constructor_inputs, _check_unit_conversion
 from euphonic.io import (_obj_to_json_file, _obj_from_json_file,
                          _obj_to_dict, _process_dict)
 from euphonic.readers import castep, phonopy
 from euphonic.util import direction_changed, is_gamma, get_reference_data
-from euphonic import ureg, Crystal, Spectrum1D, DebyeWaller, StructureFactor
+from euphonic import (ureg, Quantity, Crystal, Spectrum1D, DebyeWaller,
+                      StructureFactor)
 
 
 class QpointPhononModes(object):
@@ -64,8 +64,7 @@ class QpointPhononModes(object):
         self.crystal = crystal
         self.qpts = qpts
         self.n_qpts = n_qpts
-        self._frequencies = frequencies.to(
-            ureg.INTERNAL_ENERGY_UNIT).magnitude
+        self._frequencies = frequencies.to(ureg.hartree).magnitude
         self.frequencies_unit = str(frequencies.units)
         self.eigenvectors = eigenvectors
 
@@ -76,8 +75,7 @@ class QpointPhononModes(object):
 
     @property
     def frequencies(self):
-        return self._frequencies*ureg(
-            'INTERNAL_ENERGY_UNIT').to(self.frequencies_unit)
+        return self._frequencies*ureg('hartree').to(self.frequencies_unit)
 
     def __setattr__(self, name, value):
         _check_unit_conversion(self, name, value,
@@ -238,7 +236,7 @@ class QpointPhononModes(object):
         elif isinstance(scattering_lengths, dict):
             scattering_length_data = scattering_lengths
 
-        sl = [scattering_length_data[x].to('INTERNAL_LENGTH_UNIT').magnitude
+        sl = [scattering_length_data[x].to('bohr').magnitude
               for x in self.crystal.atom_type]
 
         # Calculate normalisation factor
@@ -251,8 +249,7 @@ class QpointPhononModes(object):
 
         # Eigenvectors are in Cartesian so need to convert hkl to
         # Cartesian by computing dot with hkl and reciprocal lattice
-        recip = self.crystal.reciprocal_cell().to(
-            '1/INTERNAL_LENGTH_UNIT').magnitude
+        recip = self.crystal.reciprocal_cell().to('1/bohr').magnitude
         Q = np.einsum('ij,jk->ik', self.qpts, recip)
 
         # Calculate dot product of Q and eigenvectors for all branches
@@ -281,8 +278,7 @@ class QpointPhononModes(object):
 
         return StructureFactor(
             self.crystal, self.qpts, self.frequencies,
-            sf*ureg('INTERNAL_LENGTH_UNIT**2').to(
-                self.crystal.cell_vectors.units**2),
+            sf*ureg('bohr**2').to(self.crystal.cell_vectors.units**2),
             temperature=temperature)
 
     def calculate_debye_waller(self, temperature):
@@ -336,15 +332,14 @@ class QpointPhononModes(object):
         """
 
         # Convert units
-        kB = (1*ureg.k).to(
-            'INTERNAL_ENERGY_UNIT/INTERNAL_TEMPERATURE_UNIT').magnitude
+        kB = (1*ureg.k).to('hartree/K').magnitude
         n_atoms = self.crystal.n_atoms
         atom_mass = self.crystal._atom_mass
         freqs = self._frequencies
         qpts = self.qpts
         evecs = self.eigenvectors
         weights = self.weights
-        temp = temperature.to('INTERNAL_TEMPERATURE_UNIT').magnitude
+        temp = temperature.to('K').magnitude
 
         mass_term = 1/(4*atom_mass)
 
@@ -377,8 +372,7 @@ class QpointPhononModes(object):
                              freq_mask[qi:qf], evec_term))
 
         dw = dw/np.sum(weights)
-        dw *= ureg('INTERNAL_LENGTH_UNIT**2').to(
-            self.crystal.cell_vectors_unit + '**2')
+        dw = dw*ureg('bohr**2').to(self.crystal.cell_vectors_unit + '**2')
 
         return DebyeWaller(self.crystal, dw, temperature)
 
@@ -400,14 +394,14 @@ class QpointPhononModes(object):
 
         freqs = self._frequencies
         dos_bins_unit = dos_bins.units
-        dos_bins = dos_bins.to('INTERNAL_ENERGY_UNIT').magnitude
+        dos_bins = dos_bins.to('hartree').magnitude
         weights = np.repeat(self.weights[:, np.newaxis],
                             3*self.crystal.n_atoms,
                             axis=1) / np.sum(self.weights)
         dos, _ = np.histogram(freqs, dos_bins, weights=weights)
 
         return Spectrum1D(
-            dos_bins*ureg('INTERNAL_ENERGY_UNIT').to(dos_bins_unit),
+            dos_bins*ureg('hartree').to(dos_bins_unit),
             dos*ureg('dimensionless'))
 
     def to_dict(self):

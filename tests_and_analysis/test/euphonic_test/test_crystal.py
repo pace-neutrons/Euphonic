@@ -4,9 +4,9 @@ import os
 import numpy as np
 import numpy.testing as npt
 import pytest
-from pint import Quantity, DimensionalityError
+from pint import DimensionalityError
 
-from euphonic import Crystal, ureg
+from euphonic import ureg, Quantity, Crystal
 from tests_and_analysis.test.utils import get_data_path, check_unit_conversion
 
 
@@ -163,7 +163,7 @@ class TestCrystalCreation:
         ('atom_mass',
          np.array(
              [15.999399987607514, 15.999399987607514, 91.2239999293416])*ureg(
-                 'unified_atomic_mass_unit'),
+                 'amu'),
          ValueError),
         ('atom_mass',
          get_expected_crystal('quartz').atom_mass.magnitude*ureg('angstrom'),

@@ -87,10 +87,10 @@ def run_setup(build_c=True):
         packages=packages,
         package_data=package_data,
         install_requires=[
-            'numpy>=1.13.1',
+            'numpy>=1.12.1',
             'scipy>=1.0.0',
             'seekpath>=1.1.0',
-            'pint>=0.10.1',
+            'pint>=0.9',
             'importlib_resources>=1.3.0'
         ],
         extras_require={
