@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 import collections
 from copy import deepcopy
 import math
-from typing import (Dict, List, Optional, overload,
+from typing import (Any, Dict, List, Optional, overload,
                     Sequence, Tuple, TypeVar, Union)
 
 from scipy import signal
@@ -265,7 +265,7 @@ class Spectrum1D(Spectrum):
         """
         d = _process_dict(d, quantities=['x_data', 'y_data'],
                           optional=['x_tick_labels'])
-        return cls(d['x_data'], d['y_data'], d['x_tick_labels'])
+        return cls(d['x_data'], d['y_data'], x_tick_labels=d['x_tick_labels'])
 
     def broaden(self, x_width, shape='gauss'):
         """
@@ -395,12 +395,43 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
 
         return cls(x_data, y_data, x_tick_labels=x_tick_labels)
 
-    def to_dict(self):
-        raise NotImplementedError()
+    def to_dict(self) -> Dict[str, Any]:
+        """
+        Convert to a dictionary consistent with from_dict()
+
+        Returns
+        -------
+        dict
+        """
+        return _obj_to_dict(self, ['x_data', 'y_data', 'x_tick_labels'])
 
     @classmethod
-    def from_dict(d):
-        raise NotImplementedError()
+    def from_dict(cls: S, d) -> S:
+        """
+        Convert a dictionary to a Spectrum1DCollection object
+
+        Parameters
+        ----------
+        d : dict
+            A dictionary with the following keys/values:
+
+            - 'x_data': (n_x_data,) or (n_x_data + 1,) float ndarray
+            - 'x_data_unit': str
+            - 'y_data': (n_x_data,) float ndarray
+            - 'y_data_unit': str
+
+            There are also the following optional keys:
+
+            - 'x_tick_labels': list of (int, string) tuples
+
+        Returns
+        -------
+        Spectrum1D
+        """
+        d = _process_dict(d, quantities=['x_data', 'y_data'],
+                          optional=['x_tick_labels'])
+        return cls(d['x_data'], d['y_data'], x_tick_labels=d['x_tick_labels'])
+
 
 class Spectrum2D(Spectrum):
     """
@@ -478,7 +509,7 @@ class Spectrum2D(Spectrum):
         """Split data along x-axis at given indices"""
         ranges = self._ranges_from_indices(indices)
         return [type(self)(self.x_data[x0:x1], self.y_data,
-                           self.z_data[:, x0:x1],
+                           self.z_data[x0:x1, :],
                            x_tick_labels=self._cut_x_ticks(self.x_tick_labels,
                                                            x0, x1))
                            for x0, x1 in ranges]
@@ -563,7 +594,7 @@ class Spectrum2D(Spectrum):
         d = _process_dict(d, quantities=['x_data', 'y_data', 'z_data'],
                           optional=['x_tick_labels'])
         return Spectrum2D(d['x_data'], d['y_data'], d['z_data'],
-                          d['x_tick_labels'])
+                          x_tick_labels=d['x_tick_labels'])
 
 
 def _gaussian(x, sigma):
