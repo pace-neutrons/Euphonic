@@ -57,7 +57,12 @@ def plot_dispersion(phonons: 'QpointPhononModes',
 def _plot_1d_core(spectra: Union[Spectrum1D, Spectrum1DCollection],
                   ax: Axes,
                   **mplargs) -> None:
-    """Plot a (collection of) 1D spectrum lines to matplotlib axis"""
+    """Plot a (collection of) 1D spectrum lines to matplotlib axis
+
+    Where there are two identical x-values in a row, plotting will restart
+    to avoid creating a vertical line
+    """
+
     if isinstance(spectra, Spectrum1D):
         return _plot_1d_core(Spectrum1DCollection.from_spectra([spectra]),
                              ax=ax, **mplargs)
@@ -68,13 +73,25 @@ def _plot_1d_core(spectra: Union[Spectrum1D, Spectrum1DCollection],
         raise TypeError("spectra should be a Spectrum1D or "
                         "Spectrum1DCollection")        
 
-    for spectrum in spectra:
-        ax.plot(spectrum._get_bin_centres('x').magnitude,
-                plot_y = spectrum.y_data.magnitude,
-                **mplargs)
+    # Find where there are two identical x_data points in a row
+    breakpoints = np.where(spectra.x_data.magnitude[:-1]
+                           == spectra.x_data.magnitude[1:])[0].tolist()
+    breakpoints = [0] + breakpoints + [None]
 
-    ax.set_xlim(left=spectra[0].x_data.magnitude,
-                right=spectra[0].x_data.magnitude)
+    for spectrum in spectra:
+        # Plot each line in segments, keeping colour consistent
+        for x0, x1 in zip(breakpoints[:-1], breakpoints[1:]):
+            if x0 == 0:
+                color = None
+            else:
+                color = p[-1].get_color()
+
+            p = ax.plot(spectrum._get_bin_centres('x').magnitude[x0:x1],
+                        spectrum.y_data.magnitude[x0:x1],
+                        color=color, **mplargs)
+
+    ax.set_xlim(left=min(spectra.x_data.magnitude),
+                right=max(spectra.x_data.magnitude))
     _set_x_tick_labels(ax, spectra.x_tick_labels, spectra.x_data)
 
 
@@ -170,21 +187,9 @@ def plot_1d(spectra: Union[Spectrum1D,
 
     for i, ax in enumerate(subplots):
         _set_x_tick_labels(ax, spectra[0].x_tick_labels, spectra[0].x_data)
-        ax.set_xlim(left=spectra[0].x_data[ibreak[i]].magnitude,
-                    right=spectra[0].x_data[ibreak[i + 1] - 1].magnitude)
         for spectrum in spectra:
-            plot_x = spectrum._get_bin_centres('x').magnitude
-            plot_y = spectrum.y_data.magnitude
-            # Don't join points where _split_line_x_idx has been defined
-            idx = np.concatenate(([0], _split_line_x_idx, [len(plot_x)]))
-            for j in range(len(idx) - 1):
-                # Ensure data from same spectrum is the same colour
-                if j == 0:
-                    color = None
-                else:
-                    color = p[-1].get_color()
-                p = ax.plot(plot_x[idx[j]:idx[j+1]], plot_y[idx[j]:idx[j+1]],
-                            color=color, **line_kwargs)
+            _plot_1d_core(spectrum, ax, **line_kwargs)
+
         if i == 0 and labels:
             ax.legend(labels)
 

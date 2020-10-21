@@ -380,7 +380,8 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
 
         x_data = spectra[0].x_data
         x_tick_labels = spectra[0].x_tick_labels
-        y_data_magnitude = np.empty((len(spectra), len(x_data.magnitude)))
+        y_data_length = len(spectra[0].y_data.magnitude)
+        y_data_magnitude = np.empty((len(spectra), y_data_length))
         y_data_magnitude[0, :] = spectra[0].y_data.magnitude
         y_data_units = spectra[0].y_data.units
 
