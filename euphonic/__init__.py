@@ -5,13 +5,13 @@ del get_versions
 import pint
 from pint import UnitRegistry
 from importlib_resources import files
+from distutils.version import LooseVersion
 
 # Create ureg here so it is only created once
-pint_ver = [int(x) for x in pint.__version__.split('.')]
-if pint_ver[0] == 0 and pint_ver[1] < 10:
+if LooseVersion(pint.__version__) < LooseVersion('0.10'):
     # Bohr, unified_atomic_mass_unit not defined in pint 0.9, so load
     # pint 0.16.1 definition file
-    ureg = UnitRegistry(str(files('euphonic.data').joinpath('default_en.txt')))
+    ureg = UnitRegistry(str(files('euphonic.data') / 'default_en.txt'))
 else:
     ureg = UnitRegistry()
 ureg.enable_contexts('spectroscopy')
