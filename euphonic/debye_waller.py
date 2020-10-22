@@ -1,11 +1,9 @@
 import inspect
 
-from pint import Quantity
-
 from euphonic.validate import _check_constructor_inputs, _check_unit_conversion
 from euphonic.io import (_obj_to_json_file, _obj_from_json_file,
                          _obj_to_dict, _process_dict)
-from euphonic import ureg, Crystal
+from euphonic import ureg, Quantity, Crystal
 
 
 class DebyeWaller(object):
@@ -46,25 +44,21 @@ class DebyeWaller(object):
             [(n_atoms, 3, 3), ()],
             inspect.getfullargspec(self.__init__)[0][2:])
         self.crystal = crystal
-        self._debye_waller = debye_waller.to(
-            ureg.INTERNAL_LENGTH_UNIT**2).magnitude
-        self._temperature = temperature.to(
-            ureg.INTERNAL_TEMPERATURE_UNIT).magnitude
+        self._debye_waller = debye_waller.to(ureg.bohr**2).magnitude
+        self._temperature = temperature.to(ureg.K).magnitude
 
         self.debye_waller_unit = str(debye_waller.units)
         self.temperature_unit = str(temperature.units)
 
     @property
     def debye_waller(self):
-        return self._debye_waller*ureg('INTERNAL_LENGTH_UNIT**2').to(
+        return self._debye_waller*ureg('bohr**2').to(
             self.debye_waller_unit)
 
     @property
     def temperature(self):
         # See https://pint.readthedocs.io/en/latest/nonmult.html
-        return Quantity(self._temperature,
-                        ureg('INTERNAL_TEMPERATURE_UNIT')).to(
-                            self.temperature_unit)
+        return Quantity(self._temperature, ureg('K')).to(self.temperature_unit)
 
     def __setattr__(self, name, value):
         _check_unit_conversion(self, name, value,

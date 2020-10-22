@@ -87,15 +87,15 @@ def run_setup(build_c=True):
         packages=packages,
         package_data=package_data,
         install_requires=[
-            'numpy>=1.9.1',
+            'numpy>=1.12.1',
             'scipy>=1.0.0',
             'seekpath>=1.1.0',
-            'pint>=0.10.1',
+            'pint>=0.9',
             'importlib_resources>=1.3.0'
         ],
         extras_require={
-            'matplotlib': ['matplotlib>=1.4.2'],
-            'phonopy_reader': ['h5py>=2.9.0', 'PyYAML>=5.1.2']
+            'matplotlib': ['matplotlib>=2.0.0'],
+            'phonopy_reader': ['h5py>=2.7.0', 'PyYAML>=3.13']
         },
         entry_points={'console_scripts': [
             'euphonic-dispersion = euphonic.cli.dispersion:main',

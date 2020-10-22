@@ -1,12 +1,11 @@
 """Functions for averaging spectra in spherical q bins"""
 
 import numpy as np
-from pint import Quantity
 from typing import Union
 
 from euphonic import (Crystal, DebyeWaller, ForceConstants, QpointPhononModes,
                       Spectrum1D)
-from euphonic import ureg
+from euphonic import ureg, Quantity
 from euphonic.util import mp_grid, get_reference_data
 
 
@@ -230,10 +229,8 @@ def _qpts_cart_to_frac(qpts: Quantity,
     """
     lattice = crystal.reciprocal_cell()
 
-    return np.linalg.solve(lattice.to(ureg('1/INTERNAL_LENGTH_UNIT'))
-                           .magnitude.T,
-                           qpts.to(ureg('1/INTERNAL_LENGTH_UNIT'))
-                           .magnitude.T
+    return np.linalg.solve(lattice.to(ureg('1/bohr')).magnitude.T,
+                           qpts.to(ureg('1/bohr')).magnitude.T
                            ).T
 
 

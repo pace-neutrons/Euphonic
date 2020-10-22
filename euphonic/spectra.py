@@ -1,14 +1,13 @@
 import math
 from copy import deepcopy
 
-from pint import Quantity
 from scipy import signal
 import numpy as np
 
 from euphonic.validate import _check_constructor_inputs, _check_unit_conversion
 from euphonic.io import (_obj_to_json_file, _obj_from_json_file,
                          _obj_to_dict, _process_dict)
-from euphonic import ureg
+from euphonic import ureg, Quantity
 
 
 class Spectrum1D(object):
@@ -90,7 +89,8 @@ class Spectrum1D(object):
             self.y_data.magnitude, broadening, mode='same')*ureg(
                 self.y_data_unit)
         return Spectrum1D(
-            np.copy(self.x_data), y_broadened, deepcopy((self.x_tick_labels)))
+            np.copy(self.x_data.magnitude)*ureg(self.x_data_unit),
+            y_broadened, deepcopy((self.x_tick_labels)))
 
     def _set_data(self, data, attr_name):
         setattr(self, f'_{attr_name}_data',
@@ -103,23 +103,27 @@ class Spectrum1D(object):
         bins = getattr(self, f'{bin_ax}_data')
         data = getattr(self, f'{data_ax}_data')
         if len(bins) == data.shape[enum[bin_ax]] + 1:
-            return True, bins
-        return False, bins
+            is_bin_edge = True
+        else:
+            is_bin_edge = False
+        return is_bin_edge, bins.magnitude, bins.units
 
     def _get_bin_edges(self, bin_ax='x'):
-        is_bin_edge, bins = self._is_bin_edge(bin_ax)
+        is_bin_edge, bins, bins_units = self._is_bin_edge(bin_ax)
         if is_bin_edge:
-            return bins
+            return bins*bins_units
         else:
-            return np.concatenate((
+            bin_edges = np.concatenate((
                 [bins[0]], (bins[1:] + bins[:-1])/2, [bins[-1]]))
+            return bin_edges*bins_units
 
     def _get_bin_centres(self, bin_ax='x'):
-        is_bin_edge, bins = self._is_bin_edge(bin_ax)
+        is_bin_edge, bins, bins_units = self._is_bin_edge(bin_ax)
         if is_bin_edge:
-            return bins[:-1] + 0.5*np.diff(bins)
+             bin_centres = bins[:-1] + 0.5*np.diff(bins)
+             return bin_centres*bins_units
         else:
-            return bins
+            return bins*bins_units
 
     def to_dict(self):
         """
@@ -279,8 +283,10 @@ class Spectrum2D(Spectrum1D):
         z_broadened = signal.fftconvolve(
             self.z_data.magnitude, np.transpose(broadening), mode='same')*ureg(
                 self.z_data_unit)
-        return Spectrum2D(np.copy(self.x_data), np.copy(self.y_data),
-                          z_broadened, deepcopy((self.x_tick_labels)))
+        return Spectrum2D(
+            np.copy(self.x_data.magnitude)*ureg(self.x_data_unit),
+            np.copy(self.y_data.magnitude)*ureg(self.y_data_unit),
+            z_broadened, deepcopy((self.x_tick_labels)))
 
     def _is_bin_edge(self, bin_ax, data_ax='z'):
         return super()._is_bin_edge(bin_ax, data_ax)
