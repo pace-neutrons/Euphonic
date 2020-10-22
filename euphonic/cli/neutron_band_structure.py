@@ -1,5 +1,4 @@
 import argparse
-import os
 import pathlib
 from typing import List, Tuple
 
@@ -11,6 +10,7 @@ import seekpath
 import euphonic
 from euphonic import ureg
 import euphonic.plot
+
 
 def get_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser()
@@ -35,11 +35,6 @@ def get_parser() -> argparse.ArgumentParser:
                         dest='x_label')
     parser.add_argument('--y-label', type=str, default=None,
                         dest='y_label')
-    parser.add_argument('--seekpath-labels', action='store_true',
-                        dest='seekpath_labels',
-                        help='Use the exact labels reported by Seekpath when '
-                             'constructing the band structure path. Otherwise,'
-                             ' use the labels detected by Euphonic.')
     parser.add_argument('--title', type=str, default=None)
     parser.add_argument('--cmap', type=str, default='viridis',
                         help='Matplotlib colormap')
@@ -70,8 +65,7 @@ def get_seekpath_structure(crystal: euphonic.Crystal) -> Tuple[np.ndarray,
             unique_inverse.tolist())
 
 
-def _get_break_points(bandpath: dict) -> Tuple[List[Tuple[int, int]],
-                                               List[int]]:
+def _get_break_points(bandpath: dict) -> List[int]:
     """Get information about band path labels and break points
 
     Parameters
@@ -81,50 +75,40 @@ def _get_break_points(bandpath: dict) -> Tuple[List[Tuple[int, int]],
 
     Returns
     -------
-    (break_points, special_point_indices)
+    list[int]
 
-    ``break_points`` is a list of tuples identifying the boundaries of
-    regions with discontinuities between them, e.g.::
-
-      [(0, end1), (start2, end2), (start3, end3)]
-
-    for a band path with three segments. end3 should equal the index of
-    the last k-point in the full path.
-
-    ``special_point_indices`` is a list of locations for labelled points
-    in the full set of labels from Seekpath.
+        Indices at which the spectrum should be split into subplots
 
     """
     # Find break points between continuous spectra: wherever there are two
     # adjacent labels
     special_point_bools = np.fromiter(
         map(bool, bandpath["explicit_kpoints_labels"]), dtype=bool)
-    special_point_indices = special_point_bools.nonzero()[0]
 
     # [T F F T T F T] -> [F F T T F T] AND [T F F T T F] = [F F F T F F] -> 3,
-    break_points = (np.logical_and(special_point_bools[:-1],
-                                   special_point_bools[1:])
-                    .nonzero()[0].tolist())
-
-    return break_points, special_point_indices
+    break_points = np.where(np.logical_and(special_point_bools[:-1],
+                                           special_point_bools[1:]))[0]
+    return (break_points + 1).tolist()
 
 
-def _get_tick_labels(region: Tuple[int, int],
-                     bandpath: dict,
-                     special_point_indices) -> List[Tuple[int, str]]:
-    start, end = region
-    label_indices = special_point_indices[
-        np.logical_and(special_point_indices >= start,
-                       special_point_indices < end)]
+def _get_tick_labels(bandpath: dict) -> List[Tuple[int, str]]:
+    """Convert x-axis labels from seekpath format to euphonic format
 
-    labels = [bandpath["explicit_kpoints_labels"][i]
-              for i in label_indices]
+    i.e.::
+
+        ['L', '', '', 'X', '', 'GAMMA']   -->
+
+        [(0, 'L'), (3, 'X'), (5, '$\\Gamma$')]
+    """
+
+    label_indices = np.where(bandpath["explicit_kpoints_labels"])[0]
+    labels = [bandpath["explicit_kpoints_labels"][i] for i in label_indices]
+
     for i, label in enumerate(labels):
         if label == 'GAMMA':
             labels[i] = r'$\Gamma$'
 
-    label_indices_shifted = [i - start for i in label_indices]
-    return list(zip(label_indices_shifted, labels))
+    return list(zip(label_indices, labels))
 
 
 def force_constants_from_file(filename):
@@ -143,11 +127,10 @@ def force_constants_from_file(filename):
 
     return force_constants
 
+
 def main():
     args = get_parser().parse_args()
     filename = args.file
-    summary_name = os.path.basename(filename)
-    path = os.path.dirname(filename)
 
     try:
         length_units = ureg(args.length_units)
@@ -173,81 +156,56 @@ def main():
     bandpath = seekpath.get_explicit_k_path(
         structure, reference_distance=q_distance.to('1 / angstrom').magnitude)
 
-    break_points, special_point_indices = _get_break_points(bandpath)
-    if break_points:
-        print(f"Found {len(break_points)} regions in q-point path")
-
-    regions = []
-    start_point = 0
-    for break_point in break_points:
-        regions.append((start_point, break_point + 1))
-        start_point = break_point + 1
-    regions.append((start_point, len(bandpath["explicit_kpoints_rel"])))
-
     print("Computing phonon modes: {n_modes} modes across {n_qpts} q-points"
           .format(n_modes=(force_constants.crystal.n_atoms * 3),
                   n_qpts=len(bandpath["explicit_kpoints_rel"])))
-    region_modes = []
-    for (start, end) in regions:
-        qpts = bandpath["explicit_kpoints_rel"][start:end]
-        region_modes.append(force_constants
-                            .calculate_qpoint_phonon_modes(qpts,
-                                                           reduce_qpts=False))
 
-    emin = min(np.min(modes.frequencies.to(energy_units).magnitude)
-               for modes in region_modes) * energy_units
-    emax = max(np.max(modes.frequencies.to(energy_units).magnitude)
-               for modes in region_modes) * energy_units
-    ebins = np.linspace(emin.magnitude,
-                        emax.magnitude,
-                        args.ebins) * energy_units
+    qpts = bandpath["explicit_kpoints_rel"]
+    modes = force_constants.calculate_qpoint_phonon_modes(qpts,
+                                                          reduce_qpts=False)
 
-    print("Computing structure factors and generating 2D maps")
-    spectra = []
-    for region, modes in zip(regions, region_modes):
-        if args.seekpath_labels:
-            x_tick_labels = _get_tick_labels(region, bandpath,
-                                             special_point_indices)
-        else:
-            x_tick_labels = None
+    if args.lines:
+        print("Mapping modes to 1D band-structure")
+        spectrum = modes.get_dispersion()
 
-        if args.lines:
-            spectrum = modes.get_dispersion()
-            if x_tick_labels:
-                spectrum[0].x_tick_labels = x_tick_labels
+    else:
+        print("Computing structure factors and generating 2D maps")
+        emin = np.min(modes.frequencies.to(energy_units).magnitude)
+        emax = np.max(modes.frequencies.to(energy_units).magnitude)
+        ebins = np.linspace(emin, emax, args.ebins) * energy_units
 
-        else:
-            structure_factor = modes.calculate_structure_factor()
-            spectrum = structure_factor.calculate_sqw_map(ebins)
-            if x_tick_labels:
-                spectrum.x_tick_labels = x_tick_labels
+        structure_factor = modes.calculate_structure_factor()
+        spectrum = structure_factor.calculate_sqw_map(ebins)
 
-            if args.gaussian_x or args.gaussian_y:
-                spectrum = spectrum.broaden(
-                    x_width=(args.gaussian_x * ureg['1 / angstrom']
-                             if args.gaussian_x else None),
-                    y_width=(args.gaussian_y * ureg['meV']
-                             if args.gaussian_y else None))
+        if args.gaussian_x or args.gaussian_y:
+            spectrum = spectrum.broaden(
+                x_width=(args.gaussian_x * ureg['1 / angstrom']
+                         if args.gaussian_x else None),
+                y_width=(args.gaussian_y * ureg['meV']
+                         if args.gaussian_y else None))
 
-        spectra.append(spectrum)
-
-    print(f"Plotting figure")
+    print("Plotting figure")
     if args.y_label is None:
         if args.lines:
-            y_label = f"Energy / {spectra[0][0].y_data.units:~P}"
+            y_label = f"Energy / {spectrum.y_data.units:~P}"
         else:
-            y_label = f"Energy / {spectra[0].y_data.units:~P}"
+            y_label = f"Energy / {spectrum.y_data.units:~P}"
     else:
         y_label = args.y_label
 
+    spectrum.x_tick_labels = _get_tick_labels(bandpath)
+    break_points = _get_break_points(bandpath)
+    if break_points:
+        print(f"Found {len(break_points) + 1} regions in q-point path")
+        spectrum = spectrum.split(indices=break_points)
+
     if args.lines:
-        euphonic.plot.plot_1d(spectra, x_label=args.x_label, y_label=y_label)
+        euphonic.plot.plot_1d(spectrum, x_label=args.x_label, y_label=y_label)
 
     else:
-        euphonic.plot.plot_2d(spectra,
+        euphonic.plot.plot_2d(spectrum,
                               cmap=args.cmap,
                               x_label=args.x_label,
                               y_label=y_label,
                               title=args.title)
-
     plt.show()
