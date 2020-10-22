@@ -35,4 +35,4 @@ class TestRegression:
         for index, line in enumerate(lines):
             npt.assert_allclose(line.get_xydata().T,
                                 np.array(expected_lines[index]),
-                                atol=sys.float_info.epsilon)
+                                atol=5*sys.float_info.epsilon)

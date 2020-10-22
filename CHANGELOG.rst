@@ -1,6 +1,25 @@
 `Unreleased <https://github.com/pace-neutrons/Euphonic/compare/v0.3.2...HEAD>`_
 ----------
 
+- Changes:
+
+  - ``yaml.CSafeLoader`` is now used instead of ``yaml.SafeLoader`` by
+    default, so Phonopy ``.yaml`` files should load faster
+  - Some of Euphonic's dependency version requirements have been changed - but
+    can now be relied on with more certainty due to better CI testing. This
+    includes:
+
+    - numpy requirement increased from ``1.9.1`` to ``1.12.1``
+    - matplotlib requirement increased from ``1.4.2`` to ``2.0.0``
+    - pint requirement decreased from ``0.10.1`` to ``0.9``
+    - h5py requirement decreased from ``2.9.0`` to ``2.7.0``
+    - pyyaml requirement decreased from ``5.1.2`` to ``3.13``
+
+- Bug fixes:
+
+  - Fix read of Phonopy 'full' force constants from phonopy.yaml and
+    FORCE_CONSTANTS files
+
 `v0.3.2 <https://github.com/pace-neutrons/Euphonic/compare/v0.3.1...v0.3.2>`_
 ----------
 

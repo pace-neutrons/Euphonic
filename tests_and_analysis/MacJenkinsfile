@@ -86,11 +86,13 @@ pipeline {
                 script {
                     def tag = env.JOB_BASE_NAME.substring(1)
                     sh """
+                        mv euphonic euphonic_local
                         export PATH=\$PATH:~/opt/anaconda3/bin:/usr/local/bin
                         eval "\$(conda shell.bash hook)"
                         conda activate py
-                        export EUPHONIC_VERSION="$tag"
+                        export EUPHONIC_VERSION=${tag}
                         python -m tox -c release_tox.ini
+                        mv euphonic_local euphonic
                     """
                 }
             }

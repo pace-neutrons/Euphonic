@@ -3,7 +3,6 @@ import sys
 import warnings
 
 import numpy as np
-from pint import Quantity
 import scipy
 from scipy.linalg.lapack import zheev
 from scipy.special import erfc
@@ -16,7 +15,7 @@ from euphonic.io import (_obj_to_json_file, _obj_from_json_file,
 from euphonic.readers import castep, phonopy
 from euphonic.util import (is_gamma, get_all_origins,
                            _get_supercell_relative_idx)
-from euphonic import ureg, Crystal, QpointPhononModes
+from euphonic import ureg, Quantity, Crystal, QpointPhononModes
 
 
 class ImportCError(Exception):
@@ -81,37 +80,35 @@ class ForceConstants(object):
             ['force_constants', 'cell_origins', 'born', 'dielectric'])
         self.crystal = crystal
         self._force_constants = force_constants.to(
-            'INTERNAL_ENERGY_UNIT/INTERNAL_LENGTH_UNIT**2').magnitude
+            'hartree/bohr**2').magnitude
         self.force_constants_unit = str(force_constants.units)
         self.sc_matrix = sc_matrix
         self.cell_origins = cell_origins
         self.n_cells_in_sc = n_sc
 
         if born is not None:
-            self._born = born.to(ureg.INTERNAL_CHARGE_UNIT).magnitude
+            self._born = born.to(ureg.e).magnitude
             self.born_unit = str(born.units)
             self._dielectric = dielectric.to(ureg(
-                '(INTERNAL_CHARGE_UNIT**2)/'
-                '(INTERNAL_LENGTH_UNIT*INTERNAL_ENERGY_UNIT)')).magnitude
+                'e**2/(bohr*hartree)')).magnitude
             self.dielectric_unit = str(dielectric.units)
         else:
             self._born = born
-            self.born_unit = str(ureg.INTERNAL_CHARGE_UNIT)
+            self.born_unit = str(ureg.e)
             self._dielectric = dielectric
             self.dielectric_unit = str(ureg((
-                '(INTERNAL_CHARGE_UNIT**2)/'
-                '(INTERNAL_LENGTH_UNIT*INTERNAL_ENERGY_UNIT)')))
+                'e**2/(bohr*hartree)')))
 
     @property
     def force_constants(self):
         return self._force_constants*ureg(
-            'INTERNAL_ENERGY_UNIT/INTERNAL_LENGTH_UNIT**2').to(
+            'hartree/bohr**2').to(
                 self.force_constants_unit)
 
     @property
     def born(self):
         if self._born is not None:
-            return self._born*ureg('INTERNAL_CHARGE_UNIT').to(self.born_unit)
+            return self._born*ureg('e').to(self.born_unit)
         else:
             return None
 
@@ -119,9 +116,7 @@ class ForceConstants(object):
     def dielectric(self):
         if self._dielectric is not None:
             return self._dielectric*ureg((
-                '(INTERNAL_CHARGE_UNIT**2)/'
-                '(INTERNAL_LENGTH_UNIT*INTERNAL_ENERGY_UNIT)')).to(
-                    self.dielectric_unit)
+                'e**2/(bohr*hartree)')).to(self.dielectric_unit)
         else:
             return None
 
@@ -286,9 +281,15 @@ class ForceConstants(object):
             gamma_i = np.where(is_gamma(qpts))[0]
             n_gamma = len(gamma_i)
             norm_qpts[gamma_i] = 0.
-
-            reduced_qpts, qpts_i = np.unique(norm_qpts, return_inverse=True,
-                                             axis=0)
+            try:
+                reduced_qpts, qpts_i = np.unique(norm_qpts, return_inverse=True,
+                                                 axis=0)
+            except TypeError:  # Workaround for np 1.12 before axis kwarg
+                reduced_qpts, qpts_i = np.unique(
+                    norm_qpts.view(norm_qpts.dtype.descr*3),
+                    return_inverse=True)
+                reduced_qpts = reduced_qpts.view(norm_qpts.dtype
+                               ).reshape(-1, 3)
             n_rqpts = len(reduced_qpts)
             # Special handling of gamma points - don't reduce gamma
             # points if LO-TO splitting
@@ -433,8 +434,7 @@ class ForceConstants(object):
                     rfreqs[q], reigenvecs[q] = self._calculate_phonons_at_q(
                         q, q_independent_args)
 
-        freqs = rfreqs[qpts_i]*ureg('INTERNAL_ENERGY_UNIT').to(
-            'mDEFAULT_ENERGY_UNIT')
+        freqs = rfreqs[qpts_i]*ureg('hartree').to('meV')
 
         return QpointPhononModes(
             self.crystal, qpts, freqs, reigenvecs[qpts_i], weights=weights)

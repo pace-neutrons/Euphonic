@@ -7,10 +7,10 @@ from typing import Dict, List, Any
 import seekpath
 import numpy as np
 from importlib_resources import open_text  # Backport for Python 3.6
-from pint import Quantity, UndefinedUnitError
+from pint import UndefinedUnitError
 
 import euphonic.data
-from euphonic import ureg
+from euphonic import ureg, Quantity
 
 
 def direction_changed(qpts, tolerance=5e-6):
@@ -252,7 +252,7 @@ def _calc_abscissa(reciprocal_cell, qpts):
     abscissa : (n_qpts) float Quantity
         The distance between q-points in 1/crystal.cell_vectors_unit
     """
-    recip = reciprocal_cell.to('1/INTERNAL_LENGTH_UNIT').magnitude
+    recip = reciprocal_cell.to('1/bohr').magnitude
     # Get distance between q-points in each dimension
     # Note: length is nqpts - 1
     delta = np.diff(qpts, axis=0)
@@ -286,7 +286,7 @@ def _calc_abscissa(reciprocal_cell, qpts):
 
     # Do cumulative sum to get position along x axis
     abscissa = np.cumsum(abscissa)
-    return abscissa*ureg('1/INTERNAL_LENGTH_UNIT').to(reciprocal_cell.units)
+    return abscissa*ureg('1/bohr').to(reciprocal_cell.units)
 
 
 def _recip_space_labels(qpts, cell=None):

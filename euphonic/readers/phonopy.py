@@ -63,11 +63,15 @@ def _extract_phonon_data_yaml(filename):
     """
     try:
         import yaml
+        try:
+            from yaml import CSafeLoader as SafeLoader
+        except ImportError:
+            from yaml import SafeLoader
     except ModuleNotFoundError as e:
         raise ImportPhonopyReaderError from e
 
     with open(filename, 'r') as yaml_file:
-        phonon_data = yaml.safe_load(yaml_file)
+        phonon_data = yaml.load(yaml_file, Loader=SafeLoader)
 
     data_dict = {}
     phonons = [phon for phon in phonon_data['phonon']]
@@ -302,56 +306,55 @@ def convert_eigenvector_phases(phonon_dict):
     return np.reshape(eigvecs, (n_qpts, 3*n_atoms, n_atoms, 3))
 
 
-def _extract_force_constants(fc_file, n_atoms, n_cells, summary_name,
-                             cell_origins_map, sc_relative_idx):
+def _extract_force_constants(fc_pathname, n_atoms, n_cells, summary_name,
+                             cell_origins_map, sc_relative_idx, p2s_map):
     """
     Reads force constants from a Phonopy FORCE_CONSTANTS file
 
     Parameters
     ----------
-    fc_file : File
-        Opened File object
+    fc_pathname : str
+        The FORCE_CONSTANTS file to read from
     n_atoms : int
         Number of atoms in the unit cell
     n_cells : int
         Number of unit cells in the supercell
+    cell_origins_map : (n_atoms*n_cells, 2) int ndarray
+        In the case of of non-diagonal supercell_matrices, the cell
+        origins are not the same for each atom. This is a map of the
+        equivalent cell origins for each atom, which is required to
+        reorder the force constants matrix so that all atoms in the unit
+        cell share equivalent origins.
+    sc_relative_idx : (n_cells, n_cells) int ndarray
+        The index n of the equivalent vector in cell_origins for each
+        cell_origins[i] -> cell_origins[j] vector in the supercell.
+        See _get_supercell_relative_idx
+    p2s_map : (n_atoms,) int ndarray
+        The index of the primitive atoms in the atoms of the supercell.
+        Used if fc_format = 'full'
 
     Returns
     -------
     fc : (n_cells, 3*n_atoms, 3*n_atoms) float ndarray
         The force constants, in Euphonic convention
     """
-
-    data = np.array([])
-    fc = np.array([])
-
-    fc_dims =  [int(dim) for dim in fc_file.readline().split()]
+    with open(fc_pathname, 'r') as f:
+        fc_dims =  [int(dim) for dim in f.readline().split()]
     # single shape specifier implies full format
     if len(fc_dims) == 1:
         fc_dims.append(fc_dims[0])
-    _check_fc_shape(fc_dims, n_atoms, n_cells, fc_file.name, summary_name)
-    if fc_dims[0] == fc_dims[1]:
-        full_fc = True
-    else:
-        full_fc = False
+    _check_fc_shape(fc_dims, n_atoms, n_cells, fc_pathname, summary_name)
 
-    skip_header = 0
-    for i in range(n_atoms):
-        if full_fc and i > 0:
-            # Skip extra entries present in full matrix
-            skip_header = 4*(n_cells - 1)*n_atoms*n_cells
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        fc = np.genfromtxt(fc_pathname, skip_header=1,
+                           max_rows=4*(n_atoms*n_cells)**2, usecols=(0,1,2),
+                           invalid_raise=False)
+    if fc_dims[0] == fc_dims[1]:  # full fc
+        fc = fc.reshape(n_atoms*n_cells, n_atoms, n_cells, 3, 3)
+        fc = fc[p2s_map]
 
-        # Skip rows without fc values using invalid_raise=False and
-        # ignoring warning
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore")
-            data = np.genfromtxt(fc_file, skip_header=skip_header,
-                                 max_rows=3*n_atoms*n_cells, usecols=(0,1,2),
-                                 invalid_raise=False)
-        if i == 0:
-            fc = data
-        else:
-            fc = np.concatenate([fc, data])
+    fc = fc.reshape((n_atoms, n_cells*n_atoms, 3, 3))
 
     return _reshape_fc(fc, n_atoms, n_cells, cell_origins_map, sc_relative_idx)
 
@@ -376,7 +379,7 @@ def _extract_force_constants_hdf5(filename, n_atoms, n_cells, summary_name,
 
 
 def _extract_force_constants_summary(summary_object, cell_origins_map,
-                                     sc_relative_idx):
+                                     sc_relative_idx, p2s_map):
     """
     Get force constants from phonopy yaml summary file.
 
@@ -394,6 +397,9 @@ def _extract_force_constants_summary(summary_object, cell_origins_map,
         The index n of the equivalent vector in cell_origins for each
         cell_origins[i] -> cell_origins[j] vector in the supercell.
         See _get_supercell_relative_idx
+    p2s_map : (n_atoms,) int ndarray
+        The index of the primitive atoms in the atoms of the supercell.
+        Used if fc_format = 'full'
 
     Returns
     ----------
@@ -408,7 +414,6 @@ def _extract_force_constants_summary(summary_object, cell_origins_map,
     if fc_format == 'compact':
         fc = np.array(fc_entry['elements'])
     else:  # convert to compact
-        p2s_map = [pi for pi in range(0, n_atoms*n_cells, n_atoms)]
         fc = np.array(fc_entry['elements']).reshape(
             [n_atoms*n_cells, n_atoms, n_cells, 3, 3])[p2s_map, :, :, :, :]
 
@@ -546,11 +551,15 @@ def _extract_summary(filename, fc_extract=False):
     """
     try:
         import yaml
+        try:
+            from yaml import CSafeLoader as SafeLoader
+        except ImportError:
+            from yaml import SafeLoader
     except ModuleNotFoundError as e:
         raise ImportPhonopyReaderError from e
 
     with open(filename, 'r') as summary_file:
-        summary_object = yaml.safe_load(summary_file)
+        summary_object = yaml.load(summary_file, Loader=SafeLoader)
 
     (cell_vectors, n_atoms, atom_r, atom_mass,
      atom_type, _) = _extract_crystal_data(summary_object['primitive_cell'])
@@ -585,7 +594,8 @@ def _extract_summary(filename, fc_extract=False):
         # Coords of supercell atoms in frac coords of the prim cell
         satom_r_pcell = np.einsum('ij,jk->ik', satom_r, p_to_sc_matrix)
         # Determine mapping from atoms in the supercell to the prim cell
-        _, sc_to_pc_atom_idx = np.unique(sc_idx_in_pc, return_inverse=True)
+        _, p2s_map_idx, sc_to_pc_atom_idx = np.unique(
+            sc_idx_in_pc, return_index=True, return_inverse=True)
         # Get cell origins for all atoms
         cell_origins_per_atom = np.rint((
             satom_r_pcell - atom_r[sc_to_pc_atom_idx])).astype(np.int32)
@@ -629,6 +639,8 @@ def _extract_summary(filename, fc_extract=False):
         summary_dict['cell_origins'] = cell_origins[:n_pcells_in_sc]
         summary_dict['cell_origins'] = cell_origins[:n_pcells_in_sc]
         summary_dict['cell_origins_map'] = cell_origins_map
+        p2s_map = sc_idx_in_pc[np.sort(p2s_map_idx)] - 1
+        summary_dict['p2s_map'] = p2s_map
         sc_relative_idx = _get_supercell_relative_idx(cell_origins,
                                                       p_to_sc_matrix)
         summary_dict['sc_relative_idx'] = sc_relative_idx
@@ -637,7 +649,7 @@ def _extract_summary(filename, fc_extract=False):
             'Angstrom', 'angstrom')
         try:
             summary_dict['force_constants'] = _extract_force_constants_summary(
-                summary_object, cell_origins_map, sc_relative_idx)
+                summary_object, cell_origins_map, sc_relative_idx, p2s_map)
         except KeyError:
             pass
 
@@ -759,9 +771,10 @@ def _read_interpolation_data(path='.', summary_name='phonopy.yaml',
         if fc_format == 'phonopy':
             with open(fc_pathname, 'r') as fc_file:
                 summary_dict['force_constants'] = _extract_force_constants(
-                    fc_file, n_atoms, n_cells, summary_pathname,
+                    fc_pathname, n_atoms, n_cells, summary_pathname,
                     summary_dict['cell_origins_map'],
-                    summary_dict['sc_relative_idx'])
+                    summary_dict['sc_relative_idx'],
+                    summary_dict['p2s_map'])
         elif fc_format in 'hdf5':
             summary_dict['force_constants'] =  _extract_force_constants_hdf5(
                 fc_pathname, n_atoms, n_cells, summary_pathname,

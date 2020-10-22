@@ -3,9 +3,8 @@ import json
 import os
 
 import numpy as np
-from pint import Quantity
 
-from euphonic import ureg
+from euphonic import ureg, Quantity
 
 
 def _to_json_dict(dictionary):

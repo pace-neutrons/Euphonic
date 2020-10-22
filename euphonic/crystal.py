@@ -1,12 +1,11 @@
 import inspect
 
 import numpy as np
-from pint import Quantity
 
 from euphonic.validate import _check_constructor_inputs, _check_unit_conversion
 from euphonic.io import (_obj_to_json_file, _obj_from_json_file,
                          _obj_to_dict, _process_dict)
-from euphonic import ureg
+from euphonic import ureg, Quantity
 
 
 class Crystal(object):
@@ -50,24 +49,23 @@ class Crystal(object):
             [Quantity, np.ndarray, np.ndarray, Quantity],
             [(3, 3), (n_atoms, 3), (n_atoms,), (n_atoms,)],
             inspect.getfullargspec(self.__init__)[0][1:])
-        self._cell_vectors = cell_vectors.to(
-            ureg.INTERNAL_LENGTH_UNIT).magnitude
+        self._cell_vectors = cell_vectors.to(ureg.bohr).magnitude
         self.n_atoms = n_atoms
         self.atom_r = atom_r
         self.atom_type = atom_type
-        self._atom_mass = atom_mass.to(ureg.INTERNAL_MASS_UNIT).magnitude
+        self._atom_mass = atom_mass.to(ureg.m_e).magnitude
 
         self.cell_vectors_unit = str(cell_vectors.units)
         self.atom_mass_unit = str(atom_mass.units)
                 
     @property
     def cell_vectors(self):
-        return self._cell_vectors*ureg('INTERNAL_LENGTH_UNIT').to(
+        return self._cell_vectors*ureg('bohr').to(
             self.cell_vectors_unit)
 
     @property
     def atom_mass(self):
-        return self._atom_mass*ureg('INTERNAL_MASS_UNIT').to(
+        return self._atom_mass*ureg('m_e').to(
             self.atom_mass_unit)
 
     def __setattr__(self, name, value):
@@ -93,12 +91,12 @@ class Crystal(object):
 
         recip = np.array([norm*bxc,
                           norm*cxa,
-                          norm*axb])*(1/ureg.INTERNAL_LENGTH_UNIT)
+                          norm*axb])*(1/ureg.bohr)
 
         return recip.to(1/ureg(self.cell_vectors_unit))
 
     def cell_volume(self):
-        vol = self._cell_volume()*ureg.INTERNAL_LENGTH_UNIT**3
+        vol = self._cell_volume()*ureg.bohr**3
         return vol.to(ureg(self.cell_vectors_unit)**3)
 
     def _cell_volume(self):
