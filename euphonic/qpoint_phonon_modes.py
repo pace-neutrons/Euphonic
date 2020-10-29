@@ -8,7 +8,8 @@ from pint import DimensionalityError
 from euphonic.validate import _check_constructor_inputs
 from euphonic.io import _obj_from_json_file, _obj_to_dict, _process_dict
 from euphonic.readers import castep, phonopy
-from euphonic.util import (direction_changed, is_gamma, get_reference_data)
+from euphonic.util import direction_changed, is_gamma, get_reference_data
+from euphonic.debye_waller import _calculate_debye_waller
 from euphonic import (ureg, Quantity, Crystal, DebyeWaller, QpointFrequencies,
                       StructureFactor, Spectrum1DCollection)
 
@@ -348,58 +349,15 @@ class QpointPhononModes(QpointFrequencies):
 
         .. [2] G.L. Squires, Introduction to the Theory of Thermal Neutron Scattering, Dover Publications, New York, 1996, 34-37
         """
-
-        # Convert units
-        kB = (1*ureg.k).to('hartree/K').magnitude
-        n_atoms = self.crystal.n_atoms
-        atom_mass = self.crystal._atom_mass
-        freqs = self._frequencies
-        freq_min = frequency_min.to('hartree').magnitude
-        qpts = self.qpts
-        evecs = self.eigenvectors
-        weights = self.weights
-        temp = temperature.to('K').magnitude
-
-        mass_term = 1/(4*atom_mass)
-
-        # Mask out frequencies below frequency_min
-        freq_mask = np.ones(freqs.shape)
-        freq_mask[freqs < freq_min] = 0
-
-        if temp > 0:
-            x = freqs/(2*kB*temp)
-            freq_term = 1/(freqs*np.tanh(x))
-        else:
-            freq_term = 1/(freqs)
-        dw = np.zeros((n_atoms, 3, 3))
-        # Calculating the e.e* term is expensive, do in chunks
-        chunk = 1000
-        for i in range(int((len(qpts) - 1)/chunk) + 1):
-            qi = i*chunk
-            qf = min((i + 1)*chunk, len(qpts))
-
-            evec_term = np.real(
-                np.einsum('ijkl,ijkm->ijklm',
-                          evecs[qi:qf],
-                          np.conj(evecs[qi:qf])))
-
-            dw += (np.einsum('i,k,ij,ij,ijklm->klm',
-                             weights[qi:qf], mass_term, freq_term[qi:qf],
-                             freq_mask[qi:qf], evec_term))
-
-        dw = dw/np.sum(weights)
-        if symmetrise:
-            dw_tmp = np.zeros(dw.shape)
-            (rot, trans,
-             eq_atoms) = self.crystal.get_symmetry_equivalent_atoms()
-            cell_vec = self.crystal._cell_vectors
-            recip_vec = self.crystal.reciprocal_cell().to('1/bohr').magnitude
-            rot_cart = np.einsum('ijk,jl,km->ilm',
-                                 rot, cell_vec, recip_vec)/(2*np.pi)
-            for s in range(len(rot)):
-                dw_tmp[eq_atoms[s]] += np.einsum('ij,kjl,ml->kim',
-                                                 rot_cart[s], dw, rot_cart[s])
-            dw = dw_tmp/len(rot)
+        dw = _calculate_debye_waller(
+            self.qpts,
+            self._frequencies,
+            self.eigenvectors,
+            temperature.to('K').magnitude,
+            self.crystal,
+            weights=self.weights,
+            frequency_min=frequency_min,
+            symmetrise=symmetrise)
 
         dw = dw*ureg('bohr**2').to(self.crystal.cell_vectors_unit + '**2')
         return DebyeWaller(self.crystal, dw, temperature)
