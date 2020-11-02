@@ -142,7 +142,7 @@ class Spectrum(ABC):
         if x_tick_labels is None:
             return None
         else:
-            return [(x - x0, label) for (x, label) in x_tick_labels
+            return [(int(x - x0), label) for (x, label) in x_tick_labels
                     if (x >= x0) and ((x1 is None) or (x < x1))]
 
     def split(self: S, indices: Union[Sequence[int], np.ndarray] = None,

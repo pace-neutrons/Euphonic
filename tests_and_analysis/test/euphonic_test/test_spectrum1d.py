@@ -228,128 +228,37 @@ class TestSpectrum1DUnitConversion:
 
 
 @pytest.mark.unit
-class TestSpectrum1DSplitting:
-    _sine_spectrum_x = np.linspace(0, 10, 21)
-    _sine_spectrum = Spectrum1D(
-        _sine_spectrum_x * ureg('1/bohr'),
-        np.sin(_sine_spectrum_x) * ureg(None),
-        x_tick_labels=[(i, f'{xi:.1f}') for i, xi in enumerate(_sine_spectrum_x)])
-
-    sine_spectrum_data = {
-            'spectrum': _sine_spectrum,
-            'params': dict(indices=[2, 8]),
-            'expected_split_x': [[0., 0.5],
-                                 [1., 1.5, 2., 2.5, 3., 3.5],
-                                 np.linspace(4., 10., 13)],
-            'expected_split_y': [np.sin([0, 0.5]),
-                                 np.sin(np.linspace(1, 3.5, 6)),
-                                 np.sin(np.linspace(4., 10., 13))],
-            'expected_split_labels': [[(0, '0.0'), (1, '0.5')],
-                                      [(0, '1.0'), (1, '1.5'), (2, '2.0'),
-                                       (3, '2.5'), (4, '3.0'), (5, '3.5')],
-                                      [(i, f'{xi:.1f}')
-                                       for i, xi
-                                       in enumerate(np.linspace(4, 10, 13))]]
-            }
-
-    no_labels_data = sine_spectrum_data.copy()
-    no_labels_data['spectrum'] = Spectrum1D(no_labels_data['spectrum'].x_data,
-                                            no_labels_data['spectrum'].y_data)
-    no_labels_data['expected_split_labels'] = [None, None, None]
-
-    no_split_data = {
-            'spectrum': _sine_spectrum,
-            'params': dict(indices=[]),
-            'expected_split_x': [_sine_spectrum_x],
-            'expected_split_y': [np.sin(_sine_spectrum_x)],
-            'expected_split_labels': [[(i, f'{xi:.1f}')
-                                       for i, xi
-                                       in enumerate(_sine_spectrum_x)]]
-            }
-
-    one_split_data = {
-            'spectrum': _sine_spectrum,
-            'params': dict(indices=[5]),
-            'expected_split_x': [_sine_spectrum_x[:5], _sine_spectrum_x[5:]],
-            'expected_split_y': [np.sin(_sine_spectrum_x[:5]),
-                                 np.sin(_sine_spectrum_x[5:])],
-            'expected_split_labels': [[(i, f'{xi:.1f}')
-                                       for i, xi
-                                       in enumerate(_sine_spectrum_x[:5])],
-                                      [(i, f'{xi:.1f}')
-                                       for i, xi
-                                       in enumerate(_sine_spectrum_x[5:])]]
-            }
-
-    _band_split_x = [2., 3., 4., 24., 25., 26., 27., 50., 50.9]
-    _band_split_y = np.random.random(9).tolist()
-
-    _band_split_spectrum= Spectrum1D(_band_split_x * ureg('1/angstrom'),
-                                     _band_split_y * ureg(None),
-                                     x_tick_labels=[(0, 'A'), (2, 'B'),
-                                                    (3, 'C'), (4, 'D'),
-                                                    (6, 'E'), (7, 'F'),
-                                                    (8, 'G')])
-
-    band_split_data = {
-            'spectrum': _band_split_spectrum,
-            'params': dict(btol=None, indices=None),
-            'expected_split_x': [[2., 3., 4.],
-                                 [24., 25., 26., 27.], [50., 50.9]],
-            'expected_split_y': [_band_split_y[0:3],
-                                 _band_split_y[3:7],
-                                 _band_split_y[7:]],
-            'expected_split_labels': [[(0, 'A'), (2, 'B')],
-                                      [(0, 'C'), (1, 'D'), (3, 'E')],
-                                      [(0, 'F'), (1, 'G')]]
-         }
-
-    big_split_data = {
-            'spectrum': _band_split_spectrum,
-            'params': dict(btol=22, indices=None),
-            'expected_split_x': [[2., 3., 4., 24., 25., 26., 27.],
-                                 [50., 50.9]],
-            'expected_split_y': [_band_split_y[0:7],
-                                 _band_split_y[7:]],
-            'expected_split_labels': [[(0, 'A'), (2, 'B'), (3, 'C'),
-                                       (4, 'D'), (6, 'E')],
-                                      [(0, 'F'), (1, 'G')]]
-         }
-
-    overspecified_data = {
-            'spectrum': _band_split_spectrum,
-            'params': dict(btol=10., indices=[3, 4]),
-            'error': ValueError
-         }
-
-    @pytest.mark.parametrize('spectrum_data', [sine_spectrum_data,
-                                               no_split_data,
-                                               no_labels_data,
-                                               one_split_data,
-                                               band_split_data,
-                                               big_split_data,
-                                               overspecified_data])
-    def test_split(self, spectrum_data):
-        full_spectrum = spectrum_data['spectrum']
-
-        if 'error' in spectrum_data:
-            with pytest.raises(spectrum_data['error']):
-                full_spectrum.split(**spectrum_data['params'])
-        else:
-            spectra = full_spectrum.split(**spectrum_data['params'])
-            for spectrum, expected_x in zip(spectra,
-                                            spectrum_data['expected_split_x']):
-                npt.assert_allclose(spectrum.x_data.magnitude, expected_x)
-            for spectrum, expected_y in zip(spectra,
-                                            spectrum_data['expected_split_y']):
-                npt.assert_allclose(spectrum.y_data.magnitude, expected_y)
-            for spectrum, expected_labels in zip(
-                    spectra, spectrum_data['expected_split_labels']):
-                assert spectrum.x_tick_labels == expected_labels
-
-
-@pytest.mark.unit
 class TestSpectrum1DMethods:
+    @pytest.mark.parametrize(
+        'args, spectrum1d_file, split_spectrum_files', [
+            # Multiple split by index, with x_tick_labels
+            ({'indices': (3, 8)}, 'xsq_spectrum1d.json',
+             [f'xsq_split38_{i}.json' for i in range(3)]),
+            # Single split by index, no x_tick_labels
+            ({'indices': (11,)}, 'quartz_666_dos.json',
+             [f'quartz_666_split_11_{i}.json' for i in range(2)]),
+            # No split
+            ({'indices': ()}, 'xsq_spectrum1d.json', ('xsq_spectrum1d.json',)),
+            # Default (btol=10) split of band data
+            ({}, 'toy_band.json',
+             [f'toy_band_btol10_split_{i}.json' for i in range(3)]),
+            # Non-default btol split of band data
+            ({'btol': 22.}, 'toy_band.json',
+             [f'toy_band_btol22_split_{i}.json' for i in range(2)]),
+            ])             
+    def test_split(self, args, spectrum1d_file, split_spectrum_files):
+        spec1d = get_spectrum1d(spectrum1d_file)
+        split_spec1d = spec1d.split(**args)
+        for spectrum, expected_file in zip(split_spec1d, split_spectrum_files):
+            check_spectrum1d(spectrum, get_spectrum1d(expected_file))        
+
+    @pytest.mark.parametrize(
+        'args, spectrum1d_file, expected_error',
+        [({'indices': (3, 4), 'btol': 4.}, 'xsq_spectrum1d.json', ValueError)])
+    def test_split_errors(self, args, spectrum1d_file, expected_error):
+        spec1d = get_spectrum1d(spectrum1d_file)
+        with pytest.raises(expected_error):
+            spec1d.split(**args)
 
     @pytest.mark.parametrize(
         'args, spectrum1d_file, broadened_spectrum1d_file', [
