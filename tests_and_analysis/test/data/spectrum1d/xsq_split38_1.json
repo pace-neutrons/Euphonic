@@ -1,0 +1,24 @@
+{
+    "x_data": [
+        3.5,
+        4.5,
+        5.5,
+        7.0,
+        9.0
+    ],
+    "x_data_unit": "1 / angstrom",
+    "x_tick_labels": [
+        [
+            2,
+            "B"
+        ]
+    ],
+    "y_data": [
+        12.25,
+        20.25,
+        30.25,
+        49.0,
+        81.0
+    ],
+    "y_data_unit": "millielectron_volt"
+}
