@@ -1,0 +1,22 @@
+{
+    "x_data": [
+        50.0,
+        50.9
+    ],
+    "x_data_unit": "1 / angstrom",
+    "x_tick_labels": [
+        [
+            0,
+            "F"
+        ],
+        [
+            1,
+            "G"
+        ]
+    ],
+    "y_data": [
+        0.8691345603208117,
+        0.6607606066440227
+    ],
+    "y_data_unit": "dimensionless"
+}
