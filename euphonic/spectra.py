@@ -367,6 +367,9 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
                               self.y_data[item, :],
                               x_tick_labels=self.x_tick_labels)
         elif isinstance(item, slice):
+            if (item.stop is not None) and (item.stop >= len(self)):
+                raise IndexError(f'index "{item.stop}" out of range')
+
             return type(self)(self.x_data,
                               self.y_data[item, :],
                               x_tick_labels=self.x_tick_labels)
@@ -378,6 +381,12 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
         if len(spectra) < 1:
             raise IndexError("At least one spectrum is needed for collection")
 
+        def _type_check(spectrum):
+            if not isinstance(spectrum, Spectrum1D):
+                raise TypeError(
+                    "from_spectra() requires a sequence of Spectrum1D")
+
+        _type_check(spectra[0])
         x_data = spectra[0].x_data
         x_tick_labels = spectra[0].x_tick_labels
         y_data_length = len(spectra[0].y_data.magnitude)
@@ -386,6 +395,7 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
         y_data_units = spectra[0].y_data.units
 
         for i, spectrum in enumerate(spectra[1:]):
+            _type_check(spectrum)
             assert spectrum.y_data.units == y_data_units
             assert np.allclose(spectrum.x_data.magnitude, x_data.magnitude)
             assert spectrum.x_data.units == x_data.units
