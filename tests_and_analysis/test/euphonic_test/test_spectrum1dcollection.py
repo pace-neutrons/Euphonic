@@ -3,10 +3,9 @@ import json
 
 import numpy as np
 from numpy.testing import assert_allclose
-from pint import Quantity
 import pytest
 
-from euphonic import ureg
+from euphonic import ureg, Quantity
 from euphonic.spectra import Spectrum1D, Spectrum1DCollection
 from tests_and_analysis.test.utils import get_data_path, check_unit_conversion
 

@@ -16,10 +16,9 @@ except ImportError:
         'dependency, try:\n\npip install euphonic[matplotlib]\n'))
     raise
 
-from pint import Quantity
 import numpy as np
 
-from euphonic import ureg
+from euphonic import ureg, Quantity
 from euphonic.spectra import Spectrum1D, Spectrum1DCollection, Spectrum2D
 from euphonic.util import is_gamma, get_qpoint_labels
 
