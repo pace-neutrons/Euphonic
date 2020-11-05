@@ -5,12 +5,13 @@ import numpy as np
 from numpy.testing import assert_allclose
 import pytest
 
-from euphonic import ureg, Quantity
-from euphonic.spectra import Spectrum1D, Spectrum1DCollection
-from tests_and_analysis.test.utils import get_data_path, check_unit_conversion
+from euphonic import ureg
+from euphonic.spectra import Spectrum1DCollection
+from tests_and_analysis.test.utils import get_data_path
 
 from .test_spectrum1d import (get_spectrum1d, get_expected_spectrum1d,
                               check_spectrum1d)
+
 
 class ExpectedSpectrum1DCollection:
     def __init__(self, spectrum_json_file: str):
@@ -58,6 +59,7 @@ class ExpectedSpectrum1DCollection:
 
         return (x_data, y_data), kwargs
 
+
 def get_spectrum_dir():
     return os.path.join(get_data_path(), 'spectrum1dcollection')
 
@@ -73,17 +75,18 @@ def get_spectrum(json_filename):
 def get_expected_spectrum(json_filename):
     return ExpectedSpectrum1DCollection(get_json_file(json_filename))
 
+
 def check_spectrum1dcollection(actual_spectrum, expected_spectrum):
 
     assert_allclose(actual_spectrum.x_data.magnitude,
-                        expected_spectrum.x_data.magnitude,
-                        atol=np.finfo(np.float64).eps)
+                    expected_spectrum.x_data.magnitude,
+                    atol=np.finfo(np.float64).eps)
     assert (actual_spectrum.x_data.units
             == expected_spectrum.x_data.units)
 
     assert_allclose(actual_spectrum.y_data.magnitude,
-                        expected_spectrum.y_data.magnitude,
-                        atol=np.finfo(np.float64).eps)
+                    expected_spectrum.y_data.magnitude,
+                    atol=np.finfo(np.float64).eps)
     assert (actual_spectrum.y_data.units
             == expected_spectrum.y_data.units)
 
@@ -92,6 +95,7 @@ def check_spectrum1dcollection(actual_spectrum, expected_spectrum):
     else:
         assert (actual_spectrum.x_tick_labels
                 == expected_spectrum.x_tick_labels)
+
 
 @pytest.mark.unit
 class TestSpectrum1DCollectionCreation:
@@ -143,10 +147,10 @@ class TestSpectrum1DCollectionCreation:
          get_expected_spectrum('gan_bands.json').y_data.magnitude,
          TypeError),
         ('y_data',
-         get_expected_spectrum('gan_bands.json').y_data[:,:-2],
+         get_expected_spectrum('gan_bands.json').y_data[:, :-2],
          ValueError),
         ('y_data',
-         get_expected_spectrum('gan_bands.json').y_data[0,:].flatten(),
+         get_expected_spectrum('gan_bands.json').y_data[0, :].flatten(),
          ValueError),
         ('x_tick_labels',
          get_expected_spectrum('gan_bands.json').x_tick_labels[0],
@@ -168,7 +172,7 @@ class TestSpectrum1DCollectionCreation:
         'input_spectra, expected_spectrum',
         [([get_spectrum1d(f'gan_bands_index_{i}.json') for i in range(2, 5)],
           get_spectrum('gan_bands_index_2_5.json'))
-          ])
+         ])
     def test_create_from_sequence(self, input_spectra, expected_spectrum):
         spectrum = Spectrum1DCollection.from_spectra(input_spectra)
         check_spectrum1dcollection(spectrum, expected_spectrum)
@@ -259,17 +263,3 @@ class TestSpectrum1DCollectionIndexAccess:
         spectra = spectrum.split(**split_kwargs)
         for split, expected_split in zip(spectra, expected_spectra):
             check_spectrum1dcollection(split, expected_split)
-
-def assert_quantity_allclose(q1, q2):
-    assert str(q1.units) == str(q2.units)
-    # assert q1.units == q2.units   # why doesn't this work?
-    assert_allclose(q1.magnitude, q2.magnitude)
-
-
-def sample_xy_data(n_spectra=1, n_energies=10, n_labels=2):
-    x_data = np.linspace(0, 1, n_energies)* ureg('1/angstrom')
-    y_data = np.random.random((n_spectra, n_energies)) * ureg('meV')
-    x_label_positions = np.random.choice(range(n_energies),
-                                         size=n_labels, replace=False)
-    x_tick_labels = [(i, str(i)) for i in x_label_positions]
-    return (x_data, y_data, x_tick_labels)
