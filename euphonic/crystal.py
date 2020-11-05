@@ -1,4 +1,5 @@
 import inspect
+from typing import List, Tuple
 
 import numpy as np
 
@@ -103,7 +104,9 @@ class Crystal(object):
         cv = self._cell_vectors
         return np.dot(cv[0], np.cross(cv[1], cv[2]))
 
-    def to_spglib_cell(self):
+    def to_spglib_cell(self) -> Tuple[List[List[float]],
+                                      List[List[float]],
+                                      List[int]]:
         """
         Convert to a 'cell' as defined by spglib
 

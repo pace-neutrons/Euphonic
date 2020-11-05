@@ -1,6 +1,6 @@
 import argparse
 import pathlib
-from typing import List, Tuple
+from typing import List, Optional, Tuple
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -20,6 +20,10 @@ def get_parser() -> argparse.ArgumentParser:
                               '(Castep); .json (Euphonic)'))
     parser.add_argument('--ebins', type=int, default=200,
                         help='Number of energy bins on y-axis')
+    parser.add_argument('--e-min', type=float, default=None, dest='e_min',
+                        help='Energy range minimum in ENERGY_UNITS')
+    parser.add_argument('--e-max', type=float, default=None, dest='e_max',
+                        help='Energy range maximum in ENERGY_UNITS')
     parser.add_argument('--q-distance', type=float, default=0.025,
                         dest='q_distance',
                         help=('Target distance between q-point samples in '
@@ -52,17 +56,20 @@ def get_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def get_seekpath_structure(crystal: euphonic.Crystal) -> Tuple[np.ndarray,
-                                                               np.ndarray,
-                                                               List[int]]:
-    # Seekpath needs a set of integer identities, while Crystal stores strings
-    # so we need to convert e.g. ['H', 'C', 'Cl', 'C'] -> [0, 1, 2, 1]
-    _, unique_inverse = np.unique(crystal.atom_type,
-                                  return_inverse=True)
+def _get_energy_range(frequencies: np.ndarray,
+                      emin: Optional[float] = None,
+                      emax: Optional[float] = None,
+                      headroom = 1.05) -> Tuple[float, float]:
+    if emin is None:
+        emin = min(np.min(frequencies), 0.)
+    if emax is None:
+        emax = np.max(frequencies) * headroom
 
-    return (crystal.cell_vectors.to('angstrom').magnitude,
-            crystal.atom_r,
-            unique_inverse.tolist())
+    if emin >= emax:
+        raise ValueError("Maximum energy should be greater than minimum. "
+                         "Check --e-min and --e-max arguments.")
+
+    return (emin, emax)
 
 
 def _get_break_points(bandpath: dict) -> List[int]:
@@ -152,7 +159,7 @@ def main():
     force_constants = force_constants_from_file(filename)
 
     print(f"Getting band path")
-    structure = get_seekpath_structure(force_constants.crystal)
+    structure = force_constants.crystal.to_spglib_cell()
     bandpath = seekpath.get_explicit_k_path(
         structure, reference_distance=q_distance.to('1 / angstrom').magnitude)
 
@@ -170,8 +177,10 @@ def main():
 
     else:
         print("Computing structure factors and generating 2D maps")
-        emin = np.min(modes.frequencies.to(energy_units).magnitude)
-        emax = np.max(modes.frequencies.to(energy_units).magnitude)
+        emin, emax = _get_energy_range(
+            modes.frequencies.to(energy_units).magnitude,
+            emin=args.e_min, emax=args.e_max)
+
         ebins = np.linspace(emin, emax, args.ebins) * energy_units
 
         structure_factor = modes.calculate_structure_factor()
