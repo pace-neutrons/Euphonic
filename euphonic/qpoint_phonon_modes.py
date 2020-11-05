@@ -405,6 +405,32 @@ class QpointPhononModes(object):
             dos_bins*ureg('hartree').to(dos_bins_unit),
             dos*ureg('dimensionless'))
 
+    def get_dispersion(self) -> Spectrum1DCollection:
+        """
+        Creates a set of 1-D bands from phonon mode data
+
+        Bands follow the q-point order from the QpointPhononModes
+        object, with x-axis spacing corresponding to the absolute
+        distances between q-points.  Discontinuities will appear as
+        large jumps on the x-axis.
+
+        Parameters
+        ----------
+        phonons
+            Containing the q-points/frequencies to plot
+
+        Returns
+        -------
+        Spectrum1DCollection
+
+            A sequence of phonon bands with a common x-axis
+        """
+        abscissa = _calc_abscissa(self.crystal.reciprocal_cell(), self.qpts)
+        x_tick_labels = get_qpoint_labels(self.qpts,
+                                          cell=self.crystal.to_spglib_cell())
+        return Spectrum1DCollection(abscissa, self.frequencies.T,
+                                    x_tick_labels=x_tick_labels)
+
     def to_dict(self):
         """
         Convert to a dictionary. See QpointPhononModes.from_dict for
@@ -526,29 +552,3 @@ class QpointPhononModes(object):
             path=path, phonon_name=phonon_name, phonon_format=phonon_format,
             summary_name=summary_name)
         return cls.from_dict(data)
-
-    def get_dispersion(self) -> Spectrum1DCollection:
-        """
-        Creates a set of 1-D bands from phonon mode data
-
-        Bands follow the q-point order from the QpointPhononModes
-        object, with x-axis spacing corresponding to the absolute
-        distances between q-points.  Discontinuities will appear as
-        large jumps on the x-axis.
-
-        Parameters
-        ----------
-        phonons
-            Containing the q-points/frequencies to plot
-
-        Returns
-        -------
-        Spectrum1DCollection
-
-            A sequence of phonon bands with a common x-axis
-        """
-        abscissa = _calc_abscissa(self.crystal.reciprocal_cell(), self.qpts)
-        x_tick_labels = get_qpoint_labels(self.qpts,
-                                          cell=self.crystal.to_spglib_cell())
-        return Spectrum1DCollection(abscissa, self.frequencies.T,
-                                    x_tick_labels=x_tick_labels)
