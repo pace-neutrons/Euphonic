@@ -85,7 +85,7 @@ def get_parser():
         help=('Convert frequencies to specified units for plotting (e.g 1/cm'))
     parser.add_argument('--length-unit', type=str, default='angstrom',
                         dest='length_unit',
-                        help=('Length units; these will be inverted to obtain'
+                        help=('Length units; these will be inverted to obtain '
                               'units of distance between q-points (e.g. "bohr"'
                               ' for bohr^-1).'))
     parser.add_argument('--title', type=str, default='', help='Plot title')
