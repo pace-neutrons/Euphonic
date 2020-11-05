@@ -67,8 +67,9 @@ def _plot_1d_core(spectra: Union[Spectrum1D, Spectrum1DCollection],
                         "Spectrum1DCollection")
 
     # Find where there are two identical x_data points in a row
-    breakpoints = np.where(spectra.x_data.magnitude[:-1]
-                           == spectra.x_data.magnitude[1:])[0].tolist()
+    breakpoints = (np.where(spectra.x_data.magnitude[:-1]
+                            == spectra.x_data.magnitude[1:])[0]
+                   + 1).tolist()
     breakpoints = [0] + breakpoints + [None]
 
     for spectrum in spectra:
