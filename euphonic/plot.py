@@ -64,7 +64,7 @@ def _plot_1d_core(spectra: Union[Spectrum1D, Spectrum1DCollection],
         assert isinstance(spectra, Spectrum1DCollection)
     except AssertionError:
         raise TypeError("spectra should be a Spectrum1D or "
-                        "Spectrum1DCollection")        
+                        "Spectrum1DCollection")
 
     # Find where there are two identical x_data points in a row
     breakpoints = np.where(spectra.x_data.magnitude[:-1]
@@ -107,7 +107,7 @@ def plot_1d(spectra: Union[Spectrum1D,
     ----------
     spectra
         1D data to plot. Spectrum1D objects contain a single line, while
-        Spectrum1DCollection is suitable for plotting multiple lines 
+        Spectrum1DCollection is suitable for plotting multiple lines
         simultaneously (e.g. band structures).
 
         Data split across several regions should be provided as a sequence of
