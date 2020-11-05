@@ -57,7 +57,7 @@ def modes_from_file(filename: Union[str, os.PathLike]
     if path.suffix == '.phonon':
         return QpointPhononModes.from_castep(path)
     elif path.suffix == '.json':
-        return QpointPhononModes.from_json(path)
+        return QpointPhononModes.from_json_file(path)
     else:
         raise ValueError("File not recognised. Should have extension "
                          ".phonon (castep) or .json (JSON from Euphonic).")
@@ -71,7 +71,7 @@ def _load_json(filename: Union[str, os.PathLike]
     if 'force_constants' in data:
         return force_constants_from_file(filename)
     elif 'eigenvectors' in data:
-        return force_constants_from_file(filename)
+        return modes_from_file(filename)
     else:
         raise ValueError("Could not identify Euphonic data in JSON file.")
 
