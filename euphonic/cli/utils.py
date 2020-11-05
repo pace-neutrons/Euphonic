@@ -211,10 +211,42 @@ def _get_break_points(bandpath: dict) -> List[int]:
     """
     # Find break points between continuous spectra: wherever there are two
     # adjacent labels
+    labels = np.array(bandpath["explicit_kpoints_labels"])
+
     special_point_bools = np.fromiter(
-        map(bool, bandpath["explicit_kpoints_labels"]), dtype=bool)
+        map(bool, labels), dtype=bool)
 
     # [T F F T T F T] -> [F F T T F T] AND [T F F T T F] = [F F F T F F] -> 3,
-    break_points = np.where(np.logical_and(special_point_bools[:-1],
-                                           special_point_bools[1:]))[0]
+    adjacent_non_empty_labels = np.logical_and(special_point_bools[:-1],
+                                               special_point_bools[1:])
+
+    adjacent_different_labels = (labels[:-1] != labels[1:])
+
+    break_points = np.where(np.logical_and(adjacent_non_empty_labels,
+                                           adjacent_different_labels))[0]
     return (break_points + 1).tolist()
+
+
+def _insert_gamma(bandpath):
+    """Modify seekpath.get_explicit_k_path() results; duplicate Gamma
+
+    This enables LO-TO splitting to be included
+    """
+    import numpy as np
+    gamma_indices = np.where(np.array(bandpath['explicit_kpoints_labels'][1:-1]
+                                      ) == 'GAMMA')[0] + 1
+
+    rel_kpts = bandpath['explicit_kpoints_rel'].tolist()
+    labels = bandpath['explicit_kpoints_labels']
+    for i in reversed(gamma_indices.tolist()):
+        rel_kpts.insert(i, [0., 0., 0.])
+        labels.insert(i, 'GAMMA')
+
+    bandpath['explicit_kpoints_rel'] = np.array(rel_kpts)
+    bandpath['explicit_kpoints_labels'] = labels
+
+    # These unused properties have been invalidated: safer
+    # to leave None than incorrect values
+    bandpath['explicit_kpoints_abs'] = None
+    bandpath['explicit_kpoints_linearcoord'] = None
+    bandpath['explicit_segments'] = None

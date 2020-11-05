@@ -13,7 +13,7 @@ import euphonic
 from euphonic.plot import plot_1d
 from .utils import (load_data_from_file, get_args,
                     _get_break_points, _get_q_distance, _get_tick_labels,
-                    matplotlib_save_or_show)
+                    _insert_gamma, matplotlib_save_or_show)
 
 
 def main(params: List[str] = None):
@@ -31,6 +31,8 @@ def main(params: List[str] = None):
         bandpath = seekpath.get_explicit_k_path(
             structure,
             reference_distance=q_distance.to('1 / angstrom').magnitude)
+
+        _insert_gamma(bandpath)
 
         x_tick_labels = _get_tick_labels(bandpath)
         split_args = {'indices': _get_break_points(bandpath)}
@@ -57,15 +59,16 @@ def main(params: List[str] = None):
     if args.reorder:
         modes.reorder_frequencies()
 
-    spectrum = data.get_dispersion()
+    spectrum = modes.get_dispersion()
     if x_tick_labels is not None:
         spectrum.x_tick_labels = x_tick_labels
-    spectrum.split(**split_args)
+    spectra = spectrum.split(**split_args)
 
-    _ = plot_1d(spectrum,
+    _ = plot_1d(spectra,
                 title=args.title,
-                y_label=f'Energy ({data.frequencies.units:~P})',
-                y_min=0, lw=1.0)
+                y_label=f'Energy ({spectrum.y_data.units:~P})',
+                y_min=args.e_min, y_max=args.e_max,
+                lw=1.0)
     matplotlib_save_or_show(save_filename=args.save_to)
 
 
@@ -88,6 +91,10 @@ def get_parser():
                         help=('Length units; these will be inverted to obtain '
                               'units of distance between q-points (e.g. "bohr"'
                               ' for bohr^-1).'))
+    parser.add_argument('--e-min', type=float, default=None, dest='e_min',
+                        help='Energy range minimum in ENERGY_UNIT')
+    parser.add_argument('--e-max', type=float, default=None, dest='e_max',
+                        help='Energy range maximum in ENERGY_UNIT')
     parser.add_argument('--title', type=str, default='', help='Plot title')
 
     disp_group = parser.add_argument_group(
