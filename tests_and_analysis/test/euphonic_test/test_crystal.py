@@ -7,7 +7,8 @@ import pytest
 from pint import DimensionalityError
 
 from euphonic import ureg, Quantity, Crystal
-from tests_and_analysis.test.utils import get_data_path, check_unit_conversion
+from tests_and_analysis.test.utils import (
+    get_data_path, check_unit_conversion, check_json_metadata)
 
 
 class ExpectedCrystal:
@@ -191,19 +192,18 @@ class TestCrystalCreation:
 @pytest.mark.unit
 class TestCrystalSerialisation:
 
-    @pytest.fixture(params=[get_crystal('quartz'), get_crystal('LZO')])
-    def serialise_to_json_file(self, request, tmpdir):
-        crystal = request.param
+    @pytest.mark.parametrize('crystal', [
+        get_crystal('quartz'),
+        get_crystal('LZO')])
+    def test_serialise_to_json_file(self, crystal, tmpdir):
         # Serialise
         output_file = str(tmpdir.join('tmp.test'))
         crystal.to_json_file(output_file)
+        # Test file metadata
+        check_json_metadata(output_file, 'Crystal')
         # Deserialise
         deserialised_crystal = Crystal.from_json_file(output_file)
-        return crystal, deserialised_crystal
-
-    def test_serialise_to_file(self, serialise_to_json_file):
-        crystal, deserialised_crystal = serialise_to_json_file
-        check_crystal(crystal, deserialised_crystal)
+        return check_crystal(crystal, deserialised_crystal)
 
     @pytest.fixture(params=[
         (get_crystal('quartz'), get_expected_crystal('quartz')),

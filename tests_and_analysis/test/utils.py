@@ -1,10 +1,11 @@
 import os
+import json
 from typing import Optional
 
 import numpy as np
 import numpy.testing as npt
 
-from euphonic import ureg
+from euphonic import ureg, __version__
 
 def get_data_path() -> str:
     """
@@ -141,3 +142,23 @@ def check_unit_conversion(obj, attr, unit):
         assert getattr(obj, attr).units == ureg(unit)
     npt.assert_allclose(getattr(obj, attr).magnitude,
                         original_attr_value.to(unit).magnitude)
+
+
+def check_json_metadata(json_file: str, class_name: str):
+    """
+    Utility function to check that .json file metadata has been output
+    correctly
+
+    Parameters
+    ----------
+    json_file
+        Path and name of the .json file
+    class_name
+        The name of the class that should've been written to the file.
+        Using a string rather than cls.__name__ so it is more explicit
+        for testing
+    """
+    with open(json_file, 'r') as f:
+        data = json.loads(f.read())
+    assert data['__euphonic_class__'] == class_name
+    assert data['__euphonic_version__'] == __version__

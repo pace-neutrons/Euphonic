@@ -7,7 +7,8 @@ import numpy.testing as npt
 
 from euphonic import ureg
 from euphonic.spectra import Spectrum1D
-from tests_and_analysis.test.utils import get_data_path, check_unit_conversion
+from tests_and_analysis.test.utils import (
+    get_data_path, check_unit_conversion, check_json_metadata)
 
 class ExpectedSpectrum1D:
     def __init__(self, spectrum1d_json_file: str):
@@ -171,21 +172,15 @@ class TestSpectrum1DCreation:
 @pytest.mark.unit
 class TestSpectrum1DSerialisation:
 
-    @pytest.fixture(params=[
+    @pytest.mark.parametrize('spec1d', [
         get_spectrum1d('quartz_666_dos.json'),
         get_spectrum1d('xsq_spectrum1d.json'),
         get_spectrum1d('xsq_bin_edges_spectrum1d.json')])
-    def serialise_to_json_file(self, request, tmpdir):
-        spec1d = request.param
-        # Serialise
+    def test_serialise_to_json_file(self, spec1d, tmpdir):
         output_file = str(tmpdir.join('tmp.test'))
         spec1d.to_json_file(output_file)
-        # Deserialise
+        check_json_metadata(output_file, 'Spectrum1D')
         deserialised_spec1d = Spectrum1D.from_json_file(output_file)
-        return spec1d, deserialised_spec1d
-
-    def test_serialise_to_file(self, serialise_to_json_file):
-        spec1d, deserialised_spec1d = serialise_to_json_file
         check_spectrum1d(spec1d, deserialised_spec1d)
 
     @pytest.fixture(params=[

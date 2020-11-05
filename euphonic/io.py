@@ -4,7 +4,7 @@ import os
 
 import numpy as np
 
-from euphonic import ureg, Quantity
+from euphonic import ureg, Quantity, __version__
 
 
 def _to_json_dict(dictionary):
@@ -91,6 +91,8 @@ def _obj_to_json_file(obj, filename):
     Generic function for writing to a JSON file from a Euphonic object
     """
     dout = _to_json_dict(obj.to_dict())
+    dout['__euphonic_class__'] = obj.__class__.__name__
+    dout['__euphonic_version__'] = __version__
     with open(filename, 'w') as f:
         json.dump(dout, f, indent=4, sort_keys=True)
     print(f'Written to {os.path.realpath(f.name)}')
