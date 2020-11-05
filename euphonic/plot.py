@@ -98,6 +98,7 @@ def plot_1d(spectra: Union[Spectrum1D,
             x_label: str = '',
             y_label: str = '',
             y_min: float = None,
+            y_max: float = None,
             labels: Optional[List[str]] = None,
             **line_kwargs) -> Figure:
     """
@@ -137,6 +138,8 @@ def plot_1d(spectra: Union[Spectrum1D,
     y_min
         Minimum value on the y-axis. Can be useful to set y-axis minimum
         to 0 for energy, for example.
+    y_max
+        Maximum value on the y-axis.
     labels
         Legend labels for spectra, in the same order as spectra
     **line_kwargs
@@ -176,9 +179,8 @@ def plot_1d(spectra: Union[Spectrum1D,
         if i == 0 and labels:
             ax.legend(labels)
 
-    if y_min is not None:
-        # Need to set limits after plotting the data
-        ax.set_ylim(bottom=y_min)
+    #    if y_min is not None:
+    ax.set_ylim(bottom=y_min, top=y_max)
 
     fig.suptitle(title)
     return fig

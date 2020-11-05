@@ -128,10 +128,7 @@ def main():
 
     print("Plotting figure")
     if args.y_label is None:
-        if args.lines:
-            y_label = f"Energy / {spectrum.y_data.units:~P}"
-        else:
-            y_label = f"Energy / {spectrum.y_data.units:~P}"
+        y_label = f"Energy / {spectrum.y_data.units:~P}"
     else:
         y_label = args.y_label
 
