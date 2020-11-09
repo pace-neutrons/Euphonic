@@ -110,7 +110,7 @@ def get_dispersion_params() -> List[List[str]]:
     List[str]
         The parameters to run the script with
     """
-    return [[], ["-unit=meV"], ["-btol=5.0"], ["-reorder"]]
+    return [[], ["--energy-unit=meV"], ["--btol=5.0"], ["--reorder"]]
 
 
 def get_sphere_sampling_params() -> List[List[str]]:
