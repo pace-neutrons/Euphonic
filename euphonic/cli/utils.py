@@ -6,9 +6,9 @@ from typing import List, Tuple, Union
 
 import numpy as np
 from pint import UndefinedUnitError
-from pint.unit import Unit
 
 from euphonic import ForceConstants, QpointPhononModes, Quantity, ureg
+Unit = ureg.Unit
 
 
 def force_constants_from_file(filename: Union[str, os.PathLike]
