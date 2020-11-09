@@ -13,12 +13,19 @@ from .utils import (_get_break_points, _get_energy_unit,
                     _get_q_distance, _get_tick_labels)
 
 
+_spectrum_choices = ('dos', 'coherent')
+
+
 def get_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser()
     parser.add_argument('file', type=str,
                         help=('File with force constants data. Supported '
                               'formats: .yaml (Phonopy); .castep_bin, .check '
                               '(Castep); .json (Euphonic)'))
+    parser.add_argument('--weights', '-w', default='dos',
+                        choices=_spectrum_choices,
+                        help=('Spectral weights to plot: phonon DOS or '
+                              'coherent inelastic neutron scattering.'))
     parser.add_argument('--ebins', type=int, default=200,
                         help='Number of energy bins on y-axis')
     parser.add_argument('--e-min', type=float, default=None, dest='e_min',
@@ -34,7 +41,7 @@ def get_parser() -> argparse.ArgumentParser:
                         help=('Length units; these will be inverted to obtain'
                               'units of distance between q-points (e.g. "bohr"'
                               ' for bohr^-1).'))
-    parser.add_argument('--energy-unit', dest='energy_unit',
+    parser.add_argument('--energy-unit', '-u', dest='energy_unit',
                         type=str, default='meV', help='Energy units')
     parser.add_argument('--x-label', type=str, default=None,
                         dest='x_label')
@@ -87,6 +94,21 @@ def force_constants_from_file(filename):
     return force_constants
 
 
+def calculate_dos_map(modes: euphonic.QpointPhononModes,
+                      ebins: euphonic.Quantity) -> euphonic.Spectrum2D:
+    from euphonic.util import _calc_abscissa
+    q_bins = _calc_abscissa(modes.crystal.reciprocal_cell(), modes.qpts)
+
+    bin_indices = np.digitize(modes.frequencies.magnitude, ebins.magnitude)
+    intensity_map = np.zeros((modes.n_qpts, len(ebins) + 1))
+    first_index = np.tile(range(modes.n_qpts),
+                          (3 * modes.crystal.n_atoms, 1)).transpose()
+    np.add.at(intensity_map, (first_index, bin_indices), 1)
+
+    return euphonic.Spectrum2D(q_bins, ebins,
+                               intensity_map[:, :-1] * ureg('dimensionless'))
+
+
 def main():
     args = get_parser().parse_args()
     filename = args.file
@@ -116,8 +138,15 @@ def main():
 
     ebins = np.linspace(emin, emax, args.ebins) * energy_unit
 
-    structure_factor = modes.calculate_structure_factor()
-    spectrum = structure_factor.calculate_sqw_map(ebins)
+    if args.weights.lower() == 'coherent':
+        spectrum = modes.calculate_structure_factor().calculate_sqw_map(ebins)
+
+    elif args.weights.lower() == 'dos':
+        spectrum = calculate_dos_map(modes, ebins)
+        
+    else:
+        raise ValueError(f'Could not compute "{weights}" spectrum. Valid '
+                         'choices: ' + ', '.join(_spectrum_choices))
 
     if args.gaussian_x or args.gaussian_y:
         spectrum = spectrum.broaden(
