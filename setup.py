@@ -102,8 +102,7 @@ def run_setup(build_c=True):
             'euphonic-dos = euphonic.cli.dos:main',
             'euphonic-optimise-eta = euphonic.cli.optimise_eta:main',
             'euphonic-show-sampling = euphonic.cli.show_sampling:main',
-            'euphonic-neutron-band-structure '
-            '= euphonic.cli.neutron_band_structure:main']}
+            'euphonic-intensity-map = euphonic.cli.intensity_map:main']}
     )
 
 run_setup()
