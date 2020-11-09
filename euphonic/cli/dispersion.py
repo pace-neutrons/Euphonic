@@ -84,7 +84,7 @@ def get_parser():
         '-s', '--save-to', dest='save_to', default=None,
         help='Save resulting plot to a file with this name')
     parser.add_argument(
-        '--energy-unit', dest='energy_unit', default='meV',
+        '-u', '--energy-unit', dest='energy_unit', default='meV',
         help=('Convert frequencies to specified units for plotting (e.g 1/cm'))
     parser.add_argument('--length-unit', type=str, default='angstrom',
                         dest='length_unit',
