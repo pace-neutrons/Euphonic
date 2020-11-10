@@ -1,6 +1,6 @@
 import argparse
 import pathlib
-from typing import Optional, Tuple
+from typing import List, Optional, Tuple
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -9,7 +9,7 @@ import seekpath
 import euphonic
 from euphonic import ureg
 import euphonic.plot
-from .utils import (_get_break_points, _get_energy_unit,
+from .utils import (get_args, _get_break_points, _get_energy_unit,
                     _get_q_distance, _get_tick_labels)
 
 
@@ -109,8 +109,8 @@ def calculate_dos_map(modes: euphonic.QpointPhononModes,
                                intensity_map[:, :-1] * ureg('dimensionless'))
 
 
-def main():
-    args = get_parser().parse_args()
+def main(params: List[str] = None) -> None:
+    args = get_args(get_parser(), params)
     filename = args.file
 
     q_distance = _get_q_distance(args.length_unit, args.q_distance)
@@ -150,9 +150,9 @@ def main():
 
     if args.gaussian_x or args.gaussian_y:
         spectrum = spectrum.broaden(
-            x_width=(args.gaussian_x * ureg['1 / angstrom']
+            x_width=(args.gaussian_x * q_distance.units
                      if args.gaussian_x else None),
-            y_width=(args.gaussian_y * ureg['meV']
+            y_width=(args.gaussian_y * energy_unit
                      if args.gaussian_y else None))
 
     print("Plotting figure")
