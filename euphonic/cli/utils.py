@@ -2,10 +2,11 @@ from argparse import ArgumentParser
 import json
 import os
 import pathlib
-from typing import List, Tuple, Union
+from typing import Any, Dict, List, Tuple, Union
 
 import numpy as np
 from pint import UndefinedUnitError
+import seekpath
 
 from euphonic import ForceConstants, QpointPhononModes, Quantity, ureg
 Unit = ureg.Unit
@@ -227,7 +228,7 @@ def _get_break_points(bandpath: dict) -> List[int]:
     return (break_points + 1).tolist()
 
 
-def _insert_gamma(bandpath):
+def _insert_gamma(bandpath: dict) -> None:
     """Modify seekpath.get_explicit_k_path() results; duplicate Gamma
 
     This enables LO-TO splitting to be included
@@ -250,3 +251,33 @@ def _insert_gamma(bandpath):
     bandpath['explicit_kpoints_abs'] = None
     bandpath['explicit_kpoints_linearcoord'] = None
     bandpath['explicit_segments'] = None
+
+
+XTickLabels = List[Tuple[int, str]]
+SplitArgs = Dict[str, Any]
+
+
+def _bands_from_force_constants(data: ForceConstants,
+                                q_distance: Quantity,
+                                insert_gamma=True
+                                ) -> Tuple[QpointPhononModes,
+                                           XTickLabels, SplitArgs]:
+    structure = data.crystal.to_spglib_cell()
+    bandpath = seekpath.get_explicit_k_path(
+        structure,
+        reference_distance=q_distance.to('1 / angstrom').magnitude)
+
+    if insert_gamma:
+        _insert_gamma(bandpath)
+
+    x_tick_labels = _get_tick_labels(bandpath)
+    split_args = {'indices': _get_break_points(bandpath)}
+
+    print(
+        "Computing phonon modes: {n_modes} modes across {n_qpts} q-points"
+        .format(n_modes=(data.crystal.n_atoms * 3),
+                n_qpts=len(bandpath["explicit_kpoints_rel"])))
+    qpts = bandpath["explicit_kpoints_rel"]
+    modes = data.calculate_qpoint_phonon_modes(qpts, reduce_qpts=False)
+
+    return modes, x_tick_labels, split_args
