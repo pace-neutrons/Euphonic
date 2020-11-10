@@ -7,13 +7,10 @@ save or display a matplotlib plot of the vibrational dispersion
 import argparse
 from typing import List
 
-import seekpath
-
 import euphonic
 from euphonic.plot import plot_1d
-from .utils import (load_data_from_file, get_args,
-                    _get_break_points, _get_q_distance, _get_tick_labels,
-                    _insert_gamma, matplotlib_save_or_show)
+from .utils import (load_data_from_file, get_args, _bands_from_force_constants,
+                    _get_q_distance, matplotlib_save_or_show)
 
 
 def main(params: List[str] = None):
@@ -26,32 +23,13 @@ def main(params: List[str] = None):
     if isinstance(data, euphonic.ForceConstants):
         print("Force Constants data was loaded. Getting band path...")
         q_distance = _get_q_distance(args.length_unit, args.q_distance)
-
-        structure = data.crystal.to_spglib_cell()
-        bandpath = seekpath.get_explicit_k_path(
-            structure,
-            reference_distance=q_distance.to('1 / angstrom').magnitude)
-
-        _insert_gamma(bandpath)
-
-        x_tick_labels = _get_tick_labels(bandpath)
-        split_args = {'indices': _get_break_points(bandpath)}
-
-        print(
-            "Computing phonon modes: {n_modes} modes across {n_qpts} q-points"
-            .format(n_modes=(data.crystal.n_atoms * 3),
-                    n_qpts=len(bandpath["explicit_kpoints_rel"])))
-
-        qpts = bandpath["explicit_kpoints_rel"]
-        modes = data.calculate_qpoint_phonon_modes(
-            qpts, reduce_qpts=False)
-
+        (modes, x_tick_labels, split_args) = _bands_from_force_constants(
+            data, q_distance=q_distance)
     elif isinstance(data, euphonic.QpointPhononModes):
         print("Phonon band data was loaded.")
         modes = data
         split_args = {'btol': args.btol}
         x_tick_labels = None
-
     else:
         raise TypeError("Input data must be phonon modes or force constants.")
 
@@ -78,8 +56,12 @@ def get_parser():
                      'and plot it with matplotlib'))
     parser.add_argument(
         'filename',
-        help=('The input data file. This should contain force constants or '
-              'band data.'))
+        help=('Phonon data file. This should contain force constants or '
+              'band data. Force constants formats: .yaml, .hdf5 '
+              '(Phonopy); .castep_bin , .check (Castep); .json '
+              '(Euphonic). [A band structure path will be obtained '
+              'using Seekpath.] Band data formats: .phonon (Castep); '
+              '.json (Euphonic).'))
     parser.add_argument(
         '-s', '--save-to', dest='save_to', default=None,
         help='Save resulting plot to a file with this name')
@@ -96,15 +78,14 @@ def get_parser():
     parser.add_argument('--e-max', type=float, default=None, dest='e_max',
                         help='Energy range maximum in ENERGY_UNIT')
     parser.add_argument('--title', type=str, default='', help='Plot title')
-
-    disp_group = parser.add_argument_group(
-        'Dispersion arguments',
-        'Arguments specific to plotting a pre-calculated band structure')
-    disp_group.add_argument(
+    parser.add_argument(
         '--reorder',
         action='store_true',
         help=('Try to determine branch crossings from eigenvectors and'
               ' rearrange frequencies accordingly'))
+    disp_group = parser.add_argument_group(
+        'Dispersion arguments',
+        'Arguments specific to plotting a pre-calculated band structure')
     disp_group.add_argument(
         '--btol',
         default=10.0,
