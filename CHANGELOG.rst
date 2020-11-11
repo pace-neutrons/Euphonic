@@ -3,8 +3,6 @@
 
 - Changes:
 
-  - ``yaml.CSafeLoader`` is now used instead of ``yaml.SafeLoader`` by
-    default, so Phonopy ``.yaml`` files should load faster
   - Some of Euphonic's dependency version requirements have been changed - but
     can now be relied on with more certainty due to better CI testing. This
     includes:
@@ -14,6 +12,13 @@
     - pint requirement decreased from ``0.10.1`` to ``0.9``
     - h5py requirement decreased from ``2.9.0`` to ``2.7.0``
     - pyyaml requirement decreased from ``5.1.2`` to ``3.13``
+
+- Improvements:
+
+  - ``yaml.CSafeLoader`` is now used instead of ``yaml.SafeLoader`` by
+    default, so Phonopy ``.yaml`` files should load faster
+  - Metadata ``__euphonic_version__`` and ``__euphonic_class__`` have been
+    added to .json file output for better provenance
 
 - Bug fixes:
 
