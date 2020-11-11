@@ -37,6 +37,10 @@ def get_parser() -> argparse.ArgumentParser:
                         help='Energy range minimum in ENERGY_UNIT')
     parser.add_argument('--e-max', type=float, default=None, dest='e_max',
                         help='Energy range maximum in ENERGY_UNIT')
+    parser.add_argument('--v-min', type=float, default=None, dest='v_min',
+                        help='Minimum of data range for colormap.')
+    parser.add_argument('--v-max', type=float, default=None, dest='v_max',
+                        help='Maximum of data range for colormap.')
     parser.add_argument('--length-unit', type=str, default='angstrom',
                         dest='length_unit',
                         help=('Length units; these will be inverted to obtain'
@@ -172,6 +176,7 @@ def main(params: List[str] = None) -> None:
 
     euphonic.plot.plot_2d(spectra,
                           cmap=args.cmap,
+                          vmin=args.v_min, vmax=args.v_max,
                           x_label=args.x_label,
                           y_label=y_label,
                           title=args.title)
