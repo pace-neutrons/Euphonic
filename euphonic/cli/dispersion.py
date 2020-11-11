@@ -56,12 +56,13 @@ def get_parser():
                      'and plot it with matplotlib'))
     parser.add_argument(
         'filename',
-        help=('Phonon data file. This should contain force constants or '
-              'band data. Force constants formats: .yaml, .hdf5 '
-              '(Phonopy); .castep_bin , .check (Castep); .json '
-              '(Euphonic). [A band structure path will be obtained '
-              'using Seekpath.] Band data formats: .phonon (Castep); '
-              '.json (Euphonic).'))
+        help=('Phonon data file. This should contain force constants or band '
+              'data. Force constants formats: .yaml, force_constants.hdf5 '
+              '(Phonopy); .castep_bin , .check (Castep); .json (Euphonic). [A '
+              'band structure path will be obtained using Seekpath.  ] Band '
+              'data formats: {band,qpoints,mesh}.{hdf5,yaml} (Phonopy); '
+              '.phonon (Castep); .json (Euphonic)'
+              ))
     parser.add_argument(
         '-s', '--save-to', dest='save_to', default=None,
         help='Save resulting plot to a file with this name')
