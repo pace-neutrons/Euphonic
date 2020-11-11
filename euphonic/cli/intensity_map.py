@@ -18,15 +18,15 @@ _spectrum_choices = ('dos', 'coherent')
 
 def get_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser()
-    parser.add_argument('filename', type=str,
-                        help=('Phonon data file. This should contain force '
-                              'constants or band data. Force constants '
-                              'formats: .yaml, .hdf5 (Phonopy); .castep_bin , '
-                              '.check (Castep); .json (Euphonic). [A band '
-                              'structure path will be obtained using Seekpath.'
-                              '] Band data formats: .phonon (Castep); .json '
-                              '(Euphonic)'
-                              ))
+    parser.add_argument(
+        'filename', type=str,
+        help=('Phonon data file. This should contain force constants or band '
+              'data. Force constants formats: .yaml, force_constants.hdf5 '
+              '(Phonopy); .castep_bin , .check (Castep); .json (Euphonic). [A '
+              'band structure path will be obtained using Seekpath.  ] Band '
+              'data formats: {band,qpoints,mesh}.{hdf5,yaml} (Phonopy); '
+              '.phonon (Castep); .json (Euphonic)'
+              ))
     parser.add_argument('--weights', '-w', default='dos',
                         choices=_spectrum_choices,
                         help=('Spectral weights to plot: phonon DOS or '
@@ -43,7 +43,7 @@ def get_parser() -> argparse.ArgumentParser:
                         help='Maximum of data range for colormap.')
     parser.add_argument('--length-unit', type=str, default='angstrom',
                         dest='length_unit',
-                        help=('Length units; these will be inverted to obtain'
+                        help=('Length units; these will be inverted to obtain '
                               'units of distance between q-points (e.g. "bohr"'
                               ' for bohr^-1).'))
     parser.add_argument('--energy-unit', '-u', dest='energy_unit',
