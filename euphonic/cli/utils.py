@@ -27,17 +27,32 @@ def force_constants_from_file(filename: Union[str, os.PathLike]
     ForceConstants
     """
     path = pathlib.Path(filename)
-    if path.suffix == '.yaml':
-        return ForceConstants.from_phonopy(
-            path=path.parent, summary_name=path.name)
+    if path.name == 'force_constants.hdf5':
+        if (path.parent / 'phonopy.yaml').is_file():
+            return ForceConstants.from_phonopy(path=path.parent,
+                                               summary_name='phonopy.yaml',
+                                               fc_name=path.name)
+        raise ValueError("Phonopy force_constants.hdf5 file "
+                         "must be accompanied by phonopy.yaml")
+    elif path.suffix == '.yaml':
+        # Assume this is a (renamed?) phonopy.yaml file
+        if (path.parent / 'force_constants.hdf5').is_file():
+            fc_name = 'force_constants.hdf5'
+        else:
+            fc_name = 'FORCE_CONSTANTS'
+
+        return ForceConstants.from_phonopy(path=path.parent,
+                                           fc_name=fc_name,
+                                           summary_name=path.name)
     elif path.suffix in ('.castep_bin', '.check'):
         return ForceConstants.from_castep(filename)
     elif path.suffix == '.json':
         return ForceConstants.from_json_file(filename)
     else:
-        raise ValueError("File not recognised. Should have extension "
-                         ".yaml (phonopy), .castep_bin or .check "
-                         "(castep) or .json (JSON from Euphonic).")
+        raise ValueError("File not recognised. Filename should be "
+                         "*.yaml or force_constants.hdf5 (phonopy), "
+                         "*.castep_bin or *.check "
+                         "(castep) or *.json (JSON from Euphonic).")
 
 
 def modes_from_file(filename: Union[str, os.PathLike]
@@ -59,8 +74,12 @@ def modes_from_file(filename: Union[str, os.PathLike]
         return QpointPhononModes.from_castep(path)
     elif path.suffix == '.json':
         return QpointPhononModes.from_json_file(path)
+    elif path.suffix in ('.yaml', '.hdf5'):
+        return QpointPhononModes.from_phonopy(path=path.parent,
+                                              phonon_name=path.name)
     else:
         raise ValueError("File not recognised. Should have extension "
+                         ".yaml or .hdf5 (phonopy), "
                          ".phonon (castep) or .json (JSON from Euphonic).")
 
 
@@ -92,7 +111,7 @@ def load_data_from_file(filename: Union[str, os.PathLike]
     QpointPhononmodes or ForceConstants
     """
     qpoint_phonon_modes_suffixes = ('.phonon')
-    force_constants_suffixes = ('.yaml', '.hdf5', '.castep_bin', '.check')
+    force_constants_suffixes = ('.castep_bin', '.check')
 
     path = pathlib.Path(filename)
     if path.suffix in qpoint_phonon_modes_suffixes:
@@ -101,13 +120,24 @@ def load_data_from_file(filename: Union[str, os.PathLike]
         return force_constants_from_file(path)
     elif path.suffix == '.json':
         return _load_json(path)
+    elif path.suffix in ('.hdf5', '.yaml'):
+        if path.stem in ('band', 'qpoints', 'mesh'):
+            return modes_from_file(path)
+        elif path.suffix == '.yaml':
+            return force_constants_from_file(path)
+        else:
+            raise ValueError(
+                "Supported Phonopy files are force_constants.hdf5, "
+                "{band,qpoints,mesh}.{hdf5,yaml} or phonopy.yaml. Other .yaml "
+                "files are interpreted as phonopy.yaml")
     else:
         raise ValueError(
             "File format was not recognised. Force constant data for import "
             f"should have extension from {force_constants_suffixes},"
             " phonon mode data for import should have extension "
-            f"'{qpoint_phonon_modes_suffixes[0]}', data from Euphonic should"
-            " have extension '.json'.")
+            f"'{qpoint_phonon_modes_suffixes[0]}',"
+            " data from phonpy should have extension .yaml or .hdf5,"
+            " data from Euphonic should have extension '.json'.")
 
 
 def get_args(parser: ArgumentParser, params: List[str] = None):
