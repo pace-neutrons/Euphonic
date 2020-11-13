@@ -14,8 +14,8 @@ from tests_and_analysis.test.euphonic_test.test_spectrum2d import (
 from tests_and_analysis.test.euphonic_test.test_spectrum1d import (
     get_expected_spectrum1d, check_spectrum1d)
 from tests_and_analysis.test.utils import (
-    get_data_path, check_mode_values_at_qpts, check_unit_conversion,
-    check_json_metadata)
+    get_data_path, check_frequencies_at_qpts, check_structure_factors_at_qpts,
+    check_unit_conversion, check_json_metadata)
 
 
 class ExpectedStructureFactor:
@@ -162,7 +162,7 @@ def check_structure_factor(
 
     assert sf.frequencies.units == expected_sf.frequencies.units
     # Check frequencies
-    check_mode_values_at_qpts(
+    check_frequencies_at_qpts(
         sf.qpts,
         sf.frequencies.magnitude,
         expected_sf.frequencies.magnitude,
@@ -182,14 +182,13 @@ def check_structure_factor(
     else:
         sf_sum = sf.structure_factors.magnitude
         expected_sf_sum = expected_sf.structure_factors.magnitude
-    check_mode_values_at_qpts(
+    check_structure_factors_at_qpts(
         sf.qpts,
         sf_sum,
         expected_sf_sum,
         atol=sf_atol,
         rtol=sf_rtol,
-        gamma_atol=sf_gamma_atol,
-        gamma_operator=np.greater)
+        gamma_atol=sf_gamma_atol)
 
 
 @pytest.mark.unit

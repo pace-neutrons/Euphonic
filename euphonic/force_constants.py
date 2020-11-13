@@ -258,7 +258,7 @@ class ForceConstants(object):
             gamma_i = np.where(is_gamma(qpts))[0]
             split_gamma = gamma_i[np.where(
                 np.logical_and(gamma_i > 0, gamma_i < len(qpts) - 1))]
-            qpts = np.insert(qpts, split_gamma, np.array([0., 0., 0.]), axis=0)
+            qpts = np.insert(qpts, split_gamma, qpts[split_gamma], axis=0)
             # It doesn't necessarily make sense to use both weights
             # (usually used for DOS) and splitting (usually used for
             # bandstructures) but we need to handle this case anyway
@@ -788,17 +788,17 @@ class ForceConstants(object):
                 idx_in_qpts = np.where(qpts_i == idx)[0]
                 # If first q-point
                 if idx_in_qpts == 0:
-                    q_dirs[i] = qpts[1]
+                    q_dirs[i] = qpts[1] - qpts[0]
                 # If last q-point
                 elif idx_in_qpts == (len(qpts) - 1):
-                    q_dirs[i] = qpts[-2]
+                    q_dirs[i] = qpts[-1] - qpts[-2]
                 else:
                     # If splitting=True there should be an adjacent gamma
                     # point. Calculate splitting in whichever direction
                     # isn't gamma
-                    q_dirs[i] = qpts[idx_in_qpts + 1]
+                    q_dirs[i] = qpts[idx_in_qpts + 1] - qpts[idx_in_qpts]
                     if is_gamma(q_dirs[i]):
-                        q_dirs[i] = -qpts[idx_in_qpts - 1]
+                        q_dirs[i] = qpts[idx_in_qpts] - qpts[idx_in_qpts - 1]
         return q_dirs
 
     def _calculate_gamma_correction(self, q_dir):
@@ -826,11 +826,14 @@ class ForceConstants(object):
         if is_gamma(q_dir):
             return na_corr
 
+        recip_cell = self.crystal.reciprocal_cell().to('1/bohr').magnitude
+        q_dir_cart = np.einsum('ij,i->j', recip_cell, q_dir)
+
         cell_volume = self.crystal._cell_volume()
-        denominator = np.einsum('ij,i,j', dielectric, q_dir, q_dir)
+        denominator = np.einsum('ij,i,j', dielectric, q_dir_cart, q_dir_cart)
         factor = 4*math.pi/(cell_volume*denominator)
 
-        q_born_sum = np.einsum('ijk,k->ij', born, q_dir)
+        q_born_sum = np.einsum('ijk,k->ij', born, q_dir_cart)
         for i in range(n_atoms):
             for j in range(n_atoms):
                 na_corr[3*i:3*(i+1), 3*j:3*(j+1)] = np.einsum(

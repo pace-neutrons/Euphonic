@@ -227,22 +227,30 @@ void calculate_dipole_correction(const double *qpt, const int n_atoms,
 }
 
 void calculate_gamma_correction(const double q_dir[3], const int n_atoms,
-    const double *cell_vec, const double *born, const double *dielectric,
-    double *corr) {
+    const double *cell_vec, const double *recip_vec, const double *born,
+    const double *dielectric, double *corr) {
 
     int i, j, a, b, idx;
     double fac, denominator;
     double *q_born_sum;
+    double q_dir_cart[3];
 
     if (is_gamma(q_dir)) {
         memset(corr, 0, 2*9*n_atoms*n_atoms*sizeof(double));
         return;
     }
 
+    for (a = 0; a < 3; a++) {
+        q_dir_cart[a] = 0;
+        for (b = 0; b < 3; b++) {
+            q_dir_cart[a] += recip_vec[3*b + a]*q_dir[b];
+        }
+    }
+
     denominator = 0;
     for (a = 0; a < 3; a++) {
         for (b = 0; b < 3; b++) {
-           denominator += dielectric[3*a + b]*q_dir[a]*q_dir[b];
+           denominator += dielectric[3*a + b]*q_dir_cart[a]*q_dir_cart[b];
         }
     }
     fac = (4*PI)/(cell_volume(cell_vec)*denominator);
@@ -252,7 +260,7 @@ void calculate_gamma_correction(const double q_dir[3], const int n_atoms,
     for (i = 0; i < n_atoms; i++) {
         for (a = 0; a < 3; a++) {
             for (b = 0; b < 3; b++) {
-                q_born_sum[3*i + a] += born[9*i + 3*a + b]*q_dir[b];
+                q_born_sum[3*i + a] += born[9*i + 3*a + b]*q_dir_cart[b];
             }
         }
     }

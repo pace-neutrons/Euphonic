@@ -15,7 +15,7 @@ from tests_and_analysis.test.euphonic_test.test_debye_waller import (
 from tests_and_analysis.test.euphonic_test.test_spectrum1d import (
     get_expected_spectrum1d, check_spectrum1d)
 from tests_and_analysis.test.utils import (
-    get_data_path, check_mode_values_at_qpts, check_unit_conversion,
+    get_data_path, check_frequencies_at_qpts, check_unit_conversion,
     check_json_metadata)
 
 
@@ -120,7 +120,7 @@ def check_qpt_ph_modes(
     assert (qpoint_phonon_modes.frequencies.units
             == expected_qpoint_phonon_modes.frequencies.units)
     # Check frequencies
-    check_mode_values_at_qpts(
+    check_frequencies_at_qpts(
         qpoint_phonon_modes.qpts,
         qpoint_phonon_modes.frequencies.magnitude,
         expected_qpoint_phonon_modes.frequencies.magnitude,

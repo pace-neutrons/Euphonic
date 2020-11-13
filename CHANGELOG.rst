@@ -24,6 +24,8 @@
 
   - Fix read of Phonopy 'full' force constants from phonopy.yaml and
     FORCE_CONSTANTS files
+  - Fix structure factor calculation at gamma points with splitting, see
+    `#107 <https://github.com/pace-neutrons/Euphonic/issues/107>`_
 
 `v0.3.2 <https://github.com/pace-neutrons/Euphonic/compare/v0.3.1...v0.3.2>`_
 ----------

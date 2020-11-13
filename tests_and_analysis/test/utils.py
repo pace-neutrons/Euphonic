@@ -35,30 +35,30 @@ def get_test_qpts(qpts_option: Optional[str] = 'default') -> np.ndarray:
     """
     if qpts_option == 'split':
         return np.array([
-            [0.00, 0.00, 0.00],
+            [1.00, 1.00, 1.00],
             [0.00, 0.00, 0.50],
             [0.00, 0.00, 0.00],
             [0.00, 0.00, 0.00],
             [-0.25, 0.50, 0.50],
+            [2.00, 1.00, 1.00],
+            [2.00, 1.00, 1.00],
             [0.00, 0.00, 0.00],
             [0.00, 0.00, 0.00],
-            [0.00, 0.00, 0.00],
-            [0.00, 0.00, 0.00],
-            [0.00, 0.00, 0.00],
-            [0.00, 0.00, 0.00],
+            [-1.00, 1.00, 1.00],
+            [-1.00, 1.00, 1.00],
             [-0.151515, 0.575758, 0.5],
-            [0.00, 0.00, 0.00]])
+            [-1.00, 1.00, 1.00]])
     elif qpts_option == 'split_insert_gamma':
         return np.array([
-            [0.00, 0.00, 0.00],
+            [1.00, 1.00, 1.00],
             [0.00, 0.00, 0.50],
             [0.00, 0.00, 0.00],
             [-0.25, 0.50, 0.50],
+            [2.00, 1.00, 1.00],
             [0.00, 0.00, 0.00],
-            [0.00, 0.00, 0.00],
-            [0.00, 0.00, 0.00],
+            [-1.00, 1.00, 1.00],
             [-0.151515, 0.575758, 0.5],
-            [0.00, 0.00, 0.00]])
+            [-1.00, 1.00, 1.00]])
     else:
         return np.array([
             [0.00, 0.00, 0.00],
@@ -72,8 +72,21 @@ def get_test_qpts(qpts_option: Optional[str] = 'default') -> np.ndarray:
             [1.75, 0.50, 2.50]])
 
 
+def check_frequencies_at_qpts(qpts, freqs, expected_freqs, atol, rtol,
+                              gamma_atol=None):
+    check_mode_values_at_qpts(
+            qpts, freqs, expected_freqs, atol, rtol, gamma_atol,
+            gamma_operator=np.less, gamma_idx_limit=3)
+
+def check_structure_factors_at_qpts(qpts, freqs, expected_freqs, atol, rtol,
+                                    gamma_atol=None):
+    check_mode_values_at_qpts(
+            qpts, freqs, expected_freqs, atol, rtol, gamma_atol,
+            gamma_operator=np.greater, gamma_idx_limit=1)
+
 def check_mode_values_at_qpts(qpts, values, expected_values, atol, rtol,
-                              gamma_atol=None, gamma_operator=np.less):
+                              gamma_atol=None, gamma_operator=np.less,
+                              gamma_idx_limit=None):
     """
     Utility function for comparing difficult to test values (e.g.
     frequencies, structure factors) which are often unstable at the
@@ -97,13 +110,21 @@ def check_mode_values_at_qpts(qpts, values, expected_values, atol, rtol,
     gamma_operator : numpy.ufunc, optional, default numpy.less
         The function to compare the test values and expected values at
         the gamma point. Should be numpy.less or numpy.greater
+    gamma_idx_limit : int, optional default 1
+        Required if gamma_atol is set. Describes which gamma-point values
+        to test with gamma_atol e.g. gamma_idx_limit = 3 will test the
+        first 3 values (i.e. the acoustic modes) at each gamma qpoint
     """
     values_to_test = np.ones(values.shape, dtype=bool)
 
     if gamma_atol:
         gamma_points = (np.sum(np.absolute(qpts - np.rint(qpts)), axis=-1)
                         < 1e-10)
-        values_to_test[gamma_points, :3] = False
+        values_to_test[gamma_points, :gamma_idx_limit] = False
+        # Don't use the gamma_atol method where values == 0 e.g. structure
+        # factors at q=[0., 0., 0.] should be 0. so would fail if testing
+        # that they are more than gamma_atol
+        values_to_test[np.where(values == 0.)] = True
         assert np.all(gamma_operator(
             np.absolute(values[~values_to_test]),
             gamma_atol))
