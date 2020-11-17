@@ -77,10 +77,16 @@ def get_parser() -> argparse.ArgumentParser:
         'Interpolation arguments',
         ('Arguments specific to band structures that are generated from '
          'Force Constants data'))
-    interp_group.add_argument('--q-distance', type=float, default=0.025,
-                              dest='q_distance',
-                              help=('Target distance between q-point samples '
-                                    'in 1/LENGTH_UNIT'))
+    interp_group.add_argument(
+        '--asr', type=str, nargs='?',
+        default=None, const='reciprocal', choices=('reciprocal', 'realspace'),
+        help=('Apply an acoustic-sum-rule (ASR) correction to the data: '
+              '"realspace" applies the correction to the force constant '
+              'matrix in real space. "reciprocal" applies the correction to '
+              'the dynamical matrix at each q-point.'))
+    interp_group.add_argument(
+        '--q-distance', type=float, default=0.025, dest='q_distance',
+        help=('Target distance between q-point samples in 1/LENGTH_UNIT'))
     return parser
 
 
@@ -128,7 +134,7 @@ def main(params: List[str] = None) -> None:
     if isinstance(data, euphonic.ForceConstants):
         print("Force Constants data was loaded. Getting band path...")
         (modes, x_tick_labels, split_args) = _bands_from_force_constants(
-            data, q_distance=q_distance, insert_gamma=False)
+            data, q_distance=q_distance, asr=args.asr, insert_gamma=False)
     elif isinstance(data, euphonic.QpointPhononModes):
         print("Phonon band data was loaded.")
         modes = data

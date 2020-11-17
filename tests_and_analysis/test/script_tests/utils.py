@@ -158,7 +158,8 @@ def get_dispersion_params() -> List[List[str]]:
     List[str]
         The parameters to run the script with
     """
-    return [[], ["--energy-unit=meV"], ["--btol=5.0"], ["--reorder"]]
+    return [[], ["--energy-unit=meV"], ["--btol=5.0"], ["--reorder"],
+            ["--asr"], ["--asr=realspace"]]
 
 
 def get_intensity_map_params() -> List[List[str]]:
@@ -176,7 +177,8 @@ def get_intensity_map_params() -> List[List[str]]:
             ["--e-min=-10", "--e-max=200", "--energy-unit=cm^-1"],
             ["--energy-broadening=2e-3", "--energy-unit=eV"],
             ["--q-distance=0.05", "--length-unit=bohr", "--q-broadening=0.1"],
-            #["--q-distance=0.05", "--length-unit=bohr"],
+            ["--asr"],
+            ["--asr=realspace"],
             ]
 
 
