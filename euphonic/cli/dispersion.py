@@ -24,7 +24,7 @@ def main(params: List[str] = None):
         print("Force Constants data was loaded. Getting band path...")
         q_distance = _get_q_distance(args.length_unit, args.q_distance)
         (modes, x_tick_labels, split_args) = _bands_from_force_constants(
-            data, q_distance=q_distance)
+            data, q_distance=q_distance, asr=args.asr)
     elif isinstance(data, euphonic.QpointPhononModes):
         print("Phonon band data was loaded.")
         modes = data
@@ -99,8 +99,14 @@ def get_parser():
         'Interpolation arguments',
         ('Arguments specific to band structures that are generated from '
          'Force Constants data'))
-    interp_group.add_argument('--q-distance', type=float, default=0.025,
-                              dest='q_distance',
-                              help=('Target distance between q-point samples '
-                                    'in 1/LENGTH_UNIT'))
+    interp_group.add_argument(
+        '--asr', type=str, nargs='?',
+        default=None, const='reciprocal', choices=('reciprocal', 'realspace'),
+        help=('Apply an acoustic-sum-rule (ASR) correction to the data: '
+              '"realspace" applies the correction to the force constant '
+              'matrix in real space. "reciprocal" applies the correction to '
+              'the dynamical matrix at each q-point.'))
+    interp_group.add_argument(
+        '--q-distance', type=float, dest='q_distance', default=0.025,
+        help=('Target distance between q-point samples in 1/LENGTH_UNIT'))
     return parser

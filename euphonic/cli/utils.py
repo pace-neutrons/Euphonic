@@ -289,7 +289,8 @@ SplitArgs = Dict[str, Any]
 
 def _bands_from_force_constants(data: ForceConstants,
                                 q_distance: Quantity,
-                                insert_gamma=True
+                                insert_gamma=True,
+                                asr=None
                                 ) -> Tuple[QpointPhononModes,
                                            XTickLabels, SplitArgs]:
     structure = data.crystal.to_spglib_cell()
@@ -308,6 +309,7 @@ def _bands_from_force_constants(data: ForceConstants,
         .format(n_modes=(data.crystal.n_atoms * 3),
                 n_qpts=len(bandpath["explicit_kpoints_rel"])))
     qpts = bandpath["explicit_kpoints_rel"]
-    modes = data.calculate_qpoint_phonon_modes(qpts, reduce_qpts=False)
+    modes = data.calculate_qpoint_phonon_modes(qpts, asr=asr,
+                                               reduce_qpts=False)
 
     return modes, x_tick_labels, split_args
