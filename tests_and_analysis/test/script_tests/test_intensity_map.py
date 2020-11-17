@@ -36,9 +36,14 @@ class TestRegression:
         with open(get_intensity_map_data_file()) as expected_data_file:
             expected_image_data = json.load(
                 expected_data_file)[" ".join(intensity_map_args)]
-
         for key, value in image_data.items():
-            if isinstance(value, list) and isinstance(value[0], float):
+            if key == 'extent':
+                # Lower bound of y-data (energy) varies by up to ~2e-6 on
+                # different systems when --asr is used, compared to
+                # the upper bound of 100s of meV this is effectively zero,
+                # so increase tolerance to allow for this
+                npt.assert_allclose(value, expected_image_data[key], atol=2e-6)
+            elif isinstance(value, list) and isinstance(value[0], float):
                 # Errors of 2-4 epsilon seem to be common when using
                 # broadening, so slightly increase tolerance
                 npt.assert_allclose(value, expected_image_data[key],
