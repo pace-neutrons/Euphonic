@@ -112,7 +112,6 @@ def get_current_plot_offsets() -> List[List[float]]:
 
 def get_current_plot_image_data() -> Dict[str,
                                           Union[str, List[float], List[int]]]:
-    from hashlib import md5
     import numpy as np
 
     fig = matplotlib.pyplot.gcf()
