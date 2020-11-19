@@ -269,7 +269,15 @@ class TestSpectrum2DMethods:
             (({'x_width': 0.1*ureg('1/angstrom'), 'y_width': 2*ureg('meV'),
                'shape': 'lorentz'}),
              'quartz_bandstructure_sqw.json',
-             'quartz_bandstructure_xybroaden_lorentz_sqw.json')])
+             'quartz_bandstructure_xybroaden_lorentz_sqw.json'),
+            (({'x_width': 0.2*ureg('1/angstrom'), 'y_width': 1.5*ureg('meV'),
+               'shape': 'gauss'}),
+             'lzo_57L_bragg_sqw.json',
+             'lzo_57L_1.5meV_0.1ang_gauss_sqw.json'),
+            (({'x_width': 0.2*ureg('1/angstrom'), 'y_width': 1.5*ureg('meV'),
+               'shape': 'lorentz'}),
+             'lzo_57L_bragg_sqw.json',
+             'lzo_57L_1.5meV_0.1ang_lorentz_sqw.json')])
     def test_broaden(self, args, spectrum2d_file, broadened_spectrum2d_file):
         spec2d = get_spectrum2d(spectrum2d_file)
         expected_broadened_spec2d = get_spectrum2d(broadened_spectrum2d_file)
