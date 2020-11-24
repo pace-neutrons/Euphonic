@@ -2,8 +2,7 @@ import math
 from copy import deepcopy
 
 import numpy as np
-from scipy.ndimage import (gaussian_filter1d, correlate1d, gaussian_filter,
-                           correlate)
+from scipy.ndimage import gaussian_filter1d, correlate1d, gaussian_filter
 
 from euphonic.validate import _check_constructor_inputs, _check_unit_conversion
 from euphonic.io import (_obj_to_json_file, _obj_from_json_file,
@@ -314,35 +313,41 @@ class Spectrum2D(Spectrum1D):
         ValueError
             If shape is not one of the allowed strings
         """
-        # If no width has been set, make widths small enough to have
-        # effectively no broadening
-        if x_width is None:
-            x_width = 0.1*(self.x_data[1] - self.x_data[0])
-        if y_width is None:
-            y_width = 0.1*(self.y_data[1] - self.y_data[0])
         if shape == 'gauss':
+            if x_width is None:
+                xsigma = 0.0
+            else:
                 xsigma = self._gfwhm_to_sigma(x_width, 'x')
+            if y_width is None:
+                ysigma = 0.0
+            else:
                 ysigma = self._gfwhm_to_sigma(y_width, 'y')
-                z_broadened = gaussian_filter(
-                        self.z_data.magnitude, [xsigma, ysigma],
-                        mode='constant')*ureg(self.z_data_unit)
+            z_broadened = gaussian_filter(
+                self.z_data.magnitude, [xsigma, ysigma],
+                mode='constant')
         elif shape == 'lorentz':
-                broadening = _distribution_2d(
-                        self._get_bin_centres('x').magnitude,
-                        self._get_bin_centres('y').magnitude,
-                        x_width.to(self.x_data_unit).magnitude,
-                        y_width.to(self.y_data_unit).magnitude,
-                        shape=shape)
-                z_broadened = correlate(
-                        self.z_data.magnitude, broadening.transpose(),
-                        mode='constant')*ureg(self.z_data_unit)
+            z_broadened = self.z_data.magnitude
+            if x_width is not None:
+                x_broadening = _distribution_1d(
+                    self._get_bin_centres('x').magnitude,
+                    x_width.to(self.x_data_unit).magnitude,
+                    shape=shape)
+                z_broadened = correlate1d(
+                    z_broadened, x_broadening, mode='constant', axis=0)
+            if y_width is not None:
+                y_broadening = _distribution_1d(
+                    self._get_bin_centres('y').magnitude,
+                    y_width.to(self.y_data_unit).magnitude,
+                    shape=shape)
+                z_broadened = correlate1d(
+                    z_broadened, y_broadening, mode='constant', axis=1)
         else:
             raise ValueError(
                 f"Distribution shape '{shape}' not recognised")
         return Spectrum2D(
             np.copy(self.x_data.magnitude)*ureg(self.x_data_unit),
             np.copy(self.y_data.magnitude)*ureg(self.y_data_unit),
-            z_broadened, deepcopy((self.x_tick_labels)))
+            z_broadened*ureg(self.z_data_unit), deepcopy((self.x_tick_labels)))
 
     def _is_bin_edge(self, bin_ax, data_ax='z'):
         return super()._is_bin_edge(bin_ax, data_ax)
@@ -416,19 +421,5 @@ def _distribution_1d(xbins, xwidth, shape='lorentz', extent=3.0):
     x = _get_dist_bins(xbins, xwidth, extent)
     if shape == 'lorentz':
         dist = _lorentzian(x, xwidth)
-    dist = dist/np.sum(dist)  # Naively normalise
-    return dist
-
-
-def _distribution_2d(xbins, ybins, xwidth, ywidth, shape='lorentz',
-                     extent=3.0):
-    x = _get_dist_bins(xbins, xwidth, extent)
-    y = _get_dist_bins(ybins, ywidth, extent)
-    if shape == 'lorentz':
-        xdist = _lorentzian(x, xwidth)
-        ydist = _lorentzian(y, ywidth)
-    xgrid = np.tile(xdist, (len(ydist), 1))
-    ygrid = np.transpose(np.tile(ydist, (len(xdist), 1)))
-    dist = xgrid*ygrid
     dist = dist/np.sum(dist)  # Naively normalise
     return dist
