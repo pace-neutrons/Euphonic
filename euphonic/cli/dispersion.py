@@ -18,7 +18,6 @@ def main(params: List[str] = None):
     args = get_args(parser, params)
 
     data = load_data_from_file(args.filename)
-    data.frequencies_unit = args.energy_unit
 
     if isinstance(data, euphonic.ForceConstants):
         print("Force Constants data was loaded. Getting band path...")
@@ -32,6 +31,7 @@ def main(params: List[str] = None):
         x_tick_labels = None
     else:
         raise TypeError("Input data must be phonon modes or force constants.")
+    modes.frequencies_unit = args.energy_unit
 
     print("Mapping modes to 1D band-structure")
     if args.reorder:
