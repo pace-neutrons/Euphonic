@@ -27,7 +27,7 @@ def force_constants_from_file(filename: Union[str, os.PathLike]
     ForceConstants
     """
     path = pathlib.Path(filename)
-    if path.name == 'force_constants.hdf5':
+    if path.suffix == '.hdf5':
         if (path.parent / 'phonopy.yaml').is_file():
             return ForceConstants.from_phonopy(path=path.parent,
                                                summary_name='phonopy.yaml',
@@ -121,15 +121,10 @@ def load_data_from_file(filename: Union[str, os.PathLike]
     elif path.suffix == '.json':
         return _load_json(path)
     elif path.suffix in ('.hdf5', '.yaml'):
-        if path.stem in ('band', 'qpoints', 'mesh'):
+        try:
             return modes_from_file(path)
-        elif path.suffix == '.yaml':
+        except KeyError:
             return force_constants_from_file(path)
-        else:
-            raise ValueError(
-                "Supported Phonopy files are force_constants.hdf5, "
-                "{band,qpoints,mesh}.{hdf5,yaml} or phonopy.yaml. Other .yaml "
-                "files are interpreted as phonopy.yaml")
     else:
         raise ValueError(
             "File format was not recognised. Force constant data for import "
