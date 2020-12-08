@@ -1,7 +1,6 @@
 import argparse
 from typing import List, Optional, Tuple
 
-import matplotlib.pyplot as plt
 import numpy as np
 
 import euphonic
@@ -50,12 +49,13 @@ def main(params: List[str] = None) -> None:
         raise ValueError(f'Could not compute "{args.weights}" spectrum. Valid '
                          'choices: ' + ', '.join(_spectrum_choices))
 
-    if args.gaussian_x or args.gaussian_y:
+    if args.q_broadening or args.energy_broadening:
         spectrum = spectrum.broaden(
-            x_width=(args.gaussian_x * recip_length_unit
-                     if args.gaussian_x else None),
-            y_width=(args.gaussian_y * energy_unit
-                     if args.gaussian_y else None))
+            x_width=(args.q_broadening * recip_length_unit
+                     if args.q_broadening else None),
+            y_width=(args.energy_broadening * energy_unit
+                     if args.energy_broadening else None),
+            shape=args.shape)
 
     print("Plotting figure")
     if args.y_label is None:
@@ -97,7 +97,7 @@ def calculate_dos_map(modes: euphonic.QpointPhononModes,
 
 
 def get_parser() -> argparse.ArgumentParser:
-    parser = _get_cli_parser(qe_plot=True, n_ebins=True)
+    parser = _get_cli_parser(qe_band_plot=True, n_ebins=True)
     parser.description = (
         'Plots a 2D intensity map from the file provided. If a force '
         'constants file is provided, a band structure path is '
@@ -113,11 +113,7 @@ def get_parser() -> argparse.ArgumentParser:
     parser.add_argument('--cmap', type=str, default='viridis',
                         help='Matplotlib colormap')
     parser.add_argument('--q-broadening', type=float, default=None,
-                        dest='gaussian_x',
+                        dest='q_broadening',
                         help='Width of Gaussian broadening on q axis in recip '
                              'LENGTH_UNIT. (No broadening if unspecified.)')
-    parser.add_argument('--energy-broadening', type=float, default=None,
-                        dest='gaussian_y',
-                        help='Width of Gaussian broadening on energy axis in '
-                        'ENERGY_UNIT. (No broadening if unspecified.)')
     return parser

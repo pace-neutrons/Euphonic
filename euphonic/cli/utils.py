@@ -177,6 +177,7 @@ def matplotlib_save_or_show(save_filename: str = None):
     import matplotlib.pyplot as plt
     if save_filename is not None:
         plt.savefig(save_filename)
+        print(f'Saved plot to {os.path.realpath(save_filename)}')
     else:
         plt.show()
 
@@ -329,14 +330,15 @@ def _bands_from_force_constants(data: ForceConstants,
 
     return modes, x_tick_labels, split_args
 
-def _get_cli_parser(qe_plot=False, n_ebins=False) -> ArgumentParser:
+def _get_cli_parser(qe_band_plot=False, n_ebins=False) -> ArgumentParser:
     parser = ArgumentParser()
     parser.add_argument(
         'filename', type=str,
-        help=('Phonon data file. This should contain force constants or band '
-              'data. Force constants formats: .yaml, force_constants.hdf5 '
-              '(Phonopy); .castep_bin , .check (Castep); .json (Euphonic). '
-              'Band data formats: {band,qpoints,mesh}.{hdf5,yaml} (Phonopy); '
+        help=('Phonon data file. This should contain force constants or '
+              'phonon mode data. Force constants formats: .yaml, '
+              'force_constants.hdf5 (Phonopy); .castep_bin , .check '
+              '(Castep); .json (Euphonic). Phonon mode data formats: '
+              '{band,qpoints,mesh}.{hdf5,yaml} (Phonopy); '
               '.phonon (Castep); .json (Euphonic)'))
     parser.add_argument(
         '-s', '--save-to', dest='save_to', default=None,
@@ -349,13 +351,22 @@ def _get_cli_parser(qe_plot=False, n_ebins=False) -> ArgumentParser:
     if n_ebins:
         parser.add_argument('--ebins', type=int, default=200,
                             help='Number of energy bins')
+        parser.add_argument(
+            '--energy-broadening', type=float, default=None,
+            dest='energy_broadening',
+            help=('FWHM of broadening on energy axis in ENERGY_UNIT. '
+                  '(No broadening if unspecified.)'))
+        parser.add_argument(
+            '--shape', type=str, nargs='?', default='gauss',
+            choices=('gauss', 'lorentz'),
+            help='The broadening shape')
     parser.add_argument('--e-min', type=float, default=None, dest='e_min',
                         help='Energy range minimum in ENERGY_UNIT')
     parser.add_argument('--e-max', type=float, default=None, dest='e_max',
                         help='Energy range maximum in ENERGY_UNIT')
     parser.add_argument('--energy-unit', '-u', dest='energy_unit',
                         type=str, default='meV', help='Energy units')
-    if qe_plot:
+    if qe_band_plot:
         parser.add_argument(
             '--length-unit', type=str, default='angstrom', dest='length_unit',
             help=('Length units; these will be inverted to obtain '
