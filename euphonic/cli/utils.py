@@ -2,7 +2,7 @@ from argparse import ArgumentParser
 import json
 import os
 import pathlib
-from typing import Any, Dict, List, Tuple, Union
+from typing import Any, Dict, List, Tuple, Union, Optional
 
 import numpy as np
 from pint import UndefinedUnitError
@@ -195,14 +195,29 @@ def _get_q_distance(length_unit_string: str, q_distance: float) -> Quantity:
     return q_distance * recip_length_units
 
 
-def _get_energy_unit(energy_unit_string: str) -> Unit:
+def _get_energy_bins_and_units(
+        energy_unit_string: str, modes: QpointPhononModes,
+        n_ebins: int, emin: Optional[float] = None,
+        emax: Optional[float] = None,
+        headroom: float = 1.05) -> Tuple[Quantity, Unit]:
+
     try:
         energy_unit = ureg(energy_unit_string)
-        return energy_unit
     except UndefinedUnitError:
         raise ValueError("Energy unit not known. Euphonic uses Pint for units."
                          " Try 'eV' or 'hartree'. Metric prefixes are also "
                          "allowed, e.g 'meV' or 'fJ'.")
+
+    if emin is None:
+        emin = min(np.min(modes.frequencies.magnitude), 0.)
+    if emax is None:
+        emax = np.max(modes.frequencies.magnitude) * headroom
+    if emin >= emax:
+        raise ValueError("Maximum energy should be greater than minimum. "
+                         "Check --e-min and --e-max arguments.")
+    ebins = np.linspace(emin, emax, n_ebins) * energy_unit
+
+    return ebins, energy_unit
 
 
 def _get_tick_labels(bandpath: dict) -> List[Tuple[int, str]]:
@@ -313,3 +328,60 @@ def _bands_from_force_constants(data: ForceConstants,
                                                reduce_qpts=False)
 
     return modes, x_tick_labels, split_args
+
+def _get_cli_parser(qe_plot=False, n_ebins=False) -> ArgumentParser:
+    parser = ArgumentParser()
+    parser.add_argument(
+        'filename', type=str,
+        help=('Phonon data file. This should contain force constants or band '
+              'data. Force constants formats: .yaml, force_constants.hdf5 '
+              '(Phonopy); .castep_bin , .check (Castep); .json (Euphonic). '
+              'Band data formats: {band,qpoints,mesh}.{hdf5,yaml} (Phonopy); '
+              '.phonon (Castep); .json (Euphonic)'))
+    parser.add_argument(
+        '-s', '--save-to', dest='save_to', default=None,
+        help='Save resulting plot to a file with this name')
+    parser.add_argument('--title', type=str, default=None, help='Plot title')
+    parser.add_argument('--x-label', type=str, default=None,
+                        dest='x_label', help='Plot x-axis label')
+    parser.add_argument('--y-label', type=str, default=None,
+                        dest='y_label', help='Plot y-axis label')
+    if n_ebins:
+        parser.add_argument('--ebins', type=int, default=200,
+                            help='Number of energy bins')
+    parser.add_argument('--e-min', type=float, default=None, dest='e_min',
+                        help='Energy range minimum in ENERGY_UNIT')
+    parser.add_argument('--e-max', type=float, default=None, dest='e_max',
+                        help='Energy range maximum in ENERGY_UNIT')
+    parser.add_argument('--energy-unit', '-u', dest='energy_unit',
+                        type=str, default='meV', help='Energy units')
+    if qe_plot:
+        parser.add_argument(
+            '--length-unit', type=str, default='angstrom', dest='length_unit',
+            help=('Length units; these will be inverted to obtain '
+                  'units of distance between q-points (e.g. "bohr"'
+                  ' for bohr^-1).'))
+        interp_group = parser.add_argument_group(
+            'Interpolation arguments',
+            ('Arguments specific to band structures that are generated '
+             'from Force Constants data'))
+        interp_group.add_argument(
+            '--asr', type=str, nargs='?', default=None, const='reciprocal',
+            choices=('reciprocal', 'realspace'),
+            help=('Apply an acoustic-sum-rule (ASR) correction to the '
+                  'data: "realspace" applies the correction to the force '
+                  'constant matrix in real space. "reciprocal" applies '
+                  'the correction to the dynamical matrix at each q-point.'))
+        interp_group.add_argument(
+            '--q-distance', type=float, dest='q_distance', default=0.025,
+            help=('Target distance between q-point samples in 1/LENGTH_UNIT'))
+        disp_group = parser.add_argument_group(
+            'Dispersion arguments',
+            'Arguments specific to plotting a pre-calculated band structure')
+        disp_group.add_argument(
+            '--btol', default=10.0, type=float,
+            help=('The tolerance for plotting sections of reciprocal '
+                  'space on different subplots, as a fraction of the '
+                  'median distance between q-points'))
+
+    return parser
