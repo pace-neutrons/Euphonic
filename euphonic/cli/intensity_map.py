@@ -125,7 +125,6 @@ def main(params: List[str] = None) -> None:
     args = get_args(get_parser(), params)
 
     data = load_data_from_file(args.filename)
-    data.frequencies_unit = args.energy_unit
 
     energy_unit = _get_energy_unit(args.energy_unit)
     q_distance = _get_q_distance(args.length_unit, args.q_distance)
@@ -143,6 +142,7 @@ def main(params: List[str] = None) -> None:
                                           cell=modes.crystal.to_spglib_cell())
     else:
         raise TypeError("Input data must be phonon modes or force constants.")
+    modes.frequencies_unit = args.energy_unit
 
     print("Computing intensities and generating 2D maps")
     emin, emax = _get_energy_range(modes.frequencies.to(energy_unit).magnitude,
