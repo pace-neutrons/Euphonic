@@ -1,10 +1,3 @@
-# -*- coding: utf-8 -*-
-"""
-Parse a *.phonon CASTEP output file for vibrational frequency data and
-save or display a matplotlib plot of the vibrational dispersion
-"""
-
-import argparse
 from typing import List
 
 import euphonic
@@ -59,7 +52,7 @@ def main(params: List[str] = None):
 
 
 def get_parser():
-    parser = _get_cli_parser(qe_plot=True)
+    parser = _get_cli_parser(qe_band_plot=True)
     parser.description = (
         'Plots a band structure from the file provided. If a force '
         'constants file is provided, a band structure path is '
