@@ -45,7 +45,7 @@ def main(params: List[str] = None):
     _ = plot_1d(spectra,
                 title=args.title,
                 x_label=args.x_label,
-                y_label=f'Energy ({spectrum.y_data.units:~P})',
+                y_label=y_label,
                 y_min=args.e_min, y_max=args.e_max,
                 lw=1.0)
     matplotlib_save_or_show(save_filename=args.save_to)

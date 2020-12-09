@@ -347,7 +347,7 @@ def _get_cli_parser(qe_band_plot=False, n_ebins=False) -> ArgumentParser:
         parser.add_argument('--ebins', type=int, default=200,
                             help='Number of energy bins')
         parser.add_argument(
-            '--energy-broadening', type=float, default=None,
+            '--energy-broadening', '--eb', type=float, default=None,
             dest='energy_broadening',
             help=('FWHM of broadening on energy axis in ENERGY_UNIT. '
                   '(No broadening if unspecified.)'))

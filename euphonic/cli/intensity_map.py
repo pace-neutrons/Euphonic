@@ -112,7 +112,7 @@ def get_parser() -> argparse.ArgumentParser:
                         help='Maximum of data range for colormap.')
     parser.add_argument('--cmap', type=str, default='viridis',
                         help='Matplotlib colormap')
-    parser.add_argument('--q-broadening', type=float, default=None,
+    parser.add_argument('--q-broadening', '--qb', type=float, default=None,
                         dest='q_broadening',
                         help='Width of Gaussian broadening on q axis in recip '
                              'LENGTH_UNIT. (No broadening if unspecified.)')
