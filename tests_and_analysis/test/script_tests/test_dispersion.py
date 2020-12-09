@@ -11,7 +11,7 @@ import matplotlib.pyplot
 
 from tests_and_analysis.test.utils import get_data_path
 from tests_and_analysis.test.script_tests.utils import (
-    get_script_test_data_path, get_current_plot_lines_xydata)
+    get_script_test_data_path, get_current_plot_lines_xydata, args_to_key)
 import euphonic.cli.dispersion
 
 
@@ -72,7 +72,7 @@ class TestRegression:
         lines = matplotlib.pyplot.gcf().axes[0].lines
 
         with open(disp_output_file, 'r') as f:
-            expected_lines = json.load(f)[' '.join(dispersion_args)]
+            expected_lines = json.load(f)[args_to_key(dispersion_args)]
         for index, line in enumerate(lines):
             npt.assert_allclose(
                 line.get_xydata().T, np.array(expected_lines[index]),
@@ -95,6 +95,6 @@ def test_regenerate_disp_data(_):
         # Generate current figure for us to retrieve with gcf
         euphonic.cli.dispersion.main(disp_param)
         # Retrieve with gcf and record data
-        json_data[' '.join(disp_param)] = get_current_plot_lines_xydata()
+        json_data[args_to_key(disp_param)] = get_current_plot_lines_xydata()
     with open(disp_output_file, 'w+') as json_file:
         json.dump(json_data, json_file, indent=4)

@@ -10,7 +10,7 @@ import matplotlib.pyplot
 
 from tests_and_analysis.test.utils import get_data_path
 from tests_and_analysis.test.script_tests.utils import (
-    get_script_test_data_path, get_current_plot_image_data)
+    get_script_test_data_path, get_current_plot_image_data, args_to_key)
 import euphonic.cli.intensity_map
 
 
@@ -63,7 +63,7 @@ class TestRegression:
 
         with open(intensity_map_output_file, 'r') as expected_data_file:
             expected_image_data = json.load(
-                expected_data_file)[' '.join(intensity_map_args)]
+                expected_data_file)[args_to_key(intensity_map_args)]
         for key, value in image_data.items():
             if key == 'extent':
                 # Lower bound of y-data (energy) varies by up to ~2e-6 on
@@ -99,7 +99,7 @@ def test_regenerate_intensity_map_data(_):
         euphonic.cli.intensity_map.main(intensity_map_param)
 
         # Retrieve with gcf and write to file
-        json_data[' '.join(intensity_map_param)
+        json_data[args_to_key(intensity_map_param)
                   ] = get_current_plot_image_data()
 
     with open(intensity_map_output_file, 'w+') as json_file:

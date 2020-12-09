@@ -1,5 +1,5 @@
 {
-    "C:\\Users\\mll13652\\Documents\\TCP Group\\PACE Project\\Euphonic\\tests_and_analysis\\test\\data\\qpoint_phonon_modes\\NaH\\NaH.phonon": [
+    "NaH NaH.phonon": [
         [
             [
                 0.2891736495388724,
@@ -405,7 +405,7 @@
             ]
         ]
     ],
-    "C:\\Users\\mll13652\\Documents\\TCP Group\\PACE Project\\Euphonic\\tests_and_analysis\\test\\data\\qpoint_phonon_modes\\NaH\\NaH.phonon --energy-broadening=2": [
+    "NaH NaH.phonon --energy-broadening=2": [
         [
             [
                 0.2891736495388724,
@@ -811,7 +811,7 @@
             ]
         ]
     ],
-    "C:\\Users\\mll13652\\Documents\\TCP Group\\PACE Project\\Euphonic\\tests_and_analysis\\test\\data\\qpoint_phonon_modes\\NaH\\NaH.phonon --ebins=100": [
+    "NaH NaH.phonon --ebins=100": [
         [
             [
                 0.581268245032683,
@@ -1017,7 +1017,7 @@
             ]
         ]
     ],
-    "C:\\Users\\mll13652\\Documents\\TCP Group\\PACE Project\\Euphonic\\tests_and_analysis\\test\\data\\qpoint_phonon_modes\\NaH\\NaH.phonon --energy-broadening=2.3 --ebins=50": [
+    "NaH NaH.phonon --energy-broadening=2.3 --ebins=50": [
         [
             [
                 1.174399107310931,
@@ -1123,7 +1123,7 @@
             ]
         ]
     ],
-    "C:\\Users\\mll13652\\Documents\\TCP Group\\PACE Project\\Euphonic\\tests_and_analysis\\test\\data\\qpoint_phonon_modes\\NaH\\NaH.phonon --energy-unit=1/cm --eb=20 --e-max=750": [
+    "NaH NaH.phonon --energy-unit=1/cm --eb=20 --e-max=750": [
         [
             [
                 1.884422110552764,
@@ -1529,7 +1529,7 @@
             ]
         ]
     ],
-    "C:\\Users\\mll13652\\Documents\\TCP Group\\PACE Project\\Euphonic\\tests_and_analysis\\test\\data\\qpoint_phonon_modes\\NaH\\NaH.phonon --eb=5e-5 --shape=lorentz --e-min=1.5e-3 -u=hartree": [
+    "NaH NaH.phonon --eb=5e-5 --shape=lorentz --e-min=1.5e-3 -u=hartree": [
         [
             [
                 0.0015068580913905083,
@@ -1935,7 +1935,7 @@
             ]
         ]
     ],
-    "C:\\Users\\mll13652\\Documents\\TCP Group\\PACE Project\\Euphonic\\tests_and_analysis\\test\\data\\qpoint_phonon_modes\\NaH\\NaH.phonon --title=NaH --x-label=Energy (meV) --y-label=DOS": [
+    "NaH NaH.phonon --title=NaH --x-label=Energy (meV) --y-label=DOS": [
         [
             [
                 0.2891736495388724,
@@ -2341,7 +2341,7 @@
             ]
         ]
     ],
-    "C:\\Users\\mll13652\\Documents\\TCP Group\\PACE Project\\Euphonic\\tests_and_analysis\\test\\data\\force_constants\\quartz\\quartz.castep_bin": [
+    "quartz quartz.castep_bin": [
         [
             [
                 0.40360212844451837,
@@ -2747,7 +2747,7 @@
             ]
         ]
     ],
-    "C:\\Users\\mll13652\\Documents\\TCP Group\\PACE Project\\Euphonic\\tests_and_analysis\\test\\data\\force_constants\\quartz\\quartz.castep_bin --grid 3 3 3": [
+    "quartz quartz.castep_bin --grid 3 3 3": [
         [
             [
                 -2.238275613543245,

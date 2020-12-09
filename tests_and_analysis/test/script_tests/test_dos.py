@@ -11,7 +11,8 @@ import matplotlib.pyplot
 
 from tests_and_analysis.test.utils import get_data_path
 from tests_and_analysis.test.script_tests.utils import (
-    get_script_test_data_path, get_current_plot_lines_xydata)
+    get_script_test_data_path, get_current_plot_lines_xydata,
+    args_to_key)
 import euphonic.cli.dos
 
 
@@ -55,7 +56,7 @@ class TestRegression:
         lines = matplotlib.pyplot.gcf().axes[0].lines
 
         with open(dos_output_file, 'r') as f:
-            expected_lines = json.load(f)[' '.join(dos_args)]
+            expected_lines = json.load(f)[args_to_key(dos_args)]
 
         for index, line in enumerate(lines):
             npt.assert_allclose(line.get_xydata().T,
@@ -79,6 +80,6 @@ def test_regenerate_dos_data(_):
         # Generate current figure for us to retrieve with gcf
         euphonic.cli.dos.main(dos_param)
         # Retrieve with gcf and record data
-        json_data[' '.join(dos_param)] = get_current_plot_lines_xydata()
+        json_data[args_to_key(dos_param)] = get_current_plot_lines_xydata()
     with open(dos_output_file, 'w+') as json_file:
         json.dump(json_data, json_file, indent=4)
