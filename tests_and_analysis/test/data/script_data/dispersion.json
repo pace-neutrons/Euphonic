@@ -1,5 +1,5 @@
 {
-    "C:\\Users\\mll13652\\Documents\\TCP Group\\PACE Project\\Euphonic\\tests_and_analysis\\test\\data\\force_constants\\CaHgO2\\mp-7041-20180417.yaml": [
+    "CaHgO2 mp-7041-20180417.yaml": [
         [
             [
                 0.0,
@@ -1585,7 +1585,7 @@
             ]
         ]
     ],
-    "C:\\Users\\mll13652\\Documents\\TCP Group\\PACE Project\\Euphonic\\tests_and_analysis\\test\\data\\force_constants\\CaHgO2\\mp-7041-20180417.yaml --energy-unit=hartree": [
+    "CaHgO2 mp-7041-20180417.yaml --energy-unit=hartree": [
         [
             [
                 0.0,
@@ -3171,7 +3171,7 @@
             ]
         ]
     ],
-    "C:\\Users\\mll13652\\Documents\\TCP Group\\PACE Project\\Euphonic\\tests_and_analysis\\test\\data\\force_constants\\CaHgO2\\mp-7041-20180417.yaml --x-label=wavenumber --y-label=Energy (meV) --title=CaHgO2": [
+    "CaHgO2 mp-7041-20180417.yaml --x-label=wavenumber --y-label=Energy (meV) --title=CaHgO2": [
         [
             [
                 0.0,
@@ -4757,7 +4757,7 @@
             ]
         ]
     ],
-    "C:\\Users\\mll13652\\Documents\\TCP Group\\PACE Project\\Euphonic\\tests_and_analysis\\test\\data\\force_constants\\CaHgO2\\mp-7041-20180417.yaml --reorder": [
+    "CaHgO2 mp-7041-20180417.yaml --reorder": [
         [
             [
                 0.0,
@@ -6343,7 +6343,7 @@
             ]
         ]
     ],
-    "C:\\Users\\mll13652\\Documents\\TCP Group\\PACE Project\\Euphonic\\tests_and_analysis\\test\\data\\force_constants\\CaHgO2\\mp-7041-20180417.yaml -u=1/cm --e-min=200": [
+    "CaHgO2 mp-7041-20180417.yaml -u=1/cm --e-min=200": [
         [
             [
                 0.0,
@@ -7929,7 +7929,7 @@
             ]
         ]
     ],
-    "C:\\Users\\mll13652\\Documents\\TCP Group\\PACE Project\\Euphonic\\tests_and_analysis\\test\\data\\force_constants\\CaHgO2\\mp-7041-20180417.yaml --e-min=30 --e-max=100": [
+    "CaHgO2 mp-7041-20180417.yaml --e-min=30 --e-max=100": [
         [
             [
                 0.0,
@@ -9515,7 +9515,7 @@
             ]
         ]
     ],
-    "C:\\Users\\mll13652\\Documents\\TCP Group\\PACE Project\\Euphonic\\tests_and_analysis\\test\\data\\force_constants\\CaHgO2\\mp-7041-20180417.yaml --length-unit=bohr --q-distance=0.04": [
+    "CaHgO2 mp-7041-20180417.yaml --length-unit=bohr --q-distance=0.04": [
         [
             [
                 0.0,
@@ -10045,7 +10045,7 @@
             ]
         ]
     ],
-    "C:\\Users\\mll13652\\Documents\\TCP Group\\PACE Project\\Euphonic\\tests_and_analysis\\test\\data\\force_constants\\CaHgO2\\mp-7041-20180417.yaml --q-distance=0.02": [
+    "CaHgO2 mp-7041-20180417.yaml --q-distance=0.02": [
         [
             [
                 0.0,
@@ -12015,7 +12015,7 @@
             ]
         ]
     ],
-    "C:\\Users\\mll13652\\Documents\\TCP Group\\PACE Project\\Euphonic\\tests_and_analysis\\test\\data\\force_constants\\CaHgO2\\mp-7041-20180417.yaml --asr": [
+    "CaHgO2 mp-7041-20180417.yaml --asr": [
         [
             [
                 0.0,
@@ -13601,7 +13601,7 @@
             ]
         ]
     ],
-    "C:\\Users\\mll13652\\Documents\\TCP Group\\PACE Project\\Euphonic\\tests_and_analysis\\test\\data\\force_constants\\CaHgO2\\mp-7041-20180417.yaml --asr=realspace": [
+    "CaHgO2 mp-7041-20180417.yaml --asr=realspace": [
         [
             [
                 0.0,
@@ -15187,7 +15187,7 @@
             ]
         ]
     ],
-    "C:\\Users\\mll13652\\Documents\\TCP Group\\PACE Project\\Euphonic\\tests_and_analysis\\test\\data\\force_constants\\LZO\\LZO_force_constants.json": [
+    "LZO LZO_force_constants.json": [
         [
             [
                 0.0,
@@ -19545,7 +19545,7 @@
             ]
         ]
     ],
-    "C:\\Users\\mll13652\\Documents\\TCP Group\\PACE Project\\Euphonic\\tests_and_analysis\\test\\data\\force_constants\\NaCl_cli_test\\force_constants.hdf5": [
+    "NaCl_cli_test force_constants.hdf5": [
         [
             [
                 0.0,
@@ -22475,7 +22475,7 @@
             ]
         ]
     ],
-    "C:\\Users\\mll13652\\Documents\\TCP Group\\PACE Project\\Euphonic\\tests_and_analysis\\test\\data\\qpoint_phonon_modes\\quartz\\quartz_bandstructure_qpoint_phonon_modes.json": [
+    "quartz quartz_bandstructure_qpoint_phonon_modes.json": [
         [
             [
                 0.0,
@@ -28039,7 +28039,7 @@
             ]
         ]
     ],
-    "C:\\Users\\mll13652\\Documents\\TCP Group\\PACE Project\\Euphonic\\tests_and_analysis\\test\\data\\qpoint_phonon_modes\\quartz\\quartz_bandstructure_qpoint_phonon_modes.json --btol=1000": [
+    "quartz quartz_bandstructure_qpoint_phonon_modes.json --btol=1000": [
         [
             [
                 0.0,
@@ -36087,7 +36087,7 @@
             ]
         ]
     ],
-    "C:\\Users\\mll13652\\Documents\\TCP Group\\PACE Project\\Euphonic\\tests_and_analysis\\test\\data\\qpoint_phonon_modes\\NaCl\\band\\band.yaml": [
+    "band band.yaml": [
         [
             [
                 0.0,
@@ -37481,7 +37481,7 @@
             ]
         ]
     ],
-    "C:\\Users\\mll13652\\Documents\\TCP Group\\PACE Project\\Euphonic\\tests_and_analysis\\test\\data\\qpoint_phonon_modes\\NaCl\\band\\band.hdf5": [
+    "band band.hdf5": [
         [
             [
                 0.0,

@@ -5,6 +5,18 @@ from typing import Dict, List, Union
 from ..utils import get_data_path
 
 
+def args_to_key(cl_args: str) -> str:
+    """
+    From CL tool arguments, return the key that should be used to store
+    its testing output
+    """
+    if os.path.isfile(cl_args[0]):
+        cl_args[0] = ' '.join([os.path.split(os.path.dirname(cl_args[0]))[1],
+                               os.path.split(cl_args[0])[1]])
+    key = ' '.join(cl_args)
+    return key
+
+
 def get_script_test_data_path() -> str:
     """
     Returns
