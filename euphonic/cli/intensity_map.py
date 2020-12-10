@@ -13,6 +13,9 @@ from .utils import (_bands_from_force_constants,
                     matplotlib_save_or_show)
 
 
+_spectrum_choices = ('dos', 'coherent')
+
+
 def main(params: List[str] = None) -> None:
     args = get_args(get_parser(), params)
 
@@ -31,8 +34,6 @@ def main(params: List[str] = None) -> None:
         split_args = {'btol': args.btol}
         x_tick_labels = get_qpoint_labels(modes.qpts,
                                           cell=modes.crystal.to_spglib_cell())
-    else:
-        raise TypeError("Input data must be phonon modes or force constants.")
     modes.frequencies_unit = args.energy_unit
     ebins, energy_unit = _get_energy_bins_and_units(
         args.energy_unit, modes, args.ebins, emin=args.e_min, emax=args.e_max)
@@ -44,10 +45,6 @@ def main(params: List[str] = None) -> None:
 
     elif args.weights.lower() == 'dos':
         spectrum = calculate_dos_map(modes, ebins)
-
-    else:
-        raise ValueError(f'Could not compute "{args.weights}" spectrum. Valid '
-                         'choices: ' + ', '.join(_spectrum_choices))
 
     if args.q_broadening or args.energy_broadening:
         spectrum = spectrum.broaden(
@@ -77,8 +74,6 @@ def main(params: List[str] = None) -> None:
                           y_label=y_label,
                           title=args.title)
     matplotlib_save_or_show(save_filename=args.save_to)
-
-_spectrum_choices = ('dos', 'coherent')
 
 
 def calculate_dos_map(modes: euphonic.QpointPhononModes,

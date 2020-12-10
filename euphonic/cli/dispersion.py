@@ -22,8 +22,6 @@ def main(params: List[str] = None):
         modes = data
         split_args = {'btol': args.btol}
         x_tick_labels = None
-    else:
-        raise TypeError("Input data must be phonon modes or force constants.")
     modes.frequencies_unit = args.energy_unit
 
     print("Mapping modes to 1D band-structure")

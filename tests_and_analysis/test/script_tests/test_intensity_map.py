@@ -3,7 +3,6 @@ import json
 from unittest.mock import patch
 
 import pytest
-import numpy as np
 import numpy.testing as npt
 # Required for mocking
 import matplotlib.pyplot
@@ -17,6 +16,9 @@ import euphonic.cli.intensity_map
 quartz_phonon_file = os.path.join(
     get_data_path(), 'qpoint_phonon_modes', 'quartz',
     'quartz_bandstructure_qpoint_phonon_modes.json')
+lzo_phonon_file = os.path.join(
+    get_data_path(), 'qpoint_phonon_modes', 'LZO',
+    'La2Zr2O7.phonon')
 graphite_fc_file = os.path.join(
     get_data_path(), 'force_constants', 'graphite', 'graphite.castep_bin')
 intensity_map_output_file = os.path.join(get_script_test_data_path(),
@@ -37,7 +39,8 @@ intensity_map_params = [
     [graphite_fc_file, '--asr'],
     [graphite_fc_file, '--asr=realspace'],
     [quartz_phonon_file],
-    [quartz_phonon_file, '--btol=1000']]
+    [quartz_phonon_file, '--btol=1000'],
+    [lzo_phonon_file]]
 
 
 @pytest.mark.integration
@@ -86,6 +89,21 @@ class TestRegression:
         output_file = str(tmpdir.join('test.png'))
         euphonic.cli.intensity_map.main(intensity_map_args + [output_file])
         assert os.path.exists(output_file)
+
+    @pytest.mark.parametrize('intensity_map_args', [
+        [os.path.join(get_data_path(), 'util', 'qgrid_444.txt')]])
+    def test_invalid_file_raises_value_error(self, intensity_map_args):
+        with pytest.raises(ValueError):
+            euphonic.cli.intensity_map.main(intensity_map_args)
+
+    @pytest.mark.parametrize('intensity_map_args', [
+        [quartz_phonon_file, '-w=incoherent']])
+    def test_invalid_weights_raises_causes_exit(self, intensity_map_args):
+        # Argparse should call sys.exit on invalid choices
+        with pytest.raises(SystemExit) as err:
+            euphonic.cli.intensity_map.main(intensity_map_args)
+        assert err.type == SystemExit
+        assert err.value.code == 2
 
 
 @patch('matplotlib.pyplot.show')

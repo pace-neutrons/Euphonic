@@ -91,6 +91,14 @@ class TestRegression:
         euphonic.cli.dispersion.main(dispersion_args + [output_file])
         assert os.path.exists(output_file)
 
+    @pytest.mark.parametrize('dispersion_args', [
+        [os.path.join(get_data_path(), 'crystal', 'crystal_LZO.json')],
+        [os.path.join(get_data_path(), 'force_constants', 'NaCl',
+                      'FORCE_CONSTANTS')]])
+    def test_invalid_file_raises_value_error(self, dispersion_args):
+        with pytest.raises(ValueError):
+            euphonic.cli.dispersion.main(dispersion_args)
+
 
 @patch('matplotlib.pyplot.show')
 @pytest.mark.skip(reason='Only run if you want to regenerate the test data')
