@@ -19,8 +19,6 @@ def main(params: List[str] = None):
     elif isinstance(data, euphonic.QpointPhononModes):
         print("Phonon band data was loaded.")
         modes = data
-    else:
-        raise TypeError("Input data must be phonon modes or force constants.")
     modes.frequencies_unit = args.energy_unit
     ebins, energy_unit = _get_energy_bins_and_units(
         args.energy_unit, modes, args.ebins, emin=args.e_min, emax=args.e_max)

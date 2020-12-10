@@ -71,6 +71,13 @@ class TestRegression:
         euphonic.cli.dos.main(dos_args + [output_file])
         assert os.path.exists(output_file)
 
+    @pytest.mark.parametrize('dos_args', [
+        [os.path.join(get_data_path(), 'structure_factor', 'quartz',
+                      'quartz_structure_factor.json')]])
+    def test_invalid_file_raises_value_error(self, dos_args):
+        with pytest.raises(ValueError):
+            euphonic.cli.dos.main(dos_args)
+
 
 @patch('matplotlib.pyplot.show')
 @pytest.mark.skip(reason='Only run if you want to regenerate the test data')
