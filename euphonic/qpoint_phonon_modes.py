@@ -1,4 +1,5 @@
 import math
+import warnings
 from typing import Dict, Optional, Union
 
 import numpy as np
@@ -395,7 +396,11 @@ class QpointPhononModes(object):
 
         freqs = self._frequencies
         dos_bins_unit = dos_bins.units
-        dos_bins = dos_bins.to('hartree').magnitude
+        # dos_bins commonly contains a 0 bin, and converting from 0 1/cm
+        # to 0 hartree causes a RuntimeWarning, so suppress it
+        with warnings.catch_warnings():
+            warnings.filterwarnings('ignore', category=RuntimeWarning)
+            dos_bins = dos_bins.to('hartree').magnitude
         weights = np.repeat(self.weights[:, np.newaxis],
                             3*self.crystal.n_atoms,
                             axis=1) / np.sum(self.weights)
