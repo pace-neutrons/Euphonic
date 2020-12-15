@@ -478,3 +478,10 @@ class TestQpointPhononModesCalculateDos:
         dos = qpt_ph_modes.calculate_dos(ebins)
         expected_dos = get_expected_spectrum1d(expected_dos_json)
         check_spectrum1d(dos, expected_dos)
+
+    def test_calculate_dos_with_0_inv_cm_bin_doesnt_raise_runtime_warn(self):
+        qpt_ph_modes = get_qpt_ph_modes('quartz')
+        ebins = np.arange(0, 1300, 4)*ureg('1/cm')
+        with pytest.warns(None) as warn_record:
+            dos = qpt_ph_modes.calculate_dos(ebins)
+        assert len(warn_record) == 0

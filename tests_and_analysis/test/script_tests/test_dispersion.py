@@ -73,11 +73,12 @@ class TestRegression:
 
         with open(disp_output_file, 'r') as f:
             expected_lines = json.load(f)[args_to_key(dispersion_args)]
-        atol = sys.float_info.epsilon
         # Increase tolerance if asr present - can give slightly
         # different results with different libs
         if any(['--asr' in arg for arg in dispersion_args]):
             atol = 1.5e-6
+        else:
+            atol = sys.float_info.epsilon
         for index, line in enumerate(lines):
             npt.assert_allclose(
                 line.get_xydata().T, np.array(expected_lines[index]),
