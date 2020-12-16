@@ -11,7 +11,7 @@ import matplotlib.pyplot
 
 from tests_and_analysis.test.utils import get_data_path
 from tests_and_analysis.test.script_tests.utils import (
-    get_script_test_data_path, get_current_plot_lines_xydata,
+    get_script_test_data_path, get_current_plot_line_data,
     args_to_key)
 import euphonic.cli.dos
 
@@ -50,18 +50,21 @@ class TestRegression:
         matplotlib.pyplot.close('all')
 
     @pytest.mark.parametrize('dos_args', dos_params)
-    def test_plots_produce_expected_xydata(self, inject_mocks, dos_args):
+    def test_plots_contain_expected_data(self, inject_mocks, dos_args):
         euphonic.cli.dos.main(dos_args)
 
-        lines = matplotlib.pyplot.gcf().axes[0].lines
+        line_data = get_current_plot_line_data()
 
         with open(dos_output_file, 'r') as f:
-            expected_lines = json.load(f)[args_to_key(dos_args)]
+            expected_line_data = json.load(f)[args_to_key(dos_args)]
+        for key, value in line_data.items():
+            if isinstance(value, list) and isinstance(value[0], float):
+                npt.assert_allclose(
+                    value, expected_line_data[key],
+                    atol=5*sys.float_info.epsilon)
+            else:
+                assert value == expected_line_data[key]
 
-        for index, line in enumerate(lines):
-            npt.assert_allclose(line.get_xydata().T,
-                                np.array(expected_lines[index]),
-                                atol=5*sys.float_info.epsilon)
 
     @pytest.mark.parametrize('dos_args', [
         [nah_phonon_file, '--save-to'],
@@ -86,7 +89,8 @@ def test_regenerate_dos_data(_):
     for dos_param in dos_params:
         # Generate current figure for us to retrieve with gcf
         euphonic.cli.dos.main(dos_param)
-        # Retrieve with gcf and record data
-        json_data[args_to_key(dos_param)] = get_current_plot_lines_xydata()
+        # Retrieve with gcf and write to file
+        json_data[args_to_key(dos_param)
+                  ] = get_current_plot_line_data()
     with open(dos_output_file, 'w+') as json_file:
         json.dump(json_data, json_file, indent=4)

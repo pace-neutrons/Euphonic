@@ -11,7 +11,7 @@ import matplotlib.pyplot
 
 from tests_and_analysis.test.utils import get_data_path
 from tests_and_analysis.test.script_tests.utils import (
-    get_script_test_data_path, get_current_plot_lines_xydata, args_to_key)
+    get_script_test_data_path, get_current_plot_line_data, args_to_key)
 import euphonic.cli.dispersion
 
 
@@ -65,24 +65,27 @@ class TestRegression:
         matplotlib.pyplot.close('all')
 
     @pytest.mark.parametrize('dispersion_args', disp_params)
-    def test_plots_produce_expected_xydata(
+    def test_plots_contain_expected_data(
             self, inject_mocks, dispersion_args):
         euphonic.cli.dispersion.main(dispersion_args)
 
-        lines = matplotlib.pyplot.gcf().axes[0].lines
+        line_data = get_current_plot_line_data()
 
         with open(disp_output_file, 'r') as f:
-            expected_lines = json.load(f)[args_to_key(dispersion_args)]
+            expected_line_data = json.load(f)[args_to_key(dispersion_args)]
         # Increase tolerance if asr present - can give slightly
         # different results with different libs
         if any(['--asr' in arg for arg in dispersion_args]):
             atol = 1.5e-6
         else:
             atol = sys.float_info.epsilon
-        for index, line in enumerate(lines):
-            npt.assert_allclose(
-                line.get_xydata().T, np.array(expected_lines[index]),
-                atol=atol)
+        for key, value in line_data.items():
+            if isinstance(value, list) and isinstance(value[0], float):
+                npt.assert_allclose(
+                    value, expected_line_data[key],
+                    atol=atol)
+            else:
+                assert value == expected_line_data[key]
 
     @pytest.mark.parametrize('dispersion_args', [
         [quartz_phonon_file, '--save-to'],
@@ -108,7 +111,8 @@ def test_regenerate_disp_data(_):
     for disp_param in disp_params:
         # Generate current figure for us to retrieve with gcf
         euphonic.cli.dispersion.main(disp_param)
-        # Retrieve with gcf and record data
-        json_data[args_to_key(disp_param)] = get_current_plot_lines_xydata()
+        # Retrieve with gcf and write to file
+        json_data[args_to_key(disp_param)
+                  ] = get_current_plot_line_data()
     with open(disp_output_file, 'w+') as json_file:
         json.dump(json_data, json_file, indent=4)
