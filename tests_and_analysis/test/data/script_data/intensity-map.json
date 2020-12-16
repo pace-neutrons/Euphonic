@@ -1,5 +1,28 @@
 {
     "graphite graphite.castep_bin": {
+        "title": "",
+        "x_label": "",
+        "y_label": "Energy / meV",
+        "x_ticklabels": [
+            "$\\Gamma$",
+            "M",
+            "K",
+            "$\\Gamma$",
+            "A",
+            "L",
+            "H",
+            "A",
+            "L",
+            "M",
+            "H",
+            "K",
+            "0.0",
+            "0.2",
+            "0.4",
+            "0.6",
+            "0.8",
+            "1.0"
+        ],
         "cmap": "viridis",
         "extent": [
             0.0,
@@ -549,6 +572,29 @@
         ]
     },
     "graphite graphite.castep_bin --v-min=0 --v-max=1e-10": {
+        "title": "",
+        "x_label": "",
+        "y_label": "Energy / meV",
+        "x_ticklabels": [
+            "$\\Gamma$",
+            "M",
+            "K",
+            "$\\Gamma$",
+            "A",
+            "L",
+            "H",
+            "A",
+            "L",
+            "M",
+            "H",
+            "K",
+            "0.0",
+            "0.2",
+            "0.4",
+            "0.6",
+            "0.8",
+            "1.0"
+        ],
         "cmap": "viridis",
         "extent": [
             0.0,
@@ -1098,6 +1144,29 @@
         ]
     },
     "graphite graphite.castep_bin --energy-unit=meV": {
+        "title": "",
+        "x_label": "",
+        "y_label": "Energy / meV",
+        "x_ticklabels": [
+            "$\\Gamma$",
+            "M",
+            "K",
+            "$\\Gamma$",
+            "A",
+            "L",
+            "H",
+            "A",
+            "L",
+            "M",
+            "H",
+            "K",
+            "0.0",
+            "0.2",
+            "0.4",
+            "0.6",
+            "0.8",
+            "1.0"
+        ],
         "cmap": "viridis",
         "extent": [
             0.0,
@@ -1647,6 +1716,29 @@
         ]
     },
     "graphite graphite.castep_bin --weights=coherent --cmap=bone": {
+        "title": "",
+        "x_label": "",
+        "y_label": "Energy / meV",
+        "x_ticklabels": [
+            "$\\Gamma$",
+            "M",
+            "K",
+            "$\\Gamma$",
+            "A",
+            "L",
+            "H",
+            "A",
+            "L",
+            "M",
+            "H",
+            "K",
+            "0.0",
+            "0.2",
+            "0.4",
+            "0.6",
+            "0.8",
+            "1.0"
+        ],
         "cmap": "bone",
         "extent": [
             0.0,
@@ -2195,6 +2287,29 @@
         ]
     },
     "graphite graphite.castep_bin -w dos --y-label=DOS --title=DOS TITLE": {
+        "title": "DOS TITLE",
+        "x_label": "",
+        "y_label": "DOS",
+        "x_ticklabels": [
+            "$\\Gamma$",
+            "M",
+            "K",
+            "$\\Gamma$",
+            "A",
+            "L",
+            "H",
+            "A",
+            "L",
+            "M",
+            "H",
+            "K",
+            "0.0",
+            "0.2",
+            "0.4",
+            "0.6",
+            "0.8",
+            "1.0"
+        ],
         "cmap": "viridis",
         "extent": [
             0.0,
@@ -2744,6 +2859,29 @@
         ]
     },
     "graphite graphite.castep_bin --e-min=50 -u=cm^-1 --x-label=wavenumber": {
+        "title": "",
+        "x_label": "wavenumber",
+        "y_label": "Energy / 1/cm",
+        "x_ticklabels": [
+            "$\\Gamma$",
+            "M",
+            "K",
+            "$\\Gamma$",
+            "A",
+            "L",
+            "H",
+            "A",
+            "L",
+            "M",
+            "H",
+            "K",
+            "0.0",
+            "0.2",
+            "0.4",
+            "0.6",
+            "0.8",
+            "1.0"
+        ],
         "cmap": "viridis",
         "extent": [
             0.0,
@@ -3293,6 +3431,29 @@
         ]
     },
     "graphite graphite.castep_bin --e-min=-100 --e-max=1000 --ebins=100 --energy-unit=cm^-1": {
+        "title": "",
+        "x_label": "",
+        "y_label": "Energy / 1/cm",
+        "x_ticklabels": [
+            "$\\Gamma$",
+            "M",
+            "K",
+            "$\\Gamma$",
+            "A",
+            "L",
+            "H",
+            "A",
+            "L",
+            "M",
+            "H",
+            "K",
+            "0.0",
+            "0.2",
+            "0.4",
+            "0.6",
+            "0.8",
+            "1.0"
+        ],
         "cmap": "viridis",
         "extent": [
             0.0,
@@ -3742,6 +3903,29 @@
         ]
     },
     "graphite graphite.castep_bin --energy-broadening=2e-3 -u=eV": {
+        "title": "",
+        "x_label": "",
+        "y_label": "Energy / eV",
+        "x_ticklabels": [
+            "$\\Gamma$",
+            "M",
+            "K",
+            "$\\Gamma$",
+            "A",
+            "L",
+            "H",
+            "A",
+            "L",
+            "M",
+            "H",
+            "K",
+            "0.0",
+            "0.2",
+            "0.4",
+            "0.6",
+            "0.8",
+            "1.0"
+        ],
         "cmap": "viridis",
         "extent": [
             0.0,
@@ -4291,6 +4475,29 @@
         ]
     },
     "graphite graphite.castep_bin --q-distance=0.05 --length-unit=bohr --q-broadening=0.1": {
+        "title": "",
+        "x_label": "",
+        "y_label": "Energy / meV",
+        "x_ticklabels": [
+            "$\\Gamma$",
+            "M",
+            "K",
+            "$\\Gamma$",
+            "A",
+            "L",
+            "H",
+            "A",
+            "L",
+            "M",
+            "H",
+            "K",
+            "0.0",
+            "0.2",
+            "0.4",
+            "0.6",
+            "0.8",
+            "1.0"
+        ],
         "cmap": "viridis",
         "extent": [
             0.0,
@@ -4586,6 +4793,29 @@
         ]
     },
     "graphite graphite.castep_bin --qb=0.01 --eb=1.5 --shape=lorentz": {
+        "title": "",
+        "x_label": "",
+        "y_label": "Energy / meV",
+        "x_ticklabels": [
+            "$\\Gamma$",
+            "M",
+            "K",
+            "$\\Gamma$",
+            "A",
+            "L",
+            "H",
+            "A",
+            "L",
+            "M",
+            "H",
+            "K",
+            "0.0",
+            "0.2",
+            "0.4",
+            "0.6",
+            "0.8",
+            "1.0"
+        ],
         "cmap": "viridis",
         "extent": [
             0.0,
@@ -5135,6 +5365,29 @@
         ]
     },
     "graphite graphite.castep_bin --asr": {
+        "title": "",
+        "x_label": "",
+        "y_label": "Energy / meV",
+        "x_ticklabels": [
+            "$\\Gamma$",
+            "M",
+            "K",
+            "$\\Gamma$",
+            "A",
+            "L",
+            "H",
+            "A",
+            "L",
+            "M",
+            "H",
+            "K",
+            "0.0",
+            "0.2",
+            "0.4",
+            "0.6",
+            "0.8",
+            "1.0"
+        ],
         "cmap": "viridis",
         "extent": [
             0.0,
@@ -5684,6 +5937,29 @@
         ]
     },
     "graphite graphite.castep_bin --asr=realspace": {
+        "title": "",
+        "x_label": "",
+        "y_label": "Energy / meV",
+        "x_ticklabels": [
+            "$\\Gamma$",
+            "M",
+            "K",
+            "$\\Gamma$",
+            "A",
+            "L",
+            "H",
+            "A",
+            "L",
+            "M",
+            "H",
+            "K",
+            "0.0",
+            "0.2",
+            "0.4",
+            "0.6",
+            "0.8",
+            "1.0"
+        ],
         "cmap": "viridis",
         "extent": [
             0.0,
@@ -6233,6 +6509,26 @@
         ]
     },
     "quartz quartz_bandstructure_qpoint_phonon_modes.json": {
+        "title": "",
+        "x_label": "",
+        "y_label": "Energy / meV",
+        "x_ticklabels": [
+            "$\\Gamma$",
+            "A",
+            "L",
+            "H",
+            "A",
+            "L",
+            "M",
+            "H",
+            "K",
+            "0.0",
+            "0.2",
+            "0.4",
+            "0.6",
+            "0.8",
+            "1.0"
+        ],
         "cmap": "viridis",
         "extent": [
             0.0,
@@ -6550,6 +6846,26 @@
         ]
     },
     "quartz quartz_bandstructure_qpoint_phonon_modes.json --btol=1000": {
+        "title": "",
+        "x_label": "",
+        "y_label": "Energy / meV",
+        "x_ticklabels": [
+            "$\\Gamma$",
+            "A",
+            "L",
+            "H",
+            "A",
+            "L",
+            "M",
+            "H",
+            "K",
+            "0.0",
+            "0.2",
+            "0.4",
+            "0.6",
+            "0.8",
+            "1.0"
+        ],
         "cmap": "viridis",
         "extent": [
             0.0,
@@ -6913,6 +7229,26 @@
         ]
     },
     "LZO La2Zr2O7.phonon": {
+        "title": "",
+        "x_label": "",
+        "y_label": "Energy / meV",
+        "x_ticklabels": [
+            "$\\Gamma$",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "0.0",
+            "0.2",
+            "0.4",
+            "0.6",
+            "0.8",
+            "1.0"
+        ],
         "cmap": "viridis",
         "extent": [
             0.0,

@@ -30,18 +30,26 @@ def get_script_test_data_path() -> str:
     return folder
 
 
-def get_current_plot_lines_xydata() -> List[List[List[float]]]:
-    """
-    Get the current matplotlib plot with gcf() and return the xydata of
-    the lines of the plot
+def get_current_plot_line_data() -> Dict[str, Union[str,
+                                                    List[str],
+                                                    List[List[List[float]]]]]:
+    fig = matplotlib.pyplot.gcf()
+    data = get_fig_label_data(fig)
+    data['xy_data'] = [line.get_xydata().T.tolist()
+                       for line in fig.axes[0].lines]
+    return data
 
-    Returns
-    -------
-    List[List[List[float]]]
-        The list of lines xy data from the current matplotlib plot
-    """
-    return [line.get_xydata().T.tolist()
-            for line in matplotlib.pyplot.gcf().axes[0].lines]
+
+def get_fig_label_data(fig) -> Dict[str, Union[str, List[str]]]:
+    label_data = {}
+    label_data['title'] = fig._suptitle.get_text()
+    # Get axis label no matter which axis it's on
+    label_data['x_label'] = ''.join([ax.get_xlabel() for ax in fig.axes])
+    label_data['y_label'] = ''.join([ax.get_ylabel() for ax in fig.axes])
+    label_data['x_ticklabels'] = [lab.get_text()
+                                  for ax in fig.axes
+                                  for lab in ax.get_xticklabels()]
+    return label_data
 
 
 def get_current_plot_offsets() -> List[List[float]]:
@@ -69,16 +77,16 @@ def get_current_plot_image_data() -> Dict[str,
             break
     else:
         raise Exception("Could not find axes with a single image")
-
     im = ax.get_images()[0]
-
     # Convert negative zero to positive zero
-    data = im.get_array()
-    data_slice_1 = data[:, (data.shape[1] // 2)].flatten()
-    data_slice_2 = data[data.shape[0] // 2, :].flatten()
+    im_data = im.get_array()
+    data_slice_1 = im_data[:, (im_data.shape[1] // 2)].flatten()
+    data_slice_2 = im_data[im_data.shape[0] // 2, :].flatten()
 
-    return {'cmap': im.cmap.name,
-            'extent': [float(x) for x in im.get_extent()],
-            'size': [int(x) for x in im.get_size()],
-            'data_1': list(map(float, data_slice_1)),
-            'data_2': list(map(float, data_slice_2))}
+    data = get_fig_label_data(fig)
+    data['cmap'] = im.cmap.name
+    data['extent'] = [float(x) for x in im.get_extent()]
+    data['size'] = [int(x) for x in im.get_size()]
+    data['data_1'] = list(map(float, data_slice_1))
+    data['data_2'] = list(map(float, data_slice_2))
+    return data
