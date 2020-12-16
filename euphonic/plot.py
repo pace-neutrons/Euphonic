@@ -170,17 +170,18 @@ def plot_1d(spectra: Union[Spectrum1D,
     if not isinstance(subplots, np.ndarray):  # if only one subplot
         subplots = np.array([subplots])
 
-    subplots[0].set_ylabel(y_label)
-    subplots[0].set_xlabel(x_label)
-
     for i, (spectrum, ax) in enumerate(zip(spectra, subplots)):
         _plot_1d_core(spectrum, ax, **line_kwargs)
+        ax.set_ylim(bottom=y_min, top=y_max)
 
         if i == 0 and labels:
             ax.legend(labels)
 
-    #    if y_min is not None:
-    ax.set_ylim(bottom=y_min, top=y_max)
+    # Add an invisible large axis for common labels
+    ax = fig.add_subplot(111, frameon=False)
+    ax.tick_params(labelcolor="none", bottom=False, left=False)
+    ax.set_xlabel(x_label)
+    ax.set_ylabel(y_label)
 
     fig.suptitle(title)
     return fig
