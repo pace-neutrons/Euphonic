@@ -80,10 +80,13 @@ class TestRegression:
         else:
             atol = sys.float_info.epsilon
         for key, value in line_data.items():
-            if isinstance(value, list) and isinstance(value[0], float):
-                npt.assert_allclose(
-                    value, expected_line_data[key],
-                    atol=atol)
+            if key == 'xy_data':
+                # numpy can only auto convert 2D lists - xy_data has
+                # dimensions (n_lines, 2, n_points) so check in a loop
+                for idx, line in enumerate(value):
+                    npt.assert_allclose(
+                        line, expected_line_data[key][idx],
+                        atol=atol)
             else:
                 assert value == expected_line_data[key]
 

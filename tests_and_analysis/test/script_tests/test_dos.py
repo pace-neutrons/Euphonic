@@ -58,7 +58,7 @@ class TestRegression:
         with open(dos_output_file, 'r') as f:
             expected_line_data = json.load(f)[args_to_key(dos_args)]
         for key, value in line_data.items():
-            if isinstance(value, list) and isinstance(value[0], float):
+            if key == 'xy_data':
                 npt.assert_allclose(
                     value, expected_line_data[key],
                     atol=5*sys.float_info.epsilon)
