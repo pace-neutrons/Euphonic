@@ -33,9 +33,10 @@ class TestCalculateStructureFactorFromForceConstants:
     @pytest.fixture(params=[0, 1, 2])
     def get_quartz_qpt_ph_modes(self, request):
         fc = ForceConstants.from_castep(
-                 os.path.join(get_fc_dir('quartz'), 'quartz.castep_bin'))
+            os.path.join(get_fc_dir('quartz'), 'quartz.castep_bin'))
         kwargs = self.get_multithreaded_kwargs(request.param)
-        return fc.calculate_qpoint_phonon_modes(get_test_qpts(), **kwargs)
+        return fc.calculate_qpoint_phonon_modes(
+            get_test_qpts('split'), **kwargs)
 
     @pytest.fixture(params=[0, 1, 2])
     def get_si2_qpt_ph_modes(self, request):
@@ -81,7 +82,7 @@ class TestCalculateStructureFactorFromForceConstants:
         expected_sf = sf.from_json_file(sf_file)
         check_structure_factor(sf, expected_sf, sf_atol=8e-14, sf_rtol=3e-4,
                                freq_atol=1e-4, freq_rtol=2e-5,
-                               freq_gamma_atol=0.5)
+                               freq_gamma_atol=0.5, sf_gamma_atol=1e-7)
 
 
 @pytest.mark.unit

@@ -15,7 +15,8 @@ from tests_and_analysis.test.euphonic_test.test_debye_waller import (
 from tests_and_analysis.test.euphonic_test.test_spectrum1d import (
     get_expected_spectrum1d, check_spectrum1d)
 from tests_and_analysis.test.utils import (
-    get_data_path, check_mode_values_at_qpts, check_unit_conversion)
+    get_data_path, check_frequencies_at_qpts, check_unit_conversion,
+    check_json_metadata)
 
 
 class ExpectedQpointPhononModes:
@@ -119,7 +120,7 @@ def check_qpt_ph_modes(
     assert (qpoint_phonon_modes.frequencies.units
             == expected_qpoint_phonon_modes.frequencies.units)
     # Check frequencies
-    check_mode_values_at_qpts(
+    check_frequencies_at_qpts(
         qpoint_phonon_modes.qpts,
         qpoint_phonon_modes.frequencies.magnitude,
         expected_qpoint_phonon_modes.frequencies.magnitude,
@@ -361,18 +362,16 @@ class TestQpointPhononModesCreation:
 @pytest.mark.unit
 class TestQpointPhononModesSerialisation:
 
-    @pytest.fixture(params=['quartz', 'Si2-sc-skew', 'NaCl'])
-    def serialise_to_json_file(self, request, tmpdir):
-        qpt_ph_modes = get_qpt_ph_modes(request.param)
-        # Write to file then read back to test
+    @pytest.mark.parametrize('qpt_ph_modes', [
+        get_qpt_ph_modes('quartz'),
+        get_qpt_ph_modes('Si2-sc-skew'),
+        get_qpt_ph_modes('NaCl')])
+    def test_serialise_to_json_file(self, qpt_ph_modes, tmpdir):
         output_file = str(tmpdir.join('tmp.test'))
         qpt_ph_modes.to_json_file(output_file)
+        check_json_metadata(output_file, 'QpointPhononModes')
         deserialised_qpt_ph_modes = QpointPhononModes.from_json_file(
             output_file)
-        return qpt_ph_modes, deserialised_qpt_ph_modes
-
-    def test_serialise_to_file(self, serialise_to_json_file):
-        qpt_ph_modes, deserialised_qpt_ph_modes = serialise_to_json_file
         check_qpt_ph_modes(qpt_ph_modes, deserialised_qpt_ph_modes,
                            check_evecs=True)
 

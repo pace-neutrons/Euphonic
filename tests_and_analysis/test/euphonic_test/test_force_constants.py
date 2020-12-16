@@ -9,7 +9,8 @@ from euphonic import ForceConstants, Crystal, ureg
 from euphonic.readers.phonopy import ImportPhonopyReaderError
 from tests_and_analysis.test.euphonic_test.test_crystal import (
     get_crystal, ExpectedCrystal, check_crystal)
-from tests_and_analysis.test.utils import get_data_path, check_unit_conversion
+from tests_and_analysis.test.utils import (
+    get_data_path, check_unit_conversion, check_json_metadata)
 
 
 class ExpectedForceConstants:
@@ -358,17 +359,15 @@ class TestForceConstantsCreation:
 @pytest.mark.unit
 class TestForceConstantsSerialisation:
 
-    @pytest.fixture(params=[get_fc('quartz'), get_fc('LZO'), get_fc('NaCl')])
-    def serialise_to_json_file(self, request, tmpdir):
-        fc = request.param
-        # Write to file then read back to test
+    @pytest.mark.parametrize('fc', [
+        get_fc('quartz'),
+        get_fc('LZO'),
+        get_fc('NaCl')])
+    def test_serialise_to_json_file(self, fc, tmpdir):
         output_file = str(tmpdir.join('tmp.test'))
         fc.to_json_file(output_file)
+        check_json_metadata(output_file, 'ForceConstants')
         deserialised_fc = ForceConstants.from_json_file(output_file)
-        return fc, deserialised_fc
-
-    def test_serialise_to_file(self, serialise_to_json_file):
-        fc, deserialised_fc = serialise_to_json_file
         check_force_constants(fc, deserialised_fc)
 
     @pytest.fixture(params=[

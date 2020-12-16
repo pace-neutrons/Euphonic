@@ -14,7 +14,8 @@ from tests_and_analysis.test.euphonic_test.test_spectrum2d import (
 from tests_and_analysis.test.euphonic_test.test_spectrum1d import (
     get_expected_spectrum1d, check_spectrum1d)
 from tests_and_analysis.test.utils import (
-    get_data_path, check_mode_values_at_qpts, check_unit_conversion)
+    get_data_path, check_frequencies_at_qpts, check_structure_factors_at_qpts,
+    check_unit_conversion, check_json_metadata)
 
 
 class ExpectedStructureFactor:
@@ -161,7 +162,7 @@ def check_structure_factor(
 
     assert sf.frequencies.units == expected_sf.frequencies.units
     # Check frequencies
-    check_mode_values_at_qpts(
+    check_frequencies_at_qpts(
         sf.qpts,
         sf.frequencies.magnitude,
         expected_sf.frequencies.magnitude,
@@ -181,14 +182,13 @@ def check_structure_factor(
     else:
         sf_sum = sf.structure_factors.magnitude
         expected_sf_sum = expected_sf.structure_factors.magnitude
-    check_mode_values_at_qpts(
+    check_structure_factors_at_qpts(
         sf.qpts,
         sf_sum,
         expected_sf_sum,
         atol=sf_atol,
         rtol=sf_rtol,
-        gamma_atol=sf_gamma_atol,
-        gamma_operator=np.greater)
+        gamma_atol=sf_gamma_atol)
 
 
 @pytest.mark.unit
@@ -289,21 +289,15 @@ class TestStructureFactorCreation:
 @pytest.mark.unit
 class TestStructureFactorSerialisation:
 
-    @pytest.fixture(params=[
+    @pytest.mark.parametrize('sf', [
         get_sf('quartz', 'quartz_0K_structure_factor.json'),
         get_sf('CaHgO2', 'CaHgO2_300K_structure_factor.json')])
-    def serialise_to_json_file(self, request, tmpdir):
-        sf = request.param
-        # Serialise
+    def test_serialise_to_json_file(self, sf, tmpdir):
         output_file = str(tmpdir.join('tmp.test'))
         sf.to_json_file(output_file)
-        # Deserialise
+        check_json_metadata(output_file, 'StructureFactor')
         deserialised_sf = StructureFactor.from_json_file(output_file)
-        return sf, deserialised_sf
-
-    def test_serialise_to_file(self, serialise_to_json_file):
-        sf, deserialised_sf = serialise_to_json_file
-        check_structure_factor(sf, deserialised_sf, sum_sf=False)
+        check_structure_factor(sf, deserialised_sf)
 
     @pytest.fixture(params=[
         ('quartz', 'quartz_0K_structure_factor.json'),

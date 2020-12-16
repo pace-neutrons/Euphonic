@@ -7,7 +7,8 @@ import numpy.testing as npt
 
 from euphonic import ureg
 from euphonic.spectra import Spectrum2D
-from tests_and_analysis.test.utils import get_data_path, check_unit_conversion
+from tests_and_analysis.test.utils import (
+    get_data_path, check_unit_conversion, check_json_metadata)
 
 class ExpectedSpectrum2D:
     def __init__(self, spectrum2d_json_file: str):
@@ -198,22 +199,16 @@ class TestSpectrum2DCreation:
 @pytest.mark.unit
 class TestSpectrum2DSerialisation:
 
-    @pytest.fixture(params=[
+    @pytest.mark.parametrize('spec2d', [
         get_spectrum2d('quartz_bandstructure_sqw.json'),
         get_spectrum2d('example_spectrum2d.json'),
         get_spectrum2d('example_xbin_edges_spectrum2d.json'),
         get_spectrum2d('example_xybin_edges_spectrum2d.json')])
-    def serialise_to_json_file(self, request, tmpdir):
-        spec2d = request.param
-        # Serialise
+    def test_serialise_to_json_file(self, spec2d, tmpdir):
         output_file = str(tmpdir.join('tmp.test'))
         spec2d.to_json_file(output_file)
-        # Deserialise
+        check_json_metadata(output_file, 'Spectrum2D')
         deserialised_spec2d = Spectrum2D.from_json_file(output_file)
-        return spec2d, deserialised_spec2d
-
-    def test_serialise_to_file(self, serialise_to_json_file):
-        spec2d, deserialised_spec2d = serialise_to_json_file
         check_spectrum2d(spec2d, deserialised_spec2d)
 
     @pytest.fixture(params=[
@@ -284,7 +279,15 @@ class TestSpectrum2DMethods:
             (({'x_width': 0.1*ureg('1/angstrom'), 'y_width': 2*ureg('meV'),
                'shape': 'lorentz'}),
              'quartz_bandstructure_sqw.json',
-             'quartz_bandstructure_xybroaden_lorentz_sqw.json')])
+             'quartz_bandstructure_xybroaden_lorentz_sqw.json'),
+            (({'x_width': 0.2*ureg('1/angstrom'), 'y_width': 1.5*ureg('meV'),
+               'shape': 'gauss'}),
+             'lzo_57L_bragg_sqw.json',
+             'lzo_57L_1.5meV_0.1ang_gauss_sqw.json'),
+            (({'x_width': 0.2*ureg('1/angstrom'), 'y_width': 1.5*ureg('meV'),
+               'shape': 'lorentz'}),
+             'lzo_57L_bragg_sqw.json',
+             'lzo_57L_1.5meV_0.1ang_lorentz_sqw.json')])
     def test_broaden(self, args, spectrum2d_file, broadened_spectrum2d_file):
         spec2d = get_spectrum2d(spectrum2d_file)
         expected_broadened_spec2d = get_spectrum2d(broadened_spectrum2d_file)

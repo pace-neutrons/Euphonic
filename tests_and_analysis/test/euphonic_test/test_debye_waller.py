@@ -9,7 +9,8 @@ import pytest
 from euphonic import ureg, Crystal, DebyeWaller
 from tests_and_analysis.test.euphonic_test.test_crystal import (
     ExpectedCrystal, get_crystal, check_crystal)
-from tests_and_analysis.test.utils import get_data_path, check_unit_conversion
+from tests_and_analysis.test.utils import (
+    get_data_path, check_unit_conversion, check_json_metadata)
 
 
 class ExpectedDebyeWaller:
@@ -169,21 +170,15 @@ class TestDebyeWallerCreation:
 @pytest.mark.unit
 class TestDebyeWallerSerialisation:
 
-    @pytest.fixture(params=[
+    @pytest.mark.parametrize('dw', [
         get_dw('quartz', 'quartz_666_0K_debye_waller.json'),
         get_dw('Si2-sc-skew', 'Si2-sc-skew_666_300K_debye_waller.json'),
         get_dw('CaHgO2', 'CaHgO2_666_300K_debye_waller.json')])
-    def serialise_to_json_file(self, request, tmpdir):
-        dw = request.param
-        # Serialise
+    def test_serialise_to_json_file(self, dw, tmpdir):
         output_file = str(tmpdir.join('tmp.test'))
         dw.to_json_file(output_file)
-        # Deserialise
+        check_json_metadata(output_file, 'DebyeWaller')
         deserialised_dw = DebyeWaller.from_json_file(output_file)
-        return dw, deserialised_dw
-
-    def test_serialise_to_file(self, serialise_to_json_file):
-        dw, deserialised_dw = serialise_to_json_file
         check_debye_waller(dw, deserialised_dw)
 
     @pytest.fixture(params=[

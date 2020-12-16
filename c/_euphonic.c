@@ -219,8 +219,8 @@ static PyObject *calculate_phonons(PyObject *self, PyObject *args) {
                         break;
                     }
                 }
-                calculate_gamma_correction((q_dirs + 3*qpos), n_atoms, cell_vec, born,
-                    dielectric, corr);
+                calculate_gamma_correction((q_dirs + 3*qpos), n_atoms,
+                    cell_vec, recip_vec, born, dielectric, corr);
                 add_arrays(dmat_elems, corr, dmat);
             }
 
