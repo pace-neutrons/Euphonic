@@ -338,7 +338,7 @@ def _get_cli_parser(qe_band_plot=False, n_ebins=False) -> ArgumentParser:
     parser.add_argument(
         '-s', '--save-to', dest='save_to', default=None,
         help='Save resulting plot to a file with this name')
-    parser.add_argument('--title', type=str, default=None, help='Plot title')
+    parser.add_argument('--title', type=str, default='', help='Plot title')
     parser.add_argument('--x-label', type=str, default=None,
                         dest='x_label', help='Plot x-axis label')
     parser.add_argument('--y-label', type=str, default=None,

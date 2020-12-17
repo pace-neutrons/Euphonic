@@ -59,6 +59,10 @@ def main(params: List[str] = None) -> None:
         y_label = f"Energy / {spectrum.y_data.units:~P}"
     else:
         y_label = args.y_label
+    if args.x_label is None:
+        x_label = ""
+    else:
+        x_label = args.x_label
 
     if x_tick_labels:
         spectrum.x_tick_labels = x_tick_labels
@@ -70,7 +74,7 @@ def main(params: List[str] = None) -> None:
     euphonic.plot.plot_2d(spectra,
                           cmap=args.cmap,
                           vmin=args.v_min, vmax=args.v_max,
-                          x_label=args.x_label,
+                          x_label=x_label,
                           y_label=y_label,
                           title=args.title)
     matplotlib_save_or_show(save_filename=args.save_to)
