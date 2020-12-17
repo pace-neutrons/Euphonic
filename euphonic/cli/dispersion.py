@@ -34,6 +34,10 @@ def main(params: List[str] = None):
         y_label = f"Energy / {spectrum.y_data.units:~P}"
     else:
         y_label = args.y_label
+    if args.x_label is None:
+        x_label = ""
+    else:
+        x_label = args.x_label
 
     if x_tick_labels:
         spectrum.x_tick_labels = x_tick_labels
@@ -42,7 +46,7 @@ def main(params: List[str] = None):
 
     _ = plot_1d(spectra,
                 title=args.title,
-                x_label=args.x_label,
+                x_label=x_label,
                 y_label=y_label,
                 y_min=args.e_min, y_max=args.e_max,
                 lw=1.0)

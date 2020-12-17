@@ -31,7 +31,12 @@ def main(params: List[str] = None):
         x_label = f"Energy / {dos.x_data.units:~P}"
     else:
         x_label = args.x_label
-    fig = plot_1d(dos, title=args.title, x_label=x_label, y_label=args.y_label,
+    if args.y_label is None:
+        y_label = ""
+    else:
+        y_label = args.y_label
+
+    fig = plot_1d(dos, title=args.title, x_label=x_label, y_label=y_label,
                   y_min=0, lw=1.0)
     matplotlib_save_or_show(save_filename=args.save_to)
 
