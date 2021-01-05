@@ -66,7 +66,8 @@ def run_setup(build_c=True):
                 'euphonic.readers',
                 'euphonic.data']
 
-    package_data = {'euphonic' : ['data/*.json']}
+    package_data = {'euphonic' : ['data/*.json', 'data/constants_en.txt',
+                                  'data/default_en.txt']}
 
     cmdclass = versioneer.get_cmdclass()
     cmdclass['install'] = InstallCommand

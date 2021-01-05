@@ -5,7 +5,8 @@ import numpy as np
 import numpy.testing as npt
 # Required for mocking
 import matplotlib.pyplot
-from .utils import (get_sphere_sampling_params,
+from tests_and_analysis.test.script_tests.utils import (
+                    get_sphere_sampling_params,
                     get_sphere_sampling_data_file,
                     get_current_plot_offsets)
 import euphonic.cli.show_sampling

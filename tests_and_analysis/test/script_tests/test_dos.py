@@ -5,7 +5,8 @@ import numpy as np
 import numpy.testing as npt
 # Required for mocking
 import matplotlib.pyplot
-from .utils import get_phonon_file, get_dos_params, get_dos_data_file
+from tests_and_analysis.test.script_tests.utils import (
+    get_phonon_file, get_dos_params, get_dos_data_file)
 import euphonic.cli.dos
 
 

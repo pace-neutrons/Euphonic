@@ -122,6 +122,11 @@ def run_tests(pytest_options: List[str], do_report_coverage: bool,
     A test exit code. 0 is success, 1 to 5 are all errors
      (see pytest docs for further details).
     """
+
+    # Set import-mode to ensure the installed version is tested rather
+    # than the local version
+    pytest_options = ['--import-mode=append'] + pytest_options
+
     # Start recording coverage if requested
     cov: Union[coverage.Coverage, None] = None
     if do_report_coverage:
