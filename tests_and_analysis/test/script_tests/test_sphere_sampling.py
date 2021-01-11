@@ -9,9 +9,9 @@ import numpy.testing as npt
 # Required for mocking
 import matplotlib.pyplot
 
-import euphonic.cli.show_sampling
 from tests_and_analysis.test.script_tests.utils import (
     get_script_test_data_path, get_current_plot_offsets)
+import euphonic.cli.show_sampling
 
 
 sphere_sampling_output_file = os.path.join(get_script_test_data_path(),
