@@ -19,7 +19,7 @@ def figure():
 
 @pytest.fixture
 def axes(figure):
-    ax = figure.add_subplot()
+    ax = figure.add_subplot(1, 1, 1)
     return ax
 
 
