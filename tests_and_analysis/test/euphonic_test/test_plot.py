@@ -6,7 +6,7 @@ import numpy as np
 import numpy.testing as npt
 
 from euphonic import ureg
-from euphonic.plot import _plot_1d_core
+from euphonic.plot import _plot_1d_core, plot_1d
 from euphonic.spectra import Spectrum1D, Spectrum1DCollection
 
 
@@ -23,6 +23,7 @@ def axes(figure):
     return ax
 
 
+@pytest.mark.unit
 class TestPlot1DCore:
     @pytest.mark.parametrize('spectra, expected_error',
                              [('wrong_type', TypeError), ])
@@ -83,3 +84,29 @@ class TestPlot1DCore:
 
             npt.assert_allclose(line.get_xdata(), expected[0])
             npt.assert_allclose(line.get_ydata(), expected[1])
+
+@pytest.mark.unit
+class TestPlot1D:
+    @staticmethod
+    def mock_core(mocker):
+        return mocker.patch('euphonic.plot._plot_1d_core',
+                            return_value=None)
+
+    @pytest.mark.parametrize(
+        'spectrum',
+        [Spectrum1D([0., 1., 2.] * ureg('meV'),
+                    [1., 2., 1.] * ureg('angstrom^-2')),
+         Spectrum1DCollection([0., 1., 2.] * ureg('meV'),
+                              [[1., 2., 1.],
+                               [2., 3., 2.]] * ureg('angstrom^-2'),
+                               x_tick_labels=[(1, 'A')]),
+         ])
+    def test_plot_single(self, mocker, spectrum):
+        core = self.mock_core(mocker)
+
+        fig = plot_1d(spectrum)
+        # Check args were as expected
+        assert core.call_args[0][0] == spectrum
+        assert core.call_args[0][1] in fig.axes
+        
+        plt.close(fig)
