@@ -6,7 +6,7 @@ try:
     import matplotlib.pyplot as plt
     from matplotlib.axes import Axes
     from matplotlib.figure import Figure
-    from matplotlib.colors import Normalize
+    from matplotlib.colors import Colormap, Normalize
     from matplotlib.image import NonUniformImage
 
 except ImportError:
@@ -24,7 +24,7 @@ from euphonic.util import is_gamma, get_qpoint_labels
 
 
 def plot_dispersion(phonons: 'QpointPhononModes',
-                    btol: float = 10.0, *args, **kwargs) -> Figure:
+                    btol: float = 10.0, **kwargs) -> Figure:
     """
     Creates a Matplotlib figure displaying phonon dispersion from a
     QpointPhononModes object
@@ -37,14 +37,12 @@ def plot_dispersion(phonons: 'QpointPhononModes',
         Determines the limit for plotting sections of reciprocal space
         on different subplots, as a fraction of the median distance
         between q-points
-    *args
-        Get passed to plot_1d
     **kwargs
         Get passed to plot_1d
     """
     bands = phonons.get_dispersion()
 
-    return plot_1d(bands.split(btol=btol), *args, **kwargs)
+    return plot_1d(bands.split(btol=btol), **kwargs)
 
 
 def _plot_1d_core(spectra: Union[Spectrum1D, Spectrum1DCollection],
@@ -188,7 +186,7 @@ def plot_1d(spectra: Union[Spectrum1D,
 
 
 def _plot_2d_core(spectrum: Spectrum2D, ax: Axes,
-                  cmap: Union[str, mpl.colors.Colormap] = 'viridis',
+                  cmap: Union[str, Colormap] = 'viridis',
                   interpolation: str = 'nearest',
                   norm: Optional[Normalize] = None,
                   ) -> NonUniformImage:
@@ -240,7 +238,7 @@ def _plot_2d_core(spectrum: Spectrum2D, ax: Axes,
 def plot_2d(spectra: Union[Spectrum2D, Sequence[Spectrum2D]],
             vmin: Optional[float] = None,
             vmax: Optional[float] = None,
-            cmap: Union[str, mpl.colors.Colormap] = 'viridis',
+            cmap: Union[str, Colormap] = 'viridis',
             title: str = '', x_label: str = '', y_label: str = '') -> Figure:
     """
     Creates a Matplotlib figure for a Spectrum2D object
