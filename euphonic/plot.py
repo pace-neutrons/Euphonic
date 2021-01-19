@@ -9,12 +9,11 @@ try:
     from matplotlib.colors import Colormap, Normalize
     from matplotlib.image import NonUniformImage
 
-except ImportError:
-    warnings.warn((
-        'Cannot import Matplotliib for plotting (maybe Matplotlib is '
+except ModuleNotFoundError:
+    raise ModuleNotFoundError(
+        'Cannot import Matplotlib for plotting (maybe Matplotlib is '
         'not installed?). To install Euphonic\'s optional Matplotlib '
-        'dependency, try:\n\npip install euphonic[matplotlib]\n'))
-    raise
+        'dependency, try:\n\npip install euphonic[matplotlib]\n')
 
 import numpy as np
 
