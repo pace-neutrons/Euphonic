@@ -10,7 +10,8 @@ import euphonic.plot
 from euphonic.plot import plot_1d, _plot_1d_core, plot_dispersion
 from euphonic.spectra import Spectrum1D, Spectrum1DCollection
 
-from ..script_tests.utils import get_ax_image_data, get_ax_label_data
+from ..script_tests.utils import get_ax_image_data
+
 
 @pytest.fixture
 def figure():
@@ -219,7 +220,12 @@ class TestPlotDispersion:
 
 
 @pytest.mark.unit
-class TestPlot2DCore:
+class TestPlot2D:
+    @staticmethod
+    def mock_core(mocker):
+        return mocker.patch('euphonic.plot._plot_2d_core',
+                            return_value=None)
+
     @pytest.fixture
     def spectrum(self):
         from .test_spectrum2d import get_spectrum2d as get_ref_spectrum2d
@@ -228,7 +234,7 @@ class TestPlot2DCore:
     @pytest.mark.parametrize('kwargs', [{'cmap': 'magma',
                                          'interpolation': 'nearest',
                                          'norm': 'some-norm'},
-                                         {'cmap': 'magma',
+                                        {'cmap': 'magma',
                                          'interpolation': 'bilinear',
                                          'norm': None}])
     def test_plot(self, axes, spectrum, kwargs, mocker):
@@ -251,4 +257,35 @@ class TestPlot2DCore:
             image_data['data_1'],
             spectrum.z_data.magnitude[image_data['size'][1] // 2, :])
 
-        label_data = get_ax_label_data(axes)
+    @pytest.mark.parametrize('kwargs',
+                             [{'title': 'TITLE',
+                               'x_label': 'X_LABEL',
+                               'y_label': 'Y_LABEL'},
+                              {'vmin': 1.,
+                               'vmax': 2.,
+                               'cmap': 'magma'}])
+    def test_plot_single(self, mocker, spectrum, kwargs):
+        core = self.mock_core(mocker)
+        suptitle = mocker.patch.object(matplotlib.figure.Figure, 'suptitle')
+
+        fig = euphonic.plot.plot_2d(spectrum, **kwargs)
+        # Check args were as expected
+        assert core.call_args[0][0] == spectrum
+        assert core.call_args[0][1] in fig.axes
+
+        if 'cmap' in kwargs:
+            assert core.call_args[1]['cmap'] == kwargs['cmap']
+
+        norm = core.call_args[1]['norm']
+        for attr in ('vmin', 'vmax'):
+            if attr in kwargs:
+                assert getattr(norm, attr) == pytest.approx(kwargs[attr])
+
+        if 'x_label' in kwargs:
+            assert fig.axes[-1].get_xlabel() == kwargs['x_label']
+        if 'y_label' in kwargs:
+            assert fig.axes[-1].get_ylabel() == kwargs['y_label']
+        if 'title' in kwargs:
+            suptitle.assert_called_once_with(kwargs['title'])
+
+        plt.close(fig)
