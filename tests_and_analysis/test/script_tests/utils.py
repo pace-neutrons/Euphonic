@@ -1,6 +1,7 @@
 import os
 # Required for mocking
 import matplotlib.pyplot
+from matplotlib.axes import Axes
 from typing import Dict, List, Union
 from ..utils import get_data_path
 
@@ -41,13 +42,27 @@ def get_current_plot_line_data() -> Dict[str, Union[str,
 
 
 def get_fig_label_data(fig) -> Dict[str, Union[str, List[str]]]:
+    label_data = {'x_ticklabels': [],
+                  'title': fig._suptitle.get_text()}
+
+    # Get axis labels from whichever axis has them; collect all tick labels
+    for ax in fig.axes:
+        ax_label_data = get_ax_label_data(ax)
+
+        for key in 'x_label', 'y_label':
+            if ax_label_data[key]:
+                label_data[key] = ax_label_data[key]
+
+        label_data['x_ticklabels'] += ax_label_data['x_ticklabels']
+
+    return label_data
+
+
+def get_ax_label_data(ax) -> Dict[str, Union[str, List[str]]]:
     label_data = {}
-    label_data['title'] = fig._suptitle.get_text()
-    # Get axis label no matter which axis it's on
-    label_data['x_label'] = ''.join([ax.get_xlabel() for ax in fig.axes])
-    label_data['y_label'] = ''.join([ax.get_ylabel() for ax in fig.axes])
+    label_data['x_label'] = ax.get_xlabel()
+    label_data['y_label'] = ax.get_ylabel()
     label_data['x_ticklabels'] = [lab.get_text()
-                                  for ax in fig.axes
                                   for lab in ax.get_xticklabels()]
     return label_data
 
@@ -69,24 +84,33 @@ def get_current_plot_offsets() -> List[List[float]]:
 
 def get_current_plot_image_data() -> Dict[str,
                                           Union[str, List[float], List[int]]]:
-    import numpy as np
-
     fig = matplotlib.pyplot.gcf()
     for ax in fig.axes:
         if len(ax.get_images()) == 1:
             break
     else:
         raise Exception("Could not find axes with a single image")
+
+    data = get_fig_label_data(fig)
+    data.update(get_ax_image_data(ax))
+
+    return data
+
+
+def get_ax_image_data(ax: Axes) -> Dict[str,
+                                        Union[str, List[float], List[int]]]:
     im = ax.get_images()[0]
     # Convert negative zero to positive zero
     im_data = im.get_array()
     data_slice_1 = im_data[:, (im_data.shape[1] // 2)].flatten()
     data_slice_2 = im_data[im_data.shape[0] // 2, :].flatten()
 
-    data = get_fig_label_data(fig)
+    data = {}
+
     data['cmap'] = im.cmap.name
     data['extent'] = [float(x) for x in im.get_extent()]
     data['size'] = [int(x) for x in im.get_size()]
     data['data_1'] = list(map(float, data_slice_1))
     data['data_2'] = list(map(float, data_slice_2))
+
     return data

@@ -6,9 +6,11 @@ import numpy as np
 import numpy.testing as npt
 
 from euphonic import ureg
+import euphonic.plot
 from euphonic.plot import plot_1d, _plot_1d_core, plot_dispersion
 from euphonic.spectra import Spectrum1D, Spectrum1DCollection
 
+from ..script_tests.utils import get_ax_image_data, get_ax_label_data
 
 @pytest.fixture
 def figure():
@@ -214,3 +216,39 @@ class TestPlotDispersion:
         euphonic.plot.plot_1d.assert_called_once_with(
             [1, 2],
             **{k: v for k, v in kwargs.items() if k != 'btol'})
+
+
+@pytest.mark.unit
+class TestPlot2DCore:
+    @pytest.fixture
+    def spectrum(self):
+        from .test_spectrum2d import get_spectrum2d as get_ref_spectrum2d
+        return get_ref_spectrum2d('quartz_bandstructure_sqw.json')
+
+    @pytest.mark.parametrize('kwargs', [{'cmap': 'magma',
+                                         'interpolation': 'nearest',
+                                         'norm': 'some-norm'},
+                                         {'cmap': 'magma',
+                                         'interpolation': 'bilinear',
+                                         'norm': None}])
+    def test_plot(self, axes, spectrum, kwargs, mocker):
+        mock_set_norm = mocker.patch.object(matplotlib.image.NonUniformImage,
+                                            'set_norm')
+
+        euphonic.plot._plot_2d_core(spectrum, axes, **kwargs)
+
+        mock_set_norm.assert_called_with(kwargs['norm'])
+
+        image_data = get_ax_image_data(axes)
+
+        if 'cmap' in kwargs:
+            assert image_data['cmap'] == kwargs['cmap']
+
+        expected_extent = [0., 5.280359268188477, 0.5, 153.5]
+        npt.assert_allclose(image_data['extent'], expected_extent)
+
+        npt.assert_allclose(
+            image_data['data_1'],
+            spectrum.z_data.magnitude[image_data['size'][1] // 2, :])
+
+        label_data = get_ax_label_data(axes)
