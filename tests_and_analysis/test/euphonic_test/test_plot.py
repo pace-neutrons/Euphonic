@@ -26,6 +26,7 @@ def axes(figure):
     return ax
 
 
+@pytest.mark.unit
 def test_missing_matplotlib(mocker):
     from builtins import __import__ as builtins_import
     from importlib import reload
@@ -289,3 +290,27 @@ class TestPlot2D:
             suptitle.assert_called_once_with(kwargs['title'])
 
         plt.close(fig)
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize('labels, rotate',
+                         [([(1, 'A'), (3, 'B'), (4, 'CDEF')], False),
+                          ([(0, 'A'), (3, 'THISISALONGLABEL')], True)])
+def test_set_x_tick_labels(axes, labels, rotate):
+    from euphonic.plot import _set_x_tick_labels
+
+    x_data = np.array([0., 1., 2., 3., 4.]) * ureg('angstrom^-1')
+
+    _set_x_tick_labels(axes, labels, x_data)
+
+    if rotate:
+        angle = 90.
+    else:
+        angle = 0.
+
+    plotted_labels = axes.get_xticklabels()
+    for i, (pos, label) in enumerate(labels):
+        assert plotted_labels[i].get_text() == label
+        assert (plotted_labels[i].get_position()[0]
+                == pytest.approx(x_data.magnitude[pos]))
+        assert plotted_labels[i].get_rotation() == pytest.approx(angle)
