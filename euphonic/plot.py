@@ -279,10 +279,7 @@ def plot_2d(spectra: Union[Spectrum2D, Sequence[Spectrum2D]],
 
     fig, axes = plt.subplots(ncols=len(spectra), nrows=1,
                              gridspec_kw={'width_ratios': widths},
-                             sharey=True)
-
-    if not isinstance(axes, np.ndarray):  # Ensure axes are always iterable
-        axes = [axes]
+                             sharey=True, squeeze=False)
 
     intensity_unit = spectra[0].z_data.units
 
@@ -298,7 +295,7 @@ def plot_2d(spectra: Union[Spectrum2D, Sequence[Spectrum2D]],
 
     norm = Normalize(vmin=vmin, vmax=vmax)
 
-    for spectrum, ax in zip(spectra, axes):
+    for spectrum, ax in zip(spectra, axes.flatten()):
         _plot_2d_core(spectrum, ax, cmap=cmap, norm=norm)
 
     # Add an invisible large axis for common labels
