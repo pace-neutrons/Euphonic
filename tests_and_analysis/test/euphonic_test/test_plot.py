@@ -23,6 +23,24 @@ def axes(figure):
     return ax
 
 
+def test_missing_matplotlib(mocker):
+    from builtins import __import__ as builtins_import
+    from importlib import reload
+    import euphonic.plot
+
+    def mocked_import(name, *args, **kwargs):
+        if name == 'matplotlib':
+            raise ModuleNotFoundError
+        return builtins_import(name, *args, **kwargs)
+
+    with mocker.patch('builtins.__import__', side_effect=mocked_import):
+        with pytest.raises(ModuleNotFoundError) as mnf_error:
+            reload(euphonic.plot)
+
+        assert ("Cannot import Matplotlib for plotting"
+                in mnf_error.value.args[0])
+
+
 @pytest.mark.unit
 class TestPlot1DCore:
     @pytest.mark.parametrize('spectra, expected_error',
@@ -85,6 +103,7 @@ class TestPlot1DCore:
             npt.assert_allclose(line.get_xdata(), expected[0])
             npt.assert_allclose(line.get_ydata(), expected[1])
 
+
 @pytest.mark.unit
 class TestPlot1D:
     @staticmethod
@@ -99,7 +118,7 @@ class TestPlot1D:
          Spectrum1DCollection([0., 1., 2.] * ureg('meV'),
                               [[1., 2., 1.],
                                [2., 3., 2.]] * ureg('angstrom^-2'),
-                               x_tick_labels=[(1, 'A')]),
+                              x_tick_labels=[(1, 'A')]),
          ])
     def test_plot_single(self, mocker, spectrum):
         core = self.mock_core(mocker)
@@ -108,8 +127,9 @@ class TestPlot1D:
         # Check args were as expected
         assert core.call_args[0][0] == spectrum
         assert core.call_args[0][1] in fig.axes
-        
+
         plt.close(fig)
+
 
 @pytest.mark.unit
 class TestPlotDispersion:
@@ -127,7 +147,6 @@ class TestPlotDispersion:
         modes.get_dispersion.return_value = bands
 
         return modes
-
 
     @pytest.mark.parametrize('kwargs',
                              [{'btol': 5., 'kwarg1': 1, 'kwarg2': 2},
