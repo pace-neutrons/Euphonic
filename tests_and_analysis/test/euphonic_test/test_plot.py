@@ -33,12 +33,12 @@ def test_missing_matplotlib(mocker):
             raise ModuleNotFoundError
         return builtins_import(name, *args, **kwargs)
 
-    with mocker.patch('builtins.__import__', side_effect=mocked_import):
-        with pytest.raises(ModuleNotFoundError) as mnf_error:
-            reload(euphonic.plot)
+    mocker.patch('builtins.__import__', side_effect=mocked_import)
+    with pytest.raises(ModuleNotFoundError) as mnf_error:
+        reload(euphonic.plot)
 
-        assert ("Cannot import Matplotlib for plotting"
-                in mnf_error.value.args[0])
+    assert ("Cannot import Matplotlib for plotting"
+            in mnf_error.value.args[0])
 
 
 @pytest.mark.unit
@@ -111,6 +111,14 @@ class TestPlot1D:
         return mocker.patch('euphonic.plot._plot_1d_core',
                             return_value=None)
 
+    @pytest.fixture
+    def band_segments(self):
+        spec1 = Spectrum1D([0., 1., 2.] * ureg('angstrom^-1'),
+                           [1., 2., 1.] * ureg('meV'))
+        spec2 = Spectrum1D([4., 6., 7.] * ureg('angstrom^-1'),
+                           [1., 2., 1.] * ureg('meV'))
+        return [spec1, spec2]
+
     @pytest.mark.parametrize(
         'spectrum',
         [Spectrum1D([0., 1., 2.] * ureg('meV'),
@@ -129,6 +137,45 @@ class TestPlot1D:
         assert core.call_args[0][1] in fig.axes
 
         plt.close(fig)
+
+    @pytest.mark.parametrize('spec1_units', [('angstrom^-1', 'hartree'),
+                                             ('bohr^-1', 'meV')])
+    def test_plot_badunits(self, spec1_units, band_segments):
+        spec1, spec2 = band_segments
+        spec1.x_data_unit, spec1.y_data_unit = spec1_units
+        spec2.x_data_unit, spec2.y_data_unit = ('angstrom^-1', 'meV')
+        with pytest.raises(ValueError):
+            plot_1d([spec1, spec2])
+
+    @pytest.mark.parametrize('kwargs', [{'labels': ['band A', 'band B']},
+                                        {'x_label': 'X_LABEL',
+                                         'y_label': 'Y_LABEL',
+                                         'title': 'TITLE'}])
+    def test_plot_multi(self, mocker, band_segments, kwargs):
+
+        suptitle = mocker.patch.object(matplotlib.figure.Figure, 'suptitle')
+
+        fig = plot_1d(band_segments, **kwargs)
+
+        if 'labels' in kwargs:
+            legend = fig.axes[0].get_legend()
+            assert legend is not None
+
+            for text, label in zip(legend.get_texts(), kwargs['labels']):
+                assert text.get_text() == label
+
+        if 'x_label' in kwargs:
+            assert fig.axes[-1].get_xlabel() == kwargs['x_label']
+        if 'y_label' in kwargs:
+            assert fig.axes[-1].get_ylabel() == kwargs['y_label']
+        if 'title' in kwargs:
+            suptitle.assert_called_once_with(kwargs['title'])
+
+        for ax in fig.axes[:-1]:
+            if 'y_min' in kwargs:
+                assert ax.get_ylim()[0] == pytest.approx(kwargs.get('y_min'))
+            if 'y_max' in kwargs:
+                assert ax.get_ylim()[0] == pytest.approx(kwargs.get('y_max'))
 
 
 @pytest.mark.unit
