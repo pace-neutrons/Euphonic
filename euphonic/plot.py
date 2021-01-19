@@ -163,11 +163,9 @@ def plot_1d(spectra: Union[Spectrum1D,
 
     gridspec_kw = _get_gridspec_kw(spectra)
     fig, subplots = plt.subplots(1, len(spectra), sharey=True,
-                                 gridspec_kw=gridspec_kw)
-    if not isinstance(subplots, np.ndarray):  # if only one subplot
-        subplots = np.array([subplots])
+                                 gridspec_kw=gridspec_kw, squeeze=False)
 
-    for i, (spectrum, ax) in enumerate(zip(spectra, subplots)):
+    for i, (spectrum, ax) in enumerate(zip(spectra, subplots.flatten())):
         _plot_1d_core(spectrum, ax, **line_kwargs)
         ax.set_ylim(bottom=y_min, top=y_max)
 
