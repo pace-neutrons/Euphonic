@@ -244,7 +244,8 @@ class TestPlot2D:
 
         euphonic.plot._plot_2d_core(spectrum, axes, **kwargs)
 
-        mock_set_norm.assert_called_with(kwargs['norm'])
+        if kwargs['norm']:
+            mock_set_norm.assert_called_with(kwargs['norm'])
 
         image_data = get_ax_image_data(axes)
 
