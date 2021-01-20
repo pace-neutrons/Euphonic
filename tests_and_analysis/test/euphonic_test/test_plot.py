@@ -293,6 +293,17 @@ class TestPlot2D:
         plt.close(fig)
 
 
+    def test_plot_multi(self, mocker, spectrum):
+        core = self.mock_core(mocker)
+
+        spectra = spectrum.split(indices=[10])
+        fig = euphonic.plot.plot_2d(spectra)
+
+        call_1, call_2 = core.call_args_list
+
+        assert call_1[0][0] == spectra[0]
+        assert call_2[0][0] == spectra[1]
+
 @pytest.mark.unit
 @pytest.mark.parametrize('labels, rotate',
                          [([(1, 'A'), (3, 'B'), (4, 'CDEF')], False),
