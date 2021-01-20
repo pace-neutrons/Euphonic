@@ -320,9 +320,13 @@ def test_set_x_tick_labels(axes, labels, rotate):
     else:
         angle = 0.
 
+    label_x_indices, label_values = zip(*labels)
     plotted_labels = axes.get_xticklabels()
-    for i, (pos, label) in enumerate(labels):
-        assert plotted_labels[i].get_text() == label
-        assert (plotted_labels[i].get_position()[0]
-                == pytest.approx(x_data.magnitude[pos]))
-        assert plotted_labels[i].get_rotation() == pytest.approx(angle)
+    plotted_positions = axes.get_xticks()
+
+    for x_index, x, text, plotted_label in zip(
+            label_x_indices, plotted_positions, label_values, plotted_labels):
+
+        assert plotted_label.get_text() == text
+        assert x == pytest.approx(x_data.magnitude[x_index])
+        assert plotted_label.get_rotation() == pytest.approx(angle)
