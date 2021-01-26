@@ -1,8 +1,6 @@
 from typing import List, Optional, Sequence, Tuple, Union
-import warnings
 
 try:
-    import matplotlib as mpl
     import matplotlib.pyplot as plt
     from matplotlib.axes import Axes
     from matplotlib.figure import Figure
@@ -17,31 +15,8 @@ except ModuleNotFoundError:
 
 import numpy as np
 
-from euphonic import ureg, Quantity
+from euphonic import Quantity
 from euphonic.spectra import Spectrum1D, Spectrum1DCollection, Spectrum2D
-from euphonic.util import is_gamma, get_qpoint_labels
-
-
-def plot_dispersion(phonons: 'QpointPhononModes',
-                    btol: float = 10.0, **kwargs) -> Figure:
-    """
-    Creates a Matplotlib figure displaying phonon dispersion from a
-    QpointPhononModes object
-
-    Parameters
-    ----------
-    phonons : QpointPhononModes
-        Containing the q-points/frequencies to plot
-    btol : float, optional
-        Determines the limit for plotting sections of reciprocal space
-        on different subplots, as a fraction of the median distance
-        between q-points
-    **kwargs
-        Get passed to plot_1d
-    """
-    bands = phonons.get_dispersion()
-
-    return plot_1d(bands.split(btol=btol), **kwargs)
 
 
 def _plot_1d_core(spectra: Union[Spectrum1D, Spectrum1DCollection],
