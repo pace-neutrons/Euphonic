@@ -54,21 +54,23 @@ A compact recipe to write a band-structure plot with discontinuities could be
 1D Plots
 ========
 
-1D spectra are plotted with :py:meth:`euphonic.plot.plot_1d`.
+1D spectra are arranged in a matplotlib Figure with :py:meth:`euphonic.plot.plot_1d`.
 For multiple lines on the same axes, use Spectrum1DCollection objects.
 A sequence of Spectrum1D or Spectrum1DCollection objects will be interpreted
 as a series of axis regions:
 
 .. code-block:: py
 
-  from euphonic import Spectrum1D
+  from euphonic import Spectrum1D, Spectrum1DCollection
   from euphonic.plot import plot_1d
 
   dos = Spectrum1D.from_json_file('dos.json')
   dos_broaden = Spectrum1D.from_json_file('dos_broaden.json')
 
-  fig = plot_1d([dos, dos_broaden], x_label='Energy (meV)', y_min=0,
-                labels=['dos', 'broadened dos'])
+  dos_collection = Spectrum1DCollection.from_spectra([dos, dos_broaden])
+
+  fig = plot_1d(dos_collection, x_label='Energy (meV)', y_min=0,
+                labels=['Density of states', 'Broadened'])
   fig.show()
 
 Docstring
@@ -79,7 +81,8 @@ Docstring
 2D Plots
 ========
 
-2D spectra are plotted with :py:meth:`euphonic.plot.plot_2d`:
+2D spectra are arranged in a matplotlibFigure with
+:py:meth:`euphonic.plot.plot_2d`:
 
 .. code-block:: py
 
