@@ -7,7 +7,7 @@ import numpy.testing as npt
 
 from euphonic import ureg
 import euphonic.plot
-from euphonic.plot import plot_1d, _plot_1d_core, plot_dispersion
+from euphonic.plot import plot_1d, _plot_1d_core
 from euphonic.spectra import Spectrum1D, Spectrum1DCollection
 
 from ..script_tests.utils import get_ax_image_data
@@ -180,44 +180,6 @@ class TestPlot1D:
                 assert ax.get_ylim()[0] == pytest.approx(kwargs.get('y_min'))
             if 'y_max' in kwargs:
                 assert ax.get_ylim()[0] == pytest.approx(kwargs.get('y_max'))
-
-
-@pytest.mark.unit
-class TestPlotDispersion:
-    @pytest.fixture
-    def bands(self, mocker):
-        spectrum = mocker.MagicMock(spec_set=Spectrum1DCollection)
-        spectrum.split.return_value = [1, 2]
-
-        return spectrum
-
-    @pytest.fixture
-    def phonons(self, mocker, bands):
-        from euphonic import QpointPhononModes
-        modes = mocker.MagicMock(spec_set=QpointPhononModes)
-        modes.get_dispersion.return_value = bands
-
-        return modes
-
-    @pytest.mark.parametrize('kwargs',
-                             [{'btol': 5., 'kwarg1': 1, 'kwarg2': 2},
-                              {'kwarg1': 2},
-                              {}])
-    def test_plot_dispersion(self, mocker, phonons, bands, kwargs):
-        import euphonic.plot
-        mocker.patch('euphonic.plot.plot_1d', return_value=None)
-
-        plot_dispersion(phonons, **kwargs)
-
-        assert phonons.get_dispersion.called
-        if 'btol' in kwargs:
-            bands.split.assert_called_once_with(btol=kwargs['btol'])
-        else:
-            bands.split.assert_called_once_with(btol=10.)
-
-        euphonic.plot.plot_1d.assert_called_once_with(
-            [1, 2],
-            **{k: v for k, v in kwargs.items() if k != 'btol'})
 
 
 @pytest.mark.unit

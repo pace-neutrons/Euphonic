@@ -13,31 +13,51 @@ be tweaked, then viewed with ``matplotlib.figure.Figure.show()``
 Plotting Dispersion
 ===================
 
-Phonon dispersion can be plotted straight from the q-points/frequencies in a
-:ref:`QpointPhononModes <qpoint-phonon-modes>` object with
-:py:meth:`euphonic.plot.plot_dispersion`. Extra arguments get passed to
-:py:meth:`plot_1d <euphonic.plot.plot_dispersion>`, for adding axis labels
+Phonon dispersion can be plotted from the q-points/frequencies in a
+:ref:`QpointPhononModes <qpoint-phonon-modes>`
+via a :ref:`Spectrum1DCollection` object, which is plotted with :py:meth:`euphonic.plot.plot_1d`.
+Converting to `Spectrum1DCollection` creates a defined x-axis for the plot.
+Extra arguments get passed to :py:meth:`plot_1d <euphonic.plot.plot_1d>`, for adding axis labels
 etc.:
 
 .. code-block:: py
 
   from euphonic import QpointPhononModes
-  from euphonic.plot import plot_dispersion
+  from euphonic.plot import plot_1d
 
   phonons = QpointPhononModes.from_castep('quartz.phonon')
-  fig = plot_dispersion(phonons, y_label='Energy (meV)')
+  bands = phonons.get_dispersion()  # type: Spectrum1DCollection
+
+  fig = plot_1d(bands, y_label='Energy (meV)')
   fig.show()
 
-Docstring
----------
+Phonon dispersion plots often include large steps between
+discontinuous regions. In order to accommodate this, a single
+Spectrum1D can be split into a list of spectra with the
+:py:meth:`euphonic.spectra.Spectrum1D.split` method.
+:py:meth:`plot_1d <euphonic.plot.plot_1d>` will happily accept
+this list as input, plotting each region to a series of
+proportionally-spaced subplots.
 
-.. autofunction:: euphonic.plot.plot_dispersion
+A compact recipe to write a band-structure plot with discontinuities could be
+
+.. code-block:: py
+  from euphonic import QpointPhononModes
+  from euphonic.plot import plot_1d
+
+  phonons = QpointPhononModes.from_castep('quartz.phonon')
+
+  fig = plot_1d(phonons.get_dispersion().split())
+  fig.safefig('quartz-dispersion.pdf')
+
 
 1D Plots
 ========
 
-1D spectra are plotted with :py:meth:`euphonic.plot.plot_1d`. Multiple 1D
-spectra can be plotted on the same axis by passing a list:
+1D spectra are plotted with :py:meth:`euphonic.plot.plot_1d`.
+For multiple lines on the same axes, use Spectrum1DCollection objects.
+A sequence of Spectrum1D or Spectrum1DCollection objects will be interpreted
+as a series of axis regions:
 
 .. code-block:: py
 
