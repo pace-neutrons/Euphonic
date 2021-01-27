@@ -33,7 +33,7 @@ def test_missing_matplotlib(mocker):
     import euphonic.plot
 
     def mocked_import(name, *args, **kwargs):
-        if name == 'matplotlib':
+        if name.split('.')[0] == 'matplotlib':
             raise ModuleNotFoundError
         return builtins_import(name, *args, **kwargs)
 
