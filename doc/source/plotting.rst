@@ -43,6 +43,7 @@ proportionally-spaced subplots.
 A compact recipe to write a band-structure plot with discontinuities could be
 
 .. code-block:: py
+
   from euphonic import QpointPhononModes
   from euphonic.plot import plot_1d
 
