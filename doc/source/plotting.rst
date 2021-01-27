@@ -32,7 +32,8 @@ etc.:
   fig.show()
 
 Phonon dispersion plots often include large steps between
-discontinuous regions. In order to accommodate this, a single
+discontinuous regions in reciprocal space.
+In order to accommodate this, a single
 Spectrum1D can be split into a list of spectra with the
 :py:meth:`euphonic.spectra.Spectrum1D.split` method.
 :py:meth:`plot_1d <euphonic.plot.plot_1d>` will happily accept
@@ -48,7 +49,7 @@ A compact recipe to write a band-structure plot with discontinuities could be
   phonons = QpointPhononModes.from_castep('quartz.phonon')
 
   fig = plot_1d(phonons.get_dispersion().split())
-  fig.safefig('quartz-dispersion.pdf')
+  fig.savefig('quartz-dispersion.pdf')
 
 
 1D Plots
@@ -81,7 +82,7 @@ Docstring
 2D Plots
 ========
 
-2D spectra are arranged in a matplotlibFigure with
+2D spectra are arranged in a matplotlib Figure with
 :py:meth:`euphonic.plot.plot_2d`:
 
 .. code-block:: py
