@@ -302,3 +302,14 @@ class TestSpectrum1DCollectionMethods:
         assert_allclose(bin_centres.magnitude,
                         expected_bin_centres)
 
+    def test_get_bin_edges_with_invalid_data_shape_raises_runtime_error(self):
+        spec = get_spectrum('gan_bands.json')
+        spec._y_data = spec._y_data[:, :51]
+        with pytest.raises(RuntimeError):
+            spec.get_bin_edges()
+
+    def test_get_bin_centres_with_invalid_data_shape_raises_runtime_error(self):
+        spec = get_spectrum('quartz_dos_collection.json')
+        spec._x_data = spec._x_data[:31]
+        with pytest.raises(RuntimeError):
+            spec.get_bin_centres()
