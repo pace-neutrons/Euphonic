@@ -183,8 +183,8 @@ class Spectrum(ABC):
             return False
         else:
             raise RuntimeError((
-                f'Unexpected data axis {data_ax}_data shape {data.shape} '
-                f'for bin axis {bin_ax}_data shape {bins.shape}'))
+                f'Unexpected data axis length {data_length} '
+                f'for bin axis length {bin_length}'))
 
     def get_bin_edges(self) -> Quantity:
         """
