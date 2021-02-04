@@ -6,6 +6,7 @@ from typing import (Any, Dict, List, Optional, overload,
                     Sequence, Tuple, TypeVar, Union)
 
 import numpy as np
+from pint import Unit
 from scipy.ndimage import gaussian_filter1d, correlate1d, gaussian_filter
 
 from euphonic.validate import _check_constructor_inputs, _check_unit_conversion
@@ -19,20 +20,6 @@ SC = TypeVar('SC', bound='Spectrum1DCollection')
 
 
 class Spectrum(ABC):
-    """
-    For storing generic 1D spectra e.g. density of states
-
-    Attributes
-    ----------
-    x_data : (n_x_data,) or (n_x_data + 1,) float Quantity
-        The x_data points (if size (n_x_data,)) or x_data bin edges (if
-        size (n_x_data + 1,))
-    y_data : (n_x_data,) float Quantity
-        The plot data in y
-    x_tick_labels : list (int, string) tuples or None
-        Special tick labels e.g. for high-symmetry points. The int
-        refers to the index in x_data the label should be applied to
-    """
     def __setattr__(self, name, value):
         _check_unit_conversion(self, name, value,
                                ['x_data_unit', 'y_data_unit'])
@@ -44,34 +31,7 @@ class Spectrum(ABC):
         setattr(self, f'_internal_{attr_name}_data_unit', str(data.units))
         setattr(self, f'{attr_name}_data_unit', str(data.units))
 
-    def _is_bin_edge(self, bin_ax, data_ax='y'):
-        enum = {'x': 0, 'y': 1}
-        bins = getattr(self, f'{bin_ax}_data')
-        data = getattr(self, f'{data_ax}_data')
-        if len(bins) == data.shape[enum[bin_ax]] + 1:
-            is_bin_edge = True
-        else:
-            is_bin_edge = False
-        return is_bin_edge, bins.magnitude, bins.units
-
-    def _get_bin_edges(self, bin_ax='x'):
-        is_bin_edge, bins, bins_units = self._is_bin_edge(bin_ax)
-        if is_bin_edge:
-            return bins*bins_units
-        else:
-            bin_edges = np.concatenate((
-                [bins[0]], (bins[1:] + bins[:-1])/2, [bins[-1]]))
-            return bin_edges*bins_units
-
-    def _get_bin_centres(self, bin_ax='x'):
-        is_bin_edge, bins, bins_units = self._is_bin_edge(bin_ax)
-        if is_bin_edge:
-            bin_centres = bins[:-1] + 0.5*np.diff(bins)
-            return bin_centres*bins_units
-        else:
-            return bins*bins_units
-
-    def _gfwhm_to_sigma(self, fwhm, ax):
+    def _gfwhm_to_sigma(self, fwhm, ax_bin_centres):
         """
         Convert a Gaussian FWHM to sigma in units of the mean ax bin size
 
@@ -79,18 +39,17 @@ class Spectrum(ABC):
         ----------
         fwhm : float Quantity
             The Gaussian broadening FWHM
-        ax : str
-            The axis the broadening is applied to e.g. 'x'
+        ax_bin_centres : Quantity ndarray
+            The bin centres along the axis the broadening is applied to
 
         Returns
         -------
         sigma : float
             Sigma in units of mean ax bin size
         """
-        ax_data = self._get_bin_centres(ax)
-        ax_units = ax_data.units
+        ax_units = ax_bin_centres.units
         sigma = fwhm/(2*math.sqrt(2*math.log(2)))
-        mean_bin_size = np.mean(np.diff(ax_data.magnitude))
+        mean_bin_size = np.mean(np.diff(ax_bin_centres.magnitude))
         sigma_bin = sigma.to(ax_units).magnitude/mean_bin_size
         return sigma_bin
 
@@ -204,8 +163,82 @@ class Spectrum(ABC):
                 raise ValueError("Cannot set both indices and btol")
             return self._split_by_indices(indices)
 
+    @staticmethod
+    def _bin_edges_to_centres(bin_edges: np.ndarray) -> np.ndarray:
+        return bin_edges[:-1] + 0.5*np.diff(bin_edges)
+
+    @staticmethod
+    def _bin_centres_to_edges(bin_centres: np.ndarray) -> np.ndarray:
+        return np.concatenate((
+            [bin_centres[0]],
+            (bin_centres[1:] + bin_centres[:-1])/2,
+            [bin_centres[-1]]))
+
+    @staticmethod
+    def _is_bin_edge(data_length, bin_length) -> bool:
+        """Determine if axis data are bin edges or centres"""
+        if bin_length == data_length + 1:
+            return True
+        elif bin_length == data_length:
+            return False
+        else:
+            raise RuntimeError((
+                f'Unexpected data axis {data_ax}_data shape {data.shape} '
+                f'for bin axis {bin_ax}_data shape {bins.shape}'))
+
+    def get_bin_edges(self) -> Quantity:
+        """
+        Get x-axis bin edges. If the size of x_data is one element larger
+        than y_data, x_data is assumed to contain bin edges, but if x_data
+        is the same size, x_data is assumed to contain bin centres and
+        a conversion is made. In the conversion, the bin edges will
+        not go outside the existing data bounds so the first and last
+        bins may be half-size. In addition, each bin edge is assumed
+        to be halfway between each bin centre, which may not be an
+        accurate assumption in the case of differently sized bins.
+        """
+        # Need to use -1 index for y_data so it also works for
+        # Spectrum1DCollection which has y_data shape (n_spectra, bins)
+        if self._is_bin_edge(self.y_data.shape[-1], self.x_data.shape[0]):
+            return self.x_data
+        else:
+            return self._bin_centres_to_edges(
+                self.x_data.magnitude)*self.x_data.units
+
+
+    def get_bin_centres(self) -> Quantity:
+        """
+        Get x-axis bin centres. If the size of x_data is the same size
+        as y_data, x_data is assumed to contain bin centres, but if x_data
+        is one element larger, x_data is assumed to contain bin edges and
+        a conversion is made. In this conversion, the bin centres are
+        assumed to be in the middle of each bin, which may not be an
+        accurate assumption in the case of differently sized bins.
+        """
+        # Need to use -1 index for y_data so it also works for
+        # Spectrum1DCollection which has y_data shape (n_spectra, bins)
+        if self._is_bin_edge(self.y_data.shape[-1], self.x_data.shape[0]):
+            return self._bin_edges_to_centres(
+                self.x_data.magnitude)*self.x_data.units
+        else:
+            return self.x_data
+
 
 class Spectrum1D(Spectrum):
+    """
+    For storing generic 1D spectra e.g. density of states
+
+    Attributes
+    ----------
+    x_data : (n_x_data,) or (n_x_data + 1,) float Quantity
+        The x_data points (if size (n_x_data,)) or x_data bin edges (if
+        size (n_x_data + 1,))
+    y_data : (n_x_data,) float Quantity
+        The plot data in y
+    x_tick_labels : list (int, string) tuples or None
+        Special tick labels e.g. for high-symmetry points. The int
+        refers to the index in x_data the label should be applied to
+    """
     def __init__(self, x_data, y_data, x_tick_labels=None):
         """
         Parameters
@@ -312,13 +345,13 @@ class Spectrum1D(Spectrum):
             If shape is not one of the allowed strings
         """
         if shape == 'gauss':
-            xsigma = self._gfwhm_to_sigma(x_width, 'x')
+            xsigma = self._gfwhm_to_sigma(x_width, self.get_bin_centres())
             y_broadened = gaussian_filter1d(
                     self.y_data.magnitude, xsigma,
                     mode='constant')*ureg(self.y_data_unit)
         elif shape == 'lorentz':
             broadening = _distribution_1d(
-                    self._get_bin_centres().magnitude,
+                    self.get_bin_centres().magnitude,
                     x_width.to(self.x_data_unit).magnitude,
                     shape=shape)
             y_broadened = correlate1d(
@@ -591,11 +624,13 @@ class Spectrum2D(Spectrum):
             if x_width is None:
                 xsigma = 0.0
             else:
-                xsigma = self._gfwhm_to_sigma(x_width, 'x')
+                xsigma = self._gfwhm_to_sigma(
+                    x_width, self.get_bin_centres('x'))
             if y_width is None:
                 ysigma = 0.0
             else:
-                ysigma = self._gfwhm_to_sigma(y_width, 'y')
+                ysigma = self._gfwhm_to_sigma(
+                    y_width, self.get_bin_centres('y'))
             z_broadened = gaussian_filter(
                 self.z_data.magnitude, [xsigma, ysigma],
                 mode='constant')
@@ -603,14 +638,14 @@ class Spectrum2D(Spectrum):
             z_broadened = self.z_data.magnitude
             if x_width is not None:
                 x_broadening = _distribution_1d(
-                    self._get_bin_centres('x').magnitude,
+                    self.get_bin_centres('x').magnitude,
                     x_width.to(self.x_data_unit).magnitude,
                     shape=shape)
                 z_broadened = correlate1d(
                     z_broadened, x_broadening, mode='constant', axis=0)
             if y_width is not None:
                 y_broadening = _distribution_1d(
-                    self._get_bin_centres('y').magnitude,
+                    self.get_bin_centres('y').magnitude,
                     y_width.to(self.y_data_unit).magnitude,
                     shape=shape)
                 z_broadened = correlate1d(
@@ -623,8 +658,54 @@ class Spectrum2D(Spectrum):
             np.copy(self.y_data.magnitude)*ureg(self.y_data_unit),
             z_broadened*ureg(self.z_data_unit), deepcopy((self.x_tick_labels)))
 
-    def _is_bin_edge(self, bin_ax, data_ax='z'):
-        return super()._is_bin_edge(bin_ax, data_ax)
+    def get_bin_edges(self, bin_ax: str = 'x') -> Quantity:
+        """
+        Get bin edges for the axis specified by bin_ax. If the size of
+        bin_ax is one element larger than z_data along that axis, bin_ax
+        is assumed to contain bin edges, but if bin_ax is the same size,
+        bin_ax is assumed to contain bin centres and a conversion is made.
+        In the conversion, the bin edges will not go outside the existing
+        data bounds so the first and last bins may be half-size. In addition,
+        each bin edge is assumed to be halfway between each bin centre,
+        which may not be an accurate assumption in the case of differently
+        sized bins.
+
+        Parameters
+        ----------
+        bin_ax
+            The axis to get the bin edges for, 'x' or 'y'
+        """
+        enum = {'x': 0, 'y': 1}
+        bin_data = getattr(self, f'{bin_ax}_data')
+        data_ax_len = self.z_data.shape[enum[bin_ax]]
+        if self._is_bin_edge(data_ax_len, bin_data.shape[0]):
+            return bin_data
+        else:
+            return self._bin_centres_to_edges(bin_data.magnitude)*bin_data.units
+
+    def get_bin_centres(self, bin_ax: str = 'x') -> Quantity:
+        """
+        Get bin centres for the axis specified by bin_ax. If the size of
+        bin_ax is the same size as z_data along that axis, bin_ax is
+        assumed to contain bin centres, but if bin_ax is one element
+        larger, bin_ax is assumed to contain bin centres and a conversion
+        is made. In this conversion, the bin centres are assumed to be in
+        the middle of each bin, which may not be an accurate assumption in
+        the case of differently sized bins.
+
+        Parameters
+        ----------
+        bin_ax
+            The axis to get the bin centres for, 'x' or 'y'
+        """
+        enum = {'x': 0, 'y': 1}
+        bin_data = getattr(self, f'{bin_ax}_data')
+        data_ax_len = self.z_data.shape[enum[bin_ax]]
+        if self._is_bin_edge(data_ax_len, bin_data.shape[0]):
+            return self._bin_edges_to_centres(
+                bin_data.magnitude)*bin_data.units
+        else:
+            return bin_data
 
     def to_dict(self):
         """

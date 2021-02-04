@@ -287,7 +287,7 @@ class TestSpectrum1DMethods:
                        24., 28.])*ureg('1/angstrom'))])
     def test_get_bin_edges(self, spectrum1d_file, expected_bin_edges):
         spec1d = get_spectrum1d(spectrum1d_file)
-        bin_edges = spec1d._get_bin_edges()
+        bin_edges = spec1d.get_bin_edges()
         assert bin_edges.units == expected_bin_edges.units
         npt.assert_allclose(bin_edges.magnitude, expected_bin_edges.magnitude)
 
@@ -301,7 +301,7 @@ class TestSpectrum1DMethods:
                        18., 22., 26.])*ureg('1/angstrom'))])
     def test_get_bin_centres(self, spectrum1d_file, expected_bin_centres):
         spec1d = get_spectrum1d(spectrum1d_file)
-        bin_centres = spec1d._get_bin_centres()
+        bin_centres = spec1d.get_bin_centres()
         assert bin_centres.units == expected_bin_centres.units
         npt.assert_allclose(bin_centres.magnitude,
                             expected_bin_centres.magnitude)

@@ -52,7 +52,7 @@ def _plot_1d_core(spectra: Union[Spectrum1D, Spectrum1DCollection],
             else:
                 color = p[-1].get_color()
 
-            p = ax.plot(spectrum._get_bin_centres('x').magnitude[x0:x1],
+            p = ax.plot(spectrum.get_bin_centres().magnitude[x0:x1],
                         spectrum.y_data.magnitude[x0:x1],
                         color=color, **mplargs)
 
@@ -185,8 +185,8 @@ def _plot_2d_core(spectrum: Spectrum2D, ax: Axes,
     y_unit = spectrum.y_data_unit
     z_unit = spectrum.z_data_unit
 
-    x_bins = spectrum._get_bin_edges('x').to(x_unit).magnitude
-    y_bins = spectrum._get_bin_edges('y').to(y_unit).magnitude
+    x_bins = spectrum.get_bin_edges('x').to(x_unit).magnitude
+    y_bins = spectrum.get_bin_edges('y').to(y_unit).magnitude
 
     image = NonUniformImage(ax, interpolation=interpolation,
                             extent=(min(x_bins), max(x_bins),
@@ -195,8 +195,8 @@ def _plot_2d_core(spectrum: Spectrum2D, ax: Axes,
     if norm is not None:
         image.set_norm(norm)
 
-    image.set_data(spectrum._get_bin_centres('x').to(x_unit).magnitude,
-                   spectrum._get_bin_centres('y').to(y_unit).magnitude,
+    image.set_data(spectrum.get_bin_centres('x').to(x_unit).magnitude,
+                   spectrum.get_bin_centres('y').to(y_unit).magnitude,
                    spectrum.z_data.to(z_unit).magnitude.T)
     ax.images.append(image)
     ax.set_xlim(min(x_bins), max(x_bins))
