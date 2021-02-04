@@ -317,7 +317,7 @@ class TestSpectrum2DMethods:
                        15.])*ureg('dimensionless'))])
     def test_get_bin_edges(self, spectrum2d_file, ax, expected_bin_edges):
         spec2d = get_spectrum2d(spectrum2d_file)
-        bin_edges = spec2d._get_bin_edges(bin_ax=ax)
+        bin_edges = spec2d.get_bin_edges(bin_ax=ax)
         assert bin_edges.units == expected_bin_edges.units
         npt.assert_allclose(bin_edges.magnitude, expected_bin_edges.magnitude)
 
@@ -339,7 +339,7 @@ class TestSpectrum2DMethods:
                        14.5])*ureg('dimensionless'))])
     def test_get_bin_centres(self, spectrum2d_file, ax, expected_bin_centres):
         spec2d = get_spectrum2d(spectrum2d_file)
-        bin_centres = spec2d._get_bin_centres(bin_ax=ax)
+        bin_centres = spec2d.get_bin_centres(bin_ax=ax)
         assert bin_centres.units == expected_bin_centres.units
         npt.assert_allclose(bin_centres.magnitude,
                             expected_bin_centres.magnitude)

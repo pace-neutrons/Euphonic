@@ -255,6 +255,9 @@ class TestSpectrum1DCollectionIndexAccess:
         with pytest.raises(expected_error):
             spectrum[index]
 
+
+@pytest.mark.unit
+class TestSpectrum1DCollectionMethods:
     @pytest.mark.parametrize(
         'spectrum, split_kwargs, expected_spectra',
         [(get_spectrum('methane_pdos.json'), {'indices': [50]},
@@ -263,3 +266,39 @@ class TestSpectrum1DCollectionIndexAccess:
         spectra = spectrum.split(**split_kwargs)
         for split, expected_split in zip(spectra, expected_spectra):
             check_spectrum1dcollection(split, expected_split)
+
+    @pytest.mark.parametrize(
+        'spectrum_file, expected_bin_edges_file, expected_units', [
+            ('gan_bands.json',
+             'gan_bands_bin_edges.npy',
+             ureg('1/angstrom')),
+            ('quartz_dos_collection.json',
+             'quartz_dos_collection_bin_edges.npy',
+             ureg('meV'))])
+    def test_get_bin_edges(self, spectrum_file, expected_bin_edges_file,
+                           expected_units):
+        spec = get_spectrum(spectrum_file)
+        bin_edges = spec.get_bin_edges()
+        expected_bin_edges = np.load(
+                os.path.join(get_spectrum_dir(), expected_bin_edges_file))
+        assert bin_edges.units == expected_units
+        assert_allclose(bin_edges.magnitude, expected_bin_edges)
+
+    @pytest.mark.parametrize(
+        'spectrum_file, expected_bin_centres_file, expected_units', [
+            ('gan_bands.json',
+             'gan_bands_bin_centres.npy',
+             ureg('1/angstrom')),
+            ('quartz_dos_collection.json',
+             'quartz_dos_collection_bin_centres.npy',
+             ureg('meV'))])
+    def test_get_bin_centres(self, spectrum_file, expected_bin_centres_file,
+                             expected_units):
+        spec = get_spectrum(spectrum_file)
+        bin_centres = spec.get_bin_centres()
+        expected_bin_centres = np.load(
+                os.path.join(get_spectrum_dir(), expected_bin_centres_file))
+        assert bin_centres.units == expected_units
+        assert_allclose(bin_centres.magnitude,
+                        expected_bin_centres)
+
