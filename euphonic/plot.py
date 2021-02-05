@@ -19,17 +19,26 @@ from euphonic import Quantity
 from euphonic.spectra import Spectrum1D, Spectrum1DCollection, Spectrum2D
 
 
-def _plot_1d_core(spectra: Union[Spectrum1D, Spectrum1DCollection],
-                  ax: Axes,
-                  **mplargs) -> None:
+def plot_1d_to_axis(spectra: Union[Spectrum1D, Spectrum1DCollection],
+                    ax: Axes,
+                    **mplargs) -> None:
     """Plot a (collection of) 1D spectrum lines to matplotlib axis
 
     Where there are two identical x-values in a row, plotting will restart
     to avoid creating a vertical line
+
+    Parameters
+    ----------
+    spectra
+        Spectrum1D or Spectrum1DCollection to plot
+    ax
+        Matplotlib axes to which spectra will be drawn
+    **mplargs
+        Keyword arguments passed to Axes.plot
     """
 
     if isinstance(spectra, Spectrum1D):
-        return _plot_1d_core(Spectrum1DCollection.from_spectra([spectra]),
+        return plot_1d_to_axis(Spectrum1DCollection.from_spectra([spectra]),
                              ax=ax, **mplargs)
 
     try:
@@ -141,7 +150,7 @@ def plot_1d(spectra: Union[Spectrum1D,
                                  gridspec_kw=gridspec_kw, squeeze=False)
 
     for i, (spectrum, ax) in enumerate(zip(spectra, subplots.flatten())):
-        _plot_1d_core(spectrum, ax, **line_kwargs)
+        plot_1d_to_axis(spectrum, ax, **line_kwargs)
         ax.set_ylim(bottom=y_min, top=y_max)
 
         if i == 0 and labels:
@@ -157,11 +166,11 @@ def plot_1d(spectra: Union[Spectrum1D,
     return fig
 
 
-def _plot_2d_core(spectrum: Spectrum2D, ax: Axes,
-                  cmap: Union[str, Colormap] = 'viridis',
-                  interpolation: str = 'nearest',
-                  norm: Optional[Normalize] = None,
-                  ) -> NonUniformImage:
+def plot_2d_to_axis(spectrum: Spectrum2D, ax: Axes,
+                    cmap: Union[str, Colormap] = 'viridis',
+                    interpolation: str = 'nearest',
+                    norm: Optional[Normalize] = None,
+                    ) -> NonUniformImage:
     """Plot Spectrum2D object to Axes
 
     Parameters
@@ -271,7 +280,7 @@ def plot_2d(spectra: Union[Spectrum2D, Sequence[Spectrum2D]],
     norm = Normalize(vmin=vmin, vmax=vmax)
 
     for spectrum, ax in zip(spectra, axes.flatten()):
-        _plot_2d_core(spectrum, ax, cmap=cmap, norm=norm)
+        plot_2d_to_axis(spectrum, ax, cmap=cmap, norm=norm)
 
     # Add an invisible large axis for common labels
     ax = fig.add_subplot(111, frameon=False)
