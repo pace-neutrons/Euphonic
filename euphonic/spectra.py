@@ -6,7 +6,6 @@ from typing import (Any, Dict, List, Optional, overload,
                     Sequence, Tuple, TypeVar, Union)
 
 import numpy as np
-from pint import Unit
 from scipy.ndimage import gaussian_filter1d, correlate1d, gaussian_filter
 
 from euphonic.validate import _check_constructor_inputs, _check_unit_conversion
