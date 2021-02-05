@@ -38,6 +38,27 @@ Docstring
 ---------
 
 .. autoclass:: euphonic.spectra.Spectrum1D
+   :inherited-members:
+   :members:
+
+.. _spectrum1dcollection:
+
+Spectrum1DCollection
+====================
+
+This is an object for storing multiple 1D spectra which share the same
+x-axis, e.g. modes in a dispersion plot.
+
+Plotting
+--------
+
+See :ref:`Plotting <plotting>`
+
+Docstring
+---------
+
+.. autoclass:: euphonic.spectra.Spectrum1DCollection
+   :inherited-members:
    :members:
 
 .. _spectrum2d:

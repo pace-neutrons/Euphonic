@@ -5,10 +5,16 @@ euphonic-dos
 ============
 
 The ``euphonic-dos`` program can be used to plot a density of states
-from precalculated frequencies in a ``.phonon`` file. For example, to
-plot DOS from a ``quartz.phonon`` file, run::
+from precalculated frequencies, or on a specific Monkhorst-Pack grid
+from force constants. For example, to plot DOS from a CASTEP ``.phonon``
+file in units of 1/cm, run::
 
-   euphonic-dos quartz.phonon
+   euphonic-dos --energy-unit 1/cm quartz-554-grid.phonon
+
+Or, to plot DOS from CASTEP force constants in a ``.castep_bin`` file
+on a 5x5x4 grid with broadening, run::
+
+   euphonic-dos --grid 5 5 4 --energy-broadening 1.5 quartz.castep_bin
 
 To see all the command line options, run::
 

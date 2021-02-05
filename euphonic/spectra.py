@@ -508,7 +508,7 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
 
         Returns
         -------
-        Spectrum1D
+        Spectrum1DCollection
         """
         d = _process_dict(d, quantities=['x_data', 'y_data'],
                           optional=['x_tick_labels'])
