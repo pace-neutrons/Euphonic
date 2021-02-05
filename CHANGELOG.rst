@@ -1,9 +1,29 @@
 `Unreleased <https://github.com/pace-neutrons/Euphonic/compare/v0.3.2...HEAD>`_
 ----------
 
-- Changes:
+- There have been some major changes and improvements to spectra, plotting
+  and command line tools, including:
+    - New command line tool ``euphonic-intensity-map`` for plotting weighted
+      2D Spectra e.g. Coherent neutron S(Q,w)
+    - Existing command line tools ``euphonic-dispersion`` and ``euphonic-dos``
+      have been updated to also read force constants and Phonopy files.
+      Arguments are also more consistent across tools so some may have changed,
+      check the command line tool help for details.
+    - New ``Spectrum1DCollection`` object for containing 1D spectra with a
+      shared x-axis (e.g. phonon dispersion modes)
+    - New ``plot_1d_to_axis`` and ``plot_2d_to_axis`` functions to allow
+      plotting on specific axes
+    - ``get_bin_centres`` and ``get_bin_edges`` utility functions on spectra
+    - The ``ratio`` argument to ``plot_2d`` has been removed, it should no longer
+      be required due to better management of relative axis sizes.
+    - The ``btol`` argument to ``plot_1d`` has been removed, it is recommended
+      to use ``Spectrum1D.split()`` or ``Spectrum1DCollection.split()`` instead.
+    - The ``plot_dispersion`` function has been removed. It is now recommended
+      to plot dispersion using ``plot_1d(QpointPhononModes.get_dispersion())``.
+      See docs for details.
 
-  - Some of Euphonic's dependency version requirements have been changed - but
+- Other changes:
+  - Some of Euphonic's dependency version requirements have been changed, but
     can now be relied on with more certainty due to better CI testing. This
     includes:
 
