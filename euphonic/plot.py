@@ -107,9 +107,6 @@ def plot_1d(spectra: Union[Spectrum1D,
         band structures, so the subplot widths will be based on the x-axis
         ranges.)
 
-        A singular Spectrum1D or Spectrum1DCollection will be automatically
-        split into segments if btol was set.
-
     title
         Plot title
     x_label
