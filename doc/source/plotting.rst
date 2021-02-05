@@ -155,8 +155,8 @@ spectra are on the same colour scale. An example of this for 2 S(Q,w) is below:
   sqw2 = Spectrum2D.from_json_file('sqw2.json')
   norm = Normalize(vmin=0, vmax=1e-10)
   fig, axes = plt.subplots(1, 2)
-  plot_2d_to_axis(dos1, axes[0], norm=norm)
-  plot_2d_to_axis(dos2, axes[1], norm=norm)
+  plot_2d_to_axis(sqw1, axes[0], norm=norm)
+  plot_2d_to_axis(sqw2, axes[1], norm=norm)
   fig.show()
 
 Docstrings
