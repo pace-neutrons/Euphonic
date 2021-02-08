@@ -181,7 +181,7 @@ class Spectrum(ABC):
         elif bin_length == data_length:
             return False
         else:
-            raise RuntimeError((
+            raise ValueError((
                 f'Unexpected data axis length {data_length} '
                 f'for bin axis length {bin_length}'))
 

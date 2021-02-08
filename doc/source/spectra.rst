@@ -47,7 +47,7 @@ Spectrum1DCollection
 ====================
 
 This is an object for storing multiple 1D spectra which share the same
-x-axis, e.g. modes in a dispersion plot.
+x-axis, e.g. bands in a dispersion plot.
 
 Plotting
 --------

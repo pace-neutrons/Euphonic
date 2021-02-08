@@ -306,15 +306,15 @@ class TestSpectrum1DMethods:
         npt.assert_allclose(bin_centres.magnitude,
                             expected_bin_centres.magnitude)
 
-    def test_get_bin_edges_with_invalid_data_shape_raises_runtime_error(self):
+    def test_get_bin_edges_with_invalid_data_shape_raises_value_error(self):
         spec1d = get_spectrum1d('xsq_spectrum1d.json')
         spec1d._x_data = spec1d._x_data[:4]
-        with pytest.raises(RuntimeError):
+        with pytest.raises(ValueError):
             spec1d.get_bin_edges()
 
-    def test_get_bin_centres_with_invalid_data_shape_raises_runtime_error(self):
+    def test_get_bin_centres_with_invalid_data_shape_raises_value_error(self):
         spec1d = get_spectrum1d('xsq_bin_edges_spectrum1d.json')
         spec1d._x_data = spec1d._x_data[:5]
-        with pytest.raises(RuntimeError):
+        with pytest.raises(ValueError):
             spec1d.get_bin_centres()
 
