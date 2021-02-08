@@ -10,6 +10,7 @@ from euphonic.spectra import Spectrum1D
 from tests_and_analysis.test.utils import (
     get_data_path, check_unit_conversion, check_json_metadata)
 
+
 class ExpectedSpectrum1D:
     def __init__(self, spectrum1d_json_file: str):
         with open(spectrum1d_json_file) as fd:
@@ -223,6 +224,36 @@ class TestSpectrum1DUnitConversion:
 
 @pytest.mark.unit
 class TestSpectrum1DMethods:
+    @pytest.mark.parametrize(
+        'args, spectrum1d_file, split_spectrum_files', [
+            # Multiple split by index, with x_tick_labels
+            ({'indices': (3, 8)}, 'xsq_spectrum1d.json',
+             [f'xsq_split38_{i}.json' for i in range(3)]),
+            # Single split by index, no x_tick_labels
+            ({'indices': (11,)}, 'quartz_666_dos.json',
+             [f'quartz_666_split_11_{i}.json' for i in range(2)]),
+            # No split
+            ({'indices': ()}, 'xsq_spectrum1d.json', ('xsq_spectrum1d.json',)),
+            # Default (btol=10) split of band data
+            ({}, 'toy_band.json',
+             [f'toy_band_btol10_split_{i}.json' for i in range(3)]),
+            # Non-default btol split of band data
+            ({'btol': 22.}, 'toy_band.json',
+             [f'toy_band_btol22_split_{i}.json' for i in range(2)]),
+            ])             
+    def test_split(self, args, spectrum1d_file, split_spectrum_files):
+        spec1d = get_spectrum1d(spectrum1d_file)
+        split_spec1d = spec1d.split(**args)
+        for spectrum, expected_file in zip(split_spec1d, split_spectrum_files):
+            check_spectrum1d(spectrum, get_spectrum1d(expected_file))        
+
+    @pytest.mark.parametrize(
+        'args, spectrum1d_file, expected_error',
+        [({'indices': (3, 4), 'btol': 4.}, 'xsq_spectrum1d.json', ValueError)])
+    def test_split_errors(self, args, spectrum1d_file, expected_error):
+        spec1d = get_spectrum1d(spectrum1d_file)
+        with pytest.raises(expected_error):
+            spec1d.split(**args)
 
     @pytest.mark.parametrize(
         'args, spectrum1d_file, broadened_spectrum1d_file', [
@@ -256,7 +287,7 @@ class TestSpectrum1DMethods:
                        24., 28.])*ureg('1/angstrom'))])
     def test_get_bin_edges(self, spectrum1d_file, expected_bin_edges):
         spec1d = get_spectrum1d(spectrum1d_file)
-        bin_edges = spec1d._get_bin_edges()
+        bin_edges = spec1d.get_bin_edges()
         assert bin_edges.units == expected_bin_edges.units
         npt.assert_allclose(bin_edges.magnitude, expected_bin_edges.magnitude)
 
@@ -270,7 +301,20 @@ class TestSpectrum1DMethods:
                        18., 22., 26.])*ureg('1/angstrom'))])
     def test_get_bin_centres(self, spectrum1d_file, expected_bin_centres):
         spec1d = get_spectrum1d(spectrum1d_file)
-        bin_centres = spec1d._get_bin_centres()
+        bin_centres = spec1d.get_bin_centres()
         assert bin_centres.units == expected_bin_centres.units
         npt.assert_allclose(bin_centres.magnitude,
                             expected_bin_centres.magnitude)
+
+    def test_get_bin_edges_with_invalid_data_shape_raises_value_error(self):
+        spec1d = get_spectrum1d('xsq_spectrum1d.json')
+        spec1d._x_data = spec1d._x_data[:4]
+        with pytest.raises(ValueError):
+            spec1d.get_bin_edges()
+
+    def test_get_bin_centres_with_invalid_data_shape_raises_value_error(self):
+        spec1d = get_spectrum1d('xsq_bin_edges_spectrum1d.json')
+        spec1d._x_data = spec1d._x_data[:5]
+        with pytest.raises(ValueError):
+            spec1d.get_bin_centres()
+

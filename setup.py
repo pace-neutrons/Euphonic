@@ -102,7 +102,8 @@ def run_setup(build_c=True):
             'euphonic-dispersion = euphonic.cli.dispersion:main',
             'euphonic-dos = euphonic.cli.dos:main',
             'euphonic-optimise-eta = euphonic.cli.optimise_eta:main',
-            'euphonic-show-sampling = euphonic.cli.show_sampling:main']}
+            'euphonic-show-sampling = euphonic.cli.show_sampling:main',
+            'euphonic-intensity-map = euphonic.cli.intensity_map:main']}
     )
 
 run_setup()

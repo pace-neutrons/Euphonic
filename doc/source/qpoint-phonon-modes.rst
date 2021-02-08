@@ -65,6 +65,11 @@ This reordering can be seen the plotting dispersion (see
   phonons = QpointPhononModes.from_castep('quartz.phonon')
   phonons.reorder_frequencies()
 
+Plotting Dispersion
+-------------------
+
+See :ref:`Plotting Dispersion <plotting-dispersion>`
+
 
 Calculating The Coherent Neutron Structure Factor
 -------------------------------------------------

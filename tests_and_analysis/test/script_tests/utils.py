@@ -1,22 +1,24 @@
 import os
 # Required for mocking
 import matplotlib.pyplot
-from typing import List
+from matplotlib.axes import Axes
+from typing import Dict, List, Union
 from ..utils import get_data_path
 
 
-def get_phonon_file() -> str:
+def args_to_key(cl_args: str) -> str:
     """
-    Returns
-    -------
-    str
-        The full path to the NaH.phonon file
+    From CL tool arguments, return the key that should be used to store
+    its testing output
     """
-    return os.path.join(get_data_path(),
-                       'qpoint_phonon_modes', 'NaH', 'NaH.phonon')
+    if os.path.isfile(cl_args[0]):
+        cl_args[0] = ' '.join([os.path.split(os.path.dirname(cl_args[0]))[1],
+                               os.path.split(cl_args[0])[1]])
+    key = ' '.join(cl_args)
+    return key
 
 
-def get_script_data_folder() -> str:
+def get_script_test_data_path() -> str:
     """
     Returns
     -------
@@ -29,48 +31,40 @@ def get_script_data_folder() -> str:
     return folder
 
 
-def get_dispersion_data_file() -> str:
-    """
-    Returns
-    -------
-    str
-        A full path prefix of all dispersion regression test files
-    """
-    return os.path.join(get_script_data_folder(), "dispersion.json")
+def get_current_plot_line_data() -> Dict[str, Union[str,
+                                                    List[str],
+                                                    List[List[List[float]]]]]:
+    fig = matplotlib.pyplot.gcf()
+    data = get_fig_label_data(fig)
+    data['xy_data'] = [line.get_xydata().T.tolist()
+                       for line in fig.axes[0].lines]
+    return data
 
 
-def get_dos_data_file() -> str:
-    """
-    Returns
-    -------
-    str
-        A full path prefix of all dos regression test files
-    """
-    return os.path.join(get_script_data_folder(), "dos.json")
+def get_fig_label_data(fig) -> Dict[str, Union[str, List[str]]]:
+    label_data = {'x_ticklabels': [],
+                  'title': fig._suptitle.get_text()}
+
+    # Get axis labels from whichever axis has them; collect all tick labels
+    for ax in fig.axes:
+        ax_label_data = get_ax_label_data(ax)
+
+        for key in 'x_label', 'y_label':
+            if ax_label_data[key]:
+                label_data[key] = ax_label_data[key]
+
+        label_data['x_ticklabels'] += ax_label_data['x_ticklabels']
+
+    return label_data
 
 
-def get_sphere_sampling_data_file() -> str:
-    """
-    Returns
-    -------
-    str
-        A full path prefix of all sampling script regression test files
-    """
-    return os.path.join(get_script_data_folder(), "sphere_sampling.json")
-
-
-def get_current_plot_lines_xydata() -> List[List[List[float]]]:
-    """
-    Get the current matplotlib plot with gcf() and return the xydata of
-    the lines of the plot
-
-    Returns
-    -------
-    List[List[List[float]]]
-        The list of lines xy data from the current matplotlib plot
-    """
-    return [line.get_xydata().T.tolist()
-            for line in matplotlib.pyplot.gcf().axes[0].lines]
+def get_ax_label_data(ax) -> Dict[str, Union[str, List[str]]]:
+    label_data = {}
+    label_data['x_label'] = ax.get_xlabel()
+    label_data['y_label'] = ax.get_ylabel()
+    label_data['x_ticklabels'] = [lab.get_text()
+                                  for lab in ax.get_xticklabels()]
+    return label_data
 
 
 def get_current_plot_offsets() -> List[List[float]]:
@@ -88,51 +82,35 @@ def get_current_plot_offsets() -> List[List[float]]:
     return matplotlib.pyplot.gca().collections[0].get_offsets().data.tolist()
 
 
-def get_dos_params() -> List[List[str]]:
-    """
-    Get the parameters to run and test euphonic-dos with
+def get_current_plot_image_data() -> Dict[str,
+                                          Union[str, List[float], List[int]]]:
+    fig = matplotlib.pyplot.gcf()
+    for ax in fig.axes:
+        if len(ax.get_images()) == 1:
+            break
+    else:
+        raise Exception("Could not find axes with a single image")
 
-    Returns
-    -------
-    List[str]
-        The parameters to run the script with
-    """
-    return [[], ["-w 2.3"], ["-b 3.3"], ["-w 2.3", "-b 3.3"],
-            ["-unit=meV"], ["-lorentz"]]
+    data = get_fig_label_data(fig)
+    data.update(get_ax_image_data(ax))
 
-
-def get_dispersion_params() -> List[List[str]]:
-    """
-    Get the parameters to run and test euphonic-dispersion with.
-
-    Returns
-    -------
-    List[str]
-        The parameters to run the script with
-    """
-    return [[], ["-unit=meV"], ["-btol=5.0"], ["-reorder"]]
+    return data
 
 
-def get_sphere_sampling_params() -> List[List[str]]:
-    """
-    Get the parameters to run and test euphonic-show-sampling
+def get_ax_image_data(ax: Axes) -> Dict[str,
+                                        Union[str, List[float], List[int]]]:
+    im = ax.get_images()[0]
+    # Convert negative zero to positive zero
+    im_data = im.get_array()
+    data_slice_1 = im_data[:, (im_data.shape[1] // 2)].flatten()
+    data_slice_2 = im_data[im_data.shape[0] // 2, :].flatten()
 
-    Returns
-    -------
-    List[str]
-        The parameters to run the script with
-    """
-    return [['27', 'golden-square'],
-            ['8', 'regular-square'],
-            ['9', 'regular-square'],
-            ['10', 'golden-sphere'],
-            ['10', 'golden-sphere', '--jitter'],
-            ['15', 'spherical-polar-grid'],
-            ['18', 'spherical-polar-grid', '--jitter'],
-            ['17', 'sphere-from-square-grid', '--jitter'],
-            ['18', 'sphere-from-square-grid'],
-            ['15', 'spherical-polar-improved'],
-            ['15', 'spherical-polar-improved', '--jitter'],
-            ['10', 'random-sphere'],
-            ['10', 'random-sphere', '--jitter']
-            ]
+    data = {}
+
+    data['cmap'] = im.cmap.name
+    data['extent'] = [float(x) for x in im.get_extent()]
+    data['size'] = [int(x) for x in im.get_size()]
+    data['data_1'] = list(map(float, data_slice_1))
+    data['data_2'] = list(map(float, data_slice_2))
+
+    return data

@@ -2,15 +2,15 @@ import json
 import math
 import sys
 import os.path
-from typing import Dict, List, Any
+from typing import Dict
 
 import seekpath
 import numpy as np
 from importlib_resources import open_text  # Backport for Python 3.6
 from pint import UndefinedUnitError
 
-import euphonic.data
 from euphonic import ureg, Quantity
+import euphonic.data
 
 
 def direction_changed(qpts, tolerance=5e-6):

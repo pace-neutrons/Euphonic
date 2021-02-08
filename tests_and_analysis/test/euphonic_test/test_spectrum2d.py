@@ -254,6 +254,16 @@ class TestSpectrum2DUnitConversion:
 
 @pytest.mark.unit
 class TestSpectrum2DMethods:
+    @pytest.mark.parametrize(
+        'args, spectrum2d_file, split_spectrum_files',
+        [({'indices': (4,)}, 'example_spectrum2d.json',
+          [f'example_spectrum2d_split4_{i}.json' for i in range(2)])])
+    def test_split(self, args, spectrum2d_file, split_spectrum_files):
+        spec2d = get_spectrum2d(spectrum2d_file)
+        split_spec2d = spec2d.split(**args)
+        for spectrum, expected_file in zip(split_spec2d, split_spectrum_files):
+            expected_spectrum = get_spectrum2d(expected_file)
+            check_spectrum2d(spectrum, expected_spectrum)
 
     @pytest.mark.parametrize(
         'args, spectrum2d_file, broadened_spectrum2d_file', [
@@ -307,7 +317,7 @@ class TestSpectrum2DMethods:
                        15.])*ureg('dimensionless'))])
     def test_get_bin_edges(self, spectrum2d_file, ax, expected_bin_edges):
         spec2d = get_spectrum2d(spectrum2d_file)
-        bin_edges = spec2d._get_bin_edges(bin_ax=ax)
+        bin_edges = spec2d.get_bin_edges(bin_ax=ax)
         assert bin_edges.units == expected_bin_edges.units
         npt.assert_allclose(bin_edges.magnitude, expected_bin_edges.magnitude)
 
@@ -329,7 +339,29 @@ class TestSpectrum2DMethods:
                        14.5])*ureg('dimensionless'))])
     def test_get_bin_centres(self, spectrum2d_file, ax, expected_bin_centres):
         spec2d = get_spectrum2d(spectrum2d_file)
-        bin_centres = spec2d._get_bin_centres(bin_ax=ax)
+        bin_centres = spec2d.get_bin_centres(bin_ax=ax)
         assert bin_centres.units == expected_bin_centres.units
         npt.assert_allclose(bin_centres.magnitude,
                             expected_bin_centres.magnitude)
+
+    @pytest.mark.parametrize(
+        'bin_ax', ['x', 'y']
+    )
+    def test_get_bin_edges_with_invalid_data_shape_raises_value_error(
+            self, bin_ax):
+        spec2d = get_spectrum2d('example_xybin_edges_spectrum2d.json')
+        spec2d._z_data = spec2d._z_data[:4, :6]
+        with pytest.raises(ValueError):
+            spec2d.get_bin_centres()
+
+    @pytest.mark.parametrize(
+        'bin_ax', ['x', 'y']
+    )
+    def test_get_bin_centres_with_invalid_data_shape_raises_value_error(
+            self, bin_ax):
+        spec2d = get_spectrum2d('example_spectrum2d.json')
+        spec2d._z_data = spec2d._z_data[:3, :5]
+        with pytest.raises(ValueError):
+            spec2d.get_bin_centres()
+
+
