@@ -60,8 +60,9 @@ pipeline {
         stage("Set up") {
             steps {
                 bat """
-                    CALL conda create --name py python=3.6 -y
-                    CALL conda activate py
+                    CALL conda remove --name euphonic_ci_branch_%BRANCH_NAME% --all -y
+                    CALL conda create --name euphonic_ci_branch_%BRANCH_NAME% python=3.6 -y
+                    CALL conda activate euphonic_ci_branch_%BRANCH_NAME%
                     python -m pip install --upgrade --user pip
                     python -m pip install -r tests_and_analysis/jenkins_requirements.txt
                 """
@@ -73,7 +74,7 @@ pipeline {
             steps {
                 bat """
                     CALL "%VS2019_VCVARSALL%" x86_amd64
-                    CALL conda activate py
+                    CALL conda activate euphonic_ci_branch_%BRANCH_NAME%
                     python -m tox
                 """
             }
@@ -86,7 +87,7 @@ pipeline {
                     def tag = env.JOB_BASE_NAME.substring(1)
                     bat """
                         CALL "%VS2019_VCVARSALL%" x86_amd64
-                        CALL conda activate py
+                        CALL conda activate euphonic_ci_branch_%BRANCH_NAME%
                         set EUPHONIC_VERSION=${tag}
                         python -m tox -c release_tox.ini
                     """
@@ -99,6 +100,9 @@ pipeline {
 
         always {
             junit 'tests_and_analysis/test/reports/junit_report*.xml'
+            bat """
+                CALL conda remove --name euphonic_ci_branch_%BRANCH_NAME% --all -y
+            """
         }
 
         unsuccessful {
