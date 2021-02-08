@@ -134,9 +134,9 @@
 
 - Breaking Changes:
 
-  - There has been a major refactor, for see the latest
-    `docs <https://euphonic.readthedocs.io/en/latest>`_ for how to use, or
-    `here <https://euphonic.readthedocs.io/en/latest/refactor.html>`_ for
+  - There has been a major refactor, for see the v0.3.0
+    `docs <https://euphonic.readthedocs.io/en/v0.3.0>`_ for how to use, or
+    `here <https://euphonic.readthedocs.io/en/v0.3.0/refactor.html>`_ for
     refactor details
   - Python 2 is no longer supported. Supported Python versions are ``3.6``,
     ``3.7`` and ``3.8``
@@ -144,7 +144,7 @@
 - New Features:
 
   - Euphonic can now read Phonopy input! See
-    `the docs <https://euphonic.readthedocs.io/en/latest>`_
+    `the docs <https://euphonic.readthedocs.io/en/v0.3.0>`_
     for details.
 
 - Improvements:

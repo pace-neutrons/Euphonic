@@ -347,21 +347,21 @@ class TestSpectrum2DMethods:
     @pytest.mark.parametrize(
         'bin_ax', ['x', 'y']
     )
-    def test_get_bin_edges_with_invalid_data_shape_raises_runtime_error(
+    def test_get_bin_edges_with_invalid_data_shape_raises_value_error(
             self, bin_ax):
         spec2d = get_spectrum2d('example_xybin_edges_spectrum2d.json')
         spec2d._z_data = spec2d._z_data[:4, :6]
-        with pytest.raises(RuntimeError):
+        with pytest.raises(ValueError):
             spec2d.get_bin_centres()
 
     @pytest.mark.parametrize(
         'bin_ax', ['x', 'y']
     )
-    def test_get_bin_centres_with_invalid_data_shape_raises_runtime_error(
+    def test_get_bin_centres_with_invalid_data_shape_raises_value_error(
             self, bin_ax):
         spec2d = get_spectrum2d('example_spectrum2d.json')
         spec2d._z_data = spec2d._z_data[:3, :5]
-        with pytest.raises(RuntimeError):
+        with pytest.raises(ValueError):
             spec2d.get_bin_centres()
 
 

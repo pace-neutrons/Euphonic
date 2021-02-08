@@ -12,9 +12,9 @@ file in units of 1/cm, run::
    euphonic-dos --energy-unit 1/cm quartz-554-grid.phonon
 
 Or, to plot DOS from CASTEP force constants in a ``.castep_bin`` file
-on a 5x5x4 grid with broadening, run::
+on a 15x15x12 grid with broadening, run::
 
-   euphonic-dos --grid 5 5 4 --energy-broadening 1.5 quartz.castep_bin
+   euphonic-dos --grid 15 15 12 --energy-broadening 1.5 quartz.castep_bin
 
 To see all the command line options, run::
 
