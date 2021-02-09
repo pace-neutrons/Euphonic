@@ -1,4 +1,7 @@
-`Unreleased <https://github.com/pace-neutrons/Euphonic/compare/v0.3.2...HEAD>`_
+`Unreleased <https://github.com/pace-neutrons/Euphonic/compare/v0.4.0...HEAD>`_
+----------
+
+`v0.4.0 <https://github.com/pace-neutrons/Euphonic/compare/v0.3.2...v0.4.0>`_
 ----------
 
 - There have been some major changes and improvements to spectra, plotting
