@@ -1,4 +1,6 @@
 {
+    "__euphonic_class__": "StructureFactor",
+    "__euphonic_version__": "0.4.0+1.g1217c14",
     "crystal": {
         "atom_mass": [
             15.999400000000001,
@@ -894,5 +896,12 @@
             3.491990735009132e-13
         ]
     ],
-    "structure_factors_unit": "angstrom ** 2"
+    "structure_factors_unit": "angstrom ** 2",
+    "weights": [
+        0.2,
+        0.2,
+        0.2,
+        0.2,
+        0.2
+    ]
 }
