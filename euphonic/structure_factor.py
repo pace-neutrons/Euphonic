@@ -31,6 +31,8 @@ class StructureFactor(object):
         Phonon frequencies per q-point and mode
     structure_factors : (n_qpts, 3*crystal.n_atoms) float Quantity
         Structure factor per q-point and mode
+    weights : (n_qpts,) float ndarray
+        The weight for each q-point
     temperature : float Quantity or None
         The temperature used to calculate any temperature-dependent
         parts of the structure factor (e.g. Debye-Waller, Bose
@@ -39,7 +41,7 @@ class StructureFactor(object):
     """
 
     def __init__(self, crystal, qpts, frequencies, structure_factors,
-                 temperature=None):
+                 weights=None, temperature=None):
         """
         Parameters
         ----------
@@ -52,6 +54,9 @@ class StructureFactor(object):
             Phonon frequencies per q-point and mode
         structure_factors: (n_qpts, 3*crystal.n_atoms) float Quantity
             Structure factor per q-point and mode
+        weights : (n_qpts,) float ndarray, optional
+            The weight for each q-point. If None, equal
+            weights are assumed
         temperature : float Quantity or None
             The temperature used to calculate any temperature-dependent
             parts of the structure factor (e.g. Debye-Waller, Bose
@@ -64,10 +69,10 @@ class StructureFactor(object):
         n_at = crystal.n_atoms
         n_qpts = len(qpts)
         _check_constructor_inputs(
-            [frequencies, structure_factors, temperature],
-            [Quantity, Quantity, [Quantity, type(None)]],
-            [(n_qpts, 3*n_at), (n_qpts, 3*n_at), ()],
-            ['frequencies', 'structure_factors', 'temperature'])
+            [frequencies, structure_factors, weights, temperature],
+            [Quantity, Quantity, [np.ndarray, type(None)], [Quantity, type(None)]],
+            [(n_qpts, 3*n_at), (n_qpts, 3*n_at), (n_qpts,), ()],
+            ['frequencies', 'structure_factors', 'weights', 'temperature'])
         self.crystal = crystal
         self.qpts = qpts
         self.n_qpts = len(qpts)
@@ -76,6 +81,11 @@ class StructureFactor(object):
         self._structure_factors = structure_factors.to(
             ureg.bohr**2).magnitude
         self.structure_factors_unit = str(structure_factors.units)
+
+        if weights is not None:
+            self.weights = weights
+        else:
+            self.weights = np.full(self.n_qpts, 1/self.n_qpts)
 
         if temperature is not None:
             self._temperature = temperature.to(ureg.K).magnitude
@@ -121,23 +131,29 @@ class StructureFactor(object):
 
         Parameters
         ----------
-        e_bins : (n_e_bins + 1,) float Quantity
+        e_bins
             The energy bin edges
-        calc_bose : boolean, optional
+        calc_bose
             Whether to calculate and apply the Bose population factor
-        temperature : float Quantity, optional
+        temperature
             The temperature to use to calculate the Bose factor. Is only
             required if StructureFactor.temperature = None, otherwise
             the temperature stored in StructureFactor will be used
         weights
-            Dimensionless weights to be applied in averaging. For details of
-            how this argument is interpreted see docs for :func:`numpy.average`
+            Dimensionless weights to be applied in averaging, the same
+            length as qpts. If no weights are provided the weights
+            contained in StructureFactor are used. For details of how
+            this argument is interpreted see docs for
+            :func:`numpy.average`
 
         Returns
         -------
         s_w : Spectrum1D
             1-D neutron scattering spectrum, averaged over all sampled q-points
         """
+        if weights is None:
+            weights = self.weights
+
         sqw_map = self._bose_corrected_structure_factor(
             e_bins, calc_bose=calc_bose, temperature=temperature)
 
@@ -322,7 +338,8 @@ class StructureFactor(object):
         dict
         """
         dout = _obj_to_dict(self, ['crystal', 'n_qpts', 'qpts', 'frequencies',
-                                   'structure_factors', 'temperature'])
+                                   'structure_factors', 'weights',
+                                   'temperature'])
         return dout
 
     def to_json_file(self, filename):
@@ -356,6 +373,7 @@ class StructureFactor(object):
 
             There are also the following optional keys:
 
+            - 'weights': (n_qpts,) float ndarray
             - 'temperature': float
             - 'temperature_unit': str
 
@@ -366,9 +384,10 @@ class StructureFactor(object):
         crystal = Crystal.from_dict(d['crystal'])
         d = _process_dict(
             d, quantities=['frequencies', 'structure_factors', 'temperature'],
-            optional=['temperature'])
+            optional=['weights', 'temperature'])
         return StructureFactor(crystal, d['qpts'], d['frequencies'],
-                               d['structure_factors'], d['temperature'])
+                               d['structure_factors'], d['weights'],
+                               d['temperature'])
 
     @classmethod
     def from_json_file(cls, filename):
