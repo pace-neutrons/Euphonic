@@ -1,5 +1,6 @@
 import re
 import struct
+from typing import Dict, Optional, Any
 
 import numpy as np
 
@@ -7,15 +8,28 @@ from euphonic import ureg
 from euphonic.util import is_gamma
 
 
-def _read_phonon_data(filename, cell_vectors_unit='angstrom',
-                      atom_mass_unit='amu', frequencies_unit='meV'):
+def _read_phonon_data(filename: str,
+                      cell_vectors_unit: Optional[str] = 'angstrom',
+                      atom_mass_unit: Optional[str] = 'amu',
+                      frequencies_unit: Optional[str] = 'meV',
+                      read_eigenvectors: Optional[bool] = True
+    ) -> Dict[str, Any]:
     """
     Reads data from a .phonon file and returns it in a dictionary
 
     Parameters
     ----------
-    filename : str
+    filename
         The path and name of the .phonon file to read
+    cell_vectors_unit
+        The unit to return the cell vectors in
+    atom_mass_unit
+        The unit to return the atom masses in
+    frequencies_unit
+        The unit to return the frequencies in
+    read_eigenvectors
+        Whether to read the eigenvectors and return them in the
+        dictionary
 
     Returns
     -------
@@ -23,7 +37,10 @@ def _read_phonon_data(filename, cell_vectors_unit='angstrom',
         A dict with the following keys: 'n_atoms', 'cell_vectors',
         'cell_vectors_unit', 'atom_r', 'atom_type', 'atom_mass',
         'atom_mass_unit', 'qpts', 'weights', 'frequencies',
-        'frequencies_unit', 'eigenvectors'
+        'frequencies_unit'
+
+        If read_eigenvectors is True, there will also be an
+        'eigenvectors' key
     """
     with open(filename, 'r') as f:
 
@@ -33,8 +50,9 @@ def _read_phonon_data(filename, cell_vectors_unit='angstrom',
         qpts = np.zeros((n_qpts, 3))
         weights = np.zeros(n_qpts)
         freqs = np.zeros((n_qpts, n_branches))
-        eigenvecs = np.zeros((n_qpts, n_branches, n_atoms, 3),
-                             dtype='complex128')
+        if read_eigenvectors:
+            eigenvecs = np.zeros((n_qpts, n_branches, n_atoms, 3),
+                                 dtype='complex128')
 
         # Need to loop through file using while rather than number of
         # q-points as sometimes points are duplicated
@@ -61,16 +79,18 @@ def _read_phonon_data(filename, cell_vectors_unit='angstrom',
                           for line in freq_lines]
 
             [f.readline() for x in range(2)]  # Skip 2 label lines
-            lines = np.array([f.readline().split()[2:]
-                              for x in range(n_atoms*n_branches)],
-                             dtype=np.float64)
-            lines_i = np.column_stack(([lines[:, 0] + lines[:, 1]*1j,
-                                        lines[:, 2] + lines[:, 3]*1j,
-                                        lines[:, 4] + lines[:, 5]*1j]))
-            qeigenvec = np.zeros((n_branches, n_atoms, 3),
-                                 dtype=np.complex128)
-            for i in range(n_branches):
-                qeigenvec[i, :, :] = lines_i[i*n_atoms:(i+1)*n_atoms, :]
+            evec_lines = [f.readline() for x in range(n_atoms*n_branches)]
+            if read_eigenvectors:
+                evec_lines = np.array([x.split()[2:] for x in evec_lines],
+                                      dtype=np.float64)
+                lines_i = np.column_stack((
+                    [evec_lines[:, 0] + evec_lines[:, 1]*1j,
+                     evec_lines[:, 2] + evec_lines[:, 3]*1j,
+                     evec_lines[:, 4] + evec_lines[:, 5]*1j]))
+                qeigenvec = np.zeros((n_branches, n_atoms, 3),
+                                     dtype=np.complex128)
+                for i in range(n_branches):
+                    qeigenvec[i, :, :] = lines_i[i*n_atoms:(i+1)*n_atoms, :]
             qpt_line = f.readline()
             # Sometimes there are more than n_qpts q-points in the file
             # due to LO-TO splitting
@@ -78,12 +98,14 @@ def _read_phonon_data(filename, cell_vectors_unit='angstrom',
                 qpts[idx] = qpt
                 freqs[idx] = qfreq
                 weights[idx] = qweight
-                eigenvecs[idx] = qeigenvec
+                if read_eigenvectors:
+                    eigenvecs[idx] = qeigenvec
             else:
                 qpts = np.concatenate((qpts, [qpt]))
                 freqs = np.concatenate((freqs, [qfreq]))
                 weights = np.concatenate((weights, [qweight]))
-                eigenvecs = np.concatenate((eigenvecs, [qeigenvec]))
+                if read_eigenvectors:
+                    eigenvecs = np.concatenate((eigenvecs, [qeigenvec]))
             idx += 1
 
     data_dict = {}
@@ -103,7 +125,8 @@ def _read_phonon_data(filename, cell_vectors_unit='angstrom',
     data_dict['frequencies'] = ((freqs*(1/ureg.cm)).to(
         frequencies_unit)).magnitude
     data_dict['frequencies_unit'] = frequencies_unit
-    data_dict['eigenvectors'] = eigenvecs
+    if read_eigenvectors:
+        data_dict['eigenvectors'] = eigenvecs
 
     return data_dict
 

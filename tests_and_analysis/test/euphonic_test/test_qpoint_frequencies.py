@@ -13,7 +13,7 @@ from tests_and_analysis.test.euphonic_test.test_crystal import (
 from tests_and_analysis.test.euphonic_test.test_spectrum1d import (
     get_expected_spectrum1d, check_spectrum1d)
 from tests_and_analysis.test.utils import (
-    get_data_path, check_frequencies_at_qpts, check_unit_conversion,
+    get_data_path, get_castep_path, check_frequencies_at_qpts, check_unit_conversion,
     check_json_metadata)
 
 
@@ -140,16 +140,18 @@ class TestQpointFrequenciesCreation:
         qpt_freqs = QpointFrequencies(*args, **kwargs)
         return qpt_freqs, expected_qpt_freqs
 
-#    @pytest.fixture(params=[
-#        ('LZO', 'La2Zr2O7.phonon',
-#         'LZO_from_castep_qpoint_frequencies.json')])
-#    def create_from_castep(self, request):
-#        material, phonon_file, json_file = request.param
-#        qpt_freqs = QpointFrequencies.from_castep(
-#            os.path.join(get_qpt_freqs_dir(material), phonon_file))
-#        expected_qpt_freqs = ExpectedQpointPhononModes(
-#            os.path.join(get_qpt_freqs_dir(material), json_file))
-#        return qpt_freqs, expected_qpt_freqs
+    @pytest.fixture(params=[
+        ('LZO', 'La2Zr2O7.phonon',
+         'LZO_qpoint_frequencies.json'),
+         ('quartz', 'quartz-666-grid.phonon',
+         'quartz_666_qpoint_frequencies.json')])
+    def create_from_castep(self, request):
+        material, phonon_file, json_file = request.param
+        qpt_freqs = QpointFrequencies.from_castep(
+            get_castep_path(material, phonon_file))
+        expected_qpt_freqs = ExpectedQpointFrequencies(
+            os.path.join(get_qpt_freqs_dir(), json_file))
+        return qpt_freqs, expected_qpt_freqs
 
 #    @pytest.fixture(params=[
 #        ('NaCl', 'band', {'summary_name': 'phonopy.yaml',
@@ -187,8 +189,8 @@ class TestQpointFrequenciesCreation:
         pytest.lazy_fixture('create_from_constructor'),
         pytest.lazy_fixture('create_from_constructor_without_weights'),
         pytest.lazy_fixture('create_from_dict'),
-        pytest.lazy_fixture('create_from_json')])
-#        pytest.lazy_fixture('create_from_castep'),
+        pytest.lazy_fixture('create_from_json'),
+        pytest.lazy_fixture('create_from_castep')])
 #        pytest.lazy_fixture('create_from_phonopy')])
     def test_correct_object_creation(self, qpt_freqs_creator):
         qpt_freqs, expected_qpt_freqs = qpt_freqs_creator

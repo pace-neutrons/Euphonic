@@ -219,7 +219,7 @@ class QpointFrequencies(object):
         -------
         QpointFrequencies
         """
-        data = castep._read_phonon_data(filename)
+        data = castep._read_phonon_data(filename, read_eigenvectors=False)
         return cls.from_dict(data)
 
     @classmethod
