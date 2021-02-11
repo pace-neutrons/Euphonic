@@ -7,11 +7,10 @@ import time
 from unittest.mock import Mock
 from euphonic import ForceConstants
 from euphonic.cli.optimise_eta import calculate_optimum_eta
-from tests_and_analysis.test.utils import get_data_path
+from tests_and_analysis.test.utils import get_castep_path
 
 
-quartz_castep_bin = os.path.join(
-    get_data_path(), "force_constants", "quartz", "quartz.castep_bin")
+quartz_castep_bin = get_castep_path("quartz", "quartz.castep_bin")
 
 
 class SharedCode:

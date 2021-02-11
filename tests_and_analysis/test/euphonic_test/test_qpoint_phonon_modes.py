@@ -15,7 +15,8 @@ from tests_and_analysis.test.euphonic_test.test_debye_waller import (
 from tests_and_analysis.test.euphonic_test.test_spectrum1d import (
     get_expected_spectrum1d, check_spectrum1d)
 from tests_and_analysis.test.utils import (
-    get_data_path, check_frequencies_at_qpts, check_unit_conversion,
+    get_data_path, get_castep_path, get_phonopy_path,
+    check_frequencies_at_qpts, check_unit_conversion,
     check_json_metadata)
 
 
@@ -182,7 +183,7 @@ class TestQpointPhononModesCreation:
     def create_from_castep(self, request):
         material, phonon_file, json_file = request.param
         qpt_ph_modes = QpointPhononModes.from_castep(
-            os.path.join(get_qpt_ph_modes_dir(material), phonon_file))
+            get_castep_path(material, phonon_file))
         expected_qpt_ph_modes = ExpectedQpointPhononModes(
             os.path.join(get_qpt_ph_modes_dir(material), json_file))
         return qpt_ph_modes, expected_qpt_ph_modes
@@ -219,10 +220,10 @@ class TestQpointPhononModesCreation:
          'CaHgO2_from_phonopy_qpoint_phonon_modes.json')])
     def create_from_phonopy(self, request):
         material, subdir, phonopy_args, json_file = request.param
-        phonopy_args['path'] = os.path.join(get_qpt_ph_modes_dir(material),
-                                            subdir)
+        phonopy_args['path'] = get_phonopy_path(material, subdir)
         qpt_ph_modes = QpointPhononModes.from_phonopy(**phonopy_args)
-        json_path = os.path.join(phonopy_args['path'], json_file)
+        json_path = os.path.join(
+            get_qpt_ph_modes_dir(material), json_file)
         expected_qpt_ph_modes = ExpectedQpointPhononModes(json_path)
         return qpt_ph_modes, expected_qpt_ph_modes
 
@@ -299,8 +300,7 @@ class TestQpointPhononModesCreation:
                              'phonon_name': 'qpoints.hdf5'})])
     def test_create_from_phonopy_without_installed_modules_raises_err(
             self, material, subdir, phonopy_args, mocker):
-        phonopy_args['path'] = os.path.join(get_qpt_ph_modes_dir(material),
-                                            subdir)
+        phonopy_args['path'] = get_phonopy_path(material, subdir)
         # Mock import of yaml, h5py to raise ModuleNotFoundError
         import builtins
         real_import = builtins.__import__
@@ -335,8 +335,7 @@ class TestQpointPhononModesCreation:
          ValueError)])
     def test_create_from_phonopy_with_bad_inputs_raises_err(
             self, material, subdir, phonopy_args, err):
-        phonopy_args['path'] = os.path.join(get_qpt_ph_modes_dir(material),
-                                            subdir)
+        phonopy_args['path'] = get_phonopy_path(material, subdir)
         with pytest.raises(err):
             QpointPhononModes.from_phonopy(**phonopy_args)
 
@@ -356,10 +355,10 @@ class TestQpointPhononModesCreation:
             return real_import(name, globals, locals, fromlist, level)
         mocker.patch('builtins.__import__', side_effect=mocked_import)
 
-        phonopy_args['path'] = os.path.join(get_qpt_ph_modes_dir(material),
-                                            subdir)
+        phonopy_args['path'] = get_phonopy_path(material, subdir)
         qpt_ph_modes = QpointPhononModes.from_phonopy(**phonopy_args)
-        json_path = os.path.join(phonopy_args['path'], json_file)
+        json_path = os.path.join(
+            get_qpt_ph_modes_dir(material), json_file)
         expected_qpt_ph_modes = ExpectedQpointPhononModes(json_path)
         check_qpt_ph_modes(qpt_ph_modes, expected_qpt_ph_modes,
                            check_evecs=True)
@@ -449,12 +448,12 @@ class TestQpointPhononModesCalculateDebyeWaller:
         ])
     def test_calculate_debye_waller(self, material, qpt_ph_modes_file,
                                     expected_dw_json, temperature):
-        filepath = os.path.join(get_qpt_ph_modes_dir(material),
-                                qpt_ph_modes_file)
-        if filepath.endswith('.phonon'):
-            qpt_ph_modes = QpointPhononModes.from_castep(filepath)
+        if qpt_ph_modes_file.endswith('.phonon'):
+            qpt_ph_modes = QpointPhononModes.from_castep(
+                get_castep_path(material, qpt_ph_modes_file))
         else:
-            qpt_ph_modes = QpointPhononModes.from_phonopy(phonon_name=filepath)
+            qpt_ph_modes = QpointPhononModes.from_phonopy(
+                phonon_name=get_phonopy_path(material, qpt_ph_modes_file))
 
         dw = qpt_ph_modes.calculate_debye_waller(temperature*ureg('K'))
         expected_dw = get_expected_dw(material, expected_dw_json)
@@ -473,12 +472,12 @@ class TestQpointPhononModesCalculateDos:
         ])
     def test_calculate_dos(self, material, qpt_ph_modes_file,
                            expected_dos_json, ebins):
-        filepath = os.path.join(get_qpt_ph_modes_dir(material),
-                                qpt_ph_modes_file)
-        if filepath.endswith('.phonon'):
-            qpt_ph_modes = QpointPhononModes.from_castep(filepath)
+        if qpt_ph_modes_file.endswith('.phonon'):
+            qpt_ph_modes = QpointPhononModes.from_castep(
+                get_castep_path(material, qpt_ph_modes_file))
         else:
-            qpt_ph_modes = QpointPhononModes.from_phonopy(phonon_name=filepath)
+            qpt_ph_modes = QpointPhononModes.from_phonopy(
+                phonon_name=get_phonopy_path(material, qpt_ph_modes_file))
         dos = qpt_ph_modes.calculate_dos(ebins)
         expected_dos = get_expected_spectrum1d(expected_dos_json)
         check_spectrum1d(dos, expected_dos)

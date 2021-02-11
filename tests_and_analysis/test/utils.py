@@ -17,6 +17,25 @@ def get_data_path() -> str:
     """
     return os.path.join(os.path.abspath(os.path.dirname(__file__)), "data")
 
+def get_phonopy_path(material: str, filename: str) -> str:
+    """
+    Get the path to a Phonopy data file
+
+    Returns
+    -------
+    str: The path to the Phonopy data file
+    """
+    return os.path.join(get_data_path(), 'phonopy_files', material, filename)
+
+def get_castep_path(material: str, filename: str) -> str:
+    """
+    Get the path to a CASTEP data file
+
+    Returns
+    -------
+    str: The path to the CASTEP data file
+    """
+    return os.path.join(get_data_path(), 'castep_files', material, filename)
 
 def get_test_qpts(qpts_option: Optional[str] = 'default') -> np.ndarray:
     """

@@ -1,0 +1,15 @@
+task                : phonon
+phonon_fine_method  : interpolate
+opt_strategy        : speed
+fix_occupancy       : true
+cut_off_energy      : 880 eV
+elec_method         : dm
+mixing_scheme       : Pulay
+phonon_sum_rule     : true
+phonon_sum_rule_method : reciprocal
+born_charge_sumrule : true
+iprint              : 1
+backup_interval     : 1800
+run_time            : 43200
+continuation        : quartz.castep_bin
+phonon_calc_lo_to_splitting : false

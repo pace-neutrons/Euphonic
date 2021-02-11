@@ -7,7 +7,7 @@ import numpy.testing as npt
 # Required for mocking
 import matplotlib.pyplot
 
-from tests_and_analysis.test.utils import get_data_path
+from tests_and_analysis.test.utils import get_data_path, get_castep_path
 from tests_and_analysis.test.script_tests.utils import (
     get_script_test_data_path, get_current_plot_image_data, args_to_key)
 import euphonic.cli.intensity_map
@@ -16,11 +16,8 @@ import euphonic.cli.intensity_map
 quartz_phonon_file = os.path.join(
     get_data_path(), 'qpoint_phonon_modes', 'quartz',
     'quartz_bandstructure_qpoint_phonon_modes.json')
-lzo_phonon_file = os.path.join(
-    get_data_path(), 'qpoint_phonon_modes', 'LZO',
-    'La2Zr2O7.phonon')
-graphite_fc_file = os.path.join(
-    get_data_path(), 'force_constants', 'graphite', 'graphite.castep_bin')
+lzo_phonon_file = get_castep_path('LZO', 'La2Zr2O7.phonon')
+graphite_fc_file = get_castep_path('graphite', 'graphite.castep_bin')
 intensity_map_output_file = os.path.join(get_script_test_data_path(),
                                          'intensity-map.json')
 intensity_map_params = [

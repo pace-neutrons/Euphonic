@@ -1,0 +1,20 @@
+task: phonon
+phonon_fine_method : supercell
+phonon_method : finitedisplacement
+phonon_calc_lo_to_splitting : false
+opt_strategy : speed
+XC_functional: LDA
+CUT_OFF_ENERGY : 600 eV
+elec_energy_tol: 1e-9
+fine_grid_scale: 3
+max_scf_cycles : 100
+mixing_scheme  : Pulay
+mix_cut_off_energy : 1000 eV
+mix_history_length : 30
+
+geom_force_tol:0.005
+write_cell_structure: true
+geom_method   : LBFGS
+iprint:2
+backup_interval : 3600
+continuation : La2Zr2O7.castep_bin
