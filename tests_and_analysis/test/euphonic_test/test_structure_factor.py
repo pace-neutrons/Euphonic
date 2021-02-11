@@ -425,7 +425,9 @@ class TestStructureFactorCalculate1dAverage:
             ('quartz', 'quartz_666_300K_structure_factor_noweights.json',
              'quartz_666_300K_sf_1d_average.json',
              np.arange(0,156)*ureg('meV'),
-             {'weights': np.load('quartz_666_weights.npy')}),
+             {'weights': np.load(os.path.join(
+                 get_sf_dir('quartz'),
+                 'quartz_666_weights.npy'))}),
             ('quartz', 'quartz_666_300K_structure_factor_noweights.json',
              'quartz_666_300K_sf_1d_average_noweights.json',
              np.arange(0,156)*ureg('meV'), {})])
