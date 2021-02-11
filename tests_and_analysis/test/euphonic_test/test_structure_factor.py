@@ -421,6 +421,13 @@ class TestStructureFactorCalculate1dAverage:
         'material, sf_json, expected_1d_json, ebins, kwargs', [
             ('quartz', 'quartz_666_300K_structure_factor.json',
              'quartz_666_300K_sf_1d_average.json',
+             np.arange(0,156)*ureg('meV'), {}),
+            ('quartz', 'quartz_666_300K_structure_factor_noweights.json',
+             'quartz_666_300K_sf_1d_average.json',
+             np.arange(0,156)*ureg('meV'),
+             {'weights': np.load('quartz_666_weights.npy')}),
+            ('quartz', 'quartz_666_300K_structure_factor_noweights.json',
+             'quartz_666_300K_sf_1d_average_noweights.json',
              np.arange(0,156)*ureg('meV'), {})])
     def test_calculate_1d_average(self, material, sf_json, expected_1d_json,
                                   ebins, kwargs):
