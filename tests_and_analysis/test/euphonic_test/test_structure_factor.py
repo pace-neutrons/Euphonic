@@ -43,6 +43,15 @@ class ExpectedStructureFactor:
             self.data['frequencies_unit'])
 
     @property
+    def weights(self):
+        # Weights are optional, so if they are not found in .json
+        # file, assign equal weights, simulating expected behaviour
+        if 'weights' in self.data:
+            return np.array(self.data['weights'])
+        else:
+            return np.full(len(self.qpts), 1/len(self.qpts))
+
+    @property
     def temperature(self):
         if 'temperature' in self.data.keys():
             return np.array(self.data['temperature'])*ureg(
@@ -57,14 +66,15 @@ class ExpectedStructureFactor:
             'frequencies': self.frequencies.magnitude,
             'frequencies_unit': str(self.frequencies.units),
             'structure_factors': self.structure_factors.magnitude,
-            'structure_factors_unit': str(self.structure_factors.units)}
+            'structure_factors_unit': str(self.structure_factors.units),
+            'weights': self.weights}
         if self.temperature is not None:
             d['temperature'] = self.temperature.magnitude
             d['temperature_unit'] = str(self.temperature.units)
         return d
 
     def to_constructor_args(self, crystal=None, qpts=None, frequencies=None,
-                            structure_factors=None, temperature=None):
+                            structure_factors=None, weights=None, temperature=None):
         if crystal is None:
             crystal = Crystal(*self.crystal.to_constructor_args())
         if qpts is None:
@@ -73,10 +83,16 @@ class ExpectedStructureFactor:
             frequencies = self.frequencies
         if structure_factors is None:
             structure_factors = self.structure_factors
+        if weights is None:
+            weights = self.weights
         if temperature is None:
             temperature = self.temperature
 
         kwargs = {}
+        # Allow setting weights=False to not include weights in kwargs, to test
+        # object creation when weights is not supplied
+        if weights is not False:
+            kwargs['weights'] = weights
         if temperature is not None:
             kwargs['temperature'] = temperature
 
@@ -151,6 +167,11 @@ def check_structure_factor(
         sf.qpts,
         atol=np.finfo(np.float64).eps)
 
+    npt.assert_allclose(
+        sf.weights,
+        expected_sf.weights,
+        atol=np.finfo(np.float64).eps)
+
     if expected_sf.temperature is None:
         assert sf.temperature is None
     else:
@@ -200,6 +221,15 @@ class TestStructureFactorCreation:
     def create_from_constructor(self, request):
         expected_sf = request.param
         args, kwargs = expected_sf.to_constructor_args()
+        sf = StructureFactor(*args, **kwargs)
+        return sf, expected_sf
+
+    @pytest.fixture(params=[
+        get_expected_sf('quartz', 'quartz_0K_structure_factor.json'),
+        get_expected_sf('CaHgO2', 'CaHgO2_300K_structure_factor.json')])
+    def create_from_constructor_without_weights(self, request):
+        expected_sf = request.param
+        args, kwargs = expected_sf.to_constructor_args(weights=False)
         sf = StructureFactor(*args, **kwargs)
         return sf, expected_sf
 

@@ -47,7 +47,12 @@ class ExpectedQpointPhononModes:
 
     @property
     def weights(self):
-        return np.array(self.data['weights'])
+        # Weights are optional, so if they are not found in .json
+        # file, assign equal weights, simulating expected behaviour
+        if 'weights' in self.data:
+            return np.array(self.data['weights'])
+        else:
+            return np.full(len(self.qpts), 1/len(self.qpts))
 
     def to_dict(self):
         d = {
