@@ -126,7 +126,7 @@ class QpointFrequencies(object):
 
         Returns
         -------
-        Spectrum1DCollection
+        bands
             A sequence of mode bands with a common x-axis
         """
         abscissa = _calc_abscissa(self.crystal.reciprocal_cell(), self.qpts)
@@ -155,7 +155,7 @@ class QpointFrequencies(object):
 
         Parameters
         ----------
-        filename : str
+        filename
             Name of the JSON file to write to
         """
         _obj_to_json_file(self, filename)
@@ -167,7 +167,7 @@ class QpointFrequencies(object):
 
         Parameters
         ----------
-        d : dict
+        d
             A dictionary with the following keys/values:
 
             - 'crystal': dict, see Crystal.from_dict
@@ -196,7 +196,7 @@ class QpointFrequencies(object):
 
         Parameters
         ----------
-        filename : str
+        filename
             The file to read from
 
         Returns
@@ -212,7 +212,7 @@ class QpointFrequencies(object):
 
         Parameters
         ----------
-        filename : str
+        filename
             The path and name of the .phonon file to read
 
         Returns
@@ -226,7 +226,7 @@ class QpointFrequencies(object):
     def from_phonopy(cls: QF, path: Optional[str] = '.',
                      phonon_name: Optional[str] = 'band.yaml',
                      phonon_format: Optional[str] = None,
-                     summary_name: Optional[str] = 'phonopy.yaml'):
+                     summary_name: Optional[str] = 'phonopy.yaml') -> QF:
         """
         Reads precalculated phonon mode data from a Phonopy
         mesh/band/qpoints.yaml/hdf5 file. May also read from
@@ -234,14 +234,14 @@ class QpointFrequencies(object):
 
         Parameters
         ----------
-        path : str, optional
+        path
             Path to directory containing the file(s)
-        phonon_name : str, optional
+        phonon_name
             Name of Phonopy file including the frequencies
-        phonon_format : {'yaml', 'hdf5'} str, optional
+        phonon_format
             Format of the phonon_name file if it isn't obvious from the
-            phonon_name extension
-        summary_name : str, optional
+            phonon_name extension, one of {'yaml', 'hdf5'}
+        summary_name
             Name of Phonopy summary file to read the crystal information
             from. Crystal information in the phonon_name file takes
             priority, but if it isn't present, crystal information is
