@@ -253,5 +253,5 @@ class QpointFrequencies(object):
         """
         data = phonopy._read_phonon_data(
             path=path, phonon_name=phonon_name, phonon_format=phonon_format,
-            summary_name=summary_name)
+            summary_name=summary_name, read_eigenvectors=False)
         return cls.from_dict(data)

@@ -13,7 +13,8 @@ from tests_and_analysis.test.euphonic_test.test_crystal import (
 from tests_and_analysis.test.euphonic_test.test_spectrum1d import (
     get_expected_spectrum1d, check_spectrum1d)
 from tests_and_analysis.test.utils import (
-    get_data_path, get_castep_path, check_frequencies_at_qpts, check_unit_conversion,
+    get_data_path, get_castep_path, get_phonopy_path,
+    check_frequencies_at_qpts, check_unit_conversion,
     check_json_metadata)
 
 
@@ -143,7 +144,7 @@ class TestQpointFrequenciesCreation:
     @pytest.fixture(params=[
         ('LZO', 'La2Zr2O7.phonon',
          'LZO_qpoint_frequencies.json'),
-         ('quartz', 'quartz-666-grid.phonon',
+        ('quartz', 'quartz-666-grid.phonon',
          'quartz_666_qpoint_frequencies.json')])
     def create_from_castep(self, request):
         material, phonon_file, json_file = request.param
@@ -153,18 +154,44 @@ class TestQpointFrequenciesCreation:
             os.path.join(get_qpt_freqs_dir(), json_file))
         return qpt_freqs, expected_qpt_freqs
 
-#    @pytest.fixture(params=[
-#        ('NaCl', 'band', {'summary_name': 'phonopy.yaml',
-#                          'phonon_name': 'band.yaml'},
-#         'NaCl_band_yaml_from_phonopy_qpoint_frequencies.json')])
-#    def create_from_phonopy(self, request):
-#        material, subdir, phonopy_args, json_file = request.param
-#        phonopy_args['path'] = os.path.join(get_qpt_freqs_dir(material),
-#                                            subdir)
-#        qpt_freqs = QpointPhononModes.from_phonopy(**phonopy_args)
-#        json_path = os.path.join(phonopy_args['path'], json_file)
-#        expected_qpt_freqs = ExpectedQpointPhononModes(json_path)
-#        return qpt_freqs, expected_qpt_freqs
+    @pytest.fixture(params=[
+        ('NaCl', 'band', {'summary_name': 'should_not_be_read',
+                          'phonon_name': 'band.yaml'},
+         'NaCl_band_yaml_from_phonopy_qpoint_frequencies.json'),
+        ('NaCl', 'band', {'summary_name': 'phonopy.yaml',
+                          'phonon_name': 'band_no_evec.hdf5'},
+         'NaCl_band_no_evec_hdf5_from_phonopy_qpoint_frequencies.json'),
+        ('NaCl', 'mesh', {'summary_name': 'should_not_be_read',
+                          'phonon_name': 'mesh_no_evec.yaml'},
+         'NaCl_mesh_yaml_from_phonopy_qpoint_frequencies.json'),
+        ('NaCl', 'mesh', {'summary_name': 'phonopy.yaml',
+                          'phonon_name': 'mesh.hdf5'},
+         'NaCl_mesh_hdf5_from_phonopy_qpoint_frequencies.json'),
+        ('NaCl', 'qpoints', {'summary_name': 'phonopy.yaml',
+                             'phonon_name': 'qpoints.yaml'},
+         'NaCl_qpoints_yaml_from_phonopy_qpoint_frequencies.json'),
+        ('NaCl', 'qpoints', {'summary_name': 'phonopy.yaml',
+                             'phonon_name': 'qpoints_yaml.test',
+                             'phonon_format': 'yaml'},
+         'NaCl_qpoints_yaml_from_phonopy_qpoint_frequencies.json'),
+        ('NaCl', 'qpoints', {'summary_name': 'phonopy.yaml',
+                             'phonon_name': 'qpoints_hdf5.test',
+                             'phonon_format': 'hdf5'},
+         'NaCl_qpoints_hdf5_from_phonopy_qpoint_frequencies.json'),
+        ('NaCl', 'qpoints', {'summary_name': 'phonopy.yaml',
+                             'phonon_name': 'qpoints.hdf5'},
+         'NaCl_qpoints_hdf5_from_phonopy_qpoint_frequencies.json'),
+        ('CaHgO2', '', {'summary_name': 'mp-7041-20180417.yaml',
+                        'phonon_name': 'qpoints.yaml'},
+         'CaHgO2_from_phonopy_qpoint_frequencies.json')])
+    def create_from_phonopy(self, request):
+        material, subdir, phonopy_args, json_file = request.param
+        phonopy_args['path'] = get_phonopy_path(material, subdir)
+        qpt_freqs = QpointFrequencies.from_phonopy(**phonopy_args)
+        json_path = os.path.join(
+            get_qpt_freqs_dir(), json_file)
+        expected_qpt_freqs = ExpectedQpointFrequencies(json_path)
+        return qpt_freqs, expected_qpt_freqs
 
     @pytest.fixture(params=[
         'quartz_666_qpoint_frequencies.json',
@@ -190,8 +217,8 @@ class TestQpointFrequenciesCreation:
         pytest.lazy_fixture('create_from_constructor_without_weights'),
         pytest.lazy_fixture('create_from_dict'),
         pytest.lazy_fixture('create_from_json'),
-        pytest.lazy_fixture('create_from_castep')])
-#        pytest.lazy_fixture('create_from_phonopy')])
+        pytest.lazy_fixture('create_from_castep'),
+        pytest.lazy_fixture('create_from_phonopy')])
     def test_correct_object_creation(self, qpt_freqs_creator):
         qpt_freqs, expected_qpt_freqs = qpt_freqs_creator
         check_qpt_freqs(qpt_freqs, expected_qpt_freqs)
@@ -226,78 +253,66 @@ class TestQpointFrequenciesCreation:
         with pytest.raises(expected_exception):
             QpointFrequencies(*faulty_args, **faulty_kwargs)
 
+    @pytest.mark.parametrize('material, subdir, phonopy_args', [
+        ('NaCl', 'qpoints', {'summary_name': 'phonopy.yaml',
+                             'phonon_name': 'qpoints.yaml'}),
+        ('NaCl', 'qpoints', {'summary_name': 'phonopy.yaml',
+                             'phonon_name': 'qpoints.hdf5'})])
+    def test_create_from_phonopy_without_installed_modules_raises_err(
+            self, material, subdir, phonopy_args, mocker):
+        phonopy_args['path'] = get_phonopy_path(material, subdir)
+        # Mock import of yaml, h5py to raise ModuleNotFoundError
+        import builtins
+        real_import = builtins.__import__
+        def mocked_import(name, *args, **kwargs):
+            if name == 'h5py' or name == 'yaml':
+                raise ModuleNotFoundError
+            return real_import(name, *args, **kwargs)
+        mocker.patch('builtins.__import__', side_effect=mocked_import)
+        with pytest.raises(ImportPhonopyReaderError):
+            QpointFrequencies.from_phonopy(**phonopy_args)
 
-#    @pytest.mark.parametrize('material, subdir, phonopy_args', [
-#        ('NaCl', 'qpoints', {'summary_name': 'phonopy.yaml',
-#                             'phonon_name': 'qpoints.yaml'}),
-#        ('NaCl', 'qpoints', {'summary_name': 'phonopy.yaml',
-#                             'phonon_name': 'qpoints.hdf5'})])
-#    def test_create_from_phonopy_without_installed_modules_raises_err(
-#            self, material, subdir, phonopy_args, mocker):
-#        phonopy_args['path'] = os.path.join(get_qpt_freqs_dir(material),
-#                                            subdir)
-#        # Mock import of yaml, h5py to raise ModuleNotFoundError
-#        import builtins
-#        real_import = builtins.__import__
-#        def mocked_import(name, *args, **kwargs):
-#            if name == 'h5py' or name == 'yaml':
-#                raise ModuleNotFoundError
-#            return real_import(name, *args, **kwargs)
-#        mocker.patch('builtins.__import__', side_effect=mocked_import)
-#        with pytest.raises(ImportPhonopyReaderError):
-#            QpointPhononModes.from_phonopy(**phonopy_args)
+    @pytest.mark.parametrize('material, subdir, phonopy_args, err', [
+        ('NaCl', 'qpoints', {'summary_name': 'phonopy.yaml',
+                             'phonon_name': 'qpoints_hdf5.test'},
+         ValueError),
+        ('NaCl', 'qpoints', {'summary_name': 'phonopy.yaml',
+                             'phonon_name': 'qpoints.hdf5',
+                             'phonon_format': 'nonsense'},
+         ValueError),
+        ('NaCl', 'qpoints', {
+            'summary_name': '../../CaHgO2/mp-7041-20180417.yaml',
+            'phonon_name': 'qpoints.hdf5'},
+         ValueError)])
+    def test_create_from_phonopy_with_bad_inputs_raises_err(
+            self, material, subdir, phonopy_args, err):
+        phonopy_args['path'] = get_phonopy_path(material, subdir)
+        with pytest.raises(err):
+            QpointFrequencies.from_phonopy(**phonopy_args)
 
-#    @pytest.mark.parametrize('material, subdir, phonopy_args, err', [
-#        ('NaCl', 'qpoints', {'summary_name': 'phonopy.yaml',
-#                             'phonon_name': 'qpoints_hdf5.test'},
-#         ValueError),
-#        ('NaCl', 'qpoints', {'summary_name': 'phonopy.yaml',
-#                             'phonon_name': 'qpoints.hdf5',
-#                             'phonon_format': 'nonsense'},
-#         ValueError),
-#        ('NaCl', 'qpoints', {'summary_name': 'phonopy.yaml',
-#                             'phonon_name': 'qpoints_no_evec.yaml'},
-#         RuntimeError),
-#        ('NaCl', 'qpoints', {'summary_name': 'phonopy.yaml',
-#                             'phonon_name': 'qpoints_no_evec.hdf5'},
-#         RuntimeError),
-#        ('NaCl', 'band', {'summary_name': 'phonopy.yaml',
-#                          'phonon_name': 'band_no_evec.hdf5'},
-#         RuntimeError),
-#        ('NaCl', 'qpoints', {
-#            'summary_name': '../../CaHgO2/mp-7041-20180417.yaml',
-#            'phonon_name': 'qpoints.hdf5'},
-#         ValueError)])
-#    def test_create_from_phonopy_with_bad_inputs_raises_err(
-#            self, material, subdir, phonopy_args, err):
-#        phonopy_args['path'] = os.path.join(get_qpt_freqs_dir(material),
-#                                            subdir)
-#        with pytest.raises(err):
-#            QpointPhononModes.from_phonopy(**phonopy_args)
+    @pytest.mark.parametrize('material, subdir, phonopy_args, json_file', [
+        ('CaHgO2', '', {'summary_name': 'mp-7041-20180417.yaml',
+                        'phonon_name': 'qpoints.yaml'},
+         'CaHgO2_from_phonopy_qpoint_frequencies.json')])
+    def test_create_from_phonopy_without_cloader_is_ok(
+            self, material, subdir, phonopy_args, json_file, mocker):
+        # Mock 'from yaml import CLoader as Loader' to raise ImportError
+        import builtins
+        real_import = builtins.__import__
+        def mocked_import(name, globals, locals, fromlist, level):
+            if name == 'yaml':
+                if fromlist is not None and fromlist[0] == 'CSafeLoader':
+                    raise ImportError
+            return real_import(name, globals, locals, fromlist, level)
+        mocker.patch('builtins.__import__', side_effect=mocked_import)
 
-#    @pytest.mark.parametrize('material, subdir, phonopy_args, json_file', [
-#        ('CaHgO2', '', {'summary_name': 'mp-7041-20180417.yaml',
-#                        'phonon_name': 'qpoints.yaml'},
-#         'CaHgO2_from_phonopy_qpoint_frequencies.json')])
-#    def test_create_from_phonopy_without_cloader_is_ok(
-#            self, material, subdir, phonopy_args, json_file, mocker):
-#        # Mock 'from yaml import CLoader as Loader' to raise ImportError
-#        import builtins
-#        real_import = builtins.__import__
-#        def mocked_import(name, globals, locals, fromlist, level):
-#            if name == 'yaml':
-#                if fromlist is not None and fromlist[0] == 'CSafeLoader':
-#                    raise ImportError
-#            return real_import(name, globals, locals, fromlist, level)
-#        mocker.patch('builtins.__import__', side_effect=mocked_import)
-#
-#        phonopy_args['path'] = os.path.join(get_qpt_freqs_dir(material),
-#                                            subdir)
-#        qpt_freqs = QpointPhononModes.from_phonopy(**phonopy_args)
-#        json_path = os.path.join(phonopy_args['path'], json_file)
-#        expected_qpt_freqs = ExpectedQpointPhononModes(json_path)
-#        check_qpt_freqs(qpt_freqs, expected_qpt_freqs,
-#                           check_evecs=True)
+        phonopy_args['path'] = get_phonopy_path(material, subdir)
+        qpt_freqs = QpointFrequencies.from_phonopy(**phonopy_args)
+        json_path = os.path.join(
+            get_qpt_freqs_dir(), json_file)
+        expected_qpt_freqs = ExpectedQpointFrequencies(json_path)
+        check_qpt_freqs(qpt_freqs, expected_qpt_freqs)
+
 
 @pytest.mark.unit
 class TestQpointFrequenciesSerialisation:
@@ -352,6 +367,8 @@ class TestQpointFrequenciesCalculateDos:
         'qpt_freqs_json, expected_dos_json, ebins', [
             ('quartz_666_qpoint_frequencies.json',
              'quartz_666_dos.json', np.arange(0, 155, 0.5)*ureg('meV')),
+            ('CaHgO2_666_qpoint_frequencies.json',
+             'CaHgO2_666_dos.json', np.arange(0, 95, 0.4)*ureg('meV'))
         ])
     def test_calculate_dos(self, qpt_freqs_json, expected_dos_json, ebins):
         qpt_freqs = get_qpt_freqs(qpt_freqs_json)

@@ -1,5 +1,6 @@
 import os
 import warnings
+from typing import Optional, Dict, Any
 
 import numpy as np
 
@@ -40,7 +41,9 @@ def _convert_weights(weights):
     return weights/total_weight
 
 
-def _extract_phonon_data_yaml(filename):
+def _extract_phonon_data_yaml(filename: str,
+                              read_eigenvectors: Optional[str] = True
+    ) -> Dict[str, Any]:
     """
     From a mesh/band/qpoint.yaml file, extract the relevant information
     as a dict of Numpy arrays. No unit conversion is done at this point,
@@ -48,12 +51,15 @@ def _extract_phonon_data_yaml(filename):
 
     Parameters
     ----------
-    filename : str
+    filename
         Path and name of the mesh/band/qpoint.yaml file
+    read_eigenvectors
+        Whether to try and read the eigenvectors and return them in the
+        dictionary
 
     Returns
     -------
-    data_dict : dict
+    data_dict
         A dict with the following keys:
             'qpts', 'frequencies'
         It may also have the following keys if they are present in the
@@ -81,12 +87,15 @@ def _extract_phonon_data_yaml(filename):
     data_dict['frequencies'] = np.array(
         [[band_data['frequency'] for band_data in bands_data]
          for bands_data in bands_data_each_qpt])
-    try:
-        data_dict['eigenvectors'] = np.squeeze(np.array(
-            [[band_data['eigenvector'] for band_data in bands_data]
-             for bands_data in bands_data_each_qpt]).view(np.complex128))
-    except KeyError:
-        pass
+    if read_eigenvectors:
+        # Eigenvectors may not be present if users haven't set
+        # --eigvecs when running Phonopy - deal with this later
+        try:
+            data_dict['eigenvectors'] = np.squeeze(np.array(
+                [[band_data['eigenvector'] for band_data in bands_data]
+                 for bands_data in bands_data_each_qpt]).view(np.complex128))
+        except KeyError:
+            pass
 
     # Weights only present in mesh
     try:
@@ -105,11 +114,12 @@ def _extract_phonon_data_yaml(filename):
             [atom['symbol'] for atom in phonon_data['points']])
     except KeyError:
         pass
-
     return data_dict
 
 
-def _extract_phonon_data_hdf5(filename):
+def _extract_phonon_data_hdf5(filename: str,
+                              read_eigenvectors: Optional[bool] = True
+    ) -> Dict[str, Any]:
     """
     From a mesh/band/qpoint.hdf5 file, extract the relevant information
     as a dict of Numpy arrays. No unit conversion is done at this point,
@@ -117,12 +127,15 @@ def _extract_phonon_data_hdf5(filename):
 
     Parameters
     ----------
-    filename : str
+    filename
         Path and name of the mesh/band/qpoint.hdf5 file
+    read_eigenvectors
+        Whether to try and read the eigenvectors and return them in the
+        dictionary
 
     Returns
     -------
-    data_dict : dict
+    data_dict
         A dict with the following keys:
             'qpts', 'frequencies'
         It may also have the following keys if they are present in the
@@ -139,12 +152,13 @@ def _extract_phonon_data_hdf5(filename):
             data_dict = {}
             data_dict['qpts'] = hdf5_file['qpoint'][()]
             data_dict['frequencies'] = hdf5_file['frequency'][()]
-            # Eigenvectors may not be present if users haven't set
-            # --eigvecs when running Phonopy
-            try:
-                data_dict['eigenvectors'] = hdf5_file['eigenvector'][()]
-            except KeyError:
-                pass
+            if read_eigenvectors:
+                # Eigenvectors may not be present if users haven't set
+                # --eigvecs when running Phonopy - deal with this later
+                try:
+                    data_dict['eigenvectors'] = hdf5_file['eigenvector'][()]
+                except KeyError:
+                    pass
             # Only mesh.hdf5 has weights
             try:
                 data_dict['weights'] = hdf5_file['weight'][()]
@@ -181,9 +195,13 @@ def _extract_band_data_hdf5(hdf5_file):
 
 
 def _read_phonon_data(
-        path='.', phonon_name='band.yaml', phonon_format=None,
-        summary_name='phonopy.yaml', cell_vectors_unit='angstrom',
-        atom_mass_unit='amu', frequencies_unit='meV'):
+        path: Optional[str] = '.', phonon_name: Optional[str] = 'band.yaml',
+        phonon_format: Optional[str] = None,
+        summary_name: Optional[str] = 'phonopy.yaml',
+        cell_vectors_unit: Optional[str] = 'angstrom',
+        atom_mass_unit: Optional[str] = 'amu',
+        frequencies_unit: Optional[str] = 'meV',
+        read_eigenvectors: Optional[bool] = True) -> Dict[str, Any]:
     """
     Reads precalculated phonon mode data from a Phonopy
     mesh/band/qpoints.yaml/hdf5 file and returns it in a dictionary. May
@@ -191,26 +209,41 @@ def _read_phonon_data(
 
     Parameters
     ----------
-    path : str, optional, default '.'
+    path
         Path to directory containing the file(s)
-    phonon_name : str, optional, default 'band.yaml'
+    phonon_name
         Name of Phonopy file including the frequencies and eigenvectors
-    phonon_format : {'yaml', 'hdf5'} str, optional, default None
+    phonon_format
         Format of the phonon_name file if it isn't obvious from the
-        phonon_name extension
-    summary_name : str, optional, default 'phonopy.yaml'
+        phonon_name extension. One of {'yaml', 'hdf5'}
+    summary_name
         Name of Phonopy summary file to read the crystal information
         from. Crystal information in the phonon_name file takes
         priority, but if it isn't present, crystal information is read
         from summary_name instead
+    cell_vectors_unit
+        The unit to return the cell vectors in
+    atom_mass_unit
+        The unit to return the atom masses in
+    frequencies_unit
+        The unit to return the frequencies in
+    read_eigenvectors
+        Whether to read the eigenvectors and return them in the
+        dictionary. In this case, if eigenvectors = False it is assumed
+        a QpointFrequencies object is being created so detailed structure
+        information such as atom locations, masses, species is not
+        explicitly required, although the cell vectors are required.
 
     Returns
     -------
-    data_dict : dict
+    data_dict
         A dict with the following keys: 'n_atoms', 'cell_vectors',
         'cell_vectors_unit', 'atom_r', 'atom_type', 'atom_mass',
         'atom_mass_unit', 'qpts', 'weights', 'frequencies',
-        'frequencies_unit', 'eigenvectors'.
+        'frequencies_unit'.
+
+        If read_eigenvectors is True, there will also be an
+        'eigenvectors' key
     """
     phonon_pathname = os.path.join(path, phonon_name)
     summary_pathname = os.path.join(path, summary_name)
@@ -221,14 +254,16 @@ def _read_phonon_data(
         phonon_format = os.path.splitext(phonon_name)[1].strip('.')
 
     if phonon_format in hdf5_exts:
-        phonon_dict = _extract_phonon_data_hdf5(phonon_pathname)
+        phonon_dict = _extract_phonon_data_hdf5(
+            phonon_pathname, read_eigenvectors=read_eigenvectors)
     elif phonon_format in yaml_exts:
-        phonon_dict = _extract_phonon_data_yaml(phonon_pathname)
+        phonon_dict = _extract_phonon_data_yaml(
+            phonon_pathname, read_eigenvectors=read_eigenvectors)
     else:
         raise ValueError((f'File format {phonon_format} of {phonon_name}'
                           f' is not recognised'))
 
-    if not 'eigenvectors' in phonon_dict.keys():
+    if read_eigenvectors and not 'eigenvectors' in phonon_dict.keys():
         raise RuntimeError((f'Eigenvectors couldn\'t be found in '
                             f'{phonon_pathname}, ensure --eigvecs was '
                             f'set when running Phonopy'))
@@ -276,8 +311,9 @@ def _read_phonon_data(
     data_dict['frequencies'] = phonon_dict['frequencies']*ureg(
         ufreq).to(frequencies_unit).magnitude
     data_dict['frequencies_unit'] = frequencies_unit
-    # Convert Phonopy conventions to Euphonic conventions
-    data_dict['eigenvectors'] = convert_eigenvector_phases(phonon_dict)
+    if read_eigenvectors:
+        # Convert Phonopy conventions to Euphonic conventions
+        data_dict['eigenvectors'] = convert_eigenvector_phases(phonon_dict)
     if 'weights' in phonon_dict.keys():
         data_dict['weights'] = _convert_weights(phonon_dict['weights'])
     return data_dict

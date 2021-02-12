@@ -189,13 +189,13 @@ class TestQpointPhononModesCreation:
         return qpt_ph_modes, expected_qpt_ph_modes
 
     @pytest.fixture(params=[
-        ('NaCl', 'band', {'summary_name': 'phonopy.yaml',
+        ('NaCl', 'band', {'summary_name': 'should_not_be_read',
                           'phonon_name': 'band.yaml'},
          'NaCl_band_yaml_from_phonopy_qpoint_phonon_modes.json'),
         ('NaCl', 'band', {'summary_name': 'phonopy.yaml',
                           'phonon_name': 'band.hdf5'},
          'NaCl_band_hdf5_from_phonopy_qpoint_phonon_modes.json'),
-        ('NaCl', 'mesh', {'summary_name': 'phonopy.yaml',
+        ('NaCl', 'mesh', {'summary_name': 'should_not_be_read',
                           'phonon_name': 'mesh.yaml'},
          'NaCl_mesh_yaml_from_phonopy_qpoint_phonon_modes.json'),
         ('NaCl', 'mesh', {'summary_name': 'phonopy.yaml',
