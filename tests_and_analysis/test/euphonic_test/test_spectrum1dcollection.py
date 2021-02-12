@@ -68,11 +68,11 @@ def get_json_file(json_filename):
     return os.path.join(get_spectrum_dir(), json_filename)
 
 
-def get_spectrum(json_filename):
+def get_spectrum1dcollection(json_filename):
     return Spectrum1DCollection.from_json_file(get_json_file(json_filename))
 
 
-def get_expected_spectrum(json_filename):
+def get_expected_spectrum1dcollection(json_filename):
     return ExpectedSpectrum1DCollection(get_json_file(json_filename))
 
 
@@ -100,8 +100,8 @@ def check_spectrum1dcollection(actual_spectrum, expected_spectrum):
 @pytest.mark.unit
 class TestSpectrum1DCollectionCreation:
     @pytest.fixture(params=[
-        get_expected_spectrum('gan_bands.json'),
-        get_expected_spectrum('methane_pdos.json')])
+        get_expected_spectrum1dcollection('gan_bands.json'),
+        get_expected_spectrum1dcollection('methane_pdos.json')])
     def create_from_constructor(self, request):
         expected_spectrum = request.param
         args, kwargs = expected_spectrum.to_constructor_args()
@@ -113,7 +113,7 @@ class TestSpectrum1DCollectionCreation:
         'methane_pdos.json'])
     def create_from_json(self, request):
         json_file = request.param
-        expected_spectrum = get_expected_spectrum(json_file)
+        expected_spectrum = get_expected_spectrum1dcollection(json_file)
         spectrum = Spectrum1DCollection.from_json_file(
             get_json_file(json_file))
         return spectrum, expected_spectrum
@@ -123,7 +123,7 @@ class TestSpectrum1DCollectionCreation:
         'methane_pdos.json'])
     def create_from_dict(self, request):
         json_file = request.param
-        expected_spectrum = get_expected_spectrum(json_file)
+        expected_spectrum = get_expected_spectrum1dcollection(json_file)
         spectrum = Spectrum1DCollection.from_dict(
             expected_spectrum.to_dict())
         return spectrum, expected_spectrum
@@ -138,26 +138,26 @@ class TestSpectrum1DCollectionCreation:
 
     @pytest.fixture(params=[
         ('x_data',
-         get_expected_spectrum('gan_bands.json').x_data.magnitude,
+         get_expected_spectrum1dcollection('gan_bands.json').x_data.magnitude,
          TypeError),
         ('x_data',
-         get_expected_spectrum('gan_bands.json').x_data[:-1],
+         get_expected_spectrum1dcollection('gan_bands.json').x_data[:-1],
          ValueError),
         ('y_data',
-         get_expected_spectrum('gan_bands.json').y_data.magnitude,
+         get_expected_spectrum1dcollection('gan_bands.json').y_data.magnitude,
          TypeError),
         ('y_data',
-         get_expected_spectrum('gan_bands.json').y_data[:, :-2],
+         get_expected_spectrum1dcollection('gan_bands.json').y_data[:, :-2],
          ValueError),
         ('y_data',
-         get_expected_spectrum('gan_bands.json').y_data[0, :].flatten(),
+         get_expected_spectrum1dcollection('gan_bands.json').y_data[0, :].flatten(),
          ValueError),
         ('x_tick_labels',
-         get_expected_spectrum('gan_bands.json').x_tick_labels[0],
+         get_expected_spectrum1dcollection('gan_bands.json').x_tick_labels[0],
          TypeError)])
     def inject_faulty_elements(self, request):
         faulty_arg, faulty_value, expected_exception = request.param
-        expected_spectrum = get_expected_spectrum('gan_bands.json')
+        expected_spectrum = get_expected_spectrum1dcollection('gan_bands.json')
         # Inject the faulty value and get a tuple of constructor arguments
         args, kwargs = expected_spectrum.to_constructor_args(
             **{faulty_arg: faulty_value})
@@ -171,7 +171,7 @@ class TestSpectrum1DCollectionCreation:
     @pytest.mark.parametrize(
         'input_spectra, expected_spectrum',
         [([get_spectrum1d(f'gan_bands_index_{i}.json') for i in range(2, 5)],
-          get_spectrum('gan_bands_index_2_5.json'))
+          get_spectrum1dcollection('gan_bands_index_2_5.json'))
          ])
     def test_create_from_sequence(self, input_spectra, expected_spectrum):
         spectrum = Spectrum1DCollection.from_spectra(input_spectra)
@@ -180,7 +180,7 @@ class TestSpectrum1DCollectionCreation:
     @pytest.mark.parametrize(
         'input_spectra, expected_error',
         [([], IndexError),
-         ([get_spectrum('gan_bands.json')], TypeError),
+         ([get_spectrum1dcollection('gan_bands.json')], TypeError),
          ([f'gan_bands_index_{i}.json' for i in range(2, 5)], TypeError)])
     def test_faulty_create_from_sequence(self, input_spectra, expected_error):
         with pytest.raises(expected_error):
@@ -191,8 +191,8 @@ class TestSpectrum1DCollectionCreation:
 class TestSpectrum1DCollectionSerialisation:
 
     @pytest.fixture(params=[
-        get_spectrum('gan_bands.json'),
-        get_spectrum('methane_pdos.json')])
+        get_spectrum1dcollection('gan_bands.json'),
+        get_spectrum1dcollection('methane_pdos.json')])
     def serialise_to_json_file(self, request, tmpdir):
         spectrum = request.param
         # Serialise
@@ -212,8 +212,8 @@ class TestSpectrum1DCollectionSerialisation:
         'methane_pdos.json'])
     def serialise_to_dict(self, request):
         json_file = request.param
-        spectrum = get_spectrum(json_file)
-        expected_spectrum = get_expected_spectrum(json_file)
+        spectrum = get_spectrum1dcollection(json_file)
+        expected_spectrum = get_expected_spectrum1dcollection(json_file)
         # Convert to dict, then back to object to test
         spectrum_dict = spectrum.to_dict()
         spectrum_from_dict = Spectrum1DCollection.from_dict(spectrum_dict)
@@ -228,9 +228,9 @@ class TestSpectrum1DCollectionSerialisation:
 class TestSpectrum1DCollectionIndexAccess:
     @pytest.mark.parametrize(
         'spectrum, index, expected_spectrum1d',
-        [(get_spectrum('gan_bands.json'), 2,
+        [(get_spectrum1dcollection('gan_bands.json'), 2,
           get_expected_spectrum1d('gan_bands_index_2.json')),
-         (get_spectrum('gan_bands.json'), -4,
+         (get_spectrum1dcollection('gan_bands.json'), -4,
           get_expected_spectrum1d('gan_bands_index_2.json'))])
     def test_index_individual(self, spectrum, index, expected_spectrum1d):
         extracted_spectrum1d = spectrum[index]
@@ -238,19 +238,22 @@ class TestSpectrum1DCollectionIndexAccess:
 
     @pytest.mark.parametrize(
         'spectrum, index, expected_spectrum',
-        [(get_spectrum('gan_bands.json'), slice(2, 5),
-          get_expected_spectrum('gan_bands_index_2_5.json')),
-         (get_spectrum('gan_bands.json'), slice(-4, -1),
-          get_expected_spectrum('gan_bands_index_2_5.json'))])
+        [(get_spectrum1dcollection('gan_bands.json'), slice(2, 5),
+          get_expected_spectrum1dcollection('gan_bands_index_2_5.json')),
+         (get_spectrum1dcollection('gan_bands.json'), slice(-4, -1),
+          get_expected_spectrum1dcollection('gan_bands_index_2_5.json'))])
     def test_index_slice(self, spectrum, index, expected_spectrum):
         extracted_spectrum = spectrum[index]
         check_spectrum1dcollection(extracted_spectrum, expected_spectrum)
 
     @pytest.mark.parametrize(
         'spectrum, index, expected_error',
-        [(get_spectrum('gan_bands.json'), '1', TypeError),
-         (get_spectrum('gan_bands.json'), 6, IndexError),
-         (get_spectrum('gan_bands.json'), slice(2, 6), IndexError)])
+        [(get_spectrum1dcollection('gan_bands.json'),
+          '1', TypeError),
+         (get_spectrum1dcollection('gan_bands.json'),
+          6, IndexError),
+         (get_spectrum1dcollection('gan_bands.json'),
+          slice(2, 6), IndexError)])
     def test_index_errors(self, spectrum, index, expected_error):
         with pytest.raises(expected_error):
             spectrum[index]
@@ -260,8 +263,10 @@ class TestSpectrum1DCollectionIndexAccess:
 class TestSpectrum1DCollectionMethods:
     @pytest.mark.parametrize(
         'spectrum, split_kwargs, expected_spectra',
-        [(get_spectrum('methane_pdos.json'), {'indices': [50]},
-          [get_spectrum(f'methane_pdos_split50_{i}.json') for i in range(2)])])
+        [(get_spectrum1dcollection('methane_pdos.json'),
+          {'indices': [50]},
+          [get_spectrum1dcollection(f'methane_pdos_split50_{i}.json')
+              for i in range(2)])])
     def test_split(self, spectrum, split_kwargs, expected_spectra):
         spectra = spectrum.split(**split_kwargs)
         for split, expected_split in zip(spectra, expected_spectra):
@@ -277,7 +282,7 @@ class TestSpectrum1DCollectionMethods:
              ureg('meV'))])
     def test_get_bin_edges(self, spectrum_file, expected_bin_edges_file,
                            expected_units):
-        spec = get_spectrum(spectrum_file)
+        spec = get_spectrum1dcollection(spectrum_file)
         bin_edges = spec.get_bin_edges()
         expected_bin_edges = np.load(
                 os.path.join(get_spectrum_dir(), expected_bin_edges_file))
@@ -294,7 +299,7 @@ class TestSpectrum1DCollectionMethods:
              ureg('meV'))])
     def test_get_bin_centres(self, spectrum_file, expected_bin_centres_file,
                              expected_units):
-        spec = get_spectrum(spectrum_file)
+        spec = get_spectrum1dcollection(spectrum_file)
         bin_centres = spec.get_bin_centres()
         expected_bin_centres = np.load(
                 os.path.join(get_spectrum_dir(), expected_bin_centres_file))
@@ -303,13 +308,13 @@ class TestSpectrum1DCollectionMethods:
                         expected_bin_centres)
 
     def test_get_bin_edges_with_invalid_data_shape_raises_value_error(self):
-        spec = get_spectrum('gan_bands.json')
+        spec = get_spectrum1dcollection('gan_bands.json')
         spec._y_data = spec._y_data[:, :51]
         with pytest.raises(ValueError):
             spec.get_bin_edges()
 
     def test_get_bin_centres_with_invalid_data_shape_raises_value_error(self):
-        spec = get_spectrum('quartz_dos_collection.json')
+        spec = get_spectrum1dcollection('quartz_dos_collection.json')
         spec._x_data = spec._x_data[:31]
         with pytest.raises(ValueError):
             spec.get_bin_centres()
