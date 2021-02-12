@@ -9,7 +9,7 @@ from pint import DimensionalityError
 from euphonic import ureg, Crystal, QpointFrequencies
 from euphonic.readers.phonopy import ImportPhonopyReaderError
 from tests_and_analysis.test.euphonic_test.test_crystal import (
-    ExpectedCrystal, get_crystal, check_crystal)
+    ExpectedCrystal, check_crystal)
 from tests_and_analysis.test.euphonic_test.test_spectrum1d import (
     get_expected_spectrum1d, check_spectrum1d)
 from tests_and_analysis.test.utils import (
@@ -145,7 +145,9 @@ class TestQpointFrequenciesCreation:
         ('LZO', 'La2Zr2O7.phonon',
          'LZO_qpoint_frequencies.json'),
         ('quartz', 'quartz-666-grid.phonon',
-         'quartz_666_qpoint_frequencies.json')])
+         'quartz_666_qpoint_frequencies.json'),
+        ('quartz', 'quartz_split_qpts.phonon',
+         'quartz_split_from_castep_qpoint_frequencies.json')])
     def create_from_castep(self, request):
         material, phonon_file, json_file = request.param
         qpt_freqs = QpointFrequencies.from_castep(
