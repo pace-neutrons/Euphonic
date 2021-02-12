@@ -74,19 +74,18 @@ class ExpectedQpointFrequencies:
 
         return (crystal, qpts, frequencies), kwargs
 
+def get_qpt_freqs_dir(material):
+    return os.path.join(get_data_path(), 'qpoint_frequencies', material)
 
-def get_qpt_freqs_dir():
-    return os.path.join(get_data_path(), 'qpoint_frequencies')
 
-
-def get_qpt_freqs(file):
+def get_qpt_freqs(material, file):
     return QpointFrequencies.from_json_file(
-        os.path.join(get_qpt_freqs_dir(), file))
+        os.path.join(get_qpt_freqs_dir(material), file))
 
 
-def get_expected_qpt_freqs(file):
+def get_expected_qpt_freqs(material, file):
     return ExpectedQpointFrequencies(
-        os.path.join(get_qpt_freqs_dir(), file))
+        os.path.join(get_qpt_freqs_dir(material), file))
 
 
 def check_qpt_freqs(
@@ -123,9 +122,10 @@ def check_qpt_freqs(
 class TestQpointFrequenciesCreation:
 
     @pytest.fixture(params=[
-        get_expected_qpt_freqs('quartz_666_qpoint_frequencies.json'),
-        get_expected_qpt_freqs('quartz_bandstructure_qpoint_frequencies.json')
-        ])
+        get_expected_qpt_freqs(
+            'quartz', 'quartz_666_qpoint_frequencies.json'),
+        get_expected_qpt_freqs(
+            'quartz', 'quartz_bandstructure_qpoint_frequencies.json')])
     def create_from_constructor(self, request):
         expected_qpt_freqs = request.param
         args, kwargs = expected_qpt_freqs.to_constructor_args()
@@ -133,8 +133,8 @@ class TestQpointFrequenciesCreation:
         return qpt_freqs, expected_qpt_freqs
 
     @pytest.fixture(params=[
-        get_expected_qpt_freqs('quartz_bandstructure_qpoint_frequencies.json')
-        ])
+        get_expected_qpt_freqs(
+            'quartz', 'quartz_bandstructure_qpoint_frequencies.json')])
     def create_from_constructor_without_weights(self, request):
         expected_qpt_freqs = request.param
         args, kwargs = expected_qpt_freqs.to_constructor_args(weights=False)
@@ -153,7 +153,7 @@ class TestQpointFrequenciesCreation:
         qpt_freqs = QpointFrequencies.from_castep(
             get_castep_path(material, phonon_file))
         expected_qpt_freqs = ExpectedQpointFrequencies(
-            os.path.join(get_qpt_freqs_dir(), json_file))
+            os.path.join(get_qpt_freqs_dir(material), json_file))
         return qpt_freqs, expected_qpt_freqs
 
     @pytest.fixture(params=[
@@ -191,25 +191,25 @@ class TestQpointFrequenciesCreation:
         phonopy_args['path'] = get_phonopy_path(material, subdir)
         qpt_freqs = QpointFrequencies.from_phonopy(**phonopy_args)
         json_path = os.path.join(
-            get_qpt_freqs_dir(), json_file)
+            get_qpt_freqs_dir(material), json_file)
         expected_qpt_freqs = ExpectedQpointFrequencies(json_path)
         return qpt_freqs, expected_qpt_freqs
 
     @pytest.fixture(params=[
-        'quartz_666_qpoint_frequencies.json',
-        'quartz_bandstructure_qpoint_frequencies.json'])
+        ('quartz', 'quartz_666_qpoint_frequencies.json'),
+        ('quartz', 'quartz_bandstructure_qpoint_frequencies.json')])
     def create_from_json(self, request):
-        json_file = request.param
-        expected_qpt_freqs = get_expected_qpt_freqs(json_file)
-        qpt_freqs = get_qpt_freqs(json_file)
+        material, json_file = request.param
+        expected_qpt_freqs = get_expected_qpt_freqs(material, json_file)
+        qpt_freqs = get_qpt_freqs(material, json_file)
         return qpt_freqs, expected_qpt_freqs
 
     @pytest.fixture(params=[
-        'quartz_666_qpoint_frequencies.json',
-        'quartz_bandstructure_qpoint_frequencies.json'])
+        ('quartz', 'quartz_666_qpoint_frequencies.json'),
+        ('quartz', 'quartz_bandstructure_qpoint_frequencies.json')])
     def create_from_dict(self, request):
-        json_file = request.param
-        expected_qpt_freqs = get_expected_qpt_freqs(json_file)
+        material, json_file = request.param
+        expected_qpt_freqs = get_expected_qpt_freqs(material, json_file)
         qpt_freqs = QpointFrequencies.from_dict(
             expected_qpt_freqs.to_dict())
         return qpt_freqs, expected_qpt_freqs
@@ -227,24 +227,31 @@ class TestQpointFrequenciesCreation:
 
     @pytest.fixture(params=[
         ('qpts',
-         get_expected_qpt_freqs('quartz_666_qpoint_frequencies.json').qpts[:3],
+         get_expected_qpt_freqs(
+             'quartz', 'quartz_666_qpoint_frequencies.json').qpts[:3],
          ValueError),
         ('frequencies',
-         get_expected_qpt_freqs('quartz_666_qpoint_frequencies.json').frequencies[:2],
+         get_expected_qpt_freqs(
+             'quartz', 'quartz_666_qpoint_frequencies.json').frequencies[:2],
          ValueError),
         ('frequencies',
-         get_expected_qpt_freqs('quartz_666_qpoint_frequencies.json').frequencies.magnitude,
+         get_expected_qpt_freqs(
+             'quartz', 'quartz_666_qpoint_frequencies.json'
+         ).frequencies.magnitude,
          TypeError),
         ('frequencies',
-         get_expected_qpt_freqs('quartz_666_qpoint_frequencies.json').frequencies.magnitude*ureg('kg'),
+         get_expected_qpt_freqs(
+             'quartz', 'quartz_666_qpoint_frequencies.json'
+         ).frequencies.magnitude*ureg('kg'),
          DimensionalityError),
         ('weights',
-         get_expected_qpt_freqs('quartz_666_qpoint_frequencies.json').weights[:5],
+         get_expected_qpt_freqs(
+             'quartz', 'quartz_666_qpoint_frequencies.json').weights[:5],
          ValueError)])
     def inject_faulty_elements(self, request):
         faulty_arg, faulty_value, expected_exception = request.param
         expected_qpt_freqs = get_expected_qpt_freqs(
-            'quartz_666_qpoint_frequencies.json')
+            'quartz', 'quartz_666_qpoint_frequencies.json')
         # Inject the faulty value and get a tuple of constructor arguments
         args, kwargs = expected_qpt_freqs.to_constructor_args(
             **{faulty_arg: faulty_value})
@@ -311,7 +318,7 @@ class TestQpointFrequenciesCreation:
         phonopy_args['path'] = get_phonopy_path(material, subdir)
         qpt_freqs = QpointFrequencies.from_phonopy(**phonopy_args)
         json_path = os.path.join(
-            get_qpt_freqs_dir(), json_file)
+            get_qpt_freqs_dir(material), json_file)
         expected_qpt_freqs = ExpectedQpointFrequencies(json_path)
         check_qpt_freqs(qpt_freqs, expected_qpt_freqs)
 
@@ -320,7 +327,7 @@ class TestQpointFrequenciesCreation:
 class TestQpointFrequenciesSerialisation:
 
     @pytest.mark.parametrize('qpt_freqs', [
-        get_qpt_freqs('quartz_666_qpoint_frequencies.json')])
+        get_qpt_freqs('quartz', 'quartz_666_qpoint_frequencies.json')])
     def test_serialise_to_json_file(self, qpt_freqs, tmpdir):
         output_file = str(tmpdir.join('tmp.test'))
         qpt_freqs.to_json_file(output_file)
@@ -330,9 +337,10 @@ class TestQpointFrequenciesSerialisation:
         check_qpt_freqs(qpt_freqs, deserialised_qpt_freqs)
 
     @pytest.fixture(params=[
-        'quartz_666_qpoint_frequencies.json'])
+        ('quartz', 'quartz_666_qpoint_frequencies.json')])
     def serialise_to_dict(self, request):
-        qpt_freqs = get_qpt_freqs(request.param)
+        material, json_file = request.param
+        qpt_freqs = get_qpt_freqs(material, json_file)
         # Convert to dict, then back to object to test
         qpt_freqs_dict = qpt_freqs.to_dict()
         qpt_freqs_from_dict = QpointFrequencies.from_dict(qpt_freqs_dict)
@@ -346,18 +354,23 @@ class TestQpointFrequenciesSerialisation:
 @pytest.mark.unit
 class TestQpointFrequenciesUnitConversion:
 
-    @pytest.mark.parametrize('json_file, attr, unit_val', [
-        ('quartz_666_qpoint_frequencies.json', 'frequencies', '1/cm')])
-    def test_correct_unit_conversion(self, json_file, attr, unit_val):
-        qpt_freqs = get_qpt_freqs(json_file)
+    @pytest.mark.parametrize('material, json_file, attr, unit_val', [
+        ('quartz',
+         'quartz_666_qpoint_frequencies.json',
+         'frequencies',
+         '1/cm')])
+    def test_correct_unit_conversion(self, material, json_file, attr, unit_val):
+        qpt_freqs = get_qpt_freqs(material, json_file)
         check_unit_conversion(qpt_freqs, attr, unit_val)
 
-    @pytest.mark.parametrize('json_file, unit_attr, unit_val, err', [
-        ('quartz_666_qpoint_frequencies.json',
-         'frequencies_unit', 'kg', ValueError)])
-    def test_incorrect_unit_conversion(self, json_file, unit_attr,
+    @pytest.mark.parametrize('material, json_file, unit_attr, unit_val, err', [
+        ('quartz',
+         'quartz_666_qpoint_frequencies.json',
+         'frequencies_unit',
+         'kg', ValueError)])
+    def test_incorrect_unit_conversion(self, material, json_file, unit_attr,
                                        unit_val, err):
-        qpt_freqs = get_qpt_freqs(json_file)
+        qpt_freqs = get_qpt_freqs(material, json_file)
         with pytest.raises(err):
             setattr(qpt_freqs, unit_attr, unit_val)
 
@@ -366,20 +379,22 @@ class TestQpointFrequenciesUnitConversion:
 class TestQpointFrequenciesCalculateDos:
 
     @pytest.mark.parametrize(
-        'qpt_freqs_json, expected_dos_json, ebins', [
-            ('quartz_666_qpoint_frequencies.json',
+        'material, qpt_freqs_json, expected_dos_json, ebins', [
+            ('quartz', 'quartz_666_qpoint_frequencies.json',
              'quartz_666_dos.json', np.arange(0, 155, 0.5)*ureg('meV')),
-            ('CaHgO2_666_qpoint_frequencies.json',
+            ('CaHgO2', 'CaHgO2_666_qpoint_frequencies.json',
              'CaHgO2_666_dos.json', np.arange(0, 95, 0.4)*ureg('meV'))
         ])
-    def test_calculate_dos(self, qpt_freqs_json, expected_dos_json, ebins):
-        qpt_freqs = get_qpt_freqs(qpt_freqs_json)
+    def test_calculate_dos(
+            self, material, qpt_freqs_json, expected_dos_json, ebins):
+        qpt_freqs = get_qpt_freqs(material, qpt_freqs_json)
         dos = qpt_freqs.calculate_dos(ebins)
         expected_dos = get_expected_spectrum1d(expected_dos_json)
         check_spectrum1d(dos, expected_dos)
 
     def test_calculate_dos_with_0_inv_cm_bin_doesnt_raise_runtime_warn(self):
-        qpt_freqs = get_qpt_freqs('quartz_666_qpoint_frequencies.json')
+        qpt_freqs = get_qpt_freqs(
+            'quartz', 'quartz_666_qpoint_frequencies.json')
         ebins = np.arange(0, 1300, 4)*ureg('1/cm')
         with pytest.warns(None) as warn_record:
             dos = qpt_freqs.calculate_dos(ebins)
