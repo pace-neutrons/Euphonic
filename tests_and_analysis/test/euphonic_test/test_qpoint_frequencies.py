@@ -12,6 +12,8 @@ from tests_and_analysis.test.euphonic_test.test_crystal import (
     ExpectedCrystal, check_crystal)
 from tests_and_analysis.test.euphonic_test.test_spectrum1d import (
     get_expected_spectrum1d, check_spectrum1d)
+from tests_and_analysis.test.euphonic_test.test_spectrum1dcollection import (
+    get_expected_spectrum1dcollection, check_spectrum1dcollection)
 from tests_and_analysis.test.utils import (
     get_data_path, get_castep_path, get_phonopy_path,
     check_frequencies_at_qpts, check_unit_conversion,
@@ -399,3 +401,21 @@ class TestQpointFrequenciesCalculateDos:
         with pytest.warns(None) as warn_record:
             dos = qpt_freqs.calculate_dos(ebins)
         assert len(warn_record) == 0
+
+@pytest.mark.unit
+class TestQpointFrequenciesGetDispersion:
+
+    @pytest.mark.parametrize(
+        'material, qpt_freqs_json, expected_dispersion_json', [
+            ('quartz', 'quartz_bandstructure_qpoint_frequencies.json',
+             'quartz_bandstructure_dispersion.json'),
+            ('NaCl', 'NaCl_band_yaml_from_phonopy_qpoint_frequencies.json',
+             'NaCl_band_yaml_dispersion.json')
+        ])
+    def test_get_dispersion(
+            self, material, qpt_freqs_json, expected_dispersion_json):
+        qpt_freqs = get_qpt_freqs(material, qpt_freqs_json)
+        disp = qpt_freqs.get_dispersion()
+        expected_disp = get_expected_spectrum1dcollection(
+            expected_dispersion_json)
+        check_spectrum1dcollection(disp, expected_disp)

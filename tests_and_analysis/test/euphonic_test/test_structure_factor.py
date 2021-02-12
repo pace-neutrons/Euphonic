@@ -13,6 +13,8 @@ from tests_and_analysis.test.euphonic_test.test_spectrum2d import (
     get_expected_spectrum2d, check_spectrum2d)
 from tests_and_analysis.test.euphonic_test.test_spectrum1d import (
     get_expected_spectrum1d, check_spectrum1d)
+from tests_and_analysis.test.euphonic_test.test_spectrum1dcollection import (
+    get_expected_spectrum1dcollection, check_spectrum1dcollection)
 from tests_and_analysis.test.utils import (
     get_data_path, check_frequencies_at_qpts, check_structure_factors_at_qpts,
     check_unit_conversion, check_json_metadata)
@@ -437,3 +439,22 @@ class TestStructureFactorCalculate1dAverage:
         sw = sf.calculate_1d_average(ebins, **kwargs)
         expected_sw = get_expected_spectrum1d(expected_1d_json)
         check_spectrum1d(sw, expected_sw)
+
+@pytest.mark.unit
+class TestStructureFactorGetDispersion:
+
+    @pytest.mark.parametrize(
+        'material, sf_json, expected_dispersion_json', [
+            ('quartz', 'quartz_bandstructure_structure_factor.json',
+             'quartz_bandstructure_dispersion.json'),
+            ('LZO', 'La2Zr2O7_cut_structure_factor.json',
+             'LZO_cut_dispersion.json')
+        ])
+    def test_get_dispersion(
+            self, material, sf_json, expected_dispersion_json):
+        sf = get_sf(material, sf_json)
+        disp = sf.get_dispersion()
+        expected_disp = get_expected_spectrum1dcollection(
+            expected_dispersion_json)
+        check_spectrum1dcollection(disp, expected_disp)
+

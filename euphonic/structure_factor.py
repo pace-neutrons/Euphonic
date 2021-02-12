@@ -6,7 +6,8 @@ from euphonic.validate import _check_constructor_inputs, _check_unit_conversion
 from euphonic.io import (_obj_to_json_file, _obj_from_json_file,
                          _obj_to_dict, _process_dict)
 from euphonic.util import get_qpoint_labels, _calc_abscissa
-from euphonic import ureg, Quantity, Spectrum1D, Spectrum2D, Crystal
+from euphonic import (ureg, Quantity, Spectrum1D, Spectrum1DCollection,
+                      Spectrum2D, Crystal)
 
 
 class NoTemperatureError(Exception):
@@ -327,6 +328,26 @@ class StructureFactor(object):
         else:
             bose = 0
         return bose
+
+    def get_dispersion(self) -> Spectrum1DCollection:
+        """
+        Creates a set of 1-D bands from mode data
+
+        Bands follow the same q-point order as in the qpts array, with
+        x-axis spacing corresponding to the absolute distances between
+        q-points.  Discontinuities will appear as large jumps on the
+        x-axis.
+
+        Returns
+        -------
+        bands
+            A sequence of mode bands with a common x-axis
+        """
+        abscissa = _calc_abscissa(self.crystal.reciprocal_cell(), self.qpts)
+        x_tick_labels = get_qpoint_labels(self.qpts,
+                                          cell=self.crystal.to_spglib_cell())
+        return Spectrum1DCollection(abscissa, self.frequencies.T,
+                                    x_tick_labels=x_tick_labels)
 
     def to_dict(self):
         """
