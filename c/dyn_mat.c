@@ -30,6 +30,7 @@ void calculate_dyn_mat_at_q(const double *qpt, const int n_atoms,
     int s_i[3] = {n_atoms*n_atoms*max_images, n_atoms*max_images, max_images};
     int s_fc = 9*n_atoms*n_atoms; // For fc_mat
 
+    memset(dyn_mat, 0, 2*9*n_atoms*n_atoms*sizeof(double));
     for (i = 0; i < n_atoms; i++) {
         for (j = i; j < n_atoms; j++) {
             for (nc = 0; nc < n_cells; nc++){
