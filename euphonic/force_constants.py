@@ -15,7 +15,8 @@ from euphonic.io import (_obj_to_json_file, _obj_from_json_file,
 from euphonic.readers import castep, phonopy
 from euphonic.util import (is_gamma, get_all_origins,
                            _get_supercell_relative_idx)
-from euphonic import ureg, Quantity, Crystal, QpointPhononModes
+from euphonic import (ureg, Quantity, Crystal, QpointPhononModes,
+                      QpointFrequencies)
 
 
 class ImportCError(Exception):
@@ -130,6 +131,27 @@ class ForceConstants(object):
             self, qpts, weights=None, asr=None, dipole=True, eta_scale=1.0,
             splitting=True, insert_gamma=False, reduce_qpts=True, use_c=False,
             n_threads=1, fall_back_on_python=True):
+
+        qpts, weights, freqs, evecs = self._calculate_phonons_at_qpts(
+            qpts, weights, asr, dipole, eta_scale, splitting, insert_gamma,
+            reduce_qpts, use_c, n_threads, fall_back_on_python)
+        return QpointPhononModes(
+            self.crystal, qpts, freqs, evecs, weights=weights)
+
+    def calculate_qpoint_frequencies(
+            self, qpts, weights=None, asr=None, dipole=True, eta_scale=1.0,
+            splitting=True, insert_gamma=False, reduce_qpts=True, use_c=False,
+            n_threads=1, fall_back_on_python=True):
+
+        qpts, weights, freqs, evecs = self._calculate_phonons_at_qpts(
+            qpts, weights, asr, dipole, eta_scale, splitting, insert_gamma,
+            reduce_qpts, use_c, n_threads, fall_back_on_python)
+        return QpointFrequencies(
+            self.crystal, qpts, freqs, weights=weights)
+
+    def _calculate_phonons_at_qpts(self, qpts, weights, asr, dipole, eta_scale,
+            splitting, insert_gamma, reduce_qpts, use_c, n_threads,
+            fall_back_on_python):
         """
         Calculate phonon frequencies and eigenvectors at specified
         q-points from a force constants matrix via Fourier interpolation
@@ -434,10 +456,10 @@ class ForceConstants(object):
                     rfreqs[q], reigenvecs[q] = self._calculate_phonons_at_q(
                         q, q_independent_args)
 
-        freqs = rfreqs[qpts_i]*ureg('hartree').to('meV')
-
-        return QpointPhononModes(
-            self.crystal, qpts, freqs, reigenvecs[qpts_i], weights=weights)
+        return (qpts,
+                weights,
+                rfreqs[qpts_i]*ureg('hartree').to('meV'),
+                reigenvecs[qpts_i])
 
     def _calculate_phonons_at_q(self, q, args):
         """
