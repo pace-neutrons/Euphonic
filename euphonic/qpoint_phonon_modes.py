@@ -10,7 +10,7 @@ from euphonic.io import (_obj_to_json_file, _obj_from_json_file,
 from euphonic.readers import castep, phonopy
 from euphonic.util import (_calc_abscissa, direction_changed,
                            get_qpoint_labels, is_gamma, get_reference_data)
-from euphonic import (ureg, Crystal, DebyeWaller, Quantity,
+from euphonic import (ureg, Quantity, Crystal, DebyeWaller, QpointFrequencies,
                       Spectrum1D, Spectrum1DCollection, StructureFactor)
 
 
@@ -460,6 +460,17 @@ class QpointPhononModes(object):
             Name of the JSON file to write to
         """
         _obj_to_json_file(self, filename)
+
+    def to_qpoint_frequencies(self) -> QpointFrequencies:
+        """
+        Create a QpointFrequencies object
+
+        Returns
+        -------
+        qpoint_frequencies
+        """
+        return QpointFrequencies(
+            self.crystal, self.qpts, self.frequencies, self.weights)
 
     @classmethod
     def from_dict(cls, d):

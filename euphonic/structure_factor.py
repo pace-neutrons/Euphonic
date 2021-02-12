@@ -6,8 +6,8 @@ from euphonic.validate import _check_constructor_inputs, _check_unit_conversion
 from euphonic.io import (_obj_to_json_file, _obj_from_json_file,
                          _obj_to_dict, _process_dict)
 from euphonic.util import get_qpoint_labels, _calc_abscissa
-from euphonic import (ureg, Quantity, Spectrum1D, Spectrum1DCollection,
-                      Spectrum2D, Crystal)
+from euphonic import (ureg, Quantity, Crystal, QpointFrequencies, Spectrum1D,
+                      Spectrum1DCollection, Spectrum2D)
 
 
 class NoTemperatureError(Exception):
@@ -374,6 +374,17 @@ class StructureFactor(object):
             Name of the JSON file to write to
         """
         _obj_to_json_file(self, filename)
+
+    def to_qpoint_frequencies(self) -> QpointFrequencies:
+        """
+        Create a QpointFrequencies object
+
+        Returns
+        -------
+        qpoint_frequencies
+        """
+        return QpointFrequencies(
+            self.crystal, self.qpts, self.frequencies, self.weights)
 
     @classmethod
     def from_dict(cls, d):

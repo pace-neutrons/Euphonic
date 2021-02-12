@@ -9,6 +9,8 @@ import pytest
 from euphonic import ureg, Crystal, StructureFactor
 from tests_and_analysis.test.euphonic_test.test_crystal import (
     ExpectedCrystal, get_crystal, check_crystal)
+from tests_and_analysis.test.euphonic_test.test_qpoint_frequencies import (
+    get_expected_qpt_freqs, check_qpt_freqs)
 from tests_and_analysis.test.euphonic_test.test_spectrum2d import (
     get_expected_spectrum2d, check_spectrum2d)
 from tests_and_analysis.test.euphonic_test.test_spectrum1d import (
@@ -346,6 +348,20 @@ class TestStructureFactorSerialisation:
     def test_serialise_to_dict(self, serialise_to_dict):
         sf, expected_sf = serialise_to_dict
         check_structure_factor(sf, expected_sf, sum_sf=False)
+
+    @pytest.mark.parametrize('material, sf_json, qpt_freqs_json', [
+        ('quartz',
+         'quartz_666_300K_structure_factor.json',
+         'quartz_666_qpoint_frequencies.json'),
+        ('CaHgO2',
+         'CaHgO2_300K_structure_factor.json',
+         'CaHgO2_from_phonopy_qpoint_frequencies.json')])
+    def test_to_qpoint_frequencies(
+            self, material, sf_json, qpt_freqs_json):
+        sf = get_sf(material, sf_json)
+        qpt_freqs = sf.to_qpoint_frequencies()
+        expected_qpt_freqs = get_expected_qpt_freqs(material, qpt_freqs_json)
+        check_qpt_freqs(qpt_freqs, expected_qpt_freqs)
 
 
 @pytest.mark.unit

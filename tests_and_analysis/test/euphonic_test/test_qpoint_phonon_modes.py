@@ -12,6 +12,8 @@ from tests_and_analysis.test.euphonic_test.test_crystal import (
     ExpectedCrystal, get_crystal, check_crystal)
 from tests_and_analysis.test.euphonic_test.test_debye_waller import (
     get_expected_dw, check_debye_waller)
+from tests_and_analysis.test.euphonic_test.test_qpoint_frequencies import (
+    get_expected_qpt_freqs, check_qpt_freqs)
 from tests_and_analysis.test.euphonic_test.test_spectrum1d import (
     get_expected_spectrum1d, check_spectrum1d)
 from tests_and_analysis.test.euphonic_test.test_spectrum1dcollection import (
@@ -393,6 +395,21 @@ class TestQpointPhononModesSerialisation:
         qpt_ph_modes, qpt_ph_modes_from_dict = serialise_to_dict
         check_qpt_ph_modes(qpt_ph_modes, qpt_ph_modes_from_dict,
                            check_evecs=True)
+
+    @pytest.mark.parametrize('material, qpt_ph_modes_json, qpt_freqs_json', [
+        ('quartz',
+         'quartz_bandstructure_qpoint_phonon_modes.json',
+         'quartz_bandstructure_qpoint_frequencies.json'),
+        ('NaCl',
+         'NaCl_mesh_yaml_from_phonopy_qpoint_phonon_modes.json',
+         'NaCl_mesh_yaml_from_phonopy_qpoint_frequencies.json')])
+    def test_to_qpoint_frequencies(
+            self, material, qpt_ph_modes_json, qpt_freqs_json):
+        qpt_ph_modes = get_qpt_ph_modes_from_json(material, qpt_ph_modes_json)
+        qpt_freqs = qpt_ph_modes.to_qpoint_frequencies()
+        expected_qpt_freqs = get_expected_qpt_freqs(material, qpt_freqs_json)
+        check_qpt_freqs(qpt_freqs, expected_qpt_freqs)
+
 
 
 @pytest.mark.unit
