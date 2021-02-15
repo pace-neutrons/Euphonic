@@ -1,6 +1,15 @@
 `Unreleased <https://github.com/pace-neutrons/Euphonic/compare/v0.4.0...HEAD>`_
 ----------
 
+- New Features:
+
+  - New ``QpointFrequencies`` object which allows storage of frequencies
+    without eigenvectors, meaning that memory usage can be reduced if
+    eigenvectors are not required.
+  - ``StructureFactor`` now has a ``weights`` attribute and can be used
+    to calculate DOS with ``calculate_dos`` and get dispersion with
+    ``get_dispersion``
+
 `v0.4.0 <https://github.com/pace-neutrons/Euphonic/compare/v0.3.2...v0.4.0>`_
 ----------
 
