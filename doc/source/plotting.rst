@@ -15,9 +15,9 @@ be tweaked, then viewed with ``matplotlib.figure.Figure.show()``
 Plotting Dispersion
 ===================
 
-Phonon dispersion can be plotted from the q-points/frequencies in
-:ref:`QpointPhononModes <qpoint-phonon-modes>` using
-:py:meth:`QpointPhononModes.get_dispersion <euphonic.qpoint_phonon_modes.QpointPhononModes.get_dispersion>`
+Phonon dispersion can be plotted from any Euphonic object that contains
+q-points and frequencies. For example, from :ref:`QpointPhononModes <qpoint-phonon-modes>`
+using :py:meth:`QpointPhononModes.get_dispersion <euphonic.qpoint_phonon_modes.QpointPhononModes.get_dispersion>`
 to convert the frequencies into a :ref:`Spectrum1DCollection` object, which
 is plotted with :py:meth:`euphonic.plot.plot_1d`. Converting to
 :ref:`Spectrum1DCollection` creates a defined x-axis for the plot. Extra
@@ -47,12 +47,12 @@ A compact recipe to write a band-structure plot with discontinuities could be
 
 .. code-block:: py
 
-  from euphonic import QpointPhononModes
+  from euphonic import QpointFrequencies
   from euphonic.plot import plot_1d
 
-  phonons = QpointPhononModes.from_castep('quartz.phonon')
+  phonon_frequencies = QpointFrequencies.from_castep('quartz.phonon')
 
-  fig = plot_1d(phonons.get_dispersion().split())
+  fig = plot_1d(phonon_frequencies.get_dispersion().split())
   fig.savefig('quartz-dispersion.pdf')
 
 
@@ -116,7 +116,7 @@ An example of plotting 2 DOS on different axes on the same figure:
   fig.show()
 
 Docstrings
----------
+----------
 
 .. autofunction:: euphonic.plot.plot_1d
 
@@ -160,7 +160,7 @@ spectra are on the same colour scale. An example of this for 2 S(Q,w) is below:
   fig.show()
 
 Docstrings
----------
+----------
 
 .. autofunction:: euphonic.plot.plot_2d
 
