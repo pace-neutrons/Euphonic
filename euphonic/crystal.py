@@ -1,5 +1,5 @@
 import inspect
-from typing import List, Tuple
+from typing import List, Tuple, TypeVar
 
 import numpy as np
 
@@ -7,6 +7,9 @@ from euphonic.validate import _check_constructor_inputs, _check_unit_conversion
 from euphonic.io import (_obj_to_json_file, _obj_from_json_file,
                          _obj_to_dict, _process_dict)
 from euphonic import ureg, Quantity
+
+
+CR = TypeVar('CR', bound='Crystal')
 
 
 class Crystal(object):
@@ -45,6 +48,15 @@ class Crystal(object):
             atom_r
         """
         n_atoms = len(atom_r)
+        # Allow empty structure information, but convert to correct
+        # shape/type. This is required here to allow reading from .json
+        # files where attrs will have been converted to a list so
+        # shape/type information will have been lost
+        if n_atoms == 0 and atom_r.shape == (0,):
+            atom_r = np.zeros((0, 3), dtype=np.float64)
+        if n_atoms == 0 and atom_type.shape == (0,):
+            atom_type = np.array([], dtype='<U32')
+
         _check_constructor_inputs(
             [cell_vectors, atom_r, atom_type, atom_mass],
             [Quantity, np.ndarray, np.ndarray, Quantity],
@@ -189,3 +201,24 @@ class Crystal(object):
         Crystal
         """
         return _obj_from_json_file(cls, filename)
+
+    @classmethod
+    def from_cell_vectors(cls: CR, cell_vectors: Quantity) -> CR:
+        """
+        Create a Crystal object from just cell vectors, containing no
+        detailed structure information (atomic positions, species,
+        masses)
+
+        Parameters
+        ----------
+        cell_vectors : (3, 3) float Quantity
+            Cartesian unit cell vectors. cell_vectors[0] = a,
+            cell_vectors[:, 0] = x etc.
+
+        Returns
+        -------
+        Crystal
+        """
+        return Crystal(cell_vectors,
+                       np.array([]), np.array([]),
+                       Quantity(np.array([], dtype=np.float64), 'amu'))
