@@ -185,6 +185,7 @@ Docstring
 
 .. autoclass:: euphonic.qpoint_phonon_modes.QpointPhononModes
    :members:
+   :inherited-members:
    :exclude-members: frequencies
 
 

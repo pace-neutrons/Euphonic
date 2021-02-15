@@ -12,7 +12,7 @@ from euphonic import (ureg, Crystal, Quantity, Spectrum1D,
                       Spectrum1DCollection)
 
 
-QF = TypeVar('QF', bound='QpointFrequencies')
+T = TypeVar('T', bound='QpointFrequencies')
 
 
 class QpointFrequencies(object):
@@ -25,13 +25,14 @@ class QpointFrequencies(object):
         Lattice and atom information
     n_qpts : int
         Number of q-points in the object
-    qpts : (n_qpts, 3) float ndarray
-        Q-point coordinates, in fractional coordinates of the reciprocal
-        lattice
-    frequencies : (n_qpts, 3*crystal.n_atoms) float Quantity
-        Frequencies per q-point and mode
-    weights : (n_qpts,) float ndarray
-        The weight for each q-point
+    qpts
+        Shape (n_qpts, 3) float ndarray. Q-point coordinates, in
+        fractional coordinates of the reciprocal lattice
+    frequencies
+        Shape (n_qpts, n_branches) float Quantity. Frequencies
+        per q-point and mode
+    weights
+        Shape (n_qpts,) float ndarray. The weight for each q-point
     """
 
     def __init__(self, crystal: Crystal, qpts: np.ndarray,
@@ -40,16 +41,17 @@ class QpointFrequencies(object):
         """
         Parameters
         ----------
-        crystal : Crystal
+        crystal
             Lattice and atom information
-        qpts : (n_qpts, 3) float ndarray
-            Q-point coordinates
-        frequencies: (n_qpts, 3*crystal.n_atoms) float Quantity
-            Frequencies, ordered according to increasing q-point
-            number. Default units meV
-        weights : (n_qpts,) float ndarray, optional
-            The weight for each q-point. If None, equal
-            weights are assumed
+        qpts
+            Shape (n_qpts, 3) float ndarray. Q-point coordinates
+        frequencies
+            Shape (n_qpts, n_branches) float Quantity. Frequencies,
+            ordered according to increasing q-point number. Default
+            units meV
+        weights
+            Shape (n_qpts,) float ndarray. The weight for each q-point.
+            If None, equal weights are assumed
         """
         _check_constructor_inputs(
             [crystal, qpts], [Crystal, np.ndarray], [(), (-1, 3)],
@@ -89,8 +91,9 @@ class QpointFrequencies(object):
 
         Parameters
         ----------
-        dos_bins : (n_ebins + 1,) float Quantity
-            The energy bin edges to use for calculating the DOS
+        dos_bins
+            Shape (n_e_bins + 1,) float Quantity. The energy bin edges
+            to use for calculating the DOS
 
         Returns
         -------
@@ -126,7 +129,7 @@ class QpointFrequencies(object):
 
         Returns
         -------
-        bands
+        dispersion
             A sequence of mode bands with a common x-axis
         """
         abscissa = _calc_abscissa(self.crystal.reciprocal_cell(), self.qpts)
@@ -139,10 +142,6 @@ class QpointFrequencies(object):
         """
         Convert to a dictionary. See QpointFrequencies.from_dict for
         details on keys/values
-
-        Returns
-        -------
-        dict
         """
         dout = _obj_to_dict(self, ['crystal', 'n_qpts', 'qpts', 'frequencies',
                                    'weights'])
@@ -161,7 +160,7 @@ class QpointFrequencies(object):
         _obj_to_json_file(self, filename)
 
     @classmethod
-    def from_dict(cls: QF, d: Dict[str, Any]) -> QF:
+    def from_dict(cls: T, d: Dict[str, Any]) -> T:
         """
         Convert a dictionary to a QpointFrequencies object
 
@@ -172,16 +171,12 @@ class QpointFrequencies(object):
 
             - 'crystal': dict, see Crystal.from_dict
             - 'qpts': (n_qpts, 3) float ndarray
-            - 'frequencies': (n_qpts, 3*crystal.n_atoms) float ndarray
+            - 'frequencies': (n_qpts, n_branches) float ndarray
             - 'frequencies_unit': str
 
             There are also the following optional keys:
 
             - 'weights': (n_qpts,) float ndarray
-
-        Returns
-        -------
-        QpointFrequencies
         """
         crystal = Crystal.from_dict(d['crystal'])
         d = _process_dict(d, quantities=['frequencies'], optional=['weights'])
@@ -189,7 +184,7 @@ class QpointFrequencies(object):
                                  d['weights'])
 
     @classmethod
-    def from_json_file(cls: QF, filename: str) -> QF:
+    def from_json_file(cls: T, filename: str) -> T:
         """
         Read from a JSON file. See from_dict for
         required fields
@@ -198,15 +193,11 @@ class QpointFrequencies(object):
         ----------
         filename
             The file to read from
-
-        Returns
-        -------
-        QpointFrequencies
         """
         return _obj_from_json_file(cls, filename)
 
     @classmethod
-    def from_castep(cls: QF, filename: str) -> QF:
+    def from_castep(cls: T, filename: str) -> T:
         """
         Reads precalculated phonon mode data from a CASTEP .phonon file
 
@@ -214,19 +205,15 @@ class QpointFrequencies(object):
         ----------
         filename
             The path and name of the .phonon file to read
-
-        Returns
-        -------
-        QpointFrequencies
         """
         data = castep._read_phonon_data(filename, read_eigenvectors=False)
         return cls.from_dict(data)
 
     @classmethod
-    def from_phonopy(cls: QF, path: Optional[str] = '.',
+    def from_phonopy(cls: T, path: Optional[str] = '.',
                      phonon_name: Optional[str] = 'band.yaml',
                      phonon_format: Optional[str] = None,
-                     summary_name: Optional[str] = 'phonopy.yaml') -> QF:
+                     summary_name: Optional[str] = 'phonopy.yaml') -> T:
         """
         Reads precalculated phonon mode data from a Phonopy
         mesh/band/qpoints.yaml/hdf5 file. May also read from
@@ -246,10 +233,6 @@ class QpointFrequencies(object):
             from. Crystal information in the phonon_name file takes
             priority, but if it isn't present, crystal information is
             read from summary_name instead
-
-        Returns
-        -------
-        QpointFrequencies
         """
         data = phonopy._read_phonon_data(
             path=path, phonon_name=phonon_name, phonon_format=phonon_format,

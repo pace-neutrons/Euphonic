@@ -1,13 +1,15 @@
-from typing import Optional
+from typing import Optional, TypeVar, Dict, Any
 
 import numpy as np
 
 from euphonic.validate import _check_constructor_inputs, _check_unit_conversion
-from euphonic.io import (_obj_to_json_file, _obj_from_json_file,
-                         _obj_to_dict, _process_dict)
+from euphonic.io import _obj_to_dict, _process_dict
 from euphonic.util import get_qpoint_labels, _calc_abscissa
 from euphonic import (ureg, Quantity, Crystal, QpointFrequencies, Spectrum1D,
-                      Spectrum1DCollection, Spectrum2D)
+                      Spectrum2D)
+
+
+T = TypeVar('T', bound='StructureFactor')
 
 
 class NoTemperatureError(Exception):
@@ -40,29 +42,32 @@ class StructureFactor(QpointFrequencies):
         population factor). None if no temperature-dependent effects
         have been applied
     """
-
-    def __init__(self, crystal, qpts, frequencies, structure_factors,
-                 weights=None, temperature=None):
+    def __init__(self, crystal: Crystal, qpts: np.ndarray,
+                 frequencies: Quantity, structure_factors: Quantity,
+                 weights: Optional[np.ndarray] = None,
+                 temperature: Optional[Quantity] = None) -> None:
         """
         Parameters
         ----------
-        crystal : Crystal
+        crystal
             Lattice and atom information
-        qpts : (n_qpts, 3) float ndarray
-            Q-point coordinates, in fractional coordinates of the
-            reciprocal lattice
-        frequencies: (n_qpts, 3*crystal.n_atoms) float Quantity
-            Phonon frequencies per q-point and mode
-        structure_factors: (n_qpts, 3*crystal.n_atoms) float Quantity
-            Structure factor per q-point and mode
-        weights : (n_qpts,) float ndarray, optional
-            The weight for each q-point. If None, equal
-            weights are assumed
-        temperature : float Quantity or None
-            The temperature used to calculate any temperature-dependent
-            parts of the structure factor (e.g. Debye-Waller, Bose
-            population factor). None if no temperature-dependent effects
-            have been applied
+        qpts
+            Shape (n_qpts, 3) float ndarray. Q-point coordinates, in
+            fractional coordinates of the reciprocal lattice
+        frequencies
+            Shape (n_qpts, 3*crystal.n_atoms) float Quantity. Phonon
+            frequencies per q-point and mode
+        structure_factors
+            Shape (n_qpts, 3*crystal.n_atoms) float Quantity. Structure
+            factor per q-point and mode
+        weights
+            Shape (n_qpts,) float ndarray. The weight for each q-point.
+            If None, equal weights are assumed
+        temperature
+            Scalar float Quantity. The temperature used to calculate any
+            temperature-dependent parts of the structure factor (e.g.
+            Debye-Waller, Bose population factor). None if no
+            temperature-dependent effects have been applied
         """
         _check_constructor_inputs(
             [crystal, qpts], [Crystal, np.ndarray], [(), (-1, 3)],
@@ -129,13 +134,13 @@ class StructureFactor(QpointFrequencies):
         Parameters
         ----------
         e_bins
-            The energy bin edges
+            Shape (n_e_bins + 1,) float Quantity. The energy bin edges
         calc_bose
             Whether to calculate and apply the Bose population factor
         temperature
-            The temperature to use to calculate the Bose factor. Is only
-            required if StructureFactor.temperature = None, otherwise
-            the temperature stored in StructureFactor will be used
+            Scalar float Quantity. The temperature to use to calculate the Bose
+            factor. Is only required if StructureFactor.temperature = None,
+            otherwise the temperature stored in StructureFactor will be used
         weights
             Dimensionless weights to be applied in averaging, the same
             length as qpts. If no weights are provided the weights
@@ -145,7 +150,7 @@ class StructureFactor(QpointFrequencies):
 
         Returns
         -------
-        s_w : Spectrum1D
+        s_w
             1-D neutron scattering spectrum, averaged over all sampled q-points
         """
         if weights is None:
@@ -158,25 +163,29 @@ class StructureFactor(QpointFrequencies):
             sqw_map.magnitude, axis=0, weights=weights)*sqw_map.units
         return Spectrum1D(e_bins, spectrum)
 
-    def calculate_sqw_map(self, e_bins, calc_bose=True, temperature=None):
+    def calculate_sqw_map(self,
+                          e_bins: Quantity,
+                          calc_bose: Optional[bool] = True,
+                          temperature: Optional[Quantity] = None
+                          ) -> Spectrum2D:
         """
         Bin the structure factor in energy and apply the Bose population
         factor to produce a a S(Q,w) map
 
         Parameters
         ----------
-        e_bins : (n_e_bins + 1,) float Quantity
-            The energy bin edges
-        calc_bose : boolean, optional
+        e_bins
+            Shape (n_e_bins + 1,) float Quantity. The energy bin edges
+        calc_bose
             Whether to calculate and apply the Bose population factor
-        temperature : float Quantity, optional
+        temperature
             The temperature to use to calculate the Bose factor. Is only
             required if StructureFactor.temperature = None, otherwise
             the temperature stored in StructureFactor will be used
 
         Returns
         -------
-        sqw_map : Spectrum2D
+        sqw_map
             A spectrum containing the q-point bins on the x-axis, energy
             bins on the y-axis and scattering intensities on the z-axis
 
@@ -228,8 +237,8 @@ class StructureFactor(QpointFrequencies):
 
         Parameters
         ----------
-        e_bins : (n_e_bins + 1,) float Quantity
-            The energy bin edges
+        e_bins
+            Shape (n_e_bins + 1,) float Quantity. The energy bin edges
         calc_bose
             Whether to calculate and apply the Bose population factor
         temperature
@@ -239,7 +248,7 @@ class StructureFactor(QpointFrequencies):
 
         Returns
         -------
-        Quantity
+        intensities
             Scattering intensities as array over (qpt, energy)
         """
         # Convert units
@@ -275,22 +284,22 @@ class StructureFactor(QpointFrequencies):
 
         return sqw_map
 
-    def _bose_factor(self, temperature=None):
+    def _bose_factor(self, temperature: Optional[Quantity] = None):
         """
         Calculate the Bose factor for the frequencies stored in
         StructureFactor
 
         Parameters
         ----------
-        temperature : Quantity
+        temperature
             Temperature used to calculate the Bose factor. This is only
             required if StructureFactor.temperature = None, otherwise
             the temperature stored in StructureFactor will be used.
 
         Returns
         -------
-        bose : (n_qpts, 3*n_atoms) float ndarray
-            Bose factor
+        bose
+            Shape (n_qpts, 3*n_atoms) float ndarray. The Bose factor
 
         Raises
         ------
@@ -325,14 +334,10 @@ class StructureFactor(QpointFrequencies):
             bose = 0
         return bose
 
-    def to_dict(self):
+    def to_dict(self) -> Dict[str, Any]:
         """
         Convert to a dictionary. See StructureFactor.from_dict for
         details on keys/values
-
-        Returns
-        -------
-        dict
         """
         dout = _obj_to_dict(self, ['crystal', 'n_qpts', 'qpts', 'frequencies',
                                    'structure_factors', 'weights',
@@ -342,16 +347,12 @@ class StructureFactor(QpointFrequencies):
     def to_qpoint_frequencies(self) -> QpointFrequencies:
         """
         Create a QpointFrequencies object
-
-        Returns
-        -------
-        qpoint_frequencies
         """
         return QpointFrequencies(
             self.crystal, self.qpts, self.frequencies, self.weights)
 
     @classmethod
-    def from_dict(cls, d):
+    def from_dict(cls: T, d: Dict[str, Any]) -> T:
         """
         Convert a dictionary to a StructureFactor object
 
@@ -372,10 +373,6 @@ class StructureFactor(QpointFrequencies):
             - 'weights': (n_qpts,) float ndarray
             - 'temperature': float
             - 'temperature_unit': str
-
-        Returns
-        -------
-        StructureFactor
         """
         crystal = Crystal.from_dict(d['crystal'])
         d = _process_dict(
@@ -384,3 +381,13 @@ class StructureFactor(QpointFrequencies):
         return StructureFactor(crystal, d['qpts'], d['frequencies'],
                                d['structure_factors'], d['weights'],
                                d['temperature'])
+
+    @classmethod
+    def from_castep(cls):
+        ''
+        raise AttributeError
+
+    @classmethod
+    def from_phonopy(cls):
+        ''
+        raise AttributeError

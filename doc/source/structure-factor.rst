@@ -42,4 +42,5 @@ Docstring
 
 .. autoclass:: euphonic.structure_factor.StructureFactor
    :members:
+   :inherited-members:
    :exclude-members: frequencies, temperature

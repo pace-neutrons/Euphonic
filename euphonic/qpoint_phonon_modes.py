@@ -1,17 +1,17 @@
 import math
-import warnings
-from typing import Dict, Optional, Union
+from typing import Dict, Optional, Union, TypeVar, Any
 
 import numpy as np
 
-from euphonic.validate import _check_constructor_inputs, _check_unit_conversion
-from euphonic.io import (_obj_to_json_file, _obj_from_json_file,
-                         _obj_to_dict, _process_dict)
+from euphonic.validate import _check_constructor_inputs
+from euphonic.io import _obj_from_json_file, _obj_to_dict, _process_dict
 from euphonic.readers import castep, phonopy
-from euphonic.util import (_calc_abscissa, direction_changed,
-                           get_qpoint_labels, is_gamma, get_reference_data)
+from euphonic.util import (direction_changed, is_gamma, get_reference_data)
 from euphonic import (ureg, Quantity, Crystal, DebyeWaller, QpointFrequencies,
-                      Spectrum1D, Spectrum1DCollection, StructureFactor)
+                      StructureFactor)
+
+
+T = TypeVar('T', bound='QpointPhononModes')
 
 
 class QpointPhononModes(QpointFrequencies):
@@ -21,37 +21,43 @@ class QpointPhononModes(QpointFrequencies):
 
     Attributes
     ----------
-    crystal : Crystal
+    crystal
         Lattice and atom information
-    n_qpts : int
+    n_qpts
         Number of q-points in the object
-    qpts : (n_qpts, 3) float ndarray
-        Q-point coordinates, in fractional coordinates of the reciprocal
-        lattice
-    weights : (n_qpts,) float ndarray
-        The weight for each q-point
-    frequencies : (n_qpts, 3*crystal.n_atoms) float Quantity
-        Phonon frequencies per q-point and mode
-    eigenvectors : (n_qpts, 3*crystal.n_atoms, crystal.n_atoms, 3) complex ndarray
-        Dynamical matrix eigenvectors
+    qpts
+        Shape (n_qpts, 3) float ndarray. Q-point coordinates, in
+        fractional coordinates of the reciprocal lattice
+    weights
+        Shape (n_qpts,) float ndarray. The weight for each q-point
+    frequencies
+        Shape (n_qpts, 3*crystal.n_atoms) float Quantity. Phonon
+        frequencies per q-point and mode
+    eigenvectors
+        Shape (n_qpts, 3*crystal.n_atoms, crystal.n_atoms, 3) complex
+        ndarray. The dynamical matrix eigenvectors
     """
 
-    def __init__(self, crystal, qpts, frequencies, eigenvectors, weights=None):
+    def __init__(self, crystal: Crystal, qpts: np.ndarray,
+                 frequencies: Quantity, eigenvectors: Quantity,
+                 weights: Optional[np.ndarray] = None):
         """
         Parameters
         ----------
-        crystal : Crystal
+        crystal
             Lattice and atom information
-        qpts : (n_qpts, 3) float ndarray
-            Q-point coordinates
-        frequencies: (n_qpts, 3*crystal.n_atoms) float Quantity
-            Phonon frequencies, ordered according to increasing q-point
-            number. Default units meV
-        eigenvectors: (n_qpts, 3*crystal.n_atoms, crystal.n_atoms, 3) complex ndarray
-            Dynamical matrix eigenvectors
-        weights : (n_qpts,) float ndarray, optional
-            The weight for each q-point. If None, equal
-            weights are assumed
+        qpts
+            Shape (n_qpts, 3) float ndarray. The Q-point coordinates
+        frequencies
+            Shape (n_qpts, 3*crystal.n_atoms) float Quantity. Phonon
+            frequencies, ordered according to increasing q-point number.
+            Default units meV
+        eigenvectors
+            Shape (n_qpts, 3*crystal.n_atoms, crystal.n_atoms, 3)
+            complex ndarray. The dynamical matrix eigenvectors
+        weights
+            Shape (n_qpts,) float ndarray. The weight for each q-point.
+            If None, equal weights are assumed
         """
         _check_constructor_inputs(
             [crystal, qpts], [Crystal, np.ndarray], [(), (-1, 3)],
@@ -75,7 +81,8 @@ class QpointPhononModes(QpointFrequencies):
         else:
             self.weights = np.full(self.n_qpts, 1/self.n_qpts)
 
-    def reorder_frequencies(self, reorder_gamma=True):
+    def reorder_frequencies(self,
+                            reorder_gamma: Optional[bool] = True) -> None:
         """
         By doing a dot product of eigenvectors at adjacent q-points,
         determines which modes are most similar and reorders the
@@ -83,7 +90,7 @@ class QpointPhononModes(QpointFrequencies):
 
         Parameters
         ----------
-        reorder_gamma : bool
+        reorder_gamma
             Whether to reorder frequencies at gamma-equivalent points.
             If an analytical correction has been applied at the gamma
             points (i.e LO-TO splitting) mode assignments can be
@@ -193,7 +200,7 @@ class QpointPhononModes(QpointFrequencies):
 
         Returns
         -------
-        sf : StructureFactor
+        sf
             An object containing the structure factor for each q-point
             and phonon mode
 
@@ -274,19 +281,20 @@ class QpointPhononModes(QpointFrequencies):
             sf*ureg('bohr**2').to(self.crystal.cell_vectors.units**2),
             temperature=temperature)
 
-    def calculate_debye_waller(self, temperature):
+    def calculate_debye_waller(self, temperature: Quantity) -> DebyeWaller:
         """
         Calculate the 3 x 3 Debye-Waller exponent for each atom over the
         q-points contained in this object
 
         Parameters
         ----------
-        temperature : float Quantity
-            Temperature
+        temperature
+            Scalar float Quantity. The temperature to use in the
+            Debye-Waller calculation.
 
         Returns
         -------
-        dw : DebyeWaller
+        dw
             An object containing the 3x3 Debye-Waller exponent for each
             atom
 
@@ -369,14 +377,10 @@ class QpointPhononModes(QpointFrequencies):
 
         return DebyeWaller(self.crystal, dw, temperature)
 
-    def to_dict(self):
+    def to_dict(self) -> Dict[str, Any]:
         """
         Convert to a dictionary. See QpointPhononModes.from_dict for
         details on keys/values
-
-        Returns
-        -------
-        dict
         """
         dout = _obj_to_dict(self, ['crystal', 'n_qpts', 'qpts', 'frequencies',
                                    'eigenvectors', 'weights'])
@@ -385,16 +389,12 @@ class QpointPhononModes(QpointFrequencies):
     def to_qpoint_frequencies(self) -> QpointFrequencies:
         """
         Create a QpointFrequencies object
-
-        Returns
-        -------
-        qpoint_frequencies
         """
         return QpointFrequencies(
             self.crystal, self.qpts, self.frequencies, self.weights)
 
     @classmethod
-    def from_dict(cls, d):
+    def from_dict(cls: T, d: Dict[str, Any]) -> T:
         """
         Convert a dictionary to a QpointPhononModes object
 
@@ -412,10 +412,6 @@ class QpointPhononModes(QpointFrequencies):
             There are also the following optional keys:
 
             - 'weights': (n_qpts,) float ndarray
-
-        Returns
-        -------
-        QpointPhononModes
         """
         crystal = Crystal.from_dict(d['crystal'])
         d = _process_dict(d, quantities=['frequencies'], optional=['weights'])
@@ -423,43 +419,37 @@ class QpointPhononModes(QpointFrequencies):
                                  d['eigenvectors'], d['weights'])
 
     @classmethod
-    def from_json_file(cls, filename):
+    def from_json_file(cls: T, filename: str) -> T:
         """
         Read from a JSON file. See QpointPhononModes.from_dict for
         required fields
 
         Parameters
         ----------
-        filename : str
+        filename
             The file to read from
-
-        Returns
-        -------
-        QpointPhononModes
         """
         return _obj_from_json_file(cls, filename,
                                    type_dict={'eigenvectors': np.complex128})
 
     @classmethod
-    def from_castep(cls, filename):
+    def from_castep(cls: T, filename: str) -> T:
         """
         Reads precalculated phonon mode data from a CASTEP .phonon file
 
         Parameters
         ----------
-        filename : str
+        filename
             The path and name of the .phonon file to read
-
-        Returns
-        -------
-        QpointPhononModes
         """
         data = castep._read_phonon_data(filename)
         return cls.from_dict(data)
 
     @classmethod
-    def from_phonopy(cls, path='.', phonon_name='band.yaml',
-                     phonon_format=None, summary_name='phonopy.yaml'):
+    def from_phonopy(cls: T, path: Optional[str] = '.',
+                     phonon_name: Optional[str] = 'band.yaml',
+                     phonon_format: Optional[str] = None,
+                     summary_name: Optional[str] = 'phonopy.yaml') -> T:
         """
         Reads precalculated phonon mode data from a Phonopy
         mesh/band/qpoints.yaml/hdf5 file. May also read from
@@ -467,23 +457,18 @@ class QpointPhononModes(QpointFrequencies):
 
         Parameters
         ----------
-        path : str, optional
+        path
             Path to directory containing the file(s)
-        phonon_name : str, optional
-            Name of Phonopy file including the frequencies and
-            eigenvectors
-        phonon_format : {'yaml', 'hdf5'} str, optional
+        phonon_name
+            Name of Phonopy file including the frequencies
+        phonon_format
             Format of the phonon_name file if it isn't obvious from the
-            phonon_name extension
-        summary_name : str, optional
+            phonon_name extension, one of {'yaml', 'hdf5'}
+        summary_name
             Name of Phonopy summary file to read the crystal information
             from. Crystal information in the phonon_name file takes
             priority, but if it isn't present, crystal information is
             read from summary_name instead
-
-        Returns
-        -------
-        QpointPhononModes
         """
         data = phonopy._read_phonon_data(
             path=path, phonon_name=phonon_name, phonon_format=phonon_format,
