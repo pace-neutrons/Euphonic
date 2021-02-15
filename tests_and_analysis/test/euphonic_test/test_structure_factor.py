@@ -474,3 +474,24 @@ class TestStructureFactorGetDispersion:
             expected_dispersion_json)
         check_spectrum1dcollection(disp, expected_disp)
 
+@pytest.mark.unit
+class TestStructureFactorCalculateDos:
+
+    @pytest.mark.parametrize(
+        'material, sf_json, expected_dos_json, ebins', [
+            ('quartz', 'quartz_666_300K_structure_factor.json',
+             'quartz_666_dos.json', np.arange(0, 155, 0.5)*ureg('meV'))])
+    def test_calculate_dos(
+            self, material, sf_json, expected_dos_json, ebins):
+        sf = get_sf(material, sf_json)
+        dos = sf.calculate_dos(ebins)
+        expected_dos = get_expected_spectrum1d(expected_dos_json)
+        check_spectrum1d(dos, expected_dos)
+
+    def test_calculate_dos_with_0_inv_cm_bin_doesnt_raise_runtime_warn(self):
+        sf = get_sf(
+            'quartz', 'quartz_666_300K_structure_factor.json')
+        ebins = np.arange(0, 1300, 4)*ureg('1/cm')
+        with pytest.warns(None) as warn_record:
+            dos = sf.calculate_dos(ebins)
+        assert len(warn_record) == 0

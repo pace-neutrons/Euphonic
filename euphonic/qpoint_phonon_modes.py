@@ -14,7 +14,7 @@ from euphonic import (ureg, Quantity, Crystal, DebyeWaller, QpointFrequencies,
                       Spectrum1D, Spectrum1DCollection, StructureFactor)
 
 
-class QpointPhononModes(object):
+class QpointPhononModes(QpointFrequencies):
     """
     A class to read and store vibrational data from model (e.g. CASTEP)
     output files
@@ -74,15 +74,6 @@ class QpointPhononModes(object):
             self.weights = weights
         else:
             self.weights = np.full(self.n_qpts, 1/self.n_qpts)
-
-    @property
-    def frequencies(self):
-        return self._frequencies*ureg('hartree').to(self.frequencies_unit)
-
-    def __setattr__(self, name, value):
-        _check_unit_conversion(self, name, value,
-                               ['frequencies_unit'])
-        super(QpointPhononModes, self).__setattr__(name, value)
 
     def reorder_frequencies(self, reorder_gamma=True):
         """
@@ -378,64 +369,6 @@ class QpointPhononModes(object):
 
         return DebyeWaller(self.crystal, dw, temperature)
 
-    def calculate_dos(self, dos_bins):
-        """
-        Calculates a density of states
-
-        Parameters
-        ----------
-        dos_bins : (n_ebins + 1,) float Quantity
-            The energy bin edges to use for calculating the DOS
-
-        Returns
-        -------
-        dos : Spectrum1D
-            A spectrum containing the energy bins on the x-axis and dos
-            on the y-axis
-        """
-
-        freqs = self._frequencies
-        dos_bins_unit = dos_bins.units
-        # dos_bins commonly contains a 0 bin, and converting from 0 1/cm
-        # to 0 hartree causes a RuntimeWarning, so suppress it
-        with warnings.catch_warnings():
-            warnings.filterwarnings('ignore', category=RuntimeWarning)
-            dos_bins = dos_bins.to('hartree').magnitude
-        weights = np.repeat(self.weights[:, np.newaxis],
-                            3*self.crystal.n_atoms,
-                            axis=1) / np.sum(self.weights)
-        dos, _ = np.histogram(freqs, dos_bins, weights=weights)
-
-        return Spectrum1D(
-            dos_bins*ureg('hartree').to(dos_bins_unit),
-            dos*ureg('dimensionless'))
-
-    def get_dispersion(self) -> Spectrum1DCollection:
-        """
-        Creates a set of 1-D bands from phonon mode data
-
-        Bands follow the q-point order from the QpointPhononModes
-        object, with x-axis spacing corresponding to the absolute
-        distances between q-points.  Discontinuities will appear as
-        large jumps on the x-axis.
-
-        Parameters
-        ----------
-        phonons
-            Containing the q-points/frequencies to plot
-
-        Returns
-        -------
-        Spectrum1DCollection
-
-            A sequence of phonon bands with a common x-axis
-        """
-        abscissa = _calc_abscissa(self.crystal.reciprocal_cell(), self.qpts)
-        x_tick_labels = get_qpoint_labels(self.qpts,
-                                          cell=self.crystal.to_spglib_cell())
-        return Spectrum1DCollection(abscissa, self.frequencies.T,
-                                    x_tick_labels=x_tick_labels)
-
     def to_dict(self):
         """
         Convert to a dictionary. See QpointPhononModes.from_dict for
@@ -448,18 +381,6 @@ class QpointPhononModes(object):
         dout = _obj_to_dict(self, ['crystal', 'n_qpts', 'qpts', 'frequencies',
                                    'eigenvectors', 'weights'])
         return dout
-
-    def to_json_file(self, filename):
-        """
-        Write to a JSON file. JSON fields are equivalent to
-        QpointPhononModes.from_dict keys
-
-        Parameters
-        ----------
-        filename : str
-            Name of the JSON file to write to
-        """
-        _obj_to_json_file(self, filename)
 
     def to_qpoint_frequencies(self) -> QpointFrequencies:
         """

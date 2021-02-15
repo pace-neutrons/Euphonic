@@ -14,7 +14,7 @@ class NoTemperatureError(Exception):
     pass
 
 
-class StructureFactor(object):
+class StructureFactor(QpointFrequencies):
     """
     Stores the structure factor calculated per q-point and per phonon
     mode
@@ -94,10 +94,6 @@ class StructureFactor(object):
         else:
             self._temperature = None
             self.temperature_unit = str(ureg.K)
-
-    @property
-    def frequencies(self):
-        return self._frequencies*ureg('hartree').to(self.frequencies_unit)
 
     @property
     def structure_factors(self):
@@ -329,26 +325,6 @@ class StructureFactor(object):
             bose = 0
         return bose
 
-    def get_dispersion(self) -> Spectrum1DCollection:
-        """
-        Creates a set of 1-D bands from mode data
-
-        Bands follow the same q-point order as in the qpts array, with
-        x-axis spacing corresponding to the absolute distances between
-        q-points.  Discontinuities will appear as large jumps on the
-        x-axis.
-
-        Returns
-        -------
-        bands
-            A sequence of mode bands with a common x-axis
-        """
-        abscissa = _calc_abscissa(self.crystal.reciprocal_cell(), self.qpts)
-        x_tick_labels = get_qpoint_labels(self.qpts,
-                                          cell=self.crystal.to_spglib_cell())
-        return Spectrum1DCollection(abscissa, self.frequencies.T,
-                                    x_tick_labels=x_tick_labels)
-
     def to_dict(self):
         """
         Convert to a dictionary. See StructureFactor.from_dict for
@@ -362,18 +338,6 @@ class StructureFactor(object):
                                    'structure_factors', 'weights',
                                    'temperature'])
         return dout
-
-    def to_json_file(self, filename):
-        """
-        Write to a JSON file. JSON fields are equivalent to
-        StructureFactor.from_dict keys
-
-        Parameters
-        ----------
-        filename : str
-            Name of the JSON file to write to
-        """
-        _obj_to_json_file(self, filename)
 
     def to_qpoint_frequencies(self) -> QpointFrequencies:
         """
@@ -420,20 +384,3 @@ class StructureFactor(object):
         return StructureFactor(crystal, d['qpts'], d['frequencies'],
                                d['structure_factors'], d['weights'],
                                d['temperature'])
-
-    @classmethod
-    def from_json_file(cls, filename):
-        """
-        Read from a JSON file. See StructureFactor.from_dict for required
-        fields
-
-        Parameters
-        ----------
-        filename : str
-            The file to read from
-
-        Returns
-        -------
-        StructureFactor
-        """
-        return _obj_from_json_file(cls, filename)

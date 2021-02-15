@@ -151,7 +151,7 @@ class QpointFrequencies(object):
     def to_json_file(self, filename: str) -> None:
         """
         Write to a JSON file. JSON fields are equivalent to
-        QpointFrequencies.from_dict keys
+        from_dict keys
 
         Parameters
         ----------
@@ -191,7 +191,7 @@ class QpointFrequencies(object):
     @classmethod
     def from_json_file(cls: QF, filename: str) -> QF:
         """
-        Read from a JSON file. See QpointFrequencies.from_dict for
+        Read from a JSON file. See from_dict for
         required fields
 
         Parameters
