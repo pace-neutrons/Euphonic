@@ -438,10 +438,10 @@ class TestStructureFactorCalculate1dAverage:
     @pytest.mark.parametrize(
         'material, sf_json, expected_1d_json, ebins, kwargs', [
             ('quartz', 'quartz_666_300K_structure_factor.json',
-             'quartz_666_300K_sf_1d_average.json',
+             'quartz_666_300K_sf_1d_average_with_weights.json',
              np.arange(0,156)*ureg('meV'), {}),
             ('quartz', 'quartz_666_300K_structure_factor_noweights.json',
-             'quartz_666_300K_sf_1d_average.json',
+             'quartz_666_300K_sf_1d_average_with_weights.json',
              np.arange(0,156)*ureg('meV'),
              {'weights': np.load(os.path.join(
                  get_sf_dir('quartz'),
