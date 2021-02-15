@@ -107,7 +107,7 @@ class QpointFrequencies(object):
             warnings.filterwarnings('ignore', category=RuntimeWarning)
             dos_bins = dos_bins.to('hartree').magnitude
         weights = np.repeat(self.weights[:, np.newaxis],
-                            3*self.crystal.n_atoms,
+                            self.frequencies.shape[1],
                             axis=1) / np.sum(self.weights)
         dos, _ = np.histogram(freqs, dos_bins, weights=weights)
 

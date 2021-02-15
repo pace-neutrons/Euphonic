@@ -1,11 +1,13 @@
 import json
 import math
 import sys
+import warnings
 import os.path
 from typing import Dict
 
-import seekpath
 import numpy as np
+import seekpath
+from seekpath.hpkot import SymmetryDetectionError
 from importlib_resources import open_text  # Backport for Python 3.6
 from pint import UndefinedUnitError
 
@@ -323,10 +325,16 @@ def _recip_space_labels(qpts, cell=None):
             [True]))
     qpts_with_labels = np.where(qpt_has_label)[0]
 
-    if cell is not None:
-        sym_label_to_coords = seekpath.get_path(cell)["point_coords"]
-    else:
+    if cell is None:
         sym_label_to_coords = _generic_qpt_labels()
+    else:
+        try:
+            sym_label_to_coords = seekpath.get_path(cell)["point_coords"]
+        except SymmetryDetectionError:
+            warnings.warn(('Could not determine cell symmetry, using generic '
+                           'q-point labels'), stacklevel=2)
+            sym_label_to_coords = _generic_qpt_labels()
+
     # Get labels for each q-point
     labels = np.array([])
     for qpt in qpts[qpts_with_labels]:
