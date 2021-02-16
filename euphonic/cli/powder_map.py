@@ -15,6 +15,14 @@ from euphonic.powder import sample_sphere_dos, sample_sphere_structure_factor
 from euphonic.spectra import Spectrum2D
 import euphonic.util
 
+# Dummy tqdm function if tqdm progress bars unavailable
+try:
+    from tqdm import tqdm
+except ModuleNotFoundError:
+    def tqdm(sequence):
+        return sequence
+
+
 _sampling_choices = {'golden', 'sphere-projected-grid',
                      'spherical-polar-grid', 'spherical-polar-improved',
                      'random-sphere'}
@@ -40,7 +48,7 @@ def get_parser() -> 'argparse.ArgumentParser':
     npts_group.add_argument('--npts-density', type=int, default=None,
                             dest='npts_density',
                             help=('NPTS specified as the number of points at '
-                                  'surface of 1 recip. angstrom-radius sphere;'
+                                  'surface of 1/LENGTH_UNIT-radius sphere;'
                                   ' otherwise scaled to equivalent area '
                                   'density at sphere surface.'))
     sampling_group.add_argument(
@@ -73,7 +81,7 @@ def get_parser() -> 'argparse.ArgumentParser':
     q_group.add_argument('--q-max', type=float, default=3., dest='q_max',
                         help="Maximum |q| in 1/LENGTH_UNIT")
     q_group.add_argument(
-        '--q-distance', type=float, dest='q_distance', default=0.2,
+        '--q-spacing', type=float, dest='q_spacing', default=0.2,
         help=('Target distance between q-point samples in 1/LENGTH_UNIT'))
 
     #### QUITE REDUNDANT WITH EUPHONIC-INTENSITY-MAP ####
@@ -121,7 +129,7 @@ def main():
     q_max = _get_q_distance(args.length_unit, args.q_max)
     recip_length_unit = q_min.units
 
-    n_q_bins = ceil((args.q_max - args.q_min) / args.q_distance)
+    n_q_bins = ceil((args.q_max - args.q_min) / args.q_spacing)
     q_bin_edges = np.linspace(q_min.magnitude, q_max.magnitude, n_q_bins + 1,
                               endpoint=True) * recip_length_unit
     q_bin_centers = (q_bin_edges[:-1] + q_bin_edges[1:]) / 2
@@ -150,9 +158,15 @@ def main():
     print(f"Sampling {n_q_bins} |q| shells between {q_min:~P} and {q_max:~P}")
 
     z_data = np.empty((n_q_bins, len(energy_bins) - 1))
-    for q_index, q in enumerate(q_bin_centers):
+
+
+    for q_index in tqdm(range(n_q_bins)):
+        q = q_bin_centers[q_index]
+
         if args.npts_density is not None:
-            raise NotImplementedError()
+            npts = ceil(args.npts_density * (q / recip_length_unit)**2)
+            npts = max(args.npts_min,
+                       min(args.npts_max, npts))
         else:
             npts = args.npts
 
@@ -172,6 +186,8 @@ def main():
 
         z_data[q_index, :] = spectrum_1d.y_data.magnitude
 
+    print(f"Final npts: {npts}")
+
     spectrum = euphonic.Spectrum2D(q_bin_edges, energy_bins,
                                    z_data * spectrum_1d.y_data.units)
 
@@ -185,7 +201,7 @@ def main():
                      if args.energy_broadening else None),
             shape=args.shape)
 
-    print("Plotting figure")
+    print(f"Plotting figure: max intensity {np.max(spectrum.z_data):~P}")
     if args.y_label is None:
         y_label = f"Energy / {spectrum.y_data.units:~P}"
     else:
