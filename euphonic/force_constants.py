@@ -143,7 +143,8 @@ class ForceConstants:
             insert_gamma: bool = False,
             reduce_qpts: bool = True,
             use_c: Optional[bool] = None,
-            n_threads: Optional[int] = None) -> QpointPhononModes:
+            n_threads: Optional[int] = None,
+            return_mode_gradients: bool = False) -> QpointPhononModes:
         """
         Calculate phonon frequencies and eigenvectors at specified
         q-points from a force constants matrix via Fourier interpolation
@@ -260,11 +261,16 @@ class ForceConstants:
         .. [1] M.T. Dove, Introduction to Lattice Dynamics, Cambridge University Press, Cambridge, 1993, 83-87
         .. [2] X. Gonze, K. C. Charlier, D. C. Allan, M. P. Teter, Phys. Rev. B, 1994, 50, 13035-13038
         """
-        qpts, weights, freqs, evecs = self._calculate_phonons_at_qpts(
+        qpts, weights, freqs, evecs, grads = self._calculate_phonons_at_qpts(
             qpts, weights, asr, dipole, eta_scale, splitting, insert_gamma,
-            reduce_qpts, use_c, n_threads, return_eigenvectors=True)
-        return QpointPhononModes(
+            reduce_qpts, use_c, n_threads, return_mode_gradients,
+            return_eigenvectors=True)
+        qpt_ph_modes = QpointPhononModes(
             self.crystal, qpts, freqs, evecs, weights=weights)
+        if return_mode_gradients:
+            return qpt_ph_modes, grads
+        else:
+            return qpt_ph_modes
 
     def calculate_qpoint_frequencies(
             self,
@@ -277,17 +283,23 @@ class ForceConstants:
             insert_gamma: bool = False,
             reduce_qpts: bool = True,
             use_c: Optional[bool] = None,
-            n_threads: Optional[int] = None) -> QpointFrequencies:
+            n_threads: Optional[int] = None,
+            return_mode_gradients: bool = False) -> QpointFrequencies:
         """
         Calculate phonon frequencies (without eigenvectors) at specified
         q-points. See ForceConstants.calculate_qpoint_phonon_modes for
         argument and algorithm details
         """
-        qpts, weights, freqs = self._calculate_phonons_at_qpts(
+        qpts, weights, freqs, _, grads = self._calculate_phonons_at_qpts(
             qpts, weights, asr, dipole, eta_scale, splitting, insert_gamma,
-            reduce_qpts, use_c, n_threads, return_eigenvectors=False)
-        return QpointFrequencies(
+            reduce_qpts, use_c, n_threads, return_mode_gradients,
+            return_eigenvectors=False)
+        qpt_freqs = QpointFrequencies(
             self.crystal, qpts, freqs, weights=weights)
+        if return_mode_gradients:
+            return qpt_freqs, grads
+        else:
+            return qpt_freqs
 
     def _calculate_phonons_at_qpts(
             self,
@@ -301,6 +313,7 @@ class ForceConstants:
             reduce_qpts: bool,
             use_c: Optional[bool],
             n_threads: Optional[int],
+            return_mode_gradients: bool,
             return_eigenvectors: bool) -> Union[
                 Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray],
                 Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]]:
@@ -400,6 +413,11 @@ class ForceConstants:
                 sc_origins[:, i], return_inverse=True)
             unique_cell_origins[i], unique_cell_i[:, i] = np.unique(
                 self.cell_origins[:, i], return_inverse=True)
+        if return_mode_gradients:
+            sc_origins_cart = np.einsum('ij,jk->ik', sc_origins,
+                                        self.crystal._cell_vectors)
+            cell_origins_cart = np.einsum('ij,jk->ik', self.cell_origins,
+                                          self.crystal._cell_vectors)
 
         # Precompute dynamical matrix mass weighting
         atom_mass = self.crystal._atom_mass
@@ -430,9 +448,10 @@ class ForceConstants:
         if asr == 'reciprocal':
             # Calculate dyn mat at gamma for reciprocal ASR
             q_gamma = np.array([0., 0., 0.])
-            dyn_mat_gamma = self._calculate_dyn_mat(
+            dyn_mat_gamma, _ = self._calculate_dyn_mat(
                 q_gamma, fc_img_weighted, unique_sc_origins,
-                unique_sc_i, unique_cell_origins, unique_cell_i)
+                unique_sc_i, unique_cell_origins, unique_cell_i,
+                return_mode_gradients=False)
             if dipole:
                 dyn_mat_gamma += self._calculate_dipole_correction(q_gamma)
             recip_asr_correction = self._enforce_reciprocal_asr(dyn_mat_gamma)
@@ -449,6 +468,11 @@ class ForceConstants:
             # detected in C and eigenvectors won't be saved
             reigenvecs = np.zeros(
                 (0, 3*n_atoms, n_atoms, 3), dtype=np.complex128)
+
+        if return_mode_gradients:
+            rmode_gradients = np.zeros((n_rqpts, 3*n_atoms), dtype=np.float64)
+        else:
+            rmode_gradients = np.zeros((0, 3*n_atoms), dtype=np.float64)
 
         euphonic_path = os.path.dirname(euphonic.__file__)
         cext_err_msg = (f'Euphonic\'s C extension couldn\'t be imported '
@@ -507,19 +531,26 @@ class ForceConstants:
                 reduced_qpts, split_idx, q_dirs, fc_img_weighted,
                 unique_sc_origins, unique_sc_i, unique_cell_origins,
                 unique_cell_i, recip_asr_correction, dyn_mat_weighting,
-                dipole, asr, splitting)
+                dipole, asr, splitting, sc_origins_cart, cell_origins_cart,
+                return_mode_gradients)
             for q in range(n_rqpts):
+                rfreqs[q], evecs, grads = self._calculate_phonons_at_q(
+                    q, q_independent_args)
                 if return_eigenvectors:
-                    rfreqs[q], reigenvecs[q] = self._calculate_phonons_at_q(
-                        q, q_independent_args)
-                else:
-                    rfreqs[q], _ = self._calculate_phonons_at_q(
-                        q, q_independent_args)
+                    reigenvecs[q] = evecs
+                if return_mode_gradients:
+                    rmode_gradients[q] = grads
+
         freqs = rfreqs[qpts_i]*ureg('hartree').to('meV')
         if return_eigenvectors:
-            return qpts, weights, freqs, reigenvecs[qpts_i]
+            eigenvectors = reigenvecs[qpts_i]
         else:
-            return qpts, weights, freqs
+            eigenvectors = None
+        if return_mode_gradients:
+            mode_gradients = rmode_gradients[qpts_i]
+        else:
+            mode_gradients = None
+        return qpts, weights, freqs, eigenvectors, mode_gradients
 
     def _calculate_phonons_at_q(self, q, args):
         """
@@ -531,14 +562,15 @@ class ForceConstants:
         (reduced_qpts, split_idx, q_dirs, fc_img_weighted, unique_sc_origins,
          unique_sc_i, unique_cell_origins, unique_cell_i,
          recip_asr_correction, dyn_mat_weighting, dipole, asr,
-         splitting) = args
+         splitting, sc_origins_cart, cell_origins_cart, return_mode_gradients) = args
 
         qpt = reduced_qpts[q]
         n_atoms = self.crystal.n_atoms
 
-        dyn_mat = self._calculate_dyn_mat(
-            qpt, fc_img_weighted, unique_sc_origins, unique_sc_i,
-            unique_cell_origins, unique_cell_i)
+        dmat_args = (qpt, fc_img_weighted, unique_sc_origins, unique_sc_i,
+                     unique_cell_origins, unique_cell_i, sc_origins_cart,
+                     cell_origins_cart, return_mode_gradients)
+        dyn_mat, dmat_grad = self._calculate_dyn_mat(*dmat_args)
 
         if dipole:
             dipole_corr = self._calculate_dipole_correction(qpt)
@@ -569,10 +601,26 @@ class ForceConstants:
         evals = np.sqrt(np.abs(evals))
         evals[imag_freqs] *= -1
 
-        return evals, evecs
+        if return_mode_gradients:
+            ax = np.newaxis
+            dmat_grad *= dyn_mat_weighting[..., ax]
+            mode_gradients = np.zeros(len(evecs))
+            for n in range(len(evecs)):
+                grad_tmp = 0 + 0j
+                for i in range(n_atoms):
+                    for a in range(3):
+                        for j in range(n_atoms):
+                            for b in range(3):
+                                grad_tmp += np.conj(evecs[n, i, a, ax])*evecs[n, j, b, ax]*dmat_grad[3*i + a, 3*j + b]
+                mode_gradients[n] = 0.5*np.sqrt(np.real(np.vdot(grad_tmp, grad_tmp)))/evals[n]
+            return evals, evecs, mode_gradients
+        else:
+            return evals, evecs, None
 
     def _calculate_dyn_mat(self, q, fc_img_weighted, unique_sc_origins,
-                           unique_sc_i, unique_cell_origins, unique_cell_i):
+                           unique_sc_i, unique_cell_origins, unique_cell_i,
+                           sc_origins_cart, cell_origins_cart,
+                           return_mode_gradients=False):
         """
         Calculate the non mass weighted dynamical matrix at a specified
         q-point from the image weighted force constants matrix and the
@@ -628,13 +676,24 @@ class ForceConstants:
         sc_phase_sum = np.sum(sc_phases[sc_image_i],
                               axis=3)
 
+        # Again, append 0. due to -1 in phases
         ax = np.newaxis
+        sc_origins_cart = np.append(sc_origins_cart, [[0., 0., 0.]], axis=0)
+        all_origins = sc_origins_cart[sc_image_i] + cell_origins_cart[:, ax, ax, ax, :]
+        all_phases = sc_phases[sc_image_i] + cell_phases[:, ax, ax, ax]
+        r_vec_sum = np.sum(1j*all_phases[..., ax]*all_origins, axis=3)
+        dmat_gradient = fc_img_weighted[..., ax]*(r_vec_sum.repeat(3, axis=2).repeat(3, axis=1))
+        dmat_gradient = np.sum(dmat_gradient, axis=0)
+
         ij_phases = cell_phases[:, ax, ax]*sc_phase_sum
         full_dyn_mat = fc_img_weighted*(
             ij_phases.repeat(3, axis=2).repeat(3, axis=1))
         dyn_mat = np.sum(full_dyn_mat, axis=0)
 
-        return dyn_mat
+        if return_mode_gradients:
+            return dyn_mat, dmat_gradient
+        else:
+            return dyn_mat, None
 
     def _dipole_correction_init(self, eta_scale=1.0):
         """
