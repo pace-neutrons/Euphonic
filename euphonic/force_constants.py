@@ -389,15 +389,15 @@ class ForceConstants:
         # expensive phase calculations later
         sc_image_r = get_all_origins(
             np.repeat(lim, 3) + 1, min_xyz=-np.repeat(lim, 3))
-        sc_offsets = np.einsum('ij,jk->ik', sc_image_r,
+        sc_origins = np.einsum('ij,jk->ik', sc_image_r,
                                self.sc_matrix).astype(np.int32)
-        unique_sc_offsets = [[] for i in range(3)]
-        unique_sc_i = np.zeros((len(sc_offsets), 3), dtype=np.int32)
+        unique_sc_origins = [[] for i in range(3)]
+        unique_sc_i = np.zeros((len(sc_origins), 3), dtype=np.int32)
         unique_cell_origins = [[] for i in range(3)]
         unique_cell_i = np.zeros((len(self.cell_origins), 3), dtype=np.int32)
         for i in range(3):
-            unique_sc_offsets[i], unique_sc_i[:, i] = np.unique(
-                sc_offsets[:, i], return_inverse=True)
+            unique_sc_origins[i], unique_sc_i[:, i] = np.unique(
+                sc_origins[:, i], return_inverse=True)
             unique_cell_origins[i], unique_cell_i[:, i] = np.unique(
                 self.cell_origins[:, i], return_inverse=True)
 
@@ -431,7 +431,7 @@ class ForceConstants:
             # Calculate dyn mat at gamma for reciprocal ASR
             q_gamma = np.array([0., 0., 0.])
             dyn_mat_gamma = self._calculate_dyn_mat(
-                q_gamma, fc_img_weighted, unique_sc_offsets,
+                q_gamma, fc_img_weighted, unique_sc_origins,
                 unique_sc_i, unique_cell_origins, unique_cell_i)
             if dipole:
                 dyn_mat_gamma += self._calculate_dipole_correction(q_gamma)
@@ -483,11 +483,11 @@ class ForceConstants:
             recip_vectors = self.crystal.reciprocal_cell().to(
                 '1/bohr').magnitude
             (cell_vectors, recip_vectors, reduced_qpts, split_idx, q_dirs,
-             fc_img_weighted, sc_offsets, recip_asr_correction,
+             fc_img_weighted, sc_origins, recip_asr_correction,
              dyn_mat_weighting, rfreqs,
              reigenvecs) = _ensure_contiguous_args(
                  cell_vectors, recip_vectors, reduced_qpts, split_idx,
-                 q_dirs, fc_img_weighted, sc_offsets, recip_asr_correction,
+                 q_dirs, fc_img_weighted, sc_origins, recip_asr_correction,
                  dyn_mat_weighting, rfreqs, reigenvecs)
             attrs = ['_n_sc_images', '_sc_image_i', 'cell_origins']
             dipole_attrs = ['atom_r', '_born', '_dielectric', '_H_ab',
@@ -498,14 +498,14 @@ class ForceConstants:
             with threadpool_limits(limits=1):
                 euphonic_c.calculate_phonons(
                     self, cell_vectors, recip_vectors, reduced_qpts,
-                    split_idx, q_dirs, fc_img_weighted, sc_offsets,
+                    split_idx, q_dirs, fc_img_weighted, sc_origins,
                     recip_asr_correction, dyn_mat_weighting, dipole,
                     reciprocal_asr, splitting, rfreqs, reigenvecs, n_threads,
                     scipy.__path__[0])
         else:
             q_independent_args = (
                 reduced_qpts, split_idx, q_dirs, fc_img_weighted,
-                unique_sc_offsets, unique_sc_i, unique_cell_origins,
+                unique_sc_origins, unique_sc_i, unique_cell_origins,
                 unique_cell_i, recip_asr_correction, dyn_mat_weighting,
                 dipole, asr, splitting)
             for q in range(n_rqpts):
@@ -528,7 +528,7 @@ class ForceConstants:
         frequencies and eigenvalues. Optionally also includes the Ewald
         dipole sum correction and LO-TO splitting
         """
-        (reduced_qpts, split_idx, q_dirs, fc_img_weighted, unique_sc_offsets,
+        (reduced_qpts, split_idx, q_dirs, fc_img_weighted, unique_sc_origins,
          unique_sc_i, unique_cell_origins, unique_cell_i,
          recip_asr_correction, dyn_mat_weighting, dipole, asr,
          splitting) = args
@@ -537,7 +537,7 @@ class ForceConstants:
         n_atoms = self.crystal.n_atoms
 
         dyn_mat = self._calculate_dyn_mat(
-            qpt, fc_img_weighted, unique_sc_offsets, unique_sc_i,
+            qpt, fc_img_weighted, unique_sc_origins, unique_sc_i,
             unique_cell_origins, unique_cell_i)
 
         if dipole:
@@ -571,7 +571,7 @@ class ForceConstants:
 
         return evals, evecs
 
-    def _calculate_dyn_mat(self, q, fc_img_weighted, unique_sc_offsets,
+    def _calculate_dyn_mat(self, q, fc_img_weighted, unique_sc_origins,
                            unique_sc_i, unique_cell_origins, unique_cell_i):
         """
         Calculate the non mass weighted dynamical matrix at a specified
@@ -586,7 +586,7 @@ class ForceConstants:
         fc_img_weighted : (n_cells_in_sc, 3*n_atoms, 3*n_atoms) float ndarray
             The force constants matrix weighted by the number of
             supercell atom images for each ij displacement
-        unique_sc_offsets : list of lists of ints
+        unique_sc_origins : list of lists of ints
             A list containing 3 lists of the unique supercell image
             offsets in each direction. The supercell offset is
             calculated by multiplying the supercell matrix by the
@@ -594,8 +594,8 @@ class ForceConstants:
             list of lists rather than a Numpy array is used as the 3
             lists are independent and their size is not known beforehand
         unique_sc_i : ((2*lim + 1)**3, 3) int ndarray
-            The indices needed to reconstruct sc_offsets from the unique
-            values in unique_sc_offsets
+            The indices needed to reconstruct sc_origins from the unique
+            values in unique_sc_origins
         unique_cell_origins : list of lists of ints
             A list containing 3 lists of the unique cell origins in each
             direction. A list of lists rather than a Numpy array is used
@@ -623,10 +623,11 @@ class ForceConstants:
         # hence phase of zero can be used
         sc_phases = np.zeros(len(unique_sc_i) + 1, dtype=np.complex128)
         sc_phases[:-1], cell_phases = self._calculate_phases(
-            q, unique_sc_offsets, unique_sc_i, unique_cell_origins,
+            q, unique_sc_origins, unique_sc_i, unique_cell_origins,
             unique_cell_i)
         sc_phase_sum = np.sum(sc_phases[sc_image_i],
                               axis=3)
+
         ax = np.newaxis
         ij_phases = cell_phases[:, ax, ax]*sc_phase_sum
         full_dyn_mat = fc_img_weighted*(
@@ -1097,7 +1098,7 @@ class ForceConstants:
 
         return ac_i, evals, evecs
 
-    def _calculate_phases(self, q, unique_sc_offsets, unique_sc_i,
+    def _calculate_phases(self, q, unique_sc_origins, unique_sc_i,
                           unique_cell_origins, unique_cell_i):
         """
         Calculate the phase factors for the supercell images and cells
@@ -1109,21 +1110,22 @@ class ForceConstants:
         ----------
         q : (3,) float ndarray
             The q-point to calculate the phase for
-        unique_sc_offsets : list of lists of ints
+        unique_sc_origins : list of lists of ints
             A list containing 3 lists of the unique supercell image
-            offsets in each direction. The supercell offset is
-            calculated by multiplying the supercell matrix by the
-            supercell image indices (obtained by _get_all_origins()). A
-            list of lists rather than a Numpy array is used as the 3
-            lists are independent and their size is not known beforehand
+            offsets in each direction in units of the unit cell vectors.
+            The supercell offset is calculated by multiplying the
+            supercell matrix by the supercell image indices
+            (obtained by _get_all_origins()). A list of lists rather
+            than a Numpy array is used as the 3 lists are independent
+            and their size is not known beforehand
         unique_sc_i : ((2*lim + 1)**3, 3) int ndarray
-            The indices needed to reconstruct sc_offsets from the unique
-            values in unique_sc_offsets
+            The indices needed to reconstruct sc_origins from the unique
+            values in unique_sc_origins
         unique_cell_origins : list of lists of ints
             A list containing 3 lists of the unique cell origins in each
-            direction. A list of lists rather than a Numpy array is used
-            as the 3 lists are independent and their size is not known
-            beforehand
+            direction in units of the unit cell vectors. A list of
+            lists rather than a Numpy array is used as the 3 lists are
+            independent and their size is not known beforehand
         unique_cell_i : (cell_origins, 3) int ndarray
             The indices needed to reconstruct cell_origins from the
             unique values in unique_cell_origins
@@ -1132,7 +1134,7 @@ class ForceConstants:
         -------
         sc_phases : (unique_sc_i,) float ndarray
             Phase factors exp(iq.r) for each supercell image coordinate
-            in sc_offsets
+            in sc_origins
         cell_phases : (unique_cell_i,) float ndarray
             Phase factors exp(iq.r) for each cell coordinate in the
             supercell
@@ -1147,7 +1149,7 @@ class ForceConstants:
         sc_phases = np.ones(len(unique_sc_i), dtype=np.complex128)
         cell_phases = np.ones(len(unique_cell_i), dtype=np.complex128)
         for i in range(3):
-            unique_sc_phases = np.power(phase[i], unique_sc_offsets[i])
+            unique_sc_phases = np.power(phase[i], unique_sc_origins[i])
             sc_phases *= unique_sc_phases[unique_sc_i[:, i]]
 
             unique_cell_phases = np.power(phase[i], unique_cell_origins[i])
