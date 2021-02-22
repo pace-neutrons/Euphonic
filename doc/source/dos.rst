@@ -4,10 +4,10 @@ Calculating DOS
 ===============
 
 Density of states can be calculated for any Euphonic object containing
-frequencies using ``calculate_dos``. This requires an array of energy bin
-edges, with the units specified by wrapping it as a ``pint.Quantity`` (see
-:ref:`Units` for details). This function returns a generic
-:ref:`Spectrum1D<spectrum1d>` object. For example, using
+frequencies using its ``calculate_dos`` method. This requires an array of
+energy bin edges, with the units specified by wrapping it as a
+``pint.Quantity`` (see :ref:`Units` for details). This function returns a
+generic :ref:`Spectrum1D<spectrum1d>` object. For example, using
 :py:meth:`QpointFrequencies.calculate_dos <euphonic.qpoint_frequencies.QpointFrequencies.calculate_dos>`.
 
 .. code-block:: py

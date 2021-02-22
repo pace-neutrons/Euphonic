@@ -15,7 +15,7 @@ from euphonic import (ureg, Crystal, Quantity, Spectrum1D,
 T = TypeVar('T', bound='QpointFrequencies')
 
 
-class QpointFrequencies(object):
+class QpointFrequencies:
     """
     A class to read and store frequency data at q-points
 
@@ -46,9 +46,8 @@ class QpointFrequencies(object):
         qpts
             Shape (n_qpts, 3) float ndarray. Q-point coordinates
         frequencies
-            Shape (n_qpts, n_branches) float Quantity. Frequencies,
-            ordered according to increasing q-point number. Default
-            units meV
+            Shape (n_qpts, n_branches) float Quantity. Frequencies
+            per q-point and mode
         weights
             Shape (n_qpts,) float ndarray. The weight for each q-point.
             If None, equal weights are assumed
@@ -180,8 +179,8 @@ class QpointFrequencies(object):
         """
         crystal = Crystal.from_dict(d['crystal'])
         d = _process_dict(d, quantities=['frequencies'], optional=['weights'])
-        return QpointFrequencies(crystal, d['qpts'], d['frequencies'],
-                                 d['weights'])
+        return cls(crystal, d['qpts'], d['frequencies'],
+                   d['weights'])
 
     @classmethod
     def from_json_file(cls: T, filename: str) -> T:
@@ -206,14 +205,14 @@ class QpointFrequencies(object):
         filename
             The path and name of the .phonon file to read
         """
-        data = castep._read_phonon_data(filename, read_eigenvectors=False)
+        data = castep.read_phonon_data(filename, read_eigenvectors=False)
         return cls.from_dict(data)
 
     @classmethod
-    def from_phonopy(cls: T, path: Optional[str] = '.',
-                     phonon_name: Optional[str] = 'band.yaml',
+    def from_phonopy(cls: T, path: str = '.',
+                     phonon_name: str = 'band.yaml',
                      phonon_format: Optional[str] = None,
-                     summary_name: Optional[str] = 'phonopy.yaml') -> T:
+                     summary_name: str = 'phonopy.yaml') -> T:
         """
         Reads precalculated phonon mode data from a Phonopy
         mesh/band/qpoints.yaml/hdf5 file. May also read from
@@ -234,7 +233,7 @@ class QpointFrequencies(object):
             priority, but if it isn't present, crystal information is
             read from summary_name instead
         """
-        data = phonopy._read_phonon_data(
+        data = phonopy.read_phonon_data(
             path=path, phonon_name=phonon_name, phonon_format=phonon_format,
             summary_name=summary_name, read_eigenvectors=False)
         return cls.from_dict(data)

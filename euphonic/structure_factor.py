@@ -69,29 +69,19 @@ class StructureFactor(QpointFrequencies):
             Debye-Waller, Bose population factor). None if no
             temperature-dependent effects have been applied
         """
-        _check_constructor_inputs(
-            [crystal, qpts], [Crystal, np.ndarray], [(), (-1, 3)],
-            ['crystal', 'qpts'])
+        super().__init__(crystal, qpts, frequencies, weights)
         n_at = crystal.n_atoms
         n_qpts = len(qpts)
+        # Check freqs axis 1 shape here - QpointFrequencies doesn't
+        # enforce that the number of modes = 3*(number of atoms)
         _check_constructor_inputs(
-            [frequencies, structure_factors, weights, temperature],
-            [Quantity, Quantity, [np.ndarray, type(None)], [Quantity, type(None)]],
-            [(n_qpts, 3*n_at), (n_qpts, 3*n_at), (n_qpts,), ()],
-            ['frequencies', 'structure_factors', 'weights', 'temperature'])
-        self.crystal = crystal
-        self.qpts = qpts
-        self.n_qpts = len(qpts)
-        self._frequencies = frequencies.to(ureg.hartree).magnitude
-        self.frequencies_unit = str(frequencies.units)
+            [frequencies, structure_factors, temperature],
+            [Quantity, Quantity, [Quantity, type(None)]],
+            [(n_qpts, 3*n_at), (n_qpts, 3*n_at), ()],
+            ['frequencies', 'structure_factors', 'temperature'])
         self._structure_factors = structure_factors.to(
             ureg.bohr**2).magnitude
         self.structure_factors_unit = str(structure_factors.units)
-
-        if weights is not None:
-            self.weights = weights
-        else:
-            self.weights = np.full(self.n_qpts, 1/self.n_qpts)
 
         if temperature is not None:
             self._temperature = temperature.to(ureg.K).magnitude
@@ -122,7 +112,7 @@ class StructureFactor(QpointFrequencies):
 
     def calculate_1d_average(self,
                              e_bins: Quantity,
-                             calc_bose: Optional[bool] = True,
+                             calc_bose: bool = True,
                              temperature: Optional[Quantity] = None,
                              weights: Optional[np.ndarray] = None
                              ) -> Spectrum1D:
@@ -165,7 +155,7 @@ class StructureFactor(QpointFrequencies):
 
     def calculate_sqw_map(self,
                           e_bins: Quantity,
-                          calc_bose: Optional[bool] = True,
+                          calc_bose: bool = True,
                           temperature: Optional[Quantity] = None
                           ) -> Spectrum2D:
         """
@@ -378,9 +368,9 @@ class StructureFactor(QpointFrequencies):
         d = _process_dict(
             d, quantities=['frequencies', 'structure_factors', 'temperature'],
             optional=['weights', 'temperature'])
-        return StructureFactor(crystal, d['qpts'], d['frequencies'],
-                               d['structure_factors'], d['weights'],
-                               d['temperature'])
+        return cls(crystal, d['qpts'], d['frequencies'],
+                   d['structure_factors'], d['weights'],
+                   d['temperature'])
 
     @classmethod
     def from_castep(cls):

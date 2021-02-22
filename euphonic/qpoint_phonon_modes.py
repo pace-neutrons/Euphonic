@@ -50,8 +50,7 @@ class QpointPhononModes(QpointFrequencies):
             Shape (n_qpts, 3) float ndarray. The Q-point coordinates
         frequencies
             Shape (n_qpts, 3*crystal.n_atoms) float Quantity. Phonon
-            frequencies, ordered according to increasing q-point number.
-            Default units meV
+            frequencies per q-point and mode
         eigenvectors
             Shape (n_qpts, 3*crystal.n_atoms, crystal.n_atoms, 3)
             complex ndarray. The dynamical matrix eigenvectors
@@ -59,30 +58,20 @@ class QpointPhononModes(QpointFrequencies):
             Shape (n_qpts,) float ndarray. The weight for each q-point.
             If None, equal weights are assumed
         """
-        _check_constructor_inputs(
-            [crystal, qpts], [Crystal, np.ndarray], [(), (-1, 3)],
-            ['crystal', 'qpts'])
-        n_at = crystal.n_atoms
+        super().__init__(crystal, qpts, frequencies, weights)
         n_qpts = len(qpts)
+        n_at = crystal.n_atoms
+        # Check freqs axis 1 shape here - QpointFrequencies doesn't
+        # enforce that the number of modes = 3*(number of atoms)
         _check_constructor_inputs(
-            [frequencies, eigenvectors, weights],
-            [Quantity, np.ndarray, [np.ndarray, type(None)]],
-            [(n_qpts, 3*n_at), (n_qpts, 3*n_at, n_at, 3), (n_qpts,)],
-            ['frequencies', 'eigenvectors', 'weights'])
-        self.crystal = crystal
-        self.qpts = qpts
-        self.n_qpts = n_qpts
-        self._frequencies = frequencies.to(ureg.hartree).magnitude
-        self.frequencies_unit = str(frequencies.units)
+            [frequencies, eigenvectors],
+            [Quantity, np.ndarray],
+            [(n_qpts, 3*n_at), (n_qpts, 3*n_at, n_at, 3)],
+            ['frequencies', 'eigenvectors'])
         self.eigenvectors = eigenvectors
 
-        if weights is not None:
-            self.weights = weights
-        else:
-            self.weights = np.full(self.n_qpts, 1/self.n_qpts)
-
     def reorder_frequencies(self,
-                            reorder_gamma: Optional[bool] = True) -> None:
+                            reorder_gamma: bool = True) -> None:
         """
         By doing a dot product of eigenvectors at adjacent q-points,
         determines which modes are most similar and reorders the
@@ -415,8 +404,8 @@ class QpointPhononModes(QpointFrequencies):
         """
         crystal = Crystal.from_dict(d['crystal'])
         d = _process_dict(d, quantities=['frequencies'], optional=['weights'])
-        return QpointPhononModes(crystal, d['qpts'], d['frequencies'],
-                                 d['eigenvectors'], d['weights'])
+        return cls(crystal, d['qpts'], d['frequencies'],
+                   d['eigenvectors'], d['weights'])
 
     @classmethod
     def from_json_file(cls: T, filename: str) -> T:
@@ -442,14 +431,14 @@ class QpointPhononModes(QpointFrequencies):
         filename
             The path and name of the .phonon file to read
         """
-        data = castep._read_phonon_data(filename)
+        data = castep.read_phonon_data(filename)
         return cls.from_dict(data)
 
     @classmethod
-    def from_phonopy(cls: T, path: Optional[str] = '.',
-                     phonon_name: Optional[str] = 'band.yaml',
+    def from_phonopy(cls: T, path: str = '.',
+                     phonon_name: str = 'band.yaml',
                      phonon_format: Optional[str] = None,
-                     summary_name: Optional[str] = 'phonopy.yaml') -> T:
+                     summary_name: str = 'phonopy.yaml') -> T:
         """
         Reads precalculated phonon mode data from a Phonopy
         mesh/band/qpoints.yaml/hdf5 file. May also read from
@@ -470,7 +459,7 @@ class QpointPhononModes(QpointFrequencies):
             priority, but if it isn't present, crystal information is
             read from summary_name instead
         """
-        data = phonopy._read_phonon_data(
+        data = phonopy.read_phonon_data(
             path=path, phonon_name=phonon_name, phonon_format=phonon_format,
             summary_name=summary_name)
         return cls.from_dict(data)

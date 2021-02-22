@@ -42,7 +42,7 @@ def _convert_weights(weights):
 
 
 def _extract_phonon_data_yaml(filename: str,
-                              read_eigenvectors: Optional[str] = True
+                              read_eigenvectors: bool = True
     ) -> Dict[str, Any]:
     """
     From a mesh/band/qpoint.yaml file, extract the relevant information
@@ -118,7 +118,7 @@ def _extract_phonon_data_yaml(filename: str,
 
 
 def _extract_phonon_data_hdf5(filename: str,
-                              read_eigenvectors: Optional[bool] = True
+                              read_eigenvectors: bool = True
     ) -> Dict[str, Any]:
     """
     From a mesh/band/qpoint.hdf5 file, extract the relevant information
@@ -194,14 +194,15 @@ def _extract_band_data_hdf5(hdf5_file):
     return data_dict
 
 
-def _read_phonon_data(
-        path: Optional[str] = '.', phonon_name: Optional[str] = 'band.yaml',
+def read_phonon_data(
+        path: str = '.',
+        phonon_name: str = 'band.yaml',
         phonon_format: Optional[str] = None,
-        summary_name: Optional[str] = 'phonopy.yaml',
-        cell_vectors_unit: Optional[str] = 'angstrom',
-        atom_mass_unit: Optional[str] = 'amu',
-        frequencies_unit: Optional[str] = 'meV',
-        read_eigenvectors: Optional[bool] = True) -> Dict[str, Any]:
+        summary_name: str = 'phonopy.yaml',
+        cell_vectors_unit: str = 'angstrom',
+        atom_mass_unit: str = 'amu',
+        frequencies_unit: str = 'meV',
+        read_eigenvectors: bool = True) -> Dict[str, Any]:
     """
     Reads precalculated phonon mode data from a Phonopy
     mesh/band/qpoints.yaml/hdf5 file and returns it in a dictionary. May
@@ -746,13 +747,17 @@ def _extract_crystal_data(crystal):
     return cell_vectors, n_atoms, atom_r, atom_mass, atom_type, idx_in_pcell
 
 
-def _read_interpolation_data(path='.', summary_name='phonopy.yaml',
-                             born_name=None, fc_name='FORCE_CONSTANTS',
-                             fc_format=None, cell_vectors_unit='angstrom',
-                             atom_mass_unit='amu',
-                             force_constants_unit='hartree/bohr**2',
-                             born_unit='e',
-                             dielectric_unit='(e**2)/(bohr*hartree)'):
+def read_interpolation_data(
+        path: str = '.',
+        summary_name: str = 'phonopy.yaml',
+        born_name: Optional[str] = None,
+        fc_name: str = 'FORCE_CONSTANTS',
+        fc_format: Optional[str] = None,
+        cell_vectors_unit: str = 'angstrom',
+        atom_mass_unit: str = 'amu',
+        force_constants_unit: str = 'hartree/bohr**2',
+        born_unit: str = 'e',
+        dielectric_unit: str = '(e**2)/(bohr*hartree)') -> Dict[str, Any]:
     """
     Reads data from the phonopy summary file (default phonopy.yaml) and
     optionally born and force constants files. Only attempts to read
@@ -761,27 +766,37 @@ def _read_interpolation_data(path='.', summary_name='phonopy.yaml',
 
     Parameters
     ----------
-    path : str, optional, default '.'
+    path
         Path to directory containing the file(s)
-    summary_name : str, optional, default 'phonpy.yaml'
+    summary_name
         Filename of phonopy summary file, default phonopy.yaml. By
         default any information (e.g. force constants) read from this
         file takes priority
-    born_name : str, optional, default None
+    born_name
         Name of the Phonopy file containing born charges and dielectric
         tensor, (by convention in Phonopy this would be called BORN). Is
         only read if Born charges can't be found in the summary_name
         file
-    fc_name : str, optional, default 'FORCE_CONSTANTS'
+    fc_name
         Name of file containing force constants. Is only read if force
         constants can't be found in summary_name
-    fc_format : {'phonopy', 'hdf5'} str, optional, default None
-        Format of file containing force constants data. FORCE_CONSTANTS
-        is type 'phonopy'
+    fc_format
+        One of {'phonopy', 'hdf5'}. Format of file containing force
+        constants data. FORCE_CONSTANTS is type 'phonopy'
+    cell_vectors_unit
+        The unit to return the cell vectors in
+    atom_mass_unit
+        The unit to return the atom masses in
+    force_constants_unit
+        The unit to return the force constants in
+    born_unit
+        The unit to return the Born charges in
+    dielectric_unit
+        The unit to return the dielectric permittivity tensor in
 
     Returns
     -------
-    data_dict : dict
+    data_dict
         A dict with the following keys: 'n_atoms', 'cell_vectors',
         'cell_vectors_unit', 'atom_r', 'atom_type', 'atom_mass',
         'atom_mass_unit', 'force_constants', 'force_constants_unit',

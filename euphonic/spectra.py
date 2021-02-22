@@ -745,8 +745,8 @@ class Spectrum2D(Spectrum):
         """
         d = _process_dict(d, quantities=['x_data', 'y_data', 'z_data'],
                           optional=['x_tick_labels'])
-        return Spectrum2D(d['x_data'], d['y_data'], d['z_data'],
-                          x_tick_labels=d['x_tick_labels'])
+        return cls(d['x_data'], d['y_data'], d['z_data'],
+                   x_tick_labels=d['x_tick_labels'])
 
 
 def _lorentzian(x, gamma):

@@ -12,7 +12,7 @@ from euphonic import ureg, Quantity
 CR = TypeVar('CR', bound='Crystal')
 
 
-class Crystal(object):
+class Crystal:
     """
     Stores lattice and atom information
 
@@ -183,8 +183,8 @@ class Crystal(object):
         Crystal
         """
         d = _process_dict(d, quantities=['cell_vectors', 'atom_mass'])
-        return Crystal(d['cell_vectors'], d['atom_r'], d['atom_type'],
-                       d['atom_mass'])
+        return cls(d['cell_vectors'], d['atom_r'], d['atom_type'],
+                   d['atom_mass'])
 
     @classmethod
     def from_json_file(cls, filename):
@@ -219,6 +219,6 @@ class Crystal(object):
         -------
         Crystal
         """
-        return Crystal(cell_vectors,
-                       np.array([]), np.array([]),
-                       Quantity(np.array([], dtype=np.float64), 'amu'))
+        return cls(cell_vectors,
+                   np.array([]), np.array([]),
+                   Quantity(np.array([], dtype=np.float64), 'amu'))

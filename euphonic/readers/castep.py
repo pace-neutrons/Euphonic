@@ -1,6 +1,6 @@
 import re
 import struct
-from typing import Dict, Optional, Any
+from typing import Dict, Any
 
 import numpy as np
 
@@ -8,12 +8,12 @@ from euphonic import ureg
 from euphonic.util import is_gamma
 
 
-def _read_phonon_data(filename: str,
-                      cell_vectors_unit: Optional[str] = 'angstrom',
-                      atom_mass_unit: Optional[str] = 'amu',
-                      frequencies_unit: Optional[str] = 'meV',
-                      read_eigenvectors: Optional[bool] = True
-    ) -> Dict[str, Any]:
+def read_phonon_data(
+        filename: str,
+        cell_vectors_unit: str = 'angstrom',
+        atom_mass_unit: str = 'amu',
+        frequencies_unit: str = 'meV',
+        read_eigenvectors: bool = True) -> Dict[str, Any]:
     """
     Reads data from a .phonon file and returns it in a dictionary
 
@@ -178,19 +178,31 @@ def _read_phonon_header(f):
             atom_mass)
 
 
-def _read_interpolation_data(filename, cell_vectors_unit='angstrom',
-                             atom_mass_unit='amu',
-                             force_constants_unit='hartree/bohr**2',
-                             born_unit='e',
-                             dielectric_unit='(e**2)/(bohr*hartree)'):
+def read_interpolation_data(
+        filename: str,
+        cell_vectors_unit: str = 'angstrom',
+        atom_mass_unit: str = 'amu',
+        force_constants_unit: str = 'hartree/bohr**2',
+        born_unit: str = 'e',
+        dielectric_unit: str = '(e**2)/(bohr*hartree)') -> Dict[str, Any]:
     """
     Reads data from a .castep_bin or .check file and returns it in a
     dictionary
 
     Parameters
     ----------
-    filename : str
+    filename
         The path and name of the file to read
+    cell_vectors_unit
+        The unit to return the cell vectors in
+    atom_mass_unit
+        The unit to return the atom masses in
+    force_constants_unit
+        The unit to return the force constants in
+    born_unit
+        The unit to return the Born charges in
+    dielectric_unit
+        The unit to return the dielectric permittivity tensor in
 
     Returns
     -------

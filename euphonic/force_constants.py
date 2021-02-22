@@ -24,7 +24,7 @@ class ImportCError(Exception):
     pass
 
 
-class ForceConstants(object):
+class ForceConstants:
     """
     A class to read and store the data required for a phonon
     interpolation calculation from model (e.g. CASTEP) output,
@@ -133,14 +133,14 @@ class ForceConstants(object):
             qpts: np.ndarray,
             weights: Optional[np.ndarray] = None,
             asr: Optional[str] = None,
-            dipole: Optional[bool] = True,
-            eta_scale: Optional[float] = 1.0,
-            splitting: Optional[bool] = True,
-            insert_gamma: Optional[bool] = False,
-            reduce_qpts: Optional[bool] = True,
-            use_c: Optional[bool] = False,
-            n_threads: Optional[int] = 1,
-            fall_back_on_python: Optional[bool] = True) -> QpointPhononModes:
+            dipole: bool = True,
+            eta_scale: float = 1.0,
+            splitting: bool = True,
+            insert_gamma: bool = False,
+            reduce_qpts: bool = True,
+            use_c: bool = False,
+            n_threads: int = 1,
+            fall_back_on_python: bool = True) -> QpointPhononModes:
         """
         Calculate phonon frequencies and eigenvectors at specified
         q-points from a force constants matrix via Fourier interpolation
@@ -264,14 +264,14 @@ class ForceConstants(object):
             qpts: np.ndarray,
             weights: Optional[np.ndarray] = None,
             asr: Optional[str] = None,
-            dipole: Optional[bool] = True,
-            eta_scale: Optional[float] = 1.0,
-            splitting: Optional[bool] = True,
-            insert_gamma: Optional[bool] = False,
-            reduce_qpts: Optional[bool] = True,
-            use_c: Optional[bool] = False,
-            n_threads: Optional[int] = 1,
-            fall_back_on_python: Optional[bool] = True) -> QpointFrequencies:
+            dipole: bool = True,
+            eta_scale: float = 1.0,
+            splitting: bool = True,
+            insert_gamma: bool = False,
+            reduce_qpts: bool = True,
+            use_c: bool = False,
+            n_threads: int = 1,
+            fall_back_on_python: bool = True) -> QpointFrequencies:
         """
         Calculate phonon frequencies (without eigenvectors) at specified
         q-points. See ForceConstants.calculate_qpoint_phonon_modes for
@@ -440,6 +440,8 @@ class ForceConstants(object):
             reigenvecs = np.zeros(
                 (n_rqpts, 3*n_atoms, n_atoms, 3), dtype=np.complex128)
         else:
+            # Create dummy zero-length eigenvectors so this can be
+            # detected in C and eigenvectors won't be saved
             reigenvecs = np.zeros(
                 (0, 3*n_atoms, n_atoms, 3), dtype=np.complex128)
 
@@ -1289,8 +1291,8 @@ class ForceConstants(object):
         d = _process_dict(
             d, quantities=['force_constants', 'born', 'dielectric'],
             optional=['born', 'dielectric'])
-        return ForceConstants(crystal, d['force_constants'], d['sc_matrix'],
-                              d['cell_origins'], d['born'], d['dielectric'])
+        return cls(crystal, d['force_constants'], d['sc_matrix'],
+                   d['cell_origins'], d['born'], d['dielectric'])
 
     @classmethod
     def from_json_file(cls, filename):
@@ -1323,7 +1325,7 @@ class ForceConstants(object):
         -------
         ForceConstants
         """
-        data = castep._read_interpolation_data(filename)
+        data = castep.read_interpolation_data(filename)
         return cls.from_dict(data)
 
     @classmethod
@@ -1360,7 +1362,7 @@ class ForceConstants(object):
         -------
         ForceConstants
         """
-        data = phonopy._read_interpolation_data(
+        data = phonopy.read_interpolation_data(
             path=path, summary_name=summary_name, born_name=born_name,
             fc_name=fc_name, fc_format=fc_format)
         return cls.from_dict(data)
