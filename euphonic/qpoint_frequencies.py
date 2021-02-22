@@ -84,7 +84,8 @@ class QpointFrequencies:
                                ['frequencies_unit'])
         super(QpointFrequencies, self).__setattr__(name, value)
 
-    def calculate_dos(self, dos_bins: Quantity) -> Spectrum1D:
+    def calculate_dos(self, dos_bins: Quantity,
+                      mode_widths: Optional[np.ndarray] = None) -> Spectrum1D:
         """
         Calculates a density of states
 
@@ -100,7 +101,6 @@ class QpointFrequencies:
             A spectrum containing the energy bins on the x-axis and dos
             on the y-axis
         """
-
         freqs = self._frequencies
         dos_bins_unit = dos_bins.units
         # dos_bins commonly contains a 0 bin, and converting from 0 1/cm
@@ -108,10 +108,26 @@ class QpointFrequencies:
         with warnings.catch_warnings():
             warnings.filterwarnings('ignore', category=RuntimeWarning)
             dos_bins = dos_bins.to('hartree').magnitude
-        weights = np.repeat(self.weights[:, np.newaxis],
-                            self.frequencies.shape[1],
-                            axis=1) / np.sum(self.weights)
-        dos, _ = np.histogram(freqs, dos_bins, weights=weights)
+        if mode_widths is not None:
+            from scipy.signal.windows import gaussian
+            # How far out to go for each gaussian, say 3*sigma. Ensure it is
+            # always odd so the centre of the gaussian can be in the correct
+            # bin
+            bin_width = np.mean(np.diff(dos_bins))
+            lim = 2*(int(3*np.amax(mode_widths)/bin_width)//2) + 1
+            # Allow enough space for gaussian with centre in first/last bins
+            dos = np.zeros(len(dos_bins) - 1 + (lim - 1))
+            for q in range(self.n_qpts):
+                bin_idx = np.digitize(freqs[q], dos_bins) + (lim//2)
+                for m in range(freqs.shape[1]):
+                    gauss = gaussian(lim, mode_widths[q, m]/bin_width)
+                    dos[bin_idx[m] - (lim//2): bin_idx[m] + (lim//2) + 1] = self.weights[q]*gauss
+            dos = dos[lim//2:-lim//2 + 1]
+        else:
+            weights = np.repeat(self.weights[:, np.newaxis],
+                                self.frequencies.shape[1],
+                                axis=1) / np.sum(self.weights)
+            dos, _ = np.histogram(freqs, dos_bins, weights=weights)
 
         return Spectrum1D(
             dos_bins*ureg('hartree').to(dos_bins_unit),
