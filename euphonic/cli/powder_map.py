@@ -111,6 +111,17 @@ def get_parser() -> 'argparse.ArgumentParser':
                         help='Matplotlib colormap')
     #### END REDUNDANCY ####
 
+    performance_group = parser.add_argument_group(
+        'Performance-related arguments')
+    performance_group.add_argument(
+        '--disable-c', action='store_false', dest='use_c',
+        help=('Do not attempt to use compiled C extension when computing '
+              'phonon frequencies/eigenvectors.'))
+    performance_group.add_argument(
+        '--n-threads', type=int, default=None, dest='n_threads',
+        help=('Number of parallel processes for computing phonon modes. '
+              '(Only applies when using C extension.)')
+        )
     return parser
 
 def main():
@@ -119,6 +130,10 @@ def main():
     # Make sure we get an error if accessing NPTS inappropriately
     if args.npts_density is not None:
         args.npts = None
+
+    calc_modes_args = {'use_c': args.use_c}
+    if args.n_threads is not None:
+        calc_modes_args['n_threads'] = args.n_threads
 
     temperature = args.temperature * ureg['K']
 
@@ -136,9 +151,11 @@ def main():
 
     # Use X-point modes to estimate frequency range, set up energy bins
     # (Not Gamma in case there are only 3 branches; value would be zero!)
+
     energy_bins, energy_unit = _get_energy_bins_and_units(
         args.energy_unit,
-        fc.calculate_qpoint_phonon_modes(np.array([[0., 0., 0.5]])),
+        fc.calculate_qpoint_phonon_modes(np.array([[0., 0., 0.5]]),
+                                         **calc_modes_args),
         args.ebins, emin=args.e_min, emax=args.e_max,
         headroom=1.2)  # Generous headroom as we only checked one q-point
 
@@ -152,7 +169,8 @@ def main():
         print("Calculating Debye-Waller factor on {} q-point grid"
               .format(' x '.join(map(str, mp_grid))))
         dw_phonons = fc.calculate_qpoint_phonon_modes(
-            euphonic.util.mp_grid(mp_grid))
+            euphonic.util.mp_grid(mp_grid),
+            **calc_modes_args)
         dw = dw_phonons.calculate_debye_waller(temperature)
 
     print(f"Sampling {n_q_bins} |q| shells between {q_min:~P} and {q_max:~P}")
@@ -174,7 +192,8 @@ def main():
             spectrum_1d = sample_sphere_dos(
                 fc, q,
                 npts=npts, sampling=args.sampling, jitter=args.jitter,
-                energy_bins=energy_bins)
+                energy_bins=energy_bins,
+                **calc_modes_args)
         elif args.weights == 'coherent':
             spectrum_1d = sample_sphere_structure_factor(
                 fc, q,
@@ -182,7 +201,8 @@ def main():
                 temperature=temperature,
                 sampling=args.sampling, jitter=args.jitter,
                 npts=npts,
-                energy_bins=energy_bins)
+                energy_bins=energy_bins,
+                **calc_modes_args)
 
         z_data[q_index, :] = spectrum_1d.y_data.magnitude
 
