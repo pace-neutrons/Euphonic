@@ -9,10 +9,14 @@ import pytest
 from euphonic import ureg, Crystal, StructureFactor
 from tests_and_analysis.test.euphonic_test.test_crystal import (
     ExpectedCrystal, get_crystal, check_crystal)
+from tests_and_analysis.test.euphonic_test.test_qpoint_frequencies import (
+    get_expected_qpt_freqs, check_qpt_freqs)
 from tests_and_analysis.test.euphonic_test.test_spectrum2d import (
     get_expected_spectrum2d, check_spectrum2d)
 from tests_and_analysis.test.euphonic_test.test_spectrum1d import (
     get_expected_spectrum1d, check_spectrum1d)
+from tests_and_analysis.test.euphonic_test.test_spectrum1dcollection import (
+    get_expected_spectrum1dcollection, check_spectrum1dcollection)
 from tests_and_analysis.test.utils import (
     get_data_path, check_frequencies_at_qpts, check_structure_factors_at_qpts,
     check_unit_conversion, check_json_metadata)
@@ -43,6 +47,15 @@ class ExpectedStructureFactor:
             self.data['frequencies_unit'])
 
     @property
+    def weights(self):
+        # Weights are optional, so if they are not found in .json
+        # file, assign equal weights, simulating expected behaviour
+        if 'weights' in self.data:
+            return np.array(self.data['weights'])
+        else:
+            return np.full(len(self.qpts), 1/len(self.qpts))
+
+    @property
     def temperature(self):
         if 'temperature' in self.data.keys():
             return np.array(self.data['temperature'])*ureg(
@@ -57,14 +70,15 @@ class ExpectedStructureFactor:
             'frequencies': self.frequencies.magnitude,
             'frequencies_unit': str(self.frequencies.units),
             'structure_factors': self.structure_factors.magnitude,
-            'structure_factors_unit': str(self.structure_factors.units)}
+            'structure_factors_unit': str(self.structure_factors.units),
+            'weights': self.weights}
         if self.temperature is not None:
             d['temperature'] = self.temperature.magnitude
             d['temperature_unit'] = str(self.temperature.units)
         return d
 
     def to_constructor_args(self, crystal=None, qpts=None, frequencies=None,
-                            structure_factors=None, temperature=None):
+                            structure_factors=None, weights=None, temperature=None):
         if crystal is None:
             crystal = Crystal(*self.crystal.to_constructor_args())
         if qpts is None:
@@ -73,10 +87,16 @@ class ExpectedStructureFactor:
             frequencies = self.frequencies
         if structure_factors is None:
             structure_factors = self.structure_factors
+        if weights is None:
+            weights = self.weights
         if temperature is None:
             temperature = self.temperature
 
         kwargs = {}
+        # Allow setting weights=False to not include weights in kwargs, to test
+        # object creation when weights is not supplied
+        if weights is not False:
+            kwargs['weights'] = weights
         if temperature is not None:
             kwargs['temperature'] = temperature
 
@@ -151,6 +171,11 @@ def check_structure_factor(
         sf.qpts,
         atol=np.finfo(np.float64).eps)
 
+    npt.assert_allclose(
+        sf.weights,
+        expected_sf.weights,
+        atol=np.finfo(np.float64).eps)
+
     if expected_sf.temperature is None:
         assert sf.temperature is None
     else:
@@ -200,6 +225,15 @@ class TestStructureFactorCreation:
     def create_from_constructor(self, request):
         expected_sf = request.param
         args, kwargs = expected_sf.to_constructor_args()
+        sf = StructureFactor(*args, **kwargs)
+        return sf, expected_sf
+
+    @pytest.fixture(params=[
+        get_expected_sf('quartz', 'quartz_0K_structure_factor.json'),
+        get_expected_sf('CaHgO2', 'CaHgO2_300K_structure_factor.json')])
+    def create_from_constructor_without_weights(self, request):
+        expected_sf = request.param
+        args, kwargs = expected_sf.to_constructor_args(weights=False)
         sf = StructureFactor(*args, **kwargs)
         return sf, expected_sf
 
@@ -315,6 +349,20 @@ class TestStructureFactorSerialisation:
         sf, expected_sf = serialise_to_dict
         check_structure_factor(sf, expected_sf, sum_sf=False)
 
+    @pytest.mark.parametrize('material, sf_json, qpt_freqs_json', [
+        ('quartz',
+         'quartz_666_300K_structure_factor.json',
+         'quartz_666_qpoint_frequencies.json'),
+        ('CaHgO2',
+         'CaHgO2_300K_structure_factor.json',
+         'CaHgO2_from_phonopy_qpoint_frequencies.json')])
+    def test_to_qpoint_frequencies(
+            self, material, sf_json, qpt_freqs_json):
+        sf = get_sf(material, sf_json)
+        qpt_freqs = sf.to_qpoint_frequencies()
+        expected_qpt_freqs = get_expected_qpt_freqs(material, qpt_freqs_json)
+        check_qpt_freqs(qpt_freqs, expected_qpt_freqs)
+
 
 @pytest.mark.unit
 class TestStructureFactorUnitConversion:
@@ -390,7 +438,16 @@ class TestStructureFactorCalculate1dAverage:
     @pytest.mark.parametrize(
         'material, sf_json, expected_1d_json, ebins, kwargs', [
             ('quartz', 'quartz_666_300K_structure_factor.json',
-             'quartz_666_300K_sf_1d_average.json',
+             'quartz_666_300K_sf_1d_average_with_weights.json',
+             np.arange(0,156)*ureg('meV'), {}),
+            ('quartz', 'quartz_666_300K_structure_factor_noweights.json',
+             'quartz_666_300K_sf_1d_average_with_weights.json',
+             np.arange(0,156)*ureg('meV'),
+             {'weights': np.load(os.path.join(
+                 get_sf_dir('quartz'),
+                 'quartz_666_weights.npy'))}),
+            ('quartz', 'quartz_666_300K_structure_factor_noweights.json',
+             'quartz_666_300K_sf_1d_average_noweights.json',
              np.arange(0,156)*ureg('meV'), {})])
     def test_calculate_1d_average(self, material, sf_json, expected_1d_json,
                                   ebins, kwargs):
@@ -398,3 +455,43 @@ class TestStructureFactorCalculate1dAverage:
         sw = sf.calculate_1d_average(ebins, **kwargs)
         expected_sw = get_expected_spectrum1d(expected_1d_json)
         check_spectrum1d(sw, expected_sw)
+
+@pytest.mark.unit
+class TestStructureFactorGetDispersion:
+
+    @pytest.mark.parametrize(
+        'material, sf_json, expected_dispersion_json', [
+            ('quartz', 'quartz_bandstructure_structure_factor.json',
+             'quartz_bandstructure_dispersion.json'),
+            ('LZO', 'La2Zr2O7_cut_structure_factor.json',
+             'LZO_cut_dispersion.json')
+        ])
+    def test_get_dispersion(
+            self, material, sf_json, expected_dispersion_json):
+        sf = get_sf(material, sf_json)
+        disp = sf.get_dispersion()
+        expected_disp = get_expected_spectrum1dcollection(
+            expected_dispersion_json)
+        check_spectrum1dcollection(disp, expected_disp)
+
+@pytest.mark.unit
+class TestStructureFactorCalculateDos:
+
+    @pytest.mark.parametrize(
+        'material, sf_json, expected_dos_json, ebins', [
+            ('quartz', 'quartz_666_300K_structure_factor.json',
+             'quartz_666_dos.json', np.arange(0, 155, 0.5)*ureg('meV'))])
+    def test_calculate_dos(
+            self, material, sf_json, expected_dos_json, ebins):
+        sf = get_sf(material, sf_json)
+        dos = sf.calculate_dos(ebins)
+        expected_dos = get_expected_spectrum1d(expected_dos_json)
+        check_spectrum1d(dos, expected_dos)
+
+    def test_calculate_dos_with_0_inv_cm_bin_doesnt_raise_runtime_warn(self):
+        sf = get_sf(
+            'quartz', 'quartz_666_300K_structure_factor.json')
+        ebins = np.arange(0, 1300, 4)*ureg('1/cm')
+        with pytest.warns(None) as warn_record:
+            dos = sf.calculate_dos(ebins)
+        assert len(warn_record) == 0

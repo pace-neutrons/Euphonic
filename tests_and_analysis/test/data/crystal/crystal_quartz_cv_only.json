@@ -1,0 +1,27 @@
+{
+    "__euphonic_class__": "Crystal",
+    "__euphonic_version__": "0.4.0+19.g5499af8",
+    "atom_mass": [],
+    "atom_mass_unit": "unified_atomic_mass_unit",
+    "atom_r": [],
+    "atom_type": [],
+    "cell_vectors": [
+        [
+            2.4261758809569254,
+            -4.202259893915576,
+            0.0
+        ],
+        [
+            2.4261758809569254,
+            4.202259893915576,
+            0.0
+        ],
+        [
+            0.0,
+            0.0,
+            5.35030451418839
+        ]
+    ],
+    "cell_vectors_unit": "angstrom",
+    "n_atoms": 0
+}

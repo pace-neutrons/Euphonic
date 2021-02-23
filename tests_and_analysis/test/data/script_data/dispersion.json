@@ -15427,7 +15427,7 @@
             ]
         ]
     },
-    "LZO LZO_force_constants.json": {
+    "force_constants LZO_force_constants.json": {
         "title": "",
         "x_label": "",
         "y_label": "Energy / meV",

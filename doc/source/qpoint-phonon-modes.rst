@@ -25,7 +25,7 @@ Reading From Phonopy
 --------------------
 
 Phonopy should be run with the ``--eigvecs`` flag, or ``EIGENVECTORS = .TRUE.``
-for use with Euphonic.
+to enable creation of a Euphonic ``QpointPhononModes`` object.
 
 Using :py:meth:`QpointPhononModes.from_phonopy <euphonic.qpoint_phonon_modes.QpointPhononModes.from_phonopy>`
 Euphonic can read frequencies and eigenvectors from Phonopy files with the following default names:
@@ -69,7 +69,6 @@ Plotting Dispersion
 -------------------
 
 See :ref:`Plotting Dispersion <plotting-dispersion>`
-
 
 Calculating The Coherent Neutron Structure Factor
 -------------------------------------------------
@@ -156,35 +155,17 @@ calculated by:
   temperature = 5*ureg('K')
   dw = phonons.calculate_debye_waller(temperature)
 
-.. _dos:
-
 Calculating Density of States
 -----------------------------
 
-Density of states can be calculated using 
-:py:meth:`QpointPhononModes.calculate_dos <euphonic.qpoint_phonon_modes.QpointPhononModes.calculate_dos>`.
-This requires an array of energy bin edges, with the units specified by
-wrapping it as a ``pint.Quantity`` (see :ref:`Units` for details). This
-function returns a generic :ref:`Spectrum1D<spectrum1d>` object. For example:
-
-.. code-block:: py
-
-  from euphonic import ureg, QpointPhononModes
-  import numpy as np
-
-  phonons = QpointPhononModes.from_castep('quartz.phonon')
-
-  # Create an array of energy bins 0 - 100 in meV
-  energy_bins = np.arange(0, 101, 1)*ureg('meV')
-
-  # Calculate dos
-  dos = phonons.calculate_dos(energy_bins)
+See :ref:`Calculating DOS <dos>`
 
 Docstring
 ---------
 
 .. autoclass:: euphonic.qpoint_phonon_modes.QpointPhononModes
    :members:
+   :inherited-members:
    :exclude-members: frequencies
 
 

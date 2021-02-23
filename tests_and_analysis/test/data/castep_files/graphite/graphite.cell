@@ -1,0 +1,39 @@
+%BLOCK LATTICE_ABC
+  2.463174 2.463174  6.71
+   90.0  90.0  120.0
+%ENDBLOCK LATTICE_ABC
+
+%BLOCK cell_constraints
+ 1 1 0
+ 0 0 0
+%ENDBLOCK cell_constraints
+
+%BLOCK POSITIONS_FRAC
+     C    0.0000000000    0.0000000000    0.2500000000
+     C    0.0000000000    0.0000000000    0.7500000000
+     C    0.3333333333    0.6666666667    0.2500000000
+     C   -0.3333333333   -0.6666666667    0.7500000000
+%ENDBLOCK POSITIONS_FRAC
+
+kpoint_mp_grid   7  7  2
+
+symmetry_generate
+
+FIX_COM : false
+
+%BLOCK SPECIES_POT
+       QC5
+%ENDBLOCK SPECIES_POT
+
+phonon_kpoint_mp_grid :  7  7  2
+phonon_kpoint_mp_offset : 0.0  0.0  0.25
+
+%BLOCK phonon_fine_kpoint_path
+    0.0000000000    0.0000000000    0.0000000000
+    0.3333333333    0.3333333333    0.0000000000
+    0.5000000000    0.0000000000    0.0000000000
+    0.0000000000    0.0000000000    0.0000000000
+    0.0000000000    0.0000000000    0.5000000000
+%ENDBLOCK phonon_fine_kpoint_path
+
+phonon_fine_kpoint_path_spacing 0.01 1/ang

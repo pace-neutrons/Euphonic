@@ -4,28 +4,25 @@ import json
 from unittest.mock import patch
 
 import pytest
-import numpy as np
 import numpy.testing as npt
 # Required for mocking
 import matplotlib.pyplot
 
-from tests_and_analysis.test.utils import get_data_path
+from tests_and_analysis.test.utils import (
+    get_data_path, get_castep_path, get_phonopy_path)
 from tests_and_analysis.test.script_tests.utils import (
     get_script_test_data_path, get_current_plot_line_data, args_to_key)
 import euphonic.cli.dispersion
 
 
-cahgo2_fc_file = os.path.join(
-    get_data_path(), 'force_constants', 'CaHgO2', 'mp-7041-20180417.yaml')
+cahgo2_fc_file = get_phonopy_path('CaHgO2', 'mp-7041-20180417.yaml')
 lzo_fc_file = os.path.join(
-    get_data_path(), 'force_constants', 'LZO', 'LZO_force_constants.json')
-nacl_fc_file = os.path.join(
-    get_data_path(), 'force_constants', 'NaCl_cli_test',
-    'force_constants.hdf5')
+    get_data_path(), 'force_constants', 'LZO_force_constants.json')
+nacl_fc_file = get_phonopy_path('NaCl_cli_test', 'force_constants.hdf5')
 nacl_phonon_file = os.path.join(
-    get_data_path(), 'qpoint_phonon_modes', 'NaCl', 'band', 'band.yaml')
+    get_phonopy_path('NaCl', 'band'), 'band.yaml')
 nacl_phonon_hdf5_file = os.path.join(
-    get_data_path(), 'qpoint_phonon_modes', 'NaCl', 'band', 'band.hdf5')
+    get_phonopy_path('NaCl', 'band'), 'band.hdf5')
 quartz_phonon_file = os.path.join(
     get_data_path(), 'qpoint_phonon_modes', 'quartz',
     'quartz_bandstructure_qpoint_phonon_modes.json')

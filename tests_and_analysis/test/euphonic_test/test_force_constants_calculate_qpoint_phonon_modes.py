@@ -7,7 +7,8 @@ import numpy.testing as npt
 
 from euphonic import ureg, ForceConstants
 from euphonic.force_constants import ImportCError
-from tests_and_analysis.test.utils import get_data_path, get_test_qpts
+from tests_and_analysis.test.utils import (get_data_path, get_phonopy_path,
+    get_castep_path, get_test_qpts)
 from tests_and_analysis.test.euphonic_test.test_qpoint_phonon_modes import (
     ExpectedQpointPhononModes, check_qpt_ph_modes, get_qpt_ph_modes_dir)
 from tests_and_analysis.test.euphonic_test.test_force_constants import (
@@ -19,7 +20,7 @@ class TestForceConstantsCalculateQPointPhononModes:
 
     def get_lzo_fc():
         return ForceConstants.from_castep(
-            os.path.join(get_fc_dir('LZO'), 'La2Zr2O7.castep_bin'))
+            get_castep_path('LZO', 'La2Zr2O7.castep_bin'))
 
     lzo_params = [
         (get_lzo_fc(), 'LZO',
@@ -34,8 +35,7 @@ class TestForceConstantsCalculateQPointPhononModes:
 
     def get_si2_fc():
         return ForceConstants.from_castep(
-            os.path.join(get_fc_dir('Si2-sc-skew'),
-                         'Si2-sc-skew.castep_bin'))
+            get_castep_path('Si2-sc-skew', 'Si2-sc-skew.castep_bin'))
 
     si2_params = [
         (get_si2_fc(), 'Si2-sc-skew',
@@ -50,7 +50,7 @@ class TestForceConstantsCalculateQPointPhononModes:
 
     def get_quartz_fc():
         return ForceConstants.from_castep(
-            os.path.join(get_fc_dir('quartz'), 'quartz.castep_bin'))
+            get_castep_path('quartz', 'quartz.castep_bin'))
 
     quartz_params = [
         (get_quartz_fc(), 'quartz',
@@ -72,7 +72,7 @@ class TestForceConstantsCalculateQPointPhononModes:
 
     nacl_params = [(
         ForceConstants.from_phonopy(
-            path=get_fc_dir('NaCl'),
+            path=get_phonopy_path('NaCl', ''),
             summary_name='phonopy_nacl.yaml'),
         'NaCl',
         [get_test_qpts(), {'asr': 'reciprocal'}],
@@ -81,7 +81,7 @@ class TestForceConstantsCalculateQPointPhononModes:
 
     cahgo2_params = [(
         ForceConstants.from_phonopy(
-            path=get_fc_dir('CaHgO2'),
+            path=get_phonopy_path('CaHgO2', ''),
             summary_name='mp-7041-20180417.yaml'),
         'CaHgO2',
         [get_test_qpts(), {'asr': 'reciprocal'}],
@@ -181,8 +181,7 @@ class TestForceConstantsCalculateQPointPhononModes:
     def test_calc_qpt_ph_mds_asr_with_nonsense_fc_raises_warning(
             self, asr):
         fc = ForceConstants.from_json_file(
-            os.path.join(get_fc_dir('quartz'),
-                         'quartz_random_force_constants.json'))
+            os.path.join(get_fc_dir(), 'quartz_random_force_constants.json'))
         with pytest.warns(UserWarning):
             fc.calculate_qpoint_phonon_modes(get_test_qpts(), asr=asr)
 

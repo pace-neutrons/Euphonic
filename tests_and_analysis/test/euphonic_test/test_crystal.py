@@ -27,7 +27,10 @@ class ExpectedCrystal:
 
     @property
     def atom_r(self) -> np.array:
-        return np.array(self.data['atom_r'])
+        if self.n_atoms == 0 and len(self.data['atom_r']) == 0:
+            return np.zeros((0, 3), dtype=np.float64)
+        else:
+            return np.array(self.data['atom_r'])
 
     @property
     def atom_type(self) -> np.array:
@@ -115,6 +118,7 @@ def check_crystal(crystal, expected_crystal):
 class TestCrystalCreation:
 
     @pytest.fixture(params=[get_expected_crystal('quartz'),
+                            get_expected_crystal('quartz_cv_only'),
                             get_expected_crystal('LZO')])
     def create_from_constructor(self, request):
         expected_crystal = request.param
@@ -122,6 +126,7 @@ class TestCrystalCreation:
         return crystal, expected_crystal
 
     @pytest.fixture(params=[get_expected_crystal('quartz'),
+                            get_expected_crystal('quartz_cv_only'),
                             get_expected_crystal('LZO')])
     def create_from_dict(self, request):
         expected_crystal = request.param
@@ -130,17 +135,31 @@ class TestCrystalCreation:
         return crystal, expected_crystal
 
     @pytest.fixture(params=[
-        (get_json_file('quartz'), get_expected_crystal('quartz')),
-        (get_json_file('LZO'), get_expected_crystal('LZO'))
+        (get_json_file('quartz'),
+         get_expected_crystal('quartz')),
+        (get_json_file('quartz_cv_only'),
+         get_expected_crystal('quartz_cv_only')),
+        (get_json_file('LZO'),
+         get_expected_crystal('LZO'))
     ])
     def create_from_json_file(self, request):
         filename, expected_crystal = request.param
         return get_crystal_from_json_file(filename), expected_crystal
 
+    @pytest.fixture(params=[
+        (Quantity(np.array([[2.426176, -4.20226, 0.000000],
+                            [2.426176,  4.20226, 0.000000],
+                            [0.000000,  0.00000, 5.350304]]), 'angstrom'),
+         get_expected_crystal('quartz_cv_only'))])
+    def create_from_cell_vectors(self, request):
+        cell_vectors, expected_crystal = request.param
+        return Crystal.from_cell_vectors(cell_vectors), expected_crystal
+
     @pytest.mark.parametrize('crystal_creator', [
         pytest.lazy_fixture('create_from_constructor'),
         pytest.lazy_fixture('create_from_json_file'),
-        pytest.lazy_fixture('create_from_dict')
+        pytest.lazy_fixture('create_from_dict'),
+        pytest.lazy_fixture('create_from_cell_vectors')
     ])
     def test_create(self, crystal_creator):
         crystal, expected_crystal = crystal_creator
@@ -194,6 +213,7 @@ class TestCrystalSerialisation:
 
     @pytest.mark.parametrize('crystal', [
         get_crystal('quartz'),
+        get_crystal('quartz_cv_only'),
         get_crystal('LZO')])
     def test_serialise_to_json_file(self, crystal, tmpdir):
         # Serialise
@@ -206,8 +226,12 @@ class TestCrystalSerialisation:
         return check_crystal(crystal, deserialised_crystal)
 
     @pytest.fixture(params=[
-        (get_crystal('quartz'), get_expected_crystal('quartz')),
-        (get_crystal('LZO'), get_expected_crystal('LZO'))
+        (get_crystal('quartz'),
+         get_expected_crystal('quartz')),
+        (get_crystal('quartz_cv_only'),
+         get_expected_crystal('quartz_cv_only')),
+        (get_crystal('LZO'),
+         get_expected_crystal('LZO'))
     ])
     def serialise_to_dict(self, request):
         crystal, expected_crystal = request.param
@@ -297,6 +321,12 @@ class TestCrystalMethods:
                            [0.535040, 0.535040, 0.500000]],
                            [0, 0, 0, 0, 0, 0, 1, 1, 1])
 
+    quartz_cv_only_spglib_cell = ([[2.426176, -4.20226, 0.000000],
+                                   [2.426176,  4.20226, 0.000000],
+                                   [0.000000,  0.00000, 5.350304]],
+                                   [],
+                                   [])
+
     lzo_spglib_cell = ([[7.58391282,  0.00000000, 0.00000000],
                         [3.79195641,  3.79195641, 5.36263619],
                         [3.79195641, -3.79195641, 5.36263619]],
@@ -328,6 +358,7 @@ class TestCrystalMethods:
 
     @pytest.mark.parametrize('crystal,expected_spglib_cell', [
         (get_crystal('quartz'), quartz_spglib_cell),
+        (get_crystal('quartz_cv_only'), quartz_cv_only_spglib_cell),
         (get_crystal('LZO'), lzo_spglib_cell)])
     def test_to_spglib_cell(self, crystal, expected_spglib_cell):
         spglib_cell = crystal.to_spglib_cell()

@@ -30,7 +30,7 @@ and set ``PHONON_WRITE_FORCE_CONSTANTS: true``, then rerun CASTEP to trigger the
 force constants to be written.
 
 Reading From Phonopy
-------------
+--------------------
 
 When using Phonopy with Euphonic, it is recommended that all the required data
 (force constants, crystal structure, born charges if applicable) be collected
@@ -63,8 +63,8 @@ charges can also be read from Phonopy plaintext or hdf5 files by specifying the
                                    fc_name='force_constants.hdf5',
                                    born_name='BORN')
 
-Calculating phonon frequencies/eigenvectors
--------------------------------------------
+Calculating phonon frequencies and eigenvectors
+-----------------------------------------------
 
 Phonon frequencies and eigenvectors are calculated using
 :py:meth:`ForceConstants.calculate_qpoint_phonon_modes <euphonic.force_constants.ForceConstants.calculate_qpoint_phonon_modes>`
@@ -90,6 +90,16 @@ recommended q-point path for plotting bandstructures can be generated using
 
   # Calculate frequencies/eigenvectors
   phonons = fc.calculate_qpoint_phonon_modes(qpts, asr='reciprocal')
+
+Calculating phonon frequencies only
+-----------------------------------
+
+This uses the same algorithm as for calculating both the frequencies and
+eigenvectors, only with lower memory requirements as the eigenvectors
+are not stored. This is done using
+:py:meth:`ForceConstants.calculate_qpoint_frequencies <euphonic.force_constants.ForceConstants.calculate_qpoint_frequencies>`
+which returns a :ref:`QpointFrequencies<qpoint-frequencies>` object.
+
 
 Docstring
 ---------

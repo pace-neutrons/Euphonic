@@ -78,6 +78,7 @@ static PyObject *calculate_phonons(PyObject *self, PyObject *args) {
     // Other vars
     int n_cells;
     int n_rqpts;
+    int dmats_len;
     int n_split_qpts;
     int q, i, qpos;
     int max_ims;
@@ -157,6 +158,7 @@ static PyObject *calculate_phonons(PyObject *self, PyObject *args) {
     n_cells = PyArray_DIMS(py_fc)[0];
     n_rqpts = PyArray_DIMS(py_rqpts)[0];
     n_split_qpts = PyArray_DIMS(py_split_idx)[0];
+    dmats_len = PyArray_DIMS(py_dmats)[0];
     max_ims = PyArray_DIMS(py_sc_im_idx)[3];
     dmat_elems = 2*9*n_atoms*n_atoms;
     if (dipole) {
@@ -183,17 +185,27 @@ static PyObject *calculate_phonons(PyObject *self, PyObject *args) {
     omp_set_num_threads(n_threads);
     #pragma omp parallel
     {
-        double *corr;
+        double *corr, *dmat_per_q;
         if (dipole) {
             corr = (double*) malloc(dmat_elems*sizeof(double));
+        }
+        // If space for the eigenvectors has not been allocated, assume they
+        // aren't to be returned and just allocate just enough memory for each
+        // q-point calculation
+        if (dmats_len == 0) {
+            dmat_per_q = (double*) malloc(dmat_elems*sizeof(double));
         }
         #pragma omp for
         for (q = 0; q < n_rqpts; q++) {
             double *qpt, *dmat, *eval;
             qpt = (rqpts + 3*q);
-            dmat = (dmats + q*dmat_elems);
             eval = (evals + q*3*n_atoms);
 
+            if (dmats_len == 0) {
+                dmat = dmat_per_q;
+            } else {
+                dmat = (dmats + q*dmat_elems);
+            }
             calculate_dyn_mat_at_q(qpt, n_atoms, n_cells, max_ims, n_sc_ims,
                 sc_im_idx, cell_ogs, sc_ogs, fc, dmat);
 

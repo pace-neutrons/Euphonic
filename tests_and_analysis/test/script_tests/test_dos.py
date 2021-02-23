@@ -9,17 +9,15 @@ import numpy.testing as npt
 # Required for mocking
 import matplotlib.pyplot
 
-from tests_and_analysis.test.utils import get_data_path
+from tests_and_analysis.test.utils import get_data_path, get_castep_path
 from tests_and_analysis.test.script_tests.utils import (
     get_script_test_data_path, get_current_plot_line_data,
     args_to_key)
 import euphonic.cli.dos
 
 
-nah_phonon_file = os.path.join(
-    get_data_path(), 'qpoint_phonon_modes', 'NaH', 'NaH.phonon')
-quartz_fc_file = os.path.join(
-    get_data_path(), 'force_constants', 'quartz', 'quartz.castep_bin')
+nah_phonon_file = get_castep_path('NaH', 'NaH.phonon')
+quartz_fc_file = get_castep_path('quartz', 'quartz.castep_bin')
 dos_output_file = os.path.join(get_script_test_data_path(), 'dos.json')
 dos_params = [
     [nah_phonon_file],

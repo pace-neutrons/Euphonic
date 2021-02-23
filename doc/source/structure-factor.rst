@@ -11,8 +11,8 @@ the Debye-Waller factor were used in the calculation.
 
 .. _scattering-intensities:
 
-From Phonon Frequencies
------------------------
+From Phonon Modes
+-----------------
 
 See :ref:`QpointPhononModes <qpoint-phonon-modes>`
 
@@ -37,9 +37,20 @@ generic :ref:`Spectrum2D` object.
   energy_bins = np.arange(-100, 101, 1)*ureg('meV')
   sqw_map = sf.calculate_sqw_map(energy_bins calc_bose=True)
 
+Plotting Dispersion
+-------------------
+
+See :ref:`Plotting Dispersion <plotting-dispersion>`
+
+Calculating Density of States
+-----------------------------
+
+See :ref:`Calculating DOS <dos>`
+
 Docstring
 ---------
 
 .. autoclass:: euphonic.structure_factor.StructureFactor
    :members:
+   :inherited-members:
    :exclude-members: frequencies, temperature

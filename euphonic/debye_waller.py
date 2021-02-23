@@ -6,7 +6,7 @@ from euphonic.io import (_obj_to_json_file, _obj_from_json_file,
 from euphonic import ureg, Quantity, Crystal
 
 
-class DebyeWaller(object):
+class DebyeWaller:
     """
     Stores the (n_ions, 3, 3) anisotropic Debye-Waller exponent
     W_ab to be used in structure factor calculations
@@ -112,7 +112,7 @@ class DebyeWaller(object):
         crystal = Crystal.from_dict(d['crystal'])
         d = _process_dict(d, quantities=['debye_waller', 'temperature'],
                           optional=['temperature'])
-        return DebyeWaller(crystal, d['debye_waller'], d['temperature'])
+        return cls(crystal, d['debye_waller'], d['temperature'])
 
     @classmethod
     def from_json_file(cls, filename):

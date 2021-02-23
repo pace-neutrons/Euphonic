@@ -1,0 +1,7 @@
+task                    : phonon
+phononfinemethod        : supercell           # fine phonon calculation method (S)
+phononmethod            : finitedisplacement  # phonon calculation method (S)
+phononcalclotosplitting : F                   # gamma-point phonon LO/TO correction (L)
+phononsumrulemethod     : realspace           # select method to enforce phonon sum rule (S)
+continuation            : graphite.castep_bin
+

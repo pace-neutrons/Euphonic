@@ -5,7 +5,8 @@ import pytest
 import numpy.testing as npt
 
 from euphonic import ureg, ForceConstants, QpointPhononModes
-from tests_and_analysis.test.utils import get_data_path, get_test_qpts
+from tests_and_analysis.test.utils import (get_castep_path, get_phonopy_path,
+    get_test_qpts)
 from tests_and_analysis.test.euphonic_test.test_qpoint_phonon_modes import (
     get_qpt_ph_modes, get_qpt_ph_modes_dir)
 from tests_and_analysis.test.euphonic_test.test_debye_waller import (
@@ -33,7 +34,7 @@ class TestCalculateStructureFactorFromForceConstants:
     @pytest.fixture(params=[0, 1, 2])
     def get_quartz_qpt_ph_modes(self, request):
         fc = ForceConstants.from_castep(
-            os.path.join(get_fc_dir('quartz'), 'quartz.castep_bin'))
+            get_castep_path('quartz', 'quartz.castep_bin'))
         kwargs = self.get_multithreaded_kwargs(request.param)
         return fc.calculate_qpoint_phonon_modes(
             get_test_qpts('split'), **kwargs)
@@ -41,15 +42,14 @@ class TestCalculateStructureFactorFromForceConstants:
     @pytest.fixture(params=[0, 1, 2])
     def get_si2_qpt_ph_modes(self, request):
         fc = ForceConstants.from_castep(
-            os.path.join(get_fc_dir('Si2-sc-skew'),
-                         'Si2-sc-skew.castep_bin'))
+            get_castep_path('Si2-sc-skew', 'Si2-sc-skew.castep_bin'))
         kwargs = self.get_multithreaded_kwargs(request.param)
         return fc.calculate_qpoint_phonon_modes(get_test_qpts(), **kwargs)
 
     @pytest.fixture(params=[0, 1, 2])
     def get_cahgo2_qpt_ph_modes(self, request):
         fc = ForceConstants.from_phonopy(
-            path=get_fc_dir('CaHgO2'),
+            path=get_phonopy_path('CaHgO2', ''),
             summary_name='mp-7041-20180417.yaml')
         kwargs = self.get_multithreaded_kwargs(request.param)
         return fc.calculate_qpoint_phonon_modes(get_test_qpts(), **kwargs)
@@ -90,17 +90,15 @@ class TestCalculateStructureFactorFromQpointPhononModes:
 
     def get_quartz_qpt_ph_modes():
         return QpointPhononModes.from_castep(
-            os.path.join(get_qpt_ph_modes_dir('quartz'),
-                         'quartz_nosplit.phonon'))
+            get_castep_path('quartz', 'quartz_nosplit.phonon'))
 
     def get_si2_qpt_ph_modes():
         return QpointPhononModes.from_castep(
-            os.path.join(get_qpt_ph_modes_dir('Si2-sc-skew'),
-                         'Si2-sc-skew.phonon'))
+            get_castep_path('Si2-sc-skew', 'Si2-sc-skew.phonon'))
 
     def get_cahgo2_qpt_ph_modes():
         return QpointPhononModes.from_phonopy(
-            path=get_qpt_ph_modes_dir('CaHgO2'),
+            path=get_phonopy_path('CaHgO2', ''),
             summary_name='mp-7041-20180417.yaml',
             phonon_name='qpoints.yaml')
 

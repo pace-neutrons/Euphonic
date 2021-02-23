@@ -1,5 +1,7 @@
 {
     "__euphonic_class__": "StructureFactor",
+    "__euphonic_version__": "0.4.0+1.g1217c14",
+    "__euphonic_class__": "StructureFactor",
     "__euphonic_version__": "0.3.2+7.g3815684.dirty",
     "crystal": {
         "atom_mass": [
@@ -921,5 +923,20 @@
     ],
     "structure_factors_unit": "angstrom ** 2",
     "temperature": 0,
-    "temperature_unit": "kelvin"
+    "temperature_unit": "kelvin",
+    "weights": [
+        0.07692307692307693,
+        0.07692307692307693,
+        0.07692307692307693,
+        0.07692307692307693,
+        0.07692307692307693,
+        0.07692307692307693,
+        0.07692307692307693,
+        0.07692307692307693,
+        0.07692307692307693,
+        0.07692307692307693,
+        0.07692307692307693,
+        0.07692307692307693,
+        0.07692307692307693
+    ]
 }

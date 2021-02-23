@@ -12,7 +12,8 @@ Python API
 ==========
 
 - :ref:`Force Constants <force-constants>`
-- :ref:`Phonon Frequencies/Eigenvectors <qpoint-phonon-modes>`
+- :ref:`Phonon Frequencies and Eigenvectors <qpoint-phonon-modes>`
+- :ref:`Phonon Frequencies Only <qpoint-frequencies>`
 - :ref:`Density of States <dos>`
 - :ref:`Structure Factors <structure-factor>`
 - :ref:`Scattering Intensities <scattering-intensities>`

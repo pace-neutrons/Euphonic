@@ -10,7 +10,8 @@ from euphonic.readers.phonopy import ImportPhonopyReaderError
 from tests_and_analysis.test.euphonic_test.test_crystal import (
     get_crystal, ExpectedCrystal, check_crystal)
 from tests_and_analysis.test.utils import (
-    get_data_path, check_unit_conversion, check_json_metadata)
+    get_data_path, get_castep_path, get_phonopy_path, check_unit_conversion,
+    check_json_metadata)
 
 
 class ExpectedForceConstants:
@@ -97,13 +98,12 @@ class ExpectedForceConstants:
         return (crystal, force_constants, sc_matrix, cell_origins), kwargs
 
 
-def get_fc_dir(material):
-    return os.path.join(get_data_path(), 'force_constants', material)
+def get_fc_dir():
+    return os.path.join(get_data_path(), 'force_constants')
 
 
 def get_json_file(material):
-    return os.path.join(get_fc_dir(material),
-                        f'{material}_force_constants.json')
+    return os.path.join(get_fc_dir(), f'{material}_force_constants.json')
 
 
 def get_expected_fc(material):
@@ -181,7 +181,7 @@ class TestForceConstantsCreation:
     def create_from_castep(self, request):
         material, castep_bin_file = request.param
         expected_fc = get_expected_fc(material)
-        castep_filepath = os.path.join(get_fc_dir(material),  castep_bin_file)
+        castep_filepath = get_castep_path(material, castep_bin_file)
         fc = ForceConstants.from_castep(castep_filepath)
         return fc, expected_fc
 
@@ -237,7 +237,7 @@ class TestForceConstantsCreation:
                     'fc_name': 'full_force_constants.hdf5'})])
     def create_from_phonopy(self, request):
         material, phonopy_args = request.param
-        phonopy_args['path'] = get_fc_dir(material)
+        phonopy_args['path'] = get_phonopy_path(material, '')
         fc = ForceConstants.from_phonopy(**phonopy_args)
         expected_fc = get_expected_fc(material)
         return fc, expected_fc
@@ -301,7 +301,7 @@ class TestForceConstantsCreation:
     @pytest.mark.parametrize('phonopy_args', [
         ({'summary_name': 'phonopy_nofc.yaml',
           'fc_name': 'force_constants.hdf5',
-          'path': get_fc_dir('NaCl')})])
+          'path': get_phonopy_path('NaCl', '')})])
     def test_create_from_phonopy_without_installed_modules_raises_err(
             self, phonopy_args, mocker):
         # Mock import of yaml, h5py to raise ModuleNotFoundError
@@ -318,12 +318,12 @@ class TestForceConstantsCreation:
     @pytest.mark.parametrize('phonopy_args, err', [
         ({'summary_name': 'phonopy_nofc.yaml',
           'fc_name': 'force_constants.hdf5',
-          'path': get_fc_dir('NaCl'),
+          'path': get_phonopy_path('NaCl', ''),
           'fc_format': 'nonsense'},
          ValueError),
         ({'summary_name': '../CaHgO2/phonopy_nofc.yaml',
           'fc_name': 'force_constants.hdf5',
-          'path': get_fc_dir('NaCl')},
+          'path': get_phonopy_path('NaCl', '')},
          ValueError)])
     def test_create_from_phonopy_with_bad_inputs_raises_err(
             self, phonopy_args, err):
@@ -333,8 +333,7 @@ class TestForceConstantsCreation:
     def test_create_from_castep_with_no_fc_raises_runtime_error(self):
         with pytest.raises(RuntimeError):
             ForceConstants.from_castep(
-                os.path.join(get_fc_dir('h-BN'),
-                             'h-BN_no_force_constants.castep_bin'))
+                get_castep_path('h-BN', 'h-BN_no_force_constants.castep_bin'))
 
     @pytest.mark.parametrize('material, phonopy_args', [
         ('CaHgO2', {'summary_name': 'mp-7041-20180417.yaml'})])
@@ -350,7 +349,7 @@ class TestForceConstantsCreation:
             return real_import(name, globals, locals, fromlist, level)
         mocker.patch('builtins.__import__', side_effect=mocked_import)
 
-        phonopy_args['path'] = get_fc_dir(material)
+        phonopy_args['path'] = get_phonopy_path(material, '')
         fc = ForceConstants.from_phonopy(**phonopy_args)
         expected_fc = get_expected_fc(material)
         check_force_constants(fc, expected_fc)

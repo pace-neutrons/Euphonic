@@ -1,6 +1,7 @@
 import math
 import sys
 import warnings
+from typing import Optional, Tuple, Union
 
 import numpy as np
 import scipy
@@ -15,14 +16,15 @@ from euphonic.io import (_obj_to_json_file, _obj_from_json_file,
 from euphonic.readers import castep, phonopy
 from euphonic.util import (is_gamma, get_all_origins,
                            _get_supercell_relative_idx)
-from euphonic import ureg, Quantity, Crystal, QpointPhononModes
+from euphonic import (ureg, Quantity, Crystal, QpointPhononModes,
+                      QpointFrequencies)
 
 
 class ImportCError(Exception):
     pass
 
 
-class ForceConstants(object):
+class ForceConstants:
     """
     A class to read and store the data required for a phonon
     interpolation calculation from model (e.g. CASTEP) output,
@@ -127,9 +129,18 @@ class ForceConstants(object):
         super(ForceConstants, self).__setattr__(name, value)
 
     def calculate_qpoint_phonon_modes(
-            self, qpts, weights=None, asr=None, dipole=True, eta_scale=1.0,
-            splitting=True, insert_gamma=False, reduce_qpts=True, use_c=False,
-            n_threads=1, fall_back_on_python=True):
+            self,
+            qpts: np.ndarray,
+            weights: Optional[np.ndarray] = None,
+            asr: Optional[str] = None,
+            dipole: bool = True,
+            eta_scale: float = 1.0,
+            splitting: bool = True,
+            insert_gamma: bool = False,
+            reduce_qpts: bool = True,
+            use_c: bool = False,
+            n_threads: int = 1,
+            fall_back_on_python: bool = True) -> QpointPhononModes:
         """
         Calculate phonon frequencies and eigenvectors at specified
         q-points from a force constants matrix via Fourier interpolation
@@ -138,46 +149,46 @@ class ForceConstants(object):
         ----------
         qpts : (n_qpts, 3) float ndarray
             The q-points to interpolate onto
-        weights : (n_qpts,) float ndarray, optional
+        weights : (n_qpts,) float ndarray
             The weight for each q-point. If not given, equal weights are
             applied
-        asr : {'realspace', 'reciprocal'}, optional
-            Which acoustic sum rule correction to apply. 'realspace'
-            applies the correction to the force constant matrix in real
-            space. 'reciprocal' applies the correction to the dynamical
-            matrix at every q-point
-        dipole : boolean, optional
-            Calculates the dipole tail correction to the dynamical
+        asr
+            One of {'realspace', 'reciprocal'}. Which acoustic sum rule
+            correction to apply. 'realspace' applies the correction to the
+            force constant matrix in real space. 'reciprocal' applies the
+            correction to the dynamical matrix at every q-point
+        dipole
+            Whether to calculate the dipole tail correction to the dynamical
             matrix at each q-point using the Ewald sum, if the Born
             charges and dielectric permitivitty tensor are present.
-        eta_scale : float, optional
+        eta_scale
             Changes the cutoff in real/reciprocal space for the dipole
             Ewald sum. A higher value uses more reciprocal terms. If tuned
             correctly this can result in performance improvements. See
             euphonic-optimise-eta program for help on choosing a good
             eta_scale.
-        splitting : boolean, optional
+        splitting
             Whether to calculate the LO-TO splitting at the gamma
             points. Only applied if dipole is True and the Born charges
             and dielectric permitivitty tensor are present.
-        insert_gamma : boolean, optional
+        insert_gamma
             If splitting is True, this will insert gamma points into
             qpts to store the extra split frequencies. Note this means
             that the length of qpts in the output QpointPhononModes
             object will not necessarily be the same as the input qpts.
             If qpts already contains double gamma points where you want
             split frequencies, leave this as False.
-        reduce_qpts : boolean, optional
+        reduce_qpts
             Whether to use periodicity to reduce all q-points and only
             calculate for unique q-points within the 1st BZ. This won't
             change the output but could increase performance.
-        use_c : boolean, optional
+        use_c
             Whether to use C instead of Python to calculate and
             diagonalise the dynamical matrix
-        n_threads : int, optional
+        n_threads
             The number of OpenMP threads to use when looping over
             q-points in C. Only applicable if use_c=True
-        fall_back_on_python : boolean, optional
+        fall_back_on_python
             If we cannot use the C extension, fall back on using python
             if this is true, else raise an ImportCError.
 
@@ -241,7 +252,54 @@ class ForceConstants(object):
         .. [1] M.T. Dove, Introduction to Lattice Dynamics, Cambridge University Press, Cambridge, 1993, 83-87
         .. [2] X. Gonze, K. C. Charlier, D. C. Allan, M. P. Teter, Phys. Rev. B, 1994, 50, 13035-13038
         """
+        qpts, weights, freqs, evecs = self._calculate_phonons_at_qpts(
+            qpts, weights, asr, dipole, eta_scale, splitting, insert_gamma,
+            reduce_qpts, use_c, n_threads, fall_back_on_python,
+            return_eigenvectors=True)
+        return QpointPhononModes(
+            self.crystal, qpts, freqs, evecs, weights=weights)
 
+    def calculate_qpoint_frequencies(
+            self,
+            qpts: np.ndarray,
+            weights: Optional[np.ndarray] = None,
+            asr: Optional[str] = None,
+            dipole: bool = True,
+            eta_scale: float = 1.0,
+            splitting: bool = True,
+            insert_gamma: bool = False,
+            reduce_qpts: bool = True,
+            use_c: bool = False,
+            n_threads: int = 1,
+            fall_back_on_python: bool = True) -> QpointFrequencies:
+        """
+        Calculate phonon frequencies (without eigenvectors) at specified
+        q-points. See ForceConstants.calculate_qpoint_phonon_modes for
+        details
+        """
+        qpts, weights, freqs = self._calculate_phonons_at_qpts(
+            qpts, weights, asr, dipole, eta_scale, splitting, insert_gamma,
+            reduce_qpts, use_c, n_threads, fall_back_on_python,
+            return_eigenvectors=False)
+        return QpointFrequencies(
+            self.crystal, qpts, freqs, weights=weights)
+
+    def _calculate_phonons_at_qpts(
+            self,
+            qpts: np.ndarray,
+            weights: np.ndarray,
+            asr: str,
+            dipole: bool,
+            eta_scale: float,
+            splitting: bool,
+            insert_gamma: bool,
+            reduce_qpts: bool,
+            use_c: bool,
+            n_threads: int,
+            fall_back_on_python: bool,
+            return_eigenvectors: bool) -> Union[
+                Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray],
+                Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]]:
         # Check weights is of appropriate type and shape, to avoid doing all
         # the interpolation only for it to fail creating QpointPhononModes
         _check_constructor_inputs(
@@ -288,8 +346,8 @@ class ForceConstants(object):
                 reduced_qpts, qpts_i = np.unique(
                     norm_qpts.view(norm_qpts.dtype.descr*3),
                     return_inverse=True)
-                reduced_qpts = reduced_qpts.view(norm_qpts.dtype
-                               ).reshape(-1, 3)
+                reduced_qpts = reduced_qpts.view(
+                    norm_qpts.dtype).reshape(-1, 3)
             n_rqpts = len(reduced_qpts)
             # Special handling of gamma points - don't reduce gamma
             # points if LO-TO splitting
@@ -378,9 +436,15 @@ class ForceConstants(object):
                 asr = None
 
         rfreqs = np.zeros((n_rqpts, 3*n_atoms))
-        reigenvecs = np.zeros(
-            (n_rqpts, 3*n_atoms, n_atoms, 3), dtype=np.complex128
-        )
+        if return_eigenvectors:
+            reigenvecs = np.zeros(
+                (n_rqpts, 3*n_atoms, n_atoms, 3), dtype=np.complex128)
+        else:
+            # Create dummy zero-length eigenvectors so this can be
+            # detected in C and eigenvectors won't be saved
+            reigenvecs = np.zeros(
+                (0, 3*n_atoms, n_atoms, 3), dtype=np.complex128)
+
         try:
             if use_c:
                 try:
@@ -431,13 +495,17 @@ class ForceConstants(object):
                     unique_cell_i, recip_asr_correction, dyn_mat_weighting,
                     dipole, asr, splitting)
                 for q in range(n_rqpts):
-                    rfreqs[q], reigenvecs[q] = self._calculate_phonons_at_q(
-                        q, q_independent_args)
-
+                    if return_eigenvectors:
+                        rfreqs[q], reigenvecs[q] = self._calculate_phonons_at_q(
+                            q, q_independent_args)
+                    else:
+                        rfreqs[q], _ = self._calculate_phonons_at_q(
+                            q, q_independent_args)
         freqs = rfreqs[qpts_i]*ureg('hartree').to('meV')
-
-        return QpointPhononModes(
-            self.crystal, qpts, freqs, reigenvecs[qpts_i], weights=weights)
+        if return_eigenvectors:
+            return qpts, weights, freqs, reigenvecs[qpts_i]
+        else:
+            return qpts, weights, freqs
 
     def _calculate_phonons_at_q(self, q, args):
         """
@@ -1223,8 +1291,8 @@ class ForceConstants(object):
         d = _process_dict(
             d, quantities=['force_constants', 'born', 'dielectric'],
             optional=['born', 'dielectric'])
-        return ForceConstants(crystal, d['force_constants'], d['sc_matrix'],
-                              d['cell_origins'], d['born'], d['dielectric'])
+        return cls(crystal, d['force_constants'], d['sc_matrix'],
+                   d['cell_origins'], d['born'], d['dielectric'])
 
     @classmethod
     def from_json_file(cls, filename):
@@ -1257,7 +1325,7 @@ class ForceConstants(object):
         -------
         ForceConstants
         """
-        data = castep._read_interpolation_data(filename)
+        data = castep.read_interpolation_data(filename)
         return cls.from_dict(data)
 
     @classmethod
@@ -1294,7 +1362,7 @@ class ForceConstants(object):
         -------
         ForceConstants
         """
-        data = phonopy._read_interpolation_data(
+        data = phonopy.read_interpolation_data(
             path=path, summary_name=summary_name, born_name=born_name,
             fc_name=fc_name, fc_format=fc_format)
         return cls.from_dict(data)
