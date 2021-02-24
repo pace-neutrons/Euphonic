@@ -3,6 +3,7 @@ import os
 import sys
 import warnings
 from typing import Optional, Tuple, Union
+from multiprocessing import cpu_count
 
 import numpy as np
 import scipy
@@ -141,7 +142,7 @@ class ForceConstants:
             insert_gamma: bool = False,
             reduce_qpts: bool = True,
             use_c: Optional[bool] = None,
-            n_threads: int = 1) -> QpointPhononModes:
+            n_threads: Optional[int] = None) -> QpointPhononModes:
         """
         Calculate phonon frequencies and eigenvectors at specified
         q-points from a force constants matrix via Fourier interpolation
@@ -193,10 +194,11 @@ class ForceConstants:
             of Python, even if the C extension is installed
         n_threads
             The number of OpenMP threads to use when looping over
-            q-points in C. Only applicable if use_c=True
-        fall_back_on_python
-            If we cannot use the C extension, fall back on using python
-            if this is true, else raise an ImportCError.
+            q-points in C. By default this is None, in which case
+            the environment variable EUPHONIC_NUM_THREADS will be used
+            to determine number of threads, if this is not set then
+            the value returned from multiprocessing.cpu_count() will be
+            used
 
         Returns
         -------
@@ -274,7 +276,7 @@ class ForceConstants:
             insert_gamma: bool = False,
             reduce_qpts: bool = True,
             use_c: Optional[bool] = None,
-            n_threads: int = 1) -> QpointFrequencies:
+            n_threads: Optional[int] = None) -> QpointFrequencies:
         """
         Calculate phonon frequencies (without eigenvectors) at specified
         q-points. See ForceConstants.calculate_qpoint_phonon_modes for
@@ -297,7 +299,7 @@ class ForceConstants:
             insert_gamma: bool,
             reduce_qpts: bool,
             use_c: Optional[bool],
-            n_threads: int,
+            n_threads: Optional[int],
             return_eigenvectors: bool) -> Union[
                 Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray],
                 Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]]:
@@ -463,6 +465,11 @@ class ForceConstants:
                     raise
             else:
                 raise ImportError
+            if n_threads is None:
+                try:
+                    n_threads = int(os.environ['EUPHONIC_NUM_THREADS'])
+                except KeyError:
+                    n_threads = cpu_count()
             # Make sure all arrays are contiguous before calling C
             cell_vectors = self.crystal._cell_vectors
             recip_vectors = self.crystal.reciprocal_cell().to(
