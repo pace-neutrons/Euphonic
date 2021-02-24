@@ -104,7 +104,6 @@ class TestForceConstantsCalculateQPointPhononModes:
         else:
             func_kwargs['use_c'] = True
             func_kwargs['n_threads'] = n_threads
-            func_kwargs['fall_back_on_python'] = False
         qpoint_phonon_modes = fc.calculate_qpoint_phonon_modes(
             all_args[0], **func_kwargs)
         expected_qpoint_phonon_modes = ExpectedQpointPhononModes(
@@ -188,8 +187,9 @@ class TestForceConstantsCalculateQPointPhononModes:
 
 @pytest.mark.unit
 class TestForceConstantsCalculateQPointPhononModesWithoutCExtensionInstalled:
-    def test_calculate_qpoint_phonon_modes_with_use_c_true_raises_error(
-            self, mocker):
+
+    @pytest.fixture
+    def mocked_cext_with_importerror(self, mocker):
         # Mock import of euphonic._euphonic to raise ImportError
         import builtins
         real_import = builtins.__import__
@@ -199,8 +199,47 @@ class TestForceConstantsCalculateQPointPhononModesWithoutCExtensionInstalled:
             return real_import(name, *args, **kwargs)
         mocker.patch('builtins.__import__', side_effect=mocked_import)
 
+    def test_with_use_c_true_raises_importcerror(
+            self, mocked_cext_with_importerror):
         fc = get_fc('quartz')
         with pytest.raises(ImportCError):
             fc.calculate_qpoint_phonon_modes(get_test_qpts(),
-                                             use_c=True,
-                                             fall_back_on_python=False)
+                                             use_c=True)
+
+    def test_with_use_c_default_warns(
+            self, mocked_cext_with_importerror):
+        fc = get_fc('quartz')
+        with pytest.warns(None) as warn_record:
+            fc.calculate_qpoint_phonon_modes(get_test_qpts())
+        assert len(warn_record) == 1
+
+    def test_with_use_c_false_doesnt_raise_error_or_warn(
+            self, mocked_cext_with_importerror):
+        fc = get_fc('quartz')
+        with pytest.warns(None) as warn_record:
+            fc.calculate_qpoint_phonon_modes(get_test_qpts(), use_c=False)
+        assert len(warn_record) == 0
+
+
+@pytest.mark.unit
+class TestForceConstantsCalculateQPointPhononModesWithCExtensionInstalled:
+
+    @pytest.fixture
+    def mocked_cext(self, mocker):
+        return mocker.patch('euphonic._euphonic.calculate_phonons')
+
+    def test_cext_called_with_use_c_true(self, mocked_cext):
+        fc = get_fc('quartz')
+        fc.calculate_qpoint_phonon_modes(get_test_qpts(), use_c=True)
+        mocked_cext.assert_called()
+
+    def test_cext_called_with_use_c_default(self, mocked_cext):
+        fc = get_fc('quartz')
+        fc.calculate_qpoint_phonon_modes(get_test_qpts())
+        mocked_cext.assert_called()
+
+    def test_cext_not_called_with_use_c_false(self, mocked_cext):
+        fc = get_fc('quartz')
+        fc.calculate_qpoint_phonon_modes(get_test_qpts(), use_c=False)
+        mocked_cext.assert_not_called()
+

@@ -63,7 +63,6 @@ class TestForceConstantsCalculateQPointFrequencies:
         else:
             func_kwargs['use_c'] = True
             func_kwargs['n_threads'] = n_threads
-            func_kwargs['fall_back_on_python'] = False
         qpt_freqs = fc.calculate_qpoint_frequencies(all_args[0], **func_kwargs)
         expected_qpt_freqs = get_expected_qpt_freqs(
             material, expected_qpoint_frequencies_file)
