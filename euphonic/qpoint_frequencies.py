@@ -122,7 +122,8 @@ class QpointFrequencies:
                 for m in range(freqs.shape[1]):
                     gauss = gaussian(lim, mode_widths[q, m]/bin_width)
                     dos[bin_idx[m] - (lim//2): bin_idx[m] + (lim//2) + 1] = self.weights[q]*gauss
-            dos = dos[lim//2:-lim//2 + 1]
+            # Finally cut off extra bins
+            dos = dos[lim//2:lim//2 + len(dos_bins)]
         else:
             weights = np.repeat(self.weights[:, np.newaxis],
                                 self.frequencies.shape[1],
