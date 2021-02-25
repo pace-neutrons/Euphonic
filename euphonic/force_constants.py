@@ -9,6 +9,7 @@ import numpy as np
 import scipy
 from scipy.linalg.lapack import zheev
 from scipy.special import erfc
+from threadpoolctl import threadpool_limits
 
 import euphonic
 from euphonic.validate import (
@@ -487,11 +488,13 @@ class ForceConstants:
                             '_dipole_q0']
             _ensure_contiguous_attrs(self, attrs, opt_attrs=dipole_attrs)
             reciprocal_asr = 1 if asr == 'reciprocal' else 0
-            euphonic_c.calculate_phonons(
-                self, cell_vectors, recip_vectors, reduced_qpts, split_idx,
-                q_dirs, fc_img_weighted, sc_offsets, recip_asr_correction,
-                dyn_mat_weighting, dipole, reciprocal_asr, splitting, rfreqs,
-                reigenvecs, n_threads, scipy.__path__[0])
+            with threadpool_limits(limits=1):
+                euphonic_c.calculate_phonons(
+                    self, cell_vectors, recip_vectors, reduced_qpts,
+                    split_idx, q_dirs, fc_img_weighted, sc_offsets,
+                    recip_asr_correction, dyn_mat_weighting, dipole,
+                    reciprocal_asr, splitting, rfreqs, reigenvecs, n_threads,
+                    scipy.__path__[0])
         except ImportError:
             if use_c is True:
                 raise ImportCError(cext_err_msg)

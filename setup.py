@@ -92,7 +92,8 @@ def run_setup(build_c=True):
             'scipy>=1.0.0',
             'seekpath>=1.1.0',
             'pint>=0.9',
-            'importlib_resources>=1.3.0'
+            'importlib_resources>=1.3.0',
+            'threadpoolctl>=1.0.0'
         ],
         extras_require={
             'matplotlib': ['matplotlib>=2.0.0'],
