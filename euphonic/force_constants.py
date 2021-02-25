@@ -451,6 +451,7 @@ class ForceConstants:
             dyn_mat_gamma, _ = self._calculate_dyn_mat(
                 q_gamma, fc_img_weighted, unique_sc_origins,
                 unique_sc_i, unique_cell_origins, unique_cell_i,
+                sc_origins_cart, cell_origins_cart,
                 return_mode_gradients=False)
             if dipole:
                 dyn_mat_gamma += self._calculate_dipole_correction(q_gamma)

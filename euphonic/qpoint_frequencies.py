@@ -118,10 +118,10 @@ class QpointFrequencies:
             # Allow enough space for gaussian with centre in first/last bins
             dos = np.zeros(len(dos_bins) - 1 + (lim - 1))
             for q in range(self.n_qpts):
-                bin_idx = np.digitize(freqs[q], dos_bins) + (lim//2)
+                bin_idx = np.digitize(freqs[q], dos_bins) + (lim//2) - 1
                 for m in range(freqs.shape[1]):
                     gauss = gaussian(lim, mode_widths[q, m]/bin_width)
-                    dos[bin_idx[m] - (lim//2): bin_idx[m] + (lim//2) + 1] = self.weights[q]*gauss
+                    dos[bin_idx[m] - (lim//2): bin_idx[m] + (lim//2) + 1] += self.weights[q]*gauss
             # Finally cut off extra bins
             dos = dos[lim//2:lim//2 + len(dos_bins)]
         else:
