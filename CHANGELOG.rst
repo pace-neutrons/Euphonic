@@ -10,6 +10,22 @@
     to calculate DOS with ``calculate_dos`` and get dispersion with
     ``get_dispersion``
 
+- Improvements:
+
+  - Improved default behaviour for C extension use and number of threads:
+
+    - By default the C extension will be used if it is installed
+    - By default the number of threads will be set by
+      ``multiprocessing.cpu_count()``
+    - The environment variable ``EUPHONIC_NUM_THREADS`` can be used to set
+      a specific number of threads, which takes priority over
+      ``multiprocessing.cpu_count()``
+    - ``fall_back_on_python`` argument has been removed and superseded by the
+      default ``use_c=None`` behaviour
+    - ``threadpoolctl.threadpool_limits`` is used to limit the number of threads
+      used by numerical libraries in Euphonic C function calls, resulting in
+      better overall performance
+
 `v0.4.0 <https://github.com/pace-neutrons/Euphonic/compare/v0.3.2...v0.4.0>`_
 ----------
 
