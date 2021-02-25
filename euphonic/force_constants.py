@@ -413,11 +413,11 @@ class ForceConstants:
                 sc_origins[:, i], return_inverse=True)
             unique_cell_origins[i], unique_cell_i[:, i] = np.unique(
                 self.cell_origins[:, i], return_inverse=True)
-        if return_mode_gradients:
-            sc_origins_cart = np.einsum('ij,jk->ik', sc_origins,
-                                        self.crystal._cell_vectors)
-            cell_origins_cart = np.einsum('ij,jk->ik', self.cell_origins,
-                                          self.crystal._cell_vectors)
+        # Only required if return_mode_gradients
+        sc_origins_cart = np.einsum('ij,jk->ik', sc_origins,
+                                    self.crystal._cell_vectors)
+        cell_origins_cart = np.einsum('ij,jk->ik', self.cell_origins,
+                                      self.crystal._cell_vectors)
 
         # Precompute dynamical matrix mass weighting
         atom_mass = self.crystal._atom_mass
