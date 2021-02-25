@@ -60,10 +60,18 @@ Installing the C extension
 ==========================
 
 By default, Euphonic will attempt to build and install the C extension,
-which can lead to increased performance and enable use of multiple cores when
-interpolating phonons. See below for information on installing the extension
-for different platforms. If you are having trouble installing the C extension
-and don't require it, see `Installing Euphonic without the C extension`_
+which can lead to increased performance and enable use of multiple cores for
+interpolating phonons. If installed, the C extension will be used automatically,
+with the number of threads automatically set by ``multiprocessing.cpu_count()``.
+A specific number of threads can be used by setting the environment variable
+``EUPHONIC_NUM_THREADS``. The number of threads and whether to use the C
+extension at all can also be controlled on each function call with the
+``n_threads`` and ``use_c`` arguments to
+:py:meth:`ForceConstants.calculate_qpoint_phonon_modes <euphonic.force_constants.ForceConstants.calculate_qpoint_phonon_modes>`.
+
+See below for information on installing the extension for different platforms.
+If you are having trouble installing the C extension and don't require it, see
+`Installing Euphonic without the C extension`_
 
 **Windows**
 
