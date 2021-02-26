@@ -12,9 +12,8 @@
 void calculate_dyn_mat_at_q(const double *qpt, const int n_atoms,
     const int n_cells, const int max_images, const int *n_sc_images,
     const int *sc_image_i, const int *cell_origins, const int *sc_origins,
-    const double *fc_mat, double *dyn_mat, double *modeg,
-    double *modeg_work, const int *cell_origins_cart,
-    const int *sc_origins_cart) {
+    const double *fc_mat, double *dyn_mat, double *dmat_grad,
+    const int *cell_origins_cart, const int *sc_origins_cart) {
 
     int i, j, n, nc, k, sc, ii, jj, idx;
     double qdotr;
@@ -35,6 +34,9 @@ void calculate_dyn_mat_at_q(const double *qpt, const int n_atoms,
     int s_fc = 9*n_atoms*n_atoms; // For fc_mat
 
     memset(dyn_mat, 0, 2*9*n_atoms*n_atoms*sizeof(double));
+    if (dmat_grad) {
+        memset(dmat_grad, 0, 3*2*9*n_atoms*n_atoms*sizeof(double));
+    }
     for (i = 0; i < n_atoms; i++) {
         for (j = i; j < n_atoms; j++) {
             for (nc = 0; nc < n_cells; nc++){
@@ -56,7 +58,7 @@ void calculate_dyn_mat_at_q(const double *qpt, const int n_atoms,
                     for (k = 0; k < 3; k++){
 		        rcart = sc_origins_cart[3*sc + k] + cell_origins_cart[3*nc + k];
 			rcart_r_sum[k] -= phase_i*rcart; //Multiplied by i so use r for i and vice versa
-			rcart_i_sum[k] += phase_r*rcart; //Multiplied by i so use r for i and vice versa
+			rcart_i_sum[k] += phase_r*rcart;
                     }
                 }
                 for (ii = 0; ii < 3; ii++){
@@ -66,6 +68,14 @@ void calculate_dyn_mat_at_q(const double *qpt, const int n_atoms,
                         dyn_mat[2*idx] += phase_r_sum*fc_mat[nc*s_fc + idx];
                         // Imaginary part
                         dyn_mat[2*idx + 1] += phase_i_sum*fc_mat[nc*s_fc + idx];
+                        if (dmat_grad) {
+                            for (k = 0; k < 3; k++) {
+				// Real
+                                dmat_grad[6*idx + 2*k] += rcart_r_sum[k]*fc_mat[nc*s_fc + idx];
+				// Imaginary
+                                dmat_grad[6*idx + 2*k + 1] += rcart_i_sum[k]*fc_mat[nc*s_fc + idx];
+                            }
+			}
                     }
                 }
             }
@@ -293,11 +303,13 @@ void calculate_gamma_correction(const double q_dir[3], const int n_atoms,
 }
 
 void mass_weight_dyn_mat(const double* dyn_mat_weighting, const int n_atoms,
-    double* dyn_mat) {
+    const int repeats, double* dyn_mat) {
 
     int i, j;
     for (i = 0; i < 9*n_atoms*n_atoms; i++) {
-        for (j = 0; j < 2; j++) {
+        for (j = 0; j < repeats; j++) {
+	    // Repeats: how many elements of dyn_mat per dyn_mat_weighting
+	    // As dyn_mat = complex and weighting = real, this is usually 2
             dyn_mat[2*i + j] *= dyn_mat_weighting[i];
         }
     }
@@ -360,3 +372,43 @@ void evals_to_freqs(const int n_atoms, double *eigenvalues) {
         eigenvalues[i] = tmp;
     }
 }
+
+void calculate_mode_gradients(const int n_atoms, const double *evals,
+    const double *evecs, const double *dmat_grad, double *modeg) {
+    int n, i, j, a, b, k, grad_idx;
+    int n_modes = 3*n_atoms;
+    double grad_dot;
+    double grad_tmp[6];
+    double evec_mult_tmp[2];
+    double conj_tmp[2];
+    int mode_s = 2*3*n_atoms; //Eigenvector array stride
+
+    for (n = 0; n < n_modes; n++) {
+        memset(grad_tmp, 0, 6*sizeof(double));
+        for (i = 0; i < n_atoms; i++) {
+            for (a = 0; a < 3; a++) {
+                for (j = 0; j < n_atoms; j++) {
+                    for (b = 0; b < 3; b++) {
+
+                        for (k = 0; k < 3; k++) {
+                            cmult_conj((evecs + (n*mode_s + 6*i + 2*a)),
+                                       (evecs + (n*mode_s + 6*j + 2*b)),
+                                       evec_mult_tmp);
+                            grad_idx = 3*(3*i + a)*mode_s + 3*(6*j + 2*b) + 2*k;
+			    cmult((dmat_grad + grad_idx), evec_mult_tmp, conj_tmp);
+			    grad_tmp[2*k] += conj_tmp[0];
+			    grad_tmp[2*k + 1] += conj_tmp[1];
+                        }
+		    }
+                }
+	    }
+        }
+	grad_dot = 0;
+        for (k = 0; k < 3; k++) {
+            cmult_conj((grad_tmp + 2*k), (grad_tmp + 2*k), conj_tmp);
+            grad_dot += conj_tmp[0];
+        }
+        modeg[n] = 0.5*sqrt(grad_dot)/evals[n];
+    }
+}
+
