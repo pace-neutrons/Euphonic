@@ -12,12 +12,16 @@
 void calculate_dyn_mat_at_q(const double *qpt, const int n_atoms,
     const int n_cells, const int max_images, const int *n_sc_images,
     const int *sc_image_i, const int *cell_origins, const int *sc_origins,
-    const double *fc_mat, double *dyn_mat) {
+    const double *fc_mat, double *dyn_mat, double *modeg,
+    double *modeg_work, const int *cell_origins_cart,
+    const int *sc_origins_cart) {
 
     int i, j, n, nc, k, sc, ii, jj, idx;
     double qdotr;
-    double phase_r;
-    double phase_i;
+    double phase_r_sum, phase_i_sum, phase_r, phase_i;
+    double rcart;
+    double rcart_r_sum[3];
+    double rcart_i_sum[3];
 
     // Note: C calculated dynamical matrix uses e^-i(q.r) convention, whereas
     // Python uses the e^i(q.r) convention. This differing convention is used
@@ -34,8 +38,10 @@ void calculate_dyn_mat_at_q(const double *qpt, const int n_atoms,
     for (i = 0; i < n_atoms; i++) {
         for (j = i; j < n_atoms; j++) {
             for (nc = 0; nc < n_cells; nc++){
-                phase_r = 0;
-                phase_i = 0;
+                phase_r_sum = 0;
+                phase_i_sum = 0;
+                memset(rcart_r_sum, 0, 3*sizeof(double));
+                memset(rcart_i_sum, 0, 3*sizeof(double));
                 // Calculate and sum phases for all  images
                 for (n = 0; n < n_sc_images[nc*s_n[0] + i*s_n[1] + j]; n++) {
                     qdotr = 0;
@@ -43,16 +49,23 @@ void calculate_dyn_mat_at_q(const double *qpt, const int n_atoms,
                     for (k = 0; k < 3; k++){
                         qdotr += qpt[k]*(sc_origins[3*sc + k] + cell_origins[3*nc + k]);
                     }
-                    phase_r += cos(2*PI*qdotr);
-                    phase_i -= sin(2*PI*qdotr);
+                    phase_r = cos(2*PI*qdotr);
+		    phase_i = -sin(2*PI*qdotr);
+                    phase_r_sum += phase_r;
+                    phase_i_sum += phase_i;
+                    for (k = 0; k < 3; k++){
+		        rcart = sc_origins_cart[3*sc + k] + cell_origins_cart[3*nc + k];
+			rcart_r_sum[k] -= phase_i*rcart; //Multiplied by i so use r for i and vice versa
+			rcart_i_sum[k] += phase_r*rcart; //Multiplied by i so use r for i and vice versa
+                    }
                 }
                 for (ii = 0; ii < 3; ii++){
                     for (jj = 0; jj < 3; jj++){
                         idx = (3*i+ii)*3*n_atoms + 3*j + jj;
                         // Real part
-                        dyn_mat[2*idx] += phase_r*fc_mat[nc*s_fc + idx];
+                        dyn_mat[2*idx] += phase_r_sum*fc_mat[nc*s_fc + idx];
                         // Imaginary part
-                        dyn_mat[2*idx + 1] += phase_i*fc_mat[nc*s_fc + idx];
+                        dyn_mat[2*idx + 1] += phase_i_sum*fc_mat[nc*s_fc + idx];
                     }
                 }
             }

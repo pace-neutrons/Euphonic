@@ -4,7 +4,9 @@
 void calculate_dyn_mat_at_q(const double *qpt, const int n_atoms,
     const int n_cells, const int max_ims, const int *n_sc_images,
     const int *sc_image_i, const int *cell_origins, const int *sc_origins,
-    const double *fc_mat, double *dyn_mat);
+    const double *fc_mat, double *dyn_mat, double *modeg,
+    double *modeg_work, const int *cell_origins_cart,
+    const int *sc_origins_cart);
 
 void calculate_dipole_correction(const double *qpt, const int n_atoms,
     const double *cell_vec, const double *recip, const double *atom_r,

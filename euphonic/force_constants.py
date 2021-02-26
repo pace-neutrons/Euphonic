@@ -509,11 +509,12 @@ class ForceConstants:
                 '1/bohr').magnitude
             (cell_vectors, recip_vectors, reduced_qpts, split_idx, q_dirs,
              fc_img_weighted, sc_origins, recip_asr_correction,
-             dyn_mat_weighting, rfreqs,
-             reigenvecs) = _ensure_contiguous_args(
+             dyn_mat_weighting, rfreqs, reigenvecs, rmode_gradients,
+             cell_origins_cart, sc_origins_cart) = _ensure_contiguous_args(
                  cell_vectors, recip_vectors, reduced_qpts, split_idx,
                  q_dirs, fc_img_weighted, sc_origins, recip_asr_correction,
-                 dyn_mat_weighting, rfreqs, reigenvecs)
+                 dyn_mat_weighting, rfreqs, reigenvecs, rmode_gradients,
+                 cell_origins_cart, sc_origins_cart)
             attrs = ['_n_sc_images', '_sc_image_i', 'cell_origins']
             dipole_attrs = ['atom_r', '_born', '_dielectric', '_H_ab',
                             '_cells', '_gvec_phases', '_gvecs_cart',
@@ -522,11 +523,11 @@ class ForceConstants:
             reciprocal_asr = 1 if asr == 'reciprocal' else 0
             with threadpool_limits(limits=1):
                 euphonic_c.calculate_phonons(
-                    self, cell_vectors, recip_vectors, reduced_qpts,
-                    split_idx, q_dirs, fc_img_weighted, sc_origins,
-                    recip_asr_correction, dyn_mat_weighting, dipole,
-                    reciprocal_asr, splitting, rfreqs, reigenvecs, n_threads,
-                    scipy.__path__[0])
+                    self, cell_vectors, recip_vectors, reduced_qpts, split_idx,
+                    q_dirs, fc_img_weighted, sc_origins, recip_asr_correction,
+                    dyn_mat_weighting, dipole, reciprocal_asr, splitting,
+                    rfreqs, reigenvecs, rmode_gradients, cell_origins_cart,
+                    sc_origins_cart, n_threads, scipy.__path__[0])
         else:
             q_independent_args = (
                 reduced_qpts, split_idx, q_dirs, fc_img_weighted,
