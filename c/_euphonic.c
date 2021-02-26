@@ -213,6 +213,8 @@ static PyObject *calculate_phonons(PyObject *self, PyObject *args) {
 	// should be calculated and allocate space for dyn mat gradients
 	if (modegs_len > 0) {
             dmat_grad = (double*) malloc(3*dmat_elems*sizeof(double));
+	} else {
+	    dmat_grad = NULL;
 	}
         #pragma omp for
         for (q = 0; q < n_rqpts; q++) {
