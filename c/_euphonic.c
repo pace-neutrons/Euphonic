@@ -66,8 +66,8 @@ static PyObject *calculate_phonons(PyObject *self, PyObject *args) {
     double *evals;
     double *dmats;
     double *modegs;
-    int *cell_ogs_cart;
-    int *sc_ogs_cart;
+    double *cell_ogs_cart;
+    double *sc_ogs_cart;
     int *n_sc_ims;
     int *sc_im_idx;
     int *cell_ogs;
@@ -163,8 +163,8 @@ static PyObject *calculate_phonons(PyObject *self, PyObject *args) {
     evals = (double*) PyArray_DATA(py_evals);
     dmats = (double*) PyArray_DATA(py_dmats);
     modegs = (double*) PyArray_DATA(py_modegs);
-    cell_ogs_cart = (int*) PyArray_DATA(py_cell_ogs_cart);
-    sc_ogs_cart = (int*) PyArray_DATA(py_sc_ogs_cart);
+    cell_ogs_cart = (double*) PyArray_DATA(py_cell_ogs_cart);
+    sc_ogs_cart = (double*) PyArray_DATA(py_sc_ogs_cart);
     n_sc_ims = (int*) PyArray_DATA(py_n_sc_ims);
     sc_im_idx = (int*) PyArray_DATA(py_sc_im_idx);
     cell_ogs = (int*) PyArray_DATA(py_cell_ogs);
