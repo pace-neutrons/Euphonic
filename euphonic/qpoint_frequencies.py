@@ -113,6 +113,7 @@ class QpointFrequencies:
             # How far out to go for each gaussian, say 3*sigma. Ensure it is
             # always odd so the centre of the gaussian can be in the correct
             # bin
+            mode_widths = mode_widths.to('hartree*bohr').magnitude
             bin_width = np.mean(np.diff(dos_bins))
             lim = 2*(int(3*np.amax(mode_widths)/bin_width)//2) + 1
             # Allow enough space for gaussian with centre in first/last bins
@@ -123,7 +124,7 @@ class QpointFrequencies:
                     gauss = gaussian(lim, mode_widths[q, m]/bin_width)
                     dos[bin_idx[m] - (lim//2): bin_idx[m] + (lim//2) + 1] += self.weights[q]*gauss
             # Finally cut off extra bins
-            dos = dos[lim//2:lim//2 + len(dos_bins)]
+            dos = dos[lim//2:lim//2 + len(dos_bins) - 1]
         else:
             weights = np.repeat(self.weights[:, np.newaxis],
                                 self.frequencies.shape[1],

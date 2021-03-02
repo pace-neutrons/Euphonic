@@ -549,7 +549,8 @@ class ForceConstants:
         else:
             eigenvectors = None
         if return_mode_gradients:
-            mode_gradients = rmode_gradients[qpts_i]
+            mode_gradients = rmode_gradients[qpts_i]*ureg(
+                    'hartree*bohr').to('meV*angstrom')
         else:
             mode_gradients = None
         return qpts, weights, freqs, eigenvectors, mode_gradients
