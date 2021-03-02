@@ -85,7 +85,8 @@ class QpointFrequencies:
         super(QpointFrequencies, self).__setattr__(name, value)
 
     def calculate_dos(self, dos_bins: Quantity,
-                      mode_widths: Optional[np.ndarray] = None) -> Spectrum1D:
+                      mode_widths: Optional[np.ndarray] = None,
+                      use_pdf=True) -> Spectrum1D:
         """
         Calculates a density of states
 
@@ -103,12 +104,25 @@ class QpointFrequencies:
         """
         freqs = self._frequencies
         dos_bins_unit = dos_bins.units
+        n_modes = self.frequencies.shape[1]
         # dos_bins commonly contains a 0 bin, and converting from 0 1/cm
         # to 0 hartree causes a RuntimeWarning, so suppress it
         with warnings.catch_warnings():
             warnings.filterwarnings('ignore', category=RuntimeWarning)
             dos_bins = dos_bins.to('hartree').magnitude
-        if mode_widths is not None:
+        if mode_widths is not None and use_pdf is True:
+            from scipy.stats import norm
+            dos = np.zeros(len(dos_bins)-1)
+            mode_widths = mode_widths.to('hartree*bohr').magnitude
+            dos_bin_centres = Spectrum1D._bin_edges_to_centres(dos_bins)
+            bin_width = dos_bins[1] - dos_bins[0]
+            for q in range(self.n_qpts):
+                for m in range(n_modes):
+                    pdf = norm.pdf(dos_bin_centres, loc=freqs[q,m], scale=mode_widths[q,m])
+                    # Sometimes get a nan on very small mode_widths
+                    if not np.any(np.isnan(pdf)):
+                        dos += pdf*self.weights[q]/n_modes
+        elif mode_widths is not None:
             from scipy.signal.windows import gaussian
             # How far out to go for each gaussian, say 3*sigma. Ensure it is
             # always odd so the centre of the gaussian can be in the correct
@@ -119,17 +133,17 @@ class QpointFrequencies:
             # Allow enough space for gaussian with centre in first/last bins
             dos = np.zeros(len(dos_bins) - 1 + (lim - 1))
             for q in range(self.n_qpts):
-                bin_idx = np.digitize(freqs[q], dos_bins) + (lim//2) - 1
-                for m in range(freqs.shape[1]):
+                bin_idx = np.digitize(freqs[q], dos_bins) + (lim//2)
+                for m in range(n_modes):
                     gauss = gaussian(lim, mode_widths[q, m]/bin_width)
                     dos[bin_idx[m] - (lim//2): bin_idx[m] + (lim//2) + 1] += self.weights[q]*gauss
             # Finally cut off extra bins
             dos = dos[lim//2:lim//2 + len(dos_bins) - 1]
         else:
             weights = np.repeat(self.weights[:, np.newaxis],
-                                self.frequencies.shape[1],
-                                axis=1) / np.sum(self.weights)
-            dos, _ = np.histogram(freqs, dos_bins, weights=weights)
+                                n_modes,
+                                axis=1)
+            dos, _ = np.histogram(freqs, dos_bins, weights=weights, density=True)
 
         return Spectrum1D(
             dos_bins*ureg('hartree').to(dos_bins_unit),
