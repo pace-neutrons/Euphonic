@@ -7,6 +7,7 @@ import numpy as np
 import numpy.testing as npt
 
 from euphonic import ureg, ForceConstants
+from euphonic.util import mp_grid
 from euphonic.force_constants import ImportCError
 from tests_and_analysis.test.utils import (get_data_path, get_phonopy_path,
     get_castep_path, get_test_qpts)
@@ -121,6 +122,57 @@ class TestForceConstantsCalculateQPointPhononModes:
                            frequencies_atol=1e-4,
                            frequencies_rtol=2e-5,
                            acoustic_gamma_atol=gamma_atol)
+
+    @pytest.mark.parametrize(
+        ('fc, material, all_args, expected_qpoint_phonon_modes_file, '
+         'expected_modg_file'), [
+        (get_quartz_fc(),
+         'quartz',
+         [mp_grid([5, 5, 4]),
+          {'asr': 'reciprocal', 'return_mode_gradients': True}],
+         'quartz_554_full_qpoint_phonon_modes.json',
+         'quartz_554_full_mode_gradients.json'),
+        (get_lzo_fc(),
+         'LZO',
+         [mp_grid([2, 2, 2]),
+          {'asr': 'reciprocal', 'return_mode_gradients': True}],
+         'lzo_222_full_qpoint_phonon_modes.json',
+         'lzo_222_full_mode_gradients.json')])
+    @pytest.mark.parametrize(
+        'n_threads',
+        [0, 2])
+    def test_calculate_qpoint_phonon_modes_with_mode_gradients(
+            self, fc, material, all_args, expected_qpoint_phonon_modes_file,
+            expected_modg_file, n_threads):
+        func_kwargs = all_args[1]
+        if n_threads == 0:
+            func_kwargs['use_c'] = False
+        else:
+            func_kwargs['use_c'] = True
+            func_kwargs['n_threads'] = n_threads
+        qpoint_phonon_modes, modg = fc.calculate_qpoint_phonon_modes(
+            all_args[0], **func_kwargs)
+
+        with open(os.path.join(get_fc_dir(), expected_modg_file), 'r') as fp:
+            modg_dict = json.load(fp)
+        expected_modg = modg_dict['mode_gradients']*ureg(modg_dict['mode_gradients_unit'])
+        expected_qpoint_phonon_modes = ExpectedQpointPhononModes(
+            os.path.join(get_qpt_ph_modes_dir(material),
+            expected_qpoint_phonon_modes_file))
+        # Only give gamma-acoustic modes special treatment if the acoustic
+        # sum rule has been applied
+        if not 'asr' in func_kwargs.keys():
+            gamma_atol = None
+        else:
+            gamma_atol = 0.5
+
+        check_qpt_ph_modes(qpoint_phonon_modes,
+                           expected_qpoint_phonon_modes,
+                           frequencies_atol=1e-4,
+                           frequencies_rtol=2e-5,
+                           acoustic_gamma_atol=gamma_atol)
+        assert modg.units == expected_modg.units
+        npt.assert_allclose(modg.magnitude, expected_modg.magnitude)
 
     # ForceConstants stores some values (supercell image list, vectors
     # for the Ewald sum) so check repeated calculations give the same
