@@ -10,6 +10,8 @@ from euphonic import ureg, Crystal, QpointFrequencies
 from euphonic.readers.phonopy import ImportPhonopyReaderError
 from tests_and_analysis.test.euphonic_test.test_crystal import (
     ExpectedCrystal, check_crystal)
+from tests_and_analysis.test.euphonic_test.test_force_constants import (
+    get_fc_dir)
 from tests_and_analysis.test.euphonic_test.test_spectrum1d import (
     get_expected_spectrum1d, check_spectrum1d)
 from tests_and_analysis.test.euphonic_test.test_spectrum1dcollection import (
@@ -399,6 +401,29 @@ class TestQpointFrequenciesCalculateDos:
             self, material, qpt_freqs_json, expected_dos_json, ebins):
         qpt_freqs = get_qpt_freqs(material, qpt_freqs_json)
         dos = qpt_freqs.calculate_dos(ebins)
+        expected_dos = get_expected_spectrum1d(expected_dos_json)
+        check_spectrum1d(dos, expected_dos)
+
+    @pytest.mark.parametrize(
+        ('material, qpt_freqs_json, mode_widths_json, modw_scale, '
+         'expected_dos_json, ebins'), [
+            ('quartz', 'quartz_554_full_qpoint_frequencies.json',
+             'quartz_554_full_mode_gradients.json', 0.05,
+             'quartz_554_full_adaptive_dos.json',
+             np.arange(0, 155, 0.1)*ureg('meV')),
+            ('LZO', 'lzo_222_full_qpoint_frequencies.json',
+             'lzo_222_full_mode_gradients.json', 0.08,
+             'lzo_222_full_adaptive_dos.json',
+             np.arange(0, 100, 0.1)*ureg('meV'))])
+    def test_calculate_dos_with_mode_widths(
+            self, material, qpt_freqs_json, mode_widths_json, modw_scale,
+            expected_dos_json, ebins):
+        qpt_freqs = get_qpt_freqs(material, qpt_freqs_json)
+        with open(os.path.join(get_fc_dir(), mode_widths_json), 'r') as fp:
+            modw_dict = json.load(fp)
+        mode_widths = modw_dict['mode_gradients']*ureg(
+            modw_dict['mode_gradients_unit'])
+        dos = qpt_freqs.calculate_dos(ebins, mode_widths=modw_scale*mode_widths)
         expected_dos = get_expected_spectrum1d(expected_dos_json)
         check_spectrum1d(dos, expected_dos)
 

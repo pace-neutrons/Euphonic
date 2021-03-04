@@ -155,7 +155,8 @@ class TestForceConstantsCalculateQPointPhononModes:
 
         with open(os.path.join(get_fc_dir(), expected_modg_file), 'r') as fp:
             modg_dict = json.load(fp)
-        expected_modg = modg_dict['mode_gradients']*ureg(modg_dict['mode_gradients_unit'])
+        expected_modg = modg_dict['mode_gradients']*ureg(
+                modg_dict['mode_gradients_unit'])
         expected_qpoint_phonon_modes = ExpectedQpointPhononModes(
             os.path.join(get_qpt_ph_modes_dir(material),
             expected_qpoint_phonon_modes_file))
