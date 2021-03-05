@@ -173,7 +173,8 @@ class TestForceConstantsCalculateQPointPhononModes:
                            frequencies_rtol=2e-5,
                            acoustic_gamma_atol=gamma_atol)
         assert modg.units == expected_modg.units
-        npt.assert_allclose(modg.magnitude, expected_modg.magnitude)
+        npt.assert_allclose(modg.magnitude, expected_modg.magnitude,
+                            atol=2e-4, rtol=5e-5)
 
     # ForceConstants stores some values (supercell image list, vectors
     # for the Ewald sum) so check repeated calculations give the same

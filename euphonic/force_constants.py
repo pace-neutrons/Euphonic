@@ -683,7 +683,7 @@ class ForceConstants:
         ax = np.newaxis
         sc_origins_cart = np.append(sc_origins_cart, [[0., 0., 0.]], axis=0)
         all_origins = sc_origins_cart[sc_image_i] + cell_origins_cart[:, ax, ax, ax, :]
-        all_phases = sc_phases[sc_image_i] + cell_phases[:, ax, ax, ax]
+        all_phases = sc_phases[sc_image_i]*cell_phases[:, ax, ax, ax]
         r_vec_sum = np.sum(1j*all_phases[..., ax]*all_origins, axis=3)
         dmat_gradient = fc_img_weighted[..., ax]*(r_vec_sum.repeat(3, axis=2).repeat(3, axis=1))
         dmat_gradient = np.sum(dmat_gradient, axis=0)
