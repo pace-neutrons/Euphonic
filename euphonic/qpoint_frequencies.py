@@ -86,7 +86,7 @@ class QpointFrequencies:
 
     def calculate_dos(self, dos_bins: Quantity,
                       mode_widths: Optional[np.ndarray] = None,
-                      use_pdf=True) -> Spectrum1D:
+                      are_bin_edges: bool = True) -> Spectrum1D:
         """
         Calculates a density of states
 
@@ -103,50 +103,39 @@ class QpointFrequencies:
             on the y-axis
         """
         freqs = self._frequencies
-        dos_bins_unit = dos_bins.units
         n_modes = self.frequencies.shape[1]
         # dos_bins commonly contains a 0 bin, and converting from 0 1/cm
         # to 0 hartree causes a RuntimeWarning, so suppress it
         with warnings.catch_warnings():
             warnings.filterwarnings('ignore', category=RuntimeWarning)
-            dos_bins = dos_bins.to('hartree').magnitude
-        if mode_widths is not None and use_pdf is True:
+            dos_bins_calc = dos_bins.to('hartree').magnitude
+        if mode_widths is not None:
             from scipy.stats import norm
-            dos = np.zeros(len(dos_bins)-1)
+            if are_bin_edges:
+                dos_bins_calc = Spectrum1D._bin_edges_to_centres(dos_bins_calc)
+            dos = np.zeros(len(dos_bins_calc))
             mode_widths = mode_widths.to('hartree*bohr').magnitude
-            dos_bin_centres = Spectrum1D._bin_edges_to_centres(dos_bins)
-            bin_width = dos_bins[1] - dos_bins[0]
+            # scale mode widths
+            q_spacing = 2/(np.cbrt(len(freqs)*self.crystal._cell_volume()))
+            mode_widths = 2*mode_widths*q_spacing
+            # Set limit on very small widths of, say, 5e-7 hartree
+            # (~0.013meV) due to divergent behaviour
+            mode_widths = np.maximum(mode_widths, 5e-7)
             for q in range(self.n_qpts):
                 for m in range(n_modes):
-                    pdf = norm.pdf(dos_bin_centres, loc=freqs[q,m], scale=mode_widths[q,m])
-                    # Sometimes get a nan on very small mode_widths
-                    if not np.any(np.isnan(pdf)):
-                        dos += pdf*self.weights[q]/n_modes
-        elif mode_widths is not None:
-            from scipy.signal.windows import gaussian
-            # How far out to go for each gaussian, say 3*sigma. Ensure it is
-            # always odd so the centre of the gaussian can be in the correct
-            # bin
-            mode_widths = mode_widths.to('hartree*bohr').magnitude
-            bin_width = np.mean(np.diff(dos_bins))
-            lim = 2*(int(3*np.amax(mode_widths)/bin_width)//2) + 1
-            # Allow enough space for gaussian with centre in first/last bins
-            dos = np.zeros(len(dos_bins) - 1 + (lim - 1))
-            for q in range(self.n_qpts):
-                bin_idx = np.digitize(freqs[q], dos_bins) + (lim//2)
-                for m in range(n_modes):
-                    gauss = gaussian(lim, mode_widths[q, m]/bin_width)
-                    dos[bin_idx[m] - (lim//2): bin_idx[m] + (lim//2) + 1] += self.weights[q]*gauss
-            # Finally cut off extra bins
-            dos = dos[lim//2:lim//2 + len(dos_bins) - 1]
+                    pdf = norm.pdf(dos_bins_calc, loc=freqs[q,m],
+                                   scale=mode_widths[q,m])
+                    dos += pdf*self.weights[q]/n_modes
         else:
+            if not are_bin_edges:
+                dos_bins_calc = Spectrum1D._bin_centres_to_edges(dos_bins_calc)
             weights = np.repeat(self.weights[:, np.newaxis],
                                 n_modes,
                                 axis=1)
-            dos, _ = np.histogram(freqs, dos_bins, weights=weights, density=True)
+            dos, _ = np.histogram(freqs, dos_bins_calc, weights=weights, density=True)
 
         return Spectrum1D(
-            dos_bins*ureg('hartree').to(dos_bins_unit),
+            dos_bins,
             dos*ureg('dimensionless'))
 
     def get_dispersion(self) -> Spectrum1DCollection:
