@@ -1,14 +1,17 @@
-from argparse import ArgumentParser
+from argparse import ArgumentParser, _ArgumentGroup
 import json
+from math import ceil
 import os
 import pathlib
-from typing import Any, Dict, List, Tuple, Union, Optional
+from typing import (Any, Collection, Dict, List,
+                    Sequence, Tuple, Union, Optional)
 
 import numpy as np
 from pint import UndefinedUnitError
 import seekpath
 
-from euphonic import ForceConstants, QpointPhononModes, Quantity, ureg
+from euphonic import (Crystal, DebyeWaller, ForceConstants,
+                      QpointPhononModes, Quantity, ureg)
 Unit = ureg.Unit
 
 
@@ -301,7 +304,9 @@ SplitArgs = Dict[str, Any]
 def _bands_from_force_constants(data: ForceConstants,
                                 q_distance: Quantity,
                                 insert_gamma=True,
-                                asr=None
+                                asr=None,
+                                use_c=None,
+                                n_threads=None
                                 ) -> Tuple[QpointPhononModes,
                                            XTickLabels, SplitArgs]:
     structure = data.crystal.to_spglib_cell()
@@ -320,74 +325,246 @@ def _bands_from_force_constants(data: ForceConstants,
         .format(n_modes=(data.crystal.n_atoms * 3),
                 n_qpts=len(bandpath["explicit_kpoints_rel"])))
     qpts = bandpath["explicit_kpoints_rel"]
-    modes = data.calculate_qpoint_phonon_modes(qpts, asr=asr,
+    modes = data.calculate_qpoint_phonon_modes(qpts, asr=asr, use_c=use_c,
+                                               n_threads=n_threads,
                                                reduce_qpts=False)
-
     return modes, x_tick_labels, split_args
 
-def _get_cli_parser(qe_band_plot=False, n_ebins=False) -> ArgumentParser:
+def _get_mp_grid_spec(crystal: Crystal,
+                      grid: Optional[Sequence[int]] = None,
+                      grid_spacing: Quantity = 0.1 * ureg('1/angstrom')
+                      ) -> Sequence[int]:
+    """Get Monkorst-Pack mesh divisions from input arguments"""
+    if grid:
+        grid_spec = grid
+    else:
+        recip_length_unit = grid_spacing.units
+        lattice = crystal.reciprocal_cell().to(recip_length_unit)
+        grid_spec = np.linalg.norm(lattice.magnitude, axis=1
+                                   ) / grid_spacing.magnitude
+        # math.ceil is better than np.ceil because it returns ints
+        grid_spec = [ceil(x) for x in grid_spec]
+
+    return grid_spec
+
+def _get_debye_waller(temperature: Quantity,
+                      fc: ForceConstants,
+                      grid: Optional[Sequence[int]] = None,
+                      grid_spacing: Quantity = 0.1 * ureg('1/angstrom'),
+                      **calc_modes_args
+                      ) -> DebyeWaller:
+    """Generate Debye-Waller data from force constants and grid specification
+    """
+    mp_grid_spec = _get_mp_grid_spec(fc.crystal, grid=grid,
+                                     grid_spacing=grid_spacing)
+    print("Calculating Debye-Waller factor on {} q-point grid"
+          .format(' x '.join(map(str, mp_grid_spec))))
+    dw_phonons = fc.calculate_qpoint_phonon_modes(
+        euphonic.util.mp_grid(mp_grid_spec),
+                **calc_modes_args)
+    dw = dw_phonons.calculate_debye_waller(temperature)
+
+
+def _get_cli_parser(features: Collection[str] = {}
+                    ) -> Tuple[ArgumentParser,
+                               Dict[str, _ArgumentGroup]]:
+    """Instantiate an ArgumentParser with appropriate argument groups
+
+    Args:
+        sections:
+            collection (e.g. set, list) of str for known argument groups.
+            Known keys: read-fc, read-modes, weights, powder, mp-grid,
+                plotting, ebins, q-e, map, btol
+
+    Returns:
+        Parser and a dict of parser subsections. This allows their help strings
+        to be customised and specialised options to be added.
+
+    """
+    _spectrum_choices = ('dos', 'coherent')
+
     parser = ArgumentParser()
-    parser.add_argument(
-        'filename', type=str,
-        help=('Phonon data file. This should contain force constants or '
-              'phonon mode data. Force constants formats: .yaml, '
-              'force_constants.hdf5 (Phonopy); .castep_bin , .check '
-              '(Castep); .json (Euphonic). Phonon mode data formats: '
-              '{band,qpoints,mesh}.{hdf5,yaml} (Phonopy); '
-              '.phonon (Castep); .json (Euphonic)'))
-    parser.add_argument(
-        '-s', '--save-to', dest='save_to', default=None,
-        help='Save resulting plot to a file with this name')
-    parser.add_argument('--title', type=str, default='', help='Plot title')
-    parser.add_argument('--x-label', type=str, default=None,
-                        dest='x_label', help='Plot x-axis label')
-    parser.add_argument('--y-label', type=str, default=None,
-                        dest='y_label', help='Plot y-axis label')
-    if n_ebins:
-        parser.add_argument('--ebins', type=int, default=200,
-                            help='Number of energy bins')
-        parser.add_argument(
-            '--energy-broadening', '--eb', type=float, default=None,
-            dest='energy_broadening',
-            help=('FWHM of broadening on energy axis in ENERGY_UNIT. '
-                  '(No broadening if unspecified.)'))
-        parser.add_argument(
-            '--shape', type=str, nargs='?', default='gauss',
-            choices=('gauss', 'lorentz'),
-            help='The broadening shape')
-    parser.add_argument('--e-min', type=float, default=None, dest='e_min',
-                        help='Energy range minimum in ENERGY_UNIT')
-    parser.add_argument('--e-max', type=float, default=None, dest='e_max',
-                        help='Energy range maximum in ENERGY_UNIT')
-    parser.add_argument('--energy-unit', '-u', dest='energy_unit',
-                        type=str, default='meV', help='Energy units')
-    if qe_band_plot:
-        parser.add_argument(
-            '--length-unit', type=str, default='angstrom', dest='length_unit',
-            help=('Length units; these will be inverted to obtain '
-                  'units of distance between q-points (e.g. "bohr"'
-                  ' for bohr^-1).'))
-        interp_group = parser.add_argument_group(
-            'Interpolation arguments',
-            ('Arguments specific to band structures that are generated '
-             'from Force Constants data'))
-        interp_group.add_argument(
+
+    # Set up groups; these are only displayed if used, so simplest to
+    # instantiate them all now and guarantee consistent order/presence
+    # regardless of control logic
+    section_defs = [('file', 'File I/O arguments'),
+                    ('q', 'q-point sampling arguments'),
+                    ('energy', 'energy/frequency arguments'),
+                    ('property', 'Property-calculation arguments'),
+                    ('plotting', 'Plotting arguments'),
+                    ('performance', 'Performance-related arguments')
+                    ]
+
+    sections = {label: parser.add_argument_group(doc)
+                for label, doc in section_defs}
+
+    if {'read-fc', 'read-modes'}.intersection(features):
+        if {'read-fc', 'read-modes'}.issubset(features):
+            filename_doc = (
+                'Phonon data file. This should contain force constants or'
+                'phonon mode data. Force constants formats: .yaml,'
+                'force_constants.hdf5 (Phonopy); .castep_bin , .check'
+                '(Castep); .json (Euphonic). Phonon mode data formats:'
+                '{band,qpoints,mesh}.{hdf5,yaml} (Phonopy);'
+                '.phonon (Castep); .json (Euphonic)')
+        elif {'read-fc'} in features:
+            filename_doc = (
+                'Phonon data file. This should contain force constants data.'
+                'Accepted formats: .yaml, force_constants.hdf5 (Phonopy); '
+                '.castep_bin , .check (Castep); .json (Euphonic).')
+        else:
+            raise ValueError('No band-data-only tools have been defined.')
+        sections['file'].add_argument('filename', type=str, help=filename_doc)
+
+    if 'read-fc' in features:
+        sections['property'].add_argument(
             '--asr', type=str, nargs='?', default=None, const='reciprocal',
             choices=('reciprocal', 'realspace'),
             help=('Apply an acoustic-sum-rule (ASR) correction to the '
                   'data: "realspace" applies the correction to the force '
                   'constant matrix in real space. "reciprocal" applies '
                   'the correction to the dynamical matrix at each q-point.'))
-        interp_group.add_argument(
-            '--q-distance', type=float, dest='q_distance', default=0.025,
-            help=('Target distance between q-point samples in 1/LENGTH_UNIT'))
-        disp_group = parser.add_argument_group(
-            'Dispersion arguments',
-            'Arguments specific to plotting a pre-calculated band structure')
-        disp_group.add_argument(
-            '--btol', default=10.0, type=float,
-            help=('The tolerance for plotting sections of reciprocal '
-                  'space on different subplots, as a fraction of the '
-                  'median distance between q-points'))
 
-    return parser
+        use_c = sections['performance'].add_mutually_exclusive_group()
+        use_c.add_argument(
+            '--use-c', action='store_true', dest='use_c', default=None,
+            help=('Force use of compiled C extension when computing '
+                  'phonon frequencies/eigenvectors (or raise error).'))
+        use_c.add_argument(
+            '--disable-c', action='store_false', dest='use_c',
+            help=('Do not attempt to use compiled C extension when computing '
+                  'phonon frequencies/eigenvectors.'))
+        sections['performance'].add_argument(
+            '--n-threads', type=int, default=None, dest='n_threads',
+            help=('Number of parallel processes for computing phonon modes. '
+                  '(Only applies when using C extension.)'))
+
+    if 'weights' in features:
+        sections['property'].add_argument(
+            '--weights', '-w', default='dos', choices=_spectrum_choices,
+            help=('Spectral weights to plot: phonon DOS or '
+                  'coherent inelastic neutron scattering.'))
+
+        sections['property'].add_argument(
+            '--temperature', type=float, default=None,
+            help=('Temperature in K; enable Debye-Waller factor calculation. '
+                  '(Only applicable when --weights=coherent).'))
+
+    # 'weights' implies 'mp-grid' as well because mesh is needed for DW factor
+    if {'weights', 'mp-grid'}.intersection(features):
+        grid_spec = sections['q'].add_mutually_exclusive_group()
+
+        grid_spec.add_argument(
+            '--grid', type=int, nargs=3, default=None,
+            help=('Defines a Monkhorst-Pack grid.'))
+        grid_spec.add_argument(
+            '--grid-spacing', type=float, default=0.1, dest='grid_spacing',
+            help=('q-point spacing of Monkhorst-Pack grid.'))
+
+    if 'powder' in features:
+        _sampling_choices = {'golden', 'sphere-projected-grid',
+                             'spherical-polar-grid',
+                             'spherical-polar-improved',
+                             'random-sphere'}
+        npts_group = sections['q'].add_mutually_exclusive_group()
+        npts_group.add_argument('--npts', '-n', type=int, default=1000,
+                                help=('Number of samples at each |q| sphere'
+                                      ' (default 1000)'))
+        npts_group.add_argument(
+            '--npts-density', type=int, default=None, dest='npts_density',
+            help=('NPTS specified as the number of points at surface of '
+                  '1/LENGTH_UNIT-radius sphere; otherwise scaled to equivalent'
+                  ' area density at sphere surface.'))
+
+        sections['q'].add_argument(
+            '--npts-min', type=int, default=100, dest='npts_min',
+            help=('Minimum number of samples per sphere. This ensures adequate'
+                  ' sampling at small q when using --npts-density.'))
+        sections['q'].add_argument(
+            '--npts-max', type=int, default=10000, dest='npts_max',
+            help=('Maximum number of samples per sphere. This avoids '
+                  'diminishing returns at large q when using --npts-density.'))
+        sections['q'].add_argument(
+            '--sampling', type=str, default='golden',
+            choices=_sampling_choices,
+            help=('Spherical sampling scheme; "golden" is generally '
+                  'recommended uniform quasirandom sampling.'))
+        sections['q'].add_argument(
+            '--jitter', action='store_true',
+            help=('Apply additional jitter to sample positions in angular '
+                  'direction. Recommended for sampling methods other than '
+                  '"golden" and "random-sphere".'))
+
+    if 'plotting' in features:
+        section = sections['plotting']
+        section.add_argument(
+            '-s', '--save-to', dest='save_to', default=None,
+            help='Save resulting plot to a file with this name')
+        section.add_argument('--title', type=str, default='',
+                             help='Plot title')
+        section.add_argument('--x-label', type=str, default=None,
+                             dest='x_label', help='Plot x-axis label')
+        section.add_argument('--y-label', type=str, default=None,
+                             dest='y_label', help='Plot y-axis label')
+
+    if {'ebins', 'q-e'}.intersection(features):
+        section = sections['energy']
+        section.add_argument('--e-min', type=float, default=None, dest='e_min',
+                             help='Energy range minimum in ENERGY_UNIT')
+        section.add_argument('--e-max', type=float, default=None, dest='e_max',
+                             help='Energy range maximum in ENERGY_UNIT')
+        section.add_argument('--energy-unit', '-u', dest='energy_unit',
+                             type=str, default='meV', help='Energy units')
+
+    if 'ebins' in features:
+        section = sections['energy']
+        section.add_argument('--ebins', type=int, default=200,
+                            help='Number of energy bins')
+        section.add_argument(
+            '--energy-broadening', '--eb', type=float, default=None,
+            dest='energy_broadening',
+            help=('FWHM of broadening on energy axis in ENERGY_UNIT. '
+                  '(No broadening if unspecified.)'))
+        section.add_argument(
+            '--shape', type=str, nargs='?', default='gauss',
+            choices=('gauss', 'lorentz'),
+            help='The broadening shape')
+
+    if {'q-e', 'mp-grid'}.intersection(features):
+        sections['q'].add_argument(
+            '--length-unit', type=str, default='angstrom', dest='length_unit',
+            help=('Length units; these will be inverted to obtain '
+                  'units of distance between q-points (e.g. "bohr"'
+                  ' for bohr^-1).'))
+
+    if 'q-e' in features:
+        sections['q'].add_argument(
+            '--q-spacing', type=float, dest='q_spacing', default=0.025,
+            help=('Target distance between q-point samples in 1/LENGTH_UNIT'))
+
+    if {'q-e', 'map'}.issubset(features):
+        sections['q'].add_argument(
+            '--q-broadening', '--qb', type=float, default=None,
+            dest='q_broadening',
+            help=('FWHM of broadening on q axis in 1/LENGTH_UNIT. '
+                  '(No broadening if unspecified.)'))
+
+        sections['plotting'].add_argument(
+            '--v-min', type=float, default=None, dest='v_min',
+            help='Minimum of data range for colormap.')
+        sections['plotting'].add_argument(
+            '--v-max', type=float, default=None, dest='v_max',
+            help='Maximum of data range for colormap.')
+        sections['plotting'].add_argument(
+            '--cmap', type=str, default='viridis', help='Matplotlib colormap')
+
+    if 'btol' in features:
+        sections['q'].add_argument(
+            '--btol', default=10.0, type=float,
+            help=('Distance threshold used for automatically splitting '
+                  'discontinuous segments of reciprocal space onto separate '
+                  'subplots. This is specified as a multiple of the median '
+                  'distance between q-points.'))
+
+    return parser, sections

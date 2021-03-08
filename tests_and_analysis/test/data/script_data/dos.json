@@ -2483,7 +2483,7 @@
             ]
         ]
     },
-    "quartz quartz.castep_bin": {
+    "quartz quartz.castep_bin --grid 6 6 6": {
         "title": "",
         "x_label": "Energy / meV",
         "y_label": "",

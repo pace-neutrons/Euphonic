@@ -13,21 +13,22 @@ from .utils import (_bands_from_force_constants,
                     matplotlib_save_or_show)
 
 
-_spectrum_choices = ('dos', 'coherent')
-
-
 def main(params: List[str] = None) -> None:
     args = get_args(get_parser(), params)
 
     data = load_data_from_file(args.filename)
 
-    q_distance = _get_q_distance(args.length_unit, args.q_distance)
-    recip_length_unit = q_distance.units
+    q_spacing = _get_q_distance(args.length_unit, args.q_spacing)
+    recip_length_unit = q_spacing.units
+
+    calc_modes_args = {'asr': args.asr,
+                       'use_c': args.use_c, 'n_threads': args.n_threads}
 
     if isinstance(data, euphonic.ForceConstants):
         print("Force Constants data was loaded. Getting band path...")
         (modes, x_tick_labels, split_args) = _bands_from_force_constants(
-            data, q_distance=q_distance, asr=args.asr, insert_gamma=False)
+            data, q_distance=q_spacing, insert_gamma=False,
+            **calc_modes_args)
     elif isinstance(data, euphonic.QpointPhononModes):
         print("Phonon band data was loaded.")
         modes = data
@@ -41,7 +42,24 @@ def main(params: List[str] = None) -> None:
     print("Computing intensities and generating 2D maps")
 
     if args.weights.lower() == 'coherent':
-        spectrum = modes.calculate_structure_factor().calculate_sqw_map(ebins)
+        if args.temperature is not None:
+            if not isinstance(data, euphonic.ForceConstants):
+                raise TypeError("Cannot generate Debye-Waller factor without "
+                                "force constants data. Leave --temperature "
+                                "unset if plotting precalculated phonon "
+                                "modes.")
+
+            temperature = args.temperature * ureg('K')
+            dw = _get_debye_waller(temperature, fc,
+                                   grid=args.grid,
+                                   grid_spacing=(args.grid_spacing
+                                                 * recip_length_unit),
+                                   **calc_modes_args)
+        else:
+            dw = None
+
+        spectrum = (modes.calculate_structure_factor(dw=dw)
+                    .calculate_sqw_map(ebins))
 
     elif args.weights.lower() == 'dos':
         spectrum = calculate_dos_map(modes, ebins)
@@ -96,23 +114,17 @@ def calculate_dos_map(modes: euphonic.QpointPhononModes,
 
 
 def get_parser() -> argparse.ArgumentParser:
-    parser = _get_cli_parser(qe_band_plot=True, n_ebins=True)
+    parser, sections = _get_cli_parser(features={'read-fc', 'read-modes',
+                                                 'q-e', 'map', 'btol', 'ebins',
+                                                 'weights', 'plotting'})
     parser.description = (
         'Plots a 2D intensity map from the file provided. If a force '
         'constants file is provided, a band structure path is '
         'generated using Seekpath')
-    parser.add_argument('--weights', '-w', default='dos',
-                        choices=_spectrum_choices,
-                        help=('Spectral weights to plot: phonon DOS or '
-                              'coherent inelastic neutron scattering.'))
-    parser.add_argument('--v-min', type=float, default=None, dest='v_min',
-                        help='Minimum of data range for colormap.')
-    parser.add_argument('--v-max', type=float, default=None, dest='v_max',
-                        help='Maximum of data range for colormap.')
-    parser.add_argument('--cmap', type=str, default='viridis',
-                        help='Matplotlib colormap')
-    parser.add_argument('--q-broadening', '--qb', type=float, default=None,
-                        dest='q_broadening',
-                        help='Width of Gaussian broadening on q axis in recip '
-                             'LENGTH_UNIT. (No broadening if unspecified.)')
+
+    sections['q'].description = (
+        '"GRID" options relate to Monkhorst-Pack sampling for the Debye-Waller'
+        ' factor, and only apply when --weights=coherent and --temperature is '
+        'set. "Q" options relate to the x-axis of spectrum data.')
+
     return parser

@@ -1,18 +1,18 @@
 #! /usr/bin/env python3
 
+import argparse
 from math import ceil
-import pathlib
+from typing import List
 
 import numpy as np
 
 from euphonic import ureg
 from euphonic.cli.utils import (_get_cli_parser, _get_energy_bins_and_units,
-                                _get_q_distance)
-from euphonic.cli.utils import (force_constants_from_file,
+                                _get_mp_grid_spec, _get_q_distance)
+from euphonic.cli.utils import (force_constants_from_file, get_args,
                                 matplotlib_save_or_show)
 import euphonic.plot
 from euphonic.powder import sample_sphere_dos, sample_sphere_structure_factor
-from euphonic.spectra import Spectrum2D
 import euphonic.util
 
 # Dummy tqdm function if tqdm progress bars unavailable
@@ -23,119 +23,36 @@ except ModuleNotFoundError:
         return sequence
 
 
-_sampling_choices = {'golden', 'sphere-projected-grid',
-                     'spherical-polar-grid', 'spherical-polar-improved',
-                     'random-sphere'}
-_spectrum_choices = ('dos', 'coherent')
-
-
 def get_parser() -> 'argparse.ArgumentParser':
 
-    parser = _get_cli_parser(n_ebins=True)
+    parser, sections = _get_cli_parser(
+        features={'read-fc', 'read-modes', 'weights', 'powder',
+                  'plotting', 'ebins', 'q-e', 'map'})
 
-    parser.add_argument('--weights', '-w', default='dos',
-                        choices=_spectrum_choices,
-                        help=('Spectral weights to plot: phonon DOS or '
-                              'coherent inelastic neutron scattering.'))
+    sections['q'].description = (
+        '"GRID" options relate to Monkhorst-Pack sampling for the Debye-Waller'
+        ' factor, and only apply when --weights=coherent and --temperature is '
+        'set. "NPTS" options determine spherical groups of q-points for '
+        'powder-averaging. '
+        '"Q" options relate to the sphere sizes (i.e. radial distances).')
 
-    sampling_group = parser.add_argument_group(
-        'Sampling arguments', 'Powder-averaging options')
-
-    npts_group = sampling_group.add_mutually_exclusive_group()
-    npts_group.add_argument('--npts', '-n', type=int, default=1000,
-                            help=('Number of samples at each |q| sphere'
-                                  ' (default 1000)'))
-    npts_group.add_argument('--npts-density', type=int, default=None,
-                            dest='npts_density',
-                            help=('NPTS specified as the number of points at '
-                                  'surface of 1/LENGTH_UNIT-radius sphere;'
-                                  ' otherwise scaled to equivalent area '
-                                  'density at sphere surface.'))
-    sampling_group.add_argument(
-        '--npts-min', type=int, default=100, dest='npts_min',
-        help=('Minimum number of samples per sphere. This ensures adequate '
-              'sampling at small q when using --npts-density.'))
-    sampling_group.add_argument(
-        '--npts-max', type=int, default=10000, dest='npts_max',
-        help=('Maximum number of samples per sphere. This avoids diminishing '
-              'returns at large q when using --npts-density.'))
-
-    sampling_group.add_argument(
-        '--sampling', type=str, default='golden', choices=_sampling_choices,
-        help=('Sphere sampling scheme; "golden" is generally recommended '
-              'uniform quasirandom sampling.'))
-    sampling_group.add_argument(
-        '--jitter', action='store_true',
-        help=('Apply additional jitter to sample positions in angular '
-              'direction. Recommended for sampling methods other than "golden"'
-              ' and "random-sphere".'))
-
-    q_group = parser.add_argument_group(
-        'q-axis arguments', 'Arguments controlling |q| axis sampling')
-    q_group.add_argument(
-        '--length-unit', type=str, default='angstrom', dest='length_unit',
-        help=('Length units; these will be inverted to obtain units of '
-              'distance between q-points (e.g. "bohr" for bohr^-1).'))
-    q_group.add_argument('--q-min', type=float, default=0., dest='q_min',
-                        help="Minimum |q| in 1/LENGTH_UNIT")
-    q_group.add_argument('--q-max', type=float, default=3., dest='q_max',
-                        help="Maximum |q| in 1/LENGTH_UNIT")
-    q_group.add_argument(
-        '--q-spacing', type=float, dest='q_spacing', default=0.2,
-        help=('Target distance between q-point samples in 1/LENGTH_UNIT'))
-
-    #### QUITE REDUNDANT WITH EUPHONIC-INTENSITY-MAP ####
-    q_group.add_argument(
-        '--q-broadening', '--qb', type=float, default=None,
-        dest='q_broadening',
-        help=('fwhm of broadening on |q| axis in 1/LENGTH_UNIT. '
-              '(No broadening if unspecified.)'))
-
-    ins_group = parser.add_argument_group(
-        'Inelastic neutron scattering arguments',
-        'Options used when --weights=coherent')
-    ins_group.add_argument('--temperature', type=float, default=273.,
-                           help='Temperature in K')
-    ins_group.add_argument('--dw-spacing', type=float, default=0.1,
-                           dest='dw_spacing',
-                           help=('q-point spacing of grid in Debye-Waller '
-                                 'factor calculation'))
-
-    cmap_group = parser.add_argument_group(
-        'Spectrogram arguments', 'Colour mapping options')
-    cmap_group.add_argument('--v-min', type=float, default=None, dest='v_min',
-                        help='Minimum of data range for colormap.')
-    cmap_group.add_argument('--v-max', type=float, default=None, dest='v_max',
-                        help='Maximum of data range for colormap.')
-    cmap_group.add_argument('--cmap', type=str, default='viridis',
-                        help='Matplotlib colormap')
-    #### END REDUNDANCY ####
-
-    performance_group = parser.add_argument_group(
-        'Performance-related arguments')
-    performance_group.add_argument(
-        '--disable-c', action='store_false', dest='use_c',
-        help=('Do not attempt to use compiled C extension when computing '
-              'phonon frequencies/eigenvectors.'))
-    performance_group.add_argument(
-        '--n-threads', type=int, default=None, dest='n_threads',
-        help=('Number of parallel processes for computing phonon modes. '
-              '(Only applies when using C extension.)')
-        )
+    sections['q'].add_argument('--q-min', type=float, default=0., dest='q_min',
+                               help="Minimum |q| in 1/LENGTH_UNIT")
+    sections['q'].add_argument('--q-max', type=float, default=3., dest='q_max',
+                               help="Maximum |q| in 1/LENGTH_UNIT")
     return parser
 
-def main():
-    args = get_parser().parse_args()
+
+def main(params: List[str] = None):
+    args = get_args(get_parser(), params)
 
     # Make sure we get an error if accessing NPTS inappropriately
     if args.npts_density is not None:
         args.npts = None
 
-    calc_modes_args = {'use_c': args.use_c}
-    if args.n_threads is not None:
-        calc_modes_args['n_threads'] = args.n_threads
-
-    temperature = args.temperature * ureg['K']
+    calc_modes_args = {'use_c': args.use_c,
+                       'n_threads': args.n_threads,
+                       'asr': args.asr}
 
     fc = force_constants_from_file(args.filename)
     print("Force constants data was loaded. Setting up dimensions...")
@@ -161,22 +78,19 @@ def main():
 
     if args.weights in ('coherent',):
         # Compute Debye-Waller factor once for re-use at each mod(q)
-        spacing = args.dw_spacing * recip_length_unit
-        lattice = fc.crystal.reciprocal_cell().to(recip_length_unit)
-        mp_grid = np.linalg.norm(lattice.magnitude, axis=1) / spacing.magnitude
-        # math.ceil is better than np.ceil because it returns ints
-        mp_grid = [ceil(x) for x in mp_grid]
-        print("Calculating Debye-Waller factor on {} q-point grid"
-              .format(' x '.join(map(str, mp_grid))))
-        dw_phonons = fc.calculate_qpoint_phonon_modes(
-            euphonic.util.mp_grid(mp_grid),
-            **calc_modes_args)
-        dw = dw_phonons.calculate_debye_waller(temperature)
+        # (If temperature is not set, this will be None.)
+        if args.temperature is not None:
+            temperature = args.temperature * ureg['K']
+            dw = _get_debye_waller(temperature, fc, grid=args.grid,
+                                   grid_spacing=(args.grid_spacing
+                                                 * recip_length_unit),
+                                   **calc_modes_args)
+        else:
+            dw = None
 
     print(f"Sampling {n_q_bins} |q| shells between {q_min:~P} and {q_max:~P}")
 
     z_data = np.empty((n_q_bins, len(energy_bins) - 1))
-
 
     for q_index in tqdm(range(n_q_bins)):
         q = q_bin_centers[q_index]
@@ -211,8 +125,6 @@ def main():
     spectrum = euphonic.Spectrum2D(q_bin_edges, energy_bins,
                                    z_data * spectrum_1d.y_data.units)
 
-
-    ##### THIS IS REDUNDANT WITH EUPHONIC-INTENSITY-MAP
     if args.q_broadening or args.energy_broadening:
         spectrum = spectrum.broaden(
             x_width=(args.q_broadening * recip_length_unit
@@ -238,7 +150,7 @@ def main():
                           y_label=y_label,
                           title=args.title)
     matplotlib_save_or_show(save_filename=args.save_to)
-    #### END REDUNDANCY ###
+
 
 if __name__ == '__main__':
     main()

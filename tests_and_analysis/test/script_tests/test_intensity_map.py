@@ -30,7 +30,7 @@ intensity_map_params = [
     [graphite_fc_file, '--e-min=-100', '--e-max=1000', '--ebins=100',
      '--energy-unit=cm^-1'],
     [graphite_fc_file, '--energy-broadening=2e-3', '-u=eV'],
-    [graphite_fc_file, '--q-distance=0.05', '--length-unit=bohr',
+    [graphite_fc_file, '--q-spacing=0.05', '--length-unit=bohr',
      '--q-broadening=0.1'],
     [graphite_fc_file, '--qb=0.01', '--eb=1.5', '--shape=lorentz'],
     [graphite_fc_file, '--asr'],

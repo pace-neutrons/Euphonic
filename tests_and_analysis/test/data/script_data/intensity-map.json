@@ -4474,7 +4474,7 @@
             0.0
         ]
     },
-    "graphite graphite.castep_bin --q-distance=0.05 --length-unit=bohr --q-broadening=0.1": {
+    "graphite graphite.castep_bin --q-spacing=0.05 --length-unit=bohr --q-broadening=0.1": {
         "title": "",
         "x_label": "",
         "y_label": "Energy / meV",
