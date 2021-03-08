@@ -471,9 +471,11 @@ class ForceConstants:
 
         if use_c_status is True:
             if n_threads is None:
-                try:
-                    n_threads = int(os.environ['EUPHONIC_NUM_THREADS'])
-                except KeyError:
+                n_threads_env = os.environ.get(
+                    'EUPHONIC_NUM_THREADS', '')  # type: str
+                if n_threads_env:
+                    n_threads = int(n_threads_env)
+                else:
                     n_threads = cpu_count()
             # Make sure all arrays are contiguous before calling C
             cell_vectors = self.crystal._cell_vectors
