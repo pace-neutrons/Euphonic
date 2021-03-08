@@ -117,7 +117,7 @@ class QpointFrequencies:
             mode_widths = mode_widths.to('hartree*bohr').magnitude
             # scale mode widths
             q_spacing = 2/(np.cbrt(len(freqs)*self.crystal._cell_volume()))
-            mode_widths = 2*mode_widths*q_spacing
+            mode_widths = mode_widths*q_spacing
             # Set limit on very small widths of, say, 5e-7 hartree
             # (~0.013meV) due to divergent behaviour
             mode_widths = np.maximum(mode_widths, 5e-7)
