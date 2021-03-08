@@ -1,5 +1,6 @@
 import os
 import json
+from multiprocessing import cpu_count
 
 import pytest
 import numpy as np
@@ -104,7 +105,6 @@ class TestForceConstantsCalculateQPointPhononModes:
         else:
             func_kwargs['use_c'] = True
             func_kwargs['n_threads'] = n_threads
-            func_kwargs['fall_back_on_python'] = False
         qpoint_phonon_modes = fc.calculate_qpoint_phonon_modes(
             all_args[0], **func_kwargs)
         expected_qpoint_phonon_modes = ExpectedQpointPhononModes(
@@ -188,8 +188,9 @@ class TestForceConstantsCalculateQPointPhononModes:
 
 @pytest.mark.unit
 class TestForceConstantsCalculateQPointPhononModesWithoutCExtensionInstalled:
-    def test_calculate_qpoint_phonon_modes_with_use_c_true_raises_error(
-            self, mocker):
+
+    @pytest.fixture
+    def mocked_cext_with_importerror(self, mocker):
         # Mock import of euphonic._euphonic to raise ImportError
         import builtins
         real_import = builtins.__import__
@@ -199,8 +200,73 @@ class TestForceConstantsCalculateQPointPhononModesWithoutCExtensionInstalled:
             return real_import(name, *args, **kwargs)
         mocker.patch('builtins.__import__', side_effect=mocked_import)
 
+    def test_with_use_c_true_raises_importcerror(
+            self, mocked_cext_with_importerror):
         fc = get_fc('quartz')
         with pytest.raises(ImportCError):
             fc.calculate_qpoint_phonon_modes(get_test_qpts(),
-                                             use_c=True,
-                                             fall_back_on_python=False)
+                                             use_c=True)
+
+    def test_with_use_c_default_warns(
+            self, mocked_cext_with_importerror):
+        fc = get_fc('quartz')
+        with pytest.warns(None) as warn_record:
+            fc.calculate_qpoint_phonon_modes(get_test_qpts())
+        assert len(warn_record) == 1
+
+    def test_with_use_c_false_doesnt_raise_error_or_warn(
+            self, mocked_cext_with_importerror):
+        fc = get_fc('quartz')
+        with pytest.warns(None) as warn_record:
+            fc.calculate_qpoint_phonon_modes(get_test_qpts(), use_c=False)
+        assert len(warn_record) == 0
+
+
+@pytest.mark.unit
+class TestForceConstantsCalculateQPointPhononModesWithCExtensionInstalled:
+
+    @pytest.fixture
+    def mocked_cext(self, mocker):
+        return mocker.patch('euphonic._euphonic.calculate_phonons')
+
+    def test_cext_called_with_use_c_true(self, mocked_cext):
+        fc = get_fc('quartz')
+        fc.calculate_qpoint_phonon_modes(get_test_qpts(), use_c=True)
+        mocked_cext.assert_called()
+
+    def test_cext_called_with_use_c_default(self, mocked_cext):
+        fc = get_fc('quartz')
+        fc.calculate_qpoint_phonon_modes(get_test_qpts())
+        mocked_cext.assert_called()
+
+    def test_cext_not_called_with_use_c_false(self, mocked_cext):
+        fc = get_fc('quartz')
+        fc.calculate_qpoint_phonon_modes(get_test_qpts(), use_c=False)
+        mocked_cext.assert_not_called()
+
+    # The following only tests that the C extension was called with the
+    # correct n_threads, rather than testing that that number of threads
+    # have actually been spawned, but I can't think of a way to test that
+    def test_cext_called_with_n_threads_arg(self, mocked_cext):
+        n_threads = 3
+        fc = get_fc('quartz')
+        fc.calculate_qpoint_phonon_modes(get_test_qpts(), n_threads=n_threads)
+        assert mocked_cext.call_args[0][-2] == n_threads
+
+    def test_cext_called_with_n_threads_default_and_env_var(self, mocked_cext):
+        n_threads = 4
+        os.environ['EUPHONIC_NUM_THREADS'] = str(n_threads)
+        fc = get_fc('quartz')
+        fc.calculate_qpoint_phonon_modes(get_test_qpts())
+        assert mocked_cext.call_args[0][-2] == n_threads
+
+    def test_cext_called_with_n_threads_default_and_no_env_var(self, mocked_cext):
+        n_threads = cpu_count()
+        try:
+            os.environ.pop('EUPHONIC_NUM_THREADS')
+        except KeyError:
+            pass
+        fc = get_fc('quartz')
+        fc.calculate_qpoint_phonon_modes(get_test_qpts())
+        assert mocked_cext.call_args[0][-2] == n_threads
+

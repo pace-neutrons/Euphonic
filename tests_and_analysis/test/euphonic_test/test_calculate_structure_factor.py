@@ -27,7 +27,6 @@ class TestCalculateStructureFactorFromForceConstants:
         else:
             kwargs['use_c'] = True
             kwargs['n_threads'] = n_threads
-            kwargs['fall_back_on_python'] = False
         kwargs['asr'] = 'reciprocal'
         return kwargs
 

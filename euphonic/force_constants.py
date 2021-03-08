@@ -1,13 +1,17 @@
 import math
+import os
 import sys
 import warnings
 from typing import Optional, Tuple, Union
+from multiprocessing import cpu_count
 
 import numpy as np
 import scipy
 from scipy.linalg.lapack import zheev
 from scipy.special import erfc
+from threadpoolctl import threadpool_limits
 
+import euphonic
 from euphonic.validate import (
     _check_constructor_inputs, _check_unit_conversion,
     _ensure_contiguous_args, _ensure_contiguous_attrs)
@@ -138,9 +142,8 @@ class ForceConstants:
             splitting: bool = True,
             insert_gamma: bool = False,
             reduce_qpts: bool = True,
-            use_c: bool = False,
-            n_threads: int = 1,
-            fall_back_on_python: bool = True) -> QpointPhononModes:
+            use_c: Optional[bool] = None,
+            n_threads: Optional[int] = None) -> QpointPhononModes:
         """
         Calculate phonon frequencies and eigenvectors at specified
         q-points from a force constants matrix via Fourier interpolation
@@ -184,13 +187,19 @@ class ForceConstants:
             change the output but could increase performance.
         use_c
             Whether to use C instead of Python to calculate and
-            diagonalise the dynamical matrix
+            diagonalise the dynamical matrix. By default this is None
+            and will use the C extension if it is installed, and fall
+            back to Python if not. If use_c=True, this will force use
+            of the C extension and an error will be raised if it
+            is not installed. If use_c=False, this will force use
+            of Python, even if the C extension is installed
         n_threads
             The number of OpenMP threads to use when looping over
-            q-points in C. Only applicable if use_c=True
-        fall_back_on_python
-            If we cannot use the C extension, fall back on using python
-            if this is true, else raise an ImportCError.
+            q-points in C. By default this is None, in which case
+            the environment variable EUPHONIC_NUM_THREADS will be used
+            to determine number of threads, if this is not set then
+            the value returned from multiprocessing.cpu_count() will be
+            used
 
         Returns
         -------
@@ -204,8 +213,7 @@ class ForceConstants:
         Raises
         ------
         ImportCError
-            If we have selected not to fall back on Python and cannot
-            use the C extension
+            If use_c=True but the C extension cannot be imported
 
         Notes
         -----
@@ -254,8 +262,7 @@ class ForceConstants:
         """
         qpts, weights, freqs, evecs = self._calculate_phonons_at_qpts(
             qpts, weights, asr, dipole, eta_scale, splitting, insert_gamma,
-            reduce_qpts, use_c, n_threads, fall_back_on_python,
-            return_eigenvectors=True)
+            reduce_qpts, use_c, n_threads, return_eigenvectors=True)
         return QpointPhononModes(
             self.crystal, qpts, freqs, evecs, weights=weights)
 
@@ -269,18 +276,16 @@ class ForceConstants:
             splitting: bool = True,
             insert_gamma: bool = False,
             reduce_qpts: bool = True,
-            use_c: bool = False,
-            n_threads: int = 1,
-            fall_back_on_python: bool = True) -> QpointFrequencies:
+            use_c: Optional[bool] = None,
+            n_threads: Optional[int] = None) -> QpointFrequencies:
         """
         Calculate phonon frequencies (without eigenvectors) at specified
         q-points. See ForceConstants.calculate_qpoint_phonon_modes for
-        details
+        argument and algorithm details
         """
         qpts, weights, freqs = self._calculate_phonons_at_qpts(
             qpts, weights, asr, dipole, eta_scale, splitting, insert_gamma,
-            reduce_qpts, use_c, n_threads, fall_back_on_python,
-            return_eigenvectors=False)
+            reduce_qpts, use_c, n_threads, return_eigenvectors=False)
         return QpointFrequencies(
             self.crystal, qpts, freqs, weights=weights)
 
@@ -294,9 +299,8 @@ class ForceConstants:
             splitting: bool,
             insert_gamma: bool,
             reduce_qpts: bool,
-            use_c: bool,
-            n_threads: int,
-            fall_back_on_python: bool,
+            use_c: Optional[bool],
+            n_threads: Optional[int],
             return_eigenvectors: bool) -> Union[
                 Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray],
                 Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]]:
@@ -445,19 +449,34 @@ class ForceConstants:
             reigenvecs = np.zeros(
                 (0, 3*n_atoms, n_atoms, 3), dtype=np.complex128)
 
-        try:
-            if use_c:
-                try:
-                    import euphonic._euphonic as euphonic_c
-                except ImportError:
+        euphonic_path = os.path.dirname(euphonic.__file__)
+        cext_err_msg = (f'Euphonic\'s C extension couldn\'t be imported '
+                        f'from {euphonic_path}, it may not have been '
+                        f'installed.')
+
+        # Check if C extension can be used and handle appropriately
+        use_c_status = False
+        if use_c is not False:
+            try:
+                import euphonic._euphonic as euphonic_c
+                use_c_status = True
+            except ImportError:
+                if use_c is None:
                     warnings.warn((
-                        'use_c=True is set, but the Euphonic\'s C '
-                        'extension couldn\'t be imported, it may not '
-                        'have been installed. Attempting to fall back '
-                        'to pure Python calculation'), stacklevel=2)
-                    raise
-            else:
-                raise ImportError
+                        cext_err_msg
+                        + ' Falling back to pure Python calculation.'),
+                        stacklevel=3)
+                else:
+                    raise ImportCError(cext_err_msg)
+
+        if use_c_status is True:
+            if n_threads is None:
+                n_threads_env = os.environ.get(
+                    'EUPHONIC_NUM_THREADS', '')  # type: str
+                if n_threads_env:
+                    n_threads = int(n_threads_env)
+                else:
+                    n_threads = cpu_count()
             # Make sure all arrays are contiguous before calling C
             cell_vectors = self.crystal._cell_vectors
             recip_vectors = self.crystal.reciprocal_cell().to(
@@ -475,32 +494,26 @@ class ForceConstants:
                             '_dipole_q0']
             _ensure_contiguous_attrs(self, attrs, opt_attrs=dipole_attrs)
             reciprocal_asr = 1 if asr == 'reciprocal' else 0
-            euphonic_c.calculate_phonons(
-                self, cell_vectors, recip_vectors, reduced_qpts, split_idx,
-                q_dirs, fc_img_weighted, sc_offsets, recip_asr_correction,
-                dyn_mat_weighting, dipole, reciprocal_asr, splitting, rfreqs,
-                reigenvecs, n_threads, scipy.__path__[0])
-        except ImportError:
-            if not fall_back_on_python:
-                raise ImportCError((
-                    'use_c=True is set, but the Euphonic\'s C extension'
-                    ' couldn\'t be imported, it may not have been '
-                    'installed. You have selected not to fall back on '
-                    'Python, therefore the calculation can\'t be '
-                    'completed'))
-            else:
-                q_independent_args = (
-                    reduced_qpts, split_idx, q_dirs, fc_img_weighted,
-                    unique_sc_offsets, unique_sc_i, unique_cell_origins,
-                    unique_cell_i, recip_asr_correction, dyn_mat_weighting,
-                    dipole, asr, splitting)
-                for q in range(n_rqpts):
-                    if return_eigenvectors:
-                        rfreqs[q], reigenvecs[q] = self._calculate_phonons_at_q(
-                            q, q_independent_args)
-                    else:
-                        rfreqs[q], _ = self._calculate_phonons_at_q(
-                            q, q_independent_args)
+            with threadpool_limits(limits=1):
+                euphonic_c.calculate_phonons(
+                    self, cell_vectors, recip_vectors, reduced_qpts,
+                    split_idx, q_dirs, fc_img_weighted, sc_offsets,
+                    recip_asr_correction, dyn_mat_weighting, dipole,
+                    reciprocal_asr, splitting, rfreqs, reigenvecs, n_threads,
+                    scipy.__path__[0])
+        else:
+            q_independent_args = (
+                reduced_qpts, split_idx, q_dirs, fc_img_weighted,
+                unique_sc_offsets, unique_sc_i, unique_cell_origins,
+                unique_cell_i, recip_asr_correction, dyn_mat_weighting,
+                dipole, asr, splitting)
+            for q in range(n_rqpts):
+                if return_eigenvectors:
+                    rfreqs[q], reigenvecs[q] = self._calculate_phonons_at_q(
+                        q, q_independent_args)
+                else:
+                    rfreqs[q], _ = self._calculate_phonons_at_q(
+                        q, q_independent_args)
         freqs = rfreqs[qpts_i]*ureg('hartree').to('meV')
         if return_eigenvectors:
             return qpts, weights, freqs, reigenvecs[qpts_i]
