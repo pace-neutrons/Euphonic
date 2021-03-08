@@ -26,8 +26,7 @@ static PyObject *calculate_phonons(PyObject *self, PyObject *args) {
     PyArrayObject *py_evals;
     PyArrayObject *py_dmats;
     PyArrayObject *py_modegs;
-    PyArrayObject *py_cell_ogs_cart;
-    PyArrayObject *py_sc_ogs_cart;
+    PyArrayObject *py_all_ogs_cart;
     int dipole;
     int reciprocal_asr;
     int splitting;
@@ -66,8 +65,7 @@ static PyObject *calculate_phonons(PyObject *self, PyObject *args) {
     double *evals;
     double *dmats;
     double *modegs;
-    double *cell_ogs_cart;
-    double *sc_ogs_cart;
+    double *all_ogs_cart;
     int *n_sc_ims;
     int *sc_im_idx;
     int *cell_ogs;
@@ -95,7 +93,7 @@ static PyObject *calculate_phonons(PyObject *self, PyObject *args) {
     int n_gvecs;
 
     // Parse inputs
-    if (!PyArg_ParseTuple(args, "OO!O!O!O!O!O!O!O!O!iiiO!O!O!O!O!is",
+    if (!PyArg_ParseTuple(args, "OO!O!O!O!O!O!O!O!O!iiiO!O!O!O!is",
                           &py_idata,
                           &PyArray_Type, &py_cell_vec,
                           &PyArray_Type, &py_recip_vec,
@@ -112,8 +110,7 @@ static PyObject *calculate_phonons(PyObject *self, PyObject *args) {
                           &PyArray_Type, &py_evals,
                           &PyArray_Type, &py_dmats,
                           &PyArray_Type, &py_modegs,
-                          &PyArray_Type, &py_cell_ogs_cart,
-                          &PyArray_Type, &py_sc_ogs_cart,
+                          &PyArray_Type, &py_all_ogs_cart,
                           &n_threads,
                           &scipy_dir)) {
         return NULL;
@@ -163,8 +160,7 @@ static PyObject *calculate_phonons(PyObject *self, PyObject *args) {
     evals = (double*) PyArray_DATA(py_evals);
     dmats = (double*) PyArray_DATA(py_dmats);
     modegs = (double*) PyArray_DATA(py_modegs);
-    cell_ogs_cart = (double*) PyArray_DATA(py_cell_ogs_cart);
-    sc_ogs_cart = (double*) PyArray_DATA(py_sc_ogs_cart);
+    all_ogs_cart = (double*) PyArray_DATA(py_all_ogs_cart);
     n_sc_ims = (int*) PyArray_DATA(py_n_sc_ims);
     sc_im_idx = (int*) PyArray_DATA(py_sc_im_idx);
     cell_ogs = (int*) PyArray_DATA(py_cell_ogs);
@@ -232,7 +228,7 @@ static PyObject *calculate_phonons(PyObject *self, PyObject *args) {
 	    }
             calculate_dyn_mat_at_q(qpt, n_atoms, n_cells, max_ims, n_sc_ims,
                 sc_im_idx, cell_ogs, sc_ogs, fc, dmat, dmat_grad,
-		cell_ogs_cart, sc_ogs_cart);
+		all_ogs_cart);
 
             if (dipole) {
                 calculate_dipole_correction(qpt, n_atoms, cell_vec, recip_vec,

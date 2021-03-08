@@ -413,15 +413,20 @@ class ForceConstants:
                 sc_origins[:, i], return_inverse=True)
             unique_cell_origins[i], unique_cell_i[:, i] = np.unique(
                 self.cell_origins[:, i], return_inverse=True)
-        # Cartesian origins only required if return_mode_gradients=True
-        cell_origins_cart = np.einsum('ij,jk->ik', self.cell_origins,
-                                      self.crystal._cell_vectors)
-        # Append 0. to sc_origins_cart, so that when being indexed by
-        # sc_image_i to get the origins for each image, an index of -1
-        # and a value of 0. can be used
-        sc_origins_cart = np.zeros((len(sc_origins) + 1, 3))
-        sc_origins_cart[:len(sc_origins)] = np.einsum(
-            'ij,jk->ik', sc_origins, self.crystal._cell_vectors)
+        if return_mode_gradients:
+            cell_origins_cart = np.einsum('ij,jk->ik', self.cell_origins,
+                                          self.crystal._cell_vectors)
+            # Append 0. to sc_origins_cart, so that when being indexed by
+            # sc_image_i to get the origins for each image, an index of -1
+            # and a value of 0. can be used
+            sc_origins_cart = np.zeros((len(sc_origins) + 1, 3))
+            sc_origins_cart[:len(sc_origins)] = np.einsum(
+                'ij,jk->ik', sc_origins, self.crystal._cell_vectors)
+            ax = np.newaxis
+            all_origins_cart = (sc_origins_cart[self._sc_image_i]
+                                + cell_origins_cart[:, ax, ax, ax, :])
+        else:
+            all_origins_cart = None
 
         # Precompute dynamical matrix mass weighting
         atom_mass = self.crystal._atom_mass
@@ -455,8 +460,7 @@ class ForceConstants:
             dyn_mat_gamma, _ = self._calculate_dyn_mat(
                 q_gamma, fc_img_weighted, unique_sc_origins,
                 unique_sc_i, unique_cell_origins, unique_cell_i,
-                sc_origins_cart, cell_origins_cart,
-                return_mode_gradients=False)
+                all_origins_cart)
             if dipole:
                 dyn_mat_gamma += self._calculate_dipole_correction(q_gamma)
             recip_asr_correction = self._enforce_reciprocal_asr(dyn_mat_gamma)
@@ -514,11 +518,11 @@ class ForceConstants:
             (cell_vectors, recip_vectors, reduced_qpts, split_idx, q_dirs,
              fc_img_weighted, sc_origins, recip_asr_correction,
              dyn_mat_weighting, rfreqs, reigenvecs, rmode_gradients,
-             cell_origins_cart, sc_origins_cart) = _ensure_contiguous_args(
+             all_origins_cart) = _ensure_contiguous_args(
                  cell_vectors, recip_vectors, reduced_qpts, split_idx,
                  q_dirs, fc_img_weighted, sc_origins, recip_asr_correction,
                  dyn_mat_weighting, rfreqs, reigenvecs, rmode_gradients,
-                 cell_origins_cart, sc_origins_cart)
+                 all_origins_cart)
             attrs = ['_n_sc_images', '_sc_image_i', 'cell_origins']
             dipole_attrs = ['atom_r', '_born', '_dielectric', '_H_ab',
                             '_cells', '_gvec_phases', '_gvecs_cart',
@@ -527,21 +531,21 @@ class ForceConstants:
             reciprocal_asr = 1 if asr == 'reciprocal' else 0
             with threadpool_limits(limits=1):
                 euphonic_c.calculate_phonons(
-                    self, cell_vectors, recip_vectors, reduced_qpts, split_idx,
-                    q_dirs, fc_img_weighted, sc_origins, recip_asr_correction,
-                    dyn_mat_weighting, dipole, reciprocal_asr, splitting,
-                    rfreqs, reigenvecs, rmode_gradients, cell_origins_cart,
-                    sc_origins_cart, n_threads, scipy.__path__[0])
+                    self, cell_vectors, recip_vectors, reduced_qpts,
+                    split_idx, q_dirs, fc_img_weighted, sc_origins,
+                    recip_asr_correction, dyn_mat_weighting, dipole,
+                    reciprocal_asr, splitting, rfreqs, reigenvecs,
+                    rmode_gradients, all_origins_cart, n_threads,
+                    scipy.__path__[0])
         else:
             q_independent_args = (
                 reduced_qpts, split_idx, q_dirs, fc_img_weighted,
                 unique_sc_origins, unique_sc_i, unique_cell_origins,
                 unique_cell_i, recip_asr_correction, dyn_mat_weighting,
-                dipole, asr, splitting, sc_origins_cart, cell_origins_cart,
-                return_mode_gradients)
+                dipole, asr, splitting, all_origins_cart)
             for q in range(n_rqpts):
                 rfreqs[q], evecs, grads = self._calculate_phonons_at_q(
-                    q, q_independent_args)
+                        q, q_independent_args)
                 if return_eigenvectors:
                     reigenvecs[q] = evecs
                 if return_mode_gradients:
@@ -559,6 +563,7 @@ class ForceConstants:
             mode_gradients = None
         return qpts, weights, freqs, eigenvectors, mode_gradients
 
+#    @profile
     def _calculate_phonons_at_q(self, q, args):
         """
         Given a q-point and some precalculated q-independent values,
@@ -569,14 +574,13 @@ class ForceConstants:
         (reduced_qpts, split_idx, q_dirs, fc_img_weighted, unique_sc_origins,
          unique_sc_i, unique_cell_origins, unique_cell_i,
          recip_asr_correction, dyn_mat_weighting, dipole, asr,
-         splitting, sc_origins_cart, cell_origins_cart, return_mode_gradients) = args
+         splitting, all_origins_cart) = args
 
         qpt = reduced_qpts[q]
         n_atoms = self.crystal.n_atoms
 
         dmat_args = (qpt, fc_img_weighted, unique_sc_origins, unique_sc_i,
-                     unique_cell_origins, unique_cell_i, sc_origins_cart,
-                     cell_origins_cart, return_mode_gradients)
+                     unique_cell_origins, unique_cell_i, all_origins_cart)
         dyn_mat, dmat_grad = self._calculate_dyn_mat(*dmat_args)
 
         if dipole:
@@ -608,7 +612,7 @@ class ForceConstants:
         evals = np.sqrt(np.abs(evals))
         evals[imag_freqs] *= -1
 
-        if return_mode_gradients:
+        if dmat_grad is not None:
             n_modes = len(evecs)
             dmat_grad *= dyn_mat_weighting[..., np.newaxis]
             evecs_sq_view = np.reshape(evecs, (n_modes, n_modes))
@@ -626,8 +630,7 @@ class ForceConstants:
 
     def _calculate_dyn_mat(self, q, fc_img_weighted, unique_sc_origins,
                            unique_sc_i, unique_cell_origins, unique_cell_i,
-                           sc_origins_cart, cell_origins_cart,
-                           return_mode_gradients=False):
+                           all_origins_cart):
         """
         Calculate the non mass weighted dynamical matrix at a specified
         q-point from the image weighted force constants matrix and the
@@ -684,11 +687,11 @@ class ForceConstants:
                               axis=3)
 
         ax = np.newaxis
-        if return_mode_gradients:
-            all_origins = (sc_origins_cart[sc_image_i]
-                           + cell_origins_cart[:, ax, ax, ax, :])
-            all_phases = sc_phases[sc_image_i]*cell_phases[:, ax, ax, ax]
-            r_vec_sum = np.sum(1j*all_phases[..., ax]*all_origins, axis=3)
+        if all_origins_cart is not None:
+            all_phases = np.einsum('ijkl,i->ijkl',
+                                   sc_phases[sc_image_i], cell_phases)
+            r_vec_sum = 1j*np.einsum('ijkl,ijklm->ijkm',
+                                     all_phases, all_origins_cart)
             dmat_gradient = fc_img_weighted[..., ax]*(r_vec_sum.repeat(
                 3, axis=2).repeat(3, axis=1))
             dmat_gradient = np.sum(dmat_gradient, axis=0)
@@ -698,7 +701,7 @@ class ForceConstants:
             ij_phases.repeat(3, axis=2).repeat(3, axis=1))
         dyn_mat = np.sum(full_dyn_mat, axis=0)
 
-        if return_mode_gradients:
+        if all_origins_cart is not None:
             return dyn_mat, dmat_gradient
         else:
             return dyn_mat, None

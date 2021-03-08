@@ -13,9 +13,9 @@ void calculate_dyn_mat_at_q(const double *qpt, const int n_atoms,
     const int n_cells, const int max_images, const int *n_sc_images,
     const int *sc_image_i, const int *cell_origins, const int *sc_origins,
     const double *fc_mat, double *dyn_mat, double *dmat_grad,
-    const double *cell_origins_cart, const double *sc_origins_cart) {
+    const double *all_origins_cart) {
 
-    int i, j, n, nc, k, sc, ii, jj, idx;
+    int i, j, n, nc, k, sc, ii, jj, sc_img_idx, idx;
     double qdotr;
     double rcart;
     double phase[2];
@@ -45,7 +45,8 @@ void calculate_dyn_mat_at_q(const double *qpt, const int n_atoms,
                 // Calculate and sum phases for all  images
                 for (n = 0; n < n_sc_images[nc*s_n[0] + i*s_n[1] + j]; n++) {
                     qdotr = 0;
-                    sc = sc_image_i[nc*s_i[0] + i*s_i[1] + j*s_i[2] + n];
+		    sc_img_idx = nc*s_i[0] + i*s_i[1] + j*s_i[2] + n;
+                    sc = sc_image_i[sc_img_idx];
                     for (k = 0; k < 3; k++){
                         qdotr += qpt[k]*(sc_origins[3*sc + k] + cell_origins[3*nc + k]);
                     }
@@ -53,13 +54,15 @@ void calculate_dyn_mat_at_q(const double *qpt, const int n_atoms,
                     phase[1] = -sin(2*PI*qdotr);
                     phase_sum[0] += phase[0];
                     phase_sum[1] += phase[1];
-                    for (k = 0; k < 3; k++){
-                        rcart = sc_origins_cart[3*sc + k] + cell_origins_cart[3*nc + k];
-                        // Note: use cos + isin phase as dyn mat gradients aren't passed
-                        // to a Fortran lib so we need to use the e^i(q.r) convention
-                        rcart_sum[2*k] += phase[1]*rcart; //Multiply phase by i: swap re and im
-                        rcart_sum[2*k + 1] += phase[0]*rcart;
-                    }
+		    if (dmat_grad) {
+                        for (k = 0; k < 3; k++){
+                            // Note: use cos + isin phase as dyn mat gradients aren't passed
+                            // to a Fortran lib so we need to use the e^i(q.r) convention
+                            rcart = all_origins_cart[3*sc_img_idx + k];
+                            rcart_sum[2*k] += phase[1]*rcart; //Multiply phase by i: swap re and im
+                            rcart_sum[2*k + 1] += phase[0]*rcart;
+                        }
+		    }
                 }
                 for (ii = 0; ii < 3; ii++){
                     for (jj = 0; jj < 3; jj++){
