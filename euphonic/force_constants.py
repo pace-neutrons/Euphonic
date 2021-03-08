@@ -609,17 +609,17 @@ class ForceConstants:
         evals[imag_freqs] *= -1
 
         if return_mode_gradients:
-            ax = np.newaxis
-            dmat_grad *= dyn_mat_weighting[..., ax]
-            mode_gradients = np.zeros(len(evecs))
-            for n in range(len(evecs)):
-                grad_tmp = 0 + 0j
-                for i in range(n_atoms):
-                    for a in range(3):
-                        for j in range(n_atoms):
-                            for b in range(3):
-                                grad_tmp += np.conj(evecs[n, i, a, ax])*evecs[n, j, b, ax]*dmat_grad[3*i + a, 3*j + b]
-                mode_gradients[n] = 0.5*np.sqrt(np.real(np.vdot(grad_tmp, grad_tmp)))/evals[n]
+            n_modes = len(evecs)
+            dmat_grad *= dyn_mat_weighting[..., np.newaxis]
+            evecs_sq_view = np.reshape(evecs, (n_modes, n_modes))
+            grad_tmps = np.einsum('ij,ik,jkl->il', np.conj(evecs_sq_view),
+                                                   evecs_sq_view,
+                                                   dmat_grad)
+            mode_gradients = np.zeros(n_modes)
+            for n, grad_tmp in enumerate(grad_tmps):
+                mode_gradients[n] = 0.5*np.sqrt(
+                    np.real(np.vdot(grad_tmp, grad_tmp)))/evals[n]
+
             return evals, evecs, mode_gradients
         else:
             return evals, evecs, None
