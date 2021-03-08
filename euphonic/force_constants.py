@@ -426,7 +426,7 @@ class ForceConstants:
             all_origins_cart = (sc_origins_cart[self._sc_image_i]
                                 + cell_origins_cart[:, ax, ax, ax, :])
         else:
-            all_origins_cart = None
+            all_origins_cart = np.zeros((0, 3), dtype=np.float64)
 
         # Precompute dynamical matrix mass weighting
         atom_mass = self.crystal._atom_mass
@@ -687,7 +687,11 @@ class ForceConstants:
                               axis=3)
 
         ax = np.newaxis
-        if all_origins_cart is not None:
+        ij_phases = cell_phases[:, ax, ax]*sc_phase_sum
+        full_dyn_mat = fc_img_weighted*(
+            ij_phases.repeat(3, axis=2).repeat(3, axis=1))
+        dyn_mat = np.sum(full_dyn_mat, axis=0)
+        if len(all_origins_cart) > 0:
             all_phases = np.einsum('ijkl,i->ijkl',
                                    sc_phases[sc_image_i], cell_phases)
             r_vec_sum = 1j*np.einsum('ijkl,ijklm->ijkm',
@@ -695,13 +699,6 @@ class ForceConstants:
             dmat_gradient = fc_img_weighted[..., ax]*(r_vec_sum.repeat(
                 3, axis=2).repeat(3, axis=1))
             dmat_gradient = np.sum(dmat_gradient, axis=0)
-
-        ij_phases = cell_phases[:, ax, ax]*sc_phase_sum
-        full_dyn_mat = fc_img_weighted*(
-            ij_phases.repeat(3, axis=2).repeat(3, axis=1))
-        dyn_mat = np.sum(full_dyn_mat, axis=0)
-
-        if all_origins_cart is not None:
             return dyn_mat, dmat_gradient
         else:
             return dyn_mat, None
