@@ -453,19 +453,23 @@ class ForceConstants:
         cext_err_msg = (f'Euphonic\'s C extension couldn\'t be imported '
                         f'from {euphonic_path}, it may not have been '
                         f'installed.')
-        try:
-            if use_c is not False:
-                try:
-                    import euphonic._euphonic as euphonic_c
-                except ImportError:
-                    if use_c is None:
-                        warnings.warn((
-                            cext_err_msg
-                            + ' Falling back to pure Python calculation.'),
-                            stacklevel=3)
-                    raise
-            else:
-                raise ImportError
+
+        # Check if C extension can be used and handle appropriately
+        use_c_status = False
+        if use_c is not False:
+            try:
+                import euphonic._euphonic as euphonic_c
+                use_c_status = True
+            except ImportError:
+                if use_c is None:
+                    warnings.warn((
+                        cext_err_msg
+                        + ' Falling back to pure Python calculation.'),
+                        stacklevel=3)
+                else:
+                    raise ImportCError(cext_err_msg)
+
+        if use_c_status is True:
             if n_threads is None:
                 try:
                     n_threads = int(os.environ['EUPHONIC_NUM_THREADS'])
@@ -495,22 +499,19 @@ class ForceConstants:
                     recip_asr_correction, dyn_mat_weighting, dipole,
                     reciprocal_asr, splitting, rfreqs, reigenvecs, n_threads,
                     scipy.__path__[0])
-        except ImportError:
-            if use_c is True:
-                raise ImportCError(cext_err_msg)
-            else:
-                q_independent_args = (
-                    reduced_qpts, split_idx, q_dirs, fc_img_weighted,
-                    unique_sc_offsets, unique_sc_i, unique_cell_origins,
-                    unique_cell_i, recip_asr_correction, dyn_mat_weighting,
-                    dipole, asr, splitting)
-                for q in range(n_rqpts):
-                    if return_eigenvectors:
-                        rfreqs[q], reigenvecs[q] = self._calculate_phonons_at_q(
-                            q, q_independent_args)
-                    else:
-                        rfreqs[q], _ = self._calculate_phonons_at_q(
-                            q, q_independent_args)
+        else:
+            q_independent_args = (
+                reduced_qpts, split_idx, q_dirs, fc_img_weighted,
+                unique_sc_offsets, unique_sc_i, unique_cell_origins,
+                unique_cell_i, recip_asr_correction, dyn_mat_weighting,
+                dipole, asr, splitting)
+            for q in range(n_rqpts):
+                if return_eigenvectors:
+                    rfreqs[q], reigenvecs[q] = self._calculate_phonons_at_q(
+                        q, q_independent_args)
+                else:
+                    rfreqs[q], _ = self._calculate_phonons_at_q(
+                        q, q_independent_args)
         freqs = rfreqs[qpts_i]*ureg('hartree').to('meV')
         if return_eigenvectors:
             return qpts, weights, freqs, reigenvecs[qpts_i]
