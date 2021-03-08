@@ -413,11 +413,15 @@ class ForceConstants:
                 sc_origins[:, i], return_inverse=True)
             unique_cell_origins[i], unique_cell_i[:, i] = np.unique(
                 self.cell_origins[:, i], return_inverse=True)
-        # Only required if return_mode_gradients
-        sc_origins_cart = np.einsum('ij,jk->ik', sc_origins,
-                                    self.crystal._cell_vectors)
+        # Cartesian origins only required if return_mode_gradients=True
         cell_origins_cart = np.einsum('ij,jk->ik', self.cell_origins,
                                       self.crystal._cell_vectors)
+        # Append 0. to sc_origins_cart, so that when being indexed by
+        # sc_image_i to get the origins for each image, an index of -1
+        # and a value of 0. can be used
+        sc_origins_cart = np.zeros((len(sc_origins) + 1, 3))
+        sc_origins_cart[:len(sc_origins)] = np.einsum(
+            'ij,jk->ik', sc_origins, self.crystal._cell_vectors)
 
         # Precompute dynamical matrix mass weighting
         atom_mass = self.crystal._atom_mass
@@ -679,14 +683,15 @@ class ForceConstants:
         sc_phase_sum = np.sum(sc_phases[sc_image_i],
                               axis=3)
 
-        # Again, append 0. due to -1 in phases
         ax = np.newaxis
-        sc_origins_cart = np.append(sc_origins_cart, [[0., 0., 0.]], axis=0)
-        all_origins = sc_origins_cart[sc_image_i] + cell_origins_cart[:, ax, ax, ax, :]
-        all_phases = sc_phases[sc_image_i]*cell_phases[:, ax, ax, ax]
-        r_vec_sum = np.sum(1j*all_phases[..., ax]*all_origins, axis=3)
-        dmat_gradient = fc_img_weighted[..., ax]*(r_vec_sum.repeat(3, axis=2).repeat(3, axis=1))
-        dmat_gradient = np.sum(dmat_gradient, axis=0)
+        if return_mode_gradients:
+            all_origins = (sc_origins_cart[sc_image_i]
+                           + cell_origins_cart[:, ax, ax, ax, :])
+            all_phases = sc_phases[sc_image_i]*cell_phases[:, ax, ax, ax]
+            r_vec_sum = np.sum(1j*all_phases[..., ax]*all_origins, axis=3)
+            dmat_gradient = fc_img_weighted[..., ax]*(r_vec_sum.repeat(
+                3, axis=2).repeat(3, axis=1))
+            dmat_gradient = np.sum(dmat_gradient, axis=0)
 
         ij_phases = cell_phases[:, ax, ax]*sc_phase_sum
         full_dyn_mat = fc_img_weighted*(
