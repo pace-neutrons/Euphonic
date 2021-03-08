@@ -45,7 +45,7 @@ void calculate_dyn_mat_at_q(const double *qpt, const int n_atoms,
                 // Calculate and sum phases for all  images
                 for (n = 0; n < n_sc_images[nc*s_n[0] + i*s_n[1] + j]; n++) {
                     qdotr = 0;
-		    sc_img_idx = nc*s_i[0] + i*s_i[1] + j*s_i[2] + n;
+                    sc_img_idx = nc*s_i[0] + i*s_i[1] + j*s_i[2] + n;
                     sc = sc_image_i[sc_img_idx];
                     for (k = 0; k < 3; k++){
                         qdotr += qpt[k]*(sc_origins[3*sc + k] + cell_origins[3*nc + k]);
@@ -54,7 +54,7 @@ void calculate_dyn_mat_at_q(const double *qpt, const int n_atoms,
                     phase[1] = -sin(2*PI*qdotr);
                     phase_sum[0] += phase[0];
                     phase_sum[1] += phase[1];
-		    if (dmat_grad) {
+                    if (dmat_grad) {
                         for (k = 0; k < 3; k++){
                             // Note: use cos + isin phase as dyn mat gradients aren't passed
                             // to a Fortran lib so we need to use the e^i(q.r) convention
@@ -62,7 +62,7 @@ void calculate_dyn_mat_at_q(const double *qpt, const int n_atoms,
                             rcart_sum[2*k] += phase[1]*rcart; //Multiply phase by i: swap re and im
                             rcart_sum[2*k + 1] += phase[0]*rcart;
                         }
-		    }
+                    }
                 }
                 for (ii = 0; ii < 3; ii++){
                     for (jj = 0; jj < 3; jj++){
@@ -73,12 +73,12 @@ void calculate_dyn_mat_at_q(const double *qpt, const int n_atoms,
                         dyn_mat[2*idx + 1] += phase_sum[1]*fc_mat[nc*s_fc + idx];
                         if (dmat_grad) {
                             for (k = 0; k < 3; k++) {
-				// Real
+                                // Real
                                 dmat_grad[6*idx + 2*k] += rcart_sum[2*k]*fc_mat[nc*s_fc + idx];
-				// Imaginary
+                                // Imaginary
                                 dmat_grad[6*idx + 2*k + 1] += rcart_sum[2*k + 1]*fc_mat[nc*s_fc + idx];
                             }
-			}
+                        }
                     }
                 }
             }
@@ -311,8 +311,8 @@ void mass_weight_dyn_mat(const double* dyn_mat_weighting, const int n_atoms,
     int i, j;
     for (i = 0; i < 9*n_atoms*n_atoms; i++) {
         for (j = 0; j < repeats; j++) {
-	    // Repeats: how many elements of dyn_mat per dyn_mat_weighting
-	    // As dyn_mat = complex and weighting = real, this is usually 2
+            // Repeats: how many elements of dyn_mat per dyn_mat_weighting
+            // As dyn_mat = complex and weighting = real, this is usually 2
             dyn_mat[repeats*i + j] *= dyn_mat_weighting[i];
         }
     }
@@ -398,15 +398,15 @@ void calculate_mode_gradients(const int n_atoms, const double *evals,
                                        (evecs + (n*mode_s + 6*i + 2*a)),
                                        evec_mult_tmp);
                             grad_idx = 3*(3*i + a)*mode_s + 3*(6*j + 2*b) + 2*k;
-			    cmult((dmat_grad + grad_idx), evec_mult_tmp, conj_tmp);
-			    grad_tmp[2*k] += conj_tmp[0];
-			    grad_tmp[2*k + 1] += conj_tmp[1];
+                            cmult((dmat_grad + grad_idx), evec_mult_tmp, conj_tmp);
+                            grad_tmp[2*k] += conj_tmp[0];
+                            grad_tmp[2*k + 1] += conj_tmp[1];
                         }
-		    }
+                    }
                 }
-	    }
+            }
         }
-	grad_dot = 0;
+        grad_dot = 0;
         for (k = 0; k < 3; k++) {
             cmult_conj((grad_tmp + 2*k), (grad_tmp + 2*k), conj_tmp);
             grad_dot += conj_tmp[0];

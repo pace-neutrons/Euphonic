@@ -205,13 +205,13 @@ static PyObject *calculate_phonons(PyObject *self, PyObject *args) {
         if (dmats_len == 0) {
             dmat_per_q = (double*) malloc(dmat_elems*sizeof(double));
         }
-	// If space for the mode gradients has been allocated, assume they
-	// should be calculated and allocate space for dyn mat gradients
-	if (modegs_len > 0) {
+        // If space for the mode gradients has been allocated, assume they
+        // should be calculated and allocate space for dyn mat gradients
+        if (modegs_len > 0) {
             dmat_grad = (double*) malloc(3*dmat_elems*sizeof(double));
-	} else {
-	    dmat_grad = NULL;
-	}
+        } else {
+            dmat_grad = NULL;
+        }
         #pragma omp for
         for (q = 0; q < n_rqpts; q++) {
             double *qpt, *dmat, *eval, *modeg;
@@ -223,12 +223,12 @@ static PyObject *calculate_phonons(PyObject *self, PyObject *args) {
             } else {
                 dmat = (dmats + q*dmat_elems);
             }
-	    if (modegs_len > 0) {
+            if (modegs_len > 0) {
                 modeg = (modegs + q*3*n_atoms);
-	    }
+            }
             calculate_dyn_mat_at_q(qpt, n_atoms, n_cells, max_ims, n_sc_ims,
                 sc_im_idx, cell_ogs, sc_ogs, fc, dmat, dmat_grad,
-		all_ogs_cart);
+                all_ogs_cart);
 
             if (dipole) {
                 calculate_dipole_correction(qpt, n_atoms, cell_vec, recip_vec,
