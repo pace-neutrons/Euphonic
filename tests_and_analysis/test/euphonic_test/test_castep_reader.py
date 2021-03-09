@@ -34,8 +34,12 @@ class TestReadPhononDosData:
                 expected_dos_data.pop('crystal'))
         check_crystal(dos_crystal, expected_dos_crystal)
 
-        for exp_key, exp_val in expected_dos_data.items():
-            if isinstance(exp_val, list):
-                npt.assert_allclose(dos_data[exp_key], np.array(exp_val))
-            else:
-                assert dos_data[exp_key] == exp_val
+        def check_dict(dct, expected_dct):
+            for exp_key, exp_val in expected_dct.items():
+                if isinstance(exp_val, list):
+                    npt.assert_allclose(dct[exp_key], np.array(exp_val))
+                elif isinstance(exp_val, dict):
+                    check_dict(dct[exp_key], exp_val)
+                else:
+                    assert dct[exp_key] == exp_val
+        check_dict(dos_data, expected_dos_data)

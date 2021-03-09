@@ -128,8 +128,8 @@ class TestForceConstantsCalculateQPointFrequencies:
                         frequencies_rtol=2e-5,
                         acoustic_gamma_atol=gamma_atol)
         assert modg.units == expected_modg.units
-        npt.assert_allclose(modg.magnitude, expected_modg.magnitude)
-
+        npt.assert_allclose(modg.magnitude, expected_modg.magnitude,
+                            atol=2e-4, rtol=5e-5)
     weights = np.array([0.1, 0.05, 0.05, 0.2, 0.2, 0.15, 0.15, 0.2, 0.1])
     weights_output_split_gamma = np.array([
         0.1, 0.05, 0.025, 0.025, 0.2, 0.1, 0.1, 0.075, 0.075, 0.075, 0.075,

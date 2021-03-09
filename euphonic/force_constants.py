@@ -563,7 +563,6 @@ class ForceConstants:
             mode_gradients = None
         return qpts, weights, freqs, eigenvectors, mode_gradients
 
-#    @profile
     def _calculate_phonons_at_q(self, q, args):
         """
         Given a q-point and some precalculated q-independent values,
