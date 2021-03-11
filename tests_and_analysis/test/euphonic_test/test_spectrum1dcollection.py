@@ -35,6 +35,13 @@ class ExpectedSpectrum1DCollection:
         else:
             return None
 
+    @property
+    def metadata(self):
+        if 'metadata' in self.data.keys():
+            return self.data['metadata']
+        else:
+            return None
+
     def to_dict(self):
         d = {'x_data': self.x_data.magnitude,
              'x_data_unit': str(self.x_data.units),
@@ -95,6 +102,12 @@ def check_spectrum1dcollection(actual_spectrum, expected_spectrum):
     else:
         assert (actual_spectrum.x_tick_labels
                 == expected_spectrum.x_tick_labels)
+
+    if expected_spectrum.metadata is None:
+        assert actual_spectrum.metadata is None
+    else:
+        assert (actual_spectrum.metadata
+                == expected_spectrum.metadata)
 
 
 @pytest.mark.unit

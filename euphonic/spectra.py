@@ -383,14 +383,14 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
 
     """
     def __init__(self, x_data: Quantity, y_data: Quantity,
-                 x_tick_labels: Optional[Sequence[Tuple[int, str]]] = None
-                 ) -> None:
+                 x_tick_labels: Optional[Sequence[Tuple[int, str]]] = None,
+                 metadata: Optional[Dict[Any, Any]] = None) -> None:
 
         _check_constructor_inputs(
-            [y_data, x_tick_labels],
-            [Quantity, [list, type(None)]],
-            [(-1,-1), ()],
-            ['y_data', 'x_tick_labels'])
+            [y_data, x_tick_labels, metadata],
+            [Quantity, [list, type(None)], [dict, type(None)]],
+            [(-1,-1), (), ()],
+            ['y_data', 'x_tick_labels', 'metadata'])
         ny = len(y_data[0])
         _check_constructor_inputs(
             [x_data], [Quantity],
@@ -399,6 +399,7 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
         self._set_data(x_data, 'x')
         self._set_data(y_data, 'y')
         self.x_tick_labels = x_tick_labels
+        self.metadata = metadata
 
     @property
     def x_data(self):
@@ -485,7 +486,8 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
         -------
         dict
         """
-        return _obj_to_dict(self, ['x_data', 'y_data', 'x_tick_labels'])
+        return _obj_to_dict(self, ['x_data', 'y_data', 'x_tick_labels',
+                                   'metadata'])
 
     @classmethod
     def from_dict(cls: S, d) -> S:
@@ -511,8 +513,9 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
         Spectrum1DCollection
         """
         d = _process_dict(d, quantities=['x_data', 'y_data'],
-                          optional=['x_tick_labels'])
-        return cls(d['x_data'], d['y_data'], x_tick_labels=d['x_tick_labels'])
+                          optional=['x_tick_labels', 'metadata'])
+        return cls(d['x_data'], d['y_data'], x_tick_labels=d['x_tick_labels'],
+                   metadata=d['metadata'])
 
 
 class Spectrum2D(Spectrum):

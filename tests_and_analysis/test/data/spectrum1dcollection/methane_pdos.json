@@ -1,4 +1,15 @@
 {
+    "__euphonic_class__": "Spectrum1DCollection",
+    "__euphonic_version__": "0.4.0+2.g6696045.dirty",
+    "metadata": {
+        "PDOS": [
+            "C1",
+            "H2",
+            "H3",
+            "H4",
+            "H5"
+        ]
+    },
     "x_data": [
         -0.03,
         -0.02786899778116715,
