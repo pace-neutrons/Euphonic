@@ -1,6 +1,7 @@
 #define PY_SSIZE_T_CLEAN
 #define NPY_NO_DEPRECATED_API NPY_1_9_API_VERSION
 #include <math.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -12,8 +13,8 @@
 void calculate_dyn_mat_at_q(const double *qpt, const int n_atoms,
     const int n_cells, const int max_images, const int *n_sc_images,
     const int *sc_image_i, const int *cell_origins, const int *sc_origins,
-    const double *fc_mat, double *dyn_mat, double *dmat_grad,
-    const double *all_origins_cart) {
+    const double *fc_mat, const double *all_origins_cart, const bool calc_dmat_grad,
+    double *dyn_mat, double *dmat_grad) {
 
     int i, j, n, nc, k, sc, ii, jj, sc_img_idx, idx;
     double qdotr;
@@ -34,7 +35,7 @@ void calculate_dyn_mat_at_q(const double *qpt, const int n_atoms,
     int s_fc = 9*n_atoms*n_atoms; // For fc_mat
 
     memset(dyn_mat, 0, 2*9*n_atoms*n_atoms*sizeof(double));
-    if (dmat_grad) {
+    if (calc_dmat_grad) {
         memset(dmat_grad, 0, 3*2*9*n_atoms*n_atoms*sizeof(double));
     }
     for (i = 0; i < n_atoms; i++) {
@@ -54,7 +55,7 @@ void calculate_dyn_mat_at_q(const double *qpt, const int n_atoms,
                     phase[1] = -sin(2*PI*qdotr);
                     phase_sum[0] += phase[0];
                     phase_sum[1] += phase[1];
-                    if (dmat_grad) {
+                    if (calc_dmat_grad) {
                         for (k = 0; k < 3; k++){
                             // Note: use cos + isin phase as dyn mat gradients aren't passed
                             // to a Fortran lib so we need to use the e^i(q.r) convention
@@ -71,7 +72,7 @@ void calculate_dyn_mat_at_q(const double *qpt, const int n_atoms,
                         dyn_mat[2*idx] += phase_sum[0]*fc_mat[nc*s_fc + idx];
                         // Imaginary part
                         dyn_mat[2*idx + 1] += phase_sum[1]*fc_mat[nc*s_fc + idx];
-                        if (dmat_grad) {
+                        if (calc_dmat_grad) {
                             for (k = 0; k < 3; k++) {
                                 // Real
                                 dmat_grad[6*idx + 2*k] += rcart_sum[2*k]*fc_mat[nc*s_fc + idx];
