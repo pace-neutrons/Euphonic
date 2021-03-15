@@ -230,7 +230,7 @@ static PyObject *calculate_phonons(PyObject *self, PyObject *args) {
             }
             calculate_dyn_mat_at_q(qpt, n_atoms, n_cells, max_ims, n_sc_ims,
                 sc_im_idx, cell_ogs, sc_ogs, fc, all_ogs_cart, calc_dmat_grad,
-		dmat, dmat_grad);
+                dmat, dmat_grad);
 
             if (dipole) {
                 calculate_dipole_correction(qpt, n_atoms, cell_vec, recip_vec,

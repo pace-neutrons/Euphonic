@@ -16,7 +16,7 @@ void calculate_dyn_mat_at_q(const double *qpt, const int n_atoms,
     const double *fc_mat, const double *all_origins_cart, const bool calc_dmat_grad,
     double *dyn_mat, double *dmat_grad) {
 
-    int i, j, n, nc, k, sc, ii, jj, sc_img_idx, idx;
+    int i, j, n, nc, k, sc, ii, jj, sc_img_idx, idx, idx_t;
     double qdotr;
     double rcart;
     double phase[2];
@@ -39,7 +39,7 @@ void calculate_dyn_mat_at_q(const double *qpt, const int n_atoms,
         memset(dmat_grad, 0, 3*2*9*n_atoms*n_atoms*sizeof(double));
     }
     for (i = 0; i < n_atoms; i++) {
-        for (j = 0; j < n_atoms; j++) {
+        for (j = i; j < n_atoms; j++) {
             for (nc = 0; nc < n_cells; nc++){
                 memset(phase_sum, 0, 2*sizeof(double));
                 memset(rcart_sum, 0, 6*sizeof(double));
@@ -79,6 +79,24 @@ void calculate_dyn_mat_at_q(const double *qpt, const int n_atoms,
                                 // Imaginary
                                 dmat_grad[6*idx + 2*k + 1] += rcart_sum[2*k + 1]*fc_mat[nc*s_fc + idx];
                             }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // Fill in lower triangular of dmat gradients - is Hermitian
+    if (calc_dmat_grad) {
+        for (i = 1; i < n_atoms; i++) {
+            for (j = 0; j < i; j++) {
+                for (ii = 0; ii < 3; ii++){
+                    for (jj = 0; jj < 3; jj++){
+                        idx = 6*((3*i+ii)*3*n_atoms + 3*j + jj);
+                        idx_t = 6*((3*j+jj)*3*n_atoms + 3*i + ii);
+                        for (k = 0; k < 3; k++) {
+                            dmat_grad[idx + 2*k] = dmat_grad[idx_t + 2*k];
+                            dmat_grad[idx + 2*k + 1] = -dmat_grad[idx_t + 2*k + 1];
                         }
                     }
                 }
