@@ -421,8 +421,10 @@ class TestQpointFrequenciesCalculateDos:
         qpt_freqs = get_qpt_freqs(material, qpt_freqs_json)
         with open(os.path.join(get_fc_dir(), mode_widths_json), 'r') as fp:
             modw_dict = json.load(fp)
+        scaling = 2/(np.cbrt(len(qpt_freqs.qpts)*qpt_freqs.crystal.cell_volume()))
         mode_widths = modw_dict['mode_gradients']*ureg(
             modw_dict['mode_gradients_unit'])
+        mode_widths *= scaling
         dos = qpt_freqs.calculate_dos(ebins, mode_widths=mode_widths)
         expected_dos = get_expected_spectrum1d(expected_dos_json)
         check_spectrum1d(dos, expected_dos)

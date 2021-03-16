@@ -144,7 +144,7 @@ class ForceConstants:
             reduce_qpts: bool = True,
             use_c: Optional[bool] = None,
             n_threads: Optional[int] = None,
-            return_mode_gradients: bool = False) -> QpointPhononModes:
+            return_mode_widths: bool = False) -> QpointPhononModes:
         """
         Calculate phonon frequencies and eigenvectors at specified
         q-points from a force constants matrix via Fourier interpolation
@@ -261,14 +261,14 @@ class ForceConstants:
         .. [1] M.T. Dove, Introduction to Lattice Dynamics, Cambridge University Press, Cambridge, 1993, 83-87
         .. [2] X. Gonze, K. C. Charlier, D. C. Allan, M. P. Teter, Phys. Rev. B, 1994, 50, 13035-13038
         """
-        qpts, weights, freqs, evecs, grads = self._calculate_phonons_at_qpts(
+        qpts, weights, freqs, evecs, widths = self._calculate_phonons_at_qpts(
             qpts, weights, asr, dipole, eta_scale, splitting, insert_gamma,
-            reduce_qpts, use_c, n_threads, return_mode_gradients,
+            reduce_qpts, use_c, n_threads, return_mode_widths,
             return_eigenvectors=True)
         qpt_ph_modes = QpointPhononModes(
             self.crystal, qpts, freqs, evecs, weights=weights)
-        if return_mode_gradients:
-            return qpt_ph_modes, grads
+        if return_mode_widths:
+            return qpt_ph_modes, widths
         else:
             return qpt_ph_modes
 
@@ -284,20 +284,20 @@ class ForceConstants:
             reduce_qpts: bool = True,
             use_c: Optional[bool] = None,
             n_threads: Optional[int] = None,
-            return_mode_gradients: bool = False) -> QpointFrequencies:
+            return_mode_widths: bool = False) -> QpointFrequencies:
         """
         Calculate phonon frequencies (without eigenvectors) at specified
         q-points. See ForceConstants.calculate_qpoint_phonon_modes for
         argument and algorithm details
         """
-        qpts, weights, freqs, _, grads = self._calculate_phonons_at_qpts(
+        qpts, weights, freqs, _, widths = self._calculate_phonons_at_qpts(
             qpts, weights, asr, dipole, eta_scale, splitting, insert_gamma,
-            reduce_qpts, use_c, n_threads, return_mode_gradients,
+            reduce_qpts, use_c, n_threads, return_mode_widths,
             return_eigenvectors=False)
         qpt_freqs = QpointFrequencies(
             self.crystal, qpts, freqs, weights=weights)
-        if return_mode_gradients:
-            return qpt_freqs, grads
+        if return_mode_widths:
+            return qpt_freqs, widths
         else:
             return qpt_freqs
 
@@ -313,7 +313,7 @@ class ForceConstants:
             reduce_qpts: bool,
             use_c: Optional[bool],
             n_threads: Optional[int],
-            return_mode_gradients: bool,
+            return_mode_widths: bool,
             return_eigenvectors: bool) -> Union[
                 Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray],
                 Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]]:
@@ -413,7 +413,7 @@ class ForceConstants:
                 sc_origins[:, i], return_inverse=True)
             unique_cell_origins[i], unique_cell_i[:, i] = np.unique(
                 self.cell_origins[:, i], return_inverse=True)
-        if return_mode_gradients:
+        if return_mode_widths:
             cell_origins_cart = np.einsum('ij,jk->ik', self.cell_origins,
                                           self.crystal._cell_vectors)
             # Append 0. to sc_origins_cart, so that when being indexed by
@@ -478,7 +478,7 @@ class ForceConstants:
             reigenvecs = np.zeros(
                 (0, 3*n_atoms, n_atoms, 3), dtype=np.complex128)
 
-        if return_mode_gradients:
+        if return_mode_widths:
             rmode_gradients = np.zeros((n_rqpts, 3*n_atoms), dtype=np.float64)
         else:
             rmode_gradients = np.zeros((0, 3*n_atoms), dtype=np.float64)
@@ -548,7 +548,7 @@ class ForceConstants:
                         q, q_independent_args)
                 if return_eigenvectors:
                     reigenvecs[q] = evecs
-                if return_mode_gradients:
+                if return_mode_widths:
                     rmode_gradients[q] = grads
 
         freqs = rfreqs[qpts_i]*ureg('hartree').to('meV')
@@ -556,12 +556,13 @@ class ForceConstants:
             eigenvectors = reigenvecs[qpts_i]
         else:
             eigenvectors = None
-        if return_mode_gradients:
-            mode_gradients = rmode_gradients[qpts_i]*ureg(
-                    'hartree*bohr').to('meV*angstrom')
+        if return_mode_widths:
+            q_spacing = 2/(np.cbrt(len(qpts)*self.crystal._cell_volume()))
+            mode_widths = q_spacing*rmode_gradients[qpts_i]*ureg(
+                    'hartree').to('meV')
         else:
-            mode_gradients = None
-        return qpts, weights, freqs, eigenvectors, mode_gradients
+            mode_widths = None
+        return qpts, weights, freqs, eigenvectors, mode_widths
 
     def _calculate_phonons_at_q(self, q, args):
         """
