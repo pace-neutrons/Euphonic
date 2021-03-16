@@ -94,12 +94,9 @@ def check_spectrum1d(actual_spectrum1d, expected_spectrum1d):
                         atol=np.finfo(np.float64).eps)
     assert (actual_spectrum1d.x_data.units
             == expected_spectrum1d.x_data.units)
-    spec1d_ydata = actual_spectrum1d.y_data.magnitude
-    exp_spec1d_ydata = expected_spectrum1d.y_data.magnitude
-    idx = np.where(spec1d_ydata > 0)
-    scale = np.mean(spec1d_ydata[idx]/exp_spec1d_ydata[idx])
+
     npt.assert_allclose(actual_spectrum1d.y_data.magnitude,
-                        scale*expected_spectrum1d.y_data.magnitude,
+                        expected_spectrum1d.y_data.magnitude,
                         atol=np.finfo(np.float64).eps)
     assert (actual_spectrum1d.y_data.units
             == expected_spectrum1d.y_data.units)
