@@ -82,38 +82,37 @@ class TestForceConstantsCalculateQPointFrequencies:
 
     @pytest.mark.parametrize(
         ('fc, material, all_args, expected_qpoint_frequencies_file, '
-         'expected_modg_file'), [
+         'expected_modw_file'), [
         (get_quartz_fc(),
          'quartz',
          [mp_grid([5, 5, 4]),
           {'asr': 'reciprocal', 'return_mode_widths': True}],
          'quartz_554_full_qpoint_frequencies.json',
-         'quartz_554_full_mode_gradients.json'),
+         'quartz_554_full_mode_widths.json'),
         (get_lzo_fc(),
          'LZO',
          [mp_grid([2, 2, 2]),
           {'asr': 'reciprocal', 'return_mode_widths': True}],
          'lzo_222_full_qpoint_frequencies.json',
-         'lzo_222_full_mode_gradients.json')])
+         'lzo_222_full_mode_widths.json')])
     @pytest.mark.parametrize(
         'n_threads',
         [0, 2])
     def test_calculate_qpoint_frequencies_with_mode_widths(
             self, fc, material, all_args, expected_qpoint_frequencies_file,
-            expected_modg_file, n_threads):
+            expected_modw_file, n_threads):
         func_kwargs = all_args[1]
         if n_threads == 0:
             func_kwargs['use_c'] = False
         else:
             func_kwargs['use_c'] = True
             func_kwargs['n_threads'] = n_threads
-        qpt_freqs, modg = fc.calculate_qpoint_frequencies(
+        qpt_freqs, modw = fc.calculate_qpoint_frequencies(
             all_args[0], **func_kwargs)
-
-        with open(os.path.join(get_fc_dir(), expected_modg_file), 'r') as fp:
-            modg_dict = json.load(fp)
-        expected_modg = modg_dict['mode_gradients']*ureg(
-            modg_dict['mode_gradients_unit'])
+        with open(os.path.join(get_fc_dir(), expected_modw_file), 'r') as fp:
+            modw_dict = json.load(fp)
+        expected_modw = modw_dict['mode_widths']*ureg(
+            modw_dict['mode_widths_unit'])
         expected_qpt_freqs = get_expected_qpt_freqs(
             material, expected_qpoint_frequencies_file)
         # Only give gamma-acoustic modes special treatment if the acoustic
@@ -127,9 +126,8 @@ class TestForceConstantsCalculateQPointFrequencies:
                         frequencies_atol=1e-4,
                         frequencies_rtol=2e-5,
                         acoustic_gamma_atol=gamma_atol)
-        assert modg.units == expected_modg.units/ureg('angstrom')
-        scaling = 2/(np.cbrt(len(qpt_freqs.qpts)*qpt_freqs.crystal.cell_volume())).magnitude
-        npt.assert_allclose(modg.magnitude, scaling*expected_modg.magnitude,
+        assert modw.units == expected_modw.units
+        npt.assert_allclose(modw.magnitude, expected_modw.magnitude,
                             atol=2e-4, rtol=5e-5)
     weights = np.array([0.1, 0.05, 0.05, 0.2, 0.2, 0.15, 0.15, 0.2, 0.1])
     weights_output_split_gamma = np.array([

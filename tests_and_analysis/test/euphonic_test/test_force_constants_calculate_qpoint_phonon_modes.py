@@ -125,38 +125,38 @@ class TestForceConstantsCalculateQPointPhononModes:
 
     @pytest.mark.parametrize(
         ('fc, material, all_args, expected_qpoint_phonon_modes_file, '
-         'expected_modg_file'), [
+         'expected_modw_file'), [
         (get_quartz_fc(),
          'quartz',
          [mp_grid([5, 5, 4]),
           {'asr': 'reciprocal', 'return_mode_widths': True}],
          'quartz_554_full_qpoint_phonon_modes.json',
-         'quartz_554_full_mode_gradients.json'),
+         'quartz_554_full_mode_widths.json'),
         (get_lzo_fc(),
          'LZO',
          [mp_grid([2, 2, 2]),
           {'asr': 'reciprocal', 'return_mode_widths': True}],
          'lzo_222_full_qpoint_phonon_modes.json',
-         'lzo_222_full_mode_gradients.json')])
+         'lzo_222_full_mode_widths.json')])
     @pytest.mark.parametrize(
         'n_threads',
         [0, 2])
     def test_calculate_qpoint_phonon_modes_with_mode_widths(
             self, fc, material, all_args, expected_qpoint_phonon_modes_file,
-            expected_modg_file, n_threads):
+            expected_modw_file, n_threads):
         func_kwargs = all_args[1]
         if n_threads == 0:
             func_kwargs['use_c'] = False
         else:
             func_kwargs['use_c'] = True
             func_kwargs['n_threads'] = n_threads
-        qpoint_phonon_modes, modg = fc.calculate_qpoint_phonon_modes(
+        qpoint_phonon_modes, modw = fc.calculate_qpoint_phonon_modes(
             all_args[0], **func_kwargs)
 
-        with open(os.path.join(get_fc_dir(), expected_modg_file), 'r') as fp:
-            modg_dict = json.load(fp)
-        expected_modg = modg_dict['mode_gradients']*ureg(
-                modg_dict['mode_gradients_unit'])
+        with open(os.path.join(get_fc_dir(), expected_modw_file), 'r') as fp:
+            modw_dict = json.load(fp)
+        expected_modw = modw_dict['mode_widths']*ureg(
+                modw_dict['mode_widths_unit'])
         expected_qpoint_phonon_modes = ExpectedQpointPhononModes(
             os.path.join(get_qpt_ph_modes_dir(material),
             expected_qpoint_phonon_modes_file))
@@ -172,9 +172,8 @@ class TestForceConstantsCalculateQPointPhononModes:
                            frequencies_atol=1e-4,
                            frequencies_rtol=2e-5,
                            acoustic_gamma_atol=gamma_atol)
-        assert modg.units == expected_modg.units/ureg('angstrom')
-        scaling = 2/(np.cbrt(len(qpoint_phonon_modes.qpts)*qpoint_phonon_modes.crystal.cell_volume())).magnitude
-        npt.assert_allclose(modg.magnitude, scaling*expected_modg.magnitude,
+        assert modw.units == expected_modw.units
+        npt.assert_allclose(modw.magnitude, expected_modw.magnitude,
                             atol=2e-4, rtol=5e-5)
 
     # ForceConstants stores some values (supercell image list, vectors
