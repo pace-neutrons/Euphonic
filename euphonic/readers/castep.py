@@ -67,7 +67,13 @@ def read_phonon_dos_data(
         if not 'BEGIN DOS' in line:
             raise RuntimeError(
                 f'Expected "BEGIN DOS" in {filename}, got {line}')
-        dos_data = np.loadtxt(f, max_rows=n_bins)
+        # max_rows arg not available until Numpy 1.16.0
+        try:
+            dos_data = np.loadtxt(f, max_rows=n_bins)
+        except TypeError:
+            data = f.readlines()
+            dos_data = np.array([[float(elem) for elem in line.split()]
+                                      for line in data[:n_bins]])
 
     data_dict = {}
 
