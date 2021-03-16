@@ -144,7 +144,9 @@ class ForceConstants:
             reduce_qpts: bool = True,
             use_c: Optional[bool] = None,
             n_threads: Optional[int] = None,
-            return_mode_widths: bool = False) -> QpointPhononModes:
+            return_mode_widths: bool = False
+            ) -> Union[QpointPhononModes,
+                       Tuple[QpointPhononModes, Quantity]]:
         """
         Calculate phonon frequencies and eigenvectors at specified
         q-points from a force constants matrix via Fourier interpolation
@@ -201,15 +203,24 @@ class ForceConstants:
             to determine number of threads, if this is not set then
             the value returned from multiprocessing.cpu_count() will be
             used
+        return_mode_widths
+            Whether to return the mode widths in additon to
+            QpointPhononModes. The mode widths can be used in adaptive
+            broadening for DOS. For details on how these are calculated
+            see the Notes section
 
         Returns
         -------
-        QpointPhononModes
+        qpoint_phonon_modes
             A QpointPhononModes object containing the interpolated
             frequencies and eigenvectors at each q-point. Note that if
             there is LO-TO splitting, and insert_gamma=True, the number
             of input q-points may not be the same as in the output
             object
+        mode_widths
+            Optional shape (n_qpts, n_branches) float Quantity. Is only
+            returned if return_mode_widths is true
+
 
         Raises
         ------
@@ -218,6 +229,9 @@ class ForceConstants:
 
         Notes
         -----
+
+        **Phonon Frequencies/Eigenvectors Calculation**
+
         Phonon frequencies/eigenvectors are calculated at any q-point by
         Fourier interpolation of a force constants matrix. The force
         constants matrix is defined as [1]_:
@@ -258,8 +272,69 @@ class ForceConstants:
         dipole=True) and a non-analytical correction at the gamma point
         [2]_ (applied if splitting=True).
 
-        .. [1] M.T. Dove, Introduction to Lattice Dynamics, Cambridge University Press, Cambridge, 1993, 83-87
+        .. [1] M. T. Dove, Introduction to Lattice Dynamics, Cambridge University Press, Cambridge, 1993, 83-87
         .. [2] X. Gonze, K. C. Charlier, D. C. Allan, M. P. Teter, Phys. Rev. B, 1994, 50, 13035-13038
+
+        **Mode Widths Calculation**
+
+        The mode widths are used in the adaptive broadening scheme [3]_
+        when computing a DOS - broadening each mode contribution
+        individually according to its mode width. The mode widths at
+        each Q are calculated as the same time as the phonon
+        frequencies and eigenvectors as follows.
+
+        The mode widths are proportional to the gradient of the
+        dispersion, :math:`\\frac{\\delta\\omega_{q\\nu}}{{\\delta}Q}`.
+        Firstly, the eigenvalue equation above can be written in matrix
+        form as:
+
+        .. math::
+
+          \\Omega(q)E(q) = D(q)E(q)
+
+        .. math::
+
+          \\Omega(q) = E^{-1}(q)D(q)E(q)
+
+        Where :math:`\\Omega(q)` is the diagonal matrix of phonon
+        frequencies squared :math:`\\omega_{q\\nu}^{2}` and :math:`E(q)`
+        is the matrix containing eigenvectors for all modes.
+        :math:`\\frac{\\delta\\omega_{q\\nu}}{{\\delta}Q}`, can then
+        be obtained by differentiating the above equation with respect
+        to Q using the product rule:
+
+        .. math::
+
+          \\frac{\\delta\\Omega}{{\\delta}Q} = 2\\omega_{q\\nu}\\frac{\\delta\\omega_{q\\nu}}{{\\delta}Q}
+
+        .. math::
+
+          \\frac{\\delta\\omega_{q\\nu}}{{\\delta}Q} = \\frac{1}{2\\omega_{q\\nu}}{(
+          \\frac{\\delta{E^{-1}}}{{\\delta}Q}DE +
+          E^{-1}\\frac{\\delta{D}}{{\\delta}Q}E +
+          E^{-1}D\\frac{\\delta{E}}{{\\delta}Q})}
+
+        Given that eigenvectors are normalised and orthogonal, an identity of normalised wavefunctions
+        can be employed:
+
+        .. math::
+
+          \\frac{d}{d\\lambda}<\\psi_{\\lambda}|\\psi_{\\lambda}> = 0
+
+        So some terms can be set to zero, resulting in:
+
+        .. math::
+
+         \\frac{\\delta\\omega_{q\\nu}}{{\\delta}Q} = \\frac{1}{2\\omega_{q\\nu}}{(E^{-1}\\frac{\\delta{D}}{{\\delta}Q}E)}
+        :math:`\\frac{\\delta{D}}{\\delta{Q}}` can be obtained by differentiating the Fourier equation above:
+
+        .. math::
+
+          \\frac{\\delta{D}}{\\delta{Q}} =
+          \\frac{-i r_a}{\\sqrt{M_\\kappa M_{\\kappa '}}}
+          \\sum_{a}\\phi_{\\alpha, \\alpha '}^{\\kappa, \\kappa '}e^{-iq\\cdot r_a}
+
+        .. [3] J. R. Yates, X. Wang, D. Vanderbilt and I. Souza, Phys. Rev. B, 2007, 75, 195121
         """
         qpts, weights, freqs, evecs, widths = self._calculate_phonons_at_qpts(
             qpts, weights, asr, dipole, eta_scale, splitting, insert_gamma,
@@ -284,7 +359,9 @@ class ForceConstants:
             reduce_qpts: bool = True,
             use_c: Optional[bool] = None,
             n_threads: Optional[int] = None,
-            return_mode_widths: bool = False) -> QpointFrequencies:
+            return_mode_widths: bool = False,
+            ) -> Union[QpointFrequencies,
+                       Tuple[QpointFrequencies, Quantity]]:
         """
         Calculate phonon frequencies (without eigenvectors) at specified
         q-points. See ForceConstants.calculate_qpoint_phonon_modes for
