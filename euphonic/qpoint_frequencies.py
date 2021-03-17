@@ -95,6 +95,18 @@ class QpointFrequencies:
         dos_bins
             Shape (n_e_bins + 1,) float Quantity. The energy bin edges
             to use for calculating the DOS
+        mode_widths
+            Shape (n_qpts, n_branches) float Quantity in energy units.
+            The broadening width for each mode at each q-point, for
+            adaptive broadening
+        are_bin_edges
+            Whether the provided dos_bins are bin edges. For normal
+            histogram binning, bin edges are preferable, but for
+            adaptive broadening (when mode_widths are provided) the
+            weights for each mode must be calculated at specific
+            points, so bin centres are preferred. This parameter allows
+            flexibility and bins will be converted to the correct
+            form before use
 
         Returns
         -------

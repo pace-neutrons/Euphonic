@@ -389,41 +389,58 @@ class TestQpointFrequenciesUnitConversion:
 class TestQpointFrequenciesCalculateDos:
 
     @pytest.mark.parametrize(
-        'material, qpt_freqs_json, expected_dos_json, ebins', [
+        'material, qpt_freqs_json, expected_dos_json, ebins, kwargs', [
             ('quartz', 'quartz_666_qpoint_frequencies.json',
-             'quartz_666_dos.json', np.arange(0, 155, 0.5)*ureg('meV')),
+             'quartz_666_dos.json', np.arange(0, 155, 0.5)*ureg('meV'), {}),
             ('quartz', 'quartz_666_cv_only_qpoint_frequencies.json',
-             'quartz_666_dos.json', np.arange(0, 155, 0.5)*ureg('meV')),
+             'quartz_666_dos.json', np.arange(0, 155, 0.5)*ureg('meV'), {}),
+            ('quartz', 'quartz_666_qpoint_frequencies.json',
+             'quartz_666_dos_bin_centres.json', np.arange(0, 155, 0.5)*ureg('meV'),
+             {'are_bin_edges': False}),
             ('CaHgO2', 'CaHgO2_666_qpoint_frequencies.json',
-             'CaHgO2_666_dos.json', np.arange(0, 95, 0.4)*ureg('meV'))
+             'CaHgO2_666_dos.json', np.arange(0, 95, 0.4)*ureg('meV'), {}),
+            ('CaHgO2', 'CaHgO2_666_qpoint_frequencies.json',
+             'CaHgO2_666_dos_bin_centres.json', np.arange(0, 95, 0.4)*ureg('meV'),
+             {'are_bin_edges': False})
         ])
     def test_calculate_dos(
-            self, material, qpt_freqs_json, expected_dos_json, ebins):
+            self, material, qpt_freqs_json, expected_dos_json, ebins, kwargs):
         qpt_freqs = get_qpt_freqs(material, qpt_freqs_json)
-        dos = qpt_freqs.calculate_dos(ebins)
+        dos = qpt_freqs.calculate_dos(ebins, **kwargs)
         expected_dos = get_expected_spectrum1d(expected_dos_json)
         check_spectrum1d(dos, expected_dos)
 
     @pytest.mark.parametrize(
         ('material, qpt_freqs_json, mode_widths_json, '
-         'expected_dos_json, ebins'), [
+         'expected_dos_json, ebins, kwargs'), [
             ('quartz', 'quartz_554_full_qpoint_frequencies.json',
              'quartz_554_full_mode_widths.json',
              'quartz_554_full_adaptive_dos.json',
-             np.arange(0, 155, 0.1)*ureg('meV')),
+             np.arange(0, 155, 0.1)*ureg('meV'), {}),
+            ('quartz', 'quartz_554_full_qpoint_frequencies.json',
+             'quartz_554_full_mode_widths.json',
+             'quartz_554_full_adaptive_dos_bin_centres.json',
+             np.arange(0, 155, 0.1)*ureg('meV'),
+             {'are_bin_edges': False}),
             ('LZO', 'lzo_222_full_qpoint_frequencies.json',
              'lzo_222_full_mode_widths.json',
              'lzo_222_full_adaptive_dos.json',
-             np.arange(0, 100, 0.1)*ureg('meV'))])
+             np.arange(0, 100, 0.1)*ureg('meV'), {}),
+            ('LZO', 'lzo_222_full_qpoint_frequencies.json',
+             'lzo_222_full_mode_widths.json',
+             'lzo_222_full_adaptive_dos_bin_centres.json',
+             np.arange(0, 100, 0.1)*ureg('meV'),
+             {'are_bin_edges': False})])
     def test_calculate_dos_with_mode_widths(
             self, material, qpt_freqs_json, mode_widths_json,
-            expected_dos_json, ebins):
+            expected_dos_json, ebins, kwargs):
         qpt_freqs = get_qpt_freqs(material, qpt_freqs_json)
         with open(os.path.join(get_fc_dir(), mode_widths_json), 'r') as fp:
             modw_dict = json.load(fp)
         mode_widths = modw_dict['mode_widths']*ureg(
             modw_dict['mode_widths_unit'])
-        dos = qpt_freqs.calculate_dos(ebins, mode_widths=mode_widths)
+        dos = qpt_freqs.calculate_dos(
+            ebins, mode_widths=mode_widths, **kwargs)
         expected_dos = get_expected_spectrum1d(expected_dos_json)
         check_spectrum1d(dos, expected_dos)
 
