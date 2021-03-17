@@ -204,10 +204,9 @@ class ForceConstants:
             the value returned from multiprocessing.cpu_count() will be
             used
         return_mode_widths
-            Whether to return the mode widths in additon to
-            QpointPhononModes. The mode widths can be used in adaptive
-            broadening for DOS. For details on how these are calculated
-            see the Notes section
+            Whether to also return the mode widths. The mode widths can
+            be used in adaptive broadening for DOS. For details on how
+            these are calculated see the Notes section
 
         Returns
         -------
