@@ -22,14 +22,14 @@ def _to_json_dict(dictionary):
     return dictionary
 
 
-def _from_json_dict(dictionary, type_dict={}):
+def _from_json_dict(dictionary, type_dict={}, convert_list=True):
     """
     For a dictionary read from a JSON file, convert all list key values
     to that specified in type_dict. If not specified in type_dict, just
     uses the default conversion provided by np.array(list)
     """
     for key, val in dictionary.items():
-        if isinstance(val, list):
+        if convert_list and isinstance(val, list):
             if key in type_dict and type_dict[key] == tuple:
                 dictionary[key] = [tuple(x) for x in val]
             elif key in type_dict and type_dict[key] == np.complex128:
@@ -38,7 +38,9 @@ def _from_json_dict(dictionary, type_dict={}):
             else:
                 dictionary[key] = np.array(val)
         elif isinstance(val, dict):
-            dictionary[key] = _from_json_dict(val, type_dict)
+            convert_list = (key != 'metadata')
+            dictionary[key] = _from_json_dict(
+                val, type_dict, convert_list=convert_list)
     return dictionary
 
 

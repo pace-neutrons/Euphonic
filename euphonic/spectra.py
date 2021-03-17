@@ -384,7 +384,7 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
     """
     def __init__(self, x_data: Quantity, y_data: Quantity,
                  x_tick_labels: Optional[Sequence[Tuple[int, str]]] = None,
-                 metadata: Optional[Dict[Any, Any]] = None) -> None:
+                 metadata: Optional[Dict[str, Any]] = None) -> None:
 
         _check_constructor_inputs(
             [y_data, x_tick_labels, metadata],

@@ -49,20 +49,26 @@ class ExpectedSpectrum1DCollection:
              'y_data_unit': str(self.y_data.units)}
         if self.x_tick_labels is not None:
             d['x_tick_labels'] = self.x_tick_labels
+        if self.metadata is not None:
+            d['metadata'] = self.metadata
         return d
 
     def to_constructor_args(self, x_data=None, y_data=None,
-                            x_tick_labels=None):
+                            x_tick_labels=None, metadata=None):
         if x_data is None:
             x_data = self.x_data
         if y_data is None:
             y_data = self.y_data
         if x_tick_labels is None:
             x_tick_labels = self.x_tick_labels
+        if metadata is None:
+            metadata = self.metadata
 
         kwargs = {}
         if x_tick_labels is not None:
             kwargs['x_tick_labels'] = x_tick_labels
+        if metadata is not None:
+            kwargs['metadata'] = metadata
 
         return (x_data, y_data), kwargs
 
@@ -167,6 +173,9 @@ class TestSpectrum1DCollectionCreation:
          ValueError),
         ('x_tick_labels',
          get_expected_spectrum1dcollection('gan_bands.json').x_tick_labels[0],
+         TypeError),
+        ('metadata',
+         ['Not', 'a', 'dictionary'],
          TypeError)])
     def inject_faulty_elements(self, request):
         faulty_arg, faulty_value, expected_exception = request.param
