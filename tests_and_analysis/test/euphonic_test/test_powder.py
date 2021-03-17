@@ -100,6 +100,7 @@ class TestSphereSampledProperties:
     @pytest.fixture
     def mock_dw(self, mocker):
         dw = mocker.MagicMock()
+        dw.configure_mock(temperature=273.*ureg('K'))
         return dw
 
     @pytest.fixture
@@ -151,6 +152,13 @@ class TestSphereSampledProperties:
             random_qpts_array * mod_q.magnitude,
             mock_fc.calculate_qpoint_phonon_modes.call_args[0][0])
         mock_qpm.calculate_dos.assert_called_with(return_bins)
+
+    @pytest.mark.unit
+    def test_sample_sphere_structure_factor_error(self, mock_fc, mock_dw):
+        with pytest.raises(ValueError):
+            sample_sphere_structure_factor(mock_fc, 1. * ureg('1 / angstrom'),
+                                           dw=mock_dw,
+                                           temperature=(100. * ureg('K')))
 
     @pytest.mark.unit
     @pytest.mark.parametrize('options',

@@ -1,7 +1,9 @@
 """Functions for averaging spectra in spherical q bins"""
 
 import numpy as np
-from typing import Union
+from typing import Optional, Union
+
+from pytest import approx
 
 from euphonic import (Crystal, DebyeWaller, ForceConstants, QpointPhononModes,
                       Spectrum1D)
@@ -97,7 +99,7 @@ def sample_sphere_structure_factor(
     fc: ForceConstants,
     mod_q: Quantity,
     dw: DebyeWaller = None,
-    temperature: Quantity = 273. * ureg['K'],
+    temperature: Optional[Quantity] = 273. * ureg['K'],
     sampling: str = 'golden',
     npts: int = 1000, jitter: bool = False,
     energy_bins: Quantity = None,
@@ -125,7 +127,8 @@ def sample_sphere_structure_factor(
         a 20x20x20 q-point mesh.
 
     temperature
-        Temperature used for Debye-Waller
+        Temperature for Debye-Waller calculation. If both temperature and dw
+        are set to None, Debye-Waller factor will be omitted.
 
     sampling
         Sphere-sampling scheme. (Case-insensitive) options are:
@@ -190,12 +193,17 @@ def sample_sphere_structure_factor(
             physical_property='coherent_scattering_length',
             collection=scattering_lengths)  # type: dict
 
-    if dw is None:
-        dw_qpts = mp_grid([20, 20, 20])
-        dw_phonons = fc.calculate_qpoint_phonon_modes(dw_qpts,
-                                                      **calc_modes_args)
-        dw = dw_phonons.calculate_debye_waller(temperature
-                                               )  # type: DebyeWaller
+    if temperature is not None:
+        if (dw is None):
+            dw_qpts = mp_grid([20, 20, 20])
+            dw_phonons = fc.calculate_qpoint_phonon_modes(dw_qpts,
+                                                          **calc_modes_args)
+            dw = dw_phonons.calculate_debye_waller(temperature
+                                                   )  # type: DebyeWaller
+        else:
+            if dw.temperature.to('K').magnitude != approx(temperature.to('K')):
+                raise ValueError('Temperature argument is not consistent with '
+                                 'temperature stored in DebyeWaller object.')
 
     qpts_cart = _get_qpts_sphere(npts, sampling=sampling, jitter=jitter
                                  ) * mod_q
