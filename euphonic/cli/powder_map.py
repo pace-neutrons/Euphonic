@@ -7,7 +7,8 @@ from typing import List
 import numpy as np
 
 from euphonic import ureg
-from euphonic.cli.utils import (_get_cli_parser, _get_energy_bins_and_units,
+from euphonic.cli.utils import (_calc_modes_kwargs,
+                                _get_cli_parser, _get_energy_bins_and_units,
                                 _get_mp_grid_spec, _get_q_distance)
 from euphonic.cli.utils import (force_constants_from_file, get_args,
                                 matplotlib_save_or_show)
@@ -45,14 +46,11 @@ def get_parser() -> 'argparse.ArgumentParser':
 
 def main(params: List[str] = None):
     args = get_args(get_parser(), params)
+    calc_modes_kwargs = _calc_modes_kwargs(args)
 
     # Make sure we get an error if accessing NPTS inappropriately
     if args.npts_density is not None:
         args.npts = None
-
-    calc_modes_args = {'use_c': args.use_c,
-                       'n_threads': args.n_threads,
-                       'asr': args.asr}
 
     fc = force_constants_from_file(args.filename)
     print("Force constants data was loaded. Setting up dimensions...")
@@ -72,7 +70,7 @@ def main(params: List[str] = None):
     energy_bins, energy_unit = _get_energy_bins_and_units(
         args.energy_unit,
         fc.calculate_qpoint_phonon_modes(np.array([[0., 0., 0.5]]),
-                                         **calc_modes_args),
+                                         **calc_modes_kwargs),
         args.ebins, emin=args.e_min, emax=args.e_max,
         headroom=1.2)  # Generous headroom as we only checked one q-point
 
@@ -84,7 +82,7 @@ def main(params: List[str] = None):
             dw = _get_debye_waller(temperature, fc, grid=args.grid,
                                    grid_spacing=(args.grid_spacing
                                                  * recip_length_unit),
-                                   **calc_modes_args)
+                                   **calc_modes_kwargs)
         else:
             dw = None
 
@@ -107,7 +105,7 @@ def main(params: List[str] = None):
                 fc, q,
                 npts=npts, sampling=args.sampling, jitter=args.jitter,
                 energy_bins=energy_bins,
-                **calc_modes_args)
+                **calc_modes_kwargs)
         elif args.weights == 'coherent':
             spectrum_1d = sample_sphere_structure_factor(
                 fc, q,
@@ -116,7 +114,7 @@ def main(params: List[str] = None):
                 sampling=args.sampling, jitter=args.jitter,
                 npts=npts,
                 energy_bins=energy_bins,
-                **calc_modes_args)
+                **calc_modes_kwargs)
 
         z_data[q_index, :] = spectrum_1d.y_data.magnitude
 

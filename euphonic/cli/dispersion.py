@@ -3,7 +3,8 @@ from typing import List
 import euphonic
 from euphonic.plot import plot_1d
 from .utils import (load_data_from_file, get_args, _bands_from_force_constants,
-                    _get_q_distance, matplotlib_save_or_show, _get_cli_parser)
+                    _get_q_distance, matplotlib_save_or_show, _get_cli_parser,
+                    _calc_modes_kwargs)
 
 
 def main(params: List[str] = None):
@@ -12,15 +13,17 @@ def main(params: List[str] = None):
 
     if isinstance(data, euphonic.ForceConstants):
         print("Force Constants data was loaded. Getting band path...")
+
         q_distance = _get_q_distance(args.length_unit, args.q_spacing)
         (modes, x_tick_labels, split_args) = _bands_from_force_constants(
-            data, q_distance=q_distance, asr=args.asr,
-            use_c=args.use_c, n_threads=args.n_threads)
+            data, q_distance=q_distance,
+            **_calc_modes_kwargs(args))
     elif isinstance(data, euphonic.QpointPhononModes):
         print("Phonon band data was loaded.")
         modes = data
         split_args = {'btol': args.btol}
         x_tick_labels = None
+
     modes.frequencies_unit = args.energy_unit
 
     print("Mapping modes to 1D band-structure")

@@ -1,4 +1,4 @@
-from argparse import ArgumentParser, _ArgumentGroup
+from argparse import ArgumentParser, _ArgumentGroup, Namespace
 import json
 from math import ceil
 import os
@@ -304,9 +304,7 @@ SplitArgs = Dict[str, Any]
 def _bands_from_force_constants(data: ForceConstants,
                                 q_distance: Quantity,
                                 insert_gamma=True,
-                                asr=None,
-                                use_c=None,
-                                n_threads=None
+                                **calc_modes_kwargs
                                 ) -> Tuple[QpointPhononModes,
                                            XTickLabels, SplitArgs]:
     structure = data.crystal.to_spglib_cell()
@@ -325,9 +323,9 @@ def _bands_from_force_constants(data: ForceConstants,
         .format(n_modes=(data.crystal.n_atoms * 3),
                 n_qpts=len(bandpath["explicit_kpoints_rel"])))
     qpts = bandpath["explicit_kpoints_rel"]
-    modes = data.calculate_qpoint_phonon_modes(qpts, asr=asr, use_c=use_c,
-                                               n_threads=n_threads,
-                                               reduce_qpts=False)
+    modes = data.calculate_qpoint_phonon_modes(qpts, 
+                                               reduce_qpts=False,
+                                               **calc_modes_kwargs)
     return modes, x_tick_labels, split_args
 
 def _get_mp_grid_spec(crystal: Crystal,
@@ -351,7 +349,7 @@ def _get_debye_waller(temperature: Quantity,
                       fc: ForceConstants,
                       grid: Optional[Sequence[int]] = None,
                       grid_spacing: Quantity = 0.1 * ureg('1/angstrom'),
-                      **calc_modes_args
+                      **calc_modes_kwargs
                       ) -> DebyeWaller:
     """Generate Debye-Waller data from force constants and grid specification
     """
@@ -361,9 +359,14 @@ def _get_debye_waller(temperature: Quantity,
           .format(' x '.join(map(str, mp_grid_spec))))
     dw_phonons = fc.calculate_qpoint_phonon_modes(
         euphonic.util.mp_grid(mp_grid_spec),
-                **calc_modes_args)
+                **calc_modes_kwargs)
     dw = dw_phonons.calculate_debye_waller(temperature)
 
+def _calc_modes_kwargs(args: Namespace) -> Dict[str, Any]:
+    """Collect arguments that can be passed to calculate_qpoint_phonon_modes()
+    """
+    return dict(asr=args.asr, eta_scale=args.eta_scale,
+                use_c=args.use_c, n_threads=args.n_threads)
 
 def _get_cli_parser(features: Collection[str] = {}
                     ) -> Tuple[ArgumentParser,
@@ -391,6 +394,8 @@ def _get_cli_parser(features: Collection[str] = {}
     section_defs = [('file', 'File I/O arguments'),
                     ('q', 'q-point sampling arguments'),
                     ('energy', 'energy/frequency arguments'),
+                    ('interpolation',
+                     'Force constants interpolation arguments'),
                     ('property', 'Property-calculation arguments'),
                     ('plotting', 'Plotting arguments'),
                     ('performance', 'Performance-related arguments')
@@ -418,13 +423,20 @@ def _get_cli_parser(features: Collection[str] = {}
         sections['file'].add_argument('filename', type=str, help=filename_doc)
 
     if 'read-fc' in features:
-        sections['property'].add_argument(
+        sections['interpolation'].add_argument(
             '--asr', type=str, nargs='?', default=None, const='reciprocal',
             choices=('reciprocal', 'realspace'),
             help=('Apply an acoustic-sum-rule (ASR) correction to the '
                   'data: "realspace" applies the correction to the force '
                   'constant matrix in real space. "reciprocal" applies '
                   'the correction to the dynamical matrix at each q-point.'))
+        sections['interpolation'].add_argument(
+            '--eta-scale', type=float, default=1.0, dest='eta_scale',
+            help=('Set the cutoff in real/reciprocal space for the dipole'
+                  'Ewald sum; higher values use more reciprocal terms. If '
+                  'tuned correctly this can result in performance '
+                  'improvements. See euphonic-optimise-eta program for help '
+                  'on choosing a good ETA_SCALE.'))
 
         use_c = sections['performance'].add_mutually_exclusive_group()
         use_c.add_argument(

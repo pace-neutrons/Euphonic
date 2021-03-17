@@ -4,6 +4,7 @@ import euphonic
 from euphonic.util import mp_grid
 from euphonic.plot import plot_1d
 from .utils import (load_data_from_file, get_args, matplotlib_save_or_show,
+                    _calc_modes_kwargs,
                     _get_cli_parser, _get_energy_bins_and_units,
                     _get_mp_grid_spec)
 
@@ -14,6 +15,7 @@ def main(params: List[str] = None):
 
     data = load_data_from_file(args.filename)
     if isinstance(data, euphonic.ForceConstants):
+
         recip_length_unit = euphonic.ureg(f'1 / {args.length_unit}')
         grid_spec = _get_mp_grid_spec(data.crystal, grid=args.grid,
                                       grid_spacing=(args.grid_spacing
@@ -23,9 +25,7 @@ def main(params: List[str] = None):
               "on {} q-point grid...".format(
                   ' x '.join([str(x) for x in grid_spec])))
         modes = data.calculate_qpoint_phonon_modes(mp_grid(grid_spec),
-                                                   asr=args.asr,
-                                                   use_c=args.use_c,
-                                                   n_threads=args.n_threads)
+                                                   **_calc_modes_kwargs(args))
     elif isinstance(data, euphonic.QpointPhononModes):
         print("Phonon band data was loaded.")
         modes = data
