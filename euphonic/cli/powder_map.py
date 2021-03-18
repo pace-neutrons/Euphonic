@@ -7,9 +7,9 @@ from typing import List
 import numpy as np
 
 from euphonic import ureg
-from euphonic.cli.utils import (_calc_modes_kwargs,
-                                _get_cli_parser, _get_energy_bins_and_units,
-                                _get_mp_grid_spec, _get_q_distance)
+from euphonic.cli.utils import (_calc_modes_kwargs, _get_cli_parser,
+                                _get_debye_waller, _get_energy_bins_and_units,
+                                _get_q_distance)
 from euphonic.cli.utils import (force_constants_from_file, get_args,
                                 matplotlib_save_or_show)
 import euphonic.plot
@@ -27,7 +27,7 @@ except ModuleNotFoundError:
 def get_parser() -> 'argparse.ArgumentParser':
 
     parser, sections = _get_cli_parser(
-        features={'read-fc', 'read-modes', 'weights', 'powder',
+        features={'read-fc', 'weights', 'powder',
                   'plotting', 'ebins', 'q-e', 'map'})
 
     sections['q'].description = (

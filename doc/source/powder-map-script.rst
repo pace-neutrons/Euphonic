@@ -6,10 +6,10 @@ euphonic-powder-map
 
 The ``euphonic-powder-map`` program can be used to sample
 spherically-averaged properties from force constants data over a range
-of :math:`|q|`. The results are plotted as a 2-dimensional map in :math:`(|q|, \epsilon)`,.
+of :math:`|q|`. The results are plotted as a 2-dimensional map in :math:`(|q|, \omega)`.
 
 For example, to plot a coherent neutron-weighted powder spectrum from CASTEP
-force constants along a recommended q-point path, one could run::
+force constants over a recommended :math:`|q|` range, one could run::
 
    euphonic-powder-map --weights coherent --energy-broadening 1.5 quartz.castep_bin
 
@@ -30,6 +30,8 @@ Spherical averaging is performed in a series of constant-q shells. The
 ``--npts``, ``--npts-density``, ``--npts-min`` and ``--npts-max``
 options control the number of samples in each shell, while the
 ``--sampling`` and ``--jitter`` options control the sampling scheme.
+The :ref:`euphonic-show-sampling <sampling-script>` tool can be used
+to visualise different sampling schemes.
 
 While the default scheme is recommended for all production
 calculations, it is generally necessary to tune the NPTS parameters.

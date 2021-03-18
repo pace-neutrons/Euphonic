@@ -13,6 +13,7 @@ import seekpath
 
 from euphonic import (Crystal, DebyeWaller, ForceConstants,
                       QpointPhononModes, Quantity, ureg)
+import euphonic.util
 Unit = ureg.Unit
 
 
@@ -324,10 +325,11 @@ def _bands_from_force_constants(data: ForceConstants,
         .format(n_modes=(data.crystal.n_atoms * 3),
                 n_qpts=len(bandpath["explicit_kpoints_rel"])))
     qpts = bandpath["explicit_kpoints_rel"]
-    modes = data.calculate_qpoint_phonon_modes(qpts, 
+    modes = data.calculate_qpoint_phonon_modes(qpts,
                                                reduce_qpts=False,
                                                **calc_modes_kwargs)
     return modes, x_tick_labels, split_args
+
 
 def _get_mp_grid_spec(crystal: Crystal,
                       grid: Optional[Sequence[int]] = None,
@@ -346,6 +348,7 @@ def _get_mp_grid_spec(crystal: Crystal,
 
     return grid_spec
 
+
 def _get_debye_waller(temperature: Quantity,
                       fc: ForceConstants,
                       grid: Optional[Sequence[int]] = None,
@@ -360,14 +363,16 @@ def _get_debye_waller(temperature: Quantity,
           .format(' x '.join(map(str, mp_grid_spec))))
     dw_phonons = fc.calculate_qpoint_phonon_modes(
         euphonic.util.mp_grid(mp_grid_spec),
-                **calc_modes_kwargs)
-    dw = dw_phonons.calculate_debye_waller(temperature)
+        **calc_modes_kwargs)
+    return dw_phonons.calculate_debye_waller(temperature)
+
 
 def _calc_modes_kwargs(args: Namespace) -> Dict[str, Any]:
     """Collect arguments that can be passed to calculate_qpoint_phonon_modes()
     """
     return dict(asr=args.asr, eta_scale=args.eta_scale,
                 use_c=args.use_c, n_threads=args.n_threads)
+
 
 def _get_cli_parser(features: Collection[str] = {}
                     ) -> Tuple[ArgumentParser,
@@ -409,17 +414,17 @@ def _get_cli_parser(features: Collection[str] = {}
     if {'read-fc', 'read-modes'}.intersection(features):
         if {'read-fc', 'read-modes'}.issubset(features):
             filename_doc = (
-                'Phonon data file. This should contain force constants or'
-                'phonon mode data. Force constants formats: .yaml,'
-                'force_constants.hdf5 (Phonopy); .castep_bin , .check'
-                '(Castep); .json (Euphonic). Phonon mode data formats:'
-                '{band,qpoints,mesh}.{hdf5,yaml} (Phonopy);'
+                'Phonon data file. This should contain force constants or '
+                'phonon mode data. Force constants formats: .yaml, '
+                'force_constants.hdf5 (Phonopy); .castep_bin , .check '
+                '(Castep); .json (Euphonic). Phonon mode data formats: '
+                '{band,qpoints,mesh}.{hdf5,yaml} (Phonopy); '
                 '.phonon (Castep); .json (Euphonic)')
-        elif {'read-fc'} in features:
+        elif 'read-fc' in features:
             filename_doc = (
-                'Phonon data file. This should contain force constants data.'
+                'Phonon data file. This should contain force constants data. '
                 'Accepted formats: .yaml, force_constants.hdf5 (Phonopy); '
-                '.castep_bin , .check (Castep); .json (Euphonic).')
+                '.castep_bin, .check (Castep); .json (Euphonic).')
         else:
             raise ValueError('No band-data-only tools have been defined.')
         sections['file'].add_argument('filename', type=str, help=filename_doc)
@@ -434,7 +439,7 @@ def _get_cli_parser(features: Collection[str] = {}
                   'the correction to the dynamical matrix at each q-point.'))
         sections['interpolation'].add_argument(
             '--eta-scale', type=float, default=1.0, dest='eta_scale',
-            help=('Set the cutoff in real/reciprocal space for the dipole'
+            help=('Set the cutoff in real/reciprocal space for the dipole '
                   'Ewald sum; higher values use more reciprocal terms. If '
                   'tuned correctly this can result in performance '
                   'improvements. See euphonic-optimise-eta program for help '
@@ -533,7 +538,7 @@ def _get_cli_parser(features: Collection[str] = {}
     if 'ebins' in features:
         section = sections['energy']
         section.add_argument('--ebins', type=int, default=200,
-                            help='Number of energy bins')
+                             help='Number of energy bins')
         section.add_argument(
             '--energy-broadening', '--eb', type=float, default=None,
             dest='energy_broadening',

@@ -53,7 +53,7 @@ def main(params: List[str] = None):
 
 def get_parser():
     parser, _ = _get_cli_parser(features={'read-fc', 'read-modes', 'mp-grid',
-                                       'plotting', 'ebins'})
+                                          'plotting', 'ebins'})
     parser.description = (
         'Plots a DOS from the file provided. If a force '
         'constants file is provided, a DOS is generated on the Monkhorst-Pack '
