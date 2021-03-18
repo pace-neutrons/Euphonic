@@ -84,6 +84,7 @@ def main(params: List[str] = None):
                                                  * recip_length_unit),
                                    **calc_modes_kwargs)
         else:
+            temperature = None
             dw = None
 
     print(f"Sampling {n_q_bins} |q| shells between {q_min:~P} and {q_max:~P}")
