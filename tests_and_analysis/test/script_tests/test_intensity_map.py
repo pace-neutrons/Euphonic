@@ -25,6 +25,7 @@ intensity_map_params = [
     [graphite_fc_file, '--v-min=0', '--v-max=1e-10'],
     [graphite_fc_file, '--energy-unit=meV'],
     [graphite_fc_file, '--weights=coherent', '--cmap=bone'],
+    [graphite_fc_file, '--weights=coherent', '--temperature=800'],
     [graphite_fc_file, '-w', 'dos', '--y-label=DOS', '--title=DOS TITLE'],
     [graphite_fc_file, '--e-min=50', '-u=cm^-1', '--x-label=wavenumber'],
     [graphite_fc_file, '--e-min=-100', '--e-max=1000', '--ebins=100',
