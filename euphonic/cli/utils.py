@@ -1,4 +1,5 @@
-from argparse import ArgumentParser, _ArgumentGroup, Namespace
+from argparse import (ArgumentParser, _ArgumentGroup, Namespace,
+                      ArgumentDefaultsHelpFormatter)
 import json
 from math import ceil
 import os
@@ -386,7 +387,8 @@ def _get_cli_parser(features: Collection[str] = {}
     """
     _spectrum_choices = ('dos', 'coherent')
 
-    parser = ArgumentParser()
+    parser = ArgumentParser(
+        formatter_class=ArgumentDefaultsHelpFormatter)
 
     # Set up groups; these are only displayed if used, so simplest to
     # instantiate them all now and guarantee consistent order/presence
@@ -481,8 +483,7 @@ def _get_cli_parser(features: Collection[str] = {}
                              'random-sphere'}
         npts_group = sections['q'].add_mutually_exclusive_group()
         npts_group.add_argument('--npts', '-n', type=int, default=1000,
-                                help=('Number of samples at each |q| sphere'
-                                      ' (default 1000)'))
+                                help=('Number of samples at each |q| sphere.'))
         npts_group.add_argument(
             '--npts-density', type=int, default=None, dest='npts_density',
             help=('NPTS specified as the number of points at surface of '
