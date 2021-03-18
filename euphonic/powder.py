@@ -5,8 +5,8 @@ from typing import Optional, Union
 
 from pytest import approx
 
-from euphonic import (Crystal, DebyeWaller, ForceConstants, QpointPhononModes,
-                      Spectrum1D)
+from euphonic import (Crystal, DebyeWaller, ForceConstants,
+                      QpointFrequencies, QpointPhononModes, Spectrum1D)
 from euphonic import ureg, Quantity
 from euphonic.util import mp_grid, get_reference_data
 
@@ -86,8 +86,8 @@ def sample_sphere_dos(fc: ForceConstants,
                                  ) * mod_q
     qpts_frac = _qpts_cart_to_frac(qpts_cart, fc.crystal)
 
-    phonons = fc.calculate_qpoint_phonon_modes(qpts_frac, **calc_modes_args
-                                               )  # type: QpointPhononModes
+    phonons = fc.calculate_qpoint_frequencies(qpts_frac, **calc_modes_args
+                                              )  # type: QpointFrequencies
 
     if energy_bins is None:
         energy_bins = _get_default_bins(phonons)

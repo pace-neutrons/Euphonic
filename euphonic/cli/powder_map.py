@@ -69,8 +69,8 @@ def main(params: List[str] = None):
 
     energy_bins, energy_unit = _get_energy_bins_and_units(
         args.energy_unit,
-        fc.calculate_qpoint_phonon_modes(np.array([[0., 0., 0.5]]),
-                                         **calc_modes_kwargs),
+        fc.calculate_qpoint_frequencies(np.array([[0., 0., 0.5]]),
+                                        **calc_modes_kwargs),
         args.ebins, emin=args.e_min, emax=args.e_max,
         headroom=1.2)  # Generous headroom as we only checked one q-point
 

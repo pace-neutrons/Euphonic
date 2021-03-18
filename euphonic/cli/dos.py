@@ -24,8 +24,8 @@ def main(params: List[str] = None):
         print("Force Constants data was loaded. Calculating phonon modes "
               "on {} q-point grid...".format(
                   ' x '.join([str(x) for x in grid_spec])))
-        modes = data.calculate_qpoint_phonon_modes(mp_grid(grid_spec),
-                                                   **_calc_modes_kwargs(args))
+        modes = data.calculate_qpoint_frequencies(mp_grid(grid_spec),
+                                                  **_calc_modes_kwargs(args))
     elif isinstance(data, euphonic.QpointPhononModes):
         print("Phonon band data was loaded.")
         modes = data

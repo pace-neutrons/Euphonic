@@ -11,7 +11,7 @@ import numpy as np
 from pint import UndefinedUnitError
 import seekpath
 
-from euphonic import (Crystal, DebyeWaller, ForceConstants,
+from euphonic import (Crystal, DebyeWaller, ForceConstants, QpointFrequencies,
                       QpointPhononModes, Quantity, ureg)
 import euphonic.util
 Unit = ureg.Unit
@@ -305,9 +305,11 @@ SplitArgs = Dict[str, Any]
 
 def _bands_from_force_constants(data: ForceConstants,
                                 q_distance: Quantity,
-                                insert_gamma=True,
+                                insert_gamma: bool = True,
+                                frequencies_only: bool = False,
                                 **calc_modes_kwargs
-                                ) -> Tuple[QpointPhononModes,
+                                ) -> Tuple[Union[QpointPhononModes,
+                                                 QpointFrequencies],
                                            XTickLabels, SplitArgs]:
     structure = data.crystal.to_spglib_cell()
     bandpath = seekpath.get_explicit_k_path(
@@ -325,9 +327,15 @@ def _bands_from_force_constants(data: ForceConstants,
         .format(n_modes=(data.crystal.n_atoms * 3),
                 n_qpts=len(bandpath["explicit_kpoints_rel"])))
     qpts = bandpath["explicit_kpoints_rel"]
-    modes = data.calculate_qpoint_phonon_modes(qpts,
-                                               reduce_qpts=False,
-                                               **calc_modes_kwargs)
+
+    if frequencies_only:
+        modes = data.calculate_qpoint_frequencies(qpts,
+                                                  reduce_qpts=False,
+                                                  **calc_modes_kwargs)
+    else:
+        modes = data.calculate_qpoint_phonon_modes(qpts,
+                                                   reduce_qpts=False,
+                                                   **calc_modes_kwargs)
     return modes, x_tick_labels, split_args
 
 
