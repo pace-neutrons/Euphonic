@@ -30,6 +30,7 @@ Helper Scripts
 - :ref:`euphonic-dispersion <disp-script>`
 - :ref:`euphonic-dos <dos-script>`
 - :ref:`euphonic-intensity-map <intensity-map-script>`
+- :ref:`euphonic-powder-map <powder-map-script>`
 - :ref:`euphonic-optimise-eta <eta-script>`
 - :ref:`euphonic-show-sampling <sampling-script>`
 
