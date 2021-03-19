@@ -15,55 +15,45 @@ from euphonic import ureg, Quantity
 
 
 S = TypeVar('S', bound='Spectrum')
+S1D = TypeVar('S1D', bound='Spectrum1D')
 SC = TypeVar('SC', bound='Spectrum1DCollection')
+S2D = TypeVar('S2D', bound='Spectrum2D')
 
 
 class Spectrum(ABC):
-    def __setattr__(self, name, value):
+    def __setattr__(self, name: str, value: Any) -> None:
         _check_unit_conversion(self, name, value,
                                ['x_data_unit', 'y_data_unit'])
         super().__setattr__(name, value)
 
-    def _set_data(self, data, attr_name):
+    def _set_data(self, data: Quantity, attr_name: str) -> None:
         setattr(self, f'_{attr_name}_data',
                 np.array(data.magnitude, dtype=np.float64))
         setattr(self, f'_internal_{attr_name}_data_unit', str(data.units))
         setattr(self, f'{attr_name}_data_unit', str(data.units))
 
-    def _gfwhm_to_sigma(self, fwhm, ax_bin_centres):
-        """
-        Convert a Gaussian FWHM to sigma in units of the mean ax bin size
+    @property
+    def x_data(self):
+        return self._x_data*ureg(self._internal_x_data_unit).to(
+            self.x_data_unit)
 
-        Parameters
-        ----------
-        fwhm : float Quantity
-            The Gaussian broadening FWHM
-        ax_bin_centres : Quantity ndarray
-            The bin centres along the axis the broadening is applied to
-
-        Returns
-        -------
-        sigma : float
-            Sigma in units of mean ax bin size
-        """
-        ax_units = ax_bin_centres.units
-        sigma = fwhm/(2*math.sqrt(2*math.log(2)))
-        mean_bin_size = np.mean(np.diff(ax_bin_centres.magnitude))
-        sigma_bin = sigma.to(ax_units).magnitude/mean_bin_size
-        return sigma_bin
+    @property
+    def y_data(self):
+        return self._y_data*ureg(self._internal_y_data_unit).to(
+            self.y_data_unit)
 
     @abstractmethod
-    def to_dict(self) -> Dict[str, Union[float, np.ndarray]]:
+    def to_dict(self) -> Dict[str, Any]:
         """Write to dict using euphonic.io._obj_to_dict"""
         ...
 
     @classmethod
     @abstractmethod
-    def from_dict(cls: S, d: Dict[str, Union[float, np.ndarray]]) -> S:
+    def from_dict(cls: S, d: Dict[str, Any]) -> S:
         """Initialise a Spectrum object from dictionary"""
         ...
 
-    def to_json_file(self, filename):
+    def to_json_file(self, filename: str) -> None:
         """
         Write to a JSON file. JSON fields are equivalent to
         from_dict keys
@@ -76,7 +66,7 @@ class Spectrum(ABC):
         _obj_to_json_file(self, filename)
 
     @classmethod
-    def from_json_file(cls, filename):
+    def from_json_file(cls: S, filename: str) -> S:
         """
         Read from a JSON file. See from_dict for required fields
 
@@ -89,8 +79,8 @@ class Spectrum(ABC):
         return _obj_from_json_file(cls, filename, type_dict)
 
     @abstractmethod
-    def _split_by_indices(self: S,
-                        indices: Union[Sequence[int], np.ndarray]) -> List[S]:
+    def _split_by_indices(self: S, indices: Union[Sequence[int], np.ndarray]
+                          ) -> List[S]:
         """Split data along x axis at given indices"""
         ...
 
@@ -163,6 +153,30 @@ class Spectrum(ABC):
             return self._split_by_indices(indices)
 
     @staticmethod
+    def _gfwhm_to_sigma(fwhm: Quantity, ax_bin_centres: Quantity) -> float:
+        """
+        Convert a Gaussian FWHM to sigma in units of the mean ax bin size
+
+        Parameters
+        ----------
+        fwhm
+            Scalar float quantity, the Gaussian broadening FWHM
+        ax_bin_centres
+            Shape (n_bins,) float Quantity.
+            The bin centres along the axis the broadening is applied to
+
+        Returns
+        -------
+        sigma
+            Sigma in units of mean ax bin size
+        """
+        ax_units = ax_bin_centres.units
+        sigma = fwhm/(2*math.sqrt(2*math.log(2)))
+        mean_bin_size = np.mean(np.diff(ax_bin_centres.magnitude))
+        sigma_bin = sigma.to(ax_units).magnitude/mean_bin_size
+        return sigma_bin
+
+    @staticmethod
     def _bin_edges_to_centres(bin_edges: np.ndarray) -> np.ndarray:
         return bin_edges[:-1] + 0.5*np.diff(bin_edges)
 
@@ -204,7 +218,6 @@ class Spectrum(ABC):
             return self._bin_centres_to_edges(
                 self.x_data.magnitude)*self.x_data.units
 
-
     def get_bin_centres(self) -> Quantity:
         """
         Get x-axis bin centres. If the size of x_data is the same size
@@ -229,33 +242,47 @@ class Spectrum1D(Spectrum):
 
     Attributes
     ----------
-    x_data : (n_x_data,) or (n_x_data + 1,) float Quantity
-        The x_data points (if size (n_x_data,)) or x_data bin edges (if
-        size (n_x_data + 1,))
-    y_data : (n_x_data,) float Quantity
-        The plot data in y
-    x_tick_labels : list (int, string) tuples or None
+    x_data
+        Shape (n_x_data,) or (n_x_data + 1,) float Quantity. The x_data
+        points (if size == (n_x_data,)) or x_data bin edges (if size
+        == (n_x_data + 1,))
+    y_data
+        Shape (n_x_data,) float Quantity. The plot data in y
+    x_tick_labels : Sequence[Tuple[int, str]] or None
         Special tick labels e.g. for high-symmetry points. The int
         refers to the index in x_data the label should be applied to
+    metadata : Dict[str, Any] or None
+        Contains metadata about the spectrum. Any keys/values are
+        allowed, but values must be JSON serialisable to write to a
+        json file. There are some functional keys:
+          - 'label' : str. This is used label lines on a 1D plot
     """
-    def __init__(self, x_data, y_data, x_tick_labels=None):
+    def __init__(self, x_data: Quantity, y_data: Quantity,
+                 x_tick_labels: Optional[Sequence[Tuple[int, str]]] = None,
+                 metadata: Optional[Dict[str, Any]] = None) -> None:
         """
         Parameters
         ----------
-        x_data : (n_x_data,) or (n_x_data + 1,) float Quantity
-            The x_data points (if size (n_x_data,)) or x_data bin edges
-            (if size (n_x_data + 1,))
-        y_data : (n_x_data,) float Quantity
-            The plot data in y
-        x_tick_labels : list (int, string) tuples or None
+        x_data
+            Shape (n_x_data,) or (n_x_data + 1,) float Quantity. The
+            x_data points (if size == (n_x_data,)) or x_data bin edges
+            (if size == (n_x_data + 1,))
+        y_data
+            Shape (n_x_data,) float Quantity. The plot data in y
+        x_tick_labels
             Special tick labels e.g. for high-symmetry points. The int
             refers to the index in x_data the label should be applied to
+        metadata
+            Contains metadata about the spectrum. Any keys/values are
+            allowed, but values must be JSON serialisable to write to a
+            json file. There are some functional keys:
+              - 'label' : str. This is used label lines on a 1D plot
         """
         _check_constructor_inputs(
-            [y_data, x_tick_labels],
-            [Quantity, [list, type(None)]],
-            [(-1,), ()],
-            ['y_data', 'x_tick_labels'])
+            [y_data, x_tick_labels, metadata],
+            [Quantity, [list, type(None)], [dict, type(None)]],
+            [(-1,), (), ()],
+            ['y_data', 'x_tick_labels', 'metadata'])
         ny = len(y_data)
         _check_constructor_inputs(
             [x_data], [Quantity],
@@ -263,28 +290,21 @@ class Spectrum1D(Spectrum):
         self._set_data(x_data, 'x')
         self._set_data(y_data, 'y')
         self.x_tick_labels = x_tick_labels
+        self.metadata = metadata
 
-    @property
-    def x_data(self):
-        return self._x_data*ureg(self._internal_x_data_unit).to(
-            self.x_data_unit)
-
-    @property
-    def y_data(self):
-        return self._y_data*ureg(self._internal_y_data_unit).to(
-            self.y_data_unit)
-
-    def _split_by_indices(self: S,
-                        indices: Union[Sequence[int], np.ndarray]) -> List[S]:
+    def _split_by_indices(self: S1D,
+                          indices: Union[Sequence[int], np.ndarray]
+                          ) -> List[S1D]:
         """Split data along x-axis at given indices"""
         ranges = self._ranges_from_indices(indices)
 
         return [type(self)(self.x_data[x0:x1], self.y_data[x0:x1],
                            x_tick_labels=self._cut_x_ticks(self.x_tick_labels,
-                                                           x0, x1))
-                           for x0, x1 in ranges]
+                                                           x0, x1),
+                           metadata=self.metadata)
+                for x0, x1 in ranges]
 
-    def to_dict(self):
+    def to_dict(self) -> Dict[str, Any]:
         """
         Convert to a dictionary. See Spectrum1D.from_dict for details on
         keys/values
@@ -293,16 +313,17 @@ class Spectrum1D(Spectrum):
         -------
         dict
         """
-        return _obj_to_dict(self, ['x_data', 'y_data', 'x_tick_labels'])
+        return _obj_to_dict(self, ['x_data', 'y_data', 'x_tick_labels',
+                                   'metadata'])
 
     @classmethod
-    def from_dict(cls: S, d) -> S:
+    def from_dict(cls: S1D, d: Dict[str, Any]) -> S1D:
         """
         Convert a dictionary to a Spectrum1D object
 
         Parameters
         ----------
-        d : dict
+        d
             A dictionary with the following keys/values:
 
             - 'x_data': (n_x_data,) or (n_x_data + 1,) float ndarray
@@ -313,29 +334,31 @@ class Spectrum1D(Spectrum):
             There are also the following optional keys:
 
             - 'x_tick_labels': list of (int, string) tuples
+            - 'metadata': dict
 
         Returns
         -------
-        Spectrum1D
+        spectrum
         """
         d = _process_dict(d, quantities=['x_data', 'y_data'],
-                          optional=['x_tick_labels'])
-        return cls(d['x_data'], d['y_data'], x_tick_labels=d['x_tick_labels'])
+                          optional=['x_tick_labels', 'metadata'])
+        return cls(d['x_data'], d['y_data'], x_tick_labels=d['x_tick_labels'],
+                   metadata=d['metadata'])
 
-    def broaden(self, x_width, shape='gauss'):
+    def broaden(self: S1D, x_width: Quantity, shape: str = 'gauss') -> S1D:
         """
         Broaden y_data and return a new broadened spectrum object
 
         Parameters
         ----------
-        x_width : float Quantity
-            The broadening FWHM
-        shape : {'gauss', 'lorentz'}, optional
-            The broadening shape
+        x_width
+            Scalar float Quantity. The broadening FWHM
+        shape
+            One of {'gauss', 'lorentz'}. The broadening shape
 
         Returns
         -------
-        broadened_spectrum : Spectrum1D
+        broadened_spectrum
             A new Spectrum1D object with broadened y_data
 
         Raises
@@ -369,22 +392,49 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
     """A collection of Spectrum1D with common x_data and x_tick_labels
 
     Intended for convenient storage of band structures, projected DOS
-    etc.  This object can be indexed or iterated to obtain individual
+    etc. This object can be indexed or iterated to obtain individual
     Spectrum1D.
 
-    x_data : (n_x_data,) or (n_x_data + 1,) float Quantity
-        The x_data points (if size (n_x_data,)) or x_data bin edges (if
-        size (n_x_data + 1,))
-    y_data : (n_entries, n_x_data) float Quantity
-        The plot data in y, in rows corresponding to separate 1D spectra
-    x_tick_labels : list (int, string) tuples or None
+    x_data
+        Shape (n_x_data,) or (n_x_data + 1,) float Quantity. The x_data
+        points (if size == (n_x_data,)) or x_data bin edges (if size
+        == (n_x_data + 1,))
+    y_data
+        Shape (n_entries, n_x_data) float Quantity. The plot data in y,
+        in rows corresponding to separate 1D spectra
+    x_tick_labels : Sequence[Tuple[int, str]] or None
         Special tick labels e.g. for high-symmetry points. The int
         refers to the index in x_data the label should be applied to
-
+    metadata : Dict[str, Any] or None
+        Contains metadata about the spectrum. Any keys/values are
+        allowed, but values must be JSON serialisable to write to a
+        json file. There are some functional keys:
+          - 'labels' : List[str]. This is used to label multiple lines
+                       on a 1D plot
     """
     def __init__(self, x_data: Quantity, y_data: Quantity,
                  x_tick_labels: Optional[Sequence[Tuple[int, str]]] = None,
                  metadata: Optional[Dict[str, Any]] = None) -> None:
+        """
+        Parameters
+        ----------
+        x_data
+            Shape (n_x_data,) or (n_x_data + 1,) float Quantity. The
+            x_data points (if size == (n_x_data,)) or x_data bin edges
+            (if size == (n_x_data + 1,))
+        y_data
+            Shape (n_entries, n_x_data) float Quantity. The plot data
+            in y, in rows corresponding to separate 1D spectra
+        x_tick_labels
+            Special tick labels e.g. for high-symmetry points. The int
+            refers to the index in x_data the label should be applied to
+        metadata
+            Contains metadata about the spectrum. Any keys/values are
+            allowed, but values must be JSON serialisable to write to a
+            json file. There are some functional keys:
+              - 'labels' : List[str]. This is used to label multiple
+                           lines on a 1D plot
+        """
 
         _check_constructor_inputs(
             [y_data, x_tick_labels, metadata],
@@ -401,26 +451,18 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
         self.x_tick_labels = x_tick_labels
         self.metadata = metadata
 
-    @property
-    def x_data(self):
-        return self._x_data*ureg(self._internal_x_data_unit).to(
-            self.x_data_unit)
-
-    @property
-    def y_data(self):
-        return self._y_data*ureg(self._internal_y_data_unit).to(
-            self.y_data_unit)
-
-    def _split_by_indices(self: S,
-                        indices: Union[Sequence[int], np.ndarray]) -> List[S]:
+    def _split_by_indices(self: SC,
+                          indices: Union[Sequence[int], np.ndarray]
+                          ) -> List[SC]:
         """Split data along x-axis at given indices"""
 
         ranges = self._ranges_from_indices(indices)
 
         return [type(self)(self.x_data[x0:x1], self.y_data[:, x0:x1],
                            x_tick_labels=self._cut_x_ticks(self.x_tick_labels,
-                                                           x0, x1))
-                           for x0, x1 in ranges]
+                                                           x0, x1),
+                           metadata=self.metadata)
+                for x0, x1 in ranges]
 
     def __len__(self):
         return self.y_data.magnitude.shape[0]
@@ -430,21 +472,31 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
         ...
 
     @overload  # noqa: F811
-    def __getitem__(self, item: slice) -> 'Spectrum1DCollection':
+    def __getitem__(self, item: slice) -> SC:
         ...
 
-    def __getitem__(self, item):  # noqa: F811
+    def __getitem__(self, item: Union[int, slice]):  # noqa: F811
+        new_metadata = deepcopy(self.metadata)
+        if isinstance(new_metadata, dict) and 'labels' in new_metadata.keys():
+            labels = new_metadata.pop('labels')
+        else:
+            labels = None
         if isinstance(item, int):
+            if labels is not None:
+                new_metadata['label'] = labels[item]
             return Spectrum1D(self.x_data,
                               self.y_data[item, :],
-                              x_tick_labels=self.x_tick_labels)
+                              x_tick_labels=self.x_tick_labels,
+                              metadata=new_metadata)
         elif isinstance(item, slice):
             if (item.stop is not None) and (item.stop >= len(self)):
                 raise IndexError(f'index "{item.stop}" out of range')
-
+            if labels is not None:
+                new_metadata['labels'] = labels[item]
             return type(self)(self.x_data,
                               self.y_data[item, :],
-                              x_tick_labels=self.x_tick_labels)
+                              x_tick_labels=self.x_tick_labels,
+                              metadata=new_metadata)
         else:
             raise TypeError(f'Index "{item}" should be an integer or a slice')
 
@@ -474,9 +526,24 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
             assert spectrum.x_tick_labels == x_tick_labels
             y_data_magnitude[i + 1, :] = spectrum.y_data.magnitude
 
-        y_data = Quantity(y_data_magnitude, y_data_units)
+        # Process metadata
+        metadata = deepcopy(spectra[0]).metadata
+        try:
+            metadata.pop('label')
+        except (AttributeError, KeyError):
+            pass
+        for i, spectrum in enumerate(spectra):
+            if isinstance(spectrum.metadata, dict):
+                if 'label' in spectrum.metadata.keys():
+                    if not isinstance(metadata, dict):
+                        metadata = {}
+                    if not 'labels' in metadata.keys():
+                        metadata['labels'] = ['']*len(spectra)
+                    metadata['labels'][i] = spectrum.metadata['label']
 
-        return cls(x_data, y_data, x_tick_labels=x_tick_labels)
+        y_data = Quantity(y_data_magnitude, y_data_units)
+        return cls(x_data, y_data, x_tick_labels=x_tick_labels,
+                   metadata=metadata)
 
     def to_dict(self) -> Dict[str, Any]:
         """
@@ -490,7 +557,7 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
                                    'metadata'])
 
     @classmethod
-    def from_dict(cls: S, d) -> S:
+    def from_dict(cls: SC, d) -> SC:
         """
         Convert a dictionary to a Spectrum1DCollection object
 
@@ -507,10 +574,11 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
             There are also the following optional keys:
 
             - 'x_tick_labels': list of (int, string) tuples
+            - 'metadata': dict
 
         Returns
         -------
-        Spectrum1DCollection
+        spectrum_collection
         """
         d = _process_dict(d, quantities=['x_data', 'y_data'],
                           optional=['x_tick_labels', 'metadata'])
@@ -524,39 +592,54 @@ class Spectrum2D(Spectrum):
 
     Attributes
     ----------
-    x_data : (n_x_data,) or (n_x_data + 1,) float Quantity
-        The x_data points (if size (n_x_data,)) or x_data bin edges (if
-        size (n_x_data + 1,))
-    y_data : (n_y_data,) or (n_y_data + 1,) float Quantity
-        The y_data bin points (if size (n_y_data,)) or y_data bin edges
-        (if size (n_y_data + 1,))
-    z_data : (n_x_data, n_y_data) float Quantity
-        The plot data in z
-    x_tick_labels : list (int, string) tuples or None
+    x_data
+        Shape (n_x_data,) or (n_x_data + 1,) float Quantity. The x_data
+        points (if size == (n_x_data,)) or x_data bin edges (if size
+        == (n_x_data + 1,))
+    y_data
+        Shape (n_y_data,) or (n_y_data + 1,) float Quantity. The y_data
+        bin points (if size == (n_y_data,)) or y_data bin edges (if size
+        == (n_y_data + 1,))
+    z_data
+        Shape (n_x_data, n_y_data) float Quantity. The plot data in z
+    x_tick_labels : Sequence[Tuple[int, str]] or None
         Special tick labels e.g. for high-symmetry points. The int
         refers to the index in x_data the label should be applied to
+    metadata : Dict[str, Any] or None
+        Contains metadata about the spectrum. Any keys/values are
+        allowed, but values must be JSON serialisable to write to a
+        json file
     """
-    def __init__(self, x_data, y_data, z_data, x_tick_labels=None):
+    def __init__(self, x_data: Quantity, y_data: Quantity,
+                 z_data: Quantity,
+                 x_tick_labels: Optional[Sequence[Tuple[int, str]]] = None,
+                 metadata: Optional[Dict[str, Any]] = None) -> None:
         """
         Attributes
         ----------
-        x_data : (n_x_data,) or (n_x_data + 1,) float Quantity
-            The x_data points (if size (n_x_data,)) or x_data bin edges
-            (if size (n_x_data + 1,))
-        y_data : (n_y_data,) or (n_y_data + 1,) float Quantity
-            The y_data bin points (if size (n_y_data,)) or y_data bin
-            edges (if size (n_y_data + 1,))
-        z_data : (n_x_data, n_y_data) float Quantity
-            The plot data in z
-        x_tick_labels : list (int, string) tuples or None
+        x_data
+            Shape (n_x_data,) or (n_x_data + 1,) float Quantity. The
+            x_data points (if size == (n_x_data,)) or x_data bin edges
+            (if size == (n_x_data + 1,))
+        y_data
+            Shape (n_y_data,) or (n_y_data + 1,) float Quantity. The
+            y_data bin points (if size == (n_y_data,)) or y_data bin
+            edges (if size == (n_y_data + 1,))
+        z_data
+            Shape (n_x_data, n_y_data) float Quantity. The plot data in z
+        x_tick_labels
             Special tick labels e.g. for high-symmetry points. The int
             refers to the index in x_data the label should be applied to
+        metadata
+            Contains metadata about the spectrum. Any keys/values are
+            allowed, but values must be JSON serialisable to write to a
+            json file
         """
         _check_constructor_inputs(
-            [z_data, x_tick_labels],
-            [Quantity, [list, type(None)]],
-            [(-1, -1), ()],
-            ['z_data', 'x_tick_labels'])
+            [z_data, x_tick_labels, metadata],
+            [Quantity, [list, type(None)], [dict, type(None)]],
+            [(-1, -1), (), ()],
+            ['z_data', 'x_tick_labels', 'metadata'])
         nx = z_data.shape[0]
         ny = z_data.shape[1]
         _check_constructor_inputs(
@@ -568,53 +651,48 @@ class Spectrum2D(Spectrum):
         self._set_data(y_data, 'y')
         self.x_tick_labels = x_tick_labels
         self._set_data(z_data, 'z')
-
-    @property
-    def x_data(self):
-        return self._x_data*ureg(self._internal_x_data_unit).to(
-            self.x_data_unit)
-
-    @property
-    def y_data(self):
-        return self._y_data*ureg(self._internal_y_data_unit).to(
-            self.y_data_unit)
+        self.metadata = metadata
 
     @property
     def z_data(self):
         return self._z_data*ureg(self._internal_z_data_unit).to(
             self.z_data_unit)
 
-    def __setattr__(self, name, value):
+    def __setattr__(self, name: str, value: Any) -> None:
         _check_unit_conversion(self, name, value,
                                ['z_data_unit'])
         super(Spectrum2D, self).__setattr__(name, value)
 
-    def _split_by_indices(self: S,
-                        indices: Union[Sequence[int], np.ndarray]) -> List[S]:
+    def _split_by_indices(self: S2D,
+                          indices: Union[Sequence[int], np.ndarray]
+                          ) -> List[S2D]:
         """Split data along x-axis at given indices"""
         ranges = self._ranges_from_indices(indices)
         return [type(self)(self.x_data[x0:x1], self.y_data,
                            self.z_data[x0:x1, :],
                            x_tick_labels=self._cut_x_ticks(self.x_tick_labels,
-                                                           x0, x1))
-                           for x0, x1 in ranges]
+                                                           x0, x1),
+                           metadata=self.metadata)
+                for x0, x1 in ranges]
 
-    def broaden(self, x_width=None, y_width=None, shape='gauss'):
+    def broaden(self: S2D, x_width: Optional[Quantity] = None,
+                y_width: Optional[Quantity] = None, shape: str = 'gauss'
+                ) -> S2D:
         """
         Broaden z_data and return a new broadened Spectrum2D object
 
         Parameters
         ----------
-        x_width : float Quantity, optional
-            The broadening FWHM in x
-        y_width : float Quantity, optional
-            The broadening FWHM in y
-        shape : {'gauss', 'lorentz'}, optional
-            The broadening shape
+        x_width
+            Scalar float Quantity. The broadening FWHM in x
+        y_width
+            Scalar float Quantity. The broadening FWHM in y
+        shape
+            One of {'gauss', 'lorentz'}. The broadening shape
 
         Returns
         -------
-        broadened_spectrum : Spectrum2D
+        broadened_spectrum
             A new Spectrum2D object with broadened z_data
 
         Raises
@@ -683,7 +761,8 @@ class Spectrum2D(Spectrum):
         if self._is_bin_edge(data_ax_len, bin_data.shape[0]):
             return bin_data
         else:
-            return self._bin_centres_to_edges(bin_data.magnitude)*bin_data.units
+            return self._bin_centres_to_edges(bin_data.magnitude
+                                              )*bin_data.units
 
     def get_bin_centres(self, bin_ax: str = 'x') -> Quantity:
         """
@@ -709,7 +788,7 @@ class Spectrum2D(Spectrum):
         else:
             return bin_data
 
-    def to_dict(self):
+    def to_dict(self) -> Dict[str, Any]:
         """
         Convert to a dictionary. See Spectrum2D.from_dict for details on
         keys/values
@@ -719,10 +798,10 @@ class Spectrum2D(Spectrum):
         dict
         """
         return _obj_to_dict(self, ['x_data', 'y_data', 'z_data',
-                                   'x_tick_labels'])
+                                   'x_tick_labels', 'metadata'])
 
     @classmethod
-    def from_dict(cls, d):
+    def from_dict(cls: S2D, d: Dict[str, Any]) -> S2D:
         """
         Convert a dictionary to a Spectrum2D object
 
@@ -741,22 +820,25 @@ class Spectrum2D(Spectrum):
             There are also the following optional keys:
 
             - 'x_tick_labels': list of (int, string) tuples
+            - 'metadata': dict
 
         Returns
         -------
-        Spectrum2D
+        spectrum
         """
         d = _process_dict(d, quantities=['x_data', 'y_data', 'z_data'],
-                          optional=['x_tick_labels'])
+                          optional=['x_tick_labels', 'metadata'])
         return cls(d['x_data'], d['y_data'], d['z_data'],
-                   x_tick_labels=d['x_tick_labels'])
+                   x_tick_labels=d['x_tick_labels'],
+                   metadata=d['metadata'])
 
 
-def _lorentzian(x, gamma):
+def _lorentzian(x: np.ndarray, gamma: float) -> np.ndarray:
     return gamma/(2*math.pi*(np.square(x) + (gamma/2)**2))
 
 
-def _get_dist_bins(bins, fwhm, extent):
+def _get_dist_bins(bins: np.ndarray, fwhm: float, extent: float
+                   ) -> np.ndarray:
     # Ensure nbins is always odd, and each bin has the same approx width
     # as original x/ybins
     bin_width = np.mean(np.diff(bins))
@@ -772,7 +854,8 @@ def _get_dist_bins(bins, fwhm, extent):
     return np.linspace(-width, width, nbins)
 
 
-def _distribution_1d(xbins, xwidth, shape='lorentz', extent=3.0):
+def _distribution_1d(xbins: np.ndarray, xwidth: float, shape: str = 'lorentz',
+                     extent: float = 3.0) -> np.ndarray:
     x = _get_dist_bins(xbins, xwidth, extent)
     if shape == 'lorentz':
         dist = _lorentzian(x, xwidth)
