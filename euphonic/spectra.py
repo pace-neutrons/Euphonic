@@ -385,7 +385,8 @@ class Spectrum1D(Spectrum):
 
         return Spectrum1D(
             np.copy(self.x_data.magnitude)*ureg(self.x_data_unit),
-            y_broadened, deepcopy((self.x_tick_labels)))
+            y_broadened, deepcopy((self.x_tick_labels)),
+            deepcopy(self.metadata))
 
 
 class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
@@ -736,7 +737,8 @@ class Spectrum2D(Spectrum):
         return Spectrum2D(
             np.copy(self.x_data.magnitude)*ureg(self.x_data_unit),
             np.copy(self.y_data.magnitude)*ureg(self.y_data_unit),
-            z_broadened*ureg(self.z_data_unit), deepcopy((self.x_tick_labels)))
+            z_broadened*ureg(self.z_data_unit), deepcopy(self.x_tick_labels),
+            deepcopy(self.metadata))
 
     def get_bin_edges(self, bin_ax: str = 'x') -> Quantity:
         """
