@@ -18,7 +18,8 @@ def _to_json_dict(dictionary):
                 val = val.view(np.float64).reshape(val.shape + (2,))
             dictionary[key] = val.tolist()
         elif isinstance(val, dict):
-            dictionary[key] = _to_json_dict(val)
+            if key != 'metadata':
+                dictionary[key] = _to_json_dict(val)
     return dictionary
 
 
