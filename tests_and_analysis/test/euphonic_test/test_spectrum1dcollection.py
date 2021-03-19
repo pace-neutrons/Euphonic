@@ -193,11 +193,35 @@ class TestSpectrum1DCollectionCreation:
     @pytest.mark.parametrize(
         'input_spectra, expected_spectrum',
         [([get_spectrum1d(f'gan_bands_index_{i}.json') for i in range(2, 5)],
-          get_spectrum1dcollection('gan_bands_index_2_5.json'))
+          get_spectrum1dcollection('gan_bands_index_2_5.json')),
+         ([get_spectrum1d(f'methane_pdos_index_{i}.json') for i in range(1, 4)],
+          get_spectrum1dcollection('methane_pdos_index_1_4.json'))
          ])
     def test_create_from_sequence(self, input_spectra, expected_spectrum):
         spectrum = Spectrum1DCollection.from_spectra(input_spectra)
         check_spectrum1dcollection(spectrum, expected_spectrum)
+
+    @pytest.mark.parametrize(
+        'input_metadata, expected_metadata',
+        [([None, {'label': 'H3'}, {'Another key': 'Anything'}],
+          {'labels': ['', 'H3', '']}),
+         ([{'desc': 'methane PDOS', 'label':'H2'}, {'label': 'H3'}, None],
+          {'desc': 'methane PDOS', 'labels': ['H2', 'H3', '']}),
+         ([{'desc': 'methane PDOS'}, None, None],
+           {'desc': 'methane PDOS'})
+         ])
+    def test_create_methane_pdos_from_sequence_metadata_handling(
+            self, input_metadata, expected_metadata):
+        spectra = [get_spectrum1d(
+            f'methane_pdos_index_{i}.json') for i in range(1, 4)]
+        for i, spec in enumerate(spectra):
+            spec.metadata = input_metadata[i]
+        expected_spectrum = get_spectrum1dcollection(
+            'methane_pdos_index_1_4.json')
+        expected_spectrum.metadata = expected_metadata
+        spectrum = Spectrum1DCollection.from_spectra(spectra)
+        check_spectrum1dcollection(spectrum, expected_spectrum)
+
 
     @pytest.mark.parametrize(
         'input_spectra, expected_error',
@@ -253,7 +277,10 @@ class TestSpectrum1DCollectionIndexAccess:
         [(get_spectrum1dcollection('gan_bands.json'), 2,
           get_expected_spectrum1d('gan_bands_index_2.json')),
          (get_spectrum1dcollection('gan_bands.json'), -4,
-          get_expected_spectrum1d('gan_bands_index_2.json'))])
+          get_expected_spectrum1d('gan_bands_index_2.json')),
+         (get_spectrum1dcollection('methane_pdos.json'), 3,
+          get_expected_spectrum1d('methane_pdos_index_3.json')),
+          ])
     def test_index_individual(self, spectrum, index, expected_spectrum1d):
         extracted_spectrum1d = spectrum[index]
         check_spectrum1d(extracted_spectrum1d, expected_spectrum1d)
@@ -263,7 +290,10 @@ class TestSpectrum1DCollectionIndexAccess:
         [(get_spectrum1dcollection('gan_bands.json'), slice(2, 5),
           get_expected_spectrum1dcollection('gan_bands_index_2_5.json')),
          (get_spectrum1dcollection('gan_bands.json'), slice(-4, -1),
-          get_expected_spectrum1dcollection('gan_bands_index_2_5.json'))])
+          get_expected_spectrum1dcollection('gan_bands_index_2_5.json')),
+         (get_spectrum1dcollection('methane_pdos.json'), slice(1, 4),
+          get_expected_spectrum1dcollection('methane_pdos_index_1_4.json')),
+         ])
     def test_index_slice(self, spectrum, index, expected_spectrum):
         extracted_spectrum = spectrum[index]
         check_spectrum1dcollection(extracted_spectrum, expected_spectrum)

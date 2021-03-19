@@ -33,6 +33,13 @@ class ExpectedSpectrum1D:
         else:
             return None
 
+    @property
+    def metadata(self):
+        if 'metadata' in self.data.keys():
+            return self.data['metadata']
+        else:
+            return None
+
     def to_dict(self):
         d = {'x_data': self.x_data.magnitude,
              'x_data_unit': str(self.x_data.units),
@@ -40,20 +47,26 @@ class ExpectedSpectrum1D:
              'y_data_unit': str(self.y_data.units)}
         if self.x_tick_labels is not None:
             d['x_tick_labels'] = self.x_tick_labels
+        if self.metadata is not None:
+            d['metadata'] = self.metadata
         return d
 
     def to_constructor_args(self, x_data=None, y_data=None,
-                            x_tick_labels=None):
+                            x_tick_labels=None, metadata=None):
         if x_data is None:
             x_data = self.x_data
         if y_data is None:
             y_data = self.y_data
         if x_tick_labels is None:
             x_tick_labels = self.x_tick_labels
+        if metadata is None:
+            metadata = self.metadata
 
         kwargs = {}
         if x_tick_labels is not None:
             kwargs['x_tick_labels'] = x_tick_labels
+        if metadata is not None:
+            kwargs['metadata'] = metadata
 
         return (x_data, y_data), kwargs
 
@@ -93,6 +106,12 @@ def check_spectrum1d(actual_spectrum1d, expected_spectrum1d):
     else:
         assert (actual_spectrum1d.x_tick_labels
                 == expected_spectrum1d.x_tick_labels)
+
+    if expected_spectrum1d.metadata is None:
+        assert actual_spectrum1d.metadata is None
+    else:
+        assert (actual_spectrum1d.metadata
+                == expected_spectrum1d.metadata)
 
 
 @pytest.mark.unit
@@ -155,6 +174,9 @@ class TestSpectrum1DCreation:
          ValueError),
         ('x_tick_labels',
          get_expected_spectrum1d('xsq_spectrum1d.json').x_tick_labels[0],
+         TypeError),
+        ('metadata',
+         ['Not', 'a', 'dictionary'],
          TypeError)])
     def inject_faulty_elements(self, request):
         faulty_arg, faulty_value, expected_exception = request.param
@@ -257,6 +279,9 @@ class TestSpectrum1DMethods:
 
     @pytest.mark.parametrize(
         'args, spectrum1d_file, broadened_spectrum1d_file', [
+        ((1*ureg('meV'), {}),
+        'methane_pdos_index_1.json',
+        'methane_pdos_1meV_gauss_broaden_dos.json'),
         ((1*ureg('meV'), {}),
         'quartz_666_dos.json',
         'quartz_666_1meV_gauss_broaden_dos.json'),
