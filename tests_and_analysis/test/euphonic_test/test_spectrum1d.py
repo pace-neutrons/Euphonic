@@ -281,7 +281,7 @@ class TestSpectrum1DMethods:
         'args, spectrum1d_file, broadened_spectrum1d_file', [
         ((1*ureg('meV'), {}),
         'methane_pdos_index_1.json',
-        'methane_pdos_1meV_gauss_broaden_dos.json'),
+        'methane_pdos_index_1_1meV_gauss_broaden.json'),
         ((1*ureg('meV'), {}),
         'quartz_666_dos.json',
         'quartz_666_1meV_gauss_broaden_dos.json'),
