@@ -37,6 +37,13 @@ class ExpectedSpectrum2D:
         else:
             return None
 
+    @property
+    def metadata(self):
+        if 'metadata' in self.data.keys():
+            return self.data['metadata']
+        else:
+            return None
+
     def to_dict(self):
         d = {'x_data': self.x_data.magnitude,
              'x_data_unit': str(self.x_data.units),
@@ -46,10 +53,12 @@ class ExpectedSpectrum2D:
              'z_data_unit': str(self.z_data.units)}
         if self.x_tick_labels is not None:
             d['x_tick_labels'] = self.x_tick_labels
+        if self.metadata is not None:
+            d['metadata'] = self.metadata
         return d
 
     def to_constructor_args(self, x_data=None, y_data=None, z_data=None,
-                            x_tick_labels=None):
+                            x_tick_labels=None, metadata=None):
         if x_data is None:
             x_data = self.x_data
         if y_data is None:
@@ -58,10 +67,14 @@ class ExpectedSpectrum2D:
             z_data = self.z_data
         if x_tick_labels is None:
             x_tick_labels = self.x_tick_labels
+        if metadata is None:
+            metadata = self.metadata
 
         kwargs = {}
         if x_tick_labels is not None:
             kwargs['x_tick_labels'] = x_tick_labels
+        if metadata is not None:
+            kwargs['metadata'] = metadata
 
         return (x_data, y_data, z_data), kwargs
 
@@ -107,6 +120,12 @@ def check_spectrum2d(actual_spectrum2d, expected_spectrum2d):
     else:
         assert (actual_spectrum2d.x_tick_labels
                 == expected_spectrum2d.x_tick_labels)
+
+    if expected_spectrum2d.metadata is None:
+        assert actual_spectrum2d.metadata is None
+    else:
+        assert (actual_spectrum2d.metadata
+                == expected_spectrum2d.metadata)
 
 
 @pytest.mark.unit
@@ -181,6 +200,9 @@ class TestSpectrum2DCreation:
         ('x_tick_labels',
          get_expected_spectrum2d(
              'quartz_bandstructure_sqw.json').x_tick_labels[0],
+         TypeError),
+        ('metadata',
+         np.arange(10),
          TypeError)])
     def inject_faulty_elements(self, request):
         faulty_arg, faulty_value, expected_exception = request.param

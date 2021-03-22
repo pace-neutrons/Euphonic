@@ -1,6 +1,10 @@
 {
     "__euphonic_class__": "Spectrum2D",
-    "__euphonic_version__": "0.3.2+5.g36d4c2a.dirty",
+    "__euphonic_version__": "0.4.0+5.g45a6e57.dirty",
+    "metadata": {
+        "q_direction": "[5., 7., L]",
+        "material": "La2Zr2O7"
+    },
     "x_data": [
         1.116155878255573,
         1.2176245944606248,
