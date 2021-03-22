@@ -25,6 +25,11 @@ def axes(figure):
     ax = figure.add_subplot(1, 1, 1)
     return ax
 
+@pytest.fixture
+def axes_with_line_and_legend(axes):
+    axes.plot(np.array([0., 1., 2.]), np.array([3., 4., 5.]), label='Line A')
+    axes.legend()
+    return axes
 
 @pytest.mark.unit
 def test_missing_matplotlib(mocker):
@@ -53,25 +58,29 @@ class TestPlot1DCore:
         with pytest.raises(expected_error):
             plot_1d_to_axis(spectra, axes)
 
+    spec1d_args = (np.array([0., 1., 2.])*ureg('meV'),
+                   np.array([2., 3., 2.])*ureg('angstrom^-2'))
+
+    spec1d_split_args = (np.array([0., 1., 1., 2.]) * ureg('meV'),
+                         np.array([2., 3., 2., 4.]) * ureg('angstrom^-2'))
+
     @pytest.mark.parametrize(
-        'spectrum_params, spectrum_kwargs, expected_data, expected_ticks',
+        'spectrum_args, spectrum_kwargs, expected_data, expected_ticks',
         [  # Case 1: Trivial
-         ((np.array([0., 1., 2.]) * ureg('meV'),
-           np.array([2., 3., 2.]) * ureg('angstrom^-2')),
+         (spec1d_args,
           {'x_tick_labels': [(0, 'A'), (2, 'B')]},
           ([[0., 1., 2.], [2., 3., 2]],),
           [(0., 'A'), (2., 'B')]),
          # Case 2: Split points create new line
-         ((np.array([0., 1., 1., 2.]) * ureg('meV'),
-           np.array([2., 3., 2., 4.]) * ureg('angstrom^-2')),
+         (spec1d_split_args,
           {'x_tick_labels': [(1, 'B'), (2, 'B'), (3, 'C')]},
           ([[0., 1.], [2., 3.]], [[1., 2.], [2., 4.]]),
           #  Note that duplicated points get plotted twice. Weird but harmless.
           [(1., 'B'), (1., 'B'), (2., 'C')]
           )])
-    def test_plot_single_spectrum(self, spectrum_params, spectrum_kwargs,
+    def test_plot_single_spectrum(self, spectrum_args, spectrum_kwargs,
                                   expected_data, expected_ticks, axes):
-        plot_1d_to_axis(Spectrum1D(*spectrum_params, **spectrum_kwargs), axes)
+        plot_1d_to_axis(Spectrum1D(*spectrum_args, **spectrum_kwargs), axes)
 
         assert len(expected_data) == len(axes.lines)
         for line, expected in zip(axes.lines, expected_data):
@@ -84,29 +93,80 @@ class TestPlot1DCore:
         assert [label.get_text() for label in axes.get_xticklabels()
                 ] == list(tick_labels)
 
+
+    spec1dcol_args = (np.array([0., 1., 2.])*ureg('meV'),
+                      np.array([[2., 3., 2.],
+                                [3., 4., 3.]])*ureg('angstrom^-2'))
+
+    spec1dcol_split_args = (np.array([0., 1., 1., 2.])*ureg('meV'),
+                            np.array([[2., 3., 2., 4.],
+                                      [5., 4., 3., 2.]])*ureg('angstrom^-2'))
     @pytest.mark.parametrize(
-        'spectrum_params, expected_data',
+        'spectrum_args, expected_data',
         [  # Case 1: Two lines
-         ((np.array([0., 1., 2.]) * ureg('meV'),
-           np.array([[2., 3., 2.],
-                     [3., 4., 3.]]) * ureg('angstrom^-2')),
+         (spec1dcol_args,
           ([[0., 1., 2.], [2., 3., 2.]],
            [[0., 1., 2.], [3., 4., 3.]])),
          # Case 2: Two lines with split points
-         ((np.array([0., 1., 1., 2.]) * ureg('meV'),
-           np.array([[2., 3., 2., 4.],
-                     [5., 4., 3., 2.]]) * ureg('angstrom^-2')),
+         (spec1dcol_split_args,
           ([[0., 1.], [2., 3.]], [[1., 2.], [2., 4.]],
            [[0., 1.], [5., 4.]], [[1., 2.], [3., 2.]]))
            ])
-    def test_plot_collection(self, spectrum_params, expected_data, axes):
-        plot_1d_to_axis(Spectrum1DCollection(*spectrum_params), axes)
+    def test_plot_collection(self, spectrum_args, expected_data, axes):
+        plot_1d_to_axis(Spectrum1DCollection(*spectrum_args), axes)
         assert len(expected_data) == len(axes.lines)
         for line, expected in zip(axes.lines, expected_data):
 
             npt.assert_allclose(line.get_xdata(), expected[0])
             npt.assert_allclose(line.get_ydata(), expected[1])
 
+    @pytest.mark.parametrize(
+        'spec, labels_kwarg, expected_legend_labels',
+        [(Spectrum1D(*spec1d_args), None, []),
+         (Spectrum1D(*spec1d_args), ['Line B'], ['Line B']),
+         (Spectrum1D(*spec1d_args,
+                     metadata={'label': 'Line B'}),
+          None,
+          ['Line B']),
+         (Spectrum1D(*spec1d_args,
+                     metadata={'label': 'Line B'}),
+          ['Line C'],
+          ['Line C']),
+         (Spectrum1D(*spec1d_split_args,
+                     metadata={'label': 'Line B'}),
+          ['Line C'],
+          ['Line C']),
+         (Spectrum1DCollection(*spec1dcol_args,
+                               metadata={'labels': ['Line B', 'Line C']}),
+          None,
+          ['Line B', 'Line C']),
+         (Spectrum1DCollection(*spec1dcol_args,
+                               metadata={'labels': ['Line B', 'Line C']}),
+          ['Line D', 'Line E'],
+          ['Line D', 'Line E']),
+         (Spectrum1DCollection(*spec1dcol_args,
+                               metadata={'labels': ['Line B', 'Line C']}),
+          ['', ''],
+          []),
+         (Spectrum1DCollection(*spec1dcol_split_args,
+                               metadata={'labels': ['Line B', 'Line C']}),
+          None,
+          ['Line B', 'Line C'])])
+    def test_plot_labels(self, spec, labels_kwarg, expected_legend_labels,
+                         axes_with_line_and_legend):
+        existing_line_label = ['Line A']
+        plot_1d_to_axis(spec, axes_with_line_and_legend, labels=labels_kwarg)
+        legend = axes_with_line_and_legend.get_legend()
+        assert ([x.get_text() for x in legend.get_texts()]
+                == existing_line_label + expected_legend_labels)
+
+    @pytest.mark.parametrize('spec, labels', [
+        (Spectrum1D(*spec1d_args), ['Line B', 'Line C']),
+        (Spectrum1DCollection(*spec1dcol_args), ['Line B'])])
+    def test_incorrect_length_labels_raises_value_error(
+            self, spec, labels, axes):
+        with pytest.raises(ValueError):
+            plot_1d_to_axis(spec, axes, labels=labels)
 
 @pytest.mark.unit
 class TestPlot1D:
@@ -123,22 +183,35 @@ class TestPlot1D:
                            [1., 2., 1.] * ureg('meV'))
         return [spec1, spec2]
 
+    spec1d_args = ([0., 1., 2.] * ureg('meV'),
+                   [1., 2., 1.] * ureg('angstrom^-2'))
+    spec1dcol_args = ([0., 1., 2.] * ureg('meV'),
+                      [[1., 2., 1.], [2., 3., 2.]] * ureg('angstrom^-2'))
+
     @pytest.mark.parametrize(
-        'spectrum',
-        [Spectrum1D([0., 1., 2.] * ureg('meV'),
-                    [1., 2., 1.] * ureg('angstrom^-2')),
-         Spectrum1DCollection([0., 1., 2.] * ureg('meV'),
-                              [[1., 2., 1.],
-                               [2., 3., 2.]] * ureg('angstrom^-2'),
-                              x_tick_labels=[(1, 'A')]),
+        'spectrum, labels, kwargs',
+        [(Spectrum1D(*spec1d_args),
+          ['Line A'],
+          {'lw': 2}),
+          (Spectrum1D(*spec1d_args, metadata={'label': ['Line B']}),
+          None,
+          {'ls': '--'}),
+         (Spectrum1DCollection(*spec1dcol_args, x_tick_labels=[(1, 'A')]),
+         ['Line D', 'Line E'],
+         {'ls': '.-'}),
+         (Spectrum1DCollection(*spec1dcol_args, metadata={'labels': ['Line B', 'Line C']}),
+         ['Line D', 'Line E'],
+         {})
          ])
-    def test_plot_single(self, mocker, spectrum):
+    def test_plot_single(self, mocker, spectrum, labels, kwargs):
         core = self.mock_core(mocker)
 
-        fig = plot_1d(spectrum)
+        fig = plot_1d(spectrum, labels=labels, **kwargs)
         # Check args were as expected
         assert core.call_args[0][0] == spectrum
         assert core.call_args[0][1] in fig.axes
+        assert core.call_args[0][2] == labels
+        assert core.call_args[1] == kwargs
 
         plt.close(fig)
 
@@ -151,22 +224,27 @@ class TestPlot1D:
         with pytest.raises(ValueError):
             plot_1d([spec1, spec2])
 
-    @pytest.mark.parametrize('kwargs', [{'labels': ['band A', 'band B']},
-                                        {'x_label': 'X_LABEL',
-                                         'y_label': 'Y_LABEL',
-                                         'title': 'TITLE'}])
-    def test_plot_multi(self, mocker, band_segments, kwargs):
+    @pytest.mark.parametrize('kwargs, expected_labels',
+        [({'labels': ['band A'], 'x_label': 'X_LABEL', 'y_label': 'Y_LABEL',
+           'title': 'TITLE'},
+         ['band A']),
+         ({},
+          None)])
+    def test_plot_multi_segments(
+            self, mocker, band_segments, kwargs, expected_labels):
 
         suptitle = mocker.patch.object(matplotlib.figure.Figure, 'suptitle')
-
         fig = plot_1d(band_segments, **kwargs)
 
-        if 'labels' in kwargs:
-            legend = fig.axes[0].get_legend()
-            assert legend is not None
-
-            for text, label in zip(legend.get_texts(), kwargs['labels']):
+        legend = fig.axes[0].get_legend()
+        if expected_labels is None:
+            assert legend == None
+        else:
+            for text, label in zip(legend.get_texts(), expected_labels):
                 assert text.get_text() == label
+        # Ensure legend only on first subplot
+        for ax in fig.axes[1:]:
+            assert ax.get_legend() == None
 
         if 'x_label' in kwargs:
             assert fig.axes[-1].get_xlabel() == kwargs['x_label']
@@ -180,6 +258,10 @@ class TestPlot1D:
                 assert ax.get_ylim()[0] == pytest.approx(kwargs.get('y_min'))
             if 'y_max' in kwargs:
                 assert ax.get_ylim()[0] == pytest.approx(kwargs.get('y_max'))
+
+    def test_plot_with_incorrect_labels_raises_valueerror(self, band_segments):
+        with pytest.raises(ValueError):
+            fig = plot_1d(band_segments, labels=['Band A', 'Band B'])
 
 
 @pytest.mark.unit
