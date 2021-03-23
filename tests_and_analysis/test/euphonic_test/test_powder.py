@@ -126,7 +126,8 @@ class TestSphereSampledProperties:
             **{'reciprocal_cell.return_value': np.array([[1, 0, 0],
                                                          [0, 1, 0],
                                                          [0, 0, 1]])
-               * ureg('1 / angstrom')})
+               * ureg('1 / angstrom'),
+               'get_mp_divisions.return_value': (2, 2, 2)})
         return crystal
 
     @pytest.fixture
@@ -176,6 +177,12 @@ class TestSphereSampledProperties:
                                    energy_bins=_energy_bins,
                                    scattering_lengths='Sears1992',
                                    dw=None),
+                              dict(mod_q=1.2 * ureg('1 / angstrom'),
+                                   npts=200, temperature=100. * ureg('K'),
+                                   sampling='golden', jitter=False,
+                                   energy_bins=_energy_bins,
+                                   scattering_lengths='Sears1992',
+                                   dw=None),
                               dict(mod_q=2.3 * ureg('1 / angstrom'),
                                    npts=1000, jitter=False,
                                    sampling='spherical-polar-improved',
@@ -183,7 +190,8 @@ class TestSphereSampledProperties:
                                    scattering_lengths=_scattering_lengths,
                                    dw='mock_dw')
                                ])
-    def test_sample_sphere_structure_factor(self, mocker, mock_fc, mock_qpm,
+    def test_sample_sphere_structure_factor(self, mocker, mock_crystal,
+                                            mock_fc, mock_qpm,
                                             mock_s, mock_dw, random_qpts_array,
                                             options):
         # Make sure the same instance of mock DebyeWaller is used everywhere
@@ -228,6 +236,13 @@ class TestSphereSampledProperties:
         assert (mock_qpm.calculate_structure_factor.call_args
                 == (tuple(), {'scattering_lengths': self._scattering_lengths,
                               'dw': mock_dw}))
+
+        # Check auto grid was used if temperature given
+        if options.get('temperature') is not None:
+            assert (mock_qpm.calculate_debye_waller.call_args[0][0]
+                    == options['temperature'])
+            assert (mock_crystal.get_mp_divisions.call_args[0][0]
+                    == 0.025 * ureg('1/angstrom'))
 
         # Check expected bins set for 1d averaging
         assert mock_s.calculate_1d_average.call_args == ((return_bins,),)
