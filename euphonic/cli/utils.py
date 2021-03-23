@@ -1,7 +1,6 @@
 from argparse import (ArgumentParser, _ArgumentGroup, Namespace,
                       ArgumentDefaultsHelpFormatter)
 import json
-from math import ceil
 import os
 import pathlib
 from typing import (Any, Collection, Dict, List,
@@ -347,13 +346,7 @@ def _get_mp_grid_spec(crystal: Crystal,
     if grid:
         grid_spec = grid
     else:
-        recip_length_unit = grid_spacing.units
-        lattice = crystal.reciprocal_cell().to(recip_length_unit)
-        grid_spec = np.linalg.norm(lattice.magnitude, axis=1
-                                   ) / grid_spacing.magnitude
-        # math.ceil is better than np.ceil because it returns ints
-        grid_spec = [ceil(x) for x in grid_spec]
-
+        grid_spec = crystal.get_mp_divisions(spacing=grid_spacing)
     return grid_spec
 
 

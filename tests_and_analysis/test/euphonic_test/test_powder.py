@@ -113,6 +113,13 @@ class TestSphereSampledProperties:
         return qpm
 
     @pytest.fixture
+    def mock_qpf(self, mocker, mock_s, mock_dw):
+        qpf = mocker.MagicMock()
+        qpf.configure_mock(
+            **{'calculate_dos.return_value': 'calculate_dos_return_value'})
+        return qpf
+
+    @pytest.fixture
     def mock_crystal(self, mocker):
         crystal = mocker.MagicMock()
         crystal.configure_mock(
@@ -123,10 +130,11 @@ class TestSphereSampledProperties:
         return crystal
 
     @pytest.fixture
-    def mock_fc(self, mocker, mock_qpm, mock_crystal):
+    def mock_fc(self, mocker, mock_qpm, mock_qpf, mock_crystal):
         fc = mocker.MagicMock()
         fc.configure_mock(
             **{'calculate_qpoint_phonon_modes.return_value': mock_qpm,
+               'calculate_qpoint_frequencies.return_value': mock_qpf,
                'crystal': mock_crystal})
         return fc
 
@@ -137,7 +145,7 @@ class TestSphereSampledProperties:
     @pytest.mark.unit
     @pytest.mark.parametrize('energy_bins', [_energy_bins, None])
     def test_sample_sphere_dos(self,
-                               mocker, mock_fc, mock_qpm, random_qpts_array,
+                               mocker, mock_fc, mock_qpf, random_qpts_array,
                                energy_bins):
         mod_q = 1.2 * ureg('1 / angstrom')
         return_bins = self._energy_bins
@@ -150,8 +158,8 @@ class TestSphereSampledProperties:
                 == 'calculate_dos_return_value')
         npt.assert_almost_equal(
             random_qpts_array * mod_q.magnitude,
-            mock_fc.calculate_qpoint_phonon_modes.call_args[0][0])
-        mock_qpm.calculate_dos.assert_called_with(return_bins)
+            mock_fc.calculate_qpoint_frequencies.call_args[0][0])
+        mock_qpf.calculate_dos.assert_called_with(return_bins)
 
     @pytest.mark.unit
     def test_sample_sphere_structure_factor_error(self, mock_fc, mock_dw):
