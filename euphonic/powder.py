@@ -97,6 +97,7 @@ def sample_sphere_structure_factor(
     fc: ForceConstants,
     mod_q: Quantity,
     dw: DebyeWaller = None,
+    dw_spacing: Quantity = 0.025 * ureg('1/angstrom'),
     temperature: Optional[Quantity] = 273. * ureg['K'],
     sampling: str = 'golden',
     npts: int = 1000, jitter: bool = False,
@@ -122,7 +123,11 @@ def sample_sphere_structure_factor(
     dw
         Debye-Waller exponent used for evaluation of scattering
         function. If not provided, this is generated automatically over
-        a 20x20x20 q-point mesh.
+        Monkhorst-Pack q-point mesh determined by ``dw_spacing``.
+
+    dw_spacing
+        Maximum distance between q-points in automatic q-point mesh (if used)
+        for Debye-Waller calculation.
 
     temperature
         Temperature for Debye-Waller calculation. If both temperature and dw
@@ -193,8 +198,7 @@ def sample_sphere_structure_factor(
 
     if temperature is not None:
         if (dw is None):
-            dw_qpts = mp_grid(fc.crystal.get_mp_divisions(
-                0.025 * ureg('1/angstrom')))
+            dw_qpts = mp_grid(fc.crystal.get_mp_divisions(dw_spacing))
             dw_phonons = fc.calculate_qpoint_phonon_modes(dw_qpts,
                                                           **calc_modes_args)
             dw = dw_phonons.calculate_debye_waller(temperature
