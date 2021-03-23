@@ -3,8 +3,6 @@
 import numpy as np
 from typing import Optional, Union
 
-from pytest import approx
-
 from euphonic import (Crystal, DebyeWaller, ForceConstants,
                       QpointFrequencies, QpointPhononModes, Spectrum1D)
 from euphonic import ureg, Quantity
@@ -195,13 +193,15 @@ def sample_sphere_structure_factor(
 
     if temperature is not None:
         if (dw is None):
-            dw_qpts = mp_grid([20, 20, 20])
+            dw_qpts = mp_grid(fc.crystal.get_mp_divisions(
+                0.025 * ureg('1/angstrom')))
             dw_phonons = fc.calculate_qpoint_phonon_modes(dw_qpts,
                                                           **calc_modes_args)
             dw = dw_phonons.calculate_debye_waller(temperature
                                                    )  # type: DebyeWaller
         else:
-            if dw.temperature.to('K').magnitude != approx(temperature.to('K')):
+            if not np.isclose(dw.temperature.to('K').magnitude,
+                              temperature.to('K').magnitude):
                 raise ValueError('Temperature argument is not consistent with '
                                  'temperature stored in DebyeWaller object.')
 
