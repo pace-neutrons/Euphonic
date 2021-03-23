@@ -22,6 +22,8 @@ powder_map_params = [
     [nacl_prim_fc_file],
     [nacl_prim_fc_file, *quick_calc_params],
     [nacl_prim_fc_file, '--temperature=1000', *quick_calc_params],
+    [nacl_prim_fc_file, '--temperature=1000', '--weights=coherent',
+     *quick_calc_params],
     [nacl_prim_fc_file, '--v-min=0', '--v-max=1e-10', *quick_calc_params],
     [nacl_prim_fc_file, '--energy-unit=meV', *quick_calc_params],
     [nacl_prim_fc_file, '--weights=coherent', '--cmap=bone'],
