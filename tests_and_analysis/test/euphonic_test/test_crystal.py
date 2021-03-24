@@ -368,3 +368,14 @@ class TestCrystalMethods:
         npt.assert_allclose(spglib_cell[1], expected_spglib_cell[1],
                             atol=np.finfo(np.float64).eps)
         assert spglib_cell[2] == expected_spglib_cell[2]
+
+    @pytest.mark.parametrize('crystal,kwargs,expected', [
+        (get_crystal('quartz'), {}, (15, 15, 12)),
+        (get_crystal('quartz'), {'spacing': 0.05 * ureg('1/angstrom')},
+         (30, 30, 24)),
+        (get_crystal('quartz'), {'spacing': 0.05 * ureg('1/bohr')},
+         (16, 16, 13)),
+        (get_crystal('LZO'), {'spacing': 0.5 * ureg('1/angstrom')},
+         (3, 3, 3))])
+    def test_get_mp_grid_spec(self, crystal, kwargs, expected):
+        assert crystal.get_mp_grid_spec(**kwargs) == expected

@@ -198,7 +198,7 @@ def sample_sphere_structure_factor(
 
     if temperature is not None:
         if (dw is None):
-            dw_qpts = mp_grid(fc.crystal.get_mp_divisions(dw_spacing))
+            dw_qpts = mp_grid(fc.crystal.get_mp_grid_spec(dw_spacing))
             dw_phonons = fc.calculate_qpoint_phonon_modes(dw_qpts,
                                                           **calc_modes_args)
             dw = dw_phonons.calculate_debye_waller(temperature

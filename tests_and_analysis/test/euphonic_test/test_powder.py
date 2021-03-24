@@ -127,7 +127,7 @@ class TestSphereSampledProperties:
                                                          [0, 1, 0],
                                                          [0, 0, 1]])
                * ureg('1 / angstrom'),
-               'get_mp_divisions.return_value': (2, 2, 2)})
+               'get_mp_grid_spec.return_value': (2, 2, 2)})
         return crystal
 
     @pytest.fixture
@@ -241,7 +241,7 @@ class TestSphereSampledProperties:
         if options.get('temperature') is not None:
             assert (mock_qpm.calculate_debye_waller.call_args[0][0]
                     == options['temperature'])
-            assert (mock_crystal.get_mp_divisions.call_args[0][0]
+            assert (mock_crystal.get_mp_grid_spec.call_args[0][0]
                     == 0.025 * ureg('1/angstrom'))
 
         # Check expected bins set for 1d averaging

@@ -6,7 +6,7 @@ from euphonic.plot import plot_1d
 from .utils import (load_data_from_file, get_args, matplotlib_save_or_show,
                     _calc_modes_kwargs,
                     _get_cli_parser, _get_energy_bins_and_units,
-                    _get_mp_grid_spec)
+                    _grid_spec_from_args)
 
 
 def main(params: List[str] = None):
@@ -17,9 +17,9 @@ def main(params: List[str] = None):
     if isinstance(data, euphonic.ForceConstants):
 
         recip_length_unit = euphonic.ureg(f'1 / {args.length_unit}')
-        grid_spec = _get_mp_grid_spec(data.crystal, grid=args.grid,
-                                      grid_spacing=(args.grid_spacing
-                                                    * recip_length_unit))
+        grid_spec = _grid_spec_from_args(data.crystal, grid=args.grid,
+                                         grid_spacing=(args.grid_spacing
+                                                       * recip_length_unit))
 
         print("Force Constants data was loaded. Calculating phonon modes "
               "on {} q-point grid...".format(

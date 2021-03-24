@@ -338,15 +338,15 @@ def _bands_from_force_constants(data: ForceConstants,
     return modes, x_tick_labels, split_args
 
 
-def _get_mp_grid_spec(crystal: Crystal,
-                      grid: Optional[Sequence[int]] = None,
-                      grid_spacing: Quantity = 0.1 * ureg('1/angstrom')
-                      ) -> Sequence[int]:
-    """Get Monkorst-Pack mesh divisions from input arguments"""
+def _grid_spec_from_args(crystal: Crystal,
+                           grid: Optional[Sequence[int]] = None,
+                           grid_spacing: Quantity = 0.1 * ureg('1/angstrom')
+                           ) -> Sequence[int]:
+    """Get Monkorst-Pack mesh divisions from user arguments"""
     if grid:
         grid_spec = grid
     else:
-        grid_spec = crystal.get_mp_divisions(spacing=grid_spacing)
+        grid_spec = crystal.get_mp_grid_spec(spacing=grid_spacing)
     return grid_spec
 
 
@@ -358,8 +358,8 @@ def _get_debye_waller(temperature: Quantity,
                       ) -> DebyeWaller:
     """Generate Debye-Waller data from force constants and grid specification
     """
-    mp_grid_spec = _get_mp_grid_spec(fc.crystal, grid=grid,
-                                     grid_spacing=grid_spacing)
+    mp_grid_spec = _grid_spec_from_args(fc.crystal, grid=grid,
+                                        grid_spacing=grid_spacing)
     print("Calculating Debye-Waller factor on {} q-point grid"
           .format(' x '.join(map(str, mp_grid_spec))))
     dw_phonons = fc.calculate_qpoint_phonon_modes(

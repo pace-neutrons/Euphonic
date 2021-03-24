@@ -117,7 +117,7 @@ class Crystal:
         cv = self._cell_vectors
         return np.dot(cv[0], np.cross(cv[1], cv[2]))
 
-    def get_mp_divisions(self, spacing: Quantity = 0.1 * ureg('1/angstrom')
+    def get_mp_grid_spec(self, spacing: Quantity = 0.1 * ureg('1/angstrom')
                          ) -> Tuple[int, int, int]:
         """Get suggested divisions for Monkhorst-Pack grid
 
