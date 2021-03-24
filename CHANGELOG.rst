@@ -1,8 +1,11 @@
 `Unreleased <https://github.com/pace-neutrons/Euphonic/compare/v0.4.0...HEAD>`_
 ----------
 
+
 - New Features:
 
+  - New command-line tool ``euphonic-powder-map`` allows generation
+    and plotting of powder-averaged S(|q|,w) and DOS maps.
   - New ``QpointFrequencies`` object which allows storage of frequencies
     without eigenvectors, meaning that memory usage can be reduced if
     eigenvectors are not required.
@@ -25,6 +28,28 @@
     - ``threadpoolctl.threadpool_limits`` is used to limit the number of threads
       used by numerical libraries in Euphonic C function calls, resulting in
       better overall performance
+
+  - Command-line interfaces have been refactored, giving a more
+    uniform set of options and clearer sections of related arguments
+    on the interactive help pages.
+
+    - It is now possible where appropriate to specify Monkhorst-Pack
+      sampling with a single-parameter ``--q-spacing`` as an
+      alternative to setting Monkhorst-Pack divisions. This approach
+      will account for the size and shape of reciprocal-lattice cells.
+
+- Breaking changes:
+
+  - The ``--q-distance`` argument to ``euphonic-intensity-map`` has
+    been renamed to ``--q-spacing`` for consistency with other tools.
+
+  - Debye-Waller calculation in ``euphonic-intensity-map`` is now
+    enabled by setting ``--temperature``, which no longer has a
+    default value.
+
+  - Default Monkhorst-Pack meshes (i.e. [6, 6, 6] in ``euphonic-dos``
+    and [20, 20, 20] in ``sample_sphere_structure_factor()``) have
+    been replaced by default grid-spacing values.
 
 `v0.4.0 <https://github.com/pace-neutrons/Euphonic/compare/v0.3.2...v0.4.0>`_
 ----------
