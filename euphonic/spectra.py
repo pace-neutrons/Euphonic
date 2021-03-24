@@ -251,7 +251,7 @@ class Spectrum1D(Spectrum):
     x_tick_labels : Sequence[Tuple[int, str]] or None
         Special tick labels e.g. for high-symmetry points. The int
         refers to the index in x_data the label should be applied to
-    metadata : Dict[str, Any] or None
+    metadata : Dict[str, Any]
         Contains metadata about the spectrum. Any keys/values are
         allowed, but values must be JSON serialisable to write to a
         json file. There are some functional keys:
@@ -290,7 +290,7 @@ class Spectrum1D(Spectrum):
         self._set_data(x_data, 'x')
         self._set_data(y_data, 'y')
         self.x_tick_labels = x_tick_labels
-        self.metadata = metadata
+        self.metadata = {} if metadata is None else metadata
 
     def _split_by_indices(self: S1D,
                           indices: Union[Sequence[int], np.ndarray]
@@ -406,7 +406,7 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
     x_tick_labels : Sequence[Tuple[int, str]] or None
         Special tick labels e.g. for high-symmetry points. The int
         refers to the index in x_data the label should be applied to
-    metadata : Dict[str, Any] or None
+    metadata : Dict[str, Any]
         Contains metadata about the spectrum. Any keys/values are
         allowed, but values must be JSON serialisable to write to a
         json file. There are some functional keys:
@@ -450,7 +450,7 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
         self._set_data(x_data, 'x')
         self._set_data(y_data, 'y')
         self.x_tick_labels = x_tick_labels
-        self.metadata = metadata
+        self.metadata = {} if metadata is None else metadata
 
     def _split_by_indices(self: SC,
                           indices: Union[Sequence[int], np.ndarray]
@@ -478,7 +478,7 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
 
     def __getitem__(self, item: Union[int, slice]):  # noqa: F811
         new_metadata = deepcopy(self.metadata)
-        if isinstance(new_metadata, dict) and 'labels' in new_metadata.keys():
+        if 'labels' in new_metadata.keys():
             labels = new_metadata.pop('labels')
         else:
             labels = None
@@ -531,16 +531,14 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
         metadata = deepcopy(spectra[0]).metadata
         try:
             metadata.pop('label')
-        except (AttributeError, KeyError):
+        except (KeyError):
             pass
         for i, spectrum in enumerate(spectra):
-            if isinstance(spectrum.metadata, dict):
-                if 'label' in spectrum.metadata.keys():
-                    if not isinstance(metadata, dict):
-                        metadata = {}
-                    if not 'labels' in metadata.keys():
-                        metadata['labels'] = ['']*len(spectra)
-                    metadata['labels'][i] = spectrum.metadata['label']
+            if 'label' in spectrum.metadata.keys():
+                if not 'labels' in metadata.keys():
+                    # First line with a label, initialise 'labels'
+                    metadata['labels'] = ['']*len(spectra)
+                metadata['labels'][i] = spectrum.metadata['label']
 
         y_data = Quantity(y_data_magnitude, y_data_units)
         return cls(x_data, y_data, x_tick_labels=x_tick_labels,
@@ -606,7 +604,7 @@ class Spectrum2D(Spectrum):
     x_tick_labels : Sequence[Tuple[int, str]] or None
         Special tick labels e.g. for high-symmetry points. The int
         refers to the index in x_data the label should be applied to
-    metadata : Dict[str, Any] or None
+    metadata : Dict[str, Any]
         Contains metadata about the spectrum. Any keys/values are
         allowed, but values must be JSON serialisable to write to a
         json file
@@ -652,7 +650,7 @@ class Spectrum2D(Spectrum):
         self._set_data(y_data, 'y')
         self.x_tick_labels = x_tick_labels
         self._set_data(z_data, 'z')
-        self.metadata = metadata
+        self.metadata = {} if metadata is None else metadata
 
     @property
     def z_data(self):

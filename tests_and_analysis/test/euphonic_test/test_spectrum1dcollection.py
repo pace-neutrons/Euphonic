@@ -40,7 +40,7 @@ class ExpectedSpectrum1DCollection:
         if 'metadata' in self.data.keys():
             return self.data['metadata']
         else:
-            return None
+            return {}
 
     def to_dict(self):
         d = {'x_data': self.x_data.magnitude,
@@ -203,11 +203,11 @@ class TestSpectrum1DCollectionCreation:
 
     @pytest.mark.parametrize(
         'input_metadata, expected_metadata',
-        [([None, {'label': 'H3'}, {'Another key': 'Anything'}],
+        [([{}, {'label': 'H3'}, {'Another key': 'Anything'}],
           {'labels': ['', 'H3', '']}),
-         ([{'desc': 'methane PDOS', 'label':'H2'}, {'label': 'H3'}, None],
+         ([{'desc': 'methane PDOS', 'label':'H2'}, {'label': 'H3'}, {}],
           {'desc': 'methane PDOS', 'labels': ['H2', 'H3', '']}),
-         ([{'desc': 'methane PDOS'}, None, None],
+         ([{'desc': 'methane PDOS'}, {}, {}],
            {'desc': 'methane PDOS'})
          ])
     def test_create_methane_pdos_from_sequence_metadata_handling(

@@ -42,7 +42,7 @@ class ExpectedSpectrum2D:
         if 'metadata' in self.data.keys():
             return self.data['metadata']
         else:
-            return None
+            return {}
 
     def to_dict(self):
         d = {'x_data': self.x_data.magnitude,

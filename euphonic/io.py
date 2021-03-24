@@ -52,6 +52,9 @@ def _obj_to_dict(obj, attrs):
         # Don't write None values to dict
         if val is None:
             continue
+        # Don't write empty metadata to dict
+        if attr == 'metadata' and not val:
+            continue
 
         if isinstance(val, np.ndarray):
             dout[attr] = np.copy(val)

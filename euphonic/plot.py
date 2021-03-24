@@ -35,8 +35,8 @@ def plot_1d_to_axis(spectra: Union[Spectrum1D, Spectrum1DCollection],
         Matplotlib axes to which spectra will be drawn
     labels
         The label to be applied to each line in spectra, must be the same
-        as the number of lines. If this is None, the label(s) contained in
-        spectra.metadata 'label' (Spectrum1D) or 'labels'
+        length as the number of lines. If this is None, the label(s)
+        contained in spectra.metadata 'label' (Spectrum1D) or 'labels'
         (Spectrum1DCollection) will be used. To disable labelling for a
         specific line, pass an empty string.
     **mplargs
@@ -78,11 +78,10 @@ def plot_1d_to_axis(spectra: Union[Spectrum1D, Spectrum1DCollection],
             label = None
             if x0 == 0:
                 if labels is None:
-                    if spectrum.metadata is not None:
-                        try:
-                            label = spectrum.metadata['label']
-                        except KeyError:
-                            pass
+                    try:
+                        label = spectrum.metadata['label']
+                    except KeyError:
+                        pass
                 else:
                     label = labels[i]
 
