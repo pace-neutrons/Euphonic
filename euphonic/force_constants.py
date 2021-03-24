@@ -347,6 +347,7 @@ class ForceConstants:
                 reduced_qpts, qpts_i = np.unique(norm_qpts, return_inverse=True,
                                                  axis=0)
             except TypeError:  # Workaround for np 1.12 before axis kwarg
+                norm_qpts = np.ascontiguousarray(norm_qpts)
                 reduced_qpts, qpts_i = np.unique(
                     norm_qpts.view(norm_qpts.dtype.descr*3),
                     return_inverse=True)

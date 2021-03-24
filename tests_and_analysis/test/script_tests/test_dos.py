@@ -29,7 +29,7 @@ dos_params = [
      '-u=hartree'],
     [nah_phonon_file, '--title=NaH', '--x-label=Energy (meV)',
      '--y-label=DOS'],
-    [quartz_fc_file],
+    [quartz_fc_file, '--grid-spacing=0.1', '--length-unit=bohr'],
     [quartz_fc_file, '--grid', '5', '5', '4']]
 
 

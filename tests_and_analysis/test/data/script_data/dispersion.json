@@ -9659,7 +9659,7 @@
             ]
         ]
     },
-    "CaHgO2 mp-7041-20180417.yaml --length-unit=bohr --q-distance=0.04": {
+    "CaHgO2 mp-7041-20180417.yaml --length-unit=bohr --q-spacing=0.04": {
         "title": "",
         "x_label": "",
         "y_label": "Energy / meV",
@@ -10213,7 +10213,7 @@
             ]
         ]
     },
-    "CaHgO2 mp-7041-20180417.yaml --q-distance=0.02": {
+    "CaHgO2 mp-7041-20180417.yaml --q-spacing=0.02": {
         "title": "",
         "x_label": "",
         "y_label": "Energy / meV",

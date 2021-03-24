@@ -4,7 +4,9 @@ import euphonic
 from euphonic.util import mp_grid
 from euphonic.plot import plot_1d
 from .utils import (load_data_from_file, get_args, matplotlib_save_or_show,
-                    _get_cli_parser, _get_energy_bins_and_units)
+                    _calc_modes_kwargs,
+                    _get_cli_parser, _get_energy_bins_and_units,
+                    _grid_spec_from_args)
 
 
 def main(params: List[str] = None):
@@ -13,9 +15,17 @@ def main(params: List[str] = None):
 
     data = load_data_from_file(args.filename)
     if isinstance(data, euphonic.ForceConstants):
-        print((f"Force Constants data was loaded. Calculating points "
-               f"on {args.grid} grid..."))
-        modes = data.calculate_qpoint_phonon_modes(mp_grid(args.grid))
+
+        recip_length_unit = euphonic.ureg(f'1 / {args.length_unit}')
+        grid_spec = _grid_spec_from_args(data.crystal, grid=args.grid,
+                                         grid_spacing=(args.grid_spacing
+                                                       * recip_length_unit))
+
+        print("Force Constants data was loaded. Calculating phonon modes "
+              "on {} q-point grid...".format(
+                  ' x '.join([str(x) for x in grid_spec])))
+        modes = data.calculate_qpoint_frequencies(mp_grid(grid_spec),
+                                                  **_calc_modes_kwargs(args))
     elif isinstance(data, euphonic.QpointPhononModes):
         print("Phonon band data was loaded.")
         modes = data
@@ -42,16 +52,11 @@ def main(params: List[str] = None):
 
 
 def get_parser():
-    parser = _get_cli_parser(n_ebins=True)
+    parser, _ = _get_cli_parser(features={'read-fc', 'read-modes', 'mp-grid',
+                                          'plotting', 'ebins'})
     parser.description = (
         'Plots a DOS from the file provided. If a force '
-        'constants file is provided, a DOS is generated on the '
-        'grid specified by the grid argument')
-    interp_group = parser.add_argument_group(
-        'Interpolation arguments',
-        ('Arguments specific to DOS that is generated from Force '
-         'Constants data'))
-    interp_group.add_argument(
-        '--grid', type=int, nargs=3, default=[6, 6, 6],
-        help=('Defines a Monkhorst-Pack grid to calculate the DOS'))
+        'constants file is provided, a DOS is generated on the Monkhorst-Pack '
+        'grid specified by the grid (or grid-spacing) argument.')
+
     return parser

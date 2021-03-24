@@ -3,25 +3,29 @@ from typing import List
 import euphonic
 from euphonic.plot import plot_1d
 from .utils import (load_data_from_file, get_args, _bands_from_force_constants,
-                    _get_q_distance, matplotlib_save_or_show, _get_cli_parser)
+                    _get_q_distance, matplotlib_save_or_show, _get_cli_parser,
+                    _calc_modes_kwargs)
 
 
 def main(params: List[str] = None):
-    parser = get_parser()
-    args = get_args(parser, params)
-
+    args = get_args(get_parser(), params)
     data = load_data_from_file(args.filename)
 
     if isinstance(data, euphonic.ForceConstants):
+        frequencies_only = not args.reorder  # Need eigenvectors to reorder
+
         print("Force Constants data was loaded. Getting band path...")
-        q_distance = _get_q_distance(args.length_unit, args.q_distance)
+
+        q_distance = _get_q_distance(args.length_unit, args.q_spacing)
         (modes, x_tick_labels, split_args) = _bands_from_force_constants(
-            data, q_distance=q_distance, asr=args.asr)
+            data, q_distance=q_distance, frequencies_only=frequencies_only,
+            **_calc_modes_kwargs(args))
     elif isinstance(data, euphonic.QpointPhononModes):
         print("Phonon band data was loaded.")
         modes = data
         split_args = {'btol': args.btol}
         x_tick_labels = None
+
     modes.frequencies_unit = args.energy_unit
 
     print("Mapping modes to 1D band-structure")
@@ -54,12 +58,16 @@ def main(params: List[str] = None):
 
 
 def get_parser():
-    parser = _get_cli_parser(qe_band_plot=True)
+    parser, _ = _get_cli_parser(features={'read-fc', 'read-modes', 'plotting',
+                                          'q-e', 'btol'})
     parser.description = (
         'Plots a band structure from the file provided. If a force '
         'constants file is provided, a band structure path is '
         'generated using Seekpath')
-    parser.add_argument(
+    bands_group = parser.add_argument_group(
+        'Band arguments',
+        'Options related to plotting 1D bands ("spaghetti plots").')
+    bands_group.add_argument(
         '--reorder',
         action='store_true',
         help=('Try to determine branch crossings from eigenvectors and'

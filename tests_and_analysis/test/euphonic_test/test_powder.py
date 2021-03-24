@@ -100,6 +100,7 @@ class TestSphereSampledProperties:
     @pytest.fixture
     def mock_dw(self, mocker):
         dw = mocker.MagicMock()
+        dw.configure_mock(temperature=273.*ureg('K'))
         return dw
 
     @pytest.fixture
@@ -112,20 +113,29 @@ class TestSphereSampledProperties:
         return qpm
 
     @pytest.fixture
+    def mock_qpf(self, mocker, mock_s, mock_dw):
+        qpf = mocker.MagicMock()
+        qpf.configure_mock(
+            **{'calculate_dos.return_value': 'calculate_dos_return_value'})
+        return qpf
+
+    @pytest.fixture
     def mock_crystal(self, mocker):
         crystal = mocker.MagicMock()
         crystal.configure_mock(
             **{'reciprocal_cell.return_value': np.array([[1, 0, 0],
                                                          [0, 1, 0],
                                                          [0, 0, 1]])
-               * ureg('1 / angstrom')})
+               * ureg('1 / angstrom'),
+               'get_mp_grid_spec.return_value': (2, 2, 2)})
         return crystal
 
     @pytest.fixture
-    def mock_fc(self, mocker, mock_qpm, mock_crystal):
+    def mock_fc(self, mocker, mock_qpm, mock_qpf, mock_crystal):
         fc = mocker.MagicMock()
         fc.configure_mock(
             **{'calculate_qpoint_phonon_modes.return_value': mock_qpm,
+               'calculate_qpoint_frequencies.return_value': mock_qpf,
                'crystal': mock_crystal})
         return fc
 
@@ -136,7 +146,7 @@ class TestSphereSampledProperties:
     @pytest.mark.unit
     @pytest.mark.parametrize('energy_bins', [_energy_bins, None])
     def test_sample_sphere_dos(self,
-                               mocker, mock_fc, mock_qpm, random_qpts_array,
+                               mocker, mock_fc, mock_qpf, random_qpts_array,
                                energy_bins):
         mod_q = 1.2 * ureg('1 / angstrom')
         return_bins = self._energy_bins
@@ -149,14 +159,27 @@ class TestSphereSampledProperties:
                 == 'calculate_dos_return_value')
         npt.assert_almost_equal(
             random_qpts_array * mod_q.magnitude,
-            mock_fc.calculate_qpoint_phonon_modes.call_args[0][0])
-        mock_qpm.calculate_dos.assert_called_with(return_bins)
+            mock_fc.calculate_qpoint_frequencies.call_args[0][0])
+        mock_qpf.calculate_dos.assert_called_with(return_bins)
+
+    @pytest.mark.unit
+    def test_sample_sphere_structure_factor_error(self, mock_fc, mock_dw):
+        with pytest.raises(ValueError):
+            sample_sphere_structure_factor(mock_fc, 1. * ureg('1 / angstrom'),
+                                           dw=mock_dw,
+                                           temperature=(100. * ureg('K')))
 
     @pytest.mark.unit
     @pytest.mark.parametrize('options',
                              [dict(mod_q=1.2 * ureg('1 / angstrom'),
                                    npts=400, jitter=True,
                                    sampling='golden',
+                                   energy_bins=_energy_bins,
+                                   scattering_lengths='Sears1992',
+                                   dw=None),
+                              dict(mod_q=1.2 * ureg('1 / angstrom'),
+                                   npts=200, temperature=100. * ureg('K'),
+                                   sampling='golden', jitter=False,
                                    energy_bins=_energy_bins,
                                    scattering_lengths='Sears1992',
                                    dw=None),
@@ -167,7 +190,8 @@ class TestSphereSampledProperties:
                                    scattering_lengths=_scattering_lengths,
                                    dw='mock_dw')
                                ])
-    def test_sample_sphere_structure_factor(self, mocker, mock_fc, mock_qpm,
+    def test_sample_sphere_structure_factor(self, mocker, mock_crystal,
+                                            mock_fc, mock_qpm,
                                             mock_s, mock_dw, random_qpts_array,
                                             options):
         # Make sure the same instance of mock DebyeWaller is used everywhere
@@ -212,6 +236,13 @@ class TestSphereSampledProperties:
         assert (mock_qpm.calculate_structure_factor.call_args
                 == (tuple(), {'scattering_lengths': self._scattering_lengths,
                               'dw': mock_dw}))
+
+        # Check auto grid was used if temperature given
+        if options.get('temperature') is not None:
+            assert (mock_qpm.calculate_debye_waller.call_args[0][0]
+                    == options['temperature'])
+            assert (mock_crystal.get_mp_grid_spec.call_args[0][0]
+                    == 0.025 * ureg('1/angstrom'))
 
         # Check expected bins set for 1d averaging
         assert mock_s.calculate_1d_average.call_args == ((return_bins,),)

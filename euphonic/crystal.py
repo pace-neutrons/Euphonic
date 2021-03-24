@@ -1,4 +1,5 @@
 import inspect
+from math import ceil
 from typing import List, Tuple, TypeVar
 
 import numpy as np
@@ -115,6 +116,27 @@ class Crystal:
     def _cell_volume(self):
         cv = self._cell_vectors
         return np.dot(cv[0], np.cross(cv[1], cv[2]))
+
+    def get_mp_grid_spec(self, spacing: Quantity = 0.1 * ureg('1/angstrom')
+                         ) -> Tuple[int, int, int]:
+        """Get suggested divisions for Monkhorst-Pack grid
+
+        Determine a mesh for even Monkhorst-Pack sampling of the reciprocal
+        cell.
+
+        Args:
+            spacing: Maximum reciprocal-space distance between q-point samples
+
+        Returns:
+            number of divisions for each reciprocal lattice vector.
+        """
+
+        recip_length_unit = spacing.units
+        lattice = self.reciprocal_cell().to(recip_length_unit)
+        grid_spec = np.linalg.norm(lattice.magnitude, axis=1
+                                   ) / spacing.magnitude
+        # math.ceil is better than np.ceil because it returns ints
+        return tuple([ceil(x) for x in grid_spec])
 
     def to_spglib_cell(self) -> Tuple[List[List[float]],
                                       List[List[float]],

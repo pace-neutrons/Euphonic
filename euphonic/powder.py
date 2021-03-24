@@ -1,10 +1,10 @@
 """Functions for averaging spectra in spherical q bins"""
 
 import numpy as np
-from typing import Union
+from typing import Optional, Union
 
-from euphonic import (Crystal, DebyeWaller, ForceConstants, QpointPhononModes,
-                      Spectrum1D)
+from euphonic import (Crystal, DebyeWaller, ForceConstants,
+                      QpointFrequencies, QpointPhononModes, Spectrum1D)
 from euphonic import ureg, Quantity
 from euphonic.util import mp_grid, get_reference_data
 
@@ -13,7 +13,8 @@ def sample_sphere_dos(fc: ForceConstants,
                       mod_q: Quantity,
                       sampling: str = 'golden',
                       npts: int = 1000, jitter: bool = False,
-                      energy_bins: Quantity = None
+                      energy_bins: Quantity = None,
+                      **calc_modes_args
                       ) -> Spectrum1D:
     """Sample the phonon DOS, averaging over a sphere of constant |q|
 
@@ -69,6 +70,10 @@ def sample_sphere_dos(fc: ForceConstants,
         Preferred energy bin edges. If not provided, will setup
         1000 bins (1001 bin edges) from 0 to 1.05 * [max energy]
 
+    **calc_modes_args
+        other keyword arguments (e.g. 'use_c') will be passed to
+        ForceConstants.calculate_qpoint_phonon_modes()
+
     Returns
     -------
     Spectrum1D
@@ -79,8 +84,8 @@ def sample_sphere_dos(fc: ForceConstants,
                                  ) * mod_q
     qpts_frac = _qpts_cart_to_frac(qpts_cart, fc.crystal)
 
-    phonons = fc.calculate_qpoint_phonon_modes(qpts_frac
-                                               )  # type: QpointPhononModes
+    phonons = fc.calculate_qpoint_frequencies(qpts_frac, **calc_modes_args
+                                              )  # type: QpointFrequencies
 
     if energy_bins is None:
         energy_bins = _get_default_bins(phonons)
@@ -92,11 +97,13 @@ def sample_sphere_structure_factor(
     fc: ForceConstants,
     mod_q: Quantity,
     dw: DebyeWaller = None,
-    temperature: Quantity = 273. * ureg['K'],
+    dw_spacing: Quantity = 0.025 * ureg('1/angstrom'),
+    temperature: Optional[Quantity] = 273. * ureg['K'],
     sampling: str = 'golden',
     npts: int = 1000, jitter: bool = False,
     energy_bins: Quantity = None,
-    scattering_lengths: Union[dict, str] = 'Sears1992'
+    scattering_lengths: Union[dict, str] = 'Sears1992',
+    **calc_modes_args
 ) -> Spectrum1D:
     """Sample structure factor, averaging over a sphere of constant |q|
 
@@ -116,10 +123,15 @@ def sample_sphere_structure_factor(
     dw
         Debye-Waller exponent used for evaluation of scattering
         function. If not provided, this is generated automatically over
-        a 20x20x20 q-point mesh.
+        Monkhorst-Pack q-point mesh determined by ``dw_spacing``.
+
+    dw_spacing
+        Maximum distance between q-points in automatic q-point mesh (if used)
+        for Debye-Waller calculation.
 
     temperature
-        Temperature used for Debye-Waller
+        Temperature for Debye-Waller calculation. If both temperature and dw
+        are set to None, Debye-Waller factor will be omitted.
 
     sampling
         Sphere-sampling scheme. (Case-insensitive) options are:
@@ -169,6 +181,10 @@ def sample_sphere_structure_factor(
         from reference data by setting the 'label' argument of the
         euphonic.util.get_reference_data() function.
 
+    **calc_modes_args
+        other keyword arguments (e.g. 'use_c') will be passed to
+        ForceConstants.calculate_qpoint_phonon_modes()
+
     Returns
     -------
     Spectrum1D
@@ -180,18 +196,25 @@ def sample_sphere_structure_factor(
             physical_property='coherent_scattering_length',
             collection=scattering_lengths)  # type: dict
 
-    if dw is None:
-        dw_qpts = mp_grid([20, 20, 20])
-        dw_phonons = fc.calculate_qpoint_phonon_modes(dw_qpts)
-        dw = dw_phonons.calculate_debye_waller(temperature
-                                               )  # type: DebyeWaller
+    if temperature is not None:
+        if (dw is None):
+            dw_qpts = mp_grid(fc.crystal.get_mp_grid_spec(dw_spacing))
+            dw_phonons = fc.calculate_qpoint_phonon_modes(dw_qpts,
+                                                          **calc_modes_args)
+            dw = dw_phonons.calculate_debye_waller(temperature
+                                                   )  # type: DebyeWaller
+        else:
+            if not np.isclose(dw.temperature.to('K').magnitude,
+                              temperature.to('K').magnitude):
+                raise ValueError('Temperature argument is not consistent with '
+                                 'temperature stored in DebyeWaller object.')
 
     qpts_cart = _get_qpts_sphere(npts, sampling=sampling, jitter=jitter
                                  ) * mod_q
 
     qpts_frac = _qpts_cart_to_frac(qpts_cart, fc.crystal)
 
-    phonons = fc.calculate_qpoint_phonon_modes(qpts_frac
+    phonons = fc.calculate_qpoint_phonon_modes(qpts_frac, **calc_modes_args
                                                )  # type: QpointPhononModes
 
     if energy_bins is None:
