@@ -1,14 +1,24 @@
 {
     "__euphonic_class__": "Spectrum1DCollection",
-    "__euphonic_version__": "0.4.0+2.g6696045.dirty",
+    "__euphonic_version__": "0.4.0+13.gd21c4bc.dirty",
     "metadata": {
         "desc": "Methane PDOS",
-        "labels": [
-            "C1",
-            "H2",
-            "H3",
-            "H4",
-            "H5"
+        "line_data": [
+            {
+                "label": "C1"
+            },
+            {
+                "label": "H2"
+            },
+            {
+                "label": "H3"
+            },
+            {
+                "label": "H4"
+            },
+            {
+                "label": "H5"
+            }
         ]
     },
     "x_data": [

@@ -176,7 +176,10 @@ class TestSpectrum1DCollectionCreation:
          TypeError),
         ('metadata',
          ['Not', 'a', 'dictionary'],
-         TypeError)])
+         TypeError),
+        ('metadata',
+         {'line_data': [{'label': 'Wrong number'}, {'label': 'Of Elements'}]},
+         ValueError)])
     def inject_faulty_elements(self, request):
         faulty_arg, faulty_value, expected_exception = request.param
         expected_spectrum = get_expected_spectrum1dcollection('gan_bands.json')
@@ -203,13 +206,29 @@ class TestSpectrum1DCollectionCreation:
 
     @pytest.mark.parametrize(
         'input_metadata, expected_metadata',
-        [([{}, {'label': 'H3'}, {'Another key': 'Anything'}],
-          {'labels': ['', 'H3', '']}),
-         ([{'desc': 'methane PDOS', 'label':'H2'}, {'label': 'H3'}, {}],
-          {'desc': 'methane PDOS', 'labels': ['H2', 'H3', '']}),
+        [([{},
+           {'label': 'H3'},
+           {'Another key': 'Anything'}
+          ],
+          {'line_data': [{}, {'label': 'H3'}, {'Another key': 'Anything'}]}
+         ),
+         ([{'desc': 'PDOS H2', 'int list': [1, 2, 3]},
+           {'desc': 'PDOS H3', 'label': 'H3', 'int list': [1, 2, 3]},
+           {'desc': 'PDOS', 'int list': [1, 2, 3]}
+          ],
+          {'int list': [1, 2, 3], 'line_data': [
+               {'desc': 'PDOS H2'},
+               {'desc': 'PDOS H3', 'label': 'H3'},
+               {'desc': 'PDOS'}]}
+         ),
          ([{'desc': 'methane PDOS'}, {}, {}],
-           {'desc': 'methane PDOS'})
-         ])
+          {'line_data': [{'desc': 'methane PDOS'}, {}, {}]}),
+         ([{'desc': 'methane PDOS'},
+           {'desc': 'methane PDOS'},
+           {'desc': 'methane PDOS'}
+          ],
+          {'desc': 'methane PDOS'}
+         )])
     def test_create_methane_pdos_from_sequence_metadata_handling(
             self, input_metadata, expected_metadata):
         spectra = [get_spectrum1d(

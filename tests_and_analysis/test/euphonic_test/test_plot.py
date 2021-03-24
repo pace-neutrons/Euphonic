@@ -137,19 +137,27 @@ class TestPlot1DCore:
           ['Line C'],
           ['Line C']),
          (Spectrum1DCollection(*spec1dcol_args,
-                               metadata={'labels': ['Line B', 'Line C']}),
+                               metadata={'line_data': [
+                                            {'label': 'Line B'},
+                                            {'label': 'Line C'}]}),
           None,
           ['Line B', 'Line C']),
          (Spectrum1DCollection(*spec1dcol_args,
-                               metadata={'labels': ['Line B', 'Line C']}),
+                               metadata={'line_data': [
+                                            {'label': 'Line B'},
+                                            {'label': 'Line C'}]}),
           ['Line D', 'Line E'],
           ['Line D', 'Line E']),
          (Spectrum1DCollection(*spec1dcol_args,
-                               metadata={'labels': ['Line B', 'Line C']}),
+                               metadata={'line_data': [
+                                            {'label': 'Line B'},
+                                            {'label': 'Line C'}]}),
           ['', ''],
           []),
          (Spectrum1DCollection(*spec1dcol_split_args,
-                               metadata={'labels': ['Line B', 'Line C']}),
+                               metadata={'line_data': [
+                                            {'label': 'Line B'},
+                                            {'label': 'Line C'}]}),
           None,
           ['Line B', 'Line C'])])
     def test_plot_labels(self, spec, labels_kwarg, expected_legend_labels,
@@ -199,7 +207,10 @@ class TestPlot1D:
          (Spectrum1DCollection(*spec1dcol_args, x_tick_labels=[(1, 'A')]),
          ['Line D', 'Line E'],
          {'ls': '.-'}),
-         (Spectrum1DCollection(*spec1dcol_args, metadata={'labels': ['Line B', 'Line C']}),
+         (Spectrum1DCollection(*spec1dcol_args,
+                               metadata={'line_data': [
+                                            {'label': 'Line B'},
+                                            {'label': 'Line C'}]}),
          ['Line D', 'Line E'],
          {})
          ])

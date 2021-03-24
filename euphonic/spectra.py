@@ -410,8 +410,9 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
         Contains metadata about the spectrum. Any keys/values are
         allowed, but values must be JSON serialisable to write to a
         json file. There are some functional keys:
-          - 'labels' : List[str]. This is used to label multiple lines
-                       on a 1D plot
+          - 'line_data' : List[Dict[str, Any]]. This contains metadata
+                          for each spectrum in the collection, and must
+                          be of length n_entries
     """
     def __init__(self, x_data: Quantity, y_data: Quantity,
                  x_tick_labels: Optional[Sequence[Tuple[int, str]]] = None,
@@ -433,8 +434,10 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
             Contains metadata about the spectrum. Any keys/values are
             allowed, but values must be JSON serialisable to write to a
             json file. There are some functional keys:
-              - 'labels' : List[str]. This is used to label multiple
-                           lines on a 1D plot
+              - 'line_data' : List[Dict[str, Any]]. This contains
+                              metadata for each spectrum in the
+                              collection, and must be of length
+                              n_entries
         """
 
         _check_constructor_inputs(
@@ -450,6 +453,12 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
         self._set_data(x_data, 'x')
         self._set_data(y_data, 'y')
         self.x_tick_labels = x_tick_labels
+        if metadata and 'line_data' in metadata.keys():
+            if len(metadata['line_data']) != len(y_data):
+                raise ValueError(
+                    f'y_data contains {len(y_data)} spectra, but '
+                    f'metadata["line_data"] contains '
+                    f'{len(metadata["line_data"])} entries')
         self.metadata = {} if metadata is None else metadata
 
     def _split_by_indices(self: SC,
@@ -478,22 +487,19 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
 
     def __getitem__(self, item: Union[int, slice]):  # noqa: F811
         new_metadata = deepcopy(self.metadata)
-        if 'labels' in new_metadata.keys():
-            labels = new_metadata.pop('labels')
-        else:
-            labels = None
+        line_metadata = new_metadata.pop('line_data',
+                                         [{} for _ in self._y_data])
         if isinstance(item, int):
-            if labels is not None:
-                new_metadata['label'] = labels[item]
+            new_metadata = {**new_metadata, **line_metadata[item]}
             return Spectrum1D(self.x_data,
                               self.y_data[item, :],
                               x_tick_labels=self.x_tick_labels,
                               metadata=new_metadata)
         elif isinstance(item, slice):
+            if any(line_metadata):
+                new_metadata['line_data'] = line_metadata[item]
             if (item.stop is not None) and (item.stop >= len(self)):
                 raise IndexError(f'index "{item.stop}" out of range')
-            if labels is not None:
-                new_metadata['labels'] = labels[item]
             return type(self)(self.x_data,
                               self.y_data[item, :],
                               x_tick_labels=self.x_tick_labels,
@@ -528,17 +534,25 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
             y_data_magnitude[i + 1, :] = spectrum.y_data.magnitude
 
         # Process metadata
-        metadata = deepcopy(spectra[0]).metadata
-        try:
-            metadata.pop('label')
-        except (KeyError):
-            pass
+        metadata = {}
+        # Put common key/val pairs in top-level metadata dict
+        # Use .keys() and explicitly compare values, rather than just using
+        # items() in case metadata contains unhashable types (e.g. list)
+        common_keys = set(spectra[0].metadata.keys()).intersection(
+            *[spectrum.metadata.keys() for spectrum in spectra[1:]])
+        for ckey in common_keys:
+            if all([spectra[0].metadata[ckey] == spectrum.metadata[ckey]
+                   for spectrum in spectra[1:]]):
+                metadata[ckey] = spectra[0].metadata[ckey]
+        # Put all other per-spectrum metadata in line_data
+        line_data = []
         for i, spectrum in enumerate(spectra):
-            if 'label' in spectrum.metadata.keys():
-                if not 'labels' in metadata.keys():
-                    # First line with a label, initialise 'labels'
-                    metadata['labels'] = ['']*len(spectra)
-                metadata['labels'][i] = spectrum.metadata['label']
+            sdata = deepcopy(spectrum.metadata)
+            for key in metadata.keys():
+                sdata.pop(key)
+            line_data.append(sdata)
+        if any(line_data):
+            metadata['line_data'] = line_data
 
         y_data = Quantity(y_data_magnitude, y_data_units)
         return cls(x_data, y_data, x_tick_labels=x_tick_labels,

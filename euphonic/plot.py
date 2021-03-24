@@ -75,15 +75,13 @@ def plot_1d_to_axis(spectra: Union[Spectrum1D, Spectrum1DCollection],
                 color = p[-1].get_color()
 
             # Optionally add legend label to the first segment
-            label = None
             if x0 == 0:
                 if labels is None:
-                    try:
-                        label = spectrum.metadata['label']
-                    except KeyError:
-                        pass
+                    label = spectrum.metadata.get('label')
                 else:
                     label = labels[i]
+            else:
+                label = None
 
             p = ax.plot(spectrum.get_bin_centres().magnitude[x0:x1],
                         spectrum.y_data.magnitude[x0:x1],
