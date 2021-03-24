@@ -396,6 +396,8 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
     etc. This object can be indexed or iterated to obtain individual
     Spectrum1D.
 
+    Attributes
+    ----------
     x_data
         Shape (n_x_data,) or (n_x_data + 1,) float Quantity. The x_data
         points (if size == (n_x_data,)) or x_data bin edges (if size

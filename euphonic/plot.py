@@ -20,7 +20,7 @@ from euphonic.spectra import Spectrum1D, Spectrum1DCollection, Spectrum2D
 
 
 def plot_1d_to_axis(spectra: Union[Spectrum1D, Spectrum1DCollection],
-                    ax: Axes, labels: Optional[List[str]] = None,
+                    ax: Axes, labels: Optional[Sequence[str]] = None,
                     **mplargs) -> None:
     """Plot a (collection of) 1D spectrum lines to matplotlib axis
 
@@ -34,9 +34,10 @@ def plot_1d_to_axis(spectra: Union[Spectrum1D, Spectrum1DCollection],
     ax
         Matplotlib axes to which spectra will be drawn
     labels
-        The label to be applied to each line in spectra, must be the same
-        length as the number of lines. If this is None, the label(s)
-        contained in spectra.metadata 'label' (Spectrum1D) or 'labels'
+        A sequence of labels corresponding to the sequence of lines in
+        spectra, used to label each line. If this is None, the
+        label(s) contained in spectra.metadata['label'] (Spectrum1D) or
+        spectra.metadata['line_data'][i]['label']
         (Spectrum1DCollection) will be used. To disable labelling for a
         specific line, pass an empty string.
     **mplargs
@@ -53,6 +54,7 @@ def plot_1d_to_axis(spectra: Union[Spectrum1D, Spectrum1DCollection],
         raise TypeError("spectra should be a Spectrum1D or "
                         "Spectrum1DCollection")
 
+    if isinstance(labels, str): labels = [labels]
     if labels is not None and len(labels) != len(spectra):
         raise ValueError(
             f"The length of labels (got {len(labels)}) should be the "
@@ -64,24 +66,19 @@ def plot_1d_to_axis(spectra: Union[Spectrum1D, Spectrum1DCollection],
                    + 1).tolist()
     breakpoints = [0] + breakpoints + [None]
 
-    for i, spectrum in enumerate(spectra):
+    if labels is None:
+        labels = [spec.metadata.get('label', None) for spec in spectra]
 
+    for label, spectrum in zip(labels, spectra):
         # Plot each line in segments
         for x0, x1 in zip(breakpoints[:-1], breakpoints[1:]):
             # Keep colour consistent across segments
             if x0 == 0:
                 color = None
             else:
-                color = p[-1].get_color()
-
-            # Optionally add legend label to the first segment
-            if x0 == 0:
-                if labels is None:
-                    label = spectrum.metadata.get('label')
-                else:
-                    label = labels[i]
-            else:
+                # Only add legend label to the first segment
                 label = None
+                color = p[-1].get_color()
 
             p = ax.plot(spectrum.get_bin_centres().magnitude[x0:x1],
                         spectrum.y_data.magnitude[x0:x1],
@@ -107,7 +104,7 @@ def plot_1d(spectra: Union[Spectrum1D,
             y_label: str = '',
             y_min: float = None,
             y_max: float = None,
-            labels: Optional[List[str]] = None,
+            labels: Optional[Sequence[str]] = None,
             **line_kwargs) -> Figure:
     """
     Creates a Matplotlib figure for a Spectrum1D object, or multiple
@@ -146,9 +143,10 @@ def plot_1d(spectra: Union[Spectrum1D,
     y_max
         Maximum value on the y-axis.
     labels
-        The label to be applied to each line in spectra, must be the same
-        as the number of lines. If this is None, the label(s) contained in
-        spectra.metadata 'label' (Spectrum1D) or 'labels'
+        A sequence of labels corresponding to the sequence of lines in
+        spectra, used to label each line. If this is None, the
+        label(s) contained in spectra.metadata['label'] (Spectrum1D) or
+        spectra.metadata['line_data'][i]['label']
         (Spectrum1DCollection) will be used. To disable labelling for a
         specific line, pass an empty string.
     **line_kwargs

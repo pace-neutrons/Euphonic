@@ -134,7 +134,7 @@ class TestPlot1DCore:
           ['Line C']),
          (Spectrum1D(*spec1d_split_args,
                      metadata={'label': 'Line B'}),
-          ['Line C'],
+          'Line C',
           ['Line C']),
          (Spectrum1DCollection(*spec1dcol_args,
                                metadata={'line_data': [
@@ -200,6 +200,9 @@ class TestPlot1D:
         'spectrum, labels, kwargs',
         [(Spectrum1D(*spec1d_args),
           ['Line A'],
+          {'lw': 2}),
+         (Spectrum1D(*spec1d_args),
+          'Line A',
           {'lw': 2}),
           (Spectrum1D(*spec1d_args, metadata={'label': ['Line B']}),
           None,
