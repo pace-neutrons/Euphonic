@@ -283,13 +283,13 @@ class ForceConstants:
         frequencies and eigenvectors as follows.
 
         The mode widths are proportional to the gradient of the
-        dispersion, :math:`\\frac{\\delta\\omega_{q\\nu}}{{\\delta}Q}`.
+        dispersion, :math:`\\frac{d\\omega_{q\\nu}}{dQ}`.
         Firstly, the eigenvalue equation above can be written in matrix
         form as:
 
         .. math::
 
-          \\Omega(q)E(q) = D(q)E(q)
+          E(q)\\Omega(q) = D(q)E(q)
 
         .. math::
 
@@ -298,38 +298,37 @@ class ForceConstants:
         Where :math:`\\Omega(q)` is the diagonal matrix of phonon
         frequencies squared :math:`\\omega_{q\\nu}^{2}` and :math:`E(q)`
         is the matrix containing eigenvectors for all modes.
-        :math:`\\frac{\\delta\\omega_{q\\nu}}{{\\delta}Q}`, can then
+        :math:`\\frac{d\\omega_{q\\nu}}{dQ}`, can then
         be obtained by differentiating the above equation with respect
         to Q using the product rule:
 
         .. math::
 
-          \\frac{\\delta\\Omega}{{\\delta}Q} = 2\\omega_{q\\nu}\\frac{\\delta\\omega_{q\\nu}}{{\\delta}Q}
+          \\frac{d\\Omega}{dQ} = 2\\omega_{q\\nu}\\frac{d\\omega_{q\\nu}}{dQ}\\delta_{\\nu, \\nu^{\\prime}}
 
         .. math::
 
-          \\frac{\\delta\\omega_{q\\nu}}{{\\delta}Q} = \\frac{1}{2\\omega_{q\\nu}}{(
-          \\frac{\\delta{E^{-1}}}{{\\delta}Q}DE +
-          E^{-1}\\frac{\\delta{D}}{{\\delta}Q}E +
-          E^{-1}D\\frac{\\delta{E}}{{\\delta}Q})}
+          \\frac{d\\omega_{q\\nu}}{dQ} = \\frac{1}{2\\omega_{q\\nu}}{(
+          \\frac{d{E^{-1}}}{dQ}DE +
+          E^{-1}\\frac{dD}{dQ}E +
+          E^{-1}D\\frac{dE}{dQ})}
 
-        Given that eigenvectors are normalised and orthogonal, an identity of normalised wavefunctions
-        can be employed:
-
-        .. math::
-
-          \\frac{d}{d\\lambda}<\\psi_{\\lambda}|\\psi_{\\lambda}> = 0
-
-        So some terms can be set to zero, resulting in:
+        Given that eigenvectors are normalised and orthogonal, an identity can be employed:
 
         .. math::
 
-         \\frac{\\delta\\omega_{q\\nu}}{{\\delta}Q} = \\frac{1}{2\\omega_{q\\nu}}{(E^{-1}\\frac{\\delta{D}}{{\\delta}Q}E)}
-        :math:`\\frac{\\delta{D}}{\\delta{Q}}` can be obtained by differentiating the Fourier equation above:
+          \\frac{d}{d\\lambda}E^{\\prime}E = 0
+
+        So terms involving the first derivative of the eigenvector matrix can be set to zero, resulting in:
 
         .. math::
 
-          \\frac{\\delta{D}}{\\delta{Q}} =
+         \\frac{d\\omega_{q\\nu}}{dQ} = \\frac{1}{2\\omega_{q\\nu}}{(E^{-1}\\frac{dD}{dQ}E)}
+        :math:`\\frac{dD}{dQ}` can be obtained by differentiating the Fourier equation above:
+
+        .. math::
+
+          \\frac{dD}{dQ} =
           \\frac{-i r_a}{\\sqrt{M_\\kappa M_{\\kappa '}}}
           \\sum_{a}\\phi_{\\alpha, \\alpha '}^{\\kappa, \\kappa '}e^{-iq\\cdot r_a}
 
