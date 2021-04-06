@@ -299,6 +299,8 @@ class TestSpectrum1DCollectionIndexAccess:
           get_expected_spectrum1d('gan_bands_index_2.json')),
          (get_spectrum1dcollection('methane_pdos.json'), 3,
           get_expected_spectrum1d('methane_pdos_index_3.json')),
+         (get_spectrum1dcollection('quartz_dos_collection.json'), 2,
+          get_expected_spectrum1d('quartz_dos_collection_index_2.json')),
           ])
     def test_index_individual(self, spectrum, index, expected_spectrum1d):
         extracted_spectrum1d = spectrum[index]

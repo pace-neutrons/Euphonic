@@ -492,7 +492,7 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
         line_metadata = new_metadata.pop('line_data',
                                          [{} for _ in self._y_data])
         if isinstance(item, int):
-            new_metadata = {**new_metadata, **line_metadata[item]}
+            new_metadata.update(line_metadata[item])
             return Spectrum1D(self.x_data,
                               self.y_data[item, :],
                               x_tick_labels=self.x_tick_labels,
