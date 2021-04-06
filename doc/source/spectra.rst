@@ -5,6 +5,14 @@ Spectra
 These are generic objects for storing 1D/2D spectra e.g. density of states or
 S(Q,w) maps.
 
+**Metadata**
+
+All spectra objects have a ``metadata`` attribute. By default it is an empty
+dictionary, but it can contain any keys/values to help describe the contained
+spectra. Note there are some special 'functional' keys, see the metadata
+docstring below for each specific spectrum class for details.
+
+
 .. contents:: :local:
 
 .. _spectrum1d:

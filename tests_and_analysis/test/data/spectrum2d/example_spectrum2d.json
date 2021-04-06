@@ -1,4 +1,11 @@
 {
+    "__euphonic_class__": "Spectrum2D",
+    "__euphonic_version__": "0.4.0+5.g45a6e57.dirty",
+    "metadata": {
+        "description": "This is an example 2D Spectrum",
+        "a list of ints": [0, 1, 1, 2, 3, 5, 8],
+        "a list of floats": [3.14, 2.72, 1.41]
+    },
     "x_data": [
         0.0,
         1.0,

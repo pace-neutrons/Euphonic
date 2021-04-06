@@ -18,7 +18,8 @@ def _to_json_dict(dictionary):
                 val = val.view(np.float64).reshape(val.shape + (2,))
             dictionary[key] = val.tolist()
         elif isinstance(val, dict):
-            dictionary[key] = _to_json_dict(val)
+            if key != 'metadata':
+                dictionary[key] = _to_json_dict(val)
     return dictionary
 
 
@@ -38,7 +39,9 @@ def _from_json_dict(dictionary, type_dict={}):
             else:
                 dictionary[key] = np.array(val)
         elif isinstance(val, dict):
-            dictionary[key] = _from_json_dict(val, type_dict)
+            if key != 'metadata':
+                dictionary[key] = _from_json_dict(
+                    val, type_dict)
     return dictionary
 
 
@@ -48,6 +51,9 @@ def _obj_to_dict(obj, attrs):
         val = getattr(obj, attr)
         # Don't write None values to dict
         if val is None:
+            continue
+        # Don't write empty metadata to dict
+        if attr == 'metadata' and not val:
             continue
 
         if isinstance(val, np.ndarray):

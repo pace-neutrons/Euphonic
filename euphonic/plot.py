@@ -20,7 +20,7 @@ from euphonic.spectra import Spectrum1D, Spectrum1DCollection, Spectrum2D
 
 
 def plot_1d_to_axis(spectra: Union[Spectrum1D, Spectrum1DCollection],
-                    ax: Axes,
+                    ax: Axes, labels: Optional[Sequence[str]] = None,
                     **mplargs) -> None:
     """Plot a (collection of) 1D spectrum lines to matplotlib axis
 
@@ -33,13 +33,20 @@ def plot_1d_to_axis(spectra: Union[Spectrum1D, Spectrum1DCollection],
         Spectrum1D or Spectrum1DCollection to plot
     ax
         Matplotlib axes to which spectra will be drawn
+    labels
+        A sequence of labels corresponding to the sequence of lines in
+        spectra, used to label each line. If this is None, the
+        label(s) contained in spectra.metadata['label'] (Spectrum1D) or
+        spectra.metadata['line_data'][i]['label']
+        (Spectrum1DCollection) will be used. To disable labelling for a
+        specific line, pass an empty string.
     **mplargs
         Keyword arguments passed to Axes.plot
     """
 
     if isinstance(spectra, Spectrum1D):
         return plot_1d_to_axis(Spectrum1DCollection.from_spectra([spectra]),
-                             ax=ax, **mplargs)
+                               ax=ax, labels=labels, **mplargs)
 
     try:
         assert isinstance(spectra, Spectrum1DCollection)
@@ -47,23 +54,40 @@ def plot_1d_to_axis(spectra: Union[Spectrum1D, Spectrum1DCollection],
         raise TypeError("spectra should be a Spectrum1D or "
                         "Spectrum1DCollection")
 
+    if isinstance(labels, str): labels = [labels]
+    if labels is not None and len(labels) != len(spectra):
+        raise ValueError(
+            f"The length of labels (got {len(labels)}) should be the "
+            f"same as the number of lines to plot (got {len(spectra)})")
+
     # Find where there are two identical x_data points in a row
     breakpoints = (np.where(spectra.x_data.magnitude[:-1]
                             == spectra.x_data.magnitude[1:])[0]
                    + 1).tolist()
     breakpoints = [0] + breakpoints + [None]
 
-    for spectrum in spectra:
-        # Plot each line in segments, keeping colour consistent
+    if labels is None:
+        labels = [spec.metadata.get('label', None) for spec in spectra]
+
+    for label, spectrum in zip(labels, spectra):
+        # Plot each line in segments
         for x0, x1 in zip(breakpoints[:-1], breakpoints[1:]):
+            # Keep colour consistent across segments
             if x0 == 0:
                 color = None
             else:
+                # Only add legend label to the first segment
+                label = None
                 color = p[-1].get_color()
 
             p = ax.plot(spectrum.get_bin_centres().magnitude[x0:x1],
                         spectrum.y_data.magnitude[x0:x1],
-                        color=color, **mplargs)
+                        color=color, label=label, **mplargs)
+
+    # Update legend if it exists, in case new labels have been added
+    legend = ax.get_legend()
+    if legend is not None:
+        ax.legend()
 
     ax.set_xlim(left=min(spectra.x_data.magnitude),
                 right=max(spectra.x_data.magnitude))
@@ -80,7 +104,7 @@ def plot_1d(spectra: Union[Spectrum1D,
             y_label: str = '',
             y_min: float = None,
             y_max: float = None,
-            labels: Optional[List[str]] = None,
+            labels: Optional[Sequence[str]] = None,
             **line_kwargs) -> Figure:
     """
     Creates a Matplotlib figure for a Spectrum1D object, or multiple
@@ -119,7 +143,12 @@ def plot_1d(spectra: Union[Spectrum1D,
     y_max
         Maximum value on the y-axis.
     labels
-        Legend labels for spectra, in the same order as spectra
+        A sequence of labels corresponding to the sequence of lines in
+        spectra, used to label each line. If this is None, the
+        label(s) contained in spectra.metadata['label'] (Spectrum1D) or
+        spectra.metadata['line_data'][i]['label']
+        (Spectrum1DCollection) will be used. To disable labelling for a
+        specific line, pass an empty string.
     **line_kwargs
         matplotlib.line.Line2D properties, optional
         Used in the axes.plot command to specify properties like
@@ -147,11 +176,13 @@ def plot_1d(spectra: Union[Spectrum1D,
                                  gridspec_kw=gridspec_kw, squeeze=False)
 
     for i, (spectrum, ax) in enumerate(zip(spectra, subplots.flatten())):
-        plot_1d_to_axis(spectrum, ax, **line_kwargs)
+        plot_1d_to_axis(spectrum, ax, labels, **line_kwargs)
+        # To avoid an ugly empty legend, only use if there are labels to plot
+        if i == 0:
+            leg_handles, leg_labels = ax.get_legend_handles_labels()
+            if len(leg_labels) > 0:
+                ax.legend()
         ax.set_ylim(bottom=y_min, top=y_max)
-
-        if i == 0 and labels:
-            ax.legend(labels)
 
     # Add an invisible large axis for common labels
     ax = fig.add_subplot(111, frameon=False)
@@ -289,7 +320,6 @@ def plot_2d(spectra: Union[Spectrum2D, Sequence[Spectrum2D]],
     fig.tight_layout()
 
     return fig
-
 
 def _set_x_tick_labels(ax: Axes,
                        x_tick_labels: List[Tuple[int, str]],

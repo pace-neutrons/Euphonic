@@ -1,6 +1,17 @@
 {
     "__euphonic_class__": "Spectrum1DCollection",
     "__euphonic_version__": "0.3.2+94.g92306dd",
+    "metadata": {
+        "desc": "Quartz DOS",
+        "duplicate_key": "main value",
+        "line_data": [
+            {},
+            {},
+            {
+                "duplicate_key": "line value"
+            }
+        ]
+    },
     "x_data": [
         0.0,
         0.5000000000000001,
