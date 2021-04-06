@@ -104,14 +104,14 @@ def read_phonon_dos_data(
     data_dict['dos_bins'] = dos_data[:, 0]*ureg('1/cm').to(
             frequencies_unit).magnitude
     data_dict['dos_bins_unit'] = frequencies_unit
-    data_dict['dos'] = dos_data[:, 1]
 
-    data_dict['pdos'] = {}
-    pdos_dict = data_dict['pdos']
+    data_dict['dos'] = {}
+    dos_dict = data_dict['dos']
+    dos_dict['Total'] = dos_data[:, 1]
     _, idx = np.unique(atom_type, return_index=True)
     unique_types = atom_type[np.sort(idx)]
     for i, species in enumerate(unique_types):
-        pdos_dict[species] = dos_data[:, i + 2]
+        dos_dict[species] = dos_data[:, i + 2]
 
     return data_dict
 
