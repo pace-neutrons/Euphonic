@@ -12,6 +12,8 @@
   - ``StructureFactor`` now has a ``weights`` attribute and can be used
     to calculate DOS with ``calculate_dos`` and get dispersion with
     ``get_dispersion``
+  - ``Spectrum1D``, ``Spectrum1DCollection`` and ``Spectrum2D`` objects
+    have a new ``metadata`` attribute, see their docstrings for details
 
 - Improvements:
 
