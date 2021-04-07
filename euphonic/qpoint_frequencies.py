@@ -85,8 +85,7 @@ class QpointFrequencies:
         super(QpointFrequencies, self).__setattr__(name, value)
 
     def calculate_dos(self, dos_bins: Quantity,
-                      mode_widths: Optional[np.ndarray] = None,
-                      are_bin_edges: bool = True) -> Spectrum1D:
+                      mode_widths: Optional[np.ndarray] = None) -> Spectrum1D:
         """
         Calculates a density of states
 
@@ -99,14 +98,6 @@ class QpointFrequencies:
             Shape (n_qpts, n_branches) float Quantity in energy units.
             The broadening width for each mode at each q-point, for
             adaptive broadening
-        are_bin_edges
-            Whether the provided dos_bins are bin edges. For normal
-            histogram binning, bin edges are preferable, but for
-            adaptive broadening (when mode_widths are provided) the
-            weights for each mode must be calculated at specific
-            points, so bin centres are preferred. This parameter allows
-            flexibility and bins will be converted to the correct
-            form before use
 
         Returns
         -------
@@ -123,8 +114,7 @@ class QpointFrequencies:
             dos_bins_calc = dos_bins.to('hartree').magnitude
         if mode_widths is not None:
             from scipy.stats import norm
-            if are_bin_edges:
-                dos_bins_calc = Spectrum1D._bin_edges_to_centres(dos_bins_calc)
+            dos_bins_calc = Spectrum1D._bin_edges_to_centres(dos_bins_calc)
             dos = np.zeros(len(dos_bins_calc))
             mode_widths = mode_widths.to('hartree').magnitude
             # Set limit on very small widths of, say, 5e-7 hartree
@@ -136,8 +126,6 @@ class QpointFrequencies:
                                    scale=mode_widths[q,m])
                     dos += pdf*self.weights[q]/n_modes
         else:
-            if not are_bin_edges:
-                dos_bins_calc = Spectrum1D._bin_centres_to_edges(dos_bins_calc)
             weights = np.repeat(self.weights[:, np.newaxis],
                                 n_modes,
                                 axis=1)
