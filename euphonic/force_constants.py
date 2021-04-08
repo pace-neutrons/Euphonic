@@ -19,6 +19,7 @@ from euphonic.io import (_obj_to_json_file, _obj_from_json_file,
                          _obj_to_dict, _process_dict)
 from euphonic.readers import castep, phonopy
 from euphonic.util import (is_gamma, get_all_origins,
+                           mode_gradients_to_widths,
                            _get_supercell_relative_idx)
 from euphonic import (ureg, Quantity, Crystal, QpointPhononModes,
                       QpointFrequencies)
@@ -632,9 +633,9 @@ class ForceConstants:
         else:
             eigenvectors = None
         if return_mode_widths:
-            q_spacing = 2/(np.cbrt(len(qpts)*self.crystal._cell_volume()))
-            mode_widths = q_spacing*rmode_gradients[qpts_i]*ureg(
-                    'hartree').to('meV')
+            mode_widths = mode_gradients_to_widths(
+                rmode_gradients[qpts_i]*ureg('hartree*bohr'),
+                self.crystal.cell_vectors).to('meV')
         else:
             mode_widths = None
         return qpts, weights, freqs, eigenvectors, mode_widths
