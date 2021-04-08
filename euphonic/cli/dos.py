@@ -14,6 +14,7 @@ def main(params: List[str] = None):
     args = get_args(parser, params)
 
     data = load_data_from_file(args.filename)
+    mode_widths = None
     if isinstance(data, euphonic.ForceConstants):
 
         recip_length_unit = euphonic.ureg(f'1 / {args.length_unit}')
@@ -24,17 +25,29 @@ def main(params: List[str] = None):
         print("Force Constants data was loaded. Calculating phonon modes "
               "on {} q-point grid...".format(
                   ' x '.join([str(x) for x in grid_spec])))
-        modes = data.calculate_qpoint_frequencies(mp_grid(grid_spec),
-                                                  **_calc_modes_kwargs(args))
+        if args.adaptive:
+            if args.shape != 'gauss':
+                raise ValueError('Currently only Gaussian shape is supported '
+                                 'with adaptive broadening')
+            cmkwargs = _calc_modes_kwargs(args)
+            cmkwargs['return_mode_widths'] = True
+            modes, mode_widths = data.calculate_qpoint_frequencies(
+                mp_grid(grid_spec), **cmkwargs)
+            if args.energy_broadening:
+                mode_widths *= args.energy_broadening
+        else:
+            modes = data.calculate_qpoint_frequencies(mp_grid(grid_spec),
+                                                      **_calc_modes_kwargs(args))
+
     elif isinstance(data, euphonic.QpointPhononModes):
         print("Phonon band data was loaded.")
         modes = data
     modes.frequencies_unit = args.energy_unit
     ebins, energy_unit = _get_energy_bins_and_units(
         args.energy_unit, modes, args.ebins, emin=args.e_min, emax=args.e_max)
-    dos = modes.calculate_dos(ebins)
+    dos = modes.calculate_dos(ebins, mode_widths=mode_widths)
 
-    if args.energy_broadening:
+    if args.energy_broadening and not args.adaptive:
         dos = dos.broaden(args.energy_broadening*energy_unit, shape=args.shape)
 
     if args.x_label is None:
@@ -53,7 +66,8 @@ def main(params: List[str] = None):
 
 def get_parser():
     parser, _ = _get_cli_parser(features={'read-fc', 'read-modes', 'mp-grid',
-                                          'plotting', 'ebins'})
+                                          'plotting', 'ebins',
+                                          'adaptive-broadening'})
     parser.description = (
         'Plots a DOS from the file provided. If a force '
         'constants file is provided, a DOS is generated on the Monkhorst-Pack '
