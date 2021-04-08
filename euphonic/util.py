@@ -243,7 +243,7 @@ def mode_gradients_to_widths(mode_gradients: Quantity, cell_vectors: Quantity
     """
     Converts mode gradients (units energy/(length^-1)) to an estimate of the
     mode widths (units energy) by using the cell volume and number of q-points
-    to give an estimate of the q-spacing
+    to estimate the q-spacing
 
     Parameters
     ----------
@@ -252,10 +252,12 @@ def mode_gradients_to_widths(mode_gradients: Quantity, cell_vectors: Quantity
     cell_vectors
         Shape (3, 3) float Quantity. The cell vectors
     """
-    crystal = Crystal.from_cell_vectors(cell_vectors)
-    q_spacing = 2/(np.cbrt(len(mode_gradients)*crystal.cell_volume()))
-    mode_widths = q_spacing*mode_gradients
-    return mode_widths
+    cell_volume = Crystal.from_cell_vectors(cell_vectors)._cell_volume()
+    modg = mode_gradients.to('hartree*bohr').magnitude
+    q_spacing = 2/(np.cbrt(len(mode_gradients)*cell_volume))
+    mode_widths = q_spacing*modg
+    return mode_widths*ureg('hartree').to(
+        mode_gradients.units/cell_vectors.units)
 
 
 def _calc_abscissa(reciprocal_cell, qpts):
