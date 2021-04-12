@@ -86,8 +86,8 @@ class QpointFrequencies:
 
     def calculate_dos(self, dos_bins: Quantity,
                       mode_widths: Optional[np.ndarray] = None,
-                      mode_widths_min: Quantity = Quantity(0.01, 'meV')
-                      ) -> Spectrum1D:
+                      mode_widths_min: Quantity = Quantity(0.01, 'meV'),
+                      mode_weights: Optional[np.ndarray] = None) -> Spectrum1D:
         """
         Calculates a density of states
 
@@ -104,6 +104,11 @@ class QpointFrequencies:
             Scalar float Quantity in energy units. Sets a lower limit on
             the mode widths, as mode widths of zero will result in
             infinitely sharp peaks
+        mode_weights
+            Shape (n_qpts, n_branches) float ndarray. The weight of each
+            mode at each q-point. If not provided, the self.weights
+            attribute is used, and each mode is equally weighted for
+            each q-point
 
         Returns
         -------
@@ -118,6 +123,10 @@ class QpointFrequencies:
         with warnings.catch_warnings():
             warnings.filterwarnings('ignore', category=RuntimeWarning)
             dos_bins_calc = dos_bins.to('hartree').magnitude
+        if mode_weights is None:
+            mode_weights = np.repeat(self.weights[:, np.newaxis]/n_modes,
+                                     n_modes,
+                                     axis=1)
         if mode_widths is not None:
             from scipy.stats import norm
             dos_bins_calc = Spectrum1D._bin_edges_to_centres(dos_bins_calc)
@@ -129,12 +138,11 @@ class QpointFrequencies:
                 for m in range(n_modes):
                     pdf = norm.pdf(dos_bins_calc, loc=freqs[q,m],
                                    scale=mode_widths[q,m])
-                    dos += pdf*self.weights[q]/n_modes
+                    dos += pdf*mode_weights[q, m]
         else:
-            weights = np.repeat(self.weights[:, np.newaxis],
-                                n_modes,
-                                axis=1)
-            dos, _ = np.histogram(freqs, dos_bins_calc, weights=weights, density=True)
+            dos, _ = np.histogram(freqs, dos_bins_calc,
+                                  weights=mode_weights,
+                                  density=True)
 
         return Spectrum1D(
             dos_bins,
