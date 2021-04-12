@@ -41,7 +41,7 @@ def get_c_extension():
         except FileNotFoundError:
             brew_prefix = None
 
-        if brew_prefix and not os.environ.get['CC']:
+        if brew_prefix and not os.environ.get('CC'):
             os.environ['CC'] = '{}/opt/llvm/bin/clang'.format(brew_prefix)
             link_args = ['-L{}/opt/llvm/lib'.format(brew_prefix), '-fopenmp']
         else:
