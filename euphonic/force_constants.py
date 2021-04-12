@@ -697,8 +697,7 @@ class ForceConstants:
                                                    dmat_grad)
             mode_gradients = np.zeros(n_modes)
             for n, grad_tmp in enumerate(grad_tmps):
-                mode_gradients[n] = 0.5*np.sqrt(
-                    np.real(np.vdot(grad_tmp, grad_tmp)))/evals[n]
+                mode_gradients[n] = 0.5*np.linalg.norm(grad_tmp)/evals[n]
 
             return evals, evecs, mode_gradients
         else:
