@@ -8,7 +8,7 @@ from euphonic.io import _obj_from_json_file, _obj_to_dict, _process_dict
 from euphonic.readers import castep, phonopy
 from euphonic.util import (direction_changed, is_gamma, get_reference_data)
 from euphonic import (ureg, Quantity, Crystal, DebyeWaller, QpointFrequencies,
-                      StructureFactor)
+                      StructureFactor, Spectrum1DCollection)
 
 
 T = TypeVar('T', bound='QpointPhononModes')
@@ -389,6 +389,30 @@ class QpointPhononModes(QpointFrequencies):
 
         dw = dw*ureg('bohr**2').to(self.crystal.cell_vectors_unit + '**2')
         return DebyeWaller(self.crystal, dw, temperature)
+
+    def calculate_pdos(self, dos_bins: Quantity,
+                       mode_widths: Optional[Quantity] = None
+                       ) -> Spectrum1DCollection:
+        evec_weights = np.real(np.einsum('ijkl,ijkl->ijk',
+                                         self.eigenvectors,
+                                         np.conj(self.eigenvectors)))
+        n_modes = self._frequencies.shape[1]
+        qpt_weights = self.weights[:, np.newaxis]/n_modes
+        species, idx = np.unique(self.crystal.atom_type, return_inverse=True)
+        doses = []
+        total_dos = self.calculate_dos(dos_bins, mode_widths=mode_widths)
+        total_dos.metadata['label'] = 'Total'
+        doses.append(total_dos)
+        for i, spec in enumerate(species):
+            spec_idx = np.where(idx == i)[0]
+            species_weights = np.sum(evec_weights[:, :, spec_idx], axis=-1)
+            weights = species_weights*qpt_weights
+            dos = self.calculate_dos(dos_bins, mode_widths=mode_widths,
+                                     mode_weights=weights)
+            dos.metadata['label'] = spec
+            doses.append(dos)
+        return Spectrum1DCollection.from_spectra(doses)
+
 
     def to_dict(self) -> Dict[str, Any]:
         """
