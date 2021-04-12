@@ -33,16 +33,27 @@ def get_c_extension():
         compile_args = ['/openmp']
         link_args = None
     elif platform == 'darwin':
-        # OSX - assume brew install llvm
-        brew_prefix_cmd_return = subprocess.run(["brew", "--prefix"],
-                                                stdout=subprocess.PIPE)
-        brew_prefix = brew_prefix_cmd_return.stdout.decode("utf-8").strip()
-        os.environ['CC'] = '{}/opt/llvm/bin/clang'.format(brew_prefix)
-        compile_args = ['-fopenmp']
-        link_args = ['-L{}/opt/llvm/lib'.format(brew_prefix), '-fopenmp']
+        # OSX - if CC not set, assume brew install llvm
+        try:
+            brew_prefix_cmd_return = subprocess.run(["brew", "--prefix"],
+                                                    stdout=subprocess.PIPE)
+            brew_prefix = brew_prefix_cmd_return.stdout.decode("utf-8").strip()
+        except FileNotFoundError:
+            brew_prefix = None
+
+        if brew_prefix and not os.environ.get('CC'):
+            os.environ['CC'] = '{}/opt/llvm/bin/clang'.format(brew_prefix)
+            link_args = ['-L{}/opt/llvm/lib'.format(brew_prefix), '-fopenmp']
+        else:
+            link_args = ['-fopenmp']
+
+        compile_args = ['-fopenmp']            
+
     else:
-        # Linux - assume gcc
-        os.environ['CC'] = 'gcc'
+        # Linux - assume gcc if CC not set
+        if not os.environ.get('CC'):
+            os.environ['CC'] = 'gcc'
+
         compile_args = ['-fopenmp']
         link_args = ['-fopenmp']
 

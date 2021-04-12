@@ -1,7 +1,6 @@
 `Unreleased <https://github.com/pace-neutrons/Euphonic/compare/v0.4.0...HEAD>`_
 ----------
 
-
 - New Features:
 
   - New command-line tool ``euphonic-powder-map`` allows generation
@@ -39,6 +38,17 @@
       sampling with a single-parameter ``--q-spacing`` as an
       alternative to setting Monkhorst-Pack divisions. This approach
       will account for the size and shape of reciprocal-lattice cells.
+
+  - Build process tweaks
+
+    - On Linux, the build process will now respect a user-defined
+      C-compiler variable ``CC``.
+
+    - On Mac OSX, the build process will now respect a user-defined
+      C-compiler variable ``CC``. Homebrew library paths will only be
+      set if ``CC`` is empty and the ``brew`` command is available.
+
+    These tweaks are intended to facilitate Conda packaging.
 
 - Breaking changes:
 
