@@ -428,6 +428,33 @@ class TestQpointFrequenciesCalculateDos:
         expected_dos = get_expected_spectrum1d(expected_dos_json)
         check_spectrum1d(dos, expected_dos)
 
+    @pytest.mark.parametrize(
+        ('material, qpt_freqs_json, mode_widths_json, mode_widths_min, '
+         'ebins'), [
+            ('LZO', 'lzo_222_full_qpoint_frequencies.json',
+             'lzo_222_full_mode_widths.json',
+              5*ureg('meV'),
+             np.arange(0, 100, 0.1)*ureg('meV')),
+            ('LZO', 'lzo_222_full_qpoint_frequencies.json',
+             'lzo_222_full_mode_widths.json',
+             2e-4*ureg('hartree'),
+             np.arange(0, 100, 0.1)*ureg('meV'))])
+    def test_calculate_dos_with_mode_widths_min(
+            self, material, qpt_freqs_json, mode_widths_json,
+            mode_widths_min, ebins):
+        qpt_freqs = get_qpt_freqs(material, qpt_freqs_json)
+        with open(os.path.join(get_fc_dir(), mode_widths_json), 'r') as fp:
+            modw_dict = json.load(fp)
+        mode_widths = modw_dict['mode_widths']*ureg(
+            modw_dict['mode_widths_unit'])
+        dos = qpt_freqs.calculate_dos(ebins, mode_widths=mode_widths,
+                                      mode_widths_min=mode_widths_min)
+        mode_widths = np.maximum(
+            mode_widths.magnitude,
+            mode_widths_min.to(mode_widths.units).magnitude)*mode_widths.units
+        expected_dos = qpt_freqs.calculate_dos(ebins, mode_widths=mode_widths)
+        check_spectrum1d(dos, expected_dos)
+
     def test_calculate_dos_with_0_inv_cm_bin_doesnt_raise_runtime_warn(self):
         qpt_freqs = get_qpt_freqs(
             'quartz', 'quartz_666_qpoint_frequencies.json')

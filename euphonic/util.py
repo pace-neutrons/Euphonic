@@ -243,7 +243,9 @@ def mode_gradients_to_widths(mode_gradients: Quantity, cell_vectors: Quantity
     """
     Converts mode gradients (units energy/(length^-1)) to an estimate of the
     mode widths (units energy) by using the cell volume and number of q-points
-    to estimate the q-spacing
+    to estimate the q-spacing. Note that the  number of q-points is determined
+    by the size of mode_gradients, so is not likely to give accurate widths if
+    the q-points have been symmetry reduced.
 
     Parameters
     ----------

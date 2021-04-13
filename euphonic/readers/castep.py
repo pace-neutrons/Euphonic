@@ -187,7 +187,6 @@ def read_phonon_data(
                                      dtype=np.complex128)
                 for i in range(n_branches):
                     qeigenvec[i, :, :] = lines_i[i*n_atoms:(i+1)*n_atoms, :]
-            #qpt_line = f.readline()
             # Sometimes there are more than n_qpts q-points in the file
             # due to LO-TO splitting
             if idx < len(qpts):

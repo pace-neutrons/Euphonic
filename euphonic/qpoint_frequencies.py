@@ -85,7 +85,9 @@ class QpointFrequencies:
         super(QpointFrequencies, self).__setattr__(name, value)
 
     def calculate_dos(self, dos_bins: Quantity,
-                      mode_widths: Optional[np.ndarray] = None) -> Spectrum1D:
+                      mode_widths: Optional[np.ndarray] = None,
+                      mode_widths_min: Quantity = Quantity(0.01, 'meV')
+                      ) -> Spectrum1D:
         """
         Calculates a density of states
 
@@ -98,6 +100,10 @@ class QpointFrequencies:
             Shape (n_qpts, n_branches) float Quantity in energy units.
             The broadening width for each mode at each q-point, for
             adaptive broadening
+        mode_widths_min
+            Scalar float Quantity in energy units. Sets a lower limit on
+            the mode widths, as mode widths of zero will result in
+            infinitely sharp peaks
 
         Returns
         -------
@@ -117,9 +123,8 @@ class QpointFrequencies:
             dos_bins_calc = Spectrum1D._bin_edges_to_centres(dos_bins_calc)
             dos = np.zeros(len(dos_bins_calc))
             mode_widths = mode_widths.to('hartree').magnitude
-            # Set limit on very small widths of, say, 5e-7 hartree
-            # (~0.013meV) due to divergent behaviour
-            mode_widths = np.maximum(mode_widths, 5e-7)
+            mode_widths = np.maximum(mode_widths,
+                                     mode_widths_min.to('hartree').magnitude)
             for q in range(self.n_qpts):
                 for m in range(n_modes):
                     pdf = norm.pdf(dos_bins_calc, loc=freqs[q,m],
