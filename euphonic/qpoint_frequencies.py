@@ -123,10 +123,12 @@ class QpointFrequencies:
         with warnings.catch_warnings():
             warnings.filterwarnings('ignore', category=RuntimeWarning)
             dos_bins_calc = dos_bins.to('hartree').magnitude
-        if mode_weights is None:
-            mode_weights = np.repeat(self.weights[:, np.newaxis]/n_modes,
-                                     n_modes,
-                                     axis=1)
+        if mode_weights is not None:
+            mode_weights_calc = mode_weights
+        else:
+            mode_weights_calc = np.repeat(self.weights[:, np.newaxis]/n_modes,
+                                          n_modes,
+                                          axis=1)
         if mode_widths is not None:
             from scipy.stats import norm
             dos_bins_calc = Spectrum1D._bin_edges_to_centres(dos_bins_calc)
@@ -138,11 +140,17 @@ class QpointFrequencies:
                 for m in range(n_modes):
                     pdf = norm.pdf(dos_bins_calc, loc=freqs[q,m],
                                    scale=mode_widths[q,m])
-                    dos += pdf*mode_weights[q, m]
+                    dos += pdf*mode_weights_calc[q, m]
         else:
-            dos, _ = np.histogram(freqs, dos_bins_calc,
-                                  weights=mode_weights,
-                                  density=True)
+            bin_idx = np.digitize(freqs, dos_bins_calc)
+            # Create DOS with extra bin either side, for any points
+            # that fall outside the bin range
+            dos = np.zeros(len(dos_bins) + 1)
+            bin_widths = np.ones(len(dos_bins) + 1) # Use ones to avoid div/0
+            bin_widths[1:-1] = np.diff(dos_bins_calc)
+            mode_weights_calc = mode_weights_calc/bin_widths[bin_idx]
+            np.add.at(dos, bin_idx, mode_weights_calc)
+            dos = dos[1:-1]
 
         return Spectrum1D(
             dos_bins,
