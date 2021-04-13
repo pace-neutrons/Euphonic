@@ -408,13 +408,17 @@ class QpointPhononModes(QpointFrequencies):
                                          np.conj(self.eigenvectors)))
         n_modes = self._frequencies.shape[1]
         qpt_weights = self.weights[:, np.newaxis]/n_modes
-        species, idx = np.unique(self.crystal.atom_type, return_inverse=True)
+
         doses = []
         total_dos = self.calculate_dos(dos_bins, mode_widths=mode_widths)
         total_dos.metadata['label'] = 'Total'
         doses.append(total_dos)
-        for i, spec in enumerate(species):
-            spec_idx = np.where(idx == i)[0]
+
+        _, idx = np.unique(self.crystal.atom_type, return_index=True)
+        # Retain species order for usability
+        species = self.crystal.atom_type[np.sort(idx)]
+        for spec in species:
+            spec_idx = np.where(self.crystal.atom_type == spec)[0]
             species_weights = np.sum(evec_weights[:, :, spec_idx], axis=-1)
             weights = species_weights*qpt_weights
             dos = self.calculate_dos(dos_bins, mode_widths=mode_widths,
@@ -422,7 +426,6 @@ class QpointPhononModes(QpointFrequencies):
             dos.metadata['label'] = spec
             doses.append(dos)
         return Spectrum1DCollection.from_spectra(doses)
-
 
     def to_dict(self) -> Dict[str, Any]:
         """
