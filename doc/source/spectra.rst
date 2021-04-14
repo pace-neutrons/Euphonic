@@ -57,6 +57,28 @@ Spectrum1DCollection
 This is an object for storing multiple 1D spectra which share the same
 x-axis, e.g. bands in a dispersion plot.
 
+Indexing
+--------
+
+A ``Spectrum1DCollection`` can be indexed just like a list to obtain
+a specific spectrum as a ``Spectrum1D``, or a subset of spectra as
+another ``Spectrum1DCollection``, for example, to plot only specific
+spectra:
+
+.. code-block:: py
+
+  from euphonic import Spectrum1DCollection
+  from euphonic.plot import plot_1d
+
+  spec1d_col = Spectrum1DCollection.from_json_file('dos.json')
+  # Plot the 1st spectrum
+  spec1d_0 = spec1d_col[0]
+  fig1 = plot_1d(spec1d_0)
+
+  # Plot the 2nd - 5th spectra
+  spec1d_col_1_5 = spec1d_col[1:5]
+  fig2 = plot_1d(spec1d_col_1_5)
+
 Plotting
 --------
 
