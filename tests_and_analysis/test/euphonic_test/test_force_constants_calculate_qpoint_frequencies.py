@@ -5,11 +5,13 @@ import pytest
 import numpy as np
 import numpy.testing as npt
 
-from euphonic import ForceConstants
+from euphonic import ForceConstants, ureg
+from euphonic.util import mp_grid
 from tests_and_analysis.test.utils import get_castep_path, get_test_qpts
 from tests_and_analysis.test.euphonic_test.test_qpoint_frequencies import (
     check_qpt_freqs, get_expected_qpt_freqs)
-from tests_and_analysis.test.euphonic_test.test_force_constants import get_fc
+from tests_and_analysis.test.euphonic_test.test_force_constants import (
+    get_fc, get_fc_dir)
 
 
 @pytest.mark.unit
@@ -78,6 +80,55 @@ class TestForceConstantsCalculateQPointFrequencies:
                         frequencies_rtol=2e-5,
                         acoustic_gamma_atol=gamma_atol)
 
+    @pytest.mark.parametrize(
+        ('fc, material, all_args, expected_qpoint_frequencies_file, '
+         'expected_modw_file'), [
+        (get_quartz_fc(),
+         'quartz',
+         [mp_grid([5, 5, 4]),
+          {'asr': 'reciprocal', 'return_mode_widths': True}],
+         'quartz_554_full_qpoint_frequencies.json',
+         'quartz_554_full_mode_widths.json'),
+        (get_lzo_fc(),
+         'LZO',
+         [mp_grid([2, 2, 2]),
+          {'asr': 'reciprocal', 'return_mode_widths': True}],
+         'lzo_222_full_qpoint_frequencies.json',
+         'lzo_222_full_mode_widths.json')])
+    @pytest.mark.parametrize(
+        'n_threads',
+        [0, 2])
+    def test_calculate_qpoint_frequencies_with_mode_widths(
+            self, fc, material, all_args, expected_qpoint_frequencies_file,
+            expected_modw_file, n_threads):
+        func_kwargs = all_args[1]
+        if n_threads == 0:
+            func_kwargs['use_c'] = False
+        else:
+            func_kwargs['use_c'] = True
+            func_kwargs['n_threads'] = n_threads
+        qpt_freqs, modw = fc.calculate_qpoint_frequencies(
+            all_args[0], **func_kwargs)
+        with open(os.path.join(get_fc_dir(), expected_modw_file), 'r') as fp:
+            modw_dict = json.load(fp)
+        expected_modw = modw_dict['mode_widths']*ureg(
+            modw_dict['mode_widths_unit'])
+        expected_qpt_freqs = get_expected_qpt_freqs(
+            material, expected_qpoint_frequencies_file)
+        # Only give gamma-acoustic modes special treatment if the acoustic
+        # sum rule has been applied
+        if not 'asr' in func_kwargs.keys():
+            gamma_atol = None
+        else:
+            gamma_atol = 0.5
+        check_qpt_freqs(qpt_freqs,
+                        expected_qpt_freqs,
+                        frequencies_atol=1e-4,
+                        frequencies_rtol=2e-5,
+                        acoustic_gamma_atol=gamma_atol)
+        assert modw.units == expected_modw.units
+        npt.assert_allclose(modw.magnitude, expected_modw.magnitude,
+                            atol=2e-4, rtol=5e-5)
     weights = np.array([0.1, 0.05, 0.05, 0.2, 0.2, 0.15, 0.15, 0.2, 0.1])
     weights_output_split_gamma = np.array([
         0.1, 0.05, 0.025, 0.025, 0.2, 0.1, 0.1, 0.075, 0.075, 0.075, 0.075,

@@ -12,6 +12,7 @@ from importlib_resources import open_text  # Backport for Python 3.6
 from pint import UndefinedUnitError
 
 from euphonic import ureg, Quantity
+from euphonic.crystal import Crystal
 import euphonic.data
 
 
@@ -235,6 +236,30 @@ def get_reference_data(collection: str = 'Sears1992',
     return {key: value * unit
             for key, value in data.items()
             if isinstance(value, (float, complex))}
+
+
+def mode_gradients_to_widths(mode_gradients: Quantity, cell_vectors: Quantity
+                             ) -> Quantity:
+    """
+    Converts mode gradients (units energy/(length^-1)) to an estimate of the
+    mode widths (units energy) by using the cell volume and number of q-points
+    to estimate the q-spacing. Note that the  number of q-points is determined
+    by the size of mode_gradients, so is not likely to give accurate widths if
+    the q-points have been symmetry reduced.
+
+    Parameters
+    ----------
+    mode_gradients
+        Shape (n_qpts, n_modes) float Quantity. The mode gradients.
+    cell_vectors
+        Shape (3, 3) float Quantity. The cell vectors
+    """
+    cell_volume = Crystal.from_cell_vectors(cell_vectors)._cell_volume()
+    modg = mode_gradients.to('hartree*bohr').magnitude
+    q_spacing = 2/(np.cbrt(len(mode_gradients)*cell_volume))
+    mode_widths = q_spacing*modg
+    return mode_widths*ureg('hartree').to(
+        mode_gradients.units/cell_vectors.units)
 
 
 def _calc_abscissa(reciprocal_cell, qpts):

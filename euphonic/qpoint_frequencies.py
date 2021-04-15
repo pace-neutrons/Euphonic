@@ -84,7 +84,10 @@ class QpointFrequencies:
                                ['frequencies_unit'])
         super(QpointFrequencies, self).__setattr__(name, value)
 
-    def calculate_dos(self, dos_bins: Quantity) -> Spectrum1D:
+    def calculate_dos(self, dos_bins: Quantity,
+                      mode_widths: Optional[np.ndarray] = None,
+                      mode_widths_min: Quantity = Quantity(0.01, 'meV')
+                      ) -> Spectrum1D:
         """
         Calculates a density of states
 
@@ -93,6 +96,14 @@ class QpointFrequencies:
         dos_bins
             Shape (n_e_bins + 1,) float Quantity. The energy bin edges
             to use for calculating the DOS
+        mode_widths
+            Shape (n_qpts, n_branches) float Quantity in energy units.
+            The broadening width for each mode at each q-point, for
+            adaptive broadening
+        mode_widths_min
+            Scalar float Quantity in energy units. Sets a lower limit on
+            the mode widths, as mode widths of zero will result in
+            infinitely sharp peaks
 
         Returns
         -------
@@ -100,21 +111,33 @@ class QpointFrequencies:
             A spectrum containing the energy bins on the x-axis and dos
             on the y-axis
         """
-
         freqs = self._frequencies
-        dos_bins_unit = dos_bins.units
+        n_modes = self.frequencies.shape[1]
         # dos_bins commonly contains a 0 bin, and converting from 0 1/cm
         # to 0 hartree causes a RuntimeWarning, so suppress it
         with warnings.catch_warnings():
             warnings.filterwarnings('ignore', category=RuntimeWarning)
-            dos_bins = dos_bins.to('hartree').magnitude
-        weights = np.repeat(self.weights[:, np.newaxis],
-                            self.frequencies.shape[1],
-                            axis=1) / np.sum(self.weights)
-        dos, _ = np.histogram(freqs, dos_bins, weights=weights)
+            dos_bins_calc = dos_bins.to('hartree').magnitude
+        if mode_widths is not None:
+            from scipy.stats import norm
+            dos_bins_calc = Spectrum1D._bin_edges_to_centres(dos_bins_calc)
+            dos = np.zeros(len(dos_bins_calc))
+            mode_widths = mode_widths.to('hartree').magnitude
+            mode_widths = np.maximum(mode_widths,
+                                     mode_widths_min.to('hartree').magnitude)
+            for q in range(self.n_qpts):
+                for m in range(n_modes):
+                    pdf = norm.pdf(dos_bins_calc, loc=freqs[q,m],
+                                   scale=mode_widths[q,m])
+                    dos += pdf*self.weights[q]/n_modes
+        else:
+            weights = np.repeat(self.weights[:, np.newaxis],
+                                n_modes,
+                                axis=1)
+            dos, _ = np.histogram(freqs, dos_bins_calc, weights=weights, density=True)
 
         return Spectrum1D(
-            dos_bins*ureg('hartree').to(dos_bins_unit),
+            dos_bins,
             dos*ureg('dimensionless'))
 
     def get_dispersion(self) -> Spectrum1DCollection:

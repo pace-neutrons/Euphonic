@@ -112,16 +112,27 @@ class TestRegression:
 @patch('matplotlib.pyplot.show')
 @pytest.mark.skip(reason='Only run if you want to regenerate the test data')
 def test_regenerate_powder_map_data(_):
-
-    json_data = {}
+    # Read from existing file first to allow option of only replacing for
+    # certain test cases or keys
+    try:
+        with open(powder_map_output_file, 'r') as json_file:
+            json_data = json.load(json_file)
+    except FileNotFoundError:
+        json_data = {}
 
     for powder_map_param in powder_map_params:
         # Generate current figure for us to retrieve with gcf
         euphonic.cli.powder_map.main(powder_map_param)
 
         # Retrieve with gcf and write to file
-        json_data[args_to_key(powder_map_param)
-                  ] = get_current_plot_image_data()
+        image_data = get_current_plot_image_data()
+        # Optionally only write certain keys
+        keys_to_replace = []
+        if len(keys_to_replace) > 0:
+            for key in keys_to_replace:
+                json_data[args_to_key(powder_map_param)][key] = image_data[key]
+        else:
+            json_data[args_to_key(powder_map_param)] = image_data
 
     with open(powder_map_output_file, 'w+') as json_file:
         json.dump(json_data, json_file, indent=4)

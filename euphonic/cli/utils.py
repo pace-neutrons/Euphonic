@@ -384,7 +384,7 @@ def _get_cli_parser(features: Collection[str] = {}
         sections:
             collection (e.g. set, list) of str for known argument groups.
             Known keys: read-fc, read-modes, weights, powder, mp-grid,
-                plotting, ebins, q-e, map, btol
+                plotting, ebins, adaptive-broadening, q-e, map, btol
 
     Returns:
         Parser and a dict of parser subsections. This allows their help strings
@@ -536,19 +536,37 @@ def _get_cli_parser(features: Collection[str] = {}
         section.add_argument('--energy-unit', '-u', dest='energy_unit',
                              type=str, default='meV', help='Energy units')
 
-    if 'ebins' in features:
-        section = sections['energy']
-        section.add_argument('--ebins', type=int, default=200,
-                             help='Number of energy bins')
-        section.add_argument(
-            '--energy-broadening', '--eb', type=float, default=None,
-            dest='energy_broadening',
-            help=('FWHM of broadening on energy axis in ENERGY_UNIT. '
-                  '(No broadening if unspecified.)'))
-        section.add_argument(
-            '--shape', type=str, nargs='?', default='gauss',
-            choices=('gauss', 'lorentz'),
-            help='The broadening shape')
+    if {'ebins', 'adaptive-broadening'}.intersection(features):
+        if 'ebins' in features:
+            section = sections['energy']
+            section.add_argument('--ebins', type=int, default=200,
+                                 help='Number of energy bins')
+            if 'adaptive-broadening' in features:
+                section.add_argument(
+                    '--adaptive', action='store_true',
+                    help=('Use adaptive broadening on the energy axis to '
+                          'broaden based on phonon mode widths, rather than '
+                          'using fixed width broadening'))
+                eb_help = (
+                    'If using fixed width broadening, the FWHM of broadening '
+                    'on energy axis in ENERGY_UNIT (no broadening if '
+                    'unspecified). If using adaptive broadening, this is a '
+                    'scale factor multiplying the mode widths (no scale '
+                    'factor applied if unspecified).')
+            else:
+                eb_help = ('The FWHM of broadening on energy axis in '
+                           'ENERGY_UNIT (no broadening if unspecified).')
+            section.add_argument(
+                '--energy-broadening', '--eb', type=float, default=None,
+                dest='energy_broadening',
+                help=eb_help)
+            section.add_argument(
+                '--shape', type=str, nargs='?', default='gauss',
+                choices=('gauss', 'lorentz'),
+                help='The broadening shape')
+        else:
+            ValueError('"adaptive-broadening" cannot be applied without '
+                       '"ebins"')
 
     if {'q-e', 'mp-grid'}.intersection(features):
         sections['q'].add_argument(
@@ -566,9 +584,10 @@ def _get_cli_parser(features: Collection[str] = {}
         sections['q'].add_argument(
             '--q-broadening', '--qb', type=float, default=None,
             dest='q_broadening',
-            help=('FWHM of broadening on q axis in 1/LENGTH_UNIT. '
-                  '(No broadening if unspecified.)'))
+            help=('FWHM of broadening on q axis in 1/LENGTH_UNIT '
+                  '(no broadening if unspecified).'))
 
+    if 'map' in features:
         sections['plotting'].add_argument(
             '--v-min', type=float, default=None, dest='v_min',
             help='Minimum of data range for colormap.')

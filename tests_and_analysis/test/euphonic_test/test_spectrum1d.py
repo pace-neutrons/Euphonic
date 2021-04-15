@@ -8,8 +8,8 @@ import numpy.testing as npt
 from euphonic import ureg
 from euphonic.spectra import Spectrum1D
 from tests_and_analysis.test.utils import (
-    get_data_path, check_unit_conversion, check_json_metadata)
-
+    get_data_path, get_castep_path, check_unit_conversion,
+    check_json_metadata)
 
 class ExpectedSpectrum1D:
     def __init__(self, spectrum1d_json_file: str):
@@ -151,10 +151,27 @@ class TestSpectrum1DCreation:
             expected_spec1d.to_dict())
         return spec1d, expected_spec1d
 
+    @pytest.fixture(params=[
+        ('quartz', 'quartz-554-full.phonon_dos', {},
+         'quartz_554_full_castep_total_adaptive_dos.json'),
+        ('quartz', 'quartz-554-full.phonon_dos', {'element': 'Si'},
+         'quartz_554_full_castep_si_adaptive_dos.json'),
+        ('LZO', 'La2Zr2O7-222-full.phonon_dos', {},
+         'lzo_222_full_castep_total_adaptive_dos.json'),
+        ('LZO', 'La2Zr2O7-222-full.phonon_dos', {'element': 'Zr'},
+         'lzo_222_full_castep_zr_adaptive_dos.json')])
+    def create_from_castep_phonon_dos(self, request):
+        material, phonon_dos_file, kwargs, json_file = request.param
+        expected_spec1d = get_expected_spectrum1d(json_file)
+        spec1d = Spectrum1D.from_castep_phonon_dos(
+            get_castep_path(material, phonon_dos_file), **kwargs)
+        return spec1d, expected_spec1d
+
     @pytest.mark.parametrize(('spec1d_creator'), [
         pytest.lazy_fixture('create_from_constructor'),
         pytest.lazy_fixture('create_from_json'),
-        pytest.lazy_fixture('create_from_dict')])
+        pytest.lazy_fixture('create_from_dict'),
+        pytest.lazy_fixture('create_from_castep_phonon_dos')])
     def test_correct_object_creation(self, spec1d_creator):
         spec1d, expected_spec1d = spec1d_creator
         check_spectrum1d(spec1d, expected_spec1d)

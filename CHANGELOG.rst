@@ -13,6 +13,15 @@
     ``get_dispersion``
   - ``Spectrum1D``, ``Spectrum1DCollection`` and ``Spectrum2D`` objects
     have a new ``metadata`` attribute, see their docstrings for details
+  - Euphonic can now read DOS/PDOS from CASTEP .phonon_dos files with
+    ``Spectrum1D.from_castep_phonon_dos`` and
+    ``Spectrum1DCollection.from_castep_phonon_dos``
+  - **Adaptive broadening** is now available for DOS, which can obtain a
+    more representative DOS than standard fixed-width broadening. See
+    `the docs <https://euphonic.readthedocs.io/en/latest/dos.html#adaptive-broadening>`_
+    for details
+  - Adaptive broadening can be used in the ``euphonic-dos`` tool with the
+    ``--adaptive`` argument
 
 - Improvements:
 
@@ -62,6 +71,9 @@
   - Default Monkhorst-Pack meshes (i.e. [6, 6, 6] in ``euphonic-dos``
     and [20, 20, 20] in ``sample_sphere_structure_factor()``) have
     been replaced by default grid-spacing values.
+  
+  - The scaling of density of states has changed, due to a change
+    in implementation
 
 `v0.4.0 <https://github.com/pace-neutrons/Euphonic/compare/v0.3.2...v0.4.0>`_
 ----------

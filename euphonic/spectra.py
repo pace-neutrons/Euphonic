@@ -11,6 +11,7 @@ from scipy.ndimage import gaussian_filter1d, correlate1d, gaussian_filter
 from euphonic.validate import _check_constructor_inputs, _check_unit_conversion
 from euphonic.io import (_obj_to_json_file, _obj_from_json_file,
                          _obj_to_dict, _process_dict)
+from euphonic.readers.castep import read_phonon_dos_data
 from euphonic import ureg, Quantity
 
 
@@ -345,6 +346,27 @@ class Spectrum1D(Spectrum):
         return cls(d['x_data'], d['y_data'], x_tick_labels=d['x_tick_labels'],
                    metadata=d['metadata'])
 
+    @classmethod
+    def from_castep_phonon_dos(cls: S1D, filename: str,
+                               element: Optional[str] = None) -> S1D:
+        """
+        Reads DOS from a CASTEP .phonon_dos file
+
+        Parameters
+        ----------
+        filename
+            The path and name of the .phonon_dos file to read
+        element
+            Which element's PDOS to read. If not supplied reads
+            the total DOS.
+        """
+        data = read_phonon_dos_data(filename)
+        if element is None:
+            element = 'Total'
+        return Spectrum1D(data['dos_bins']*ureg(data['dos_bins_unit']),
+                          data['dos'][element]*ureg('dimensionless'),
+                          metadata={'label': element})
+
     def broaden(self: S1D, x_width: Quantity, shape: str = 'gauss') -> S1D:
         """
         Broaden y_data and return a new broadened spectrum object
@@ -560,6 +582,7 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
         return cls(x_data, y_data, x_tick_labels=x_tick_labels,
                    metadata=metadata)
 
+
     def to_dict(self) -> Dict[str, Any]:
         """
         Convert to a dictionary consistent with from_dict()
@@ -599,6 +622,27 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
                           optional=['x_tick_labels', 'metadata'])
         return cls(d['x_data'], d['y_data'], x_tick_labels=d['x_tick_labels'],
                    metadata=d['metadata'])
+
+    @classmethod
+    def from_castep_phonon_dos(cls: SC, filename: str) -> SC:
+        """
+        Reads total DOS and per-element PDOS from a CASTEP
+        .phonon_dos file
+
+        Parameters
+        ----------
+        filename
+            The path and name of the .phonon_dos file to read
+        """
+        data = read_phonon_dos_data(filename)
+        items = data['dos'].items()
+        metadata = {'line_data': [{'label': item[0]}
+                                  for item in items]}
+        y_data = np.stack([item[1] for item in items])
+        return Spectrum1DCollection(
+            data['dos_bins']*ureg(data['dos_bins_unit']),
+            y_data*ureg('dimensionless'),
+            metadata=metadata)
 
 
 class Spectrum2D(Spectrum):

@@ -19,6 +19,7 @@ from euphonic.io import (_obj_to_json_file, _obj_from_json_file,
                          _obj_to_dict, _process_dict)
 from euphonic.readers import castep, phonopy
 from euphonic.util import (is_gamma, get_all_origins,
+                           mode_gradients_to_widths,
                            _get_supercell_relative_idx)
 from euphonic import (ureg, Quantity, Crystal, QpointPhononModes,
                       QpointFrequencies)
@@ -143,7 +144,10 @@ class ForceConstants:
             insert_gamma: bool = False,
             reduce_qpts: bool = True,
             use_c: Optional[bool] = None,
-            n_threads: Optional[int] = None) -> QpointPhononModes:
+            n_threads: Optional[int] = None,
+            return_mode_widths: bool = False
+            ) -> Union[QpointPhononModes,
+                       Tuple[QpointPhononModes, Quantity]]:
         """
         Calculate phonon frequencies and eigenvectors at specified
         q-points from a force constants matrix via Fourier interpolation
@@ -200,15 +204,23 @@ class ForceConstants:
             to determine number of threads, if this is not set then
             the value returned from multiprocessing.cpu_count() will be
             used
+        return_mode_widths
+            Whether to also return the mode widths. The mode widths can
+            be used in adaptive broadening for DOS. For details on how
+            these are calculated see the Notes section
 
         Returns
         -------
-        QpointPhononModes
+        qpoint_phonon_modes
             A QpointPhononModes object containing the interpolated
             frequencies and eigenvectors at each q-point. Note that if
             there is LO-TO splitting, and insert_gamma=True, the number
             of input q-points may not be the same as in the output
             object
+        mode_widths
+            Optional shape (n_qpts, n_branches) float Quantity. Is only
+            returned if return_mode_widths is true
+
 
         Raises
         ------
@@ -217,6 +229,9 @@ class ForceConstants:
 
         Notes
         -----
+
+        **Phonon Frequencies/Eigenvectors Calculation**
+
         Phonon frequencies/eigenvectors are calculated at any q-point by
         Fourier interpolation of a force constants matrix. The force
         constants matrix is defined as [1]_:
@@ -257,14 +272,79 @@ class ForceConstants:
         dipole=True) and a non-analytical correction at the gamma point
         [2]_ (applied if splitting=True).
 
-        .. [1] M.T. Dove, Introduction to Lattice Dynamics, Cambridge University Press, Cambridge, 1993, 83-87
+        .. [1] M. T. Dove, Introduction to Lattice Dynamics, Cambridge University Press, Cambridge, 1993, 83-87
         .. [2] X. Gonze, K. C. Charlier, D. C. Allan, M. P. Teter, Phys. Rev. B, 1994, 50, 13035-13038
+
+        **Mode Widths Calculation**
+
+        The mode widths are used in the adaptive broadening scheme [3]_
+        when computing a DOS - broadening each mode contribution
+        individually according to its mode width. The mode widths at
+        each Q are calculated as the same time as the phonon
+        frequencies and eigenvectors as follows.
+
+        The mode widths are proportional to the gradient of the
+        dispersion, :math:`\\frac{d\\omega_{q\\nu}}{dQ}`.
+        Firstly, the eigenvalue equation above can be written in matrix
+        form as:
+
+        .. math::
+
+          E(q)\\Omega(q) = D(q)E(q)
+
+        .. math::
+
+          \\Omega(q) = E^{-1}(q)D(q)E(q)
+
+        Where :math:`\\Omega(q)` is the diagonal matrix of phonon
+        frequencies squared :math:`\\omega_{q\\nu}^{2}` and :math:`E(q)`
+        is the matrix containing eigenvectors for all modes.
+        :math:`\\frac{d\\omega_{q\\nu}}{dQ}`, can then
+        be obtained by differentiating the above equation with respect
+        to Q using the product rule:
+
+        .. math::
+
+          \\frac{d\\Omega}{dQ} = 2\\omega_{q\\nu}\\frac{d\\omega_{q\\nu}}{dQ}\\delta_{\\nu, \\nu^{\\prime}}
+
+        .. math::
+
+          \\frac{d\\omega_{q\\nu}}{dQ} = \\frac{1}{2\\omega_{q\\nu}}{(
+          \\frac{d{E^{-1}}}{dQ}DE +
+          E^{-1}\\frac{dD}{dQ}E +
+          E^{-1}D\\frac{dE}{dQ})}
+
+        Given that eigenvectors are normalised and orthogonal, an identity can be employed:
+
+        .. math::
+
+          \\frac{d}{d\\lambda}E^{\\prime}E = 0
+
+        So terms involving the first derivative of the eigenvector matrix can be set to zero, resulting in:
+
+        .. math::
+
+         \\frac{d\\omega_{q\\nu}}{dQ} = \\frac{1}{2\\omega_{q\\nu}}{(E^{-1}\\frac{dD}{dQ}E)}
+        :math:`\\frac{dD}{dQ}` can be obtained by differentiating the Fourier equation above:
+
+        .. math::
+
+          \\frac{dD}{dQ} =
+          \\frac{-i r_a}{\\sqrt{M_\\kappa M_{\\kappa '}}}
+          \\sum_{a}\\phi_{\\alpha, \\alpha '}^{\\kappa, \\kappa '}e^{-iq\\cdot r_a}
+
+        .. [3] J. R. Yates, X. Wang, D. Vanderbilt and I. Souza, Phys. Rev. B, 2007, 75, 195121
         """
-        qpts, weights, freqs, evecs = self._calculate_phonons_at_qpts(
+        qpts, weights, freqs, evecs, widths = self._calculate_phonons_at_qpts(
             qpts, weights, asr, dipole, eta_scale, splitting, insert_gamma,
-            reduce_qpts, use_c, n_threads, return_eigenvectors=True)
-        return QpointPhononModes(
+            reduce_qpts, use_c, n_threads, return_mode_widths,
+            return_eigenvectors=True)
+        qpt_ph_modes = QpointPhononModes(
             self.crystal, qpts, freqs, evecs, weights=weights)
+        if return_mode_widths:
+            return qpt_ph_modes, widths
+        else:
+            return qpt_ph_modes
 
     def calculate_qpoint_frequencies(
             self,
@@ -277,17 +357,25 @@ class ForceConstants:
             insert_gamma: bool = False,
             reduce_qpts: bool = True,
             use_c: Optional[bool] = None,
-            n_threads: Optional[int] = None) -> QpointFrequencies:
+            n_threads: Optional[int] = None,
+            return_mode_widths: bool = False,
+            ) -> Union[QpointFrequencies,
+                       Tuple[QpointFrequencies, Quantity]]:
         """
         Calculate phonon frequencies (without eigenvectors) at specified
         q-points. See ForceConstants.calculate_qpoint_phonon_modes for
         argument and algorithm details
         """
-        qpts, weights, freqs = self._calculate_phonons_at_qpts(
+        qpts, weights, freqs, _, widths = self._calculate_phonons_at_qpts(
             qpts, weights, asr, dipole, eta_scale, splitting, insert_gamma,
-            reduce_qpts, use_c, n_threads, return_eigenvectors=False)
-        return QpointFrequencies(
+            reduce_qpts, use_c, n_threads, return_mode_widths,
+            return_eigenvectors=False)
+        qpt_freqs = QpointFrequencies(
             self.crystal, qpts, freqs, weights=weights)
+        if return_mode_widths:
+            return qpt_freqs, widths
+        else:
+            return qpt_freqs
 
     def _calculate_phonons_at_qpts(
             self,
@@ -301,6 +389,7 @@ class ForceConstants:
             reduce_qpts: bool,
             use_c: Optional[bool],
             n_threads: Optional[int],
+            return_mode_widths: bool,
             return_eigenvectors: bool) -> Union[
                 Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray],
                 Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]]:
@@ -389,17 +478,31 @@ class ForceConstants:
         # expensive phase calculations later
         sc_image_r = get_all_origins(
             np.repeat(lim, 3) + 1, min_xyz=-np.repeat(lim, 3))
-        sc_offsets = np.einsum('ij,jk->ik', sc_image_r,
+        sc_origins = np.einsum('ij,jk->ik', sc_image_r,
                                self.sc_matrix).astype(np.int32)
-        unique_sc_offsets = [[] for i in range(3)]
-        unique_sc_i = np.zeros((len(sc_offsets), 3), dtype=np.int32)
+        unique_sc_origins = [[] for i in range(3)]
+        unique_sc_i = np.zeros((len(sc_origins), 3), dtype=np.int32)
         unique_cell_origins = [[] for i in range(3)]
         unique_cell_i = np.zeros((len(self.cell_origins), 3), dtype=np.int32)
         for i in range(3):
-            unique_sc_offsets[i], unique_sc_i[:, i] = np.unique(
-                sc_offsets[:, i], return_inverse=True)
+            unique_sc_origins[i], unique_sc_i[:, i] = np.unique(
+                sc_origins[:, i], return_inverse=True)
             unique_cell_origins[i], unique_cell_i[:, i] = np.unique(
                 self.cell_origins[:, i], return_inverse=True)
+        if return_mode_widths:
+            cell_origins_cart = np.einsum('ij,jk->ik', self.cell_origins,
+                                          self.crystal._cell_vectors)
+            # Append 0. to sc_origins_cart, so that when being indexed by
+            # sc_image_i to get the origins for each image, an index of -1
+            # and a value of 0. can be used
+            sc_origins_cart = np.zeros((len(sc_origins) + 1, 3))
+            sc_origins_cart[:len(sc_origins)] = np.einsum(
+                'ij,jk->ik', sc_origins, self.crystal._cell_vectors)
+            ax = np.newaxis
+            all_origins_cart = (sc_origins_cart[self._sc_image_i]
+                                + cell_origins_cart[:, ax, ax, ax, :])
+        else:
+            all_origins_cart = np.zeros((0, 3), dtype=np.float64)
 
         # Precompute dynamical matrix mass weighting
         atom_mass = self.crystal._atom_mass
@@ -430,9 +533,10 @@ class ForceConstants:
         if asr == 'reciprocal':
             # Calculate dyn mat at gamma for reciprocal ASR
             q_gamma = np.array([0., 0., 0.])
-            dyn_mat_gamma = self._calculate_dyn_mat(
-                q_gamma, fc_img_weighted, unique_sc_offsets,
-                unique_sc_i, unique_cell_origins, unique_cell_i)
+            dyn_mat_gamma, _ = self._calculate_dyn_mat(
+                q_gamma, fc_img_weighted, unique_sc_origins,
+                unique_sc_i, unique_cell_origins, unique_cell_i,
+                all_origins_cart)
             if dipole:
                 dyn_mat_gamma += self._calculate_dipole_correction(q_gamma)
             recip_asr_correction = self._enforce_reciprocal_asr(dyn_mat_gamma)
@@ -449,6 +553,11 @@ class ForceConstants:
             # detected in C and eigenvectors won't be saved
             reigenvecs = np.zeros(
                 (0, 3*n_atoms, n_atoms, 3), dtype=np.complex128)
+
+        if return_mode_widths:
+            rmode_gradients = np.zeros((n_rqpts, 3*n_atoms), dtype=np.float64)
+        else:
+            rmode_gradients = np.zeros((0, 3*n_atoms), dtype=np.float64)
 
         euphonic_path = os.path.dirname(euphonic.__file__)
         cext_err_msg = (f'Euphonic\'s C extension couldn\'t be imported '
@@ -483,12 +592,13 @@ class ForceConstants:
             recip_vectors = self.crystal.reciprocal_cell().to(
                 '1/bohr').magnitude
             (cell_vectors, recip_vectors, reduced_qpts, split_idx, q_dirs,
-             fc_img_weighted, sc_offsets, recip_asr_correction,
-             dyn_mat_weighting, rfreqs,
-             reigenvecs) = _ensure_contiguous_args(
+             fc_img_weighted, sc_origins, recip_asr_correction,
+             dyn_mat_weighting, rfreqs, reigenvecs, rmode_gradients,
+             all_origins_cart) = _ensure_contiguous_args(
                  cell_vectors, recip_vectors, reduced_qpts, split_idx,
-                 q_dirs, fc_img_weighted, sc_offsets, recip_asr_correction,
-                 dyn_mat_weighting, rfreqs, reigenvecs)
+                 q_dirs, fc_img_weighted, sc_origins, recip_asr_correction,
+                 dyn_mat_weighting, rfreqs, reigenvecs, rmode_gradients,
+                 all_origins_cart)
             attrs = ['_n_sc_images', '_sc_image_i', 'cell_origins']
             dipole_attrs = ['atom_r', '_born', '_dielectric', '_H_ab',
                             '_cells', '_gvec_phases', '_gvecs_cart',
@@ -498,28 +608,37 @@ class ForceConstants:
             with threadpool_limits(limits=1):
                 euphonic_c.calculate_phonons(
                     self, cell_vectors, recip_vectors, reduced_qpts,
-                    split_idx, q_dirs, fc_img_weighted, sc_offsets,
+                    split_idx, q_dirs, fc_img_weighted, sc_origins,
                     recip_asr_correction, dyn_mat_weighting, dipole,
-                    reciprocal_asr, splitting, rfreqs, reigenvecs, n_threads,
+                    reciprocal_asr, splitting, rfreqs, reigenvecs,
+                    rmode_gradients, all_origins_cart, n_threads,
                     scipy.__path__[0])
         else:
             q_independent_args = (
                 reduced_qpts, split_idx, q_dirs, fc_img_weighted,
-                unique_sc_offsets, unique_sc_i, unique_cell_origins,
+                unique_sc_origins, unique_sc_i, unique_cell_origins,
                 unique_cell_i, recip_asr_correction, dyn_mat_weighting,
-                dipole, asr, splitting)
+                dipole, asr, splitting, all_origins_cart)
             for q in range(n_rqpts):
+                rfreqs[q], evecs, grads = self._calculate_phonons_at_q(
+                        q, q_independent_args)
                 if return_eigenvectors:
-                    rfreqs[q], reigenvecs[q] = self._calculate_phonons_at_q(
-                        q, q_independent_args)
-                else:
-                    rfreqs[q], _ = self._calculate_phonons_at_q(
-                        q, q_independent_args)
+                    reigenvecs[q] = evecs
+                if return_mode_widths:
+                    rmode_gradients[q] = grads
+
         freqs = rfreqs[qpts_i]*ureg('hartree').to('meV')
         if return_eigenvectors:
-            return qpts, weights, freqs, reigenvecs[qpts_i]
+            eigenvectors = reigenvecs[qpts_i]
         else:
-            return qpts, weights, freqs
+            eigenvectors = None
+        if return_mode_widths:
+            mode_widths = mode_gradients_to_widths(
+                rmode_gradients[qpts_i]*ureg('hartree*bohr'),
+                self.crystal.cell_vectors).to('meV')
+        else:
+            mode_widths = None
+        return qpts, weights, freqs, eigenvectors, mode_widths
 
     def _calculate_phonons_at_q(self, q, args):
         """
@@ -528,17 +647,17 @@ class ForceConstants:
         frequencies and eigenvalues. Optionally also includes the Ewald
         dipole sum correction and LO-TO splitting
         """
-        (reduced_qpts, split_idx, q_dirs, fc_img_weighted, unique_sc_offsets,
+        (reduced_qpts, split_idx, q_dirs, fc_img_weighted, unique_sc_origins,
          unique_sc_i, unique_cell_origins, unique_cell_i,
          recip_asr_correction, dyn_mat_weighting, dipole, asr,
-         splitting) = args
+         splitting, all_origins_cart) = args
 
         qpt = reduced_qpts[q]
         n_atoms = self.crystal.n_atoms
 
-        dyn_mat = self._calculate_dyn_mat(
-            qpt, fc_img_weighted, unique_sc_offsets, unique_sc_i,
-            unique_cell_origins, unique_cell_i)
+        dmat_args = (qpt, fc_img_weighted, unique_sc_origins, unique_sc_i,
+                     unique_cell_origins, unique_cell_i, all_origins_cart)
+        dyn_mat, dmat_grad = self._calculate_dyn_mat(*dmat_args)
 
         if dipole:
             dipole_corr = self._calculate_dipole_correction(qpt)
@@ -569,10 +688,24 @@ class ForceConstants:
         evals = np.sqrt(np.abs(evals))
         evals[imag_freqs] *= -1
 
-        return evals, evecs
+        if dmat_grad is not None:
+            n_modes = len(evecs)
+            dmat_grad *= dyn_mat_weighting[..., np.newaxis]
+            evecs_sq_view = np.reshape(evecs, (n_modes, n_modes))
+            grad_tmps = np.einsum('ij,ik,jkl->il', np.conj(evecs_sq_view),
+                                                   evecs_sq_view,
+                                                   dmat_grad)
+            mode_gradients = np.zeros(n_modes)
+            for n, grad_tmp in enumerate(grad_tmps):
+                mode_gradients[n] = 0.5*np.linalg.norm(grad_tmp)/evals[n]
 
-    def _calculate_dyn_mat(self, q, fc_img_weighted, unique_sc_offsets,
-                           unique_sc_i, unique_cell_origins, unique_cell_i):
+            return evals, evecs, mode_gradients
+        else:
+            return evals, evecs, None
+
+    def _calculate_dyn_mat(self, q, fc_img_weighted, unique_sc_origins,
+                           unique_sc_i, unique_cell_origins, unique_cell_i,
+                           all_origins_cart):
         """
         Calculate the non mass weighted dynamical matrix at a specified
         q-point from the image weighted force constants matrix and the
@@ -586,7 +719,7 @@ class ForceConstants:
         fc_img_weighted : (n_cells_in_sc, 3*n_atoms, 3*n_atoms) float ndarray
             The force constants matrix weighted by the number of
             supercell atom images for each ij displacement
-        unique_sc_offsets : list of lists of ints
+        unique_sc_origins : list of lists of ints
             A list containing 3 lists of the unique supercell image
             offsets in each direction. The supercell offset is
             calculated by multiplying the supercell matrix by the
@@ -594,8 +727,8 @@ class ForceConstants:
             list of lists rather than a Numpy array is used as the 3
             lists are independent and their size is not known beforehand
         unique_sc_i : ((2*lim + 1)**3, 3) int ndarray
-            The indices needed to reconstruct sc_offsets from the unique
-            values in unique_sc_offsets
+            The indices needed to reconstruct sc_origins from the unique
+            values in unique_sc_origins
         unique_cell_origins : list of lists of ints
             A list containing 3 lists of the unique cell origins in each
             direction. A list of lists rather than a Numpy array is used
@@ -623,17 +756,27 @@ class ForceConstants:
         # hence phase of zero can be used
         sc_phases = np.zeros(len(unique_sc_i) + 1, dtype=np.complex128)
         sc_phases[:-1], cell_phases = self._calculate_phases(
-            q, unique_sc_offsets, unique_sc_i, unique_cell_origins,
+            q, unique_sc_origins, unique_sc_i, unique_cell_origins,
             unique_cell_i)
         sc_phase_sum = np.sum(sc_phases[sc_image_i],
                               axis=3)
+
         ax = np.newaxis
         ij_phases = cell_phases[:, ax, ax]*sc_phase_sum
         full_dyn_mat = fc_img_weighted*(
             ij_phases.repeat(3, axis=2).repeat(3, axis=1))
         dyn_mat = np.sum(full_dyn_mat, axis=0)
-
-        return dyn_mat
+        if len(all_origins_cart) > 0:
+            all_phases = np.einsum('ijkl,i->ijkl',
+                                   sc_phases[sc_image_i], cell_phases)
+            r_vec_sum = 1j*np.einsum('ijkl,ijklm->ijkm',
+                                     all_phases, all_origins_cart)
+            dmat_gradient = fc_img_weighted[..., ax]*(r_vec_sum.repeat(
+                3, axis=2).repeat(3, axis=1))
+            dmat_gradient = np.sum(dmat_gradient, axis=0)
+            return dyn_mat, dmat_gradient
+        else:
+            return dyn_mat, None
 
     def _dipole_correction_init(self, eta_scale=1.0):
         """
@@ -1097,7 +1240,7 @@ class ForceConstants:
 
         return ac_i, evals, evecs
 
-    def _calculate_phases(self, q, unique_sc_offsets, unique_sc_i,
+    def _calculate_phases(self, q, unique_sc_origins, unique_sc_i,
                           unique_cell_origins, unique_cell_i):
         """
         Calculate the phase factors for the supercell images and cells
@@ -1109,21 +1252,22 @@ class ForceConstants:
         ----------
         q : (3,) float ndarray
             The q-point to calculate the phase for
-        unique_sc_offsets : list of lists of ints
+        unique_sc_origins : list of lists of ints
             A list containing 3 lists of the unique supercell image
-            offsets in each direction. The supercell offset is
-            calculated by multiplying the supercell matrix by the
-            supercell image indices (obtained by _get_all_origins()). A
-            list of lists rather than a Numpy array is used as the 3
-            lists are independent and their size is not known beforehand
+            offsets in each direction in units of the unit cell vectors.
+            The supercell offset is calculated by multiplying the
+            supercell matrix by the supercell image indices
+            (obtained by _get_all_origins()). A list of lists rather
+            than a Numpy array is used as the 3 lists are independent
+            and their size is not known beforehand
         unique_sc_i : ((2*lim + 1)**3, 3) int ndarray
-            The indices needed to reconstruct sc_offsets from the unique
-            values in unique_sc_offsets
+            The indices needed to reconstruct sc_origins from the unique
+            values in unique_sc_origins
         unique_cell_origins : list of lists of ints
             A list containing 3 lists of the unique cell origins in each
-            direction. A list of lists rather than a Numpy array is used
-            as the 3 lists are independent and their size is not known
-            beforehand
+            direction in units of the unit cell vectors. A list of
+            lists rather than a Numpy array is used as the 3 lists are
+            independent and their size is not known beforehand
         unique_cell_i : (cell_origins, 3) int ndarray
             The indices needed to reconstruct cell_origins from the
             unique values in unique_cell_origins
@@ -1132,7 +1276,7 @@ class ForceConstants:
         -------
         sc_phases : (unique_sc_i,) float ndarray
             Phase factors exp(iq.r) for each supercell image coordinate
-            in sc_offsets
+            in sc_origins
         cell_phases : (unique_cell_i,) float ndarray
             Phase factors exp(iq.r) for each cell coordinate in the
             supercell
@@ -1147,7 +1291,7 @@ class ForceConstants:
         sc_phases = np.ones(len(unique_sc_i), dtype=np.complex128)
         cell_phases = np.ones(len(unique_cell_i), dtype=np.complex128)
         for i in range(3):
-            unique_sc_phases = np.power(phase[i], unique_sc_offsets[i])
+            unique_sc_phases = np.power(phase[i], unique_sc_origins[i])
             sc_phases *= unique_sc_phases[unique_sc_i[:, i]]
 
             unique_cell_phases = np.power(phase[i], unique_cell_origins[i])

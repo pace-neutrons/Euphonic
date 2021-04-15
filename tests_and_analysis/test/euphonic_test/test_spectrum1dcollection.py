@@ -7,7 +7,7 @@ import pytest
 
 from euphonic import ureg
 from euphonic.spectra import Spectrum1DCollection
-from tests_and_analysis.test.utils import get_data_path
+from tests_and_analysis.test.utils import get_data_path, get_castep_path
 
 from .test_spectrum1d import (get_spectrum1d, get_expected_spectrum1d,
                               check_spectrum1d)
@@ -147,10 +147,23 @@ class TestSpectrum1DCollectionCreation:
             expected_spectrum.to_dict())
         return spectrum, expected_spectrum
 
+    @pytest.fixture(params=[
+        ('quartz', 'quartz-554-full.phonon_dos',
+         'quartz_554_full_castep_adaptive_dos.json'),
+        ('LZO', 'La2Zr2O7-222-full.phonon_dos',
+         'lzo_222_full_castep_adaptive_dos.json')])
+    def create_from_castep_phonon_dos(self, request):
+        material, phonon_dos_file, json_file = request.param
+        spec = Spectrum1DCollection.from_castep_phonon_dos(
+            get_castep_path(material, phonon_dos_file))
+        expected_spec = get_expected_spectrum1dcollection(json_file)
+        return spec, expected_spec
+
     @pytest.mark.parametrize(('spectrum_creator'), [
         pytest.lazy_fixture('create_from_constructor'),
         pytest.lazy_fixture('create_from_json'),
-        pytest.lazy_fixture('create_from_dict')])
+        pytest.lazy_fixture('create_from_dict'),
+        pytest.lazy_fixture('create_from_castep_phonon_dos')])
     def test_correct_object_creation(self, spectrum_creator):
         spectrum, expected_spectrum = spectrum_creator
         check_spectrum1dcollection(spectrum, expected_spectrum)

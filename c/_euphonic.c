@@ -2,6 +2,7 @@
 #define NPY_NO_DEPRECATED_API NPY_1_9_API_VERSION
 #define PY_ARRAY_UNIQUE_SYMBOL EUPHONIC_NPY_ARRAY_API
 #include <string.h>
+#include <stdbool.h>
 #include <omp.h>
 #include <Python.h>
 #include <numpy/arrayobject.h>
@@ -25,6 +26,8 @@ static PyObject *calculate_phonons(PyObject *self, PyObject *args) {
     PyArrayObject *py_dmat_weighting;
     PyArrayObject *py_evals;
     PyArrayObject *py_dmats;
+    PyArrayObject *py_modegs;
+    PyArrayObject *py_all_ogs_cart;
     int dipole;
     int reciprocal_asr;
     int splitting;
@@ -62,6 +65,8 @@ static PyObject *calculate_phonons(PyObject *self, PyObject *args) {
     double *dmat_weighting;
     double *evals;
     double *dmats;
+    double *modegs;
+    double *all_ogs_cart;
     int *n_sc_ims;
     int *sc_im_idx;
     int *cell_ogs;
@@ -79,6 +84,7 @@ static PyObject *calculate_phonons(PyObject *self, PyObject *args) {
     int n_cells;
     int n_rqpts;
     int dmats_len;
+    int modegs_len;
     int n_split_qpts;
     int q, i, qpos;
     int max_ims;
@@ -88,7 +94,7 @@ static PyObject *calculate_phonons(PyObject *self, PyObject *args) {
     int n_gvecs;
 
     // Parse inputs
-    if (!PyArg_ParseTuple(args, "OO!O!O!O!O!O!O!O!O!iiiO!O!is",
+    if (!PyArg_ParseTuple(args, "OO!O!O!O!O!O!O!O!O!iiiO!O!O!O!is",
                           &py_idata,
                           &PyArray_Type, &py_cell_vec,
                           &PyArray_Type, &py_recip_vec,
@@ -104,6 +110,8 @@ static PyObject *calculate_phonons(PyObject *self, PyObject *args) {
                           &splitting,
                           &PyArray_Type, &py_evals,
                           &PyArray_Type, &py_dmats,
+                          &PyArray_Type, &py_modegs,
+                          &PyArray_Type, &py_all_ogs_cart,
                           &n_threads,
                           &scipy_dir)) {
         return NULL;
@@ -152,6 +160,8 @@ static PyObject *calculate_phonons(PyObject *self, PyObject *args) {
     dmat_weighting = (double*) PyArray_DATA(py_dmat_weighting);
     evals = (double*) PyArray_DATA(py_evals);
     dmats = (double*) PyArray_DATA(py_dmats);
+    modegs = (double*) PyArray_DATA(py_modegs);
+    all_ogs_cart = (double*) PyArray_DATA(py_all_ogs_cart);
     n_sc_ims = (int*) PyArray_DATA(py_n_sc_ims);
     sc_im_idx = (int*) PyArray_DATA(py_sc_im_idx);
     cell_ogs = (int*) PyArray_DATA(py_cell_ogs);
@@ -159,6 +169,7 @@ static PyObject *calculate_phonons(PyObject *self, PyObject *args) {
     n_rqpts = PyArray_DIMS(py_rqpts)[0];
     n_split_qpts = PyArray_DIMS(py_split_idx)[0];
     dmats_len = PyArray_DIMS(py_dmats)[0];
+    modegs_len = PyArray_DIMS(py_modegs)[0];
     max_ims = PyArray_DIMS(py_sc_im_idx)[3];
     dmat_elems = 2*9*n_atoms*n_atoms;
     if (dipole) {
@@ -185,7 +196,8 @@ static PyObject *calculate_phonons(PyObject *self, PyObject *args) {
     omp_set_num_threads(n_threads);
     #pragma omp parallel
     {
-        double *corr, *dmat_per_q;
+        const bool calc_dmat_grad = (modegs_len > 0) ? true : false;
+        double *corr, *dmat_per_q, *dmat_grad;
         if (dipole) {
             corr = (double*) malloc(dmat_elems*sizeof(double));
         }
@@ -195,9 +207,16 @@ static PyObject *calculate_phonons(PyObject *self, PyObject *args) {
         if (dmats_len == 0) {
             dmat_per_q = (double*) malloc(dmat_elems*sizeof(double));
         }
+        // If space for the mode gradients has been allocated, assume they
+        // should be calculated and allocate space for dyn mat gradients
+        if (calc_dmat_grad) {
+            dmat_grad = (double*) malloc(3*dmat_elems*sizeof(double));
+        } else {
+            dmat_grad = NULL;
+        }
         #pragma omp for
         for (q = 0; q < n_rqpts; q++) {
-            double *qpt, *dmat, *eval;
+            double *qpt, *dmat, *eval, *modeg;
             qpt = (rqpts + 3*q);
             eval = (evals + q*3*n_atoms);
 
@@ -206,8 +225,12 @@ static PyObject *calculate_phonons(PyObject *self, PyObject *args) {
             } else {
                 dmat = (dmats + q*dmat_elems);
             }
+            if (calc_dmat_grad) {
+                modeg = (modegs + q*3*n_atoms);
+            }
             calculate_dyn_mat_at_q(qpt, n_atoms, n_cells, max_ims, n_sc_ims,
-                sc_im_idx, cell_ogs, sc_ogs, fc, dmat);
+                sc_im_idx, cell_ogs, sc_ogs, fc, all_ogs_cart, calc_dmat_grad,
+                dmat, dmat_grad);
 
             if (dipole) {
                 calculate_dipole_correction(qpt, n_atoms, cell_vec, recip_vec,
@@ -236,9 +259,14 @@ static PyObject *calculate_phonons(PyObject *self, PyObject *args) {
                 add_arrays(dmat_elems, corr, dmat);
             }
 
-            mass_weight_dyn_mat(dmat_weighting, n_atoms, dmat);
+            mass_weight_dyn_mat(dmat_weighting, n_atoms, 2, dmat);
             diagonalise_dyn_mat_zheevd(n_atoms, qpt, dmat, eval, zheevd);
             evals_to_freqs(n_atoms, eval);
+
+            if (calc_dmat_grad) {
+                mass_weight_dyn_mat(dmat_weighting, n_atoms, 6, dmat_grad);
+                calculate_mode_gradients(n_atoms, eval, dmat, dmat_grad, modeg);
+            }
         }
     }
 

@@ -1,6 +1,7 @@
 #define PY_SSIZE_T_CLEAN
 #define NPY_NO_DEPRECATED_API NPY_1_9_API_VERSION
 #include <math.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -12,12 +13,15 @@
 void calculate_dyn_mat_at_q(const double *qpt, const int n_atoms,
     const int n_cells, const int max_images, const int *n_sc_images,
     const int *sc_image_i, const int *cell_origins, const int *sc_origins,
-    const double *fc_mat, double *dyn_mat) {
+    const double *fc_mat, const double *all_origins_cart, const bool calc_dmat_grad,
+    double *dyn_mat, double *dmat_grad) {
 
-    int i, j, n, nc, k, sc, ii, jj, idx;
+    int i, j, n, nc, k, sc, ii, jj, sc_img_idx, idx, idx_t;
     double qdotr;
-    double phase_r;
-    double phase_i;
+    double rcart;
+    double phase[2];
+    double phase_sum[2];
+    double rcart_sum[6];
 
     // Note: C calculated dynamical matrix uses e^-i(q.r) convention, whereas
     // Python uses the e^i(q.r) convention. This differing convention is used
@@ -31,28 +35,69 @@ void calculate_dyn_mat_at_q(const double *qpt, const int n_atoms,
     int s_fc = 9*n_atoms*n_atoms; // For fc_mat
 
     memset(dyn_mat, 0, 2*9*n_atoms*n_atoms*sizeof(double));
+    if (calc_dmat_grad) {
+        memset(dmat_grad, 0, 3*2*9*n_atoms*n_atoms*sizeof(double));
+    }
     for (i = 0; i < n_atoms; i++) {
         for (j = i; j < n_atoms; j++) {
             for (nc = 0; nc < n_cells; nc++){
-                phase_r = 0;
-                phase_i = 0;
+                memset(phase_sum, 0, 2*sizeof(double));
+                memset(rcart_sum, 0, 6*sizeof(double));
                 // Calculate and sum phases for all  images
                 for (n = 0; n < n_sc_images[nc*s_n[0] + i*s_n[1] + j]; n++) {
                     qdotr = 0;
-                    sc = sc_image_i[nc*s_i[0] + i*s_i[1] + j*s_i[2] + n];
+                    sc_img_idx = nc*s_i[0] + i*s_i[1] + j*s_i[2] + n;
+                    sc = sc_image_i[sc_img_idx];
                     for (k = 0; k < 3; k++){
                         qdotr += qpt[k]*(sc_origins[3*sc + k] + cell_origins[3*nc + k]);
                     }
-                    phase_r += cos(2*PI*qdotr);
-                    phase_i -= sin(2*PI*qdotr);
+                    phase[0] = cos(2*PI*qdotr);
+                    phase[1] = -sin(2*PI*qdotr);
+                    phase_sum[0] += phase[0];
+                    phase_sum[1] += phase[1];
+                    if (calc_dmat_grad) {
+                        for (k = 0; k < 3; k++){
+                            // Note: use cos + isin phase as dyn mat gradients aren't passed
+                            // to a Fortran lib so we need to use the e^i(q.r) convention
+                            rcart = all_origins_cart[3*sc_img_idx + k];
+                            rcart_sum[2*k] += phase[1]*rcart; //Multiply phase by i: swap re and im
+                            rcart_sum[2*k + 1] += phase[0]*rcart;
+                        }
+                    }
                 }
                 for (ii = 0; ii < 3; ii++){
                     for (jj = 0; jj < 3; jj++){
                         idx = (3*i+ii)*3*n_atoms + 3*j + jj;
                         // Real part
-                        dyn_mat[2*idx] += phase_r*fc_mat[nc*s_fc + idx];
+                        dyn_mat[2*idx] += phase_sum[0]*fc_mat[nc*s_fc + idx];
                         // Imaginary part
-                        dyn_mat[2*idx + 1] += phase_i*fc_mat[nc*s_fc + idx];
+                        dyn_mat[2*idx + 1] += phase_sum[1]*fc_mat[nc*s_fc + idx];
+                        if (calc_dmat_grad) {
+                            for (k = 0; k < 3; k++) {
+                                // Real
+                                dmat_grad[6*idx + 2*k] += rcart_sum[2*k]*fc_mat[nc*s_fc + idx];
+                                // Imaginary
+                                dmat_grad[6*idx + 2*k + 1] += rcart_sum[2*k + 1]*fc_mat[nc*s_fc + idx];
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // Fill in lower triangular of dmat gradients - is Hermitian
+    if (calc_dmat_grad) {
+        for (i = 1; i < n_atoms; i++) {
+            for (j = 0; j < i; j++) {
+                for (ii = 0; ii < 3; ii++){
+                    for (jj = 0; jj < 3; jj++){
+                        idx = 6*((3*i+ii)*3*n_atoms + 3*j + jj);
+                        idx_t = 6*((3*j+jj)*3*n_atoms + 3*i + ii);
+                        for (k = 0; k < 3; k++) {
+                            dmat_grad[idx + 2*k] = dmat_grad[idx_t + 2*k];
+                            dmat_grad[idx + 2*k + 1] = -dmat_grad[idx_t + 2*k + 1];
+                        }
                     }
                 }
             }
@@ -280,12 +325,14 @@ void calculate_gamma_correction(const double q_dir[3], const int n_atoms,
 }
 
 void mass_weight_dyn_mat(const double* dyn_mat_weighting, const int n_atoms,
-    double* dyn_mat) {
+    const int repeats, double* dyn_mat) {
 
     int i, j;
     for (i = 0; i < 9*n_atoms*n_atoms; i++) {
-        for (j = 0; j < 2; j++) {
-            dyn_mat[2*i + j] *= dyn_mat_weighting[i];
+        for (j = 0; j < repeats; j++) {
+            // Repeats: how many elements of dyn_mat per dyn_mat_weighting
+            // As dyn_mat = complex and weighting = real, this is usually 2
+            dyn_mat[repeats*i + j] *= dyn_mat_weighting[i];
         }
     }
 }
@@ -347,3 +394,43 @@ void evals_to_freqs(const int n_atoms, double *eigenvalues) {
         eigenvalues[i] = tmp;
     }
 }
+
+void calculate_mode_gradients(const int n_atoms, const double *evals,
+    const double *evecs, const double *dmat_grad, double *modeg) {
+    int n, i, j, a, b, k, grad_idx;
+    int n_modes = 3*n_atoms;
+    double grad_dot;
+    double grad_tmp[6];
+    double evec_mult_tmp[2];
+    double conj_tmp[2];
+    int mode_s = 2*3*n_atoms; //Eigenvector array stride
+
+    for (n = 0; n < n_modes; n++) {
+        memset(grad_tmp, 0, 6*sizeof(double));
+        for (i = 0; i < n_atoms; i++) {
+            for (a = 0; a < 3; a++) {
+                for (j = 0; j < n_atoms; j++) {
+                    for (b = 0; b < 3; b++) {
+
+                        for (k = 0; k < 3; k++) {
+                            cmult_conj((evecs + (n*mode_s + 6*j + 2*b)),
+                                       (evecs + (n*mode_s + 6*i + 2*a)),
+                                       evec_mult_tmp);
+                            grad_idx = 3*(3*i + a)*mode_s + 3*(6*j + 2*b) + 2*k;
+                            cmult((dmat_grad + grad_idx), evec_mult_tmp, conj_tmp);
+                            grad_tmp[2*k] += conj_tmp[0];
+                            grad_tmp[2*k + 1] += conj_tmp[1];
+                        }
+                    }
+                }
+            }
+        }
+        grad_dot = 0;
+        for (k = 0; k < 3; k++) {
+            cmult_conj((grad_tmp + 2*k), (grad_tmp + 2*k), conj_tmp);
+            grad_dot += conj_tmp[0];
+        }
+        modeg[n] = 0.5*sqrt(grad_dot)/evals[n];
+    }
+}
+
