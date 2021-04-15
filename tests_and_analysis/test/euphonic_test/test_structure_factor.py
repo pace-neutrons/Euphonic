@@ -495,6 +495,9 @@ class TestStructureFactorCalculateDos:
         sf = get_sf(material, sf_json)
         dos = sf.calculate_dos(ebins)
         expected_dos = get_expected_spectrum1d(expected_dos_json)
+        # Temporary solution until test data has been regenerated, results
+        # have changed by a factor of the number of modes
+        dos._y_data = dos._y_data/sf.frequencies.shape[1]
         check_spectrum1d(dos, expected_dos)
 
     def test_calculate_dos_with_0_inv_cm_bin_doesnt_raise_runtime_warn(self):

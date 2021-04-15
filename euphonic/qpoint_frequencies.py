@@ -90,9 +90,9 @@ class QpointFrequencies:
         super(QpointFrequencies, self).__setattr__(name, value)
 
     def calculate_dos(self, dos_bins: Quantity,
-                      mode_widths: Optional[np.ndarray] = None,
-                      mode_widths_min: Quantity = Quantity(0.01, 'meV'),
-                      mode_weights: Optional[np.ndarray] = None) -> Spectrum1D:
+                      mode_widths: Optional[Quantity] = None,
+                      mode_widths_min: Quantity = Quantity(0.01, 'meV')
+                      ) -> Spectrum1D:
         """
         Calculates a density of states
 
@@ -109,17 +109,29 @@ class QpointFrequencies:
             Scalar float Quantity in energy units. Sets a lower limit on
             the mode widths, as mode widths of zero will result in
             infinitely sharp peaks
-        mode_weights
-            Shape (n_qpts, n_branches) float ndarray. The weight of each
-            mode at each q-point. If not provided, the self.weights
-            attribute is used, and each mode is equally weighted for
-            each q-point
 
         Returns
         -------
         dos
             A spectrum containing the energy bins on the x-axis and dos
             on the y-axis
+        """
+        return self._calculate_dos(dos_bins, mode_widths=mode_widths,
+                                   mode_widths_min=mode_widths_min)
+
+    def _calculate_dos(self, dos_bins: Quantity,
+                       mode_widths: Optional[Quantity] = None,
+                       mode_widths_min: Quantity = Quantity(0.01, 'meV'),
+                       mode_weights: Optional[np.ndarray] = None
+                       ) -> Spectrum1D:
+        """
+        Calculates a density of states (same arg defs as calculate_dos)
+
+        The mode_weights is a shape (n_qpts, n_modes) float array,
+        describing the weight of each mode at each q-point.
+        This is useful for calculating PDOS, for total DOS each
+        mode is equally weighted so each mode_weights value will
+        be one, for PDOS it will not.
         """
         freqs = self._frequencies
         n_modes = self.frequencies.shape[1]
@@ -131,9 +143,7 @@ class QpointFrequencies:
         if mode_weights is not None:
             mode_weights_calc = mode_weights
         else:
-            mode_weights_calc = np.repeat(self.weights[:, np.newaxis]/n_modes,
-                                          n_modes,
-                                          axis=1)
+            mode_weights_calc = np.ones(freqs.shape)
         if mode_widths is not None:
             from scipy.stats import norm
             dos_bins_calc = Spectrum1D._bin_edges_to_centres(dos_bins_calc)
@@ -145,7 +155,7 @@ class QpointFrequencies:
                 for m in range(n_modes):
                     pdf = norm.pdf(dos_bins_calc, loc=freqs[q,m],
                                    scale=mode_widths[q,m])
-                    dos += pdf*mode_weights_calc[q, m]
+                    dos += pdf*self.weights[q]*mode_weights_calc[q, m]
         else:
             bin_idx = np.digitize(freqs, dos_bins_calc)
             # Create DOS with extra bin either side, for any points
@@ -153,10 +163,12 @@ class QpointFrequencies:
             dos = np.zeros(len(dos_bins) + 1)
             bin_widths = np.ones(len(dos_bins) + 1) # Use ones to avoid div/0
             bin_widths[1:-1] = np.diff(dos_bins_calc)
-            mode_weights_calc = mode_weights_calc/bin_widths[bin_idx]
+            mode_weights_calc = (self.weights[:, np.newaxis]
+                                 *mode_weights_calc/bin_widths[bin_idx])
             np.add.at(dos, bin_idx, mode_weights_calc)
             dos = dos[1:-1]
 
+        dos = dos/np.sum(self.weights)
         return Spectrum1D(
             dos_bins,
             dos*ureg('dimensionless'))

@@ -427,6 +427,9 @@ class TestQpointFrequenciesCalculateDos:
         qpt_freqs = get_qpt_freqs(material, qpt_freqs_json)
         dos = qpt_freqs.calculate_dos(ebins)
         expected_dos = get_expected_spectrum1d(expected_dos_json)
+        # Temporary solution until test data has been regenerated, results
+        # have changed by a factor of the number of modes
+        dos._y_data = dos._y_data/qpt_freqs.frequencies.shape[1]
         check_spectrum1d(dos, expected_dos)
 
     @pytest.mark.parametrize(
@@ -451,6 +454,9 @@ class TestQpointFrequenciesCalculateDos:
         dos = qpt_freqs.calculate_dos(
             ebins, mode_widths=mode_widths)
         expected_dos = get_expected_spectrum1d(expected_dos_json)
+        # Temporary solution until test data has been regenerated, results
+        # have changed by a factor of the number of modes
+        dos._y_data = dos._y_data/qpt_freqs.frequencies.shape[1]
         check_spectrum1d(dos, expected_dos)
 
     @pytest.mark.parametrize(
