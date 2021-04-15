@@ -516,6 +516,8 @@ class TestQpointPhononModesCalculateDos:
         # Temporary solution until test data has been regenerated, results
         # have changed by a factor of the number of modes
         dos._y_data = dos._y_data/qpt_ph_modes.frequencies.shape[1]
+        # Energy units have also changed
+        dos.y_data_unit = '1/hartree'
         check_spectrum1d(dos, expected_dos)
 
     def test_calculate_dos_with_0_inv_cm_bin_doesnt_raise_runtime_warn(self):
