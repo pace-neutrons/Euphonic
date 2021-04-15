@@ -405,6 +405,9 @@ class TestQpointFrequenciesCalculateDos:
         # Temporary solution until test data has been regenerated, results
         # have changed by a factor of the number of modes
         dos._y_data = dos._y_data/qpt_freqs.frequencies.shape[1]
+        # Energy units have also changed
+        dos.y_data_unit = '1/hartree'
+
         check_spectrum1d(dos, expected_dos)
 
     @pytest.mark.parametrize(
@@ -432,6 +435,8 @@ class TestQpointFrequenciesCalculateDos:
         # Temporary solution until test data has been regenerated, results
         # have changed by a factor of the number of modes
         dos._y_data = dos._y_data/qpt_freqs.frequencies.shape[1]
+        # Energy units have also changed
+        dos.y_data_unit = '1/hartree'
         check_spectrum1d(dos, expected_dos)
 
     @pytest.mark.parametrize(
