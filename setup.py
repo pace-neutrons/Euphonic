@@ -89,10 +89,21 @@ def run_setup(build_c=True):
         cmdclass=cmdclass,
         author='Rebecca Fair',
         author_email='rebecca.fair@stfc.ac.uk',
+        classifiers=[
+            'Development Status :: 4 - Beta',
+            'Environment :: Console',
+            'Intended Audience :: Science/Research',
+            'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',
+            'Programming Language :: C',
+            'Programming Language :: Python :: 3',
+            'Topic :: Scientific/Engineering :: Physics',
+            ],
         description=(
             'Euphonic calculates phonon bandstructures and inelastic '
             'neutron scattering intensities from modelling code output '
             '(e.g. CASTEP)'),
+        license='GPLv3',
+        license_files=('LICENSE',),
         long_description=long_description,
         long_description_content_type='text/x-rst',
         url='https://github.com/pace-neutrons/Euphonic',
