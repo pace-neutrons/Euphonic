@@ -513,6 +513,9 @@ class TestQpointPhononModesCalculateDos:
                 phonon_name=get_phonopy_path(material, qpt_ph_modes_file))
         dos = qpt_ph_modes.calculate_dos(ebins)
         expected_dos = get_expected_spectrum1d(expected_dos_json)
+        # Temporary solution until test data has been regenerated, results
+        # have changed by a factor of the number of modes
+        dos._y_data = dos._y_data/qpt_ph_modes.frequencies.shape[1]
         check_spectrum1d(dos, expected_dos)
 
     def test_calculate_dos_with_0_inv_cm_bin_doesnt_raise_runtime_warn(self):

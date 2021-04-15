@@ -391,13 +391,14 @@ class QpointPhononModes(QpointFrequencies):
         return DebyeWaller(self.crystal, dw, temperature)
 
     def calculate_pdos(self, dos_bins: Quantity,
-                       mode_widths: Optional[Quantity] = None
+                       mode_widths: Optional[Quantity] = None,
+                       mode_widths_min: Quantity = Quantity(0.01, 'meV'),
                        ) -> Spectrum1DCollection:
+
         evec_weights = np.real(np.einsum('ijkl,ijkl->ijk',
                                          self.eigenvectors,
                                          np.conj(self.eigenvectors)))
         n_modes = self._frequencies.shape[1]
-        qpt_weights = self.weights[:, np.newaxis]/n_modes
 
         doses = []
         total_dos = self.calculate_dos(dos_bins, mode_widths=mode_widths)
@@ -409,10 +410,11 @@ class QpointPhononModes(QpointFrequencies):
         species = self.crystal.atom_type[np.sort(idx)]
         for spec in species:
             spec_idx = np.where(self.crystal.atom_type == spec)[0]
-            species_weights = np.sum(evec_weights[:, :, spec_idx], axis=-1)
-            weights = species_weights*qpt_weights
-            dos = self.calculate_dos(dos_bins, mode_widths=mode_widths,
-                                     mode_weights=weights)
+            species_weights = np.sum(
+                evec_weights[:, :, spec_idx], axis=-1)
+            dos = self._calculate_dos(dos_bins, mode_widths=mode_widths,
+                                      mode_widths_min=mode_widths_min,
+                                      mode_weights=species_weights)
             dos.metadata['label'] = spec
             doses.append(dos)
         return Spectrum1DCollection.from_spectra(doses)
