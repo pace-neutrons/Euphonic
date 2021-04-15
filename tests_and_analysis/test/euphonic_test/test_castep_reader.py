@@ -9,6 +9,7 @@ from euphonic.util import direction_changed, mp_grid, get_qpoint_labels
 from euphonic.readers.castep import read_phonon_dos_data
 from tests_and_analysis.test.utils import get_data_path, get_castep_path
 from .test_crystal import ExpectedCrystal, check_crystal
+from euphonic import ureg
 
 
 def get_filepath(filename):
@@ -42,4 +43,10 @@ class TestReadPhononDosData:
                     check_dict(dct[exp_key], exp_val)
                 else:
                     assert dct[exp_key] == exp_val
+        # Temporary solution until test data has been regenerated
+        # units have changed
+        expected_dos_data['dos_unit'] = 'meV'
+        dos_conv = (1*ureg('1/cm').to('meV')).magnitude
+        for key, value in expected_dos_data['dos'].items():
+            expected_dos_data['dos'][key] = [x/dos_conv for x in value]
         check_dict(dos_data, expected_dos_data)

@@ -404,7 +404,7 @@ class Spectrum1D(Spectrum):
         if element is None:
             element = 'Total'
         return Spectrum1D(data['dos_bins']*ureg(data['dos_bins_unit']),
-                          data['dos'][element]*ureg('dimensionless'),
+                          data['dos'][element]*ureg(data['dos_unit']),
                           metadata={'label': element})
 
     def broaden(self: S1D, x_width: Quantity, shape: str = 'gauss') -> S1D:
@@ -668,7 +668,7 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
         y_data = np.stack([item[1] for item in items])
         return Spectrum1DCollection(
             data['dos_bins']*ureg(data['dos_bins_unit']),
-            y_data*ureg('dimensionless'),
+            y_data*ureg(data['dos_unit']),
             metadata=metadata)
 
     def broaden(self, x_width: Quantity, shape: str = 'gauss') -> SC:

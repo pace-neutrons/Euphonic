@@ -169,9 +169,12 @@ class QpointFrequencies:
             dos = dos[1:-1]
 
         dos = dos/np.sum(self.weights)
+        # Avoid issues in converting DOS when energy is in cm^-1
+        # Pint allows hartree -> cm^-1 but not 1/hartree -> cm
+        conv = 1*ureg('hartree').to(dos_bins.units)
         return Spectrum1D(
             dos_bins,
-            dos*ureg('dimensionless'))
+            dos/conv)
 
     def get_dispersion(self) -> Spectrum1DCollection:
         """

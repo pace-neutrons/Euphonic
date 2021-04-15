@@ -165,6 +165,7 @@ class TestSpectrum1DCreation:
         expected_spec1d = get_expected_spectrum1d(json_file)
         spec1d = Spectrum1D.from_castep_phonon_dos(
             get_castep_path(material, phonon_dos_file), **kwargs)
+        spec1d.y_data_unit = 'cm'
         return spec1d, expected_spec1d
 
     @pytest.mark.parametrize(('spec1d_creator'), [
