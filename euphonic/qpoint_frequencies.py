@@ -111,8 +111,9 @@ class QpointFrequencies:
             A spectrum containing the energy bins on the x-axis and dos
             on the y-axis
         """
-        return self._calculate_dos(dos_bins, mode_widths=mode_widths,
-                                   mode_widths_min=mode_widths_min)
+        dos = self._calculate_dos(dos_bins, mode_widths=mode_widths,
+                                  mode_widths_min=mode_widths_min)
+        return Spectrum1D(dos_bins, dos)
 
     def _calculate_dos(self, dos_bins: Quantity,
                        mode_widths: Optional[Quantity] = None,
@@ -167,9 +168,7 @@ class QpointFrequencies:
         # Avoid issues in converting DOS when energy is in cm^-1
         # Pint allows hartree -> cm^-1 but not 1/hartree -> cm
         conv = 1*ureg('hartree').to(dos_bins.units)
-        return Spectrum1D(
-            dos_bins,
-            dos/conv)
+        return dos/conv
 
     def get_dispersion(self) -> Spectrum1DCollection:
         """
