@@ -390,34 +390,101 @@ class QpointPhononModes(QpointFrequencies):
         dw = dw*ureg('bohr**2').to(self.crystal.cell_vectors_unit + '**2')
         return DebyeWaller(self.crystal, dw, temperature)
 
-    def calculate_pdos(self, dos_bins: Quantity,
-                       mode_widths: Optional[Quantity] = None,
-                       mode_widths_min: Quantity = Quantity(0.01, 'meV'),
-                       ) -> Spectrum1DCollection:
+    def calculate_pdos(
+            self, dos_bins: Quantity,
+            mode_widths: Optional[Quantity] = None,
+            mode_widths_min: Quantity = Quantity(0.01, 'meV'),
+            weighting: Optional[str] = None,
+            cross_sections: Union[str, Dict[str, Quantity]] = 'BlueBook',
+            ) -> Spectrum1DCollection:
+        """
+        Calculates a density of states
+
+        Parameters
+        ----------
+        dos_bins
+            Shape (n_e_bins + 1,) float Quantity. The energy bin edges
+            to use for calculating the DOS
+        mode_widths
+            Shape (n_qpts, n_branches) float Quantity in energy units.
+            The broadening width for each mode at each q-point, for
+            adaptive broadening
+        mode_widths_min
+            Scalar float Quantity in energy units. Sets a lower limit on
+            the mode widths, as mode widths of zero will result in
+            infinitely sharp peaks
+        weighting
+            One of {'coherent', 'incoherent'}. If provided, produces a
+            neutron-weighted DOS, weighted by coherent/incoherent
+            neutron scattering cross-sections
+        cross_sections
+            Dataset of cross-sections for each element in the structure,
+            it can be a string specifying a dataset, or a dictionary
+            explicitly giving the cross-sections for each element.
+
+            If cross_sections is a string, it is passed to the ``collection``
+            argument of :obj:`euphonic.util.get_reference_data()`. This
+            collection must contain the 'coherent_cross_section' or
+            'incoherent_cross_section' physical property, depending on
+            the ``weighting`` argument. If ``weighting`` is None, this
+            string argument is not used.
+
+            If cross sections is a dictionary, the ``weighting`` argument is
+            ignored, and these cross-sections are used directly to calculate
+            the neutron-weighted DOS. It must contain a key for each element
+            in the structure, and each value must be a Quantity in the
+            appropriate units, e.g::
+
+                {'La': 8.0*ureg('barn'), 'Zr': 9.5*ureg('barn')}
+
+        Returns
+        -------
+        dos
+            A collection of spectra, with the energy bins on the x-axis and
+            total DOS and per-element PDOS on the y-axis
+        """
+        weighting_opts = [None, 'coherent', 'incoherent']
+        if not weighting in weighting_opts:
+            raise ValueError(f'Invalid value for weighting, got '
+                             f'{weighting}, should be one of '
+                             f'{weighting_opts}')
+        cross_sections_data = None
+        if isinstance(cross_sections, str) and weighting is not None:
+            cross_sections_data = get_reference_data(
+                collection=cross_sections,
+                physical_property=f'{weighting}_cross_section')
+        elif isinstance(cross_sections, dict):
+            cross_sections_data = cross_sections
 
         evec_weights = np.real(np.einsum('ijkl,ijkl->ijk',
                                          self.eigenvectors,
                                          np.conj(self.eigenvectors)))
         n_modes = self._frequencies.shape[1]
 
-        doses = []
-        total_dos = self.calculate_dos(dos_bins, mode_widths=mode_widths)
-        total_dos.metadata['label'] = 'Total'
-        doses.append(total_dos)
-
         _, idx = np.unique(self.crystal.atom_type, return_index=True)
-        # Retain species order for usability
+        # Retain species order
         species = self.crystal.atom_type[np.sort(idx)]
-        for spec in species:
+        for i, spec in enumerate(species):
             spec_idx = np.where(self.crystal.atom_type == spec)[0]
             species_weights = np.sum(
                 evec_weights[:, :, spec_idx], axis=-1)
             dos = self._calculate_dos(dos_bins, mode_widths=mode_widths,
                                       mode_widths_min=mode_widths_min,
                                       mode_weights=species_weights)
-            dos.metadata['label'] = spec
-            doses.append(dos)
-        return Spectrum1DCollection.from_spectra(doses)
+            if cross_sections_data:
+                neutron_weighting = (cross_sections_data[spec]
+                                     /self.crystal.atom_mass[spec_idx[0]])
+                dos = dos*neutron_weighting
+            if i == 0:
+                all_dos_y_data = np.zeros((
+                    len(species) + 1, len(dos_bins) - 1))*dos.units
+            all_dos_y_data[i + 1] = dos
+        # Now calculate total dos
+        all_dos_y_data[0] = np.sum(all_dos_y_data[1:], axis=0)
+        metadata = {'line_data':
+            [{'label': x} for x in ['Total'] + species.tolist()]}
+        return Spectrum1DCollection(
+            dos_bins, all_dos_y_data, metadata=metadata)
 
     def to_dict(self) -> Dict[str, Any]:
         """
