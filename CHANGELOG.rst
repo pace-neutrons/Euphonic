@@ -1,6 +1,14 @@
 `Unreleased <https://github.com/pace-neutrons/Euphonic/compare/v0.5.0...HEAD>`_
 ----------
 
+- Improvements:
+
+  - Added ``frequencies_min`` argument to ``calculate_debye_waller`` to
+    exclude very small frequencies. This will also exclude negative
+    frequencies. This improves on the previous behaviour which only excluded
+    gamma-point acoustic modes, so would miss small/negative frequencies
+    elsewhere.
+
 `v0.5.0 <https://github.com/pace-neutrons/Euphonic/compare/v0.4.0...v0.5.0>`_
 ----------
 

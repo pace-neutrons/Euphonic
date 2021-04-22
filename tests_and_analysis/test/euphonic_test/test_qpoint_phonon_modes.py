@@ -453,20 +453,23 @@ class TestQpointPhononModesReorderFrequencies:
 class TestQpointPhononModesCalculateDebyeWaller:
 
     @pytest.mark.parametrize(
-        'material, qpt_ph_modes_file, expected_dw_json, temperature', [
+        'material, qpt_ph_modes_file, expected_dw_json, temperature, kwargs', [
             ('quartz', 'quartz-666-grid.phonon',
-             'quartz_666_0K_debye_waller.json', 0),
+             'quartz_666_0K_debye_waller.json', 0, {}),
             ('quartz', 'quartz-666-grid.phonon',
-             'quartz_666_300K_debye_waller.json', 300),
+             'quartz_666_0K_debye_waller_10mev_lim.json', 0,
+             {'frequency_min': 10*ureg('meV')}),
+            ('quartz', 'quartz-666-grid.phonon',
+             'quartz_666_300K_debye_waller.json', 300, {}),
             ('quartz', 'quartz-777-grid.phonon',
-             'quartz_777_300K_debye_waller.json', 300),
+             'quartz_777_300K_debye_waller.json', 300, {}),
             ('Si2-sc-skew', 'Si2-sc-skew-666-grid.phonon',
-             'Si2-sc-skew_666_300K_debye_waller.json', 300),
+             'Si2-sc-skew_666_300K_debye_waller.json', 300, {}),
             ('CaHgO2', 'CaHgO2-666-grid.yaml',
-             'CaHgO2_666_300K_debye_waller.json', 300)
+             'CaHgO2_666_300K_debye_waller.json', 300, {})
         ])
     def test_calculate_debye_waller(self, material, qpt_ph_modes_file,
-                                    expected_dw_json, temperature):
+                                    expected_dw_json, temperature, kwargs):
         if qpt_ph_modes_file.endswith('.phonon'):
             qpt_ph_modes = QpointPhononModes.from_castep(
                 get_castep_path(material, qpt_ph_modes_file))
@@ -474,7 +477,8 @@ class TestQpointPhononModesCalculateDebyeWaller:
             qpt_ph_modes = QpointPhononModes.from_phonopy(
                 phonon_name=get_phonopy_path(material, qpt_ph_modes_file))
 
-        dw = qpt_ph_modes.calculate_debye_waller(temperature*ureg('K'))
+        dw = qpt_ph_modes.calculate_debye_waller(
+            temperature*ureg('K'), **kwargs)
         expected_dw = get_expected_dw(material, expected_dw_json)
         check_debye_waller(dw, expected_dw)
 

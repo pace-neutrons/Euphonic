@@ -154,7 +154,8 @@ class QpointPhononModes(QpointFrequencies):
             evec_tmp = np.copy(self.eigenvectors[i, mode_map[i]])
             self.eigenvectors[i] = evec_tmp
 
-    def calculate_structure_factor(self,
+    def calculate_structure_factor(
+        self,
         scattering_lengths: Union[str, Dict[str, Quantity]] = 'Sears1992',
         dw: Optional[DebyeWaller] = None,
         ) -> StructureFactor:
@@ -270,7 +271,9 @@ class QpointPhononModes(QpointFrequencies):
             sf*ureg('bohr**2').to(self.crystal.cell_vectors.units**2),
             temperature=temperature)
 
-    def calculate_debye_waller(self, temperature: Quantity) -> DebyeWaller:
+    def calculate_debye_waller(
+        self, temperature: Quantity,
+        frequency_min: Quantity = Quantity(0.01, 'meV')) -> DebyeWaller:
         """
         Calculate the 3 x 3 Debye-Waller exponent for each atom over the
         q-points contained in this object
@@ -279,7 +282,12 @@ class QpointPhononModes(QpointFrequencies):
         ----------
         temperature
             Scalar float Quantity. The temperature to use in the
-            Debye-Waller calculation.
+            Debye-Waller calculation
+        frequency_min
+            Scalar float Quantity in energy units. Excludes frequencies below
+            this limit from the calculation, as the calculation contains a
+            1/frequency factor which would result in infinite values. This
+            also allows negative frequencies to be excluded.
 
         Returns
         -------
@@ -326,6 +334,7 @@ class QpointPhononModes(QpointFrequencies):
         n_atoms = self.crystal.n_atoms
         atom_mass = self.crystal._atom_mass
         freqs = self._frequencies
+        freq_min = frequency_min.to('hartree').magnitude
         qpts = self.qpts
         evecs = self.eigenvectors
         weights = self.weights
@@ -333,12 +342,9 @@ class QpointPhononModes(QpointFrequencies):
 
         mass_term = 1/(4*atom_mass)
 
-        # Determine q-points near the gamma point and mask out their
-        # acoustic modes due to the potentially large 1/frequency factor
-        TOL = 1e-8
-        is_small_q = np.sum(np.square(qpts), axis=1) < TOL
+        # Mask out frequencies below frequency_min
         freq_mask = np.ones(freqs.shape)
-        freq_mask[is_small_q, :3] = 0
+        freq_mask[freqs < freq_min] = 0
 
         if temp > 0:
             x = freqs/(2*kB*temp)
