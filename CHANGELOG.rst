@@ -9,6 +9,11 @@
     gamma-point acoustic modes, so would miss small/negative frequencies
     elsewhere.
 
+- Changes:
+
+  - Fixed formula in ``calculate_debye_waller`` docstring to match actual
+    implementation: moved ``1/2`` factor and added explicit q-point weights
+
 `v0.5.0 <https://github.com/pace-neutrons/Euphonic/compare/v0.4.0...v0.5.0>`_
 ----------
 

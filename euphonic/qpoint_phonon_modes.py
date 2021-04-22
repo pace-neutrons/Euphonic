@@ -303,7 +303,7 @@ class QpointPhononModes(QpointFrequencies):
 
         .. math::
 
-          e^{-W} = e^{-\\sum_{\\alpha\\beta}\\frac{W^{\\kappa}_{\\alpha\\beta}Q_{\\alpha}Q_{\\beta}}{2}}
+          e^{-W} = e^{-\\sum_{\\alpha\\beta}{W^{\\kappa}_{\\alpha\\beta}Q_{\\alpha}Q_{\\beta}}}
 
         The Debye-Waller exponent is defined as
         :math:`W^{\\kappa}_{\\alpha\\beta}` and is independent of Q, so
@@ -313,8 +313,8 @@ class QpointPhononModes(QpointFrequencies):
         .. math::
 
           W^{\\kappa}_{\\alpha\\beta} =
-          \\frac{1}{2N_{q}M_{\\kappa}}
-          \\sum_{BZ}\\frac{\\epsilon_{q\\nu\\kappa\\alpha}\\epsilon^{*}_{q\\nu\\kappa\\beta}}
+          \\frac{1}{4M_{\\kappa}\\sum_{q}{weight_q}}
+          \\sum_{q\\nu}weight_q\\frac{\\epsilon_{q\\nu\\kappa\\alpha}\\epsilon^{*}_{q\\nu\\kappa\\beta}}
           {\\omega_{q\\nu}}
           coth(\\frac{\\omega_{q\\nu}}{2k_BT})
 
@@ -322,9 +322,9 @@ class QpointPhononModes(QpointFrequencies):
         over atoms, :math:`\\alpha,\\beta` run over the Cartesian
         directions, :math:`M_{\\kappa}` is the atom mass,
         :math:`\\epsilon_{q\\nu\\kappa\\alpha}` are the eigenvectors,
-        :math:`\\omega_{q\\nu}` are the frequencies, :math:`\\sum_{BZ}`
-        is a sum over the 1st Brillouin Zone, and :math:`N_q` is the
-        number of q-point samples in the BZ.
+        :math:`\\omega_{q\\nu}` are the frequencies, and :math:`weight_q` is
+        the per q-point weight. The q-points should be distributed over the
+        1st Brillouin Zone.
 
         .. [2] G.L. Squires, Introduction to the Theory of Thermal Neutron Scattering, Dover Publications, New York, 1996, 34-37
         """
