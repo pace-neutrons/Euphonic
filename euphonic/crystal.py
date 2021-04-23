@@ -1,6 +1,6 @@
 import inspect
 from math import ceil
-from typing import List, Tuple, TypeVar
+from typing import List, Tuple, TypeVar, Dict, Any
 
 import numpy as np
 
@@ -19,34 +19,40 @@ class Crystal:
 
     Attributes
     ----------
-    cell_vectors : (3, 3) float Quantity
-        Unit cell vectors
-    n_atoms : int
+    cell_vectors
+        Shape (3, 3) float Quantity in length units. Cartesian unit
+        cell vectors. cell_vectors[0] = a, cell_vectors[:, 0] = x etc.
+    n_atoms
         Number of atoms in the unit cell
-    atom_r : (n_atoms, 3) float ndarray
-        The fractional position of each atom within the unit cell
-    atom_type : (n_atoms,) string ndarray
-        The chemical symbols of each atom in the unit cell. Atoms are in
-        the same order as in atom_r
-    atom_mass : (n_atoms,) float Quantity
-        The mass of each atom in the unit cell
+    atom_r
+        Shape (n_atoms, 3) float ndarray. The fractional position of
+        each atom within the unit cell
+    atom_type
+        Shape (n_atoms,) string ndarray. The chemical symbols of each
+        atom in the unit cell
+    atom_mass
+        Shape (n_atoms,) float Quantity in mass units. The mass of each
+        atom in the unit cell
     """
 
-    def __init__(self, cell_vectors, atom_r, atom_type, atom_mass):
+    def __init__(self, cell_vectors: Quantity, atom_r: np.ndarray,
+                 atom_type: np.ndarray, atom_mass: Quantity) -> None:
         """
         Parameters
         ----------
-        cell_vectors : (3, 3) float Quantity
-            Cartesian unit cell vectors. cell_vectors[0] = a,
+        cell_vectors
+            Shape (3, 3) float Quantity in length units. Cartesian unit
+            cell vectors. cell_vectors[0] = a,
             cell_vectors[:, 0] = x etc.
-        atom_r : (n_atoms, 3) float ndarray
-            The fractional position of each atom within the unit cell
-        atom_type : (n_atoms,) string ndarray
-            The chemical symbols of each atom in the unit cell. Atoms
-            are in the same order as in atom_r
-        atom_mass : (n_atoms,) float Quantity
-            The mass of each atom in the unit cell, in the same order as
-            atom_r
+        atom_r
+            Shape (n_atoms, 3) float ndarray. The fractional position
+            of each atom within the unit cell
+        atom_type
+            Shape (n_atoms,) string ndarray. The chemical symbols of
+            each atom in the unit cell
+        atom_mass
+            Shape (n_atoms,) float Quantity in mass units. The mass
+            of each atom in the unit cell
         """
         n_atoms = len(atom_r)
         # Allow empty structure information, but convert to correct
@@ -87,13 +93,15 @@ class Crystal:
                                ['cell_vectors_unit', 'atom_mass_unit'])
         super(Crystal, self).__setattr__(name, value)
 
-    def reciprocal_cell(self):
+    def reciprocal_cell(self) -> Quantity:
         """
         Calculates the reciprocal lattice vectors
 
         Returns
         -------
-        recip : (3, 3) float Quantity
+        recip
+            Shape (3, 3) float Quantity in 1/length units, the
+            reciprocal lattice vectors
         """
         cv = self._cell_vectors
 
@@ -109,7 +117,15 @@ class Crystal:
 
         return recip.to(1/ureg(self.cell_vectors_unit))
 
-    def cell_volume(self):
+    def cell_volume(self) -> Quantity:
+        """
+        Calculates the cell volume
+
+        Returns
+        -------
+        volume
+            Scalar float quantity in length**3 units. The cell volume
+        """
         vol = self._cell_volume()*ureg.bohr**3
         return vol.to(ureg(self.cell_vectors_unit)**3)
 
@@ -117,18 +133,25 @@ class Crystal:
         cv = self._cell_vectors
         return np.dot(cv[0], np.cross(cv[1], cv[2]))
 
-    def get_mp_grid_spec(self, spacing: Quantity = 0.1 * ureg('1/angstrom')
+    def get_mp_grid_spec(self,
+                         spacing: Quantity = 0.1 * ureg('1/angstrom')
                          ) -> Tuple[int, int, int]:
-        """Get suggested divisions for Monkhorst-Pack grid
+        """
+        Get suggested divisions for Monkhorst-Pack grid
 
         Determine a mesh for even Monkhorst-Pack sampling of the reciprocal
-        cell.
+        cell
 
-        Args:
-            spacing: Maximum reciprocal-space distance between q-point samples
+        Parameters
+        ----------
+        spacing
+            Scalar float quantity in 1/length units. Maximum
+            reciprocal-space distance between q-point samples
 
-        Returns:
-            number of divisions for each reciprocal lattice vector.
+        Returns
+        -------
+        grid_spec
+            The number of divisions for each reciprocal lattice vector
         """
 
         recip_length_unit = spacing.units
@@ -146,7 +169,7 @@ class Crystal:
 
         Returns
         -------
-        cell : tuple of lists
+        cell
             cell = (lattice, positions, numbers), where lattice is the
             lattice vectors, positions are the fractional atomic
             positions, and numbers are integers distinguishing the
@@ -158,7 +181,7 @@ class Crystal:
                 unique_atoms.tolist())
         return cell
 
-    def to_dict(self):
+    def to_dict(self) -> Dict[str, Any]:
         """
         Convert to a dictionary. See Crystal.from_dict for details on
         keys/values
@@ -171,26 +194,26 @@ class Crystal:
                                    'atom_type', 'atom_mass'])
         return dout
 
-    def to_json_file(self, filename):
+    def to_json_file(self, filename: str):
         """
         Write to a JSON file. JSON fields are equivalent to
         Crystal.from_dict keys
 
         Parameters
         ----------
-        filename : str
+        filename
             Name of the JSON file to write to
         """
         _obj_to_json_file(self, filename)
 
     @classmethod
-    def from_dict(cls, d):
+    def from_dict(cls: CR, d: Dict[str, Any]) -> CR:
         """
         Convert a dictionary to a Crystal object
 
         Parameters
         ----------
-        d : dict
+        d
             A dictionary with the following keys/values:
 
             - 'cell_vectors': (3, 3) float ndarray
@@ -202,25 +225,25 @@ class Crystal:
 
         Returns
         -------
-        Crystal
+        crystal
         """
         d = _process_dict(d, quantities=['cell_vectors', 'atom_mass'])
         return cls(d['cell_vectors'], d['atom_r'], d['atom_type'],
                    d['atom_mass'])
 
     @classmethod
-    def from_json_file(cls, filename):
+    def from_json_file(cls: CR, filename: str) -> CR:
         """
         Read from a JSON file. See Crystal.from_dict for required fields
 
         Parameters
         ----------
-        filename : str
+        filename
             The file to read from
 
         Returns
         -------
-        Crystal
+        crystal
         """
         return _obj_from_json_file(cls, filename)
 
@@ -233,13 +256,14 @@ class Crystal:
 
         Parameters
         ----------
-        cell_vectors : (3, 3) float Quantity
-            Cartesian unit cell vectors. cell_vectors[0] = a,
+        cell_vectors
+            Shape (3, 3) float Quantity in length units. Cartesian
+            unit cell vectors. cell_vectors[0] = a,
             cell_vectors[:, 0] = x etc.
 
         Returns
         -------
-        Crystal
+        crystal
         """
         return cls(cell_vectors,
                    np.array([]), np.array([]),
