@@ -379,3 +379,16 @@ class TestCrystalMethods:
          (3, 3, 3))])
     def test_get_mp_grid_spec(self, crystal, kwargs, expected):
         assert crystal.get_mp_grid_spec(**kwargs) == expected
+
+    @pytest.mark.parametrize('crystal, expected_spec_idx', [
+        (get_crystal('quartz'),
+         {'O': np.arange(6), 'Si': np.arange(6, 9)}),
+        (get_crystal('LZO'),
+         {'O': np.arange(14), 'Zr': np.arange(14, 18),
+          'La': np.arange(18, 22)})
+        ])
+    def test_get_species_idx(self, crystal, expected_spec_idx):
+        spec_idx = crystal.get_species_idx()
+        assert spec_idx.keys() == expected_spec_idx.keys()
+        for key in expected_spec_idx.keys():
+            npt.assert_equal(spec_idx[key], expected_spec_idx[key])

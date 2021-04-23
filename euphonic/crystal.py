@@ -181,6 +181,23 @@ class Crystal:
                 unique_atoms.tolist())
         return cell
 
+    def get_species_idx(self) -> Dict[str, np.ndarray]:
+        """
+        Returns a dictionary of each species and their indices
+
+        Returns
+        -------
+        species_idx
+            A dictionary containing each unique species symbol
+            as the keys, and their indices as the values
+        """
+        _, idx = np.unique(self.atom_type, return_index=True)
+        # Retain species order
+        species = self.atom_type[np.sort(idx)]
+        spec_idx = {spec: np.where(self.atom_type == spec)[0]
+                    for spec in species}
+        return spec_idx
+
     def to_dict(self) -> Dict[str, Any]:
         """
         Convert to a dictionary. See Crystal.from_dict for details on
