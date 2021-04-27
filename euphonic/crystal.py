@@ -3,6 +3,7 @@ from math import ceil
 from typing import List, Tuple, TypeVar, Dict, Any
 
 import numpy as np
+from spglib import get_symmetry
 
 from euphonic.validate import _check_constructor_inputs, _check_unit_conversion
 from euphonic.io import (_obj_to_json_file, _obj_from_json_file,
@@ -197,6 +198,80 @@ class Crystal:
         spec_idx = {spec: np.where(self.atom_type == spec)[0]
                     for spec in species}
         return spec_idx
+
+    def _get_symmetry_equivalent_atoms(
+            self, tol: Quantity = Quantity(1e-5, 'angstrom')
+            ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+        """
+        Returns the rotational and translational symmetry operations
+        as obtained by spglib.get_symmetry, and also the equivalent
+        atoms that each atom gets mapped onto for each symmetry
+        operation
+
+        Parameters
+        ----------
+        tol
+           Scalar float Quantity in length units. The distance
+           tolerance, if the distance between atoms is less than
+           this, they are considered to be equivalent. This is
+           also passed to spglib.get_symmetry as symprec
+
+        Returns
+        -------
+        rotations
+           Shape (n_symmetry_ops, 3, 3) integer np.ndarray. The
+           rotational symmetry matrices as returned by
+           spglib.get_symmetry
+        translations
+           Shape (n_symmetry_ops, 3) float np.ndarray. The
+           rotational symmetry matrices as returned by
+           spglib.get_symmetry
+        equivalent_atoms
+           Shape (n_symmetry_ops, n_atoms) integer np.ndarray.
+           The equivalent atoms for each symmetry operation. e.g.
+           equivalent_atoms[s, i] = j means symmetry operation s
+           maps atom i to atom j
+
+        """
+        tol_calc = tol.to('bohr').magnitude
+        symprec = tol.to(self.cell_vectors_unit).magnitude
+        symm = get_symmetry(self.to_spglib_cell(), symprec=symprec)
+        if symm is None:
+            raise RuntimeError(f'spglib.get_symmetry returned None with '
+                               f'symprec={symprec}. Try increasing tol')
+        n_ops = len(symm['rotations'])
+        equiv_atoms = np.full((n_ops, self.n_atoms), -1, dtype=np.int32)
+        atom_r_symm = (np.einsum('ijk,lk->ilj', symm['rotations'], self.atom_r)
+                       + symm['translations'][:, np.newaxis, :])
+        atom_r_symm -= np.floor(atom_r_symm + 0.5)
+
+        species_idx = self.get_species_idx()
+        for spec, idx in species_idx.items():
+            for i in idx:
+                atom_r_symm_i = atom_r_symm[:, i, :]
+                # Difference between symmetry-transformed atom i and all
+                # other atoms of that species for each symmetry operation
+                diff_frac = (atom_r_symm_i[:, np.newaxis, :]
+                             - self.atom_r[np.newaxis, idx, :])
+                diff_frac -= np.floor(diff_frac + 0.5)
+                diff_cart = np.einsum('ijk,kl->ijl', diff_frac, self._cell_vectors)
+                diff_r = np.linalg.norm(diff_cart, axis=2)
+                equiv_idx = np.where(diff_r < tol_calc)
+                # There should be one matching atom per symm op
+                if not np.array_equal(equiv_idx[0], np.arange(n_ops)):
+                    for op_idx, diff_r_op in enumerate(diff_r):
+                        equiv_idx_op = np.where(diff_r_op < tol_calc)[0]
+                        err_info = (f'for {spec} atom at {self.atom_r[i]} for '
+                                    f'symmetry op {op_idx}. Rotation '
+                                    f'{symm["rotations"][op_idx]} translation '
+                                    f'{symm["translations"][op_idx]}')
+                        if len(equiv_idx_op) == 0:
+                            raise RuntimeError(f'No equivalent atom found {err_info}')
+                        elif len(equiv_idx_op) > 1:
+                            raise RuntimeError(f'Multiple equivalent atoms found {err_info}')
+                equiv_atoms[:, i] = idx[equiv_idx[1]]
+
+        return symm['rotations'], symm['translations'], equiv_atoms
 
     def to_dict(self) -> Dict[str, Any]:
         """
