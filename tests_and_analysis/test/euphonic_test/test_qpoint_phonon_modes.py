@@ -455,18 +455,28 @@ class TestQpointPhononModesCalculateDebyeWaller:
     @pytest.mark.parametrize(
         'material, qpt_ph_modes_file, expected_dw_json, temperature, kwargs', [
             ('quartz', 'quartz-666-grid.phonon',
-             'quartz_666_0K_debye_waller.json', 0, {}),
+                'quartz_666_0K_debye_waller.json', 0, {'symmetrise': False}),
             ('quartz', 'quartz-666-grid.phonon',
              'quartz_666_0K_debye_waller_10mev_lim.json', 0,
-             {'frequency_min': 10*ureg('meV')}),
+             {'frequency_min': 10*ureg('meV'), 'symmetrise': False}),
             ('quartz', 'quartz-666-grid.phonon',
-             'quartz_666_300K_debye_waller.json', 300, {}),
+                'quartz_666_300K_debye_waller.json', 300,
+                {'symmetrise': False}),
+            ('quartz', 'quartz-666-grid.phonon',
+                'quartz_666_300K_symm_debye_waller.json', 300,
+                {'symmetrise': True}),
             ('quartz', 'quartz-777-grid.phonon',
-             'quartz_777_300K_debye_waller.json', 300, {}),
+                'quartz_777_300K_debye_waller.json', 300,
+                {'symmetrise': False}),
             ('Si2-sc-skew', 'Si2-sc-skew-666-grid.phonon',
-             'Si2-sc-skew_666_300K_debye_waller.json', 300, {}),
+                'Si2-sc-skew_666_300K_debye_waller.json', 300,
+                {'symmetrise': False}),
+            ('Si2-sc-skew', 'Si2-sc-skew-666-grid.phonon',
+                'Si2-sc-skew_666_300K_symm_debye_waller.json', 300,
+                {'symmetrise': True}),
             ('CaHgO2', 'CaHgO2-666-grid.yaml',
-             'CaHgO2_666_300K_debye_waller.json', 300, {})
+                'CaHgO2_666_300K_debye_waller.json', 300,
+                {'symmetrise': False})
         ])
     def test_calculate_debye_waller(self, material, qpt_ph_modes_file,
                                     expected_dw_json, temperature, kwargs):
