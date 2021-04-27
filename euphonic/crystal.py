@@ -199,7 +199,7 @@ class Crystal:
                     for spec in species}
         return spec_idx
 
-    def _get_symmetry_equivalent_atoms(
+    def get_symmetry_equivalent_atoms(
             self, tol: Quantity = Quantity(1e-5, 'angstrom')
             ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
         """
@@ -235,6 +235,9 @@ class Crystal:
         """
         tol_calc = tol.to('bohr').magnitude
         symprec = tol.to(self.cell_vectors_unit).magnitude
+        # Sometimes if symprec is very low, even the identity
+        # symmetry op won't be found, and None will be returned
+        # For some reason this can't always be reproduced
         symm = get_symmetry(self.to_spglib_cell(), symprec=symprec)
         if symm is None:
             raise RuntimeError(f'spglib.get_symmetry returned None with '

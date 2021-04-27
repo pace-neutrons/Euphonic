@@ -392,3 +392,19 @@ class TestCrystalMethods:
         assert spec_idx.keys() == expected_spec_idx.keys()
         for key in expected_spec_idx.keys():
             npt.assert_equal(spec_idx[key], expected_spec_idx[key])
+
+    @pytest.mark.parametrize('crystal, kwargs, expected_res_file', [
+        (get_crystal('quartz'), {}, 'quartz_equiv_atoms.json'),
+        (get_crystal('LZO'), {}, 'lzo_equiv_atoms.json'),
+        (get_crystal('LZO'), {'tol': 1e-12*ureg('angstrom')},
+         'lzo_equiv_atoms_tol_1e12_ang.json'),
+        ])
+    def test_get_symmetry_equivalent_atoms(
+            self, crystal, kwargs, expected_res_file):
+        rot, trans, equiv_atoms = crystal.get_symmetry_equivalent_atoms(
+            **kwargs)
+        with open(get_filepath(expected_res_file), 'r') as fp:
+            res = json.load(fp)
+        npt.assert_equal(rot, np.array(res['rotations']))
+        npt.assert_allclose(trans, np.array(res['translations']))
+        npt.assert_equal(equiv_atoms, np.array(res['equivalent_atoms']))
