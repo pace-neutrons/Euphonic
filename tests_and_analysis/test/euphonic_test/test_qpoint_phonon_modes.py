@@ -490,7 +490,7 @@ class TestQpointPhononModesCalculateDebyeWaller:
         dw = qpt_ph_modes.calculate_debye_waller(
             temperature*ureg('K'), **kwargs)
         expected_dw = get_expected_dw(material, expected_dw_json)
-        check_debye_waller(dw, expected_dw)
+        check_debye_waller(dw, expected_dw, dw_atol=1e-12)
 
 
 @pytest.mark.unit
