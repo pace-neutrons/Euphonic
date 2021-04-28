@@ -405,6 +405,26 @@ class TestCrystalMethods:
             **kwargs)
         with open(get_filepath(expected_res_file), 'r') as fp:
             res = json.load(fp)
-        npt.assert_equal(rot, np.array(res['rotations']))
-        npt.assert_allclose(trans, np.array(res['translations']))
-        npt.assert_equal(equiv_atoms, np.array(res['equivalent_atoms']))
+        exp_rot = np.array(res['rotations'])
+        exp_trans = np.array(res['translations'])
+        exp_equiv_atoms = np.array(res['equivalent_atoms'])
+        # In older versions of Numpy/spglib, sometimes the operations
+        # are in a different order
+        if not np.array_equal(rot, exp_rot):
+            for i, rot_i in enumerate(rot):
+                match_found = False
+                for j, exp_rot_j in enumerate(exp_rot):
+                    if np.array_equal(rot_i, exp_rot_j):
+                        npt.assert_equal(rot_i, exp_rot_j)
+                        # The translations may also be in different cells
+                        trans_diff = np.absolute(trans[i] - exp_trans[j])
+                        assert np.sum(trans_diff - np.rint(trans_diff)) < 1e-10
+                        npt.assert_equal(equiv_atoms[i], exp_equiv_atoms[j])
+                        match_found = True
+                        break
+                if not match_found:
+                    pytest.fail(f'No matching rotations found for {rot_i}')
+        else:
+            npt.assert_equal(rot, exp_rot)
+            npt.assert_allclose(trans, exp_trans, atol=1e-10)
+            npt.assert_equal(equiv_atoms, exp_equiv_atoms)
