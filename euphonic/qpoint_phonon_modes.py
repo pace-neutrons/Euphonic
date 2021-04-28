@@ -383,10 +383,8 @@ class QpointPhononModes(QpointFrequencies):
             rot_cart = np.einsum('ijk,jl,km->ilm',
                                  rot, cell_vec, recip_vec)/(2*np.pi)
             for s in range(len(rot)):
-                for i in range(self.crystal.n_atoms):
-                    tmp = np.einsum('ij,jk->ik', rot_cart[s], dw[i])
-                    dw_tmp[eq_atoms[s, i]] += np.einsum(
-                        'ij,jk->ik', tmp, rot_cart[s].transpose())
+                dw_tmp[eq_atoms[s]] += np.einsum('ij,kjl,ml->kim',
+                                                 rot_cart[s], dw, rot_cart[s])
             dw = dw_tmp/len(rot)
 
         dw = dw*ureg('bohr**2').to(self.crystal.cell_vectors_unit + '**2')
