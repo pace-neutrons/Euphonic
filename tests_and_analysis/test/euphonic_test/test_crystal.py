@@ -379,3 +379,52 @@ class TestCrystalMethods:
          (3, 3, 3))])
     def test_get_mp_grid_spec(self, crystal, kwargs, expected):
         assert crystal.get_mp_grid_spec(**kwargs) == expected
+
+    @pytest.mark.parametrize('crystal, expected_spec_idx', [
+        (get_crystal('quartz'),
+         {'O': np.arange(6), 'Si': np.arange(6, 9)}),
+        (get_crystal('LZO'),
+         {'O': np.arange(14), 'Zr': np.arange(14, 18),
+          'La': np.arange(18, 22)})
+        ])
+    def test_get_species_idx(self, crystal, expected_spec_idx):
+        spec_idx = crystal.get_species_idx()
+        assert spec_idx.keys() == expected_spec_idx.keys()
+        for key in expected_spec_idx.keys():
+            npt.assert_equal(spec_idx[key], expected_spec_idx[key])
+
+    @pytest.mark.parametrize('crystal, kwargs, expected_res_file', [
+        (get_crystal('quartz'), {}, 'quartz_equiv_atoms.json'),
+        (get_crystal('LZO'), {}, 'lzo_equiv_atoms.json'),
+        (get_crystal('LZO'), {'tol': 1e-12*ureg('angstrom')},
+         'lzo_equiv_atoms_tol_1e12_ang.json'),
+        ])
+    def test_get_symmetry_equivalent_atoms(
+            self, crystal, kwargs, expected_res_file):
+        rot, trans, equiv_atoms = crystal.get_symmetry_equivalent_atoms(
+            **kwargs)
+        with open(get_filepath(expected_res_file), 'r') as fp:
+            res = json.load(fp)
+        exp_rot = np.array(res['rotations'])
+        exp_trans = np.array(res['translations'])
+        exp_equiv_atoms = np.array(res['equivalent_atoms'])
+        # In older versions of Numpy/spglib, sometimes the operations
+        # are in a different order
+        if not np.array_equal(rot, exp_rot):
+            for i, rot_i in enumerate(rot):
+                match_found = False
+                for j, exp_rot_j in enumerate(exp_rot):
+                    if np.array_equal(rot_i, exp_rot_j):
+                        npt.assert_equal(rot_i, exp_rot_j)
+                        # The translations may also be in different cells
+                        trans_diff = np.absolute(trans[i] - exp_trans[j])
+                        assert np.sum(trans_diff - np.rint(trans_diff)) < 1e-10
+                        npt.assert_equal(equiv_atoms[i], exp_equiv_atoms[j])
+                        match_found = True
+                        break
+                if not match_found:
+                    pytest.fail(f'No matching rotations found for {rot_i}')
+        else:
+            npt.assert_equal(rot, exp_rot)
+            npt.assert_allclose(trans, exp_trans, atol=1e-10)
+            npt.assert_equal(equiv_atoms, exp_equiv_atoms)

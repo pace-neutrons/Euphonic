@@ -273,7 +273,8 @@ class QpointPhononModes(QpointFrequencies):
 
     def calculate_debye_waller(
         self, temperature: Quantity,
-        frequency_min: Quantity = Quantity(0.01, 'meV')) -> DebyeWaller:
+        frequency_min: Quantity = Quantity(0.01, 'meV'),
+        symmetrise: bool = True) -> DebyeWaller:
         """
         Calculate the 3 x 3 Debye-Waller exponent for each atom over the
         q-points contained in this object
@@ -287,7 +288,12 @@ class QpointPhononModes(QpointFrequencies):
             Scalar float Quantity in energy units. Excludes frequencies below
             this limit from the calculation, as the calculation contains a
             1/frequency factor which would result in infinite values. This
-            also allows negative frequencies to be excluded.
+            also allows negative frequencies to be excluded
+        symmetrise
+            Whether to symmetrise the Debye-Waller factor based on the
+            crystal symmetry operations. Note that if the Debye-Waller
+            exponent is not symmetrised, the results may not be the
+            same for unfolded and symmetry-reduced q-point grids
 
         Returns
         -------
@@ -368,8 +374,20 @@ class QpointPhononModes(QpointFrequencies):
                              freq_mask[qi:qf], evec_term))
 
         dw = dw/np.sum(weights)
-        dw = dw*ureg('bohr**2').to(self.crystal.cell_vectors_unit + '**2')
+        if symmetrise:
+            dw_tmp = np.zeros(dw.shape)
+            (rot, trans,
+             eq_atoms) = self.crystal.get_symmetry_equivalent_atoms()
+            cell_vec = self.crystal._cell_vectors
+            recip_vec = self.crystal.reciprocal_cell().to('1/bohr').magnitude
+            rot_cart = np.einsum('ijk,jl,km->ilm',
+                                 rot, cell_vec, recip_vec)/(2*np.pi)
+            for s in range(len(rot)):
+                dw_tmp[eq_atoms[s]] += np.einsum('ij,kjl,ml->kim',
+                                                 rot_cart[s], dw, rot_cart[s])
+            dw = dw_tmp/len(rot)
 
+        dw = dw*ureg('bohr**2').to(self.crystal.cell_vectors_unit + '**2')
         return DebyeWaller(self.crystal, dw, temperature)
 
     def to_dict(self) -> Dict[str, Any]:

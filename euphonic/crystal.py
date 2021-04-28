@@ -1,8 +1,9 @@
 import inspect
 from math import ceil
-from typing import List, Tuple, TypeVar
+from typing import List, Tuple, TypeVar, Dict, Any
 
 import numpy as np
+from spglib import get_symmetry
 
 from euphonic.validate import _check_constructor_inputs, _check_unit_conversion
 from euphonic.io import (_obj_to_json_file, _obj_from_json_file,
@@ -19,34 +20,40 @@ class Crystal:
 
     Attributes
     ----------
-    cell_vectors : (3, 3) float Quantity
-        Unit cell vectors
-    n_atoms : int
+    cell_vectors
+        Shape (3, 3) float Quantity in length units. Cartesian unit
+        cell vectors. cell_vectors[0] = a, cell_vectors[:, 0] = x etc.
+    n_atoms
         Number of atoms in the unit cell
-    atom_r : (n_atoms, 3) float ndarray
-        The fractional position of each atom within the unit cell
-    atom_type : (n_atoms,) string ndarray
-        The chemical symbols of each atom in the unit cell. Atoms are in
-        the same order as in atom_r
-    atom_mass : (n_atoms,) float Quantity
-        The mass of each atom in the unit cell
+    atom_r
+        Shape (n_atoms, 3) float ndarray. The fractional position of
+        each atom within the unit cell
+    atom_type
+        Shape (n_atoms,) string ndarray. The chemical symbols of each
+        atom in the unit cell
+    atom_mass
+        Shape (n_atoms,) float Quantity in mass units. The mass of each
+        atom in the unit cell
     """
 
-    def __init__(self, cell_vectors, atom_r, atom_type, atom_mass):
+    def __init__(self, cell_vectors: Quantity, atom_r: np.ndarray,
+                 atom_type: np.ndarray, atom_mass: Quantity) -> None:
         """
         Parameters
         ----------
-        cell_vectors : (3, 3) float Quantity
-            Cartesian unit cell vectors. cell_vectors[0] = a,
+        cell_vectors
+            Shape (3, 3) float Quantity in length units. Cartesian unit
+            cell vectors. cell_vectors[0] = a,
             cell_vectors[:, 0] = x etc.
-        atom_r : (n_atoms, 3) float ndarray
-            The fractional position of each atom within the unit cell
-        atom_type : (n_atoms,) string ndarray
-            The chemical symbols of each atom in the unit cell. Atoms
-            are in the same order as in atom_r
-        atom_mass : (n_atoms,) float Quantity
-            The mass of each atom in the unit cell, in the same order as
-            atom_r
+        atom_r
+            Shape (n_atoms, 3) float ndarray. The fractional position
+            of each atom within the unit cell
+        atom_type
+            Shape (n_atoms,) string ndarray. The chemical symbols of
+            each atom in the unit cell
+        atom_mass
+            Shape (n_atoms,) float Quantity in mass units. The mass
+            of each atom in the unit cell
         """
         n_atoms = len(atom_r)
         # Allow empty structure information, but convert to correct
@@ -87,13 +94,15 @@ class Crystal:
                                ['cell_vectors_unit', 'atom_mass_unit'])
         super(Crystal, self).__setattr__(name, value)
 
-    def reciprocal_cell(self):
+    def reciprocal_cell(self) -> Quantity:
         """
         Calculates the reciprocal lattice vectors
 
         Returns
         -------
-        recip : (3, 3) float Quantity
+        recip
+            Shape (3, 3) float Quantity in 1/length units, the
+            reciprocal lattice vectors
         """
         cv = self._cell_vectors
 
@@ -109,7 +118,15 @@ class Crystal:
 
         return recip.to(1/ureg(self.cell_vectors_unit))
 
-    def cell_volume(self):
+    def cell_volume(self) -> Quantity:
+        """
+        Calculates the cell volume
+
+        Returns
+        -------
+        volume
+            Scalar float quantity in length**3 units. The cell volume
+        """
         vol = self._cell_volume()*ureg.bohr**3
         return vol.to(ureg(self.cell_vectors_unit)**3)
 
@@ -117,18 +134,25 @@ class Crystal:
         cv = self._cell_vectors
         return np.dot(cv[0], np.cross(cv[1], cv[2]))
 
-    def get_mp_grid_spec(self, spacing: Quantity = 0.1 * ureg('1/angstrom')
+    def get_mp_grid_spec(self,
+                         spacing: Quantity = 0.1 * ureg('1/angstrom')
                          ) -> Tuple[int, int, int]:
-        """Get suggested divisions for Monkhorst-Pack grid
+        """
+        Get suggested divisions for Monkhorst-Pack grid
 
         Determine a mesh for even Monkhorst-Pack sampling of the reciprocal
-        cell.
+        cell
 
-        Args:
-            spacing: Maximum reciprocal-space distance between q-point samples
+        Parameters
+        ----------
+        spacing
+            Scalar float quantity in 1/length units. Maximum
+            reciprocal-space distance between q-point samples
 
-        Returns:
-            number of divisions for each reciprocal lattice vector.
+        Returns
+        -------
+        grid_spec
+            The number of divisions for each reciprocal lattice vector
         """
 
         recip_length_unit = spacing.units
@@ -146,7 +170,7 @@ class Crystal:
 
         Returns
         -------
-        cell : tuple of lists
+        cell
             cell = (lattice, positions, numbers), where lattice is the
             lattice vectors, positions are the fractional atomic
             positions, and numbers are integers distinguishing the
@@ -158,7 +182,101 @@ class Crystal:
                 unique_atoms.tolist())
         return cell
 
-    def to_dict(self):
+    def get_species_idx(self) -> Dict[str, np.ndarray]:
+        """
+        Returns a dictionary of each species and their indices
+
+        Returns
+        -------
+        species_idx
+            A dictionary containing each unique species symbol
+            as the keys, and their indices as the values
+        """
+        _, idx = np.unique(self.atom_type, return_index=True)
+        # Retain species order
+        species = self.atom_type[np.sort(idx)]
+        spec_idx = {spec: np.where(self.atom_type == spec)[0]
+                    for spec in species}
+        return spec_idx
+
+    def get_symmetry_equivalent_atoms(
+            self, tol: Quantity = Quantity(1e-5, 'angstrom')
+            ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+        """
+        Returns the rotational and translational symmetry operations
+        as obtained by spglib.get_symmetry, and also the equivalent
+        atoms that each atom gets mapped onto for each symmetry
+        operation
+
+        Parameters
+        ----------
+        tol
+           Scalar float Quantity in length units. The distance
+           tolerance, if the distance between atoms is less than
+           this, they are considered to be equivalent. This is
+           also passed to spglib.get_symmetry as symprec
+
+        Returns
+        -------
+        rotations
+           Shape (n_symmetry_ops, 3, 3) integer np.ndarray. The
+           rotational symmetry matrices as returned by
+           spglib.get_symmetry
+        translations
+           Shape (n_symmetry_ops, 3) float np.ndarray. The
+           rotational symmetry matrices as returned by
+           spglib.get_symmetry
+        equivalent_atoms
+           Shape (n_symmetry_ops, n_atoms) integer np.ndarray.
+           The equivalent atoms for each symmetry operation. e.g.
+           equivalent_atoms[s, i] = j means symmetry operation s
+           maps atom i to atom j
+
+        """
+        tol_calc = tol.to('bohr').magnitude
+        symprec = tol.to(self.cell_vectors_unit).magnitude
+        # Sometimes if symprec is very low, even the identity
+        # symmetry op won't be found, and None will be returned
+        # For some reason this can't always be reproduced
+        symm = get_symmetry(self.to_spglib_cell(), symprec=symprec)
+        if symm is None:
+            raise RuntimeError(f'spglib.get_symmetry returned None with '
+                               f'symprec={symprec}. Try increasing tol')
+        n_ops = len(symm['rotations'])
+        equiv_atoms = np.full((n_ops, self.n_atoms), -1, dtype=np.int32)
+        atom_r_symm = (np.einsum('ijk,lk->ilj', symm['rotations'], self.atom_r)
+                       + symm['translations'][:, np.newaxis, :])
+        atom_r_symm -= np.floor(atom_r_symm + 0.5)
+
+        species_idx = self.get_species_idx()
+        for spec, idx in species_idx.items():
+            for i in idx:
+                atom_r_symm_i = atom_r_symm[:, i, :]
+                # Difference between symmetry-transformed atom i and all
+                # other atoms of that species for each symmetry operation
+                diff_frac = (atom_r_symm_i[:, np.newaxis, :]
+                             - self.atom_r[np.newaxis, idx, :])
+                diff_frac -= np.floor(diff_frac + 0.5)
+                diff_cart = np.einsum('ijk,kl->ijl', diff_frac, self._cell_vectors)
+                diff_r = np.linalg.norm(diff_cart, axis=2)
+                equiv_idx = np.where(diff_r < tol_calc)
+                # There should be one matching atom per symm op
+                if not np.array_equal(equiv_idx[0], np.arange(n_ops)):
+                    for op_idx, diff_r_op in enumerate(diff_r):
+                        equiv_idx_op = np.where(diff_r_op < tol_calc)[0]
+                        err_info = (f'for {spec} atom at {self.atom_r[i]} for '
+                                    f'symmetry op {op_idx}. Rotation '
+                                    f'{symm["rotations"][op_idx]} translation '
+                                    f'{symm["translations"][op_idx]}')
+                        if len(equiv_idx_op) == 0:
+                            raise RuntimeError(f'No equivalent atom found {err_info}')
+                        elif len(equiv_idx_op) > 1:
+                            raise RuntimeError(f'Multiple equivalent atoms found {err_info}')
+                equiv_atoms[:, i] = idx[equiv_idx[1]]
+
+        return symm['rotations'], symm['translations'], equiv_atoms
+
+    def to_dict(self) -> Dict[str, Any]:
         """
         Convert to a dictionary. See Crystal.from_dict for details on
         keys/values
@@ -171,26 +289,26 @@ class Crystal:
                                    'atom_type', 'atom_mass'])
         return dout
 
-    def to_json_file(self, filename):
+    def to_json_file(self, filename: str):
         """
         Write to a JSON file. JSON fields are equivalent to
         Crystal.from_dict keys
 
         Parameters
         ----------
-        filename : str
+        filename
             Name of the JSON file to write to
         """
         _obj_to_json_file(self, filename)
 
     @classmethod
-    def from_dict(cls, d):
+    def from_dict(cls: CR, d: Dict[str, Any]) -> CR:
         """
         Convert a dictionary to a Crystal object
 
         Parameters
         ----------
-        d : dict
+        d
             A dictionary with the following keys/values:
 
             - 'cell_vectors': (3, 3) float ndarray
@@ -202,25 +320,25 @@ class Crystal:
 
         Returns
         -------
-        Crystal
+        crystal
         """
         d = _process_dict(d, quantities=['cell_vectors', 'atom_mass'])
         return cls(d['cell_vectors'], d['atom_r'], d['atom_type'],
                    d['atom_mass'])
 
     @classmethod
-    def from_json_file(cls, filename):
+    def from_json_file(cls: CR, filename: str) -> CR:
         """
         Read from a JSON file. See Crystal.from_dict for required fields
 
         Parameters
         ----------
-        filename : str
+        filename
             The file to read from
 
         Returns
         -------
-        Crystal
+        crystal
         """
         return _obj_from_json_file(cls, filename)
 
@@ -233,13 +351,14 @@ class Crystal:
 
         Parameters
         ----------
-        cell_vectors : (3, 3) float Quantity
-            Cartesian unit cell vectors. cell_vectors[0] = a,
+        cell_vectors
+            Shape (3, 3) float Quantity in length units. Cartesian
+            unit cell vectors. cell_vectors[0] = a,
             cell_vectors[:, 0] = x etc.
 
         Returns
         -------
-        Crystal
+        crystal
         """
         return cls(cell_vectors,
                    np.array([]), np.array([]),

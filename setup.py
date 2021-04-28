@@ -113,6 +113,7 @@ def run_setup(build_c=True):
             'numpy>=1.12.1',
             'scipy>=1.0.0',
             'seekpath>=1.1.0',
+            'spglib>=1.9.4',
             'pint>=0.9',
             'importlib_resources>=1.3.0',
             'threadpoolctl>=1.0.0'
