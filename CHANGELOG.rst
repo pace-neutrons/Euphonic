@@ -1,8 +1,18 @@
 `Unreleased <https://github.com/pace-neutrons/Euphonic/compare/v0.5.0...HEAD>`_
 ----------
 
+- New Features:
+
+  - New ``Crystal.get_symmetry_equivalent_atoms`` method which uses spglib
+    to get the symmetry operations and equivalent atoms under each operation
+
 - Improvements:
 
+  - Added ``symmetrise`` argument to ``QpointPhononModes.calculate_debye_waller``
+    which will symmetrise it under the crystal symmetry operations. This
+    means that there will no longer be a discrepancy between ``DebyeWaller``
+    calculated on a symmetry-reduced or full Monkhorst-Pack grid. By default,
+    ``symmetrise=True``
   - Added ``frequencies_min`` argument to ``calculate_debye_waller`` to
     exclude very small frequencies. This will also exclude negative
     frequencies. This improves on the previous behaviour which only excluded
