@@ -17,7 +17,10 @@
     exclude very small frequencies. This will also exclude negative
     frequencies. This improves on the previous behaviour which only excluded
     gamma-point acoustic modes, so would miss small/negative frequencies
-    elsewhere.
+    elsewhere
+  - When loading libraries for the C extension in Windows, there are now
+    additional search paths, and ``liblapack.dll`` or ``mkl_rt.1.dll`` will
+    be attempted to be loaded if ``libopenblas.dll`` can't be found
 
 - Changes:
 
