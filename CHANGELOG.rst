@@ -24,6 +24,7 @@
 
 - Changes:
 
+  - New dependency on ``spglib>=1.9.4``
   - Fixed formula in ``calculate_debye_waller`` docstring to match actual
     implementation: moved ``1/2`` factor and added explicit q-point weights
 
