@@ -19,39 +19,58 @@ ZheevdFunc get_zheevd(const char *scipy_dir) {
     HMODULE lib;
     WIN32_FIND_DATA filedata;
     HANDLE hfile;
-    int i, j;
-    const char *libdirs[3];
-    libdirs[0] = "\\extra-dll\\";
-    libdirs[1] = "\\..\\numpy\\.libs\\";
-    libdirs[2] = "\\.libs\\";
-    const int ndirs = sizeof(libdirs)/sizeof(libdirs[0]);
-    const char *fileglob = "libopenblas*dll";
+    int i;
+
+    const char *openblas_dirs[3];
+    openblas_dirs[0] = "\\extra-dll\\";
+    openblas_dirs[1] = "\\..\\numpy\\.libs\\";
+    openblas_dirs[2] = "\\.libs\\";
+    const int ndirs = sizeof(openblas_dirs)/sizeof(openblas_dirs[0]);
+    const char *openblas_glob = "libopenblas*dll";
+
+    const char *other_libs[2];
+    other_libs[0] = "liblapack.dll";
+    other_libs[1] = "mkl_rt.1.dll";
+    const int nlibs = sizeof(other_libs)/sizeof(other_libs[0]);
+
     char buf[300];
+    char err_info[2000] = "";
+
     for (i = 0; i < ndirs; i++) {
-        snprintf(buf, sizeof(buf), "%s%s%s", scipy_dir, libdirs[i], fileglob);
+        snprintf(buf, sizeof(buf), "%s%s%s", scipy_dir, openblas_dirs[i], openblas_glob);
+        snprintf(err_info + strlen(err_info), sizeof(err_info), "\nSearched for %s", buf);
         hfile = FindFirstFile(buf, &filedata);
         if (hfile != INVALID_HANDLE_VALUE) {
             break;
         }
-        // libopenblas.dll file should have been found by this point, if not
-        // print all searched dirs and return null
-        if (i == ndirs - 1) {
-            for (j = 0; j < ndirs; j++) {
-                snprintf(buf, sizeof(buf), "%s%s%s", scipy_dir, libdirs[j], fileglob);
-                printf("Could not find %s\n", buf);
+    }
+
+    if (hfile != INVALID_HANDLE_VALUE) {
+        snprintf(err_info + strlen(err_info), sizeof(err_info),
+                 "\nTried to load %s", filedata.cFileName);
+        lib = LoadLibrary(filedata.cFileName);
+    } else {
+        // Try to load other possible libs, they should be on the path
+        // so don't need the full path
+        for (i = 0; i < nlibs; i++) {
+            lib = LoadLibrary(other_libs[i]);
+            snprintf(err_info + strlen(err_info), sizeof(err_info),
+                     "\nTried to load %s", other_libs[i]);
+            if (lib != NULL) {
+                break;
             }
-            return NULL;
         }
     }
 
-    lib = LoadLibrary(filedata.cFileName);
     if (lib == NULL) {
-        printf("Could not load lib handle %s\n", filedata.cFileName);
+        printf(err_info);
+        printf("\nCould not load lib handle");
         return NULL;
     }
     zheevd = (ZheevdFunc) GetProcAddress(lib, "zheevd_");
     if (zheevd == NULL) {
-        printf("Could not find zheevd_ in %s\n", filedata.cFileName);
+        printf(err_info);
+        printf("\nCould not find zheevd_ in lib");
         FreeLibrary(lib);
         return NULL;
     }
