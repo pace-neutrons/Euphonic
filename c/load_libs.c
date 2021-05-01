@@ -1,120 +1,36 @@
-#ifdef _WIN32
-#include <Windows.h>
-#else
-#include <dlfcn.h>
-#include <dirent.h>
-#include <glob.h>
-#endif
-
 #include <stdio.h>
+#include <Python.h>
+#include "load_libs.h"
 
-typedef void (*ZheevdFunc)(char* jobz, char* uplo, int* n, double* a, int* lda,
-    double* w, double* work, int* lwork, double* rwork, int* lrwork,
-    int* iwork, int* liwork, int* info);
+// Global variable to cache pointer location
+void *ZHEEVD_POINTER = NULL;
 
 ZheevdFunc get_zheevd(const char *scipy_dir) {
-    ZheevdFunc zheevd;
-
-#ifdef _WIN32
-    HMODULE lib;
-    WIN32_FIND_DATA filedata;
-    HANDLE hfile;
-    int i;
-
-    const char *openblas_dirs[3];
-    openblas_dirs[0] = "\\extra-dll\\";
-    openblas_dirs[1] = "\\..\\numpy\\.libs\\";
-    openblas_dirs[2] = "\\.libs\\";
-    const int ndirs = sizeof(openblas_dirs)/sizeof(openblas_dirs[0]);
-    const char *openblas_glob = "libopenblas*dll";
-
-    const char *other_libs[2];
-    other_libs[0] = "liblapack.dll";
-    other_libs[1] = "mkl_rt.1.dll";
-    const int nlibs = sizeof(other_libs)/sizeof(other_libs[0]);
-
-    char buf[300];
-    char err_info[2000] = "";
-
-    for (i = 0; i < ndirs; i++) {
-        snprintf(buf, sizeof(buf), "%s%s%s", scipy_dir, openblas_dirs[i], openblas_glob);
-        snprintf(err_info + strlen(err_info), sizeof(err_info), "\nSearched for %s", buf);
-        hfile = FindFirstFile(buf, &filedata);
-        if (hfile != INVALID_HANDLE_VALUE) {
-            break;
+    if (!ZHEEVD_POINTER)
+    {
+        // Take the Global interpreter lock to import scipy.linalg
+        PyGILState_STATE gstate = PyGILState_Ensure();
+        // scipy exposes pointers to all the BLAS and LAPACK functions in the
+        // scipy.linalg.cython_[blas,lapack] submodules.
+        // It's meant for use in cython but we can also use it here.
+        PyObject *scipylinalg = PyImport_ImportModule("scipy.linalg.cython_lapack");
+        if (!scipylinalg) {
+            printf("Error: could not load the scipy.linalg module.");
+            return NULL;
         }
-    }
-
-    if (hfile != INVALID_HANDLE_VALUE) {
-        snprintf(err_info + strlen(err_info), sizeof(err_info),
-                 "\nTried to load %s", filedata.cFileName);
-        lib = LoadLibrary(filedata.cFileName);
-    } else {
-        // Try to load other possible libs, they should be on the path
-        // so don't need the full path
-        for (i = 0; i < nlibs; i++) {
-            lib = LoadLibrary(other_libs[i]);
-            snprintf(err_info + strlen(err_info), sizeof(err_info),
-                     "\nTried to load %s", other_libs[i]);
-            if (lib != NULL) {
-                break;
-            }
+        PyObject *pyx_capi = PyObject_GetAttrString(scipylinalg, "__pyx_capi__");
+        if (!pyx_capi || !PyDict_Check(pyx_capi)) {
+            printf("Error: could not load the C-api functions from scipy.linalg.");
+            return NULL;
         }
-    }
-
-    if (lib == NULL) {
-        printf(err_info);
-        printf("\nCould not load lib handle");
-        return NULL;
-    }
-    zheevd = (ZheevdFunc) GetProcAddress(lib, "zheevd_");
-    if (zheevd == NULL) {
-        printf(err_info);
-        printf("\nCould not find zheevd_ in lib");
-        FreeLibrary(lib);
-        return NULL;
-    }
-    FreeLibrary(lib);
-#else
-    void *lib;
-    const char *libdir = "/linalg";
-    const char *fileglob = "/_flapack*so";
-    glob_t globres;
-    char buf[300];
-    DIR *dir;
-
-    snprintf(buf, sizeof(buf), "%s%s", scipy_dir, libdir);
-    dir = opendir(buf);
-    if (dir == NULL) {
-        printf("Could not open dir %s\n", buf);
-        return NULL;
-    }
-    while (readdir(dir) != NULL) {
-        snprintf(buf, sizeof(buf), "%s%s%s", scipy_dir, libdir, fileglob);
-        glob(buf, 0, NULL, &globres);
-        if (globres.gl_pathc > 0) {
-            break;
+        PyObject *zheevdcapsule = PyDict_GetItemString(pyx_capi, "zheevd");
+        if (!zheevdcapsule) {
+            printf("Error: could not load the zheevd function from the cython api.");
+            return NULL;
         }
+        const char *name = PyCapsule_GetName(zheevdcapsule);
+        ZHEEVD_POINTER = PyCapsule_GetPointer(zheevdcapsule, name);
+        PyGILState_Release(gstate);
     }
-    closedir(dir);
-    if (globres.gl_pathc == 0) {
-        printf("Glob failed: couldn't find %s\n", buf);
-        return NULL;
-    }
-
-    lib = dlopen(globres.gl_pathv[0], RTLD_LAZY);
-    if (lib == NULL) {
-        printf("Could not load lib handle %s. Error: %s\n", globres.gl_pathv[0], dlerror());
-        return NULL;
-    }
-    zheevd = dlsym(lib, "zheevd_");
-    if (zheevd == NULL) {
-        printf("Could not find zheevd_ in %s\n", buf);
-        dlclose(lib);
-        return NULL;
-    }
-    dlclose(lib);
-#endif
-
-    return zheevd;
+    return ZHEEVD_POINTER;
 }
