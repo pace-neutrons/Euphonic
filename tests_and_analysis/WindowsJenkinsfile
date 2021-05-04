@@ -23,9 +23,20 @@ def getGitCommitAuthorEmail() {
     }
 }
 
+def getCondaEnvName() {
+  String envName = "euphonic_ci_branch_${env.BRANCH_NAME}"
+  envName = envName.replaceAll("[ /:#]", "")
+  return envName
+}
+
+
 pipeline {
 
     agent { label "PACE Windows (Private)" }
+
+    environment {
+      CONDA_ENV_NAME = getCondaEnvName()
+    }
 
     triggers {
         GenericTrigger(
@@ -60,9 +71,9 @@ pipeline {
         stage("Set up") {
             steps {
                 bat """
-                    CALL conda remove --name euphonic_ci_branch_%BRANCH_NAME% --all -y
-                    CALL conda create --name euphonic_ci_branch_%BRANCH_NAME% python=3.6 -y
-                    CALL conda activate euphonic_ci_branch_%BRANCH_NAME%
+                    CALL conda remove --name %CONDA_ENV_NAME% --all -y
+                    CALL conda create --name %CONDA_ENV_NAME% python=3.6 -y
+                    CALL conda activate %CONDA_ENV_NAME%
                     python -m pip install --upgrade --user pip
                     python -m pip install -r tests_and_analysis/jenkins_requirements.txt
                 """
@@ -74,7 +85,7 @@ pipeline {
             steps {
                 bat """
                     CALL "%VS2019_VCVARSALL%" x86_amd64
-                    CALL conda activate euphonic_ci_branch_%BRANCH_NAME%
+                    CALL conda activate %CONDA_ENV_NAME%
                     python -m tox
                 """
             }
@@ -87,7 +98,7 @@ pipeline {
                     def tag = env.JOB_BASE_NAME.substring(1)
                     bat """
                         CALL "%VS2019_VCVARSALL%" x86_amd64
-                        CALL conda activate euphonic_ci_branch_%BRANCH_NAME%
+                        CALL conda activate %CONDA_ENV_NAME%
                         set EUPHONIC_VERSION=${tag}
                         python -m tox -c release_tox.ini
                     """
@@ -101,7 +112,7 @@ pipeline {
         always {
             junit 'tests_and_analysis/test/reports/junit_report*.xml'
             bat """
-                CALL conda remove --name euphonic_ci_branch_%BRANCH_NAME% --all -y
+                CALL conda remove --name %CONDA_ENV_NAME% --all -y
             """
         }
 

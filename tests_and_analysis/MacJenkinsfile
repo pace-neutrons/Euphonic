@@ -21,9 +21,19 @@ def getGitCommitAuthorEmail() {
     }
 }
 
+def getCondaEnvName() {
+  String envName = "euphonic_ci_branch_${env.BRANCH_NAME}"
+  envName = envName.replaceAll("[ /:#]", "")
+  return envName
+}
+
 pipeline {
     
     agent { label "PACE macOS" }
+
+    environment {
+      CONDA_ENV_NAME = getCondaEnvName()
+    }
 
     triggers {
         GenericTrigger(
@@ -60,9 +70,9 @@ pipeline {
                 sh """
                     export PATH=\$PATH:~/opt/anaconda3/bin
                     eval "\$(conda shell.bash hook)"
-                    conda remove --name euphonic_ci_branch_\$BRANCH_NAME -y --all
-                    conda create --name euphonic_ci_branch_\$BRANCH_NAME python=3.7.7 -y
-                    conda activate euphonic_ci_branch_\$BRANCH_NAME
+                    conda remove --name \$CONDA_ENV_NAME -y --all
+                    conda create --name \$CONDA_ENV_NAME python=3.7.7 -y
+                    conda activate \$CONDA_ENV_NAME
                     python -m pip install --upgrade --user pip
                     python -m pip install -r tests_and_analysis/jenkins_requirements.txt
                 """
@@ -75,7 +85,7 @@ pipeline {
                 sh """
                     export PATH=\$PATH:~/opt/anaconda3/bin:/usr/local/bin
                     eval "\$(conda shell.bash hook)"
-                    conda activate euphonic_ci_branch_\$BRANCH_NAME
+                    conda activate \$CONDA_ENV_NAME
                     python -m tox
                 """
             }
@@ -89,7 +99,7 @@ pipeline {
                     sh """
                         export PATH=\$PATH:~/opt/anaconda3/bin:/usr/local/bin
                         eval "\$(conda shell.bash hook)"
-                        conda activate euphonic_ci_branch_\$BRANCH_NAME
+                        conda activate \$CONDA_ENV_NAME
                         export EUPHONIC_VERSION=${tag}
                         python -m tox -c release_tox.ini
                     """
@@ -105,7 +115,7 @@ pipeline {
             sh """
                 export PATH=\$PATH:~/opt/anaconda3/bin:/usr/local/bin
                 eval "\$(conda shell.bash hook)"
-                conda remove --name euphonic_ci_branch_\$BRANCH_NAME --all -y
+                conda remove --name \$CONDA_ENV_NAME --all -y
             """
         }
 
