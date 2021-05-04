@@ -611,8 +611,7 @@ class ForceConstants:
                     split_idx, q_dirs, fc_img_weighted, sc_origins,
                     recip_asr_correction, dyn_mat_weighting, dipole,
                     reciprocal_asr, splitting, rfreqs, reigenvecs,
-                    rmode_gradients, all_origins_cart, n_threads,
-                    scipy.__path__[0])
+                    rmode_gradients, all_origins_cart, n_threads)
         else:
             q_independent_args = (
                 reduced_qpts, split_idx, q_dirs, fc_img_weighted,

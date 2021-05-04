@@ -18,9 +18,10 @@
     frequencies. This improves on the previous behaviour which only excluded
     gamma-point acoustic modes, so would miss small/negative frequencies
     elsewhere
-  - When loading libraries for the C extension in Windows, there are now
-    additional search paths, and ``liblapack.dll`` or ``mkl_rt.1.dll`` will
-    be attempted to be loaded if ``libopenblas.dll`` can't be found
+  - Loading the LAPACK libraries for the C extension now uses the
+    `interface <https://docs.scipy.org/doc/scipy/reference/linalg.cython_lapack.html`_
+    provided by `scipy` for `cython` instead of loading directly from a DLL.
+    The new method means we don't have to guess the DLL filename anymore!
 
 - Changes:
 

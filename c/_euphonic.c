@@ -32,7 +32,6 @@ static PyObject *calculate_phonons(PyObject *self, PyObject *args) {
     int reciprocal_asr;
     int splitting;
     int n_threads = 1;
-    const char *scipy_dir;
 
     // Define vars to be obtained from ForceConstants attributes
     PyObject *py_crystal; // Crystal object
@@ -94,7 +93,7 @@ static PyObject *calculate_phonons(PyObject *self, PyObject *args) {
     int n_gvecs;
 
     // Parse inputs
-    if (!PyArg_ParseTuple(args, "OO!O!O!O!O!O!O!O!O!iiiO!O!O!O!is",
+    if (!PyArg_ParseTuple(args, "OO!O!O!O!O!O!O!O!O!iiiO!O!O!O!i",
                           &py_idata,
                           &PyArray_Type, &py_cell_vec,
                           &PyArray_Type, &py_recip_vec,
@@ -112,8 +111,7 @@ static PyObject *calculate_phonons(PyObject *self, PyObject *args) {
                           &PyArray_Type, &py_dmats,
                           &PyArray_Type, &py_modegs,
                           &PyArray_Type, &py_all_ogs_cart,
-                          &n_threads,
-                          &scipy_dir)) {
+                          &n_threads)) {
         return NULL;
     }
 
@@ -187,7 +185,7 @@ static PyObject *calculate_phonons(PyObject *self, PyObject *args) {
 
     // Load library functions
     ZheevdFunc zheevd;
-    zheevd = get_zheevd(scipy_dir);
+    zheevd = get_zheevd();
     if (zheevd == NULL) {
         PyErr_Format(PyExc_RuntimeError, "Could not load zheevd function\n");
         return NULL;

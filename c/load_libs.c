@@ -5,7 +5,7 @@
 // Global variable to cache pointer location
 void *ZHEEVD_POINTER = NULL;
 
-ZheevdFunc get_zheevd(const char *scipy_dir) {
+ZheevdFunc get_zheevd() {
     if (!ZHEEVD_POINTER)
     {
         // Take the Global interpreter lock to import scipy.linalg
