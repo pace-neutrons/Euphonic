@@ -68,6 +68,7 @@ pipeline {
 
         stage("Notify") {
             steps {
+                checkout scm
                 setGitHubBuildStatus("pending", "Starting", "Linux")
                 echo "Branch: ${env.JOB_BASE_NAME}"
             }
