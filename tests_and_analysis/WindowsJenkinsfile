@@ -70,7 +70,7 @@ pipeline {
         }
 
         stage("Test VS2019") {
-	    when { not { buildingTag() } }
+          when { not { buildingTag() } }
             steps {
                 bat """
                     CALL "%VS2019_VCVARSALL%" x86_amd64
