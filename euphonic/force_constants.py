@@ -6,8 +6,6 @@ from typing import Optional, Tuple, Union
 from multiprocessing import cpu_count
 
 import numpy as np
-import scipy
-from scipy.linalg.lapack import zheev
 from scipy.special import erfc
 from threadpoolctl import threadpool_limits
 
