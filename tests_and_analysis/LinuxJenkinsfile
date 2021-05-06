@@ -1,5 +1,23 @@
 #!groovy
 
+def getGitCommitSHA() {
+    if (env.BRANCH_NAME.contains("pull") && env.BRANCH_NAME.contains("merge")) {
+        // Assuming that PR merge commits always have two parents and the first
+        // is the target (e.g. master) and second is the source (e.g. PR branch)
+        env.COMMIT_SHA = sh(
+            script: """
+                curl -s -H "Accept: application/vnd.github.v3+json" \
+                https://api.github.com/repos/pace-neutrons/Euphonic/commits/${env.GIT_COMMIT} | \
+                jq -r '.parents | .[1] | .sha' 
+            """,
+            returnStdout: true
+        )
+    }
+    else {
+        env.COMMIT_SHA = env.GIT_COMMIT
+    }
+}
+
 def setGitHubBuildStatus(String status, String message, String context) {
     script {
         withCredentials([string(credentialsId: 'GitHub_API_Token',
@@ -13,7 +31,7 @@ def setGitHubBuildStatus(String status, String message, String context) {
                     "target_url": "$BUILD_URL", \
                     "context": "jenkins/${context}" \
                 }' \
-                https://api.github.com/repos/pace-neutrons/Euphonic/statuses/${env.GIT_COMMIT}
+                https://api.github.com/repos/pace-neutrons/Euphonic/statuses/${env.COMMIT_SHA}
             """
         }
     }
@@ -69,6 +87,7 @@ pipeline {
         stage("Notify") {
             steps {
                 checkout scm
+                getGitCommitSHA()
                 setGitHubBuildStatus("pending", "Starting", "Linux")
                 echo "Branch: ${env.JOB_BASE_NAME}"
             }
