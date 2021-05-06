@@ -610,6 +610,9 @@ class TestQpointPhononModesCalculatePdos:
             ('quartz', 'quartz-666-grid.phonon',
              'quartz_666_incoh_pdos.json', np.arange(0, 155, 0.5)*ureg('meV'),
              {'weighting': 'incoherent'}),
+            ('quartz', 'quartz-666-grid.phonon',
+             'quartz_666_cs_dict_pdos.json', np.arange(0, 155, 0.5)*ureg('meV'),
+             {'cross_sections': {'O': 429*ureg('fm**2'), 'Si': 2.78*ureg('barn')}}),
             ('LZO', 'La2Zr2O7-666-grid.phonon',
              'La2Zr2O7_666_pdos.json', np.arange(0, 100, 0.8)*ureg('meV'), {})
         ])
@@ -638,6 +641,22 @@ class TestQpointPhononModesCalculatePdos:
         total_dos_y_data = all_dos.y_data[0].to('1/hartree').magnitude/qpt_ph_modes.frequencies.shape[1]
         expected_total_dos_y_data = expected_total_dos.y_data
         npt.assert_allclose(total_dos_y_data, expected_total_dos_y_data)
+
+    def test_invalid_weighting_raises_value_error(self):
+        qpt_ph_modes = QpointPhononModes.from_castep(
+            get_castep_path('quartz', 'quartz-666-grid.phonon'))
+        with pytest.raises(ValueError):
+            qpt_ph_modes.calculate_pdos(np.arange(0, 155, 0.5)*ureg('meV'),
+                                        weighting='neutron')
+
+    def test_cross_sections_wrong_units_raises_value_error(self):
+        qpt_ph_modes = QpointPhononModes.from_castep(
+            get_castep_path('quartz', 'quartz-666-grid.phonon'))
+        with pytest.raises(ValueError):
+            qpt_ph_modes.calculate_pdos(
+                np.arange(0, 155, 0.5)*ureg('meV'),
+                cross_sections={'O': 4.29*ureg('fm'), 'Si': 2.78*ureg('fm')})
+
 
 
 @pytest.mark.unit

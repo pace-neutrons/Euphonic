@@ -434,10 +434,9 @@ class QpointPhononModes(QpointFrequencies):
             neutron-weighted DOS, weighted by coherent/incoherent
             neutron scattering cross-sections
         cross_sections
-            Is only used if weighting is not None. A dataset of
-            cross-sections for each element in the structure, it can be
-            a string specifying a dataset, or a dictionary explicitly
-            giving the cross-sections for each element.
+            A dataset of cross-sections for each element in the structure,
+            it can be a string specifying a dataset, or a dictionary
+            explicitly giving the cross-sections for each element.
 
             If cross_sections is a string, it is passed to the ``collection``
             argument of :obj:`euphonic.util.get_reference_data()`. This
@@ -468,27 +467,28 @@ class QpointPhononModes(QpointFrequencies):
             raise ValueError(f'Invalid value for weighting, got '
                              f'{weighting}, should be one of '
                              f'{weighting_opts}')
-        cs = None
+
         spec_idx_dict = self.crystal.get_species_idx()
-        if weighting is not None:
-            if isinstance(cross_sections, str):
-                cross_sections_data = get_reference_data(
-                    collection=cross_sections,
-                    physical_property=f'{weighting}_cross_section')
-            elif isinstance(cross_sections, dict):
-                cross_sections_data = cross_sections
-            else:
-                raise TypeError((
-                    f'Unexpected type for cross_sections, should be str or '
-                    f'dict, got {type(cross_sections)}'))
+        if isinstance(cross_sections, str) and weighting is not None:
+            cross_sections_data = get_reference_data(
+                collection=cross_sections,
+                physical_property=f'{weighting}_cross_section')
+        elif isinstance(cross_sections, dict):
+            cross_sections_data = cross_sections
+        else:
+            cross_sections_data = None
+        if cross_sections_data is not None:
             cs = [cross_sections_data[x] for x in spec_idx_dict.keys()]
             # Account for cross sections in different, or invalid, units
-            if not cs[0].check('[length]**2'):
-                raise DimensionalityError((
-                    f'Unexpected dimensionality in cross_sections, expected '
-                    f'[length]**2, got {str(cs[0].dimensionality)}'))
+            ex_units = '[length]**2'
+            if not cs[0].check(ex_units):
+                raise ValueError((
+                    f'Unexpected dimensionality in cross_sections units, '
+                    f'expected {ex_units}, got {str(cs[0].dimensionality)}'))
             cs_unit = cs[0].units
             cs = [x.to(cs_unit).magnitude for x in cs]*cs_unit
+        else:
+            cs = None
 
         evec_weights = np.real(np.einsum('ijkl,ijkl->ijk',
                                          self.eigenvectors,
@@ -501,7 +501,7 @@ class QpointPhononModes(QpointFrequencies):
             dos = self._calculate_dos(dos_bins, mode_widths=mode_widths,
                                        mode_widths_min=mode_widths_min,
                                        mode_weights=species_weights)
-            if weighting is not None:
+            if cs is not None:
                 # Weighted DOS is per-atom (rather than per mass unit)
                 # so don't divide by mass
                 dos *= cs[i]
@@ -510,7 +510,7 @@ class QpointPhononModes(QpointFrequencies):
                     len(spec_idx_dict) + 1, len(dos_bins) - 1))*dos.units
             all_dos_y_data[i + 1] = dos
         # Now calculate total dos
-        if weighting is not None:
+        if cs is not None:
             avg_atom_mass = np.mean(self.crystal.atom_mass).magnitude
             per_species_mass = [self.crystal.atom_mass[spec_idx[0]].magnitude
                                 for spec_idx in spec_idx_dict.values()]
