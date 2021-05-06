@@ -119,9 +119,11 @@ class QpointFrequencies:
                        mode_widths: Optional[Quantity] = None,
                        mode_widths_min: Quantity = Quantity(0.01, 'meV'),
                        mode_weights: Optional[np.ndarray] = None
-                       ) -> Spectrum1D:
+                       ) -> Quantity:
         """
-        Calculates a density of states (same arg defs as calculate_dos)
+        Calculates a density of states (same arg defs as calculate_dos),
+        but returns just a Quantity containing the y_data, rather
+        than a Spectrum1D
 
         The mode_weights is a shape (n_qpts, n_modes) float array,
         describing the weight of each mode at each q-point.
