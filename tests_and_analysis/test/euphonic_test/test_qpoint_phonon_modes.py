@@ -515,11 +515,6 @@ class TestQpointPhononModesCalculateDos:
                 phonon_name=get_phonopy_path(material, qpt_ph_modes_file))
         dos = qpt_ph_modes.calculate_dos(ebins)
         expected_dos = get_expected_spectrum1d(expected_dos_json)
-        # Temporary solution until test data has been regenerated, results
-        # have changed by a factor of the number of modes
-        dos._y_data = dos._y_data/qpt_ph_modes.frequencies.shape[1]
-        # Energy units have also changed
-        dos.y_data_unit = '1/hartree'
         check_spectrum1d(dos, expected_dos)
 
     @pytest.mark.parametrize(
@@ -540,11 +535,6 @@ class TestQpointPhononModesCalculateDos:
         dos = qpt_ph_modes.calculate_dos(
             ebins, mode_widths=mode_widths)
         expected_dos = get_expected_spectrum1d(expected_dos_json)
-        # Temporary solution until test data has been regenerated, results
-        # have changed by a factor of the number of modes
-        dos._y_data = dos._y_data/qpt_ph_modes.frequencies.shape[1]
-        # Energy units have also changed
-        dos.y_data_unit = '1/hartree'
         check_spectrum1d(dos, expected_dos)
 
     @pytest.mark.parametrize(
@@ -636,11 +626,7 @@ class TestQpointPhononModesCalculatePdos:
             get_castep_path(material, qpt_ph_modes_file))
         all_dos = qpt_ph_modes.calculate_pdos(ebins)
         expected_total_dos = get_expected_spectrum1d(expected_dos_json)
-        # Temporary solution until test data has been regenerated, results
-        # have changed by a factor of the number of modes
-        total_dos_y_data = all_dos.y_data[0].to('1/hartree').magnitude/qpt_ph_modes.frequencies.shape[1]
-        expected_total_dos_y_data = expected_total_dos.y_data
-        npt.assert_allclose(total_dos_y_data, expected_total_dos_y_data)
+        npt.assert_allclose(all_dos.y_data[0], expected_total_dos.y_data)
 
     @pytest.mark.parametrize(
         ('material, qpt_ph_modes_json, mode_widths_json, expected_dos_json, '
@@ -660,11 +646,7 @@ class TestQpointPhononModesCalculatePdos:
             modw_dict['mode_widths_unit'])
         all_dos = qpt_ph_modes.calculate_pdos(ebins, mode_widths=mode_widths)
         expected_total_dos = get_expected_spectrum1d(expected_dos_json)
-        # Temporary solution until test data has been regenerated, results
-        # have changed by a factor of the number of modes
-        total_dos_y_data = all_dos.y_data[0].to('1/hartree').magnitude/qpt_ph_modes.frequencies.shape[1]
-        expected_total_dos_y_data = expected_total_dos.y_data
-        npt.assert_allclose(total_dos_y_data, expected_total_dos_y_data)
+        npt.assert_allclose(all_dos.y_data[0], expected_total_dos.y_data)
 
     def test_invalid_weighting_raises_value_error(self):
         qpt_ph_modes = QpointPhononModes.from_castep(
