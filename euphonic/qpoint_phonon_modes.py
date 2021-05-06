@@ -2,6 +2,7 @@ import math
 from typing import Dict, Optional, Union, TypeVar, Any
 
 import numpy as np
+from pint import DimensionalityError
 
 from euphonic.validate import _check_constructor_inputs
 from euphonic.io import _obj_from_json_file, _obj_to_dict, _process_dict
@@ -232,6 +233,10 @@ class QpointPhononModes(QpointFrequencies):
                 physical_property='coherent_scattering_length')
         elif isinstance(scattering_lengths, dict):
             scattering_length_data = scattering_lengths
+        else:
+            raise TypeError((
+                f'Unexpected type for scattering_lengths, should be str '
+                f'or dict, got {type(scattering_lengths)}'))
 
         sl = [scattering_length_data[x].to('bohr').magnitude
               for x in self.crystal.atom_type]
@@ -408,7 +413,8 @@ class QpointPhononModes(QpointFrequencies):
             cross_sections: Union[str, Dict[str, Quantity]] = 'BlueBook',
             ) -> Spectrum1DCollection:
         """
-        Calculates a density of states
+        Calculates a total density of states, and per-species partial
+        density of states
 
         Parameters
         ----------
@@ -428,9 +434,10 @@ class QpointPhononModes(QpointFrequencies):
             neutron-weighted DOS, weighted by coherent/incoherent
             neutron scattering cross-sections
         cross_sections
-            Dataset of cross-sections for each element in the structure,
-            it can be a string specifying a dataset, or a dictionary
-            explicitly giving the cross-sections for each element.
+            Is only used if weighting is not None. A dataset of
+            cross-sections for each element in the structure, it can be
+            a string specifying a dataset, or a dictionary explicitly
+            giving the cross-sections for each element.
 
             If cross_sections is a string, it is passed to the ``collection``
             argument of :obj:`euphonic.util.get_reference_data()`. This
@@ -458,41 +465,60 @@ class QpointPhononModes(QpointFrequencies):
             raise ValueError(f'Invalid value for weighting, got '
                              f'{weighting}, should be one of '
                              f'{weighting_opts}')
-        cross_sections_data = None
-        if isinstance(cross_sections, str) and weighting is not None:
-            cross_sections_data = get_reference_data(
-                collection=cross_sections,
-                physical_property=f'{weighting}_cross_section')
-        elif isinstance(cross_sections, dict):
-            cross_sections_data = cross_sections
+        cs = None
+        spec_idx_dict = self.crystal.get_species_idx()
+        if weighting is not None:
+            if isinstance(cross_sections, str):
+                cross_sections_data = get_reference_data(
+                    collection=cross_sections,
+                    physical_property=f'{weighting}_cross_section')
+            elif isinstance(cross_sections, dict):
+                cross_sections_data = cross_sections
+            else:
+                raise TypeError((
+                    f'Unexpected type for cross_sections, should be str or '
+                    f'dict, got {type(cross_sections)}'))
+            cs = [cross_sections_data[x] for x in spec_idx_dict.keys()]
+            # Account for cross sections in different, or invalid, units
+            if not cs[0].check('[length]**2'):
+                raise DimensionalityError((
+                    f'Unexpected dimensionality in cross_sections, expected '
+                    f'[length]**2, got {str(cs[0].dimensionality)}'))
+            cs_unit = cs[0].units
+            cs = [x.to(cs_unit).magnitude for x in cs]*cs_unit
 
         evec_weights = np.real(np.einsum('ijkl,ijkl->ijk',
                                          self.eigenvectors,
                                          np.conj(self.eigenvectors)))
         n_modes = self._frequencies.shape[1]
 
-        _, idx = np.unique(self.crystal.atom_type, return_index=True)
-        # Retain species order
-        species = self.crystal.atom_type[np.sort(idx)]
-        for i, spec in enumerate(species):
-            spec_idx = np.where(self.crystal.atom_type == spec)[0]
+        for i, (spec, spec_idx) in enumerate(spec_idx_dict.items()):
             species_weights = np.sum(
                 evec_weights[:, :, spec_idx], axis=-1)
             dos = self._calculate_dos(dos_bins, mode_widths=mode_widths,
-                                      mode_widths_min=mode_widths_min,
-                                      mode_weights=species_weights)
-            if cross_sections_data:
-                neutron_weighting = (cross_sections_data[spec]
-                                     /self.crystal.atom_mass[spec_idx[0]])
-                dos = dos*neutron_weighting
+                                       mode_widths_min=mode_widths_min,
+                                       mode_weights=species_weights)
+            if weighting is not None:
+                # Weighted DOS is per-atom (rather than per mass unit)
+                # so don't divide by mass
+                dos *= cs[i]
             if i == 0:
                 all_dos_y_data = np.zeros((
-                    len(species) + 1, len(dos_bins) - 1))*dos.units
+                    len(spec_idx_dict) + 1, len(dos_bins) - 1))*dos.units
             all_dos_y_data[i + 1] = dos
         # Now calculate total dos
-        all_dos_y_data[0] = np.sum(all_dos_y_data[1:], axis=0)
+        if weighting is not None:
+            avg_atom_mass = np.mean(self.crystal.atom_mass).magnitude
+            per_species_mass = [self.crystal.atom_mass[spec_idx[0]].magnitude
+                                for spec_idx in spec_idx_dict.values()]
+            pdos_weighting = avg_atom_mass/per_species_mass
+        else:
+            pdos_weighting = np.ones(len(spec_idx_dict))
+        all_dos_y_data[0] = np.sum(
+            pdos_weighting[:, np.newaxis]*all_dos_y_data[1:], axis=0)
         metadata = {'line_data':
-            [{'label': x} for x in ['Total'] + species.tolist()]}
+            [{'label': x} for x in ['Total'] + list(spec_idx_dict.keys())]}
+
         return Spectrum1DCollection(
             dos_bins, all_dos_y_data, metadata=metadata)
 
