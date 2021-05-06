@@ -626,6 +626,26 @@ class TestQpointPhononModesCalculatePdos:
         check_spectrum1dcollection(pdos, expected_pdos)
 
     @pytest.mark.parametrize(
+        ('material, qpt_ph_modes_json, mode_widths_json, '
+         'expected_pdos_json, ebins'), [
+            ('LZO', 'lzo_222_full_qpoint_phonon_modes.json',
+             'lzo_222_full_mode_widths.json',
+             'lzo_222_full_adaptive_coh_pdos.json',
+             np.arange(0, 100, 0.5)*ureg('meV'))])
+    def test_calculate_pdos_with_mode_widths(
+            self, material, qpt_ph_modes_json, mode_widths_json,
+            expected_pdos_json, ebins):
+        qpt_ph_modes = get_qpt_ph_modes_from_json(material, qpt_ph_modes_json)
+        with open(os.path.join(get_fc_dir(), mode_widths_json), 'r') as fp:
+            modw_dict = json.load(fp)
+        mode_widths = modw_dict['mode_widths']*ureg(
+            modw_dict['mode_widths_unit'])
+        pdos = qpt_ph_modes.calculate_pdos(
+            ebins, mode_widths=mode_widths, weighting='coherent')
+        expected_pdos = get_expected_spectrum1dcollection(expected_pdos_json)
+        check_spectrum1dcollection(pdos, expected_pdos)
+
+    @pytest.mark.parametrize(
         'material, qpt_ph_modes_file, expected_dos_json, ebins', [
             ('quartz', 'quartz-666-grid.phonon',
              'quartz_666_dos.json', np.arange(0, 155, 0.5)*ureg('meV')),
@@ -635,6 +655,30 @@ class TestQpointPhononModesCalculatePdos:
         qpt_ph_modes = QpointPhononModes.from_castep(
             get_castep_path(material, qpt_ph_modes_file))
         all_dos = qpt_ph_modes.calculate_pdos(ebins)
+        expected_total_dos = get_expected_spectrum1d(expected_dos_json)
+        # Temporary solution until test data has been regenerated, results
+        # have changed by a factor of the number of modes
+        total_dos_y_data = all_dos.y_data[0].to('1/hartree').magnitude/qpt_ph_modes.frequencies.shape[1]
+        expected_total_dos_y_data = expected_total_dos.y_data
+        npt.assert_allclose(total_dos_y_data, expected_total_dos_y_data)
+
+    @pytest.mark.parametrize(
+        ('material, qpt_ph_modes_json, mode_widths_json, expected_dos_json, '
+         'ebins'), [
+            ('quartz', 'quartz_554_full_qpoint_phonon_modes.json',
+             'quartz_554_full_mode_widths.json',
+             'quartz_554_full_adaptive_dos.json',
+             np.arange(0, 155, 0.1)*ureg('meV'))
+        ])
+    def test_total_dos_from_pdos_same_as_calculate_dos_with_mode_widths(
+            self, material, qpt_ph_modes_json, mode_widths_json,
+            expected_dos_json, ebins):
+        qpt_ph_modes = get_qpt_ph_modes_from_json(material, qpt_ph_modes_json)
+        with open(os.path.join(get_fc_dir(), mode_widths_json), 'r') as fp:
+            modw_dict = json.load(fp)
+        mode_widths = modw_dict['mode_widths']*ureg(
+            modw_dict['mode_widths_unit'])
+        all_dos = qpt_ph_modes.calculate_pdos(ebins, mode_widths=mode_widths)
         expected_total_dos = get_expected_spectrum1d(expected_dos_json)
         # Temporary solution until test data has been regenerated, results
         # have changed by a factor of the number of modes
