@@ -305,14 +305,14 @@ class TestForceConstantsCalculateQPointPhononModesWithCExtensionInstalled:
         n_threads = 3
         fc = get_fc('quartz')
         fc.calculate_qpoint_phonon_modes(get_test_qpts(), n_threads=n_threads)
-        assert mocked_cext.call_args[0][-2] == n_threads
+        assert mocked_cext.call_args[0][-1] == n_threads
 
     def test_cext_called_with_n_threads_default_and_env_var(self, mocked_cext):
         n_threads = 4
         os.environ['EUPHONIC_NUM_THREADS'] = str(n_threads)
         fc = get_fc('quartz')
         fc.calculate_qpoint_phonon_modes(get_test_qpts())
-        assert mocked_cext.call_args[0][-2] == n_threads
+        assert mocked_cext.call_args[0][-1] == n_threads
 
     def test_cext_called_with_n_threads_default_and_no_env_var(self, mocked_cext):
         n_threads = cpu_count()
@@ -322,5 +322,5 @@ class TestForceConstantsCalculateQPointPhononModesWithCExtensionInstalled:
             pass
         fc = get_fc('quartz')
         fc.calculate_qpoint_phonon_modes(get_test_qpts())
-        assert mocked_cext.call_args[0][-2] == n_threads
+        assert mocked_cext.call_args[0][-1] == n_threads
 
