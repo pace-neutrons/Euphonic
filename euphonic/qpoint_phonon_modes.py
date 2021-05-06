@@ -448,7 +448,10 @@ class QpointPhononModes(QpointFrequencies):
         -------
         dos
             A collection of spectra, with the energy bins on the x-axis and
-            total DOS and per-element PDOS on the y-axis
+            total DOS and per-element PDOS on the y-axis. If weighting
+            is None, y-axis is in 1/energy units. If weighting is specified,
+            neutron-weighted DOS is returned and y-axis is in area/energy
+            units per atom.
         """
         weighting_opts = [None, 'coherent', 'incoherent']
         if not weighting in weighting_opts:
