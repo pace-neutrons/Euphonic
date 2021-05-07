@@ -447,10 +447,13 @@ class QpointPhononModes(QpointFrequencies):
         -------
         dos
             A collection of spectra, with the energy bins on the x-axis and
-            total DOS and per-element PDOS on the y-axis. If weighting
-            is None, y-axis is in 1/energy units. If weighting is specified,
+            DOS on the y-axis. If weighting is None, y-axis is in 1/energy
+            units, and the first spectrum is the total DOS, with the other
+            spectra being the per-element PDOS. If weighting is specified,
             neutron-weighted DOS is returned and y-axis is in area/energy
-            units per atom.
+            units per atom, and the first spectrum is the neutron-weighted
+            DOS for the average atom in the crystal, and the other spectra
+            are per-element neutron-weighted PDOS.
         """
         weighting_opts = [None, 'coherent', 'incoherent']
         if not weighting in weighting_opts:
@@ -499,18 +502,19 @@ class QpointPhononModes(QpointFrequencies):
                 all_dos_y_data = np.zeros((
                     len(spec_idx_dict) + 1, len(dos_bins) - 1))*dos.units
             all_dos_y_data[i + 1] = dos
-        # Now calculate total dos
+        # Now calculate overall dos
         if cs is not None:
-            avg_atom_mass = np.mean(self.crystal.atom_mass).magnitude
-            per_species_mass = [self.crystal.atom_mass[spec_idx[0]].magnitude
-                                for spec_idx in spec_idx_dict.values()]
-            pdos_weighting = avg_atom_mass/per_species_mass
+            dos_label = 'Average atom'
+            pdos_weighting = np.array([len(x)/self.crystal.n_atoms
+                for x in spec_idx_dict.values()])
         else:
+            dos_label = 'Total'
             pdos_weighting = np.ones(len(spec_idx_dict))
+
         all_dos_y_data[0] = np.sum(
             pdos_weighting[:, np.newaxis]*all_dos_y_data[1:], axis=0)
         metadata = {'line_data':
-            [{'label': x} for x in ['Total'] + list(spec_idx_dict.keys())]}
+            [{'label': x} for x in [dos_label] + list(spec_idx_dict.keys())]}
 
         return Spectrum1DCollection(
             dos_bins, all_dos_y_data, metadata=metadata)
