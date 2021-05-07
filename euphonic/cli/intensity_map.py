@@ -39,7 +39,7 @@ def main(params: List[str] = None) -> None:
                                           cell=modes.crystal.to_spglib_cell())
     modes.frequencies_unit = args.energy_unit
     ebins, energy_unit = _get_energy_bins_and_units(
-        args.energy_unit, modes, args.ebins, emin=args.e_min, emax=args.e_max)
+        args.energy_unit, modes, args.ebins + 1, emin=args.e_min, emax=args.e_max)
 
     print("Computing intensities and generating 2D maps")
 
@@ -64,7 +64,7 @@ def main(params: List[str] = None) -> None:
                     .calculate_sqw_map(ebins))
 
     elif args.weights.lower() == 'dos':
-        spectrum = calculate_dos_map(modes, ebins)
+        spectrum = modes.calculate_dos_map(ebins)
 
     if args.q_broadening or args.energy_broadening:
         spectrum = spectrum.broaden(
@@ -98,21 +98,6 @@ def main(params: List[str] = None) -> None:
                           y_label=y_label,
                           title=args.title)
     matplotlib_save_or_show(save_filename=args.save_to)
-
-
-def calculate_dos_map(modes: euphonic.QpointPhononModes,
-                      ebins: euphonic.Quantity) -> euphonic.Spectrum2D:
-    from euphonic.util import _calc_abscissa
-    q_bins = _calc_abscissa(modes.crystal.reciprocal_cell(), modes.qpts)
-
-    bin_indices = np.digitize(modes.frequencies.magnitude, ebins.magnitude)
-    intensity_map = np.zeros((modes.n_qpts, len(ebins) + 1))
-    first_index = np.tile(range(modes.n_qpts),
-                          (3 * modes.crystal.n_atoms, 1)).transpose()
-    np.add.at(intensity_map, (first_index, bin_indices), 1)
-
-    return euphonic.Spectrum2D(q_bins, ebins,
-                               intensity_map[:, :-1] * ureg('dimensionless'))
 
 
 def get_parser() -> argparse.ArgumentParser:

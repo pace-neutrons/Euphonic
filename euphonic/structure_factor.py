@@ -4,7 +4,6 @@ import numpy as np
 
 from euphonic.validate import _check_constructor_inputs, _check_unit_conversion
 from euphonic.io import _obj_to_dict, _process_dict
-from euphonic.util import get_qpoint_labels, _calc_abscissa
 from euphonic import (ureg, Quantity, Crystal, QpointFrequencies, Spectrum1D,
                       Spectrum2D)
 
@@ -207,16 +206,10 @@ class StructureFactor(QpointFrequencies):
         .. [1] M.T. Dove, Structure and Dynamics, Oxford University Press,
                Oxford, 2003, 225-226
         """
-
         sqw_map = self._bose_corrected_structure_factor(
             e_bins, calc_bose=calc_bose, temperature=temperature)
-
-        abscissa = _calc_abscissa(self.crystal.reciprocal_cell(), self.qpts)
-        # Calculate q-space ticks and labels
-        x_tick_labels = get_qpoint_labels(self.qpts,
-                                          cell=self.crystal.to_spglib_cell())
-
-        return Spectrum2D(abscissa, e_bins, sqw_map,
+        x_data, x_tick_labels = self._get_qpt_axis_and_labels()
+        return Spectrum2D(x_data, e_bins, sqw_map,
                           x_tick_labels=x_tick_labels)
 
     def _bose_corrected_structure_factor(self, e_bins: Quantity,
