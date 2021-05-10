@@ -2,8 +2,10 @@ from typing import List
 
 import euphonic
 from euphonic.plot import plot_1d
-from .utils import (load_data_from_file, get_args, _bands_from_force_constants,
-                    _get_q_distance, matplotlib_save_or_show, _get_cli_parser,
+from .utils import (load_data_from_file, get_args,
+                    _band_qpts_from_force_constants,
+                    _modes_from_fc_and_qpts, _get_q_distance,
+                    matplotlib_save_or_show, _get_cli_parser,
                     _calc_modes_kwargs)
 
 
@@ -12,14 +14,14 @@ def main(params: List[str] = None):
     data = load_data_from_file(args.filename)
 
     if isinstance(data, euphonic.ForceConstants):
-        frequencies_only = not args.reorder  # Need eigenvectors to reorder
-
         print("Force Constants data was loaded. Getting band path...")
 
         q_distance = _get_q_distance(args.length_unit, args.q_spacing)
-        (modes, x_tick_labels, split_args) = _bands_from_force_constants(
-            data, q_distance=q_distance, frequencies_only=frequencies_only,
-            **_calc_modes_kwargs(args))
+        qpts, x_tick_labels, split_args = _band_qpts_from_force_constants(
+            data, q_distance=q_distance)
+        cmkwargs, frequencies_only = _calc_modes_kwargs(args)
+        modes = _modes_from_fc_and_qpts(data, qpts, frequencies_only,
+                                        **cmkwargs)
     elif isinstance(data, euphonic.QpointPhononModes):
         print("Phonon band data was loaded.")
         modes = data

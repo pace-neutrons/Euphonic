@@ -299,18 +299,26 @@ def _insert_gamma(bandpath: dict) -> None:
     bandpath['explicit_segments'] = None
 
 
+def _modes_from_fc_and_qpts(fc: ForceConstants,
+                            qpts: np.ndarray,
+                            frequencies_only: bool = False,
+                            **calc_modes_kwargs
+                            ) -> Union[QpointPhononModes, QpointFrequencies]:
+    if frequencies_only:
+        return fc.calculate_qpoint_frequencies(qpts, **calc_modes_kwargs)
+    else:
+        return fc.calculate_qpoint_phonon_modes(qpts, **calc_modes_kwargs)
+
+
 XTickLabels = List[Tuple[int, str]]
 SplitArgs = Dict[str, Any]
 
 
-def _bands_from_force_constants(data: ForceConstants,
-                                q_distance: Quantity,
-                                insert_gamma: bool = True,
-                                frequencies_only: bool = False,
-                                **calc_modes_kwargs
-                                ) -> Tuple[Union[QpointPhononModes,
-                                                 QpointFrequencies],
-                                           XTickLabels, SplitArgs]:
+def _band_qpts_from_force_constants(data: ForceConstants,
+                                   q_distance: Quantity,
+                                   insert_gamma: bool = True,
+                                   ) -> Tuple[np.ndarray,
+                                              XTickLabels, SplitArgs]:
     structure = data.crystal.to_spglib_cell()
     bandpath = seekpath.get_explicit_k_path(
         structure,
@@ -327,16 +335,7 @@ def _bands_from_force_constants(data: ForceConstants,
         .format(n_modes=(data.crystal.n_atoms * 3),
                 n_qpts=len(bandpath["explicit_kpoints_rel"])))
     qpts = bandpath["explicit_kpoints_rel"]
-
-    if frequencies_only:
-        modes = data.calculate_qpoint_frequencies(qpts,
-                                                  reduce_qpts=False,
-                                                  **calc_modes_kwargs)
-    else:
-        modes = data.calculate_qpoint_phonon_modes(qpts,
-                                                   reduce_qpts=False,
-                                                   **calc_modes_kwargs)
-    return modes, x_tick_labels, split_args
+    return qpts, x_tick_labels, split_args
 
 
 def _grid_spec_from_args(crystal: Crystal,
@@ -369,11 +368,21 @@ def _get_debye_waller(temperature: Quantity,
     return dw_phonons.calculate_debye_waller(temperature)
 
 
-def _calc_modes_kwargs(args: Namespace) -> Dict[str, Any]:
+def _calc_modes_kwargs(args: Namespace) -> Tuple[Dict[str, Any], bool]:
     """Collect arguments that can be passed to calculate_qpoint_phonon_modes()
+       and determine whether eigenvectors are required
     """
-    return dict(asr=args.asr, eta_scale=args.eta_scale,
-                use_c=args.use_c, n_threads=args.n_threads)
+    kwargs = dict(asr=args.asr, eta_scale=args.eta_scale,
+                  use_c=args.use_c, n_threads=args.n_threads)
+    if getattr(args, 'adaptive', False):
+        kwargs['return_mode_widths'] = True
+    frequencies_only = True
+    # Any weighting apart from 'dos' requires eigenvectors
+    # So does reordering modes
+    if (getattr(args, 'weights', 'dos') != 'dos'
+            or getattr(args, 'reorder', False)):
+        frequencies_only = False
+    return kwargs, frequencies_only
 
 
 def _get_cli_parser(features: Collection[str] = {}

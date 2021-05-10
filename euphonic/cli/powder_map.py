@@ -46,7 +46,7 @@ def get_parser() -> 'argparse.ArgumentParser':
 
 def main(params: List[str] = None):
     args = get_args(get_parser(), params)
-    calc_modes_kwargs = _calc_modes_kwargs(args)
+    calc_modes_kwargs, _ = _calc_modes_kwargs(args)
 
     # Make sure we get an error if accessing NPTS inappropriately
     if args.npts_density is not None:

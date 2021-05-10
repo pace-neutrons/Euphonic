@@ -4,7 +4,7 @@ import euphonic
 from euphonic.util import mp_grid
 from euphonic.plot import plot_1d
 from .utils import (load_data_from_file, get_args, matplotlib_save_or_show,
-                    _calc_modes_kwargs,
+                    _calc_modes_kwargs, _modes_from_fc_and_qpts,
                     _get_cli_parser, _get_energy_bins,
                     _grid_spec_from_args)
 
@@ -25,20 +25,17 @@ def main(params: List[str] = None):
         print("Force Constants data was loaded. Calculating phonon modes "
               "on {} q-point grid...".format(
                   ' x '.join([str(x) for x in grid_spec])))
+        cmkwargs, frequencies_only = _calc_modes_kwargs(args)
+        modes = _modes_from_fc_and_qpts(data, mp_grid(grid_spec),
+                                        frequencies_only, **cmkwargs)
         if args.adaptive:
             if args.shape != 'gauss':
                 raise ValueError('Currently only Gaussian shape is supported '
                                  'with adaptive broadening')
-            cmkwargs = _calc_modes_kwargs(args)
-            cmkwargs['return_mode_widths'] = True
-            modes, mode_widths = data.calculate_qpoint_frequencies(
-                mp_grid(grid_spec), **cmkwargs)
+            mode_widths = modes[1]
+            modes = modes[0]
             if args.energy_broadening:
                 mode_widths *= args.energy_broadening
-        else:
-            modes = data.calculate_qpoint_frequencies(mp_grid(grid_spec),
-                                                      **_calc_modes_kwargs(args))
-
     elif isinstance(data, euphonic.QpointPhononModes):
         print("Phonon band data was loaded.")
         modes = data

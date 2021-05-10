@@ -7,7 +7,8 @@ import euphonic
 from euphonic import ureg
 import euphonic.plot
 from euphonic.util import get_qpoint_labels
-from .utils import (_bands_from_force_constants, _calc_modes_kwargs,
+from .utils import (_band_qpts_from_force_constants, _calc_modes_kwargs,
+                    _modes_from_fc_and_qpts,
                     get_args, _get_debye_waller,
                     _get_energy_bins, _get_q_distance,
                     _get_cli_parser, load_data_from_file,
@@ -16,21 +17,19 @@ from .utils import (_bands_from_force_constants, _calc_modes_kwargs,
 
 def main(params: List[str] = None) -> None:
     args = get_args(get_parser(), params)
-    calc_modes_kwargs = _calc_modes_kwargs(args)
+    cmkwargs, frequencies_only = _calc_modes_kwargs(args)
 
     data = load_data_from_file(args.filename)
 
     q_spacing = _get_q_distance(args.length_unit, args.q_spacing)
     recip_length_unit = q_spacing.units
 
-    frequencies_only = (args.weights != 'coherent')
-
     if isinstance(data, euphonic.ForceConstants):
         print("Force Constants data was loaded. Getting band path...")
-        (modes, x_tick_labels, split_args) = _bands_from_force_constants(
-            data, q_distance=q_spacing, insert_gamma=False,
-            frequencies_only=frequencies_only,
-            **calc_modes_kwargs)
+        (qpts, x_tick_labels, split_args) = _band_qpts_from_force_constants(
+            data, q_distance=q_spacing, insert_gamma=False)
+        modes = _modes_from_fc_and_qpts(
+            data, qpts, frequencies_only, **cmkwargs)
     elif isinstance(data, euphonic.QpointPhononModes):
         print("Phonon band data was loaded.")
         modes = data
@@ -56,7 +55,7 @@ def main(params: List[str] = None) -> None:
                                    grid=args.grid,
                                    grid_spacing=(args.grid_spacing
                                                  * recip_length_unit),
-                                   **calc_modes_kwargs)
+                                   **cmkwargs)
         else:
             dw = None
 
