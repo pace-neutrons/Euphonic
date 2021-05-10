@@ -207,7 +207,11 @@ def _get_energy_bins(
     modes.frequencies are used to find the bin limits
     """
     if emin is None:
-        emin = min(np.min(modes.frequencies.magnitude), 0.)
+        # Subtract small amount from min frequency - otherwise due to unit
+        # conversions binning of this frequency can vary with different
+        # architectures/lib versions, making it difficult to test
+        emin_room = 1e-5*ureg('meV').to(modes.frequencies.units).magnitude
+        emin = min(np.min(modes.frequencies.magnitude - emin_room), 0.)
     if emax is None:
         emax = np.max(modes.frequencies.magnitude) * headroom
     if emin >= emax:
