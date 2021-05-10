@@ -195,19 +195,17 @@ def _get_q_distance(length_unit_string: str, q_distance: float) -> Quantity:
     return q_distance * recip_length_units
 
 
-def _get_energy_bins_and_units(
-        energy_unit_string: str, modes: QpointPhononModes,
+def _get_energy_bins(
+        modes: QpointPhononModes,
         n_ebins: int, emin: Optional[float] = None,
         emax: Optional[float] = None,
-        headroom: float = 1.05) -> Tuple[Quantity, Unit]:
-
-    try:
-        energy_unit = ureg(energy_unit_string)
-    except UndefinedUnitError:
-        raise ValueError("Energy unit not known. Euphonic uses Pint for units."
-                         " Try 'eV' or 'hartree'. Metric prefixes are also "
-                         "allowed, e.g 'meV' or 'fJ'.")
-
+        headroom: float = 1.05) -> Quantity:
+    """
+    Gets recommeded energy bins, in same units as modes.frequencies.
+    emin and emax are assumed to be in the same units as
+    modes.frequencies, if not provided the min/max values of
+    modes.frequencies are used to find the bin limits
+    """
     if emin is None:
         emin = min(np.min(modes.frequencies.magnitude), 0.)
     if emax is None:
@@ -215,9 +213,8 @@ def _get_energy_bins_and_units(
     if emin >= emax:
         raise ValueError("Maximum energy should be greater than minimum. "
                          "Check --e-min and --e-max arguments.")
-    ebins = np.linspace(emin, emax, n_ebins) * energy_unit
-
-    return ebins, energy_unit
+    ebins = np.linspace(emin, emax, n_ebins) * modes.frequencies.units
+    return ebins
 
 
 def _get_tick_labels(bandpath: dict) -> List[Tuple[int, str]]:

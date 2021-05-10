@@ -5,7 +5,7 @@ from euphonic.util import mp_grid
 from euphonic.plot import plot_1d
 from .utils import (load_data_from_file, get_args, matplotlib_save_or_show,
                     _calc_modes_kwargs,
-                    _get_cli_parser, _get_energy_bins_and_units,
+                    _get_cli_parser, _get_energy_bins,
                     _grid_spec_from_args)
 
 
@@ -43,12 +43,12 @@ def main(params: List[str] = None):
         print("Phonon band data was loaded.")
         modes = data
     modes.frequencies_unit = args.energy_unit
-    ebins, energy_unit = _get_energy_bins_and_units(
-        args.energy_unit, modes, args.ebins, emin=args.e_min, emax=args.e_max)
+    ebins = _get_energy_bins(
+            modes, args.ebins, emin=args.e_min, emax=args.e_max)
     dos = modes.calculate_dos(ebins, mode_widths=mode_widths)
 
     if args.energy_broadening and not args.adaptive:
-        dos = dos.broaden(args.energy_broadening*energy_unit, shape=args.shape)
+        dos = dos.broaden(args.energy_broadening*ebins.units, shape=args.shape)
 
     if args.x_label is None:
         x_label = f"Energy / {dos.x_data.units:~P}"
