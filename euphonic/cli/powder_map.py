@@ -8,7 +8,7 @@ import numpy as np
 
 from euphonic import ureg
 from euphonic.cli.utils import (_calc_modes_kwargs, _get_cli_parser,
-                                _get_debye_waller, _get_energy_bins_and_units,
+                                _get_debye_waller, _get_energy_bins,
                                 _get_q_distance)
 from euphonic.cli.utils import (force_constants_from_file, get_args,
                                 matplotlib_save_or_show)
@@ -66,12 +66,11 @@ def main(params: List[str] = None):
 
     # Use X-point modes to estimate frequency range, set up energy bins
     # (Not Gamma in case there are only 3 branches; value would be zero!)
-
-    energy_bins, energy_unit = _get_energy_bins_and_units(
-        args.energy_unit,
-        fc.calculate_qpoint_frequencies(np.array([[0., 0., 0.5]]),
-                                        **calc_modes_kwargs),
-        args.ebins, emin=args.e_min, emax=args.e_max,
+    modes = fc.calculate_qpoint_frequencies(
+        np.array([[0., 0., 0.5]]), **calc_modes_kwargs)
+    modes.frequencies_unit = args.energy_unit
+    energy_bins = _get_energy_bins(
+        modes, args.ebins, emin=args.e_min, emax=args.e_max,
         headroom=1.2)  # Generous headroom as we only checked one q-point
 
     if args.weights in ('coherent',):
@@ -128,7 +127,7 @@ def main(params: List[str] = None):
         spectrum = spectrum.broaden(
             x_width=(args.q_broadening * recip_length_unit
                      if args.q_broadening else None),
-            y_width=(args.energy_broadening * energy_unit
+            y_width=(args.energy_broadening * energy_bins.units
                      if args.energy_broadening else None),
             shape=args.shape)
 

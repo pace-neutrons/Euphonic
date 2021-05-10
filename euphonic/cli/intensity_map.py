@@ -9,7 +9,7 @@ import euphonic.plot
 from euphonic.util import get_qpoint_labels
 from .utils import (_bands_from_force_constants, _calc_modes_kwargs,
                     get_args, _get_debye_waller,
-                    _get_energy_bins_and_units, _get_q_distance,
+                    _get_energy_bins, _get_q_distance,
                     _get_cli_parser, load_data_from_file,
                     matplotlib_save_or_show)
 
@@ -38,8 +38,8 @@ def main(params: List[str] = None) -> None:
         x_tick_labels = get_qpoint_labels(modes.qpts,
                                           cell=modes.crystal.to_spglib_cell())
     modes.frequencies_unit = args.energy_unit
-    ebins, energy_unit = _get_energy_bins_and_units(
-        args.energy_unit, modes, args.ebins, emin=args.e_min, emax=args.e_max)
+    ebins = _get_energy_bins(
+        modes, args.ebins, emin=args.e_min, emax=args.e_max)
 
     print("Computing intensities and generating 2D maps")
 
@@ -70,7 +70,7 @@ def main(params: List[str] = None) -> None:
         spectrum = spectrum.broaden(
             x_width=(args.q_broadening * recip_length_unit
                      if args.q_broadening else None),
-            y_width=(args.energy_broadening * energy_unit
+            y_width=(args.energy_broadening * ebins.units
                      if args.energy_broadening else None),
             shape=args.shape)
 

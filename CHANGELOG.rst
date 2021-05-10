@@ -1,6 +1,12 @@
 `Unreleased <https://github.com/pace-neutrons/Euphonic/compare/v0.5.1...HEAD>`_
 ----------
 
+- Bug fixes:
+
+  - Fixed bug which resulted in incorrect energy bins being generated
+    in ``euphonic-powder-map`` if units other than meV are used and
+    ``--e-max`` and ``--e-min`` aren't specified
+
 `v0.5.1 <https://github.com/pace-neutrons/Euphonic/compare/v0.5.0...v0.5.1>`_
 ----------
 
