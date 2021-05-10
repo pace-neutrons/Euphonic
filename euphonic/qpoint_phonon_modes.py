@@ -449,11 +449,12 @@ class QpointPhononModes(QpointFrequencies):
             A collection of spectra, with the energy bins on the x-axis and
             DOS on the y-axis. If weighting is None, y-axis is in 1/energy
             units, and the first spectrum is the total DOS, with the other
-            spectra being the per-element PDOS. If weighting is specified,
-            neutron-weighted DOS is returned and y-axis is in area/energy
-            units per atom, and the first spectrum is the neutron-weighted
-            DOS for the average atom in the crystal, and the other spectra
-            are per-element neutron-weighted PDOS.
+            spectra being the per-species PDOS. If weighting is specified
+            or cross_sections are supplied, the neutron-weighted DOS is
+            returned and y-axis is in area/energy units per atom, where the
+            first spectrum is the total neutron-weighted DOS per average
+            atom, and the other spectra show the contributions of each
+            species to the total
         """
         weighting_opts = [None, 'coherent', 'incoherent']
         if not weighting in weighting_opts:
@@ -495,26 +496,18 @@ class QpointPhononModes(QpointFrequencies):
                                        mode_widths_min=mode_widths_min,
                                        mode_weights=species_weights)
             if cs is not None:
-                # Weighted DOS is per-atom (rather than per mass unit)
-                # so don't divide by mass
-                dos *= cs[i]
+                # Neutron weighted DOS is per atom of sample
+                avg_atom_mass = np.mean(self.crystal._atom_mass)
+                species_mass = self.crystal._atom_mass[spec_idx[0]]
+                dos *= cs[i]*avg_atom_mass/species_mass
             if i == 0:
                 all_dos_y_data = np.zeros((
                     len(spec_idx_dict) + 1, len(dos_bins) - 1))*dos.units
             all_dos_y_data[i + 1] = dos
-        # Now calculate overall dos
-        if cs is not None:
-            dos_label = 'Average atom'
-            pdos_weighting = np.array([len(x)/self.crystal.n_atoms
-                for x in spec_idx_dict.values()])
-        else:
-            dos_label = 'Total'
-            pdos_weighting = np.ones(len(spec_idx_dict))
 
-        all_dos_y_data[0] = np.sum(
-            pdos_weighting[:, np.newaxis]*all_dos_y_data[1:], axis=0)
+        all_dos_y_data[0] = np.sum(all_dos_y_data[1:], axis=0)
         metadata = {'line_data':
-            [{'label': x} for x in [dos_label] + list(spec_idx_dict.keys())]}
+            [{'label': x} for x in ['Total'] + list(spec_idx_dict.keys())]}
 
         return Spectrum1DCollection(
             dos_bins, all_dos_y_data, metadata=metadata)
