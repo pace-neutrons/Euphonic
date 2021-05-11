@@ -420,9 +420,10 @@ class QpointPhononModes(QpointFrequencies):
             the mode widths, as mode widths of zero will result in
             infinitely sharp peaks
         weighting
-            One of {'coherent', 'incoherent'}. If provided, produces a
-            neutron-weighted DOS, weighted by coherent/incoherent
-            neutron scattering cross-sections
+            One of {'coherent', 'incoherent', 'total'}. If provided,
+            produces a neutron-weighted DOS, weighted by either
+            the coherent, incoherent, or sum of coherent and incoherent
+            neutron scattering cross-sections.
         cross_sections
             A dataset of cross-sections for each element in the structure,
             it can be a string specifying a dataset, or a dictionary
@@ -456,23 +457,33 @@ class QpointPhononModes(QpointFrequencies):
             atom, and the other spectra show the contributions of each
             species to the total
         """
-        weighting_opts = [None, 'coherent', 'incoherent']
+        weighting_opts = [None, 'coherent', 'incoherent', 'total']
         if not weighting in weighting_opts:
             raise ValueError(f'Invalid value for weighting, got '
                              f'{weighting}, should be one of '
                              f'{weighting_opts}')
 
-        spec_idx_dict = self.crystal.get_species_idx()
         if isinstance(cross_sections, str) and weighting is not None:
-            cross_sections_data = get_reference_data(
+            if weighting == 'total':
+                weights = ['coherent', 'incoherent']
+            else:
+                weights = [weighting]
+            cross_sections_data = [get_reference_data(
                 collection=cross_sections,
-                physical_property=f'{weighting}_cross_section')
+                physical_property=f'{weight}_cross_section')
+                                   for weight in weights]
         elif isinstance(cross_sections, dict):
-            cross_sections_data = cross_sections
+            cross_sections_data = [cross_sections]
         else:
             cross_sections_data = None
+
+        spec_idx_dict = self.crystal.get_species_idx()
         if cross_sections_data is not None:
-            cs = [cross_sections_data[x] for x in spec_idx_dict.keys()]
+            cs = [cross_sections_data[0][x] for x in spec_idx_dict.keys()]
+            if len(cross_sections_data) == 2:
+                cs2 = [cross_sections_data[1][x]
+                        for x in spec_idx_dict.keys()]
+                cs = [sum(x) for x in zip(cs, cs2)]
             # Account for cross sections in different, or invalid, units
             ex_units = '[length]**2'
             if not cs[0].check(ex_units):
