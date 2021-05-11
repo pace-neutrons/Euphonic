@@ -1,5 +1,6 @@
 import math
 from typing import Dict, Optional, Union, TypeVar, Any
+from collections.abc import Mapping
 
 import numpy as np
 from pint import DimensionalityError
@@ -463,19 +464,22 @@ class QpointPhononModes(QpointFrequencies):
                              f'{weighting}, should be one of '
                              f'{weighting_opts}')
 
-        if isinstance(cross_sections, str) and weighting is not None:
-            if weighting == 'total':
-                weights = ['coherent', 'incoherent']
-            else:
-                weights = [weighting]
-            cross_sections_data = [get_reference_data(
-                collection=cross_sections,
-                physical_property=f'{weight}_cross_section')
-                                   for weight in weights]
-        elif isinstance(cross_sections, dict):
+        cross_sections_data = None
+        if isinstance(cross_sections, str):
+            if weighting is not None:
+                if weighting == 'total':
+                    weights = ['coherent', 'incoherent']
+                else:
+                    weights = [weighting]
+                cross_sections_data = [get_reference_data(
+                    collection=cross_sections,
+                    physical_property=f'{weight}_cross_section')
+                                       for weight in weights]
+        elif isinstance(cross_sections, Mapping):
             cross_sections_data = [cross_sections]
         else:
-            cross_sections_data = None
+            raise TypeError(f'Unexpected type for cross_sections, expected '
+                            f'str or dict, got {type(cross_sections)}')
 
         spec_idx_dict = self.crystal.get_species_idx()
         if cross_sections_data is not None:

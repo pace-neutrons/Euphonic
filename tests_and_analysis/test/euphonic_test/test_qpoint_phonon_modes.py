@@ -658,6 +658,14 @@ class TestQpointPhononModesCalculatePdos:
             qpt_ph_modes.calculate_pdos(np.arange(0, 155, 0.5)*ureg('meV'),
                                         weighting='neutron')
 
+    def test_wrong_type_cross_sections_raises_type_error(self):
+        qpt_ph_modes = QpointPhononModes.from_castep(
+            get_castep_path('quartz', 'quartz-666-grid.phonon'))
+        with pytest.raises(TypeError):
+            qpt_ph_modes.calculate_pdos(
+                np.arange(0, 155, 0.5)*ureg('meV'),
+                cross_sections=[4.29, 2.78])
+
     def test_cross_sections_wrong_units_raises_value_error(self):
         qpt_ph_modes = QpointPhononModes.from_castep(
             get_castep_path('quartz', 'quartz-666-grid.phonon'))
