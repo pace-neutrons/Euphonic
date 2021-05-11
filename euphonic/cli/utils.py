@@ -380,7 +380,8 @@ def _calc_modes_kwargs(args: Namespace) -> Tuple[Dict[str, Any], bool]:
     # Any weighting apart from 'dos' requires eigenvectors
     # So does reordering modes
     if (getattr(args, 'weights', 'dos') != 'dos'
-            or getattr(args, 'reorder', False)):
+            or getattr(args, 'reorder', False)
+            or getattr(args, 'pdos', None) is not None):
         frequencies_only = False
     return kwargs, frequencies_only
 
@@ -393,8 +394,9 @@ def _get_cli_parser(features: Collection[str] = {}
     Args:
         sections:
             collection (e.g. set, list) of str for known argument groups.
-            Known keys: read-fc, read-modes, weights, powder, mp-grid,
-                plotting, ebins, adaptive-broadening, q-e, map, btol
+            Known keys: read-fc, read-modes, weights, dos-weights, powder,
+                mp-grid, plotting, ebins, adaptive-broadening, q-e, map,
+                btol
 
     Returns:
         Parser and a dict of parser subsections. This allows their help strings
@@ -476,6 +478,9 @@ def _get_cli_parser(features: Collection[str] = {}
         raise ValueError('Cannot have both dos-weights and weights, they '
                          'have overlapping options')
     if 'dos-weights' in features:
+        sections['property'].add_argument(
+            '--pdos', type=str, action='store', nargs='*',
+            help=('Plot PDOS'))
         sections['property'].add_argument(
             '--weights', '-w', default='dos', choices=_dos_choices,
             help=('Type of DOS to plot, regular dos or '

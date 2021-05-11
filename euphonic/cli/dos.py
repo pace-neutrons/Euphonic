@@ -1,6 +1,7 @@
 from typing import List
 
 import euphonic
+from euphonic import Spectrum1DCollection
 from euphonic.util import mp_grid
 from euphonic.plot import plot_1d
 from .utils import (load_data_from_file, get_args, matplotlib_save_or_show,
@@ -44,13 +45,26 @@ def main(params: List[str] = None):
             modes, args.ebins, emin=args.e_min, emax=args.e_max)
     if len(args.weights.split('-')) > 1:
         weighting = args.weights.split('-')[0]
+    else:
+        weighting = None
+    if weighting is None and args.pdos is None:
+        dos = modes.calculate_dos(ebins, mode_widths=mode_widths)
+    else:
         dos = modes.calculate_pdos(ebins, mode_widths=mode_widths,
                                    weighting=weighting)
-    else:
-        dos = modes.calculate_dos(ebins, mode_widths=mode_widths)
-
+        if args.pdos is None:
+            dos = dos[0]
+        elif len(args.pdos) > 0:
+            labels = [x['label'] for x in dos.metadata['line_data']]
+            idx = [labels.index(x) for x in args.pdos]
+            dos = Spectrum1DCollection.from_spectra([dos[x] for x in idx])
     if args.energy_broadening and not args.adaptive:
-        dos = dos.broaden(args.energy_broadening*ebins.units, shape=args.shape)
+        if isinstance(dos, Spectrum1DCollection):
+            dos = Spectrum1DCollection.from_spectra(
+                [spec.broaden(args.energy_broadening*ebins.units, shape=args.shape)
+                for spec in dos])
+        else:
+            dos = dos.broaden(args.energy_broadening*ebins.units, shape=args.shape)
 
     if args.x_label is None:
         x_label = f"Energy / {dos.x_data.units:~P}"
