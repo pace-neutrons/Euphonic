@@ -156,7 +156,6 @@ class TestSpectrum1DCollectionCreation:
         material, phonon_dos_file, json_file = request.param
         spec = Spectrum1DCollection.from_castep_phonon_dos(
             get_castep_path(material, phonon_dos_file))
-        spec.y_data_unit = 'cm'
         expected_spec = get_expected_spectrum1dcollection(json_file)
         return spec, expected_spec
 
