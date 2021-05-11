@@ -401,7 +401,9 @@ def _get_cli_parser(features: Collection[str] = {}
         to be customised and specialised options to be added.
 
     """
-    _spectrum_choices = ('dos', 'coherent')
+    _dos_choices = ('dos', 'coherent-dos', 'incoherent-dos',
+                    'total-dos')
+    _spectrum_choices = (_dos_choices + ('coherent',))
 
     parser = ArgumentParser(
         formatter_class=ArgumentDefaultsHelpFormatter)
@@ -470,11 +472,20 @@ def _get_cli_parser(features: Collection[str] = {}
             help=('Number of parallel processes for computing phonon modes. '
                   '(Only applies when using C extension.)'))
 
+    if {'dos-weights', 'weights'}.issubset(features):
+        raise ValueError('Cannot have both dos-weights and weights, they '
+                         'have overlapping options')
+    if 'dos-weights' in features:
+        sections['property'].add_argument(
+            '--weights', '-w', default='dos', choices=_dos_choices,
+            help=('Type of DOS to plot, regular dos or '
+                  'coherent/incoherent/total neutron-weighted DOS'))
+
     if 'weights' in features:
         sections['property'].add_argument(
             '--weights', '-w', default='dos', choices=_spectrum_choices,
-            help=('Spectral weights to plot: phonon DOS or '
-                  'coherent inelastic neutron scattering.'))
+            help=('Spectral weights to plot: Phonon DOS, neutron-weighted '
+                  'phonon DOS or coherent inelastic neutron scattering.'))
 
         sections['property'].add_argument(
             '--temperature', type=float, default=None,
@@ -556,7 +567,8 @@ def _get_cli_parser(features: Collection[str] = {}
                     '--adaptive', action='store_true',
                     help=('Use adaptive broadening on the energy axis to '
                           'broaden based on phonon mode widths, rather than '
-                          'using fixed width broadening'))
+                          'using fixed width broadening. Only applicable '
+                          'if plotting a DOS'))
                 eb_help = (
                     'If using fixed width broadening, the FWHM of broadening '
                     'on energy axis in ENERGY_UNIT (no broadening if '

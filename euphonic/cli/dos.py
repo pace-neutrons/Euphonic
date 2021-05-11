@@ -42,7 +42,12 @@ def main(params: List[str] = None):
     modes.frequencies_unit = args.energy_unit
     ebins = _get_energy_bins(
             modes, args.ebins, emin=args.e_min, emax=args.e_max)
-    dos = modes.calculate_dos(ebins, mode_widths=mode_widths)
+    if len(args.weights.split('-')) > 1:
+        weighting = args.weights.split('-')[0]
+        dos = modes.calculate_pdos(ebins, mode_widths=mode_widths,
+                                   weighting=weighting)
+    else:
+        dos = modes.calculate_dos(ebins, mode_widths=mode_widths)
 
     if args.energy_broadening and not args.adaptive:
         dos = dos.broaden(args.energy_broadening*ebins.units, shape=args.shape)
@@ -64,7 +69,8 @@ def main(params: List[str] = None):
 def get_parser():
     parser, _ = _get_cli_parser(features={'read-fc', 'read-modes', 'mp-grid',
                                           'plotting', 'ebins',
-                                          'adaptive-broadening'})
+                                          'adaptive-broadening',
+                                          'dos-weights'})
     parser.description = (
         'Plots a DOS from the file provided. If a force '
         'constants file is provided, a DOS is generated on the Monkhorst-Pack '
