@@ -1,0 +1,29 @@
+{
+    "__euphonic_class__": "Spectrum1D",
+    "__euphonic_version__": "0.5.0+28.g7e7d8fd",
+    "x_data": [
+        5.0,
+        6.0,
+        7.0,
+        8.0,
+        9.0,
+        10.0,
+        11.0,
+        12.0,
+        13.0,
+        14.0
+    ],
+    "x_data_unit": "millielectron_volt",
+    "y_data": [
+        0.4999999999999996,
+        0.5,
+        0.5,
+        0.5,
+        0.5,
+        1.0,
+        0.9999999999999986,
+        1.0,
+        1.0
+    ],
+    "y_data_unit": "1 / millielectron_volt"
+}
