@@ -421,6 +421,18 @@ class TestQpointFrequenciesCalculateDos:
              'quartz_666_dos.json', np.arange(0, 155, 0.5)*ureg('meV')),
             ('CaHgO2', 'CaHgO2_666_qpoint_frequencies.json',
              'CaHgO2_666_dos.json', np.arange(0, 95, 0.4)*ureg('meV')),
+            ('quartz', 'toy_quartz_qpoint_frequencies.json',
+             'toy_quartz_dos.json', np.arange(-1, 40)*ureg('meV')),
+            ('quartz', 'toy_quartz_qpoint_frequencies.json',
+             'toy_quartz_cropped_dos.json', np.arange(5, 15)*ureg('meV')),
+            ('quartz', 'toy_quartz_qpoint_frequencies.json',
+             'toy_quartz_cropped_uneven_dos.json',
+             np.concatenate((np.arange(5, 21, 2),
+                             np.arange(21, 30)))*ureg('meV')),
+            ('quartz', 'toy_quartz_qpoint_frequencies.json',
+             'toy_quartz_cropped_uneven_hartree_dos.json',
+             np.concatenate((np.arange(5, 21, 2),
+                             np.arange(21, 30)))*ureg('meV').to('hartree'))
         ])
     def test_calculate_dos(
             self, material, qpt_freqs_json, expected_dos_json, ebins):
