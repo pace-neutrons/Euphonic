@@ -5,6 +5,9 @@
 
   - Fixed bug which resulted in incorrect energy bins being generated
     in `euphonic-powder-map` if units other than meV are used
+  - Use correct number of energy bins in `euphonic-intensity-map`
+    and `euphonic-powder-map`. Previously only `ebins - 1` bins
+    were generated
 
 `v0.5.1 <https://github.com/pace-neutrons/Euphonic/compare/v0.5.0...v0.5.1>`_
 ----------
