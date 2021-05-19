@@ -11,7 +11,8 @@ from pint import UndefinedUnitError
 import seekpath
 
 from euphonic import (Crystal, DebyeWaller, ForceConstants, QpointFrequencies,
-                      QpointPhononModes, Quantity, ureg)
+                      QpointPhononModes, Spectrum1DCollection, Spectrum2D,
+                      Quantity, ureg)
 import euphonic.util
 Unit = ureg.Unit
 
@@ -368,6 +369,29 @@ def _get_debye_waller(temperature: Quantity,
     return dw_phonons.calculate_debye_waller(temperature)
 
 
+def _get_dos_weighting(weights: str):
+    """Get calculate_(p)dos weighting from user arguments"""
+    if weights == 'dos':
+        return None
+    else:
+        return weights.split('-')[0]
+
+
+def _pdos_to_idx(spectra: Union[Spectrum1DCollection, List[Spectrum2D]],
+                 pdos: Union[str, None]) -> List[int]:
+    """From a --pdos string describing the spectra to be returned, get
+       the indices of those spectra
+    """
+    if pdos is None:
+        idx = [0]
+    elif len(pdos) > 0:
+        labels = [x.metadata['label'] for x in spectra]
+        idx = [labels.index(x) for x in pdos]
+    elif len(pdos) == 0:
+        idx = list(range(len(spectra)))
+    return idx
+
+
 def _calc_modes_kwargs(args: Namespace) -> Tuple[Dict[str, Any], bool]:
     """Collect arguments that can be passed to calculate_qpoint_phonon_modes()
        and determine whether eigenvectors are required
@@ -477,20 +501,30 @@ def _get_cli_parser(features: Collection[str] = {}
     if {'dos-weights', 'weights'}.issubset(features):
         raise ValueError('Cannot have both dos-weights and weights, they '
                          'have overlapping options')
+    dos_desc = ('DOS, coherent neutron-weighted DOS, incoherent '
+                'neutron-weighted DOS or total (coherent + incoherent) '
+                'neutron-weighted DOS')
+    if {'weights', 'dos-weights'}.intersection(features):
+        if not 'q-e' in features:
+            sections['property'].add_argument(
+                '--pdos', type=str, action='store', nargs='*',
+                help=('Plot PDOS. Just use --pdos to plot all species, or '
+                      'plot certain species (multiple species allowed) with '
+                      '--pdos Si O for example'))
+        else:
+            sections['property'].add_argument(
+                '--pdos', type=str, action='store', nargs=1,
+                help=('Plot PDOS for a specific species e.g. --pdos Si'))
     if 'dos-weights' in features:
         sections['property'].add_argument(
-            '--pdos', type=str, action='store', nargs='*',
-            help=('Plot PDOS'))
-        sections['property'].add_argument(
             '--weights', '-w', default='dos', choices=_dos_choices,
-            help=('Type of DOS to plot, regular dos or '
-                  'coherent/incoherent/total neutron-weighted DOS'))
+            help=(f'Type of DOS to plot: {dos_desc}'))
 
-    if 'weights' in features:
+    elif 'weights' in features:
         sections['property'].add_argument(
             '--weights', '-w', default='dos', choices=_spectrum_choices,
-            help=('Spectral weights to plot: Phonon DOS, neutron-weighted '
-                  'phonon DOS or coherent inelastic neutron scattering.'))
+            help=(f'Spectral weights to plot: coherent inelastic neutron '
+                  f'scattering, {dos_desc}'))
 
         sections['property'].add_argument(
             '--temperature', type=float, default=None,

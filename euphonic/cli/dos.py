@@ -6,8 +6,8 @@ from euphonic.util import mp_grid
 from euphonic.plot import plot_1d
 from .utils import (load_data_from_file, get_args, matplotlib_save_or_show,
                     _calc_modes_kwargs, _modes_from_fc_and_qpts,
-                    _get_cli_parser, _get_energy_bins,
-                    _grid_spec_from_args)
+                    _get_cli_parser, _get_energy_bins, _pdos_to_idx,
+                    _grid_spec_from_args, _get_dos_weighting)
 
 
 def main(params: List[str] = None):
@@ -43,21 +43,13 @@ def main(params: List[str] = None):
     modes.frequencies_unit = args.energy_unit
     ebins = _get_energy_bins(
             modes, args.ebins, emin=args.e_min, emax=args.e_max)
-    if len(args.weights.split('-')) > 1:
-        weighting = args.weights.split('-')[0]
-    else:
-        weighting = None
-    if weighting is None and args.pdos is None:
+    if args.weights == 'dos' and args.pdos is None:
         dos = modes.calculate_dos(ebins, mode_widths=mode_widths)
     else:
         dos = modes.calculate_pdos(ebins, mode_widths=mode_widths,
-                                   weighting=weighting)
-        if args.pdos is None:
-            dos = dos[0]
-        elif len(args.pdos) > 0:
-            labels = [x['label'] for x in dos.metadata['line_data']]
-            idx = [labels.index(x) for x in args.pdos]
-            dos = Spectrum1DCollection.from_spectra([dos[x] for x in idx])
+                                   weighting=_get_dos_weighting(args.weights))
+        idx = _pdos_to_idx(dos, args.pdos)
+        dos = Spectrum1DCollection.from_spectra([dos[x] for x in idx])
     if args.energy_broadening and not args.adaptive:
         if isinstance(dos, Spectrum1DCollection):
             dos = Spectrum1DCollection.from_spectra(

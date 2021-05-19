@@ -1,21 +1,26 @@
 """Functions for averaging spectra in spherical q bins"""
 
 import numpy as np
-from typing import Optional, Union
+from typing import Optional, Union, Dict
 
 from euphonic import (Crystal, DebyeWaller, ForceConstants,
-                      QpointFrequencies, QpointPhononModes, Spectrum1D)
+                      QpointFrequencies, QpointPhononModes, Spectrum1D,
+                      Spectrum1DCollection)
 from euphonic import ureg, Quantity
 from euphonic.util import mp_grid, get_reference_data
 
 
-def sample_sphere_dos(fc: ForceConstants,
-                      mod_q: Quantity,
-                      sampling: str = 'golden',
-                      npts: int = 1000, jitter: bool = False,
-                      energy_bins: Quantity = None,
-                      **calc_modes_args
-                      ) -> Spectrum1D:
+def sample_sphere_dos(
+        fc: ForceConstants,
+        mod_q: Quantity,
+        sampling: str = 'golden',
+        npts: int = 1000, jitter: bool = False,
+        energy_bins: Quantity = None,
+        pdos: bool = False,
+        weighting: Optional[str] = None,
+        cross_sections: Union[str, Dict[str, Quantity]] = 'BlueBook',
+        **calc_modes_args
+        ) -> Union[Spectrum1D, Spectrum1DCollection]:
     """Sample the phonon DOS, averaging over a sphere of constant |q|
 
     Parameters
@@ -70,13 +75,30 @@ def sample_sphere_dos(fc: ForceConstants,
         Preferred energy bin edges. If not provided, will setup
         1000 bins (1001 bin edges) from 0 to 1.05 * [max energy]
 
+    pdos
+        Whether to return only total dos or per-species PDOS. If
+        PDOS, a Spectrum1DCollection will be returned
+
+    weighting
+        One of {'coherent', 'incoherent', 'total'}. If provided,
+        produces a neutron-weighted DOS, weighted by either
+        the coherent, incoherent, or sum of coherent and incoherent
+        neutron scattering cross-sections.
+
+    cross_sections
+        Dict of neutron cross sections labelled by element. If a
+        string is provided, this selects coherent/incoherent cross
+        sections from reference data by setting the 'label' argument
+        of the euphonic.util.get_reference_data() function.
+
     **calc_modes_args
         other keyword arguments (e.g. 'use_c') will be passed to
         ForceConstants.calculate_qpoint_phonon_modes()
 
     Returns
     -------
-    Spectrum1D
+    spectrum
+        Total dos spectrum, or PDOS spectra (if pdos = True)
 
     """
 
@@ -84,13 +106,23 @@ def sample_sphere_dos(fc: ForceConstants,
                                  ) * mod_q
     qpts_frac = _qpts_cart_to_frac(qpts_cart, fc.crystal)
 
-    phonons = fc.calculate_qpoint_frequencies(qpts_frac, **calc_modes_args
-                                              )  # type: QpointFrequencies
+    if pdos or weighting is not None:
+        phonons = fc.calculate_qpoint_phonon_modes(
+            qpts_frac, **calc_modes_args)
+    else:
+        phonons = fc.calculate_qpoint_frequencies(
+            qpts_frac, **calc_modes_args)
 
     if energy_bins is None:
         energy_bins = _get_default_bins(phonons)
-
-    return phonons.calculate_dos(energy_bins)
+    if pdos or weighting is not None:
+        dos = phonons.calculate_pdos(energy_bins, weighting=weighting,
+                                     cross_sections=cross_sections)
+        if not pdos:
+            dos = dos[0]
+    else:
+        dos = phonons.calculate_dos(energy_bins)
+    return dos
 
 
 def sample_sphere_structure_factor(

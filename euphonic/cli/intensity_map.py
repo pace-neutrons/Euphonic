@@ -7,12 +7,13 @@ import euphonic
 from euphonic import ureg
 import euphonic.plot
 from euphonic.util import get_qpoint_labels
-from .utils import (_band_qpts_from_force_constants, _calc_modes_kwargs,
-                    _modes_from_fc_and_qpts,
-                    get_args, _get_debye_waller,
-                    _get_energy_bins, _get_q_distance,
-                    _get_cli_parser, load_data_from_file,
-                    matplotlib_save_or_show)
+from euphonic.cli.utils import (_band_qpts_from_force_constants,
+                                _calc_modes_kwargs, _modes_from_fc_and_qpts,
+                                _get_dos_weighting, get_args,
+                                _get_debye_waller, _pdos_to_idx,
+                                _get_energy_bins, _get_q_distance,
+                                _get_cli_parser, load_data_from_file,
+                                matplotlib_save_or_show)
 
 
 def main(params: List[str] = None) -> None:
@@ -61,9 +62,14 @@ def main(params: List[str] = None) -> None:
 
         spectrum = (modes.calculate_structure_factor(dw=dw)
                     .calculate_sqw_map(ebins))
-
-    elif args.weights.lower() == 'dos':
-        spectrum = modes.calculate_dos_map(ebins)
+    elif 'dos' in args.weights.lower():
+        if args.weights == 'dos' and args.pdos is None:
+            spectrum = modes.calculate_dos_map(ebins)
+        else:
+            weighting = _get_dos_weighting(args.weights)
+            spectra = modes.calculate_pdos_map(ebins, weighting=weighting)
+            idx = _pdos_to_idx(spectra, args.pdos)
+            spectrum = spectra[idx[0]]
 
     if args.q_broadening or args.energy_broadening:
         spectrum = spectrum.broaden(

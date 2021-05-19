@@ -6,12 +6,12 @@ from typing import List
 
 import numpy as np
 
-from euphonic import ureg
+from euphonic import ureg, Spectrum1DCollection
 from euphonic.cli.utils import (_calc_modes_kwargs, _get_cli_parser,
                                 _get_debye_waller, _get_energy_bins,
-                                _get_q_distance)
-from euphonic.cli.utils import (force_constants_from_file, get_args,
-                                matplotlib_save_or_show)
+                                _get_q_distance, _get_dos_weighting,
+                                force_constants_from_file, get_args,
+                                matplotlib_save_or_show, _pdos_to_idx)
 import euphonic.plot
 from euphonic.powder import sample_sphere_dos, sample_sphere_structure_factor
 import euphonic.util
@@ -100,12 +100,19 @@ def main(params: List[str] = None):
         else:
             npts = args.npts
 
-        if args.weights == 'dos':
+        if 'dos' in args.weights:
+            weighting = _get_dos_weighting(args.weights)
             spectrum_1d = sample_sphere_dos(
                 fc, q,
                 npts=npts, sampling=args.sampling, jitter=args.jitter,
                 energy_bins=energy_bins,
+                weighting=weighting,
+                pdos=bool(args.pdos),
                 **calc_modes_kwargs)
+            if isinstance(spectrum_1d, Spectrum1DCollection):
+                idx = _pdos_to_idx(spectrum_1d, args.pdos)
+                spectrum_1d = Spectrum1DCollection.from_spectra(
+                    [spectrum_1d[x] for x in idx])
         elif args.weights == 'coherent':
             spectrum_1d = sample_sphere_structure_factor(
                 fc, q,
