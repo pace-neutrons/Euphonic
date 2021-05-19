@@ -70,7 +70,7 @@ def main(params: List[str] = None):
         np.array([[0., 0., 0.5]]), **calc_modes_kwargs)
     modes.frequencies_unit = args.energy_unit
     energy_bins = _get_energy_bins(
-        modes, args.ebins, emin=args.e_min, emax=args.e_max,
+        modes, args.ebins + 1, emin=args.e_min, emax=args.e_max,
         headroom=1.2)  # Generous headroom as we only checked one q-point
 
     if args.weights in ('coherent',):

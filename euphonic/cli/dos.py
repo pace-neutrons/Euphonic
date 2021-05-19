@@ -44,7 +44,7 @@ def main(params: List[str] = None):
         modes = data
     modes.frequencies_unit = args.energy_unit
     ebins = _get_energy_bins(
-            modes, args.ebins, emin=args.e_min, emax=args.e_max)
+            modes, args.ebins + 1, emin=args.e_min, emax=args.e_max)
     dos = modes.calculate_dos(ebins, mode_widths=mode_widths)
 
     if args.energy_broadening and not args.adaptive:

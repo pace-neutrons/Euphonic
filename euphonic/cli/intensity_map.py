@@ -38,12 +38,13 @@ def main(params: List[str] = None) -> None:
         x_tick_labels = get_qpoint_labels(modes.qpts,
                                           cell=modes.crystal.to_spglib_cell())
     modes.frequencies_unit = args.energy_unit
-    ebins = _get_energy_bins(
-        modes, args.ebins, emin=args.e_min, emax=args.e_max)
 
     print("Computing intensities and generating 2D maps")
 
     if args.weights.lower() == 'coherent':
+        # calculate_sqw_map uses bin edges
+        ebins = _get_energy_bins(
+            modes, args.ebins + 1, emin=args.e_min, emax=args.e_max)
         if args.temperature is not None:
             if not isinstance(data, euphonic.ForceConstants):
                 raise TypeError("Cannot generate Debye-Waller factor without "
@@ -64,6 +65,9 @@ def main(params: List[str] = None) -> None:
                     .calculate_sqw_map(ebins))
 
     elif args.weights.lower() == 'dos':
+        # calculate_dos_map uses bin centres
+        ebins = _get_energy_bins(
+            modes, args.ebins, emin=args.e_min, emax=args.e_max)
         spectrum = calculate_dos_map(modes, ebins)
 
     if args.q_broadening or args.energy_broadening:
