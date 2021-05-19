@@ -176,6 +176,12 @@ class TestForceConstantsCalculateQPointPhononModes:
         npt.assert_allclose(modw.magnitude, expected_modw.magnitude,
                             atol=2e-4, rtol=5e-5)
 
+    def test_calc_qpt_ph_modes_with_mode_widths_raises_deprecation_warning(self):
+        fc = get_fc('quartz')
+        with pytest.warns(DeprecationWarning):
+            fc.calculate_qpoint_phonon_modes(get_test_qpts(),
+                                             return_mode_widths=True)
+
     # ForceConstants stores some values (supercell image list, vectors
     # for the Ewald sum) so check repeated calculations give the same
     # result

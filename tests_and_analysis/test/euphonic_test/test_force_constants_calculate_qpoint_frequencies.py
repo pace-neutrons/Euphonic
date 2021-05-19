@@ -129,6 +129,14 @@ class TestForceConstantsCalculateQPointFrequencies:
         assert modw.units == expected_modw.units
         npt.assert_allclose(modw.magnitude, expected_modw.magnitude,
                             atol=2e-4, rtol=5e-5)
+
+    def test_calc_qpt_freqs_with_mode_widths_raises_deprecation_warning(self):
+        fc = get_fc('quartz')
+        with pytest.warns(DeprecationWarning):
+            fc.calculate_qpoint_frequencies(get_test_qpts(),
+                                            return_mode_widths=True)
+
+
     weights = np.array([0.1, 0.05, 0.05, 0.2, 0.2, 0.15, 0.15, 0.2, 0.1])
     weights_output_split_gamma = np.array([
         0.1, 0.05, 0.025, 0.025, 0.2, 0.1, 0.1, 0.075, 0.075, 0.075, 0.075,

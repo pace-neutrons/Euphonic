@@ -241,21 +241,33 @@ def get_reference_data(collection: str = 'Sears1992',
 def mode_gradients_to_widths(mode_gradients: Quantity, cell_vectors: Quantity
                              ) -> Quantity:
     """
-    Converts mode gradients (units energy/(length^-1)) to an estimate of the
-    mode widths (units energy) by using the cell volume and number of q-points
-    to estimate the q-spacing. Note that the  number of q-points is determined
-    by the size of mode_gradients, so is not likely to give accurate widths if
-    the q-points have been symmetry reduced.
+    Converts either scalar or vector mode gradients (units
+    energy/(length^-1)) to an estimate of the mode widths (units
+    energy). If vector mode gradients are supplied, they will first be
+    converted to scalar gradients by taking the Frobenius norm (using
+    np.linalg.norm). The conversion to mode widths uses the cell volume
+    and number of q-points to estimate the q-spacing. Note that the
+    number of q-points is determined by the size of mode_gradients, so
+    is not likely to give accurate widths if the q-points have been
+    symmetry reduced.
 
     Parameters
     ----------
     mode_gradients
-        Shape (n_qpts, n_modes) float Quantity. The mode gradients.
+        Shape (n_qpts, n_modes) float Quantity if using scalar mode
+        gradients, shape (n_qpts, n_modes, 3) float Quantity if using
+        vector mode gradients
     cell_vectors
         Shape (3, 3) float Quantity. The cell vectors
     """
-    cell_volume = Crystal.from_cell_vectors(cell_vectors)._cell_volume()
     modg = mode_gradients.to('hartree*bohr').magnitude
+    if modg.ndim == 3 and modg.shape[2] == 3:
+        modg = np.linalg.norm(modg, axis=2)
+    elif modg.ndim != 2:
+        raise ValueError(
+            f'Unexpected shape for mode_gradients {modg.shape}, '
+            f'expected (n_qpts, n_modes) or (n_qpts, n_modes, 3)')
+    cell_volume = Crystal.from_cell_vectors(cell_vectors)._cell_volume()
     q_spacing = 2/(np.cbrt(len(mode_gradients)*cell_volume))
     mode_widths = q_spacing*modg
     return mode_widths*ureg('hartree').to(
