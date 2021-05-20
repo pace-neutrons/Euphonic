@@ -1189,7 +1189,7 @@ class ForceConstants:
             warnings.warn((
                 '\nError correcting for acoustic sum rule, could not '
                 'find 3 acoustic modes.\nReturning uncorrected FC '
-                'matrix'), stacklevel=2)
+                'matrix'), stacklevel=3)
             return self._force_constants
 
         # Correct fc matrix - set acoustic modes to almost zero
@@ -1232,7 +1232,7 @@ class ForceConstants:
         except Exception:
             warnings.warn(('\nError correcting for acoustic sum rule, '
                            'could not find 3 acoustic modes.\nNot '
-                           'correcting dynamical matrix'), stacklevel=2)
+                           'correcting dynamical matrix'), stacklevel=3)
             return np.array([], dtype=np.complex128)
 
         n_atoms = self.crystal.n_atoms
