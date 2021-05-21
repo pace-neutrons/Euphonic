@@ -404,3 +404,18 @@ class TestSpectrum1DCollectionMethods:
         spec._x_data = spec._x_data[:31]
         with pytest.raises(ValueError):
             spec.get_bin_centres()
+
+    # Check the same answer is obtained broadening Spectrum1DCollection,
+    # and broadening each spectrum individually
+    @pytest.mark.parametrize(
+        'spectrum_file, width, shape', [
+            ('methane_pdos.json', 10*ureg('1/cm'), 'lorentz'),
+            ('quartz_dos_collection.json', 2*ureg('meV'), 'gauss'),
+            ('quartz_dos_collection.json', 15*ureg('1/cm'), 'gauss')])
+    def test_broaden(self, spectrum_file, width, shape):
+        spec_col = get_spectrum1dcollection(spectrum_file)
+        broadened_spec_col = spec_col.broaden(width, shape)
+        for i, spec in enumerate(spec_col):
+            broadened_spec1d = spec.broaden(width, shape)
+            check_spectrum1d(broadened_spec_col[i],
+                             broadened_spec1d)
