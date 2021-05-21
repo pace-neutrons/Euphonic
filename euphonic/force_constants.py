@@ -607,6 +607,12 @@ class ForceConstants:
             cell_vectors = self.crystal._cell_vectors
             recip_vectors = self.crystal.reciprocal_cell().to(
                 '1/bohr').magnitude
+            # Get conj transpose - the dynamical matrix calculated in C
+            # is passed to Fortran libs so uses Fortran ordering, make
+            # sure reciprocal correction matches this. This only makes
+            # a very small difference and can only be seen in near-flat
+            # mode gradients, but should be corrected anyway
+            recip_asr_correction =  recip_asr_correction.conj().T
             (cell_vectors, recip_vectors, reduced_qpts, split_idx, q_dirs,
              fc_img_weighted, sc_origins, recip_asr_correction,
              dyn_mat_weighting, rfreqs, reigenvecs, rmode_gradients,

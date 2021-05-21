@@ -19,7 +19,7 @@ from tests_and_analysis.test.euphonic_test.test_spectrum1dcollection import (
     get_expected_spectrum1dcollection, check_spectrum1dcollection)
 from tests_and_analysis.test.utils import (
     get_data_path, check_frequencies_at_qpts, check_structure_factors_at_qpts,
-    check_unit_conversion, check_json_metadata)
+    check_unit_conversion, check_json_metadata, sum_at_degenerate_modes)
 
 
 class ExpectedStructureFactor:
@@ -119,40 +119,6 @@ def get_expected_sf(material, json_file):
     return ExpectedStructureFactor(get_json_file(material, json_file))
 
 
-def get_summed_structure_factors(structure_factors, frequencies, TOL=0.05):
-    """
-    For degenerate frequency modes, eigenvectors are an arbitrary
-    admixture, so the derived structure factors can only be compared
-    when summed over degenerate modes. This function performs that
-    summation
-
-    Parameters
-    ----------
-    structure_factors (n_qpts, n_branches) float ndarray
-        The plain structure factors magnitudes
-    frequencies (n_qpts, n_branches) float ndarray
-        The plain frequency magnitudes
-
-    Returns
-    -------
-    sf_sum (n_qpts, n_branches) float ndarray
-        The summed structure factors. As there will be different numbers
-        of summed values for each q-point depending on the number of
-        degenerate modes, the last few entries for some q-points will be
-        zero
-    """
-    sf_sum = np.zeros(structure_factors.shape)
-    for i in range(len(frequencies)):
-        diff = np.append(TOL + 1, np.diff(frequencies[i]))
-        unique_index = np.where(diff > TOL)[0]
-        x = np.zeros(len(frequencies[0]), dtype=np.int32)
-        x[unique_index] = 1
-        unique_modes = np.cumsum(x) - 1
-        sf_sum[i, :len(unique_index)] = np.bincount(unique_modes,
-                                                    structure_factors[i])
-    return sf_sum
-
-
 def check_structure_factor(
         sf, expected_sf,
         freq_atol=np.finfo(np.float64).eps,
@@ -198,10 +164,10 @@ def check_structure_factor(
     assert sf.structure_factors.units == expected_sf.structure_factors.units
     # Sum structure factors over degenerate modes and check
     if sum_sf:
-        sf_sum = get_summed_structure_factors(
+        sf_sum = sum_at_degenerate_modes(
             sf.structure_factors.magnitude,
             expected_sf.frequencies.magnitude)
-        expected_sf_sum = get_summed_structure_factors(
+        expected_sf_sum = sum_at_degenerate_modes(
             expected_sf.structure_factors.magnitude,
             expected_sf.frequencies.magnitude)
     else:

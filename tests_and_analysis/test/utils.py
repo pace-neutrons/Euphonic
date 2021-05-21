@@ -202,3 +202,40 @@ def check_json_metadata(json_file: str, class_name: str):
         data = json.loads(f.read())
     assert data['__euphonic_class__'] == class_name
     assert data['__euphonic_version__'] == __version__
+
+def sum_at_degenerate_modes(values_to_sum, frequencies, TOL=0.05):
+    """
+    For degenerate frequency modes, eigenvectors are an arbitrary
+    admixture, so derived quantities (e.g. structure factors) can
+    only be compared when summed over degenerate modes. This function
+    performs that summation
+
+    Parameters
+    ----------
+    values_to_sum (n_qpts, n_branches, ...) float ndarray
+        Magnitude of values to be summed, can be 2D or 3D
+    frequencies (n_qpts, n_branches) float ndarray
+        The plain frequency magnitudes
+
+    Returns
+    -------
+    value_sum (n_qpts, n_branches, ...) float ndarray
+        The summed values. As there will be different numbers
+        of summed values for each q-point depending on the number of
+        degenerate modes, the last few entries for some q-points will be
+        zero
+    """
+    value_sum = np.zeros(values_to_sum.shape)
+    if value_sum.ndim == 2:
+        value_sum = np.expand_dims(value_sum, -1)
+        values_to_sum = np.expand_dims(values_to_sum, -1)
+    for i in range(len(frequencies)):
+        diff = np.append(TOL + 1, np.diff(frequencies[i]))
+        unique_index = np.where(diff > TOL)[0]
+        x = np.zeros(len(frequencies[0]), dtype=np.int32)
+        x[unique_index] = 1
+        unique_modes = np.cumsum(x) - 1
+        for j in range(value_sum.shape[-1]):
+            value_sum[i, :len(unique_index), j] = np.bincount(
+                unique_modes, values_to_sum[i, :, j])
+    return value_sum.squeeze()
