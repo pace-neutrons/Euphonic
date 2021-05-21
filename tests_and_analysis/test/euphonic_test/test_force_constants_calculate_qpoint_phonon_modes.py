@@ -181,7 +181,7 @@ class TestForceConstantsCalculateQPointPhononModes:
             expected_modg.magnitude,
             expected_qpoint_phonon_modes.frequencies.magnitude)
         npt.assert_allclose(summed_modg, summed_expected_modg,
-            atol=1e-7)
+            atol=8e-4, rtol=2e-4)
 
     @pytest.mark.parametrize(
         ('fc, material, all_args, expected_qpoint_phonon_modes_file, '

@@ -137,7 +137,7 @@ class TestForceConstantsCalculateQPointFrequencies:
             expected_modg.magnitude,
             expected_qpt_freqs.frequencies.magnitude)
         npt.assert_allclose(summed_modg, summed_expected_modg,
-            atol=1e-7)
+            atol=8e-4, rtol=2e-4)
 
     @pytest.mark.parametrize(
         ('fc, material, all_args, expected_qpoint_frequencies_file, '
