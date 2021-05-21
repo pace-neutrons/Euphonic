@@ -6,6 +6,7 @@ import pytest
 import numpy as np
 import numpy.testing as npt
 
+import euphonic
 from euphonic import ureg, ForceConstants
 from euphonic.util import mp_grid
 from euphonic.force_constants import ImportCError
@@ -240,6 +241,23 @@ class TestForceConstantsCalculateQPointPhononModes:
         with pytest.warns(DeprecationWarning):
             fc.calculate_qpoint_phonon_modes(get_test_qpts(),
                                              return_mode_widths=True)
+
+    def test_calc_qpt_ph_modes_with_large_complex_mode_gradients_raises_warning(
+            self, mocker):
+        # Mock force constants to return nonsense gradients with high
+        # imaginary terms
+        class MockFC(ForceConstants):
+            def _calculate_phonons_at_q(self, q, args):
+                freqs, evecs, grads = ForceConstants._calculate_phonons_at_q(
+                    self, q, args)
+                mocked_grads = np.ones(grads.shape) + np.ones(grads.shape)*1j
+                return freqs, evecs, mocked_grads
+        mocker.patch('euphonic.ForceConstants', MockFC)
+        fc = euphonic.ForceConstants.from_json_file(
+            os.path.join(get_fc_dir(), 'quartz_force_constants.json'))
+        with pytest.warns(UserWarning):
+            fc.calculate_qpoint_phonon_modes(get_test_qpts(), use_c=False,
+                                             return_mode_gradients=True)
 
     # ForceConstants stores some values (supercell image list, vectors
     # for the Ewald sum) so check repeated calculations give the same
