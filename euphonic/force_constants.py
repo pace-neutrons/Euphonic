@@ -204,20 +204,19 @@ class ForceConstants:
             the value returned from multiprocessing.cpu_count() will be
             used
         return_mode_gradients
-            Whether to also return the vector mode gradients. These
-            can be converted to mode widths and used in adaptive
-            broadening for DOS. For details on how these are
-            calculated see the Notes section
+            Whether to also return the vector mode gradients (in
+            Cartesian coordinates). These can be converted to mode
+            widths and used in adaptive broadening for DOS. For details
+            on how these are calculated see the Notes section
         return_mode_widths
 
-            .. deprecated:: > 0.5.1
-
+            .. deprecated:: 0.6.0
             The mode widths as calculated were only applicable for
             adaptive broadening of DOS, this argument will be removed
             in favour of the more flexible return_mode_gradients,
             which will allow the calculation of direction-specific
-            mode widths for example. The mode widths can still
-            be obtained from the mode gradients using
+            mode widths in the future, for example. The mode widths
+            can still be obtained from the mode gradients using
             euphonic.util.mode_gradients_to_widths
 
         Returns
@@ -229,8 +228,9 @@ class ForceConstants:
             of input q-points may not be the same as in the output
             object
         mode_gradients
-            Optional shape (n_qpts, n_branches, 3) float Quantity. Is
-            only returned if return_mode_gradients is true
+            Optional shape (n_qpts, n_branches, 3) float Quantity,
+            the vector mode gradients dw/dQ in Cartesian coordinates.
+            Is only returned if return_mode_gradients is true
 
 
         Raises
@@ -286,16 +286,18 @@ class ForceConstants:
         .. [1] M. T. Dove, Introduction to Lattice Dynamics, Cambridge University Press, Cambridge, 1993, 83-87
         .. [2] X. Gonze, K. C. Charlier, D. C. Allan, M. P. Teter, Phys. Rev. B, 1994, 50, 13035-13038
 
-        **Mode Widths Calculation**
+        **Mode Gradients Calculation**
 
-        The mode widths are used in the adaptive broadening scheme [3]_
-        when computing a DOS - broadening each mode contribution
-        individually according to its mode width. The mode widths at
-        each Q are calculated as the same time as the phonon
-        frequencies and eigenvectors as follows.
+        The mode gradients can be used to calculate mode widths to be used
+        in the adaptive broadening scheme [3]_ when computing a DOS - this
+        broadens each mode contribution individually according to its mode
+        width. The mode widths are proportional to the mode gradients and
+        can be estimated using ``euphonic.util.mode_gradients_to_widths``
 
-        The mode widths are proportional to the gradient of the
-        dispersion, :math:`\\frac{d\\omega_{q\\nu}}{dQ}`.
+        The mode gradients :math:`\\frac{d\\omega_{q\\nu}}{dQ}` at each Q
+        are calculated as the same time as the phonon frequencies and
+        eigenvectors as follows.
+
         Firstly, the eigenvalue equation above can be written in matrix
         form as:
 
