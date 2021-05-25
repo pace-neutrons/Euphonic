@@ -6,11 +6,12 @@ import pytest
 import numpy as np
 import numpy.testing as npt
 
+import euphonic
 from euphonic import ureg, ForceConstants
 from euphonic.util import mp_grid
 from euphonic.force_constants import ImportCError
 from tests_and_analysis.test.utils import (get_data_path, get_phonopy_path,
-    get_castep_path, get_test_qpts)
+    get_castep_path, get_test_qpts, sum_at_degenerate_modes)
 from tests_and_analysis.test.euphonic_test.test_qpoint_phonon_modes import (
     ExpectedQpointPhononModes, check_qpt_ph_modes, get_qpt_ph_modes_dir)
 from tests_and_analysis.test.euphonic_test.test_force_constants import (
@@ -125,6 +126,65 @@ class TestForceConstantsCalculateQPointPhononModes:
 
     @pytest.mark.parametrize(
         ('fc, material, all_args, expected_qpoint_phonon_modes_file, '
+         'expected_modg_file'), [
+        (get_quartz_fc(),
+         'quartz',
+         [mp_grid([5, 5, 4]),
+          {'asr': 'reciprocal', 'return_mode_gradients': True}],
+         'quartz_554_full_qpoint_phonon_modes.json',
+         'quartz_554_full_mode_gradients.json'),
+        (get_lzo_fc(),
+         'LZO',
+         [mp_grid([2, 2, 2]),
+          {'asr': 'reciprocal', 'return_mode_gradients': True}],
+         'lzo_222_full_qpoint_phonon_modes.json',
+         'lzo_222_full_mode_gradients.json')])
+    @pytest.mark.parametrize(
+        'n_threads',
+        [0, 2])
+    def test_calculate_qpoint_phonon_modes_with_mode_gradients(
+            self, fc, material, all_args, expected_qpoint_phonon_modes_file,
+            expected_modg_file, n_threads):
+        func_kwargs = all_args[1]
+        if n_threads == 0:
+            func_kwargs['use_c'] = False
+        else:
+            func_kwargs['use_c'] = True
+            func_kwargs['n_threads'] = n_threads
+        qpoint_phonon_modes, modg = fc.calculate_qpoint_phonon_modes(
+            all_args[0], **func_kwargs)
+        with open(os.path.join(get_fc_dir(), expected_modg_file), 'r') as fp:
+            modg_dict = json.load(fp)
+        expected_modg = modg_dict['mode_gradients']*ureg(
+                modg_dict['mode_gradients_unit'])
+        expected_qpoint_phonon_modes = ExpectedQpointPhononModes(
+            os.path.join(get_qpt_ph_modes_dir(material),
+            expected_qpoint_phonon_modes_file))
+        # Only give gamma-acoustic modes special treatment if the acoustic
+        # sum rule has been applied
+        if not 'asr' in func_kwargs.keys():
+            gamma_atol = None
+        else:
+            gamma_atol = 0.5
+        check_qpt_ph_modes(qpoint_phonon_modes,
+                           expected_qpoint_phonon_modes,
+                           frequencies_atol=1e-4,
+                           frequencies_rtol=2e-5,
+                           acoustic_gamma_atol=gamma_atol)
+        assert modg.units == expected_modg.units
+        # Mode gradients are derived from eigenvectors - in the case of
+        # degenerate modes they may not be in the same order
+        summed_modg = sum_at_degenerate_modes(
+            modg.magnitude,
+            expected_qpoint_phonon_modes.frequencies.magnitude)
+        summed_expected_modg = sum_at_degenerate_modes(
+            expected_modg.magnitude,
+            expected_qpoint_phonon_modes.frequencies.magnitude)
+        npt.assert_allclose(summed_modg, summed_expected_modg,
+            atol=8e-4, rtol=2e-4)
+
+    @pytest.mark.parametrize(
+        ('fc, material, all_args, expected_qpoint_phonon_modes_file, '
          'expected_modw_file'), [
         (get_quartz_fc(),
          'quartz',
@@ -175,6 +235,29 @@ class TestForceConstantsCalculateQPointPhononModes:
         assert modw.units == expected_modw.units
         npt.assert_allclose(modw.magnitude, expected_modw.magnitude,
                             atol=2e-4, rtol=5e-5)
+
+    def test_calc_qpt_ph_modes_with_mode_widths_raises_deprecation_warning(self):
+        fc = get_fc('quartz')
+        with pytest.warns(DeprecationWarning):
+            fc.calculate_qpoint_phonon_modes(get_test_qpts(),
+                                             return_mode_widths=True)
+
+    def test_calc_qpt_ph_modes_with_large_complex_mode_gradients_raises_warning(
+            self, mocker):
+        # Mock force constants to return nonsense gradients with high
+        # imaginary terms
+        class MockFC(ForceConstants):
+            def _calculate_phonons_at_q(self, q, args):
+                freqs, evecs, grads = ForceConstants._calculate_phonons_at_q(
+                    self, q, args)
+                mocked_grads = np.ones(grads.shape) + np.ones(grads.shape)*1j
+                return freqs, evecs, mocked_grads
+        mocker.patch('euphonic.ForceConstants', MockFC)
+        fc = euphonic.ForceConstants.from_json_file(
+            os.path.join(get_fc_dir(), 'quartz_force_constants.json'))
+        with pytest.warns(UserWarning):
+            fc.calculate_qpoint_phonon_modes(get_test_qpts(), use_c=False,
+                                             return_mode_gradients=True)
 
     # ForceConstants stores some values (supercell image list, vectors
     # for the Ewald sum) so check repeated calculations give the same

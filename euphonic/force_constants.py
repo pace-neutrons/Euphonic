@@ -143,7 +143,8 @@ class ForceConstants:
             reduce_qpts: bool = True,
             use_c: Optional[bool] = None,
             n_threads: Optional[int] = None,
-            return_mode_widths: bool = False
+            return_mode_gradients: bool = False,
+            return_mode_widths: bool = False,
             ) -> Union[QpointPhononModes,
                        Tuple[QpointPhononModes, Quantity]]:
         """
@@ -202,10 +203,21 @@ class ForceConstants:
             to determine number of threads, if this is not set then
             the value returned from multiprocessing.cpu_count() will be
             used
+        return_mode_gradients
+            Whether to also return the vector mode gradients (in
+            Cartesian coordinates). These can be converted to mode
+            widths and used in adaptive broadening for DOS. For details
+            on how these are calculated see the Notes section
         return_mode_widths
-            Whether to also return the mode widths. The mode widths can
-            be used in adaptive broadening for DOS. For details on how
-            these are calculated see the Notes section
+
+            .. deprecated:: 0.6.0
+            The mode widths as calculated were only applicable for
+            adaptive broadening of DOS, this argument will be removed
+            in favour of the more flexible return_mode_gradients,
+            which will allow the calculation of direction-specific
+            mode widths in the future, for example. The mode widths
+            can still be obtained from the mode gradients using
+            euphonic.util.mode_gradients_to_widths
 
         Returns
         -------
@@ -215,9 +227,10 @@ class ForceConstants:
             there is LO-TO splitting, and insert_gamma=True, the number
             of input q-points may not be the same as in the output
             object
-        mode_widths
-            Optional shape (n_qpts, n_branches) float Quantity. Is only
-            returned if return_mode_widths is true
+        mode_gradients
+            Optional shape (n_qpts, n_branches, 3) float Quantity,
+            the vector mode gradients dw/dQ in Cartesian coordinates.
+            Is only returned if return_mode_gradients is true
 
 
         Raises
@@ -273,16 +286,18 @@ class ForceConstants:
         .. [1] M. T. Dove, Introduction to Lattice Dynamics, Cambridge University Press, Cambridge, 1993, 83-87
         .. [2] X. Gonze, K. C. Charlier, D. C. Allan, M. P. Teter, Phys. Rev. B, 1994, 50, 13035-13038
 
-        **Mode Widths Calculation**
+        **Mode Gradients Calculation**
 
-        The mode widths are used in the adaptive broadening scheme [3]_
-        when computing a DOS - broadening each mode contribution
-        individually according to its mode width. The mode widths at
-        each Q are calculated as the same time as the phonon
-        frequencies and eigenvectors as follows.
+        The mode gradients can be used to calculate mode widths to be used
+        in the adaptive broadening scheme [3]_ when computing a DOS - this
+        broadens each mode contribution individually according to its mode
+        width. The mode widths are proportional to the mode gradients and
+        can be estimated using ``euphonic.util.mode_gradients_to_widths``
 
-        The mode widths are proportional to the gradient of the
-        dispersion, :math:`\\frac{d\\omega_{q\\nu}}{dQ}`.
+        The mode gradients :math:`\\frac{d\\omega_{q\\nu}}{dQ}` at each Q
+        are calculated as the same time as the phonon frequencies and
+        eigenvectors as follows.
+
         Firstly, the eigenvalue equation above can be written in matrix
         form as:
 
@@ -333,14 +348,14 @@ class ForceConstants:
 
         .. [3] J. R. Yates, X. Wang, D. Vanderbilt and I. Souza, Phys. Rev. B, 2007, 75, 195121
         """
-        qpts, weights, freqs, evecs, widths = self._calculate_phonons_at_qpts(
+        qpts, weights, freqs, evecs, grads = self._calculate_phonons_at_qpts(
             qpts, weights, asr, dipole, eta_scale, splitting, insert_gamma,
-            reduce_qpts, use_c, n_threads, return_mode_widths,
+            reduce_qpts, use_c, n_threads, return_mode_gradients, return_mode_widths,
             return_eigenvectors=True)
         qpt_ph_modes = QpointPhononModes(
             self.crystal, qpts, freqs, evecs, weights=weights)
-        if return_mode_widths:
-            return qpt_ph_modes, widths
+        if return_mode_gradients or return_mode_widths:
+            return qpt_ph_modes, grads
         else:
             return qpt_ph_modes
 
@@ -356,6 +371,7 @@ class ForceConstants:
             reduce_qpts: bool = True,
             use_c: Optional[bool] = None,
             n_threads: Optional[int] = None,
+            return_mode_gradients: bool = False,
             return_mode_widths: bool = False,
             ) -> Union[QpointFrequencies,
                        Tuple[QpointFrequencies, Quantity]]:
@@ -364,14 +380,14 @@ class ForceConstants:
         q-points. See ForceConstants.calculate_qpoint_phonon_modes for
         argument and algorithm details
         """
-        qpts, weights, freqs, _, widths = self._calculate_phonons_at_qpts(
+        qpts, weights, freqs, _, grads = self._calculate_phonons_at_qpts(
             qpts, weights, asr, dipole, eta_scale, splitting, insert_gamma,
-            reduce_qpts, use_c, n_threads, return_mode_widths,
-            return_eigenvectors=False)
+            reduce_qpts, use_c, n_threads, return_mode_gradients,
+            return_mode_widths, return_eigenvectors=False)
         qpt_freqs = QpointFrequencies(
             self.crystal, qpts, freqs, weights=weights)
-        if return_mode_widths:
-            return qpt_freqs, widths
+        if return_mode_gradients or return_mode_widths:
+            return qpt_freqs, grads
         else:
             return qpt_freqs
 
@@ -387,10 +403,13 @@ class ForceConstants:
             reduce_qpts: bool,
             use_c: Optional[bool],
             n_threads: Optional[int],
+            return_mode_gradients: bool,
             return_mode_widths: bool,
             return_eigenvectors: bool) -> Union[
                 Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray],
                 Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]]:
+        if return_mode_widths:
+            return_mode_gradients = True
         # Check weights is of appropriate type and shape, to avoid doing all
         # the interpolation only for it to fail creating QpointPhononModes
         _check_constructor_inputs(
@@ -487,7 +506,7 @@ class ForceConstants:
                 sc_origins[:, i], return_inverse=True)
             unique_cell_origins[i], unique_cell_i[:, i] = np.unique(
                 self.cell_origins[:, i], return_inverse=True)
-        if return_mode_widths:
+        if return_mode_gradients:
             cell_origins_cart = np.einsum('ij,jk->ik', self.cell_origins,
                                           self.crystal._cell_vectors)
             # Append 0. to sc_origins_cart, so that when being indexed by
@@ -552,10 +571,11 @@ class ForceConstants:
             reigenvecs = np.zeros(
                 (0, 3*n_atoms, n_atoms, 3), dtype=np.complex128)
 
-        if return_mode_widths:
-            rmode_gradients = np.zeros((n_rqpts, 3*n_atoms), dtype=np.float64)
+        if return_mode_gradients:
+            rmode_gradients = np.zeros((n_rqpts, 3*n_atoms, 3),
+                                       dtype=np.complex128)
         else:
-            rmode_gradients = np.zeros((0, 3*n_atoms), dtype=np.float64)
+            rmode_gradients = np.zeros((0, 3*n_atoms, 3), dtype=np.complex128)
 
         euphonic_path = os.path.dirname(euphonic.__file__)
         cext_err_msg = (f'Euphonic\'s C extension couldn\'t be imported '
@@ -589,6 +609,12 @@ class ForceConstants:
             cell_vectors = self.crystal._cell_vectors
             recip_vectors = self.crystal.reciprocal_cell().to(
                 '1/bohr').magnitude
+            # Get conj transpose - the dynamical matrix calculated in C
+            # is passed to Fortran libs so uses Fortran ordering, make
+            # sure reciprocal correction matches this. This only makes
+            # a very small difference and can only be seen in near-flat
+            # mode gradients, but should be corrected anyway
+            recip_asr_correction =  recip_asr_correction.conj().T
             (cell_vectors, recip_vectors, reduced_qpts, split_idx, q_dirs,
              fc_img_weighted, sc_origins, recip_asr_correction,
              dyn_mat_weighting, rfreqs, reigenvecs, rmode_gradients,
@@ -621,7 +647,7 @@ class ForceConstants:
                         q, q_independent_args)
                 if return_eigenvectors:
                     reigenvecs[q] = evecs
-                if return_mode_widths:
+                if return_mode_gradients:
                     rmode_gradients[q] = grads
 
         freqs = rfreqs[qpts_i]*ureg('hartree').to('meV')
@@ -629,13 +655,41 @@ class ForceConstants:
             eigenvectors = reigenvecs[qpts_i]
         else:
             eigenvectors = None
+
+        mode_gradients = None
+        if return_mode_gradients:
+            max_real = np.amax(np.absolute(rmode_gradients.real))
+            idx = np.where(
+                rmode_gradients.imag/max_real > 1e-10)
+            n_idx = len(idx[0])
+            if n_idx > 0:
+                n_print = n_idx if n_idx < 5 else 5
+                warnings.warn(
+                    f'Unexpected values for mode gradients at {n_idx}/{rmode_gradients.size} '
+                    f'indices {[x for x in zip(*idx)][:n_print]}..., '
+                    f'expected near-zero imaginary elements, got values of '
+                    f'{rmode_gradients.imag[idx][:n_print]}..., compared to a '
+                    f'max real value of {max_real}. Data may have been lost '
+                    f'when casting to real mode gradients',
+                    stacklevel=3)
+            mode_gradients = rmode_gradients.real[qpts_i]*ureg(
+                'hartree*bohr').to(
+                    f'meV*{str(self.crystal.cell_vectors.units)}')
         if return_mode_widths:
-            mode_widths = mode_gradients_to_widths(
-                rmode_gradients[qpts_i]*ureg('hartree*bohr'),
-                self.crystal.cell_vectors).to('meV')
-        else:
-            mode_widths = None
-        return qpts, weights, freqs, eigenvectors, mode_widths
+            warnings.warn(
+                'return_mode_widths has been deprecated and will be removed '
+                'in a future release. Please instead use a combination of '
+                'return_mode_gradients and euphonic.util.'
+                'mode_gradients_to_widths, e.g.:\n'
+                'phon, mode_gradients = force_constants.calculate_qpoint_phonon_modes('
+                '*args, **kwargs, return_mode_gradients=True)\n'
+                'mode_widths = euphonic.util.mode_gradients_to_widths(mode_gradients, '
+                'phon.crystal.cell_vectors)',
+                category=DeprecationWarning, stacklevel=3)
+            mode_gradients = mode_gradients_to_widths(
+                mode_gradients,
+                self.crystal.cell_vectors)
+        return qpts, weights, freqs, eigenvectors, mode_gradients
 
     def _calculate_phonons_at_q(self, q, args):
         """
@@ -689,14 +743,11 @@ class ForceConstants:
             n_modes = len(evecs)
             dmat_grad *= dyn_mat_weighting[..., np.newaxis]
             evecs_sq_view = np.reshape(evecs, (n_modes, n_modes))
-            grad_tmps = np.einsum('ij,ik,jkl->il', np.conj(evecs_sq_view),
-                                                   evecs_sq_view,
-                                                   dmat_grad)
-            mode_gradients = np.zeros(n_modes)
-            for n, grad_tmp in enumerate(grad_tmps):
-                mode_gradients[n] = 0.5*np.linalg.norm(grad_tmp)/evals[n]
-
-            return evals, evecs, mode_gradients
+            mode_grads_xyz = np.einsum(
+                'ij,ik,jkl->il', np.conj(evecs_sq_view),
+                                 evecs_sq_view,
+                                 dmat_grad)/(2*evals[:, np.newaxis])
+            return evals, evecs, mode_grads_xyz
         else:
             return evals, evecs, None
 
@@ -731,16 +782,19 @@ class ForceConstants:
             direction. A list of lists rather than a Numpy array is used
             as the 3 lists are independent and their size is not known
             beforehand
-        unique_sc_i : (cell_origins, 3) int ndarray
+        unique_cell_i : (n_cells_in_sc, 3) int ndarray
             The indices needed to reconstruct cell_origins from the
             unique values in unique_cell_origins
+        all_origins_cart : (n_cells_in_sc, n_atoms, n_atoms, n_images, 3)
+            or (0, 3) float ndarray
+            The Cartesian coordinate of each atom in each supercell
+            image. Is only used if calculating dynamical matrix gradients
 
         Returns
         -------
         dyn_mat : (3*n_atoms, 3*n_atoms) complex ndarray
             The non mass weighted dynamical matrix at q
         """
-
         sc_image_i = self._sc_image_i
 
         # Cumulant method: for each ij ion-ion displacement sum phases
@@ -1143,7 +1197,7 @@ class ForceConstants:
             warnings.warn((
                 '\nError correcting for acoustic sum rule, could not '
                 'find 3 acoustic modes.\nReturning uncorrected FC '
-                'matrix'), stacklevel=2)
+                'matrix'), stacklevel=3)
             return self._force_constants
 
         # Correct fc matrix - set acoustic modes to almost zero
@@ -1186,7 +1240,7 @@ class ForceConstants:
         except Exception:
             warnings.warn(('\nError correcting for acoustic sum rule, '
                            'could not find 3 acoustic modes.\nNot '
-                           'correcting dynamical matrix'), stacklevel=2)
+                           'correcting dynamical matrix'), stacklevel=3)
             return np.array([], dtype=np.complex128)
 
         n_atoms = self.crystal.n_atoms

@@ -1,3 +1,4 @@
+import json
 import os
 
 import pytest
@@ -9,6 +10,8 @@ from euphonic.util import (direction_changed, mp_grid, get_qpoint_labels,
                            mode_gradients_to_widths)
 from tests_and_analysis.test.utils import get_data_path
 from tests_and_analysis.test.euphonic_test.test_crystal import get_crystal
+from tests_and_analysis.test.euphonic_test.test_force_constants import (
+    get_fc_dir)
 
 
 @pytest.mark.unit
@@ -63,28 +66,44 @@ class TestGetQptLabels:
         labels = get_qpoint_labels(qpts, **kwargs)
         assert labels == expected_labels
 
+
+def get_modg(mode_gradients_file):
+    with open(os.path.join(get_fc_dir(), mode_gradients_file), 'r') as fp:
+        modg_dict = json.load(fp)
+    modg = modg_dict['mode_gradients']*ureg(
+        modg_dict['mode_gradients_unit'])
+    return modg
+
+
+def get_modg_norm(mode_gradients_file):
+    modg = get_modg(mode_gradients_file)
+    return np.linalg.norm(modg.magnitude, axis=-1)*modg.units
+
+
 @pytest.mark.unit
 class TestModeGradientsToWidths:
 
-    @pytest.mark.parametrize('mode_grads, cell_vecs, expected_mode_widths', [
-        (np.array([[42.150888, 23.297914, 46.008871],
-                   [25.679001, 55.025284,  4.599791],
-                   [23.106633, 25.714757, 21.541563],
-                   [15.468629, 15.307626, 20.417814],
-                   [41.257245, 43.774049, 35.250878]])*ureg('meV*angstrom'),
-        np.array([[2.426176, -4.20226, 0.000000],
-                  [2.426176,  4.20226, 0.000000],
-                  [0.000000,  0.00000, 5.350305]])*ureg('angstrom'),
-        np.array([[10.317524,  5.702769, 11.261865],
-                  [ 6.285602, 13.468866,  1.125918],
-                  [ 5.655948,  6.294354,  5.272857],
-                  [ 3.786348,  3.746939,  4.997790],
-                  [10.098781, 10.714834,  8.628567]])*ureg('meV'))
+    @pytest.mark.parametrize('mode_grads, cell_vecs, expected_mode_widths_file', [
+        (get_modg('quartz_554_full_mode_gradients.json'),
+         get_crystal('quartz').cell_vectors,
+         'quartz_554_full_mode_widths.json'),
+        (get_modg_norm('quartz_554_full_mode_gradients.json'),
+         get_crystal('quartz').cell_vectors,
+         'quartz_554_full_mode_widths.json'),
+        (get_modg('lzo_222_full_mode_gradients.json'),
+         get_crystal('LZO').cell_vectors,
+         'lzo_222_full_mode_widths.json'),
+        (get_modg_norm('lzo_222_full_mode_gradients.json'),
+         get_crystal('LZO').cell_vectors,
+         'lzo_222_full_mode_widths.json')
         ])
     def test_mode_gradients_to_widths(self, mode_grads, cell_vecs,
-            expected_mode_widths):
-
+                                      expected_mode_widths_file):
         mode_widths = mode_gradients_to_widths(mode_grads, cell_vecs)
+        with open(os.path.join(get_fc_dir(), expected_mode_widths_file), 'r') as fp:
+            modw_dict = json.load(fp)
+        expected_mode_widths = modw_dict['mode_widths']*ureg(
+            modw_dict['mode_widths_unit'])
         assert mode_widths.units == expected_mode_widths.units
         npt.assert_allclose(mode_widths.magnitude,
-                            expected_mode_widths.magnitude, atol=1e-5)
+                            expected_mode_widths.magnitude, atol=3e-4)

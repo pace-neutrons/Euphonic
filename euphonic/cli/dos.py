@@ -1,7 +1,7 @@
 from typing import List
 
 import euphonic
-from euphonic.util import mp_grid
+from euphonic.util import mp_grid, mode_gradients_to_widths
 from euphonic.plot import plot_1d
 from .utils import (load_data_from_file, get_args, matplotlib_save_or_show,
                     _calc_modes_kwargs,
@@ -30,9 +30,11 @@ def main(params: List[str] = None):
                 raise ValueError('Currently only Gaussian shape is supported '
                                  'with adaptive broadening')
             cmkwargs = _calc_modes_kwargs(args)
-            cmkwargs['return_mode_widths'] = True
-            modes, mode_widths = data.calculate_qpoint_frequencies(
+            cmkwargs['return_mode_gradients'] = True
+            modes, mode_grads = data.calculate_qpoint_frequencies(
                 mp_grid(grid_spec), **cmkwargs)
+            mode_widths = mode_gradients_to_widths(mode_grads,
+                                                   modes.crystal.cell_vectors)
             if args.energy_broadening:
                 mode_widths *= args.energy_broadening
         else:

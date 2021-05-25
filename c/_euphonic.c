@@ -224,7 +224,7 @@ static PyObject *calculate_phonons(PyObject *self, PyObject *args) {
                 dmat = (dmats + q*dmat_elems);
             }
             if (calc_dmat_grad) {
-                modeg = (modegs + q*3*n_atoms);
+                modeg = (modegs + q*3*n_atoms*6);
             }
             calculate_dyn_mat_at_q(qpt, n_atoms, n_cells, max_ims, n_sc_ims,
                 sc_im_idx, cell_ogs, sc_ogs, fc, all_ogs_cart, calc_dmat_grad,
