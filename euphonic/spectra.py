@@ -735,7 +735,7 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
         if grouping == 'all':
             grouping_dict = {'Total': np.arange(len(self))}
         elif grouping == 'species':
-            pattern_str = '^(.*)-\d+$'
+            pattern_str = r'^(.*)-\d+$'
             pattern = re.compile(pattern_str)
 
             labels = np.array(
