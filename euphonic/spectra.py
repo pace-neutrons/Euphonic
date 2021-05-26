@@ -524,11 +524,16 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
     def __getitem__(self, item: int) -> Spectrum1D:
         ...
 
+
     @overload  # noqa: F811
     def __getitem__(self, item: slice) -> SC:
         ...
 
-    def __getitem__(self, item: Union[int, slice]):  # noqa: F811
+    @overload  # noqa: F811
+    def __getitem__(self, item: Sequence[int]) -> Union[Spectrum1D, SC]:
+        ...
+
+    def __getitem__(self, item: Union[int, slice, Sequence[int]]):  # noqa: F811
         new_metadata = deepcopy(self.metadata)
         line_metadata = new_metadata.pop('line_data',
                                          [{} for _ in self._y_data])
@@ -538,17 +543,28 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
                               self.y_data[item, :],
                               x_tick_labels=self.x_tick_labels,
                               metadata=new_metadata)
-        elif isinstance(item, slice):
-            if any(line_metadata):
-                new_metadata['line_data'] = line_metadata[item]
+
+        if isinstance(item, slice):
             if (item.stop is not None) and (item.stop >= len(self)):
                 raise IndexError(f'index "{item.stop}" out of range')
-            return type(self)(self.x_data,
-                              self.y_data[item, :],
-                              x_tick_labels=self.x_tick_labels,
-                              metadata=new_metadata)
+            if any(line_metadata):
+                new_metadata['line_data'] = line_metadata[item]
+            y_data = self.y_data[item, :]
         else:
-            raise TypeError(f'Index "{item}" should be an integer or a slice')
+            try:
+                item = list(item)
+                if not all([isinstance(i, (int, np.integer)) for i in item]):
+                    raise TypeError
+                if any(line_metadata):
+                   new_metadata['line_data'] = [line_metadata[idx]
+                                                for idx in item]
+            except TypeError:
+                raise TypeError(f'Index "{item}" should be an integer, slice '
+                                 'or sequence of ints')
+        return type(self)(self.x_data,
+                self.y_data[item, :],
+                          x_tick_labels=self.x_tick_labels,
+                          metadata=new_metadata)
 
     @classmethod
     def from_spectra(cls: SC, spectra: Sequence[Spectrum1D]) -> SC:

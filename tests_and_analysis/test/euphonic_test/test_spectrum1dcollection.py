@@ -333,9 +333,22 @@ class TestSpectrum1DCollectionIndexAccess:
         check_spectrum1dcollection(extracted_spectrum, expected_spectrum)
 
     @pytest.mark.parametrize(
+        'spectrum, index, expected_spectrum',
+        [(get_spectrum1dcollection('gan_bands.json'), np.arange(2, 5),
+          get_expected_spectrum1dcollection('gan_bands_index_2_5.json')),
+         (get_spectrum1dcollection('gan_bands.json'), [2, 3, 4],
+          get_expected_spectrum1dcollection('gan_bands_index_2_5.json'))
+         ])
+    def test_index_sequence(self, spectrum, index, expected_spectrum):
+        extracted_spectrum = spectrum[index]
+        check_spectrum1dcollection(extracted_spectrum, expected_spectrum)
+
+    @pytest.mark.parametrize(
         'spectrum, index, expected_error',
         [(get_spectrum1dcollection('gan_bands.json'),
           '1', TypeError),
+         (get_spectrum1dcollection('gan_bands.json'),
+          np.arange(4.0), TypeError),
          (get_spectrum1dcollection('gan_bands.json'),
           6, IndexError),
          (get_spectrum1dcollection('gan_bands.json'),
