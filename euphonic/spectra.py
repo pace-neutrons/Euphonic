@@ -626,6 +626,22 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
             combined_metadata['line_data'] = line_data
         return combined_metadata
 
+    def _get_labels(self) -> List[str]:
+        """
+        Get value of the 'label' key for each element in
+        metadata['line_data']. Raises a KeyError if 'line_data' or
+        'label' keys don't exist
+        """
+        labels = np.array(
+            [x.get('label', None) for x in self.metadata.get(
+                'line_data', [{}]*len(self))])
+        no_label_idx = np.where(labels == None)[0]
+        if len(no_label_idx) > 0:
+            raise KeyError(
+                f'No "label" keys found in metadata for spectra '
+                f'{no_label_idx}')
+        return labels
+
     def to_dict(self) -> Dict[str, Any]:
         """
         Convert to a dictionary consistent with from_dict()
@@ -754,15 +770,7 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
             pattern_str = r'^(.*)-\d+$'
             pattern = re.compile(pattern_str)
 
-            labels = np.array(
-                [x.get('label', None) for x in self.metadata.get(
-                    'line_data', [{}]*len(self))])
-            no_label_idx = np.where(labels == None)[0]
-            if len(no_label_idx) > 0:
-                raise RuntimeError(
-                    f'No "label" keys found in metadata for spectra '
-                    f'{no_label_idx}, cannot group spectra')
-
+            labels = self._get_labels()
             matches = np.array([], dtype=object)
             for label in labels:
                 match_obj = pattern.match(label)
@@ -810,6 +818,23 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
             return Spectrum1D(*spec_args, **spec_kwargs)
         else:
             return Spectrum1DCollection(*spec_args, **spec_kwargs)
+
+    def select(self, selection: Sequence[str]) -> SC:
+        """
+        Select spectra by their 'label' keys in metadata['line_data']
+
+        Parameters
+        ----------
+        selection
+            A sequence of strings describing the labels to select, e.g.
+            spectrum.select(['Na', 'Cl']) or spectrum.select(['Si'])
+        """
+        labels = self._get_labels()
+        select_dict = _get_unique_str_and_idx(labels)
+        select_idx = np.array([], dtype=np.int32)
+        for selec in selection:
+            select_idx = np.concatenate((select_idx, select_dict[selec]))
+        return self[select_idx]
 
 
 class Spectrum2D(Spectrum):
