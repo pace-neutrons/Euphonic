@@ -595,8 +595,10 @@ class TestQpointPhononModesCalculatePdos:
         qpt_ph_modes = QpointPhononModes.from_castep(
             get_castep_path(material, qpt_ph_modes_file))
         pdos = qpt_ph_modes.calculate_pdos(ebins, **kwargs)
+        tdos = pdos.sum()
+        tdos.metadata['label'] = 'Total'
         pdos = Spectrum1DCollection.from_spectra([
-            pdos.group_by('all'), *pdos.group_by('species')])
+            tdos, *pdos.group_by('species')])
         expected_pdos = get_expected_spectrum1dcollection(expected_pdos_json)
         check_spectrum1dcollection(pdos, expected_pdos)
 
@@ -617,8 +619,10 @@ class TestQpointPhononModesCalculatePdos:
             modw_dict['mode_widths_unit'])
         pdos = qpt_ph_modes.calculate_pdos(
             ebins, mode_widths=mode_widths, weighting='coherent')
+        tdos = pdos.sum()
+        tdos.metadata['label'] = 'Total'
         pdos = Spectrum1DCollection.from_spectra([
-            pdos.group_by('all'), *pdos.group_by('species')])
+            tdos, *pdos.group_by('species')])
         expected_pdos = get_expected_spectrum1dcollection(expected_pdos_json)
         check_spectrum1dcollection(pdos, expected_pdos)
 
@@ -631,7 +635,8 @@ class TestQpointPhononModesCalculatePdos:
             self, material, qpt_ph_modes_file, expected_dos_json, ebins):
         qpt_ph_modes = QpointPhononModes.from_castep(
             get_castep_path(material, qpt_ph_modes_file))
-        all_dos = qpt_ph_modes.calculate_pdos(ebins).group_by('all')
+        all_dos = qpt_ph_modes.calculate_pdos(ebins).sum()
+        all_dos.metadata['label'] = 'Total'
         expected_total_dos = get_expected_spectrum1d(expected_dos_json)
         assert (str(all_dos.y_data.units)
                 == str(expected_total_dos.y_data.units))
@@ -655,7 +660,8 @@ class TestQpointPhononModesCalculatePdos:
         mode_widths = modw_dict['mode_widths']*ureg(
             modw_dict['mode_widths_unit'])
         all_dos = qpt_ph_modes.calculate_pdos(
-            ebins, mode_widths=mode_widths).group_by('all')
+            ebins, mode_widths=mode_widths).sum()
+        all_dos.metadata['label'] = 'Total'
         expected_total_dos = get_expected_spectrum1d(expected_dos_json)
         assert (str(all_dos.y_data.units)
                 == str(expected_total_dos.y_data.units))

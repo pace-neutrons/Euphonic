@@ -562,7 +562,7 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
                 raise TypeError(f'Index "{item}" should be an integer, slice '
                                  'or sequence of ints')
         return type(self)(self.x_data,
-                self.y_data[item, :],
+                          self.y_data[item, :],
                           x_tick_labels=self.x_tick_labels,
                           metadata=new_metadata)
 
@@ -601,10 +601,11 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
     def _combine_metadata(all_metadata: Sequence[Dict[str, Any]]
                           ) -> Dict[str, Any]:
         """
-        Combines all common key/value pairs into the top level of a
-        metadata dictionary, all unmatching key/value pairs are put
-        into the 'line_data' key, which is a list of metadata dicts
-        for each element in all_metadata
+        From a sequence of metadata dictionaries, combines all common
+        key/value pairs into the top level of a metadata dictionary,
+        all unmatching key/value pairs are put into the 'line_data'
+        key, which is a list of metadata dicts for each element in
+        all_metadata
         """
         combined_metadata = {}
         # Use .keys() and explicitly compare values, rather than just using
@@ -614,7 +615,7 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
         for ckey in common_keys:
             if all([all_metadata[0][ckey] == metadata[ckey]
                    for metadata in all_metadata[1:]]):
-                combined_metadata[ckey] = all_metadata[0][ckey]
+                combined_metadata[ckey] = deepcopy(all_metadata[0][ckey])
         # Put all other per-spectrum metadata in line_data
         line_data = []
         for i, metadata in enumerate(all_metadata):
@@ -625,6 +626,21 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
         if any(line_data):
             combined_metadata['line_data'] = line_data
         return combined_metadata
+
+    def _combine_line_metadata(self, indices: Optional[Sequence[int]] = None
+                               ) -> Dict[str, Any]:
+        """
+        For a metadata dictionary, combines all common key/value
+        pairs in 'line_data' and puts them in a top-level dictionary.
+        If indices is supplied, only those indices in 'line_data' are
+        combined. Unmatching key/value pairs are discarded
+        """
+        line_data = self.metadata.get('line_data', [{}]*len(self))
+        if indices is not None:
+            line_data = [line_data[idx] for idx in indices]
+        combined_line_data = self._combine_metadata(line_data)
+        combined_line_data.pop('line_data', None)
+        return combined_line_data
 
     def _get_labels(self) -> List[str]:
         """
@@ -737,19 +753,15 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
             deepcopy((self.x_tick_labels)),
             deepcopy(self.metadata))
 
-    def group_by(self, grouping: str) -> Union[SC,
-                                               Spectrum1D]:
+    def group_by(self, grouping: str) -> SC:
         """
-        Group and sum spectra according to the 'label' key for
-        each spectrum in metadata['line_data']
+        Group and sum y_data for each spectrum according to the 'label'
+        key in metadata['line_data']
 
         Parameters
         ----------
         grouping
-            One of {'all', 'species'}. How to group spectra:
-
-            - 'all': sum over all spectra. The resultant spectrum
-              will be labelled as 'Total' in its metadata
+            One of {'species'}. How to group spectra:
 
             - 'species': sum according to the species in each 'label'
               key in metadata['line_data'] which should be in the
@@ -760,13 +772,12 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
         Returns
         -------
         grouped_spectrum
-            A new Spectrum1D or Spectrum1DCollection with one line for
-            each group
+            A new Spectrum1DCollection with one line for each group. Any
+            metadata in 'line_data' not common across all spectra in a
+            group will be discarded
         """
-        grouping_opts = ['all', 'species']
-        if grouping == 'all':
-            grouping_dict = {'Total': np.arange(len(self))}
-        elif grouping == 'species':
+        grouping_opts = ['species']
+        if grouping == 'species':
             pattern_str = r'^(.*)-\d+$'
             pattern = re.compile(pattern_str)
 
@@ -798,26 +809,36 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
         group_metadata['line_data'] = [{}]*len(grouping_dict)
         for i, (label, idx) in enumerate(grouping_dict.items()):
              # Look for any common key/values in grouped metadata
-             group_i_metadata = self._combine_metadata(
-                 [self.metadata['line_data'][idxi] for idxi in idx])
-             group_i_metadata.pop('line_data', None)
+             group_i_metadata = self._combine_line_metadata(idx)
              group_i_metadata['label'] = label
              group_metadata['line_data'][i] = group_i_metadata
              new_y_data[i] = np.sum(self._y_data[idx], axis=0)
-
         new_y_data = new_y_data.squeeze()*ureg(self._internal_y_data_unit).to(
             self.y_data_unit)
 
-        if len(grouping_dict) == 1:
-            group_metadata.update(group_metadata['line_data'][0])
-            group_metadata.pop('line_data')
-        spec_args = (self.x_data, new_y_data)
-        spec_kwargs = {'x_tick_labels': self.x_tick_labels,
-                       'metadata': group_metadata}
-        if len(grouping_dict) == 1:
-            return Spectrum1D(*spec_args, **spec_kwargs)
-        else:
-            return Spectrum1DCollection(*spec_args, **spec_kwargs)
+        return Spectrum1DCollection(self.x_data, new_y_data,
+                                    x_tick_labels=self.x_tick_labels,
+                                    metadata=group_metadata)
+
+    def sum(self) -> Spectrum1D:
+        """
+        Sum y_data over all spectra
+
+        Returns
+        -------
+        summed_spectrum
+            A Spectrum1D created from the summed y_data. Any metadata
+            in 'line_data' not common across all spectra will be
+            discarded
+        """
+        metadata = deepcopy(self.metadata)
+        metadata.pop('line_data', None)
+        metadata.update(self._combine_line_metadata())
+        summed_y_data = np.sum(self._y_data, axis=0)*ureg(
+            self._internal_y_data_unit).to(self.y_data_unit)
+        return Spectrum1D(self.x_data, summed_y_data,
+                          x_tick_labels=self.x_tick_labels,
+                          metadata=metadata)
 
     def select(self, selection: Sequence[str]) -> SC:
         """
@@ -828,6 +849,11 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
         selection
             A sequence of strings describing the labels to select, e.g.
             spectrum.select(['Na', 'Cl']) or spectrum.select(['Si'])
+
+        Returns
+        -------
+        selected_spectra
+           A Spectrum1DCollection containing the selected spectra
         """
         labels = self._get_labels()
         select_dict = _get_unique_str_and_idx(labels)
