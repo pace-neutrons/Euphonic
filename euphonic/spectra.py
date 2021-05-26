@@ -537,7 +537,7 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
         new_metadata = deepcopy(self.metadata)
         line_metadata = new_metadata.pop('line_data',
                                          [{} for _ in self._y_data])
-        if isinstance(item, int):
+        if isinstance(item, (int, np.integer)):
             new_metadata.update(line_metadata[item])
             return Spectrum1D(self.x_data,
                               self.y_data[item, :],
@@ -840,26 +840,35 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
                           x_tick_labels=self.x_tick_labels,
                           metadata=metadata)
 
-    def select(self, selection: Sequence[str]) -> SC:
+    def select(self, selection: Union[str, Sequence[str]]) -> SC:
         """
         Select spectra by their 'label' keys in metadata['line_data']
 
         Parameters
         ----------
         selection
-            A sequence of strings describing the labels to select, e.g.
-            spectrum.select(['Na', 'Cl']) or spectrum.select(['Si'])
+            A string or sequence of strings describing the label(s) to
+            select, e.g. spectrum.select(['Na', 'Cl']) or
+            spectrum.select('Si')
 
         Returns
         -------
         selected_spectra
-           A Spectrum1DCollection containing the selected spectra
+           If selection matches a single spectrum, is a Spectrum1D
+           containing the selected spectrum. If selection matches
+           multiple spectra, is a sequence this is a
+           Spectrum1DCollection containing the selected spectra
         """
+        import pdb; pdb.set_trace()
+        if isinstance(selection, str):
+            selection = [selection]
         labels = self._get_labels()
         select_dict = _get_unique_str_and_idx(labels)
         select_idx = np.array([], dtype=np.int32)
         for selec in selection:
             select_idx = np.concatenate((select_idx, select_dict[selec]))
+        if len(select_idx) == 1:
+            select_idx = select_idx[0]
         return self[select_idx]
 
 
