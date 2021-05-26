@@ -6,7 +6,7 @@ import numpy as np
 import numpy.testing as npt
 from pint import DimensionalityError
 
-from euphonic import ureg, Crystal, QpointPhononModes
+from euphonic import ureg, Crystal, QpointPhononModes, Spectrum1DCollection
 from euphonic.readers.phonopy import ImportPhonopyReaderError
 from tests_and_analysis.test.euphonic_test.test_crystal import (
     ExpectedCrystal, get_crystal, check_crystal)
@@ -595,6 +595,8 @@ class TestQpointPhononModesCalculatePdos:
         qpt_ph_modes = QpointPhononModes.from_castep(
             get_castep_path(material, qpt_ph_modes_file))
         pdos = qpt_ph_modes.calculate_pdos(ebins, **kwargs)
+        pdos = Spectrum1DCollection.from_spectra([
+            pdos.group_by('all'), *pdos.group_by('species')])
         expected_pdos = get_expected_spectrum1dcollection(expected_pdos_json)
         check_spectrum1dcollection(pdos, expected_pdos)
 
@@ -615,6 +617,8 @@ class TestQpointPhononModesCalculatePdos:
             modw_dict['mode_widths_unit'])
         pdos = qpt_ph_modes.calculate_pdos(
             ebins, mode_widths=mode_widths, weighting='coherent')
+        pdos = Spectrum1DCollection.from_spectra([
+            pdos.group_by('all'), *pdos.group_by('species')])
         expected_pdos = get_expected_spectrum1dcollection(expected_pdos_json)
         check_spectrum1dcollection(pdos, expected_pdos)
 
@@ -627,11 +631,11 @@ class TestQpointPhononModesCalculatePdos:
             self, material, qpt_ph_modes_file, expected_dos_json, ebins):
         qpt_ph_modes = QpointPhononModes.from_castep(
             get_castep_path(material, qpt_ph_modes_file))
-        all_dos = qpt_ph_modes.calculate_pdos(ebins)
+        all_dos = qpt_ph_modes.calculate_pdos(ebins).group_by('all')
         expected_total_dos = get_expected_spectrum1d(expected_dos_json)
         assert (str(all_dos.y_data.units)
                 == str(expected_total_dos.y_data.units))
-        npt.assert_allclose(all_dos.y_data[0].magnitude,
+        npt.assert_allclose(all_dos.y_data.magnitude,
                             expected_total_dos.y_data.magnitude)
 
     @pytest.mark.parametrize(
@@ -650,11 +654,12 @@ class TestQpointPhononModesCalculatePdos:
             modw_dict = json.load(fp)
         mode_widths = modw_dict['mode_widths']*ureg(
             modw_dict['mode_widths_unit'])
-        all_dos = qpt_ph_modes.calculate_pdos(ebins, mode_widths=mode_widths)
+        all_dos = qpt_ph_modes.calculate_pdos(
+            ebins, mode_widths=mode_widths).group_by('all')
         expected_total_dos = get_expected_spectrum1d(expected_dos_json)
         assert (str(all_dos.y_data.units)
                 == str(expected_total_dos.y_data.units))
-        npt.assert_allclose(all_dos.y_data[0].magnitude,
+        npt.assert_allclose(all_dos.y_data.magnitude,
                             expected_total_dos.y_data.magnitude)
 
     def test_invalid_weighting_raises_value_error(self):

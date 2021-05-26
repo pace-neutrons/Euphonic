@@ -3,7 +3,8 @@ import math
 import sys
 import warnings
 import os.path
-from typing import Dict
+from typing import Dict, Sequence
+from collections import OrderedDict
 
 import numpy as np
 import seekpath
@@ -12,7 +13,6 @@ from importlib_resources import open_text  # Backport for Python 3.6
 from pint import UndefinedUnitError
 
 from euphonic import ureg, Quantity
-from euphonic.crystal import Crystal
 import euphonic.data
 
 
@@ -267,11 +267,32 @@ def mode_gradients_to_widths(mode_gradients: Quantity, cell_vectors: Quantity
         raise ValueError(
             f'Unexpected shape for mode_gradients {modg.shape}, '
             f'expected (n_qpts, n_modes) or (n_qpts, n_modes, 3)')
-    cell_volume = Crystal.from_cell_vectors(cell_vectors)._cell_volume()
+    cell_volume = (_cell_vectors_to_volume(
+        cell_vectors.magnitude)*cell_vectors.units**3).to('bohr**3').magnitude
     q_spacing = 2/(np.cbrt(len(mode_gradients)*cell_volume))
     mode_widths = q_spacing*modg
     return mode_widths*ureg('hartree').to(
         mode_gradients.units/cell_vectors.units)
+
+
+def _cell_vectors_to_volume(cell_vectors: np.ndarray) -> float:
+    """Convert 3x3 cell vectors to volume"""
+    return np.dot(cell_vectors[0],
+                  np.cross(cell_vectors[1], cell_vectors[2]))
+
+
+def _get_unique_str_and_idx(all_str: Sequence[str]
+                            ) -> 'OrderedDict[str, np.ndarray]':
+    """
+    Returns an ordered dictionary mapping the unique strings contained
+    in a list to their indices
+    """
+    _, idx = np.unique(all_str, return_index=True)
+    # Retain order
+    unique_strings = all_str[np.sort(idx)]
+    str_dict = OrderedDict([(strg, np.where(all_str == strg)[0])
+                            for strg in unique_strings])
+    return str_dict
 
 
 def _calc_abscissa(reciprocal_cell, qpts):
