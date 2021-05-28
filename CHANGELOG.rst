@@ -1,5 +1,13 @@
-`Unreleased <https://github.com/pace-neutrons/Euphonic/compare/v0.3.2...HEAD>`_
+`Unreleased <https://github.com/pace-neutrons/Euphonic/compare/v0.3.3...HEAD>`_
 ----------
+
+`v0.3.3 <https://github.com/pace-neutrons/Euphonic/compare/v0.3.2...v0.3.3>`_
+------
+
+- Bug fixes:
+
+  - Fixed memory leak when using the C extension and making multiple calls to
+    ``calculate_qpoint_phonon_modes``
 
 `v0.3.2 <https://github.com/pace-neutrons/Euphonic/compare/v0.3.1...v0.3.2>`_
 ----------

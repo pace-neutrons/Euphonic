@@ -108,6 +108,16 @@ static PyObject *calculate_phonons(PyObject *self, PyObject *args) {
         return NULL;
     }
 
+    // Load library functions
+    // Load before calling PyObject_GetAttrString so we don't have to
+    // py_DECREF if library loading fails
+    ZheevdFunc zheevd;
+    zheevd = get_zheevd(scipy_dir);
+    if (zheevd == NULL) {
+        PyErr_Format(PyExc_RuntimeError, "Could not load zheevd function\n");
+        return NULL;
+    }
+
     // Get rest of vars from ForceConstants object
     if (attr_from_pyobj(py_idata, "crystal", &py_crystal) ||
         attr_from_pyobj(py_idata, "_n_sc_images", &py_n_sc_ims) ||
@@ -172,14 +182,6 @@ static PyObject *calculate_phonons(PyObject *self, PyObject *args) {
         n_gvecs = PyArray_DIMS(py_gvec_phases)[0];
     }
 
-    // Load library functions
-    ZheevdFunc zheevd;
-    zheevd = get_zheevd(scipy_dir);
-    if (zheevd == NULL) {
-        PyErr_Format(PyExc_RuntimeError, "Could not load zheevd function\n");
-        return NULL;
-    }
-
     omp_set_num_threads(n_threads);
     #pragma omp parallel
     {
@@ -228,6 +230,25 @@ static PyObject *calculate_phonons(PyObject *self, PyObject *args) {
             diagonalise_dyn_mat_zheevd(n_atoms, qpt, dmat, eval, zheevd);
             evals_to_freqs(n_atoms, eval);
         }
+        if (dipole) {
+            free((void*)corr);
+        }
+    }
+
+    // PyObject_GetAttrString returns a "new" reference, need to decref
+    Py_DECREF(py_crystal);
+    Py_DECREF(py_n_sc_ims);
+    Py_DECREF(py_sc_im_idx);
+    Py_DECREF(py_cell_ogs);
+    Py_DECREF(py_atom_r);
+    if (dipole){
+        Py_DECREF(py_born);
+        Py_DECREF(py_dielectric);
+        Py_DECREF(py_H_ab);
+        Py_DECREF(py_dipole_cells);
+        Py_DECREF(py_gvec_phases);
+        Py_DECREF(py_gvecs_cart);
+        Py_DECREF(py_dipole_q0);
     }
 
     return Py_None;
