@@ -514,10 +514,11 @@ class QpointPhononModes(QpointFrequencies):
                 all_dos_y_data = np.zeros((
                     crystal.n_atoms, len(dos_bins) - 1))*dos.units
             all_dos_y_data[i] = dos
-
         metadata = {'line_data':
-            [{'label': f'{symbol}-{idx}'}
-                for idx, symbol in enumerate(crystal.atom_type)]}
+            [{'species': symbol, 'index': idx}
+             for idx, symbol in enumerate(crystal.atom_type)]}
+        if weighting is not None:
+            metadata['weighting'] = weighting
 
         return Spectrum1DCollection(
             dos_bins, all_dos_y_data, metadata=metadata)

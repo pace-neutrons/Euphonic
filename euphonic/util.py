@@ -3,7 +3,7 @@ import math
 import sys
 import warnings
 import os.path
-from typing import Dict, Sequence
+from typing import Dict, Sequence, Union
 from collections import OrderedDict
 
 import numpy as np
@@ -281,17 +281,22 @@ def _cell_vectors_to_volume(cell_vectors: np.ndarray) -> float:
                   np.cross(cell_vectors[1], cell_vectors[2]))
 
 
-def _get_unique_str_and_idx(all_str: Sequence[str]
+def _get_unique_str_and_idx(all_str: Sequence[Union[str, Sequence[str]]]
                             ) -> 'OrderedDict[str, np.ndarray]':
     """
-    Returns an ordered dictionary mapping the unique strings contained
-    in a list to their indices
+    Returns an ordered dictionary mapping the unique strings (or lists of
+    strings), contained in a list to their indices
     """
-    _, idx = np.unique(all_str, return_index=True)
+    if isinstance(all_str[0], str):
+        all_str = [[x] for x in all_str]
+    all_str = np.array(all_str)
+
+    _, idx = np.unique(all_str, return_index=True, axis=0)
     # Retain order
     unique_strings = all_str[np.sort(idx)]
-    str_dict = OrderedDict([(strg, np.where(all_str == strg)[0])
-                            for strg in unique_strings])
+    str_dict = OrderedDict([
+        ('-'.join(strg), np.where(np.all(all_str == strg, axis=1))[0])
+        for strg in unique_strings])
     return str_dict
 
 

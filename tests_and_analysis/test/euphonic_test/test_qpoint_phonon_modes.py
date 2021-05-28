@@ -595,6 +595,8 @@ class TestQpointPhononModesCalculatePdos:
         qpt_ph_modes = QpointPhononModes.from_castep(
             get_castep_path(material, qpt_ph_modes_file))
         pdos = qpt_ph_modes.calculate_pdos(ebins, **kwargs)
+        for line_data in pdos.metadata['line_data']:
+            line_data['label'] = line_data['species']
         tdos = pdos.sum()
         tdos.metadata['label'] = 'Total'
         pdos = Spectrum1DCollection.from_spectra([
@@ -619,6 +621,8 @@ class TestQpointPhononModesCalculatePdos:
             modw_dict['mode_widths_unit'])
         pdos = qpt_ph_modes.calculate_pdos(
             ebins, mode_widths=mode_widths, weighting='coherent')
+        for line_data in pdos.metadata['line_data']:
+            line_data['label'] = line_data['species']
         tdos = pdos.sum()
         tdos.metadata['label'] = 'Total'
         pdos = Spectrum1DCollection.from_spectra([

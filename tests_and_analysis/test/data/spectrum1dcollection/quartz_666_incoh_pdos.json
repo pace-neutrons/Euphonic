@@ -7,12 +7,15 @@
                 "label": "Total"
             },
             {
-                "label": "O"
+                "label": "O",
+                "species": "O"
             },
             {
-                "label": "Si"
+                "label": "Si",
+                "species": "Si"
             }
-        ]
+        ],
+        "weighting": "incoherent"
     },
     "x_data": [
         0.0,

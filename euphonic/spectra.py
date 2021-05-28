@@ -406,11 +406,15 @@ class Spectrum1D(Spectrum):
             the total DOS.
         """
         data = read_phonon_dos_data(filename)
+        metadata = {}
         if element is None:
             element = 'Total'
+        else:
+            metadata['species'] = element
+        metadata['label'] = element
         return Spectrum1D(data['dos_bins']*ureg(data['dos_bins_unit']),
                           data['dos'][element]*ureg(data['dos_unit']),
-                          metadata={'label': element})
+                          metadata=metadata)
 
     def broaden(self: S1D, x_width: Quantity, shape: str = 'gauss') -> S1D:
         """
@@ -655,19 +659,18 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
         combined_line_data.pop('line_data', None)
         return combined_line_data
 
-    def _get_labels(self) -> List[str]:
+    def _get_line_data_vals(self, key: str) -> List[str]:
         """
-        Get value of the 'label' key for each element in
-        metadata['line_data']. Raises a KeyError if 'line_data' or
-        'label' keys don't exist
+        Get value of the key for each element in metadata['line_data']
+        Raises a KeyError if 'line_data' or the key doesn't exist
         """
         labels = np.array(
-            [x.get('label', None) for x in self.metadata.get(
+            [x.get(key, None) for x in self.metadata.get(
                 'line_data', [{}]*len(self))])
         no_label_idx = np.where(labels == None)[0]
         if len(no_label_idx) > 0:
             raise KeyError(
-                f'No "label" keys found in metadata for spectra '
+                f'No "{key}" keys found in metadata for spectra '
                 f'{no_label_idx}')
         return labels
 
@@ -723,10 +726,15 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
             The path and name of the .phonon_dos file to read
         """
         data = read_phonon_dos_data(filename)
-        items = data['dos'].items()
-        metadata = {'line_data': [{'label': item[0]}
-                                  for item in items]}
-        y_data = np.stack([item[1] for item in items])
+        n_spectra = len(data['dos'].keys())
+        metadata = {'line_data': [{} for x in range(n_spectra)]}
+        for i, (species, dos_data) in enumerate(data['dos'].items()):
+            if i == 0:
+                y_data = np.zeros((n_spectra, len(dos_data)))
+            y_data[i] = dos_data
+            if species != 'Total':
+                metadata['line_data'][i]['species'] = species
+            metadata['line_data'][i]['label'] = species
         return Spectrum1DCollection(
             data['dos_bins']*ureg(data['dos_bins_unit']),
             y_data*ureg(data['dos_unit']),
@@ -766,21 +774,19 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
             deepcopy((self.x_tick_labels)),
             deepcopy(self.metadata))
 
-    def group_by(self, grouping: str) -> SC:
+    def group_by(self, line_data_keys: Union[str, Sequence[str]]) -> SC:
         """
-        Group and sum y_data for each spectrum according to the 'label'
-        key in metadata['line_data']
+        Group and sum y_data for each spectrum according to the values
+        mapped to the specified keys in metadata['line_data']
 
         Parameters
         ----------
-        grouping
-            One of {'species'}. How to group spectra:
-
-            - 'species': sum according to the species in each 'label'
-              key in metadata['line_data'] which should be in the
-              format '{species}-{index}' e.g. 'Si-2', 'O-3'. The
-              resultant grouped spectra will be labelled by species
-              in their metadata
+        line_data_keys
+            The key(s) to group by. If line_data_keys is a string, if the
+            value mapped to a key is the same for multiple spectra,
+            they are placed in the same group and summed. If line_data_keys
+            is a sequence, the values must be the same for all specified
+            keys for them to be placed in the same group
 
         Returns
         -------
@@ -789,33 +795,16 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
             metadata in 'line_data' not common across all spectra in a
             group will be discarded
         """
-        grouping_opts = ['species']
-        if grouping == 'species':
-            pattern_str = r'^(.*)-\d+$'
-            pattern = re.compile(pattern_str)
-
-            labels = self._get_labels()
-            matches = np.array([], dtype=object)
-            for label in labels:
-                match_obj = pattern.match(label)
-                if match_obj is not None:
-                    match = match_obj.group(1)
-                else:
-                    match = None
-                matches = np.append(matches, match)
-
-            no_match_idx = np.where(matches == None)[0]
-            if len(no_match_idx) > 0:
-                raise RuntimeError(
-                    f'No matches found for spectra {no_match_idx} with labels '
-                    f'{[labels[idx] for idx in no_match_idx]}, cannot group '
-                    f'spectra')
-
-            grouping_dict = _get_unique_str_and_idx(matches)
-        else:
-            raise ValueError(
-                f'Invalid value for grouping, got {grouping}, should '
-                f'be one of {grouping_opts}')
+        if isinstance(line_data_keys, str):
+            line_data_keys = [line_data_keys]
+        line_data_keys = list(line_data_keys)
+        for i, key in enumerate(line_data_keys):
+            vals = self._get_line_data_vals(key)
+            if i == 0:
+                line_data_vals = vals
+            else:
+                line_data_vals = np.vstack((line_data_vals, vals))
+        grouping_dict = _get_unique_str_and_idx(line_data_vals.transpose())
 
         new_y_data = np.zeros((len(grouping_dict), self._y_data.shape[-1]))
         group_metadata = deepcopy(self.metadata)
@@ -823,10 +812,9 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
         for i, (label, idx) in enumerate(grouping_dict.items()):
              # Look for any common key/values in grouped metadata
              group_i_metadata = self._combine_line_metadata(idx)
-             group_i_metadata['label'] = label
              group_metadata['line_data'][i] = group_i_metadata
              new_y_data[i] = np.sum(self._y_data[idx], axis=0)
-        new_y_data = new_y_data.squeeze()*ureg(self._internal_y_data_unit).to(
+        new_y_data = new_y_data*ureg(self._internal_y_data_unit).to(
             self.y_data_unit)
 
         return Spectrum1DCollection(self.x_data, new_y_data,
@@ -872,10 +860,9 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
            multiple spectra, is a sequence this is a
            Spectrum1DCollection containing the selected spectra
         """
-        import pdb; pdb.set_trace()
         if isinstance(selection, str):
             selection = [selection]
-        labels = self._get_labels()
+        labels = self._get_line_data_vals('label')
         select_dict = _get_unique_str_and_idx(labels)
         select_idx = np.array([], dtype=np.int32)
         for selec in selection:

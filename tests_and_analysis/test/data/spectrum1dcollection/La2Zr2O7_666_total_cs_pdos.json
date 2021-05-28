@@ -7,15 +7,19 @@
                 "label": "Total"
             },
             {
-                "label": "O"
+                "label": "O",
+                "species": "O"
             },
             {
-                "label": "Zr"
+                "label": "Zr",
+                "species": "Zr"
             },
             {
-                "label": "La"
+                "label": "La",
+                "species": "La"
             }
-        ]
+        ],
+        "weighting": "total"
     },
     "x_data": [
         0.0,

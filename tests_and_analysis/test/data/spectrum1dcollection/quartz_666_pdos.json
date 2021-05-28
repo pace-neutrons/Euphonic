@@ -7,10 +7,12 @@
                 "label": "Total"
             },
             {
-                "label": "O"
+                "label": "O",
+                "species": "O"
             },
             {
-                "label": "Si"
+                "label": "Si",
+                "species": "Si"
             }
         ]
     },
