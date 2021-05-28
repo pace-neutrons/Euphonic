@@ -325,6 +325,19 @@ class Spectrum1D(Spectrum):
         self.x_tick_labels = x_tick_labels
         self.metadata = {} if metadata is None else metadata
 
+    def __add__(self, other: S1D):
+        """
+        Sums the y_data of two Spectrum1D objects together,
+        their x_data axes must be equal, and their y_data must
+        have compatible units and the same number of y_data
+        entries
+
+        Any metadata key/value pairs that are common to both
+        spectra are retained, any others are discarded
+        """
+        spec_col = Spectrum1DCollection.from_spectra([self, other])
+        return spec_col.sum()
+
     def _split_by_indices(self: S1D,
                           indices: Union[Sequence[int], np.ndarray]
                           ) -> List[S1D]:
