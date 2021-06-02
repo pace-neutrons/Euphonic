@@ -154,16 +154,46 @@ class Spectrum(ABC):
             return self._split_by_indices(indices)
 
     @staticmethod
-    def _gfwhm_to_sigma(fwhm: Quantity, ax_bin_centres: Quantity) -> float:
+    def _broaden_data(data: np.ndarray, bin_centres: Sequence[np.ndarray],
+                      widths: Sequence[float], shape: str = 'gauss'
+                      ) -> np.ndarray:
+        """
+        Broaden data along each axis by widths, returning the broadened
+        data. Data can be 1D or 2D, and  the length of bin_centres and
+        widths should match the number of dimensions in data.
+        bin_centres and widths are assumed to be in the same units
+        """
+        if shape == 'gauss':
+            sigmas = []
+            for width, bin_data in zip(widths, bin_centres):
+                if width is None:
+                    sigmas.append(0.0)
+                else:
+                    sigmas.append(Spectrum._gfwhm_to_sigma(width, bin_data))
+            data_broadened = gaussian_filter(data, sigmas, mode='constant')
+        elif shape == 'lorentz':
+            data_broadened = data
+            for ax, (width, bin_data) in enumerate(zip(widths, bin_centres)):
+                if width is not None:
+                    broadening = _distribution_1d(bin_data, width)
+                    data_broadened = correlate1d(data_broadened, broadening,
+                                                 mode='constant', axis=ax)
+        else:
+            raise ValueError(
+                f"Distribution shape '{shape}' not recognised")
+        return data_broadened
+
+    @staticmethod
+    def _gfwhm_to_sigma(fwhm: float, ax_bin_centres: np.ndarray) -> float:
         """
         Convert a Gaussian FWHM to sigma in units of the mean ax bin size
 
         Parameters
         ----------
         fwhm
-            Scalar float quantity, the Gaussian broadening FWHM
+            The Gaussian broadening FWHM
         ax_bin_centres
-            Shape (n_bins,) float Quantity.
+            Shape (n_bins,) float np.ndarray.
             The bin centres along the axis the broadening is applied to
 
         Returns
@@ -171,10 +201,9 @@ class Spectrum(ABC):
         sigma
             Sigma in units of mean ax bin size
         """
-        ax_units = ax_bin_centres.units
         sigma = fwhm/(2*math.sqrt(2*math.log(2)))
-        mean_bin_size = np.mean(np.diff(ax_bin_centres.magnitude))
-        sigma_bin = sigma.to(ax_units).magnitude/mean_bin_size
+        mean_bin_size = np.mean(np.diff(ax_bin_centres))
+        sigma_bin = sigma/mean_bin_size
         return sigma_bin
 
     @staticmethod
@@ -235,6 +264,7 @@ class Spectrum(ABC):
                 self.x_data.magnitude)*self.x_data.units
         else:
             return self.x_data
+
 
 
 class Spectrum1D(Spectrum):
@@ -388,26 +418,13 @@ class Spectrum1D(Spectrum):
         ValueError
             If shape is not one of the allowed strings
         """
-        if shape == 'gauss':
-            xsigma = self._gfwhm_to_sigma(x_width, self.get_bin_centres())
-            y_broadened = gaussian_filter1d(
-                    self.y_data.magnitude, xsigma,
-                    mode='constant')*ureg(self.y_data_unit)
-        elif shape == 'lorentz':
-            broadening = _distribution_1d(
-                    self.get_bin_centres().magnitude,
-                    x_width.to(self.x_data_unit).magnitude,
-                    shape=shape)
-            y_broadened = correlate1d(
-                    self.y_data.magnitude, broadening,
-                    mode='constant')*ureg(self.y_data_unit)
-        else:
-            raise ValueError(
-                f"Distribution shape '{shape}' not recognised")
-
+        y_broadened = self._broaden_data(self.y_data.magnitude,
+                                      [self.get_bin_centres().magnitude],
+                                      [x_width.to(self.x_data_unit).magnitude],
+                                      shape=shape)
         return Spectrum1D(
             np.copy(self.x_data.magnitude)*ureg(self.x_data_unit),
-            y_broadened, deepcopy((self.x_tick_labels)),
+            y_broadened*ureg(self.y_data_unit), deepcopy((self.x_tick_labels)),
             deepcopy(self.metadata))
 
 
@@ -644,6 +661,40 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
             y_data*ureg('dimensionless'),
             metadata=metadata)
 
+    def broaden(self, x_width: Quantity, shape: str = 'gauss') -> SC:
+        """
+        Individually broaden each line in y_data, returning a new
+        Spectrum1DCollection
+
+        Parameters
+        ----------
+        x_width
+            Scalar float Quantity. The broadening FWHM
+        shape
+            One of {'gauss', 'lorentz'}. The broadening shape
+
+        Returns
+        -------
+        broadened_spectrum
+            A new Spectrum1DCollection object with broadened y_data
+
+        Raises
+        ------
+        ValueError
+            If shape is not one of the allowed strings
+        """
+        y_broadened = np.zeros_like(self.y_data)
+        x_centres = [self.get_bin_centres().magnitude]
+        x_width_calc = [x_width.to(self.x_data_unit).magnitude]
+        for i, yi in enumerate(self.y_data.magnitude):
+            y_broadened[i] = self._broaden_data(
+                yi, x_centres, x_width_calc, shape=shape)
+        return Spectrum1DCollection(
+            np.copy(self.x_data.magnitude)*ureg(self.x_data_unit),
+            y_broadened*ureg(self.y_data_unit),
+            deepcopy((self.x_tick_labels)),
+            deepcopy(self.metadata))
+
 
 class Spectrum2D(Spectrum):
     """
@@ -759,39 +810,14 @@ class Spectrum2D(Spectrum):
         ValueError
             If shape is not one of the allowed strings
         """
-        if shape == 'gauss':
-            if x_width is None:
-                xsigma = 0.0
-            else:
-                xsigma = self._gfwhm_to_sigma(
-                    x_width, self.get_bin_centres('x'))
-            if y_width is None:
-                ysigma = 0.0
-            else:
-                ysigma = self._gfwhm_to_sigma(
-                    y_width, self.get_bin_centres('y'))
-            z_broadened = gaussian_filter(
-                self.z_data.magnitude, [xsigma, ysigma],
-                mode='constant')
-        elif shape == 'lorentz':
-            z_broadened = self.z_data.magnitude
-            if x_width is not None:
-                x_broadening = _distribution_1d(
-                    self.get_bin_centres('x').magnitude,
-                    x_width.to(self.x_data_unit).magnitude,
-                    shape=shape)
-                z_broadened = correlate1d(
-                    z_broadened, x_broadening, mode='constant', axis=0)
-            if y_width is not None:
-                y_broadening = _distribution_1d(
-                    self.get_bin_centres('y').magnitude,
-                    y_width.to(self.y_data_unit).magnitude,
-                    shape=shape)
-                z_broadened = correlate1d(
-                    z_broadened, y_broadening, mode='constant', axis=1)
-        else:
-            raise ValueError(
-                f"Distribution shape '{shape}' not recognised")
+        bin_centres = [self.get_bin_centres(ax).magnitude for ax in ['x', 'y']]
+        bin_widths = [None]*2
+        if x_width is not None:
+            bin_widths[0] = x_width.to(self.x_data_unit).magnitude
+        if y_width is not None:
+            bin_widths[1] =  y_width.to(self.y_data_unit).magnitude
+        z_broadened = self._broaden_data(self.z_data.magnitude, bin_centres,
+                                         bin_widths, shape=shape)
         return Spectrum2D(
             np.copy(self.x_data.magnitude)*ureg(self.x_data_unit),
             np.copy(self.y_data.magnitude)*ureg(self.y_data_unit),

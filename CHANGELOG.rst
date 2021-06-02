@@ -1,7 +1,12 @@
 `Unreleased <https://github.com/pace-neutrons/Euphonic/compare/v0.5.1...HEAD>`_
 ----------
 
+- Improvements:
+
+  - Added ``broaden`` method to ``Spectrum1DCollection``
+
 - Changes:
+
   - The ``return_mode_widths`` argument in ``calculate_qpoint_phonon_modes``
     has been deprecated in favour of ``return_mode_gradients``. The mode
     widths can still be obtained from the mode gradients with
