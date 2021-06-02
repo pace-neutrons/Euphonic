@@ -683,7 +683,7 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
         ValueError
             If shape is not one of the allowed strings
         """
-        y_broadened = np.zeros(self._y_data.shape)
+        y_broadened = np.zeros_like(self.y_data)
         x_centres = [self.get_bin_centres().magnitude]
         x_width_calc = [x_width.to(self.x_data_unit).magnitude]
         for i, yi in enumerate(self.y_data.magnitude):
@@ -811,13 +811,13 @@ class Spectrum2D(Spectrum):
             If shape is not one of the allowed strings
         """
         bin_centres = [self.get_bin_centres(ax).magnitude for ax in ['x', 'y']]
-        bwidths = [None]*2
+        bin_widths = [None]*2
         if x_width is not None:
-            bwidths[0] = x_width.to(self.x_data_unit).magnitude
+            bin_widths[0] = x_width.to(self.x_data_unit).magnitude
         if y_width is not None:
-            bwidths[1] =  y_width.to(self.y_data_unit).magnitude
+            bin_widths[1] =  y_width.to(self.y_data_unit).magnitude
         z_broadened = self._broaden_data(self.z_data.magnitude, bin_centres,
-                                         bwidths, shape=shape)
+                                         bin_widths, shape=shape)
         return Spectrum2D(
             np.copy(self.x_data.magnitude)*ureg(self.x_data_unit),
             np.copy(self.y_data.magnitude)*ureg(self.y_data_unit),
