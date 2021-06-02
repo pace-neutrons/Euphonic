@@ -14,6 +14,8 @@
 
 - Bug fixes:
 
+  - Fixed memory leak when using the C extension and making multiple calls to
+    ``calculate_qpoint_phonon_modes/frequencies``
   - Fixed bug which resulted in incorrect energy bins being generated
     in ``euphonic-powder-map`` if units other than meV are used and
     ``--e-max`` and ``--e-min`` aren't specified

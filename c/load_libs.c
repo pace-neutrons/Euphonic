@@ -21,15 +21,22 @@ ZheevdFunc get_zheevd() {
         PyObject *pyx_capi = PyObject_GetAttrString(scipylinalg, "__pyx_capi__");
         if (!pyx_capi || !PyDict_Check(pyx_capi)) {
             printf("Error: could not load the C-api functions from scipy.linalg.");
+            Py_DECREF(scipylinalg);
             return NULL;
         }
         PyObject *zheevdcapsule = PyDict_GetItemString(pyx_capi, "zheevd");
         if (!zheevdcapsule) {
             printf("Error: could not load the zheevd function from the cython api.");
+            Py_DECREF(scipylinalg);
+            Py_DECREF(pyx_capi);
             return NULL;
         }
+
         const char *name = PyCapsule_GetName(zheevdcapsule);
         ZHEEVD_POINTER = PyCapsule_GetPointer(zheevdcapsule, name);
+        Py_DECREF(scipylinalg);
+        Py_DECREF(pyx_capi);
+
         PyGILState_Release(gstate);
     }
     return ZHEEVD_POINTER;
