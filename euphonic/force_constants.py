@@ -210,7 +210,7 @@ class ForceConstants:
             on how these are calculated see the Notes section
         return_mode_widths
 
-            .. deprecated:: 0.6.0
+            .. deprecated:: 0.5.2
             The mode widths as calculated were only applicable for
             adaptive broadening of DOS, this argument will be removed
             in favour of the more flexible return_mode_gradients,
