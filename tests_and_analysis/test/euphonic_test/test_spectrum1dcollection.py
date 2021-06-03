@@ -432,3 +432,139 @@ class TestSpectrum1DCollectionMethods:
             broadened_spec1d = spec.broaden(width, shape)
             check_spectrum1d(broadened_spec_col[i],
                              broadened_spec1d)
+
+    @pytest.mark.parametrize(
+        'spectrum_file, summed_spectrum_file', [
+            ('quartz_666_pdos.json', 'quartz_666_dos.json')
+        ])
+    def test_sum(self, spectrum_file, summed_spectrum_file):
+        spec_col = get_spectrum1dcollection(spectrum_file)
+        summed_spec = spec_col.sum()
+        expected_summed_spec = get_expected_spectrum1d(summed_spectrum_file)
+        check_spectrum1d(summed_spec, expected_summed_spec)
+
+    @pytest.mark.parametrize(
+        'spectrum_file, group_by_args, grouped_spectrum_file', [
+            ('La2Zr2O7_666_incoh_pdos.json', ['species'],
+             'La2Zr2O7_666_incoh_species_pdos.json'),
+            ('La2Zr2O7_666_coh_pdos.json', ['species'],
+             'La2Zr2O7_666_coh_species_pdos.json')
+            ])
+    def test_group_by(self, spectrum_file, group_by_args,
+                      grouped_spectrum_file):
+        spec_col = get_spectrum1dcollection(spectrum_file)
+        grouped_spec = spec_col.group_by(*group_by_args)
+        expected_grouped_spec = get_expected_spectrum1dcollection(
+            grouped_spectrum_file)
+        check_spectrum1dcollection(grouped_spec, expected_grouped_spec)
+
+    fake_metadata = {'top_level_key': 'something', 'top_level_int': 10,
+                     'line_data': [
+                         {'sample': 0, 'inst': 'LET', 'index': 10, 'other_data': 'misc'},
+                         {'sample': 2, 'inst': 'MARI', 'index': 5, 'some_other_data': 5},
+                         {'sample': 2, 'inst': 'MARI', 'index': 10, 'some_other_data': 5},
+                         {'sample': 0, 'inst': 'MAPS', 'index': 10, 'other_data': 'another_value'},
+                         {'sample': 0, 'inst': 'TOSCA', 'index': 7},
+                         {'sample': 0, 'inst': 'TOSCA', 'index': 10},
+                         {'sample': 2, 'inst': 'LET', 'index': 10},
+                         {'sample': 2, 'inst': 'LET', 'index': 5},
+                         {'sample': 1, 'inst': 'LET', 'index': 10}]}
+
+    @pytest.mark.parametrize(
+        'spectrum_file, metadata, group_by_args, expected_metadata', [
+            ('quartz_666_pdos.json', fake_metadata,
+             ['sample', 'inst'],
+             {'top_level_key': 'something', 'top_level_int': 10,
+              'line_data': [
+                  {'sample': 0, 'inst': 'LET', 'index': 10, 'other_data': 'misc'},
+                  {'sample': 2, 'inst': 'MARI', 'some_other_data': 5},
+                  {'sample': 0, 'inst': 'MAPS', 'index': 10, 'other_data': 'another_value'},
+                  {'sample': 0, 'inst': 'TOSCA'},
+                  {'sample': 2, 'inst': 'LET'},
+                  {'sample': 1, 'inst': 'LET', 'index': 10}]}),
+            ('quartz_666_pdos.json', fake_metadata,
+             'index',
+             {'top_level_key': 'something', 'top_level_int': 10,
+              'line_data': [
+                  {'index': 10},
+                  {'sample': 2, 'index': 5},
+                  {'sample': 0, 'inst': 'TOSCA', 'index': 7}]})
+            ])
+    def test_group_by_fake_metadata(
+            self, spectrum_file, metadata, group_by_args, expected_metadata):
+        spec_col = get_spectrum1dcollection(spectrum_file)
+        spec_col.metadata = metadata
+        grouped_spec = spec_col.group_by(group_by_args)
+        assert  grouped_spec.metadata == expected_metadata
+
+    # Self-consistency test, allows us to test more metadata combinations
+    # without generating more test files
+    @pytest.mark.parametrize(
+        'spectrum_file, metadata, group_by_args, group_indices', [
+            ('quartz_666_pdos.json', fake_metadata, ['sample', 'inst'],
+             [[0], [1, 2], [3], [4,5], [6,7], [8]]),
+            ('quartz_666_pdos.json', fake_metadata, 'index',
+             [[0, 2, 3, 5, 6, 8], [1, 7], [4]])])
+    def test_group_by_same_as_index_and_sum_with_fake_metadata(
+            self, spectrum_file, metadata, group_by_args, group_indices):
+        spec_col = get_spectrum1dcollection(spectrum_file)
+        spec_col.metadata = metadata
+        grouped_spec = spec_col.group_by(group_by_args)
+        for i, spec in enumerate(grouped_spec):
+            check_spectrum1d(spec,
+                             spec_col[group_indices[i]].sum())
+
+    @pytest.mark.parametrize(
+        'spectrum_file, select_kwargs, selected_spectrum_file', [
+            ('methane_pdos.json', {'label': ['H2', 'H3', 'H4']},
+             'methane_pdos_index_1_4.json'),
+            ])
+    def test_select(self, spectrum_file, select_kwargs,
+                    selected_spectrum_file):
+        spec_col = get_spectrum1dcollection(spectrum_file)
+        selected_spec = spec_col.select(**select_kwargs)
+        expected_selected_spec = get_expected_spectrum1dcollection(
+            selected_spectrum_file)
+        check_spectrum1dcollection(selected_spec, expected_selected_spec)
+
+    # Keys that were initially in the high-level metadata dict (e.g.
+    # weighting from calculate_pdos) are put into 'line_data' when
+    # two Spectrum1DCollection objects are added together, and are
+    # not put back into the high-level dict again by select, which
+    # results in comparison failures. Instead test the correct spectra
+    # have been returned from select by indexing the original spectrum,
+    # which will have the same metadata behaviour
+    @pytest.mark.parametrize(
+        'spectrum_file, select_kwargs, expected_indices', [
+            ('La2Zr2O7_666_coh_incoh_species_append_pdos.json',
+             {'weighting': 'coherent'},
+             [0, 1, 2]),
+            ('La2Zr2O7_666_coh_incoh_species_append_pdos.json',
+             {'weighting': 'incoherent', 'species': ['O', 'La']},
+             [3, 5]),
+            ('La2Zr2O7_666_coh_incoh_species_append_pdos.json',
+             {'weighting': 'incoherent', 'species': 'O'},
+             [3])
+            ])
+    def test_select_by_indexing(self, spectrum_file, select_kwargs,
+                    expected_indices):
+        spec_col = get_spectrum1dcollection(spectrum_file)
+        selected_spec = spec_col.select(**select_kwargs)
+        expected_selected_spec = spec_col[expected_indices]
+        check_spectrum1dcollection(selected_spec, expected_selected_spec)
+
+    @pytest.mark.parametrize(
+        'spectrum_file, other_spectrum_file, expected_spectrum_file', [
+            ('La2Zr2O7_666_coh_species_pdos.json',
+             'La2Zr2O7_666_incoh_species_pdos.json',
+             'La2Zr2O7_666_coh_incoh_species_append_pdos.json')
+            ])
+    def test_add(self, spectrum_file, other_spectrum_file,
+                 expected_spectrum_file):
+        spec_col = get_spectrum1dcollection(spectrum_file)
+        other_spec_col = get_spectrum1dcollection(other_spectrum_file)
+        added_spec = spec_col + other_spec_col
+        expected_added_spec = get_expected_spectrum1dcollection(
+            expected_spectrum_file)
+        check_spectrum1dcollection(added_spec, expected_added_spec)
+

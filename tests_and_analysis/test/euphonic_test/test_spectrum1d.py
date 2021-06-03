@@ -361,3 +361,29 @@ class TestSpectrum1DMethods:
         with pytest.raises(ValueError):
             spec1d.get_bin_centres()
 
+    @pytest.mark.parametrize(
+        'spectrum_file, other_spectrum_file, expected_spectrum_file',
+        [('gan_bands_index_2.json', 'gan_bands_index_3.json',
+          'gan_bands_index_2_3_add.json')])
+    def test_add(self, spectrum_file, other_spectrum_file,
+                 expected_spectrum_file):
+        spec = get_spectrum1d(spectrum_file)
+        other_spec = get_spectrum1d(other_spectrum_file)
+        added_spectrum = spec + other_spec
+        expected_spectrum = get_expected_spectrum1d(expected_spectrum_file)
+        check_spectrum1d(added_spectrum, expected_spectrum)
+
+    @pytest.mark.parametrize(
+        'spectrum_files, metadata, expected_metadata',
+        [(['gan_bands_index_2.json', 'gan_bands_index_3.json'],
+          [{'a': 1, 'b': 'fizz', 'c': 'value'},
+           {'a': 1, 'b': 'buzz'}],
+          {'a': 1})])
+    def test_add_metadata(self, spectrum_files, metadata,
+                          expected_metadata):
+        spec = get_spectrum1d(spectrum_files[0])
+        spec.metadata = metadata[0]
+        other_spec = get_spectrum1d(spectrum_files[1])
+        other_spec.metadata = metadata[1]
+        added_spectrum = spec + other_spec
+        assert added_spectrum.metadata == expected_metadata

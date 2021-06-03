@@ -578,16 +578,17 @@ class TestQpointPhononModesCalculatePdos:
              'quartz_666_coh_pdos.json', np.arange(0, 155, 0.5)*ureg('meV'),
              {'weighting': 'coherent'}),
             ('quartz', 'quartz-666-grid.phonon',
-             'quartz_666_incoh_pdos.json', np.arange(0, 155, 0.5)*ureg('meV'),
-             {'weighting': 'incoherent'}),
+             'quartz_666_total_cs_pdos.json', np.arange(0, 155, 0.5)*ureg('meV'),
+             {'weighting': 'total'}),
             ('quartz', 'quartz-666-grid.phonon',
              'quartz_666_cs_dict_pdos.json', np.arange(0, 155, 0.5)*ureg('meV'),
              {'cross_sections': {'O': 429*ureg('fm**2'), 'Si': 2.78*ureg('barn')}}),
             ('LZO', 'La2Zr2O7-666-grid.phonon',
-             'La2Zr2O7_666_pdos.json', np.arange(0, 100, 0.8)*ureg('meV'), {}),
+             'La2Zr2O7_666_coh_pdos.json', np.arange(0, 100, 0.8)*ureg('meV'),
+             {'weighting': 'coherent'}),
             ('LZO', 'La2Zr2O7-666-grid.phonon',
-             'La2Zr2O7_666_total_cs_pdos.json', np.arange(0, 100, 0.8)*ureg('meV'),
-             {'weighting': 'total'})
+             'La2Zr2O7_666_incoh_pdos.json', np.arange(0, 100, 0.8)*ureg('meV'),
+             {'weighting': 'incoherent'})
         ])
     def test_calculate_pdos(
             self, material, qpt_ph_modes_file, expected_pdos_json, ebins,
