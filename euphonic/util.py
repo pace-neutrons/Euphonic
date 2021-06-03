@@ -284,19 +284,25 @@ def _cell_vectors_to_volume(cell_vectors: np.ndarray) -> float:
 def _get_unique_str_and_idx(all_str: Sequence[Union[str, Sequence[str]]]
                             ) -> 'OrderedDict[str, np.ndarray]':
     """
-    Returns an ordered dictionary mapping the unique strings (or lists of
-    strings), contained in a list to their indices
+    Returns an ordered dictionary mapping the unique strings (or sequences
+    of strings), contained in a list to their indices
     """
     if isinstance(all_str[0], str):
         all_str = [[x] for x in all_str]
-    all_str = np.array(all_str)
+    all_str_tuple = np.empty(len(all_str), dtype=object)
+    all_str_tuple[:] = [tuple(row) for row in all_str]
 
-    _, idx = np.unique(all_str, return_index=True, axis=0)
+    _, idx, inverse = np.unique(all_str_tuple, return_index=True,
+                                return_inverse=True)
     # Retain order
-    unique_strings = all_str[np.sort(idx)]
+    sorted_idx = np.sort(idx)
+    inverse_idx = inverse[sorted_idx]
+    unique_strings = all_str_tuple[sorted_idx]
+
     str_dict = OrderedDict([
-        ('-'.join(strg), np.where(np.all(all_str == strg, axis=1))[0])
-        for strg in unique_strings])
+        (str('-'.join(strg)), np.where(inverse == inverse_strg_idx)[0])
+        for strg, inverse_strg_idx in zip(unique_strings, inverse_idx)
+        ])
     return str_dict
 
 
