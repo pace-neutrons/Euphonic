@@ -523,6 +523,21 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
                     f'{len(metadata["line_data"])} entries')
         self.metadata = {} if metadata is None else metadata
 
+    def __add__(self, other: SC):
+        """
+        Appends the y_data of 2 Spectrum1DCollection objects,
+        creating a single Spectrum1DCollection that contains
+        the spectra from both objects. The two objects must
+        have equal x_data axes, and their y_data must
+        have compatible units and the same number of y_data
+        entries
+
+        Any metadata key/value pairs that are common to both
+        spectra are retained in the top level dictionary, any
+        others are put in the individual 'line_data' entries
+        """
+        return Spectrum1DCollection.from_spectra([*self, *other])
+
     def _split_by_indices(self: SC,
                           indices: Union[Sequence[int], np.ndarray]
                           ) -> List[SC]:
