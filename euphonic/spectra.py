@@ -8,13 +8,13 @@ from typing import (Any, Dict, List, Optional, overload,
                     Sequence, Tuple, TypeVar, Union)
 
 import numpy as np
-from scipy.ndimage import gaussian_filter1d, correlate1d, gaussian_filter
+from scipy.ndimage import correlate1d, gaussian_filter
 
 from euphonic.validate import _check_constructor_inputs, _check_unit_conversion
 from euphonic.io import (_obj_to_json_file, _obj_from_json_file,
                          _obj_to_dict, _process_dict)
 from euphonic.readers.castep import read_phonon_dos_data
-from euphonic.util import  _get_unique_elems_and_idx
+from euphonic.util import _get_unique_elems_and_idx
 from euphonic import ureg, Quantity
 
 
@@ -269,7 +269,6 @@ class Spectrum(ABC):
             return self.x_data
 
 
-
 class Spectrum1D(Spectrum):
     """
     For storing generic 1D spectra e.g. density of states
@@ -439,10 +438,11 @@ class Spectrum1D(Spectrum):
         ValueError
             If shape is not one of the allowed strings
         """
-        y_broadened = self._broaden_data(self.y_data.magnitude,
-                                      [self.get_bin_centres().magnitude],
-                                      [x_width.to(self.x_data_unit).magnitude],
-                                      shape=shape)
+        y_broadened = self._broaden_data(
+            self.y_data.magnitude,
+            [self.get_bin_centres().magnitude],
+            [x_width.to(self.x_data_unit).magnitude],
+            shape=shape)
         return Spectrum1D(
             np.copy(self.x_data.magnitude)*ureg(self.x_data_unit),
             y_broadened*ureg(self.y_data_unit), deepcopy((self.x_tick_labels)),
@@ -506,7 +506,7 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
         _check_constructor_inputs(
             [y_data, x_tick_labels, metadata],
             [Quantity, [list, type(None)], [dict, type(None)]],
-            [(-1,-1), (), ()],
+            [(-1, -1), (), ()],
             ['y_data', 'x_tick_labels', 'metadata'])
         ny = len(y_data[0])
         _check_constructor_inputs(
@@ -559,7 +559,6 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
     def __getitem__(self, item: int) -> Spectrum1D:
         ...
 
-
     @overload  # noqa: F811
     def __getitem__(self, item: slice) -> SC:
         ...
@@ -584,18 +583,17 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
                 raise IndexError(f'index "{item.stop}" out of range')
             if any(line_metadata):
                 new_metadata['line_data'] = line_metadata[item]
-            y_data = self.y_data[item, :]
         else:
             try:
                 item = list(item)
                 if not all([isinstance(i, Integral) for i in item]):
                     raise TypeError
                 if any(line_metadata):
-                   new_metadata['line_data'] = [line_metadata[idx]
-                                                for idx in item]
+                    new_metadata['line_data'] = [line_metadata[idx]
+                                                 for idx in item]
             except TypeError:
                 raise TypeError(f'Index "{item}" should be an integer, slice '
-                                 'or sequence of ints')
+                                f'or sequence of ints')
         return type(self)(self.x_data,
                           self.y_data[item, :],
                           x_tick_labels=self.x_tick_labels,
@@ -824,10 +822,10 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
         group_metadata = deepcopy(self.metadata)
         group_metadata['line_data'] = [{}]*len(grouping_dict)
         for i, (label, idx) in enumerate(grouping_dict.items()):
-             # Look for any common key/values in grouped metadata
-             group_i_metadata = self._combine_line_metadata(idx)
-             group_metadata['line_data'][i] = group_i_metadata
-             new_y_data[i] = np.sum(self._y_data[idx], axis=0)
+            # Look for any common key/values in grouped metadata
+            group_i_metadata = self._combine_line_metadata(idx)
+            group_metadata['line_data'][i] = group_i_metadata
+            new_y_data[i] = np.sum(self._y_data[idx], axis=0)
         new_y_data = new_y_data*ureg(self._internal_y_data_unit).to(
             self.y_data_unit)
 
@@ -1023,7 +1021,7 @@ class Spectrum2D(Spectrum):
         if x_width is not None:
             bin_widths[0] = x_width.to(self.x_data_unit).magnitude
         if y_width is not None:
-            bin_widths[1] =  y_width.to(self.y_data_unit).magnitude
+            bin_widths[1] = y_width.to(self.y_data_unit).magnitude
         z_broadened = self._broaden_data(self.z_data.magnitude, bin_centres,
                                          bin_widths, shape=shape)
         return Spectrum2D(
