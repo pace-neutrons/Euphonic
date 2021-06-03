@@ -284,15 +284,16 @@ class Spectrum1D(Spectrum):
     x_tick_labels : Sequence[Tuple[int, str]] or None
         Special tick labels e.g. for high-symmetry points. The int
         refers to the index in x_data the label should be applied to
-    metadata : Dict[str, Any]
-        Contains metadata about the spectrum. Any keys/values are
-        allowed, but values must be JSON serialisable to write to a
-        json file. There are some functional keys:
+    metadata : Dict[str, Union[int, str]]
+        Contains metadata about the spectrum. Keys should be strings
+        and values should be strings or integers
+        There are some functional keys:
           - 'label' : str. This is used label lines on a 1D plot
     """
     def __init__(self, x_data: Quantity, y_data: Quantity,
                  x_tick_labels: Optional[Sequence[Tuple[int, str]]] = None,
-                 metadata: Optional[Dict[str, Any]] = None) -> None:
+                 metadata: Optional[Dict[str, Union[int, str]]] = None
+                 ) -> None:
         """
         Parameters
         ----------
@@ -306,9 +307,9 @@ class Spectrum1D(Spectrum):
             Special tick labels e.g. for high-symmetry points. The int
             refers to the index in x_data the label should be applied to
         metadata
-            Contains metadata about the spectrum. Any keys/values are
-            allowed, but values must be JSON serialisable to write to a
-            json file. There are some functional keys:
+            Contains metadata about the spectrum. Keys should be
+            strings and values should be strings or integers
+            There are some functional keys:
               - 'label' : str. This is used label lines on a 1D plot
         """
         _check_constructor_inputs(
@@ -466,17 +467,18 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
     x_tick_labels : Sequence[Tuple[int, str]] or None
         Special tick labels e.g. for high-symmetry points. The int
         refers to the index in x_data the label should be applied to
-    metadata : Dict[str, Any]
-        Contains metadata about the spectrum. Any keys/values are
-        allowed, but values must be JSON serialisable to write to a
-        json file. There are some functional keys:
-          - 'line_data' : List[Dict[str, Any]]. This contains metadata
-                          for each spectrum in the collection, and must
-                          be of length n_entries
+    metadata : Dict[str, Union[int, str]]
+        Contains metadata about the spectra. Keys should be strings
+        and values should be strings or integers. There are some
+        functional keys:
+          - 'line_data' : List[Dict[str, Union[int, str]]]. This
+                          contains metadata for each spectrum in the
+                          collection, and must be of length n_entries
     """
     def __init__(self, x_data: Quantity, y_data: Quantity,
                  x_tick_labels: Optional[Sequence[Tuple[int, str]]] = None,
-                 metadata: Optional[Dict[str, Any]] = None) -> None:
+                 metadata: Optional[Dict[str, Union[int, str]]] = None
+                 ) -> None:
         """
         Parameters
         ----------
@@ -491,12 +493,12 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
             Special tick labels e.g. for high-symmetry points. The int
             refers to the index in x_data the label should be applied to
         metadata
-            Contains metadata about the spectrum. Any keys/values are
-            allowed, but values must be JSON serialisable to write to a
-            json file. There are some functional keys:
-              - 'line_data' : List[Dict[str, Any]]. This contains
-                              metadata for each spectrum in the
-                              collection, and must be of length
+            Contains metadata about the spectra. Keys should be
+            strings and values should be strings or integers.
+            There are some functional keys:
+              - 'line_data' : List[Dict[str, Union[int, str]]]. This
+                              contains metadata for each spectrum in
+                              the collection, and must be of length
                               n_entries
         """
 
@@ -615,7 +617,7 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
                    metadata=metadata)
 
     @staticmethod
-    def _combine_metadata(all_metadata: Sequence[Dict[str, Any]]
+    def _combine_metadata(all_metadata: Sequence[Dict[str, Union[int, str]]]
                           ) -> Dict[str, Any]:
         """
         From a sequence of metadata dictionaries, combines all common
@@ -897,15 +899,15 @@ class Spectrum2D(Spectrum):
     x_tick_labels : Sequence[Tuple[int, str]] or None
         Special tick labels e.g. for high-symmetry points. The int
         refers to the index in x_data the label should be applied to
-    metadata : Dict[str, Any]
-        Contains metadata about the spectrum. Any keys/values are
-        allowed, but values must be JSON serialisable to write to a
-        json file
+    metadata : Dict[str, Union[int, str]]
+        Contains metadata about the spectrum. Keys should be strings
+        and values should be strings or integers
     """
     def __init__(self, x_data: Quantity, y_data: Quantity,
                  z_data: Quantity,
                  x_tick_labels: Optional[Sequence[Tuple[int, str]]] = None,
-                 metadata: Optional[Dict[str, Any]] = None) -> None:
+                 metadata: Optional[Dict[str, Union[int, str]]] = None
+                 ) -> None:
         """
         Attributes
         ----------
@@ -923,9 +925,8 @@ class Spectrum2D(Spectrum):
             Special tick labels e.g. for high-symmetry points. The int
             refers to the index in x_data the label should be applied to
         metadata
-            Contains metadata about the spectrum. Any keys/values are
-            allowed, but values must be JSON serialisable to write to a
-            json file
+            Contains metadata about the spectrum. Keys should be
+            strings and values should be strings or integers.
         """
         _check_constructor_inputs(
             [z_data, x_tick_labels, metadata],

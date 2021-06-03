@@ -225,11 +225,11 @@ class TestSpectrum1DCollectionCreation:
           ],
           {'line_data': [{}, {'label': 'H3'}, {'Another key': 'Anything'}]}
          ),
-         ([{'desc': 'PDOS H2', 'int list': [1, 2, 3]},
-           {'desc': 'PDOS H3', 'label': 'H3', 'int list': [1, 2, 3]},
-           {'desc': 'PDOS', 'int list': [1, 2, 3]}
+         ([{'desc': 'PDOS H2', 'common_key_value': 3},
+           {'desc': 'PDOS H3', 'label': 'H3', 'common_key_value': 3},
+           {'desc': 'PDOS', 'common_key_value': 3}
           ],
-          {'int list': [1, 2, 3], 'line_data': [
+          {'common_key_value': 3, 'line_data': [
                {'desc': 'PDOS H2'},
                {'desc': 'PDOS H3', 'label': 'H3'},
                {'desc': 'PDOS'}]}
