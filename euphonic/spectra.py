@@ -3,6 +3,7 @@ import collections
 from copy import deepcopy
 import itertools
 import math
+from numbers import Integral
 from typing import (Any, Dict, List, Optional, overload,
                     Sequence, Tuple, TypeVar, Union)
 
@@ -564,14 +565,14 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
         ...
 
     @overload  # noqa: F811
-    def __getitem__(self, item: Sequence[int]) -> Union[Spectrum1D, SC]:
+    def __getitem__(self, item: Union[Sequence[int], np.ndarray]) -> SC:
         ...
 
     def __getitem__(self, item: Union[int, slice, Sequence[int]]):  # noqa: F811
         new_metadata = deepcopy(self.metadata)
         line_metadata = new_metadata.pop('line_data',
                                          [{} for _ in self._y_data])
-        if isinstance(item, (int, np.integer)):
+        if isinstance(item, Integral):
             new_metadata.update(line_metadata[item])
             return Spectrum1D(self.x_data,
                               self.y_data[item, :],
@@ -587,7 +588,7 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
         else:
             try:
                 item = list(item)
-                if not all([isinstance(i, (int, np.integer)) for i in item]):
+                if not all([isinstance(i, Integral) for i in item]):
                     raise TypeError
                 if any(line_metadata):
                    new_metadata['line_data'] = [line_metadata[idx]

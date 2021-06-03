@@ -288,6 +288,8 @@ def _get_unique_elems_and_idx(
     Returns an ordered dictionary mapping the unique elements (or
     sequences of elements), to their indices
     """
+    # If each element of all_elems is a sequence, convert each row
+    # to a tuple so it can be compared with np.unique
     if not isinstance(all_elems[0], (str, int)):
         tmp = np.empty(len(all_elems), dtype=object)
         tmp[:] = [tuple(row) for row in all_elems]
