@@ -1,10 +1,10 @@
 from abc import ABC, abstractmethod
 import collections
 from copy import deepcopy
+import itertools
 import math
 from typing import (Any, Dict, List, Optional, overload,
                     Sequence, Tuple, TypeVar, Union)
-import re
 
 import numpy as np
 from scipy.ndimage import gaussian_filter1d, correlate1d, gaussian_filter
@@ -13,7 +13,7 @@ from euphonic.validate import _check_constructor_inputs, _check_unit_conversion
 from euphonic.io import (_obj_to_json_file, _obj_from_json_file,
                          _obj_to_dict, _process_dict)
 from euphonic.readers.castep import read_phonon_dos_data
-from euphonic.util import  _get_unique_str_and_idx
+from euphonic.util import  _get_unique_elems_and_idx
 from euphonic import ureg, Quantity
 
 
@@ -659,20 +659,24 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
         combined_line_data.pop('line_data', None)
         return combined_line_data
 
-    def _get_line_data_vals(self, key: str) -> List[str]:
+    def _get_line_data_vals(self, line_data_keys: Union[str, Sequence[str]]
+                            ) -> np.ndarray:
         """
-        Get value of the key for each element in metadata['line_data']
+        Get value of the key(s) for each element in metadata['line_data'].
+        Returns a 1D array of tuples, where each tuple contains the
+        value(s) for each key in line_data_keys, for a single element
+        in metadata['line_data']
+
         Raises a KeyError if 'line_data' or the key doesn't exist
         """
-        labels = np.array(
-            [x.get(key, None) for x in self.metadata.get(
-                'line_data', [{}]*len(self))])
-        no_label_idx = np.where(labels == None)[0]
-        if len(no_label_idx) > 0:
-            raise KeyError(
-                f'No "{key}" keys found in metadata for spectra '
-                f'{no_label_idx}')
-        return labels
+        if isinstance(line_data_keys, str):
+            line_data_keys = [line_data_keys]
+        line_data_keys = list(line_data_keys)
+        line_data = self.metadata['line_data']
+        line_data_vals = np.empty(len(line_data), dtype=object)
+        for i, data in enumerate(line_data):
+            line_data_vals[i] = tuple([data[key] for key in line_data_keys])
+        return line_data_vals
 
     def to_dict(self) -> Dict[str, Any]:
         """
@@ -795,16 +799,8 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
             metadata in 'line_data' not common across all spectra in a
             group will be discarded
         """
-        if isinstance(line_data_keys, str):
-            line_data_keys = [line_data_keys]
-        line_data_keys = list(line_data_keys)
-        for i, key in enumerate(line_data_keys):
-            vals = self._get_line_data_vals(key)
-            if i == 0:
-                line_data_vals = vals
-            else:
-                line_data_vals = np.vstack((line_data_vals, vals))
-        grouping_dict = _get_unique_str_and_idx(line_data_vals.transpose())
+        grouping_dict = _get_unique_elems_and_idx(
+            self._get_line_data_vals(line_data_keys))
 
         new_y_data = np.zeros((len(grouping_dict), self._y_data.shape[-1]))
         group_metadata = deepcopy(self.metadata)
@@ -841,34 +837,44 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
                           x_tick_labels=self.x_tick_labels,
                           metadata=metadata)
 
-    def select(self, selection: Union[str, Sequence[str]]) -> SC:
+    def select(self, **select_key_values: Union[
+            str, int, Sequence[str], Sequence[int]]) -> SC:
         """
-        Select spectra by their 'label' keys in metadata['line_data']
+        Select spectra by their keys and values in metadata['line_data']
 
         Parameters
         ----------
-        selection
-            A string or sequence of strings describing the label(s) to
-            select, e.g. spectrum.select(['Na', 'Cl']) or
-            spectrum.select('Si')
+        **select_key_values
+            Key-value/values pairs in metadata['line_data'] describing
+            which spectra to extract. For example, to select all spectra
+            where metadata['line_data']['species'] = 'Na' or 'Cl' use
+            spectrum.select(species=['Na', 'Cl']). To select 'Na' and
+            'Cl' spectra where weighting is also coherent, use
+            spectrum.select(species=['Na', 'Cl'], weighting='coherent')
 
         Returns
         -------
         selected_spectra
-           If selection matches a single spectrum, is a Spectrum1D
-           containing the selected spectrum. If selection matches
-           multiple spectra, is a sequence this is a
-           Spectrum1DCollection containing the selected spectra
+           A Spectrum1DCollection containing the selected spectra
         """
-        if isinstance(selection, str):
-            selection = [selection]
-        labels = self._get_line_data_vals('label')
-        select_dict = _get_unique_str_and_idx(labels)
+        select_keys = list(select_key_values.keys())
+        select_val_dict = _get_unique_elems_and_idx(
+            self._get_line_data_vals(select_keys))
+        for key, value in select_key_values.items():
+            if isinstance(value, (int, str)):
+                select_key_values[key] = [value]
+        value_combinations = list(
+            itertools.product(*select_key_values.values()))
         select_idx = np.array([], dtype=np.int32)
-        for selec in selection:
-            select_idx = np.concatenate((select_idx, select_dict[selec]))
-        if len(select_idx) == 1:
-            select_idx = select_idx[0]
+        for value_combo in value_combinations:
+            try:
+                idx = select_val_dict[value_combo]
+            except KeyError:
+                continue
+            select_idx = np.append(select_idx, idx)
+        if len(select_idx) == 0:
+            raise ValueError(f'No spectra found with matching metadata '
+                             f'for {select_key_values}')
         return self[select_idx]
 
 

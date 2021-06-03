@@ -5,7 +5,7 @@ from typing import List, Tuple, TypeVar, Dict, Any
 import numpy as np
 from spglib import get_symmetry
 
-from euphonic.util import _cell_vectors_to_volume, _get_unique_str_and_idx
+from euphonic.util import _cell_vectors_to_volume, _get_unique_elems_and_idx
 from euphonic.validate import _check_constructor_inputs, _check_unit_conversion
 from euphonic.io import (_obj_to_json_file, _obj_from_json_file,
                          _obj_to_dict, _process_dict)
@@ -193,7 +193,7 @@ class Crystal:
             symbol as the keys, and their indices as the values,
             in the same order as they appear in atom_type
         """
-        return _get_unique_str_and_idx(self.atom_type)
+        return _get_unique_elems_and_idx(self.atom_type)
 
     def get_symmetry_equivalent_atoms(
             self, tol: Quantity = Quantity(1e-5, 'angstrom')

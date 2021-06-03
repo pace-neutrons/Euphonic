@@ -281,29 +281,30 @@ def _cell_vectors_to_volume(cell_vectors: np.ndarray) -> float:
                   np.cross(cell_vectors[1], cell_vectors[2]))
 
 
-def _get_unique_str_and_idx(all_str: Sequence[Union[str, Sequence[str]]]
-                            ) -> 'OrderedDict[str, np.ndarray]':
+def _get_unique_elems_and_idx(
+    all_elems: Sequence[Union[str, int, Sequence[str], Sequence[int]]]
+    ) -> 'OrderedDict[Union[str, int, tuple], np.ndarray]':
     """
-    Returns an ordered dictionary mapping the unique strings (or sequences
-    of strings), contained in a list to their indices
+    Returns an ordered dictionary mapping the unique elements (or
+    sequences of elements), to their indices
     """
-    if isinstance(all_str[0], str):
-        all_str = [[x] for x in all_str]
-    all_str_tuple = np.empty(len(all_str), dtype=object)
-    all_str_tuple[:] = [tuple(row) for row in all_str]
+    if not isinstance(all_elems[0], (str, int)):
+        tmp = np.empty(len(all_elems), dtype=object)
+        tmp[:] = [tuple(row) for row in all_elems]
+        all_elems = tmp
 
-    _, idx, inverse = np.unique(all_str_tuple, return_index=True,
+    _, idx, inverse = np.unique(all_elems, return_index=True,
                                 return_inverse=True)
     # Retain order
     sorted_idx = np.sort(idx)
     inverse_idx = inverse[sorted_idx]
-    unique_strings = all_str_tuple[sorted_idx]
+    unique_elems = all_elems[sorted_idx]
 
-    str_dict = OrderedDict([
-        (str('-'.join(strg)), np.where(inverse == inverse_strg_idx)[0])
-        for strg, inverse_strg_idx in zip(unique_strings, inverse_idx)
+    elem_dict = OrderedDict([
+        (unique_elem, np.where(inverse == inverse_elem_idx)[0])
+        for unique_elem, inverse_elem_idx in zip(unique_elems, inverse_idx)
         ])
-    return str_dict
+    return elem_dict
 
 
 def _calc_abscissa(reciprocal_cell, qpts):
