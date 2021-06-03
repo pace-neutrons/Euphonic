@@ -553,6 +553,25 @@ class TestSpectrum1DCollectionMethods:
         expected_selected_spec = spec_col[expected_indices]
         check_spectrum1dcollection(selected_spec, expected_selected_spec)
 
+    @pytest.mark.parametrize('spectrum_file, metadata, select_kwargs',
+            [('quartz_666_pdos.json', fake_metadata,
+             {'inst': ['LET', 'TOSCA'], 'index': [7, 5]})])
+    def test_select_with_not_all_matching_combinations_doesnt_raise_key_error(
+            self, spectrum_file, metadata, select_kwargs):
+        spec_col = get_spectrum1dcollection(spectrum_file)
+        spec_col.metadata = metadata
+        spec_col.select(**select_kwargs)
+
+    @pytest.mark.parametrize('spectrum_file, metadata, select_kwargs',
+            [('quartz_666_pdos.json', fake_metadata,
+             {'inst': ['LET', 'TOSCA'], 'index': [4, 6]})])
+    def test_select_with_no_matches_raises_value_error(
+            self, spectrum_file, metadata, select_kwargs):
+        spec_col = get_spectrum1dcollection(spectrum_file)
+        spec_col.metadata = metadata
+        with pytest.raises(ValueError):
+            spec_col.select(**select_kwargs)
+
     @pytest.mark.parametrize(
         'spectrum_file, other_spectrum_file, expected_spectrum_file', [
             ('La2Zr2O7_666_coh_species_pdos.json',

@@ -873,6 +873,11 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
         -------
         selected_spectra
            A Spectrum1DCollection containing the selected spectra
+
+        Raises
+        ------
+        ValueError
+            If no matching spectra are found
         """
         select_keys = list(select_key_values.keys())
         select_val_dict = _get_unique_elems_and_idx(
@@ -886,6 +891,10 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
         for value_combo in value_combinations:
             try:
                 idx = select_val_dict[value_combo]
+            # Don't require every combination to match e.g.
+            # spec.select(sample=[0, 2], inst=['MAPS', 'MARI'])
+            # we don't want to error simply because there are no
+            # inst='MAPS' and sample=2 combinations
             except KeyError:
                 continue
             select_idx = np.append(select_idx, idx)
