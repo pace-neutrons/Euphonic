@@ -9,7 +9,7 @@ from euphonic import ureg
 from euphonic.spectra import Spectrum1D
 from tests_and_analysis.test.utils import (
     get_data_path, get_castep_path, check_unit_conversion,
-    check_json_metadata)
+    check_json_metadata, check_property_setters)
 
 class ExpectedSpectrum1D:
     def __init__(self, spectrum1d_json_file: str):
@@ -259,6 +259,31 @@ class TestSpectrum1DUnitConversion:
         spec1d = get_spectrum1d(spectrum1d_file)
         with pytest.raises(err):
             setattr(spec1d, unit_attr, unit_val)
+
+
+@pytest.mark.unit
+class TestSpectrum1DSetters:
+
+    @pytest.mark.parametrize('spectrum1d_file, attr, unit, scale', [
+        ('xsq_spectrum1d.json', 'x_data', '1/cm', 3.),
+        ('xsq_spectrum1d.json', 'x_data', '1/angstrom', 2.),
+        ('xsq_spectrum1d.json', 'y_data', '1/bohr', 3.),
+        ('xsq_spectrum1d.json', 'y_data', '1/cm', 2.),
+        ])
+    def test_setter_correct_units(self, spectrum1d_file, attr,
+                                  unit, scale):
+        spec1d = get_spectrum1d(spectrum1d_file)
+        check_property_setters(spec1d, attr, unit, scale)
+
+    @pytest.mark.parametrize('spectrum1d_file, attr, unit, err', [
+        ('xsq_spectrum1d.json', 'x_data', 'kg', ValueError),
+        ('xsq_spectrum1d.json', 'y_data', 'mbarn', ValueError)])
+    def test_incorrect_unit_conversion(self, spectrum1d_file, attr,
+                                       unit, err):
+        spec1d = get_spectrum1d(spectrum1d_file)
+        new_attr = getattr(spec1d, attr).magnitude*ureg(unit)
+        with pytest.raises(err):
+            setattr(spec1d, attr, new_attr)
 
 
 @pytest.mark.unit

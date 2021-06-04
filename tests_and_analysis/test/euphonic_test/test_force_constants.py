@@ -11,7 +11,7 @@ from tests_and_analysis.test.euphonic_test.test_crystal import (
     get_crystal, ExpectedCrystal, check_crystal)
 from tests_and_analysis.test.utils import (
     get_data_path, get_castep_path, get_phonopy_path, check_unit_conversion,
-    check_json_metadata)
+    check_json_metadata, check_property_setters)
 
 
 class ExpectedForceConstants:
@@ -408,3 +408,31 @@ class TestForceConstantsUnitConversion:
         fc = get_fc(material)
         with pytest.raises(err):
             setattr(fc, unit_attr, unit_val)
+
+
+@pytest.mark.unit
+class TestForceConstantsSetters:
+
+    @pytest.mark.parametrize('material, attr, unit, scale', [
+        ('quartz', 'force_constants', 'hartree/bohr**2', 2.),
+        ('quartz', 'force_constants', 'meV/angstrom**2', 3.),
+        ('quartz', 'dielectric', 'e**2/(angstrom*eV)', 5.),
+        ('quartz', 'dielectric', 'e**2/(bohr*hartree)', 2.),
+        ('quartz', 'born', 'e', 2.),
+        ('quartz', 'born', 'C', 2.),
+        ])
+    def test_setter_correct_units(self, material, attr,
+                                  unit, scale):
+        fc = get_fc(material)
+        check_property_setters(fc, attr, unit, scale)
+
+    @pytest.mark.parametrize('material, attr, unit, err', [
+        ('quartz', 'force_constants', 'hartree/bohr', ValueError),
+        ('quartz', 'dielectric', 'e/meV', ValueError),
+        ('quartz', 'born', 'kg', ValueError)])
+    def test_incorrect_unit_conversion(self, material, attr,
+                                       unit, err):
+        fc = get_fc(material)
+        new_attr = getattr(fc, attr).magnitude*ureg(unit)
+        with pytest.raises(err):
+            setattr(fc, attr, new_attr)

@@ -110,12 +110,22 @@ class ForceConstants:
             'hartree/bohr**2').to(
                 self.force_constants_unit)
 
+    @force_constants.setter
+    def force_constants(self, value):
+        self.force_constants_unit = str(value.units)
+        self._force_constants = value.to('hartree/bohr**2').magnitude
+
     @property
     def born(self):
         if self._born is not None:
             return self._born*ureg('e').to(self.born_unit)
         else:
             return None
+
+    @born.setter
+    def born(self, value):
+        self.born_unit = str(value.units)
+        self._born = value.to('e').magnitude
 
     @property
     def dielectric(self):
@@ -124,6 +134,11 @@ class ForceConstants:
                 'e**2/(bohr*hartree)')).to(self.dielectric_unit)
         else:
             return None
+
+    @dielectric.setter
+    def dielectric(self, value):
+        self.dielectric_unit = str(value.units)
+        self._dielectric = value.to('e**2/(bohr*hartree)').magnitude
 
     def __setattr__(self, name, value):
         _check_unit_conversion(self, name, value,

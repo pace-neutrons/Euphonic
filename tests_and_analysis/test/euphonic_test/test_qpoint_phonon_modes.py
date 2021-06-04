@@ -21,7 +21,7 @@ from tests_and_analysis.test.euphonic_test.test_spectrum1dcollection import (
 from tests_and_analysis.test.utils import (
     get_data_path, get_castep_path, get_phonopy_path,
     check_frequencies_at_qpts, check_unit_conversion,
-    check_json_metadata)
+    check_json_metadata, check_property_setters)
 
 
 class ExpectedQpointPhononModes:
@@ -428,6 +428,26 @@ class TestQpointPhononModesUnitConversion:
         qpt_ph_modes = get_qpt_ph_modes(material)
         with pytest.raises(err):
             setattr(qpt_ph_modes, unit_attr, unit_val)
+
+
+@pytest.mark.unit
+class TestQpointPhononModesSetters:
+
+    @pytest.mark.parametrize('material, attr, unit, scale', [
+        ('quartz', 'frequencies', '1/cm', 2.),
+        ('quartz', 'frequencies', 'meV', 3.)
+        ])
+    def test_setter_correct_units(self, material, attr, unit, scale):
+        qpt_ph_modes = get_qpt_ph_modes(material)
+        check_property_setters(qpt_ph_modes, attr, unit, scale)
+
+    @pytest.mark.parametrize('material, attr, unit, err', [
+        ('quartz', 'frequencies', '1/cm**2', ValueError)])
+    def test_incorrect_unit_conversion(self, material, attr, unit, err):
+        qpt_ph_modes = get_qpt_ph_modes(material)
+        new_attr = getattr(qpt_ph_modes, attr).magnitude*ureg(unit)
+        with pytest.raises(err):
+            setattr(qpt_ph_modes, attr, new_attr)
 
 
 @pytest.mark.unit

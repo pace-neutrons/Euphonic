@@ -55,10 +55,20 @@ class DebyeWaller:
         return self._debye_waller*ureg('bohr**2').to(
             self.debye_waller_unit)
 
+    @debye_waller.setter
+    def debye_waller(self, value):
+        self.debye_waller_unit = str(value.units)
+        self._debye_waller = value.to('bohr**2').magnitude
+
     @property
     def temperature(self):
         # See https://pint.readthedocs.io/en/latest/nonmult.html
         return Quantity(self._temperature, ureg('K')).to(self.temperature_unit)
+
+    @temperature.setter
+    def temperature(self, value):
+        self.temperature_unit = str(value.units)
+        self._temperature = value.to('K').magnitude
 
     def __setattr__(self, name, value):
         _check_unit_conversion(self, name, value,

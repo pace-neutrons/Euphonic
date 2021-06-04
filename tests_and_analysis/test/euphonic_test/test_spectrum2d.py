@@ -8,7 +8,8 @@ import numpy.testing as npt
 from euphonic import ureg
 from euphonic.spectra import Spectrum2D
 from tests_and_analysis.test.utils import (
-    get_data_path, check_unit_conversion, check_json_metadata)
+    get_data_path, check_unit_conversion, check_json_metadata,
+    check_property_setters)
 
 class ExpectedSpectrum2D:
     def __init__(self, spectrum2d_json_file: str):
@@ -272,6 +273,33 @@ class TestSpectrum2DUnitConversion:
         spec2d = get_spectrum2d(spectrum2d_file)
         with pytest.raises(err):
             setattr(spec2d, unit_attr, unit_val)
+
+
+@pytest.mark.unit
+class TestSpectrum2DSetters:
+
+    @pytest.mark.parametrize('spectrum2d_file, attr, unit, scale', [
+        ('example_spectrum2d.json', 'x_data', 'm', 3.),
+        ('example_spectrum2d.json', 'x_data', 'angstrom', 2.),
+        ('example_spectrum2d.json', 'y_data', 'dimensionless', 3.),
+        ('example_spectrum2d.json', 'z_data', 'kg', 2.),
+        ('example_spectrum2d.json', 'z_data', 'm_e', 2.),
+        ])
+    def test_setter_correct_units(self, spectrum2d_file, attr,
+                                  unit, scale):
+        spec2d = get_spectrum2d(spectrum2d_file)
+        check_property_setters(spec2d, attr, unit, scale)
+
+    @pytest.mark.parametrize('spectrum2d_file, attr, unit, err', [
+        ('example_spectrum2d.json', 'x_data', 'kg', ValueError),
+        ('example_spectrum2d.json', 'y_data', 'mbarn', ValueError),
+        ('example_spectrum2d.json', 'z_data', 'angstrom', ValueError)])
+    def test_incorrect_unit_conversion(self, spectrum2d_file, attr,
+                                       unit, err):
+        spec2d = get_spectrum2d(spectrum2d_file)
+        new_attr = getattr(spec2d, attr).magnitude*ureg(unit)
+        with pytest.raises(err):
+            setattr(spec2d, attr, new_attr)
 
 
 @pytest.mark.unit

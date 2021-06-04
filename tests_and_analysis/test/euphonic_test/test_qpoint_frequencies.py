@@ -19,7 +19,7 @@ from tests_and_analysis.test.euphonic_test.test_spectrum1dcollection import (
 from tests_and_analysis.test.utils import (
     get_data_path, get_castep_path, get_phonopy_path,
     check_frequencies_at_qpts, check_unit_conversion,
-    check_json_metadata)
+    check_json_metadata, check_property_setters)
 
 
 class ExpectedQpointFrequencies:
@@ -383,6 +383,31 @@ class TestQpointFrequenciesUnitConversion:
         qpt_freqs = get_qpt_freqs(material, json_file)
         with pytest.raises(err):
             setattr(qpt_freqs, unit_attr, unit_val)
+
+
+@pytest.mark.unit
+class TestQpointFrequenciesSetters:
+
+    @pytest.mark.parametrize('material, json_file, attr, unit, scale', [
+        ('quartz', 'quartz_reciprocal_qpoint_frequencies.json',
+         'frequencies', '1/cm', 2.),
+        ('quartz', 'quartz_reciprocal_qpoint_frequencies.json',
+         'frequencies', 'meV', 3.)
+        ])
+    def test_setter_correct_units(self, material, json_file, attr,
+                                  unit, scale):
+        qpt_freqs = get_qpt_freqs(material, json_file)
+        check_property_setters(qpt_freqs, attr, unit, scale)
+
+    @pytest.mark.parametrize('material, json_file, attr, unit, err', [
+        ('quartz', 'quartz_reciprocal_qpoint_frequencies.json',
+         'frequencies', '1/cm**2', ValueError)])
+    def test_incorrect_unit_conversion(self, material, json_file, attr,
+                                       unit, err):
+        qpt_freqs = get_qpt_freqs(material, json_file)
+        new_attr = getattr(qpt_freqs, attr).magnitude*ureg(unit)
+        with pytest.raises(err):
+            setattr(qpt_freqs, attr, new_attr)
 
 
 @pytest.mark.unit

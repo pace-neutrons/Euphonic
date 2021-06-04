@@ -95,6 +95,11 @@ class StructureFactor(QpointFrequencies):
         return self._structure_factors*ureg('bohr**2').to(
             self.structure_factors_unit)
 
+    @structure_factors.setter
+    def structure_factors(self, value):
+        self.structure_factors_unit = str(value.units)
+        self._structure_factors = value.to('bohr**2').magnitude
+
     @property
     def temperature(self):
         if self._temperature is not None:
@@ -103,6 +108,11 @@ class StructureFactor(QpointFrequencies):
                             ureg('K')).to(self.temperature_unit)
         else:
             return None
+
+    @temperature.setter
+    def temperature(self, value):
+        self.temperature_unit = str(value.units)
+        self._temperature = value.to('K').magnitude
 
     def __setattr__(self, name, value):
         _check_unit_conversion(self, name, value,

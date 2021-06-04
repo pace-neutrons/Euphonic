@@ -19,7 +19,8 @@ from tests_and_analysis.test.euphonic_test.test_spectrum1dcollection import (
     get_expected_spectrum1dcollection, check_spectrum1dcollection)
 from tests_and_analysis.test.utils import (
     get_data_path, check_frequencies_at_qpts, check_structure_factors_at_qpts,
-    check_unit_conversion, check_json_metadata, sum_at_degenerate_modes)
+    check_unit_conversion, check_json_metadata, check_property_setters,
+    sum_at_degenerate_modes)
 
 
 class ExpectedStructureFactor:
@@ -357,6 +358,41 @@ class TestStructureFactorUnitConversion:
         sf = get_sf(material, json_file)
         with pytest.raises(err):
             setattr(sf, unit_attr, unit_val)
+
+
+@pytest.mark.unit
+class TestStructureFactorSetters:
+
+    @pytest.mark.parametrize('material, json_file, attr, unit, scale', [
+        ('quartz', 'quartz_0K_structure_factor.json',
+         'frequencies', '1/cm', 2.),
+        ('quartz', 'quartz_0K_structure_factor.json',
+         'frequencies', 'meV', 3.),
+        ('quartz', 'quartz_0K_structure_factor.json',
+         'structure_factors', 'bohr**2', 2.),
+        ('quartz', 'quartz_0K_structure_factor.json',
+         'structure_factors', 'mbarn', 3.),
+        ('quartz', 'quartz_0K_structure_factor.json',
+         'temperature', 'K', 2.)
+        ])
+    def test_setter_correct_units(self, material, json_file, attr,
+                                  unit, scale):
+        sf = get_sf(material, json_file)
+        check_property_setters(sf, attr, unit, scale)
+
+    @pytest.mark.parametrize('material, json_file, attr, unit, err', [
+        ('quartz', 'quartz_0K_structure_factor.json',
+         'frequencies', '1/cm**2', ValueError),
+        ('quartz', 'quartz_0K_structure_factor.json',
+         'structure_factors', '1/cm', ValueError),
+        ('quartz', 'quartz_0K_structure_factor.json',
+         'temperature', 'kg', ValueError)])
+    def test_incorrect_unit_conversion(self, material, json_file, attr,
+                                       unit, err):
+        sf = get_sf(material, json_file)
+        new_attr = getattr(sf, attr).magnitude*ureg(unit)
+        with pytest.raises(err):
+            setattr(sf, attr, new_attr)
 
 
 @pytest.mark.unit
