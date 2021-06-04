@@ -91,17 +91,17 @@ def get_expected_spectrum1dcollection(json_filename):
 
 def check_spectrum1dcollection(actual_spectrum, expected_spectrum):
 
+    assert (actual_spectrum.x_data.units
+            == expected_spectrum.x_data.units)
     assert_allclose(actual_spectrum.x_data.magnitude,
                     expected_spectrum.x_data.magnitude,
                     atol=np.finfo(np.float64).eps)
-    assert (actual_spectrum.x_data.units
-            == expected_spectrum.x_data.units)
 
+    assert (actual_spectrum.y_data.units
+            == expected_spectrum.y_data.units)
     assert_allclose(actual_spectrum.y_data.magnitude,
                     expected_spectrum.y_data.magnitude,
                     atol=np.finfo(np.float64).eps)
-    assert (actual_spectrum.y_data.units
-            == expected_spectrum.y_data.units)
 
     if expected_spectrum.x_tick_labels is None:
         assert actual_spectrum.x_tick_labels is None
