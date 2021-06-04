@@ -381,14 +381,14 @@ class TestStructureFactorCalculateSqwMap:
         'material, sf_json, expected_sqw_json, ebins, kwargs', [
             ('quartz', 'quartz_bandstructure_structure_factor.json',
              'quartz_bandstructure_sqw.json',
-             np.arange(0,155)*ureg('meV'), {'calc_bose': False}),
+             np.arange(0,1250,8)*ureg('1/cm'), {'calc_bose': False}),
             ('quartz', 'quartz_bandstructure_structure_factor.json',
              'quartz_bandstructure_100K_bose_no_dw_sqw.json',
              np.arange(0,155)*ureg('meV'),
              {'calc_bose': True, 'temperature': 100*ureg('K')}),
             ('CaHgO2', 'CaHgO2_300K_structure_factor.json',
              'CaHgO2_300K_bose_sqw.json',
-             np.arange(0,95,0.4)*ureg('meV'), {'calc_bose': True}),
+             np.arange(0,23,0.1)*ureg('THz'), {'calc_bose': True}),
             ('CaHgO2', 'CaHgO2_300K_structure_factor.json',
              'CaHgO2_300K_bose_negative_e_sqw.json',
              np.arange(-95,95,0.4)*ureg('meV'), {'calc_bose': True}),
@@ -436,7 +436,7 @@ class TestStructureFactorCalculate1dAverage:
                  'quartz_666_weights.npy'))}),
             ('quartz', 'quartz_666_300K_structure_factor_noweights.json',
              'quartz_666_300K_sf_1d_average_noweights.json',
-             np.arange(0,156)*ureg('meV'), {})])
+             np.arange(0,1250,8)*ureg('1/cm'), {})])
     def test_calculate_1d_average(self, material, sf_json, expected_1d_json,
                                   ebins, kwargs):
         sf = get_sf(material, sf_json)
