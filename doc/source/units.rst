@@ -49,14 +49,21 @@ a function:
   scattering_lengths = {'Si': 4.1491*fm, 'O': 5.803*fm}
   sf = phonons.calculate_structure_factor(scattering_lengths)
 
-Changing Units
---------------
+Object Attributes
+-----------------
 
-When creating a Euphonic object, any attributes with units will be
-wrapped as a ``Quantity`` object in default units (e.g. meV for frequencies,
-angstrom for cell vectors). Each ``Quantity`` attribute has an associated
-string attribute that can be used to change the units. See the following
-example to change the units of frequency in ``QpointPhononModes``:
+Any dimensioned attributes (attributes with units) on a Euphonic object,
+for example ``cell_vectors`` or ``frequencies``, are actually properties.
+They are stored internally in atomic units, and only wrapped as a
+``Quantity`` in user-friendly units once they are accessed.
+
+**Changing attribute units**
+
+When a Euphonic object is created, its dimensioned attributes will be
+in default units (e.g. meV for frequencies, angstrom for cell vectors).
+Each ``Quantity`` attribute has an associated string attribute that can
+be used to change the units. See the following example to change the units
+of frequency in ``QpointPhononModes``:
 
 .. code-block:: py
 
@@ -80,3 +87,55 @@ example to change the units of frequency in ``QpointPhononModes``:
 The pattern is the same for any ``Quantity`` attribute e.g.
 ``ForceConstants.force_constants`` has ``ForceConstants.force_constants_unit``,
 ``Crystal.cell_vectors`` has ``Crystal.cell_vectors_unit``
+
+**Changing attribute values**
+
+Each dimensioned property also has a setter which allows it to be set. For
+example, to set new ``Crystal.cell_vectors``:
+
+.. code-block:: py
+
+  >>> from euphonic import ForceConstants
+  >>> fc = ForceConstants.from_castep('quartz.castep_bin')
+  >>> fc.crystal.cell_vectors
+  <Quantity([[ 2.42617588 -4.20225989  0.        ]
+   [ 2.42617588  4.20225989  0.        ]
+   [ 0.          0.          5.35030451]], 'angstrom')>
+  >>> fc.crystal.cell_vectors = np.array(
+  ...     [[ 4.85235176, -8.40451979, 0.],
+  ...      [ 4.85235176,  8.40451979, 0.],
+  ...      [ 0., 0., 10.70060903]])*ureg('angstrom')
+  >>> fc.crystal.cell_vectors
+  <Quantity([[ 4.85235176 -8.40451979  0.        ]
+   [ 4.85235176  8.40451979  0.        ]
+   [ 0.          0.         10.70060903]], 'angstrom')>
+
+However as dimensioned attributes are properties, individual elements can't be
+set by indexing, for example the following to set a single element of
+``Crystal.atom_mass`` does not work:
+
+.. code-block:: py
+
+  >>> from euphonic import ForceConstants
+  >>> fc = ForceConstants.from_castep('quartz.castep_bin')
+  >>> fc.crystal.atom_mass
+  <Quantity([15.99939997 15.99939997 15.99939997 15.99939997 15.99939997 15.99939997
+   28.08549995 28.08549995 28.08549995], 'unified_atomic_mass_unit')>
+  >>> fc.crystal.atom_mass[0] = 17.999*ureg('amu')
+  >>> fc.crystal.atom_mass
+  <Quantity([15.99939997 15.99939997 15.99939997 15.99939997 15.99939997 15.99939997
+   28.08549995 28.08549995 28.08549995], 'unified_atomic_mass_unit')>
+
+Nothing has changed! Instead, get the entire array, change any desired entries and
+then set the whole attribute as follows:
+
+.. code-block:: py
+
+  >>> from euphonic import ForceConstants
+  >>> fc = ForceConstants.from_castep('quartz.castep_bin')
+  >>> atom_mass = fc.crystal.atom_mass
+  >>> atom_mass[0] = 17.999*ureg('amu')
+  >>> fc.crystal.atom_mass = atom_mass
+  >>> fc.crystal.atom_mass
+  <Quantity([17.999      15.99939997 15.99939997 15.99939997 15.99939997 15.99939997
+   28.08549995 28.08549995 28.08549995], 'unified_atomic_mass_unit')>
