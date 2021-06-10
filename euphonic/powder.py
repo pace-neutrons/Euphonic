@@ -98,7 +98,7 @@ def sample_sphere_structure_factor(
     mod_q: Quantity,
     dw: DebyeWaller = None,
     dw_spacing: Quantity = 0.025 * ureg('1/angstrom'),
-    temperature: Optional[Quantity] = 273. * ureg['K'],
+    temperature: Optional[Quantity] = 273. * ureg('K'),
     sampling: str = 'golden',
     npts: int = 1000, jitter: bool = False,
     energy_bins: Quantity = None,

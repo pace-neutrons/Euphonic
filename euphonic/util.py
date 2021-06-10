@@ -227,7 +227,7 @@ def get_reference_data(collection: str = 'Sears1992',
                          'specify dimensions with "__units__" metadata.')
 
     try:
-        unit = ureg[unit_str]
+        unit = ureg(unit_str)
     except UndefinedUnitError:
         raise ValueError(
             f'Units "{unit_str}" from data file "{filename}" '

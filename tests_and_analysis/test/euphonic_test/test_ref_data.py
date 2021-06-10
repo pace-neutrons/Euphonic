@@ -23,7 +23,7 @@ class TestReferenceData:
             collection='Sears1992',
             physical_property='coherent_scattering_length')
 
-        assert data['Ba'].units == ureg['fm']
+        assert data['Ba'].units == ureg('fm')
         assert data['Hg'].magnitude == pytest.approx(12.692)
         assert data['Sm'].magnitude == pytest.approx(complex(0.80, -1.65))
 
@@ -31,7 +31,7 @@ class TestReferenceData:
         data = get_reference_data(collection='BlueBook',
                                   physical_property='coherent_cross_section')
 
-        assert data['Ca'].units == ureg['barn']
+        assert data['Ca'].units == ureg('barn')
         assert data['Cl'].magnitude == pytest.approx(11.5257)
 
     @staticmethod

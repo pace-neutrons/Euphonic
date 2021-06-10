@@ -77,7 +77,7 @@ def main(params: List[str] = None):
         # Compute Debye-Waller factor once for re-use at each mod(q)
         # (If temperature is not set, this will be None.)
         if args.temperature is not None:
-            temperature = args.temperature * ureg['K']
+            temperature = args.temperature * ureg('K')
             dw = _get_debye_waller(temperature, fc, grid=args.grid,
                                    grid_spacing=(args.grid_spacing
                                                  * recip_length_unit),

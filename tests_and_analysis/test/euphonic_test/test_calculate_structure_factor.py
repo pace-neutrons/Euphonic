@@ -164,19 +164,19 @@ class TestCalculateStructureFactorUsingReferenceData:
         return str(filename)
 
     def test_structure_factor_with_named_ref(self, quartz_modes):
-        fm = ureg['fm']
+        fm = ureg('fm')
         sf_direct = quartz_modes.calculate_structure_factor(
             scattering_lengths={'Si': 4.1491*fm, 'O': 5.803*fm})
         sf_named = quartz_modes.calculate_structure_factor(
             scattering_lengths='Sears1992')
 
-        aa2 = ureg['angstrom']**2
+        aa2 = ureg('angstrom')**2
         npt.assert_allclose(sf_direct.structure_factors.to(aa2).magnitude,
                             sf_named.structure_factors.to(aa2).magnitude)
 
     def test_structure_factor_with_file_ref(self, quartz_modes,
                                             tmpdir, fake_quartz_data):
-        fm = ureg['fm']
+        fm = ureg('fm')
 
         filename = self._dump_data(fake_quartz_data, tmpdir, 'fake_data')
 
@@ -185,6 +185,6 @@ class TestCalculateStructureFactorUsingReferenceData:
         sf_from_file = quartz_modes.calculate_structure_factor(
             scattering_lengths=filename)
 
-        aa2 = ureg['angstrom']**2
+        aa2 = ureg('angstrom')**2
         npt.assert_allclose(sf_direct.structure_factors.to(aa2).magnitude,
                             sf_from_file.structure_factors.to(aa2).magnitude)
