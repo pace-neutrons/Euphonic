@@ -30,10 +30,10 @@ class SharedCode:
     def get_calculate_optimum_dipole_parameter_kwargs():
         return [
             {},
-            {"dipole-parameter-min": 0.25, "dipole-parameter-max": 1.35,
-             "dipole-parameter-step": 0.2, "n": 20},
-            {"dipole-parameter-min": 0.5, "dipole-parameter-max": 1.75,
-             "dipole-parameter-step": 0.3, "n": 10}
+            {"dipole_parameter_min": 0.25, "dipole_parameter_max": 1.35,
+             "dipole_parameter_step": 0.2, "n": 20},
+            {"dipole_parameter_min": 0.5, "dipole_parameter_max": 1.75,
+             "dipole_parameter_step": 0.3, "n": 10}
         ]
 
 
