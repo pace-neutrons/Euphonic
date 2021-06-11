@@ -41,7 +41,7 @@ static PyObject *calculate_phonons(PyObject *self, PyObject *args) {
     // Extra vars only required if dipole = True
     PyArrayObject *py_born;
     PyArrayObject *py_dielectric;
-    double eta;
+    double lambda;
     PyArrayObject *py_H_ab;
     PyArrayObject *py_dipole_cells;
     PyArrayObject *py_gvec_phases;
@@ -137,7 +137,7 @@ static PyObject *calculate_phonons(PyObject *self, PyObject *args) {
     if (dipole) {
         if (attr_from_pyobj(py_idata, "_born", &py_born) ||
             attr_from_pyobj(py_idata, "_dielectric", &py_dielectric) ||
-            double_from_pyobj(py_idata, "_eta", &eta) ||
+            double_from_pyobj(py_idata, "_lambda", &lambda) ||
             attr_from_pyobj(py_idata, "_H_ab", &py_H_ab) ||
             attr_from_pyobj(py_idata, "_cells", &py_dipole_cells) ||
             attr_from_pyobj(py_idata, "_gvec_phases", &py_gvec_phases) ||
@@ -238,7 +238,7 @@ static PyObject *calculate_phonons(PyObject *self, PyObject *args) {
                 calculate_dipole_correction(qpt, n_atoms, cell_vec, recip_vec,
                     atom_r, born, dielectric, H_ab, dipole_cells,
                     n_dipole_cells, gvec_phases, gvecs_cart, n_gvecs,
-                    dipole_q0, eta, corr);
+                    dipole_q0, lambda, corr);
                 add_arrays(dmat_elems, corr, dmat);
             }
 
