@@ -124,19 +124,19 @@ def get_parser():
               'longer')
     )
     parser.add_argument(
-        '--dipole_parameter_min',
+        '--dipole_parameter_min', '--min',
         default=0.25,
         type=float,
         help='The minimum value of dipole_parameter to test'
     )
     parser.add_argument(
-        '--dipole_parameter_max',
+        '--dipole_parameter_max', '--max',
         default=1.5,
         type=float,
         help='The maximum value of dipole_parameter to test'
     )
     parser.add_argument(
-        '--dipole_parameter_step',
+        '--dipole_parameter_step', '--step',
         default=0.25,
         type=float,
         help='The difference between each dipole_parameter to test'
