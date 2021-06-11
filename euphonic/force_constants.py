@@ -409,6 +409,16 @@ class ForceConstants:
                 Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray],
                 Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]]:
         if return_mode_widths:
+            warnings.warn(
+                'return_mode_widths has been deprecated and will be removed '
+                'in a future release. Please instead use a combination of '
+                'return_mode_gradients and euphonic.util.'
+                'mode_gradients_to_widths, e.g.:\n'
+                'phon, mode_gradients = force_constants.calculate_qpoint_phonon_modes('
+                '*args, **kwargs, return_mode_gradients=True)\n'
+                'mode_widths = euphonic.util.mode_gradients_to_widths(mode_gradients, '
+                'phon.crystal.cell_vectors)',
+                category=DeprecationWarning, stacklevel=3)
             return_mode_gradients = True
         # Check weights is of appropriate type and shape, to avoid doing all
         # the interpolation only for it to fail creating QpointPhononModes
@@ -676,16 +686,6 @@ class ForceConstants:
                 'hartree*bohr').to(
                     f'meV*{str(self.crystal.cell_vectors.units)}')
         if return_mode_widths:
-            warnings.warn(
-                'return_mode_widths has been deprecated and will be removed '
-                'in a future release. Please instead use a combination of '
-                'return_mode_gradients and euphonic.util.'
-                'mode_gradients_to_widths, e.g.:\n'
-                'phon, mode_gradients = force_constants.calculate_qpoint_phonon_modes('
-                '*args, **kwargs, return_mode_gradients=True)\n'
-                'mode_widths = euphonic.util.mode_gradients_to_widths(mode_gradients, '
-                'phon.crystal.cell_vectors)',
-                category=DeprecationWarning, stacklevel=3)
             mode_gradients = mode_gradients_to_widths(
                 mode_gradients,
                 self.crystal.cell_vectors)
