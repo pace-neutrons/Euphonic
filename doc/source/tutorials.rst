@@ -31,7 +31,7 @@ Helper Scripts
 - :ref:`euphonic-dos <dos-script>`
 - :ref:`euphonic-intensity-map <intensity-map-script>`
 - :ref:`euphonic-powder-map <powder-map-script>`
-- :ref:`euphonic-optimise-eta <eta-script>`
+- :ref:`euphonic-optimise-dipole-parameter <dipole-parameter-script>`
 - :ref:`euphonic-show-sampling <sampling-script>`
 
 :ref:`Changelog <changelog>`
