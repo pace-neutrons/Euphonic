@@ -368,7 +368,7 @@ def _get_debye_waller(temperature: Quantity,
 def _calc_modes_kwargs(args: Namespace) -> Dict[str, Any]:
     """Collect arguments that can be passed to calculate_qpoint_phonon_modes()
     """
-    return dict(asr=args.asr, eta_scale=args.eta_scale,
+    return dict(asr=args.asr, dipole_parameter=args.dipole_parameter,
                 use_c=args.use_c, n_threads=args.n_threads)
 
 
@@ -436,12 +436,13 @@ def _get_cli_parser(features: Collection[str] = {}
                   'constant matrix in real space. "reciprocal" applies '
                   'the correction to the dynamical matrix at each q-point.'))
         sections['interpolation'].add_argument(
-            '--eta-scale', type=float, default=1.0, dest='eta_scale',
+            '--dipole-parameter', type=float, default=1.0,
+            dest='dipole_parameter',
             help=('Set the cutoff in real/reciprocal space for the dipole '
                   'Ewald sum; higher values use more reciprocal terms. If '
                   'tuned correctly this can result in performance '
-                  'improvements. See euphonic-optimise-eta program for help '
-                  'on choosing a good ETA_SCALE.'))
+                  'improvements. See euphonic-optimise-dipole-parameter '
+                  'program for help on choosing a good DIPOLE_PARAMETER.'))
 
         use_c = sections['performance'].add_mutually_exclusive_group()
         use_c.add_argument(

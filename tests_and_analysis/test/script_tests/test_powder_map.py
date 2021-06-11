@@ -40,7 +40,7 @@ powder_map_params = [
     [graphite_fc_file, '--qb=0.01', '--eb=1.5', '--shape=lorentz',
      *quick_calc_params],
     [graphite_fc_file, '--asr', *quick_calc_params],
-    [graphite_fc_file, '--asr=realspace', '--eta-scale=0.75',
+    [graphite_fc_file, '--asr=realspace', '--dipole-parameter=0.75',
      *quick_calc_params],
     [nacl_prim_fc_file, *quick_calc_params]]
 
