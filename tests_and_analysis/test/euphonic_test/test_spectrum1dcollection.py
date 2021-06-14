@@ -520,6 +520,9 @@ class TestSpectrum1DCollectionMethods:
         'spectrum_file, select_kwargs, selected_spectrum_file', [
             ('methane_pdos.json', {'label': ['H2', 'H3', 'H4']},
              'methane_pdos_index_1_4.json'),
+            ('La2Zr2O7_666_coh_incoh_species_append_pdos.json',
+             {'weighting': 'coherent'},
+             'La2Zr2O7_666_coh_species_pdos.json')
             ])
     def test_select(self, spectrum_file, select_kwargs,
                     selected_spectrum_file):
@@ -529,13 +532,9 @@ class TestSpectrum1DCollectionMethods:
             selected_spectrum_file)
         check_spectrum1dcollection(selected_spec, expected_selected_spec)
 
-    # Keys that were initially in the high-level metadata dict (e.g.
-    # weighting from calculate_pdos) are put into 'line_data' when
-    # two Spectrum1DCollection objects are added together, and are
-    # not put back into the high-level dict again by select, which
-    # results in comparison failures. Instead test the correct spectra
-    # have been returned from select by indexing the original spectrum,
-    # which will have the same metadata behaviour
+
+    # Self-consistency test, allows us to test more combinations
+    # without generating more test files
     @pytest.mark.parametrize(
         'spectrum_file, select_kwargs, expected_indices', [
             ('La2Zr2O7_666_coh_incoh_species_append_pdos.json',
@@ -548,8 +547,8 @@ class TestSpectrum1DCollectionMethods:
              {'weighting': 'incoherent', 'species': 'O'},
              [3])
             ])
-    def test_select_by_indexing(self, spectrum_file, select_kwargs,
-                    expected_indices):
+    def test_select_same_as_indexing(self, spectrum_file, select_kwargs,
+                                     expected_indices):
         spec_col = get_spectrum1dcollection(spectrum_file)
         selected_spec = spec_col.select(**select_kwargs)
         expected_selected_spec = spec_col[expected_indices]

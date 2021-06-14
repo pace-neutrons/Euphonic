@@ -591,19 +591,17 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
         if isinstance(item, slice):
             if (item.stop is not None) and (item.stop >= len(self)):
                 raise IndexError(f'index "{item.stop}" out of range')
-            if any(line_metadata):
-                new_metadata['line_data'] = line_metadata[item]
+            new_metadata.update(self._combine_metadata(line_metadata[item]))
         else:
             try:
                 item = list(item)
                 if not all([isinstance(i, Integral) for i in item]):
                     raise TypeError
-                if any(line_metadata):
-                    new_metadata['line_data'] = [line_metadata[i]
-                                                 for i in item]
             except TypeError:
                 raise TypeError(f'Index "{item}" should be an integer, slice '
                                 f'or sequence of ints')
+            new_metadata.update(self._combine_metadata(
+                [line_metadata[i] for i in item]))
         return type(self)(self.x_data,
                           self.y_data[item, :],
                           x_tick_labels=self.x_tick_labels,
