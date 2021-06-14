@@ -654,15 +654,10 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
         # they shouldn't have line_data
         for metadata in all_metadata:
             assert not 'line_data' in metadata.keys()
-        combined_metadata = {}
-        # Use .keys() and explicitly compare values, rather than just using
-        # items() in case metadata contains unhashable types (e.g. list)
-        common_keys = set(all_metadata[0].keys()).intersection(
-            *[metadata.keys() for metadata in all_metadata[1:]])
-        for ckey in common_keys:
-            if all([all_metadata[0][ckey] == metadata[ckey]
-                   for metadata in all_metadata[1:]]):
-                combined_metadata[ckey] = copy.copy(all_metadata[0][ckey])
+        # Combine all common key/value pairs
+        combined_metadata = dict(
+            set(all_metadata[0].items()).intersection(
+                *[metadata.items() for metadata in all_metadata[1:]]))
         # Put all other per-spectrum metadata in line_data
         line_data = []
         for i, metadata in enumerate(all_metadata):
