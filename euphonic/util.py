@@ -1,9 +1,10 @@
+import itertools
 import json
 import math
 import sys
 import warnings
 import os.path
-from typing import Dict, Sequence, Union
+from typing import Dict, Sequence, Union, Tuple
 from collections import OrderedDict
 
 import numpy as np
@@ -282,31 +283,20 @@ def _cell_vectors_to_volume(cell_vectors: np.ndarray) -> float:
 
 
 def _get_unique_elems_and_idx(
-        all_elems: Sequence[Union[str, int, Sequence[str], Sequence[int]]]
-    ) -> 'OrderedDict[Union[str, int, tuple], np.ndarray]':
+        all_elems: Sequence[Tuple[Union[int, str]]]
+        ) -> 'OrderedDict[Union[str, int, tuple], np.ndarray]':
     """
-    Returns an ordered dictionary mapping the unique elements (or
-    sequences of elements), to their indices
+    Returns an ordered dictionary mapping the unique sequences of
+    elements to their indices
     """
-    # If each element of all_elems is a sequence, convert each row
-    # to a tuple so it can be compared with np.unique
-    if not isinstance(all_elems[0], (str, int)):
-        tmp = np.empty(len(all_elems), dtype=object)
-        tmp[:] = [tuple(row) for row in all_elems]
-        all_elems = tmp
-
-    _, idx, inverse = np.unique(all_elems, return_index=True,
-                                return_inverse=True)
-    # Retain order
-    sorted_idx = np.sort(idx)
-    inverse_idx = inverse[sorted_idx]
-    unique_elems = all_elems[sorted_idx]
-
-    elem_dict = OrderedDict([
-        (unique_elem, np.where(inverse == inverse_elem_idx)[0])
-        for unique_elem, inverse_elem_idx in zip(unique_elems, inverse_idx)
-        ])
-    return elem_dict
+    # Abuse OrderedDict to get ordered set
+    unique_elems = OrderedDict(
+        zip(all_elems, itertools.cycle([None]))).keys()
+    return OrderedDict((
+        elem,
+        np.asarray([i for i, other_elem in enumerate(all_elems)
+                    if elem == other_elem])
+        ) for elem in unique_elems)
 
 
 def _calc_abscissa(reciprocal_cell, qpts):

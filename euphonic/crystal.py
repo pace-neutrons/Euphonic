@@ -1,6 +1,7 @@
 import inspect
 from math import ceil
 from typing import List, Tuple, TypeVar, Dict, Any
+from collections import OrderedDict
 
 import numpy as np
 from spglib import get_symmetry
@@ -193,7 +194,11 @@ class Crystal:
             symbol as the keys, and their indices as the values,
             in the same order as they appear in atom_type
         """
-        return _get_unique_elems_and_idx(self.atom_type)
+        species_dict = _get_unique_elems_and_idx(
+            [tuple([at]) for at in self.atom_type])
+        # Convert tuples back to string
+        return OrderedDict([(str(key[0]), value)
+                            for key, value in species_dict.items()])
 
     def get_symmetry_equivalent_atoms(
             self, tol: Quantity = Quantity(1e-5, 'angstrom')
