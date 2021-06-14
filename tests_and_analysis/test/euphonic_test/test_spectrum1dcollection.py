@@ -447,9 +447,9 @@ class TestSpectrum1DCollectionMethods:
 
     @pytest.mark.parametrize(
         'spectrum_file, group_by_args, grouped_spectrum_file', [
-            ('La2Zr2O7_666_incoh_pdos.json', ['species'],
+            ('La2Zr2O7_666_incoh_pdos.json', ('species',),
              'La2Zr2O7_666_incoh_species_pdos.json'),
-            ('La2Zr2O7_666_coh_pdos.json', ['species'],
+            ('La2Zr2O7_666_coh_pdos.json', ('species',),
              'La2Zr2O7_666_coh_species_pdos.json')
             ])
     def test_group_by(self, spectrum_file, group_by_args,
@@ -475,7 +475,7 @@ class TestSpectrum1DCollectionMethods:
     @pytest.mark.parametrize(
         'spectrum_file, metadata, group_by_args, expected_metadata', [
             ('quartz_666_pdos.json', fake_metadata,
-             ['sample', 'inst'],
+             ('sample', 'inst'),
              {'top_level_key': 'something', 'top_level_int': 10,
               'line_data': [
                   {'sample': 0, 'inst': 'LET', 'index': 10, 'other_data': 'misc'},
@@ -485,7 +485,7 @@ class TestSpectrum1DCollectionMethods:
                   {'sample': 2, 'inst': 'LET'},
                   {'sample': 1, 'inst': 'LET', 'index': 10}]}),
             ('quartz_666_pdos.json', fake_metadata,
-             'index',
+             ('index',),
              {'top_level_key': 'something', 'top_level_int': 10,
               'line_data': [
                   {'index': 10},
@@ -496,22 +496,22 @@ class TestSpectrum1DCollectionMethods:
             self, spectrum_file, metadata, group_by_args, expected_metadata):
         spec_col = get_spectrum1dcollection(spectrum_file)
         spec_col.metadata = metadata
-        grouped_spec = spec_col.group_by(group_by_args)
+        grouped_spec = spec_col.group_by(*group_by_args)
         assert  grouped_spec.metadata == expected_metadata
 
     # Self-consistency test, allows us to test more metadata combinations
     # without generating more test files
     @pytest.mark.parametrize(
         'spectrum_file, metadata, group_by_args, group_indices', [
-            ('quartz_666_pdos.json', fake_metadata, ['sample', 'inst'],
+            ('quartz_666_pdos.json', fake_metadata, ('sample', 'inst'),
              [[0], [1, 2], [3], [4,5], [6,7], [8]]),
-            ('quartz_666_pdos.json', fake_metadata, 'index',
+            ('quartz_666_pdos.json', fake_metadata, ('index',),
              [[0, 2, 3, 5, 6, 8], [1, 7], [4]])])
     def test_group_by_same_as_index_and_sum_with_fake_metadata(
             self, spectrum_file, metadata, group_by_args, group_indices):
         spec_col = get_spectrum1dcollection(spectrum_file)
         spec_col.metadata = metadata
-        grouped_spec = spec_col.group_by(group_by_args)
+        grouped_spec = spec_col.group_by(*group_by_args)
         for i, spec in enumerate(grouped_spec):
             check_spectrum1d(spec,
                              spec_col[group_indices[i]].sum())

@@ -684,8 +684,7 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
         combined_line_data.pop('line_data', None)
         return combined_line_data
 
-    def _get_line_data_vals(self, line_data_keys: Union[str, Sequence[str]]
-                            ) -> np.ndarray:
+    def _get_line_data_vals(self, *line_data_keys: str) -> np.ndarray:
         """
         Get value of the key(s) for each element in
         metadata['line_data']. Returns a 1D array of tuples, where each
@@ -700,14 +699,12 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
                 {'inst': 'MARI', 'sample': 1, 'index': 1},
             ]}
         Then:
-            _get_line_data_vals(['inst', 'sample']) = [('LET', 0),
-                                                       ('MAPS', 1),
-                                                       ('MARI', 1)]
+            _get_line_data_vals('inst', 'sample') = [('LET', 0),
+                                                     ('MAPS', 1),
+                                                     ('MARI', 1)]
 
         Raises a KeyError if 'line_data' or the key doesn't exist
         """
-        if isinstance(line_data_keys, str):
-            line_data_keys = [line_data_keys]
         line_data = self.metadata['line_data']
         line_data_vals = np.empty(len(line_data), dtype=object)
         for i, data in enumerate(line_data):
@@ -814,7 +811,7 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
             copy.copy((self.x_tick_labels)),
             copy.deepcopy(self.metadata))
 
-    def group_by(self, line_data_keys: Union[str, Sequence[str]]) -> SC:
+    def group_by(self, *line_data_keys: str) -> SC:
         """
         Group and sum y_data for each spectrum according to the values
         mapped to the specified keys in metadata['line_data']
@@ -822,11 +819,12 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
         Parameters
         ----------
         line_data_keys
-            The key(s) to group by. If line_data_keys is a string, if the
-            value mapped to a key is the same for multiple spectra,
-            they are placed in the same group and summed. If line_data_keys
-            is a sequence, the values must be the same for all specified
-            keys for them to be placed in the same group
+            The key(s) to group by. If only one line_data_key is
+            supplied, if the value mapped to a key is the same for
+            multiple spectra, they are placed in the same group and
+            summed. If multiple line_data_keys are supplied, the values
+            must be the same for all specified keys for them to be
+            placed in the same group
 
         Returns
         -------
@@ -836,7 +834,7 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
             group will be discarded
         """
         grouping_dict = _get_unique_elems_and_idx(
-            self._get_line_data_vals(line_data_keys))
+            self._get_line_data_vals(*line_data_keys))
 
         new_y_data = np.zeros((len(grouping_dict), self._y_data.shape[-1]))
         group_metadata = copy.deepcopy(self.metadata)
@@ -898,9 +896,8 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
         ValueError
             If no matching spectra are found
         """
-        select_keys = list(select_key_values.keys())
         select_val_dict = _get_unique_elems_and_idx(
-            self._get_line_data_vals(select_keys))
+            self._get_line_data_vals(*select_key_values.keys()))
         for key, value in select_key_values.items():
             if isinstance(value, (int, str)):
                 select_key_values[key] = [value]
