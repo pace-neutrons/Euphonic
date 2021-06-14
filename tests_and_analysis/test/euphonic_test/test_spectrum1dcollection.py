@@ -211,7 +211,9 @@ class TestSpectrum1DCollectionCreation:
         [([get_spectrum1d(f'gan_bands_index_{i}.json') for i in range(2, 5)],
           get_spectrum1dcollection('gan_bands_index_2_5.json')),
          ([get_spectrum1d(f'methane_pdos_index_{i}.json') for i in range(1, 4)],
-          get_spectrum1dcollection('methane_pdos_index_1_4.json'))
+          get_spectrum1dcollection('methane_pdos_index_1_4.json')),
+         ([get_spectrum1d('xsq_spectrum1d.json')],
+          get_spectrum1dcollection('xsq_from_single_spectrum1d.json'))
          ])
     def test_create_from_sequence(self, input_spectra, expected_spectrum):
         spectrum = Spectrum1DCollection.from_spectra(input_spectra)

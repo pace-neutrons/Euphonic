@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 import collections
-from copy import deepcopy
+import copy
 import itertools
 import math
 from numbers import Integral
@@ -445,8 +445,12 @@ class Spectrum1D(Spectrum):
             shape=shape)
         return Spectrum1D(
             np.copy(self.x_data.magnitude)*ureg(self.x_data_unit),
-            y_broadened*ureg(self.y_data_unit), deepcopy((self.x_tick_labels)),
-            deepcopy(self.metadata))
+            y_broadened*ureg(self.y_data_unit),
+            copy.copy((self.x_tick_labels)),
+            copy.copy(self.metadata))
+
+
+LineData = Sequence[Dict[str, Union[str, int]]]
 
 
 class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
@@ -468,18 +472,22 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
     x_tick_labels : Sequence[Tuple[int, str]] or None
         Special tick labels e.g. for high-symmetry points. The int
         refers to the index in x_data the label should be applied to
-    metadata : Dict[str, Union[int, str]]
+    metadata : Dict[str, Union[int, str, LineData]] or None
         Contains metadata about the spectra. Keys should be strings
         and values should be strings or integers. There are some
         functional keys:
-          - 'line_data' : List[Dict[str, Union[int, str]]]. This
-                          contains metadata for each spectrum in the
-                          collection, and must be of length n_entries
+          - 'line_data' : LineData
+                          This is a Sequence[
+                              Dict[str, Union[int, str]]
+                          ], it contains metadata for each spectrum in
+                          the collection, and must be of length
+                          n_entries
     """
-    def __init__(self, x_data: Quantity, y_data: Quantity,
-                 x_tick_labels: Optional[Sequence[Tuple[int, str]]] = None,
-                 metadata: Optional[Dict[str, Union[int, str]]] = None
-                 ) -> None:
+    def __init__(
+            self, x_data: Quantity, y_data: Quantity,
+            x_tick_labels: Optional[Sequence[Tuple[int, str]]] = None,
+            metadata: Optional[Dict[str, Union[str, int, LineData]]
+            ] = None) -> None:
         """
         Parameters
         ----------
@@ -497,9 +505,11 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
             Contains metadata about the spectra. Keys should be
             strings and values should be strings or integers.
             There are some functional keys:
-              - 'line_data' : List[Dict[str, Union[int, str]]]. This
-                              contains metadata for each spectrum in
-                              the collection, and must be of length
+              - 'line_data' : LineData
+                              This is a Sequence[
+                                  Dict[str, Union[int, str]]
+                              ], it contains metadata for each spectrum
+                              in the collection, and must be of length
                               n_entries
         """
 
@@ -568,7 +578,7 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
         ...
 
     def __getitem__(self, item: Union[int, slice, Sequence[int]]):  # noqa: F811
-        new_metadata = deepcopy(self.metadata)
+        new_metadata = copy.deepcopy(self.metadata)
         line_metadata = new_metadata.pop('line_data',
                                          [{} for _ in self._y_data])
         if isinstance(item, Integral):
@@ -589,8 +599,8 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
                 if not all([isinstance(i, Integral) for i in item]):
                     raise TypeError
                 if any(line_metadata):
-                    new_metadata['line_data'] = [line_metadata[idx]
-                                                 for idx in item]
+                    new_metadata['line_data'] = [line_metadata[i]
+                                                 for i in item]
             except TypeError:
                 raise TypeError(f'Index "{item}" should be an integer, slice '
                                 f'or sequence of ints')
@@ -640,6 +650,10 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
         key, which is a list of metadata dicts for each element in
         all_metadata
         """
+        # This is for combining multiple separate spectrum metadata,
+        # they shouldn't have line_data
+        for metadata in all_metadata:
+            assert not 'line_data' in metadata.keys()
         combined_metadata = {}
         # Use .keys() and explicitly compare values, rather than just using
         # items() in case metadata contains unhashable types (e.g. list)
@@ -648,11 +662,11 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
         for ckey in common_keys:
             if all([all_metadata[0][ckey] == metadata[ckey]
                    for metadata in all_metadata[1:]]):
-                combined_metadata[ckey] = deepcopy(all_metadata[0][ckey])
+                combined_metadata[ckey] = copy.copy(all_metadata[0][ckey])
         # Put all other per-spectrum metadata in line_data
         line_data = []
         for i, metadata in enumerate(all_metadata):
-            sdata = deepcopy(metadata)
+            sdata = copy.copy(metadata)
             for key in combined_metadata.keys():
                 sdata.pop(key)
             line_data.append(sdata)
@@ -678,16 +692,27 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
     def _get_line_data_vals(self, line_data_keys: Union[str, Sequence[str]]
                             ) -> np.ndarray:
         """
-        Get value of the key(s) for each element in metadata['line_data'].
-        Returns a 1D array of tuples, where each tuple contains the
-        value(s) for each key in line_data_keys, for a single element
-        in metadata['line_data']
+        Get value of the key(s) for each element in
+        metadata['line_data']. Returns a 1D array of tuples, where each
+        tuple contains the value(s) for each key in line_data_keys, for
+        a single element in metadata['line_data']. This allows easy
+        grouping/selecting by specific keys
+
+        For example, if we have a Spectrum1DCollection with the following metadata:
+            {'desc': 'Quartz', 'line_data': [
+                {'inst': 'LET', 'sample': 0, 'index': 1},
+                {'inst': 'MAPS', 'sample': 1, 'index': 2},
+                {'inst': 'MARI', 'sample': 1, 'index': 1},
+            ]}
+        Then:
+            _get_line_data_vals(['inst', 'sample']) = [('LET', 0),
+                                                       ('MAPS', 1),
+                                                       ('MARI', 1)]
 
         Raises a KeyError if 'line_data' or the key doesn't exist
         """
         if isinstance(line_data_keys, str):
             line_data_keys = [line_data_keys]
-        line_data_keys = list(line_data_keys)
         line_data = self.metadata['line_data']
         line_data_vals = np.empty(len(line_data), dtype=object)
         for i, data in enumerate(line_data):
@@ -791,8 +816,8 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
         return Spectrum1DCollection(
             np.copy(self.x_data.magnitude)*ureg(self.x_data_unit),
             y_broadened*ureg(self.y_data_unit),
-            deepcopy((self.x_tick_labels)),
-            deepcopy(self.metadata))
+            copy.copy((self.x_tick_labels)),
+            copy.deepcopy(self.metadata))
 
     def group_by(self, line_data_keys: Union[str, Sequence[str]]) -> SC:
         """
@@ -819,13 +844,13 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
             self._get_line_data_vals(line_data_keys))
 
         new_y_data = np.zeros((len(grouping_dict), self._y_data.shape[-1]))
-        group_metadata = deepcopy(self.metadata)
+        group_metadata = copy.deepcopy(self.metadata)
         group_metadata['line_data'] = [{}]*len(grouping_dict)
-        for i, (label, idx) in enumerate(grouping_dict.items()):
+        for i, idxs in enumerate(grouping_dict.values()):
             # Look for any common key/values in grouped metadata
-            group_i_metadata = self._combine_line_metadata(idx)
+            group_i_metadata = self._combine_line_metadata(idxs)
             group_metadata['line_data'][i] = group_i_metadata
-            new_y_data[i] = np.sum(self._y_data[idx], axis=0)
+            new_y_data[i] = np.sum(self._y_data[idxs], axis=0)
         new_y_data = new_y_data*ureg(self._internal_y_data_unit).to(
             self.y_data_unit)
 
@@ -844,7 +869,7 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
             in 'line_data' not common across all spectra will be
             discarded
         """
-        metadata = deepcopy(self.metadata)
+        metadata = copy.deepcopy(self.metadata)
         metadata.pop('line_data', None)
         metadata.update(self._combine_line_metadata())
         summed_y_data = np.sum(self._y_data, axis=0)*ureg(
@@ -884,8 +909,7 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
         for key, value in select_key_values.items():
             if isinstance(value, (int, str)):
                 select_key_values[key] = [value]
-        value_combinations = list(
-            itertools.product(*select_key_values.values()))
+        value_combinations = itertools.product(*select_key_values.values())
         select_idx = np.array([], dtype=np.int32)
         for value_combo in value_combinations:
             try:
@@ -1027,8 +1051,8 @@ class Spectrum2D(Spectrum):
         return Spectrum2D(
             np.copy(self.x_data.magnitude)*ureg(self.x_data_unit),
             np.copy(self.y_data.magnitude)*ureg(self.y_data_unit),
-            z_broadened*ureg(self.z_data_unit), deepcopy(self.x_tick_labels),
-            deepcopy(self.metadata))
+            z_broadened*ureg(self.z_data_unit), copy.copy(self.x_tick_labels),
+            copy.copy(self.metadata))
 
     def get_bin_edges(self, bin_ax: str = 'x') -> Quantity:
         """
