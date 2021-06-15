@@ -31,23 +31,27 @@ def force_constants_from_file(filename: Union[str, os.PathLike]
     ForceConstants
     """
     path = pathlib.Path(filename)
-    if path.suffix == '.hdf5':
-        if (path.parent / 'phonopy.yaml').is_file():
-            return ForceConstants.from_phonopy(path=path.parent,
-                                               summary_name='phonopy.yaml',
-                                               fc_name=path.name)
-        raise ValueError("Phonopy force_constants.hdf5 file "
-                         "must be accompanied by phonopy.yaml")
-    elif path.suffix == '.yaml':
-        # Assume this is a (renamed?) phonopy.yaml file
-        if (path.parent / 'force_constants.hdf5').is_file():
-            fc_name = 'force_constants.hdf5'
-        else:
-            fc_name = 'FORCE_CONSTANTS'
-
-        return ForceConstants.from_phonopy(path=path.parent,
-                                           fc_name=fc_name,
-                                           summary_name=path.name)
+    if path.suffix in ['.hdf5', '.yaml']:
+        phonopy_kwargs = {}
+        phonopy_kwargs['path'] = path.parent
+        if (path.parent / 'BORN').is_file():
+            phonopy_kwargs['born_name'] = 'BORN'
+        # Set summary_name and fc_name depending on input file
+        if path.suffix == '.hdf5':
+            if (path.parent / 'phonopy.yaml').is_file():
+                phonopy_kwargs['summary_name'] = 'phonopy.yaml'
+                phonopy_kwargs['fc_name'] = path.name
+            else:
+                raise ValueError("Phonopy force_constants.hdf5 file "
+                                 "must be accompanied by phonopy.yaml")
+        elif path.suffix == '.yaml':
+            phonopy_kwargs['summary_name'] = path.name
+            # Assume this is a (renamed?) phonopy.yaml file
+            if (path.parent / 'force_constants.hdf5').is_file():
+                phonopy_kwargs['fc_name'] = 'force_constants.hdf5'
+            else:
+                phonopy_kwargs['fc_name'] = 'FORCE_CONSTANTS'
+        return ForceConstants.from_phonopy(**phonopy_kwargs)
     elif path.suffix in ('.castep_bin', '.check'):
         return ForceConstants.from_castep(filename)
     elif path.suffix == '.json':
