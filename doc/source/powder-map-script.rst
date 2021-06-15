@@ -46,6 +46,13 @@ sphere. If this is equal to ``--npts-max`` then the upper limit is in
 use; you may wish to experiment with reducing ``--npts-density`` or
 increasing ``--npts-max`` in such cases.
 
+Progress bars
+-------------
+
+Sampling many q-points can be computationally expensive, so a progress
+bar will automatically be displayed if `tqdm <https://tqdm.github.io/>`_
+is installed
+
 Command Line Options
 --------------------
 

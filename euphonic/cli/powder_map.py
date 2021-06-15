@@ -18,10 +18,13 @@ import euphonic.util
 
 # Dummy tqdm function if tqdm progress bars unavailable
 try:
-    from tqdm import tqdm
+    from tqdm.auto import tqdm
 except ModuleNotFoundError:
-    def tqdm(sequence):
-        return sequence
+    try:
+        from tqdm import tqdm
+    except ModuleNotFoundError:
+        def tqdm(sequence):
+            return sequence
 
 
 def get_parser() -> 'argparse.ArgumentParser':
