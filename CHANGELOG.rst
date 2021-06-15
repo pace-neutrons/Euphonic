@@ -4,9 +4,9 @@
 - Changes:
 
   - The ``eta_scale`` argument in ``calculate_qpoint_phonon_modes`` has been
-    deprecated, ``dipole_parameter`` should be used instead
+    deprecated, ``dipole_parameter`` should be used instead.
   - This means the ``euphonic-optimise-eta`` script has been renamed to
-    ``euphonic-optimise-dipole-parameter``
+    ``euphonic-optimise-dipole-parameter``.
 
 
 `v0.5.2 <https://github.com/pace-neutrons/Euphonic/compare/v0.5.1...v0.5.2>`_

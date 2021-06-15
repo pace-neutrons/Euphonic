@@ -870,6 +870,7 @@ class ForceConstants:
         # Make guess for balance between real/recip terms
         abc_mag = np.linalg.norm(cell_vectors, axis=1)
         mean_abc_mag = np.prod(abc_mag)**(1.0/3)
+        # Using upper_lambda varname as lambda is a reserved keyword
         upper_lambda = (sqrt_pi/mean_abc_mag*n_atoms**(1.0/6)
                         *np.linalg.det(dielectric)**(1.0/6))
         upper_lambda *= dipole_parameter
