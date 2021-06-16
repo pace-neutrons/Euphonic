@@ -211,7 +211,9 @@ class TestSpectrum1DCollectionCreation:
         [([get_spectrum1d(f'gan_bands_index_{i}.json') for i in range(2, 5)],
           get_spectrum1dcollection('gan_bands_index_2_5.json')),
          ([get_spectrum1d(f'methane_pdos_index_{i}.json') for i in range(1, 4)],
-          get_spectrum1dcollection('methane_pdos_index_1_4.json'))
+          get_spectrum1dcollection('methane_pdos_index_1_4.json')),
+         ([get_spectrum1d('xsq_spectrum1d.json')],
+          get_spectrum1dcollection('xsq_from_single_spectrum1d.json'))
          ])
     def test_create_from_sequence(self, input_spectra, expected_spectrum):
         spectrum = Spectrum1DCollection.from_spectra(input_spectra)
@@ -225,11 +227,11 @@ class TestSpectrum1DCollectionCreation:
           ],
           {'line_data': [{}, {'label': 'H3'}, {'Another key': 'Anything'}]}
          ),
-         ([{'desc': 'PDOS H2', 'int list': [1, 2, 3]},
-           {'desc': 'PDOS H3', 'label': 'H3', 'int list': [1, 2, 3]},
-           {'desc': 'PDOS', 'int list': [1, 2, 3]}
+         ([{'desc': 'PDOS H2', 'common_key_value': 3},
+           {'desc': 'PDOS H3', 'label': 'H3', 'common_key_value': 3},
+           {'desc': 'PDOS', 'common_key_value': 3}
           ],
-          {'int list': [1, 2, 3], 'line_data': [
+          {'common_key_value': 3, 'line_data': [
                {'desc': 'PDOS H2'},
                {'desc': 'PDOS H3', 'label': 'H3'},
                {'desc': 'PDOS'}]}
@@ -333,9 +335,22 @@ class TestSpectrum1DCollectionIndexAccess:
         check_spectrum1dcollection(extracted_spectrum, expected_spectrum)
 
     @pytest.mark.parametrize(
+        'spectrum, index, expected_spectrum',
+        [(get_spectrum1dcollection('gan_bands.json'), np.arange(2, 5),
+          get_expected_spectrum1dcollection('gan_bands_index_2_5.json')),
+         (get_spectrum1dcollection('gan_bands.json'), [2, 3, 4],
+          get_expected_spectrum1dcollection('gan_bands_index_2_5.json'))
+         ])
+    def test_index_sequence(self, spectrum, index, expected_spectrum):
+        extracted_spectrum = spectrum[index]
+        check_spectrum1dcollection(extracted_spectrum, expected_spectrum)
+
+    @pytest.mark.parametrize(
         'spectrum, index, expected_error',
         [(get_spectrum1dcollection('gan_bands.json'),
           '1', TypeError),
+         (get_spectrum1dcollection('gan_bands.json'),
+          np.arange(4.0), TypeError),
          (get_spectrum1dcollection('gan_bands.json'),
           6, IndexError),
          (get_spectrum1dcollection('gan_bands.json'),
@@ -419,3 +434,157 @@ class TestSpectrum1DCollectionMethods:
             broadened_spec1d = spec.broaden(width, shape)
             check_spectrum1d(broadened_spec_col[i],
                              broadened_spec1d)
+
+    @pytest.mark.parametrize(
+        'spectrum_file, summed_spectrum_file', [
+            ('quartz_666_pdos.json', 'quartz_666_dos.json')
+        ])
+    def test_sum(self, spectrum_file, summed_spectrum_file):
+        spec_col = get_spectrum1dcollection(spectrum_file)
+        summed_spec = spec_col.sum()
+        expected_summed_spec = get_expected_spectrum1d(summed_spectrum_file)
+        check_spectrum1d(summed_spec, expected_summed_spec)
+
+    @pytest.mark.parametrize(
+        'spectrum_file, group_by_args, grouped_spectrum_file', [
+            ('La2Zr2O7_666_incoh_pdos.json', ('species',),
+             'La2Zr2O7_666_incoh_species_pdos.json'),
+            ('La2Zr2O7_666_coh_pdos.json', ('species',),
+             'La2Zr2O7_666_coh_species_pdos.json')
+            ])
+    def test_group_by(self, spectrum_file, group_by_args,
+                      grouped_spectrum_file):
+        spec_col = get_spectrum1dcollection(spectrum_file)
+        grouped_spec = spec_col.group_by(*group_by_args)
+        expected_grouped_spec = get_expected_spectrum1dcollection(
+            grouped_spectrum_file)
+        check_spectrum1dcollection(grouped_spec, expected_grouped_spec)
+
+    fake_metadata = {'top_level_key': 'something', 'top_level_int': 10,
+                     'line_data': [
+                         {'sample': 0, 'inst': 'LET', 'index': 10, 'other_data': 'misc'},
+                         {'sample': 2, 'inst': 'MARI', 'index': 5, 'some_other_data': 5},
+                         {'sample': 2, 'inst': 'MARI', 'index': 10, 'some_other_data': 5},
+                         {'sample': 0, 'inst': 'MAPS', 'index': 10, 'other_data': 'another_value'},
+                         {'sample': 0, 'inst': 'TOSCA', 'index': 7},
+                         {'sample': 0, 'inst': 'TOSCA', 'index': 10},
+                         {'sample': 2, 'inst': 'LET', 'index': 10},
+                         {'sample': 2, 'inst': 'LET', 'index': 5},
+                         {'sample': 1, 'inst': 'LET', 'index': 10}]}
+
+    @pytest.mark.parametrize(
+        'spectrum_file, metadata, group_by_args, expected_metadata', [
+            ('quartz_666_pdos.json', fake_metadata,
+             ('sample', 'inst'),
+             {'top_level_key': 'something', 'top_level_int': 10,
+              'line_data': [
+                  {'sample': 0, 'inst': 'LET', 'index': 10, 'other_data': 'misc'},
+                  {'sample': 2, 'inst': 'MARI', 'some_other_data': 5},
+                  {'sample': 0, 'inst': 'MAPS', 'index': 10, 'other_data': 'another_value'},
+                  {'sample': 0, 'inst': 'TOSCA'},
+                  {'sample': 2, 'inst': 'LET'},
+                  {'sample': 1, 'inst': 'LET', 'index': 10}]}),
+            ('quartz_666_pdos.json', fake_metadata,
+             ('index',),
+             {'top_level_key': 'something', 'top_level_int': 10,
+              'line_data': [
+                  {'index': 10},
+                  {'sample': 2, 'index': 5},
+                  {'sample': 0, 'inst': 'TOSCA', 'index': 7}]})
+            ])
+    def test_group_by_fake_metadata(
+            self, spectrum_file, metadata, group_by_args, expected_metadata):
+        spec_col = get_spectrum1dcollection(spectrum_file)
+        spec_col.metadata = metadata
+        grouped_spec = spec_col.group_by(*group_by_args)
+        assert  grouped_spec.metadata == expected_metadata
+
+    # Self-consistency test, allows us to test more metadata combinations
+    # without generating more test files
+    @pytest.mark.parametrize(
+        'spectrum_file, metadata, group_by_args, group_indices', [
+            ('quartz_666_pdos.json', fake_metadata, ('sample', 'inst'),
+             [[0], [1, 2], [3], [4,5], [6,7], [8]]),
+            ('quartz_666_pdos.json', fake_metadata, ('index',),
+             [[0, 2, 3, 5, 6, 8], [1, 7], [4]])])
+    def test_group_by_same_as_index_and_sum_with_fake_metadata(
+            self, spectrum_file, metadata, group_by_args, group_indices):
+        spec_col = get_spectrum1dcollection(spectrum_file)
+        spec_col.metadata = metadata
+        grouped_spec = spec_col.group_by(*group_by_args)
+        for i, spec in enumerate(grouped_spec):
+            check_spectrum1d(spec,
+                             spec_col[group_indices[i]].sum())
+
+    @pytest.mark.parametrize(
+        'spectrum_file, select_kwargs, selected_spectrum_file', [
+            ('methane_pdos.json', {'label': ['H2', 'H3', 'H4']},
+             'methane_pdos_index_1_4.json'),
+            ('La2Zr2O7_666_coh_incoh_species_append_pdos.json',
+             {'weighting': 'coherent'},
+             'La2Zr2O7_666_coh_species_pdos.json')
+            ])
+    def test_select(self, spectrum_file, select_kwargs,
+                    selected_spectrum_file):
+        spec_col = get_spectrum1dcollection(spectrum_file)
+        selected_spec = spec_col.select(**select_kwargs)
+        expected_selected_spec = get_expected_spectrum1dcollection(
+            selected_spectrum_file)
+        check_spectrum1dcollection(selected_spec, expected_selected_spec)
+
+
+    # Self-consistency test, allows us to test more combinations
+    # without generating more test files
+    @pytest.mark.parametrize(
+        'spectrum_file, select_kwargs, expected_indices', [
+            ('La2Zr2O7_666_coh_incoh_species_append_pdos.json',
+             {'weighting': 'coherent'},
+             [0, 1, 2]),
+            ('La2Zr2O7_666_coh_incoh_species_append_pdos.json',
+             {'weighting': 'incoherent', 'species': ['O', 'La']},
+             [3, 5]),
+            ('La2Zr2O7_666_coh_incoh_species_append_pdos.json',
+             {'weighting': 'incoherent', 'species': 'O'},
+             [3])
+            ])
+    def test_select_same_as_indexing(self, spectrum_file, select_kwargs,
+                                     expected_indices):
+        spec_col = get_spectrum1dcollection(spectrum_file)
+        selected_spec = spec_col.select(**select_kwargs)
+        expected_selected_spec = spec_col[expected_indices]
+        check_spectrum1dcollection(selected_spec, expected_selected_spec)
+
+    @pytest.mark.parametrize('spectrum_file, metadata, select_kwargs',
+            [('quartz_666_pdos.json', fake_metadata,
+             {'inst': ['LET', 'TOSCA'], 'index': [7, 5]})])
+    def test_select_with_not_all_matching_combinations_doesnt_raise_key_error(
+            self, spectrum_file, metadata, select_kwargs):
+        spec_col = get_spectrum1dcollection(spectrum_file)
+        spec_col.metadata = metadata
+        spec_col.select(**select_kwargs)
+
+    @pytest.mark.parametrize('spectrum_file, metadata, select_kwargs',
+            [('quartz_666_pdos.json', fake_metadata,
+             {'inst': ['LET', 'TOSCA'], 'index': [4, 6]})])
+    def test_select_with_no_matches_raises_value_error(
+            self, spectrum_file, metadata, select_kwargs):
+        spec_col = get_spectrum1dcollection(spectrum_file)
+        spec_col.metadata = metadata
+        with pytest.raises(ValueError):
+            spec_col.select(**select_kwargs)
+
+    @pytest.mark.parametrize(
+        'spectrum_file, other_spectrum_file, expected_spectrum_file', [
+            ('La2Zr2O7_666_coh_species_pdos.json',
+             'La2Zr2O7_666_incoh_species_pdos.json',
+             'La2Zr2O7_666_coh_incoh_species_append_pdos.json')
+            ])
+    def test_add(self, spectrum_file, other_spectrum_file,
+                 expected_spectrum_file):
+        spec_col = get_spectrum1dcollection(spectrum_file)
+        other_spec_col = get_spectrum1dcollection(other_spectrum_file)
+        added_spec = spec_col + other_spec_col
+        expected_added_spec = get_expected_spectrum1dcollection(
+            expected_spectrum_file)
+        check_spectrum1dcollection(added_spec, expected_added_spec)
+

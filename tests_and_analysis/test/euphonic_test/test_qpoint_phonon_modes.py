@@ -6,7 +6,7 @@ import numpy as np
 import numpy.testing as npt
 from pint import DimensionalityError
 
-from euphonic import ureg, Crystal, QpointPhononModes
+from euphonic import ureg, Crystal, QpointPhononModes, Spectrum1DCollection
 from euphonic.readers.phonopy import ImportPhonopyReaderError
 from tests_and_analysis.test.euphonic_test.test_crystal import (
     ExpectedCrystal, get_crystal, check_crystal)
@@ -578,16 +578,17 @@ class TestQpointPhononModesCalculatePdos:
              'quartz_666_coh_pdos.json', np.arange(0, 155, 0.5)*ureg('meV'),
              {'weighting': 'coherent'}),
             ('quartz', 'quartz-666-grid.phonon',
-             'quartz_666_incoh_pdos.json', np.arange(0, 155, 0.5)*ureg('meV'),
-             {'weighting': 'incoherent'}),
+             'quartz_666_total_cs_pdos.json', np.arange(0, 155, 0.5)*ureg('meV'),
+             {'weighting': 'total'}),
             ('quartz', 'quartz-666-grid.phonon',
              'quartz_666_cs_dict_pdos.json', np.arange(0, 155, 0.5)*ureg('meV'),
              {'cross_sections': {'O': 429*ureg('fm**2'), 'Si': 2.78*ureg('barn')}}),
             ('LZO', 'La2Zr2O7-666-grid.phonon',
-             'La2Zr2O7_666_pdos.json', np.arange(0, 100, 0.8)*ureg('meV'), {}),
+             'La2Zr2O7_666_coh_pdos.json', np.arange(0, 100, 0.8)*ureg('meV'),
+             {'weighting': 'coherent'}),
             ('LZO', 'La2Zr2O7-666-grid.phonon',
-             'La2Zr2O7_666_total_cs_pdos.json', np.arange(0, 100, 0.8)*ureg('meV'),
-             {'weighting': 'total'})
+             'La2Zr2O7_666_incoh_pdos.json', np.arange(0, 100, 0.8)*ureg('meV'),
+             {'weighting': 'incoherent'})
         ])
     def test_calculate_pdos(
             self, material, qpt_ph_modes_file, expected_pdos_json, ebins,
@@ -627,12 +628,9 @@ class TestQpointPhononModesCalculatePdos:
             self, material, qpt_ph_modes_file, expected_dos_json, ebins):
         qpt_ph_modes = QpointPhononModes.from_castep(
             get_castep_path(material, qpt_ph_modes_file))
-        all_dos = qpt_ph_modes.calculate_pdos(ebins)
+        summed_pdos = qpt_ph_modes.calculate_pdos(ebins).sum()
         expected_total_dos = get_expected_spectrum1d(expected_dos_json)
-        assert (str(all_dos.y_data.units)
-                == str(expected_total_dos.y_data.units))
-        npt.assert_allclose(all_dos.y_data[0].magnitude,
-                            expected_total_dos.y_data.magnitude)
+        check_spectrum1d(summed_pdos, expected_total_dos)
 
     @pytest.mark.parametrize(
         ('material, qpt_ph_modes_json, mode_widths_json, expected_dos_json, '
@@ -650,12 +648,10 @@ class TestQpointPhononModesCalculatePdos:
             modw_dict = json.load(fp)
         mode_widths = modw_dict['mode_widths']*ureg(
             modw_dict['mode_widths_unit'])
-        all_dos = qpt_ph_modes.calculate_pdos(ebins, mode_widths=mode_widths)
+        summed_pdos = qpt_ph_modes.calculate_pdos(
+            ebins, mode_widths=mode_widths).sum()
         expected_total_dos = get_expected_spectrum1d(expected_dos_json)
-        assert (str(all_dos.y_data.units)
-                == str(expected_total_dos.y_data.units))
-        npt.assert_allclose(all_dos.y_data[0].magnitude,
-                            expected_total_dos.y_data.magnitude)
+        check_spectrum1d(summed_pdos, expected_total_dos)
 
     def test_invalid_weighting_raises_value_error(self):
         qpt_ph_modes = QpointPhononModes.from_castep(

@@ -1,17 +1,20 @@
 from abc import ABC, abstractmethod
 import collections
-from copy import deepcopy
+import copy
+import itertools
 import math
+from numbers import Integral
 from typing import (Any, Dict, List, Optional, overload,
                     Sequence, Tuple, TypeVar, Union)
 
 import numpy as np
-from scipy.ndimage import gaussian_filter1d, correlate1d, gaussian_filter
+from scipy.ndimage import correlate1d, gaussian_filter
 
 from euphonic.validate import _check_constructor_inputs, _check_unit_conversion
 from euphonic.io import (_obj_to_json_file, _obj_from_json_file,
                          _obj_to_dict, _process_dict)
 from euphonic.readers.castep import read_phonon_dos_data
+from euphonic.util import _get_unique_elems_and_idx
 from euphonic import ureg, Quantity
 
 
@@ -266,7 +269,6 @@ class Spectrum(ABC):
             return self.x_data
 
 
-
 class Spectrum1D(Spectrum):
     """
     For storing generic 1D spectra e.g. density of states
@@ -282,15 +284,16 @@ class Spectrum1D(Spectrum):
     x_tick_labels : Sequence[Tuple[int, str]] or None
         Special tick labels e.g. for high-symmetry points. The int
         refers to the index in x_data the label should be applied to
-    metadata : Dict[str, Any]
-        Contains metadata about the spectrum. Any keys/values are
-        allowed, but values must be JSON serialisable to write to a
-        json file. There are some functional keys:
+    metadata : Dict[str, Union[int, str]]
+        Contains metadata about the spectrum. Keys should be strings
+        and values should be strings or integers
+        There are some functional keys:
           - 'label' : str. This is used label lines on a 1D plot
     """
     def __init__(self, x_data: Quantity, y_data: Quantity,
                  x_tick_labels: Optional[Sequence[Tuple[int, str]]] = None,
-                 metadata: Optional[Dict[str, Any]] = None) -> None:
+                 metadata: Optional[Dict[str, Union[int, str]]] = None
+                 ) -> None:
         """
         Parameters
         ----------
@@ -304,9 +307,9 @@ class Spectrum1D(Spectrum):
             Special tick labels e.g. for high-symmetry points. The int
             refers to the index in x_data the label should be applied to
         metadata
-            Contains metadata about the spectrum. Any keys/values are
-            allowed, but values must be JSON serialisable to write to a
-            json file. There are some functional keys:
+            Contains metadata about the spectrum. Keys should be
+            strings and values should be strings or integers
+            There are some functional keys:
               - 'label' : str. This is used label lines on a 1D plot
         """
         _check_constructor_inputs(
@@ -322,6 +325,19 @@ class Spectrum1D(Spectrum):
         self._set_data(y_data, 'y')
         self.x_tick_labels = x_tick_labels
         self.metadata = {} if metadata is None else metadata
+
+    def __add__(self, other: S1D):
+        """
+        Sums the y_data of two Spectrum1D objects together,
+        their x_data axes must be equal, and their y_data must
+        have compatible units and the same number of y_data
+        entries
+
+        Any metadata key/value pairs that are common to both
+        spectra are retained, any others are discarded
+        """
+        spec_col = Spectrum1DCollection.from_spectra([self, other])
+        return spec_col.sum()
 
     def _split_by_indices(self: S1D,
                           indices: Union[Sequence[int], np.ndarray]
@@ -391,11 +407,15 @@ class Spectrum1D(Spectrum):
             the total DOS.
         """
         data = read_phonon_dos_data(filename)
+        metadata = {}
         if element is None:
             element = 'Total'
+        else:
+            metadata['species'] = element
+        metadata['label'] = element
         return Spectrum1D(data['dos_bins']*ureg(data['dos_bins_unit']),
                           data['dos'][element]*ureg(data['dos_unit']),
-                          metadata={'label': element})
+                          metadata=metadata)
 
     def broaden(self: S1D, x_width: Quantity, shape: str = 'gauss') -> S1D:
         """
@@ -418,14 +438,19 @@ class Spectrum1D(Spectrum):
         ValueError
             If shape is not one of the allowed strings
         """
-        y_broadened = self._broaden_data(self.y_data.magnitude,
-                                      [self.get_bin_centres().magnitude],
-                                      [x_width.to(self.x_data_unit).magnitude],
-                                      shape=shape)
+        y_broadened = self._broaden_data(
+            self.y_data.magnitude,
+            [self.get_bin_centres().magnitude],
+            [x_width.to(self.x_data_unit).magnitude],
+            shape=shape)
         return Spectrum1D(
             np.copy(self.x_data.magnitude)*ureg(self.x_data_unit),
-            y_broadened*ureg(self.y_data_unit), deepcopy((self.x_tick_labels)),
-            deepcopy(self.metadata))
+            y_broadened*ureg(self.y_data_unit),
+            copy.copy((self.x_tick_labels)),
+            copy.copy(self.metadata))
+
+
+LineData = Sequence[Dict[str, Union[str, int]]]
 
 
 class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
@@ -447,17 +472,22 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
     x_tick_labels : Sequence[Tuple[int, str]] or None
         Special tick labels e.g. for high-symmetry points. The int
         refers to the index in x_data the label should be applied to
-    metadata : Dict[str, Any]
-        Contains metadata about the spectrum. Any keys/values are
-        allowed, but values must be JSON serialisable to write to a
-        json file. There are some functional keys:
-          - 'line_data' : List[Dict[str, Any]]. This contains metadata
-                          for each spectrum in the collection, and must
-                          be of length n_entries
+    metadata : Dict[str, Union[int, str, LineData]] or None
+        Contains metadata about the spectra. Keys should be strings
+        and values should be strings or integers. There are some
+        functional keys:
+          - 'line_data' : LineData
+                          This is a Sequence[
+                              Dict[str, Union[int, str]]
+                          ], it contains metadata for each spectrum in
+                          the collection, and must be of length
+                          n_entries
     """
-    def __init__(self, x_data: Quantity, y_data: Quantity,
-                 x_tick_labels: Optional[Sequence[Tuple[int, str]]] = None,
-                 metadata: Optional[Dict[str, Any]] = None) -> None:
+    def __init__(
+            self, x_data: Quantity, y_data: Quantity,
+            x_tick_labels: Optional[Sequence[Tuple[int, str]]] = None,
+            metadata: Optional[Dict[str, Union[str, int, LineData]]
+            ] = None) -> None:
         """
         Parameters
         ----------
@@ -472,19 +502,21 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
             Special tick labels e.g. for high-symmetry points. The int
             refers to the index in x_data the label should be applied to
         metadata
-            Contains metadata about the spectrum. Any keys/values are
-            allowed, but values must be JSON serialisable to write to a
-            json file. There are some functional keys:
-              - 'line_data' : List[Dict[str, Any]]. This contains
-                              metadata for each spectrum in the
-                              collection, and must be of length
+            Contains metadata about the spectra. Keys should be
+            strings and values should be strings or integers.
+            There are some functional keys:
+              - 'line_data' : LineData
+                              This is a Sequence[
+                                  Dict[str, Union[int, str]]
+                              ], it contains metadata for each spectrum
+                              in the collection, and must be of length
                               n_entries
         """
 
         _check_constructor_inputs(
             [y_data, x_tick_labels, metadata],
             [Quantity, [list, type(None)], [dict, type(None)]],
-            [(-1,-1), (), ()],
+            [(-1, -1), (), ()],
             ['y_data', 'x_tick_labels', 'metadata'])
         ny = len(y_data[0])
         _check_constructor_inputs(
@@ -501,6 +533,21 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
                     f'metadata["line_data"] contains '
                     f'{len(metadata["line_data"])} entries')
         self.metadata = {} if metadata is None else metadata
+
+    def __add__(self, other: SC):
+        """
+        Appends the y_data of 2 Spectrum1DCollection objects,
+        creating a single Spectrum1DCollection that contains
+        the spectra from both objects. The two objects must
+        have equal x_data axes, and their y_data must
+        have compatible units and the same number of y_data
+        entries
+
+        Any metadata key/value pairs that are common to both
+        spectra are retained in the top level dictionary, any
+        others are put in the individual 'line_data' entries
+        """
+        return Spectrum1DCollection.from_spectra([*self, *other])
 
     def _split_by_indices(self: SC,
                           indices: Union[Sequence[int], np.ndarray]
@@ -526,27 +573,39 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
     def __getitem__(self, item: slice) -> SC:
         ...
 
-    def __getitem__(self, item: Union[int, slice]):  # noqa: F811
-        new_metadata = deepcopy(self.metadata)
+    @overload  # noqa: F811
+    def __getitem__(self, item: Union[Sequence[int], np.ndarray]) -> SC:
+        ...
+
+    def __getitem__(self, item: Union[int, slice, Sequence[int]]):  # noqa: F811
+        new_metadata = copy.deepcopy(self.metadata)
         line_metadata = new_metadata.pop('line_data',
                                          [{} for _ in self._y_data])
-        if isinstance(item, int):
+        if isinstance(item, Integral):
             new_metadata.update(line_metadata[item])
             return Spectrum1D(self.x_data,
                               self.y_data[item, :],
                               x_tick_labels=self.x_tick_labels,
                               metadata=new_metadata)
-        elif isinstance(item, slice):
-            if any(line_metadata):
-                new_metadata['line_data'] = line_metadata[item]
+
+        if isinstance(item, slice):
             if (item.stop is not None) and (item.stop >= len(self)):
                 raise IndexError(f'index "{item.stop}" out of range')
-            return type(self)(self.x_data,
-                              self.y_data[item, :],
-                              x_tick_labels=self.x_tick_labels,
-                              metadata=new_metadata)
+            new_metadata.update(self._combine_metadata(line_metadata[item]))
         else:
-            raise TypeError(f'Index "{item}" should be an integer or a slice')
+            try:
+                item = list(item)
+                if not all([isinstance(i, Integral) for i in item]):
+                    raise TypeError
+            except TypeError:
+                raise TypeError(f'Index "{item}" should be an integer, slice '
+                                f'or sequence of ints')
+            new_metadata.update(self._combine_metadata(
+                [line_metadata[i] for i in item]))
+        return type(self)(self.x_data,
+                          self.y_data[item, :],
+                          x_tick_labels=self.x_tick_labels,
+                          metadata=new_metadata)
 
     @classmethod
     def from_spectra(cls: SC, spectra: Sequence[Spectrum1D]) -> SC:
@@ -574,31 +633,81 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
             assert spectrum.x_tick_labels == x_tick_labels
             y_data_magnitude[i + 1, :] = spectrum.y_data.magnitude
 
-        # Process metadata
-        metadata = {}
-        # Put common key/val pairs in top-level metadata dict
-        # Use .keys() and explicitly compare values, rather than just using
-        # items() in case metadata contains unhashable types (e.g. list)
-        common_keys = set(spectra[0].metadata.keys()).intersection(
-            *[spectrum.metadata.keys() for spectrum in spectra[1:]])
-        for ckey in common_keys:
-            if all([spectra[0].metadata[ckey] == spectrum.metadata[ckey]
-                   for spectrum in spectra[1:]]):
-                metadata[ckey] = spectra[0].metadata[ckey]
-        # Put all other per-spectrum metadata in line_data
-        line_data = []
-        for i, spectrum in enumerate(spectra):
-            sdata = deepcopy(spectrum.metadata)
-            for key in metadata.keys():
-                sdata.pop(key)
-            line_data.append(sdata)
-        if any(line_data):
-            metadata['line_data'] = line_data
-
+        metadata = cls._combine_metadata([spec.metadata for spec in spectra])
         y_data = Quantity(y_data_magnitude, y_data_units)
         return cls(x_data, y_data, x_tick_labels=x_tick_labels,
                    metadata=metadata)
 
+    @staticmethod
+    def _combine_metadata(all_metadata: Sequence[Dict[str, Union[int, str]]]
+                          ) -> Dict[str, Any]:
+        """
+        From a sequence of metadata dictionaries, combines all common
+        key/value pairs into the top level of a metadata dictionary,
+        all unmatching key/value pairs are put into the 'line_data'
+        key, which is a list of metadata dicts for each element in
+        all_metadata
+        """
+        # This is for combining multiple separate spectrum metadata,
+        # they shouldn't have line_data
+        for metadata in all_metadata:
+            assert not 'line_data' in metadata.keys()
+        # Combine all common key/value pairs
+        combined_metadata = dict(
+            set(all_metadata[0].items()).intersection(
+                *[metadata.items() for metadata in all_metadata[1:]]))
+        # Put all other per-spectrum metadata in line_data
+        line_data = []
+        for i, metadata in enumerate(all_metadata):
+            sdata = copy.copy(metadata)
+            for key in combined_metadata.keys():
+                sdata.pop(key)
+            line_data.append(sdata)
+        if any(line_data):
+            combined_metadata['line_data'] = line_data
+        return combined_metadata
+
+    def _combine_line_metadata(self, indices: Optional[Sequence[int]] = None
+                               ) -> Dict[str, Any]:
+        """
+        For a metadata dictionary, combines all common key/value
+        pairs in 'line_data' and puts them in a top-level dictionary.
+        If indices is supplied, only those indices in 'line_data' are
+        combined. Unmatching key/value pairs are discarded
+        """
+        line_data = self.metadata.get('line_data', [{}]*len(self))
+        if indices is not None:
+            line_data = [line_data[idx] for idx in indices]
+        combined_line_data = self._combine_metadata(line_data)
+        combined_line_data.pop('line_data', None)
+        return combined_line_data
+
+    def _get_line_data_vals(self, *line_data_keys: str) -> np.ndarray:
+        """
+        Get value of the key(s) for each element in
+        metadata['line_data']. Returns a 1D array of tuples, where each
+        tuple contains the value(s) for each key in line_data_keys, for
+        a single element in metadata['line_data']. This allows easy
+        grouping/selecting by specific keys
+
+        For example, if we have a Spectrum1DCollection with the following metadata:
+            {'desc': 'Quartz', 'line_data': [
+                {'inst': 'LET', 'sample': 0, 'index': 1},
+                {'inst': 'MAPS', 'sample': 1, 'index': 2},
+                {'inst': 'MARI', 'sample': 1, 'index': 1},
+            ]}
+        Then:
+            _get_line_data_vals('inst', 'sample') = [('LET', 0),
+                                                     ('MAPS', 1),
+                                                     ('MARI', 1)]
+
+        Raises a KeyError if 'line_data' or the key doesn't exist
+        """
+        line_data = self.metadata['line_data']
+        line_data_vals = np.empty(len(line_data), dtype=object)
+        for i, data in enumerate(line_data):
+            line_data_vals[i] = tuple([data[key] for key in line_data_keys])
+        return line_data_vals
 
     def to_dict(self) -> Dict[str, Any]:
         """
@@ -652,10 +761,15 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
             The path and name of the .phonon_dos file to read
         """
         data = read_phonon_dos_data(filename)
-        items = data['dos'].items()
-        metadata = {'line_data': [{'label': item[0]}
-                                  for item in items]}
-        y_data = np.stack([item[1] for item in items])
+        n_spectra = len(data['dos'].keys())
+        metadata = {'line_data': [{} for x in range(n_spectra)]}
+        for i, (species, dos_data) in enumerate(data['dos'].items()):
+            if i == 0:
+                y_data = np.zeros((n_spectra, len(dos_data)))
+            y_data[i] = dos_data
+            if species != 'Total':
+                metadata['line_data'][i]['species'] = species
+            metadata['line_data'][i]['label'] = species
         return Spectrum1DCollection(
             data['dos_bins']*ureg(data['dos_bins_unit']),
             y_data*ureg(data['dos_unit']),
@@ -692,8 +806,115 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
         return Spectrum1DCollection(
             np.copy(self.x_data.magnitude)*ureg(self.x_data_unit),
             y_broadened*ureg(self.y_data_unit),
-            deepcopy((self.x_tick_labels)),
-            deepcopy(self.metadata))
+            copy.copy((self.x_tick_labels)),
+            copy.deepcopy(self.metadata))
+
+    def group_by(self, *line_data_keys: str) -> SC:
+        """
+        Group and sum y_data for each spectrum according to the values
+        mapped to the specified keys in metadata['line_data']
+
+        Parameters
+        ----------
+        line_data_keys
+            The key(s) to group by. If only one line_data_key is
+            supplied, if the value mapped to a key is the same for
+            multiple spectra, they are placed in the same group and
+            summed. If multiple line_data_keys are supplied, the values
+            must be the same for all specified keys for them to be
+            placed in the same group
+
+        Returns
+        -------
+        grouped_spectrum
+            A new Spectrum1DCollection with one line for each group. Any
+            metadata in 'line_data' not common across all spectra in a
+            group will be discarded
+        """
+        grouping_dict = _get_unique_elems_and_idx(
+            self._get_line_data_vals(*line_data_keys))
+
+        new_y_data = np.zeros((len(grouping_dict), self._y_data.shape[-1]))
+        group_metadata = copy.deepcopy(self.metadata)
+        group_metadata['line_data'] = [{}]*len(grouping_dict)
+        for i, idxs in enumerate(grouping_dict.values()):
+            # Look for any common key/values in grouped metadata
+            group_i_metadata = self._combine_line_metadata(idxs)
+            group_metadata['line_data'][i] = group_i_metadata
+            new_y_data[i] = np.sum(self._y_data[idxs], axis=0)
+        new_y_data = new_y_data*ureg(self._internal_y_data_unit).to(
+            self.y_data_unit)
+
+        return Spectrum1DCollection(self.x_data, new_y_data,
+                                    x_tick_labels=self.x_tick_labels,
+                                    metadata=group_metadata)
+
+    def sum(self) -> Spectrum1D:
+        """
+        Sum y_data over all spectra
+
+        Returns
+        -------
+        summed_spectrum
+            A Spectrum1D created from the summed y_data. Any metadata
+            in 'line_data' not common across all spectra will be
+            discarded
+        """
+        metadata = copy.deepcopy(self.metadata)
+        metadata.pop('line_data', None)
+        metadata.update(self._combine_line_metadata())
+        summed_y_data = np.sum(self._y_data, axis=0)*ureg(
+            self._internal_y_data_unit).to(self.y_data_unit)
+        return Spectrum1D(self.x_data, summed_y_data,
+                          x_tick_labels=self.x_tick_labels,
+                          metadata=metadata)
+
+    def select(self, **select_key_values: Union[
+            str, int, Sequence[str], Sequence[int]]) -> SC:
+        """
+        Select spectra by their keys and values in metadata['line_data']
+
+        Parameters
+        ----------
+        **select_key_values
+            Key-value/values pairs in metadata['line_data'] describing
+            which spectra to extract. For example, to select all spectra
+            where metadata['line_data']['species'] = 'Na' or 'Cl' use
+            spectrum.select(species=['Na', 'Cl']). To select 'Na' and
+            'Cl' spectra where weighting is also coherent, use
+            spectrum.select(species=['Na', 'Cl'], weighting='coherent')
+
+        Returns
+        -------
+        selected_spectra
+           A Spectrum1DCollection containing the selected spectra
+
+        Raises
+        ------
+        ValueError
+            If no matching spectra are found
+        """
+        select_val_dict = _get_unique_elems_and_idx(
+            self._get_line_data_vals(*select_key_values.keys()))
+        for key, value in select_key_values.items():
+            if isinstance(value, (int, str)):
+                select_key_values[key] = [value]
+        value_combinations = itertools.product(*select_key_values.values())
+        select_idx = np.array([], dtype=np.int32)
+        for value_combo in value_combinations:
+            try:
+                idx = select_val_dict[value_combo]
+            # Don't require every combination to match e.g.
+            # spec.select(sample=[0, 2], inst=['MAPS', 'MARI'])
+            # we don't want to error simply because there are no
+            # inst='MAPS' and sample=2 combinations
+            except KeyError:
+                continue
+            select_idx = np.append(select_idx, idx)
+        if len(select_idx) == 0:
+            raise ValueError(f'No spectra found with matching metadata '
+                             f'for {select_key_values}')
+        return self[select_idx]
 
 
 class Spectrum2D(Spectrum):
@@ -715,15 +936,15 @@ class Spectrum2D(Spectrum):
     x_tick_labels : Sequence[Tuple[int, str]] or None
         Special tick labels e.g. for high-symmetry points. The int
         refers to the index in x_data the label should be applied to
-    metadata : Dict[str, Any]
-        Contains metadata about the spectrum. Any keys/values are
-        allowed, but values must be JSON serialisable to write to a
-        json file
+    metadata : Dict[str, Union[int, str]]
+        Contains metadata about the spectrum. Keys should be strings
+        and values should be strings or integers
     """
     def __init__(self, x_data: Quantity, y_data: Quantity,
                  z_data: Quantity,
                  x_tick_labels: Optional[Sequence[Tuple[int, str]]] = None,
-                 metadata: Optional[Dict[str, Any]] = None) -> None:
+                 metadata: Optional[Dict[str, Union[int, str]]] = None
+                 ) -> None:
         """
         Attributes
         ----------
@@ -741,9 +962,8 @@ class Spectrum2D(Spectrum):
             Special tick labels e.g. for high-symmetry points. The int
             refers to the index in x_data the label should be applied to
         metadata
-            Contains metadata about the spectrum. Any keys/values are
-            allowed, but values must be JSON serialisable to write to a
-            json file
+            Contains metadata about the spectrum. Keys should be
+            strings and values should be strings or integers.
         """
         _check_constructor_inputs(
             [z_data, x_tick_labels, metadata],
@@ -815,14 +1035,14 @@ class Spectrum2D(Spectrum):
         if x_width is not None:
             bin_widths[0] = x_width.to(self.x_data_unit).magnitude
         if y_width is not None:
-            bin_widths[1] =  y_width.to(self.y_data_unit).magnitude
+            bin_widths[1] = y_width.to(self.y_data_unit).magnitude
         z_broadened = self._broaden_data(self.z_data.magnitude, bin_centres,
                                          bin_widths, shape=shape)
         return Spectrum2D(
             np.copy(self.x_data.magnitude)*ureg(self.x_data_unit),
             np.copy(self.y_data.magnitude)*ureg(self.y_data_unit),
-            z_broadened*ureg(self.z_data_unit), deepcopy(self.x_tick_labels),
-            deepcopy(self.metadata))
+            z_broadened*ureg(self.z_data_unit), copy.copy(self.x_tick_labels),
+            copy.copy(self.metadata))
 
     def get_bin_edges(self, bin_ax: str = 'x') -> Quantity:
         """

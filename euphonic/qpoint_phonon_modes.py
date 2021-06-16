@@ -481,12 +481,11 @@ class QpointPhononModes(QpointFrequencies):
             raise TypeError(f'Unexpected type for cross_sections, expected '
                             f'str or dict, got {type(cross_sections)}')
 
-        spec_idx_dict = self.crystal.get_species_idx()
         if cross_sections_data is not None:
-            cs = [cross_sections_data[0][x] for x in spec_idx_dict.keys()]
+            cs = [cross_sections_data[0][x] for x in self.crystal.atom_type]
             if len(cross_sections_data) == 2:
                 cs2 = [cross_sections_data[1][x]
-                        for x in spec_idx_dict.keys()]
+                        for x in self.crystal.atom_type]
                 cs = [sum(x) for x in zip(cs, cs2)]
             # Account for cross sections in different, or invalid, units
             ex_units = '[length]**2'
@@ -502,27 +501,24 @@ class QpointPhononModes(QpointFrequencies):
         evec_weights = np.real(np.einsum('ijkl,ijkl->ijk',
                                          self.eigenvectors,
                                          np.conj(self.eigenvectors)))
-        n_modes = self._frequencies.shape[1]
-
-        for i, (spec, spec_idx) in enumerate(spec_idx_dict.items()):
-            species_weights = np.sum(
-                evec_weights[:, :, spec_idx], axis=-1)
+        crystal = self.crystal
+        for i in range(crystal.n_atoms):
             dos = self._calculate_dos(dos_bins, mode_widths=mode_widths,
-                                       mode_widths_min=mode_widths_min,
-                                       mode_weights=species_weights)
+                                      mode_widths_min=mode_widths_min,
+                                      mode_weights=evec_weights[:, :, i])
             if cs is not None:
                 # Neutron weighted DOS is per atom of sample
-                avg_atom_mass = np.mean(self.crystal._atom_mass)
-                species_mass = self.crystal._atom_mass[spec_idx[0]]
-                dos *= cs[i]*avg_atom_mass/species_mass
+                avg_atom_mass = np.mean(crystal._atom_mass)
+                dos *= cs[i]*avg_atom_mass/crystal._atom_mass[i]
             if i == 0:
                 all_dos_y_data = np.zeros((
-                    len(spec_idx_dict) + 1, len(dos_bins) - 1))*dos.units
-            all_dos_y_data[i + 1] = dos
-
-        all_dos_y_data[0] = np.sum(all_dos_y_data[1:], axis=0)
+                    crystal.n_atoms, len(dos_bins) - 1))*dos.units
+            all_dos_y_data[i] = dos
         metadata = {'line_data':
-            [{'label': x} for x in ['Total'] + list(spec_idx_dict.keys())]}
+            [{'species': symbol, 'index': idx}
+             for idx, symbol in enumerate(crystal.atom_type)]}
+        if weighting is not None:
+            metadata['weighting'] = weighting
 
         return Spectrum1DCollection(
             dos_bins, all_dos_y_data, metadata=metadata)

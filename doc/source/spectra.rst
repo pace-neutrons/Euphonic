@@ -8,8 +8,9 @@ S(Q,w) maps.
 **Metadata**
 
 All spectra objects have a ``metadata`` attribute. By default it is an empty
-dictionary, but it can contain any keys/values to help describe the contained
-spectra. Note there are some special 'functional' keys, see the metadata
+dictionary, but it can contain keys/values to help describe the contained
+spectra. The keys should be strings and values should be only strings or
+integers. Note there are some special 'functional' keys, see the metadata
 docstring below for each specific spectrum class for details.
 
 
