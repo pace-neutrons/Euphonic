@@ -381,7 +381,8 @@ def _get_cli_parser(features: Collection[str] = {}
         sections:
             collection (e.g. set, list) of str for known argument groups.
             Known keys: read-fc, read-modes, weights, powder, mp-grid,
-                plotting, ebins, adaptive-broadening, q-e, map, btol
+                plotting, ebins, adaptive-broadening, q-e, map, btol,
+                dipole-parameter-optimisation
 
     Returns:
         Parser and a dict of parser subsections. This allows their help strings
@@ -435,14 +436,15 @@ def _get_cli_parser(features: Collection[str] = {}
                   'data: "realspace" applies the correction to the force '
                   'constant matrix in real space. "reciprocal" applies '
                   'the correction to the dynamical matrix at each q-point.'))
-        sections['interpolation'].add_argument(
-            '--dipole-parameter', type=float, default=1.0,
-            dest='dipole_parameter',
-            help=('Set the cutoff in real/reciprocal space for the dipole '
-                  'Ewald sum; higher values use more reciprocal terms. If '
-                  'tuned correctly this can result in performance '
-                  'improvements. See euphonic-optimise-dipole-parameter '
-                  'program for help on choosing a good DIPOLE_PARAMETER.'))
+        if not 'dipole-parameter-optimisation' in features:
+            sections['interpolation'].add_argument(
+                '--dipole-parameter', type=float, default=1.0,
+                dest='dipole_parameter',
+                help=('Set the cutoff in real/reciprocal space for the dipole '
+                      'Ewald sum; higher values use more reciprocal terms. If '
+                      'tuned correctly this can result in performance '
+                      'improvements. See euphonic-optimise-dipole-parameter '
+                      'program for help on choosing a good DIPOLE_PARAMETER.'))
 
         use_c = sections['performance'].add_mutually_exclusive_group()
         use_c.add_argument(
@@ -602,5 +604,33 @@ def _get_cli_parser(features: Collection[str] = {}
                   'discontinuous segments of reciprocal space onto separate '
                   'subplots. This is specified as a multiple of the median '
                   'distance between q-points.'))
+
+    if 'dipole-parameter-optimisation' in features:
+        parser.add_argument(
+            '-n',
+            default=100,
+            type=int,
+            help=('The number of times to loop over q-points. A higher '
+                  'value will get a more reliable timing, but will take '
+                  'longer')
+        )
+        parser.add_argument(
+            '--dipole-parameter-min', '--min',
+            default=0.25,
+            type=float,
+            help='The minimum value of dipole_parameter to test'
+        )
+        parser.add_argument(
+            '--dipole-parameter-max', '--max',
+            default=1.5,
+            type=float,
+            help='The maximum value of dipole_parameter to test'
+        )
+        parser.add_argument(
+            '--dipole-parameter-step', '--step',
+            default=0.25,
+            type=float,
+            help='The difference between each dipole_parameter to test'
+        )
 
     return parser, sections
