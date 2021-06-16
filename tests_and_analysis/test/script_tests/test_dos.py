@@ -29,8 +29,12 @@ dos_params = [
      '-u=hartree'],
     [nah_phonon_file, '--title=NaH', '--x-label=Energy (meV)',
      '--y-label=DOS'],
+    [nah_phonon_file, '--weighting=coherent-plus-incoherent-dos', '--pdos'],
+    [nah_phonon_file, '--weighting=coherent-dos', '--pdos', 'Na', 'H'],
+    [nah_phonon_file, '--weighting=incoherent-dos', '--pdos', 'Na'],
     [quartz_fc_file, '--grid-spacing=0.1', '--length-unit=bohr'],
     [quartz_fc_file, '--grid', '5', '5', '4'],
+    [quartz_fc_file, '--grid', '5', '5', '4', '--adaptive', '--pdos'],
     [quartz_fc_file, '--grid', '5', '5', '4', '--adaptive'],
     [quartz_fc_file, '--grid', '5', '5', '4', '--adaptive', '--eb', '2']]
 
