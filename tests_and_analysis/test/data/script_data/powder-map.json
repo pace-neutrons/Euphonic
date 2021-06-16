@@ -830,7 +830,7 @@
             0.5664594179188575
         ]
     },
-    "NaCl_prim phonopy_nacl.yaml --temperature=1000 --weights=coherent --npts=10 --npts-min=10 --q-spacing=1": {
+    "NaCl_prim phonopy_nacl.yaml --temperature=1000 --weighting=coherent --npts=10 --npts-min=10 --q-spacing=1": {
         "x_ticklabels": [
             "0.0",
             "0.5",
@@ -1544,7 +1544,7 @@
             0.5664594179188575
         ]
     },
-    "NaCl_prim phonopy_nacl.yaml --weights=coherent --cmap=bone": {
+    "NaCl_prim phonopy_nacl.yaml --weighting=coherent --cmap=bone": {
         "x_ticklabels": [
             "0.0",
             "0.5",

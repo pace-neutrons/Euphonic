@@ -1,10 +1,11 @@
 from argparse import (ArgumentParser, _ArgumentGroup, Namespace,
-                      ArgumentDefaultsHelpFormatter)
+                      ArgumentDefaultsHelpFormatter, Action)
 import json
 import os
 import pathlib
 from typing import (Any, Collection, Dict, List,
                     Sequence, Tuple, Union, Optional)
+import warnings
 
 import numpy as np
 from pint import UndefinedUnitError
@@ -384,7 +385,7 @@ def _get_cli_parser(features: Collection[str] = {}
     Args:
         sections:
             collection (e.g. set, list) of str for known argument groups.
-            Known keys: read-fc, read-modes, weights, powder, mp-grid,
+            Known keys: read-fc, read-modes, weighting, powder, mp-grid,
                 plotting, ebins, adaptive-broadening, q-e, map, btol
 
     Returns:
@@ -392,6 +393,24 @@ def _get_cli_parser(features: Collection[str] = {}
         to be customised and specialised options to be added.
 
     """
+    def deprecation_text(deprecated_arg: str, new_arg: str):
+        return (f'--{deprecated_arg} is deprecated, '
+                f'please use --{new_arg} instead')
+    def deprecated_arg(recommended_arg: str):
+        class DeprecatedArgAction(Action):
+            def __call__(self, parser, args, values, option_string=None):
+                # Need to filter to raise warnings from CL tools
+                # Warnings not in __main__ are ignored by default
+                with warnings.catch_warnings():
+                    warnings.filterwarnings(
+                        'default', category=DeprecationWarning,
+                        module=__name__)
+                    warnings.warn(
+                        deprecation_text(self.dest, recommended_arg),
+                        DeprecationWarning)
+                    setattr(args, recommended_arg, values)
+        return DeprecatedArgAction
+
     _spectrum_choices = ('dos', 'coherent')
 
     parser = ArgumentParser(
@@ -461,19 +480,23 @@ def _get_cli_parser(features: Collection[str] = {}
             help=('Number of parallel processes for computing phonon modes. '
                   '(Only applies when using C extension.)'))
 
-    if 'weights' in features:
+    if 'weighting' in features:
         sections['property'].add_argument(
-            '--weights', '-w', default='dos', choices=_spectrum_choices,
-            help=('Spectral weights to plot: phonon DOS or '
+            '--weights', default='dos', choices=_spectrum_choices,
+            action=deprecated_arg('weighting'),
+            help=deprecation_text('weights', 'weighting'))
+        sections['property'].add_argument(
+            '--weighting', '-w', default='dos', choices=_spectrum_choices,
+            help=('Spectral weighting to plot: phonon DOS or '
                   'coherent inelastic neutron scattering.'))
 
         sections['property'].add_argument(
             '--temperature', type=float, default=None,
             help=('Temperature in K; enable Debye-Waller factor calculation. '
-                  '(Only applicable when --weights=coherent).'))
+                  '(Only applicable when --weighting=coherent).'))
 
-    # 'weights' implies 'mp-grid' as well because mesh is needed for DW factor
-    if {'weights', 'mp-grid'}.intersection(features):
+    # 'weighting' implies 'mp-grid' as well because mesh is needed for DW factor
+    if {'weighting', 'mp-grid'}.intersection(features):
         grid_spec = sections['q'].add_mutually_exclusive_group()
 
         grid_spec.add_argument(

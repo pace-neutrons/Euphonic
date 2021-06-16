@@ -27,15 +27,15 @@ except ModuleNotFoundError:
 def get_parser() -> 'argparse.ArgumentParser':
 
     parser, sections = _get_cli_parser(
-        features={'read-fc', 'weights', 'powder',
+        features={'read-fc', 'weighting', 'powder',
                   'plotting', 'ebins', 'q-e', 'map'})
 
     sections['q'].description = (
-        '"GRID" options relate to Monkhorst-Pack sampling for the Debye-Waller'
-        ' factor, and only apply when --weights=coherent and --temperature is '
-        'set. "NPTS" options determine spherical groups of q-points for '
-        'powder-averaging. '
-        '"Q" options relate to the sphere sizes (i.e. radial distances).')
+        '"GRID" options relate to Monkhorst-Pack sampling for the '
+        'Debye-Waller factor, and only apply when --weighting=coherent and '
+        '--temperature is set. "NPTS" options determine spherical groups of '
+        'q-points for powder-averaging. "Q" options relate to the sphere '
+        'sizes (i.e. radial distances).')
 
     sections['q'].add_argument('--q-min', type=float, default=0., dest='q_min',
                                help="Minimum |q| in 1/LENGTH_UNIT")
@@ -73,7 +73,7 @@ def main(params: List[str] = None):
         modes, args.ebins + 1, emin=args.e_min, emax=args.e_max,
         headroom=1.2)  # Generous headroom as we only checked one q-point
 
-    if args.weights in ('coherent',):
+    if args.weighting in ('coherent',):
         # Compute Debye-Waller factor once for re-use at each mod(q)
         # (If temperature is not set, this will be None.)
         if args.temperature is not None:
@@ -100,13 +100,13 @@ def main(params: List[str] = None):
         else:
             npts = args.npts
 
-        if args.weights == 'dos':
+        if args.weighting == 'dos':
             spectrum_1d = sample_sphere_dos(
                 fc, q,
                 npts=npts, sampling=args.sampling, jitter=args.jitter,
                 energy_bins=energy_bins,
                 **calc_modes_kwargs)
-        elif args.weights == 'coherent':
+        elif args.weighting == 'coherent':
             spectrum_1d = sample_sphere_structure_factor(
                 fc, q,
                 dw=dw,

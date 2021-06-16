@@ -1715,7 +1715,7 @@
             0.0
         ]
     },
-    "graphite graphite.castep_bin --weights=coherent --cmap=bone": {
+    "graphite graphite.castep_bin --weighting=coherent --cmap=bone": {
         "title": "",
         "x_label": "",
         "y_label": "Energy / meV",
@@ -2287,7 +2287,7 @@
             0.0
         ]
     },
-    "graphite graphite.castep_bin --weights=coherent --temperature=800": {
+    "graphite graphite.castep_bin --weighting=coherent --temperature=800": {
         "x_ticklabels": [
             "$\\Gamma$",
             "M",

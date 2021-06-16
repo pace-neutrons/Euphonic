@@ -24,9 +24,11 @@ powder_map_params = [
     [nacl_prim_fc_file, '--temperature=1000', *quick_calc_params],
     [nacl_prim_fc_file, '--temperature=1000', '--weights=coherent',
      *quick_calc_params],
+    [nacl_prim_fc_file, '--temperature=1000', '--weighting=coherent',
+     *quick_calc_params],
     [nacl_prim_fc_file, '--v-min=0', '--v-max=1e-10', *quick_calc_params],
     [nacl_prim_fc_file, '--energy-unit=meV', *quick_calc_params],
-    [nacl_prim_fc_file, '--weights=coherent', '--cmap=bone'],
+    [nacl_prim_fc_file, '--weighting=coherent', '--cmap=bone'],
     [graphite_fc_file, '-w', 'dos', '--y-label=DOS', '--title=DOS TITLE',
      *quick_calc_params],
     [graphite_fc_file, '--e-min=50', '-u=cm^-1', '--x-label=wavenumber',
@@ -67,8 +69,10 @@ class TestRegression:
         image_data = get_current_plot_image_data()
 
         with open(powder_map_output_file, 'r') as expected_data_file:
-            expected_image_data = json.load(
-                expected_data_file)[args_to_key(powder_map_args)]
+            # Test deprecated --weights until it is removed
+            key = args_to_key(powder_map_args).replace(
+                    'weights', 'weighting')
+            expected_image_data = json.load(expected_data_file)[key]
         for key, value in image_data.items():
             if key == 'extent':
                 # Lower bound of y-data (energy) varies by up to ~2e-6 on
@@ -100,8 +104,15 @@ class TestRegression:
             euphonic.cli.powder_map.main(powder_map_args)
 
     @pytest.mark.parametrize('powder_map_args', [
+        [nacl_prim_fc_file, '--weights=dos']])
+    def test_weights_emits_deprecation_warning(
+            self, inject_mocks, powder_map_args):
+        with pytest.warns(DeprecationWarning):
+            euphonic.cli.powder_map.main(powder_map_args + quick_calc_params)
+
+    @pytest.mark.parametrize('powder_map_args', [
         [nacl_prim_fc_file, '-w=incoherent']])
-    def test_invalid_weights_raises_causes_exit(self, powder_map_args):
+    def test_invalid_weighting_raises_causes_exit(self, powder_map_args):
         # Argparse should call sys.exit on invalid choices
         with pytest.raises(SystemExit) as err:
             euphonic.cli.powder_map.main(powder_map_args)
