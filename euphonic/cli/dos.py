@@ -7,7 +7,8 @@ from euphonic.plot import plot_1d
 from .utils import (load_data_from_file, get_args, matplotlib_save_or_show,
                     _calc_modes_kwargs,
                     _get_cli_parser, _get_energy_bins,
-                    _grid_spec_from_args)
+                    _grid_spec_from_args, _get_pdos_weighting,
+                    _get_output_dos)
 
 
 def main(params: List[str] = None):
@@ -55,26 +56,10 @@ def main(params: List[str] = None):
     if args.weighting == 'dos' and args.pdos is None:
         dos = modes.calculate_dos(ebins, mode_widths=mode_widths)
     else:
-        if args.weighting == 'dos':
-            weighting = None
-        else:
-            idx = args.weighting.rfind('-')
-            weighting = args.weighting[:idx]
-        pdos = modes.calculate_pdos(ebins, mode_widths=mode_widths,
-                                    weighting=weighting)
-        dos = pdos.sum()
-
-        if args.pdos is not None:
-            # Only label total DOS if there are other lines on the plot
-            dos.metadata['label'] = 'Total'
-            pdos = pdos.group_by('species')
-            for line_metadata in pdos.metadata['line_data']:
-                line_metadata['label'] = line_metadata['species']
-            if len(args.pdos) > 0:
-                pdos = pdos.select(species=args.pdos)
-                dos = pdos
-            else:
-                dos = Spectrum1DCollection.from_spectra([dos] + [*pdos])
+        pdos = modes.calculate_pdos(
+            ebins, mode_widths=mode_widths,
+            weighting=_get_pdos_weighting(args.weighting))
+        dos = _get_output_dos(pdos, args.pdos)
 
     if args.energy_broadening and not args.adaptive:
         dos = dos.broaden(args.energy_broadening*ebins.units, shape=args.shape)

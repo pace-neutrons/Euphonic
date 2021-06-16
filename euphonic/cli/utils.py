@@ -12,7 +12,8 @@ from pint import UndefinedUnitError
 import seekpath
 
 from euphonic import (Crystal, DebyeWaller, ForceConstants, QpointFrequencies,
-                      QpointPhononModes, Quantity, ureg)
+                      QpointPhononModes, Spectrum1D, Spectrum1DCollection,
+                      Quantity, ureg)
 import euphonic.util
 Unit = ureg.Unit
 
@@ -368,6 +369,41 @@ def _get_debye_waller(temperature: Quantity,
         euphonic.util.mp_grid(mp_grid_spec),
         **calc_modes_kwargs)
     return dw_phonons.calculate_debye_waller(temperature)
+
+
+def _get_pdos_weighting(cl_arg_weighting: str) -> str:
+    """
+    Convert CL --weighting to weighting for calculate_pdos
+    e.g. --weighting coherent-dos to weighting=coherent
+    """
+    if cl_arg_weighting == 'dos':
+        pdos_weighting = None
+    else:
+        idx = cl_arg_weighting.rfind('-')
+        pdos_weighting = cl_arg_weighting[:idx]
+    return pdos_weighting
+
+
+def _get_output_dos(pdos: Spectrum1DCollection,
+                    cl_arg_pdos: Sequence[str]
+                    ) -> Union[Spectrum1D, Spectrum1DCollection]:
+    """
+    Convert PDOS returned by calculate_pdos to PDOS/DOS
+    wanted as CL output according to --pdos
+    """
+    dos = pdos.sum()
+    if cl_arg_pdos is not None:
+        # Only label total DOS if there are other lines on the plot
+        dos.metadata['label'] = 'Total'
+        pdos = pdos.group_by('species')
+        for line_metadata in pdos.metadata['line_data']:
+            line_metadata['label'] = line_metadata['species']
+        if len(cl_arg_pdos) > 0:
+            pdos = pdos.select(species=cl_arg_pdos)
+            dos = pdos
+        else:
+            dos = Spectrum1DCollection.from_spectra([dos] + [*pdos])
+    return dos
 
 
 def _calc_modes_kwargs(args: Namespace) -> Dict[str, Any]:

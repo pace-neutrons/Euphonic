@@ -20,7 +20,6 @@ powder_map_output_file = os.path.join(get_script_test_data_path(),
 quick_calc_params = ['--npts=10', '--npts-min=10', '--q-spacing=1']
 powder_map_params = [
     [nacl_prim_fc_file],
-    [nacl_prim_fc_file, *quick_calc_params],
     [nacl_prim_fc_file, '--temperature=1000', *quick_calc_params],
     [nacl_prim_fc_file, '--temperature=1000', '--weights=coherent',
      *quick_calc_params],
@@ -33,7 +32,7 @@ powder_map_params = [
     [graphite_fc_file, '-w', 'dos', '--y-label=DOS', '--title=DOS TITLE',
      *quick_calc_params],
     [graphite_fc_file, '--e-min=50', '-u=cm^-1', '--x-label=wavenumber',
-     *quick_calc_params],
+     *quick_calc_params, '-w=coherent-dos'],
     [graphite_fc_file, '--e-min=-100', '--e-max=1000', '--ebins=100',
      '--energy-unit=cm^-1', *quick_calc_params],
     [graphite_fc_file, '--energy-broadening=2e-3', '-u=eV',
@@ -45,7 +44,10 @@ powder_map_params = [
     [graphite_fc_file, '--asr', *quick_calc_params],
     [graphite_fc_file, '--asr=realspace', '--eta-scale=0.75',
      *quick_calc_params],
-    [nacl_prim_fc_file, *quick_calc_params]]
+    [nacl_prim_fc_file, '-w=incoherent-dos', '--pdos=Na',
+     *quick_calc_params],
+    [nacl_prim_fc_file, '-w=coherent-plus-incoherent-dos', '--pdos=Cl',
+     *quick_calc_params]]
 
 
 @pytest.mark.integration
@@ -119,6 +121,30 @@ class TestRegression:
             euphonic.cli.powder_map.main(powder_map_args)
         assert err.type == SystemExit
         assert err.value.code == 2
+
+    @pytest.mark.parametrize('powder_map_args', [
+        [nacl_prim_fc_file, '-w=coherent', '--pdos', 'Na']])
+    def test_coherent_weighting_and_pdos_raises_value_error(
+            self, powder_map_args):
+        with pytest.raises(ValueError):
+            euphonic.cli.powder_map.main(powder_map_args + quick_calc_params)
+
+    @pytest.mark.parametrize('powder_map_args', [
+        [nacl_prim_fc_file, '--pdos']])
+    def test_no_pdos_args_raises_causes_exit(self, powder_map_args):
+        with pytest.raises(SystemExit) as err:
+            euphonic.cli.powder_map.main(powder_map_args)
+        assert err.type == SystemExit
+        assert err.value.code == 2
+
+    @pytest.mark.parametrize('powder_map_args', [
+        [nacl_prim_fc_file, '--pdos', 'Na', 'Cl']])
+    def test_multiple_pdos_args_raises_causes_exit(self, powder_map_args):
+        with pytest.raises(SystemExit) as err:
+            euphonic.cli.powder_map.main(powder_map_args)
+        assert err.type == SystemExit
+        assert err.value.code == 2
+
 
 
 @patch('matplotlib.pyplot.show')

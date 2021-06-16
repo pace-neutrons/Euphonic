@@ -1,10 +1,11 @@
 """Functions for averaging spectra in spherical q bins"""
 
 import numpy as np
-from typing import Optional, Union
+from typing import Optional, Union, Dict
 
 from euphonic import (Crystal, DebyeWaller, ForceConstants,
-                      QpointFrequencies, QpointPhononModes, Spectrum1D)
+                      QpointFrequencies, QpointPhononModes, Spectrum1D,
+                      Spectrum1DCollection)
 from euphonic import ureg, Quantity
 from euphonic.util import mp_grid, get_reference_data
 
@@ -16,18 +17,17 @@ def sample_sphere_dos(fc: ForceConstants,
                       energy_bins: Quantity = None,
                       **calc_modes_args
                       ) -> Spectrum1D:
-    """Sample the phonon DOS, averaging over a sphere of constant |q|
+    """
+    Calculate phonon DOS with QpointFrequencies.calculate_dos,
+    sampling over a sphere of constant |q|
 
     Parameters
     ----------
-
     fc
         Force constant data for system
-
     mod_q
         radius of sphere from which vector q samples are taken (in units
         of inverse length; usually 1/angstrom).
-
     sampling
         Sphere-sampling scheme. (Case-insensitive) options are:
 
@@ -57,19 +57,15 @@ def sample_sphere_dos(fc: ForceConstants,
             - 'random-sphere':
                 Points are distributed randomly in unit square and
                 projected onto sphere.
-
     npts
         Number of samples. Note that some sampling methods have
         constraints on valid values and will round up as appropriate.
-
     jitter
         For non-random sampling schemes, apply an additional random
         displacement to each point.
-
     energy_bins
         Preferred energy bin edges. If not provided, will setup
         1000 bins (1001 bin edges) from 0 to 1.05 * [max energy]
-
     **calc_modes_args
         other keyword arguments (e.g. 'use_c') will be passed to
         ForceConstants.calculate_qpoint_phonon_modes()
@@ -93,6 +89,110 @@ def sample_sphere_dos(fc: ForceConstants,
     return phonons.calculate_dos(energy_bins)
 
 
+def sample_sphere_pdos(
+        fc: ForceConstants,
+        mod_q: Quantity,
+        sampling: str = 'golden',
+        npts: int = 1000, jitter: bool = False,
+        energy_bins: Quantity = None,
+        weighting: Optional[str] = None,
+        cross_sections: Union[str, Dict[str, Quantity]] = 'BlueBook',
+        **calc_modes_args
+        ) -> Spectrum1DCollection:
+    """
+    Calculate phonon PDOS with QpointPhononModes.calculate_pdos,
+    sampling over a sphere of constant |q|
+
+    Parameters
+    ----------
+    fc
+        Force constant data for system
+    mod_q
+        radius of sphere from which vector q samples are taken (in units
+        of inverse length; usually 1/angstrom).
+    sampling
+        Sphere-sampling scheme. (Case-insensitive) options are:
+
+            - 'golden':
+                Fibonnaci-like sampling that steps regularly along one
+                spherical coordinate while making irrational steps in
+                the other
+
+            - 'sphere-projected-grid':
+                Regular 2-D square mesh projected onto sphere. npts will
+                be distributed as evenly as possible (i.e. using twice
+                as many 'longitude' as 'lattitude' lines), rounding up
+                if necessary.
+
+            - 'spherical-polar-grid':
+                Mesh over regular subdivisions in spherical polar
+                coordinates.  npts will be rounded up as necessary in
+                the same scheme as for sphere-projected-grid. 'Latitude'
+                lines are evenly-spaced in z
+
+            - 'spherical-polar-improved':
+                npts distributed as regularly as possible using
+                spherical polar coordinates: 'latitude' lines are
+                evenly-spaced in z and points are distributed among
+                these rings to obtain most even spacing possible.
+
+            - 'random-sphere':
+                Points are distributed randomly in unit square and
+                projected onto sphere.
+    npts
+        Number of samples. Note that some sampling methods have
+        constraints on valid values and will round up as appropriate.
+    jitter
+        For non-random sampling schemes, apply an additional random
+        displacement to each point.
+    energy_bins
+        Preferred energy bin edges. If not provided, will setup
+        1000 bins (1001 bin edges) from 0 to 1.05 * [max energy]
+    weighting
+        One of {'coherent', 'incoherent', 'coherent-plus-incoherent'}.
+        If provided, produces a neutron-weighted DOS, weighted by
+        either the coherent, incoherent, or sum of coherent and
+        incoherent neutron scattering cross-sections.
+    cross_sections
+        A dataset of cross-sections for each element in the structure,
+        it can be a string specifying a dataset, or a dictionary
+        explicitly giving the cross-sections for each element.
+
+        If cross_sections is a string, it is passed to the ``collection``
+        argument of :obj:`euphonic.util.get_reference_data()`. This
+        collection must contain the 'coherent_cross_section' or
+        'incoherent_cross_section' physical property, depending on
+        the ``weighting`` argument. If ``weighting`` is None, this
+        string argument is not used.
+
+        If cross sections is a dictionary, the ``weighting`` argument is
+        ignored, and these cross-sections are used directly to calculate
+        the neutron-weighted DOS. It must contain a key for each element
+        in the structure, and each value must be a Quantity in the
+        appropriate units, e.g::
+
+            {'La': 8.0*ureg('barn'), 'Zr': 9.5*ureg('barn')}
+    **calc_modes_args
+        other keyword arguments (e.g. 'use_c') will be passed to
+        ForceConstants.calculate_qpoint_phonon_modes()
+
+    Returns
+    -------
+    Spectrum1DCollection
+
+    """
+    qpts_cart = _get_qpts_sphere(npts, sampling=sampling, jitter=jitter
+                                 ) * mod_q
+    qpts_frac = _qpts_cart_to_frac(qpts_cart, fc.crystal)
+    phonons = fc.calculate_qpoint_phonon_modes(qpts_frac, **calc_modes_args)
+
+    if energy_bins is None:
+        energy_bins = _get_default_bins(phonons)
+
+    return phonons.calculate_pdos(energy_bins, weighting=weighting,
+                                  cross_sections=cross_sections)
+
+
 def sample_sphere_structure_factor(
     fc: ForceConstants,
     mod_q: Quantity,
@@ -102,7 +202,7 @@ def sample_sphere_structure_factor(
     sampling: str = 'golden',
     npts: int = 1000, jitter: bool = False,
     energy_bins: Quantity = None,
-    scattering_lengths: Union[dict, str] = 'Sears1992',
+    scattering_lengths: Union[str, Dict[str, Quantity]] = 'Sears1992',
     **calc_modes_args
 ) -> Spectrum1D:
     """Sample structure factor, averaging over a sphere of constant |q|
@@ -113,26 +213,20 @@ def sample_sphere_structure_factor(
 
     Parameters
     ----------
-
     fc
         Force constant data for system
-
     mod_q
         scalar radius of sphere from which vector q samples are taken
-
     dw
         Debye-Waller exponent used for evaluation of scattering
         function. If not provided, this is generated automatically over
         Monkhorst-Pack q-point mesh determined by ``dw_spacing``.
-
     dw_spacing
         Maximum distance between q-points in automatic q-point mesh (if used)
         for Debye-Waller calculation.
-
     temperature
         Temperature for Debye-Waller calculation. If both temperature and dw
         are set to None, Debye-Waller factor will be omitted.
-
     sampling
         Sphere-sampling scheme. (Case-insensitive) options are:
             - 'golden':
@@ -161,26 +255,21 @@ def sample_sphere_structure_factor(
             - 'random-sphere':
                 Points are distributed randomly in unit square and
                 projected onto sphere.
-
     npts
         Number of samples. Note that some sampling methods have
             constraints on valid values and will round up as
             appropriate.
-
     jitter
         For non-random sampling schemes, apply an additional random
             displacement to each point.
-
     energy_bins
         Preferred energy bin edges. If not provided, will setup 1000
         bins (1001 bin edges) from 0 to 1.05 * [max energy]
-
     scattering_lengths
         Dict of neutron scattering lengths labelled by element. If a
         string is provided, this selects coherent scattering lengths
         from reference data by setting the 'label' argument of the
         euphonic.util.get_reference_data() function.
-
     **calc_modes_args
         other keyword arguments (e.g. 'use_c') will be passed to
         ForceConstants.calculate_qpoint_phonon_modes()
@@ -239,7 +328,6 @@ def _qpts_cart_to_frac(qpts: Quantity,
 
     Parameters
     ----------
-
     qpts
         Array of q-points in Cartesian coordinates.
     crystal
