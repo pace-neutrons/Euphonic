@@ -43,6 +43,10 @@ def main(params: List[str] = None):
                 mp_grid(grid_spec), **_calc_modes_kwargs(args))
 
     elif isinstance(data, QpointPhononModes):
+        if args.adaptive:
+            raise ValueError('Cannot calculate mode gradients without force '
+                             'constants data. Do not use --adaptive if using '
+                             'precalculated phonon modes')
         print("Phonon band data was loaded.")
         modes = data
     modes.frequencies_unit = args.energy_unit

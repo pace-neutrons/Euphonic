@@ -85,6 +85,10 @@ class TestRegression:
         with pytest.raises(ValueError):
             euphonic.cli.dos.main(dos_args)
 
+    def test_adaptive_and_dot_phonon_raises_value_error(self):
+        with pytest.raises(ValueError):
+            euphonic.cli.dos.main([nah_phonon_file, '--adaptive'])
+
     def test_adaptive_and_lorentz_raises_value_error(self):
         with pytest.raises(ValueError):
             euphonic.cli.dos.main([quartz_fc_file, '--adaptive',
