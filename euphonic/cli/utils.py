@@ -421,9 +421,9 @@ def _get_cli_parser(features: Collection[str] = {}
     Args:
         sections:
             collection (e.g. set, list) of str for known argument groups.
-            Known keys: read-fc, read-modes, weighting, dos-weighting,
-            powder, mp-grid, plotting, ebins, adaptive-broadening, q-e, map,
-            btol
+            Known keys: read-fc, read-modes, ins-weighting, pdos-weighting,
+            powder, mp-grid, plotting, ebins, adaptive-broadening, q-e,
+            map, btol
 
     Returns:
         Parser and a dict of parser subsections. This allows their help strings
@@ -448,9 +448,9 @@ def _get_cli_parser(features: Collection[str] = {}
                     setattr(args, recommended_arg, values)
         return DeprecatedArgAction
 
-    _dos_choices = ('dos', 'coherent-dos', 'incoherent-dos',
-                    'coherent-plus-incoherent-dos')
-    _spectrum_choices = (_dos_choices + ('coherent',))
+    _pdos_choices = ('coherent-dos', 'incoherent-dos',
+                     'coherent-plus-incoherent-dos')
+    _ins_choices = ('coherent',)
 
     parser = ArgumentParser(
         formatter_class=ArgumentDefaultsHelpFormatter)
@@ -519,13 +519,11 @@ def _get_cli_parser(features: Collection[str] = {}
             help=('Number of parallel processes for computing phonon modes. '
                   '(Only applies when using C extension.)'))
 
-    if {'dos-weighting', 'weighting'}.issubset(features):
-        raise ValueError('Cannot have both dos-weights and weights, '
-                         'they have overlapping options')
-    dos_desc = ('DOS, coherent neutron-weighted DOS, incoherent '
-                'neutron-weighted DOS or total (coherent + incoherent) '
-                'neutron-weighted DOS')
-    if {'dos-weighting', 'weighting'}.intersection(features):
+    pdos_desc = ('coherent neutron-weighted DOS, incoherent '
+                 'neutron-weighted DOS or total (coherent + incoherent) '
+                 'neutron-weighted DOS')
+    ins_desc = ('coherent inelastic neutron scattering')
+    if 'pdos-weighting' in features:
         # Currently do not support multiple PDOS for 2D plots
         if not 'q-e' in features:
             sections['property'].add_argument(
@@ -539,29 +537,44 @@ def _get_cli_parser(features: Collection[str] = {}
                 '--pdos', type=str, action='store', nargs=1,
                 help=('Plot PDOS for a specific species e.g. --pdos Si'))
 
-        if 'dos-weighting' in features:
-            sections['property'].add_argument(
-                '--weighting', '-w', default='dos', choices=_dos_choices,
-                help=f'Type of DOS to plot: {dos_desc}')
-        elif 'weighting' in features:
+    if {'pdos-weighting', 'ins-weighting'}.intersection(
+            features):
+        # We can plot plain DOS with all CL tools
+        _weighting_choices = ('dos',)
+        desc = 'DOS'
+        if 'pdos-weighting' in features:
+            _weighting_choices += _pdos_choices
+            desc += (', coherent neutron-weighted DOS, incoherent '
+                     'neutron-weighted DOS or total (coherent + incoherent) '
+                     'neutron-weighted DOS')
+        # We may have both 'pdos' and 'ins' so use separate if
+        if 'ins-weighting' in features:
+            _weighting_choices += _ins_choices
+            desc += ', coherent inelastic neutron scattering'
+        if 'ins-weighting' in features:
             # --weights was deprecated before dos-weighting was added so
             # keep in this section
             sections['property'].add_argument(
-                '--weights', default='dos', choices=_spectrum_choices,
+                '--weights', default='dos', choices=_weighting_choices,
                 action=deprecated_arg('weighting'),
                 help=deprecation_text('weights', 'weighting'))
             sections['property'].add_argument(
-                '--weighting', '-w', default='dos', choices=_spectrum_choices,
-                help=(f'Spectral weighting to plot: coherent inelastic '
-                      f'neutron scattering, {dos_desc}'))
+                '--weighting', '-w', default='dos', choices=_weighting_choices,
+                help=(f'Spectral weighting to plot: {desc}'))
+        else:
+            sections['property'].add_argument(
+                '--weighting', '-w', default='dos', choices=_weighting_choices,
+                help=f'Type of DOS to plot: {desc}')
 
+    if 'ins-weighting' in features:
         sections['property'].add_argument(
             '--temperature', type=float, default=None,
             help=('Temperature in K; enable Debye-Waller factor calculation. '
                   '(Only applicable when --weighting=coherent).'))
 
-    # 'weighting' implies 'mp-grid' as well because mesh is needed for DW factor
-    if {'weighting', 'mp-grid'}.intersection(features):
+    # 'ins-weighting' implies 'mp-grid' as well because mesh is needed for DW
+    # factor
+    if {'ins-weighting', 'mp-grid'}.intersection(features):
         grid_spec = sections['q'].add_mutually_exclusive_group()
 
         grid_spec.add_argument(

@@ -103,7 +103,7 @@ def main(params: List[str] = None) -> None:
 def get_parser() -> argparse.ArgumentParser:
     parser, sections = _get_cli_parser(
         features={'read-fc', 'read-modes', 'q-e', 'map', 'btol', 'ebins',
-                  'weighting', 'plotting'})
+                  'ins-weighting', 'plotting'})
     parser.description = (
         'Plots a 2D intensity map from the file provided. If a force '
         'constants file is provided, a band structure path is '

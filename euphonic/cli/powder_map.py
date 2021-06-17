@@ -29,8 +29,8 @@ except ModuleNotFoundError:
 def get_parser() -> 'argparse.ArgumentParser':
 
     parser, sections = _get_cli_parser(
-        features={'read-fc', 'weighting', 'powder',
-                  'plotting', 'ebins', 'q-e', 'map'})
+        features={'read-fc', 'pdos-weighting', 'ins-weighting',
+                  'powder', 'plotting', 'ebins', 'q-e', 'map'})
 
     sections['q'].description = (
         '"GRID" options relate to Monkhorst-Pack sampling for the '
@@ -119,7 +119,8 @@ def main(params: List[str] = None):
         elif args.weighting == 'coherent':
             if args.pdos is not None:
                 raise ValueError(
-                    '--pdos is not compatible with --weighting coherent')
+                    '--pdos is only compatible with --weighting options '
+                    'that include dos')
             spectrum_1d = sample_sphere_structure_factor(
                 fc, q,
                 dw=dw,

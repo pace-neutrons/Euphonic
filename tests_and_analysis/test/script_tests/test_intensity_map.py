@@ -104,8 +104,18 @@ class TestRegression:
         with pytest.warns(DeprecationWarning):
             euphonic.cli.intensity_map.main(intensity_map_args)
 
+    # Until --pdos is implemented for intensity-map, check we haven't
+    # accidentally allowed it as an argument
     @pytest.mark.parametrize('intensity_map_args', [
-        [quartz_phonon_file, '-w=incoherent']])
+        [quartz_phonon_file, '-w=dos', '--pdos=Si']])
+    def test_pdos_raises_causes_exit(self, intensity_map_args):
+        with pytest.raises(SystemExit) as err:
+            euphonic.cli.intensity_map.main(intensity_map_args)
+        assert err.type == SystemExit
+        assert err.value.code == 2
+
+    @pytest.mark.parametrize('intensity_map_args', [
+        [quartz_phonon_file, '-w=incoherent-dos']])
     def test_invalid_weighting_raises_causes_exit(self, intensity_map_args):
         # Argparse should call sys.exit on invalid choices
         with pytest.raises(SystemExit) as err:
