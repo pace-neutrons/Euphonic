@@ -612,7 +612,7 @@ def _get_cli_parser(features: Collection[str] = {}
     if 'dipole-parameter-optimisation' in features:
         parser.add_argument(
             '-n',
-            default=100,
+            default=500,
             type=int,
             help=('The number of times to loop over q-points. A higher '
                   'value will get a more reliable timing, but will take '

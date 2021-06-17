@@ -1,10 +1,13 @@
-import pytest
 import os
 import math
 # Required for mocking
 from random import random
 import time
 from unittest.mock import Mock
+
+import pytest
+import numpy.testing as npt
+
 from euphonic import ForceConstants
 from euphonic.cli.optimise_dipole_parameter import calculate_optimum_dipole_parameter
 from tests_and_analysis.test.utils import get_castep_path, get_phonopy_path
@@ -21,10 +24,19 @@ quick_calc_params = ['-n=10', '--min=0.5', '--max=0.5']
 class TestRegression:
 
     def test_optimal_is_0_75(self):
+        # Need a high-enough n to get a good timing, but
+        # can be slow for testing, so reduce the parameters that
+        # we test
         optimal_dipole_parameter = calculate_optimum_dipole_parameter(
-            quartz_castep_bin)[0]
+            quartz_castep_bin, dipole_parameter_min=0.5,
+            dipole_parameter_max=1.25)[0]
         assert optimal_dipole_parameter == 0.75
 
+    def test_default_dipole_parameters(self):
+        tested_parameters = calculate_optimum_dipole_parameter(
+            quartz_castep_bin, n=5)[3]
+        npt.assert_equal(tested_parameters,
+                         [0.25, 0.5, 0.75, 1., 1.25, 1.5])
 
     def test_time_per_qpt_with_use_c_is_lower_than_disable_c(self):
         kwargs = {'n': 10, 'dipole_parameter_min': 0.5,
@@ -34,7 +46,6 @@ class TestRegression:
         optimum_time_qpt_noc = calculate_optimum_dipole_parameter(
             quartz_castep_bin, use_c=False, **kwargs)[2]
         assert optimum_time_qpt_c < optimum_time_qpt_noc
-
 
     @pytest.mark.parametrize('optimise_dipole_parameter_args', [
         [lzo_castep_bin, '--asr=reciprocal', *quick_calc_params],
@@ -70,9 +81,9 @@ class TestRegression:
 
     @pytest.mark.parametrize('kwargs', [
             {},
-            {"dipole_parameter_min": 0.25, "dipole_parameter_max": 1.35,
+            {"dipole_parameter_min": 0.6, "dipole_parameter_max": 1.2,
              "dipole_parameter_step": 0.2, "n": 20},
-            {"dipole_parameter_min": 0.5, "dipole_parameter_max": 1.75,
+            {"dipole_parameter_min": 0.7, "dipole_parameter_max": 1.4,
              "dipole_parameter_step": 0.3, "n": 10}
         ])
     def test_optimal_has_lowest_time_per_qpt(

@@ -30,7 +30,7 @@ def calculate_optimum_dipole_parameter(
         dipole_parameter_min: float = 0.25,
         dipole_parameter_max: float = 1.5,
         dipole_parameter_step: float = 0.25,
-        n: int = 100,
+        n: int = 500,
         print_to_terminal: bool = False,
         **calc_modes_kwargs
         ) -> Tuple[float, float, float, np.array, np.array, np.array]:
@@ -112,7 +112,6 @@ def calculate_optimum_dipole_parameter(
         end = time.time()
         t_per_qpt[i] = (end - start)/n
         if print_to_terminal:
-            print(('Per qpt: ' + str(t_per_qpt[i]*1000) + ' ms'))
             print((sfmt + ': ' + tfmt + ' ms\n').format(
                 'Time/qpt', t_per_qpt[i]*1000))
     opt = np.argmin(t_per_qpt)
@@ -120,9 +119,9 @@ def calculate_optimum_dipole_parameter(
         print('******************************')
         print(('Suggested optimum dipole_parameter is ' + dparamfmt).format(
             dipole_parameters[opt]))
-        print((sfmt + ': ' + tfmt + ' s').format('init time', t_init[opt]))
+        print((sfmt + ': ' + tfmt + ' s').format('Initialisation Time', t_init[opt]))
         print((sfmt + ': ' + tfmt + ' ms\n').format(
-            'time/qpt', t_per_qpt[opt]*1000))
+            'Time/qpt', t_per_qpt[opt]*1000))
 
     return (dipole_parameters[opt], t_init[opt], t_per_qpt[opt],
             dipole_parameters, t_init, t_per_qpt)
