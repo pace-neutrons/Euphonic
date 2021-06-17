@@ -12,8 +12,9 @@ import euphonic.cli.optimise_dipole_parameter
 
 
 quartz_castep_bin = get_castep_path("quartz", "quartz.castep_bin")
-lzo_castep_bin = get_castep_path("quartz", "quartz.castep_bin")
-nacl_yaml = get_phonopy_path("NaCl_default", "phonopy.yaml")
+lzo_castep_bin = get_castep_path("LZO", "La2Zr2O7.castep_bin")
+nacl_default_yaml = get_phonopy_path("NaCl_default", "phonopy.yaml")
+quick_calc_params = ['-n=10', '--min=0.5', '--max=0.5']
 
 
 @pytest.mark.integration
@@ -34,12 +35,6 @@ class TestRegression:
             quartz_castep_bin, use_c=False, **kwargs)[2]
         assert optimum_time_qpt_c < optimum_time_qpt_noc
 
-    def test_fc_with_no_born_emits_user_warning(self):
-        with pytest.warns(UserWarning):
-            euphonic.cli.optimise_dipole_parameter.main([get_castep_path(
-                'LZO', 'La2Zr2O7.castep_bin')])
-
-    quick_calc_params = ['-n=10', '--min=0.5', '--max=0.5']
 
     @pytest.mark.parametrize('optimise_dipole_parameter_args', [
         [lzo_castep_bin, '--asr=reciprocal', *quick_calc_params],
@@ -49,6 +44,18 @@ class TestRegression:
         euphonic.cli.optimise_dipole_parameter.main(
             optimise_dipole_parameter_args)
 
+    def test_reading_nacl_default_reads_born(self):
+        # BORN should be read by default so no warning should
+        # be raised
+        with pytest.warns(None) as record:
+            euphonic.cli.optimise_dipole_parameter.main([
+                nacl_default_yaml, *quick_calc_params])
+        assert len(record) == 0
+
+    def test_fc_with_no_born_emits_user_warning(self):
+        with pytest.warns(UserWarning):
+            euphonic.cli.optimise_dipole_parameter.main([
+                lzo_castep_bin, *quick_calc_params])
 
     @staticmethod
     def get_lowest_time_per_qpt_and_index(dipole_parameters_time_per_qpts):
