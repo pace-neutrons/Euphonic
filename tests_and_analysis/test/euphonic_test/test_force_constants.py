@@ -223,8 +223,11 @@ class TestForceConstantsCreation:
         ('NaCl', {'summary_name': 'phonopy_nofc_noborn.yaml',
                   'fc_name': 'FORCE_CONSTANTS_nacl',
                   'born_name': 'BORN_nacl'}),
-        # Explicitly test the default behaviour (if fc/born aren't found
-        # in phonopy.yaml they should be read from BORN, FORCE_CONSTANTS).
+        # Explicitly test the default behaviour (if fcs aren't found
+        # in phonopy.yaml they should be read from FORCE_CONSTANTS. BORN
+        # is not read by default as it is not required, so it is difficult
+        # to tell in that case whether the user intended to read a BORN file
+        # or not, and could end up in silently not reading the file).
         # This must be done in a separate directory to the above tests,
         # again to avoid false positives
         ('NaCl_default', {}),
