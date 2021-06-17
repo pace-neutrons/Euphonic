@@ -12,7 +12,7 @@ void calculate_dipole_correction(const double *qpt, const int n_atoms,
     const double *born, const double *dielectric, const double *H_ab,
     const double *cells, const int n_dcells, const double *gvec_phases,
     const double *gvecs_cart, const int n_gvecs, const double *dipole_q0,
-    const double eta, double *corr);
+    const double lambda, double *corr);
 
 void calculate_gamma_correction(const double q_dir[3], const int n_atoms,
     const double *cell_vec, const double *recip_vec, const double *born,

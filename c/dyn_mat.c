@@ -110,7 +110,7 @@ void calculate_dipole_correction(const double *qpt, const int n_atoms,
     const double *born, const double *dielectric, const double *H_ab,
     const double *cells, const int n_dcells, const double *gvec_phases,
     const double *gvecs_cart, const int n_gvecs, const double *dipole_q0,
-    const double eta, double *corr) {
+    const double lambda, double *corr) {
 
     int size = 2*9*n_atoms*n_atoms;
     double q_cart[3] = {0, 0, 0};
@@ -160,13 +160,13 @@ void calculate_dipole_correction(const double *qpt, const int n_atoms,
         }
     }
     det_e = det_array(dielectric);
-    multiply_array(size, pow(eta, 3)/sqrt(det_e), corr);
+    multiply_array(size, pow(lambda, 3)/sqrt(det_e), corr);
 
     // Precalculate some values for reciprocal space term
-    // Calculate dielectric/4(eta^2) factor
-    double diel_eta[9];
+    // Calculate dielectric/4(lambda^2) factor
+    double diel_lambda[9];
     for (a = 0; a < 9; a++) {
-        diel_eta[a] = dielectric[a]/(4*pow(eta, 2));
+        diel_lambda[a] = dielectric[a]/(4*pow(lambda, 2));
     }
     // Calculate q in Cartesian coords
     for (a = 0; a < 3; a++) {
@@ -186,7 +186,7 @@ void calculate_dipole_correction(const double *qpt, const int n_atoms,
         q_phases[2*i + 1] = -sin(2*PI*qdotr);
     }
     // Calculate reciprocal term multiplication factor
-    double fac = PI/(cell_volume(cell_vec)*pow(eta, 2));
+    double fac = PI/(cell_volume(cell_vec)*pow(lambda, 2));
     // Calculate reciprocal term
     double kvec[3];
     double k_ab_exp[9];
@@ -204,7 +204,7 @@ void calculate_dipole_correction(const double *qpt, const int n_atoms,
             for (b = 0; b < 3; b++) {
                 idx= 3*a + b;
                 k_ab_exp[idx] = kvec[a]*kvec[b];
-                k_len_2 += k_ab_exp[idx]*diel_eta[idx];
+                k_len_2 += k_ab_exp[idx]*diel_lambda[idx];
             }
         }
         multiply_array(9, exp(-k_len_2)/k_len_2, k_ab_exp);

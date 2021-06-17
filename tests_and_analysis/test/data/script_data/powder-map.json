@@ -3465,7 +3465,7 @@
             0.0
         ]
     },
-    "graphite graphite.castep_bin --asr=realspace --eta-scale=0.75 --npts=10 --npts-min=10 --q-spacing=1": {
+    "graphite graphite.castep_bin --asr=realspace --dipole-parameter=0.75 --npts=10 --npts-min=10 --q-spacing=1": {
         "x_ticklabels": [
             "0.0",
             "0.5",

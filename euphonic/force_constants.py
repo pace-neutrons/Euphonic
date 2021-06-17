@@ -137,6 +137,7 @@ class ForceConstants:
             weights: Optional[np.ndarray] = None,
             asr: Optional[str] = None,
             dipole: bool = True,
+            dipole_parameter: float = 1.0,
             eta_scale: float = 1.0,
             splitting: bool = True,
             insert_gamma: bool = False,
@@ -144,7 +145,7 @@ class ForceConstants:
             use_c: Optional[bool] = None,
             n_threads: Optional[int] = None,
             return_mode_gradients: bool = False,
-            return_mode_widths: bool = False,
+            return_mode_widths: bool = False
             ) -> Union[QpointPhononModes,
                        Tuple[QpointPhononModes, Quantity]]:
         """
@@ -167,12 +168,16 @@ class ForceConstants:
             Whether to calculate the dipole tail correction to the dynamical
             matrix at each q-point using the Ewald sum, if the Born
             charges and dielectric permitivitty tensor are present.
-        eta_scale
+        dipole_parameter
             Changes the cutoff in real/reciprocal space for the dipole
             Ewald sum. A higher value uses more reciprocal terms. If tuned
             correctly this can result in performance improvements. See
-            euphonic-optimise-eta program for help on choosing a good
-            eta_scale.
+            euphonic-optimise-dipole-parameter program for help on choosing
+            a good dipole_parameter.
+        eta_scale
+
+            .. deprecated:: 0.6.0
+            Please use dipole_parameter instead
         splitting
             Whether to calculate the LO-TO splitting at the gamma
             points. Only applied if dipole is True and the Born charges
@@ -349,8 +354,9 @@ class ForceConstants:
         .. [3] J. R. Yates, X. Wang, D. Vanderbilt and I. Souza, Phys. Rev. B, 2007, 75, 195121
         """
         qpts, weights, freqs, evecs, grads = self._calculate_phonons_at_qpts(
-            qpts, weights, asr, dipole, eta_scale, splitting, insert_gamma,
-            reduce_qpts, use_c, n_threads, return_mode_gradients, return_mode_widths,
+            qpts, weights, asr, dipole, dipole_parameter, eta_scale,
+            splitting, insert_gamma, reduce_qpts, use_c, n_threads,
+            return_mode_gradients, return_mode_widths,
             return_eigenvectors=True)
         qpt_ph_modes = QpointPhononModes(
             self.crystal, qpts, freqs, evecs, weights=weights)
@@ -365,6 +371,7 @@ class ForceConstants:
             weights: Optional[np.ndarray] = None,
             asr: Optional[str] = None,
             dipole: bool = True,
+            dipole_parameter: float = 1.0,
             eta_scale: float = 1.0,
             splitting: bool = True,
             insert_gamma: bool = False,
@@ -381,9 +388,10 @@ class ForceConstants:
         argument and algorithm details
         """
         qpts, weights, freqs, _, grads = self._calculate_phonons_at_qpts(
-            qpts, weights, asr, dipole, eta_scale, splitting, insert_gamma,
-            reduce_qpts, use_c, n_threads, return_mode_gradients,
-            return_mode_widths, return_eigenvectors=False)
+            qpts, weights, asr, dipole, dipole_parameter, eta_scale,
+            splitting, insert_gamma, reduce_qpts, use_c, n_threads,
+            return_mode_gradients, return_mode_widths,
+            return_eigenvectors=False)
         qpt_freqs = QpointFrequencies(
             self.crystal, qpts, freqs, weights=weights)
         if return_mode_gradients or return_mode_widths:
@@ -397,6 +405,7 @@ class ForceConstants:
             weights: np.ndarray,
             asr: str,
             dipole: bool,
+            dipole_parameter: float,
             eta_scale: float,
             splitting: bool,
             insert_gamma: bool,
@@ -409,7 +418,23 @@ class ForceConstants:
                 Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray],
                 Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]]:
         if return_mode_widths:
+            warnings.warn(
+                'return_mode_widths has been deprecated and will be removed '
+                'in a future release. Please instead use a combination of '
+                'return_mode_gradients and euphonic.util.'
+                'mode_gradients_to_widths, e.g.:\n'
+                'phon, mode_gradients = force_constants.calculate_qpoint_phonon_modes('
+                '*args, **kwargs, return_mode_gradients=True)\n'
+                'mode_widths = euphonic.util.mode_gradients_to_widths(mode_gradients, '
+                'phon.crystal.cell_vectors)',
+                category=DeprecationWarning, stacklevel=3)
             return_mode_gradients = True
+        if eta_scale != 1.0:
+            warnings.warn(
+                'eta_scale has been deprecated and will be removed '
+                'in a future release. Please use dipole_parameter instead ',
+                category=DeprecationWarning, stacklevel=3)
+            dipole_parameter = eta_scale
         # Check weights is of appropriate type and shape, to avoid doing all
         # the interpolation only for it to fail creating QpointPhononModes
         _check_constructor_inputs(
@@ -528,9 +553,9 @@ class ForceConstants:
         dyn_mat_weighting = 1/np.sqrt(masses*np.transpose(masses))
 
         # Initialise dipole correction calc to FC matrix if required
-        if dipole and (not hasattr(self, 'eta_scale') or
-                       eta_scale != self._eta_scale):
-            self._dipole_correction_init(eta_scale)
+        if dipole and (not hasattr(self, '_dipole_parameter') or
+                       dipole_parameter != self._dipole_parameter):
+            self._dipole_correction_init(dipole_parameter)
 
         if asr == 'realspace':
             if not hasattr(self, '_force_constants_asr'):
@@ -676,16 +701,6 @@ class ForceConstants:
                 'hartree*bohr').to(
                     f'meV*{str(self.crystal.cell_vectors.units)}')
         if return_mode_widths:
-            warnings.warn(
-                'return_mode_widths has been deprecated and will be removed '
-                'in a future release. Please instead use a combination of '
-                'return_mode_gradients and euphonic.util.'
-                'mode_gradients_to_widths, e.g.:\n'
-                'phon, mode_gradients = force_constants.calculate_qpoint_phonon_modes('
-                '*args, **kwargs, return_mode_gradients=True)\n'
-                'mode_widths = euphonic.util.mode_gradients_to_widths(mode_gradients, '
-                'phon.crystal.cell_vectors)',
-                category=DeprecationWarning, stacklevel=3)
             mode_gradients = mode_gradients_to_widths(
                 mode_gradients,
                 self.crystal.cell_vectors)
@@ -829,7 +844,7 @@ class ForceConstants:
         else:
             return dyn_mat, None
 
-    def _dipole_correction_init(self, eta_scale=1.0):
+    def _dipole_correction_init(self, dipole_parameter=1.0):
         """
         Calculate the q-independent parts of the long range correction
         to the dynamical matrix for efficiency. The method used is based
@@ -838,7 +853,7 @@ class ForceConstants:
 
         Parameters
         ----------
-        eta_scale : float, optional
+        dipole_parameter : float, optional
             Changes the cutoff in real/reciprocal space for the dipole
             Ewald sum. A higher value uses more reciprocal terms
         """
@@ -852,13 +867,14 @@ class ForceConstants:
         inv_dielectric = np.linalg.inv(dielectric)
         sqrt_pi = math.sqrt(math.pi)
 
-        # Calculate real/recip weighting
+        # Make guess for balance between real/recip terms
         abc_mag = np.linalg.norm(cell_vectors, axis=1)
         mean_abc_mag = np.prod(abc_mag)**(1.0/3)
-        eta = (sqrt_pi/mean_abc_mag)*n_atoms**(1.0/6)
-        # Use eta = lambda * |permittivity|**(1/6)
-        eta = eta*np.power(np.linalg.det(dielectric), 1.0/6)*eta_scale
-        eta_2 = eta**2
+        # Using upper_lambda varname as lambda is a reserved keyword
+        upper_lambda = (sqrt_pi/mean_abc_mag*n_atoms**(1.0/6)
+                        *np.linalg.det(dielectric)**(1.0/6))
+        upper_lambda *= dipole_parameter
+        lambda_2 = upper_lambda**2
 
         # Set limits and tolerances
         max_shells = 50
@@ -888,13 +904,13 @@ class ForceConstants:
                     rij_e = atom_r_e[i] - atom_r_e[j]
                     diffs = rij_cart - cells_cart
                     deltas = rij_e - cells_e
-                    norms_2 = np.einsum('ij,ij->i', deltas, diffs)*eta_2
+                    norms_2 = np.einsum('ij,ij->i', deltas, diffs)*lambda_2
                     norms = np.sqrt(norms_2)
 
                     # Calculate H_ab
                     exp_term = 2*np.exp(-norms_2)/(sqrt_pi*norms_2)
                     erfc_term = erfc(norms)/(norms*norms_2)
-                    f1 = eta_2*(3*erfc_term/norms_2 + exp_term*(3/norms_2 + 2))
+                    f1 = lambda_2*(3*erfc_term/norms_2 + exp_term*(3/norms_2 + 2))
                     f2 = erfc_term + exp_term
                     deltas_ab = np.einsum('ij,ik->ijk', deltas, deltas)
                     H_ab_tmp[:, idx + j] = (
@@ -911,7 +927,7 @@ class ForceConstants:
                 break
         # Use compact H_ab to fill in upper triangular of realspace term
         real_q0[np.triu_indices(n_atoms)] = np.sum(H_ab, axis=0)
-        real_q0 *= eta**3/math.sqrt(np.linalg.det(dielectric))
+        real_q0 *= upper_lambda**3/math.sqrt(np.linalg.det(dielectric))
 
         # Calculate the q=0 reciprocal term
         recip_q0 = np.zeros((n_atoms, n_atoms, 3, 3), dtype=np.complex128)
@@ -925,7 +941,8 @@ class ForceConstants:
             gvec_dot_r = np.einsum('ij,kj->ik', gvecs, atom_r)
             gvec_phases_tmp = np.exp(2j*math.pi*gvec_dot_r)
             gvecs_ab = np.einsum('ij,ik->ijk', gvecs_cart_tmp, gvecs_cart_tmp)
-            k_len_2 = np.einsum('ijk,jk->i', gvecs_ab, dielectric)/(4*eta_2)
+            k_len_2 = np.einsum(
+                'ijk,jk->i', gvecs_ab, dielectric)/(4*lambda_2)
             recip_exp = np.exp(-k_len_2)/k_len_2
             recip_q0_tmp = np.zeros((n_atoms, n_atoms, 3, 3),
                                     dtype=np.complex128)
@@ -945,7 +962,7 @@ class ForceConstants:
             else:
                 break
         vol = self.crystal._cell_volume()
-        recip_q0 *= math.pi/(vol*eta_2)
+        recip_q0 *= math.pi/(vol*lambda_2)
 
         # Fill in remaining entries by symmetry
         for i in range(1, n_atoms):
@@ -966,8 +983,8 @@ class ForceConstants:
             # Symmetrise 3x3
             dipole_q0[i] = 0.5*(dipole_q0[i] + np.transpose(dipole_q0[i]))
 
-        self._eta_scale = eta_scale
-        self._eta = eta
+        self._dipole_parameter = dipole_parameter
+        self._lambda = upper_lambda
         self._H_ab = H_ab
         self._cells = cells
         self._gvecs_cart = gvecs_cart
@@ -995,8 +1012,8 @@ class ForceConstants:
         atom_r = self.crystal.atom_r
         born = self._born
         dielectric = self._dielectric
-        eta = self._eta
-        eta_2 = eta**2
+        upper_lambda = self._lambda
+        lambda_2 = upper_lambda**2
         H_ab = self._H_ab
         cells = self._cells
         q_norm = q - np.rint(q)  # Normalised q-pt
@@ -1017,7 +1034,7 @@ class ForceConstants:
         real_dipole_tmp = np.einsum('i,ijkl->jkl', real_phases, H_ab)
         idx_u = np.triu_indices(n_atoms)
         real_dipole[idx_u] = real_dipole_tmp
-        real_dipole *= eta**3/math.sqrt(np.linalg.det(dielectric))
+        real_dipole *= upper_lambda**3/math.sqrt(np.linalg.det(dielectric))
 
         # Calculate reciprocal term
         recip_dipole = np.zeros((n_atoms, n_atoms, 3, 3), dtype=np.complex128)
@@ -1028,7 +1045,7 @@ class ForceConstants:
         # Calculate k-vector symmetric matrix
         kvecs = gvecs_cart + q_cart
         kvecs_ab = np.einsum('ij,ik->ijk', kvecs, kvecs)
-        k_len_2 = np.einsum('ijk,jk->i', kvecs_ab, dielectric)/(4*eta_2)
+        k_len_2 = np.einsum('ijk,jk->i', kvecs_ab, dielectric)/(4*lambda_2)
         recip_exp = np.einsum('ijk,i->ijk', kvecs_ab, np.exp(-k_len_2)/k_len_2)
         for i in range(n_atoms):
                 phase_exp = ((gvec_phases[:, i, None]*q_phases[i])
@@ -1036,7 +1053,7 @@ class ForceConstants:
                 recip_dipole[i, i:] = np.einsum(
                     'ikl,ij->jkl', recip_exp, phase_exp)
         cell_volume = self.crystal._cell_volume()
-        recip_dipole *= math.pi/(cell_volume*eta_2)
+        recip_dipole *= math.pi/(cell_volume*lambda_2)
 
         # Fill in remaining entries by symmetry
         # Mask so we don't count diagonal twice
