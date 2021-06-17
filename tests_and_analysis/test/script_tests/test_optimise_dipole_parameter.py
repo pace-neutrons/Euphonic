@@ -8,6 +8,7 @@ from unittest.mock import Mock
 from euphonic import ForceConstants
 from euphonic.cli.optimise_dipole_parameter import calculate_optimum_dipole_parameter
 from tests_and_analysis.test.utils import get_castep_path
+import euphonic.cli.optimise_dipole_parameter
 
 
 quartz_castep_bin = get_castep_path("quartz", "quartz.castep_bin")
@@ -90,15 +91,25 @@ class TestUnit:
 @pytest.mark.integration
 class TestRegression:
 
-    @pytest.fixture
-    def call_with_defaults_and_quartz_integration(self):
-        return calculate_optimum_dipole_parameter(quartz_castep_bin)
-
-    # Regression test
-    def test_optimal_is_0_75(self, call_with_defaults_and_quartz_integration):
-        optimal_dipole_parameter = \
-            call_with_defaults_and_quartz_integration[0]
+    def test_optimal_is_0_75(self):
+        optimal_dipole_parameter = calculate_optimum_dipole_parameter(
+            quartz_castep_bin)[0]
         assert optimal_dipole_parameter == 0.75
+
+    def test_time_per_qpt_with_use_c_is_lower_than_disable_c(self):
+        kwargs = {'n': 10, 'dipole_parameter_min': 0.5,
+                  'dipole_parameter_max': 0.5}
+        optimum_time_qpt_c = calculate_optimum_dipole_parameter(
+            quartz_castep_bin, use_c=True, **kwargs)[2]
+        optimum_time_qpt_noc = calculate_optimum_dipole_parameter(
+            quartz_castep_bin, use_c=False, **kwargs)[2]
+        assert optimum_time_qpt_c < optimum_time_qpt_noc
+
+    def test_fc_with_no_born_emits_user_warning(self):
+        with pytest.warns(UserWarning):
+            euphonic.cli.optimise_dipole_parameter.main([get_castep_path(
+                'LZO', 'La2Zr2O7.castep_bin')])
+
 
 
 @pytest.mark.integration

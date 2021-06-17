@@ -10,6 +10,7 @@ value
 import argparse
 import time
 from typing import List, Tuple
+import warnings
 
 import numpy as np
 
@@ -71,9 +72,15 @@ def calculate_optimum_dipole_parameter(
         dipole_parameter_max + dipole_parameter_step / 100,
         dipole_parameter_step)
     t_init = np.zeros(len(dipole_parameters), dtype=np.float64)
-    t_tot = np.zeros(len(dipole_parameters), dtype=np.float64)
+    t_per_qpt = np.zeros(len(dipole_parameters), dtype=np.float64)
 
     fc = force_constants_from_file(filename)
+    # Only warn rather than error - although not designed for it
+    # this script could still be useful for getting approximate
+    # per-qpt timings for any material
+    if fc.born is None:
+        warnings.warn('Born charges not found for this material - '
+                      'changing dipole_parameter will have no effect.')
     sfmt = '{:20s}'
     tfmt = '{: 3.2f}'
     dparamfmt = '{: 2.2f}'
@@ -81,36 +88,44 @@ def calculate_optimum_dipole_parameter(
         if print_to_terminal:
             print(('Results for dipole_parameter ' + dparamfmt).format(
                 dipole_parameter))
+
         # Time Ewald sum initialisation
         start = time.time()
-        fc._dipole_correction_init(dipole_parameter=dipole_parameter)
+        fc.calculate_qpoint_phonon_modes(
+            np.full((1, 3), 0.5), dipole_parameter=dipole_parameter,
+            **calc_modes_kwargs)
         end = time.time()
         t_init[i] = end - start
         if print_to_terminal:
             print((sfmt + ': ' + tfmt + ' s').format(
-                'Ewald init time', t_init[i]))
+                'Initialisation Time', t_init[i]))
 
         # Time per qpt
+        qpts = np.full((n, 3), 0.5)
+        t_total = []
         start = time.time()
-        for n in range(n):
-            fc._calculate_dipole_correction(np.array([0.5, 0.5, 0.5]))
+        # Need reduce_qpts=False because all q-points are the same,
+        # so if reduce_qpts=True only one q-point will be calculated
+        fc.calculate_qpoint_phonon_modes(
+            qpts, dipole_parameter=dipole_parameter, reduce_qpts=False,
+            **calc_modes_kwargs)
         end = time.time()
-        t_tot[i] = end - start
+        t_per_qpt[i] = (end - start)/n
         if print_to_terminal:
+            print(('Per qpt: ' + str(t_per_qpt[i]*1000) + ' ms'))
             print((sfmt + ': ' + tfmt + ' ms\n').format(
-                'Ewald time/qpt', t_tot[i]*1000/n))
-
-    opt = np.argmin(t_tot)
+                'Time/qpt', t_per_qpt[i]*1000))
+    opt = np.argmin(t_per_qpt)
     if print_to_terminal:
         print('******************************')
         print(('Suggested optimum dipole_parameter is ' + dparamfmt).format(
             dipole_parameters[opt]))
         print((sfmt + ': ' + tfmt + ' s').format('init time', t_init[opt]))
         print((sfmt + ': ' + tfmt + ' ms\n').format(
-            'time/qpt', t_tot[opt]*1000/n))
+            'time/qpt', t_per_qpt[opt]*1000))
 
-    return (dipole_parameters[opt], t_init[opt], t_tot[opt],
-            dipole_parameters, t_init, t_tot)
+    return (dipole_parameters[opt], t_init[opt], t_per_qpt[opt],
+            dipole_parameters, t_init, t_per_qpt)
 
 
 def get_parser() -> argparse.ArgumentParser:
