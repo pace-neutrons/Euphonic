@@ -539,7 +539,7 @@ def _extract_born(born_object):
 
     for l_i, line in enumerate(born_lines):
         try:
-            born_lines[l_i] = [np.float(i) for i in line]
+            born_lines[l_i] = [float(i) for i in line]
             continue
         except:
             pass

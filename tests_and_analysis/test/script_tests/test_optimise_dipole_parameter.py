@@ -55,13 +55,12 @@ class TestRegression:
         euphonic.cli.optimise_dipole_parameter.main(
             optimise_dipole_parameter_args)
 
-    def test_reading_nacl_default_reads_born(self):
+    def test_reading_nacl_default_reads_born(self, recwarn):
         # BORN should be read by default so no warning should
         # be raised
-        with pytest.warns(None) as record:
-            euphonic.cli.optimise_dipole_parameter.main([
-                nacl_default_yaml, *quick_calc_params])
-        assert len(record) == 0
+        euphonic.cli.optimise_dipole_parameter.main([
+           nacl_default_yaml, *quick_calc_params])
+        assert len(recwarn) == 0
 
     def test_fc_with_no_born_emits_user_warning(self):
         with pytest.warns(UserWarning):
