@@ -161,17 +161,32 @@ def check_structure_factor(
         rtol=freq_rtol,
         gamma_atol=freq_gamma_atol)
 
-    assert sf.structure_factors.units == expected_sf.structure_factors.units
+    # Temporary solution while changing structure factor units - just check
+    # units are consistent
+    try:
+        assert sf.structure_factors.units == expected_sf.structure_factors.units
+    except AssertionError:
+        (1*sf.structure_factors.units).to(expected_sf.structure_factors.units)
+
     # Sum structure factors over degenerate modes and check
+    # Temporary solution while changing structure factor units - check
+    # scaling and units have changed as expected
+    if sf.structure_factors.units == expected_sf.structure_factors.units:
+        sf_magnitude = sf.structure_factors.magnitude
+    else:
+        sf_magnitude = (sf.structure_factors.to(
+            expected_sf.structure_factors.units).magnitude)*2*sf.crystal.n_atoms
     if sum_sf:
         sf_sum = sum_at_degenerate_modes(
-            sf.structure_factors.magnitude,
+#            sf.structure_factors.magnitude,
+            sf_magnitude,
             expected_sf.frequencies.magnitude)
         expected_sf_sum = sum_at_degenerate_modes(
             expected_sf.structure_factors.magnitude,
             expected_sf.frequencies.magnitude)
     else:
-        sf_sum = sf.structure_factors.magnitude
+        #sf_sum = sf.structure_factors.magnitude
+        sf_sum = sf_magnitude
         expected_sf_sum = expected_sf.structure_factors.magnitude
     check_structure_factors_at_qpts(
         sf.qpts,
@@ -384,6 +399,13 @@ class TestStructureFactorCalculateSqwMap:
                                ebins, kwargs):
         sf = get_sf(material, sf_json)
         sqw = sf.calculate_sqw_map(ebins, **kwargs)
+        # Temporary solution while changing units - check answers are
+        # the same subject units area -> area/energy
+        from euphonic import Spectrum2D
+        sqw = Spectrum2D(sqw.x_data, sqw.y_data,
+                         sqw.z_data/(1*ureg('meV').to('hartree').magnitude)*(1*ureg('meV')),
+                         x_tick_labels=sqw.x_tick_labels,
+                         metadata=sqw.metadata)
         expected_sqw = get_expected_spectrum2d(expected_sqw_json)
         check_spectrum2d(sqw, expected_sqw)
 
@@ -420,6 +442,13 @@ class TestStructureFactorCalculate1dAverage:
         sf = get_sf(material, sf_json)
         sw = sf.calculate_1d_average(ebins, **kwargs)
         expected_sw = get_expected_spectrum1d(expected_1d_json)
+        # Temporary solution while changing units - check answers are
+        # the same subject units area -> area/energy
+        from euphonic import Spectrum1D
+        sw = Spectrum1D(sw.x_data,
+                        sw.y_data/(1*ureg('meV').to('hartree').magnitude)*(1*ureg('meV')),
+                        x_tick_labels=sw.x_tick_labels,
+                        metadata=sw.metadata)
         check_spectrum1d(sw, expected_sw)
 
 @pytest.mark.unit
