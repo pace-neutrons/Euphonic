@@ -387,6 +387,13 @@ class TestStructureFactorCalculateSqwMap:
         expected_sqw = get_expected_spectrum2d(expected_sqw_json)
         check_spectrum2d(sqw, expected_sqw)
 
+    def test_calculate_sqw_map_with_0_inv_cm_bin_doesnt_emit_runtime_warn(self):
+        sf = get_sf('CaHgO2', 'CaHgO2_300K_fc_structure_factor.json')
+        ebins = np.array([0, 50, 100, 150, 200, 250, 300])*ureg('1/cm')
+        with pytest.warns(None) as warn_record:
+            sqw = sf.calculate_sqw_map(ebins)
+        assert len(warn_record) == 0
+
     @pytest.mark.parametrize(
         'material, sf_json, ebins, kwargs, err', [
             ('CaHgO2', 'CaHgO2_300K_structure_factor.json',

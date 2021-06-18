@@ -1,4 +1,5 @@
 from typing import Optional, TypeVar, Dict, Any
+import warnings
 
 import numpy as np
 
@@ -243,7 +244,11 @@ class StructureFactor(QpointFrequencies):
         """
         # Convert units
         freqs = self._frequencies
-        e_bins_internal = e_bins.to('hartree').magnitude
+        # e_bins commonly contains a 0 bin, and converting from 0 1/cm
+        # to 0 hartree causes a RuntimeWarning, so suppress it
+        with warnings.catch_warnings():
+            warnings.filterwarnings('ignore', category=RuntimeWarning)
+            e_bins_internal = e_bins.to('hartree').magnitude
 
         # Create initial sqw_map with an extra an energy bin either
         # side, for any branches that fall outside the energy bin range
