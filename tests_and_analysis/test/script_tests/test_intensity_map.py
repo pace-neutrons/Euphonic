@@ -63,8 +63,9 @@ class TestRegression:
         image_data = get_current_plot_image_data()
 
         with open(intensity_map_output_file, 'r') as expected_data_file:
+            expected_data_key = args_to_key(intensity_map_args)
             expected_image_data = json.load(
-                expected_data_file)[args_to_key(intensity_map_args)]
+                expected_data_file)[expected_data_key]
         for key, value in image_data.items():
             if key == 'extent':
                 # Lower bound of y-data (energy) varies by up to ~2e-6 on
@@ -73,10 +74,21 @@ class TestRegression:
                 # so increase tolerance to allow for this
                 npt.assert_allclose(value, expected_image_data[key], atol=2e-6)
             elif isinstance(value, list) and isinstance(value[0], float):
-                # Errors of 2-4 epsilon seem to be common when using
-                # broadening, so slightly increase tolerance
-                npt.assert_allclose(value, expected_image_data[key],
-                                    atol=1e-14)
+                # Check coherent values have only changed by a scale factor
+                if 'coherent' in expected_data_key and key in ['data_1', 'data_2']:
+                    import numpy as np
+                    value = np.array(value)
+                    # Don't include near-zero values in scale calculation
+                    idx = value > 1e-20
+                    scale = np.nanmean(
+                        value[idx]/np.array(expected_image_data[key])[idx])
+                    npt.assert_allclose(value/scale, expected_image_data[key],
+                                        atol=1e-14)
+                else:
+                    # Errors of 2-4 epsilon seem to be common when using
+                    # broadening, so slightly increase tolerance
+                    npt.assert_allclose(value, expected_image_data[key],
+                                        atol=1e-14)
             else:
                 assert value == expected_image_data[key]
 
