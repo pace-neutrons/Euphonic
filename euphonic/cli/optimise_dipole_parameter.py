@@ -105,7 +105,7 @@ def calculate_optimum_dipole_parameter(
         t_total = []
         start = time.time()
         # Need reduce_qpts=False because all q-points are the same,
-        # so if reduce_qpts=True only one q-point will be calculated
+        # if reduce_qpts=True only one q-point would be calculated
         fc.calculate_qpoint_phonon_modes(
             qpts, dipole_parameter=dipole_parameter, reduce_qpts=False,
             **calc_modes_kwargs)
