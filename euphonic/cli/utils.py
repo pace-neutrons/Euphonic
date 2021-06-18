@@ -31,23 +31,27 @@ def force_constants_from_file(filename: Union[str, os.PathLike]
     ForceConstants
     """
     path = pathlib.Path(filename)
-    if path.suffix == '.hdf5':
-        if (path.parent / 'phonopy.yaml').is_file():
-            return ForceConstants.from_phonopy(path=path.parent,
-                                               summary_name='phonopy.yaml',
-                                               fc_name=path.name)
-        raise ValueError("Phonopy force_constants.hdf5 file "
-                         "must be accompanied by phonopy.yaml")
-    elif path.suffix == '.yaml':
-        # Assume this is a (renamed?) phonopy.yaml file
-        if (path.parent / 'force_constants.hdf5').is_file():
-            fc_name = 'force_constants.hdf5'
-        else:
-            fc_name = 'FORCE_CONSTANTS'
-
-        return ForceConstants.from_phonopy(path=path.parent,
-                                           fc_name=fc_name,
-                                           summary_name=path.name)
+    if path.suffix in ['.hdf5', '.yaml']:
+        phonopy_kwargs = {}
+        phonopy_kwargs['path'] = path.parent
+        if (path.parent / 'BORN').is_file():
+            phonopy_kwargs['born_name'] = 'BORN'
+        # Set summary_name and fc_name depending on input file
+        if path.suffix == '.hdf5':
+            if (path.parent / 'phonopy.yaml').is_file():
+                phonopy_kwargs['summary_name'] = 'phonopy.yaml'
+                phonopy_kwargs['fc_name'] = path.name
+            else:
+                raise ValueError("Phonopy force_constants.hdf5 file "
+                                 "must be accompanied by phonopy.yaml")
+        elif path.suffix == '.yaml':
+            phonopy_kwargs['summary_name'] = path.name
+            # Assume this is a (renamed?) phonopy.yaml file
+            if (path.parent / 'force_constants.hdf5').is_file():
+                phonopy_kwargs['fc_name'] = 'force_constants.hdf5'
+            else:
+                phonopy_kwargs['fc_name'] = 'FORCE_CONSTANTS'
+        return ForceConstants.from_phonopy(**phonopy_kwargs)
     elif path.suffix in ('.castep_bin', '.check'):
         return ForceConstants.from_castep(filename)
     elif path.suffix == '.json':
@@ -381,7 +385,8 @@ def _get_cli_parser(features: Collection[str] = {}
         sections:
             collection (e.g. set, list) of str for known argument groups.
             Known keys: read-fc, read-modes, weights, powder, mp-grid,
-                plotting, ebins, adaptive-broadening, q-e, map, btol
+                plotting, ebins, adaptive-broadening, q-e, map, btol,
+                dipole-parameter-optimisation
 
     Returns:
         Parser and a dict of parser subsections. This allows their help strings
@@ -435,14 +440,15 @@ def _get_cli_parser(features: Collection[str] = {}
                   'data: "realspace" applies the correction to the force '
                   'constant matrix in real space. "reciprocal" applies '
                   'the correction to the dynamical matrix at each q-point.'))
-        sections['interpolation'].add_argument(
-            '--dipole-parameter', type=float, default=1.0,
-            dest='dipole_parameter',
-            help=('Set the cutoff in real/reciprocal space for the dipole '
-                  'Ewald sum; higher values use more reciprocal terms. If '
-                  'tuned correctly this can result in performance '
-                  'improvements. See euphonic-optimise-dipole-parameter '
-                  'program for help on choosing a good DIPOLE_PARAMETER.'))
+        if not 'dipole-parameter-optimisation' in features:
+            sections['interpolation'].add_argument(
+                '--dipole-parameter', type=float, default=1.0,
+                dest='dipole_parameter',
+                help=('Set the cutoff in real/reciprocal space for the dipole '
+                      'Ewald sum; higher values use more reciprocal terms. If '
+                      'tuned correctly this can result in performance '
+                      'improvements. See euphonic-optimise-dipole-parameter '
+                      'program for help on choosing a good DIPOLE_PARAMETER.'))
 
         use_c = sections['performance'].add_mutually_exclusive_group()
         use_c.add_argument(
@@ -602,5 +608,33 @@ def _get_cli_parser(features: Collection[str] = {}
                   'discontinuous segments of reciprocal space onto separate '
                   'subplots. This is specified as a multiple of the median '
                   'distance between q-points.'))
+
+    if 'dipole-parameter-optimisation' in features:
+        parser.add_argument(
+            '-n',
+            default=500,
+            type=int,
+            help=('The number of times to loop over q-points. A higher '
+                  'value will get a more reliable timing, but will take '
+                  'longer')
+        )
+        parser.add_argument(
+            '--dipole-parameter-min', '--min',
+            default=0.25,
+            type=float,
+            help='The minimum value of dipole_parameter to test'
+        )
+        parser.add_argument(
+            '--dipole-parameter-max', '--max',
+            default=1.5,
+            type=float,
+            help='The maximum value of dipole_parameter to test'
+        )
+        parser.add_argument(
+            '--dipole-parameter-step', '--step',
+            default=0.25,
+            type=float,
+            help='The difference between each dipole_parameter to test'
+        )
 
     return parser, sections

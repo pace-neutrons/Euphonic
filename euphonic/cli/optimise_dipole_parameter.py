@@ -9,13 +9,17 @@ value
 
 import argparse
 import time
+from typing import List, Tuple
+import warnings
+
 import numpy as np
-from euphonic import ForceConstants
+
+from euphonic.cli.utils import (_get_cli_parser, get_args,
+                                force_constants_from_file)
 
 
-def main():
-    parser = get_parser()
-    args = parser.parse_args()
+def main(params: List[str] = None) -> None:
+    args = get_args(get_parser(), params)
     params = vars(args)
     params.update({'print_to_terminal': True})
     calculate_optimum_dipole_parameter(**params)
@@ -26,8 +30,10 @@ def calculate_optimum_dipole_parameter(
         dipole_parameter_min: float = 0.25,
         dipole_parameter_max: float = 1.5,
         dipole_parameter_step: float = 0.25,
-        n: int = 100,
-        print_to_terminal: bool = False):
+        n: int = 500,
+        print_to_terminal: bool = False,
+        **calc_modes_kwargs
+        ) -> Tuple[float, float, float, np.array, np.array, np.array]:
     """
     Calculate the optimum dipole_parameter and other dipole_parameters
     from the filename castep_bin file
@@ -35,7 +41,7 @@ def calculate_optimum_dipole_parameter(
     Parameters
     ----------
     filename : str
-        The path and name of the .castep_bin/.check to read from
+        The filename to read from
     dipole_parameter_min
         The minimum value of dipole_parameter to test
     dipole_parameter_max
@@ -47,10 +53,12 @@ def calculate_optimum_dipole_parameter(
         get a more reliable timing, but will take longer
     print_to_terminal
         Whether to print the outcome to terminal or not
+    **calc_modes_kwargs
+        Will be passed through to calculate_qpoint_phonon_modes
 
     Returns
     -------
-    Tuple[float, float, float, np.array, np.array, np.array]:
+    results
         A tuple of:
          - the optimal dipole_parameter
          - the time it took to initialise the optimal dipole_parameter,
@@ -64,9 +72,15 @@ def calculate_optimum_dipole_parameter(
         dipole_parameter_max + dipole_parameter_step / 100,
         dipole_parameter_step)
     t_init = np.zeros(len(dipole_parameters), dtype=np.float64)
-    t_tot = np.zeros(len(dipole_parameters), dtype=np.float64)
+    t_per_qpt = np.zeros(len(dipole_parameters), dtype=np.float64)
 
-    idata = ForceConstants.from_castep(filename)
+    fc = force_constants_from_file(filename)
+    # Only warn rather than error - although not designed for it
+    # this script could still be useful for getting approximate
+    # per-qpt timings for any material
+    if fc.born is None:
+        warnings.warn('Born charges not found for this material - '
+                      'changing dipole_parameter will have no effect.')
     sfmt = '{:20s}'
     tfmt = '{: 3.2f}'
     dparamfmt = '{: 2.2f}'
@@ -74,72 +88,51 @@ def calculate_optimum_dipole_parameter(
         if print_to_terminal:
             print(('Results for dipole_parameter ' + dparamfmt).format(
                 dipole_parameter))
+
         # Time Ewald sum initialisation
         start = time.time()
-        idata._dipole_correction_init(dipole_parameter=dipole_parameter)
+        fc.calculate_qpoint_phonon_modes(
+            np.full((1, 3), 0.5), dipole_parameter=dipole_parameter,
+            **calc_modes_kwargs)
         end = time.time()
         t_init[i] = end - start
         if print_to_terminal:
             print((sfmt + ': ' + tfmt + ' s').format(
-                'Ewald init time', t_init[i]))
+                'Initialisation Time', t_init[i]))
 
         # Time per qpt
+        qpts = np.full((n, 3), 0.5)
+        t_total = []
         start = time.time()
-        for n in range(n):
-            idata._calculate_dipole_correction(np.array([0.5, 0.5, 0.5]))
+        # Need reduce_qpts=False because all q-points are the same,
+        # if reduce_qpts=True only one q-point would be calculated
+        fc.calculate_qpoint_phonon_modes(
+            qpts, dipole_parameter=dipole_parameter, reduce_qpts=False,
+            **calc_modes_kwargs)
         end = time.time()
-        t_tot[i] = end - start
+        t_per_qpt[i] = (end - start)/n
         if print_to_terminal:
             print((sfmt + ': ' + tfmt + ' ms\n').format(
-                'Ewald time/qpt', t_tot[i]*1000/n))
-
-    opt = np.argmin(t_tot)
+                'Time/qpt', t_per_qpt[i]*1000))
+    opt = np.argmin(t_per_qpt)
     if print_to_terminal:
         print('******************************')
         print(('Suggested optimum dipole_parameter is ' + dparamfmt).format(
             dipole_parameters[opt]))
-        print((sfmt + ': ' + tfmt + ' s').format('init time', t_init[opt]))
+        print((sfmt + ': ' + tfmt + ' s').format('Initialisation Time', t_init[opt]))
         print((sfmt + ': ' + tfmt + ' ms\n').format(
-            'time/qpt', t_tot[opt]*1000/n))
+            'Time/qpt', t_per_qpt[opt]*1000))
 
-    return (dipole_parameters[opt], t_init[opt], t_tot[opt],
-            dipole_parameters, t_init, t_tot)
+    return (dipole_parameters[opt], t_init[opt], t_per_qpt[opt],
+            dipole_parameters, t_init, t_per_qpt)
 
 
-def get_parser():
-    parser = argparse.ArgumentParser(
-        description=('Run and time an interpolation calculation for a small '
-                     'number of q-points for different values of '
-                     'dipole_parameter to determine dipole_parameter\'s '
-                     'optimum value for this material'))
-    parser.add_argument(
-        'filename',
-        help='The .castep_bin file to extract the data from')
-    parser.add_argument(
-        '-n',
-        default=100,
-        type=int,
-        help=('The number of times to loop over q-points. A higher '
-              'value will get a more reliable timing, but will take '
-              'longer')
-    )
-    parser.add_argument(
-        '--dipole-parameter-min', '--min',
-        default=0.25,
-        type=float,
-        help='The minimum value of dipole_parameter to test'
-    )
-    parser.add_argument(
-        '--dipole-parameter-max', '--max',
-        default=1.5,
-        type=float,
-        help='The maximum value of dipole_parameter to test'
-    )
-    parser.add_argument(
-        '--dipole-parameter-step', '--step',
-        default=0.25,
-        type=float,
-        help='The difference between each dipole_parameter to test'
-    )
+def get_parser() -> argparse.ArgumentParser:
+    parser, sections = _get_cli_parser(
+        features={'read-fc', 'dipole-parameter-optimisation'})
+    parser.description=(
+        'Run and time an interpolation calculation for a small number of '
+        'q-points for different values of dipole_parameter to determine '
+        'dipole_parameter\'s optimum value for this material')
 
     return parser

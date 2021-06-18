@@ -1,6 +1,12 @@
 `Unreleased <https://github.com/pace-neutrons/Euphonic/compare/v0.5.2...HEAD>`_
 ----------
 
+- Improvements:
+
+  - ``euphonic-optimise-dipole-parameter`` can now read from Phonopy sources
+  - ``euphonic-optimise-dipole-parameter`` can now also be used for non-polar
+    materials to get general per-qpoint timings
+
 - Changes:
 
   - The ``eta_scale`` argument in ``calculate_qpoint_phonon_modes`` has been
