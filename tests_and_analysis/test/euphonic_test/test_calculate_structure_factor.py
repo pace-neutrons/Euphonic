@@ -79,9 +79,9 @@ class TestCalculateStructureFactorFromForceConstants:
             sf = qpt_ph_modes.calculate_structure_factor()
         sf_file = os.path.join(get_sf_dir(material), expected_sf_file)
         expected_sf = sf.from_json_file(sf_file)
-        check_structure_factor(sf, expected_sf, sf_atol=8e-14, sf_rtol=3e-4,
+        check_structure_factor(sf, expected_sf, sf_atol=4e-4, sf_rtol=3e-4,
                                freq_atol=1e-4, freq_rtol=2e-5,
-                               freq_gamma_atol=0.5, sf_gamma_atol=1e-7)
+                               freq_gamma_atol=0.5, sf_gamma_atol=6e2)
 
 
 @pytest.mark.unit

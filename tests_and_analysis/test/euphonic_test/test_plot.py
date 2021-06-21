@@ -310,7 +310,7 @@ class TestPlot2D:
         if 'cmap' in kwargs:
             assert image_data['cmap'] == kwargs['cmap']
 
-        expected_extent = [0., 5.280359268188477, 0.5, 153.5]
+        expected_extent = [0., 5.280359268188477, 4., 1244.]
         npt.assert_allclose(image_data['extent'], expected_extent)
 
         npt.assert_allclose(
