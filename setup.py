@@ -1,10 +1,6 @@
 import versioneer
-try:
-    from setuptools import setup, Extension
-    from setuptools.command.install import install
-except ImportError:
-    from distutils.core import setup, Extension
-    from distutils.command.install import install
+from setuptools import setup, Extension
+from setuptools.command.install import install
 
 
 class InstallCommand(install):
