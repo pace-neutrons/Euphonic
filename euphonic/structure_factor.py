@@ -203,7 +203,7 @@ class StructureFactor(QpointFrequencies):
 
         .. math::
 
-          n_\\nu = \\frac{1}{e^{\\frac{\\hbar\\omega_\\nu}{k_{B}T}} - 1}
+          n_\\nu = \\frac{1}{e^{\\frac{\\omega_{q\\nu}}{k_{B}T}} - 1}
 
         .. [1] M.T. Dove, Structure and Dynamics, Oxford University Press,
                Oxford, 2003, 225-226

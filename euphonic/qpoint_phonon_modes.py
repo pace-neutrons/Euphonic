@@ -199,14 +199,16 @@ class QpointPhononModes(QpointFrequencies):
 
         This method calculates the mode-resolved (not binned in energy)
         one-phonon neutron scattering function
-        :math:`S(Q, \\omega_{q\\nu})` **per atom**, as defined in [1]_:
+        :math:`S(Q, \\omega_{q\\nu})` **per atom**, as defined in [1]_. Note
+        that internally Euphonic uses atomic units so :math:`\\hbar` has been
+        omitted from the formulation:
 
         .. math::
 
           S(Q, \\omega_{q\\nu}) =
               \\frac{1}{2N_{atom}} \\
               \\left\\lvert \\
-              \\sum\\limits_\\kappa\\frac{b_\\kappa}{M_{\\kappa}^{1/2}\\omega_\\nu^{1/2}} \\
+              \\sum\\limits_\\kappa\\frac{b_\\kappa}{M_{\\kappa}^{1/2}\\omega_{q\\nu}^{1/2}} \\
               [Q\\cdot\\epsilon_{q\\nu\\kappa\\alpha}]e^{iQ{\\cdot}r_\\kappa}e^{-W} \\
               \\right\\rvert^2
 
@@ -320,7 +322,9 @@ class QpointPhononModes(QpointFrequencies):
         The Debye-Waller exponent is defined as
         :math:`W^{\\kappa}_{\\alpha\\beta}` and is independent of Q, so
         for efficiency can be precalculated to be used in the structure
-        factor calculation. The Debye-Waller exponent is calculated by [2]_
+        factor calculation. The Debye-Waller exponent is calculated by [2]_.
+        Note that internally Euphonic uses atomic units so :math:`\\hbar`
+        has been omitted from the formulation:
 
         .. math::
 
