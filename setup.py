@@ -63,7 +63,7 @@ def get_c_extension():
     return euphonic_c_extension
 
 
-def run_setup(build_c=True):
+def run_setup():
 
     with open('README.rst', 'r') as f:
         long_description = f.read()
