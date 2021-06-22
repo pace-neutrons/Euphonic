@@ -23,7 +23,7 @@ version: "0.5.2"
 date-released: "2021-06-02"
 license: "GPL-3.0-only"
 repository: "https://github.com/pace-neutrons/Euphonic"
-url: "https://github.com/pace-neutrons/Euphonic"
+url: "euphonic.readthedocs.io/en/latest"
 keywords:
   - "Python"
   - "physics"
