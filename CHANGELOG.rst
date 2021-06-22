@@ -9,6 +9,16 @@
 
 - Changes:
 
+  - ``StructureFactor.structure_factors`` have been changed to be in absolute
+    units per atom (rather than per unit cell) so will have changed by a
+    factor of `1/2*n_atoms`, this formulation change has been reflected in the
+    ``calculate_structure_factor`` docstring
+  - The default unit of ``StructureFactor.structure_factors`` has been changed
+    from ``angstrom**2`` to ``millibarn``
+  - The unit of S(Q,w) as produced by ``StructureFactor.calculate_sqw_map``
+    has changed dimension from ``length**2`` to ``length**2/energy``. Also,
+    as its unit is derived from the input ``StructureFactor`` object, its
+    default units are now ``millibarn/meV``
   - The ``eta_scale`` argument in ``calculate_qpoint_phonon_modes`` has been
     deprecated, ``dipole_parameter`` should be used instead.
   - This means the ``euphonic-optimise-eta`` script has been renamed to

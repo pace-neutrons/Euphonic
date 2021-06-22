@@ -97,23 +97,23 @@ def get_expected_spectrum2d(json_filename):
 
 def check_spectrum2d(actual_spectrum2d, expected_spectrum2d):
 
+    assert (actual_spectrum2d.x_data.units
+            == expected_spectrum2d.x_data.units)
     npt.assert_allclose(actual_spectrum2d.x_data.magnitude,
                         expected_spectrum2d.x_data.magnitude,
                         atol=np.finfo(np.float64).eps)
-    assert (actual_spectrum2d.x_data.units
-            == expected_spectrum2d.x_data.units)
 
+    assert (actual_spectrum2d.y_data.units
+            == expected_spectrum2d.y_data.units)
     npt.assert_allclose(actual_spectrum2d.y_data.magnitude,
                         expected_spectrum2d.y_data.magnitude,
                         atol=np.finfo(np.float64).eps)
-    assert (actual_spectrum2d.y_data.units
-            == expected_spectrum2d.y_data.units)
 
+    assert (actual_spectrum2d.z_data.units
+            == expected_spectrum2d.z_data.units)
     npt.assert_allclose(actual_spectrum2d.z_data.magnitude,
                         expected_spectrum2d.z_data.magnitude,
                         atol=np.finfo(np.float64).eps)
-    assert (actual_spectrum2d.z_data.units
-            == expected_spectrum2d.z_data.units)
 
     if expected_spectrum2d.x_tick_labels is None:
         assert actual_spectrum2d.x_tick_labels is None

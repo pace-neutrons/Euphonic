@@ -197,13 +197,20 @@ class QpointPhononModes(QpointFrequencies):
         Notes
         -----
 
-        This function calculates :math:`|F(Q, \\nu)|^2` per unit cell, where
-        :math:`F(Q, \\nu)` is defined as [1]_:
+        This method calculates the mode-resolved (not binned in energy)
+        one-phonon neutron scattering function
+        :math:`S(Q, \\omega_{q\\nu})` **per atom**, as defined in [1]_. Note
+        that internally Euphonic uses atomic units so :math:`\\hbar` has been
+        omitted from the formulation:
 
         .. math::
 
-          F(Q, \\nu) = \\frac{b_\\kappa}{M_{\\kappa}^{1/2}\\omega_{q\\nu}^{1/2}} \\
-          [Q\\cdot\\epsilon_{q\\nu\\kappa\\alpha}]e^{iQ{\\cdot}r_\\kappa}e^{-W}
+          S(Q, \\omega_{q\\nu}) =
+              \\frac{1}{2N_{atom}} \\
+              \\left\\lvert \\
+              \\sum\\limits_\\kappa\\frac{b_\\kappa}{M_{\\kappa}^{1/2}\\omega_{q\\nu}^{1/2}} \\
+              [Q\\cdot\\epsilon_{q\\nu\\kappa\\alpha}]e^{iQ{\\cdot}r_\\kappa}e^{-W} \\
+              \\right\\rvert^2
 
         Where :math:`\\nu` runs over phonon modes, :math:`\\kappa` runs
         over atoms, :math:`\\alpha` runs over the Cartesian directions,
@@ -212,9 +219,9 @@ class QpointPhononModes(QpointFrequencies):
         vector to atom :math:`\\kappa` in the unit cell,
         :math:`\\epsilon_{q\\nu\\kappa\\alpha}` are the eigevectors,
         :math:`\\omega_{q\\nu}` are the frequencies and :math:`e^{-W}`
-        is the Debye-Waller factor. Note that a factor N for the
-        number of unit cells in the sample hasn't been included, so the
-        returned structure factor is per unit cell.
+        is the Debye-Waller factor. :math:`N_{atom}` is the number of
+        atoms in the unit cell, so the returned structure factor is
+        **per atom** of sample.
 
         .. [1] M.T. Dove, Structure and Dynamics, Oxford University Press, Oxford, 2003, 225-226
 
@@ -265,10 +272,11 @@ class QpointPhononModes(QpointFrequencies):
         # Take mod squared and divide by frequency to get intensity
         sf = np.real(
             np.absolute(term*np.conj(term))/np.absolute(self._frequencies))
+        sf /= 2*self.crystal.n_atoms
 
         return StructureFactor(
             self.crystal, self.qpts, self.frequencies,
-            sf*ureg('bohr**2').to(self.crystal.cell_vectors.units**2),
+            sf*ureg('bohr**2').to('mbarn'),
             temperature=temperature)
 
     def calculate_debye_waller(
@@ -309,18 +317,20 @@ class QpointPhononModes(QpointFrequencies):
 
         .. math::
 
-          e^{-W} = e^{-\\sum_{\\alpha\\beta}{W^{\\kappa}_{\\alpha\\beta}Q_{\\alpha}Q_{\\beta}}}
+          e^{-W} = e^{-\\sum\\limits_{\\alpha\\beta}{W^{\\kappa}_{\\alpha\\beta}Q_{\\alpha}Q_{\\beta}}}
 
         The Debye-Waller exponent is defined as
         :math:`W^{\\kappa}_{\\alpha\\beta}` and is independent of Q, so
         for efficiency can be precalculated to be used in the structure
-        factor calculation. The Debye-Waller exponent is calculated by [2]_
+        factor calculation. The Debye-Waller exponent is calculated by [2]_.
+        Note that internally Euphonic uses atomic units so :math:`\\hbar`
+        has been omitted from the formulation:
 
         .. math::
 
           W^{\\kappa}_{\\alpha\\beta} =
-          \\frac{1}{4M_{\\kappa}\\sum_{q}{weight_q}}
-          \\sum_{q\\nu}weight_q\\frac{\\epsilon_{q\\nu\\kappa\\alpha}\\epsilon^{*}_{q\\nu\\kappa\\beta}}
+          \\frac{1}{4M_{\\kappa}\\sum\\limits_{q}{weight_q}}
+          \\sum\\limits_{q\\nu}weight_q\\frac{\\epsilon_{q\\nu\\kappa\\alpha}\\epsilon^{*}_{q\\nu\\kappa\\beta}}
           {\\omega_{q\\nu}}
           coth(\\frac{\\omega_{q\\nu}}{2k_BT})
 

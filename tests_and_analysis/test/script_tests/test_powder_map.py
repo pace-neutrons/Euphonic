@@ -67,8 +67,9 @@ class TestRegression:
         image_data = get_current_plot_image_data()
 
         with open(powder_map_output_file, 'r') as expected_data_file:
+            expected_data_key = args_to_key(powder_map_args)
             expected_image_data = json.load(
-                expected_data_file)[args_to_key(powder_map_args)]
+                expected_data_file)[expected_data_key]
         for key, value in image_data.items():
             if key == 'extent':
                 # Lower bound of y-data (energy) varies by up to ~2e-6 on

@@ -1,4 +1,5 @@
 from typing import Optional, TypeVar, Dict, Any
+import warnings
 
 import numpy as np
 
@@ -187,22 +188,22 @@ class StructureFactor(QpointFrequencies):
 
         Notes
         -----
-        StructureFactor.structure_factors is defined as
-        :math:`|F(Q, \\nu)|^2` per unit cell. To create an
-        :math:`S(Q,\\omega)` map, it is binned in energy and the Bose
-        factor is applied [1]_:
+        StructureFactor.structure_factors is defined as the mode-resolved
+        :math:`S(Q, \\omega_{q\\nu})` per atom of sample. To create
+        an :math:`S(Q,\\omega)` map, it is binned in :math:`\\omega`
+        and the Bose factor is applied [1]_:
 
         .. math::
 
-          S(Q, \\omega) = |F(Q, \\nu)|^2
-          (n_\\nu+\\frac{1}{2}\\pm\\frac{1}{2})
+          S(Q, \\omega) = S(Q, \\omega_{q\\nu}) \\
+          (n_\\nu+\\frac{1}{2}\\pm\\frac{1}{2}) \\
           \\delta(\\omega\\mp\\omega_{q\\nu})
 
         :math:`n_\\nu` is the Bose-Einstein distribution:
 
         .. math::
 
-          n_\\nu = \\frac{1}{e^{\\frac{\\hbar\\omega_\\nu}{k_{B}T}} - 1}
+          n_\\nu = \\frac{1}{e^{\\frac{\\omega_{q\\nu}}{k_{B}T}} - 1}
 
         .. [1] M.T. Dove, Structure and Dynamics, Oxford University Press,
                Oxford, 2003, 225-226
@@ -243,7 +244,11 @@ class StructureFactor(QpointFrequencies):
         """
         # Convert units
         freqs = self._frequencies
-        e_bins_internal = e_bins.to('hartree').magnitude
+        # e_bins commonly contains a 0 bin, and converting from 0 1/cm
+        # to 0 hartree causes a RuntimeWarning, so suppress it
+        with warnings.catch_warnings():
+            warnings.filterwarnings('ignore', category=RuntimeWarning)
+            e_bins_internal = e_bins.to('hartree').magnitude
 
         # Create initial sqw_map with an extra an energy bin either
         # side, for any branches that fall outside the energy bin range
@@ -269,10 +274,13 @@ class StructureFactor(QpointFrequencies):
         np.add.at(sqw_map, (first_index, p_bin), p_intensity)
         np.add.at(sqw_map, (first_index, n_bin), n_intensity)
         # Exclude values outside ebin range
-        sqw_map = sqw_map[:, 1:-1]*ureg('bohr**2').to(
-            self.structure_factors_unit)
+        sqw_map = sqw_map[:, 1:-1]
+        # Avoid issues in converting when energy is in cm^-1
+        # Pint allows hartree -> cm^-1 but not 1/hartree -> cm
+        e_conv = 1*ureg('hartree').to(e_bins.units)
+        sf_conv = 1*ureg('bohr**2').to(self.structure_factors_unit)
 
-        return sqw_map
+        return sqw_map*sf_conv/e_conv
 
     def _bose_factor(self, temperature: Optional[Quantity] = None):
         """

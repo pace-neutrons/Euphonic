@@ -89,17 +89,17 @@ def get_expected_spectrum1d(json_filename):
 
 def check_spectrum1d(actual_spectrum1d, expected_spectrum1d):
 
+    assert (actual_spectrum1d.x_data.units
+            == expected_spectrum1d.x_data.units)
     npt.assert_allclose(actual_spectrum1d.x_data.magnitude,
                         expected_spectrum1d.x_data.magnitude,
                         atol=np.finfo(np.float64).eps)
-    assert (actual_spectrum1d.x_data.units
-            == expected_spectrum1d.x_data.units)
 
+    assert (actual_spectrum1d.y_data.units
+            == expected_spectrum1d.y_data.units)
     npt.assert_allclose(actual_spectrum1d.y_data.magnitude,
                         expected_spectrum1d.y_data.magnitude,
                         atol=np.finfo(np.float64).eps)
-    assert (actual_spectrum1d.y_data.units
-            == expected_spectrum1d.y_data.units)
 
     if expected_spectrum1d.x_tick_labels is None:
         assert actual_spectrum1d.x_tick_labels is None
