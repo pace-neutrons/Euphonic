@@ -272,7 +272,7 @@ class QpointPhononModes(QpointFrequencies):
         # Take mod squared and divide by frequency to get intensity
         sf = np.real(
             np.absolute(term*np.conj(term))/np.absolute(self._frequencies))
-        sf = sf/(2*self.crystal.n_atoms)
+        sf /= 2*self.crystal.n_atoms
 
         return StructureFactor(
             self.crystal, self.qpts, self.frequencies,
@@ -330,7 +330,7 @@ class QpointPhononModes(QpointFrequencies):
 
           W^{\\kappa}_{\\alpha\\beta} =
           \\frac{1}{4M_{\\kappa}\\sum\\limits_{q}{weight_q}}
-          \\sum_\\limits{q\\nu}weight_q\\frac{\\epsilon_{q\\nu\\kappa\\alpha}\\epsilon^{*}_{q\\nu\\kappa\\beta}}
+          \\sum\\limits_{q\\nu}weight_q\\frac{\\epsilon_{q\\nu\\kappa\\alpha}\\epsilon^{*}_{q\\nu\\kappa\\beta}}
           {\\omega_{q\\nu}}
           coth(\\frac{\\omega_{q\\nu}}{2k_BT})
 
