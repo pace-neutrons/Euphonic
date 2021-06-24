@@ -141,7 +141,7 @@ class TestForceConstantsCalculateQPointFrequencies:
             expected_modg.magnitude,
             expected_qpt_freqs.frequencies.magnitude)
         npt.assert_allclose(summed_modg, summed_expected_modg,
-            atol=8e-4, rtol=2e-4)
+            atol=2e-2, rtol=2e-4)
 
     @pytest.mark.parametrize(
         ('fc, material, all_args, expected_qpoint_frequencies_file, '
@@ -190,8 +190,16 @@ class TestForceConstantsCalculateQPointFrequencies:
                         frequencies_rtol=2e-5,
                         acoustic_gamma_atol=gamma_atol)
         assert modw.units == expected_modw.units
-        npt.assert_allclose(modw.magnitude, expected_modw.magnitude,
-                            atol=2e-4, rtol=5e-5)
+        # Mode widths are derived from eigenvectors - in the case of
+        # degenerate modes they may not be in the same order
+        summed_modw = sum_at_degenerate_modes(
+            modw.magnitude,
+            expected_qpt_freqs.frequencies.magnitude)
+        summed_expected_modw = sum_at_degenerate_modes(
+            expected_modw.magnitude,
+            expected_qpt_freqs.frequencies.magnitude)
+        npt.assert_allclose(summed_modw, summed_expected_modw,
+                            atol=2e-4, rtol=2e-3)
 
     def test_calc_qpt_freqs_with_mode_widths_raises_deprecation_warning(self):
         fc = get_fc('quartz')
