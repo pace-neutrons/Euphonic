@@ -32,10 +32,11 @@ generic :ref:`Spectrum2D` object.
 .. code-block:: py
 
   from euphonic import ureg, StructureFactor
+  import numpy as np
 
   sf = StructureFactor.from_json_file('sf_100K.json')
   energy_bins = np.arange(-100, 101, 1)*ureg('meV')
-  sqw_map = sf.calculate_sqw_map(energy_bins calc_bose=True)
+  sqw_map = sf.calculate_sqw_map(energy_bins, calc_bose=True)
 
 Plotting Dispersion
 -------------------

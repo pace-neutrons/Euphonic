@@ -1,3 +1,5 @@
+.. _spectra:
+
 =======
 Spectra
 =======
@@ -20,6 +22,23 @@ docstring below for each specific spectrum class for details.
 
 Spectrum1D
 ==========
+
+Adding Spectrum1D
+-----------------
+
+Two ``Spectrum1D`` objects can be added together (provided they have the
+same ``x_data`` axes) with the ``+`` operator. This will add their ``y_data``
+and return a single ``Spectrum1D``. Note that any metadata key/value pairs
+that aren't common to both spectra will be omitted from the new object. For
+example:
+
+.. code-block:: py
+
+  from euphonic import Spectrum1D
+
+  pdos_si = Spectrum1D.from_json_file('si_pdos.json')
+  pdos_o = Spectrum1D.from_json_file('o_pdos.json')
+  total_dos = pdos_si + pdos_o
 
 Broadening
 ----------
@@ -58,6 +77,38 @@ Spectrum1DCollection
 This is an object for storing multiple 1D spectra which share the same
 x-axis, e.g. bands in a dispersion plot.
 
+From Spectrum1D
+---------------
+
+If you have multiple ``Spectrum1D`` objects with the same ``x_data``,
+they can be grouped together into a ``Spectrum1DCollection`` object.
+For example:
+
+.. code-block:: py
+
+  from euphonic import Spectrum1D, Spectrum1DCollection
+
+  pdos_si = Spectrum1D.from_json_file('si_pdos.json')
+  pdos_o = Spectrum1D.from_json_file('o_pdos.json')
+
+  pdos_collection = Spectrum1DCollection.from_spectra([pdos_si, pdos_o])
+
+Adding Spectrum1DCollection
+---------------------------
+
+Two ``Spectrum1DCollection`` objects can be added together (provided they
+have the same ``x_data`` axes) with the ``+`` operator. This will append
+their ``y_data``, returning a single ``Spectrum1DCollection`` that contains
+all the ``y_data`` of both objects. For example:
+
+.. code-block:: py
+
+  from euphonic import Spectrum1DCollection
+
+  coh_pdos = Spectrum1DCollection.from_json_file('coherent_pdos.json')
+  incoh_pdos = Spectrum1DCollection.from_json_file('incoherent_pdos.json')
+  all_pdos = coh_pdos + incoh_pdos
+
 Indexing
 --------
 
@@ -80,6 +131,98 @@ spectra:
   spec1d_col_1_5 = spec1d_col[1:5]
   fig2 = plot_1d(spec1d_col_1_5)
 
+Broadening
+----------
+
+A collection of 1D spectra can also be broadened using
+:py:meth:`Spectrum1DCollection.broaden <euphonic.spectra.Spectrum1DCollection.broaden>`,
+which broadens each spectrum individually, giving the same result
+as using :py:meth:`Spectrum1D.broaden <euphonic.spectra.Spectrum1D.broaden>`
+on each contained spectrum.
+
+Grouping By Metadata
+---------------------
+
+You can group and sum specific spectra from a ``Spectrum1DCollection``
+based on their metadata using
+:py:meth:`Spectrum1DCollection.group_by <euphonic.spectra.Spectrum1DCollection.group_by>`.
+For example, if you have a collection containing
+8 spectra with the following metadata:
+
+.. code-block:: py
+
+  {'line_data': [
+     {'index': 1, 'species': 'Si', 'weighting': 'coherent'},
+     {'index': 2, 'species': 'Si', 'weighting': 'coherent'},
+     {'index': 3, 'species': 'O', 'weighting': 'coherent'},
+     {'index': 4, 'species': 'O', 'weighting': 'coherent'},
+     {'index': 1, 'species': 'Si', 'weighting': 'incoherent'},
+     {'index': 2, 'species': 'Si', 'weighting': 'incoherent'},
+     {'index': 3, 'species': 'O', 'weighting': 'incoherent'},
+     {'index': 4, 'species': 'O', 'weighting': 'incoherent'}]
+  }
+
+If you want to group and sum spectra that have the same ``weighting``:
+
+.. code-block:: py
+
+  weighting_pdos = spec1d_col.group_by('weighting')
+
+You can also group by multiple keys, for example to group and sum spectra that
+have both the same ``weighting`` and ``species``:
+
+.. code-block:: py
+
+  weighting_species_pdos = spec1d_col.group_by('weighting', 'species')
+
+Selecting By Metadata
+---------------------
+
+You can select specific spectra from a ``Spectrum1DCollection`` based
+on their metadata using
+:py:meth:`Spectrum1DCollection.select <euphonic.spectra.Spectrum1DCollection.select>`.
+For example, if you have a collection containing
+6 spectra with the following metadata:
+
+.. code-block:: py
+
+  {'line_data': [
+     {'species': 'Si', 'weighting': 'coherent'},
+     {'species': 'O', 'weighting': 'incoherent'},
+     {'species': 'Si', 'weighting': 'coherent'},
+     {'species': 'O', 'weighting': 'incoherent'},
+     {'species': 'Si', 'weighting': 'coherent-plus-incoherent'},
+     {'species': 'O', 'weighting': 'incoherent-plus-incoherent'}]
+  }
+
+If you want to select only the spectra where ``weighting='coherent'``:
+
+.. code-block:: py
+
+  coh_pdos = spec1d_col.select(weighting='coherent')
+
+You can also select multiple values for a specific key. To select spectra
+where ``weighting='coherent'`` or ``weighting='incoherent'``:
+
+.. code-block:: py
+
+  coh_or_incoh_pdos = spec1d_col.select(weighting=['coherent', 'incoherent'])
+
+You can also select by multiple key/values. To select only the spectrum with
+``weighting='coherent'`` and ``species='Si'``:
+
+.. code-block:: py
+
+  coh_si_pdos = spec1d_col.select(weighting='coherent', species='Si')
+
+Summing Spectra
+---------------
+
+All spectra in a ``Spectrum1DCollection`` can be summed with
+:py:meth:`Spectrum1DCollection.sum <euphonic.spectra.Spectrum1DCollection.sum>`.
+This produces a single ``Spectrum1D`` object.
+
+
 Plotting
 --------
 
@@ -95,7 +238,7 @@ Docstring
 .. _spectrum2d:
 
 Spectrum2D
-===============
+==========
 
 Broadening
 ----------
