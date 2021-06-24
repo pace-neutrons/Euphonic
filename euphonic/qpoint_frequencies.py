@@ -79,6 +79,11 @@ class QpointFrequencies:
     def frequencies(self):
         return self._frequencies*ureg('hartree').to(self.frequencies_unit)
 
+    @frequencies.setter
+    def frequencies(self, value):
+        self.frequencies_unit = str(value.units)
+        self._frequencies = value.to('hartree').magnitude
+
     def __setattr__(self, name, value):
         _check_unit_conversion(self, name, value,
                                ['frequencies_unit'])

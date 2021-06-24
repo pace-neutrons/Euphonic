@@ -6,6 +6,9 @@
   - ``euphonic-optimise-dipole-parameter`` can now read from Phonopy sources
   - ``euphonic-optimise-dipole-parameter`` can now also be used for non-polar
     materials to get general per-qpoint timings
+  - Dimensioned Euphonic properties (e.g. ``frequencies``, ``cell_vectors``)
+    now have setters so can be set, previously this would raise an
+    ``AttributeError``
 
 - Changes:
 
@@ -23,7 +26,6 @@
     deprecated, ``dipole_parameter`` should be used instead.
   - This means the ``euphonic-optimise-eta`` script has been renamed to
     ``euphonic-optimise-dipole-parameter``.
-
 
 `v0.5.2 <https://github.com/pace-neutrons/Euphonic/compare/v0.5.1...v0.5.2>`_
 ------

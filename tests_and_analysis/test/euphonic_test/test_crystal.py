@@ -8,7 +8,8 @@ from pint import DimensionalityError
 
 from euphonic import ureg, Quantity, Crystal
 from tests_and_analysis.test.utils import (
-    get_data_path, check_unit_conversion, check_json_metadata)
+    get_data_path, check_unit_conversion, check_property_setters,
+    check_json_metadata)
 
 
 class ExpectedCrystal:
@@ -264,6 +265,31 @@ class TestCrystalUnitConversion:
         crystal = get_crystal(material)
         with pytest.raises(err):
             setattr(crystal, unit_attr, unit_val)
+
+
+@pytest.mark.unit
+class TestCrystalSetters:
+
+    @pytest.mark.parametrize('material, attr, unit, scale', [
+        ('quartz', 'cell_vectors', 'bohr', 2.),
+        ('quartz', 'cell_vectors', 'angstrom', 3.),
+        ('quartz', 'atom_mass', 'kg', 2.),
+        ('quartz', 'atom_mass', 'm_e', 0.5),
+        ])
+    def test_setter_correct_units(self, material, attr,
+                                  unit, scale):
+        crystal = get_crystal(material)
+        check_property_setters(crystal, attr, unit, scale)
+
+    @pytest.mark.parametrize('material, attr, unit, err', [
+        ('quartz', 'cell_vectors', 'kg', ValueError),
+        ('quartz', 'atom_mass', 'bohr', ValueError)])
+    def test_incorrect_unit_conversion(self, material, attr,
+                                       unit, err):
+        crystal = get_crystal(material)
+        new_attr = getattr(crystal, attr).magnitude*ureg(unit)
+        with pytest.raises(err):
+            setattr(crystal, attr, new_attr)
 
 
 @pytest.mark.unit

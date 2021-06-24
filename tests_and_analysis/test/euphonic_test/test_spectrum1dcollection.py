@@ -10,7 +10,8 @@ from euphonic.spectra import Spectrum1DCollection
 from tests_and_analysis.test.utils import get_data_path, get_castep_path
 
 from .test_spectrum1d import (get_spectrum1d, get_expected_spectrum1d,
-                              check_spectrum1d)
+                              check_spectrum1d, check_unit_conversion,
+                              check_property_setters)
 
 
 class ExpectedSpectrum1DCollection:
@@ -300,6 +301,51 @@ class TestSpectrum1DCollectionSerialisation:
     def test_serialise_to_dict(self, serialise_to_dict):
         spectrum, expected_spectrum = serialise_to_dict
         check_spectrum1dcollection(spectrum, expected_spectrum)
+
+
+@pytest.mark.unit
+class TestSpectrum1DCollectionUnitConversion:
+
+    @pytest.mark.parametrize('spectrum1d_file, attr, unit_val', [
+        ('LZO_cut_dispersion.json', 'x_data', '1/bohr'),
+        ('LZO_cut_dispersion.json', 'y_data', 'hartree')])
+    def test_correct_unit_conversion(self, spectrum1d_file, attr, unit_val):
+        spec1d = get_spectrum1dcollection(spectrum1d_file)
+        check_unit_conversion(spec1d, attr, unit_val)
+
+    @pytest.mark.parametrize('spectrum1d_file, unit_attr, unit_val, err', [
+        ('LZO_cut_dispersion.json', 'x_data_unit', 'kg', ValueError),
+        ('LZO_cut_dispersion.json', 'y_data_unit', 'mbarn', ValueError)])
+    def test_incorrect_unit_conversion(self, spectrum1d_file, unit_attr,
+                                       unit_val, err):
+        spec1d = get_spectrum1dcollection(spectrum1d_file)
+        with pytest.raises(err):
+            setattr(spec1d, unit_attr, unit_val)
+
+
+@pytest.mark.unit
+class TestSpectrum1DCollectionSetters:
+
+    @pytest.mark.parametrize('spectrum1d_file, attr, unit, scale', [
+        ('LZO_cut_dispersion.json', 'x_data', '1/cm', 3.),
+        ('LZO_cut_dispersion.json', 'x_data', '1/angstrom', 2.),
+        ('LZO_cut_dispersion.json', 'y_data', 'THz', 3.),
+        ('LZO_cut_dispersion.json', 'y_data', 'meV', 2.),
+        ])
+    def test_setter_correct_units(self, spectrum1d_file, attr,
+                                  unit, scale):
+        spec1d = get_spectrum1dcollection(spectrum1d_file)
+        check_property_setters(spec1d, attr, unit, scale)
+
+    @pytest.mark.parametrize('spectrum1d_file, attr, unit, err', [
+        ('LZO_cut_dispersion.json', 'x_data', 'kg', ValueError),
+        ('LZO_cut_dispersion.json', 'y_data', 'mbarn', ValueError)])
+    def test_incorrect_unit_conversion(self, spectrum1d_file, attr,
+                                       unit, err):
+        spec1d = get_spectrum1dcollection(spectrum1d_file)
+        new_attr = getattr(spec1d, attr).magnitude*ureg(unit)
+        with pytest.raises(err):
+            setattr(spec1d, attr, new_attr)
 
 
 @pytest.mark.unit

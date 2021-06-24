@@ -38,10 +38,20 @@ class Spectrum(ABC):
         return self._x_data*ureg(self._internal_x_data_unit).to(
             self.x_data_unit)
 
+    @x_data.setter
+    def x_data(self, value):
+        self.x_data_unit = str(value.units)
+        self._x_data = value.to(self._internal_x_data_unit).magnitude
+
     @property
     def y_data(self):
         return self._y_data*ureg(self._internal_y_data_unit).to(
             self.y_data_unit)
+
+    @y_data.setter
+    def y_data(self, value):
+        self.y_data_unit = str(value.units)
+        self._y_data = value.to(self._internal_y_data_unit).magnitude
 
     @abstractmethod
     def to_dict(self) -> Dict[str, Any]:
@@ -767,6 +777,11 @@ class Spectrum2D(Spectrum):
     def z_data(self):
         return self._z_data*ureg(self._internal_z_data_unit).to(
             self.z_data_unit)
+
+    @z_data.setter
+    def z_data(self, value):
+        self.z_data_unit = str(value.units)
+        self._z_data = value.to(self._internal_z_data_unit).magnitude
 
     def __setattr__(self, name: str, value: Any) -> None:
         _check_unit_conversion(self, name, value,

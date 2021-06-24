@@ -154,17 +154,17 @@ def check_mode_values_at_qpts(qpts, values, expected_values, atol, rtol,
         atol=atol, rtol=rtol)
 
 
-def check_unit_conversion(obj, attr, unit):
+def check_unit_conversion(obj: object, attr: str, unit: str) -> None:
     """
     Utility function to check unit conversions in Euphonic objects
 
     Parameters
     ----------
-    obj : Object
+    obj
         The object to check
-    attr : str
+    attr
         The name of the attribute to change the units of
-    unit : str
+    unit
         The unit to change attr to
     """
     unit_attr = attr + '_unit'
@@ -183,8 +183,30 @@ def check_unit_conversion(obj, attr, unit):
     npt.assert_allclose(getattr(obj, attr).magnitude,
                         original_attr_value.to(unit).magnitude)
 
+def check_property_setters(obj: object, attr: str, unit: str,
+                           scale: float) -> None:
+    """
+    Utility function to check setters for Quantity properties in
+    Euphonic objects
 
-def check_json_metadata(json_file: str, class_name: str):
+    Parameters
+    ----------
+    obj
+        The object to check
+    attr
+        The name of the attribute to set
+    unit
+        The unit the attribute should be set to
+    scale
+        What to scale the attribute by, so we can check its been changed
+    """
+    new_attr = scale*getattr(obj, attr).to(unit)
+    setattr(obj, attr, new_attr)
+    set_attr = getattr(obj, attr)
+    assert set_attr.units == new_attr.units
+    npt.assert_allclose(set_attr.magnitude, new_attr.magnitude)
+
+def check_json_metadata(json_file: str, class_name: str) -> None:
     """
     Utility function to check that .json file metadata has been output
     correctly

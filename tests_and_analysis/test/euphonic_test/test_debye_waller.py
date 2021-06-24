@@ -10,7 +10,8 @@ from euphonic import ureg, Crystal, DebyeWaller
 from tests_and_analysis.test.euphonic_test.test_crystal import (
     ExpectedCrystal, get_crystal, check_crystal)
 from tests_and_analysis.test.utils import (
-    get_data_path, check_unit_conversion, check_json_metadata)
+    get_data_path, check_unit_conversion, check_json_metadata,
+    check_property_setters)
 
 
 class ExpectedDebyeWaller:
@@ -223,3 +224,33 @@ class TestDebyeWallerUnitConversion:
         dw = get_dw(material, json_file)
         with pytest.raises(err):
             setattr(dw, unit_attr, unit_val)
+
+
+@pytest.mark.unit
+class TestDebyeWallerSetters:
+
+    @pytest.mark.parametrize('material, json_file, attr, unit, scale', [
+        ('CaHgO2', 'CaHgO2_666_300K_debye_waller.json',
+         'debye_waller', 'angstrom**2', 2.),
+        ('CaHgO2', 'CaHgO2_666_300K_debye_waller.json',
+         'debye_waller', 'mbarn', 3.),
+        ('CaHgO2', 'CaHgO2_666_300K_debye_waller.json',
+         'temperature', 'K', 2.)
+        ])
+    def test_setter_correct_units(self, material, json_file, attr,
+                                  unit, scale):
+        dw = get_dw(material, json_file)
+        check_property_setters(dw, attr, unit, scale)
+
+    @pytest.mark.parametrize('material, json_file, attr, unit, err', [
+        ('CaHgO2', 'CaHgO2_666_300K_debye_waller.json',
+         'debye_waller', '1/cm', ValueError),
+        ('CaHgO2', 'CaHgO2_666_300K_debye_waller.json',
+         'temperature', 'kg', ValueError)])
+    def test_incorrect_unit_conversion(self, material, json_file, attr,
+                                       unit, err):
+        dw = get_dw(material, json_file)
+        new_attr = getattr(dw, attr).magnitude*ureg(unit)
+        with pytest.raises(err):
+            setattr(dw, attr, new_attr)
+

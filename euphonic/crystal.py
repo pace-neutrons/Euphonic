@@ -84,10 +84,20 @@ class Crystal:
         return self._cell_vectors*ureg('bohr').to(
             self.cell_vectors_unit)
 
+    @cell_vectors.setter
+    def cell_vectors(self, value):
+        self.cell_vectors_unit = str(value.units)
+        self._cell_vectors = value.to('bohr').magnitude
+
     @property
     def atom_mass(self):
         return self._atom_mass*ureg('m_e').to(
             self.atom_mass_unit)
+
+    @atom_mass.setter
+    def atom_mass(self, value):
+        self.atom_mass_unit = str(value.units)
+        self._atom_mass = value.to('m_e').magnitude
 
     def __setattr__(self, name, value):
         _check_unit_conversion(self, name, value,
