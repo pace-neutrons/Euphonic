@@ -4,6 +4,11 @@
 DOS
 ===
 
+.. contents:: :local:
+
+DOS
+---
+
 DOS in Euphonic are represented by a generic :ref:`Spectrum1D<spectrum1d>`
 object. If there are multiple DOS with the same energy bins (e.g. per-element
 PDOS and total DOS) they can be contained in a
@@ -78,6 +83,8 @@ generic :ref:`Spectrum1D<spectrum1d>` object. For example, using
   # Calculate dos
   dos = phonons.calculate_dos(energy_bins)
 
+.. _adaptive_broadening:
+
 Adaptive Broadening
 -------------------
 
@@ -108,4 +115,9 @@ These widths can then be passed to ``calculate_dos`` through the
 
   energy_bins = np.arange(0, 166, 0.1)*ureg('meV')
   adaptive_dos = phonons.calculate_dos(energy_bins, mode_widths=mode_widths)
+
+Calculating Partial and Neutron-weighted DOS
+--------------------------------------------
+
+See :ref:`Calculating PDOS <calculating_pdos>`
 

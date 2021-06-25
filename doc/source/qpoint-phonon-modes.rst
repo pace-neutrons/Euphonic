@@ -79,9 +79,12 @@ using the
 method, which returns a :ref:`StructureFactor<structure-factor>` object.
 (See the docstring for algorithm details.)
 
+.. _scattering_lengths:
 
 Scattering lengths
 ^^^^^^^^^^^^^^^^^^
+
+
 The coherent scattering length is a physical property of the nucleus.
 To provide this data explicitly, the ``scattering_lengths`` argument can
 be set as a dictionary mapping each atom identity to a ``pint.Quantity``
@@ -154,6 +157,40 @@ calculated by:
   phonons = QpointPhononModes.from_castep('quartz-grid.phonon')
   temperature = 5*ureg('K')
   dw = phonons.calculate_debye_waller(temperature)
+
+.. _calculating_pdos:
+
+Calculating Partial and Neutron-Weighted Density of States
+----------------------------------------------------------
+
+Partial and neutron-weighted density of states can be calculated using
+:py:meth:`QpointPhononModes.calculate_pdos <euphonic.qpoint_phonon_modes.QpointPhononModes.calculate_pdos>`.
+Like DOS, this requires an array of energy bin edges in energy units. This
+returns a :ref:`Spectrum1DCollection<spectrum1dcollection>` object, containing
+the atom-resolved partial density of states. If ``weighting`` is supplied, or
+the ``cross_sections`` are specified (this can be done in the same way as the
+:ref:`scattering lengths <scattering_lengths>`) the neutron-weighted partial
+density of states is returned. This is also resolved per-atom, and units are
+area/energy per atom of sample.
+
+The ``Spectrum1DCollection.metadata`` attribute labels each PDOS spectrum by
+species and index, and :ref:`Spectrum1DCollection<spectrum1dcollection>` methods
+can be used to obtain per-species or total PDOS. For example, to produce both total
+and species-resolved coherent neutron-weighted PDOS:
+
+.. code-block:: py
+
+  from euphonic import ureg, QpointPhononModes
+
+  phonons = QpointPhononModes.from_castep('quartz-grid.phonon')
+
+  ebins = np.arange(0, 165, 0.1)*ureg('meV')
+  pdos = phonons.calculate_pdos(ebins, weighting='coherent')  # atom resolved pdos
+
+  species_pdos = pdos.group_by('species')  # species resolved pdos
+  total_dos = pdos.sum()  # total dos
+
+PDOS can also be adaptively broadened :ref:`in the same way as DOS <adaptive_broadening>`
 
 Calculating Density of States
 -----------------------------
