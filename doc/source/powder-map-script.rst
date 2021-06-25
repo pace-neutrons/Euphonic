@@ -11,11 +11,11 @@ of :math:`|q|`. The results are plotted as a 2-dimensional map in :math:`(|q|, \
 For example, to plot a coherent neutron-weighted powder spectrum from CASTEP
 force constants over a recommended :math:`|q|` range, one could run::
 
-   euphonic-powder-map --weights coherent --energy-broadening 1.5 quartz.castep_bin
+   euphonic-powder-map --weighting coherent --energy-broadening 1.5 quartz.castep_bin
 
 Or, to plot a DOS-weighted intensity from Phonopy phonon frequencies over a specified q range with denser sampling::
 
-   euphonic-powder-map --weights dos --energy-unit THz --energy-broadening 0.15 --q-min 0.01 --q-max 4. --q-spacing 0.1 phonopy.yaml
+   euphonic-powder-map --weighting dos --energy-unit THz --energy-broadening 0.15 --q-min 0.01 --q-max 4. --q-spacing 0.1 phonopy.yaml
 
 To see all the command line options, run::
 
