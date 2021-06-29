@@ -46,8 +46,8 @@ def get_parser() -> 'argparse.ArgumentParser':
                                help="Minimum |q| in 1/LENGTH_UNIT")
     sections['q'].add_argument('--q-max', type=float, default=3., dest='q_max',
                                help="Maximum |q| in 1/LENGTH_UNIT")
-    sections['plotting'].add_argument('--no-widgets', action='store_false',
-                                      dest='use_widgets', default=True,
+    sections['plotting'].add_argument('--no-widgets', action='store_true',
+                                      dest='disable_widgets', default=False,
                                       help=("Don't use Matplotlib widgets to "
                                             "enable interactive setting of "
                                             "colourmap intensity limits"))
@@ -170,14 +170,14 @@ def main(params: List[str] = None):
                                 y_label=y_label,
                                 title=args.title)
 
-    if args.use_widgets == True:
+    if args.disable_widgets is False:
         # TextBox only available from mpl 2.1.0
         try:
             from matplotlib.widgets import TextBox
         except ImportError:
-            args.use_widgets = False
+            args.disable_widgets = True
 
-    if args.use_widgets:
+    if args.disable_widgets is False:
         min_label = f'Min Intensity ({spectrum.z_data.units:~P})'
         max_label = f'Max Intensity ({spectrum.z_data.units:~P})'
         boxw = 0.15
