@@ -8,7 +8,7 @@ from .utils import (load_data_from_file, get_args, matplotlib_save_or_show,
                     _calc_modes_kwargs,
                     _get_cli_parser, _get_energy_bins,
                     _grid_spec_from_args, _get_pdos_weighting,
-                    _get_output_dos)
+                    _arrange_pdos_groups)
 
 
 def main(params: List[str] = None):
@@ -59,7 +59,7 @@ def main(params: List[str] = None):
         pdos = modes.calculate_pdos(
             ebins, mode_widths=mode_widths,
             weighting=_get_pdos_weighting(args.weighting))
-        dos = _get_output_dos(pdos, args.pdos)
+        dos = _arrange_pdos_groups(pdos, args.pdos)
 
     if args.energy_broadening and not args.adaptive:
         dos = dos.broaden(args.energy_broadening*ebins.units, shape=args.shape)

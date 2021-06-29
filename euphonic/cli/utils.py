@@ -380,13 +380,15 @@ def _get_pdos_weighting(cl_arg_weighting: str) -> str:
         pdos_weighting = None
     else:
         idx = cl_arg_weighting.rfind('-')
+        if idx == -1:
+            raise ValueError('Unexpected weighting {cl_arg_weighting}')
         pdos_weighting = cl_arg_weighting[:idx]
     return pdos_weighting
 
 
-def _get_output_dos(pdos: Spectrum1DCollection,
-                    cl_arg_pdos: Sequence[str]
-                    ) -> Union[Spectrum1D, Spectrum1DCollection]:
+def _arrange_pdos_groups(pdos: Spectrum1DCollection,
+                         cl_arg_pdos: Sequence[str]
+                         ) -> Union[Spectrum1D, Spectrum1DCollection]:
     """
     Convert PDOS returned by calculate_pdos to PDOS/DOS
     wanted as CL output according to --pdos
@@ -528,10 +530,9 @@ def _get_cli_parser(features: Collection[str] = {}
         if not 'q-e' in features:
             sections['property'].add_argument(
                 '--pdos', type=str, action='store', nargs='*',
-                help=('Plot PDOS. Just use --pdos to plot per species PDOS '
-                      'alongside total DOS, plot only certain species '
-                      '(multiple species allowed) with --pdos Si O for '
-                      'example'))
+                help=('Plot PDOS. With --pdos, per-species PDOS will be plotted '
+                      'alongside total DOS. A subset of species can also be '
+                      'selected by adding more arguments e.g. --pdos Si O'))
         else:
             sections['property'].add_argument(
                 '--pdos', type=str, action='store', nargs=1,
@@ -551,7 +552,6 @@ def _get_cli_parser(features: Collection[str] = {}
         if 'ins-weighting' in features:
             _weighting_choices += _ins_choices
             desc += ', coherent inelastic neutron scattering'
-        if 'ins-weighting' in features:
             # --weights was deprecated before dos-weighting was added so
             # keep in this section
             sections['property'].add_argument(

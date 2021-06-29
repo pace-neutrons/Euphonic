@@ -10,7 +10,7 @@ from euphonic import ureg
 from euphonic.cli.utils import (_calc_modes_kwargs, _get_cli_parser,
                                 _get_debye_waller, _get_energy_bins,
                                 _get_q_distance, _get_pdos_weighting,
-                                _get_output_dos)
+                                _arrange_pdos_groups)
 from euphonic.cli.utils import (force_constants_from_file, get_args,
                                 matplotlib_save_or_show)
 import euphonic.plot
@@ -115,7 +115,7 @@ def main(params: List[str] = None):
                     energy_bins=energy_bins,
                     weighting=_get_pdos_weighting(args.weighting),
                     **calc_modes_kwargs)
-            spectrum_1d = _get_output_dos(spectrum_1d_col, args.pdos)
+            spectrum_1d = _arrange_pdos_groups(spectrum_1d_col, args.pdos)
         elif args.weighting == 'coherent':
             if args.pdos is not None:
                 raise ValueError(

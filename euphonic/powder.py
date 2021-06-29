@@ -257,11 +257,11 @@ def sample_sphere_structure_factor(
                 projected onto sphere.
     npts
         Number of samples. Note that some sampling methods have
-            constraints on valid values and will round up as
-            appropriate.
+        constraints on valid values and will round up as
+        appropriate.
     jitter
         For non-random sampling schemes, apply an additional random
-            displacement to each point.
+        displacement to each point.
     energy_bins
         Preferred energy bin edges. If not provided, will setup 1000
         bins (1001 bin edges) from 0 to 1.05 * [max energy]

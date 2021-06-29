@@ -13,6 +13,7 @@ from tests_and_analysis.test.utils import get_data_path, get_castep_path
 from tests_and_analysis.test.script_tests.utils import (
     get_script_test_data_path, get_current_plot_line_data,
     args_to_key)
+from euphonic.cli.utils import _get_pdos_weighting
 import euphonic.cli.dos
 
 
@@ -93,6 +94,10 @@ class TestRegression:
         with pytest.raises(ValueError):
             euphonic.cli.dos.main([quartz_fc_file, '--adaptive',
                                    '--shape', 'lorentz'])
+
+    def test_get_pdos_weighting_without_dash_raises_valueerror(self):
+        with pytest.raises(ValueError):
+            _get_pdos_weighting('coherentdos')
 
 
 @patch('matplotlib.pyplot.show')
