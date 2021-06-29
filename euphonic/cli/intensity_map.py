@@ -23,7 +23,7 @@ def main(params: List[str] = None) -> None:
     q_spacing = _get_q_distance(args.length_unit, args.q_spacing)
     recip_length_unit = q_spacing.units
 
-    frequencies_only = (args.weights != 'coherent')
+    frequencies_only = (args.weighting != 'coherent')
 
     if isinstance(data, euphonic.ForceConstants):
         print("Force Constants data was loaded. Getting band path...")
@@ -43,7 +43,7 @@ def main(params: List[str] = None) -> None:
 
     print("Computing intensities and generating 2D maps")
 
-    if args.weights.lower() == 'coherent':
+    if args.weighting.lower() == 'coherent':
         if args.temperature is not None:
             if not isinstance(data, euphonic.ForceConstants):
                 raise TypeError("Cannot generate Debye-Waller factor without "
@@ -63,7 +63,7 @@ def main(params: List[str] = None) -> None:
         spectrum = (modes.calculate_structure_factor(dw=dw)
                     .calculate_sqw_map(ebins))
 
-    elif args.weights.lower() == 'dos':
+    elif args.weighting.lower() == 'dos':
         spectrum = modes.calculate_dos_map(ebins)
 
     if args.q_broadening or args.energy_broadening:
@@ -101,17 +101,18 @@ def main(params: List[str] = None) -> None:
 
 
 def get_parser() -> argparse.ArgumentParser:
-    parser, sections = _get_cli_parser(features={'read-fc', 'read-modes',
-                                                 'q-e', 'map', 'btol', 'ebins',
-                                                 'weights', 'plotting'})
+    parser, sections = _get_cli_parser(
+        features={'read-fc', 'read-modes', 'q-e', 'map', 'btol', 'ebins',
+                  'ins-weighting', 'plotting'})
     parser.description = (
         'Plots a 2D intensity map from the file provided. If a force '
         'constants file is provided, a band structure path is '
         'generated using Seekpath')
 
     sections['q'].description = (
-        '"GRID" options relate to Monkhorst-Pack sampling for the Debye-Waller'
-        ' factor, and only apply when --weights=coherent and --temperature is '
-        'set. "Q" options relate to the x-axis of spectrum data.')
+        '"GRID" options relate to Monkhorst-Pack sampling for the '
+        'Debye-Waller factor, and only apply when --weighting=coherent '
+        'and --temperature is set. "Q" options relate to the x-axis of '
+        'spectrum data.')
 
     return parser

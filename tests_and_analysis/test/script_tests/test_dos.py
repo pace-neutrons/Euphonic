@@ -13,6 +13,7 @@ from tests_and_analysis.test.utils import get_data_path, get_castep_path
 from tests_and_analysis.test.script_tests.utils import (
     get_script_test_data_path, get_current_plot_line_data,
     args_to_key)
+from euphonic.cli.utils import _get_pdos_weighting
 import euphonic.cli.dos
 
 
@@ -29,8 +30,12 @@ dos_params = [
      '-u=hartree'],
     [nah_phonon_file, '--title=NaH', '--x-label=Energy (meV)',
      '--y-label=DOS'],
+    [nah_phonon_file, '--weighting=coherent-plus-incoherent-dos', '--pdos'],
+    [nah_phonon_file, '--weighting=coherent-dos', '--pdos', 'Na', 'H'],
+    [nah_phonon_file, '--weighting=incoherent-dos', '--pdos', 'Na'],
     [quartz_fc_file, '--grid-spacing=0.1', '--length-unit=bohr'],
     [quartz_fc_file, '--grid', '5', '5', '4'],
+    [quartz_fc_file, '--grid', '5', '5', '4', '--adaptive', '--pdos'],
     [quartz_fc_file, '--grid', '5', '5', '4', '--adaptive'],
     [quartz_fc_file, '--grid', '5', '5', '4', '--adaptive', '--eb', '2']]
 
@@ -81,10 +86,18 @@ class TestRegression:
         with pytest.raises(ValueError):
             euphonic.cli.dos.main(dos_args)
 
+    def test_adaptive_and_dot_phonon_raises_value_error(self):
+        with pytest.raises(ValueError):
+            euphonic.cli.dos.main([nah_phonon_file, '--adaptive'])
+
     def test_adaptive_and_lorentz_raises_value_error(self):
         with pytest.raises(ValueError):
             euphonic.cli.dos.main([quartz_fc_file, '--adaptive',
                                    '--shape', 'lorentz'])
+
+    def test_get_pdos_weighting_without_dash_raises_valueerror(self):
+        with pytest.raises(ValueError):
+            _get_pdos_weighting('coherentdos')
 
 
 @patch('matplotlib.pyplot.show')

@@ -1,17 +1,19 @@
 from argparse import (ArgumentParser, _ArgumentGroup, Namespace,
-                      ArgumentDefaultsHelpFormatter)
+                      ArgumentDefaultsHelpFormatter, Action)
 import json
 import os
 import pathlib
 from typing import (Any, Collection, Dict, List,
                     Sequence, Tuple, Union, Optional)
+import warnings
 
 import numpy as np
 from pint import UndefinedUnitError
 import seekpath
 
 from euphonic import (Crystal, DebyeWaller, ForceConstants, QpointFrequencies,
-                      QpointPhononModes, Quantity, ureg)
+                      QpointPhononModes, Spectrum1D, Spectrum1DCollection,
+                      Quantity, ureg)
 import euphonic.util
 Unit = ureg.Unit
 
@@ -373,6 +375,43 @@ def _get_debye_waller(temperature: Quantity,
     return dw_phonons.calculate_debye_waller(temperature)
 
 
+def _get_pdos_weighting(cl_arg_weighting: str) -> str:
+    """
+    Convert CL --weighting to weighting for calculate_pdos
+    e.g. --weighting coherent-dos to weighting=coherent
+    """
+    if cl_arg_weighting == 'dos':
+        pdos_weighting = None
+    else:
+        idx = cl_arg_weighting.rfind('-')
+        if idx == -1:
+            raise ValueError('Unexpected weighting {cl_arg_weighting}')
+        pdos_weighting = cl_arg_weighting[:idx]
+    return pdos_weighting
+
+
+def _arrange_pdos_groups(pdos: Spectrum1DCollection,
+                         cl_arg_pdos: Sequence[str]
+                         ) -> Union[Spectrum1D, Spectrum1DCollection]:
+    """
+    Convert PDOS returned by calculate_pdos to PDOS/DOS
+    wanted as CL output according to --pdos
+    """
+    dos = pdos.sum()
+    if cl_arg_pdos is not None:
+        # Only label total DOS if there are other lines on the plot
+        dos.metadata['label'] = 'Total'
+        pdos = pdos.group_by('species')
+        for line_metadata in pdos.metadata['line_data']:
+            line_metadata['label'] = line_metadata['species']
+        if len(cl_arg_pdos) > 0:
+            pdos = pdos.select(species=cl_arg_pdos)
+            dos = pdos
+        else:
+            dos = Spectrum1DCollection.from_spectra([dos] + [*pdos])
+    return dos
+
+
 def _calc_modes_kwargs(args: Namespace) -> Dict[str, Any]:
     """Collect arguments that can be passed to calculate_qpoint_phonon_modes()
     """
@@ -388,16 +427,36 @@ def _get_cli_parser(features: Collection[str] = {}
     Args:
         sections:
             collection (e.g. set, list) of str for known argument groups.
-            Known keys: read-fc, read-modes, weights, powder, mp-grid,
-                plotting, ebins, adaptive-broadening, q-e, map, btol,
-                dipole-parameter-optimisation
+            Known keys: read-fc, read-modes, ins-weighting, pdos-weighting,
+            powder, mp-grid, plotting, ebins, adaptive-broadening, q-e,
+            map, btol, dipole-parameter-optimisation
 
     Returns:
         Parser and a dict of parser subsections. This allows their help strings
         to be customised and specialised options to be added.
 
     """
-    _spectrum_choices = ('dos', 'coherent')
+    def deprecation_text(deprecated_arg: str, new_arg: str):
+        return (f'--{deprecated_arg} is deprecated, '
+                f'please use --{new_arg} instead')
+    def deprecated_arg(recommended_arg: str):
+        class DeprecatedArgAction(Action):
+            def __call__(self, parser, args, values, option_string=None):
+                # Need to filter to raise warnings from CL tools
+                # Warnings not in __main__ are ignored by default
+                with warnings.catch_warnings():
+                    warnings.filterwarnings(
+                        'default', category=DeprecationWarning,
+                        module=__name__)
+                    warnings.warn(
+                        deprecation_text(self.dest, recommended_arg),
+                        DeprecationWarning)
+                    setattr(args, recommended_arg, values)
+        return DeprecatedArgAction
+
+    _pdos_choices = ('coherent-dos', 'incoherent-dos',
+                     'coherent-plus-incoherent-dos')
+    _ins_choices = ('coherent',)
 
     parser = ArgumentParser(
         formatter_class=ArgumentDefaultsHelpFormatter)
@@ -468,19 +527,60 @@ def _get_cli_parser(features: Collection[str] = {}
             help=('Number of parallel processes for computing phonon modes. '
                   '(Only applies when using C extension.)'))
 
-    if 'weights' in features:
-        sections['property'].add_argument(
-            '--weights', '-w', default='dos', choices=_spectrum_choices,
-            help=('Spectral weights to plot: phonon DOS or '
-                  'coherent inelastic neutron scattering.'))
+    pdos_desc = ('coherent neutron-weighted DOS, incoherent '
+                 'neutron-weighted DOS or total (coherent + incoherent) '
+                 'neutron-weighted DOS')
+    ins_desc = ('coherent inelastic neutron scattering')
+    if 'pdos-weighting' in features:
+        # Currently do not support multiple PDOS for 2D plots
+        if not 'q-e' in features:
+            sections['property'].add_argument(
+                '--pdos', type=str, action='store', nargs='*',
+                help=('Plot PDOS. With --pdos, per-species PDOS will be plotted '
+                      'alongside total DOS. A subset of species can also be '
+                      'selected by adding more arguments e.g. --pdos Si O'))
+        else:
+            sections['property'].add_argument(
+                '--pdos', type=str, action='store', nargs=1,
+                help=('Plot PDOS for a specific species e.g. --pdos Si'))
 
+    if {'pdos-weighting', 'ins-weighting'}.intersection(
+            features):
+        # We can plot plain DOS with all CL tools
+        _weighting_choices = ('dos',)
+        desc = 'DOS'
+        if 'pdos-weighting' in features:
+            _weighting_choices += _pdos_choices
+            desc += (', coherent neutron-weighted DOS, incoherent '
+                     'neutron-weighted DOS or total (coherent + incoherent) '
+                     'neutron-weighted DOS')
+        # We may have both 'pdos' and 'ins' so use separate if
+        if 'ins-weighting' in features:
+            _weighting_choices += _ins_choices
+            desc += ', coherent inelastic neutron scattering'
+            # --weights was deprecated before dos-weighting was added so
+            # keep in this section
+            sections['property'].add_argument(
+                '--weights', default='dos', choices=_weighting_choices,
+                action=deprecated_arg('weighting'),
+                help=deprecation_text('weights', 'weighting'))
+            sections['property'].add_argument(
+                '--weighting', '-w', default='dos', choices=_weighting_choices,
+                help=(f'Spectral weighting to plot: {desc}'))
+        else:
+            sections['property'].add_argument(
+                '--weighting', '-w', default='dos', choices=_weighting_choices,
+                help=f'Type of DOS to plot: {desc}')
+
+    if 'ins-weighting' in features:
         sections['property'].add_argument(
             '--temperature', type=float, default=None,
             help=('Temperature in K; enable Debye-Waller factor calculation. '
-                  '(Only applicable when --weights=coherent).'))
+                  '(Only applicable when --weighting=coherent).'))
 
-    # 'weights' implies 'mp-grid' as well because mesh is needed for DW factor
-    if {'weights', 'mp-grid'}.intersection(features):
+    # 'ins-weighting' implies 'mp-grid' as well because mesh is needed for DW
+    # factor
+    if {'ins-weighting', 'mp-grid'}.intersection(features):
         grid_spec = sections['q'].add_mutually_exclusive_group()
 
         grid_spec.add_argument(

@@ -414,27 +414,27 @@ class QpointPhononModes(QpointFrequencies):
             cross_sections: Union[str, Dict[str, Quantity]] = 'BlueBook',
             ) -> Spectrum1DCollection:
         """
-        Calculates a total density of states, and per-species partial
-        density of states
+        Calculates partial density of states for each atom in the unit
+        cell.
 
         Parameters
         ----------
         dos_bins
             Shape (n_e_bins + 1,) float Quantity. The energy bin edges
-            to use for calculating the DOS
+            to use for calculating the DOS.
         mode_widths
             Shape (n_qpts, n_branches) float Quantity in energy units.
             The broadening width for each mode at each q-point, for
-            adaptive broadening
+            adaptive broadening.
         mode_widths_min
             Scalar float Quantity in energy units. Sets a lower limit on
             the mode widths, as mode widths of zero will result in
-            infinitely sharp peaks
+            infinitely sharp peaks.
         weighting
-            One of {'coherent', 'incoherent', 'total'}. If provided,
-            produces a neutron-weighted DOS, weighted by either
-            the coherent, incoherent, or sum of coherent and incoherent
-            neutron scattering cross-sections.
+            One of {'coherent', 'incoherent', 'coherent-plus-incoherent'}.
+            If provided, produces a neutron-weighted DOS, weighted by
+            either the coherent, incoherent, or sum of coherent and
+            incoherent neutron scattering cross-sections.
         cross_sections
             A dataset of cross-sections for each element in the structure,
             it can be a string specifying a dataset, or a dictionary
@@ -459,16 +459,13 @@ class QpointPhononModes(QpointFrequencies):
         -------
         dos
             A collection of spectra, with the energy bins on the x-axis and
-            DOS on the y-axis. If weighting is None, y-axis is in 1/energy
-            units, and the first spectrum is the total DOS, with the other
-            spectra being the per-species PDOS. If weighting is specified
-            or cross_sections are supplied, the neutron-weighted DOS is
-            returned and y-axis is in area/energy units per atom, where the
-            first spectrum is the total neutron-weighted DOS per average
-            atom, and the other spectra show the contributions of each
-            species to the total
+            PDOS for each atom in the unit cell on the y-axis. If weighting
+            is None, the y-axis is in 1/energy units. If weighting is
+            specified or cross_sections are supplied, the y-axis
+            is in area/energy units per average atom.
         """
-        weighting_opts = [None, 'coherent', 'incoherent', 'total']
+        weighting_opts = [None, 'coherent', 'incoherent',
+                          'coherent-plus-incoherent']
         if not weighting in weighting_opts:
             raise ValueError(f'Invalid value for weighting, got '
                              f'{weighting}, should be one of '
@@ -477,7 +474,7 @@ class QpointPhononModes(QpointFrequencies):
         cross_sections_data = None
         if isinstance(cross_sections, str):
             if weighting is not None:
-                if weighting == 'total':
+                if weighting == 'coherent-plus-incoherent':
                     weights = ['coherent', 'incoherent']
                 else:
                     weights = [weighting]

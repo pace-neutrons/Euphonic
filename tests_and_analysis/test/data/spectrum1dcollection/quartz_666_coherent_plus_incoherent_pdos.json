@@ -40,7 +40,7 @@
                 "species": "Si"
             }
         ],
-        "weighting": "total"
+        "weighting": "coherent-plus-incoherent"
     },
     "x_data": [
         0.0,

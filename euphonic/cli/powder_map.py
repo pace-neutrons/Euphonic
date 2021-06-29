@@ -9,11 +9,13 @@ import numpy as np
 from euphonic import ureg
 from euphonic.cli.utils import (_calc_modes_kwargs, _get_cli_parser,
                                 _get_debye_waller, _get_energy_bins,
-                                _get_q_distance)
+                                _get_q_distance, _get_pdos_weighting,
+                                _arrange_pdos_groups)
 from euphonic.cli.utils import (force_constants_from_file, get_args,
                                 matplotlib_save_or_show)
 import euphonic.plot
-from euphonic.powder import sample_sphere_dos, sample_sphere_structure_factor
+from euphonic.powder import (sample_sphere_dos, sample_sphere_pdos,
+                             sample_sphere_structure_factor)
 import euphonic.util
 
 # Dummy tqdm function if tqdm progress bars unavailable
@@ -30,15 +32,15 @@ except ModuleNotFoundError:
 def get_parser() -> 'argparse.ArgumentParser':
 
     parser, sections = _get_cli_parser(
-        features={'read-fc', 'weights', 'powder',
-                  'plotting', 'ebins', 'q-e', 'map'})
+        features={'read-fc', 'pdos-weighting', 'ins-weighting',
+                  'powder', 'plotting', 'ebins', 'q-e', 'map'})
 
     sections['q'].description = (
-        '"GRID" options relate to Monkhorst-Pack sampling for the Debye-Waller'
-        ' factor, and only apply when --weights=coherent and --temperature is '
-        'set. "NPTS" options determine spherical groups of q-points for '
-        'powder-averaging. '
-        '"Q" options relate to the sphere sizes (i.e. radial distances).')
+        '"GRID" options relate to Monkhorst-Pack sampling for the '
+        'Debye-Waller factor, and only apply when --weighting=coherent and '
+        '--temperature is set. "NPTS" options determine spherical groups of '
+        'q-points for powder-averaging. "Q" options relate to the sphere '
+        'sizes (i.e. radial distances).')
 
     sections['q'].add_argument('--q-min', type=float, default=0., dest='q_min',
                                help="Minimum |q| in 1/LENGTH_UNIT")
@@ -76,7 +78,7 @@ def main(params: List[str] = None):
         modes, args.ebins + 1, emin=args.e_min, emax=args.e_max,
         headroom=1.2)  # Generous headroom as we only checked one q-point
 
-    if args.weights in ('coherent',):
+    if args.weighting in ('coherent',):
         # Compute Debye-Waller factor once for re-use at each mod(q)
         # (If temperature is not set, this will be None.)
         if args.temperature is not None:
@@ -103,13 +105,25 @@ def main(params: List[str] = None):
         else:
             npts = args.npts
 
-        if args.weights == 'dos':
+        if args.weighting == 'dos' and args.pdos is None:
             spectrum_1d = sample_sphere_dos(
                 fc, q,
                 npts=npts, sampling=args.sampling, jitter=args.jitter,
                 energy_bins=energy_bins,
                 **calc_modes_kwargs)
-        elif args.weights == 'coherent':
+        elif 'dos' in args.weighting:
+            spectrum_1d_col = sample_sphere_pdos(
+                    fc, q,
+                    npts=npts, sampling=args.sampling, jitter=args.jitter,
+                    energy_bins=energy_bins,
+                    weighting=_get_pdos_weighting(args.weighting),
+                    **calc_modes_kwargs)
+            spectrum_1d = _arrange_pdos_groups(spectrum_1d_col, args.pdos)
+        elif args.weighting == 'coherent':
+            if args.pdos is not None:
+                raise ValueError(
+                    '--pdos is only compatible with --weighting options '
+                    'that include dos')
             spectrum_1d = sample_sphere_structure_factor(
                 fc, q,
                 dw=dw,
