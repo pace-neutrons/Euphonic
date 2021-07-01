@@ -33,6 +33,11 @@
 
 - Changes:
 
+  - The units of density of states as produced by ``calculate_dos`` have
+    changed from dimensionless to ``1/energy``
+  - The scaling of density of states has also changed. Previously the
+    integration would sum to 1 (if the ``x_data`` were converted to Hartree
+    units), now the integration will sum to 3N in the same units as ``x_data``
   - ``StructureFactor.structure_factors`` have been changed to be in absolute
     units per atom (rather than per unit cell) so will have changed by a
     factor of `1/2*n_atoms`, this formulation change has been reflected in the
