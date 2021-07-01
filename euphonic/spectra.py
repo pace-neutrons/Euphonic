@@ -487,9 +487,8 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
         and values should be strings or integers. There are some
         functional keys:
           - 'line_data' : LineData
-                          This is a Sequence[
-                              Dict[str, Union[int, str]]
-                          ], it contains metadata for each spectrum in
+                          This is a Sequence[Dict[str, Union[int, str]],
+                          it contains metadata for each spectrum in
                           the collection, and must be of length
                           n_entries
     """
@@ -516,9 +515,8 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
             strings and values should be strings or integers.
             There are some functional keys:
               - 'line_data' : LineData
-                              This is a Sequence[
-                                  Dict[str, Union[int, str]]
-                              ], it contains metadata for each spectrum
+                              This is a Sequence[Dict[str, Union[int, str]],
+                              it contains metadata for each spectrum
                               in the collection, and must be of length
                               n_entries
         """

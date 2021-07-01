@@ -91,12 +91,13 @@ same axis:
 
   import matplotlib.pyplot as plt
   from euphonic import Spectrum1D
-  from euphonic.plot import plot_1d_to_axis
+  from euphonic.plot import plot_1d, plot_1d_to_axis
 
   dos1 = Spectrum1D.from_json_file('dos_ebins1.json')
   dos2 = Spectrum1D.from_json_file('dos_ebins2.json')
-  fig, ax = plt.subplots(1, 1)
-  plot_1d_to_axis(dos1, ax)
+
+  fig = plot_1d(dos1)
+  ax = fig.get_axes()[0]
   plot_1d_to_axis(dos2, ax)
   fig.show()
 
