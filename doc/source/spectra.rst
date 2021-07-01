@@ -97,7 +97,7 @@ Adding Spectrum1DCollection
 ---------------------------
 
 Two ``Spectrum1DCollection`` objects can be added together (provided they
-have the same ``x_data`` axes) with the ``+`` operator. This will append
+have the same ``x_data`` axes) with the ``+`` operator. This will concatenate
 their ``y_data``, returning a single ``Spectrum1DCollection`` that contains
 all the ``y_data`` of both objects. For example:
 
@@ -146,7 +146,7 @@ Grouping By Metadata
 You can group and sum specific spectra from a ``Spectrum1DCollection``
 based on their metadata using
 :py:meth:`Spectrum1DCollection.group_by <euphonic.spectra.Spectrum1DCollection.group_by>`.
-For example, if you have a collection containing
+For example, if you have a collection ``spec1d_col`` containing
 8 spectra with the following metadata:
 
 .. code-block:: py
@@ -168,6 +168,17 @@ If you want to group and sum spectra that have the same ``weighting``:
 
   weighting_pdos = spec1d_col.group_by('weighting')
 
+This would produce a collection containing 2 spectra with the following metadata
+(the ``index`` and ``species`` metadata are not common across all the grouped
+spectra, so have been discarded):
+
+.. code-block:: py
+
+  {'line_data': [
+     {'weighting': 'coherent'},
+     {'weighting': 'incoherent'}]
+  }
+
 You can also group by multiple keys, for example to group and sum spectra that
 have both the same ``weighting`` and ``species``:
 
@@ -175,24 +186,36 @@ have both the same ``weighting`` and ``species``:
 
   weighting_species_pdos = spec1d_col.group_by('weighting', 'species')
 
+This would produce a collection containing 4 spectra with the following metadata:
+
+.. code-block:: py
+
+  {'line_data': [
+     {'species': 'Si', 'weighting': 'coherent'},
+     {'species': 'O', 'weighting': 'coherent'},
+     {'species': 'Si', 'weighting': 'incoherent'},
+     {'species': 'O', 'weighting': 'incoherent'}]
+  }
+
+
 Selecting By Metadata
 ---------------------
 
 You can select specific spectra from a ``Spectrum1DCollection`` based
 on their metadata using
 :py:meth:`Spectrum1DCollection.select <euphonic.spectra.Spectrum1DCollection.select>`.
-For example, if you have a collection containing
+For example, if you have a collection ``spec1d_col`` containing
 6 spectra with the following metadata:
 
 .. code-block:: py
 
   {'line_data': [
      {'species': 'Si', 'weighting': 'coherent'},
-     {'species': 'O', 'weighting': 'incoherent'},
-     {'species': 'Si', 'weighting': 'coherent'},
+     {'species': 'O', 'weighting': 'coherent'},
+     {'species': 'Si', 'weighting': 'incoherent'},
      {'species': 'O', 'weighting': 'incoherent'},
      {'species': 'Si', 'weighting': 'coherent-plus-incoherent'},
-     {'species': 'O', 'weighting': 'incoherent-plus-incoherent'}]
+     {'species': 'O', 'weighting': 'coherent-plus-incoherent'}]
   }
 
 If you want to select only the spectra where ``weighting='coherent'``:
@@ -201,6 +224,16 @@ If you want to select only the spectra where ``weighting='coherent'``:
 
   coh_pdos = spec1d_col.select(weighting='coherent')
 
+This would create a collection containing 2 spectra, with the following
+metadata:
+
+.. code-block:: py
+
+  {'line_data': [
+     {'species': 'Si', 'weighting': 'coherent'},
+     {'species': 'O', 'weighting': 'coherent'}]
+  }
+
 You can also select multiple values for a specific key. To select spectra
 where ``weighting='coherent'`` or ``weighting='incoherent'``:
 
@@ -208,12 +241,31 @@ where ``weighting='coherent'`` or ``weighting='incoherent'``:
 
   coh_or_incoh_pdos = spec1d_col.select(weighting=['coherent', 'incoherent'])
 
+This would create a collection containing 4 spectra, with the following
+metadata:
+
+.. code-block:: py
+
+  {'line_data': [
+     {'species': 'Si', 'weighting': 'coherent'},
+     {'species': 'O', 'weighting': 'coherent'},
+     {'species': 'Si', 'weighting': 'incoherent'},
+     {'species': 'O', 'weighting': 'incoherent'}]
+  }
+
 You can also select by multiple key/values. To select only the spectrum with
 ``weighting='coherent'`` and ``species='Si'``:
 
 .. code-block:: py
 
   coh_si_pdos = spec1d_col.select(weighting='coherent', species='Si')
+
+This would create a collection containing only one spectrum, with the
+following metadata:
+
+.. code-block:: py
+
+  {'species': 'Si', 'weighting': 'coherent'}
 
 Summing Spectra
 ---------------

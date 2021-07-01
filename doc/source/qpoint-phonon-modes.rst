@@ -190,7 +190,7 @@ and species-resolved coherent neutron-weighted PDOS:
   species_pdos = pdos.group_by('species')  # species resolved pdos
   total_dos = pdos.sum()  # total dos
 
-PDOS can also be adaptively broadened :ref:`in the same way as DOS <adaptive_broadening>`
+PDOS can also be adaptively broadened :ref:`in the same way as DOS <adaptive_broadening>`.
 
 Calculating Density of States
 -----------------------------

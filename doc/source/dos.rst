@@ -1,19 +1,21 @@
 .. _dos:
 
-===
-DOS
-===
+=================
+Density of States
+=================
 
 .. contents:: :local:
 
-DOS
----
+DOS representation in Euphonic
+------------------------------
 
-DOS in Euphonic are represented by a generic :ref:`Spectrum1D<spectrum1d>`
-object. If there are multiple DOS with the same energy bins (e.g. per-element
-PDOS and total DOS) they can be contained in a
-:ref:`Spectrum1DCollection<spectrum1dcollection>` object. PDOS can be labelled
-with the ``metadata`` attributes, e.g. for a ``Spectrum1D`` object:
+Density of states in Euphonic is represented by a generic
+:ref:`Spectrum1D<spectrum1d>` object. If there are multiple
+DOS with the same energy bins (e.g. per-element partial DOS
+and total DOS) they can be contained in a
+:ref:`Spectrum1DCollection<spectrum1dcollection>` object. PDOS
+can be labelled with the ``metadata`` attributes, e.g. for a
+``Spectrum1D`` object:
 
 .. code-block:: py
 
