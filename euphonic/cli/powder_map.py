@@ -46,6 +46,11 @@ def get_parser() -> 'argparse.ArgumentParser':
                                help="Minimum |q| in 1/LENGTH_UNIT")
     sections['q'].add_argument('--q-max', type=float, default=3., dest='q_max',
                                help="Maximum |q| in 1/LENGTH_UNIT")
+    sections['plotting'].add_argument('--no-widgets', action='store_true',
+                                      dest='disable_widgets', default=False,
+                                      help=("Don't use Matplotlib widgets to "
+                                            "enable interactive setting of "
+                                            "colormap intensity limits"))
     return parser
 
 
@@ -158,12 +163,48 @@ def main(params: List[str] = None):
     else:
         x_label = args.x_label
 
-    euphonic.plot.plot_2d(spectrum,
-                          cmap=args.cmap,
-                          vmin=args.v_min, vmax=args.v_max,
-                          x_label=x_label,
-                          y_label=y_label,
-                          title=args.title)
+    fig = euphonic.plot.plot_2d(spectrum,
+                                cmap=args.cmap,
+                                vmin=args.v_min, vmax=args.v_max,
+                                x_label=x_label,
+                                y_label=y_label,
+                                title=args.title)
+
+    if args.disable_widgets is False:
+        # TextBox only available from mpl 2.1.0
+        try:
+            from matplotlib.widgets import TextBox
+        except ImportError:
+            args.disable_widgets = True
+
+    if args.disable_widgets is False:
+        min_label = f'Min Intensity ({spectrum.z_data.units:~P})'
+        max_label = f'Max Intensity ({spectrum.z_data.units:~P})'
+        boxw = 0.15
+        boxh = 0.05
+        x0 = 0.1 + len(min_label)*0.01
+        y0 = 0.025
+        fig.subplots_adjust(bottom=0.25)
+        axmin = fig.add_axes([x0, y0, boxw, boxh])
+        axmax = fig.add_axes([x0, y0 + 0.075, boxw, boxh])
+        image = fig.get_axes()[0].images[0]
+        cmin, cmax = image.get_clim()
+        pad = 0.05
+        fmt_str = '.2e' if cmax < 0.1 else '.2f'
+        minbox = TextBox(axmin, min_label,
+                         initial=f'{cmin:{fmt_str}}', label_pad=pad)
+        maxbox = TextBox(axmax, max_label,
+                         initial=f'{cmax:{fmt_str}}', label_pad=pad)
+        def update_min(min_val):
+            image.set_clim(vmin=float(min_val))
+            fig.canvas.draw()
+
+        def update_max(max_val):
+            image.set_clim(vmax=float(max_val))
+            fig.canvas.draw()
+        minbox.on_submit(update_min)
+        maxbox.on_submit(update_max)
+
     matplotlib_save_or_show(save_filename=args.save_to)
 
 
