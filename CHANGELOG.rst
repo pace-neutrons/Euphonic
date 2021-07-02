@@ -24,6 +24,8 @@
 
 - Improvements:
 
+  - Add ability to interactively change the colormap intensity limits
+    in ``euphonic-powder-map``
   - ``euphonic-optimise-dipole-parameter`` can now read from Phonopy sources
   - ``euphonic-optimise-dipole-parameter`` can now also be used for non-polar
     materials to get general per-qpoint timings
