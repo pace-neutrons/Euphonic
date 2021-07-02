@@ -24,6 +24,8 @@
 
 - Improvements:
 
+  - LICENSE and `CITATION.cff <https://citation-file-format.github.io/>`_
+    files are now included in Euphonic's installation
   - Add ability to interactively change the colormap intensity limits
     in ``euphonic-powder-map``
   - ``euphonic-optimise-dipole-parameter`` can now read from Phonopy sources

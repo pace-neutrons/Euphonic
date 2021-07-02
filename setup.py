@@ -1,10 +1,11 @@
+import os
+import shutil
+import warnings
+
 import versioneer
-try:
-    from setuptools import setup, Extension
-    from setuptools.command.install import install
-except ImportError:
-    from distutils.core import setup, Extension
-    from distutils.command.install import install
+from setuptools import setup, Extension
+from setuptools.command.install import install
+
 
 
 class InstallCommand(install):
@@ -67,18 +68,32 @@ def get_c_extension():
     return euphonic_c_extension
 
 
-def run_setup(build_c=True):
+def run_setup():
 
-    with open('README.rst', 'r') as f:
-        long_description = f.read()
+    license_file = 'LICENSE'
+
+    # A list of files outside the Euphonic package directory that should
+    # be included in the installation in site-packages. They must
+    # also be added to MANIFEST.in
+    ex_install_files = [license_file,
+                        'CITATION.cff']
+    # MANIFEST.in will add any included files to the site-packages
+    # installation, but only if they are inside the package directory,
+    # so temporarily copy them there
+    for ex_install_file in ex_install_files:
+        try:
+            shutil.copy(ex_install_file, 'euphonic')
+        except (PermissionError, OSError) as err:
+            warnings.warn(f'{err}', stacklevel=2)
 
     packages = ['euphonic',
                 'euphonic.cli',
                 'euphonic.readers',
                 'euphonic.data']
 
-    package_data = {'euphonic' : ['data/*.json', 'data/constants_en.txt',
-                                  'data/default_en.txt']}
+    with open('README.rst', 'r') as f:
+        long_description = f.read()
+
 
     cmdclass = versioneer.get_cmdclass()
     cmdclass['install'] = InstallCommand
@@ -103,12 +118,12 @@ def run_setup(build_c=True):
             'neutron scattering intensities from modelling code output '
             '(e.g. CASTEP)'),
         license='GPLv3',
-        license_files=('LICENSE',),
+        license_files=(license_file,),
         long_description=long_description,
         long_description_content_type='text/x-rst',
         url='https://github.com/pace-neutrons/Euphonic',
         packages=packages,
-        package_data=package_data,
+        include_package_data=True,
         install_requires=[
             'numpy>=1.12.1',
             'scipy>=1.0.0',
@@ -130,5 +145,11 @@ def run_setup(build_c=True):
             'euphonic-intensity-map = euphonic.cli.intensity_map:main',
             'euphonic-powder-map = euphonic.cli.powder_map:main']}
     )
+
+    for ex_install_file in ex_install_files:
+        try:
+            os.remove(os.path.join('euphonic', ex_install_file))
+        except (PermissionError, OSError) as err:
+            warnings.warn(f'{err}', stacklevel=2)
 
 run_setup()

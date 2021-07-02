@@ -11,6 +11,8 @@ precalculated phonon frequencies (e.g. CASTEP .phonon files).
 For more information on how to use Euphonic, see the
 :ref:`tutorials <tutorials>`
 
+.. contents:: :local:
+
 Installation
 ============
 
@@ -57,7 +59,7 @@ If you don't require plotting or reading of Phonopy files, just use:
   pip install .
 
 Installing the C extension
-==========================
+--------------------------
 
 By default, Euphonic will attempt to build and install the C extension,
 which can lead to increased performance and enable use of multiple cores for
@@ -99,7 +101,7 @@ before running pip install run:
   brew install llvm
 
 Installing Euphonic without the C extension
-===========================================
+-------------------------------------------
 
 If you don't need the extra performance the C extension provides, you can
 install the Python parts only with:
@@ -113,6 +115,27 @@ been installed already, actually makes installing other packages such as Numpy
 more difficult. The easiest way around this is running the usual install
 command first (which will install all the dependencies), then running again
 with the ``--install-option="--python-only"`` option.
+
+Citing Euphonic
+===============
+
+Euphonic has a `CITATION.cff <https://citation-file-format.github.io/>`_ that
+contains all the metadata required to cite Euphonic. The correct citation file
+for your version of Euphonic can be found in Euphonic's installation directory,
+or it can be read programatically as follows:
+
+.. code-block:: py
+
+  import yaml
+  import euphonic
+  from importlib_resources import open_text
+
+  with open_text(euphonic, 'CITATION.cff') as fp:
+      citation_data = yaml.safe_load(fp)
+
+The latest version of the citation file can also be found in Euphonic's code
+repository
+
 
 .. toctree::
    :hidden:
