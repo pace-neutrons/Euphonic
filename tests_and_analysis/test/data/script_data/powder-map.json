@@ -3348,7 +3348,7 @@
             0.0
         ]
     },
-    "NaCl_prim phonopy_nacl.yaml -w=incoherent-dos --pdos=Na --npts=10 --npts-min=10 --q-spacing=1": {
+    "NaCl_prim phonopy_nacl.yaml -w=incoherent-dos --pdos=Na --no-widget --npts=10 --npts-min=10 --q-spacing=1": {
         "x_ticklabels": [
             "0.0",
             "0.5",

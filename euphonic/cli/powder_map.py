@@ -50,7 +50,7 @@ def get_parser() -> 'argparse.ArgumentParser':
                                       dest='disable_widgets', default=False,
                                       help=("Don't use Matplotlib widgets to "
                                             "enable interactive setting of "
-                                            "colourmap intensity limits"))
+                                            "colormap intensity limits"))
     return parser
 
 

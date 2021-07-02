@@ -44,7 +44,7 @@ powder_map_params = [
     [graphite_fc_file, '--asr', *quick_calc_params],
     [graphite_fc_file, '--asr=realspace', '--dipole-parameter=0.75',
      *quick_calc_params],
-    [nacl_prim_fc_file, '-w=incoherent-dos', '--pdos=Na',
+    [nacl_prim_fc_file, '-w=incoherent-dos', '--pdos=Na', '--no-widget',
      *quick_calc_params],
     [nacl_prim_fc_file, '-w=coherent-plus-incoherent-dos', '--pdos=Cl',
      *quick_calc_params]]
