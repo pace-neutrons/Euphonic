@@ -18,14 +18,15 @@ Python API
 - :ref:`Structure Factors <structure-factor>`
 - :ref:`Scattering Intensities <scattering-intensities>`
 - :ref:`Debye-Waller <debye-waller>`
+- :ref:`Spectra <spectra>`
 - :ref:`powder`
 - :ref:`plotting`
 - :ref:`sampling`
 - :ref:`utils`
 - :ref:`Units in Euphonic <units>`
 
-Helper Scripts
-==============
+Command-line Tools
+==================
 
 - :ref:`euphonic-dispersion <disp-script>`
 - :ref:`euphonic-dos <dos-script>`

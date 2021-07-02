@@ -1,6 +1,27 @@
 `Unreleased <https://github.com/pace-neutrons/Euphonic/compare/v0.5.2...HEAD>`_
 ----------
 
+- Euphonic can now calculate neutron-weighted partial density of states, and
+  has new ``Spectra`` features to handle PDOS data:
+
+  - Added ``QpointPhononModes.calculate_pdos`` method
+  - Added ``QpointFrequencies.calculate_dos_map`` method
+  - New ``Spectrum1D.__add__`` method, which adds 2 spectra together
+  - New ``Spectrum1DCollection.__add__`` method, which concatenates 2 collections
+  - Enabled indexing of ``Spectrum1DCollection`` by a sequence
+  - Added ``Spectrum1DCollection.group_by`` method, which allows grouping and
+    summing spectra by metadata keys e.g. ``group_by('species')``
+  - Added ``Spectrum1DCollection.select`` method, which allows selection
+    of spectra by metadata keys e.g. ``select(species='Si')``
+  - Added ``Spectrum1DCollection.sum`` method, which sums all spectra in a
+    collection
+  - Added ``-w={'coherent-dos','incoherent-dos','coherent-plus-incoherent-dos'}``
+    neutron-weighted PDOS options to ``euphonic-dos`` and ``euphonic-powder-map``
+  - Added ``--pdos`` options for plotting specific species PDOS to
+    ``euphonic-dos`` and ``euphonic-powder-map``
+  - Deprecated ``--weights`` command-line argument in favour of ``--weighting``
+    for consistency with ``calculate_pdos``
+
 - Improvements:
 
   - ``euphonic-optimise-dipole-parameter`` can now read from Phonopy sources
@@ -12,6 +33,11 @@
 
 - Changes:
 
+  - The units of density of states as produced by ``calculate_dos`` have
+    changed from dimensionless to ``1/energy``
+  - The scaling of density of states has also changed. Previously the
+    integration would sum to 1 (if the ``x_data`` were converted to Hartree
+    units), now the integration will sum to 3N in the same units as ``x_data``
   - ``StructureFactor.structure_factors`` have been changed to be in absolute
     units per atom (rather than per unit cell) so will have changed by a
     factor of `1/2*n_atoms`, this formulation change has been reflected in the

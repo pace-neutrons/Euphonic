@@ -12,11 +12,11 @@ constants.
 For example, to plot a coherent neutron-weighted intensity map from CASTEP
 force constants along a recommended q-point path, one could run::
 
-   euphonic-intensity-map --weights coherent --energy-broadening 1.5 quartz.castep_bin
+   euphonic-intensity-map --weighting coherent --energy-broadening 1.5 quartz.castep_bin
 
 Or, to plot a DOS-weighted intensity from Phonopy phonon frequencies::
 
-   euphonic-intensity-map --weights dos --energy-unit THz --energy-broadening 0.15 band.yaml
+   euphonic-intensity-map --weighting dos --energy-unit THz --energy-broadening 0.15 band.yaml
 
 To see all the command line options, run::
 

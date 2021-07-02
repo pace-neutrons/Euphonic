@@ -2,7 +2,8 @@
     "__euphonic_class__": "Spectrum1D",
     "__euphonic_version__": "0.4.0+43.g29d0ab9.dirty",
     "metadata": {
-        "label": "Si"
+        "label": "Si",
+        "species": "Si"
     },
     "x_data": [
         -185.97629764980042,
@@ -6011,5 +6012,5 @@
         0.0,
         0.0
     ],
-    "y_data_unit": "dimensionless"
+    "y_data_unit": "cm"
 }

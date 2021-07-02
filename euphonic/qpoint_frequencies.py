@@ -1,5 +1,5 @@
 import warnings
-from typing import Dict, Optional, TypeVar, Any
+from typing import Any, Dict, List, Optional, Tuple, TypeVar
 
 import numpy as np
 
@@ -9,7 +9,7 @@ from euphonic.io import (_obj_to_json_file, _obj_from_json_file,
 from euphonic.readers import castep, phonopy
 from euphonic.util import (_calc_abscissa, get_qpoint_labels)
 from euphonic import (ureg, Crystal, Quantity, Spectrum1D,
-                      Spectrum1DCollection)
+                      Spectrum1DCollection, Spectrum2D)
 
 
 T = TypeVar('T', bound='QpointFrequencies')
@@ -90,7 +90,7 @@ class QpointFrequencies:
         super(QpointFrequencies, self).__setattr__(name, value)
 
     def calculate_dos(self, dos_bins: Quantity,
-                      mode_widths: Optional[np.ndarray] = None,
+                      mode_widths: Optional[Quantity] = None,
                       mode_widths_min: Quantity = Quantity(0.01, 'meV')
                       ) -> Spectrum1D:
         """
@@ -116,13 +116,48 @@ class QpointFrequencies:
             A spectrum containing the energy bins on the x-axis and dos
             on the y-axis
         """
-        freqs = self._frequencies
-        n_modes = self.frequencies.shape[1]
+        dos = self._calculate_dos(dos_bins, mode_widths=mode_widths,
+                                  mode_widths_min=mode_widths_min)
+        return Spectrum1D(dos_bins, dos)
+
+    def _calculate_dos(self, dos_bins: Quantity,
+                       mode_widths: Optional[Quantity] = None,
+                       mode_widths_min: Quantity = Quantity(0.01, 'meV'),
+                       mode_weights: Optional[np.ndarray] = None,
+                       q_idx: Optional[int] = None
+                       ) -> Quantity:
+        """
+        Calculates a density of states (same arg defs as calculate_dos),
+        but returns just a Quantity containing the y_data, rather
+        than a Spectrum1D
+
+        The mode_weights is a shape (n_qpts, n_modes) float array,
+        describing the weight of each mode at each q-point.
+        This is useful for calculating PDOS, for total DOS each
+        mode is equally weighted so each mode_weights value will
+        be one, for PDOS it will not
+
+        If q_idx is specified, only calculates a DOS for that specific
+        q-point, used for calculating a Q-E DOS-weighted map. In this
+        case, mode_widths and mode_weights must be shape (1, n_modes)
+        arrays
+        """
+        if q_idx is None:
+            freqs = self._frequencies
+            weights = self.weights
+        else:
+            freqs = self._frequencies[q_idx][np.newaxis, :]
+            weights = np.array([self.weights[q_idx]])
+        n_modes = freqs.shape[-1]
         # dos_bins commonly contains a 0 bin, and converting from 0 1/cm
         # to 0 hartree causes a RuntimeWarning, so suppress it
         with warnings.catch_warnings():
             warnings.filterwarnings('ignore', category=RuntimeWarning)
             dos_bins_calc = dos_bins.to('hartree').magnitude
+        if mode_weights is not None:
+            mode_weights_calc = mode_weights
+        else:
+            mode_weights_calc = np.ones(freqs.shape)
         if mode_widths is not None:
             from scipy.stats import norm
             dos_bins_calc = Spectrum1D._bin_edges_to_centres(dos_bins_calc)
@@ -130,20 +165,46 @@ class QpointFrequencies:
             mode_widths = mode_widths.to('hartree').magnitude
             mode_widths = np.maximum(mode_widths,
                                      mode_widths_min.to('hartree').magnitude)
-            for q in range(self.n_qpts):
+            for q in range(len(freqs)):
                 for m in range(n_modes):
                     pdf = norm.pdf(dos_bins_calc, loc=freqs[q,m],
                                    scale=mode_widths[q,m])
-                    dos += pdf*self.weights[q]/n_modes
+                    dos += pdf*weights[q]*mode_weights_calc[q, m]
         else:
-            weights = np.repeat(self.weights[:, np.newaxis],
-                                n_modes,
-                                axis=1)
-            dos, _ = np.histogram(freqs, dos_bins_calc, weights=weights, density=True)
+            bin_idx = np.digitize(freqs, dos_bins_calc)
+            # Create DOS with extra bin either side, for any points
+            # that fall outside the bin range
+            dos = np.zeros(len(dos_bins) + 1)
+            bin_widths = np.ones(len(dos_bins) + 1) # Use ones to avoid div/0
+            bin_widths[1:-1] = np.diff(dos_bins_calc)
+            mode_weights_calc = (weights[:, np.newaxis]
+                                 *mode_weights_calc/bin_widths[bin_idx])
+            np.add.at(dos, bin_idx, mode_weights_calc)
+            dos = dos[1:-1]
 
-        return Spectrum1D(
-            dos_bins,
-            dos*ureg('dimensionless'))
+        dos = dos/np.sum(weights)
+        # Avoid issues in converting DOS when energy is in cm^-1
+        # Pint allows hartree -> cm^-1 but not 1/hartree -> cm
+        conv = 1*ureg('hartree').to(dos_bins.units)
+        return dos/conv
+
+
+    def calculate_dos_map(self, dos_bins: Quantity,
+                          mode_widths: Optional[Quantity] = None,
+                          mode_widths_min: Quantity = Quantity(0.01, 'meV')
+                          ) -> Spectrum2D:
+        x_data, x_tick_labels = self._get_qpt_axis_and_labels()
+        dos_map = np.zeros((len(self.qpts), len(dos_bins) - 1))
+        for i in range(len(self.qpts)):
+            dos_kwargs = {}
+            if mode_widths is not None:
+                dos_kwargs['mode_widths'] = mode_widths[i][np.newaxis, :]
+            dos = self._calculate_dos(
+                dos_bins, mode_widths_min=mode_widths_min, q_idx=i,
+                **dos_kwargs)
+            dos_map[i, :] = dos.magnitude
+        return Spectrum2D(x_data, dos_bins, dos_map*(dos.units),
+                          x_tick_labels=x_tick_labels)
 
     def get_dispersion(self) -> Spectrum1DCollection:
         """
@@ -164,6 +225,14 @@ class QpointFrequencies:
                                           cell=self.crystal.to_spglib_cell())
         return Spectrum1DCollection(abscissa, self.frequencies.T,
                                     x_tick_labels=x_tick_labels)
+
+    def _get_qpt_axis_and_labels(self
+            ) -> Tuple[Quantity, List[Tuple[int, str]]]:
+        abscissa = _calc_abscissa(self.crystal.reciprocal_cell(), self.qpts)
+        # Calculate q-space ticks and labels
+        x_tick_labels = get_qpoint_labels(
+            self.qpts, cell=self.crystal.to_spglib_cell())
+        return abscissa, x_tick_labels
 
     def to_dict(self) -> Dict[str, Any]:
         """

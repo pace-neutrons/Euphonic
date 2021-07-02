@@ -1,3 +1,4 @@
+import copy
 import os
 import json
 
@@ -6,7 +7,7 @@ import numpy as np
 import numpy.testing as npt
 from pint import DimensionalityError
 
-from euphonic import ureg, Crystal, QpointFrequencies
+from euphonic import ureg, Crystal, QpointFrequencies, Spectrum1D
 from euphonic.readers.phonopy import ImportPhonopyReaderError
 from tests_and_analysis.test.euphonic_test.test_crystal import (
     ExpectedCrystal, check_crystal)
@@ -16,6 +17,8 @@ from tests_and_analysis.test.euphonic_test.test_spectrum1d import (
     get_expected_spectrum1d, check_spectrum1d)
 from tests_and_analysis.test.euphonic_test.test_spectrum1dcollection import (
     get_expected_spectrum1dcollection, check_spectrum1dcollection)
+from tests_and_analysis.test.euphonic_test.test_spectrum2d import (
+    get_expected_spectrum2d, check_spectrum2d)
 from tests_and_analysis.test.utils import (
     get_data_path, get_castep_path, get_phonopy_path,
     check_frequencies_at_qpts, check_unit_conversion,
@@ -421,6 +424,18 @@ class TestQpointFrequenciesCalculateDos:
              'quartz_666_dos.json', np.arange(0, 155, 0.5)*ureg('meV')),
             ('CaHgO2', 'CaHgO2_666_qpoint_frequencies.json',
              'CaHgO2_666_dos.json', np.arange(0, 95, 0.4)*ureg('meV')),
+            ('quartz', 'toy_quartz_qpoint_frequencies.json',
+             'toy_quartz_dos.json', np.arange(-1, 40)*ureg('meV')),
+            ('quartz', 'toy_quartz_qpoint_frequencies.json',
+             'toy_quartz_cropped_dos.json', np.arange(5, 15)*ureg('meV')),
+            ('quartz', 'toy_quartz_qpoint_frequencies.json',
+             'toy_quartz_cropped_uneven_dos.json',
+             np.concatenate((np.arange(5, 21, 2),
+                             np.arange(21, 30)))*ureg('meV')),
+            ('quartz', 'toy_quartz_qpoint_frequencies.json',
+             'toy_quartz_cropped_uneven_hartree_dos.json',
+             np.concatenate((np.arange(5, 21, 2),
+                             np.arange(21, 30)))*ureg('meV').to('hartree'))
         ])
     def test_calculate_dos(
             self, material, qpt_freqs_json, expected_dos_json, ebins):
@@ -487,6 +502,63 @@ class TestQpointFrequenciesCalculateDos:
         with pytest.warns(None) as warn_record:
             dos = qpt_freqs.calculate_dos(ebins)
         assert len(warn_record) == 0
+
+@pytest.mark.unit
+class TestQpointFrequenciesCalculateDosMap:
+    @pytest.mark.parametrize(
+        'material, qpt_freqs_json, ebins, expected_dos_map_json', [
+            ('quartz', 'quartz_bandstructure_cv_only_qpoint_frequencies.json',
+             np.arange(0, 155, 0.6)*ureg('meV'),
+             'quartz_bandstructure_dos_map.json'),
+            ('NaCl', 'NaCl_band_yaml_from_phonopy_qpoint_frequencies.json',
+             np.arange(0, 300, 5)*ureg('1/cm'),
+             'NaCl_band_yaml_dos_map.json')
+        ])
+    def test_calculate_dos_map(
+            self, material, qpt_freqs_json, ebins, expected_dos_map_json):
+        qpt_freqs = get_qpt_freqs(material, qpt_freqs_json)
+        dos_map = qpt_freqs.calculate_dos_map(ebins)
+        expected_dos_map = get_expected_spectrum2d(
+            expected_dos_map_json)
+        check_spectrum2d(dos_map, expected_dos_map)
+
+    def get_test_nacl_mode_widths():
+        mode_widths = np.ones((23,24))
+        mode_widths[:, :5] = 2.
+        mode_widths[:10, -6:] = 1.5
+        return mode_widths*ureg('meV')
+
+    @pytest.mark.parametrize(
+        'material, qpt_freqs_json, ebins, dos_kwargs, qpts_to_test', [
+            ('NaCl', 'NaCl_band_yaml_from_phonopy_qpoint_frequencies.json',
+             np.arange(50, 150, 4)*ureg('1/cm'), {}, [0, 7, -1]),
+            ('NaCl', 'NaCl_band_yaml_from_phonopy_qpoint_frequencies.json',
+             np.arange(0, 35, 0.5)*ureg('meV'),
+             {'mode_widths': get_test_nacl_mode_widths()},
+             [-1]),
+            ('NaCl', 'NaCl_band_yaml_from_phonopy_qpoint_frequencies.json',
+             np.arange(0, 250, 4)*ureg('1/cm'),
+             {'mode_widths': get_test_nacl_mode_widths(), 'mode_widths_min': 1.1*ureg('meV')},
+             [0, 15])
+        ])
+    def test_calculate_dos_map_gives_same_result_as_dos_at_single_qpt(
+            self, material, qpt_freqs_json, ebins, dos_kwargs, qpts_to_test):
+        qpt_freqs = get_qpt_freqs(material, qpt_freqs_json)
+        dos_map = qpt_freqs.calculate_dos_map(ebins, **dos_kwargs)
+        for qpt in qpts_to_test:
+            qpt_freqs_single_qpt = QpointFrequencies(
+                qpt_freqs.crystal,
+                qpt_freqs.qpts[qpt].reshape(1,-1),
+                qpt_freqs.frequencies[qpt].reshape(1,-1),
+                np.array([qpt_freqs.weights[qpt]]))
+            dos_kwargs_single_qpt = copy.copy(dos_kwargs)
+            if 'mode_widths' in dos_kwargs.keys():
+                dos_kwargs_single_qpt['mode_widths'] = dos_kwargs[
+                    'mode_widths'][qpt].reshape(1, -1)
+            dos_single_qpt = qpt_freqs_single_qpt.calculate_dos(
+                ebins, **dos_kwargs_single_qpt)
+            dos_map_at_qpt = Spectrum1D(dos_map.y_data, dos_map.z_data[qpt])
+            check_spectrum1d(dos_map_at_qpt, dos_single_qpt)
 
 @pytest.mark.unit
 class TestQpointFrequenciesGetDispersion:

@@ -25,7 +25,8 @@ intensity_map_params = [
     [graphite_fc_file, '--v-min=0', '--v-max=1e-10'],
     [graphite_fc_file, '--energy-unit=meV'],
     [graphite_fc_file, '--weights=coherent', '--cmap=bone'],
-    [graphite_fc_file, '--weights=coherent', '--temperature=800'],
+    [graphite_fc_file, '--weighting=coherent', '--cmap=bone'],
+    [graphite_fc_file, '--weighting=coherent', '--temperature=800'],
     [graphite_fc_file, '-w', 'dos', '--y-label=DOS', '--title=DOS TITLE'],
     [graphite_fc_file, '--e-min=50', '-u=cm^-1', '--x-label=wavenumber'],
     [graphite_fc_file, '--e-min=-100', '--e-max=1000', '--ebins=100',
@@ -63,9 +64,10 @@ class TestRegression:
         image_data = get_current_plot_image_data()
 
         with open(intensity_map_output_file, 'r') as expected_data_file:
-            expected_data_key = args_to_key(intensity_map_args)
-            expected_image_data = json.load(
-                expected_data_file)[expected_data_key]
+            # Test deprecated --weights until it is removed
+            key = args_to_key(intensity_map_args).replace(
+                'weights', 'weighting')
+            expected_image_data = json.load(expected_data_file)[key]
         for key, value in image_data.items():
             if key == 'extent':
                 # Lower bound of y-data (energy) varies by up to ~2e-6 on
@@ -96,8 +98,25 @@ class TestRegression:
             euphonic.cli.intensity_map.main(intensity_map_args)
 
     @pytest.mark.parametrize('intensity_map_args', [
-        [quartz_phonon_file, '-w=incoherent']])
-    def test_invalid_weights_raises_causes_exit(self, intensity_map_args):
+        [quartz_phonon_file, '--weights=dos']])
+    def test_weights_emits_deprecation_warning(
+            self, inject_mocks, intensity_map_args):
+        with pytest.warns(DeprecationWarning):
+            euphonic.cli.intensity_map.main(intensity_map_args)
+
+    # Until --pdos is implemented for intensity-map, check we haven't
+    # accidentally allowed it as an argument
+    @pytest.mark.parametrize('intensity_map_args', [
+        [quartz_phonon_file, '-w=dos', '--pdos=Si']])
+    def test_pdos_raises_causes_exit(self, intensity_map_args):
+        with pytest.raises(SystemExit) as err:
+            euphonic.cli.intensity_map.main(intensity_map_args)
+        assert err.type == SystemExit
+        assert err.value.code == 2
+
+    @pytest.mark.parametrize('intensity_map_args', [
+        [quartz_phonon_file, '-w=incoherent-dos']])
+    def test_invalid_weighting_raises_causes_exit(self, intensity_map_args):
         # Argparse should call sys.exit on invalid choices
         with pytest.raises(SystemExit) as err:
             euphonic.cli.intensity_map.main(intensity_map_args)

@@ -2,7 +2,8 @@
     "__euphonic_class__": "Spectrum1D",
     "__euphonic_version__": "0.4.0+43.g29d0ab9.dirty",
     "metadata": {
-        "label": "Zr"
+        "label": "Zr",
+        "species": "Zr"
     },
     "x_data": [
         -619.9209921660014,
@@ -20011,5 +20012,5 @@
         0.0,
         0.0
     ],
-    "y_data_unit": "dimensionless"
+    "y_data_unit": "cm"
 }

@@ -1,14 +1,16 @@
 import math
 from typing import Dict, Optional, Union, TypeVar, Any
+from collections.abc import Mapping
 
 import numpy as np
+from pint import DimensionalityError
 
 from euphonic.validate import _check_constructor_inputs
 from euphonic.io import _obj_from_json_file, _obj_to_dict, _process_dict
 from euphonic.readers import castep, phonopy
 from euphonic.util import (direction_changed, is_gamma, get_reference_data)
 from euphonic import (ureg, Quantity, Crystal, DebyeWaller, QpointFrequencies,
-                      StructureFactor)
+                      StructureFactor, Spectrum1DCollection)
 
 
 T = TypeVar('T', bound='QpointPhononModes')
@@ -232,6 +234,10 @@ class QpointPhononModes(QpointFrequencies):
                 physical_property='coherent_scattering_length')
         elif isinstance(scattering_lengths, dict):
             scattering_length_data = scattering_lengths
+        else:
+            raise TypeError((
+                f'Unexpected type for scattering_lengths, should be str '
+                f'or dict, got {type(scattering_lengths)}'))
 
         sl = [scattering_length_data[x].to('bohr').magnitude
               for x in self.crystal.atom_type]
@@ -399,6 +405,129 @@ class QpointPhononModes(QpointFrequencies):
 
         dw = dw*ureg('bohr**2').to(self.crystal.cell_vectors_unit + '**2')
         return DebyeWaller(self.crystal, dw, temperature)
+
+    def calculate_pdos(
+            self, dos_bins: Quantity,
+            mode_widths: Optional[Quantity] = None,
+            mode_widths_min: Quantity = Quantity(0.01, 'meV'),
+            weighting: Optional[str] = None,
+            cross_sections: Union[str, Dict[str, Quantity]] = 'BlueBook',
+            ) -> Spectrum1DCollection:
+        """
+        Calculates partial density of states for each atom in the unit
+        cell.
+
+        Parameters
+        ----------
+        dos_bins
+            Shape (n_e_bins + 1,) float Quantity. The energy bin edges
+            to use for calculating the DOS.
+        mode_widths
+            Shape (n_qpts, n_branches) float Quantity in energy units.
+            The broadening width for each mode at each q-point, for
+            adaptive broadening.
+        mode_widths_min
+            Scalar float Quantity in energy units. Sets a lower limit on
+            the mode widths, as mode widths of zero will result in
+            infinitely sharp peaks.
+        weighting
+            One of {'coherent', 'incoherent', 'coherent-plus-incoherent'}.
+            If provided, produces a neutron-weighted DOS, weighted by
+            either the coherent, incoherent, or sum of coherent and
+            incoherent neutron scattering cross-sections.
+        cross_sections
+            A dataset of cross-sections for each element in the structure,
+            it can be a string specifying a dataset, or a dictionary
+            explicitly giving the cross-sections for each element.
+
+            If cross_sections is a string, it is passed to the ``collection``
+            argument of :obj:`euphonic.util.get_reference_data()`. This
+            collection must contain the 'coherent_cross_section' or
+            'incoherent_cross_section' physical property, depending on
+            the ``weighting`` argument. If ``weighting`` is None, this
+            string argument is not used.
+
+            If cross sections is a dictionary, the ``weighting`` argument is
+            ignored, and these cross-sections are used directly to calculate
+            the neutron-weighted DOS. It must contain a key for each element
+            in the structure, and each value must be a Quantity in the
+            appropriate units, e.g::
+
+                {'La': 8.0*ureg('barn'), 'Zr': 9.5*ureg('barn')}
+
+        Returns
+        -------
+        dos
+            A collection of spectra, with the energy bins on the x-axis and
+            PDOS for each atom in the unit cell on the y-axis. If weighting
+            is None, the y-axis is in 1/energy units. If weighting is
+            specified or cross_sections are supplied, the y-axis
+            is in area/energy units per average atom.
+        """
+        weighting_opts = [None, 'coherent', 'incoherent',
+                          'coherent-plus-incoherent']
+        if not weighting in weighting_opts:
+            raise ValueError(f'Invalid value for weighting, got '
+                             f'{weighting}, should be one of '
+                             f'{weighting_opts}')
+
+        cross_sections_data = None
+        if isinstance(cross_sections, str):
+            if weighting is not None:
+                if weighting == 'coherent-plus-incoherent':
+                    weights = ['coherent', 'incoherent']
+                else:
+                    weights = [weighting]
+                cross_sections_data = [get_reference_data(
+                    collection=cross_sections,
+                    physical_property=f'{weight}_cross_section')
+                                       for weight in weights]
+        elif isinstance(cross_sections, Mapping):
+            cross_sections_data = [cross_sections]
+        else:
+            raise TypeError(f'Unexpected type for cross_sections, expected '
+                            f'str or dict, got {type(cross_sections)}')
+
+        if cross_sections_data is not None:
+            cs = [cross_sections_data[0][x] for x in self.crystal.atom_type]
+            if len(cross_sections_data) == 2:
+                cs2 = [cross_sections_data[1][x]
+                        for x in self.crystal.atom_type]
+                cs = [sum(x) for x in zip(cs, cs2)]
+            # Account for cross sections in different, or invalid, units
+            ex_units = '[length]**2'
+            if not cs[0].check(ex_units):
+                raise ValueError((
+                    f'Unexpected dimensionality in cross_sections units, '
+                    f'expected {ex_units}, got {str(cs[0].dimensionality)}'))
+            cs = [x.to('mbarn').magnitude for x in cs]*ureg('mbarn')
+        else:
+            cs = None
+
+        evec_weights = np.real(np.einsum('ijkl,ijkl->ijk',
+                                         self.eigenvectors,
+                                         np.conj(self.eigenvectors)))
+        crystal = self.crystal
+        for i in range(crystal.n_atoms):
+            dos = self._calculate_dos(dos_bins, mode_widths=mode_widths,
+                                      mode_widths_min=mode_widths_min,
+                                      mode_weights=evec_weights[:, :, i])
+            if cs is not None:
+                # Neutron weighted DOS is per atom of sample
+                avg_atom_mass = np.mean(crystal._atom_mass)
+                dos *= cs[i]*avg_atom_mass/crystal._atom_mass[i]
+            if i == 0:
+                all_dos_y_data = np.zeros((
+                    crystal.n_atoms, len(dos_bins) - 1))*dos.units
+            all_dos_y_data[i] = dos
+        metadata = {'line_data':
+            [{'species': symbol, 'index': idx}
+             for idx, symbol in enumerate(crystal.atom_type)]}
+        if weighting is not None:
+            metadata['weighting'] = weighting
+
+        return Spectrum1DCollection(
+            dos_bins, all_dos_y_data, metadata=metadata)
 
     def to_dict(self) -> Dict[str, Any]:
         """

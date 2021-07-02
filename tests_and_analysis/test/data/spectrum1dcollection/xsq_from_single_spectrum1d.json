@@ -1,0 +1,54 @@
+{
+    "__euphonic_class__": "Spectrum1DCollection",
+    "__euphonic_version__": "0.5.2+1.g1c84002.dirty",
+    "metadata": {
+        "Another key": 2,
+        "Test": "Could be anything"
+    },
+    "x_data": [
+        0.5,
+        1.5,
+        2.5,
+        3.5,
+        4.5,
+        5.5,
+        7.0,
+        9.0,
+        11.0,
+        13.0,
+        15.0,
+        18.0,
+        22.0,
+        26.0
+    ],
+    "x_data_unit": "1 / angstrom",
+    "x_tick_labels": [
+        [
+            0,
+            "A"
+        ],
+        [
+            5,
+            "B"
+        ]
+    ],
+    "y_data": [
+        [
+            0.25,
+            2.25,
+            6.25,
+            12.25,
+            20.25,
+            30.25,
+            49.0,
+            81.0,
+            121.0,
+            169.0,
+            225.0,
+            324.0,
+            484.0,
+            676.0
+        ]
+    ],
+    "y_data_unit": "millielectron_volt"
+}

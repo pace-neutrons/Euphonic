@@ -1,10 +1,12 @@
 import inspect
 from math import ceil
 from typing import List, Tuple, TypeVar, Dict, Any
+from collections import OrderedDict
 
 import numpy as np
 from spglib import get_symmetry
 
+from euphonic.util import _cell_vectors_to_volume, _get_unique_elems_and_idx
 from euphonic.validate import _check_constructor_inputs, _check_unit_conversion
 from euphonic.io import (_obj_to_json_file, _obj_from_json_file,
                          _obj_to_dict, _process_dict)
@@ -141,8 +143,7 @@ class Crystal:
         return vol.to(ureg(self.cell_vectors_unit)**3)
 
     def _cell_volume(self):
-        cv = self._cell_vectors
-        return np.dot(cv[0], np.cross(cv[1], cv[2]))
+        return _cell_vectors_to_volume(self._cell_vectors)
 
     def get_mp_grid_spec(self,
                          spacing: Quantity = 0.1 * ureg('1/angstrom')
@@ -192,22 +193,22 @@ class Crystal:
                 unique_atoms.tolist())
         return cell
 
-    def get_species_idx(self) -> Dict[str, np.ndarray]:
+    def get_species_idx(self) -> 'OrderedDict[str, np.ndarray]':
         """
         Returns a dictionary of each species and their indices
 
         Returns
         -------
         species_idx
-            A dictionary containing each unique species symbol
-            as the keys, and their indices as the values
+            An ordered dictionary containing each unique species
+            symbol as the keys, and their indices as the values,
+            in the same order as they appear in atom_type
         """
-        _, idx = np.unique(self.atom_type, return_index=True)
-        # Retain species order
-        species = self.atom_type[np.sort(idx)]
-        spec_idx = {spec: np.where(self.atom_type == spec)[0]
-                    for spec in species}
-        return spec_idx
+        species_dict = _get_unique_elems_and_idx(
+            [tuple([at]) for at in self.atom_type])
+        # Convert tuples back to string
+        return OrderedDict([(str(key[0]), value)
+                            for key, value in species_dict.items()])
 
     def get_symmetry_equivalent_atoms(
             self, tol: Quantity = Quantity(1e-5, 'angstrom')
