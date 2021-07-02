@@ -71,7 +71,6 @@ def get_c_extension():
 def run_setup():
 
     license_file = 'LICENSE'
-
     # A list of files outside the Euphonic package directory that should
     # be included in the installation in site-packages. They must
     # also be added to MANIFEST.in
@@ -79,7 +78,7 @@ def run_setup():
                         'CITATION.cff']
     # MANIFEST.in will add any included files to the site-packages
     # installation, but only if they are inside the package directory,
-    # so temporarily copy them there
+    # so temporarily copy them there if needed
     for ex_install_file in ex_install_files:
         try:
             shutil.copy(ex_install_file, 'euphonic')
@@ -147,9 +146,13 @@ def run_setup():
     )
 
     for ex_install_file in ex_install_files:
-        try:
-            os.remove(os.path.join('euphonic', ex_install_file))
-        except (PermissionError, OSError) as err:
-            warnings.warn(f'{err}', stacklevel=2)
+        # Only delete file if there is another copy in the current dir
+        # (e.g. from a git clone) in a PyPI dist the only copy will be
+        # in the euphonic subdir, we don't want to delete that!
+        if os.path.isfile(ex_install_file):
+            try:
+                os.remove(os.path.join('euphonic', ex_install_file))
+            except (PermissionError, OSError, FileNotFoundError) as err:
+                warnings.warn(f'{err}', stacklevel=2)
 
 run_setup()

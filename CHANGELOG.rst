@@ -1,5 +1,8 @@
-`Unreleased <https://github.com/pace-neutrons/Euphonic/compare/v0.5.2...HEAD>`_
+`Unreleased <https://github.com/pace-neutrons/Euphonic/compare/v0.6.0...HEAD>`_
 ----------
+
+`v0.6.0 <https://github.com/pace-neutrons/Euphonic/compare/v0.5.2...0.6.0>`_
+------
 
 - Euphonic can now calculate neutron-weighted partial density of states, and
   has new ``Spectra`` features to handle PDOS data:

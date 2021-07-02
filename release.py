@@ -4,6 +4,8 @@ import os
 import re
 import requests
 import subprocess
+from importlib_resources import open_text
+import yaml
 from euphonic import __version__
 
 
@@ -22,20 +24,27 @@ def main():
 def release_github(test=True):
     with open('CHANGELOG.rst') as f:
         changelog = f.read()
+    with open('CITATION.cff') as f:
+        citation = yaml.safe_load(f)
+
     euphonic_ver = 'v' + __version__
-    changelog_ver = re.findall('\n`(v\d+\.\d+\.\S+)\s', changelog)[0]
-    if euphonic_ver != changelog_ver:
-        raise Exception((
-            f'euphonic.__version__/changelog.rst version mismatch! '
-            f'euphonic.__version__: {euphonic_ver} changelog.rst: '
-            f'{changelog_ver}'))
+    version_dict = {}
+    version_dict['CHANGELOG.rst'] = re.findall('\n`(v\d+\.\d+\.\S+)\s',
+                                               changelog)[0]
+    version_dict['CITATION.cff'] = 'v' + citation['version']
+    for ver_name, ver in version_dict.items():
+        if euphonic_ver != ver:
+            raise Exception((
+                f'euphonic.__version__/{ver_name} version mismatch! '
+                f'euphonic.__version__: {euphonic_ver} {ver_name}: '
+                f'{ver}'))
+
     desc = re.search('`v\d+\.\d+\.\S+.*?^-+\n(.*?)^`v', changelog,
                      re.DOTALL | re.MULTILINE).groups()[0].strip()
-
     payload = {
-        "tag_name": changelog_ver,
+        "tag_name": euphonic_ver,
         "target_commitish": "master",
-        "name": changelog_ver,
+        "name": euphonic_ver,
         "body": desc,
         "draft": False,
         "prerelease": True
