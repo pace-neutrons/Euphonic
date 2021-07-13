@@ -414,8 +414,10 @@ class TestStructureFactorCalculateSqwMap:
              'CaHgO2_300K_bose_negative_e_sqw.json',
              np.arange(-95,95,0.4)*ureg('meV'), {'calc_bose': True}),
             ('LZO', 'La2Zr2O7_cut_structure_factor.json',
-             'La2Zr2O7_cut_sqw.json',
-             np.arange(0,95)*ureg('meV'), {'calc_bose': 'False'})])
+             'La2Zr2O7_cut_sqw_uneven_bins.json',
+             np.concatenate((np.arange(0, 50),
+                             np.arange(50, 95, 2)))*ureg('meV'),
+             {'calc_bose': 'False'})])
     def test_calculate_sqw_map(self, material, sf_json, expected_sqw_json,
                                ebins, kwargs):
         sf = get_sf(material, sf_json)

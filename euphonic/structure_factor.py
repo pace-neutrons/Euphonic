@@ -276,6 +276,11 @@ class StructureFactor(QpointFrequencies):
             np.tile(range(self.n_qpts), (3*self.crystal.n_atoms, 1)))
         np.add.at(sqw_map, (first_index, p_bin), p_intensity)
         np.add.at(sqw_map, (first_index, n_bin), n_intensity)
+        # Account for bin widths
+        bin_widths = np.ones(sqw_map.shape)
+        bin_widths[:, 1:-1] = np.tile(np.diff(e_bins_internal)[np.newaxis, :],
+                                      (self.n_qpts, 1))
+        sqw_map /= bin_widths
         # Exclude values outside ebin range
         sqw_map = sqw_map[:, 1:-1]
         # Avoid issues in converting when energy is in cm^-1

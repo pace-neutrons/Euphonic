@@ -1,6 +1,16 @@
 `Unreleased <https://github.com/pace-neutrons/Euphonic/compare/v0.6.0...HEAD>`_
 ----------
 
+- Bug fixes:
+
+  - The scaling of S(Q,w) as produced by ``StructureFactor.calculate_sqw_map``
+    was incorrect, and did not correctly scale with energy bin size (given its
+    units are now ``length**2/energy``). This has been fixed, and S(Q,w) scale
+    has changed by a factor of (hartee to energy bin unit conversion)/(energy
+    bin width magnitude). e.g. if using an energy bin width of 0.1 meV, the new
+    S(Q,w) will be scaled by 2.72e4/0.1 = 2.72e5. The original structure factors
+    can now be correctly recovered by multiplying S(Q,w) by the energy bin width.
+
 `v0.6.0 <https://github.com/pace-neutrons/Euphonic/compare/v0.5.2...0.6.0>`_
 ------
 
