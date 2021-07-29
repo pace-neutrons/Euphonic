@@ -284,7 +284,7 @@ def _cell_vectors_to_volume(cell_vectors: np.ndarray) -> float:
 
 def _get_unique_elems_and_idx(
         all_elems: Sequence[Tuple[Union[int, str]]]
-        ) -> 'OrderedDict[Union[str, int, tuple], np.ndarray]':
+        ) -> 'OrderedDict[Tuple[Union[int, str]], np.ndarray]':
     """
     Returns an ordered dictionary mapping the unique sequences of
     elements to their indices
