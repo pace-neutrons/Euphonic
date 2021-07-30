@@ -98,7 +98,7 @@ class Crystal:
         self.atom_mass_unit = str(value.units)
         self._atom_mass = value.to('m_e').magnitude
 
-    def __setattr__(self, name: str, value: Any):
+    def __setattr__(self, name: str, value: Any) -> None:
         _check_unit_conversion(self, name, value,
                                ['cell_vectors_unit', 'atom_mass_unit'])
         super(Crystal, self).__setattr__(name, value)
