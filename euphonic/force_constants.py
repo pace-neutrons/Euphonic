@@ -1311,9 +1311,9 @@ class ForceConstants:
         # the edges, the xz plane has (2*n + 1) - 2 rows in z, rather
         # than (2*n + 1). The yz plane also has (2*n + 1) - 2 rows in z
         # and (2*n + 1) - 2 columns in y
-        xy = get_all_origins([n+1, n+1, 1], min_xyz=[-n, -n, 0])
-        xz = get_all_origins([n+1, 1, n], min_xyz=[-n, 0, -n+1])
-        yz = get_all_origins([1, n, n], min_xyz=[0, -n+1, -n+1])
+        xy = get_all_origins((n+1, n+1, 1), min_xyz=(-n, -n, 0))
+        xz = get_all_origins((n+1, 1, n), min_xyz=(-n, 0, -n+1))
+        yz = get_all_origins((1, n, n), min_xyz=(0, -n+1, -n+1))
 
         # Offset each plane by n and -n to get the 6 planes that make up
         # the shell
