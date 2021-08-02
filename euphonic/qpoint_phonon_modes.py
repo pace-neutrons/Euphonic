@@ -1,5 +1,5 @@
 import math
-from typing import Dict, Optional, Union, TypeVar, Any
+from typing import Dict, Optional, Union, TypeVar, Any, Type
 from collections.abc import Mapping
 
 import numpy as np
@@ -11,9 +11,6 @@ from euphonic.readers import castep, phonopy
 from euphonic.util import (direction_changed, is_gamma, get_reference_data)
 from euphonic import (ureg, Quantity, Crystal, DebyeWaller, QpointFrequencies,
                       StructureFactor, Spectrum1DCollection)
-
-
-T = TypeVar('T', bound='QpointPhononModes')
 
 
 class QpointPhononModes(QpointFrequencies):
@@ -39,10 +36,11 @@ class QpointPhononModes(QpointFrequencies):
         Shape (n_qpts, 3*crystal.n_atoms, crystal.n_atoms, 3) complex
         ndarray. The dynamical matrix eigenvectors
     """
+    T = TypeVar('T', bound='QpointPhononModes')
 
     def __init__(self, crystal: Crystal, qpts: np.ndarray,
-                 frequencies: Quantity, eigenvectors: Quantity,
-                 weights: Optional[np.ndarray] = None):
+                 frequencies: Quantity, eigenvectors: np.ndarray,
+                 weights: Optional[np.ndarray] = None) -> None:
         """
         Parameters
         ----------
@@ -546,7 +544,7 @@ class QpointPhononModes(QpointFrequencies):
             self.crystal, self.qpts, self.frequencies, self.weights)
 
     @classmethod
-    def from_dict(cls: T, d: Dict[str, Any]) -> T:
+    def from_dict(cls: Type[T], d: Dict[str, Any]) -> T:
         """
         Convert a dictionary to a QpointPhononModes object
 
@@ -571,7 +569,7 @@ class QpointPhononModes(QpointFrequencies):
                    d['eigenvectors'], d['weights'])
 
     @classmethod
-    def from_json_file(cls: T, filename: str) -> T:
+    def from_json_file(cls: Type[T], filename: str) -> T:
         """
         Read from a JSON file. See QpointPhononModes.from_dict for
         required fields
@@ -585,7 +583,7 @@ class QpointPhononModes(QpointFrequencies):
                                    type_dict={'eigenvectors': np.complex128})
 
     @classmethod
-    def from_castep(cls: T, filename: str) -> T:
+    def from_castep(cls: Type[T], filename: str) -> T:
         """
         Reads precalculated phonon mode data from a CASTEP .phonon file
 
@@ -598,7 +596,7 @@ class QpointPhononModes(QpointFrequencies):
         return cls.from_dict(data)
 
     @classmethod
-    def from_phonopy(cls: T, path: str = '.',
+    def from_phonopy(cls: Type[T], path: str = '.',
                      phonon_name: str = 'band.yaml',
                      phonon_format: Optional[str] = None,
                      summary_name: str = 'phonopy.yaml') -> T:
