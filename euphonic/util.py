@@ -451,7 +451,7 @@ def _generic_qpt_labels() -> Dict[str, Tuple[float, float, float]]:
         for j, s2 in enumerate(label_strings):
             for k, s3 in enumerate(label_strings):
                 key = s1 + ' ' + s2 + ' ' + s3
-                value = [label_coords[i], label_coords[j], label_coords[k]]
+                value = (label_coords[i], label_coords[j], label_coords[k])
                 generic_labels[key] = value
     return generic_labels
 

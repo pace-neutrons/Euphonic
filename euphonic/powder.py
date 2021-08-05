@@ -204,7 +204,7 @@ def sample_sphere_structure_factor(
     energy_bins: Quantity = None,
     scattering_lengths: Union[str, Dict[str, Quantity]] = 'Sears1992',
     **calc_modes_args
-) -> Spectrum1D:
+    ) -> Spectrum1D:
     """Sample structure factor, averaging over a sphere of constant |q|
 
     (Specifically, this is the one-phonon inelastic-scattering structure
@@ -315,7 +315,7 @@ def sample_sphere_structure_factor(
     return s.calculate_1d_average(energy_bins)
 
 
-def _get_default_bins(phonons: QpointPhononModes,
+def _get_default_bins(phonons: Union[QpointPhononModes, QpointFrequencies],
                       nbins: int = 1000) -> Quantity:
     """Get a default set of energy bin edges for set of phonon modes"""
     max_energy = np.max(phonons.frequencies) * 1.05

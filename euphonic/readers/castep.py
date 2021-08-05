@@ -1,6 +1,6 @@
 import re
 import struct
-from typing import Dict, Any, TextIO, Tuple, Optional, List, Union
+from typing import Dict, Any, TextIO, BinaryIO, Tuple, Optional, List, Union
 
 import numpy as np
 
@@ -75,8 +75,7 @@ def read_phonon_dos_data(
             dos_data = np.array([[float(elem) for elem in line.split()]
                                       for line in data[:n_bins]])
 
-    data_dict = {}
-
+    data_dict: Dict[str, Any] = {}
     data_dict['crystal'] = {}
     cry_dict = data_dict['crystal']
     cry_dict['n_atoms'] = n_atoms
@@ -179,7 +178,8 @@ def read_phonon_data(
             except EOFError:
                 break
             [f.readline() for x in range(2)]  # Skip 2 label lines
-            evec_lines = [f.readline() for x in range(n_atoms*n_branches)]
+            evec_lines = np.array(
+                [f.readline() for x in range(n_atoms*n_branches)])
             if read_eigenvectors:
                 evec_lines = np.array([x.split()[2:] for x in evec_lines],
                                       dtype=np.float64)
@@ -207,7 +207,7 @@ def read_phonon_data(
                     eigenvecs = np.concatenate((eigenvecs, [qeigenvec]))
             idx += 1
 
-    data_dict = {}
+    data_dict: Dict[str, Any] = {}
     data_dict['crystal'] = {}
     cry_dict = data_dict['crystal']
     cry_dict['n_atoms'] = n_atoms
@@ -231,7 +231,7 @@ def read_phonon_data(
 
 
 def _read_crystal_info(f: TextIO, n_atoms: int
-    ) -> Tuple[int, int, int, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """
     Reads the header crystal information from a CASTEP text file, from
     'Unit cell vectors' to 'END header'
@@ -274,7 +274,7 @@ def _read_crystal_info(f: TextIO, n_atoms: int
 
 def _read_frequency_block(
             f: TextIO, n_branches: int, extra_columns: Optional[List] = None
-    ) -> Tuple[np.ndarray, float, np.ndarray, Union[None, np.ndarray]]:
+    ) -> Tuple[np.ndarray, float, np.ndarray, Optional[np.ndarray]]:
     """
     For a single q-point reads the q-point, weight, frequencies
     and optionally any extra columns
@@ -310,23 +310,22 @@ def _read_frequency_block(
         raise EOFError
     float_patt = re.compile('-?\d+\.\d+')
     floats = re.findall(float_patt, qpt_line)
-    qpt = [float(x) for x in floats[:3]]
+    qpt = np.array([float(x) for x in floats[:3]])
     qweight = float(floats[3])
     freq_lines = [f.readline().split()
                   for i in range(n_branches)]
     freq_col = 1
     qfreq = np.array([float(line[freq_col]) for line in freq_lines])
+    extra: Optional[np.ndarray] = None
     if extra_columns is not None:
         if len(qpt_line.split()) > 6:
             # Indicates a split gamma point in .phonon, so there is an
             # additional column
-            extra_columns += 1
+            extra_columns = [x + 1 for x in extra_columns]
         extra = np.zeros((len(extra_columns), n_branches))
         for i, col in enumerate(extra_columns):
             extra[i] = np.array(
                 [float(line[freq_col + col + 1]) for line in freq_lines])
-    else:
-        extra = None
     return qpt, qweight, qfreq, extra
 
 
@@ -401,7 +400,7 @@ def read_interpolation_data(
                 dielectric = np.transpose(np.reshape(
                     _read_entry(f, float_type), (3, 3)))
 
-    data_dict = {}
+    data_dict: Dict[str, Any] = {}
     data_dict['crystal'] = {}
     cry_dict = data_dict['crystal']
     cry_dict['n_atoms'] = n_atoms
@@ -441,34 +440,38 @@ def read_interpolation_data(
     return data_dict
 
 
-def _read_cell(file_obj, int_type, float_type):
+def _read_cell(file_obj: BinaryIO, int_type: str, float_type: str
+               ) -> Tuple[int, np.ndarray, np.ndarray,
+                          np.ndarray, np.ndarray]:
     """
     Read cell data from a .castep_bin or .check file
 
     Parameters
     ----------
-    f : file object
+    file_obj
         File object in read mode for the .castep_bin or .check file
-    int_type : str
+    int_type
         Python struct format string describing the size and endian-ness
         of ints in the file
-    float_type : str
+    float_type
         Python struct format string describing the size and endian-ness
         of floats in the file
 
-        Returns
+    Returns
     -------
-    n_atoms : int
+    n_atoms
         Number of atoms in the unit cell
-    cell_vectors : (3, 3) float ndarray
-        The unit cell vectors in bohr
-    atom_r : (n_atoms, 3) float ndarray
-        The fractional position of each atom within the unit cell
-    atom_mass : (n_atoms,) float ndarray
-        The mass of each atom in the unit cell in units of electron mass
-    atom_type : (n_atoms,) string ndarray
-        The chemical symbols of each atom in the unit cell. Atoms are in
-        the same order as in atom_r
+    cell_vectors
+        Shape (3, 3) float ndarray. The unit cell vectors in bohr
+    atom_r
+        Shape (n_atoms, 3) float ndarray. The fractional position of
+        each atom within the unit cell
+    atom_mass
+        Shape (n_atoms,) float ndarray. The mass of each atom in the
+        unit cell in units of electron mass
+    atom_type
+        Shape (n_atoms,) string ndarray. The chemical symbols of each
+        atom in the unit cell
     """
     header = ''
     while header.strip() != b'END_UNIT_CELL':
@@ -524,22 +527,23 @@ def _read_cell(file_obj, int_type, float_type):
     return n_atoms, cell_vectors, atom_r, atom_mass, atom_type
 
 
-def _read_entry(file_obj, dtype=''):
+def _read_entry(file_obj: BinaryIO, dtype: str = ''
+                ) -> Union[str, int, float, np.ndarray]:
     """
     Read a record from a Fortran binary file, including the beginning
     and end record markers and return the data inbetween
 
     Parameters
     ----------
-    f : file object
+    f
         File object in read mode for the Fortran binary file
-    dtype : str, optional, default ''
+    dtype
         String determining what order and type to unpack the bytes as.
         See 'Format Strings' in Python struct documentation
 
     Returns
     -------
-    data : str, int, float or ndarray
+    data
         Data type returned depends on dtype specified. If dtype is not
         specified, return type is a string. If there is more than one
         element in the record, it is returned as an ndarray of floats or
