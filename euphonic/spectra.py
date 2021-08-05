@@ -963,7 +963,7 @@ class Spectrum2D(Spectrum):
                  metadata: Optional[Dict[str, Union[int, str]]] = None
                  ) -> None:
         """
-        Attributes
+        Parameters
         ----------
         x_data
             Shape (n_x_data,) or (n_x_data + 1,) float Quantity. The
