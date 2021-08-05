@@ -152,10 +152,14 @@ def _ensure_contiguous_args(*args: np.ndarray) -> Tuple[np.ndarray, ...]:
     contiguous_args
         The same as the provided args, but all contiguous.
     """
-    contiguous_args: List[np.ndarray] = []
-    for i in range(len(args)):
-        contiguous_args += args[i].astype(
-            _get_dtype(args[i]), order='C', copy=False)
+    for i, arg in enumerate(args):
+        contiguous_arg = arg.astype(
+            _get_dtype(arg), order='C', copy=False)
+        if i == 0:
+            contiguous_args = [contiguous_arg]
+        else:
+            contiguous_args.append(contiguous_arg)
+
     return tuple(contiguous_args)
 
 

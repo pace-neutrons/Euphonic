@@ -1,3 +1,4 @@
+from argparse import ArgumentParser
 from typing import List
 
 from euphonic import (ureg, ForceConstants, QpointPhononModes,
@@ -11,7 +12,7 @@ from .utils import (load_data_from_file, get_args, matplotlib_save_or_show,
                     _arrange_pdos_groups)
 
 
-def main(params: List[str] = None):
+def main(params: List[str] = None) -> None:
     parser = get_parser()
     args = get_args(parser, params)
 
@@ -78,7 +79,7 @@ def main(params: List[str] = None):
     matplotlib_save_or_show(save_filename=args.save_to)
 
 
-def get_parser():
+def get_parser() -> ArgumentParser:
     parser, _ = _get_cli_parser(features={'read-fc', 'read-modes', 'mp-grid',
                                           'plotting', 'ebins',
                                           'adaptive-broadening',

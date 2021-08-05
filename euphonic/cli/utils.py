@@ -30,11 +30,11 @@ def force_constants_from_file(filename: Union[str, os.PathLike]
 
     Returns
     -------
-    ForceConstants
+    fc
     """
     path = pathlib.Path(filename)
     if path.suffix in ['.hdf5', '.yaml']:
-        phonopy_kwargs = {}
+        phonopy_kwargs: Dict[str, Union[str, os.PathLike]] = {}
         phonopy_kwargs['path'] = path.parent
         if (path.parent / 'BORN').is_file():
             phonopy_kwargs['born_name'] = 'BORN'
@@ -77,7 +77,7 @@ def modes_from_file(filename: Union[str, os.PathLike]
 
     Returns
     -------
-    QpointPhononmodes
+    modes
     """
     path = pathlib.Path(filename)
     if path.suffix == '.phonon':
@@ -113,12 +113,12 @@ def load_data_from_file(filename: Union[str, os.PathLike]
 
     Parameters
     ----------
-    filename : str
+    filename
         The file with a path
 
     Returns
     -------
-    QpointPhononmodes or ForceConstants
+    file_data
     """
     qpoint_phonon_modes_suffixes = ('.phonon')
     force_constants_suffixes = ('.castep_bin', '.check')
@@ -145,22 +145,24 @@ def load_data_from_file(filename: Union[str, os.PathLike]
             " data from Euphonic should have extension '.json'.")
 
 
-def get_args(parser: ArgumentParser, params: List[str] = None):
+def get_args(parser: ArgumentParser, params: Optional[List[str]] = None
+             ) -> Namespace:
     """
     Get the arguments from the parser. params should only be none when
     running from command line.
 
     Parameters
     ----------
-    parser : ArgumentParser
+    parser
         The parser to get the arguments from
-    params : List[str], optional
+    params
         The parameters to get arguments from, if None,
          then parse_args gets them from command line args
 
     Returns
     -------
-    Arguments object for use e.g. args.unit
+    args
+        Arguments object for use e.g. args.unit
     """
     if params is None:
         args = parser.parse_args()
@@ -169,14 +171,14 @@ def get_args(parser: ArgumentParser, params: List[str] = None):
     return args
 
 
-def matplotlib_save_or_show(save_filename: str = None):
+def matplotlib_save_or_show(save_filename: str = None) -> None:
     """
     Save or show the current matplotlib plot.
     Show if save_filename is not None which by default it is.
 
     Parameters
     ----------
-    save_filename : str, optional
+    save_filename
         The file to save the plot in
     """
     import matplotlib.pyplot as plt
@@ -202,7 +204,7 @@ def _get_q_distance(length_unit_string: str, q_distance: float) -> Quantity:
 
 
 def _get_energy_bins(
-        modes: QpointPhononModes,
+        modes: Union[QpointPhononModes, QpointFrequencies],
         n_ebins: int, emin: Optional[float] = None,
         emax: Optional[float] = None,
         headroom: float = 1.05) -> Quantity:
@@ -257,10 +259,8 @@ def _get_break_points(bandpath: dict) -> List[int]:
 
     Returns
     -------
-    list[int]
-
+    break_points
         Indices at which the spectrum should be split into subplots
-
     """
     # Find break points between continuous spectra: wherever there are two
     # adjacent labels
@@ -348,10 +348,10 @@ def _bands_from_force_constants(data: ForceConstants,
 def _grid_spec_from_args(crystal: Crystal,
                            grid: Optional[Sequence[int]] = None,
                            grid_spacing: Quantity = 0.1 * ureg('1/angstrom')
-                           ) -> Sequence[int]:
+                           ) -> Tuple[int, int, int]:
     """Get Monkorst-Pack mesh divisions from user arguments"""
     if grid:
-        grid_spec = grid
+        grid_spec = tuple(grid)
     else:
         grid_spec = crystal.get_mp_grid_spec(spacing=grid_spacing)
     return grid_spec
@@ -375,7 +375,7 @@ def _get_debye_waller(temperature: Quantity,
     return dw_phonons.calculate_debye_waller(temperature)
 
 
-def _get_pdos_weighting(cl_arg_weighting: str) -> str:
+def _get_pdos_weighting(cl_arg_weighting: str) -> Optional[str]:
     """
     Convert CL --weighting to weighting for calculate_pdos
     e.g. --weighting coherent-dos to weighting=coherent
@@ -424,16 +424,22 @@ def _get_cli_parser(features: Collection[str] = {}
                                Dict[str, _ArgumentGroup]]:
     """Instantiate an ArgumentParser with appropriate argument groups
 
-    Args:
-        sections:
-            collection (e.g. set, list) of str for known argument groups.
-            Known keys: read-fc, read-modes, ins-weighting, pdos-weighting,
-            powder, mp-grid, plotting, ebins, adaptive-broadening, q-e,
-            map, btol, dipole-parameter-optimisation
+    Parameters
+    ----------
+    features
+        collection (e.g. set, list) of str for known argument groups.
+        Known keys: read-fc, read-modes, ins-weighting, pdos-weighting,
+        powder, mp-grid, plotting, ebins, adaptive-broadening, q-e,
+        map, btol, dipole-parameter-optimisation
 
-    Returns:
-        Parser and a dict of parser subsections. This allows their help strings
-        to be customised and specialised options to be added.
+    Returns
+    -------
+    parser
+        ArgumentParser with the requested features
+    sections
+        Dictionary of section labels and their argument groups. This
+        allows their help strings to be customised and specialised
+        options to be added
 
     """
     def deprecation_text(deprecated_arg: str, new_arg: str):
