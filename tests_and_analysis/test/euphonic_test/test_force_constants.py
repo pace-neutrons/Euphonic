@@ -206,6 +206,7 @@ class TestForceConstantsCreation:
         # FORCE_CONSTANTS) have been renamed from their defaults to
         # avoid a false positive
         ('NaCl', {'summary_name': 'phonopy_nacl.yaml'}),
+        ('NaCl', {'summary_name': 'phonopy_nacl_no_units.yaml'}),
         ('NaCl', {'summary_name': 'phonopy_full_fc.yaml'}),
         ('NaCl', {'summary_name': 'phonopy_nofc.yaml',
                   'fc_name': 'FORCE_CONSTANTS_nacl'}),

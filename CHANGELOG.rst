@@ -1,6 +1,11 @@
 `Unreleased <https://github.com/pace-neutrons/Euphonic/compare/v0.6.1...HEAD>`_
 ----------
 
+- Bug Fixes:
+
+  - Will no longer raise a KeyError reading from ``phonopy.yaml`` if
+    ``physical_unit`` key is not present, instead will assume default units
+
 `v0.6.1 <https://github.com/pace-neutrons/Euphonic/compare/v0.6.0...v0.6.1>`_
 ------
 

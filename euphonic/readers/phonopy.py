@@ -602,7 +602,15 @@ def _extract_summary(filename, fc_extract=False):
      atom_type, _) = _extract_crystal_data(summary_object['primitive_cell'])
 
     summary_dict = {}
-    pu = summary_object['physical_unit']
+    try:
+        pu = summary_object['physical_unit']
+    except KeyError:
+        default_units = {'atomic_mass': 'AMU',
+                         'length': 'Angstrom',
+                         'force_constants': 'eV/Angstrom^2'}
+        print(f'physical_unit key not found in {filename}, assuming '
+              f'the following units: {default_units}')
+        pu = default_units
     summary_dict['ulength'] = pu['length'].lower()
     summary_dict['umass'] = pu['atomic_mass'].lower()
 
