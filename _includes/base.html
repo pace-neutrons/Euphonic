@@ -1,0 +1,15 @@
+<div class="wrapper">
+  <b>DOI: <a href="DOI here">DOI here</a></b><br>
+  <b>Authors: </b>
+  {% for author in page.schemadotorg.author %}
+    {% if author['@id'] %}
+      <a href="{{ author['@id'] }}">{{ author.familyName }}, {{ author.givenName}};</a>
+    {% else %}
+      {{ author.familyName }}, {{ author.givenName}};
+    {% endif %}
+  {% endfor %}<br>
+  <b>Description: </b>{{ site.description }}<br>
+  <b>Repository: </b><a href="{{ site.github.repository_url}}">{{ site.github.repository_url }}</a><br>
+  <b>Version: </b>{{ page.schemadotorg.version }}<br>
+  <b>Released: </b>{{ page.schemadotorg.datePublished || date: "%-d %B %Y"}}<br>
+</div>
