@@ -20,8 +20,8 @@
     {%- for page in site.pages -%}
       {%- if page.dir contains "version" -%}
         {%- unless page.name contains "index" -%}
-  	<a href="{{ page.url }}">{{ page.name | remove: ".markdown"}}</a><br>
-	{%- endunless -%}
+          <a class="page-link" href="{{ page.url | relative_url }}">{{ page.name | remove: ".markdown" }}</a><br>
+        {%- endunless -%}
       {%- endif -%}
     {%- endfor -%}
     </div>
