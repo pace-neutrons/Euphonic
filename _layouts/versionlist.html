@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="{{ page.lang | default: site.lang | default: "en" }}">
+
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  {%- seo -%}
+  <link rel="stylesheet" href="{{ "/assets/main.css" | relative_url }}">
+  {%- feed_meta -%}
+  {%- if jekyll.environment == 'production' and site.google_analytics -%}
+    {%- include google-analytics.html -%}
+  {%- endif -%}
+</head>
+
+  <body>
+    {%- include header.html -%}
+    <div class="wrapper"><h1>Euphonic Versions</h1>
+    {%- assign sit = site.pages | map: "dir" -%}
+    {%- for page in site.pages -%}
+      {%- if page.dir contains "version" -%}
+        {%- unless page.name contains "index" -%}
+  	<a href="{{ page.url }}">{{ page.name | remove: ".markdown"}}</a><br>
+	{%- endunless -%}
+      {%- endif -%}
+    {%- endfor -%}
+    </div>
+
+  </body>
+
+</html>

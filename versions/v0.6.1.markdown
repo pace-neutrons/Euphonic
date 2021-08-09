@@ -1,5 +1,5 @@
 ---
-layout: latest
+layout: version
 schemadotorg:
   '@context': https://schema.org
   '@type': SoftwareSourceCode
@@ -44,4 +44,3 @@ schemadotorg:
   name: Euphonic
   version: 0.6.1
 ---
-# Euphonic - Latest
