@@ -1,15 +1,42 @@
 <div class="wrapper">
+  <b>Name: </b> {{ page.schemadotorg.name }}<br>
   <b>DOI: <a href="DOI here">DOI here</a></b><br>
   <b>Authors: </b>
   {% for author in page.schemadotorg.author %}
     {% if author['@id'] %}
       <a href="{{ author['@id'] }}">{{ author.familyName }}, {{ author.givenName}};</a>
     {% else %}
-      {{ author.familyName }}, {{ author.givenName}};
+      {{ author.familyName }}, {{ author.givenName }};
     {% endif %}
   {% endfor %}<br>
   <b>Description: </b>{{ site.description }}<br>
   <b>Repository: </b><a href="{{ site.github.repository_url}}">{{ site.github.repository_url }}</a><br>
   <b>Version: </b>{{ page.schemadotorg.version }}<br>
   <b>Released: </b>{{ page.schemadotorg.datePublished || date: "%-d %B %Y"}}<br>
+  <b>License: </b>{{ page.schemadotorg.license }}<br>
+  <b>Keywords: </b>
+  {% for keyword in page.schemadotorg.keywords %}
+    {% if forloop.index == 1 %}
+      {{ keyword }}
+    {% else %}
+      , {{ keyword }}
+    {% endif %}
+  {% endfor %}
+  <br>
+  <br>
+  <b>Cite as: </b>
+  {%- for author in page.schemadotorg.author -%}
+    {% assign givenNames =  author.givenName | split: ' ' %}
+    {% assign initials = '' | split: '' %}
+    {% for name in givenNames %}
+      {% assign initial = name | truncate: 1, "" | append: '.' | split: '' %}
+      {% assign initials = initials | concat: initial %}
+    {% endfor %}
+
+    {{ author.familyName }} {{ initials-}}
+    {%- unless forloop.last == true -%}
+    ,
+    {%- endunless -%}
+  {%- endfor %}
+   ({{ page.schemadotorg.datePublished || date: "%Y" }}). {{ page.schemadotorg.name }} (version {{ page.schemadotorg.version }}).<br>
 </div>
