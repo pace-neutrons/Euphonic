@@ -31,6 +31,7 @@ schemadotorg:
   - '@type': Person
     familyName: Voneshen
     givenName: D. J.
+  codeRepository: https://github.com/pace-neutrons/Euphonic
   datePublished: '2021-07-13T00:00:00'
   keywords:
   - Python
