@@ -16,7 +16,6 @@
   <body>
     {%- include header.html -%}
     <div class="wrapper"><h1>Euphonic Versions</h1>
-    {%- assign sit = site.pages | map: "dir" -%}
     {%- for page in site.pages -%}
       {%- if page.dir contains "version" -%}
         {%- unless page.name contains "index" -%}
