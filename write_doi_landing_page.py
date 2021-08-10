@@ -4,14 +4,15 @@ import sys
 import yaml
 from cffconvert.cli import cli as cffconvert_main
 
-if len(sys.argv) > 1:
-    branch = f'v{sys.argv[1]}'
-    layout = 'version'
-    landing_page = f'versions/{branch}.markdown'
-else:
-    branch = 'master'
+if len(sys.argv) == 1 or sys.argv[1] == 'latest':
+    #branch = 'master'
+    branch = 'cff_test'
     layout = 'latest'
     landing_page = 'index.markdown'
+else:
+    branch = f'{sys.argv[1]}'
+    layout = 'version'
+    landing_page = f'versions/{branch}.markdown'
 
 try:
     cffconvert_main(['-u', f'https://github.com/pace-neutrons/Euphonic/tree/{branch}',
