@@ -1,4 +1,5 @@
 .. _intensity-map-script:
+.. highlight:: bash
 
 ======================
 euphonic-intensity-map

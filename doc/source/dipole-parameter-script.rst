@@ -1,8 +1,9 @@
 .. _dipole-parameter-script:
+.. highlight:: bash
 
-=====================
+==================================
 euphonic-optimise-dipole-parameter
-=====================
+==================================
 
 This program is useful for users wanting to efficiently calculate phonon
 frequencies on many q-points for polar materials.
@@ -27,7 +28,7 @@ Usage
 Simply run the program on a ``.castep_bin`` file to get an output suggesting the
 optimum ``dipole_parameter``. For example, for ``quartz.castep_bin``:
 
-.. code-block:: bash
+.. code-block:: none
 
    euphonic-optimise-dipole-parameter quartz.castep_bin
 

@@ -1,4 +1,5 @@
 .. _dos-script:
+.. highlight:: bash
 
 ============
 euphonic-dos

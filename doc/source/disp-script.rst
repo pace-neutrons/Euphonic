@@ -1,4 +1,5 @@
 .. _disp-script:
+.. highlight:: bash
 
 ===================
 euphonic-dispersion

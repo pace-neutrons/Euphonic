@@ -1,4 +1,5 @@
 .. _powder-map-script:
+.. highlight:: bash
 
 ======================
 euphonic-powder-map
