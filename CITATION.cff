@@ -22,6 +22,7 @@ authors:
   - family-names: "Voneshen"
     given-names: "D. J."
 title: "Euphonic"
+doi: "10.5286/SOFTWARE/EUPHONIC"
 version: "0.6.1"
 date-released: "2021-07-13"
 license: "GPL-3.0-only"
