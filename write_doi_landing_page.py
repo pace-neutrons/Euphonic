@@ -5,8 +5,7 @@ import yaml
 from cffconvert.cli import cli as cffconvert_main
 
 if len(sys.argv) == 1 or sys.argv[1] == 'latest':
-    #branch = 'master'
-    branch = 'cff_test'
+    branch = 'master'
     layout = 'latest'
     landing_page = 'index.markdown'
 else:
