@@ -33,6 +33,7 @@ schemadotorg:
     givenName: D. J.
   codeRepository: https://github.com/pace-neutrons/Euphonic
   datePublished: '2021-07-13T00:00:00'
+  identifier: https://doi.org/10.5286/SOFTWARE/EUPHONIC
   keywords:
   - Python
   - physics
