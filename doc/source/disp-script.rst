@@ -9,7 +9,7 @@ The ``euphonic-dispersion`` program can be used to plot dispersion
 either along a specific trajectory from precalculated phonon frequencies,
 or along a recommended reciprocal space path from force constants. For
 example, to plot from a Euphonic ``.json`` file containing
-`QpointPhononModes`, with frequencies reordered to follow equivalent modes
+``QpointPhononModes``, with frequencies reordered to follow equivalent modes
 across Q, run::
 
    euphonic-dispersion --reorder si_qpoint_phonon_modes.json
