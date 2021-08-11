@@ -1,6 +1,6 @@
 <div class="wrapper">
   <b>Name: </b> {{ page.schemadotorg.name }}<br>
-  <b>DOI: <a href="DOI here">DOI here</a></b><br>
+  <b>DOI: </b><a href="{{ page.schemadotorg.identifier }}">{{ page.schemadotorg.identifier }}</a><br>
   <b>Authors: </b>
   {% for author in page.schemadotorg.author %}
     {% if author['@id'] %}
@@ -38,9 +38,9 @@
     ,
     {%- endunless -%}
   {%- endfor %}
-   ({{ page.schemadotorg.datePublished || date: "%Y" }}).
-   {{ page.schemadotorg.name }}
-   (version {{ page.schemadotorg.version }}).
-   DOI: DOI here
-   URL: {{ page.schemadotorg.codeRepository }}<br>
+  ({{ page.schemadotorg.datePublished || date: "%Y" }}).
+  {{ page.schemadotorg.name }}
+  (version {{ page.schemadotorg.version }}).
+  DOI: {{ page.schemadotorg.identifier }}
+  URL: {{ page.schemadotorg.codeRepository }}<br>
 </div>
