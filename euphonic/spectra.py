@@ -89,12 +89,12 @@ class Spectrum(ABC):
         return _obj_from_json_file(cls, filename, type_dict)
 
     @abstractmethod
-    def _split_by_indices(self, indices: Union[Sequence[int], np.ndarray]
+    def _split_by_indices(self: T, indices: Union[Sequence[int], np.ndarray]
                           ) -> List[T]:
         """Split data along x axis at given indices"""
         ...
 
-    def _split_by_tol(self, btol: float = 10.0) -> List[T]:
+    def _split_by_tol(self: T, btol: float = 10.0) -> List[T]:
         """Split data along x-axis at detected breakpoints"""
         diff = np.diff(self.x_data.magnitude)
         median = np.median(diff)
