@@ -71,8 +71,6 @@ class ForceConstants:
             in energy/length**2 units. The force constants matrix
         sc_matrix
             Shape (3, 3) int ndarray. The supercell matrix
-        n_cells_in_sc
-            Number of cells in the supercell
         cell_origins
             Shape (n_cells_in_sc, 3) int ndarray. The locations of the
             unit cells within the supercell
@@ -565,16 +563,16 @@ class ForceConstants:
             split_idx = np.array([])
             q_dirs = np.array([])
 
-        lim = 2  # Supercell image limit
-        # Construct list of supercell ion images
+        n_sc_shells = 2  # How many supercells out to search for atom images
+        # Construct list of supercell atom images
         if not hasattr(self, '_sc_image_i'):
-            self._calculate_supercell_images(lim)
+            self._calculate_supercell_images(n_sc_shells)
 
         # Get a list of all the unique supercell image origins and cell
         # origins in x, y, z and how to rebuild them to minimise
         # expensive phase calculations later
         sc_image_r = get_all_origins(
-            np.repeat(lim, 3) + 1, min_xyz=-np.repeat(lim, 3))
+            np.repeat(n_sc_shells, 3) + 1, min_xyz=-np.repeat(n_sc_shells, 3))
         sc_origins = np.einsum('ij,jk->ik', sc_image_r,
                                self.sc_matrix).astype(np.int32)
         unique_sc_origins = [[] for i in range(3)]
@@ -793,9 +791,10 @@ class ForceConstants:
             lists are independent and their size is not known
             beforehand
         unique_sc_i
-            Shape ((2*lim + 1)**3, 3) int ndarray. The indices needed
-            to reconstruct sc_origins from the unique values in
-            unique_sc_origins
+            Shape ((2*n_sc_shells + 1)**3, 3) int ndarray, where
+            n_sc_shells is how many supercells out to go to search for
+            atom images. The indices needed to reconstruct sc_origins
+            from the unique values in unique_sc_origins
         unique_cell_origins
             A list containing 3 lists of the unique cell origins in
             each direction. A list of lists rather than a Numpy array
@@ -848,10 +847,8 @@ class ForceConstants:
 
         # Calculate LO-TO splitting by calculating non-analytic
         # correction to dynamical matrix
-        na_corr = np.array([0])
         if q_dir is not None:
-            na_corr = self._calculate_gamma_correction(q_dir)
-        dyn_mat += na_corr
+            dyn_mat += self._calculate_gamma_correction(q_dir)
 
         # Mass weight dynamical matrix
         dyn_mat *= dyn_mat_weighting
@@ -909,9 +906,10 @@ class ForceConstants:
             lists are independent and their size is not known
             beforehand
         unique_sc_i
-            Shape ((2*lim + 1)**3, 3) int ndarray. The indices needed
-            to reconstruct sc_origins from the unique values in
-            unique_sc_origins
+            Shape ((2*n_sc_shells + 1)**3, 3) int ndarray, where
+            n_sc_shells is how many supercells out to go to search for
+            atom images. The indices needed to reconstruct sc_origins
+            from the unique values in unique_sc_origins
         unique_cell_origins
             A list containing 3 lists of the unique cell origins in
             each direction. A list of lists rather than a Numpy array
@@ -1492,9 +1490,10 @@ class ForceConstants:
             lists are independent and their size is not known
             beforehand
         unique_sc_i
-            Shape ((2*lim + 1)**3, 3) int ndarray. The indices needed
-            to reconstruct sc_origins from the unique values in
-            unique_sc_origins
+            Shape ((2*n_sc_shells + 1)**3, 3) int ndarray, where
+            n_sc_shells is how many supercells out to go to search for
+            atom images. The indices needed to reconstruct sc_origins
+            from the unique values in unique_sc_origins
         unique_cell_origins
             A list containing 3 lists of the unique cell origins in
             each direction. A list of lists rather than a Numpy array
@@ -1532,17 +1531,18 @@ class ForceConstants:
 
         return sc_phases, cell_phases
 
-    def _calculate_supercell_images(self, lim: int) -> None:
+    def _calculate_supercell_images(self, n_sc_shells: int) -> None:
         """
-        For each displacement of ion i in the unit cell and ion j in the
-        supercell, calculate the number of supercell periodic images
-        there are and which supercells they reside in, and sets the
-        _sc_image_i, and _n_sc_images ForceConstants attributes
+        For each displacement of ion i in the unit cell and ion j in
+        the supercell, calculate the number of supercell periodic
+        images there are and which supercells they reside in, and sets
+        the _sc_image_i, and _n_sc_images ForceConstants attributes
 
         Parameters
         ----------
-        lim
-            The supercell image limit
+        n_sc_shells
+            The number of supercells out to go to search for atom
+            images
         """
 
         n_atoms = self.crystal.n_atoms
@@ -1568,14 +1568,15 @@ class ForceConstants:
 
         # Get Cartesian coords of supercell images and ions in supercell
         sc_image_r = get_all_origins(
-            np.repeat(lim, 3) + 1, min_xyz=-np.repeat(lim, 3))
+            np.repeat(n_sc_shells, 3) + 1, min_xyz=-np.repeat(n_sc_shells, 3))
         sc_image_cart = np.einsum('ij,jk->ik', sc_image_r, sc_vecs)
         sc_atom_cart = np.einsum('ijk,kl->ijl',
                                  cell_origins[:, ax, :] + atom_r[ax, :, :],
                                  cell_vectors)
 
-        sc_image_i = np.full((n_cells_in_sc, n_atoms, n_atoms, (2*lim + 1)**3),
-                             -1, dtype=np.int32)
+        sc_image_i = np.full(
+            (n_cells_in_sc, n_atoms, n_atoms, (2*n_sc_shells + 1)**3),
+            -1, dtype=np.int32)
         n_sc_images = np.zeros((n_cells_in_sc, n_atoms, n_atoms),
                                dtype=np.int32)
 

@@ -1,5 +1,5 @@
 from argparse import ArgumentParser
-from typing import List
+from typing import List, Optional
 
 import euphonic
 from euphonic.plot import plot_1d
@@ -9,7 +9,7 @@ from .utils import (load_data_from_file, get_args, _bands_from_force_constants,
                     _calc_modes_kwargs)
 
 
-def main(params: List[str] = None) -> None:
+def main(params: Optional[List[str]] = None) -> None:
     args = get_args(get_parser(), params)
     data = load_data_from_file(args.filename)
 

@@ -52,7 +52,7 @@ def get_parser() -> ArgumentParser:
     return parser
 
 
-def main(params: List[str] = None) -> None:
+def main(params: Optional[List[str]] = None) -> None:
     args = get_args(get_parser(), params)
     calc_modes_kwargs = _calc_modes_kwargs(args)
 

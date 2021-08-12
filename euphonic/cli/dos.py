@@ -1,5 +1,5 @@
 from argparse import ArgumentParser
-from typing import List
+from typing import List, Optional
 
 from euphonic import (ureg, ForceConstants, QpointPhononModes,
                       Spectrum1DCollection)
@@ -12,7 +12,7 @@ from .utils import (load_data_from_file, get_args, matplotlib_save_or_show,
                     _arrange_pdos_groups)
 
 
-def main(params: List[str] = None) -> None:
+def main(params: Optional[List[str]] = None) -> None:
     parser = get_parser()
     args = get_args(parser, params)
 

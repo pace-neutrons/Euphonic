@@ -1,5 +1,5 @@
 from argparse import ArgumentParser
-from typing import List
+from typing import List, Optional
 
 import numpy as np
 
@@ -14,7 +14,7 @@ from .utils import (_bands_from_force_constants, _calc_modes_kwargs,
                     matplotlib_save_or_show)
 
 
-def main(params: List[str] = None) -> None:
+def main(params: Optional[List[str]] = None) -> None:
     args = get_args(get_parser(), params)
     calc_modes_kwargs = _calc_modes_kwargs(args)
 
