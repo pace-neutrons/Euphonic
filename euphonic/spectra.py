@@ -5,7 +5,7 @@ import itertools
 import math
 from numbers import Integral
 from typing import (Any, Dict, List, Optional, overload,
-                    Sequence, Tuple, TypeVar, Union, Type)
+                    Sequence, Tuple, TypeVar, Union, Type, Iterable)
 
 import numpy as np
 from scipy.ndimage import correlate1d, gaussian_filter
@@ -337,7 +337,7 @@ class Spectrum1D(Spectrum):
         self.x_tick_labels = x_tick_labels
         self.metadata = {} if metadata is None else metadata
 
-    def __add__(self, other: T) -> T:
+    def __add__(self, other: 'Spectrum1D') -> 'Spectrum1D':
         """
         Sums the y_data of two Spectrum1D objects together,
         their x_data axes must be equal, and their y_data must
@@ -350,7 +350,7 @@ class Spectrum1D(Spectrum):
         spec_col = Spectrum1DCollection.from_spectra([self, other])
         return spec_col.sum()
 
-    def _split_by_indices(self,
+    def _split_by_indices(self: T,
                           indices: Union[Sequence[int], np.ndarray]
                           ) -> List[T]:
         """Split data along x-axis at given indices"""
@@ -428,7 +428,7 @@ class Spectrum1D(Spectrum):
                    data['dos'][element]*ureg(data['dos_unit']),
                    metadata=metadata)
 
-    def broaden(self, x_width: Quantity, shape: str = 'gauss') -> T:
+    def broaden(self: T, x_width: Quantity, shape: str = 'gauss') -> T:
         """
         Broaden y_data and return a new broadened spectrum object
 
@@ -547,7 +547,7 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
                     f'{len(metadata["line_data"])} entries')
         self.metadata = {} if metadata is None else metadata
 
-    def __add__(self, other: T) -> T:
+    def __add__(self: T, other: T) -> T:
         """
         Appends the y_data of 2 Spectrum1DCollection objects,
         creating a single Spectrum1DCollection that contains
