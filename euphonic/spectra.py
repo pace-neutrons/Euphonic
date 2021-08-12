@@ -127,7 +127,7 @@ class Spectrum(ABC):
             return [(int(x - x0), label) for (x, label) in x_tick_labels
                     if (x >= x0) and ((x1 is None) or (x < x1))]
 
-    def split(self, indices: Union[Sequence[int], np.ndarray] = None,
+    def split(self: T, indices: Union[Sequence[int], np.ndarray] = None,
               btol: float = None) -> List[T]:
         """Split to multiple spectra
 
