@@ -73,7 +73,7 @@ class TestRegression:
         # Increase tolerance if asr present - can give slightly
         # different results with different libs
         if any(['--asr' in arg for arg in dispersion_args]):
-            atol = 1.5e-6
+            atol = 5e-6
         else:
             atol = sys.float_info.epsilon
         for key, value in line_data.items():
