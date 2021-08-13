@@ -52,7 +52,7 @@ To create a "complete" installation in a new environment:
 
 .. code-block:: bash
 
-  conda create -n euphonic-forge -c conda-forge python=3.8 euphonic matplotlib-base pyyaml tqdm
+  conda create -n euphonic-forge -c conda-forge python=3.8 euphonic matplotlib-base pyyaml tqdm h5py
 
 This creates an environment named "euphonic-forge", which can be
 entered with ``activate euphonic-forge`` and exited with
