@@ -29,4 +29,10 @@ jobs:
         env:
           EUPHONIC_VERSION: v0.6.1
         run: python -m tox -c release_tox.ini
-
+      - name: Publish test results
+        uses: EnricoMi/publish-unit-test-result-action@v1
+        if: |
+          startsWith(matrix.os, 'ubuntu') &&
+          always()
+        with:
+          files: tests_and_analysis/test/reports/junit_report*.xml
