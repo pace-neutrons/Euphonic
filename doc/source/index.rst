@@ -60,7 +60,7 @@ entered with ``activate euphonic-forge`` and exited with
 
 .. code-block:: bash
 
-  conda install -c conda-forge euphonic matplotlib-base pyyaml tqdm
+  conda install -c conda-forge euphonic matplotlib-base pyyaml tqdm h5py
 
 Github
 ------
