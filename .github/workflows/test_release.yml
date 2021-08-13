@@ -5,6 +5,7 @@ on:
       version:
         description: 'The Euphonic release version to test e.g. 0.6.1'
         required: true
+  push:
 
 jobs:
   test:
@@ -16,7 +17,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
         with:
-          ref: v${{ github.event.inputs.version }}
+          ref: v0.6.1
       - uses: conda-incubator/setup-miniconda@v2
         with:
           python-version: 3.6
@@ -26,5 +27,6 @@ jobs:
           python -m pip install -r tests_and_analysis/jenkins_requirements.txt
       - name: Run tests
         env:
-          EUPHONIC_VERSION: ${{ github.event.inputs.version }}
-        run: python -m release_tox
+          EUPHONIC_VERSION: v0.6.1
+        run: python -m tox -c release_tox.ini
+
