@@ -5,7 +5,7 @@ import itertools
 import math
 from numbers import Integral
 from typing import (Any, Dict, List, Optional, overload,
-                    Sequence, Tuple, TypeVar, Union)
+                    Sequence, Tuple, TypeVar, Union, Type, Iterable)
 
 import numpy as np
 from scipy.ndimage import correlate1d, gaussian_filter
@@ -18,13 +18,9 @@ from euphonic.util import _get_unique_elems_and_idx
 from euphonic import ureg, Quantity
 
 
-S = TypeVar('S', bound='Spectrum')
-S1D = TypeVar('S1D', bound='Spectrum1D')
-SC = TypeVar('SC', bound='Spectrum1DCollection')
-S2D = TypeVar('S2D', bound='Spectrum2D')
-
-
 class Spectrum(ABC):
+    T = TypeVar('T', bound='Spectrum')
+
     def __setattr__(self, name: str, value: Any) -> None:
         _check_unit_conversion(self, name, value,
                                ['x_data_unit', 'y_data_unit'])
@@ -37,22 +33,22 @@ class Spectrum(ABC):
         setattr(self, f'{attr_name}_data_unit', str(data.units))
 
     @property
-    def x_data(self):
+    def x_data(self) -> Quantity:
         return self._x_data*ureg(self._internal_x_data_unit).to(
             self.x_data_unit)
 
     @x_data.setter
-    def x_data(self, value):
+    def x_data(self, value: Quantity) -> None:
         self.x_data_unit = str(value.units)
         self._x_data = value.to(self._internal_x_data_unit).magnitude
 
     @property
-    def y_data(self):
+    def y_data(self) -> Quantity:
         return self._y_data*ureg(self._internal_y_data_unit).to(
             self.y_data_unit)
 
     @y_data.setter
-    def y_data(self, value):
+    def y_data(self, value: Quantity) -> None:
         self.y_data_unit = str(value.units)
         self._y_data = value.to(self._internal_y_data_unit).magnitude
 
@@ -63,7 +59,7 @@ class Spectrum(ABC):
 
     @classmethod
     @abstractmethod
-    def from_dict(cls: S, d: Dict[str, Any]) -> S:
+    def from_dict(cls: Type[T], d: Dict[str, Any]) -> T:
         """Initialise a Spectrum object from dictionary"""
         ...
 
@@ -80,7 +76,7 @@ class Spectrum(ABC):
         _obj_to_json_file(self, filename)
 
     @classmethod
-    def from_json_file(cls: S, filename: str) -> S:
+    def from_json_file(cls: Type[T], filename: str) -> T:
         """
         Read from a JSON file. See from_dict for required fields
 
@@ -93,12 +89,12 @@ class Spectrum(ABC):
         return _obj_from_json_file(cls, filename, type_dict)
 
     @abstractmethod
-    def _split_by_indices(self: S, indices: Union[Sequence[int], np.ndarray]
-                          ) -> List[S]:
+    def _split_by_indices(self: T, indices: Union[Sequence[int], np.ndarray]
+                          ) -> List[T]:
         """Split data along x axis at given indices"""
         ...
 
-    def _split_by_tol(self: S, btol: float = 10.0) -> List[S]:
+    def _split_by_tol(self: T, btol: float = 10.0) -> List[T]:
         """Split data along x-axis at detected breakpoints"""
         diff = np.diff(self.x_data.magnitude)
         median = np.median(diff)
@@ -107,7 +103,7 @@ class Spectrum(ABC):
 
     @staticmethod
     def _ranges_from_indices(indices: Union[Sequence[int], np.ndarray]
-                             ) -> List[Tuple[int, int]]:
+                             ) -> List[Tuple[int, Optional[int]]]:
         """Convert a series of breakpoints to a series of slice ranges"""
         if len(indices) == 0:
             ranges = [(0, None)]
@@ -120,9 +116,10 @@ class Spectrum(ABC):
         return ranges
 
     @staticmethod
-    def _cut_x_ticks(x_tick_labels: Union[List[Tuple[int, str]], None],
+    def _cut_x_ticks(x_tick_labels: Union[Sequence[Tuple[int, str]], None],
                      x0: int,
-                     x1: Union[int, None]) -> List[Tuple[int, str]]:
+                     x1: Union[int, None]) -> Union[List[Tuple[int, str]],
+                                                    None]:
         """Crop and shift x labels to new x range"""
         if x_tick_labels is None:
             return None
@@ -130,8 +127,8 @@ class Spectrum(ABC):
             return [(int(x - x0), label) for (x, label) in x_tick_labels
                     if (x >= x0) and ((x1 is None) or (x < x1))]
 
-    def split(self: S, indices: Union[Sequence[int], np.ndarray] = None,
-              btol: float = None) -> List[S]:
+    def split(self: T, indices: Union[Sequence[int], np.ndarray] = None,
+              btol: float = None) -> List[T]:
         """Split to multiple spectra
 
         Data may be split by index. Alternatively, x-axis data may be
@@ -141,9 +138,9 @@ class Spectrum(ABC):
 
         Parameters
         ----------
-        indices:
+        indices
             positions in data of breakpoints
-        btol:
+        btol
             parameter used to identify breakpoints. This is a ratio
             between the gap in values and the median gap between
             neighbouring x-values. If neither indices nor btol is
@@ -151,10 +148,10 @@ class Spectrum(ABC):
 
         Returns
         -------
+        split_spectra
             Separated spectrum regions. If passed to the appropriate
             functions in euphonic.plot this would be interpreted as a
             series of subplots.
-
         """
 
         if indices is None:
@@ -291,15 +288,19 @@ class Spectrum1D(Spectrum):
         == (n_x_data + 1,))
     y_data
         Shape (n_x_data,) float Quantity. The plot data in y
-    x_tick_labels : Sequence[Tuple[int, str]] or None
-        Special tick labels e.g. for high-symmetry points. The int
-        refers to the index in x_data the label should be applied to
-    metadata : Dict[str, Union[int, str]]
-        Contains metadata about the spectrum. Keys should be strings
-        and values should be strings or integers
+    x_tick_labels
+        Sequence[Tuple[int, str]] or None. Special tick labels e.g. for
+        high-symmetry points. The int refers to the index in x_data the
+        label should be applied to
+    metadata
+        Dict[str, Union[int, str]]. Contains metadata about the
+        spectrum. Keys should be strings and values should be strings
+        or integers
         There are some functional keys:
           - 'label' : str. This is used label lines on a 1D plot
     """
+    T = TypeVar('T', bound='Spectrum1D')
+
     def __init__(self, x_data: Quantity, y_data: Quantity,
                  x_tick_labels: Optional[Sequence[Tuple[int, str]]] = None,
                  metadata: Optional[Dict[str, Union[int, str]]] = None
@@ -336,7 +337,7 @@ class Spectrum1D(Spectrum):
         self.x_tick_labels = x_tick_labels
         self.metadata = {} if metadata is None else metadata
 
-    def __add__(self, other: S1D):
+    def __add__(self, other: 'Spectrum1D') -> 'Spectrum1D':
         """
         Sums the y_data of two Spectrum1D objects together,
         their x_data axes must be equal, and their y_data must
@@ -349,9 +350,9 @@ class Spectrum1D(Spectrum):
         spec_col = Spectrum1DCollection.from_spectra([self, other])
         return spec_col.sum()
 
-    def _split_by_indices(self: S1D,
+    def _split_by_indices(self: T,
                           indices: Union[Sequence[int], np.ndarray]
-                          ) -> List[S1D]:
+                          ) -> List[T]:
         """Split data along x-axis at given indices"""
         ranges = self._ranges_from_indices(indices)
 
@@ -374,7 +375,7 @@ class Spectrum1D(Spectrum):
                                    'metadata'])
 
     @classmethod
-    def from_dict(cls: S1D, d: Dict[str, Any]) -> S1D:
+    def from_dict(cls: Type[T], d: Dict[str, Any]) -> T:
         """
         Convert a dictionary to a Spectrum1D object
 
@@ -403,8 +404,8 @@ class Spectrum1D(Spectrum):
                    metadata=d['metadata'])
 
     @classmethod
-    def from_castep_phonon_dos(cls: S1D, filename: str,
-                               element: Optional[str] = None) -> S1D:
+    def from_castep_phonon_dos(cls: Type[T], filename: str,
+                               element: Optional[str] = None) -> T:
         """
         Reads DOS from a CASTEP .phonon_dos file
 
@@ -423,11 +424,11 @@ class Spectrum1D(Spectrum):
         else:
             metadata['species'] = element
         metadata['label'] = element
-        return Spectrum1D(data['dos_bins']*ureg(data['dos_bins_unit']),
-                          data['dos'][element]*ureg(data['dos_unit']),
-                          metadata=metadata)
+        return cls(data['dos_bins']*ureg(data['dos_bins_unit']),
+                   data['dos'][element]*ureg(data['dos_unit']),
+                   metadata=metadata)
 
-    def broaden(self: S1D, x_width: Quantity, shape: str = 'gauss') -> S1D:
+    def broaden(self: T, x_width: Quantity, shape: str = 'gauss') -> T:
         """
         Broaden y_data and return a new broadened spectrum object
 
@@ -453,7 +454,7 @@ class Spectrum1D(Spectrum):
             [self.get_bin_centres().magnitude],
             [x_width.to(self.x_data_unit).magnitude],
             shape=shape)
-        return Spectrum1D(
+        return type(self)(
             np.copy(self.x_data.magnitude)*ureg(self.x_data_unit),
             y_broadened*ureg(self.y_data_unit),
             copy.copy((self.x_tick_labels)),
@@ -479,19 +480,23 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
     y_data
         Shape (n_entries, n_x_data) float Quantity. The plot data in y,
         in rows corresponding to separate 1D spectra
-    x_tick_labels : Sequence[Tuple[int, str]] or None
-        Special tick labels e.g. for high-symmetry points. The int
-        refers to the index in x_data the label should be applied to
-    metadata : Dict[str, Union[int, str, LineData]] or None
-        Contains metadata about the spectra. Keys should be strings
-        and values should be strings or integers. There are some
-        functional keys:
+    x_tick_labels
+        Sequence[Tuple[int, str]] or None. Special tick labels e.g. for
+        high-symmetry points. The int refers to the index in x_data the
+        label should be applied to
+    metadata
+        Dict[str, Union[int, str, LineData]] or None. Contains metadata
+        about the spectra. Keys should be strings and values should be
+        strings or integers.
+        There are some functional keys:
           - 'line_data' : LineData
                           This is a Sequence[Dict[str, Union[int, str]],
                           it contains metadata for each spectrum in
                           the collection, and must be of length
                           n_entries
     """
+    T = TypeVar('T', bound='Spectrum1DCollection')
+
     def __init__(
             self, x_data: Quantity, y_data: Quantity,
             x_tick_labels: Optional[Sequence[Tuple[int, str]]] = None,
@@ -542,7 +547,7 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
                     f'{len(metadata["line_data"])} entries')
         self.metadata = {} if metadata is None else metadata
 
-    def __add__(self, other: SC):
+    def __add__(self: T, other: T) -> T:
         """
         Appends the y_data of 2 Spectrum1DCollection objects,
         creating a single Spectrum1DCollection that contains
@@ -555,11 +560,11 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
         spectra are retained in the top level dictionary, any
         others are put in the individual 'line_data' entries
         """
-        return Spectrum1DCollection.from_spectra([*self, *other])
+        return type(self).from_spectra([*self, *other])
 
-    def _split_by_indices(self: SC,
+    def _split_by_indices(self,
                           indices: Union[Sequence[int], np.ndarray]
-                          ) -> List[SC]:
+                          ) -> List[T]:
         """Split data along x-axis at given indices"""
 
         ranges = self._ranges_from_indices(indices)
@@ -578,14 +583,14 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
         ...
 
     @overload  # noqa: F811
-    def __getitem__(self, item: slice) -> SC:
+    def __getitem__(self, item: slice) -> T:
         ...
 
     @overload  # noqa: F811
-    def __getitem__(self, item: Union[Sequence[int], np.ndarray]) -> SC:
+    def __getitem__(self, item: Union[Sequence[int], np.ndarray]) -> T:
         ...
 
-    def __getitem__(self, item: Union[int, slice, Sequence[int]]):  # noqa: F811
+    def __getitem__(self, item: Union[int, slice, Sequence[int], np.ndarray]):  # noqa: F811
         new_metadata = copy.deepcopy(self.metadata)
         line_metadata = new_metadata.pop('line_data',
                                          [{} for _ in self._y_data])
@@ -616,7 +621,7 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
                           metadata=new_metadata)
 
     @classmethod
-    def from_spectra(cls: SC, spectra: Sequence[Spectrum1D]) -> SC:
+    def from_spectra(cls: Type[T], spectra: Sequence[Spectrum1D]) -> T:
         if len(spectra) < 1:
             raise IndexError("At least one spectrum is needed for collection")
 
@@ -648,7 +653,7 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
 
     @staticmethod
     def _combine_metadata(all_metadata: Sequence[Dict[str, Union[int, str]]]
-                          ) -> Dict[str, Any]:
+                          ) -> Dict[str, Union[int, str, LineData]]:
         """
         From a sequence of metadata dictionaries, combines all common
         key/value pairs into the top level of a metadata dictionary,
@@ -729,7 +734,7 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
                                    'metadata'])
 
     @classmethod
-    def from_dict(cls: SC, d) -> SC:
+    def from_dict(cls: Type[T], d) -> T:
         """
         Convert a dictionary to a Spectrum1DCollection object
 
@@ -758,7 +763,7 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
                    metadata=d['metadata'])
 
     @classmethod
-    def from_castep_phonon_dos(cls: SC, filename: str) -> SC:
+    def from_castep_phonon_dos(cls: Type[T], filename: str) -> T:
         """
         Reads total DOS and per-element PDOS from a CASTEP
         .phonon_dos file
@@ -783,7 +788,7 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
             y_data*ureg(data['dos_unit']),
             metadata=metadata)
 
-    def broaden(self, x_width: Quantity, shape: str = 'gauss') -> SC:
+    def broaden(self, x_width: Quantity, shape: str = 'gauss') -> T:
         """
         Individually broaden each line in y_data, returning a new
         Spectrum1DCollection
@@ -817,7 +822,7 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
             copy.copy((self.x_tick_labels)),
             copy.deepcopy(self.metadata))
 
-    def group_by(self, *line_data_keys: str) -> SC:
+    def group_by(self, *line_data_keys: str) -> T:
         """
         Group and sum y_data for each spectrum according to the values
         mapped to the specified keys in metadata['line_data']
@@ -878,7 +883,7 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
                           metadata=metadata)
 
     def select(self, **select_key_values: Union[
-            str, int, Sequence[str], Sequence[int]]) -> SC:
+            str, int, Sequence[str], Sequence[int]]) -> T:
         """
         Select spectra by their keys and values in metadata['line_data']
 
@@ -941,20 +946,24 @@ class Spectrum2D(Spectrum):
         == (n_y_data + 1,))
     z_data
         Shape (n_x_data, n_y_data) float Quantity. The plot data in z
-    x_tick_labels : Sequence[Tuple[int, str]] or None
-        Special tick labels e.g. for high-symmetry points. The int
-        refers to the index in x_data the label should be applied to
-    metadata : Dict[str, Union[int, str]]
-        Contains metadata about the spectrum. Keys should be strings
-        and values should be strings or integers
+    x_tick_labels
+        Sequence[Tuple[int, str]] or None. Special tick labels e.g. for
+        high-symmetry points. The int refers to the index in x_data the
+        label should be applied to
+    metadata
+        Dict[str, Union[int, str]]. Contains metadata about the
+        spectrum. Keys should be strings and values should be strings
+        or integers
     """
+    T = TypeVar('T', bound='Spectrum2D')
+
     def __init__(self, x_data: Quantity, y_data: Quantity,
                  z_data: Quantity,
                  x_tick_labels: Optional[Sequence[Tuple[int, str]]] = None,
                  metadata: Optional[Dict[str, Union[int, str]]] = None
                  ) -> None:
         """
-        Attributes
+        Parameters
         ----------
         x_data
             Shape (n_x_data,) or (n_x_data + 1,) float Quantity. The
@@ -992,12 +1001,12 @@ class Spectrum2D(Spectrum):
         self.metadata = {} if metadata is None else metadata
 
     @property
-    def z_data(self):
+    def z_data(self) -> Quantity:
         return self._z_data*ureg(self._internal_z_data_unit).to(
             self.z_data_unit)
 
     @z_data.setter
-    def z_data(self, value):
+    def z_data(self, value: Quantity) -> None:
         self.z_data_unit = str(value.units)
         self._z_data = value.to(self._internal_z_data_unit).magnitude
 
@@ -1006,9 +1015,9 @@ class Spectrum2D(Spectrum):
                                ['z_data_unit'])
         super(Spectrum2D, self).__setattr__(name, value)
 
-    def _split_by_indices(self: S2D,
+    def _split_by_indices(self,
                           indices: Union[Sequence[int], np.ndarray]
-                          ) -> List[S2D]:
+                          ) -> List[T]:
         """Split data along x-axis at given indices"""
         ranges = self._ranges_from_indices(indices)
         return [type(self)(self.x_data[x0:x1], self.y_data,
@@ -1018,9 +1027,9 @@ class Spectrum2D(Spectrum):
                            metadata=self.metadata)
                 for x0, x1 in ranges]
 
-    def broaden(self: S2D, x_width: Optional[Quantity] = None,
+    def broaden(self, x_width: Optional[Quantity] = None,
                 y_width: Optional[Quantity] = None, shape: str = 'gauss'
-                ) -> S2D:
+                ) -> T:
         """
         Broaden z_data and return a new broadened Spectrum2D object
 
@@ -1120,7 +1129,7 @@ class Spectrum2D(Spectrum):
                                    'x_tick_labels', 'metadata'])
 
     @classmethod
-    def from_dict(cls: S2D, d: Dict[str, Any]) -> S2D:
+    def from_dict(cls: Type[T], d: Dict[str, Any]) -> T:
         """
         Convert a dictionary to a Spectrum2D object
 

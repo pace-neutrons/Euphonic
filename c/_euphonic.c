@@ -29,7 +29,6 @@ static PyObject *calculate_phonons(PyObject *self, PyObject *args) {
     PyArrayObject *py_modegs;
     PyArrayObject *py_all_ogs_cart;
     int dipole;
-    int reciprocal_asr;
     int splitting;
     int n_threads = 1;
 
@@ -84,6 +83,7 @@ static PyObject *calculate_phonons(PyObject *self, PyObject *args) {
     int n_rqpts;
     int dmats_len;
     int modegs_len;
+    int asr_corr_len;
     int n_split_qpts;
     int q, i, qpos;
     int max_ims;
@@ -93,7 +93,7 @@ static PyObject *calculate_phonons(PyObject *self, PyObject *args) {
     int n_gvecs;
 
     // Parse inputs
-    if (!PyArg_ParseTuple(args, "OO!O!O!O!O!O!O!O!O!iiiO!O!O!O!i",
+    if (!PyArg_ParseTuple(args, "OO!O!O!O!O!O!O!O!O!iiO!O!O!O!i",
                           &py_idata,
                           &PyArray_Type, &py_cell_vec,
                           &PyArray_Type, &py_recip_vec,
@@ -105,7 +105,6 @@ static PyObject *calculate_phonons(PyObject *self, PyObject *args) {
                           &PyArray_Type, &py_asr_correction,
                           &PyArray_Type, &py_dmat_weighting,
                           &dipole,
-                          &reciprocal_asr,
                           &splitting,
                           &PyArray_Type, &py_evals,
                           &PyArray_Type, &py_dmats,
@@ -178,6 +177,7 @@ static PyObject *calculate_phonons(PyObject *self, PyObject *args) {
     n_split_qpts = PyArray_DIMS(py_split_idx)[0];
     dmats_len = PyArray_DIMS(py_dmats)[0];
     modegs_len = PyArray_DIMS(py_modegs)[0];
+    asr_corr_len = PyArray_DIMS(py_asr_correction)[0];
     max_ims = PyArray_DIMS(py_sc_im_idx)[3];
     dmat_elems = 2*9*n_atoms*n_atoms;
     if (dipole) {
@@ -242,7 +242,7 @@ static PyObject *calculate_phonons(PyObject *self, PyObject *args) {
                 add_arrays(dmat_elems, corr, dmat);
             }
 
-            if (reciprocal_asr) {
+            if (asr_corr_len > 0) {
                 add_arrays(dmat_elems, asr_correction, dmat);
             }
 

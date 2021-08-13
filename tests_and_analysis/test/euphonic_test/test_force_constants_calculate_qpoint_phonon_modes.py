@@ -265,9 +265,9 @@ class TestForceConstantsCalculateQPointPhononModes:
         # Mock force constants to return nonsense gradients with high
         # imaginary terms
         class MockFC(ForceConstants):
-            def _calculate_phonons_at_q(self, q, args):
+            def _calculate_phonons_at_q(self, *args):
                 freqs, evecs, grads = ForceConstants._calculate_phonons_at_q(
-                    self, q, args)
+                    self, *args)
                 mocked_grads = np.ones(grads.shape) + np.ones(grads.shape)*1j
                 return freqs, evecs, mocked_grads
         mocker.patch('euphonic.ForceConstants', MockFC)

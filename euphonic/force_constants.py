@@ -2,7 +2,7 @@ import math
 import os
 import sys
 import warnings
-from typing import Optional, Tuple, Union
+from typing import Optional, Tuple, Union, TypeVar, Sequence, Dict, Any, Type
 from multiprocessing import cpu_count
 
 import numpy as np
@@ -36,39 +36,50 @@ class ForceConstants:
 
     Attributes
     ----------
-    crystal : Crystal
+    crystal
         Lattice and atom information
-    force_constants : (n_cells_in_sc, 3*n_atoms, 3*n_atoms) float Quantity
-        Force constants matrix
-    sc_matrix : (3, 3) int ndarray
-        The supercell matrix
-    n_cells_in_sc : int
+    force_constants
+        Shape (n_cells_in_sc, 3*n_atoms, 3*n_atoms) float Quantity in
+        energy/length**2 units. The force constants matrix
+    sc_matrix
+        Shape (3, 3) int ndarray. The supercell matrix
+    n_cells_in_sc
         Number of cells in the supercell
-    cell_origins : (n_cells_in_sc, 3) int ndarray
-        The locations of the unit cells within the supercell
-    born : (n_atoms, 3, 3) float Quantity or None
+    cell_origins
+        Shape (n_cells_in_sc, 3) int ndarray. The locations of the unit
+        cells within the supercell
+    born
+        Shape (n_atoms, 3, 3) float Quantity in charge units or None.
         The Born charges for each atom
-    dielectric : (3, 3) float Quantity or None
-        The dielectric permittivity tensor
+    dielectric
+        Shape (3, 3) float Quantity in charge**2/(length*energy) units
+        or None. The dielectric permittivity tensor
     """
+    T = TypeVar('T', bound='ForceConstants')
 
-    def __init__(self, crystal, force_constants, sc_matrix, cell_origins,
-                 born=None, dielectric=None):
+    def __init__(self, crystal: Crystal, force_constants: Quantity,
+                 sc_matrix: np.ndarray, cell_origins: np.ndarray,
+                 born: Optional[Quantity] = None,
+                 dielectric: Optional[Quantity] = None) -> None:
         """
         Parameters
         ----------
-        crystal : Crystal
+        crystal
             Lattice and atom information
-        force_constants : (n_cells_in_sc, 3*n_atoms, 3*n_atoms) float Quantity
-            Force constants matrix
-        sc_matrix : (3, 3) int ndarray
-            The supercell matrix
-        cell_origins : (n_cells_in_sc, 3) int ndarray
-            The locations of the unit cells within the supercell
-        born : (n_atoms, 3, 3) float Quantity, optional
-            The Born charges for each atom
-        dielectric : (3, 3) float Quantity, optional
-            The dielectric permittivity tensor
+        force_constants
+            Shape (n_cells_in_sc, 3*n_atoms, 3*n_atoms) float Quantity
+            in energy/length**2 units. The force constants matrix
+        sc_matrix
+            Shape (3, 3) int ndarray. The supercell matrix
+        cell_origins
+            Shape (n_cells_in_sc, 3) int ndarray. The locations of the
+            unit cells within the supercell
+        born
+            Shape (n_atoms, 3, 3) float Quantity in charge units. The
+            Born charges for each atom
+        dielectric
+            Shape (3, 3) float Quantity in charge**2/(length*energy)
+            units. The dielectric permittivity tensor
         """
         # Check independent inputs first
         _check_constructor_inputs(
@@ -105,30 +116,30 @@ class ForceConstants:
                 'e**2/(bohr*hartree)')))
 
     @property
-    def force_constants(self):
+    def force_constants(self) -> Quantity:
         return self._force_constants*ureg(
             'hartree/bohr**2').to(
                 self.force_constants_unit)
 
     @force_constants.setter
-    def force_constants(self, value):
+    def force_constants(self, value: Quantity) -> None:
         self.force_constants_unit = str(value.units)
         self._force_constants = value.to('hartree/bohr**2').magnitude
 
     @property
-    def born(self):
+    def born(self) -> Union[Quantity, None]:
         if self._born is not None:
             return self._born*ureg('e').to(self.born_unit)
         else:
             return None
 
     @born.setter
-    def born(self, value):
+    def born(self, value: Quantity) -> None:
         self.born_unit = str(value.units)
         self._born = value.to('e').magnitude
 
     @property
-    def dielectric(self):
+    def dielectric(self) -> Union[Quantity, None]:
         if self._dielectric is not None:
             return self._dielectric*ureg((
                 'e**2/(bohr*hartree)')).to(self.dielectric_unit)
@@ -136,11 +147,11 @@ class ForceConstants:
             return None
 
     @dielectric.setter
-    def dielectric(self, value):
+    def dielectric(self, value: Quantity) -> None:
         self.dielectric_unit = str(value.units)
         self._dielectric = value.to('e**2/(bohr*hartree)').magnitude
 
-    def __setattr__(self, name, value):
+    def __setattr__(self, name: str, value: Any) -> None:
         _check_unit_conversion(self, name, value,
                                ['force_constants_unit', 'born_unit',
                                 'dielectric_unit'])
@@ -169,10 +180,12 @@ class ForceConstants:
 
         Parameters
         ----------
-        qpts : (n_qpts, 3) float ndarray
-            The q-points to interpolate onto
-        weights : (n_qpts,) float ndarray
-            The weight for each q-point. If not given, equal weights are
+        qpts
+            Shape (n_qpts, 3) float ndarray. The q-points to
+            interpolate onto in reciprocal cell vector units
+        weights
+            Shape (n_qpts,) float ndarray. The weight for each q-point.
+            If not given, equal weights are
             applied
         asr
             One of {'realspace', 'reciprocal'}. Which acoustic sum rule
@@ -368,7 +381,7 @@ class ForceConstants:
 
         .. [3] J. R. Yates, X. Wang, D. Vanderbilt and I. Souza, Phys. Rev. B, 2007, 75, 195121
         """
-        qpts, weights, freqs, evecs, grads = self._calculate_phonons_at_qpts(
+        qpts, freqs, weights, evecs, grads = self._calculate_phonons_at_qpts(
             qpts, weights, asr, dipole, dipole_parameter, eta_scale,
             splitting, insert_gamma, reduce_qpts, use_c, n_threads,
             return_mode_gradients, return_mode_widths,
@@ -402,7 +415,7 @@ class ForceConstants:
         q-points. See ForceConstants.calculate_qpoint_phonon_modes for
         argument and algorithm details
         """
-        qpts, weights, freqs, _, grads = self._calculate_phonons_at_qpts(
+        qpts, freqs, weights, _, grads = self._calculate_phonons_at_qpts(
             qpts, weights, asr, dipole, dipole_parameter, eta_scale,
             splitting, insert_gamma, reduce_qpts, use_c, n_threads,
             return_mode_gradients, return_mode_widths,
@@ -417,8 +430,8 @@ class ForceConstants:
     def _calculate_phonons_at_qpts(
             self,
             qpts: np.ndarray,
-            weights: np.ndarray,
-            asr: str,
+            weights: Optional[np.ndarray],
+            asr: Optional[str],
             dipole: bool,
             dipole_parameter: float,
             eta_scale: float,
@@ -429,9 +442,34 @@ class ForceConstants:
             n_threads: Optional[int],
             return_mode_gradients: bool,
             return_mode_widths: bool,
-            return_eigenvectors: bool) -> Union[
-                Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray],
-                Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]]:
+            return_eigenvectors: bool) -> Tuple[
+                np.ndarray, Quantity, Optional[np.ndarray],
+                Optional[np.ndarray], Optional[Quantity]]:
+        """
+        Calculates phonon frequencies, and optionally eigenvectors and
+        phonon frequency gradients. See calculate_qpoint_phonon_modes
+        for argument details
+
+        Returns
+        -------
+        qpts
+            Shape (n_qpts, 3) float ndarray. The calculated q-points,
+            note that this may not be the same as the input q-points
+            if splitting and insert_gamma=True and there are gamma
+            points
+        frequencies
+            Shape (n_qpts, 3*n_atoms) float Quantity in energy units,
+            the phonon frequencies. n_qpts may not be the same as the
+            number of input q-points, if splitting and
+            insert_gamma=True and there are gamma points
+        weights
+            Shape (n_qpts,) float ndarray. The weight of each q-point
+        eigenvectors
+            Shape (n_qpts, 3*n_atoms, n_atoms, 3) complex ndarray
+        gradients
+            Shape (n_qpts, 3*n_atoms, 3) float Quantity in
+            energy*length units. The phonon mode gradients
+        """
         if return_mode_widths:
             warnings.warn(
                 'return_mode_widths has been deprecated and will be removed '
@@ -520,21 +558,21 @@ class ForceConstants:
         # Get q-directions for non-analytical corrections
         if splitting:
             split_idx = np.where(is_gamma(reduced_qpts))[0]
-            q_dirs = self._get_q_dir(qpts, qpts_i, split_idx)
+            q_dirs = self._get_q_dirs(qpts, qpts_i, split_idx)
         else:
             split_idx = np.array([])
             q_dirs = np.array([])
 
-        lim = 2  # Supercell image limit
-        # Construct list of supercell ion images
+        n_sc_shells = 2  # How many supercells out to search for atom images
+        # Construct list of supercell atom images
         if not hasattr(self, '_sc_image_i'):
-            self._calculate_supercell_images(lim)
+            self._calculate_supercell_images(n_sc_shells)
 
         # Get a list of all the unique supercell image origins and cell
         # origins in x, y, z and how to rebuild them to minimise
         # expensive phase calculations later
         sc_image_r = get_all_origins(
-            np.repeat(lim, 3) + 1, min_xyz=-np.repeat(lim, 3))
+            np.repeat(n_sc_shells, 3) + 1, min_xyz=-np.repeat(n_sc_shells, 3))
         sc_origins = np.einsum('ij,jk->ik', sc_image_r,
                                self.sc_matrix).astype(np.int32)
         unique_sc_origins = [[] for i in range(3)]
@@ -572,17 +610,15 @@ class ForceConstants:
                        dipole_parameter != self._dipole_parameter):
             self._dipole_correction_init(dipole_parameter)
 
+        force_constants = self._force_constants
         if asr == 'realspace':
             if not hasattr(self, '_force_constants_asr'):
                 self._force_constants_asr = self._enforce_realspace_asr()
             force_constants = self._force_constants_asr
-        else:
-            force_constants = self._force_constants
         # Precompute fc matrix weighted by number of supercell atom
         # images (for cumulant method)
         n_sc_images_repeat = (
-            self._n_sc_images.repeat(3, axis=2).repeat(3, axis=1)
-        )
+            self._n_sc_images.repeat(3, axis=2).repeat(3, axis=1))
         fc_img_weighted = np.divide(
             force_constants, n_sc_images_repeat, where=n_sc_images_repeat != 0)
 
@@ -597,9 +633,7 @@ class ForceConstants:
             if dipole:
                 dyn_mat_gamma += self._calculate_dipole_correction(q_gamma)
             recip_asr_correction = self._enforce_reciprocal_asr(dyn_mat_gamma)
-            if len(recip_asr_correction) == 0:
-                # Finding acoustic modes failed
-                asr = None
+
 
         rfreqs = np.zeros((n_rqpts, 3*n_atoms))
         if return_eigenvectors:
@@ -668,27 +702,27 @@ class ForceConstants:
                             '_cells', '_gvec_phases', '_gvecs_cart',
                             '_dipole_q0']
             _ensure_contiguous_attrs(self, attrs, opt_attrs=dipole_attrs)
-            reciprocal_asr = 1 if asr == 'reciprocal' else 0
             with threadpool_limits(limits=1):
                 euphonic_c.calculate_phonons(
                     self, cell_vectors, recip_vectors, reduced_qpts,
                     split_idx, q_dirs, fc_img_weighted, sc_origins,
                     recip_asr_correction, dyn_mat_weighting, dipole,
-                    reciprocal_asr, splitting, rfreqs, reigenvecs,
-                    rmode_gradients, all_origins_cart, n_threads)
+                    splitting, rfreqs, reigenvecs, rmode_gradients,
+                    all_origins_cart, n_threads)
         else:
-            q_independent_args = (
-                reduced_qpts, split_idx, q_dirs, fc_img_weighted,
-                unique_sc_origins, unique_sc_i, unique_cell_origins,
-                unique_cell_i, recip_asr_correction, dyn_mat_weighting,
-                dipole, asr, splitting, all_origins_cart)
-            for q in range(n_rqpts):
-                rfreqs[q], evecs, grads = self._calculate_phonons_at_q(
-                        q, q_independent_args)
+            for qi, qpt in enumerate(reduced_qpts):
+                q_dir = None
+                if splitting and is_gamma(qpt):
+                    q_dir_idx = np.where(split_idx == qi)[0][0]
+                    q_dir = q_dirs[q_dir_idx]
+                rfreqs[qi], evecs, grads = self._calculate_phonons_at_q(
+                    qpt, fc_img_weighted, unique_sc_origins, unique_sc_i,
+                    unique_cell_origins, unique_cell_i, all_origins_cart,
+                    dyn_mat_weighting, recip_asr_correction, dipole, q_dir)
                 if return_eigenvectors:
-                    reigenvecs[q] = evecs
+                    reigenvecs[qi] = evecs
                 if return_mode_gradients:
-                    rmode_gradients[q] = grads
+                    rmode_gradients[qi] = grads
 
         freqs = rfreqs[qpts_i]*ureg('hartree').to('meV')
         if return_eigenvectors:
@@ -719,44 +753,102 @@ class ForceConstants:
             mode_gradients = mode_gradients_to_widths(
                 mode_gradients,
                 self.crystal.cell_vectors)
-        return qpts, weights, freqs, eigenvectors, mode_gradients
+        return qpts, freqs, weights, eigenvectors, mode_gradients
 
-    def _calculate_phonons_at_q(self, q, args):
+    def _calculate_phonons_at_q(
+            self,
+            qpt: np.ndarray,
+            fc_img_weighted: np.ndarray,
+            unique_sc_origins: Sequence[Sequence[int]],
+            unique_sc_i: np.ndarray,
+            unique_cell_origins: Sequence[Sequence[int]],
+            unique_cell_i: np.ndarray,
+            all_origins_cart: np.ndarray,
+            dyn_mat_weighting: np.ndarray,
+            recip_asr_correction: np.ndarray,
+            dipole: bool,
+            q_dir: Optional[np.ndarray] = None
+            ) -> Tuple[np.ndarray, np.ndarray, Union[np.ndarray, None]]:
         """
         Given a q-point and some precalculated q-independent values,
         calculate and diagonalise the dynamical matrix and return the
-        frequencies and eigenvalues. Optionally also includes the Ewald
-        dipole sum correction and LO-TO splitting
-        """
-        (reduced_qpts, split_idx, q_dirs, fc_img_weighted, unique_sc_origins,
-         unique_sc_i, unique_cell_origins, unique_cell_i,
-         recip_asr_correction, dyn_mat_weighting, dipole, asr,
-         splitting, all_origins_cart) = args
+        frequencies, eigenvectors and optionally mode gradients
 
-        qpt = reduced_qpts[q]
+        Parameters
+        ----------
+        qpt
+            Shape (3,) float ndarray. The q-point to calculate
+        fc_img_weighted
+            Shape (n_cells_in_sc, 3*n_atoms, 3*n_atoms) float ndarray.
+            The force constants matrix weighted by the number of
+            supercell atom images for each ij displacement
+        unique_sc_origins
+            A list containing 3 lists of the unique supercell image
+            offsets in each direction. The supercell offset is
+            calculated by multiplying the supercell matrix by the
+            supercell image indices (obtained by _get_all_origins()). A
+            list of lists rather than a Numpy array is used as the 3
+            lists are independent and their size is not known
+            beforehand
+        unique_sc_i
+            Shape ((2*n_sc_shells + 1)**3, 3) int ndarray, where
+            n_sc_shells is how many supercells out to go to search for
+            atom images. The indices needed to reconstruct sc_origins
+            from the unique values in unique_sc_origins
+        unique_cell_origins
+            A list containing 3 lists of the unique cell origins in
+            each direction. A list of lists rather than a Numpy array
+            is used as the 3 lists are independent and their size is
+            not known beforehand
+        unique_cell_i
+            Shape (n_cells_in_sc, 3) int ndarray. The indices needed to
+            reconstruct cell_origins from the unique values in
+            unique_cell_origins
+        all_origins_cart
+            Shape (n_cells_in_sc, n_atoms, n_atoms, n_images, 3) or
+            (0, 3) float ndarray. The Cartesian coordinate of each atom
+            in each supercell image. Is only used if calculating
+            dynamical matrix gradients
+        dyn_mat_weighting
+            Shape (3*n_atoms, 3*n_atoms) float ndarray. The dynamical
+            matrix mass weighting
+        recip_asr_correction
+            Shape (3*n_atoms, 3*n_atoms) or (0,) complex ndarray. Is
+            only used if the reciprocal ASR was requested
+        dipole
+            Whether to apply the dipole correction
+        q_dir
+            Shape (3,) float ndarray, the q-direction to use in LO-TO
+            splitting, if applicable
+
+        Returns
+        -------
+        frequencies
+            Shape (3*n_atoms) float ndarray. The phonon frequencies
+        eigenvectors
+            Shape (3*n_atoms, n_atoms, 3) complex ndarray. The
+            eigenvectors
+        mode_gradients
+            Shape (3*n_atoms, 3) complex ndarray. The gradient for
+            each mode
+        """
         n_atoms = self.crystal.n_atoms
 
-        dmat_args = (qpt, fc_img_weighted, unique_sc_origins, unique_sc_i,
-                     unique_cell_origins, unique_cell_i, all_origins_cart)
-        dyn_mat, dmat_grad = self._calculate_dyn_mat(*dmat_args)
+        dyn_mat, dmat_grad = self._calculate_dyn_mat(
+            qpt, fc_img_weighted, unique_sc_origins, unique_sc_i,
+            unique_cell_origins, unique_cell_i, all_origins_cart)
 
         if dipole:
             dipole_corr = self._calculate_dipole_correction(qpt)
             dyn_mat += dipole_corr
 
-        if asr == 'reciprocal':
+        if len(recip_asr_correction) > 0:
             dyn_mat += recip_asr_correction
 
         # Calculate LO-TO splitting by calculating non-analytic
         # correction to dynamical matrix
-        if splitting and is_gamma(qpt):
-            q_dir_idx = np.where(split_idx == q)[0][0]
-            na_corr = self._calculate_gamma_correction(q_dirs[q_dir_idx])
-        else:
-            # Correction is zero if not a gamma point or splitting=False
-            na_corr = np.array([0])
-
-        dyn_mat += na_corr
+        if q_dir is not None:
+            dyn_mat += self._calculate_gamma_correction(q_dir)
 
         # Mass weight dynamical matrix
         dyn_mat *= dyn_mat_weighting
@@ -781,9 +873,16 @@ class ForceConstants:
         else:
             return evals, evecs, None
 
-    def _calculate_dyn_mat(self, q, fc_img_weighted, unique_sc_origins,
-                           unique_sc_i, unique_cell_origins, unique_cell_i,
-                           all_origins_cart):
+    def _calculate_dyn_mat(
+            self,
+            qpt: np.ndarray,
+            fc_img_weighted: np.ndarray,
+            unique_sc_origins: Sequence[Sequence[int]],
+            unique_sc_i: np.ndarray,
+            unique_cell_origins: Sequence[Sequence[int]],
+            unique_cell_i: np.ndarray,
+            all_origins_cart: np.ndarray) -> Tuple[np.ndarray,
+                                                   Optional[np.ndarray]]:
         """
         Calculate the non mass weighted dynamical matrix at a specified
         q-point from the image weighted force constants matrix and the
@@ -792,38 +891,48 @@ class ForceConstants:
 
         Parameters
         ----------
-        q : (3,) float ndarray
-            The q-point to calculate the correction for
-        fc_img_weighted : (n_cells_in_sc, 3*n_atoms, 3*n_atoms) float ndarray
+        qpt
+            Shape (3,) float ndarray. The q-point to calculate
+        fc_img_weighted
+            Shape (n_cells_in_sc, 3*n_atoms, 3*n_atoms) float ndarray.
             The force constants matrix weighted by the number of
             supercell atom images for each ij displacement
-        unique_sc_origins : list of lists of ints
+        unique_sc_origins
             A list containing 3 lists of the unique supercell image
             offsets in each direction. The supercell offset is
             calculated by multiplying the supercell matrix by the
             supercell image indices (obtained by _get_all_origins()). A
             list of lists rather than a Numpy array is used as the 3
-            lists are independent and their size is not known beforehand
-        unique_sc_i : ((2*lim + 1)**3, 3) int ndarray
-            The indices needed to reconstruct sc_origins from the unique
-            values in unique_sc_origins
-        unique_cell_origins : list of lists of ints
-            A list containing 3 lists of the unique cell origins in each
-            direction. A list of lists rather than a Numpy array is used
-            as the 3 lists are independent and their size is not known
+            lists are independent and their size is not known
             beforehand
-        unique_cell_i : (n_cells_in_sc, 3) int ndarray
-            The indices needed to reconstruct cell_origins from the
-            unique values in unique_cell_origins
-        all_origins_cart : (n_cells_in_sc, n_atoms, n_atoms, n_images, 3)
-            or (0, 3) float ndarray
-            The Cartesian coordinate of each atom in each supercell
-            image. Is only used if calculating dynamical matrix gradients
+        unique_sc_i
+            Shape ((2*n_sc_shells + 1)**3, 3) int ndarray, where
+            n_sc_shells is how many supercells out to go to search for
+            atom images. The indices needed to reconstruct sc_origins
+            from the unique values in unique_sc_origins
+        unique_cell_origins
+            A list containing 3 lists of the unique cell origins in
+            each direction. A list of lists rather than a Numpy array
+            is used as the 3 lists are independent and their size is
+            not known beforehand
+        unique_cell_i
+            Shape (n_cells_in_sc, 3) int ndarray. The indices needed to
+            reconstruct cell_origins from the unique values in
+            unique_cell_origins
+        all_origins_cart
+            Shape (n_cells_in_sc, n_atoms, n_atoms, n_images, 3) or
+            (0, 3) float ndarray. The Cartesian coordinate of each atom
+            in each supercell image. Is only used if calculating
+            dynamical matrix gradients
 
         Returns
         -------
-        dyn_mat : (3*n_atoms, 3*n_atoms) complex ndarray
-            The non mass weighted dynamical matrix at q
+        dyn_mat
+            Shape (3*n_atoms, 3*n_atoms) complex ndarray. The non mass
+            weighted dynamical matrix at q
+        dyn_mat_grad
+            Shape (3*n_atoms, 3*n_atoms, 3) complex ndarray. The dynamical
+            matrix gradient in each Cartesian direction
         """
         sc_image_i = self._sc_image_i
 
@@ -837,7 +946,7 @@ class ForceConstants:
         # hence phase of zero can be used
         sc_phases = np.zeros(len(unique_sc_i) + 1, dtype=np.complex128)
         sc_phases[:-1], cell_phases = self._calculate_phases(
-            q, unique_sc_origins, unique_sc_i, unique_cell_origins,
+            qpt, unique_sc_origins, unique_sc_i, unique_cell_origins,
             unique_cell_i)
         sc_phase_sum = np.sum(sc_phases[sc_image_i],
                               axis=3)
@@ -859,7 +968,7 @@ class ForceConstants:
         else:
             return dyn_mat, None
 
-    def _dipole_correction_init(self, dipole_parameter=1.0):
+    def _dipole_correction_init(self, dipole_parameter: float = 1.0) -> None:
         """
         Calculate the q-independent parts of the long range correction
         to the dynamical matrix for efficiency. The method used is based
@@ -868,7 +977,7 @@ class ForceConstants:
 
         Parameters
         ----------
-        dipole_parameter : float, optional
+        dipole_parameter
             Changes the cutoff in real/reciprocal space for the dipole
             Ewald sum. A higher value uses more reciprocal terms
         """
@@ -1006,7 +1115,7 @@ class ForceConstants:
         self._gvec_phases = gvec_phases
         self._dipole_q0 = dipole_q0
 
-    def _calculate_dipole_correction(self, q):
+    def _calculate_dipole_correction(self, q: np.ndarray) -> np.ndarray:
         """
         Calculate the long range correction to the dynamical matrix
         using the Ewald sum, see eqs 72-74 from Gonze and Lee PRB 55,
@@ -1014,13 +1123,15 @@ class ForceConstants:
 
         Parameters
         ----------
-        q : (3,) float ndarray
-            The q-point to calculate the correction for
+        q
+            Shape (3,) float ndarray. The q-point to calculate the
+            correction for
 
         Returns
         -------
-        corr : (3*n_atoms, 3*n_atoms) complex ndarray
-            The correction to the dynamical matrix
+        corr
+            Shape (3*n_atoms, 3*n_atoms) complex ndarray. The
+            correction to the dynamical matrix
         """
         recip = self.crystal.reciprocal_cell().to('1/bohr').magnitude
         n_atoms = self.crystal.n_atoms
@@ -1089,7 +1200,29 @@ class ForceConstants:
         return np.reshape(np.transpose(dipole, axes=[0, 2, 1, 3]),
                           (3*n_atoms, 3*n_atoms))
 
-    def _get_q_dir(self, qpts, qpts_i, gamma_idx):
+    def _get_q_dirs(self, qpts: np.ndarray, qpts_i: np.ndarray,
+                   gamma_idx: np.ndarray) -> np.ndarray:
+        """
+        Get q-directions at gamma points
+
+        Parameters
+        ----------
+        qpts
+            Shape (n_qpts, 3) float ndarray. The q-points.
+        qpts_i
+            Shape (n_qpts,) int ndarray. Describes how to index
+            the 'reduced' q-points back into the full q-points
+            array
+        gamma_idx
+            Shape (n_gamma_points,) int ndarray. The indices
+            of gamma-points in the full q-points array
+
+        Returns
+        -------
+        q_dirs
+            Shape (n_gamma_points, 3 float ndarray. The q-direction
+            for splitting at each gamma point)
+        """
         q_dirs = np.zeros((len(gamma_idx), 3))
         if len(qpts) > 1:
             for i, idx in enumerate(gamma_idx):
@@ -1109,7 +1242,7 @@ class ForceConstants:
                         q_dirs[i] = qpts[idx_in_qpts] - qpts[idx_in_qpts - 1]
         return q_dirs
 
-    def _calculate_gamma_correction(self, q_dir):
+    def _calculate_gamma_correction(self, q_dir: np.ndarray) -> np.ndarray:
         """
         Calculate non-analytic correction to the dynamical matrix at q=0
         for a specified direction of approach. See Eq. 60 of X. Gonze
@@ -1117,14 +1250,15 @@ class ForceConstants:
 
         Parameters
         ----------
-        q_dir : (3,) float ndarray
-            The direction along which q approaches 0, in reciprocal
-            fractional coordinates
+        q_dir
+            Shape (3,) float ndarray. The direction along which q
+            approaches 0, in reciprocal fractional coordinates
 
         Returns
         -------
-        na_corr : (3*n_atoms, 3*n_atoms) complex ndarray
-            The correction to the dynamical matrix
+        na_corr
+            Shape (3*n_atoms, 3*n_atoms) complex ndarray. The
+            correction to the dynamical matrix
         """
         n_atoms = self.crystal.n_atoms
         born = self._born
@@ -1150,21 +1284,21 @@ class ForceConstants:
 
         return na_corr
 
-    def _get_shell_origins(self, n):
+    def _get_shell_origins(self, n: int) -> np.ndarray:
         """
         Given the shell number, compute all the cell origins that lie in
         that shell
 
         Parameters
         ----------
-        n : int
+        n
             The shell number
 
         Returns
         -------
-        origins : ((2*n + 1)**3 - (2*n - 1)**3, 3) int ndarray
-            The cell origins. Note: if n = 0, origins = [[0, 0, 0]]
-
+        origins
+            Shape ((2*n + 1)**3 - (2*n - 1)**3, 3) int ndarray. The
+            cell origins. Note: if n = 0, origins = [[0, 0, 0]]
         """
 
         if n == 0:
@@ -1175,9 +1309,9 @@ class ForceConstants:
         # the edges, the xz plane has (2*n + 1) - 2 rows in z, rather
         # than (2*n + 1). The yz plane also has (2*n + 1) - 2 rows in z
         # and (2*n + 1) - 2 columns in y
-        xy = get_all_origins([n+1, n+1, 1], min_xyz=[-n, -n, 0])
-        xz = get_all_origins([n+1, 1, n], min_xyz=[-n, 0, -n+1])
-        yz = get_all_origins([1, n, n], min_xyz=[0, -n+1, -n+1])
+        xy = get_all_origins((n+1, n+1, 1), min_xyz=(-n, -n, 0))
+        xz = get_all_origins((n+1, 1, n), min_xyz=(-n, 0, -n+1))
+        yz = get_all_origins((1, n, n), min_xyz=(0, -n+1, -n+1))
 
         # Offset each plane by n and -n to get the 6 planes that make up
         # the shell
@@ -1194,7 +1328,7 @@ class ForceConstants:
 
         return origins
 
-    def _enforce_realspace_asr(self):
+    def _enforce_realspace_asr(self) -> np.ndarray:
         """
         Apply a transformation to the force constants matrix so that it
         satisfies the acousic sum rule. Diagonalise, shift the acoustic
@@ -1205,8 +1339,9 @@ class ForceConstants:
 
         Returns
         -------
-        force_constants : (n_cells_in_sc, 3*n_atoms, 3*n_atoms) float ndarray
-            The corrected force constants matrix
+        force_constants
+            Shape (n_cells_in_sc, 3*n_atoms, 3*n_atoms) float ndarray. The
+            corrected force constants matrix
         """
         n_cells_in_sc = self.n_cells_in_sc
         n_atoms = self.crystal.n_atoms
@@ -1243,7 +1378,8 @@ class ForceConstants:
 
         return fc
 
-    def _enforce_reciprocal_asr(self, dyn_mat_gamma):
+    def _enforce_reciprocal_asr(self, dyn_mat_gamma: np.ndarray
+            ) -> np.ndarray:
         """
         Calculate the correction to the dynamical matrix that would have
         to be applied to satisfy the acousic sum rule. Diagonalise the
@@ -1254,15 +1390,16 @@ class ForceConstants:
 
         Parameters
         ----------
-        dyn_mat_gamma : (3*n_atoms, 3*n_atoms) complex ndarray
-            The non mass-weighted dynamical matrix at gamma
+        dyn_mat_gamma
+            Shape (3*n_atoms, 3*n_atoms) complex ndarray. The non
+            mass-weighted dynamical matrix at gamma
 
         Returns
         -------
-        dyn_mat : (3*n_atoms, 3*n_atoms) complex ndarray or empty array
+        dyn_mat
+            Shape (3*n_atoms, 3*n_atoms) complex ndarray or empty array
             The corrected, non mass-weighted dynamical matrix at q.
-            Returns empty array (np.array([])) if finding the 3 acoustic
-            modes fails
+            Returns empty array if finding the 3 acoustic modes fails
         """
         tol = 5e-15
 
@@ -1284,7 +1421,8 @@ class ForceConstants:
 
         return recip_asr_correction
 
-    def _find_acoustic_modes(self, dyn_mat):
+    def _find_acoustic_modes(self, dyn_mat: np.ndarray
+            ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
         """
         Find the acoustic modes from a dynamical matrix, they should
         have the sum of c of m amplitude squared = mass (note: have not
@@ -1292,17 +1430,20 @@ class ForceConstants:
 
         Parameters
         ----------
-        dyn_mat : (3*n_atoms, 3*n_atoms) complex ndarray
-            A dynamical matrix
+        dyn_mat
+            Shape (3*n_atoms, 3*n_atoms) complex ndarray. A dynamical
+            matrix
 
         Returns
         -------
-        ac_i : (3,) int ndarray
-            The indices of the acoustic modes
-        evals : (3*n_atoms) float ndarray
-            Dynamical matrix eigenvalues
-        evecs : (3*n_atoms, n_atoms, 3) complex ndarray
-            Dynamical matrix eigenvectors
+        ac_i
+            Shape (3,) int ndarray. The indices of the acoustic modes
+        evals
+            Shape (3*n_atoms) float ndarray. Dynamical matrix
+            eigenvalues
+        evecs
+            Shape (3*n_atoms, n_atoms, 3) complex ndarray. Dynamical
+            matrix eigenvectors
         """
         n_branches = dyn_mat.shape[0]
         n_atoms = int(n_branches/3)
@@ -1323,8 +1464,13 @@ class ForceConstants:
 
         return ac_i, evals, evecs
 
-    def _calculate_phases(self, q, unique_sc_origins, unique_sc_i,
-                          unique_cell_origins, unique_cell_i):
+    def _calculate_phases(
+            self,
+            qpt: np.ndarray,
+            unique_sc_origins: Sequence[Sequence[int]],
+            unique_sc_i: np.ndarray,
+            unique_cell_origins: Sequence[Sequence[int]],
+            unique_cell_i: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
         """
         Calculate the phase factors for the supercell images and cells
         for a single q-point. The unique supercell and cell origins
@@ -1333,36 +1479,39 @@ class ForceConstants:
 
         Parameters
         ----------
-        q : (3,) float ndarray
-            The q-point to calculate the phase for
-        unique_sc_origins : list of lists of ints
+        qpt
+            Shape (3,) float ndarray. The q-point to calculate
+        unique_sc_origins
             A list containing 3 lists of the unique supercell image
-            offsets in each direction in units of the unit cell vectors.
-            The supercell offset is calculated by multiplying the
-            supercell matrix by the supercell image indices
-            (obtained by _get_all_origins()). A list of lists rather
-            than a Numpy array is used as the 3 lists are independent
-            and their size is not known beforehand
-        unique_sc_i : ((2*lim + 1)**3, 3) int ndarray
-            The indices needed to reconstruct sc_origins from the unique
-            values in unique_sc_origins
-        unique_cell_origins : list of lists of ints
-            A list containing 3 lists of the unique cell origins in each
-            direction in units of the unit cell vectors. A list of
-            lists rather than a Numpy array is used as the 3 lists are
-            independent and their size is not known beforehand
-        unique_cell_i : (cell_origins, 3) int ndarray
-            The indices needed to reconstruct cell_origins from the
-            unique values in unique_cell_origins
+            offsets in each direction. The supercell offset is
+            calculated by multiplying the supercell matrix by the
+            supercell image indices (obtained by _get_all_origins()). A
+            list of lists rather than a Numpy array is used as the 3
+            lists are independent and their size is not known
+            beforehand
+        unique_sc_i
+            Shape ((2*n_sc_shells + 1)**3, 3) int ndarray, where
+            n_sc_shells is how many supercells out to go to search for
+            atom images. The indices needed to reconstruct sc_origins
+            from the unique values in unique_sc_origins
+        unique_cell_origins
+            A list containing 3 lists of the unique cell origins in
+            each direction. A list of lists rather than a Numpy array
+            is used as the 3 lists are independent and their size is
+            not known beforehand
+        unique_cell_i
+            Shape (n_cells_in_sc, 3) int ndarray. The indices needed to
+            reconstruct cell_origins from the unique values in
+            unique_cell_origins
 
         Returns
         -------
-        sc_phases : (unique_sc_i,) float ndarray
-            Phase factors exp(iq.r) for each supercell image coordinate
-            in sc_origins
-        cell_phases : (unique_cell_i,) float ndarray
-            Phase factors exp(iq.r) for each cell coordinate in the
-            supercell
+        sc_phases
+            Shape (unique_sc_i,) float ndarray. Phase factors exp(iq.r)
+            for each supercell image coordinate in sc_origins
+        cell_phases
+            Shape (unique_cell_i,) float ndarray. Phase factors
+            exp(iq.r) for each cell coordinate in the supercell
         """
 
         # Only calculate exp(iq) once, then raise to power to get the
@@ -1370,7 +1519,7 @@ class ForceConstants:
         # expensive exp calculations
         # exp(iq.r) = exp(iqh.ra)*exp(iqk.rb)*exp(iql.rc)
         #           = (exp(iqh)^ra)*(exp(iqk)^rb)*(exp(iql)^rc)
-        phase = np.exp(2j*math.pi*q)
+        phase = np.exp(2j*math.pi*qpt)
         sc_phases = np.ones(len(unique_sc_i), dtype=np.complex128)
         cell_phases = np.ones(len(unique_cell_i), dtype=np.complex128)
         for i in range(3):
@@ -1382,17 +1531,18 @@ class ForceConstants:
 
         return sc_phases, cell_phases
 
-    def _calculate_supercell_images(self, lim):
+    def _calculate_supercell_images(self, n_sc_shells: int) -> None:
         """
-        For each displacement of ion i in the unit cell and ion j in the
-        supercell, calculate the number of supercell periodic images
-        there are and which supercells they reside in, and sets the
-        sc_image_i, and n_sc_images ForceConstants attributes
+        For each displacement of ion i in the unit cell and ion j in
+        the supercell, calculate the number of supercell periodic
+        images there are and which supercells they reside in, and sets
+        the _sc_image_i, and _n_sc_images ForceConstants attributes
 
         Parameters
         ----------
-        lim : int
-            The supercell image limit
+        n_sc_shells
+            The number of supercells out to go to search for atom
+            images
         """
 
         n_atoms = self.crystal.n_atoms
@@ -1418,14 +1568,15 @@ class ForceConstants:
 
         # Get Cartesian coords of supercell images and ions in supercell
         sc_image_r = get_all_origins(
-            np.repeat(lim, 3) + 1, min_xyz=-np.repeat(lim, 3))
+            np.repeat(n_sc_shells, 3) + 1, min_xyz=-np.repeat(n_sc_shells, 3))
         sc_image_cart = np.einsum('ij,jk->ik', sc_image_r, sc_vecs)
         sc_atom_cart = np.einsum('ijk,kl->ijl',
                                  cell_origins[:, ax, :] + atom_r[ax, :, :],
                                  cell_vectors)
 
-        sc_image_i = np.full((n_cells_in_sc, n_atoms, n_atoms, (2*lim + 1)**3),
-                             -1, dtype=np.int32)
+        sc_image_i = np.full(
+            (n_cells_in_sc, n_atoms, n_atoms, (2*n_sc_shells + 1)**3),
+            -1, dtype=np.int32)
         n_sc_images = np.zeros((n_cells_in_sc, n_atoms, n_atoms),
                                dtype=np.int32)
 
@@ -1474,7 +1625,7 @@ class ForceConstants:
         # nonexistent images
         self._sc_image_i = sc_image_i[:, :, :, :np.max(n_sc_images)]
 
-    def to_dict(self):
+    def to_dict(self) -> Dict[str, Any]:
         """
         Convert to a dictionary. See ForceConstants.from_dict for
         details on keys/values
@@ -1489,26 +1640,26 @@ class ForceConstants:
                                    'dielectric'])
         return dout
 
-    def to_json_file(self, filename):
+    def to_json_file(self, filename: str) -> None:
         """
         Write to a JSON file. JSON fields are equivalent to
         ForceConstants.from_dict keys
 
         Parameters
         ----------
-        filename : str
+        filename
             Name of the JSON file to write to
         """
         _obj_to_json_file(self, filename)
 
     @classmethod
-    def from_dict(cls, d):
+    def from_dict(cls: Type[T], d: Dict[str, Any]) -> T:
         """
         Convert a dictionary to a ForceConstants object
 
         Parameters
         ----------
-        d : dict
+        d
             A dictionary with the following keys/values:
 
             - 'crystal': dict, see Crystal.from_dict
@@ -1526,7 +1677,7 @@ class ForceConstants:
 
         Returns
         -------
-        ForceConstants
+        forceconstants
         """
         crystal = Crystal.from_dict(d['crystal'])
         d = _process_dict(
@@ -1536,43 +1687,46 @@ class ForceConstants:
                    d['cell_origins'], d['born'], d['dielectric'])
 
     @classmethod
-    def from_json_file(cls, filename):
+    def from_json_file(cls: Type[T], filename: str) -> T:
         """
         Read from a JSON file. See ForceConstants.from_dict for required
         fields
 
         Parameters
         ----------
-        filename : str
+        filename
             The file to read from
 
         Returns
         -------
-        ForceConstants
+        forceconstants
         """
         return _obj_from_json_file(cls, filename)
 
     @classmethod
-    def from_castep(cls, filename):
+    def from_castep(cls: Type[T], filename: str) -> T:
         """
         Reads from a .castep_bin or .check file
 
         Parameters
         ----------
-        filename : str
+        filename
             The path and name of the file to read
 
         Returns
         -------
-        ForceConstants
+        forceconstants
         """
         data = castep.read_interpolation_data(filename)
         return cls.from_dict(data)
 
     @classmethod
-    def from_phonopy(cls, path='.', summary_name='phonopy.yaml',
-                     born_name=None, fc_name='FORCE_CONSTANTS',
-                     fc_format=None):
+    def from_phonopy(cls: Type[T],
+                     path: str = '.',
+                     summary_name: str = 'phonopy.yaml',
+                     born_name: Optional[str] = None,
+                     fc_name: str = 'FORCE_CONSTANTS',
+                     fc_format: Optional[str] = None) -> T:
         """
         Reads data from the phonopy summary file (default phonopy.yaml)
         and optionally born and force constants files. Only attempts to
@@ -1581,27 +1735,28 @@ class ForceConstants:
 
         Parameters
         ----------
-        path : str, optional
+        path
             Path to directory containing the file(s)
-        summary_name : str, optional
+        summary_name
             Filename of phonopy summary file, default phonopy.yaml. By
             default any information (e.g. force constants) read from
             this file takes priority
-        born_name : str, optional
+        born_name
             Name of the Phonopy file containing born charges and
             dielectric tensor (by convention in Phonopy this would be
             called BORN). Is only read if Born charges can't be found in
             the summary_name file
-        fc_name : str, optional
+        fc_name
             Name of file containing force constants. Is only read if
             force constants can't be found in summary_name
-        fc_format : {'phonopy', 'hdf5'} str, optional
-            Format of file containing force constants data.
-            FORCE_CONSTANTS is type 'phonopy'
+        fc_format
+            One of {'phonopy', 'hdf5'}. Format of file containing force
+            constants data, if it can't be determined from the
+            extension. FORCE_CONSTANTS is type 'phonopy'
 
         Returns
         -------
-        ForceConstants
+        forceconstants
         """
         data = phonopy.read_interpolation_data(
             path=path, summary_name=summary_name, born_name=born_name,

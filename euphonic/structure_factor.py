@@ -1,4 +1,4 @@
-from typing import Optional, TypeVar, Dict, Any
+from typing import Optional, TypeVar, Dict, Any, Type
 import warnings
 
 import numpy as np
@@ -7,9 +7,6 @@ from euphonic.validate import _check_constructor_inputs, _check_unit_conversion
 from euphonic.io import _obj_to_dict, _process_dict
 from euphonic import (ureg, Quantity, Crystal, QpointFrequencies, Spectrum1D,
                       Spectrum2D)
-
-
-T = TypeVar('T', bound='StructureFactor')
 
 
 class NoTemperatureError(Exception):
@@ -42,6 +39,8 @@ class StructureFactor(QpointFrequencies):
         population factor). None if no temperature-dependent effects
         have been applied
     """
+    T = TypeVar('T', bound='StructureFactor')
+
     def __init__(self, crystal: Crystal, qpts: np.ndarray,
                  frequencies: Quantity, structure_factors: Quantity,
                  weights: Optional[np.ndarray] = None,
@@ -91,17 +90,17 @@ class StructureFactor(QpointFrequencies):
             self.temperature_unit = str(ureg.K)
 
     @property
-    def structure_factors(self):
+    def structure_factors(self) -> Quantity:
         return self._structure_factors*ureg('bohr**2').to(
             self.structure_factors_unit)
 
     @structure_factors.setter
-    def structure_factors(self, value):
+    def structure_factors(self, value: Quantity) -> None:
         self.structure_factors_unit = str(value.units)
         self._structure_factors = value.to('bohr**2').magnitude
 
     @property
-    def temperature(self):
+    def temperature(self) -> Quantity:
         if self._temperature is not None:
             # See https://pint.readthedocs.io/en/latest/nonmult.html
             return Quantity(self._temperature,
@@ -110,11 +109,11 @@ class StructureFactor(QpointFrequencies):
             return None
 
     @temperature.setter
-    def temperature(self, value):
+    def temperature(self, value: Quantity) -> None:
         self.temperature_unit = str(value.units)
         self._temperature = value.to('K').magnitude
 
-    def __setattr__(self, name, value):
+    def __setattr__(self, name: str, value: Any) -> None:
         _check_unit_conversion(self, name, value,
                                ['frequencies_unit', 'structure_factors_unit',
                                 'temperature_unit'])
@@ -290,7 +289,8 @@ class StructureFactor(QpointFrequencies):
 
         return sqw_map*sf_conv/e_conv
 
-    def _bose_factor(self, temperature: Optional[Quantity] = None):
+    def _bose_factor(self, temperature: Optional[Quantity] = None
+                     ) -> np.ndarray:
         """
         Calculate the Bose factor for the frequencies stored in
         StructureFactor
@@ -358,7 +358,7 @@ class StructureFactor(QpointFrequencies):
             self.crystal, self.qpts, self.frequencies, self.weights)
 
     @classmethod
-    def from_dict(cls: T, d: Dict[str, Any]) -> T:
+    def from_dict(cls: Type[T], d: Dict[str, Any]) -> T:
         """
         Convert a dictionary to a StructureFactor object
 
@@ -389,11 +389,11 @@ class StructureFactor(QpointFrequencies):
                    d['temperature'])
 
     @classmethod
-    def from_castep(cls):
+    def from_castep(cls: Type[T]) -> None:  # type: ignore
         ''
         raise AttributeError
 
     @classmethod
-    def from_phonopy(cls):
+    def from_phonopy(cls: Type[T]) -> None:  # type: ignore
         ''
         raise AttributeError

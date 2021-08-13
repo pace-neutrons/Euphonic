@@ -1,5 +1,5 @@
 import warnings
-from typing import Any, Dict, List, Optional, Tuple, TypeVar
+from typing import Any, Dict, List, Optional, Tuple, TypeVar, Type
 
 import numpy as np
 
@@ -12,28 +12,26 @@ from euphonic import (ureg, Crystal, Quantity, Spectrum1D,
                       Spectrum1DCollection, Spectrum2D)
 
 
-T = TypeVar('T', bound='QpointFrequencies')
-
-
 class QpointFrequencies:
     """
     A class to read and store frequency data at q-points
 
     Attributes
     ----------
-    crystal : Crystal
+    crystal
         Lattice and atom information
-    n_qpts : int
+    n_qpts
         Number of q-points in the object
     qpts
         Shape (n_qpts, 3) float ndarray. Q-point coordinates, in
         fractional coordinates of the reciprocal lattice
     frequencies
-        Shape (n_qpts, n_branches) float Quantity. Frequencies
-        per q-point and mode
+        Shape (n_qpts, n_branches) float Quantity in energy units.
+        Frequencies per q-point and mode
     weights
         Shape (n_qpts,) float ndarray. The weight for each q-point
     """
+    T = TypeVar('T', bound='QpointFrequencies')
 
     def __init__(self, crystal: Crystal, qpts: np.ndarray,
                  frequencies: Quantity,
@@ -46,8 +44,8 @@ class QpointFrequencies:
         qpts
             Shape (n_qpts, 3) float ndarray. Q-point coordinates
         frequencies
-            Shape (n_qpts, n_branches) float Quantity. Frequencies
-            per q-point and mode
+            Shape (n_qpts, n_branches) float Quantity in energy units.
+            Frequencies per q-point and mode
         weights
             Shape (n_qpts,) float ndarray. The weight for each q-point.
             If None, equal weights are assumed
@@ -76,15 +74,15 @@ class QpointFrequencies:
             self.weights = np.full(self.n_qpts, 1/self.n_qpts)
 
     @property
-    def frequencies(self):
+    def frequencies(self) -> Quantity:
         return self._frequencies*ureg('hartree').to(self.frequencies_unit)
 
     @frequencies.setter
-    def frequencies(self, value):
+    def frequencies(self, value: Quantity) -> None:
         self.frequencies_unit = str(value.units)
         self._frequencies = value.to('hartree').magnitude
 
-    def __setattr__(self, name, value):
+    def __setattr__(self, name: str, value: Any) -> None:
         _check_unit_conversion(self, name, value,
                                ['frequencies_unit'])
         super(QpointFrequencies, self).__setattr__(name, value)
@@ -99,8 +97,8 @@ class QpointFrequencies:
         Parameters
         ----------
         dos_bins
-            Shape (n_e_bins + 1,) float Quantity. The energy bin edges
-            to use for calculating the DOS
+            Shape (n_e_bins + 1,) float Quantity in energy units. The
+            energy bin edges to use for calculating the DOS
         mode_widths
             Shape (n_qpts, n_branches) float Quantity in energy units.
             The broadening width for each mode at each q-point, for
@@ -193,6 +191,29 @@ class QpointFrequencies:
                           mode_widths: Optional[Quantity] = None,
                           mode_widths_min: Quantity = Quantity(0.01, 'meV')
                           ) -> Spectrum2D:
+        """
+        Produces a bandstructure-like plot, using the DOS at each q-point
+
+        Parameters
+        ----------
+        dos_bins
+            Shape (n_e_bins + 1,) float Quantity in energy units. The
+            energy bin edges to use for calculating the DOS
+        mode_widths
+            Shape (n_qpts, n_branches) float Quantity in energy units.
+            The broadening width for each mode at each q-point, for
+            adaptive broadening
+        mode_widths_min
+            Scalar float Quantity in energy units. Sets a lower limit on
+            the mode widths, as mode widths of zero will result in
+            infinitely sharp peaks
+
+        Returns
+        -------
+        dos_map
+            A 2D spectrum containing the q-point bins on the x-axis, energy
+            bins on the y-axis and DOS on the z-axis
+        """
         x_data, x_tick_labels = self._get_qpt_axis_and_labels()
         dos_map = np.zeros((len(self.qpts), len(dos_bins) - 1))
         for i in range(len(self.qpts)):
@@ -228,6 +249,18 @@ class QpointFrequencies:
 
     def _get_qpt_axis_and_labels(self
             ) -> Tuple[Quantity, List[Tuple[int, str]]]:
+        """
+        Converts the qpts stored in this object an array of
+        scalar distances and applies appropriate symmetry labels
+
+        Returns
+        -------
+        abscissa
+            Shape (n_qpts,) float quantity in 1/length units. The
+            scalar q-point distances
+        x_tick_labels
+            The tick labels
+        """
         abscissa = _calc_abscissa(self.crystal.reciprocal_cell(), self.qpts)
         # Calculate q-space ticks and labels
         x_tick_labels = get_qpoint_labels(
@@ -256,7 +289,7 @@ class QpointFrequencies:
         _obj_to_json_file(self, filename)
 
     @classmethod
-    def from_dict(cls: T, d: Dict[str, Any]) -> T:
+    def from_dict(cls: Type[T], d: Dict[str, Any]) -> T:
         """
         Convert a dictionary to a QpointFrequencies object
 
@@ -280,7 +313,7 @@ class QpointFrequencies:
                    d['weights'])
 
     @classmethod
-    def from_json_file(cls: T, filename: str) -> T:
+    def from_json_file(cls: Type[T], filename: str) -> T:
         """
         Read from a JSON file. See from_dict for
         required fields
@@ -293,7 +326,7 @@ class QpointFrequencies:
         return _obj_from_json_file(cls, filename)
 
     @classmethod
-    def from_castep(cls: T, filename: str) -> T:
+    def from_castep(cls: Type[T], filename: str) -> T:
         """
         Reads precalculated phonon mode data from a CASTEP .phonon file
 
@@ -306,7 +339,7 @@ class QpointFrequencies:
         return cls.from_dict(data)
 
     @classmethod
-    def from_phonopy(cls: T, path: str = '.',
+    def from_phonopy(cls: Type[T], path: str = '.',
                      phonon_name: str = 'band.yaml',
                      phonon_format: Optional[str] = None,
                      summary_name: str = 'phonopy.yaml') -> T:

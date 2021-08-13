@@ -1,13 +1,15 @@
 import copy
 import json
 import os
+from typing import Dict, Type, TypeVar, Sequence, Any
 
 import numpy as np
 
 from euphonic import ureg, Quantity, __version__
 
+T = TypeVar('T')
 
-def _to_json_dict(dictionary):
+def _to_json_dict(dictionary: Dict[str, Any]) -> Dict[str, Any]:
     """
     Convert all keys in an output dictionary to a JSON serialisable
     format
@@ -23,7 +25,8 @@ def _to_json_dict(dictionary):
     return dictionary
 
 
-def _from_json_dict(dictionary, type_dict={}):
+def _from_json_dict(dictionary: Dict[str, Any],
+                    type_dict: Dict[str, Type[Any]] = {}) -> Dict[str, Any]:
     """
     For a dictionary read from a JSON file, convert all list key values
     to that specified in type_dict. If not specified in type_dict, just
@@ -45,7 +48,7 @@ def _from_json_dict(dictionary, type_dict={}):
     return dictionary
 
 
-def _obj_to_dict(obj, attrs):
+def _obj_to_dict(obj: T, attrs: Sequence[str]) -> Dict[str, Any]:
     dout = {}
     for attr in attrs:
         val = getattr(obj, attr)
@@ -73,7 +76,8 @@ def _obj_to_dict(obj, attrs):
     return dout
 
 
-def _process_dict(dictionary, quantities={}, optional={}):
+def _process_dict(dictionary: Dict[str, Any], quantities: Sequence[str] = [],
+                  optional: Sequence[str] = []) -> Dict[str, Any]:
     """
     Process an input dictionary for creating objects. Convert keys in
     'quantities' to Quantity objects, and if any 'optional' keys are
@@ -92,7 +96,7 @@ def _process_dict(dictionary, quantities={}, optional={}):
     return dictionary
 
 
-def _obj_to_json_file(obj, filename):
+def _obj_to_json_file(obj: T, filename: str) -> None:
     """
     Generic function for writing to a JSON file from a Euphonic object
     """
@@ -104,7 +108,8 @@ def _obj_to_json_file(obj, filename):
     print(f'Written to {os.path.realpath(f.name)}')
 
 
-def _obj_from_json_file(cls, filename, type_dict={}):
+def _obj_from_json_file(cls: Type[T], filename: str,
+                        type_dict: Dict[str, Type[Any]] = {}) -> T:
     """
     Generic function for reading from a JSON file to a Euphonic object
     """

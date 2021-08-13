@@ -1,4 +1,4 @@
-from typing import List, Any
+from typing import List, Any, Union, Type, Tuple, Optional
 
 import numpy as np
 from pint import DimensionalityError
@@ -6,28 +6,32 @@ from pint import DimensionalityError
 from euphonic import ureg
 
 
-def _check_constructor_inputs(objs, types, shapes, names):
+def _check_constructor_inputs(
+        objs: List[object],
+        types: List[Union[Type, List[Type]]],
+        shapes: List[Union[Tuple[int, ...], List[Tuple[int, ...]]]],
+        names: List[str]) -> None:
     """
     Make sure all the inputs are all the expected type, and if they are
     an array, the correct shape
 
     Parameters
     ----------
-    objs : list of objects
+    objs
         The objects to check
-    types : list of types or lists of types
+    types
         The expected class of each input. If multiple types are
         accepted, the expected class can be a list of types. e.g.
         types=[[list, np.ndarray], int]
-    shapes : list of tuples
+    shapes
         The expected shape of each object (if the object has a shape
         attribute). If the shape of some dimensions don't matter,
         provide -1 for those dimensions, or if none of the dimensions
         matter, provide an empty tuple (). If multiple shapes are
         accepted, the expected shapes can be a list of tuples. e.g.
-        shapes=[[(n, 3), (n + 1, 3)], 3]
-    names : list of strings
-        The name of each array
+        shapes=[[(n, 3), (n + 1, 3)], (3,)]
+    names
+        The name of each input variable
 
     Raises
     ------
@@ -85,18 +89,20 @@ def _check_unit_conversion(obj: object, attr_name: str, attr_value: Any,
                     f'unit for "{attr_name}"'))
 
 
-def _replace_dim(expected_shape, obj_shape):
+def _replace_dim(expected_shape: Tuple[int, ...],
+                 obj_shape: Tuple[int, ...]) -> Tuple[int, ...]:
     # Allow -1 dimensions to be any size
     idx = np.where(np.array(expected_shape) == -1)[0]
     if len(idx) == 0 or len(expected_shape) != len(obj_shape):
         return expected_shape
     else:
-        expected_shape = np.array(expected_shape)
-        expected_shape[idx] = np.array(obj_shape)[idx]
-        return tuple(expected_shape)
+        expected_shape_replaced = np.array(expected_shape)
+        expected_shape_replaced[idx] = np.array(obj_shape)[idx]
+        return tuple(expected_shape_replaced)
 
 
-def _ensure_contiguous_attrs(obj, required_attrs, opt_attrs=[]):
+def _ensure_contiguous_attrs(obj: object, required_attrs: List[str],
+                             opt_attrs: List[str] = []) -> None:
     """
     Make sure all listed attributes of obj are C Contiguous and of the
     correct type (int32, float64, complex128). This should only be used
@@ -105,12 +111,12 @@ def _ensure_contiguous_attrs(obj, required_attrs, opt_attrs=[]):
 
     Parameters
     ----------
-    obj : Object
+    obj
         The object that will have it's attributes checked
-    required_attrs : list of strings
+    required_attrs
         The attributes of obj to be checked. They should all be Numpy
         arrays
-    opt_attrs : list of strings, optional
+    opt_attrs
         The attributes of obj to be checked, but if they don't exist
         will not throw an error. e.g. Depending on the material
         ForceConstants objects may or may not have 'born' defined
@@ -129,7 +135,7 @@ def _ensure_contiguous_attrs(obj, required_attrs, opt_attrs=[]):
             pass
 
 
-def _ensure_contiguous_args(*args):
+def _ensure_contiguous_args(*args: np.ndarray) -> Tuple[np.ndarray, ...]:
     """
     Make sure all arguments are C Contiguous and of the correct type
     (int32, float64, complex128). This should only be used internally,
@@ -138,33 +144,30 @@ def _ensure_contiguous_args(*args):
 
     Parameters
     ----------
-    *args : any number of ndarrays
+    *args
         The Numpy arrays to be checked
 
     Returns
     -------
-    args_contiguous : the same number of ndarrays as args
+    contiguous_args
         The same as the provided args, but all contiguous.
     """
-    args = list(args)
-    for i in range(len(args)):
-        args[i] = args[i].astype(_get_dtype(args[i]), order='C', copy=False)
-
-    return args
+    return tuple(arg.astype(_get_dtype(arg), order='C', copy=False)
+                 for arg in args)
 
 
-def _get_dtype(arr):
+def _get_dtype(arr: np.ndarray) -> Optional[Type]:
     """
     Get the Numpy dtype that should be used for the input array
 
     Parameters
     ----------
-    arr : ndarray
+    arr
         The Numpy array to get the type of
 
     Returns
     -------
-    dtype : Numpy dtype
+    dtype
         The type the array should be
     """
     if np.issubdtype(arr.dtype, np.integer):

@@ -160,7 +160,7 @@ def plot_1d(spectra: Union[Spectrum1D,
 
     """
     if isinstance(spectra, (Spectrum1D, Spectrum1DCollection)):
-        spectra = [spectra]
+        spectra = (spectra,)
     else:
         # Check units are consistent
         for spectrum in spectra[1:]:
@@ -295,7 +295,7 @@ def plot_2d(spectra: Union[Spectrum2D, Sequence[Spectrum2D]],
 
     intensity_unit = spectra[0].z_data.units
 
-    def _get_minmax_intensity(spectrum: Spectrum2D) -> float:
+    def _get_minmax_intensity(spectrum: Spectrum2D) -> Tuple[float, float]:
         dimensionless_data = spectrum.z_data.to(intensity_unit).magnitude
         assert isinstance(dimensionless_data, np.ndarray)
         return np.min(dimensionless_data), np.max(dimensionless_data)
@@ -322,7 +322,7 @@ def plot_2d(spectra: Union[Spectrum2D, Sequence[Spectrum2D]],
     return fig
 
 def _set_x_tick_labels(ax: Axes,
-                       x_tick_labels: List[Tuple[int, str]],
+                       x_tick_labels: Optional[Sequence[Tuple[int, str]]],
                        x_data: Quantity) -> None:
     if x_tick_labels is not None:
         locs, labels = [list(x) for x in zip(*x_tick_labels)]

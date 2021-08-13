@@ -4,7 +4,7 @@ import math
 import sys
 import warnings
 import os.path
-from typing import Dict, Sequence, Union, Tuple
+from typing import Dict, Sequence, Union, Tuple, Optional, List
 from collections import OrderedDict
 
 import numpy as np
@@ -17,11 +17,26 @@ from euphonic import ureg, Quantity
 import euphonic.data
 
 
-def direction_changed(qpts, tolerance=5e-6):
+def direction_changed(qpts: np.ndarray, tolerance: float = 5e-6
+                      ) -> np.ndarray:
     """
-    Takes a N length list of q-points and returns an N - 2 length list of
-    booleans indicating whether the direction has changed between each pair
-    of q-points
+    Determines whether the q-direction has changed between each pair of
+    q-points
+
+    Parameters
+    ----------
+    qpts
+        Shape (n_qpts, 3) float ndarray. The q-points to use
+    tolerance
+        The minimum difference between the dot product and magnitude of
+        both vectors multiplied together for each pair of direction
+        vectors required for the direction to have changed
+
+    Returns
+    -------
+    has_direction_changed
+        Shape (n_qpts - 2,) bool ndarray. Indicates whether the
+        direction vector has changed between each pair of q-points
     """
 
     # Get vectors between q-points
@@ -38,42 +53,42 @@ def direction_changed(qpts, tolerance=5e-6):
     return direction_changed
 
 
-def is_gamma(qpt):
+def is_gamma(qpt: np.ndarray) -> Union[bool, np.ndarray]:
     """
     Determines whether the given point(s) are gamma points
 
     Parameters
     ----------
-    qpts: (3,) or (N, 3) float ndarray
-        The q-point or q-points
+    qpts
+        Shape (3,) or (N, 3) float ndarray. The q-point or q-points
 
     Returns
     -------
-    isgamma: bool or (N,) bool ndarray
-        Whether the input q-points(s) are gamma points. Returns a scalar
-        if only 1 q-point is provided
+    isgamma
+        bool or shape (N,) bool ndarray. Whether the input q-points(s)
+        are gamma points. Returns a scalar if only 1 q-point is
+        provided
     """
     tol = 1e-15
     isgamma = np.sum(np.absolute(qpt - np.rint(qpt)), axis=-1) < tol
     return isgamma
 
 
-def mp_grid(grid):
+def mp_grid(grid: Tuple[int, int, int]) -> np.ndarray:
     """
     Returns the q-points on a MxNxL Monkhorst-Pack grid specified by
     grid
 
     Parameters
     ----------
-    grid : (3,) int ndarray
-        Length 3 array specifying the number of points in each direction
+    grid
+        The number of points in each direction
 
     Returns
     -------
-    qgrid : (M*N*L, 3) float ndarray
-        Q-points on an MP grid
+    qgrid
+        Shape (M*N*L, 3) float ndarray. Q-points on an MP grid
     """
-
     # Monkhorst-Pack grid: ur = (2r-qr-1)/2qr where r=1,2..,qr
     qh = np.true_divide(
         2*(np.arange(grid[0]) + 1) - grid[0] - 1, 2*grid[0])
@@ -87,24 +102,27 @@ def mp_grid(grid):
     return np.column_stack((qh, qk, ql))
 
 
-def get_all_origins(max_xyz, min_xyz=[0, 0, 0], step=1):
+def get_all_origins(max_xyz: Tuple[int, int, int],
+                    min_xyz: Tuple[int, int, int] = (0, 0, 0),
+                    step: int = 1) -> np.ndarray:
     """
     Given the max/min number of cells in each direction, get a list of
     all possible cell origins
 
     Parameters
     ----------
-    max_xyz : (3,) int ndarray
+    max_xyz
         The number of cells to count to in each direction
-    min_xyz : (3,) int ndarray, optional
+    min_xyz
         The cell number to count from in each direction
-    step : integer, optional
+    step
         The step between cells
 
     Returns
     -------
-    origins : (prod(max_xyz - min_xyz)/step, 3) int ndarray
-        The cell origins
+    origins
+        Shape (prod(max_xyz - min_xyz)/step, 3) int ndarray. The cell
+        origins
     """
     diff = np.absolute(np.subtract(max_xyz, min_xyz))
     nx = np.repeat(range(min_xyz[0], max_xyz[0], step), diff[1]*diff[2])
@@ -115,23 +133,27 @@ def get_all_origins(max_xyz, min_xyz=[0, 0, 0], step=1):
     return np.column_stack((nx, ny, nz))
 
 
-def get_qpoint_labels(qpts, cell=None):
+def get_qpoint_labels(qpts: np.ndarray,
+                      cell: Optional[Tuple[List[List[float]],
+                                           List[List[float]],
+                                           List[int]]] = None
+                      ) -> List[Tuple[int, str]]:
     """
     Gets q-point labels (e.g. GAMMA, X, L) for the q-points at which the
     path through reciprocal space changes direction
 
     Parameters
     ----------
-    qpts : (n_qpts, 3) float ndarray
-        The q-points to get labels for
-    cell : (list, list, list), optional
+    qpts
+        Shape (n_qpts, 3) float ndarray. The q-points to get labels for
+    cell
         The cell structure as defined by spglib. Can be obtained by
         Crystal.to_spglib_cell. If not provided, the labels will be
         generic e.g. '1/3 1/2 0' rather than high-symmetry point labels
 
     Returns
     -------
-    x_tick_labels : list (int, string) tuples or None
+    x_tick_labels
         Tick labels and the q-point indices that they apply to
     """
     xlabels, qpts_with_labels = _recip_space_labels(qpts, cell=cell)
@@ -283,8 +305,8 @@ def _cell_vectors_to_volume(cell_vectors: np.ndarray) -> float:
 
 
 def _get_unique_elems_and_idx(
-        all_elems: Sequence[Tuple[Union[int, str]]]
-        ) -> 'OrderedDict[Union[str, int, tuple], np.ndarray]':
+        all_elems: Sequence[Tuple[Union[int, str], ...]]
+        ) -> 'OrderedDict[Tuple[Union[int, str], ...], np.ndarray]':
     """
     Returns an ordered dictionary mapping the unique sequences of
     elements to their indices
@@ -299,22 +321,26 @@ def _get_unique_elems_and_idx(
         ) for elem in unique_elems)
 
 
-def _calc_abscissa(reciprocal_cell, qpts):
+def _calc_abscissa(reciprocal_cell: Quantity, qpts: np.ndarray
+                       ) -> Quantity:
     """
     Calculates the distance between q-points (e.g. to use as a plot
     x-coordinate)
 
     Parameters
     ----------
-    reciprocal_cell : (3, 3) float Quantity
-        The reciprocal cell, can be calculated with
-        Crystal.reciprocal_cell
-    qpts : (n_qpts, 3) float ndarray
-        The q-points to get the distance between, in reciprocal lattice
-        units
+    reciprocal_cell
+        Shape (3, 3) float Quantity. The reciprocal cell, can be
+        calculated with Crystal.reciprocal_cell
+    qpts
+        Shape (n_qpts, 3) float ndarray. The q-points to get the
+        distance between, in reciprocal lattice units
 
-    abscissa : (n_qpts) float Quantity
-        The distance between q-points in 1/crystal.cell_vectors_unit
+    Returns
+    -------
+    abscissa
+        Shape (n_qpts) float Quantity. The distance between q-points
+        in 1/crystal.cell_vectors_unit
     """
     recip = reciprocal_cell.to('1/bohr').magnitude
     # Get distance between q-points in each dimension
@@ -353,28 +379,34 @@ def _calc_abscissa(reciprocal_cell, qpts):
     return abscissa*ureg('1/bohr').to(reciprocal_cell.units)
 
 
-def _recip_space_labels(qpts, cell=None):
+def _recip_space_labels(qpts: np.ndarray,
+                        cell: Optional[Tuple[List[List[float]],
+                                             List[List[float]],
+                                             List[int]]]
+                        ) -> Tuple[np.ndarray, np.ndarray]:
     """
     Gets q-points point labels (e.g. GAMMA, X, L) for the q-points at
     which the path through reciprocal space changes direction
 
     Parameters
     ----------
-    qpts : (n_qpts, 3) float ndarray
-        The q-points to get labels for
-    cell : (list, list, list), optional
+    qpts
+        Shape (n_qpts, 3) float ndarray. The q-points to get labels for
+    cell
         The cell structure as defined by spglib. Can be obtained by
         Crystal.to_spglib_cell. If not provided, the labels will be
         generic e.g. '1/3 1/2 0' rather than high-symmetry point labels
 
     Returns
     -------
-    labels : (n_qpts_direction_changed,) string ndarray
-        List of the labels for each q-point at which the path through
-        reciprocal space changes direction
-    qpts_with_labels : (n_qpts_direction_changed,) int ndarray
-        List of the indices of the q-points at which the path through
-        reciprocal space changes direction
+    labels
+        Shape (n_qpts_direction_changed,) string ndarray. The labels
+        for each q-point at which the path through reciprocal space
+        changes direction
+    qpts_with_labels
+        Shape (n_qpts_direction_changed,) int ndarray. The indices of
+        the q-points at which the path through reciprocal space changes
+        direction
     """
 
     # First and last q-points should always be labelled
@@ -405,7 +437,7 @@ def _recip_space_labels(qpts, cell=None):
     return labels, qpts_with_labels
 
 
-def _generic_qpt_labels():
+def _generic_qpt_labels() -> Dict[str, Tuple[float, float, float]]:
     """
     Returns a dictionary relating fractional q-point label strings to
     their coordinates e.g. '1/4 1/2 1/4' = [0.25, 0.5, 0.25]. Used for
@@ -419,12 +451,14 @@ def _generic_qpt_labels():
         for j, s2 in enumerate(label_strings):
             for k, s3 in enumerate(label_strings):
                 key = s1 + ' ' + s2 + ' ' + s3
-                value = [label_coords[i], label_coords[j], label_coords[k]]
+                value = (label_coords[i], label_coords[j], label_coords[k])
                 generic_labels[key] = value
     return generic_labels
 
 
-def _get_qpt_label(qpt, point_labels):
+def _get_qpt_label(qpt: np.ndarray,
+                   point_labels: Dict[str, Tuple[float, float, float]]
+                   ) -> str:
     """
     Gets a label for a particular q-point, based on the high symmetry
     points of a particular space group. Used for labelling the
@@ -432,9 +466,9 @@ def _get_qpt_label(qpt, point_labels):
 
     Parameters
     ----------
-    qpt : (3,) float ndarray
-        3 dimensional coordinates of a q-point
-    point_labels : dictionary
+    qpt
+        Shape (3,) float ndarray. Single q-point coordinates
+    point_labels
         A dictionary with N entries, relating high symmetry point labels
         (e.g. 'GAMMA', 'X'), to their 3-dimensional coordinates (e.g.
         [0.0, 0.0, 0.0]) where N = number of high symmetry points for a
@@ -442,7 +476,7 @@ def _get_qpt_label(qpt, point_labels):
 
     Returns
     -------
-    label : string
+    label
         The label for this q-point. If the q-point isn't a high symmetry
         point label is just an empty string
     """
@@ -476,7 +510,8 @@ def _get_qpt_label(qpt, point_labels):
     return label
 
 
-def _get_supercell_relative_idx(cell_origins, sc_matrix):
+def _get_supercell_relative_idx(cell_origins: np.ndarray,
+                                sc_matrix: np.ndarray) -> np.ndarray:
     """"
     For each cell_origins[i] -> cell_origins[j] vector in the supercell,
     gets the index n of the equivalent cell_origins[n] vector, where
@@ -485,16 +520,18 @@ def _get_supercell_relative_idx(cell_origins, sc_matrix):
 
     Parameters
     ----------
-    cell_origins : (n_cells, 3) int ndarray
-        The vector to the origin of each cell in the supercell, in unit
-        cell fractional coordinates
-    sc_matrix : (3, 3) int ndarray
-        The matrix for converting from the unit cell to the supercell
+    cell_origins
+        Shape (n_cells, 3) int ndarray. The vector to the origin of
+        each cell in the supercell, in unit cell fractional coordinates
+    sc_matrix
+        Shape (3, 3) int ndarray. The matrix for converting from the
+        unit cell to the supercell
 
     Returns
     -------
-    supercell_relative_idx : (n_cells, n_cells) in ndarray
-        The index n of the equivalent vector in cell_origins
+    supercell_relative_idx
+        Shape (n_cells, n_cells) int ndarray. The index n of the
+        equivalent vector in cell_origins
     """
     n_cells = len(cell_origins)
     ax = np.newaxis

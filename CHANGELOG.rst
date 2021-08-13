@@ -1,10 +1,17 @@
 `Unreleased <https://github.com/pace-neutrons/Euphonic/compare/v0.6.1...HEAD>`_
 ----------
 
+- Improvements:
+
+  - Type hinting is now handled more consistently across different Euphonic
+    classes and functions
+
 - Bug Fixes:
 
   - Will no longer raise a KeyError reading from ``phonopy.yaml`` if
     ``physical_unit`` key is not present, instead will assume default units
+  - Can now read Phonopy BORN files where the (optional) NAC conversion
+    factor is not present
 
 `v0.6.1 <https://github.com/pace-neutrons/Euphonic/compare/v0.6.0...v0.6.1>`_
 ------

@@ -1,10 +1,10 @@
-import argparse
-from typing import List
+from argparse import ArgumentParser
+from typing import List, Optional
 
 import numpy as np
 
 import euphonic
-from euphonic import ureg
+from euphonic import ureg, Spectrum2D
 import euphonic.plot
 from euphonic.util import get_qpoint_labels
 from .utils import (_bands_from_force_constants, _calc_modes_kwargs,
@@ -14,7 +14,7 @@ from .utils import (_bands_from_force_constants, _calc_modes_kwargs,
                     matplotlib_save_or_show)
 
 
-def main(params: List[str] = None) -> None:
+def main(params: Optional[List[str]] = None) -> None:
     args = get_args(get_parser(), params)
     calc_modes_kwargs = _calc_modes_kwargs(args)
 
@@ -87,7 +87,7 @@ def main(params: List[str] = None) -> None:
     if x_tick_labels:
         spectrum.x_tick_labels = x_tick_labels
 
-    spectra = spectrum.split(**split_args)
+    spectra = spectrum.split(**split_args)  # type: List[Spectrum2D]
     if len(spectra) > 1:
         print(f"Found {len(spectra)} regions in q-point path")
 
@@ -100,7 +100,7 @@ def main(params: List[str] = None) -> None:
     matplotlib_save_or_show(save_filename=args.save_to)
 
 
-def get_parser() -> argparse.ArgumentParser:
+def get_parser() -> ArgumentParser:
     parser, sections = _get_cli_parser(
         features={'read-fc', 'read-modes', 'q-e', 'map', 'btol', 'ebins',
                   'ins-weighting', 'plotting'})

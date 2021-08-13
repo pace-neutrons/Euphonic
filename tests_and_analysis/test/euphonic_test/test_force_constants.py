@@ -224,6 +224,9 @@ class TestForceConstantsCreation:
         ('NaCl', {'summary_name': 'phonopy_nofc_noborn.yaml',
                   'fc_name': 'FORCE_CONSTANTS_nacl',
                   'born_name': 'BORN_nacl'}),
+        ('NaCl', {'summary_name': 'phonopy_nofc_noborn.yaml',
+                  'fc_name': 'FORCE_CONSTANTS_nacl',
+                  'born_name': 'BORN_nacl_nofactor'}),
         # Explicitly test the default behaviour (if fcs aren't found
         # in phonopy.yaml they should be read from FORCE_CONSTANTS. BORN
         # is not read by default as it is not required, so it is difficult

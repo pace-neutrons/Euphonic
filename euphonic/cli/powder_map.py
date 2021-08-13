@@ -1,8 +1,6 @@
-#! /usr/bin/env python3
-
-import argparse
+from argparse import ArgumentParser
 from math import ceil
-from typing import List
+from typing import List, Optional
 
 import numpy as np
 
@@ -29,7 +27,7 @@ except ModuleNotFoundError:
             return sequence
 
 
-def get_parser() -> 'argparse.ArgumentParser':
+def get_parser() -> ArgumentParser:
 
     parser, sections = _get_cli_parser(
         features={'read-fc', 'pdos-weighting', 'ins-weighting',
@@ -54,7 +52,7 @@ def get_parser() -> 'argparse.ArgumentParser':
     return parser
 
 
-def main(params: List[str] = None):
+def main(params: Optional[List[str]] = None) -> None:
     args = get_args(get_parser(), params)
     calc_modes_kwargs = _calc_modes_kwargs(args)
 
@@ -206,7 +204,3 @@ def main(params: List[str] = None):
         maxbox.on_submit(update_max)
 
     matplotlib_save_or_show(save_filename=args.save_to)
-
-
-if __name__ == '__main__':
-    main()

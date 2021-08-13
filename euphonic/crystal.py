@@ -1,6 +1,6 @@
 import inspect
 from math import ceil
-from typing import List, Tuple, TypeVar, Dict, Any
+from typing import List, Tuple, Type, TypeVar, Dict, Any
 from collections import OrderedDict
 
 import numpy as np
@@ -11,10 +11,6 @@ from euphonic.validate import _check_constructor_inputs, _check_unit_conversion
 from euphonic.io import (_obj_to_json_file, _obj_from_json_file,
                          _obj_to_dict, _process_dict)
 from euphonic import ureg, Quantity
-
-
-CR = TypeVar('CR', bound='Crystal')
-
 
 class Crystal:
     """
@@ -37,6 +33,7 @@ class Crystal:
         Shape (n_atoms,) float Quantity in mass units. The mass of each
         atom in the unit cell
     """
+    T = TypeVar('T', bound='Crystal')
 
     def __init__(self, cell_vectors: Quantity, atom_r: np.ndarray,
                  atom_type: np.ndarray, atom_mass: Quantity) -> None:
@@ -82,26 +79,26 @@ class Crystal:
         self.atom_mass_unit = str(atom_mass.units)
                 
     @property
-    def cell_vectors(self):
+    def cell_vectors(self) -> Quantity:
         return self._cell_vectors*ureg('bohr').to(
             self.cell_vectors_unit)
 
     @cell_vectors.setter
-    def cell_vectors(self, value):
+    def cell_vectors(self, value: Quantity) -> None:
         self.cell_vectors_unit = str(value.units)
         self._cell_vectors = value.to('bohr').magnitude
 
     @property
-    def atom_mass(self):
+    def atom_mass(self) -> Quantity:
         return self._atom_mass*ureg('m_e').to(
             self.atom_mass_unit)
 
     @atom_mass.setter
-    def atom_mass(self, value):
+    def atom_mass(self, value: Quantity) -> None:
         self.atom_mass_unit = str(value.units)
         self._atom_mass = value.to('m_e').magnitude
 
-    def __setattr__(self, name, value):
+    def __setattr__(self, name: str, value: Any) -> None:
         _check_unit_conversion(self, name, value,
                                ['cell_vectors_unit', 'atom_mass_unit'])
         super(Crystal, self).__setattr__(name, value)
@@ -137,12 +134,12 @@ class Crystal:
         Returns
         -------
         volume
-            Scalar float quantity in length**3 units. The cell volume
+            Scalar float Quantity in length**3 units. The cell volume
         """
         vol = self._cell_volume()*ureg.bohr**3
         return vol.to(ureg(self.cell_vectors_unit)**3)
 
-    def _cell_volume(self):
+    def _cell_volume(self) -> float:
         return _cell_vectors_to_volume(self._cell_vectors)
 
     def get_mp_grid_spec(self,
@@ -300,7 +297,7 @@ class Crystal:
                                    'atom_type', 'atom_mass'])
         return dout
 
-    def to_json_file(self, filename: str):
+    def to_json_file(self, filename: str) -> None:
         """
         Write to a JSON file. JSON fields are equivalent to
         Crystal.from_dict keys
@@ -313,7 +310,7 @@ class Crystal:
         _obj_to_json_file(self, filename)
 
     @classmethod
-    def from_dict(cls: CR, d: Dict[str, Any]) -> CR:
+    def from_dict(cls: Type[T], d: Dict[str, Any]) -> T:
         """
         Convert a dictionary to a Crystal object
 
@@ -338,7 +335,7 @@ class Crystal:
                    d['atom_mass'])
 
     @classmethod
-    def from_json_file(cls: CR, filename: str) -> CR:
+    def from_json_file(cls: Type[T], filename: str) -> T:
         """
         Read from a JSON file. See Crystal.from_dict for required fields
 
@@ -354,7 +351,7 @@ class Crystal:
         return _obj_from_json_file(cls, filename)
 
     @classmethod
-    def from_cell_vectors(cls: CR, cell_vectors: Quantity) -> CR:
+    def from_cell_vectors(cls: Type[T], cell_vectors: Quantity) -> T:
         """
         Create a Crystal object from just cell vectors, containing no
         detailed structure information (atomic positions, species,

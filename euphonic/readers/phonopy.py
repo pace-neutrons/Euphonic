@@ -1,6 +1,6 @@
 import os
 import warnings
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, Union, Tuple, TextIO, Sequence, List
 
 import numpy as np
 
@@ -23,19 +23,19 @@ class ImportPhonopyReaderError(ModuleNotFoundError):
         return self.message
 
 
-def _convert_weights(weights):
+def _convert_weights(weights: np.ndarray) -> np.ndarray:
     """
     Convert q-point weights to normalised convention
 
     Parameters
     ----------
-    weights : (n_qpts,) float ndarray
-        Weights in Phonopy convention
+    weights
+        Shape (n_qpts,) float ndarray. Weights in Phonopy convention
 
     Returns
     ----------
-    norm_weights : (n_qpts,) float ndarray
-        Normalised weights
+    norm_weights
+        Shape (n_qpts,) float ndarray. Normalised weights
     """
     total_weight = weights.sum()
     return weights/total_weight
@@ -43,7 +43,7 @@ def _convert_weights(weights):
 
 def _extract_phonon_data_yaml(filename: str,
                               read_eigenvectors: bool = True
-    ) -> Dict[str, Any]:
+                              ) -> Dict[str, np.ndarray]:
     """
     From a mesh/band/qpoint.yaml file, extract the relevant information
     as a dict of Numpy arrays. No unit conversion is done at this point,
@@ -119,7 +119,7 @@ def _extract_phonon_data_yaml(filename: str,
 
 def _extract_phonon_data_hdf5(filename: str,
                               read_eigenvectors: bool = True
-    ) -> Dict[str, Any]:
+                              ) -> Dict[str, np.ndarray]:
     """
     From a mesh/band/qpoint.hdf5 file, extract the relevant information
     as a dict of Numpy arrays. No unit conversion is done at this point,
@@ -148,8 +148,8 @@ def _extract_phonon_data_hdf5(filename: str,
         raise ImportPhonopyReaderError from e
 
     with h5py.File(filename, 'r') as hdf5_file:
+        data_dict = {}
         if 'qpoint' in hdf5_file.keys():
-            data_dict = {}
             data_dict['qpts'] = hdf5_file['qpoint'][()]
             data_dict['frequencies'] = hdf5_file['frequency'][()]
             if read_eigenvectors:
@@ -167,32 +167,22 @@ def _extract_phonon_data_hdf5(filename: str,
         # Is a band.hdf5 file - q-points are stored in 'path' and need
         # special treatment
         else:
-            data_dict = _extract_band_data_hdf5(hdf5_file)
+            data_dict['qpts'] = hdf5_file['path'][()].reshape(
+                -1, hdf5_file['path'][()].shape[-1])
+            data_dict['frequencies'] = hdf5_file['frequency'][()].reshape(
+                -1, hdf5_file['frequency'][()].shape[-1])
+            try:
+                # The last 2 dimensions of eigenvectors in bands.hdf5 are for
+                # some reason transposed compared to mesh/qpoints.hdf5, so also
+                # transpose to handle this
+                data_dict['eigenvectors'] = hdf5_file[
+                    'eigenvector'][()].reshape(
+                        -1, *hdf5_file['eigenvector'][()].shape[-2:]
+                        ).transpose([0,2,1])
+            except KeyError:
+                pass
 
     return data_dict
-
-
-def _extract_band_data_hdf5(hdf5_file):
-    """
-    Read data from a Phonopy band.hdf5 file. All information is stored
-    in the shape (n_paths, n_qpoints_in_path, x) rather than (n_qpts, x)
-    so needs special treatment
-    """
-    data_dict = {}
-    data_dict['qpts'] = hdf5_file['path'][()].reshape(
-        -1, hdf5_file['path'][()].shape[-1])
-    data_dict['frequencies'] = hdf5_file['frequency'][()].reshape(
-        -1, hdf5_file['frequency'][()].shape[-1])
-    try:
-        # The last 2 dimensions of eigenvectors in bands.hdf5 are for
-        # some reason transposed compared to mesh/qpoints.hdf5, so also
-        # transpose to handle this
-        data_dict['eigenvectors'] = hdf5_file['eigenvector'][()].reshape(
-            -1, *hdf5_file['eigenvector'][()].shape[-2:]).transpose([0,2,1])
-    except KeyError:
-        pass
-    return data_dict
-
 
 def read_phonon_data(
         path: str = '.',
@@ -202,7 +192,8 @@ def read_phonon_data(
         cell_vectors_unit: str = 'angstrom',
         atom_mass_unit: str = 'amu',
         frequencies_unit: str = 'meV',
-        read_eigenvectors: bool = True) -> Dict[str, Any]:
+        read_eigenvectors: bool = True
+        ) -> Dict[str, Union[int, str, np.ndarray]]:
     """
     Reads precalculated phonon mode data from a Phonopy
     mesh/band/qpoints.yaml/hdf5 file and returns it in a dictionary. May
@@ -294,7 +285,7 @@ def read_phonon_data(
                 f'with summary file {summary_pathname}. Please '
                 'check contents'))
 
-    data_dict = {}
+    data_dict: Dict[str, Any] = {}
     data_dict['crystal'] = {}
     cry_dict = data_dict['crystal']
     cry_dict['n_atoms'] = len(phonon_dict['atom_r'])
@@ -320,7 +311,8 @@ def read_phonon_data(
     return data_dict
 
 
-def convert_eigenvector_phases(phonon_dict):
+def convert_eigenvector_phases(phonon_dict: Dict[str, np.ndarray]
+                               ) -> np.ndarray:
     """
     When interpolating the force constants matrix, Euphonic uses a phase
     convention of e^iq.r_a, where r_a is the coordinate of each CELL in
@@ -343,37 +335,44 @@ def convert_eigenvector_phases(phonon_dict):
     return np.reshape(eigvecs, (n_qpts, 3*n_atoms, n_atoms, 3))
 
 
-def _extract_force_constants(fc_pathname, n_atoms, n_cells, summary_name,
-                             cell_origins_map, sc_relative_idx, p2s_map):
+def _extract_force_constants(fc_pathname: str, n_atoms: int, n_cells: int,
+                             summary_name: str, cell_origins_map: np.ndarray,
+                             sc_relative_idx: np.ndarray, p2s_map: np.ndarray,
+                             ) -> np.ndarray:
     """
     Reads force constants from a Phonopy FORCE_CONSTANTS file
 
     Parameters
     ----------
-    fc_pathname : str
+    fc_pathname
         The FORCE_CONSTANTS file to read from
-    n_atoms : int
+    n_atoms
         Number of atoms in the unit cell
-    n_cells : int
+    n_cells
         Number of unit cells in the supercell
-    cell_origins_map : (n_atoms*n_cells, 2) int ndarray
-        In the case of of non-diagonal supercell_matrices, the cell
-        origins are not the same for each atom. This is a map of the
-        equivalent cell origins for each atom, which is required to
-        reorder the force constants matrix so that all atoms in the unit
-        cell share equivalent origins.
-    sc_relative_idx : (n_cells, n_cells) int ndarray
-        The index n of the equivalent vector in cell_origins for each
-        cell_origins[i] -> cell_origins[j] vector in the supercell.
-        See _get_supercell_relative_idx
-    p2s_map : (n_atoms,) int ndarray
-        The index of the primitive atoms in the atoms of the supercell.
-        Used if fc_format = 'full'
+    summary_name
+        Name of input phonopy.yaml file
+    cell_origins_map
+        Shape (n_atoms*n_cells, 2) int ndarray. In the case of
+        non-diagonal supercell_matrices, the cell origins are not the
+        same for each atom. This is a map of the equivalent cell origins
+        for each atom, which is required to reorder the force constants
+        matrix so that all atoms in the unit cell share equivalent
+        origins
+    sc_relative_idx
+        Shape (n_cells, n_cells) int ndarray. The index n of the
+        equivalent vector in cell_origins for each
+        cell_origins[i] -> cell_origins[j] vector in the supercell. See
+        _get_supercell_relative_idx
+    p2s_map
+        Shape (n_atoms,) int ndarray. The index of the primitive atoms
+        in the atoms of the supercell. Used if fc_format = 'full'
 
     Returns
     -------
-    fc : (n_cells, 3*n_atoms, 3*n_atoms) float ndarray
-        The force constants, in Euphonic convention
+    fc
+        Shape (n_cells, 3*n_atoms, 3*n_atoms) float ndarray. The force
+        constants, in Euphonic convention
     """
     with open(fc_pathname, 'r') as f:
         fc_dims =  [int(dim) for dim in f.readline().split()]
@@ -396,8 +395,10 @@ def _extract_force_constants(fc_pathname, n_atoms, n_cells, summary_name,
     return _reshape_fc(fc, n_atoms, n_cells, cell_origins_map, sc_relative_idx)
 
 
-def _extract_force_constants_hdf5(filename, n_atoms, n_cells, summary_name,
-                                  cell_origins_map, sc_relative_idx):
+def _extract_force_constants_hdf5(
+        filename: str, n_atoms: int, n_cells: int, summary_name: str,
+        cell_origins_map: np.ndarray, sc_relative_idx: np.ndarray
+        ) -> np.ndarray:
     try:
         import h5py
     except ModuleNotFoundError as e:
@@ -415,33 +416,39 @@ def _extract_force_constants_hdf5(filename, n_atoms, n_cells, summary_name,
                        sc_relative_idx)
 
 
-def _extract_force_constants_summary(summary_object, cell_origins_map,
-                                     sc_relative_idx, p2s_map):
+def _extract_force_constants_summary(
+        summary_object: Dict[str, Any],
+        cell_origins_map: np.ndarray,
+        sc_relative_idx: np.ndarray,
+        p2s_map: np.ndarray) -> np.ndarray:
     """
     Get force constants from phonopy yaml summary file.
 
     Parameters
     ----------
-    summary_object : dict
+    summary_object
         Dict containing contents of phonopy.yaml
-    cell_origins_map : (n_atoms*n_cells, 2) int ndarray
-        In the case of of non-diagonal supercell_matrices, the cell
-        origins are not the same for each atom. This is a map of the
-        equivalent cell origins for each atom, which is required to
-        reorder the force constants matrix so that all atoms in the unit
-        cell share equivalent origins.
-    sc_relative_idx : (n_cells, n_cells) int ndarray
-        The index n of the equivalent vector in cell_origins for each
+    cell_origins_map
+        Shape (n_atoms*n_cells, 2) int ndarray. In the case of of
+        non-diagonal supercell_matrices, the cell origins are not the
+        same for each atom. This is a map of the equivalent cell
+        origins for each atom, which is required to reorder the force
+        constants matrix so that all atoms in the unit cell share
+        equivalent origins
+    sc_relative_idx
+        Shape (n_cells, n_cells) int ndarray. The index n of the
+        equivalent vector in cell_origins for each
         cell_origins[i] -> cell_origins[j] vector in the supercell.
         See _get_supercell_relative_idx
-    p2s_map : (n_atoms,) int ndarray
-        The index of the primitive atoms in the atoms of the supercell.
-        Used if fc_format = 'full'
+    p2s_map
+        Shape (n_atoms,) int ndarray. The index of the primitive atoms
+        in the atoms of the supercell. Used if fc_format = 'full'
 
     Returns
-    ----------
-    units : dict
-        Dict containing force constants in Euphonic format.
+    -------
+    fc
+        Shape (n_cells, 3*n_atoms, 3*n_atoms) float ndarray. Force
+        constants in Euphonic format
     """
     fc_entry = summary_object['force_constants']
     fc_format = fc_entry['format']
@@ -457,33 +464,39 @@ def _extract_force_constants_summary(summary_object, cell_origins_map,
     fc = _reshape_fc(fc, n_atoms, n_cells, cell_origins_map, sc_relative_idx)
     return fc
 
-def _reshape_fc(fc, n_atoms, n_cells, cell_origins_map, sc_relative_idx):
+def _reshape_fc(fc: np.ndarray, n_atoms: int, n_cells: int,
+                cell_origins_map: np.ndarray, sc_relative_idx: np.ndarray
+                ) -> np.ndarray:
     """
     Reshape force constants from Phonopy convention to Euphonic
     convention
 
     Parameters
     ----------
-    fc : (n_atoms, n_atoms*n_cells, 3, 3) float ndarray
-        Force constants matrix in Phonopy shape
-    n_atoms : int
+    fc
+        Shape (n_atoms, n_atoms*n_cells, 3, 3) float ndarray. Force
+        constants matrix in Phonopy shape
+    n_atoms
         Number of atoms in the unit cell
-    n_cells : int
+    n_cells
         Number of cells in the supercell
-    cell_origins_map : (n_atoms*n_cells, 2) int ndarray
-        This describes how the supercell atoms in Phonopy map onto the
-        cells and atoms in Euphonic. The first column is the index of
-        the equivalent atom in the unit cell, and the second column is
-        the index of the cell in the supercell.
-    sc_relative_idx : (n_cells, n_cells) int ndarray
-        The index n of the equivalent vector in cell_origins for each
+    cell_origins_map
+        Shape (n_atoms*n_cells, 2) int ndarray. This describes how the
+        supercell atoms in Phonopy map onto the cells and atoms in
+        Euphonic. The first column is the index of the equivalent atom
+        in the unit cell, and the second column is the index of the
+        cell in the supercell
+    sc_relative_idx
+        Shape (n_cells, n_cells) int ndarray. The index n of the
+        equivalent vector in cell_origins for each
         cell_origins[i] -> cell_origins[j] vector in the supercell.
         See _get_supercell_relative_idx
 
     Returns
     -------
-    fc : (n_cells, 3*n_atoms, 3*n_atoms) float ndarray
-        Force constants matrix in Euphonic shape
+    fc
+        Shape (n_cells, 3*n_atoms, 3*n_atoms) float ndarray. Force
+        constants matrix in Euphonic shape
     """
     fc_phonopy = np.reshape(fc, (n_atoms, n_atoms*n_cells, 3, 3))
     fc_euphonic = np.full((n_atoms, n_cells, n_atoms, 3, 3), -1.0)
@@ -506,7 +519,9 @@ def _reshape_fc(fc, n_atoms, n_cells, cell_origins_map, sc_relative_idx):
         axes=[1, 0, 3, 2, 4]), (n_cells, 3*n_atoms, 3*n_atoms))
 
 
-def _check_fc_shape(fc_shape, n_atoms, n_cells, fc_filename, summary_filename):
+def _check_fc_shape(fc_shape: Tuple[int, int], n_atoms: int,
+                    n_cells: int, fc_filename: str,
+                    summary_filename: str) -> None:
     """
     Check if force constants has the correct shape
     """
@@ -519,68 +534,67 @@ def _check_fc_shape(fc_shape, n_atoms, n_cells, fc_filename, summary_filename):
             f' and {n_cells} cells in the supercell'))
 
 
-def _extract_born(born_object):
+def _extract_born(born_file_obj: TextIO) -> Dict[str, Union[float, np.ndarray]]:
     """
     Parse and convert dielectric tensor and born effective
     charge from BORN file
 
     Parameters
     ----------
-    born_object : file-like object
-        Object representing contents of BORN
+    born_file_obj
+        Pointer to BORN file
 
     Returns
     ----------
-    born_dict : float ndarray
+    born_dict
         Dict containing dielectric tensor and born effective charge
     """
-    born_lines_str = born_object.readlines()
-    born_lines = [narr.split() for narr in born_lines_str]
-
-    for l_i, line in enumerate(born_lines):
-        try:
-            born_lines[l_i] = [float(i) for i in line]
-            continue
-        except:
+    born_lines_str = born_file_obj.readlines()
+    born_lines: List[List[float]] = []
+    for line in born_lines_str:
+        # Ignore comments
+        if line.startswith('#'):
             pass
+        else:
+            born_lines.append([float(x) for x in line.split()])
 
-    n_lines = len(born_lines)
-    # factor first line
-    factor = born_lines[0][0]
+    born_dict: Dict[str, Union[float, np.ndarray]] = {}
 
-    # dielectric second line
+    idx0 = 0
+    if len(born_lines[0]) == 1:
+        # Then this is the NAC conversion factor
+        born_dict['factor'] = born_lines[0][0]
+        idx0 = 1
+
+    # dielectric first line after factor
     # xx, xy, xz, yx, yy, yz, zx, zy, zz.
-    dielectric = np.array(born_lines[1]).reshape([3,3])
+    born_dict['dielectric'] = np.array(born_lines[idx0]).reshape([3,3])
 
-    # born ec third line onwards
+    # born charges after dielectric
     # xx, xy, xz, yx, yy, yz, zx, zy, zz.
-    born_lines = born_lines[2:]
-    born = np.array([np.array(bl).reshape([3,3]) for bl in born_lines])
-
-    born_dict = {}
-    born_dict['factor'] = factor
-    born_dict['dielectric'] = dielectric
-    born_dict['born'] = born
+    born_dict['born'] = np.array(
+        [np.array(bl).reshape([3,3]) for bl in born_lines[idx0+1:]])
 
     return born_dict
 
 
-def _extract_summary(filename, fc_extract=False):
+def _extract_summary(filename: str, fc_extract: bool = False
+                     ) -> Dict[str, Union[str, int, np.ndarray]]:
     """
     Read phonopy.yaml for summary data produced during the Phonopy
-    post-process.
+    post-process
 
     Parameters
     ----------
-    filename : str
+    filename
         Path and name of the Phonopy summary file (usually phonopy.yaml)
-    fc_extract : bool, optional, default False
+    fc_extract
         Whether to attempt to read force constants and related
         information from summary_object
 
     Returns
     ----------
-    summary_dict : dict
+    summary_dict
         A dict with the following keys: n_atoms, cell_vectors, atom_r,
         atom_type, atom_mass, ulength, umass. Also optionally has the
         following keys: sc_matrix, n_cells_in_sc, cell_origins,
@@ -597,7 +611,6 @@ def _extract_summary(filename, fc_extract=False):
 
     with open(filename, 'r') as summary_file:
         summary_object = yaml.load(summary_file, Loader=SafeLoader)
-
     (cell_vectors, n_atoms, atom_r, atom_mass,
      atom_type, _) = _extract_crystal_data(summary_object['primitive_cell'])
 
@@ -658,7 +671,7 @@ def _extract_summary(filename, fc_extract=False):
         cell_origins_map = np.zeros((n_atoms*n_pcells_in_sc, 2),
                                     dtype=np.int32)
         # Get origins of adjacent supercells in prim cell frac coords
-        sc_origins =  get_all_origins([2,2,2], min_xyz=[-1,-1,-1])
+        sc_origins =  get_all_origins((2,2,2), min_xyz=(-1,-1,-1))
         sc_origins_pcell = np.einsum('ij,jk->ik', sc_origins, p_to_sc_matrix)
         for i in range(n_pcells_in_sc*n_atoms):
             co_idx = np.where(
@@ -709,30 +722,37 @@ def _extract_summary(filename, fc_extract=False):
     return summary_dict
 
 
-def _extract_crystal_data(crystal):
+def _extract_crystal_data(crystal: Dict[str, Any]
+                          ) -> Tuple[np.ndarray, int, np.ndarray,
+                                     np.ndarray, np.ndarray, np.ndarray]:
     """
     Gets relevant data from a section of phonopy.yaml
 
     Parameters
     ----------
-    crystal : dict
+    crystal
         Part of the dict obtained from reading a phonopy.yaml file. e.g.
         summary_dict['unit_cell']
 
     Returns
     -------
-    cell_vectors : (3,3) float ndarray
-        Cell vectors, in same units as in the phonopy.yaml file
-    n_atoms : int
+    cell_vectors
+        Shape (3,3) float ndarray. Cell vectors, in same units as in
+        the phonopy.yaml file
+    n_atoms
         Number of atoms
-    atom_r : (n_atoms, 3) float ndarray
-        Fractional position of each atom
-    atom_mass : (n_atoms,) float ndarray
-        Mass of each atom, in same units as in the phonopy.yaml file
-    atom_type : (n_atoms,) str ndarray
-        String specifying the species of each atom
-    idx_in_pcell : (n_atoms,) int ndarray
-        Maps the atom index on the unit/supercell to the primitive cell
+    atom_r
+        Shape (n_atoms, 3) float ndarray. Fractional position of each
+        atom
+    atom_mass
+        Shape (n_atoms,) float ndarray. Mass of each atom, in same
+        units as in the phonopy.yaml file
+    atom_type
+        Shape (n_atoms,) str ndarray. String specifying the species
+        of each atom
+    idx_in_pcell
+        Shape (n_atoms,) int ndarray. Maps the atom index on the
+        unit/supercell to the primitive cell
     """
     n_atoms = len(crystal['points'])
     cell_vectors = np.array(crystal['lattice'])
@@ -862,7 +882,7 @@ def read_interpolation_data(
     umass = summary_dict['umass']
     ufc = summary_dict['ufc']
 
-    data_dict = {}
+    data_dict: Dict[str, Any] = {}
     data_dict['crystal'] = {}
     cry_dict = data_dict['crystal']
     cry_dict['cell_vectors'] = summary_dict['cell_vectors']*ureg(

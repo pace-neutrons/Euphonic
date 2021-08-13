@@ -1,13 +1,15 @@
-from typing import List
+from argparse import ArgumentParser
+from typing import List, Optional
 
 import euphonic
 from euphonic.plot import plot_1d
+from euphonic import Spectrum1D
 from .utils import (load_data_from_file, get_args, _bands_from_force_constants,
                     _get_q_distance, matplotlib_save_or_show, _get_cli_parser,
                     _calc_modes_kwargs)
 
 
-def main(params: List[str] = None):
+def main(params: Optional[List[str]] = None) -> None:
     args = get_args(get_parser(), params)
     data = load_data_from_file(args.filename)
 
@@ -46,7 +48,7 @@ def main(params: List[str] = None):
     if x_tick_labels:
         spectrum.x_tick_labels = x_tick_labels
 
-    spectra = spectrum.split(**split_args)
+    spectra = spectrum.split(**split_args)  # type: List[Spectrum1D]
 
     _ = plot_1d(spectra,
                 title=args.title,
@@ -57,7 +59,7 @@ def main(params: List[str] = None):
     matplotlib_save_or_show(save_filename=args.save_to)
 
 
-def get_parser():
+def get_parser() -> ArgumentParser:
     parser, _ = _get_cli_parser(features={'read-fc', 'read-modes', 'plotting',
                                           'q-e', 'btol'})
     parser.description = (

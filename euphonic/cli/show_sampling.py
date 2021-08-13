@@ -1,6 +1,6 @@
 # -*- coding: UTF-8 -*-
-import argparse
-from typing import List
+from argparse import ArgumentParser
+from typing import List, Optional
 
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D  # noqa: F401
@@ -14,8 +14,8 @@ choices_3d = {'golden-sphere', 'sphere-from-square-grid',
               'random-sphere'}
 
 
-def get_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser()
+def get_parser() -> ArgumentParser:
+    parser = ArgumentParser()
     parser.add_argument('npts', type=int)
     parser.add_argument('sampling', type=str,
                         choices=(choices_2d | choices_3d))
@@ -27,7 +27,7 @@ def get_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def main(params: List[str] = None) -> None:
+def main(params: Optional[List[str]] = None) -> None:
     parser = get_parser()
     args = get_args(parser, params)
 
