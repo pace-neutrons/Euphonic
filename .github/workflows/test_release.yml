@@ -11,7 +11,7 @@ jobs:
   test:
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest]
+        os: [ubuntu-latest, windows-latest, macos-latest]
       fail-fast: false
     runs-on: ${{ matrix.os }}
     steps:
@@ -23,11 +23,11 @@ jobs:
           python-version: 3.6
       - name: Update pip and install dependencies
         run: |
-          python -m pip install --upgrade --user pip
+          python -m pip install --upgrade pip
           python -m pip install -r tests_and_analysis/jenkins_requirements.txt
       - name: Run tests
         env:
-          EUPHONIC_VERSION: v0.6.1
+          EUPHONIC_VERSION: 0.6.1
         run: python -m tox -c release_tox.ini
       - name: Publish test results
         uses: EnricoMi/publish-unit-test-result-action@v1
