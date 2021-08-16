@@ -40,6 +40,28 @@ If you don't require plotting or reading of Phonopy files, just use:
 
   pip install euphonic
 
+Conda
+-----
+
+For Conda users there is a ``euphonic`` package on conda-forge.
+This may be preferable to Pip installation as it should grab existing
+binary-compatible builds of Euphonic and its dependencies.
+The package is quite minimal, it is usually recommended to also
+install plotting, import and progress-bar dependencies.
+To create a "complete" installation in a new environment:
+
+.. code-block:: bash
+
+  conda create -n euphonic-forge -c conda-forge python=3.8 euphonic matplotlib-base pyyaml tqdm h5py
+
+This creates an environment named "euphonic-forge", which can be
+entered with ``activate euphonic-forge`` and exited with
+``deactivate``. Once could also install the packages into an existing environment:
+
+.. code-block:: bash
+
+  conda install -c conda-forge euphonic matplotlib-base pyyaml tqdm h5py
+
 Github
 ------
 To get the latest unreleased version, clone the Git repository at
