@@ -1,4 +1,4 @@
-.. _cl_tools:
+.. _cl-tools:
 
 Command-line Tools
 ******************

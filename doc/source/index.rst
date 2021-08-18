@@ -23,8 +23,8 @@ Using Euphonic
 .. toctree::
   :maxdepth: 2
 
-  python_api
-  cl_tools
+  python-api
+  cl-tools
 
 :ref:`Changelog <changelog>`
 ============================
