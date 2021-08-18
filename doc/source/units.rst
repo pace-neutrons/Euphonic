@@ -1,8 +1,7 @@
 .. _units:
 
-=====
 Units
-=====
+*****
 
 In Euphonic, units are handled by `Pint <https://pint.readthedocs.io/>`_. Pint
 wraps Numpy arrays as a ``Quantity`` object, so you can easily see which units

@@ -9,7 +9,7 @@ the Debye-Waller factor were used in the calculation.
 
 .. contents:: :local:
 
-.. _scattering-intensities:
+.. _scattering-intensities-from-sf:
 
 From Phonon Modes
 -----------------

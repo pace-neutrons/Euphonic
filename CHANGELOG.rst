@@ -131,7 +131,7 @@
     gamma-point acoustic modes, so would miss small/negative frequencies
     elsewhere
   - Loading the LAPACK libraries for the C extension now uses the
-    `interface <https://docs.scipy.org/doc/scipy/reference/linalg.cython_lapack.html`_
+    `interface <https://docs.scipy.org/doc/scipy/reference/linalg.cython_lapack.html>`_
     provided by `scipy` for `cython` instead of loading directly from a DLL.
     The new method means we don't have to guess the DLL filename anymore!
 
@@ -411,7 +411,7 @@
 
   - Changes to the object instantiation API. The former interface
     ``InterpolationData(seedname)`` has been changed to
-    ``InterpolationData.from_castep(seedname)`,` in anticipation of more codes
+    ``InterpolationData.from_castep(seedname)`` in anticipation of more codes
     being added which require more varied arguments.
   - Changes to the Debye-Waller calculation API when calculating the structure
     factor. The previous ``dw_arg`` kwarg accepted either a seedname or length

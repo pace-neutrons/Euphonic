@@ -1,4 +1,5 @@
 .. _sampling-script:
+.. highlight:: bash
 
 ======================
 euphonic-show-sampling
