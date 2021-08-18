@@ -24,10 +24,17 @@ jobs:
       - name: Run tests
         shell: bash -l {0}
         run: python -m tox
-      - name: Publish test results
+      - name: Publish test results Linux
         uses: EnricoMi/publish-unit-test-result-action@v1
         if: |
           startsWith(matrix.os, 'ubuntu') &&
+          always()
+        with:
+          files: tests_and_analysis/test/reports/junit_report*.xml
+      - name: Publish test results Mac/Windows
+        uses: EnricoMi/publish-unit-test-result-action/composite@v1
+        if: |
+          (startsWith(matrix.os, 'macos') || startsWith(matrix.os, 'windows')) &&
           always()
         with:
           files: tests_and_analysis/test/reports/junit_report*.xml
