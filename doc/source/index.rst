@@ -14,39 +14,17 @@ information.
 Getting Started
 ===============
 .. toctree::
+  :maxdepth: 2
 
   installation
 
-Python API
-==========
+Using Euphonic
+==============
 .. toctree::
-  :maxdepth: 1
+  :maxdepth: 2
 
-  Force Constants <force-constants>
-  Phonon Frequencies and Eigenvectors <qpoint-phonon-modes>
-  Phonon Frequencies Only <qpoint-frequencies>
-  Density of States <dos>
-  Structure Factors <structure-factor>
-  Scattering Intensities <scattering-intensities>
-  Debye-Waller <debye-waller>
-  Spectra <spectra>
-  powder
-  plotting
-  sampling
-  utils
-  Units in Euphonic <units>
-
-Command-line Tools
-==================
-.. toctree::
-  :maxdepth: 1
-
-  euphonic-dispersion <disp-script>
-  euphonic-dos <dos-script>
-  euphonic-intensity-map <intensity-map-script>
-  euphonic-powder-map <powder-map-script>
-  euphonic-optimise-dipole-parameter <dipole-parameter-script>
-  euphonic-show-sampling <sampling-script>
+  python_api
+  cl_tools
 
 :ref:`Changelog <changelog>`
 ============================
