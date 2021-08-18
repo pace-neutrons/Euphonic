@@ -21,6 +21,11 @@ Getting Started
 Using Euphonic
 ==============
 .. toctree::
+  :maxdepth: 1
+
+  Units in Euphonic <units>
+
+.. toctree::
   :maxdepth: 2
 
   python-api

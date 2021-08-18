@@ -18,4 +18,3 @@ Python API
   plotting
   sampling
   utils
-  Units in Euphonic <units>
