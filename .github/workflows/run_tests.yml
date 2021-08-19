@@ -24,25 +24,32 @@ jobs:
       - name: Run tests
         shell: bash -l {0}
         run: python -m tox
-      - name: Publish test results Linux
-        uses: EnricoMi/publish-unit-test-result-action@v1
-        if: |
-          startsWith(matrix.os, 'ubuntu') &&
-          always()
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v2
         with:
-          files: tests_and_analysis/test/reports/junit_report*.xml
-      - name: Publish test results Mac/Windows
-        uses: EnricoMi/publish-unit-test-result-action/composite@v1
-        if: |
-          (startsWith(matrix.os, 'macos') || startsWith(matrix.os, 'windows')) &&
-          always()
-        with:
-          files: tests_and_analysis/test/reports/junit_report*.xml
+          name: Unit test results ${{ matrix.os }}
+          path: tests_and_analysis/test/reports/junit_report*.xml
       - name: Publish coverage
         uses: codecov/codecov-action@v2
         if: startsWith(matrix.os, 'ubuntu')
         with:
           files: coverage.xml
+
+  publish-test-results:
+    needs: test
+    runs-on: ubuntu-latest
+    if: success() || failure()
+    steps:
+      - name: Download Artifacts
+        uses: actions/download-artifact@v2
+        with:
+          path: artifacts
+      - name: Publish test results
+        uses: EnricoMi/publish-unit-test-result-action@v1
+        with:
+          files: artifacts/**/junit_report*.xml
+
   static-analysis:
     runs-on: ubuntu-latest
     steps:
