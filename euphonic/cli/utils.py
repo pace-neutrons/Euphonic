@@ -653,6 +653,11 @@ def _get_cli_parser(features: Collection[str] = {}
                                    'the font is actually sans-serif.'))
         section.add_argument('--fontsize', type=float, default=None,
                              help='Set base font size in pt.')
+        section.add_argument('--figsize', type=float, nargs=2, default=None,
+                             help='Figure canvas size in FIGSIZE-UNITS')
+        section.add_argument('--figsize-unit', type=str, default='cm',
+                             dest='figsize_unit',
+                             help='Unit of length for --figsize')
 
     if ('plotting' in features) and not ('map' in features):
         section = sections['plotting']
@@ -788,12 +793,19 @@ def _compose_style(
     for user_arg, mpl_property in {'cmap': 'image.cmap',
                                    'fontsize': 'font.size',
                                    'font': 'font.sans-serif',
-                                   'linewidth': 'lines.linewidth'}.items():
+                                   'linewidth': 'lines.linewidth',
+                                   'figsize': 'figure.figsize'}.items():
         if getattr(user_args, user_arg, None):
             explicit_args.update({mpl_property: getattr(user_args, user_arg)})
 
-    if 'font' in explicit_args:
-        explit_args.append({'font.family': 'sans-serif'})
+    if 'font.sans-serif' in explicit_args:
+        explicit_args.update({'font.family': 'sans-serif'})
+
+    if 'figure.figsize' in explicit_args:        
+        dimensioned_figsize = [dim * ureg(user_args.figsize_unit)
+                               for dim in explicit_args['figure.figsize']]
+        explicit_args['figure.figsize'] = [dim.to('inches').magnitude
+                                           for dim in dimensioned_figsize]
 
     style.append(explicit_args)
     return style
