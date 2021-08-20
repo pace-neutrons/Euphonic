@@ -2,6 +2,7 @@ include euphonic/LICENSE
 include euphonic/CITATION.cff
 include euphonic/data/*
 include euphonic/_version.py
+include euphonic/styles/*.mplstyle
 include versioneer.py
 include c/*.h
 include c/*.c
