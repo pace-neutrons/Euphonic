@@ -646,6 +646,13 @@ def _get_cli_parser(features: Collection[str] = {}
                              dest='no_base_style',
                              help=('Remove all default formatting before '
                                    'applying other style options.'))
+        section.add_argument('--fontsize', type=float, default=None,
+                             help='Set base font size in pt.')
+
+    if ('plotting' in features) and not ('map' in features):
+        section = sections['plotting']
+        section.add_argument('--linewidth', type=float, default=None,
+                             help='Set line width in pt.')
 
     if {'ebins', 'q-e'}.intersection(features):
         section = sections['energy']
@@ -771,8 +778,13 @@ def _compose_style(
     if user_args.style:
         style += user_args.style
 
-    # Explicit cmap takes priority over any other
-    if 'cmap' in user_args and user_args.cmap:
-        style.append({'image.cmap': user_args.cmap})
+    # Explicit args take priority over any other
+    explicit_args = {}
+    for user_arg, mpl_property in {'cmap': 'image.cmap',
+                                   'fontsize': 'font.size',
+                                   'linewidth': 'lines.linewidth'}.items():
+        if getattr(user_args, user_arg, None):
+            explicit_args.update({mpl_property: getattr(user_args, user_arg)})
 
+    style.append(explicit_args)
     return style
