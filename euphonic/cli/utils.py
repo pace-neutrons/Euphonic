@@ -646,6 +646,11 @@ def _get_cli_parser(features: Collection[str] = {}
                              dest='no_base_style',
                              help=('Remove all default formatting before '
                                    'applying other style options.'))
+        section.add_argument('--font', type=str, default=None,
+                             help=('Select text font. (This has to be a name '
+                                   'known to Matplotlib. font-family will be '
+                                   'set to sans-serif; it doesn\'t matter if)'
+                                   'the font is actually sans-serif.'))
         section.add_argument('--fontsize', type=float, default=None,
                              help='Set base font size in pt.')
 
@@ -782,9 +787,13 @@ def _compose_style(
     explicit_args = {}
     for user_arg, mpl_property in {'cmap': 'image.cmap',
                                    'fontsize': 'font.size',
+                                   'font': 'font.sans-serif',
                                    'linewidth': 'lines.linewidth'}.items():
         if getattr(user_args, user_arg, None):
             explicit_args.update({mpl_property: getattr(user_args, user_arg)})
+
+    if 'font' in explicit_args:
+        explit_args.append({'font.family': 'sans-serif'})
 
     style.append(explicit_args)
     return style
