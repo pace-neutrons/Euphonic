@@ -756,12 +756,13 @@ def _get_cli_parser(features: Collection[str] = {}
     return parser, sections
 
 
-MPLStyle = Union[str, Dict[str, str]]
+MplStyle = Union[str, Dict[str, str]]
 
 
-def _compose_style(*, user_args: Namespace, base: Optional[List[MPLStyle]]
-                   ) -> List[MPLStyle]:
-    """Get user-specified style and options from args, combine with defaults"""
+def _compose_style(
+        *, user_args: Namespace, base: Optional[List[MplStyle]]
+        ) -> List[MplStyle]:
+    """Combine user-specified style options with default stylesheets"""
     if user_args.no_base_style or base is None:
         style = []
     else:
