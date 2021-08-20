@@ -640,6 +640,12 @@ def _get_cli_parser(features: Collection[str] = {}
                              dest='x_label', help='Plot x-axis label')
         section.add_argument('--y-label', type=str, default=None,
                              dest='y_label', help='Plot y-axis label')
+        section.add_argument('--style', type=str, nargs='+',
+                             help='Matplotlib styles (name or file)')
+        section.add_argument('--no-base-style', action='store_true',
+                             dest='no_base_style',
+                             help=('Remove all default formatting before '
+                                   'applying other style options.'))
 
     if {'ebins', 'q-e'}.intersection(features):
         section = sections['energy']
@@ -709,7 +715,7 @@ def _get_cli_parser(features: Collection[str] = {}
             '--v-max', type=float, default=None, dest='v_max',
             help='Maximum of data range for colormap.')
         sections['plotting'].add_argument(
-            '--cmap', type=str, default='viridis', help='Matplotlib colormap')
+            '--cmap', type=str, default=None, help='Matplotlib colormap')
 
     if 'btol' in features:
         sections['q'].add_argument(
@@ -748,3 +754,24 @@ def _get_cli_parser(features: Collection[str] = {}
         )
 
     return parser, sections
+
+
+MPLStyle = Union[str, Dict[str, str]]
+
+
+def _compose_style(*, user_args: Namespace, base: Optional[List[MPLStyle]]
+                   ) -> List[MPLStyle]:
+    """Get user-specified style and options from args, combine with defaults"""
+    if user_args.no_base_style or base is None:
+        style = []
+    else:
+        style = base
+
+    if user_args.style:
+        style += user_args.style
+
+    # Explicit cmap takes priority over any other
+    if 'cmap' in user_args and user_args.cmap:
+        style.append({'image.cmap': user_args.cmap})
+
+    return style

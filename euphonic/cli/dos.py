@@ -1,12 +1,14 @@
 from argparse import ArgumentParser
 from typing import List, Optional
 
-from euphonic import (ureg, ForceConstants, QpointPhononModes,
-                      Spectrum1DCollection)
+import matplotlib.style
+
+from euphonic import (ureg, ForceConstants, QpointPhononModes)
 from euphonic.util import mp_grid, mode_gradients_to_widths
 from euphonic.plot import plot_1d
+from euphonic.styles import base_style
 from .utils import (load_data_from_file, get_args, matplotlib_save_or_show,
-                    _calc_modes_kwargs,
+                    _calc_modes_kwargs, _compose_style,
                     _get_cli_parser, _get_energy_bins,
                     _grid_spec_from_args, _get_pdos_weighting,
                     _arrange_pdos_groups)
@@ -74,9 +76,11 @@ def main(params: Optional[List[str]] = None) -> None:
     else:
         y_label = args.y_label
 
-    fig = plot_1d(dos, title=args.title, x_label=x_label, y_label=y_label,
-                  y_min=0, lw=1.0)
-    matplotlib_save_or_show(save_filename=args.save_to)
+    style = _compose_style(user_args=args, base=[base_style])
+    with matplotlib.style.context(style):
+        _ = plot_1d(dos, title=args.title, x_label=x_label, y_label=y_label,
+                    y_min=0)
+        matplotlib_save_or_show(save_filename=args.save_to)
 
 
 def get_parser() -> ArgumentParser:
