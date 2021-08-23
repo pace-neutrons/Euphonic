@@ -320,7 +320,6 @@ def plot_2d(spectra: Union[Spectrum2D, Sequence[Spectrum2D]],
     ax.set_ylabel(y_label)
 
     fig.suptitle(title)
-    fig.tight_layout()
 
     return fig
 
