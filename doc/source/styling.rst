@@ -5,7 +5,7 @@
 Customising plots
 =================
 
-Several of Euphonic's `cl-tools`_ produce 2D plots. A few command-line
+Several of Euphonic's :ref:`cl-tools` produce 2D plots. A few command-line
 arguments are provided to tweak the plot size, font settings and colour maps, e.g.::
 
   euphonic-dos --font Monaco --fontsize 18 --figsize 10 10 --figsize-unit cm quartz.castep_bin
@@ -32,6 +32,7 @@ and may be accessed by name, e.g.::
 will yield a plot on a grey background with white gridlines.
 
 .. image:: figures/plot-styling-seaborn.png
+  :width: 400
   :alt: PDOS plot with thin dark blue, red and green lines against a
         pale blue background divided by white gridlines. There are no
         outlines around the legend (top-right) or the axes; number
@@ -54,13 +55,14 @@ For example, with the following file saved as "custom.mplstyle"
   figure.figsize : 3, 3
   figure.facecolor : palegoldenrod
   
-then the command
+then the command::
 
   euphonic-dos quartz.castep_bin --pdos --style custom.mplstyle
 
 generates a small figure with some "opinionated" styling.
 
 .. image:: figures/plot-styling-custom-1.png
+  :width: 400
   :alt: A square PDOS plot with very thick blue, orange and green data
         lines, a pale yellow background and pinkish off-white canvas.
         The canvas is surrounded by black lines with numbered ticks.
@@ -69,7 +71,7 @@ generates a small figure with some "opinionated" styling.
         monospace font.
 
 It is possible to "compose" multiple styles in ascending priority
-order, e.g.
+order, e.g.::
 
   euphonic-dos quartz.castep_bin --pdos --style seaborn custom.mplstyle
 
@@ -80,6 +82,7 @@ plot seems to have mixed with the figure background (due to a
 transparency setting?)
 
 .. image:: figures/plot-styling-custom-2.png
+  :width: 400
   :alt: A very similar plot to the above, except that the legend box
         is gone (along with its shadow), and the line colours are now
         a tasteful blue, green and (desaturated) red combination. The
