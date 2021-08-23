@@ -77,9 +77,8 @@ order, e.g.::
 
 In the resulting figure, the customised text and canvas options have
 taken priority, but we still get the Seaborn colour sequence for plot
-lines. The plot outline was removed and the background colour of the
-plot seems to have mixed with the figure background (due to a
-transparency setting?)
+lines. The plot outline, ticks and legend box were removed. (And with
+them, the legend customisation!)
 
 .. image:: figures/plot-styling-custom-2.png
   :width: 400
