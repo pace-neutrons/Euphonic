@@ -6,7 +6,7 @@ Customising plots
 =================
 
 Command-line options
---------------------
+====================
 
 Several of Euphonic's :ref:`cl-tools` produce 2D plots. A few command-line
 arguments are provided to tweak the plot size, font settings and colour maps, e.g.::
@@ -26,7 +26,7 @@ all platforms, so if you have a preferred font it may be worth
 searching for help on using this font with Matplotlib.
 
 Using Matplotlib styles
------------------------
+=======================
 
 These and other appearance customisations can be defined as a
 Matplotlib style sheet.
@@ -48,7 +48,7 @@ will yield a plot on a grey background with white gridlines.
 presentations. 
 
 Using custom stylesheets
-------------------------
+========================
 
 For a custom scheme, you can `develop your own style file <https://matplotlib.org/stable/tutorials/introductory/customizing.html>`_.
 For example, with the following file saved as "custom.mplstyle"
