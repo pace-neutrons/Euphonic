@@ -1,9 +1,10 @@
 .. _styling:
-.. highlight:: bash
 
 =================
 Customising plots
 =================
+
+.. highlight:: bash
 
 Command-line options
 ====================

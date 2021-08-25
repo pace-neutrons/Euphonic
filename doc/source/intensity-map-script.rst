@@ -1,9 +1,10 @@
 .. _intensity-map-script:
-.. highlight:: bash
 
 ======================
 euphonic-intensity-map
 ======================
+
+.. highlight:: bash
 
 The ``euphonic-intensity-map`` program can be used to plot a 2D intensity
 map either along a specific trajectory from precalculated phonon frequencies

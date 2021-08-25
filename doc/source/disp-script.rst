@@ -1,9 +1,10 @@
 .. _disp-script:
-.. highlight:: bash
 
 ===================
 euphonic-dispersion
 ===================
+
+.. highlight:: bash
 
 The ``euphonic-dispersion`` program can be used to plot dispersion
 either along a specific trajectory from precalculated phonon frequencies,

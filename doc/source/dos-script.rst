@@ -1,9 +1,10 @@
 .. _dos-script:
-.. highlight:: bash
 
 ============
 euphonic-dos
 ============
+
+.. highlight:: bash
 
 The ``euphonic-dos`` program can be used to plot density of states,
 partial density of states, and/or neutron-weighted density of states.

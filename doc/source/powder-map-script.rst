@@ -1,9 +1,10 @@
 .. _powder-map-script:
-.. highlight:: bash
 
 ======================
 euphonic-powder-map
 ======================
+
+.. highlight:: bash
 
 The ``euphonic-powder-map`` program can be used to sample
 spherically-averaged properties from force constants data over a range

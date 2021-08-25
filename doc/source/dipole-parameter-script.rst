@@ -1,9 +1,10 @@
 .. _dipole-parameter-script:
-.. highlight:: bash
 
 ==================================
 euphonic-optimise-dipole-parameter
 ==================================
+
+.. highlight:: bash
 
 This program is useful for users wanting to efficiently calculate phonon
 frequencies on many q-points for polar materials.
