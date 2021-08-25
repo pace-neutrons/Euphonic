@@ -2,11 +2,14 @@ import sys
 import os
 import json
 from unittest.mock import patch
+from platform import platform
 
 import pytest
 import numpy.testing as npt
 # Required for mocking
 import matplotlib.pyplot
+from packaging import version
+from scipy import __version__ as scipy_ver
 
 from tests_and_analysis.test.utils import (
     get_data_path, get_castep_path, get_phonopy_path)
@@ -32,7 +35,6 @@ disp_params =  [
     [cahgo2_fc_file, '--energy-unit=hartree'],
     [cahgo2_fc_file, '--x-label=wavenumber', '--y-label=Energy (meV)',
      '--title=CaHgO2'],
-    [cahgo2_fc_file, '--reorder'],
     [cahgo2_fc_file, '-u=1/cm', '--e-min=200'],
     [cahgo2_fc_file, '--e-min=30', '--e-max=100'],
     [cahgo2_fc_file, '--length-unit=bohr', '--q-spacing=0.04'],
@@ -45,6 +47,7 @@ disp_params =  [
     [quartz_phonon_file, '--btol=1000'],
     [nacl_phonon_file],
     [nacl_phonon_hdf5_file]]
+disp_params_macos_segfault =  [[cahgo2_fc_file, '--reorder']]
 
 
 @pytest.mark.integration
@@ -61,9 +64,7 @@ class TestRegression:
         # Ensure figures are closed
         matplotlib.pyplot.close('all')
 
-    @pytest.mark.parametrize('dispersion_args', disp_params)
-    def test_plots_contain_expected_data(
-            self, inject_mocks, dispersion_args):
+    def run_dispersion_and_test_result(self, dispersion_args):
         euphonic.cli.dispersion.main(dispersion_args)
 
         line_data = get_current_plot_line_data()
@@ -86,6 +87,21 @@ class TestRegression:
                         atol=atol)
             else:
                 assert value == expected_line_data[key]
+
+
+    @pytest.mark.parametrize('dispersion_args', disp_params)
+    def test_dispersion_plot_data(self, inject_mocks, dispersion_args):
+        self.run_dispersion_and_test_result(dispersion_args)
+
+    @pytest.mark.parametrize('dispersion_args', disp_params_macos_segfault)
+    @pytest.mark.skipif(
+        (any([s in platform() for s in ['Darwin', 'macOS']])
+         and version.parse(scipy_ver) > version.parse('1.1.0')),
+        reason=('Segfaults on some MacOS platforms with Scipy > 1.1.0, may '
+                'be related to https://github.com/google/jax/issues/432'))
+    def test_dispersion_plot_data_macos_segfault(
+            self, inject_mocks, dispersion_args):
+        self.run_dispersion_and_test_result(dispersion_args)
 
     @pytest.mark.parametrize('dispersion_args', [
         [quartz_phonon_file, '--save-to'],
