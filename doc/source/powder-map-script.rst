@@ -23,6 +23,7 @@ To see all the command line options, run::
    euphonic-powder-map -h
 
 You can also see the available command line options at the bottom of this page.
+For information on advanced plot styling, see :ref:`styling`.
 
 Spherical averaging options
 ---------------------------

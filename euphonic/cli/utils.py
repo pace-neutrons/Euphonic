@@ -779,7 +779,19 @@ MplStyle = Union[str, Dict[str, str]]
 def _compose_style(
         *, user_args: Namespace, base: Optional[List[MplStyle]]
         ) -> List[MplStyle]:
-    """Combine user-specified style options with default stylesheets"""
+    """Combine user-specified style options with default stylesheets
+
+    Args:
+        user_args: from _get_cli_parser().parse_args()
+        base: Euphonic default styles for this plot
+
+    N.B. matplotlib applies styles from left to right, so the right-most
+    elements of the list take the highest priority. This function builds a
+    list in the order:
+
+    [base style(s), user style(s), CLI arguments]
+    """
+
     if user_args.no_base_style or base is None:
         style = []
     else:
