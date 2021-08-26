@@ -16,7 +16,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
         with:
-          ref: v{{ github.event.inputs.version }}
+          ref: v${{ github.event.inputs.version }}
       - uses: conda-incubator/setup-miniconda@v2
         with:
           python-version: 3.6
@@ -28,19 +28,26 @@ jobs:
       - name: Run tests
         shell: bash -l {0}
         env:
-          EUPHONIC_VERSION: {{ github.event.inputs.version }}
+          EUPHONIC_VERSION: ${{ github.event.inputs.version }}
         run: python -m tox -c release_tox.ini
-      - name: Publish test results Linux
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v2
+        with:
+          name: Unit test results ${{ matrix.os }}
+          path: tests_and_analysis/test/reports/junit_report*.xml
+
+  publish-test-results:
+    needs: test
+    runs-on: ubuntu-latest
+    if: success() || failure()
+    steps:
+      - name: Download Artifacts
+        uses: actions/download-artifact@v2
+        with:
+          path: artifacts
+      - name: Publish test results
         uses: EnricoMi/publish-unit-test-result-action@v1
-        if: |
-          startsWith(matrix.os, 'ubuntu') &&
-          always()
         with:
-          files: tests_and_analysis/test/reports/junit_report*.xml
-      - name: Publish test results Mac/Windows
-        uses: EnricoMi/publish-unit-test-result-action/composite@v1
-        if: |
-          (startsWith(matrix.os, 'macos') || startsWith(matrix.os, 'windows')) &&
-          always()
-        with:
-          files: tests_and_analysis/test/reports/junit_report*.xml
+          files: artifacts/**/junit_report*.xml
+
