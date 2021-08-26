@@ -35,6 +35,12 @@ jobs:
         if: startsWith(matrix.os, 'ubuntu')
         with:
           files: coverage.xml
+      - name: Publish Codacy coverage
+        uses: codacy/codacy-coverage-reporter-action@v1
+        if: startsWith(matrix.os, 'ubuntu')
+        with:
+          project-token: ${{ secrets.CODACY_PROJECT_TOKEN }}
+          coverage-reports: tests_and_analysis/test/reports/coverage.xml
 
   publish-test-results:
     needs: test
@@ -49,11 +55,3 @@ jobs:
         uses: EnricoMi/publish-unit-test-result-action@v1
         with:
           files: artifacts/**/junit_report*.xml
-
-  static-analysis:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - uses: codacy/codacy-analysis-cli-action@4.0.0
-        with:
-          directory: $PWD/euphonic
