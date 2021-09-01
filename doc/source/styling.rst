@@ -41,7 +41,7 @@ will yield a plot on a grey background with white gridlines.
 .. image:: figures/plot-styling-seaborn.png
   :width: 400
   :alt: PDOS plot with thin dark blue, red and green lines against a
-        pale blue background divided by white gridlines. There are no
+        pale grey background divided by white gridlines. There are no
         outlines around the legend (top-right) or the axes; number
         values are in a black sans-serif and float near the plot.
 
