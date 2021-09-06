@@ -2,11 +2,12 @@ name: run-tests
 on:
   push:
   pull_request:
-    types: [opened, reopened]
+    types: [opened, reopened, labeled]
   workflow_dispatch:
 
 jobs:
   test:
+    if: github.event.action != 'labeled' || github.event.label.name == 'run CI'
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
