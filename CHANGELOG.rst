@@ -3,6 +3,7 @@
 
 - Improvements:
 
+  - Wheels are now provided with PyPI releases
   - Type hinting is now handled more consistently across different Euphonic
     classes and functions
 
