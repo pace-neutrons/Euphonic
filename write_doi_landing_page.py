@@ -31,6 +31,10 @@ landing_page_content = (
     f'---\n')
 if branch == 'master':
     landing_page_content += f'# Euphonic - Latest\n'
+else:
+    landing_page_content = landing_page_content.replace(
+        f'SOFTWARE/EUPHONIC',
+        f'SOFTWARE/EUPHONIC/{branch.strip("v")}')
 
 with open(landing_page, 'w') as f:
     f.write(landing_page_content)
