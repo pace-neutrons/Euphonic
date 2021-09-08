@@ -23,15 +23,6 @@ quick_calc_params = ['-n=10', '--min=0.5', '--max=0.5']
 @pytest.mark.integration
 class TestRegression:
 
-    def test_optimal_is_0_75(self):
-        # Need a high-enough n to get a good timing, but
-        # can be slow for testing, so reduce the parameters that
-        # we test
-        optimal_dipole_parameter = calculate_optimum_dipole_parameter(
-            quartz_castep_bin, dipole_parameter_min=0.5,
-            dipole_parameter_max=1.25)[0]
-        assert optimal_dipole_parameter == 0.75
-
     def test_default_dipole_parameters(self):
         tested_parameters = calculate_optimum_dipole_parameter(
             quartz_castep_bin, n=5)[3]
