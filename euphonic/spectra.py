@@ -429,6 +429,18 @@ class Spectrum1D(Spectrum):
         x_data and subsequent columns should contain a y_data
         spectrum.
 
+        A header may be included to specify x/y_data
+        units and any metadata. If not included the
+        data will be dimensionless and metadata will be
+        empty. Each line must begin with # and individual
+        lines can be omitted if not required. An example of
+        a full header specifying x/y_data units and metadata
+        would be:
+
+        # x_data in (millielectron_volt)
+        # y_data in (millibarn / millielectron_volt)
+        # Common metadata: {"weighting": "coherent", "species": "O"}
+
         Parameters
         ----------
         filename
@@ -837,6 +849,21 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
         Read from a text file. The first column should contain
         x_data and subsequent columns should contain a y_data
         spectrum.
+
+        A header may be included to specify x_data/y_data
+        units and any metadata. If not included the
+        data will be dimensionless and metadata will be
+        empty. Each line must begin with # and individual
+        lines can be omitted if not required. An example of
+        a header specifying x/y_data units, overall metadata
+        and line-specific metadata would be:
+
+        # x_data in (millielectron_volt)
+        # y_data in (millibarn / millielectron_volt)
+        # Common metadata: {"weighting": "coherent"}
+        # Column 2: y_data[0] {"index": 0, "species": "O"}
+        # Column 3: y_data[1] {"index": 1, "species": "O"}
+        # Column 4: y_data[2] {"index": 2, "species": "Si"}
 
         Parameters
         ----------
