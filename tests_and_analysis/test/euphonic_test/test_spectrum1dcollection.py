@@ -78,16 +78,16 @@ def get_spectrum_dir():
     return os.path.join(get_data_path(), 'spectrum1dcollection')
 
 
-def get_json_file(json_filename):
-    return os.path.join(get_spectrum_dir(), json_filename)
+def get_full_path(filename):
+    return os.path.join(get_spectrum_dir(), filename)
 
 
 def get_spectrum1dcollection(json_filename):
-    return Spectrum1DCollection.from_json_file(get_json_file(json_filename))
+    return Spectrum1DCollection.from_json_file(get_full_path(json_filename))
 
 
 def get_expected_spectrum1dcollection(json_filename):
-    return ExpectedSpectrum1DCollection(get_json_file(json_filename))
+    return ExpectedSpectrum1DCollection(get_full_path(json_filename))
 
 
 def check_spectrum1dcollection(actual_spectrum, expected_spectrum):
@@ -135,7 +135,18 @@ class TestSpectrum1DCollectionCreation:
         json_file = request.param
         expected_spectrum = get_expected_spectrum1dcollection(json_file)
         spectrum = Spectrum1DCollection.from_json_file(
-            get_json_file(json_file))
+            get_full_path(json_file))
+        return spectrum, expected_spectrum
+
+    @pytest.fixture(params=[
+        ('gan_bands.text', 'gan_bands_from_text_file.json'),
+        ('quartz_666_coh_pdos.text',
+         'quartz_666_coh_pdos_from_text_file_fmt.json')])
+    def create_from_text_file(self, request):
+        text_file, json_file = request.param
+        expected_spectrum = get_expected_spectrum1dcollection(json_file)
+        spectrum = Spectrum1DCollection.from_text_file(
+            get_full_path(text_file))
         return spectrum, expected_spectrum
 
     @pytest.fixture(params=[
@@ -163,6 +174,7 @@ class TestSpectrum1DCollectionCreation:
     @pytest.mark.parametrize(('spectrum_creator'), [
         pytest.lazy_fixture('create_from_constructor'),
         pytest.lazy_fixture('create_from_json'),
+        pytest.lazy_fixture('create_from_text_file'),
         pytest.lazy_fixture('create_from_dict'),
         pytest.lazy_fixture('create_from_castep_phonon_dos')])
     def test_correct_object_creation(self, spectrum_creator):
@@ -271,6 +283,28 @@ class TestSpectrum1DCollectionCreation:
 @pytest.mark.unit
 class TestSpectrum1DCollectionSerialisation:
 
+    # Note that when writing .text there must be the same number of
+    # x_data and y_data points so bin centres will be used, this and
+    # using fmt may mean the output spectrum is slightly different.
+    # x_tick_labels will also be lost
+    @pytest.fixture(params=[
+        ('quartz_666_coh_pdos.json', 'quartz_666_coh_pdos_from_text_file_fmt.json',
+         {'fmt': '%.2f'}),
+        ('gan_bands.json', 'gan_bands_from_text_file.json', {}),
+        ('methane_pdos.json', 'methane_pdos_from_text_file_fmt.json',
+         {'fmt': ['%.4f'] + ['%.2f']*5})])
+    def serialise_to_text_file(self, request, tmpdir):
+        in_json, out_json, kwargs = request.param
+        spectrum = get_spectrum1dcollection(in_json)
+        # Serialise
+        output_file = str(tmpdir.join('tmp.test'))
+        spectrum.to_text_file(output_file, **kwargs)
+        # Deserialise
+        deserialised_spectrum = (Spectrum1DCollection
+                                 .from_text_file(output_file))
+        expected_deserialised_spectrum = get_spectrum1dcollection(out_json)
+        return expected_deserialised_spectrum, deserialised_spectrum
+
     @pytest.fixture(params=[
         get_spectrum1dcollection('gan_bands.json'),
         get_spectrum1dcollection('methane_pdos.json')])
@@ -284,8 +318,11 @@ class TestSpectrum1DCollectionSerialisation:
                                  .from_json_file(output_file))
         return spectrum, deserialised_spectrum
 
-    def test_serialise_to_file(self, serialise_to_json_file):
-        spectrum, deserialised_spectrum = serialise_to_json_file
+    @pytest.mark.parametrize(('to_file_method'), [
+        pytest.lazy_fixture('serialise_to_json_file'),
+        pytest.lazy_fixture('serialise_to_text_file')])
+    def test_serialise_to_file(self, to_file_method):
+        spectrum, deserialised_spectrum = to_file_method
         check_spectrum1dcollection(spectrum, deserialised_spectrum)
 
     @pytest.fixture(params=[
