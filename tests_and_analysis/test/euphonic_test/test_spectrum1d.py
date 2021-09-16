@@ -75,16 +75,16 @@ def get_spectrum1d_dir():
     return os.path.join(get_data_path(), 'spectrum1d')
 
 
-def get_json_file(json_filename):
+def get_full_path(json_filename):
     return os.path.join(get_spectrum1d_dir(), json_filename)
 
 
 def get_spectrum1d(json_filename):
-    return Spectrum1D.from_json_file(get_json_file(json_filename))
+    return Spectrum1D.from_json_file(get_full_path(json_filename))
 
 
 def get_expected_spectrum1d(json_filename):
-    return ExpectedSpectrum1D(get_json_file(json_filename))
+    return ExpectedSpectrum1D(get_full_path(json_filename))
 
 
 def check_spectrum1d(actual_spectrum1d, expected_spectrum1d):
@@ -137,7 +137,17 @@ class TestSpectrum1DCreation:
         json_file = request.param
         expected_spec1d = get_expected_spectrum1d(json_file)
         spec1d = Spectrum1D.from_json_file(
-            get_json_file(json_file))
+            get_full_path(json_file))
+        return spec1d, expected_spec1d
+
+    @pytest.fixture(params=[
+        ('quartz_666_dos.text', 'quartz_666_dos_from_text.json'),
+        ('methane_pdos_index_1.text', 'methane_pdos_index_1.json'),
+        ('toy_band_no_header.text', 'toy_band_from_text_no_header.json')])
+    def create_from_text_file(self, request):
+        text_file, json_file = request.param
+        expected_spec1d = get_expected_spectrum1d(json_file)
+        spec1d = Spectrum1D.from_text_file(get_full_path(text_file))
         return spec1d, expected_spec1d
 
     @pytest.fixture(params=[
@@ -170,6 +180,7 @@ class TestSpectrum1DCreation:
 
     @pytest.mark.parametrize(('spec1d_creator'), [
         pytest.lazy_fixture('create_from_constructor'),
+        pytest.lazy_fixture('create_from_text_file'),
         pytest.lazy_fixture('create_from_json'),
         pytest.lazy_fixture('create_from_dict'),
         pytest.lazy_fixture('create_from_castep_phonon_dos')])
@@ -212,6 +223,26 @@ class TestSpectrum1DCreation:
 
 @pytest.mark.unit
 class TestSpectrum1DSerialisation:
+
+    # Note that when writing .text there must be the same number of
+    # x_data and y_data points so bin centres will be used, this and
+    # using fmt may mean the output spectrum is slightly different.
+    # x_tick_labels will also be lost
+    @pytest.mark.parametrize('in_json, out_json', [
+        ('quartz_666_dos.json', 'quartz_666_dos_from_text.json'),
+        ('methane_pdos_index_1.json', 'methane_pdos_index_1.json')])
+    def test_serialise_to_text_file(self, in_json, out_json, tmpdir):
+        spec1d = get_spectrum1d(in_json)
+        # Serialise
+        output_file = str(tmpdir.join('tmp.test'))
+        spec1d.to_text_file(output_file)
+        spec1d.to_text_file(in_json.split('.')[0] + '.text')
+        # Deserialise
+        deserialised_spec1d = (Spectrum1D
+                                 .from_text_file(output_file))
+        deserialised_spec1d.to_json_file(out_json)
+        expected_deserialised_spec1d = get_spectrum1d(out_json)
+        check_spectrum1d(deserialised_spec1d, expected_deserialised_spec1d)
 
     @pytest.mark.parametrize('spec1d', [
         get_spectrum1d('quartz_666_dos.json'),
