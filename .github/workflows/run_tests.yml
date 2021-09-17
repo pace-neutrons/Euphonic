@@ -38,6 +38,10 @@ jobs:
         with:
           project-token: ${{ secrets.CODACY_PROJECT_TOKEN }}
           coverage-reports: tests_and_analysis/test/reports/coverage.xml
+      - uses: codecov/codecov-action@v2
+        if: startsWith(matrix.os, 'ubuntu')
+        with:
+          files: tests_and_analysis/test/reports/coverage.xml
 
   publish-test-results:
     needs: test
