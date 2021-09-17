@@ -887,11 +887,7 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
                 elif 'Common metadata:' in line:
                     metadata.update(json.loads(line[line.index('{'):]))
                 elif 'Column' in line and 'y_data' in line:
-                    try:
-                        line_data = json.loads(line[line.index('{'):])
-                    except ValueError:
-                        # There is no line_data for this spectrum
-                        break
+                    line_data = json.loads(line[line.index('{'):])
                     y_idx = int(line[line.index('[') + 1])
                     if not 'line_data' in metadata:
                         metadata['line_data'] = [
