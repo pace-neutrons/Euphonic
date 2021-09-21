@@ -5,7 +5,7 @@ import numpy as np
 from numpy.testing import assert_allclose
 import pytest
 
-from euphonic import ureg, __version__
+from euphonic import ureg
 from euphonic.spectra import Spectrum1DCollection
 from tests_and_analysis.test.utils import (
     get_data_path, get_castep_path, get_spectrum_from_text,
