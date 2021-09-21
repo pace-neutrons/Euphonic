@@ -1,7 +1,13 @@
 from argparse import Namespace
-import pytest
 
+import pytest
+import matplotlib.pyplot
+from numpy.testing import assert_allclose
+
+import euphonic.cli.dos
 from euphonic.cli.utils import _compose_style
+
+from tests_and_analysis.test.utils import get_data_path, get_castep_path
 
 compose_style_cases = [
     ({'user_args': Namespace(unused=1, no_base_style=False, style=None),
@@ -35,3 +41,35 @@ compose_style_cases = [
 def test_compose_style(kwargs, expected_style):
     """Internal function which interprets matplotlib style options"""
     assert _compose_style(**kwargs) == expected_style
+
+@pytest.mark.integration
+class TestDOSStyling:
+
+    @pytest.fixture
+    def inject_mocks(self, mocker):
+        # Prevent calls to show so we can get the current figure using
+        # gcf()
+        mocker.patch('matplotlib.pyplot.show')
+        mocker.resetall()
+
+    def teardown_method(self):
+        # Ensure figures are closed
+        matplotlib.pyplot.close('all')
+
+    def test_dos_styling(self, inject_mocks):
+        nah_phonon_file = get_castep_path('NaH', 'NaH.phonon')
+
+        params = [nah_phonon_file,
+                  '--style=dark_background',
+                  '--linewidth=4.',
+                  '--figsize', '4', '4',
+                  '--figsize-unit', 'inch']
+
+        euphonic.cli.dos.main(params=params)
+
+        fig = matplotlib.pyplot.gcf()
+        #plt.tight_layout()  # Text to be drawn so we can check it
+
+        assert_allclose([0., 0., 0., 1.], fig.get_facecolor())
+        assert fig.axes[0].lines[0].get_linewidth() == pytest.approx(4.)
+        assert_allclose([4., 4.], fig.get_size_inches())
