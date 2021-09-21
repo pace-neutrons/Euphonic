@@ -304,7 +304,7 @@ def get_spectrum_from_text(text_filename, is_collection=True):
         metadata.update(json.loads(line[line.index('{'):]))
         fp.readline()  # Skip 'Column 1: x_data' line
         for idx in range(len(y_data[0])):
-            line = fp.readline()  # 'Column i: y_data[i + 1]...' line
+            line = fp.readline()  # 'Column i + 2: y_data[i]...' line
             line_data = json.loads(line[line.index('{'):])
             if line_data:
                 if not 'line_data' in metadata:
