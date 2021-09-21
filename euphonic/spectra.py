@@ -423,33 +423,6 @@ class Spectrum1D(Spectrum):
                    metadata=d['metadata'])
 
     @classmethod
-    def from_text_file(cls: Type[T], filename: str) -> T:
-        """
-        Read from a text file. The first column should contain
-        x_data and subsequent columns should contain a y_data
-        spectrum.
-
-        A header may be included to specify x/y_data
-        units and any metadata. If not included the
-        data will be dimensionless and metadata will be
-        empty. Each line must begin with # and individual
-        lines can be omitted if not required. An example of
-        a full header specifying x/y_data units and metadata
-        would be:
-
-        # x_data in (millielectron_volt)
-        # y_data in (millibarn / millielectron_volt)
-        # Common metadata: {"weighting": "coherent", "species": "O"}
-
-        Parameters
-        ----------
-        filename
-            Name of the text file to read from
-        """
-        spec = Spectrum1DCollection.from_text_file(filename)
-        return spec[0]
-
-    @classmethod
     def from_castep_phonon_dos(cls: Type[T], filename: str,
                                element: Optional[str] = None) -> T:
         """
@@ -842,60 +815,6 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
                           optional=['x_tick_labels', 'metadata'])
         return cls(d['x_data'], d['y_data'], x_tick_labels=d['x_tick_labels'],
                    metadata=d['metadata'])
-
-    @classmethod
-    def from_text_file(cls: Type[T], filename: str) -> T:
-        """
-        Read from a text file. The first column should contain
-        x_data and subsequent columns should contain a y_data
-        spectrum.
-
-        A header may be included to specify x_data/y_data
-        units and any metadata. If not included the
-        data will be dimensionless and metadata will be
-        empty. Each line must begin with # and individual
-        lines can be omitted if not required. An example of
-        a header specifying x/y_data units, overall metadata
-        and line-specific metadata would be:
-
-        # x_data in (millielectron_volt)
-        # y_data in (millibarn / millielectron_volt)
-        # Common metadata: {"weighting": "coherent"}
-        # Column 2: y_data[0] {"index": 0, "species": "O"}
-        # Column 3: y_data[1] {"index": 1, "species": "O"}
-        # Column 4: y_data[2] {"index": 2, "species": "Si"}
-
-        Parameters
-        ----------
-        filename
-            Name of the text file to read from
-        """
-        x_data_unit = 'dimensionless'
-        y_data_unit = 'dimensionless'
-        metadata = {}
-        data = np.loadtxt(filename)
-        x_data = data[:, 0]
-        y_data = data[:, 1:].transpose()
-        with open(filename, 'r') as fp:
-            for line in fp:
-                if line[0] != '#':
-                    break
-                elif 'x_data in' in line:
-                    x_data_unit = line[line.index('('):]
-                elif 'y_data in' in line:
-                    y_data_unit = line[line.index('('):]
-                elif 'Common metadata:' in line:
-                    metadata.update(json.loads(line[line.index('{'):]))
-                elif 'Column' in line and 'y_data' in line:
-                    line_data = json.loads(line[line.index('{'):])
-                    y_idx = int(line[line.index('[') + 1])
-                    if not 'line_data' in metadata:
-                        metadata['line_data'] = [
-                            {} for i in range(len(y_data))]
-                    metadata['line_data'][y_idx] = line_data
-        return cls(x_data*ureg(x_data_unit),
-                   y_data*ureg(y_data_unit),
-                   metadata=metadata)
 
     @classmethod
     def from_castep_phonon_dos(cls: Type[T], filename: str) -> T:

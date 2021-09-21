@@ -1,16 +1,6 @@
 {
     "__euphonic_class__": "Spectrum1DCollection",
     "__euphonic_version__": "0.6.2+3.g379357f.dirty",
-    "metadata": {
-        "line_data": [
-            {},
-            {},
-            {},
-            {},
-            {},
-            {}
-        ]
-    },
     "x_data": [
         0.0,
         0.025883087787901028,

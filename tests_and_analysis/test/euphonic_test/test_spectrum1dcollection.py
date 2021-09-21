@@ -5,13 +5,15 @@ import numpy as np
 from numpy.testing import assert_allclose
 import pytest
 
-from euphonic import ureg
+from euphonic import ureg, __version__
 from euphonic.spectra import Spectrum1DCollection
-from tests_and_analysis.test.utils import get_data_path, get_castep_path
-
-from .test_spectrum1d import (get_spectrum1d, get_expected_spectrum1d,
-                              check_spectrum1d, check_unit_conversion,
-                              check_property_setters)
+from tests_and_analysis.test.utils import (
+    get_data_path, get_castep_path, get_spectrum_from_text,
+    check_spectrum_text_header)
+from tests_and_analysis.test.euphonic_test.test_spectrum1d import (
+    get_spectrum1d, get_expected_spectrum1d,
+    check_spectrum1d, check_unit_conversion,
+    check_property_setters)
 
 
 class ExpectedSpectrum1DCollection:
@@ -139,17 +141,6 @@ class TestSpectrum1DCollectionCreation:
         return spectrum, expected_spectrum
 
     @pytest.fixture(params=[
-        ('gan_bands.text', 'gan_bands_from_text_file.json'),
-        ('quartz_666_coh_pdos.text',
-         'quartz_666_coh_pdos_from_text_file_fmt.json')])
-    def create_from_text_file(self, request):
-        text_file, json_file = request.param
-        expected_spectrum = get_expected_spectrum1dcollection(json_file)
-        spectrum = Spectrum1DCollection.from_text_file(
-            get_full_path(text_file))
-        return spectrum, expected_spectrum
-
-    @pytest.fixture(params=[
         'gan_bands.json',
         'methane_pdos.json'])
     def create_from_dict(self, request):
@@ -174,7 +165,6 @@ class TestSpectrum1DCollectionCreation:
     @pytest.mark.parametrize(('spectrum_creator'), [
         pytest.lazy_fixture('create_from_constructor'),
         pytest.lazy_fixture('create_from_json'),
-        pytest.lazy_fixture('create_from_text_file'),
         pytest.lazy_fixture('create_from_dict'),
         pytest.lazy_fixture('create_from_castep_phonon_dos')])
     def test_correct_object_creation(self, spectrum_creator):
@@ -287,59 +277,48 @@ class TestSpectrum1DCollectionSerialisation:
     # x_data and y_data points so bin centres will be used, this and
     # using fmt may mean the output spectrum is slightly different.
     # x_tick_labels will also be lost
-    @pytest.fixture(params=[
-        ('quartz_666_coh_pdos.json', 'quartz_666_coh_pdos_from_text_file_fmt.json',
+    @pytest.mark.parametrize('in_json, out_json, kwargs', [
+        ('quartz_666_coh_pdos.json',
+         'quartz_666_coh_pdos_from_text_file_fmt.json',
          {'fmt': '%.2f'}),
         ('gan_bands.json', 'gan_bands_from_text_file.json', {}),
         ('methane_pdos.json', 'methane_pdos_from_text_file_fmt.json',
          {'fmt': ['%.4f'] + ['%.2f']*5})])
-    def serialise_to_text_file(self, request, tmpdir):
-        in_json, out_json, kwargs = request.param
+    def test_serialise_to_text_file(self, in_json, out_json, kwargs, tmpdir):
         spectrum = get_spectrum1dcollection(in_json)
         # Serialise
         output_file = str(tmpdir.join('tmp.test'))
         spectrum.to_text_file(output_file, **kwargs)
         # Deserialise
-        deserialised_spectrum = (Spectrum1DCollection
-                                 .from_text_file(output_file))
+        deserialised_spectrum = get_spectrum_from_text(
+            output_file, is_collection=True)
         expected_deserialised_spectrum = get_spectrum1dcollection(out_json)
-        return expected_deserialised_spectrum, deserialised_spectrum
+        check_spectrum_text_header(output_file)
+        check_spectrum1dcollection(
+            expected_deserialised_spectrum, deserialised_spectrum)
 
-    @pytest.fixture(params=[
+    @pytest.mark.parametrize('spectrum', [
         get_spectrum1dcollection('gan_bands.json'),
         get_spectrum1dcollection('methane_pdos.json')])
-    def serialise_to_json_file(self, request, tmpdir):
-        spectrum = request.param
+    def test_serialise_to_json_file(self, spectrum, tmpdir):
         # Serialise
         output_file = str(tmpdir.join('tmp.test'))
         spectrum.to_json_file(output_file)
         # Deserialise
         deserialised_spectrum = (Spectrum1DCollection
                                  .from_json_file(output_file))
-        return spectrum, deserialised_spectrum
-
-    @pytest.mark.parametrize(('to_file_method'), [
-        pytest.lazy_fixture('serialise_to_json_file'),
-        pytest.lazy_fixture('serialise_to_text_file')])
-    def test_serialise_to_file(self, to_file_method):
-        spectrum, deserialised_spectrum = to_file_method
         check_spectrum1dcollection(spectrum, deserialised_spectrum)
 
-    @pytest.fixture(params=[
+    @pytest.mark.parametrize('json_file', [
         'gan_bands.json',
         'methane_pdos.json'])
-    def serialise_to_dict(self, request):
-        json_file = request.param
+    def test_serialise_to_dict(self, json_file):
         spectrum = get_spectrum1dcollection(json_file)
         expected_spectrum = get_expected_spectrum1dcollection(json_file)
         # Convert to dict, then back to object to test
         spectrum_dict = spectrum.to_dict()
         spectrum_from_dict = Spectrum1DCollection.from_dict(spectrum_dict)
-        return spectrum_from_dict, expected_spectrum
-
-    def test_serialise_to_dict(self, serialise_to_dict):
-        spectrum, expected_spectrum = serialise_to_dict
-        check_spectrum1dcollection(spectrum, expected_spectrum)
+        check_spectrum1dcollection(spectrum_from_dict, expected_spectrum)
 
 
 @pytest.mark.unit
