@@ -380,7 +380,8 @@ class Spectrum1D(Spectrum):
         """
         Write to a text file. The header contains metadata and unit
         information, the first column contains x_data and the second
-        column contains y_data
+        column contains y_data. Note that text files written in this
+        format cannot be read back in by Euphonic.
 
         Parameters
         ----------
@@ -757,7 +758,8 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
         """
         Write to a text file. The header contains metadata and unit
         information, the first column is x_data and each subsequent
-        column is a y_data spectrum.
+        column is a y_data spectrum. Note that text files written in
+        this format cannot be read back in by Euphonic.
 
         Parameters
         ----------
