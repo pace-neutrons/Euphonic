@@ -62,6 +62,7 @@ class TestDOSStyling:
         params = [nah_phonon_file,
                   '--style=dark_background',
                   '--linewidth=4.',
+                  '--fontsize=11.',
                   '--figsize', '4', '4',
                   '--figsize-unit', 'inch']
 
@@ -73,3 +74,5 @@ class TestDOSStyling:
         assert_allclose([0., 0., 0., 1.], fig.get_facecolor())
         assert fig.axes[0].lines[0].get_linewidth() == pytest.approx(4.)
         assert_allclose([4., 4.], fig.get_size_inches())
+        # Font size: base size 11 * "small" factor 0.833
+        assert fig.axes[0].get_xticklabels()[0].get_fontsize() == pytest.approx(0.833 * 11)
