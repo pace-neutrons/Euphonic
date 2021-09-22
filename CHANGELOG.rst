@@ -1,6 +1,11 @@
 `Unreleased <https://github.com/pace-neutrons/Euphonic/compare/v0.6.2...HEAD>`_
 ----------
 
+- New Features:
+
+  - New ``Spectrum1D.to_text_file`` and ``Spectrum1DCollection.to_text_file``
+    methods to write to column text files
+
 `v0.6.2 <https://github.com/pace-neutrons/Euphonic/compare/v0.6.1...v0.6.2>`_
 ------
 

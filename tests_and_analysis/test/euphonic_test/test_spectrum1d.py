@@ -9,7 +9,9 @@ from euphonic import ureg
 from euphonic.spectra import Spectrum1D
 from tests_and_analysis.test.utils import (
     get_data_path, get_castep_path, check_unit_conversion,
-    check_json_metadata, check_property_setters)
+    check_json_metadata, check_property_setters, get_spectrum_from_text,
+    check_spectrum_text_header)
+
 
 class ExpectedSpectrum1D:
     def __init__(self, spectrum1d_json_file: str):
@@ -75,16 +77,16 @@ def get_spectrum1d_dir():
     return os.path.join(get_data_path(), 'spectrum1d')
 
 
-def get_json_file(json_filename):
+def get_full_path(json_filename):
     return os.path.join(get_spectrum1d_dir(), json_filename)
 
 
 def get_spectrum1d(json_filename):
-    return Spectrum1D.from_json_file(get_json_file(json_filename))
+    return Spectrum1D.from_json_file(get_full_path(json_filename))
 
 
 def get_expected_spectrum1d(json_filename):
-    return ExpectedSpectrum1D(get_json_file(json_filename))
+    return ExpectedSpectrum1D(get_full_path(json_filename))
 
 
 def check_spectrum1d(actual_spectrum1d, expected_spectrum1d):
@@ -137,7 +139,7 @@ class TestSpectrum1DCreation:
         json_file = request.param
         expected_spec1d = get_expected_spectrum1d(json_file)
         spec1d = Spectrum1D.from_json_file(
-            get_json_file(json_file))
+            get_full_path(json_file))
         return spec1d, expected_spec1d
 
     @pytest.fixture(params=[
@@ -213,6 +215,25 @@ class TestSpectrum1DCreation:
 @pytest.mark.unit
 class TestSpectrum1DSerialisation:
 
+    # Note that when writing .text there must be the same number of
+    # x_data and y_data points so bin centres will be used, this and
+    # using fmt may mean the output spectrum is slightly different.
+    # x_tick_labels will also be lost
+    @pytest.mark.parametrize('in_json, out_json', [
+        ('quartz_666_dos.json', 'quartz_666_dos_from_text.json'),
+        ('methane_pdos_index_1.json', 'methane_pdos_index_1.json')])
+    def test_serialise_to_text_file(self, in_json, out_json, tmpdir):
+        spec1d = get_spectrum1d(in_json)
+        # Serialise
+        output_file = str(tmpdir.join('tmp.test'))
+        spec1d.to_text_file(output_file)
+        # Deserialise
+        deserialised_spec1d = get_spectrum_from_text(
+            output_file, is_collection=False)
+        expected_deserialised_spec1d = get_spectrum1d(out_json)
+        check_spectrum_text_header(output_file)
+        check_spectrum1d(deserialised_spec1d, expected_deserialised_spec1d)
+
     @pytest.mark.parametrize('spec1d', [
         get_spectrum1d('quartz_666_dos.json'),
         get_spectrum1d('xsq_spectrum1d.json'),
@@ -224,22 +245,17 @@ class TestSpectrum1DSerialisation:
         deserialised_spec1d = Spectrum1D.from_json_file(output_file)
         check_spectrum1d(spec1d, deserialised_spec1d)
 
-    @pytest.fixture(params=[
+    @pytest.mark.parametrize('json_file', [
         'quartz_666_dos.json',
         'xsq_spectrum1d.json',
         'xsq_bin_edges_spectrum1d.json'])
-    def serialise_to_dict(self, request):
-        json_file = request.param
+    def test_serialise_to_dict(self, json_file):
         spec1d = get_spectrum1d(json_file)
         expected_spec1d = get_expected_spectrum1d(json_file)
         # Convert to dict, then back to object to test
         spec1d_dict = spec1d.to_dict()
         spec1d_from_dict = Spectrum1D.from_dict(spec1d_dict)
-        return spec1d_from_dict, expected_spec1d
-
-    def test_serialise_to_dict(self, serialise_to_dict):
-        spec1d, expected_spec1d = serialise_to_dict
-        check_spectrum1d(spec1d, expected_spec1d)
+        check_spectrum1d(spec1d_from_dict, expected_spec1d)
 
 
 @pytest.mark.unit
