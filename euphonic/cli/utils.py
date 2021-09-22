@@ -813,7 +813,7 @@ def _compose_style(
     if 'font.sans-serif' in explicit_args:
         explicit_args.update({'font.family': 'sans-serif'})
 
-    if 'figure.figsize' in explicit_args:        
+    if 'figure.figsize' in explicit_args:
         dimensioned_figsize = [dim * ureg(user_args.figsize_unit)
                                for dim in explicit_args['figure.figsize']]
         explicit_args['figure.figsize'] = [dim.to('inches').magnitude

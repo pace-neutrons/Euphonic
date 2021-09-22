@@ -7,7 +7,7 @@ from numpy.testing import assert_allclose
 import euphonic.cli.dos
 from euphonic.cli.utils import _compose_style
 
-from tests_and_analysis.test.utils import get_data_path, get_castep_path
+from tests_and_analysis.test.utils import get_castep_path
 
 compose_style_cases = [
     ({'user_args': Namespace(unused=1, no_base_style=False, style=None),
@@ -36,11 +36,13 @@ compose_style_cases = [
       'base': None}, ['ggplot', {'figure.figsize': [1., 1.]}]),
     ]
 
+
 @pytest.mark.unit
 @pytest.mark.parametrize('kwargs,expected_style', compose_style_cases)
 def test_compose_style(kwargs, expected_style):
     """Internal function which interprets matplotlib style options"""
     assert _compose_style(**kwargs) == expected_style
+
 
 @pytest.mark.integration
 class TestDOSStyling:
@@ -61,7 +63,7 @@ class TestDOSStyling:
 
         params = [nah_phonon_file,
                   '--style=dark_background',
-                  '--linewidth=4.',
+                  '--linewidth=5.',
                   '--fontsize=11.',
                   '--figsize', '4', '4',
                   '--figsize-unit', 'inch']
@@ -69,10 +71,10 @@ class TestDOSStyling:
         euphonic.cli.dos.main(params=params)
 
         fig = matplotlib.pyplot.gcf()
-        #plt.tight_layout()  # Text to be drawn so we can check it
 
         assert_allclose([0., 0., 0., 1.], fig.get_facecolor())
-        assert fig.axes[0].lines[0].get_linewidth() == pytest.approx(4.)
+        assert fig.axes[0].lines[0].get_linewidth() == pytest.approx(5.)
         assert_allclose([4., 4.], fig.get_size_inches())
         # Font size: base size 11 * "small" factor 0.833
-        assert fig.axes[0].get_xticklabels()[0].get_fontsize() == pytest.approx(0.833 * 11)
+        assert (fig.axes[0].get_xticklabels()[0].get_fontsize()
+                == pytest.approx(0.833 * 11))
