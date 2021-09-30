@@ -116,6 +116,31 @@ An example of plotting 2 DOS on different axes on the same figure:
   plot_1d_to_axis(dos2, axes[1])
   fig.show()
 
+Styling
+-------
+
+To produce consistent and beautiful plots, it is recommended to use
+Matplotlib styling contexts. Within a context block, stylesheets are
+applied in order. These can be built-in themes, file paths or
+parameter dictionaries, e.g.:
+
+.. code-block:: py
+
+  import matplotlib.style
+  from euphonic import Spectrum1D
+  from euphonic.plot import plot_1d, plot_1d_to_axis
+
+  dos = Spectrum1D.from_json_file('dos.json')
+
+  with matplotlib.style.context(['dark_background', {'lines.linewidth': 2.0}]):
+      fig = plot_1d(dos)
+      fig.show()
+
+This approach is used in the Euphonic command-line tools; for more
+information see :ref:`styling`. The CLI defaults can be imitated by
+using the same stylesheet ``euphonic.style.base_style``.
+
+
 Docstrings
 ----------
 

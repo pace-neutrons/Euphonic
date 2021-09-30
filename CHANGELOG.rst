@@ -6,6 +6,19 @@
   - New ``Spectrum1D.to_text_file`` and ``Spectrum1DCollection.to_text_file``
     methods to write to column text files
 
+  - An expanded and consistent set of styling options is made
+    available for command-line tools that produce plots.
+
+  - Consistent styling and advanced changes can be made using
+    Matplotlib stylesheet files, either as a CLI argument or
+    using ``matplotlib.style.context()`` in a Python script.
+
+- Improvements:
+
+  - Internally, plot theming has been adjusted to rely on Matplotlib
+    style contexts. This means user changes and style context are more
+    likely to be respected.
+
 `v0.6.2 <https://github.com/pace-neutrons/Euphonic/compare/v0.6.1...v0.6.2>`_
 ------
 
