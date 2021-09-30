@@ -120,25 +120,28 @@ Styling
 -------
 
 To produce consistent and beautiful plots, it is recommended to use
-Matplotlib styling contexts. Within a context block, stylesheets are
-applied in order. These can be built-in themes, file paths or
-parameter dictionaries, e.g.:
+`Matplotlib style sheets <https://matplotlib.org/stable/tutorials/introductory/customizing.html#temporary-styling>`_.
+The cleanest way to apply this is using a context manager.
+Within the indented block, a user-provided combination of style sheets
+is applied to any new plots.
+These can be built-in themes, file paths or parameter dictionaries,
+e.g.:
 
 .. code-block:: py
 
-  import matplotlib.style
+  import matplotlib.pyplot as plt
   from euphonic import Spectrum1D
   from euphonic.plot import plot_1d, plot_1d_to_axis
 
   dos = Spectrum1D.from_json_file('dos.json')
 
-  with matplotlib.style.context(['dark_background', {'lines.linewidth': 2.0}]):
+  with plt.style.context(['dark_background', {'lines.linewidth': 2.0}]):
       fig = plot_1d(dos)
-      fig.show()
+  fig.show()
 
 This approach is used in the Euphonic command-line tools; for more
 information see :ref:`styling`. The CLI defaults can be imitated by
-using the same stylesheet ``euphonic.style.base_style``.
+using the same style sheet ``euphonic.style.base_style``.
 
 
 Docstrings
