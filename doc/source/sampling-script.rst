@@ -1,9 +1,10 @@
 .. _sampling-script:
-.. highlight:: bash
 
 ======================
 euphonic-show-sampling
 ======================
+
+.. highlight:: bash
 
 ``euphonic-show-sampling`` can be used to visualise the spherical
 sampling schemes implemented in :mod:`euphonic.sampling`.  For

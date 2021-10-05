@@ -1,4 +1,4 @@
-from typing import List, Optional, Sequence, Tuple, Union
+from typing import Optional, Sequence, Tuple, Union
 
 try:
     import matplotlib.pyplot as plt
@@ -54,7 +54,8 @@ def plot_1d_to_axis(spectra: Union[Spectrum1D, Spectrum1DCollection],
         raise TypeError("spectra should be a Spectrum1D or "
                         "Spectrum1DCollection")
 
-    if isinstance(labels, str): labels = [labels]
+    if isinstance(labels, str):
+        labels = [labels]
     if labels is not None and len(labels) != len(spectra):
         raise ValueError(
             f"The length of labels (got {len(labels)}) should be the "
@@ -186,6 +187,7 @@ def plot_1d(spectra: Union[Spectrum1D,
 
     # Add an invisible large axis for common labels
     ax = fig.add_subplot(111, frameon=False)
+    ax.grid(False)
     ax.tick_params(labelcolor="none", bottom=False, left=False)
     ax.set_xlabel(x_label)
     ax.set_ylabel(y_label)
@@ -195,7 +197,7 @@ def plot_1d(spectra: Union[Spectrum1D,
 
 
 def plot_2d_to_axis(spectrum: Spectrum2D, ax: Axes,
-                    cmap: Union[str, Colormap] = 'viridis',
+                    cmap: Union[str, Colormap] = None,
                     interpolation: str = 'nearest',
                     norm: Optional[Normalize] = None,
                     ) -> NonUniformImage:
@@ -247,7 +249,7 @@ def plot_2d_to_axis(spectrum: Spectrum2D, ax: Axes,
 def plot_2d(spectra: Union[Spectrum2D, Sequence[Spectrum2D]],
             vmin: Optional[float] = None,
             vmax: Optional[float] = None,
-            cmap: Union[str, Colormap] = 'viridis',
+            cmap: Optional[Union[str, Colormap]] = None,
             title: str = '', x_label: str = '', y_label: str = '') -> Figure:
     """
     Creates a Matplotlib figure for a Spectrum2D object
@@ -312,14 +314,15 @@ def plot_2d(spectra: Union[Spectrum2D, Sequence[Spectrum2D]],
 
     # Add an invisible large axis for common labels
     ax = fig.add_subplot(111, frameon=False)
+    ax.grid(False)
     ax.tick_params(labelcolor="none", bottom=False, left=False)
     ax.set_xlabel(x_label)
     ax.set_ylabel(y_label)
 
     fig.suptitle(title)
-    fig.tight_layout()
 
     return fig
+
 
 def _set_x_tick_labels(ax: Axes,
                        x_tick_labels: Optional[Sequence[Tuple[int, str]]],
@@ -328,7 +331,7 @@ def _set_x_tick_labels(ax: Axes,
         locs, labels = [list(x) for x in zip(*x_tick_labels)]
         x_values = x_data.magnitude  # type: np.ndarray
         ax.set_xticks(x_values[locs])
-        ax.xaxis.grid(True, which='major')
+
         # Rotate long tick labels
         if len(max(labels, key=len)) >= 11:
             ax.set_xticklabels(labels, rotation=90)

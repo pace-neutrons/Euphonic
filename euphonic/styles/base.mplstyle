@@ -1,0 +1,11 @@
+axes.grid : True
+axes.grid.axis : x
+axes.grid.which : major
+axes.labelsize: medium
+figure.titlesize : large
+xtick.labelsize : small
+ytick.labelsize : small
+lines.linewidth : 1.0
+image.cmap : viridis
+figure.autolayout : True  # Equivalent to calling tight_layout();
+                          # consider setting to false if making adjustments

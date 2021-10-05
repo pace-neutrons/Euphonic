@@ -1,9 +1,10 @@
 .. _intensity-map-script:
-.. highlight:: bash
 
 ======================
 euphonic-intensity-map
 ======================
+
+.. highlight:: bash
 
 The ``euphonic-intensity-map`` program can be used to plot a 2D intensity
 map either along a specific trajectory from precalculated phonon frequencies
@@ -23,7 +24,8 @@ To see all the command line options, run::
 
    euphonic-intensity-map -h
 
-You can also see the available command line options below
+You can also see the available command line options below.
+For information on advanced plot styling, see :ref:`styling`.
 
 Command Line Options
 --------------------

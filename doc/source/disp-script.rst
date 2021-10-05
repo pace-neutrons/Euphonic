@@ -1,9 +1,10 @@
 .. _disp-script:
-.. highlight:: bash
 
 ===================
 euphonic-dispersion
 ===================
+
+.. highlight:: bash
 
 The ``euphonic-dispersion`` program can be used to plot dispersion
 either along a specific trajectory from precalculated phonon frequencies,
@@ -23,7 +24,8 @@ To see all the command line options, run::
 
    euphonic-dispersion -h
 
-You can also see the available command line options below
+You can also see the available command line options below.
+For information on advanced plot styling, see :ref:`styling`.
 
 Command Line Options
 --------------------
