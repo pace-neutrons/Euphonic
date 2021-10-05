@@ -116,34 +116,6 @@ An example of plotting 2 DOS on different axes on the same figure:
   plot_1d_to_axis(dos2, axes[1])
   fig.show()
 
-Styling
--------
-
-To produce consistent and beautiful plots, it is recommended to use
-`Matplotlib style sheets <https://matplotlib.org/stable/tutorials/introductory/customizing.html#temporary-styling>`_.
-The cleanest way to apply this is using a context manager.
-Within the indented block, a user-provided combination of style sheets
-is applied to any new plots.
-These can be built-in themes, file paths or parameter dictionaries,
-e.g.:
-
-.. code-block:: py
-
-  import matplotlib.pyplot as plt
-  from euphonic import Spectrum1D
-  from euphonic.plot import plot_1d, plot_1d_to_axis
-
-  dos = Spectrum1D.from_json_file('dos.json')
-
-  with plt.style.context(['dark_background', {'lines.linewidth': 2.0}]):
-      fig = plot_1d(dos)
-  fig.show()
-
-This approach is used in the Euphonic command-line tools; for more
-information see :ref:`styling`. The CLI defaults can be imitated by
-using the same style sheet ``euphonic.style.base_style``.
-
-
 Docstrings
 ----------
 
@@ -194,3 +166,30 @@ Docstrings
 .. autofunction:: euphonic.plot.plot_2d
 
 .. autofunction:: euphonic.plot.plot_2d_to_axis
+
+Styling
+=======
+
+To produce consistent and beautiful plots, it is recommended to use
+`Matplotlib style sheets <https://matplotlib.org/stable/tutorials/introductory/customizing.html#temporary-styling>`_.
+The cleanest way to apply this is using a context manager.
+Within the indented block, a user-provided combination of style sheets
+is applied to any new plots.
+These can be built-in themes, file paths or parameter dictionaries,
+e.g.:
+
+.. code-block:: py
+
+  import matplotlib.pyplot as plt
+  from euphonic import Spectrum1D
+  from euphonic.plot import plot_1d, plot_1d_to_axis
+
+  dos = Spectrum1D.from_json_file('dos.json')
+
+  with plt.style.context(['dark_background', {'lines.linewidth': 2.0}]):
+      fig = plot_1d(dos)
+  fig.show()
+
+This approach is used in the Euphonic command-line tools; for more
+information see :ref:`styling`. The CLI defaults can be imitated by
+using the same style sheet ``euphonic.style.base_style``.
