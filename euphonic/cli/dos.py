@@ -72,7 +72,7 @@ def main(params: Optional[List[str]] = None) -> None:
 
     style = _compose_style(user_args=args, base=[base_style])
     with matplotlib.style.context(style):
-        _ = plot_1d(dos, y_min=0, **plot_label_kwargs)
+        _ = plot_1d(dos, ymin=0, **plot_label_kwargs)
         matplotlib_save_or_show(save_filename=args.save_to)
 
 

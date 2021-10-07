@@ -417,12 +417,12 @@ def _plot_label_kwargs(args: Namespace, default_xlabel: str = '',
     """Collect title/label arguments that can be passed to plot_nd
     """
     plot_kwargs = dict(title=args.title,
-                       x_label=default_xlabel,
-                       y_label=default_ylabel)
+                       xlabel=default_xlabel,
+                       ylabel=default_ylabel)
     if args.ylabel is not None:
-        plot_kwargs['y_label'] = args.ylabel
+        plot_kwargs['ylabel'] = args.ylabel
     if args.xlabel is not None:
-        plot_kwargs['x_label'] = args.xlabel
+        plot_kwargs['xlabel'] = args.xlabel
     return plot_kwargs
 
 

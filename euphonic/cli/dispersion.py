@@ -53,8 +53,8 @@ def main(params: Optional[List[str]] = None) -> None:
 
     with matplotlib.style.context(style):
         _ = plot_1d(spectra,
-                    y_min=args.e_min,
-                    y_max=args.e_max,
+                    ymin=args.e_min,
+                    ymax=args.e_max,
                     **plot_label_kwargs)
         matplotlib_save_or_show(save_filename=args.save_to)
 
