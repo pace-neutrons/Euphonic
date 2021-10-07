@@ -34,7 +34,7 @@ Matplotlib style sheet.
 `A number of popular styles are predefined in Matplotlib <https://matplotlib.org/stable/gallery/style_sheets/style_sheets_reference.html>`_
 and may be accessed by name, e.g.::
 
-  euphonic-dos --style seaborn quartz.castep_bin
+  euphonic-dos --pdos --style seaborn quartz.castep_bin
 
 will yield a plot on a grey background with white gridlines.
 
