@@ -104,13 +104,13 @@ def plot_1d(spectra: Union[Spectrum1D,
             title: str = '',
             xlabel: str = '',
             ylabel: str = '',
-            ymin: float = None,
-            ymax: float = None,
+            ymin: Optional[float] = None,
+            ymax: Optional[float] = None,
             labels: Optional[Sequence[str]] = None,
             x_label: str = '',
             y_label: str = '',
-            y_min: float = None,
-            y_max: float = None,
+            y_min: Optional[float] = None,
+            y_max: Optional[float] = None,
             **line_kwargs) -> Figure:
     """
     Creates a Matplotlib figure for a Spectrum1D object, or multiple
@@ -227,7 +227,7 @@ def plot_1d(spectra: Union[Spectrum1D,
 
 
 def plot_2d_to_axis(spectrum: Spectrum2D, ax: Axes,
-                    cmap: Union[str, Colormap] = None,
+                    cmap: Union[str, Colormap, None] = None,
                     interpolation: str = 'nearest',
                     norm: Optional[Normalize] = None,
                     ) -> NonUniformImage:
