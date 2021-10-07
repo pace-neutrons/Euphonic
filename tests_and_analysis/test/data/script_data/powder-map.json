@@ -1306,7 +1306,7 @@
             0.5664594179188575
         ]
     },
-    "NaCl_prim phonopy_nacl.yaml --weighting=coherent --cmap=bone --npts=10 --npts-min=10 --q-spacing=1": {
+    "NaCl_prim phonopy_nacl.yaml --weighting=coherent --c-map=bone --npts=10 --npts-min=10 --q-spacing=1": {
         "x_ticklabels": [
             "0.0",
             "0.5",

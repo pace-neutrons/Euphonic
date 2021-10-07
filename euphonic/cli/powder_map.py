@@ -10,7 +10,7 @@ from euphonic.cli.utils import (_calc_modes_kwargs, _compose_style,
                                 _get_cli_parser,
                                 _get_debye_waller, _get_energy_bins,
                                 _get_q_distance, _get_pdos_weighting,
-                                _arrange_pdos_groups)
+                                _arrange_pdos_groups, _plot_label_kwargs)
 from euphonic.cli.utils import (force_constants_from_file, get_args,
                                 matplotlib_save_or_show)
 import euphonic.plot
@@ -155,14 +155,9 @@ def main(params: Optional[List[str]] = None) -> None:
             shape=args.shape)
 
     print(f"Plotting figure: max intensity {np.max(spectrum.z_data):~P}")
-    if args.y_label is None:
-        y_label = f"Energy / {spectrum.y_data.units:~P}"
-    else:
-        y_label = args.y_label
-    if args.x_label is None:
-        x_label = f"|q| / {q_min.units:~P}"
-    else:
-        x_label = args.x_label
+    plot_label_kwargs = _plot_label_kwargs(
+        args, default_xlabel=f"|q| / {q_min.units:~P}",
+        default_ylabel=f"Energy / {spectrum.y_data.units:~P}")
 
     if args.disable_widgets:
         base = [base_style]
@@ -171,10 +166,9 @@ def main(params: Optional[List[str]] = None) -> None:
     style = _compose_style(user_args=args, base=base)
     with matplotlib.style.context(style):
         fig = euphonic.plot.plot_2d(spectrum,
-                                    vmin=args.v_min, vmax=args.v_max,
-                                    x_label=x_label,
-                                    y_label=y_label,
-                                    title=args.title)
+                                    vmin=args.vmin,
+                                    vmax=args.vmax,
+                                    **plot_label_kwargs)
 
         if args.disable_widgets is False:
             # TextBox only available from mpl 2.1.0

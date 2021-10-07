@@ -571,7 +571,7 @@
             0.0
         ]
     },
-    "graphite graphite.castep_bin --v-min=0 --v-max=1e-10": {
+    "graphite graphite.castep_bin --vmin=0 --vmax=1e-10": {
         "title": "",
         "x_label": "",
         "y_label": "Energy / meV",
@@ -2858,7 +2858,7 @@
             0.0
         ]
     },
-    "graphite graphite.castep_bin -w dos --y-label=DOS --title=DOS TITLE": {
+    "graphite graphite.castep_bin -w dos --ylabel=DOS --title=DOS TITLE": {
         "title": "DOS TITLE",
         "x_label": "",
         "y_label": "DOS",
@@ -3430,7 +3430,7 @@
             0.0
         ]
     },
-    "graphite graphite.castep_bin --e-min=50 -u=cm^-1 --x-label=wavenumber": {
+    "graphite graphite.castep_bin --e-min=50 -u=cm^-1 --xlabel=wavenumber": {
         "title": "",
         "x_label": "wavenumber",
         "y_label": "Energy / 1/cm",
