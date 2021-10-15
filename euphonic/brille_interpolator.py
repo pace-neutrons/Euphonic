@@ -2,8 +2,7 @@ import spglib as spg
 import numpy as np
 import brille as br
 
-from euphonic import ureg, QpointPhononModes, DebyeWaller, Quantity
-from euphonic.debye_waller import _calculate_debye_waller
+from euphonic import ureg, QpointPhononModes, DebyeWaller
 
 class BrilleInterpolator(object):
     """
@@ -71,28 +70,6 @@ class BrilleInterpolator(object):
         frequencies = vals.squeeze()*ureg('hartree').to('meV')
         return QpointPhononModes(
             self.crystal, qpts, frequencies, vecs_cart)
-
-    def calculate_debye_waller(self,
-                               temperature: Quantity,
-                               frequency_min: Quantity = Quantity(0.01, 'meV'),
-                               symmetrise: bool = True) -> DebyeWaller:
-
-        grid = self._grid
-        dw = _calculate_debye_waller(
-            grid.rlu,
-            grid.values.squeeze(),
-            self._br_evec_to_eu(grid.vectors),
-            temperature.to('K').magnitude,
-            self.crystal,
-            frequency_min=frequency_min,
-            symmetrise=symmetrise)
-        # Convert Debye-Waller from basis to Cartesian
-        dw = np.einsum(
-            'ab,ija->ijb', self.crystal._cell_vectors, dw)
-        dw = np.einsum(
-            'ab,iak->ibk', self.crystal._cell_vectors, dw)
-        dw = dw*ureg('bohr**2').to(self.crystal.cell_vectors_unit + '**2')
-        return DebyeWaller(self.crystal, dw, temperature)
 
     @staticmethod
     def _br_evec_to_eu(br_evecs, cell_vectors=None):

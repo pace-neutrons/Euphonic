@@ -1,7 +1,5 @@
 import inspect
-from typing import TypeVar, Dict, Any, Type, Optional
-
-import numpy as np
+from typing import TypeVar, Dict, Any, Type
 
 from euphonic.validate import _check_constructor_inputs, _check_unit_conversion
 from euphonic.io import (_obj_to_json_file, _obj_from_json_file,
@@ -149,64 +147,3 @@ class DebyeWaller:
         DebyeWaller
         """
         return _obj_from_json_file(cls, filename)
-
-
-def _calculate_debye_waller(qpts: np.ndarray,
-                            frequencies: np.ndarray,
-                            eigenvectors: np.ndarray,
-                            temperature: float,
-                            crystal: Crystal,
-                            weights: Optional[np.ndarray] = None,
-                            frequency_min: Quantity = Quantity(0.01, 'meV'),
-                            symmetrise: bool = True,
-                            ) -> np.ndarray:
-
-    # Convert units
-    kB = (1*ureg.k).to('hartree/K').magnitude
-    freq_min = frequency_min.to('hartree').magnitude
-    mass_term = 1/(4*crystal._atom_mass)
-    n_qpts = len(qpts)
-    if weights is None:
-        weights = np.full(n_qpts, 1/n_qpts)
-
-    # Mask out frequencies below frequency_min
-    freq_mask = np.ones(frequencies.shape)
-    freq_mask[frequencies < freq_min] = 0
-
-    if temperature > 0:
-        x = frequencies/(2*kB*temperature)
-        freq_term = 1/(frequencies*np.tanh(x))
-    else:
-        freq_term = 1/(frequencies)
-    dw = np.zeros((len(crystal._atom_mass), 3, 3))
-
-    # Calculating the e.e* term is expensive, do in chunks
-    chunk = 1000
-    for i in range(int((len(qpts) - 1)/chunk) + 1):
-        qi = i*chunk
-        qf = min((i + 1)*chunk, len(qpts))
-
-        evec_term = np.real(
-            np.einsum('ijkl,ijkm->ijklm',
-                      eigenvectors[qi:qf],
-                      np.conj(eigenvectors[qi:qf])))
-
-        dw += (np.einsum('i,k,ij,ij,ijklm->klm',
-                         weights[qi:qf], mass_term, freq_term[qi:qf],
-                         freq_mask[qi:qf], evec_term))
-
-    dw = dw/np.sum(weights)
-    if symmetrise:
-        dw_tmp = np.zeros(dw.shape)
-        (rot, trans,
-         eq_atoms) = crystal.get_symmetry_equivalent_atoms()
-        cell_vec = crystal._cell_vectors
-        recip_vec = crystal.reciprocal_cell().to('1/bohr').magnitude
-        rot_cart = np.einsum('ijk,jl,km->ilm',
-                             rot, cell_vec, recip_vec)/(2*np.pi)
-        for s in range(len(rot)):
-            dw_tmp[eq_atoms[s]] += np.einsum('ij,kjl,ml->kim',
-                                             rot_cart[s], dw, rot_cart[s])
-        dw = dw_tmp/len(rot)
-
-    return dw
