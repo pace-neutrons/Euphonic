@@ -7,7 +7,7 @@ on:
 jobs:
   build:
     strategy:
-       matrix:
+      matrix:
         os: [windows-latest, macos-latest, ubuntu-latest]
         architecture: [x64]
         python-version: [3.6, 3.7, 3.8]
@@ -28,6 +28,7 @@ jobs:
           - python-version: 3.8
             manylinux-version-tag: cp38-cp38
             numpy-version: 1.17.3
+      fail-fast: false
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v2
