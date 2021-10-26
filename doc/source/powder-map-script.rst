@@ -13,11 +13,28 @@ of :math:`|q|`. The results are plotted as a 2-dimensional map in :math:`(|q|, \
 For example, to plot a coherent neutron-weighted powder spectrum from CASTEP
 force constants over a recommended :math:`|q|` range, one could run::
 
-   euphonic-powder-map --weighting coherent --energy-broadening 1.5 quartz.castep_bin
+   euphonic-powder-map quartz.castep_bin --weighting coherent --energy-broadening 1.5
 
-Or, to plot a DOS-weighted intensity from Phonopy phonon frequencies over a specified q range with denser sampling::
+.. image:: figures/euphonic-powder-map-quartz.png
+   :width: 400
+   :alt: 2D intensity map with |q| on the x-axis, and energy on the y axis,
+         showing powder-averaged coherent inelastic neutron scattering
+         intensities for quartz. Below the intensity map there are also 2
+         text boxes labelled 'Max intensity' and 'Min intensity', allowing
+         the user to adjust the intensity limits of the plot.
 
-   euphonic-powder-map --weighting dos --energy-unit THz --energy-broadening 0.15 --q-min 0.01 --q-max 4. --q-spacing 0.1 phonopy.yaml
+Note the text boxes below the intensity map, which allow the intensity limits of
+the plot to be adjusted without having to re-run the expensive powder calculation.
+To plot a DOS-weighted intensity from Phonopy force constants over a specified
+q range with denser sampling, in THz and with the intensity widget disabled::
+
+   euphonic-powder-map NaCl/phonopy.yaml --weighting dos --energy-unit THz --energy-broadening 0.15 --q-min 0.01 --q-max 4. --q-spacing 0.01 --no-widgets
+
+.. image:: figures/euphonic-powder-map-nacl.png
+   :width: 400
+   :alt: 2D intensity map with |q| from 0.01 to 4.0 on the x-axis,
+         and energy on the y axis, showing powder-averaged coherent
+         inelastic neutron scattering intensities for NaCl.
 
 To see all the command line options, run::
 
