@@ -412,6 +412,20 @@ def _arrange_pdos_groups(pdos: Spectrum1DCollection,
     return dos
 
 
+def _plot_label_kwargs(args: Namespace, default_xlabel: str = '',
+                       default_ylabel: str = '') -> Dict[str, str]:
+    """Collect title/label arguments that can be passed to plot_nd
+    """
+    plot_kwargs = dict(title=args.title,
+                       xlabel=default_xlabel,
+                       ylabel=default_ylabel)
+    if args.ylabel is not None:
+        plot_kwargs['ylabel'] = args.ylabel
+    if args.xlabel is not None:
+        plot_kwargs['xlabel'] = args.xlabel
+    return plot_kwargs
+
+
 def _calc_modes_kwargs(args: Namespace) -> Dict[str, Any]:
     """Collect arguments that can be passed to calculate_qpoint_phonon_modes()
     """
@@ -525,7 +539,7 @@ def _get_cli_parser(features: Collection[str] = {}
             help=('Force use of compiled C extension when computing '
                   'phonon frequencies/eigenvectors (or raise error).'))
         use_c.add_argument(
-            '--disable-c', action='store_false', dest='use_c',
+            '--disable-c', action='store_false', dest='use_c', default=None,
             help=('Do not attempt to use compiled C extension when computing '
                   'phonon frequencies/eigenvectors.'))
         sections['performance'].add_argument(
@@ -636,10 +650,10 @@ def _get_cli_parser(features: Collection[str] = {}
             help='Save resulting plot to a file with this name')
         section.add_argument('--title', type=str, default='',
                              help='Plot title')
-        section.add_argument('--x-label', type=str, default=None,
-                             dest='x_label', help='Plot x-axis label')
-        section.add_argument('--y-label', type=str, default=None,
-                             dest='y_label', help='Plot y-axis label')
+        section.add_argument('--x-label', '--xlabel', type=str, default=None,
+                             dest='xlabel', help='Plot x-axis label')
+        section.add_argument('--y-label', '--ylabel', type=str, default=None,
+                             dest='ylabel', help='Plot y-axis label')
         section.add_argument('--style', type=str, nargs='+',
                              help='Matplotlib styles (name or file)')
         section.add_argument('--no-base-style', action='store_true',
@@ -651,17 +665,20 @@ def _get_cli_parser(features: Collection[str] = {}
                                    'known to Matplotlib. font-family will be '
                                    'set to sans-serif; it doesn\'t matter if)'
                                    'the font is actually sans-serif.'))
-        section.add_argument('--fontsize', type=float, default=None,
+        section.add_argument('--font-size', '--fontsize', type=float,
+                             default=None, dest='fontsize',
                              help='Set base font size in pt.')
-        section.add_argument('--figsize', type=float, nargs=2, default=None,
+        section.add_argument('--fig-size', '--figsize', type=float, nargs=2,
+                             default=None, dest='figsize',
                              help='Figure canvas size in FIGSIZE-UNITS')
-        section.add_argument('--figsize-unit', type=str, default='cm',
-                             dest='figsize_unit',
+        section.add_argument('--fig-size-unit', '--figsize-unit', type=str,
+                             default='cm', dest='figsize_unit',
                              help='Unit of length for --figsize')
 
     if ('plotting' in features) and not ('map' in features):
         section = sections['plotting']
-        section.add_argument('--linewidth', type=float, default=None,
+        section.add_argument('--line-width', '--linewidth', type=float,
+                             default=None, dest='linewidth',
                              help='Set line width in pt.')
 
     if {'ebins', 'q-e'}.intersection(features):
@@ -726,13 +743,14 @@ def _get_cli_parser(features: Collection[str] = {}
 
     if 'map' in features:
         sections['plotting'].add_argument(
-            '--v-min', type=float, default=None, dest='v_min',
+            '--v-min', '--vmin', type=float, default=None, dest='vmin',
             help='Minimum of data range for colormap.')
         sections['plotting'].add_argument(
-            '--v-max', type=float, default=None, dest='v_max',
+            '--v-max', '--vmax', type=float, default=None, dest='vmax',
             help='Maximum of data range for colormap.')
         sections['plotting'].add_argument(
-            '--cmap', type=str, default=None, help='Matplotlib colormap')
+            '--c-map', '--cmap', type=str, default=None, dest='cmap',
+            help='Matplotlib colormap')
 
     if 'btol' in features:
         sections['q'].add_argument(

@@ -18,6 +18,15 @@
   - Internally, plot theming has been adjusted to rely on Matplotlib
     style contexts. This means user changes and style context are more
     likely to be respected.
+  - Additional aliases for plot arguments in the command-line tools have
+    been added, for example either ``--x-label`` or ``--xlabel`` can be used.
+
+- Changes:
+
+  - ``x_label``, ``y_label``, ``y_min`` and ``y_max`` in ``euphonic.plot``
+    functions have been deprecated in favour of ``xlabel``, ``ylabel``,
+    ``ymin`` and ``ymax`` respectively, to match the Matplotlib arguments
+    they refer to, and to match other arguments like ``vmin``, ``vmax``.
 
 `v0.6.2 <https://github.com/pace-neutrons/Euphonic/compare/v0.6.1...v0.6.2>`_
 ------

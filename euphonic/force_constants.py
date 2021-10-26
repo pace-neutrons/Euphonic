@@ -18,7 +18,8 @@ from euphonic.io import (_obj_to_json_file, _obj_from_json_file,
 from euphonic.readers import castep, phonopy
 from euphonic.util import (is_gamma, get_all_origins,
                            mode_gradients_to_widths,
-                           _get_supercell_relative_idx)
+                           _get_supercell_relative_idx,
+                           _deprecation_warn)
 from euphonic import (ureg, Quantity, Crystal, QpointPhononModes,
                       QpointFrequencies)
 
@@ -203,9 +204,8 @@ class ForceConstants:
             euphonic-optimise-dipole-parameter program for help on choosing
             a good dipole_parameter.
         eta_scale
-
             .. deprecated:: 0.6.0
-            Please use dipole_parameter instead
+               Please use dipole_parameter instead
         splitting
             Whether to calculate the LO-TO splitting at the gamma
             points. Only applied if dipole is True and the Born charges
@@ -242,15 +242,14 @@ class ForceConstants:
             widths and used in adaptive broadening for DOS. For details
             on how these are calculated see the Notes section
         return_mode_widths
-
             .. deprecated:: 0.5.2
-            The mode widths as calculated were only applicable for
-            adaptive broadening of DOS, this argument will be removed
-            in favour of the more flexible return_mode_gradients,
-            which will allow the calculation of direction-specific
-            mode widths in the future, for example. The mode widths
-            can still be obtained from the mode gradients using
-            euphonic.util.mode_gradients_to_widths
+               The mode widths as calculated were only applicable for
+               adaptive broadening of DOS, this argument will be removed
+               in favour of the more flexible return_mode_gradients,
+               which will allow the calculation of direction-specific
+               mode widths in the future, for example. The mode widths
+               can still be obtained from the mode gradients using
+               euphonic.util.mode_gradients_to_widths
 
         Returns
         -------
@@ -483,10 +482,7 @@ class ForceConstants:
                 category=DeprecationWarning, stacklevel=3)
             return_mode_gradients = True
         if eta_scale != 1.0:
-            warnings.warn(
-                'eta_scale has been deprecated and will be removed '
-                'in a future release. Please use dipole_parameter instead ',
-                category=DeprecationWarning, stacklevel=3)
+            _deprecation_warn('eta_scale', 'dipole_parameter', stacklevel=4)
             dipole_parameter = eta_scale
         # Check weights is of appropriate type and shape, to avoid doing all
         # the interpolation only for it to fail creating QpointPhononModes

@@ -58,17 +58,21 @@ class TestDOSStyling:
         # Ensure figures are closed
         matplotlib.pyplot.close('all')
 
-    def test_dos_styling(self, inject_mocks):
-        nah_phonon_file = get_castep_path('NaH', 'NaH.phonon')
-
-        params = [nah_phonon_file,
-                  '--style=dark_background',
-                  '--linewidth=5.',
-                  '--fontsize=11.',
-                  '--figsize', '4', '4',
-                  '--figsize-unit', 'inch']
-
-        euphonic.cli.dos.main(params=params)
+    @pytest.mark.parametrize('dos_args',
+        [[get_castep_path('NaH', 'NaH.phonon'),
+          '--style=dark_background',
+          '--linewidth=5.',
+          '--fontsize=11.',
+          '--figsize', '4', '4',
+          '--figsize-unit', 'inch'],
+         [get_castep_path('NaH', 'NaH.phonon'),
+          '--style=dark_background',
+          '--line-width=5.',
+          '--font-size=11.',
+          '--fig-size', '4', '4',
+          '--fig-size-unit', 'inch']])
+    def test_dos_styling(self, inject_mocks, dos_args):
+        euphonic.cli.dos.main(params=dos_args)
 
         fig = matplotlib.pyplot.gcf()
 

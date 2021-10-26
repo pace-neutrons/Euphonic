@@ -25,10 +25,10 @@ intensity_map_output_file = os.path.join(get_script_test_data_path(),
                                          'intensity-map.json')
 intensity_map_params = [
     [graphite_fc_file],
-    [graphite_fc_file, '--v-min=0', '--v-max=1e-10'],
+    [graphite_fc_file, '--vmin=0', '--vmax=1e-10'],
     [graphite_fc_file, '--energy-unit=meV'],
-    [graphite_fc_file, '-w', 'dos', '--y-label=DOS', '--title=DOS TITLE'],
-    [graphite_fc_file, '--e-min=50', '-u=cm^-1', '--x-label=wavenumber'],
+    [graphite_fc_file, '-w', 'dos', '--ylabel=DOS', '--title=DOS TITLE'],
+    [graphite_fc_file, '--e-min=50', '-u=cm^-1', '--xlabel=wavenumber'],
     [graphite_fc_file, '--e-min=-100', '--e-max=1000', '--ebins=100',
      '--energy-unit=cm^-1'],
     [graphite_fc_file, '--energy-broadening=2e-3', '-u=eV'],
