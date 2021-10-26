@@ -63,7 +63,7 @@ jobs:
           pip-wheel-args: '--no-deps -w wheelhouse'
 
       - name: Create source distribution
-        if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.6'
+        if: matrix.os == 'windows-latest' && matrix.python-version == '3.8'
         run: |
           python setup.py sdist
         shell: bash
@@ -74,7 +74,7 @@ jobs:
             name: wheels
             path: wheelhouse/*-${{ matrix.wheelname }}*.whl
       - name: Upload source dist to PyPI
-        if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.6'
+        if: matrix.os == 'windows-latest' && matrix.python-version == '3.8'
         env:
           TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
           TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
