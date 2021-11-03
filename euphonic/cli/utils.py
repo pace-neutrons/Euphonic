@@ -120,29 +120,30 @@ def load_data_from_file(filename: Union[str, os.PathLike]
     -------
     file_data
     """
-    qpoint_phonon_modes_suffixes = ('.phonon')
-    force_constants_suffixes = ('.castep_bin', '.check')
+    castep_qpm_suffixes = ('.phonon')
+    castep_fc_suffixes = ('.castep_bin', '.check')
+    phonopy_suffixes = ('.hdf5', '.yaml')
 
     path = pathlib.Path(filename)
-    if path.suffix in qpoint_phonon_modes_suffixes:
+    if path.suffix in castep_qpm_suffixes:
         return modes_from_file(path)
-    elif path.suffix in force_constants_suffixes:
+    elif path.suffix in castep_fc_suffixes:
         return force_constants_from_file(path)
     elif path.suffix == '.json':
         return _load_json(path)
-    elif path.suffix in ('.hdf5', '.yaml'):
+    elif path.suffix in phonopy_suffixes:
         try:
             return modes_from_file(path)
         except KeyError:
             return force_constants_from_file(path)
     else:
         raise ValueError(
-            "File format was not recognised. Force constant data for import "
-            f"should have extension from {force_constants_suffixes},"
-            " phonon mode data for import should have extension "
-            f"'{qpoint_phonon_modes_suffixes[0]}',"
-            " data from phonpy should have extension .yaml or .hdf5,"
-            " data from Euphonic should have extension '.json'.")
+            f"File format was not recognised. CASTEP force constants "
+            f"data for import should have extension from "
+            f"{castep_fc_suffixes}, CASTEP phonon mode data for import "
+            f"should have extension '{castep_qpm_suffixes}', data from "
+            f"Phonopy should have extension from {phonopy_suffixes}, "
+            f"data from Euphonic should have extension '.json'.")
 
 
 def get_args(parser: ArgumentParser, params: Optional[List[str]] = None
