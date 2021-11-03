@@ -65,8 +65,9 @@ def force_constants_from_file(filename: Union[str, os.PathLike]
                          "(castep) or *.json (JSON from Euphonic).")
 
 
-def modes_from_file(filename: Union[str, os.PathLike]
-                    ) -> QpointPhononModes:
+def modes_from_file(filename: Union[str, os.PathLike],
+                    frequencies_only: bool = False
+                    ) -> Union[QpointPhononModes, QpointFrequencies]:
     """
     Load phonon mode data from file
 
@@ -74,40 +75,51 @@ def modes_from_file(filename: Union[str, os.PathLike]
     ----------
     filename
         Data file
+    frequencies_only
+        If true only reads frequencies (not eigenvectors) from the
+        file
 
     Returns
     -------
     modes
     """
     path = pathlib.Path(filename)
+    if frequencies_only:
+        cls = QpointFrequencies
+    else:
+        cls = QpointPhononModes
+
     if path.suffix == '.phonon':
-        return QpointPhononModes.from_castep(path)
+        return cls.from_castep(path)
     elif path.suffix == '.json':
-        return QpointPhononModes.from_json_file(path)
+        return cls.from_json_file(path)
     elif path.suffix in ('.yaml', '.hdf5'):
-        return QpointPhononModes.from_phonopy(path=path.parent,
-                                              phonon_name=path.name)
+        return cls.from_phonopy(path=path.parent,
+                                phonon_name=path.name)
     else:
         raise ValueError("File not recognised. Should have extension "
-                         ".yaml or .hdf5 (phonopy), "
-                         ".phonon (castep) or .json (JSON from Euphonic).")
+                         ".yaml or .hdf5 (Phonopy), "
+                         ".phonon (CASTEP) or .json (JSON from Euphonic).")
 
 
-def _load_json(filename: Union[str, os.PathLike]
+def _load_json(filename: Union[str, os.PathLike],
+               frequencies_only: bool = False
                ) -> Union[QpointPhononModes, ForceConstants]:
     with open(filename, 'r') as f:
         data = json.load(f)
 
     if 'force_constants' in data:
         return force_constants_from_file(filename)
-    elif 'eigenvectors' in data:
-        return modes_from_file(filename)
+    elif 'frequencies' in data:
+        return modes_from_file(filename, frequencies_only)
     else:
         raise ValueError("Could not identify Euphonic data in JSON file.")
 
 
-def load_data_from_file(filename: Union[str, os.PathLike]
-                        ) -> Union[QpointPhononModes, ForceConstants]:
+def load_data_from_file(filename: Union[str, os.PathLike],
+                        frequencies_only: bool = False
+                        ) -> Union[QpointPhononModes, QpointFrequencies,
+                                   ForceConstants]:
     """
     Load phonon mode or force constants data from file
 
@@ -115,6 +127,10 @@ def load_data_from_file(filename: Union[str, os.PathLike]
     ----------
     filename
         The file with a path
+    frequencies_only
+        If true only reads frequencies (not eigenvectors) from the
+        file. Only applies if the file is not a force constants
+        file.
 
     Returns
     -------
@@ -126,14 +142,14 @@ def load_data_from_file(filename: Union[str, os.PathLike]
 
     path = pathlib.Path(filename)
     if path.suffix in castep_qpm_suffixes:
-        return modes_from_file(path)
+        return modes_from_file(path, frequencies_only)
     elif path.suffix in castep_fc_suffixes:
         return force_constants_from_file(path)
     elif path.suffix == '.json':
-        return _load_json(path)
+        return _load_json(path, frequencies_only)
     elif path.suffix in phonopy_suffixes:
         try:
-            return modes_from_file(path)
+            return modes_from_file(path, frequencies_only)
         except KeyError:
             return force_constants_from_file(path)
     else:

@@ -15,30 +15,32 @@ from .utils import (load_data_from_file, get_args, _bands_from_force_constants,
 
 def main(params: Optional[List[str]] = None) -> None:
     args = get_args(get_parser(), params)
-    data = load_data_from_file(args.filename)
+
+    frequencies_only = not args.reorder  # Need eigenvectors to reorder
+
+
+    data = load_data_from_file(args.filename, frequencies_only)
 
     if isinstance(data, euphonic.ForceConstants):
-        frequencies_only = not args.reorder  # Need eigenvectors to reorder
-
         print("Force Constants data was loaded. Getting band path...")
 
         q_distance = _get_q_distance(args.length_unit, args.q_spacing)
-        (modes, x_tick_labels, split_args) = _bands_from_force_constants(
+        (bands, x_tick_labels, split_args) = _bands_from_force_constants(
             data, q_distance=q_distance, frequencies_only=frequencies_only,
             **_calc_modes_kwargs(args))
-    elif isinstance(data, euphonic.QpointPhononModes):
+    else:
         print("Phonon band data was loaded.")
-        modes = data
+        bands = data
         split_args = {'btol': args.btol}
         x_tick_labels = None
 
-    modes.frequencies_unit = args.energy_unit
+    bands.frequencies_unit = args.energy_unit
 
     print("Mapping modes to 1D band-structure")
     if args.reorder:
-        modes.reorder_frequencies()
+        bands.reorder_frequencies()
 
-    spectrum = modes.get_dispersion()
+    spectrum = bands.get_dispersion()
 
     plot_label_kwargs = _plot_label_kwargs(
         args, default_ylabel=f"Energy / {spectrum.y_data.units:~P}")
