@@ -666,6 +666,9 @@ def _get_cli_parser(features: Collection[str] = {}
     if 'plotting' in features:
         section = sections['plotting']
         section.add_argument(
+            '--save-json', dest='save_json', default=None,
+            help='Save spectrum to a .json file with this name')
+        section.add_argument(
             '-s', '--save-to', dest='save_to', default=None,
             help='Save resulting plot to a file with this name')
         section.add_argument('--title', type=str, default='',
