@@ -18,7 +18,8 @@ def main(params: Optional[List[str]] = None) -> None:
     parser = get_parser()
     args = get_args(parser, params)
 
-    data = load_data_from_file(args.filename)
+    frequencies_only = (args.weighting == 'dos' and args.pdos is None)
+    data = load_data_from_file(args.filename, frequencies_only)
     mode_widths = None
     if isinstance(data, ForceConstants):
 
@@ -46,7 +47,7 @@ def main(params: Optional[List[str]] = None) -> None:
             modes = data.calculate_qpoint_phonon_modes(
                 mp_grid(grid_spec), **_calc_modes_kwargs(args))
 
-    elif isinstance(data, QpointPhononModes):
+    else:
         if args.adaptive:
             raise ValueError('Cannot calculate mode gradients without force '
                              'constants data. Do not use --adaptive if using '

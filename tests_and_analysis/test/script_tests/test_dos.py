@@ -7,7 +7,8 @@ import pytest
 import numpy as np
 import numpy.testing as npt
 
-from tests_and_analysis.test.utils import get_data_path, get_castep_path
+from tests_and_analysis.test.utils import (
+    get_data_path, get_castep_path, get_phonopy_path)
 from tests_and_analysis.test.script_tests.utils import (
     get_script_test_data_path, get_current_plot_line_data,
     args_to_key)
@@ -23,6 +24,8 @@ except ModuleNotFoundError:
     pass
 
 nah_phonon_file = get_castep_path('NaH', 'NaH.phonon')
+nacl_no_evec_yaml_file = os.path.join(
+    get_phonopy_path('NaCl', 'mesh'), 'mesh_no_evec.yaml')
 quartz_fc_file = get_castep_path('quartz', 'quartz.castep_bin')
 dos_output_file = os.path.join(get_script_test_data_path(), 'dos.json')
 dos_params = [
@@ -43,6 +46,7 @@ dos_params = [
     [quartz_fc_file, '--grid', '5', '5', '4', '--adaptive', '--pdos'],
     [quartz_fc_file, '--grid', '5', '5', '4', '--adaptive'],
     [quartz_fc_file, '--grid', '5', '5', '4', '--adaptive', '--eb', '2']]
+dos_params_from_phonopy = [[nacl_no_evec_yaml_file]]
 
 
 class TestRegression:
@@ -58,8 +62,7 @@ class TestRegression:
         # Ensure figures are closed
         matplotlib.pyplot.close('all')
 
-    @pytest.mark.parametrize('dos_args', dos_params)
-    def test_plots_contain_expected_data(self, inject_mocks, dos_args):
+    def run_dos_and_test_result(self, dos_args):
         euphonic.cli.dos.main(dos_args)
 
         line_data = get_current_plot_line_data()
@@ -74,6 +77,14 @@ class TestRegression:
             else:
                 assert value == expected_line_data[key]
 
+    @pytest.mark.parametrize('dos_args', dos_params)
+    def test_dos_plot_data(self, inject_mocks, dos_args):
+        self.run_dos_and_test_result(dos_args)
+
+    @pytest.mark.phonopy_reader
+    @pytest.mark.parametrize('dos_args', dos_params_from_phonopy)
+    def test_dos_plot_data_from_phonopy(self, inject_mocks, dos_args):
+        self.run_dos_and_test_result(dos_args)
 
     @pytest.mark.parametrize('dos_args', [
         [nah_phonon_file, '--save-to'],
