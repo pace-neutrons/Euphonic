@@ -14,8 +14,8 @@ class BrilleInterpolator(object):
     crystal : Crystal
         Lattice and atom information
     """
-    def __init__(self, force_constants, grid_type='mesh', grid_kwargs={},
-                 interp_kwargs={}):
+    def __init__(self, force_constants, grid_type='trellis', grid_kwargs={},
+                 interp_kwargs={}, n_qpts=1000):
 
         crystal = force_constants.crystal
         cell_vectors = crystal._cell_vectors
@@ -35,6 +35,9 @@ class BrilleInterpolator(object):
         elif grid_type == 'nest':
             grid = br.BZNestQdc(bz, **grid_kwargs)
         elif grid_type == 'trellis':
+            if not grid_kwargs:
+                grid_kwargs = {
+                    'node_volume_fraction': bz.ir_polyhedron.volume/n_qpts}
             grid = br.BZTrellisQdc(bz, **grid_kwargs)
         else:
             raise ValueError(f'Grid type "{grid_type}" not recognised')
