@@ -21,12 +21,12 @@ def main(params: Optional[List[str]] = None) -> None:
     args = get_args(get_parser(), params)
     calc_modes_kwargs = _calc_modes_kwargs(args)
 
-    data = load_data_from_file(args.filename)
+    frequencies_only = (args.weighting != 'coherent')
+    data = load_data_from_file(args.filename, frequencies_only)
 
     q_spacing = _get_q_distance(args.length_unit, args.q_spacing)
     recip_length_unit = q_spacing.units
 
-    frequencies_only = (args.weighting != 'coherent')
 
     if isinstance(data, euphonic.ForceConstants):
         print("Force Constants data was loaded. Getting band path...")
@@ -34,7 +34,7 @@ def main(params: Optional[List[str]] = None) -> None:
             data, q_distance=q_spacing, insert_gamma=False,
             frequencies_only=frequencies_only,
             **calc_modes_kwargs)
-    elif isinstance(data, euphonic.QpointPhononModes):
+    else:
         print("Phonon band data was loaded.")
         modes = data
         split_args = {'btol': args.btol}
