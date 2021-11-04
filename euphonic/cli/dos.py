@@ -3,7 +3,7 @@ from typing import List, Optional
 
 import matplotlib.style
 
-from euphonic import ureg, ForceConstants, QpointPhononModes
+from euphonic import ureg, ForceConstants
 from euphonic.util import mp_grid, mode_gradients_to_widths
 from euphonic.plot import plot_1d
 from euphonic.styles import base_style
