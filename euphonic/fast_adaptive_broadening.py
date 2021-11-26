@@ -1,6 +1,7 @@
 """
 Functions for fast adaptive broadening of density of states spectra
 """
+from __future__ import division
 from typing import Optional
 from scipy.optimize import curve_fit
 from scipy.signal import convolve
@@ -22,7 +23,8 @@ def fast_broaden(dos_bins: np.ndarray,
         Shape (n_e_bins + 1,) float ndarray. The energy bin edges to use for
         calculating the DOS
     freqs
-        Shape (n_qpts*n_modes,) float ndarray. Frequencies per q-point and mode.
+        Shape (n_qpts*n_modes,) float ndarray. Frequencies per q-point
+        and mode.
     mode_widths
         Shape (n_qpts*n_modes,) float ndarray. The broadening width for each
         mode at each q-point
@@ -92,7 +94,8 @@ def gaussian(xvals: np.ndarray,
     Parameters
     ----------
     xvals
-        Float ndarray. Points at which the Gaussian function should be evaluated
+        Float ndarray. Points at which the Gaussian function should be
+        evaluated
     sigma
         Float ndarray. Specifies the standard deviation for the gaussian
     centre

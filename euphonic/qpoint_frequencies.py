@@ -92,7 +92,7 @@ class QpointFrequencies:
                       mode_widths: Optional[Quantity] = None,
                       mode_widths_min: Quantity = Quantity(0.01, 'meV'),
                       adaptive_method: Optional[str] = 'default',
-                      error: Optional[float] = 0.001,
+                      error: Optional[float] = None,
                       ) -> Spectrum1D:
         """
         Calculates a density of states
@@ -112,10 +112,11 @@ class QpointFrequencies:
             infinitely sharp peaks
         adaptive_method
             String. Specifies whether to use slow, reference adaptive method or
-            faster, approximate method. Allowed options are 'default', or 'fast'.
+            faster, approximate method. Allowed options are 'default',
+            or 'fast'.
         error
-            Scalar float. Acceptable percentage error for gaussian approximations when using
-            the fast adaptive method.
+            Scalar float. Acceptable percentage error for gaussian approximations
+            when using the fast adaptive method.
 
         Returns
         -------
@@ -153,11 +154,13 @@ class QpointFrequencies:
         arrays
         """
         if adaptive_method!='fast' and error is not None:
-            warnings.warn('\n The error argument can only be applied when using the fast adaptive '
-                          'method, so will be ignored.')
-        if mode_widths is None and adaptive_method!='default' or mode_widths is None and error is not None:
-            warnings.warn('\n Adaptive broadening can only be applied when mode_widths are '
-                          'provided, therefore adaptive_method will be ignored.')
+            warnings.warn('\n The error argument can only be applied when '
+                          'using the fast adaptive method, so will be ignored.')
+        if mode_widths is None and adaptive_method!='default'\
+            or mode_widths is None and error is not None:
+            warnings.warn('\n Adaptive broadening can only be applied when '
+                          'mode_widths are provided, therefore adaptive_method '
+                          'will be ignored.')
 
         if q_idx is None:
             freqs = self._frequencies
@@ -198,7 +201,8 @@ class QpointFrequencies:
             if error is None:
                 error = 0.01
 
-            dos = fast_broaden(dos_bins_calc, freqs, mode_widths, n_weights, error)
+            dos = fast_broaden(dos_bins_calc, freqs, mode_widths,
+                               n_weights, error)
         else:
             bin_idx = np.digitize(freqs, dos_bins_calc)
             # Create DOS with extra bin either side, for any points
