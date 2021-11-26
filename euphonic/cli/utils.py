@@ -412,6 +412,20 @@ def _arrange_pdos_groups(pdos: Spectrum1DCollection,
     return dos
 
 
+def _plot_label_kwargs(args: Namespace, default_xlabel: str = '',
+                       default_ylabel: str = '') -> Dict[str, str]:
+    """Collect title/label arguments that can be passed to plot_nd
+    """
+    plot_kwargs = dict(title=args.title,
+                       xlabel=default_xlabel,
+                       ylabel=default_ylabel)
+    if args.ylabel is not None:
+        plot_kwargs['ylabel'] = args.ylabel
+    if args.xlabel is not None:
+        plot_kwargs['xlabel'] = args.xlabel
+    return plot_kwargs
+
+
 def _calc_modes_kwargs(args: Namespace) -> Dict[str, Any]:
     """Collect arguments that can be passed to calculate_qpoint_phonon_modes()
     """
@@ -525,7 +539,7 @@ def _get_cli_parser(features: Collection[str] = {}
             help=('Force use of compiled C extension when computing '
                   'phonon frequencies/eigenvectors (or raise error).'))
         use_c.add_argument(
-            '--disable-c', action='store_false', dest='use_c',
+            '--disable-c', action='store_false', dest='use_c', default=None,
             help=('Do not attempt to use compiled C extension when computing '
                   'phonon frequencies/eigenvectors.'))
         sections['performance'].add_argument(
@@ -636,10 +650,36 @@ def _get_cli_parser(features: Collection[str] = {}
             help='Save resulting plot to a file with this name')
         section.add_argument('--title', type=str, default='',
                              help='Plot title')
-        section.add_argument('--x-label', type=str, default=None,
-                             dest='x_label', help='Plot x-axis label')
-        section.add_argument('--y-label', type=str, default=None,
-                             dest='y_label', help='Plot y-axis label')
+        section.add_argument('--x-label', '--xlabel', type=str, default=None,
+                             dest='xlabel', help='Plot x-axis label')
+        section.add_argument('--y-label', '--ylabel', type=str, default=None,
+                             dest='ylabel', help='Plot y-axis label')
+        section.add_argument('--style', type=str, nargs='+',
+                             help='Matplotlib styles (name or file)')
+        section.add_argument('--no-base-style', action='store_true',
+                             dest='no_base_style',
+                             help=('Remove all default formatting before '
+                                   'applying other style options.'))
+        section.add_argument('--font', type=str, default=None,
+                             help=('Select text font. (This has to be a name '
+                                   'known to Matplotlib. font-family will be '
+                                   'set to sans-serif; it doesn\'t matter if)'
+                                   'the font is actually sans-serif.'))
+        section.add_argument('--font-size', '--fontsize', type=float,
+                             default=None, dest='fontsize',
+                             help='Set base font size in pt.')
+        section.add_argument('--fig-size', '--figsize', type=float, nargs=2,
+                             default=None, dest='figsize',
+                             help='Figure canvas size in FIGSIZE-UNITS')
+        section.add_argument('--fig-size-unit', '--figsize-unit', type=str,
+                             default='cm', dest='figsize_unit',
+                             help='Unit of length for --figsize')
+
+    if ('plotting' in features) and not ('map' in features):
+        section = sections['plotting']
+        section.add_argument('--line-width', '--linewidth', type=float,
+                             default=None, dest='linewidth',
+                             help='Set line width in pt.')
 
     if {'ebins', 'q-e'}.intersection(features):
         section = sections['energy']
@@ -703,13 +743,14 @@ def _get_cli_parser(features: Collection[str] = {}
 
     if 'map' in features:
         sections['plotting'].add_argument(
-            '--v-min', type=float, default=None, dest='v_min',
+            '--v-min', '--vmin', type=float, default=None, dest='vmin',
             help='Minimum of data range for colormap.')
         sections['plotting'].add_argument(
-            '--v-max', type=float, default=None, dest='v_max',
+            '--v-max', '--vmax', type=float, default=None, dest='vmax',
             help='Maximum of data range for colormap.')
         sections['plotting'].add_argument(
-            '--cmap', type=str, default='viridis', help='Matplotlib colormap')
+            '--c-map', '--cmap', type=str, default=None, dest='cmap',
+            help='Matplotlib colormap')
 
     if 'btol' in features:
         sections['q'].add_argument(
@@ -748,3 +789,53 @@ def _get_cli_parser(features: Collection[str] = {}
         )
 
     return parser, sections
+
+
+MplStyle = Union[str, Dict[str, str]]
+
+
+def _compose_style(
+        *, user_args: Namespace, base: Optional[List[MplStyle]]
+        ) -> List[MplStyle]:
+    """Combine user-specified style options with default stylesheets
+
+    Args:
+        user_args: from _get_cli_parser().parse_args()
+        base: Euphonic default styles for this plot
+
+    N.B. matplotlib applies styles from left to right, so the right-most
+    elements of the list take the highest priority. This function builds a
+    list in the order:
+
+    [base style(s), user style(s), CLI arguments]
+    """
+
+    if user_args.no_base_style or base is None:
+        style = []
+    else:
+        style = base
+
+    if user_args.style:
+        style += user_args.style
+
+    # Explicit args take priority over any other
+    explicit_args = {}
+    for user_arg, mpl_property in {'cmap': 'image.cmap',
+                                   'fontsize': 'font.size',
+                                   'font': 'font.sans-serif',
+                                   'linewidth': 'lines.linewidth',
+                                   'figsize': 'figure.figsize'}.items():
+        if getattr(user_args, user_arg, None):
+            explicit_args.update({mpl_property: getattr(user_args, user_arg)})
+
+    if 'font.sans-serif' in explicit_args:
+        explicit_args.update({'font.family': 'sans-serif'})
+
+    if 'figure.figsize' in explicit_args:
+        dimensioned_figsize = [dim * ureg(user_args.figsize_unit)
+                               for dim in explicit_args['figure.figsize']]
+        explicit_args['figure.figsize'] = [dim.to('inches').magnitude
+                                           for dim in dimensioned_figsize]
+
+    style.append(explicit_args)
+    return style

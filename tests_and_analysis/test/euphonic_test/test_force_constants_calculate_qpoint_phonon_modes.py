@@ -57,6 +57,9 @@ class TestForceConstantsCalculateQPointPhononModes:
 
     quartz_params = [
         (get_quartz_fc(), 'quartz',
+         [get_test_qpts(), {'splitting': False}],
+         'quartz_no_asr_qpoint_phonon_modes.json'),
+        (get_quartz_fc(), 'quartz',
          [get_test_qpts(), {'asr': 'reciprocal', 'splitting': False}],
          'quartz_reciprocal_qpoint_phonon_modes.json'),
         (get_quartz_fc(), 'quartz',
@@ -118,15 +121,17 @@ class TestForceConstantsCalculateQPointPhononModes:
                          expected_qpoint_phonon_modes_file))
         # Only give gamma-acoustic modes special treatment if the acoustic
         # sum rule has been applied
-        if not 'asr' in func_kwargs.keys():
-            gamma_atol = None
-        else:
-            gamma_atol = 0.5
+        tol_kwargs = {}
+        if 'asr' in func_kwargs.keys():
+            tol_kwargs['acoustic_gamma_atol'] = 0.55
+        # Use larger tolerances with reciprocal ASR - formalism works
+        # only at gamma but is applied to all q, so problem is less
+        # well conditioned leading to larger f.p errors on different systems
+        if func_kwargs.get('asr') == 'reciprocal':
+            tol_kwargs['frequencies_atol'] = 0.01
         check_qpt_ph_modes(qpoint_phonon_modes,
                            expected_qpoint_phonon_modes,
-                           frequencies_atol=1e-4,
-                           frequencies_rtol=2e-5,
-                           acoustic_gamma_atol=gamma_atol)
+                           **tol_kwargs)
 
     @pytest.mark.parametrize(
         ('fc, material, all_args, expected_qpoint_phonon_modes_file, '
@@ -134,7 +139,7 @@ class TestForceConstantsCalculateQPointPhononModes:
         (get_quartz_fc(),
          'quartz',
          [mp_grid([5, 5, 4]),
-          {'asr': 'reciprocal', 'return_mode_gradients': True}],
+          {'return_mode_gradients': True}],
          'quartz_554_full_qpoint_phonon_modes.json',
          'quartz_554_full_mode_gradients.json'),
         (get_lzo_fc(),
@@ -164,17 +169,8 @@ class TestForceConstantsCalculateQPointPhononModes:
         expected_qpoint_phonon_modes = ExpectedQpointPhononModes(
             os.path.join(get_qpt_ph_modes_dir(material),
             expected_qpoint_phonon_modes_file))
-        # Only give gamma-acoustic modes special treatment if the acoustic
-        # sum rule has been applied
-        if not 'asr' in func_kwargs.keys():
-            gamma_atol = None
-        else:
-            gamma_atol = 0.5
         check_qpt_ph_modes(qpoint_phonon_modes,
-                           expected_qpoint_phonon_modes,
-                           frequencies_atol=1e-4,
-                           frequencies_rtol=2e-5,
-                           acoustic_gamma_atol=gamma_atol)
+                           expected_qpoint_phonon_modes)
         assert modg.units == expected_modg.units
         # Mode gradients are derived from eigenvectors - in the case of
         # degenerate modes they may not be in the same order
@@ -185,7 +181,7 @@ class TestForceConstantsCalculateQPointPhononModes:
             expected_modg.magnitude,
             expected_qpoint_phonon_modes.frequencies.magnitude)
         npt.assert_allclose(summed_modg, summed_expected_modg,
-            atol=2e-2, rtol=2e-4)
+                            atol=2e-5)
 
     @pytest.mark.parametrize(
         ('fc, material, all_args, expected_qpoint_phonon_modes_file, '
@@ -193,7 +189,7 @@ class TestForceConstantsCalculateQPointPhononModes:
         (get_quartz_fc(),
          'quartz',
          [mp_grid([5, 5, 4]),
-          {'asr': 'reciprocal', 'return_mode_widths': True}],
+          {'return_mode_widths': True}],
          'quartz_554_full_qpoint_phonon_modes.json',
          'quartz_554_full_mode_widths.json'),
         (get_lzo_fc(),
@@ -216,7 +212,6 @@ class TestForceConstantsCalculateQPointPhononModes:
             func_kwargs['n_threads'] = n_threads
         qpoint_phonon_modes, modw = fc.calculate_qpoint_phonon_modes(
             all_args[0], **func_kwargs)
-
         with open(os.path.join(get_fc_dir(), expected_modw_file), 'r') as fp:
             modw_dict = json.load(fp)
         expected_modw = modw_dict['mode_widths']*ureg(
@@ -224,18 +219,8 @@ class TestForceConstantsCalculateQPointPhononModes:
         expected_qpoint_phonon_modes = ExpectedQpointPhononModes(
             os.path.join(get_qpt_ph_modes_dir(material),
             expected_qpoint_phonon_modes_file))
-        # Only give gamma-acoustic modes special treatment if the acoustic
-        # sum rule has been applied
-        if not 'asr' in func_kwargs.keys():
-            gamma_atol = None
-        else:
-            gamma_atol = 0.5
-
         check_qpt_ph_modes(qpoint_phonon_modes,
-                           expected_qpoint_phonon_modes,
-                           frequencies_atol=1e-4,
-                           frequencies_rtol=2e-5,
-                           acoustic_gamma_atol=gamma_atol)
+                           expected_qpoint_phonon_modes)
         assert modw.units == expected_modw.units
         # Mode widths are derived from eigenvectors - in the case of
         # degenerate modes they may not be in the same order
@@ -246,7 +231,8 @@ class TestForceConstantsCalculateQPointPhononModes:
             expected_modw.magnitude,
             expected_qpoint_phonon_modes.frequencies.magnitude)
         npt.assert_allclose(summed_modw, summed_expected_modw,
-                            atol=2e-4, rtol=2e-3)
+                            rtol=3e-5)
+
 
     def test_calc_qpt_ph_modes_with_mode_widths_raises_deprecation_warning(self):
         fc = get_fc('quartz')

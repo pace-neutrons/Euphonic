@@ -570,3 +570,13 @@ def _get_supercell_relative_idx(cell_origins: np.ndarray,
         if np.any(dist_min > 16*sys.float_info.epsilon):
             raise Exception('Couldn\'t find supercell relative index')
     return sc_relative_index
+
+
+def _deprecation_warn(old_arg: str, new_arg: str, stacklevel: int = 3):
+    """
+    Emits a deprecation warning with a generic message
+    """
+    warnings.warn(f'{old_arg} has been deprecated and will be removed '
+                  f'in a future release. Please use {new_arg} instead.',
+                  category=DeprecationWarning,
+                  stacklevel=stacklevel)

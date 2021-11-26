@@ -1,11 +1,14 @@
 import os
 import json
 from unittest.mock import patch
+from platform import platform
 
 import pytest
 import numpy.testing as npt
 # Required for mocking
 import matplotlib.pyplot
+from packaging import version
+from scipy import __version__ as scipy_ver
 
 from tests_and_analysis.test.utils import get_data_path, get_castep_path
 from tests_and_analysis.test.script_tests.utils import (
@@ -22,13 +25,10 @@ intensity_map_output_file = os.path.join(get_script_test_data_path(),
                                          'intensity-map.json')
 intensity_map_params = [
     [graphite_fc_file],
-    [graphite_fc_file, '--v-min=0', '--v-max=1e-10'],
+    [graphite_fc_file, '--vmin=0', '--vmax=1e-10'],
     [graphite_fc_file, '--energy-unit=meV'],
-    [graphite_fc_file, '--weights=coherent', '--cmap=bone'],
-    [graphite_fc_file, '--weighting=coherent', '--cmap=bone'],
-    [graphite_fc_file, '--weighting=coherent', '--temperature=800'],
-    [graphite_fc_file, '-w', 'dos', '--y-label=DOS', '--title=DOS TITLE'],
-    [graphite_fc_file, '--e-min=50', '-u=cm^-1', '--x-label=wavenumber'],
+    [graphite_fc_file, '-w', 'dos', '--ylabel=DOS', '--title=DOS TITLE'],
+    [graphite_fc_file, '--e-min=50', '-u=cm^-1', '--xlabel=wavenumber'],
     [graphite_fc_file, '--e-min=-100', '--e-max=1000', '--ebins=100',
      '--energy-unit=cm^-1'],
     [graphite_fc_file, '--energy-broadening=2e-3', '-u=eV'],
@@ -40,6 +40,10 @@ intensity_map_params = [
     [quartz_phonon_file],
     [quartz_phonon_file, '--btol=1000'],
     [lzo_phonon_file]]
+intensity_map_params_macos_segfault = [
+    [graphite_fc_file, '--weights=coherent', '--cmap=bone'],
+    [graphite_fc_file, '--weighting=coherent', '--cmap=bone'],
+    [graphite_fc_file, '--weighting=coherent', '--temperature=800']]
 
 
 @pytest.mark.integration
@@ -56,11 +60,11 @@ class TestRegression:
         # Ensure figures are closed
         matplotlib.pyplot.close('all')
 
-    @pytest.mark.parametrize('intensity_map_args', intensity_map_params)
-    def test_plots_produce_expected_image(
-            self, inject_mocks, intensity_map_args):
+    def run_intensity_map_and_test_result(
+            self, intensity_map_args):
         euphonic.cli.intensity_map.main(intensity_map_args)
 
+        matplotlib.pyplot.gcf().tight_layout()  # Force tick labels to be set
         image_data = get_current_plot_image_data()
 
         with open(intensity_map_output_file, 'r') as expected_data_file:
@@ -82,6 +86,22 @@ class TestRegression:
                                     atol=1e-14)
             else:
                 assert value == expected_image_data[key]
+
+    @pytest.mark.parametrize('intensity_map_args', intensity_map_params)
+    def test_intensity_map_image_data(
+            self, inject_mocks, intensity_map_args):
+        self.run_intensity_map_and_test_result(intensity_map_args)
+
+    @pytest.mark.parametrize(
+        'intensity_map_args', intensity_map_params_macos_segfault)
+    @pytest.mark.skipif(
+        (any([s in platform() for s in ['Darwin', 'macOS']])
+         and version.parse(scipy_ver) > version.parse('1.1.0')),
+        reason=('Segfaults on some MacOS platforms with Scipy > 1.1.0, may '
+                'be related to https://github.com/google/jax/issues/432'))
+    def test_intensity_map_image_data_macos_segfault(
+            self, inject_mocks, intensity_map_args):
+        self.run_intensity_map_and_test_result(intensity_map_args)
 
     @pytest.mark.parametrize('intensity_map_args', [
         [quartz_phonon_file, '--save-to'],

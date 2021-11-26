@@ -1,13 +1,16 @@
 from argparse import ArgumentParser
 from typing import List, Optional
 
+import matplotlib.style
 import numpy as np
 
 import euphonic
 from euphonic import ureg, Spectrum2D
 import euphonic.plot
 from euphonic.util import get_qpoint_labels
+from euphonic.styles import base_style
 from .utils import (_bands_from_force_constants, _calc_modes_kwargs,
+                    _compose_style, _plot_label_kwargs,
                     get_args, _get_debye_waller,
                     _get_energy_bins, _get_q_distance,
                     _get_cli_parser, load_data_from_file,
@@ -75,14 +78,8 @@ def main(params: Optional[List[str]] = None) -> None:
             shape=args.shape)
 
     print("Plotting figure")
-    if args.y_label is None:
-        y_label = f"Energy / {spectrum.y_data.units:~P}"
-    else:
-        y_label = args.y_label
-    if args.x_label is None:
-        x_label = ""
-    else:
-        x_label = args.x_label
+    plot_label_kwargs = _plot_label_kwargs(
+        args, default_ylabel=f"Energy / {spectrum.y_data.units:~P}")
 
     if x_tick_labels:
         spectrum.x_tick_labels = x_tick_labels
@@ -91,13 +88,14 @@ def main(params: Optional[List[str]] = None) -> None:
     if len(spectra) > 1:
         print(f"Found {len(spectra)} regions in q-point path")
 
-    euphonic.plot.plot_2d(spectra,
-                          cmap=args.cmap,
-                          vmin=args.v_min, vmax=args.v_max,
-                          x_label=x_label,
-                          y_label=y_label,
-                          title=args.title)
-    matplotlib_save_or_show(save_filename=args.save_to)
+    style = _compose_style(user_args=args, base=[base_style])
+    with matplotlib.style.context(style):
+
+        euphonic.plot.plot_2d(spectra,
+                              vmin=args.vmin,
+                              vmax=args.vmax,
+                              **plot_label_kwargs)
+        matplotlib_save_or_show(save_filename=args.save_to)
 
 
 def get_parser() -> ArgumentParser:

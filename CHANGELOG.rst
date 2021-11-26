@@ -1,8 +1,42 @@
-`Unreleased <https://github.com/pace-neutrons/Euphonic/compare/v0.6.1...HEAD>`_
+`Unreleased <https://github.com/pace-neutrons/Euphonic/compare/v0.6.3...HEAD>`_
 ----------
+
+`v0.6.3 <https://github.com/pace-neutrons/Euphonic/compare/v0.6.2...v0.6.3>`_
+------
+
+- New Features:
+
+  - New ``Spectrum1D.to_text_file`` and ``Spectrum1DCollection.to_text_file``
+    methods to write to column text files
+
+  - An expanded and consistent set of styling options is made
+    available for command-line tools that produce plots.
+
+  - Consistent styling and advanced changes can be made using
+    Matplotlib stylesheet files, either as a CLI argument or
+    using ``matplotlib.style.context()`` in a Python script.
 
 - Improvements:
 
+  - Internally, plot theming has been adjusted to rely on Matplotlib
+    style contexts. This means user changes and style context are more
+    likely to be respected.
+  - Additional aliases for plot arguments in the command-line tools have
+    been added, for example either ``--x-label`` or ``--xlabel`` can be used.
+
+- Changes:
+
+  - ``x_label``, ``y_label``, ``y_min`` and ``y_max`` in ``euphonic.plot``
+    functions have been deprecated in favour of ``xlabel``, ``ylabel``,
+    ``ymin`` and ``ymax`` respectively, to match the Matplotlib arguments
+    they refer to, and to match other arguments like ``vmin``, ``vmax``.
+
+`v0.6.2 <https://github.com/pace-neutrons/Euphonic/compare/v0.6.1...v0.6.2>`_
+------
+
+- Improvements:
+
+  - Wheels are now provided with PyPI releases
   - Type hinting is now handled more consistently across different Euphonic
     classes and functions
 

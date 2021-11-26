@@ -239,9 +239,10 @@ class TestPlot1D:
             plot_1d([spec1, spec2])
 
     @pytest.mark.parametrize('kwargs, expected_labels',
-        [({'labels': ['band A'], 'x_label': 'X_LABEL', 'y_label': 'Y_LABEL',
+        [({'labels': ['band A'], 'xlabel': 'X_LABEL', 'ylabel': 'Y_LABEL',
            'title': 'TITLE'},
          ['band A']),
+         ({'ymin': 0, 'ymax': 1.5}, None),
          ({},
           None)])
     def test_plot_multi_segments(
@@ -260,22 +261,34 @@ class TestPlot1D:
         for ax in fig.axes[1:]:
             assert ax.get_legend() == None
 
-        if 'x_label' in kwargs:
-            assert fig.axes[-1].get_xlabel() == kwargs['x_label']
-        if 'y_label' in kwargs:
-            assert fig.axes[-1].get_ylabel() == kwargs['y_label']
+        if 'xlabel' in kwargs:
+            assert fig.axes[-1].get_xlabel() == kwargs['xlabel']
+        if 'ylabel' in kwargs:
+            assert fig.axes[-1].get_ylabel() == kwargs['ylabel']
         if 'title' in kwargs:
             suptitle.assert_called_once_with(kwargs['title'])
 
         for ax in fig.axes[:-1]:
-            if 'y_min' in kwargs:
-                assert ax.get_ylim()[0] == pytest.approx(kwargs.get('y_min'))
-            if 'y_max' in kwargs:
-                assert ax.get_ylim()[0] == pytest.approx(kwargs.get('y_max'))
+            if 'ymin' in kwargs:
+                assert ax.get_ylim()[0] == pytest.approx(kwargs.get('ymin'))
+            if 'ymax' in kwargs:
+                assert ax.get_ylim()[1] == pytest.approx(kwargs.get('ymax'))
 
     def test_plot_with_incorrect_labels_raises_valueerror(self, band_segments):
         with pytest.raises(ValueError):
             fig = plot_1d(band_segments, labels=['Band A', 'Band B'])
+
+    @pytest.mark.parametrize('kwargs', [
+        {'y_label': 'Y_LABEL'},
+        {'x_label': 'X_LABEL'},
+        {'y_min': 0},
+        {'y_max': 1.5}])
+    def test_deprecated_kwargs_raise_deprecation_warning(
+            self, kwargs):
+        spec1d = Spectrum1D([0., 1., 2.] * ureg('meV'),
+                            [1., 2., 1.] * ureg('angstrom^-2'))
+        with pytest.warns(DeprecationWarning):
+            plot_1d(spec1d, **kwargs)
 
 
 @pytest.mark.unit
@@ -319,8 +332,8 @@ class TestPlot2D:
 
     @pytest.mark.parametrize('kwargs',
                              [{'title': 'TITLE',
-                               'x_label': 'X_LABEL',
-                               'y_label': 'Y_LABEL'},
+                               'xlabel': 'X_LABEL',
+                               'ylabel': 'Y_LABEL'},
                               {'vmin': 1.,
                                'vmax': 2.,
                                'cmap': 'magma'}])
@@ -341,14 +354,15 @@ class TestPlot2D:
             if attr in kwargs:
                 assert getattr(norm, attr) == pytest.approx(kwargs[attr])
 
-        if 'x_label' in kwargs:
-            assert fig.axes[-1].get_xlabel() == kwargs['x_label']
-        if 'y_label' in kwargs:
-            assert fig.axes[-1].get_ylabel() == kwargs['y_label']
+        if 'xlabel' in kwargs:
+            assert fig.axes[-1].get_xlabel() == kwargs['xlabel']
+        if 'ylabel' in kwargs:
+            assert fig.axes[-1].get_ylabel() == kwargs['ylabel']
         if 'title' in kwargs:
             suptitle.assert_called_once_with(kwargs['title'])
 
         plt.close(fig)
+
 
     def test_plot_multi(self, mocker, spectrum):
         core = self.mock_core(mocker)
@@ -360,6 +374,14 @@ class TestPlot2D:
 
         assert call_1[0][0] == spectra[0]
         assert call_2[0][0] == spectra[1]
+
+    @pytest.mark.parametrize('kwargs', [
+        {'y_label': 'Y_LABEL'},
+        {'x_label': 'X_LABEL'}])
+    def test_deprecated_kwargs_raise_deprecation_warning(
+            self, spectrum, kwargs):
+        with pytest.warns(DeprecationWarning):
+            euphonic.plot.plot_2d(spectrum, **kwargs)
 
 
 @pytest.mark.unit

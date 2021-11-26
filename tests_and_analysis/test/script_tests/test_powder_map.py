@@ -1,11 +1,14 @@
 import os
 import json
 from unittest.mock import patch
+from platform import platform
 
 import pytest
 import numpy.testing as npt
 # Required for mocking
 import matplotlib.pyplot
+from packaging import version
+from scipy import __version__ as scipy_ver
 
 from tests_and_analysis.test.utils import get_data_path, get_castep_path, get_phonopy_path
 from tests_and_analysis.test.script_tests.utils import (
@@ -21,13 +24,9 @@ quick_calc_params = ['--npts=10', '--npts-min=10', '--q-spacing=1']
 powder_map_params = [
     [nacl_prim_fc_file],
     [nacl_prim_fc_file, '--temperature=1000', *quick_calc_params],
-    [nacl_prim_fc_file, '--temperature=1000', '--weights=coherent',
-     *quick_calc_params],
-    [nacl_prim_fc_file, '--temperature=1000', '--weighting=coherent',
-     *quick_calc_params],
     [nacl_prim_fc_file, '--v-min=0', '--v-max=1e-10', *quick_calc_params],
     [nacl_prim_fc_file, '--energy-unit=meV', *quick_calc_params],
-    [nacl_prim_fc_file, '--weighting=coherent', '--cmap=bone',
+    [nacl_prim_fc_file, '--weighting=coherent', '--c-map=bone',
      *quick_calc_params],
     [graphite_fc_file, '-w', 'dos', '--y-label=DOS', '--title=DOS TITLE',
      *quick_calc_params],
@@ -48,6 +47,11 @@ powder_map_params = [
      *quick_calc_params],
     [nacl_prim_fc_file, '-w=coherent-plus-incoherent-dos', '--pdos=Cl',
      *quick_calc_params]]
+powder_map_params_macos_segfault = [
+    [nacl_prim_fc_file, '--temperature=1000', '--weights=coherent',
+     *quick_calc_params],
+    [nacl_prim_fc_file, '--temperature=1000', '--weighting=coherent',
+     *quick_calc_params]]
 
 
 @pytest.mark.integration
@@ -64,11 +68,10 @@ class TestRegression:
         # Ensure figures are closed
         matplotlib.pyplot.close('all')
 
-    @pytest.mark.parametrize('powder_map_args', powder_map_params)
-    def test_plots_produce_expected_image(
-            self, inject_mocks, powder_map_args):
+    def run_powder_map_and_test_result(self, powder_map_args):
         euphonic.cli.powder_map.main(powder_map_args)
 
+        matplotlib.pyplot.gcf().tight_layout()  # Force tick labels to be set
         image_data = get_current_plot_image_data()
 
         with open(powder_map_output_file, 'r') as expected_data_file:
@@ -90,6 +93,21 @@ class TestRegression:
                                     atol=1e-14)
             else:
                 assert value == expected_image_data[key]
+
+    @pytest.mark.parametrize('powder_map_args', powder_map_params)
+    def test_powder_map_plot_image(
+            self, inject_mocks, powder_map_args):
+        self.run_powder_map_and_test_result(powder_map_args)
+
+    @pytest.mark.parametrize('powder_map_args', powder_map_params_macos_segfault)
+    @pytest.mark.skipif(
+        (any([s in platform() for s in ['Darwin', 'macOS']])
+         and version.parse(scipy_ver) > version.parse('1.1.0')),
+        reason=('Segfaults on some MacOS platforms with Scipy > 1.1.0, may '
+                'be related to https://github.com/google/jax/issues/432'))
+    def test_powder_map_plot_image_macos_segfault(
+            self, inject_mocks, powder_map_args):
+        self.run_powder_map_and_test_result(powder_map_args)
 
     @pytest.mark.parametrize('powder_map_args', [
         [nacl_prim_fc_file, '--save-to'],

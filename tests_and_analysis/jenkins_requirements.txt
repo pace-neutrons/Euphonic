@@ -1,6 +1,0 @@
-numpy
-scipy
-seekpath
-matplotlib
-tox==3.14.5
-pylint==2.4.4

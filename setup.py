@@ -3,9 +3,21 @@ import shutil
 import warnings
 
 import versioneer
-from setuptools import setup, Extension
+from setuptools import setup, Extension, Distribution
 from setuptools.command.install import install
 
+
+# As the C extension is optional, this is not detected when building
+# wheels and they are incorrectly marked as universal. Explicitly
+# specify the distribution is not pure Python
+try:
+    from wheel.bdist_wheel import bdist_wheel as _bdist_wheel
+    class bdist_wheel(_bdist_wheel):
+        def finalize_options(self):
+            _bdist_wheel.finalize_options(self)
+            self.root_is_pure = False
+except ImportError:
+    bdist_wheel = None
 
 
 class InstallCommand(install):
@@ -19,6 +31,8 @@ class InstallCommand(install):
         install.finalize_options(self)
         if not bool(self.python_only):
             self.distribution.ext_modules = [get_c_extension()]
+        if self.distribution.has_ext_modules():
+            self.install_lib = self.install_platlib
 
 
 def get_c_extension():
@@ -88,7 +102,8 @@ def run_setup():
     packages = ['euphonic',
                 'euphonic.cli',
                 'euphonic.readers',
-                'euphonic.data']
+                'euphonic.data',
+                'euphonic.styles']
 
     with open('README.rst', 'r') as f:
         long_description = f.read()
@@ -96,6 +111,7 @@ def run_setup():
 
     cmdclass = versioneer.get_cmdclass()
     cmdclass['install'] = InstallCommand
+    cmdclass['bdist_wheel'] = bdist_wheel
 
     setup(
         name='euphonic',

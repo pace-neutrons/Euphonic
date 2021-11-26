@@ -12,3 +12,4 @@ Command-line Tools
   euphonic-powder-map <powder-map-script>
   euphonic-optimise-dipole-parameter <dipole-parameter-script>
   euphonic-show-sampling <sampling-script>
+  Customising plots <styling>

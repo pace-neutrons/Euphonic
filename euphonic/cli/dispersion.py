@@ -1,12 +1,16 @@
 from argparse import ArgumentParser
 from typing import List, Optional
 
+import matplotlib.style
+
 import euphonic
 from euphonic.plot import plot_1d
+from euphonic.styles import base_style
 from euphonic import Spectrum1D
 from .utils import (load_data_from_file, get_args, _bands_from_force_constants,
+                    _compose_style,
                     _get_q_distance, matplotlib_save_or_show, _get_cli_parser,
-                    _calc_modes_kwargs)
+                    _calc_modes_kwargs, _plot_label_kwargs)
 
 
 def main(params: Optional[List[str]] = None) -> None:
@@ -36,27 +40,23 @@ def main(params: Optional[List[str]] = None) -> None:
 
     spectrum = modes.get_dispersion()
 
-    if args.y_label is None:
-        y_label = f"Energy / {spectrum.y_data.units:~P}"
-    else:
-        y_label = args.y_label
-    if args.x_label is None:
-        x_label = ""
-    else:
-        x_label = args.x_label
+    plot_label_kwargs = _plot_label_kwargs(
+        args, default_ylabel=f"Energy / {spectrum.y_data.units:~P}")
 
     if x_tick_labels:
         spectrum.x_tick_labels = x_tick_labels
 
     spectra = spectrum.split(**split_args)  # type: List[Spectrum1D]
 
-    _ = plot_1d(spectra,
-                title=args.title,
-                x_label=x_label,
-                y_label=y_label,
-                y_min=args.e_min, y_max=args.e_max,
-                lw=1.0)
-    matplotlib_save_or_show(save_filename=args.save_to)
+    style = _compose_style(user_args=args,
+                           base=[base_style])
+
+    with matplotlib.style.context(style):
+        _ = plot_1d(spectra,
+                    ymin=args.e_min,
+                    ymax=args.e_max,
+                    **plot_label_kwargs)
+        matplotlib_save_or_show(save_filename=args.save_to)
 
 
 def get_parser() -> ArgumentParser:

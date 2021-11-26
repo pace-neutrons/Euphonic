@@ -1,0 +1,2 @@
+figure.autolayout : False
+figure.subplot.bottom: 0.25
