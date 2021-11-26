@@ -1,9 +1,11 @@
+from multiprocessing import cpu_count
+from typing import Union, Optional, Dict, Any, Type, TypeVar
 import spglib as spg
 import numpy as np
 import brille as br
-from multiprocessing import cpu_count
 
-from euphonic import ureg, QpointPhononModes
+from euphonic.validate import _check_constructor_inputs
+from euphonic import ureg, QpointPhononModes, ForceConstants, Crystal
 
 class BrilleInterpolator(object):
     """
@@ -15,10 +17,119 @@ class BrilleInterpolator(object):
     crystal : Crystal
         Lattice and atom information
     """
-    def __init__(self, force_constants, grid_type='trellis',
-                 n_grid_points=1000, grid_kwargs=None,
-                 interpolation_kwargs=None):
+    T = TypeVar('T', bound='BrilleInterpolator')
 
+    def __init__(self, crystal: Crystal,
+                 grid: Union[br.BZTrellisQdc, br.BZMeshQdc,
+                             br.BZNestQdc]) -> None:
+        _check_constructor_inputs(
+            [crystal, grid],
+            [Crystal, [br.BZTrellisQdc, br.BZMeshQdc, br.BZNestQdc]],
+            [(), ()],
+            ['crystal', 'grid'])
+        # Check grid has been filled and vals/vecs are the correct shape
+        n_atoms = crystal.n_atoms
+        n_qpts = len(grid.rlu)
+        _check_constructor_inputs(
+            [grid.values, grid.vectors],
+            [np.ndarray, np.ndarray],
+            [(n_qpts, 3*n_atoms, 1), (n_qpts, 3*n_atoms, 3*n_atoms)],
+            ['grid.values', 'grid.vectors'])
+
+        self._grid = grid
+        self.crystal = crystal
+
+    def calculate_qpoint_phonon_modes(self, qpts: np.ndarray, **kwargs
+                                      ) -> QpointPhononModes:
+        """
+        Calculate phonon frequencies and eigenvectors at specified
+        q-points via linear interpolation
+
+        Parameters
+        ----------
+        qpts
+            Shape (n_qpts, 3) float ndarray. The q-points to
+            interpolate onto in reciprocal cell vector units
+        **kwargs
+            Will be passed to the
+            brille.BZTrellis/Mesh/Nest.ir_interpolate_at
+            method. By default useparallel=True and
+            threads=multiprocessing.cpu_count() are passed
+
+        Returns
+        -------
+        qpoint_phonon_modes
+            An object containing frequencies and eigenvectors
+            linearly interpolated at each q-point
+        """
+        if not kwargs:
+            kwargs = {'useparallel': True, 'threads': cpu_count()}
+        vals, vecs = self._grid.ir_interpolate_at(qpts, **kwargs)
+        # Eigenvectors in grid are stored in cell vectors basis,
+        # convert to Cartesian
+        vecs_cart = self._br_evec_to_eu(
+            vecs, cell_vectors=self.crystal._cell_vectors)
+        frequencies = vals.squeeze()*ureg('hartree').to('meV')
+        return QpointPhononModes(
+            self.crystal, qpts, frequencies, vecs_cart)
+
+    @staticmethod
+    def _br_evec_to_eu(br_evecs, cell_vectors=None):
+        n_branches = len(br_evecs[1])
+        eu_evecs = br_evecs.view().reshape(-1, n_branches, n_branches//3, 3)
+        if cell_vectors is not None:
+            # Convert Brille evecs (stored in basis coordinates) to
+            # Cartesian coordinates
+            eu_evecs = np.einsum('ab,ijka->ijkb', cell_vectors, eu_evecs)
+        return eu_evecs
+
+    @classmethod
+    def from_force_constants(
+            cls: Type[T], force_constants: ForceConstants,
+            grid_type: str = 'trellis', n_grid_points: int = 1000,
+            grid_kwargs: Optional[Dict[str, Any]] = None,
+            interpolation_kwargs: Optional[Dict[str, Any]] = None) -> T:
+        """
+        Generates a grid over the irreducible Brillouin Zone to be
+        used for linear interpolation with Brille, with properties
+        determined by the grid_type, n_grid_points and grid_kwargs
+        arguments. Then uses ForceConstants to fill the grid points
+        with phonon frequencies and eigenvectors via Fourier
+        interpolation. This returns a BrilleInterpolator object that
+        can then be used for linear interpolation.
+
+        Parameters
+        ----------
+        grid_type
+            The Brille grid type to be used, one of {'trellis',
+            'mesh', 'nest'}, creating a brille.BZTrellisQdc,
+            brille.BZMeshQdc or brille.BZNestQdc grid
+            respectively
+        n_grid_points
+            The approximate number of q-points in the Brille grid.
+            This is used to set the kwargs for the grid creation so
+            that a grid with approximately the desired number of
+            points is created, note this number is approximate
+            as the number of grid points generated depends on
+            Brille's internal algorithm. If this number is higher,
+            the linear interpolation is likely to give values
+            closer to the ForceConstants Fourier interpolation,
+            but the initialisation and memory costs will be higher.
+            This does nothing if grid_kwargs is set
+        grid_kwargs
+            Kwargs to be passed to the grid constructor (e.g.
+            brille.BZTrellisQdc). If set n_grid_points does
+            nothing
+        interpolation_kwargs
+            Kwargs to be passed to
+            ForceConstants.calculate_qpoint_phonon_modes. Note
+            that insert_gamma and reduce_qpoints are incompatible
+            and will be ignored
+
+        Returns
+        -------
+        brille_interpolator
+        """
         crystal = force_constants.crystal
         cell_vectors = crystal._cell_vectors
         cell = crystal.to_spglib_cell()
@@ -77,27 +188,5 @@ class BrilleInterpolator(object):
         print(f'Filling grid...')
         grid.fill(frequencies, freq_el, freq_weight, evecs, evecs_el,
                   evecs_weight)
-        self._grid = grid
-        self.crystal = crystal
+        return cls(force_constants.crystal, grid)
 
-    def calculate_qpoint_phonon_modes(self, qpts, **kwargs):
-        if not kwargs:
-            kwargs = {'useparallel': True, 'threads': cpu_count()} 
-        vals, vecs = self._grid.ir_interpolate_at(qpts, **kwargs)
-        # Eigenvectors in grid are stored in cell vectors basis,
-        # convert to Cartesian
-        vecs_cart = self._br_evec_to_eu(
-            vecs, cell_vectors=self.crystal._cell_vectors)
-        frequencies = vals.squeeze()*ureg('hartree').to('meV')
-        return QpointPhononModes(
-            self.crystal, qpts, frequencies, vecs_cart)
-
-    @staticmethod
-    def _br_evec_to_eu(br_evecs, cell_vectors=None):
-        n_branches = len(br_evecs[1])
-        eu_evecs = br_evecs.view().reshape(-1, n_branches, n_branches//3, 3)
-        if cell_vectors is not None:
-            # Convert Brille evecs (stored in basis coordinates) to
-            # Cartesian coordinates
-            eu_evecs = np.einsum('ab,ijka->ijkb', cell_vectors, eu_evecs)
-        return eu_evecs
