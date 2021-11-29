@@ -91,8 +91,8 @@ class QpointFrequencies:
     def calculate_dos(self, dos_bins: Quantity,
                       mode_widths: Optional[Quantity] = None,
                       mode_widths_min: Quantity = Quantity(0.01, 'meV'),
-                      adaptive_method: Optional[str] = 'default',
-                      error: Optional[float] = None,
+                      adaptive_method: Optional[str] = None,
+                      adaptive_error: Optional[float] = None,
                       ) -> Spectrum1D:
         """
         Calculates a density of states
@@ -112,11 +112,12 @@ class QpointFrequencies:
             infinitely sharp peaks
         adaptive_method
             String. Specifies whether to use slow, reference adaptive method or
-            faster, approximate method. Allowed options are 'default',
-            or 'fast'.
-        error
-            Scalar float. Acceptable percentage error for gaussian approximations
-            when using the fast adaptive method.
+            faster, approximate method. Allowed options are None, 'reference',
+            or 'fast', default is None.
+        adaptive_error
+            Scalar float. Acceptable error for gaussian approximations
+            when using the fast adaptive method, defined as the absolute
+            difference between the areas of the true and approximate gaussians
 
         Returns
         -------
@@ -126,15 +127,16 @@ class QpointFrequencies:
         """
         dos = self._calculate_dos(dos_bins, mode_widths=mode_widths,
                                   mode_widths_min=mode_widths_min,
-                                  adaptive_method=adaptive_method, error=error)
+                                  adaptive_method=adaptive_method,
+                                  adaptive_error=adaptive_error)
         return Spectrum1D(dos_bins, dos)
 
     def _calculate_dos(self, dos_bins: Quantity,
                        mode_widths: Optional[Quantity] = None,
                        mode_widths_min: Quantity = Quantity(0.01, 'meV'),
                        mode_weights: Optional[np.ndarray] = None,
-                       adaptive_method: Optional[str] = 'default',
-                       error: Optional[float] = None,
+                       adaptive_method: Optional[str] = None,
+                       adaptive_error: Optional[float] = None,
                        q_idx: Optional[int] = None
                        ) -> Quantity:
         """
@@ -153,11 +155,13 @@ class QpointFrequencies:
         case, mode_widths and mode_weights must be shape (1, n_modes)
         arrays
         """
-        if adaptive_method!='fast' and error is not None:
+
+        # warnings to be improved
+        if adaptive_method!='fast' and adaptive_error is not None:
             warnings.warn('\n The error argument can only be applied when '
                           'using the fast adaptive method, so will be ignored.')
-        if mode_widths is None and adaptive_method!='default'\
-            or mode_widths is None and error is not None:
+        if mode_widths is None and adaptive_method is not None\
+            or mode_widths is None and adaptive_error is not None:
             warnings.warn('\n Adaptive broadening can only be applied when '
                           'mode_widths are provided, therefore adaptive_method '
                           'will be ignored.')
@@ -178,7 +182,7 @@ class QpointFrequencies:
             mode_weights_calc = mode_weights
         else:
             mode_weights_calc = np.ones(freqs.shape)
-        if mode_widths is not None and adaptive_method=='default':
+        if mode_widths is not None and adaptive_method=='reference':
             # adaptive broadening by summing over individual peaks
             from scipy.stats import norm
             dos_bins_calc = Spectrum1D._bin_edges_to_centres(dos_bins_calc)
@@ -193,16 +197,8 @@ class QpointFrequencies:
                     dos += pdf*weights[q]*mode_weights_calc[q, m]
         elif mode_widths is not None and adaptive_method=='fast':
             # fast, approximate method for adaptive broadening
-            freqs = np.ravel(freqs)
-            mode_widths = np.ravel(mode_widths).to('hartree').magnitude
-            n_weights = np.repeat(weights, n_modes)
-
-            # set default error value if none specified
-            if error is None:
-                error = 0.01
-
             dos = fast_broaden(dos_bins_calc, freqs, mode_widths,
-                               n_weights, error)
+                               weights, adaptive_error)
         else:
             bin_idx = np.digitize(freqs, dos_bins_calc)
             # Create DOS with extra bin either side, for any points
