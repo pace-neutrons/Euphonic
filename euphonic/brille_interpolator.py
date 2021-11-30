@@ -5,17 +5,17 @@ import spglib as spg
 import numpy as np
 try:
     import brille as br
-except ModuleNotFoundError:
+except ModuleNotFoundError as err:
     raise ModuleNotFoundError(
         'Cannot import Brille for use with BrilleInterpolator '
         '(maybe Brille is not installed?). To install Euphonic\'s '
         'optional Brille dependency, try:\n\npip install '
-        'euphonic[brille]\n')
+        'euphonic[brille]\n') from err
 
 from euphonic.validate import _check_constructor_inputs
 from euphonic import ureg, QpointPhononModes, ForceConstants, Crystal
 
-class BrilleInterpolator(object):
+class BrilleInterpolator:
     """
     A class to perform linear interpolation of eigenvectors and
     frequencies at arbitrary q-points using the Brille library
@@ -151,7 +151,7 @@ class BrilleInterpolator(object):
         direct.spacegroup = symmetry
         bz = br.BrillouinZone(direct.star)
 
-        print(f'Generating grid...')
+        print('Generating grid...')
         if grid_type == 'trellis':
             if grid_kwargs is None:
                 vol = bz.ir_polyhedron.volume
@@ -180,7 +180,7 @@ class BrilleInterpolator(object):
         phonons = force_constants.calculate_qpoint_phonon_modes(
             grid.rlu, **interpolation_kwargs)
         # Convert eigenvectors from Cartesian to cell vectors basis
-        # for storage in grid 
+        # for storage in grid
         evecs_basis = np.einsum('ba,ijkb->ijka', np.linalg.inv(cell_vectors),
                                 phonons.eigenvectors)
         n_atoms = crystal.n_atoms
@@ -193,7 +193,7 @@ class BrilleInterpolator(object):
         cost_function = 0
         evecs_el = (0, 3*n_atoms, 0, 3, 0, cost_function)
         evecs_weight = (0., 1., 0.)
-        print(f'Filling grid...')
+        print('Filling grid...')
         grid.fill(frequencies, freq_el, freq_weight, evecs, evecs_el,
                   evecs_weight)
         return cls(force_constants.crystal, grid)
