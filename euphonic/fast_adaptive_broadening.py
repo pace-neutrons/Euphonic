@@ -1,7 +1,6 @@
 """
 Functions for fast adaptive broadening of density of states spectra
 """
-from __future__ import division
 from typing import Optional
 from scipy.optimize import curve_fit
 from scipy.signal import convolve
