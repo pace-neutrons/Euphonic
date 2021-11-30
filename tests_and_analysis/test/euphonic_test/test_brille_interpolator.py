@@ -1,13 +1,9 @@
-import json
-import os
-
 import pytest
 import numpy as np
-import numpy.testing as npt
 import spglib as spg
 import brille as br
 
-from euphonic import ForceConstants, Crystal, ureg
+from euphonic import Crystal, ureg
 from euphonic.brille_interpolator import BrilleInterpolator
 from tests_and_analysis.test.euphonic_test.test_force_constants import (
     get_fc)
@@ -47,8 +43,8 @@ def get_grid(material, grid_type='trellis', fill=True):
     if fill:
         n_qpts = len(grid.rlu)
         n_atoms = crystal.n_atoms
-        vals = np.random.rand(len(grid.rlu), 3*n_atoms, 1)
-        vec_real = np.random.rand(len(grid.rlu), 3*n_atoms, 3*n_atoms)
+        vals = np.random.rand(n_qpts, 3*n_atoms, 1)
+        vec_real = np.random.rand(n_qpts, 3*n_atoms, 3*n_atoms)
         vecs = vec_real + vec_real*1j
         grid.fill(vals, (1,), (1., 0., 0.), vecs,
                   (0., 3*n_atoms , 0, 3, 0, 0), (0., 1., 0.))
@@ -69,7 +65,7 @@ def test_import__without_brille_raises_err(
     mocker.patch('builtins.__import__', side_effect=mocked_import)
     with pytest.raises(ModuleNotFoundError) as mnf_error:
         reload(euphonic.brille_interpolator)
-    assert ("Cannot import Brille" in mnf_error.value.args[0])
+    assert "Cannot import Brille" in mnf_error.value.args[0]
 
 
 class TestBrilleInterpolatorCreation:
@@ -113,12 +109,9 @@ class TestBrilleInterpolatorCreation:
                 'grid': get_grid('quartz')}
         args[faulty_arg] = faulty_value
         # Inject the faulty value and get a tuple of constructor arguments
-        #args, kwargs = expected_fc.to_constructor_args(**{faulty_arg: faulty_value})
-        #return args, kwargs, expected_exception
         return (), args, expected_exception
 
     def test_faulty_object_creation(self, inject_faulty_elements):
         faulty_args, faulty_kwargs, expected_exception = inject_faulty_elements
         with pytest.raises(expected_exception):
             BrilleInterpolator(*faulty_args, **faulty_kwargs)
-
