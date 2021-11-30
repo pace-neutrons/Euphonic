@@ -1,8 +1,16 @@
 from multiprocessing import cpu_count
 from typing import Union, Optional, Dict, Any, Type, TypeVar
+
 import spglib as spg
 import numpy as np
-import brille as br
+try:
+    import brille as br
+except ModuleNotFoundError:
+    raise ModuleNotFoundError(
+        'Cannot import Brille for use with BrilleInterpolator '
+        '(maybe Brille is not installed?). To install Euphonic\'s '
+        'optional Brille dependency, try:\n\npip install '
+        'euphonic[brille]\n')
 
 from euphonic.validate import _check_constructor_inputs
 from euphonic import ureg, QpointPhononModes, ForceConstants, Crystal
@@ -189,4 +197,3 @@ class BrilleInterpolator(object):
         grid.fill(frequencies, freq_el, freq_weight, evecs, evecs_el,
                   evecs_weight)
         return cls(force_constants.crystal, grid)
-

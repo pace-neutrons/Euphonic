@@ -7,7 +7,8 @@ import numpy.testing as npt
 import spglib as spg
 import brille as br
 
-from euphonic import BrilleInterpolator, ForceConstants, Crystal, ureg
+from euphonic import ForceConstants, Crystal, ureg
+from euphonic.brille_interpolator import BrilleInterpolator
 from tests_and_analysis.test.euphonic_test.test_force_constants import (
     get_fc)
 from tests_and_analysis.test.euphonic_test.test_crystal import (
@@ -52,6 +53,23 @@ def get_grid(material, grid_type='trellis', fill=True):
         grid.fill(vals, (1,), (1., 0., 0.), vecs,
                   (0., 3*n_atoms , 0, 3, 0, 0), (0., 1., 0.))
     return grid
+
+
+def test_import__without_brille_raises_err(
+        mocker):
+    # Mock import of brille to raise ModuleNotFoundError
+    import builtins
+    from importlib import reload
+    import euphonic.brille_interpolator
+    real_import = builtins.__import__
+    def mocked_import(name, *args, **kwargs):
+        if name == 'brille':
+            raise ModuleNotFoundError
+        return real_import(name, *args, **kwargs)
+    mocker.patch('builtins.__import__', side_effect=mocked_import)
+    with pytest.raises(ModuleNotFoundError) as mnf_error:
+        reload(euphonic.brille_interpolator)
+    assert ("Cannot import Brille" in mnf_error.value.args[0])
 
 
 class TestBrilleInterpolatorCreation:
@@ -103,3 +121,4 @@ class TestBrilleInterpolatorCreation:
         faulty_args, faulty_kwargs, expected_exception = inject_faulty_elements
         with pytest.raises(expected_exception):
             BrilleInterpolator(*faulty_args, **faulty_kwargs)
+

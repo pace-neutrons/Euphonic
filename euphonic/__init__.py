@@ -24,4 +24,3 @@ from .qpoint_frequencies import QpointFrequencies
 from .structure_factor import StructureFactor
 from .qpoint_phonon_modes import QpointPhononModes
 from .force_constants import ForceConstants
-from .brille_interpolator import BrilleInterpolator
