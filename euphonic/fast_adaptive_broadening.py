@@ -13,6 +13,7 @@ def fast_broaden(dos_bins: np.ndarray,
                  freqs: np.ndarray,
                  mode_widths: Quantity,
                  weights: np.ndarray,
+                 mode_weights: np.ndarray,
                  adaptive_error: float) -> np.ndarray:
     """
     Uses a fast, approximate method to adaptively broaden a density
@@ -24,13 +25,16 @@ def fast_broaden(dos_bins: np.ndarray,
         Shape (n_e_bins + 1,) float ndarray. The energy bin edges to use for
         calculating the DOS
     freqs
-        Shape (n_qpts,) float ndarray. Frequencies per q-point
+        Shape (n_qpts, n_modes) float ndarray. Frequencies per q-point
         and mode.
     mode_widths
         Shape (n_qpts, n_modes) float Quantity in energy units. The broadening
         width for each mode at each q-point
     weights
         Shape (n_qpts,) float ndarray. The weight for each q-point.
+    mode_weights
+        Shape (n_qpts, n_modes) float ndarray. The weight of each mode at
+        each q-point.
     adaptive_error
         Scalar float. Acceptable error for gaussian approximations, defined
         as the absolute difference between the areas of the true and
@@ -44,6 +48,7 @@ def fast_broaden(dos_bins: np.ndarray,
     """
     n_modes = freqs.shape[-1]
     freqs = np.ravel(freqs)
+    mode_weights = np.ravel(mode_weights)
     mode_widths = np.ravel(mode_widths).to('hartree').magnitude
     n_weights = np.repeat(weights, n_modes)
 
@@ -85,9 +90,9 @@ def fast_broaden(dos_bins: np.ndarray,
         up_weights[masked_block] = upper_mix
 
         lower_hist, _ = np.histogram(
-            n_spec, bins=dos_bins, weights=low_weights*n_weights/bin_width)
+            n_spec, bins=dos_bins, weights=low_weights*n_weights*mode_weights/bin_width)
         upper_hist, _ = np.histogram(
-            n_spec, bins=dos_bins, weights=up_weights*n_weights/bin_width)
+            n_spec, bins=dos_bins, weights=up_weights*n_weights*mode_weights/bin_width)
 
         scaled_data_matrix[:, i-1] += lower_hist
         scaled_data_matrix[:, i] += upper_hist

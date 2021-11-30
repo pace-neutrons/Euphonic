@@ -156,6 +156,12 @@ class QpointFrequencies:
         arrays
         """
 
+        adaptive_method_options = [None, 'reference', 'fast']
+        if not adaptive_method in adaptive_method_options:
+            raise ValueError(f'Invalid value for adaptive_method, '
+                             f'got {adaptive_method}, should be one '
+                             f'of {adaptive_method_options}')
+
         # warnings to be improved
         if adaptive_method!='fast' and adaptive_error is not None:
             warnings.warn('\n The error argument can only be applied when '
@@ -198,7 +204,7 @@ class QpointFrequencies:
         elif mode_widths is not None and adaptive_method=='fast':
             # fast, approximate method for adaptive broadening
             dos = fast_broaden(dos_bins_calc, freqs, mode_widths,
-                               weights, adaptive_error)
+                               weights, mode_weights_calc, adaptive_error)
         else:
             bin_idx = np.digitize(freqs, dos_bins_calc)
             # Create DOS with extra bin either side, for any points
