@@ -48,7 +48,7 @@ def fast_broaden(dos_bins: np.ndarray,
     n_modes = freqs.shape[-1]
     freqs = np.ravel(freqs)
     mode_weights = np.ravel(mode_weights)
-    mode_widths = np.ravel(mode_widths).to('hartree').magnitude
+    mode_widths = np.ravel(mode_widths.to('hartree').magnitude)
     n_weights = np.repeat(weights, n_modes)
 
     # determine spacing value for mode_width samples given desired error level
