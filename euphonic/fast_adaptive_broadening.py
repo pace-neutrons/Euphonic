@@ -51,10 +51,6 @@ def fast_broaden(dos_bins: np.ndarray,
     mode_widths = np.ravel(mode_widths).to('hartree').magnitude
     n_weights = np.repeat(weights, n_modes)
 
-    # set default error value if none specified
-    if adaptive_error is None:
-        adaptive_error = 0.01
-
     # determine spacing value for mode_width samples given desired error level
     spacing = 656.1*adaptive_error**3 - 131.8*adaptive_error**2 +\
                 15.98*adaptive_error + 1.0803

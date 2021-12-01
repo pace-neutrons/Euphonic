@@ -408,8 +408,8 @@ class QpointPhononModes(QpointFrequencies):
             self, dos_bins: Quantity,
             mode_widths: Optional[Quantity] = None,
             mode_widths_min: Quantity = Quantity(0.01, 'meV'),
-            adaptive_method: Optional[str] = None,
-            adaptive_error: Optional[float] = None,
+            adaptive_method: Optional[str] = 'reference',
+            adaptive_error: Optional[float] = 0.01,
             weighting: Optional[str] = None,
             cross_sections: Union[str, Dict[str, Quantity]] = 'BlueBook',
             ) -> Spectrum1DCollection:
@@ -432,8 +432,8 @@ class QpointPhononModes(QpointFrequencies):
             infinitely sharp peaks.
         adaptive_method
             String. Specifies whether to use slow, reference adaptive method or
-            faster, approximate method. Allowed options are None, 'reference',
-            or 'fast', default is None.
+            faster, approximate method. Allowed options are 'reference'
+            or 'fast', default is 'reference'.
         adaptive_error
             Scalar float. Acceptable error for gaussian approximations
             when using the fast adaptive method, defined as the absolute

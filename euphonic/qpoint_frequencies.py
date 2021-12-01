@@ -91,8 +91,8 @@ class QpointFrequencies:
     def calculate_dos(self, dos_bins: Quantity,
                       mode_widths: Optional[Quantity] = None,
                       mode_widths_min: Quantity = Quantity(0.01, 'meV'),
-                      adaptive_method: Optional[str] = None,
-                      adaptive_error: Optional[float] = None,
+                      adaptive_method: Optional[str] = 'reference',
+                      adaptive_error: Optional[float] = 0.01,
                       ) -> Spectrum1D:
         """
         Calculates a density of states
@@ -112,8 +112,8 @@ class QpointFrequencies:
             infinitely sharp peaks
         adaptive_method
             String. Specifies whether to use slow, reference adaptive method or
-            faster, approximate method. Allowed options are None, 'reference',
-            or 'fast', default is None.
+            faster, approximate method. Allowed options are 'reference'
+            or 'fast', default is 'reference'.
         adaptive_error
             Scalar float. Acceptable error for gaussian approximations
             when using the fast adaptive method, defined as the absolute
@@ -135,8 +135,8 @@ class QpointFrequencies:
                        mode_widths: Optional[Quantity] = None,
                        mode_widths_min: Quantity = Quantity(0.01, 'meV'),
                        mode_weights: Optional[np.ndarray] = None,
-                       adaptive_method: Optional[str] = None,
-                       adaptive_error: Optional[float] = None,
+                       adaptive_method: Optional[str] = 'reference',
+                       adaptive_error: Optional[float] = 0.01,
                        q_idx: Optional[int] = None
                        ) -> Quantity:
         """
@@ -161,16 +161,6 @@ class QpointFrequencies:
             raise ValueError(f'Invalid value for adaptive_method, '
                              f'got {adaptive_method}, should be one '
                              f'of {adaptive_method_options}')
-
-        # warnings to be improved
-        if adaptive_method!='fast' and adaptive_error is not None:
-            warnings.warn('\n The error argument can only be applied when '
-                          'using the fast adaptive method, so will be ignored.')
-        if mode_widths is None and adaptive_method is not None\
-            or mode_widths is None and adaptive_error is not None:
-            warnings.warn('\n Adaptive broadening can only be applied when '
-                          'mode_widths are provided, therefore adaptive_method '
-                          'will be ignored.')
 
         if q_idx is None:
             freqs = self._frequencies
