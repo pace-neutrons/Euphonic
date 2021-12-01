@@ -51,9 +51,9 @@ def test_gaussian():
     assert gaussian_eval == pytest.approx(scipy_norm)
 
 @pytest.mark.parametrize(('spacing','expected_coeffs'),
-                         [(2, [-0.14792773,  1.19816561, -3.55951241,  3.50998823]),
-                          (np.sqrt(2), [-0.39948008,  2.97409516, -7.83100669,  6.25652513])])
+                         [(2, [-0.14238859,  1.17197007, -3.51888052,  3.48935083]),
+                          (np.sqrt(2), [-0.31548272,  2.66806879, -7.46079177,  6.10782419])])
 def test_find_coeffs(spacing, expected_coeffs):
-    """Test find_coeffs against coefficients calculated on a fine grid"""
+    """Test find_coeffs against expected coefficients"""
     coeffs = find_coeffs(spacing)
-    assert coeffs == pytest.approx(expected_coeffs, abs=0.015)
+    assert coeffs == pytest.approx(expected_coeffs)
