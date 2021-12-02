@@ -1,5 +1,6 @@
 from importlib_resources import open_text
-import yaml
+
+import pytest
 
 import euphonic
 
@@ -11,7 +12,9 @@ class TestInstalledFiles:
             license_data = fp.readlines()
         assert 'GNU GENERAL PUBLIC LICENSE' in license_data[0]
 
+    @pytest.mark.phonopy_reader  # Needs pyyaml
     def test_citation_cff_is_installed(self):
+        import yaml
         with open_text(euphonic, 'CITATION.cff') as fp:
             citation_data = yaml.safe_load(fp)
         assert 'cff-version' in citation_data

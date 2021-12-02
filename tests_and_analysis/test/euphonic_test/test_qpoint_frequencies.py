@@ -128,44 +128,44 @@ def check_qpt_freqs(
 @pytest.mark.unit
 class TestQpointFrequenciesCreation:
 
-    @pytest.fixture(params=[
+    @pytest.mark.parametrize('expected_qpt_freqs', [
         get_expected_qpt_freqs(
             'quartz', 'quartz_666_qpoint_frequencies.json'),
         get_expected_qpt_freqs(
             'quartz', 'quartz_bandstructure_qpoint_frequencies.json'),
         get_expected_qpt_freqs(
             'quartz', 'quartz_666_cv_only_qpoint_frequencies.json')])
-    def create_from_constructor(self, request):
-        expected_qpt_freqs = request.param
+    def test_create_from_constructor(self, expected_qpt_freqs):
         args, kwargs = expected_qpt_freqs.to_constructor_args()
         qpt_freqs = QpointFrequencies(*args, **kwargs)
-        return qpt_freqs, expected_qpt_freqs
+        check_qpt_freqs(qpt_freqs, expected_qpt_freqs)
 
-    @pytest.fixture(params=[
+    @pytest.mark.parametrize('expected_qpt_freqs', [
         get_expected_qpt_freqs(
             'quartz', 'quartz_bandstructure_qpoint_frequencies.json')])
-    def create_from_constructor_without_weights(self, request):
-        expected_qpt_freqs = request.param
+    def test_create_from_constructor_without_weights(
+            self, expected_qpt_freqs):
         args, kwargs = expected_qpt_freqs.to_constructor_args(weights=False)
         qpt_freqs = QpointFrequencies(*args, **kwargs)
-        return qpt_freqs, expected_qpt_freqs
+        check_qpt_freqs(qpt_freqs, expected_qpt_freqs)
 
-    @pytest.fixture(params=[
+    @pytest.mark.parametrize('material, phonon_file, json_file', [
         ('LZO', 'La2Zr2O7.phonon',
          'LZO_qpoint_frequencies.json'),
         ('quartz', 'quartz-666-grid.phonon',
          'quartz_666_qpoint_frequencies.json'),
         ('quartz', 'quartz_split_qpts.phonon',
          'quartz_split_from_castep_qpoint_frequencies.json')])
-    def create_from_castep(self, request):
-        material, phonon_file, json_file = request.param
+    def test_create_from_castep(self, material, phonon_file, json_file):
         qpt_freqs = QpointFrequencies.from_castep(
             get_castep_path(material, phonon_file))
         expected_qpt_freqs = ExpectedQpointFrequencies(
             os.path.join(get_qpt_freqs_dir(material), json_file))
-        return qpt_freqs, expected_qpt_freqs
+        check_qpt_freqs(qpt_freqs, expected_qpt_freqs)
 
-    @pytest.fixture(params=[
+    @pytest.mark.phonopy_reader
+    @pytest.mark.parametrize(
+            'material, subdir, phonopy_args, json_file', [
         ('NaCl', 'band', {'summary_name': 'should_not_be_read',
                           'phonon_name': 'band.yaml'},
          'NaCl_band_yaml_from_phonopy_qpoint_frequencies.json'),
@@ -195,48 +195,35 @@ class TestQpointFrequenciesCreation:
         ('CaHgO2', '', {'summary_name': 'mp-7041-20180417.yaml',
                         'phonon_name': 'qpoints.yaml'},
          'CaHgO2_from_phonopy_qpoint_frequencies.json')])
-    def create_from_phonopy(self, request):
-        material, subdir, phonopy_args, json_file = request.param
+    def test_create_from_phonopy(
+            self, material, subdir, phonopy_args, json_file):
         phonopy_args['path'] = get_phonopy_path(material, subdir)
         qpt_freqs = QpointFrequencies.from_phonopy(**phonopy_args)
         json_path = os.path.join(
             get_qpt_freqs_dir(material), json_file)
         expected_qpt_freqs = ExpectedQpointFrequencies(json_path)
-        return qpt_freqs, expected_qpt_freqs
+        check_qpt_freqs(qpt_freqs, expected_qpt_freqs)
 
-    @pytest.fixture(params=[
+    @pytest.mark.parametrize('material, json_file', [
         ('quartz', 'quartz_666_qpoint_frequencies.json'),
         ('quartz', 'quartz_bandstructure_qpoint_frequencies.json'),
         ('quartz', 'quartz_666_cv_only_qpoint_frequencies.json')])
-    def create_from_json(self, request):
-        material, json_file = request.param
+    def test_create_from_json(self, material, json_file):
         expected_qpt_freqs = get_expected_qpt_freqs(material, json_file)
         qpt_freqs = get_qpt_freqs(material, json_file)
-        return qpt_freqs, expected_qpt_freqs
+        check_qpt_freqs(qpt_freqs, expected_qpt_freqs)
 
-    @pytest.fixture(params=[
+    @pytest.mark.parametrize('material, json_file', [
         ('quartz', 'quartz_666_qpoint_frequencies.json'),
         ('quartz', 'quartz_bandstructure_qpoint_frequencies.json'),
         ('quartz', 'quartz_666_cv_only_qpoint_frequencies.json')])
-    def create_from_dict(self, request):
-        material, json_file = request.param
+    def test_create_from_dict(self, material, json_file):
         expected_qpt_freqs = get_expected_qpt_freqs(material, json_file)
         qpt_freqs = QpointFrequencies.from_dict(
             expected_qpt_freqs.to_dict())
-        return qpt_freqs, expected_qpt_freqs
-
-    @pytest.mark.parametrize(('qpt_freqs_creator'), [
-        pytest.lazy_fixture('create_from_constructor'),
-        pytest.lazy_fixture('create_from_constructor_without_weights'),
-        pytest.lazy_fixture('create_from_dict'),
-        pytest.lazy_fixture('create_from_json'),
-        pytest.lazy_fixture('create_from_castep'),
-        pytest.lazy_fixture('create_from_phonopy')])
-    def test_correct_object_creation(self, qpt_freqs_creator):
-        qpt_freqs, expected_qpt_freqs = qpt_freqs_creator
         check_qpt_freqs(qpt_freqs, expected_qpt_freqs)
 
-    @pytest.fixture(params=[
+    @pytest.mark.parametrize('faulty_arg, faulty_value, expected_exception', [
         ('qpts',
          get_expected_qpt_freqs(
              'quartz', 'quartz_666_qpoint_frequencies.json').qpts[:3],
@@ -259,19 +246,15 @@ class TestQpointFrequenciesCreation:
          get_expected_qpt_freqs(
              'quartz', 'quartz_666_qpoint_frequencies.json').weights[:5],
          ValueError)])
-    def inject_faulty_elements(self, request):
-        faulty_arg, faulty_value, expected_exception = request.param
+    def inject_faulty_elements(
+            self, faulty_arg, faulty_value, expected_exception):
         expected_qpt_freqs = get_expected_qpt_freqs(
             'quartz', 'quartz_666_qpoint_frequencies.json')
         # Inject the faulty value and get a tuple of constructor arguments
         args, kwargs = expected_qpt_freqs.to_constructor_args(
             **{faulty_arg: faulty_value})
-        return args, kwargs, expected_exception
-
-    def test_faulty_object_creation(self, inject_faulty_elements):
-        faulty_args, faulty_kwargs, expected_exception = inject_faulty_elements
         with pytest.raises(expected_exception):
-            QpointFrequencies(*faulty_args, **faulty_kwargs)
+            QpointFrequencies(*args, **kwargs)
 
     @pytest.mark.parametrize('material, subdir, phonopy_args', [
         ('NaCl', 'qpoints', {'summary_name': 'phonopy.yaml',
@@ -292,6 +275,7 @@ class TestQpointFrequenciesCreation:
         with pytest.raises(ImportPhonopyReaderError):
             QpointFrequencies.from_phonopy(**phonopy_args)
 
+    @pytest.mark.phonopy_reader
     @pytest.mark.parametrize('material, subdir, phonopy_args, err', [
         ('NaCl', 'qpoints', {'summary_name': 'phonopy.yaml',
                              'phonon_name': 'qpoints_hdf5.test'},
@@ -310,6 +294,7 @@ class TestQpointFrequenciesCreation:
         with pytest.raises(err):
             QpointFrequencies.from_phonopy(**phonopy_args)
 
+    @pytest.mark.phonopy_reader
     @pytest.mark.parametrize('material, subdir, phonopy_args, json_file', [
         ('CaHgO2', '', {'summary_name': 'mp-7041-20180417.yaml',
                         'phonon_name': 'qpoints.yaml'},

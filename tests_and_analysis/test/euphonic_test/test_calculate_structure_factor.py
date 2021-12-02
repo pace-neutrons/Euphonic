@@ -20,68 +20,50 @@ from tests_and_analysis.test.euphonic_test.test_structure_factor import (
 @pytest.mark.integration
 class TestCalculateStructureFactorFromForceConstants:
 
-    def get_multithreaded_kwargs(self, n_threads):
-        kwargs = {}
+    def get_quartz_fc():
+        return ForceConstants.from_castep(
+            get_castep_path('quartz', 'quartz.castep_bin'))
+
+    def get_si2_fc():
+        return ForceConstants.from_castep(
+            get_castep_path('Si2-sc-skew', 'Si2-sc-skew.castep_bin'))
+
+
+    tol_kwargs = {'sf_atol': 3e-3,
+                  'sf_rtol': 3e-4,
+                  'freq_atol': 1e-4,
+                  'freq_rtol': 3e-4,
+                  'freq_gamma_atol': 0.55,
+                  'sf_gamma_atol': 3e2}
+
+    @pytest.mark.parametrize(
+        'material, fc, qpt_ph_modes_args, dw_file, expected_sf_file', [
+            ('quartz', get_quartz_fc(), (get_test_qpts('split'), {}),
+             'quartz_666_0K_debye_waller.json',
+             'quartz_0K_fc_structure_factor.json'),
+            ('quartz', get_quartz_fc(), (get_test_qpts('split'), {}),
+             'quartz_666_300K_debye_waller.json',
+             'quartz_300K_fc_structure_factor.json'),
+            ('quartz', get_quartz_fc(), (get_test_qpts('split'), {}),
+             None,
+             'quartz_fc_structure_factor.json'),
+            ('Si2-sc-skew', get_si2_fc(), (get_test_qpts(), {}),
+             'Si2-sc-skew_666_300K_debye_waller.json',
+             'Si2-sc-skew_300K_fc_structure_factor.json'),
+            ('quartz', get_quartz_fc(),
+             (get_test_qpts('split'), {'asr': 'reciprocal'}),
+             'quartz_666_300K_debye_waller.json',
+             'quartz_recip_asr_300K_fc_structure_factor.json')])
+    @pytest.mark.parametrize('n_threads', [0, 1, 2])
+    def test_calculate_structure_factor(self, material, fc, qpt_ph_modes_args,
+                                        dw_file, expected_sf_file, n_threads):
+        args, kwargs = qpt_ph_modes_args
         if n_threads == 0:
             kwargs['use_c'] = False
         else:
             kwargs['use_c'] = True
             kwargs['n_threads'] = n_threads
-        return kwargs
-
-    @pytest.fixture(params=[0, 1, 2])
-    def get_quartz_qpt_ph_modes_recip(self, request):
-        fc = ForceConstants.from_castep(
-            get_castep_path('quartz', 'quartz.castep_bin'))
-        kwargs = self.get_multithreaded_kwargs(request.param)
-        return fc.calculate_qpoint_phonon_modes(
-            get_test_qpts('split'), asr='reciprocal', **kwargs)
-
-    @pytest.fixture(params=[0, 1, 2])
-    def get_quartz_qpt_ph_modes(self, request):
-        fc = ForceConstants.from_castep(
-            get_castep_path('quartz', 'quartz.castep_bin'))
-        kwargs = self.get_multithreaded_kwargs(request.param)
-        return fc.calculate_qpoint_phonon_modes(
-            get_test_qpts('split'), **kwargs)
-
-    @pytest.fixture(params=[0, 1, 2])
-    def get_si2_qpt_ph_modes(self, request):
-        fc = ForceConstants.from_castep(
-            get_castep_path('Si2-sc-skew', 'Si2-sc-skew.castep_bin'))
-        kwargs = self.get_multithreaded_kwargs(request.param)
-        return fc.calculate_qpoint_phonon_modes(get_test_qpts(), **kwargs)
-
-    @pytest.fixture(params=[0, 1, 2])
-    def get_cahgo2_qpt_ph_modes(self, request):
-        fc = ForceConstants.from_phonopy(
-            path=get_phonopy_path('CaHgO2', ''),
-            summary_name='mp-7041-20180417.yaml')
-        kwargs = self.get_multithreaded_kwargs(request.param)
-        return fc.calculate_qpoint_phonon_modes(get_test_qpts(), **kwargs)
-
-    @pytest.mark.parametrize(
-        'material, qpt_ph_modes, dw_file, expected_sf_file', [
-            ('quartz', pytest.lazy_fixture('get_quartz_qpt_ph_modes'),
-             'quartz_666_0K_debye_waller.json',
-             'quartz_0K_fc_structure_factor.json'),
-            ('quartz', pytest.lazy_fixture('get_quartz_qpt_ph_modes'),
-             'quartz_666_300K_debye_waller.json',
-             'quartz_300K_fc_structure_factor.json'),
-            ('quartz', pytest.lazy_fixture('get_quartz_qpt_ph_modes'),
-             None,
-             'quartz_fc_structure_factor.json'),
-            ('Si2-sc-skew', pytest.lazy_fixture('get_si2_qpt_ph_modes'),
-             'Si2-sc-skew_666_300K_debye_waller.json',
-             'Si2-sc-skew_300K_fc_structure_factor.json'),
-            ('CaHgO2', pytest.lazy_fixture('get_cahgo2_qpt_ph_modes'),
-             'CaHgO2_666_300K_debye_waller.json',
-             'CaHgO2_300K_fc_structure_factor.json'),
-            ('quartz', pytest.lazy_fixture('get_quartz_qpt_ph_modes_recip'),
-             'quartz_666_300K_debye_waller.json',
-             'quartz_recip_asr_300K_fc_structure_factor.json')])
-    def test_calculate_structure_factor(self, material, qpt_ph_modes,
-                                        dw_file, expected_sf_file):
+        qpt_ph_modes = fc.calculate_qpoint_phonon_modes(args, **kwargs)
         if dw_file is not None:
             sf = qpt_ph_modes.calculate_structure_factor(
                 dw=get_dw(material, dw_file))
@@ -89,19 +71,43 @@ class TestCalculateStructureFactorFromForceConstants:
             sf = qpt_ph_modes.calculate_structure_factor()
         sf_file = os.path.join(get_sf_dir(material), expected_sf_file)
         expected_sf = StructureFactor.from_json_file(sf_file)
-        tol_kwargs = {}
         # Use larger tolerances with reciprocal ASR - formalism works
         # only at gamma but is applied to all q, so problem is less
         # well conditioned leading to larger f.p errors on different systems
         if 'recip' in expected_sf_file:
-            tol_kwargs['sf_atol'] = 3e-3
-            tol_kwargs['sf_rtol'] = 3e-4
-            tol_kwargs['freq_atol'] = 1e-4
-            tol_kwargs['freq_rtol'] = 3e-4
-            tol_kwargs['freq_gamma_atol'] = 0.55
-            tol_kwargs['sf_gamma_atol'] = 3e2
-
+            tol_kwargs = self.tol_kwargs
+        else:
+            tol_kwargs = {}
         check_structure_factor(sf, expected_sf, **tol_kwargs)
+
+    @pytest.mark.phonopy_reader
+    @pytest.mark.parametrize(
+        'material, fc_kwargs, qpt_ph_modes_args, dw_file, expected_sf_file', [
+            ('CaHgO2', {'path': get_phonopy_path('CaHgO2', ''),
+                        'summary_name': 'mp-7041-20180417.yaml'},
+             (get_test_qpts(), {}),
+             'CaHgO2_666_300K_debye_waller.json',
+             'CaHgO2_300K_fc_structure_factor.json')])
+    @pytest.mark.parametrize('n_threads', [0, 1, 2])
+    def test_calculate_structure_factor_from_phonopy(
+            self, material, fc_kwargs, qpt_ph_modes_args, dw_file,
+            expected_sf_file, n_threads):
+        fc = ForceConstants.from_phonopy(**fc_kwargs)
+        args, kwargs = qpt_ph_modes_args
+        if n_threads == 0:
+            kwargs['use_c'] = False
+        else:
+            kwargs['use_c'] = True
+            kwargs['n_threads'] = n_threads
+        qpt_ph_modes = fc.calculate_qpoint_phonon_modes(args, **kwargs)
+        if dw_file is not None:
+            sf = qpt_ph_modes.calculate_structure_factor(
+                dw=get_dw(material, dw_file))
+        else:
+            sf = qpt_ph_modes.calculate_structure_factor()
+        sf_file = os.path.join(get_sf_dir(material), expected_sf_file)
+        expected_sf = StructureFactor.from_json_file(sf_file)
+        check_structure_factor(sf, expected_sf)
 
 
 @pytest.mark.unit
@@ -114,12 +120,6 @@ class TestCalculateStructureFactorFromQpointPhononModes:
     def get_si2_qpt_ph_modes():
         return QpointPhononModes.from_castep(
             get_castep_path('Si2-sc-skew', 'Si2-sc-skew.phonon'))
-
-    def get_cahgo2_qpt_ph_modes():
-        return QpointPhononModes.from_phonopy(
-            path=get_phonopy_path('CaHgO2', ''),
-            summary_name='mp-7041-20180417.yaml',
-            phonon_name='qpoints.yaml')
 
     @pytest.mark.parametrize(
         'material, qpt_ph_modes, dw_file, expected_sf_file', [
@@ -134,12 +134,29 @@ class TestCalculateStructureFactorFromQpointPhononModes:
              'quartz_structure_factor.json'),
             ('Si2-sc-skew', get_si2_qpt_ph_modes(),
              'Si2-sc-skew_666_300K_debye_waller.json',
-             'Si2-sc-skew_300K_structure_factor.json'),
-            ('CaHgO2', get_cahgo2_qpt_ph_modes(),
-             'CaHgO2_666_300K_debye_waller.json',
-             'CaHgO2_300K_structure_factor.json')])
+             'Si2-sc-skew_300K_structure_factor.json')])
     def test_calculate_structure_factor(self, material, qpt_ph_modes,
                                         dw_file, expected_sf_file):
+        if dw_file is not None:
+            sf = qpt_ph_modes.calculate_structure_factor(
+                dw=get_dw(material, dw_file))
+        else:
+            sf = qpt_ph_modes.calculate_structure_factor()
+        sf_file = os.path.join(get_sf_dir(material), expected_sf_file)
+        expected_sf = StructureFactor.from_json_file(sf_file)
+        check_structure_factor(sf, expected_sf)
+
+    @pytest.mark.phonopy_reader
+    @pytest.mark.parametrize(
+        'material, qpt_ph_modes_kwargs, dw_file, expected_sf_file', [
+            ('CaHgO2', {'path': get_phonopy_path('CaHgO2', ''),
+             'summary_name': 'mp-7041-20180417.yaml',
+             'phonon_name': 'qpoints.yaml'},
+             'CaHgO2_666_300K_debye_waller.json',
+             'CaHgO2_300K_structure_factor.json')])
+    def test_calculate_structure_factor_from_phonopy(
+            self, material, qpt_ph_modes_kwargs, dw_file, expected_sf_file):
+        qpt_ph_modes = QpointPhononModes.from_phonopy(**qpt_ph_modes_kwargs)
         if dw_file is not None:
             sf = qpt_ph_modes.calculate_structure_factor(
                 dw=get_dw(material, dw_file))
