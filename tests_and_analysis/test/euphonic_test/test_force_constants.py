@@ -161,46 +161,43 @@ def check_force_constants(
                 == expected_force_constants.dielectric.units)
 
 
-@pytest.mark.unit
 class TestForceConstantsCreation:
 
-    @pytest.fixture(params=[get_expected_fc('quartz'),
-                            get_expected_fc('LZO'),
-                            get_expected_fc('NaCl')])
-    def create_from_constructor(self, request):
-        expected_fc = request.param
+    @pytest.mark.parametrize('expected_fc', [
+        get_expected_fc('quartz'),
+        get_expected_fc('LZO'),
+        get_expected_fc('NaCl')])
+    def test_create_from_constructor(self, expected_fc):
         args, kwargs = expected_fc.to_constructor_args()
         fc = ForceConstants(*args, **kwargs)
-        return fc, expected_fc
+        check_force_constants(fc, expected_fc)
 
-    @pytest.fixture(params=[
+    @pytest.mark.parametrize('material, castep_bin_file', [
         ('LZO', 'La2Zr2O7.castep_bin'),
         ('graphite', 'graphite.castep_bin'),
         ('Si2-sc-skew', 'Si2-sc-skew.castep_bin'),
         ('quartz', 'quartz.castep_bin')])
-    def create_from_castep(self, request):
-        material, castep_bin_file = request.param
+    def test_create_from_castep(self, material, castep_bin_file):
         expected_fc = get_expected_fc(material)
         castep_filepath = get_castep_path(material, castep_bin_file)
         fc = ForceConstants.from_castep(castep_filepath)
-        return fc, expected_fc
+        check_force_constants(fc, expected_fc)
 
-    @pytest.fixture(params=['LZO', 'graphite', 'Si2-sc-skew', 'quartz',
-                            'CaHgO2', 'NaCl'])
-    def create_from_json(self, request):
-        material = request.param
+    @pytest.mark.parametrize('material',
+        ['LZO', 'graphite', 'Si2-sc-skew', 'quartz', 'CaHgO2', 'NaCl'])
+    def test_create_from_json(self, material):
         expected_fc = get_expected_fc(material)
         fc = ForceConstants.from_json_file(get_json_file(material))
-        return fc, expected_fc
+        check_force_constants(fc, expected_fc)
 
-    @pytest.fixture(params=['LZO', 'graphite', 'quartz'])
-    def create_from_dict(self, request):
-        material = request.param
+    @pytest.mark.parametrize('material', ['LZO', 'graphite', 'quartz'])
+    def test_create_from_dict(self, material):
         expected_fc = get_expected_fc(material)
         fc = ForceConstants.from_dict(expected_fc.to_dict())
-        return fc, expected_fc
+        check_force_constants(fc, expected_fc)
 
-    @pytest.fixture(params=[
+    @pytest.mark.phonopy_reader
+    @pytest.mark.parametrize('material, phonopy_args', [
         # Test all combinations of reading from .yaml with/without force
         # constants/born and different file formats. Extra files (e.g.
         # FORCE_CONSTANTS) have been renamed from their defaults to
@@ -242,24 +239,13 @@ class TestForceConstantsCreation:
                     'fc_name': 'FULL_FORCE_CONSTANTS'}),
         ('CaHgO2', {'summary_name': 'phonopy_nofc.yaml',
                     'fc_name': 'full_force_constants.hdf5'})])
-    def create_from_phonopy(self, request):
-        material, phonopy_args = request.param
+    def test_create_from_phonopy(self, material, phonopy_args):
         phonopy_args['path'] = get_phonopy_path(material, '')
         fc = ForceConstants.from_phonopy(**phonopy_args)
         expected_fc = get_expected_fc(material)
-        return fc, expected_fc
+        check_force_constants(fc, expected_fc)
 
-    @pytest.mark.parametrize(('force_constants_creator'), [
-        pytest.lazy_fixture('create_from_constructor'),
-        pytest.lazy_fixture('create_from_dict'),
-        pytest.lazy_fixture('create_from_json'),
-        pytest.lazy_fixture('create_from_phonopy'),
-        pytest.lazy_fixture('create_from_castep')])
-    def test_correct_object_creation(self, force_constants_creator):
-        force_constants, expected_force_constants = force_constants_creator
-        check_force_constants(force_constants, expected_force_constants)
-
-    @pytest.fixture(params=[
+    @pytest.mark.parametrize('faulty_arg, faulty_value, expected_exception', [
         ('sc_matrix',
          get_expected_fc('quartz').sc_matrix[:2],
          ValueError),
@@ -293,15 +279,12 @@ class TestForceConstantsCreation:
         ('dielectric',
          get_expected_fc('quartz').dielectric.shape,
          TypeError)])
-    def inject_faulty_elements(self, request):
-        faulty_arg, faulty_value, expected_exception = request.param
+    def test_faulty_object_creation(
+            self, faulty_arg, faulty_value, expected_exception):
         expected_fc = get_expected_fc('quartz')
         # Inject the faulty value and get a tuple of constructor arguments
-        args, kwargs = expected_fc.to_constructor_args(**{faulty_arg: faulty_value})
-        return args, kwargs, expected_exception
-
-    def test_faulty_object_creation(self, inject_faulty_elements):
-        faulty_args, faulty_kwargs, expected_exception = inject_faulty_elements
+        faulty_args, faulty_kwargs = expected_fc.to_constructor_args(
+            **{faulty_arg: faulty_value})
         with pytest.raises(expected_exception):
             ForceConstants(*faulty_args, **faulty_kwargs)
 
@@ -311,17 +294,10 @@ class TestForceConstantsCreation:
           'path': get_phonopy_path('NaCl', '')})])
     def test_create_from_phonopy_without_installed_modules_raises_err(
             self, phonopy_args, mocker):
-        # Mock import of yaml, h5py to raise ModuleNotFoundError
-        import builtins
-        real_import = builtins.__import__
-        def mocked_import(name, *args, **kwargs):
-            if name == 'h5py' or name == 'yaml':
-                raise ModuleNotFoundError
-            return real_import(name, *args, **kwargs)
-        mocker.patch('builtins.__import__', side_effect=mocked_import)
         with pytest.raises(ImportPhonopyReaderError):
             ForceConstants.from_phonopy(**phonopy_args)
 
+    @pytest.mark.phonopy_reader
     @pytest.mark.parametrize('phonopy_args, err', [
         ({'summary_name': 'phonopy_nofc.yaml',
           'fc_name': 'force_constants.hdf5',
@@ -342,6 +318,7 @@ class TestForceConstantsCreation:
             ForceConstants.from_castep(
                 get_castep_path('h-BN', 'h-BN_no_force_constants.castep_bin'))
 
+    @pytest.mark.phonopy_reader
     @pytest.mark.parametrize('material, phonopy_args', [
         ('CaHgO2', {'summary_name': 'mp-7041-20180417.yaml'})])
     def test_create_from_phonopy_without_cloader_is_ok(
@@ -362,7 +339,6 @@ class TestForceConstantsCreation:
         check_force_constants(fc, expected_fc)
 
 
-@pytest.mark.unit
 class TestForceConstantsSerialisation:
 
     @pytest.mark.parametrize('fc', [
@@ -392,7 +368,6 @@ class TestForceConstantsSerialisation:
         check_force_constants(fc, expected_fc)
 
 
-@pytest.mark.unit
 class TestForceConstantsUnitConversion:
 
     @pytest.mark.parametrize('material, attr, unit_val', [
@@ -414,7 +389,6 @@ class TestForceConstantsUnitConversion:
             setattr(fc, unit_attr, unit_val)
 
 
-@pytest.mark.unit
 class TestForceConstantsSetters:
 
     @pytest.mark.parametrize('material, attr, unit, scale', [
