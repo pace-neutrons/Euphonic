@@ -80,34 +80,10 @@ class TestForceConstantsCalculateQPointPhononModes:
          'quartz_split_reciprocal_qpoint_phonon_modes.json')]
 
 
-    nacl_params = [(
-        ForceConstants.from_phonopy(
-            path=get_phonopy_path('NaCl', ''),
-            summary_name='phonopy_nacl.yaml'),
-        'NaCl',
-        [get_test_qpts(), {'asr': 'reciprocal'}],
-        'NaCl_reciprocal_qpoint_phonon_modes.json')]
-
-
-    cahgo2_params = [(
-        ForceConstants.from_phonopy(
-            path=get_phonopy_path('CaHgO2', ''),
-            summary_name='mp-7041-20180417.yaml'),
-        'CaHgO2',
-        [get_test_qpts(), {'asr': 'reciprocal'}],
-        'CaHgO2_reciprocal_qpoint_phonon_modes.json')]
-
-
-    @pytest.mark.parametrize(
-        'fc, material, all_args, expected_qpoint_phonon_modes_file',
-        lzo_params + quartz_params + nacl_params + si2_params + cahgo2_params)
-    @pytest.mark.parametrize(
-        'reduce_qpts, n_threads',
-        [(False, 0), (True, 0), (True, 1), (True, 2)])
-    def test_calculate_qpoint_phonon_modes(
-            self, fc, material, all_args, expected_qpoint_phonon_modes_file,
-            reduce_qpts, n_threads):
-        func_kwargs = all_args[1]
+    @staticmethod
+    def calculate_and_check_qpoint_phonon_modes(
+            fc, material, args, expected_file, reduce_qpts, n_threads):
+        func_kwargs = args[1]
         func_kwargs['reduce_qpts'] = reduce_qpts
         if n_threads == 0:
             func_kwargs['use_c'] = False
@@ -115,10 +91,10 @@ class TestForceConstantsCalculateQPointPhononModes:
             func_kwargs['use_c'] = True
             func_kwargs['n_threads'] = n_threads
         qpoint_phonon_modes = fc.calculate_qpoint_phonon_modes(
-            all_args[0], **func_kwargs)
+            args[0], **func_kwargs)
         expected_qpoint_phonon_modes = ExpectedQpointPhononModes(
             os.path.join(get_qpt_ph_modes_dir(material),
-                         expected_qpoint_phonon_modes_file))
+                         expected_file))
         # Only give gamma-acoustic modes special treatment if the acoustic
         # sum rule has been applied
         tol_kwargs = {}
@@ -132,6 +108,43 @@ class TestForceConstantsCalculateQPointPhononModes:
         check_qpt_ph_modes(qpoint_phonon_modes,
                            expected_qpoint_phonon_modes,
                            **tol_kwargs)
+
+    @pytest.mark.parametrize(
+        'fc, material, all_args, expected_qpoint_phonon_modes_file',
+        lzo_params + quartz_params + si2_params)
+    @pytest.mark.parametrize(
+        'reduce_qpts, n_threads',
+        [(False, 0), (True, 0), (True, 1), (True, 2)])
+    def test_calculate_qpoint_phonon_modes(
+            self, fc, material, all_args, expected_qpoint_phonon_modes_file,
+            reduce_qpts, n_threads):
+        self.calculate_and_check_qpoint_phonon_modes(
+            fc, material, all_args, expected_qpoint_phonon_modes_file,
+            reduce_qpts, n_threads)
+
+    @pytest.mark.phonopy_reader
+    @pytest.mark.parametrize(
+        'fc_kwargs, material, all_args, expected_qpoint_phonon_modes_file', [
+        ({'path': get_phonopy_path('NaCl', ''),
+          'summary_name': 'phonopy_nacl.yaml'},
+         'NaCl',
+         [get_test_qpts(), {'asr': 'reciprocal'}],
+         'NaCl_reciprocal_qpoint_phonon_modes.json'),
+        ({'path': get_phonopy_path('CaHgO2', ''),
+          'summary_name': 'mp-7041-20180417.yaml'},
+         'CaHgO2',
+         [get_test_qpts(), {'asr': 'reciprocal'}],
+         'CaHgO2_reciprocal_qpoint_phonon_modes.json')])
+    @pytest.mark.parametrize(
+        'reduce_qpts, n_threads',
+        [(False, 0), (True, 0), (True, 1), (True, 2)])
+    def test_calculate_qpoint_phonon_modes_from_phonopy(
+            self, fc_kwargs, material, all_args,
+            expected_qpoint_phonon_modes_file, reduce_qpts, n_threads):
+        fc = ForceConstants.from_phonopy(**fc_kwargs)
+        self.calculate_and_check_qpoint_phonon_modes(
+            fc, material, all_args, expected_qpoint_phonon_modes_file,
+            reduce_qpts, n_threads)
 
     @pytest.mark.parametrize(
         ('fc, material, all_args, expected_qpoint_phonon_modes_file, '
