@@ -178,23 +178,24 @@ class QpointFrequencies:
             mode_weights_calc = mode_weights
         else:
             mode_weights_calc = np.ones(freqs.shape)
-        if mode_widths is not None and adaptive_method=='reference':
-            # adaptive broadening by summing over individual peaks
-            from scipy.stats import norm
-            dos_bins_calc = Spectrum1D._bin_edges_to_centres(dos_bins_calc)
-            dos = np.zeros(len(dos_bins_calc))
+        if mode_widths is not None:
             mode_widths = mode_widths.to('hartree').magnitude
-            mode_widths = np.maximum(mode_widths,
-                                     mode_widths_min.to('hartree').magnitude)
-            for q in range(len(freqs)):
-                for m in range(n_modes):
-                    pdf = norm.pdf(dos_bins_calc, loc=freqs[q,m],
-                                   scale=mode_widths[q,m])
-                    dos += pdf*weights[q]*mode_weights_calc[q, m]
-        elif mode_widths is not None and adaptive_method=='fast':
-            # fast, approximate method for adaptive broadening
-            dos = fast_broaden(dos_bins_calc, freqs, mode_widths,
-                               weights, mode_weights_calc, adaptive_error)
+            if adaptive_method=='reference':
+                # adaptive broadening by summing over individual peaks
+                from scipy.stats import norm
+                dos_bins_calc = Spectrum1D._bin_edges_to_centres(dos_bins_calc)
+                dos = np.zeros(len(dos_bins_calc))
+                mode_widths = np.maximum(mode_widths,
+                                        mode_widths_min.to('hartree').magnitude)
+                for q in range(len(freqs)):
+                    for m in range(n_modes):
+                        pdf = norm.pdf(dos_bins_calc, loc=freqs[q,m],
+                                    scale=mode_widths[q,m])
+                        dos += pdf*weights[q]*mode_weights_calc[q, m]
+            elif adaptive_method=='fast':
+                # fast, approximate method for adaptive broadening
+                dos = fast_broaden(dos_bins_calc, freqs, mode_widths,
+                                   weights, mode_weights_calc, adaptive_error)
         else:
             bin_idx = np.digitize(freqs, dos_bins_calc)
             # Create DOS with extra bin either side, for any points

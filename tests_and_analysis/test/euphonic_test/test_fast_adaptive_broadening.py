@@ -4,7 +4,7 @@ import pytest
 import numpy as np
 from scipy.integrate import simps
 
-from euphonic.fast_adaptive_broadening import gaussian, find_coeffs
+from euphonic.fast_adaptive_broadening import find_coeffs
 from euphonic import ureg, QpointFrequencies, Spectrum1D
 from tests_and_analysis.test.euphonic_test.test_force_constants\
     import get_fc_dir
@@ -26,8 +26,12 @@ def get_qpt_freqs(material, file):
             ('LZO', 'lzo_222_full_qpoint_frequencies.json',
              'lzo_222_full_mode_widths.json',
              np.arange(0, 100, 0.1)*ureg('meV'))])
-def test_area_unchanged_for_broadened_dos(material, qpt_freqs_json, mode_widths_json, ebins):
-    """Test that the area is approximately equal for unbroadened and broadened dos"""
+def test_area_unchanged_for_broadened_dos(material, qpt_freqs_json,
+                                          mode_widths_json, ebins):
+    """
+    Test that the area is approximately equal for unbroadened
+    and broadened dos
+    """
     qpt_freqs = get_qpt_freqs(material, qpt_freqs_json)
     with open(os.path.join(get_fc_dir(), mode_widths_json), 'r') as fp:
         modw_dict = json.load(fp)
@@ -44,8 +48,8 @@ def test_area_unchanged_for_broadened_dos(material, qpt_freqs_json, mode_widths_
     assert adaptively_broadened_dos_area == pytest.approx(dos_area, abs=1e-4)
 
 @pytest.mark.parametrize(('spacing','expected_coeffs'),
-    [(2, [-0.14238859,  1.17197007, -3.51888052,  3.48935083]),
-    (np.sqrt(2), [-0.31548272,  2.66806879, -7.46079177,  6.10782419])])
+    [(2, [-0.14384022, 1.17850278, -3.52853758, 3.49403704]),
+    (np.sqrt(2), [-0.35630207, 2.81589259, -7.6385478, 6.17879599])])
 def test_find_coeffs(spacing, expected_coeffs):
     """Test find_coeffs against expected coefficients"""
     coeffs = find_coeffs(spacing)
