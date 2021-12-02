@@ -3,11 +3,11 @@ import json
 import pytest
 import numpy as np
 from scipy.integrate import simps
-from scipy.stats import norm
 
 from euphonic.fast_adaptive_broadening import gaussian, find_coeffs
-from euphonic import ureg, Crystal, QpointFrequencies, Spectrum1D
-from tests_and_analysis.test.euphonic_test.test_force_constants import get_fc_dir
+from euphonic import ureg, QpointFrequencies, Spectrum1D
+from tests_and_analysis.test.euphonic_test.test_force_constants\
+    import get_fc_dir
 from tests_and_analysis.test.utils import get_data_path
 
 
@@ -36,23 +36,16 @@ def test_area_unchanged_for_broadened_dos(material, qpt_freqs_json, mode_widths_
     dos = qpt_freqs._calculate_dos(ebins)
     adaptively_broadened_dos = qpt_freqs._calculate_dos(
         ebins, mode_widths=mode_widths, adaptive_method='fast')
-    ebins_centres = Spectrum1D._bin_edges_to_centres(ebins.to('hartree').magnitude)
+    ebins_centres = \
+        Spectrum1D._bin_edges_to_centres(ebins.to('hartree').magnitude)
     dos_area = simps(dos, ebins_centres)
-    adaptively_broadened_dos_area = simps(adaptively_broadened_dos, ebins_centres)
+    adaptively_broadened_dos_area = simps(adaptively_broadened_dos,
+                                          ebins_centres)
     assert adaptively_broadened_dos_area == pytest.approx(dos_area, abs=1e-4)
 
-def test_gaussian():
-    """Test gaussian function against scipy.norm.pdf"""
-    xvals = np.linspace(-5,5,101)
-    sigma = 2
-    centre = 0
-    scipy_norm = norm.pdf(xvals, loc=centre, scale=sigma)
-    gaussian_eval = gaussian(xvals, sigma, centre)
-    assert gaussian_eval == pytest.approx(scipy_norm)
-
 @pytest.mark.parametrize(('spacing','expected_coeffs'),
-                         [(2, [-0.14238859,  1.17197007, -3.51888052,  3.48935083]),
-                          (np.sqrt(2), [-0.31548272,  2.66806879, -7.46079177,  6.10782419])])
+    [(2, [-0.14238859,  1.17197007, -3.51888052,  3.48935083]),
+    (np.sqrt(2), [-0.31548272,  2.66806879, -7.46079177,  6.10782419])])
 def test_find_coeffs(spacing, expected_coeffs):
     """Test find_coeffs against expected coefficients"""
     coeffs = find_coeffs(spacing)

@@ -157,7 +157,7 @@ class QpointFrequencies:
         """
 
         adaptive_method_options = [None, 'reference', 'fast']
-        if not adaptive_method in adaptive_method_options:
+        if adaptive_method not in adaptive_method_options:
             raise ValueError(f'Invalid value for adaptive_method, '
                              f'got {adaptive_method}, should be one '
                              f'of {adaptive_method_options}')

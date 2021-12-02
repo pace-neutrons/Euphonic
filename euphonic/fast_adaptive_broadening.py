@@ -4,6 +4,7 @@ Functions for fast adaptive broadening of density of states spectra
 from typing import Optional
 from scipy.optimize import curve_fit
 from scipy.signal import convolve
+from scipy.stats import norm
 import numpy as np
 from euphonic import Quantity
 
@@ -63,10 +64,9 @@ def fast_broaden(dos_bins: np.ndarray,
     mode_width_samples = spacing**np.arange(n_kernels+1)*min(mode_widths)
     freq_range = 3*max(mode_widths)
     kernel_npts_oneside = np.ceil(freq_range/bin_width)
-    kernels = gaussian(xvals=np.arange(-kernel_npts_oneside,
-                       kernel_npts_oneside+1, 1)*bin_width,
-                       sigma=mode_width_samples[:, np.newaxis],
-                       centre=0)*bin_width
+    kernels = norm.pdf(x=np.arange(-kernel_npts_oneside,
+                       kernel_npts_oneside+1, 1)*bin_width, loc=0,
+                       scale=mode_width_samples[:, np.newaxis])*bin_width
     kernels_idx = np.searchsorted(mode_width_samples, mode_widths)
 
     lower_coeffs = find_coeffs(spacing)
@@ -85,9 +85,11 @@ def fast_broaden(dos_bins: np.ndarray,
         up_weights[masked_block] = upper_mix
 
         lower_hist, _ = np.histogram(
-            n_spec, bins=dos_bins, weights=low_weights*n_weights*mode_weights/bin_width)
+            n_spec, bins=dos_bins,
+            weights=low_weights*n_weights*mode_weights/bin_width)
         upper_hist, _ = np.histogram(
-            n_spec, bins=dos_bins, weights=up_weights*n_weights*mode_weights/bin_width)
+            n_spec, bins=dos_bins,
+            weights=up_weights*n_weights*mode_weights/bin_width)
 
         scaled_data_matrix[:, i-1] += lower_hist
         scaled_data_matrix[:, i] += upper_hist
