@@ -246,7 +246,7 @@ class TestQpointFrequenciesCreation:
          get_expected_qpt_freqs(
              'quartz', 'quartz_666_qpoint_frequencies.json').weights[:5],
          ValueError)])
-    def inject_faulty_elements(
+    def test_faulty_object_creation(
             self, faulty_arg, faulty_value, expected_exception):
         expected_qpt_freqs = get_expected_qpt_freqs(
             'quartz', 'quartz_666_qpoint_frequencies.json')
