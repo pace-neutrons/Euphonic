@@ -1,13 +1,20 @@
 from argparse import Namespace
 
 import pytest
-import matplotlib.pyplot
 from numpy.testing import assert_allclose
 
-import euphonic.cli.dos
 from euphonic.cli.utils import _compose_style
 
 from tests_and_analysis.test.utils import get_castep_path
+
+pytestmark = pytest.mark.matplotlib
+# Allow tests with matplotlib marker to be collected and
+# deselected if Matplotlib is not installed
+try:
+    import matplotlib.pyplot
+    import euphonic.cli.dos
+except ModuleNotFoundError:
+    pass
 
 compose_style_cases = [
     ({'user_args': Namespace(unused=1, no_base_style=False, style=None),

@@ -5,15 +5,21 @@ from platform import platform
 
 import pytest
 import numpy.testing as npt
-# Required for mocking
-import matplotlib.pyplot
 from packaging import version
 from scipy import __version__ as scipy_ver
 
 from tests_and_analysis.test.utils import get_data_path, get_castep_path, get_phonopy_path
 from tests_and_analysis.test.script_tests.utils import (
     get_script_test_data_path, get_current_plot_image_data, args_to_key)
-import euphonic.cli.powder_map
+
+pytestmark = pytest.mark.matplotlib
+# Allow tests with matplotlib marker to be collected and
+# deselected if Matplotlib is not installed
+try:
+    import matplotlib.pyplot
+    import euphonic.cli.powder_map
+except ModuleNotFoundError:
+    pass
 
 graphite_fc_file = get_castep_path('graphite', 'graphite.castep_bin')
 nacl_prim_fc_file = get_phonopy_path('NaCl_prim', 'phonopy_nacl.yaml')

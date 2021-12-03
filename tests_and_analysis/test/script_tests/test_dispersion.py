@@ -6,8 +6,6 @@ from platform import platform
 
 import pytest
 import numpy.testing as npt
-# Required for mocking
-import matplotlib.pyplot
 from packaging import version
 from scipy import __version__ as scipy_ver
 
@@ -15,8 +13,15 @@ from tests_and_analysis.test.utils import (
     get_data_path, get_castep_path, get_phonopy_path)
 from tests_and_analysis.test.script_tests.utils import (
     get_script_test_data_path, get_current_plot_line_data, args_to_key)
-import euphonic.cli.dispersion
 
+pytestmark = pytest.mark.matplotlib
+# Allow tests with matplotlib marker to be collected and
+# deselected if Matplotlib is not installed
+try:
+    import matplotlib.pyplot
+    import euphonic.cli.dispersion
+except ModuleNotFoundError:
+    pass
 
 cahgo2_fc_file = get_phonopy_path('CaHgO2', 'mp-7041-20180417.yaml')
 lzo_fc_file = os.path.join(
