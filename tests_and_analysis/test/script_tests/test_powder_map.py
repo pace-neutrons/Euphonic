@@ -22,12 +22,6 @@ powder_map_output_file = os.path.join(get_script_test_data_path(),
 
 quick_calc_params = ['--npts=10', '--npts-min=10', '--q-spacing=1']
 powder_map_params = [
-    [nacl_prim_fc_file],
-    [nacl_prim_fc_file, '--temperature=1000', *quick_calc_params],
-    [nacl_prim_fc_file, '--v-min=0', '--v-max=1e-10', *quick_calc_params],
-    [nacl_prim_fc_file, '--energy-unit=meV', *quick_calc_params],
-    [nacl_prim_fc_file, '--weighting=coherent', '--c-map=bone',
-     *quick_calc_params],
     [graphite_fc_file, '-w', 'dos', '--y-label=DOS', '--title=DOS TITLE',
      *quick_calc_params],
     [graphite_fc_file, '--e-min=50', '-u=cm^-1', '--x-label=wavenumber',
@@ -42,6 +36,13 @@ powder_map_params = [
      *quick_calc_params],
     [graphite_fc_file, '--asr', *quick_calc_params],
     [graphite_fc_file, '--asr=realspace', '--dipole-parameter=0.75',
+     *quick_calc_params]]
+powder_map_params_from_phonopy = [
+    [nacl_prim_fc_file],
+    [nacl_prim_fc_file, '--temperature=1000', *quick_calc_params],
+    [nacl_prim_fc_file, '--v-min=0', '--v-max=1e-10', *quick_calc_params],
+    [nacl_prim_fc_file, '--energy-unit=meV', *quick_calc_params],
+    [nacl_prim_fc_file, '--weighting=coherent', '--c-map=bone',
      *quick_calc_params],
     [nacl_prim_fc_file, '-w=incoherent-dos', '--pdos=Na', '--no-widget',
      *quick_calc_params],
@@ -99,6 +100,14 @@ class TestRegression:
             self, inject_mocks, powder_map_args):
         self.run_powder_map_and_test_result(powder_map_args)
 
+    @pytest.mark.phonopy_reader
+    @pytest.mark.parametrize(
+        'powder_map_args', powder_map_params_from_phonopy)
+    def test_powder_map_plot_image_from_phonopy(
+            self, inject_mocks, powder_map_args):
+        self.run_powder_map_and_test_result(powder_map_args)
+
+    @pytest.mark.phonopy_reader
     @pytest.mark.parametrize('powder_map_args', powder_map_params_macos_segfault)
     @pytest.mark.skipif(
         (any([s in platform() for s in ['Darwin', 'macOS']])
@@ -109,6 +118,7 @@ class TestRegression:
             self, inject_mocks, powder_map_args):
         self.run_powder_map_and_test_result(powder_map_args)
 
+    @pytest.mark.phonopy_reader
     @pytest.mark.parametrize('powder_map_args', [
         [nacl_prim_fc_file, '--save-to'],
         [nacl_prim_fc_file, '-s']])
@@ -124,6 +134,7 @@ class TestRegression:
         with pytest.raises(ValueError):
             euphonic.cli.powder_map.main(powder_map_args)
 
+    @pytest.mark.phonopy_reader
     @pytest.mark.parametrize('powder_map_args', [
         [nacl_prim_fc_file, '--weights=dos']])
     def test_weights_emits_deprecation_warning(
@@ -140,6 +151,7 @@ class TestRegression:
         assert err.type == SystemExit
         assert err.value.code == 2
 
+    @pytest.mark.phonopy_reader
     @pytest.mark.parametrize('powder_map_args', [
         [nacl_prim_fc_file, '-w=coherent', '--pdos', 'Na']])
     def test_coherent_weighting_and_pdos_raises_value_error(

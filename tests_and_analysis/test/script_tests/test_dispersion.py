@@ -31,6 +31,10 @@ quartz_phonon_file = os.path.join(
     'quartz_bandstructure_qpoint_phonon_modes.json')
 disp_output_file = os.path.join(get_script_test_data_path(), 'dispersion.json')
 disp_params =  [
+    [lzo_fc_file],
+    [quartz_phonon_file],
+    [quartz_phonon_file, '--btol=1000']]
+disp_params_from_phonopy =  [
     [cahgo2_fc_file],
     [cahgo2_fc_file, '--energy-unit=hartree'],
     [cahgo2_fc_file, '--x-label=wavenumber', '--y-label=Energy (meV)',
@@ -41,10 +45,7 @@ disp_params =  [
     [cahgo2_fc_file, '--q-spacing=0.02'],
     [cahgo2_fc_file, '--asr'],
     [cahgo2_fc_file, '--asr=realspace'],
-    [lzo_fc_file],
     [nacl_fc_file],
-    [quartz_phonon_file],
-    [quartz_phonon_file, '--btol=1000'],
     [nacl_phonon_file],
     [nacl_phonon_hdf5_file]]
 disp_params_macos_segfault =  [[cahgo2_fc_file, '--reorder']]
@@ -93,6 +94,13 @@ class TestRegression:
     def test_dispersion_plot_data(self, inject_mocks, dispersion_args):
         self.run_dispersion_and_test_result(dispersion_args)
 
+    @pytest.mark.phonopy_reader
+    @pytest.mark.parametrize('dispersion_args', disp_params_from_phonopy)
+    def test_dispersion_plot_data_from_phonopy(
+            self, inject_mocks, dispersion_args):
+        self.run_dispersion_and_test_result(dispersion_args)
+
+    @pytest.mark.phonopy_reader
     @pytest.mark.parametrize('dispersion_args', disp_params_macos_segfault)
     @pytest.mark.skipif(
         (any([s in platform() for s in ['Darwin', 'macOS']])

@@ -46,6 +46,7 @@ class TestRegression:
         euphonic.cli.optimise_dipole_parameter.main(
             optimise_dipole_parameter_args)
 
+    @pytest.mark.phonopy_reader
     def test_reading_nacl_default_reads_born(self, recwarn):
         # BORN should be read by default so no warning should
         # be raised
