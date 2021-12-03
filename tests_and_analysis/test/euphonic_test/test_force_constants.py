@@ -294,6 +294,14 @@ class TestForceConstantsCreation:
           'path': get_phonopy_path('NaCl', '')})])
     def test_create_from_phonopy_without_installed_modules_raises_err(
             self, phonopy_args, mocker):
+        # Mock import of yaml, h5py to raise ModuleNotFoundError
+        import builtins
+        real_import = builtins.__import__
+        def mocked_import(name, *args, **kwargs):
+            if name == 'h5py' or name == 'yaml':
+                raise ModuleNotFoundError
+            return real_import(name, *args, **kwargs)
+        mocker.patch('builtins.__import__', side_effect=mocked_import)
         with pytest.raises(ImportPhonopyReaderError):
             ForceConstants.from_phonopy(**phonopy_args)
 

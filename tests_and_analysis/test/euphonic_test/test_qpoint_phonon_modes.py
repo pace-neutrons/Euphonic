@@ -294,6 +294,14 @@ class TestQpointPhononModesCreation:
     def test_create_from_phonopy_without_installed_modules_raises_err(
             self, material, subdir, phonopy_args, mocker):
         phonopy_args['path'] = get_phonopy_path(material, subdir)
+        # Mock import of yaml, h5py to raise ModuleNotFoundError
+        import builtins
+        real_import = builtins.__import__
+        def mocked_import(name, *args, **kwargs):
+            if name == 'h5py' or name == 'yaml':
+                raise ModuleNotFoundError
+            return real_import(name, *args, **kwargs)
+        mocker.patch('builtins.__import__', side_effect=mocked_import)
         with pytest.raises(ImportPhonopyReaderError):
             QpointPhononModes.from_phonopy(**phonopy_args)
 
