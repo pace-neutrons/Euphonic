@@ -20,7 +20,6 @@ nacl_default_yaml = get_phonopy_path("NaCl_default", "phonopy.yaml")
 quick_calc_params = ['-n=10', '--min=0.5', '--max=0.5']
 
 
-@pytest.mark.integration
 class TestRegression:
 
     def test_default_dipole_parameters(self):

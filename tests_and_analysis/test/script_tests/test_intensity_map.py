@@ -51,7 +51,6 @@ intensity_map_params_macos_segfault = [
     [graphite_fc_file, '--weighting=coherent', '--temperature=800']]
 
 
-@pytest.mark.integration
 class TestRegression:
 
     @pytest.fixture

@@ -129,7 +129,6 @@ def check_spectrum2d(actual_spectrum2d, expected_spectrum2d):
                 == expected_spectrum2d.metadata)
 
 
-@pytest.mark.unit
 class TestSpectrum2DCreation:
 
     # As x_data and y_data can be either bin centres or edges, test all
@@ -219,7 +218,6 @@ class TestSpectrum2DCreation:
             Spectrum2D(*faulty_args, **faulty_kwargs)
 
 
-@pytest.mark.unit
 class TestSpectrum2DSerialisation:
 
     @pytest.mark.parametrize('spec2d', [
@@ -253,7 +251,6 @@ class TestSpectrum2DSerialisation:
         check_spectrum2d(spec2d, expected_spec2d)
 
 
-@pytest.mark.unit
 class TestSpectrum2DUnitConversion:
 
     @pytest.mark.parametrize('spectrum2d_file, attr, unit_val', [
@@ -275,7 +272,6 @@ class TestSpectrum2DUnitConversion:
             setattr(spec2d, unit_attr, unit_val)
 
 
-@pytest.mark.unit
 class TestSpectrum2DSetters:
 
     @pytest.mark.parametrize('spectrum2d_file, attr, unit, scale', [
@@ -302,7 +298,6 @@ class TestSpectrum2DSetters:
             setattr(spec2d, attr, new_attr)
 
 
-@pytest.mark.unit
 class TestSpectrum2DMethods:
     @pytest.mark.parametrize(
         'args, spectrum2d_file, split_spectrum_files',

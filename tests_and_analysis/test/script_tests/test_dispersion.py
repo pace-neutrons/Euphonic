@@ -56,7 +56,6 @@ disp_params_from_phonopy =  [
 disp_params_macos_segfault =  [[cahgo2_fc_file, '--reorder']]
 
 
-@pytest.mark.integration
 class TestRegression:
 
     @pytest.fixture

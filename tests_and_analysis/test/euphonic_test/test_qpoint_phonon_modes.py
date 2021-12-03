@@ -157,7 +157,6 @@ def check_qpt_ph_modes(
         atol=np.finfo(np.float64).eps)
 
 
-@pytest.mark.unit
 class TestQpointPhononModesCreation:
 
     @pytest.mark.parametrize('expected_qpt_ph_modes', [
@@ -358,7 +357,6 @@ class TestQpointPhononModesCreation:
         check_qpt_ph_modes(qpt_ph_modes, expected_qpt_ph_modes,
                            check_evecs=True)
 
-@pytest.mark.unit
 class TestQpointPhononModesSerialisation:
 
     @pytest.mark.parametrize('qpt_ph_modes', [
@@ -403,7 +401,6 @@ class TestQpointPhononModesSerialisation:
 
 
 
-@pytest.mark.unit
 class TestQpointPhononModesUnitConversion:
 
     @pytest.mark.parametrize('material, attr, unit_val', [
@@ -421,7 +418,6 @@ class TestQpointPhononModesUnitConversion:
             setattr(qpt_ph_modes, unit_attr, unit_val)
 
 
-@pytest.mark.unit
 class TestQpointPhononModesSetters:
 
     @pytest.mark.parametrize('material, attr, unit, scale', [
@@ -441,7 +437,6 @@ class TestQpointPhononModesSetters:
             setattr(qpt_ph_modes, attr, new_attr)
 
 
-@pytest.mark.unit
 class TestQpointPhononModesReorderFrequencies:
 
     @pytest.mark.parametrize(
@@ -460,7 +455,6 @@ class TestQpointPhononModesReorderFrequencies:
         check_qpt_ph_modes(qpt_ph_modes, expected_qpt_ph_modes)
 
 
-@pytest.mark.unit
 class TestQpointPhononModesCalculateDebyeWaller:
 
     @pytest.mark.parametrize(
@@ -513,7 +507,6 @@ class TestQpointPhononModesCalculateDebyeWaller:
         check_debye_waller(dw, expected_dw, dw_atol=1e-12)
 
 
-@pytest.mark.unit
 class TestQpointPhononModesCalculateDos:
 
     @pytest.mark.parametrize(
@@ -594,7 +587,6 @@ class TestQpointPhononModesCalculateDos:
             dos = qpt_ph_modes.calculate_dos(ebins)
         assert len(warn_record) == 0
 
-@pytest.mark.unit
 class TestQpointPhononModesCalculatePdos:
 
     @pytest.mark.parametrize(
@@ -706,7 +698,6 @@ class TestQpointPhononModesCalculatePdos:
 
 
 
-@pytest.mark.unit
 class TestQpointPhononModesGetDispersion:
 
     @pytest.mark.parametrize(

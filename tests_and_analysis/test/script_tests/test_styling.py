@@ -44,14 +44,12 @@ compose_style_cases = [
     ]
 
 
-@pytest.mark.unit
 @pytest.mark.parametrize('kwargs,expected_style', compose_style_cases)
 def test_compose_style(kwargs, expected_style):
     """Internal function which interprets matplotlib style options"""
     assert _compose_style(**kwargs) == expected_style
 
 
-@pytest.mark.integration
 class TestDOSStyling:
 
     @pytest.fixture

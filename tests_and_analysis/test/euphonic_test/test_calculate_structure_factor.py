@@ -17,7 +17,6 @@ from tests_and_analysis.test.euphonic_test.test_structure_factor import (
     check_structure_factor, get_sf_dir)
 
 
-@pytest.mark.integration
 class TestCalculateStructureFactorFromForceConstants:
 
     def get_quartz_fc():
@@ -110,7 +109,6 @@ class TestCalculateStructureFactorFromForceConstants:
         check_structure_factor(sf, expected_sf)
 
 
-@pytest.mark.unit
 class TestCalculateStructureFactorFromQpointPhononModes:
 
     def get_quartz_qpt_ph_modes():
@@ -177,7 +175,6 @@ class TestCalculateStructureFactorFromQpointPhononModes:
                 dw=get_dw(dw_material, dw_file))
 
 
-@pytest.mark.unit
 class TestCalculateStructureFactorUsingReferenceData:
     @pytest.fixture
     def quartz_modes(self):

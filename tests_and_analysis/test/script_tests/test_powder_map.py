@@ -61,7 +61,6 @@ powder_map_params_macos_segfault = [
      *quick_calc_params]]
 
 
-@pytest.mark.integration
 class TestRegression:
 
     @pytest.fixture

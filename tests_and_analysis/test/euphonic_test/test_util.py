@@ -14,7 +14,6 @@ from tests_and_analysis.test.euphonic_test.test_force_constants import (
     get_fc_dir)
 
 
-@pytest.mark.unit
 class TestDirectionChanged:
 
     def test_direction_changed_nah(self):
@@ -31,7 +30,6 @@ class TestDirectionChanged:
                          expected_direction_changed)
 
 
-@pytest.mark.unit
 class TestMPGrid:
 
     def test_444_grid(self):
@@ -41,7 +39,6 @@ class TestMPGrid:
         npt.assert_equal(qpts, expected_qpts)
 
 
-@pytest.mark.unit
 class TestGetQptLabels:
 
     @pytest.mark.parametrize('qpts, kwargs, expected_labels', [
@@ -80,7 +77,6 @@ def get_modg_norm(mode_gradients_file):
     return np.linalg.norm(modg.magnitude, axis=-1)*modg.units
 
 
-@pytest.mark.unit
 class TestModeGradientsToWidths:
 
     @pytest.mark.parametrize('mode_grads, cell_vecs, expected_mode_widths_file', [

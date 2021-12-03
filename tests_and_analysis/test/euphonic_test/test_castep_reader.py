@@ -15,7 +15,6 @@ from euphonic import ureg
 def get_filepath(filename):
     return os.path.join(get_data_path(), 'readers', filename)
 
-@pytest.mark.unit
 class TestReadPhononDosData:
 
     @pytest.mark.parametrize(

@@ -45,7 +45,6 @@ dos_params = [
     [quartz_fc_file, '--grid', '5', '5', '4', '--adaptive', '--eb', '2']]
 
 
-@pytest.mark.integration
 class TestRegression:
 
     @pytest.fixture

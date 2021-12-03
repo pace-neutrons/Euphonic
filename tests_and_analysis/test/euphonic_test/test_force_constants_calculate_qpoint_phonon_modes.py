@@ -18,7 +18,6 @@ from tests_and_analysis.test.euphonic_test.test_force_constants import (
     get_fc, get_fc_dir)
 
 
-@pytest.mark.unit
 class TestForceConstantsCalculateQPointPhononModes:
 
     def get_lzo_fc():
@@ -340,7 +339,6 @@ class TestForceConstantsCalculateQPointPhononModes:
             fc.calculate_qpoint_phonon_modes(get_test_qpts(), asr=asr)
 
 
-@pytest.mark.unit
 class TestForceConstantsCalculateQPointPhononModesWithoutCExtensionInstalled:
 
     @pytest.fixture
@@ -376,7 +374,6 @@ class TestForceConstantsCalculateQPointPhononModesWithoutCExtensionInstalled:
         assert len(warn_record) == 0
 
 
-@pytest.mark.unit
 class TestForceConstantsCalculateQPointPhononModesWithCExtensionInstalled:
 
     @pytest.fixture

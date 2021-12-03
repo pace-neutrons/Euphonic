@@ -125,7 +125,6 @@ def check_qpt_freqs(
         atol=np.finfo(np.float64).eps)
 
 
-@pytest.mark.unit
 class TestQpointFrequenciesCreation:
 
     @pytest.mark.parametrize('expected_qpt_freqs', [
@@ -319,7 +318,6 @@ class TestQpointFrequenciesCreation:
         check_qpt_freqs(qpt_freqs, expected_qpt_freqs)
 
 
-@pytest.mark.unit
 class TestQpointFrequenciesSerialisation:
 
     @pytest.mark.parametrize('qpt_freqs', [
@@ -349,7 +347,6 @@ class TestQpointFrequenciesSerialisation:
         check_qpt_freqs(qpt_freqs, qpt_freqs_from_dict)
 
 
-@pytest.mark.unit
 class TestQpointFrequenciesUnitConversion:
 
     @pytest.mark.parametrize('material, json_file, attr, unit_val', [
@@ -373,7 +370,6 @@ class TestQpointFrequenciesUnitConversion:
             setattr(qpt_freqs, unit_attr, unit_val)
 
 
-@pytest.mark.unit
 class TestQpointFrequenciesSetters:
 
     @pytest.mark.parametrize('material, json_file, attr, unit, scale', [
@@ -398,7 +394,6 @@ class TestQpointFrequenciesSetters:
             setattr(qpt_freqs, attr, new_attr)
 
 
-@pytest.mark.unit
 class TestQpointFrequenciesCalculateDos:
 
     @pytest.mark.parametrize(
@@ -488,7 +483,6 @@ class TestQpointFrequenciesCalculateDos:
             dos = qpt_freqs.calculate_dos(ebins)
         assert len(warn_record) == 0
 
-@pytest.mark.unit
 class TestQpointFrequenciesCalculateDosMap:
     @pytest.mark.parametrize(
         'material, qpt_freqs_json, ebins, expected_dos_map_json', [
@@ -545,7 +539,6 @@ class TestQpointFrequenciesCalculateDosMap:
             dos_map_at_qpt = Spectrum1D(dos_map.y_data, dos_map.z_data[qpt])
             check_spectrum1d(dos_map_at_qpt, dos_single_qpt)
 
-@pytest.mark.unit
 class TestQpointFrequenciesGetDispersion:
 
     @pytest.mark.parametrize(

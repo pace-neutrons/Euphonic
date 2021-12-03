@@ -37,7 +37,6 @@ sphere_sampling_params =  [
     ['10', 'random-sphere', '--jitter']]
 
 
-@pytest.mark.integration
 class TestRegression:
 
     @pytest.fixture

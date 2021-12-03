@@ -183,7 +183,6 @@ def check_structure_factor(
         gamma_atol=sf_gamma_atol)
 
 
-@pytest.mark.unit
 class TestStructureFactorCreation:
 
     @pytest.fixture(params=[
@@ -287,7 +286,6 @@ class TestStructureFactorCreation:
             StructureFactor(*faulty_args, **faulty_kwargs)
 
 
-@pytest.mark.unit
 class TestStructureFactorSerialisation:
 
     @pytest.mark.parametrize('sf', [
@@ -331,7 +329,6 @@ class TestStructureFactorSerialisation:
         check_qpt_freqs(qpt_freqs, expected_qpt_freqs)
 
 
-@pytest.mark.unit
 class TestStructureFactorUnitConversion:
 
     @pytest.mark.parametrize('material, json_file, attr, unit_val', [
@@ -360,7 +357,6 @@ class TestStructureFactorUnitConversion:
             setattr(sf, unit_attr, unit_val)
 
 
-@pytest.mark.unit
 class TestStructureFactorSetters:
 
     @pytest.mark.parametrize('material, json_file, attr, unit, scale', [
@@ -395,7 +391,6 @@ class TestStructureFactorSetters:
             setattr(sf, attr, new_attr)
 
 
-@pytest.mark.unit
 class TestStructureFactorCalculateSqwMap:
 
     @pytest.mark.parametrize(
@@ -443,7 +438,6 @@ class TestStructureFactorCalculateSqwMap:
         with pytest.raises(err):
             sf.calculate_sqw_map(ebins, **kwargs)
 
-@pytest.mark.unit
 class TestStructureFactorCalculate1dAverage:
 
     @pytest.mark.parametrize(
@@ -467,7 +461,6 @@ class TestStructureFactorCalculate1dAverage:
         expected_sw = get_expected_spectrum1d(expected_1d_json)
         check_spectrum1d(sw, expected_sw)
 
-@pytest.mark.unit
 class TestStructureFactorGetDispersion:
 
     @pytest.mark.parametrize(
@@ -485,7 +478,6 @@ class TestStructureFactorGetDispersion:
             expected_dispersion_json)
         check_spectrum1dcollection(disp, expected_disp)
 
-@pytest.mark.unit
 class TestStructureFactorCalculateDos:
 
     @pytest.mark.parametrize(
