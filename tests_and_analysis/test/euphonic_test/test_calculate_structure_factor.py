@@ -17,16 +17,17 @@ from tests_and_analysis.test.euphonic_test.test_structure_factor import (
     check_structure_factor, get_sf_dir)
 
 
+def get_quartz_fc():
+    return ForceConstants.from_castep(
+        get_castep_path('quartz', 'quartz.castep_bin'))
+
+
+def get_si2_fc():
+    return ForceConstants.from_castep(
+        get_castep_path('Si2-sc-skew', 'Si2-sc-skew.castep_bin'))
+
+
 class TestCalculateStructureFactorFromForceConstants:
-
-    def get_quartz_fc():
-        return ForceConstants.from_castep(
-            get_castep_path('quartz', 'quartz.castep_bin'))
-
-    def get_si2_fc():
-        return ForceConstants.from_castep(
-            get_castep_path('Si2-sc-skew', 'Si2-sc-skew.castep_bin'))
-
 
     tol_kwargs = {'sf_atol': 3e-3,
                   'sf_rtol': 3e-4,
@@ -109,15 +110,17 @@ class TestCalculateStructureFactorFromForceConstants:
         check_structure_factor(sf, expected_sf)
 
 
+def get_quartz_qpt_ph_modes():
+    return QpointPhononModes.from_castep(
+        get_castep_path('quartz', 'quartz_nosplit.phonon'))
+
+
+def get_si2_qpt_ph_modes():
+    return QpointPhononModes.from_castep(
+        get_castep_path('Si2-sc-skew', 'Si2-sc-skew.phonon'))
+
+
 class TestCalculateStructureFactorFromQpointPhononModes:
-
-    def get_quartz_qpt_ph_modes():
-        return QpointPhononModes.from_castep(
-            get_castep_path('quartz', 'quartz_nosplit.phonon'))
-
-    def get_si2_qpt_ph_modes():
-        return QpointPhononModes.from_castep(
-            get_castep_path('Si2-sc-skew', 'Si2-sc-skew.phonon'))
 
     @pytest.mark.parametrize(
         'material, qpt_ph_modes, dw_file, expected_sf_file', [

@@ -64,7 +64,7 @@ def _get_parsed_args(test_dir: str) -> Tuple[bool, bool, str, str]:
             args_parsed.markers_to_run)
 
 
-def _build_pytest_options(reports_dir: str, do_report_tests: bool, tests: str,
+def _build_pytest_options(do_report_tests: bool, tests: str,
                           markers: str) -> List[str]:
     """
     Build the options for pytest to use.
@@ -154,7 +154,7 @@ if __name__ == "__main__":
         _get_parsed_args(test_dir)
 
     pytest_options: List[str] = _build_pytest_options(
-        reports_dir, do_report_tests, tests, markers_to_run)
+        do_report_tests, tests, markers_to_run)
 
     test_exit_code: int = \
         run_tests(pytest_options, do_report_coverage, reports_dir, test_dir)
