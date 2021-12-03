@@ -1,9 +1,11 @@
+import argparse
 import sys
 import os
+import time
+from typing import Tuple, List, Union
+
 import pytest
 import coverage
-import argparse
-from typing import Tuple, List, Union
 
 
 def _get_test_and_reports_dir() -> Tuple[str, str]:
@@ -87,17 +89,14 @@ def _build_pytest_options(reports_dir: str, do_report_tests: bool, tests: str,
     options: List[str] = [tests]
     # Add reporting of test results
     if do_report_tests:
-        # We may have multiple reports, so do not overwrite them
+        # We may have multiple reports, so get a unique filename
         filename_prefix = "junit_report"
-        filenum = 0
-        for filename in os.listdir(reports_dir):
-            if filename_prefix in filename:
-                filenum += 1
-        junit_xml_filepath: str = os.path.join(
-            test_dir, "reports", "{}{}.xml".format(filename_prefix, filenum))
-        options.append("--junitxml={}".format(junit_xml_filepath))
+        filenum = int(time.time())
+        junit_xml_filepath = os.path.join(
+            test_dir, "reports", f"{filename_prefix}_{filenum}.xml")
+        options.append(f"--junitxml={junit_xml_filepath}")
     # Only run the specified markers
-    options.append("-m={}".format(markers))
+    options.append(f"-m={markers}")
     return options
 
 
