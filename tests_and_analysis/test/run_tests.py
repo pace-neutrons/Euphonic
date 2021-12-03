@@ -49,7 +49,7 @@ def _get_parsed_args(test_dir: str) -> Tuple[bool, bool, str, str]:
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--cov", action="store_true",
-        help="If present report coverage in a coverage.xml file in reports")
+        help="If present report coverage in a coverage*.xml file in reports")
     parser.add_argument(
         "--report", action="store_true",
         help="If present report test results to junit_report*.xml files")
@@ -110,7 +110,7 @@ def run_tests(pytest_options: List[str], do_report_coverage: bool,
     pytest_options : List[str]
         The options to pass to pytest
     do_report_coverage : bool
-        If true report coverage to coverage.xml
+        If true report coverage to coverage*.xml
     reports_dir : str
         The directory to report coverage to
     test_dir: str
@@ -141,7 +141,8 @@ def run_tests(pytest_options: List[str], do_report_coverage: bool,
     # Report coverage if requested
     if do_report_coverage and cov is not None:
         cov.stop()
-        coverage_xml_filepath = os.path.join(reports_dir, "coverage.xml")
+        coverage_xml_filepath = os.path.join(
+            reports_dir, f"coverage_{int(time.time())}.xml")
         cov.xml_report(outfile=coverage_xml_filepath)
 
     return test_exit_code
