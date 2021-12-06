@@ -490,7 +490,7 @@ class TestQpointFrequenciesCalculateDos:
         dos = qpt_freqs.calculate_dos(
             ebins, mode_widths=mode_widths, adaptive_method='fast')
         expected_dos = get_expected_spectrum1d(expected_dos_json)
-        check_spectrum1d(dos, expected_dos)
+        check_spectrum1d(dos, expected_dos, 1e-15)
 
     @pytest.mark.parametrize(
         ('material, qpt_freqs_json, mode_widths_json, ebins'), [
