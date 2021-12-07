@@ -126,6 +126,21 @@ class TestRegression:
             euphonic.cli.intensity_map.main(intensity_map_args)
 
     @pytest.mark.parametrize('intensity_map_args', [
+        [quartz_no_evec_json_file, '--weighting', 'coherent']])
+    def test_qpoint_frequencies_incompatible_args_raises_type_error(
+            self, intensity_map_args):
+        with pytest.raises(TypeError):
+            euphonic.cli.intensity_map.main(intensity_map_args)
+
+    @pytest.mark.parametrize('intensity_map_args', [
+        [quartz_json_file, '--weighting', 'coherent',
+         '--temperature', '300']])
+    def test_qpoint_modes_debyewaller_raises_type_error(
+            self, intensity_map_args):
+        with pytest.raises(TypeError):
+            euphonic.cli.intensity_map.main(intensity_map_args)
+
+    @pytest.mark.parametrize('intensity_map_args', [
         [quartz_json_file, '--weights=dos']])
     def test_weights_emits_deprecation_warning(
             self, inject_mocks, intensity_map_args):

@@ -100,8 +100,17 @@ class TestRegression:
         with pytest.raises(ValueError):
             euphonic.cli.dos.main(dos_args)
 
-    def test_adaptive_and_dot_phonon_raises_value_error(self):
-        with pytest.raises(ValueError):
+    @pytest.mark.phonopy_reader
+    @pytest.mark.parametrize('dos_args', [
+        [nacl_no_evec_yaml_file, '--pdos'],
+        [nacl_no_evec_yaml_file, '--weighting', 'coherent-dos']])
+    def test_qpoint_frequencies_and_incompatible_args_raises_type_error(
+            self, dos_args):
+        with pytest.raises(TypeError):
+            euphonic.cli.dos.main(dos_args)
+
+    def test_qpoint_modes_and_adaptive_raises_type_error(self):
+        with pytest.raises(TypeError):
             euphonic.cli.dos.main([nah_phonon_file, '--adaptive'])
 
     def test_adaptive_and_lorentz_raises_value_error(self):

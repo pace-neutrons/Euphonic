@@ -5,13 +5,13 @@ from typing import List, Optional
 import matplotlib.style
 import numpy as np
 
-from euphonic import ureg
+from euphonic import ureg, ForceConstants
 from euphonic.cli.utils import (_calc_modes_kwargs, _compose_style,
                                 _get_cli_parser,
                                 _get_debye_waller, _get_energy_bins,
                                 _get_q_distance, _get_pdos_weighting,
                                 _arrange_pdos_groups, _plot_label_kwargs)
-from euphonic.cli.utils import (force_constants_from_file, get_args,
+from euphonic.cli.utils import (load_data_from_file, get_args,
                                 matplotlib_save_or_show)
 import euphonic.plot
 from euphonic.powder import (sample_sphere_dos, sample_sphere_pdos,
@@ -63,8 +63,14 @@ def main(params: Optional[List[str]] = None) -> None:
     if args.npts_density is not None:
         args.npts = None
 
-    fc = force_constants_from_file(args.filename)
-    print("Force constants data was loaded. Setting up dimensions...")
+    fc = load_data_from_file(args.filename, verbose=True)
+    if not isinstance(fc, ForceConstants):
+        raise TypeError('Force constants are required to use the '
+                        'euphonic-powder-map tool')
+    if args.pdos is not None and args.weighting == 'coherent':
+        raise ValueError('"--pdos" is only compatible with '
+                         '"--weighting" options that include dos')
+    print("Setting up dimensions...")
 
     q_min = _get_q_distance(args.length_unit, args.q_min)
     q_max = _get_q_distance(args.length_unit, args.q_max)
@@ -126,10 +132,6 @@ def main(params: Optional[List[str]] = None) -> None:
                     **calc_modes_kwargs)
             spectrum_1d = _arrange_pdos_groups(spectrum_1d_col, args.pdos)
         elif args.weighting == 'coherent':
-            if args.pdos is not None:
-                raise ValueError(
-                    '--pdos is only compatible with --weighting options '
-                    'that include dos')
             spectrum_1d = sample_sphere_structure_factor(
                 fc, q,
                 dw=dw,

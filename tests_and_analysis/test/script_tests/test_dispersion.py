@@ -131,6 +131,12 @@ class TestRegression:
         assert os.path.exists(output_file)
 
     @pytest.mark.parametrize('dispersion_args', [
+        [quartz_no_evec_json_file, '--reorder']])
+    def test_no_evecs_with_reorder_raises_type_error(self, dispersion_args):
+        with pytest.raises(TypeError):
+            euphonic.cli.dispersion.main(dispersion_args)
+
+    @pytest.mark.parametrize('dispersion_args', [
         [os.path.join(get_data_path(), 'crystal', 'crystal_LZO.json')],
         [os.path.join(get_data_path(), 'force_constants', 'NaCl',
                       'FORCE_CONSTANTS')]])

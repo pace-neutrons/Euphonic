@@ -3,10 +3,9 @@ from typing import List, Optional
 
 import matplotlib.style
 
-import euphonic
 from euphonic.plot import plot_1d
 from euphonic.styles import base_style
-from euphonic import Spectrum1D
+from euphonic import Spectrum1D, ForceConstants, QpointFrequencies
 from .utils import (load_data_from_file, get_args, _bands_from_force_constants,
                     _compose_style,
                     _get_q_distance, matplotlib_save_or_show, _get_cli_parser,
@@ -17,19 +16,19 @@ def main(params: Optional[List[str]] = None) -> None:
     args = get_args(get_parser(), params)
 
     frequencies_only = not args.reorder  # Need eigenvectors to reorder
+    data = load_data_from_file(args.filename, verbose=True,
+                               frequencies_only=frequencies_only)
+    if not frequencies_only and type(data) is QpointFrequencies:
+        raise TypeError(
+            'Eigenvectors are required to use "--reorder" option')
 
-
-    data = load_data_from_file(args.filename, frequencies_only)
-
-    if isinstance(data, euphonic.ForceConstants):
-        print("Force Constants data was loaded. Getting band path...")
-
+    if isinstance(data, ForceConstants):
+        print("Getting band path...")
         q_distance = _get_q_distance(args.length_unit, args.q_spacing)
         (bands, x_tick_labels, split_args) = _bands_from_force_constants(
             data, q_distance=q_distance, frequencies_only=frequencies_only,
             **_calc_modes_kwargs(args))
     else:
-        print("Phonon band data was loaded.")
         bands = data
         split_args = {'btol': args.btol}
         x_tick_labels = None

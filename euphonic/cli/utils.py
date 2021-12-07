@@ -3,6 +3,7 @@ from argparse import (ArgumentParser, _ArgumentGroup, Namespace,
 import json
 import os
 import pathlib
+import warnings
 from typing import (Any, Collection, Dict, List,
                     Sequence, Tuple, Union, Optional)
 import warnings
@@ -20,20 +21,74 @@ Unit = ureg.Unit
 
 def force_constants_from_file(filename: Union[str, os.PathLike]
                               ) -> ForceConstants:
-    """
-    Load force constants data from file
+    warnings.warn('force_constants_from_file has been deprecated '
+                  'and will be removed in a future release. Please '
+                  'use load_data_from_file instead',
+                  category=DeprecationWarning,
+                  stacklevel=2)
+    data = load_data_from_file(filename)
+    if not isinstance(data, ForceConstants):
+        raise TypeError('File does not contain force constants')
+    return data
 
-    Parameters
-    ----------
-    filename
-        Data file
 
-    Returns
-    -------
-    fc
-    """
+def modes_from_file(filename: Union[str, os.PathLike]
+                    ) -> Union[QpointPhononModes, QpointFrequencies]:
+    warnings.warn('modes_from_file has been deprecated ',
+                  'and will be removed in a future release. Please '
+                  'use load_data_from_file instead',
+                  category=DeprecationWarning,
+                  stacklevel=2)
+    data = load_data_from_file(filename)
+    if not isinstance(data, QpointFrequencies):
+        raise TypeError('File does not contain phonon modes')
+    return data
+
+
+def _load_euphonic_json(filename: Union[str, os.PathLike],
+                        frequencies_only: bool = False
+                        ) -> Union[QpointPhononModes, QpointFrequencies,
+                                   ForceConstants]:
+    with open(filename, 'r') as f:
+        data = json.load(f)
+
+    if 'force_constants' in data:
+        return ForceConstants.from_json_file(filename)
+    elif 'frequencies' in data:
+        if 'eigenvectors' in data and not frequencies_only:
+            return QpointPhononModes.from_json_file(filename)
+        else:
+            return QpointFrequencies.from_json_file(filename)
+    else:
+        raise ValueError("Could not identify Euphonic data in JSON file.")
+
+
+def _load_phonopy_file(filename: Union[str, os.PathLike],
+                       frequencies_only: bool = False
+                       ) -> Union[QpointPhononModes, QpointFrequencies,
+                                  ForceConstants]:
     path = pathlib.Path(filename)
-    if path.suffix in ['.hdf5', '.yaml']:
+    loaded_data = None
+    if not frequencies_only:
+        try:
+            loaded_data = QpointPhononModes.from_phonopy(
+                path=path.parent, phonon_name=path.name)
+        except (KeyError, RuntimeError):
+            # KeyError will be raised if it is actually a force
+            # constants file, RuntimeError will be raised if
+            # it only contains q-point frequencies (no eigenvectors)
+            pass
+
+    # Try to read QpointFrequencies if loading QpointPhononModes has
+    # failed, or has been specifically requested with frequencies_only
+    if frequencies_only or loaded_data is None:
+        try:
+            loaded_data = QpointFrequencies.from_phonopy(
+                path=path.parent, phonon_name=path.name)
+        except KeyError:
+            pass
+
+    if loaded_data is None:
         phonopy_kwargs: Dict[str, Union[str, os.PathLike]] = {}
         phonopy_kwargs['path'] = path.parent
         if (path.parent / 'BORN').is_file():
@@ -53,71 +108,17 @@ def force_constants_from_file(filename: Union[str, os.PathLike]
                 phonopy_kwargs['fc_name'] = 'force_constants.hdf5'
             else:
                 phonopy_kwargs['fc_name'] = 'FORCE_CONSTANTS'
-        return ForceConstants.from_phonopy(**phonopy_kwargs)
-    elif path.suffix in ('.castep_bin', '.check'):
-        return ForceConstants.from_castep(filename)
-    elif path.suffix == '.json':
-        return ForceConstants.from_json_file(filename)
-    else:
-        raise ValueError("File not recognised. Filename should be "
-                         "*.yaml or force_constants.hdf5 (phonopy), "
-                         "*.castep_bin or *.check "
-                         "(castep) or *.json (JSON from Euphonic).")
+        loaded_data = ForceConstants.from_phonopy(**phonopy_kwargs)
 
+    if loaded_data is None:
+        raise ValueError("Could not identify data in Phonopy file.")
 
-def modes_from_file(filename: Union[str, os.PathLike],
-                    frequencies_only: bool = False
-                    ) -> Union[QpointPhononModes, QpointFrequencies]:
-    """
-    Load phonon mode data from file
-
-    Parameters
-    ----------
-    filename
-        Data file
-    frequencies_only
-        If true only reads frequencies (not eigenvectors) from the
-        file
-
-    Returns
-    -------
-    modes
-    """
-    path = pathlib.Path(filename)
-    if frequencies_only:
-        cls = QpointFrequencies
-    else:
-        cls = QpointPhononModes
-
-    if path.suffix == '.phonon':
-        return cls.from_castep(path)
-    elif path.suffix == '.json':
-        return cls.from_json_file(path)
-    elif path.suffix in ('.yaml', '.hdf5'):
-        return cls.from_phonopy(path=path.parent,
-                                phonon_name=path.name)
-    else:
-        raise ValueError("File not recognised. Should have extension "
-                         ".yaml or .hdf5 (Phonopy), "
-                         ".phonon (CASTEP) or .json (JSON from Euphonic).")
-
-
-def _load_json(filename: Union[str, os.PathLike],
-               frequencies_only: bool = False
-               ) -> Union[QpointPhononModes, ForceConstants]:
-    with open(filename, 'r') as f:
-        data = json.load(f)
-
-    if 'force_constants' in data:
-        return force_constants_from_file(filename)
-    elif 'frequencies' in data:
-        return modes_from_file(filename, frequencies_only)
-    else:
-        raise ValueError("Could not identify Euphonic data in JSON file.")
+    return loaded_data
 
 
 def load_data_from_file(filename: Union[str, os.PathLike],
-                        frequencies_only: bool = False
+                        frequencies_only: bool = False,
+                        verbose: bool = False
                         ) -> Union[QpointPhononModes, QpointFrequencies,
                                    ForceConstants]:
     """
@@ -136,22 +137,22 @@ def load_data_from_file(filename: Union[str, os.PathLike],
     -------
     file_data
     """
-    castep_qpm_suffixes = ('.phonon')
+    castep_qpm_suffixes = ('.phonon',)
     castep_fc_suffixes = ('.castep_bin', '.check')
     phonopy_suffixes = ('.hdf5', '.yaml')
 
     path = pathlib.Path(filename)
     if path.suffix in castep_qpm_suffixes:
-        return modes_from_file(path, frequencies_only)
+        if frequencies_only:
+            data = QpointFrequencies.from_castep(path)
+        else:
+            data = QpointPhononModes.from_castep(path)
     elif path.suffix in castep_fc_suffixes:
-        return force_constants_from_file(path)
+        data = ForceConstants.from_castep(path)
     elif path.suffix == '.json':
-        return _load_json(path, frequencies_only)
+        data = _load_euphonic_json(path, frequencies_only)
     elif path.suffix in phonopy_suffixes:
-        try:
-            return modes_from_file(path, frequencies_only)
-        except KeyError:
-            return force_constants_from_file(path)
+        data = _load_phonopy_file(path, frequencies_only)
     else:
         raise ValueError(
             f"File format was not recognised. CASTEP force constants "
@@ -160,6 +161,9 @@ def load_data_from_file(filename: Union[str, os.PathLike],
             f"should have extension '{castep_qpm_suffixes}', data from "
             f"Phonopy should have extension from {phonopy_suffixes}, "
             f"data from Euphonic should have extension '.json'.")
+    if verbose:
+        print(f'{data.__class__.__name__} data was loaded')
+    return data
 
 
 def get_args(parser: ArgumentParser, params: Optional[List[str]] = None
