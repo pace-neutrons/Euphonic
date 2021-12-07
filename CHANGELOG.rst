@@ -1,6 +1,18 @@
 `Unreleased <https://github.com/pace-neutrons/Euphonic/compare/v0.6.3...HEAD>`_
 ----------
 
+- Improvements:
+
+  - The ``euphonic-dos``, ``euphonic-dispersion`` and
+    ``euphonic-intensity-map`` command-line tools can now read
+    files that don't contain eigenvectors, if eigenvectors are
+    not required for the chosen options
+
+- Changes:
+
+  - ``euphonic.cli.force_constants_from_file`` and ``modes_from_file``
+    have been deprecated in favour of ``euphonic.cli.load_data_from_file``
+
 `v0.6.3 <https://github.com/pace-neutrons/Euphonic/compare/v0.6.2...v0.6.3>`_
 ------
 
