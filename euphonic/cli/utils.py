@@ -6,7 +6,6 @@ import pathlib
 import warnings
 from typing import (Any, Collection, Dict, List,
                     Sequence, Tuple, Union, Optional)
-import warnings
 
 import numpy as np
 from pint import UndefinedUnitError
@@ -34,7 +33,7 @@ def force_constants_from_file(filename: Union[str, os.PathLike]
 
 def modes_from_file(filename: Union[str, os.PathLike]
                     ) -> Union[QpointPhononModes, QpointFrequencies]:
-    warnings.warn('modes_from_file has been deprecated ',
+    warnings.warn('modes_from_file has been deprecated '
                   'and will be removed in a future release. Please '
                   'use load_data_from_file instead',
                   category=DeprecationWarning,

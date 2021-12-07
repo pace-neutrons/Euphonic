@@ -30,8 +30,8 @@ def main(params: Optional[List[str]] = None) -> None:
             raise TypeError(
                 'Force constants are required to use --adaptive option')
         if args.shape != 'gauss':
-                raise ValueError('Currently only Gaussian shape is supported '
-                                 'with adaptive broadening')
+            raise ValueError('Currently only Gaussian shape is supported '
+                             'with adaptive broadening')
 
     mode_widths = None
     if isinstance(data, ForceConstants):
