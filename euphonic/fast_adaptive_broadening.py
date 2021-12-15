@@ -80,11 +80,12 @@ def fast_broaden(dos_bins_hartree: np.ndarray,
             hist, _ = np.histogram(freqs[masked_block], bins=dos_bins_hartree,
                                 weights=lower_weights/bin_width)
         else:
-            mixing_weights = np.concatenate((upper_weights_prev, lower_weights))
+            mixing_weights = np.concatenate((upper_weights_prev,
+                                             lower_weights))
             hist_freqs = np.concatenate((freqs_prev,freqs[masked_block]))
             hist, _ = np.histogram(hist_freqs, bins=dos_bins_hartree,
                                     weights=mixing_weights/bin_width)
-        
+
         scaled_data_matrix[:, i-1] = hist
 
         freqs_prev = freqs[masked_block]
