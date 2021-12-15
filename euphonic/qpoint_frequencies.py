@@ -185,8 +185,8 @@ class QpointFrequencies:
                 from scipy.stats import norm
                 dos_bins_calc = Spectrum1D._bin_edges_to_centres(dos_bins_calc)
                 dos = np.zeros(len(dos_bins_calc))
-                mode_widths = np.maximum(mode_widths,
-                                        mode_widths_min.to('hartree').magnitude)
+                mode_widths = np.maximum(
+                    mode_widths, mode_widths_min.to('hartree').magnitude)
                 for q in range(len(freqs)):
                     for m in range(n_modes):
                         pdf = norm.pdf(dos_bins_calc, loc=freqs[q,m],

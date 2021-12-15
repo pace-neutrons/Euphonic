@@ -3,8 +3,9 @@ import json
 import pytest
 import numpy as np
 from scipy.integrate import simps
+from scipy.stats import norm
 
-from euphonic.fast_adaptive_broadening import find_coeffs
+from euphonic.fast_adaptive_broadening import find_coeffs, gaussian
 from euphonic import ureg, QpointFrequencies, Spectrum1D
 from tests_and_analysis.test.euphonic_test.test_force_constants\
     import get_fc_dir
@@ -45,11 +46,20 @@ def test_area_unchanged_for_broadened_dos(material, qpt_freqs_json,
     dos_area = simps(dos, ebins_centres)
     adaptively_broadened_dos_area = simps(adaptively_broadened_dos,
                                           ebins_centres)
-    assert adaptively_broadened_dos_area == pytest.approx(dos_area, abs=1e-4)
+    assert adaptively_broadened_dos_area == pytest.approx(dos_area, abs=1e-3)
+
+def test_gaussian():
+    """Test gaussian function against scipy.norm.pdf"""
+    xvals = np.linspace(-5,5,101)
+    sigma = 2
+    centre = 0
+    scipy_norm = norm.pdf(xvals, loc=centre, scale=sigma)
+    gaussian_eval = gaussian(xvals, sigma, centre)
+    assert gaussian_eval == pytest.approx(scipy_norm)
 
 @pytest.mark.parametrize(('spacing','expected_coeffs'),
-    [(2, [-0.14384022, 1.17850278, -3.52853758, 3.49403704]),
-    (np.sqrt(2), [-0.35630207, 2.81589259, -7.6385478, 6.17879599])])
+    [(2, [-0.1883858, 1.46930932, -4.0893793, 3.80872458]),
+    (np.sqrt(2), [-0.60874207, 4.10599029, -9.63986481, 7.14267836])])
 def test_find_coeffs(spacing, expected_coeffs):
     """Test find_coeffs against expected coefficients"""
     coeffs = find_coeffs(spacing)

@@ -690,7 +690,8 @@ class TestQpointPhononModesCalculatePdos:
         mode_widths = modw_dict['mode_widths']*ureg(
             modw_dict['mode_widths_unit'])
         pdos = qpt_ph_modes.calculate_pdos(
-            ebins, mode_widths=mode_widths, adaptive_method='fast', weighting='coherent')
+            ebins, mode_widths=mode_widths,
+            adaptive_method='fast', weighting='coherent')
         expected_pdos = get_expected_spectrum1dcollection(expected_pdos_json)
         check_spectrum1dcollection(pdos, expected_pdos)
 

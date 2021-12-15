@@ -2,11 +2,9 @@
 Functions for fast adaptive broadening of density of states spectra
 """
 from typing import Optional
-from scipy.optimize import curve_fit
+from scipy.optimize import nnls
 from scipy.signal import convolve
-from scipy.stats import norm
 import numpy as np
-
 
 def fast_broaden(dos_bins_hartree: np.ndarray,
                  freqs: np.ndarray,
@@ -48,11 +46,11 @@ def fast_broaden(dos_bins_hartree: np.ndarray,
     freqs = np.ravel(freqs)
     mode_widths = np.ravel(mode_widths_hartree)
     combined_weights = np.ravel(mode_weights * weights[:, np.newaxis])
-    
+
     # determine spacing value for mode_width samples given desired error level
     # coefficients determined from a polynomial fit to plot of
     # error vs spacing value
-    spacing = np.polyval([656.1, -131.8, 15.98, 1.0803], adaptive_error)
+    spacing = np.polyval([ 612.7, -122.7, 15.40, 1.0831], adaptive_error)
 
     bin_width = dos_bins_hartree[1]-dos_bins_hartree[0]
     mode_widths = np.maximum(mode_widths, bin_width / 2)
@@ -64,9 +62,9 @@ def fast_broaden(dos_bins_hartree: np.ndarray,
     # 3*max(sigma) is arbitrary but tuned for acceptable error/peformance
     freq_range = 3*max(mode_widths)
     kernel_npts_oneside = np.ceil(freq_range/bin_width)
-    kernels = norm.pdf(x=np.arange(-kernel_npts_oneside,
-                       kernel_npts_oneside+1, 1)*bin_width, loc=0,
-                       scale=mode_width_samples[:, np.newaxis])*bin_width
+    kernels = gaussian(np.arange(-kernel_npts_oneside,
+                       kernel_npts_oneside+1, 1)*bin_width,
+                       mode_width_samples[:, np.newaxis])*bin_width
     kernels_idx = np.searchsorted(mode_width_samples, mode_widths)
 
     lower_coeffs = find_coeffs(spacing)
@@ -76,20 +74,29 @@ def fast_broaden(dos_bins_hartree: np.ndarray,
         masked_block = (kernels_idx == i)
         sigma_factors = mode_widths[masked_block]/mode_width_samples[i-1]
         lower_mix = np.polyval(lower_coeffs, sigma_factors)
-        upper_mix = 1-lower_mix
+        lower_weights = lower_mix * combined_weights[masked_block]
 
-        lower_hist, _ = np.histogram(
-            freqs[masked_block], bins=dos_bins_hartree,
-            weights=lower_mix*combined_weights[masked_block]/bin_width)
-        upper_hist, _ = np.histogram(
-            freqs[masked_block], bins=dos_bins_hartree,
-            weights=upper_mix*combined_weights[masked_block]/bin_width)
+        if i == 1:
+            hist, _ = np.histogram(freqs[masked_block], bins=dos_bins_hartree,
+                                weights=lower_weights/bin_width)
+        else:
+            mixing_weights = np.concatenate((upper_weights_prev, lower_weights))
+            hist_freqs = np.concatenate((freqs_prev,freqs[masked_block]))
+            hist, _ = np.histogram(hist_freqs, bins=dos_bins_hartree,
+                                    weights=mixing_weights/bin_width)
+        
+        scaled_data_matrix[:, i-1] = hist
 
-        scaled_data_matrix[:, i-1] += lower_hist
-        scaled_data_matrix[:, i] += upper_hist
+        freqs_prev = freqs[masked_block]
+        upper_weights_prev = combined_weights[masked_block] - lower_weights
+
+        if i == len(mode_width_samples)-1:
+            hist, _ = np.histogram(freqs[masked_block], bins=dos_bins_hartree,
+                                weights=upper_weights_prev/bin_width)
+            scaled_data_matrix[:, i] = hist
 
     dos = np.sum([convolve(scaled_data_matrix[:, i], kernels[i],
-                 mode="same") for i in range(0, n_kernels)], 0)
+                 mode="same", method="fft") for i in range(0, n_kernels)], 0)
     return dos
 
 
@@ -140,19 +147,14 @@ def find_coeffs(spacing: float) -> np.ndarray:
     """
     sigma_values = np.linspace(1, spacing, 10)
     x_range = np.linspace(-10, 10, 101)
-
-    def gaussian_mix(xvals, weight):
-        # Return a linear combination of two Gaussians with weights
-        return (weight * gaussian(xvals, sigma=1)
-                + (1-weight) * gaussian(xvals, sigma=spacing))
-
+    actual_gaussians = gaussian(x_range, sigma_values[:,np.newaxis])
     lower_mix = np.zeros(len(sigma_values))
+    ref_gaussians = actual_gaussians[[0, -1]].T
 
-    for i, s_val in enumerate(sigma_values):
-        actual_gaussian = gaussian(x_range, s_val)
-        mixl, _ = curve_fit(gaussian_mix, x_range,
-                            ydata=actual_gaussian, p0=[0.5], bounds=(0, 1))
-        lower_mix[i] = mixl[0]
+    for i in range(len(sigma_values)):
+        actual_gaussian = actual_gaussians[i]
+        res = nnls(ref_gaussians, actual_gaussian)[0]
+        lower_mix[i] = res[0]
 
     coeffs = np.polyfit(sigma_values, lower_mix, 3)
     return coeffs
