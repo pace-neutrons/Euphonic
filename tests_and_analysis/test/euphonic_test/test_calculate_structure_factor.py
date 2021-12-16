@@ -29,12 +29,6 @@ def get_si2_fc():
 
 class TestCalculateStructureFactorFromForceConstants:
 
-    tol_kwargs = {'sf_atol': 3e-3,
-                  'sf_rtol': 3e-4,
-                  'freq_atol': 1e-4,
-                  'freq_rtol': 3e-4,
-                  'freq_gamma_atol': 0.55,
-                  'sf_gamma_atol': 3e2}
 
     @pytest.mark.parametrize(
         'material, fc, qpt_ph_modes_args, dw_file, expected_sf_file', [
@@ -75,7 +69,12 @@ class TestCalculateStructureFactorFromForceConstants:
         # only at gamma but is applied to all q, so problem is less
         # well conditioned leading to larger f.p errors on different systems
         if 'recip' in expected_sf_file:
-            tol_kwargs = self.tol_kwargs
+            tol_kwargs = {'sf_atol': 3e-3,
+                          'sf_rtol': 3e-4,
+                          'freq_atol': 1e-4,
+                          'freq_rtol': 3e-4,
+                          'freq_gamma_atol': 0.55,
+                          'sf_gamma_atol': 3e2}
         else:
             tol_kwargs = {}
         check_structure_factor(sf, expected_sf, **tol_kwargs)
