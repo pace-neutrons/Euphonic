@@ -1,17 +1,47 @@
 import pytest
 import numpy as np
 import spglib as spg
-import brille as br
 
 from euphonic import Crystal, ureg
-from euphonic.brille_interpolator import BrilleInterpolator
 from tests_and_analysis.test.euphonic_test.test_force_constants import (
     get_fc)
 from tests_and_analysis.test.euphonic_test.test_crystal import (
     get_crystal)
 
+# Allow tests with brille marker to be collected and
+# deselected if brille isn't installed
+pytestmark = pytest.mark.brille
+try:
+    import brille as br
+    from euphonic.brille_interpolator import BrilleInterpolator
+except ModuleNotFoundError:
+    pass
 
-def get_grid(material, grid_type='trellis', fill=True):
+
+def test_import__without_brille_raises_err(
+        mocker):
+    # Mock import of brille to raise ModuleNotFoundError
+    import builtins
+    from importlib import reload
+    import euphonic.brille_interpolator
+    real_import = builtins.__import__
+    def mocked_import(name, *args, **kwargs):
+        if name == 'brille':
+            raise ModuleNotFoundError
+        return real_import(name, *args, **kwargs)
+    mocker.patch('builtins.__import__', side_effect=mocked_import)
+    with pytest.raises(ModuleNotFoundError) as mnf_error:
+        reload(euphonic.brille_interpolator)
+    assert "Cannot import Brille" in mnf_error.value.args[0]
+
+@pytest.fixture
+def grid(grid_args):
+    # Currently can only use 1 fixture argument in indirectly
+    # parametrized fixtures, so work around it
+    material, kwargs = grid_args
+    fill = kwargs.get('fill', True)
+    grid_type = kwargs.get('grid_type', 'trellis')
+
     fc = get_fc(material)
     crystal = fc.crystal
     cell_vectors = crystal._cell_vectors
@@ -50,68 +80,37 @@ def get_grid(material, grid_type='trellis', fill=True):
                   (0., 3*n_atoms , 0, 3, 0, 0), (0., 1., 0.))
     return grid
 
-
-def test_import__without_brille_raises_err(
-        mocker):
-    # Mock import of brille to raise ModuleNotFoundError
-    import builtins
-    from importlib import reload
-    import euphonic.brille_interpolator
-    real_import = builtins.__import__
-    def mocked_import(name, *args, **kwargs):
-        if name == 'brille':
-            raise ModuleNotFoundError
-        return real_import(name, *args, **kwargs)
-    mocker.patch('builtins.__import__', side_effect=mocked_import)
-    with pytest.raises(ModuleNotFoundError) as mnf_error:
-        reload(euphonic.brille_interpolator)
-    assert "Cannot import Brille" in mnf_error.value.args[0]
-
-
 class TestBrilleInterpolatorCreation:
 
-    @pytest.fixture(params=['quartz', 'LZO'])
-    def create_from_constructor(self, request):
-        material = request.param
+    @pytest.mark.parametrize('material, grid_args', [
+        ('quartz', ('quartz', {})),
+        ('LZO', ('LZO', {}))])
+    def test_create_from_constructor(self, material, grid):
         crystal = get_crystal(material)
-        grid = get_grid(material)
         bri = BrilleInterpolator(crystal, grid)
-        return bri
 
-    @pytest.fixture(params=[
+    @pytest.mark.parametrize('material, kwargs', [
         ('LZO', {'n_grid_points': 10}),
         ('quartz', {'n_grid_points': 10})])
-    def create_from_force_constants(self, request):
-        material, kwargs = request.param
+    def test_create_from_force_constants(self, material, kwargs):
         fc = get_fc(material)
         bri = BrilleInterpolator.from_force_constants(fc, **kwargs)
-        return bri
 
-    @pytest.mark.parametrize(('bri_creator'), [
-        pytest.lazy_fixture('create_from_constructor'),
-        pytest.lazy_fixture('create_from_force_constants')])
-    def test_correct_object_creation(self, bri_creator):
-        bri = bri_creator
-
-    @pytest.fixture(params=[
-        ('crystal',
-         get_fc('quartz'),
-         TypeError),
-        ('grid',
-         get_grid('quartz', fill=False),
-         ValueError),
-        ('grid',
-         get_grid('LZO'),
-         ValueError)])
-    def inject_faulty_elements(self, request):
-        faulty_arg, faulty_value, expected_exception = request.param
-        args = {'crystal': get_crystal('quartz'),
-                'grid': get_grid('quartz')}
-        args[faulty_arg] = faulty_value
-        # Inject the faulty value and get a tuple of constructor arguments
-        return (), args, expected_exception
-
-    def test_faulty_object_creation(self, inject_faulty_elements):
-        faulty_args, faulty_kwargs, expected_exception = inject_faulty_elements
+    @pytest.mark.parametrize('faulty_crystal, expected_exception',
+        [(get_fc('quartz'), TypeError)])
+    # This uses implicit indirect parametrization - material is passed to the
+    # grid fixture
+    @pytest.mark.parametrize('grid_args', [('quartz', {})])
+    def test_faulty_crystal_object_creation(self, faulty_crystal, expected_exception, grid):
         with pytest.raises(expected_exception):
-            BrilleInterpolator(*faulty_args, **faulty_kwargs)
+            BrilleInterpolator(faulty_crystal, grid)
+
+    # Deliberately create a grid incompatible with the quartz crystal
+    # This uses implicit indirect parametrization - material and fill
+    # are passed to the grid fixture
+    @pytest.mark.parametrize('expected_exception, grid_args',
+        [(ValueError, ('LZO', {})),
+         (ValueError, ('quartz', {'fill': False}))])
+    def test_faulty_grid_object_creation(self, expected_exception, grid):
+        with pytest.raises(expected_exception):
+            BrilleInterpolator(get_crystal('quartz'), grid)
