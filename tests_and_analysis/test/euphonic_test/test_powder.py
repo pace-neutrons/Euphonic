@@ -25,7 +25,6 @@ def jitter(request):
     return request.param
 
 
-@pytest.mark.unit
 @pytest.mark.parametrize('npts, sampling, sampling_args, sampling_kwargs',
                          [(10, 'golden', (10,), {'jitter': None}),
                           # 31 pts rounded up to 2N^2 -> 4 cols, 8 rows
@@ -143,7 +142,6 @@ class TestSphereSampledProperties:
     _energy_bins = np.linspace(1., 10., 5)
     _scattering_lengths = {'Si': 4. * ureg('fm')}
 
-    @pytest.mark.unit
     @pytest.mark.parametrize('energy_bins', [_energy_bins, None])
     def test_sample_sphere_dos(self,
                                mocker, mock_fc, mock_qpf, random_qpts_array,
@@ -162,14 +160,12 @@ class TestSphereSampledProperties:
             mock_fc.calculate_qpoint_frequencies.call_args[0][0])
         mock_qpf.calculate_dos.assert_called_with(return_bins)
 
-    @pytest.mark.unit
     def test_sample_sphere_structure_factor_error(self, mock_fc, mock_dw):
         with pytest.raises(ValueError):
             sample_sphere_structure_factor(mock_fc, 1. * ureg('1 / angstrom'),
                                            dw=mock_dw,
                                            temperature=(100. * ureg('K')))
 
-    @pytest.mark.unit
     @pytest.mark.parametrize('options',
                              [dict(mod_q=1.2 * ureg('1 / angstrom'),
                                    npts=400, jitter=True,
@@ -276,7 +272,6 @@ class TestQpointConversion:
                          [0, np.pi / 2, np.pi / 3]]}
 
     @staticmethod
-    @pytest.mark.unit
     def test_qpts_cart_to_frac_trivial(trivial_crystal, trivial_qpts):
         """Check internal method for q-point conversion with trivial example"""
         cart_qpts = np.asarray(trivial_qpts['cart'], dtype=float
@@ -287,7 +282,6 @@ class TestQpointConversion:
         npt.assert_almost_equal(calc_frac_qpts, frac_qpts)
 
     @staticmethod
-    @pytest.mark.unit
     def test_qpts_cart_to_frac_roundtrip(random_qpts_array,
                                          nontrivial_crystal):
         frac_qpts = random_qpts_array

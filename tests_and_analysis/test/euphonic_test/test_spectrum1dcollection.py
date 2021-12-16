@@ -119,7 +119,6 @@ def check_spectrum1dcollection(actual_spectrum, expected_spectrum):
                 == expected_spectrum.metadata)
 
 
-@pytest.mark.unit
 class TestSpectrum1DCollectionCreation:
     @pytest.fixture(params=[
         get_expected_spectrum1dcollection('gan_bands.json'),
@@ -270,7 +269,6 @@ class TestSpectrum1DCollectionCreation:
             Spectrum1DCollection.from_spectra(input_spectra)
 
 
-@pytest.mark.unit
 class TestSpectrum1DCollectionSerialisation:
 
     # Note that when writing .text there must be the same number of
@@ -321,7 +319,6 @@ class TestSpectrum1DCollectionSerialisation:
         check_spectrum1dcollection(spectrum_from_dict, expected_spectrum)
 
 
-@pytest.mark.unit
 class TestSpectrum1DCollectionUnitConversion:
 
     @pytest.mark.parametrize('spectrum1d_file, attr, unit_val', [
@@ -341,7 +338,6 @@ class TestSpectrum1DCollectionUnitConversion:
             setattr(spec1d, unit_attr, unit_val)
 
 
-@pytest.mark.unit
 class TestSpectrum1DCollectionSetters:
 
     @pytest.mark.parametrize('spectrum1d_file, attr, unit, scale', [
@@ -366,7 +362,6 @@ class TestSpectrum1DCollectionSetters:
             setattr(spec1d, attr, new_attr)
 
 
-@pytest.mark.unit
 class TestSpectrum1DCollectionIndexAccess:
     @pytest.mark.parametrize(
         'spectrum, index, expected_spectrum1d',
@@ -422,7 +417,6 @@ class TestSpectrum1DCollectionIndexAccess:
             spectrum[index]
 
 
-@pytest.mark.unit
 class TestSpectrum1DCollectionMethods:
     @pytest.mark.parametrize(
         'spectrum, split_kwargs, expected_spectra',

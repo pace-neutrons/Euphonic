@@ -1,17 +1,24 @@
 import pytest
-import matplotlib
-matplotlib.use('Agg')
-import matplotlib.pyplot as plt
 import numpy as np
 import numpy.testing as npt
 
 from euphonic import ureg
-import euphonic.plot
-from euphonic.plot import plot_1d, plot_1d_to_axis
 from euphonic.spectra import Spectrum1D, Spectrum1DCollection
 
 from ..script_tests.utils import get_ax_image_data
 
+# Allow tests with matplotlib marker to be collected and
+# deselected if Matplotlib is not installed
+pytestmark = pytest.mark.matplotlib
+try:
+    import matplotlib
+    matplotlib.use('Agg')
+    import matplotlib.pyplot as plt
+
+    import euphonic.plot
+    from euphonic.plot import plot_1d, plot_1d_to_axis
+except ModuleNotFoundError:
+    pass
 
 @pytest.fixture
 def figure():
@@ -31,7 +38,6 @@ def axes_with_line_and_legend(axes):
     axes.legend()
     return axes
 
-@pytest.mark.unit
 def test_missing_matplotlib(mocker):
     from builtins import __import__ as builtins_import
     from importlib import reload
@@ -50,7 +56,6 @@ def test_missing_matplotlib(mocker):
             in mnf_error.value.args[0])
 
 
-@pytest.mark.unit
 class TestPlot1DCore:
     @pytest.mark.parametrize('spectra, expected_error',
                              [('wrong_type', TypeError), ])
@@ -176,7 +181,6 @@ class TestPlot1DCore:
         with pytest.raises(ValueError):
             plot_1d_to_axis(spec, axes, labels=labels)
 
-@pytest.mark.unit
 class TestPlot1D:
     @staticmethod
     def mock_core(mocker):
@@ -291,7 +295,6 @@ class TestPlot1D:
             plot_1d(spec1d, **kwargs)
 
 
-@pytest.mark.unit
 class TestPlot2D:
     @staticmethod
     def mock_core(mocker):
@@ -384,7 +387,6 @@ class TestPlot2D:
             euphonic.plot.plot_2d(spectrum, **kwargs)
 
 
-@pytest.mark.unit
 @pytest.mark.parametrize('labels, rotate',
                          [([(1, 'A'), (3, 'B'), (4, 'CDEF')], False),
                           ([(0, 'A'), (3, 'THISISALONGLABEL')], True)])

@@ -5,16 +5,21 @@ from platform import platform
 
 import pytest
 import numpy.testing as npt
-# Required for mocking
-import matplotlib.pyplot
 from packaging import version
 from scipy import __version__ as scipy_ver
 
 from tests_and_analysis.test.utils import get_data_path, get_castep_path
 from tests_and_analysis.test.script_tests.utils import (
     get_script_test_data_path, get_current_plot_image_data, args_to_key)
-import euphonic.cli.intensity_map
 
+pytestmark = pytest.mark.matplotlib
+# Allow tests with matplotlib marker to be collected and
+# deselected if Matplotlib is not installed
+try:
+    import matplotlib.pyplot
+    import euphonic.cli.intensity_map
+except ModuleNotFoundError:
+    pass
 
 quartz_phonon_file = os.path.join(
     get_data_path(), 'qpoint_phonon_modes', 'quartz',
@@ -46,7 +51,6 @@ intensity_map_params_macos_segfault = [
     [graphite_fc_file, '--weighting=coherent', '--temperature=800']]
 
 
-@pytest.mark.integration
 class TestRegression:
 
     @pytest.fixture

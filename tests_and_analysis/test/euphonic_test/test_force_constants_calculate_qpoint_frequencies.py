@@ -15,7 +15,6 @@ from tests_and_analysis.test.euphonic_test.test_force_constants import (
     get_fc, get_fc_dir)
 
 
-@pytest.mark.unit
 class TestForceConstantsCalculateQPointFrequencies:
 
     def get_lzo_fc():

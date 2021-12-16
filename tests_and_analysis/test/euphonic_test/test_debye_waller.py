@@ -90,7 +90,6 @@ def check_debye_waller(
                         atol=dw_atol,
                         rtol=dw_rtol)
 
-@pytest.mark.unit
 class TestDebyeWallerCreation:
 
     @pytest.fixture(params=[
@@ -168,7 +167,6 @@ class TestDebyeWallerCreation:
             DebyeWaller(*faulty_args)
 
 
-@pytest.mark.unit
 class TestDebyeWallerSerialisation:
 
     @pytest.mark.parametrize('dw', [
@@ -201,7 +199,6 @@ class TestDebyeWallerSerialisation:
         check_debye_waller(dw, expected_dw)
 
 
-@pytest.mark.unit
 class TestDebyeWallerUnitConversion:
 
     @pytest.mark.parametrize('material, json_file, attr, unit_val', [
@@ -226,7 +223,6 @@ class TestDebyeWallerUnitConversion:
             setattr(dw, unit_attr, unit_val)
 
 
-@pytest.mark.unit
 class TestDebyeWallerSetters:
 
     @pytest.mark.parametrize('material, json_file, attr, unit, scale', [

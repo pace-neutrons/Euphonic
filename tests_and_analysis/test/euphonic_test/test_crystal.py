@@ -115,7 +115,6 @@ def check_crystal(crystal, expected_crystal):
         atol=np.finfo(np.float64).eps)
 
 
-@pytest.mark.unit
 class TestCrystalCreation:
 
     @pytest.fixture(params=[get_expected_crystal('quartz'),
@@ -209,7 +208,6 @@ class TestCrystalCreation:
             Crystal(*faulty_args)
 
 
-@pytest.mark.unit
 class TestCrystalSerialisation:
 
     @pytest.mark.parametrize('crystal', [
@@ -246,7 +244,6 @@ class TestCrystalSerialisation:
         check_crystal(crystal, expected_crystal)
 
 
-@pytest.mark.unit
 class TestCrystalUnitConversion:
 
     @pytest.mark.parametrize('material, attr, unit_val', [
@@ -267,7 +264,6 @@ class TestCrystalUnitConversion:
             setattr(crystal, unit_attr, unit_val)
 
 
-@pytest.mark.unit
 class TestCrystalSetters:
 
     @pytest.mark.parametrize('material, attr, unit, scale', [
@@ -292,7 +288,6 @@ class TestCrystalSetters:
             setattr(crystal, attr, new_attr)
 
 
-@pytest.mark.unit
 class TestCrystalMethods:
 
     quartz_reciprocal_cell = np.array([
