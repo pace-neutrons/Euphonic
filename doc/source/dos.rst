@@ -96,7 +96,7 @@ available, the 'reference' and 'fast' methods. In the 'reference' scheme each
 mode at each q-point is broadened individually with a specific width. 
 These mode widths are derived from the mode gradients, and the mode gradients
 can be  calculated at the same time as the phonon frequencies and eigenvectors,
- by passing ``return_mode_gradients=True`` to
+by passing ``return_mode_gradients=True`` to
 :py:meth:`ForceConstants.calculate_qpoint_phonon_modes <euphonic.force_constants.ForceConstants.calculate_qpoint_phonon_modes>` or
 :py:meth:`ForceConstants.calculate_qpoint_frequencies <euphonic.force_constants.ForceConstants.calculate_qpoint_frequencies>`.
 The mode widths can be estimated from the mode gradients using
@@ -136,9 +136,11 @@ will change the number of mode width samples; more samples will make the gaussia
 accurate but will also increase computation time. Following on from the above example,
 fast adaptive broadening can be performed as follows:
 
-... code-block:: py
+.. code-block:: py
 
-  fast_adaptive_dos = phonons.calculate_dos(energy_bins, mode_widths=mode_widths, adaptive_method='fast')
+  fast_adaptive_dos = phonons.calculate_dos(energy_bins, 
+                                            mode_widths=mode_widths,
+                                            adaptive_method='fast')
 
 Calculating Partial and Neutron-weighted DOS
 --------------------------------------------
