@@ -124,6 +124,20 @@ class QpointFrequencies:
         dos
             A spectrum containing the energy bins on the x-axis and dos
             on the y-axis
+
+        Notes
+        -----
+
+        The fast adaptive broadening method reduces computation time by
+        reducing the number of Gaussian functions that have to be evaluated.
+        Broadening kernels are only evaulated for a subset of mode width values
+        with intermediate values approximated using interpolation. 
+
+        The ``adaptive_error`` keyword argument is used to determine how many
+        broadening kernels are computed exactly. The more exact kernels are
+        used, the more accurate the Gaussian approximations will be, but
+        computation time will also be increased.
+
         """
         dos = self._calculate_dos(dos_bins, mode_widths=mode_widths,
                                   mode_widths_min=mode_widths_min,

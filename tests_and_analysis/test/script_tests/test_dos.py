@@ -37,7 +37,10 @@ dos_params = [
     [quartz_fc_file, '--grid', '5', '5', '4'],
     [quartz_fc_file, '--grid', '5', '5', '4', '--adaptive', '--pdos'],
     [quartz_fc_file, '--grid', '5', '5', '4', '--adaptive'],
-    [quartz_fc_file, '--grid', '5', '5', '4', '--adaptive', '--eb', '2']]
+    [quartz_fc_file, '--grid', '5', '5', '4', '--adaptive', '--eb', '2'],
+    [quartz_fc_file, '--grid', '5', '5', '4', '--adaptive', '--adaptive_method=fast'],
+    [quartz_fc_file, '--grid', '5', '5', '4', '--adaptive', '--adaptive_method=fast',
+                     '--adaptive_error=0.05']]
 
 
 @pytest.mark.integration

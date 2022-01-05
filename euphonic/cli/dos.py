@@ -56,12 +56,18 @@ def main(params: Optional[List[str]] = None) -> None:
     modes.frequencies_unit = args.energy_unit
     ebins = _get_energy_bins(
         modes, args.ebins + 1, emin=args.e_min, emax=args.e_max)
+
+    kwargs = {"mode_widths": mode_widths}
+
+    if args.adaptive_method == 'fast':
+        kwargs["adaptive_method"] = 'fast'
+        kwargs["adaptive_error"] = args.adaptive_error
+    
     if args.weighting == 'dos' and args.pdos is None:
-        dos = modes.calculate_dos(ebins, mode_widths=mode_widths)
+        dos = modes.calculate_dos(ebins, **kwargs)
     else:
-        pdos = modes.calculate_pdos(
-            ebins, mode_widths=mode_widths,
-            weighting=_get_pdos_weighting(args.weighting))
+        kwargs["weighting"] = _get_pdos_weighting(args.weighting)
+        pdos = modes.calculate_pdos(ebins, **kwargs)
         dos = _arrange_pdos_groups(pdos, args.pdos)
 
     if args.energy_broadening and not args.adaptive:

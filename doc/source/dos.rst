@@ -91,11 +91,12 @@ Adaptive Broadening
 -------------------
 
 Adaptive broadening can also be enabled to get a more accurate DOS than with
-standard fixed width broadening. In this scheme each mode at each q-point is
-broadened individually with a specific width. These mode widths are derived
-from the mode gradients, and the mode gradients can be  calculated at the
-same time as the phonon frequencies and eigenvectors, by passing
-``return_mode_gradients=True`` to
+standard fixed width broadening. There are two adaptive broadening methods
+available, the 'reference' and 'fast' methods. In the 'reference' scheme each
+mode at each q-point is broadened individually with a specific width. 
+These mode widths are derived from the mode gradients, and the mode gradients
+can be  calculated at the same time as the phonon frequencies and eigenvectors,
+ by passing ``return_mode_gradients=True`` to
 :py:meth:`ForceConstants.calculate_qpoint_phonon_modes <euphonic.force_constants.ForceConstants.calculate_qpoint_phonon_modes>` or
 :py:meth:`ForceConstants.calculate_qpoint_frequencies <euphonic.force_constants.ForceConstants.calculate_qpoint_frequencies>`.
 The mode widths can be estimated from the mode gradients using
@@ -117,6 +118,27 @@ These widths can then be passed to ``calculate_dos`` through the
 
   energy_bins = np.arange(0, 166, 0.1)*ureg('meV')
   adaptive_dos = phonons.calculate_dos(energy_bins, mode_widths=mode_widths)
+
+The 'fast' approximate adaptive brodening method reduces computation time by
+reducing the number of Gaussian functions that have to be evaluated. Rather than
+individually broadening each mode at each q-point with a Gaussian of specific width,
+broadening kernels need only be computed for regularly spaced values across range of
+mode widths. The kernels at intermediate mode width values can then be approximated
+using interpolation. Interpolation weights can then be used to scale the input spectrum, 
+before scaled spectra are then convolved by each of the broadening functions associated
+with the mode width sample values and then summed.
+
+For fast adaptive broadening the ``adaptive_method`` keyword argument must be set to 'fast'
+when passed to ``calculate_dos``. Optionally, an acceptable error level for the interpolated kernels
+can be specified, using the ``adaptive_error`` keyword argument. The error is defined as the absolute
+difference between the areas of the true and approximate Gaussians. Changing the ``adaptive_error`` value
+will change the number of mode width samples; more samples will make the gaussian approximations more
+accurate but will also increase computation time. Following on from the above example,
+fast adaptive broadening can be performed as follows:
+
+... code-block:: py
+
+  fast_adaptive_dos = phonons.calculate_dos(energy_bins, mode_widths=mode_widths, adaptive_method='fast')
 
 Calculating Partial and Neutron-weighted DOS
 --------------------------------------------
