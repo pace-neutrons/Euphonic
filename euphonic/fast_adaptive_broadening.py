@@ -68,7 +68,8 @@ def fast_broaden(dos_bins_hartree: np.ndarray,
 
     lower_coeffs = find_coeffs(spacing)
     scaled_data_matrix = np.zeros((len(dos_bins_hartree)-1, len(kernels)))
-    # start loop from 1 as points with insert-position 0 lie outside of bin range
+    # start loop from 1 as points with insert-position 0
+    # lie outside of bin range
     for i in range(1, len(mode_width_samples)):
         masked_block = (kernels_idx == i)
         sigma_factors = mode_widths[masked_block]/mode_width_samples[i-1]

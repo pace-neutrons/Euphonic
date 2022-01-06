@@ -707,7 +707,8 @@ def _get_cli_parser(features: Collection[str] = {}
                     help='The adaptive broadening method')
                 section.add_argument(
                     '--adaptive_error', type=float, default=0.01,
-                    help='Acceptable absolute error for gaussian approximations')
+                    help=('Acceptable absolute error for '
+                          'gaussian approximations'))
                 eb_help = (
                     'If using fixed width broadening, the FWHM of broadening '
                     'on energy axis in ENERGY_UNIT (no broadening if '

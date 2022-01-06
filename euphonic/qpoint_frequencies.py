@@ -131,7 +131,7 @@ class QpointFrequencies:
         The fast adaptive broadening method reduces computation time by
         reducing the number of Gaussian functions that have to be evaluated.
         Broadening kernels are only evaulated for a subset of mode width values
-        with intermediate values approximated using interpolation. 
+        with intermediate values approximated using interpolation.
 
         The ``adaptive_error`` keyword argument is used to determine how many
         broadening kernels are computed exactly. The more exact kernels are

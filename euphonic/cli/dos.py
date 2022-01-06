@@ -62,7 +62,7 @@ def main(params: Optional[List[str]] = None) -> None:
     if args.adaptive_method == 'fast':
         kwargs["adaptive_method"] = 'fast'
         kwargs["adaptive_error"] = args.adaptive_error
-    
+
     if args.weighting == 'dos' and args.pdos is None:
         dos = modes.calculate_dos(ebins, **kwargs)
     else:
