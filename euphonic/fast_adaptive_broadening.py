@@ -53,7 +53,6 @@ def fast_broaden(dos_bins_hartree: np.ndarray,
     spacing = np.polyval([ 612.7, -122.7, 15.40, 1.0831], adaptive_error)
 
     bin_width = dos_bins_hartree[1]-dos_bins_hartree[0]
-    mode_widths = np.maximum(mode_widths, bin_width / 2)
 
     n_kernels = int(
         np.ceil(np.log(max(mode_widths)/min(mode_widths))/np.log(spacing)))
