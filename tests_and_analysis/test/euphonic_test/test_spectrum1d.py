@@ -119,7 +119,6 @@ def check_spectrum1d(actual_spectrum1d, expected_spectrum1d, tol=None):
                 == expected_spectrum1d.metadata)
 
 
-@pytest.mark.unit
 class TestSpectrum1DCreation:
 
     # As x_data can be either bin centres or edges, test both cases with
@@ -215,7 +214,6 @@ class TestSpectrum1DCreation:
             Spectrum1D(*faulty_args, **faulty_kwargs)
 
 
-@pytest.mark.unit
 class TestSpectrum1DSerialisation:
 
     # Note that when writing .text there must be the same number of
@@ -261,7 +259,6 @@ class TestSpectrum1DSerialisation:
         check_spectrum1d(spec1d_from_dict, expected_spec1d)
 
 
-@pytest.mark.unit
 class TestSpectrum1DUnitConversion:
 
     @pytest.mark.parametrize('spectrum1d_file, attr, unit_val', [
@@ -281,7 +278,6 @@ class TestSpectrum1DUnitConversion:
             setattr(spec1d, unit_attr, unit_val)
 
 
-@pytest.mark.unit
 class TestSpectrum1DSetters:
 
     @pytest.mark.parametrize('spectrum1d_file, attr, unit, scale', [
@@ -306,7 +302,6 @@ class TestSpectrum1DSetters:
             setattr(spec1d, attr, new_attr)
 
 
-@pytest.mark.unit
 class TestSpectrum1DMethods:
     @pytest.mark.parametrize(
         'args, spectrum1d_file, split_spectrum_files', [

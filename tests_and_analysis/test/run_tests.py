@@ -1,9 +1,27 @@
+import argparse
 import sys
 import os
+import time
+from typing import Tuple, List, Union
+
 import pytest
 import coverage
-import argparse
-from typing import Tuple, List, Union
+
+
+def main():
+    test_dir, reports_dir = _get_test_and_reports_dir()
+
+    (do_report_coverage, do_report_tests, tests,
+     markers_to_run) = _get_parsed_args(test_dir)
+
+    pytest_options: List[str] = _build_pytest_options(
+        reports_dir, do_report_tests, tests, markers_to_run)
+
+    test_exit_code: int = run_tests(
+        pytest_options, do_report_coverage, reports_dir, test_dir)
+
+    # Exit with a failure code if there are any errors or failures
+    sys.exit(test_exit_code)
 
 
 def _get_test_and_reports_dir() -> Tuple[str, str]:
@@ -47,7 +65,7 @@ def _get_parsed_args(test_dir: str) -> Tuple[bool, bool, str, str]:
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--cov", action="store_true",
-        help="If present report coverage in a coverage.xml file in reports")
+        help="If present report coverage in a coverage*.xml file in reports")
     parser.add_argument(
         "--report", action="store_true",
         help="If present report test results to junit_report*.xml files")
@@ -62,8 +80,8 @@ def _get_parsed_args(test_dir: str) -> Tuple[bool, bool, str, str]:
             args_parsed.markers_to_run)
 
 
-def _build_pytest_options(reports_dir: str, do_report_tests: bool, tests: str,
-                          markers: str) -> List[str]:
+def _build_pytest_options(reports_dir: str, do_report_tests: bool,
+                          tests: str, markers: str) -> List[str]:
     """
     Build the options for pytest to use.
 
@@ -87,17 +105,14 @@ def _build_pytest_options(reports_dir: str, do_report_tests: bool, tests: str,
     options: List[str] = [tests]
     # Add reporting of test results
     if do_report_tests:
-        # We may have multiple reports, so do not overwrite them
+        # We may have multiple reports, so get a unique filename
         filename_prefix = "junit_report"
-        filenum = 0
-        for filename in os.listdir(reports_dir):
-            if filename_prefix in filename:
-                filenum += 1
-        junit_xml_filepath: str = os.path.join(
-            test_dir, "reports", "{}{}.xml".format(filename_prefix, filenum))
-        options.append("--junitxml={}".format(junit_xml_filepath))
+        filenum = int(time.time())
+        junit_xml_filepath = os.path.join(
+            reports_dir, f"{filename_prefix}_{filenum}.xml")
+        options.append(f"--junitxml={junit_xml_filepath}")
     # Only run the specified markers
-    options.append("-m={}".format(markers))
+    options.append(f"-m={markers}")
     return options
 
 
@@ -111,7 +126,7 @@ def run_tests(pytest_options: List[str], do_report_coverage: bool,
     pytest_options : List[str]
         The options to pass to pytest
     do_report_coverage : bool
-        If true report coverage to coverage.xml
+        If true report coverage to coverage*.xml
     reports_dir : str
         The directory to report coverage to
     test_dir: str
@@ -142,23 +157,12 @@ def run_tests(pytest_options: List[str], do_report_coverage: bool,
     # Report coverage if requested
     if do_report_coverage and cov is not None:
         cov.stop()
-        coverage_xml_filepath = os.path.join(reports_dir, "coverage.xml")
+        coverage_xml_filepath = os.path.join(
+            reports_dir, f"coverage_{int(time.time())}.xml")
         cov.xml_report(outfile=coverage_xml_filepath)
 
     return test_exit_code
 
 
 if __name__ == "__main__":
-    test_dir, reports_dir = _get_test_and_reports_dir()
-
-    do_report_coverage, do_report_tests, tests, markers_to_run = \
-        _get_parsed_args(test_dir)
-
-    pytest_options: List[str] = _build_pytest_options(
-        reports_dir, do_report_tests, tests, markers_to_run)
-
-    test_exit_code: int = \
-        run_tests(pytest_options, do_report_coverage, reports_dir, test_dir)
-
-    # Exit with a failure code if there are any errors or failures
-    sys.exit(test_exit_code)
+    main()

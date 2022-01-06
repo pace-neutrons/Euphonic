@@ -6,16 +6,21 @@ from unittest.mock import patch
 import pytest
 import numpy as np
 import numpy.testing as npt
-# Required for mocking
-import matplotlib.pyplot
 
 from tests_and_analysis.test.utils import get_data_path, get_castep_path
 from tests_and_analysis.test.script_tests.utils import (
     get_script_test_data_path, get_current_plot_line_data,
     args_to_key)
 from euphonic.cli.utils import _get_pdos_weighting
-import euphonic.cli.dos
 
+pytestmark = pytest.mark.matplotlib
+# Allow tests with matplotlib marker to be collected and
+# deselected if Matplotlib is not installed
+try:
+    import matplotlib.pyplot
+    import euphonic.cli.dos
+except ModuleNotFoundError:
+    pass
 
 nah_phonon_file = get_castep_path('NaH', 'NaH.phonon')
 quartz_fc_file = get_castep_path('quartz', 'quartz.castep_bin')
@@ -43,7 +48,6 @@ dos_params = [
                      '--adaptive_error=0.05']]
 
 
-@pytest.mark.integration
 class TestRegression:
 
     @pytest.fixture

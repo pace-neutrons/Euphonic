@@ -1,7 +1,9 @@
 import os
 # Required for mocking
-import matplotlib.pyplot
-from matplotlib.axes import Axes
+try:
+    import matplotlib.pyplot
+except ModuleNotFoundError:
+    pass
 from typing import Dict, List, Union
 from ..utils import get_data_path
 
@@ -97,8 +99,8 @@ def get_current_plot_image_data() -> Dict[str,
     return data
 
 
-def get_ax_image_data(ax: Axes) -> Dict[str,
-                                        Union[str, List[float], List[int]]]:
+def get_ax_image_data(ax: 'matplotlib.axes.Axes'
+                      ) -> Dict[str, Union[str, List[float], List[int]]]:
     im = ax.get_images()[0]
     # Convert negative zero to positive zero
     im_data = im.get_array()

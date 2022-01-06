@@ -20,7 +20,6 @@ nacl_default_yaml = get_phonopy_path("NaCl_default", "phonopy.yaml")
 quick_calc_params = ['-n=10', '--min=0.5', '--max=0.5']
 
 
-@pytest.mark.integration
 class TestRegression:
 
     def test_default_dipole_parameters(self):
@@ -46,6 +45,7 @@ class TestRegression:
         euphonic.cli.optimise_dipole_parameter.main(
             optimise_dipole_parameter_args)
 
+    @pytest.mark.phonopy_reader
     def test_reading_nacl_default_reads_born(self, recwarn):
         # BORN should be read by default so no warning should
         # be raised

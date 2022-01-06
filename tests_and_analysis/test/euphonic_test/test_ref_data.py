@@ -7,7 +7,6 @@ from euphonic import ureg
 from euphonic.util import get_reference_data
 
 
-@pytest.mark.unit
 class TestReferenceData:
 
     def test_bad_collection(self):

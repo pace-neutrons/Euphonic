@@ -163,27 +163,29 @@ def check_qpt_ph_modes(
         atol=np.finfo(np.float64).eps)
 
 
-@pytest.mark.unit
 class TestQpointPhononModesCreation:
 
-    @pytest.fixture(params=[get_expected_qpt_ph_modes('quartz'),
-                            get_expected_qpt_ph_modes('LZO'),
-                            get_expected_qpt_ph_modes('NaCl')])
-    def create_from_constructor(self, request):
-        expected_qpt_ph_modes = request.param
+    @pytest.mark.parametrize('expected_qpt_ph_modes', [
+        get_expected_qpt_ph_modes('quartz'),
+        get_expected_qpt_ph_modes('LZO'),
+        get_expected_qpt_ph_modes('NaCl')])
+    def test_create_from_constructor(self, expected_qpt_ph_modes):
         args, kwargs = expected_qpt_ph_modes.to_constructor_args()
         qpt_ph_modes = QpointPhononModes(*args, **kwargs)
-        return qpt_ph_modes, expected_qpt_ph_modes
+        check_qpt_ph_modes(qpt_ph_modes, expected_qpt_ph_modes,
+                           check_evecs=True)
 
-    @pytest.fixture(params=[get_expected_qpt_ph_modes('quartz'),
-                            get_expected_qpt_ph_modes('NaCl')])
-    def create_from_constructor_without_weights(self, request):
-        expected_qpt_ph_modes = request.param
+    @pytest.mark.parametrize('expected_qpt_ph_modes', [
+        get_expected_qpt_ph_modes('quartz'),
+        get_expected_qpt_ph_modes('NaCl')])
+    def test_create_from_constructor_without_weights(
+            self, expected_qpt_ph_modes):
         args, kwargs = expected_qpt_ph_modes.to_constructor_args(weights=False)
         qpt_ph_modes = QpointPhononModes(*args, **kwargs)
-        return qpt_ph_modes, expected_qpt_ph_modes
+        check_qpt_ph_modes(qpt_ph_modes, expected_qpt_ph_modes,
+                           check_evecs=True)
 
-    @pytest.fixture(params=[
+    @pytest.mark.parametrize('material, phonon_file, json_file', [
         ('LZO', 'La2Zr2O7.phonon',
          'LZO_from_castep_qpoint_phonon_modes.json'),
         ('Si2-sc-skew', 'Si2-sc-skew.phonon',
@@ -192,15 +194,16 @@ class TestQpointPhononModesCreation:
          'quartz_from_castep_qpoint_phonon_modes.json'),
         ('quartz', 'quartz_split_qpts.phonon',
          'quartz_split_from_castep_qpoint_phonon_modes.json')])
-    def create_from_castep(self, request):
-        material, phonon_file, json_file = request.param
+    def test_create_from_castep(self, material, phonon_file, json_file):
         qpt_ph_modes = QpointPhononModes.from_castep(
             get_castep_path(material, phonon_file))
         expected_qpt_ph_modes = ExpectedQpointPhononModes(
             os.path.join(get_qpt_ph_modes_dir(material), json_file))
-        return qpt_ph_modes, expected_qpt_ph_modes
+        check_qpt_ph_modes(qpt_ph_modes, expected_qpt_ph_modes,
+                           check_evecs=True)
 
-    @pytest.fixture(params=[
+    @pytest.mark.phonopy_reader
+    @pytest.mark.parametrize('material, subdir, phonopy_args, json_file', [
         ('NaCl', 'band', {'summary_name': 'should_not_be_read',
                           'phonon_name': 'band.yaml'},
          'NaCl_band_yaml_from_phonopy_qpoint_phonon_modes.json'),
@@ -230,43 +233,31 @@ class TestQpointPhononModesCreation:
         ('CaHgO2', '', {'summary_name': 'mp-7041-20180417.yaml',
                         'phonon_name': 'qpoints.yaml'},
          'CaHgO2_from_phonopy_qpoint_phonon_modes.json')])
-    def create_from_phonopy(self, request):
-        material, subdir, phonopy_args, json_file = request.param
+    def test_create_from_phonopy(self, material, subdir, phonopy_args, json_file):
         phonopy_args['path'] = get_phonopy_path(material, subdir)
         qpt_ph_modes = QpointPhononModes.from_phonopy(**phonopy_args)
         json_path = os.path.join(
             get_qpt_ph_modes_dir(material), json_file)
         expected_qpt_ph_modes = ExpectedQpointPhononModes(json_path)
-        return qpt_ph_modes, expected_qpt_ph_modes
-
-    @pytest.fixture(params=['LZO', 'quartz', 'NaCl'])
-    def create_from_json(self, request):
-        material = request.param
-        expected_qpt_ph_modes = get_expected_qpt_ph_modes(material)
-        qpt_ph_modes = get_qpt_ph_modes(material)
-        return qpt_ph_modes, expected_qpt_ph_modes
-
-    @pytest.fixture(params=['LZO', 'quartz', 'NaCl'])
-    def create_from_dict(self, request):
-        material = request.param
-        expected_qpt_ph_modes = get_expected_qpt_ph_modes(material)
-        qpt_ph_modes = QpointPhononModes.from_dict(
-            expected_qpt_ph_modes.to_dict())
-        return qpt_ph_modes, expected_qpt_ph_modes
-
-    @pytest.mark.parametrize(('qpt_ph_modes_creator'), [
-        pytest.lazy_fixture('create_from_constructor'),
-        pytest.lazy_fixture('create_from_constructor_without_weights'),
-        pytest.lazy_fixture('create_from_dict'),
-        pytest.lazy_fixture('create_from_json'),
-        pytest.lazy_fixture('create_from_castep'),
-        pytest.lazy_fixture('create_from_phonopy')])
-    def test_correct_object_creation(self, qpt_ph_modes_creator):
-        qpt_ph_modes, expected_qpt_ph_modes = qpt_ph_modes_creator
         check_qpt_ph_modes(qpt_ph_modes, expected_qpt_ph_modes,
                            check_evecs=True)
 
-    @pytest.fixture(params=[
+    @pytest.mark.parametrize('material', ['LZO', 'quartz', 'NaCl'])
+    def test_create_from_json(self, material):
+        expected_qpt_ph_modes = get_expected_qpt_ph_modes(material)
+        qpt_ph_modes = get_qpt_ph_modes(material)
+        check_qpt_ph_modes(qpt_ph_modes, expected_qpt_ph_modes,
+                           check_evecs=True)
+
+    @pytest.mark.parametrize('material', ['LZO', 'quartz', 'NaCl'])
+    def test_create_from_dict(self, material):
+        expected_qpt_ph_modes = get_expected_qpt_ph_modes(material)
+        qpt_ph_modes = QpointPhononModes.from_dict(
+            expected_qpt_ph_modes.to_dict())
+        check_qpt_ph_modes(qpt_ph_modes, expected_qpt_ph_modes,
+                           check_evecs=True)
+
+    @pytest.mark.parametrize('faulty_arg, faulty_value, expected_exception', [
         ('qpts',
          get_expected_qpt_ph_modes('quartz').qpts[:3],
          ValueError),
@@ -291,19 +282,14 @@ class TestQpointPhononModesCreation:
         ('crystal',
          get_crystal('LZO'),
          ValueError)])
-    def inject_faulty_elements(self, request):
-        faulty_arg, faulty_value, expected_exception = request.param
+    def test_faulty_object_creation(
+            self, faulty_arg, faulty_value, expected_exception):
         expected_qpt_ph_modes = get_expected_qpt_ph_modes('quartz')
         # Inject the faulty value and get a tuple of constructor arguments
         args, kwargs = expected_qpt_ph_modes.to_constructor_args(
             **{faulty_arg: faulty_value})
-        return args, kwargs, expected_exception
-
-    def test_faulty_object_creation(self, inject_faulty_elements):
-        faulty_args, faulty_kwargs, expected_exception = inject_faulty_elements
         with pytest.raises(expected_exception):
-            QpointPhononModes(*faulty_args, **faulty_kwargs)
-
+            QpointPhononModes(*args, **kwargs)
 
     @pytest.mark.parametrize('material, subdir, phonopy_args', [
         ('NaCl', 'qpoints', {'summary_name': 'phonopy.yaml',
@@ -324,6 +310,7 @@ class TestQpointPhononModesCreation:
         with pytest.raises(ImportPhonopyReaderError):
             QpointPhononModes.from_phonopy(**phonopy_args)
 
+    @pytest.mark.phonopy_reader
     @pytest.mark.parametrize('material, subdir, phonopy_args, err', [
         ('NaCl', 'qpoints', {'summary_name': 'phonopy.yaml',
                              'phonon_name': 'qpoints_hdf5.test'},
@@ -351,6 +338,7 @@ class TestQpointPhononModesCreation:
         with pytest.raises(err):
             QpointPhononModes.from_phonopy(**phonopy_args)
 
+    @pytest.mark.phonopy_reader
     @pytest.mark.parametrize('material, subdir, phonopy_args, json_file', [
         ('CaHgO2', '', {'summary_name': 'mp-7041-20180417.yaml',
                         'phonon_name': 'qpoints.yaml'},
@@ -375,7 +363,6 @@ class TestQpointPhononModesCreation:
         check_qpt_ph_modes(qpt_ph_modes, expected_qpt_ph_modes,
                            check_evecs=True)
 
-@pytest.mark.unit
 class TestQpointPhononModesSerialisation:
 
     @pytest.mark.parametrize('qpt_ph_modes', [
@@ -420,7 +407,6 @@ class TestQpointPhononModesSerialisation:
 
 
 
-@pytest.mark.unit
 class TestQpointPhononModesUnitConversion:
 
     @pytest.mark.parametrize('material, attr, unit_val', [
@@ -438,7 +424,6 @@ class TestQpointPhononModesUnitConversion:
             setattr(qpt_ph_modes, unit_attr, unit_val)
 
 
-@pytest.mark.unit
 class TestQpointPhononModesSetters:
 
     @pytest.mark.parametrize('material, attr, unit, scale', [
@@ -458,7 +443,6 @@ class TestQpointPhononModesSetters:
             setattr(qpt_ph_modes, attr, new_attr)
 
 
-@pytest.mark.unit
 class TestQpointPhononModesReorderFrequencies:
 
     @pytest.mark.parametrize(
@@ -477,7 +461,6 @@ class TestQpointPhononModesReorderFrequencies:
         check_qpt_ph_modes(qpt_ph_modes, expected_qpt_ph_modes)
 
 
-@pytest.mark.unit
 class TestQpointPhononModesCalculateDebyeWaller:
 
     @pytest.mark.parametrize(
@@ -502,43 +485,60 @@ class TestQpointPhononModesCalculateDebyeWaller:
             ('Si2-sc-skew', 'Si2-sc-skew-666-grid.phonon',
                 'Si2-sc-skew_666_300K_symm_debye_waller.json', 300,
                 {'symmetrise': True}),
+        ])
+    def test_calculate_debye_waller(self, material, qpt_ph_modes_file,
+                                    expected_dw_json, temperature, kwargs):
+        qpt_ph_modes = QpointPhononModes.from_castep(
+            get_castep_path(material, qpt_ph_modes_file))
+        dw = qpt_ph_modes.calculate_debye_waller(
+            temperature*ureg('K'), **kwargs)
+        expected_dw = get_expected_dw(material, expected_dw_json)
+        check_debye_waller(dw, expected_dw, dw_atol=1e-12)
+
+    @pytest.mark.phonopy_reader
+    @pytest.mark.parametrize(
+        'material, qpt_ph_modes_file, expected_dw_json, temperature, kwargs', [
             ('CaHgO2', 'CaHgO2-666-grid.yaml',
                 'CaHgO2_666_300K_debye_waller.json', 300,
                 {'symmetrise': False})
         ])
-    def test_calculate_debye_waller(self, material, qpt_ph_modes_file,
-                                    expected_dw_json, temperature, kwargs):
-        if qpt_ph_modes_file.endswith('.phonon'):
-            qpt_ph_modes = QpointPhononModes.from_castep(
-                get_castep_path(material, qpt_ph_modes_file))
-        else:
-            qpt_ph_modes = QpointPhononModes.from_phonopy(
-                phonon_name=get_phonopy_path(material, qpt_ph_modes_file))
-
+    def test_calculate_debye_waller_from_phonopy(
+            self, material, qpt_ph_modes_file,
+            expected_dw_json, temperature, kwargs):
+        qpt_ph_modes = QpointPhononModes.from_phonopy(
+            phonon_name=get_phonopy_path(material, qpt_ph_modes_file))
         dw = qpt_ph_modes.calculate_debye_waller(
             temperature*ureg('K'), **kwargs)
         expected_dw = get_expected_dw(material, expected_dw_json)
         check_debye_waller(dw, expected_dw, dw_atol=1e-12)
 
 
-@pytest.mark.unit
 class TestQpointPhononModesCalculateDos:
 
     @pytest.mark.parametrize(
         'material, qpt_ph_modes_file, expected_dos_json, ebins', [
             ('quartz', 'quartz-666-grid.phonon',
              'quartz_666_dos.json', np.arange(0, 155, 0.5)*ureg('meV')),
-            ('CaHgO2', 'CaHgO2-666-grid.yaml',
-             'CaHgO2_666_dos.json', np.arange(0, 95, 0.4)*ureg('meV'))
         ])
     def test_calculate_dos(self, material, qpt_ph_modes_file,
                            expected_dos_json, ebins):
-        if qpt_ph_modes_file.endswith('.phonon'):
-            qpt_ph_modes = QpointPhononModes.from_castep(
-                get_castep_path(material, qpt_ph_modes_file))
-        else:
-            qpt_ph_modes = QpointPhononModes.from_phonopy(
-                phonon_name=get_phonopy_path(material, qpt_ph_modes_file))
+        qpt_ph_modes = QpointPhononModes.from_castep(
+            get_castep_path(material, qpt_ph_modes_file))
+        dos = qpt_ph_modes.calculate_dos(ebins)
+        expected_dos = get_expected_spectrum1d(expected_dos_json)
+        check_spectrum1d(dos, expected_dos)
+
+    @pytest.mark.phonopy_reader
+    @pytest.mark.parametrize(
+        'material, qpt_ph_modes_file, expected_dos_json, ebins', [
+            ('CaHgO2', 'CaHgO2-666-grid.yaml',
+             'CaHgO2_666_dos.json', np.arange(0, 95, 0.4)*ureg('meV'))
+        ])
+    def test_calculate_dos_from_phonopy(
+            self, material, qpt_ph_modes_file,
+            expected_dos_json, ebins):
+        qpt_ph_modes = QpointPhononModes.from_phonopy(
+            phonon_name=get_phonopy_path(material, qpt_ph_modes_file))
         dos = qpt_ph_modes.calculate_dos(ebins)
         expected_dos = get_expected_spectrum1d(expected_dos_json)
         check_spectrum1d(dos, expected_dos)
@@ -620,7 +620,6 @@ class TestQpointPhononModesCalculateDos:
             dos = qpt_ph_modes.calculate_dos(ebins)
         assert len(warn_record) == 0
 
-@pytest.mark.unit
 class TestQpointPhononModesCalculatePdos:
 
     @pytest.mark.parametrize(
@@ -775,7 +774,6 @@ class TestQpointPhononModesCalculatePdos:
 
 
 
-@pytest.mark.unit
 class TestQpointPhononModesGetDispersion:
 
     @pytest.mark.parametrize(

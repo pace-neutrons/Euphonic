@@ -6,13 +6,18 @@ from unittest.mock import patch
 import pytest
 import numpy as np
 import numpy.testing as npt
-# Required for mocking
-import matplotlib.pyplot
 
 from tests_and_analysis.test.script_tests.utils import (
     get_script_test_data_path, get_current_plot_offsets)
-import euphonic.cli.show_sampling
 
+pytestmark = pytest.mark.matplotlib
+# Allow tests with matplotlib marker to be collected and
+# deselected if Matplotlib is not installed
+try:
+    import matplotlib.pyplot
+    import euphonic.cli.show_sampling
+except ModuleNotFoundError:
+    pass
 
 sphere_sampling_output_file = os.path.join(get_script_test_data_path(),
                                            "sphere_sampling.json")
@@ -32,7 +37,6 @@ sphere_sampling_params =  [
     ['10', 'random-sphere', '--jitter']]
 
 
-@pytest.mark.integration
 class TestRegression:
 
     @pytest.fixture
