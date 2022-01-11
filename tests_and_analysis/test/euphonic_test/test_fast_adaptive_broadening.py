@@ -52,9 +52,8 @@ def test_gaussian():
     """Test gaussian function against scipy.norm.pdf"""
     xvals = np.linspace(-5,5,101)
     sigma = 2
-    centre = 0
-    scipy_norm = norm.pdf(xvals, loc=centre, scale=sigma)
-    gaussian_eval = gaussian(xvals, sigma, centre)
+    scipy_norm = norm.pdf(xvals, scale=sigma)
+    gaussian_eval = gaussian(xvals, sigma)
     assert gaussian_eval == pytest.approx(scipy_norm)
 
 @pytest.mark.parametrize(('spacing','expected_coeffs'),
