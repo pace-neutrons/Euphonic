@@ -102,8 +102,7 @@ def fast_broaden(dos_bins_hartree: np.ndarray,
 
 
 def gaussian(xvals: np.ndarray,
-             sigma: np.ndarray,
-             centre: Optional[int] = 0) -> np.ndarray:
+             sigma: np.ndarray) -> np.ndarray:
     """
     Evaluates the Gaussian function.
 
@@ -114,8 +113,6 @@ def gaussian(xvals: np.ndarray,
         evaluated
     sigma
         Float ndarray. Specifies the standard deviation for the gaussian
-    centre
-        Optional integer value that sets the centre of the gaussian
 
     Returns
     -------
@@ -123,7 +120,7 @@ def gaussian(xvals: np.ndarray,
         Float ndarray containing the values of the evaluated gaussian function
     """
     # evaluate gaussian function with defined sigma and center at x
-    gauss_eval = np.exp(-0.5 * ((xvals - centre) / sigma)**2) \
+    gauss_eval = np.exp(-0.5 * (xvals / sigma)**2) \
                     / (sigma * np.sqrt(2 * np.pi))
     return gauss_eval
 
