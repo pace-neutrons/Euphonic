@@ -13,7 +13,7 @@ from tests_and_analysis.test.euphonic_test.test_crystal import (
 pytestmark = pytest.mark.brille
 try:
     import brille as br
-    from euphonic.brille_interpolator import BrilleInterpolator
+    from euphonic.brille import BrilleInterpolator
 except ModuleNotFoundError:
     pass
 
@@ -23,7 +23,7 @@ def test_import__without_brille_raises_err(
     # Mock import of brille to raise ModuleNotFoundError
     import builtins
     from importlib import reload
-    import euphonic.brille_interpolator
+    import euphonic.brille
     real_import = builtins.__import__
     def mocked_import(name, *args, **kwargs):
         if name == 'brille':
@@ -31,7 +31,7 @@ def test_import__without_brille_raises_err(
         return real_import(name, *args, **kwargs)
     mocker.patch('builtins.__import__', side_effect=mocked_import)
     with pytest.raises(ModuleNotFoundError) as mnf_error:
-        reload(euphonic.brille_interpolator)
+        reload(euphonic.brille)
     assert "Cannot import Brille" in mnf_error.value.args[0]
 
 @pytest.fixture
