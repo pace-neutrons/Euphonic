@@ -103,12 +103,14 @@ class TestRegression:
         self.run_dispersion_and_test_result(dispersion_args)
 
     @pytest.mark.phonopy_reader
+    @pytest.mark.multiple_extras
     @pytest.mark.parametrize('dispersion_args', disp_params_from_phonopy)
     def test_dispersion_plot_data_from_phonopy(
             self, inject_mocks, dispersion_args):
         self.run_dispersion_and_test_result(dispersion_args)
 
     @pytest.mark.phonopy_reader
+    @pytest.mark.multiple_extras
     @pytest.mark.parametrize('dispersion_args', disp_params_macos_segfault)
     @pytest.mark.skipif(
         (any([s in platform() for s in ['Darwin', 'macOS']])

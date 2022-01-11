@@ -107,6 +107,7 @@ class TestRegression:
         self.run_powder_map_and_test_result(powder_map_args)
 
     @pytest.mark.phonopy_reader
+    @pytest.mark.multiple_extras
     @pytest.mark.parametrize(
         'powder_map_args', powder_map_params_from_phonopy)
     def test_powder_map_plot_image_from_phonopy(
@@ -114,6 +115,7 @@ class TestRegression:
         self.run_powder_map_and_test_result(powder_map_args)
 
     @pytest.mark.phonopy_reader
+    @pytest.mark.multiple_extras
     @pytest.mark.parametrize('powder_map_args', powder_map_params_macos_segfault)
     @pytest.mark.skipif(
         (any([s in platform() for s in ['Darwin', 'macOS']])
@@ -125,6 +127,7 @@ class TestRegression:
         self.run_powder_map_and_test_result(powder_map_args)
 
     @pytest.mark.phonopy_reader
+    @pytest.mark.multiple_extras
     @pytest.mark.parametrize('powder_map_args', [
         [nacl_prim_fc_file, '--save-to'],
         [nacl_prim_fc_file, '-s']])
@@ -159,6 +162,7 @@ class TestRegression:
             euphonic.cli.powder_map.main(powder_map_args)
 
     @pytest.mark.phonopy_reader
+    @pytest.mark.multiple_extras
     @pytest.mark.parametrize('powder_map_args', [
         [nacl_prim_fc_file, '--weights=dos']])
     def test_weights_emits_deprecation_warning(
@@ -176,6 +180,7 @@ class TestRegression:
         assert err.value.code == 2
 
     @pytest.mark.phonopy_reader
+    @pytest.mark.multiple_extras
     @pytest.mark.parametrize('powder_map_args', [
         [nacl_prim_fc_file, '-w=coherent', '--pdos', 'Na']])
     def test_coherent_weighting_and_pdos_raises_value_error(
