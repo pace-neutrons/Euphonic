@@ -1,7 +1,6 @@
 """
 Functions for fast adaptive broadening of density of states spectra
 """
-from typing import Optional
 from scipy.optimize import nnls
 from scipy.signal import convolve
 import numpy as np

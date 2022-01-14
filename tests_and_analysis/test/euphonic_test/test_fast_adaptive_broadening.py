@@ -1,12 +1,10 @@
-import os
-import json
 import pytest
 import numpy as np
 from scipy.integrate import simps
 from scipy.stats import norm
 
 from euphonic.fast_adaptive_broadening import find_coeffs, gaussian
-from euphonic import ureg, QpointFrequencies, Spectrum1D
+from euphonic import ureg, Spectrum1D
 from tests_and_analysis.test.euphonic_test.test_force_constants\
     import get_fc_dir
 from tests_and_analysis.test.euphonic_test.test_qpoint_frequencies\

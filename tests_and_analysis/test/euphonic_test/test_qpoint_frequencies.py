@@ -510,7 +510,7 @@ class TestQpointFrequenciesCalculateDos:
         ebins = np.arange(0, 1300, 4)*ureg('1/cm')
         with pytest.raises(ValueError):
             qpt_freqs.calculate_dos(ebins, adaptive_method='faster')
-            
+        
 class TestQpointFrequenciesCalculateDosMap:
     @pytest.mark.parametrize(
         'material, qpt_freqs_json, ebins, expected_dos_map_json', [
