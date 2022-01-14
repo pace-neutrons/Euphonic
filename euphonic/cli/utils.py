@@ -707,7 +707,7 @@ def _get_cli_parser(features: Collection[str] = {}
                     help='The adaptive broadening method')
                 section.add_argument(
                     '--adaptive-error', type=float, default=0.01,
-                    dest='adaptive_error', 
+                    dest='adaptive_error',
                     help=('Acceptable absolute error '
                           'for gaussian approximations'))
                 eb_help = (
