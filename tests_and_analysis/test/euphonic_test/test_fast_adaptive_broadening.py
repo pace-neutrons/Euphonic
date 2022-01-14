@@ -9,15 +9,10 @@ from euphonic.fast_adaptive_broadening import find_coeffs, gaussian
 from euphonic import ureg, QpointFrequencies, Spectrum1D
 from tests_and_analysis.test.euphonic_test.test_force_constants\
     import get_fc_dir
-from tests_and_analysis.test.utils import get_data_path
+from tests_and_analysis.test.euphonic_test.test_qpoint_frequencies\
+    import get_qpt_freqs
+from tests_and_analysis.test.utils import get_mode_widths
 
-
-def get_qpt_freqs_dir(material):
-    return os.path.join(get_data_path(), 'qpoint_frequencies', material)
-
-def get_qpt_freqs(material, file):
-    return QpointFrequencies.from_json_file(
-        os.path.join(get_qpt_freqs_dir(material), file))
 
 @pytest.mark.parametrize(
         ('material, qpt_freqs_json, mode_widths_json, ebins'), [
@@ -34,10 +29,7 @@ def test_area_unchanged_for_broadened_dos(material, qpt_freqs_json,
     and broadened dos
     """
     qpt_freqs = get_qpt_freqs(material, qpt_freqs_json)
-    with open(os.path.join(get_fc_dir(), mode_widths_json), 'r') as fp:
-        modw_dict = json.load(fp)
-    mode_widths = modw_dict['mode_widths']*ureg(
-        modw_dict['mode_widths_unit'])
+    mode_widths = get_mode_widths(get_fc_dir(), mode_widths_json)
     dos = qpt_freqs._calculate_dos(ebins)
     adaptively_broadened_dos = qpt_freqs._calculate_dos(
         ebins, mode_widths=mode_widths, adaptive_method='fast')

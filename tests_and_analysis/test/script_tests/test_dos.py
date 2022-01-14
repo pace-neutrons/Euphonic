@@ -44,9 +44,9 @@ dos_params = [
     [quartz_fc_file, '--grid', '5', '5', '4', '--adaptive'],
     [quartz_fc_file, '--grid', '5', '5', '4', '--adaptive', '--eb', '2'],
     [quartz_fc_file, '--grid', '5', '5', '4', '--adaptive',
-     '--adaptive_method=fast'],
+     '--adaptive-method=fast'],
     [quartz_fc_file, '--grid', '5', '5', '4', '--adaptive',
-     '--adaptive_method=fast', '--adaptive_error=0.05']]
+     '--adaptive-method=fast', '--adaptive-error=0.05']]
 
 
 class TestRegression:

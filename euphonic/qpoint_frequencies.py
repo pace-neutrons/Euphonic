@@ -91,8 +91,8 @@ class QpointFrequencies:
     def calculate_dos(self, dos_bins: Quantity,
                       mode_widths: Optional[Quantity] = None,
                       mode_widths_min: Quantity = Quantity(0.01, 'meV'),
-                      adaptive_method: Optional[str] = 'reference',
-                      adaptive_error: Optional[float] = 0.01,
+                      adaptive_method: str = 'reference',
+                      adaptive_error: float = 0.01,
                       ) -> Spectrum1D:
         """
         Calculates a density of states
@@ -149,8 +149,8 @@ class QpointFrequencies:
                        mode_widths: Optional[Quantity] = None,
                        mode_widths_min: Quantity = Quantity(0.01, 'meV'),
                        mode_weights: Optional[np.ndarray] = None,
-                       adaptive_method: Optional[str] = 'reference',
-                       adaptive_error: Optional[float] = 0.01,
+                       adaptive_method: str = 'reference',
+                       adaptive_error: float = 0.01,
                        q_idx: Optional[int] = None
                        ) -> Quantity:
         """
@@ -170,7 +170,7 @@ class QpointFrequencies:
         arrays
         """
 
-        adaptive_method_options = [None, 'reference', 'fast']
+        adaptive_method_options = ['reference', 'fast']
         if adaptive_method not in adaptive_method_options:
             raise ValueError(f'Invalid value for adaptive_method, '
                              f'got {adaptive_method}, should be one '

@@ -62,12 +62,12 @@ def fast_broaden(dos_bins_hartree: np.ndarray,
     freq_range = 3*max(mode_widths)
     kernel_npts_oneside = np.ceil(freq_range/bin_width)
     kernels = gaussian(np.arange(-kernel_npts_oneside,
-                       kernel_npts_oneside+1, 1)*bin_width,
+                                 kernel_npts_oneside+1, 1)*bin_width,
                        mode_width_samples[:, np.newaxis])*bin_width
     kernels_idx = np.searchsorted(mode_width_samples, mode_widths)
 
     lower_coeffs = find_coeffs(spacing)
-    scaled_data_matrix = np.zeros((len(dos_bins_hartree)-1, len(kernels)))
+    dos = np.zeros(len(dos_bins_hartree)-1)
     # start loop from 1 as points with insert-position 0
     # lie outside of bin range
     for i in range(1, len(mode_width_samples)):
@@ -78,26 +78,25 @@ def fast_broaden(dos_bins_hartree: np.ndarray,
 
         if i == 1:
             hist, _ = np.histogram(freqs[masked_block], bins=dos_bins_hartree,
-                                weights=lower_weights/bin_width)
+                                   weights=lower_weights/bin_width)
         else:
             mixing_weights = np.concatenate((upper_weights_prev,
                                              lower_weights))
-            hist_freqs = np.concatenate((freqs_prev,freqs[masked_block]))
+            hist_freqs = np.concatenate((freqs_prev, freqs[masked_block]))
             hist, _ = np.histogram(hist_freqs, bins=dos_bins_hartree,
-                                    weights=mixing_weights/bin_width)
-
-        scaled_data_matrix[:, i-1] = hist
+                                   weights=mixing_weights/bin_width)
 
         freqs_prev = freqs[masked_block]
         upper_weights_prev = combined_weights[masked_block] - lower_weights
 
+        dos += convolve(hist, kernels[i-1], mode="same", method="fft")
+
         if i == len(mode_width_samples)-1:
             hist, _ = np.histogram(freqs[masked_block], bins=dos_bins_hartree,
-                                weights=upper_weights_prev/bin_width)
-            scaled_data_matrix[:, i] = hist
+                                   weights=upper_weights_prev/bin_width)
 
-    dos = np.sum([convolve(scaled_data_matrix[:, i], kernels[i],
-                 mode="same", method="fft") for i in range(0, n_kernels)], 0)
+            dos += convolve(hist, kernels[i], mode="same", method="fft")
+
     return dos
 
 
@@ -143,12 +142,15 @@ def find_coeffs(spacing: float) -> np.ndarray:
         Array containing the polynomial coefficients, with the highest
         power first
     """
-    sigma_values = np.linspace(1, spacing, 10)
-    x_range = np.linspace(-10, 10, 101)
+    sigma_values = np.linspace(1, spacing, num=10)
+    x_range = np.linspace(-10, 10, num=101)
     actual_gaussians = gaussian(x_range, sigma_values[:,np.newaxis])
     lower_mix = np.zeros(len(sigma_values))
     ref_gaussians = actual_gaussians[[0, -1]].T
 
+    # For each sigma value, use non-negative least sqaures fitting to
+    # find the linear combination weights that best reproduce the
+    # actual gaussian.
     for i in range(len(sigma_values)):
         actual_gaussian = actual_gaussians[i]
         res = nnls(ref_gaussians, actual_gaussian)[0]

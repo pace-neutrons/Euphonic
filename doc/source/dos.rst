@@ -91,9 +91,10 @@ Adaptive Broadening
 -------------------
 
 Adaptive broadening can also be enabled to get a more accurate DOS than with
-standard fixed width broadening. There are two adaptive broadening methods
-available, the 'reference' and 'fast' methods. In the 'reference' scheme each
-mode at each q-point is broadened individually with a specific width. 
+standard fixed width broadening.  For adaptive broadening each
+mode at each q-point is broadened individually with a specific width.
+There are two adaptive broadening methods available, the 'reference' and 'fast' methods.
+The 'reference' scheme explicitly calculates a gaussian for each mode width. 
 These mode widths are derived from the mode gradients, and the mode gradients
 can be  calculated at the same time as the phonon frequencies and eigenvectors,
 by passing ``return_mode_gradients=True`` to

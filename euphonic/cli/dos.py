@@ -57,11 +57,9 @@ def main(params: Optional[List[str]] = None) -> None:
     ebins = _get_energy_bins(
         modes, args.ebins + 1, emin=args.e_min, emax=args.e_max)
 
-    kwargs = {"mode_widths": mode_widths}
-
-    if args.adaptive_method == 'fast':
-        kwargs["adaptive_method"] = 'fast'
-        kwargs["adaptive_error"] = args.adaptive_error
+    kwargs = {"mode_widths": mode_widths,
+              "adaptive_method": args.adaptive_method,
+              "adaptive_error": args.adaptive_error}
 
     if args.weighting == 'dos' and args.pdos is None:
         dos = modes.calculate_dos(ebins, **kwargs)

@@ -702,12 +702,12 @@ def _get_cli_parser(features: Collection[str] = {}
                           'broaden based on phonon mode widths, rather than '
                           'using fixed width broadening'))
                 section.add_argument(
-                    '--adaptive_method', type=str, default='reference',
-                    choices=('reference', 'fast'),
+                    '--adaptive-method', type=str, default='reference',
+                    dest='adaptive_method', choices=('reference', 'fast'),
                     help='The adaptive broadening method')
                 section.add_argument(
-                    '--adaptive_error', type=float, default=0.01,
-                    help=('Acceptable absolute error for '
+                    '--adaptive-error', type=float, default=0.01,
+                    dest='adaptive_error', help=('Acceptable absolute error for '
                           'gaussian approximations'))
                 eb_help = (
                     'If using fixed width broadening, the FWHM of broadening '
