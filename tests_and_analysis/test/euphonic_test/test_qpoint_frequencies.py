@@ -432,7 +432,12 @@ class TestQpointFrequenciesCalculateDos:
             ('LZO', 'lzo_222_full_qpoint_frequencies.json',
              'lzo_222_full_mode_widths.json',
              'lzo_222_full_adaptive_dos.json',
-             np.arange(0, 100, 0.1)*ureg('meV'))])
+             np.arange(0, 100, 0.1)*ureg('meV')),
+            ('quartz', 'toy_quartz_qpoint_frequencies.json',
+             'toy_quartz_mode_widths.json',
+             'toy_quartz_uneven_adaptive_dos.json',
+             np.concatenate((np.arange(0, 15, 0.1),
+                             np.arange(15, 40, 0.2)))*ureg('meV'))])
     def test_calculate_dos_with_mode_widths(
             self, material, qpt_freqs_json, mode_widths_json,
             expected_dos_json, ebins):
