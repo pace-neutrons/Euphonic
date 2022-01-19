@@ -1,6 +1,13 @@
 `Unreleased <https://github.com/pace-neutrons/Euphonic/compare/v0.6.3...HEAD>`_
 ----------
 
+There is now the option to use a fast, approximate adaptive broadening method when
+calling `calculate_dos`:
+  - Added `fast_broaden` method, which implements fast, approximate adaptive broadening.
+  - Added new `adaptive_method` and `adaptive_error` arguments for `calculate_dos`
+    which specify which adaptive broadening method to use (`reference` or `fast`) and an
+    acceptable error level when using the `fast` method.
+
 `v0.6.3 <https://github.com/pace-neutrons/Euphonic/compare/v0.6.2...v0.6.3>`_
 ------
 
