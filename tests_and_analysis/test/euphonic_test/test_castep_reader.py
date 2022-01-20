@@ -12,9 +12,6 @@ from .test_crystal import ExpectedCrystal, check_crystal
 from euphonic import ureg
 
 
-def get_filepath(filename):
-    return os.path.join(get_data_path(), 'readers', filename)
-
 class TestReadPhononDosData:
 
     @pytest.mark.parametrize(
@@ -26,7 +23,7 @@ class TestReadPhononDosData:
     def test_read_data(self, material, phonon_dos_file, expected_data_file):
         dos_data = read_phonon_dos_data(
             get_castep_path(material, phonon_dos_file))
-        with open(get_filepath(expected_data_file), 'r') as fp:
+        with open(get_data_path('readers', expected_data_file), 'r') as fp:
             expected_dos_data = json.loads(fp.read())
 
         dos_crystal = ExpectedCrystal(dos_data.pop('crystal'))

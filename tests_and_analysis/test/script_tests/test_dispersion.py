@@ -24,21 +24,23 @@ except ModuleNotFoundError:
     pass
 
 cahgo2_fc_file = get_phonopy_path('CaHgO2', 'mp-7041-20180417.yaml')
-lzo_fc_file = os.path.join(
-    get_data_path(), 'force_constants', 'LZO_force_constants.json')
+lzo_fc_file = get_data_path('force_constants', 'LZO_force_constants.json')
 nacl_fc_file = get_phonopy_path('NaCl_cli_test', 'force_constants.hdf5')
-nacl_phonon_file = os.path.join(
-    get_phonopy_path('NaCl', 'band'), 'band.yaml')
-nacl_phonon_hdf5_file = os.path.join(
-    get_phonopy_path('NaCl', 'band'), 'band.hdf5')
-quartz_phonon_file = os.path.join(
-    get_data_path(), 'qpoint_phonon_modes', 'quartz',
+nacl_phonon_file = get_phonopy_path('NaCl', 'band', 'band.yaml')
+nacl_hdf5_file = get_phonopy_path('NaCl', 'band', 'band.hdf5')
+nacl_no_evec_hdf5_file = get_phonopy_path('NaCl', 'band', 'band_no_evec.hdf5')
+quartz_json_file = get_data_path(
+    'qpoint_phonon_modes', 'quartz',
     'quartz_bandstructure_qpoint_phonon_modes.json')
-disp_output_file = os.path.join(get_script_test_data_path(), 'dispersion.json')
+quartz_no_evec_json_file = get_data_path(
+    'qpoint_frequencies', 'quartz',
+    'quartz_bandstructure_qpoint_frequencies.json')
+disp_output_file = get_script_test_data_path('dispersion.json')
 disp_params =  [
     [lzo_fc_file],
-    [quartz_phonon_file],
-    [quartz_phonon_file, '--btol=1000']]
+    [quartz_json_file],
+    [quartz_json_file, '--btol=1000'],
+    [quartz_no_evec_json_file]]
 disp_params_from_phonopy =  [
     [cahgo2_fc_file],
     [cahgo2_fc_file, '--energy-unit=hartree'],
@@ -52,7 +54,8 @@ disp_params_from_phonopy =  [
     [cahgo2_fc_file, '--asr=realspace'],
     [nacl_fc_file],
     [nacl_phonon_file],
-    [nacl_phonon_hdf5_file]]
+    [nacl_hdf5_file],
+    [nacl_no_evec_hdf5_file]]
 disp_params_macos_segfault =  [[cahgo2_fc_file, '--reorder']]
 
 
@@ -116,17 +119,22 @@ class TestRegression:
         self.run_dispersion_and_test_result(dispersion_args)
 
     @pytest.mark.parametrize('dispersion_args', [
-        [quartz_phonon_file, '--save-to'],
-        [quartz_phonon_file, '-s']])
+        [quartz_json_file, '--save-to'],
+        [quartz_json_file, '-s']])
     def test_plot_save_to_file(self, inject_mocks, tmpdir, dispersion_args):
         output_file = str(tmpdir.join('test.png'))
         euphonic.cli.dispersion.main(dispersion_args + [output_file])
         assert os.path.exists(output_file)
 
     @pytest.mark.parametrize('dispersion_args', [
-        [os.path.join(get_data_path(), 'crystal', 'crystal_LZO.json')],
-        [os.path.join(get_data_path(), 'force_constants', 'NaCl',
-                      'FORCE_CONSTANTS')]])
+        [quartz_no_evec_json_file, '--reorder']])
+    def test_no_evecs_with_reorder_raises_type_error(self, dispersion_args):
+        with pytest.raises(TypeError):
+            euphonic.cli.dispersion.main(dispersion_args)
+
+    @pytest.mark.parametrize('dispersion_args', [
+        [get_data_path('crystal', 'crystal_LZO.json')],
+        [get_data_path('force_constants', 'NaCl', 'FORCE_CONSTANTS')]])
     def test_invalid_file_raises_value_error(self, dispersion_args):
         with pytest.raises(ValueError):
             euphonic.cli.dispersion.main(dispersion_args)
@@ -135,12 +143,27 @@ class TestRegression:
 @patch('matplotlib.pyplot.show')
 @pytest.mark.skip(reason='Only run if you want to regenerate the test data')
 def test_regenerate_disp_data(_):
-    json_data = {}
+    # Read from existing file first to allow option of only replacing for
+    # certain test cases or keys
+    try:
+        with open(disp_output_file, 'r') as json_file:
+            json_data = json.load(json_file)
+    except FileNotFoundError:
+        json_data = {}
+
     for disp_param in disp_params:
         # Generate current figure for us to retrieve with gcf
         euphonic.cli.dispersion.main(disp_param)
+
         # Retrieve with gcf and write to file
-        json_data[args_to_key(disp_param)
-                  ] = get_current_plot_line_data()
+        line_data = get_current_plot_line_data()
+        # Optionally only write certain keys
+        keys_to_replace = []
+        if len(keys_to_replace) > 0:
+            for key in keys_to_replace:
+                json_data[args_to_key(disp_param)][key] = line_data[key]
+        else:
+            json_data[args_to_key(disp_param)] = line_data
+
     with open(disp_output_file, 'w+') as json_file:
         json.dump(json_data, json_file, indent=4)

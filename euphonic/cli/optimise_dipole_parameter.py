@@ -14,8 +14,9 @@ import warnings
 
 import numpy as np
 
+from euphonic import ForceConstants
 from euphonic.cli.utils import (_get_cli_parser, get_args,
-                                force_constants_from_file)
+                                load_data_from_file)
 
 
 def main(params: Optional[List[str]] = None) -> None:
@@ -74,7 +75,10 @@ def calculate_optimum_dipole_parameter(
     t_init = np.zeros(len(dipole_parameters), dtype=np.float64)
     t_per_qpt = np.zeros(len(dipole_parameters), dtype=np.float64)
 
-    fc = force_constants_from_file(filename)
+    fc = load_data_from_file(filename)
+    if not isinstance(fc, ForceConstants):
+        raise TypeError('Force constants are required to use the '
+                        'euphonic-optimise-dipole-parameter tool')
     # Only warn rather than error - although not designed for it
     # this script could still be useful for getting approximate
     # per-qpt timings for any material

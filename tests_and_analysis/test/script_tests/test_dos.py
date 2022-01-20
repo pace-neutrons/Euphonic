@@ -7,7 +7,8 @@ import pytest
 import numpy as np
 import numpy.testing as npt
 
-from tests_and_analysis.test.utils import get_data_path, get_castep_path
+from tests_and_analysis.test.utils import (
+    get_data_path, get_castep_path, get_phonopy_path)
 from tests_and_analysis.test.script_tests.utils import (
     get_script_test_data_path, get_current_plot_line_data,
     args_to_key)
@@ -23,8 +24,9 @@ except ModuleNotFoundError:
     pass
 
 nah_phonon_file = get_castep_path('NaH', 'NaH.phonon')
+nacl_no_evec_yaml_file = get_phonopy_path('NaCl', 'mesh', 'mesh_no_evec.yaml')
 quartz_fc_file = get_castep_path('quartz', 'quartz.castep_bin')
-dos_output_file = os.path.join(get_script_test_data_path(), 'dos.json')
+dos_output_file = get_script_test_data_path('dos.json')
 dos_params = [
     [nah_phonon_file],
     [nah_phonon_file, '--energy-broadening=2'],
@@ -43,6 +45,7 @@ dos_params = [
     [quartz_fc_file, '--grid', '5', '5', '4', '--adaptive', '--pdos'],
     [quartz_fc_file, '--grid', '5', '5', '4', '--adaptive'],
     [quartz_fc_file, '--grid', '5', '5', '4', '--adaptive', '--eb', '2']]
+dos_params_from_phonopy = [[nacl_no_evec_yaml_file]]
 
 
 class TestRegression:
@@ -58,8 +61,7 @@ class TestRegression:
         # Ensure figures are closed
         matplotlib.pyplot.close('all')
 
-    @pytest.mark.parametrize('dos_args', dos_params)
-    def test_plots_contain_expected_data(self, inject_mocks, dos_args):
+    def run_dos_and_test_result(self, dos_args):
         euphonic.cli.dos.main(dos_args)
 
         line_data = get_current_plot_line_data()
@@ -74,6 +76,14 @@ class TestRegression:
             else:
                 assert value == expected_line_data[key]
 
+    @pytest.mark.parametrize('dos_args', dos_params)
+    def test_dos_plot_data(self, inject_mocks, dos_args):
+        self.run_dos_and_test_result(dos_args)
+
+    @pytest.mark.phonopy_reader
+    @pytest.mark.parametrize('dos_args', dos_params_from_phonopy)
+    def test_dos_plot_data_from_phonopy(self, inject_mocks, dos_args):
+        self.run_dos_and_test_result(dos_args)
 
     @pytest.mark.parametrize('dos_args', [
         [nah_phonon_file, '--save-to'],
@@ -84,14 +94,22 @@ class TestRegression:
         assert os.path.exists(output_file)
 
     @pytest.mark.parametrize('dos_args', [
-        [os.path.join(get_data_path(), 'structure_factor', 'quartz',
-                      'quartz_structure_factor.json')]])
+        [get_data_path('crystal', 'crystal_LZO.json')]])
     def test_invalid_file_raises_value_error(self, dos_args):
         with pytest.raises(ValueError):
             euphonic.cli.dos.main(dos_args)
 
-    def test_adaptive_and_dot_phonon_raises_value_error(self):
-        with pytest.raises(ValueError):
+    @pytest.mark.phonopy_reader
+    @pytest.mark.parametrize('dos_args', [
+        [nacl_no_evec_yaml_file, '--pdos'],
+        [nacl_no_evec_yaml_file, '--weighting', 'coherent-dos']])
+    def test_qpoint_frequencies_and_incompatible_args_raises_type_error(
+            self, dos_args):
+        with pytest.raises(TypeError):
+            euphonic.cli.dos.main(dos_args)
+
+    def test_qpoint_modes_and_adaptive_raises_type_error(self):
+        with pytest.raises(TypeError):
             euphonic.cli.dos.main([nah_phonon_file, '--adaptive'])
 
     def test_adaptive_and_lorentz_raises_value_error(self):

@@ -3,7 +3,7 @@ from typing import List, Optional
 
 import matplotlib.style
 
-from euphonic import ureg, ForceConstants, QpointPhononModes
+from euphonic import ureg, ForceConstants, QpointFrequencies
 from euphonic.util import mp_grid, mode_gradients_to_widths
 from euphonic.plot import plot_1d
 from euphonic.styles import base_style
@@ -18,7 +18,21 @@ def main(params: Optional[List[str]] = None) -> None:
     parser = get_parser()
     args = get_args(parser, params)
 
-    data = load_data_from_file(args.filename)
+    frequencies_only = (args.weighting == 'dos' and args.pdos is None)
+    data = load_data_from_file(args.filename, verbose=True,
+                               frequencies_only=frequencies_only)
+
+    if not frequencies_only and type(data) is QpointFrequencies:
+        raise TypeError('Eigenvectors are required to use "--pdos" or '
+                        'any "--weighting" option other than plain DOS')
+    if args.adaptive:
+        if not isinstance(data, ForceConstants):
+            raise TypeError(
+                'Force constants are required to use --adaptive option')
+        if args.shape != 'gauss':
+            raise ValueError('Currently only Gaussian shape is supported '
+                             'with adaptive broadening')
+
     mode_widths = None
     if isinstance(data, ForceConstants):
 
@@ -26,14 +40,10 @@ def main(params: Optional[List[str]] = None) -> None:
         grid_spec = _grid_spec_from_args(data.crystal, grid=args.grid,
                                          grid_spacing=(args.grid_spacing
                                                        * recip_length_unit))
-
-        print("Force Constants data was loaded. Calculating phonon modes "
+        print("Calculating phonon modes "
               "on {} q-point grid...".format(
                   ' x '.join([str(x) for x in grid_spec])))
         if args.adaptive:
-            if args.shape != 'gauss':
-                raise ValueError('Currently only Gaussian shape is supported '
-                                 'with adaptive broadening')
             cmkwargs = _calc_modes_kwargs(args)
             cmkwargs['return_mode_gradients'] = True
             modes, mode_grads = data.calculate_qpoint_phonon_modes(
@@ -46,12 +56,7 @@ def main(params: Optional[List[str]] = None) -> None:
             modes = data.calculate_qpoint_phonon_modes(
                 mp_grid(grid_spec), **_calc_modes_kwargs(args))
 
-    elif isinstance(data, QpointPhononModes):
-        if args.adaptive:
-            raise ValueError('Cannot calculate mode gradients without force '
-                             'constants data. Do not use --adaptive if using '
-                             'precalculated phonon modes')
-        print("Phonon band data was loaded.")
+    else:
         modes = data
     modes.frequencies_unit = args.energy_unit
     ebins = _get_energy_bins(

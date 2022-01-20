@@ -8,13 +8,11 @@ from euphonic import ureg, ForceConstants, QpointPhononModes, StructureFactor
 from tests_and_analysis.test.utils import (get_castep_path, get_phonopy_path,
     get_test_qpts)
 from tests_and_analysis.test.euphonic_test.test_qpoint_phonon_modes import (
-    get_qpt_ph_modes, get_qpt_ph_modes_dir)
+    get_qpt_ph_modes)
 from tests_and_analysis.test.euphonic_test.test_debye_waller import (
     get_dw)
-from tests_and_analysis.test.euphonic_test.test_force_constants import (
-    get_fc_dir)
 from tests_and_analysis.test.euphonic_test.test_structure_factor import (
-    check_structure_factor, get_sf_dir)
+    check_structure_factor, get_sf_path)
 
 
 def get_quartz_fc():
@@ -63,7 +61,7 @@ class TestCalculateStructureFactorFromForceConstants:
                 dw=get_dw(material, dw_file))
         else:
             sf = qpt_ph_modes.calculate_structure_factor()
-        sf_file = os.path.join(get_sf_dir(material), expected_sf_file)
+        sf_file = get_sf_path(material, expected_sf_file)
         expected_sf = StructureFactor.from_json_file(sf_file)
         # Use larger tolerances with reciprocal ASR - formalism works
         # only at gamma but is applied to all q, so problem is less
@@ -82,7 +80,7 @@ class TestCalculateStructureFactorFromForceConstants:
     @pytest.mark.phonopy_reader
     @pytest.mark.parametrize(
         'material, fc_kwargs, qpt_ph_modes_args, dw_file, expected_sf_file', [
-            ('CaHgO2', {'path': get_phonopy_path('CaHgO2', ''),
+            ('CaHgO2', {'path': get_phonopy_path('CaHgO2'),
                         'summary_name': 'mp-7041-20180417.yaml'},
              (get_test_qpts(), {}),
              'CaHgO2_666_300K_debye_waller.json',
@@ -104,7 +102,7 @@ class TestCalculateStructureFactorFromForceConstants:
                 dw=get_dw(material, dw_file))
         else:
             sf = qpt_ph_modes.calculate_structure_factor()
-        sf_file = os.path.join(get_sf_dir(material), expected_sf_file)
+        sf_file = get_sf_path(material, expected_sf_file)
         expected_sf = StructureFactor.from_json_file(sf_file)
         check_structure_factor(sf, expected_sf)
 
@@ -142,14 +140,14 @@ class TestCalculateStructureFactorFromQpointPhononModes:
                 dw=get_dw(material, dw_file))
         else:
             sf = qpt_ph_modes.calculate_structure_factor()
-        sf_file = os.path.join(get_sf_dir(material), expected_sf_file)
+        sf_file = get_sf_path(material, expected_sf_file)
         expected_sf = StructureFactor.from_json_file(sf_file)
         check_structure_factor(sf, expected_sf)
 
     @pytest.mark.phonopy_reader
     @pytest.mark.parametrize(
         'material, qpt_ph_modes_kwargs, dw_file, expected_sf_file', [
-            ('CaHgO2', {'path': get_phonopy_path('CaHgO2', ''),
+            ('CaHgO2', {'path': get_phonopy_path('CaHgO2'),
              'summary_name': 'mp-7041-20180417.yaml',
              'phonon_name': 'qpoints.yaml'},
              'CaHgO2_666_300K_debye_waller.json',
@@ -162,7 +160,7 @@ class TestCalculateStructureFactorFromQpointPhononModes:
                 dw=get_dw(material, dw_file))
         else:
             sf = qpt_ph_modes.calculate_structure_factor()
-        sf_file = os.path.join(get_sf_dir(material), expected_sf_file)
+        sf_file = get_sf_path(material, expected_sf_file)
         expected_sf = StructureFactor.from_json_file(sf_file)
         check_structure_factor(sf, expected_sf)
 

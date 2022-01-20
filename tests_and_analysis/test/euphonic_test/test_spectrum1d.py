@@ -73,20 +73,16 @@ class ExpectedSpectrum1D:
         return (x_data, y_data), kwargs
 
 
-def get_spectrum1d_dir():
-    return os.path.join(get_data_path(), 'spectrum1d')
-
-
-def get_full_path(json_filename):
-    return os.path.join(get_spectrum1d_dir(), json_filename)
+def get_spectrum1d_path(*subpaths):
+    return get_data_path('spectrum1d', *subpaths)
 
 
 def get_spectrum1d(json_filename):
-    return Spectrum1D.from_json_file(get_full_path(json_filename))
+    return Spectrum1D.from_json_file(get_spectrum1d_path(json_filename))
 
 
 def get_expected_spectrum1d(json_filename):
-    return ExpectedSpectrum1D(get_full_path(json_filename))
+    return ExpectedSpectrum1D(get_spectrum1d_path(json_filename))
 
 
 def check_spectrum1d(actual_spectrum1d, expected_spectrum1d):
@@ -138,7 +134,7 @@ class TestSpectrum1DCreation:
         json_file = request.param
         expected_spec1d = get_expected_spectrum1d(json_file)
         spec1d = Spectrum1D.from_json_file(
-            get_full_path(json_file))
+            get_spectrum1d_path(json_file))
         return spec1d, expected_spec1d
 
     @pytest.fixture(params=[

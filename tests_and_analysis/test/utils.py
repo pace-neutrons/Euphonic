@@ -1,6 +1,6 @@
 import os
 import json
-from typing import Optional
+from typing import Optional, Tuple
 
 import numpy as np
 import numpy.testing as npt
@@ -8,37 +8,38 @@ import numpy.testing as npt
 from euphonic import ureg, __version__, Spectrum1D, Spectrum1DCollection
 
 
-def get_data_path() -> str:
+def get_data_path(*subpaths: Tuple[str]) -> str:
     """
-    Get the path to the data for the tests.
+    Get the path to test data file or directory
 
     Returns
     -------
-    str: The path to the test data.
+    str: The path to test data file or directory
     """
-    return os.path.join(os.path.abspath(os.path.dirname(__file__)), "data")
+    return os.path.join(os.path.abspath(os.path.dirname(__file__)),
+                        'data', *subpaths)
 
 
-def get_phonopy_path(material: str, filename: str) -> str:
+def get_phonopy_path(*subpaths: Tuple[str]) -> str:
     """
-    Get the path to a Phonopy data file
+    Get the path to a Phonopy data file or directory
 
     Returns
     -------
-    str: The path to the Phonopy data file
+    str: The path to the Phonopy data file or directory
     """
-    return os.path.join(get_data_path(), 'phonopy_files', material, filename)
+    return get_data_path('phonopy_files', *subpaths)
 
 
-def get_castep_path(material: str, filename: str) -> str:
+def get_castep_path(*subpaths: Tuple[str]) -> str:
     """
-    Get the path to a CASTEP data file
+    Get the path to a CASTEP data file or directory
 
     Returns
     -------
-    str: The path to the CASTEP data file
+    str: The path to the CASTEP data file or directory
     """
-    return os.path.join(get_data_path(), 'castep_files', material, filename)
+    return get_data_path('castep_files', *subpaths)
 
 
 def get_test_qpts(qpts_option: Optional[str] = 'default') -> np.ndarray:
