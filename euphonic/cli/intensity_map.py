@@ -76,7 +76,7 @@ def main(params: Optional[List[str]] = None) -> None:
                      if args.q_broadening else None),
             y_width=(args.energy_broadening * ebins.units
                      if args.energy_broadening else None),
-            shape=args.shape)
+            shape=args.shape, method='convolve')
 
     print("Plotting figure")
     plot_label_kwargs = _plot_label_kwargs(
