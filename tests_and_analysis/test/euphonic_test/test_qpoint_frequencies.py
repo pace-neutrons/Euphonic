@@ -492,6 +492,10 @@ class TestQpointFrequenciesCalculateDosMap:
             ('quartz', 'quartz_bandstructure_cv_only_qpoint_frequencies.json',
              np.arange(0, 155, 0.6)*ureg('meV'),
              'quartz_bandstructure_dos_map.json'),
+            ('quartz', 'quartz_bandstructure_cv_only_qpoint_frequencies.json',
+             np.concatenate((np.arange(0, 100, 0.3),
+                             np.arange(100, 155, 0.6)))*ureg('meV'),
+             'quartz_bandstructure_dos_map_uneven_bins.json'),
             ('NaCl', 'NaCl_band_yaml_from_phonopy_qpoint_frequencies.json',
              np.arange(0, 300, 5)*ureg('1/cm'),
              'NaCl_band_yaml_dos_map.json')
