@@ -24,22 +24,18 @@ except ModuleNotFoundError:
     pass
 
 cahgo2_fc_file = get_phonopy_path('CaHgO2', 'mp-7041-20180417.yaml')
-lzo_fc_file = os.path.join(
-    get_data_path(), 'force_constants', 'LZO_force_constants.json')
+lzo_fc_file = get_data_path('force_constants', 'LZO_force_constants.json')
 nacl_fc_file = get_phonopy_path('NaCl_cli_test', 'force_constants.hdf5')
-nacl_phonon_file = os.path.join(
-    get_phonopy_path('NaCl', 'band'), 'band.yaml')
-nacl_hdf5_file = os.path.join(
-    get_phonopy_path('NaCl', 'band'), 'band.hdf5')
-nacl_no_evec_hdf5_file = os.path.join(
-    get_phonopy_path('NaCl', 'band'), 'band_no_evec.hdf5')
-quartz_json_file = os.path.join(
-    get_data_path(), 'qpoint_phonon_modes', 'quartz',
+nacl_phonon_file = get_phonopy_path('NaCl', 'band', 'band.yaml')
+nacl_hdf5_file = get_phonopy_path('NaCl', 'band', 'band.hdf5')
+nacl_no_evec_hdf5_file = get_phonopy_path('NaCl', 'band', 'band_no_evec.hdf5')
+quartz_json_file = get_data_path(
+    'qpoint_phonon_modes', 'quartz',
     'quartz_bandstructure_qpoint_phonon_modes.json')
-quartz_no_evec_json_file = os.path.join(
-    get_data_path(), 'qpoint_frequencies', 'quartz',
+quartz_no_evec_json_file = get_data_path(
+    'qpoint_frequencies', 'quartz',
     'quartz_bandstructure_qpoint_frequencies.json')
-disp_output_file = os.path.join(get_script_test_data_path(), 'dispersion.json')
+disp_output_file = get_script_test_data_path('dispersion.json')
 disp_params =  [
     [lzo_fc_file],
     [quartz_json_file],
@@ -137,9 +133,8 @@ class TestRegression:
             euphonic.cli.dispersion.main(dispersion_args)
 
     @pytest.mark.parametrize('dispersion_args', [
-        [os.path.join(get_data_path(), 'crystal', 'crystal_LZO.json')],
-        [os.path.join(get_data_path(), 'force_constants', 'NaCl',
-                      'FORCE_CONSTANTS')]])
+        [get_data_path('crystal', 'crystal_LZO.json')],
+        [get_data_path('force_constants', 'NaCl', 'FORCE_CONSTANTS')]])
     def test_invalid_file_raises_value_error(self, dispersion_args):
         with pytest.raises(ValueError):
             euphonic.cli.dispersion.main(dispersion_args)

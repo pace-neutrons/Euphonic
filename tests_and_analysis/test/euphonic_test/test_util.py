@@ -11,7 +11,7 @@ from euphonic.util import (direction_changed, mp_grid, get_qpoint_labels,
 from tests_and_analysis.test.utils import get_data_path
 from tests_and_analysis.test.euphonic_test.test_crystal import get_crystal
 from tests_and_analysis.test.euphonic_test.test_force_constants import (
-    get_fc_dir)
+    get_fc_path)
 
 
 class TestDirectionChanged:
@@ -35,7 +35,7 @@ class TestMPGrid:
     def test_444_grid(self):
         qpts = mp_grid([4,4,4])
         expected_qpts = np.loadtxt(
-            os.path.join(get_data_path(), 'util', 'qgrid_444.txt'))
+            get_data_path('util', 'qgrid_444.txt'))
         npt.assert_equal(qpts, expected_qpts)
 
 
@@ -65,7 +65,7 @@ class TestGetQptLabels:
 
 
 def get_modg(mode_gradients_file):
-    with open(os.path.join(get_fc_dir(), mode_gradients_file), 'r') as fp:
+    with open(get_fc_path(mode_gradients_file), 'r') as fp:
         modg_dict = json.load(fp)
     modg = modg_dict['mode_gradients']*ureg(
         modg_dict['mode_gradients_unit'])
@@ -96,7 +96,7 @@ class TestModeGradientsToWidths:
     def test_mode_gradients_to_widths(self, mode_grads, cell_vecs,
                                       expected_mode_widths_file):
         mode_widths = mode_gradients_to_widths(mode_grads, cell_vecs)
-        with open(os.path.join(get_fc_dir(), expected_mode_widths_file), 'r') as fp:
+        with open(get_fc_path(expected_mode_widths_file), 'r') as fp:
             modw_dict = json.load(fp)
         expected_mode_widths = modw_dict['mode_widths']*ureg(
             modw_dict['mode_widths_unit'])

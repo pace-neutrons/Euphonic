@@ -21,16 +21,15 @@ try:
 except ModuleNotFoundError:
     pass
 
-quartz_json_file = os.path.join(
-    get_data_path(), 'qpoint_phonon_modes', 'quartz',
+quartz_json_file = get_data_path(
+    'qpoint_phonon_modes', 'quartz',
     'quartz_bandstructure_qpoint_phonon_modes.json')
-quartz_no_evec_json_file = os.path.join(
-    get_data_path(), 'qpoint_frequencies', 'quartz',
+quartz_no_evec_json_file = get_data_path(
+    'qpoint_frequencies', 'quartz',
     'quartz_bandstructure_qpoint_frequencies.json')
 lzo_phonon_file = get_castep_path('LZO', 'La2Zr2O7.phonon')
 graphite_fc_file = get_castep_path('graphite', 'graphite.castep_bin')
-intensity_map_output_file = os.path.join(get_script_test_data_path(),
-                                         'intensity-map.json')
+intensity_map_output_file = get_script_test_data_path('intensity-map.json')
 intensity_map_params = [
     [graphite_fc_file],
     [graphite_fc_file, '--vmin=0', '--vmax=1e-10'],
@@ -120,7 +119,7 @@ class TestRegression:
         assert os.path.exists(output_file)
 
     @pytest.mark.parametrize('intensity_map_args', [
-        [os.path.join(get_data_path(), 'util', 'qgrid_444.txt')]])
+        [get_data_path('util', 'qgrid_444.txt')]])
     def test_invalid_file_raises_value_error(self, intensity_map_args):
         with pytest.raises(ValueError):
             euphonic.cli.intensity_map.main(intensity_map_args)

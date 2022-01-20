@@ -98,12 +98,12 @@ class ExpectedForceConstants:
         return (crystal, force_constants, sc_matrix, cell_origins), kwargs
 
 
-def get_fc_dir():
-    return os.path.join(get_data_path(), 'force_constants')
+def get_fc_path(*subpaths):
+    return get_data_path('force_constants', *subpaths)
 
 
 def get_json_file(material):
-    return os.path.join(get_fc_dir(), f'{material}_force_constants.json')
+    return get_fc_path(f'{material}_force_constants.json')
 
 
 def get_expected_fc(material):
@@ -240,7 +240,7 @@ class TestForceConstantsCreation:
         ('CaHgO2', {'summary_name': 'phonopy_nofc.yaml',
                     'fc_name': 'full_force_constants.hdf5'})])
     def test_create_from_phonopy(self, material, phonopy_args):
-        phonopy_args['path'] = get_phonopy_path(material, '')
+        phonopy_args['path'] = get_phonopy_path(material)
         fc = ForceConstants.from_phonopy(**phonopy_args)
         expected_fc = get_expected_fc(material)
         check_force_constants(fc, expected_fc)
@@ -291,7 +291,7 @@ class TestForceConstantsCreation:
     @pytest.mark.parametrize('phonopy_args', [
         ({'summary_name': 'phonopy_nofc.yaml',
           'fc_name': 'force_constants.hdf5',
-          'path': get_phonopy_path('NaCl', '')})])
+          'path': get_phonopy_path('NaCl')})])
     def test_create_from_phonopy_without_installed_modules_raises_err(
             self, phonopy_args, mocker):
         # Mock import of yaml, h5py to raise ModuleNotFoundError
@@ -309,12 +309,12 @@ class TestForceConstantsCreation:
     @pytest.mark.parametrize('phonopy_args, err', [
         ({'summary_name': 'phonopy_nofc.yaml',
           'fc_name': 'force_constants.hdf5',
-          'path': get_phonopy_path('NaCl', ''),
+          'path': get_phonopy_path('NaCl'),
           'fc_format': 'nonsense'},
          ValueError),
         ({'summary_name': '../CaHgO2/phonopy_nofc.yaml',
           'fc_name': 'force_constants.hdf5',
-          'path': get_phonopy_path('NaCl', '')},
+          'path': get_phonopy_path('NaCl')},
          ValueError)])
     def test_create_from_phonopy_with_bad_inputs_raises_err(
             self, phonopy_args, err):
@@ -341,7 +341,7 @@ class TestForceConstantsCreation:
             return real_import(name, globals, locals, fromlist, level)
         mocker.patch('builtins.__import__', side_effect=mocked_import)
 
-        phonopy_args['path'] = get_phonopy_path(material, '')
+        phonopy_args['path'] = get_phonopy_path(material)
         fc = ForceConstants.from_phonopy(**phonopy_args)
         expected_fc = get_expected_fc(material)
         check_force_constants(fc, expected_fc)

@@ -80,20 +80,16 @@ class ExpectedSpectrum2D:
         return (x_data, y_data, z_data), kwargs
 
 
-def get_spectrum2d_dir():
-    return os.path.join(get_data_path(), 'spectrum2d')
-
-
-def get_json_file(json_filename):
-    return os.path.join(get_spectrum2d_dir(), json_filename)
+def get_spectrum2d_path(*subpaths):
+    return get_data_path('spectrum2d', *subpaths)
 
 
 def get_spectrum2d(json_filename):
-    return Spectrum2D.from_json_file(get_json_file(json_filename))
+    return Spectrum2D.from_json_file(get_spectrum2d_path(json_filename))
 
 
 def get_expected_spectrum2d(json_filename):
-    return ExpectedSpectrum2D(get_json_file(json_filename))
+    return ExpectedSpectrum2D(get_spectrum2d_path(json_filename))
 
 
 def check_spectrum2d(actual_spectrum2d, expected_spectrum2d):
@@ -155,7 +151,7 @@ class TestSpectrum2DCreation:
         json_file = request.param
         expected_spec2d = get_expected_spectrum2d(json_file)
         spec2d = Spectrum2D.from_json_file(
-            get_json_file(json_file))
+            get_spectrum2d_path(json_file))
         return spec2d, expected_spec2d
 
     @pytest.fixture(params=[

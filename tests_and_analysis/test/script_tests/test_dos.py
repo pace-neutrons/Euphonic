@@ -24,10 +24,9 @@ except ModuleNotFoundError:
     pass
 
 nah_phonon_file = get_castep_path('NaH', 'NaH.phonon')
-nacl_no_evec_yaml_file = os.path.join(
-    get_phonopy_path('NaCl', 'mesh'), 'mesh_no_evec.yaml')
+nacl_no_evec_yaml_file = get_phonopy_path('NaCl', 'mesh', 'mesh_no_evec.yaml')
 quartz_fc_file = get_castep_path('quartz', 'quartz.castep_bin')
-dos_output_file = os.path.join(get_script_test_data_path(), 'dos.json')
+dos_output_file = get_script_test_data_path('dos.json')
 dos_params = [
     [nah_phonon_file],
     [nah_phonon_file, '--energy-broadening=2'],
@@ -95,7 +94,7 @@ class TestRegression:
         assert os.path.exists(output_file)
 
     @pytest.mark.parametrize('dos_args', [
-        [os.path.join(get_data_path(), 'crystal', 'crystal_LZO.json')]])
+        [get_data_path('crystal', 'crystal_LZO.json')]])
     def test_invalid_file_raises_value_error(self, dos_args):
         with pytest.raises(ValueError):
             euphonic.cli.dos.main(dos_args)

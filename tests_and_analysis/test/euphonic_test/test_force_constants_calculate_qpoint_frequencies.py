@@ -1,4 +1,3 @@
-import os
 import json
 
 import pytest
@@ -12,7 +11,7 @@ from tests_and_analysis.test.utils import (get_castep_path, get_test_qpts,
 from tests_and_analysis.test.euphonic_test.test_qpoint_frequencies import (
     check_qpt_freqs, get_expected_qpt_freqs)
 from tests_and_analysis.test.euphonic_test.test_force_constants import (
-    get_fc, get_fc_dir)
+    get_fc, get_fc_path)
 
 
 class TestForceConstantsCalculateQPointFrequencies:
@@ -115,7 +114,7 @@ class TestForceConstantsCalculateQPointFrequencies:
             func_kwargs['n_threads'] = n_threads
         qpt_freqs, modg = fc.calculate_qpoint_frequencies(
             all_args[0], **func_kwargs)
-        with open(os.path.join(get_fc_dir(), expected_modg_file), 'r') as fp:
+        with open(get_fc_path(expected_modg_file), 'r') as fp:
             modg_dict = json.load(fp)
         expected_modg = modg_dict['mode_gradients']*ureg(
                 modg_dict['mode_gradients_unit'])
@@ -164,7 +163,7 @@ class TestForceConstantsCalculateQPointFrequencies:
             func_kwargs['n_threads'] = n_threads
         qpt_freqs, modw = fc.calculate_qpoint_frequencies(
             all_args[0], **func_kwargs)
-        with open(os.path.join(get_fc_dir(), expected_modw_file), 'r') as fp:
+        with open(get_fc_path(expected_modw_file), 'r') as fp:
             modw_dict = json.load(fp)
         expected_modw = modw_dict['mode_widths']*ureg(
             modw_dict['mode_widths_unit'])
