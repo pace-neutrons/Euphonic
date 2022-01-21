@@ -185,6 +185,9 @@ class Spectrum(ABC):
             raise ValueError(f'Invalid value for method, got {method}, '
                              f'should be one of {method_opts}')
 
+        # We only want to check for unequal bins if using a method that
+        # is not correct for unequal bins (currently this is the only
+        # option but leave the 'if' anyway for future implementations)
         if method in ('convolve', None):
             axes = ['x_data', 'y_data']
             unequal_bin_axes = []
