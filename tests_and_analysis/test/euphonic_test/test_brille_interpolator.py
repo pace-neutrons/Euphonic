@@ -2,11 +2,13 @@ import pytest
 import numpy as np
 import spglib as spg
 
-from euphonic import Crystal, ureg
+from euphonic import Crystal, ForceConstants, ureg
 from tests_and_analysis.test.euphonic_test.test_force_constants import (
     get_fc)
+from tests_and_analysis.test.euphonic_test.test_qpoint_phonon_modes import (
+    get_qpt_ph_modes)
 from tests_and_analysis.test.euphonic_test.test_crystal import (
-    get_crystal)
+    get_crystal, check_crystal)
 
 # Allow tests with brille marker to be collected and
 # deselected if brille isn't installed
@@ -18,7 +20,7 @@ except ModuleNotFoundError:
     pass
 
 
-def test_import__without_brille_raises_err(
+def test_import_without_brille_raises_err(
         mocker):
     # Mock import of brille to raise ModuleNotFoundError
     import builtins
@@ -33,6 +35,7 @@ def test_import__without_brille_raises_err(
     with pytest.raises(ModuleNotFoundError) as mnf_error:
         reload(euphonic.brille)
     assert "Cannot import Brille" in mnf_error.value.args[0]
+
 
 @pytest.fixture
 def grid(grid_args):
@@ -80,6 +83,7 @@ def grid(grid_args):
                   (0., 3*n_atoms , 0, 3, 0, 0), (0., 1., 0.))
     return grid
 
+
 class TestBrilleInterpolatorCreation:
 
     @pytest.mark.parametrize('material, grid_args', [
@@ -88,13 +92,59 @@ class TestBrilleInterpolatorCreation:
     def test_create_from_constructor(self, material, grid):
         crystal = get_crystal(material)
         bri = BrilleInterpolator(crystal, grid)
+        check_crystal(crystal, bri.crystal)
+        assert grid == bri._grid
 
     @pytest.mark.parametrize('material, kwargs', [
-        ('LZO', {'n_grid_points': 10}),
-        ('quartz', {'n_grid_points': 10})])
+        ('LZO', {'n_grid_points': 10,
+                 'grid_type': 'trellis'}),
+        ('quartz', {'n_grid_points': 10,
+                    'grid_type': 'mesh'}),
+        ('NaCl', {'n_grid_points': 10,
+                  'grid_type': 'nest'})
+        ])
     def test_create_from_force_constants(self, material, kwargs):
         fc = get_fc(material)
         bri = BrilleInterpolator.from_force_constants(fc, **kwargs)
+
+    @pytest.mark.parametrize(
+        'kwargs, expected_grid_type, expected_grid_kwargs', [
+            ({'n_grid_points': 10,
+              'grid_kwargs': {'node_volume_fraction': 0.04}},
+             'brille.BZTrellisQdc',
+             {'node_volume_fraction': 0.04}),
+            ({'n_grid_points': 10, 'grid_type': 'trellis'},
+             'brille.BZTrellisQdc',
+             {'node_volume_fraction': 0.013193727}),
+            ({'grid_type': 'mesh', 'n_grid_points': 50},
+             'brille.BZMeshQdc',
+             {'max_size': 0.00263874557, 'max_points': 50}),
+            ({'grid_type': 'nest', 'n_grid_points': 100},
+             'brille.BZNestQdc',
+             {'number_density': 100}),
+            ({},
+             'brille.BZTrellisQdc',
+             {'node_volume_fraction': 0.00013193727})])
+    def test_from_force_constants_correct_grid_kwargs_passed_to_brille(
+            self, mocker, kwargs, expected_grid_type, expected_grid_kwargs):
+        # Patch __init__ to avoid type checks - BZTrellisQdc is now a mock
+        # object, so can't be used as the 2nd argument in isinstance checks
+        mocker.patch.object(BrilleInterpolator, '__init__', return_value=None)
+        mock_grid = mocker.patch(expected_grid_type)
+        mock_grid().rlu = np.ones((5, 3))  # Note mock_grid() parentheses
+
+        fc = get_fc('Si2-sc-skew')
+        BrilleInterpolator.from_force_constants(fc, **kwargs)
+        for called_key, called_val in mock_grid.call_args[1].items():
+            expected_val = expected_grid_kwargs.pop(called_key)
+            assert expected_val == pytest.approx(called_val)
+        # Make sure all expected kwargs have been passed
+        assert not expected_grid_kwargs
+
+    def test_from_fc_with_invalid_grid_type_raises_value_error(self):
+        with pytest.raises(ValueError):
+            BrilleInterpolator.from_force_constants(
+                get_fc('quartz'), grid_type='unknown')
 
     @pytest.mark.parametrize('faulty_crystal, expected_exception',
         [(get_fc('quartz'), TypeError)])
@@ -106,8 +156,9 @@ class TestBrilleInterpolatorCreation:
             BrilleInterpolator(faulty_crystal, grid)
 
     # Deliberately create a grid incompatible with the quartz crystal
-    # This uses implicit indirect parametrization - material and fill
-    # are passed to the grid fixture
+    # and check that it raises an error. This uses implicit indirect
+    # parametrization - material and fill are passed to the grid
+    # fixture
     @pytest.mark.parametrize('expected_exception, grid_args',
         [(ValueError, ('LZO', {})),
          (ValueError, ('quartz', {'fill': False}))])

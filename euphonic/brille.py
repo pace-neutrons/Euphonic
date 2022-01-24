@@ -30,6 +30,7 @@ class BrilleInterpolator:
     def __init__(self, crystal: Crystal,
                  grid: Union[br.BZTrellisQdc, br.BZMeshQdc,
                              br.BZNestQdc]) -> None:
+
         _check_constructor_inputs(
             [crystal, grid],
             [Crystal, [br.BZTrellisQdc, br.BZMeshQdc, br.BZNestQdc]],
@@ -138,6 +139,10 @@ class BrilleInterpolator:
         -------
         brille_interpolator
         """
+        grid_type_opts = ('trellis', 'mesh', 'nest')
+        if grid_type not in grid_type_opts:
+            raise ValueError(f'Grid type "{grid_type}" not recognised')
+
         crystal = force_constants.crystal
         cell_vectors = crystal._cell_vectors
         cell = crystal.to_spglib_cell()
@@ -168,8 +173,6 @@ class BrilleInterpolator:
             if grid_kwargs is None:
                 grid_kwargs = {'number_density': n_grid_points}
             grid = br.BZNestQdc(bz, **grid_kwargs)
-        else:
-            raise ValueError(f'Grid type "{grid_type}" not recognised')
 
         print(f'Grid generated with {len(grid.rlu)} q-points. '
                'Calculating frequencies/eigenvectors...')
