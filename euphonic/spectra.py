@@ -201,10 +201,11 @@ class Spectrum(ABC):
                        f'not equal, so broadening by convolution may give '
                        f'incorrect results.')
                 if method is None:
-                    raise ValueError(
-                        msg + ' If you still want to broaden by convolution '
-                        'please explicitly use the method="convolve" '
-                        'option.')
+                    warnings.warn(
+                        msg + ' In the future, this will raise a ValueError, '
+                        'so if you still want to broaden by convolution '
+                        'please explicitly use the method="convolve" option.',
+                        category=DeprecationWarning, stacklevel=3)
                 else:
                     warnings.warn(msg, stacklevel=3)
 

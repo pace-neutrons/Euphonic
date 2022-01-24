@@ -7,16 +7,16 @@
     ``euphonic-intensity-map`` command-line tools can now read
     files that don't contain eigenvectors, if eigenvectors are
     not required for the chosen options.
-  - ``Spectrum1D/1DCollection/2D.broaden`` will now raise a ``ValueError``
-    if broadening is requested on an axis with unequal bin widths, as
-    broadening is performed via convolution, which is incorrect in this
-    case. To broaden anyway, ``method='convolve'`` can be supplied, which
-    will just emit a warning.
 
 - Changes:
 
   - ``euphonic.cli.force_constants_from_file`` and ``modes_from_file``
     have been deprecated in favour of ``euphonic.cli.load_data_from_file``.
+  - Using ``Spectrum1D/1DCollection/2D.broaden`` on an axis with unequal
+    bin widths is now deprecated, as broadening is performed via convolution,
+    which is incorrect in this case. In the future, this will raise a
+    ``ValueError``. To broaden anyway, ``method='convolve'`` can be supplied,
+    which will just emit a warning.
 
 `v0.6.3 <https://github.com/pace-neutrons/Euphonic/compare/v0.6.2...v0.6.3>`_
 ------
