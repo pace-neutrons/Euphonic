@@ -153,10 +153,11 @@ class TestRegression:
             euphonic.cli.powder_map.main(powder_map_args)
 
     @pytest.mark.phonopy_reader
+    @pytest.mark.multiple_extras
     @pytest.mark.parametrize('powder_map_args', [
-        [os.path.join(
-            get_data_path(), 'qpoint_phonon_modes',
-            'quartz', 'quartz_bandstructure_qpoint_phonon_modes.json')]])
+        [get_data_path(
+            'qpoint_phonon_modes', 'quartz',
+            'quartz_bandstructure_qpoint_phonon_modes.json')]])
     def test_qpoint_modes_raises_type_error(self, powder_map_args):
         with pytest.raises(TypeError):
             euphonic.cli.powder_map.main(powder_map_args)

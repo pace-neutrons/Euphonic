@@ -86,6 +86,7 @@ class TestRegression:
         self.run_dos_and_test_result(dos_args)
 
     @pytest.mark.phonopy_reader
+    @pytest.mark.multiple_extras
     @pytest.mark.parametrize('dos_args', dos_params_from_phonopy)
     def test_dos_plot_data_from_phonopy(self, inject_mocks, dos_args):
         self.run_dos_and_test_result(dos_args)
@@ -113,6 +114,7 @@ class TestRegression:
             euphonic.cli.dos.main(dos_args)
 
     @pytest.mark.phonopy_reader
+    @pytest.mark.multiple_extras
     @pytest.mark.parametrize('dos_args', [
         [nacl_no_evec_yaml_file, '--pdos'],
         [nacl_no_evec_yaml_file, '--weighting', 'coherent-dos']])
