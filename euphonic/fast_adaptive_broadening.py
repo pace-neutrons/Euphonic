@@ -67,8 +67,17 @@ def fast_broaden(dos_bins_hartree: np.ndarray,
 
     lower_coeffs = find_coeffs(spacing)
     dos = np.zeros(len(dos_bins_hartree)-1)
-    # start loop from 1 as points with insert-position 0
-    # lie outside of bin range
+
+    # start loop over kernels from 1 as points with insert-position 0
+    # lie outside of bin range but first include points
+    # where mode_widths = min(mode_width_samples)
+    masked_block = (mode_widths == min(mode_width_samples))
+    sigma_factors = mode_widths[masked_block]/mode_width_samples[0]
+    lower_weights = (np.polyval(lower_coeffs, sigma_factors))*combined_weights[masked_block]
+    hist, _ = np.histogram(freqs[masked_block], bins=dos_bins_hartree,
+                           weights=lower_weights/bin_width)
+    dos += convolve(hist, kernels[0], mode="same", method="fft")
+
     for i in range(1, len(mode_width_samples)):
         masked_block = (kernels_idx == i)
         sigma_factors = mode_widths[masked_block]/mode_width_samples[i-1]
