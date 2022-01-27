@@ -37,6 +37,7 @@ def test_import_without_brille_raises_err(
     assert "Cannot import Brille" in mnf_error.value.args[0]
 
 
+# Use this fixture until we can read Brille grids from a HDF5 file
 @pytest.fixture
 def grid(grid_args):
     # Currently can only use 1 fixture argument in indirectly
@@ -141,6 +142,36 @@ class TestBrilleInterpolatorCreation:
         # Make sure all expected kwargs have been passed
         assert not expected_grid_kwargs
 
+    @pytest.mark.parametrize(
+        'kwargs', [
+            ({}),
+            ({'grid_type': 'nest',
+              'grid_kwargs': {'number_density': 50},
+              'interpolation_kwargs': {'insert_gamma': True}}),
+            ({'interpolation_kwargs': {'reduce_qpts': True,
+                                       'eta_scale': 0.5,
+                                       'n_threads': 2}})
+        ])
+    def test_from_force_constants_correct_interpolation_kwargs_passed(
+            self, mocker, kwargs):
+        # Patch __init__ to avoid type checks - we're mocking
+        # calculate_qpoint_phonon_modes so don't care about the return value
+        mocker.patch.object(BrilleInterpolator, '__init__', return_value=None)
+        mock_qpm = mocker.patch.object(
+            ForceConstants, 'calculate_qpoint_phonon_modes',
+            return_value=get_qpt_ph_modes('quartz'))
+
+        fc = get_fc('quartz')
+        BrilleInterpolator.from_force_constants(fc, **kwargs)
+
+        # default_kwargs should be set no matter what the user provides,
+        # as the input and output qpts of calculate_qpoint_phonon_modes
+        # must be the same
+        default_kwargs = {'insert_gamma': False, 'reduce_qpts': False}
+        expected_interp_kwargs = {**kwargs.get('interpolation_kwargs', {}),
+                                  **default_kwargs}
+        assert expected_interp_kwargs == mock_qpm.call_args[1]
+
     def test_from_fc_with_invalid_grid_type_raises_value_error(self):
         with pytest.raises(ValueError):
             BrilleInterpolator.from_force_constants(
@@ -151,7 +182,8 @@ class TestBrilleInterpolatorCreation:
     # This uses implicit indirect parametrization - material is passed to the
     # grid fixture
     @pytest.mark.parametrize('grid_args', [('quartz', {})])
-    def test_faulty_crystal_object_creation(self, faulty_crystal, expected_exception, grid):
+    def test_faulty_crystal_object_creation(
+            self, faulty_crystal, expected_exception, grid):
         with pytest.raises(expected_exception):
             BrilleInterpolator(faulty_crystal, grid)
 
