@@ -1,12 +1,17 @@
+from multiprocessing import cpu_count
+
 import pytest
 import numpy as np
 import spglib as spg
 
 from euphonic import Crystal, ForceConstants, ureg
+from tests_and_analysis.test.utils import get_test_qpts
 from tests_and_analysis.test.euphonic_test.test_force_constants import (
     get_fc)
+from tests_and_analysis.test.euphonic_test.test_structure_factor import (
+    get_sf, check_structure_factor)
 from tests_and_analysis.test.euphonic_test.test_qpoint_phonon_modes import (
-    get_qpt_ph_modes)
+    get_qpt_ph_modes_from_json, check_qpt_ph_modes)
 from tests_and_analysis.test.euphonic_test.test_crystal import (
     get_crystal, check_crystal)
 
@@ -20,32 +25,8 @@ except ModuleNotFoundError:
     pass
 
 
-def test_import_without_brille_raises_err(
-        mocker):
-    # Mock import of brille to raise ModuleNotFoundError
-    import builtins
-    from importlib import reload
-    import euphonic.brille
-    real_import = builtins.__import__
-    def mocked_import(name, *args, **kwargs):
-        if name == 'brille':
-            raise ModuleNotFoundError
-        return real_import(name, *args, **kwargs)
-    mocker.patch('builtins.__import__', side_effect=mocked_import)
-    with pytest.raises(ModuleNotFoundError) as mnf_error:
-        reload(euphonic.brille)
-    assert "Cannot import Brille" in mnf_error.value.args[0]
-
-
-# Use this fixture until we can read Brille grids from a HDF5 file
-@pytest.fixture
-def grid(grid_args):
-    # Currently can only use 1 fixture argument in indirectly
-    # parametrized fixtures, so work around it
-    material, kwargs = grid_args
-    fill = kwargs.get('fill', True)
-    grid_type = kwargs.get('grid_type', 'trellis')
-
+# Use this function until we can read Brille grids from a HDF5 file
+def get_grid(material, grid_type='trellis', fill=True):
     fc = get_fc(material)
     crystal = fc.crystal
     cell_vectors = crystal._cell_vectors
@@ -64,25 +45,51 @@ def grid(grid_args):
         vol = bz.ir_polyhedron.volume
         grid_kwargs = {
             'node_volume_fraction': vol/n_grid_points}
-        grid = br.BZTrellisQdc(bz, **grid_kwargs)
+        br_grid = br.BZTrellisQdc(bz, **grid_kwargs)
     elif grid_type == 'mesh':
         grid_kwargs = {
             'max_size': bz.ir_polyhedron.volume/n_grid_points,
             'max_points': n_grid_points}
-        grid = br.BZMeshQdc(bz, **grid_kwargs)
+        br_grid = br.BZMeshQdc(bz, **grid_kwargs)
     elif grid_type == 'nest':
         grid_kwargs = {'number_density': n_grid_points}
-        grid = br.BZNestQdc(bz, **grid_kwargs)
+        br_grid = br.BZNestQdc(bz, **grid_kwargs)
 
     if fill:
-        n_qpts = len(grid.rlu)
+        n_qpts = len(br_grid.rlu)
         n_atoms = crystal.n_atoms
         vals = np.random.rand(n_qpts, 3*n_atoms, 1)
         vec_real = np.random.rand(n_qpts, 3*n_atoms, 3*n_atoms)
         vecs = vec_real + vec_real*1j
-        grid.fill(vals, (1,), (1., 0., 0.), vecs,
-                  (0., 3*n_atoms , 0, 3, 0, 0), (0., 1., 0.))
-    return grid
+        br_grid.fill(vals, (1,), (1., 0., 0.), vecs,
+                     (0., 3*n_atoms , 0, 3, 0, 0), (0., 1., 0.))
+    return br_grid
+
+
+# Use this fixture until we can read Brille grids from a HDF5 file
+@pytest.fixture
+def grid(grid_args):
+    # Currently can only use 1 fixture argument in indirectly
+    # parametrized fixtures, so work around it
+    material, kwargs = grid_args
+    return get_grid(material, **kwargs)
+
+
+def test_import_without_brille_raises_err(
+        mocker):
+    # Mock import of brille to raise ModuleNotFoundError
+    import builtins
+    from importlib import reload
+    import euphonic.brille
+    real_import = builtins.__import__
+    def mocked_import(name, *args, **kwargs):
+        if name == 'brille':
+            raise ModuleNotFoundError
+        return real_import(name, *args, **kwargs)
+    mocker.patch('builtins.__import__', side_effect=mocked_import)
+    with pytest.raises(ModuleNotFoundError) as mnf_error:
+        reload(euphonic.brille)
+    assert "Cannot import Brille" in mnf_error.value.args[0]
 
 
 class TestBrilleInterpolatorCreation:
@@ -159,7 +166,8 @@ class TestBrilleInterpolatorCreation:
         mocker.patch.object(BrilleInterpolator, '__init__', return_value=None)
         mock_qpm = mocker.patch.object(
             ForceConstants, 'calculate_qpoint_phonon_modes',
-            return_value=get_qpt_ph_modes('quartz'))
+            return_value=get_qpt_ph_modes_from_json(
+                'quartz', 'quartz_reciprocal_qpoint_phonon_modes.json'))
 
         fc = get_fc('quartz')
         BrilleInterpolator.from_force_constants(fc, **kwargs)
@@ -197,3 +205,71 @@ class TestBrilleInterpolatorCreation:
     def test_faulty_grid_object_creation(self, expected_exception, grid):
         with pytest.raises(expected_exception):
             BrilleInterpolator(get_crystal('quartz'), grid)
+
+
+class TestBrilleInterpolatorCalculateQpointPhononModes:
+
+    @pytest.mark.parametrize(
+        'material, from_fc_kwargs, expected_sf_file', [
+            ('LZO', {'n_grid_points': 100},
+             'lzo_trellis_100_structure_factor.json'),
+            ('quartz', {'grid_type': 'nest', 'n_grid_points': 50},
+             'quartz_nest_50_structure_factor.json'),
+        ])
+    def test_calculate_qpoint_phonon_modes(
+            self, material, from_fc_kwargs, expected_sf_file):
+        fc = get_fc(material)
+        bri = BrilleInterpolator.from_force_constants(fc, **from_fc_kwargs)
+
+        qpts = get_test_qpts()
+        qpm = bri.calculate_qpoint_phonon_modes(qpts)
+
+        # Calculate structure factor to test eigenvectors
+        sf = qpm.calculate_structure_factor()
+        expected_sf = get_sf(material, expected_sf_file)
+        check_structure_factor(sf, expected_sf, freq_rtol=1e-4,
+                               sf_rtol=1e-3)
+
+    def test_brille_qpoint_phonon_modes_similar_to_fc_those_from_fc(self):
+        fc = get_fc('graphite')
+        bri = BrilleInterpolator.from_force_constants(fc, n_grid_points=5000)
+        qpts = np.array([[-0.2     ,  0.55    ,  0.55    ],
+                         [ 0.35    ,  0.07    ,  0.02    ],
+                         [ 0.00    ,  0.5    ,  0.00    ],
+                         [ 0.65    ,  0.05    ,  0.25    ],
+                         [ 1.8     ,  0.55    ,  2.55    ]])
+        qpm_brille = bri.calculate_qpoint_phonon_modes(qpts)
+        qpm_fc = fc.calculate_qpoint_phonon_modes(qpts)
+
+        # Calculate structure factor to test eigenvectors
+        sf_brille = qpm_brille.calculate_structure_factor()
+        sf_fc = qpm_fc.calculate_structure_factor()
+        # Tolerances are quite generous, but that is required unless
+        # we have a very dense grid (expensive to test)
+        check_structure_factor(sf_brille, sf_fc, freq_rtol=1e-3,
+                               sf_rtol=0.01, sf_atol=0.035)
+
+    @pytest.mark.parametrize(
+        'grid_args, material, kwargs', [
+            (('LZO', {}), 'LZO', {}),
+            (('quartz', {}), 'quartz', {'useparallel': False}),
+            (('LZO', {}), 'LZO', {'kwarg_one': 'one', 'kwarg_two': 2}),
+        ])
+    def test_calculate_qpoint_phonon_modes_correct_kwargs_passed(
+            self, mocker, grid, material, kwargs):
+        qpts = np.ones((10, 3))
+        crystal = get_crystal(material)
+        bri = BrilleInterpolator(crystal, grid)
+        n_atoms = crystal.n_atoms
+        mock_interpolate = mocker.patch.object(
+            grid, 'ir_interpolate_at',
+            return_value=(np.ones((len(qpts), 3*n_atoms)),
+                          np.ones((len(qpts), 3*n_atoms, n_atoms, 3),
+                                  dtype=np.complex128)))
+
+        bri.calculate_qpoint_phonon_modes(qpts, **kwargs)
+        if kwargs:
+            assert mock_interpolate.call_args[1] == kwargs
+        else:
+            default_kwargs = {'useparallel': True, 'threads': cpu_count()}
+            assert mock_interpolate.call_args[1] == default_kwargs
