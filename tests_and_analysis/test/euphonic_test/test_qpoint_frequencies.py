@@ -432,7 +432,12 @@ class TestQpointFrequenciesCalculateDos:
             ('LZO', 'lzo_222_full_qpoint_frequencies.json',
              'lzo_222_full_mode_widths.json',
              'lzo_222_full_adaptive_dos.json',
-             np.arange(0, 100, 0.1)*ureg('meV'))])
+             np.arange(0, 100, 0.1)*ureg('meV')),
+            ('quartz', 'toy_quartz_qpoint_frequencies.json',
+             'toy_quartz_mode_widths.json',
+             'toy_quartz_uneven_adaptive_dos.json',
+             np.concatenate((np.arange(0, 15, 0.1),
+                             np.arange(15, 40, 0.2)))*ureg('meV'))])
     def test_calculate_dos_with_mode_widths(
             self, material, qpt_freqs_json, mode_widths_json,
             expected_dos_json, ebins):
@@ -487,6 +492,10 @@ class TestQpointFrequenciesCalculateDosMap:
             ('quartz', 'quartz_bandstructure_cv_only_qpoint_frequencies.json',
              np.arange(0, 155, 0.6)*ureg('meV'),
              'quartz_bandstructure_dos_map.json'),
+            ('quartz', 'quartz_bandstructure_cv_only_qpoint_frequencies.json',
+             np.concatenate((np.arange(0, 100, 0.3),
+                             np.arange(100, 155, 0.6)))*ureg('meV'),
+             'quartz_bandstructure_dos_map_uneven_bins.json'),
             ('NaCl', 'NaCl_band_yaml_from_phonopy_qpoint_frequencies.json',
              np.arange(0, 300, 5)*ureg('1/cm'),
              'NaCl_band_yaml_dos_map.json')

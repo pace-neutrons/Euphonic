@@ -146,6 +146,13 @@ class TestRegression:
         with pytest.warns(DeprecationWarning):
             euphonic.cli.intensity_map.main(intensity_map_args)
 
+    @pytest.mark.parametrize('intensity_map_args', [
+        [quartz_json_file, '--qb=0.01']])
+    def test_broaden_unequal_q_axis_emits_user_warning(
+            self, inject_mocks, intensity_map_args):
+        with pytest.warns(UserWarning):
+            euphonic.cli.intensity_map.main(intensity_map_args)
+
     # Until --pdos is implemented for intensity-map, check we haven't
     # accidentally allowed it as an argument
     @pytest.mark.parametrize('intensity_map_args', [

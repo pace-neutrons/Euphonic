@@ -340,7 +340,10 @@ class TestSpectrum1DMethods:
         'quartz_666_1meV_gauss_broaden_dos.json'),
         ((1*ureg('meV'), {'shape': 'lorentz'}),
         'quartz_666_dos.json',
-        'quartz_666_1meV_lorentz_broaden_dos.json')])
+        'quartz_666_1meV_lorentz_broaden_dos.json'),
+        ((1*ureg('meV'), {'method': 'convolve'}),
+         'toy_quartz_cropped_uneven_dos.json',
+         'toy_quartz_cropped_uneven_broaden_dos.json')])
     def test_broaden(self, args, spectrum1d_file, broadened_spectrum1d_file):
         spec1d = get_spectrum1d(spectrum1d_file)
         expected_broadened_spec1d = get_spectrum1d(broadened_spectrum1d_file)
@@ -351,6 +354,22 @@ class TestSpectrum1DMethods:
         spec1d = get_spectrum1d('quartz_666_dos.json')
         with pytest.raises(ValueError):
             spec1d.broaden(1*ureg('meV'), shape='unknown')
+
+    def test_broaden_invalid_method_raises_value_error(self):
+        spec1d = get_spectrum1d('quartz_666_dos.json')
+        with pytest.raises(ValueError):
+            spec1d.broaden(1*ureg('meV'), method='unknown')
+
+    def test_broaden_uneven_bins_deprecation_warns(self):
+        # In a future version this should raise a ValueError
+        spec1d = get_spectrum1d('toy_quartz_cropped_uneven_dos.json')
+        with pytest.warns(DeprecationWarning):
+            spec1d.broaden(1*ureg('meV'))
+
+    def test_broaden_uneven_bins_and_explicit_convolve_warns(self):
+        spec1d = get_spectrum1d('toy_quartz_cropped_uneven_dos.json')
+        with pytest.warns(UserWarning):
+            spec1d.broaden(1*ureg('meV'), method='convolve')
 
     @pytest.mark.parametrize(
         'spectrum1d_file, expected_bin_edges', [

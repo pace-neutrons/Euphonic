@@ -7,6 +7,7 @@ import json
 from numbers import Integral
 from typing import (Any, Dict, List, Optional, overload,
                     Sequence, Tuple, TypeVar, Union, Type, Iterable)
+import warnings
 
 import numpy as np
 from scipy.ndimage import correlate1d, gaussian_filter
@@ -166,7 +167,8 @@ class Spectrum(ABC):
 
     @staticmethod
     def _broaden_data(data: np.ndarray, bin_centres: Sequence[np.ndarray],
-                      widths: Sequence[float], shape: str = 'gauss'
+                      widths: Sequence[float], shape: str = 'gauss',
+                      method: Optional[str] = None
                       ) -> np.ndarray:
         """
         Broaden data along each axis by widths, returning the broadened
@@ -174,6 +176,39 @@ class Spectrum(ABC):
         widths should match the number of dimensions in data.
         bin_centres and widths are assumed to be in the same units
         """
+        shape_opts = ('gauss', 'lorentz')
+        if shape not in shape_opts:
+            raise ValueError(f'Invalid value for shape, got {shape}, '
+                             f'should be one of {shape_opts}')
+        method_opts = ('convolve', None)
+        if method not in method_opts:
+            raise ValueError(f'Invalid value for method, got {method}, '
+                             f'should be one of {method_opts}')
+
+        # We only want to check for unequal bins if using a method that
+        # is not correct for unequal bins (currently this is the only
+        # option but leave the 'if' anyway for future implementations)
+        if method in ('convolve', None):
+            axes = ['x_data', 'y_data']
+            unequal_bin_axes = []
+            for ax, (width, bin_data) in enumerate(zip(widths, bin_centres)):
+                if width is not None:
+                    bin_widths = np.diff(bin_data)
+                    if not np.all(np.isclose(bin_widths, bin_widths[0])):
+                        unequal_bin_axes += [axes[ax]]
+            if len(unequal_bin_axes) > 0:
+                msg = (f'{" and ".join(unequal_bin_axes)} bin widths are '
+                       f'not equal, so broadening by convolution may give '
+                       f'incorrect results.')
+                if method is None:
+                    warnings.warn(
+                        msg + ' In the future, this will raise a ValueError, '
+                        'so if you still want to broaden by convolution '
+                        'please explicitly use the method="convolve" option.',
+                        category=DeprecationWarning, stacklevel=3)
+                else:
+                    warnings.warn(msg, stacklevel=3)
+
         if shape == 'gauss':
             sigmas = []
             for width, bin_data in zip(widths, bin_centres):
@@ -189,9 +224,6 @@ class Spectrum(ABC):
                     broadening = _distribution_1d(bin_data, width)
                     data_broadened = correlate1d(data_broadened, broadening,
                                                  mode='constant', axis=ax)
-        else:
-            raise ValueError(
-                f"Distribution shape '{shape}' not recognised")
         return data_broadened
 
     @staticmethod
@@ -448,7 +480,8 @@ class Spectrum1D(Spectrum):
                    data['dos'][element]*ureg(data['dos_unit']),
                    metadata=metadata)
 
-    def broaden(self: T, x_width: Quantity, shape: str = 'gauss') -> T:
+    def broaden(self: T, x_width: Quantity, shape: str = 'gauss',
+                method: Optional[str] = None) -> T:
         """
         Broaden y_data and return a new broadened spectrum object
 
@@ -458,6 +491,12 @@ class Spectrum1D(Spectrum):
             Scalar float Quantity. The broadening FWHM
         shape
             One of {'gauss', 'lorentz'}. The broadening shape
+        method
+            Can be None or 'convolve'. Currently the only broadening
+            method available is convolution with a broadening kernel,
+            but this may not produce correct results for unequal bin
+            widths. To use convolution anyway, explicitly set
+            method='convolve'
 
         Returns
         -------
@@ -468,12 +507,14 @@ class Spectrum1D(Spectrum):
         ------
         ValueError
             If shape is not one of the allowed strings
+        ValueError
+            If method is None and bins are not of equal size
         """
         y_broadened = self._broaden_data(
             self.y_data.magnitude,
             [self.get_bin_centres().magnitude],
             [x_width.to(self.x_data_unit).magnitude],
-            shape=shape)
+            shape=shape, method=method)
         return type(self)(
             np.copy(self.x_data.magnitude)*ureg(self.x_data_unit),
             y_broadened*ureg(self.y_data_unit),
@@ -841,7 +882,8 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
             y_data*ureg(data['dos_unit']),
             metadata=metadata)
 
-    def broaden(self, x_width: Quantity, shape: str = 'gauss') -> T:
+    def broaden(self, x_width: Quantity, shape: str = 'gauss',
+                method: Optional[str] = None) -> T:
         """
         Individually broaden each line in y_data, returning a new
         Spectrum1DCollection
@@ -852,6 +894,12 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
             Scalar float Quantity. The broadening FWHM
         shape
             One of {'gauss', 'lorentz'}. The broadening shape
+        method
+            Can be None or 'convolve'. Currently the only broadening
+            method available is convolution with a broadening kernel,
+            but this may not produce correct results for unequal bin
+            widths. To use convolution anyway, explicitly set
+            method='convolve'
 
         Returns
         -------
@@ -862,13 +910,16 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
         ------
         ValueError
             If shape is not one of the allowed strings
+        ValueError
+            If method is None and bins are not of equal size
         """
         y_broadened = np.zeros_like(self.y_data)
         x_centres = [self.get_bin_centres().magnitude]
         x_width_calc = [x_width.to(self.x_data_unit).magnitude]
         for i, yi in enumerate(self.y_data.magnitude):
             y_broadened[i] = self._broaden_data(
-                yi, x_centres, x_width_calc, shape=shape)
+                yi, x_centres, x_width_calc, shape=shape,
+                method=method)
         return Spectrum1DCollection(
             np.copy(self.x_data.magnitude)*ureg(self.x_data_unit),
             y_broadened*ureg(self.y_data_unit),
@@ -1081,8 +1132,8 @@ class Spectrum2D(Spectrum):
                 for x0, x1 in ranges]
 
     def broaden(self, x_width: Optional[Quantity] = None,
-                y_width: Optional[Quantity] = None, shape: str = 'gauss'
-                ) -> T:
+                y_width: Optional[Quantity] = None, shape: str = 'gauss',
+                method: Optional[str] = None) -> T:
         """
         Broaden z_data and return a new broadened Spectrum2D object
 
@@ -1094,6 +1145,12 @@ class Spectrum2D(Spectrum):
             Scalar float Quantity. The broadening FWHM in y
         shape
             One of {'gauss', 'lorentz'}. The broadening shape
+        method
+            Can be None or 'convolve'. Currently the only broadening
+            method available is convolution with a broadening kernel,
+            but this may not produce correct results for unequal bin
+            widths. To use convolution anyway, explicitly set
+            method='convolve'
 
         Returns
         -------
@@ -1104,6 +1161,8 @@ class Spectrum2D(Spectrum):
         ------
         ValueError
             If shape is not one of the allowed strings
+        ValueError
+            If method is None and bins are not of equal size
         """
         bin_centres = [self.get_bin_centres(ax).magnitude for ax in ['x', 'y']]
         bin_widths = [None]*2
@@ -1112,7 +1171,8 @@ class Spectrum2D(Spectrum):
         if y_width is not None:
             bin_widths[1] = y_width.to(self.y_data_unit).magnitude
         z_broadened = self._broaden_data(self.z_data.magnitude, bin_centres,
-                                         bin_widths, shape=shape)
+                                         bin_widths, shape=shape,
+                                         method=method)
         return Spectrum2D(
             np.copy(self.x_data.magnitude)*ureg(self.x_data_unit),
             np.copy(self.y_data.magnitude)*ureg(self.y_data_unit),
