@@ -58,6 +58,11 @@ class TestRegression:
             euphonic.cli.optimise_dipole_parameter.main([
                 lzo_castep_bin, *quick_calc_params])
 
+    def test_qpoint_modes_raises_type_error(self):
+        with pytest.raises(TypeError):
+            euphonic.cli.optimise_dipole_parameter.main([
+                get_castep_path("quartz", "quartz-666-grid.phonon")])
+
     @staticmethod
     def get_lowest_time_per_qpt_and_index(dipole_parameters_time_per_qpts):
         # Search dipole_parameters_time_per_qpts for lowest time

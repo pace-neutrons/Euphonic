@@ -67,12 +67,12 @@ class ExpectedCrystal:
         return (cell_vectors, atom_r, atom_type, atom_mass)
 
 
-def get_filepath(filename):
-    return os.path.join(get_data_path(), 'crystal', filename)
+def get_crystal_path(*subpaths):
+    return get_data_path('crystal', *subpaths)
 
 
 def get_json_file(crystal_name):
-    return get_filepath(f'crystal_{crystal_name}.json')
+    return get_crystal_path(f'crystal_{crystal_name}.json')
 
 
 def get_expected_crystal(crystal_name):
@@ -424,7 +424,7 @@ class TestCrystalMethods:
             self, crystal, kwargs, expected_res_file):
         rot, trans, equiv_atoms = crystal.get_symmetry_equivalent_atoms(
             **kwargs)
-        with open(get_filepath(expected_res_file), 'r') as fp:
+        with open(get_crystal_path(expected_res_file), 'r') as fp:
             res = json.load(fp)
         exp_rot = np.array(res['rotations'])
         exp_trans = np.array(res['translations'])

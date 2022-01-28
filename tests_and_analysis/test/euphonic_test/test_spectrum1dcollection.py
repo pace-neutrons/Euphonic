@@ -76,20 +76,16 @@ class ExpectedSpectrum1DCollection:
         return (x_data, y_data), kwargs
 
 
-def get_spectrum_dir():
-    return os.path.join(get_data_path(), 'spectrum1dcollection')
-
-
-def get_full_path(filename):
-    return os.path.join(get_spectrum_dir(), filename)
+def get_spectrum_path(*subpaths):
+    return get_data_path('spectrum1dcollection', *subpaths)
 
 
 def get_spectrum1dcollection(json_filename):
-    return Spectrum1DCollection.from_json_file(get_full_path(json_filename))
+    return Spectrum1DCollection.from_json_file(get_spectrum_path(json_filename))
 
 
 def get_expected_spectrum1dcollection(json_filename):
-    return ExpectedSpectrum1DCollection(get_full_path(json_filename))
+    return ExpectedSpectrum1DCollection(get_spectrum_path(json_filename))
 
 
 def check_spectrum1dcollection(actual_spectrum, expected_spectrum):
@@ -136,7 +132,7 @@ class TestSpectrum1DCollectionCreation:
         json_file = request.param
         expected_spectrum = get_expected_spectrum1dcollection(json_file)
         spectrum = Spectrum1DCollection.from_json_file(
-            get_full_path(json_file))
+            get_spectrum_path(json_file))
         return spectrum, expected_spectrum
 
     @pytest.fixture(params=[
@@ -442,7 +438,7 @@ class TestSpectrum1DCollectionMethods:
         spec = get_spectrum1dcollection(spectrum_file)
         bin_edges = spec.get_bin_edges()
         expected_bin_edges = np.load(
-                os.path.join(get_spectrum_dir(), expected_bin_edges_file))
+                get_spectrum_path(expected_bin_edges_file))
         assert bin_edges.units == expected_units
         assert_allclose(bin_edges.magnitude, expected_bin_edges)
 
@@ -459,7 +455,7 @@ class TestSpectrum1DCollectionMethods:
         spec = get_spectrum1dcollection(spectrum_file)
         bin_centres = spec.get_bin_centres()
         expected_bin_centres = np.load(
-                os.path.join(get_spectrum_dir(), expected_bin_centres_file))
+                get_spectrum_path(expected_bin_centres_file))
         assert bin_centres.units == expected_units
         assert_allclose(bin_centres.magnitude,
                         expected_bin_centres)

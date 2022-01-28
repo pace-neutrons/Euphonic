@@ -11,7 +11,7 @@ from euphonic.readers.phonopy import ImportPhonopyReaderError
 from tests_and_analysis.test.euphonic_test.test_crystal import (
     ExpectedCrystal, get_crystal, check_crystal)
 from tests_and_analysis.test.euphonic_test.test_force_constants import (
-    get_fc_dir)
+    get_fc_path)
 from tests_and_analysis.test.euphonic_test.test_debye_waller import (
     get_expected_dw, check_debye_waller)
 from tests_and_analysis.test.euphonic_test.test_qpoint_frequencies import (
@@ -93,8 +93,8 @@ class ExpectedQpointPhononModes:
         return (crystal, qpts, frequencies, eigenvectors), kwargs
 
 
-def get_qpt_ph_modes_dir(material):
-    return os.path.join(get_data_path(), 'qpoint_phonon_modes', material)
+def get_qpt_ph_modes_path(*subpaths):
+    return get_data_path('qpoint_phonon_modes', *subpaths)
 
 def get_json_file(material):
     return f'{material}_reciprocal_qpoint_phonon_modes.json'
@@ -102,12 +102,12 @@ def get_json_file(material):
 
 def get_expected_qpt_ph_modes(material):
     return ExpectedQpointPhononModes(
-        os.path.join(get_qpt_ph_modes_dir(material), get_json_file(material)))
+        get_qpt_ph_modes_path(material, get_json_file(material)))
 
 
-def get_qpt_ph_modes_from_json(material, file):
+def get_qpt_ph_modes_from_json(material, json_file):
     return QpointPhononModes.from_json_file(
-        os.path.join(get_qpt_ph_modes_dir(material), file))
+        get_qpt_ph_modes_path(material, json_file))
 
 
 def get_qpt_ph_modes(material):
@@ -191,7 +191,7 @@ class TestQpointPhononModesCreation:
         qpt_ph_modes = QpointPhononModes.from_castep(
             get_castep_path(material, phonon_file))
         expected_qpt_ph_modes = ExpectedQpointPhononModes(
-            os.path.join(get_qpt_ph_modes_dir(material), json_file))
+            get_qpt_ph_modes_path(material, json_file))
         check_qpt_ph_modes(qpt_ph_modes, expected_qpt_ph_modes,
                            check_evecs=True)
 
@@ -229,8 +229,7 @@ class TestQpointPhononModesCreation:
     def test_create_from_phonopy(self, material, subdir, phonopy_args, json_file):
         phonopy_args['path'] = get_phonopy_path(material, subdir)
         qpt_ph_modes = QpointPhononModes.from_phonopy(**phonopy_args)
-        json_path = os.path.join(
-            get_qpt_ph_modes_dir(material), json_file)
+        json_path = get_qpt_ph_modes_path(material, json_file)
         expected_qpt_ph_modes = ExpectedQpointPhononModes(json_path)
         check_qpt_ph_modes(qpt_ph_modes, expected_qpt_ph_modes,
                            check_evecs=True)
@@ -350,8 +349,7 @@ class TestQpointPhononModesCreation:
 
         phonopy_args['path'] = get_phonopy_path(material, subdir)
         qpt_ph_modes = QpointPhononModes.from_phonopy(**phonopy_args)
-        json_path = os.path.join(
-            get_qpt_ph_modes_dir(material), json_file)
+        json_path = get_qpt_ph_modes_path(material, json_file)
         expected_qpt_ph_modes = ExpectedQpointPhononModes(json_path)
         check_qpt_ph_modes(qpt_ph_modes, expected_qpt_ph_modes,
                            check_evecs=True)

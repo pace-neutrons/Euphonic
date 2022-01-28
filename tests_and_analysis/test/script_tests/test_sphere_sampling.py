@@ -19,8 +19,7 @@ try:
 except ModuleNotFoundError:
     pass
 
-sphere_sampling_output_file = os.path.join(get_script_test_data_path(),
-                                           "sphere_sampling.json")
+sphere_sampling_output_file = get_script_test_data_path("sphere_sampling.json")
 sphere_sampling_params =  [
     ['27', 'golden-square'],
     ['8', 'regular-square'],

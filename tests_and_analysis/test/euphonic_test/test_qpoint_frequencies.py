@@ -12,7 +12,7 @@ from euphonic.readers.phonopy import ImportPhonopyReaderError
 from tests_and_analysis.test.euphonic_test.test_crystal import (
     ExpectedCrystal, check_crystal)
 from tests_and_analysis.test.euphonic_test.test_force_constants import (
-    get_fc_dir)
+    get_fc_path)
 from tests_and_analysis.test.euphonic_test.test_spectrum1d import (
     get_expected_spectrum1d, check_spectrum1d)
 from tests_and_analysis.test.euphonic_test.test_spectrum1dcollection import (
@@ -80,18 +80,18 @@ class ExpectedQpointFrequencies:
 
         return (crystal, qpts, frequencies), kwargs
 
-def get_qpt_freqs_dir(material):
-    return os.path.join(get_data_path(), 'qpoint_frequencies', material)
+def get_qpt_freqs_path(*subpaths):
+    return get_data_path('qpoint_frequencies', *subpaths)
 
 
-def get_qpt_freqs(material, file):
+def get_qpt_freqs(material, json_file):
     return QpointFrequencies.from_json_file(
-        os.path.join(get_qpt_freqs_dir(material), file))
+        get_qpt_freqs_path(material, json_file))
 
 
-def get_expected_qpt_freqs(material, file):
+def get_expected_qpt_freqs(material, json_file):
     return ExpectedQpointFrequencies(
-        os.path.join(get_qpt_freqs_dir(material), file))
+        get_qpt_freqs_path(material, json_file))
 
 def check_qpt_freqs(
         qpoint_frequencies, expected_qpoint_frequencies,
@@ -157,7 +157,7 @@ class TestQpointFrequenciesCreation:
         qpt_freqs = QpointFrequencies.from_castep(
             get_castep_path(material, phonon_file))
         expected_qpt_freqs = ExpectedQpointFrequencies(
-            os.path.join(get_qpt_freqs_dir(material), json_file))
+            get_qpt_freqs_path(material, json_file))
         check_qpt_freqs(qpt_freqs, expected_qpt_freqs)
 
     @pytest.mark.phonopy_reader
@@ -196,8 +196,7 @@ class TestQpointFrequenciesCreation:
             self, material, subdir, phonopy_args, json_file):
         phonopy_args['path'] = get_phonopy_path(material, subdir)
         qpt_freqs = QpointFrequencies.from_phonopy(**phonopy_args)
-        json_path = os.path.join(
-            get_qpt_freqs_dir(material), json_file)
+        json_path = get_qpt_freqs_path(material, json_file)
         expected_qpt_freqs = ExpectedQpointFrequencies(json_path)
         check_qpt_freqs(qpt_freqs, expected_qpt_freqs)
 
@@ -310,8 +309,7 @@ class TestQpointFrequenciesCreation:
 
         phonopy_args['path'] = get_phonopy_path(material, subdir)
         qpt_freqs = QpointFrequencies.from_phonopy(**phonopy_args)
-        json_path = os.path.join(
-            get_qpt_freqs_dir(material), json_file)
+        json_path = get_qpt_freqs_path(material, json_file)
         expected_qpt_freqs = ExpectedQpointFrequencies(json_path)
         check_qpt_freqs(qpt_freqs, expected_qpt_freqs)
 
@@ -444,8 +442,13 @@ class TestQpointFrequenciesCalculateDos:
              'lzo_222_full_mode_widths.json',
              'lzo_222_full_adaptive_dos_fast.json',
              np.arange(0, 100, 0.1)*ureg('meV'),
-             {'adaptive_method':'fast'})
-            ])
+             {'adaptive_method':'fast'}),
+            ('quartz', 'toy_quartz_qpoint_frequencies.json',
+             'toy_quartz_mode_widths.json',
+             'toy_quartz_uneven_adaptive_dos.json',
+             np.concatenate((np.arange(0, 15, 0.1),
+                             np.arange(15, 40, 0.2)))*ureg('meV'),
+             {'adaptive_method':'reference'})])
     def test_calculate_dos_with_mode_widths(
             self, material, qpt_freqs_json, mode_widths_json,
             expected_dos_json, ebins, kwargs):
@@ -517,6 +520,10 @@ class TestQpointFrequenciesCalculateDosMap:
             ('quartz', 'quartz_bandstructure_cv_only_qpoint_frequencies.json',
              np.arange(0, 155, 0.6)*ureg('meV'),
              'quartz_bandstructure_dos_map.json'),
+            ('quartz', 'quartz_bandstructure_cv_only_qpoint_frequencies.json',
+             np.concatenate((np.arange(0, 100, 0.3),
+                             np.arange(100, 155, 0.6)))*ureg('meV'),
+             'quartz_bandstructure_dos_map_uneven_bins.json'),
             ('NaCl', 'NaCl_band_yaml_from_phonopy_qpoint_frequencies.json',
              np.arange(0, 300, 5)*ureg('1/cm'),
              'NaCl_band_yaml_dos_map.json')

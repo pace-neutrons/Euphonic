@@ -4,7 +4,7 @@ try:
     import matplotlib.pyplot
 except ModuleNotFoundError:
     pass
-from typing import Dict, List, Union
+from typing import Dict, List, Union, Tuple
 from ..utils import get_data_path
 
 
@@ -20,17 +20,14 @@ def args_to_key(cl_args: str) -> str:
     return key
 
 
-def get_script_test_data_path() -> str:
+def get_script_test_data_path(*subpaths: Tuple[str]) -> str:
     """
     Returns
     -------
     str
         The data folder for scripts testing data
     """
-    folder = os.path.join(get_data_path(), "script_data")
-    if not os.path.exists(folder):
-        os.mkdir(folder)
-    return folder
+    return get_data_path('script_data', *subpaths)
 
 
 def get_current_plot_line_data() -> Dict[str, Union[str,

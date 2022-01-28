@@ -13,9 +13,9 @@ from euphonic.force_constants import ImportCError
 from tests_and_analysis.test.utils import (get_data_path, get_phonopy_path,
     get_castep_path, get_test_qpts, sum_at_degenerate_modes)
 from tests_and_analysis.test.euphonic_test.test_qpoint_phonon_modes import (
-    ExpectedQpointPhononModes, check_qpt_ph_modes, get_qpt_ph_modes_dir)
+    ExpectedQpointPhononModes, check_qpt_ph_modes, get_qpt_ph_modes_path)
 from tests_and_analysis.test.euphonic_test.test_force_constants import (
-    get_fc, get_fc_dir)
+    get_fc, get_fc_path)
 
 
 class TestForceConstantsCalculateQPointPhononModes:
@@ -92,8 +92,7 @@ class TestForceConstantsCalculateQPointPhononModes:
         qpoint_phonon_modes = fc.calculate_qpoint_phonon_modes(
             args[0], **func_kwargs)
         expected_qpoint_phonon_modes = ExpectedQpointPhononModes(
-            os.path.join(get_qpt_ph_modes_dir(material),
-                         expected_file))
+            get_qpt_ph_modes_path(material, expected_file))
         # Only give gamma-acoustic modes special treatment if the acoustic
         # sum rule has been applied
         tol_kwargs = {}
@@ -124,12 +123,12 @@ class TestForceConstantsCalculateQPointPhononModes:
     @pytest.mark.phonopy_reader
     @pytest.mark.parametrize(
         'fc_kwargs, material, all_args, expected_qpoint_phonon_modes_file', [
-        ({'path': get_phonopy_path('NaCl', ''),
+        ({'path': get_phonopy_path('NaCl'),
           'summary_name': 'phonopy_nacl.yaml'},
          'NaCl',
          [get_test_qpts(), {'asr': 'reciprocal'}],
          'NaCl_reciprocal_qpoint_phonon_modes.json'),
-        ({'path': get_phonopy_path('CaHgO2', ''),
+        ({'path': get_phonopy_path('CaHgO2'),
           'summary_name': 'mp-7041-20180417.yaml'},
          'CaHgO2',
          [get_test_qpts(), {'asr': 'reciprocal'}],
@@ -174,13 +173,12 @@ class TestForceConstantsCalculateQPointPhononModes:
             func_kwargs['n_threads'] = n_threads
         qpoint_phonon_modes, modg = fc.calculate_qpoint_phonon_modes(
             all_args[0], **func_kwargs)
-        with open(os.path.join(get_fc_dir(), expected_modg_file), 'r') as fp:
+        with open(get_fc_path(expected_modg_file), 'r') as fp:
             modg_dict = json.load(fp)
         expected_modg = modg_dict['mode_gradients']*ureg(
                 modg_dict['mode_gradients_unit'])
         expected_qpoint_phonon_modes = ExpectedQpointPhononModes(
-            os.path.join(get_qpt_ph_modes_dir(material),
-            expected_qpoint_phonon_modes_file))
+            get_qpt_ph_modes_path(material, expected_qpoint_phonon_modes_file))
         check_qpt_ph_modes(qpoint_phonon_modes,
                            expected_qpoint_phonon_modes)
         assert modg.units == expected_modg.units
@@ -224,13 +222,12 @@ class TestForceConstantsCalculateQPointPhononModes:
             func_kwargs['n_threads'] = n_threads
         qpoint_phonon_modes, modw = fc.calculate_qpoint_phonon_modes(
             all_args[0], **func_kwargs)
-        with open(os.path.join(get_fc_dir(), expected_modw_file), 'r') as fp:
+        with open(get_fc_path(expected_modw_file), 'r') as fp:
             modw_dict = json.load(fp)
         expected_modw = modw_dict['mode_widths']*ureg(
                 modw_dict['mode_widths_unit'])
         expected_qpoint_phonon_modes = ExpectedQpointPhononModes(
-            os.path.join(get_qpt_ph_modes_dir(material),
-            expected_qpoint_phonon_modes_file))
+            get_qpt_ph_modes_path(material, expected_qpoint_phonon_modes_file))
         check_qpt_ph_modes(qpoint_phonon_modes,
                            expected_qpoint_phonon_modes)
         assert modw.units == expected_modw.units
@@ -270,7 +267,7 @@ class TestForceConstantsCalculateQPointPhononModes:
                 return freqs, evecs, mocked_grads
         mocker.patch('euphonic.ForceConstants', MockFC)
         fc = euphonic.ForceConstants.from_json_file(
-            os.path.join(get_fc_dir(), 'quartz_force_constants.json'))
+            get_fc_path('quartz_force_constants.json'))
         with pytest.warns(UserWarning):
             fc.calculate_qpoint_phonon_modes(get_test_qpts(), use_c=False,
                                              return_mode_gradients=True)
@@ -295,8 +292,7 @@ class TestForceConstantsCalculateQPointPhononModes:
         qpoint_phonon_modes = fc.calculate_qpoint_phonon_modes(
             qpt, **kwargs)
         expected_qpoint_phonon_modes = ExpectedQpointPhononModes(
-            os.path.join(get_qpt_ph_modes_dir(material),
-                         expected_qpt_ph_modes_file))
+            get_qpt_ph_modes_path(material, expected_qpt_ph_modes_file))
         check_qpt_ph_modes(qpoint_phonon_modes,
                            expected_qpoint_phonon_modes,
                            frequencies_atol=1e-4,
@@ -334,7 +330,7 @@ class TestForceConstantsCalculateQPointPhononModes:
     def test_calc_qpt_ph_mds_asr_with_nonsense_fc_raises_warning(
             self, asr):
         fc = ForceConstants.from_json_file(
-            os.path.join(get_fc_dir(), 'quartz_random_force_constants.json'))
+            get_fc_path('quartz_random_force_constants.json'))
         with pytest.warns(UserWarning):
             fc.calculate_qpoint_phonon_modes(get_test_qpts(), asr=asr)
 

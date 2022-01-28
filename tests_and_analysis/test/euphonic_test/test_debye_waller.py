@@ -55,20 +55,16 @@ class ExpectedDebyeWaller:
         return crystal, debye_waller, temperature
 
 
-def get_dw_dir(material):
-    return os.path.join(get_data_path(), 'debye_waller', material)
-
-
-def get_json_file(material, json_file):
-    return os.path.join(get_dw_dir(material), json_file)
+def get_dw_path(*subpaths):
+    return get_data_path('debye_waller', *subpaths)
 
 
 def get_dw(material, json_file):
-    return DebyeWaller.from_json_file(get_json_file(material, json_file))
+    return DebyeWaller.from_json_file(get_dw_path(material, json_file))
 
 
 def get_expected_dw(material, json_file):
-    return ExpectedDebyeWaller(get_json_file(material, json_file))
+    return ExpectedDebyeWaller(get_dw_path(material, json_file))
 
 
 def check_debye_waller(

@@ -104,20 +104,16 @@ class ExpectedStructureFactor:
         return (crystal, qpts, frequencies, structure_factors), kwargs
 
 
-def get_sf_dir(material):
-    return os.path.join(get_data_path(), 'structure_factor', material)
-
-
-def get_json_file(material, json_file):
-    return os.path.join(get_sf_dir(material), json_file)
+def get_sf_path(*subpaths):
+    return get_data_path('structure_factor', *subpaths)
 
 
 def get_sf(material, json_file):
-    return StructureFactor.from_json_file(get_json_file(material, json_file))
+    return StructureFactor.from_json_file(get_sf_path(material, json_file))
 
 
 def get_expected_sf(material, json_file):
-    return ExpectedStructureFactor(get_json_file(material, json_file))
+    return ExpectedStructureFactor(get_sf_path(material, json_file))
 
 
 def check_structure_factor(
@@ -448,9 +444,8 @@ class TestStructureFactorCalculate1dAverage:
             ('quartz', 'quartz_666_300K_structure_factor_noweights.json',
              'quartz_666_300K_sf_1d_average_with_weights.json',
              np.arange(0,156)*ureg('meV'),
-             {'weights': np.load(os.path.join(
-                 get_sf_dir('quartz'),
-                 'quartz_666_weights.npy'))}),
+             {'weights': np.load(
+                 get_sf_path('quartz', 'quartz_666_weights.npy'))}),
             ('quartz', 'quartz_666_300K_structure_factor_noweights.json',
              'quartz_666_300K_sf_1d_average_noweights.json',
              np.arange(0,1250,8)*ureg('1/cm'), {})])

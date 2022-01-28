@@ -80,20 +80,16 @@ class ExpectedSpectrum2D:
         return (x_data, y_data, z_data), kwargs
 
 
-def get_spectrum2d_dir():
-    return os.path.join(get_data_path(), 'spectrum2d')
-
-
-def get_json_file(json_filename):
-    return os.path.join(get_spectrum2d_dir(), json_filename)
+def get_spectrum2d_path(*subpaths):
+    return get_data_path('spectrum2d', *subpaths)
 
 
 def get_spectrum2d(json_filename):
-    return Spectrum2D.from_json_file(get_json_file(json_filename))
+    return Spectrum2D.from_json_file(get_spectrum2d_path(json_filename))
 
 
 def get_expected_spectrum2d(json_filename):
-    return ExpectedSpectrum2D(get_json_file(json_filename))
+    return ExpectedSpectrum2D(get_spectrum2d_path(json_filename))
 
 
 def check_spectrum2d(actual_spectrum2d, expected_spectrum2d):
@@ -155,7 +151,7 @@ class TestSpectrum2DCreation:
         json_file = request.param
         expected_spec2d = get_expected_spectrum2d(json_file)
         spec2d = Spectrum2D.from_json_file(
-            get_json_file(json_file))
+            get_spectrum2d_path(json_file))
         return spec2d, expected_spec2d
 
     @pytest.fixture(params=[
@@ -312,17 +308,18 @@ class TestSpectrum2DMethods:
 
     @pytest.mark.parametrize(
         'args, spectrum2d_file, broadened_spectrum2d_file', [
-            (({'x_width': 0.1*ureg('1/angstrom')}),
+            (({'x_width': 0.1*ureg('1/angstrom'), 'method': 'convolve'}),
              'quartz_bandstructure_sqw.json',
              'quartz_bandstructure_0.1ang_xbroaden_sqw.json'),
             (({'y_width': 2*ureg('meV')}),
              'quartz_bandstructure_sqw.json',
              'quartz_bandstructure_2meV_ybroaden_sqw.json'),
-            (({'x_width': 0.1*ureg('1/angstrom'), 'y_width': 2*ureg('meV')}),
+            (({'x_width': 0.1*ureg('1/angstrom'), 'y_width': 2*ureg('meV'),
+               'method': 'convolve'}),
              'quartz_bandstructure_sqw.json',
              'quartz_bandstructure_2meV_0.1ang_xybroaden_sqw.json'),
             (({'x_width': 0.1*ureg('1/angstrom'), 'y_width': 2*ureg('meV'),
-               'shape': 'lorentz'}),
+                'shape': 'lorentz', 'method': 'convolve'}),
              'quartz_bandstructure_sqw.json',
              'quartz_bandstructure_xybroaden_lorentz_sqw.json'),
             (({'x_width': 0.2*ureg('1/angstrom'), 'y_width': 1.5*ureg('meV'),
@@ -342,7 +339,31 @@ class TestSpectrum2DMethods:
     def test_broaden_invalid_shape_raises_value_error(self):
         spec2d = get_spectrum2d('quartz_bandstructure_sqw.json')
         with pytest.raises(ValueError):
-            spec2d.broaden(y_width=1*ureg('meV'), shape='unknown')
+            spec2d.broaden(x_width=1*ureg('meV'), shape='unknown')
+
+    def test_broaden_uneven_bins_deprecation_warns(self):
+        # In a future version this should raise a ValueError
+        spec2d = get_spectrum2d('La2Zr2O7_cut_sqw_uneven_bins.json')
+        with pytest.warns(DeprecationWarning):
+            spec2d.broaden(y_width=1*ureg('meV'))
+
+    @pytest.mark.parametrize('unequal_bin_json, unequal_axes', [
+        ('La2Zr2O7_cut_sqw_uneven_bins.json', ['y_data']),
+        ('quartz_bandstructure_dos_map.json', ['x_data']),
+        ('quartz_bandstructure_dos_map_uneven_bins.json', ['x_data', 'y_data'])
+        ])
+    def test_broaden_uneven_bins_and_explicit_convolve_warns(
+            self, unequal_bin_json, unequal_axes):
+        spec2d = get_spectrum2d(unequal_bin_json)
+        with pytest.warns(UserWarning) as record:
+            spec2d.broaden(x_width=1*ureg('1/angstrom'),
+                           y_width=1*ureg('meV'),
+                           method='convolve')
+        # Check warning message includes information about which axis is
+        # uneven
+        for unequal_ax in unequal_axes:
+            assert unequal_ax in record[-1].message.args[0]
+
 
     @pytest.mark.parametrize(
         'spectrum2d_file, ax, expected_bin_edges', [
