@@ -453,7 +453,7 @@ class TestQpointFrequenciesCalculateDos:
             self, material, qpt_freqs_json, mode_widths_json,
             expected_dos_json, ebins, kwargs):
         qpt_freqs = get_qpt_freqs(material, qpt_freqs_json)
-        mode_widths = get_mode_widths(get_fc_dir(), mode_widths_json)
+        mode_widths = get_mode_widths(get_fc_path(mode_widths_json))
         dos = qpt_freqs.calculate_dos(
             ebins, mode_widths=mode_widths, **kwargs)
         expected_dos = get_expected_spectrum1d(expected_dos_json)
@@ -467,7 +467,7 @@ class TestQpointFrequenciesCalculateDos:
     def test_calculate_dos_similar_for_ref_and_fast_methods(
             self, material, qpt_freqs_json, mode_widths_json, ebins):
         qpt_freqs = get_qpt_freqs(material, qpt_freqs_json)
-        mode_widths = get_mode_widths(get_fc_dir(), mode_widths_json)
+        mode_widths = get_mode_widths(get_fc_path(mode_widths_json))
         fast_adaptive_dos = qpt_freqs.calculate_dos(
             ebins, mode_widths=mode_widths, adaptive_method='fast')
         ref_adaptive_dos = qpt_freqs.calculate_dos(ebins,
@@ -490,7 +490,7 @@ class TestQpointFrequenciesCalculateDos:
             self, material, qpt_freqs_json, mode_widths_json,
             mode_widths_min, ebins):
         qpt_freqs = get_qpt_freqs(material, qpt_freqs_json)
-        mode_widths = get_mode_widths(get_fc_dir(), mode_widths_json)
+        mode_widths = get_mode_widths(get_fc_path(mode_widths_json))
         dos = qpt_freqs.calculate_dos(ebins, mode_widths=mode_widths,
                                       mode_widths_min=mode_widths_min)
         mode_widths = np.maximum(

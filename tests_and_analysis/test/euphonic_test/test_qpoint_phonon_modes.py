@@ -551,7 +551,7 @@ class TestQpointPhononModesCalculateDos:
             self, material, qpt_ph_modes_json, mode_widths_json,
             expected_dos_json, ebins, kwargs):
         qpt_ph_modes = get_qpt_ph_modes_from_json(material, qpt_ph_modes_json)
-        mode_widths = get_mode_widths(get_fc_dir(), mode_widths_json)
+        mode_widths = get_mode_widths(get_fc_path(mode_widths_json))
         dos = qpt_ph_modes.calculate_dos(
             ebins, mode_widths=mode_widths, **kwargs)
         expected_dos = get_expected_spectrum1d(expected_dos_json)
@@ -565,7 +565,7 @@ class TestQpointPhononModesCalculateDos:
     def test_calculate_dos_similar_for_ref_and_fast_methods(
             self, material, qpt_ph_modes_json, mode_widths_json, ebins):
         qpt_ph_modes = get_qpt_ph_modes_from_json(material, qpt_ph_modes_json)
-        mode_widths = get_mode_widths(get_fc_dir(), mode_widths_json)
+        mode_widths = get_mode_widths(get_fc_path(mode_widths_json))
         ref_adaptive_dos = qpt_ph_modes.calculate_dos(
             ebins, mode_widths=mode_widths, adaptive_method='reference')
         fast_adaptive_dos = qpt_ph_modes.calculate_dos(
@@ -584,7 +584,7 @@ class TestQpointPhononModesCalculateDos:
             self, material, qpt_ph_modes_json, mode_widths_json,
             mode_widths_min, ebins):
         qpt_ph_modes = get_qpt_ph_modes_from_json(material, qpt_ph_modes_json)
-        mode_widths = get_mode_widths(get_fc_dir(), mode_widths_json)
+        mode_widths = get_mode_widths(get_fc_path(mode_widths_json))
         dos = qpt_ph_modes.calculate_dos(ebins, mode_widths=mode_widths,
                                       mode_widths_min=mode_widths_min)
         mode_widths = np.maximum(
@@ -649,7 +649,7 @@ class TestQpointPhononModesCalculatePdos:
             self, material, qpt_ph_modes_json, mode_widths_json,
             expected_pdos_json, ebins, kwargs):
         qpt_ph_modes = get_qpt_ph_modes_from_json(material, qpt_ph_modes_json)
-        mode_widths = get_mode_widths(get_fc_dir(), mode_widths_json)
+        mode_widths = get_mode_widths(get_fc_path(mode_widths_json))
         pdos = qpt_ph_modes.calculate_pdos(
             ebins, mode_widths=mode_widths,
             weighting='coherent', **kwargs)
@@ -687,7 +687,7 @@ class TestQpointPhononModesCalculatePdos:
             self, material, qpt_ph_modes_json, mode_widths_json,
             expected_dos_json, ebins, kwargs):
         qpt_ph_modes = get_qpt_ph_modes_from_json(material, qpt_ph_modes_json)
-        mode_widths = get_mode_widths(get_fc_dir(), mode_widths_json)
+        mode_widths = get_mode_widths(get_fc_path(mode_widths_json))
         summed_pdos = qpt_ph_modes.calculate_pdos(
             ebins, mode_widths=mode_widths, **kwargs).sum()
         expected_total_dos = get_expected_spectrum1d(expected_dos_json)

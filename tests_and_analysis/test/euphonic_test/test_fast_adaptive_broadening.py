@@ -6,7 +6,7 @@ from scipy.stats import norm
 from euphonic.fast_adaptive_broadening import find_coeffs, gaussian
 from euphonic import ureg, Spectrum1D
 from tests_and_analysis.test.euphonic_test.test_force_constants\
-    import get_fc_dir
+    import get_fc_path
 from tests_and_analysis.test.euphonic_test.test_qpoint_frequencies\
     import get_qpt_freqs
 from tests_and_analysis.test.utils import get_mode_widths
@@ -27,7 +27,7 @@ def test_area_unchanged_for_broadened_dos(material, qpt_freqs_json,
     and broadened dos
     """
     qpt_freqs = get_qpt_freqs(material, qpt_freqs_json)
-    mode_widths = get_mode_widths(get_fc_dir(), mode_widths_json)
+    mode_widths = get_mode_widths(get_fc_path(mode_widths_json))
     dos = qpt_freqs._calculate_dos(ebins)
     adaptively_broadened_dos = qpt_freqs._calculate_dos(
         ebins, mode_widths=mode_widths, adaptive_method='fast')
