@@ -6,8 +6,8 @@ import matplotlib.style
 import numpy as np
 
 from euphonic import ureg, ForceConstants
-from euphonic.cli.utils import (_calc_modes_kwargs, _compose_style,
-                                _get_cli_parser,
+from euphonic.cli.utils import (_calc_modes_kwargs, _brille_calc_modes_kwargs,
+                                _compose_style, _get_cli_parser,
                                 _get_debye_waller, _get_energy_bins,
                                 _get_q_distance, _get_pdos_weighting,
                                 _arrange_pdos_groups, _plot_label_kwargs)
@@ -34,7 +34,8 @@ def get_parser() -> ArgumentParser:
 
     parser, sections = _get_cli_parser(
         features={'read-fc', 'pdos-weighting', 'ins-weighting',
-                  'powder', 'plotting', 'ebins', 'q-e', 'map'})
+                  'powder', 'plotting', 'ebins', 'q-e', 'map',
+                  'brille'})
 
     sections['q'].description = (
         '"GRID" options relate to Monkhorst-Pack sampling for the '
@@ -70,8 +71,16 @@ def main(params: Optional[List[str]] = None) -> None:
     if args.pdos is not None and args.weighting == 'coherent':
         raise ValueError('"--pdos" is only compatible with '
                          '"--weighting" options that include dos')
-    print("Setting up dimensions...")
 
+    if args.use_brille:
+        from euphonic.brille import BrilleInterpolator
+        fc = BrilleInterpolator.from_force_constants(
+            fc, grid_type=args.brille_grid_type,
+            n_grid_points=args.brille_n_qpts,
+            interpolation_kwargs=calc_modes_kwargs)
+        calc_modes_kwargs = _brille_calc_modes_kwargs(args)
+
+    print("Setting up dimensions...")
     q_min = _get_q_distance(args.length_unit, args.q_min)
     q_max = _get_q_distance(args.length_unit, args.q_max)
     recip_length_unit = q_min.units
