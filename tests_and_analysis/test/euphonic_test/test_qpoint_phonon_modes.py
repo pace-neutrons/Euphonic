@@ -654,7 +654,7 @@ class TestQpointPhononModesCalculatePdos:
             ebins, mode_widths=mode_widths,
             weighting='coherent', **kwargs)
         expected_pdos = get_expected_spectrum1dcollection(expected_pdos_json)
-        check_spectrum1dcollection(pdos, expected_pdos)
+        check_spectrum1dcollection(pdos, expected_pdos, 1e-13)
 
     @pytest.mark.parametrize(
         'material, qpt_ph_modes_file, expected_dos_json, ebins', [

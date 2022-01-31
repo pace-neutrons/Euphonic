@@ -88,19 +88,22 @@ def get_expected_spectrum1dcollection(json_filename):
     return ExpectedSpectrum1DCollection(get_spectrum_path(json_filename))
 
 
-def check_spectrum1dcollection(actual_spectrum, expected_spectrum):
+def check_spectrum1dcollection(actual_spectrum, expected_spectrum, tol=None):
+
+    if not tol:
+        tol = np.finfo(np.float64).eps
 
     assert (actual_spectrum.x_data.units
             == expected_spectrum.x_data.units)
     assert_allclose(actual_spectrum.x_data.magnitude,
                     expected_spectrum.x_data.magnitude,
-                    atol=np.finfo(np.float64).eps)
+                    atol=tol)
 
     assert (actual_spectrum.y_data.units
             == expected_spectrum.y_data.units)
     assert_allclose(actual_spectrum.y_data.magnitude,
                     expected_spectrum.y_data.magnitude,
-                    atol=np.finfo(np.float64).eps)
+                    atol=tol)
 
     if expected_spectrum.x_tick_labels is None:
         assert actual_spectrum.x_tick_labels is None

@@ -1,36 +1,29 @@
 """
-Functions for fast adaptive broadening of density of states spectra
+Functions for fast adaptive broadening spectra
 """
 from scipy.optimize import nnls
 from scipy.signal import convolve
 import numpy as np
 
-def fast_broaden(dos_bins_hartree: np.ndarray,
-                 freqs: np.ndarray,
-                 mode_widths_hartree: np.ndarray,
-                 weights: np.ndarray,
-                 mode_weights: np.ndarray,
-                 adaptive_error: float) -> np.ndarray:
+def _fast_broaden(bins: np.ndarray,
+                  x: np.ndarray,
+                  widths: np.ndarray,
+                  weights: np.ndarray,
+                  adaptive_error: float) -> np.ndarray:
     """
-    Uses a fast, approximate method to adaptively broaden a density
-    of states spectrum
+    Uses a fast, approximate method to adaptively broaden a spectrum
 
     Parameters
     ----------
-    dos_bins_hartree
-        Shape (n_e_bins + 1,) float ndarray in hartree units. The energy bin
-        edges to use for calculating the DOS
-    freqs
-        Shape (n_qpts, n_modes) float ndarray. Frequencies per q-point
-        and mode.
-    mode_widths_hartree
-        Shape (n_qpts, n_modes) float ndarray in hartree units. The broadening
-        width for each mode at each q-point
+    bins
+        Float ndarray. The energy bin
+        edges to use for calculating the spectrum
+    x
+        Float ndarray containing broadening samples
+    widths
+        Float ndarray. The broadening width for each peak
     weights
-        Shape (n_qpts,) float ndarray. The weight for each q-point.
-    mode_weights
-        Shape (n_qpts, n_modes) float ndarray. The weight of each mode at
-        each q-point.
+        Float ndarray. The weight for each peak.
     adaptive_error
         Scalar float. Acceptable error for gaussian approximations, defined
         as the absolute difference between the areas of the true and
@@ -38,74 +31,75 @@ def fast_broaden(dos_bins_hartree: np.ndarray,
 
     Returns
     -------
-    dos
-        Float ndarray of shape (dos_bins - 1,) containing density of states
+    spectrum
+        Float ndarray of shape (dos_bins - 1,) containing broadened spectrum
         ydata
     """
-    freqs = np.ravel(freqs)
-    mode_widths = np.ravel(mode_widths_hartree)
-    combined_weights = np.ravel(mode_weights * weights[:, np.newaxis])
+    x = np.ravel(x)
+    widths = np.ravel(widths)
+    weights = np.ravel(weights)
 
     # determine spacing value for mode_width samples given desired error level
     # coefficients determined from a polynomial fit to plot of
     # error vs spacing value
     spacing = np.polyval([ 612.7, -122.7, 15.40, 1.0831], adaptive_error)
 
-    bin_width = dos_bins_hartree[1]-dos_bins_hartree[0]
+    # bins must be regularly spaced
+    bin_width = bins[1]-bins[0]
 
     n_kernels = int(
-        np.ceil(np.log(max(mode_widths)/min(mode_widths))/np.log(spacing)))
-    mode_width_samples = spacing**np.arange(n_kernels+1)*min(mode_widths)
+        np.ceil(np.log(max(widths)/min(widths))/np.log(spacing)))
+    width_samples = spacing**np.arange(n_kernels+1)*min(widths)
     # Determine frequency range for gaussian kernel, the choice of
     # 3*max(sigma) is arbitrary but tuned for acceptable error/peformance
-    freq_range = 3*max(mode_widths)
-    kernel_npts_oneside = np.ceil(freq_range/bin_width)
+    x_range = 3*max(widths)
+    kernel_npts_oneside = np.ceil(x_range/bin_width)
     kernels = gaussian(np.arange(-kernel_npts_oneside,
                                  kernel_npts_oneside+1, 1)*bin_width,
-                       mode_width_samples[:, np.newaxis])*bin_width
-    kernels_idx = np.searchsorted(mode_width_samples, mode_widths)
+                       width_samples[:, np.newaxis])*bin_width
+    kernels_idx = np.searchsorted(width_samples, widths)
 
     lower_coeffs = find_coeffs(spacing)
-    dos = np.zeros(len(dos_bins_hartree)-1)
+    spectrum = np.zeros(len(bins)-1)
 
     # start loop over kernels from 1 as points with insert-position 0
     # lie outside of bin range but first include points
     # where mode_widths = min(mode_width_samples)
-    masked_block = (mode_widths == min(mode_width_samples))
-    sigma_factors = mode_widths[masked_block]/mode_width_samples[0]
-    lower_weights = (np.polyval(lower_coeffs, sigma_factors))*combined_weights[masked_block]
-    hist, _ = np.histogram(freqs[masked_block], bins=dos_bins_hartree,
+    masked_block = (widths == min(width_samples))
+    width_factors = widths[masked_block]/width_samples[0]
+    lower_weights = (np.polyval(lower_coeffs, width_factors))*weights[masked_block]
+    hist, _ = np.histogram(x[masked_block], bins=bins,
                            weights=lower_weights/bin_width)
-    dos += convolve(hist, kernels[0], mode="same", method="fft")
+    spectrum += convolve(hist, kernels[0], mode="same", method="fft")
 
-    for i in range(1, len(mode_width_samples)):
+    for i in range(1, len(width_samples)):
         masked_block = (kernels_idx == i)
-        sigma_factors = mode_widths[masked_block]/mode_width_samples[i-1]
-        lower_mix = np.polyval(lower_coeffs, sigma_factors)
-        lower_weights = lower_mix * combined_weights[masked_block]
+        width_factors = widths[masked_block]/width_samples[i-1]
+        lower_mix = np.polyval(lower_coeffs, width_factors)
+        lower_weights = lower_mix * weights[masked_block]
 
         if i == 1:
-            hist, _ = np.histogram(freqs[masked_block], bins=dos_bins_hartree,
+            hist, _ = np.histogram(x[masked_block], bins=bins,
                                    weights=lower_weights/bin_width)
         else:
             mixing_weights = np.concatenate((upper_weights_prev,
                                              lower_weights))
-            hist_freqs = np.concatenate((freqs_prev, freqs[masked_block]))
-            hist, _ = np.histogram(hist_freqs, bins=dos_bins_hartree,
+            hist_x = np.concatenate((x_prev, x[masked_block]))
+            hist, _ = np.histogram(hist_x, bins=bins,
                                    weights=mixing_weights/bin_width)
 
-        freqs_prev = freqs[masked_block]
-        upper_weights_prev = combined_weights[masked_block] - lower_weights
+        x_prev = x[masked_block]
+        upper_weights_prev = weights[masked_block] - lower_weights
 
-        dos += convolve(hist, kernels[i-1], mode="same", method="fft")
+        spectrum += convolve(hist, kernels[i-1], mode="same", method="fft")
 
-        if i == len(mode_width_samples)-1:
-            hist, _ = np.histogram(freqs[masked_block], bins=dos_bins_hartree,
+        if i == len(width_samples)-1:
+            hist, _ = np.histogram(x[masked_block], bins=bins,
                                    weights=upper_weights_prev/bin_width)
 
-            dos += convolve(hist, kernels[i], mode="same", method="fft")
+            spectrum += convolve(hist, kernels[i], mode="same", method="fft")
 
-    return dos
+    return spectrum
 
 
 def gaussian(xvals: np.ndarray,
