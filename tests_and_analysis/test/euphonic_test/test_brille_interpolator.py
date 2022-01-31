@@ -4,7 +4,7 @@ import pytest
 import numpy as np
 import spglib as spg
 
-from euphonic import Crystal, ForceConstants, ureg
+from euphonic import Crystal, ForceConstants, QpointPhononModes, ureg
 from tests_and_analysis.test.utils import get_test_qpts
 from tests_and_analysis.test.euphonic_test.test_force_constants import (
     get_fc)
@@ -12,6 +12,8 @@ from tests_and_analysis.test.euphonic_test.test_structure_factor import (
     get_sf, check_structure_factor)
 from tests_and_analysis.test.euphonic_test.test_qpoint_phonon_modes import (
     get_qpt_ph_modes_from_json, check_qpt_ph_modes)
+from tests_and_analysis.test.euphonic_test.test_qpoint_frequencies import (
+    get_qpt_freqs, check_qpt_freqs)
 from tests_and_analysis.test.euphonic_test.test_crystal import (
     get_crystal, check_crystal)
 
@@ -230,7 +232,7 @@ class TestBrilleInterpolatorCalculateQpointPhononModes:
         check_structure_factor(sf, expected_sf, freq_rtol=1e-4,
                                sf_rtol=1e-3)
 
-    def test_brille_qpoint_phonon_modes_similar_to_fc_those_from_fc(self):
+    def test_brille_qpoint_phonon_modes_similar_to_those_from_fc(self):
         fc = get_fc('graphite')
         bri = BrilleInterpolator.from_force_constants(fc, n_grid_points=5000)
         qpts = np.array([[-0.2     ,  0.55    ,  0.55    ],
@@ -249,6 +251,15 @@ class TestBrilleInterpolatorCalculateQpointPhononModes:
         check_structure_factor(sf_brille, sf_fc, freq_rtol=1e-3,
                                sf_rtol=0.01, sf_atol=0.035)
 
+    def test_calculate_qpoint_phonon_modes_single_qpt(self):
+        fc = get_fc('graphite')
+        bri = BrilleInterpolator.from_force_constants(fc, n_grid_points=10)
+        qpm = bri.calculate_qpoint_phonon_modes(np.array([[0.5, 0.5, 0.5]]))
+        assert isinstance(qpm, QpointPhononModes)
+        assert qpm.qpts.shape == (1, 3)
+        assert qpm.frequencies.shape == (1, 12)
+        assert qpm.eigenvectors.shape == (1, 12, 4, 3)
+
     @pytest.mark.parametrize(
         'grid_args, material, kwargs', [
             (('LZO', {}), 'LZO', {}),
@@ -263,7 +274,7 @@ class TestBrilleInterpolatorCalculateQpointPhononModes:
         n_atoms = crystal.n_atoms
         mock_interpolate = mocker.patch.object(
             grid, 'ir_interpolate_at',
-            return_value=(np.ones((len(qpts), 3*n_atoms)),
+            return_value=(np.ones((len(qpts), 3*n_atoms, 1)),
                           np.ones((len(qpts), 3*n_atoms, n_atoms, 3),
                                   dtype=np.complex128)))
 
@@ -273,3 +284,37 @@ class TestBrilleInterpolatorCalculateQpointPhononModes:
         else:
             default_kwargs = {'useparallel': True, 'threads': cpu_count()}
             assert mock_interpolate.call_args[1] == default_kwargs
+
+
+class TestBrilleInterpolatorCalculateQpointFrequencies:
+
+    @pytest.mark.parametrize(
+        'material, from_fc_kwargs, expected_qpf_file', [
+            ('NaCl', {'n_grid_points': 10},
+             'nacl_trellis_10_qpoint_frequencies.json'),
+            ('quartz', {'grid_type': 'mesh', 'n_grid_points': 35},
+             'quartz_mesh_35_qpoint_frequencies.json'),
+        ])
+    def test_calculate_qpoint_frequencies(
+            self, material, from_fc_kwargs, expected_qpf_file):
+        fc = get_fc(material)
+        bri = BrilleInterpolator.from_force_constants(fc, **from_fc_kwargs)
+
+        qpts = get_test_qpts()
+        qpf = bri.calculate_qpoint_frequencies(qpts)
+        expected_qpf = get_qpt_freqs(material, expected_qpf_file)
+        check_qpt_freqs(qpf, expected_qpf, frequencies_rtol=1e-4)
+
+    def test_brille_qpoint_frequencies_similar_to_those_from_fc(self):
+        fc = get_fc('graphite')
+        bri = BrilleInterpolator.from_force_constants(fc, n_grid_points=100)
+        qpts = np.array([[-0.2     ,  0.55    ,  0.55    ],
+                         [ 0.35    ,  0.07    ,  0.02    ],
+                         [ 0.00    ,  0.5    ,  0.00    ],
+                         [ 0.65    ,  0.05    ,  0.25    ],
+                         [ 1.8     ,  0.55    ,  2.55    ]])
+        qpf_brille = bri.calculate_qpoint_frequencies(qpts)
+        qpf_fc = fc.calculate_qpoint_frequencies(qpts)
+        # Tolerances are quite generous, but that is required unless
+        # we have a very dense grid (expensive to test)
+        check_qpt_freqs(qpf_brille, qpf_fc, frequencies_rtol=0.01)

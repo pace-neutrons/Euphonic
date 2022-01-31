@@ -13,7 +13,8 @@ except ModuleNotFoundError as err:
         'euphonic[brille]\n') from err
 
 from euphonic.validate import _check_constructor_inputs
-from euphonic import ureg, QpointPhononModes, ForceConstants, Crystal
+from euphonic import (ureg, QpointPhononModes, QpointFrequencies,
+                      ForceConstants, Crystal)
 
 class BrilleInterpolator:
     """
@@ -71,20 +72,53 @@ class BrilleInterpolator:
             An object containing frequencies and eigenvectors
             linearly interpolated at each q-point
         """
-        if not kwargs:
-            kwargs = {'useparallel': True, 'threads': cpu_count()}
-        vals, vecs = self._grid.ir_interpolate_at(qpts, **kwargs)
+        vals, vecs = self._br_grid_calculate_phonons(self._grid, qpts, **kwargs)
+        frequencies = vals.squeeze(axis=-1)*ureg('hartree').to('meV')
         # Eigenvectors in grid are stored in cell vectors basis,
         # convert to Cartesian
         vecs_cart = self._br_evec_to_eu(
             vecs, cell_vectors=self.crystal._cell_vectors)
-        frequencies = vals.squeeze()*ureg('hartree').to('meV')
         return QpointPhononModes(
             self.crystal, qpts, frequencies, vecs_cart)
 
+    def calculate_qpoint_frequencies(self, qpts: np.ndarray, **kwargs
+                                      ) -> QpointFrequencies:
+        """
+        Calculate phonon frequencies at specified
+        q-points via linear interpolation
+
+        Parameters
+        ----------
+        qpts
+            Shape (n_qpts, 3) float ndarray. The q-points to
+            interpolate onto in reciprocal cell vector units
+        **kwargs
+            Will be passed to the
+            brille.BZTrellis/Mesh/Nest.ir_interpolate_at
+            method. By default useparallel=True and
+            threads=multiprocessing.cpu_count() are passed
+
+        Returns
+        -------
+        qpoint_frequencies
+            An object containing frequencies linearly interpolated
+            at each q-point
+        """
+        vals, _ = self._br_grid_calculate_phonons(self._grid, qpts, **kwargs)
+        frequencies = vals.squeeze(axis=-1)*ureg('hartree').to('meV')
+        return QpointFrequencies(
+            self.crystal, qpts, frequencies)
+
+    @staticmethod
+    def _br_grid_calculate_phonons(grid, qpts, **kwargs):
+        qpts = np.ascontiguousarray(qpts)
+        if not kwargs:
+            kwargs = {'useparallel': True, 'threads': cpu_count()}
+        return grid.ir_interpolate_at(qpts, **kwargs)
+
     @staticmethod
     def _br_evec_to_eu(br_evecs, cell_vectors=None):
-        n_branches = len(br_evecs[1])
+        n_branches = br_evecs.shape[1]
         eu_evecs = br_evecs.view().reshape(-1, n_branches, n_branches//3, 3)
         if cell_vectors is not None:
             # Convert Brille evecs (stored in basis coordinates) to
