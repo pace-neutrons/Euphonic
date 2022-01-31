@@ -447,10 +447,27 @@ def _plot_label_kwargs(args: Namespace, default_xlabel: str = '',
 
 
 def _calc_modes_kwargs(args: Namespace) -> Dict[str, Any]:
-    """Collect arguments that can be passed to calculate_qpoint_phonon_modes()
+    """
+    Collect arguments that can be passed to
+    ForceConstants.calculate_qpoint_phonon_modes()
     """
     return dict(asr=args.asr, dipole_parameter=args.dipole_parameter,
                 use_c=args.use_c, n_threads=args.n_threads)
+
+def _brille_calc_modes_kwargs(args: Namespace) -> Dict[str, Any]:
+    """
+    Collect arguments that can be passed to
+    BrilleInterpolator.calculate_qpoint_phonon_modes()
+    """
+    if args.n_threads is None:
+        # Nothing specified, allow defaults
+        return dict()
+    else:
+        if args.n_threads > 1:
+            parallel = True
+        else:
+            parallel = False
+        return dict(useparallel=parallel, threads=args.n_threads)
 
 
 def _get_cli_parser(features: Collection[str] = {}
@@ -511,7 +528,9 @@ def _get_cli_parser(features: Collection[str] = {}
                      'Force constants interpolation arguments'),
                     ('property', 'Property-calculation arguments'),
                     ('plotting', 'Plotting arguments'),
-                    ('performance', 'Performance-related arguments')
+                    ('performance', 'Performance-related arguments'),
+                    ('brille', 'Brille interpolation related arguments. '
+                               'Only applicable if Brille has been installed.')
                     ]
 
     sections = {label: parser.add_argument_group(doc)
@@ -793,6 +812,24 @@ def _get_cli_parser(features: Collection[str] = {}
                   'discontinuous segments of reciprocal space onto separate '
                   'subplots. This is specified as a multiple of the median '
                   'distance between q-points.'))
+
+    if 'brille' in features:
+        sections['brille'].add_argument(
+            '--use-brille', action='store_true',
+            help=('Use a BrilleInterpolator object to calculate phonon '
+                  'frequencies and eigenvectors instead of '
+                  'ForceConstants'))
+        sections['brille'].add_argument(
+            '--brille-grid-type', default='trellis',
+            choices=('trellis', 'grid', 'nest'),
+            help=('Type of Brille grid to use, passed to the '
+                  '"grid_type" kwarg of '
+                  'BrilleInterpolator.from_force_constants'))
+        sections['brille'].add_argument(
+            '--brille-n-qpts', type=int, default=5000,
+            help=('Approximate number of q-points to generate on the '
+                  'Brille grid, is passed to the "n_grid_points" kwarg '
+                  'of BrilleInterpolator.from_force_constants'))
 
     if 'dipole-parameter-optimisation' in features:
         parser.add_argument(
