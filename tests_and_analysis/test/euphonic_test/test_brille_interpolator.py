@@ -215,8 +215,6 @@ class TestBrilleInterpolatorCalculateQpointPhononModes:
         'material, from_fc_kwargs, expected_sf_file', [
             ('LZO', {'n_grid_points': 100},
              'lzo_trellis_100_structure_factor.json'),
-            ('quartz', {'grid_type': 'nest', 'n_grid_points': 50},
-             'quartz_nest_50_structure_factor.json'),
         ])
     def test_calculate_qpoint_phonon_modes(
             self, material, from_fc_kwargs, expected_sf_file):
@@ -292,8 +290,8 @@ class TestBrilleInterpolatorCalculateQpointFrequencies:
         'material, from_fc_kwargs, expected_qpf_file', [
             ('NaCl', {'n_grid_points': 10},
              'nacl_trellis_10_qpoint_frequencies.json'),
-            ('quartz', {'grid_type': 'mesh', 'n_grid_points': 35},
-             'quartz_mesh_35_qpoint_frequencies.json'),
+            ('quartz', {'grid_type': 'mesh', 'n_grid_points': 200},
+             'quartz_mesh_200_qpoint_frequencies.json'),
         ])
     def test_calculate_qpoint_frequencies(
             self, material, from_fc_kwargs, expected_qpf_file):
@@ -303,7 +301,8 @@ class TestBrilleInterpolatorCalculateQpointFrequencies:
         qpts = get_test_qpts()
         qpf = bri.calculate_qpoint_frequencies(qpts)
         expected_qpf = get_qpt_freqs(material, expected_qpf_file)
-        check_qpt_freqs(qpf, expected_qpf, frequencies_rtol=1e-4)
+        check_qpt_freqs(qpf, expected_qpf, frequencies_rtol=0.01,
+                        frequencies_atol=0.8)
 
     def test_brille_qpoint_frequencies_similar_to_those_from_fc(self):
         fc = get_fc('graphite')
