@@ -1297,6 +1297,79 @@ class Spectrum2D(Spectrum):
                    x_tick_labels=d['x_tick_labels'],
                    metadata=d['metadata'])
 
+    def apply_kinematic_constraints(self: T,
+                                    e_i: Quantity = None,
+                                    e_f: Quantity = None,
+                                    angle_range: Tuple[float] = (0, 180.)
+                                    ) -> T:
+        """Set events to NaN which violate energy/momentum limits:
+
+        - Energy transfer greater than e_i
+        - q outside region accessible for given e_i and angle range
+
+        This requires x_data to be in wavevector units and y_data to be energy
+
+        Either e_i or e_f should be set, according to direct/instrument
+        geometry. The other values will be inferred, interpreting y_data as
+        energy transfer.
+
+        """
+
+        momentum2_to_energy = 0.5 * ureg('hbar^2 / neutron_mass').to('meV angstrom^2')
+
+        if (e_i is None) == (e_f is None):
+            raise ValueError("Only one of e_i and e_f should be set. "
+                             "(The other value will be derived from energy "
+                             "transfer).")
+
+        elif e_i is None:  # Indirect geometry: final energy is fixed,
+                           # incident energy range is unlimited
+            e_i = self.get_bin_centres(bin_ax='y') + e_f
+        elif e_f is None:  # Direct geometry: incident energy is fixed,
+                           # max energy transfer = e_i
+            e_f = e_i - self.get_bin_centres(bin_ax='y')
+
+        k2_i = (e_i / momentum2_to_energy)
+        k2_f = (e_f / momentum2_to_energy)
+        
+        cos_values = np.cos(_get_abs_angle_range(angle_range) * np.pi / 180.)
+
+        q_bounds = (k2_i + k2_f
+                    - 2 * cos_values[:, np.newaxis] * (k2_i * k2_f)**0.5
+                    )**0.5
+
+        print(q_bounds)
+
+        new_z_data = np.copy(self.z_data.magnitude)
+        mask = np.logical_or(self.get_bin_centres(bin_ax='x')[:, np.newaxis] < q_bounds[0][np.newaxis, :],
+                             self.get_bin_centres(bin_ax='x')[:, np.newaxis] > q_bounds[1][np.newaxis, :])
+
+        new_z_data[mask] = float('nan')
+        new_z_data[:, self.get_bin_centres(bin_ax='y') > e_i] = float('nan')
+
+        return type(self)(
+            np.copy(self.x_data.magnitude) * ureg(self.x_data_unit),
+            np.copy(self.y_data.magnitude) * ureg(self.y_data_unit),
+            new_z_data * ureg(self.z_data_unit),
+            copy.copy(self.x_tick_labels),
+            copy.copy(self.metadata))
+
+
+def _get_abs_angle_range(angle_range: Tuple[float]) -> Tuple[float]:
+    """Process full detector angle range to get useful range in abs values"""
+    min_angle, max_angle = sorted(angle_range)
+
+    # Actual limits depend on |2θ|, so some shuffling is necessary to get
+    # absolute values in the right order, spanning the whole range.
+    if (min_angle < 0) and (max_angle <= 0):
+        min_angle, max_angle = -max_angle, -min_angle
+    elif (min_angle < 0):
+        # e.g. if -10 < 2θ < 20, we don't want to set limits 10 < |2θ| < 20
+        # as this would omit contributions from the range -10 < 2θ < 10
+        min_angle = 0.
+
+    return np.array([min_angle, max_angle])
+
 
 def _lorentzian(x: np.ndarray, gamma: float) -> np.ndarray:
     return gamma/(2*math.pi*(np.square(x) + (gamma/2)**2))

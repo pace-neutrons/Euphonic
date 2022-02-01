@@ -52,6 +52,12 @@ def get_parser() -> ArgumentParser:
                                       help=("Don't use Matplotlib widgets to "
                                             "enable interactive setting of "
                                             "colormap intensity limits"))
+
+    parser.add_argument('--e_i', type=float, default=None)
+    parser.add_argument('--e_f', type=float, default=None)
+    parser.add_argument('--angle-range', nargs=2, type=float, default=None,
+                        dest='angle_range')
+
     return parser
 
 
@@ -86,8 +92,14 @@ def main(params: Optional[List[str]] = None) -> None:
     modes = fc.calculate_qpoint_frequencies(
         np.array([[0., 0., 0.5]]), **calc_modes_kwargs)
     modes.frequencies_unit = args.energy_unit
+
+    if args.e_i is not None and args.e_max is None:
+        emax = args.e_i
+    else:
+        emax = args.e_max
+
     energy_bins = _get_energy_bins(
-        modes, args.ebins + 1, emin=args.e_min, emax=args.e_max,
+        modes, args.ebins + 1, emin=args.e_min, emax=emax,
         headroom=1.2)  # Generous headroom as we only checked one q-point
 
     if args.weighting in ('coherent',):
@@ -156,7 +168,14 @@ def main(params: Optional[List[str]] = None) -> None:
                      if args.energy_broadening else None),
             shape=args.shape)
 
-    print(f"Plotting figure: max intensity {np.max(spectrum.z_data):~P}")
+    if args.angle_range is not None:
+        print("Applying kinematic constraints")
+        e_i = args.e_i * ureg(args.energy_unit) if (args.e_i is not None) else None
+        e_f = args.e_f * ureg(args.energy_unit) if (args.e_f is not None) else None        
+        spectrum = spectrum.apply_kinematic_constraints(e_i=e_i, e_f=e_f,
+                                                        angle_range=args.angle_range)
+
+    print(f"Plotting figure: max intensity {np.nanmax(spectrum.z_data):~P}")
     plot_label_kwargs = _plot_label_kwargs(
         args, default_xlabel=f"|q| / {q_min.units:~P}",
         default_ylabel=f"Energy / {spectrum.y_data.units:~P}")
