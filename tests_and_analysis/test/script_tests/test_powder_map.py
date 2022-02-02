@@ -80,7 +80,8 @@ class TestRegression:
         # Ensure figures are closed
         matplotlib.pyplot.close('all')
 
-    def run_powder_map_and_test_result(self, powder_map_args, omit_keys=[]):
+    def run_powder_map_and_test_result(
+            self, powder_map_args, keys_to_omit=None):
         euphonic.cli.powder_map.main(powder_map_args)
 
         matplotlib.pyplot.gcf().tight_layout()  # Force tick labels to be set
@@ -92,7 +93,7 @@ class TestRegression:
                     'weights', 'weighting')
             expected_image_data = json.load(expected_data_file)[key]
         for key, value in image_data.items():
-            if key in omit_keys:
+            if keys_to_omit is not None and key in keys_to_omit:
                 pass
             elif key == 'extent':
                 # Lower bound of y-data (energy) varies by up to ~2e-6 on
@@ -144,7 +145,7 @@ class TestRegression:
         # is used. Just check that the program runs and a plot
         # is produced, by omitting check of 'data_1'
         self.run_powder_map_and_test_result(powder_map_args,
-                                            omit_keys=['data_1'])
+                                            keys_to_omit=['data_1'])
 
     @pytest.mark.brille
     @pytest.mark.multiple_extras

@@ -4,7 +4,7 @@ import pytest
 import numpy as np
 import spglib as spg
 
-from euphonic import ForceConstants, QpointPhononModes, ureg
+from euphonic import ForceConstants, QpointPhononModes
 from tests_and_analysis.test.utils import get_test_qpts
 from tests_and_analysis.test.euphonic_test.test_force_constants import (
     get_fc)
