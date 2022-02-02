@@ -1,5 +1,5 @@
 """
-Functions for fast adaptive broadening spectra
+Functions for fast adaptive broadening of spectra
 """
 from scipy.optimize import nnls
 from scipy.signal import convolve
@@ -57,22 +57,12 @@ def _fast_broaden(bins: np.ndarray,
     kernels = gaussian(np.arange(-kernel_npts_oneside,
                                  kernel_npts_oneside+1, 1)*bin_width,
                        width_samples[:, np.newaxis])*bin_width
-    kernels_idx = np.searchsorted(width_samples, widths)
+    kernels_idx = np.searchsorted(width_samples, widths, side="right")
 
     lower_coeffs = find_coeffs(spacing)
     spectrum = np.zeros(len(bins)-1)
 
-    # start loop over kernels from 1 as points with insert-position 0
-    # lie outside of bin range but first include points
-    # where mode_widths = min(mode_width_samples)
-    masked_block = (widths == min(width_samples))
-    width_factors = widths[masked_block]/width_samples[0]
-    lower_weights = (np.polyval(lower_coeffs, width_factors))*weights[masked_block]
-    hist, _ = np.histogram(x[masked_block], bins=bins,
-                           weights=lower_weights/bin_width)
-    spectrum += convolve(hist, kernels[0], mode="same", method="fft")
-
-    for i in range(1, len(width_samples)):
+    for i in range(1, len(width_samples)+1):
         masked_block = (kernels_idx == i)
         width_factors = widths[masked_block]/width_samples[i-1]
         lower_mix = np.polyval(lower_coeffs, width_factors)
@@ -92,12 +82,6 @@ def _fast_broaden(bins: np.ndarray,
         upper_weights_prev = weights[masked_block] - lower_weights
 
         spectrum += convolve(hist, kernels[i-1], mode="same", method="fft")
-
-        if i == len(width_samples)-1:
-            hist, _ = np.histogram(x[masked_block], bins=bins,
-                                   weights=upper_weights_prev/bin_width)
-
-            spectrum += convolve(hist, kernels[i], mode="same", method="fft")
 
     return spectrum
 

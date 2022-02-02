@@ -10,6 +10,8 @@ from tests_and_analysis.test.euphonic_test.test_force_constants\
 from tests_and_analysis.test.euphonic_test.test_qpoint_frequencies\
     import get_qpt_freqs
 from tests_and_analysis.test.utils import get_mode_widths
+from tests_and_analysis.test.euphonic_test.test_spectrum1d import (
+    get_expected_spectrum1d, check_spectrum1d)
 
 
 @pytest.mark.parametrize(
@@ -37,6 +39,23 @@ def test_area_unchanged_for_broadened_dos(material, qpt_freqs_json,
     adaptively_broadened_dos_area = simps(adaptively_broadened_dos,
                                           ebins_centres)
     assert adaptively_broadened_dos_area == pytest.approx(dos_area, abs=1e-3)
+
+@pytest.mark.parametrize(
+        ('material, qpt_freqs_json, mode_widths_json,'
+         'expected_dos_json, ebins'), [
+            ('quartz', 'toy_quartz_qpoint_frequencies.json',
+             'toy_quartz_mode_widths.json',
+             'toy_quartz_adaptive_dos.json',
+             np.arange(0, 40, 0.1)*ureg('meV'))])
+def test_lower_bound_widths_broadened(material, qpt_freqs_json,
+                                      mode_widths_json,
+                                      expected_dos_json, ebins):
+    qpt_freqs = get_qpt_freqs(material, qpt_freqs_json)
+    mode_widths = get_mode_widths(get_fc_path(mode_widths_json))
+    dos = qpt_freqs.calculate_dos(ebins, mode_widths=mode_widths,
+                                   adaptive_method='fast')
+    expected_dos = get_expected_spectrum1d(expected_dos_json)  
+    check_spectrum1d(dos, expected_dos, tol=1e-13)                         
 
 def test_gaussian():
     """Test gaussian function against scipy.norm.pdf"""
