@@ -821,7 +821,7 @@ def _get_cli_parser(features: Collection[str] = {}
                   'ForceConstants'))
         sections['brille'].add_argument(
             '--brille-grid-type', default='trellis',
-            choices=('trellis', 'grid', 'nest'),
+            choices=('trellis', 'mesh', 'nest'),
             help=('Type of Brille grid to use, passed to the '
                   '"grid_type" kwarg of '
                   'BrilleInterpolator.from_force_constants'))

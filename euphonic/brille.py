@@ -72,7 +72,8 @@ class BrilleInterpolator:
             An object containing frequencies and eigenvectors
             linearly interpolated at each q-point
         """
-        vals, vecs = self._br_grid_calculate_phonons(self._grid, qpts, **kwargs)
+        vals, vecs = self._br_grid_calculate_phonons(
+            self._grid, qpts, **kwargs)
         frequencies = vals.squeeze(axis=-1)*ureg('hartree').to('meV')
         # Eigenvectors in grid are stored in cell vectors basis,
         # convert to Cartesian

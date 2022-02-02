@@ -60,6 +60,11 @@ powder_map_params_macos_segfault = [
      *quick_calc_params],
     [nacl_prim_fc_file, '--temperature=1000', '--weighting=coherent',
      *quick_calc_params]]
+powder_map_params_brille = [[graphite_fc_file, '--use-brille',
+                             '--brille-n-qpts', '10',
+                             '--brille-grid-type', 'nest',
+                             '-w', 'coherent',
+                             *quick_calc_params]]
 
 
 class TestRegression:
@@ -75,7 +80,7 @@ class TestRegression:
         # Ensure figures are closed
         matplotlib.pyplot.close('all')
 
-    def run_powder_map_and_test_result(self, powder_map_args):
+    def run_powder_map_and_test_result(self, powder_map_args, omit_keys=[]):
         euphonic.cli.powder_map.main(powder_map_args)
 
         matplotlib.pyplot.gcf().tight_layout()  # Force tick labels to be set
@@ -87,7 +92,9 @@ class TestRegression:
                     'weights', 'weighting')
             expected_image_data = json.load(expected_data_file)[key]
         for key, value in image_data.items():
-            if key == 'extent':
+            if key in omit_keys:
+                pass
+            elif key == 'extent':
                 # Lower bound of y-data (energy) varies by up to ~2e-6 on
                 # different systems when --asr is used, compared to
                 # the upper bound of 100s of meV this is effectively zero,
@@ -125,6 +132,55 @@ class TestRegression:
     def test_powder_map_plot_image_macos_segfault(
             self, inject_mocks, powder_map_args):
         self.run_powder_map_and_test_result(powder_map_args)
+
+    @pytest.mark.brille
+    @pytest.mark.multiple_extras
+    @pytest.mark.parametrize(
+        'powder_map_args', powder_map_params_brille)
+    def test_powder_map_plot_image_with_brille(
+            self, inject_mocks, powder_map_args):
+        # Different numerical results on different platforms
+        # unless a very dense, computationally expensive grid
+        # is used. Just check that the program runs and a plot
+        # is produced, by omitting check of 'data_1'
+        self.run_powder_map_and_test_result(powder_map_args,
+                                            omit_keys=['data_1'])
+
+    @pytest.mark.brille
+    @pytest.mark.multiple_extras
+    @pytest.mark.parametrize('powder_map_args, expected_kwargs', [
+        (['--use-brille', '--brille-n-qpts', '25', '--disable-c'],
+         {'n_grid_points': 25, 'grid_type': 'trellis',
+          'interpolation_kwargs': {'use_c': False}}),
+        (['--use-brille', '--brille-grid-type', 'mesh', '--use-c',
+          '--n-threads', '2'],
+          {'grid_type': 'mesh', 'interpolation_kwargs': {'use_c': True,
+                                                         'n_threads': 2}})
+    ])
+    def test_brille_interpolator_from_force_constants_kwargs_passed(
+            self, inject_mocks, mocker, powder_map_args, expected_kwargs):
+        from euphonic.brille import BrilleInterpolator
+        # Stop execution once from_fc has been called - we're only
+        # checking here that the correct arguments have been passed
+        # through
+        class MockException(Exception):
+            pass
+        mock = mocker.patch.object(BrilleInterpolator, 'from_force_constants',
+                                   side_effect=MockException())
+        try:
+            euphonic.cli.powder_map.main(
+                [graphite_fc_file] + powder_map_args + quick_calc_params)
+        except MockException:
+            pass
+        default_interp_kwargs =  {'asr': None, 'dipole_parameter': 1.0,
+                                  'n_threads': None, 'use_c': None}
+        default_kwargs = {'grid_type': 'trellis', 'n_grid_points': 5000}
+        expected_interp_kwargs = {
+            **default_interp_kwargs,
+            **expected_kwargs.pop('interpolation_kwargs', {})}
+        expected_kwargs = {**default_kwargs, **expected_kwargs}
+        expected_kwargs['interpolation_kwargs'] = expected_interp_kwargs
+        assert mock.call_args[1] == expected_kwargs
 
     @pytest.mark.phonopy_reader
     @pytest.mark.multiple_extras
@@ -180,6 +236,17 @@ class TestRegression:
         assert err.type == SystemExit
         assert err.value.code == 2
 
+    @pytest.mark.brille
+    @pytest.mark.multiple_extras
+    @pytest.mark.parametrize('powder_map_args', [
+        [nacl_prim_fc_file, '--use-brille', '--brille-grid-type', 'grid']])
+    def test_invalid_brille_grid_raises_causes_exit(self, powder_map_args):
+        # Argparse should call sys.exit on invalid choices
+        with pytest.raises(SystemExit) as err:
+            euphonic.cli.powder_map.main(powder_map_args)
+        assert err.type == SystemExit
+        assert err.value.code == 2
+
     @pytest.mark.phonopy_reader
     @pytest.mark.multiple_extras
     @pytest.mark.parametrize('powder_map_args', [
@@ -206,7 +273,6 @@ class TestRegression:
         assert err.value.code == 2
 
 
-
 @patch('matplotlib.pyplot.show')
 @pytest.mark.skip(reason='Only run if you want to regenerate the test data')
 def test_regenerate_powder_map_data(_):
@@ -218,11 +284,14 @@ def test_regenerate_powder_map_data(_):
     except FileNotFoundError:
         json_data = {}
 
-    for powder_map_param in powder_map_params:
-        # Generate current figure for us to retrieve with gcf
+    all_powder_map_params = (powder_map_params
+                             + powder_map_params_from_phonopy
+                             + powder_map_params_macos_segfault
+                             + powder_map_params_brille)
+    for powder_map_param in all_powder_map_params:
         euphonic.cli.powder_map.main(powder_map_param)
 
-        # Retrieve with gcf and write to file
+        matplotlib.pyplot.gcf().tight_layout()  # Force tick labels to be set
         image_data = get_current_plot_image_data()
         # Optionally only write certain keys
         keys_to_replace = []

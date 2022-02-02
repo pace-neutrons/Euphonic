@@ -4,14 +4,14 @@ import pytest
 import numpy as np
 import spglib as spg
 
-from euphonic import Crystal, ForceConstants, QpointPhononModes, ureg
+from euphonic import ForceConstants, QpointPhononModes, ureg
 from tests_and_analysis.test.utils import get_test_qpts
 from tests_and_analysis.test.euphonic_test.test_force_constants import (
     get_fc)
 from tests_and_analysis.test.euphonic_test.test_structure_factor import (
     get_sf, check_structure_factor)
 from tests_and_analysis.test.euphonic_test.test_qpoint_phonon_modes import (
-    get_qpt_ph_modes_from_json, check_qpt_ph_modes)
+    get_qpt_ph_modes_from_json)
 from tests_and_analysis.test.euphonic_test.test_qpoint_frequencies import (
     get_qpt_freqs, check_qpt_freqs)
 from tests_and_analysis.test.euphonic_test.test_crystal import (
@@ -31,7 +31,6 @@ except ModuleNotFoundError:
 def get_grid(material, grid_type='trellis', fill=True):
     fc = get_fc(material)
     crystal = fc.crystal
-    cell_vectors = crystal._cell_vectors
     cell = crystal.to_spglib_cell()
 
     dataset = spg.get_symmetry_dataset(cell)
