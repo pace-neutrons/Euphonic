@@ -79,6 +79,8 @@ def main(params: Optional[List[str]] = None) -> None:
     plot_label_kwargs = _plot_label_kwargs(
         args, default_xlabel=f"Energy / {dos.x_data.units:~P}")
 
+    if args.save_json:
+        dos.to_json_file(args.save_json)
     style = _compose_style(user_args=args, base=[base_style])
     with matplotlib.style.context(style):
         _ = plot_1d(dos, ymin=0, **plot_label_kwargs)

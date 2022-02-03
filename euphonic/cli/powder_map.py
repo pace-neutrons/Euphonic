@@ -161,6 +161,8 @@ def main(params: Optional[List[str]] = None) -> None:
         args, default_xlabel=f"|q| / {q_min.units:~P}",
         default_ylabel=f"Energy / {spectrum.y_data.units:~P}")
 
+    if args.save_json:
+        spectrum.to_json_file(args.save_json)
     if args.disable_widgets:
         base = [base_style]
     else:
@@ -205,6 +207,5 @@ def main(params: Optional[List[str]] = None) -> None:
                 fig.canvas.draw()
             minbox.on_submit(update_min)
             maxbox.on_submit(update_max)
-        if args.save_json:
-            spectrum.to_json_file(args.save_json)
+
         matplotlib_save_or_show(save_filename=args.save_to)

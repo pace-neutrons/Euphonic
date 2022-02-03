@@ -52,6 +52,8 @@ def main(params: Optional[List[str]] = None) -> None:
     style = _compose_style(user_args=args,
                            base=[base_style])
 
+    if args.save_json:
+        spectrum.to_json_file(args.save_json)
     with matplotlib.style.context(style):
         _ = plot_1d(spectra,
                     ymin=args.e_min,

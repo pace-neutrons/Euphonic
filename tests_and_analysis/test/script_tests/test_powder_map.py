@@ -8,6 +8,7 @@ import numpy.testing as npt
 from packaging import version
 from scipy import __version__ as scipy_ver
 
+from euphonic import Spectrum2D
 from tests_and_analysis.test.utils import get_data_path, get_castep_path, get_phonopy_path
 from tests_and_analysis.test.script_tests.utils import (
     get_script_test_data_path, get_current_plot_image_data, args_to_key)
@@ -132,6 +133,15 @@ class TestRegression:
         euphonic.cli.powder_map.main(powder_map_args + [output_file]
                                      + quick_calc_params)
         assert os.path.exists(output_file)
+
+    @pytest.mark.parametrize('powder_map_args', [
+        [graphite_fc_file, '--save-json']])
+    def test_plot_save_to_json(self, inject_mocks, tmpdir, powder_map_args):
+        output_file = str(tmpdir.join('test.json'))
+        euphonic.cli.powder_map.main(powder_map_args + [output_file]
+                                     + quick_calc_params)
+        spec = Spectrum2D.from_json_file(output_file)
+        assert isinstance(spec, Spectrum2D)
 
     @pytest.mark.parametrize('powder_map_args', [
         [os.path.join(get_data_path(), 'util', 'qgrid_444.txt')]])

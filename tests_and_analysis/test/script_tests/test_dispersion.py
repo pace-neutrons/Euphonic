@@ -9,6 +9,7 @@ import numpy.testing as npt
 from packaging import version
 from scipy import __version__ as scipy_ver
 
+from euphonic import Spectrum1DCollection
 from tests_and_analysis.test.utils import (
     get_data_path, get_castep_path, get_phonopy_path)
 from tests_and_analysis.test.script_tests.utils import (
@@ -125,6 +126,14 @@ class TestRegression:
         output_file = str(tmpdir.join('test.png'))
         euphonic.cli.dispersion.main(dispersion_args + [output_file])
         assert os.path.exists(output_file)
+
+    @pytest.mark.parametrize('dispersion_args', [
+        [quartz_json_file, '--save-json']])
+    def test_plot_save_to_json(self, inject_mocks, tmpdir, dispersion_args):
+        output_file = str(tmpdir.join('test.json'))
+        euphonic.cli.dispersion.main(dispersion_args + [output_file])
+        spec = Spectrum1DCollection.from_json_file(output_file)
+        assert isinstance(spec, Spectrum1DCollection)
 
     @pytest.mark.parametrize('dispersion_args', [
         [quartz_no_evec_json_file, '--reorder']])
