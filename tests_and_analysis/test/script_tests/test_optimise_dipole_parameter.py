@@ -7,6 +7,7 @@ from unittest.mock import Mock
 
 import pytest
 import numpy.testing as npt
+import numpy as np
 
 from euphonic import ForceConstants
 from euphonic.cli.optimise_dipole_parameter import calculate_optimum_dipole_parameter
@@ -22,28 +23,58 @@ quick_calc_params = ['-n=10', '--min=0.5', '--max=0.5']
 
 class TestRegression:
 
-    def test_default_dipole_parameters(self):
-        tested_parameters = calculate_optimum_dipole_parameter(
-            quartz_castep_bin, n=5)[3]
-        npt.assert_equal(tested_parameters,
-                         [0.25, 0.5, 0.75, 1., 1.25, 1.5])
-
-    def test_time_per_qpt_with_use_c_is_lower_than_disable_c(self):
-        kwargs = {'n': 10, 'dipole_parameter_min': 0.5,
-                  'dipole_parameter_max': 0.5}
-        optimum_time_qpt_c = calculate_optimum_dipole_parameter(
-            quartz_castep_bin, use_c=True, **kwargs)[2]
-        optimum_time_qpt_noc = calculate_optimum_dipole_parameter(
-            quartz_castep_bin, use_c=False, **kwargs)[2]
-        assert optimum_time_qpt_c < optimum_time_qpt_noc
-
-    @pytest.mark.parametrize('optimise_dipole_parameter_args', [
-        [lzo_castep_bin, '--asr=reciprocal', *quick_calc_params],
-        [quartz_castep_bin, '--n-threads=2', *quick_calc_params],
-        [quartz_castep_bin, '--disable-c', *quick_calc_params]])
-    def test_called_without_errors(self, optimise_dipole_parameter_args):
+    @pytest.mark.parametrize(
+        'fc_file, opt_dipole_par_args, expected_n_qpts, '
+        'expected_dipole_pars, expected_calc_qpt_ph_modes_kwargs', [
+            (quartz_castep_bin, ['-n=5'], 5, np.linspace(0.25, 1.5, 6), {}),
+            (quartz_castep_bin,
+             ['-n=10', '--n-threads=2', '--dipole-parameter-min=0.5',
+              '--dipole-parameter-max=1.0'], 10, np.linspace(0.5, 1.0, 3),
+             {'n_threads': 2}),
+            (lzo_castep_bin,
+             ['-n=15', '--asr=reciprocal', '--disable-c',
+              '--dipole-parameter-min=0.1', '--dipole-parameter-max=0.4',
+              '--dipole-parameter-step=0.1'], 15, np.linspace(0.1, 0.4, 4),
+             {'asr': 'reciprocal', 'use_c': False})
+        ])
+    def test_calc_qpt_phonon_modes_called_with_correct_args(
+            self, mocker, fc_file, opt_dipole_par_args, expected_n_qpts,
+            expected_dipole_pars, expected_calc_qpt_ph_modes_kwargs):
+        fc = ForceConstants.from_castep(fc_file)
+        mock = mocker.patch.object(ForceConstants, 'calculate_qpoint_phonon_modes',
+            wraps=fc.calculate_qpoint_phonon_modes)
         euphonic.cli.optimise_dipole_parameter.main(
-            optimise_dipole_parameter_args)
+            [fc_file, *opt_dipole_par_args])
+        default_kwargs = {'asr': None, 'n_threads': None, 'use_c': None}
+
+        # Called twice for each dipole_parameter value - once to measure
+        # initialisation time, and once to measure time per qpt
+        # time/qpt call has extra argument 'reduce_qpts'
+        expected_kwargs = {**default_kwargs,
+                           **expected_calc_qpt_ph_modes_kwargs}
+        expected_kwargs_per_qpt = expected_kwargs.copy()
+        expected_kwargs_per_qpt['reduce_qpts'] = False
+        assert mock.call_count == len(expected_dipole_pars)*2
+        for i, dipole_par in enumerate(expected_dipole_pars):
+            expected_kwargs['dipole_parameter'] = dipole_par
+            expected_kwargs_per_qpt['dipole_parameter'] = dipole_par
+            # Ensure initialisation call and time/qpt call are made
+            # with correct kwargs
+            assert mock.call_args_list[2*i][1] == expected_kwargs
+            assert mock.call_args_list[2*i + 1][1] == expected_kwargs_per_qpt
+            # Ensure time/qpt call is made with correct number of qpts
+            assert len(mock.call_args_list[2*i + 1][0][0]) == expected_n_qpts
+
+    # Ensure by correct number of default qpts are passed,
+    # but don't actually run because this would be expensive
+    def test_default_correct_n_qpts_passed(self, mocker):
+        mock = mocker.patch(
+            'euphonic.cli.optimise_dipole_parameter'
+            '.calculate_optimum_dipole_parameter')
+        euphonic.cli.optimise_dipole_parameter.main(
+            [quartz_castep_bin])
+        default_n_qpts = 500
+        assert mock.call_args[1]['n'] == default_n_qpts
 
     @pytest.mark.phonopy_reader
     def test_reading_nacl_default_reads_born(self, recwarn):
@@ -63,42 +94,8 @@ class TestRegression:
             euphonic.cli.optimise_dipole_parameter.main([
                 get_castep_path("quartz", "quartz-666-grid.phonon")])
 
-    @staticmethod
-    def get_lowest_time_per_qpt_and_index(dipole_parameters_time_per_qpts):
-        # Search dipole_parameters_time_per_qpts for lowest time
-        lowest_time_per_qpt = math.inf
-        lowest_time_per_qpt_index = None
-        for index, time_per_qpt in enumerate(dipole_parameters_time_per_qpts):
-            if time_per_qpt < lowest_time_per_qpt:
-                lowest_time_per_qpt = time_per_qpt
-                lowest_time_per_qpt_index = index
-        return lowest_time_per_qpt, lowest_time_per_qpt_index
-
-    @pytest.mark.parametrize('kwargs', [
-            {},
-            {"dipole_parameter_min": 0.6, "dipole_parameter_max": 1.2,
-             "dipole_parameter_step": 0.2, "n": 20},
-            {"dipole_parameter_min": 0.7, "dipole_parameter_max": 1.4,
-             "dipole_parameter_step": 0.3, "n": 10}
-        ])
-    def test_optimal_has_lowest_time_per_qpt(
-            self, kwargs):
-        params = calculate_optimum_dipole_parameter(
-            quartz_castep_bin, **kwargs)
-        # Unpack data
-        optimal_dipole_parameter = params[0]
-        optimal_time_per_qpt = params[2]
-        dipole_parameters = params[3]
-        dipole_parameters_time_per_qpts = params[5]
-
-        lowest_time_per_qpt, lowest_time_per_qpt_index = \
-            self.get_lowest_time_per_qpt_and_index(
-                dipole_parameters_time_per_qpts)
-
-        # Check optimal time per q-point is the lowest detected q-point
-        assert optimal_time_per_qpt == lowest_time_per_qpt
-        # Check dipole_parameter from lowest detected q-point index matches
-        # our optimal q-point
-        assert dipole_parameters[
-            lowest_time_per_qpt_index] == optimal_dipole_parameter
-
+    def test_optimal_has_lowest_time_per_qpt(self):
+        (opt_param, _, opt_t, all_params,
+         _, all_t) = calculate_optimum_dipole_parameter(quartz_castep_bin)
+        assert opt_t == np.amin(all_t)
+        assert opt_param == all_params[np.argmin(all_t)]
