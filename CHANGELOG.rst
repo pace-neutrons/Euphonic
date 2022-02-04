@@ -9,7 +9,7 @@
     not required for the chosen options.
   - There is now the option to use a fast, approximate adaptive broadening method when
     calling `calculate_dos`:
-      - Added `fast_broaden` method, which implements fast, approximate adaptive broadening.
+      - Added `variable_width` method, which implements fast, approximate variable width broadening.
       - Added new `adaptive_method` and `adaptive_error` arguments for `calculate_dos`
         which specify which adaptive broadening method to use (`reference` or `fast`) and an
         acceptable error level when using the `fast` method.
