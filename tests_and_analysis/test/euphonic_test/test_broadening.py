@@ -34,7 +34,7 @@ def test_area_unchanged_for_broadened_dos(material, qpt_freqs_json,
     variable_width_broaden = variable_width(ebins, qpt_freqs.frequencies,
                                             mode_widths, weights,
                                             0.01)
-    ebins_centres = ebins[:-1] + 0.5*np.diff(ebins)
+    ebins_centres = ebins.magnitude[:-1] + 0.5*np.diff(ebins.magnitude)
     dos_area = simps(dos.y_data, ebins_centres)
     adaptively_broadened_dos_area = simps(variable_width_broaden,
                                           ebins_centres)
