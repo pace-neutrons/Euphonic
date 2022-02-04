@@ -128,7 +128,8 @@ class TestRegression:
         assert os.path.exists(output_file)
 
     @pytest.mark.parametrize('dispersion_args', [
-        [quartz_json_file, '--save-json']])
+        [quartz_json_file, '--save-json'],
+        [lzo_fc_file, '--save-json']])
     def test_plot_save_to_json(self, inject_mocks, tmpdir, dispersion_args):
         output_file = str(tmpdir.join('test.json'))
         euphonic.cli.dispersion.main(dispersion_args + [output_file])

@@ -54,6 +54,30 @@ class Spectrum(ABC):
         self.y_data_unit = str(value.units)
         self._y_data = value.to(self._internal_y_data_unit).magnitude
 
+    @property
+    def x_tick_labels(self) -> List[Tuple[int, str]]:
+        return self._x_tick_labels
+
+    @x_tick_labels.setter
+    def x_tick_labels(self, value: Sequence[Tuple[int, str]]) -> None:
+        err_msg = ('x_tick_labels should be of type '
+                   'Sequence[Tuple[int, str]] e.g. '
+                   '[(0, "label1"), (5, "label2")]')
+        if value is not None:
+            if isinstance(value, Sequence):
+                for elem in value:
+                    if not (isinstance(elem, tuple)
+                            and len(elem) == 2
+                            and isinstance(elem[0], Integral)
+                            and isinstance(elem[1], str)):
+                        raise TypeError(err_msg)
+                # Ensure indices in x_tick_labels are plain ints as
+                # np.int64/32 etc. are not JSON serializable
+                value = [(int(idx), label) for idx, label in value]
+            else:
+                raise TypeError(err_msg)
+        self._x_tick_labels = value
+
     @abstractmethod
     def to_dict(self) -> Dict[str, Any]:
         """Write to dict using euphonic.io._obj_to_dict"""
