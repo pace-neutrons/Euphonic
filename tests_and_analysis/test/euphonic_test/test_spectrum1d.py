@@ -314,7 +314,8 @@ class TestSpectrum1DSetters:
 
     @pytest.mark.parametrize('value', [
         [(0,), (1, 'one')],
-        [(0, 'zero'), ('one', 'one')]])
+        [(0, 'zero'), ('one', 'one')],
+        0])
     def test_x_tick_labels_incorrect_setter(self, value):
          spec1d = get_spectrum1d('xsq_spectrum1d.json')
          with pytest.raises(TypeError):
