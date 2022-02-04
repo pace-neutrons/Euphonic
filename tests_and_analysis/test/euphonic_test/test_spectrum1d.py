@@ -308,18 +308,18 @@ class TestSpectrum1DSetters:
 
     @pytest.mark.parametrize('value', [[(0, 'zero'), (1, 'one')]])
     def test_x_tick_labels_setter(self, value):
-         spec1d = get_spectrum1d('xsq_spectrum1d.json')
-         spec1d.x_tick_labels = value
-         assert spec1d.x_tick_labels == value
+        spec1d = get_spectrum1d('xsq_spectrum1d.json')
+        spec1d.x_tick_labels = value
+        assert spec1d.x_tick_labels == value
 
     @pytest.mark.parametrize('value', [
         [(0,), (1, 'one')],
         [(0, 'zero'), ('one', 'one')],
         0])
     def test_x_tick_labels_incorrect_setter(self, value):
-         spec1d = get_spectrum1d('xsq_spectrum1d.json')
-         with pytest.raises(TypeError):
-             spec1d.x_tick_labels = value
+        spec1d = get_spectrum1d('xsq_spectrum1d.json')
+        with pytest.raises(TypeError):
+            spec1d.x_tick_labels = value
 
     def test_x_tick_labels_converted_to_plain_int(self):
         # np.arange returns an array of type np.int32
