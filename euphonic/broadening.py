@@ -19,7 +19,7 @@ def variable_width(bins: Quantity,
     Parameters
     ----------
     bins
-        The energy bin edges to use for calculating 
+        The energy bin edges to use for calculating
         the spectrum
     x
         Broadening samples
@@ -43,7 +43,7 @@ def variable_width(bins: Quantity,
                            x.to('hartree').magnitude,
                            widths.to('hartree').magnitude,
                            weights,
-                           adaptive_error)/conv 
+                           adaptive_error)/conv
 
 def _variable_width(bins: np.ndarray,
                     x: np.ndarray,

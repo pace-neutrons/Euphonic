@@ -1,18 +1,18 @@
 import pytest
 import numpy as np
+import numpy.testing as npt
 from scipy.integrate import simps
 from scipy.stats import norm
-import numpy.testing as npt
 
 from euphonic.broadening import find_coeffs, gaussian, variable_width
-from euphonic import ureg, Spectrum1D
+from euphonic import ureg
 from tests_and_analysis.test.euphonic_test.test_force_constants\
     import get_fc_path
 from tests_and_analysis.test.euphonic_test.test_qpoint_frequencies\
     import get_qpt_freqs
 from tests_and_analysis.test.utils import get_mode_widths
-from tests_and_analysis.test.euphonic_test.test_spectrum1d import (
-    get_expected_spectrum1d, check_spectrum1d)
+from tests_and_analysis.test.euphonic_test.test_spectrum1d\
+    import get_expected_spectrum1d
 
 
 @pytest.mark.parametrize(
@@ -31,7 +31,7 @@ def test_area_unchanged_for_broadened_dos(material, qpt_freqs_json,
     dos = qpt_freqs.calculate_dos(ebins)
     weights = np.ones(qpt_freqs.frequencies.shape) * \
         np.full(qpt_freqs.n_qpts, 1/qpt_freqs.n_qpts)[:, np.newaxis]
-    variable_width_broaden = variable_width(ebins, qpt_freqs.frequencies, 
+    variable_width_broaden = variable_width(ebins, qpt_freqs.frequencies,
                                             mode_widths, weights,
                                             0.01)
     ebins_centres = ebins[:-1] + 0.5*np.diff(ebins)
@@ -57,7 +57,7 @@ def test_lower_bound_widths_broadened(material, qpt_freqs_json,
     dos = variable_width(ebins, qpt_freqs.frequencies, mode_widths,
                          weights, 0.01)
     expected_dos = get_expected_spectrum1d(expected_dos_json)
-    npt.assert_allclose(expected_dos.y_data.magnitude, dos.magnitude)                       
+    npt.assert_allclose(expected_dos.y_data.magnitude, dos.magnitude)                  
 
 def test_gaussian():
     """Test gaussian function against scipy.norm.pdf"""
