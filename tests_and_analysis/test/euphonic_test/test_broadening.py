@@ -2,8 +2,9 @@ import pytest
 import numpy as np
 from scipy.integrate import simps
 from scipy.stats import norm
+import numpy.testing as npt
 
-from euphonic.fast_adaptive_broadening import find_coeffs, gaussian
+from euphonic.broadening import find_coeffs, gaussian, variable_width
 from euphonic import ureg, Spectrum1D
 from tests_and_analysis.test.euphonic_test.test_force_constants\
     import get_fc_path
@@ -18,27 +19,26 @@ from tests_and_analysis.test.euphonic_test.test_spectrum1d import (
         ('material, qpt_freqs_json, mode_widths_json, ebins'), [
             ('quartz', 'quartz_554_full_qpoint_frequencies.json',
              'quartz_554_full_mode_widths.json',
-             np.arange(0, 155, 0.1)*ureg('meV')),
-            ('LZO', 'lzo_222_full_qpoint_frequencies.json',
-             'lzo_222_full_mode_widths.json',
-             np.arange(0, 100, 0.1)*ureg('meV'))])
+             np.arange(0, 155, 0.1)*ureg('meV'))])
 def test_area_unchanged_for_broadened_dos(material, qpt_freqs_json,
                                           mode_widths_json, ebins):
     """
-    Test that the area is approximately equal for unbroadened
-    and broadened dos
+    Test that the area is approximately equal for unbroadened and
+    broadened dos
     """
     qpt_freqs = get_qpt_freqs(material, qpt_freqs_json)
     mode_widths = get_mode_widths(get_fc_path(mode_widths_json))
-    dos = qpt_freqs._calculate_dos(ebins)
-    adaptively_broadened_dos = qpt_freqs._calculate_dos(
-        ebins, mode_widths=mode_widths, adaptive_method='fast')
-    ebins_centres = \
-        Spectrum1D._bin_edges_to_centres(ebins.to('hartree').magnitude)
-    dos_area = simps(dos, ebins_centres)
-    adaptively_broadened_dos_area = simps(adaptively_broadened_dos,
+    dos = qpt_freqs.calculate_dos(ebins)
+    weights = np.ones(qpt_freqs.frequencies.shape) * \
+        np.full(qpt_freqs.n_qpts, 1/qpt_freqs.n_qpts)[:, np.newaxis]
+    variable_width_broaden = variable_width(ebins, qpt_freqs.frequencies, 
+                                            mode_widths, weights,
+                                            0.01)
+    ebins_centres = ebins[:-1] + 0.5*np.diff(ebins)
+    dos_area = simps(dos.y_data, ebins_centres)
+    adaptively_broadened_dos_area = simps(variable_width_broaden,
                                           ebins_centres)
-    assert adaptively_broadened_dos_area == pytest.approx(dos_area, abs=1e-3)
+    assert adaptively_broadened_dos_area == pytest.approx(dos_area, rel=0.01)
 
 @pytest.mark.parametrize(
         ('material, qpt_freqs_json, mode_widths_json,'
@@ -52,10 +52,12 @@ def test_lower_bound_widths_broadened(material, qpt_freqs_json,
                                       expected_dos_json, ebins):
     qpt_freqs = get_qpt_freqs(material, qpt_freqs_json)
     mode_widths = get_mode_widths(get_fc_path(mode_widths_json))
-    dos = qpt_freqs.calculate_dos(ebins, mode_widths=mode_widths,
-                                   adaptive_method='fast')
-    expected_dos = get_expected_spectrum1d(expected_dos_json)  
-    check_spectrum1d(dos, expected_dos, tol=1e-13)                         
+    weights = np.ones(qpt_freqs.frequencies.shape) * \
+        np.full(qpt_freqs.n_qpts, 1/qpt_freqs.n_qpts)[:, np.newaxis]
+    dos = variable_width(ebins, qpt_freqs.frequencies, mode_widths,
+                         weights, 0.01)
+    expected_dos = get_expected_spectrum1d(expected_dos_json)
+    npt.assert_allclose(expected_dos.y_data.magnitude, dos.magnitude)                       
 
 def test_gaussian():
     """Test gaussian function against scipy.norm.pdf"""

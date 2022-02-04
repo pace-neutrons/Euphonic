@@ -1,29 +1,32 @@
 """
-Functions for fast adaptive broadening of spectra
+Functions for broadening spectra
 """
 from scipy.optimize import nnls
 from scipy.signal import convolve
 import numpy as np
 
-def _fast_broaden(bins: np.ndarray,
-                  x: np.ndarray,
-                  widths: np.ndarray,
-                  weights: np.ndarray,
-                  adaptive_error: float) -> np.ndarray:
+from euphonic import ureg, Quantity
+
+def variable_width(bins: Quantity,
+                   x: Quantity,
+                   widths: Quantity,
+                   weights: np.ndarray,
+                   adaptive_error: float) -> Quantity:
     """
-    Uses a fast, approximate method to adaptively broaden a spectrum
+    Uses a fast, approximate method to broaden a spectrum
+    with a variable-width kernel.
 
     Parameters
     ----------
     bins
-        Float ndarray. The energy bin
-        edges to use for calculating the spectrum
+        The energy bin edges to use for calculating 
+        the spectrum
     x
-        Float ndarray containing broadening samples
+        Broadening samples
     widths
-        Float ndarray. The broadening width for each peak
+        The broadening width for each peak, must be the same shape as x.
     weights
-        Float ndarray. The weight for each peak.
+        The weight for each peak, must be the same shape as x.
     adaptive_error
         Scalar float. Acceptable error for gaussian approximations, defined
         as the absolute difference between the areas of the true and
@@ -32,8 +35,26 @@ def _fast_broaden(bins: np.ndarray,
     Returns
     -------
     spectrum
-        Float ndarray of shape (dos_bins - 1,) containing broadened spectrum
+        Quantity of shape (bins - 1,) containing broadened spectrum
         ydata
+    """
+    conv = 1*ureg('hartree').to(bins.units)
+    return _variable_width(bins.to('hartree').magnitude,
+                           x.to('hartree').magnitude,
+                           widths.to('hartree').magnitude,
+                           weights,
+                           adaptive_error)/conv 
+
+def _variable_width(bins: np.ndarray,
+                    x: np.ndarray,
+                    widths: np.ndarray,
+                    weights: np.ndarray,
+                    adaptive_error: float) -> np.ndarray:
+    """
+    Broadens a spectrum using a variable-width kernel, taking the
+    same arguments as `variable_width` but expects arrays with
+    consistent units rather than Quantities. Also returns an array
+    rather than a Quantity.
     """
     x = np.ravel(x)
     widths = np.ravel(widths)
