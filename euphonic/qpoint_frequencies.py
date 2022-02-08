@@ -194,8 +194,8 @@ class QpointFrequencies:
             mode_weights_calc = np.ones(freqs.shape)
         if mode_widths is not None:
             mode_widths = mode_widths.to('hartree').magnitude
-            mode_widths = np.maximum(
-                    mode_widths, mode_widths_min.to('hartree').magnitude)
+            mode_widths = np.maximum(mode_widths,
+                                     mode_widths_min.to('hartree').magnitude)
             if adaptive_method=='reference':
                 # adaptive broadening by summing over individual peaks
                 from scipy.stats import norm
@@ -204,13 +204,13 @@ class QpointFrequencies:
                 for q in range(len(freqs)):
                     for m in range(n_modes):
                         pdf = norm.pdf(dos_bins_calc, loc=freqs[q,m],
-                                    scale=mode_widths[q,m])
+                                       scale=mode_widths[q,m])
                         dos += pdf*weights[q]*mode_weights_calc[q, m]
             elif adaptive_method=='fast':
                 # fast, approximate method for adaptive broadening
                 combined_weights = mode_weights_calc * weights[:, np.newaxis]
                 dos = _variable_width(dos_bins_calc, freqs, mode_widths,
-                                   combined_weights, adaptive_error)
+                                      combined_weights, adaptive_error)
         else:
             bin_idx = np.digitize(freqs, dos_bins_calc)
             # Create DOS with extra bin either side, for any points
