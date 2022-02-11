@@ -6,7 +6,8 @@ from typing import Optional, Dict, Any, Union, Tuple, TextIO, Sequence, List
 import numpy as np
 
 from euphonic import ureg
-from euphonic.util import get_all_origins, _get_supercell_relative_idx
+from euphonic.util import (get_all_origins, convert_fc_phases,
+                           _get_supercell_relative_idx)
 
 
 # h5py can't be called from Matlab, so import as late as possible to
@@ -337,9 +338,7 @@ def convert_eigenvector_phases(phonon_dict: Dict[str, np.ndarray]
 
 
 def _extract_force_constants(fc_pathname: str, n_atoms: int, n_cells: int,
-                             summary_name: str, cell_origins_map: np.ndarray,
-                             sc_relative_idx: np.ndarray, p2s_map: np.ndarray,
-                             ) -> np.ndarray:
+                             summary_name: str) -> np.ndarray:
     """
     Reads force constants from a Phonopy FORCE_CONSTANTS file
 
@@ -353,27 +352,13 @@ def _extract_force_constants(fc_pathname: str, n_atoms: int, n_cells: int,
         Number of unit cells in the supercell
     summary_name
         Name of input phonopy.yaml file
-    cell_origins_map
-        Shape (n_atoms*n_cells, 2) int ndarray. In the case of
-        non-diagonal supercell_matrices, the cell origins are not the
-        same for each atom. This is a map of the equivalent cell origins
-        for each atom, which is required to reorder the force constants
-        matrix so that all atoms in the unit cell share equivalent
-        origins
-    sc_relative_idx
-        Shape (n_cells, n_cells) int ndarray. The index n of the
-        equivalent vector in cell_origins for each
-        cell_origins[i] -> cell_origins[j] vector in the supercell. See
-        _get_supercell_relative_idx
-    p2s_map
-        Shape (n_atoms,) int ndarray. The index of the primitive atoms
-        in the atoms of the supercell. Used if fc_format = 'full'
 
     Returns
     -------
     fc
-        Shape (n_cells, 3*n_atoms, 3*n_atoms) float ndarray. The force
-        constants, in Euphonic convention
+        Shape (n_atoms, n_atoms*n_cells, 3, 3) or
+        (n_atoms*n_cells, n_atoms*n_cells, 3, 3) float ndarray. The
+        force constants in Phonopy convention
     """
     with open(fc_pathname, 'r') as f:
         fc_dims =  [int(dim) for dim in f.readline().split()]
@@ -387,18 +372,11 @@ def _extract_force_constants(fc_pathname: str, n_atoms: int, n_cells: int,
         fc = np.genfromtxt(fc_pathname, skip_header=1,
                            max_rows=4*(n_atoms*n_cells)**2, usecols=(0,1,2),
                            invalid_raise=False)
-    if fc_dims[0] == fc_dims[1]:  # full fc
-        fc = fc.reshape(n_atoms*n_cells, n_atoms, n_cells, 3, 3)
-        fc = fc[p2s_map]
-
-    fc = fc.reshape((n_atoms, n_cells*n_atoms, 3, 3))
-
-    return _reshape_fc(fc, n_atoms, n_cells, cell_origins_map, sc_relative_idx)
+    return fc.reshape(fc_dims + [3, 3])
 
 
 def _extract_force_constants_hdf5(
         filename: str, n_atoms: int, n_cells: int, summary_name: str,
-        cell_origins_map: np.ndarray, sc_relative_idx: np.ndarray
         ) -> np.ndarray:
     try:
         import h5py
@@ -409,115 +387,7 @@ def _extract_force_constants_hdf5(
         fc = fc_file['force_constants'][:]
         _check_fc_shape(fc.shape, n_atoms, n_cells, fc_file.filename,
                         summary_name)
-        p2s_map = list(fc_file['p2s_map'])
-    if fc.shape[0] == fc.shape[1]: # FULL FC, convert down to COMPACT
-        fc = fc[p2s_map, :, :, :]
-    fc_unfolded = fc.reshape(n_atoms, n_atoms*n_cells, 3, 3)
-    return _reshape_fc(fc_unfolded, n_atoms, n_cells, cell_origins_map,
-                       sc_relative_idx)
-
-
-def _extract_force_constants_summary(
-        summary_object: Dict[str, Any],
-        cell_origins_map: np.ndarray,
-        sc_relative_idx: np.ndarray,
-        p2s_map: np.ndarray) -> np.ndarray:
-    """
-    Get force constants from phonopy yaml summary file.
-
-    Parameters
-    ----------
-    summary_object
-        Dict containing contents of phonopy.yaml
-    cell_origins_map
-        Shape (n_atoms*n_cells, 2) int ndarray. In the case of of
-        non-diagonal supercell_matrices, the cell origins are not the
-        same for each atom. This is a map of the equivalent cell
-        origins for each atom, which is required to reorder the force
-        constants matrix so that all atoms in the unit cell share
-        equivalent origins
-    sc_relative_idx
-        Shape (n_cells, n_cells) int ndarray. The index n of the
-        equivalent vector in cell_origins for each
-        cell_origins[i] -> cell_origins[j] vector in the supercell.
-        See _get_supercell_relative_idx
-    p2s_map
-        Shape (n_atoms,) int ndarray. The index of the primitive atoms
-        in the atoms of the supercell. Used if fc_format = 'full'
-
-    Returns
-    -------
-    fc
-        Shape (n_cells, 3*n_atoms, 3*n_atoms) float ndarray. Force
-        constants in Euphonic format
-    """
-    fc_entry = summary_object['force_constants']
-    fc_format = fc_entry['format']
-
-    n_cells = sc_relative_idx.shape[0]
-    n_atoms = int(cell_origins_map.shape[0]/n_cells)
-    if fc_format == 'compact':
-        fc = np.array(fc_entry['elements'])
-    else:  # convert to compact
-        fc = np.array(fc_entry['elements']).reshape(
-            [n_atoms*n_cells, n_atoms, n_cells, 3, 3])[p2s_map, :, :, :, :]
-
-    fc = _reshape_fc(fc, n_atoms, n_cells, cell_origins_map, sc_relative_idx)
     return fc
-
-def _reshape_fc(fc: np.ndarray, n_atoms: int, n_cells: int,
-                cell_origins_map: np.ndarray, sc_relative_idx: np.ndarray
-                ) -> np.ndarray:
-    """
-    Reshape force constants from Phonopy convention to Euphonic
-    convention
-
-    Parameters
-    ----------
-    fc
-        Shape (n_atoms, n_atoms*n_cells, 3, 3) float ndarray. Force
-        constants matrix in Phonopy shape
-    n_atoms
-        Number of atoms in the unit cell
-    n_cells
-        Number of cells in the supercell
-    cell_origins_map
-        Shape (n_atoms*n_cells, 2) int ndarray. This describes how the
-        supercell atoms in Phonopy map onto the cells and atoms in
-        Euphonic. The first column is the index of the equivalent atom
-        in the unit cell, and the second column is the index of the
-        cell in the supercell
-    sc_relative_idx
-        Shape (n_cells, n_cells) int ndarray. The index n of the
-        equivalent vector in cell_origins for each
-        cell_origins[i] -> cell_origins[j] vector in the supercell.
-        See _get_supercell_relative_idx
-
-    Returns
-    -------
-    fc
-        Shape (n_cells, 3*n_atoms, 3*n_atoms) float ndarray. Force
-        constants matrix in Euphonic shape
-    """
-    fc_phonopy = np.reshape(fc, (n_atoms, n_atoms*n_cells, 3, 3))
-    fc_euphonic = np.full((n_atoms, n_cells, n_atoms, 3, 3), -1.0)
-
-    for i in range(n_atoms):
-        fc_tmp = np.zeros((n_cells, n_atoms, 3, 3))
-        # Put fc's in correct atom and cell in supercell
-        fc_tmp[cell_origins_map[:, 1],
-               cell_origins_map[:, 0]] = fc_phonopy[i]
-        # For Phonopy force constants, the n_atoms in the (n_atoms, ...)
-        # shaped array may not be in the same cell within the supercell,
-        # but Euphonic's interpolation requires this, so use equivalent
-        # cell vector indices to arrange the force constants correctly
-        atom_idx = np.where(cell_origins_map[:, 0] == i)[0][0]
-        cell_idx = cell_origins_map[atom_idx, 1]
-        fc_euphonic[i, sc_relative_idx[cell_idx]] = fc_tmp
-
-    return np.reshape(np.transpose(
-        fc_euphonic,
-        axes=[1, 0, 3, 2, 4]), (n_cells, 3*n_atoms, 3*n_atoms))
 
 
 def _check_fc_shape(fc_shape: Tuple[int, int], n_atoms: int,
@@ -645,6 +515,7 @@ def _extract_summary(filename: str, fc_extract: bool = False
     summary_dict['atom_mass'] = atom_mass
 
     if fc_extract:
+        # Get matrix to convert from primitive cell to unit cell
         u_to_sc_matrix = np.array(summary_object['supercell_matrix'])
         if 'primitive_matrix' in summary_object.keys():
             u_to_p_matrix = np.array(summary_object['primitive_matrix'])
@@ -656,68 +527,25 @@ def _extract_summary(filename: str, fc_extract: bool = False
             u_to_p_matrix = np.identity(3, dtype=np.int32)
             p_to_sc_matrix = u_to_sc_matrix
 
+        # Get supercell info
         _, _, satom_r, _, _, sc_idx_in_pc = _extract_crystal_data(
             summary_object['supercell'])
-        n_pcells_in_sc = int(np.rint(np.absolute(
-            np.linalg.det(p_to_sc_matrix))))
         # Coords of supercell atoms in frac coords of the prim cell
         satom_r_pcell = np.einsum('ij,jk->ik', satom_r, p_to_sc_matrix)
         # Determine mapping from atoms in the supercell to the prim cell
-        _, p2s_map_idx, sc_to_pc_atom_idx = np.unique(
-            sc_idx_in_pc, return_index=True, return_inverse=True)
-        # Get cell origins for all atoms
-        cell_origins_per_atom = np.rint((
-            satom_r_pcell - atom_r[sc_to_pc_atom_idx])).astype(np.int32)
-        # Recenter cell origins onto atom 0
-        atom0_idx = np.where(sc_to_pc_atom_idx == 0)[0]
-        cell_origins_per_atom -= cell_origins_per_atom[[atom0_idx[0]]]
-        # Build unique cell origins by getting all cell origins
-        # associated with primitive atom 0
-        cell_origins = cell_origins_per_atom[atom0_idx]
-        # For some supercells, cell origins aren't always the
-        # same for each atom in a supercell, and the cell origins are
-        # sometimes outside the supercell. Create a mapping of cell
-        # origins for atoms 1..n onto the equivalent cell origins for
-        # atom 0, so the same cell origins can be used for all atoms
-        cell_origins_map = np.zeros((n_atoms*n_pcells_in_sc, 2),
-                                    dtype=np.int32)
-        # Get origins of adjacent supercells in prim cell frac coords
-        sc_origins =  get_all_origins((2,2,2), min_xyz=(-1,-1,-1))
-        sc_origins_pcell = np.einsum('ij,jk->ik', sc_origins, p_to_sc_matrix)
-        for i in range(n_pcells_in_sc*n_atoms):
-            co_idx = np.where(
-                (cell_origins_per_atom[i] == cell_origins).all(axis=1))[0]
-            if len(co_idx) != 1:
-                # Get equivalent cell origin in surrounding supercells
-                origin_in_scs = cell_origins_per_atom[i] - sc_origins_pcell
-                co_idx = -1
-                # Find which of the 'unique' cell origins is equivalent
-                for j, cell_origin in enumerate(cell_origins):
-                    if np.any((origin_in_scs == cell_origin).all(axis=1)):
-                        co_idx = j
-                        break
-                if co_idx == -1:
-                    raise Exception((
-                        'Couldn\'t determine cell origins for '
-                        'force constants matrix'))
-            cell_origins_map[i, 0] = sc_to_pc_atom_idx[i]
-            cell_origins_map[i, 1] = co_idx
+        # Note: -1 to get 0-indexed instead of 1-indexed values
+        pc_to_sc_atom_idx, sc_to_pc_atom_idx = np.unique(
+            sc_idx_in_pc - 1, return_inverse=True)
 
         summary_dict['sc_matrix'] = p_to_sc_matrix
-        summary_dict['n_cells_in_sc'] = n_pcells_in_sc
-        summary_dict['cell_origins'] = cell_origins[:n_pcells_in_sc]
-        summary_dict['cell_origins'] = cell_origins[:n_pcells_in_sc]
-        summary_dict['cell_origins_map'] = cell_origins_map
-        p2s_map = sc_idx_in_pc[np.sort(p2s_map_idx)] - 1
-        summary_dict['p2s_map'] = p2s_map
-        sc_relative_idx = _get_supercell_relative_idx(cell_origins,
-                                                      p_to_sc_matrix)
-        summary_dict['sc_relative_idx'] = sc_relative_idx
-
+        summary_dict['sc_atom_r'] = satom_r_pcell
+        summary_dict['pc_to_sc_atom_idx'] = pc_to_sc_atom_idx
+        summary_dict['sc_to_pc_atom_idx'] = sc_to_pc_atom_idx
         summary_dict['ufc'] = pu['force_constants']
         try:
-            summary_dict['force_constants'] = _extract_force_constants_summary(
-                summary_object, cell_origins_map, sc_relative_idx, p2s_map)
+            fc = summary_object['force_constants']
+            summary_dict['force_constants'] = np.array(
+                fc['elements']).reshape(fc['shape'] + [3,3])
         except KeyError:
             pass
 
@@ -856,19 +684,14 @@ def read_interpolation_data(
         print((f'Force constants not found in {summary_pathname}, '
                f'attempting to read from {fc_pathname}'))
         n_atoms = summary_dict['n_atoms']
-        n_cells = summary_dict['n_cells_in_sc']
+        n_cells = int(len(summary_dict['sc_atom_r'])/n_atoms)
         if fc_format == 'phonopy':
             with open(fc_pathname, 'r') as fc_file:
                 summary_dict['force_constants'] = _extract_force_constants(
-                    fc_pathname, n_atoms, n_cells, summary_pathname,
-                    summary_dict['cell_origins_map'],
-                    summary_dict['sc_relative_idx'],
-                    summary_dict['p2s_map'])
+                    fc_pathname, n_atoms, n_cells, summary_pathname)
         elif fc_format in 'hdf5':
             summary_dict['force_constants'] =  _extract_force_constants_hdf5(
-                fc_pathname, n_atoms, n_cells, summary_pathname,
-                summary_dict['cell_origins_map'],
-                summary_dict['sc_relative_idx'])
+                fc_pathname, n_atoms, n_cells, summary_pathname)
         else:
             raise ValueError((
                 f'Force constants file format "{fc_format}" of '
@@ -906,11 +729,15 @@ def read_interpolation_data(
         umass).to(atom_mass_unit).magnitude
     cry_dict['atom_mass_unit'] = atom_mass_unit
 
-    data_dict['force_constants'] = summary_dict['force_constants']*ureg(
+    fc, cell_origins = convert_fc_phases(
+         summary_dict['force_constants'], summary_dict['atom_r'],
+         summary_dict['sc_atom_r'], summary_dict['pc_to_sc_atom_idx'],
+         summary_dict['sc_to_pc_atom_idx'], summary_dict['sc_matrix'])
+    data_dict['force_constants'] = fc*ureg(
         ufc).to(force_constants_unit).magnitude
     data_dict['force_constants_unit'] = force_constants_unit
     data_dict['sc_matrix'] = summary_dict['sc_matrix']
-    data_dict['cell_origins'] = summary_dict['cell_origins']
+    data_dict['cell_origins'] = cell_origins
 
     try:
         data_dict['born'] = summary_dict['born']*ureg(
