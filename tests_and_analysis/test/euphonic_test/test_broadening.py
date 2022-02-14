@@ -3,7 +3,7 @@ import numpy as np
 import numpy.testing as npt
 from scipy.integrate import simps
 
-from euphonic.broadening import (find_coeffs, 
+from euphonic.broadening import (find_coeffs,
     width_interpolated_broadening)
 from euphonic import ureg
 from tests_and_analysis.test.euphonic_test.test_force_constants\
@@ -63,7 +63,7 @@ def test_lower_bound_widths_broadened(material, qpt_freqs_json,
     dos = width_interpolated_broadening(ebins, qpt_freqs.frequencies,
                                         mode_widths, weights, 0.01)
     expected_dos = get_expected_spectrum1d(expected_dos_json)
-    npt.assert_allclose(expected_dos.y_data.magnitude, dos.magnitude)          
+    npt.assert_allclose(expected_dos.y_data.magnitude, dos.magnitude)
 
 @pytest.mark.parametrize(('spacing','expected_coeffs'),
     [(2, [-0.1883858, 1.46930932, -4.0893793, 3.80872458]),

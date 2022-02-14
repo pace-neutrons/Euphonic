@@ -1,11 +1,11 @@
 """
 Functions for broadening spectra
 """
+import warnings
 from scipy.optimize import nnls
 from scipy.stats import norm
 from scipy.signal import convolve
 import numpy as np
-import warnings
 
 from euphonic import ureg, Quantity
 
