@@ -2,16 +2,18 @@
 Functions for broadening spectra
 """
 from scipy.optimize import nnls
+from scipy.stats import norm
 from scipy.signal import convolve
 import numpy as np
+import warnings
 
 from euphonic import ureg, Quantity
 
-def variable_width(bins: Quantity,
-                   x: Quantity,
-                   widths: Quantity,
-                   weights: np.ndarray,
-                   adaptive_error: float) -> Quantity:
+def width_interpolated_broadening(bins: Quantity,
+                                  x: Quantity,
+                                  widths: Quantity,
+                                  weights: np.ndarray,
+                                  adaptive_error: float) -> Quantity:
     """
     Uses a fast, approximate method to broaden a spectrum
     with a variable-width kernel.
@@ -39,17 +41,19 @@ def variable_width(bins: Quantity,
         ydata
     """
     conv = 1*ureg('hartree').to(bins.units)
-    return _variable_width(bins.to('hartree').magnitude,
-                           x.to('hartree').magnitude,
-                           widths.to('hartree').magnitude,
-                           weights,
-                           adaptive_error)/conv
+    return _width_interpolated_broadening(
+                                    bins.to('hartree').magnitude,
+                                    x.to('hartree').magnitude,
+                                    widths.to('hartree').magnitude,
+                                    weights,
+                                    adaptive_error)/conv
 
-def _variable_width(bins: np.ndarray,
-                    x: np.ndarray,
-                    widths: np.ndarray,
-                    weights: np.ndarray,
-                    adaptive_error: float) -> np.ndarray:
+def _width_interpolated_broadening(
+                            bins: np.ndarray,
+                            x: np.ndarray,
+                            widths: np.ndarray,
+                            weights: np.ndarray,
+                            adaptive_error: float) -> np.ndarray:
     """
     Broadens a spectrum using a variable-width kernel, taking the
     same arguments as `variable_width` but expects arrays with
@@ -65,8 +69,14 @@ def _variable_width(bins: np.ndarray,
     # error vs spacing value
     spacing = np.polyval([ 612.7, -122.7, 15.40, 1.0831], adaptive_error)
 
-    # bins must be regularly spaced
-    bin_width = bins[1]-bins[0]
+    # bins should be regularly spaced, check that this is the case and
+    # raise a warning if not
+    bin_widths = np.diff(bins)
+    if not np.all(np.isclose(bin_widths, bin_widths[0])):
+        warnings.warn('Not all bin widths are equal, so broadening by '
+                      'convolution will give incorrect results.',
+                      stacklevel=3)
+    bin_width = bin_widths[0]
 
     n_kernels = int(
         np.ceil(np.log(max(widths)/min(widths))/np.log(spacing)))
@@ -75,9 +85,9 @@ def _variable_width(bins: np.ndarray,
     # 3*max(sigma) is arbitrary but tuned for acceptable error/peformance
     x_range = 3*max(widths)
     kernel_npts_oneside = np.ceil(x_range/bin_width)
-    kernels = gaussian(np.arange(-kernel_npts_oneside,
+    kernels = norm.pdf(np.arange(-kernel_npts_oneside,
                                  kernel_npts_oneside+1, 1)*bin_width,
-                       width_samples[:, np.newaxis])*bin_width
+                       scale=width_samples[:, np.newaxis])*bin_width
     kernels_idx = np.searchsorted(width_samples, widths, side="right")
 
     lower_coeffs = find_coeffs(spacing)
@@ -106,31 +116,6 @@ def _variable_width(bins: np.ndarray,
 
     return spectrum
 
-
-def gaussian(xvals: np.ndarray,
-             sigma: np.ndarray) -> np.ndarray:
-    """
-    Evaluates the Gaussian function.
-
-    Parameters
-    ----------
-    xvals
-        Float ndarray. Points at which the Gaussian function should be
-        evaluated
-    sigma
-        Float ndarray. Specifies the standard deviation for the gaussian
-
-    Returns
-    -------
-    gauss_eval
-        Float ndarray containing the values of the evaluated gaussian function
-    """
-    # evaluate gaussian function with defined sigma and center at x
-    gauss_eval = np.exp(-0.5 * (xvals / sigma)**2) \
-                    / (sigma * np.sqrt(2 * np.pi))
-    return gauss_eval
-
-
 def find_coeffs(spacing: float) -> np.ndarray:
     """"
     Function that, for a given spacing value, gives the coefficients of the
@@ -151,7 +136,7 @@ def find_coeffs(spacing: float) -> np.ndarray:
     """
     sigma_values = np.linspace(1, spacing, num=10)
     x_range = np.linspace(-10, 10, num=101)
-    actual_gaussians = gaussian(x_range, sigma_values[:,np.newaxis])
+    actual_gaussians = norm.pdf(x_range, scale=sigma_values[:,np.newaxis])
     lower_mix = np.zeros(len(sigma_values))
     ref_gaussians = actual_gaussians[[0, -1]].T
 

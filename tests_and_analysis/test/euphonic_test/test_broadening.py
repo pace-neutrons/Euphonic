@@ -2,9 +2,9 @@ import pytest
 import numpy as np
 import numpy.testing as npt
 from scipy.integrate import simps
-from scipy.stats import norm
 
-from euphonic.broadening import find_coeffs, gaussian, variable_width
+from euphonic.broadening import (find_coeffs, 
+    width_interpolated_broadening)
 from euphonic import ureg
 from tests_and_analysis.test.euphonic_test.test_force_constants\
     import get_fc_path
@@ -31,9 +31,11 @@ def test_area_unchanged_for_broadened_dos(material, qpt_freqs_json,
     dos = qpt_freqs.calculate_dos(ebins)
     weights = np.ones(qpt_freqs.frequencies.shape) * \
         np.full(qpt_freqs.n_qpts, 1/qpt_freqs.n_qpts)[:, np.newaxis]
-    variable_width_broaden = variable_width(ebins, qpt_freqs.frequencies,
-                                            mode_widths, weights,
-                                            0.01)
+    variable_width_broaden = width_interpolated_broadening(
+                                ebins,
+                                qpt_freqs.frequencies,
+                                mode_widths, weights,
+                                0.01)
     ebins_centres = ebins.magnitude[:-1] + 0.5*np.diff(ebins.magnitude)
     dos_area = simps(dos.y_data, ebins_centres)
     adaptively_broadened_dos_area = simps(variable_width_broaden,
@@ -50,22 +52,18 @@ def test_area_unchanged_for_broadened_dos(material, qpt_freqs_json,
 def test_lower_bound_widths_broadened(material, qpt_freqs_json,
                                       mode_widths_json,
                                       expected_dos_json, ebins):
+    """
+    Test to ensure that points with mode width equal to
+    min(width_samples) are broadened
+    """
     qpt_freqs = get_qpt_freqs(material, qpt_freqs_json)
     mode_widths = get_mode_widths(get_fc_path(mode_widths_json))
     weights = np.ones(qpt_freqs.frequencies.shape) * \
         np.full(qpt_freqs.n_qpts, 1/qpt_freqs.n_qpts)[:, np.newaxis]
-    dos = variable_width(ebins, qpt_freqs.frequencies, mode_widths,
-                         weights, 0.01)
+    dos = width_interpolated_broadening(ebins, qpt_freqs.frequencies,
+                                        mode_widths, weights, 0.01)
     expected_dos = get_expected_spectrum1d(expected_dos_json)
-    npt.assert_allclose(expected_dos.y_data.magnitude, dos.magnitude)                  
-
-def test_gaussian():
-    """Test gaussian function against scipy.norm.pdf"""
-    xvals = np.linspace(-5,5,101)
-    sigma = 2
-    scipy_norm = norm.pdf(xvals, scale=sigma)
-    gaussian_eval = gaussian(xvals, sigma)
-    assert gaussian_eval == pytest.approx(scipy_norm)
+    npt.assert_allclose(expected_dos.y_data.magnitude, dos.magnitude)          
 
 @pytest.mark.parametrize(('spacing','expected_coeffs'),
     [(2, [-0.1883858, 1.46930932, -4.0893793, 3.80872458]),

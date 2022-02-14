@@ -10,7 +10,7 @@ from euphonic.readers import castep, phonopy
 from euphonic.util import (_calc_abscissa, get_qpoint_labels)
 from euphonic import (ureg, Crystal, Quantity, Spectrum1D,
                       Spectrum1DCollection, Spectrum2D)
-from euphonic.broadening import _variable_width
+from euphonic.broadening import _width_interpolated_broadening
 
 
 class QpointFrequencies:
@@ -209,8 +209,10 @@ class QpointFrequencies:
             elif adaptive_method=='fast':
                 # fast, approximate method for adaptive broadening
                 combined_weights = mode_weights_calc * weights[:, np.newaxis]
-                dos = _variable_width(dos_bins_calc, freqs, mode_widths,
-                                      combined_weights, adaptive_error)
+                dos = _width_interpolated_broadening(dos_bins_calc,
+                                                     freqs, mode_widths,
+                                                     combined_weights,
+                                                     adaptive_error)
         else:
             bin_idx = np.digitize(freqs, dos_bins_calc)
             # Create DOS with extra bin either side, for any points
