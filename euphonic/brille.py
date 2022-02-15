@@ -182,7 +182,7 @@ class BrilleInterpolator:
         cell_vectors = crystal._cell_vectors
         cell = crystal.to_spglib_cell()
 
-        dataset = spg.get_symmetry_dataset(cell)
+        dataset = spg.get_symmetry_dataset(cell, symprec=1e-8)
         rotations = dataset['rotations']  # in fractional
         translations = dataset['translations']  # in fractional
 
