@@ -6,6 +6,7 @@ import pytest
 import numpy as np
 import numpy.testing as npt
 from pint import DimensionalityError
+from unittest.mock import patch
 
 from euphonic import ureg, Crystal, QpointFrequencies, Spectrum1D
 from euphonic.readers.phonopy import ImportPhonopyReaderError
@@ -513,6 +514,18 @@ class TestQpointFrequenciesCalculateDos:
         ebins = np.arange(0, 1300, 4)*ureg('1/cm')
         with pytest.raises(ValueError):
             qpt_freqs.calculate_dos(ebins, adaptive_method='faster')
+
+    @patch('euphonic.qpoint_frequencies._width_interpolated_broadening',
+           return_value=np.zeros(1550))
+    def test_fast_method_called_when_selected(self, mock_fast_method):
+        qpt_freqs = get_qpt_freqs('quartz',
+                                  'quartz_554_full_qpoint_frequencies.json')
+        mode_widths = get_mode_widths(get_fc_path(
+            'quartz_554_full_mode_widths.json'))
+        ebins = np.arange(0, 155, 0.1)*ureg('meV')
+        qpt_freqs.calculate_dos(ebins, mode_widths=mode_widths,
+                                adaptive_method='fast')
+        mock_fast_method.assert_called()
 
 class TestQpointFrequenciesCalculateDosMap:
     @pytest.mark.parametrize(

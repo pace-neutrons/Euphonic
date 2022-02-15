@@ -81,13 +81,16 @@ def _width_interpolated_broadening(
     n_kernels = int(
         np.ceil(np.log(max(widths)/min(widths))/np.log(spacing)))
     width_samples = spacing**np.arange(n_kernels+1)*min(widths)
-    # Determine frequency range for gaussian kernel, the choice of
-    # 3*max(sigma) is arbitrary but tuned for acceptable error/peformance
-    x_range = 3*max(widths)
-    kernel_npts_oneside = np.ceil(x_range/bin_width)
-    kernels = norm.pdf(np.arange(-kernel_npts_oneside,
-                                 kernel_npts_oneside+1, 1)*bin_width,
-                       scale=width_samples[:, np.newaxis])*bin_width
+
+    # Evaluate kernels on regular grid of length equal to number of bins, avoids
+    # the need for zero padding in convolution step
+    if (len(bins) % 2) == 0:
+        kernels = norm.pdf(np.arange(-len(bins)/2+1, len(bins)/2)*bin_width,
+                                     scale=width_samples[:,np.newaxis])*bin_width
+    else:
+        kernels = norm.pdf(np.arange(-int(len(bins)/2), int(len(bins)/2)+1)*bin_width,
+                                     scale=width_samples[:,np.newaxis])*bin_width
+
     kernels_idx = np.searchsorted(width_samples, widths, side="right")
 
     lower_coeffs = find_coeffs(spacing)
