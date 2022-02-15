@@ -213,7 +213,7 @@ class TestBrilleInterpolatorCalculateQpointPhononModes:
     @pytest.mark.parametrize(
         'material, from_fc_kwargs, expected_sf_file', [
             ('LZO', {'n_grid_points': 100},
-             'lzo_trellis_100_structure_factor.json'),
+             'La2Zr2O7_trellis_100_structure_factor.json')
         ])
     def test_calculate_qpoint_phonon_modes(
             self, material, from_fc_kwargs, expected_sf_file):
@@ -232,11 +232,11 @@ class TestBrilleInterpolatorCalculateQpointPhononModes:
     def test_brille_qpoint_phonon_modes_similar_to_those_from_fc(self):
         fc = get_fc('graphite')
         bri = BrilleInterpolator.from_force_constants(fc, n_grid_points=5000)
-        qpts = np.array([[-0.2     ,  0.55    ,  0.55    ],
-                         [ 0.35    ,  0.07    ,  0.02    ],
-                         [ 0.00    ,  0.5    ,  0.00    ],
-                         [ 0.65    ,  0.05    ,  0.25    ],
-                         [ 1.8     ,  0.55    ,  2.55    ]])
+        qpts = np.array([[-0.20, 0.55, 0.55],
+                         [ 0.35, 0.07, 0.02],
+                         [ 0.00, 0.50, 0.00],
+                         [ 0.65, 0.05, 0.25],
+                         [ 1.80, 0.55, 2.55]])
         qpm_brille = bri.calculate_qpoint_phonon_modes(qpts)
         qpm_fc = fc.calculate_qpoint_phonon_modes(qpts)
 
@@ -288,7 +288,7 @@ class TestBrilleInterpolatorCalculateQpointFrequencies:
     @pytest.mark.parametrize(
         'material, from_fc_kwargs, expected_qpf_file', [
             ('NaCl', {'n_grid_points': 10},
-             'nacl_trellis_10_qpoint_frequencies.json'),
+             'NaCl_trellis_10_qpoint_frequencies.json'),
             ('quartz', {'grid_type': 'mesh', 'n_grid_points': 200},
              'quartz_mesh_200_qpoint_frequencies.json'),
         ])
