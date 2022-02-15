@@ -213,7 +213,9 @@ class TestBrilleInterpolatorCalculateQpointPhononModes:
     @pytest.mark.parametrize(
         'material, from_fc_kwargs, expected_sf_file', [
             ('LZO', {'n_grid_points': 100},
-             'La2Zr2O7_trellis_100_structure_factor.json')
+             'La2Zr2O7_trellis_100_structure_factor.json'),
+            ('CaHgO2', {'grid_type': 'mesh', 'n_grid_points': 50},
+             'CaHgO2_mesh_50_structure_factor.json')
         ])
     def test_calculate_qpoint_phonon_modes(
             self, material, from_fc_kwargs, expected_sf_file):
