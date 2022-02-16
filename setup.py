@@ -154,6 +154,7 @@ def run_setup():
             'brille': ['brille>=0.5.7']
         },
         entry_points={'console_scripts': [
+            'euphonic-check-brille = euphonic.cli.check_brille_settings:main',
             'euphonic-dispersion = euphonic.cli.dispersion:main',
             'euphonic-dos = euphonic.cli.dos:main',
             'euphonic-optimise-dipole-parameter = euphonic.cli.optimise_dipole_parameter:main',
