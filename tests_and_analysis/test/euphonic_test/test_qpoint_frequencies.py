@@ -2,11 +2,11 @@ import copy
 import os
 import json
 
+from unittest.mock import patch
 import pytest
 import numpy as np
 import numpy.testing as npt
 from pint import DimensionalityError
-from unittest.mock import patch
 
 from euphonic import ureg, Crystal, QpointFrequencies, Spectrum1D
 from euphonic.readers.phonopy import ImportPhonopyReaderError

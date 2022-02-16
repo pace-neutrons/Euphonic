@@ -82,14 +82,16 @@ def _width_interpolated_broadening(
         np.ceil(np.log(max(widths)/min(widths))/np.log(spacing)))
     width_samples = spacing**np.arange(n_kernels+1)*min(widths)
 
-    # Evaluate kernels on regular grid of length equal to number of bins, avoids
-    # the need for zero padding in convolution step
+    # Evaluate kernels on regular grid of length equal to number of bins,
+    #  avoids the need for zero padding in convolution step
     if (len(bins) % 2) == 0:
-        kernels = norm.pdf(np.arange(-len(bins)/2+1, len(bins)/2)*bin_width,
-                                     scale=width_samples[:,np.newaxis])*bin_width
+        kernels = norm.pdf(
+            np.arange(-len(bins)/2+1, len(bins)/2)*bin_width,
+            scale=width_samples[:,np.newaxis])*bin_width
     else:
-        kernels = norm.pdf(np.arange(-int(len(bins)/2), int(len(bins)/2)+1)*bin_width,
-                                     scale=width_samples[:,np.newaxis])*bin_width
+        kernels = norm.pdf(
+            np.arange(-int(len(bins)/2), int(len(bins)/2)+1)*bin_width,
+            scale=width_samples[:,np.newaxis])*bin_width
 
     kernels_idx = np.searchsorted(width_samples, widths, side="right")
 
