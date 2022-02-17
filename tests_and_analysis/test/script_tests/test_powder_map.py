@@ -61,7 +61,7 @@ powder_map_params_macos_segfault = [
     [nacl_prim_fc_file, '--temperature=1000', '--weighting=coherent',
      *quick_calc_params]]
 powder_map_params_brille = [[graphite_fc_file, '--use-brille',
-                             '--brille-n-qpts', '10',
+                             '--brille-npts', '10',
                              '--brille-grid-type', 'nest',
                              '-w', 'coherent',
                              *quick_calc_params]]
@@ -150,7 +150,7 @@ class TestRegression:
     @pytest.mark.brille
     @pytest.mark.multiple_extras
     @pytest.mark.parametrize('powder_map_args, expected_kwargs', [
-        (['--use-brille', '--brille-n-qpts', '25', '--disable-c'],
+        (['--use-brille', '--brille-npts', '25', '--disable-c'],
          {'n_grid_points': 25, 'grid_type': 'trellis',
           'interpolation_kwargs': {'use_c': False}}),
         (['--use-brille', '--brille-grid-type', 'mesh', '--use-c',
@@ -175,7 +175,8 @@ class TestRegression:
             pass
         default_interp_kwargs =  {'asr': None, 'dipole_parameter': 1.0,
                                   'n_threads': None, 'use_c': None}
-        default_kwargs = {'grid_type': 'trellis', 'n_grid_points': 5000}
+        default_kwargs = {'grid_type': 'trellis', 'n_grid_points': 5000,
+                          'grid_density': None}
         expected_interp_kwargs = {
             **default_interp_kwargs,
             **expected_kwargs.pop('interpolation_kwargs', {})}

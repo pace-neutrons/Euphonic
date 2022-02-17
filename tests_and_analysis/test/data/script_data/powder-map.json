@@ -4062,7 +4062,7 @@
             6.936512952535646e-05
         ]
     },
-    "graphite graphite.castep_bin --use-brille --brille-n-qpts 10 --brille-grid-type nest -w coherent --npts=10 --npts-min=10 --q-spacing=1": {
+    "graphite graphite.castep_bin --use-brille --brille-npts 10 --brille-grid-type nest -w coherent --npts=10 --npts-min=10 --q-spacing=1": {
         "x_ticklabels": [
             "0.0",
             "0.5",

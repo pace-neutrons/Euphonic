@@ -831,9 +831,14 @@ def _get_cli_parser(features: Collection[str] = {},
                   '"grid_type" kwarg of '
                   'BrilleInterpolator.from_force_constants'))
         sections['brille'].add_argument(
-            '--brille-n-qpts', type=int, default=5000,
+            '--brille-npts', type=int, default=5000,
             help=('Approximate number of q-points to generate on the '
                   'Brille grid, is passed to the "n_grid_points" kwarg '
+                  'of BrilleInterpolator.from_force_constants'))
+        sections['brille'].add_argument(
+            '--brille-npts-density', type=int, default=None,
+            help=('Approximate density of q-points to generate on the '
+                  'Brille grid, is passed to the "grid_density" kwarg '
                   'of BrilleInterpolator.from_force_constants'))
 
     if 'dipole-parameter-optimisation' in features:
