@@ -28,7 +28,8 @@ def check_brille_settings(
         npts: int = 500,
         use_brille: bool = True,
         brille_grid_type: str = 'trellis',
-        brille_n_qpts: int = 5000,
+        brille_npts: int = 5000,
+        brille_npts_density: Optional[int] = None,
         **calc_modes_kwargs
         ) -> None:
 
@@ -43,26 +44,36 @@ def check_brille_settings(
 
     fig, ax = plt.subplots()
 
-    for brille_n_qpts_i in brille_n_qpts:
+    if brille_npts_density is not None:
+        brille_params = brille_npts_density
+        brille_param_key = 'grid_density'
+    else:
+        brille_params = brille_npts
+        brille_param_key = 'n_grid_points'
+
+    for brille_param_i in brille_params:
 
         brille_fc = BrilleInterpolator.from_force_constants(
             fc, grid_type=brille_grid_type,
-            n_grid_points=brille_n_qpts_i,
-            interpolation_kwargs=calc_modes_kwargs)    
+            interpolation_kwargs=calc_modes_kwargs,
+            **{brille_param_key: brille_param_i})
 
-        actual_brille_n_qpts = len(brille_fc._grid.rlu)
+        actual_brille_npts = len(brille_fc._grid.rlu)
+        bz_vol = brille_fc._grid.BrillouinZone.ir_polyhedron.volume
+        actual_brille_density = int(actual_brille_npts/bz_vol)
+
 
         interp_modes = brille_fc.calculate_qpoint_phonon_modes(qpts)
 
         eps = interp_modes.frequencies.magnitude - modes.frequencies.magnitude
 
         ax.plot(modes.frequencies.magnitude.flatten(), eps.flatten(), 'x',
-                label=str(actual_brille_n_qpts))
+                label=f'{actual_brille_npts} ({actual_brille_density})')
 
     ax.set_xlabel(f'Frequency / {modes.frequencies.units:~P}')
     ax.set_ylabel(f'Epsilon / {modes.frequencies.units:~P}')
 
-    ax.legend(title='Brille mesh size')
+    ax.legend(title='Brille mesh size (density)')
     ax.set_title(Path(filename).name)
     plt.show()
 
@@ -80,9 +91,14 @@ def get_parser() -> ArgumentParser:
                                           'used in error estimate.'))
     sections['brille'].add_argument('--use-brille', help=SUPPRESS)
     sections['brille'].add_argument(
-        '--brille-n-qpts', type=int, default=[5000], nargs='+',
+        '--brille-npts', type=int, default=[5000], nargs='+',
         help=('Approximate number of q-points to generate on the '
               'Brille grid, is passed to the "n_grid_points" kwarg '
+              'of BrilleInterpolator.from_force_constants'))
+    sections['brille'].add_argument(
+        '--brille-npts-density', type=int, default=None, nargs='+',
+        help=('Approximate density of q-points to generate on the '
+              'Brille grid, is passed to the "grid_density" kwarg '
               'of BrilleInterpolator.from_force_constants'))
 
     return parser

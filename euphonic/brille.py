@@ -131,6 +131,7 @@ class BrilleInterpolator:
     def from_force_constants(
             cls: Type[T], force_constants: ForceConstants,
             grid_type: str = 'trellis', n_grid_points: int = 1000,
+            grid_density: Optional[int] = None,
             grid_kwargs: Optional[Dict[str, Any]] = None,
             interpolation_kwargs: Optional[Dict[str, Any]] = None) -> T:
         """
@@ -160,6 +161,9 @@ class BrilleInterpolator:
             closer to the ForceConstants Fourier interpolation,
             but the initialisation and memory costs will be higher.
             This does nothing if grid_kwargs is set
+        grid_density
+            The approximate density of q-points per 1/angstrom^3
+            volume
         grid_kwargs
             Kwargs to be passed to the grid constructor (e.g.
             brille.BZTrellisQdc). If set n_grid_points does
@@ -192,21 +196,35 @@ class BrilleInterpolator:
         bz = br.BrillouinZone(direct.star)
 
         print('Generating grid...')
+        vol = bz.ir_polyhedron.volume
         if grid_type == 'trellis':
             if grid_kwargs is None:
-                vol = bz.ir_polyhedron.volume
-                grid_kwargs = {
-                    'node_volume_fraction': vol/n_grid_points}
+                if grid_density is not None:
+                    grid_kwargs = {
+                        'node_volume_fraction': 1/grid_density}
+                else:
+                    # node_volume_fraction actually describes cube
+                    # volume used to generate tetrahedra
+                    grid_kwargs = {
+                        'node_volume_fraction': vol/n_grid_points}
             grid = br.BZTrellisQdc(bz, **grid_kwargs)
         elif grid_type == 'mesh':
             if grid_kwargs is None:
-                grid_kwargs = {
-                    'max_size': bz.ir_polyhedron.volume/n_grid_points,
-                    'max_points': n_grid_points}
+                if grid_density is not None:
+                    grid_kwargs = {
+                        'max_size': 1/grid_density,
+                        'max_points': int(grid_density*vol)}
+                else:
+                    grid_kwargs = {
+                        'max_size': vol/n_grid_points,
+                        'max_points': n_grid_points}
             grid = br.BZMeshQdc(bz, **grid_kwargs)
         elif grid_type == 'nest':
             if grid_kwargs is None:
-                grid_kwargs = {'number_density': n_grid_points}
+                if grid_density is not None:
+                    grid_kwargs = {'number_density': int(grid_density*vol)}
+                else:
+                    grid_kwargs = {'number_density': n_grid_points}
             grid = br.BZNestQdc(bz, **grid_kwargs)
 
         print(f'Grid generated with {len(grid.rlu)} q-points. '
