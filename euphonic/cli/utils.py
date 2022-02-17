@@ -470,7 +470,8 @@ def _brille_calc_modes_kwargs(args: Namespace) -> Dict[str, Any]:
         return dict(useparallel=parallel, threads=args.n_threads)
 
 
-def _get_cli_parser(features: Collection[str] = {}
+def _get_cli_parser(features: Collection[str] = {},
+                    conflict_handler: str = 'error'
                     ) -> Tuple[ArgumentParser,
                                Dict[str, _ArgumentGroup]]:
     """Instantiate an ArgumentParser with appropriate argument groups
@@ -482,6 +483,9 @@ def _get_cli_parser(features: Collection[str] = {}
         Known keys: read-fc, read-modes, ins-weighting, pdos-weighting,
         powder, mp-grid, plotting, ebins, adaptive-broadening, q-e,
         map, btol, dipole-parameter-optimisation
+    conflict_handler
+        With default value ('error') parser will not allow arguments
+        to be re-defined. To allow this, set to 'resolve'.
 
     Returns
     -------
@@ -516,7 +520,8 @@ def _get_cli_parser(features: Collection[str] = {}
     _ins_choices = ('coherent',)
 
     parser = ArgumentParser(
-        formatter_class=ArgumentDefaultsHelpFormatter)
+        formatter_class=ArgumentDefaultsHelpFormatter,
+        conflict_handler=conflict_handler)
 
     # Set up groups; these are only displayed if used, so simplest to
     # instantiate them all now and guarantee consistent order/presence
