@@ -555,7 +555,7 @@ class TestQpointPhononModesCalculateDos:
         dos = qpt_ph_modes.calculate_dos(
             ebins, mode_widths=mode_widths, **kwargs)
         expected_dos = get_expected_spectrum1d(expected_dos_json)
-        check_spectrum1d(dos, expected_dos, tol=1e-13)
+        check_spectrum1d(dos, expected_dos, y_atol=1e-13)
 
     @pytest.mark.parametrize(
         ('material, qpt_ph_modes_json, mode_widths_json, ebins'), [
@@ -654,7 +654,7 @@ class TestQpointPhononModesCalculatePdos:
             ebins, mode_widths=mode_widths,
             weighting='coherent', **kwargs)
         expected_pdos = get_expected_spectrum1dcollection(expected_pdos_json)
-        check_spectrum1dcollection(pdos, expected_pdos, 1e-12)
+        check_spectrum1dcollection(pdos, expected_pdos, y_atol=1e-12)
 
     @pytest.mark.parametrize(
         'material, qpt_ph_modes_file, expected_dos_json, ebins', [
@@ -691,7 +691,7 @@ class TestQpointPhononModesCalculatePdos:
         summed_pdos = qpt_ph_modes.calculate_pdos(
             ebins, mode_widths=mode_widths, **kwargs).sum()
         expected_total_dos = get_expected_spectrum1d(expected_dos_json)
-        check_spectrum1d(summed_pdos, expected_total_dos, tol=1e-13)
+        check_spectrum1d(summed_pdos, expected_total_dos, y_atol=1e-13)
 
     def test_invalid_weighting_raises_value_error(self):
         qpt_ph_modes = QpointPhononModes.from_castep(

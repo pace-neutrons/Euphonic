@@ -16,7 +16,12 @@ def width_interpolated_broadening(bins: Quantity,
                                   adaptive_error: float) -> Quantity:
     """
     Uses a fast, approximate method to broaden a spectrum
-    with a variable-width kernel.
+    with a variable-width kernel. Exact Gaussians are calculated
+    at logrithmically spaced values across the range of widths.
+    A small set of spectra that have been scaled using the weights
+    from linear combinations of the exact Gaussians are convolved
+    using Fast Fourier Transforms (FFT) and then summed to give the
+    approximate broadened spectra.
 
     Parameters
     ----------
