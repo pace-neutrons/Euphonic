@@ -88,7 +88,9 @@ def get_expected_spectrum1dcollection(json_filename):
     return ExpectedSpectrum1DCollection(get_spectrum_path(json_filename))
 
 
-def check_spectrum1dcollection(actual_spectrum, expected_spectrum, y_atol=None):
+def check_spectrum1dcollection(actual_spectrum,
+                               expected_spectrum,
+                               y_atol=None):
 
     if y_atol is None:
         y_atol = np.finfo(np.float64).eps
