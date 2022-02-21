@@ -175,7 +175,8 @@ def main(params: Optional[List[str]] = None) -> None:
         spectrum = spectrum.apply_kinematic_constraints(e_i=e_i, e_f=e_f,
                                                         angle_range=args.angle_range)
 
-    print(f"Plotting figure: max intensity {np.nanmax(spectrum.z_data):~P}")
+    print(f"Plotting figure: max intensity "
+          f"{np.nanmax(spectrum.z_data.magnitude) * spectrum.z_data.units:~P}")
     plot_label_kwargs = _plot_label_kwargs(
         args, default_xlabel=f"|q| / {q_min.units:~P}",
         default_ylabel=f"Energy / {spectrum.y_data.units:~P}")
