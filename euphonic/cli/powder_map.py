@@ -170,10 +170,11 @@ def main(params: Optional[List[str]] = None) -> None:
 
     if args.angle_range is not None:
         print("Applying kinematic constraints")
-        e_i = args.e_i * ureg(args.energy_unit) if (args.e_i is not None) else None
-        e_f = args.e_f * ureg(args.energy_unit) if (args.e_f is not None) else None        
-        spectrum = spectrum.apply_kinematic_constraints(e_i=e_i, e_f=e_f,
-                                                        angle_range=args.angle_range)
+        energy_unit = args.energy_unit
+        e_i = args.e_i * ureg(energy_unit) if (args.e_i is not None) else None
+        e_f = args.e_f * ureg(energy_unit) if (args.e_f is not None) else None
+        spectrum = spectrum.apply_kinematic_constraints(
+            e_i=e_i, e_f=e_f, angle_range=args.angle_range)
 
     print(f"Plotting figure: max intensity "
           f"{np.nanmax(spectrum.z_data.magnitude) * spectrum.z_data.units:~P}")
@@ -218,6 +219,7 @@ def main(params: Optional[List[str]] = None) -> None:
                              initial=f'{cmin:{fmt_str}}', label_pad=pad)
             maxbox = TextBox(axmax, max_label,
                              initial=f'{cmax:{fmt_str}}', label_pad=pad)
+
             def update_min(min_val):
                 image.set_clim(vmin=float(min_val))
                 fig.canvas.draw()
