@@ -41,8 +41,10 @@ def check_brille_settings(
     qpts = np.fromiter(itertools.chain.from_iterable(
         recurrence_sequence(npts, order=3)), dtype=float).reshape(-1, 3)
     modes = fc.calculate_qpoint_phonon_modes(qpts, **calc_modes_kwargs)
+    sf = modes.calculate_structure_factor()
 
     fig, ax = plt.subplots()
+    fig_sf, ax_sf = plt.subplots()
 
     if brille_npts_density is not None:
         brille_params = brille_npts_density
@@ -62,19 +64,28 @@ def check_brille_settings(
         bz_vol = brille_fc._grid.BrillouinZone.ir_polyhedron.volume
         actual_brille_density = int(actual_brille_npts/bz_vol)
 
-
         interp_modes = brille_fc.calculate_qpoint_phonon_modes(qpts)
+        interp_sf = interp_modes.calculate_structure_factor()
 
         eps = interp_modes.frequencies.magnitude - modes.frequencies.magnitude
+        eps_sf = (interp_sf.structure_factors.magnitude
+                  - sf.structure_factors.magnitude)
 
         ax.plot(modes.frequencies.magnitude.flatten(), eps.flatten(), 'x',
                 label=f'{actual_brille_npts} ({actual_brille_density})')
+        ax_sf.plot(sf.structure_factors.magnitude.flatten(), eps_sf.flatten(), 'x',
+                   label=f'{actual_brille_npts} ({actual_brille_density})')
 
     ax.set_xlabel(f'Frequency / {modes.frequencies.units:~P}')
     ax.set_ylabel(f'Epsilon / {modes.frequencies.units:~P}')
-
     ax.legend(title='Brille mesh size (density)')
     ax.set_title(Path(filename).name)
+
+    ax_sf.set_xlabel(f'Structure factors / {sf.structure_factors.units:~P}')
+    ax_sf.set_ylabel(f'Epsilon / {sf.structure_factors.units:~P}')
+    ax_sf.legend(title='Brille mesh size (density)')
+    ax_sf.set_title(Path(filename).name)
+
     plt.show()
 
 
