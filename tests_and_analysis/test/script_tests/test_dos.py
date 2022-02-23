@@ -44,7 +44,11 @@ dos_params = [
     [quartz_fc_file, '--grid', '5', '5', '4'],
     [quartz_fc_file, '--grid', '5', '5', '4', '--adaptive', '--pdos'],
     [quartz_fc_file, '--grid', '5', '5', '4', '--adaptive'],
-    [quartz_fc_file, '--grid', '5', '5', '4', '--adaptive', '--eb', '2']]
+    [quartz_fc_file, '--grid', '5', '5', '4', '--adaptive', '--eb', '2'],
+    [quartz_fc_file, '--grid', '5', '5', '4', '--adaptive',
+     '--adaptive-method=fast'],
+    [quartz_fc_file, '--grid', '5', '5', '4', '--adaptive',
+     '--adaptive-method=fast', '--adaptive-error=0.05']]
 dos_params_from_phonopy = [[nacl_no_evec_yaml_file]]
 
 

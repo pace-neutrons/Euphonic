@@ -408,6 +408,8 @@ class QpointPhononModes(QpointFrequencies):
             self, dos_bins: Quantity,
             mode_widths: Optional[Quantity] = None,
             mode_widths_min: Quantity = Quantity(0.01, 'meV'),
+            adaptive_method: Optional[str] = 'reference',
+            adaptive_error: Optional[float] = 0.01,
             weighting: Optional[str] = None,
             cross_sections: Union[str, Dict[str, Quantity]] = 'BlueBook',
             ) -> Spectrum1DCollection:
@@ -428,6 +430,14 @@ class QpointPhononModes(QpointFrequencies):
             Scalar float Quantity in energy units. Sets a lower limit on
             the mode widths, as mode widths of zero will result in
             infinitely sharp peaks.
+        adaptive_method
+            String. Specifies whether to use slow, reference adaptive method or
+            faster, approximate method. Allowed options are 'reference'
+            or 'fast', default is 'reference'.
+        adaptive_error
+            Scalar float. Acceptable error for gaussian approximations
+            when using the fast adaptive method, defined as the absolute
+            difference between the areas of the true and approximate gaussians
         weighting
             One of {'coherent', 'incoherent', 'coherent-plus-incoherent'}.
             If provided, produces a neutron-weighted DOS, weighted by
@@ -509,6 +519,8 @@ class QpointPhononModes(QpointFrequencies):
         for i in range(crystal.n_atoms):
             dos = self._calculate_dos(dos_bins, mode_widths=mode_widths,
                                       mode_widths_min=mode_widths_min,
+                                      adaptive_method=adaptive_method,
+                                      adaptive_error=adaptive_error,
                                       mode_weights=evec_weights[:, :, i])
             if cs is not None:
                 # Neutron weighted DOS is per atom of sample

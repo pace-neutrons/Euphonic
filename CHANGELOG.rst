@@ -7,6 +7,14 @@
     ``euphonic-intensity-map`` command-line tools can now read
     files that don't contain eigenvectors, if eigenvectors are
     not required for the chosen options.
+  - There is now the option to use a fast, approximate variable-width broadening method when
+    adaptively broadening dos:
+
+    - Added new ``adaptive_method`` and ``adaptive_error`` arguments for ``calculate_dos``
+      which specify which adaptive broadening method to use (``reference`` or ``fast``) and an
+      acceptable error level when using the ``fast`` method.
+    - Fast adaptive broadening can be used in the ``euphonic-dos`` tool with the
+      ``--adaptive-method`` and ``--adaptive-error`` arguments.
 
 - Changes:
 

@@ -721,6 +721,17 @@ def _get_cli_parser(features: Collection[str] = {}
                     help=('Use adaptive broadening on the energy axis to '
                           'broaden based on phonon mode widths, rather than '
                           'using fixed width broadening'))
+                section.add_argument(
+                    '--adaptive-method', type=str, default='reference',
+                    dest='adaptive_method', choices=('reference', 'fast'),
+                    help='The adaptive broadening method')
+                section.add_argument(
+                    '--adaptive-error', type=float, default=0.01,
+                    dest='adaptive_error',
+                    help=('Maximum absolute error '
+                          'for gaussian approximations '
+                          'when using the fast adaptive '
+                          'broadening method'))
                 eb_help = (
                     'If using fixed width broadening, the FWHM of broadening '
                     'on energy axis in ENERGY_UNIT (no broadening if '

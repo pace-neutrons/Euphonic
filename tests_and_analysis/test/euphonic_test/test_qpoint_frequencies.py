@@ -2,6 +2,7 @@ import copy
 import os
 import json
 
+from unittest.mock import patch
 import pytest
 import numpy as np
 import numpy.testing as npt
@@ -22,8 +23,7 @@ from tests_and_analysis.test.euphonic_test.test_spectrum2d import (
 from tests_and_analysis.test.utils import (
     get_data_path, get_castep_path, get_phonopy_path,
     check_frequencies_at_qpts, check_unit_conversion,
-    check_json_metadata, check_property_setters)
-
+    check_json_metadata, check_property_setters, get_mode_widths)
 
 class ExpectedQpointFrequencies:
 
@@ -93,7 +93,6 @@ def get_qpt_freqs(material, json_file):
 def get_expected_qpt_freqs(material, json_file):
     return ExpectedQpointFrequencies(
         get_qpt_freqs_path(material, json_file))
-
 
 def check_qpt_freqs(
         qpoint_frequencies, expected_qpoint_frequencies,
@@ -424,32 +423,58 @@ class TestQpointFrequenciesCalculateDos:
 
     @pytest.mark.parametrize(
         ('material, qpt_freqs_json, mode_widths_json, '
-         'expected_dos_json, ebins'), [
+         'expected_dos_json, ebins, kwargs'), [
             ('quartz', 'quartz_554_full_qpoint_frequencies.json',
              'quartz_554_full_mode_widths.json',
              'quartz_554_full_adaptive_dos.json',
-             np.arange(0, 155, 0.1)*ureg('meV')),
+             np.arange(0, 155, 0.1)*ureg('meV'),
+             {'adaptive_method':'reference'}),
+            ('quartz', 'quartz_554_full_qpoint_frequencies.json',
+             'quartz_554_full_mode_widths.json',
+             'quartz_554_full_adaptive_dos_fast.json',
+             np.arange(0, 155, 0.1)*ureg('meV'),
+             {'adaptive_method':'fast'}),
             ('LZO', 'lzo_222_full_qpoint_frequencies.json',
              'lzo_222_full_mode_widths.json',
              'lzo_222_full_adaptive_dos.json',
-             np.arange(0, 100, 0.1)*ureg('meV')),
+             np.arange(0, 100, 0.1)*ureg('meV'),
+             {'adaptive_method':'reference'}),
+            ('LZO', 'lzo_222_full_qpoint_frequencies.json',
+             'lzo_222_full_mode_widths.json',
+             'lzo_222_full_adaptive_dos_fast.json',
+             np.arange(0, 100, 0.1)*ureg('meV'),
+             {'adaptive_method':'fast'}),
             ('quartz', 'toy_quartz_qpoint_frequencies.json',
              'toy_quartz_mode_widths.json',
              'toy_quartz_uneven_adaptive_dos.json',
              np.concatenate((np.arange(0, 15, 0.1),
-                             np.arange(15, 40, 0.2)))*ureg('meV'))])
+                             np.arange(15, 40, 0.2)))*ureg('meV'),
+             {'adaptive_method':'reference'})])
     def test_calculate_dos_with_mode_widths(
             self, material, qpt_freqs_json, mode_widths_json,
-            expected_dos_json, ebins):
+            expected_dos_json, ebins, kwargs):
         qpt_freqs = get_qpt_freqs(material, qpt_freqs_json)
-        with open(get_fc_path(mode_widths_json), 'r') as fp:
-            modw_dict = json.load(fp)
-        mode_widths = modw_dict['mode_widths']*ureg(
-            modw_dict['mode_widths_unit'])
+        mode_widths = get_mode_widths(get_fc_path(mode_widths_json))
         dos = qpt_freqs.calculate_dos(
-            ebins, mode_widths=mode_widths)
+            ebins, mode_widths=mode_widths, **kwargs)
         expected_dos = get_expected_spectrum1d(expected_dos_json)
-        check_spectrum1d(dos, expected_dos)
+        check_spectrum1d(dos, expected_dos, y_atol=1e-13)
+
+    @pytest.mark.parametrize(
+        ('material, qpt_freqs_json, mode_widths_json, ebins'), [
+            ('quartz', 'quartz_554_full_qpoint_frequencies.json',
+             'quartz_554_full_mode_widths.json',
+             np.arange(0, 155, 0.1)*ureg('meV'))])
+    def test_calculate_dos_similar_for_ref_and_fast_methods(
+            self, material, qpt_freqs_json, mode_widths_json, ebins):
+        qpt_freqs = get_qpt_freqs(material, qpt_freqs_json)
+        mode_widths = get_mode_widths(get_fc_path(mode_widths_json))
+        fast_adaptive_dos = qpt_freqs.calculate_dos(
+            ebins, mode_widths=mode_widths, adaptive_method='fast')
+        ref_adaptive_dos = qpt_freqs.calculate_dos(ebins,
+            mode_widths=mode_widths, adaptive_method='reference')
+        assert fast_adaptive_dos.y_data.magnitude == \
+            pytest.approx(ref_adaptive_dos.y_data.magnitude, abs=0.1)
 
     @pytest.mark.parametrize(
         ('material, qpt_freqs_json, mode_widths_json, mode_widths_min, '
@@ -466,10 +491,7 @@ class TestQpointFrequenciesCalculateDos:
             self, material, qpt_freqs_json, mode_widths_json,
             mode_widths_min, ebins):
         qpt_freqs = get_qpt_freqs(material, qpt_freqs_json)
-        with open(get_fc_path(mode_widths_json), 'r') as fp:
-            modw_dict = json.load(fp)
-        mode_widths = modw_dict['mode_widths']*ureg(
-            modw_dict['mode_widths_unit'])
+        mode_widths = get_mode_widths(get_fc_path(mode_widths_json))
         dos = qpt_freqs.calculate_dos(ebins, mode_widths=mode_widths,
                                       mode_widths_min=mode_widths_min)
         mode_widths = np.maximum(
@@ -485,6 +507,25 @@ class TestQpointFrequenciesCalculateDos:
         with pytest.warns(None) as warn_record:
             dos = qpt_freqs.calculate_dos(ebins)
         assert len(warn_record) == 0
+
+    def test_incorrect_adaptive_method_error(self):
+        qpt_freqs = get_qpt_freqs(
+            'quartz', 'quartz_666_qpoint_frequencies.json')
+        ebins = np.arange(0, 1300, 4)*ureg('1/cm')
+        with pytest.raises(ValueError):
+            qpt_freqs.calculate_dos(ebins, adaptive_method='faster')
+
+    @patch('euphonic.qpoint_frequencies._width_interpolated_broadening',
+           return_value=np.zeros(1550))
+    def test_fast_method_called_when_selected(self, mock_fast_method):
+        qpt_freqs = get_qpt_freqs('quartz',
+                                  'quartz_554_full_qpoint_frequencies.json')
+        mode_widths = get_mode_widths(get_fc_path(
+            'quartz_554_full_mode_widths.json'))
+        ebins = np.arange(0, 155, 0.1)*ureg('meV')
+        qpt_freqs.calculate_dos(ebins, mode_widths=mode_widths,
+                                adaptive_method='fast')
+        mock_fast_method.assert_called()
 
 class TestQpointFrequenciesCalculateDosMap:
     @pytest.mark.parametrize(

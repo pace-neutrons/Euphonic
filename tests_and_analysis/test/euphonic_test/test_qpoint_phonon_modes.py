@@ -23,7 +23,7 @@ from tests_and_analysis.test.euphonic_test.test_spectrum1dcollection import (
 from tests_and_analysis.test.utils import (
     get_data_path, get_castep_path, get_phonopy_path,
     check_frequencies_at_qpts, check_unit_conversion,
-    check_json_metadata, check_property_setters)
+    check_json_metadata, check_property_setters, get_mode_widths)
 
 
 class ExpectedQpointPhononModes:
@@ -95,7 +95,6 @@ class ExpectedQpointPhononModes:
 
 def get_qpt_ph_modes_path(*subpaths):
     return get_data_path('qpoint_phonon_modes', *subpaths)
-
 
 def get_json_file(material):
     return f'{material}_reciprocal_qpoint_phonon_modes.json'
@@ -537,23 +536,42 @@ class TestQpointPhononModesCalculateDos:
 
     @pytest.mark.parametrize(
         ('material, qpt_ph_modes_json, mode_widths_json, '
-         'expected_dos_json, ebins'), [
+         'expected_dos_json, ebins, kwargs'), [
             ('quartz', 'quartz_554_full_qpoint_phonon_modes.json',
              'quartz_554_full_mode_widths.json',
              'quartz_554_full_adaptive_dos.json',
-             np.arange(0, 155, 0.1)*ureg('meV'))])
+             np.arange(0, 155, 0.1)*ureg('meV'),
+             {'adaptive_method':'reference'}),
+            ('quartz', 'quartz_554_full_qpoint_phonon_modes.json',
+             'quartz_554_full_mode_widths.json',
+             'quartz_554_full_adaptive_dos_fast.json',
+             np.arange(0, 155, 0.1)*ureg('meV'),
+             {'adaptive_method':'fast'})])
     def test_calculate_dos_with_mode_widths(
             self, material, qpt_ph_modes_json, mode_widths_json,
-            expected_dos_json, ebins):
+            expected_dos_json, ebins, kwargs):
         qpt_ph_modes = get_qpt_ph_modes_from_json(material, qpt_ph_modes_json)
-        with open(get_fc_path(mode_widths_json), 'r') as fp:
-            modw_dict = json.load(fp)
-        mode_widths = modw_dict['mode_widths']*ureg(
-            modw_dict['mode_widths_unit'])
+        mode_widths = get_mode_widths(get_fc_path(mode_widths_json))
         dos = qpt_ph_modes.calculate_dos(
-            ebins, mode_widths=mode_widths)
+            ebins, mode_widths=mode_widths, **kwargs)
         expected_dos = get_expected_spectrum1d(expected_dos_json)
-        check_spectrum1d(dos, expected_dos)
+        check_spectrum1d(dos, expected_dos, y_atol=1e-13)
+
+    @pytest.mark.parametrize(
+        ('material, qpt_ph_modes_json, mode_widths_json, ebins'), [
+            ('quartz', 'quartz_554_full_qpoint_phonon_modes.json',
+             'quartz_554_full_mode_widths.json',
+             np.arange(0, 155, 0.1)*ureg('meV'))])
+    def test_calculate_dos_similar_for_ref_and_fast_methods(
+            self, material, qpt_ph_modes_json, mode_widths_json, ebins):
+        qpt_ph_modes = get_qpt_ph_modes_from_json(material, qpt_ph_modes_json)
+        mode_widths = get_mode_widths(get_fc_path(mode_widths_json))
+        ref_adaptive_dos = qpt_ph_modes.calculate_dos(
+            ebins, mode_widths=mode_widths, adaptive_method='reference')
+        fast_adaptive_dos = qpt_ph_modes.calculate_dos(
+            ebins, mode_widths=mode_widths, adaptive_method='fast')
+        assert fast_adaptive_dos.y_data.magnitude == \
+            pytest.approx(ref_adaptive_dos.y_data.magnitude, abs=0.1)
 
     @pytest.mark.parametrize(
         ('material, qpt_ph_modes_json, mode_widths_json, mode_widths_min, '
@@ -566,10 +584,7 @@ class TestQpointPhononModesCalculateDos:
             self, material, qpt_ph_modes_json, mode_widths_json,
             mode_widths_min, ebins):
         qpt_ph_modes = get_qpt_ph_modes_from_json(material, qpt_ph_modes_json)
-        with open(get_fc_path(mode_widths_json), 'r') as fp:
-            modw_dict = json.load(fp)
-        mode_widths = modw_dict['mode_widths']*ureg(
-            modw_dict['mode_widths_unit'])
+        mode_widths = get_mode_widths(get_fc_path(mode_widths_json))
         dos = qpt_ph_modes.calculate_dos(ebins, mode_widths=mode_widths,
                                       mode_widths_min=mode_widths_min)
         mode_widths = np.maximum(
@@ -619,23 +634,27 @@ class TestQpointPhononModesCalculatePdos:
 
     @pytest.mark.parametrize(
         ('material, qpt_ph_modes_json, mode_widths_json, '
-         'expected_pdos_json, ebins'), [
+         'expected_pdos_json, ebins, kwargs'), [
             ('LZO', 'lzo_222_full_qpoint_phonon_modes.json',
              'lzo_222_full_mode_widths.json',
              'lzo_222_full_adaptive_coh_pdos.json',
-             np.arange(0, 100, 0.5)*ureg('meV'))])
+             np.arange(0, 100, 0.5)*ureg('meV'),
+             {'adaptive_method':'reference'}),
+            ('LZO', 'lzo_222_full_qpoint_phonon_modes.json',
+             'lzo_222_full_mode_widths.json',
+             'lzo_222_full_adaptive_fast_coh_pdos.json',
+             np.arange(0, 100, 0.5)*ureg('meV'),
+             {'adaptive_method':'fast'})])
     def test_calculate_pdos_with_mode_widths(
             self, material, qpt_ph_modes_json, mode_widths_json,
-            expected_pdos_json, ebins):
+            expected_pdos_json, ebins, kwargs):
         qpt_ph_modes = get_qpt_ph_modes_from_json(material, qpt_ph_modes_json)
-        with open(get_fc_path(mode_widths_json), 'r') as fp:
-            modw_dict = json.load(fp)
-        mode_widths = modw_dict['mode_widths']*ureg(
-            modw_dict['mode_widths_unit'])
+        mode_widths = get_mode_widths(get_fc_path(mode_widths_json))
         pdos = qpt_ph_modes.calculate_pdos(
-            ebins, mode_widths=mode_widths, weighting='coherent')
+            ebins, mode_widths=mode_widths,
+            weighting='coherent', **kwargs)
         expected_pdos = get_expected_spectrum1dcollection(expected_pdos_json)
-        check_spectrum1dcollection(pdos, expected_pdos)
+        check_spectrum1dcollection(pdos, expected_pdos, y_atol=1e-12)
 
     @pytest.mark.parametrize(
         'material, qpt_ph_modes_file, expected_dos_json, ebins', [
@@ -652,24 +671,27 @@ class TestQpointPhononModesCalculatePdos:
 
     @pytest.mark.parametrize(
         ('material, qpt_ph_modes_json, mode_widths_json, expected_dos_json, '
-         'ebins'), [
+         'ebins, kwargs'), [
             ('quartz', 'quartz_554_full_qpoint_phonon_modes.json',
              'quartz_554_full_mode_widths.json',
              'quartz_554_full_adaptive_dos.json',
-             np.arange(0, 155, 0.1)*ureg('meV'))
+             np.arange(0, 155, 0.1)*ureg('meV'),
+             {'adaptive_method':'reference'}),
+            ('quartz', 'quartz_554_full_qpoint_phonon_modes.json',
+             'quartz_554_full_mode_widths.json',
+             'quartz_554_full_adaptive_dos_fast.json',
+             np.arange(0, 155, 0.1)*ureg('meV'),
+             {'adaptive_method':'fast'})
         ])
     def test_total_dos_from_pdos_same_as_calculate_dos_with_mode_widths(
             self, material, qpt_ph_modes_json, mode_widths_json,
-            expected_dos_json, ebins):
+            expected_dos_json, ebins, kwargs):
         qpt_ph_modes = get_qpt_ph_modes_from_json(material, qpt_ph_modes_json)
-        with open(get_fc_path(mode_widths_json), 'r') as fp:
-            modw_dict = json.load(fp)
-        mode_widths = modw_dict['mode_widths']*ureg(
-            modw_dict['mode_widths_unit'])
+        mode_widths = get_mode_widths(get_fc_path(mode_widths_json))
         summed_pdos = qpt_ph_modes.calculate_pdos(
-            ebins, mode_widths=mode_widths).sum()
+            ebins, mode_widths=mode_widths, **kwargs).sum()
         expected_total_dos = get_expected_spectrum1d(expected_dos_json)
-        check_spectrum1d(summed_pdos, expected_total_dos)
+        check_spectrum1d(summed_pdos, expected_total_dos, y_atol=1e-13)
 
     def test_invalid_weighting_raises_value_error(self):
         qpt_ph_modes = QpointPhononModes.from_castep(

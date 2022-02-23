@@ -10,6 +10,7 @@ from euphonic.readers import castep, phonopy
 from euphonic.util import (_calc_abscissa, get_qpoint_labels)
 from euphonic import (ureg, Crystal, Quantity, Spectrum1D,
                       Spectrum1DCollection, Spectrum2D)
+from euphonic.broadening import _width_interpolated_broadening
 
 
 class QpointFrequencies:
@@ -89,7 +90,9 @@ class QpointFrequencies:
 
     def calculate_dos(self, dos_bins: Quantity,
                       mode_widths: Optional[Quantity] = None,
-                      mode_widths_min: Quantity = Quantity(0.01, 'meV')
+                      mode_widths_min: Quantity = Quantity(0.01, 'meV'),
+                      adaptive_method: str = 'reference',
+                      adaptive_error: float = 0.01,
                       ) -> Spectrum1D:
         """
         Calculates a density of states
@@ -107,21 +110,47 @@ class QpointFrequencies:
             Scalar float Quantity in energy units. Sets a lower limit on
             the mode widths, as mode widths of zero will result in
             infinitely sharp peaks
+        adaptive_method
+            String. Specifies whether to use slow, reference adaptive method or
+            faster, approximate method. Allowed options are 'reference'
+            or 'fast', default is 'reference'.
+        adaptive_error
+            Scalar float. Acceptable error for gaussian approximations
+            when using the fast adaptive method, defined as the absolute
+            difference between the areas of the true and approximate gaussians
 
         Returns
         -------
         dos
             A spectrum containing the energy bins on the x-axis and dos
             on the y-axis
+
+        Notes
+        -----
+
+        The fast adaptive broadening method reduces computation time by
+        reducing the number of Gaussian functions that have to be evaluated.
+        Broadening kernels are only evaulated for a subset of mode width values
+        with intermediate values approximated using interpolation.
+
+        The ``adaptive_error`` keyword argument is used to determine how many
+        broadening kernels are computed exactly. The more exact kernels are
+        used, the more accurate the Gaussian approximations will be, but
+        computation time will also be increased.
+
         """
         dos = self._calculate_dos(dos_bins, mode_widths=mode_widths,
-                                  mode_widths_min=mode_widths_min)
+                                  mode_widths_min=mode_widths_min,
+                                  adaptive_method=adaptive_method,
+                                  adaptive_error=adaptive_error)
         return Spectrum1D(dos_bins, dos)
 
     def _calculate_dos(self, dos_bins: Quantity,
                        mode_widths: Optional[Quantity] = None,
                        mode_widths_min: Quantity = Quantity(0.01, 'meV'),
                        mode_weights: Optional[np.ndarray] = None,
+                       adaptive_method: str = 'reference',
+                       adaptive_error: float = 0.01,
                        q_idx: Optional[int] = None
                        ) -> Quantity:
         """
@@ -140,6 +169,13 @@ class QpointFrequencies:
         case, mode_widths and mode_weights must be shape (1, n_modes)
         arrays
         """
+
+        adaptive_method_options = ['reference', 'fast']
+        if adaptive_method not in adaptive_method_options:
+            raise ValueError(f'Invalid value for adaptive_method, '
+                             f'got {adaptive_method}, should be one '
+                             f'of {adaptive_method_options}')
+
         if q_idx is None:
             freqs = self._frequencies
             weights = self.weights
@@ -157,17 +193,26 @@ class QpointFrequencies:
         else:
             mode_weights_calc = np.ones(freqs.shape)
         if mode_widths is not None:
-            from scipy.stats import norm
-            dos_bins_calc = Spectrum1D._bin_edges_to_centres(dos_bins_calc)
-            dos = np.zeros(len(dos_bins_calc))
             mode_widths = mode_widths.to('hartree').magnitude
             mode_widths = np.maximum(mode_widths,
                                      mode_widths_min.to('hartree').magnitude)
-            for q in range(len(freqs)):
-                for m in range(n_modes):
-                    pdf = norm.pdf(dos_bins_calc, loc=freqs[q,m],
-                                   scale=mode_widths[q,m])
-                    dos += pdf*weights[q]*mode_weights_calc[q, m]
+            if adaptive_method=='reference':
+                # adaptive broadening by summing over individual peaks
+                from scipy.stats import norm
+                dos_bins_calc = Spectrum1D._bin_edges_to_centres(dos_bins_calc)
+                dos = np.zeros(len(dos_bins_calc))
+                for q in range(len(freqs)):
+                    for m in range(n_modes):
+                        pdf = norm.pdf(dos_bins_calc, loc=freqs[q,m],
+                                       scale=mode_widths[q,m])
+                        dos += pdf*weights[q]*mode_weights_calc[q, m]
+            elif adaptive_method=='fast':
+                # fast, approximate method for adaptive broadening
+                combined_weights = mode_weights_calc * weights[:, np.newaxis]
+                dos = _width_interpolated_broadening(dos_bins_calc,
+                                                     freqs, mode_widths,
+                                                     combined_weights,
+                                                     adaptive_error)
         else:
             bin_idx = np.digitize(freqs, dos_bins_calc)
             # Create DOS with extra bin either side, for any points
