@@ -7,6 +7,9 @@ schemadotorg:
   - '@type': Person
     familyName: Fair
     givenName: Rebecca L.
+  - '@type': Person
+    familyName: Farmer
+    givenName: Jessica L.
   - '@id': https://orcid.org/0000-0001-5272-6530
     '@type': Person
     familyName: Jackson
