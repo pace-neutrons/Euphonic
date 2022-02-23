@@ -44,7 +44,7 @@ def check_brille_settings(
     sf = modes.calculate_structure_factor()
 
     fig, ax = plt.subplots()
-    fig_sf, ax_sf = plt.subplots()
+    fig_sf, ax_sf = plt.subplots(subplot_kw={'projection': '3d'})
 
     if brille_npts_density is not None:
         brille_params = brille_npts_density
@@ -73,7 +73,9 @@ def check_brille_settings(
 
         ax.plot(modes.frequencies.magnitude.flatten(), eps.flatten(), 'x',
                 label=f'{actual_brille_npts} ({actual_brille_density})')
-        ax_sf.plot(sf.structure_factors.magnitude.flatten(), eps_sf.flatten(), 'x',
+        ax_sf.plot(modes.frequencies.magnitude.flatten(),
+                   sf.structure_factors.magnitude.flatten(),
+                   eps_sf.flatten(), 'x',
                    label=f'{actual_brille_npts} ({actual_brille_density})')
 
     ax.set_xlabel(f'Frequency / {modes.frequencies.units:~P}')
@@ -81,8 +83,9 @@ def check_brille_settings(
     ax.legend(title='Brille mesh size (density)')
     ax.set_title(Path(filename).name)
 
-    ax_sf.set_xlabel(f'Structure factors / {sf.structure_factors.units:~P}')
-    ax_sf.set_ylabel(f'Epsilon / {sf.structure_factors.units:~P}')
+    ax.set_xlabel(f'Frequency / {modes.frequencies.units:~P}')
+    ax_sf.set_ylabel(f'Structure factors / {sf.structure_factors.units:~P}')
+    ax_sf.set_zlabel(f'Epsilon / {sf.structure_factors.units:~P}')
     ax_sf.legend(title='Brille mesh size (density)')
     ax_sf.set_title(Path(filename).name)
 
