@@ -10,7 +10,7 @@ jobs:
     if: github.event.action != 'labeled' || github.event.label.name == 'run CI'
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        os: [ubuntu-latest, windows-2019, macos-latest]
       fail-fast: false
     runs-on: ${{ matrix.os }}
     steps:
