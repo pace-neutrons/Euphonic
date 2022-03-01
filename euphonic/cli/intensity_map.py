@@ -89,6 +89,8 @@ def main(params: Optional[List[str]] = None) -> None:
     if len(spectra) > 1:
         print(f"Found {len(spectra)} regions in q-point path")
 
+    if args.save_json:
+        spectrum.to_json_file(args.save_json)
     style = _compose_style(user_args=args, base=[base_style])
     with matplotlib.style.context(style):
 

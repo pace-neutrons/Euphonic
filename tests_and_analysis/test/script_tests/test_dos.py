@@ -7,6 +7,7 @@ import pytest
 import numpy as np
 import numpy.testing as npt
 
+from euphonic import Spectrum1D
 from tests_and_analysis.test.utils import (
     get_data_path, get_castep_path, get_phonopy_path)
 from tests_and_analysis.test.script_tests.utils import (
@@ -96,6 +97,14 @@ class TestRegression:
         output_file = str(tmpdir.join('test.png'))
         euphonic.cli.dos.main(dos_args + [output_file])
         assert os.path.exists(output_file)
+
+    @pytest.mark.parametrize('dos_args', [
+        [nah_phonon_file, '--save-json']])
+    def test_plot_save_to_json(self, inject_mocks, tmpdir, dos_args):
+        output_file = str(tmpdir.join('test.json'))
+        euphonic.cli.dos.main(dos_args + [output_file])
+        spec = Spectrum1D.from_json_file(output_file)
+        assert isinstance(spec, Spectrum1D)
 
     @pytest.mark.parametrize('dos_args', [
         [get_data_path('crystal', 'crystal_LZO.json')]])

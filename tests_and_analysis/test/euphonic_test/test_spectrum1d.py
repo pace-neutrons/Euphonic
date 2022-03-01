@@ -193,6 +193,15 @@ class TestSpectrum1DCreation:
         ('x_tick_labels',
          get_expected_spectrum1d('xsq_spectrum1d.json').x_tick_labels[0],
          TypeError),
+        ('x_tick_labels',
+         [(0,), (1, 'one'), (2, 'two')],
+         TypeError),
+        ('x_tick_labels',
+         [(0, 'zero'), (1,), (2,)],
+         TypeError),
+        ('x_tick_labels',
+         [(0, 1), (2, 3), (4, 5)],
+         TypeError),
         ('metadata',
          ['Not', 'a', 'dictionary'],
          TypeError)])
@@ -296,6 +305,28 @@ class TestSpectrum1DSetters:
         new_attr = getattr(spec1d, attr).magnitude*ureg(unit)
         with pytest.raises(err):
             setattr(spec1d, attr, new_attr)
+
+    @pytest.mark.parametrize('value', [[(0, 'zero'), (1, 'one')]])
+    def test_x_tick_labels_setter(self, value):
+        spec1d = get_spectrum1d('xsq_spectrum1d.json')
+        spec1d.x_tick_labels = value
+        assert spec1d.x_tick_labels == value
+
+    @pytest.mark.parametrize('value', [
+        [(0,), (1, 'one')],
+        [(0, 'zero'), ('one', 'one')],
+        0])
+    def test_x_tick_labels_incorrect_setter(self, value):
+        spec1d = get_spectrum1d('xsq_spectrum1d.json')
+        with pytest.raises(TypeError):
+            spec1d.x_tick_labels = value
+
+    def test_x_tick_labels_converted_to_plain_int(self):
+        # np.arange returns an array of type np.int32
+        x_tick_labels = [(idx, 'label') for idx in np.arange(5)]
+        spec1d = get_spectrum1d('xsq_spectrum1d.json')
+        spec1d.x_tick_labels = x_tick_labels
+        assert np.all([isinstance(x[0], int) for x in spec1d.x_tick_labels])
 
 
 class TestSpectrum1DMethods:
