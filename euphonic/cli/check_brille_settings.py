@@ -33,7 +33,6 @@ def check_brille_settings(
         brille_grid_type: str = 'trellis',
         brille_npts: int = 5000,
         brille_npts_density: Optional[int] = None,
-        ftol: Optional[float] = None,
         n: int = 0,
         eb: float = 0,
         ebins: int = 500,
@@ -51,10 +50,6 @@ def check_brille_settings(
     freqs_plot = modes.frequencies.magnitude
     sf_obj = modes.calculate_structure_factor()
     sf = sf_obj.structure_factors.magnitude
-    if ftol is not None:
-        sf, freqs_plot = sum_at_degenerate_modes(
-            sf, modes.frequencies.magnitude, ftol)
-
 
     fig, ax = plt.subplots()
     fig_sf, ax_sf = plt.subplots(subplot_kw={'projection': '3d'})
@@ -100,9 +95,6 @@ def check_brille_settings(
         interp_modes = brille_fc.calculate_qpoint_phonon_modes(qpts)
         interp_sf_obj = interp_modes.calculate_structure_factor()
         interp_sf = interp_sf_obj.structure_factors.magnitude
-        if ftol is not None:
-            interp_sf, _ = sum_at_degenerate_modes(
-                interp_sf, modes.frequencies.magnitude, ftol)
 
         eps = interp_modes.frequencies.magnitude - modes.frequencies.magnitude
         eps_sf = (interp_sf - sf)
@@ -148,48 +140,6 @@ def check_brille_settings(
     plt.show()
 
 
-def sum_at_degenerate_modes(structure_factors, frequencies, TOL=0.05):
-    """
-    For degenerate frequency modes, eigenvectors are an arbitrary
-    admixture, so the derived structure factors can only be compared
-    when summed over degenerate modes. This function performs that
-    summation.
-
-    Parameters
-    ----------
-    structure_factors (n_qpts, n_branches) float ndarray
-        The plain structure factors magnitudes
-    frequencies (n_qpts, n_branches) float ndarray
-        The plain frequency magnitudes
-
-    Returns
-    -------
-    sf_sum (n_qpts, n_branches) float ndarray
-        The summed structure factors. As there will be different
-        numbers of summed values for each q-point depending on the
-        number of degenerate modes, the last few entries for some
-        q-points will be zero.
-    unique_frequencies (n_qpts, n_branches) float ndarray
-        The unique frequencies at each q-point, which correspond to
-        each of the summed structure factors. As there will be
-        different numbers of unique frequencies for each q-point
-        depending on the number of degenerate modes, the last few
-        entries for some q-points will be zero.
-    """
-    sf_sum = np.zeros(structure_factors.shape)
-    unique_freqs = np.zeros(frequencies.shape)
-    for i in range(len(frequencies)):
-        diff = np.append(TOL + 1, np.diff(frequencies[i]))
-        unique_index = np.where(diff > TOL)[0]
-        unique_freqs[i, :len(unique_index)] = frequencies[i, unique_index]
-        x = np.zeros(len(frequencies[0]), dtype=np.int32)
-        x[unique_index] = 1
-        unique_modes = np.cumsum(x) - 1
-        sf_sum[i, :len(unique_index)] = np.bincount(unique_modes,
-                                                    structure_factors[i])
-    return sf_sum, unique_freqs
-
-
 def get_parser() -> ArgumentParser:
     parser, sections = _get_cli_parser(
         features={'read-fc', 'brille'},
@@ -212,11 +162,6 @@ def get_parser() -> ArgumentParser:
         help=('Approximate density of q-points to generate on the '
               'Brille grid, is passed to the "grid_density" kwarg '
               'of BrilleInterpolator.from_force_constants'))
-    sections['brille'].add_argument('--ftol', type=float, default=None,
-        help=('Frequency tolerance in meV for defining 2 modes as '
-              'degenerate. If modes are degenerate their structure '
-              'factors will be summed before comparison. If not provided, '
-              'structure factors are not summed.'))
     sections['brille'].add_argument('-n', type=int, default=0)
     sections['brille'].add_argument('--eb', type=float, default=0)
     sections['brille'].add_argument('--ebins', type=float, default=500)
