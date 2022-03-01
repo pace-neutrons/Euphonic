@@ -7,6 +7,9 @@
     ``euphonic-intensity-map`` command-line tools can now read
     files that don't contain eigenvectors, if eigenvectors are
     not required for the chosen options.
+  - A new ``--save-json`` option is available for command-line tools
+    which produce plots, this will output the produced spectrum to
+    a Euphonic .json file.
   - There is now the option to use a fast, approximate variable-width broadening method when
     adaptively broadening dos:
 

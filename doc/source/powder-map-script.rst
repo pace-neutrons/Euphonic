@@ -4,7 +4,12 @@
 euphonic-powder-map
 ======================
 
+.. contents:: :local:
+
 .. highlight:: bash
+
+Overview
+--------
 
 The ``euphonic-powder-map`` program can be used to sample
 spherically-averaged properties from force constants data over a range
@@ -35,6 +40,7 @@ q range with denser sampling, in THz and with the intensity widget disabled::
    :alt: 2D intensity map with |q| from 0.01 to 4.0 on the x-axis,
          and energy on the y axis, showing powder-averaged coherent
          inelastic neutron scattering intensities for NaCl.
+
 
 To see all the command line options, run::
 
@@ -72,6 +78,13 @@ Progress bars
 Sampling many q-points can be computationally expensive, so a progress
 bar will automatically be displayed if `tqdm <https://tqdm.github.io/>`_
 is installed
+
+Output to file
+--------------
+
+The ``--save-json`` option can be used to output the produced
+:ref:`Spectrum2D` object as a Euphonic .json file with a specified
+name for further use in Euphonic or other programs.
 
 Command Line Options
 --------------------
