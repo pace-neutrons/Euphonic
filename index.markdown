@@ -35,7 +35,7 @@ schemadotorg:
     familyName: Voneshen
     givenName: D. J.
   codeRepository: https://github.com/pace-neutrons/Euphonic
-  datePublished: '2021-10-26T00:00:00'
+  datePublished: '2022-03-01T00:00:00'
   identifier: https://doi.org/10.5286/SOFTWARE/EUPHONIC
   keywords:
   - Python
@@ -46,6 +46,6 @@ schemadotorg:
   - Phonopy
   license: http://www.gnu.org/licenses/gpl-3.0-standalone.html
   name: Euphonic
-  version: 0.6.3
+  version: 0.6.4
 ---
 # Euphonic - Latest
