@@ -25,8 +25,8 @@ authors:
     given-names: "D. J."
 title: "Euphonic"
 doi: "10.5286/SOFTWARE/EUPHONIC"
-version: "0.6.3"
-date-released: "2021-10-26"
+version: "0.6.4"
+date-released: "2022-03-01"
 license: "GPL-3.0-only"
 repository-code: "https://github.com/pace-neutrons/Euphonic"
 keywords:
