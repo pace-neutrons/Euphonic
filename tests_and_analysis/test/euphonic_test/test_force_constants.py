@@ -233,6 +233,7 @@ class TestForceConstantsCreation:
         # again to avoid false positives
         ('NaCl_default', {}),
         ('NaCl_prim', {'summary_name': 'phonopy_nacl.yaml'}),
+        ('CaHgO2', {'summary_name': 'phonopy_au_units.yaml'}),
         ('CaHgO2', {'summary_name': 'mp-7041-20180417.yaml'}),
         ('CaHgO2', {'summary_name': 'phonopy_fullfc.yaml'}),
         ('CaHgO2', {'summary_name': 'phonopy_nofc.yaml',
