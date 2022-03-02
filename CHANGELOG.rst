@@ -1,6 +1,11 @@
 `Unreleased <https://github.com/pace-neutrons/Euphonic/compare/v0.6.4...HEAD>`_
 ----------
 
+- Bug fixes:
+
+  - Allow read of ``phonopy.yaml`` quantities in ``'au'`` (bohr) units.
+    Previously this was interpreted as an astronomical unit by Pint.
+
 `v0.6.4 <https://github.com/pace-neutrons/Euphonic/compare/v0.6.3...v0.6.4>`_
 ------
 
