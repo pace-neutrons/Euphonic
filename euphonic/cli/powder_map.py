@@ -34,7 +34,8 @@ def get_parser() -> ArgumentParser:
 
     parser, sections = _get_cli_parser(
         features={'read-fc', 'pdos-weighting', 'ins-weighting',
-                  'powder', 'plotting', 'ebins', 'q-e', 'map'})
+                  'powder', 'plotting', 'ebins', 'q-e', 'map',
+                  'kinematic'})
 
     sections['q'].description = (
         '"GRID" options relate to Monkhorst-Pack sampling for the '
@@ -53,11 +54,19 @@ def get_parser() -> ArgumentParser:
                                             "enable interactive setting of "
                                             "colormap intensity limits"))
 
-    parser.add_argument('--e_i', type=float, default=None)
-    parser.add_argument('--e_f', type=float, default=None)
-    parser.add_argument('--angle-range', nargs=2, type=float, default=None,
-                        dest='angle_range')
 
+    kinematic = parser.add_argument_group('Kinematic constraints')
+    e_lims = kinematic.add_mutually_exclusive_group()
+
+    e_lims.add_argument('--e-incident', '--e-i', dest='e_i',
+                        type=float, default=None,
+                        help="Incident energy for direct-geometry constraints")
+    e_lims.add_argument('--e-final', '--e-f', dest='e_f',
+                        type=float, default=None,
+                        help="Final energy for indirect-geometry constraints")
+    kinematic.add_argument('--angle-range', nargs=2, type=float, default=None,
+                           dest='angle_range',
+                           help="Detector angle range")
     return parser
 
 
