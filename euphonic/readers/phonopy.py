@@ -1,4 +1,5 @@
 import os
+import re
 import warnings
 from typing import Optional, Dict, Any, Union, Tuple, TextIO, Sequence, List
 
@@ -628,7 +629,9 @@ def _extract_summary(filename: str, fc_extract: bool = False
     pu['atomic_mass'] = pu['atomic_mass'].replace('AMU', 'amu')
     # Ensure denominator is surrounded by brackets to handle
     # cases like 'eV/Angstrom.au'
-    pu['force_constants'] = pu['force_constants'].replace('/', '/(') + ')'
+    divs = re.findall(r'/([^/]+)', pu['force_constants'])
+    pu['force_constants'] = (pu['force_constants'].split('/')[0]
+                             + '/(' + '/('.join([d+')' for d in divs]))
     for key, value in pu.items():
         pu[key] = value.replace('au', 'bohr').replace('Angstrom', 'angstrom')
 
