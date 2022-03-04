@@ -135,7 +135,7 @@ Docstrings
   from euphonic.plot import plot_2d
 
   sqw = Spectrum2D.from_json_file('sqw.json')
-  fig, ims = plot_2d(sqw, ratio=1.0)
+  fig = plot_2d(sqw, cmap='bone')
   fig.show()
 
 Plotting to a specific axis
