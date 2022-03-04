@@ -1338,8 +1338,6 @@ class Spectrum2D(Spectrum):
                     - 2 * cos_values[:, np.newaxis] * (k2_i * k2_f)**0.5
                     )**0.5
 
-        print(q_bounds)
-
         new_z_data = np.copy(self.z_data.magnitude)
         mask = np.logical_or(self.get_bin_centres(bin_ax='x')[:, np.newaxis] < q_bounds[0][np.newaxis, :],
                              self.get_bin_centres(bin_ax='x')[:, np.newaxis] > q_bounds[1][np.newaxis, :])
