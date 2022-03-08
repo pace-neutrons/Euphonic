@@ -1,4 +1,5 @@
 import os
+import re
 import warnings
 from typing import Optional, Dict, Any, Union, Tuple, TextIO, Sequence, List
 
@@ -624,8 +625,18 @@ def _extract_summary(filename: str, fc_extract: bool = False
         print(f'physical_unit key not found in {filename}, assuming '
               f'the following units: {default_units}')
         pu = default_units
-    summary_dict['ulength'] = pu['length'].lower()
-    summary_dict['umass'] = pu['atomic_mass'].lower()
+    # Format units so they can be read by Pint
+    pu['atomic_mass'] = pu['atomic_mass'].replace('AMU', 'amu')
+    # Ensure denominator is surrounded by brackets to handle
+    # cases like 'eV/Angstrom.au'
+    divs = re.findall(r'/([^/]+)', pu['force_constants'])
+    pu['force_constants'] = (pu['force_constants'].split('/')[0]
+                             + '/(' + '/('.join([d+')' for d in divs]))
+    for key, value in pu.items():
+        pu[key] = value.replace('au', 'bohr').replace('Angstrom', 'angstrom')
+
+    summary_dict['ulength'] = pu['length']
+    summary_dict['umass'] = pu['atomic_mass']
 
     summary_dict['n_atoms'] = n_atoms
     summary_dict['cell_vectors'] = cell_vectors
@@ -703,8 +714,7 @@ def _extract_summary(filename: str, fc_extract: bool = False
                                                       p_to_sc_matrix)
         summary_dict['sc_relative_idx'] = sc_relative_idx
 
-        summary_dict['ufc'] = pu['force_constants'].replace(
-            'Angstrom', 'angstrom')
+        summary_dict['ufc'] = pu['force_constants']
         try:
             summary_dict['force_constants'] = _extract_force_constants_summary(
                 summary_object, cell_origins_map, sc_relative_idx, p2s_map)

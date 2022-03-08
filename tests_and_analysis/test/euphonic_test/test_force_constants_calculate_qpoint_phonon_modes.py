@@ -240,7 +240,7 @@ class TestForceConstantsCalculateQPointPhononModes:
             expected_modw.magnitude,
             expected_qpoint_phonon_modes.frequencies.magnitude)
         npt.assert_allclose(summed_modw, summed_expected_modw,
-                            rtol=3e-5)
+                            rtol=7e-5)
 
 
     def test_calc_qpt_ph_modes_with_mode_widths_raises_deprecation_warning(self):
