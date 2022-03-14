@@ -92,7 +92,7 @@ def get_expected_spectrum2d(json_filename):
     return ExpectedSpectrum2D(get_spectrum2d_path(json_filename))
 
 
-def check_spectrum2d(actual_spectrum2d, expected_spectrum2d):
+def check_spectrum2d(actual_spectrum2d, expected_spectrum2d, equal_nan=False):
 
     assert (actual_spectrum2d.x_data.units
             == expected_spectrum2d.x_data.units)
@@ -110,7 +110,8 @@ def check_spectrum2d(actual_spectrum2d, expected_spectrum2d):
             == expected_spectrum2d.z_data.units)
     npt.assert_allclose(actual_spectrum2d.z_data.magnitude,
                         expected_spectrum2d.z_data.magnitude,
-                        atol=np.finfo(np.float64).eps)
+                        atol=np.finfo(np.float64).eps,
+                        equal_nan=equal_nan)
 
     if expected_spectrum2d.x_tick_labels is None:
         assert actual_spectrum2d.x_tick_labels is None
@@ -295,6 +296,19 @@ class TestSpectrum2DSetters:
 
 
 class TestSpectrum2DMethods:
+    @pytest.mark.parametrize(
+        'kwargs, spectrum2d_file, constrained_file',
+        [({'e_i': 300 * ureg('1/cm'),},
+          'NaCl_band_yaml_dos_map.json',
+          'NaCl_constrained_ei_300_cm.json')])
+    def test_kinematic_constraints(self, kwargs,
+                                   spectrum2d_file, constrained_file):
+        spec2d = get_spectrum2d(spectrum2d_file)
+        ref_spec2d = get_spectrum2d(constrained_file)
+
+        constrained_spec2d = spec2d.apply_kinematic_constraints(**kwargs)
+        check_spectrum2d(constrained_spec2d, ref_spec2d, equal_nan=True)
+
     @pytest.mark.parametrize(
         'args, spectrum2d_file, split_spectrum_files',
         [({'indices': (4,)}, 'example_spectrum2d.json',
