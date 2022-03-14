@@ -315,6 +315,14 @@ class TestSpectrum2DMethods:
         constrained_spec2d = spec2d.apply_kinematic_constraints(**kwargs)
         check_spectrum2d(constrained_spec2d, ref_spec2d, equal_nan=True)
 
+    @pytest.mark.parametrize('kwargs, expected',
+                             [({'e_i': 10, 'e_f': 20}, ValueError)])
+    def test_kinematic_constraints_invalid(self, kwargs, expected):
+        spec2d = get_spectrum2d('example_spectrum2d.json')
+
+        with pytest.raises(expected):
+            spec2d.apply_kinematic_constraints(**kwargs)
+
     @pytest.mark.parametrize(
         'args, spectrum2d_file, split_spectrum_files',
         [({'indices': (4,)}, 'example_spectrum2d.json',
