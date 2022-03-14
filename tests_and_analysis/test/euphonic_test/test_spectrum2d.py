@@ -303,7 +303,10 @@ class TestSpectrum2DMethods:
           'NaCl_constrained_ei_300_cm.json'),
           ({'e_i': 30 * ureg('meV'), 'angle_range': (-20, 30)},
            'NaCl_band_yaml_dos_map.json',
-           'NaCl_constrained_ei_30_meV_angle_-20_30.json')])
+           'NaCl_constrained_ei_30_meV_angle_-20_30.json'),
+         ({'e_f': 32 * ureg('1/cm'), 'angle_range': (45., 135.)},
+           'NaCl_band_yaml_dos_map.json',
+           'NaCl_constrained_ef_32_cm_angle_45_135.json')])
     def test_kinematic_constraints(self, kwargs,
                                    spectrum2d_file, constrained_file):
         spec2d = get_spectrum2d(spectrum2d_file)
