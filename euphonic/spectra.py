@@ -6,7 +6,7 @@ import math
 import json
 from numbers import Integral
 from typing import (Any, Dict, List, Optional, overload,
-                    Sequence, Tuple, TypeVar, Union, Type, Iterable)
+                    Sequence, Tuple, TypeVar, Union, Type)
 import warnings
 
 import numpy as np
@@ -1322,28 +1322,40 @@ class Spectrum2D(Spectrum):
                              "(The other value will be derived from energy "
                              "transfer).")
 
-        elif e_i is None:  # Indirect geometry: final energy is fixed,
-                           # incident energy range is unlimited
-            e_i = self.get_bin_centres(bin_ax='y') + e_f
-        elif e_f is None:  # Direct geometry: incident energy is fixed,
-                           # max energy transfer = e_i
-            e_f = e_i - self.get_bin_centres(bin_ax='y')
+        elif e_i is None:   # Indirect geometry: final energy is fixed,
+                            # incident energy range is unlimited
+            e_f = e_f.to('meV')
+            e_i = (self.get_bin_centres(bin_ax='y').to('meV') + e_f)
+        elif e_f is None:   # Direct geometry: incident energy is fixed,
+                            # max energy transfer = e_i
+            e_i = e_i.to('meV')
+            e_f = e_i - self.get_bin_centres(bin_ax='y').to('meV')
 
         k2_i = (e_i / momentum2_to_energy)
         k2_f = (e_f / momentum2_to_energy)
-        
+
         cos_values = np.cos(_get_abs_angle_range(angle_range) * np.pi / 180.)
 
-        q_bounds = (k2_i + k2_f
-                    - 2 * cos_values[:, np.newaxis] * (k2_i * k2_f)**0.5
-                    )**0.5
+        # Momentum goes negative where final energy greater than incident
+        # energy; detect this as complex component and set extreme q-bounds to
+        # enforce conservation of energy
+        q_bounds = np.sqrt(k2_i + k2_f
+                           - 2 * cos_values[:, np.newaxis]
+                               * np.sqrt(k2_i * k2_f, dtype=complex)
+                           )
+        q_bounds.magnitude.T[np.any(q_bounds.imag, axis=0)] = [float('Inf'),
+                                                               float('-Inf')]
+        q_bounds = q_bounds.real
 
         new_z_data = np.copy(self.z_data.magnitude)
-        mask = np.logical_or(self.get_bin_centres(bin_ax='x')[:, np.newaxis] < q_bounds[0][np.newaxis, :],
-                             self.get_bin_centres(bin_ax='x')[:, np.newaxis] > q_bounds[1][np.newaxis, :])
+        mask = np.logical_or((self.get_bin_centres(bin_ax='x')[:, np.newaxis]
+                              < q_bounds[0][np.newaxis, :]),
+                             (self.get_bin_centres(bin_ax='x')[:, np.newaxis]
+                              > q_bounds[1][np.newaxis, :]))
 
         new_z_data[mask] = float('nan')
-        new_z_data[:, self.get_bin_centres(bin_ax='y') > e_i] = float('nan')
+        new_z_data[:, self.get_bin_centres(bin_ax='y').to('meV') > e_i
+                   ] = float('nan')
 
         return type(self)(
             np.copy(self.x_data.magnitude) * ureg(self.x_data_unit),
