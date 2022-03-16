@@ -1319,6 +1319,8 @@ class Spectrum2D(Spectrum):
             angle_range: min and max scattering angles (2θ) of detector bank in
                 degrees.
 
+        Returns:
+            Masked spectrum with inaccessible bins set to NaN in z_data.
         """
 
         momentum2_to_energy = 0.5 * (ureg('hbar^2 / neutron_mass')
