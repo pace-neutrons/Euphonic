@@ -306,7 +306,11 @@ class TestSpectrum2DMethods:
            'NaCl_constrained_ei_30_meV_angle_-20_30.json'),
          ({'e_f': 32 * ureg('1/cm'), 'angle_range': (45., 135.)},
            'NaCl_band_yaml_dos_map.json',
-           'NaCl_constrained_ef_32_cm_angle_45_135.json')])
+           'NaCl_constrained_ef_32_cm_angle_45_135.json'),
+         ({'e_f': 32 * ureg('1/cm'), 'angle_range': (-135., -45.)},
+           'NaCl_band_yaml_dos_map.json',
+           'NaCl_constrained_ef_32_cm_angle_45_135.json')
+           ])
     def test_kinematic_constraints(self, kwargs,
                                    spectrum2d_file, constrained_file):
         spec2d = get_spectrum2d(spectrum2d_file)
@@ -316,7 +320,8 @@ class TestSpectrum2DMethods:
         check_spectrum2d(constrained_spec2d, ref_spec2d, equal_nan=True)
 
     @pytest.mark.parametrize('kwargs, expected',
-                             [({'e_i': 10, 'e_f': 20}, ValueError)])
+                             [({'e_i': 10, 'e_f': 20}, ValueError),
+                              ({}, ValueError)])
     def test_kinematic_constraints_invalid(self, kwargs, expected):
         spec2d = get_spectrum2d('example_spectrum2d.json')
 
