@@ -1313,12 +1313,19 @@ class Spectrum2D(Spectrum):
         geometry. The other values will be inferred, interpreting y_data as
         energy transfer.
 
+        Args:
+            e_i: incident energy of direct-geometry spectrometer
+            e_f: final energy of indirect-geometry spectrometer
+            angle_range: min and max scattering angles (2θ) of detector bank in
+                degrees.
+
         """
 
-        momentum2_to_energy = 0.5 * ureg('hbar^2 / neutron_mass').to('meV angstrom^2')
+        momentum2_to_energy = 0.5 * (ureg('hbar^2 / neutron_mass')
+                                     .to('meV angstrom^2'))
 
         if (e_i is None) == (e_f is None):
-            raise ValueError("Only one of e_i and e_f should be set. "
+            raise ValueError("Exactly one of e_i and e_f should be set. "
                              "(The other value will be derived from energy "
                              "transfer).")
 
@@ -1362,7 +1369,7 @@ class Spectrum2D(Spectrum):
             np.copy(self.y_data.magnitude) * ureg(self.y_data_unit),
             new_z_data * ureg(self.z_data_unit),
             copy.copy(self.x_tick_labels),
-            copy.copy(self.metadata))
+            copy.deepcopy(self.metadata))
 
 
 def _get_abs_angle_range(angle_range: Tuple[float]) -> Tuple[float]:

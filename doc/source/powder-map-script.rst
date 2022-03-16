@@ -60,12 +60,12 @@ Kinematic constraints
 ---------------------
 
 Inelastic neutron-scattering measurements have an accessible
-:math:`(\omega, \mathbf{q})` range depending on the instrument
+:math:`(\mathbf{q}, \omega)` range depending on the instrument
 geometry: either the incident energy is fixed (direct geometry) or the
 final energy is fixed (indirect geometry), and the scattering angles
 are determined by detector/reflector positions. The remaining degrees
 of freedom (e.g. time-of-flight) are used to determine the
-:math:`(\omega, \mathbf{q})` transfer. To simulate these constraints,
+:math:`(\mathbf{q}, \omega)` transfer. To simulate these constraints,
 the parameter ``--e-incident`` or ``--e-final`` can be used to set the
 constrained energy, and ``--angle-range`` can be used to fix the
 detector range. So, for example, to simulate the MARI instrument at

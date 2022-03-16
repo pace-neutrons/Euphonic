@@ -64,9 +64,12 @@ def get_parser() -> ArgumentParser:
     e_lims.add_argument('--e-final', '--e-f', dest='e_f',
                         type=float, default=None,
                         help="Final energy for indirect-geometry constraints")
-    kinematic.add_argument('--angle-range', nargs=2, type=float, default=None,
-                           dest='angle_range',
-                           help="Detector angle range")
+    kinematic.add_argument(
+        '--angle-range', nargs=2, type=float, dest='angle_range',
+        default=[0., 180.],
+        help=("Range of scattering angles (2θ) in degrees. These lower/upper "
+              "bounds are used with incident/final energy to determine "
+              "accessible (|q|, ω) region."))
     return parser
 
 
@@ -177,7 +180,7 @@ def main(params: Optional[List[str]] = None) -> None:
                      if args.energy_broadening else None),
             shape=args.shape)
 
-    if args.angle_range is not None:
+    if not (args.e_i is None and args.e_f is None):
         print("Applying kinematic constraints")
         energy_unit = args.energy_unit
         e_i = args.e_i * ureg(energy_unit) if (args.e_i is not None) else None
