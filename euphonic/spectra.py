@@ -1363,8 +1363,6 @@ class Spectrum2D(Spectrum):
                               > q_bounds[1][np.newaxis, :]))
 
         new_z_data[mask] = float('nan')
-        new_z_data[:, self.get_bin_centres(bin_ax='y').to('meV') > e_i
-                   ] = float('nan')
 
         return type(self)(
             np.copy(self.x_data.magnitude) * ureg(self.x_data_unit),
