@@ -176,7 +176,6 @@ class ForceConstants:
             use_c: Optional[bool] = None,
             n_threads: Optional[int] = None,
             return_mode_gradients: bool = False,
-            return_mode_widths: bool = False
             ) -> Union[QpointPhononModes,
                        Tuple[QpointPhononModes, Quantity]]:
         """
@@ -245,15 +244,6 @@ class ForceConstants:
             Cartesian coordinates). These can be converted to mode
             widths and used in adaptive broadening for DOS. For details
             on how these are calculated see the Notes section
-        return_mode_widths
-            .. deprecated:: 0.5.2
-               The mode widths as calculated were only applicable for
-               adaptive broadening of DOS, this argument will be removed
-               in favour of the more flexible return_mode_gradients,
-               which will allow the calculation of direction-specific
-               mode widths in the future, for example. The mode widths
-               can still be obtained from the mode gradients using
-               euphonic.util.mode_gradients_to_widths
 
         Returns
         -------
@@ -387,11 +377,10 @@ class ForceConstants:
         qpts, freqs, weights, evecs, grads = self._calculate_phonons_at_qpts(
             qpts, weights, asr, dipole, dipole_parameter, eta_scale,
             splitting, insert_gamma, reduce_qpts, use_c, n_threads,
-            return_mode_gradients, return_mode_widths,
-            return_eigenvectors=True)
+            return_mode_gradients, return_eigenvectors=True)
         qpt_ph_modes = QpointPhononModes(
             self.crystal, qpts, freqs, evecs, weights=weights)
-        if return_mode_gradients or return_mode_widths:
+        if return_mode_gradients:
             return qpt_ph_modes, grads
         else:
             return qpt_ph_modes
@@ -410,7 +399,6 @@ class ForceConstants:
             use_c: Optional[bool] = None,
             n_threads: Optional[int] = None,
             return_mode_gradients: bool = False,
-            return_mode_widths: bool = False,
             ) -> Union[QpointFrequencies,
                        Tuple[QpointFrequencies, Quantity]]:
         """
@@ -421,11 +409,10 @@ class ForceConstants:
         qpts, freqs, weights, _, grads = self._calculate_phonons_at_qpts(
             qpts, weights, asr, dipole, dipole_parameter, eta_scale,
             splitting, insert_gamma, reduce_qpts, use_c, n_threads,
-            return_mode_gradients, return_mode_widths,
-            return_eigenvectors=False)
+            return_mode_gradients, return_eigenvectors=False)
         qpt_freqs = QpointFrequencies(
             self.crystal, qpts, freqs, weights=weights)
-        if return_mode_gradients or return_mode_widths:
+        if return_mode_gradients:
             return qpt_freqs, grads
         else:
             return qpt_freqs
@@ -444,7 +431,6 @@ class ForceConstants:
             use_c: Optional[bool],
             n_threads: Optional[int],
             return_mode_gradients: bool,
-            return_mode_widths: bool,
             return_eigenvectors: bool) -> Tuple[
                 np.ndarray, Quantity, Optional[np.ndarray],
                 Optional[np.ndarray], Optional[Quantity]]:
@@ -473,18 +459,6 @@ class ForceConstants:
             Shape (n_qpts, 3*n_atoms, 3) float Quantity in
             energy*length units. The phonon mode gradients
         """
-        if return_mode_widths:
-            warnings.warn(
-                'return_mode_widths has been deprecated and will be removed '
-                'in a future release. Please instead use a combination of '
-                'return_mode_gradients and euphonic.util.'
-                'mode_gradients_to_widths, e.g.:\n'
-                'phon, mode_gradients = force_constants.calculate_qpoint_phonon_modes('
-                '*args, **kwargs, return_mode_gradients=True)\n'
-                'mode_widths = euphonic.util.mode_gradients_to_widths(mode_gradients, '
-                'phon.crystal.cell_vectors)',
-                category=DeprecationWarning, stacklevel=3)
-            return_mode_gradients = True
         if eta_scale != 1.0:
             _deprecation_warn('eta_scale', 'dipole_parameter', stacklevel=4)
             dipole_parameter = eta_scale
@@ -749,10 +723,6 @@ class ForceConstants:
             mode_gradients = rmode_gradients.real[qpts_i]*ureg(
                 'hartree*bohr').to(
                     f'meV*{str(self.crystal.cell_vectors.units)}')
-        if return_mode_widths:
-            mode_gradients = mode_gradients_to_widths(
-                mode_gradients,
-                self.crystal.cell_vectors)
         return qpts, freqs, weights, eigenvectors, mode_gradients
 
     def _calculate_phonons_at_q(
