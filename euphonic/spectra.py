@@ -1348,9 +1348,14 @@ class Spectrum2D(Spectrum):
         # Momentum goes negative where final energy greater than incident
         # energy; detect this as complex component and set extreme q-bounds to
         # enforce conservation of energy
+
+        # (Complex number sqrt separated from units sqrt for compatibility with
+        # older library versions; in newer versions this is not necessary.)
         q_bounds = np.sqrt(k2_i + k2_f
                            - 2 * cos_values[:, np.newaxis]
-                               * np.sqrt(k2_i * k2_f, dtype=complex)
+                               * np.sqrt(k2_i.magnitude * k2_f.magnitude,
+                                         dtype=complex)
+                               * (k2_i.units * k2_f.units)**0.5
                            )
         q_bounds.magnitude.T[np.any(q_bounds.imag, axis=0)] = [float('Inf'),
                                                                float('-Inf')]
