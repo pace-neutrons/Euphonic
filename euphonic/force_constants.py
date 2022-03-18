@@ -18,8 +18,7 @@ from euphonic.io import (_obj_to_json_file, _obj_from_json_file,
 from euphonic.readers import castep, phonopy
 from euphonic.util import (is_gamma, get_all_origins,
                            mode_gradients_to_widths,
-                           _get_supercell_relative_idx,
-                           _deprecation_warn)
+                           _get_supercell_relative_idx)
 from euphonic import (ureg, Quantity, Crystal, QpointPhononModes,
                       QpointFrequencies)
 
@@ -169,7 +168,6 @@ class ForceConstants:
             asr: Optional[str] = None,
             dipole: bool = True,
             dipole_parameter: float = 1.0,
-            eta_scale: float = 1.0,
             splitting: bool = True,
             insert_gamma: bool = False,
             reduce_qpts: bool = True,
@@ -206,9 +204,6 @@ class ForceConstants:
             correctly this can result in performance improvements. See
             euphonic-optimise-dipole-parameter program for help on choosing
             a good dipole_parameter.
-        eta_scale
-            .. deprecated:: 0.6.0
-               Please use dipole_parameter instead
         splitting
             Whether to calculate the LO-TO splitting at the gamma
             points. Only applied if dipole is True and the Born charges
@@ -375,8 +370,8 @@ class ForceConstants:
         .. [3] J. R. Yates, X. Wang, D. Vanderbilt and I. Souza, Phys. Rev. B, 2007, 75, 195121
         """
         qpts, freqs, weights, evecs, grads = self._calculate_phonons_at_qpts(
-            qpts, weights, asr, dipole, dipole_parameter, eta_scale,
-            splitting, insert_gamma, reduce_qpts, use_c, n_threads,
+            qpts, weights, asr, dipole, dipole_parameter, splitting,
+            insert_gamma, reduce_qpts, use_c, n_threads,
             return_mode_gradients, return_eigenvectors=True)
         qpt_ph_modes = QpointPhononModes(
             self.crystal, qpts, freqs, evecs, weights=weights)
@@ -392,7 +387,6 @@ class ForceConstants:
             asr: Optional[str] = None,
             dipole: bool = True,
             dipole_parameter: float = 1.0,
-            eta_scale: float = 1.0,
             splitting: bool = True,
             insert_gamma: bool = False,
             reduce_qpts: bool = True,
@@ -407,8 +401,8 @@ class ForceConstants:
         argument and algorithm details
         """
         qpts, freqs, weights, _, grads = self._calculate_phonons_at_qpts(
-            qpts, weights, asr, dipole, dipole_parameter, eta_scale,
-            splitting, insert_gamma, reduce_qpts, use_c, n_threads,
+            qpts, weights, asr, dipole, dipole_parameter, splitting,
+            insert_gamma, reduce_qpts, use_c, n_threads,
             return_mode_gradients, return_eigenvectors=False)
         qpt_freqs = QpointFrequencies(
             self.crystal, qpts, freqs, weights=weights)
@@ -424,7 +418,6 @@ class ForceConstants:
             asr: Optional[str],
             dipole: bool,
             dipole_parameter: float,
-            eta_scale: float,
             splitting: bool,
             insert_gamma: bool,
             reduce_qpts: bool,
@@ -459,9 +452,6 @@ class ForceConstants:
             Shape (n_qpts, 3*n_atoms, 3) float Quantity in
             energy*length units. The phonon mode gradients
         """
-        if eta_scale != 1.0:
-            _deprecation_warn('eta_scale', 'dipole_parameter', stacklevel=4)
-            dipole_parameter = eta_scale
         # Check weights is of appropriate type and shape, to avoid doing all
         # the interpolation only for it to fail creating QpointPhononModes
         _check_constructor_inputs(

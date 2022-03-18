@@ -66,10 +66,6 @@ class TestForceConstantsCalculateQPointPhononModes:
                             'dipole_parameter': 0.75}],
          'quartz_reciprocal_qpoint_phonon_modes.json'),
         (get_quartz_fc(), 'quartz',
-         [get_test_qpts(), {'asr': 'reciprocal', 'splitting': False,
-                            'eta_scale': 0.75}],
-         'quartz_reciprocal_qpoint_phonon_modes.json'),
-        (get_quartz_fc(), 'quartz',
          [get_test_qpts('split'), {'asr': 'reciprocal', 'splitting': True,
                                    'insert_gamma': False}],
          'quartz_split_reciprocal_qpoint_phonon_modes.json'),
@@ -192,12 +188,6 @@ class TestForceConstantsCalculateQPointPhononModes:
             expected_qpoint_phonon_modes.frequencies.magnitude)
         npt.assert_allclose(summed_modg, summed_expected_modg,
                             atol=2e-5)
-
-    def test_calc_qpt_ph_modes_with_eta_scale_raises_deprecation_warning(self):
-        fc = get_fc('quartz')
-        with pytest.warns(DeprecationWarning):
-            fc.calculate_qpoint_phonon_modes(get_test_qpts(),
-                                             eta_scale=0.9)
 
     def test_calc_qpt_ph_modes_with_large_complex_mode_gradients_raises_warning(
             self, mocker):

@@ -40,10 +40,6 @@ class TestForceConstantsCalculateQPointFrequencies:
                             'dipole_parameter': 0.75}],
          'quartz_reciprocal_qpoint_frequencies.json'),
         (get_quartz_fc(), 'quartz',
-         [get_test_qpts(), {'asr': 'reciprocal', 'splitting': False,
-                            'eta_scale': 0.75}],
-         'quartz_reciprocal_qpoint_frequencies.json'),
-        (get_quartz_fc(), 'quartz',
          [get_test_qpts('split'), {'asr': 'reciprocal', 'splitting': True,
                                    'insert_gamma': False}],
          'quartz_split_reciprocal_qpoint_frequencies.json'),
@@ -133,12 +129,6 @@ class TestForceConstantsCalculateQPointFrequencies:
             expected_qpt_freqs.frequencies.magnitude)
         npt.assert_allclose(summed_modg, summed_expected_modg,
                             atol=2e-5)
-
-    def test_calc_qpt_freqs_with_eta_scale_raises_deprecation_warning(self):
-        fc = get_fc('quartz')
-        with pytest.warns(DeprecationWarning):
-            fc.calculate_qpoint_frequencies(get_test_qpts(),
-                                            eta_scale=0.75)
 
     weights = np.array([0.1, 0.05, 0.05, 0.2, 0.2, 0.15, 0.15, 0.2, 0.1])
     weights_output_split_gamma = np.array([
