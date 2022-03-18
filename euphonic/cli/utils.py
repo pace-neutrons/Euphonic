@@ -598,12 +598,6 @@ def _get_cli_parser(features: Collection[str] = {}
         if 'ins-weighting' in features:
             _weighting_choices += _ins_choices
             desc += ', coherent inelastic neutron scattering'
-            # --weights was deprecated before dos-weighting was added so
-            # keep in this section
-            sections['property'].add_argument(
-                '--weights', default='dos', choices=_weighting_choices,
-                action=deprecated_arg('weighting'),
-                help=deprecation_text('weights', 'weighting'))
             sections['property'].add_argument(
                 '--weighting', '-w', default='dos', choices=_weighting_choices,
                 help=(f'Spectral weighting to plot: {desc}'))
