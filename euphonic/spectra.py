@@ -1343,7 +1343,8 @@ class Spectrum2D(Spectrum):
         k2_i = (e_i / momentum2_to_energy)
         k2_f = (e_f / momentum2_to_energy)
 
-        cos_values = np.cos(_get_abs_angle_range(angle_range) * np.pi / 180.)
+        cos_values = np.asarray(
+            _get_cos_range(np.asarray(angle_range) * np.pi / 180.))
 
         # Momentum goes negative where final energy greater than incident
         # energy; detect this as complex component and set extreme q-bounds to
@@ -1377,20 +1378,24 @@ class Spectrum2D(Spectrum):
             copy.deepcopy(self.metadata))
 
 
-def _get_abs_angle_range(angle_range: Tuple[float]) -> Tuple[float]:
-    """Process full detector angle range to get useful range in abs values"""
-    min_angle, max_angle = sorted(angle_range)
+def _get_cos_range(angle_range: Tuple[float]) -> Tuple[float]:
+    """Get max and min of cosine function over angle range
 
-    # Actual limits depend on |2θ|, so some shuffling is necessary to get
-    # absolute values in the right order, spanning the whole range.
-    if (min_angle < 0) and (max_angle <= 0):
-        min_angle, max_angle = -max_angle, -min_angle
-    elif (min_angle < 0):
-        # e.g. if -10 < 2θ < 20, we don't want to set limits 10 < |2θ| < 20
-        # as this would omit contributions from the range -10 < 2θ < 10
-        min_angle = 0.
+    These will either be the cosines of the input angles, or, in the case that
+    a cosine max/min point lies within the angle range, 1/-1 respectively.
 
-    return np.array([min_angle, max_angle])
+    Method: the angle range is translated such that it starts within 0-2π; then
+    we check for the presence of turning points at π and 2π.
+    """
+    limiting_values = np.cos(angle_range).tolist()
+
+    shift, lower_angle = np.divmod(min(angle_range), np.pi * 2)
+    upper_angle = max(angle_range) - (shift * 2 * np.pi)
+    if lower_angle < np.pi < upper_angle:
+        limiting_values.append(-1.)
+    if lower_angle < 2 * np.pi < upper_angle:
+        limiting_values.append(1.)
+    return max(limiting_values), min(limiting_values)
 
 
 def _lorentzian(x: np.ndarray, gamma: float) -> np.ndarray:
