@@ -1387,9 +1387,17 @@ def _get_cos_range(angle_range: Tuple[float]) -> Tuple[float]:
     Method: the angle range is translated such that it starts within 0-2π; then
     we check for the presence of turning points at π and 2π.
     """
+    def divmod(value, divisor):
+        """Divmod was introduced in numpy 1.13.0"""
+        try:
+            from numpy import divmod as np_divmod
+            return np_divmod(value, divisor)
+        except ImportError:
+            return (value // divisor, value % divisor)
+
     limiting_values = np.cos(angle_range).tolist()
 
-    shift, lower_angle = np.divmod(min(angle_range), np.pi * 2)
+    shift, lower_angle = divmod(min(angle_range), np.pi * 2)
     upper_angle = max(angle_range) - (shift * 2 * np.pi)
     if lower_angle < np.pi < upper_angle:
         limiting_values.append(-1.)
