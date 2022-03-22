@@ -1,12 +1,13 @@
 import os
 import json
 
+from pint import DimensionalityError
 import pytest
 import numpy as np
 import numpy.testing as npt
 
 from euphonic import ureg
-from euphonic.spectra import Spectrum2D
+from euphonic.spectra import Spectrum2D, apply_kinematic_constraints
 from tests_and_analysis.test.utils import (
     get_data_path, check_unit_conversion, check_json_metadata,
     check_property_setters)
@@ -296,40 +297,6 @@ class TestSpectrum2DSetters:
 
 
 class TestSpectrum2DMethods:
-    @pytest.mark.parametrize(
-        'kwargs, spectrum2d_file, constrained_file',
-        [({'e_i': 300 * ureg('1/cm'),},
-          'NaCl_band_yaml_dos_map.json',
-          'NaCl_constrained_ei_300_cm.json'),
-         ({'e_i': 100 * ureg('1/cm'), 'angle_range': (20, 275)},
-          'NaCl_band_yaml_dos_map.json',
-          'NaCl_constrained_ei_100_cm_angle_20_275.json'),
-          ({'e_i': 30 * ureg('meV'), 'angle_range': (-20, 30)},
-           'NaCl_band_yaml_dos_map.json',
-           'NaCl_constrained_ei_30_meV_angle_-20_30.json'),
-         ({'e_f': 32 * ureg('1/cm'), 'angle_range': (45., 135.)},
-           'NaCl_band_yaml_dos_map.json',
-           'NaCl_constrained_ef_32_cm_angle_45_135.json'),
-         ({'e_f': 32 * ureg('1/cm'), 'angle_range': (-135., -45.)},
-           'NaCl_band_yaml_dos_map.json',
-           'NaCl_constrained_ef_32_cm_angle_45_135.json')
-           ])
-    def test_kinematic_constraints(self, kwargs,
-                                   spectrum2d_file, constrained_file):
-        spec2d = get_spectrum2d(spectrum2d_file)
-        ref_spec2d = get_spectrum2d(constrained_file)
-
-        constrained_spec2d = spec2d.apply_kinematic_constraints(**kwargs)
-        check_spectrum2d(constrained_spec2d, ref_spec2d, equal_nan=True)
-
-    @pytest.mark.parametrize('kwargs, expected',
-                             [({'e_i': 10, 'e_f': 20}, ValueError),
-                              ({}, ValueError)])
-    def test_kinematic_constraints_invalid(self, kwargs, expected):
-        spec2d = get_spectrum2d('example_spectrum2d.json')
-
-        with pytest.raises(expected):
-            spec2d.apply_kinematic_constraints(**kwargs)
 
     @pytest.mark.parametrize(
         'args, spectrum2d_file, split_spectrum_files',
@@ -468,6 +435,7 @@ class TestSpectrum2DMethods:
 
 
 class TestKinematicAngles:
+
     @pytest.mark.parametrize(
         'angle_range, expected',
         [((0, np.pi / 2), (1, 0)),
@@ -479,3 +447,47 @@ class TestKinematicAngles:
         from euphonic.spectra import _get_cos_range
         cos_limits = _get_cos_range(angle_range)
         assert cos_limits == pytest.approx(expected)
+
+
+class TestKinematicConstraints:
+
+    @pytest.mark.parametrize(
+        'kwargs, spectrum2d_file, constrained_file',
+        [({'e_i': 300 * ureg('1/cm'),},
+          'NaCl_band_yaml_dos_map.json',
+          'NaCl_constrained_ei_300_cm.json'),
+         ({'e_i': 100 * ureg('1/cm'), 'angle_range': (20, 275)},
+          'NaCl_band_yaml_dos_map.json',
+          'NaCl_constrained_ei_100_cm_angle_20_275.json'),
+          ({'e_i': 30 * ureg('meV'), 'angle_range': (-20, 30)},
+           'NaCl_band_yaml_dos_map.json',
+           'NaCl_constrained_ei_30_meV_angle_-20_30.json'),
+         ({'e_f': 32 * ureg('1/cm'), 'angle_range': (45., 135.)},
+           'NaCl_band_yaml_dos_map.json',
+           'NaCl_constrained_ef_32_cm_angle_45_135.json'),
+         ({'e_f': 32 * ureg('1/cm'), 'angle_range': (-135., -45.)},
+           'NaCl_band_yaml_dos_map.json',
+           'NaCl_constrained_ef_32_cm_angle_45_135.json')
+           ])
+    def test_kinematic_constraints(self, kwargs,
+                                   spectrum2d_file, constrained_file):
+        spec2d = get_spectrum2d(spectrum2d_file)
+        ref_spec2d = get_spectrum2d(constrained_file)
+
+        constrained_spec2d = apply_kinematic_constraints(spec2d, **kwargs)
+        check_spectrum2d(constrained_spec2d, ref_spec2d, equal_nan=True)
+
+    @pytest.mark.parametrize('json_file, kwargs, expected',
+                             [('NaCl_band_yaml_dos_map.json',
+                               {'e_i': 10 * ureg('1/cm'),
+                                'e_f': 20 * ureg('1/cm')},
+                               ValueError),
+                              ('NaCl_band_yaml_dos_map.json', {}, ValueError),
+                              ('example_spectrum2d.json',
+                               {'e_i': 20 * ureg('1/cm')},
+                               DimensionalityError)])
+    def test_kinematic_constraints_invalid(self, json_file, kwargs, expected):
+        spec2d = get_spectrum2d(json_file)
+
+        with pytest.raises(expected):
+            apply_kinematic_constraints(spec2d, **kwargs)

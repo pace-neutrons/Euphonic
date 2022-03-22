@@ -1297,85 +1297,94 @@ class Spectrum2D(Spectrum):
                    x_tick_labels=d['x_tick_labels'],
                    metadata=d['metadata'])
 
-    def apply_kinematic_constraints(self: T,
-                                    e_i: Quantity = None,
-                                    e_f: Quantity = None,
-                                    angle_range: Tuple[float] = (0, 180.)
-                                    ) -> T:
-        """Set events to NaN which violate energy/momentum limits:
+def apply_kinematic_constraints(spectrum: Spectrum2D,
+                                e_i: Quantity = None,
+                                e_f: Quantity = None,
+                                angle_range: Tuple[float] = (0, 180.)
+                                ) -> Spectrum2D:
+    """Set events to NaN which violate energy/momentum limits:
 
-        - Energy transfer greater than e_i
-        - q outside region accessible for given e_i and angle range
+    - Energy transfer greater than e_i
+    - q outside region accessible for given e_i and angle range
 
-        This requires x_data to be in wavevector units and y_data to be energy
+    This requires x_data to be in wavevector units and y_data to be energy
 
-        Either e_i or e_f should be set, according to direct/instrument
-        geometry. The other values will be inferred, interpreting y_data as
-        energy transfer.
+    Either e_i or e_f should be set, according to direct/instrument
+    geometry. The other values will be inferred, interpreting y_data as
+    energy transfer.
 
-        Args:
-            e_i: incident energy of direct-geometry spectrometer
-            e_f: final energy of indirect-geometry spectrometer
-            angle_range: min and max scattering angles (2θ) of detector bank in
-                degrees.
+    Args:
+        spectrum: input 2-D spectrum, with |q| x_data and energy y_data
+        e_i: incident energy of direct-geometry spectrometer
+        e_f: final energy of indirect-geometry spectrometer
+        angle_range: min and max scattering angles (2θ) of detector bank in
+            degrees.
 
-        Returns:
-            Masked spectrum with inaccessible bins set to NaN in z_data.
-        """
+    Returns:
+        Masked spectrum with inaccessible bins set to NaN in z_data.
+    """
+    from pint import DimensionalityError
 
-        momentum2_to_energy = 0.5 * (ureg('hbar^2 / neutron_mass')
-                                     .to('meV angstrom^2'))
+    if not spectrum.x_data.units.is_compatible_with('1/angstrom'):
+        raise DimensionalityError(spectrum.x_data.units, '1/angstrom',
+            extra_msg="x_data needs to have wavevector units (i.e. 1/length)")
+    elif not spectrum.y_data.units.is_compatible_with('eV', 'spectroscopy'):
+        raise DimensionalityError(spectrum.y_data.units, 'eV',
+            extra_msg="y_data needs to have energy (or wavenumber) units")
 
-        if (e_i is None) == (e_f is None):
-            raise ValueError("Exactly one of e_i and e_f should be set. "
-                             "(The other value will be derived from energy "
-                             "transfer).")
+    momentum2_to_energy = 0.5 * (ureg('hbar^2 / neutron_mass')
+                                 .to('meV angstrom^2'))
 
-        elif e_i is None:   # Indirect geometry: final energy is fixed,
-                            # incident energy range is unlimited
-            e_f = e_f.to('meV')
-            e_i = (self.get_bin_centres(bin_ax='y').to('meV') + e_f)
-        elif e_f is None:   # Direct geometry: incident energy is fixed,
-                            # max energy transfer = e_i
-            e_i = e_i.to('meV')
-            e_f = e_i - self.get_bin_centres(bin_ax='y').to('meV')
+    if (e_i is None) == (e_f is None):
+        raise ValueError("Exactly one of e_i and e_f should be set. "
+                         "(The other value will be derived from energy "
+                         "transfer).")
 
-        k2_i = (e_i / momentum2_to_energy)
-        k2_f = (e_f / momentum2_to_energy)
+    elif e_i is None:   # Indirect geometry: final energy is fixed,
+                        # incident energy range is unlimited
+        e_f = e_f.to('meV')
+        e_i = (spectrum.get_bin_centres(bin_ax='y').to('meV') + e_f)
+    elif e_f is None:   # Direct geometry: incident energy is fixed,
+                        # max energy transfer = e_i
+        e_i = e_i.to('meV')
+        e_f = e_i - spectrum.get_bin_centres(bin_ax='y').to('meV')
 
-        cos_values = np.asarray(
-            _get_cos_range(np.asarray(angle_range) * np.pi / 180.))
+    k2_i = (e_i / momentum2_to_energy)
+    k2_f = (e_f / momentum2_to_energy)
 
-        # Momentum goes negative where final energy greater than incident
-        # energy; detect this as complex component and set extreme q-bounds to
-        # enforce conservation of energy
+    cos_values = np.asarray(
+        _get_cos_range(np.asarray(angle_range) * np.pi / 180.))
 
-        # (Complex number sqrt separated from units sqrt for compatibility with
-        # older library versions; in newer versions this is not necessary.)
-        q_bounds = np.sqrt(k2_i + k2_f
-                           - 2 * cos_values[:, np.newaxis]
-                               * np.sqrt(k2_i.magnitude * k2_f.magnitude,
-                                         dtype=complex)
-                               * (k2_i.units * k2_f.units)**0.5
-                           )
-        q_bounds.magnitude.T[np.any(q_bounds.imag, axis=0)] = [float('Inf'),
-                                                               float('-Inf')]
-        q_bounds = q_bounds.real
+    # Momentum goes negative where final energy greater than incident
+    # energy; detect this as complex component and set extreme q-bounds to
+    # enforce conservation of energy
 
-        new_z_data = np.copy(self.z_data.magnitude)
-        mask = np.logical_or((self.get_bin_centres(bin_ax='x')[:, np.newaxis]
-                              < q_bounds[0][np.newaxis, :]),
-                             (self.get_bin_centres(bin_ax='x')[:, np.newaxis]
-                              > q_bounds[1][np.newaxis, :]))
+    # (Complex number sqrt separated from units sqrt for compatibility with
+    # older library versions; in newer versions this is not necessary.)
+    q_bounds = np.sqrt(k2_i + k2_f
+                       - 2 * cos_values[:, np.newaxis]
+                           * np.sqrt(k2_i.magnitude * k2_f.magnitude,
+                                     dtype=complex)
+                           * (k2_i.units * k2_f.units)**0.5
+                       )
+    q_bounds.magnitude.T[np.any(q_bounds.imag, axis=0)] = [float('Inf'),
+                                                           float('-Inf')]
+    q_bounds = q_bounds.real
 
-        new_z_data[mask] = float('nan')
+    new_z_data = np.copy(spectrum.z_data.magnitude)
+    mask = np.logical_or((spectrum.get_bin_centres(bin_ax='x')[:, np.newaxis]
+                          < q_bounds[0][np.newaxis, :]),
+                         (spectrum.get_bin_centres(bin_ax='x')[:, np.newaxis]
+                          > q_bounds[1][np.newaxis, :]))
 
-        return type(self)(
-            np.copy(self.x_data.magnitude) * ureg(self.x_data_unit),
-            np.copy(self.y_data.magnitude) * ureg(self.y_data_unit),
-            new_z_data * ureg(self.z_data_unit),
-            copy.copy(self.x_tick_labels),
-            copy.deepcopy(self.metadata))
+    new_z_data[mask] = float('nan')
+
+    return Spectrum2D(
+        np.copy(spectrum.x_data.magnitude) * ureg(spectrum.x_data_unit),
+        np.copy(spectrum.y_data.magnitude) * ureg(spectrum.y_data_unit),
+        new_z_data * ureg(spectrum.z_data_unit),
+        copy.copy(spectrum.x_tick_labels),
+        copy.deepcopy(spectrum.metadata))
 
 
 def _get_cos_range(angle_range: Tuple[float]) -> Tuple[float]:

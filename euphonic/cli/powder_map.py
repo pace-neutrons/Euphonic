@@ -16,6 +16,7 @@ from euphonic.cli.utils import (load_data_from_file, get_args,
 import euphonic.plot
 from euphonic.powder import (sample_sphere_dos, sample_sphere_pdos,
                              sample_sphere_structure_factor)
+from euphonic.spectra import apply_kinematic_constraints
 from euphonic.styles import base_style, intensity_widget_style
 import euphonic.util
 
@@ -185,7 +186,7 @@ def main(params: Optional[List[str]] = None) -> None:
         energy_unit = args.energy_unit
         e_i = args.e_i * ureg(energy_unit) if (args.e_i is not None) else None
         e_f = args.e_f * ureg(energy_unit) if (args.e_f is not None) else None
-        spectrum = spectrum.apply_kinematic_constraints(
+        spectrum = apply_kinematic_constraints(spectrum,
             e_i=e_i, e_f=e_f, angle_range=args.angle_range)
 
     print(f"Plotting figure: max intensity "
