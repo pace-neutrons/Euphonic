@@ -1325,10 +1325,14 @@ def apply_kinematic_constraints(spectrum: Spectrum2D,
     """
     from pint import DimensionalityError
 
-    if not spectrum.x_data.units.is_compatible_with('1/angstrom'):
+    try:
+        (1 * spectrum.x_data.units).to('1/angstrom')
+    except DimensionalityError:
         raise DimensionalityError(spectrum.x_data.units, '1/angstrom',
             extra_msg="x_data needs to have wavevector units (i.e. 1/length)")
-    elif not spectrum.y_data.units.is_compatible_with('eV', 'spectroscopy'):
+    try:
+        (1 * spectrum.y_data.units).to('eV', 'spectroscopy')
+    except DimensionalityError:
         raise DimensionalityError(spectrum.y_data.units, 'eV',
             extra_msg="y_data needs to have energy (or wavenumber) units")
 
