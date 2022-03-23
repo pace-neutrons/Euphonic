@@ -320,15 +320,18 @@ See :ref:`Plotting <plotting>`
 Kinematic constraints
 ---------------------
 
-Inelastic neutron-scattering (INS) experiments are often performed using
-time-of-flight information to sample a wide range of energy transfer.
+Inelastic neutron-scattering (INS) experiments are often performed on
+time-of-flight (ToF) spectrometers where a wide ToF range yields a wide
+range of energy transfers which are measured simultaneously.
 In "direct geometry" the incident energy is fixed (e.g. by a Fermi
-chopper) while in "indirect geometry" the measurement energy is fixed
+chopper) while in "indirect geometry" the scattered energy is fixed
 (e.g. by scattering from an "analyser" crystal).
 Conservation laws allow the overall energy and momentum
-transfer to be determined for a given scattering angle --- but this also
-means that the accessible :math:`(q, \omega)` range is restricted by
-these instrument parameters.
+transfer to be determined for a given scattering angle and crystal
+orientation. In powder measurements, the crystal orientation is not
+needed so the kinematic limits --- the accessible :math:`(q, \omega)`
+range --- determined by the conservation laws is given solely
+by these instrument parameters.
 
 The function :py:func:`apply_kinematic_constraints
 <euphonic.spectra.apply_kinematic_constraints>` applies these limits
@@ -351,10 +354,15 @@ this will leave them unset.
      - 4.5
      - 10--90
    * - ISIS
+     - LET
+     - 1--25
+     -
+     - 3--135
+   * - ISIS
      - MAPS
      - 15--2000
      -
-     - 30--60
+     - 3--60
    * - ISIS
      - MARI
      - 7--1000
@@ -364,7 +372,7 @@ this will leave them unset.
      - MERLIN
      - 7--2000
      -
-     - -45--135
+     - 3--135
    * - ILL
      - PANTHER
      - 76, 112, 150

@@ -63,7 +63,7 @@ Inelastic neutron-scattering measurements have an accessible
 :math:`(\mathbf{q}, \omega)` range depending on the instrument
 geometry: either the incident energy is fixed (direct geometry) or the
 final energy is fixed (indirect geometry), and the scattering angles
-are determined by detector/reflector positions. The remaining degrees
+are determined by detector/analyzer positions. The remaining degrees
 of freedom (e.g. time-of-flight) are used to determine the
 :math:`(\mathbf{q}, \omega)` transfer. To simulate these constraints,
 the parameter ``--e-incident`` or ``--e-final`` can be used to set the
