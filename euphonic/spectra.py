@@ -9,6 +9,7 @@ from typing import (Any, Dict, List, Optional, overload,
                     Sequence, Tuple, TypeVar, Union, Type)
 import warnings
 
+from pint import DimensionalityError
 import numpy as np
 from scipy.ndimage import correlate1d, gaussian_filter
 
@@ -1323,18 +1324,18 @@ def apply_kinematic_constraints(spectrum: Spectrum2D,
     Returns:
         Masked spectrum with inaccessible bins set to NaN in z_data.
     """
-    from pint import DimensionalityError
-
     try:
         (1 * spectrum.x_data.units).to('1/angstrom')
-    except DimensionalityError:
-        raise DimensionalityError(spectrum.x_data.units, '1/angstrom',
-            extra_msg="x_data needs to have wavevector units (i.e. 1/length)")
+    except DimensionalityError as error:
+        raise ValueError(
+            "x_data needs to have wavevector units (i.e. 1/length)"
+            ) from error
     try:
         (1 * spectrum.y_data.units).to('eV', 'spectroscopy')
-    except DimensionalityError:
-        raise DimensionalityError(spectrum.y_data.units, 'eV',
-            extra_msg="y_data needs to have energy (or wavenumber) units")
+    except DimensionalityError as error:
+        raise ValueError(
+            "y_data needs to have energy (or wavenumber) units"
+            ) from error
 
     momentum2_to_energy = 0.5 * (ureg('hbar^2 / neutron_mass')
                                  .to('meV angstrom^2'))
@@ -1344,7 +1345,7 @@ def apply_kinematic_constraints(spectrum: Spectrum2D,
                          "(The other value will be derived from energy "
                          "transfer).")
 
-    elif e_i is None:   # Indirect geometry: final energy is fixed,
+    if e_i is None:   # Indirect geometry: final energy is fixed,
                         # incident energy range is unlimited
         e_f = e_f.to('meV')
         e_i = (spectrum.get_bin_centres(bin_ax='y').to('meV') + e_f)
@@ -1400,14 +1401,6 @@ def _get_cos_range(angle_range: Tuple[float]) -> Tuple[float]:
     Method: the angle range is translated such that it starts within 0-2π; then
     we check for the presence of turning points at π and 2π.
     """
-    def divmod(value, divisor):
-        """Divmod was introduced in numpy 1.13.0"""
-        try:
-            from numpy import divmod as np_divmod
-            return np_divmod(value, divisor)
-        except ImportError:
-            return (value // divisor, value % divisor)
-
     limiting_values = np.cos(angle_range).tolist()
 
     shift, lower_angle = divmod(min(angle_range), np.pi * 2)
