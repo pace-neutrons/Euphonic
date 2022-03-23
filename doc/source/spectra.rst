@@ -317,6 +317,66 @@ Plotting
 
 See :ref:`Plotting <plotting>`
 
+Kinematic constraints
+---------------------
+
+Inelastic neutron-scattering (INS) experiments are often performed using
+time-of-flight information to sample a wide range of energy transfer.
+In "direct geometry" the incident energy is fixed (e.g. by a Fermi
+chopper) while in "indirect geometry" the measurement energy is fixed
+(e.g. by scattering from an "analyser" crystal.)  Energy- and
+momentum-conservation laws allow the overall energy and momentum
+transfer to be determined for a given scattering angle; but this also
+means that the accessible :math:`(Q, \omega)` range is restricted by
+these instrument parameters.
+
+The function :py:func:`apply_kinematic_constraints
+<euphonic.spectra.apply_kinematic_constraints>` applies these limits
+to a :ref:`Spectrum2D` object with appropriate dimensions (i.e. the x-
+and y-axes represent :math:`|q|` and :math:`\omega` respectively).
+Inaccessible data values are set to ``NaN``; in Matplotlib colourmaps
+this will leave them unset.
+
+.. list-table:: Sample values for INS spectrometers
+   :header-rows: 1
+
+   * - Facility
+     - Instrument
+     - :math:`E_i` / meV
+     - :math:`E_f` / meV
+     - :math:`2\theta` / :math:`{}^\circ`
+   * - ILL
+     - LAGRANGE
+     -
+     - 4.5
+     - 10--90
+   * - ISIS
+     - MAPS
+     - 15--2000
+     -
+     - 30--60
+   * - ISIS
+     - MARI
+     - 7--1000
+     -
+     - 3--135
+   * - ISIS
+     - MERLIN
+     - 7--2000
+     -
+     - -45--135
+   * - ILL
+     - PANTHER
+     - 76, 112, 150
+     -
+     - 5--136
+   * - ISIS
+     - TOSCA
+     -
+     - 3.97
+     - 45, 135
+.. autofunction:: euphonic.spectra.apply_kinematic_constraints
+
 Docstring
 ---------
 

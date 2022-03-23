@@ -1305,10 +1305,10 @@ def apply_kinematic_constraints(spectrum: Spectrum2D,
                                 ) -> Spectrum2D:
     """Set events to NaN which violate energy/momentum limits:
 
-    - Energy transfer greater than e_i
-    - q outside region accessible for given e_i and angle range
+      - Energy transfer greater than e_i
+      - q outside region accessible for given e_i and angle range
 
-    This requires x_data to be in wavevector units and y_data to be energy
+    This requires x_data to be in wavevector units and y_data to be energy.
 
     Either e_i or e_f should be set, according to direct/instrument
     geometry. The other values will be inferred, interpreting y_data as
