@@ -1,7 +1,5 @@
-import os
 import json
 
-from pint import DimensionalityError
 import pytest
 import numpy as np
 import numpy.testing as npt
@@ -11,6 +9,7 @@ from euphonic.spectra import Spectrum2D, apply_kinematic_constraints
 from tests_and_analysis.test.utils import (
     get_data_path, check_unit_conversion, check_json_metadata,
     check_property_setters)
+
 
 class ExpectedSpectrum2D:
     def __init__(self, spectrum2d_json_file: str):
@@ -367,7 +366,6 @@ class TestSpectrum2DMethods:
         for unequal_ax in unequal_axes:
             assert unequal_ax in record[-1].message.args[0]
 
-
     @pytest.mark.parametrize(
         'spectrum2d_file, ax, expected_bin_edges', [
             ('example_spectrum2d.json', 'x',
@@ -453,22 +451,22 @@ class TestKinematicConstraints:
 
     @pytest.mark.parametrize(
         'kwargs, spectrum2d_file, constrained_file',
-        [({'e_i': 300 * ureg('1/cm'),},
+        [({'e_i': 300 * ureg('1/cm')},
           'NaCl_band_yaml_dos_map.json',
           'NaCl_constrained_ei_300_cm.json'),
          ({'e_i': 100 * ureg('1/cm'), 'angle_range': (20, 275)},
           'NaCl_band_yaml_dos_map.json',
           'NaCl_constrained_ei_100_cm_angle_20_275.json'),
-          ({'e_i': 30 * ureg('meV'), 'angle_range': (-20, 30)},
-           'NaCl_band_yaml_dos_map.json',
-           'NaCl_constrained_ei_30_meV_angle_-20_30.json'),
+         ({'e_i': 30 * ureg('meV'), 'angle_range': (-20, 30)},
+          'NaCl_band_yaml_dos_map.json',
+          'NaCl_constrained_ei_30_meV_angle_-20_30.json'),
          ({'e_f': 32 * ureg('1/cm'), 'angle_range': (45., 135.)},
-           'NaCl_band_yaml_dos_map.json',
-           'NaCl_constrained_ef_32_cm_angle_45_135.json'),
+          'NaCl_band_yaml_dos_map.json',
+          'NaCl_constrained_ef_32_cm_angle_45_135.json'),
          ({'e_f': 32 * ureg('1/cm'), 'angle_range': (-135., -45.)},
-           'NaCl_band_yaml_dos_map.json',
-           'NaCl_constrained_ef_32_cm_angle_45_135.json')
-           ])
+          'NaCl_band_yaml_dos_map.json',
+          'NaCl_constrained_ef_32_cm_angle_45_135.json')
+         ])
     def test_kinematic_constraints(self, kwargs,
                                    spectrum2d_file, constrained_file):
         spec2d = get_spectrum2d(spectrum2d_file)
@@ -485,7 +483,7 @@ class TestKinematicConstraints:
                               ('NaCl_band_yaml_dos_map.json', {}, ValueError),
                               ('example_spectrum2d.json',
                                {'e_i': 20 * ureg('1/cm')},
-                               DimensionalityError)])
+                               ValueError)])
     def test_kinematic_constraints_invalid(self, json_file, kwargs, expected):
         spec2d = get_spectrum2d(json_file)
 
