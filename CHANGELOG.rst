@@ -1,6 +1,19 @@
 `Unreleased <https://github.com/pace-neutrons/Euphonic/compare/v0.6.4...HEAD>`_
 ----------
 
+- New Features:
+
+  - Kinematic constraints have been implemented for 2-D S(q,ω)-like data.
+
+    - A function ``euphonic.spectra.apply_kinematic_constraints(Spectrum2d, **kwargs) -> Spectrum2D``
+      is implemented which masks out inaccessible data, replacing it with NaN.
+    - Both direct-geometry and indirect-geometry are supported, by
+      using the appropriate argument to set incident or final neutron energy.
+    - This function is exposed to the ``euphonic-powder-map`` tool, so these
+      plots can be produced directly from the CLI.
+    - Some parameters from real-world instruments are collected in the
+      documentation for convenience.
+
 - Bug fixes:
 
   - Allow read of ``phonopy.yaml`` quantities in ``'au'`` (bohr) units.
