@@ -330,13 +330,13 @@ Conservation laws allow the overall energy and momentum
 transfer to be determined for a given scattering angle and crystal
 orientation. In powder measurements, the crystal orientation is not
 needed so the kinematic limits --- the accessible :math:`(q, \omega)`
-range --- determined by the conservation laws is given solely
+range --- determined by the conservation laws are given solely
 by these instrument parameters.
 
 The function :py:func:`apply_kinematic_constraints
 <euphonic.spectra.apply_kinematic_constraints>` applies these limits
-to a :ref:`Spectrum2D` object with appropriate dimensions (i.e. the x-
-and y-axes represent :math:`|q|` and :math:`\omega` respectively).
+to a powder-averaged :ref:`Spectrum2D` object with appropriate dimensions
+(i.e. the x- and y-axes represent :math:`|q|` and :math:`\omega` respectively).
 Inaccessible data values are set to ``NaN``; in Matplotlib colour maps
 this will leave them unset.
 
@@ -357,7 +357,7 @@ this will leave them unset.
      - LET
      - 1--25
      -
-     - 3--135
+     - 5--140
    * - ISIS
      - MAPS
      - 15--2000
