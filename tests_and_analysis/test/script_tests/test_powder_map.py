@@ -46,7 +46,7 @@ powder_map_params = [
      *quick_calc_params],
     [graphite_fc_file, '--e-i=15', '--e-max=20', '--ebins=50',
      *quick_calc_params],
-    [graphite_fc_file, '--e-f=15', '--ebins=50', '--q-max=15',
+    [graphite_fc_file, '--e-f=15', '--ebins=50', '--q-max=16',
      '--angle-range', '20', '230', *quick_calc_params]]
 powder_map_params_from_phonopy = [
     [nacl_prim_fc_file],
