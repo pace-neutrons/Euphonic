@@ -49,6 +49,7 @@ class BrilleInterpolator:
         self._grid = grid
         self.crystal = crystal
 
+    @profile
     def calculate_qpoint_phonon_modes(self, qpts: np.ndarray, **kwargs
                                       ) -> QpointPhononModes:
         """
@@ -110,15 +111,15 @@ class BrilleInterpolator:
         return QpointFrequencies(
             self.crystal, qpts, frequencies)
 
-    @staticmethod
-    def _br_grid_calculate_phonons(grid, qpts, **kwargs):
+    @profile
+    def _br_grid_calculate_phonons(self, grid, qpts, **kwargs):
         qpts = np.ascontiguousarray(qpts)
         if not kwargs:
             kwargs = {'useparallel': True, 'threads': cpu_count()}
         return grid.ir_interpolate_at(qpts, **kwargs)
 
-    @staticmethod
-    def _br_evec_to_eu(br_evecs, cell_vectors=None):
+    @profile
+    def _br_evec_to_eu(self, br_evecs, cell_vectors=None):
         n_branches = br_evecs.shape[1]
         eu_evecs = br_evecs.view().reshape(-1, n_branches, n_branches//3, 3)
         if cell_vectors is not None:
@@ -128,6 +129,7 @@ class BrilleInterpolator:
         return eu_evecs
 
     @classmethod
+    @profile
     def from_force_constants(
             cls: Type[T], force_constants: ForceConstants,
             grid_type: str = 'trellis', grid_npts: int = 1000,

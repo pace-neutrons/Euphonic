@@ -73,7 +73,7 @@ def get_parser() -> ArgumentParser:
               "accessible (|q|, ω) region."))
     return parser
 
-
+@profile
 def main(params: Optional[List[str]] = None) -> None:
     args = get_args(get_parser(), params)
     calc_modes_kwargs = _calc_modes_kwargs(args)

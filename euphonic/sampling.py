@@ -100,20 +100,20 @@ def regular_square(n_rows: int, n_cols: int,
         yield (x + x_offset + delta_x,
                y + y_offset + delta_y)
 
-
+@profile
 def _spherical_polar_to_cartesian(phi, theta):
     return (np.cos(phi) * np.sin(theta),
             np.sin(phi) * np.sin(theta),
             np.cos(theta))
 
-
+@profile
 def _square_to_spherical_polar(x: float, y: float) -> Tuple[float, float]:
     """Map from Cartesian square to spherical polar (phi, theta)"""
     theta = np.arccos(2 * x - 1)
     phi = 2 * np.pi * y
     return (phi, theta)
 
-
+@profile
 def golden_sphere(npts: int, cartesian: bool = True, jitter: bool = False,
                   ) -> Iterator[Tuple[float, float, float]]:
     """Yield a series of 3D points on unit sphere surface

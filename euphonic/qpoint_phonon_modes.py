@@ -154,6 +154,7 @@ class QpointPhononModes(QpointFrequencies):
             evec_tmp = np.copy(self.eigenvectors[i, mode_map[i]])
             self.eigenvectors[i] = evec_tmp
 
+    @profile
     def calculate_structure_factor(
         self,
         scattering_lengths: Union[str, Dict[str, Quantity]] = 'Sears1992',

@@ -426,6 +426,7 @@ class ForceConstants:
         else:
             return qpt_freqs
 
+    @profile
     def _calculate_phonons_at_qpts(
             self,
             qpts: np.ndarray,

@@ -192,7 +192,7 @@ def sample_sphere_pdos(
     return phonons.calculate_pdos(energy_bins, weighting=weighting,
                                   cross_sections=cross_sections)
 
-
+@profile
 def sample_sphere_structure_factor(
     fc: ForceConstants,
     mod_q: Quantity,
@@ -344,7 +344,7 @@ def _qpts_cart_to_frac(qpts: Quantity,
                            qpts.to(ureg('1/bohr')).magnitude.T
                            ).T
 
-
+@profile
 def _get_qpts_sphere(npts: int,
                      sampling: str = 'golden',
                      jitter: bool = False) -> np.ndarray:
