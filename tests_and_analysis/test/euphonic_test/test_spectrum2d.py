@@ -373,7 +373,7 @@ class TestSpectrum2DMethods:
                        13.])*ureg('meter')),
             ('example_xbin_edges_spectrum2d.json', 'x',
              np.array([0., 1., 2., 3., 4., 5., 7., 9., 11.,
-                       13.])*ureg('meter')),
+                       13.])*ureg('Hz')),
             ('example_spectrum2d.json', 'y',
              np.array([-2.5, -2.25, -1.75, -1.25, -0.75, -0.25, 0.5, 1.5, 2.5,
                        3.5, 4.5, 5.5, 6.5, 7.5, 8.5, 9.5, 10.5, 11.5, 12.5,
@@ -395,7 +395,7 @@ class TestSpectrum2DMethods:
                        13.])*ureg('meter')),
             ('example_xbin_edges_spectrum2d.json', 'x',
              np.array([0.5, 1.5, 2.5, 3.5, 4.5, 6., 8., 10.,
-                       12.])*ureg('meter')),
+                       12.])*ureg('Hz')),
             ('example_spectrum2d.json', 'y',
              np.array([-2.5, -2., -1.5, -1., -0.5, 0., 1., 2., 3., 4., 5., 6.,
                        7., 8., 9., 10., 11., 12., 13., 14.,
@@ -482,6 +482,9 @@ class TestKinematicConstraints:
                                ValueError),
                               ('NaCl_band_yaml_dos_map.json', {}, ValueError),
                               ('example_spectrum2d.json',
+                               {'e_i': 20 * ureg('1/cm')},
+                               ValueError),
+                              ('example_xbin_edges_spectrum2d.json',
                                {'e_i': 20 * ureg('1/cm')},
                                ValueError)])
     def test_kinematic_constraints_invalid(self, json_file, kwargs, expected):

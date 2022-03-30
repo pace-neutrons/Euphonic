@@ -1303,7 +1303,8 @@ def apply_kinematic_constraints(spectrum: Spectrum2D,
                                 e_f: Quantity = None,
                                 angle_range: Tuple[float] = (0, 180.)
                                 ) -> Spectrum2D:
-    """Set events to NaN which violate energy/momentum limits:
+    """
+    Set events to NaN which violate energy/momentum limits:
 
       - Energy transfer greater than e_i
       - q outside region accessible for given e_i and angle range
@@ -1314,15 +1315,16 @@ def apply_kinematic_constraints(spectrum: Spectrum2D,
     geometry. The other values will be inferred, interpreting y_data as
     energy transfer.
 
-    Args:
-        spectrum: input 2-D spectrum, with |q| x_data and energy y_data
-        e_i: incident energy of direct-geometry spectrometer
-        e_f: final energy of indirect-geometry spectrometer
-        angle_range: min and max scattering angles (2θ) of detector bank in
-            degrees.
+    Parameters
+    ----------
+    spectrum: input 2-D spectrum, with |q| x_data and energy y_data
+    e_i: incident energy of direct-geometry spectrometer
+    e_f: final energy of indirect-geometry spectrometer
+    angle_range: min and max scattering angles (2θ) of detector bank in degrees
 
-    Returns:
-        Masked spectrum with inaccessible bins set to NaN in z_data.
+    Returns
+    -------
+    Masked spectrum with inaccessible bins set to NaN in z_data.
     """
     try:
         (1 * spectrum.x_data.units).to('1/angstrom')
@@ -1393,7 +1395,8 @@ def apply_kinematic_constraints(spectrum: Spectrum2D,
 
 
 def _get_cos_range(angle_range: Tuple[float]) -> Tuple[float]:
-    """Get max and min of cosine function over angle range
+    """
+    Get max and min of cosine function over angle range
 
     These will either be the cosines of the input angles, or, in the case that
     a cosine max/min point lies within the angle range, 1/-1 respectively.

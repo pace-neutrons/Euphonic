@@ -333,7 +333,7 @@ needed so the kinematic limits --- the accessible :math:`(q, \omega)`
 range --- determined by the conservation laws are given solely
 by these instrument parameters.
 
-The function :py:func:`apply_kinematic_constraints
+The function :py:func:`euphonic.spectra.apply_kinematic_constraints
 <euphonic.spectra.apply_kinematic_constraints>` applies these limits
 to a powder-averaged :ref:`Spectrum2D` object with appropriate dimensions
 (i.e. the x- and y-axes represent :math:`|q|` and :math:`\omega` respectively).
