@@ -1,11 +1,8 @@
 # -*- coding: UTF-8 -*-
-from argparse import ArgumentParser, SUPPRESS
+from argparse import ArgumentParser, Namespace, SUPPRESS
 import itertools
 from pathlib import Path
-import time
 from typing import List, Tuple, Optional, Sequence
-import random
-import warnings
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -18,7 +15,6 @@ from euphonic.cli.utils import (_get_cli_parser, get_args,
                                 _brille_calc_modes_kwargs,
                                 load_data_from_file,
                                 _get_energy_bins)
-from euphonic.plot import plot_1d_to_axis
 from euphonic.sampling import recurrence_sequence
 
 
@@ -50,6 +46,8 @@ def check_brille_settings(
         raise TypeError('Force constants are required to use the '
                         'euphonic-check-brille-settings tool')
 
+    brille_calc_modes_kwargs = _brille_calc_modes_kwargs(
+        Namespace(**calc_modes_kwargs))
     qpts = np.fromiter(itertools.chain.from_iterable(
         recurrence_sequence(npts, order=3)), dtype=float).reshape(-1, 3)
 
@@ -117,7 +115,8 @@ def check_brille_settings(
             fc, grid_type=brille_grid_type,
             interpolation_kwargs=calc_modes_kwargs,
             **{brille_param_key: brille_param_i})
-        brille_modes = brille_fc.calculate_qpoint_phonon_modes(qpts)
+        brille_modes = brille_fc.calculate_qpoint_phonon_modes(
+            qpts, **brille_calc_modes_kwargs)
         brille_modes.frequencies_unit = energy_unit
         brille_sf = brille_modes.calculate_structure_factor()
         brille_sqw_avg = brille_sf.calculate_1d_average(ebins)
