@@ -1317,10 +1317,14 @@ def apply_kinematic_constraints(spectrum: Spectrum2D,
 
     Parameters
     ----------
-    spectrum: input 2-D spectrum, with |q| x_data and energy y_data
-    e_i: incident energy of direct-geometry spectrometer
-    e_f: final energy of indirect-geometry spectrometer
-    angle_range: min and max scattering angles (2θ) of detector bank in degrees
+    spectrum
+        input 2-D spectrum, with |q| x_data and energy y_data
+    e_i
+        incident energy of direct-geometry spectrometer
+    e_f
+        final energy of indirect-geometry spectrometer
+    angle_range
+        min and max scattering angles (2θ) of detector bank in degrees
 
     Returns
     -------
