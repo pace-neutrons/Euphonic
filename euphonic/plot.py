@@ -346,7 +346,7 @@ def plot_2d(spectra: Union[Spectrum2D, Sequence[Spectrum2D]],
     def _get_minmax_intensity(spectrum: Spectrum2D) -> Tuple[float, float]:
         dimensionless_data = spectrum.z_data.to(intensity_unit).magnitude
         assert isinstance(dimensionless_data, np.ndarray)
-        return np.min(dimensionless_data), np.max(dimensionless_data)
+        return np.nanmin(dimensionless_data), np.nanmax(dimensionless_data)
     min_z_list, max_z_list = zip(*map(_get_minmax_intensity, spectra))
     if vmin is None:
         vmin = min(min_z_list)

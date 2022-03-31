@@ -43,7 +43,12 @@ powder_map_params = [
      *quick_calc_params],
     [graphite_fc_file, '--asr', *quick_calc_params],
     [graphite_fc_file, '--asr=realspace', '--dipole-parameter=0.75',
-     *quick_calc_params]]
+     *quick_calc_params],
+    [graphite_fc_file, '--e-i=15', '--ebins=50', *quick_calc_params],    
+    [graphite_fc_file, '--e-i=15', '--e-max=20', '--ebins=50',
+     *quick_calc_params],
+    [graphite_fc_file, '--e-f=15', '--ebins=50', '--q-max=16',
+     '--angle-range', '20', '230', *quick_calc_params]]
 powder_map_params_from_phonopy = [
     [nacl_prim_fc_file],
     [nacl_prim_fc_file, '--temperature=1000', *quick_calc_params],
@@ -200,7 +205,6 @@ class TestRegression:
         assert err.value.code == 2
 
 
-
 @patch('matplotlib.pyplot.show')
 @pytest.mark.skip(reason='Only run if you want to regenerate the test data')
 def test_regenerate_powder_map_data(_):
@@ -215,6 +219,8 @@ def test_regenerate_powder_map_data(_):
     for powder_map_param in powder_map_params:
         # Generate current figure for us to retrieve with gcf
         euphonic.cli.powder_map.main(powder_map_param)
+
+        matplotlib.pyplot.gcf().tight_layout()  # Force tick labels to be set
 
         # Retrieve with gcf and write to file
         image_data = get_current_plot_image_data()

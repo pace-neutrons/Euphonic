@@ -4,15 +4,17 @@ try:
     import matplotlib.pyplot
 except ModuleNotFoundError:
     pass
+from copy import copy
 from typing import Dict, List, Union, Tuple
 from ..utils import get_data_path
 
 
-def args_to_key(cl_args: str) -> str:
+def args_to_key(cl_args: List[str]) -> str:
     """
     From CL tool arguments, return the key that should be used to store
     its testing output
     """
+    cl_args = copy(cl_args)
     if os.path.isfile(cl_args[0]):
         cl_args[0] = ' '.join([os.path.split(os.path.dirname(cl_args[0]))[1],
                                os.path.split(cl_args[0])[1]])
