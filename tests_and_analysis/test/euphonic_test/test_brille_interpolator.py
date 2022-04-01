@@ -41,19 +41,19 @@ def get_grid(material, grid_type='trellis', fill=True):
     direct = br.Direct(*cell)
     direct.spacegroup = symmetry
     bz = br.BrillouinZone(direct.star)
-    n_grid_points = 10
+    grid_npts = 10
     if grid_type == 'trellis':
         vol = bz.ir_polyhedron.volume
         grid_kwargs = {
-            'node_volume_fraction': vol/n_grid_points}
+            'node_volume_fraction': vol/grid_npts}
         br_grid = br.BZTrellisQdc(bz, **grid_kwargs)
     elif grid_type == 'mesh':
         grid_kwargs = {
-            'max_size': bz.ir_polyhedron.volume/n_grid_points,
-            'max_points': n_grid_points}
+            'max_size': bz.ir_polyhedron.volume/grid_npts,
+            'max_points': grid_npts}
         br_grid = br.BZMeshQdc(bz, **grid_kwargs)
     elif grid_type == 'nest':
-        grid_kwargs = {'number_density': n_grid_points}
+        grid_kwargs = {'number_density': grid_npts}
         br_grid = br.BZNestQdc(bz, **grid_kwargs)
 
     if fill:
@@ -105,11 +105,11 @@ class TestBrilleInterpolatorCreation:
         assert grid == bri._grid
 
     @pytest.mark.parametrize('material, kwargs', [
-        ('LZO', {'n_grid_points': 10,
+        ('LZO', {'grid_npts': 10,
                  'grid_type': 'trellis'}),
-        ('quartz', {'n_grid_points': 10,
+        ('quartz', {'grid_npts': 10,
                     'grid_type': 'mesh'}),
-        ('NaCl', {'n_grid_points': 10,
+        ('NaCl', {'grid_npts': 10,
                   'grid_type': 'nest'})
         ])
     def test_create_from_force_constants(self, material, kwargs):
@@ -118,17 +118,17 @@ class TestBrilleInterpolatorCreation:
 
     @pytest.mark.parametrize(
         'kwargs, expected_grid_type, expected_grid_kwargs', [
-            ({'n_grid_points': 10,
+            ({'grid_npts': 10,
               'grid_kwargs': {'node_volume_fraction': 0.04}},
              'brille.BZTrellisQdc',
              {'node_volume_fraction': 0.04}),
-            ({'n_grid_points': 10, 'grid_type': 'trellis'},
+            ({'grid_npts': 10, 'grid_type': 'trellis'},
              'brille.BZTrellisQdc',
              {'node_volume_fraction': 0.013193727}),
-            ({'grid_type': 'mesh', 'n_grid_points': 50},
+            ({'grid_type': 'mesh', 'grid_npts': 50},
              'brille.BZMeshQdc',
              {'max_size': 0.00263874557, 'max_points': 50}),
-            ({'grid_type': 'nest', 'n_grid_points': 100},
+            ({'grid_type': 'nest', 'grid_npts': 100},
              'brille.BZNestQdc',
              {'number_density': 100}),
             ({},
@@ -212,9 +212,9 @@ class TestBrilleInterpolatorCalculateQpointPhononModes:
 
     @pytest.mark.parametrize(
         'material, from_fc_kwargs, expected_sf_file', [
-            ('LZO', {'n_grid_points': 100},
+            ('LZO', {'grid_npts': 100},
              'La2Zr2O7_trellis_100_structure_factor.json'),
-            ('CaHgO2', {'grid_type': 'trellis', 'n_grid_points': 20},
+            ('CaHgO2', {'grid_type': 'trellis', 'grid_npts': 20},
              'CaHgO2_trellis_20_structure_factor.json')
         ])
     def test_calculate_qpoint_phonon_modes(
@@ -233,7 +233,7 @@ class TestBrilleInterpolatorCalculateQpointPhononModes:
 
     def test_brille_qpoint_phonon_modes_similar_to_those_from_fc(self):
         fc = get_fc('graphite')
-        bri = BrilleInterpolator.from_force_constants(fc, n_grid_points=5000)
+        bri = BrilleInterpolator.from_force_constants(fc, grid_npts=5000)
         qpts = np.array([[-0.20, 0.55, 0.55],
                          [ 0.35, 0.07, 0.02],
                          [ 0.00, 0.50, 0.00],
@@ -252,7 +252,7 @@ class TestBrilleInterpolatorCalculateQpointPhononModes:
 
     def test_calculate_qpoint_phonon_modes_single_qpt(self):
         fc = get_fc('graphite')
-        bri = BrilleInterpolator.from_force_constants(fc, n_grid_points=10)
+        bri = BrilleInterpolator.from_force_constants(fc, grid_npts=10)
         qpm = bri.calculate_qpoint_phonon_modes(np.array([[0.5, 0.5, 0.5]]))
         assert isinstance(qpm, QpointPhononModes)
         assert qpm.qpts.shape == (1, 3)
@@ -289,9 +289,9 @@ class TestBrilleInterpolatorCalculateQpointFrequencies:
 
     @pytest.mark.parametrize(
         'material, from_fc_kwargs, expected_qpf_file', [
-            ('NaCl', {'n_grid_points': 10},
+            ('NaCl', {'grid_npts': 10},
              'NaCl_trellis_10_qpoint_frequencies.json'),
-            ('quartz', {'grid_type': 'mesh', 'n_grid_points': 200},
+            ('quartz', {'grid_type': 'mesh', 'grid_npts': 200},
              'quartz_mesh_200_qpoint_frequencies.json'),
         ])
     def test_calculate_qpoint_frequencies(
@@ -307,7 +307,7 @@ class TestBrilleInterpolatorCalculateQpointFrequencies:
 
     def test_brille_qpoint_frequencies_similar_to_those_from_fc(self):
         fc = get_fc('graphite')
-        bri = BrilleInterpolator.from_force_constants(fc, n_grid_points=100)
+        bri = BrilleInterpolator.from_force_constants(fc, grid_npts=100)
         qpts = np.array([[-0.2     ,  0.55    ,  0.55    ],
                          [ 0.35    ,  0.07    ,  0.02    ],
                          [ 0.00    ,  0.5    ,  0.00    ],

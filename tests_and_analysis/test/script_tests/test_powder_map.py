@@ -151,7 +151,7 @@ class TestRegression:
     @pytest.mark.multiple_extras
     @pytest.mark.parametrize('powder_map_args, expected_kwargs', [
         (['--use-brille', '--brille-npts', '25', '--disable-c'],
-         {'n_grid_points': 25, 'grid_type': 'trellis',
+         {'grid_npts': 25, 'grid_type': 'trellis',
           'interpolation_kwargs': {'use_c': False}}),
         (['--use-brille', '--brille-grid-type', 'mesh', '--use-c',
           '--n-threads', '2'],
@@ -175,7 +175,7 @@ class TestRegression:
             pass
         default_interp_kwargs =  {'asr': None, 'dipole_parameter': 1.0,
                                   'n_threads': None, 'use_c': None}
-        default_kwargs = {'grid_type': 'trellis', 'n_grid_points': 5000,
+        default_kwargs = {'grid_type': 'trellis', 'grid_npts': 5000,
                           'grid_density': None}
         expected_interp_kwargs = {
             **default_interp_kwargs,

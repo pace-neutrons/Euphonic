@@ -130,14 +130,14 @@ class BrilleInterpolator:
     @classmethod
     def from_force_constants(
             cls: Type[T], force_constants: ForceConstants,
-            grid_type: str = 'trellis', n_grid_points: int = 1000,
+            grid_type: str = 'trellis', grid_npts: int = 1000,
             grid_density: Optional[int] = None,
             grid_kwargs: Optional[Dict[str, Any]] = None,
             interpolation_kwargs: Optional[Dict[str, Any]] = None) -> T:
         """
         Generates a grid over the irreducible Brillouin Zone to be
         used for linear interpolation with Brille, with properties
-        determined by the grid_type, n_grid_points and grid_kwargs
+        determined by the grid_type, grid_npts and grid_kwargs
         arguments. Then uses ForceConstants to fill the grid points
         with phonon frequencies and eigenvectors via Fourier
         interpolation. This returns a BrilleInterpolator object that
@@ -150,7 +150,7 @@ class BrilleInterpolator:
             'mesh', 'nest'}, creating a brille.BZTrellisQdc,
             brille.BZMeshQdc or brille.BZNestQdc grid
             respectively
-        n_grid_points
+        grid_npts
             The approximate number of q-points in the Brille grid.
             This is used to set the kwargs for the grid creation so
             that a grid with approximately the desired number of
@@ -166,7 +166,7 @@ class BrilleInterpolator:
             volume
         grid_kwargs
             Kwargs to be passed to the grid constructor (e.g.
-            brille.BZTrellisQdc). If set n_grid_points does
+            brille.BZTrellisQdc). If set grid_npts does
             nothing
         interpolation_kwargs
             Kwargs to be passed to
@@ -206,7 +206,7 @@ class BrilleInterpolator:
                     # node_volume_fraction actually describes cube
                     # volume used to generate tetrahedra
                     grid_kwargs = {
-                        'node_volume_fraction': vol/n_grid_points}
+                        'node_volume_fraction': vol/grid_npts}
             grid = br.BZTrellisQdc(bz, **grid_kwargs)
         elif grid_type == 'mesh':
             if grid_kwargs is None:
@@ -216,15 +216,15 @@ class BrilleInterpolator:
                         'max_points': int(grid_density*vol)}
                 else:
                     grid_kwargs = {
-                        'max_size': vol/n_grid_points,
-                        'max_points': n_grid_points}
+                        'max_size': vol/grid_npts,
+                        'max_points': grid_npts}
             grid = br.BZMeshQdc(bz, **grid_kwargs)
         elif grid_type == 'nest':
             if grid_kwargs is None:
                 if grid_density is not None:
                     grid_kwargs = {'number_density': int(grid_density*vol)}
                 else:
-                    grid_kwargs = {'number_density': n_grid_points}
+                    grid_kwargs = {'number_density': grid_npts}
             grid = br.BZNestQdc(bz, **grid_kwargs)
 
         print(f'Grid generated with {len(grid.rlu)} q-points. '

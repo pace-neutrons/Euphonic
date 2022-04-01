@@ -76,7 +76,7 @@ def main(params: Optional[List[str]] = None) -> None:
         from euphonic.brille import BrilleInterpolator
         fc = BrilleInterpolator.from_force_constants(
             fc, grid_type=args.brille_grid_type,
-            n_grid_points=args.brille_npts,
+            grid_npts=args.brille_npts,
             grid_density=args.brille_npts_density,
             interpolation_kwargs=calc_modes_kwargs)
         calc_modes_kwargs = _brille_calc_modes_kwargs(args)
