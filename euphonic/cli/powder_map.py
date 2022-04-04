@@ -16,6 +16,7 @@ from euphonic.cli.utils import (load_data_from_file, get_args,
 import euphonic.plot
 from euphonic.powder import (sample_sphere_dos, sample_sphere_pdos,
                              sample_sphere_structure_factor)
+from euphonic.spectra import apply_kinematic_constraints
 from euphonic.styles import base_style, intensity_widget_style
 import euphonic.util
 
@@ -35,7 +36,7 @@ def get_parser() -> ArgumentParser:
     parser, sections = _get_cli_parser(
         features={'read-fc', 'pdos-weighting', 'ins-weighting',
                   'powder', 'plotting', 'ebins', 'q-e', 'map',
-                  'brille'})
+                  'brille', 'kinematic'})
 
     sections['q'].description = (
         '"GRID" options relate to Monkhorst-Pack sampling for the '
@@ -53,6 +54,23 @@ def get_parser() -> ArgumentParser:
                                       help=("Don't use Matplotlib widgets to "
                                             "enable interactive setting of "
                                             "colormap intensity limits"))
+
+
+    kinematic = parser.add_argument_group('Kinematic constraints')
+    e_lims = kinematic.add_mutually_exclusive_group()
+
+    e_lims.add_argument('--e-incident', '--e-i', dest='e_i',
+                        type=float, default=None,
+                        help="Incident energy for direct-geometry constraints")
+    e_lims.add_argument('--e-final', '--e-f', dest='e_f',
+                        type=float, default=None,
+                        help="Final energy for indirect-geometry constraints")
+    kinematic.add_argument(
+        '--angle-range', nargs=2, type=float, dest='angle_range',
+        default=[0., 180.],
+        help=("Range of scattering angles (2θ) in degrees. These lower/upper "
+              "bounds are used with incident/final energy to determine "
+              "accessible (|q|, ω) region."))
     return parser
 
 
@@ -96,8 +114,14 @@ def main(params: Optional[List[str]] = None) -> None:
     modes = fc.calculate_qpoint_frequencies(
         np.array([[0., 0., 0.5]]), **calc_modes_kwargs)
     modes.frequencies_unit = args.energy_unit
+
+    if args.e_i is not None and args.e_max is None:
+        emax = args.e_i
+    else:
+        emax = args.e_max
+
     energy_bins = _get_energy_bins(
-        modes, args.ebins + 1, emin=args.e_min, emax=args.e_max,
+        modes, args.ebins + 1, emin=args.e_min, emax=emax,
         headroom=1.2)  # Generous headroom as we only checked one q-point
 
     if args.weighting in ('coherent',):
@@ -166,7 +190,16 @@ def main(params: Optional[List[str]] = None) -> None:
                      if args.energy_broadening else None),
             shape=args.shape)
 
-    print(f"Plotting figure: max intensity {np.max(spectrum.z_data):~P}")
+    if not (args.e_i is None and args.e_f is None):
+        print("Applying kinematic constraints")
+        energy_unit = args.energy_unit
+        e_i = args.e_i * ureg(energy_unit) if (args.e_i is not None) else None
+        e_f = args.e_f * ureg(energy_unit) if (args.e_f is not None) else None
+        spectrum = apply_kinematic_constraints(spectrum,
+            e_i=e_i, e_f=e_f, angle_range=args.angle_range)
+
+    print(f"Plotting figure: max intensity "
+          f"{np.nanmax(spectrum.z_data.magnitude) * spectrum.z_data.units:~P}")
     plot_label_kwargs = _plot_label_kwargs(
         args, default_xlabel=f"|q| / {q_min.units:~P}",
         default_ylabel=f"Energy / {spectrum.y_data.units:~P}")
@@ -208,6 +241,7 @@ def main(params: Optional[List[str]] = None) -> None:
                              initial=f'{cmin:{fmt_str}}', label_pad=pad)
             maxbox = TextBox(axmax, max_label,
                              initial=f'{cmax:{fmt_str}}', label_pad=pad)
+
             def update_min(min_val):
                 image.set_clim(vmin=float(min_val))
                 fig.canvas.draw()

@@ -6,9 +6,10 @@ import math
 import json
 from numbers import Integral
 from typing import (Any, Dict, List, Optional, overload,
-                    Sequence, Tuple, TypeVar, Union, Type, Iterable)
+                    Sequence, Tuple, TypeVar, Union, Type)
 import warnings
 
+from pint import DimensionalityError
 import numpy as np
 from scipy.ndimage import correlate1d, gaussian_filter
 
@@ -1296,6 +1297,126 @@ class Spectrum2D(Spectrum):
         return cls(d['x_data'], d['y_data'], d['z_data'],
                    x_tick_labels=d['x_tick_labels'],
                    metadata=d['metadata'])
+
+def apply_kinematic_constraints(spectrum: Spectrum2D,
+                                e_i: Quantity = None,
+                                e_f: Quantity = None,
+                                angle_range: Tuple[float] = (0, 180.)
+                                ) -> Spectrum2D:
+    """
+    Set events to NaN which violate energy/momentum limits:
+
+      - Energy transfer greater than e_i
+      - q outside region accessible for given e_i and angle range
+
+    This requires x_data to be in wavevector units and y_data to be energy.
+
+    Either e_i or e_f should be set, according to direct/instrument
+    geometry. The other values will be inferred, interpreting y_data as
+    energy transfer.
+
+    Parameters
+    ----------
+    spectrum
+        input 2-D spectrum, with |q| x_data and energy y_data
+    e_i
+        incident energy of direct-geometry spectrometer
+    e_f
+        final energy of indirect-geometry spectrometer
+    angle_range
+        min and max scattering angles (2θ) of detector bank in degrees
+
+    Returns
+    -------
+    Masked spectrum with inaccessible bins set to NaN in z_data.
+    """
+    try:
+        (1 * spectrum.x_data.units).to('1/angstrom')
+    except DimensionalityError as error:
+        raise ValueError(
+            "x_data needs to have wavevector units (i.e. 1/length)"
+            ) from error
+    try:
+        (1 * spectrum.y_data.units).to('eV', 'spectroscopy')
+    except DimensionalityError as error:
+        raise ValueError(
+            "y_data needs to have energy (or wavenumber) units"
+            ) from error
+
+    momentum2_to_energy = 0.5 * (ureg('hbar^2 / neutron_mass')
+                                 .to('meV angstrom^2'))
+
+    if (e_i is None) == (e_f is None):
+        raise ValueError("Exactly one of e_i and e_f should be set. "
+                         "(The other value will be derived from energy "
+                         "transfer).")
+
+    if e_i is None:   # Indirect geometry: final energy is fixed,
+                        # incident energy range is unlimited
+        e_f = e_f.to('meV')
+        e_i = (spectrum.get_bin_centres(bin_ax='y').to('meV') + e_f)
+    elif e_f is None:   # Direct geometry: incident energy is fixed,
+                        # max energy transfer = e_i
+        e_i = e_i.to('meV')
+        e_f = e_i - spectrum.get_bin_centres(bin_ax='y').to('meV')
+
+    k2_i = (e_i / momentum2_to_energy)
+    k2_f = (e_f / momentum2_to_energy)
+
+    cos_values = np.asarray(
+        _get_cos_range(np.asarray(angle_range) * np.pi / 180.))
+
+    # Momentum goes negative where final energy greater than incident
+    # energy; detect this as complex component and set extreme q-bounds to
+    # enforce conservation of energy
+
+    # (Complex number sqrt separated from units sqrt for compatibility with
+    # older library versions; in newer versions this is not necessary.)
+    q_bounds = np.sqrt(k2_i + k2_f
+                       - 2 * cos_values[:, np.newaxis]
+                           * np.sqrt(k2_i.magnitude * k2_f.magnitude,
+                                     dtype=complex)
+                           * (k2_i.units * k2_f.units)**0.5
+                       )
+    q_bounds.magnitude.T[np.any(q_bounds.imag, axis=0)] = [float('Inf'),
+                                                           float('-Inf')]
+    q_bounds = q_bounds.real
+
+    new_z_data = np.copy(spectrum.z_data.magnitude)
+    mask = np.logical_or((spectrum.get_bin_centres(bin_ax='x')[:, np.newaxis]
+                          < q_bounds[0][np.newaxis, :]),
+                         (spectrum.get_bin_centres(bin_ax='x')[:, np.newaxis]
+                          > q_bounds[1][np.newaxis, :]))
+
+    new_z_data[mask] = float('nan')
+
+    return Spectrum2D(
+        np.copy(spectrum.x_data.magnitude) * ureg(spectrum.x_data_unit),
+        np.copy(spectrum.y_data.magnitude) * ureg(spectrum.y_data_unit),
+        new_z_data * ureg(spectrum.z_data_unit),
+        copy.copy(spectrum.x_tick_labels),
+        copy.deepcopy(spectrum.metadata))
+
+
+def _get_cos_range(angle_range: Tuple[float]) -> Tuple[float]:
+    """
+    Get max and min of cosine function over angle range
+
+    These will either be the cosines of the input angles, or, in the case that
+    a cosine max/min point lies within the angle range, 1/-1 respectively.
+
+    Method: the angle range is translated such that it starts within 0-2π; then
+    we check for the presence of turning points at π and 2π.
+    """
+    limiting_values = np.cos(angle_range).tolist()
+
+    shift, lower_angle = divmod(min(angle_range), np.pi * 2)
+    upper_angle = max(angle_range) - (shift * 2 * np.pi)
+    if lower_angle < np.pi < upper_angle:
+        limiting_values.append(-1.)
+    if lower_angle < 2 * np.pi < upper_angle:
+        limiting_values.append(1.)
+    return max(limiting_values), min(limiting_values)
 
 
 def _lorentzian(x: np.ndarray, gamma: float) -> np.ndarray:

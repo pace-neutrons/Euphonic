@@ -49,6 +49,39 @@ To see all the command line options, run::
 You can also see the available command line options at the bottom of this page.
 For information on advanced plot styling, see :ref:`styling`.
 
+Progress bars
+-------------
+
+Sampling many q-points can be computationally expensive, so a progress
+bar will automatically be displayed if `tqdm <https://tqdm.github.io/>`_
+is installed
+
+Kinematic constraints
+---------------------
+
+Inelastic neutron-scattering measurements have an accessible
+:math:`(\mathbf{q}, \omega)` range depending on the instrument
+geometry: either the incident energy is fixed (direct geometry) or the
+final energy is fixed (indirect geometry), and the scattering angles
+are determined by reflector/analyzer/detector positions. The remaining degrees
+of freedom (e.g. time-of-flight) are used to determine the
+:math:`(\mathbf{q}, \omega)` transfer. To simulate these constraints,
+the parameter ``--e-incident`` or ``--e-final`` can be used to set the
+constrained energy, and ``--angle-range`` can be used to fix the
+detector range. So, for example, to simulate the MARI instrument at
+ISIS with a 60 meV incident energy::
+
+  euphonic-powder-map quartz.castep_bin --angle-range 3 135 --e-incident 60 --q-max 11 --energy-unit meV --weights coherent
+
+.. image:: figures/euphonic-powder-map-quartz-kinematic.png
+   :width: 400
+   :alt: 2D intensity map with |q| from 0. to 11.0 on the x-axis,
+         and energy on the y axis, showing powder-averaged coherent
+         inelastic neutron scattering intensities for quartz. The
+         plotting region fills an arc shape, against a white
+         background of missing data.
+
+
 Spherical averaging options
 ---------------------------
 
@@ -71,13 +104,6 @@ npts:" with the number of samples used at the largest sampling
 sphere. If this is equal to ``--npts-max`` then the upper limit is in
 use; you may wish to experiment with reducing ``--npts-density`` or
 increasing ``--npts-max`` in such cases.
-
-Progress bars
--------------
-
-Sampling many q-points can be computationally expensive, so a progress
-bar will automatically be displayed if `tqdm <https://tqdm.github.io/>`_
-is installed
 
 Output to file
 --------------
