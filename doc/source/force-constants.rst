@@ -9,6 +9,52 @@ eigenvectors at any arbitrary q via Fourier interpolation.
 
 .. contents:: :local:
 
+Force Constants Shape and Phase Conventions
+-------------------------------------------
+
+
+The :py:attr:`ForceConstants.force_constants <euphonic.force_constants.ForceConstants.force_constants>`
+attribute contains the force constants matrix
+
+.. math::
+
+  \phi_{\alpha, {\alpha}'}^{\kappa, {\kappa}'} =
+  \frac{\delta^{2}E}{{\delta}u_{\kappa,\alpha}{\delta}u_{{\kappa}',{\alpha}'}}
+
+This describes the change in total energy when atom :math:`\kappa` is displaced in direction
+:math:`\alpha` and atom :math:`\kappa\prime` is displaced in direction
+:math:`\alpha\prime`. In Euphonic the force constants are stored
+in 'compact' form, which means that the minimum required information is
+stored. The change in energy in displacing atom :math:`\kappa` and atom
+:math:`\kappa\prime`, is the same as displacing atom :math:`\kappa\prime` and
+atom :math:`\kappa`, so only :math:`N(3n)^2` values need to be stored rather than :math:`(3Nn)^2`,
+where :math:`n` is the number of atoms in the unit cell and :math:`N` is the
+number of unit cells in the supercell.
+
+**Phase Convention**
+
+To calculate phonon frequencies and eigenvectors, the dynamical matrix at
+:math:`q` must be calculated. This is calculated by taking a Fourier transform
+of the force constants matrix
+
+.. math::
+
+  D_{\alpha, {\alpha}'}^{\kappa, {\kappa}'}(q) =
+  \frac{1}{\sqrt{M_\kappa M_{\kappa '}}}
+  \sum_{a}\phi_{\alpha, \alpha '}^{\kappa, \kappa '}e^{-iq\cdot r_a}
+
+**Indexing**
+
+The force constants matrix has shape ``(n_cells, 3*n_atoms, 3*n_atoms)``, where ``n_cells`` is
+the number of cells in the supercell, and ``n_atoms`` is the number of atoms
+in the unit cell. The force constants index ``[n, l, m]``, where
+``l = 3*i + a`` and ``m = 3*j + b``, describes the change in energy when atom
+``i`` in unit cell ``0`` is displaced in direction ``a`` and atom ``j``
+in unit cell ``n`` is displaced in direction ``b``. For example,
+``ForceConstants.force_constants[5, 8, 1]`` is the change in energy when atom
+``2`` in unit cell ``0`` is displaced in the ``z`` direction and atom ``0`` in
+unit cell ``5`` is displaced in the ``y`` direction.
+
 Reading From CASTEP
 -------------------
 
