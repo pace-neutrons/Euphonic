@@ -43,12 +43,14 @@ class ForceConstants:
         Shape (n_cells_in_sc, 3*n_atoms, 3*n_atoms) float Quantity in
         energy/length**2 units. The force constants matrix
     sc_matrix
-        Shape (3, 3) int ndarray. The supercell matrix
+        Shape (3, 3) int ndarray. The matrix to convert from the unit
+        cell vectors to the supercell vectors
     n_cells_in_sc
         Number of cells in the supercell
     cell_origins
-        Shape (n_cells_in_sc, 3) int ndarray. The locations of the unit
-        cells within the supercell
+        Shape (n_cells_in_sc, 3) int ndarray. The origin coordinates of
+        each unit cell within the supercell, in units of the unit cell
+        vectors
     born
         Shape (n_atoms, 3, 3) float Quantity in charge units or None.
         The Born charges for each atom
@@ -71,10 +73,12 @@ class ForceConstants:
             Shape (n_cells_in_sc, 3*n_atoms, 3*n_atoms) float Quantity
             in energy/length**2 units. The force constants matrix
         sc_matrix
-            Shape (3, 3) int ndarray. The supercell matrix
+            Shape (3, 3) int ndarray. The matrix to convert from the
+            unit cell vectors to the supercell vectors
         cell_origins
-            Shape (n_cells_in_sc, 3) int ndarray. The locations of the
-            unit cells within the supercell
+            Shape (n_cells_in_sc, 3) int ndarray. The origin
+            coordinates of each unit cell within the supercell, in
+            units of the unit cell vectors
         born
             Shape (n_atoms, 3, 3) float Quantity in charge units. The
             Born charges for each atom

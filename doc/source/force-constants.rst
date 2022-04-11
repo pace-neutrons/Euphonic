@@ -86,7 +86,7 @@ Similarly the green atom can be indexed into the magenta cell, so only 2 cell or
 This is a simple example, but the same applies to more realistic 3D structures.
 
 This transformation is done automatically when reading from Phonopy.
-If reading force constants from another program, see :ref:`Reading From Other Programs<fc_read_other_programs>`.
+If reading force constants from another program, there is a function to help with this transformation, see :ref:`Reading From Other Programs<fc_read_other_programs>`.
 
 
 Reading From CASTEP

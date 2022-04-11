@@ -343,7 +343,9 @@ def convert_fc_phases(force_constants: np.ndarray, atom_r: np.ndarray,
         constants matrix with a phase and shape compatible with
         Euphonic
     cell_origins
-        The vector the origin of each unit cell in the supercell
+        Shape (n_cells_in_sc, 3) int ndarray. The origin coordinates of
+        each unit cell within the supercell, in units of the unit cell
+        vectors
     """
     n_atoms_sc = len(sc_to_uc_atom_idx)
     n_atoms_uc = len(uc_to_sc_atom_idx)
