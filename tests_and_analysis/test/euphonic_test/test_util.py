@@ -138,3 +138,21 @@ class TestConvertFcPhases:
             (converted_fc*fc.units).to(expected_fc_unit).magnitude,
             expected_fc.force_constants.magnitude,
             atol=sys.float_info.epsilon)
+
+    def test_inconsistent_sc_matrix_raises_value_error(self):
+        (fc, atom_r, sc_atom_r, uc_to_sc_idx, sc_to_uc_idx,
+            sc_matrix) = get_data_from_json('CaHgO2_convert_fc_data.json')
+        sc_matrix[0, 0] = 2
+        with pytest.raises(ValueError):
+            _, _ = convert_fc_phases(
+                fc.magnitude, atom_r, sc_atom_r, uc_to_sc_idx, sc_to_uc_idx,
+                sc_matrix)
+
+    def test_non_int_cell_origins_raises_runtime_error(self):
+        (fc, atom_r, sc_atom_r, uc_to_sc_idx, sc_to_uc_idx,
+            sc_matrix) = get_data_from_json('CaHgO2_convert_fc_data.json')
+        sc_atom_r *= 2
+        with pytest.raises(RuntimeError):
+            _, _ = convert_fc_phases(
+                fc.magnitude, atom_r, sc_atom_r, uc_to_sc_idx, sc_to_uc_idx,
+                sc_matrix)
