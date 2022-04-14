@@ -6,8 +6,7 @@ from typing import Optional, Dict, Any, Union, Tuple, TextIO, Sequence, List
 import numpy as np
 
 from euphonic import ureg
-from euphonic.util import (get_all_origins, convert_fc_phases,
-                           _get_supercell_relative_idx)
+from euphonic.util import convert_fc_phases
 
 
 # h5py can't be called from Matlab, so import as late as possible to
