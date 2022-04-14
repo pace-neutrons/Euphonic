@@ -176,7 +176,7 @@ An example is shown below, assuming that the inputs are being loaded from existi
   # Create a ForceConstants object, using the Crystal object
   fc = ForceConstants(crystal, force_constants, sc_matrix, cell_origins)
 
-If, as described in the previous section, the source program uses the atomic coordinate phase convention, there may be some re-indexing required to get the force constants in the correct shape and form.
+If, as described in the :ref:`Force Constants Format<fc_format>` section, the source program uses the atomic coordinate phase convention, there may be some re-indexing required to get the force constants in the correct shape and form.
 There is a helper function :py:meth:`euphonic.util.convert_fc_phases <euphonic.util.convert_fc_phases>`
 which will convert a force constants of shape ``(n, N*n, 3, 3)``, to the shape required by Euphonic ``(N, 3*n, 3*n)``,
 will do any re-indexing required, and will return the appropriate cell origins, even if the supercell matrix is non-diagonal.
