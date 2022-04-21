@@ -371,7 +371,7 @@ def convert_fc_phases(force_constants: np.ndarray, atom_r: np.ndarray,
     if len(non_int) > 0:
         raise RuntimeError(
             f'Non-integer cell origins for atom(s) '
-            f'{", ".join(non_int.astype(str))}, '
+            f'{", ".join(np.unique(non_int).astype(str))}, '
             f'check coordinates and indices are correct')
     cell_origins_per_atom = np.rint(cell_origins_per_atom).astype(np.int32)
     # Recenter cell origins onto those for atom 0 in unit cell 0

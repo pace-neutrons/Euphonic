@@ -151,11 +151,14 @@ class TestConvertFcPhases:
     def test_non_int_cell_origins_raises_runtime_error(self):
         (fc, atom_r, sc_atom_r, uc_to_sc_idx, sc_to_uc_idx,
             sc_matrix) = get_data_from_json('CaHgO2_convert_fc_data.json')
-        sc_atom_r *= 2
-        with pytest.raises(RuntimeError):
+        non_int_atoms = [1, 7, 65]
+        sc_atom_r[non_int_atoms] *= 2
+        with pytest.raises(RuntimeError) as error:
             _, _ = convert_fc_phases(
                 fc.magnitude, atom_r, sc_atom_r, uc_to_sc_idx, sc_to_uc_idx,
                 sc_matrix)
+        # Ensure specific atoms are mentioned in error message
+        assert '1, 7, 65' in str(error.value)
 
     def test_large_tolerance_doesnt_raise_error(self):
         (fc, atom_r, sc_atom_r, uc_to_sc_idx, sc_to_uc_idx,
@@ -171,5 +174,5 @@ class TestConvertFcPhases:
         with pytest.raises(RuntimeError):
             _, _ = convert_fc_phases(
                 fc.magnitude, atom_r, sc_atom_r, uc_to_sc_idx, sc_to_uc_idx,
-                sc_matrix, cell_origins_tol=1e-10)
+                sc_matrix, cell_origins_tol=1e-8)
 
