@@ -43,8 +43,8 @@ class ForceConstants:
         Shape (n_cells_in_sc, 3*n_atoms, 3*n_atoms) float Quantity in
         energy/length**2 units. The force constants matrix
     sc_matrix
-        Shape (3, 3) int ndarray. The matrix to convert from the unit
-        cell vectors to the supercell vectors
+        Shape (3, 3) int ndarray. The transformation matrix to convert
+        from the unit cell vectors to the supercell vectors
     n_cells_in_sc
         Number of cells in the supercell
     cell_origins
@@ -73,8 +73,8 @@ class ForceConstants:
             Shape (n_cells_in_sc, 3*n_atoms, 3*n_atoms) float Quantity
             in energy/length**2 units. The force constants matrix
         sc_matrix
-            Shape (3, 3) int ndarray. The matrix to convert from the
-            unit cell vectors to the supercell vectors
+            Shape (3, 3) int ndarray. The transformation matrix to
+            convert from the unit cell vectors to the supercell vectors
         cell_origins
             Shape (n_cells_in_sc, 3) int ndarray. The origin
             coordinates of each unit cell within the supercell, in

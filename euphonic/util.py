@@ -300,7 +300,8 @@ def mode_gradients_to_widths(mode_gradients: Quantity, cell_vectors: Quantity
 
 def convert_fc_phases(force_constants: np.ndarray, atom_r: np.ndarray,
                       sc_atom_r: np.ndarray, uc_to_sc_atom_idx: np.ndarray,
-                      sc_to_uc_atom_idx: np.ndarray, sc_matrix: np.ndarray
+                      sc_to_uc_atom_idx: np.ndarray, sc_matrix: np.ndarray,
+                      cell_origins_tol: float = 1e-5
                       ) -> Tuple[np.ndarray, np.ndarray]:
     """
     Convert from a force constants matrix which uses the atom
@@ -315,7 +316,7 @@ def convert_fc_phases(force_constants: np.ndarray, atom_r: np.ndarray,
         Shape (n_atoms, n_cells*n_atoms, 3, 3) or
         (n_cells*n_atoms, n_cells*n_atoms, 3, 3) float ndarray with
         phases based on the atom coordinate. n_atoms is the number
-        of atoms in the unit cell, n_cells in the number of unit cells
+        of atoms in the unit cell, n_cells is the number of unit cells
         in the supercell
     atom_r
         Shape (n_atoms, 3) float ndarray. The coordinates of the atoms
@@ -328,13 +329,19 @@ def convert_fc_phases(force_constants: np.ndarray, atom_r: np.ndarray,
         supercell
     uc_to_sc_atom_idx
         Shape (n_atoms,) int ndarray. For each atom in the unit cell,
-        the corresponding index in the supercell
+        the index of that atom in the supercell
     sc_to_uc_atom_idx
         Shape (n_atoms_in_sc,) int ndarray. For each atom in the
-        supercell, the corresponding index in the unit cell
+        supercell, the index of the equivalent atom in
+        the unit cell
     sc_matrix
-        Shape (3, 3) int ndarray. The matrix to convert from the unit
-        cell vectors to the supercell vectors
+        Shape (3, 3) int ndarray. The transformation matrix to convert
+        from the unit cell vectors to the supercell vectors
+    cell_origins_tol
+        The calculated cell origins for each atom should be integer
+        values. This defines the tolerance as above which a value is
+        considered non-integer, which may indicate an issue with the
+        input and will raise a RuntimeError.
 
     Returns
     -------
@@ -358,19 +365,21 @@ def convert_fc_phases(force_constants: np.ndarray, atom_r: np.ndarray,
             f'there should be {n_cells} cells in the supercell')
     # Get cell origins for all atoms
     cell_origins_per_atom = sc_atom_r - atom_r[sc_to_uc_atom_idx]
-    non_int = np.where(np.abs(cell_origins_per_atom
-                              - np.rint(cell_origins_per_atom)) > 1e-5)[0]
+    non_int = np.where(
+        np.abs(cell_origins_per_atom
+               - np.rint(cell_origins_per_atom)) > cell_origins_tol)[0]
     if len(non_int) > 0:
         raise RuntimeError(
             f'Non-integer cell origins for atom(s) '
             f'{", ".join(non_int.astype(str))}, '
             f'check coordinates and indices are correct')
     cell_origins_per_atom = np.rint(cell_origins_per_atom).astype(np.int32)
-    # Recenter cell origins onto atom 0
+    # Recenter cell origins onto those for atom 0 in unit cell 0
+    cell_origins_per_atom -= cell_origins_per_atom[uc_to_sc_atom_idx[0]]
+
+    # Build unique cell origins by getting  cell origins
+    # associated with primitive atom 0 in all unit cells
     atom0_idx = np.where(sc_to_uc_atom_idx == 0)[0]
-    cell_origins_per_atom -= cell_origins_per_atom[[atom0_idx[0]]]
-    # Build unique cell origins by getting all cell origins
-    # associated with primitive atom 0
     cell_origins = cell_origins_per_atom[atom0_idx]
     # For some supercells, cell origins aren't always the
     # same for each atom in a supercell, and the cell origins are

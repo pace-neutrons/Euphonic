@@ -156,3 +156,20 @@ class TestConvertFcPhases:
             _, _ = convert_fc_phases(
                 fc.magnitude, atom_r, sc_atom_r, uc_to_sc_idx, sc_to_uc_idx,
                 sc_matrix)
+
+    def test_large_tolerance_doesnt_raise_error(self):
+        (fc, atom_r, sc_atom_r, uc_to_sc_idx, sc_to_uc_idx,
+            sc_matrix) = get_data_from_json('CaHgO2_convert_fc_data.json')
+        sc_atom_r[:, ] *= 1.01
+        _, _ = convert_fc_phases(
+            fc.magnitude, atom_r, sc_atom_r, uc_to_sc_idx, sc_to_uc_idx,
+            sc_matrix, cell_origins_tol=0.1)
+
+    def test_small_tolerance_raises_runtime_error(self):
+        (fc, atom_r, sc_atom_r, uc_to_sc_idx, sc_to_uc_idx,
+            sc_matrix) = get_data_from_json('CaHgO2_convert_fc_data.json')
+        with pytest.raises(RuntimeError):
+            _, _ = convert_fc_phases(
+                fc.magnitude, atom_r, sc_atom_r, uc_to_sc_idx, sc_to_uc_idx,
+                sc_matrix, cell_origins_tol=1e-10)
+
