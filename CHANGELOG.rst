@@ -22,7 +22,7 @@
 - Improvements:
 
   - Documentation on the shape and format of the force constants, and how to
-    read then from other programs has been improved.
+    read them from other programs has been improved.
 
 
 - Bug fixes:

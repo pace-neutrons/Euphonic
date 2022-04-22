@@ -307,7 +307,7 @@ def convert_fc_phases(force_constants: np.ndarray, atom_r: np.ndarray,
     Convert from a force constants matrix which uses the atom
     coordinates as r in the e^-iq.r phase (Phonopy-like), to a
     matrix which uses the cell origin coordinates as r in the
-    e^-iq.r phase (Euphonic,CASTEP-like). Also changes the shape
+    e^-iq.r phase (Euphonic, CASTEP-like). Also changes the shape
     of the matrix to be compatible with Euphonic.
 
     Parameters
