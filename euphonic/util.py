@@ -298,6 +298,138 @@ def mode_gradients_to_widths(mode_gradients: Quantity, cell_vectors: Quantity
         mode_gradients.units/cell_vectors.units)
 
 
+def convert_fc_phases(force_constants: np.ndarray, atom_r: np.ndarray,
+                      sc_atom_r: np.ndarray, uc_to_sc_atom_idx: np.ndarray,
+                      sc_to_uc_atom_idx: np.ndarray, sc_matrix: np.ndarray,
+                      cell_origins_tol: float = 1e-5
+                      ) -> Tuple[np.ndarray, np.ndarray]:
+    """
+    Convert from a force constants matrix which uses the atom
+    coordinates as r in the e^-iq.r phase (Phonopy-like), to a
+    matrix which uses the cell origin coordinates as r in the
+    e^-iq.r phase (Euphonic, CASTEP-like). Also changes the shape
+    of the matrix to be compatible with Euphonic.
+
+    Parameters
+    ----------
+    force_constants
+        Shape (n_atoms, n_cells*n_atoms, 3, 3) or
+        (n_cells*n_atoms, n_cells*n_atoms, 3, 3) float ndarray with
+        phases based on the atom coordinate. n_atoms is the number
+        of atoms in the unit cell, n_cells is the number of unit cells
+        in the supercell
+    atom_r
+        Shape (n_atoms, 3) float ndarray. The coordinates of the atoms
+        in the unit cell in fractional coordinates of the unit cell
+        vectors
+    sc_atom_r
+        Shape (n_atoms_in_sc, 3) float ndarray. The coordinates of the
+        atoms in the supercell in fractional coordinates of the unit
+        cell vectors. n_atoms_in_sc is the number of atoms in the
+        supercell
+    uc_to_sc_atom_idx
+        Shape (n_atoms,) int ndarray. For each atom in the unit cell,
+        the index of that atom in the supercell
+    sc_to_uc_atom_idx
+        Shape (n_atoms_in_sc,) int ndarray. For each atom in the
+        supercell, the index of the equivalent atom in
+        the unit cell
+    sc_matrix
+        Shape (3, 3) int ndarray. The transformation matrix to convert
+        from the unit cell vectors to the supercell vectors
+    cell_origins_tol
+        The calculated cell origins for each atom should be integer
+        values. This defines the tolerance as above which a value is
+        considered non-integer, which may indicate an issue with the
+        input and will raise a RuntimeError.
+
+    Returns
+    -------
+    fc_converted
+        Shape (n_cells, 3*n_atoms, 3*n_atoms) float ndarray. The force
+        constants matrix with a phase and shape compatible with
+        Euphonic
+    cell_origins
+        Shape (n_cells_in_sc, 3) int ndarray. The origin coordinates of
+        each unit cell within the supercell, in units of the unit cell
+        vectors
+    """
+    n_atoms_sc = len(sc_to_uc_atom_idx)
+    n_atoms_uc = len(uc_to_sc_atom_idx)
+    n_cells = int(np.rint(np.absolute(np.linalg.det(sc_matrix))))
+    if n_atoms_sc/n_atoms_uc - n_cells != 0:
+        raise ValueError(
+            f'Inconsistent numbers of cells in the supercell, unit '
+            f'cell has {n_atoms_uc} atoms, and supercell has '
+            f'{n_atoms_sc} atoms, but sc_matrix determinant suggests '
+            f'there should be {n_cells} cells in the supercell')
+    # Get cell origins for all atoms
+    cell_origins_per_atom = sc_atom_r - atom_r[sc_to_uc_atom_idx]
+    non_int = np.where(
+        np.abs(cell_origins_per_atom
+               - np.rint(cell_origins_per_atom)) > cell_origins_tol)[0]
+    if len(non_int) > 0:
+        raise RuntimeError(
+            f'Non-integer cell origins for atom(s) '
+            f'{", ".join(np.unique(non_int).astype(str))}, '
+            f'check coordinates and indices are correct')
+    cell_origins_per_atom = np.rint(cell_origins_per_atom).astype(np.int32)
+    # Recenter cell origins onto those for atom 0 in unit cell 0
+    cell_origins_per_atom -= cell_origins_per_atom[uc_to_sc_atom_idx[0]]
+
+    # Build unique cell origins by getting  cell origins
+    # associated with primitive atom 0 in all unit cells
+    atom0_idx = np.where(sc_to_uc_atom_idx == 0)[0]
+    cell_origins = cell_origins_per_atom[atom0_idx]
+    # For some supercells, cell origins aren't always the
+    # same for each atom in a supercell, and the cell origins are
+    # sometimes outside the supercell. Create a mapping of cell
+    # origins for atoms 1..n onto the equivalent cell origins for
+    # atom 0, so the same cell origins can be used for all atoms
+    cell_origins_map = np.zeros((n_atoms_sc), dtype=np.int32)
+    # Get origins of adjacent supercells in prim cell frac coords
+    sc_origins =  get_all_origins((2,2,2), min_xyz=(-1,-1,-1))
+    sc_origins_pcell = np.einsum('ij,jk->ik', sc_origins, sc_matrix)
+    for i in range(n_atoms_sc):
+        co_idx = np.where(
+            (cell_origins_per_atom[i] == cell_origins).all(axis=1))[0]
+        if len(co_idx) != 1:
+            # Get equivalent cell origin in surrounding supercells
+            origin_in_scs = cell_origins_per_atom[i] - sc_origins_pcell
+            co_idx = -1
+            # Find which of the 'unique' cell origins is equivalent
+            for j, cell_origin in enumerate(cell_origins):
+                if np.any((origin_in_scs == cell_origin).all(axis=1)):
+                    co_idx = j
+                    break
+            if co_idx == -1:
+                raise Exception((
+                    'Couldn\'t determine cell origins for '
+                    'force constants matrix'))
+        cell_origins_map[i] = co_idx
+
+    if force_constants.shape[0] == force_constants.shape[1]:
+        # full fc
+        force_constants = force_constants[uc_to_sc_atom_idx]
+    fc_converted = np.full((n_atoms_uc, n_cells, n_atoms_uc, 3, 3), -1.0)
+    for i in range(n_atoms_uc):
+        fc_tmp = np.zeros((n_cells, n_atoms_uc, 3, 3))
+        fc_tmp[cell_origins_map, sc_to_uc_atom_idx] = force_constants[i]
+        # For Phonopy force constants, the n_atoms in the (n_atoms, ...)
+        # shaped array may not be in the same cell within the supercell,
+        # but Euphonic's interpolation requires this, so use equivalent
+        # cell vector indices to arrange the force constants correctly
+        atom_idx = np.where(sc_to_uc_atom_idx == i)[0][0]
+        cell_idx = cell_origins_map[atom_idx]
+        sc_relative_idx = _get_supercell_relative_idx(cell_origins, sc_matrix)
+        fc_converted[i, sc_relative_idx[cell_idx]] = fc_tmp
+
+    fc_converted =  np.reshape(np.transpose(
+        fc_converted,
+        axes=[1, 0, 3, 2, 4]), (n_cells, 3*n_atoms_uc, 3*n_atoms_uc))
+    return fc_converted, cell_origins
+
+
 def _cell_vectors_to_volume(cell_vectors: np.ndarray) -> float:
     """Convert 3x3 cell vectors to volume"""
     return np.dot(cell_vectors[0],

@@ -14,6 +14,17 @@
     - Some parameters from real-world instruments are collected in the
       documentation for convenience.
 
+  - There is a new function ``euphonic.util.convert_fc_phases``, which converts
+    a force constants matrix which uses the atom coordinates in the phase
+    during interpolation (Phonopy-like), to one which uses the cell origin
+    coordinates (Euphonic, CASTEP-like).
+
+- Improvements:
+
+  - Documentation on the shape and format of the force constants, and how to
+    read them from other programs has been improved.
+
+
 - Bug fixes:
 
   - Allow read of ``phonopy.yaml`` quantities in ``'au'`` (bohr) units.
