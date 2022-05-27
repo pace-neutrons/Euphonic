@@ -198,18 +198,16 @@ class QpointPhononModes(QpointFrequencies):
         -----
 
         This method calculates the mode-resolved (not binned in energy)
-        one-phonon neutron scattering function
-        :math:`S(Q, \\omega_{q\\nu})` **per atom**, as defined in [1]_. Note
-        that internally Euphonic uses atomic units so :math:`\\hbar` has been
-        omitted from the formulation:
+        coherent one-phonon neutron scattering function
+        :math:`S(Q, \\omega_{q\\nu})` **per atom**, as defined in [1]_:
 
         .. math::
 
           S(Q, \\omega_{q\\nu}) =
               \\frac{1}{2N_{atom}} \\
-              \\left\\lvert \\
-              \\sum\\limits_\\kappa\\frac{b_\\kappa}{M_{\\kappa}^{1/2}\\omega_{q\\nu}^{1/2}} \\
-              [Q\\cdot\\epsilon_{q\\nu\\kappa\\alpha}]e^{iQ{\\cdot}r_\\kappa}e^{-W} \\
+              \\left\\lvert
+              {\\sum_{\\kappa}{\\frac{b_\\kappa}{M_{\\kappa}^{1/2}{\\omega_{\\textbf{q}\\nu}^{1/2}}}
+              (\\mathbf{Q}\\cdot \\mathbf{e}_{\\mathbf{q}\\nu\\kappa})e^{i\\textbf{Q}{\\cdot}\\mathbf{r}_{\\kappa}}e^{-\\mathbf{W}_{\\kappa}}}}
               \\right\\rvert^2
 
         Where :math:`\\nu` runs over phonon modes, :math:`\\kappa` runs
@@ -217,8 +215,8 @@ class QpointPhononModes(QpointFrequencies):
         :math:`b_\\kappa` is the coherent neutron scattering length,
         :math:`M_{\\kappa}` is the atom mass, :math:`r_{\\kappa}` is the
         vector to atom :math:`\\kappa` in the unit cell,
-        :math:`\\epsilon_{q\\nu\\kappa\\alpha}` are the eigevectors,
-        :math:`\\omega_{q\\nu}` are the frequencies and :math:`e^{-W}`
+        :math:`\\mathbf{e}_{\\mathbf{q}\\nu\\kappa}` are the eigenvectors,
+        :math:`\\omega_{\\textbf{q}\\nu}` are the frequencies and :math:`e^{-W}`
         is the Debye-Waller factor. :math:`N_{atom}` is the number of
         atoms in the unit cell, so the returned structure factor is
         **per atom** of sample.
@@ -321,10 +319,10 @@ class QpointPhononModes(QpointFrequencies):
 
         .. math::
 
-          e^{-W} = e^{-\\sum\\limits_{\\alpha\\beta}{W^{\\kappa}_{\\alpha\\beta}Q_{\\alpha}Q_{\\beta}}}
+          e^{-\\textbf{W}_\\kappa} = e^{-\\sum\\limits_{\\alpha\\beta}{W_{\\kappa\\alpha\\beta}Q_{\\alpha}Q_{\\beta}}}
 
         The Debye-Waller exponent is defined as
-        :math:`W^{\\kappa}_{\\alpha\\beta}` and is independent of Q, so
+        :math:`\\textbf{W}_{\\kappa}` and is independent of Q, so
         for efficiency can be precalculated to be used in the structure
         factor calculation. The Debye-Waller exponent is calculated by [2]_.
         Note that internally Euphonic uses atomic units so :math:`\\hbar`
@@ -332,11 +330,11 @@ class QpointPhononModes(QpointFrequencies):
 
         .. math::
 
-          W^{\\kappa}_{\\alpha\\beta} =
-          \\frac{1}{4M_{\\kappa}\\sum\\limits_{q}{weight_q}}
-          \\sum\\limits_{q\\nu}weight_q\\frac{\\epsilon_{q\\nu\\kappa\\alpha}\\epsilon^{*}_{q\\nu\\kappa\\beta}}
-          {\\omega_{q\\nu}}
-          coth(\\frac{\\omega_{q\\nu}}{2k_BT})
+          \\textbf{W}_{\\kappa} =
+          \\frac{1}{4M_{\\kappa}\\sum\\limits_{\mathbf{q}}{weight_\mathbf{q}}}
+          \\sum\\limits_{\mathbf{q}\\nu \in{BZ}}weight_\mathbf{q}\\frac{\\mathbf{e}_{\mathbf{q}\\nu\\kappa}\\mathbf{e}^{*}_{\mathbf{q}\\nu\\kappa}}
+          {\\omega_{\mathbf{q}\\nu}}
+          coth(\\frac{\\omega_{\mathbf{q}\\nu}}{2k_BT})
 
         Where :math:`\\nu` runs over phonon modes, :math:`\\kappa` runs
         over atoms, :math:`\\alpha,\\beta` run over the Cartesian
