@@ -34,7 +34,9 @@ class QpointPhononModes(QpointFrequencies):
         frequencies per q-point and mode
     eigenvectors
         Shape (n_qpts, 3*crystal.n_atoms, crystal.n_atoms, 3) complex
-        ndarray. The dynamical matrix eigenvectors
+        ndarray. The dynamical matrix eigenvectors in Cartesian
+        coordinates, using the same Cartesian basis as the
+        cell_vectors in the crystal object
     """
     T = TypeVar('T', bound='QpointPhononModes')
 
@@ -47,13 +49,16 @@ class QpointPhononModes(QpointFrequencies):
         crystal
             Lattice and atom information
         qpts
-            Shape (n_qpts, 3) float ndarray. The Q-point coordinates
+            Shape (n_qpts, 3) float ndarray. Q-point coordinates, in
+            fractional coordinates of the reciprocal lattice
         frequencies
             Shape (n_qpts, 3*crystal.n_atoms) float Quantity. Phonon
             frequencies per q-point and mode
         eigenvectors
             Shape (n_qpts, 3*crystal.n_atoms, crystal.n_atoms, 3)
-            complex ndarray. The dynamical matrix eigenvectors
+            complax ndarray. The dynamical matrix eigenvectors in
+            Cartesian coordinates, using the same Cartesian basis
+            as the cell_vectors in the crystal object.
         weights
             Shape (n_qpts,) float ndarray. The weight for each q-point.
             If None, equal weights are assumed
@@ -75,7 +80,10 @@ class QpointPhononModes(QpointFrequencies):
         """
         By doing a dot product of eigenvectors at adjacent q-points,
         determines which modes are most similar and reorders the
-        frequencies at each q-point
+        frequencies at each q-point. This means that the same mode
+        will have the same index across different q-points, so will
+        be plotted as the same colour in a dispersion plot, and can
+        be followed across q-space.
 
         Parameters
         ----------
@@ -324,17 +332,15 @@ class QpointPhononModes(QpointFrequencies):
         The Debye-Waller exponent is defined as
         :math:`\\textbf{W}_{\\kappa}` and is independent of Q, so
         for efficiency can be precalculated to be used in the structure
-        factor calculation. The Debye-Waller exponent is calculated by [2]_.
-        Note that internally Euphonic uses atomic units so :math:`\\hbar`
-        has been omitted from the formulation:
+        factor calculation. The Debye-Waller exponent is calculated by [2]_:
 
         .. math::
 
           \\textbf{W}_{\\kappa} =
-          \\frac{1}{4M_{\\kappa}\\sum\\limits_{\mathbf{q}}{weight_\mathbf{q}}}
+          \\frac{\\hbar}{4M_{\\kappa}\\sum\\limits_{\mathbf{q}}{weight_\mathbf{q}}}
           \\sum\\limits_{\mathbf{q}\\nu \in{BZ}}weight_\mathbf{q}\\frac{\\mathbf{e}_{\mathbf{q}\\nu\\kappa}\\mathbf{e}^{*}_{\mathbf{q}\\nu\\kappa}}
           {\\omega_{\mathbf{q}\\nu}}
-          coth(\\frac{\\omega_{\mathbf{q}\\nu}}{2k_BT})
+          coth(\\frac{\\hbar\\omega_{\mathbf{q}\\nu}}{2k_BT})
 
         Where :math:`\\nu` runs over phonon modes, :math:`\\kappa` runs
         over atoms, :math:`\\alpha,\\beta` run over the Cartesian
