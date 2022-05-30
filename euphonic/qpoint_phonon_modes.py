@@ -28,7 +28,8 @@ class QpointPhononModes(QpointFrequencies):
         Shape (n_qpts, 3) float ndarray. Q-point coordinates, in
         fractional coordinates of the reciprocal lattice
     weights
-        Shape (n_qpts,) float ndarray. The weight for each q-point
+        Shape (n_qpts,) float ndarray. The weight for each q-point,
+        for Brillouin Zone integration over symmetry-reduced q-points
     frequencies
         Shape (n_qpts, 3*crystal.n_atoms) float Quantity. Phonon
         frequencies per q-point and mode
@@ -58,10 +59,11 @@ class QpointPhononModes(QpointFrequencies):
             Shape (n_qpts, 3*crystal.n_atoms, crystal.n_atoms, 3)
             complax ndarray. The dynamical matrix eigenvectors in
             Cartesian coordinates, using the same Cartesian basis
-            as the cell_vectors in the crystal object.
+            as the cell_vectors in the crystal object
         weights
-            Shape (n_qpts,) float ndarray. The weight for each q-point.
-            If None, equal weights are assumed
+            Shape (n_qpts,) float ndarray. The weight for each q-point,
+            for Brillouin Zone integration over symmetry-reduced
+            q-points. If None, equal weights are assumed
         """
         super().__init__(crystal, qpts, frequencies, weights)
         n_qpts = len(qpts)
@@ -219,15 +221,16 @@ class QpointPhononModes(QpointFrequencies):
               \\right\\rvert^2
 
         Where :math:`\\nu` runs over phonon modes, :math:`\\kappa` runs
-        over atoms, :math:`\\alpha` runs over the Cartesian directions,
-        :math:`b_\\kappa` is the coherent neutron scattering length,
-        :math:`M_{\\kappa}` is the atom mass, :math:`r_{\\kappa}` is the
-        vector to atom :math:`\\kappa` in the unit cell,
-        :math:`\\mathbf{e}_{\\mathbf{q}\\nu\\kappa}` are the eigenvectors,
-        :math:`\\omega_{\\textbf{q}\\nu}` are the frequencies and :math:`e^{-W}`
-        is the Debye-Waller factor. :math:`N_{atom}` is the number of
-        atoms in the unit cell, so the returned structure factor is
-        **per atom** of sample.
+        over atoms, :math:`b_\\kappa` is the coherent neutron
+        scattering length, :math:`M_{\\kappa}` is the atom mass,
+        :math:`r_{\\kappa}` is the vector from the origin to atom
+        :math:`\\kappa` in the unit cell,
+        :math:`\\mathbf{e}_{\\mathbf{q}\\nu\\kappa}` are the normalised
+        Cartesian eigenvectors, :math:`\\omega_{\\textbf{q}\\nu}` are
+        the frequencies and :math:`e^{-\\mathbf{W}_\\kappa}` is the
+        Debye-Waller factor. :math:`N_{atom}` is the number of atoms in
+        the unit cell, so the returned structure factor is **per atom**
+        of sample.
 
         .. [1] M.T. Dove, Structure and Dynamics, Oxford University Press, Oxford, 2003, 225-226
 
@@ -342,13 +345,14 @@ class QpointPhononModes(QpointFrequencies):
           {\\omega_{\mathbf{q}\\nu}}
           coth(\\frac{\\hbar\\omega_{\mathbf{q}\\nu}}{2k_BT})
 
-        Where :math:`\\nu` runs over phonon modes, :math:`\\kappa` runs
-        over atoms, :math:`\\alpha,\\beta` run over the Cartesian
-        directions, :math:`M_{\\kappa}` is the atom mass,
-        :math:`\\epsilon_{q\\nu\\kappa\\alpha}` are the eigenvectors,
-        :math:`\\omega_{q\\nu}` are the frequencies, and :math:`weight_q` is
-        the per q-point weight. The q-points should be distributed over the
-        1st Brillouin Zone.
+        Where the sum is over q-points and modes :math:`\\nu` in the
+        first Brillouin Zone (BZ), :math:`\\kappa` runs over atoms,
+        :math:`\\alpha,\\beta` run over the Cartesian directions,
+        :math:`M_{\\kappa}` is the atom mass,
+        :math:`\\mathbf{\\epsilon}_{q\\nu\\kappa}` are the eigenvectors,
+        :math:`\\omega_{q\\nu}` are the frequencies, and
+        :math:`weight_q` is the per q-point symmetry weight (if the
+        q-points are not symmetry-reduced, all weights will be equal).
 
         .. [2] G.L. Squires, Introduction to the Theory of Thermal Neutron Scattering, Dover Publications, New York, 1996, 34-37
         """
