@@ -518,7 +518,8 @@ def _recip_space_labels(qpts: np.ndarray,
                         ) -> Tuple[np.ndarray, np.ndarray]:
     """
     Gets q-points point labels (e.g. GAMMA, X, L) for the q-points at
-    which the path through reciprocal space changes direction
+    which the path through reciprocal space changes direction or where a
+    q-point is repeated
 
     Parameters
     ----------
@@ -540,6 +541,7 @@ def _recip_space_labels(qpts: np.ndarray,
         the q-points at which the path through reciprocal space changes
         direction
     """
+    from functools import reduce
 
     # First and last q-points should always be labelled
     if len(qpts) <= 2:
@@ -547,7 +549,12 @@ def _recip_space_labels(qpts: np.ndarray,
     else:
         qpt_has_label = np.concatenate((
             [True],
-            np.logical_or(direction_changed(qpts), is_gamma(qpts[1:-1])),
+            reduce(np.logical_or,
+                   (direction_changed(qpts),
+                    is_gamma(qpts[1:-1]),
+                    np.all(qpts[2:] == qpts[1:-1], axis=1)
+                    )
+                   ),
             [True]))
     qpts_with_labels = np.where(qpt_has_label)[0]
 
