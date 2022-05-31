@@ -1,11 +1,12 @@
+from collections import OrderedDict
+from functools import reduce
 import itertools
 import json
 import math
-import sys
-import warnings
 import os.path
+import sys
 from typing import Dict, Sequence, Union, Tuple, Optional, List
-from collections import OrderedDict
+import warnings
 
 import numpy as np
 import seekpath
@@ -541,7 +542,6 @@ def _recip_space_labels(qpts: np.ndarray,
         the q-points at which the path through reciprocal space changes
         direction
     """
-    from functools import reduce
 
     # First and last q-points should always be labelled
     if len(qpts) <= 2:
