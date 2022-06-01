@@ -285,8 +285,8 @@ class ForceConstants:
 
         .. math::
 
-          \\Phi_{\\alpha {\\alpha}'}^{\\kappa {\\kappa}'}(0,l) =
-          \\frac{\\partial^{2}E}{{\\partial}u_{\\kappa\\alpha0}{\\partial}u_{{\\kappa}'{\\alpha}'l}}
+          \\Phi_{\\alpha {\\alpha}^\\prime}^{\\kappa {\\kappa}^\\prime}(0,l) =
+          \\frac{\\partial^{2}E}{{\\partial}u_{\\kappa\\alpha0}{\\partial}u_{{{\\kappa}^\\prime}{{\\alpha}^\\prime}l}}
 
         where the unit cell containing the displaced atom is labelled
         :math:`0` and :math:`l` runs over unit cells in the crystal,
@@ -295,14 +295,14 @@ class ForceConstants:
         is the displacement of atom :math:`\\kappa` in cell :math:`l` in
         direction :math:`\\alpha` from its equilibrium position. This can be
         used to calculate the dynamical matrix
-        :math:`D_{\\alpha {\\alpha}'}^{\\kappa {\\kappa}'}` at
+        :math:`D_{\\alpha {\\alpha}^\\prime}^{\\kappa {\\kappa}^\\prime}` at
         :math:`\mathbf{q}`:
 
         .. math::
 
-          D_{\\alpha {\\alpha}'}^{\\kappa {\\kappa}'}(\\mathbf{q}) =
-          \\frac{1}{\\sqrt{M_\\kappa M_{\\kappa '}}}
-          \\sum_{l}\\Phi_{\\alpha {\\alpha}'}^{\\kappa {\\kappa}'}e^{-i\\mathbf{q}\\cdot \\mathbf{R}_l}
+          \sum_{\\kappa^\\prime \\alpha^\\prime}D_{\\alpha {\\alpha^\\prime}}^{\\kappa {\\kappa^\\prime}}(\\mathbf{q}) =
+          \\frac{1}{\\sqrt{M_\\kappa M_{\\kappa^\\prime}}}
+          \\sum_{l}\\Phi_{\\alpha {\\alpha^\\prime}}^{\\kappa {\\kappa^\\prime}}e^{-i\\mathbf{q}\\cdot \\mathbf{R}_l}
 
         where :math:`M_\\kappa` is the mass of atom :math:`\\kappa`,
         :math:`\\mathbf{R}_l` is the vector from the origin to the
@@ -311,8 +311,8 @@ class ForceConstants:
 
         .. math::
 
-          D_{\\alpha {\\alpha}'}^{\\kappa {\\kappa}'}(\\mathbf{q}) {\\mathbf{e}}_{\\mathbf{q}\\nu\\kappa} =
-          {\\omega}_{\\mathbf{q}\\nu}^2 {\\mathbf{e}}_{\\mathbf{q}\\nu\\kappa}
+          \sum_{\\kappa^\\prime \\alpha^\\prime}D_{\\alpha {\\alpha}^\\prime}^{\\kappa {\\kappa}^\\prime}(\\mathbf{q}) {e}_{\\mathbf{q}\\nu{\\kappa^\\prime}{\\alpha^\\prime}} =
+          {\\omega}_{\\mathbf{q}\\nu}^2 {e}_{\\mathbf{q}\\nu\\kappa\\alpha}
 
         where the eigenvalues :math:`{\\omega}_{\\mathbf{q}\\nu}^2` are the
         square of the phonon frequencies of mode :math:`\\nu` at
@@ -390,9 +390,9 @@ class ForceConstants:
 
         .. math::
 
-          \\frac{dD_{\\alpha {\\alpha}'}^{\\kappa {\\kappa}'}}{d\\mathbf{q}} =
-          \\frac{-i \mathbf{R}_l}{\\sqrt{M_\\kappa M_{\\kappa '}}}
-          \\sum_{l}\\Phi_{\\alpha\\alpha'}^{\\kappa\\kappa'}e^{-i\\mathbf{q}\\cdot \mathbf{R}_l}
+          \\frac{dD_{\\alpha {\\alpha}^\\prime}^{\\kappa {\\kappa}^\\prime}}{d\\mathbf{q}} =
+          \\frac{-i \mathbf{R}_l}{\\sqrt{M_\\kappa M_{\\kappa ^\\prime}}}
+          \\sum_{l}\\Phi_{\\alpha\\alpha^\\prime}^{\\kappa\\kappa^\\prime}e^{-i\\mathbf{q}\\cdot \mathbf{R}_l}
 
         .. [3] J. R. Yates, X. Wang, D. Vanderbilt and I. Souza, Phys. Rev. B, 2007, 75, 195121
         """
