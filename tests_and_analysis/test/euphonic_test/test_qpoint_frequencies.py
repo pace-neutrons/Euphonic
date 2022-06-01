@@ -147,16 +147,22 @@ class TestQpointFrequenciesCreation:
         qpt_freqs = QpointFrequencies(*args, **kwargs)
         check_qpt_freqs(qpt_freqs, expected_qpt_freqs)
 
-    @pytest.mark.parametrize('material, phonon_file, json_file', [
+    @pytest.mark.parametrize('material, phonon_file, json_file, kwargs', [
         ('LZO', 'La2Zr2O7.phonon',
-         'LZO_qpoint_frequencies.json'),
+         'LZO_qpoint_frequencies.json', {}),
         ('quartz', 'quartz-666-grid.phonon',
-         'quartz_666_qpoint_frequencies.json'),
+         'quartz_666_qpoint_frequencies.json', {}),
+        ('quartz', 'quartz-666-grid.phonon',
+         'quartz_666_qpoint_frequencies.json',
+         {'average_repeat_points': True}),
         ('quartz', 'quartz_split_qpts.phonon',
-         'quartz_split_from_castep_qpoint_frequencies.json')])
-    def test_create_from_castep(self, material, phonon_file, json_file):
+         'quartz_split_from_castep_qpoint_frequencies.json', {}),
+        ('quartz', 'quartz_split_qpts.phonon',
+         'quartz_split_averaged_from_castep_qpoint_frequencies.json',
+         {'average_repeat_points': True})])
+    def test_create_from_castep(self, material, phonon_file, json_file, kwargs):
         qpt_freqs = QpointFrequencies.from_castep(
-            get_castep_path(material, phonon_file))
+            get_castep_path(material, phonon_file), **kwargs)
         expected_qpt_freqs = ExpectedQpointFrequencies(
             get_qpt_freqs_path(material, json_file))
         check_qpt_freqs(qpt_freqs, expected_qpt_freqs)

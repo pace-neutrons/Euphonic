@@ -595,7 +595,8 @@ class QpointPhononModes(QpointFrequencies):
                                    type_dict={'eigenvectors': np.complex128})
 
     @classmethod
-    def from_castep(cls: Type[T], filename: str) -> T:
+    def from_castep(cls: Type[T], filename: str,
+                    average_repeat_points: bool = False) -> T:
         """
         Reads precalculated phonon mode data from a CASTEP .phonon file
 
@@ -603,8 +604,16 @@ class QpointPhononModes(QpointFrequencies):
         ----------
         filename
             The path and name of the .phonon file to read
+        average_repeat_points
+            If multiple frequency/eigenvectors blocks are included with the
+            same q-point index (i.e. for Gamma-point with LO-TO splitting),
+            scale the weights such that these sum to the given weight
         """
-        data = castep.read_phonon_data(filename)
+        data = castep.read_phonon_data(
+            filename,
+            average_repeat_points=average_repeat_points)
+
+
         return cls.from_dict(data)
 
     @classmethod
