@@ -25,9 +25,12 @@ with open(f'tmp.json', 'r') as f:
 
 schema_data = {'schemadotorg': data}
 # Link to specific version on readthedocs
-if branch != 'master':
-    url = schema_data['schemadotorg'].get('url', '')
-    schema_data['schemadotorg']['url'] = url.replace(f'readthedocs.io', f'readthedocs.io/en/{branch}')
+if branch == 'master':
+    url_subdir = 'latest'
+else:
+    url_subdir = f'{branch}'
+url = schema_data['schemadotorg'].get('url', '')
+schema_data['schemadotorg']['url'] = url.replace(f'readthedocs.io', f'readthedocs.io/en/{url_subdir}')
 
 landing_page_content = (
     f'---\n'

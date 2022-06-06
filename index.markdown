@@ -48,7 +48,7 @@ schemadotorg:
   - Phonopy
   license: https://spdx.org/licenses/GPL-3.0-only
   name: Euphonic
-  url: https://euphonic.readthedocs.io
+  url: https://euphonic.readthedocs.io/en/latest
   version: 0.6.4
 ---
 # Euphonic - Latest
