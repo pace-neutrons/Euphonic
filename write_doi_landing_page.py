@@ -2,7 +2,7 @@ import json
 import sys
 
 import yaml
-from cffconvert.cli import cli as cffconvert_main
+from cffconvert.cli.cli import cli as cffconvert_main
 
 if len(sys.argv) == 1 or sys.argv[1] == 'latest':
     branch = 'master'
@@ -14,9 +14,9 @@ else:
     landing_page = f'versions/{branch}.markdown'
 
 try:
-    cffconvert_main(['-u', f'https://github.com/pace-neutrons/Euphonic/tree/{branch}',
-                     '-f', 'schema.org',
-                     '-of', 'tmp.json'])
+    cffconvert_main(['--url', f'https://github.com/pace-neutrons/Euphonic/tree/{branch}',
+                     '--format', 'schema.org',
+                     '--outfile', 'tmp.json'])
 except SystemExit:
     pass
 
