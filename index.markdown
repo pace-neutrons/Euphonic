@@ -20,6 +20,10 @@ schemadotorg:
   - '@type': Person
     familyName: Le
     givenName: Manh Duc
+  - '@id': https://orcid.org/0000-0001-5756-6433
+    '@type': Person
+    familyName: Perring
+    givenName: Toby G.
   - '@type': Person
     familyName: Pettitt
     givenName: Connor
