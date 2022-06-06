@@ -9,7 +9,7 @@
       {{ author.familyName }}, {{ author.givenName }};
     {% endif %}
   {% endfor %}<br>
-  <b>Description: </b>{{ site.description }}<br>
+  <b>Description: </b>{{ page.schemadotorg.description }}<br>
   <b>Repository: </b><a href="{{ page.schemadotorg.codeRepository }}">{{ page.schemadotorg.codeRepository }}</a><br>
   {% if page.schemadotorg['@url'] %}
     <b>URL: </b><a href="{{ page.schemadotorg.url }}">{{ page.schemadotorg.url }}</a><br>
