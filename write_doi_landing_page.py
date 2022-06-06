@@ -24,11 +24,17 @@ with open(f'tmp.json', 'r') as f:
     data = json.load(f)
 
 schema_data = {'schemadotorg': data}
+# Link to specific version on readthedocs
+if branch != 'master':
+    url = schema_data['schemadotorg'].get('url', '')
+    schema_data['schemadotorg']['url'] = url.replace(f'readthedocs.io', f'readthedocs.io/en/{branch}')
+
 landing_page_content = (
     f'---\n'
     f'layout: {layout}\n'
     f'{yaml.dump(schema_data)}'
     f'---\n')
+# Use specific DOI version
 if branch == 'master':
     landing_page_content += f'# Euphonic - Latest\n'
 else:
