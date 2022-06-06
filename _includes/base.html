@@ -11,7 +11,9 @@
   {% endfor %}<br>
   <b>Description: </b>{{ site.description }}<br>
   <b>Repository: </b><a href="{{ page.schemadotorg.codeRepository }}">{{ page.schemadotorg.codeRepository }}</a><br>
-  <b>URL: </b><a href="{{ page.schemadotorg.url }}">{{ page.schemadotorg.url }}</a><br>
+  {% if page.schemadotorg['@url'] %}
+    <b>URL: </b><a href="{{ page.schemadotorg.url }}">{{ page.schemadotorg.url }}</a><br>
+  {% endif %}
   <b>Version: </b>{{ page.schemadotorg.version }}<br>
   <b>Released: </b>{{ page.schemadotorg.datePublished || date: "%-d %B %Y"}}<br>
   <b>License: </b>{{ page.schemadotorg.license }}<br>
