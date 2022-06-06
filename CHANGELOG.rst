@@ -24,6 +24,21 @@
   - Documentation on the shape and format of the force constants, and how to
     read them from other programs has been improved.
 
+- Changes:
+
+  - The following deprecated features have been removed:
+
+    - The ``return_mode_widths`` argument in ``ForceConstants.calculate_qpoint_phonon_modes``
+      and ``ForceConstants.calculate_qpoint_frequencies`` has been removed
+    - The ``eta_scale`` argument in ``calculate_qpoint_phonon_modes/frequencies``
+      has been removed
+    - The alias command-line tool argument ``--weights`` has been removed
+    - The alias arguments ``x_label``, ``y_label``, ``y_min`` and ``y_max`` to
+      ``plot_1d/2d`` have been removed
+    - The ``modes_from_file`` and ``force_constants_from_file`` functions from
+      ``euphonic.cli.utils`` have been removed
+    - Calling ``broaden`` on a ``Spectrum`` with uneven bin widths without
+      specifying the ``method='convolve'`` argument will now raise a ``ValueError``
 
 - Bug fixes:
 

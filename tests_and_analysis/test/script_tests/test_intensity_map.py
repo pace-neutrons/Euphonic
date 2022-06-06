@@ -50,7 +50,6 @@ intensity_map_params = [
     [lzo_phonon_file],
     [quartz_no_evec_json_file]]
 intensity_map_params_macos_segfault = [
-    [graphite_fc_file, '--weights=coherent', '--cmap=bone'],
     [graphite_fc_file, '--weighting=coherent', '--cmap=bone'],
     [graphite_fc_file, '--weighting=coherent', '--temperature=800']]
 
@@ -76,10 +75,8 @@ class TestRegression:
         image_data = get_current_plot_image_data()
 
         with open(intensity_map_output_file, 'r') as expected_data_file:
-            # Test deprecated --weights until it is removed
-            key = args_to_key(intensity_map_args).replace(
-                'weights', 'weighting')
-            expected_image_data = json.load(expected_data_file)[key]
+            expected_image_data = json.load(expected_data_file)[
+                args_to_key(intensity_map_args)]
         for key, value in image_data.items():
             if key == 'extent':
                 # Lower bound of y-data (energy) varies by up to ~2e-6 on
@@ -146,13 +143,6 @@ class TestRegression:
     def test_qpoint_modes_debyewaller_raises_type_error(
             self, intensity_map_args):
         with pytest.raises(TypeError):
-            euphonic.cli.intensity_map.main(intensity_map_args)
-
-    @pytest.mark.parametrize('intensity_map_args', [
-        [quartz_json_file, '--weights=dos']])
-    def test_weights_emits_deprecation_warning(
-            self, inject_mocks, intensity_map_args):
-        with pytest.warns(DeprecationWarning):
             euphonic.cli.intensity_map.main(intensity_map_args)
 
     @pytest.mark.parametrize('intensity_map_args', [

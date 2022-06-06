@@ -343,10 +343,9 @@ class TestSpectrum2DMethods:
         with pytest.raises(ValueError):
             spec2d.broaden(x_width=1*ureg('meV'), shape='unknown')
 
-    def test_broaden_uneven_bins_deprecation_warns(self):
-        # In a future version this should raise a ValueError
+    def test_broaden_uneven_bins_deprecation_raises_value_error(self):
         spec2d = get_spectrum2d('La2Zr2O7_cut_sqw_uneven_bins.json')
-        with pytest.warns(DeprecationWarning):
+        with pytest.raises(ValueError):
             spec2d.broaden(y_width=1*ureg('meV'))
 
     @pytest.mark.parametrize('unequal_bin_json, unequal_axes', [
