@@ -4,13 +4,14 @@
   <b>Authors: </b>
   {% for author in page.schemadotorg.author %}
     {% if author['@id'] %}
-      <a href="{{ author['@id'] }}">{{ author.familyName }}, {{ author.givenName}};</a>
+      <a href="{{ author['@id'] }}">{{ author.familyName }}, {{ author.givenName }};</a>
     {% else %}
       {{ author.familyName }}, {{ author.givenName }};
     {% endif %}
   {% endfor %}<br>
   <b>Description: </b>{{ site.description }}<br>
   <b>Repository: </b><a href="{{ page.schemadotorg.codeRepository }}">{{ page.schemadotorg.codeRepository }}</a><br>
+  <b>URL: </b><a href="{{ page.schemadotorg.url }}">{{ page.schemadotorg.url }}</a><br>
   <b>Version: </b>{{ page.schemadotorg.version }}<br>
   <b>Released: </b>{{ page.schemadotorg.datePublished || date: "%-d %B %Y"}}<br>
   <b>License: </b>{{ page.schemadotorg.license }}<br>
@@ -42,5 +43,5 @@
   {{ page.schemadotorg.name }}
   (version {{ page.schemadotorg.version }}).
   DOI: {{ page.schemadotorg.identifier }}
-  URL: {{ page.schemadotorg.codeRepository }}<br>
+  URL: {{ page.schemadotorg.url }}<br>
 </div>
