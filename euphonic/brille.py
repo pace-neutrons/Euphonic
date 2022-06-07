@@ -191,9 +191,9 @@ class BrilleInterpolator:
         translations = dataset['translations']  # in fractional
 
         symmetry = br.Symmetry(rotations, translations)
-        direct = br.Direct(*cell)
-        direct.spacegroup = symmetry
-        bz = br.BrillouinZone(direct.star)
+        basis = br.Basis(cell[1], cell[2])
+        lattice = br.Lattice(cell[0], symmetry, basis)
+        bz = br.BrillouinZone(lattice)
 
         print('Generating grid...')
         vol = bz.ir_polyhedron.volume
