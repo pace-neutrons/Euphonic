@@ -105,7 +105,7 @@ def check_brille_settings(
         brille_param_key = 'grid_density'
     else:
         brille_params = brille_npts
-        brille_param_key = 'n_grid_points'
+        brille_param_key = 'grid_npts'
 
     handles = []
     for brille_param_i in brille_params:
