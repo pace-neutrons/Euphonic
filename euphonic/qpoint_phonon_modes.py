@@ -515,6 +515,8 @@ class QpointPhononModes(QpointFrequencies):
         evec_weights = np.real(np.einsum('ijkl,ijkl->ijk',
                                          self.eigenvectors,
                                          np.conj(self.eigenvectors)))
+        # Normalise DOS to per atom
+        evec_weights /= self.crystal.n_atoms
         crystal = self.crystal
         for i in range(crystal.n_atoms):
             dos = self._calculate_dos(dos_bins, mode_widths=mode_widths,
