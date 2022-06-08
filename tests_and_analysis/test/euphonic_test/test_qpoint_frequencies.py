@@ -418,7 +418,7 @@ class TestQpointFrequenciesCalculateDos:
             self, material, qpt_freqs_json, expected_dos_json, ebins):
         qpt_freqs = get_qpt_freqs(material, qpt_freqs_json)
         dos = qpt_freqs.calculate_dos(ebins)
-        dos.y_data = dos.y_data*qpt_freqs.crystal.n_atoms
+        dos.y_data = dos.y_data*(qpt_freqs.frequencies.shape[1]/3)
         expected_dos = get_expected_spectrum1d(expected_dos_json)
         check_spectrum1d(dos, expected_dos)
 
@@ -547,7 +547,7 @@ class TestQpointFrequenciesCalculateDosMap:
             self, material, qpt_freqs_json, ebins, expected_dos_map_json):
         qpt_freqs = get_qpt_freqs(material, qpt_freqs_json)
         dos_map = qpt_freqs.calculate_dos_map(ebins)
-        dos_map.z_data = dos_map.z_data*qpt_freqs.crystal.n_atoms
+        dos_map.z_data = dos_map.z_data*(qpt_freqs.frequencies.shape[1]/3)
         expected_dos_map = get_expected_spectrum2d(
             expected_dos_map_json)
         check_spectrum2d(dos_map, expected_dos_map)

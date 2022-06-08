@@ -192,7 +192,7 @@ class QpointFrequencies:
             mode_weights_calc = mode_weights
         else:
             # Normalise DOS to per atom (rather than per unit cell)
-            mode_weights_calc = np.ones(freqs.shape)/self.crystal.n_atoms
+            mode_weights_calc = np.full(freqs.shape, 3/freqs.shape[1])
         if mode_widths is not None:
             mode_widths = mode_widths.to('hartree').magnitude
             mode_widths = np.maximum(mode_widths,
