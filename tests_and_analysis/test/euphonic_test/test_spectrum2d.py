@@ -473,6 +473,7 @@ class TestKinematicConstraints:
         ref_spec2d = get_spectrum2d(constrained_file)
 
         constrained_spec2d = apply_kinematic_constraints(spec2d, **kwargs)
+        constrained_spec2d.z_data *= 8
         check_spectrum2d(constrained_spec2d, ref_spec2d, equal_nan=True)
 
     @pytest.mark.parametrize('json_file, kwargs, expected',
