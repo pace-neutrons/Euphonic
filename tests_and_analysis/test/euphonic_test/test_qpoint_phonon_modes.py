@@ -516,7 +516,6 @@ class TestQpointPhononModesCalculateDos:
         qpt_ph_modes = QpointPhononModes.from_castep(
             get_castep_path(material, qpt_ph_modes_file))
         dos = qpt_ph_modes.calculate_dos(ebins)
-        dos.y_data = dos.y_data*qpt_ph_modes.crystal.n_atoms
         expected_dos = get_expected_spectrum1d(expected_dos_json)
         check_spectrum1d(dos, expected_dos)
 
@@ -532,7 +531,6 @@ class TestQpointPhononModesCalculateDos:
         qpt_ph_modes = QpointPhononModes.from_phonopy(
             phonon_name=get_phonopy_path(material, qpt_ph_modes_file))
         dos = qpt_ph_modes.calculate_dos(ebins)
-        dos.y_data = dos.y_data*qpt_ph_modes.crystal.n_atoms
         expected_dos = get_expected_spectrum1d(expected_dos_json)
         check_spectrum1d(dos, expected_dos)
 
@@ -556,7 +554,6 @@ class TestQpointPhononModesCalculateDos:
         mode_widths = get_mode_widths(get_fc_path(mode_widths_json))
         dos = qpt_ph_modes.calculate_dos(
             ebins, mode_widths=mode_widths, **kwargs)
-        dos.y_data = dos.y_data*qpt_ph_modes.crystal.n_atoms
         expected_dos = get_expected_spectrum1d(expected_dos_json)
         check_spectrum1d(dos, expected_dos, y_atol=1e-13)
 
@@ -632,7 +629,6 @@ class TestQpointPhononModesCalculatePdos:
         qpt_ph_modes = QpointPhononModes.from_castep(
             get_castep_path(material, qpt_ph_modes_file))
         pdos = qpt_ph_modes.calculate_pdos(ebins, **kwargs)
-        pdos.y_data = pdos.y_data*qpt_ph_modes.crystal.n_atoms
         expected_pdos = get_expected_spectrum1dcollection(expected_pdos_json)
         check_spectrum1dcollection(pdos, expected_pdos)
 
@@ -657,7 +653,6 @@ class TestQpointPhononModesCalculatePdos:
         pdos = qpt_ph_modes.calculate_pdos(
             ebins, mode_widths=mode_widths,
             weighting='coherent', **kwargs)
-        pdos.y_data = pdos.y_data*qpt_ph_modes.crystal.n_atoms
         expected_pdos = get_expected_spectrum1dcollection(expected_pdos_json)
         check_spectrum1dcollection(pdos, expected_pdos, y_atol=1e-12)
 
@@ -671,7 +666,6 @@ class TestQpointPhononModesCalculatePdos:
         qpt_ph_modes = QpointPhononModes.from_castep(
             get_castep_path(material, qpt_ph_modes_file))
         summed_pdos = qpt_ph_modes.calculate_pdos(ebins).sum()
-        summed_pdos.y_data = summed_pdos.y_data*qpt_ph_modes.crystal.n_atoms
         expected_total_dos = get_expected_spectrum1d(expected_dos_json)
         check_spectrum1d(summed_pdos, expected_total_dos)
 
@@ -696,7 +690,6 @@ class TestQpointPhononModesCalculatePdos:
         mode_widths = get_mode_widths(get_fc_path(mode_widths_json))
         summed_pdos = qpt_ph_modes.calculate_pdos(
             ebins, mode_widths=mode_widths, **kwargs).sum()
-        summed_pdos.y_data = summed_pdos.y_data*qpt_ph_modes.crystal.n_atoms
         expected_total_dos = get_expected_spectrum1d(expected_dos_json)
         check_spectrum1d(summed_pdos, expected_total_dos, y_atol=1e-13)
 
