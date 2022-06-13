@@ -51,9 +51,6 @@ dos_params = [
     [quartz_fc_file, '--grid', '5', '5', '4', '--adaptive',
      '--adaptive-method=fast', '--adaptive-error=0.05']]
 dos_params_from_phonopy = [[nacl_no_evec_yaml_file]]
-n_atoms = {nah_phonon_file: 2,
-           nacl_no_evec_yaml_file: 8,
-           quartz_fc_file: 9}
 
 
 class TestRegression:
@@ -78,8 +75,6 @@ class TestRegression:
             expected_line_data = json.load(f)[args_to_key(dos_args)]
         for key, value in line_data.items():
             if key == 'xy_data':
-                value = np.array(value)
-                value[:, 1:] = value[:, 1:]*n_atoms[dos_args[0]]
                 npt.assert_allclose(
                     value, expected_line_data[key],
                     atol=5*sys.float_info.epsilon)
@@ -151,7 +146,7 @@ def test_regenerate_dos_data(_):
     except FileNotFoundError:
         json_data = {}
 
-    for dos_param in dos_params:
+    for dos_param in dos_params + dos_params_from_phonopy:
         # Generate current figure for us to retrieve with gcf
         euphonic.cli.dos.main(dos_param)
 

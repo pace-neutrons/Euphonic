@@ -65,9 +65,6 @@ powder_map_params_macos_segfault = [
      *quick_calc_params],
     [nacl_prim_fc_file, '--temperature=1000', '--weighting=coherent',
      *quick_calc_params]]
-n_atoms = {graphite_fc_file: 4,
-           nacl_prim_fc_file: 2}
-
 
 class TestRegression:
 
@@ -103,10 +100,6 @@ class TestRegression:
             elif isinstance(value, list) and isinstance(value[0], float):
                 # Errors of 2-4 epsilon seem to be common when using
                 # broadening, so slightly increase tolerance
-                import numpy as np
-                if set(['--weights=coherent', '--weighting=coherent']).isdisjoint(powder_map_args):
-                    value = np.array(value)
-                    value = value*n_atoms[powder_map_args[0]]
                 npt.assert_allclose(value, expected_image_data[key],
                                     atol=1e-14)
             else:
@@ -222,7 +215,9 @@ def test_regenerate_powder_map_data(_):
     except FileNotFoundError:
         json_data = {}
 
-    for powder_map_param in powder_map_params:
+    for powder_map_param in (powder_map_params
+                             + powder_map_params_from_phonopy
+                             + powder_map_params_macos_segfault):
         # Generate current figure for us to retrieve with gcf
         euphonic.cli.powder_map.main(powder_map_param)
 
