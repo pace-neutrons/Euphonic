@@ -29,8 +29,8 @@ def test_area_unchanged_for_broadened_dos(material, qpt_freqs_json,
     qpt_freqs = get_qpt_freqs(material, qpt_freqs_json)
     mode_widths = get_mode_widths(get_fc_path(mode_widths_json))
     dos = qpt_freqs.calculate_dos(ebins)
-    weights = np.ones(qpt_freqs.frequencies.shape) * \
-        np.full(qpt_freqs.n_qpts, 1/qpt_freqs.n_qpts)[:, np.newaxis]
+    weights = np.full(qpt_freqs.frequencies.shape,
+                      1/(qpt_freqs.n_qpts*qpt_freqs.crystal.n_atoms))
     variable_width_broaden = width_interpolated_broadening(
                                 ebins,
                                 qpt_freqs.frequencies,

@@ -483,6 +483,8 @@ class TestStructureFactorCalculateDos:
             self, material, sf_json, expected_dos_json, ebins):
         sf = get_sf(material, sf_json)
         dos = sf.calculate_dos(ebins)
+        if sf.crystal.n_atoms != 0:
+            dos.y_data = dos.y_data*sf.crystal.n_atoms
         expected_dos = get_expected_spectrum1d(expected_dos_json)
         check_spectrum1d(dos, expected_dos)
 

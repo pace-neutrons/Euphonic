@@ -53,6 +53,10 @@ intensity_map_params_macos_segfault = [
     [graphite_fc_file, '--weights=coherent', '--cmap=bone'],
     [graphite_fc_file, '--weighting=coherent', '--cmap=bone'],
     [graphite_fc_file, '--weighting=coherent', '--temperature=800']]
+n_atoms = {graphite_fc_file: 4,
+           quartz_no_evec_json_file: 9,
+           quartz_json_file: 9,
+           lzo_phonon_file: 22}
 
 
 class TestRegression:
@@ -90,6 +94,10 @@ class TestRegression:
             elif isinstance(value, list) and isinstance(value[0], float):
                 # Errors of 2-4 epsilon seem to be common when using
                 # broadening, so slightly increase tolerance
+                import numpy as np
+                if set(['--weights=coherent', '--weighting=coherent']).isdisjoint(intensity_map_args):
+                    value = np.array(value)
+                    value = value*n_atoms[intensity_map_args[0]]
                 npt.assert_allclose(value, expected_image_data[key],
                                     atol=1e-14)
             else:
