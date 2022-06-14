@@ -24,14 +24,12 @@ The :py:attr:`ForceConstants.force_constants <euphonic.force_constants.ForceCons
   \frac{\partial^{2}E}{{\partial}u_{\kappa\alpha0}{\partial}u_{{\kappa}'{\alpha}'l}}
 
 This describes the change in total energy when atom :math:`\kappa` in unit cell :math:`0`` is displaced in direction :math:`\alpha` and atom :math:`\kappa\prime` in unit cell :math:`l` is displaced in direction :math:`\alpha\prime`.
-In Euphonic the force constants are stored in 'compact' form, which means that the minimum required information is stored.
-Using equivalent vectors, the force constants between every atom in the unit cell, and every atom in the supercell are all that is needed,
-so only :math:`N(3n)^2` values need to be stored rather than :math:`(3Nn)^2` as in the 'full' square force constants matrix,
-where N is the number of unit cells in the supercell, and n is the number of atoms in the unit cell.
+In Euphonic the force constants are stored in 'compact' form, with shape :math:`3Nn\times3n`, where :math:`N` is the number of cells in the supercell, and :math:`n` is the number of atoms in the unit cell.
+This form can be expanded as needed to a 'full' :math:`3Nn\times3Nn` matrix of supercell atom pairs by mapping to an equivalent vector from unit cell 0.
 
 **Shape and Indexing**
 
-The force constants matrix has shape ``(N, 3*n, 3*n)``, where N is the number of unit cells in the supercell, and n is the number of atoms in the unit cell.
+The force constants matrix has shape ``(N, 3*n, 3*n)``, where ``N`` is the number of unit cells in the supercell, and ``n`` is the number of atoms in the unit cell.
 The force constants index ``[l, a, b]``, where ``a = 3*kappa + alpha`` and ``b = 3*kappa_prime + alpha_prime``,
 describes the change in energy when atom ``kappa`` in unit cell ``0`` is displaced in direction ``alpha`` and atom ``kappa_prime`` in unit cell ``l`` is displaced in direction ``alpha_prime``.
 For example, ``ForceConstants.force_constants[5, 8, 1]`` is the change in energy when atom

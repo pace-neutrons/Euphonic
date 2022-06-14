@@ -330,7 +330,7 @@ class QpointPhononModes(QpointFrequencies):
 
         .. math::
 
-          e^{-\\textbf{W}_\\kappa} = e^{-\\sum\\limits_{\\alpha\\beta}{W_{\\kappa\\alpha\\beta}Q_{\\alpha}Q_{\\beta}}}
+          e^{-\\textbf{W}_\\kappa} = e^{-\\sum\\limits_{\\alpha\\beta}{W^{\\alpha\\beta}_{\\kappa}Q_{\\alpha}Q_{\\beta}}}
 
         The Debye-Waller exponent is defined as
         :math:`\\textbf{W}_{\\kappa}` and is independent of Q, so
@@ -339,9 +339,9 @@ class QpointPhononModes(QpointFrequencies):
 
         .. math::
 
-          \\textbf{W}_{\\kappa} =
+          W^{\\alpha\\beta}_{\\kappa} =
           \\frac{\\hbar}{4M_{\\kappa}\\sum\\limits_{\mathbf{q}}{weight_\mathbf{q}}}
-          \\sum\\limits_{\mathbf{q}\\nu \in{BZ}}weight_\mathbf{q}\\frac{\\mathbf{e}_{\mathbf{q}\\nu\\kappa}\\mathbf{e}^{*}_{\mathbf{q}\\nu\\kappa}}
+          \\sum\\limits_{\mathbf{q}\\nu \in{BZ}}weight_\mathbf{q}\\frac{e_{\mathbf{q}\\nu\\kappa\\alpha}e^{*}_{\mathbf{q}\\nu\\kappa\\beta}}
           {\\omega_{\mathbf{q}\\nu}}
           coth(\\frac{\\hbar\\omega_{\mathbf{q}\\nu}}{2k_BT})
 
