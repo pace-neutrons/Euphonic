@@ -415,7 +415,7 @@ class QpointPhononModes(QpointFrequencies):
             ) -> Spectrum1DCollection:
         """
         Calculates partial density of states for each atom in the unit
-        cell.
+        cell
 
         Parameters
         ----------
@@ -465,12 +465,50 @@ class QpointPhononModes(QpointFrequencies):
 
         Returns
         -------
+
         dos
-            A collection of spectra, with the energy bins on the x-axis and
-            PDOS for each atom in the unit cell on the y-axis. If weighting
-            is None, the y-axis is in 1/energy units. If weighting is
-            specified or cross_sections are supplied, the y-axis
-            is in area/energy units per average atom.
+            A collection of spectra, with the energy bins on the x-axis
+            and PDOS for each atom in the unit cell on the y-axis,
+            metadata describes the index and species of each PDOS. If
+            the PDOS is not neutron-weighted, it is in units of modes
+            per energy unit per atom, such that the integrated area of
+            the total DOS is equal to 3. If the PDOS is weighted by the
+            neutron cross-section, it is in units of area per unit
+            energy per atom, see Notes for details.
+
+        Notes
+        -----
+
+        The PDOS is calculated as:
+
+        .. math::
+
+            PDOS_{\\kappa}(\\omega) = \\frac{1}{N_{atom}\\sum\\limits_{\\mathbf{q}}{weight_{\\mathbf{q}}}}
+                                      \\sum_{\\mathbf{q}\\nu\\alpha\\in{BZ}}
+                                      weight_{\\mathbf{q}} {e_{\\mathbf{q}\\nu\\kappa\\alpha}e^{*}_{\\mathbf{q}\\nu\\kappa\\alpha}}
+                                      \\delta(\\omega - \\omega_{\\mathbf{q}\\nu})
+
+        Where :math:`N_{atom}` is the number of atoms in the unit cell,
+        :math:`weight_\\mathbf{q}` is the per q-point weight,
+        :math:`e_{\\mathbf{q}\\nu\\kappa\\alpha}` is the normalised
+        eigenvector at :math:`\\mathbf{q}` for mode :math:`\\nu`, atom
+        :math:`\\kappa` in Cartesian direction :math:`\\alpha` and
+        :math:`\\omega_{\\mathbf{q}\\nu}` is the phonon frequency at
+        :math:`\\mathbf{q}` for mode :math:`\\nu`, and the sum
+        :math:`BZ` is over the 1st Brillouin Zone.
+
+        The neutron-weighted PDOS is calculated as:
+
+        .. math::
+
+            PDOS^{neutron}_{\\kappa}(\\omega) = \\frac{\\sigma_{\\kappa}M_{avg}}{M_\\kappa} PDOS_{\\kappa}(\\omega)
+
+        Where :math:`\\sigma_\\kappa` is the neutron scattering cross
+        section, :math:`M_{avg}` is the average mass of atoms in the
+        unit cell and :math:`M_\\kappa` is the mass of atom
+        :math:`\\kappa`, so the neutron-weighted PDOS is returned in
+        units of area per unit energy.
+
         """
         weighting_opts = [None, 'coherent', 'incoherent',
                           'coherent-plus-incoherent']
