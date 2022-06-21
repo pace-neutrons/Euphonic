@@ -4,7 +4,8 @@ schemadotorg:
   '@context': https://schema.org
   '@type': SoftwareSourceCode
   author:
-  - '@type': Person
+  - '@id': https://orcid.org/0000-0002-0926-2942
+    '@type': Person
     familyName: Fair
     givenName: Rebecca L.
   - '@type': Person
@@ -17,7 +18,8 @@ schemadotorg:
   - '@type': Person
     familyName: King
     givenName: James Charles
-  - '@type': Person
+  - '@id': https://orcid.org/0000-0003-3012-6053
+    '@type': Person
     familyName: Le
     givenName: Manh Duc
   - '@id': https://orcid.org/0000-0001-5756-6433
@@ -35,7 +37,8 @@ schemadotorg:
     '@type': Person
     familyName: Tucker
     givenName: Gregory Scott
-  - '@type': Person
+  - '@id': https://orcid.org/0000-0001-5716-7184
+    '@type': Person
     familyName: Voneshen
     givenName: D. J.
   codeRepository: https://github.com/pace-neutrons/Euphonic
