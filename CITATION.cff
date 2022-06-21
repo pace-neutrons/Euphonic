@@ -4,6 +4,7 @@ abstract: "Euphonic is a Python package for efficient simulation of phonon bands
 authors:
   - family-names: "Fair"
     given-names: "Rebecca L."
+    orcid: https://orcid.org/0000-0002-0926-2942
   - family-names: "Farmer"
     given-names: "Jessica L."
   - family-names: "Jackson"
@@ -13,6 +14,7 @@ authors:
     given-names: "James Charles"
   - family-names: "Le"
     given-names: "Manh Duc"
+    orcid: https://orcid.org/0000-0003-3012-6053
   - family-names: "Perring"
     given-names: "Toby G."
     orcid: https://orcid.org/0000-0001-5756-6433
@@ -26,6 +28,7 @@ authors:
     orcid: https://orcid.org/0000-0002-2787-8054
   - family-names: "Voneshen"
     given-names: "D. J."
+    orcid: https://orcid.org/0000-0001-5716-7184
 title: "Euphonic"
 doi: 10.5286/SOFTWARE/EUPHONIC
 version: 0.6.4
