@@ -1,3 +1,4 @@
+from collections import defaultdict
 import re
 import struct
 from typing import Dict, Any, TextIO, BinaryIO, Tuple, Optional, List, Union
@@ -167,7 +168,6 @@ def read_phonon_data(
         (cell_vectors, atom_r, atom_type, atom_mass) = _read_crystal_info(
             f, n_atoms)
 
-        qpt_ids = np.zeros(n_qpts)
         qpts = np.zeros((n_qpts, 3))
         weights = np.zeros(n_qpts)
         freqs = np.zeros((n_qpts, n_branches))
@@ -179,7 +179,7 @@ def read_phonon_data(
         # q-points as points are duplicated on LO-TO splitting
         idx = 0
         previous_qpt_id = -1
-        repeated_qpt_ids = set()
+        repeated_qpt_ids = defaultdict(set)
         while True:
             try:
                 qpt_id, qpt, qweight, qfreq, _ = _read_frequency_block(f, n_branches)
@@ -187,7 +187,7 @@ def read_phonon_data(
                 break
 
             if average_repeat_points and qpt_id == previous_qpt_id:
-                repeated_qpt_ids.add(qpt_id)
+                repeated_qpt_ids[qpt_id].update({idx - 1, idx})
             previous_qpt_id = qpt_id
 
             [f.readline() for x in range(2)]  # Skip 2 label lines
@@ -207,14 +207,12 @@ def read_phonon_data(
             # Sometimes there are more than n_qpts q-points in the file
             # due to LO-TO splitting
             if idx < len(qpts):
-                qpt_ids[idx] = qpt_id
                 qpts[idx] = qpt
                 freqs[idx] = qfreq
                 weights[idx] = qweight
                 if read_eigenvectors:
                     eigenvecs[idx] = qeigenvec
             else:
-                qpt_ids = np.concatenate((qpt_ids, [qpt_id]))
                 qpts = np.concatenate((qpts, [qpt]))
                 freqs = np.concatenate((freqs, [qfreq]))
                 weights = np.concatenate((weights, [qweight]))
@@ -224,10 +222,9 @@ def read_phonon_data(
 
     # Multiple qpts with same CASTEP q-pt index: correct weights
     if average_repeat_points:
-        id_counts = {qpt_id: np.count_nonzero(qpt_ids == qpt_id)
-                     for qpt_id in repeated_qpt_ids}
-        for qpt_id, count in id_counts.items():
-            weights[qpt_ids == qpt_id] /= count
+        for qpt_id, indices in repeated_qpt_ids.items():
+            indices = np.asarray(list(indices), dtype=int)
+            weights[indices] /= indices.size
 
     data_dict: Dict[str, Any] = {}
     data_dict['crystal'] = {}
