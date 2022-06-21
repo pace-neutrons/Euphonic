@@ -294,13 +294,13 @@ def _read_crystal_info(f: TextIO, n_atoms: int
     return cell_vectors, atom_r, atom_type, atom_mass
 
 
-_qpt_index_pattern = re.compile('q-pt=\s*(\d+)')
-_qpt_float_pattern = re.compile('-?\d+\.\d+')
+_qpt_index_pattern = re.compile(r'q-pt=\s*(\d+)')
+_qpt_float_pattern = re.compile(r'-?\d+\.\d+')
 
 
 def _read_frequency_block(
             f: TextIO, n_branches: int, extra_columns: Optional[List] = None
-    ) -> Tuple[np.ndarray, float, np.ndarray, Optional[np.ndarray]]:
+    ) -> Tuple[int, np.ndarray, float, np.ndarray, Optional[np.ndarray]]:
     """
     For a single q-point reads the q-point, weight, frequencies
     and optionally any extra columns
@@ -337,7 +337,7 @@ def _read_frequency_block(
     if qpt_line == '':
         raise EOFError
 
-    i_qpt = re.findall(_qpt_index_pattern, qpt_line)[0]
+    i_qpt = int(re.findall(_qpt_index_pattern, qpt_line)[0])
     floats = re.findall(_qpt_float_pattern, qpt_line)
     qpt = np.array([float(x) for x in floats[:3]])
     qweight = float(floats[3])

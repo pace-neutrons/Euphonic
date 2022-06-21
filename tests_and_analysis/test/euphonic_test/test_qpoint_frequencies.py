@@ -156,15 +156,30 @@ class TestQpointFrequenciesCreation:
          'quartz_666_qpoint_frequencies.json',
          {'average_repeat_points': True}),
         ('quartz', 'quartz_split_qpts.phonon',
-         'quartz_split_from_castep_qpoint_frequencies.json', {}),
-        ('quartz', 'quartz_split_qpts.phonon',
-         'quartz_split_averaged_from_castep_qpoint_frequencies.json',
-         {'average_repeat_points': True})])
+         'quartz_split_from_castep_qpoint_frequencies.json', {})])
     def test_create_from_castep(self, material, phonon_file, json_file, kwargs):
         qpt_freqs = QpointFrequencies.from_castep(
             get_castep_path(material, phonon_file), **kwargs)
         expected_qpt_freqs = ExpectedQpointFrequencies(
             get_qpt_freqs_path(material, json_file))
+        check_qpt_freqs(qpt_freqs, expected_qpt_freqs)
+
+    def test_create_from_castep_avg_repeats(self):
+        qpt_freqs = QpointFrequencies.from_castep(
+            get_castep_path('quartz', 'quartz_split_qpts.phonon'),
+            average_repeat_points=True)
+        expected_qpt_freqs = ExpectedQpointFrequencies(
+            get_qpt_freqs_path(
+                'quartz',
+                'quartz_split_from_castep_qpoint_frequencies.json'))
+
+        # Correct for repeated weights from non-averaged ref data
+        weights = np.ones(13)
+        weights /= 9.
+        weights[2:4] /= 2
+        weights[5:11] /= 2
+        expected_qpt_freqs.data['weights'] = weights.tolist()
+
         check_qpt_freqs(qpt_freqs, expected_qpt_freqs)
 
     @pytest.mark.phonopy_reader

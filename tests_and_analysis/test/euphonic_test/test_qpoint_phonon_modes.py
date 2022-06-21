@@ -189,17 +189,31 @@ class TestQpointPhononModesCreation:
          'quartz_from_castep_qpoint_phonon_modes.json',
          {'average_repeat_points': True}),
         ('quartz', 'quartz_split_qpts.phonon',
-         'quartz_split_from_castep_qpoint_phonon_modes.json', {}),
-        ('quartz', 'quartz_split_qpts.phonon',
-         'quartz_split_averaged_from_castep_qpoint_phonon_modes.json',
-         {'average_repeat_points': True})
-
-])
+         'quartz_split_from_castep_qpoint_phonon_modes.json', {})])
     def test_create_from_castep(self, material, phonon_file, json_file, kwargs):
         qpt_ph_modes = QpointPhononModes.from_castep(
             get_castep_path(material, phonon_file), **kwargs)
         expected_qpt_ph_modes = ExpectedQpointPhononModes(
             get_qpt_ph_modes_path(material, json_file))
+        check_qpt_ph_modes(qpt_ph_modes, expected_qpt_ph_modes,
+                           check_evecs=True)
+
+    def test_create_from_castep_avg_repeats(self):
+        qpt_ph_modes = QpointPhononModes.from_castep(
+            get_castep_path('quartz', 'quartz_split_qpts.phonon'),
+            average_repeat_points=True)
+        expected_qpt_ph_modes = ExpectedQpointPhononModes(
+            get_qpt_ph_modes_path(
+                'quartz',
+                'quartz_split_from_castep_qpoint_phonon_modes.json'))
+
+        # Correct for repeated weights from non-averaged ref data
+        weights = np.ones(13)
+        weights /= 9.
+        weights[2:4] /= 2
+        weights[5:11] /= 2
+        expected_qpt_ph_modes.data['weights'] = weights.tolist()
+
         check_qpt_ph_modes(qpt_ph_modes, expected_qpt_ph_modes,
                            check_evecs=True)
 
