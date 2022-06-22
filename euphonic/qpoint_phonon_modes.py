@@ -3,7 +3,6 @@ from typing import Dict, Optional, Union, TypeVar, Any, Type
 from collections.abc import Mapping
 
 import numpy as np
-from pint import DimensionalityError
 
 from euphonic.validate import _check_constructor_inputs
 from euphonic.io import _obj_from_json_file, _obj_to_dict, _process_dict
@@ -474,7 +473,7 @@ class QpointPhononModes(QpointFrequencies):
         """
         weighting_opts = [None, 'coherent', 'incoherent',
                           'coherent-plus-incoherent']
-        if not weighting in weighting_opts:
+        if weighting not in weighting_opts:
             raise ValueError(f'Invalid value for weighting, got '
                              f'{weighting}, should be one of '
                              f'{weighting_opts}')
@@ -612,7 +611,6 @@ class QpointPhononModes(QpointFrequencies):
         data = castep.read_phonon_data(
             filename,
             average_repeat_points=average_repeat_points)
-
 
         return cls.from_dict(data)
 

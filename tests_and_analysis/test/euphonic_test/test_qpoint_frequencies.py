@@ -1,5 +1,4 @@
 import copy
-import os
 import json
 
 from unittest.mock import patch
@@ -24,6 +23,7 @@ from tests_and_analysis.test.utils import (
     get_data_path, get_castep_path, get_phonopy_path,
     check_frequencies_at_qpts, check_unit_conversion,
     check_json_metadata, check_property_setters, get_mode_widths)
+
 
 class ExpectedQpointFrequencies:
 
@@ -81,6 +81,7 @@ class ExpectedQpointFrequencies:
 
         return (crystal, qpts, frequencies), kwargs
 
+
 def get_qpt_freqs_path(*subpaths):
     return get_data_path('qpoint_frequencies', *subpaths)
 
@@ -93,6 +94,7 @@ def get_qpt_freqs(material, json_file):
 def get_expected_qpt_freqs(material, json_file):
     return ExpectedQpointFrequencies(
         get_qpt_freqs_path(material, json_file))
+
 
 def check_qpt_freqs(
         qpoint_frequencies, expected_qpoint_frequencies,
@@ -157,7 +159,8 @@ class TestQpointFrequenciesCreation:
          {'average_repeat_points': True}),
         ('quartz', 'quartz_split_qpts.phonon',
          'quartz_split_from_castep_qpoint_frequencies.json', {})])
-    def test_create_from_castep(self, material, phonon_file, json_file, kwargs):
+    def test_create_from_castep(
+            self, material, phonon_file, json_file, kwargs):
         qpt_freqs = QpointFrequencies.from_castep(
             get_castep_path(material, phonon_file), **kwargs)
         expected_qpt_freqs = ExpectedQpointFrequencies(
@@ -184,36 +187,37 @@ class TestQpointFrequenciesCreation:
 
     @pytest.mark.phonopy_reader
     @pytest.mark.parametrize(
-            'material, subdir, phonopy_args, json_file', [
-        ('NaCl', 'band', {'summary_name': 'should_not_be_read',
-                          'phonon_name': 'band.yaml'},
-         'NaCl_band_yaml_from_phonopy_qpoint_frequencies.json'),
-        ('NaCl', 'band', {'summary_name': 'phonopy.yaml',
-                          'phonon_name': 'band_no_evec.hdf5'},
-         'NaCl_band_no_evec_hdf5_from_phonopy_qpoint_frequencies.json'),
-        ('NaCl', 'mesh', {'summary_name': 'should_not_be_read',
-                          'phonon_name': 'mesh_no_evec.yaml'},
-         'NaCl_mesh_yaml_from_phonopy_qpoint_frequencies.json'),
-        ('NaCl', 'mesh', {'summary_name': 'phonopy.yaml',
-                          'phonon_name': 'mesh.hdf5'},
-         'NaCl_mesh_hdf5_from_phonopy_qpoint_frequencies.json'),
-        ('NaCl', 'qpoints', {'summary_name': 'phonopy.yaml',
-                             'phonon_name': 'qpoints.yaml'},
-         'NaCl_qpoints_yaml_from_phonopy_qpoint_frequencies.json'),
-        ('NaCl', 'qpoints', {'summary_name': 'phonopy.yaml',
-                             'phonon_name': 'qpoints_yaml.test',
-                             'phonon_format': 'yaml'},
-         'NaCl_qpoints_yaml_from_phonopy_qpoint_frequencies.json'),
-        ('NaCl', 'qpoints', {'summary_name': 'phonopy.yaml',
-                             'phonon_name': 'qpoints_hdf5.test',
-                             'phonon_format': 'hdf5'},
-         'NaCl_qpoints_hdf5_from_phonopy_qpoint_frequencies.json'),
-        ('NaCl', 'qpoints', {'summary_name': 'phonopy.yaml',
-                             'phonon_name': 'qpoints.hdf5'},
-         'NaCl_qpoints_hdf5_from_phonopy_qpoint_frequencies.json'),
-        ('CaHgO2', '', {'summary_name': 'mp-7041-20180417.yaml',
-                        'phonon_name': 'qpoints.yaml'},
-         'CaHgO2_from_phonopy_qpoint_frequencies.json')])
+        'material, subdir, phonopy_args, json_file',
+        [('NaCl', 'band', {'summary_name': 'should_not_be_read',
+                           'phonon_name': 'band.yaml'},
+          'NaCl_band_yaml_from_phonopy_qpoint_frequencies.json'),
+         ('NaCl', 'band', {'summary_name': 'phonopy.yaml',
+                           'phonon_name': 'band_no_evec.hdf5'},
+          'NaCl_band_no_evec_hdf5_from_'
+          'phonopy_qpoint_frequencies.json'),
+         ('NaCl', 'mesh', {'summary_name': 'should_not_be_read',
+                           'phonon_name': 'mesh_no_evec.yaml'},
+          'NaCl_mesh_yaml_from_phonopy_qpoint_frequencies.json'),
+         ('NaCl', 'mesh', {'summary_name': 'phonopy.yaml',
+                           'phonon_name': 'mesh.hdf5'},
+          'NaCl_mesh_hdf5_from_phonopy_qpoint_frequencies.json'),
+         ('NaCl', 'qpoints', {'summary_name': 'phonopy.yaml',
+                              'phonon_name': 'qpoints.yaml'},
+          'NaCl_qpoints_yaml_from_phonopy_qpoint_frequencies.json'),
+         ('NaCl', 'qpoints', {'summary_name': 'phonopy.yaml',
+                              'phonon_name': 'qpoints_yaml.test',
+                              'phonon_format': 'yaml'},
+          'NaCl_qpoints_yaml_from_phonopy_qpoint_frequencies.json'),
+         ('NaCl', 'qpoints', {'summary_name': 'phonopy.yaml',
+                              'phonon_name': 'qpoints_hdf5.test',
+                              'phonon_format': 'hdf5'},
+          'NaCl_qpoints_hdf5_from_phonopy_qpoint_frequencies.json'),
+         ('NaCl', 'qpoints', {'summary_name': 'phonopy.yaml',
+                              'phonon_name': 'qpoints.hdf5'},
+          'NaCl_qpoints_hdf5_from_phonopy_qpoint_frequencies.json'),
+         ('CaHgO2', '', {'summary_name': 'mp-7041-20180417.yaml',
+                         'phonon_name': 'qpoints.yaml'},
+          'CaHgO2_from_phonopy_qpoint_frequencies.json')])
     def test_create_from_phonopy(
             self, material, subdir, phonopy_args, json_file):
         phonopy_args['path'] = get_phonopy_path(material, subdir)
@@ -285,6 +289,7 @@ class TestQpointFrequenciesCreation:
         # Mock import of yaml, h5py to raise ModuleNotFoundError
         import builtins
         real_import = builtins.__import__
+
         def mocked_import(name, *args, **kwargs):
             if name == 'h5py' or name == 'yaml':
                 raise ModuleNotFoundError
@@ -322,6 +327,7 @@ class TestQpointFrequenciesCreation:
         # Mock 'from yaml import CLoader as Loader' to raise ImportError
         import builtins
         real_import = builtins.__import__
+
         def mocked_import(name, globals, locals, fromlist, level):
             if name == 'yaml':
                 if fromlist is not None and fromlist[0] == 'CSafeLoader':
@@ -372,7 +378,8 @@ class TestQpointFrequenciesUnitConversion:
          'quartz_666_qpoint_frequencies.json',
          'frequencies',
          '1/cm')])
-    def test_correct_unit_conversion(self, material, json_file, attr, unit_val):
+    def test_correct_unit_conversion(
+            self, material, json_file, attr, unit_val):
         qpt_freqs = get_qpt_freqs(material, json_file)
         check_unit_conversion(qpt_freqs, attr, unit_val)
 
@@ -449,28 +456,28 @@ class TestQpointFrequenciesCalculateDos:
              'quartz_554_full_mode_widths.json',
              'quartz_554_full_adaptive_dos.json',
              np.arange(0, 155, 0.1)*ureg('meV'),
-             {'adaptive_method':'reference'}),
+             {'adaptive_method': 'reference'}),
             ('quartz', 'quartz_554_full_qpoint_frequencies.json',
              'quartz_554_full_mode_widths.json',
              'quartz_554_full_adaptive_dos_fast.json',
              np.arange(0, 155, 0.1)*ureg('meV'),
-             {'adaptive_method':'fast'}),
+             {'adaptive_method': 'fast'}),
             ('LZO', 'lzo_222_full_qpoint_frequencies.json',
              'lzo_222_full_mode_widths.json',
              'lzo_222_full_adaptive_dos.json',
              np.arange(0, 100, 0.1)*ureg('meV'),
-             {'adaptive_method':'reference'}),
+             {'adaptive_method': 'reference'}),
             ('LZO', 'lzo_222_full_qpoint_frequencies.json',
              'lzo_222_full_mode_widths.json',
              'lzo_222_full_adaptive_dos_fast.json',
              np.arange(0, 100, 0.1)*ureg('meV'),
-             {'adaptive_method':'fast'}),
+             {'adaptive_method': 'fast'}),
             ('quartz', 'toy_quartz_qpoint_frequencies.json',
              'toy_quartz_mode_widths.json',
              'toy_quartz_uneven_adaptive_dos.json',
              np.concatenate((np.arange(0, 15, 0.1),
                              np.arange(15, 40, 0.2)))*ureg('meV'),
-             {'adaptive_method':'reference'})])
+             {'adaptive_method': 'reference'})])
     def test_calculate_dos_with_mode_widths(
             self, material, qpt_freqs_json, mode_widths_json,
             expected_dos_json, ebins, kwargs):
@@ -492,8 +499,8 @@ class TestQpointFrequenciesCalculateDos:
         mode_widths = get_mode_widths(get_fc_path(mode_widths_json))
         fast_adaptive_dos = qpt_freqs.calculate_dos(
             ebins, mode_widths=mode_widths, adaptive_method='fast')
-        ref_adaptive_dos = qpt_freqs.calculate_dos(ebins,
-            mode_widths=mode_widths, adaptive_method='reference')
+        ref_adaptive_dos = qpt_freqs.calculate_dos(
+            ebins, mode_widths=mode_widths, adaptive_method='reference')
         assert fast_adaptive_dos.y_data.magnitude == \
             pytest.approx(ref_adaptive_dos.y_data.magnitude, abs=0.1)
 
@@ -502,7 +509,7 @@ class TestQpointFrequenciesCalculateDos:
          'ebins'), [
             ('LZO', 'lzo_222_full_qpoint_frequencies.json',
              'lzo_222_full_mode_widths.json',
-              5*ureg('meV'),
+             5*ureg('meV'),
              np.arange(0, 100, 0.1)*ureg('meV')),
             ('LZO', 'lzo_222_full_qpoint_frequencies.json',
              'lzo_222_full_mode_widths.json',
@@ -526,7 +533,7 @@ class TestQpointFrequenciesCalculateDos:
             'quartz', 'quartz_666_qpoint_frequencies.json')
         ebins = np.arange(0, 1300, 4)*ureg('1/cm')
         with pytest.warns(None) as warn_record:
-            dos = qpt_freqs.calculate_dos(ebins)
+            qpt_freqs.calculate_dos(ebins)
         assert len(warn_record) == 0
 
     def test_incorrect_adaptive_method_error(self):
@@ -547,6 +554,7 @@ class TestQpointFrequenciesCalculateDos:
         qpt_freqs.calculate_dos(ebins, mode_widths=mode_widths,
                                 adaptive_method='fast')
         mock_fast_method.assert_called()
+
 
 class TestQpointFrequenciesCalculateDosMap:
     @pytest.mark.parametrize(
@@ -571,7 +579,7 @@ class TestQpointFrequenciesCalculateDosMap:
         check_spectrum2d(dos_map, expected_dos_map)
 
     def get_test_nacl_mode_widths():
-        mode_widths = np.ones((23,24))
+        mode_widths = np.ones((23, 24))
         mode_widths[:, :5] = 2.
         mode_widths[:10, -6:] = 1.5
         return mode_widths*ureg('meV')
@@ -586,7 +594,8 @@ class TestQpointFrequenciesCalculateDosMap:
              [-1]),
             ('NaCl', 'NaCl_band_yaml_from_phonopy_qpoint_frequencies.json',
              np.arange(0, 250, 4)*ureg('1/cm'),
-             {'mode_widths': get_test_nacl_mode_widths(), 'mode_widths_min': 1.1*ureg('meV')},
+             {'mode_widths': get_test_nacl_mode_widths(),
+              'mode_widths_min': 1.1*ureg('meV')},
              [0, 15])
         ])
     def test_calculate_dos_map_gives_same_result_as_dos_at_single_qpt(
@@ -596,8 +605,8 @@ class TestQpointFrequenciesCalculateDosMap:
         for qpt in qpts_to_test:
             qpt_freqs_single_qpt = QpointFrequencies(
                 qpt_freqs.crystal,
-                qpt_freqs.qpts[qpt].reshape(1,-1),
-                qpt_freqs.frequencies[qpt].reshape(1,-1),
+                qpt_freqs.qpts[qpt].reshape(1, -1),
+                qpt_freqs.frequencies[qpt].reshape(1, -1),
                 np.array([qpt_freqs.weights[qpt]]))
             dos_kwargs_single_qpt = copy.copy(dos_kwargs)
             if 'mode_widths' in dos_kwargs.keys():
@@ -607,6 +616,7 @@ class TestQpointFrequenciesCalculateDosMap:
                 ebins, **dos_kwargs_single_qpt)
             dos_map_at_qpt = Spectrum1D(dos_map.y_data, dos_map.z_data[qpt])
             check_spectrum1d(dos_map_at_qpt, dos_single_qpt)
+
 
 class TestQpointFrequenciesGetDispersion:
 

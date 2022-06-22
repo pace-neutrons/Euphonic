@@ -1,4 +1,3 @@
-import os
 import json
 
 import pytest
@@ -6,7 +5,7 @@ import numpy as np
 import numpy.testing as npt
 from pint import DimensionalityError
 
-from euphonic import ureg, Crystal, QpointPhononModes, Spectrum1DCollection
+from euphonic import ureg, Crystal, QpointPhononModes
 from euphonic.readers.phonopy import ImportPhonopyReaderError
 from tests_and_analysis.test.euphonic_test.test_crystal import (
     ExpectedCrystal, get_crystal, check_crystal)
@@ -95,6 +94,7 @@ class ExpectedQpointPhononModes:
 
 def get_qpt_ph_modes_path(*subpaths):
     return get_data_path('qpoint_phonon_modes', *subpaths)
+
 
 def get_json_file(material):
     return f'{material}_reciprocal_qpoint_phonon_modes.json'
@@ -190,7 +190,8 @@ class TestQpointPhononModesCreation:
          {'average_repeat_points': True}),
         ('quartz', 'quartz_split_qpts.phonon',
          'quartz_split_from_castep_qpoint_phonon_modes.json', {})])
-    def test_create_from_castep(self, material, phonon_file, json_file, kwargs):
+    def test_create_from_castep(
+            self, material, phonon_file, json_file, kwargs):
         qpt_ph_modes = QpointPhononModes.from_castep(
             get_castep_path(material, phonon_file), **kwargs)
         expected_qpt_ph_modes = ExpectedQpointPhononModes(
@@ -248,7 +249,8 @@ class TestQpointPhononModesCreation:
         ('CaHgO2', '', {'summary_name': 'mp-7041-20180417.yaml',
                         'phonon_name': 'qpoints.yaml'},
          'CaHgO2_from_phonopy_qpoint_phonon_modes.json')])
-    def test_create_from_phonopy(self, material, subdir, phonopy_args, json_file):
+    def test_create_from_phonopy(
+            self, material, subdir, phonopy_args, json_file):
         phonopy_args['path'] = get_phonopy_path(material, subdir)
         qpt_ph_modes = QpointPhononModes.from_phonopy(**phonopy_args)
         json_path = get_qpt_ph_modes_path(material, json_file)
@@ -316,6 +318,7 @@ class TestQpointPhononModesCreation:
         # Mock import of yaml, h5py to raise ModuleNotFoundError
         import builtins
         real_import = builtins.__import__
+
         def mocked_import(name, *args, **kwargs):
             if name == 'h5py' or name == 'yaml':
                 raise ModuleNotFoundError
@@ -362,6 +365,7 @@ class TestQpointPhononModesCreation:
         # Mock 'from yaml import CLoader as Loader' to raise ImportError
         import builtins
         real_import = builtins.__import__
+
         def mocked_import(name, globals, locals, fromlist, level):
             if name == 'yaml':
                 if fromlist is not None and fromlist[0] == 'CSafeLoader':
@@ -375,6 +379,7 @@ class TestQpointPhononModesCreation:
         expected_qpt_ph_modes = ExpectedQpointPhononModes(json_path)
         check_qpt_ph_modes(qpt_ph_modes, expected_qpt_ph_modes,
                            check_evecs=True)
+
 
 class TestQpointPhononModesSerialisation:
 
@@ -417,7 +422,6 @@ class TestQpointPhononModesSerialisation:
         qpt_freqs = qpt_ph_modes.to_qpoint_frequencies()
         expected_qpt_freqs = get_expected_qpt_freqs(material, qpt_freqs_json)
         check_qpt_freqs(qpt_freqs, expected_qpt_freqs)
-
 
 
 class TestQpointPhononModesUnitConversion:
@@ -558,17 +562,17 @@ class TestQpointPhononModesCalculateDos:
 
     @pytest.mark.parametrize(
         ('material, qpt_ph_modes_json, mode_widths_json, '
-         'expected_dos_json, ebins, kwargs'), [
-            ('quartz', 'quartz_554_full_qpoint_phonon_modes.json',
-             'quartz_554_full_mode_widths.json',
-             'quartz_554_full_adaptive_dos.json',
-             np.arange(0, 155, 0.1)*ureg('meV'),
-             {'adaptive_method':'reference'}),
-            ('quartz', 'quartz_554_full_qpoint_phonon_modes.json',
-             'quartz_554_full_mode_widths.json',
-             'quartz_554_full_adaptive_dos_fast.json',
-             np.arange(0, 155, 0.1)*ureg('meV'),
-             {'adaptive_method':'fast'})])
+         'expected_dos_json, ebins, kwargs'),
+        [('quartz', 'quartz_554_full_qpoint_phonon_modes.json',
+          'quartz_554_full_mode_widths.json',
+          'quartz_554_full_adaptive_dos.json',
+          np.arange(0, 155, 0.1)*ureg('meV'),
+          {'adaptive_method': 'reference'}),
+         ('quartz', 'quartz_554_full_qpoint_phonon_modes.json',
+          'quartz_554_full_mode_widths.json',
+          'quartz_554_full_adaptive_dos_fast.json',
+          np.arange(0, 155, 0.1)*ureg('meV'),
+          {'adaptive_method': 'fast'})])
     def test_calculate_dos_with_mode_widths(
             self, material, qpt_ph_modes_json, mode_widths_json,
             expected_dos_json, ebins, kwargs):
@@ -608,19 +612,21 @@ class TestQpointPhononModesCalculateDos:
         qpt_ph_modes = get_qpt_ph_modes_from_json(material, qpt_ph_modes_json)
         mode_widths = get_mode_widths(get_fc_path(mode_widths_json))
         dos = qpt_ph_modes.calculate_dos(ebins, mode_widths=mode_widths,
-                                      mode_widths_min=mode_widths_min)
+                                         mode_widths_min=mode_widths_min)
         mode_widths = np.maximum(
             mode_widths.magnitude,
             mode_widths_min.to(mode_widths.units).magnitude)*mode_widths.units
-        expected_dos = qpt_ph_modes.calculate_dos(ebins, mode_widths=mode_widths)
+        expected_dos = qpt_ph_modes.calculate_dos(
+            ebins, mode_widths=mode_widths)
         check_spectrum1d(dos, expected_dos)
 
     def test_calculate_dos_with_0_inv_cm_bin_doesnt_raise_runtime_warn(self):
         qpt_ph_modes = get_qpt_ph_modes('quartz')
         ebins = np.arange(0, 1300, 4)*ureg('1/cm')
         with pytest.warns(None) as warn_record:
-            dos = qpt_ph_modes.calculate_dos(ebins)
+            qpt_ph_modes.calculate_dos(ebins)
         assert len(warn_record) == 0
+
 
 class TestQpointPhononModesCalculatePdos:
 
@@ -636,13 +642,14 @@ class TestQpointPhononModesCalculatePdos:
              np.arange(0, 155, 0.5)*ureg('meV'),
              {'weighting': 'coherent-plus-incoherent'}),
             ('quartz', 'quartz-666-grid.phonon',
-             'quartz_666_cs_dict_pdos.json', np.arange(0, 155, 0.5)*ureg('meV'),
-             {'cross_sections': {'O': 429*ureg('fm**2'), 'Si': 2.78*ureg('barn')}}),
-            ('LZO', 'La2Zr2O7-666-grid.phonon',
-             'La2Zr2O7_666_coh_pdos.json', np.arange(0, 100, 0.8)*ureg('meV'),
-             {'weighting': 'coherent'}),
-            ('LZO', 'La2Zr2O7-666-grid.phonon',
-             'La2Zr2O7_666_incoh_pdos.json', np.arange(0, 100, 0.8)*ureg('meV'),
+             'quartz_666_cs_dict_pdos.json',
+             np.arange(0, 155, 0.5)*ureg('meV'),
+             {'cross_sections': {'O': 429*ureg('fm**2'),
+                                 'Si': 2.78*ureg('barn')}}),
+            ('LZO', 'La2Zr2O7-666-grid.phonon', 'La2Zr2O7_666_coh_pdos.json',
+             np.arange(0, 100, 0.8)*ureg('meV'), {'weighting': 'coherent'}),
+            ('LZO', 'La2Zr2O7-666-grid.phonon', 'La2Zr2O7_666_incoh_pdos.json',
+             np.arange(0, 100, 0.8)*ureg('meV'),
              {'weighting': 'incoherent'})
         ])
     def test_calculate_pdos(
@@ -661,12 +668,12 @@ class TestQpointPhononModesCalculatePdos:
              'lzo_222_full_mode_widths.json',
              'lzo_222_full_adaptive_coh_pdos.json',
              np.arange(0, 100, 0.5)*ureg('meV'),
-             {'adaptive_method':'reference'}),
+             {'adaptive_method': 'reference'}),
             ('LZO', 'lzo_222_full_qpoint_phonon_modes.json',
              'lzo_222_full_mode_widths.json',
              'lzo_222_full_adaptive_fast_coh_pdos.json',
              np.arange(0, 100, 0.5)*ureg('meV'),
-             {'adaptive_method':'fast'})])
+             {'adaptive_method': 'fast'})])
     def test_calculate_pdos_with_mode_widths(
             self, material, qpt_ph_modes_json, mode_widths_json,
             expected_pdos_json, ebins, kwargs):
@@ -698,12 +705,12 @@ class TestQpointPhononModesCalculatePdos:
              'quartz_554_full_mode_widths.json',
              'quartz_554_full_adaptive_dos.json',
              np.arange(0, 155, 0.1)*ureg('meV'),
-             {'adaptive_method':'reference'}),
+             {'adaptive_method': 'reference'}),
             ('quartz', 'quartz_554_full_qpoint_phonon_modes.json',
              'quartz_554_full_mode_widths.json',
              'quartz_554_full_adaptive_dos_fast.json',
              np.arange(0, 155, 0.1)*ureg('meV'),
-             {'adaptive_method':'fast'})
+             {'adaptive_method': 'fast'})
         ])
     def test_total_dos_from_pdos_same_as_calculate_dos_with_mode_widths(
             self, material, qpt_ph_modes_json, mode_widths_json,
@@ -737,7 +744,6 @@ class TestQpointPhononModesCalculatePdos:
             qpt_ph_modes.calculate_pdos(
                 np.arange(0, 155, 0.5)*ureg('meV'),
                 cross_sections={'O': 4.29*ureg('fm'), 'Si': 2.78*ureg('fm')})
-
 
 
 class TestQpointPhononModesGetDispersion:

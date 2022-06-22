@@ -196,17 +196,17 @@ class QpointFrequencies:
             mode_widths = mode_widths.to('hartree').magnitude
             mode_widths = np.maximum(mode_widths,
                                      mode_widths_min.to('hartree').magnitude)
-            if adaptive_method=='reference':
+            if adaptive_method == 'reference':
                 # adaptive broadening by summing over individual peaks
                 from scipy.stats import norm
                 dos_bins_calc = Spectrum1D._bin_edges_to_centres(dos_bins_calc)
                 dos = np.zeros(len(dos_bins_calc))
                 for q in range(len(freqs)):
                     for m in range(n_modes):
-                        pdf = norm.pdf(dos_bins_calc, loc=freqs[q,m],
-                                       scale=mode_widths[q,m])
+                        pdf = norm.pdf(dos_bins_calc, loc=freqs[q, m],
+                                       scale=mode_widths[q, m])
                         dos += pdf*weights[q]*mode_weights_calc[q, m]
-            elif adaptive_method=='fast':
+            elif adaptive_method == 'fast':
                 # fast, approximate method for adaptive broadening
                 combined_weights = mode_weights_calc * weights[:, np.newaxis]
                 dos = _width_interpolated_broadening(dos_bins_calc,
@@ -218,10 +218,10 @@ class QpointFrequencies:
             # Create DOS with extra bin either side, for any points
             # that fall outside the bin range
             dos = np.zeros(len(dos_bins) + 1)
-            bin_widths = np.ones(len(dos_bins) + 1) # Use ones to avoid div/0
+            bin_widths = np.ones(len(dos_bins) + 1)  # Use ones to avoid div/0
             bin_widths[1:-1] = np.diff(dos_bins_calc)
             mode_weights_calc = (weights[:, np.newaxis]
-                                 *mode_weights_calc/bin_widths[bin_idx])
+                                 * mode_weights_calc/bin_widths[bin_idx])
             np.add.at(dos, bin_idx, mode_weights_calc)
             dos = dos[1:-1]
 
@@ -230,7 +230,6 @@ class QpointFrequencies:
         # Pint allows hartree -> cm^-1 but not 1/hartree -> cm
         conv = 1*ureg('hartree').to(dos_bins.units)
         return dos/conv
-
 
     def calculate_dos_map(self, dos_bins: Quantity,
                           mode_widths: Optional[Quantity] = None,
@@ -292,8 +291,8 @@ class QpointFrequencies:
         return Spectrum1DCollection(abscissa, self.frequencies.T,
                                     x_tick_labels=x_tick_labels)
 
-    def _get_qpt_axis_and_labels(self
-            ) -> Tuple[Quantity, List[Tuple[int, str]]]:
+    def _get_qpt_axis_and_labels(
+            self) -> Tuple[Quantity, List[Tuple[int, str]]]:
         """
         Converts the qpts stored in this object an array of
         scalar distances and applies appropriate symmetry labels
