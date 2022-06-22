@@ -483,13 +483,13 @@ class QpointPhononModes(QpointFrequencies):
 
         .. math::
 
-            PDOS_{\\kappa}(\\omega) = \\frac{1}{N_{atom}\\sum\\limits_{\\mathbf{q}}{weight_{\\mathbf{q}}}}
+            PDOS_{\\kappa}(\\omega) = \\frac{1}{N_\\mathrm{atom}\\sum\\limits_{\\mathbf{q}}{\\mathrm{weight}_{\\mathbf{q}}}}
                                       \\sum_{\\mathbf{q}\\nu\\alpha\\in{BZ}}
-                                      weight_{\\mathbf{q}} {e_{\\mathbf{q}\\nu\\kappa\\alpha}e^{*}_{\\mathbf{q}\\nu\\kappa\\alpha}}
+                                      \\mathrm{weight}_{\\mathbf{q}} {e_{\\mathbf{q}\\nu\\kappa\\alpha}e^{*}_{\\mathbf{q}\\nu\\kappa\\alpha}}
                                       \\delta(\\omega - \\omega_{\\mathbf{q}\\nu})
 
-        Where :math:`N_{atom}` is the number of atoms in the unit cell,
-        :math:`weight_\\mathbf{q}` is the per q-point weight,
+        Where :math:`N_\\mathrm{atom}` is the number of atoms in the unit cell,
+        :math:`\\mathrm{weight}_\\mathbf{q}` is the per q-point weight,
         :math:`e_{\\mathbf{q}\\nu\\kappa\\alpha}` is the normalised
         eigenvector at :math:`\\mathbf{q}` for mode :math:`\\nu`, atom
         :math:`\\kappa` in Cartesian direction :math:`\\alpha` and
@@ -501,10 +501,10 @@ class QpointPhononModes(QpointFrequencies):
 
         .. math::
 
-            PDOS^{neutron}_{\\kappa}(\\omega) = \\frac{\\sigma_{\\kappa}M_{avg}}{M_\\kappa} PDOS_{\\kappa}(\\omega)
+            PDOS^\\mathrm{neutron}_{\\kappa}(\\omega) = \\frac{\\sigma_{\\kappa}M_\\mathrm{avg}}{M_\\kappa} PDOS_{\\kappa}(\\omega)
 
         Where :math:`\\sigma_\\kappa` is the neutron scattering cross
-        section, :math:`M_{avg}` is the average mass of atoms in the
+        section, :math:`M_\\mathrm{avg}` is the average mass of atoms in the
         unit cell and :math:`M_\\kappa` is the mass of atom
         :math:`\\kappa`, so the neutron-weighted PDOS is returned in
         units of area per unit energy.
