@@ -6,7 +6,6 @@ from typing import Dict, Any, TextIO, BinaryIO, Tuple, Optional, List, Union
 import numpy as np
 
 from euphonic import ureg
-from euphonic.util import is_gamma
 
 
 def read_phonon_dos_data(
@@ -42,7 +41,7 @@ def read_phonon_dos_data(
 
         f.readline()  # Skip BEGIN header
         n_atoms = int(f.readline().split()[-1])
-        n_species = int(f.readline().split()[-1])
+        _ = int(f.readline().split()[-1])  # n_species is not used
         n_branches = int(f.readline().split()[-1])
         n_bins = int(f.readline().split()[-1])
         (cell_vectors, atom_r, atom_type, atom_mass) = _read_crystal_info(
@@ -65,7 +64,7 @@ def read_phonon_dos_data(
             freqs = np.concatenate((freqs, [qfreq]))
             mode_grads = np.concatenate((mode_grads, [qmode_grad.squeeze()]))
         line = f.readline()
-        if not 'BEGIN DOS' in line:
+        if 'BEGIN DOS' not in line:
             raise RuntimeError(
                 f'Expected "BEGIN DOS" in {filename}, got {line}')
         # max_rows arg not available until Numpy 1.16.0
@@ -74,7 +73,7 @@ def read_phonon_dos_data(
         except TypeError:
             data = f.readlines()
             dos_data = np.array([[float(elem) for elem in line.split()]
-                                      for line in data[:n_bins]])
+                                 for line in data[:n_bins]])
 
     data_dict: Dict[str, Any] = {}
     data_dict['crystal'] = {}
@@ -182,7 +181,8 @@ def read_phonon_data(
         repeated_qpt_ids = defaultdict(set)
         while True:
             try:
-                qpt_id, qpt, qweight, qfreq, _ = _read_frequency_block(f, n_branches)
+                qpt_id, qpt, qweight, qfreq, _ = _read_frequency_block(
+                    f, n_branches)
             except EOFError:
                 break
 
@@ -249,8 +249,9 @@ def read_phonon_data(
     return data_dict
 
 
-def _read_crystal_info(f: TextIO, n_atoms: int
-    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+def _read_crystal_info(
+        f: TextIO, n_atoms: int
+        ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """
     Reads the header crystal information from a CASTEP text file, from
     'Unit cell vectors' to 'END header'
@@ -277,10 +278,10 @@ def _read_crystal_info(f: TextIO, n_atoms: int
         Shape (n_atoms,) float ndarray. The mass of each atom in the
         unit cell in atomic mass units
     """
-    while not 'Unit cell vectors' in f.readline():
+    while 'Unit cell vectors' not in f.readline():
         pass
     cell_vectors = np.array([[float(x) for x in f.readline().split()[0:3]]
-                         for i in range(3)])
+                             for i in range(3)])
     f.readline()  # Skip fractional co-ordinates label
     atom_info = np.array([f.readline().split() for i in range(n_atoms)])
     atom_r = np.array([[float(x) for x in y[1:4]] for y in atom_info])
@@ -296,8 +297,8 @@ _qpt_float_pattern = re.compile(r'-?\d+\.\d+')
 
 
 def _read_frequency_block(
-            f: TextIO, n_branches: int, extra_columns: Optional[List] = None
-    ) -> Tuple[int, np.ndarray, float, np.ndarray, Optional[np.ndarray]]:
+        f: TextIO, n_branches: int, extra_columns: Optional[List] = None
+        ) -> Tuple[int, np.ndarray, float, np.ndarray, Optional[np.ndarray]]:
     """
     For a single q-point reads the q-point, weight, frequencies
     and optionally any extra columns
@@ -404,7 +405,7 @@ def read_interpolation_data(
                 # cell. We only want the geometry optimised cell.
                 if first_cell_read:
                     (n_atoms, cell_vectors, atom_r, atom_mass,
-                    atom_type) = _read_cell(f, int_type, float_type)
+                     atom_type) = _read_cell(f, int_type, float_type)
                     first_cell_read = False
             elif header.strip() == b'FORCE_CON':
                 sc_matrix = np.transpose(np.reshape(
@@ -418,7 +419,7 @@ def read_interpolation_data(
                     axes=[0, 2, 1]))
                 cell_origins = np.reshape(
                     _read_entry(f, int_type), (n_cells_in_sc, 3))
-                fc_row = _read_entry(f, int_type)
+                _ = _read_entry(f, int_type)  # FC row not used
             elif header.strip() == b'BORN_CHGS':
                 born = np.reshape(
                     _read_entry(f, float_type), (n_atoms, 3, 3))
@@ -516,7 +517,7 @@ def _read_cell(file_obj: BinaryIO, int_type: str, float_type: str
         elif header.strip() == b'CELL%IONIC_POSITIONS':
             max_atoms_in_species = max(n_atoms_in_species)
             atom_r_tmp = np.reshape(_read_entry(file_obj, float_type),
-                                   (n_species, max_atoms_in_species, 3))
+                                    (n_species, max_atoms_in_species, 3))
         elif header.strip() == b'CELL%SPECIES_MASS':
             atom_mass_tmp = _read_entry(file_obj, float_type)
             if n_species == 1:
@@ -525,10 +526,10 @@ def _read_cell(file_obj: BinaryIO, int_type: str, float_type: str
             # Need to decode binary string for Python 3 compatibility
             if n_species == 1:
                 atom_type_tmp = [_read_entry(file_obj, 'S8')
-                                .strip().decode('utf-8')]
+                                 .strip().decode('utf-8')]
             else:
                 atom_type_tmp = [x.strip().decode('utf-8')
-                                for x in _read_entry(file_obj, 'S8')]
+                                 for x in _read_entry(file_obj, 'S8')]
     # Get atom_r in correct form
     # CASTEP stores atom positions as 3D array (3,
     # max_atoms_in_species, n_species) so need to slice data to get
