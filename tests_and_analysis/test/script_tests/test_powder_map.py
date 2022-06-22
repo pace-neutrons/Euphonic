@@ -64,7 +64,6 @@ powder_map_params_macos_segfault = [
     [nacl_prim_fc_file, '--temperature=1000', '--weighting=coherent',
      *quick_calc_params]]
 
-
 class TestRegression:
 
     @pytest.fixture
@@ -204,7 +203,9 @@ def test_regenerate_powder_map_data(_):
     except FileNotFoundError:
         json_data = {}
 
-    for powder_map_param in powder_map_params:
+    for powder_map_param in (powder_map_params
+                             + powder_map_params_from_phonopy
+                             + powder_map_params_macos_segfault):
         # Generate current figure for us to retrieve with gcf
         euphonic.cli.powder_map.main(powder_map_param)
 

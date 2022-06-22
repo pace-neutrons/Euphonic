@@ -25,6 +25,7 @@ from tests_and_analysis.test.utils import (
     check_frequencies_at_qpts, check_unit_conversion,
     check_json_metadata, check_property_setters, get_mode_widths)
 
+
 class ExpectedQpointFrequencies:
 
     def __init__(self, qpoint_frequencies_json_file: str):

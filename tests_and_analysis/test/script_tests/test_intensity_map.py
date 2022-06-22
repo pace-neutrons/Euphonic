@@ -183,7 +183,7 @@ def test_regenerate_intensity_map_data(_):
     except FileNotFoundError:
         json_data = {}
 
-    for intensity_map_param in intensity_map_params:
+    for intensity_map_param in intensity_map_params + intensity_map_params_macos_segfault:
         # Generate current figure for us to retrieve with gcf
         euphonic.cli.intensity_map.main(intensity_map_param)
 

@@ -45,6 +45,17 @@
   - Allow read of ``phonopy.yaml`` quantities in ``'au'`` (bohr) units.
     Previously this was interpreted as an astronomical unit by Pint.
 
+- Changes:
+
+  - DOS and PDOS calculated by the ``calculate_dos`` and
+    ``calculate_dos_map`` methods of ``QpointPhononModes`` and
+    ``QpointFrequencies``, and ``QpointPhononModes.calculate_pdos`` are
+    now calculated per atom rather than per unit cell (integrated area
+    is ``3`` rather than ``3*N_atom``). This is to keep consistency with
+    the structure factors calculated by
+    ``QpointPhononModes.calculate_structure_factor`` which are calculated
+    per atom.
+
 `v0.6.4 <https://github.com/pace-neutrons/Euphonic/compare/v0.6.3...v0.6.4>`_
 ------
 
