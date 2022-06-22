@@ -180,7 +180,8 @@ class TestQpointFrequenciesCreation:
         weights = np.ones(13)
         weights /= 9.
         weights[2:4] /= 2
-        weights[5:11] /= 2
+        weights[5:8] /= 3
+        weights[9:11] /= 2
         expected_qpt_freqs.data['weights'] = weights.tolist()
 
         check_qpt_freqs(qpt_freqs, expected_qpt_freqs)
