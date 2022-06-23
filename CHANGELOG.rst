@@ -19,6 +19,12 @@
     during interpolation (Phonopy-like), to one which uses the cell origin
     coordinates (Euphonic, CASTEP-like).
 
+  - When importing q-point modes or frequencies from a CASTEP .phonon
+    file, a new option allows repeated entries (with the same q-point
+    index) to be identified and their weights divided down by the
+    number of entries. This option should give better statistics for
+    sampling meshes that include the Gamma-point with LO-TO splitting.
+
 - Improvements:
 
   - Documentation on the shape and format of the force constants, and how to
