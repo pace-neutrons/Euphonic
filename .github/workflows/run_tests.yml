@@ -1,11 +1,11 @@
 name: run-tests
 on:
   push:
-    branches-ignore:
-      - '**_no_ci'
+    branches:
+      - '**master**'
+      - '**_run_ci**'
+      - '**release**'
   pull_request:
-    branches-ignore:
-      - '**_no_ci'
     types: [opened, reopened, labeled]
   workflow_dispatch:
 
