@@ -24,8 +24,8 @@ The :py:attr:`ForceConstants.force_constants <euphonic.force_constants.ForceCons
   \frac{\partial^{2}E}{{\partial}u_{\kappa\alpha0}{\partial}u_{{\kappa}'{\alpha}'l}}
 
 This describes the change in total energy when atom :math:`\kappa` in unit cell :math:`0`` is displaced in direction :math:`\alpha` and atom :math:`\kappa\prime` in unit cell :math:`l` is displaced in direction :math:`\alpha\prime`.
-In Euphonic the force constants are stored in 'compact' form, with shape :math:`3Nn\times3n`, where :math:`N` is the number of cells in the supercell, and :math:`n` is the number of atoms in the unit cell.
-This form can be expanded as needed to a 'full' :math:`3Nn\times3Nn` matrix of supercell atom pairs by mapping to an equivalent vector from unit cell 0.
+In Euphonic the force constants are stored in 'compact' form in a matrix of :math:`N(3n)^2` elements, where :math:`N` is the number of cells in the supercell, and :math:`n` is the number of atoms in the unit cell.
+This form can be expanded as needed to a 'full' :math:`(3Nn)^2`-element matrix of supercell atom pairs by mapping to an equivalent vector from unit cell 0.
 
 **Shape and Indexing**
 
