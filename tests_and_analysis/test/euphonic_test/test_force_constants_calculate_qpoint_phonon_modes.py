@@ -10,8 +10,8 @@ import euphonic
 from euphonic import ureg, ForceConstants
 from euphonic.util import mp_grid
 from euphonic.force_constants import ImportCError
-from tests_and_analysis.test.utils import (get_data_path, get_phonopy_path,
-    get_castep_path, get_test_qpts, sum_at_degenerate_modes)
+from tests_and_analysis.test.utils import (
+    get_phonopy_path, get_castep_path, get_test_qpts, sum_at_degenerate_modes)
 from tests_and_analysis.test.euphonic_test.test_qpoint_phonon_modes import (
     ExpectedQpointPhononModes, check_qpt_ph_modes, get_qpt_ph_modes_path)
 from tests_and_analysis.test.euphonic_test.test_force_constants import (
@@ -28,12 +28,11 @@ class TestForceConstantsCalculateQPointPhononModes:
         (get_lzo_fc(), 'LZO',
          [get_test_qpts(), {}], 'LZO_no_asr_qpoint_phonon_modes.json'),
         (get_lzo_fc(), 'LZO',
-         [get_test_qpts(), {'asr':'realspace'}],
+         [get_test_qpts(), {'asr': 'realspace'}],
          'LZO_realspace_qpoint_phonon_modes.json'),
         (get_lzo_fc(), 'LZO',
          [get_test_qpts(), {'asr': 'reciprocal'}],
          'LZO_reciprocal_qpoint_phonon_modes.json')]
-
 
     def get_si2_fc():
         return ForceConstants.from_castep(
@@ -43,12 +42,11 @@ class TestForceConstantsCalculateQPointPhononModes:
         (get_si2_fc(), 'Si2-sc-skew',
          [get_test_qpts(), {}], 'Si2-sc-skew_no_asr_qpoint_phonon_modes.json'),
         (get_si2_fc(), 'Si2-sc-skew',
-         [get_test_qpts(), {'asr':'realspace'}],
+         [get_test_qpts(), {'asr': 'realspace'}],
          'Si2-sc-skew_realspace_qpoint_phonon_modes.json'),
         (get_si2_fc(), 'Si2-sc-skew',
          [get_test_qpts(), {'asr': 'reciprocal'}],
          'Si2-sc-skew_reciprocal_qpoint_phonon_modes.json')]
-
 
     def get_quartz_fc():
         return ForceConstants.from_castep(
@@ -77,7 +75,6 @@ class TestForceConstantsCalculateQPointPhononModes:
          [get_test_qpts('split_insert_gamma'),
           {'asr': 'reciprocal', 'splitting': True, 'insert_gamma': True}],
          'quartz_split_reciprocal_qpoint_phonon_modes.json')]
-
 
     @staticmethod
     def calculate_and_check_qpoint_phonon_modes(
@@ -122,17 +119,17 @@ class TestForceConstantsCalculateQPointPhononModes:
 
     @pytest.mark.phonopy_reader
     @pytest.mark.parametrize(
-        'fc_kwargs, material, all_args, expected_qpoint_phonon_modes_file', [
-        ({'path': get_phonopy_path('NaCl'),
-          'summary_name': 'phonopy_nacl.yaml'},
-         'NaCl',
-         [get_test_qpts(), {'asr': 'reciprocal'}],
-         'NaCl_reciprocal_qpoint_phonon_modes.json'),
-        ({'path': get_phonopy_path('CaHgO2'),
-          'summary_name': 'mp-7041-20180417.yaml'},
-         'CaHgO2',
-         [get_test_qpts(), {'asr': 'reciprocal'}],
-         'CaHgO2_reciprocal_qpoint_phonon_modes.json')])
+        'fc_kwargs, material, all_args, expected_qpoint_phonon_modes_file',
+        [({'path': get_phonopy_path('NaCl'),
+           'summary_name': 'phonopy_nacl.yaml'},
+          'NaCl',
+          [get_test_qpts(), {'asr': 'reciprocal'}],
+          'NaCl_reciprocal_qpoint_phonon_modes.json'),
+         ({'path': get_phonopy_path('CaHgO2'),
+           'summary_name': 'mp-7041-20180417.yaml'},
+          'CaHgO2',
+          [get_test_qpts(), {'asr': 'reciprocal'}],
+          'CaHgO2_reciprocal_qpoint_phonon_modes.json')])
     @pytest.mark.parametrize(
         'reduce_qpts, n_threads',
         [(False, 0), (True, 0), (True, 1), (True, 2)])
@@ -146,19 +143,19 @@ class TestForceConstantsCalculateQPointPhononModes:
 
     @pytest.mark.parametrize(
         ('fc, material, all_args, expected_qpoint_phonon_modes_file, '
-         'expected_modg_file'), [
-        (get_quartz_fc(),
-         'quartz',
-         [mp_grid([5, 5, 4]),
-          {'return_mode_gradients': True}],
-         'quartz_554_full_qpoint_phonon_modes.json',
-         'quartz_554_full_mode_gradients.json'),
-        (get_lzo_fc(),
-         'LZO',
-         [mp_grid([2, 2, 2]),
-          {'asr': 'reciprocal', 'return_mode_gradients': True}],
-         'lzo_222_full_qpoint_phonon_modes.json',
-         'lzo_222_full_mode_gradients.json')])
+         'expected_modg_file'),
+        [(get_quartz_fc(),
+          'quartz',
+          [mp_grid([5, 5, 4]),
+           {'return_mode_gradients': True}],
+          'quartz_554_full_qpoint_phonon_modes.json',
+          'quartz_554_full_mode_gradients.json'),
+         (get_lzo_fc(),
+          'LZO',
+          [mp_grid([2, 2, 2]),
+           {'asr': 'reciprocal', 'return_mode_gradients': True}],
+          'lzo_222_full_qpoint_phonon_modes.json',
+          'lzo_222_full_mode_gradients.json')])
     @pytest.mark.parametrize(
         'n_threads',
         [0, 2])
@@ -195,19 +192,19 @@ class TestForceConstantsCalculateQPointPhononModes:
 
     @pytest.mark.parametrize(
         ('fc, material, all_args, expected_qpoint_phonon_modes_file, '
-         'expected_modw_file'), [
-        (get_quartz_fc(),
-         'quartz',
-         [mp_grid([5, 5, 4]),
-          {'return_mode_widths': True}],
-         'quartz_554_full_qpoint_phonon_modes.json',
-         'quartz_554_full_mode_widths.json'),
-        (get_lzo_fc(),
-         'LZO',
-         [mp_grid([2, 2, 2]),
-          {'asr': 'reciprocal', 'return_mode_widths': True}],
-         'lzo_222_full_qpoint_phonon_modes.json',
-         'lzo_222_full_mode_widths.json')])
+         'expected_modw_file'),
+        [(get_quartz_fc(),
+          'quartz',
+          [mp_grid([5, 5, 4]),
+           {'return_mode_widths': True}],
+          'quartz_554_full_qpoint_phonon_modes.json',
+          'quartz_554_full_mode_widths.json'),
+         (get_lzo_fc(),
+          'LZO',
+          [mp_grid([2, 2, 2]),
+           {'asr': 'reciprocal', 'return_mode_widths': True}],
+          'lzo_222_full_qpoint_phonon_modes.json',
+          'lzo_222_full_mode_widths.json')])
     @pytest.mark.parametrize(
         'n_threads',
         [0, 2])
@@ -242,8 +239,7 @@ class TestForceConstantsCalculateQPointPhononModes:
         npt.assert_allclose(summed_modw, summed_expected_modw,
                             rtol=7e-5)
 
-
-    def test_calc_qpt_ph_modes_with_mode_widths_raises_deprecation_warning(self):
+    def test_calc_qpt_ph_modes_w_mode_widths_raises_deprecation_warning(self):
         fc = get_fc('quartz')
         with pytest.warns(DeprecationWarning):
             fc.calculate_qpoint_phonon_modes(get_test_qpts(),
@@ -255,7 +251,7 @@ class TestForceConstantsCalculateQPointPhononModes:
             fc.calculate_qpoint_phonon_modes(get_test_qpts(),
                                              eta_scale=0.9)
 
-    def test_calc_qpt_ph_modes_with_large_complex_mode_gradients_raises_warning(
+    def test_calc_qpt_ph_modes_w_large_complex_mode_gradients_raises_warning(
             self, mocker):
         # Mock force constants to return nonsense gradients with high
         # imaginary terms
@@ -342,6 +338,7 @@ class TestForceConstantsCalculateQPointPhononModesWithoutCExtensionInstalled:
         # Mock import of euphonic._euphonic to raise ImportError
         import builtins
         real_import = builtins.__import__
+
         def mocked_import(name, *args, **kwargs):
             if name == 'euphonic._euphonic':
                 raise ImportError
@@ -407,7 +404,8 @@ class TestForceConstantsCalculateQPointPhononModesWithCExtensionInstalled:
         fc.calculate_qpoint_phonon_modes(get_test_qpts())
         assert mocked_cext.call_args[0][-1] == n_threads
 
-    def test_cext_called_with_n_threads_default_and_no_env_var(self, mocked_cext):
+    def test_cext_called_with_n_threads_default_and_no_env_var(
+            self, mocked_cext):
         n_threads = cpu_count()
         try:
             os.environ.pop('EUPHONIC_NUM_THREADS')
@@ -416,4 +414,3 @@ class TestForceConstantsCalculateQPointPhononModesWithCExtensionInstalled:
         fc = get_fc('quartz')
         fc.calculate_qpoint_phonon_modes(get_test_qpts())
         assert mocked_cext.call_args[0][-1] == n_threads
-

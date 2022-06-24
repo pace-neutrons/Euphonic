@@ -6,8 +6,8 @@ import numpy.testing as npt
 
 from euphonic import ForceConstants, ureg
 from euphonic.util import mp_grid
-from tests_and_analysis.test.utils import (get_castep_path, get_test_qpts,
-    sum_at_degenerate_modes)
+from tests_and_analysis.test.utils import (
+    get_castep_path, get_test_qpts, sum_at_degenerate_modes)
 from tests_and_analysis.test.euphonic_test.test_qpoint_frequencies import (
     check_qpt_freqs, get_expected_qpt_freqs)
 from tests_and_analysis.test.euphonic_test.test_force_constants import (
@@ -24,7 +24,7 @@ class TestForceConstantsCalculateQPointFrequencies:
         (get_lzo_fc(), 'LZO',
          [get_test_qpts(), {}], 'LZO_no_asr_qpoint_frequencies.json'),
         (get_lzo_fc(), 'LZO',
-         [get_test_qpts(), {'asr':'realspace'}],
+         [get_test_qpts(), {'asr': 'realspace'}],
          'LZO_realspace_qpoint_frequencies.json')]
 
     def get_quartz_fc():
@@ -87,19 +87,19 @@ class TestForceConstantsCalculateQPointFrequencies:
 
     @pytest.mark.parametrize(
         ('fc, material, all_args, expected_qpoint_frequencies_file, '
-         'expected_modg_file'), [
-        (get_quartz_fc(),
-         'quartz',
-         [mp_grid([5, 5, 4]),
-          {'return_mode_gradients': True}],
-         'quartz_554_full_qpoint_frequencies.json',
-         'quartz_554_full_mode_gradients.json'),
-        (get_lzo_fc(),
-         'LZO',
-         [mp_grid([2, 2, 2]),
-          {'asr': 'reciprocal', 'return_mode_gradients': True}],
-         'lzo_222_full_qpoint_frequencies.json',
-         'lzo_222_full_mode_gradients.json')])
+         'expected_modg_file'),
+        [(get_quartz_fc(),
+          'quartz',
+          [mp_grid([5, 5, 4]),
+           {'return_mode_gradients': True}],
+          'quartz_554_full_qpoint_frequencies.json',
+          'quartz_554_full_mode_gradients.json'),
+         (get_lzo_fc(),
+          'LZO',
+          [mp_grid([2, 2, 2]),
+           {'asr': 'reciprocal', 'return_mode_gradients': True}],
+          'lzo_222_full_qpoint_frequencies.json',
+          'lzo_222_full_mode_gradients.json')])
     @pytest.mark.parametrize(
         'n_threads',
         [0, 2])
@@ -136,19 +136,19 @@ class TestForceConstantsCalculateQPointFrequencies:
 
     @pytest.mark.parametrize(
         ('fc, material, all_args, expected_qpoint_frequencies_file, '
-         'expected_modw_file'), [
-        (get_quartz_fc(),
-         'quartz',
-         [mp_grid([5, 5, 4]),
-          {'return_mode_widths': True}],
-         'quartz_554_full_qpoint_frequencies.json',
-         'quartz_554_full_mode_widths.json'),
-        (get_lzo_fc(),
-         'LZO',
-         [mp_grid([2, 2, 2]),
-          {'asr': 'reciprocal', 'return_mode_widths': True}],
-         'lzo_222_full_qpoint_frequencies.json',
-         'lzo_222_full_mode_widths.json')])
+         'expected_modw_file'),
+        [(get_quartz_fc(),
+          'quartz',
+          [mp_grid([5, 5, 4]),
+           {'return_mode_widths': True}],
+          'quartz_554_full_qpoint_frequencies.json',
+          'quartz_554_full_mode_widths.json'),
+         (get_lzo_fc(),
+          'LZO',
+          [mp_grid([2, 2, 2]),
+           {'asr': 'reciprocal', 'return_mode_widths': True}],
+          'lzo_222_full_qpoint_frequencies.json',
+          'lzo_222_full_mode_widths.json')])
     @pytest.mark.parametrize(
         'n_threads',
         [0, 2])
