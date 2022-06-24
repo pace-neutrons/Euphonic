@@ -209,15 +209,17 @@ class QpointPhononModes(QpointFrequencies):
 
         This method calculates the mode-resolved (not binned in energy)
         coherent one-phonon neutron scattering function
-        :math:`S(Q, \\omega_{q\\nu})` **per atom**, as defined in [1]_:
+        :math:`S(Q, \\omega_{\\mathbf{q}\\nu})` **per atom**, as defined in
+        [1]_:
 
         .. math::
 
-          S(Q, \\omega_{q\\nu}) =
+          S(Q, \\omega_{\\mathbf{q}\\nu}) =
               \\frac{1}{2N_{atom}} \\
               \\left\\lvert
-              {\\sum_{\\kappa}{\\frac{b_\\kappa}{M_{\\kappa}^{1/2}{\\omega_{\\textbf{q}\\nu}^{1/2}}}
-              (\\mathbf{Q}\\cdot \\mathbf{e}_{\\mathbf{q}\\nu\\kappa})e^{i\\textbf{Q}{\\cdot}\\mathbf{r}_{\\kappa}}e^{-\\mathbf{W}_{\\kappa}}}}
+              {\\sum_{\\kappa}{\\frac{b_\\kappa}{M_{\\kappa}^{1/2}{\\omega_{\\mathbf{q}\\nu}^{1/2}}}
+              (\\mathbf{Q}\\cdot \\mathbf{e}_{\\mathbf{q}\\nu\\kappa})\\exp\\left(i\\mathbf{Q}{\\cdot}\\mathbf{r}_{\\kappa}\\right)
+              \\exp\\left(-W_{\\kappa}\\right)}}
               \\right\\rvert^2
 
         Where :math:`\\nu` runs over phonon modes, :math:`\\kappa` runs
@@ -226,8 +228,8 @@ class QpointPhononModes(QpointFrequencies):
         :math:`r_{\\kappa}` is the vector from the origin to atom
         :math:`\\kappa` in the unit cell,
         :math:`\\mathbf{e}_{\\mathbf{q}\\nu\\kappa}` are the normalised
-        Cartesian eigenvectors, :math:`\\omega_{\\textbf{q}\\nu}` are
-        the frequencies and :math:`e^{-\\mathbf{W}_\\kappa}` is the
+        Cartesian eigenvectors, :math:`\\omega_{\\mathbf{q}\\nu}` are
+        the frequencies and :math:`\\exp\\left(-W_\\kappa\\right)` is the
         Debye-Waller factor. :math:`N_{atom}` is the number of atoms in
         the unit cell, so the returned structure factor is **per atom**
         of sample.
@@ -319,23 +321,29 @@ class QpointPhononModes(QpointFrequencies):
         Returns
         -------
         dw
-            An object containing the 3x3 Debye-Waller exponent for each
-            atom
+            An object containing the 3x3 Debye-Waller exponent matrix
+            for each atom
 
         Notes
         -----
 
-        As part of the structure factor calculation, the anisotropic
-        Debye-Waller factor is defined as:
+        As part of the structure factor calculation,
+        :math:`\\exp\\left(W_\\kappa\\right)` is the anisotropic
+        Debye-Waller factor for atom :math:`\\kappa`, and the exponent can
+        be written as:
 
         .. math::
 
-          e^{-\\textbf{W}_\\kappa} = e^{-\\sum\\limits_{\\alpha\\beta}{W^{\\alpha\\beta}_{\\kappa}Q_{\\alpha}Q_{\\beta}}}
+          W_\\kappa =
+            \\sum\\limits_{\\alpha\\beta}W^{\\alpha\\beta}_{\\kappa}
+              Q_{\\alpha}Q_{\\beta}
 
-        The Debye-Waller exponent is defined as
-        :math:`\\textbf{W}_{\\kappa}` and is independent of Q, so
-        for efficiency can be precalculated to be used in the structure
-        factor calculation. The Debye-Waller exponent is calculated by [2]_:
+        This function calculates the :math:`W^{\\alpha\\beta}_{\\kappa}`
+        part of the exponent, which is  a
+        :math:`N_\\mathrm{atom}\\times3\\times3` matrix that is
+        independent of Q, so for efficiency can be precalculated to be
+        used in the structure factor calculation. The Debye-Waller
+        exponent matrix is calculated by [2]_:
 
         .. math::
 
@@ -343,16 +351,17 @@ class QpointPhononModes(QpointFrequencies):
           \\frac{\\hbar}{4M_{\\kappa}\\sum\\limits_{\mathbf{q}}{\\mathrm{weight}_\mathbf{q}}}
           \\sum\\limits_{\mathbf{q}\\nu \in{BZ}}\\mathrm{weight}_\mathbf{q}\\frac{e_{\mathbf{q}\\nu\\kappa\\alpha}e^{*}_{\mathbf{q}\\nu\\kappa\\beta}}
           {\\omega_{\mathbf{q}\\nu}}
-          \\mathrm{coth}(\\frac{\\hbar\\omega_{\mathbf{q}\\nu}}{2k_BT})
+          \\mathrm{coth}\\left(\\frac{\\hbar\\omega_{\mathbf{q}\\nu}}{2k_BT}\\right)
 
         Where the sum is over q-points and modes :math:`\\nu` in the
         first Brillouin Zone (BZ), :math:`\\kappa` runs over atoms,
         :math:`\\alpha,\\beta` run over the Cartesian directions,
         :math:`M_{\\kappa}` is the atom mass,
-        :math:`\\mathbf{\\epsilon}_{q\\nu\\kappa}` are the eigenvectors,
-        :math:`\\omega_{q\\nu}` are the frequencies, and
-        :math:`weight_q` is the per q-point symmetry weight (if the
-        q-points are not symmetry-reduced, all weights will be equal).
+        :math:`e_{q\\nu\\kappa\\alpha}` are the scalar components of the
+        normalised Cartesian eigenvectors, :math:`\\omega_{\\mathbf{q}\\nu}`
+        are the frequencies, and :math:`\\mathrm{weight}_\\mathbf{q}`
+        is the per q-point symmetry weight (if the q-points are not
+        symmetry-reduced, all weights will be equal).
 
         .. [2] G.L. Squires, Introduction to the Theory of Thermal Neutron Scattering, Dover Publications, New York, 1996, 34-37
         """

@@ -300,9 +300,9 @@ class ForceConstants:
 
         .. math::
 
-          \sum_{\\kappa^\\prime \\alpha^\\prime}D_{\\alpha {\\alpha^\\prime}}^{\\kappa {\\kappa^\\prime}}(\\mathbf{q}) =
+          D_{\\alpha {\\alpha^\\prime}}^{\\kappa {\\kappa^\\prime}}(\\mathbf{q}) =
           \\frac{1}{\\sqrt{M_\\kappa M_{\\kappa^\\prime}}}
-          \\sum_{l}\\Phi_{\\alpha {\\alpha^\\prime}}^{\\kappa {\\kappa^\\prime}}e^{-i\\mathbf{q}\\cdot \\mathbf{R}_l}
+          \\sum_{l}\\Phi_{\\alpha {\\alpha^\\prime}}^{\\kappa {\\kappa^\\prime}}\\exp\\left(-i\\mathbf{q}\\cdot \\mathbf{R}_l\\right)
 
         where :math:`M_\\kappa` is the mass of atom :math:`\\kappa`,
         :math:`\\mathbf{R}_l` is the vector from the origin to the

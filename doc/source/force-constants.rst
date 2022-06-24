@@ -43,9 +43,9 @@ This is calculated by taking a Fourier transform of the force constants matrix
 
 .. math::
 
-  D_{\alpha {\alpha}'}^{\kappa {\kappa}'}(\mathbf{q}) =
-  \frac{1}{\sqrt{M_\kappa M_{\kappa '}}}
-  \sum_{l}\Phi_{\alpha {\alpha}'}^{\kappa {\kappa}'}e^{-i\mathbf{q}\cdot \mathbf{R}_l}
+  D_{\alpha {\alpha^\prime}}^{\kappa {\kappa^\prime}}(\mathbf{q}) =
+  \frac{1}{\sqrt{M_\kappa M_{\kappa^\prime}}}
+  \sum_{l}\Phi_{\alpha {\alpha^\prime}}^{\kappa {\kappa^\prime}}\exp\left(-i\mathbf{q}\cdot \mathbf{R}_l\right)
 
 The :math:`\mathbf{q}\cdot \mathbf{R}_l` component is the phase, and in Euphonic's convention :math:`\mathbf{R}_l` is defined as the vector from the origin to the origin coordinate of the :math:`l^\textrm{th}` unit cell in the supercell.
 For this reason the cell origin coordinates are required as input to create a :py:attr:`ForceConstants <euphonic.force_constants.ForceConstants>` object.
