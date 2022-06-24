@@ -392,7 +392,7 @@ class ForceConstants:
 
           \\frac{dD_{\\alpha {\\alpha}^\\prime}^{\\kappa {\\kappa}^\\prime}}{d\\mathbf{q}} =
           \\frac{-i \mathbf{R}_l}{\\sqrt{M_\\kappa M_{\\kappa ^\\prime}}}
-          \\sum_{l}\\Phi_{\\alpha\\alpha^\\prime}^{\\kappa\\kappa^\\prime}e^{-i\\mathbf{q}\\cdot \mathbf{R}_l}
+          \\sum_{l}\\Phi_{\\alpha\\alpha^\\prime}^{\\kappa\\kappa^\\prime}\\exp\\left(-i\\mathbf{q}\\cdot \mathbf{R}_l\\right)
 
         .. [3] J. R. Yates, X. Wang, D. Vanderbilt and I. Souza, Phys. Rev. B, 2007, 75, 195121
         """
