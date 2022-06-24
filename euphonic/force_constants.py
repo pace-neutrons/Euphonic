@@ -265,7 +265,7 @@ class ForceConstants:
             object
         mode_gradients
             Optional shape (n_qpts, n_branches, 3) float Quantity,
-            the vector mode gradients dw/dQ in Cartesian coordinates.
+            the vector mode gradients dw/dq in Cartesian coordinates.
             Is only returned if return_mode_gradients is true
 
 
@@ -285,34 +285,46 @@ class ForceConstants:
 
         .. math::
 
-          \\phi_{\\alpha, {\\alpha}'}^{\\kappa, {\\kappa}'} =
-          \\frac{\\delta^{2}E}{{\\delta}u_{\\kappa,\\alpha}{\\delta}u_{{\\kappa}',{\\alpha}'}}
+          \\Phi_{\\alpha {\\alpha}^\\prime}^{\\kappa {\\kappa}^\\prime}(0,l) =
+          \\frac{\\partial^{2}E}{{\\partial}u_{\\kappa\\alpha0}{\\partial}u_{{{\\kappa}^\\prime}{{\\alpha}^\\prime}l}}
 
-        Which gives the Dynamical matrix at q:
+        where the unit cell containing the displaced atom is labelled
+        :math:`0` and :math:`l` runs over unit cells in the crystal,
+        :math:`\\kappa` runs over atoms in the unit cell, :math:`\\alpha`
+        runs over the Cartesian directions, and :math:`u_{\\kappa{\\alpha}l}`
+        is the displacement of atom :math:`\\kappa` in cell :math:`l` in
+        direction :math:`\\alpha` from its equilibrium position. This can be
+        used to calculate the dynamical matrix
+        :math:`D_{\\alpha {\\alpha}^\\prime}^{\\kappa {\\kappa}^\\prime}` at
+        :math:`\mathbf{q}`:
 
         .. math::
 
-          D_{\\alpha, {\\alpha}'}^{\\kappa, {\\kappa}'}(q) =
-          \\frac{1}{\\sqrt{M_\\kappa M_{\\kappa '}}}
-          \\sum_{a}\\phi_{\\alpha, \\alpha '}^{\\kappa, \\kappa '}e^{-iq\\cdot r_a}
+          D_{\\alpha {\\alpha^\\prime}}^{\\kappa {\\kappa^\\prime}}(\\mathbf{q}) =
+          \\frac{1}{\\sqrt{M_\\kappa M_{\\kappa^\\prime}}}
+          \\sum_{l}\\Phi_{\\alpha {\\alpha^\\prime}}^{\\kappa {\\kappa^\\prime}}\\exp\\left(-i\\mathbf{q}\\cdot \\mathbf{R}_l\\right)
 
-        The eigenvalue equation for the dynamical matrix is then:
+        where :math:`M_\\kappa` is the mass of atom :math:`\\kappa`,
+        :math:`\\mathbf{R}_l` is the vector from the origin to the
+        :math:`l^\\textrm{th}` unit cell. The eigenvalue equation
+        for the dynamical matrix is then:
 
         .. math::
 
-          D_{\\alpha, {\\alpha}'}^{\\kappa, {\\kappa}'}(q) \\epsilon_{q\\nu\\kappa\\alpha} =
-          \\omega_{q\\nu}^{2} \\epsilon_{q\\nu\\kappa\\alpha}
+          \sum_{\\kappa^\\prime \\alpha^\\prime}D_{\\alpha {\\alpha}^\\prime}^{\\kappa {\\kappa}^\\prime}(\\mathbf{q}) {e}_{\\mathbf{q}\\nu{\\kappa^\\prime}{\\alpha^\\prime}} =
+          {\\omega}_{\\mathbf{q}\\nu}^2 {e}_{\\mathbf{q}\\nu\\kappa\\alpha}
 
-        Where :math:`\\nu` runs over phonon modes, :math:`\\kappa` runs
-        over atoms, :math:`\\alpha` runs over the Cartesian directions,
-        :math:`a` runs over unit cells in the supercell,
-        :math:`u_{\\kappa, \\alpha}` is the displacement of atom
-        :math:`\\kappa` in direction :math:`\\alpha`,
-        :math:`M_{\\kappa}` is the mass of atom :math:`\\kappa`,
-        :math:`r_{a}` is the vector to the origin of cell :math:`a` in
-        the supercell, :math:`\\epsilon_{q\\nu\\kappa\\alpha}` are the
-        eigevectors, and :math:`\\omega_{q\\nu}^{2}` are the frequencies
-        squared.
+        where the eigenvalues :math:`{\\omega}_{\\mathbf{q}\\nu}^2` are the
+        square of the phonon frequencies of mode :math:`\\nu` at
+        :math:`\\mathbf{q}`, and the eigenvectors
+        :math:`\\mathbf{e}_{\\mathbf{q}\\nu\\kappa}` are the phonon
+        polarisation vectors at :math:`\\mathbf{q}` of mode :math:`\\nu`
+        for atom :math:`\\kappa`. The produced eigenvectors are normalised
+        such that:
+
+        .. math::
+
+          \\sum_{\\kappa}{|\\mathbf{e}_{\\mathbf{q}\\nu\\kappa}|^2} = 1
 
         In polar materials, there is an additional long-ranged
         correction to the force constants matrix (applied if
@@ -330,8 +342,8 @@ class ForceConstants:
         width. The mode widths are proportional to the mode gradients and
         can be estimated using ``euphonic.util.mode_gradients_to_widths``
 
-        The mode gradients :math:`\\frac{d\\omega_{q\\nu}}{dQ}` at each Q
-        are calculated as the same time as the phonon frequencies and
+        The mode gradients :math:`\\frac{d\\omega_{\\mathbf{q}\\nu}}{d\\mathbf{q}}` at each :math:`\mathbf{q}`
+        are calculated at the same time as the phonon frequencies and
         eigenvectors as follows.
 
         Firstly, the eigenvalue equation above can be written in matrix
@@ -339,29 +351,29 @@ class ForceConstants:
 
         .. math::
 
-          E(q)\\Omega(q) = D(q)E(q)
+          E(\\mathbf{q})\\Omega(\\mathbf{q}) = D(\\mathbf{q})E(\\mathbf{q})
 
         .. math::
 
-          \\Omega(q) = E^{-1}(q)D(q)E(q)
+          \\Omega(\\mathbf{q}) = E^{-1}(\\mathbf{q})D(\\mathbf{q})E(\\mathbf{q})
 
-        Where :math:`\\Omega(q)` is the diagonal matrix of phonon
-        frequencies squared :math:`\\omega_{q\\nu}^{2}` and :math:`E(q)`
+        Where :math:`\\Omega(\\mathbf{q})` is the diagonal matrix of phonon
+        frequencies squared :math:`\\omega_{\\mathbf{q}\\nu}^{2}` and :math:`E(\\mathbf{q})`
         is the matrix containing eigenvectors for all modes.
-        :math:`\\frac{d\\omega_{q\\nu}}{dQ}`, can then
+        :math:`\\frac{d\\omega_{\\mathbf{q}\\nu}}{d\mathbf{q}}`, can then
         be obtained by differentiating the above equation with respect
-        to Q using the product rule:
+        to :math:`\mathbf{q}` using the product rule:
 
         .. math::
 
-          \\frac{d\\Omega}{dQ} = 2\\omega_{q\\nu}\\frac{d\\omega_{q\\nu}}{dQ}\\delta_{\\nu, \\nu^{\\prime}}
+          \\frac{d\\Omega}{d\\mathbf{q}} = 2\\omega_{\\mathbf{q}\\nu}\\frac{d\\omega_{\\mathbf{q}\\nu}}{d\\mathbf{q}}\\delta_{\\nu \\nu^{\\prime}}
 
         .. math::
 
-          \\frac{d\\omega_{q\\nu}}{dQ} = \\frac{1}{2\\omega_{q\\nu}}{(
-          \\frac{d{E^{-1}}}{dQ}DE +
-          E^{-1}\\frac{dD}{dQ}E +
-          E^{-1}D\\frac{dE}{dQ})}
+          \\frac{d\\omega_{\\mathbf{q}\\nu}}{d\\mathbf{q}} = \\frac{1}{2\\omega_{\\mathbf{q}\\nu}}{(
+          \\frac{d{E^{-1}}}{d\\mathbf{q}}DE +
+          E^{-1}\\frac{dD}{d\\mathbf{q}}E +
+          E^{-1}D\\frac{dE}{d\\mathbf{q}})}
 
         Given that eigenvectors are normalised and orthogonal, an identity can be employed:
 
@@ -373,14 +385,14 @@ class ForceConstants:
 
         .. math::
 
-         \\frac{d\\omega_{q\\nu}}{dQ} = \\frac{1}{2\\omega_{q\\nu}}{(E^{-1}\\frac{dD}{dQ}E)}
-        :math:`\\frac{dD}{dQ}` can be obtained by differentiating the Fourier equation above:
+         \\frac{d\\omega_{\\mathbf{q}\\nu}}{d\\mathbf{q}} = \\frac{1}{2\\omega_{\\mathbf{q}\\nu}}{(E^{-1}\\frac{dD}{d\\mathbf{q}}E)}
+        :math:`\\frac{dD}{d\\mathbf{q}}` can be obtained by differentiating the Fourier equation above:
 
         .. math::
 
-          \\frac{dD}{dQ} =
-          \\frac{-i r_a}{\\sqrt{M_\\kappa M_{\\kappa '}}}
-          \\sum_{a}\\phi_{\\alpha, \\alpha '}^{\\kappa, \\kappa '}e^{-iq\\cdot r_a}
+          \\frac{dD_{\\alpha {\\alpha}^\\prime}^{\\kappa {\\kappa}^\\prime}}{d\\mathbf{q}} =
+          \\frac{-i \mathbf{R}_l}{\\sqrt{M_\\kappa M_{\\kappa ^\\prime}}}
+          \\sum_{l}\\Phi_{\\alpha\\alpha^\\prime}^{\\kappa\\kappa^\\prime}\\exp\\left(-i\\mathbf{q}\\cdot \mathbf{R}_l\\right)
 
         .. [3] J. R. Yates, X. Wang, D. Vanderbilt and I. Souza, Phys. Rev. B, 2007, 75, 195121
         """
