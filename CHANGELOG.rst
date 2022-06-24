@@ -20,10 +20,11 @@
     coordinates (Euphonic, CASTEP-like).
 
   - When importing q-point modes or frequencies from a CASTEP .phonon
-    file, a new option allows repeated entries (with the same q-point
-    index) to be identified and their weights divided down by the
-    number of entries. This option should give better statistics for
-    sampling meshes that include the Gamma-point with LO-TO splitting.
+    file, a new option (``average_repeat_points=True``) allows
+    repeated entries (with the same q-point index) to be identified
+    and their weights divided down by the number of entries. This
+    option should give better statistics for sampling meshes that
+    include the Gamma-point with LO-TO splitting.
 
 - Improvements:
 
