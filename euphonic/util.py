@@ -141,7 +141,8 @@ def get_qpoint_labels(qpts: np.ndarray,
                       ) -> List[Tuple[int, str]]:
     """
     Gets q-point labels (e.g. GAMMA, X, L) for the q-points at which the
-    path through reciprocal space changes direction
+    path through reciprocal space changes direction, or where a point
+    appears twice in succession.
 
     Parameters
     ----------
