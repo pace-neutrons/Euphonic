@@ -31,6 +31,16 @@
   - Documentation on the shape and format of the force constants, and how to
     read them from other programs has been improved.
 
+  - The ``euphonic.util.get_qpoint_labels`` function, which is called when
+    importing band-structure data to identify and label significant points,
+    primarily identifies these points by searching for turning-points
+    in the band path. The function will now also pick up any q-point
+    that appears twice in succession. This is a common convention in
+    band-structure calculations and helps with edge-cases such as when
+    the path passes through a high-symmetry point without changing
+    direction. This may pick up some previously-missing points in
+    band-structure plots generated with ``euphonic-dispersion`` and
+    ``euphonic-intensity-map``
 
 - Bug fixes:
 
