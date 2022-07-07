@@ -1,9 +1,12 @@
-`Unreleased <https://github.com/pace-neutrons/Euphonic/compare/v0.6.4...HEAD>`_
+`Unreleased <https://github.com/pace-neutrons/Euphonic/compare/v0.6.5...HEAD>`_
 ----------
+
+`v0.6.5 <https://github.com/pace-neutrons/Euphonic/compare/v0.6.4...v0.6.5>`_
+------
 
 - New Features:
 
-  - Kinematic constraints have been implemented for 2-D S(q,ω)-like data.
+  - Kinematic constraints have been implemented for 2-D S(q,w)-like data.
 
     - A function ``euphonic.spectra.apply_kinematic_constraints(Spectrum2d, **kwargs) -> Spectrum2D``
       is implemented which masks out inaccessible data, replacing it with NaN.

@@ -31,8 +31,8 @@ authors:
     orcid: https://orcid.org/0000-0001-5716-7184
 title: "Euphonic"
 doi: 10.5286/SOFTWARE/EUPHONIC
-version: 0.6.4
-date-released: 2022-03-01
+version: 0.6.5
+date-released: 2022-07-07
 license: GPL-3.0-only
 repository-code: https://github.com/pace-neutrons/Euphonic
 url: https://euphonic.readthedocs.io
