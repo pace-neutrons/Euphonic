@@ -3,6 +3,7 @@ name: Build and upload PyPI wheels and source dist
 on:
   release:
     types: [published]
+  push:
 
 jobs:
   build:
@@ -37,8 +38,9 @@ jobs:
       fail-fast: false
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
+          ref: v0.6.5
           fetch-depth: 0 # Ensure tags are fetched for versioning
       - name: Setup Python ${{ matrix.python-version }}
         uses: actions/setup-python@v1
