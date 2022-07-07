@@ -65,7 +65,7 @@ jobs:
 
       - name: Build manylinux Python wheel
         if: matrix.os == 'ubuntu-latest'
-        uses: RalfG/python-wheels-manylinux-build@v0.4.2-manylinux2014_x86_64
+        uses: RalfG/python-wheels-manylinux-build@v0.3.4-manylinux2010_x86_64
         with:
           python-versions: ${{ matrix.manylinux-version-tag }}
           build-requirements: numpy==${{ matrix.numpy-version }}
