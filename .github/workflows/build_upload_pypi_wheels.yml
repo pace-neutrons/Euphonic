@@ -42,6 +42,8 @@ jobs:
         with:
           ref: v0.6.5
           fetch-depth: 0 # Ensure tags are fetched for versioning
+      - name: Fix git ownership for manylinux builds, see https://github.com/pypa/manylinux/issues/1309
+        run: git config --global --add safe.directory "*"
       - name: Setup Python ${{ matrix.python-version }} with Conda
         uses: conda-incubator/setup-miniconda@v2
         with:
