@@ -10,7 +10,6 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest]
-        architecture: [x64]
         python-version: ['3.6', '3.7', '3.8', '3.9', '3.10']
         include:
           - os: windows-latest
@@ -21,19 +20,19 @@ jobs:
             wheelname: manylinux
           # Build wheels against the lowest compatible Numpy version
           - python-version: 3.6
-            manylinux-version-tag: cp36-cp36m
+            manylinux-version-tag: cp36
             numpy-version: 1.12.1
           - python-version: 3.7
-            manylinux-version-tag: cp37-cp37m
+            manylinux-version-tag: cp37
             numpy-version: 1.14.6
           - python-version: 3.8
-            manylinux-version-tag: cp38-cp38
+            manylinux-version-tag: cp38
             numpy-version: 1.17.3
           - python-version: 3.9
-            manylinux-version-tag: cp39-cp39
+            manylinux-version-tag: cp39
             numpy-version: 1.19.3
           - python-version: 3.10
-            manylinux-version-tag: cp310-cp310
+            manylinux-version-tag: cp310
             numpy-version: 1.21.3
       fail-fast: false
     runs-on: ${{ matrix.os }}
@@ -42,8 +41,6 @@ jobs:
         with:
           ref: v0.6.5
           fetch-depth: 0 # Ensure tags are fetched for versioning
-      - name: Fix git ownership for manylinux builds, see https://github.com/pypa/manylinux/issues/1309
-        run: git config --global --add safe.directory "*"
       - name: Setup Python ${{ matrix.python-version }} with Conda
         uses: conda-incubator/setup-miniconda@v2
         with:
@@ -55,6 +52,7 @@ jobs:
       - name: Install llvm on Macos
         if: startsWith(matrix.os, 'macos')
         run: brew install llvm
+
       - name: Build Python wheel
         if: matrix.os != 'ubuntu-latest'
         shell: bash -l {0}
@@ -67,11 +65,13 @@ jobs:
 
       - name: Build manylinux Python wheel
         if: matrix.os == 'ubuntu-latest'
-        uses: RalfG/python-wheels-manylinux-build@v0.3.4-manylinux2010_x86_64
+        uses: pypa/cibuildwheel@v2.8.0
+        env:
+          CIBW_BUILD: ${{ matrix.manylinux-version-tag}}-manylinux*
+          CIBW_BEFORE_BUILD: python -mpip install numpy==${{ matrix.numpy-version }}
+          CIBW_ARCHS: x86_64
         with:
-          python-versions: ${{ matrix.manylinux-version-tag }}
-          build-requirements: numpy==${{ matrix.numpy-version }}
-          pip-wheel-args: '--no-deps -w wheelhouse'
+          output-dir: wheelhouse
 
       - name: Create source distribution
         if: matrix.os == 'windows-latest' && matrix.python-version == '3.10'
