@@ -15,8 +15,6 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v3
-        with:
-          ref: v${{ github.event.inputs.version }}
       - uses: conda-incubator/setup-miniconda@v2
         with:
           python-version: 3.6
