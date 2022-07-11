@@ -125,7 +125,7 @@ def read_phonon_data(
         atom_mass_unit: str = 'amu',
         frequencies_unit: str = 'meV',
         read_eigenvectors: bool = True,
-        average_repeat_points: bool = False) -> Dict[str, Any]:
+        average_repeat_points: bool = True) -> Dict[str, Any]:
     """
     Reads data from a .phonon file and returns it in a dictionary
 

@@ -652,7 +652,7 @@ class QpointPhononModes(QpointFrequencies):
 
     @classmethod
     def from_castep(cls: Type[T], filename: str,
-                    average_repeat_points: bool = False) -> T:
+                    average_repeat_points: bool = True) -> T:
         """
         Reads precalculated phonon mode data from a CASTEP .phonon file
 
