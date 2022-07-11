@@ -18,32 +18,6 @@ import euphonic.util
 Unit = ureg.Unit
 
 
-def force_constants_from_file(filename: Union[str, os.PathLike]
-                              ) -> ForceConstants:
-    warnings.warn('force_constants_from_file has been deprecated '
-                  'and will be removed in a future release. Please '
-                  'use load_data_from_file instead',
-                  category=DeprecationWarning,
-                  stacklevel=2)
-    data = load_data_from_file(filename)
-    if not isinstance(data, ForceConstants):
-        raise TypeError('File does not contain force constants')
-    return data
-
-
-def modes_from_file(filename: Union[str, os.PathLike]
-                    ) -> Union[QpointPhononModes, QpointFrequencies]:
-    warnings.warn('modes_from_file has been deprecated '
-                  'and will be removed in a future release. Please '
-                  'use load_data_from_file instead',
-                  category=DeprecationWarning,
-                  stacklevel=2)
-    data = load_data_from_file(filename)
-    if not isinstance(data, QpointFrequencies):
-        raise TypeError('File does not contain phonon modes')
-    return data
-
-
 def _load_euphonic_json(filename: Union[str, os.PathLike],
                         frequencies_only: bool = False
                         ) -> Union[QpointPhononModes, QpointFrequencies,
@@ -598,12 +572,6 @@ def _get_cli_parser(features: Collection[str] = {}
         if 'ins-weighting' in features:
             _weighting_choices += _ins_choices
             desc += ', coherent inelastic neutron scattering'
-            # --weights was deprecated before dos-weighting was added so
-            # keep in this section
-            sections['property'].add_argument(
-                '--weights', default='dos', choices=_weighting_choices,
-                action=deprecated_arg('weighting'),
-                help=deprecation_text('weights', 'weighting'))
             sections['property'].add_argument(
                 '--weighting', '-w', default='dos', choices=_weighting_choices,
                 help=(f'Spectral weighting to plot: {desc}'))
