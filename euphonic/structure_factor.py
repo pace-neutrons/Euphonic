@@ -197,21 +197,21 @@ class StructureFactor(QpointFrequencies):
         Notes
         -----
         StructureFactor.structure_factors is defined as the mode-resolved
-        :math:`S(Q, \\omega_{q\\nu})` per atom of sample. To create
+        :math:`S(Q, \\omega_{\\mathbf{q}\\nu})` per atom of sample. To create
         an :math:`S(Q,\\omega)` map, it is binned in :math:`\\omega`
-        and the Bose factor is applied [1]_:
+        and the Bose population factor is applied [1]:
 
         .. math::
 
-          S(Q, \\omega) = S(Q, \\omega_{q\\nu}) \\
+          S(Q, \\omega) = S(Q, \\omega_{\\mathbf{q}\\nu}) \\
           (n_\\nu+\\frac{1}{2}\\pm\\frac{1}{2}) \\
-          \\delta(\\omega\\mp\\omega_{q\\nu})
+          \\delta(\\omega\\mp\\omega_{\\mathbf{q}\\nu})
 
-        :math:`n_\\nu` is the Bose-Einstein distribution:
+        :math:`n_\\nu` is the Planck distribution function:
 
         .. math::
 
-          n_\\nu = \\frac{1}{e^{\\frac{\\omega_{q\\nu}}{k_{B}T}} - 1}
+          n_\\nu = \\frac{1}{\exp{\\frac{\\hbar\\omega_{\\mathbf{q}\\nu}}{k_{B}T}} - 1}
 
         .. [1] M.T. Dove, Structure and Dynamics, Oxford University Press,
                Oxford, 2003, 225-226

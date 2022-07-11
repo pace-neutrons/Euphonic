@@ -1,28 +1,5 @@
-`Unreleased <https://github.com/pace-neutrons/Euphonic/compare/v0.6.4...HEAD>`_
+`Unreleased <https://github.com/pace-neutrons/Euphonic/compare/v0.6.5...HEAD>`_
 ----------
-
-- New Features:
-
-  - Kinematic constraints have been implemented for 2-D S(q,ω)-like data.
-
-    - A function ``euphonic.spectra.apply_kinematic_constraints(Spectrum2d, **kwargs) -> Spectrum2D``
-      is implemented which masks out inaccessible data, replacing it with NaN.
-    - Both direct-geometry and indirect-geometry are supported, by
-      using the appropriate argument to set incident or final neutron energy.
-    - This function is exposed to the ``euphonic-powder-map`` tool, so these
-      plots can be produced directly from the CLI.
-    - Some parameters from real-world instruments are collected in the
-      documentation for convenience.
-
-  - There is a new function ``euphonic.util.convert_fc_phases``, which converts
-    a force constants matrix which uses the atom coordinates in the phase
-    during interpolation (Phonopy-like), to one which uses the cell origin
-    coordinates (Euphonic, CASTEP-like).
-
-- Improvements:
-
-  - Documentation on the shape and format of the force constants, and how to
-    read them from other programs has been improved.
 
 - Changes:
 
@@ -40,13 +17,6 @@
     - Calling ``broaden`` on a ``Spectrum`` with uneven bin widths without
       specifying the ``method='convolve'`` argument will now raise a ``ValueError``
 
-- Bug fixes:
-
-  - Allow read of ``phonopy.yaml`` quantities in ``'au'`` (bohr) units.
-    Previously this was interpreted as an astronomical unit by Pint.
-
-- Changes:
-
   - DOS and PDOS calculated by the ``calculate_dos`` and
     ``calculate_dos_map`` methods of ``QpointPhononModes`` and
     ``QpointFrequencies``, and ``QpointPhononModes.calculate_pdos`` are
@@ -55,6 +25,55 @@
     the structure factors calculated by
     ``QpointPhononModes.calculate_structure_factor`` which are calculated
     per atom.
+
+`v0.6.5 <https://github.com/pace-neutrons/Euphonic/compare/v0.6.4...v0.6.5>`_
+------
+
+- New Features:
+
+  - Kinematic constraints have been implemented for 2-D S(q,w)-like data.
+
+    - A function ``euphonic.spectra.apply_kinematic_constraints(Spectrum2d, **kwargs) -> Spectrum2D``
+      is implemented which masks out inaccessible data, replacing it with NaN.
+    - Both direct-geometry and indirect-geometry are supported, by
+      using the appropriate argument to set incident or final neutron energy.
+    - This function is exposed to the ``euphonic-powder-map`` tool, so these
+      plots can be produced directly from the CLI.
+    - Some parameters from real-world instruments are collected in the
+      documentation for convenience.
+
+  - There is a new function ``euphonic.util.convert_fc_phases``, which converts
+    a force constants matrix which uses the atom coordinates in the phase
+    during interpolation (Phonopy-like), to one which uses the cell origin
+    coordinates (Euphonic, CASTEP-like).
+
+  - When importing q-point modes or frequencies from a CASTEP .phonon
+    file, a new option (``average_repeat_points=True``) allows
+    repeated entries (with the same q-point index) to be identified
+    and their weights divided down by the number of entries. This
+    option should give better statistics for sampling meshes that
+    include the Gamma-point with LO-TO splitting.
+
+- Improvements:
+
+  - Documentation on the shape and format of the force constants, and how to
+    read them from other programs has been improved.
+
+  - The ``euphonic.util.get_qpoint_labels`` function, which is called when
+    importing band-structure data to identify and label significant points,
+    primarily identifies these points by searching for turning-points
+    in the band path. The function will now also pick up any q-point
+    that appears twice in succession. This is a common convention in
+    band-structure calculations and helps with edge-cases such as when
+    the path passes through a high-symmetry point without changing
+    direction. This may pick up some previously-missing points in
+    band-structure plots generated with ``euphonic-dispersion`` and
+    ``euphonic-intensity-map``
+
+- Bug fixes:
+
+  - Allow read of ``phonopy.yaml`` quantities in ``'au'`` (bohr) units.
+    Previously this was interpreted as an astronomical unit by Pint.
 
 `v0.6.4 <https://github.com/pace-neutrons/Euphonic/compare/v0.6.3...v0.6.4>`_
 ------

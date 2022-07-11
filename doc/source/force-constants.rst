@@ -20,40 +20,38 @@ The :py:attr:`ForceConstants.force_constants <euphonic.force_constants.ForceCons
 
 .. math::
 
-  \phi_{\alpha, {\alpha}'}^{\kappa, {\kappa}'} =
-  \frac{\delta^{2}E}{{\delta}u_{\kappa,\alpha}{\delta}u_{{\kappa}',{\alpha}'}}
+  \Phi_{\alpha {\alpha}'}^{\kappa {\kappa}'}(0,l) =
+  \frac{\partial^{2}E}{{\partial}u_{\kappa\alpha0}{\partial}u_{{\kappa}'{\alpha}'l}}
 
-This describes the change in total energy when atom :math:`\kappa` is displaced in direction :math:`\alpha` and atom :math:`\kappa\prime` is displaced in direction :math:`\alpha\prime`.
-In Euphonic the force constants are stored in 'compact' form, which means that the minimum required information is stored.
-Using equivalent vectors, the force constants between every atom in the unit cell, and every atom in the supercell are all that is needed,
-so only :math:`N(3n)^2` values need to be stored rather than :math:`(3Nn)^2` as in the 'full' square force constants matrix,
-where N is the number of unit cells in the supercell, and n is the number of atoms in the unit cell.
+This describes the change in total energy when atom :math:`\kappa` in unit cell :math:`0`` is displaced in direction :math:`\alpha` and atom :math:`\kappa\prime` in unit cell :math:`l` is displaced in direction :math:`\alpha\prime`.
+In Euphonic the force constants are stored in 'compact' form in a matrix of :math:`N(3n)^2` elements, where :math:`N` is the number of cells in the supercell, and :math:`n` is the number of atoms in the unit cell.
+This form can be expanded as needed to a 'full' :math:`(3Nn)^2`-element matrix of supercell atom pairs by mapping to an equivalent vector from unit cell 0.
 
 **Shape and Indexing**
 
-The force constants matrix has shape ``(N, 3*n, 3*n)``, where N is the number of unit cells in the supercell, and n is the number of atoms in the unit cell.
-The force constants index ``[a, l, m]``, where ``l = 3*kappa + alpha`` and ``m = 3*kappa_prime + alpha_prime``,
-describes the change in energy when atom ``kappa`` in unit cell ``0`` is displaced in direction ``alpha`` and atom ``kappa_prime`` in unit cell ``a`` is displaced in direction ``alpha_prime``.
+The force constants matrix has shape ``(N, 3*n, 3*n)``, where ``N`` is the number of unit cells in the supercell, and ``n`` is the number of atoms in the unit cell.
+The force constants index ``[l, a, b]``, where ``a = 3*kappa + alpha`` and ``b = 3*kappa_prime + alpha_prime``,
+describes the change in energy when atom ``kappa`` in unit cell ``0`` is displaced in direction ``alpha`` and atom ``kappa_prime`` in unit cell ``l`` is displaced in direction ``alpha_prime``.
 For example, ``ForceConstants.force_constants[5, 8, 1]`` is the change in energy when atom
 ``2`` in unit cell ``0`` is displaced in the ``z`` direction
 and atom ``0`` in unit cell ``5`` is displaced in the ``y`` direction.
 
 **Phase Convention**
 
-To calculate phonon frequencies and eigenvectors, the dynamical matrix at wavevector :math:`q` must be calculated.
+To calculate phonon frequencies and eigenvectors, the dynamical matrix at wavevector :math:`\mathbf{q}` must be calculated.
 This is calculated by taking a Fourier transform of the force constants matrix
 
 .. math::
 
-  D_{\alpha, {\alpha}'}^{\kappa, {\kappa}'}(q) =
-  \frac{1}{\sqrt{M_\kappa M_{\kappa '}}}
-  \sum_{a}\phi_{\alpha, \alpha '}^{\kappa, \kappa '}e^{-iq\cdot r_a}
+  D_{\alpha {\alpha^\prime}}^{\kappa {\kappa^\prime}}(\mathbf{q}) =
+  \frac{1}{\sqrt{M_\kappa M_{\kappa^\prime}}}
+  \sum_{l}\Phi_{\alpha {\alpha^\prime}}^{\kappa {\kappa^\prime}}\exp\left(-i\mathbf{q}\cdot \mathbf{R}_l\right)
 
-The :math:`q\cdot r_a` component is the phase, and in Euphonic's convention :math:`r_a` is defined as the origin coordinate of unit cell :math:`a` in the supercell.
+The :math:`\mathbf{q}\cdot \mathbf{R}_l` component is the phase, and in Euphonic's convention :math:`\mathbf{R}_l` is defined as the vector from the origin to the origin coordinate of the :math:`l^\textrm{th}` unit cell in the supercell.
 For this reason the cell origin coordinates are required as input to create a :py:attr:`ForceConstants <euphonic.force_constants.ForceConstants>` object.
 For force constants from programs that use the same phase convention (such as CASTEP), this information is usually provided so is straightforward.
 
-Force constants which come from programs where the phase is defined as :math:`q\cdot r_k` using the coordinate of each atom (such as Phonopy) are likely to need to be reshaped to be compatible with Euphonic, and the cell origins are not usually provided.
+Force constants which come from programs where the phase is defined as :math:`\mathbf{q}\cdot \mathbf{R}_\kappa` using the coordinate of each atom (such as Phonopy) are likely to need to be reshaped to be compatible with Euphonic, and the cell origins are not usually provided.
 If the unit cell and supercell are commensurate (i.e. the supercell matrix is diagonal), calculation of the cell origins and reshaping the force constants matrix should be trivial.
 However, if the unit and supercell are incommensurate there may be some reindexing required to get the force constants in the correct format.
 See the example below, which shows a 2D system with the following properties:
