@@ -26,6 +26,11 @@
     ``QpointPhononModes.calculate_structure_factor`` which are calculated
     per atom.
 
+  - The option ``average_repeat_points`` when importing q-point modes or
+    frequencies from a CASTEP .phonon file with
+    ``QpointFrequencies/QpointPhononModes.from_castep`` is now ``True``
+    by default. To recover previous behaviour set this to ``False``.
+
 `v0.6.5 <https://github.com/pace-neutrons/Euphonic/compare/v0.6.4...v0.6.5>`_
 ------
 
