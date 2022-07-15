@@ -197,7 +197,9 @@ class BrilleInterpolator:
         # basis positions, but not basis vectors, so include tolerance
         # for lattice vectors when creating the BZ
         ac = br.ApproxConfig()
-        bz = br.BrillouinZone(lattice, approx_config=ac)
+        ac.real_space_tolerance = 1e-8
+        ac.reciprocal_space_tolerance = 1e-8
+        bz = br.BrillouinZone(lattice)#, approx_config=ac)
 
         print('Generating grid...')
         vol = bz.ir_polyhedron.volume
@@ -211,6 +213,9 @@ class BrilleInterpolator:
                     # volume used to generate tetrahedra
                     grid_kwargs = {
                         'node_volume_fraction': vol/grid_npts}
+                grid_kwargs = {**grid_kwargs,
+                               'always_triangulate': False,
+                               'approx_config': ac}
             grid = br.BZTrellisQdc(bz, **grid_kwargs)
         elif grid_type == 'mesh':
             if grid_kwargs is None:
