@@ -503,16 +503,8 @@ class ForceConstants:
             gamma_i = np.where(is_gamma(qpts))[0]
             n_gamma = len(gamma_i)
             norm_qpts[gamma_i] = 0.
-            try:
-                reduced_qpts, qpts_i = np.unique(norm_qpts, return_inverse=True,
-                                                 axis=0)
-            except TypeError:  # Workaround for np 1.12 before axis kwarg
-                norm_qpts = np.ascontiguousarray(norm_qpts)
-                reduced_qpts, qpts_i = np.unique(
-                    norm_qpts.view(norm_qpts.dtype.descr*3),
-                    return_inverse=True)
-                reduced_qpts = reduced_qpts.view(
-                    norm_qpts.dtype).reshape(-1, 3)
+            reduced_qpts, qpts_i = np.unique(norm_qpts, return_inverse=True,
+                                             axis=0)
             n_rqpts = len(reduced_qpts)
             # Special handling of gamma points - don't reduce gamma
             # points if LO-TO splitting
