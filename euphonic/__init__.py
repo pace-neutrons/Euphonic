@@ -8,12 +8,7 @@ from importlib_resources import files
 from packaging.version import parse as parse_version
 
 # Create ureg here so it is only created once
-if parse_version(pint.__version__) < parse_version('0.10'):
-    # Bohr, unified_atomic_mass_unit not defined in pint 0.9, so load
-    # pint 0.16.1 definition file
-    ureg = UnitRegistry(str(files('euphonic.data') / 'default_en.txt'))
-else:
-    ureg = UnitRegistry()
+ureg = UnitRegistry()
 ureg.enable_contexts('spectroscopy')
 Quantity = ureg.Quantity
 
