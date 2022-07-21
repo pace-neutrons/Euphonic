@@ -95,7 +95,8 @@ class QpointFrequencies:
                       adaptive_error: float = 0.01,
                       ) -> Spectrum1D:
         """
-        Calculates a density of states
+        Calculates a density of states, in units of modes per atom per
+        energy unit, such that the integrated area is equal to 3.
 
         Parameters
         ----------
@@ -122,8 +123,9 @@ class QpointFrequencies:
         Returns
         -------
         dos
-            A spectrum containing the energy bins on the x-axis and dos
-            on the y-axis
+            A spectrum containing the energy bins on the x-axis and DOS
+            on the y-axis. The DOS is in units of modes per energy unit
+            per atom, such that the integrated area is equal to 3.
 
         Notes
         -----
@@ -191,7 +193,8 @@ class QpointFrequencies:
         if mode_weights is not None:
             mode_weights_calc = mode_weights
         else:
-            mode_weights_calc = np.ones(freqs.shape)
+            # Normalise DOS to per atom (rather than per unit cell)
+            mode_weights_calc = np.full(freqs.shape, 3/freqs.shape[1])
         if mode_widths is not None:
             mode_widths = mode_widths.to('hartree').magnitude
             mode_widths = np.maximum(mode_widths,

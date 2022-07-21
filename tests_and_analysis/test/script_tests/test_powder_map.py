@@ -61,11 +61,8 @@ powder_map_params_from_phonopy = [
     [nacl_prim_fc_file, '-w=coherent-plus-incoherent-dos', '--pdos=Cl',
      *quick_calc_params]]
 powder_map_params_macos_segfault = [
-    [nacl_prim_fc_file, '--temperature=1000', '--weights=coherent',
-     *quick_calc_params],
     [nacl_prim_fc_file, '--temperature=1000', '--weighting=coherent',
      *quick_calc_params]]
-
 
 class TestRegression:
 
@@ -87,10 +84,8 @@ class TestRegression:
         image_data = get_current_plot_image_data()
 
         with open(powder_map_output_file, 'r') as expected_data_file:
-            # Test deprecated --weights until it is removed
-            key = args_to_key(powder_map_args).replace(
-                    'weights', 'weighting')
-            expected_image_data = json.load(expected_data_file)[key]
+            expected_image_data = json.load(expected_data_file)[
+                args_to_key(powder_map_args)]
         for key, value in image_data.items():
             if key == 'extent':
                 # Lower bound of y-data (energy) varies by up to ~2e-6 on
@@ -163,14 +158,6 @@ class TestRegression:
         with pytest.raises(TypeError):
             euphonic.cli.powder_map.main(powder_map_args)
 
-    @pytest.mark.phonopy_reader
-    @pytest.mark.parametrize('powder_map_args', [
-        [nacl_prim_fc_file, '--weights=dos']])
-    def test_weights_emits_deprecation_warning(
-            self, inject_mocks, powder_map_args):
-        with pytest.warns(DeprecationWarning):
-            euphonic.cli.powder_map.main(powder_map_args + quick_calc_params)
-
     @pytest.mark.parametrize('powder_map_args', [
         [nacl_prim_fc_file, '-w=incoherent']])
     def test_invalid_weighting_raises_causes_exit(self, powder_map_args):
@@ -216,7 +203,9 @@ def test_regenerate_powder_map_data(_):
     except FileNotFoundError:
         json_data = {}
 
-    for powder_map_param in powder_map_params:
+    for powder_map_param in (powder_map_params
+                             + powder_map_params_from_phonopy
+                             + powder_map_params_macos_segfault):
         # Generate current figure for us to retrieve with gcf
         euphonic.cli.powder_map.main(powder_map_param)
 

@@ -40,10 +40,6 @@ class TestForceConstantsCalculateQPointFrequencies:
                             'dipole_parameter': 0.75}],
          'quartz_reciprocal_qpoint_frequencies.json'),
         (get_quartz_fc(), 'quartz',
-         [get_test_qpts(), {'asr': 'reciprocal', 'splitting': False,
-                            'eta_scale': 0.75}],
-         'quartz_reciprocal_qpoint_frequencies.json'),
-        (get_quartz_fc(), 'quartz',
          [get_test_qpts('split'), {'asr': 'reciprocal', 'splitting': True,
                                    'insert_gamma': False}],
          'quartz_split_reciprocal_qpoint_frequencies.json'),
@@ -133,67 +129,6 @@ class TestForceConstantsCalculateQPointFrequencies:
             expected_qpt_freqs.frequencies.magnitude)
         npt.assert_allclose(summed_modg, summed_expected_modg,
                             atol=2e-5)
-
-    @pytest.mark.parametrize(
-        ('fc, material, all_args, expected_qpoint_frequencies_file, '
-         'expected_modw_file'),
-        [(get_quartz_fc(),
-          'quartz',
-          [mp_grid([5, 5, 4]),
-           {'return_mode_widths': True}],
-          'quartz_554_full_qpoint_frequencies.json',
-          'quartz_554_full_mode_widths.json'),
-         (get_lzo_fc(),
-          'LZO',
-          [mp_grid([2, 2, 2]),
-           {'asr': 'reciprocal', 'return_mode_widths': True}],
-          'lzo_222_full_qpoint_frequencies.json',
-          'lzo_222_full_mode_widths.json')])
-    @pytest.mark.parametrize(
-        'n_threads',
-        [0, 2])
-    def test_calculate_qpoint_frequencies_with_mode_widths(
-            self, fc, material, all_args, expected_qpoint_frequencies_file,
-            expected_modw_file, n_threads):
-        func_kwargs = all_args[1]
-        if n_threads == 0:
-            func_kwargs['use_c'] = False
-        else:
-            func_kwargs['use_c'] = True
-            func_kwargs['n_threads'] = n_threads
-        qpt_freqs, modw = fc.calculate_qpoint_frequencies(
-            all_args[0], **func_kwargs)
-        with open(get_fc_path(expected_modw_file), 'r') as fp:
-            modw_dict = json.load(fp)
-        expected_modw = modw_dict['mode_widths']*ureg(
-            modw_dict['mode_widths_unit'])
-        expected_qpt_freqs = get_expected_qpt_freqs(
-            material, expected_qpoint_frequencies_file)
-        check_qpt_freqs(qpt_freqs,
-                        expected_qpt_freqs)
-        assert modw.units == expected_modw.units
-        # Mode widths are derived from eigenvectors - in the case of
-        # degenerate modes they may not be in the same order
-        summed_modw = sum_at_degenerate_modes(
-            modw.magnitude,
-            expected_qpt_freqs.frequencies.magnitude)
-        summed_expected_modw = sum_at_degenerate_modes(
-            expected_modw.magnitude,
-            expected_qpt_freqs.frequencies.magnitude)
-        npt.assert_allclose(summed_modw, summed_expected_modw,
-                            rtol=7e-5)
-
-    def test_calc_qpt_freqs_with_mode_widths_raises_deprecation_warning(self):
-        fc = get_fc('quartz')
-        with pytest.warns(DeprecationWarning):
-            fc.calculate_qpoint_frequencies(get_test_qpts(),
-                                            return_mode_widths=True)
-
-    def test_calc_qpt_freqs_with_eta_scale_raises_deprecation_warning(self):
-        fc = get_fc('quartz')
-        with pytest.warns(DeprecationWarning):
-            fc.calculate_qpoint_frequencies(get_test_qpts(),
-                                            eta_scale=0.75)
 
     weights = np.array([0.1, 0.05, 0.05, 0.2, 0.2, 0.15, 0.15, 0.2, 0.1])
     weights_output_split_gamma = np.array([

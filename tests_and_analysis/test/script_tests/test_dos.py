@@ -146,7 +146,7 @@ def test_regenerate_dos_data(_):
     except FileNotFoundError:
         json_data = {}
 
-    for dos_param in dos_params:
+    for dos_param in dos_params + dos_params_from_phonopy:
         # Generate current figure for us to retrieve with gcf
         euphonic.cli.dos.main(dos_param)
 
