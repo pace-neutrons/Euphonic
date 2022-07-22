@@ -186,8 +186,7 @@ class TestQpointPhononModesCreation:
         ('quartz', 'quartz_nosplit.phonon',
          'quartz_from_castep_qpoint_phonon_modes.json', {}),
         ('quartz', 'quartz_nosplit.phonon',
-         'quartz_from_castep_qpoint_phonon_modes.json',
-         {'average_repeat_points': True}),
+         'quartz_from_castep_qpoint_phonon_modes.json', {}),
         ('quartz', 'quartz_split_qpts.phonon',
          'quartz_split_from_castep_qpoint_phonon_modes.json', {})])
     def test_create_from_castep(
@@ -202,18 +201,14 @@ class TestQpointPhononModesCreation:
     def test_create_from_castep_avg_repeats(self):
         qpt_ph_modes = QpointPhononModes.from_castep(
             get_castep_path('quartz', 'quartz_split_qpts.phonon'),
-            average_repeat_points=True)
+            average_repeat_points=False)
         expected_qpt_ph_modes = ExpectedQpointPhononModes(
             get_qpt_ph_modes_path(
                 'quartz',
                 'quartz_split_from_castep_qpoint_phonon_modes.json'))
 
-        # Correct for repeated weights from non-averaged ref data
-        weights = np.ones(13)
-        weights /= 9.
-        weights[2:4] /= 2
-        weights[5:8] /= 3
-        weights[9:11] /= 2
+        # Correct for repeated weights from averaged ref data
+        weights = np.full(13, 1/9)
         expected_qpt_ph_modes.data['weights'] = weights.tolist()
 
         check_qpt_ph_modes(qpt_ph_modes, expected_qpt_ph_modes,
