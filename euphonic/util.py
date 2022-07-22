@@ -11,7 +11,7 @@ import warnings
 import numpy as np
 import seekpath
 from seekpath.hpkot import SymmetryDetectionError
-from importlib_resources import open_text
+from importlib_resources import files
 from pint import UndefinedUnitError
 
 from euphonic import ureg, Quantity
@@ -222,7 +222,7 @@ def get_reference_data(collection: str = 'Sears1992',
 
     if collection in _reference_data_files:
         filename = _reference_data_files[collection]
-        with open_text(euphonic.data, filename) as fd:
+        with open(files(euphonic.data).joinpath(filename)) as fd:
             file_data = json.load(fd, object_hook=custom_decode)
 
     elif os.path.isfile(collection):
