@@ -1,5 +1,6 @@
 import os
 import json
+import warnings
 from multiprocessing import cpu_count
 
 import pytest
@@ -290,14 +291,14 @@ class TestForceConstantsCalculateQPointPhononModesWithoutCExtensionInstalled:
     def test_with_use_c_default_warns(
             self, mocked_cext_with_importerror):
         fc = get_fc('quartz')
-        with pytest.warns(None) as warn_record:
+        with warnings.catch_warnings(record=True) as warn_record:
             fc.calculate_qpoint_phonon_modes(get_test_qpts())
         assert len(warn_record) == 1
 
     def test_with_use_c_false_doesnt_raise_error_or_warn(
             self, mocked_cext_with_importerror):
         fc = get_fc('quartz')
-        with pytest.warns(None) as warn_record:
+        with warnings.catch_warnings(record=True) as warn_record:
             fc.calculate_qpoint_phonon_modes(get_test_qpts(), use_c=False)
         assert len(warn_record) == 0
 
