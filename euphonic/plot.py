@@ -236,7 +236,7 @@ def plot_2d_to_axis(spectrum: Spectrum2D, ax: Axes,
     image.set_data(spectrum.get_bin_centres('x').to(x_unit).magnitude,
                    spectrum.get_bin_centres('y').to(y_unit).magnitude,
                    spectrum.z_data.to(z_unit).magnitude.T)
-    ax.images.append(image)
+    ax.add_image(image)
     ax.set_xlim(min(x_bins), max(x_bins))
     ax.set_ylim(min(y_bins), max(y_bins))
 
