@@ -14,7 +14,7 @@ or it can be read programatically as follows:
   import euphonic
   from importlib_resources import files
 
-  with open(files(euphonic)/'CITATION.cff') as fp:
+  with open(files(euphonic) / 'CITATION.cff') as fp:
       citation_data = yaml.safe_load(fp)
 
 The latest version of the citation file can also be found in Euphonic's code

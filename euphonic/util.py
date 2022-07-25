@@ -222,7 +222,7 @@ def get_reference_data(collection: str = 'Sears1992',
 
     if collection in _reference_data_files:
         filename = _reference_data_files[collection]
-        with open(files(euphonic.data)/filename) as fd:
+        with open(files(euphonic.data) / filename) as fd:
             file_data = json.load(fd, object_hook=custom_decode)
 
     elif os.path.isfile(collection):
