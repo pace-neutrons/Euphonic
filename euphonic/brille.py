@@ -192,7 +192,8 @@ class BrilleInterpolator:
 
         symmetry = br.Symmetry(rotations, translations)
         basis = br.Basis(cell[1], cell[2])
-        lattice = br.Lattice(cell[0], symmetry, basis, snap_to_symmetry=True)
+        lattice = br.Lattice(cell[0], symmetry=symmetry, basis=basis,
+                             snap_to_symmetry=True)
         # snap_to_symmetry will take care of slightly off-symmetry atom
         # basis positions, but not basis vectors, so include tolerance
         # for lattice vectors when creating the BZ
