@@ -416,9 +416,7 @@ class TestCrystalMethods:
 
     @pytest.mark.parametrize('crystal, kwargs, expected_res_file', [
         (get_crystal('quartz'), {}, 'quartz_equiv_atoms.json'),
-        (get_crystal('LZO'), {}, 'lzo_equiv_atoms.json'),
-        (get_crystal('LZO'), {'tol': 1e-12*ureg('angstrom')},
-         'lzo_equiv_atoms_tol_1e12_ang.json'),
+        (get_crystal('LZO'), {}, 'lzo_equiv_atoms.json')
         ])
     def test_get_symmetry_equivalent_atoms(
             self, crystal, kwargs, expected_res_file):
@@ -449,3 +447,21 @@ class TestCrystalMethods:
             npt.assert_equal(rot, exp_rot)
             npt.assert_allclose(trans, exp_trans, atol=1e-10)
             npt.assert_equal(equiv_atoms, exp_equiv_atoms)
+
+    @pytest.mark.parametrize('crystal, kwargs, expected_symprec', [
+        (get_crystal('LZO'), {'tol': 1e-12*ureg('angstrom')}, 1e-12),
+        (get_crystal('LZO'), {'tol': 1.8897261246e-12*ureg('bohr')}, 1e-12)
+        ])
+    def test_get_symmetry_equivalent_atoms_with_tol(
+            self, mocker, crystal, kwargs, expected_symprec):
+        # Ensure tol gets passed correctly to spglib - we don't care about
+        # the details of what spglib does
+        import spglib
+        mock = mocker.patch('spglib.get_symmetry', wraps=spglib.get_symmetry)
+        rot, trans, equiv_atoms = crystal.get_symmetry_equivalent_atoms(
+            **kwargs)
+        npt.assert_almost_equal(mock.call_args[1]['symprec'],
+                                expected_symprec)
+        npt.assert_equal(rot.shape, (4, 3, 3))
+        npt.assert_equal(trans.shape, (4, 3))
+        npt.assert_equal(equiv_atoms.shape, (4, 22))

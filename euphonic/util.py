@@ -11,7 +11,7 @@ import warnings
 import numpy as np
 import seekpath
 from seekpath.hpkot import SymmetryDetectionError
-from importlib_resources import open_text  # Backport for Python 3.6
+from importlib_resources import open_text
 from pint import UndefinedUnitError
 
 from euphonic import ureg, Quantity

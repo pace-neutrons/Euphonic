@@ -3,6 +3,15 @@
 
 - Changes:
 
+  - Support for Python 3.6 has been dropped. This has also resulted in
+    changes to the following dependencies:
+
+    - numpy requirement increased from ``1.12.1`` to ``1.14.5``
+    - scipy requirement increased from ``1.0.0`` to ``1.1.0``
+    - pint requirement increased from ``0.9`` to ``0.10.1``
+    - matplotlib requirement increased from ``2.0.0`` to ``2.2.2``
+    - h5py requirement increased from ``2.7.0`` to ``2.8.0``
+
   - The following deprecated features have been removed:
 
     - The ``return_mode_widths`` argument in ``ForceConstants.calculate_qpoint_phonon_modes``

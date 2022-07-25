@@ -10,7 +10,7 @@ jobs:
     strategy:
       matrix:
         os: [windows-latest, macos-latest, ubuntu-latest]
-        python-version: ['3.6', '3.7', '3.8', '3.9', '3.10']
+        python-version: ['3.7', '3.8', '3.9', '3.10']
         include:
           - os: windows-latest
             wheelname: win
@@ -19,12 +19,9 @@ jobs:
           - os: ubuntu-latest
             wheelname: manylinux
           # Build wheels against the lowest compatible Numpy version
-          - python-version: 3.6
-            manylinux-version-tag: cp36
-            numpy-version: 1.12.1
           - python-version: 3.7
             manylinux-version-tag: cp37
-            numpy-version: 1.14.6
+            numpy-version: 1.14.5
           - python-version: 3.8
             manylinux-version-tag: cp38
             numpy-version: 1.17.3
