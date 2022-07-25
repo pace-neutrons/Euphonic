@@ -291,9 +291,8 @@ class TestForceConstantsCalculateQPointPhononModesWithoutCExtensionInstalled:
     def test_with_use_c_default_warns(
             self, mocked_cext_with_importerror):
         fc = get_fc('quartz')
-        with warnings.catch_warnings(record=True) as warn_record:
+        with pytest.warns(UserWarning):
             fc.calculate_qpoint_phonon_modes(get_test_qpts())
-        assert len(warn_record) == 1
 
     def test_with_use_c_false_doesnt_raise_error_or_warn(
             self, mocked_cext_with_importerror):
