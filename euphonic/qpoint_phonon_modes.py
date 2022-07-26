@@ -347,10 +347,10 @@ class QpointPhononModes(QpointFrequencies):
         .. math::
 
           W^{\\alpha\\beta}_{\\kappa} =
-          \\frac{\\hbar}{4M_{\\kappa}\\sum\\limits_{\mathbf{q}}{\\mathrm{weight}_\mathbf{q}}}
-          \\sum\\limits_{\mathbf{q}\\nu \in{BZ}}\\mathrm{weight}_\mathbf{q}\\frac{e_{\mathbf{q}\\nu\\kappa\\alpha}e^{*}_{\mathbf{q}\\nu\\kappa\\beta}}
-          {\\omega_{\mathbf{q}\\nu}}
-          \\mathrm{coth}\\left(\\frac{\\hbar\\omega_{\mathbf{q}\\nu}}{2k_BT}\\right)
+          \\frac{\\hbar}{4M_{\\kappa}\\sum\\limits_{\\mathbf{q}}{\\mathrm{weight}_\\mathbf{q}}}
+          \\sum\\limits_{\\mathbf{q}\\nu \\in{BZ}}\\mathrm{weight}_\\mathbf{q}\\frac{e_{\\mathbf{q}\\nu\\kappa\\alpha}e^{*}_{\\mathbf{q}\\nu\\kappa\\beta}}
+          {\\omega_{\\mathbf{q}\\nu}}
+          \\mathrm{coth}\\left(\\frac{\\hbar\\omega_{\\mathbf{q}\\nu}}{2k_BT}\\right)
 
         Where the sum is over q-points and modes :math:`\\nu` in the
         first Brillouin Zone (BZ), :math:`\\kappa` runs over atoms,

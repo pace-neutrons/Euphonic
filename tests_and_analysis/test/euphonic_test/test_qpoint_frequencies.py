@@ -1,5 +1,6 @@
 import copy
 import json
+import warnings
 
 from unittest.mock import patch
 import pytest
@@ -528,7 +529,7 @@ class TestQpointFrequenciesCalculateDos:
         qpt_freqs = get_qpt_freqs(
             'quartz', 'quartz_666_qpoint_frequencies.json')
         ebins = np.arange(0, 1300, 4)*ureg('1/cm')
-        with pytest.warns(None) as warn_record:
+        with warnings.catch_warnings(record=True) as warn_record:
             qpt_freqs.calculate_dos(ebins)
         assert len(warn_record) == 0
 

@@ -281,7 +281,7 @@ class ForceConstants:
         direction :math:`\\alpha` from its equilibrium position. This can be
         used to calculate the dynamical matrix
         :math:`D_{\\alpha {\\alpha}^\\prime}^{\\kappa {\\kappa}^\\prime}` at
-        :math:`\mathbf{q}`:
+        :math:`\\mathbf{q}`:
 
         .. math::
 
@@ -296,7 +296,7 @@ class ForceConstants:
 
         .. math::
 
-          \sum_{\\kappa^\\prime \\alpha^\\prime}D_{\\alpha {\\alpha}^\\prime}^{\\kappa {\\kappa}^\\prime}(\\mathbf{q}) {e}_{\\mathbf{q}\\nu{\\kappa^\\prime}{\\alpha^\\prime}} =
+          \\sum_{\\kappa^\\prime \\alpha^\\prime}D_{\\alpha {\\alpha}^\\prime}^{\\kappa {\\kappa}^\\prime}(\\mathbf{q}) {e}_{\\mathbf{q}\\nu{\\kappa^\\prime}{\\alpha^\\prime}} =
           {\\omega}_{\\mathbf{q}\\nu}^2 {e}_{\\mathbf{q}\\nu\\kappa\\alpha}
 
         where the eigenvalues :math:`{\\omega}_{\\mathbf{q}\\nu}^2` are the
@@ -327,7 +327,7 @@ class ForceConstants:
         width. The mode widths are proportional to the mode gradients and
         can be estimated using ``euphonic.util.mode_gradients_to_widths``
 
-        The mode gradients :math:`\\frac{d\\omega_{\\mathbf{q}\\nu}}{d\\mathbf{q}}` at each :math:`\mathbf{q}`
+        The mode gradients :math:`\\frac{d\\omega_{\\mathbf{q}\\nu}}{d\\mathbf{q}}` at each :math:`\\mathbf{q}`
         are calculated at the same time as the phonon frequencies and
         eigenvectors as follows.
 
@@ -345,9 +345,9 @@ class ForceConstants:
         Where :math:`\\Omega(\\mathbf{q})` is the diagonal matrix of phonon
         frequencies squared :math:`\\omega_{\\mathbf{q}\\nu}^{2}` and :math:`E(\\mathbf{q})`
         is the matrix containing eigenvectors for all modes.
-        :math:`\\frac{d\\omega_{\\mathbf{q}\\nu}}{d\mathbf{q}}`, can then
+        :math:`\\frac{d\\omega_{\\mathbf{q}\\nu}}{d\\mathbf{q}}`, can then
         be obtained by differentiating the above equation with respect
-        to :math:`\mathbf{q}` using the product rule:
+        to :math:`\\mathbf{q}` using the product rule:
 
         .. math::
 
@@ -376,8 +376,8 @@ class ForceConstants:
         .. math::
 
           \\frac{dD_{\\alpha {\\alpha}^\\prime}^{\\kappa {\\kappa}^\\prime}}{d\\mathbf{q}} =
-          \\frac{-i \mathbf{R}_l}{\\sqrt{M_\\kappa M_{\\kappa ^\\prime}}}
-          \\sum_{l}\\Phi_{\\alpha\\alpha^\\prime}^{\\kappa\\kappa^\\prime}\\exp\\left(-i\\mathbf{q}\\cdot \mathbf{R}_l\\right)
+          \\frac{-i \\mathbf{R}_l}{\\sqrt{M_\\kappa M_{\\kappa ^\\prime}}}
+          \\sum_{l}\\Phi_{\\alpha\\alpha^\\prime}^{\\kappa\\kappa^\\prime}\\exp\\left(-i\\mathbf{q}\\cdot \\mathbf{R}_l\\right)
 
         .. [3] J. R. Yates, X. Wang, D. Vanderbilt and I. Souza, Phys. Rev. B, 2007, 75, 195121
         """

@@ -1,4 +1,5 @@
 import json
+import warnings
 
 import pytest
 import numpy as np
@@ -619,7 +620,7 @@ class TestQpointPhononModesCalculateDos:
     def test_calculate_dos_with_0_inv_cm_bin_doesnt_raise_runtime_warn(self):
         qpt_ph_modes = get_qpt_ph_modes('quartz')
         ebins = np.arange(0, 1300, 4)*ureg('1/cm')
-        with pytest.warns(None) as warn_record:
+        with warnings.catch_warnings(record=True) as warn_record:
             qpt_ph_modes.calculate_dos(ebins)
         assert len(warn_record) == 0
 

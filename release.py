@@ -4,7 +4,6 @@ import os
 import re
 import requests
 import subprocess
-from importlib_resources import open_text
 import yaml
 from euphonic import __version__
 
