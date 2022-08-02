@@ -18,4 +18,4 @@ or it can be read programatically as follows:
       citation_data = yaml.safe_load(fp)
 
 The latest version of the citation file can also be found in Euphonic's code
-repository
+repository `here <https://github.com/pace-neutrons/Euphonic/blob/master/CITATION.cff>`_.
