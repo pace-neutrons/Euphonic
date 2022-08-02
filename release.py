@@ -43,7 +43,7 @@ def release_github(test=True):
         "name": euphonic_ver,
         "body": desc,
         "draft": False,
-        "prerelease": True
+        "prerelease": False
     }
     if test:
         print(payload)
