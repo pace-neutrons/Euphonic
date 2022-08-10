@@ -11,9 +11,9 @@ authors:
     given-names: "Adam J."
     orcid: https://orcid.org/0000-0001-5272-6530
   - family-names: "King"
-    given-names: "James Charles"
+    given-names: "James C."
   - family-names: "Le"
-    given-names: "Manh Duc"
+    given-names: "Manh D."
     orcid: https://orcid.org/0000-0003-3012-6053
   - family-names: "Perring"
     given-names: "Toby G."
@@ -24,10 +24,10 @@ authors:
     given-names: "Keith"
     orcid: https://orcid.org/0000-0002-8715-5835
   - family-names: "Tucker"
-    given-names: "Gregory Scott"
+    given-names: "Gregory S."
     orcid: https://orcid.org/0000-0002-2787-8054
   - family-names: "Voneshen"
-    given-names: "D. J."
+    given-names: "David J."
     orcid: https://orcid.org/0000-0001-5716-7184
 title: "Euphonic"
 doi: 10.5286/SOFTWARE/EUPHONIC
