@@ -17,11 +17,11 @@ schemadotorg:
     givenName: Adam J.
   - '@type': Person
     familyName: King
-    givenName: James Charles
+    givenName: James C.
   - '@id': https://orcid.org/0000-0003-3012-6053
     '@type': Person
     familyName: Le
-    givenName: Manh Duc
+    givenName: Manh D.
   - '@id': https://orcid.org/0000-0001-5756-6433
     '@type': Person
     familyName: Perring
@@ -36,11 +36,11 @@ schemadotorg:
   - '@id': https://orcid.org/0000-0002-2787-8054
     '@type': Person
     familyName: Tucker
-    givenName: Gregory Scott
+    givenName: Gregory S.
   - '@id': https://orcid.org/0000-0001-5716-7184
     '@type': Person
     familyName: Voneshen
-    givenName: D. J.
+    givenName: David J.
   codeRepository: https://github.com/pace-neutrons/Euphonic
   datePublished: '2022-08-02'
   description: Euphonic is a Python package for efficient simulation of phonon bandstructures,
