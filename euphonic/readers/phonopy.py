@@ -553,6 +553,8 @@ def _extract_summary(filename: str, fc_extract: bool = False
                 summary_object['born_effective_charge'])
             summary_dict['dielectric'] = np.array(
                 summary_object['dielectric_constant'])
+            summary_dict['factor'] = summary_object[
+                'phonopy']['nac_unit_conversion_factor']
         except KeyError:
             pass
 
@@ -698,7 +700,7 @@ def read_interpolation_data(
 
     # Only read born/dielectric if they're not in summary file and the
     # user has specified a Born file
-    dipole_keys = ['born', 'dielectric']
+    dipole_keys = ['born', 'dielectric', 'factor']
     if (born_name is not None and
             len(dipole_keys & summary_dict.keys()) != len(dipole_keys)):
         born_pathname = os.path.join(path, born_name)
@@ -708,6 +710,7 @@ def read_interpolation_data(
             born_dict = _extract_born(born_file)
         summary_dict['born'] = born_dict['born']
         summary_dict['dielectric'] = born_dict['dielectric']
+        summary_dict['factor'] = born_dict['factor']
 
     # Units from summary_file
     ulength = summary_dict['ulength']
@@ -742,8 +745,16 @@ def read_interpolation_data(
         data_dict['born'] = summary_dict['born']*ureg(
             'e').to(born_unit).magnitude
         data_dict['born_unit'] = born_unit
-        data_dict['dielectric'] = summary_dict['dielectric']*ureg(
-            'e**2/(hartree*bohr)').to(dielectric_unit).magnitude
+        # Phonopy NAC conversion factor converts the following NAC
+        # term (eq. 75 in Gonze & Lee 1997, ignoring dimensionless units):
+        # born**2/(volume x dielectric) = 1/(ulength**3 x di_energy x di_length)
+        # to the same units as the force constants (given by ufc)
+        # i.e. factor*nac_units = force constants units
+        # So allow pint to do this unit conversion automatically
+        phonopy_dielectric_unit = ureg('e**2')/(ureg(ulength)**3*ureg(ufc))
+        data_dict['dielectric'] = (
+            summary_dict['dielectric']/summary_dict['factor']
+            *phonopy_dielectric_unit.to(dielectric_unit).magnitude)
         data_dict['dielectric_unit'] = dielectric_unit
     except KeyError:
         pass
