@@ -731,15 +731,8 @@ def read_interpolation_data(
         umass).to(atom_mass_unit).magnitude
     cry_dict['atom_mass_unit'] = atom_mass_unit
 
-    fc, cell_origins = convert_fc_phases(
-         summary_dict['force_constants'], summary_dict['atom_r'],
-         summary_dict['sc_atom_r'], summary_dict['pc_to_sc_atom_idx'],
-         summary_dict['sc_to_pc_atom_idx'], summary_dict['sc_matrix'])
-    data_dict['force_constants'] = fc*ureg(
-        ufc).to(force_constants_unit).magnitude
     data_dict['force_constants_unit'] = force_constants_unit
     data_dict['sc_matrix'] = summary_dict['sc_matrix']
-    data_dict['cell_origins'] = cell_origins
 
     try:
         data_dict['born'] = summary_dict['born']*ureg(
@@ -758,5 +751,43 @@ def read_interpolation_data(
         data_dict['dielectric_unit'] = dielectric_unit
     except KeyError:
         pass
+
+    uncorrected_fc = summary_dict['force_constants']*ureg(ufc).to(force_constants_unit).magnitude # in hartree/bohr**2
+    uncorrected_fc, cell_origins = convert_fc_phases(
+         uncorrected_fc, summary_dict['atom_r'],
+         summary_dict['sc_atom_r'], summary_dict['pc_to_sc_atom_idx'],
+         summary_dict['sc_to_pc_atom_idx'], summary_dict['sc_matrix'])
+
+    born = data_dict['born'] # 'e'
+    dielectric = data_dict['dielectric'] # 'e**2/(bohr*hartree)'
+    atom_r = data_dict['crystal']['atom_r']
+    atom_type = data_dict['crystal']['atom_type']
+    atom_mass = data_dict['crystal']['atom_mass'] # 'amu'
+    sc_matrix = data_dict['sc_matrix']
+    cell_vectors = data_dict['crystal']['cell_vectors'] # 'angstrom'
+    n_atoms = len(atom_r)
+    n_cells = len(cell_origins)
+    ax = np.newaxis
+
+    sc_atom_r = np.repeat(cell_origins, n_atoms, axis=0) + np.tile(atom_r, (n_cells, 1))
+    sc_to_u_matrix = np.linalg.inv(sc_matrix).transpose()
+    sc_atom_r_scell = np.einsum('ij,jk->ik', sc_atom_r, sc_to_u_matrix)
+    sc_vecs = np.einsum('ji,ik->jk', sc_matrix, cell_vectors)
+    sc_mass = np.tile(atom_mass, n_cells)
+
+    from euphonic import ForceConstants, Crystal
+    sc_crystal = Crystal(sc_vecs*ureg('angstrom'), sc_atom_r_scell,
+                         np.tile(atom_type, n_cells), sc_mass*ureg('amu'))
+    fc_dipole = ForceConstants(sc_crystal, np.ones((n_cells, 3*n_atoms*n_cells, 3*n_atoms*n_cells))*ureg('hartree/bohr**2'), sc_matrix,
+                               cell_origins=np.zeros((n_cells, 3), dtype=np.int32), born=np.tile(born, (n_cells, 1, 1))*ureg('e'),
+                               dielectric=dielectric*ureg('e**2/(bohr*hartree)'))
+    fc_dipole.calculate_qpoint_phonon_modes(np.array([[0., 0., 0.]]))
+    corr = np.real(fc_dipole._calculate_dipole_correction(np.array([0., 0., 0.]))) # In hartree/bohr**2
+    fc = uncorrected_fc - np.transpose(np.reshape(corr[:, :3*n_atoms], (n_cells, 3*n_atoms, 3*n_atoms)), axes=[0, 2, 1])
+
+    #data_dict['force_constants'] = fc*ureg(
+    #    ufc).to(force_constants_unit).magnitude
+    data_dict['force_constants'] = fc
+    data_dict['cell_origins'] = cell_origins
 
     return data_dict
