@@ -239,7 +239,8 @@ class TestForceConstantsCreation:
         ('CaHgO2', {'summary_name': 'phonopy_nofc.yaml',
                     'fc_name': 'FULL_FORCE_CONSTANTS'}),
         ('CaHgO2', {'summary_name': 'phonopy_nofc.yaml',
-                    'fc_name': 'full_force_constants.hdf5'})])
+                    'fc_name': 'full_force_constants.hdf5'}),
+        ('quartz_phonopy', {})])
     def test_create_from_phonopy(self, material, phonopy_args):
         phonopy_args['path'] = get_phonopy_path(material)
         fc = ForceConstants.from_phonopy(**phonopy_args)
