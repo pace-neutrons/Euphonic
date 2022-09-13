@@ -237,14 +237,15 @@ class TestForceConstantsCreation:
         # again to avoid false positives
         ('NaCl_default', {}),
         ('NaCl_prim', {'summary_name': 'phonopy_nacl.yaml'}),
+        # Test NaCl with different nac_factor (2.0 with QE)
+        ('NaCl_QE', {}),
         ('CaHgO2', {'summary_name': 'phonopy_au_units.yaml'}),
         ('CaHgO2', {'summary_name': 'mp-7041-20180417.yaml'}),
         ('CaHgO2', {'summary_name': 'phonopy_fullfc.yaml'}),
         ('CaHgO2', {'summary_name': 'phonopy_nofc.yaml',
                     'fc_name': 'FULL_FORCE_CONSTANTS'}),
         ('CaHgO2', {'summary_name': 'phonopy_nofc.yaml',
-                    'fc_name': 'full_force_constants.hdf5'}),
-        ('quartz_phonopy', {})])
+                    'fc_name': 'full_force_constants.hdf5'})])
     def test_create_from_phonopy(self, material, phonopy_args):
         phonopy_args['path'] = get_phonopy_path(material)
         fc = ForceConstants.from_phonopy(**phonopy_args)
