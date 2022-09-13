@@ -224,6 +224,10 @@ class TestForceConstantsCreation:
         ('NaCl', {'summary_name': 'phonopy_nofc_noborn.yaml',
                   'fc_name': 'FORCE_CONSTANTS_nacl',
                   'born_name': 'BORN_nacl_nofactor'}),
+        # Test that NAC factor in BORN file takes priority
+        ('NaCl', {'summary_name': 'phonopy_nofc_noborn_wrongfactor.yaml',
+                  'fc_name': 'FORCE_CONSTANTS_nacl',
+                  'born_name': 'BORN_nacl'}),
         # Explicitly test the default behaviour (if fcs aren't found
         # in phonopy.yaml they should be read from FORCE_CONSTANTS. BORN
         # is not read by default as it is not required, so it is difficult
@@ -322,6 +326,17 @@ class TestForceConstantsCreation:
             self, phonopy_args, err):
         with pytest.raises(err):
             ForceConstants.from_phonopy(**phonopy_args)
+
+    @pytest.mark.phonopy_reader
+    @pytest.mark.parametrize('material, phonopy_args', [
+        ('NaCl', {'summary_name': 'phonopy_nofc_noborn_nofactor.yaml',
+                  'fc_name': 'FORCE_CONSTANTS_nacl',
+                  'born_name': 'BORN_nacl_nofactor'})])
+    def test_create_from_phonopy_with_no_factor_raises_err(
+            self, material, phonopy_args):
+        phonopy_args['path'] = get_phonopy_path(material)
+        with pytest.raises(KeyError):
+            fc = ForceConstants.from_phonopy(**phonopy_args)
 
     def test_create_from_castep_with_no_fc_raises_runtime_error(self):
         with pytest.raises(RuntimeError):

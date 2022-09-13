@@ -433,7 +433,7 @@ def _extract_born(born_file_obj: TextIO) -> Dict[str, Union[float, np.ndarray]]:
     idx0 = 0
     if len(born_lines[0]) == 1:
         # Then this is the NAC conversion factor
-        born_dict['factor'] = born_lines[0][0]
+        born_dict['nac_factor'] = born_lines[0][0]
         idx0 = 1
 
     # dielectric first line after factor
@@ -547,14 +547,20 @@ def _extract_summary(filename: str, fc_extract: bool = False
                 fc['elements']).reshape(fc['shape'] + [3,3])
         except KeyError:
             pass
-
+        # NAC factor may be present even if born is not in phonopy.yaml
+        # (born may be in separate BORN file), and the BORN file may
+        # not necessarily contain NAC factor, so just try reading it
+        # from phonopy.yaml anyway
+        try:
+            summary_dict['nac_factor'] = summary_object[
+                'phonopy']['nac_unit_conversion_factor']
+        except KeyError:
+            pass
         try:
             summary_dict['born'] = np.array(
                 summary_object['born_effective_charge'])
             summary_dict['dielectric'] = np.array(
                 summary_object['dielectric_constant'])
-            summary_dict['factor'] = summary_object[
-                'phonopy']['nac_unit_conversion_factor']
         except KeyError:
             pass
 
@@ -700,7 +706,7 @@ def read_interpolation_data(
 
     # Only read born/dielectric if they're not in summary file and the
     # user has specified a Born file
-    dipole_keys = ['born', 'dielectric', 'factor']
+    dipole_keys = ['born', 'dielectric', 'nac_factor']
     if (born_name is not None and
             len(dipole_keys & summary_dict.keys()) != len(dipole_keys)):
         born_pathname = os.path.join(path, born_name)
@@ -708,9 +714,18 @@ def read_interpolation_data(
                f'attempting to read from {born_pathname}'))
         with open(born_pathname, 'r') as born_file:
             born_dict = _extract_born(born_file)
-        summary_dict['born'] = born_dict['born']
-        summary_dict['dielectric'] = born_dict['dielectric']
-        summary_dict['factor'] = born_dict['factor']
+        # Let BORN file take priority, but merge because the 'nac_factor'
+        # key may not always be present in BORN
+        summary_dict = {**summary_dict, **born_dict}
+    # Check if born key is present, then factor is also present. It
+    # may not always be e.g. you can run Phonopy so that 'born',
+    # 'dielectric' are written to phonopy.yaml, but if NAC = .FALSE.
+    # 'nac_factor' will not be written. In this case raise error.
+    if ('born' in summary_dict.keys()
+            and 'nac_factor' not in summary_dict.keys()):
+        raise KeyError(f'nac_unit_conversion_factor could not be found in '
+                       f'{summary_pathname} or the BORN file (if given), so '
+                       f'units of the dielectric tensor cannot be determined.')
 
     # Units from summary_file
     ulength = summary_dict['ulength']
@@ -746,44 +761,44 @@ def read_interpolation_data(
         # So allow pint to do this unit conversion automatically
         phonopy_dielectric_unit = ureg('e**2')/(ureg(ulength)**3*ureg(ufc))
         data_dict['dielectric'] = (
-            summary_dict['dielectric']/summary_dict['factor']
+            summary_dict['dielectric']/summary_dict['nac_factor']
             *phonopy_dielectric_unit.to(dielectric_unit).magnitude)
         data_dict['dielectric_unit'] = dielectric_unit
     except KeyError:
         pass
 
-    uncorrected_fc = summary_dict['force_constants']*ureg(ufc).to(force_constants_unit).magnitude # in hartree/bohr**2
-    uncorrected_fc, cell_origins = convert_fc_phases(
-         uncorrected_fc, summary_dict['atom_r'],
+    fc = summary_dict['force_constants']*ureg(ufc).to(force_constants_unit).magnitude # in hartree/bohr**2
+    fc, cell_origins = convert_fc_phases(
+         fc, summary_dict['atom_r'],
          summary_dict['sc_atom_r'], summary_dict['pc_to_sc_atom_idx'],
          summary_dict['sc_to_pc_atom_idx'], summary_dict['sc_matrix'])
+    if 'born' in data_dict.keys():
+        born = data_dict['born'] # 'e'
+        dielectric = data_dict['dielectric'] # 'e**2/(bohr*hartree)'
+        atom_r = data_dict['crystal']['atom_r']
+        atom_type = data_dict['crystal']['atom_type']
+        atom_mass = data_dict['crystal']['atom_mass'] # 'amu'
+        sc_matrix = data_dict['sc_matrix']
+        cell_vectors = data_dict['crystal']['cell_vectors'] # 'angstrom'
+        n_atoms = len(atom_r)
+        n_cells = len(cell_origins)
+        ax = np.newaxis
 
-    born = data_dict['born'] # 'e'
-    dielectric = data_dict['dielectric'] # 'e**2/(bohr*hartree)'
-    atom_r = data_dict['crystal']['atom_r']
-    atom_type = data_dict['crystal']['atom_type']
-    atom_mass = data_dict['crystal']['atom_mass'] # 'amu'
-    sc_matrix = data_dict['sc_matrix']
-    cell_vectors = data_dict['crystal']['cell_vectors'] # 'angstrom'
-    n_atoms = len(atom_r)
-    n_cells = len(cell_origins)
-    ax = np.newaxis
+        sc_atom_r = np.repeat(cell_origins, n_atoms, axis=0) + np.tile(atom_r, (n_cells, 1))
+        sc_to_u_matrix = np.linalg.inv(sc_matrix).transpose()
+        sc_atom_r_scell = np.einsum('ij,jk->ik', sc_atom_r, sc_to_u_matrix)
+        sc_vecs = np.einsum('ji,ik->jk', sc_matrix, cell_vectors)
+        sc_mass = np.tile(atom_mass, n_cells)
 
-    sc_atom_r = np.repeat(cell_origins, n_atoms, axis=0) + np.tile(atom_r, (n_cells, 1))
-    sc_to_u_matrix = np.linalg.inv(sc_matrix).transpose()
-    sc_atom_r_scell = np.einsum('ij,jk->ik', sc_atom_r, sc_to_u_matrix)
-    sc_vecs = np.einsum('ji,ik->jk', sc_matrix, cell_vectors)
-    sc_mass = np.tile(atom_mass, n_cells)
-
-    from euphonic import ForceConstants, Crystal
-    sc_crystal = Crystal(sc_vecs*ureg('angstrom'), sc_atom_r_scell,
-                         np.tile(atom_type, n_cells), sc_mass*ureg('amu'))
-    fc_dipole = ForceConstants(sc_crystal, np.ones((n_cells, 3*n_atoms*n_cells, 3*n_atoms*n_cells))*ureg('hartree/bohr**2'), sc_matrix,
-                               cell_origins=np.zeros((n_cells, 3), dtype=np.int32), born=np.tile(born, (n_cells, 1, 1))*ureg('e'),
-                               dielectric=dielectric*ureg('e**2/(bohr*hartree)'))
-    fc_dipole.calculate_qpoint_phonon_modes(np.array([[0., 0., 0.]]))
-    corr = np.real(fc_dipole._calculate_dipole_correction(np.array([0., 0., 0.]))) # In hartree/bohr**2
-    fc = uncorrected_fc - np.transpose(np.reshape(corr[:, :3*n_atoms], (n_cells, 3*n_atoms, 3*n_atoms)), axes=[0, 2, 1])
+        from euphonic import ForceConstants, Crystal
+        sc_crystal = Crystal(sc_vecs*ureg('angstrom'), sc_atom_r_scell,
+                             np.tile(atom_type, n_cells), sc_mass*ureg('amu'))
+        fc_dipole = ForceConstants(sc_crystal, np.ones((n_cells, 3*n_atoms*n_cells, 3*n_atoms*n_cells))*ureg('hartree/bohr**2'), sc_matrix,
+                                   cell_origins=np.zeros((n_cells, 3), dtype=np.int32), born=np.tile(born, (n_cells, 1, 1))*ureg('e'),
+                                   dielectric=dielectric*ureg('e**2/(bohr*hartree)'))
+        fc_dipole.calculate_qpoint_phonon_modes(np.array([[0., 0., 0.]]))
+        corr = np.real(fc_dipole._calculate_dipole_correction(np.array([0., 0., 0.]))) # In hartree/bohr**2
+        fc = fc - np.transpose(np.reshape(corr[:, :3*n_atoms], (n_cells, 3*n_atoms, 3*n_atoms)), axes=[0, 2, 1])
 
     #data_dict['force_constants'] = fc*ureg(
     #    ufc).to(force_constants_unit).magnitude
