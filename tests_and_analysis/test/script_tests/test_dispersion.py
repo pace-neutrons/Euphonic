@@ -148,7 +148,9 @@ def test_regenerate_disp_data(_):
     except FileNotFoundError:
         json_data = {}
 
-    for disp_param in disp_params:
+    all_disp_params = (disp_params
+                       + disp_params_from_phonopy)
+    for disp_param in all_disp_params:
         # Generate current figure for us to retrieve with gcf
         euphonic.cli.dispersion.main(disp_param)
 
