@@ -84,16 +84,6 @@ class ForceConstants:
         dielectric
             Shape (3, 3) float Quantity in charge**2/(length*energy)
             units. The dielectric permittivity tensor
-        is_short_ranged_fc
-            Whether the input force constants are short-ranged, only
-            has an effect if born and dielectric have been provided.
-            If the force constants are not short-ranged, they will be
-            converted to short-ranged by applying the dipole
-            correction according to eq. 78 in Gonze and Lee PRB 55,
-            10355 (1997)
-
-            
-            
         """
         # Check independent inputs first
         _check_constructor_inputs(
