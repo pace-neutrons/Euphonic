@@ -6,6 +6,7 @@ from unittest.mock import patch
 import pytest
 import numpy as np
 import numpy.testing as npt
+from packaging import version
 
 from euphonic import Spectrum1D
 from tests_and_analysis.test.utils import (
@@ -21,6 +22,7 @@ pytestmark = pytest.mark.matplotlib
 try:
     import matplotlib.pyplot
     import euphonic.cli.dos
+    from matplotlib import __version__ as mpl_ver
 except ModuleNotFoundError:
     pass
 
@@ -79,6 +81,18 @@ class TestRegression:
                     value, expected_line_data[key],
                     atol=5*sys.float_info.epsilon)
             else:
+                # In Matplotlib > 3.6.0 tick labels on invisible axis
+                # are set rather than being empty strings, don't know
+                # if this is intended behaviour or not yet so may change
+                # in further mpl releases. For now just replace invisible
+                # tick axes labels with ''.
+                # For some reason this doesn't happen with the powder-map
+                # plots so correct it here
+                if (version.parse(mpl_ver) >= version.parse('3.6.0')
+                        and key == 'x_ticklabels'):
+                    value, expected_line_data[key] = zip(*[
+                        ('', '') if exp == '' else (val, exp)
+                        for val, exp in zip(value, expected_line_data[key])])
                 assert value == expected_line_data[key]
 
     @pytest.mark.parametrize('dos_args', dos_params)
