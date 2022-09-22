@@ -150,7 +150,7 @@ def _extract_phonon_data_hdf5(filename: str,
 
     with h5py.File(filename, 'r') as hdf5_file:
         data_dict = {}
-        if 'qpoint' in hdf5_file.keys():
+        if 'qpoint' in hdf5_file:
             data_dict['qpts'] = hdf5_file['qpoint'][()]
             data_dict['frequencies'] = hdf5_file['frequency'][()]
             if read_eigenvectors:
@@ -256,7 +256,7 @@ def read_phonon_data(
         raise ValueError((f'File format {phonon_format} of {phonon_name}'
                           f' is not recognised'))
 
-    if read_eigenvectors and not 'eigenvectors' in phonon_dict.keys():
+    if read_eigenvectors and not 'eigenvectors' in phonon_dict:
         raise RuntimeError((f'Eigenvectors couldn\'t be found in '
                             f'{phonon_pathname}, ensure --eigvecs was '
                             f'set when running Phonopy'))
@@ -307,7 +307,7 @@ def read_phonon_data(
     if read_eigenvectors:
         # Convert Phonopy conventions to Euphonic conventions
         data_dict['eigenvectors'] = convert_eigenvector_phases(phonon_dict)
-    if 'weights' in phonon_dict.keys():
+    if 'weights' in phonon_dict:
         data_dict['weights'] = _convert_weights(phonon_dict['weights'])
     return data_dict
 
@@ -516,7 +516,7 @@ def _extract_summary(filename: str, fc_extract: bool = False
     if fc_extract:
         # Get matrix to convert from primitive cell to unit cell
         u_to_sc_matrix = np.array(summary_object['supercell_matrix'])
-        if 'primitive_matrix' in summary_object.keys():
+        if 'primitive_matrix' in summary_object:
             u_to_p_matrix = np.array(summary_object['primitive_matrix'])
             # Matrix to convert from primitive to supercell
             p_to_u_matrix = np.linalg.inv(u_to_p_matrix).transpose()
@@ -721,8 +721,8 @@ def read_interpolation_data(
     # may not always be e.g. you can run Phonopy so that 'born',
     # 'dielectric' are written to phonopy.yaml, but if NAC = .FALSE.
     # 'nac_factor' will not be written. In this case raise error.
-    if ('born' in summary_dict.keys()
-            and 'nac_factor' not in summary_dict.keys()):
+    if ('born' in summary_dict
+            and 'nac_factor' not in summary_dict):
         raise KeyError(f'nac_unit_conversion_factor could not be found in '
                        f'{summary_pathname} or the BORN file (if given), so '
                        f'units of the dielectric tensor cannot be determined.')
@@ -754,8 +754,10 @@ def read_interpolation_data(
             'e').to(born_unit).magnitude
         data_dict['born_unit'] = born_unit
         # Phonopy NAC conversion factor converts the following NAC
-        # term (eq. 75 in Gonze & Lee 1997, ignoring dimensionless units):
-        # born**2/(volume x dielectric) = 1/(ulength**3 x di_energy x di_length)
+        # term (eq. 75 in Gonze & Lee 1997, ignoring dimensionless
+        # units)
+        # born**2/(volume x dielectric)
+        #     = 1/(ulength**3 x di_energy x di_length)
         # to the same units as the force constants (given by ufc)
         # i.e. factor*nac_units = force constants units
         # So allow pint to do this unit conversion automatically
@@ -773,7 +775,7 @@ def read_interpolation_data(
          fc, summary_dict['atom_r'],
          summary_dict['sc_atom_r'], summary_dict['pc_to_sc_atom_idx'],
          summary_dict['sc_to_pc_atom_idx'], summary_dict['sc_matrix'])
-    if 'born' in data_dict.keys():
+    if 'born' in data_dict:
         crystal = Crystal.from_dict(data_dict['crystal'])
         fc = subtract_fc_dipole(
             fc*ureg(force_constants_unit), crystal, data_dict['sc_matrix'],

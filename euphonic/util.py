@@ -478,7 +478,6 @@ def subtract_fc_dipole(force_constants: Quantity, crystal: 'Crystal',
     from euphonic import Crystal, ForceConstants
     n_atoms = crystal.n_atoms
     n_cells = len(cell_origins)
-    ax = np.newaxis
 
     sc_atom_r = (np.repeat(cell_origins, n_atoms, axis=0)
                  + np.tile(crystal.atom_r, (n_cells, 1)))

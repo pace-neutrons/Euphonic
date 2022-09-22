@@ -337,7 +337,7 @@ class TestForceConstantsCreation:
             self, material, phonopy_args):
         phonopy_args['path'] = get_phonopy_path(material)
         with pytest.raises(KeyError):
-            fc = ForceConstants.from_phonopy(**phonopy_args)
+            ForceConstants.from_phonopy(**phonopy_args)
 
     def test_create_from_castep_with_no_fc_raises_runtime_error(self):
         with pytest.raises(RuntimeError):

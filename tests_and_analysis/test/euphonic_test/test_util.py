@@ -189,10 +189,10 @@ class TestSubtractFcDipole:
     def test_convert_fc_phases(self, uncorrected_fc_cls, expected_fc_cls):
         fc = uncorrected_fc_cls
         corrected_fc = subtract_fc_dipole(
-            fc.force_constants, fc.crystal, fc.sc_matrix, fc.cell_origins, fc.born, fc.dielectric)
+            fc.force_constants, fc.crystal, fc.sc_matrix, fc.cell_origins,
+            fc.born, fc.dielectric)
         assert corrected_fc.units == expected_fc_cls.force_constants.units
         npt.assert_allclose(
             corrected_fc.magnitude,
             expected_fc_cls.force_constants.magnitude,
             atol=2e-7)
-
