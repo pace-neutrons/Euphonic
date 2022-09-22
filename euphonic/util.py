@@ -484,15 +484,17 @@ def subtract_fc_dipole(force_constants: Quantity, crystal: 'Crystal',
                  + np.tile(crystal.atom_r, (n_cells, 1)))
     sc_to_u_matrix = np.linalg.inv(sc_matrix).transpose()
     sc_atom_r_scell = np.einsum('ij,jk->ik', sc_atom_r, sc_to_u_matrix)
-    sc_vecs = np.einsum('ji,ik->jk', sc_matrix, crystal.cell_vectors)
-    sc_mass = np.tile(crystal.atom_mass, n_cells)
+    sc_vecs = np.einsum('ji,ik->jk', sc_matrix, crystal._cell_vectors)
+    sc_mass = np.tile(crystal._atom_mass, n_cells)
 
-    sc_crystal = Crystal(sc_vecs, sc_atom_r_scell,
-                         np.tile(crystal.atom_type, n_cells), sc_mass)
+    sc_crystal = Crystal(sc_vecs*ureg('bohr'), sc_atom_r_scell,
+                         np.tile(crystal.atom_type, n_cells),
+                         sc_mass*ureg('m_e'))
     sc_fc = np.ones((n_cells, 3*n_atoms*n_cells, 3*n_atoms*n_cells))*ureg(
         'hartree/bohr**2')
     sc_co = np.zeros((n_cells, 3), dtype=np.int32)
-    sc_born = np.tile(born, (n_cells, 1, 1))
+    sc_born = np.tile(born.to(ureg('e')).magnitude,
+                      (n_cells, 1, 1))*ureg('e')
     fc_dipole = ForceConstants(sc_crystal, sc_fc, sc_matrix, sc_co,
                                born=sc_born, dielectric=dielectric)
     fc_dipole.calculate_qpoint_phonon_modes(np.array([[0., 0., 0.]]))
