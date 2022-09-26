@@ -657,6 +657,12 @@ class ForceConstants:
             # a very small difference and can only be seen in near-flat
             # mode gradients, but should be corrected anyway
             recip_asr_correction =  recip_asr_correction.conj().T
+            # Temporary fix to https://github.com/pace-neutrons/Euphonic/issues/191
+            # Append extra elements to avoid overflow in eigenvectors
+            # in openblas
+            if len(reigenvecs) > 0:
+                reigenvecs = np.append(
+                    reigenvecs, np.zeros(reigenvecs[:1].shape), axis=0)
             (cell_vectors, recip_vectors, reduced_qpts, split_idx, q_dirs,
              fc_img_weighted, sc_origins, recip_asr_correction,
              dyn_mat_weighting, rfreqs, reigenvecs, rmode_gradients,
