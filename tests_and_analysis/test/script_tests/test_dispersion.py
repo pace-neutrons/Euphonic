@@ -2,12 +2,10 @@ import sys
 import os
 import json
 from unittest.mock import patch
-from platform import platform
 
 import pytest
 import numpy.testing as npt
 from packaging import version
-from scipy import __version__ as scipy_ver
 
 from euphonic import Spectrum1DCollection
 from tests_and_analysis.test.utils import (
