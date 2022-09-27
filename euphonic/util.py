@@ -494,11 +494,11 @@ def subtract_fc_dipole(force_constants: Quantity, crystal: 'Crystal',
     sc_co = np.zeros((n_cells, 3), dtype=np.int32)
     sc_born = np.tile(born.to(ureg('e')).magnitude,
                       (n_cells, 1, 1))*ureg('e')
-    fc_dipole = ForceConstants(sc_crystal, sc_fc, sc_matrix, sc_co,
-                               born=sc_born, dielectric=dielectric)
-    fc_dipole.calculate_qpoint_phonon_modes(np.array([[0., 0., 0.]]))
-    corr = np.real(fc_dipole._calculate_dipole_correction(
-        np.array([0., 0., 0.])))
+    dipole_data = ForceConstants._dipole_correction_init(
+        sc_crystal, sc_born.magnitude, dielectric.magnitude)
+    corr = ForceConstants._calculate_dipole_correction(
+        np.array([0., 0., 0.]), sc_crystal, sc_born.magnitude,
+        dielectric.magnitude, dipole_data)
     corr = np.transpose(
         np.reshape(corr[:, :3*n_atoms], (n_cells, 3*n_atoms, 3*n_atoms)),
         axes=[0, 2, 1])

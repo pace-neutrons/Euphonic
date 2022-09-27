@@ -574,9 +574,11 @@ class ForceConstants:
         dyn_mat_weighting = 1/np.sqrt(masses*np.transpose(masses))
 
         # Initialise dipole correction calc to FC matrix if required
-        if dipole and (not hasattr(self, '_dipole_parameter') or
-                       dipole_parameter != self._dipole_parameter):
-            self._dipole_correction_init(dipole_parameter)
+        if dipole and (not hasattr(self, '_dipole_init_data') or
+                       dipole_parameter != self._dipole_init_data[
+                           'dipole_parameter']):
+            self._dipole_init_data = self._dipole_correction_init(
+                self.crystal, self._born, self._dielectric, dipole_parameter)
 
         force_constants = self._force_constants
         if asr == 'realspace':
@@ -599,7 +601,9 @@ class ForceConstants:
                 unique_sc_i, unique_cell_origins, unique_cell_i,
                 all_origins_cart)
             if dipole:
-                dyn_mat_gamma += self._calculate_dipole_correction(q_gamma)
+                dyn_mat_gamma += self._calculate_dipole_correction(
+                    q_gamma, self.crystal, self._born, self._dielectric,
+                    self._dipole_init_data)
             recip_asr_correction = self._enforce_reciprocal_asr(dyn_mat_gamma)
 
 
@@ -810,7 +814,9 @@ class ForceConstants:
             unique_cell_origins, unique_cell_i, all_origins_cart)
 
         if dipole:
-            dipole_corr = self._calculate_dipole_correction(qpt)
+            dipole_corr = self._calculate_dipole_correction(
+                qpt, self.crystal, self._born, self._dielectric,
+                self._dipole_init_data)
             dyn_mat += dipole_corr
 
         if len(recip_asr_correction) > 0:
@@ -938,8 +944,12 @@ class ForceConstants:
             return dyn_mat, dmat_gradient
         else:
             return dyn_mat, None
-
-    def _dipole_correction_init(self, dipole_parameter: float = 1.0) -> None:
+    @staticmethod
+    def _dipole_correction_init(crystal: Crystal,
+                                born: np.ndarray,
+                                dielectric: np.ndarray,
+                                dipole_parameter: float = 1.0
+                                ) -> Dict[str, Union[float, np.ndarray]]:
         """
         Calculate the q-independent parts of the long range correction
         to the dynamical matrix for efficiency. The method used is based
@@ -952,13 +962,10 @@ class ForceConstants:
             Changes the cutoff in real/reciprocal space for the dipole
             Ewald sum. A higher value uses more reciprocal terms
         """
-
-        cell_vectors = self.crystal._cell_vectors
-        recip = self.crystal.reciprocal_cell().to('1/bohr').magnitude
-        n_atoms = self.crystal.n_atoms
-        atom_r = self.crystal.atom_r
-        born = self._born
-        dielectric = self._dielectric
+        cell_vectors = crystal._cell_vectors
+        recip = crystal.reciprocal_cell().to('1/bohr').magnitude
+        n_atoms = crystal.n_atoms
+        atom_r = crystal.atom_r
         inv_dielectric = np.linalg.inv(dielectric)
         sqrt_pi = math.sqrt(math.pi)
 
@@ -985,7 +992,7 @@ class ForceConstants:
         atom_r_cart = np.einsum('ij,jk->ik', atom_r, cell_vectors)
         atom_r_e = np.einsum('ij,jk->ik', atom_r_cart, inv_dielectric)
         for n in range(max_shells):
-            cells_tmp = self._get_shell_origins(n)
+            cells_tmp = ForceConstants._get_shell_origins(n)
             cells_cart = np.einsum('ij,jk->ik', cells_tmp, cell_vectors)
             cells_e = np.einsum(
                 'ij,jk->ik', cells_cart, inv_dielectric)
@@ -1031,7 +1038,7 @@ class ForceConstants:
         gvecs_cart = np.array([[0., 0., 0.]])
         gvec_phases = np.tile([1. + 0.j], (1, n_atoms))
         for n in range(1, max_shells):
-            gvecs = self._get_shell_origins(n)
+            gvecs = ForceConstants._get_shell_origins(n)
             gvecs_cart_tmp = np.einsum('ij,jk->ik', gvecs, recip)
             gvec_dot_r = np.einsum('ij,kj->ik', gvecs, atom_r)
             gvec_phases_tmp = np.exp(2j*math.pi*gvec_dot_r)
@@ -1056,7 +1063,7 @@ class ForceConstants:
                 recip_q0 += recip_q0_tmp
             else:
                 break
-        vol = self.crystal._cell_volume()
+        vol = crystal._cell_volume()
         recip_q0 *= math.pi/(vol*lambda_2)
 
         # Fill in remaining entries by symmetry
@@ -1078,15 +1085,22 @@ class ForceConstants:
             # Symmetrise 3x3
             dipole_q0[i] = 0.5*(dipole_q0[i] + np.transpose(dipole_q0[i]))
 
-        self._dipole_parameter = dipole_parameter
-        self._lambda = upper_lambda
-        self._H_ab = H_ab
-        self._cells = cells
-        self._gvecs_cart = gvecs_cart
-        self._gvec_phases = gvec_phases
-        self._dipole_q0 = dipole_q0
+        dipole_init_data = {}
+        dipole_init_data['dipole_parameter'] = dipole_parameter
+        dipole_init_data['lambda'] = upper_lambda
+        dipole_init_data['H_ab'] = H_ab
+        dipole_init_data['cells'] = cells
+        dipole_init_data['gvecs_cart'] = gvecs_cart
+        dipole_init_data['gvec_phases'] = gvec_phases
+        dipole_init_data['dipole_q0'] = dipole_q0
+        return dipole_init_data
 
-    def _calculate_dipole_correction(self, q: np.ndarray) -> np.ndarray:
+    @staticmethod
+    def _calculate_dipole_correction(
+            q: np.ndarray, crystal: Crystal, born: np.ndarray,
+            dielectric: np.ndarray,
+            dipole_init_data: Dict[str, Union[float, np.ndarray]]
+            ) -> np.ndarray:
         """
         Calculate the long range correction to the dynamical matrix
         using the Ewald sum, see eqs 72-74 from Gonze and Lee PRB 55,
@@ -1104,24 +1118,22 @@ class ForceConstants:
             Shape (3*n_atoms, 3*n_atoms) complex ndarray. The
             correction to the dynamical matrix
         """
-        recip = self.crystal.reciprocal_cell().to('1/bohr').magnitude
-        n_atoms = self.crystal.n_atoms
-        atom_r = self.crystal.atom_r
-        born = self._born
-        dielectric = self._dielectric
-        upper_lambda = self._lambda
+        recip = crystal.reciprocal_cell().to('1/bohr').magnitude
+        n_atoms = crystal.n_atoms
+        atom_r = crystal.atom_r
+        upper_lambda = dipole_init_data['lambda']
         lambda_2 = upper_lambda**2
-        H_ab = self._H_ab
-        cells = self._cells
+        H_ab = dipole_init_data['H_ab']
+        cells = dipole_init_data['cells']
+        gvec_phases = dipole_init_data['gvec_phases']
+        gvecs_cart = dipole_init_data['gvecs_cart']
+        dipole_q0 = dipole_init_data['dipole_q0']
         q_norm = q - np.rint(q)  # Normalised q-pt
 
         # Don't include G=0 vector if q=0
         if is_gamma(q_norm):
-            gvec_phases = self._gvec_phases[1:]
-            gvecs_cart = self._gvecs_cart[1:]
-        else:
-            gvec_phases = self._gvec_phases
-            gvecs_cart = self._gvecs_cart
+            gvec_phases = gvec_phases[1:]
+            gvecs_cart = gvecs_cart[1:]
 
         # Calculate real space term
         real_dipole = np.zeros((n_atoms, n_atoms, 3, 3), dtype=np.complex128)
@@ -1149,7 +1161,7 @@ class ForceConstants:
                              /(gvec_phases[:, i:]*q_phases[i:]))
                 recip_dipole[i, i:] = np.einsum(
                     'ikl,ij->jkl', recip_exp, phase_exp)
-        cell_volume = self.crystal._cell_volume()
+        cell_volume = crystal._cell_volume()
         recip_dipole *= math.pi/(cell_volume*lambda_2)
 
         # Fill in remaining entries by symmetry
@@ -1166,7 +1178,7 @@ class ForceConstants:
         for i in range(n_atoms):
             dipole[i] = np.einsum('ij,klm,kjm->kil',
                                   born[i], born, dipole_tmp[i])
-            dipole[i, i] -= self._dipole_q0[i]
+            dipole[i, i] -= dipole_q0[i]
 
         return np.reshape(np.transpose(dipole, axes=[0, 2, 1, 3]),
                           (3*n_atoms, 3*n_atoms))
@@ -1255,7 +1267,8 @@ class ForceConstants:
 
         return na_corr
 
-    def _get_shell_origins(self, n: int) -> np.ndarray:
+    @staticmethod
+    def _get_shell_origins(n: int) -> np.ndarray:
         """
         Given the shell number, compute all the cell origins that lie in
         that shell
