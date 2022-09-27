@@ -661,9 +661,6 @@ class ForceConstants:
             # a very small difference and can only be seen in near-flat
             # mode gradients, but should be corrected anyway
             recip_asr_correction =  recip_asr_correction.conj().T
-            if len(reigenvecs) > 0:
-                reigenvecs = np.append(
-                    reigenvecs, np.zeros(reigenvecs[:1].shape), axis=0)
             # Make sure all arrays are contiguous before calling C
             (cell_vectors, recip_vectors, reduced_qpts, split_idx, q_dirs,
              fc_img_weighted, sc_origins, recip_asr_correction,
