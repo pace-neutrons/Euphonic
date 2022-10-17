@@ -58,12 +58,8 @@ def get_fig_label_data(fig) -> Dict[str, Union[str, List[str]]]:
 
             label_data['x_ticklabels'] += ax_label_data['x_ticklabels']
         else:
-            # Invisible axes should not have visible ticks or labels
-            assert not any([tl.get_visible() for tl in ax.get_xticklines()])
-            assert not any([tl.get_visible() for tl in ax.get_yticklines()])
-            clr = 'none'  # Invisible labels have colour none
-            assert all([t.get_color() == clr for t in ax.get_xticklabels()])
-            assert all([t.get_color() == clr for t in ax.get_yticklabels()])
+            for ticks in ax.get_xticks(), ax.get_yticks():
+                assert len(ticks) == 0
 
     return label_data
 

@@ -182,14 +182,14 @@ def plot_1d(spectra: Union[Spectrum1D,
             leg_handles, leg_labels = ax.get_legend_handles_labels()
             if len(leg_labels) > 0:
                 ax.legend()
+            ax.set_ylabel(ylabel)  # Shared y-axis so only label first one
         ax.set_ylim(bottom=ymin, top=ymax)
 
-    # Add an invisible large axis for common labels
+    # Add an invisible large axis so xlabel is in centre of plot
     ax = fig.add_subplot(111, frameon=False)
-    ax.grid(False)
-    ax.tick_params(labelcolor="none", bottom=False, left=False)
+    for ax_dir in ax.xaxis, ax.yaxis:
+        ax_dir.set_major_locator(plt.NullLocator())
     ax.set_xlabel(xlabel)
-    ax.set_ylabel(ylabel)
 
     fig.suptitle(title)
     return fig
@@ -309,15 +309,16 @@ def plot_2d(spectra: Union[Spectrum2D, Sequence[Spectrum2D]],
 
     norm = Normalize(vmin=vmin, vmax=vmax)
 
-    for spectrum, ax in zip(spectra, axes.flatten()):
+    for i, (spectrum, ax) in enumerate(zip(spectra, axes.flatten())):
         plot_2d_to_axis(spectrum, ax, cmap=cmap, norm=norm)
+        if i == 0:
+            ax.set_ylabel(ylabel)  # Shared y-axis so only label first one
 
-    # Add an invisible large axis for common labels
+    # Add an invisible large axis so xlabel is in centre of plot
     ax = fig.add_subplot(111, frameon=False)
-    ax.grid(False)
-    ax.tick_params(labelcolor="none", bottom=False, left=False)
+    for ax_dir in ax.xaxis, ax.yaxis:
+        ax_dir.set_major_locator(plt.NullLocator())
     ax.set_xlabel(xlabel)
-    ax.set_ylabel(ylabel)
 
     fig.suptitle(title)
 
