@@ -46,11 +46,10 @@ def get_fig_label_data(fig) -> Dict[str, Union[str, List[str]]]:
     label_data = {'x_ticklabels': [],
                   'title': fig._suptitle.get_text()}
 
-    # Get axis labels from whichever axis has them.
-    # Collect all tick labels from visible axes only,
-    # we don't care about invisible axis labels
+    # Get axis labels from whichever axis has them
     for ax in fig.axes:
         if ax.get_frame_on():
+            # Collect all tick labels from visible axes only
             ax_label_data = get_ax_label_data(ax)
 
             for key in 'x_label', 'y_label':
@@ -58,6 +57,13 @@ def get_fig_label_data(fig) -> Dict[str, Union[str, List[str]]]:
                     label_data[key] = ax_label_data[key]
 
             label_data['x_ticklabels'] += ax_label_data['x_ticklabels']
+        else:
+            # Invisible axes should not have visible ticks or labels
+            assert not any([tl.get_visible() for tl in ax.get_xticklines()])
+            assert not any([tl.get_visible() for tl in ax.get_yticklines()])
+            clr = 'none'  # Invisible labels have colour none
+            assert all([t.get_color() == clr for t in ax.get_xticklabels()])
+            assert all([t.get_color() == clr for t in ax.get_yticklabels()])
 
     return label_data
 
