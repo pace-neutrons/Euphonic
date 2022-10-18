@@ -74,7 +74,10 @@ class TestRegression:
         with open(dos_output_file, 'r') as f:
             expected_line_data = json.load(f)[args_to_key(dos_args)]
         for key, value in line_data.items():
-            if key == 'xy_data':
+            # We don't care about the details of tick labels for DOS
+            if key == 'x_ticklabels':
+                pass
+            elif key == 'xy_data':
                 npt.assert_allclose(
                     value, expected_line_data[key],
                     atol=5*sys.float_info.epsilon)

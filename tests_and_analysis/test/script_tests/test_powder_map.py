@@ -87,7 +87,10 @@ class TestRegression:
             expected_image_data = json.load(expected_data_file)[
                 args_to_key(powder_map_args)]
         for key, value in image_data.items():
-            if key == 'extent':
+            # We don't care about the details of tick labels for powder map
+            if key == 'x_ticklabels':
+                pass
+            elif key == 'extent':
                 # Lower bound of y-data (energy) varies by up to ~2e-6 on
                 # different systems when --asr is used, compared to
                 # the upper bound of 100s of meV this is effectively zero,
@@ -208,8 +211,6 @@ def test_regenerate_powder_map_data(_):
                              + powder_map_params_macos_segfault):
         # Generate current figure for us to retrieve with gcf
         euphonic.cli.powder_map.main(powder_map_param)
-
-        matplotlib.pyplot.gcf().tight_layout()  # Force tick labels to be set
 
         # Retrieve with gcf and write to file
         image_data = get_current_plot_image_data()

@@ -71,7 +71,6 @@ class TestRegression:
             self, intensity_map_args):
         euphonic.cli.intensity_map.main(intensity_map_args)
 
-        matplotlib.pyplot.gcf().tight_layout()  # Force tick labels to be set
         image_data = get_current_plot_image_data()
 
         with open(intensity_map_output_file, 'r') as expected_data_file:

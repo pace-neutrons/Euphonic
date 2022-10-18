@@ -46,15 +46,18 @@ def get_fig_label_data(fig) -> Dict[str, Union[str, List[str]]]:
     label_data = {'x_ticklabels': [],
                   'title': fig._suptitle.get_text()}
 
-    # Get axis labels from whichever axis has them; collect all tick labels
+    # Get axis labels from whichever axis has them.
+    # Collect all tick labels from visible axes only,
+    # we don't care about invisible axis labels
     for ax in fig.axes:
-        ax_label_data = get_ax_label_data(ax)
+        if ax.get_frame_on():
+            ax_label_data = get_ax_label_data(ax)
 
-        for key in 'x_label', 'y_label':
-            if ax_label_data[key]:
-                label_data[key] = ax_label_data[key]
+            for key in 'x_label', 'y_label':
+                if ax_label_data[key]:
+                    label_data[key] = ax_label_data[key]
 
-        label_data['x_ticklabels'] += ax_label_data['x_ticklabels']
+            label_data['x_ticklabels'] += ax_label_data['x_ticklabels']
 
     return label_data
 
