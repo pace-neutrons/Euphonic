@@ -9,10 +9,11 @@ from typing import (Any, Dict, List, Optional, overload,
                     Sequence, Tuple, TypeVar, Union, Type)
 import warnings
 
-from pint import DimensionalityError
+from pint import DimensionalityError, Unit
 import numpy as np
 from scipy.ndimage import correlate1d, gaussian_filter
 
+from euphonic.broadening import polynomial_broadening
 from euphonic.validate import _check_constructor_inputs, _check_unit_conversion
 from euphonic.io import (_obj_to_json_file, _obj_from_json_file,
                          _obj_to_dict, _process_dict)
@@ -541,6 +542,56 @@ class Spectrum1D(Spectrum):
         return type(self)(
             np.copy(self.x_data.magnitude)*ureg(self.x_data_unit),
             y_broadened*ureg(self.y_data_unit),
+            copy.copy((self.x_tick_labels)),
+            copy.copy(self.metadata))
+
+    def broaden_with_polynomial(self: T,
+                                polynomial: List[float],
+                                width_unit: Unit = None,
+                                width_lower_limit: float = None,
+                                width_convention: str = 'std',
+                                adaptive_error: float = 1e-2,
+                                ) -> T:
+        """Use fast approximate method to apply x-dependent Gaussian broadening
+
+        Typically this is an energy-dependent instrumental resolution function.
+
+        polynomial
+            Coefficients of polynomial fit to energy/width relationship. Order
+            should be consistent with numpy.polyfit / numpy.polyval (i.e. from
+            largest exponent to smallest.)
+        width_unit
+            x-axis units for width_polynomial. (By default, use same as bins.)
+        width_lower_limit
+            A lower bound is set for broadening width in WIDTH_UNIT. If set to
+            None (default) the bin width will be used. To disable any lower
+            limit, set to 0 or lower.
+        width_convention
+            Either 'std' or 'fwhm', to indicate if polynomial function yields
+            standard deviation (sigma) or full-width half-maximum.
+        adaptive_error
+            Acceptable error for gaussian approximations, defined
+            as the absolute difference between the areas of the true and
+            approximate gaussians.
+
+        """
+
+        if width_convention.lower() == 'fwhm':
+            polynomial = np.asarray(polynomial) / np.sqrt(8 * np.log(2))
+        elif width_convention.lower() == 'std':
+            pass
+        else:
+            raise ValueError('width_convention must be "std" or "fwhm".')
+
+        y_broadened = polynomial_broadening(
+            self.get_bin_edges(), self.get_bin_centres(), polynomial,
+            self.y_data.magnitude,
+            width_unit=width_unit, width_lower_limit=width_lower_limit,
+            adaptive_error=adaptive_error)
+
+        return type(self)(
+            np.copy(self.x_data.magnitude) * ureg(self.x_data_unit),
+            y_broadened * ureg(self.y_data_unit),
             copy.copy((self.x_tick_labels)),
             copy.copy(self.metadata))
 
@@ -1296,6 +1347,7 @@ class Spectrum2D(Spectrum):
                    x_tick_labels=d['x_tick_labels'],
                    metadata=d['metadata'])
 
+
 def apply_kinematic_constraints(spectrum: Spectrum2D,
                                 e_i: Quantity = None,
                                 e_f: Quantity = None,
@@ -1350,7 +1402,7 @@ def apply_kinematic_constraints(spectrum: Spectrum2D,
                          "transfer).")
 
     if e_i is None:   # Indirect geometry: final energy is fixed,
-                        # incident energy range is unlimited
+                      # incident energy range is unlimited
         e_f = e_f.to('meV')
         e_i = (spectrum.get_bin_centres(bin_ax='y').to('meV') + e_f)
     elif e_f is None:   # Direct geometry: incident energy is fixed,

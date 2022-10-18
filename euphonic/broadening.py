@@ -1,13 +1,66 @@
 """
 Functions for broadening spectra
 """
+from typing import List
 import warnings
+
+import numpy as np
+from pint import Unit
 from scipy.optimize import nnls
 from scipy.stats import norm
 from scipy.signal import convolve
-import numpy as np
 
 from euphonic import ureg, Quantity
+
+
+def polynomial_broadening(bins: Quantity,
+                          x: Quantity,
+                          width_polynomial: List[float],
+                          weights: np.ndarray,
+                          width_unit: Unit = None,
+                          width_lower_limit: float = None,
+                          adaptive_error: float = 1e-2) -> Quantity:
+    """Use fast approximate method to apply x-dependent Gaussian broadening
+
+    Typically this is an energy-dependent instrumental resolution function.
+
+    Parameters
+    ----------
+    bins
+        Energy bins for output spectrum
+    x
+        Data positions (to be binned)
+    width_polynomial
+        Coefficients of polynomial fit to energy/width relationship. Order
+        should be consistent with numpy.polyfit / numpy.polyval (i.e. from
+        largest exponent to smallest.) Width is expressed as standard deviation
+        (not FHWM); the conversion factor between these conventions is
+        :math:`FWHM = \sqrt{8 \ln 2} \sigma`
+    weights
+        Weight for each data point corresponding to x    
+    width_unit
+        x-axis units for width_polynomial. (By default, use same as bins.)
+    width_lower_limit
+        A lower bound is set for broadening width in WIDTH_UNIT. If set to None
+        (default) the bin width will be used. To disable any lower limit, set
+        to 0 or lower.
+    adaptive_error
+        Acceptable error for gaussian approximations, defined
+        as the absolute difference between the areas of the true and
+        approximate gaussians.
+        
+    """
+    if width_unit is None:
+        width_unit = bins.units
+    if width_lower_limit is None:
+        width_lower_limit = (bins[1] - bins[0]).to(width_unit).magnitude
+
+    widths = np.polyval(width_polynomial, x.to(width_unit).magnitude)
+    widths = np.maximum(widths, width_lower_limit) * width_unit
+    
+    return width_interpolated_broadening(bins, x, widths, weights,
+                                         adaptive_error=adaptive_error)
+
 
 def width_interpolated_broadening(bins: Quantity,
                                   x: Quantity,
