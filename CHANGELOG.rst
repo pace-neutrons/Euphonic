@@ -1,6 +1,10 @@
 `Unreleased <https://github.com/pace-neutrons/Euphonic/compare/v1.0.0...HEAD>`_
 ----------
 
+- Bug fixes:
+
+  - Avoid occasional segmentation faults when using OpenBLAS, workaround for #191
+
 `v1.0.0 <https://github.com/pace-neutrons/Euphonic/compare/v0.6.5...v1.0.0>`_
 ----------
 
