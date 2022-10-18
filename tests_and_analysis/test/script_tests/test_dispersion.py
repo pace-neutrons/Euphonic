@@ -2,12 +2,10 @@ import sys
 import os
 import json
 from unittest.mock import patch
-from platform import platform
 
 import pytest
 import numpy.testing as npt
 from packaging import version
-from scipy import __version__ as scipy_ver
 
 from euphonic import Spectrum1DCollection
 from tests_and_analysis.test.utils import (
@@ -56,8 +54,8 @@ disp_params_from_phonopy =  [
     [nacl_fc_file],
     [nacl_phonon_file],
     [nacl_hdf5_file],
-    [nacl_no_evec_hdf5_file]]
-disp_params_macos_segfault =  [[cahgo2_fc_file, '--reorder']]
+    [nacl_no_evec_hdf5_file],
+    [cahgo2_fc_file, '--reorder']]
 
 
 class TestRegression:
@@ -105,17 +103,6 @@ class TestRegression:
     @pytest.mark.phonopy_reader
     @pytest.mark.parametrize('dispersion_args', disp_params_from_phonopy)
     def test_dispersion_plot_data_from_phonopy(
-            self, inject_mocks, dispersion_args):
-        self.run_dispersion_and_test_result(dispersion_args)
-
-    @pytest.mark.phonopy_reader
-    @pytest.mark.parametrize('dispersion_args', disp_params_macos_segfault)
-    @pytest.mark.skipif(
-        (any([s in platform() for s in ['Darwin', 'macOS']])
-         and version.parse(scipy_ver) > version.parse('1.1.0')),
-        reason=('Segfaults on some MacOS platforms with Scipy > 1.1.0, may '
-                'be related to https://github.com/google/jax/issues/432'))
-    def test_dispersion_plot_data_macos_segfault(
             self, inject_mocks, dispersion_args):
         self.run_dispersion_and_test_result(dispersion_args)
 

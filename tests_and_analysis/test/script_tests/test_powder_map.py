@@ -1,12 +1,9 @@
 import os
 import json
 from unittest.mock import patch
-from platform import platform
 
 import pytest
 import numpy.testing as npt
-from packaging import version
-from scipy import __version__ as scipy_ver
 
 from euphonic import Spectrum2D
 from tests_and_analysis.test.utils import get_data_path, get_castep_path, get_phonopy_path
@@ -59,8 +56,7 @@ powder_map_params_from_phonopy = [
     [nacl_prim_fc_file, '-w=incoherent-dos', '--pdos=Na', '--no-widget',
      *quick_calc_params],
     [nacl_prim_fc_file, '-w=coherent-plus-incoherent-dos', '--pdos=Cl',
-     *quick_calc_params]]
-powder_map_params_macos_segfault = [
+     *quick_calc_params],
     [nacl_prim_fc_file, '--temperature=1000', '--weighting=coherent',
      *quick_calc_params]]
 
@@ -113,17 +109,6 @@ class TestRegression:
     @pytest.mark.parametrize(
         'powder_map_args', powder_map_params_from_phonopy)
     def test_powder_map_plot_image_from_phonopy(
-            self, inject_mocks, powder_map_args):
-        self.run_powder_map_and_test_result(powder_map_args)
-
-    @pytest.mark.phonopy_reader
-    @pytest.mark.parametrize('powder_map_args', powder_map_params_macos_segfault)
-    @pytest.mark.skipif(
-        (any([s in platform() for s in ['Darwin', 'macOS']])
-         and version.parse(scipy_ver) > version.parse('1.1.0')),
-        reason=('Segfaults on some MacOS platforms with Scipy > 1.1.0, may '
-                'be related to https://github.com/google/jax/issues/432'))
-    def test_powder_map_plot_image_macos_segfault(
             self, inject_mocks, powder_map_args):
         self.run_powder_map_and_test_result(powder_map_args)
 
@@ -207,8 +192,7 @@ def test_regenerate_powder_map_data(_):
         json_data = {}
 
     for powder_map_param in (powder_map_params
-                             + powder_map_params_from_phonopy
-                             + powder_map_params_macos_segfault):
+                             + powder_map_params_from_phonopy):
         # Generate current figure for us to retrieve with gcf
         euphonic.cli.powder_map.main(powder_map_param)
 

@@ -605,13 +605,11 @@ class ForceConstants:
 
         rfreqs = np.zeros((n_rqpts, 3*n_atoms))
         if return_eigenvectors:
-            reigenvecs = np.zeros(
-                (n_rqpts, 3*n_atoms, n_atoms, 3), dtype=np.complex128)
+            n_reigenvecs = n_rqpts
         else:
             # Create dummy zero-length eigenvectors so this can be
             # detected in C and eigenvectors won't be saved
-            reigenvecs = np.zeros(
-                (0, 3*n_atoms, n_atoms, 3), dtype=np.complex128)
+            n_reigenvecs = 0
 
         if return_mode_gradients:
             rmode_gradients = np.zeros((n_rqpts, 3*n_atoms, 3),
@@ -647,7 +645,13 @@ class ForceConstants:
                     n_threads = int(n_threads_env)
                 else:
                     n_threads = cpu_count()
-            # Make sure all arrays are contiguous before calling C
+            # Temporary fix to https://github.com/pace-neutrons/Euphonic/issues/191
+            # Append extra elements to avoid overflow in eigenvectors
+            # in openblas
+            if n_reigenvecs > 0:
+                n_reigenvecs += 1
+            reigenvecs = np.zeros((n_reigenvecs, 3*n_atoms, n_atoms, 3),
+                                  dtype=np.complex128)
             cell_vectors = self.crystal._cell_vectors
             recip_vectors = self.crystal.reciprocal_cell().to(
                 '1/bohr').magnitude
@@ -657,6 +661,7 @@ class ForceConstants:
             # a very small difference and can only be seen in near-flat
             # mode gradients, but should be corrected anyway
             recip_asr_correction =  recip_asr_correction.conj().T
+            # Make sure all arrays are contiguous before calling C
             (cell_vectors, recip_vectors, reduced_qpts, split_idx, q_dirs,
              fc_img_weighted, sc_origins, recip_asr_correction,
              dyn_mat_weighting, rfreqs, reigenvecs, rmode_gradients,
@@ -678,6 +683,8 @@ class ForceConstants:
                     splitting, rfreqs, reigenvecs, rmode_gradients,
                     all_origins_cart, n_threads)
         else:
+            reigenvecs = np.zeros((n_reigenvecs, 3*n_atoms, n_atoms, 3),
+                                  dtype=np.complex128)
             for qi, qpt in enumerate(reduced_qpts):
                 q_dir = None
                 if splitting and is_gamma(qpt):
