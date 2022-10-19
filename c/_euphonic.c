@@ -40,6 +40,7 @@ static PyObject *calculate_phonons(PyObject *self, PyObject *args) {
     // Extra vars only required if dipole = True
     PyArrayObject *py_born;
     PyArrayObject *py_dielectric;
+    PyDictObject *py_dipole_init_data;
     double lambda;
     PyArrayObject *py_H_ab;
     PyArrayObject *py_dipole_cells;
@@ -113,7 +114,6 @@ static PyObject *calculate_phonons(PyObject *self, PyObject *args) {
                           &n_threads)) {
         return NULL;
     }
-
     // Load library functions
     // Load before calling PyObject_GetAttrString so we don't have to
     // py_DECREF if library loading fails
@@ -134,14 +134,19 @@ static PyObject *calculate_phonons(PyObject *self, PyObject *args) {
             return NULL;
     }
     if (dipole) {
+        if (attr_from_pyobj(py_idata, "_dipole_init_data", &py_dipole_init_data)) {
+                PyErr_Format(PyExc_RuntimeError,
+                             "Failed to read dipole init data from object\n");
+                return NULL;
+        }
         if (attr_from_pyobj(py_idata, "_born", &py_born) ||
             attr_from_pyobj(py_idata, "_dielectric", &py_dielectric) ||
-            double_from_pyobj(py_idata, "_lambda", &lambda) ||
-            attr_from_pyobj(py_idata, "_H_ab", &py_H_ab) ||
-            attr_from_pyobj(py_idata, "_cells", &py_dipole_cells) ||
-            attr_from_pyobj(py_idata, "_gvec_phases", &py_gvec_phases) ||
-            attr_from_pyobj(py_idata, "_gvecs_cart", &py_gvecs_cart) ||
-            attr_from_pyobj(py_idata, "_dipole_q0", &py_dipole_q0)) {
+            double_from_pydict(py_dipole_init_data, "lambda", &lambda) ||
+            val_from_pydict(py_dipole_init_data, "H_ab", &py_H_ab) ||
+            val_from_pydict(py_dipole_init_data, "cells", &py_dipole_cells) ||
+            val_from_pydict(py_dipole_init_data, "gvec_phases", &py_gvec_phases) ||
+            val_from_pydict(py_dipole_init_data, "gvecs_cart", &py_gvecs_cart) ||
+            val_from_pydict(py_dipole_init_data, "dipole_q0", &py_dipole_q0)) {
                 PyErr_Format(PyExc_RuntimeError,
                              "Failed to read dipole attributes from object\n");
                 return NULL;
@@ -288,13 +293,11 @@ static PyObject *calculate_phonons(PyObject *self, PyObject *args) {
     Py_DECREF(py_cell_ogs);
     Py_DECREF(py_atom_r);
     if (dipole){
+        // Note PyDict_GetItemString returns "borrowed" ref so don't need
+        // to decref lambda, H_ab etc.
         Py_DECREF(py_born);
         Py_DECREF(py_dielectric);
-        Py_DECREF(py_H_ab);
-        Py_DECREF(py_dipole_cells);
-        Py_DECREF(py_gvec_phases);
-        Py_DECREF(py_gvecs_cart);
-        Py_DECREF(py_dipole_q0);
+        Py_DECREF(py_dipole_init_data);
     }
 
     return Py_None;
