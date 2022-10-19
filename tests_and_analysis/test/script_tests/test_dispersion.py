@@ -5,7 +5,6 @@ from unittest.mock import patch
 
 import pytest
 import numpy.testing as npt
-from packaging import version
 
 from euphonic import Spectrum1DCollection
 from tests_and_analysis.test.utils import (
