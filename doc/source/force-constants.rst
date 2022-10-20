@@ -87,6 +87,20 @@ This is a simple example, but the same applies to more realistic 3D structures.
 This transformation is done automatically when reading from Phonopy.
 If reading force constants from another program, there is a function to help with this transformation, see :ref:`Reading From Other Programs<fc_read_other_programs>`.
 
+**Polar Force Constants**
+
+From equation 78 in `Gonze & Lee, 1997 <https://doi.org/10.1103/PhysRevB.55.10355>`_:
+
+.. math::
+
+  C = C^{SR} + C^{DD}
+
+Where :math:`C` is the 'long-ranged' force constants matrix, :math:`C^{SR}` is the 'short-ranged' force constants matrix, and :math:`C^{DD}` is the long-ranged dipole part (which is non-zero for materials with non-zero Born effective charges and dielectric permittivity tensor).
+Euphonic requires :math:`C^{SR}`, whereas some codes (e.g. Phonopy) output :math:`C` so must be converted.
+This conversion is done automatically when reading from Phonopy, but if reading force constants from another program, there is a class method
+:py:meth:`ForceConstants.from_long_ranged_dipole_fc <euphonic.force_constants.ForceConstants.from_long_ranged_dipole_fc>`
+which can do this transformation. An example of this is shown in :ref:`Reading From Other Programs<fc_read_other_programs>`
+
 
 Reading From CASTEP
 -------------------
@@ -175,6 +189,8 @@ An example is shown below, assuming that the inputs are being loaded from existi
   # Create a ForceConstants object, using the Crystal object
   fc = ForceConstants(crystal, force_constants, sc_matrix, cell_origins)
 
+**Changing Phase Convention**
+
 If, as described in the :ref:`Force Constants Format<fc_format>` section, the source program uses the atomic coordinate phase convention, there may be some re-indexing required to get the force constants in the correct shape and form.
 There is a helper function :py:meth:`euphonic.util.convert_fc_phases <euphonic.util.convert_fc_phases>`
 which will convert a force constants of shape ``(n, N*n, 3, 3)``, to the shape required by Euphonic ``(N, 3*n, 3*n)``,
@@ -217,8 +233,35 @@ For more details see the function docstring. An example is below:
   # Create a ForceConstants object, using the Crystal object
   fc = ForceConstants(crystal, force_constants, sc_matrix, cell_origins)
 
-Once the force constants object has been created, it can be saved as a single portable JSON file using
-:py:meth:`ForceConstants.to_json_file <euphonic.force_constants.ForceConstants.to_json_file>`
+**Polar Force Constants - Converting from Long-ranged to Short-ranged**
+
+If, as described in the :ref:`Force Constants Format<fc_format>` section, the force constants matrix contains long-ranged dipole interactions, these must be subtracted to produce the short-ranged force constants matrix before being used in Euphonic.
+This can be done using the class method
+:py:meth:`ForceConstants.from_long_ranged_dipole_fc <euphonic.force_constants.ForceConstants.from_long_ranged_dipole_fc>`.
+Note that the force constants must have a Euphonic-like shape before using this method. An example is below:
+
+.. code-block:: py
+
+  import numpy as np
+  from euphonic import ureg, Crystal, ForceConstants
+  from euphonic.util import convert_fc_phases
+
+  # Load arrays from files and apply any required units
+  cell_vectors = np.load('cell_vectors.npy')*ureg('angstrom')
+  atom_r = np.load('atom_r.npy')
+  atom_type = np.load('atom_type.npy')
+  atom_mass = np.load('atom_mass.npy')*ureg('amu')
+  force_constants = np.load('force_constants.npy')*ureg('meV/(angstrom**2)')
+  sc_matrix = np.load('sc_matrix.npy')
+  cell_origins = np.load('cell_origins.npy')
+  born = np.load('born.npy')*ureg('e')
+  dielectric = np.load('dielectric.npy')*ureg('e**2/(bohr*hartree)')
+
+  # Create a Crystal object
+  crystal = Crystal(cell_vectors, atom_r, atom_type, atom_mass)
+  # Create a ForceConstants object from the long-ranged force constants
+  fc = ForceConstants.from_long_ranged_dipole_fc(
+    crystal, force_constants, sc_matrix, cell_origins, born, dielectric)
 
 
 Calculating Phonon Frequencies and Eigenvectors

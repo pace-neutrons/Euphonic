@@ -317,7 +317,7 @@ class ForceConstants:
         [2]_ (applied if splitting=True).
 
         .. [1] M. T. Dove, Introduction to Lattice Dynamics, Cambridge University Press, Cambridge, 1993, 83-87
-        .. [2] X. Gonze, K. C. Charlier, D. C. Allan, M. P. Teter, Phys. Rev. B, 1994, 50, 13035-13038
+        .. [2] X. Gonze, J. C. Charlier, D. C. Allan, M. P. Teter, Phys. Rev. B, 1994, 50, 13035-13038
 
         **Mode Gradients Calculation**
 
@@ -1679,13 +1679,14 @@ class ForceConstants:
         """
         Subtracts a dipole term from the input force constants matrix to
         convert a long-ranged force constants matrix to a short-ranged one,
-        as defined in eq. 78 from Gonze and Lee PRB 55, 10355 (1997). This
-        correction may need to be applied as Euphonic requires the
-        short-ranged matrix, whereas some codes output the long-ranged one
-        (e.g Phonopy, but note that the from_phonopy method will apply this
-        correction automatically). If the force constants matrix is already
-        short ranged or the material is not polar this correction should
-        not be applied.
+        as defined in eq. 78 from [4]_ . This correction may need to be
+        applied as Euphonic requires the short-ranged matrix, whereas some
+        codes output the long-ranged one (e.g Phonopy, but note that the
+        from_phonopy method will apply this correction automatically).
+        If the force constants matrix is already short ranged or the
+        material is not polar this correction should not be applied.
+
+        .. [4] X. Gonze and C. Lee., Phys. Rev. B, 1997, 55, 10355-10368
 
         Parameters
         ----------
