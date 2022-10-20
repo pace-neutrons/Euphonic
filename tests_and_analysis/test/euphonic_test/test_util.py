@@ -8,8 +8,7 @@ import numpy.testing as npt
 
 from euphonic import ureg
 from euphonic.util import (direction_changed, mp_grid, get_qpoint_labels,
-                           mode_gradients_to_widths, convert_fc_phases,
-                           subtract_fc_dipole)
+                           mode_gradients_to_widths, convert_fc_phases)
 from tests_and_analysis.test.utils import get_data_path
 from tests_and_analysis.test.euphonic_test.test_crystal import get_crystal
 from tests_and_analysis.test.euphonic_test.test_force_constants import (
@@ -180,19 +179,3 @@ class TestConvertFcPhases:
             _, _ = convert_fc_phases(
                 fc.magnitude, atom_r, sc_atom_r, uc_to_sc_idx, sc_to_uc_idx,
                 sc_matrix, cell_origins_tol=1e-8)
-
-
-class TestSubtractFcDipole:
-
-    @pytest.mark.parametrize(('uncorrected_fc_cls, expected_fc_cls'), [
-        (get_fc('NaCl_dipole'), get_fc('NaCl'))])
-    def test_convert_fc_phases(self, uncorrected_fc_cls, expected_fc_cls):
-        fc = uncorrected_fc_cls
-        corrected_fc = subtract_fc_dipole(
-            fc.force_constants, fc.crystal, fc.sc_matrix, fc.cell_origins,
-            fc.born, fc.dielectric)
-        assert corrected_fc.units == expected_fc_cls.force_constants.units
-        npt.assert_allclose(
-            corrected_fc.magnitude,
-            expected_fc_cls.force_constants.magnitude,
-            atol=2e-7)

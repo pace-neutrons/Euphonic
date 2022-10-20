@@ -944,6 +944,7 @@ class ForceConstants:
             return dyn_mat, dmat_gradient
         else:
             return dyn_mat, None
+
     @staticmethod
     def _dipole_correction_init(crystal: Crystal,
                                 born: np.ndarray,

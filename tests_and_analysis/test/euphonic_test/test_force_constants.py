@@ -119,7 +119,8 @@ def get_fc(material):
 
 
 def check_force_constants(
-        actual_force_constants, expected_force_constants):
+        actual_force_constants, expected_force_constants,
+        fc_atol=np.finfo(np.float64).eps):
     check_crystal(actual_force_constants.crystal,
                   expected_force_constants.crystal)
 
@@ -129,7 +130,7 @@ def check_force_constants(
     npt.assert_allclose(
         actual_force_constants.force_constants.magnitude,
         expected_force_constants.force_constants.magnitude,
-        atol=np.finfo(np.float64).eps)
+        atol=fc_atol)
     assert (actual_force_constants.force_constants.units
             == expected_force_constants.force_constants.units)
 
@@ -195,6 +196,17 @@ class TestForceConstantsCreation:
         expected_fc = get_expected_fc(material)
         fc = ForceConstants.from_dict(expected_fc.to_dict())
         check_force_constants(fc, expected_fc)
+
+    @pytest.mark.parametrize('long_ranged_fc_json, expected_fc_json',
+                             [('NaCl_dipole', 'NaCl')])
+    def test_create_from_long_ranged_dipole_fc(
+            self, long_ranged_fc_json, expected_fc_json):
+        expected_fc = get_expected_fc(expected_fc_json)
+        fc = get_fc(long_ranged_fc_json)
+        fc = ForceConstants.from_long_ranged_dipole_fc(
+            fc.crystal, fc.force_constants, fc.sc_matrix, fc.cell_origins,
+            fc.born, fc.dielectric)
+        check_force_constants(fc, expected_fc, fc_atol=2e-7)
 
     @pytest.mark.phonopy_reader
     @pytest.mark.parametrize('material, phonopy_args', [
