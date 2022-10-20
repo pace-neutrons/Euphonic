@@ -5,8 +5,8 @@ from typing import Optional, Dict, Any, Union, Tuple, TextIO, Sequence, List
 
 import numpy as np
 
-from euphonic import ureg, Crystal
-from euphonic.util import convert_fc_phases, subtract_fc_dipole
+from euphonic import ureg
+from euphonic.util import convert_fc_phases
 
 
 # h5py can't be called from Matlab, so import as late as possible to
@@ -197,8 +197,10 @@ def read_phonon_data(
         ) -> Dict[str, Union[int, str, np.ndarray]]:
     """
     Reads precalculated phonon mode data from a Phonopy
-    mesh/band/qpoints.yaml/hdf5 file and returns it in a dictionary. May
-    also read from phonopy.yaml for structure information.
+    mesh/band/qpoints.yaml/hdf5 file and returns it in a dictionary.
+    May also read from phonopy.yaml for structure information. The
+    output eigenvectors will have their phase transformed from
+    per atom to per cell phases.
 
     Parameters
     ----------
@@ -635,7 +637,10 @@ def read_interpolation_data(
     Reads data from the phonopy summary file (default phonopy.yaml) and
     optionally born and force constants files. Only attempts to read
     from born or force constants files if these can't be found in the
-    summary file.
+    summary file. Note that the output force constants will be transformed
+    to a Euphonic-like shape, but if it is a polar material it will still
+    be the long-ranged force constants matrix (and not the short-ranged one
+    that Euphonic requires in the case of polar materials).
 
     Parameters
     ----------
@@ -775,12 +780,6 @@ def read_interpolation_data(
          fc, summary_dict['atom_r'],
          summary_dict['sc_atom_r'], summary_dict['pc_to_sc_atom_idx'],
          summary_dict['sc_to_pc_atom_idx'], summary_dict['sc_matrix'])
-    if 'born' in data_dict:
-        crystal = Crystal.from_dict(data_dict['crystal'])
-        fc = subtract_fc_dipole(
-            fc*ureg(force_constants_unit), crystal, data_dict['sc_matrix'],
-            cell_origins, data_dict['born']*ureg('e'),
-            data_dict['dielectric']*ureg('e**2/(bohr*hartree)')).magnitude
 
     data_dict['force_constants'] = fc
     data_dict['cell_origins'] = cell_origins

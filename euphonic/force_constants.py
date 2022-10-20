@@ -1671,6 +1671,81 @@ class ForceConstants:
                    d['cell_origins'], d['born'], d['dielectric'])
 
     @classmethod
+    def from_long_ranged_dipole_fc(
+            cls: Type[T], crystal: Crystal, force_constants: Quantity,
+            sc_matrix: np.ndarray, cell_origins: np.ndarray, born: Quantity,
+            dielectric: Quantity) -> T:
+        """
+        Subtracts a dipole term from the input force constants matrix to
+        convert a long-ranged force constants matrix to a short-ranged one,
+        as defined in eq. 78 from Gonze and Lee PRB 55, 10355 (1997). This
+        correction may need to be applied as Euphonic requires the
+        short-ranged matrix, whereas some codes output the long-ranged one
+        (e.g Phonopy, but note that the from_phonopy method will apply this
+        correction automatically). If the force constants matrix is already
+        short ranged or the material is not polar this correction should
+        not be applied.
+
+        Parameters
+        ----------
+        force_constants
+            Shape (n_cells_in_sc, 3*n_atoms, 3*n_atoms) float Quantity
+            in energy/length**2 units. The long-ranged force constants
+            matrix
+        crystal
+            Lattice and atom information
+        sc_matrix
+            Shape (3, 3) int ndarray. The transformation matrix to
+            convert from the unit cell vectors to the supercell vectors
+        cell_origins
+            Shape (n_cells_in_sc, 3) int ndarray. The origin
+            coordinates of each unit cell within the supercell, in
+            units of the unit cell vectors
+        born
+            Shape (n_atoms, 3, 3) float Quantity in charge units. The
+            Born charges for each atom
+        dielectric
+            Shape (3, 3) float Quantity in charge**2/(length*energy)
+            units. The dielectric permittivity tensor
+
+        Returns
+        -------
+        forceconstants
+        """
+        n_atoms = crystal.n_atoms
+        n_cells = len(cell_origins)
+        # The dynamical matrix of the supercell at Q=0 is equivalent
+        # to the unit cell FC. Correct FC by calculating the dipole
+        # correction to the supercell dynamical matrix and subtracting
+        # it from the FC.
+        # First create Crystal and Born charges for supercell
+        sc_atom_r = (np.repeat(cell_origins, n_atoms, axis=0)
+                     + np.tile(crystal.atom_r, (n_cells, 1)))
+        sc_to_u_matrix = np.linalg.inv(sc_matrix).transpose()
+        sc_atom_r_scell = np.einsum('ij,jk->ik', sc_atom_r, sc_to_u_matrix)
+        sc_vecs = np.einsum('ji,ik->jk', sc_matrix, crystal._cell_vectors)
+        sc_mass = np.tile(crystal._atom_mass, n_cells)
+        sc_crystal = Crystal(sc_vecs*ureg('bohr'), sc_atom_r_scell,
+                             np.tile(crystal.atom_type, n_cells),
+                             sc_mass*ureg('m_e'))
+        sc_born = np.tile(born.to(ureg('e')).magnitude,
+                          (n_cells, 1, 1))
+        # Now initialise, calculate and subtract the dipole correction
+        dipole_data = cls._dipole_correction_init(
+            sc_crystal, sc_born, dielectric.magnitude)
+        corr = cls._calculate_dipole_correction(
+            np.array([0., 0., 0.]), sc_crystal, sc_born,
+            dielectric.magnitude, dipole_data)
+        corr = np.transpose(
+            np.reshape(corr[:, :3*n_atoms], (n_cells, 3*n_atoms, 3*n_atoms)),
+            axes=[0, 2, 1])
+        fc = force_constants.to('hartree/bohr**2').magnitude
+        fc_corrected = np.real(fc - corr)*ureg('hartree/bohr**2').to(
+            force_constants.units)
+        return cls(crystal, fc_corrected, sc_matrix, cell_origins,
+                   born=born, dielectric=dielectric)
+
+    @classmethod
     def from_json_file(cls: Type[T], filename: str) -> T:
         """
         Read from a JSON file. See ForceConstants.from_dict for required
@@ -1745,4 +1820,9 @@ class ForceConstants:
         data = phonopy.read_interpolation_data(
             path=path, summary_name=summary_name, born_name=born_name,
             fc_name=fc_name, fc_format=fc_format)
-        return cls.from_dict(data)
+        fc = cls.from_dict(data)
+        if fc.born is not None:
+            fc = cls.from_long_ranged_dipole_fc(
+                fc.crystal, fc.force_constants, fc.sc_matrix, fc.cell_origins,
+                born=fc.born, dielectric=fc.dielectric)
+        return fc
