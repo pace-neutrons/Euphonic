@@ -751,8 +751,15 @@ def read_interpolation_data(
         umass).to(atom_mass_unit).magnitude
     cry_dict['atom_mass_unit'] = atom_mass_unit
 
+    fc, cell_origins = convert_fc_phases(
+         summary_dict['force_constants'], summary_dict['atom_r'],
+         summary_dict['sc_atom_r'], summary_dict['pc_to_sc_atom_idx'],
+         summary_dict['sc_to_pc_atom_idx'], summary_dict['sc_matrix'])
+    data_dict['force_constants'] = fc*ureg(
+        ufc).to(force_constants_unit).magnitude
     data_dict['force_constants_unit'] = force_constants_unit
     data_dict['sc_matrix'] = summary_dict['sc_matrix']
+    data_dict['cell_origins'] = cell_origins
 
     try:
         data_dict['born'] = summary_dict['born']*ureg(
@@ -773,15 +780,5 @@ def read_interpolation_data(
         data_dict['dielectric_unit'] = dielectric_unit
     except KeyError:
         pass
-
-    fc = summary_dict['force_constants']*ureg(ufc).to(
-        force_constants_unit).magnitude
-    fc, cell_origins = convert_fc_phases(
-         fc, summary_dict['atom_r'],
-         summary_dict['sc_atom_r'], summary_dict['pc_to_sc_atom_idx'],
-         summary_dict['sc_to_pc_atom_idx'], summary_dict['sc_matrix'])
-
-    data_dict['force_constants'] = fc
-    data_dict['cell_origins'] = cell_origins
 
     return data_dict

@@ -959,9 +959,42 @@ class ForceConstants:
 
         Parameters
         ----------
+        crystal
+            Lattice and atom information
+        born
+            Shape (n_atoms, 3, 3) float Quantity in charge units. The
+            Born charges for each atom.
+        dielectric
+            Shape (3, 3) float Quantity in charge**2/(length*energy)
+            units. The dielectric permittivity tensor.
         dipole_parameter
             Changes the cutoff in real/reciprocal space for the dipole
-            Ewald sum. A higher value uses more reciprocal terms
+            Ewald sum. A higher value uses more reciprocal terms.
+
+        Returns
+        -------
+        dipole_init_data
+            A dictionary with the following keys/values:
+            - 'dipole_parameter': float
+                The input dipole parameter
+            - 'lambda': float
+                Scaling factor for the real space sums, derived from
+                dipole_parameter
+            - 'H_ab': (n_cells, n_elems, 3, 3) float ndarray
+                Where n_cells is the number of unit cells in the real
+                space sum, and n_elems is the number of elements in the
+                upper triangular of a (3*n_atoms, 3*n_atoms) matrix.
+            - 'cells': (n_cells, 3) float ndarray
+                The origin coordinates of cells used in the real space
+                sum
+            - 'gvecs_cart': (n_vecs, 3) float ndarray
+                The G vectors used in the reciprocal space sum in
+                Cartesian
+            - 'gvec_phases': (n_vecs, n_atoms) complex ndarray
+                e^i(G.r) for each G vector and atom in the unit cell
+            - 'dipole_q0': (3*n_atoms, 3*n_atoms) float ndarray
+                The dipole correction to the dynamical matrix at
+                q=0
         """
         cell_vectors = crystal._cell_vectors
         recip = crystal.reciprocal_cell().to('1/bohr').magnitude
@@ -1111,13 +1144,25 @@ class ForceConstants:
         ----------
         q
             Shape (3,) float ndarray. The q-point to calculate the
-            correction for
+            correction for.
+        crystal
+            Lattice and atom information
+        born
+            Shape (n_atoms, 3, 3) float Quantity in charge units.
+            The Born charges for each atom.
+        dielectric
+            Shape (3, 3) float Quantity in charge**2/(length*energy)
+            units. The dielectric permittivity tensor.
+        dipole_init_data
+            This should be the same dictionary as output by
+            _dipole_correction_init. See the docstring for that
+            function for details of required keys and values.
 
         Returns
         -------
         corr
             Shape (3*n_atoms, 3*n_atoms) complex ndarray. The
-            correction to the dynamical matrix
+            correction to the dynamical matrix.
         """
         recip = crystal.reciprocal_cell().to('1/bohr').magnitude
         n_atoms = crystal.n_atoms
