@@ -502,8 +502,10 @@ def subtract_fc_dipole(force_constants: Quantity, crystal: 'Crystal',
     corr = np.transpose(
         np.reshape(corr[:, :3*n_atoms], (n_cells, 3*n_atoms, 3*n_atoms)),
         axes=[0, 2, 1])
-    corr =  corr*ureg('hartree/bohr**2').to(force_constants.units)
-    return force_constants - corr
+    fc = force_constants.to('hartree/bohr**2').magnitude
+
+    return np.real(fc - corr)*ureg('hartree/bohr**2').to(
+        force_constants.units)
 
 def _cell_vectors_to_volume(cell_vectors: np.ndarray) -> float:
     """Convert 3x3 cell vectors to volume"""
