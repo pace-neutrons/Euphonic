@@ -1,4 +1,4 @@
-from importlib_resources import open_text
+from importlib_resources import files
 
 import pytest
 
@@ -8,7 +8,7 @@ import euphonic
 class TestInstalledFiles:
 
     def test_license_is_installed(self):
-        with open_text(euphonic, 'LICENSE') as fp:
+        with open(files(euphonic) / 'LICENSE') as fp:
             license_data = fp.readlines()
         assert 'GNU GENERAL PUBLIC LICENSE' in license_data[0]
 
@@ -18,6 +18,6 @@ class TestInstalledFiles:
             import yaml
         except ModuleNotFoundError:
             pytest.skip()
-        with open_text(euphonic, 'CITATION.cff') as fp:
+        with open(files(euphonic) / 'CITATION.cff') as fp:
             citation_data = yaml.safe_load(fp)
         assert 'cff-version' in citation_data

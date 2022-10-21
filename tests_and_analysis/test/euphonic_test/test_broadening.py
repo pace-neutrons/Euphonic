@@ -29,16 +29,18 @@ def test_area_unchanged_for_broadened_dos(material, qpt_freqs_json,
     qpt_freqs = get_qpt_freqs(material, qpt_freqs_json)
     mode_widths = get_mode_widths(get_fc_path(mode_widths_json))
     dos = qpt_freqs.calculate_dos(ebins)
-    weights = np.ones(qpt_freqs.frequencies.shape) * \
-        np.full(qpt_freqs.n_qpts, 1/qpt_freqs.n_qpts)[:, np.newaxis]
+    weights = np.full(qpt_freqs.frequencies.shape,
+                      1/(qpt_freqs.n_qpts*qpt_freqs.crystal.n_atoms))
     variable_width_broaden = width_interpolated_broadening(
                                 ebins,
                                 qpt_freqs.frequencies,
                                 mode_widths, weights,
                                 0.01)
     ebins_centres = ebins.magnitude[:-1] + 0.5*np.diff(ebins.magnitude)
-    dos_area = simps(dos.y_data, ebins_centres)
-    adaptively_broadened_dos_area = simps(variable_width_broaden,
+    assert dos.y_data.units == 1/ebins.units
+    dos_area = simps(dos.y_data.magnitude, ebins_centres)
+    assert variable_width_broaden.units == 1/ebins.units
+    adaptively_broadened_dos_area = simps(variable_width_broaden.magnitude,
                                           ebins_centres)
     assert adaptively_broadened_dos_area == pytest.approx(dos_area, rel=0.01)
 

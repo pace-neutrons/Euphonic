@@ -282,18 +282,6 @@ class TestPlot1D:
         with pytest.raises(ValueError):
             fig = plot_1d(band_segments, labels=['Band A', 'Band B'])
 
-    @pytest.mark.parametrize('kwargs', [
-        {'y_label': 'Y_LABEL'},
-        {'x_label': 'X_LABEL'},
-        {'y_min': 0},
-        {'y_max': 1.5}])
-    def test_deprecated_kwargs_raise_deprecation_warning(
-            self, kwargs):
-        spec1d = Spectrum1D([0., 1., 2.] * ureg('meV'),
-                            [1., 2., 1.] * ureg('angstrom^-2'))
-        with pytest.warns(DeprecationWarning):
-            plot_1d(spec1d, **kwargs)
-
 
 class TestPlot2D:
     @staticmethod
@@ -377,14 +365,6 @@ class TestPlot2D:
 
         assert call_1[0][0] == spectra[0]
         assert call_2[0][0] == spectra[1]
-
-    @pytest.mark.parametrize('kwargs', [
-        {'y_label': 'Y_LABEL'},
-        {'x_label': 'X_LABEL'}])
-    def test_deprecated_kwargs_raise_deprecation_warning(
-            self, spectrum, kwargs):
-        with pytest.warns(DeprecationWarning):
-            euphonic.plot.plot_2d(spectrum, **kwargs)
 
 
 @pytest.mark.parametrize('labels, rotate',

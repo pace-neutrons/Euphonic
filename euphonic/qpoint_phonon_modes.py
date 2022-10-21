@@ -3,7 +3,6 @@ from typing import Dict, Optional, Union, TypeVar, Any, Type
 from collections.abc import Mapping
 
 import numpy as np
-from pint import DimensionalityError
 
 from euphonic.validate import _check_constructor_inputs
 from euphonic.io import _obj_from_json_file, _obj_to_dict, _process_dict
@@ -28,13 +27,16 @@ class QpointPhononModes(QpointFrequencies):
         Shape (n_qpts, 3) float ndarray. Q-point coordinates, in
         fractional coordinates of the reciprocal lattice
     weights
-        Shape (n_qpts,) float ndarray. The weight for each q-point
+        Shape (n_qpts,) float ndarray. The weight for each q-point,
+        for Brillouin Zone integration over symmetry-reduced q-points
     frequencies
         Shape (n_qpts, 3*crystal.n_atoms) float Quantity. Phonon
         frequencies per q-point and mode
     eigenvectors
         Shape (n_qpts, 3*crystal.n_atoms, crystal.n_atoms, 3) complex
-        ndarray. The dynamical matrix eigenvectors
+        ndarray. The dynamical matrix eigenvectors in Cartesian
+        coordinates, using the same Cartesian basis as the
+        cell_vectors in the crystal object
     """
     T = TypeVar('T', bound='QpointPhononModes')
 
@@ -47,16 +49,20 @@ class QpointPhononModes(QpointFrequencies):
         crystal
             Lattice and atom information
         qpts
-            Shape (n_qpts, 3) float ndarray. The Q-point coordinates
+            Shape (n_qpts, 3) float ndarray. Q-point coordinates, in
+            fractional coordinates of the reciprocal lattice
         frequencies
             Shape (n_qpts, 3*crystal.n_atoms) float Quantity. Phonon
             frequencies per q-point and mode
         eigenvectors
             Shape (n_qpts, 3*crystal.n_atoms, crystal.n_atoms, 3)
-            complex ndarray. The dynamical matrix eigenvectors
+            complax ndarray. The dynamical matrix eigenvectors in
+            Cartesian coordinates, using the same Cartesian basis
+            as the cell_vectors in the crystal object
         weights
-            Shape (n_qpts,) float ndarray. The weight for each q-point.
-            If None, equal weights are assumed
+            Shape (n_qpts,) float ndarray. The weight for each q-point,
+            for Brillouin Zone integration over symmetry-reduced
+            q-points. If None, equal weights are assumed
         """
         super().__init__(crystal, qpts, frequencies, weights)
         n_qpts = len(qpts)
@@ -75,7 +81,10 @@ class QpointPhononModes(QpointFrequencies):
         """
         By doing a dot product of eigenvectors at adjacent q-points,
         determines which modes are most similar and reorders the
-        frequencies at each q-point
+        frequencies at each q-point. This means that the same mode
+        will have the same index across different q-points, so will
+        be plotted as the same colour in a dispersion plot, and can
+        be followed across q-space.
 
         Parameters
         ----------
@@ -198,30 +207,31 @@ class QpointPhononModes(QpointFrequencies):
         -----
 
         This method calculates the mode-resolved (not binned in energy)
-        one-phonon neutron scattering function
-        :math:`S(Q, \\omega_{q\\nu})` **per atom**, as defined in [1]_. Note
-        that internally Euphonic uses atomic units so :math:`\\hbar` has been
-        omitted from the formulation:
+        coherent one-phonon neutron scattering function
+        :math:`S(Q, \\omega_{\\mathbf{q}\\nu})` **per atom**, as defined in
+        [1]_:
 
         .. math::
 
-          S(Q, \\omega_{q\\nu}) =
+          S(Q, \\omega_{\\mathbf{q}\\nu}) =
               \\frac{1}{2N_{atom}} \\
-              \\left\\lvert \\
-              \\sum\\limits_\\kappa\\frac{b_\\kappa}{M_{\\kappa}^{1/2}\\omega_{q\\nu}^{1/2}} \\
-              [Q\\cdot\\epsilon_{q\\nu\\kappa\\alpha}]e^{iQ{\\cdot}r_\\kappa}e^{-W} \\
+              \\left\\lvert
+              {\\sum_{\\kappa}{\\frac{b_\\kappa}{M_{\\kappa}^{1/2}{\\omega_{\\mathbf{q}\\nu}^{1/2}}}
+              (\\mathbf{Q}\\cdot \\mathbf{e}_{\\mathbf{q}\\nu\\kappa})\\exp\\left(i\\mathbf{Q}{\\cdot}\\mathbf{r}_{\\kappa}\\right)
+              \\exp\\left(-W_{\\kappa}\\right)}}
               \\right\\rvert^2
 
         Where :math:`\\nu` runs over phonon modes, :math:`\\kappa` runs
-        over atoms, :math:`\\alpha` runs over the Cartesian directions,
-        :math:`b_\\kappa` is the coherent neutron scattering length,
-        :math:`M_{\\kappa}` is the atom mass, :math:`r_{\\kappa}` is the
-        vector to atom :math:`\\kappa` in the unit cell,
-        :math:`\\epsilon_{q\\nu\\kappa\\alpha}` are the eigevectors,
-        :math:`\\omega_{q\\nu}` are the frequencies and :math:`e^{-W}`
-        is the Debye-Waller factor. :math:`N_{atom}` is the number of
-        atoms in the unit cell, so the returned structure factor is
-        **per atom** of sample.
+        over atoms, :math:`b_\\kappa` is the coherent neutron
+        scattering length, :math:`M_{\\kappa}` is the atom mass,
+        :math:`r_{\\kappa}` is the vector from the origin to atom
+        :math:`\\kappa` in the unit cell,
+        :math:`\\mathbf{e}_{\\mathbf{q}\\nu\\kappa}` are the normalised
+        Cartesian eigenvectors, :math:`\\omega_{\\mathbf{q}\\nu}` are
+        the frequencies and :math:`\\exp\\left(-W_\\kappa\\right)` is the
+        Debye-Waller factor. :math:`N_{atom}` is the number of atoms in
+        the unit cell, so the returned structure factor is **per atom**
+        of sample.
 
         .. [1] M.T. Dove, Structure and Dynamics, Oxford University Press, Oxford, 2003, 225-226
 
@@ -310,41 +320,47 @@ class QpointPhononModes(QpointFrequencies):
         Returns
         -------
         dw
-            An object containing the 3x3 Debye-Waller exponent for each
-            atom
+            An object containing the 3x3 Debye-Waller exponent matrix
+            for each atom
 
         Notes
         -----
 
-        As part of the structure factor calculation, the anisotropic
-        Debye-Waller factor is defined as:
+        As part of the structure factor calculation,
+        :math:`\\exp\\left(W_\\kappa\\right)` is the anisotropic
+        Debye-Waller factor for atom :math:`\\kappa`, and the exponent can
+        be written as:
 
         .. math::
 
-          e^{-W} = e^{-\\sum\\limits_{\\alpha\\beta}{W^{\\kappa}_{\\alpha\\beta}Q_{\\alpha}Q_{\\beta}}}
+          W_\\kappa =
+            \\sum\\limits_{\\alpha\\beta}W^{\\alpha\\beta}_{\\kappa}
+              Q_{\\alpha}Q_{\\beta}
 
-        The Debye-Waller exponent is defined as
-        :math:`W^{\\kappa}_{\\alpha\\beta}` and is independent of Q, so
-        for efficiency can be precalculated to be used in the structure
-        factor calculation. The Debye-Waller exponent is calculated by [2]_.
-        Note that internally Euphonic uses atomic units so :math:`\\hbar`
-        has been omitted from the formulation:
+        This function calculates the :math:`W^{\\alpha\\beta}_{\\kappa}`
+        part of the exponent, which is  a
+        :math:`N_\\mathrm{atom}\\times3\\times3` matrix that is
+        independent of Q, so for efficiency can be precalculated to be
+        used in the structure factor calculation. The Debye-Waller
+        exponent matrix is calculated by [2]_:
 
         .. math::
 
-          W^{\\kappa}_{\\alpha\\beta} =
-          \\frac{1}{4M_{\\kappa}\\sum\\limits_{q}{weight_q}}
-          \\sum\\limits_{q\\nu}weight_q\\frac{\\epsilon_{q\\nu\\kappa\\alpha}\\epsilon^{*}_{q\\nu\\kappa\\beta}}
-          {\\omega_{q\\nu}}
-          coth(\\frac{\\omega_{q\\nu}}{2k_BT})
+          W^{\\alpha\\beta}_{\\kappa} =
+          \\frac{\\hbar}{4M_{\\kappa}\\sum\\limits_{\\mathbf{q}}{\\mathrm{weight}_\\mathbf{q}}}
+          \\sum\\limits_{\\mathbf{q}\\nu \\in{BZ}}\\mathrm{weight}_\\mathbf{q}\\frac{e_{\\mathbf{q}\\nu\\kappa\\alpha}e^{*}_{\\mathbf{q}\\nu\\kappa\\beta}}
+          {\\omega_{\\mathbf{q}\\nu}}
+          \\mathrm{coth}\\left(\\frac{\\hbar\\omega_{\\mathbf{q}\\nu}}{2k_BT}\\right)
 
-        Where :math:`\\nu` runs over phonon modes, :math:`\\kappa` runs
-        over atoms, :math:`\\alpha,\\beta` run over the Cartesian
-        directions, :math:`M_{\\kappa}` is the atom mass,
-        :math:`\\epsilon_{q\\nu\\kappa\\alpha}` are the eigenvectors,
-        :math:`\\omega_{q\\nu}` are the frequencies, and :math:`weight_q` is
-        the per q-point weight. The q-points should be distributed over the
-        1st Brillouin Zone.
+        Where the sum is over q-points and modes :math:`\\nu` in the
+        first Brillouin Zone (BZ), :math:`\\kappa` runs over atoms,
+        :math:`\\alpha,\\beta` run over the Cartesian directions,
+        :math:`M_{\\kappa}` is the atom mass,
+        :math:`e_{q\\nu\\kappa\\alpha}` are the scalar components of the
+        normalised Cartesian eigenvectors, :math:`\\omega_{\\mathbf{q}\\nu}`
+        are the frequencies, and :math:`\\mathrm{weight}_\\mathbf{q}`
+        is the per q-point symmetry weight (if the q-points are not
+        symmetry-reduced, all weights will be equal).
 
         .. [2] G.L. Squires, Introduction to the Theory of Thermal Neutron Scattering, Dover Publications, New York, 1996, 34-37
         """
@@ -415,7 +431,7 @@ class QpointPhononModes(QpointFrequencies):
             ) -> Spectrum1DCollection:
         """
         Calculates partial density of states for each atom in the unit
-        cell.
+        cell
 
         Parameters
         ----------
@@ -465,16 +481,54 @@ class QpointPhononModes(QpointFrequencies):
 
         Returns
         -------
+
         dos
-            A collection of spectra, with the energy bins on the x-axis and
-            PDOS for each atom in the unit cell on the y-axis. If weighting
-            is None, the y-axis is in 1/energy units. If weighting is
-            specified or cross_sections are supplied, the y-axis
-            is in area/energy units per average atom.
+            A collection of spectra, with the energy bins on the x-axis
+            and PDOS for each atom in the unit cell on the y-axis,
+            metadata describes the index and species of each PDOS. If
+            the PDOS is not neutron-weighted, it is in units of modes
+            per energy unit per atom, such that the integrated area of
+            the total DOS is equal to 3. If the PDOS is weighted by the
+            neutron cross-section, it is in units of area per unit
+            energy per atom, see Notes for details.
+
+        Notes
+        -----
+
+        The PDOS is calculated as:
+
+        .. math::
+
+            PDOS_{\\kappa}(\\omega) = \\frac{1}{N_\\mathrm{atom}\\sum\\limits_{\\mathbf{q}}{\\mathrm{weight}_{\\mathbf{q}}}}
+                                      \\sum_{\\mathbf{q}\\nu\\alpha\\in{BZ}}
+                                      \\mathrm{weight}_{\\mathbf{q}} {e_{\\mathbf{q}\\nu\\kappa\\alpha}e^{*}_{\\mathbf{q}\\nu\\kappa\\alpha}}
+                                      \\delta(\\omega - \\omega_{\\mathbf{q}\\nu})
+
+        Where :math:`N_\\mathrm{atom}` is the number of atoms in the unit cell,
+        :math:`\\mathrm{weight}_\\mathbf{q}` is the per q-point weight,
+        :math:`e_{\\mathbf{q}\\nu\\kappa\\alpha}` is the normalised
+        eigenvector at :math:`\\mathbf{q}` for mode :math:`\\nu`, atom
+        :math:`\\kappa` in Cartesian direction :math:`\\alpha` and
+        :math:`\\omega_{\\mathbf{q}\\nu}` is the phonon frequency at
+        :math:`\\mathbf{q}` for mode :math:`\\nu`, and the sum
+        :math:`BZ` is over the 1st Brillouin Zone.
+
+        The neutron-weighted PDOS is calculated as:
+
+        .. math::
+
+            PDOS^\\mathrm{neutron}_{\\kappa}(\\omega) = \\frac{\\sigma_{\\kappa}M_\\mathrm{avg}}{M_\\kappa} PDOS_{\\kappa}(\\omega)
+
+        Where :math:`\\sigma_\\kappa` is the neutron scattering cross
+        section, :math:`M_\\mathrm{avg}` is the average mass of atoms in the
+        unit cell and :math:`M_\\kappa` is the mass of atom
+        :math:`\\kappa`, so the neutron-weighted PDOS is returned in
+        units of area per unit energy.
+
         """
         weighting_opts = [None, 'coherent', 'incoherent',
                           'coherent-plus-incoherent']
-        if not weighting in weighting_opts:
+        if weighting not in weighting_opts:
             raise ValueError(f'Invalid value for weighting, got '
                              f'{weighting}, should be one of '
                              f'{weighting_opts}')
@@ -515,6 +569,8 @@ class QpointPhononModes(QpointFrequencies):
         evec_weights = np.real(np.einsum('ijkl,ijkl->ijk',
                                          self.eigenvectors,
                                          np.conj(self.eigenvectors)))
+        # Normalise DOS to per atom
+        evec_weights /= self.crystal.n_atoms
         crystal = self.crystal
         for i in range(crystal.n_atoms):
             dos = self._calculate_dos(dos_bins, mode_widths=mode_widths,
@@ -595,7 +651,8 @@ class QpointPhononModes(QpointFrequencies):
                                    type_dict={'eigenvectors': np.complex128})
 
     @classmethod
-    def from_castep(cls: Type[T], filename: str) -> T:
+    def from_castep(cls: Type[T], filename: str,
+                    average_repeat_points: bool = True) -> T:
         """
         Reads precalculated phonon mode data from a CASTEP .phonon file
 
@@ -603,8 +660,15 @@ class QpointPhononModes(QpointFrequencies):
         ----------
         filename
             The path and name of the .phonon file to read
+        average_repeat_points
+            If multiple frequency/eigenvectors blocks are included with the
+            same q-point index (i.e. for Gamma-point with LO-TO splitting),
+            scale the weights such that these sum to the given weight
         """
-        data = castep.read_phonon_data(filename)
+        data = castep.read_phonon_data(
+            filename,
+            average_repeat_points=average_repeat_points)
+
         return cls.from_dict(data)
 
     @classmethod

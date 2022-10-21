@@ -4,7 +4,7 @@ from typing import List, Tuple, Type, TypeVar, Dict, Any
 from collections import OrderedDict
 
 import numpy as np
-from spglib import get_symmetry
+import spglib
 
 from euphonic.util import _cell_vectors_to_volume, _get_unique_elems_and_idx
 from euphonic.validate import _check_constructor_inputs, _check_unit_conversion
@@ -246,7 +246,7 @@ class Crystal:
         # Sometimes if symprec is very low, even the identity
         # symmetry op won't be found, and None will be returned
         # For some reason this can't always be reproduced
-        symm = get_symmetry(self.to_spglib_cell(), symprec=symprec)
+        symm = spglib.get_symmetry(self.to_spglib_cell(), symprec=symprec)
         if symm is None:
             raise RuntimeError(f'spglib.get_symmetry returned None with '
                                f'symprec={symprec}. Try increasing tol')

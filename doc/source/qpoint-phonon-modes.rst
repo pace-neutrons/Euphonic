@@ -55,8 +55,9 @@ Reordering frequencies
 
 The stored frequencies can be reordered by comparing eigenvectors using 
 :py:meth:`QpointPhononModes.reorder_frequencies <euphonic.qpoint_phonon_modes.QpointPhononModes.reorder_frequencies>`.
-This reordering can be seen the plotting dispersion (see
-:ref:`Plotting <plotting>`)
+This means that the same mode will have the same index across different
+q-points, so will be plotted as the same colour in a dispersion plot,
+allowing modes to be followed across q-space (see :ref:`Plotting <plotting>`)
 
 .. code-block:: py
 

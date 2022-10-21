@@ -17,8 +17,6 @@ import numpy as np
 
 from euphonic import Quantity
 from euphonic.spectra import Spectrum1D, Spectrum1DCollection, Spectrum2D
-from euphonic.util import _deprecation_warn
-
 
 def plot_1d_to_axis(spectra: Union[Spectrum1D, Spectrum1DCollection],
                     ax: Axes, labels: Optional[Sequence[str]] = None,
@@ -107,10 +105,6 @@ def plot_1d(spectra: Union[Spectrum1D,
             ymin: Optional[float] = None,
             ymax: Optional[float] = None,
             labels: Optional[Sequence[str]] = None,
-            x_label: str = '',
-            y_label: str = '',
-            y_min: Optional[float] = None,
-            y_max: Optional[float] = None,
             **line_kwargs) -> Figure:
     """
     Creates a Matplotlib figure for a Spectrum1D object, or multiple
@@ -148,7 +142,6 @@ def plot_1d(spectra: Union[Spectrum1D,
         to 0 for energy, for example.
     ymax
         Maximum value on the y-axis.
-
     labels
         A sequence of labels corresponding to the sequence of lines in
         spectra, used to label each line. If this is None, the
@@ -156,18 +149,6 @@ def plot_1d(spectra: Union[Spectrum1D,
         spectra.metadata['line_data'][i]['label']
         (Spectrum1DCollection) will be used. To disable labelling for a
         specific line, pass an empty string.
-    x_label
-        .. deprecated:: 0.6.3
-           Please use xlabel instead
-    y_label
-        .. deprecated:: 0.6.3
-           Please use ylabel instead
-    y_min
-        .. deprecated:: 0.6.3
-           Please use ymin instead
-    y_max
-        .. deprecated:: 0.6.3
-           Please use ymax instead
     **line_kwargs
         matplotlib.line.Line2D properties, optional
         Used in the axes.plot command to specify properties like
@@ -178,18 +159,6 @@ def plot_1d(spectra: Union[Spectrum1D,
     fig : matplotlib.figure.Figure
 
     """
-    if x_label:
-        _deprecation_warn('x_label', 'xlabel')
-        xlabel = x_label
-    if y_label:
-        _deprecation_warn('y_label', 'ylabel')
-        ylabel = y_label
-    if y_min is not None:
-        _deprecation_warn('y_min', 'ymin')
-        ymin = y_min
-    if y_max is not None:
-        _deprecation_warn('y_max', 'ymax')
-        ymax = y_max
     if isinstance(spectra, (Spectrum1D, Spectrum1DCollection)):
         spectra = (spectra,)
     else:
@@ -267,7 +236,7 @@ def plot_2d_to_axis(spectrum: Spectrum2D, ax: Axes,
     image.set_data(spectrum.get_bin_centres('x').to(x_unit).magnitude,
                    spectrum.get_bin_centres('y').to(y_unit).magnitude,
                    spectrum.z_data.to(z_unit).magnitude.T)
-    ax.images.append(image)
+    ax.add_image(image)
     ax.set_xlim(min(x_bins), max(x_bins))
     ax.set_ylim(min(y_bins), max(y_bins))
 
@@ -282,9 +251,7 @@ def plot_2d(spectra: Union[Spectrum2D, Sequence[Spectrum2D]],
             cmap: Optional[Union[str, Colormap]] = None,
             title: str = '',
             xlabel: str = '',
-            ylabel: str = '',
-            x_label: str = '',
-            y_label: str = '') -> Figure:
+            ylabel: str = '') -> Figure:
     """
     Creates a Matplotlib figure for a Spectrum2D object
 
@@ -307,25 +274,12 @@ def plot_2d(spectra: Union[Spectrum2D, Sequence[Spectrum2D]],
         X-axis label
     ylabel
         Y-axis label
-    x_label
-        .. deprecated:: 0.6.3
-           Please use xlabel instead
-    y_label
-        .. deprecated:: 0.6.3
-           Please use ylabel instead
 
     Returns
     -------
     fig : matplotlib.figure.Figure
         The Figure instance
     """
-    if x_label:
-        _deprecation_warn('x_label', 'xlabel')
-        xlabel = x_label
-    if y_label:
-        _deprecation_warn('y_label', 'ylabel')
-        ylabel = y_label
-
     # Wrap a bare spectrum in list so treatment is consistent with sequences
     if isinstance(spectra, Spectrum2D):
         spectra = [spectra]

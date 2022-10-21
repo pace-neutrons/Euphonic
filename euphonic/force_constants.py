@@ -18,8 +18,7 @@ from euphonic.io import (_obj_to_json_file, _obj_from_json_file,
 from euphonic.readers import castep, phonopy
 from euphonic.util import (is_gamma, get_all_origins,
                            mode_gradients_to_widths,
-                           _get_supercell_relative_idx,
-                           _deprecation_warn)
+                           _get_supercell_relative_idx)
 from euphonic import (ureg, Quantity, Crystal, QpointPhononModes,
                       QpointFrequencies)
 
@@ -43,12 +42,14 @@ class ForceConstants:
         Shape (n_cells_in_sc, 3*n_atoms, 3*n_atoms) float Quantity in
         energy/length**2 units. The force constants matrix
     sc_matrix
-        Shape (3, 3) int ndarray. The supercell matrix
+        Shape (3, 3) int ndarray. The transformation matrix to convert
+        from the unit cell vectors to the supercell vectors
     n_cells_in_sc
         Number of cells in the supercell
     cell_origins
-        Shape (n_cells_in_sc, 3) int ndarray. The locations of the unit
-        cells within the supercell
+        Shape (n_cells_in_sc, 3) int ndarray. The origin coordinates of
+        each unit cell within the supercell, in units of the unit cell
+        vectors
     born
         Shape (n_atoms, 3, 3) float Quantity in charge units or None.
         The Born charges for each atom
@@ -71,10 +72,12 @@ class ForceConstants:
             Shape (n_cells_in_sc, 3*n_atoms, 3*n_atoms) float Quantity
             in energy/length**2 units. The force constants matrix
         sc_matrix
-            Shape (3, 3) int ndarray. The supercell matrix
+            Shape (3, 3) int ndarray. The transformation matrix to
+            convert from the unit cell vectors to the supercell vectors
         cell_origins
-            Shape (n_cells_in_sc, 3) int ndarray. The locations of the
-            unit cells within the supercell
+            Shape (n_cells_in_sc, 3) int ndarray. The origin
+            coordinates of each unit cell within the supercell, in
+            units of the unit cell vectors
         born
             Shape (n_atoms, 3, 3) float Quantity in charge units. The
             Born charges for each atom
@@ -165,14 +168,12 @@ class ForceConstants:
             asr: Optional[str] = None,
             dipole: bool = True,
             dipole_parameter: float = 1.0,
-            eta_scale: float = 1.0,
             splitting: bool = True,
             insert_gamma: bool = False,
             reduce_qpts: bool = True,
             use_c: Optional[bool] = None,
             n_threads: Optional[int] = None,
             return_mode_gradients: bool = False,
-            return_mode_widths: bool = False
             ) -> Union[QpointPhononModes,
                        Tuple[QpointPhononModes, Quantity]]:
         """
@@ -203,9 +204,6 @@ class ForceConstants:
             correctly this can result in performance improvements. See
             euphonic-optimise-dipole-parameter program for help on choosing
             a good dipole_parameter.
-        eta_scale
-            .. deprecated:: 0.6.0
-               Please use dipole_parameter instead
         splitting
             Whether to calculate the LO-TO splitting at the gamma
             points. Only applied if dipole is True and the Born charges
@@ -241,15 +239,6 @@ class ForceConstants:
             Cartesian coordinates). These can be converted to mode
             widths and used in adaptive broadening for DOS. For details
             on how these are calculated see the Notes section
-        return_mode_widths
-            .. deprecated:: 0.5.2
-               The mode widths as calculated were only applicable for
-               adaptive broadening of DOS, this argument will be removed
-               in favour of the more flexible return_mode_gradients,
-               which will allow the calculation of direction-specific
-               mode widths in the future, for example. The mode widths
-               can still be obtained from the mode gradients using
-               euphonic.util.mode_gradients_to_widths
 
         Returns
         -------
@@ -261,7 +250,7 @@ class ForceConstants:
             object
         mode_gradients
             Optional shape (n_qpts, n_branches, 3) float Quantity,
-            the vector mode gradients dw/dQ in Cartesian coordinates.
+            the vector mode gradients dw/dq in Cartesian coordinates.
             Is only returned if return_mode_gradients is true
 
 
@@ -281,34 +270,46 @@ class ForceConstants:
 
         .. math::
 
-          \\phi_{\\alpha, {\\alpha}'}^{\\kappa, {\\kappa}'} =
-          \\frac{\\delta^{2}E}{{\\delta}u_{\\kappa,\\alpha}{\\delta}u_{{\\kappa}',{\\alpha}'}}
+          \\Phi_{\\alpha {\\alpha}^\\prime}^{\\kappa {\\kappa}^\\prime}(0,l) =
+          \\frac{\\partial^{2}E}{{\\partial}u_{\\kappa\\alpha0}{\\partial}u_{{{\\kappa}^\\prime}{{\\alpha}^\\prime}l}}
 
-        Which gives the Dynamical matrix at q:
+        where the unit cell containing the displaced atom is labelled
+        :math:`0` and :math:`l` runs over unit cells in the crystal,
+        :math:`\\kappa` runs over atoms in the unit cell, :math:`\\alpha`
+        runs over the Cartesian directions, and :math:`u_{\\kappa{\\alpha}l}`
+        is the displacement of atom :math:`\\kappa` in cell :math:`l` in
+        direction :math:`\\alpha` from its equilibrium position. This can be
+        used to calculate the dynamical matrix
+        :math:`D_{\\alpha {\\alpha}^\\prime}^{\\kappa {\\kappa}^\\prime}` at
+        :math:`\\mathbf{q}`:
 
         .. math::
 
-          D_{\\alpha, {\\alpha}'}^{\\kappa, {\\kappa}'}(q) =
-          \\frac{1}{\\sqrt{M_\\kappa M_{\\kappa '}}}
-          \\sum_{a}\\phi_{\\alpha, \\alpha '}^{\\kappa, \\kappa '}e^{-iq\\cdot r_a}
+          D_{\\alpha {\\alpha^\\prime}}^{\\kappa {\\kappa^\\prime}}(\\mathbf{q}) =
+          \\frac{1}{\\sqrt{M_\\kappa M_{\\kappa^\\prime}}}
+          \\sum_{l}\\Phi_{\\alpha {\\alpha^\\prime}}^{\\kappa {\\kappa^\\prime}}\\exp\\left(-i\\mathbf{q}\\cdot \\mathbf{R}_l\\right)
 
-        The eigenvalue equation for the dynamical matrix is then:
+        where :math:`M_\\kappa` is the mass of atom :math:`\\kappa`,
+        :math:`\\mathbf{R}_l` is the vector from the origin to the
+        :math:`l^\\textrm{th}` unit cell. The eigenvalue equation
+        for the dynamical matrix is then:
 
         .. math::
 
-          D_{\\alpha, {\\alpha}'}^{\\kappa, {\\kappa}'}(q) \\epsilon_{q\\nu\\kappa\\alpha} =
-          \\omega_{q\\nu}^{2} \\epsilon_{q\\nu\\kappa\\alpha}
+          \\sum_{\\kappa^\\prime \\alpha^\\prime}D_{\\alpha {\\alpha}^\\prime}^{\\kappa {\\kappa}^\\prime}(\\mathbf{q}) {e}_{\\mathbf{q}\\nu{\\kappa^\\prime}{\\alpha^\\prime}} =
+          {\\omega}_{\\mathbf{q}\\nu}^2 {e}_{\\mathbf{q}\\nu\\kappa\\alpha}
 
-        Where :math:`\\nu` runs over phonon modes, :math:`\\kappa` runs
-        over atoms, :math:`\\alpha` runs over the Cartesian directions,
-        :math:`a` runs over unit cells in the supercell,
-        :math:`u_{\\kappa, \\alpha}` is the displacement of atom
-        :math:`\\kappa` in direction :math:`\\alpha`,
-        :math:`M_{\\kappa}` is the mass of atom :math:`\\kappa`,
-        :math:`r_{a}` is the vector to the origin of cell :math:`a` in
-        the supercell, :math:`\\epsilon_{q\\nu\\kappa\\alpha}` are the
-        eigevectors, and :math:`\\omega_{q\\nu}^{2}` are the frequencies
-        squared.
+        where the eigenvalues :math:`{\\omega}_{\\mathbf{q}\\nu}^2` are the
+        square of the phonon frequencies of mode :math:`\\nu` at
+        :math:`\\mathbf{q}`, and the eigenvectors
+        :math:`\\mathbf{e}_{\\mathbf{q}\\nu\\kappa}` are the phonon
+        polarisation vectors at :math:`\\mathbf{q}` of mode :math:`\\nu`
+        for atom :math:`\\kappa`. The produced eigenvectors are normalised
+        such that:
+
+        .. math::
+
+          \\sum_{\\kappa}{|\\mathbf{e}_{\\mathbf{q}\\nu\\kappa}|^2} = 1
 
         In polar materials, there is an additional long-ranged
         correction to the force constants matrix (applied if
@@ -326,8 +327,8 @@ class ForceConstants:
         width. The mode widths are proportional to the mode gradients and
         can be estimated using ``euphonic.util.mode_gradients_to_widths``
 
-        The mode gradients :math:`\\frac{d\\omega_{q\\nu}}{dQ}` at each Q
-        are calculated as the same time as the phonon frequencies and
+        The mode gradients :math:`\\frac{d\\omega_{\\mathbf{q}\\nu}}{d\\mathbf{q}}` at each :math:`\\mathbf{q}`
+        are calculated at the same time as the phonon frequencies and
         eigenvectors as follows.
 
         Firstly, the eigenvalue equation above can be written in matrix
@@ -335,29 +336,29 @@ class ForceConstants:
 
         .. math::
 
-          E(q)\\Omega(q) = D(q)E(q)
+          E(\\mathbf{q})\\Omega(\\mathbf{q}) = D(\\mathbf{q})E(\\mathbf{q})
 
         .. math::
 
-          \\Omega(q) = E^{-1}(q)D(q)E(q)
+          \\Omega(\\mathbf{q}) = E^{-1}(\\mathbf{q})D(\\mathbf{q})E(\\mathbf{q})
 
-        Where :math:`\\Omega(q)` is the diagonal matrix of phonon
-        frequencies squared :math:`\\omega_{q\\nu}^{2}` and :math:`E(q)`
+        Where :math:`\\Omega(\\mathbf{q})` is the diagonal matrix of phonon
+        frequencies squared :math:`\\omega_{\\mathbf{q}\\nu}^{2}` and :math:`E(\\mathbf{q})`
         is the matrix containing eigenvectors for all modes.
-        :math:`\\frac{d\\omega_{q\\nu}}{dQ}`, can then
+        :math:`\\frac{d\\omega_{\\mathbf{q}\\nu}}{d\\mathbf{q}}`, can then
         be obtained by differentiating the above equation with respect
-        to Q using the product rule:
+        to :math:`\\mathbf{q}` using the product rule:
 
         .. math::
 
-          \\frac{d\\Omega}{dQ} = 2\\omega_{q\\nu}\\frac{d\\omega_{q\\nu}}{dQ}\\delta_{\\nu, \\nu^{\\prime}}
+          \\frac{d\\Omega}{d\\mathbf{q}} = 2\\omega_{\\mathbf{q}\\nu}\\frac{d\\omega_{\\mathbf{q}\\nu}}{d\\mathbf{q}}\\delta_{\\nu \\nu^{\\prime}}
 
         .. math::
 
-          \\frac{d\\omega_{q\\nu}}{dQ} = \\frac{1}{2\\omega_{q\\nu}}{(
-          \\frac{d{E^{-1}}}{dQ}DE +
-          E^{-1}\\frac{dD}{dQ}E +
-          E^{-1}D\\frac{dE}{dQ})}
+          \\frac{d\\omega_{\\mathbf{q}\\nu}}{d\\mathbf{q}} = \\frac{1}{2\\omega_{\\mathbf{q}\\nu}}{(
+          \\frac{d{E^{-1}}}{d\\mathbf{q}}DE +
+          E^{-1}\\frac{dD}{d\\mathbf{q}}E +
+          E^{-1}D\\frac{dE}{d\\mathbf{q}})}
 
         Given that eigenvectors are normalised and orthogonal, an identity can be employed:
 
@@ -369,25 +370,24 @@ class ForceConstants:
 
         .. math::
 
-         \\frac{d\\omega_{q\\nu}}{dQ} = \\frac{1}{2\\omega_{q\\nu}}{(E^{-1}\\frac{dD}{dQ}E)}
-        :math:`\\frac{dD}{dQ}` can be obtained by differentiating the Fourier equation above:
+         \\frac{d\\omega_{\\mathbf{q}\\nu}}{d\\mathbf{q}} = \\frac{1}{2\\omega_{\\mathbf{q}\\nu}}{(E^{-1}\\frac{dD}{d\\mathbf{q}}E)}
+        :math:`\\frac{dD}{d\\mathbf{q}}` can be obtained by differentiating the Fourier equation above:
 
         .. math::
 
-          \\frac{dD}{dQ} =
-          \\frac{-i r_a}{\\sqrt{M_\\kappa M_{\\kappa '}}}
-          \\sum_{a}\\phi_{\\alpha, \\alpha '}^{\\kappa, \\kappa '}e^{-iq\\cdot r_a}
+          \\frac{dD_{\\alpha {\\alpha}^\\prime}^{\\kappa {\\kappa}^\\prime}}{d\\mathbf{q}} =
+          \\frac{-i \\mathbf{R}_l}{\\sqrt{M_\\kappa M_{\\kappa ^\\prime}}}
+          \\sum_{l}\\Phi_{\\alpha\\alpha^\\prime}^{\\kappa\\kappa^\\prime}\\exp\\left(-i\\mathbf{q}\\cdot \\mathbf{R}_l\\right)
 
         .. [3] J. R. Yates, X. Wang, D. Vanderbilt and I. Souza, Phys. Rev. B, 2007, 75, 195121
         """
         qpts, freqs, weights, evecs, grads = self._calculate_phonons_at_qpts(
-            qpts, weights, asr, dipole, dipole_parameter, eta_scale,
-            splitting, insert_gamma, reduce_qpts, use_c, n_threads,
-            return_mode_gradients, return_mode_widths,
-            return_eigenvectors=True)
+            qpts, weights, asr, dipole, dipole_parameter, splitting,
+            insert_gamma, reduce_qpts, use_c, n_threads,
+            return_mode_gradients, return_eigenvectors=True)
         qpt_ph_modes = QpointPhononModes(
             self.crystal, qpts, freqs, evecs, weights=weights)
-        if return_mode_gradients or return_mode_widths:
+        if return_mode_gradients:
             return qpt_ph_modes, grads
         else:
             return qpt_ph_modes
@@ -399,14 +399,12 @@ class ForceConstants:
             asr: Optional[str] = None,
             dipole: bool = True,
             dipole_parameter: float = 1.0,
-            eta_scale: float = 1.0,
             splitting: bool = True,
             insert_gamma: bool = False,
             reduce_qpts: bool = True,
             use_c: Optional[bool] = None,
             n_threads: Optional[int] = None,
             return_mode_gradients: bool = False,
-            return_mode_widths: bool = False,
             ) -> Union[QpointFrequencies,
                        Tuple[QpointFrequencies, Quantity]]:
         """
@@ -415,13 +413,12 @@ class ForceConstants:
         argument and algorithm details
         """
         qpts, freqs, weights, _, grads = self._calculate_phonons_at_qpts(
-            qpts, weights, asr, dipole, dipole_parameter, eta_scale,
-            splitting, insert_gamma, reduce_qpts, use_c, n_threads,
-            return_mode_gradients, return_mode_widths,
-            return_eigenvectors=False)
+            qpts, weights, asr, dipole, dipole_parameter, splitting,
+            insert_gamma, reduce_qpts, use_c, n_threads,
+            return_mode_gradients, return_eigenvectors=False)
         qpt_freqs = QpointFrequencies(
             self.crystal, qpts, freqs, weights=weights)
-        if return_mode_gradients or return_mode_widths:
+        if return_mode_gradients:
             return qpt_freqs, grads
         else:
             return qpt_freqs
@@ -433,14 +430,12 @@ class ForceConstants:
             asr: Optional[str],
             dipole: bool,
             dipole_parameter: float,
-            eta_scale: float,
             splitting: bool,
             insert_gamma: bool,
             reduce_qpts: bool,
             use_c: Optional[bool],
             n_threads: Optional[int],
             return_mode_gradients: bool,
-            return_mode_widths: bool,
             return_eigenvectors: bool) -> Tuple[
                 np.ndarray, Quantity, Optional[np.ndarray],
                 Optional[np.ndarray], Optional[Quantity]]:
@@ -469,21 +464,6 @@ class ForceConstants:
             Shape (n_qpts, 3*n_atoms, 3) float Quantity in
             energy*length units. The phonon mode gradients
         """
-        if return_mode_widths:
-            warnings.warn(
-                'return_mode_widths has been deprecated and will be removed '
-                'in a future release. Please instead use a combination of '
-                'return_mode_gradients and euphonic.util.'
-                'mode_gradients_to_widths, e.g.:\n'
-                'phon, mode_gradients = force_constants.calculate_qpoint_phonon_modes('
-                '*args, **kwargs, return_mode_gradients=True)\n'
-                'mode_widths = euphonic.util.mode_gradients_to_widths(mode_gradients, '
-                'phon.crystal.cell_vectors)',
-                category=DeprecationWarning, stacklevel=3)
-            return_mode_gradients = True
-        if eta_scale != 1.0:
-            _deprecation_warn('eta_scale', 'dipole_parameter', stacklevel=4)
-            dipole_parameter = eta_scale
         # Check weights is of appropriate type and shape, to avoid doing all
         # the interpolation only for it to fail creating QpointPhononModes
         _check_constructor_inputs(
@@ -523,16 +503,8 @@ class ForceConstants:
             gamma_i = np.where(is_gamma(qpts))[0]
             n_gamma = len(gamma_i)
             norm_qpts[gamma_i] = 0.
-            try:
-                reduced_qpts, qpts_i = np.unique(norm_qpts, return_inverse=True,
-                                                 axis=0)
-            except TypeError:  # Workaround for np 1.12 before axis kwarg
-                norm_qpts = np.ascontiguousarray(norm_qpts)
-                reduced_qpts, qpts_i = np.unique(
-                    norm_qpts.view(norm_qpts.dtype.descr*3),
-                    return_inverse=True)
-                reduced_qpts = reduced_qpts.view(
-                    norm_qpts.dtype).reshape(-1, 3)
+            reduced_qpts, qpts_i = np.unique(norm_qpts, return_inverse=True,
+                                             axis=0)
             n_rqpts = len(reduced_qpts)
             # Special handling of gamma points - don't reduce gamma
             # points if LO-TO splitting
@@ -633,13 +605,11 @@ class ForceConstants:
 
         rfreqs = np.zeros((n_rqpts, 3*n_atoms))
         if return_eigenvectors:
-            reigenvecs = np.zeros(
-                (n_rqpts, 3*n_atoms, n_atoms, 3), dtype=np.complex128)
+            n_reigenvecs = n_rqpts
         else:
             # Create dummy zero-length eigenvectors so this can be
             # detected in C and eigenvectors won't be saved
-            reigenvecs = np.zeros(
-                (0, 3*n_atoms, n_atoms, 3), dtype=np.complex128)
+            n_reigenvecs = 0
 
         if return_mode_gradients:
             rmode_gradients = np.zeros((n_rqpts, 3*n_atoms, 3),
@@ -675,7 +645,13 @@ class ForceConstants:
                     n_threads = int(n_threads_env)
                 else:
                     n_threads = cpu_count()
-            # Make sure all arrays are contiguous before calling C
+            # Temporary fix to https://github.com/pace-neutrons/Euphonic/issues/191
+            # Append extra elements to avoid overflow in eigenvectors
+            # in openblas
+            if n_reigenvecs > 0:
+                n_reigenvecs += 1
+            reigenvecs = np.zeros((n_reigenvecs, 3*n_atoms, n_atoms, 3),
+                                  dtype=np.complex128)
             cell_vectors = self.crystal._cell_vectors
             recip_vectors = self.crystal.reciprocal_cell().to(
                 '1/bohr').magnitude
@@ -685,6 +661,7 @@ class ForceConstants:
             # a very small difference and can only be seen in near-flat
             # mode gradients, but should be corrected anyway
             recip_asr_correction =  recip_asr_correction.conj().T
+            # Make sure all arrays are contiguous before calling C
             (cell_vectors, recip_vectors, reduced_qpts, split_idx, q_dirs,
              fc_img_weighted, sc_origins, recip_asr_correction,
              dyn_mat_weighting, rfreqs, reigenvecs, rmode_gradients,
@@ -706,6 +683,8 @@ class ForceConstants:
                     splitting, rfreqs, reigenvecs, rmode_gradients,
                     all_origins_cart, n_threads)
         else:
+            reigenvecs = np.zeros((n_reigenvecs, 3*n_atoms, n_atoms, 3),
+                                  dtype=np.complex128)
             for qi, qpt in enumerate(reduced_qpts):
                 q_dir = None
                 if splitting and is_gamma(qpt):
@@ -745,10 +724,6 @@ class ForceConstants:
             mode_gradients = rmode_gradients.real[qpts_i]*ureg(
                 'hartree*bohr').to(
                     f'meV*{str(self.crystal.cell_vectors.units)}')
-        if return_mode_widths:
-            mode_gradients = mode_gradients_to_widths(
-                mode_gradients,
-                self.crystal.cell_vectors)
         return qpts, freqs, weights, eigenvectors, mode_gradients
 
     def _calculate_phonons_at_q(

@@ -12,10 +12,10 @@ or it can be read programatically as follows:
 
   import yaml
   import euphonic
-  from importlib_resources import open_text
+  from importlib_resources import files
 
-  with open_text(euphonic, 'CITATION.cff') as fp:
+  with open(files(euphonic) / 'CITATION.cff') as fp:
       citation_data = yaml.safe_load(fp)
 
 The latest version of the citation file can also be found in Euphonic's code
-repository
+repository `here <https://github.com/pace-neutrons/Euphonic/blob/master/CITATION.cff>`_.

@@ -1,5 +1,6 @@
 import json
 import os
+import sys
 
 import pytest
 import numpy as np
@@ -7,11 +8,11 @@ import numpy.testing as npt
 
 from euphonic import ureg
 from euphonic.util import (direction_changed, mp_grid, get_qpoint_labels,
-                           mode_gradients_to_widths)
+                           mode_gradients_to_widths, convert_fc_phases)
 from tests_and_analysis.test.utils import get_data_path
 from tests_and_analysis.test.euphonic_test.test_crystal import get_crystal
 from tests_and_analysis.test.euphonic_test.test_force_constants import (
-    get_fc_path)
+    get_fc_path, get_fc)
 
 
 class TestDirectionChanged:
@@ -58,7 +59,11 @@ class TestGetQptLabels:
                    [0.0, 0.0, 0.3], [0.0, 0.0, 0.4], [0.0, 0.0, 0.5],
                    [0.125, 0.25, 0.5], [0.25, 0.5, 0.5], [0.375, 0.75, 0.5]]),
          {'cell': get_crystal('quartz_cv_only').to_spglib_cell()},
-         [(0, '0 0 0'), (5, '0 0 1/2'), (8, '3/8 3/4 1/2')])])
+         [(0, '0 0 0'), (5, '0 0 1/2'), (8, '3/8 3/4 1/2')]),
+        (np.array([[0.0, 0., 0.], [0.25, 0., 0.], [0.25, 0., 0.], [0.3, 0., 0.],
+                   [0.5, 0., 0.], [0.5, 0.1, 0.], [0.5, 0.25, 0.]]),
+         {},
+         [(0, '0 0 0'), (1, '1/4 0 0'), (4, '1/2 0 0'), (6, '1/2 1/4 0')])])
     def test_get_qpt_labels(self, qpts, kwargs, expected_labels):
         labels = get_qpoint_labels(qpts, **kwargs)
         assert labels == expected_labels
@@ -103,3 +108,75 @@ class TestModeGradientsToWidths:
         assert mode_widths.units == expected_mode_widths.units
         npt.assert_allclose(mode_widths.magnitude,
                             expected_mode_widths.magnitude, atol=3e-4)
+
+
+def get_data_from_json(filename):
+    with open(get_fc_path(filename), 'r') as fp:
+        data = json.load(fp)
+    fc = np.array(data['force_constants'])*ureg(data['force_constants_unit'])
+    atom_r = np.array(data['atom_r'])
+    sc_atom_r = np.array(data['sc_atom_r'])
+    sc_to_uc_idx = np.array(data['sc_to_uc_idx'])
+    uc_to_sc_idx = np.array(data['uc_to_sc_idx'])
+    sc_matrix = np.array(data['sc_matrix'])
+
+    return fc, atom_r, sc_atom_r, uc_to_sc_idx, sc_to_uc_idx, sc_matrix
+
+
+class TestConvertFcPhases:
+
+    @pytest.mark.parametrize(('fc, atom_r, sc_atom_r, uc_to_sc_idx, '
+                              'sc_to_uc_idx, sc_matrix, expected_fc'), [
+        (*get_data_from_json('NaCl_convert_full_fc_data.json'),
+         get_fc('NaCl')),
+        (*get_data_from_json('CaHgO2_convert_fc_data.json'),
+         get_fc('CaHgO2'))])
+    def test_convert_fc_phases(self, fc, atom_r, sc_atom_r, uc_to_sc_idx,
+                               sc_to_uc_idx, sc_matrix, expected_fc):
+        converted_fc, cell_origins = convert_fc_phases(
+            fc.magnitude, atom_r, sc_atom_r, uc_to_sc_idx, sc_to_uc_idx,
+            sc_matrix)
+        npt.assert_allclose(cell_origins, expected_fc.cell_origins)
+        expected_fc_unit = expected_fc.force_constants.units
+        npt.assert_allclose(
+            (converted_fc*fc.units).to(expected_fc_unit).magnitude,
+            expected_fc.force_constants.magnitude,
+            atol=sys.float_info.epsilon)
+
+    def test_inconsistent_sc_matrix_raises_value_error(self):
+        (fc, atom_r, sc_atom_r, uc_to_sc_idx, sc_to_uc_idx,
+            sc_matrix) = get_data_from_json('CaHgO2_convert_fc_data.json')
+        sc_matrix[0, 0] = 2
+        with pytest.raises(ValueError):
+            _, _ = convert_fc_phases(
+                fc.magnitude, atom_r, sc_atom_r, uc_to_sc_idx, sc_to_uc_idx,
+                sc_matrix)
+
+    def test_non_int_cell_origins_raises_runtime_error(self):
+        (fc, atom_r, sc_atom_r, uc_to_sc_idx, sc_to_uc_idx,
+            sc_matrix) = get_data_from_json('CaHgO2_convert_fc_data.json')
+        non_int_atoms = [1, 7, 65]
+        sc_atom_r[non_int_atoms] *= 2
+        with pytest.raises(RuntimeError) as error:
+            _, _ = convert_fc_phases(
+                fc.magnitude, atom_r, sc_atom_r, uc_to_sc_idx, sc_to_uc_idx,
+                sc_matrix)
+        # Ensure specific atoms are mentioned in error message
+        assert '1, 7, 65' in str(error.value)
+
+    def test_large_tolerance_doesnt_raise_error(self):
+        (fc, atom_r, sc_atom_r, uc_to_sc_idx, sc_to_uc_idx,
+            sc_matrix) = get_data_from_json('CaHgO2_convert_fc_data.json')
+        sc_atom_r[:, ] *= 1.01
+        _, _ = convert_fc_phases(
+            fc.magnitude, atom_r, sc_atom_r, uc_to_sc_idx, sc_to_uc_idx,
+            sc_matrix, cell_origins_tol=0.1)
+
+    def test_small_tolerance_raises_runtime_error(self):
+        (fc, atom_r, sc_atom_r, uc_to_sc_idx, sc_to_uc_idx,
+            sc_matrix) = get_data_from_json('CaHgO2_convert_fc_data.json')
+        with pytest.raises(RuntimeError):
+            _, _ = convert_fc_phases(
+                fc.magnitude, atom_r, sc_atom_r, uc_to_sc_idx, sc_to_uc_idx,
+                sc_matrix, cell_origins_tol=1e-8)
+

@@ -4,7 +4,6 @@ import os
 import re
 import requests
 import subprocess
-from importlib_resources import open_text
 import yaml
 from euphonic import __version__
 
@@ -44,7 +43,7 @@ def release_github(test=True):
         "name": euphonic_ver,
         "body": desc,
         "draft": False,
-        "prerelease": True
+        "prerelease": False
     }
     if test:
         print(payload)

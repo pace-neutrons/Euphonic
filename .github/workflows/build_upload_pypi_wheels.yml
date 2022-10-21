@@ -3,70 +3,77 @@ name: Build and upload PyPI wheels and source dist
 on:
   release:
     types: [published]
+  workflow_dispatch:
 
 jobs:
   build:
     strategy:
       matrix:
-        os: [windows-2019, macos-latest, ubuntu-latest]
-        architecture: [x64]
-        python-version: [3.6, 3.7, 3.8]
+        os: [windows-latest, macos-latest, ubuntu-latest]
+        python-version: ['3.7', '3.8', '3.9', '3.10']
         include:
-          - os: windows-2019
+          - os: windows-latest
             wheelname: win
           - os: macos-latest
             wheelname: macos
           - os: ubuntu-latest
             wheelname: manylinux
           # Build wheels against the lowest compatible Numpy version
-          - python-version: 3.6
-            manylinux-version-tag: cp36-cp36m
-            numpy-version: 1.12.1
           - python-version: 3.7
-            manylinux-version-tag: cp37-cp37m
-            numpy-version: 1.14.6
+            manylinux-version-tag: cp37
+            numpy-version: 1.14.5
           - python-version: 3.8
-            manylinux-version-tag: cp38-cp38
+            manylinux-version-tag: cp38
             numpy-version: 1.17.3
+          - python-version: 3.9
+            manylinux-version-tag: cp39
+            numpy-version: 1.19.3
+          - python-version: 3.10
+            manylinux-version-tag: cp310
+            numpy-version: 1.21.3
       fail-fast: false
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           fetch-depth: 0 # Ensure tags are fetched for versioning
-      - name: Setup Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v1
+      - name: Setup Python ${{ matrix.python-version }} with Conda
+        uses: conda-incubator/setup-miniconda@v2
         with:
-          architecture: ${{ matrix.architecture }}
           python-version: ${{ matrix.python-version }}
       - name: Update Python pip, wheel, and twine
+        shell: bash -l {0}
         run: |
           python -m pip install --upgrade pip wheel twine
-        shell: bash
+      - name: Install llvm on Macos
+        if: startsWith(matrix.os, 'macos')
+        run: brew install llvm
 
       - name: Build Python wheel
         if: matrix.os != 'ubuntu-latest'
+        shell: bash -l {0}
         env:
           NUMPY_VERSION: ${{ matrix.numpy-version }}
         run: |
           # Build against lowest required Numpy version
           python -m pip install numpy==${NUMPY_VERSION}
           python -m pip wheel . -w wheelhouse --no-deps
-        shell: bash
 
       - name: Build manylinux Python wheel
         if: matrix.os == 'ubuntu-latest'
-        uses: RalfG/python-wheels-manylinux-build@v0.3.4-manylinux2010_x86_64
+        uses: pypa/cibuildwheel@v2.8.0
+        env:
+          CIBW_BUILD: ${{ matrix.manylinux-version-tag}}-manylinux*
+          CIBW_BEFORE_BUILD: python -mpip install numpy==${{ matrix.numpy-version }}
+          CIBW_ARCHS: x86_64
         with:
-          python-versions: ${{ matrix.manylinux-version-tag }}
-          build-requirements: numpy==${{ matrix.numpy-version }}
-          pip-wheel-args: '--no-deps -w wheelhouse'
+          output-dir: wheelhouse
 
       - name: Create source distribution
-        if: matrix.os == 'windows-2019' && matrix.python-version == '3.8'
+        if: matrix.os == 'windows-latest' && matrix.python-version == '3.10'
+        shell: bash -l {0}
         run: |
           python setup.py sdist
-        shell: bash
 
       - name: Upload as build artifacts
         uses: actions/upload-artifact@v2
@@ -74,18 +81,19 @@ jobs:
             name: wheels
             path: wheelhouse/*-${{ matrix.wheelname }}*.whl
       - name: Upload source dist to PyPI
-        if: matrix.os == 'windows-2019' && matrix.python-version == '3.8'
+        if: github.event_name == 'release' && matrix.os == 'windows-latest' && matrix.python-version == '3.10'
+        shell: bash -l {0}
         env:
           TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
           TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
         run: |
           python -m twine upload dist/*.tar.gz
-        shell: bash
       - name: Upload wheel to PyPI
+        if: github.event_name == 'release'
+        shell: bash -l {0}
         env:
           TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
           TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
           WHEEL_NAME: ${{ matrix.wheelname }}
         run: |
           python -m twine upload wheelhouse/*-${WHEEL_NAME}*.whl
-        shell: bash

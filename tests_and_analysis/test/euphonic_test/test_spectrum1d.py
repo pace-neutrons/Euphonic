@@ -394,10 +394,9 @@ class TestSpectrum1DMethods:
         with pytest.raises(ValueError):
             spec1d.broaden(1*ureg('meV'), method='unknown')
 
-    def test_broaden_uneven_bins_deprecation_warns(self):
-        # In a future version this should raise a ValueError
+    def test_broaden_uneven_bins_deprecation_raises_value_error(self):
         spec1d = get_spectrum1d('toy_quartz_cropped_uneven_dos.json')
-        with pytest.warns(DeprecationWarning):
+        with pytest.raises(ValueError):
             spec1d.broaden(1*ureg('meV'))
 
     def test_broaden_uneven_bins_and_explicit_convolve_warns(self):

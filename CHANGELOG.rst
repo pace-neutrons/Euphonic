@@ -1,9 +1,58 @@
-`Unreleased <https://github.com/pace-neutrons/Euphonic/compare/v0.6.4...HEAD>`_
+`Unreleased <https://github.com/pace-neutrons/Euphonic/compare/v1.0.0...HEAD>`_
 ----------
+
+- Bug fixes:
+
+  - Avoid occasional segmentation faults when using OpenBLAS, workaround for #191
+
+`v1.0.0 <https://github.com/pace-neutrons/Euphonic/compare/v0.6.5...v1.0.0>`_
+----------
+
+- Changes:
+
+  - Support for Python 3.6 has been dropped. This has also resulted in
+    changes to the following dependencies:
+
+    - numpy requirement increased from ``1.12.1`` to ``1.14.5``
+    - scipy requirement increased from ``1.0.0`` to ``1.1.0``
+    - pint requirement increased from ``0.9`` to ``0.10.1``
+    - matplotlib requirement increased from ``2.0.0`` to ``2.2.2``
+    - h5py requirement increased from ``2.7.0`` to ``2.8.0``
+
+  - The following deprecated features have been removed:
+
+    - The ``return_mode_widths`` argument in ``ForceConstants.calculate_qpoint_phonon_modes``
+      and ``ForceConstants.calculate_qpoint_frequencies`` has been removed
+    - The ``eta_scale`` argument in ``calculate_qpoint_phonon_modes/frequencies``
+      has been removed
+    - The alias command-line tool argument ``--weights`` has been removed
+    - The alias arguments ``x_label``, ``y_label``, ``y_min`` and ``y_max`` to
+      ``plot_1d/2d`` have been removed
+    - The ``modes_from_file`` and ``force_constants_from_file`` functions from
+      ``euphonic.cli.utils`` have been removed
+    - Calling ``broaden`` on a ``Spectrum`` with uneven bin widths without
+      specifying the ``method='convolve'`` argument will now raise a ``ValueError``
+
+  - DOS and PDOS calculated by the ``calculate_dos`` and
+    ``calculate_dos_map`` methods of ``QpointPhononModes`` and
+    ``QpointFrequencies``, and ``QpointPhononModes.calculate_pdos`` are
+    now calculated per atom rather than per unit cell (integrated area
+    is ``3`` rather than ``3*N_atom``). This is to keep consistency with
+    the structure factors calculated by
+    ``QpointPhononModes.calculate_structure_factor`` which are calculated
+    per atom.
+
+  - The option ``average_repeat_points`` when importing q-point modes or
+    frequencies from a CASTEP .phonon file with
+    ``QpointFrequencies/QpointPhononModes.from_castep`` is now ``True``
+    by default. To recover previous behaviour set this to ``False``.
+
+`v0.6.5 <https://github.com/pace-neutrons/Euphonic/compare/v0.6.4...v0.6.5>`_
+------
 
 - New Features:
 
-  - Kinematic constraints have been implemented for 2-D S(q,ω)-like data.
+  - Kinematic constraints have been implemented for 2-D S(q,w)-like data.
 
     - A function ``euphonic.spectra.apply_kinematic_constraints(Spectrum2d, **kwargs) -> Spectrum2D``
       is implemented which masks out inaccessible data, replacing it with NaN.
@@ -13,6 +62,34 @@
       plots can be produced directly from the CLI.
     - Some parameters from real-world instruments are collected in the
       documentation for convenience.
+
+  - There is a new function ``euphonic.util.convert_fc_phases``, which converts
+    a force constants matrix which uses the atom coordinates in the phase
+    during interpolation (Phonopy-like), to one which uses the cell origin
+    coordinates (Euphonic, CASTEP-like).
+
+  - When importing q-point modes or frequencies from a CASTEP .phonon
+    file, a new option (``average_repeat_points=True``) allows
+    repeated entries (with the same q-point index) to be identified
+    and their weights divided down by the number of entries. This
+    option should give better statistics for sampling meshes that
+    include the Gamma-point with LO-TO splitting.
+
+- Improvements:
+
+  - Documentation on the shape and format of the force constants, and how to
+    read them from other programs has been improved.
+
+  - The ``euphonic.util.get_qpoint_labels`` function, which is called when
+    importing band-structure data to identify and label significant points,
+    primarily identifies these points by searching for turning-points
+    in the band path. The function will now also pick up any q-point
+    that appears twice in succession. This is a common convention in
+    band-structure calculations and helps with edge-cases such as when
+    the path passes through a high-symmetry point without changing
+    direction. This may pick up some previously-missing points in
+    band-structure plots generated with ``euphonic-dispersion`` and
+    ``euphonic-intensity-map``
 
 - Bug fixes:
 
