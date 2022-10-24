@@ -350,12 +350,12 @@ class TestSpectrum1DMethods:
             # Non-default btol split of band data
             ({'btol': 22.}, 'toy_band.json',
              [f'toy_band_btol22_split_{i}.json' for i in range(2)]),
-            ])             
+            ])
     def test_split(self, args, spectrum1d_file, split_spectrum_files):
         spec1d = get_spectrum1d(spectrum1d_file)
         split_spec1d = spec1d.split(**args)
         for spectrum, expected_file in zip(split_spec1d, split_spectrum_files):
-            check_spectrum1d(spectrum, get_spectrum1d(expected_file))        
+            check_spectrum1d(spectrum, get_spectrum1d(expected_file))
 
     @pytest.mark.parametrize(
         'args, spectrum1d_file, expected_error',
@@ -387,6 +387,27 @@ class TestSpectrum1DMethods:
         expected_broadened_spec1d = get_spectrum1d(broadened_spectrum1d_file)
         broadened_spec1d = spec1d.broaden(args[0], **args[1])
         check_spectrum1d(broadened_spec1d, expected_broadened_spec1d)
+
+    def test_variable_broaden(self):
+        """Check variable broadening is consistent with fixed-width method"""
+        from numpy.polynomial import Polynomial
+
+        spec1d = get_spectrum1d('quartz_666_dos.json')
+
+        sigma = 2 * ureg('meV')
+        fwhm = 2.3548200450309493 * sigma
+        sigma_poly = (Polynomial([sigma.magnitude, 0., 0.]), sigma.units)
+        fwhm_poly = (Polynomial([fwhm.to('1/cm').magnitude, 0., ]),
+                     ureg('1/cm'))
+
+        fixed_broad = spec1d.broaden(fwhm)
+        variable_broad_sigma = spec1d.broaden_with_polynomial(
+            sigma_poly, width_convention='std', adaptive_error=1e-5)
+        variable_broad_fwhm = spec1d.broaden_with_polynomial(
+            fwhm_poly, width_convention='FWHM', adaptive_error=1e-5)
+
+        check_spectrum1d(variable_broad_sigma, variable_broad_fwhm)
+        check_spectrum1d(fixed_broad, variable_broad_sigma, y_atol=1e-4)
 
     def test_broaden_invalid_shape_raises_value_error(self):
         spec1d = get_spectrum1d('quartz_666_dos.json')

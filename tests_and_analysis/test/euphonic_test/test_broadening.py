@@ -4,7 +4,8 @@ import numpy.testing as npt
 from scipy.integrate import simps
 
 from euphonic.broadening import (find_coeffs,
-    width_interpolated_broadening)
+                                 width_interpolated_broadening,
+                                 polynomial_broadening)
 from euphonic import ureg
 from tests_and_analysis.test.euphonic_test.test_force_constants\
     import get_fc_path
@@ -17,9 +18,9 @@ from tests_and_analysis.test.euphonic_test.test_spectrum1d\
 
 def test_polynomial_close_to_exact():
     """Check polynomial broadening agrees with exact for trivial case"""
-    from euphonic.broadening import polynomial_broadening
     from numpy.random import RandomState
     from scipy.ndimage import gaussian_filter
+    from numpy.polynomial import Polynomial
 
     rng = RandomState(123)
 
@@ -35,9 +36,8 @@ def test_polynomial_close_to_exact():
     poly_broadened = polynomial_broadening(
         bins=(bins * ureg('meV')),
         x=(x * ureg('meV')),
-        width_polynomial=[0., 0., sigma],
+        width_polynomial=(Polynomial([sigma, 0., 0.]), ureg('meV')),
         weights=(y * bin_width),  # Convert from spectrum heights to counts
-        width_unit=ureg('meV').units,
         adaptive_error=1e-5)
 
     npt.assert_allclose(exact, poly_broadened.to('1/meV').magnitude,
@@ -73,6 +73,7 @@ def test_area_unchanged_for_broadened_dos(material, qpt_freqs_json,
                                           ebins_centres)
     assert adaptively_broadened_dos_area == pytest.approx(dos_area, rel=0.01)
 
+
 @pytest.mark.parametrize(
         ('material, qpt_freqs_json, mode_widths_json,'
          'expected_dos_json, ebins'), [
@@ -95,6 +96,7 @@ def test_lower_bound_widths_broadened(material, qpt_freqs_json,
                                         mode_widths, weights, 0.01)
     expected_dos = get_expected_spectrum1d(expected_dos_json)
     npt.assert_allclose(expected_dos.y_data.magnitude, dos.magnitude)
+
 
 def test_uneven_bin_width_raises_warning():
     qpt_freqs = get_qpt_freqs('quartz',

@@ -5,11 +5,12 @@ import itertools
 import math
 import json
 from numbers import Integral
+from numpy.polynomial import Polynomial
 from typing import (Any, Dict, List, Optional, overload,
                     Sequence, Tuple, TypeVar, Union, Type)
 import warnings
 
-from pint import DimensionalityError, Unit
+from pint import DimensionalityError
 import numpy as np
 from scipy.ndimage import correlate1d, gaussian_filter
 
@@ -546,22 +547,29 @@ class Spectrum1D(Spectrum):
             copy.copy(self.metadata))
 
     def broaden_with_polynomial(self: T,
-                                polynomial: List[float],
-                                width_unit: Unit = None,
-                                width_lower_limit: float = None,
-                                width_convention: str = 'std',
+                                width_polynomial: Tuple[Polynomial, Quantity],
+                                width_lower_limit: Quantity = None,
+                                width_convention: str = 'fwhm',
                                 adaptive_error: float = 1e-2,
                                 ) -> T:
         """Use fast approximate method to apply x-dependent Gaussian broadening
 
         Typically this is an energy-dependent instrumental resolution function.
 
-        polynomial
+        Parameters
+        ----------
+
+        width_polynomial
+            A numpy Polynomial object encodes broadening width as a function of
+            binning axis (typically energy). This is paired in the input tuple
+            with a scale factor Quantity; x values will be divided by this to
+            obtain the dimensionless function input, and the function output
+            values are multiplied by this Quantity to obtain appropriately
+            dimensioned width values.
+
             Coefficients of polynomial fit to energy/width relationship. Order
             should be consistent with numpy.polyfit / numpy.polyval (i.e. from
             largest exponent to smallest.)
-        width_unit
-            x-axis units for width_polynomial. (By default, use same as bins.)
         width_lower_limit
             A lower bound is set for broadening width in WIDTH_UNIT. If set to
             None (default) the bin width will be used. To disable any lower
@@ -576,8 +584,10 @@ class Spectrum1D(Spectrum):
 
         """
 
+        width_poly, width_unit = width_polynomial
+
         if width_convention.lower() == 'fwhm':
-            polynomial = np.asarray(polynomial) / np.sqrt(8 * np.log(2))
+            width_poly = width_poly / np.sqrt(8 * np.log(2))
         elif width_convention.lower() == 'std':
             pass
         else:
@@ -589,15 +599,15 @@ class Spectrum1D(Spectrum):
                              'requires a regular sampling grid.')
 
         y_broadened = polynomial_broadening(
-            self.get_bin_edges(), self.get_bin_centres(), polynomial,
-            (self.y_data.magnitude
-             * bin_widths[0].to(1/self.y_data.units).magnitude),
-            width_unit=width_unit, width_lower_limit=width_lower_limit,
+            self.get_bin_edges(), self.get_bin_centres(),
+            (width_poly, width_unit),
+            (self.y_data * bin_widths[0]),
+            width_lower_limit=width_lower_limit,
             adaptive_error=adaptive_error)
 
         return type(self)(
             np.copy(self.x_data.magnitude) * ureg(self.x_data_unit),
-            y_broadened * ureg(self.y_data_unit),
+            y_broadened,
             copy.copy((self.x_tick_labels)),
             copy.copy(self.metadata))
 
