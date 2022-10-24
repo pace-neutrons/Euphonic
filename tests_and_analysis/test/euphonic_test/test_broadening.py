@@ -15,6 +15,35 @@ from tests_and_analysis.test.euphonic_test.test_spectrum1d\
     import get_expected_spectrum1d
 
 
+def test_polynomial_close_to_exact():
+    """Check polynomial broadening agrees with exact for trivial case"""
+    from euphonic.broadening import polynomial_broadening
+    from numpy.random import RandomState
+    from scipy.ndimage import gaussian_filter
+
+    rng = RandomState(123)
+
+    bins = np.linspace(0, 100, 200)
+    bin_width = bins[1] - bins[0]
+    x = (bins[1:] + bins[:-1]) / 2
+    y = np.zeros_like(x)
+    y[rng.random_integers(0, len(x), 20)] = rng.random(20)
+
+    sigma = 2.
+    exact = gaussian_filter(y, (sigma / bin_width), mode='constant')
+
+    poly_broadened = polynomial_broadening(
+        bins=(bins * ureg('meV')),
+        x=(x * ureg('meV')),
+        width_polynomial=[0., 0., sigma],
+        weights=(y * bin_width),  # Convert from spectrum heights to counts
+        width_unit=ureg('meV').units,
+        adaptive_error=1e-5)
+
+    npt.assert_allclose(exact, poly_broadened.to('1/meV').magnitude,
+                        atol=1e-4)
+
+
 @pytest.mark.parametrize(
         ('material, qpt_freqs_json, mode_widths_json, ebins'), [
             ('quartz', 'quartz_554_full_qpoint_frequencies.json',
