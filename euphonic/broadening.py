@@ -37,7 +37,9 @@ def polynomial_broadening(bins: Quantity,
         (not FHWM); the conversion factor between these conventions is
         :math:`FWHM = \sqrt{8 \ln 2} \sigma`
     weights
-        Weight for each data point corresponding to x    
+        Weight for each data point corresponding to x. Note that these should
+        be "counts" rather than binned spectral weights; this function will
+        bin the data and apply bin-width weighting.
     width_unit
         x-axis units for width_polynomial. (By default, use same as bins.)
     width_lower_limit
