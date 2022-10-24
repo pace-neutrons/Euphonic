@@ -27,7 +27,7 @@ def test_polynomial_close_to_exact():
     bin_width = bins[1] - bins[0]
     x = (bins[1:] + bins[:-1]) / 2
     y = np.zeros_like(x)
-    y[rng.random_integers(0, len(x), 20)] = rng.random(20)
+    y[rng.randint(0, len(x), 20)] = rng.rand(20)
 
     sigma = 2.
     exact = gaussian_filter(y, (sigma / bin_width), mode='constant')
