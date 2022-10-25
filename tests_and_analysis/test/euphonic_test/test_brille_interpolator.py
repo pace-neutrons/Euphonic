@@ -2,10 +2,11 @@ from multiprocessing import cpu_count
 
 import pytest
 import numpy as np
+import numpy.testing as npt
 import spglib as spg
 
 from euphonic import ForceConstants, QpointPhononModes
-from tests_and_analysis.test.utils import get_test_qpts
+from tests_and_analysis.test.utils import get_data_path, get_test_qpts
 from tests_and_analysis.test.euphonic_test.test_force_constants import (
     get_fc)
 from tests_and_analysis.test.euphonic_test.test_structure_factor import (
@@ -22,58 +23,20 @@ from tests_and_analysis.test.euphonic_test.test_crystal import (
 pytestmark = pytest.mark.brille
 try:
     import brille as br
+    from brille import BZTrellisQdc, BZMeshQdc, BZNestQdc, ApproxConfig
     from euphonic.brille import BrilleInterpolator
 except ModuleNotFoundError:
     pass
 
 
-# Use this function until we can read Brille grids from a HDF5 file
-def get_grid(material, grid_type='trellis', fill=True):
-    fc = get_fc(material)
-    crystal = fc.crystal
-    cell = crystal.to_spglib_cell()
-
-    dataset = spg.get_symmetry_dataset(cell)
-    rotations = dataset['rotations']  # in fractional
-    translations = dataset['translations']
-
-    symmetry = br.Symmetry(rotations, translations)
-    direct = br.Direct(*cell)
-    direct.spacegroup = symmetry
-    bz = br.BrillouinZone(direct.star)
-    grid_npts = 10
-    if grid_type == 'trellis':
-        vol = bz.ir_polyhedron.volume
-        grid_kwargs = {
-            'node_volume_fraction': vol/grid_npts}
-        br_grid = br.BZTrellisQdc(bz, **grid_kwargs)
-    elif grid_type == 'mesh':
-        grid_kwargs = {
-            'max_size': bz.ir_polyhedron.volume/grid_npts,
-            'max_points': grid_npts}
-        br_grid = br.BZMeshQdc(bz, **grid_kwargs)
-    elif grid_type == 'nest':
-        grid_kwargs = {'number_density': grid_npts}
-        br_grid = br.BZNestQdc(bz, **grid_kwargs)
-
-    if fill:
-        n_qpts = len(br_grid.rlu)
-        n_atoms = crystal.n_atoms
-        vals = np.random.rand(n_qpts, 3*n_atoms, 1)
-        vec_real = np.random.rand(n_qpts, 3*n_atoms, 3*n_atoms)
-        vecs = vec_real + vec_real*1j
-        br_grid.fill(vals, (1,), (1., 0., 0.), vecs,
-                     (0., 3*n_atoms , 0, 3, 0, 0), (0., 1., 0.))
-    return br_grid
-
-
-# Use this fixture until we can read Brille grids from a HDF5 file
-@pytest.fixture
-def grid(grid_args):
-    # Currently can only use 1 fixture argument in indirectly
-    # parametrized fixtures, so work around it
-    material, kwargs = grid_args
-    return get_grid(material, **kwargs)
+def get_brille_grid(grid_file):
+    filepath = get_data_path('brille_grid', grid_file)
+    if 'trellis' in grid_file:
+        return BZTrellisQdc.from_file(filepath)
+    elif 'mesh' in grid_file:
+        return BZMeshQdc.from_file(filepath)
+    else:
+        return BZNestQdc.from_file(filepath)
 
 
 def test_import_without_brille_raises_err(
@@ -95,26 +58,31 @@ def test_import_without_brille_raises_err(
 
 class TestBrilleInterpolatorCreation:
 
-    @pytest.mark.parametrize('material, grid_args', [
-        ('quartz', ('quartz', {})),
-        ('LZO', ('LZO', {}))])
-    def test_create_from_constructor(self, material, grid):
+    @pytest.mark.parametrize('material, grid_file', [
+        ('quartz', 'quartz_mesh_10.hdf5'),
+        ('LZO', 'lzo_trellis_10.hdf5')])
+    def test_create_from_constructor(self, material, grid_file):
         crystal = get_crystal(material)
+        grid = get_brille_grid(grid_file)
         bri = BrilleInterpolator(crystal, grid)
         check_crystal(crystal, bri.crystal)
         assert grid == bri._grid
 
-    @pytest.mark.parametrize('material, kwargs', [
+    @pytest.mark.parametrize('material, kwargs, expected_grid_file', [
         ('LZO', {'grid_npts': 10,
-                 'grid_type': 'trellis'}),
+                 'grid_type': 'trellis'},
+         'lzo_trellis_10.hdf5'),
         ('quartz', {'grid_npts': 10,
-                    'grid_type': 'mesh'}),
-        ('NaCl', {'grid_npts': 10,
-                  'grid_type': 'nest'})
+                    'grid_type': 'mesh'},
+         'quartz_mesh_10.hdf5')
         ])
-    def test_create_from_force_constants(self, material, kwargs):
+    def test_create_from_force_constants(self, material, kwargs, expected_grid_file):
         fc = get_fc(material)
         bri = BrilleInterpolator.from_force_constants(fc, **kwargs)
+        expected_grid = get_brille_grid(expected_grid_file)
+        check_crystal(fc.crystal, bri.crystal)
+        assert type(expected_grid) is type(bri._grid)
+        npt.assert_allclose(expected_grid.rlu, bri._grid.rlu)
 
     @pytest.mark.parametrize(
         'kwargs, expected_grid_type, expected_grid_kwargs', [
@@ -124,16 +92,20 @@ class TestBrilleInterpolatorCreation:
              {'node_volume_fraction': 0.04}),
             ({'grid_npts': 10, 'grid_type': 'trellis'},
              'brille.BZTrellisQdc',
-             {'node_volume_fraction': 0.013193727}),
+             {'node_volume_fraction': 0.037894368,
+              'always_triangulate': False,
+              'approx_config': ApproxConfig()}),
             ({'grid_type': 'mesh', 'grid_npts': 50},
              'brille.BZMeshQdc',
-             {'max_size': 0.00263874557, 'max_points': 50}),
+             {'max_size': 0.00757887361, 'max_points': 50}),
             ({'grid_type': 'nest', 'grid_npts': 100},
              'brille.BZNestQdc',
              {'number_density': 100}),
             ({},
              'brille.BZTrellisQdc',
-             {'node_volume_fraction': 0.00013193727})])
+             {'node_volume_fraction': 0.00037894368,
+              'always_triangulate': False,
+              'approx_config': ApproxConfig()})])
     def test_from_force_constants_correct_grid_kwargs_passed_to_brille(
             self, mocker, kwargs, expected_grid_type, expected_grid_kwargs):
         # Patch __init__ to avoid type checks - BZTrellisQdc is now a mock
@@ -142,11 +114,14 @@ class TestBrilleInterpolatorCreation:
         mock_grid = mocker.patch(expected_grid_type)
         mock_grid().rlu = np.ones((5, 3))  # Note mock_grid() parentheses
 
-        fc = get_fc('Si2-sc-skew')
+        fc = get_fc('quartz')
         BrilleInterpolator.from_force_constants(fc, **kwargs)
         for called_key, called_val in mock_grid.call_args[1].items():
             expected_val = expected_grid_kwargs.pop(called_key)
-            assert expected_val == pytest.approx(called_val)
+            if called_key == 'approx_config':
+                assert isinstance(called_val, ApproxConfig)
+            else:
+                assert expected_val == pytest.approx(called_val)
         # Make sure all expected kwargs have been passed
         assert not expected_grid_kwargs
 
@@ -157,7 +132,7 @@ class TestBrilleInterpolatorCreation:
               'grid_kwargs': {'number_density': 50},
               'interpolation_kwargs': {'insert_gamma': True}}),
             ({'interpolation_kwargs': {'reduce_qpts': True,
-                                       'eta_scale': 0.5,
+                                       'dipole_parameter': 0.5,
                                        'n_threads': 2}})
         ])
     def test_from_force_constants_correct_interpolation_kwargs_passed(
@@ -186,24 +161,21 @@ class TestBrilleInterpolatorCreation:
             BrilleInterpolator.from_force_constants(
                 get_fc('quartz'), grid_type='unknown')
 
-    @pytest.mark.parametrize('faulty_crystal, expected_exception',
-        [(get_fc('quartz'), TypeError)])
-    # This uses implicit indirect parametrization - material is passed to the
-    # grid fixture
-    @pytest.mark.parametrize('grid_args', [('quartz', {})])
+    @pytest.mark.parametrize('faulty_crystal, grid_file, expected_exception',
+        [(get_fc('quartz'), 'lzo_trellis_10.hdf5', TypeError)])
     def test_faulty_crystal_object_creation(
-            self, faulty_crystal, expected_exception, grid):
+            self, faulty_crystal, grid_file, expected_exception):
+        grid = get_brille_grid(grid_file)
         with pytest.raises(expected_exception):
             BrilleInterpolator(faulty_crystal, grid)
 
     # Deliberately create a grid incompatible with the quartz crystal
-    # and check that it raises an error. This uses implicit indirect
-    # parametrization - material and fill are passed to the grid
-    # fixture
-    @pytest.mark.parametrize('expected_exception, grid_args',
-        [(ValueError, ('LZO', {})),
-         (ValueError, ('quartz', {'fill': False}))])
-    def test_faulty_grid_object_creation(self, expected_exception, grid):
+    # and check that it raises an error
+    @pytest.mark.parametrize('expected_exception, grid_file',
+        [(ValueError, 'lzo_trellis_10.hdf5'),
+         (ValueError, 'quartz_mesh_10_unfilled.hdf5')])
+    def test_faulty_grid_object_creation(self, expected_exception, grid_file):
+        grid = get_brille_grid(grid_file)
         with pytest.raises(expected_exception):
             BrilleInterpolator(get_crystal('quartz'), grid)
 
@@ -260,15 +232,16 @@ class TestBrilleInterpolatorCalculateQpointPhononModes:
         assert qpm.eigenvectors.shape == (1, 12, 4, 3)
 
     @pytest.mark.parametrize(
-        'grid_args, material, kwargs', [
-            (('LZO', {}), 'LZO', {}),
-            (('quartz', {}), 'quartz', {'useparallel': False}),
-            (('LZO', {}), 'LZO', {'kwarg_one': 'one', 'kwarg_two': 2}),
+        'material, grid_file, kwargs', [
+            ('LZO', 'lzo_trellis_10.hdf5', {}),
+            ('quartz', 'quartz_mesh_10.hdf5', {'useparallel': False}),
+            ('LZO', 'lzo_trellis_10.hdf5', {'kwarg_one': 'one', 'kwarg_two': 2}),
         ])
     def test_calculate_qpoint_phonon_modes_correct_kwargs_passed(
-            self, mocker, grid, material, kwargs):
+            self, mocker, material, grid_file, kwargs):
         qpts = np.ones((10, 3))
         crystal = get_crystal(material)
+        grid = get_brille_grid(grid_file)
         bri = BrilleInterpolator(crystal, grid)
         n_atoms = crystal.n_atoms
         mock_interpolate = mocker.patch.object(
