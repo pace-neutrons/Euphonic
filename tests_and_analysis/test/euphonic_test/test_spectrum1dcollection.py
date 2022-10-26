@@ -15,7 +15,6 @@ from tests_and_analysis.test.euphonic_test.test_spectrum1d import (
     check_spectrum1d, check_unit_conversion,
     check_property_setters)
 
-
 class ExpectedSpectrum1DCollection:
     def __init__(self, spectrum_json_file: str):
         with open(spectrum_json_file) as fd:
