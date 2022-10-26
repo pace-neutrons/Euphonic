@@ -391,6 +391,7 @@ class TestSpectrum1DMethods:
     def test_variable_broaden(self):
         """Check variable broadening is consistent with fixed-width method"""
         from numpy.polynomial import Polynomial
+        from euphonic.broadening import broaden_spectrum1d_with_polynomial
 
         spec1d = get_spectrum1d('quartz_666_dos.json')
 
@@ -401,9 +402,9 @@ class TestSpectrum1DMethods:
                      ureg('1/cm'))
 
         fixed_broad = spec1d.broaden(fwhm)
-        variable_broad_sigma = spec1d.broaden_with_polynomial(
+        variable_broad_sigma = broaden_spectrum1d_with_polynomial(spec1d,
             sigma_poly, width_convention='std', adaptive_error=1e-5)
-        variable_broad_fwhm = spec1d.broaden_with_polynomial(
+        variable_broad_fwhm = broaden_spectrum1d_with_polynomial(spec1d,
             fwhm_poly, width_convention='FWHM', adaptive_error=1e-5)
 
         check_spectrum1d(variable_broad_sigma, variable_broad_fwhm)

@@ -37,6 +37,7 @@ def test_polynomial_close_to_exact():
         bins=(bins * ureg('meV')),
         x=(x * ureg('meV')),
         width_polynomial=(Polynomial([sigma, 0., 0.]), ureg('meV')),
+        width_convention='STD',
         weights=(y * bin_width),  # Convert from spectrum heights to counts
         adaptive_error=1e-5)
 
