@@ -593,13 +593,16 @@ class Spectrum1D(Spectrum):
         else:
             raise ValueError('width_convention must be "std" or "fwhm".')
 
-        bin_widths = np.diff(self.get_bin_edges())
-        if not np.all(np.isclose(bin_widths, bin_widths[0])):
+        bins = self.get_bin_edges()
+
+        bin_widths = np.diff(bins.magnitude) * bins.units
+        if not np.all(np.isclose(bin_widths.magnitude,
+                                 bin_widths.magnitude[0])):
             raise ValueError('Not all bins are the same width: this method '
                              'requires a regular sampling grid.')
 
         y_broadened = polynomial_broadening(
-            self.get_bin_edges(), self.get_bin_centres(),
+            bins, self.get_bin_centres(),
             (width_poly, width_unit),
             (self.y_data * bin_widths[0]),
             width_lower_limit=width_lower_limit,
