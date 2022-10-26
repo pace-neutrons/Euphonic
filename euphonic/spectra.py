@@ -5,7 +5,6 @@ import itertools
 import math
 import json
 from numbers import Integral
-from numpy.polynomial import Polynomial
 from typing import (Any, Dict, List, Optional, overload,
                     Sequence, Tuple, TypeVar, Union, Type)
 import warnings
@@ -14,7 +13,6 @@ from pint import DimensionalityError
 import numpy as np
 from scipy.ndimage import correlate1d, gaussian_filter
 
-from euphonic.broadening import polynomial_broadening
 from euphonic.validate import _check_constructor_inputs, _check_unit_conversion
 from euphonic.io import (_obj_to_json_file, _obj_from_json_file,
                          _obj_to_dict, _process_dict)
@@ -543,74 +541,6 @@ class Spectrum1D(Spectrum):
         return type(self)(
             np.copy(self.x_data.magnitude)*ureg(self.x_data_unit),
             y_broadened*ureg(self.y_data_unit),
-            copy.copy((self.x_tick_labels)),
-            copy.copy(self.metadata))
-
-    def broaden_with_polynomial(self: T,
-                                width_polynomial: Tuple[Polynomial, Quantity],
-                                width_lower_limit: Quantity = None,
-                                width_convention: str = 'fwhm',
-                                adaptive_error: float = 1e-2,
-                                ) -> T:
-        """Use fast approximate method to apply x-dependent Gaussian broadening
-
-        Typically this is an energy-dependent instrumental resolution function.
-
-        Parameters
-        ----------
-
-        width_polynomial
-            A numpy Polynomial object encodes broadening width as a function of
-            binning axis (typically energy). This is paired in the input tuple
-            with a scale factor Quantity; x values will be divided by this to
-            obtain the dimensionless function input, and the function output
-            values are multiplied by this Quantity to obtain appropriately
-            dimensioned width values.
-
-            Coefficients of polynomial fit to energy/width relationship. Order
-            should be consistent with numpy.polyfit / numpy.polyval (i.e. from
-            largest exponent to smallest.)
-        width_lower_limit
-            A lower bound is set for broadening width in WIDTH_UNIT. If set to
-            None (default) the bin width will be used. To disable any lower
-            limit, set to 0 or lower.
-        width_convention
-            Either 'std' or 'fwhm', to indicate if polynomial function yields
-            standard deviation (sigma) or full-width half-maximum.
-        adaptive_error
-            Acceptable error for gaussian approximations, defined
-            as the absolute difference between the areas of the true and
-            approximate gaussians.
-
-        """
-
-        width_poly, width_unit = width_polynomial
-
-        if width_convention.lower() == 'fwhm':
-            width_poly = width_poly / np.sqrt(8 * np.log(2))
-        elif width_convention.lower() == 'std':
-            pass
-        else:
-            raise ValueError('width_convention must be "std" or "fwhm".')
-
-        bins = self.get_bin_edges()
-
-        bin_widths = np.diff(bins.magnitude) * bins.units
-        if not np.all(np.isclose(bin_widths.magnitude,
-                                 bin_widths.magnitude[0])):
-            raise ValueError('Not all bins are the same width: this method '
-                             'requires a regular sampling grid.')
-
-        y_broadened = polynomial_broadening(
-            bins, self.get_bin_centres(),
-            (width_poly, width_unit),
-            (self.y_data * bin_widths[0]),
-            width_lower_limit=width_lower_limit,
-            adaptive_error=adaptive_error)
-
-        return type(self)(
-            np.copy(self.x_data.magnitude) * ureg(self.x_data_unit),
-            y_broadened,
             copy.copy((self.x_tick_labels)),
             copy.copy(self.metadata))
 

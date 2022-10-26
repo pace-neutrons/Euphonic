@@ -1,6 +1,7 @@
 """
 Functions for broadening spectra
 """
+import copy
 from typing import Tuple, Union
 import warnings
 
@@ -11,6 +12,72 @@ from scipy.stats import norm
 from scipy.signal import convolve
 
 from euphonic import ureg, Quantity
+from euphonic.spectra import Spectrum1D
+
+
+def broaden_spectrum1d_with_polynomial(spectrum: Spectrum1D,
+                                       width_polynomial: Tuple[Polynomial, Quantity],
+                                       width_lower_limit: Quantity = None,
+                                       width_convention: str = 'fwhm',
+                                       adaptive_error: float = 1e-2) -> Spectrum1D:
+        """Use fast approximate method to apply x-dependent Gaussian broadening
+
+        Typically this is an energy-dependent instrumental resolution function.
+
+        Parameters
+        ----------
+
+        spectrum
+            Regularly-binned spectrum to broaden
+
+        width_polynomial
+            A numpy Polynomial object encodes broadening width as a function of
+            binning axis (typically energy). This is paired in the input tuple
+            with a scale factor Quantity; x values will be divided by this to
+            obtain the dimensionless function input, and the function output
+            values are multiplied by this Quantity to obtain appropriately
+            dimensioned width values.
+
+            Coefficients of polynomial fit to energy/width relationship. Order
+            should be consistent with numpy.polyfit / numpy.polyval (i.e. from
+            largest exponent to smallest.)
+        width_lower_limit
+            A lower bound is set for broadening width in WIDTH_UNIT. If set to
+            None (default) the bin width will be used. To disable any lower
+            limit, set to 0 or lower.
+        width_convention
+            Either 'std' or 'fwhm', to indicate if polynomial function yields
+            standard deviation (sigma) or full-width half-maximum.
+        adaptive_error
+            Acceptable error for gaussian approximations, defined
+            as the absolute difference between the areas of the true and
+            approximate gaussians.
+
+        """
+
+        width_poly, width_unit = width_polynomial
+
+        bins = spectrum.get_bin_edges()
+
+        bin_widths = np.diff(bins.magnitude) * bins.units
+        if not np.all(np.isclose(bin_widths.magnitude,
+                                 bin_widths.magnitude[0])):
+            raise ValueError('Not all bins are the same width: this method '
+                             'requires a regular sampling grid.')
+
+        y_broadened = polynomial_broadening(
+            bins, spectrum.get_bin_centres(),
+            (width_poly, width_unit),
+            (spectrum.y_data * bin_widths[0]),
+            width_lower_limit=width_lower_limit,
+            width_convention=width_convention,
+            adaptive_error=adaptive_error)
+
+        return Spectrum1D(
+            np.copy(spectrum.x_data.magnitude) * ureg(spectrum.x_data_unit),
+            y_broadened,
+            copy.copy((spectrum.x_tick_labels)),
+            copy.copy(spectrum.metadata))
 
 
 def polynomial_broadening(bins: Quantity,
@@ -18,6 +85,7 @@ def polynomial_broadening(bins: Quantity,
                           width_polynomial: Tuple[Polynomial, Quantity],
                           weights: Union[np.ndarray, Quantity],
                           width_lower_limit: Quantity = None,
+                          width_convention: str = 'fwhm',
                           adaptive_error: float = 1e-2) -> Quantity:
     r"""Use fast approximate method to apply x-dependent Gaussian broadening
 
@@ -49,6 +117,9 @@ def polynomial_broadening(bins: Quantity,
         A lower bound is set for broadening width in WIDTH_UNIT. If set to None
         (default) the bin width will be used. To disable any lower limit, set
         to 0 or lower.
+    width_convention
+        Either 'std' or 'fwhm', to indicate if polynomial function yields
+        standard deviation (sigma) or full-width half-maximum.
     adaptive_error
         Acceptable error for gaussian approximations, defined
         as the absolute difference between the areas of the true and
@@ -56,11 +127,15 @@ def polynomial_broadening(bins: Quantity,
 
     """
 
-    if isinstance(weights, np.ndarray):
-        weights = weights * ureg('dimensionless')
-        assert isinstance(weights, Quantity)
-
     width_poly, width_unit = width_polynomial
+
+    if width_convention.lower() == 'fwhm':
+        width_poly = width_poly / np.sqrt(8 * np.log(2))
+    elif width_convention.lower() == 'std':
+        pass
+    else:
+        raise ValueError('width_convention must be "std" or "fwhm".')
+
     widths = width_poly((x / width_unit).magnitude) * width_unit
 
     # With newer versions of Pint we could dispense with most of this unit
@@ -72,6 +147,10 @@ def polynomial_broadening(bins: Quantity,
     widths = np.maximum(widths.magnitude,
                         width_lower_limit.to(widths.units).magnitude
                         ) * widths.units
+
+    if isinstance(weights, np.ndarray):
+        weights = weights * ureg('dimensionless')
+        assert isinstance(weights, Quantity)
 
     weights_unit = weights.units
 
