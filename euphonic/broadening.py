@@ -12,15 +12,15 @@ from scipy.stats import norm
 from scipy.signal import convolve
 
 from euphonic import ureg, Quantity
-from euphonic.spectra import Spectrum1D, Spectrum1DCollection
+from euphonic.spectra import Spectrum1D, Spectrum1DCollection, Spectrum2D
 
 
 def broaden_spectrum1d_with_polynomial(
-    spectrum: Spectrum1D,
-    width_polynomial: Tuple[Polynomial, Quantity],
-    width_lower_limit: Quantity = None,
-    width_convention: str = 'fwhm',
-    adaptive_error: float = 1e-2) -> Spectrum1D:
+        spectrum: Spectrum1D,
+        width_polynomial: Tuple[Polynomial, Quantity],
+        width_lower_limit: Quantity = None,
+        width_convention: str = 'fwhm',
+        adaptive_error: float = 1e-2) -> Spectrum1D:
     """Use fast approximate method to apply x-dependent Gaussian broadening
 
     Typically this is an energy-dependent instrumental resolution function.
@@ -79,10 +79,101 @@ def broaden_spectrum1d_with_polynomial(
         copy.copy(spectrum.metadata))
 
 
+def broaden_spectrum2d_with_polynomial(
+        spectrum: Spectrum2D,
+        width_polynomial: Tuple[Polynomial, Quantity],
+        axis: str = 'y',
+        width_lower_limit: Quantity = None,
+        width_convention: str = 'fwhm',
+        adaptive_error: float = 1e-2) -> Spectrum2D:
+    """Use fast approximate method to apply value-dependent Gaussian broadening
+
+    Typically this is an energy-dependent instrumental resolution function.
+
+    For now this is a naive implementation iterating over each row/column.
+
+    Parameters
+    ----------
+
+    spectrum
+        2-D spectrum to broaden, regularly-binned in the broadening direction
+
+    width_polynomial
+        A numpy Polynomial object encodes broadening width as a function of
+        binning axis (typically energy). This is paired in the input tuple with
+        a scale factor Quantity; x values will be divided by this to obtain the
+        dimensionless function input, and the function output values are
+        multiplied by this Quantity to obtain appropriately dimensioned width
+        values.
+
+    axis
+        'x' or 'y' axis along which Gaussian broadening as applied according to
+        width_polynomial.
+
+    width_lower_limit
+        A lower bound is set for broadening width in WIDTH_UNIT. If set to None
+        (default) the bin width will be used. To disable any lower limit, set
+        to 0 or lower.
+
+    width_convention
+        Either 'std' or 'fwhm', to indicate if polynomial function yields
+        standard deviation (sigma) or full-width half-maximum.
+
+    adaptive_error
+        Acceptable error for gaussian approximations, defined as the absolute
+        difference between the areas of the true and approximate gaussians.
+
+    """
+
+    assert axis in ('x', 'y')
+
+    width_poly, width_unit = width_polynomial
+
+    bins = spectrum.get_bin_edges(bin_ax=axis)
+    bin_widths = np.diff(bins.magnitude) * bins.units
+
+    if not np.all(np.isclose(bin_widths.magnitude,
+                             bin_widths.magnitude[0])):
+        # raise Warning('Not all bins are the same width: this method '
+        #               'requires a regular sampling grid for correct results.')
+        bin_width = bin_widths.mean()
+    else:
+        bin_width = bin_widths[0]
+
+    # Input data: rescale to sparse-like data values
+    z_data = spectrum.z_data * bin_width
+
+    if axis == 'x':
+        z_data = z_data.T
+
+    # Output data: matches input units
+    z_broadened = np.empty_like(z_data.magnitude) * spectrum.z_data.units
+
+    for i, row in enumerate(z_data):
+        z_broadened[i] = polynomial_broadening(
+            bins,
+            spectrum.get_bin_centres(bin_ax=axis),
+            (width_poly, width_unit),
+            row,
+            width_lower_limit=width_lower_limit,
+            width_convention=width_convention,
+            adaptive_error=adaptive_error)
+
+    if axis == 'x':
+        z_broadened = z_broadened.T
+
+    return Spectrum2D(
+        np.copy(spectrum.x_data.magnitude) * ureg(spectrum.x_data_unit),
+        np.copy(spectrum.y_data.magnitude) * ureg(spectrum.y_data_unit),
+        z_broadened,
+        copy.copy(spectrum.x_tick_labels),
+        copy.copy(spectrum.metadata))
+
+
 def broaden_spectrum1dcollection_with_polynomial(
-    spectra: Spectrum1DCollection,
-    width_polynomial: Tuple[Polynomial, Quantity],
-    **kwargs) -> Spectrum1DCollection:
+        spectra: Spectrum1DCollection,
+        width_polynomial: Tuple[Polynomial, Quantity],
+        **kwargs) -> Spectrum1DCollection:
     """Use fast approximate method to apply x-dependent Gaussian broadening
 
     Typically this is an energy-dependent instrumental resolution function.
