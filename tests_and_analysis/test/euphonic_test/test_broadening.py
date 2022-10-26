@@ -1,11 +1,13 @@
 import pytest
 import numpy as np
+from numpy.polynomial import Polynomial
 import numpy.testing as npt
 from scipy.integrate import simps
 
 from euphonic.broadening import (find_coeffs,
                                  width_interpolated_broadening,
-                                 polynomial_broadening)
+                                 polynomial_broadening,
+                                 broaden_spectrum1d_with_polynomial)
 from euphonic import ureg
 from tests_and_analysis.test.euphonic_test.test_force_constants\
     import get_fc_path
@@ -13,14 +15,13 @@ from tests_and_analysis.test.euphonic_test.test_qpoint_frequencies\
     import get_qpt_freqs
 from tests_and_analysis.test.utils import get_mode_widths
 from tests_and_analysis.test.euphonic_test.test_spectrum1d\
-    import get_expected_spectrum1d
+    import check_spectrum1d, get_expected_spectrum1d, get_spectrum1d
 
 
 def test_polynomial_close_to_exact():
     """Check polynomial broadening agrees with exact for trivial case"""
     from numpy.random import RandomState
     from scipy.ndimage import gaussian_filter
-    from numpy.polynomial import Polynomial
 
     rng = RandomState(123)
 
@@ -43,6 +44,26 @@ def test_polynomial_close_to_exact():
 
     npt.assert_allclose(exact, poly_broadened.to('1/meV').magnitude,
                         atol=1e-4)
+
+
+def test_variable_broaden_spectrum1d():
+    """Check variable broadening is consistent with fixed-width method"""
+    spec1d = get_spectrum1d('quartz_666_dos.json')
+
+    sigma = 2 * ureg('meV')
+    fwhm = 2.3548200450309493 * sigma
+    sigma_poly = (Polynomial([sigma.magnitude, 0., 0.]), sigma.units)
+    fwhm_poly = (Polynomial([fwhm.to('1/cm').magnitude, 0., ]),
+                 ureg('1/cm'))
+
+    fixed_broad = spec1d.broaden(fwhm)
+    variable_broad_sigma = broaden_spectrum1d_with_polynomial(
+        spec1d, sigma_poly, width_convention='std', adaptive_error=1e-5)
+    variable_broad_fwhm = broaden_spectrum1d_with_polynomial(
+        spec1d, fwhm_poly, width_convention='FWHM', adaptive_error=1e-5)
+
+    check_spectrum1d(variable_broad_sigma, variable_broad_fwhm)
+    check_spectrum1d(fixed_broad, variable_broad_sigma, y_atol=1e-4)
 
 
 @pytest.mark.parametrize(
