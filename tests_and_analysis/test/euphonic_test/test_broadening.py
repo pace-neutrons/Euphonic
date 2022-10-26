@@ -1,8 +1,10 @@
 import pytest
 import numpy as np
 from numpy.polynomial import Polynomial
+from numpy.random import RandomState
 import numpy.testing as npt
 from scipy.integrate import simps
+from scipy.ndimage import gaussian_filter
 
 from euphonic.broadening import (find_coeffs,
                                  width_interpolated_broadening,
@@ -20,9 +22,6 @@ from tests_and_analysis.test.euphonic_test.test_spectrum1d\
 
 def test_polynomial_close_to_exact():
     """Check polynomial broadening agrees with exact for trivial case"""
-    from numpy.random import RandomState
-    from scipy.ndimage import gaussian_filter
-
     rng = RandomState(123)
 
     bins = np.linspace(0, 100, 200)
@@ -128,14 +127,16 @@ def test_uneven_bin_width_raises_warning():
     weights = np.ones(qpt_freqs.frequencies.shape) * \
         np.full(qpt_freqs.n_qpts, 1/qpt_freqs.n_qpts)[:, np.newaxis]
     ebins = np.concatenate((np.arange(0, 100, 0.1),
-                             np.arange(100, 155, 0.2)))*ureg('meV')
+                            np.arange(100, 155, 0.2)))*ureg('meV')
     with pytest.warns(UserWarning):
         width_interpolated_broadening(ebins, qpt_freqs.frequencies,
                                       mode_widths, weights, 0.01)
 
-@pytest.mark.parametrize(('spacing','expected_coeffs'),
+
+@pytest.mark.parametrize(
+    ('spacing', 'expected_coeffs'),
     [(2, [-0.1883858, 1.46930932, -4.0893793, 3.80872458]),
-    (np.sqrt(2), [-0.60874207, 4.10599029, -9.63986481, 7.14267836])])
+     (np.sqrt(2), [-0.60874207, 4.10599029, -9.63986481, 7.14267836])])
 def test_find_coeffs(spacing, expected_coeffs):
     """Test find_coeffs against expected coefficients"""
     coeffs = find_coeffs(spacing)

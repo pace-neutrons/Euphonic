@@ -15,69 +15,68 @@ from euphonic import ureg, Quantity
 from euphonic.spectra import Spectrum1D
 
 
-def broaden_spectrum1d_with_polynomial(spectrum: Spectrum1D,
-                                       width_polynomial: Tuple[Polynomial, Quantity],
-                                       width_lower_limit: Quantity = None,
-                                       width_convention: str = 'fwhm',
-                                       adaptive_error: float = 1e-2) -> Spectrum1D:
-        """Use fast approximate method to apply x-dependent Gaussian broadening
+def broaden_spectrum1d_with_polynomial(
+    spectrum: Spectrum1D,
+    width_polynomial: Tuple[Polynomial, Quantity],
+    width_lower_limit: Quantity = None,
+    width_convention: str = 'fwhm',
+    adaptive_error: float = 1e-2) -> Spectrum1D:
+    """Use fast approximate method to apply x-dependent Gaussian broadening
 
-        Typically this is an energy-dependent instrumental resolution function.
+    Typically this is an energy-dependent instrumental resolution function.
 
-        Parameters
-        ----------
+    Parameters
+    ----------
 
-        spectrum
-            Regularly-binned spectrum to broaden
+    spectrum
+        Regularly-binned spectrum to broaden
 
-        width_polynomial
-            A numpy Polynomial object encodes broadening width as a function of
-            binning axis (typically energy). This is paired in the input tuple
-            with a scale factor Quantity; x values will be divided by this to
-            obtain the dimensionless function input, and the function output
-            values are multiplied by this Quantity to obtain appropriately
-            dimensioned width values.
+    width_polynomial
+        A numpy Polynomial object encodes broadening width as a function of
+        binning axis (typically energy). This is paired in the input tuple with
+        a scale factor Quantity; x values will be divided by this to obtain the
+        dimensionless function input, and the function output values are
+        multiplied by this Quantity to obtain appropriately dimensioned width
+        values.
 
-            Coefficients of polynomial fit to energy/width relationship. Order
-            should be consistent with numpy.polyfit / numpy.polyval (i.e. from
-            largest exponent to smallest.)
-        width_lower_limit
-            A lower bound is set for broadening width in WIDTH_UNIT. If set to
-            None (default) the bin width will be used. To disable any lower
-            limit, set to 0 or lower.
-        width_convention
-            Either 'std' or 'fwhm', to indicate if polynomial function yields
-            standard deviation (sigma) or full-width half-maximum.
-        adaptive_error
-            Acceptable error for gaussian approximations, defined
-            as the absolute difference between the areas of the true and
-            approximate gaussians.
+    width_lower_limit
+        A lower bound is set for broadening width in WIDTH_UNIT. If set to None
+        (default) the bin width will be used. To disable any lower limit, set
+        to 0 or lower.
 
-        """
+    width_convention
+        Either 'std' or 'fwhm', to indicate if polynomial function yields
+        standard deviation (sigma) or full-width half-maximum.
 
-        width_poly, width_unit = width_polynomial
+    adaptive_error
+        Acceptable error for gaussian approximations, defined as the absolute
+        difference between the areas of the true and approximate gaussians.
 
-        bins = spectrum.get_bin_edges()
+    """
 
-        bin_widths = np.diff(bins.magnitude) * bins.units
-        if not np.all(np.isclose(bin_widths.magnitude,
-                                 bin_widths.magnitude[0])):
-            raise ValueError('Not all bins are the same width: this method '
-                             'requires a regular sampling grid.')
+    width_poly, width_unit = width_polynomial
 
-        y_broadened = polynomial_broadening(
-            bins, spectrum.get_bin_centres(),
-            (width_poly, width_unit),
-            (spectrum.y_data * bin_widths[0]),
-            width_lower_limit=width_lower_limit,
-            width_convention=width_convention,
-            adaptive_error=adaptive_error)
+    bins = spectrum.get_bin_edges()
 
-        return Spectrum1D(
-            np.copy(spectrum.x_data.magnitude) * ureg(spectrum.x_data_unit),
-            y_broadened,
-            copy.copy((spectrum.x_tick_labels)),
-            copy.copy(spectrum.metadata))
+    bin_widths = np.diff(bins.magnitude) * bins.units
+    if not np.all(np.isclose(bin_widths.magnitude,
+                             bin_widths.magnitude[0])):
+        raise ValueError('Not all bins are the same width: this method '
+                         'requires a regular sampling grid.')
+
+    y_broadened = polynomial_broadening(
+        bins, spectrum.get_bin_centres(),
+        (width_poly, width_unit),
+        (spectrum.y_data * bin_widths[0]),
+        width_lower_limit=width_lower_limit,
+        width_convention=width_convention,
+        adaptive_error=adaptive_error)
+
+    return Spectrum1D(
+        np.copy(spectrum.x_data.magnitude) * ureg(spectrum.x_data_unit),
+        y_broadened,
+        copy.copy((spectrum.x_tick_labels)),
+        copy.copy(spectrum.metadata))
 
 
 def polynomial_broadening(bins: Quantity,
