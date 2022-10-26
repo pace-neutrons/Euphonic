@@ -12,7 +12,7 @@ from scipy.stats import norm
 from scipy.signal import convolve
 
 from euphonic import ureg, Quantity
-from euphonic.spectra import Spectrum1D
+from euphonic.spectra import Spectrum1D, Spectrum1DCollection
 
 
 def broaden_spectrum1d_with_polynomial(
@@ -77,6 +77,52 @@ def broaden_spectrum1d_with_polynomial(
         y_broadened,
         copy.copy((spectrum.x_tick_labels)),
         copy.copy(spectrum.metadata))
+
+
+def broaden_spectrum1dcollection_with_polynomial(
+    spectra: Spectrum1DCollection,
+    width_polynomial: Tuple[Polynomial, Quantity],
+    **kwargs) -> Spectrum1DCollection:
+    """Use fast approximate method to apply x-dependent Gaussian broadening
+
+    Typically this is an energy-dependent instrumental resolution function.
+
+    For now this is a naive implementation with no performance benefit over
+    broadening the component spectra individually.
+
+    Parameters
+    ----------
+
+    spectra
+        Regularly-binned spectra to broaden
+
+    width_polynomial
+        A numpy Polynomial object encodes broadening width as a function of
+        binning axis (typically energy). This is paired in the input tuple with
+        a scale factor Quantity; x values will be divided by this to obtain the
+        dimensionless function input, and the function output values are
+        multiplied by this Quantity to obtain appropriately dimensioned width
+        values.
+
+    width_lower_limit
+        A lower bound is set for broadening width in WIDTH_UNIT. If set to None
+        (default) the bin width will be used. To disable any lower limit, set
+        to 0 or lower.
+
+    width_convention
+        Either 'std' or 'fwhm', to indicate if polynomial function yields
+        standard deviation (sigma) or full-width half-maximum.
+
+    adaptive_error
+        Acceptable error for gaussian approximations, defined as the absolute
+        difference between the areas of the true and approximate gaussians.
+
+    """
+    return Spectrum1DCollection.from_spectra(
+        [broaden_spectrum1d_with_polynomial(spectrum,
+                                            width_polynomial,
+                                            **kwargs)
+         for spectrum in spectra])
 
 
 def polynomial_broadening(bins: Quantity,

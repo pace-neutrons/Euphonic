@@ -9,16 +9,17 @@ from scipy.ndimage import gaussian_filter
 from euphonic.broadening import (find_coeffs,
                                  width_interpolated_broadening,
                                  polynomial_broadening,
-                                 broaden_spectrum1d_with_polynomial)
+                                 broaden_spectrum1d_with_polynomial,
+                                 broaden_spectrum1dcollection_with_polynomial)
 from euphonic import ureg
 from tests_and_analysis.test.euphonic_test.test_force_constants\
     import get_fc_path
 from tests_and_analysis.test.euphonic_test.test_qpoint_frequencies\
     import get_qpt_freqs
-from tests_and_analysis.test.utils import get_mode_widths
+from ..utils import get_mode_widths
 from tests_and_analysis.test.euphonic_test.test_spectrum1d\
     import check_spectrum1d, get_expected_spectrum1d, get_spectrum1d
-
+from .test_spectrum1dcollection import get_spectrum1dcollection
 
 def test_polynomial_close_to_exact():
     """Check polynomial broadening agrees with exact for trivial case"""
@@ -63,6 +64,21 @@ def test_variable_broaden_spectrum1d():
 
     check_spectrum1d(variable_broad_sigma, variable_broad_fwhm)
     check_spectrum1d(fixed_broad, variable_broad_sigma, y_atol=1e-4)
+
+
+def test_variable_broaden_1d_collection():
+    """Check variable broadening is consistent when applied over collection"""
+    spectra = get_spectrum1dcollection('quartz_666_coh_pdos.json')
+    width_poly = (Polynomial([1., 2., 3.]), ureg('meV'))
+
+    individually_broadened = [
+        broaden_spectrum1d_with_polynomial(spectrum, width_poly)
+        for spectrum in spectra]
+    collection_broadened = broaden_spectrum1dcollection_with_polynomial(
+        spectra, width_poly)
+
+    for spec1, spec2 in zip(individually_broadened, collection_broadened):
+        check_spectrum1d(spec1, spec2)
 
 
 @pytest.mark.parametrize(
