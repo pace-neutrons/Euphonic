@@ -33,6 +33,23 @@ def main(params: Optional[List[str]] = None) -> None:
             raise ValueError('Currently only Gaussian shape is supported '
                              'with adaptive broadening')
 
+    if (args.energy_broadening
+            and args.adaptive
+            and len(args.energy_broadening) == 1):
+        if args.adaptive_scale is not None:
+            raise ValueError('Adaptive scale factor was specified twice; use '
+                             'either --adaptive-scale or --energy-broadening. '
+                             'To add a fixed width to adaptive broadening, '
+                             'use --instrument-broadening.')
+        args.adaptive_scale = args.energy_broadening[0]
+
+    elif args.energy_broadening:
+        if args.inst_broadening is not None:
+            raise ValueError('Broadening width was specified twice; use '
+                             'either --instrument-broadening or '
+                             '--energy-broadening.')
+        args.inst_broadening = args.energy_broadening
+
     mode_widths = None
     if isinstance(data, ForceConstants):
 
@@ -50,8 +67,14 @@ def main(params: Optional[List[str]] = None) -> None:
                 mp_grid(grid_spec), **cmkwargs)
             mode_widths = mode_gradients_to_widths(mode_grads,
                                                    modes.crystal.cell_vectors)
-            if args.energy_broadening:
-                mode_widths *= args.energy_broadening
+            if args.adaptive_scale:
+                mode_widths *= args.adaptive_scale
+            if args.inst_broadening and args.shape == 'gauss':
+                # Combine instrumental broadening and adaptive sample
+                # broadening: the convolution of a Gaussian with a Gaussian is
+                # a Gaussian with sigma = sqrt(sigma1^2 + sigma2^2)
+                mode_widths = np.sqrt(mode_widths**2
+                                      + args.inst_broadening[0]**2)
         else:
             modes = data.calculate_qpoint_phonon_modes(
                 mp_grid(grid_spec), **_calc_modes_kwargs(args))
@@ -73,8 +96,9 @@ def main(params: Optional[List[str]] = None) -> None:
         pdos = modes.calculate_pdos(ebins, **kwargs)
         dos = _arrange_pdos_groups(pdos, args.pdos)
 
-    if args.energy_broadening and not args.adaptive:
-        dos = dos.broaden(args.energy_broadening*ebins.units, shape=args.shape)
+    if args.inst_broadening and (args.shape == 'lorentz' or not args.adaptive):
+        dos = dos.broaden(args.inst_broadening[0]*ebins.units,
+                          shape=args.shape)
 
     plot_label_kwargs = _plot_label_kwargs(
         args, default_xlabel=f"Energy / {dos.x_data.units:~P}")
