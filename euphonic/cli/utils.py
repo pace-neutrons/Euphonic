@@ -710,6 +710,15 @@ def _get_cli_parser(features: Collection[str] = {},
             section = sections['energy']
             section.add_argument('--ebins', type=int, default=200,
                                  help='Number of energy bins')
+
+            ib_help = (
+                'The FWHM of broadening on energy axis in ENERGY_UNIT (no '
+                'broadening if unspecified). If multiple values are provided, '
+                'these will be interpreted as polynomial coefficients to be '
+                'evaluated in ENERGY_UNIT base, e.g. --energy-broadening'
+                ' 1. 0.01 1e-6 --energy-unit meV will apply FWHM of '
+                '(1. + 0.01 (energy / meV) + 1e-6 (energy / meV)^2) meV.')
+
             if 'adaptive-broadening' in features:
                 section.add_argument(
                     '--adaptive', action='store_true',
@@ -727,19 +736,26 @@ def _get_cli_parser(features: Collection[str] = {},
                           'for gaussian approximations '
                           'when using the fast adaptive '
                           'broadening method'))
+                section.add_argument(
+                    '--adaptive-scale', type=float, default=None,
+                    dest='adaptive_scale',
+                    help='Scale factor applied to adaptive broadening width'
+                    )
+                section.add_argument(
+                    '--instrument-broadening', type=float, nargs='+',
+                    default=None, dest='inst_broadening', help=ib_help)
+
                 eb_help = (
-                    'If using fixed width broadening, the FWHM of broadening '
-                    'on energy axis in ENERGY_UNIT (no broadening if '
-                    'unspecified). If using adaptive broadening, this is a '
-                    'scale factor multiplying the mode widths (no scale '
-                    'factor applied if unspecified).')
+                    'If using adaptive broadening and a single (i.e. scalar) '
+                    'value is provided, this is an alias for --adaptive-scale.'
+                    ' Otherwise, this is an alias for --instrument-broadening.'
+                    )
             else:
-                eb_help = ('The FWHM of broadening on energy axis in '
-                           'ENERGY_UNIT (no broadening if unspecified).')
+                eb_help = ib_help
             section.add_argument(
                 '--energy-broadening', '--eb', type=float, default=None,
-                dest='energy_broadening',
-                help=eb_help)
+                nargs='+', dest='energy_broadening', help=eb_help)
+
             section.add_argument(
                 '--shape', type=str, nargs='?', default='gauss',
                 choices=('gauss', 'lorentz'),
