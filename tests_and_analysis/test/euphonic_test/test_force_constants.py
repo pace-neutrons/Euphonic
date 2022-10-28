@@ -198,7 +198,7 @@ class TestForceConstantsCreation:
         check_force_constants(fc, expected_fc)
 
     @pytest.mark.parametrize('long_ranged_fc_json, expected_fc_json',
-                             [('NaCl_dipole', 'NaCl')])
+                             [('NaCl_long_ranged', 'NaCl')])
     def test_create_from_long_ranged_dipole_fc(
             self, long_ranged_fc_json, expected_fc_json):
         expected_fc = get_expected_fc(expected_fc_json)

@@ -128,7 +128,7 @@ class TestConvertFcPhases:
     @pytest.mark.parametrize(('fc, atom_r, sc_atom_r, uc_to_sc_idx, '
                               'sc_to_uc_idx, sc_matrix, expected_fc'), [
         (*get_data_from_json('NaCl_convert_full_fc_data.json'),
-         get_fc('NaCl_dipole')),
+         get_fc('NaCl_long_ranged')),
         (*get_data_from_json('CaHgO2_convert_fc_data.json'),
          get_fc('CaHgO2'))])
     def test_convert_fc_phases(self, fc, atom_r, sc_atom_r, uc_to_sc_idx,
