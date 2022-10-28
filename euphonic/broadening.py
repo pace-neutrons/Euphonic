@@ -2,7 +2,7 @@
 Functions for broadening spectra
 """
 import copy
-from typing import Tuple, Union
+from typing import Callable, Tuple, Union
 import warnings
 
 import numpy as np
@@ -216,6 +216,81 @@ def broaden_spectrum1dcollection_with_polynomial(
          for spectrum in spectra])
 
 
+def variable_width_broadening(bins: Quantity,
+                              x: Quantity,
+                              width_function: Callable[[Quantity], Quantity],
+                              weights: Union[np.ndarray, Quantity],
+                              width_lower_limit: Quantity = None,
+                              width_convention: str = 'fwhm',
+                              adaptive_error: float = 1e-2) -> Quantity:
+    r"""Apply x-dependent Gaussian broadening to 1-D data series
+
+    Typically this is an energy-dependent instrumental resolution function.
+    Data is binned and broadened to output array with reciprocal units.
+
+    A fast interpolation-based method is used to reduce the number of Gaussian
+    evaluations.
+
+    Parameters
+    ----------
+    bins
+        Data bins for output spectrum
+    x
+        Data positions (to be binned)
+    width_function
+        A function handle which takes an n-dimensional array of x values as
+        input and returns corresponding width values for broadening. These
+        should be Quantity arrays and dimensionally-consistent with x.
+    weights
+        Weight for each data point corresponding to x. Note that these should
+        be "counts" rather than binned spectral weights; this function will
+        bin the data and apply bin-width weighting.
+    width_lower_limit
+        A lower bound is set for broadening width in WIDTH_UNIT. If set to None
+        (default) the bin width will be used. To disable any lower limit, set
+        to 0 or lower.
+    width_convention
+        Either 'std' or 'fwhm', to indicate if polynomial function yields
+        standard deviation (sigma) or full-width half-maximum.
+    adaptive_error
+        Acceptable error for gaussian approximations, defined
+        as the absolute difference between the areas of the true and
+        approximate gaussians.
+
+    """
+
+    if width_convention.lower() == 'fwhm':
+        sigma_function = (lambda x: width_function(x)
+                                 / np.sqrt(8 * np.log(2)))
+    elif width_convention.lower() == 'std':
+        sigma_function = width_function
+    else:
+        raise ValueError('width_convention must be "std" or "fwhm".')
+
+    widths = sigma_function(x)
+
+    # With newer versions of Numpy/Pint we could dispense with most of the unit
+    # and magnitude shuffling as the numpy functions are handled more cleanly.
+
+    if width_lower_limit is None:
+        width_lower_limit = np.diff(bins.magnitude).max() * bins.units
+
+    widths = np.maximum(widths.magnitude,
+                        width_lower_limit.to(widths.units).magnitude
+                        ) * widths.units
+
+    if isinstance(weights, np.ndarray):
+        weights = weights * ureg('dimensionless')
+        assert isinstance(weights, Quantity)
+
+    weights_unit = weights.units
+
+    return width_interpolated_broadening(bins, x, widths,
+                                         weights.magnitude,
+                                         adaptive_error=adaptive_error
+                                         ) * weights_unit
+
+
 def polynomial_broadening(bins: Quantity,
                           x: Quantity,
                           width_polynomial: Tuple[Polynomial, Quantity],
@@ -265,35 +340,13 @@ def polynomial_broadening(bins: Quantity,
 
     width_poly, width_unit = width_polynomial
 
-    if width_convention.lower() == 'fwhm':
-        width_poly = width_poly / np.sqrt(8 * np.log(2))
-    elif width_convention.lower() == 'std':
-        pass
-    else:
-        raise ValueError('width_convention must be "std" or "fwhm".')
+    width_function = (lambda x: width_poly(x.to(width_unit).magnitude)
+                                * width_unit)
 
-    widths = width_poly((x / width_unit).magnitude) * width_unit
-
-    # With newer versions of Pint we could dispense with most of this unit
-    # and magnitude shuffling and the numpy functions are handled more cleanly.
-
-    if width_lower_limit is None:
-        width_lower_limit = np.diff(bins.magnitude).max() * bins.units
-
-    widths = np.maximum(widths.magnitude,
-                        width_lower_limit.to(widths.units).magnitude
-                        ) * widths.units
-
-    if isinstance(weights, np.ndarray):
-        weights = weights * ureg('dimensionless')
-        assert isinstance(weights, Quantity)
-
-    weights_unit = weights.units
-
-    return width_interpolated_broadening(bins, x, widths,
-                                         weights.magnitude,
-                                         adaptive_error=adaptive_error
-                                         ) * weights_unit
+    return variable_width_broadening(bins, x, width_function, weights,
+                                     width_lower_limit=width_lower_limit,
+                                     width_convention=width_convention,
+                                     adaptive_error=adaptive_error)
 
 
 def width_interpolated_broadening(bins: Quantity,
