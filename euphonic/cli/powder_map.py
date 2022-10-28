@@ -186,7 +186,7 @@ def main(params: Optional[List[str]] = None) -> None:
         spectrum = spectrum.broaden(
             x_width=(args.q_broadening * recip_length_unit
                      if args.q_broadening else None),
-            y_width=(args.energy_broadening * energy_bins.units
+            y_width=(args.energy_broadening[0] * energy_bins.units
                      if args.energy_broadening else None),
             shape=args.shape)
 
