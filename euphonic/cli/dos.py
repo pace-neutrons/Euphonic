@@ -2,8 +2,10 @@ from argparse import ArgumentParser
 from typing import List, Optional
 
 import matplotlib.style
+from numpy import sqrt
+from numpy.polynomial import Polynomial
 
-from euphonic import ureg, ForceConstants, QpointFrequencies
+from euphonic import ureg, ForceConstants, QpointFrequencies, Spectrum1D
 from euphonic.util import mp_grid, mode_gradients_to_widths
 from euphonic.plot import plot_1d
 from euphonic.styles import base_style
@@ -50,6 +52,9 @@ def main(params: Optional[List[str]] = None) -> None:
                              '--energy-broadening.')
         args.inst_broadening = args.energy_broadening
 
+    if args.inst_broadening:
+        energy_broadening_poly = Polynomial(args.inst_broadening)
+
     mode_widths = None
     if isinstance(data, ForceConstants):
 
@@ -73,8 +78,11 @@ def main(params: Optional[List[str]] = None) -> None:
                 # Combine instrumental broadening and adaptive sample
                 # broadening: the convolution of a Gaussian with a Gaussian is
                 # a Gaussian with sigma = sqrt(sigma1^2 + sigma2^2)
-                mode_widths = np.sqrt(mode_widths**2
-                                      + args.inst_broadening[0]**2)
+                mode_widths = sqrt(
+                    mode_widths**2
+                    + (energy_broadening_poly(modes.frequencies
+                                              .to(args.energy_unit).magnitude
+                                              ) * ureg(args.energy_unit))**2)
         else:
             modes = data.calculate_qpoint_phonon_modes(
                 mp_grid(grid_spec), **_calc_modes_kwargs(args))
@@ -96,8 +104,33 @@ def main(params: Optional[List[str]] = None) -> None:
         pdos = modes.calculate_pdos(ebins, **kwargs)
         dos = _arrange_pdos_groups(pdos, args.pdos)
 
-    if args.inst_broadening and (args.shape == 'lorentz' or not args.adaptive):
-        dos = dos.broaden(args.inst_broadening[0]*ebins.units,
+    if args.inst_broadening and args.shape == 'gauss' and args.adaptive:
+        pass  # Gaussian broadening included with adaptive sampling
+
+    elif (args.inst_broadening and args.shape == 'gauss'
+          and len(energy_broadening_poly) > 1):
+        # Variable-width Gaussian broadening
+        from euphonic.broadening import (
+            broaden_spectrum1dcollection_with_polynomial,
+            broaden_spectrum1d_with_polynomial)
+
+        if isinstance(dos, Spectrum1D):
+            broadening_function = broaden_spectrum1d_with_polynomial
+        else:
+            broadening_function = broaden_spectrum1dcollection_with_polynomial
+
+        dos = broadening_function(
+            dos,
+            (energy_broadening_poly, ureg(args.energy_unit)),
+            adaptive_error=args.adaptive_error)
+
+    elif args.inst_broadening:
+        # Fixed-width broadening
+        if len(energy_broadening_poly) > 1:
+            raise ValueError(
+                "Variable-width broadening is only supported for Gaussian "
+                "shape.")
+        dos = dos.broaden(energy_broadening_poly.coef[0] * ebins.units,
                           shape=args.shape)
 
     plot_label_kwargs = _plot_label_kwargs(
