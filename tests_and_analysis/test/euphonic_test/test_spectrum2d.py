@@ -92,7 +92,8 @@ def get_expected_spectrum2d(json_filename):
     return ExpectedSpectrum2D(get_spectrum2d_path(json_filename))
 
 
-def check_spectrum2d(actual_spectrum2d, expected_spectrum2d, equal_nan=False):
+def check_spectrum2d(actual_spectrum2d, expected_spectrum2d, equal_nan=False,
+                     z_atol=np.finfo(np.float64).eps):
 
     assert (actual_spectrum2d.x_data.units
             == expected_spectrum2d.x_data.units)
@@ -110,7 +111,7 @@ def check_spectrum2d(actual_spectrum2d, expected_spectrum2d, equal_nan=False):
             == expected_spectrum2d.z_data.units)
     npt.assert_allclose(actual_spectrum2d.z_data.magnitude,
                         expected_spectrum2d.z_data.magnitude,
-                        atol=np.finfo(np.float64).eps,
+                        atol=z_atol,
                         equal_nan=equal_nan)
 
     if expected_spectrum2d.x_tick_labels is None:
