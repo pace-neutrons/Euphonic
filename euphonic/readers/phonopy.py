@@ -721,7 +721,7 @@ def read_interpolation_data(
             born_dict = _extract_born(born_file)
         # Let BORN file take priority, but merge because the 'nac_factor'
         # key may not always be present in BORN
-        summary_dict = {**summary_dict, **born_dict}
+        summary_dict.update(born_dict)
     # Check if born key is present, then factor is also present. It
     # may not always be e.g. you can run Phonopy so that 'born',
     # 'dielectric' are written to phonopy.yaml, but if NAC = .FALSE.

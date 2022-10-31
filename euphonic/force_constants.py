@@ -1722,14 +1722,17 @@ class ForceConstants:
             sc_matrix: np.ndarray, cell_origins: np.ndarray, born: Quantity,
             dielectric: Quantity) -> T:
         """
-        Subtracts a dipole term from the input force constants matrix to
-        convert a long-ranged force constants matrix to a short-ranged one,
-        as defined in eq. 78 from [4]_ . This correction may need to be
-        applied as Euphonic requires the short-ranged matrix, whereas some
-        codes output the long-ranged one (e.g Phonopy, but note that the
-        from_phonopy method will apply this correction automatically).
-        If the force constants matrix is already short ranged or the
-        material is not polar this correction should not be applied.
+        Subtracts a dipole term from the input force constants matrix
+        to convert the 'total' force constants matrix containing both
+        dipole-dipole interactions and short-ranged interactions to one
+        containing only short-ranged interactions, as defined in eq. 78
+        from [4]_ . This correction may need to be applied as Euphonic
+        requires the short-ranged matrix, whereas some codes output the
+        total matrix (e.g Phonopy, but note that the from_phonopy
+        method will apply this correction automatically). If the force
+        constants matrix is already short ranged or the material has
+        zero Born effective charges or dielectric permittivity tensor
+        this correction should not be applied.
 
         .. [4] X. Gonze and C. Lee., Phys. Rev. B, 1997, 55, 10355-10368
 
@@ -1737,8 +1740,9 @@ class ForceConstants:
         ----------
         force_constants
             Shape (n_cells_in_sc, 3*n_atoms, 3*n_atoms) float Quantity
-            in energy/length**2 units. The long-ranged force constants
-            matrix
+            in energy/length**2 units. The 'total' force constants
+            matrix containing both dipole-dipole interactions and
+            short-ranged interactions.
         crystal
             Lattice and atom information
         sc_matrix

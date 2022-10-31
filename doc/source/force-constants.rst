@@ -87,16 +87,24 @@ This is a simple example, but the same applies to more realistic 3D structures.
 This transformation is done automatically when reading from Phonopy.
 If reading force constants from another program, there is a function to help with this transformation, see :ref:`Reading From Other Programs<fc_read_other_programs>`.
 
-**Polar Force Constants**
+**Dipole-dipole Force Constants**
 
-From equation 78 in `Gonze & Lee, 1997 <https://doi.org/10.1103/PhysRevB.55.10355>`_:
+For materials without dipole-dipole interactions (non-zero Born effective charges) force constants typically decay as :math:`1/r^{5-7}`, but if dipole-dipole interactions are present, they only decay at :math:`1/r^3`.
+It is often not computationally practical to compute the force constants at such a distance.
+Fortunately there is an analytical expression for these dipole interactions, which can be applied to the dynamical matrix to produce the correct phonon frequencies and displacements.
+However, to avoid double counting some of the dipole-dipole interactions, the force constants matrix from which the dynamical matrix is calculated must not already include the short-ranged part of the dipole interactions.
+This is represented in equation 78 in `Gonze & Lee, 1997 <https://doi.org/10.1103/PhysRevB.55.10355>`_:
 
 .. math::
 
   C = C^{SR} + C^{DD}
 
-Where :math:`C` is the 'long-ranged' force constants matrix, :math:`C^{SR}` is the 'short-ranged' force constants matrix, and :math:`C^{DD}` is the long-ranged dipole part (which is non-zero for materials with non-zero Born effective charges and dielectric permittivity tensor).
-Euphonic requires :math:`C^{SR}`, whereas some codes (e.g. Phonopy) output :math:`C` so must be converted.
+Where :math:`C` is the 'total' force constants matrix containing both short-ranged interactions and long-ranged dipole interactions,
+:math:`C^{SR}` is the force constants matrix containing only the short-ranged interactions (i.e. no dipole interactions),
+and :math:`C^{DD}` is the force constants matrix containing only the long-ranged dipole interactions,
+and all matrices have the same shape and indexing.
+To correctly apply the correction to the resulting dynamical matrix, :math:`C^{SR}` must be used, which is what Euphonic requires.
+Some codes (e.g. Phonopy) output :math:`C` so must be converted.
 This conversion is done automatically when reading from Phonopy, but if reading force constants from another program, there is a class method
 :py:meth:`ForceConstants.from_long_ranged_dipole_fc <euphonic.force_constants.ForceConstants.from_long_ranged_dipole_fc>`
 which can do this transformation. An example of this is shown in :ref:`Reading From Other Programs<fc_read_other_programs>`
@@ -233,9 +241,9 @@ For more details see the function docstring. An example is below:
   # Create a ForceConstants object, using the Crystal object
   fc = ForceConstants(crystal, force_constants, sc_matrix, cell_origins)
 
-**Polar Force Constants - Converting from Long-ranged to Short-ranged**
+**Dipole-dipole Force Constants - Converting from Total to Short-ranged**
 
-If, as described in the :ref:`Force Constants Format<fc_format>` section, the force constants matrix contains long-ranged dipole interactions, these must be subtracted to produce the short-ranged force constants matrix before being used in Euphonic.
+If, as described in the :ref:`Force Constants Format<fc_format>` section, the force constants matrix contains the dipole interactions, these must be subtracted to produce the short-ranged force constants matrix before being used in Euphonic.
 This can be done using the class method
 :py:meth:`ForceConstants.from_long_ranged_dipole_fc <euphonic.force_constants.ForceConstants.from_long_ranged_dipole_fc>`.
 Note that the force constants must have a Euphonic-like shape before using this method. An example is below:
