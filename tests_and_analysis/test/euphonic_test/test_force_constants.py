@@ -127,13 +127,6 @@ def check_force_constants(
     assert (actual_force_constants.n_cells_in_sc
             == expected_force_constants.n_cells_in_sc)
 
-    npt.assert_allclose(
-        actual_force_constants.force_constants.magnitude,
-        expected_force_constants.force_constants.magnitude,
-        atol=fc_atol)
-    assert (actual_force_constants.force_constants.units
-            == expected_force_constants.force_constants.units)
-
     npt.assert_array_equal(
         actual_force_constants.sc_matrix,
         expected_force_constants.sc_matrix)
@@ -160,6 +153,14 @@ def check_force_constants(
             expected_force_constants.dielectric.magnitude)
         assert (actual_force_constants.dielectric.units
                 == expected_force_constants.dielectric.units)
+
+    npt.assert_allclose(
+        actual_force_constants.force_constants.magnitude,
+        expected_force_constants.force_constants.magnitude,
+        atol=fc_atol)
+    assert (actual_force_constants.force_constants.units
+            == expected_force_constants.force_constants.units)
+
 
 
 class TestForceConstantsCreation:
