@@ -104,6 +104,7 @@ def test_variable_broaden_spectrum2d():
     fixed_broad_x = spectrum.broaden(x_width=fwhm)
     variable_broad_x = broaden_spectrum2d_with_polynomial(
         spectrum, sigma_poly, width_convention='std', axis='x')
+    check_spectrum2d(fixed_broad_x, variable_broad_x, z_atol=1e-10)
 
 
 @pytest.mark.parametrize(
