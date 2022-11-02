@@ -102,11 +102,11 @@ This is represented in equation 78 in `Gonze & Lee, 1997 <https://doi.org/10.110
 Where :math:`C` is the 'total' force constants matrix containing both short-ranged interactions and long-ranged dipole interactions,
 :math:`C^{SR}` is the force constants matrix containing only the short-ranged interactions (i.e. no dipole interactions),
 and :math:`C^{DD}` is the force constants matrix containing only the long-ranged dipole interactions,
-and all matrices have the same shape and indexing.
+and all matrices have the same shape and indexing and contain interactions to the same cut-off distance.
 To correctly apply the correction to the resulting dynamical matrix, :math:`C^{SR}` must be used, which is what Euphonic requires.
 Some codes (e.g. Phonopy) output :math:`C` so must be converted.
 This conversion is done automatically when reading from Phonopy, but if reading force constants from another program, there is a class method
-:py:meth:`ForceConstants.from_long_ranged_dipole_fc <euphonic.force_constants.ForceConstants.from_long_ranged_dipole_fc>`
+:py:meth:`ForceConstants.from_total_fc_with_dipole <euphonic.force_constants.ForceConstants.from_total_fc_with_dipole>`
 which can do this transformation. An example of this is shown in :ref:`Reading From Other Programs<fc_read_other_programs>`
 
 
@@ -245,7 +245,7 @@ For more details see the function docstring. An example is below:
 
 If, as described in the :ref:`Force Constants Format<fc_format>` section, the force constants matrix contains the dipole interactions, these must be subtracted to produce the short-ranged force constants matrix before being used in Euphonic.
 This can be done using the class method
-:py:meth:`ForceConstants.from_long_ranged_dipole_fc <euphonic.force_constants.ForceConstants.from_long_ranged_dipole_fc>`.
+:py:meth:`ForceConstants.from_total_fc_with_dipole <euphonic.force_constants.ForceConstants.from_total_fc_with_dipole>`.
 Note that the force constants must have a Euphonic-like shape before using this method. An example is below:
 
 .. code-block:: py
@@ -268,7 +268,7 @@ Note that the force constants must have a Euphonic-like shape before using this 
   # Create a Crystal object
   crystal = Crystal(cell_vectors, atom_r, atom_type, atom_mass)
   # Create a ForceConstants object from the long-ranged force constants
-  fc = ForceConstants.from_long_ranged_dipole_fc(
+  fc = ForceConstants.from_total_fc_with_dipole(
     crystal, force_constants, sc_matrix, cell_origins, born, dielectric)
 
 

@@ -1717,7 +1717,7 @@ class ForceConstants:
                    d['cell_origins'], d['born'], d['dielectric'])
 
     @classmethod
-    def from_long_ranged_dipole_fc(
+    def from_total_fc_with_dipole(
             cls: Type[T], crystal: Crystal, force_constants: Quantity,
             sc_matrix: np.ndarray, cell_origins: np.ndarray, born: Quantity,
             dielectric: Quantity) -> T:
@@ -1873,7 +1873,7 @@ class ForceConstants:
             fc_name=fc_name, fc_format=fc_format)
         fc = cls.from_dict(data)
         if fc.born is not None:
-            fc = cls.from_long_ranged_dipole_fc(
+            fc = cls.from_total_fc_with_dipole(
                 fc.crystal, fc.force_constants, fc.sc_matrix, fc.cell_origins,
                 born=fc.born, dielectric=fc.dielectric)
         return fc

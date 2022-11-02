@@ -198,13 +198,13 @@ class TestForceConstantsCreation:
         fc = ForceConstants.from_dict(expected_fc.to_dict())
         check_force_constants(fc, expected_fc)
 
-    @pytest.mark.parametrize('long_ranged_fc_json, expected_fc_json',
-                             [('NaCl_long_ranged', 'NaCl')])
-    def test_create_from_long_ranged_dipole_fc(
-            self, long_ranged_fc_json, expected_fc_json):
+    @pytest.mark.parametrize('total_fc_with_dipole_json, expected_fc_json',
+                             [('NaCl_total_with_dipole', 'NaCl')])
+    def test_create_from_total_fc_with_dipole(
+            self, total_fc_with_dipole_json, expected_fc_json):
         expected_fc = get_expected_fc(expected_fc_json)
-        fc = get_fc(long_ranged_fc_json)
-        fc = ForceConstants.from_long_ranged_dipole_fc(
+        fc = get_fc(total_fc_with_dipole_json)
+        fc = ForceConstants.from_total_fc_with_dipole(
             fc.crystal, fc.force_constants, fc.sc_matrix, fc.cell_origins,
             fc.born, fc.dielectric)
         check_force_constants(fc, expected_fc, fc_atol=2e-7)
