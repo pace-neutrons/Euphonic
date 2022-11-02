@@ -2,6 +2,7 @@ phonopy:
   version: 2.5.0
   frequency_unit_conversion_factor: 15.633302
   symmetry_tolerance: 1.00000e-05
+  nac_unit_conversion_factor: 14.400000
   configuration:
     atom_name: "Na Cl"
     dim: "2 2 2"
@@ -10,7 +11,7 @@ phonopy:
     band_points: "101"
     eigenvectors: ".TRUE."
     include_all: ".TRUE."
-    nac: ".FALSE."
+    nac: ".TRUE."
     write_force_constants: ".true."
     writefc_format: "hdf5"
 

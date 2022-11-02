@@ -119,19 +119,13 @@ def get_fc(material):
 
 
 def check_force_constants(
-        actual_force_constants, expected_force_constants):
+        actual_force_constants, expected_force_constants,
+        fc_atol=np.finfo(np.float64).eps):
     check_crystal(actual_force_constants.crystal,
                   expected_force_constants.crystal)
 
     assert (actual_force_constants.n_cells_in_sc
             == expected_force_constants.n_cells_in_sc)
-
-    npt.assert_allclose(
-        actual_force_constants.force_constants.magnitude,
-        expected_force_constants.force_constants.magnitude,
-        atol=np.finfo(np.float64).eps)
-    assert (actual_force_constants.force_constants.units
-            == expected_force_constants.force_constants.units)
 
     npt.assert_array_equal(
         actual_force_constants.sc_matrix,
@@ -159,6 +153,14 @@ def check_force_constants(
             expected_force_constants.dielectric.magnitude)
         assert (actual_force_constants.dielectric.units
                 == expected_force_constants.dielectric.units)
+
+    npt.assert_allclose(
+        actual_force_constants.force_constants.magnitude,
+        expected_force_constants.force_constants.magnitude,
+        atol=fc_atol)
+    assert (actual_force_constants.force_constants.units
+            == expected_force_constants.force_constants.units)
+
 
 
 class TestForceConstantsCreation:
@@ -196,6 +198,17 @@ class TestForceConstantsCreation:
         fc = ForceConstants.from_dict(expected_fc.to_dict())
         check_force_constants(fc, expected_fc)
 
+    @pytest.mark.parametrize('total_fc_with_dipole_json, expected_fc_json',
+                             [('NaCl_total_with_dipole', 'NaCl')])
+    def test_create_from_total_fc_with_dipole(
+            self, total_fc_with_dipole_json, expected_fc_json):
+        expected_fc = get_expected_fc(expected_fc_json)
+        fc = get_fc(total_fc_with_dipole_json)
+        fc = ForceConstants.from_total_fc_with_dipole(
+            fc.crystal, fc.force_constants, fc.sc_matrix, fc.cell_origins,
+            fc.born, fc.dielectric)
+        check_force_constants(fc, expected_fc, fc_atol=2e-7)
+
     @pytest.mark.phonopy_reader
     @pytest.mark.parametrize('material, phonopy_args', [
         # Test all combinations of reading from .yaml with/without force
@@ -224,6 +237,10 @@ class TestForceConstantsCreation:
         ('NaCl', {'summary_name': 'phonopy_nofc_noborn.yaml',
                   'fc_name': 'FORCE_CONSTANTS_nacl',
                   'born_name': 'BORN_nacl_nofactor'}),
+        # Test that NAC factor in BORN file takes priority
+        ('NaCl', {'summary_name': 'phonopy_nofc_noborn_wrongfactor.yaml',
+                  'fc_name': 'FORCE_CONSTANTS_nacl',
+                  'born_name': 'BORN_nacl'}),
         # Explicitly test the default behaviour (if fcs aren't found
         # in phonopy.yaml they should be read from FORCE_CONSTANTS. BORN
         # is not read by default as it is not required, so it is difficult
@@ -233,6 +250,8 @@ class TestForceConstantsCreation:
         # again to avoid false positives
         ('NaCl_default', {}),
         ('NaCl_prim', {'summary_name': 'phonopy_nacl.yaml'}),
+        # Test NaCl with different nac_factor (2.0 with QE)
+        ('NaCl_QE', {}),
         ('CaHgO2', {'summary_name': 'phonopy_au_units.yaml'}),
         ('CaHgO2', {'summary_name': 'mp-7041-20180417.yaml'}),
         ('CaHgO2', {'summary_name': 'phonopy_fullfc.yaml'}),
@@ -320,6 +339,17 @@ class TestForceConstantsCreation:
     def test_create_from_phonopy_with_bad_inputs_raises_err(
             self, phonopy_args, err):
         with pytest.raises(err):
+            ForceConstants.from_phonopy(**phonopy_args)
+
+    @pytest.mark.phonopy_reader
+    @pytest.mark.parametrize('material, phonopy_args', [
+        ('NaCl', {'summary_name': 'phonopy_nofc_noborn_nofactor.yaml',
+                  'fc_name': 'FORCE_CONSTANTS_nacl',
+                  'born_name': 'BORN_nacl_nofactor'})])
+    def test_create_from_phonopy_with_no_factor_raises_err(
+            self, material, phonopy_args):
+        phonopy_args['path'] = get_phonopy_path(material)
+        with pytest.raises(KeyError):
             ForceConstants.from_phonopy(**phonopy_args)
 
     def test_create_from_castep_with_no_fc_raises_runtime_error(self):

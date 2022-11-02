@@ -1,9 +1,18 @@
 `Unreleased <https://github.com/pace-neutrons/Euphonic/compare/v1.0.0...HEAD>`_
 ----------
 
+- New features:
+
+  - There is a new function ``ForceConstants.from_total_fc_with_dipole`` to allow
+    reading force constants from other programs which contain long-ranged
+    dipole-dipole interactions.
+
 - Bug fixes:
 
-  - Avoid occasional segmentation faults when using OpenBLAS, workaround for #191
+  - Avoid occasional segmentation faults when using OpenBLAS, workaround for
+    `#191 <https://github.com/pace-neutrons/Euphonic/issues/191>`_
+  - Correctly read force constants from Phonopy with dipole-dipole
+    interactions, see `#239 <https://github.com/pace-neutrons/Euphonic/issues/239>`_.
 
 `v1.0.0 <https://github.com/pace-neutrons/Euphonic/compare/v0.6.5...v1.0.0>`_
 ----------
