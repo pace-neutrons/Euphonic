@@ -1077,7 +1077,7 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
                     width_lower_limit=width_lower_limit,
                     width_convention=width_convention,
                     width_interpolation_error=width_interpolation_error)
-                for spectrum in spectra])
+                for spectrum in self])
 
         else:
             raise TypeError("x_width must be a Quantity or Callable")

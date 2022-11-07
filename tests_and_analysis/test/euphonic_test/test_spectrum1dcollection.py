@@ -491,6 +491,19 @@ class TestSpectrum1DCollectionMethods:
             check_spectrum1d(broadened_spec_col[i],
                              broadened_spec1d)
 
+    def test_variable_broadening(self):
+        """Check variable broadening is consistent when applied over collection"""
+        def width_function(x):
+            return x.to('meV') * 3 + 1.*ureg('meV')
+
+        spectra = get_spectrum1dcollection('quartz_666_coh_pdos.json')
+        individually_broadened = [spectrum.broaden(width_function)
+                                  for spectrum in spectra]
+        collection_broadened = spectra.broaden(width_function)
+
+        for spec1, spec2 in zip(individually_broadened, collection_broadened):
+            check_spectrum1d(spec1, spec2)
+            
     @pytest.mark.parametrize(
         'spectrum_file, summed_spectrum_file', [
             ('quartz_666_pdos.json', 'quartz_666_dos.json')

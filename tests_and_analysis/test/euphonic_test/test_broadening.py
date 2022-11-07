@@ -8,10 +8,7 @@ from scipy.ndimage import gaussian_filter
 
 from euphonic.broadening import (find_coeffs,
                                  width_interpolated_broadening,
-                                 polynomial_broadening,
                                  variable_width_broadening,
-                                 broaden_spectrum1d_with_polynomial,
-                                 broaden_spectrum1dcollection_with_polynomial,
                                  broaden_spectrum2d_with_polynomial)
 from euphonic import ureg
 from tests_and_analysis.test.euphonic_test.test_force_constants\
@@ -52,22 +49,6 @@ def test_variable_close_to_exact():
 
     npt.assert_allclose(exact, poly_broadened.to('1/meV').magnitude,
                         atol=1e-4)
-
-
-def test_variable_broaden_1d_collection():
-    """Check variable broadening is consistent when applied over collection"""
-    spectra = get_spectrum1dcollection('quartz_666_coh_pdos.json')
-    width_poly = (Polynomial([1., 2., 3.]), ureg('meV'))
-
-    individually_broadened = [
-        broaden_spectrum1d_with_polynomial(spectrum, width_poly)
-        for spectrum in spectra]
-    collection_broadened = broaden_spectrum1dcollection_with_polynomial(
-        spectra, width_poly)
-
-    for spec1, spec2 in zip(individually_broadened, collection_broadened):
-        check_spectrum1d(spec1, spec2)
-
 
 def test_variable_broaden_spectrum2d():
     """Check variable broadening is consistent with fixed-width method"""
