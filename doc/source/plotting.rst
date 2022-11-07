@@ -27,7 +27,8 @@ adding axis labels etc.:
 .. testsetup::
 
   import shutil
-  shutil.copy('../../castep_files/quartz.phonon', '.')
+  from tests_and_analysis.test.utils import get_castep_path
+  shutil.copyfile(get_castep_path('quartz', 'quartz_nosplit.phonon'), 'quartz.phonon')
 
 .. testcode::
 
