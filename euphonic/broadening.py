@@ -12,15 +12,14 @@ from scipy.stats import norm
 from scipy.signal import convolve
 
 from euphonic import ureg, Quantity
-from euphonic.spectra import Spectrum1D, Spectrum1DCollection, Spectrum2D
 
 
 def broaden_spectrum1d_with_function(
-        spectrum: Spectrum1D,
+        spectrum: 'Spectrum1D',
         width_function: Callable[[Quantity], Quantity],
         width_lower_limit: Quantity = None,
         width_convention: str = 'fwhm',
-        adaptive_error: float = 1e-2) -> Spectrum1D:
+        adaptive_error: float = 1e-2) -> 'Spectrum1D':
     """Use fast approximate method to apply x-dependent Gaussian broadening
 
     Typically this is an energy-dependent instrumental resolution function.
@@ -50,6 +49,8 @@ def broaden_spectrum1d_with_function(
         difference between the areas of the true and approximate gaussians.
 
     """
+    from euphonic.spectra import Spectrum1D
+
     bins = spectrum.get_bin_edges()
 
     bin_widths = np.diff(bins.magnitude) * bins.units
@@ -74,11 +75,11 @@ def broaden_spectrum1d_with_function(
 
 
 def broaden_spectrum1d_with_polynomial(
-        spectrum: Spectrum1D,
+        spectrum: 'Spectrum1D',
         width_polynomial: Tuple[Polynomial, Quantity],
         width_lower_limit: Quantity = None,
         width_convention: str = 'fwhm',
-        adaptive_error: float = 1e-2) -> Spectrum1D:
+        adaptive_error: float = 1e-2) -> 'Spectrum1D':
     """Use fast approximate method to apply x-dependent Gaussian broadening
 
     Typically this is an energy-dependent instrumental resolution function.
@@ -111,7 +112,6 @@ def broaden_spectrum1d_with_polynomial(
         difference between the areas of the true and approximate gaussians.
 
     """
-
     width_poly, width_unit = width_polynomial
 
     def width_function(x: Quantity) -> Quantity:
@@ -125,12 +125,12 @@ def broaden_spectrum1d_with_polynomial(
 
 
 def broaden_spectrum2d_with_function(
-        spectrum: Spectrum2D,
+        spectrum: 'Spectrum2D',
         width_function: Callable[[Quantity], Quantity],
         axis: str = 'y',
         width_lower_limit: Quantity = None,
         width_convention: str = 'fwhm',
-        adaptive_error: float = 1e-2) -> Spectrum2D:
+        adaptive_error: float = 1e-2) -> 'Spectrum2D':
     """Use fast approximate method to apply value-dependent Gaussian broadening
 
     Typically this is an energy-dependent instrumental resolution function.
@@ -166,6 +166,8 @@ def broaden_spectrum2d_with_function(
         difference between the areas of the true and approximate gaussians.
 
     """
+    from euphonic.spectra import Spectrum2D
+
     assert axis in ('x', 'y')
 
     bins = spectrum.get_bin_edges(bin_ax=axis)
@@ -208,9 +210,9 @@ def broaden_spectrum2d_with_function(
 
 
 def broaden_spectrum2d_with_polynomial(
-        spectrum: Spectrum2D,
+        spectrum: 'Spectrum2D',
         width_polynomial: Tuple[Polynomial, Quantity],
-        **kwargs) -> Spectrum2D:
+        **kwargs) -> 'Spectrum2D':
     """Use fast approximate method to apply value-dependent Gaussian broadening
 
     Typically this is an energy-dependent instrumental resolution function.
@@ -243,9 +245,9 @@ def broaden_spectrum2d_with_polynomial(
 
 
 def broaden_spectrum1dcollection_with_function(
-        spectra: Spectrum1DCollection,
+        spectra: 'Spectrum1DCollection',
         width_function: Callable[[Quantity], Quantity],
-        **kwargs) -> Spectrum1DCollection:
+        **kwargs) -> 'Spectrum1DCollection':
     """Use fast approximate method to apply x-dependent Gaussian broadening
 
     Typically this is an energy-dependent instrumental resolution function.
@@ -278,6 +280,8 @@ def broaden_spectrum1dcollection_with_function(
         difference between the areas of the true and approximate gaussians.
 
     """
+    from euphonic.spectra import Spectrum1DCollection
+
     return Spectrum1DCollection.from_spectra(
         [broaden_spectrum1d_with_function(spectrum,
                                           width_function,
@@ -286,9 +290,9 @@ def broaden_spectrum1dcollection_with_function(
 
 
 def broaden_spectrum1dcollection_with_polynomial(
-        spectra: Spectrum1DCollection,
+        spectra: 'Spectrum1DCollection',
         width_polynomial: Tuple[Polynomial, Quantity],
-        **kwargs) -> Spectrum1DCollection:
+        **kwargs) -> 'Spectrum1DCollection':
     """Use fast approximate method to apply x-dependent Gaussian broadening
 
     Typically this is an energy-dependent instrumental resolution function.
@@ -375,7 +379,6 @@ def variable_width_broadening(bins: Quantity,
         approximate gaussians.
 
     """
-
     if width_convention.lower() == 'fwhm':
         sigma_function = (lambda x: width_function(x)
                           / np.sqrt(8 * np.log(2)))

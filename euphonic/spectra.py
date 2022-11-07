@@ -5,7 +5,7 @@ import itertools
 import math
 import json
 from numbers import Integral
-from typing import (Any, Dict, List, Optional, overload,
+from typing import (Any, Callable, Dict, List, Optional, overload,
                     Sequence, Tuple, TypeVar, Union, Type)
 import warnings
 
@@ -13,12 +13,16 @@ from pint import DimensionalityError
 import numpy as np
 from scipy.ndimage import correlate1d, gaussian_filter
 
-from euphonic.validate import _check_constructor_inputs, _check_unit_conversion
+from euphonic import ureg, Quantity, __version__
+from euphonic.broadening import variable_width_broadening
 from euphonic.io import (_obj_to_json_file, _obj_from_json_file,
                          _obj_to_dict, _process_dict)
 from euphonic.readers.castep import read_phonon_dos_data
 from euphonic.util import _get_unique_elems_and_idx
-from euphonic import ureg, Quantity, __version__
+from euphonic.validate import _check_constructor_inputs, _check_unit_conversion
+
+
+CallableQuantity = Callable[[Quantity], Quantity]
 
 
 class Spectrum(ABC):
@@ -331,6 +335,38 @@ class Spectrum(ABC):
         else:
             return self.x_data
 
+    def get_bin_widths(self) -> Quantity:
+        """
+        Get x-axis bin widths
+        """
+        bins = self.get_bin_edges()
+        return np.diff(bins.magnitude) * bins.units
+
+    def assert_regular_bins(self, message: str = '',
+                            rtol: float = 1e-5,
+                            atol: float = 0.) -> None:
+        """Raise AssertionError if x-axis bins are not evenly spaced.
+
+        Parameters
+        ----------
+        message
+            Text appended to ValueError for more informative output.
+
+        rtol
+            Relative tolerance for 'close enough' values
+
+        atol
+            Absolute tolerance for 'close enough' values. Note this is a bare
+            float and follows the stored units of the bins.
+
+        """
+        bin_widths = self.get_bin_widths()
+        if not np.all(np.isclose(bin_widths.magnitude,
+                                 bin_widths.magnitude[0],
+                                 rtol=rtol, atol=atol)):
+            raise AssertionError("Not all x-axis bins are the same width. "
+                             + message)
+
 
 class Spectrum1D(Spectrum):
     """
@@ -503,23 +539,55 @@ class Spectrum1D(Spectrum):
                    data['dos'][element]*ureg(data['dos_unit']),
                    metadata=metadata)
 
-    def broaden(self: T, x_width: Quantity, shape: str = 'gauss',
-                method: Optional[str] = None) -> T:
+    @overload
+    def broaden(self: T, x_width: Quantity,
+                shape: str = 'gauss', method: Optional[str] = None) -> T:
+        ...
+
+    @overload
+    def broaden(self: T, x_width: CallableQuantity,
+                shape: str = 'gauss', method: Optional[str] = None,
+                width_lower_limit: Optional[Quantity] = None,
+                width_convention: str = 'FWHM',
+                width_interpolation_error: float = 0.01
+                ) -> T: # noqa: F811
+        ...
+
+    def broaden(self: T, x_width: Union[Quantity, CallableQuantity],
+                shape: str = 'gauss',
+                method: Optional[str] = None,
+                width_lower_limit: Quantity = None,
+                width_convention: str = 'FWHM',
+                width_interpolation_error: float = 0.01
+                ) -> T: # noqa: F811
         """
         Broaden y_data and return a new broadened spectrum object
 
         Parameters
         ----------
         x_width
-            Scalar float Quantity. The broadening FWHM
+            Scalar float Quantity, giving broadening FWHM for all y data, or
+            a function handle accepting Quantity consistent with x-axis as
+            input and returning FWHM corresponding to input array. This would
+            typically be an energy-dependent resolution function.
         shape
             One of {'gauss', 'lorentz'}. The broadening shape
         method
             Can be None or 'convolve'. Currently the only broadening
-            method available is convolution with a broadening kernel,
+            method available is convolution with a broadening kernel
             but this may not produce correct results for unequal bin
             widths. To use convolution anyway, explicitly set
             method='convolve'
+        width_lower_limit
+            Set a lower bound to width obtained calling x_width function. By
+            default, this is equal to bin width. To disable, set to -Inf.
+        width_convention
+            By default ('FWHM'), x_width is interpreted as full-width
+            half-maximum. Set to 'STD' to instead define standard deviation.
+        width_interpolation_error
+            When x_width is a callable function, variable-width broadening is
+            implemented by an approximate kernel-interpolation scheme. This
+            parameter determines the target error of the kernel approximations.
 
         Returns
         -------
@@ -533,14 +601,32 @@ class Spectrum1D(Spectrum):
         ValueError
             If method is None and bins are not of equal size
         """
-        y_broadened = self._broaden_data(
-            self.y_data.magnitude,
-            [self.get_bin_centres().magnitude],
-            [x_width.to(self.x_data_unit).magnitude],
-            shape=shape, method=method)
+        if isinstance(x_width, Quantity):
+            y_broadened = self._broaden_data(
+                self.y_data.magnitude,
+                [self.get_bin_centres().magnitude],
+                [x_width.to(self.x_data_unit).magnitude],
+                shape=shape, method=method) * ureg(self.y_data_unit)
+
+        elif isinstance(x_width, Callable):
+            self.assert_regular_bins(message=(
+                'Broadening with convolution requires a regular sampling grid.'
+            ))
+            y_broadened = variable_width_broadening(
+                self.get_bin_edges(),
+                self.get_bin_centres(),
+                x_width,
+                (self.y_data * self.get_bin_widths()[0]),
+                width_lower_limit=width_lower_limit,
+                width_convention=width_convention,
+                adaptive_error=width_interpolation_error
+            )
+        else:
+            raise TypeError("x_width must be a Quantity or Callable")
+
         return type(self)(
             np.copy(self.x_data.magnitude)*ureg(self.x_data_unit),
-            y_broadened*ureg(self.y_data_unit),
+            y_broadened,
             copy.copy((self.x_tick_labels)),
             copy.copy(self.metadata))
 
@@ -905,8 +991,27 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
             y_data*ureg(data['dos_unit']),
             metadata=metadata)
 
-    def broaden(self, x_width: Quantity, shape: str = 'gauss',
-                method: Optional[str] = None) -> T:
+    @overload
+    def broaden(self: T, x_width: Quantity,
+                shape: str = 'gauss', method: Optional[str] = None) -> T:
+        ...
+
+    @overload
+    def broaden(self: T, x_width: CallableQuantity,
+                shape: str = 'gauss', method: Optional[str] = None,
+                width_lower_limit: Quantity = None,
+                width_convention: str = 'FWHM',
+                width_interpolation_error: float = 0.01
+                ) -> T: # noqa: F811
+        ...
+
+    def broaden(self: T, x_width: Union[Quantity, CallableQuantity],
+                shape: str = 'gauss',
+                method: Optional[str] = None,
+                width_lower_limit: Quantity = None,
+                width_convention: str = 'FWHM',
+                width_interpolation_error: float = 0.01
+                ) -> T: # noqa: F811
         """
         Individually broaden each line in y_data, returning a new
         Spectrum1DCollection
@@ -914,15 +1019,28 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
         Parameters
         ----------
         x_width
-            Scalar float Quantity. The broadening FWHM
+            Scalar float Quantity, giving broadening FWHM for all y data, or
+            a function handle accepting Quantity consistent with x-axis as
+            input and returning FWHM corresponding to input array. This would
+            typically be an energy-dependent resolution function.
         shape
             One of {'gauss', 'lorentz'}. The broadening shape
         method
             Can be None or 'convolve'. Currently the only broadening
-            method available is convolution with a broadening kernel,
+            method available is convolution with a broadening kernel
             but this may not produce correct results for unequal bin
             widths. To use convolution anyway, explicitly set
             method='convolve'
+        width_lower_limit
+            Set a lower bound to width obtained calling x_width function. By
+            default, this is equal to bin width. To disable, set to -Inf.
+        width_convention
+            By default ('FWHM'), x_width is interpreted as full-width
+            half-maximum. Set to 'STD' to instead define standard deviation.
+        width_interpolation_error
+            When x_width is a callable function, variable-width broadening is
+            implemented by an approximate kernel-interpolation scheme. This
+            parameter determines the target error of the kernel approximations.
 
         Returns
         -------
@@ -936,18 +1054,33 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
         ValueError
             If method is None and bins are not of equal size
         """
-        y_broadened = np.zeros_like(self.y_data)
-        x_centres = [self.get_bin_centres().magnitude]
-        x_width_calc = [x_width.to(self.x_data_unit).magnitude]
-        for i, yi in enumerate(self.y_data.magnitude):
-            y_broadened[i] = self._broaden_data(
-                yi, x_centres, x_width_calc, shape=shape,
-                method=method)
-        return Spectrum1DCollection(
-            np.copy(self.x_data.magnitude)*ureg(self.x_data_unit),
-            y_broadened*ureg(self.y_data_unit),
-            copy.copy((self.x_tick_labels)),
-            copy.deepcopy(self.metadata))
+        if isinstance(x_width, Quantity):
+            y_broadened = np.zeros_like(self.y_data)
+            x_centres = [self.get_bin_centres().magnitude]
+            x_width_calc = [x_width.to(self.x_data_unit).magnitude]
+            for i, yi in enumerate(self.y_data.magnitude):
+                y_broadened[i] = self._broaden_data(
+                    yi, x_centres, x_width_calc, shape=shape,
+                    method=method)
+            return Spectrum1DCollection(
+                np.copy(self.x_data.magnitude)*ureg(self.x_data_unit),
+                y_broadened*ureg(self.y_data_unit),
+                copy.copy((self.x_tick_labels)),
+                copy.deepcopy(self.metadata))
+
+        elif isinstance(x_width, Callable):
+            return type(self).from_spectra([
+                spectrum.broaden(
+                    x_width=x_width,
+                    shape=shape,
+                    method=method,
+                    width_lower_limit=width_lower_limit,
+                    width_convention=width_convention,
+                    width_interpolation_error=width_interpolation_error)
+                for spectrum in spectra])
+
+        else:
+            raise TypeError("x_width must be a Quantity or Callable")
 
     def group_by(self, *line_data_keys: str) -> T:
         """
@@ -1188,13 +1321,19 @@ class Spectrum2D(Spectrum):
             If method is None and bins are not of equal size
         """
         bin_centres = [self.get_bin_centres(ax).magnitude for ax in ['x', 'y']]
-        bin_widths = [None]*2
+        widths_in_bin_units = [None]*2
+
         if x_width is not None:
-            bin_widths[0] = x_width.to(self.x_data_unit).magnitude
+            try:
+                self.assert_regular_bins('x', message=(
+                    'Broadening by convolution may give incorrect results.'))
+            except AssertionError as e:
+                warnings.warn(e, UserWarning)
+            widths_in_bin_units[0] = x_width.to(self.x_data_unit).magnitude
         if y_width is not None:
-            bin_widths[1] = y_width.to(self.y_data_unit).magnitude
+            widths_in_bin_units[1] = y_width.to(self.y_data_unit).magnitude
         z_broadened = self._broaden_data(self.z_data.magnitude, bin_centres,
-                                         bin_widths, shape=shape,
+                                         widths_in_bin_units, shape=shape,
                                          method=method)
         return Spectrum2D(
             np.copy(self.x_data.magnitude)*ureg(self.x_data_unit),
@@ -1251,6 +1390,48 @@ class Spectrum2D(Spectrum):
                 bin_data.magnitude)*bin_data.units
         else:
             return bin_data
+
+    def get_bin_widths(self, bin_ax: str = 'x') -> Quantity:
+        """
+        Get x-bin widths along specified axis
+
+        Parameters
+        ----------
+        bin_ax
+            Axis of interest, 'x' or 'y'
+        """
+        bins = self.get_bin_edges(bin_ax)
+        return np.diff(bins.magnitude) * bins.units
+
+    def assert_regular_bins(self, bin_ax: str = 'x',
+                            message: str = '',
+                            rtol: float = 1e-5,
+                            atol: float = 0.) -> None:
+        """Raise AssertionError if x-axis bins are not evenly spaced.
+
+        Parameters
+        ----------
+        bin_ax
+            Axis of interest, 'x' or 'y'
+
+        message
+            Text appended to ValueError for more informative output.
+
+        rtol
+            Relative tolerance for 'close enough' values
+
+        atol
+            Absolute tolerance for 'close enough' values. Note this is a bare
+            float and follows the stored units of the bins.
+
+        """
+        bin_widths = self.get_bin_widths(bin_ax)
+        if not np.all(np.isclose(bin_widths.magnitude,
+                                 bin_widths.magnitude[0],
+                                 rtol=rtol, atol=atol)):
+            raise AssertionError(
+                f"Not all {bin_ax}-axis bins are the same width. " + message)
+            pass
 
     def to_dict(self) -> Dict[str, Any]:
         """

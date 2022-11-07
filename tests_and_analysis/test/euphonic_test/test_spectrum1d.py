@@ -3,6 +3,7 @@ import json
 
 import pytest
 import numpy as np
+from numpy.polynomial import Polynomial
 import numpy.testing as npt
 
 from euphonic import ureg
@@ -407,6 +408,32 @@ class TestSpectrum1DMethods:
         spec1d = get_spectrum1d('toy_quartz_cropped_uneven_dos.json')
         with pytest.warns(UserWarning):
             spec1d.broaden(1*ureg('meV'), method='convolve')
+
+    def test_variable_broadening_consistent(self):
+        """Check variable broadening is consistent with fixed-width method"""
+        spec1d = get_spectrum1d('quartz_666_dos.json')
+
+        sigma = 2 * ureg('meV')
+        fwhm = 2.3548200450309493 * sigma
+
+        def sigma_function(x):
+            poly = Polynomial([sigma.magnitude, 0., 0.])
+            return poly(x.to(sigma.units).magnitude) * sigma.units
+
+        def fwhm_function(x):
+            poly = Polynomial([fwhm.magnitude, 0., 0.])
+            return poly(x.to(fwhm.units).magnitude) * fwhm.units
+
+        fixed_broad = spec1d.broaden(fwhm)
+        variable_broad_sigma = spec1d.broaden(
+            sigma_function, width_convention='std',
+            width_interpolation_error=1e-5)
+        variable_broad_fwhm =  spec1d.broaden(
+            fwhm_function, width_convention='FWHM',
+            width_interpolation_error=1e-5)
+
+        check_spectrum1d(variable_broad_sigma, variable_broad_fwhm)
+        check_spectrum1d(variable_broad_sigma, fixed_broad, y_atol=1e-4)
 
     @pytest.mark.parametrize(
         'spectrum1d_file, expected_bin_edges', [

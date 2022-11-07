@@ -110,19 +110,11 @@ def main(params: Optional[List[str]] = None) -> None:
     elif (args.inst_broadening and args.shape == 'gauss'
           and len(energy_broadening_poly) > 1):
         # Variable-width Gaussian broadening
-        from euphonic.broadening import (
-            broaden_spectrum1dcollection_with_polynomial,
-            broaden_spectrum1d_with_polynomial)
-
         if isinstance(dos, Spectrum1D):
-            broadening_function = broaden_spectrum1d_with_polynomial
-        else:
-            broadening_function = broaden_spectrum1dcollection_with_polynomial
-
-        dos = broadening_function(
-            dos,
-            (energy_broadening_poly, ureg(args.energy_unit)),
-            adaptive_error=args.adaptive_error)
+            dos.broaden(x_width=energy_broadening_poly,
+                        shape=args.shape,
+                        method='convolve',
+                        width_interpolation_error=args.adaptive_error)
 
     elif args.inst_broadening:
         # Fixed-width broadening
