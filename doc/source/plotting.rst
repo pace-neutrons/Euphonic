@@ -24,7 +24,12 @@ is plotted with :py:meth:`euphonic.plot.plot_1d`. Converting to
 arguments get passed to :py:meth:`plot_1d <euphonic.plot.plot_1d>`, for
 adding axis labels etc.:
 
-.. code-block:: py
+.. testsetup::
+
+  import shutil
+  shutil.copy('../../castep_files/quartz.phonon', '.')
+
+.. testcode::
 
   from euphonic import QpointPhononModes
   from euphonic.plot import plot_1d
@@ -32,7 +37,7 @@ adding axis labels etc.:
   phonons = QpointPhononModes.from_castep('quartz.phonon')
   bands = phonons.get_dispersion()  # type: Spectrum1DCollection
 
-  fig = plot_1d(bands, y_label='Energy (meV)')
+  fig = plot_1d(bands, ylabel='Energy (meV)')
   fig.show()
 
 Phonon dispersion plots often include large steps between discontinuous
