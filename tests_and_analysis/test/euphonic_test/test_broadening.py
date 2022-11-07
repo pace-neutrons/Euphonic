@@ -8,8 +8,7 @@ from scipy.ndimage import gaussian_filter
 
 from euphonic.broadening import (find_coeffs,
                                  width_interpolated_broadening,
-                                 variable_width_broadening,
-                                 broaden_spectrum2d_with_polynomial)
+                                 variable_width_broadening)
 from euphonic import ureg
 from tests_and_analysis.test.euphonic_test.test_force_constants\
     import get_fc_path
@@ -19,7 +18,7 @@ from ..utils import get_mode_widths
 from tests_and_analysis.test.euphonic_test.test_spectrum1d\
 import check_spectrum1d, get_expected_spectrum1d, get_spectrum1d
 from .test_spectrum1dcollection import get_spectrum1dcollection
-from .test_spectrum2d import get_spectrum2d, check_spectrum2d
+
 
 def test_variable_close_to_exact():
     """Check variable-width broadening agrees with exact for trivial case"""
@@ -49,29 +48,6 @@ def test_variable_close_to_exact():
 
     npt.assert_allclose(exact, poly_broadened.to('1/meV').magnitude,
                         atol=1e-4)
-
-def test_variable_broaden_spectrum2d():
-    """Check variable broadening is consistent with fixed-width method"""
-    spectrum = get_spectrum2d('quartz_bandstructure_sqw.json')
-
-    sigma = 2 * ureg('meV')
-    fwhm = 2.3548200450309493 * sigma
-
-    sigma_poly = (Polynomial([sigma.magnitude, 0, 0.]), sigma.units)
-
-    fixed_broad_y = spectrum.broaden(y_width=fwhm)
-    variable_broad_y = broaden_spectrum2d_with_polynomial(
-        spectrum, sigma_poly, width_convention='std', axis='y')
-
-    check_spectrum2d(fixed_broad_y, variable_broad_y)
-
-    # Force regular x bins so x-broadening is allowed
-    spectrum.x_data = np.linspace(1, 10, len(spectrum.get_bin_edges())
-                                  ) * spectrum.get_bin_edges().units
-    fixed_broad_x = spectrum.broaden(x_width=fwhm)
-    variable_broad_x = broaden_spectrum2d_with_polynomial(
-        spectrum, sigma_poly, width_convention='std', axis='x')
-    check_spectrum2d(fixed_broad_x, variable_broad_x, z_atol=1e-10)
 
 
 @pytest.mark.parametrize(
