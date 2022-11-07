@@ -57,7 +57,7 @@ jobs:
           python -m pip install -r doc/requirements.txt
           sphinx-build -c doc/source -b doctest doc/source .
       - name: Upload doctest results
-        if: startsWith(matrix.os, 'ubuntu')
+        if: startsWith(matrix.os, 'ubuntu') && (success() || failure())
         uses: actions/upload-artifact@v2
         with:
           name: Doctest results
@@ -73,16 +73,16 @@ jobs:
 #        with:
 #          files: tests_and_analysis/test/reports/coverage*.xml
 
-  publish-test-results:
-    needs: test
-    runs-on: ubuntu-latest
-    if: success() || failure()
-    steps:
-      - name: Download Artifacts
-        uses: actions/download-artifact@v2
-        with:
-          path: artifacts
-      - name: Publish test results
-        uses: EnricoMi/publish-unit-test-result-action@v1
-        with:
-          files: artifacts/**/junit_report*.xml
+#  publish-test-results:
+#    needs: test
+#    runs-on: ubuntu-latest
+#    if: success() || failure()
+#    steps:
+#      - name: Download Artifacts
+#        uses: actions/download-artifact@v2
+#        with:
+#          path: artifacts
+#      - name: Publish test results
+#        uses: EnricoMi/publish-unit-test-result-action@v1
+#        with:
+#          files: artifacts/**/junit_report*.xml
