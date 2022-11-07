@@ -2,6 +2,7 @@ import json
 
 import pytest
 import numpy as np
+from numpy.polynomial import Polynomial
 import numpy.testing as npt
 
 from euphonic import ureg
@@ -365,6 +366,32 @@ class TestSpectrum2DMethods:
         # uneven
         for unequal_ax in unequal_axes:
             assert unequal_ax in record[-1].message.args[0]
+
+    def test_variable_broaden_spectrum2d(self):
+        """Check variable broadening is consistent with fixed-width method"""
+        spectrum = get_spectrum2d('quartz_bandstructure_sqw.json')
+
+        sigma = 2 * ureg('meV')
+        fwhm = 2.3548200450309493 * sigma
+
+        def sigma_function(x):
+            poly = Polynomial([sigma.magnitude, 0, 0.])
+            return poly(x.to(sigma.units).magnitude) * sigma.units
+
+        fixed_broad_y = spectrum.broaden(y_width=fwhm)
+        variable_broad_y = spectrum.broaden(
+            y_width=sigma_function, width_convention='std')
+
+        check_spectrum2d(fixed_broad_y, variable_broad_y)
+
+        # Force regular x bins so x-broadening is allowed
+        spectrum.x_data = np.linspace(
+            1, 10,len(spectrum.get_bin_edges())
+        ) * spectrum.get_bin_edges().units
+        fixed_broad_x = spectrum.broaden(x_width=fwhm)
+        variable_broad_x = spectrum.broaden(
+            x_width=sigma_function, width_convention='std')
+        check_spectrum2d(fixed_broad_x, variable_broad_x, z_atol=1e-10)
 
     @pytest.mark.parametrize(
         'spectrum2d_file, ax, expected_bin_edges', [

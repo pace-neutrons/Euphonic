@@ -1287,18 +1287,33 @@ class Spectrum2D(Spectrum):
                            metadata=self.metadata)
                 for x0, x1 in ranges]
 
-    def broaden(self, x_width: Optional[Quantity] = None,
-                y_width: Optional[Quantity] = None, shape: str = 'gauss',
-                method: Optional[str] = None) -> T:
+    def broaden(self: T,
+                x_width: Optional[Union[Quantity, CallableQuantity]] = None,
+                y_width: Optional[Union[Quantity, CallableQuantity]] = None,
+                shape: str = 'gauss',
+                method: Optional[str] = None,
+                x_width_lower_limit: Quantity = None,
+                y_width_lower_limit: Quantity = None,
+                width_convention: str = 'FWHM',
+                width_interpolation_error: float = 0.01
+                ) -> T:
         """
         Broaden z_data and return a new broadened Spectrum2D object
+
+        Callable functions can be used to access variable-width broadening.
+        In this case, broadening is implemented with a kernel-interpolating
+        approximate scheme.
 
         Parameters
         ----------
         x_width
-            Scalar float Quantity. The broadening FWHM in x
+            Either a scalar float Quantity representing the broadening width,
+            or a callable function that accepts and returns Quantity consistent
+            with x-axis units.
         y_width
-            Scalar float Quantity. The broadening FWHM in y
+            Either a scalar float Quantity representing the broadening width,
+            or a callable function that accepts and returns Quantity consistent
+            with y-axis units.
         shape
             One of {'gauss', 'lorentz'}. The broadening shape
         method
@@ -1307,6 +1322,19 @@ class Spectrum2D(Spectrum):
             but this may not produce correct results for unequal bin
             widths. To use convolution anyway, explicitly set
             method='convolve'
+        x_width_lower_limit
+            Set a lower bound to width obtained calling x_width function. By
+            default, this is equal to x bin width. To disable, set to -Inf.
+        y_width_lower_limit
+            Set a lower bound to width obtained calling y_width function. By
+            default, this is equal to y bin width. To disable, set to -Inf.
+        width_convention
+            By default ('FWHM'), widths are interpreted as full-width
+            half-maximum. Set to 'STD' to instead define standard deviation.
+        width_interpolation_error
+            When x_width is a callable function, variable-width broadening is
+            implemented by an approximate kernel-interpolation scheme. This
+            parameter determines the target error of the kernel approximations.
 
         Returns
         -------
@@ -1320,26 +1348,96 @@ class Spectrum2D(Spectrum):
         ValueError
             If method is None and bins are not of equal size
         """
-        bin_centres = [self.get_bin_centres(ax).magnitude for ax in ['x', 'y']]
+        # First apply fixed-width broadening; this can be applied to both axes
+        # in one function call if both are specified.
         widths_in_bin_units = [None]*2
 
-        if x_width is not None:
+        if isinstance(x_width, Quantity):
             try:
                 self.assert_regular_bins('x', message=(
                     'Broadening by convolution may give incorrect results.'))
             except AssertionError as e:
                 warnings.warn(e, UserWarning)
             widths_in_bin_units[0] = x_width.to(self.x_data_unit).magnitude
-        if y_width is not None:
+        if isinstance(y_width, Quantity):
             widths_in_bin_units[1] = y_width.to(self.y_data_unit).magnitude
-        z_broadened = self._broaden_data(self.z_data.magnitude, bin_centres,
-                                         widths_in_bin_units, shape=shape,
-                                         method=method)
+
+        if any(widths_in_bin_units):
+            bin_centres = [self.get_bin_centres(ax).magnitude
+                           for ax in ['x', 'y']]
+            z_broadened = self._broaden_data(self.z_data.magnitude, bin_centres,
+                                             widths_in_bin_units, shape=shape,
+                                             method=method)
+            spectrum = Spectrum2D(
+                np.copy(self.x_data.magnitude)*ureg(self.x_data_unit),
+                np.copy(self.y_data.magnitude)*ureg(self.y_data_unit),
+                z_broadened*ureg(self.z_data_unit), copy.copy(self.x_tick_labels),
+                copy.copy(self.metadata))
+        else:
+            spectrum = self
+
+        # Then apply variable-width broadening to any axes with Callable
+        for axis, width, lower_limit in (('x', x_width, x_width_lower_limit),
+                                         ('y', y_width, y_width_lower_limit)):
+            if isinstance(width, Callable):
+                spectrum = self._broaden_spectrum2d_with_function(
+                    spectrum, width, axis=axis, width_lower_limit=lower_limit,
+                    width_convention=width_convention,
+                    width_interpolation_error=width_interpolation_error)
+
+        return spectrum
+
+    @staticmethod
+    def _broaden_spectrum2d_with_function(
+            spectrum: 'Spectrum2D',
+            width_function: Callable[[Quantity], Quantity],
+            axis: str = 'y',
+            width_lower_limit: Quantity = None,
+            width_convention: str = 'fwhm',
+            width_interpolation_error: float = 1e-2) -> 'Spectrum2D':
+        """
+        Apply value-dependent Gaussian broadening to one axis of Spectrum2D
+        """
+        assert axis in ('x', 'y')
+
+        bins = spectrum.get_bin_edges(bin_ax=axis)
+        bin_widths = np.diff(bins.magnitude) * bins.units
+
+        if not np.all(np.isclose(bin_widths.magnitude,
+                                 bin_widths.magnitude[0])):
+            bin_width = bin_widths.mean()
+        else:
+            bin_width = bin_widths[0]
+
+        # Input data: rescale to sparse-like data values
+        z_data = spectrum.z_data * bin_width
+
+        if axis == 'x':
+            z_data = z_data.T
+
+        # Output data: matches input units
+        z_broadened = np.empty_like(z_data.magnitude) * spectrum.z_data.units
+
+        for i, row in enumerate(z_data):
+            z_broadened[i] = variable_width_broadening(
+                bins,
+                spectrum.get_bin_centres(bin_ax=axis),
+                width_function,
+                row,
+                width_lower_limit=width_lower_limit,
+                width_convention=width_convention,
+                adaptive_error=width_interpolation_error)
+
+        if axis == 'x':
+            z_broadened = z_broadened.T
+
         return Spectrum2D(
-            np.copy(self.x_data.magnitude)*ureg(self.x_data_unit),
-            np.copy(self.y_data.magnitude)*ureg(self.y_data_unit),
-            z_broadened*ureg(self.z_data_unit), copy.copy(self.x_tick_labels),
-            copy.copy(self.metadata))
+            np.copy(spectrum.x_data.magnitude) * ureg(spectrum.x_data_unit),
+            np.copy(spectrum.y_data.magnitude) * ureg(spectrum.y_data_unit),
+            z_broadened,
+            copy.copy(spectrum.x_tick_labels),
+            copy.copy(spectrum.metadata))
+
 
     def get_bin_edges(self, bin_ax: str = 'x') -> Quantity:
         """
