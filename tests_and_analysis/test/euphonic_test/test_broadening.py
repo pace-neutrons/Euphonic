@@ -9,6 +9,7 @@ from scipy.ndimage import gaussian_filter
 from euphonic.broadening import (find_coeffs,
                                  width_interpolated_broadening,
                                  polynomial_broadening,
+                                 variable_width_broadening,
                                  broaden_spectrum1d_with_polynomial,
                                  broaden_spectrum1dcollection_with_polynomial,
                                  broaden_spectrum2d_with_polynomial)
@@ -19,12 +20,12 @@ from tests_and_analysis.test.euphonic_test.test_qpoint_frequencies\
     import get_qpt_freqs
 from ..utils import get_mode_widths
 from tests_and_analysis.test.euphonic_test.test_spectrum1d\
-    import check_spectrum1d, get_expected_spectrum1d, get_spectrum1d
+import check_spectrum1d, get_expected_spectrum1d, get_spectrum1d
 from .test_spectrum1dcollection import get_spectrum1dcollection
 from .test_spectrum2d import get_spectrum2d, check_spectrum2d
 
-def test_polynomial_close_to_exact():
-    """Check polynomial broadening agrees with exact for trivial case"""
+def test_variable_close_to_exact():
+    """Check variable-width broadening agrees with exact for trivial case"""
     rng = RandomState(123)
 
     bins = np.linspace(0, 100, 200)
@@ -36,36 +37,21 @@ def test_polynomial_close_to_exact():
     sigma = 2.
     exact = gaussian_filter(y, (sigma / bin_width), mode='constant')
 
-    poly_broadened = polynomial_broadening(
+    def width_function(x):
+        poly = Polynomial([sigma, 0., 0.])
+        return poly(x.to('meV').magnitude) * ureg('meV')
+
+    poly_broadened = variable_width_broadening(
         bins=(bins * ureg('meV')),
         x=(x * ureg('meV')),
-        width_polynomial=(Polynomial([sigma, 0., 0.]), ureg('meV')),
+        width_function=width_function,
         width_convention='STD',
         weights=(y * bin_width),  # Convert from spectrum heights to counts
         adaptive_error=1e-5)
 
+
     npt.assert_allclose(exact, poly_broadened.to('1/meV').magnitude,
                         atol=1e-4)
-
-
-def test_variable_broaden_spectrum1d():
-    """Check variable broadening is consistent with fixed-width method"""
-    spec1d = get_spectrum1d('quartz_666_dos.json')
-
-    sigma = 2 * ureg('meV')
-    fwhm = 2.3548200450309493 * sigma
-    sigma_poly = (Polynomial([sigma.magnitude, 0., 0.]), sigma.units)
-    fwhm_poly = (Polynomial([fwhm.to('1/cm').magnitude, 0., ]),
-                 ureg('1/cm'))
-
-    fixed_broad = spec1d.broaden(fwhm)
-    variable_broad_sigma = broaden_spectrum1d_with_polynomial(
-        spec1d, sigma_poly, width_convention='std', adaptive_error=1e-5)
-    variable_broad_fwhm = broaden_spectrum1d_with_polynomial(
-        spec1d, fwhm_poly, width_convention='FWHM', adaptive_error=1e-5)
-
-    check_spectrum1d(variable_broad_sigma, variable_broad_fwhm)
-    check_spectrum1d(fixed_broad, variable_broad_sigma, y_atol=1e-4)
 
 
 def test_variable_broaden_1d_collection():
