@@ -365,7 +365,7 @@ class Spectrum(ABC):
                                  bin_widths.magnitude[0],
                                  rtol=rtol, atol=atol)):
             raise AssertionError("Not all x-axis bins are the same width. "
-                             + message)
+                                 + message)
 
 
 class Spectrum1D(Spectrum):
@@ -550,7 +550,7 @@ class Spectrum1D(Spectrum):
                 width_lower_limit: Optional[Quantity] = None,
                 width_convention: str = 'FWHM',
                 width_interpolation_error: float = 0.01
-                ) -> T: # noqa: F811
+                ) -> T:  # noqa: F811
         ...
 
     def broaden(self: T, x_width: Union[Quantity, CallableQuantity],
@@ -559,7 +559,7 @@ class Spectrum1D(Spectrum):
                 width_lower_limit: Quantity = None,
                 width_convention: str = 'FWHM',
                 width_interpolation_error: float = 0.01
-                ) -> T: # noqa: F811
+                ) -> T:  # noqa: F811
         """
         Broaden y_data and return a new broadened spectrum object
 
@@ -670,8 +670,8 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
     def __init__(
             self, x_data: Quantity, y_data: Quantity,
             x_tick_labels: Optional[Sequence[Tuple[int, str]]] = None,
-            metadata: Optional[Dict[str, Union[str, int, LineData]]
-            ] = None) -> None:
+            metadata: Optional[Dict[str, Union[str, int, LineData]]] = None
+    ) -> None:
         """
         Parameters
         ----------
@@ -760,7 +760,8 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
     def __getitem__(self, item: Union[Sequence[int], np.ndarray]) -> T:
         ...
 
-    def __getitem__(self, item: Union[int, slice, Sequence[int], np.ndarray]):  # noqa: F811
+    def __getitem__(self, item: Union[int, slice, Sequence[int], np.ndarray]
+                    ):  # noqa: F811
         new_metadata = copy.deepcopy(self.metadata)
         line_metadata = new_metadata.pop('line_data',
                                          [{} for _ in self._y_data])
@@ -834,7 +835,7 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
         # This is for combining multiple separate spectrum metadata,
         # they shouldn't have line_data
         for metadata in all_metadata:
-            assert not 'line_data' in metadata.keys()
+            assert 'line_data' not in metadata.keys()
         # Combine all common key/value pairs
         combined_metadata = dict(
             set(all_metadata[0].items()).intersection(
@@ -873,7 +874,8 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
         a single element in metadata['line_data']. This allows easy
         grouping/selecting by specific keys
 
-        For example, if we have a Spectrum1DCollection with the following metadata:
+        For example, if we have a Spectrum1DCollection with the following
+        metadata:
             {'desc': 'Quartz', 'line_data': [
                 {'inst': 'LET', 'sample': 0, 'index': 1},
                 {'inst': 'MAPS', 'sample': 1, 'index': 2},
@@ -926,7 +928,7 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
                   f'x_data in ({self.x_data.units})',
                   f'y_data in ({self.y_data.units})',
                   f'Common metadata: {json.dumps(common_metadata)}',
-                  f'Column 1: x_data']
+                  r'Column 1: x_data']
         for i, line in enumerate(line_data):
             header += [f'Column {i + 2}: y_data[{i}] {json.dumps(line)}']
         out_data = np.hstack((self.get_bin_centres().magnitude[:, np.newaxis],
@@ -1002,7 +1004,7 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
                 width_lower_limit: Quantity = None,
                 width_convention: str = 'FWHM',
                 width_interpolation_error: float = 0.01
-                ) -> T: # noqa: F811
+                ) -> T:  # noqa: F811
         ...
 
     def broaden(self: T, x_width: Union[Quantity, CallableQuantity],
@@ -1011,7 +1013,7 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
                 width_lower_limit: Quantity = None,
                 width_convention: str = 'FWHM',
                 width_interpolation_error: float = 0.01
-                ) -> T: # noqa: F811
+                ) -> T:  # noqa: F811
         """
         Individually broaden each line in y_data, returning a new
         Spectrum1DCollection
@@ -1365,13 +1367,16 @@ class Spectrum2D(Spectrum):
         if any(widths_in_bin_units):
             bin_centres = [self.get_bin_centres(ax).magnitude
                            for ax in ['x', 'y']]
-            z_broadened = self._broaden_data(self.z_data.magnitude, bin_centres,
-                                             widths_in_bin_units, shape=shape,
+            z_broadened = self._broaden_data(self.z_data.magnitude,
+                                             bin_centres,
+                                             widths_in_bin_units,
+                                             shape=shape,
                                              method=method)
             spectrum = Spectrum2D(
                 np.copy(self.x_data.magnitude)*ureg(self.x_data_unit),
                 np.copy(self.y_data.magnitude)*ureg(self.y_data_unit),
-                z_broadened*ureg(self.z_data_unit), copy.copy(self.x_tick_labels),
+                z_broadened*ureg(self.z_data_unit),
+                copy.copy(self.x_tick_labels),
                 copy.copy(self.metadata))
         else:
             spectrum = self
@@ -1437,7 +1442,6 @@ class Spectrum2D(Spectrum):
             z_broadened,
             copy.copy(spectrum.x_tick_labels),
             copy.copy(spectrum.metadata))
-
 
     def get_bin_edges(self, bin_ax: str = 'x') -> Quantity:
         """
@@ -1529,7 +1533,6 @@ class Spectrum2D(Spectrum):
                                  rtol=rtol, atol=atol)):
             raise AssertionError(
                 f"Not all {bin_ax}-axis bins are the same width. " + message)
-            pass
 
     def to_dict(self) -> Dict[str, Any]:
         """
@@ -1629,12 +1632,12 @@ def apply_kinematic_constraints(spectrum: Spectrum2D,
                          "(The other value will be derived from energy "
                          "transfer).")
 
-    if e_i is None:   # Indirect geometry: final energy is fixed,
-                      # incident energy range is unlimited
+    if e_i is None:
+        # Indirect geometry: final energy is fixed, incident energy unlimited
         e_f = e_f.to('meV')
         e_i = (spectrum.get_bin_centres(bin_ax='y').to('meV') + e_f)
-    elif e_f is None:   # Direct geometry: incident energy is fixed,
-                        # max energy transfer = e_i
+    elif e_f is None:
+        # Direct geometry: incident energy is fixed, max energy transfer = e_i
         e_i = e_i.to('meV')
         e_f = e_i - spectrum.get_bin_centres(bin_ax='y').to('meV')
 

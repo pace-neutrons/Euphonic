@@ -503,7 +503,7 @@ class TestSpectrum1DCollectionMethods:
 
         for spec1, spec2 in zip(individually_broadened, collection_broadened):
             check_spectrum1d(spec1, spec2)
-            
+
     @pytest.mark.parametrize(
         'spectrum_file, summed_spectrum_file', [
             ('quartz_666_pdos.json', 'quartz_666_dos.json')
@@ -656,4 +656,3 @@ class TestSpectrum1DCollectionMethods:
         expected_added_spec = get_expected_spectrum1dcollection(
             expected_spectrum_file)
         check_spectrum1dcollection(added_spec, expected_added_spec)
-
