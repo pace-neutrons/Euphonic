@@ -17,7 +17,6 @@ import os
 import sys
 sys.path.insert(0, os.path.abspath('../..'))
 
-
 # -- Project information -----------------------------------------------------
 
 project = 'Euphonic'
@@ -81,4 +80,27 @@ def setup(app):
 
 rst_prolog = """
 .. |q| replace:: \|\ q\ \|
+"""
+
+# -- Doctest configuration ---------------------------------------------------
+
+# Global setup, import required modules and initialise fnames
+# fnames are files that are required by each doctest, and will be
+# copied from Euphonic's test directory in the setup for that test.
+# Initialise fnames here so it can safely be used in cleanup, even if
+# a specific test setup doesn't define it.
+doctest_global_setup = """
+import os, shutil
+from tests_and_analysis.test.utils import get_castep_path, get_data_path
+fnames = []
+"""
+# Cleanup, ensure figures are closed and any copied files are removed
+# If a test only requires one file, fnames may not be a list.
+doctest_global_cleanup = """
+import matplotlib.pyplot as plt
+plt.close('all')
+if not isinstance(fnames, list):
+    fnames = [fnames]
+for fname in fnames:
+    os.remove(fname)
 """

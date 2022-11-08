@@ -24,13 +24,13 @@ is plotted with :py:meth:`euphonic.plot.plot_1d`. Converting to
 arguments get passed to :py:meth:`plot_1d <euphonic.plot.plot_1d>`, for
 adding axis labels etc.:
 
-.. testsetup::
+.. testsetup:: quartz_phonon
 
-  import shutil
-  from tests_and_analysis.test.utils import get_castep_path
-  shutil.copyfile(get_castep_path('quartz', 'quartz_nosplit.phonon'), 'quartz.phonon')
+  fnames = 'quartz.phonon'
+  shutil.copyfile(
+      get_castep_path('quartz', 'quartz_nosplit.phonon'), fnames)
 
-.. testcode::
+.. testcode:: quartz_phonon
 
   from euphonic import QpointPhononModes
   from euphonic.plot import plot_1d
@@ -51,7 +51,7 @@ subplots.
 
 A compact recipe to write a band-structure plot with discontinuities could be
 
-.. code-block:: py
+.. testcode:: quartz_phonon
 
   from euphonic import QpointFrequencies
   from euphonic.plot import plot_1d
@@ -60,6 +60,10 @@ A compact recipe to write a band-structure plot with discontinuities could be
 
   fig = plot_1d(phonon_frequencies.get_dispersion().split())
   fig.savefig('quartz-dispersion.pdf')
+
+.. testcleanup::
+
+  os.remove('quartz-dispersion.pdf')
 
 
 1D Plots
@@ -70,7 +74,14 @@ For multiple lines on the same axes, use Spectrum1DCollection objects.
 A sequence of Spectrum1D or Spectrum1DCollection objects will be interpreted
 as a series of axis regions:
 
-.. code-block:: py
+.. testsetup:: dos_broaden
+
+  fnames = ['dos.json', 'dos_broaden.json']
+  for fname in fnames:
+      shutil.copyfile(
+          get_data_path('spectrum1d', 'quartz_666_dos.json'), fname)
+
+.. testcode:: dos_broaden
 
   from euphonic import Spectrum1D, Spectrum1DCollection
   from euphonic.plot import plot_1d
@@ -80,7 +91,7 @@ as a series of axis regions:
 
   dos_collection = Spectrum1DCollection.from_spectra([dos, dos_broaden])
 
-  fig = plot_1d(dos_collection, x_label='Energy (meV)', y_min=0,
+  fig = plot_1d(dos_collection, xlabel='Energy (meV)', ymin=0,
                 labels=['Density of states', 'Broadened'])
   fig.show()
 
@@ -93,7 +104,14 @@ have different x_data values, so using a :ref:`Spectrum1DCollection` is not
 possible). An example of plotting 2 DOS with different energy bins on the
 same axis:
 
-.. code-block:: py
+.. testsetup:: dos_ebins
+
+  fnames = ['dos_ebins1.json', 'dos_ebins2.json']
+  for fname in fnames:
+      shutil.copyfile(
+          get_data_path('spectrum1d', 'quartz_666_dos.json'), fname)
+
+.. testcode:: dos_ebins
 
   import matplotlib.pyplot as plt
   from euphonic import Spectrum1D
@@ -109,7 +127,7 @@ same axis:
 
 An example of plotting 2 DOS on different axes on the same figure:
 
-.. code-block:: py
+.. testcode:: dos_ebins
 
   import matplotlib.pyplot as plt
   from euphonic import Spectrum1D
@@ -135,7 +153,13 @@ Docstrings
 2D spectra are arranged in a matplotlib Figure with
 :py:meth:`euphonic.plot.plot_2d`:
 
-.. code-block:: py
+.. testsetup:: sqw
+
+  fnames = 'sqw.json'
+  shutil.copyfile(
+      get_data_path('spectrum2d', 'example_spectrum2d.json'), fnames)
+
+.. testcode:: sqw
 
   from euphonic import Spectrum2D
   from euphonic.plot import plot_2d
@@ -151,7 +175,14 @@ This can be used to multiple subplots showing :ref:`Spectrum2D` in the same
 figure. A `matplotlib.colors.Normalize` object can also be used to ensure both
 spectra are on the same colour scale. An example of this for 2 S(Q,w) is below:
 
-.. code-block:: py
+.. testsetup:: sqw_1_2
+
+  fnames = ['sqw1.json', 'sqw2.json']
+  for fname in fnames:
+      shutil.copyfile(
+          get_data_path('spectrum2d', 'example_spectrum2d.json'), fname)
+
+.. testcode:: sqw_1_2
 
   import matplotlib.pyplot as plt
   from matplotlib.colors import Normalize
@@ -184,7 +215,7 @@ is applied to any new plots.
 These can be built-in themes, file paths or parameter dictionaries,
 e.g.:
 
-.. code-block:: py
+.. testcode:: dos_broaden
 
   import matplotlib.pyplot as plt
   from euphonic import Spectrum1D
