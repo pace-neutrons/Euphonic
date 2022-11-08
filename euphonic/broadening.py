@@ -1,12 +1,10 @@
 """
 Functions for broadening spectra
 """
-import copy
-from typing import Callable, Tuple, Union
+from typing import Callable, Union
 import warnings
 
 import numpy as np
-from numpy.polynomial import Polynomial
 from scipy.optimize import nnls
 from scipy.stats import norm
 from scipy.signal import convolve
