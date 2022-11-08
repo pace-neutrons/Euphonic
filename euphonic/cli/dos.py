@@ -110,11 +110,14 @@ def main(params: Optional[List[str]] = None) -> None:
     elif (args.inst_broadening and args.shape == 'gauss'
           and len(energy_broadening_poly) > 1):
         # Variable-width Gaussian broadening
-        if isinstance(dos, Spectrum1D):
-            dos.broaden(x_width=energy_broadening_poly,
-                        shape=args.shape,
-                        method='convolve',
-                        width_interpolation_error=args.adaptive_error)
+        def energy_broadening_func(x):
+            return energy_broadening_poly(x.to(args.energy_unit).magnitude
+                                          ) * ureg(args.energy_unit)
+
+        dos = dos.broaden(x_width=energy_broadening_func,
+                          shape=args.shape,
+                          method='convolve',
+                          width_interpolation_error=args.adaptive_error)
 
     elif args.inst_broadening:
         # Fixed-width broadening
