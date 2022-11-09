@@ -93,7 +93,8 @@ sys.path.append(os.path.abspath('../..'))
 # a specific test setup doesn't define it.
 doctest_global_setup = """
 import os, shutil
-from tests_and_analysis.test.utils import get_castep_path, get_data_path
+from tests_and_analysis.test.utils import (get_castep_path, get_phonopy_path,
+                                           get_data_path)
 fnames = []
 """
 # Cleanup, ensure figures are closed and any copied files are removed
@@ -104,5 +105,8 @@ plt.close('all')
 if not isinstance(fnames, list):
     fnames = [fnames]
 for fname in fnames:
-    os.remove(fname)
+    if os.path.isfile(fname):
+        os.remove(fname)
+    else:
+        shutil.rmtree(fname)
 """
