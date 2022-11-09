@@ -8,7 +8,7 @@ contains all the metadata required to cite Euphonic. The correct citation file
 for your version of Euphonic can be found in Euphonic's installation directory,
 or it can be read programatically as follows:
 
-.. code-block:: py
+.. testcode::
 
   import yaml
   import euphonic

@@ -11,12 +11,6 @@
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
 
-# Ensure the euphonic source directory is on the path. Otherwise it can
-# quietly document the current Python's installed Euphonic, which we don't want!
-import os
-import sys
-sys.path.insert(0, os.path.abspath('../..'))
-
 # -- Project information -----------------------------------------------------
 
 project = 'Euphonic'
@@ -83,6 +77,14 @@ rst_prolog = """
 """
 
 # -- Doctest configuration ---------------------------------------------------
+
+# Add Euphonic directory to path so we can access tests_and_analysis.test.utils
+# Append rather than insert so that the installed Euphonic is imported rather
+# than the Git repo (the repo doesn't include the built C extension,
+# CITATION.cff in the correct place etc.)
+import os
+import sys
+sys.path.append(os.path.abspath('../..'))
 
 # Global setup, import required modules and initialise fnames
 # fnames are files that are required by each doctest, and will be
