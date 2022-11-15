@@ -80,7 +80,8 @@ def get_spectrum_path(*subpaths):
 
 
 def get_spectrum1dcollection(json_filename):
-    return Spectrum1DCollection.from_json_file(get_spectrum_path(json_filename))
+    return Spectrum1DCollection.from_json_file(
+        get_spectrum_path(json_filename))
 
 
 def get_expected_spectrum1dcollection(json_filename):
@@ -184,7 +185,8 @@ class TestSpectrum1DCollectionCreation:
          get_expected_spectrum1dcollection('gan_bands.json').y_data[:, :-2],
          ValueError),
         ('y_data',
-         get_expected_spectrum1dcollection('gan_bands.json').y_data[0, :].flatten(),
+         get_expected_spectrum1dcollection('gan_bands.json')
+         .y_data[0, :].flatten(),
          ValueError),
         ('x_tick_labels',
          get_expected_spectrum1dcollection('gan_bands.json').x_tick_labels[0],
@@ -212,7 +214,8 @@ class TestSpectrum1DCollectionCreation:
         'input_spectra, expected_spectrum',
         [([get_spectrum1d(f'gan_bands_index_{i}.json') for i in range(2, 5)],
           get_spectrum1dcollection('gan_bands_index_2_5.json')),
-         ([get_spectrum1d(f'methane_pdos_index_{i}.json') for i in range(1, 4)],
+         ([get_spectrum1d(f'methane_pdos_index_{i}.json')
+           for i in range(1, 4)],
           get_spectrum1dcollection('methane_pdos_index_1_4.json')),
          ([get_spectrum1d('xsq_spectrum1d.json')],
           get_spectrum1dcollection('xsq_from_single_spectrum1d.json'))
@@ -492,7 +495,7 @@ class TestSpectrum1DCollectionMethods:
                              broadened_spec1d)
 
     def test_variable_broadening(self):
-        """Check variable broadening is consistent when applied over collection"""
+        """Check variable broadening is consistent for collections"""
         def width_function(x):
             return x.to('meV') * 3 + 1.*ureg('meV')
 
@@ -531,10 +534,14 @@ class TestSpectrum1DCollectionMethods:
 
     fake_metadata = {'top_level_key': 'something', 'top_level_int': 10,
                      'line_data': [
-                         {'sample': 0, 'inst': 'LET', 'index': 10, 'other_data': 'misc'},
-                         {'sample': 2, 'inst': 'MARI', 'index': 5, 'some_other_data': 5},
-                         {'sample': 2, 'inst': 'MARI', 'index': 10, 'some_other_data': 5},
-                         {'sample': 0, 'inst': 'MAPS', 'index': 10, 'other_data': 'another_value'},
+                         {'sample': 0, 'inst': 'LET', 'index': 10,
+                          'other_data': 'misc'},
+                         {'sample': 2, 'inst': 'MARI', 'index': 5,
+                          'some_other_data': 5},
+                         {'sample': 2, 'inst': 'MARI', 'index': 10,
+                          'some_other_data': 5},
+                         {'sample': 0, 'inst': 'MAPS', 'index': 10,
+                          'other_data': 'another_value'},
                          {'sample': 0, 'inst': 'TOSCA', 'index': 7},
                          {'sample': 0, 'inst': 'TOSCA', 'index': 10},
                          {'sample': 2, 'inst': 'LET', 'index': 10},
@@ -547,9 +554,11 @@ class TestSpectrum1DCollectionMethods:
              ('sample', 'inst'),
              {'top_level_key': 'something', 'top_level_int': 10,
               'line_data': [
-                  {'sample': 0, 'inst': 'LET', 'index': 10, 'other_data': 'misc'},
+                  {'sample': 0, 'inst': 'LET', 'index': 10,
+                   'other_data': 'misc'},
                   {'sample': 2, 'inst': 'MARI', 'some_other_data': 5},
-                  {'sample': 0, 'inst': 'MAPS', 'index': 10, 'other_data': 'another_value'},
+                  {'sample': 0, 'inst': 'MAPS', 'index': 10,
+                   'other_data': 'another_value'},
                   {'sample': 0, 'inst': 'TOSCA'},
                   {'sample': 2, 'inst': 'LET'},
                   {'sample': 1, 'inst': 'LET', 'index': 10}]}),
