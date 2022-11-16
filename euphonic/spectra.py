@@ -619,7 +619,8 @@ class Spectrum1D(Spectrum):
                 (self.y_data * self.get_bin_widths()[0]),
                 width_lower_limit=width_lower_limit,
                 width_convention=width_convention,
-                adaptive_error=width_interpolation_error
+                adaptive_error=width_interpolation_error,
+                shape=shape
             )
         else:
             raise TypeError("x_width must be a Quantity or Callable")
@@ -1431,7 +1432,8 @@ class Spectrum2D(Spectrum):
                 row,
                 width_lower_limit=width_lower_limit,
                 width_convention=width_convention,
-                adaptive_error=width_interpolation_error)
+                adaptive_error=width_interpolation_error,
+                shape=shape)
 
         if axis == 'x':
             z_broadened = z_broadened.T
