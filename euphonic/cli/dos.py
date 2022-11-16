@@ -31,9 +31,6 @@ def main(params: Optional[List[str]] = None) -> None:
         if not isinstance(data, ForceConstants):
             raise TypeError(
                 'Force constants are required to use --adaptive option')
-        if args.shape != 'gauss':
-            raise ValueError('Currently only Gaussian shape is supported '
-                             'with adaptive broadening')
 
     if (args.energy_broadening
             and args.adaptive
@@ -107,8 +104,7 @@ def main(params: Optional[List[str]] = None) -> None:
     if args.inst_broadening and args.shape == 'gauss' and args.adaptive:
         pass  # Gaussian broadening included with adaptive sampling
 
-    elif (args.inst_broadening and args.shape == 'gauss'
-          and len(energy_broadening_poly) > 1):
+    elif (args.inst_broadening and len(energy_broadening_poly) > 1):
         # Variable-width Gaussian broadening
         def energy_broadening_func(x):
             return energy_broadening_poly(x.to(args.energy_unit).magnitude
@@ -121,10 +117,6 @@ def main(params: Optional[List[str]] = None) -> None:
 
     elif args.inst_broadening:
         # Fixed-width broadening
-        if len(energy_broadening_poly) > 1:
-            raise ValueError(
-                "Variable-width broadening is only supported for Gaussian "
-                "shape.")
         dos = dos.broaden(energy_broadening_poly.coef[0] * ebins.units,
                           shape=args.shape)
 
