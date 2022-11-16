@@ -5,6 +5,7 @@ from typing import Callable, Union
 import warnings
 
 import numpy as np
+from numpy.polynomial import Chebyshev
 from scipy.optimize import nnls
 from scipy.stats import norm
 from scipy.signal import convolve
@@ -18,7 +19,8 @@ def variable_width_broadening(bins: Quantity,
                               weights: Union[np.ndarray, Quantity],
                               width_lower_limit: Quantity = None,
                               width_convention: str = 'fwhm',
-                              adaptive_error: float = 1e-2) -> Quantity:
+                              adaptive_error: float = 1e-2,
+                              shape: str = 'gauss') -> Quantity:
     r"""Apply x-dependent Gaussian broadening to 1-D data series
 
     Typically this is an energy-dependent instrumental resolution function.
@@ -52,12 +54,18 @@ def variable_width_broadening(bins: Quantity,
         Acceptable error for gaussian approximations, defined
         as the absolute difference between the areas of the true and
         approximate gaussians.
+    shape
+        Select 'gauss' or 'lorentz' kernel.
 
     """
-    if width_convention.lower() == 'fwhm':
+
+    if width_convention.lower() == 'fwhm' and shape == 'gauss':
         sigma_function = (lambda x: width_function(x)
                           / np.sqrt(8 * np.log(2)))
-    elif width_convention.lower() == 'std':
+    elif width_convention.lower() == 'std' and shape == 'lorentz':
+        raise ValueError('Standard deviation unavailable for Lorentzian '
+                         'function: please use FWHM.')
+    elif width_convention.lower() in ('std', 'fwhm'):
         sigma_function = width_function
     else:
         raise ValueError('width_convention must be "std" or "fwhm".')
@@ -82,15 +90,16 @@ def variable_width_broadening(bins: Quantity,
 
     return width_interpolated_broadening(bins, x, widths,
                                          weights.magnitude,
-                                         adaptive_error=adaptive_error
-                                         ) * weights_unit
+                                         adaptive_error=adaptive_error,
+                                         shape=shape) * weights_unit
 
 
 def width_interpolated_broadening(bins: Quantity,
                                   x: Quantity,
                                   widths: Quantity,
                                   weights: np.ndarray,
-                                  adaptive_error: float) -> Quantity:
+                                  adaptive_error: float,
+                                  shape: str = 'gauss') -> Quantity:
     """
     Uses a fast, approximate method to broaden a spectrum
     with a variable-width kernel. Exact Gaussians are calculated
@@ -115,6 +124,9 @@ def width_interpolated_broadening(bins: Quantity,
         Scalar float. Acceptable error for gaussian approximations, defined
         as the absolute difference between the areas of the true and
         approximate gaussians.
+    shape
+        Select 'gauss' or 'lorentz' kernel. Widths will correspond to sigma or
+        gamma parameters respectively.
 
     Returns
     -------
@@ -131,12 +143,37 @@ def width_interpolated_broadening(bins: Quantity,
                                     adaptive_error)/conv
 
 
+def _lorentzian(x: np.ndarray, gamma: np.ndarray) -> np.ndarray:
+    return gamma / (2 * np.pi * (x**2 + (gamma / 2)**2))
+
+
+def _get_spacing(error, shape='gauss'):
+    """
+    Determine suitable spacing value for mode_width given accepted error level
+
+    Coefficients have been fitted to plots of error vs spacing value
+    """
+
+    if shape == 'gauss':
+        return np.polyval([612.7, -122.7, 15.40, 1.0831], error)
+    elif shape == 'lorentz':
+        cheby = Chebyshev([1.31311372, 0.41624683, 0.17961194, 0.06253194,
+                           0.0195309, 0.00555107, 0.00225896],
+                          window=[-1.,  1.], domain=[-4.04691274, -1.34655197])
+        log_error = np.log10(error)
+        if log_error < cheby.domain[0] or log_error > cheby.domain[1]:
+            raise ValueError("Target error is out of fit range; value must lie"
+                             f" in range {np.power(10, cheby.domain)}.")
+        return cheby(log_error)
+
+
 def _width_interpolated_broadening(
                             bins: np.ndarray,
                             x: np.ndarray,
                             widths: np.ndarray,
                             weights: np.ndarray,
-                            adaptive_error: float) -> np.ndarray:
+                            adaptive_error: float,
+                            shape='gauss') -> np.ndarray:
     """
     Broadens a spectrum using a variable-width kernel, taking the
     same arguments as `variable_width` but expects arrays with
@@ -147,10 +184,7 @@ def _width_interpolated_broadening(
     widths = np.ravel(widths)
     weights = np.ravel(weights)
 
-    # determine spacing value for mode_width samples given desired error level
-    # coefficients determined from a polynomial fit to plot of
-    # error vs spacing value
-    spacing = np.polyval([ 612.7, -122.7, 15.40, 1.0831], adaptive_error)
+    spacing = _get_spacing(adaptive_error, shape=shape)
 
     # bins should be regularly spaced, check that this is the case and
     # raise a warning if not
@@ -168,17 +202,20 @@ def _width_interpolated_broadening(
     # Evaluate kernels on regular grid of length equal to number of bins,
     #  avoids the need for zero padding in convolution step
     if (len(bins) % 2) == 0:
-        kernels = norm.pdf(
-            np.arange(-len(bins)/2+1, len(bins)/2)*bin_width,
-            scale=width_samples[:,np.newaxis])*bin_width
+        x_values = np.arange(-len(bins)/2+1, len(bins)/2)*bin_width
     else:
-        kernels = norm.pdf(
-            np.arange(-int(len(bins)/2), int(len(bins)/2)+1)*bin_width,
-            scale=width_samples[:,np.newaxis])*bin_width
+        x_values = np.arange(-int(len(bins)/2), int(len(bins)/2)+1)*bin_width
+
+    if shape == 'gauss':
+        kernels = norm.pdf(x_values, scale=width_samples[:, np.newaxis]
+                           ) * bin_width
+    elif shape == 'lorentz':
+        kernels = _lorentzian(x_values, gamma=width_samples[:, np.newaxis]
+                              ) * bin_width
 
     kernels_idx = np.searchsorted(width_samples, widths, side="right")
 
-    lower_coeffs = find_coeffs(spacing)
+    lower_coeffs = find_coeffs(spacing, shape=shape)
     spectrum = np.zeros(len(bins)-1)
 
     for i in range(1, len(width_samples)+1):
@@ -205,17 +242,19 @@ def _width_interpolated_broadening(
     return spectrum
 
 
-def find_coeffs(spacing: float) -> np.ndarray:
+def find_coeffs(spacing: float, shape='gauss') -> np.ndarray:
     """"
     Function that, for a given spacing value, gives the coefficients of the
-    polynomial which decsribes the relationship between sigma and the
+    polynomial which describes the relationship between kernel width and the
     linear combination weights determined by optimised interpolation
 
     Parameters
     ----------
     spacing
-        Scalar float. The spacing value between sigma samples at which
-        the gaussian kernel is exactly calculated.
+        Scalar float. The spacing value between sigma (or gamma) samples at
+        which the kernel is exactly calculated.
+    shape
+        'gauss' or 'lorentz', selecting the type of broadening kernel.
 
     Returns
     -------
@@ -223,19 +262,23 @@ def find_coeffs(spacing: float) -> np.ndarray:
         Array containing the polynomial coefficients, with the highest
         power first
     """
-    sigma_values = np.linspace(1, spacing, num=10)
+    width_values = np.linspace(1, spacing, num=10)
     x_range = np.linspace(-10, 10, num=101)
-    actual_gaussians = norm.pdf(x_range, scale=sigma_values[:,np.newaxis])
-    lower_mix = np.zeros(len(sigma_values))
-    ref_gaussians = actual_gaussians[[0, -1]].T
+    if shape == 'gauss':
+        actual_kernels = norm.pdf(x_range, scale=width_values[:, np.newaxis])
+    elif shape == 'lorentz':
+        actual_kernels = _lorentzian(x_range,
+                                     gamma=width_values[:, np.newaxis])
+    lower_mix = np.zeros(len(width_values))
+    ref_kernels = actual_kernels[[0, -1]].T
 
-    # For each sigma value, use non-negative least sqaures fitting to
+    # For each width value, use non-negative least sqaures fitting to
     # find the linear combination weights that best reproduce the
-    # actual gaussian.
-    for i in range(len(sigma_values)):
-        actual_gaussian = actual_gaussians[i]
-        res = nnls(ref_gaussians, actual_gaussian)[0]
+    # actual kernel.
+    for i in range(len(width_values)):
+        actual_kernel = actual_kernels[i]
+        res = nnls(ref_kernels, actual_kernel)[0]
         lower_mix[i] = res[0]
 
-    coeffs = np.polyfit(sigma_values, lower_mix, 3)
+    coeffs = np.polyfit(width_values, lower_mix, 3)
     return coeffs
