@@ -1391,7 +1391,8 @@ class Spectrum2D(Spectrum):
                 spectrum = self._broaden_spectrum2d_with_function(
                     spectrum, width, axis=axis, width_lower_limit=lower_limit,
                     width_convention=width_convention,
-                    width_interpolation_error=width_interpolation_error)
+                    width_interpolation_error=width_interpolation_error,
+                    shape=shape)
 
         return spectrum
 
@@ -1402,7 +1403,8 @@ class Spectrum2D(Spectrum):
             axis: str = 'y',
             width_lower_limit: Quantity = None,
             width_convention: str = 'fwhm',
-            width_interpolation_error: float = 1e-2) -> 'Spectrum2D':
+            width_interpolation_error: float = 1e-2,
+            shape: str = 'gauss') -> 'Spectrum2D':
         """
         Apply value-dependent Gaussian broadening to one axis of Spectrum2D
         """
