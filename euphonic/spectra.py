@@ -250,7 +250,9 @@ class Spectrum(ABC):
                 if width is not None:
                     broadening = _distribution_1d(bin_data, width)
                     data_broadened = correlate1d(data_broadened, broadening,
-                                                 mode='constant', axis=ax)
+                                                 mode='constant',
+                                                 axis=ax)
+
         return data_broadened
 
     @staticmethod
@@ -1724,7 +1726,7 @@ def _get_dist_bins(bins: np.ndarray, fwhm: float, extent: float
 
 
 def _distribution_1d(xbins: np.ndarray, xwidth: float, shape: str = 'lorentz',
-                     extent: float = 3.0) -> np.ndarray:
+                     extent: float = 3.) -> np.ndarray:
     x = _get_dist_bins(xbins, xwidth, extent)
     if shape == 'lorentz':
         dist = _lorentzian(x, xwidth)
