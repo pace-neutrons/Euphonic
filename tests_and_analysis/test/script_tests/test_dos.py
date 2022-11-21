@@ -132,11 +132,6 @@ class TestRegression:
         with pytest.raises(TypeError):
             euphonic.cli.dos.main([nah_phonon_file, '--adaptive'])
 
-    def test_adaptive_and_lorentz_raises_value_error(self):
-        with pytest.raises(ValueError):
-            euphonic.cli.dos.main([quartz_fc_file, '--adaptive',
-                                   '--shape', 'lorentz'])
-
     def test_get_pdos_weighting_without_dash_raises_valueerror(self):
         with pytest.raises(ValueError):
             _get_pdos_weighting('coherentdos')
