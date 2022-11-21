@@ -134,13 +134,14 @@ def width_interpolated_broadening(bins: Quantity,
         Quantity of shape (bins - 1,) containing broadened spectrum
         ydata
     """
+
     conv = 1*ureg('hartree').to(bins.units)
-    return _width_interpolated_broadening(
-                                    bins.to('hartree').magnitude,
-                                    x.to('hartree').magnitude,
-                                    widths.to('hartree').magnitude,
-                                    weights,
-                                    adaptive_error)/conv
+    return _width_interpolated_broadening(bins.to('hartree').magnitude,
+                                          x.to('hartree').magnitude,
+                                          widths.to('hartree').magnitude,
+                                          weights,
+                                          adaptive_error,
+                                          shape=shape) / conv
 
 
 def _lorentzian(x: np.ndarray, gamma: np.ndarray) -> np.ndarray:
@@ -167,13 +168,12 @@ def _get_spacing(error, shape='gauss'):
         return cheby(log_error)
 
 
-def _width_interpolated_broadening(
-                            bins: np.ndarray,
-                            x: np.ndarray,
-                            widths: np.ndarray,
-                            weights: np.ndarray,
-                            adaptive_error: float,
-                            shape='gauss') -> np.ndarray:
+def _width_interpolated_broadening(bins: np.ndarray,
+                                   x: np.ndarray,
+                                   widths: np.ndarray,
+                                   weights: np.ndarray,
+                                   adaptive_error: float,
+                                   shape='gauss') -> np.ndarray:
     """
     Broadens a spectrum using a variable-width kernel, taking the
     same arguments as `variable_width` but expects arrays with
@@ -183,7 +183,6 @@ def _width_interpolated_broadening(
     x = np.ravel(x)
     widths = np.ravel(widths)
     weights = np.ravel(weights)
-
     spacing = _get_spacing(adaptive_error, shape=shape)
 
     # bins should be regularly spaced, check that this is the case and
@@ -215,7 +214,12 @@ def _width_interpolated_broadening(
 
     kernels_idx = np.searchsorted(width_samples, widths, side="right")
 
-    lower_coeffs = find_coeffs(spacing, shape=shape)
+    if len(kernels) == 1:
+        # Only one kernel to consider, use 100% in all cases
+        lower_coeffs = [1.]
+    else:
+        lower_coeffs = find_coeffs(spacing, shape=shape)
+
     spectrum = np.zeros(len(bins)-1)
 
     for i in range(1, len(width_samples)+1):
@@ -223,6 +227,7 @@ def _width_interpolated_broadening(
         width_factors = widths[masked_block]/width_samples[i-1]
         lower_mix = np.polyval(lower_coeffs, width_factors)
         lower_weights = lower_mix * weights[masked_block]
+        print(lower_mix)
 
         if i == 1:
             hist, _ = np.histogram(x[masked_block], bins=bins,
@@ -272,7 +277,7 @@ def find_coeffs(spacing: float, shape='gauss') -> np.ndarray:
     lower_mix = np.zeros(len(width_values))
     ref_kernels = actual_kernels[[0, -1]].T
 
-    # For each width value, use non-negative least sqaures fitting to
+    # For each width value, use non-negative least squares fitting to
     # find the linear combination weights that best reproduce the
     # actual kernel.
     for i in range(len(width_values)):
