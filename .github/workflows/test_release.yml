@@ -33,7 +33,7 @@ jobs:
         run: python -m tox -c release_tox.ini
       - name: Upload test results
         if: always()
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: Unit test results ${{ matrix.os }}
           path: tests_and_analysis/test/reports/junit_report*.xml
@@ -48,7 +48,7 @@ jobs:
         with:
           path: artifacts
       - name: Publish test results
-        uses: EnricoMi/publish-unit-test-result-action@v1
+        uses: EnricoMi/publish-unit-test-result-action@v2
         with:
-          files: artifacts/**/junit_report*.xml
+          junit_files: artifacts/**/junit_report*.xml
 
