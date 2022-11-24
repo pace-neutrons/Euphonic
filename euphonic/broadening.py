@@ -227,7 +227,6 @@ def _width_interpolated_broadening(bins: np.ndarray,
         width_factors = widths[masked_block]/width_samples[i-1]
         lower_mix = np.polyval(lower_coeffs, width_factors)
         lower_weights = lower_mix * weights[masked_block]
-        print(lower_mix)
 
         if i == 1:
             hist, _ = np.histogram(x[masked_block], bins=bins,
