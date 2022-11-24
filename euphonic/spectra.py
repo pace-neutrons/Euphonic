@@ -1706,31 +1706,23 @@ def _get_cos_range(angle_range: Tuple[float]) -> Tuple[float]:
     return max(limiting_values), min(limiting_values)
 
 
+def _distribution_1d(xbins: np.ndarray, xwidth: float, shape: str = 'lorentz'
+                     ) -> np.ndarray:
+    x = _get_dist_bins(xbins)
+    if shape == 'lorentz':
+        dist = _lorentzian(x, xwidth) * np.diff(xbins).mean()
+    return dist
+
+
+def _get_dist_bins(bins: np.ndarray) -> np.ndarray:
+    # Get bins with same spacing as original, centered on zero
+    # and spanning at least twice as far; this ensures a point in bin can be
+    # distributed all the way across bin range.
+    bin_range = bins[-1] - bins[0]
+    nbins = len(bins) * 2 + 1
+
+    return np.linspace(-bin_range, bin_range, nbins, endpoint=True)
+
+
 def _lorentzian(x: np.ndarray, gamma: float) -> np.ndarray:
     return gamma/(2*math.pi*(np.square(x) + (gamma/2)**2))
-
-
-def _get_dist_bins(bins: np.ndarray, fwhm: float, extent: float
-                   ) -> np.ndarray:
-    # Ensure nbins is always odd, and each bin has the same approx width
-    # as original x/ybins
-    bin_width = np.mean(np.diff(bins))
-    nbins = int(np.ceil(2*extent*fwhm/bin_width)/2)*2 + 1
-    width = extent*fwhm
-    # Prevent xbins from being too large. If user accidentally selects a
-    # very large broadening, xwidth and therefore xbins could be
-    # extremely large. But for most cases the original nxbins should be
-    # smaller
-    if nbins > len(bins):
-        nbins = int(len(bins)/2)*2 + 1
-        width = (bins[-1] - bins[0])/2
-    return np.linspace(-width, width, nbins)
-
-
-def _distribution_1d(xbins: np.ndarray, xwidth: float, shape: str = 'lorentz',
-                     extent: float = 3.) -> np.ndarray:
-    x = _get_dist_bins(xbins, xwidth, extent)
-    if shape == 'lorentz':
-        dist = _lorentzian(x, xwidth)
-    dist = dist/np.sum(dist)  # Naively normalise
-    return dist
