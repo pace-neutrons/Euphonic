@@ -31,9 +31,8 @@ jobs:
         run: echo "PAGE_TYPE=${{ github.event.release.name }}" >> $GITHUB_ENV
       - name: Create landing page
         run: python write_doi_landing_page.py ${{ env.PAGE_TYPE }}
-      - uses: EndBug/add-and-commit@v7
+      - uses: EndBug/add-and-commit@v9
         with:
-          branch: gh-pages
           add: '["index.markdown", "versions/*.markdown"]'
           default_author: github_actions
           message: 'Update ${{ env.PAGE_TYPE }} landing page'
