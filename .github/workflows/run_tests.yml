@@ -83,7 +83,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: Doctest results
-          path: output.txt
+          path: doc/output.txt
 
 #  publish-test-results:
 #    needs: test
