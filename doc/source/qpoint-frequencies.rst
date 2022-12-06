@@ -16,7 +16,13 @@ Reading From CASTEP
 Phonon frequencies and eigenvectors can be read from a  ``.phonon`` file using
 :py:meth:`QpointFrequencies.from_castep <euphonic.qpoint_frequencies.QpointFrequencies.from_castep>`.
 
-.. code-block:: py
+.. testsetup:: quartz_phonon
+
+   fnames = 'quartz.phonon'
+   shutil.copyfile(
+       get_castep_path('quartz', 'quartz_nosplit.phonon'), fnames)
+
+.. testcode:: quartz_phonon
 
   from euphonic import QpointFrequencies
 
@@ -38,7 +44,12 @@ these files do not include the crystal information, so it must be read from a
 ``phonopy.yaml`` file, which can be specified with the ``summary_name``
 argument. A path can also be specified.
 
-.. code-block:: py
+.. testsetup:: nacl_mesh
+
+   fnames = 'NaCl'
+   shutil.copytree(get_phonopy_path('NaCl', 'mesh'), fnames)
+
+.. testcode:: nacl_mesh
 
   from euphonic import QpointFrequencies
 

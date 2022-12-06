@@ -17,17 +17,29 @@ and total DOS) they can be contained in a
 can be labelled with the ``metadata`` attributes, e.g. for a
 ``Spectrum1D`` object:
 
-.. code-block:: py
+.. testsetup:: si_pdos
 
-  >>> si_pdos.metadata
-  {'label': 'Si'}
+   from euphonic import Spectrum1D
+   si_pdos = Spectrum1D.from_json_file(get_data_path(
+       'spectrum1d', 'quartz_554_full_castep_si_adaptive_dos.json'))
+
+.. doctest:: si_pdos
+
+   >>> si_pdos.metadata
+   {'label': 'Si', 'species': 'Si'}
 
 Or, for a ``Spectrum1DCollection`` object:
 
-.. code-block:: py
+.. testsetup:: all_dos
 
-  >>> all_dos.metadata
-  {'line_data': [{'label': 'Total'}, {'label': 'O'}, {'label': 'Si'}]}
+   from euphonic import Spectrum1DCollection
+   all_dos = Spectrum1DCollection.from_json_file(get_data_path(
+       'spectrum1dcollection', 'quartz_554_full_castep_adaptive_dos.json'))
+
+.. doctest:: all_dos
+
+   >>> all_dos.metadata
+   {'line_data': [{'label': 'Total'}, {'label': 'O', 'species': 'O'}, {'label': 'Si', 'species': 'Si'}]}
 
 See the :ref:`Spectrum1D<spectrum1d>` or
 :ref:`Spectrum1DCollection<spectrum1dcollection>` documentation for further
@@ -47,7 +59,13 @@ The ``Spectrum1DCollection`` version will read both the total DOS and
 per-element PDOS. Each DOS is labelled by the
 ``Spectrum1DCollection.metadata`` attribute. An example is shown below.
 
-.. code-block:: py
+.. testsetup:: castep_dos
+
+   fnames = 'quartz-151512.phonon_dos'
+   shutil.copyfile(
+       get_castep_path('quartz', 'quartz-554-full.phonon_dos'), fnames)
+
+.. testcode:: castep_dos
 
   from euphonic import Spectrum1D, Spectrum1DCollection
 
@@ -62,6 +80,10 @@ per-element PDOS. Each DOS is labelled by the
   # View DOS labels
   print(dos_all.metadata)
 
+.. testoutput:: castep_dos
+
+   {'line_data': [{'label': 'Total'}, {'species': 'O', 'label': 'O'}, {'species': 'Si', 'label': 'Si'}]}
+
 Calculating DOS
 ===============
 
@@ -72,7 +94,13 @@ energy bin edges, with the units specified by wrapping it as a
 generic :ref:`Spectrum1D<spectrum1d>` object. For example, using
 :py:meth:`QpointFrequencies.calculate_dos <euphonic.qpoint_frequencies.QpointFrequencies.calculate_dos>`.
 
-.. code-block:: py
+.. testsetup:: quartz_phonon
+
+   fnames = 'quartz.phonon'
+   shutil.copyfile(
+       get_castep_path('quartz', 'quartz_nosplit.phonon'), fnames)
+
+.. testcode:: quartz_phonon
 
   from euphonic import ureg, QpointFrequencies
   import numpy as np
@@ -105,7 +133,13 @@ The mode widths can be estimated from the mode gradients using
 These widths can then be passed to ``calculate_dos`` through the
 ``mode_widths`` keyword argument. An example is shown below.
 
-.. code-block:: py
+.. testsetup:: quartz_fc
+
+   fnames = 'quartz.castep_bin'
+   shutil.copyfile(
+       get_castep_path('quartz', fnames), fnames)
+
+.. testcode:: quartz_fc
 
   from euphonic import ureg, ForceConstants
   from euphonic.util import mp_grid, mode_gradients_to_widths
@@ -137,7 +171,7 @@ will change the number of mode width samples; more samples will make the gaussia
 accurate but will also increase computation time. Following on from the above example,
 fast adaptive broadening can be performed as follows:
 
-.. code-block:: py
+.. testcode:: quartz_fc
 
   fast_adaptive_dos = phonons.calculate_dos(energy_bins, 
                                             mode_widths=mode_widths,
