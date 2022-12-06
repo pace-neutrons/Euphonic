@@ -32,7 +32,14 @@ and return a single ``Spectrum1D``. Note that any metadata key/value pairs
 that aren't common to both spectra will be omitted from the new object. For
 example:
 
-.. code-block:: py
+.. testsetup:: si_o_pdos
+
+   fnames = ['si_pdos.json', 'o_pdos.json']
+   for fname in fnames:
+       shutil.copyfile(
+           get_data_path('spectrum1d', 'toy_band.json'), fname)
+
+.. testcode:: si_o_pdos
 
   from euphonic import Spectrum1D
 
@@ -49,7 +56,13 @@ which broadens along the x-axis and returns a new :ref:`Spectrum1D`
 object. It can broaden with either a Gaussian or Lorentzian and requires
 a broadening FWHM in the same type of units as ``x_data``. For example:
 
-.. code-block:: py
+.. testsetup:: dos
+
+   fnames = 'dos.json'
+   shutil.copyfile(
+       get_data_path('spectrum1d', 'toy_quartz_dos.json'), fnames)
+
+.. testcode:: dos
 
   from euphonic import ureg, Spectrum1D
 
@@ -84,7 +97,7 @@ If you have multiple ``Spectrum1D`` objects with the same ``x_data``,
 they can be grouped together into a ``Spectrum1DCollection`` object.
 For example:
 
-.. code-block:: py
+.. testcode:: si_o_pdos
 
   from euphonic import Spectrum1D, Spectrum1DCollection
 
@@ -101,7 +114,14 @@ have the same ``x_data`` axes) with the ``+`` operator. This will concatenate
 their ``y_data``, returning a single ``Spectrum1DCollection`` that contains
 all the ``y_data`` of both objects. For example:
 
-.. code-block:: py
+.. testsetup:: coh_incoh_pdos
+
+   fnames = ['coherent_pdos.json', 'incoherent_pdos.json']
+   for fname in fnames:
+       shutil.copyfile(
+           get_data_path('spectrum1dcollection', 'quartz_666_coh_pdos.json'), fname)
+
+.. testcode:: coh_incoh_pdos
 
   from euphonic import Spectrum1DCollection
 
@@ -117,12 +137,12 @@ a specific spectrum as a ``Spectrum1D``, or a subset of spectra as
 another ``Spectrum1DCollection``, for example, to plot only specific
 spectra:
 
-.. code-block:: py
+.. testcode:: coh_incoh_pdos
 
   from euphonic import Spectrum1DCollection
   from euphonic.plot import plot_1d
 
-  spec1d_col = Spectrum1DCollection.from_json_file('dos.json')
+  spec1d_col = Spectrum1DCollection.from_json_file('coherent_pdos.json')
   # Plot the 1st spectrum
   spec1d_0 = spec1d_col[0]
   fig1 = plot_1d(spec1d_0)
@@ -149,54 +169,51 @@ based on their metadata using
 For example, if you have a collection ``spec1d_col`` containing
 8 spectra with the following metadata:
 
-.. code-block:: py
+.. testsetup:: metadata_spec
 
-  {'line_data': [
-     {'index': 1, 'species': 'Si', 'weighting': 'coherent'},
-     {'index': 2, 'species': 'Si', 'weighting': 'coherent'},
-     {'index': 3, 'species': 'O', 'weighting': 'coherent'},
-     {'index': 4, 'species': 'O', 'weighting': 'coherent'},
-     {'index': 1, 'species': 'Si', 'weighting': 'incoherent'},
-     {'index': 2, 'species': 'Si', 'weighting': 'incoherent'},
-     {'index': 3, 'species': 'O', 'weighting': 'incoherent'},
-     {'index': 4, 'species': 'O', 'weighting': 'incoherent'}]
-  }
+   import numpy
+   from euphonic import Spectrum1DCollection, ureg
+   fake_metadata =  {'line_data': [
+       {'index': 1, 'species': 'Si', 'weighting': 'coherent'},
+       {'index': 2, 'species': 'Si', 'weighting': 'coherent'},
+       {'index': 3, 'species': 'O', 'weighting': 'coherent'},
+       {'index': 4, 'species': 'O', 'weighting': 'coherent'},
+       {'index': 1, 'species': 'Si', 'weighting': 'incoherent'},
+       {'index': 2, 'species': 'Si', 'weighting': 'incoherent'},
+       {'index': 3, 'species': 'O', 'weighting': 'incoherent'},
+       {'index': 4, 'species': 'O', 'weighting': 'incoherent'}]}
+   spec1d_col = Spectrum1DCollection(
+       numpy.arange(5)*ureg('meV'),
+       numpy.ones((len(fake_metadata['line_data']), 5))*ureg('1/meV'),
+       metadata=fake_metadata)
 
-If you want to group and sum spectra that have the same ``weighting``:
+.. doctest:: metadata_spec
 
-.. code-block:: py
+   >>> spec1d_col.metadata
+   {'line_data': [{'index': 1, 'species': 'Si', 'weighting': 'coherent'}, {'index': 2, 'species': 'Si', 'weighting': 'coherent'}, {'index': 3, 'species': 'O', 'weighting': 'coherent'}, {'index': 4, 'species': 'O', 'weighting': 'coherent'}, {'index': 1, 'species': 'Si', 'weighting': 'incoherent'}, {'index': 2, 'species': 'Si', 'weighting': 'incoherent'}, {'index': 3, 'species': 'O', 'weighting': 'incoherent'}, {'index': 4, 'species': 'O', 'weighting': 'incoherent'}]}
 
-  weighting_pdos = spec1d_col.group_by('weighting')
+If you want to group and sum spectra that have the same ``weighting``,
+pass ``'weighting'`` to the ``group_by`` method. This would produce a
+collection containing 2 spectra with the following metadata (the ``species``
+and ``index`` metadata are not common across all the grouped spectra, so have
+been discarded):
 
-This would produce a collection containing 2 spectra with the following metadata
-(the ``index`` and ``species`` metadata are not common across all the grouped
-spectra, so have been discarded):
+.. doctest:: metadata_spec
 
-.. code-block:: py
+  >>> weighting_pdos = spec1d_col.group_by('weighting')
+  >>> weighting_pdos.metadata
+  {'line_data': [{'weighting': 'coherent'}, {'weighting': 'incoherent'}]}
 
-  {'line_data': [
-     {'weighting': 'coherent'},
-     {'weighting': 'incoherent'}]
-  }
+You can also group by multiple keys, for example you can group and sum
+spectra that have both the same ``weighting`` and ``species``, producing
+the following metadata:
 
-You can also group by multiple keys, for example to group and sum spectra that
-have both the same ``weighting`` and ``species``:
+.. doctest:: metadata_spec
+   :skipif: True # Skip due to non-deterministic metadata
 
-.. code-block:: py
-
-  weighting_species_pdos = spec1d_col.group_by('weighting', 'species')
-
-This would produce a collection containing 4 spectra with the following metadata:
-
-.. code-block:: py
-
-  {'line_data': [
-     {'species': 'Si', 'weighting': 'coherent'},
-     {'species': 'O', 'weighting': 'coherent'},
-     {'species': 'Si', 'weighting': 'incoherent'},
-     {'species': 'O', 'weighting': 'incoherent'}]
-  }
-
+   >>> weighting_species_pdos = spec1d_col.group_by('weighting', 'species')
+   >>> weighting_species_pdos.metadata
+   {'line_data': [{'weighting': 'coherent', 'species': 'Si'}, {'species': 'O', 'weighting': 'coherent'}, {'weighting': 'incoherent', 'species': 'Si'}, {'weighting': 'incoherent', 'species': 'O'}]}
 
 Selecting By Metadata
 ---------------------
@@ -205,67 +222,41 @@ You can select specific spectra from a ``Spectrum1DCollection`` based
 on their metadata using
 :py:meth:`Spectrum1DCollection.select <euphonic.spectra.Spectrum1DCollection.select>`.
 For example, if you have a collection ``spec1d_col`` containing
-6 spectra with the following metadata:
+8 spectra with the following metadata:
 
-.. code-block:: py
+.. doctest:: metadata_spec
 
-  {'line_data': [
-     {'species': 'Si', 'weighting': 'coherent'},
-     {'species': 'O', 'weighting': 'coherent'},
-     {'species': 'Si', 'weighting': 'incoherent'},
-     {'species': 'O', 'weighting': 'incoherent'},
-     {'species': 'Si', 'weighting': 'coherent-plus-incoherent'},
-     {'species': 'O', 'weighting': 'coherent-plus-incoherent'}]
-  }
+   >>> spec1d_col.metadata
+   {'line_data': [{'index': 1, 'species': 'Si', 'weighting': 'coherent'}, {'index': 2, 'species': 'Si', 'weighting': 'coherent'}, {'index': 3, 'species': 'O', 'weighting': 'coherent'}, {'index': 4, 'species': 'O', 'weighting': 'coherent'}, {'index': 1, 'species': 'Si', 'weighting': 'incoherent'}, {'index': 2, 'species': 'Si', 'weighting': 'incoherent'}, {'index': 3, 'species': 'O', 'weighting': 'incoherent'}, {'index': 4, 'species': 'O', 'weighting': 'incoherent'}]}
 
-If you want to select only the spectra where ``weighting='coherent'``:
+If you want to select only the spectra where ``weighting='coherent'``,
+use the ``select`` method, which would create a collection containing
+3 spectra, with the following metadata:
 
-.. code-block:: py
+.. doctest:: metadata_spec
 
-  coh_pdos = spec1d_col.select(weighting='coherent')
+   >>> coh_pdos = spec1d_col.select(weighting='coherent')
+   >>> coh_pdos.metadata
+   {'weighting': 'coherent', 'line_data': [{'index': 1, 'species': 'Si'}, {'index': 2, 'species': 'Si'}, {'index': 3, 'species': 'O'}, {'index': 4, 'species': 'O'}]}
 
-This would create a collection containing 2 spectra, with the following
-metadata:
+You can also select multiple values for a specific key. For example, to
+select spectra where ``index=1`` or ``index=2'``:
 
-.. code-block:: py
+.. doctest:: metadata_spec
 
-  {'line_data': [
-     {'species': 'Si', 'weighting': 'coherent'},
-     {'species': 'O', 'weighting': 'coherent'}]
-  }
+   >>> coh_or_incoh_pdos = spec1d_col.select(index=[1, 2])
+   >>> coh_or_incoh_pdos.metadata
+   {'species': 'Si', 'line_data': [{'index': 1, 'weighting': 'coherent'}, {'index': 1, 'weighting': 'incoherent'}, {'index': 2, 'weighting': 'coherent'}, {'index': 2, 'weighting': 'incoherent'}]}
 
-You can also select multiple values for a specific key. To select spectra
-where ``weighting='coherent'`` or ``weighting='incoherent'``:
-
-.. code-block:: py
-
-  coh_or_incoh_pdos = spec1d_col.select(weighting=['coherent', 'incoherent'])
-
-This would create a collection containing 4 spectra, with the following
-metadata:
-
-.. code-block:: py
-
-  {'line_data': [
-     {'species': 'Si', 'weighting': 'coherent'},
-     {'species': 'O', 'weighting': 'coherent'},
-     {'species': 'Si', 'weighting': 'incoherent'},
-     {'species': 'O', 'weighting': 'incoherent'}]
-  }
-
-You can also select by multiple key/values. To select only the spectrum with
+You can also select by multiple key/values. To select only the spectra with
 ``weighting='coherent'`` and ``species='Si'``:
 
-.. code-block:: py
+.. doctest:: metadata_spec
+   :skipif: True # Skip due to non-deterministic metadata
 
-  coh_si_pdos = spec1d_col.select(weighting='coherent', species='Si')
-
-This would create a collection containing only one spectrum, with the
-following metadata:
-
-.. code-block:: py
-
-  {'species': 'Si', 'weighting': 'coherent'}
+   >>> coh_si_pdos = spec1d_col.select(weighting='coherent', species='Si')
+   >>> coh_si_pdos.metadata
+   {'weighting': 'coherent', 'species': 'Si', 'line_data': [{'index': 1}, {'index': 2}]}
 
 Summing Spectra
 ---------------
@@ -303,7 +294,13 @@ and requires a broadening FWHM in the same type of units as
 ``x_data``/``y_data`` for broadening along the x/y-axis respectively.
 For example:
 
-.. code-block:: py
+.. testsetup:: sqw
+
+   fnames = 'sqw.json'
+   shutil.copyfile(
+       get_data_path('spectrum2d', 'lzo_57L_bragg_sqw.json'), fnames)
+
+.. testcode:: sqw
 
   from euphonic import ureg, Spectrum2D
 

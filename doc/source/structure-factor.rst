@@ -29,7 +29,13 @@ StructureFactor is used. If there is no temperature in StructureFactor,
 then it must be provided in the function arguments. This function returns a
 generic :ref:`Spectrum2D` object. 
 
-.. code-block:: py
+.. testsetup:: sf_100K
+
+  fnames = 'sf_100K.json'
+  shutil.copyfile(
+      get_data_path('structure_factor', 'quartz', 'quartz_structure_factor.json'), fnames)
+
+.. testcode:: sf_100K
 
   from euphonic import ureg, StructureFactor
   import numpy as np
