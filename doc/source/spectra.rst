@@ -231,7 +231,7 @@ For example, if you have a collection ``spec1d_col`` containing
 
 If you want to select only the spectra where ``weighting='coherent'``,
 use the ``select`` method, which would create a collection containing
-3 spectra, with the following metadata:
+4 spectra, with the following metadata:
 
 .. doctest:: metadata_spec
 
@@ -240,7 +240,7 @@ use the ``select`` method, which would create a collection containing
    {'weighting': 'coherent', 'line_data': [{'index': 1, 'species': 'Si'}, {'index': 2, 'species': 'Si'}, {'index': 3, 'species': 'O'}, {'index': 4, 'species': 'O'}]}
 
 You can also select multiple values for a specific key. For example, to
-select spectra where ``index=1`` or ``index=2'``:
+select spectra where ``index=1`` or ``index=2``:
 
 .. doctest:: metadata_spec
 
