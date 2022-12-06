@@ -44,9 +44,12 @@ a function:
     shutil.copyfile(
         get_castep_path('quartz', 'quartz_nosplit.phonon'), fnames)
 
+    import numpy
+    numpy.set_printoptions(precision=3, linewidth=52, suppress=True)
+
 .. testcode:: quartz_phonon
 
-  from euphonic import ureg, QpointPhononModes
+  from euphonic import QpointPhononModes, ureg
 
   phonons = QpointPhononModes.from_castep('quartz.phonon')
 
@@ -70,24 +73,24 @@ Each ``Quantity`` attribute has an associated string attribute that can
 be used to change the units. See the following example to change the units
 of frequency in ``QpointPhononModes``:
 
-.. testcode:: quartz_phonon
+.. doctest:: quartz_phonon
 
-  >>> from euphonic import QpointPhononModes
-  >>> phonons = QpointPhononModes.from_castep('quartz.phonon')
-  >>> phonons.frequencies[0]
-  <Quantity([  0.38193331   0.61106305   0.69303768  15.86537413  15.88218266
-    27.64203018  31.98753254  32.21911407  42.20189648  42.90662972
-    46.91907755  48.26610037  54.57118794  56.89834674  60.53664449
-    61.56378648  86.09430023  86.53104436  95.78403943  98.8705196
-   100.38739904 132.68487558 133.97647412 134.71659207 142.55121327
-   142.97971084 152.80832126], 'millielectron_volt')>
-  >>> phonons.frequencies_unit = '1/cm'
-  >>> phonons.frequencies[0]
-  <Quantity([   3.0805      4.928556    5.589726  127.962875  128.098445  222.948014
-    257.996855  259.864686  340.381258  346.065315  378.42789   389.292362
-    440.146324  458.916126  488.260977  496.545436  694.397377  697.919956
-    772.550396  797.444538  809.678996 1070.175718 1080.593163 1086.562617
-   1149.7531   1153.209166 1232.482257], '1 / centimeter')>
+   >>> from euphonic import QpointPhononModes
+   >>> phonons = QpointPhononModes.from_castep('quartz.phonon')
+   >>> phonons.frequencies[5]
+   <Quantity([  7.597  14.964  15.853  17.     21.604  27.9
+     33.892  36.467  37.509  41.034  46.834  50.083
+     52.757  53.321  58.286  62.749  80.168  88.254
+     98.021 100.962 101.436 132.376 134.143 134.503
+    142.526 145.486 149.365], 'millielectron_volt')>
+   >>> phonons.frequencies_unit = '1/cm'
+   >>> phonons.frequencies[5]
+   <Quantity([  61.271  120.695  127.866  137.113  174.25
+     225.028  273.359  294.127  302.533  330.961
+     377.744  403.949  425.516  430.063  470.105
+     506.108  646.598  711.815  790.593  814.312
+     818.136 1067.682 1081.933 1084.837 1149.553
+    1173.42  1204.709], '1 / centimeter')>
 
 The pattern is the same for any ``Quantity`` attribute e.g.
 ``ForceConstants.force_constants`` has ``ForceConstants.force_constants_unit``,
@@ -104,22 +107,23 @@ example, to set new ``Crystal.cell_vectors``:
     shutil.copyfile(
         get_castep_path('quartz', 'quartz.castep_bin'), fnames)
 
+    import numpy
+    numpy.set_printoptions(precision=3, linewidth=52)
+
 .. doctest:: quartz_fc
 
-  >>> from euphonic import ForceConstants
-  >>> fc = ForceConstants.from_castep('quartz.castep_bin')
-  >>> fc.crystal.cell_vectors
-  <Quantity([[ 2.42617588 -4.20225989  0.        ]
-   [ 2.42617588  4.20225989  0.        ]
-   [ 0.          0.          5.35030451]], 'angstrom')>
-  >>> fc.crystal.cell_vectors = np.array(
-  ...     [[ 4.85235176, -8.40451979, 0.],
-  ...      [ 4.85235176,  8.40451979, 0.],
-  ...      [ 0., 0., 10.70060903]])*ureg('angstrom')
-  >>> fc.crystal.cell_vectors
-  <Quantity([[ 4.85235176 -8.40451979  0.        ]
-   [ 4.85235176  8.40451979  0.        ]
-   [ 0.          0.         10.70060903]], 'angstrom')>
+   >>> import numpy as np
+   >>> from euphonic import ForceConstants, ureg
+   >>> fc = ForceConstants.from_castep('quartz.castep_bin')
+   >>> fc.crystal.cell_vectors
+   <Quantity([[ 2.426 -4.202  0.   ]
+    [ 2.426  4.202  0.   ]
+    [ 0.     0.     5.35 ]], 'angstrom')>
+   >>> fc.crystal.cell_vectors = np.ones((3, 3))*ureg('angstrom')
+   >>> fc.crystal.cell_vectors
+   <Quantity([[1. 1. 1.]
+    [1. 1. 1.]
+    [1. 1. 1.]], 'angstrom')>
 
 However as dimensioned attributes are properties, individual elements can't be
 set by indexing, for example the following to set a single element of
@@ -127,26 +131,27 @@ set by indexing, for example the following to set a single element of
 
 .. doctest:: quartz_fc
 
-  >>> from euphonic import ForceConstants
-  >>> fc = ForceConstants.from_castep('quartz.castep_bin')
-  >>> fc.crystal.atom_mass
-  <Quantity([15.99939997 15.99939997 15.99939997 15.99939997 15.99939997 15.99939997
-   28.08549995 28.08549995 28.08549995], 'unified_atomic_mass_unit')>
-  >>> fc.crystal.atom_mass[0] = 17.999*ureg('amu')
-  >>> fc.crystal.atom_mass
-  <Quantity([15.99939997 15.99939997 15.99939997 15.99939997 15.99939997 15.99939997
-   28.08549995 28.08549995 28.08549995], 'unified_atomic_mass_unit')>
+   >>> import numpy as np
+   >>> from euphonic import ForceConstants, ureg
+   >>> fc = ForceConstants.from_castep('quartz.castep_bin')
+   >>> fc.crystal.atom_mass
+   <Quantity([15.999 15.999 15.999 15.999 15.999 15.999 28.085
+    28.085 28.085], 'unified_atomic_mass_unit')>
+   >>> fc.crystal.atom_mass[0] = 17.999*ureg('amu')
+   >>> fc.crystal.atom_mass
+   <Quantity([15.999 15.999 15.999 15.999 15.999 15.999 28.085
+    28.085 28.085], 'unified_atomic_mass_unit')>
 
 Nothing has changed! Instead, get the entire array, change any desired entries and
 then set the whole attribute as follows:
 
 .. doctest:: quartz_fc
 
-  >>> from euphonic import ForceConstants
-  >>> fc = ForceConstants.from_castep('quartz.castep_bin')
-  >>> atom_mass = fc.crystal.atom_mass
-  >>> atom_mass[0] = 17.999*ureg('amu')
-  >>> fc.crystal.atom_mass = atom_mass
-  >>> fc.crystal.atom_mass
-  <Quantity([17.999      15.99939997 15.99939997 15.99939997 15.99939997 15.99939997
-   28.08549995 28.08549995 28.08549995], 'unified_atomic_mass_unit')>
+   >>> from euphonic import ForceConstants, ureg
+   >>> fc = ForceConstants.from_castep('quartz.castep_bin')
+   >>> atom_mass = fc.crystal.atom_mass
+   >>> atom_mass[0] = 17.999*ureg('amu')
+   >>> fc.crystal.atom_mass = atom_mass
+   >>> fc.crystal.atom_mass
+   <Quantity([17.999 15.999 15.999 15.999 15.999 15.999 28.085
+    28.085 28.085], 'unified_atomic_mass_unit')>
