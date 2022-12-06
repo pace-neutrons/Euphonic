@@ -17,7 +17,7 @@ Units in euphonic are accessed through ``euphonic.ureg``, which is a
 create temperature as a ``Quantity`` with units in Kelvin rather than a plain
 float:
 
-.. code-block:: py
+.. testcode::
 
   from euphonic import ureg
   temperature = 5.0*ureg('K')
@@ -25,7 +25,7 @@ float:
 This can also be done with Numpy arrays, to create an array with units. For
 example, to create an array of energy bins in meV:
 
-.. code-block:: py
+.. testcode::
 
   from euphonic import ureg
   import numpy as np
@@ -38,7 +38,13 @@ Many Euphonic functions require ``Quantity`` wrapped values as arguments.
 Simply import the unit registry and create a ``Quantity``, then pass it to
 a function:
 
-.. code-block:: py
+.. testsetup:: quartz_phonon
+
+    fnames = 'quartz.phonon'
+    shutil.copyfile(
+        get_castep_path('quartz', 'quartz_nosplit.phonon'), fnames)
+
+.. testcode:: quartz_phonon
 
   from euphonic import ureg, QpointPhononModes
 
@@ -64,7 +70,7 @@ Each ``Quantity`` attribute has an associated string attribute that can
 be used to change the units. See the following example to change the units
 of frequency in ``QpointPhononModes``:
 
-.. code-block:: py
+.. testcode:: quartz_phonon
 
   >>> from euphonic import QpointPhononModes
   >>> phonons = QpointPhononModes.from_castep('quartz.phonon')
@@ -92,7 +98,13 @@ The pattern is the same for any ``Quantity`` attribute e.g.
 Each dimensioned property also has a setter which allows it to be set. For
 example, to set new ``Crystal.cell_vectors``:
 
-.. code-block:: py
+.. testsetup:: quartz_fc
+
+    fnames = 'quartz.castep_bin'
+    shutil.copyfile(
+        get_castep_path('quartz', 'quartz.castep_bin'), fnames)
+
+.. doctest:: quartz_fc
 
   >>> from euphonic import ForceConstants
   >>> fc = ForceConstants.from_castep('quartz.castep_bin')
@@ -113,7 +125,7 @@ However as dimensioned attributes are properties, individual elements can't be
 set by indexing, for example the following to set a single element of
 ``Crystal.atom_mass`` does not work:
 
-.. code-block:: py
+.. doctest:: quartz_fc
 
   >>> from euphonic import ForceConstants
   >>> fc = ForceConstants.from_castep('quartz.castep_bin')
@@ -128,7 +140,7 @@ set by indexing, for example the following to set a single element of
 Nothing has changed! Instead, get the entire array, change any desired entries and
 then set the whole attribute as follows:
 
-.. code-block:: py
+.. doctest:: quartz_fc
 
   >>> from euphonic import ForceConstants
   >>> fc = ForceConstants.from_castep('quartz.castep_bin')
