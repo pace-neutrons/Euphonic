@@ -1,13 +1,16 @@
 name: test-release
 on:
-  push:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'The Euphonic release version to test e.g. 0.6.1'
+        required: true
 
 jobs:
   test:
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
-        version: [1.0.0]
       fail-fast: false
     runs-on: ${{ matrix.os }}
     steps:
@@ -26,7 +29,7 @@ jobs:
       - name: Run tests
         shell: bash -l {0}
         env:
-          EUPHONIC_VERSION: ${{ matrix.version }}
+          EUPHONIC_VERSION: ${{ github.event.inputs.version }}
         run: python -m tox -c release_tox.ini
       - name: Upload test results
         if: always()
