@@ -1,12 +1,5 @@
 name: run-tests
 on:
-  push:
-    branches:
-      - '**master**'
-      - '**_run_ci**'
-      - '**release**'
-  pull_request:
-    types: [opened, reopened, labeled, synchronize]
   workflow_dispatch:
 
 jobs:
