@@ -20,7 +20,7 @@ or it can be read programatically as follows:
 The latest version of the citation file can also be found in Euphonic's code
 repository `here <https://github.com/pace-neutrons/Euphonic/blob/master/CITATION.cff>`_.
 
-Please also cite the following publication:
+Please cite both the Euphonic software itself and the following publication:
 
 * Fair R.L., Jackson A.J., Voneshen D.J., Jochym D.B., Le M.D., Refson K., Perring T.G.
   *Euphonic: inelastic neutron scattering simulations from force constants and visualization tools for phonon properties*.
