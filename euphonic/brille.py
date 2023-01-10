@@ -77,8 +77,10 @@ class BrilleInterpolator:
         frequencies = vals.squeeze(axis=-1)*ureg('hartree').to('meV')
         # Eigenvectors in grid are stored in cell vectors basis,
         # convert to Cartesian
-        vecs_cart = self._br_evec_to_eu(
-            vecs, cell_vectors=self.crystal._cell_vectors)
+#        vecs_cart = self._br_evec_to_eu(
+#            vecs, cell_vectors=self.crystal._cell_vectors)
+        n_branches = vecs.shape[1]
+        vecs_cart = vecs.view().reshape(-1, n_branches, n_branches//3, 3)
         return QpointPhononModes(
             self.crystal, qpts, frequencies, vecs_cart)
 
@@ -114,7 +116,8 @@ class BrilleInterpolator:
     def _br_grid_calculate_phonons(grid, qpts, **kwargs):
         qpts = np.ascontiguousarray(qpts)
         if not kwargs:
-            kwargs = {'useparallel': True, 'threads': cpu_count()}
+            #kwargs = {'useparallel': True, 'threads': cpu_count()}
+            kwargs = {'useparallel': False, 'threads': 1}
         return grid.ir_interpolate_at(qpts, **kwargs)
 
     @staticmethod
@@ -189,6 +192,7 @@ class BrilleInterpolator:
         dataset = spg.get_symmetry_dataset(cell, symprec=1e-8)
         rotations = dataset['rotations']  # in fractional
         translations = dataset['translations']  # in fractional
+#        import pdb; pdb.set_trace()
 
         symmetry = br.Symmetry(rotations, translations)
         basis = br.Basis(cell[1], cell[2])
@@ -247,8 +251,9 @@ class BrilleInterpolator:
             grid.rlu, **interpolation_kwargs)
         # Convert eigenvectors from Cartesian to cell vectors basis
         # for storage in grid
-        evecs_basis = np.einsum('ba,ijkb->ijka', np.linalg.inv(cell_vectors),
-                                phonons.eigenvectors)
+#        evecs_basis = np.einsum('ba,ijkb->ijka', np.linalg.inv(cell_vectors),
+#                                phonons.eigenvectors)
+        evecs_basis = phonons.eigenvectors
         n_atoms = crystal.n_atoms
         frequencies = np.reshape(phonons._frequencies,
                                  phonons._frequencies.shape + (1,))
