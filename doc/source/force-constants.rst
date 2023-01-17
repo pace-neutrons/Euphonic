@@ -117,7 +117,13 @@ The force constants matrix and other required information can be read from a
 ``.castep_bin`` or ``.check`` file with
 :py:meth:`ForceConstants.from_castep <euphonic.force_constants.ForceConstants.from_castep>`:
 
-.. code-block:: py
+.. testsetup:: quartz_fc
+
+  fnames = 'quartz'
+  os.mkdir(fnames)
+  shutil.copy(get_castep_path('quartz', 'quartz.castep_bin'), fnames)
+
+.. testcode:: quartz_fc
 
   from euphonic import ForceConstants
 
@@ -146,24 +152,30 @@ A path keyword argument can be supplied (if the files are in another
 directory), and by default ``phonopy.yaml`` is read, but the filename can be
 changed with the ``summary_name`` keyword argument:
 
-.. code-block:: py
+.. testsetup:: nacl_yaml
+
+  fnames = 'NaCl'
+  shutil.copytree(get_phonopy_path('NaCl'), fnames)
+
+.. testcode:: nacl_yaml
 
   from euphonic import ForceConstants
 
   fc = ForceConstants.from_phonopy(path='NaCl',
-                                   summary_name='phonopy_fc.yaml')
+                                   summary_name='phonopy_nacl.yaml')
 
 If you are using an older version of Phonopy, the force constants and born
 charges can also be read from Phonopy plaintext or hdf5 files by specifying the
 ``fc_name`` and ``born_name`` keyword arguments:
 
-.. code-block:: py
+.. testcode:: nacl_yaml
 
   from euphonic import ForceConstants
 
   fc = ForceConstants.from_phonopy(path='NaCl',
+                                   summary_name='phonopy_nacl.yaml',
                                    fc_name='force_constants.hdf5',
-                                   born_name='BORN')
+                                   born_name='BORN_nacl')
 
 
 .. _fc_read_other_programs:
@@ -178,7 +190,45 @@ Some information must be provided as a pint ``Quantity`` with both a magnitude a
 For more details on the shape of each array, see the docstrings for each object.
 An example is shown below, assuming that the inputs are being loaded from existing ``.npy`` files:
 
-.. code-block:: py
+.. testsetup:: nacl_fc_convert_npy
+
+  import numpy as np
+  import json
+  from euphonic import ForceConstants
+
+  # Create ForceConstants constructor input files
+  fc_attrs = ['cell_vectors', 'atom_r', 'atom_type', 'atom_mass',
+              'force_constants', 'sc_matrix', 'cell_origins',
+              'born', 'dielectric']
+  fnames = [attr + '.npy' for attr in fc_attrs]
+  fc = ForceConstants.from_phonopy(path=get_phonopy_path('NaCl'),
+                                   summary_name='phonopy_nacl.yaml')
+  for attr, fname in zip(fc_attrs, fnames):
+      try:
+          val = getattr(fc, attr)
+      except AttributeError:
+          val = getattr(fc.crystal, attr)
+      try:
+          np.save(fname, val.magnitude)
+      except AttributeError:
+          np.save(fname, val)
+
+  convert_json = get_data_path(
+      'force_constants', 'NaCl_convert_full_fc_data.json')
+  with open(convert_json, 'r') as fp:
+      fc_convert_data = json.load(fp)
+  fnames_convert = ['force_constants_atomic_phase.npy',
+                    'supercell_atom_r.npy', 'unit_to_supercell_atom_idx.npy',
+                    'super_to_unit_cell_atom_idx.npy']
+  data_keys = ['force_constants', 'sc_atom_r', 'uc_to_sc_idx', 'sc_to_uc_idx']
+  for key, fname in zip(data_keys, fnames_convert):
+      np.save(fname, fc_convert_data[key])
+  fnames += fnames_convert
+  # Delete imports so any imports required by testcode must
+  # be correctly imported there
+  del np, ForceConstants
+
+.. testcode:: nacl_fc_convert_npy
 
   import numpy as np
   from euphonic import ureg, Crystal, ForceConstants
@@ -207,7 +257,7 @@ All that is required are the coordinates of the atoms in the unit cell and super
 the supercell matrix, and information on how atoms in the unit cell index into the supercell and vice versa.
 For more details see the function docstring. An example is below:
 
-.. code-block:: py
+.. testcode:: nacl_fc_convert_npy
 
   import numpy as np
   from euphonic import ureg, Crystal, ForceConstants
@@ -248,11 +298,10 @@ This can be done using the class method
 :py:meth:`ForceConstants.from_total_fc_with_dipole <euphonic.force_constants.ForceConstants.from_total_fc_with_dipole>`.
 Note that the force constants must have a Euphonic-like shape before using this method. An example is below:
 
-.. code-block:: py
+.. testcode:: nacl_fc_convert_npy
 
   import numpy as np
   from euphonic import ureg, Crystal, ForceConstants
-  from euphonic.util import convert_fc_phases
 
   # Load arrays from files and apply any required units
   cell_vectors = np.load('cell_vectors.npy')*ureg('angstrom')
@@ -267,7 +316,7 @@ Note that the force constants must have a Euphonic-like shape before using this 
 
   # Create a Crystal object
   crystal = Crystal(cell_vectors, atom_r, atom_type, atom_mass)
-  # Create a ForceConstants object from the long-ranged force constants
+  # Create a ForceConstants object from the total force constants
   fc = ForceConstants.from_total_fc_with_dipole(
     crystal, force_constants, sc_matrix, cell_origins, born, dielectric)
 
@@ -283,7 +332,7 @@ Phonon frequencies and eigenvectors are calculated using
 recommended q-point path for plotting bandstructures can be generated using
 `seekpath <https://seekpath.readthedocs.io/en/latest/module_guide/index.html#seekpath.getpaths.get_explicit_k_path>`_:
 
-.. code-block:: py
+.. testcode:: quartz_fc
 
   import seekpath
   import numpy as np
