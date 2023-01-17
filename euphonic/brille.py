@@ -261,8 +261,10 @@ class BrilleInterpolator:
         freq_weight = (1., 0., 0.)
         evecs = np.reshape(evecs_basis,
                            (evecs_basis.shape[0], 3*n_atoms, 3*n_atoms))
-        cost_function = 0
-        evecs_el = (0, 3*n_atoms, 0, 3, 0, cost_function)
+        n_elems = (0, 3*n_atoms, 0) # num of scalar, vector, matrix elements
+        rotates_like = 3 # Rotates like gamma
+        cost_function = (0, 0) # scalar cf, vector cf
+        evecs_el = (*n_elems, rotates_like, *cost_function)
         evecs_weight = (0., 1., 0.)
         print('Filling grid...')
         grid.fill(frequencies, freq_el, freq_weight, evecs, evecs_el,
