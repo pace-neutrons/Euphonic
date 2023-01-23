@@ -10,7 +10,7 @@ from euphonic import Spectrum1DCollection
 from tests_and_analysis.test.utils import (
     get_data_path, get_castep_path, get_phonopy_path)
 from tests_and_analysis.test.script_tests.utils import (
-    get_script_test_data_path, get_current_plot_line_data, args_to_key)
+    get_script_test_data_path, get_plot_line_data, args_to_key)
 
 pytestmark = pytest.mark.matplotlib
 # Allow tests with matplotlib marker to be collected and
@@ -73,7 +73,7 @@ class TestRegression:
     def run_dispersion_and_test_result(self, dispersion_args):
         euphonic.cli.dispersion.main(dispersion_args)
 
-        line_data = get_current_plot_line_data()
+        line_data = get_plot_line_data()
 
         with open(disp_output_file, 'r') as f:
             expected_line_data = json.load(f)[args_to_key(dispersion_args)]
@@ -155,7 +155,7 @@ def test_regenerate_disp_data(_):
         euphonic.cli.dispersion.main(disp_param)
 
         # Retrieve with gcf and write to file
-        line_data = get_current_plot_line_data()
+        line_data = get_plot_line_data()
         # Optionally only write certain keys
         keys_to_replace = []
         if len(keys_to_replace) > 0:

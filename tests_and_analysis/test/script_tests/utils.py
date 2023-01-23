@@ -5,7 +5,7 @@ try:
 except ModuleNotFoundError:
     pass
 from copy import copy
-from typing import Dict, List, Union, Tuple
+from typing import Dict, List, Union, Tuple, Optional
 from ..utils import get_data_path
 
 
@@ -32,10 +32,12 @@ def get_script_test_data_path(*subpaths: Tuple[str]) -> str:
     return get_data_path('script_data', *subpaths)
 
 
-def get_current_plot_line_data() -> Dict[str, Union[str,
-                                                    List[str],
-                                                    List[List[List[float]]]]]:
-    fig = matplotlib.pyplot.gcf()
+def get_plot_line_data(fig: Optional[matplotlib.figure.Figure] = None
+                       ) -> Dict[str, Union[str,
+                                 List[str],
+                                 List[List[List[float]]]]]:
+    if fig is None:
+        fig = matplotlib.pyplot.gcf()
     data = get_fig_label_data(fig)
     data['xy_data'] = [line.get_xydata().T.tolist()
                        for line in fig.axes[0].lines]
@@ -44,7 +46,7 @@ def get_current_plot_line_data() -> Dict[str, Union[str,
 
 def get_fig_label_data(fig) -> Dict[str, Union[str, List[str]]]:
     label_data = {'x_ticklabels': [],
-                  'title': fig._suptitle.get_text()}
+                  'title': fig._suptitle.get_text() if fig._suptitle is not None else None}
 
     # Get axis labels from whichever axis has them.
     # Collect all tick labels from visible axes only,

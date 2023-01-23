@@ -11,7 +11,7 @@ from euphonic import Spectrum1D
 from tests_and_analysis.test.utils import (
     get_data_path, get_castep_path, get_phonopy_path)
 from tests_and_analysis.test.script_tests.utils import (
-    get_script_test_data_path, get_current_plot_line_data,
+    get_script_test_data_path, get_plot_line_data,
     args_to_key)
 from euphonic.cli.utils import _get_pdos_weighting
 
@@ -69,7 +69,7 @@ class TestRegression:
     def run_dos_and_test_result(self, dos_args):
         euphonic.cli.dos.main(dos_args)
 
-        line_data = get_current_plot_line_data()
+        line_data = get_plot_line_data()
 
         with open(dos_output_file, 'r') as f:
             expected_line_data = json.load(f)[args_to_key(dos_args)]
@@ -156,7 +156,7 @@ def test_regenerate_dos_data(_):
         euphonic.cli.dos.main(dos_param)
 
         # Retrieve with gcf and write to file
-        line_data = get_current_plot_line_data()
+        line_data = get_plot_line_data()
         # Optionally only write certain keys
         keys_to_replace = []
         if len(keys_to_replace) > 0:
