@@ -171,7 +171,6 @@ class BrilleInterpolator:
             raise ValueError(f'Grid type "{grid_type}" not recognised')
 
         crystal = force_constants.crystal
-        cell_vectors = crystal._cell_vectors
         cell = crystal.to_spglib_cell()
 
         dataset = spg.get_symmetry_dataset(cell, symprec=1e-8)
@@ -240,7 +239,7 @@ class BrilleInterpolator:
         freq_el = (1,)
         freq_weight = (1., 0., 0.)
         evecs = np.reshape(phonons.eigenvectors,
-                           (phonons.eigenvectors.shape[0], 3*n_atoms, 3*n_atoms))
+                           (*phonons.eigenvectors.shape[:2], 3*n_atoms))
         n_elems = (0, 3*n_atoms, 0) # num of scalar, vector, matrix elements
         rotates_like = 2 # rotates like gamma
         length_unit = 1 # angstrom units
