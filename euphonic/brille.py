@@ -75,14 +75,10 @@ class BrilleInterpolator:
         vals, vecs = self._br_grid_calculate_phonons(
             self._grid, qpts, **kwargs)
         frequencies = vals.squeeze(axis=-1)*ureg('hartree').to('meV')
-        # Eigenvectors in grid are stored in cell vectors basis,
-        # convert to Cartesian
-#        vecs_cart = self._br_evec_to_eu(
-#            vecs, cell_vectors=self.crystal._cell_vectors)
         n_branches = vecs.shape[1]
-        vecs_cart = vecs.view().reshape(-1, n_branches, n_branches//3, 3)
+        vecs = vecs.view().reshape(-1, n_branches, n_branches//3, 3)
         return QpointPhononModes(
-            self.crystal, qpts, frequencies, vecs_cart)
+            self.crystal, qpts, frequencies, vecs)
 
     def calculate_qpoint_frequencies(self, qpts: np.ndarray, **kwargs
                                       ) -> QpointFrequencies:
@@ -116,19 +112,8 @@ class BrilleInterpolator:
     def _br_grid_calculate_phonons(grid, qpts, **kwargs):
         qpts = np.ascontiguousarray(qpts)
         if not kwargs:
-            #kwargs = {'useparallel': True, 'threads': cpu_count()}
-            kwargs = {'useparallel': False, 'threads': 1}
+            kwargs = {'useparallel': True, 'threads': cpu_count()}
         return grid.ir_interpolate_at(qpts, **kwargs)
-
-    @staticmethod
-    def _br_evec_to_eu(br_evecs, cell_vectors=None):
-        n_branches = br_evecs.shape[1]
-        eu_evecs = br_evecs.view().reshape(-1, n_branches, n_branches//3, 3)
-        if cell_vectors is not None:
-            # Convert Brille evecs (stored in basis coordinates) to
-            # Cartesian coordinates
-            eu_evecs = np.einsum('ab,ijka->ijkb', cell_vectors, eu_evecs)
-        return eu_evecs
 
     @classmethod
     def from_force_constants(
@@ -192,7 +177,6 @@ class BrilleInterpolator:
         dataset = spg.get_symmetry_dataset(cell, symprec=1e-8)
         rotations = dataset['rotations']  # in fractional
         translations = dataset['translations']  # in fractional
-#        import pdb; pdb.set_trace()
 
         symmetry = br.Symmetry(rotations, translations)
         basis = br.Basis(cell[1], cell[2])
@@ -204,7 +188,7 @@ class BrilleInterpolator:
         ac = br.ApproxConfig()
         ac.real_space_tolerance = 1e-8
         ac.reciprocal_space_tolerance = 1e-8
-        bz = br.BrillouinZone(lattice)#, approx_config=ac)
+        bz = br.BrillouinZone(lattice, approx_config=ac)
 
         print('Generating grid...')
         vol = bz.ir_polyhedron.volume
@@ -249,23 +233,18 @@ class BrilleInterpolator:
         interpolation_kwargs['reduce_qpts'] = False
         phonons = force_constants.calculate_qpoint_phonon_modes(
             grid.rlu, **interpolation_kwargs)
-        # Convert eigenvectors from Cartesian to cell vectors basis
-        # for storage in grid
-#        evecs_basis = np.einsum('ba,ijkb->ijka', np.linalg.inv(cell_vectors),
-#                                phonons.eigenvectors)
-        evecs_basis = phonons.eigenvectors
+
         n_atoms = crystal.n_atoms
         frequencies = np.reshape(phonons._frequencies,
                                  phonons._frequencies.shape + (1,))
         freq_el = (1,)
         freq_weight = (1., 0., 0.)
-        evecs = np.reshape(evecs_basis,
-                           (evecs_basis.shape[0], 3*n_atoms, 3*n_atoms))
+        evecs = np.reshape(phonons.eigenvectors,
+                           (phonons.eigenvectors.shape[0], 3*n_atoms, 3*n_atoms))
         n_elems = (0, 3*n_atoms, 0) # num of scalar, vector, matrix elements
         rotates_like = 2 # rotates like gamma
         length_unit = 1 # angstrom units
-        cost_function = (0, 0) # scalar cf, vector cf
-        evecs_el = (*n_elems, rotates_like, length_unit, *cost_function)
+        evecs_el = (*n_elems, rotates_like, length_unit)
         evecs_weight = (0., 1., 0.)
         print('Filling grid...')
         grid.fill(frequencies, freq_el, freq_weight, evecs, evecs_el,
