@@ -87,6 +87,28 @@ This is a simple example, but the same applies to more realistic 3D structures.
 This transformation is done automatically when reading from Phonopy.
 If reading force constants from another program, there is a function to help with this transformation, see :ref:`Reading From Other Programs<fc_read_other_programs>`.
 
+**Dipole-dipole Force Constants**
+
+For materials without dipole-dipole interactions (non-zero Born effective charges) force constants typically decay as :math:`1/r^{5-7}`, but if dipole-dipole interactions are present, they only decay at :math:`1/r^3`.
+It is often not computationally practical to compute the force constants at such a distance.
+Fortunately there is an analytical expression for these dipole interactions, which can be applied to the dynamical matrix to produce the correct phonon frequencies and displacements.
+However, to avoid double counting some of the dipole-dipole interactions, the force constants matrix from which the dynamical matrix is calculated must not already include the short-ranged part of the dipole interactions.
+This is represented in equation 78 in `Gonze & Lee, 1997 <https://doi.org/10.1103/PhysRevB.55.10355>`_:
+
+.. math::
+
+  C = C^{SR} + C^{DD}
+
+Where :math:`C` is the 'total' force constants matrix containing both short-ranged interactions and long-ranged dipole interactions,
+:math:`C^{SR}` is the force constants matrix containing only the short-ranged interactions (i.e. no dipole interactions),
+and :math:`C^{DD}` is the force constants matrix containing only the long-ranged dipole interactions,
+and all matrices have the same shape and indexing and contain interactions to the same cut-off distance.
+To correctly apply the correction to the resulting dynamical matrix, :math:`C^{SR}` must be used, which is what Euphonic requires.
+Some codes (e.g. Phonopy) output :math:`C` so must be converted.
+This conversion is done automatically when reading from Phonopy, but if reading force constants from another program, there is a class method
+:py:meth:`ForceConstants.from_total_fc_with_dipole <euphonic.force_constants.ForceConstants.from_total_fc_with_dipole>`
+which can do this transformation. An example of this is shown in :ref:`Reading From Other Programs<fc_read_other_programs>`
+
 
 Reading From CASTEP
 -------------------
@@ -175,6 +197,8 @@ An example is shown below, assuming that the inputs are being loaded from existi
   # Create a ForceConstants object, using the Crystal object
   fc = ForceConstants(crystal, force_constants, sc_matrix, cell_origins)
 
+**Changing Phase Convention**
+
 If, as described in the :ref:`Force Constants Format<fc_format>` section, the source program uses the atomic coordinate phase convention, there may be some re-indexing required to get the force constants in the correct shape and form.
 There is a helper function :py:meth:`euphonic.util.convert_fc_phases <euphonic.util.convert_fc_phases>`
 which will convert a force constants of shape ``(n, N*n, 3, 3)``, to the shape required by Euphonic ``(N, 3*n, 3*n)``,
@@ -217,8 +241,35 @@ For more details see the function docstring. An example is below:
   # Create a ForceConstants object, using the Crystal object
   fc = ForceConstants(crystal, force_constants, sc_matrix, cell_origins)
 
-Once the force constants object has been created, it can be saved as a single portable JSON file using
-:py:meth:`ForceConstants.to_json_file <euphonic.force_constants.ForceConstants.to_json_file>`
+**Dipole-dipole Force Constants - Converting from Total to Short-ranged**
+
+If, as described in the :ref:`Force Constants Format<fc_format>` section, the force constants matrix contains the dipole interactions, these must be subtracted to produce the short-ranged force constants matrix before being used in Euphonic.
+This can be done using the class method
+:py:meth:`ForceConstants.from_total_fc_with_dipole <euphonic.force_constants.ForceConstants.from_total_fc_with_dipole>`.
+Note that the force constants must have a Euphonic-like shape before using this method. An example is below:
+
+.. code-block:: py
+
+  import numpy as np
+  from euphonic import ureg, Crystal, ForceConstants
+  from euphonic.util import convert_fc_phases
+
+  # Load arrays from files and apply any required units
+  cell_vectors = np.load('cell_vectors.npy')*ureg('angstrom')
+  atom_r = np.load('atom_r.npy')
+  atom_type = np.load('atom_type.npy')
+  atom_mass = np.load('atom_mass.npy')*ureg('amu')
+  force_constants = np.load('force_constants.npy')*ureg('meV/(angstrom**2)')
+  sc_matrix = np.load('sc_matrix.npy')
+  cell_origins = np.load('cell_origins.npy')
+  born = np.load('born.npy')*ureg('e')
+  dielectric = np.load('dielectric.npy')*ureg('e**2/(bohr*hartree)')
+
+  # Create a Crystal object
+  crystal = Crystal(cell_vectors, atom_r, atom_type, atom_mass)
+  # Create a ForceConstants object from the long-ranged force constants
+  fc = ForceConstants.from_total_fc_with_dipole(
+    crystal, force_constants, sc_matrix, cell_origins, born, dielectric)
 
 
 Calculating Phonon Frequencies and Eigenvectors

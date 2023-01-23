@@ -5,7 +5,6 @@ from unittest.mock import patch
 
 import pytest
 import numpy.testing as npt
-from packaging import version
 
 from euphonic import Spectrum1DCollection
 from tests_and_analysis.test.utils import (
@@ -149,7 +148,9 @@ def test_regenerate_disp_data(_):
     except FileNotFoundError:
         json_data = {}
 
-    for disp_param in disp_params:
+    all_disp_params = (disp_params
+                       + disp_params_from_phonopy)
+    for disp_param in all_disp_params:
         # Generate current figure for us to retrieve with gcf
         euphonic.cli.dispersion.main(disp_param)
 

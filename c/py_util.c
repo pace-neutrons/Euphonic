@@ -4,6 +4,33 @@
 #include <Python.h>
 #include <numpy/arrayobject.h>
 
+int val_from_pydict(PyDictObject *dict, const char *key, PyObject **result) {
+/* Given a PyDictObject and key, retrieve get the address of the value associated
+ * with that key, and alter the pointer pointed to by result to point to that
+ * address */
+    PyObject *tmp = PyDict_GetItemString(dict, key);
+    if (!tmp) {
+        printf("Couldn't retrieve %s from dict\n", key);
+        return 1;
+    }
+    *result = tmp;
+    return 0;
+}
+
+int double_from_pydict(PyDictObject *dict, const char *key, double *result) {
+/* Given a PyDictObject and key, read a double from that dict and store it in
+   the address pointed to by result */
+    PyObject *tmp;
+    val_from_pydict(dict, key, &tmp);
+    if (PyFloat_Check(tmp)) {
+        *result = (double) PyFloat_AsDouble(tmp);
+    } else {
+        printf("Incorrect type for %s\n", key);
+        return 1;
+    }
+    return 0;
+}
+
 int attr_from_pyobj(PyObject *obj, const char *attr_name, PyObject **result) {
 /* Given a PyObject and the name of one of its attributes, get the address of
  * that attribute, and alter the pointer pointed to by result to point to that

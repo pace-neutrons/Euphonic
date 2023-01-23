@@ -150,7 +150,7 @@ def _extract_phonon_data_hdf5(filename: str,
 
     with h5py.File(filename, 'r') as hdf5_file:
         data_dict = {}
-        if 'qpoint' in hdf5_file.keys():
+        if 'qpoint' in hdf5_file:
             data_dict['qpts'] = hdf5_file['qpoint'][()]
             data_dict['frequencies'] = hdf5_file['frequency'][()]
             if read_eigenvectors:
@@ -197,8 +197,10 @@ def read_phonon_data(
         ) -> Dict[str, Union[int, str, np.ndarray]]:
     """
     Reads precalculated phonon mode data from a Phonopy
-    mesh/band/qpoints.yaml/hdf5 file and returns it in a dictionary. May
-    also read from phonopy.yaml for structure information.
+    mesh/band/qpoints.yaml/hdf5 file and returns it in a dictionary.
+    May also read from phonopy.yaml for structure information. The
+    output eigenvectors will have their phase transformed from
+    per atom to per cell phases.
 
     Parameters
     ----------
@@ -256,7 +258,7 @@ def read_phonon_data(
         raise ValueError((f'File format {phonon_format} of {phonon_name}'
                           f' is not recognised'))
 
-    if read_eigenvectors and not 'eigenvectors' in phonon_dict.keys():
+    if read_eigenvectors and not 'eigenvectors' in phonon_dict:
         raise RuntimeError((f'Eigenvectors couldn\'t be found in '
                             f'{phonon_pathname}, ensure --eigvecs was '
                             f'set when running Phonopy'))
@@ -307,7 +309,7 @@ def read_phonon_data(
     if read_eigenvectors:
         # Convert Phonopy conventions to Euphonic conventions
         data_dict['eigenvectors'] = convert_eigenvector_phases(phonon_dict)
-    if 'weights' in phonon_dict.keys():
+    if 'weights' in phonon_dict:
         data_dict['weights'] = _convert_weights(phonon_dict['weights'])
     return data_dict
 
@@ -433,7 +435,7 @@ def _extract_born(born_file_obj: TextIO) -> Dict[str, Union[float, np.ndarray]]:
     idx0 = 0
     if len(born_lines[0]) == 1:
         # Then this is the NAC conversion factor
-        born_dict['factor'] = born_lines[0][0]
+        born_dict['nac_factor'] = born_lines[0][0]
         idx0 = 1
 
     # dielectric first line after factor
@@ -516,7 +518,7 @@ def _extract_summary(filename: str, fc_extract: bool = False
     if fc_extract:
         # Get matrix to convert from primitive cell to unit cell
         u_to_sc_matrix = np.array(summary_object['supercell_matrix'])
-        if 'primitive_matrix' in summary_object.keys():
+        if 'primitive_matrix' in summary_object:
             u_to_p_matrix = np.array(summary_object['primitive_matrix'])
             # Matrix to convert from primitive to supercell
             p_to_u_matrix = np.linalg.inv(u_to_p_matrix).transpose()
@@ -547,7 +549,15 @@ def _extract_summary(filename: str, fc_extract: bool = False
                 fc['elements']).reshape(fc['shape'] + [3,3])
         except KeyError:
             pass
-
+        # NAC factor may be present even if born is not in phonopy.yaml
+        # (born may be in separate BORN file), and the BORN file may
+        # not necessarily contain NAC factor, so just try reading it
+        # from phonopy.yaml anyway
+        try:
+            summary_dict['nac_factor'] = summary_object[
+                'phonopy']['nac_unit_conversion_factor']
+        except KeyError:
+            pass
         try:
             summary_dict['born'] = np.array(
                 summary_object['born_effective_charge'])
@@ -627,7 +637,10 @@ def read_interpolation_data(
     Reads data from the phonopy summary file (default phonopy.yaml) and
     optionally born and force constants files. Only attempts to read
     from born or force constants files if these can't be found in the
-    summary file.
+    summary file. Note that the output force constants will be transformed
+    to a Euphonic-like shape, but if it is a polar material it will still
+    be the long-ranged force constants matrix (and not the short-ranged one
+    that Euphonic requires in the case of polar materials).
 
     Parameters
     ----------
@@ -698,7 +711,7 @@ def read_interpolation_data(
 
     # Only read born/dielectric if they're not in summary file and the
     # user has specified a Born file
-    dipole_keys = ['born', 'dielectric']
+    dipole_keys = ['born', 'dielectric', 'nac_factor']
     if (born_name is not None and
             len(dipole_keys & summary_dict.keys()) != len(dipole_keys)):
         born_pathname = os.path.join(path, born_name)
@@ -706,8 +719,18 @@ def read_interpolation_data(
                f'attempting to read from {born_pathname}'))
         with open(born_pathname, 'r') as born_file:
             born_dict = _extract_born(born_file)
-        summary_dict['born'] = born_dict['born']
-        summary_dict['dielectric'] = born_dict['dielectric']
+        # Let BORN file take priority, but merge because the 'nac_factor'
+        # key may not always be present in BORN
+        summary_dict.update(born_dict)
+    # Check if born key is present, then factor is also present. It
+    # may not always be e.g. you can run Phonopy so that 'born',
+    # 'dielectric' are written to phonopy.yaml, but if NAC = .FALSE.
+    # 'nac_factor' will not be written. In this case raise error.
+    if ('born' in summary_dict
+            and 'nac_factor' not in summary_dict):
+        raise KeyError(f'nac_unit_conversion_factor could not be found in '
+                       f'{summary_pathname} or the BORN file (if given), so '
+                       f'units of the dielectric tensor cannot be determined.')
 
     # Units from summary_file
     ulength = summary_dict['ulength']
@@ -742,8 +765,18 @@ def read_interpolation_data(
         data_dict['born'] = summary_dict['born']*ureg(
             'e').to(born_unit).magnitude
         data_dict['born_unit'] = born_unit
-        data_dict['dielectric'] = summary_dict['dielectric']*ureg(
-            'e**2/(hartree*bohr)').to(dielectric_unit).magnitude
+        # Phonopy NAC conversion factor converts the following NAC
+        # term (eq. 75 in Gonze & Lee 1997, ignoring dimensionless
+        # units)
+        # born**2/(volume x dielectric)
+        #     = 1/(ulength**3 x di_energy x di_length)
+        # to the same units as the force constants (given by ufc)
+        # i.e. factor*nac_units = force constants units
+        # So allow pint to do this unit conversion automatically
+        phonopy_dielectric_unit = ureg('e**2')/(ureg(ulength)**3*ureg(ufc))
+        data_dict['dielectric'] = (
+            summary_dict['dielectric']/summary_dict['nac_factor']
+            *phonopy_dielectric_unit.to(dielectric_unit).magnitude)
         data_dict['dielectric_unit'] = dielectric_unit
     except KeyError:
         pass

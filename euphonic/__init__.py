@@ -5,7 +5,6 @@ del get_versions
 import pint
 from pint import UnitRegistry
 from importlib_resources import files
-from packaging.version import parse as parse_version
 
 # Create ureg here so it is only created once
 ureg = UnitRegistry()
