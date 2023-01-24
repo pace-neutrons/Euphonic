@@ -8,6 +8,7 @@ from copy import copy
 from typing import Dict, List, Union, Tuple, Optional
 from ..utils import get_data_path
 
+import numpy as np
 
 def args_to_key(cl_args: List[str]) -> str:
     """
@@ -34,15 +35,35 @@ def get_script_test_data_path(*subpaths: Tuple[str]) -> str:
 
 def get_plot_line_data(fig: Optional[matplotlib.figure.Figure] = None
                        ) -> Dict[str, Union[str,
-                                 List[str],
-                                 List[List[List[float]]]]]:
+                                            List[str],
+                                            List[List[float]]]]:
     if fig is None:
         fig = matplotlib.pyplot.gcf()
     data = get_fig_label_data(fig)
     data['xy_data'] = []
     for ax in fig.axes:
-        data['xy_data'].append([line.get_xydata().T.tolist()
-                                for line in fig.axes[0].lines])
+        if '3D' in type(ax).__name__:
+            data['xy_data'].append([np.array(line.get_data_3d()).tolist()
+                                    for line in ax.lines])
+        else:
+            data['xy_data'].append([line.get_xydata().T.tolist()
+                                    for line in ax.lines])
+    return data
+
+
+def get_all_figs() -> List['matplotlib.figure.Figure']:
+    all_figs = []
+    fignums = matplotlib.pyplot.get_fignums()
+    for fignum in fignums:
+        all_figs.append(matplotlib.pyplot.figure(fignum))
+    return all_figs
+
+
+def get_all_plot_line_data(figs: List[matplotlib.figure.Figure]) -> Dict[str, List[str]]:
+    all_figs = get_all_figs()
+    data = []
+    for fig in all_figs:
+        data.append(get_plot_line_data(fig))
     return data
 
 
@@ -61,6 +82,12 @@ def get_fig_label_data(fig) -> Dict[str, Union[str, List[str]]]:
         ylabel = ax.get_ylabel()
         if ylabel:
             label_data['y_label'].append(ylabel)
+        if '3D' in type(ax).__name__:
+            zlabel = ax.get_zlabel()
+            if not 'z_label' in  label_data.keys():
+                label_data['z_label'] = []
+            if zlabel:
+                label_data['z_label'].append(zlabel)
         # Collect tick labels from visible axes only,
         # we don't care about invisible axis tick labels
         if ax.get_frame_on():
