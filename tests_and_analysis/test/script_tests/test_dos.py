@@ -52,7 +52,6 @@ dos_params = [
      '--adaptive-method=fast', '--adaptive-error=0.05']]
 dos_params_from_phonopy = [[nacl_no_evec_yaml_file]]
 
-
 class TestRegression:
 
     @pytest.fixture
@@ -70,19 +69,22 @@ class TestRegression:
         euphonic.cli.dos.main(dos_args)
 
         line_data = get_current_plot_line_data()
+        # Only use first axis xy_data to save space
+        # and avoid regenerating data after refactoring
+        line_data['xy_data'] = line_data['xy_data'][0]
 
         with open(dos_output_file, 'r') as f:
             expected_line_data = json.load(f)[args_to_key(dos_args)]
-        for key, value in line_data.items():
+        for key, expected_val in expected_line_data.items():
             # We don't care about the details of tick labels for DOS
             if key == 'x_ticklabels':
                 pass
             elif key == 'xy_data':
                 npt.assert_allclose(
-                    value, expected_line_data[key],
+                    expected_val, line_data[key],
                     atol=5*sys.float_info.epsilon)
             else:
-                assert value == expected_line_data[key]
+                assert expected_val == line_data[key]
 
     @pytest.mark.parametrize('dos_args', dos_params)
     def test_dos_plot_data(self, inject_mocks, dos_args):
@@ -155,6 +157,10 @@ def test_regenerate_dos_data(_):
 
         # Retrieve with gcf and write to file
         line_data = get_current_plot_line_data()
+        # Only use first axis xy_data to save space
+        # and avoid regenerating data after refactoring
+        line_data['xy_data'] = line_data['xy_data'][0]
+
         # Optionally only write certain keys
         keys_to_replace = []
         if len(keys_to_replace) > 0:

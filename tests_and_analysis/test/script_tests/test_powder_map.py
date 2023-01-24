@@ -82,7 +82,7 @@ class TestRegression:
         with open(powder_map_output_file, 'r') as expected_data_file:
             expected_image_data = json.load(expected_data_file)[
                 args_to_key(powder_map_args)]
-        for key, value in image_data.items():
+        for key, expected_val in expected_image_data.items():
             # We don't care about the details of tick labels for powder map
             if key == 'x_ticklabels':
                 pass
@@ -91,14 +91,14 @@ class TestRegression:
                 # different systems when --asr is used, compared to
                 # the upper bound of 100s of meV this is effectively zero,
                 # so increase tolerance to allow for this
-                npt.assert_allclose(value, expected_image_data[key], atol=2e-6)
-            elif isinstance(value, list) and isinstance(value[0], float):
+                npt.assert_allclose(expected_val, image_data[key], atol=2e-6)
+            elif key in ['data_1', 'data_2']:
                 # Errors of 2-4 epsilon seem to be common when using
                 # broadening, so slightly increase tolerance
-                npt.assert_allclose(value, expected_image_data[key],
+                npt.assert_allclose(expected_val, image_data[key],
                                     atol=1e-14)
             else:
-                assert value == expected_image_data[key]
+                assert expected_val == image_data[key]
 
     @pytest.mark.parametrize('powder_map_args', powder_map_params)
     def test_powder_map_plot_image(

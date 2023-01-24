@@ -1,20 +1,28 @@
 {
     "CaHgO2 mp-7041-20180417.yaml": {
         "title": "",
-        "x_label": "",
-        "y_label": "Energy / meV",
+        "x_label": [],
+        "y_label": [
+            "Energy / meV"
+        ],
         "x_ticklabels": [
-            "$\\Gamma$",
-            "T",
-            "H_2",
-            "H_0",
-            "L",
-            "$\\Gamma$",
-            "$\\Gamma$",
-            "S_0",
-            "S_2",
-            "F",
-            "$\\Gamma$"
+            [
+                "$\\Gamma$",
+                "T",
+                "H_2"
+            ],
+            [
+                "H_0",
+                "L",
+                "$\\Gamma$",
+                "$\\Gamma$",
+                "S_0"
+            ],
+            [
+                "S_2",
+                "F",
+                "$\\Gamma$"
+            ]
         ],
         "xy_data": [
             [
@@ -1605,20 +1613,28 @@
     },
     "CaHgO2 mp-7041-20180417.yaml --energy-unit=hartree": {
         "title": "",
-        "x_label": "",
-        "y_label": "Energy / E_h",
+        "x_label": [],
+        "y_label": [
+            "Energy / E_h"
+        ],
         "x_ticklabels": [
-            "$\\Gamma$",
-            "T",
-            "H_2",
-            "H_0",
-            "L",
-            "$\\Gamma$",
-            "$\\Gamma$",
-            "S_0",
-            "S_2",
-            "F",
-            "$\\Gamma$"
+            [
+                "$\\Gamma$",
+                "T",
+                "H_2"
+            ],
+            [
+                "H_0",
+                "L",
+                "$\\Gamma$",
+                "$\\Gamma$",
+                "S_0"
+            ],
+            [
+                "S_2",
+                "F",
+                "$\\Gamma$"
+            ]
         ],
         "xy_data": [
             [
@@ -3209,20 +3225,30 @@
     },
     "CaHgO2 mp-7041-20180417.yaml --x-label=wavenumber --y-label=Energy (meV) --title=CaHgO2": {
         "title": "CaHgO2",
-        "x_label": "wavenumber",
-        "y_label": "Energy (meV)",
+        "x_label": [
+            "wavenumber"
+        ],
+        "y_label": [
+            "Energy (meV)"
+        ],
         "x_ticklabels": [
-            "$\\Gamma$",
-            "T",
-            "H_2",
-            "H_0",
-            "L",
-            "$\\Gamma$",
-            "$\\Gamma$",
-            "S_0",
-            "S_2",
-            "F",
-            "$\\Gamma$"
+            [
+                "$\\Gamma$",
+                "T",
+                "H_2"
+            ],
+            [
+                "H_0",
+                "L",
+                "$\\Gamma$",
+                "$\\Gamma$",
+                "S_0"
+            ],
+            [
+                "S_2",
+                "F",
+                "$\\Gamma$"
+            ]
         ],
         "xy_data": [
             [
@@ -4813,20 +4839,28 @@
     },
     "CaHgO2 mp-7041-20180417.yaml --reorder": {
         "title": "",
-        "x_label": "",
-        "y_label": "Energy / meV",
+        "x_label": [],
+        "y_label": [
+            "Energy / meV"
+        ],
         "x_ticklabels": [
-            "$\\Gamma$",
-            "T",
-            "H_2",
-            "H_0",
-            "L",
-            "$\\Gamma$",
-            "$\\Gamma$",
-            "S_0",
-            "S_2",
-            "F",
-            "$\\Gamma$"
+            [
+                "$\\Gamma$",
+                "T",
+                "H_2"
+            ],
+            [
+                "H_0",
+                "L",
+                "$\\Gamma$",
+                "$\\Gamma$",
+                "S_0"
+            ],
+            [
+                "S_2",
+                "F",
+                "$\\Gamma$"
+            ]
         ],
         "xy_data": [
             [
@@ -6417,20 +6451,28 @@
     },
     "CaHgO2 mp-7041-20180417.yaml -u=1/cm --e-min=200": {
         "title": "",
-        "x_label": "",
-        "y_label": "Energy / 1/cm",
+        "x_label": [],
+        "y_label": [
+            "Energy / 1/cm"
+        ],
         "x_ticklabels": [
-            "$\\Gamma$",
-            "T",
-            "H_2",
-            "H_0",
-            "L",
-            "$\\Gamma$",
-            "$\\Gamma$",
-            "S_0",
-            "S_2",
-            "F",
-            "$\\Gamma$"
+            [
+                "$\\Gamma$",
+                "T",
+                "H_2"
+            ],
+            [
+                "H_0",
+                "L",
+                "$\\Gamma$",
+                "$\\Gamma$",
+                "S_0"
+            ],
+            [
+                "S_2",
+                "F",
+                "$\\Gamma$"
+            ]
         ],
         "xy_data": [
             [
@@ -8021,20 +8063,28 @@
     },
     "CaHgO2 mp-7041-20180417.yaml --e-min=30 --e-max=100": {
         "title": "",
-        "x_label": "",
-        "y_label": "Energy / meV",
+        "x_label": [],
+        "y_label": [
+            "Energy / meV"
+        ],
         "x_ticklabels": [
-            "$\\Gamma$",
-            "T",
-            "H_2",
-            "H_0",
-            "L",
-            "$\\Gamma$",
-            "$\\Gamma$",
-            "S_0",
-            "S_2",
-            "F",
-            "$\\Gamma$"
+            [
+                "$\\Gamma$",
+                "T",
+                "H_2"
+            ],
+            [
+                "H_0",
+                "L",
+                "$\\Gamma$",
+                "$\\Gamma$",
+                "S_0"
+            ],
+            [
+                "S_2",
+                "F",
+                "$\\Gamma$"
+            ]
         ],
         "xy_data": [
             [
@@ -9625,20 +9675,28 @@
     },
     "CaHgO2 mp-7041-20180417.yaml --length-unit=bohr --q-spacing=0.04": {
         "title": "",
-        "x_label": "",
-        "y_label": "Energy / meV",
+        "x_label": [],
+        "y_label": [
+            "Energy / meV"
+        ],
         "x_ticklabels": [
-            "$\\Gamma$",
-            "T",
-            "H_2",
-            "H_0",
-            "L",
-            "$\\Gamma$",
-            "$\\Gamma$",
-            "S_0",
-            "S_2",
-            "F",
-            "$\\Gamma$"
+            [
+                "$\\Gamma$",
+                "T",
+                "H_2"
+            ],
+            [
+                "H_0",
+                "L",
+                "$\\Gamma$",
+                "$\\Gamma$",
+                "S_0"
+            ],
+            [
+                "S_2",
+                "F",
+                "$\\Gamma$"
+            ]
         ],
         "xy_data": [
             [
@@ -10173,20 +10231,28 @@
     },
     "CaHgO2 mp-7041-20180417.yaml --q-spacing=0.02": {
         "title": "",
-        "x_label": "",
-        "y_label": "Energy / meV",
+        "x_label": [],
+        "y_label": [
+            "Energy / meV"
+        ],
         "x_ticklabels": [
-            "$\\Gamma$",
-            "T",
-            "H_2",
-            "H_0",
-            "L",
-            "$\\Gamma$",
-            "$\\Gamma$",
-            "S_0",
-            "S_2",
-            "F",
-            "$\\Gamma$"
+            [
+                "$\\Gamma$",
+                "T",
+                "H_2"
+            ],
+            [
+                "H_0",
+                "L",
+                "$\\Gamma$",
+                "$\\Gamma$",
+                "S_0"
+            ],
+            [
+                "S_2",
+                "F",
+                "$\\Gamma$"
+            ]
         ],
         "xy_data": [
             [
@@ -12161,20 +12227,28 @@
     },
     "CaHgO2 mp-7041-20180417.yaml --asr": {
         "title": "",
-        "x_label": "",
-        "y_label": "Energy / meV",
+        "x_label": [],
+        "y_label": [
+            "Energy / meV"
+        ],
         "x_ticklabels": [
-            "$\\Gamma$",
-            "T",
-            "H_2",
-            "H_0",
-            "L",
-            "$\\Gamma$",
-            "$\\Gamma$",
-            "S_0",
-            "S_2",
-            "F",
-            "$\\Gamma$"
+            [
+                "$\\Gamma$",
+                "T",
+                "H_2"
+            ],
+            [
+                "H_0",
+                "L",
+                "$\\Gamma$",
+                "$\\Gamma$",
+                "S_0"
+            ],
+            [
+                "S_2",
+                "F",
+                "$\\Gamma$"
+            ]
         ],
         "xy_data": [
             [
@@ -13765,20 +13839,28 @@
     },
     "CaHgO2 mp-7041-20180417.yaml --asr=realspace": {
         "title": "",
-        "x_label": "",
-        "y_label": "Energy / meV",
+        "x_label": [],
+        "y_label": [
+            "Energy / meV"
+        ],
         "x_ticklabels": [
-            "$\\Gamma$",
-            "T",
-            "H_2",
-            "H_0",
-            "L",
-            "$\\Gamma$",
-            "$\\Gamma$",
-            "S_0",
-            "S_2",
-            "F",
-            "$\\Gamma$"
+            [
+                "$\\Gamma$",
+                "T",
+                "H_2"
+            ],
+            [
+                "H_0",
+                "L",
+                "$\\Gamma$",
+                "$\\Gamma$",
+                "S_0"
+            ],
+            [
+                "S_2",
+                "F",
+                "$\\Gamma$"
+            ]
         ],
         "xy_data": [
             [
@@ -15369,18 +15451,24 @@
     },
     "force_constants LZO_force_constants.json": {
         "title": "",
-        "x_label": "",
-        "y_label": "Energy / meV",
+        "x_label": [],
+        "y_label": [
+            "Energy / meV"
+        ],
         "x_ticklabels": [
-            "$\\Gamma$",
-            "X",
-            "U",
-            "K",
-            "$\\Gamma$",
-            "$\\Gamma$",
-            "L",
-            "W",
-            "X"
+            [
+                "$\\Gamma$",
+                "X",
+                "U"
+            ],
+            [
+                "K",
+                "$\\Gamma$",
+                "$\\Gamma$",
+                "L",
+                "W",
+                "X"
+            ]
         ],
         "xy_data": [
             [
@@ -19743,18 +19831,24 @@
     },
     "NaCl_cli_test force_constants.hdf5": {
         "title": "",
-        "x_label": "",
-        "y_label": "Energy / meV",
+        "x_label": [],
+        "y_label": [
+            "Energy / meV"
+        ],
         "x_ticklabels": [
-            "$\\Gamma$",
-            "X",
-            "U",
-            "K",
-            "$\\Gamma$",
-            "$\\Gamma$",
-            "L",
-            "W",
-            "X"
+            [
+                "$\\Gamma$",
+                "X",
+                "U"
+            ],
+            [
+                "K",
+                "$\\Gamma$",
+                "$\\Gamma$",
+                "L",
+                "W",
+                "X"
+            ]
         ],
         "xy_data": [
             [
@@ -22689,18 +22783,26 @@
     },
     "quartz quartz_bandstructure_qpoint_phonon_modes.json": {
         "title": "",
-        "x_label": "",
-        "y_label": "Energy / meV",
+        "x_label": [],
+        "y_label": [
+            "Energy / meV"
+        ],
         "x_ticklabels": [
-            "$\\Gamma$",
-            "A",
-            "L",
-            "H",
-            "A",
-            "L",
-            "M",
-            "H",
-            "K"
+            [
+                "$\\Gamma$",
+                "A",
+                "L",
+                "H",
+                "A"
+            ],
+            [
+                "L",
+                "M"
+            ],
+            [
+                "H",
+                "K"
+            ]
         ],
         "xy_data": [
             [
@@ -28269,18 +28371,22 @@
     },
     "quartz quartz_bandstructure_qpoint_phonon_modes.json --btol=1000": {
         "title": "",
-        "x_label": "",
-        "y_label": "Energy / meV",
+        "x_label": [],
+        "y_label": [
+            "Energy / meV"
+        ],
         "x_ticklabels": [
-            "$\\Gamma$",
-            "A",
-            "L",
-            "H",
-            "A",
-            "L",
-            "M",
-            "H",
-            "K"
+            [
+                "$\\Gamma$",
+                "A",
+                "L",
+                "H",
+                "A",
+                "L",
+                "M",
+                "H",
+                "K"
+            ]
         ],
         "xy_data": [
             [
@@ -36333,15 +36439,19 @@
     },
     "band band.yaml": {
         "title": "",
-        "x_label": "",
-        "y_label": "Energy / meV",
+        "x_label": [],
+        "y_label": [
+            "Energy / meV"
+        ],
         "x_ticklabels": [
-            "$\\Gamma$",
-            "X",
-            "X",
-            "$\\Gamma$",
-            "$\\Gamma$",
-            "L"
+            [
+                "$\\Gamma$",
+                "X",
+                "X",
+                "$\\Gamma$",
+                "$\\Gamma$",
+                "L"
+            ]
         ],
         "xy_data": [
             [
@@ -37740,15 +37850,21 @@
     },
     "band band.hdf5": {
         "title": "",
-        "x_label": "",
-        "y_label": "Energy / meV",
+        "x_label": [],
+        "y_label": [
+            "Energy / meV"
+        ],
         "x_ticklabels": [
-            "$\\Gamma$",
-            "X",
-            "X",
-            "$\\Gamma$",
-            "$\\Gamma$",
-            "L"
+            [
+                "$\\Gamma$",
+                "X"
+            ],
+            [
+                "X",
+                "$\\Gamma$",
+                "$\\Gamma$",
+                "L"
+            ]
         ],
         "xy_data": [
             [
@@ -40347,15 +40463,21 @@
     },
     "band band_no_evec.hdf5": {
         "x_ticklabels": [
-            "$\\Gamma$",
-            "X",
-            "X",
-            "$\\Gamma$",
-            "$\\Gamma$",
-            "L"
+            [
+                "$\\Gamma$",
+                "X"
+            ],
+            [
+                "X",
+                "$\\Gamma$",
+                "$\\Gamma$",
+                "L"
+            ]
         ],
         "title": "",
-        "y_label": "Energy / meV",
+        "y_label": [
+            "Energy / meV"
+        ],
         "xy_data": [
             [
                 [
@@ -45349,22 +45471,31 @@
                     24.23446542953784
                 ]
             ]
-        ]
+        ],
+        "x_label": []
     },
     "quartz quartz_bandstructure_qpoint_frequencies.json": {
         "x_ticklabels": [
-            "$\\Gamma$",
-            "A",
-            "L",
-            "H",
-            "A",
-            "L",
-            "M",
-            "H",
-            "K"
+            [
+                "$\\Gamma$",
+                "A",
+                "L",
+                "H",
+                "A"
+            ],
+            [
+                "L",
+                "M"
+            ],
+            [
+                "H",
+                "K"
+            ]
         ],
         "title": "",
-        "y_label": "Energy / meV",
+        "y_label": [
+            "Energy / meV"
+        ],
         "xy_data": [
             [
                 [
@@ -50928,6 +51059,7 @@
                     150.6636545176171
                 ]
             ]
-        ]
+        ],
+        "x_label": []
     }
 }
