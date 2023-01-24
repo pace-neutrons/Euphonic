@@ -79,7 +79,7 @@ class TestRegression:
         matplotlib.pyplot.close('all')
 
     def run_powder_map_and_test_result(
-            self, powder_map_args, keys_to_omit=None):
+            self, powder_map_args, keys_to_omit=['x_ticklabels']):
         euphonic.cli.powder_map.main(powder_map_args)
 
         matplotlib.pyplot.gcf().tight_layout()  # Force tick labels to be set
@@ -88,24 +88,23 @@ class TestRegression:
         with open(powder_map_output_file, 'r') as expected_data_file:
             expected_image_data = json.load(expected_data_file)[
                 args_to_key(powder_map_args)]
-        for key, value in image_data.items():
-            if ((keys_to_omit is not None and key in keys_to_omit)
-                or key == 'x_ticklabels'):
-            # We don't care about the details of tick labels for powder map
+        for key, expected_val in expected_image_data.items():
+            if key in keys_to_omit:
+                # We don't care about the details of tick labels for powder map
                 pass
             elif key == 'extent':
                 # Lower bound of y-data (energy) varies by up to ~2e-6 on
                 # different systems when --asr is used, compared to
                 # the upper bound of 100s of meV this is effectively zero,
                 # so increase tolerance to allow for this
-                npt.assert_allclose(value, expected_image_data[key], atol=2e-6)
-            elif isinstance(value, list) and isinstance(value[0], float):
+                npt.assert_allclose(expected_val, image_data[key], atol=2e-6)
+            elif key in ['data_1', 'data_2']:
                 # Errors of 2-4 epsilon seem to be common when using
                 # broadening, so slightly increase tolerance
-                npt.assert_allclose(value, expected_image_data[key],
+                npt.assert_allclose(expected_val, image_data[key],
                                     atol=1e-14)
             else:
-                assert value == expected_image_data[key]
+                assert expected_val == image_data[key]
 
     @pytest.mark.parametrize('powder_map_args', powder_map_params)
     def test_powder_map_plot_image(
@@ -131,7 +130,7 @@ class TestRegression:
         # is used. Just check that the program runs and a plot
         # is produced, by omitting check of 'data_1'
         self.run_powder_map_and_test_result(powder_map_args,
-                                            keys_to_omit=['data_1'])
+                                            keys_to_omit=['x_ticklabels', 'data_1'])
 
     @pytest.mark.brille
     @pytest.mark.multiple_extras

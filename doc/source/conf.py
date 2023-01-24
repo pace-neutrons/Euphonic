@@ -11,13 +11,6 @@
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
 
-# Ensure the euphonic source directory is on the path. Otherwise it can
-# quietly document the current Python's installed Euphonic, which we don't want!
-import os
-import sys
-sys.path.insert(0, os.path.abspath('../..'))
-
-
 # -- Project information -----------------------------------------------------
 
 project = 'Euphonic'
@@ -34,7 +27,8 @@ extensions = [
         'sphinx.ext.autodoc',
         'sphinx.ext.napoleon',
         'sphinxarg.ext',
-        'sphinx_autodoc_typehints'
+        'sphinx_autodoc_typehints',
+        'sphinx.ext.doctest'
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -80,4 +74,40 @@ def setup(app):
 
 rst_prolog = """
 .. |q| replace:: \|\ q\ \|
+"""
+
+# -- Doctest configuration ---------------------------------------------------
+
+# Add Euphonic directory to path so we can access tests_and_analysis.test.utils
+# Append rather than insert so that the installed Euphonic is imported rather
+# than the Git repo (the repo doesn't include the built C extension,
+# CITATION.cff in the correct place etc.)
+import os
+import sys
+sys.path.append(os.path.abspath('../..'))
+
+# Global setup, import required modules and initialise fnames
+# fnames are files/directories that are required by each doctest,
+# and will be copied from Euphonic's test directory in the setup
+# for that test. Initialise fnames here so it can safely be used
+# in cleanup, even if a specific test setup doesn't define it.
+doctest_global_setup = """
+import os, shutil
+from tests_and_analysis.test.utils import (get_castep_path, get_phonopy_path,
+                                           get_data_path)
+fnames = []
+"""
+# Cleanup, ensure figures are closed and any copied files or
+# directories are removed. If a test only requires one file,
+# fnames may not be a list.
+doctest_global_cleanup = """
+import matplotlib.pyplot as plt
+plt.close('all')
+if not isinstance(fnames, list):
+    fnames = [fnames]
+for fname in fnames:
+    if os.path.isfile(fname):
+        os.remove(fname)
+    else:
+        shutil.rmtree(fname)
 """

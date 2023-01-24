@@ -1,16 +1,20 @@
 {
     "NaH NaH.phonon": {
         "x_ticklabels": [
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            ""
+            [
+                "0",
+                "20",
+                "40",
+                "60",
+                "80",
+                "100",
+                "120"
+            ]
         ],
         "title": "",
-        "x_label": "Energy / meV",
+        "x_label": [
+            "Energy / meV"
+        ],
         "xy_data": [
             [
                 [
@@ -418,20 +422,25 @@
                     0.0
                 ]
             ]
-        ]
+        ],
+        "y_label": []
     },
     "NaH NaH.phonon --energy-broadening=2": {
         "x_ticklabels": [
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            ""
+            [
+                "0",
+                "20",
+                "40",
+                "60",
+                "80",
+                "100",
+                "120"
+            ]
         ],
         "title": "",
-        "x_label": "Energy / meV",
+        "x_label": [
+            "Energy / meV"
+        ],
         "xy_data": [
             [
                 [
@@ -839,20 +848,25 @@
                     0.0
                 ]
             ]
-        ]
+        ],
+        "y_label": []
     },
     "NaH NaH.phonon --ebins=100": {
         "x_ticklabels": [
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            ""
+            [
+                "0",
+                "20",
+                "40",
+                "60",
+                "80",
+                "100",
+                "120"
+            ]
         ],
         "title": "",
-        "x_label": "Energy / meV",
+        "x_label": [
+            "Energy / meV"
+        ],
         "xy_data": [
             [
                 [
@@ -1060,20 +1074,25 @@
                     0.0
                 ]
             ]
-        ]
+        ],
+        "y_label": []
     },
     "NaH NaH.phonon --energy-broadening=2.3 --ebins=50": {
         "x_ticklabels": [
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            ""
+            [
+                "0",
+                "20",
+                "40",
+                "60",
+                "80",
+                "100",
+                "120"
+            ]
         ],
         "title": "",
-        "x_label": "Energy / meV",
+        "x_label": [
+            "Energy / meV"
+        ],
         "xy_data": [
             [
                 [
@@ -1181,22 +1200,27 @@
                     7.240537623748387e-07
                 ]
             ]
-        ]
+        ],
+        "y_label": []
     },
     "NaH NaH.phonon --energy-unit=1/cm --eb=20 --e-max=750": {
         "x_ticklabels": [
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            ""
+            [
+                "0",
+                "100",
+                "200",
+                "300",
+                "400",
+                "500",
+                "600",
+                "700",
+                "800"
+            ]
         ],
         "title": "",
-        "x_label": "Energy / 1/cm",
+        "x_label": [
+            "Energy / 1/cm"
+        ],
         "xy_data": [
             [
                 [
@@ -1604,20 +1628,25 @@
                     0.0
                 ]
             ]
-        ]
+        ],
+        "y_label": []
     },
     "NaH NaH.phonon --eb=5e-5 --shape=lorentz --e-min=1.5e-3 -u=hartree": {
         "x_ticklabels": [
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            ""
+            [
+                "0.0015",
+                "0.0020",
+                "0.0025",
+                "0.0030",
+                "0.0035",
+                "0.0040",
+                "0.0045"
+            ]
         ],
         "title": "",
-        "x_label": "Energy / E_h",
+        "x_label": [
+            "Energy / E_h"
+        ],
         "xy_data": [
             [
                 [
@@ -2025,21 +2054,28 @@
                     0.0
                 ]
             ]
-        ]
+        ],
+        "y_label": []
     },
     "NaH NaH.phonon --title=NaH --x-label=Energy (meV) --y-label=DOS": {
         "x_ticklabels": [
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            ""
+            [
+                "0",
+                "20",
+                "40",
+                "60",
+                "80",
+                "100",
+                "120"
+            ]
         ],
         "title": "NaH",
-        "x_label": "Energy (meV)",
-        "y_label": "DOS",
+        "x_label": [
+            "Energy (meV)"
+        ],
+        "y_label": [
+            "DOS"
+        ],
         "xy_data": [
             [
                 [
@@ -2451,19 +2487,23 @@
     },
     "quartz quartz.castep_bin --grid-spacing=0.1 --length-unit=bohr": {
         "x_ticklabels": [
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            ""
+            [
+                "0",
+                "20",
+                "40",
+                "60",
+                "80",
+                "100",
+                "120",
+                "140",
+                "160",
+                "180"
+            ]
         ],
         "title": "",
-        "x_label": "Energy / meV",
+        "x_label": [
+            "Energy / meV"
+        ],
         "xy_data": [
             [
                 [
@@ -2871,23 +2911,28 @@
                     0.0
                 ]
             ]
-        ]
+        ],
+        "y_label": []
     },
     "quartz quartz.castep_bin --grid 5 5 4": {
         "x_ticklabels": [
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            ""
+            [
+                "0",
+                "20",
+                "40",
+                "60",
+                "80",
+                "100",
+                "120",
+                "140",
+                "160",
+                "180"
+            ]
         ],
         "title": "",
-        "x_label": "Energy / meV",
+        "x_label": [
+            "Energy / meV"
+        ],
         "xy_data": [
             [
                 [
@@ -3295,23 +3340,28 @@
                     0.0
                 ]
             ]
-        ]
+        ],
+        "y_label": []
     },
     "quartz quartz.castep_bin --grid 5 5 4 --adaptive": {
         "x_ticklabels": [
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            ""
+            [
+                "0",
+                "20",
+                "40",
+                "60",
+                "80",
+                "100",
+                "120",
+                "140",
+                "160",
+                "180"
+            ]
         ],
         "title": "",
-        "x_label": "Energy / meV",
+        "x_label": [
+            "Energy / meV"
+        ],
         "xy_data": [
             [
                 [
@@ -3719,23 +3769,28 @@
                     1.3793033126523296e-07
                 ]
             ]
-        ]
+        ],
+        "y_label": []
     },
     "quartz quartz.castep_bin --grid 5 5 4 --adaptive --eb 2": {
         "x_ticklabels": [
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            ""
+            [
+                "0",
+                "20",
+                "40",
+                "60",
+                "80",
+                "100",
+                "120",
+                "140",
+                "160",
+                "180"
+            ]
         ],
         "title": "",
-        "x_label": "Energy / meV",
+        "x_label": [
+            "Energy / meV"
+        ],
         "xy_data": [
             [
                 [
@@ -4143,20 +4198,25 @@
                     0.00026643587094153556
                 ]
             ]
-        ]
+        ],
+        "y_label": []
     },
     "NaH NaH.phonon --weighting=coherent-plus-incoherent-dos --pdos": {
         "x_ticklabels": [
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            ""
+            [
+                "0",
+                "20",
+                "40",
+                "60",
+                "80",
+                "100",
+                "120"
+            ]
         ],
         "title": "",
-        "x_label": "Energy / meV",
+        "x_label": [
+            "Energy / meV"
+        ],
         "xy_data": [
             [
                 [
@@ -5376,20 +5436,25 @@
                     0.0
                 ]
             ]
-        ]
+        ],
+        "y_label": []
     },
     "NaH NaH.phonon --weighting=coherent-dos --pdos Na H": {
         "x_ticklabels": [
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            ""
+            [
+                "0",
+                "20",
+                "40",
+                "60",
+                "80",
+                "100",
+                "120"
+            ]
         ],
         "title": "",
-        "x_label": "Energy / meV",
+        "x_label": [
+            "Energy / meV"
+        ],
         "xy_data": [
             [
                 [
@@ -6203,20 +6268,25 @@
                     0.0
                 ]
             ]
-        ]
+        ],
+        "y_label": []
     },
     "NaH NaH.phonon --weighting=incoherent-dos --pdos Na": {
         "x_ticklabels": [
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            ""
+            [
+                "0",
+                "20",
+                "40",
+                "60",
+                "80",
+                "100",
+                "120"
+            ]
         ],
         "title": "",
-        "x_label": "Energy / meV",
+        "x_label": [
+            "Energy / meV"
+        ],
         "xy_data": [
             [
                 [
@@ -6624,23 +6694,28 @@
                     0.0
                 ]
             ]
-        ]
+        ],
+        "y_label": []
     },
     "quartz quartz.castep_bin --grid 5 5 4 --adaptive --pdos": {
         "x_ticklabels": [
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            ""
+            [
+                "0",
+                "20",
+                "40",
+                "60",
+                "80",
+                "100",
+                "120",
+                "140",
+                "160",
+                "180"
+            ]
         ],
         "title": "",
-        "x_label": "Energy / meV",
+        "x_label": [
+            "Energy / meV"
+        ],
         "xy_data": [
             [
                 [
@@ -7860,23 +7935,28 @@
                     3.479181367277545e-08
                 ]
             ]
-        ]
+        ],
+        "y_label": []
     },
     "quartz quartz.castep_bin --grid 5 5 4 --adaptive --adaptive-method=fast": {
         "x_ticklabels": [
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            ""
+            [
+                "0",
+                "20",
+                "40",
+                "60",
+                "80",
+                "100",
+                "120",
+                "140",
+                "160",
+                "180"
+            ]
         ],
         "title": "",
-        "x_label": "Energy / meV",
+        "x_label": [
+            "Energy / meV"
+        ],
         "xy_data": [
             [
                 [
@@ -8284,23 +8364,28 @@
                     4.915069842430595e-07
                 ]
             ]
-        ]
+        ],
+        "y_label": []
     },
     "quartz quartz.castep_bin --grid 5 5 4 --adaptive --adaptive-method=fast --adaptive-error=0.05": {
         "x_ticklabels": [
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            ""
+            [
+                "0",
+                "20",
+                "40",
+                "60",
+                "80",
+                "100",
+                "120",
+                "140",
+                "160",
+                "180"
+            ]
         ],
         "title": "",
-        "x_label": "Energy / meV",
+        "x_label": [
+            "Energy / meV"
+        ],
         "xy_data": [
             [
                 [
@@ -8708,21 +8793,26 @@
                     3.120701340233957e-06
                 ]
             ]
-        ]
+        ],
+        "y_label": []
     },
     "mesh mesh_no_evec.yaml": {
         "x_ticklabels": [
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            ""
+            [
+                "0",
+                "5",
+                "10",
+                "15",
+                "20",
+                "25",
+                "30",
+                "35"
+            ]
         ],
         "title": "",
-        "x_label": "Energy / meV",
+        "x_label": [
+            "Energy / meV"
+        ],
         "xy_data": [
             [
                 [
@@ -9130,6 +9220,7 @@
                     0.0
                 ]
             ]
-        ]
+        ],
+        "y_label": []
     }
 }

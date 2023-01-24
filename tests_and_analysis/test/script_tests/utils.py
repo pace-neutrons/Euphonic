@@ -39,37 +39,34 @@ def get_plot_line_data(fig: Optional[matplotlib.figure.Figure] = None
     if fig is None:
         fig = matplotlib.pyplot.gcf()
     data = get_fig_label_data(fig)
-    data['xy_data'] = [line.get_xydata().T.tolist()
-                       for line in fig.axes[0].lines]
+    data['xy_data'] = []
+    for ax in fig.axes:
+        data['xy_data'].append([line.get_xydata().T.tolist()
+                                for line in fig.axes[0].lines])
     return data
 
 
 def get_fig_label_data(fig) -> Dict[str, Union[str, List[str]]]:
     label_data = {'x_ticklabels': [],
+                  'x_label': [],
+                  'y_label': [],
                   'title': fig._suptitle.get_text() if fig._suptitle is not None else None}
 
-    # Get axis labels from whichever axis has them.
-    # Collect all tick labels from visible axes only,
-    # we don't care about invisible axis labels
+    # Get axis/tick labels from all axes, collect only non-empty values
+    # to avoid breaking tests if the way we set up axes changes
     for ax in fig.axes:
+        xlabel = ax.get_xlabel()
+        if xlabel:
+            label_data['x_label'].append(xlabel)
+        ylabel = ax.get_ylabel()
+        if ylabel:
+            label_data['y_label'].append(ylabel)
+        # Collect tick labels from visible axes only,
+        # we don't care about invisible axis tick labels
         if ax.get_frame_on():
-            ax_label_data = get_ax_label_data(ax)
+            xticklabels = [lab.get_text() for lab in ax.get_xticklabels()]
+            label_data['x_ticklabels'].append(xticklabels)
 
-            for key in 'x_label', 'y_label':
-                if ax_label_data[key]:
-                    label_data[key] = ax_label_data[key]
-
-            label_data['x_ticklabels'] += ax_label_data['x_ticklabels']
-
-    return label_data
-
-
-def get_ax_label_data(ax) -> Dict[str, Union[str, List[str]]]:
-    label_data = {}
-    label_data['x_label'] = ax.get_xlabel()
-    label_data['y_label'] = ax.get_ylabel()
-    label_data['x_ticklabels'] = [lab.get_text()
-                                  for lab in ax.get_xticklabels()]
     return label_data
 
 

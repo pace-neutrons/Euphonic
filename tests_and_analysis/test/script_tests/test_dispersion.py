@@ -74,6 +74,9 @@ class TestRegression:
         euphonic.cli.dispersion.main(dispersion_args)
 
         line_data = get_plot_line_data()
+        # Only use first axis xy_data to save space
+        # and avoid regenerating data after refactoring
+        line_data['xy_data'] = line_data['xy_data'][0]
 
         with open(disp_output_file, 'r') as f:
             expected_line_data = json.load(f)[args_to_key(dispersion_args)]
@@ -83,16 +86,16 @@ class TestRegression:
             atol = 5e-6
         else:
             atol = sys.float_info.epsilon
-        for key, value in line_data.items():
+        for key, expected_val in expected_line_data.items():
             if key == 'xy_data':
                 # numpy can only auto convert 2D lists - xy_data has
                 # dimensions (n_lines, 2, n_points) so check in a loop
-                for idx, line in enumerate(value):
+                for idx, line in enumerate(expected_val):
                     npt.assert_allclose(
-                        line, expected_line_data[key][idx],
+                        line, line_data[key][idx],
                         atol=atol)
             else:
-                assert value == expected_line_data[key]
+                assert expected_val == line_data[key]
 
 
     @pytest.mark.parametrize('dispersion_args', disp_params)
@@ -156,6 +159,10 @@ def test_regenerate_disp_data(_):
 
         # Retrieve with gcf and write to file
         line_data = get_plot_line_data()
+        # Only use first axis xy_data to save space
+        # and avoid regenerating data after refactoring
+        line_data['xy_data'] = line_data['xy_data'][0]
+
         # Optionally only write certain keys
         keys_to_replace = []
         if len(keys_to_replace) > 0:

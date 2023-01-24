@@ -14,7 +14,13 @@ Reading From CASTEP
 Phonon frequencies and eigenvectors can be read from a  ``.phonon`` file using
 :py:meth:`QpointPhononModes.from_castep <euphonic.qpoint_phonon_modes.QpointPhononModes.from_castep>`.
 
-.. code-block:: py
+.. testsetup:: quartz_phonon
+
+  fnames = 'quartz.phonon'
+  shutil.copyfile(
+      get_castep_path('quartz', 'quartz_nosplit.phonon'), fnames)
+
+.. testcode:: quartz_phonon
 
   from euphonic import QpointPhononModes
 
@@ -39,7 +45,12 @@ these files do not include the crystal information, so it must be read from a
 ``phonopy.yaml`` file, which can be specified with the ``summary_name``
 argument. A path can also be specified.
 
-.. code-block:: py
+.. testsetup:: nacl_mesh
+
+  fnames = 'NaCl'
+  shutil.copytree(get_phonopy_path('NaCl', 'mesh'), fnames)
+
+.. testcode:: nacl_mesh
 
   from euphonic import QpointPhononModes
 
@@ -59,7 +70,7 @@ This means that the same mode will have the same index across different
 q-points, so will be plotted as the same colour in a dispersion plot,
 allowing modes to be followed across q-space (see :ref:`Plotting <plotting>`)
 
-.. code-block:: py
+.. testcode:: quartz_phonon
 
   from euphonic import QpointPhononModes
 
@@ -107,7 +118,12 @@ Example
 The following example shows a full calculation from the force constants to the
 structure factor with Debye-Waller:
 
-.. code-block:: py
+.. testsetup:: quartz_fc
+
+  fnames = 'quartz.castep_bin'
+  shutil.copy(get_castep_path('quartz', fnames), '.')
+
+.. testcode:: quartz_fc
 
   import seekpath
   import numpy as np
@@ -119,7 +135,7 @@ structure factor with Debye-Waller:
 
   # Generate a recommended q-point path to calculate the structure factor on
   # using seekpath
-  cell = crystal.to_spglib_cell()
+  cell = fc.crystal.to_spglib_cell()
   qpts = seekpath.get_explicit_k_path(cell)["explicit_kpoints_rel"]
   # Calculate frequencies/eigenvectors for the q-point path
   phonons = fc.calculate_qpoint_phonon_modes(qpts, asr='reciprocal')
@@ -151,7 +167,13 @@ object calculated on a grid of q-points and a temperature, and returns a
 :ref:`DebyeWaller<debye-waller>` object. The Debye-Waller exponent can be
 calculated by:
 
-.. code-block:: py
+.. testsetup:: quartz_grid
+
+  fnames = 'quartz-grid.phonon'
+  shutil.copyfile(
+      get_castep_path('quartz', 'quartz_nosplit.phonon'), fnames)
+
+.. testcode:: quartz_grid
 
   from euphonic import ureg, QpointPhononModes
 
@@ -179,8 +201,9 @@ species and index, and :ref:`Spectrum1DCollection<spectrum1dcollection>` methods
 can be used to obtain per-species or total PDOS. For example, to produce both total
 and species-resolved coherent neutron-weighted PDOS:
 
-.. code-block:: py
+.. testcode:: quartz_grid
 
+  import numpy as np
   from euphonic import ureg, QpointPhononModes
 
   phonons = QpointPhononModes.from_castep('quartz-grid.phonon')

@@ -1,17 +1,25 @@
 {
     "NaCl_prim phonopy_nacl.yaml": {
         "x_ticklabels": [
-            "0.0",
-            "0.5",
-            "1.0",
-            "1.5",
-            "2.0",
-            "2.5",
-            "3.0"
+            [
+                "0.0",
+                "0.5",
+                "1.0",
+                "1.5",
+                "2.0",
+                "2.5",
+                "3.0"
+            ],
+            [],
+            []
         ],
         "title": "",
-        "x_label": "|q| / 1/\u00c5",
-        "y_label": "Energy / meV",
+        "x_label": [
+            "|q| / 1/\u00c5"
+        ],
+        "y_label": [
+            "Energy / meV"
+        ],
         "cmap": "viridis",
         "extent": [
             0.012500000186264515,
@@ -350,17 +358,25 @@
     },
     "NaCl_prim phonopy_nacl.yaml --temperature=1000 --npts=10 --npts-min=10 --q-spacing=1": {
         "x_ticklabels": [
-            "0.0",
-            "0.5",
-            "1.0",
-            "1.5",
-            "2.0",
-            "2.5",
-            "3.0"
+            [
+                "0.0",
+                "0.5",
+                "1.0",
+                "1.5",
+                "2.0",
+                "2.5",
+                "3.0"
+            ],
+            [],
+            []
         ],
         "title": "",
-        "x_label": "|q| / 1/\u00c5",
-        "y_label": "Energy / meV",
+        "x_label": [
+            "|q| / 1/\u00c5"
+        ],
+        "y_label": [
+            "Energy / meV"
+        ],
         "cmap": "viridis",
         "extent": [
             0.5,
@@ -582,17 +598,25 @@
     },
     "NaCl_prim phonopy_nacl.yaml --temperature=1000 --weighting=coherent --npts=10 --npts-min=10 --q-spacing=1": {
         "x_ticklabels": [
-            "0.0",
-            "0.5",
-            "1.0",
-            "1.5",
-            "2.0",
-            "2.5",
-            "3.0"
+            [
+                "0.0",
+                "0.5",
+                "1.0",
+                "1.5",
+                "2.0",
+                "2.5",
+                "3.0"
+            ],
+            [],
+            []
         ],
         "title": "",
-        "x_label": "|q| / 1/\u00c5",
-        "y_label": "Energy / meV",
+        "x_label": [
+            "|q| / 1/\u00c5"
+        ],
+        "y_label": [
+            "Energy / meV"
+        ],
         "cmap": "viridis",
         "extent": [
             0.5,
@@ -814,17 +838,25 @@
     },
     "NaCl_prim phonopy_nacl.yaml --v-min=0 --v-max=1e-10 --npts=10 --npts-min=10 --q-spacing=1": {
         "x_ticklabels": [
-            "0.0",
-            "0.5",
-            "1.0",
-            "1.5",
-            "2.0",
-            "2.5",
-            "3.0"
+            [
+                "0.0",
+                "0.5",
+                "1.0",
+                "1.5",
+                "2.0",
+                "2.5",
+                "3.0"
+            ],
+            [],
+            []
         ],
         "title": "",
-        "x_label": "|q| / 1/\u00c5",
-        "y_label": "Energy / meV",
+        "x_label": [
+            "|q| / 1/\u00c5"
+        ],
+        "y_label": [
+            "Energy / meV"
+        ],
         "cmap": "viridis",
         "extent": [
             0.5,
@@ -1046,17 +1078,25 @@
     },
     "NaCl_prim phonopy_nacl.yaml --energy-unit=meV --npts=10 --npts-min=10 --q-spacing=1": {
         "x_ticklabels": [
-            "0.0",
-            "0.5",
-            "1.0",
-            "1.5",
-            "2.0",
-            "2.5",
-            "3.0"
+            [
+                "0.0",
+                "0.5",
+                "1.0",
+                "1.5",
+                "2.0",
+                "2.5",
+                "3.0"
+            ],
+            [],
+            []
         ],
         "title": "",
-        "x_label": "|q| / 1/\u00c5",
-        "y_label": "Energy / meV",
+        "x_label": [
+            "|q| / 1/\u00c5"
+        ],
+        "y_label": [
+            "Energy / meV"
+        ],
         "cmap": "viridis",
         "extent": [
             0.5,
@@ -1278,17 +1318,25 @@
     },
     "NaCl_prim phonopy_nacl.yaml --weighting=coherent --c-map=bone --npts=10 --npts-min=10 --q-spacing=1": {
         "x_ticklabels": [
-            "0.0",
-            "0.5",
-            "1.0",
-            "1.5",
-            "2.0",
-            "2.5",
-            "3.0"
+            [
+                "0.0",
+                "0.5",
+                "1.0",
+                "1.5",
+                "2.0",
+                "2.5",
+                "3.0"
+            ],
+            [],
+            []
         ],
         "title": "",
-        "x_label": "|q| / 1/\u00c5",
-        "y_label": "Energy / meV",
+        "x_label": [
+            "|q| / 1/\u00c5"
+        ],
+        "y_label": [
+            "Energy / meV"
+        ],
         "cmap": "bone",
         "extent": [
             0.5,
@@ -1510,17 +1558,25 @@
     },
     "graphite graphite.castep_bin -w dos --y-label=DOS --title=DOS TITLE --npts=10 --npts-min=10 --q-spacing=1": {
         "x_ticklabels": [
-            "0.0",
-            "0.5",
-            "1.0",
-            "1.5",
-            "2.0",
-            "2.5",
-            "3.0"
+            [
+                "0.0",
+                "0.5",
+                "1.0",
+                "1.5",
+                "2.0",
+                "2.5",
+                "3.0"
+            ],
+            [],
+            []
         ],
         "title": "DOS TITLE",
-        "x_label": "|q| / 1/\u00c5",
-        "y_label": "DOS",
+        "x_label": [
+            "|q| / 1/\u00c5"
+        ],
+        "y_label": [
+            "DOS"
+        ],
         "cmap": "viridis",
         "extent": [
             0.5,
@@ -1742,17 +1798,25 @@
     },
     "graphite graphite.castep_bin --e-min=-100 --e-max=1000 --ebins=100 --energy-unit=cm^-1 --npts=10 --npts-min=10 --q-spacing=1": {
         "x_ticklabels": [
-            "0.0",
-            "0.5",
-            "1.0",
-            "1.5",
-            "2.0",
-            "2.5",
-            "3.0"
+            [
+                "0.0",
+                "0.5",
+                "1.0",
+                "1.5",
+                "2.0",
+                "2.5",
+                "3.0"
+            ],
+            [],
+            []
         ],
         "title": "",
-        "x_label": "|q| / 1/\u00c5",
-        "y_label": "Energy / 1/cm",
+        "x_label": [
+            "|q| / 1/\u00c5"
+        ],
+        "y_label": [
+            "Energy / 1/cm"
+        ],
         "cmap": "viridis",
         "extent": [
             0.5,
@@ -1874,17 +1938,25 @@
     },
     "graphite graphite.castep_bin --energy-broadening=2e-3 -u=eV --npts=10 --npts-min=10 --q-spacing=1": {
         "x_ticklabels": [
-            "0.0",
-            "0.5",
-            "1.0",
-            "1.5",
-            "2.0",
-            "2.5",
-            "3.0"
+            [
+                "0.0",
+                "0.5",
+                "1.0",
+                "1.5",
+                "2.0",
+                "2.5",
+                "3.0"
+            ],
+            [],
+            []
         ],
         "title": "",
-        "x_label": "|q| / 1/\u00c5",
-        "y_label": "Energy / eV",
+        "x_label": [
+            "|q| / 1/\u00c5"
+        ],
+        "y_label": [
+            "Energy / eV"
+        ],
         "cmap": "viridis",
         "extent": [
             0.5,
@@ -2106,17 +2178,25 @@
     },
     "graphite graphite.castep_bin --q-spacing=0.05 --length-unit=bohr --q-broadening=0.1 --npts=10 --npts-min=10 --q-spacing=1": {
         "x_ticklabels": [
-            "0.0",
-            "0.5",
-            "1.0",
-            "1.5",
-            "2.0",
-            "2.5",
-            "3.0"
+            [
+                "0.0",
+                "0.5",
+                "1.0",
+                "1.5",
+                "2.0",
+                "2.5",
+                "3.0"
+            ],
+            [],
+            []
         ],
         "title": "",
-        "x_label": "|q| / 1/a_0",
-        "y_label": "Energy / meV",
+        "x_label": [
+            "|q| / 1/a_0"
+        ],
+        "y_label": [
+            "Energy / meV"
+        ],
         "cmap": "viridis",
         "extent": [
             0.5,
@@ -2338,17 +2418,25 @@
     },
     "graphite graphite.castep_bin --qb=0.01 --eb=1.5 --shape=lorentz --npts=10 --npts-min=10 --q-spacing=1": {
         "x_ticklabels": [
-            "0.0",
-            "0.5",
-            "1.0",
-            "1.5",
-            "2.0",
-            "2.5",
-            "3.0"
+            [
+                "0.0",
+                "0.5",
+                "1.0",
+                "1.5",
+                "2.0",
+                "2.5",
+                "3.0"
+            ],
+            [],
+            []
         ],
         "title": "",
-        "x_label": "|q| / 1/\u00c5",
-        "y_label": "Energy / meV",
+        "x_label": [
+            "|q| / 1/\u00c5"
+        ],
+        "y_label": [
+            "Energy / meV"
+        ],
         "cmap": "viridis",
         "extent": [
             0.5,
@@ -2570,17 +2658,25 @@
     },
     "graphite graphite.castep_bin --asr --npts=10 --npts-min=10 --q-spacing=1": {
         "x_ticklabels": [
-            "0.0",
-            "0.5",
-            "1.0",
-            "1.5",
-            "2.0",
-            "2.5",
-            "3.0"
+            [
+                "0.0",
+                "0.5",
+                "1.0",
+                "1.5",
+                "2.0",
+                "2.5",
+                "3.0"
+            ],
+            [],
+            []
         ],
         "title": "",
-        "x_label": "|q| / 1/\u00c5",
-        "y_label": "Energy / meV",
+        "x_label": [
+            "|q| / 1/\u00c5"
+        ],
+        "y_label": [
+            "Energy / meV"
+        ],
         "cmap": "viridis",
         "extent": [
             0.5,
@@ -2802,17 +2898,25 @@
     },
     "graphite graphite.castep_bin --asr=realspace --dipole-parameter=0.75 --npts=10 --npts-min=10 --q-spacing=1": {
         "x_ticklabels": [
-            "0.0",
-            "0.5",
-            "1.0",
-            "1.5",
-            "2.0",
-            "2.5",
-            "3.0"
+            [
+                "0.0",
+                "0.5",
+                "1.0",
+                "1.5",
+                "2.0",
+                "2.5",
+                "3.0"
+            ],
+            [],
+            []
         ],
         "title": "",
-        "x_label": "|q| / 1/\u00c5",
-        "y_label": "Energy / meV",
+        "x_label": [
+            "|q| / 1/\u00c5"
+        ],
+        "y_label": [
+            "Energy / meV"
+        ],
         "cmap": "viridis",
         "extent": [
             0.5,
@@ -3034,17 +3138,25 @@
     },
     "graphite graphite.castep_bin --e-min=50 -u=cm^-1 --x-label=wavenumber --npts=10 --npts-min=10 --q-spacing=1 -w=coherent-dos": {
         "x_ticklabels": [
-            "0.0",
-            "0.5",
-            "1.0",
-            "1.5",
-            "2.0",
-            "2.5",
-            "3.0"
+            [
+                "0.0",
+                "0.5",
+                "1.0",
+                "1.5",
+                "2.0",
+                "2.5",
+                "3.0"
+            ],
+            [],
+            []
         ],
         "title": "",
-        "x_label": "wavenumber",
-        "y_label": "Energy / 1/cm",
+        "x_label": [
+            "wavenumber"
+        ],
+        "y_label": [
+            "Energy / 1/cm"
+        ],
         "cmap": "viridis",
         "extent": [
             0.5,
@@ -3266,17 +3378,23 @@
     },
     "NaCl_prim phonopy_nacl.yaml -w=incoherent-dos --pdos=Na --no-widget --npts=10 --npts-min=10 --q-spacing=1": {
         "x_ticklabels": [
-            "0.0",
-            "0.5",
-            "1.0",
-            "1.5",
-            "2.0",
-            "2.5",
-            "3.0"
+            [
+                "0.0",
+                "0.5",
+                "1.0",
+                "1.5",
+                "2.0",
+                "2.5",
+                "3.0"
+            ]
         ],
         "title": "",
-        "x_label": "|q| / 1/\u00c5",
-        "y_label": "Energy / meV",
+        "x_label": [
+            "|q| / 1/\u00c5"
+        ],
+        "y_label": [
+            "Energy / meV"
+        ],
         "cmap": "viridis",
         "extent": [
             0.5,
@@ -3498,17 +3616,25 @@
     },
     "NaCl_prim phonopy_nacl.yaml -w=coherent-plus-incoherent-dos --pdos=Cl --npts=10 --npts-min=10 --q-spacing=1": {
         "x_ticklabels": [
-            "0.0",
-            "0.5",
-            "1.0",
-            "1.5",
-            "2.0",
-            "2.5",
-            "3.0"
+            [
+                "0.0",
+                "0.5",
+                "1.0",
+                "1.5",
+                "2.0",
+                "2.5",
+                "3.0"
+            ],
+            [],
+            []
         ],
         "title": "",
-        "x_label": "|q| / 1/\u00c5",
-        "y_label": "Energy / meV",
+        "x_label": [
+            "|q| / 1/\u00c5"
+        ],
+        "y_label": [
+            "Energy / meV"
+        ],
         "cmap": "viridis",
         "extent": [
             0.5,
@@ -3968,17 +4094,25 @@
     },
     "graphite graphite.castep_bin --e-i=15 --e-max=20 --ebins=50 --npts=10 --npts-min=10 --q-spacing=1": {
         "x_ticklabels": [
-            "0.0",
-            "0.5",
-            "1.0",
-            "1.5",
-            "2.0",
-            "2.5",
-            "3.0"
+            [
+                "0.0",
+                "0.5",
+                "1.0",
+                "1.5",
+                "2.0",
+                "2.5",
+                "3.0"
+            ],
+            [],
+            []
         ],
         "title": "",
-        "x_label": "|q| / 1/\u00c5",
-        "y_label": "Energy / meV",
+        "x_label": [
+            "|q| / 1/\u00c5"
+        ],
+        "y_label": [
+            "Energy / meV"
+        ],
         "cmap": "viridis",
         "extent": [
             0.5,
@@ -4050,19 +4184,27 @@
     },
     "graphite graphite.castep_bin --e-f=15 --ebins=50 --q-max=16 --angle-range 20 230 --npts=10 --npts-min=10 --q-spacing=1": {
         "x_ticklabels": [
-            "0",
-            "2",
-            "4",
-            "6",
-            "8",
-            "10",
-            "12",
-            "14",
-            "16"
+            [
+                "0",
+                "2",
+                "4",
+                "6",
+                "8",
+                "10",
+                "12",
+                "14",
+                "16"
+            ],
+            [],
+            []
         ],
         "title": "",
-        "x_label": "|q| / 1/\u00c5",
-        "y_label": "Energy / meV",
+        "x_label": [
+            "|q| / 1/\u00c5"
+        ],
+        "y_label": [
+            "Energy / meV"
+        ],
         "cmap": "viridis",
         "extent": [
             0.5,
@@ -4147,17 +4289,25 @@
     },
     "graphite graphite.castep_bin --e-i=15 --ebins=50 --npts=10 --npts-min=10 --q-spacing=1": {
         "x_ticklabels": [
-            "0.0",
-            "0.5",
-            "1.0",
-            "1.5",
-            "2.0",
-            "2.5",
-            "3.0"
+            [
+                "0.0",
+                "0.5",
+                "1.0",
+                "1.5",
+                "2.0",
+                "2.5",
+                "3.0"
+            ],
+            [],
+            []
         ],
         "title": "",
-        "x_label": "|q| / 1/\u00c5",
-        "y_label": "Energy / meV",
+        "x_label": [
+            "|q| / 1/\u00c5"
+        ],
+        "y_label": [
+            "Energy / meV"
+        ],
         "cmap": "viridis",
         "extent": [
             0.5,
@@ -4229,23 +4379,25 @@
     },
     "graphite graphite.castep_bin --use-brille --brille-npts 10 --brille-grid-type nest -w coherent --npts=10 --npts-min=10 --q-spacing=1": {
         "x_ticklabels": [
-            "0.0",
-            "0.5",
-            "1.0",
-            "1.5",
-            "2.0",
-            "2.5",
-            "3.0",
-            "0.0",
-            "0.2",
-            "0.4",
-            "0.6",
-            "0.8",
-            "1.0"
+            [
+                "0.0",
+                "0.5",
+                "1.0",
+                "1.5",
+                "2.0",
+                "2.5",
+                "3.0"
+            ],
+            [],
+            []
         ],
         "title": "",
-        "x_label": "|q| / 1/\u00c5",
-        "y_label": "Energy / meV",
+        "x_label": [
+            "|q| / 1/\u00c5"
+        ],
+        "y_label": [
+            "Energy / meV"
+        ],
         "cmap": "viridis",
         "extent": [
             0.5,
@@ -4462,7 +4614,7 @@
         "data_2": [
             0.0,
             0.0,
-            0.0
+            0.03160469647476319
         ]
     }
 }

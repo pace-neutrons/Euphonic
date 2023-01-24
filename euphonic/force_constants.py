@@ -173,7 +173,7 @@ class ForceConstants:
             reduce_qpts: bool = True,
             use_c: Optional[bool] = None,
             n_threads: Optional[int] = None,
-            return_mode_gradients: bool = False,
+            return_mode_gradients: bool = False
             ) -> Union[QpointPhononModes,
                        Tuple[QpointPhononModes, Quantity]]:
         """
