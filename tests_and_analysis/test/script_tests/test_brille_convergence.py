@@ -44,8 +44,8 @@ class TestRegression:
         # Ensure figures are closed
         matplotlib.pyplot.close('all')
 
-    def run_brille_conv_and_test_result(
-            self, brille_conv_args):
+    def run_brille_conv_and_test_result(self, brille_conv_args):
+        atol = sys.float_info.epsilon
         euphonic.cli.brille_convergence.main(brille_conv_args)
         figs = get_all_figs()
         all_plot_data = get_all_plot_line_data(figs)
@@ -54,30 +54,61 @@ class TestRegression:
             expected_all_plot_data = json.load(expected_data_file)[
                 args_to_key(brille_conv_args)]
 
-        # Loop over expected figures
         for expected_plot_data, plot_data in zip(expected_all_plot_data, all_plot_data):
             for key, expected_val in expected_plot_data.items():
-                if key not in ['xy_data', 'x_ticklabels']:
+                if key == 'xy_data':
+                    # Float values for small statistics hard to check
+                    # Just test shape
+                    assert np.array(expected_val).shape \
+                           == np.array(plot_data[key]).shape
+                elif key != 'x_ticklabels':
+                    # Check titles and ax labels
+                    # Don't care about tick labels
                     assert expected_val == plot_data[key]
 
-#            if key = 'xy_data':
-#                # xy_data is indexed (n_axes, n_series, xy_axes, n_points)
-#                expected_val = np.array(expected_val)
-#                val = np.array(all_plot_data[i][key])
-#                if i <= 1: # First 2 plots are residual scatter plots
-#                    # x data are Euphonic frequencies
-#                    # they are predictable so we can test them
-#                    npt.assert_allclose(
-#                        expected_val[:, :, 0], val[:, :, 0],
-#                        atol=sys.float_info.epsilon)
-#                    # Note i = 1 is 3D ax, not sure how to test this yet
-#                    # y data are residuals from low density brille grid
-                    # hard to predict - just test they are below threshold
-                    #assert np.all(val[:, :, 1] < val[:, :, 0])
-                # The following plots are 1-D averaged or per-qpt
-                # structure factor line plots
-#                else:
-#                    pass
+        # Check specific properties of the different figures
+        # 1:  frequency residual vs frequency scatter plot
+        # 2:  structure factor residual vs frequency vs sf 3D scatter
+        # 3:  has 2 axes - 1D intensity average vs frequency line plot
+        #                - intensity residual vs frequency line plot
+        # 4+: has 2 axes - 1D intensity at q-point vs frequency line plot
+        #                - intensity residual vs frequency line plot
+        for i, fig in enumerate(figs):
+            # Note: xy_data is indexed (n_axes, n_series, xy_axes, n_points)
+            ex_xy_data = [np.array(axd)
+                          for axd in expected_all_plot_data[i]['xy_data']]
+            xy_data = [np.array(axd) for axd in all_plot_data[i]['xy_data']]
+
+            # x data are Euphonic frequencies or bins - can be tested
+            for ax in range(len(xy_data)):
+                npt.assert_allclose(ex_xy_data[ax][:, 0],
+                                    xy_data[ax][:, 0],
+                                    atol=atol)
+            if i == 0:
+                # Only check frequency residuals plot
+                # structure factors are unstable
+
+                # y axis is residual, check is smaller than frequencies
+                # themselves on the x axis
+                # also ignore acoustic (first 3) frequencies
+                assert np.all(
+                    xy_data[0][:, -1, 3:] < 0.1*xy_data[0][:, -2, 3:])
+            elif i > 1:
+                # Check differences in series on first axis match
+                # residuals on 2nd axis
+                for j in range(len(xy_data[1])):
+                    npt.assert_allclose(
+                        xy_data[0][j + 1, 1] - xy_data[0][j, 1],
+                        xy_data[1][j, 1])
+
+            markers = [ln.get_marker() for ax in fig.axes for ln in ax.lines]
+            linestyles = [ln.get_ls() for ax in fig.axes for ln in ax.lines]
+            if i < 2:
+                assert all(mk == 'x' for mk in markers)  # scatter plots
+                assert all(ls == 'None' for ls in linestyles)
+            else:
+                assert all(mk == 'None' for mk in markers)  # line plots
+                assert all(ls == '-' for ls in linestyles)
 
 
     @pytest.mark.parametrize('brille_conv_args', brille_conv_params)
