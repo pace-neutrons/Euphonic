@@ -113,22 +113,19 @@ class TestRegression:
                 assert all(mk == 'None' for mk in markers)  # line plots
                 assert all(ls == '-' for ls in linestyles)
 
-
     @pytest.mark.parametrize('brille_conv_args', brille_conv_params)
     def test_brille_conv_plots(
             self, inject_mocks, brille_conv_args):
         self.run_brille_conv_and_test_result(brille_conv_args)
 
-    @pytest.mark.skip
-    @pytest.mark.brille
-    @pytest.mark.multiple_extras
     @pytest.mark.parametrize('brille_conv_args, expected_kwargs', [
-        (['--use-brille', '--brille-npts', '25', '--disable-c'],
+        (['--brille-npts', '25', '--disable-c'],
          {'grid_npts': 25, 'grid_type': 'trellis',
           'interpolation_kwargs': {'use_c': False}}),
-        (['--use-brille', '--brille-grid-type', 'mesh', '--use-c',
-          '--n-threads', '2'],
-          {'grid_type': 'mesh', 'interpolation_kwargs': {'use_c': True,
+        (['--brille-grid-type', 'mesh', '--use-c',
+          '--n-threads', '2', '--asr', 'realspace'],
+          {'grid_type': 'mesh', 'interpolation_kwargs': {'asr': 'realspace',
+                                                         'use_c': True,
                                                          'n_threads': 2}})
     ])
     def test_brille_interpolator_from_force_constants_kwargs_passed(
@@ -143,13 +140,12 @@ class TestRegression:
                                    side_effect=MockException())
         try:
             euphonic.cli.brille_convergence.main(
-                [graphite_fc_file] + brille_conv_args + quick_calc_params)
+                [graphite_fc_file] + brille_conv_args)
         except MockException:
             pass
         default_interp_kwargs =  {'asr': None, 'dipole_parameter': 1.0,
                                   'n_threads': None, 'use_c': None}
-        default_kwargs = {'grid_type': 'trellis', 'grid_npts': 5000,
-                          'grid_density': None}
+        default_kwargs = {'grid_type': 'trellis', 'grid_npts': 5000}
         expected_interp_kwargs = {
             **default_interp_kwargs,
             **expected_kwargs.pop('interpolation_kwargs', {})}
