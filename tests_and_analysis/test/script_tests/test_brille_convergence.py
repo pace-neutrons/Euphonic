@@ -27,9 +27,11 @@ nacl_prim_fc_file = get_phonopy_path('NaCl_prim', 'phonopy_nacl.yaml')
 brille_conv_output_file = os.path.join(get_script_test_data_path(),
                                               'brille-convergence.json')
 
-quick_calc_params = ['--npts=2', '--brille-npts=10']
+quick_calc_params = ['--npts=3', '--brille-npts=10']
 brille_conv_params = [
-    [graphite_fc_file, *quick_calc_params]]
+    [graphite_fc_file, *quick_calc_params],
+    [graphite_fc_file, *quick_calc_params, '--eb=0.5', '--shape=lorentz'],
+    [nacl_prim_fc_file, *quick_calc_params, '-n=2', '--ebins=5', '--e-min=80', '--e-max=160', '-u=1/cm']]
 
 class TestRegression:
 
@@ -59,19 +61,20 @@ class TestRegression:
                 if key == 'xy_data':
                     # Float values for small statistics hard to check
                     # Just test shape
-                    assert np.array(expected_val).shape \
-                           == np.array(plot_data[key]).shape
+                    for i in range(len(expected_val)):
+                        assert np.array(expected_val[0]).shape \
+                               == np.array(plot_data[key][0]).shape
                 elif key != 'x_ticklabels':
                     # Check titles and ax labels
                     # Don't care about tick labels
                     assert expected_val == plot_data[key]
 
         # Check specific properties of the different figures
-        # 1:  frequency residual vs frequency scatter plot
-        # 2:  structure factor residual vs frequency vs sf 3D scatter
-        # 3:  has 2 axes - 1D intensity average vs frequency line plot
+        # 0:  frequency residual vs frequency scatter plot
+        # 1:  structure factor residual vs frequency vs sf 3D scatter
+        # 2:  has 2 axes - 1D intensity average vs frequency line plot
         #                - intensity residual vs frequency line plot
-        # 4+: has 2 axes - 1D intensity at q-point vs frequency line plot
+        # 3+: has 2 axes - 1D intensity at q-point vs frequency line plot
         #                - intensity residual vs frequency line plot
         for i, fig in enumerate(figs):
             # Note: xy_data is indexed (n_axes, n_series, xy_axes, n_points)
@@ -166,6 +169,8 @@ def test_regenerate_brille_conv_data(_):
     except FileNotFoundError:
         json_data = {}
     for brille_conv_param in (brille_conv_params):
+        # Ensure figures from previous runs are closed
+        matplotlib.pyplot.close('all')
         # Generate figures for us to retrieve with gcf
         euphonic.cli.brille_convergence.main(brille_conv_param)
 
