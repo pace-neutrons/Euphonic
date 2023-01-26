@@ -1,4 +1,3 @@
-import sys
 from multiprocessing import cpu_count
 
 import pytest

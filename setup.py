@@ -151,7 +151,7 @@ def run_setup():
         extras_require={
             'matplotlib': ['matplotlib>=2.2.2'],
             'phonopy_reader': ['h5py>=2.8.0', 'PyYAML>=3.13'],
-            'brille': ['brille>=0.6.0']
+            'brille': ['brille>=0.7.0']
         },
         entry_points={'console_scripts': [
             'euphonic-brille-convergence = euphonic.cli.brille_convergence:main',
