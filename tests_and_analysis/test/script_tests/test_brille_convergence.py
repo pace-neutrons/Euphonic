@@ -12,9 +12,9 @@ from tests_and_analysis.test.utils import get_data_path, get_castep_path, get_ph
 from tests_and_analysis.test.script_tests.utils import (
     get_script_test_data_path, get_all_plot_line_data, get_all_figs, args_to_key)
 
-pytestmark = pytest.mark.multiple_extras
+pytestmark = [pytest.mark.multiple_extras, pytest.mark.brille, pytest.mark.matplotlib]
 # These tests require both Brille and Matplotlib, allow tests with
-# multiple_extras marker to be collected and deselected if
+# these markers to be collected and deselected if
 # either is not installed
 try:
     import matplotlib.pyplot

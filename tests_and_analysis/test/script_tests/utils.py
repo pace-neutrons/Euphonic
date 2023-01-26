@@ -5,7 +5,7 @@ try:
 except ModuleNotFoundError:
     pass
 from copy import copy
-from typing import Dict, List, Union, Tuple, Optional
+from typing import Dict, List, Union, Tuple, Optional, Any
 from ..utils import get_data_path
 
 import numpy as np
@@ -33,18 +33,21 @@ def get_script_test_data_path(*subpaths: Tuple[str]) -> str:
     return get_data_path('script_data', *subpaths)
 
 
-def get_plot_line_data(fig: Optional[matplotlib.figure.Figure] = None
-                       ) -> Dict[str, Union[str,
-                                            List[str],
-                                            List[List[float]]]]:
+def get_plot_line_data(fig: Optional['matplotlib.figure.Figure'] = None
+                       ) -> Dict[str, Any]:
     if fig is None:
         fig = matplotlib.pyplot.gcf()
     data = get_fig_label_data(fig)
     data['xy_data'] = []
     for ax in fig.axes:
         if '3D' in type(ax).__name__:
-            data['xy_data'].append([np.array(line.get_data_3d()).tolist()
-                                    for line in ax.lines])
+            try:
+                data['xy_data'].append([np.array(line.get_data_3d()).tolist()
+                                        for line in ax.lines])
+            except AttributeError:
+                # get_data_3d not available until matplotlib 3.1
+                data['xy_data'].append([np.array(line._verts3d).tolist()
+                                        for line in ax.lines])
         else:
             data['xy_data'].append([line.get_xydata().T.tolist()
                                     for line in ax.lines])
@@ -59,7 +62,8 @@ def get_all_figs() -> List['matplotlib.figure.Figure']:
     return all_figs
 
 
-def get_all_plot_line_data(figs: List[matplotlib.figure.Figure]) -> Dict[str, List[str]]:
+def get_all_plot_line_data(figs: List['matplotlib.figure.Figure']
+                           ) -> List[Dict[str, Any]]:
     all_figs = get_all_figs()
     data = []
     for fig in all_figs:

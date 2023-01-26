@@ -128,9 +128,10 @@ class TestRegression:
         # Different numerical results on different platforms
         # unless a very dense, computationally expensive grid
         # is used. Just check that the program runs and a plot
-        # is produced, by omitting check of 'data_1'
-        self.run_powder_map_and_test_result(powder_map_args,
-                                            keys_to_omit=['x_ticklabels', 'data_1'])
+        # is produced, by omitting check of 'data_1', 'data_2'
+        self.run_powder_map_and_test_result(
+            powder_map_args,
+            keys_to_omit=['x_ticklabels', 'data_1', 'data_2'])
 
     @pytest.mark.brille
     @pytest.mark.multiple_extras

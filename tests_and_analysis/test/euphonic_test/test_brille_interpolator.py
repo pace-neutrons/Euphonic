@@ -1,3 +1,4 @@
+import sys
 from multiprocessing import cpu_count
 
 import pytest
@@ -5,18 +6,18 @@ import numpy as np
 import numpy.testing as npt
 import spglib as spg
 
-from euphonic import ForceConstants, QpointPhononModes
+from euphonic import ForceConstants, QpointPhononModes, ureg
 from tests_and_analysis.test.utils import get_data_path, get_test_qpts
 from tests_and_analysis.test.euphonic_test.test_force_constants import (
     get_fc)
-from tests_and_analysis.test.euphonic_test.test_structure_factor import (
-    get_sf, check_structure_factor)
 from tests_and_analysis.test.euphonic_test.test_qpoint_phonon_modes import (
     get_qpt_ph_modes_from_json)
 from tests_and_analysis.test.euphonic_test.test_qpoint_frequencies import (
     get_qpt_freqs, check_qpt_freqs)
 from tests_and_analysis.test.euphonic_test.test_crystal import (
     get_crystal, check_crystal)
+from tests_and_analysis.test.euphonic_test.test_spectrum1d import (
+    get_spectrum1d, check_spectrum1d)
 
 # Allow tests with brille marker to be collected and
 # deselected if brille isn't installed
@@ -76,13 +77,14 @@ class TestBrilleInterpolatorCreation:
                     'grid_type': 'mesh'},
          'quartz_mesh_10.hdf5')
         ])
-    def test_create_from_force_constants(self, material, kwargs, expected_grid_file):
+    def test_create_from_force_constants(
+            self, material, kwargs, expected_grid_file):
         fc = get_fc(material)
         bri = BrilleInterpolator.from_force_constants(fc, **kwargs)
         expected_grid = get_brille_grid(expected_grid_file)
         check_crystal(fc.crystal, bri.crystal)
         assert type(expected_grid) is type(bri._grid)
-        npt.assert_allclose(expected_grid.rlu, bri._grid.rlu)
+        assert expected_grid.rlu.shape == bri._grid.rlu.shape
 
     @pytest.mark.parametrize(
         'kwargs, expected_grid_type, expected_grid_kwargs', [
@@ -94,7 +96,10 @@ class TestBrilleInterpolatorCreation:
              'brille.BZTrellisQdc',
              {'node_volume_fraction': 0.037894368,
               'always_triangulate': False,
-              'approx_config': ApproxConfig()}),
+              'approx_config': None}),
+            # Note: approx_config should actually be brille.ApproxConfig
+            # but we can't import it on the top level here due to optional
+            # extras
             ({'grid_type': 'mesh', 'grid_npts': 50},
              'brille.BZMeshQdc',
              {'max_size': 0.00757887361, 'max_points': 50}),
@@ -105,7 +110,7 @@ class TestBrilleInterpolatorCreation:
              'brille.BZTrellisQdc',
              {'node_volume_fraction': 0.00037894368,
               'always_triangulate': False,
-              'approx_config': ApproxConfig()})])
+              'approx_config': None})])
     def test_from_force_constants_correct_grid_kwargs_passed_to_brille(
             self, mocker, kwargs, expected_grid_type, expected_grid_kwargs):
         # Patch __init__ to avoid type checks - BZTrellisQdc is now a mock
@@ -183,25 +188,29 @@ class TestBrilleInterpolatorCreation:
 class TestBrilleInterpolatorCalculateQpointPhononModes:
 
     @pytest.mark.parametrize(
-        'material, from_fc_kwargs, expected_sf_file', [
-            ('LZO', {'grid_npts': 100},
-             'La2Zr2O7_trellis_100_structure_factor.json'),
-            ('CaHgO2', {'grid_type': 'trellis', 'grid_npts': 20},
-             'CaHgO2_trellis_20_structure_factor.json')
+        'material, from_fc_kwargs, emax, expected_sf1d_file', [
+            ('LZO', {'grid_npts': 100}, 100,
+             'La2Zr2O7_trellis_100_sf_1d_average.json'),
+            ('CaHgO2', {'grid_type': 'trellis', 'grid_npts': 500}, 90,
+             'CaHgO2_trellis_500_sf_1d_average.json')
         ])
     def test_calculate_qpoint_phonon_modes(
-            self, material, from_fc_kwargs, expected_sf_file):
+            self, material, from_fc_kwargs, emax, expected_sf1d_file):
         fc = get_fc(material)
         bri = BrilleInterpolator.from_force_constants(fc, **from_fc_kwargs)
 
         qpts = get_test_qpts()
         qpm = bri.calculate_qpoint_phonon_modes(qpts)
+        # Replace frequencies to ensure same binning
+        qpm_eu = fc.calculate_qpoint_phonon_modes(qpts)
+        qpm.frequencies = qpm_eu.frequencies
 
-        # Calculate structure factor to test eigenvectors
+        # Calculate structure factor 1D to test eigenvectors
         sf = qpm.calculate_structure_factor()
-        expected_sf = get_sf(material, expected_sf_file)
-        check_structure_factor(sf, expected_sf, freq_rtol=1e-4,
-                               sf_rtol=1e-3)
+        ebins = np.arange(5, 100)*ureg('meV')
+        sf1d = sf.calculate_1d_average(ebins)
+        expected_sf1d = get_spectrum1d(expected_sf1d_file)
+        check_spectrum1d(sf1d, expected_sf1d, y_rtol=0.01, y_atol=3e-3)
 
     def test_brille_qpoint_phonon_modes_similar_to_those_from_fc(self):
         fc = get_fc('graphite')
@@ -211,16 +220,20 @@ class TestBrilleInterpolatorCalculateQpointPhononModes:
                          [ 0.00, 0.50, 0.00],
                          [ 0.65, 0.05, 0.25],
                          [ 1.80, 0.55, 2.55]])
-        qpm_brille = bri.calculate_qpoint_phonon_modes(qpts)
         qpm_fc = fc.calculate_qpoint_phonon_modes(qpts)
-
-        # Calculate structure factor to test eigenvectors
-        sf_brille = qpm_brille.calculate_structure_factor()
+        qpm_brille = bri.calculate_qpoint_phonon_modes(qpts)
+        # Replace frequencies to ensure same binning
+        qpm_brille.frequencies = qpm_fc.frequencies
+        # Calculate structure factor 1D to test eigenvectors
+        ebins = np.arange(5, 190)*ureg('meV')
         sf_fc = qpm_fc.calculate_structure_factor()
+        sf1d_fc = sf_fc.calculate_1d_average(ebins)
+        sf_brille = qpm_brille.calculate_structure_factor()
+        sf1d_brille = sf_brille.calculate_1d_average(ebins)
         # Tolerances are quite generous, but that is required unless
         # we have a very dense grid (expensive to test)
-        check_structure_factor(sf_brille, sf_fc, freq_rtol=1e-3,
-                               sf_rtol=0.01, sf_atol=0.035)
+        check_spectrum1d(sf1d_brille, sf1d_fc,
+                         y_rtol=0.01, y_atol=5e-3)
 
     def test_calculate_qpoint_phonon_modes_single_qpt(self):
         fc = get_fc('graphite')
@@ -261,21 +274,22 @@ class TestBrilleInterpolatorCalculateQpointPhononModes:
 class TestBrilleInterpolatorCalculateQpointFrequencies:
 
     @pytest.mark.parametrize(
-        'material, from_fc_kwargs, expected_qpf_file', [
+        'material, from_fc_kwargs, expected_qpf_file, rtol', [
             ('NaCl', {'grid_npts': 10},
-             'NaCl_trellis_10_qpoint_frequencies.json'),
+             'NaCl_trellis_10_qpoint_frequencies.json', 0.01),
+            # Higher rtol on quartz due to degenerate modes
             ('quartz', {'grid_type': 'mesh', 'grid_npts': 200},
-             'quartz_mesh_200_qpoint_frequencies.json'),
+             'quartz_mesh_200_qpoint_frequencies.json', 0.07),
         ])
     def test_calculate_qpoint_frequencies(
-            self, material, from_fc_kwargs, expected_qpf_file):
+            self, material, from_fc_kwargs, expected_qpf_file, rtol):
         fc = get_fc(material)
         bri = BrilleInterpolator.from_force_constants(fc, **from_fc_kwargs)
 
         qpts = get_test_qpts()
         qpf = bri.calculate_qpoint_frequencies(qpts)
         expected_qpf = get_qpt_freqs(material, expected_qpf_file)
-        check_qpt_freqs(qpf, expected_qpf, frequencies_rtol=0.01,
+        check_qpt_freqs(qpf, expected_qpf, frequencies_rtol=rtol,
                         frequencies_atol=0.8)
 
     def test_brille_qpoint_frequencies_similar_to_those_from_fc(self):

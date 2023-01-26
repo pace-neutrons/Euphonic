@@ -57,6 +57,11 @@ def test_missing_matplotlib(mocker):
 
 
 class TestPlot1DCore:
+
+    def teardown_method(self):
+        # Ensure figures are closed
+        matplotlib.pyplot.close('all')
+
     @pytest.mark.parametrize('spectra, expected_error',
                              [('wrong_type', TypeError), ])
     def test_1d_core_errors(self, spectra, expected_error, axes):
@@ -182,6 +187,11 @@ class TestPlot1DCore:
             plot_1d_to_axis(spec, axes, labels=labels)
 
 class TestPlot1D:
+
+    def teardown_method(self):
+        # Ensure figures are closed
+        matplotlib.pyplot.close('all')
+
     @staticmethod
     def mock_core(mocker):
         return mocker.patch('euphonic.plot.plot_1d_to_axis',
@@ -284,6 +294,11 @@ class TestPlot1D:
 
 
 class TestPlot2D:
+
+    def teardown_method(self):
+        # Ensure figures are closed
+        matplotlib.pyplot.close('all')
+
     @staticmethod
     def mock_core(mocker):
         return mocker.patch('euphonic.plot.plot_2d_to_axis',
