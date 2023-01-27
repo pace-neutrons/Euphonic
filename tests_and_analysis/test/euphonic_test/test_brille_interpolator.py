@@ -2,8 +2,6 @@ from multiprocessing import cpu_count
 
 import pytest
 import numpy as np
-import numpy.testing as npt
-import spglib as spg
 
 from euphonic import ForceConstants, QpointPhononModes, ureg
 from tests_and_analysis.test.utils import get_data_path, get_test_qpts
@@ -22,7 +20,6 @@ from tests_and_analysis.test.euphonic_test.test_spectrum1d import (
 # deselected if brille isn't installed
 pytestmark = pytest.mark.brille
 try:
-    import brille as br
     from brille import BZTrellisQdc, BZMeshQdc, BZNestQdc, ApproxConfig
     from euphonic.brille import BrilleInterpolator
 except ModuleNotFoundError:
@@ -204,7 +201,7 @@ class TestBrilleInterpolatorCalculateQpointPhononModes:
 
         # Calculate structure factor 1D to test eigenvectors
         sf = qpm.calculate_structure_factor()
-        ebins = np.arange(5, 100)*ureg('meV')
+        ebins = np.arange(5, emax)*ureg('meV')
         sf1d = sf.calculate_1d_average(ebins)
         expected_sf1d = get_spectrum1d(expected_sf1d_file)
         check_spectrum1d(sf1d, expected_sf1d, y_rtol=0.01, y_atol=3e-3)
@@ -245,7 +242,8 @@ class TestBrilleInterpolatorCalculateQpointPhononModes:
         'material, grid_file, kwargs', [
             ('LZO', 'lzo_trellis_10.hdf5', {}),
             ('quartz', 'quartz_mesh_10.hdf5', {'useparallel': False}),
-            ('LZO', 'lzo_trellis_10.hdf5', {'kwarg_one': 'one', 'kwarg_two': 2}),
+            ('LZO', 'lzo_trellis_10.hdf5',
+             {'kwarg_one': 'one', 'kwarg_two': 2}),
         ])
     def test_calculate_qpoint_phonon_modes_correct_kwargs_passed(
             self, mocker, material, grid_file, kwargs):

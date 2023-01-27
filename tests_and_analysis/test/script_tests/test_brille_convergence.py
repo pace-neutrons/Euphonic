@@ -1,4 +1,3 @@
-import os
 import sys
 import json
 from unittest.mock import patch
@@ -7,12 +6,13 @@ import pytest
 import numpy.testing as npt
 import numpy as np
 
-from euphonic import Spectrum2D
-from tests_and_analysis.test.utils import get_data_path, get_castep_path, get_phonopy_path
+from tests_and_analysis.test.utils import get_castep_path, get_phonopy_path
 from tests_and_analysis.test.script_tests.utils import (
-    get_script_test_data_path, get_all_plot_line_data, get_all_figs, args_to_key)
+    get_script_test_data_path, get_all_plot_line_data, get_all_figs,
+    args_to_key)
 
-pytestmark = [pytest.mark.multiple_extras, pytest.mark.brille, pytest.mark.matplotlib]
+pytestmark = [pytest.mark.multiple_extras, pytest.mark.brille,
+              pytest.mark.matplotlib]
 # These tests require both Brille and Matplotlib, allow tests with
 # these markers to be collected and deselected if
 # either is not installed
@@ -24,14 +24,14 @@ except ModuleNotFoundError:
 
 graphite_fc_file = get_castep_path('graphite', 'graphite.castep_bin')
 nacl_prim_fc_file = get_phonopy_path('NaCl_prim', 'phonopy_nacl.yaml')
-brille_conv_output_file = os.path.join(get_script_test_data_path(),
-                                              'brille-convergence.json')
+brille_conv_output_file = get_script_test_data_path('brille-convergence.json')
 
 quick_calc_params = ['--npts=3', '--brille-npts=10']
 brille_conv_params = [
     [graphite_fc_file, *quick_calc_params],
     [graphite_fc_file, *quick_calc_params, '--eb=0.5', '--shape=lorentz'],
-    [nacl_prim_fc_file, *quick_calc_params, '-n=2', '--ebins=5', '--e-min=80', '--e-max=160', '-u=1/cm']]
+    [nacl_prim_fc_file, *quick_calc_params, '-n=2', '--ebins=5', '--e-min=80',
+     '--e-max=160', '-u=1/cm']]
 
 class TestRegression:
 
@@ -56,7 +56,8 @@ class TestRegression:
             expected_all_plot_data = json.load(expected_data_file)[
                 args_to_key(brille_conv_args)]
 
-        for expected_plot_data, plot_data in zip(expected_all_plot_data, all_plot_data):
+        for expected_plot_data, plot_data in zip(expected_all_plot_data,
+                                                 all_plot_data):
             for key, expected_val in expected_plot_data.items():
                 if key == 'xy_data':
                     # Float values for small statistics hard to check
@@ -177,7 +178,8 @@ def test_regenerate_brille_conv_data(_):
         if len(keys_to_replace) > 0:
             for i, plot_data in enumerate(all_plot_data):
                 for key in keys_to_replace:
-                    json_data[args_to_key(brille_conv_param)][i][key] = plot_data[key]
+                    json_data[args_to_key(brille_conv_param)][i][key] \
+                        = plot_data[key]
         else:
             json_data[args_to_key(brille_conv_param)] = all_plot_data
 
