@@ -112,6 +112,15 @@ The ``--save-json`` option can be used to output the produced
 :ref:`Spectrum2D` object as a Euphonic .json file with a specified
 name for further use in Euphonic or other programs.
 
+Faster Interpolation with Brille
+--------------------------------
+
+The Brille library allows linear interpolation of phonon frequencies and eigenvectors, as opposed to the Fourier interpolation used by Euphonic.
+Linear interpolation should be faster, but less accurate, than Fourier interpolation, so can provide a performance improvement of the ``euphonic-powder-map`` script.
+To use Brille with this script use the ``--use-brille`` argument, which by default will create a Brille trellis grid with approximately 5000 points from which to perform linear interpolation.
+The grid type and number or number density of points on the grid can be changed using the ``--brille-grid-type`` and ``--brille-npts`` or ``--brille-npts-density`` arguments. 
+For more information on how Brille works with Euphonic and help choosing the number of grid points, see :ref:`Brille Interpolator <brille-interpolator>` and :ref:`euphonic-brille-convergence <brille-convergence-script>`.
+
 Command Line Options
 --------------------
 

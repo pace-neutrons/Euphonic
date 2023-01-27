@@ -38,7 +38,7 @@ class BrilleInterpolator:
             Lattice and atom information
         grid
             A Brille grid filled with phonon eigenvectors in
-            Cartesian coordinates and phonon frequencies in meV. See
+            Cartesian coordinates and phonon frequencies in Hartree. See
             Brille documentation for details.
         """
         _check_constructor_inputs(
@@ -159,19 +159,19 @@ class BrilleInterpolator:
             the linear interpolation is likely to give values
             closer to the ForceConstants Fourier interpolation,
             but the initialisation and memory costs will be higher.
-            This does nothing if grid_kwargs is set
+            This does nothing if grid_kwargs is set.
         grid_density
-            The approximate density of q-points per 1/angstrom^3
-            volume
+            The approximate number density of q-points per
+            1/angstrom^3 volume
         grid_kwargs
             Kwargs to be passed to the grid constructor (e.g.
             brille.BZTrellisQdc). If set grid_npts does
-            nothing
+            nothing.
         interpolation_kwargs
             Kwargs to be passed to
             ForceConstants.calculate_qpoint_phonon_modes. Note
             that insert_gamma and reduce_qpoints are incompatible
-            and will be ignored
+            and will be ignored.
 
         Returns
         -------

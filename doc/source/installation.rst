@@ -3,17 +3,23 @@ Installation
 
 .. contents:: :local:
 
-Euphonic requires Python ``3.6``, ``3.7`` or ``3.8``
+Euphonic has been tested on Python 3.7 - 3.10.
 
 Pip
 ===
 
-If you want to do plotting, or read Phonopy files, you will need to install the
-optional ``matplotlib`` and ``phonopy_reader`` extensions:
+Euphonic has optional 'extensions' which require extra dependencies for certain functionality.
+They are listed below
+
+* **matplotlib** - required for plotting
+* **phonopy_reader** - required for reading Phonopy files
+* **brille** - required for performing linear interpolation with the Brille library
+
+To install euphonic with all the dependencies run:
 
 .. code-block:: bash
 
-  pip install euphonic[matplotlib,phonopy_reader]
+  pip install euphonic[matplotlib,phonopy_reader,brille]
 
 The dependencies can also be installed individually:
 
@@ -21,7 +27,7 @@ The dependencies can also be installed individually:
 
   pip install euphonic[matplotlib]
 
-If you don't require plotting or reading of Phonopy files, just use:
+If you don't require any of the extra depencencies, just use:
 
 .. code-block:: bash
 
@@ -49,19 +55,21 @@ entered with ``activate euphonic-forge`` and exited with
 
   conda install -c conda-forge euphonic matplotlib-base pyyaml tqdm h5py
 
+Note that Brille is not currently available on Conda so users wanting this functionality should use pip.
+
 Github
 ======
 To get the latest unreleased version, clone the Git repository at
 ``https://github.com/pace-neutrons/Euphonic`` and cd into the top directory
 containing the ``setup.py`` script.
-To install with the optional Matplotlib dependency for plotting and pyyaml/h5py
-dependencies for reading Phonopy files use:
+
+To install with all dependencies use:
 
 .. code-block:: bash
 
-  pip install .[matplotlib,phonopy_reader]
+  pip install .[matplotlib,phonopy_reader,brille]
 
-If you don't require plotting or reading of Phonopy files, just use:
+If you don't require the extra dependencies, just use:
 
 .. code-block:: bash
 
