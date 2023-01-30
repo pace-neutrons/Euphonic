@@ -20,7 +20,7 @@ from tests_and_analysis.test.euphonic_test.test_spectrum1d import (
 # deselected if brille isn't installed
 pytestmark = pytest.mark.brille
 try:
-    from brille import BZTrellisQdc, BZMeshQdc, BZNestQdc, ApproxConfig
+    from brille import BZTrellisQdc, BZMeshQdc, BZNestQdc
     from euphonic.brille import BrilleInterpolator
 except ModuleNotFoundError:
     pass
@@ -91,11 +91,7 @@ class TestBrilleInterpolatorCreation:
             ({'grid_npts': 10, 'grid_type': 'trellis'},
              'brille.BZTrellisQdc',
              {'node_volume_fraction': 0.037894368,
-              'always_triangulate': False,
-              'approx_config': None}),
-            # Note: approx_config should actually be brille.ApproxConfig
-            # but we can't import it on the top level here due to optional
-            # extras
+              'always_triangulate': False}),
             ({'grid_type': 'mesh', 'grid_npts': 50},
              'brille.BZMeshQdc',
              {'max_size': 0.00757887361, 'max_points': 50}),
@@ -105,8 +101,7 @@ class TestBrilleInterpolatorCreation:
             ({},
              'brille.BZTrellisQdc',
              {'node_volume_fraction': 0.00037894368,
-              'always_triangulate': False,
-              'approx_config': None})])
+              'always_triangulate': False})])
     def test_from_force_constants_correct_grid_kwargs_passed_to_brille(
             self, mocker, kwargs, expected_grid_type, expected_grid_kwargs):
         # Patch __init__ to avoid type checks - BZTrellisQdc is now a mock
@@ -119,10 +114,7 @@ class TestBrilleInterpolatorCreation:
         BrilleInterpolator.from_force_constants(fc, **kwargs)
         for called_key, called_val in mock_grid.call_args[1].items():
             expected_val = expected_grid_kwargs.pop(called_key)
-            if called_key == 'approx_config':
-                assert isinstance(called_val, ApproxConfig)
-            else:
-                assert expected_val == pytest.approx(called_val)
+            assert expected_val == pytest.approx(called_val)
         # Make sure all expected kwargs have been passed
         assert not expected_grid_kwargs
 

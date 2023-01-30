@@ -184,7 +184,7 @@ class BrilleInterpolator:
         crystal = force_constants.crystal
         cell = crystal.to_spglib_cell()
 
-        dataset = spg.get_symmetry_dataset(cell, symprec=1e-8)
+        dataset = spg.get_symmetry_dataset(cell)
         rotations = dataset['rotations']  # in fractional
         translations = dataset['translations']  # in fractional
 
@@ -193,12 +193,8 @@ class BrilleInterpolator:
         lattice = br.Lattice(cell[0], symmetry=symmetry, basis=basis,
                              snap_to_symmetry=True)
         # snap_to_symmetry will take care of slightly off-symmetry atom
-        # basis positions, but not basis vectors, so include tolerance
-        # for lattice vectors when creating the BZ
-        ac = br.ApproxConfig()
-        ac.real_space_tolerance = 1e-8
-        ac.reciprocal_space_tolerance = 1e-8
-        bz = br.BrillouinZone(lattice, approx_config=ac)
+        # basis positions and vectors
+        bz = br.BrillouinZone(lattice)
 
         print('Generating grid...')
         vol = bz.ir_polyhedron.volume
@@ -213,8 +209,7 @@ class BrilleInterpolator:
                     grid_kwargs = {
                         'node_volume_fraction': vol/grid_npts}
                 grid_kwargs = {**grid_kwargs,
-                               'always_triangulate': False,
-                               'approx_config': ac}
+                               'always_triangulate': False}
             grid = br.BZTrellisQdc(bz, **grid_kwargs)
         elif grid_type == 'mesh':
             if grid_kwargs is None:
