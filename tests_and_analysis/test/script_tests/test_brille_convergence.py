@@ -30,6 +30,7 @@ quick_calc_params = ['--npts=3', '--brille-npts=10']
 brille_conv_params = [
     [graphite_fc_file, *quick_calc_params],
     [graphite_fc_file, *quick_calc_params, '--eb=0.5', '--shape=lorentz'],
+    [graphite_fc_file, '--npts=3', '--brille-npts', '10', '15'],
     [nacl_prim_fc_file, *quick_calc_params, '-n=2', '--ebins=5', '--e-min=80',
      '--e-max=160', '-u=1/cm']]
 
@@ -98,11 +99,11 @@ class TestRegression:
                 assert np.all(
                     xy_data[0][:, -1, 3:] < 0.1*xy_data[0][:, -2, 3:])
             elif i > 1:
-                # Check differences in series on first axis match
-                # residuals on 2nd axis
+                # Check differences between Brille and Euphonic series
+                # on first axis match residuals on 2nd axis
                 for j in range(len(xy_data[1])):
                     npt.assert_allclose(
-                        xy_data[0][j + 1, 1] - xy_data[0][j, 1],
+                        xy_data[0][j + 1, 1] - xy_data[0][0, 1],
                         xy_data[1][j, 1])
 
             markers = [ln.get_marker() for ax in fig.axes for ln in ax.lines]
