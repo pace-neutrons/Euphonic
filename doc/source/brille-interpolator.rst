@@ -5,7 +5,9 @@ BrilleInterpolator
 
 The ``BrilleInterpolator`` object provides an easy interface to the `Brille <https://brille.github.io/>`_ library for phonon frequencies and eigenvectors.
 It can be created from a ``ForceConstants`` object, then used to perform linear (rather than Fourier) interpolation to calculate phonon frequencies and eigenvectors at specific q-points.
-Linear interpolation should be faster, but less accurate, than the Fourier interpolation performed by ``ForceConstants``.
+Linear interpolation may be less accurate than the Fourier interpolation performed by ``ForceConstants``,
+but should be faster for large unit cells, particularly those tha require the computationally expensive dipole correction calculation.
+You should test this on your particular machine and material first to see if it provides a performance benefit.
 
 When creating a ``BrilleInterpolator`` from ``ForceConstants``, Brille calculates the first Brillouin Zone (BZ) for the provided ``ForceConstants.crystal``,
 then creates a grid of points distributed across it.
