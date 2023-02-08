@@ -20,6 +20,12 @@ Getting Started
 
 Using Euphonic
 ==============
+
+.. toctree::
+  :maxdepth: 1
+
+  Quick How-to Guide <howto>
+
 .. toctree::
   :maxdepth: 1
 
