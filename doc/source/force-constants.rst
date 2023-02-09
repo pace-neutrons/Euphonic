@@ -321,6 +321,8 @@ Note that the force constants must have a Euphonic-like shape before using this 
     crystal, force_constants, sc_matrix, cell_origins, born, dielectric)
 
 
+.. _calculating_phonons:
+
 Calculating Phonon Frequencies and Eigenvectors
 -----------------------------------------------
 
