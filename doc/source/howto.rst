@@ -8,7 +8,7 @@ By default it supports the output from CASTEP or Phonopy, but it is possible to 
 This guide will describe how to perform many common Euphonic operations.
 It is not intended to describe every possible operation you could perform.
 We have tried to provide links to the API documentation for the most complex cases.
-If you need extra help please feel free to contact us at euphonichelp@stfc.ac.uk.
+If you need extra help please feel free to contact us at euphonic@stfc.ac.uk.
 This guide assumes a basic level of proficiency with Python, Numpy and Matplotlib.
 If you do not know what those are you might want to look them up first!
 
