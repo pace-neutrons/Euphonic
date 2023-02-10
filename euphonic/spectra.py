@@ -1362,7 +1362,7 @@ class Spectrum2D(Spectrum):
                 self.assert_regular_bins('x', message=(
                     'Broadening by convolution may give incorrect results.'))
             except AssertionError as e:
-                warnings.warn(e, UserWarning)
+                warnings.warn(str(e), UserWarning)
             widths_in_bin_units[0] = x_width.to(self.x_data_unit).magnitude
         if isinstance(y_width, Quantity):
             widths_in_bin_units[1] = y_width.to(self.y_data_unit).magnitude
