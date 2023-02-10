@@ -1710,7 +1710,11 @@ def _distribution_1d(xbins: np.ndarray, xwidth: float, shape: str = 'lorentz'
                      ) -> np.ndarray:
     x = _get_dist_bins(xbins)
     if shape == 'lorentz':
-        dist = _lorentzian(x, xwidth) * np.diff(xbins).mean()
+        dist = _lorentzian(x, xwidth)
+        dist = dist / np.sum(dist)  # Naively normalise
+    else:
+        raise ValueError("Expected shape: 'lorentz'")
+
     return dist
 
 
