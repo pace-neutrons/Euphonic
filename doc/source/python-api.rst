@@ -18,3 +18,4 @@ Python API
   plotting
   sampling
   utils
+  Interpolation with Brille <brille-interpolator>

@@ -19,4 +19,5 @@ python:
         extra_requirements:
            - matplotlib
            - phonopy_reader
+           - brille
       - requirements: doc/requirements.txt

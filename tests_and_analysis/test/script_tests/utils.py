@@ -1,11 +1,14 @@
 import os
+from copy import copy
+from typing import Dict, List, Union, Tuple, Optional, Any
+
+import numpy as np
 # Required for mocking
 try:
     import matplotlib.pyplot
 except ModuleNotFoundError:
     pass
-from copy import copy
-from typing import Dict, List, Union, Tuple
+
 from ..utils import get_data_path
 
 
@@ -32,15 +35,40 @@ def get_script_test_data_path(*subpaths: Tuple[str]) -> str:
     return get_data_path('script_data', *subpaths)
 
 
-def get_current_plot_line_data() -> Dict[str, Union[str,
-                                                    List[str],
-                                                    List[List[List[float]]]]]:
-    fig = matplotlib.pyplot.gcf()
+def get_plot_line_data(fig: Optional['matplotlib.figure.Figure'] = None
+                       ) -> Dict[str, Any]:
+    if fig is None:
+        fig = matplotlib.pyplot.gcf()
     data = get_fig_label_data(fig)
     data['xy_data'] = []
     for ax in fig.axes:
-        data['xy_data'].append([line.get_xydata().T.tolist()
-                                for line in fig.axes[0].lines])
+        if '3D' in type(ax).__name__:
+            try:
+                data['xy_data'].append([np.array(line.get_data_3d()).tolist()
+                                        for line in ax.lines])
+            except AttributeError:
+                # get_data_3d not available until matplotlib 3.1
+                data['xy_data'].append([np.array(line._verts3d).tolist()
+                                        for line in ax.lines])
+        else:
+            data['xy_data'].append([line.get_xydata().T.tolist()
+                                    for line in ax.lines])
+    return data
+
+
+def get_all_figs() -> List['matplotlib.figure.Figure']:
+    all_figs = []
+    fignums = matplotlib.pyplot.get_fignums()
+    for fignum in fignums:
+        all_figs.append(matplotlib.pyplot.figure(fignum))
+    return all_figs
+
+
+def get_all_plot_line_data(figs: List['matplotlib.figure.Figure']
+                           ) -> List[Dict[str, Any]]:
+    data = []
+    for fig in figs:
+        data.append(get_plot_line_data(fig))
     return data
 
 
@@ -48,7 +76,8 @@ def get_fig_label_data(fig) -> Dict[str, Union[str, List[str]]]:
     label_data = {'x_ticklabels': [],
                   'x_label': [],
                   'y_label': [],
-                  'title': fig._suptitle.get_text()}
+                  'title': fig._suptitle.get_text() \
+                           if fig._suptitle is not None else None}
 
     # Get axis/tick labels from all axes, collect only non-empty values
     # to avoid breaking tests if the way we set up axes changes
@@ -59,6 +88,12 @@ def get_fig_label_data(fig) -> Dict[str, Union[str, List[str]]]:
         ylabel = ax.get_ylabel()
         if ylabel:
             label_data['y_label'].append(ylabel)
+        if '3D' in type(ax).__name__:
+            zlabel = ax.get_zlabel()
+            if 'z_label' not in  label_data:
+                label_data['z_label'] = []
+            if zlabel:
+                label_data['z_label'].append(zlabel)
         # Collect tick labels from visible axes only,
         # we don't care about invisible axis tick labels
         if ax.get_frame_on():

@@ -5,7 +5,10 @@ ForceConstants
 
 The ``ForceConstants`` object contains the force constants, supercell, and
 crystal structure information required to calculate phonon frequencies and
-eigenvectors at any arbitrary q via Fourier interpolation. 
+eigenvectors at any arbitrary q via Fourier interpolation.
+
+For faster, but less accurate linear interpolation with the Brille library,
+see :ref:`Brille Interpolator <brille-interpolator>`.
 
 .. contents:: :local:
 

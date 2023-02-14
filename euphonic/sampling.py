@@ -7,7 +7,7 @@ from itertools import product
 from typing import Iterator, Tuple
 
 import numpy as np
-
+from scipy.optimize import fmin
 
 _golden_ratio = (1 + np.sqrt(5)) / 2
 
@@ -356,3 +356,41 @@ def random_sphere(npts, cartesian: bool = True
             yield _spherical_polar_to_cartesian(phi, theta)
         else:
             yield (1, phi, theta)
+
+def recurrence_sequence(npts: int, order=3) -> Iterator[tuple]:
+    """Yield a series of well-distributed points in square or cube
+
+    This implements the R_d method of Martin Roberts (2018) published at
+    http://extremelearning.com.au/unreasonable-effectiveness-of-quasirandom-sequences/
+
+    The Krcadinac (2005) method defines a set of irrational
+    numbers beginning with the golden ratio. (x^{d+1} = x + 1). The number
+    corresponding to the desired dimensionality is transformed to irrational
+    factors alpha = (1/x_d, (1/x_d)^2, (1/x_d)^3, ...)
+
+    For each of these factors a recurrence sequence t = (n alpha) % 1 yields a
+    sequence of n low-discrepancy quasirandom numbers ranging 0 <= t < 1.
+    These are packed into n-tuples to form the output n-dimensional samples.
+
+    Parameters
+    ----------
+
+    npts
+        Number of points sampled in unit of n-dimensional space
+    order
+        Number of dimensions in sampled space
+
+    Returns
+    -------
+
+    n-tuples of floats ranging 0-1, where n=order
+
+    """
+
+    phi = fmin(lambda x: (x + 1. - x**(order + 1))**2,
+               1.,
+               xtol=np.finfo(float).eps, disp=False)[0]
+    alpha = phi**np.arange(-1, -order - 1, -1)
+
+    for n in range(npts):
+        yield tuple((n * alpha) % 1)

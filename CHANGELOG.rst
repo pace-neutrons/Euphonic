@@ -1,6 +1,18 @@
 `Unreleased <https://github.com/pace-neutrons/Euphonic/compare/v1.1.0...HEAD>`_
 ----------
 
+- New features:
+
+  - You can now perform linear interpolation of phonon frequencies and
+    eigenvectors with the `Brille <https://brille.github.io/stable/index.html>`_
+    library using the new
+    ``euphonic.brille.BrilleInterpolator`` object. This should provide
+    performance improvements for large unit cells which require the
+    dipole correction.
+  - There is a new command-line tool ``euphonic-brille-convergence`` to
+    assist with choosing the ``BrilleInterpolator.from_force_constants``
+    arguments to achieve the desired accuracy.
+
 `v1.1.0 <https://github.com/pace-neutrons/Euphonic/compare/v1.0.0...v1.1.0>`_
 ----------
 

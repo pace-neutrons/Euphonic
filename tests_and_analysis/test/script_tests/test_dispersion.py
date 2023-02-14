@@ -10,7 +10,7 @@ from euphonic import Spectrum1DCollection
 from tests_and_analysis.test.utils import (
     get_data_path, get_castep_path, get_phonopy_path)
 from tests_and_analysis.test.script_tests.utils import (
-    get_script_test_data_path, get_current_plot_line_data, args_to_key)
+    get_script_test_data_path, get_plot_line_data, args_to_key)
 
 pytestmark = pytest.mark.matplotlib
 # Allow tests with matplotlib marker to be collected and
@@ -73,7 +73,7 @@ class TestRegression:
     def run_dispersion_and_test_result(self, dispersion_args):
         euphonic.cli.dispersion.main(dispersion_args)
 
-        line_data = get_current_plot_line_data()
+        line_data = get_plot_line_data()
         # Only use first axis xy_data to save space
         # and avoid regenerating data after refactoring
         line_data['xy_data'] = line_data['xy_data'][0]
@@ -103,6 +103,7 @@ class TestRegression:
         self.run_dispersion_and_test_result(dispersion_args)
 
     @pytest.mark.phonopy_reader
+    @pytest.mark.multiple_extras
     @pytest.mark.parametrize('dispersion_args', disp_params_from_phonopy)
     def test_dispersion_plot_data_from_phonopy(
             self, inject_mocks, dispersion_args):
@@ -157,7 +158,7 @@ def test_regenerate_disp_data(_):
         euphonic.cli.dispersion.main(disp_param)
 
         # Retrieve with gcf and write to file
-        line_data = get_current_plot_line_data()
+        line_data = get_plot_line_data()
         # Only use first axis xy_data to save space
         # and avoid regenerating data after refactoring
         line_data['xy_data'] = line_data['xy_data'][0]
