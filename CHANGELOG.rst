@@ -1,6 +1,11 @@
 `Unreleased <https://github.com/pace-neutrons/Euphonic/compare/v1.1.0...HEAD>`_
 ----------
 
+- Improvements:
+
+  - Euphonic now tests on Python 3.11
+  - Euphonic now provides PyPI wheels for Python 3.11
+
 - New features:
 
   - You can now perform linear interpolation of phonon frequencies and
