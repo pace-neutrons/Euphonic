@@ -117,8 +117,6 @@ def run_setup():
         name='euphonic',
         version=versioneer.get_version(),
         cmdclass=cmdclass,
-        author='Rebecca Fair',
-        author_email='rebecca.fair@stfc.ac.uk',
         classifiers=[
             'Development Status :: 4 - Beta',
             'Environment :: Console',
