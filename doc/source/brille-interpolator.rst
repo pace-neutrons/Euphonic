@@ -6,7 +6,7 @@ BrilleInterpolator
 The ``BrilleInterpolator`` object provides an easy interface to the `Brille <https://brille.github.io/>`_ library for phonon frequencies and eigenvectors.
 It can be created from a ``ForceConstants`` object, then used to perform linear (rather than Fourier) interpolation to calculate phonon frequencies and eigenvectors at specific q-points.
 Linear interpolation may be less accurate than the Fourier interpolation performed by ``ForceConstants``,
-but should be faster for large unit cells, particularly those tha require the computationally expensive dipole correction calculation.
+but should be faster for large unit cells, particularly those that require the computationally expensive dipole correction calculation.
 You should test this on your particular machine and material first to see if it provides a performance benefit.
 
 When creating a ``BrilleInterpolator`` from ``ForceConstants``, Brille calculates the first Brillouin Zone (BZ) for the provided ``ForceConstants.crystal``,
@@ -23,7 +23,7 @@ Creating From Force Constants
 Once a :py:attr:`ForceConstants <euphonic.force_constants.ForceConstants>` object has been created, it can be used to create a :py:attr:`BrilleInterpolator <euphonic.brille.BrilleInterpolator>` object with :py:meth:`BrilleInterpolator.from_force_constants <euphonic.brille.BrilleInterpolator.from_force_constants>`.
 
 The Brille grid type can be chosen with the ``grid_type`` argument (although the default ``trellis`` is recommended),
-and the number or density of q-points in the grid can be chosen with the ``grid_npts`` and ``grid_density`` arguments.
+and the number or number density of q-points in the grid can be chosen with the ``grid_npts`` and ``grid_density`` arguments.
 A grid with more points will take longer to initialise and require more memory, but can give more accurate results.
 For more information on what these mean, see the Brille documentation at https://brille.github.io/.
 
