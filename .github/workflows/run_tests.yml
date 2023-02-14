@@ -33,10 +33,10 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           python -m pip install -r tests_and_analysis/ci_requirements.txt
-      - name: Run tests, skip Python 3.8, 3.9 unless workflow dispatch
+      - name: Run tests, skip Python 3.8, 3.9, 3.10 unless workflow dispatch
         if: github.event_name != 'workflow_dispatch'
         env:
-          TOX_SKIP_ENV: '.*?(py38|py39).*?'
+          TOX_SKIP_ENV: '.*?(py38|py39|py310).*?'
         shell: bash -l {0}
         run: python -m tox
       - name: Run tests, workflow dispatch so test all Python versions
