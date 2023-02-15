@@ -1,11 +1,14 @@
 from argparse import ArgumentParser
 from math import ceil
-from typing import List, Optional
+from typing import Callable, Dict, List, Optional, Sequence, Union
 
 import matplotlib.style
 import numpy as np
+from numpy.polynomial import Polynomial
+from pint import Unit
 
-from euphonic import ureg, ForceConstants
+
+from euphonic import ureg, ForceConstants, Quantity
 from euphonic.cli.utils import (_calc_modes_kwargs, _brille_calc_modes_kwargs,
                                 _compose_style, _get_cli_parser,
                                 _get_debye_waller, _get_energy_bins,
@@ -55,7 +58,6 @@ def get_parser() -> ArgumentParser:
                                             "enable interactive setting of "
                                             "colormap intensity limits"))
 
-
     kinematic = parser.add_argument_group('Kinematic constraints')
     e_lims = kinematic.add_mutually_exclusive_group()
 
@@ -72,6 +74,43 @@ def get_parser() -> ArgumentParser:
               "bounds are used with incident/final energy to determine "
               "accessible (|q|, ω) region."))
     return parser
+
+
+def _get_broaden_kwargs(q_broadening: Optional[Sequence[float]] = None,
+                        q_unit: Unit = ureg('1/angstrom').units,
+                        energy_broadening: Optional[Sequence[float]] = None,
+                        energy_unit: Unit = ureg('meV').units,
+                        ) -> Dict[str, Union[Quantity, Callable, None]]:
+    """Collect suitable width arguments for 2D broaden() method
+
+    Internal Euphonic methods take a Quantity or a callable returning Quantity:
+    CLI takes numbers and units separately so these have to be collected into
+    appropriate objects.
+    """
+
+    if (q_broadening is not None) and len(q_broadening) > 1:
+        q_poly = Polynomial(q_broadening)
+
+        def q_width(x):
+            return q_poly(x.to(q_unit).magnitude
+                          ) * q_unit
+    elif q_broadening:
+        q_width = q_broadening[0] * q_unit
+    else:
+        q_width = None
+
+    if (energy_broadening is not None) and len(energy_broadening) > 1:
+        energy_poly = Polynomial(energy_broadening)
+
+        def energy_width(x):
+            return energy_poly(x.to(energy_unit).magnitude
+                               ) * ureg(energy_unit)
+    elif energy_broadening:
+        energy_width = energy_broadening[0] * ureg(energy_unit)
+    else:
+        energy_width = None
+
+    return dict(x_width=q_width, y_width=energy_width)
 
 
 def main(params: Optional[List[str]] = None) -> None:
@@ -182,21 +221,21 @@ def main(params: Optional[List[str]] = None) -> None:
     spectrum = euphonic.Spectrum2D(q_bin_edges, energy_bins,
                                    z_data * spectrum_1d.y_data.units)
 
-    if args.q_broadening or args.energy_broadening:
+    if (args.energy_broadening is not None) or (args.q_broadening is not None):
         spectrum = spectrum.broaden(
-            x_width=(args.q_broadening * recip_length_unit
-                     if args.q_broadening else None),
-            y_width=(args.energy_broadening[0] * energy_bins.units
-                     if args.energy_broadening else None),
-            shape=args.shape)
+            shape=args.shape,
+            **_get_broaden_kwargs(q_broadening=args.q_broadening,
+                                  q_unit=recip_length_unit,
+                                  energy_broadening=args.energy_broadening,
+                                  energy_unit=args.energy_unit))
 
     if not (args.e_i is None and args.e_f is None):
         print("Applying kinematic constraints")
         energy_unit = args.energy_unit
         e_i = args.e_i * ureg(energy_unit) if (args.e_i is not None) else None
         e_f = args.e_f * ureg(energy_unit) if (args.e_f is not None) else None
-        spectrum = apply_kinematic_constraints(spectrum,
-            e_i=e_i, e_f=e_f, angle_range=args.angle_range)
+        spectrum = apply_kinematic_constraints(
+            spectrum, e_i=e_i, e_f=e_f, angle_range=args.angle_range)
 
     print(f"Plotting figure: max intensity "
           f"{np.nanmax(spectrum.z_data.magnitude) * spectrum.z_data.units:~P}")

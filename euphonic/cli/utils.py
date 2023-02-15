@@ -777,9 +777,14 @@ def _get_cli_parser(features: Collection[str] = {},
             help=('Target distance between q-point samples in 1/LENGTH_UNIT'))
 
     if {'q-e', 'map'}.issubset(features):
+        if 'powder' in features:
+            qb_nargs = '+'
+        else:
+            qb_nargs = 1
+
         sections['q'].add_argument(
             '--q-broadening', '--qb', type=float, default=None,
-            dest='q_broadening',
+            nargs=qb_nargs, dest='q_broadening',
             help=('FWHM of broadening on q axis in 1/LENGTH_UNIT '
                   '(no broadening if unspecified).'))
 
