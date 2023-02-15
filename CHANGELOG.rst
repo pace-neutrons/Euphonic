@@ -1,5 +1,8 @@
-`Unreleased <https://github.com/pace-neutrons/Euphonic/compare/v1.1.0...HEAD>`_
+`Unreleased <https://github.com/pace-neutrons/Euphonic/compare/v1.2.0...HEAD>`_
 ----------
+
+`v1.2.0 <https://github.com/pace-neutrons/Euphonic/compare/v1.1.0...v1.2.0>`_
+------
 
 - Improvements:
 
@@ -17,6 +20,9 @@
   - There is a new command-line tool ``euphonic-brille-convergence`` to
     assist with choosing the ``BrilleInterpolator.from_force_constants``
     arguments to achieve the desired accuracy.
+  - Brille interpolation can be accessed from the ``euphonic-powder-map`` tool
+    using the new ``--use-brille``, ``--brille-grid-type``, ``--brille-npts``
+    and ``--brille-npts-density`` arguments.
 
 `v1.1.0 <https://github.com/pace-neutrons/Euphonic/compare/v1.0.0...v1.1.0>`_
 ----------
