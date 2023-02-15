@@ -42,7 +42,7 @@ schemadotorg:
     familyName: Voneshen
     givenName: David J.
   codeRepository: https://github.com/pace-neutrons/Euphonic
-  datePublished: '2022-02-15'
+  datePublished: '2023-02-15'
   description: Euphonic is a Python package for efficient simulation of phonon bandstructures,
     density of states and inelastic neutron scattering intensities from force constants
   identifier: https://doi.org/10.5286/SOFTWARE/EUPHONIC
