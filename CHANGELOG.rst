@@ -1,6 +1,11 @@
 `Unreleased <https://github.com/pace-neutrons/Euphonic/compare/v1.2.0...HEAD>`_
 ----------
 
+- Bug Fixes:
+
+  - Allow ``color`` to be passed as an extra kwarg to ``plot_1d`` and
+    ``plot_1d_to_axis``. Previously this caused a ``TypeError``.
+
 `v1.2.0 <https://github.com/pace-neutrons/Euphonic/compare/v1.1.0...v1.2.0>`_
 ------
 
