@@ -333,7 +333,15 @@ class TestSpectrum2DMethods:
             (({'x_width': 0.2*ureg('1/angstrom'), 'y_width': 1.5*ureg('meV'),
                'shape': 'lorentz'}),
              'lzo_57L_bragg_sqw.json',
-             'lzo_57L_1.5meV_0.1ang_lorentz_sqw.json')])
+             'lzo_57L_1.5meV_0.1ang_lorentz_sqw.json'),
+            (({'x_width': (lambda x: np.polyval([0.2, -0.5],
+                                                x.to('1/nm').magnitude
+                                                ) * ureg('1/nm')),
+               'y_width': (lambda y: np.polyval([0., -0.4, 3.],
+                                                y.to('J').magnitude
+                                                ) * ureg('J')),
+               },
+              'synthetic_x.json', 'synthetic_x_poly_broadened.json'))])
     def test_broaden(self, args, spectrum2d_file, broadened_spectrum2d_file):
         spec2d = get_spectrum2d(spectrum2d_file)
         expected_broadened_spec2d = get_spectrum2d(broadened_spectrum2d_file)
