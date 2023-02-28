@@ -391,6 +391,7 @@ class Spectrum1D(Spectrum):
         spectrum. Keys should be strings and values should be strings
         or integers
         There are some functional keys:
+
           - 'label' : str. This is used label lines on a 1D plot
     """
     T = TypeVar('T', bound='Spectrum1D')
@@ -415,6 +416,7 @@ class Spectrum1D(Spectrum):
             Contains metadata about the spectrum. Keys should be
             strings and values should be strings or integers
             There are some functional keys:
+
               - 'label' : str. This is used label lines on a 1D plot
         """
         _check_constructor_inputs(
@@ -662,6 +664,7 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
         about the spectra. Keys should be strings and values should be
         strings or integers.
         There are some functional keys:
+
           - 'line_data' : LineData
                           This is a Sequence[Dict[str, Union[int, str]],
                           it contains metadata for each spectrum in
@@ -692,6 +695,7 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
             Contains metadata about the spectra. Keys should be
             strings and values should be strings or integers.
             There are some functional keys:
+
               - 'line_data' : LineData
                               This is a Sequence[Dict[str, Union[int, str]],
                               it contains metadata for each spectrum
