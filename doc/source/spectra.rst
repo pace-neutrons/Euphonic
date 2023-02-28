@@ -50,7 +50,7 @@ example:
 Broadening
 ----------
 
-A 1D spectrum can be broadened using 
+A 1D spectrum can be broadened using
 :py:meth:`Spectrum1D.broaden <euphonic.spectra.Spectrum1D.broaden>`,
 which broadens along the x-axis and returns a new :ref:`Spectrum1D`
 object. It can broaden with either a Gaussian or Lorentzian and requires
@@ -69,6 +69,24 @@ a broadening FWHM in the same type of units as ``x_data``. For example:
   dos = Spectrum1D.from_json_file('dos.json')
   fwhm = 1.5*ureg('meV')
   dos_broaden = dos.broaden(fwhm, shape='lorentz')
+
+Variable-width broadening can be achieved by passing a Python
+"Callable" (i.e. function) that accepts a position value as input and
+returns a broadening width. For example, the energy-dependent resolution of the
+`TOSCA <http://www.isis.stfc.ac.uk/instruments/tosca/tosca4715.html>`_ spectrometer
+is typically treated as a Gaussian following the quadratic function
+:math:`\sigma = 2.5 + 0.005 \omega + 0.0000001 \omega` where :math:`sigma` and :math:`omega`
+are the standard deviation and energy transfer in cm:math:`^{-1}`. To
+apply this resolution function to a Spectrum1D we package the polynomial into a suitable Callable:
+
+.. testcode:: dos
+  from numpy.polynomial import Polynomial
+
+  def tosca_resolution(energy):
+      poly_in_wavenumber = Polynomial(2.5, 0.005, 1e-7)
+      return poly_in_wavenumber(energy.to('1/cm')) * ureg('1/cm')
+
+  dos_tosca = dos.broaden(tosca_resolution, shape='gauss', width_convention='STD')
 
 Plotting
 --------
@@ -286,7 +304,7 @@ Spectrum2D
 Broadening
 ----------
 
-A 2D spectrum can be broadened using 
+A 2D spectrum can be broadened using
 :py:meth:`Spectrum2D.broaden <euphonic.spectra.Spectrum2D.broaden>`, which
 broadens along either or both of the x/y-axes and returns a new
 :ref:`Spectrum2D` object. It can broaden with either a Gaussian or Lorentzian
@@ -388,4 +406,3 @@ Docstring
 .. autoclass:: euphonic.spectra.Spectrum2D
    :members:
    :inherited-members:
-
