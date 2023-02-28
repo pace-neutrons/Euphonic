@@ -80,12 +80,12 @@ are the standard deviation and energy transfer in cm:math:`^{-1}`. To
 apply this resolution function to a Spectrum1D we package the polynomial into a suitable Callable:
 
 .. testcode:: dos
+
   from numpy.polynomial import Polynomial
 
   def tosca_resolution(energy):
-      poly_in_wavenumber = Polynomial(2.5, 0.005, 1e-7)
-      return poly_in_wavenumber(energy.to('1/cm')) * ureg('1/cm')
-
+      poly_in_wavenumber = Polynomial([2.5, 0.005, 1e-7])
+      return poly_in_wavenumber(energy.to('1/cm').magnitude) * ureg('1/cm')
   dos_tosca = dos.broaden(tosca_resolution, shape='gauss', width_convention='STD')
 
 Plotting
