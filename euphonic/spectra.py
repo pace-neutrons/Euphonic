@@ -1614,7 +1614,8 @@ class Spectrum2D(Spectrum):
 def apply_kinematic_constraints(spectrum: Spectrum2D,
                                 e_i: Quantity = None,
                                 e_f: Quantity = None,
-                                angle_range: Tuple[float] = (0, 180.)
+                                angle_range: Tuple[float] = (0, 180.),
+                                strict: bool = True
                                 ) -> Spectrum2D:
     """
     Set events to NaN which violate energy/momentum limits:
@@ -1638,6 +1639,10 @@ def apply_kinematic_constraints(spectrum: Spectrum2D,
         final energy of indirect-geometry spectrometer
     angle_range
         min and max scattering angles (2θ) of detector bank in degrees
+    strict
+        only include bins that lie entirely in accessible energy range at q-bin
+        centre; if False, include any bin that overlaps accessible energy range
+        at q-bin centre.
 
     Returns
     -------
@@ -1696,10 +1701,17 @@ def apply_kinematic_constraints(spectrum: Spectrum2D,
     q_bounds = q_bounds.real
 
     new_z_data = np.copy(spectrum.z_data.magnitude)
-    mask = np.logical_or((spectrum.get_bin_centres(bin_ax='x')[:, np.newaxis]
-                          < q_bounds[0][np.newaxis, :]),
-                         (spectrum.get_bin_centres(bin_ax='x')[:, np.newaxis]
-                          > q_bounds[1][np.newaxis, :]))
+
+    if strict:
+        mask = np.logical_or((spectrum.get_bin_centres(bin_ax='x')[:, np.newaxis]
+                              < q_bounds[0][np.newaxis, :]),
+                             (spectrum.get_bin_centres(bin_ax='x')[:, np.newaxis]
+                              > q_bounds[1][np.newaxis, :]))
+    else:
+        mask = np.logical_or((spectrum.get_bin_edges(bin_ax='x')[1:, np.newaxis]
+                              < q_bounds[0][np.newaxis, :]),
+                             (spectrum.get_bin_edges(bin_ax='x')[:-1, np.newaxis]
+                              > q_bounds[-1][np.newaxis, :]))
 
     new_z_data[mask] = float('nan')
 
