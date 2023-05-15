@@ -300,7 +300,7 @@ static PyObject *calculate_phonons(PyObject *self, PyObject *args) {
         Py_DECREF(py_dipole_init_data);
     }
 
-    return Py_None;
+    Py_RETURN_NONE;
 }
 
 static PyMethodDef _euphonic_methods[] = {

@@ -5,6 +5,8 @@
 
   - Allow ``color`` to be passed as an extra kwarg to ``plot_1d`` and
     ``plot_1d_to_axis``. Previously this caused a ``TypeError``.
+  - Fix bug where ``Py_None`` was not incremented before returning from
+    ``calculate_phonons()`` in the C-extension causing a deallocation crash
 
 `v1.2.0 <https://github.com/pace-neutrons/Euphonic/compare/v1.1.0...v1.2.0>`_
 ------
