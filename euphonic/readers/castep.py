@@ -1,7 +1,8 @@
 from collections import defaultdict
 import re
 import struct
-from typing import Dict, Any, TextIO, BinaryIO, Tuple, Optional, List, Union
+from typing import (Any, BinaryIO, Dict, List, NamedTuple,
+                    Optional, TextIO, Tuple, Union)
 
 import numpy as np
 
@@ -54,14 +55,16 @@ def read_phonon_dos_data(
         mode_grads = np.empty((0, n_branches))
         while True:
             try:
-                _, qpt, qweight, qfreq, qmode_grad = _read_frequency_block(
+                frequency_block = _read_frequency_block(
                     f, n_branches, extra_columns=[0])
+                qmode_grad = frequency_block.extra
+
             except IndexError:
                 # This should indicate we've reached 'END GRADIENTS' line
                 break
-            qpts = np.concatenate((qpts, [qpt]))
-            weights = np.concatenate((weights, [qweight]))
-            freqs = np.concatenate((freqs, [qfreq]))
+            qpts = np.concatenate((qpts, [frequency_block.qpt]))
+            weights = np.concatenate((weights, [frequency_block.weight]))
+            freqs = np.concatenate((freqs, [frequency_block.frequencies]))
             mode_grads = np.concatenate((mode_grads, [qmode_grad.squeeze()]))
         line = f.readline()
         if 'BEGIN DOS' not in line:
@@ -181,8 +184,8 @@ def read_phonon_data(
         repeated_qpt_ids = defaultdict(set)
         while True:
             try:
-                qpt_id, qpt, qweight, qfreq, _ = _read_frequency_block(
-                    f, n_branches)
+                frequency_block = _read_frequency_block(f, n_branches)
+                qpt_id = frequency_block.qpt_id
             except EOFError:
                 break
 
@@ -207,15 +210,15 @@ def read_phonon_data(
             # Sometimes there are more than n_qpts q-points in the file
             # due to LO-TO splitting
             if idx < len(qpts):
-                qpts[idx] = qpt
-                freqs[idx] = qfreq
-                weights[idx] = qweight
+                qpts[idx] = frequency_block.qpt
+                freqs[idx] = frequency_block.frequencies
+                weights[idx] = frequency_block.weight
                 if read_eigenvectors:
                     eigenvecs[idx] = qeigenvec
             else:
-                qpts = np.concatenate((qpts, [qpt]))
-                freqs = np.concatenate((freqs, [qfreq]))
-                weights = np.concatenate((weights, [qweight]))
+                qpts = np.concatenate((qpts, [frequency_block.qpt]))
+                freqs = np.concatenate((freqs, [frequency_block.frequencies]))
+                weights = np.concatenate((weights, [frequency_block.weight]))
                 if read_eigenvectors:
                     eigenvecs = np.concatenate((eigenvecs, [qeigenvec]))
             idx += 1
@@ -296,9 +299,17 @@ _qpt_index_pattern = re.compile(r'q-pt=\s*(\d+)')
 _qpt_float_pattern = re.compile(r'-?\d+\.\d+')
 
 
+class _FrequencyBlock(NamedTuple):
+    qpt_id: int
+    qpt: np.ndarray
+    weight: float
+    frequencies: np.ndarray
+    extra: Optional[np.ndarray]
+
+
 def _read_frequency_block(
         f: TextIO, n_branches: int, extra_columns: Optional[List] = None
-        ) -> Tuple[int, np.ndarray, float, np.ndarray, Optional[np.ndarray]]:
+        ) -> _FrequencyBlock:
     """
     For a single q-point reads the q-point, weight, frequencies
     and optionally any extra columns
@@ -317,7 +328,9 @@ def _read_frequency_block(
 
     Returns
     -------
-    iqpt
+    NamedTuple with attributes:
+
+    qpt_id
         CASTEP-assigned index of the q-point
     qpt
         Shape (3,) float ndarray. The q-point in reciprocal fractional
@@ -353,7 +366,7 @@ def _read_frequency_block(
         for i, col in enumerate(extra_columns):
             extra[i] = np.array(
                 [float(line[freq_col + col + 1]) for line in freq_lines])
-    return i_qpt, qpt, qweight, qfreq, extra
+    return _FrequencyBlock(i_qpt, qpt, qweight, qfreq, extra)
 
 
 def read_interpolation_data(
