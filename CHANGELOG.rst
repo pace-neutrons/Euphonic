@@ -1,6 +1,21 @@
 `Unreleased <https://github.com/pace-neutrons/Euphonic/compare/v1.2.0...HEAD>`_
 ----------
 
+- Improvements
+
+  - Added "prefer_non_loto" option to Castep *.phonon* file
+    importers. When this is enabled, a block of q-points are
+    encountered with splitting directions, and one q-point does not
+    have a splitting direction, the data at this "exact" q-point is
+    preferred and the other weights in the group are set to zero.
+
+    This provides the *intended* behaviour of the Abins Castep parser
+    and should give a reasonable result for Gamma-point only Castep
+    calculations.
+
+    The option is disabled by default, so existing scripts will not be
+    affected.
+
 - Bug Fixes:
 
   - Allow ``color`` to be passed as an extra kwarg to ``plot_1d`` and
