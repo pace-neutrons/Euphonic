@@ -239,18 +239,19 @@ def read_phonon_data(
 
     # Multiple qpts with same CASTEP q-pt index: correct weights
     for qpt_id, indices in repeated_qpt_ids.items():
+        intersection = indices & loto_split_indices
         if (prefer_non_loto
-                and (intersection := indices & loto_split_indices)
-                and len(indices) > len(intersection)):
+            and intersection
+            and len(indices) > len(intersection)):
             # Repeated q-point has both split and un-split variations;
             # set weights of split points to zero
             if len(indices) - len(intersection) == 1:
                 indices = np.asarray(list(intersection), dtyp=int)
                 weights[indices] = 0
-                else:
-                    raise ValueError(
-                        "Found multiple non-split blocks for q-point {qpt_id},"
-                        " cannot determine which to use.")
+            else:
+                raise ValueError(
+                    "Found multiple non-split blocks for q-point {qpt_id},"
+                    " cannot determine which to use.")
 
         elif average_repeat_points:
             indices = np.asarray(list(indices), dtype=int)
