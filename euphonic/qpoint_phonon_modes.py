@@ -652,7 +652,8 @@ class QpointPhononModes(QpointFrequencies):
 
     @classmethod
     def from_castep(cls: Type[T], filename: str,
-                    average_repeat_points: bool = True) -> T:
+                    average_repeat_points: bool = True,
+                    prefer_non_loto: bool = False) -> T:
         """
         Reads precalculated phonon mode data from a CASTEP .phonon file
 
@@ -664,10 +665,17 @@ class QpointPhononModes(QpointFrequencies):
             If multiple frequency/eigenvectors blocks are included with the
             same q-point index (i.e. for Gamma-point with LO-TO splitting),
             scale the weights such that these sum to the given weight
+        prefer_non_loto
+            If multiple frequency/eigenvector blocks are provided with the same
+            q-point index and all-but-one include a direction vector, use the
+            data from the point without a direction vector. (i.e. use the
+            "exact" Gamma data without non-analytic correction.) This option
+            takes priority over average_repeat_points.
         """
         data = castep.read_phonon_data(
             filename,
-            average_repeat_points=average_repeat_points)
+            average_repeat_points=average_repeat_points,
+            prefer_non_loto=prefer_non_loto)
 
         return cls.from_dict(data)
 

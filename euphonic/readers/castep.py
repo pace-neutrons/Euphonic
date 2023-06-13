@@ -246,7 +246,7 @@ def read_phonon_data(
             # Repeated q-point has both split and un-split variations;
             # set weights of split points to zero
             if len(indices) - len(intersection) == 1:
-                indices = np.asarray(list(intersection), dtyp=int)
+                indices = np.asarray(list(intersection), dtype=int)
                 weights[indices] = 0
             else:
                 raise ValueError(
