@@ -54,14 +54,17 @@ def read_phonon_dos_data(
         freqs = np.empty((0, n_branches))
         mode_grads = np.empty((0, n_branches))
         while True:
-            try:
-                frequency_block = _read_frequency_block(
-                    f, n_branches, extra_columns=[0])
-                qmode_grad = frequency_block.extra
-
-            except IndexError:
-                # This should indicate we've reached 'END GRADIENTS' line
+            frequency_block = _read_frequency_block(
+                f,
+                n_branches,
+                extra_columns=[0],
+                terminator=' END GRADIENTS\n')
+            if frequency_block is None:
+                # We've reached 'END GRADIENTS' line
                 break
+
+            qmode_grad = frequency_block.extra
+
             qpts = np.concatenate((qpts, [frequency_block.qpt]))
             weights = np.concatenate((weights, [frequency_block.weight]))
             freqs = np.concatenate((freqs, [frequency_block.frequencies]))
@@ -193,11 +196,12 @@ def read_phonon_data(
         loto_split_indices = set()
 
         while True:
-            try:
-                frequency_block = _read_frequency_block(f, n_branches)
-                qpt_id = frequency_block.qpt_id
-            except EOFError:
+            frequency_block = _read_frequency_block(f, n_branches)
+            if frequency_block is None:
+                # Reached empty line, this should be end of file
                 break
+
+            qpt_id = frequency_block.qpt_id
 
             if prefer_non_loto and frequency_block.direction is not None:
                 loto_split_indices.add(idx)
@@ -337,16 +341,21 @@ class _FrequencyBlock(NamedTuple):
 
 
 def _read_frequency_block(
-        f: TextIO, n_branches: int, extra_columns: Optional[List] = None
-        ) -> _FrequencyBlock:
+    fp: TextIO,
+    n_branches: int,
+    extra_columns: Optional[List] = None,
+    terminator: str = ''
+        ) -> Union[_FrequencyBlock, None]:
     """
     For a single q-point reads the q-point, weight, frequencies
     and optionally any extra columns
 
     Parameters
     ----------
-    f
+    fp
         File object in read mode for the file containing the data
+    n_branches
+        Expected number of frequencies (i.e. phonon branches)
     extra_columns
         The index(es) of extra columns to read after the frequencies
         column. e.g. to read the first column after frequencies
@@ -354,6 +363,8 @@ def _read_frequency_block(
         frequencies extra_columns = [0, 1]. For reference, in .phonon
         IR intensities = 0, Raman intensities = 1, and in .phonon_dos
         mode gradients = 0
+    terminator
+        If this line is reached, return None without raising an error
 
     Returns
     -------
@@ -376,9 +387,9 @@ def _read_frequency_block(
         None if extra_columns is None, otherwise a shape
         (len(extra_columns), n_modes) float ndarray
     """
-    qpt_line = f.readline()
-    if qpt_line == '':
-        raise EOFError
+    qpt_line = fp.readline()
+    if qpt_line == terminator:
+        return None
 
     i_qpt = int(re.findall(_qpt_index_pattern, qpt_line)[0])
     floats = re.findall(_qpt_float_pattern, qpt_line)
@@ -391,7 +402,7 @@ def _read_frequency_block(
     else:
         direction = None
 
-    freq_lines = [f.readline().split()
+    freq_lines = [fp.readline().split()
                   for i in range(n_branches)]
     freq_col = 1
     qfreq = np.array([float(line[freq_col]) for line in freq_lines])
