@@ -386,7 +386,7 @@ def _read_frequency_block(
     qweight = float(floats[3])
 
     direction: Optional[np.ndarray]
-    if len(floats) > 4:
+    if len(floats) >= 6:
         direction = floats[4:7]
     else:
         direction = None
