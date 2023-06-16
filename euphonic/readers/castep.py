@@ -341,7 +341,7 @@ class _FrequencyBlock(NamedTuple):
 
 
 def _read_frequency_block(
-    fp: TextIO,
+    f: TextIO,
     n_branches: int,
     extra_columns: Optional[List] = None,
     terminator: str = ''
@@ -352,7 +352,7 @@ def _read_frequency_block(
 
     Parameters
     ----------
-    fp
+    f
         File object in read mode for the file containing the data
     n_branches
         Expected number of frequencies (i.e. phonon branches)
@@ -387,7 +387,7 @@ def _read_frequency_block(
         None if extra_columns is None, otherwise a shape
         (len(extra_columns), n_modes) float ndarray
     """
-    qpt_line = fp.readline()
+    qpt_line = f.readline()
     if qpt_line == terminator:
         return None
 
@@ -402,7 +402,7 @@ def _read_frequency_block(
     else:
         direction = None
 
-    freq_lines = [fp.readline().split()
+    freq_lines = [f.readline().split()
                   for i in range(n_branches)]
     freq_col = 1
     qfreq = np.array([float(line[freq_col]) for line in freq_lines])
