@@ -7,6 +7,10 @@
     ``plot_1d_to_axis``. Previously this caused a ``TypeError``.
   - Fix bug where ``Py_None`` was not incremented before returning from
     ``calculate_phonons()`` in the C-extension causing a deallocation crash
+  - Support phonopy.yaml files from Phonopy versions >= 1.18, which
+    have moved the data relating to dipole-dipole
+    corrections. (i.e. Born effective charges, static dielectric
+    tensor and a related unit conversion factor.)
 
 - Maintenance:
 
