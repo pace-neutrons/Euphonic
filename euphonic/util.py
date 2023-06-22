@@ -395,16 +395,19 @@ def convert_fc_phases(force_constants: np.ndarray, atom_r: np.ndarray,
     for i in range(n_atoms_sc):
         co_idx = np.where(
             (cell_origins_per_atom[i] == cell_origins).all(axis=1))[0]
-        if len(co_idx) != 1:
+
+        if len(co_idx) == 1:
+            co_idx = co_idx[0]
+        else:
             # Get equivalent cell origin in surrounding supercells
             origin_in_scs = cell_origins_per_atom[i] - sc_origins_pcell
-            co_idx = -1
+
             # Find which of the 'unique' cell origins is equivalent
             for j, cell_origin in enumerate(cell_origins):
                 if np.any((origin_in_scs == cell_origin).all(axis=1)):
                     co_idx = j
                     break
-            if co_idx == -1:
+            else:
                 raise Exception((
                     'Couldn\'t determine cell origins for '
                     'force constants matrix'))
