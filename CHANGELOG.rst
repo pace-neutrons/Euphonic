@@ -8,6 +8,10 @@
   - Fix bug where ``Py_None`` was not incremented before returning from
     ``calculate_phonons()`` in the C-extension causing a deallocation crash
 
+- Maintenance:
+
+  - A deprecation in Numpy 1.25, which indirectly caused a test failure, has been addressed.
+
 `v1.2.0 <https://github.com/pace-neutrons/Euphonic/compare/v1.1.0...v1.2.0>`_
 ------
 
