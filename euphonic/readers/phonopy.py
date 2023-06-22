@@ -487,9 +487,9 @@ def _extract_summary(filename: str, fc_extract: bool = False
      atom_type, _) = _extract_crystal_data(summary_object['primitive_cell'])
 
     summary_dict = {}
-    try:
+    if 'physical_unit' in summary_object:
         pu = summary_object['physical_unit']
-    except KeyError:
+    else:
         default_units = {'atomic_mass': 'AMU',
                          'length': 'Angstrom',
                          'force_constants': 'eV/Angstrom^2'}
@@ -543,12 +543,12 @@ def _extract_summary(filename: str, fc_extract: bool = False
         summary_dict['pc_to_sc_atom_idx'] = pc_to_sc_atom_idx
         summary_dict['sc_to_pc_atom_idx'] = sc_to_pc_atom_idx
         summary_dict['ufc'] = pu['force_constants']
-        try:
+
+        if 'force_constants' in summary_object:
             fc = summary_object['force_constants']
             summary_dict['force_constants'] = np.array(
                 fc['elements']).reshape(fc['shape'] + [3,3])
-        except KeyError:
-            pass
+
         # NAC factor may be present even if born is not in phonopy.yaml
         # (born may be in separate BORN file), and the BORN file may
         # not necessarily contain NAC factor, so just try reading it
