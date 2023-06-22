@@ -573,7 +573,9 @@ def _extract_summary(filename: str, fc_extract: bool = False
         for key in ('nac_factor', 'born', 'dielectric'):
             if summary_dict[key] is None:
                 del summary_dict[key]
-            elif key in ('born', 'dielectric'):
+
+        for key in ('born', 'dielectric'):
+            if key in summary_dict:
                 summary_dict[key] = np.array(summary_dict[key])
 
     return summary_dict
