@@ -553,18 +553,28 @@ def _extract_summary(filename: str, fc_extract: bool = False
         # (born may be in separate BORN file), and the BORN file may
         # not necessarily contain NAC factor, so just try reading it
         # from phonopy.yaml anyway
-        try:
+
+        # New format
+        if 'nac' in summary_object:
+            nac = summary_object['nac']
+            summary_dict['nac_factor'] = nac.get('unit_conversion_factor')
+            summary_dict['born'] = nac.get('born_effective_charge')
+            summary_dict['dielectric'] = nac.get('dielectric_constant')
+
+        # Old format
+        else:
             summary_dict['nac_factor'] = summary_object[
-                'phonopy']['nac_unit_conversion_factor']
-        except KeyError:
-            pass
-        try:
-            summary_dict['born'] = np.array(
-                summary_object['born_effective_charge'])
-            summary_dict['dielectric'] = np.array(
-                summary_object['dielectric_constant'])
-        except KeyError:
-            pass
+                'phonopy'].get('nac_unit_conversion_factor')
+            summary_dict['born'] = summary_object.get('born_effective_charge')
+            summary_dict['dielectric'] = summary_object.get(
+                'dielectric_constant')
+
+        # Cast arrays and drop keys if data not found
+        for key in ('nac_factor', 'born', 'dielectric'):
+            if summary_dict[key] is None:
+                del summary_dict[key]
+            elif key in ('born', 'dielectric'):
+                summary_dict[key] = np.array(summary_dict[key])
 
     return summary_dict
 
