@@ -782,11 +782,18 @@ def _get_cli_parser(features: Collection[str] = {},
         else:
             qb_nargs = 1
 
+        qb_help = ('FWHM of broadening on q axis in 1/LENGTH_UNIT '
+                   '(no broadening if unspecified).')
+        if qb_nargs == '+':
+            qb_help = qb_help + (
+                'If multiple values are provided, these will be interpreted as'
+                ' polynomial coefficients to be evaluated in 1/LENGTH_UNIT '
+                'base.')
+
         sections['q'].add_argument(
             '--q-broadening', '--qb', type=float, default=None,
             nargs=qb_nargs, dest='q_broadening',
-            help=('FWHM of broadening on q axis in 1/LENGTH_UNIT '
-                  '(no broadening if unspecified).'))
+            help=qb_help)
 
     if 'map' in features:
         sections['plotting'].add_argument(
