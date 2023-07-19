@@ -1,4 +1,4 @@
-cff-version: 1.2.1
+cff-version: 1.2.0
 message: "If you have used Euphonic in your research, please cite both the Euphonic software itself, and the article from preferred-citation"
 abstract: "Euphonic is a Python package for efficient simulation of phonon bandstructures, density of states and inelastic neutron scattering intensities from force constants"
 authors:
