@@ -1,6 +1,17 @@
 `Unreleased <https://github.com/pace-neutrons/Euphonic/compare/v1.2.1...HEAD>`_
 ----------
 
+- Improvements
+
+  - Added variable-width broadening for 1-D and 2-D spectra. An
+    arbitrary Callable can be provided relating the axis position to
+    Gaussian or Lorentzian width parameter. ``euphonic-dos`` and
+    ``euphonic-powder-map`` CLI tools accept polynomial coefficients
+    as input. The broadening is implemented with the fast approximate
+    interpolation method already available for adaptive broadening of
+    DOS.
+
+
 `v1.2.1 <https://github.com/pace-neutrons/Euphonic/compare/v1.2.0...v1.2.1>`_
 ------
 
