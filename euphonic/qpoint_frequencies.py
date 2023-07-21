@@ -215,7 +215,8 @@ class QpointFrequencies:
                 dos = _width_interpolated_broadening(dos_bins_calc,
                                                      freqs, mode_widths,
                                                      combined_weights,
-                                                     adaptive_error)
+                                                     adaptive_error,
+                                                     fit='cubic')
         else:
             bin_idx = np.digitize(freqs, dos_bins_calc)
             # Create DOS with extra bin either side, for any points

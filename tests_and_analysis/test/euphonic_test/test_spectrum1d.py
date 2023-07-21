@@ -427,10 +427,10 @@ class TestSpectrum1DMethods:
         fixed_broad = spec1d.broaden(fwhm)
         variable_broad_sigma = spec1d.broaden(
             sigma_function, width_convention='std',
-            width_interpolation_error=1e-5)
+            width_interpolation_error=1e-3)
         variable_broad_fwhm =  spec1d.broaden(
             fwhm_function, width_convention='FWHM',
-            width_interpolation_error=1e-5)
+            width_interpolation_error=1e-3)
 
         check_spectrum1d(variable_broad_sigma, variable_broad_fwhm)
         check_spectrum1d(variable_broad_sigma, fixed_broad, y_atol=1e-4)
