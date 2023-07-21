@@ -113,7 +113,8 @@ def main(params: Optional[List[str]] = None) -> None:
         dos = dos.broaden(x_width=energy_broadening_func,
                           shape=args.shape,
                           method='convolve',
-                          width_interpolation_error=args.adaptive_error)
+                          width_interpolation_error=args.adaptive_error,
+                          fit='cubic')
 
     elif args.inst_broadening:
         # Fixed-width broadening
