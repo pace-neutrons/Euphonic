@@ -20,7 +20,8 @@ def variable_width_broadening(bins: Quantity,
                               width_lower_limit: Quantity = None,
                               width_convention: str = 'fwhm',
                               adaptive_error: float = 1e-2,
-                              shape: str = 'gauss') -> Quantity:
+                              shape: str = 'gauss',
+                              fit: str = 'cheby-log') -> Quantity:
     r"""Apply x-dependent Gaussian broadening to 1-D data series
 
     Typically this is an energy-dependent instrumental resolution function.
@@ -56,7 +57,10 @@ def variable_width_broadening(bins: Quantity,
         approximate gaussians.
     shape
         Select 'gauss' or 'lorentz' kernel.
-
+    fit
+        Select parametrisation of kernel width spacing to adaptive_error.
+        'cheby-log' is recommended: for shape 'gauss', 'cubic' is also
+        available.
     """
 
     if width_convention.lower() == 'fwhm' and shape == 'gauss':
@@ -91,7 +95,8 @@ def variable_width_broadening(bins: Quantity,
     return width_interpolated_broadening(bins, x, widths,
                                          weights.magnitude,
                                          adaptive_error=adaptive_error,
-                                         shape=shape) * weights_unit
+                                         shape=shape,
+                                         fit=fit) * weights_unit
 
 
 def width_interpolated_broadening(bins: Quantity,
@@ -99,7 +104,8 @@ def width_interpolated_broadening(bins: Quantity,
                                   widths: Quantity,
                                   weights: np.ndarray,
                                   adaptive_error: float,
-                                  shape: str = 'gauss') -> Quantity:
+                                  shape: str = 'gauss',
+                                  fit: str = 'cheby-log') -> Quantity:
     """
     Uses a fast, approximate method to broaden a spectrum
     with a variable-width kernel. Exact Gaussians are calculated
@@ -127,6 +133,10 @@ def width_interpolated_broadening(bins: Quantity,
     shape
         Select 'gauss' or 'lorentz' kernel. Widths will correspond to sigma or
         gamma parameters respectively.
+    fit
+        Select parametrisation of kernel width spacing to adaptive_error.
+        'cheby-log' is recommended: for shape 'gauss', 'cubic' is also
+        available.
 
     Returns
     -------
@@ -141,26 +151,43 @@ def width_interpolated_broadening(bins: Quantity,
                                           widths.to('hartree').magnitude,
                                           weights,
                                           adaptive_error,
-                                          shape=shape) / conv
+                                          shape=shape,
+                                          fit=fit) / conv
 
 
 def _lorentzian(x: np.ndarray, gamma: np.ndarray) -> np.ndarray:
     return gamma / (2 * np.pi * (x**2 + (gamma / 2)**2))
 
 
-def _get_spacing(error, shape='gauss'):
+def _get_spacing(error, shape='gauss', fit='cheby-log'):
     """
     Determine suitable spacing value for mode_width given accepted error level
 
     Coefficients have been fitted to plots of error vs spacing value
     """
 
-    if shape == 'gauss':
+    if fit == 'cubic' and shape == 'gauss':
         return np.polyval([612.7, -122.7, 15.40, 1.0831], error)
-    elif shape == 'lorentz':
-        cheby = Chebyshev([1.31311372, 0.41624683, 0.17961194, 0.06253194,
-                           0.0195309, 0.00555107, 0.00225896],
-                          window=[-1.,  1.], domain=[-4.04691274, -1.34655197])
+
+    elif fit == 'cheby-log':
+        if shape == 'lorentz':
+            cheby = Chebyshev(
+                [1.31311372, 0.41624683, 0.17961194, 0.06253194,
+                 0.0195309, 0.00555107, 0.00225896],
+                window=[-1.,  1.],
+                domain=[-4.04691274, -1.34655197])
+            # Updated params from paper:
+            # [1.26039672 0.39900457 0.20392176 0.08602507
+            #  0.03337662 0.00878684 0.00619626]
+            # window: [-1.  1.]  domain: [-4.99146317 -1.34655197]
+
+        elif shape == 'gauss':
+            cheby = Chebyshev(
+                [1.25885858, 0.39803148, 0.20311735,
+                 0.08654827, 0.03447873, 0.00894006],
+                window=[-1., 1.],
+                domain=[-4.64180022, -1.00029948])
+
         log_error = np.log10(error)
         if log_error < cheby.domain[0] or log_error > cheby.domain[1]:
             raise ValueError("Target error is out of fit range; value must lie"
@@ -173,7 +200,8 @@ def _width_interpolated_broadening(bins: np.ndarray,
                                    widths: np.ndarray,
                                    weights: np.ndarray,
                                    adaptive_error: float,
-                                   shape='gauss') -> np.ndarray:
+                                   shape='gauss',
+                                   fit='cheby-log') -> np.ndarray:
     """
     Broadens a spectrum using a variable-width kernel, taking the
     same arguments as `variable_width` but expects arrays with
@@ -183,7 +211,7 @@ def _width_interpolated_broadening(bins: np.ndarray,
     x = np.ravel(x)
     widths = np.ravel(widths)
     weights = np.ravel(weights)
-    spacing = _get_spacing(adaptive_error, shape=shape)
+    spacing = _get_spacing(adaptive_error, shape=shape, fit=fit)
 
     # bins should be regularly spaced, check that this is the case and
     # raise a warning if not

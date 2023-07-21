@@ -197,7 +197,7 @@ class Spectrum(ABC):
     @staticmethod
     def _broaden_data(data: np.ndarray, bin_centres: Sequence[np.ndarray],
                       widths: Sequence[float], shape: str = 'gauss',
-                      method: Optional[str] = None
+                      method: Optional[str] = None,
                       ) -> np.ndarray:
         """
         Broaden data along each axis by widths, returning the broadened
@@ -553,7 +553,8 @@ class Spectrum1D(Spectrum):
                 shape: str = 'gauss', method: Optional[str] = None,
                 width_lower_limit: Optional[Quantity] = None,
                 width_convention: str = 'FWHM',
-                width_interpolation_error: float = 0.01
+                width_interpolation_error: float = 0.01,
+                width_fit: str = 'cheby-log'
                 ) -> T:  # noqa: F811
         ...
 
@@ -562,7 +563,8 @@ class Spectrum1D(Spectrum):
                 method: Optional[str] = None,
                 width_lower_limit: Quantity = None,
                 width_convention: str = 'FWHM',
-                width_interpolation_error: float = 0.01
+                width_interpolation_error: float = 0.01,
+                width_fit: str = 'cheby-log'
                 ) -> T:  # noqa: F811
         """
         Broaden y_data and return a new broadened spectrum object
@@ -592,6 +594,10 @@ class Spectrum1D(Spectrum):
             When x_width is a callable function, variable-width broadening is
             implemented by an approximate kernel-interpolation scheme. This
             parameter determines the target error of the kernel approximations.
+        width_fit
+            Select parametrisation of kernel width spacing to
+            width_interpolation_error.  'cheby-log' is recommended: for shape
+            'gauss', 'cubic' is also available.
 
         Returns
         -------
@@ -624,7 +630,8 @@ class Spectrum1D(Spectrum):
                 width_lower_limit=width_lower_limit,
                 width_convention=width_convention,
                 adaptive_error=width_interpolation_error,
-                shape=shape
+                shape=shape,
+                fit=width_fit
             )
         else:
             raise TypeError("x_width must be a Quantity or Callable")
@@ -1010,7 +1017,8 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
                 shape: str = 'gauss', method: Optional[str] = None,
                 width_lower_limit: Quantity = None,
                 width_convention: str = 'FWHM',
-                width_interpolation_error: float = 0.01
+                width_interpolation_error: float = 0.01,
+                width_fit: str = 'cheby-log'
                 ) -> T:  # noqa: F811
         ...
 
@@ -1019,7 +1027,8 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
                 method: Optional[str] = None,
                 width_lower_limit: Quantity = None,
                 width_convention: str = 'FWHM',
-                width_interpolation_error: float = 0.01
+                width_interpolation_error: float = 0.01,
+                width_fit: str= 'cheby-log'
                 ) -> T:  # noqa: F811
         """
         Individually broaden each line in y_data, returning a new
@@ -1050,6 +1059,10 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
             When x_width is a callable function, variable-width broadening is
             implemented by an approximate kernel-interpolation scheme. This
             parameter determines the target error of the kernel approximations.
+        width_fit
+            Select parametrisation of kernel width spacing to
+            width_interpolation_error. 'cheby-log' is recommended: for shape
+            'gauss', 'cubic' is also available.
 
         Returns
         -------
@@ -1085,7 +1098,8 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
                     method=method,
                     width_lower_limit=width_lower_limit,
                     width_convention=width_convention,
-                    width_interpolation_error=width_interpolation_error)
+                    width_interpolation_error=width_interpolation_error,
+                    width_fit=width_fit)
                 for spectrum in self])
 
         else:
@@ -1304,7 +1318,8 @@ class Spectrum2D(Spectrum):
                 x_width_lower_limit: Quantity = None,
                 y_width_lower_limit: Quantity = None,
                 width_convention: str = 'FWHM',
-                width_interpolation_error: float = 0.01
+                width_interpolation_error: float = 0.01,
+                width_fit: str = 'cheby-log'
                 ) -> T:
         """
         Broaden z_data and return a new broadened Spectrum2D object
@@ -1344,6 +1359,10 @@ class Spectrum2D(Spectrum):
             When x_width is a callable function, variable-width broadening is
             implemented by an approximate kernel-interpolation scheme. This
             parameter determines the target error of the kernel approximations.
+        width_fit
+            Select parametrisation of kernel width spacing to
+            width_interpolation_error. 'cheby-log' is recommended: for shape
+            'gauss', 'cubic' is also available.
 
         Returns
         -------
@@ -1396,7 +1415,8 @@ class Spectrum2D(Spectrum):
                     spectrum, width, axis=axis, width_lower_limit=lower_limit,
                     width_convention=width_convention,
                     width_interpolation_error=width_interpolation_error,
-                    shape=shape)
+                    shape=shape,
+                    width_fit=width_fit)
 
         return spectrum
 
@@ -1408,7 +1428,8 @@ class Spectrum2D(Spectrum):
             width_lower_limit: Quantity = None,
             width_convention: str = 'fwhm',
             width_interpolation_error: float = 1e-2,
-            shape: str = 'gauss') -> 'Spectrum2D':
+            shape: str = 'gauss',
+            width_fit: str = 'cheby-log') -> 'Spectrum2D':
         """
         Apply value-dependent Gaussian broadening to one axis of Spectrum2D
         """
@@ -1441,7 +1462,8 @@ class Spectrum2D(Spectrum):
                 width_lower_limit=width_lower_limit,
                 width_convention=width_convention,
                 adaptive_error=width_interpolation_error,
-                shape=shape)
+                shape=shape,
+                fit=width_fit)
 
         if axis == 'x':
             z_broadened = z_broadened.T
