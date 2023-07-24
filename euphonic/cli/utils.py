@@ -728,18 +728,28 @@ def _get_cli_parser(features: Collection[str] = {},
                 section.add_argument(
                     '--adaptive-method', type=str, default='reference',
                     dest='adaptive_method', choices=('reference', 'fast'),
-                    help='The adaptive broadening method')
+                    help=('Adaptive broadening method. "Reference" is default '
+                          'for compatibility purposes: "Fast" method is '
+                          'approximate with much better performance.' ))
                 section.add_argument(
                     '--adaptive-error', type=float, default=0.01,
                     dest='adaptive_error',
-                    help=('Maximum absolute error '
-                          'for gaussian approximations '
-                          'when using the fast adaptive '
-                          'broadening method'))
+                    help=('Maximum absolute error for gaussian approximations '
+                          'when using the fast adaptive broadening method'))
                 section.add_argument(
                     '--adaptive-scale', type=float, default=None,
                     dest='adaptive_scale',
                     help='Scale factor applied to adaptive broadening width'
+                    )
+                section.add_argument(
+                    '--adaptive-fit', type=str, choices=['cubic', 'cheby-log'],
+                    default='cubic', dest='adaptive_fit',
+                    help=('Select parametrisation for fast adaptive broadening'
+                          '. "cheby-log" is generally recommended, "cubic" is '
+                          'default retained for backward-compatibility. This '
+                          'only applies when adaptive broadening is used; if '
+                          'variable-width instrument broadening is used alone '
+                          'then "cheby-log" will be used.' )
                     )
                 section.add_argument(
                     '--instrument-broadening', type=float, nargs='+',
