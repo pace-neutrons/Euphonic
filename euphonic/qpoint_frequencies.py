@@ -93,6 +93,7 @@ class QpointFrequencies:
                       mode_widths_min: Quantity = Quantity(0.01, 'meV'),
                       adaptive_method: str = 'reference',
                       adaptive_error: float = 0.01,
+                      adaptive_error_fit: str = 'cubic'
                       ) -> Spectrum1D:
         """
         Calculates a density of states, in units of modes per atom per
@@ -119,6 +120,10 @@ class QpointFrequencies:
             Scalar float. Acceptable error for gaussian approximations
             when using the fast adaptive method, defined as the absolute
             difference between the areas of the true and approximate gaussians
+        adaptive_error_fit
+            Select parametrisation of kernel width spacing to adaptive_error.
+            'cheby-log' is recommended: for backward-compatibilty, 'cubic' is
+            the default.
 
         Returns
         -------
@@ -144,7 +149,8 @@ class QpointFrequencies:
         dos = self._calculate_dos(dos_bins, mode_widths=mode_widths,
                                   mode_widths_min=mode_widths_min,
                                   adaptive_method=adaptive_method,
-                                  adaptive_error=adaptive_error)
+                                  adaptive_error=adaptive_error,
+                                  adaptive_error_fit=adaptive_error_fit)
         return Spectrum1D(dos_bins, dos)
 
     def _calculate_dos(self, dos_bins: Quantity,
@@ -153,6 +159,7 @@ class QpointFrequencies:
                        mode_weights: Optional[np.ndarray] = None,
                        adaptive_method: str = 'reference',
                        adaptive_error: float = 0.01,
+                       adaptive_error_fit: str = 'cubic',
                        q_idx: Optional[int] = None
                        ) -> Quantity:
         """
@@ -216,7 +223,7 @@ class QpointFrequencies:
                                                      freqs, mode_widths,
                                                      combined_weights,
                                                      adaptive_error,
-                                                     fit='cubic')
+                                                     fit=adaptive_error_fit)
         else:
             bin_idx = np.digitize(freqs, dos_bins_calc)
             # Create DOS with extra bin either side, for any points

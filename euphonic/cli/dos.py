@@ -92,7 +92,8 @@ def main(params: Optional[List[str]] = None) -> None:
 
     kwargs = {"mode_widths": mode_widths,
               "adaptive_method": args.adaptive_method,
-              "adaptive_error": args.adaptive_error}
+              "adaptive_error": args.adaptive_error,
+              "adaptive_error_fit": args.adaptive_fit}
 
     if args.weighting == 'dos' and args.pdos is None:
         dos = modes.calculate_dos(ebins, **kwargs)

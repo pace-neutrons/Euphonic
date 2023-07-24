@@ -426,6 +426,7 @@ class QpointPhononModes(QpointFrequencies):
             mode_widths_min: Quantity = Quantity(0.01, 'meV'),
             adaptive_method: Optional[str] = 'reference',
             adaptive_error: Optional[float] = 0.01,
+            adaptive_error_fit: str = 'cubic',
             weighting: Optional[str] = None,
             cross_sections: Union[str, Dict[str, Quantity]] = 'BlueBook',
             ) -> Spectrum1DCollection:
@@ -454,6 +455,10 @@ class QpointPhononModes(QpointFrequencies):
             Scalar float. Acceptable error for gaussian approximations
             when using the fast adaptive method, defined as the absolute
             difference between the areas of the true and approximate gaussians
+        adaptive_error_fit
+            Select parametrisation of kernel width spacing to adaptive_error
+            when using fast approximate method.  'cheby-log' is recommended:
+            for backward-compatibilty, 'cubic' is the default.
         weighting
             One of {'coherent', 'incoherent', 'coherent-plus-incoherent'}.
             If provided, produces a neutron-weighted DOS, weighted by
@@ -577,6 +582,7 @@ class QpointPhononModes(QpointFrequencies):
                                       mode_widths_min=mode_widths_min,
                                       adaptive_method=adaptive_method,
                                       adaptive_error=adaptive_error,
+                                      adaptive_error_fit=adaptive_error_fit,
                                       mode_weights=evec_weights[:, :, i])
             if cs is not None:
                 # Neutron weighted DOS is per atom of sample
