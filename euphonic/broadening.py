@@ -194,6 +194,11 @@ def _get_spacing(error, shape='gauss', fit='cheby-log'):
                              f" in range {np.power(10, cheby.domain)}.")
         return cheby(log_error)
 
+    else:
+        raise ValueError(f'Fit "{fit}" is not available for shape "{shape}". '
+                         f'The "cheby-log" fit is recommended for "gauss" and '
+                         f'"Lorentz" shapes.')
+
 
 def _width_interpolated_broadening(bins: np.ndarray,
                                    x: np.ndarray,
