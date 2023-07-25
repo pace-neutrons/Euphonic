@@ -42,8 +42,8 @@ def test_variable_close_to_exact():
         width_function=width_function,
         width_convention='STD',
         weights=(y * bin_width),  # Convert from spectrum heights to counts
-        adaptive_error=1e-5,
-        fit='cubic')
+        adaptive_error=5e-5,
+        fit='cheby-log')
 
 
     npt.assert_allclose(exact, poly_broadened.to('1/meV').magnitude,
@@ -71,7 +71,7 @@ def test_area_unchanged_for_broadened_dos(material, qpt_freqs_json,
                                 qpt_freqs.frequencies,
                                 mode_widths, weights,
                                 0.01,
-                                fit='cubic')
+                                fit='cheby-log')
     ebins_centres = ebins.magnitude[:-1] + 0.5*np.diff(ebins.magnitude)
     assert dos.y_data.units == 1/ebins.units
     dos_area = simps(dos.y_data.magnitude, ebins_centres)
