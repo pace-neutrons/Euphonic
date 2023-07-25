@@ -341,7 +341,16 @@ class TestSpectrum2DMethods:
                                                 y.to('J').magnitude
                                                 ) * ureg('J')),
                'width_fit': 'cubic'},
-              'synthetic_x.json', 'synthetic_x_poly_broadened.json'))])
+              'synthetic_x.json', 'synthetic_x_poly_broadened.json')),
+            (({'x_width': (lambda x: np.polyval([0.2, -0.5],
+                                                x.to('1/nm').magnitude
+                                                ) * ureg('1/nm')),
+               'y_width': (lambda y: np.polyval([0., -0.4, 3.],
+                                                y.to('J').magnitude
+                                                ) * ureg('J')),
+               'width_fit': 'cheby-log'},
+              'synthetic_x.json', 'synthetic_x_poly_broadened_cheby.json')),
+                             ])
     def test_broaden(self, args, spectrum2d_file, broadened_spectrum2d_file):
         spec2d = get_spectrum2d(spectrum2d_file)
         expected_broadened_spec2d = get_spectrum2d(broadened_spectrum2d_file)
@@ -388,7 +397,7 @@ class TestSpectrum2DMethods:
 
         fixed_broad_y = spectrum.broaden(y_width=fwhm)
         variable_broad_y = spectrum.broaden(
-            y_width=sigma_function, width_convention='std', width_fit='cubic')
+            y_width=sigma_function, width_convention='std')
 
         check_spectrum2d(fixed_broad_y, variable_broad_y)
 
@@ -398,7 +407,7 @@ class TestSpectrum2DMethods:
         ) * spectrum.get_bin_edges().units
         fixed_broad_x = spectrum.broaden(x_width=fwhm)
         variable_broad_x = spectrum.broaden(
-            x_width=sigma_function, width_convention='std', width_fit='cubic')
+            x_width=sigma_function, width_convention='std')
         check_spectrum2d(fixed_broad_x, variable_broad_x, z_atol=1e-10)
 
     @pytest.mark.parametrize(
