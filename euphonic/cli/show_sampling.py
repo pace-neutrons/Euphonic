@@ -8,10 +8,10 @@ import numpy as np
 import euphonic.sampling
 from .utils import get_args, matplotlib_save_or_show
 
-choices_2d = {'golden-square', 'regular-square'}
+choices_2d = {'golden-square', 'regular-square', 'recurrence-square'}
 choices_3d = {'golden-sphere', 'sphere-from-square-grid',
               'spherical-polar-grid', 'spherical-polar-improved',
-              'random-sphere'}
+              'random-sphere', 'recurrence-cube'}
 
 
 def get_parser() -> ArgumentParser:
@@ -56,6 +56,11 @@ def main(params: Optional[List[str]] = None) -> None:
         ax.scatter(*zip(*euphonic.sampling.golden_sphere(args.npts,
                                                          jitter=args.jitter)),
                    marker='x')
+
+    elif args.sampling == 'recurrence-square':
+        ax.scatter(*zip(*euphonic.sampling.recurrence_sequence(args.npts,
+                                                               order=2)))
+
     elif args.sampling == 'spherical-polar-grid':
         n_theta = int(np.ceil(np.sqrt(args.npts / 2)))
         npts = n_theta**2 * 2
@@ -91,6 +96,12 @@ def main(params: Optional[List[str]] = None) -> None:
         ax.scatter(
             *zip(*euphonic.sampling.random_sphere(args.npts)),
             marker='x')
+
+    elif args.sampling == 'recurrence-cube':
+        ax.scatter(*zip(*euphonic.sampling.recurrence_sequence(args.npts,
+                                                               order=3)),
+                   marker='x')
+
     else:
         raise ValueError("Sampling type f{args.sampling} is not implemented.")
 

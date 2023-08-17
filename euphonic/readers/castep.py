@@ -1,7 +1,8 @@
 from collections import defaultdict
 import re
 import struct
-from typing import Dict, Any, TextIO, BinaryIO, Tuple, Optional, List, Union
+from typing import (Any, BinaryIO, Dict, List, NamedTuple,
+                    Optional, TextIO, Tuple, Union)
 
 import numpy as np
 
@@ -53,15 +54,20 @@ def read_phonon_dos_data(
         freqs = np.empty((0, n_branches))
         mode_grads = np.empty((0, n_branches))
         while True:
-            try:
-                _, qpt, qweight, qfreq, qmode_grad = _read_frequency_block(
-                    f, n_branches, extra_columns=[0])
-            except IndexError:
-                # This should indicate we've reached 'END GRADIENTS' line
+            frequency_block = _read_frequency_block(
+                f,
+                n_branches,
+                extra_columns=[0],
+                terminator=' END GRADIENTS\n')
+            if frequency_block is None:
+                # We've reached 'END GRADIENTS' line
                 break
-            qpts = np.concatenate((qpts, [qpt]))
-            weights = np.concatenate((weights, [qweight]))
-            freqs = np.concatenate((freqs, [qfreq]))
+
+            qmode_grad = frequency_block.extra
+
+            qpts = np.concatenate((qpts, [frequency_block.qpt]))
+            weights = np.concatenate((weights, [frequency_block.weight]))
+            freqs = np.concatenate((freqs, [frequency_block.frequencies]))
             mode_grads = np.concatenate((mode_grads, [qmode_grad.squeeze()]))
         line = f.readline()
         if 'BEGIN DOS' not in line:
@@ -125,7 +131,9 @@ def read_phonon_data(
         atom_mass_unit: str = 'amu',
         frequencies_unit: str = 'meV',
         read_eigenvectors: bool = True,
-        average_repeat_points: bool = True) -> Dict[str, Any]:
+        average_repeat_points: bool = True,
+        prefer_non_loto: bool = False
+    ) -> Dict[str, Any]:
     """
     Reads data from a .phonon file and returns it in a dictionary
 
@@ -146,6 +154,12 @@ def read_phonon_data(
         If multiple frequency/eigenvectors blocks are provided with the same
         q-point index (i.e. for Gamma-point with LO-TO splitting), scale the
         weights such that these sum to the given weight
+    prefer_non_loto
+        If multiple frequency/eigenvector blocks are provided with the same
+        q-point index and all-but-one include a direction vector, use the data
+        from the point without a direction vector. (i.e. use the "exact" Gamma
+        data without non-analytic correction.) This option takes priority over
+        average_repeat_points.
 
     Returns
     -------
@@ -179,14 +193,21 @@ def read_phonon_data(
         idx = 0
         previous_qpt_id = -1
         repeated_qpt_ids = defaultdict(set)
+        loto_split_indices = set()
+
         while True:
-            try:
-                qpt_id, qpt, qweight, qfreq, _ = _read_frequency_block(
-                    f, n_branches)
-            except EOFError:
+            frequency_block = _read_frequency_block(f, n_branches)
+            if frequency_block is None:
+                # Reached empty line, this should be end of file
                 break
 
-            if average_repeat_points and qpt_id == previous_qpt_id:
+            qpt_id = frequency_block.qpt_id
+
+            if prefer_non_loto and frequency_block.direction is not None:
+                loto_split_indices.add(idx)
+
+            if ((average_repeat_points or prefer_non_loto)
+                and (qpt_id == previous_qpt_id)):
                 repeated_qpt_ids[qpt_id].update({idx - 1, idx})
             previous_qpt_id = qpt_id
 
@@ -207,22 +228,36 @@ def read_phonon_data(
             # Sometimes there are more than n_qpts q-points in the file
             # due to LO-TO splitting
             if idx < len(qpts):
-                qpts[idx] = qpt
-                freqs[idx] = qfreq
-                weights[idx] = qweight
+                qpts[idx] = frequency_block.qpt
+                freqs[idx] = frequency_block.frequencies
+                weights[idx] = frequency_block.weight
                 if read_eigenvectors:
                     eigenvecs[idx] = qeigenvec
             else:
-                qpts = np.concatenate((qpts, [qpt]))
-                freqs = np.concatenate((freqs, [qfreq]))
-                weights = np.concatenate((weights, [qweight]))
+                qpts = np.concatenate((qpts, [frequency_block.qpt]))
+                freqs = np.concatenate((freqs, [frequency_block.frequencies]))
+                weights = np.concatenate((weights, [frequency_block.weight]))
                 if read_eigenvectors:
                     eigenvecs = np.concatenate((eigenvecs, [qeigenvec]))
             idx += 1
 
     # Multiple qpts with same CASTEP q-pt index: correct weights
-    if average_repeat_points:
-        for qpt_id, indices in repeated_qpt_ids.items():
+    for qpt_id, indices in repeated_qpt_ids.items():
+        intersection = indices & loto_split_indices
+        if (prefer_non_loto
+            and intersection
+            and len(indices) > len(intersection)):
+            # Repeated q-point has both split and un-split variations;
+            # set weights of split points to zero
+            if len(indices) - len(intersection) == 1:
+                indices = np.asarray(list(intersection), dtype=int)
+                weights[indices] = 0
+            else:
+                raise ValueError(
+                    "Found multiple non-split blocks for q-point {qpt_id},"
+                    " cannot determine which to use.")
+
+        elif average_repeat_points:
             indices = np.asarray(list(indices), dtype=int)
             weights[indices] /= indices.size
 
@@ -296,9 +331,21 @@ _qpt_index_pattern = re.compile(r'q-pt=\s*(\d+)')
 _qpt_float_pattern = re.compile(r'-?\d+\.\d+')
 
 
+class _FrequencyBlock(NamedTuple):
+    qpt_id: int
+    qpt: np.ndarray
+    direction: Optional[np.ndarray]
+    weight: float
+    frequencies: np.ndarray
+    extra: Optional[np.ndarray]
+
+
 def _read_frequency_block(
-        f: TextIO, n_branches: int, extra_columns: Optional[List] = None
-        ) -> Tuple[int, np.ndarray, float, np.ndarray, Optional[np.ndarray]]:
+    f: TextIO,
+    n_branches: int,
+    extra_columns: Optional[List] = None,
+    terminator: str = ''
+        ) -> Union[_FrequencyBlock, None]:
     """
     For a single q-point reads the q-point, weight, frequencies
     and optionally any extra columns
@@ -307,6 +354,8 @@ def _read_frequency_block(
     ----------
     f
         File object in read mode for the file containing the data
+    n_branches
+        Expected number of frequencies (i.e. phonon branches)
     extra_columns
         The index(es) of extra columns to read after the frequencies
         column. e.g. to read the first column after frequencies
@@ -314,14 +363,21 @@ def _read_frequency_block(
         frequencies extra_columns = [0, 1]. For reference, in .phonon
         IR intensities = 0, Raman intensities = 1, and in .phonon_dos
         mode gradients = 0
+    terminator
+        If this line is reached, return None without raising an error
 
     Returns
     -------
-    iqpt
+    NamedTuple with attributes:
+
+    qpt_id
         CASTEP-assigned index of the q-point
     qpt
         Shape (3,) float ndarray. The q-point in reciprocal fractional
         coordinates
+    direction
+        If q-point is a Gamma-point with non-analytic LO-TO splitting
+        correction, this is the direction vector of that data. Otherwise, None.
     weight
         The weight of this q-point
     frequencies
@@ -332,13 +388,20 @@ def _read_frequency_block(
         (len(extra_columns), n_modes) float ndarray
     """
     qpt_line = f.readline()
-    if qpt_line == '':
-        raise EOFError
+    if qpt_line == terminator:
+        return None
 
     i_qpt = int(re.findall(_qpt_index_pattern, qpt_line)[0])
     floats = re.findall(_qpt_float_pattern, qpt_line)
     qpt = np.array([float(x) for x in floats[:3]])
     qweight = float(floats[3])
+
+    direction: Optional[np.ndarray]
+    if len(floats) >= 6:
+        direction = floats[4:7]
+    else:
+        direction = None
+
     freq_lines = [f.readline().split()
                   for i in range(n_branches)]
     freq_col = 1
@@ -353,7 +416,7 @@ def _read_frequency_block(
         for i, col in enumerate(extra_columns):
             extra[i] = np.array(
                 [float(line[freq_col + col + 1]) for line in freq_lines])
-    return i_qpt, qpt, qweight, qfreq, extra
+    return _FrequencyBlock(i_qpt, qpt, direction, qweight, qfreq, extra)
 
 
 def read_interpolation_data(

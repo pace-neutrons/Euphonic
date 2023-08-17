@@ -7,11 +7,11 @@ try:
     from matplotlib.colors import Colormap, Normalize
     from matplotlib.image import NonUniformImage
 
-except ModuleNotFoundError:
+except ModuleNotFoundError as err:
     raise ModuleNotFoundError(
         'Cannot import Matplotlib for plotting (maybe Matplotlib is '
         'not installed?). To install Euphonic\'s optional Matplotlib '
-        'dependency, try:\n\npip install euphonic[matplotlib]\n')
+        'dependency, try:\n\npip install euphonic[matplotlib]\n') from err
 
 import numpy as np
 
@@ -80,10 +80,11 @@ def plot_1d_to_axis(spectra: Union[Spectrum1D, Spectrum1DCollection],
                 # Only add legend label to the first segment
                 label = None
                 color = p[-1].get_color()
-
+            # Allow user kwargs to take priority
+            plot_kwargs = {**{'color': color, 'label': label}, **mplargs}
             p = ax.plot(spectrum.get_bin_centres().magnitude[x0:x1],
                         spectrum.y_data.magnitude[x0:x1],
-                        color=color, label=label, **mplargs)
+                        **plot_kwargs)
 
     # Update legend if it exists, in case new labels have been added
     legend = ax.get_legend()

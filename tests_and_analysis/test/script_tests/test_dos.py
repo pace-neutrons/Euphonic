@@ -11,7 +11,7 @@ from euphonic import Spectrum1D
 from tests_and_analysis.test.utils import (
     get_data_path, get_castep_path, get_phonopy_path)
 from tests_and_analysis.test.script_tests.utils import (
-    get_script_test_data_path, get_current_plot_line_data,
+    get_script_test_data_path, get_plot_line_data,
     args_to_key)
 from euphonic.cli.utils import _get_pdos_weighting
 
@@ -68,7 +68,7 @@ class TestRegression:
     def run_dos_and_test_result(self, dos_args):
         euphonic.cli.dos.main(dos_args)
 
-        line_data = get_current_plot_line_data()
+        line_data = get_plot_line_data()
         # Only use first axis xy_data to save space
         # and avoid regenerating data after refactoring
         line_data['xy_data'] = line_data['xy_data'][0]
@@ -91,6 +91,7 @@ class TestRegression:
         self.run_dos_and_test_result(dos_args)
 
     @pytest.mark.phonopy_reader
+    @pytest.mark.multiple_extras
     @pytest.mark.parametrize('dos_args', dos_params_from_phonopy)
     def test_dos_plot_data_from_phonopy(self, inject_mocks, dos_args):
         self.run_dos_and_test_result(dos_args)
@@ -118,6 +119,7 @@ class TestRegression:
             euphonic.cli.dos.main(dos_args)
 
     @pytest.mark.phonopy_reader
+    @pytest.mark.multiple_extras
     @pytest.mark.parametrize('dos_args', [
         [nacl_no_evec_yaml_file, '--pdos'],
         [nacl_no_evec_yaml_file, '--weighting', 'coherent-dos']])
@@ -156,7 +158,7 @@ def test_regenerate_dos_data(_):
         euphonic.cli.dos.main(dos_param)
 
         # Retrieve with gcf and write to file
-        line_data = get_current_plot_line_data()
+        line_data = get_plot_line_data()
         # Only use first axis xy_data to save space
         # and avoid regenerating data after refactoring
         line_data['xy_data'] = line_data['xy_data'][0]

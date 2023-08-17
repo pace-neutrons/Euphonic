@@ -252,6 +252,8 @@ class TestForceConstantsCreation:
         ('NaCl_prim', {'summary_name': 'phonopy_nacl.yaml'}),
         # Test NaCl with different nac_factor (2.0 with QE)
         ('NaCl_QE', {}),
+        # Check born charges from updated Phonopy (>2.18) yaml format
+        ('NaCl_phonopy_2.19', {'summary_name': 'phonopy_2.19_nacl.yaml'}),
         ('CaHgO2', {'summary_name': 'phonopy_au_units.yaml'}),
         ('CaHgO2', {'summary_name': 'mp-7041-20180417.yaml'}),
         ('CaHgO2', {'summary_name': 'phonopy_fullfc.yaml'}),

@@ -487,9 +487,9 @@ def _extract_summary(filename: str, fc_extract: bool = False
      atom_type, _) = _extract_crystal_data(summary_object['primitive_cell'])
 
     summary_dict = {}
-    try:
+    if 'physical_unit' in summary_object:
         pu = summary_object['physical_unit']
-    except KeyError:
+    else:
         default_units = {'atomic_mass': 'AMU',
                          'length': 'Angstrom',
                          'force_constants': 'eV/Angstrom^2'}
@@ -543,28 +543,40 @@ def _extract_summary(filename: str, fc_extract: bool = False
         summary_dict['pc_to_sc_atom_idx'] = pc_to_sc_atom_idx
         summary_dict['sc_to_pc_atom_idx'] = sc_to_pc_atom_idx
         summary_dict['ufc'] = pu['force_constants']
-        try:
+
+        if 'force_constants' in summary_object:
             fc = summary_object['force_constants']
             summary_dict['force_constants'] = np.array(
                 fc['elements']).reshape(fc['shape'] + [3,3])
-        except KeyError:
-            pass
+
         # NAC factor may be present even if born is not in phonopy.yaml
         # (born may be in separate BORN file), and the BORN file may
         # not necessarily contain NAC factor, so just try reading it
         # from phonopy.yaml anyway
-        try:
+
+        # New format
+        if 'nac' in summary_object:
+            nac = summary_object['nac']
+            summary_dict['nac_factor'] = nac.get('unit_conversion_factor')
+            summary_dict['born'] = nac.get('born_effective_charge')
+            summary_dict['dielectric'] = nac.get('dielectric_constant')
+
+        # Old format
+        else:
             summary_dict['nac_factor'] = summary_object[
-                'phonopy']['nac_unit_conversion_factor']
-        except KeyError:
-            pass
-        try:
-            summary_dict['born'] = np.array(
-                summary_object['born_effective_charge'])
-            summary_dict['dielectric'] = np.array(
-                summary_object['dielectric_constant'])
-        except KeyError:
-            pass
+                'phonopy'].get('nac_unit_conversion_factor')
+            summary_dict['born'] = summary_object.get('born_effective_charge')
+            summary_dict['dielectric'] = summary_object.get(
+                'dielectric_constant')
+
+        # Cast arrays and drop keys if data not found
+        for key in ('nac_factor', 'born', 'dielectric'):
+            if summary_dict[key] is None:
+                del summary_dict[key]
+
+        for key in ('born', 'dielectric'):
+            if key in summary_dict:
+                summary_dict[key] = np.array(summary_dict[key])
 
     return summary_dict
 

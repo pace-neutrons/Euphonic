@@ -1,5 +1,61 @@
-`Unreleased <https://github.com/pace-neutrons/Euphonic/compare/v1.1.0...HEAD>`_
+`Unreleased <https://github.com/pace-neutrons/Euphonic/compare/v1.2.1...HEAD>`_
 ----------
+
+`v1.2.1 <https://github.com/pace-neutrons/Euphonic/compare/v1.2.0...v1.2.1>`_
+------
+
+- Improvements
+
+  - Added "prefer_non_loto" option to Castep *.phonon* file
+    importers. When this is enabled, a block of q-points are
+    encountered with splitting directions, and one q-point does not
+    have a splitting direction, the data at this "exact" q-point is
+    preferred and the other weights in the group are set to zero.
+
+    This provides the *intended* behaviour of the Abins Castep parser
+    and should give a reasonable result for Gamma-point only Castep
+    calculations.
+
+    The option is disabled by default, so existing scripts will not be
+    affected.
+
+- Bug Fixes:
+
+  - Allow ``color`` to be passed as an extra kwarg to ``plot_1d`` and
+    ``plot_1d_to_axis``. Previously this caused a ``TypeError``.
+  - Fix bug where ``Py_None`` was not incremented before returning from
+    ``calculate_phonons()`` in the C-extension causing a deallocation crash
+  - Support phonopy.yaml files from Phonopy versions >= 1.18, which
+    have moved the data relating to dipole-dipole
+    corrections. (i.e. Born effective charges, static dielectric
+    tensor and a related unit conversion factor.)
+
+- Maintenance:
+
+  - A deprecation in Numpy 1.25, which indirectly caused a test failure, has been addressed.
+
+`v1.2.0 <https://github.com/pace-neutrons/Euphonic/compare/v1.1.0...v1.2.0>`_
+------
+
+- Improvements:
+
+  - Euphonic now tests on Python 3.11
+  - Euphonic now provides PyPI wheels for Python 3.11
+
+- New features:
+
+  - You can now perform linear interpolation of phonon frequencies and
+    eigenvectors with the `Brille <https://brille.github.io/stable/index.html>`_
+    library using the new
+    ``euphonic.brille.BrilleInterpolator`` object. This should provide
+    performance improvements for large unit cells which require the
+    dipole correction.
+  - There is a new command-line tool ``euphonic-brille-convergence`` to
+    assist with choosing the ``BrilleInterpolator.from_force_constants``
+    arguments to achieve the desired accuracy.
+  - Brille interpolation can be accessed from the ``euphonic-powder-map`` tool
+    using the new ``--use-brille``, ``--brille-grid-type``, ``--brille-npts``
+    and ``--brille-npts-density`` arguments.
 
 `v1.1.0 <https://github.com/pace-neutrons/Euphonic/compare/v1.0.0...v1.1.0>`_
 ----------

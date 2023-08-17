@@ -57,6 +57,11 @@ def test_missing_matplotlib(mocker):
 
 
 class TestPlot1DCore:
+
+    def teardown_method(self):
+        # Ensure figures are closed
+        matplotlib.pyplot.close('all')
+
     @pytest.mark.parametrize('spectra, expected_error',
                              [('wrong_type', TypeError), ])
     def test_1d_core_errors(self, spectra, expected_error, axes):
@@ -181,7 +186,26 @@ class TestPlot1DCore:
         with pytest.raises(ValueError):
             plot_1d_to_axis(spec, axes, labels=labels)
 
+    @pytest.mark.parametrize('kwargs', [
+        ({'ls': '--'}),
+        ({'color': 'r', 'ms': '+'})
+    ])
+    def test_extra_plot_kwargs(self, mocker, axes, kwargs):
+        mock = mocker.patch('matplotlib.axes.Axes.plot',
+                            return_value=None)
+        spec = Spectrum1D(np.array([0., 1., 2.])*ureg('meV'),
+                          np.array([2., 3., 2.])*ureg('angstrom^-2'))
+        plot_1d_to_axis(spec, axes, **kwargs)
+
+        expected_kwargs = {**{'color': None, 'label': None}, **kwargs}
+        assert mock.call_args[1] == expected_kwargs
+
 class TestPlot1D:
+
+    def teardown_method(self):
+        # Ensure figures are closed
+        matplotlib.pyplot.close('all')
+
     @staticmethod
     def mock_core(mocker):
         return mocker.patch('euphonic.plot.plot_1d_to_axis',
@@ -282,8 +306,28 @@ class TestPlot1D:
         with pytest.raises(ValueError):
             fig = plot_1d(band_segments, labels=['Band A', 'Band B'])
 
+    @pytest.mark.parametrize('spec, kwargs', [
+        (Spectrum1D(*spec1d_args), {'ls': '.-'}),
+        (Spectrum1D(*spec1d_args), {'ms': '*', 'color': 'g'}),
+        (Spectrum1DCollection(*spec1dcol_args), {'ms': '*', 'color': 'g'}),
+        (Spectrum1DCollection(*spec1dcol_args),
+         {'label': 'Line A', 'color': 'k'})
+    ])
+    def test_plot_kwargs(self, mocker, spec, kwargs):
+        mock = mocker.patch('matplotlib.axes.Axes.plot',
+                            return_value=None)
+        plot_1d(spec, **kwargs)
+
+        expected_kwargs = {**{'color': None, 'label': None}, **kwargs}
+        for mock_call_args in mock.call_args_list:
+            assert mock_call_args[1] == expected_kwargs
 
 class TestPlot2D:
+
+    def teardown_method(self):
+        # Ensure figures are closed
+        matplotlib.pyplot.close('all')
+
     @staticmethod
     def mock_core(mocker):
         return mocker.patch('euphonic.plot.plot_2d_to_axis',
