@@ -248,7 +248,7 @@ def plot_2d_to_axis(spectrum: Spectrum2D, ax: Axes,
 def plot_crystal(crystal: Crystal,
                     atom_styles: Optional[Dict[str, str]] = None,
                     bbox: Optional[Dict[str, float]] = None
-                    ) -> Dict[str, str]:
+                    ) -> Figure:
     """
     Plot Crystal object on 3D-axes.
 
@@ -258,10 +258,18 @@ def plot_crystal(crystal: Crystal,
         `Crystal` class containing crystal structure.
     atom_styles
         Dictionary of atom names and the specifications how to
-        plot them.
+        plot them. Keys should follow the specification of the
+        `matplotlib.pyplot.scatter` function, which is used for plotting.
+    bbox
+        Dictionary with keys {'xmin', 'xmax', 'ymin', 'ymax', 'zmin', 'zmax'}.
+        Only atoms with fractional coordinates within this box will be plot.
+
+    Returns
+    -------
+    fig : matplotlib.figure.Figure
+        The Figure instance.
 
     """
-
     fig = plt.figure()
     ax = fig.add_subplot(projection='3d')
     ax.grid(visible=None)
@@ -288,7 +296,8 @@ def plot_crystal_to_axis(crystal: Crystal, ax: Axes,
         Matplotlib axes to which image will be drawn.
     atom_styles
         Dictionary of atom names and the specifications how to
-        plot them.
+        plot them. Keys should follow the specification of the
+        `matplotlib.pyplot.scatter` function, which is used for plotting.
     bbox
         Dictionary with keys {'xmin', 'xmax', 'ymin', 'ymax', 'zmin', 'zmax'}.
         Only atoms with fractional coordinates within this box will be plot.
@@ -305,7 +314,7 @@ def plot_crystal_to_axis(crystal: Crystal, ax: Axes,
                      (z>bbox['zmin']) & (z<bbox['zmax'])
             x, y, z = x[id_box], y[id_box], z[id_box]
 
-        ax.scatter(x, y, z, s=atom_styles[at_type]['size'], color=atom_styles[at_type]['color'])
+        ax.scatter(x, y, z, **atom_styles[at_type])
 
 
 def plot_2d(spectra: Union[Spectrum2D, Sequence[Spectrum2D]],

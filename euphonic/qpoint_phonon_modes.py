@@ -605,16 +605,18 @@ class QpointPhononModes(QpointFrequencies):
         .. math::
 
             \\mathbf{u}(\\kappa,\\mathbf{q},\\nu) = 
+                A
                 \\frac{1}{\\sqrt{M_\\kappa}}
                 \\mathbf{e}_{\\mathbf{q}\\nu\\kappa}
                 \\exp\\left( i\\mathbf{Q}{\\cdot}\\mathbf{r}_{\\kappa} \\right)
-                A
+                
 
                 
 
-        Where :math:`M_{\\kappa}` is the atom mass,
-        :math:`\\mathbf{e}_{\\mathbf{q}\\nu\\kappa}` are the normalised
-        Cartesian eigenvectors, and A denotes the amplitude of displacement.
+        Where A is the displacement amplitude, :math:`M_{\\kappa}` is the atom mass,
+        :math:`\\mathbf{e}_{\\mathbf{q}\\nu\\kappa}` is the displacement 
+        of atom :math:`\\kappa` according to the eigenvector of phonon
+        with wavevector :math:`\\mathbf{q}` and band index :math:`\\nu`.
 
         .. [1] M.T. Dove, Structure and Dynamics, Oxford University Press, Oxford, 2003, pp. 211-212.
 
