@@ -176,18 +176,20 @@ def _get_spacing(error, shape='gauss', fit='cheby-log'):
                  0.03337662, 0.00878684, 0.00619626],
                 window=[1., 1.],
                 domain=[-4.99146317, -1.34655197])
+            safe_domain = [-4, -1.35]
 
-        elif shape == 'gauss':
+        else:  # gauss
             cheby = Chebyshev(
                 [1.25885858, 0.39803148, 0.20311735, 0.08654827,
                  0.03447873, 0.00894006, 0.00715706],
                 window=[-1., 1.],
                 domain=[-4.64180022, -1.00029948])
+            safe_domain = [-4, -1.]
 
         log_error = np.log10(error)
-        if log_error < cheby.domain[0] or log_error > cheby.domain[1]:
+        if log_error < safe_domain[0] or log_error > safe_domain[1]:
             raise ValueError("Target error is out of fit range; value must lie"
-                             f" in range {np.power(10, cheby.domain)}.")
+                             f" in range {np.power(10, safe_domain)}.")
         return cheby(log_error)
 
     else:
