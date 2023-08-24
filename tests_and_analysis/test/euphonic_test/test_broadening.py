@@ -42,7 +42,7 @@ def test_variable_close_to_exact():
         width_function=width_function,
         width_convention='STD',
         weights=(y * bin_width),  # Convert from spectrum heights to counts
-        adaptive_error=5e-5,
+        adaptive_error=2e-4,
         fit='cheby-log')
 
 
@@ -129,3 +129,16 @@ def test_find_coeffs(spacing, expected_coeffs):
     """Test find_coeffs against expected coefficients"""
     coeffs = find_coeffs(spacing)
     assert coeffs == pytest.approx(expected_coeffs)
+
+@pytest.mark.parametrize(
+        'adaptive_error', [(1e-6,), (0.2,)])
+def test_bad_range_raises_error(adaptive_error):
+    qpt_freqs = get_qpt_freqs('quartz',
+                              'toy_quartz_qpoint_frequencies.json')
+    mode_widths = np.ones(qpt_freqs.frequencies.shape) * ureg('meV')
+    weights = np.ones(qpt_freqs.frequencies.shape)
+    ebins = np.arange(0, 150, 0.1) * ureg('meV')
+    with pytest.raises(ValueError):
+        width_interpolated_broadening(ebins, qpt_freqs.frequencies,
+                                      mode_widths, weights,
+                                      adaptive_error=adaptive_error)
