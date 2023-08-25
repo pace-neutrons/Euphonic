@@ -115,7 +115,7 @@ def main(params: Optional[List[str]] = None) -> None:
                           shape=args.shape,
                           method='convolve',
                           width_interpolation_error=args.adaptive_error,
-                          fit='cheby-log')
+                          width_fit='cheby-log')
 
     elif args.inst_broadening:
         # Fixed-width broadening
