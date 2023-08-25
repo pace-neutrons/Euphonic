@@ -11,6 +11,14 @@
     interpolation method already available for adaptive broadening of
     DOS.
 
+- Bug Fixes:
+
+  - Changed the masking logic for kinematic constraints: instead of
+    requiring energy bin to _entirely_ fall within accessible range at
+    Q-bin mid-point, unmask bins if _any_ part of energy range is
+    accessible at this Q value. This gives much more intuitive
+    behaviour, especially for narrow angle ranges.
+
 
 `v1.2.1 <https://github.com/pace-neutrons/Euphonic/compare/v1.2.0...v1.2.1>`_
 ------
