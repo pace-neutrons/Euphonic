@@ -33,6 +33,8 @@ dos_params = [
     [nah_phonon_file, '--energy-broadening=2'],
     [nah_phonon_file, '--ebins=100'],
     [nah_phonon_file, '--energy-broadening=2.3', '--ebins=50'],
+    [nah_phonon_file, '--instrument-broadening', '1.', '0.1', '-0.001',
+     '--ebins=100', '--shape', 'gauss'],
     [nah_phonon_file, '--energy-unit=1/cm', '--eb=20', '--e-max=750'],
     [nah_phonon_file, '--eb=5e-5', '--shape=lorentz', '--e-min=1.5e-3',
      '-u=hartree'],
