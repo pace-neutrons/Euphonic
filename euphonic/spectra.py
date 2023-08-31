@@ -4,7 +4,7 @@ import copy
 import itertools
 import math
 import json
-from numbers import Integral
+from numbers import Integral, Real
 from typing import (Any, Callable, Dict, List, Optional, overload,
                     Sequence, Tuple, TypeVar, Union, Type)
 import warnings
@@ -58,6 +58,21 @@ class Spectrum(ABC):
     def y_data(self, value: Quantity) -> None:
         self.y_data_unit = str(value.units)
         self._y_data = value.to(self._internal_y_data_unit).magnitude
+
+    def __imul__(self, other: Real) -> None:
+        """Scale spectral data in-place"""
+        self._y_data *= other
+
+    def __mul__(self: T, other: Real) -> T:
+        """Get a new spectrum with scaled data"""
+        new_spec = self.copy()
+        new_spec *= other
+        return new_spec
+
+    @abstractmethod
+    def copy(self: T) -> T:
+        """Get an independent copy of spectrum"""
+        ...
 
     @property
     def x_tick_labels(self) -> List[Tuple[int, str]]:
@@ -458,6 +473,13 @@ class Spectrum1D(Spectrum):
                            metadata=self.metadata)
                 for x0, x1 in ranges]
 
+    def copy(self: T) -> T:
+        """Get an independent copy of spectrum"""
+        return type(self)(np.copy(self.x_data),
+                          np.copy(self.y_data),
+                          x_tick_labels=copy.copy(self.x_tick_labels),
+                          metadata=copy.deepcopy(self.metadata))
+
     def to_dict(self) -> Dict[str, Any]:
         """
         Convert to a dictionary. See Spectrum1D.from_dict for details on
@@ -636,11 +658,9 @@ class Spectrum1D(Spectrum):
         else:
             raise TypeError("x_width must be a Quantity or Callable")
 
-        return type(self)(
-            np.copy(self.x_data.magnitude)*ureg(self.x_data_unit),
-            y_broadened,
-            copy.copy((self.x_tick_labels)),
-            copy.copy(self.metadata))
+        new_spectrum = self.copy()
+        new_spectrum.y_data = y_broadened
+        return new_spectrum
 
 
 LineData = Sequence[Dict[str, Union[str, int]]]
@@ -908,6 +928,10 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
             line_data_vals[i] = tuple([data[key] for key in line_data_keys])
         return line_data_vals
 
+    def copy(self: T) -> T:
+        """Get an independent copy of spectrum"""
+        return Spectrum1D.copy(self)
+
     def to_dict(self) -> Dict[str, Any]:
         """
         Convert to a dictionary consistent with from_dict()
@@ -1022,13 +1046,14 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
                 ) -> T:  # noqa: F811
         ...
 
-    def broaden(self: T, x_width: Union[Quantity, CallableQuantity],
+    def broaden(self: T,
+                x_width: Union[Quantity, CallableQuantity],
                 shape: str = 'gauss',
                 method: Optional[str] = None,
                 width_lower_limit: Quantity = None,
                 width_convention: str = 'FWHM',
                 width_interpolation_error: float = 0.01,
-                width_fit: str= 'cheby-log'
+                width_fit: str = 'cheby-log'
                 ) -> T:  # noqa: F811
         """
         Individually broaden each line in y_data, returning a new
@@ -1084,11 +1109,10 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
                 y_broadened[i] = self._broaden_data(
                     yi, x_centres, x_width_calc, shape=shape,
                     method=method)
-            return Spectrum1DCollection(
-                np.copy(self.x_data.magnitude)*ureg(self.x_data_unit),
-                y_broadened*ureg(self.y_data_unit),
-                copy.copy((self.x_tick_labels)),
-                copy.deepcopy(self.metadata))
+
+            new_spectrum = self.copy()
+            new_spectrum.y_data = y_broadened * ureg(self.y_data_unit)
+            return new_spectrum
 
         elif isinstance(x_width, Callable):
             return type(self).from_spectra([
@@ -1293,6 +1317,10 @@ class Spectrum2D(Spectrum):
         self.z_data_unit = str(value.units)
         self._z_data = value.to(self._internal_z_data_unit).magnitude
 
+    def __imul__(self, other: Real) -> None:
+        """Scale spectral data in-place"""
+        self._z_data *= other
+
     def __setattr__(self, name: str, value: Any) -> None:
         _check_unit_conversion(self, name, value,
                                ['z_data_unit'])
@@ -1474,6 +1502,14 @@ class Spectrum2D(Spectrum):
             z_broadened,
             copy.copy(spectrum.x_tick_labels),
             copy.copy(spectrum.metadata))
+
+    def copy(self: T) -> T:
+        """Get an independent copy of spectrum"""
+        return type(self)(np.copy(self.x_data),
+                          np.copy(self.y_data),
+                          np.copy(self.z_data),
+                          copy.copy(self.x_tick_labels),
+                          copy.deepcopy(self.metadata))
 
     def get_bin_edges(self, bin_ax: str = 'x') -> Quantity:
         """
