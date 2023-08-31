@@ -5,7 +5,7 @@ Installation
 
 .. contents:: :local:
 
-Euphonic has been tested on Python 3.7 - 3.10.
+Euphonic has been tested on Python 3.8 - 3.10.
 
 Pip
 ===
