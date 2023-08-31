@@ -138,17 +138,16 @@ def run_setup():
         packages=packages,
         include_package_data=True,
         install_requires=[
-            'numpy>=1.14.5',
-            'scipy>=1.1.0',
+            'scipy>=1.10',  # requires numpy >= 1.19.5
             'seekpath>=1.1.0',
             'spglib>=1.9.4',
-            'pint>=0.10.1',
-            'importlib_resources>=1.3.0',
+            'pint>=0.19',
+            'importlib_resources>=1.3.0',  # equivalent to Python 3.9
             'threadpoolctl>=1.0.0'
         ],
         extras_require={
             'matplotlib': ['matplotlib>=2.2.2'],
-            'phonopy_reader': ['h5py>=2.8.0', 'PyYAML>=3.13'],
+            'phonopy_reader': ['h5py>=2.10.0', 'PyYAML>=3.13'],
             'brille': ['brille>=0.7.0']
         },
         entry_points={'console_scripts': [
