@@ -39,7 +39,7 @@ def get_parser() -> ArgumentParser:
     parser, sections = _get_cli_parser(
         features={'read-fc', 'pdos-weighting', 'ins-weighting',
                   'powder', 'plotting', 'ebins', 'q-e', 'map',
-                  'brille', 'kinematic'})
+                  'brille', 'kinematic', 'scaling'})
 
     sections['q'].description = (
         '"GRID" options relate to Monkhorst-Pack sampling for the '
@@ -236,6 +236,9 @@ def main(params: Optional[List[str]] = None) -> None:
         e_f = args.e_f * ureg(energy_unit) if (args.e_f is not None) else None
         spectrum = apply_kinematic_constraints(
             spectrum, e_i=e_i, e_f=e_f, angle_range=args.angle_range)
+
+    if args.scale is not None:
+        spectrum *= args.scale
 
     print(f"Plotting figure: max intensity "
           f"{np.nanmax(spectrum.z_data.magnitude) * spectrum.z_data.units:~P}")

@@ -85,6 +85,9 @@ def main(params: Optional[List[str]] = None) -> None:
     if x_tick_labels:
         spectrum.x_tick_labels = x_tick_labels
 
+    if args.scale is not None:
+        spectrum *= args.scale
+
     spectra = spectrum.split(**split_args)  # type: List[Spectrum2D]
     if len(spectra) > 1:
         print(f"Found {len(spectra)} regions in q-point path")
@@ -104,7 +107,7 @@ def main(params: Optional[List[str]] = None) -> None:
 def get_parser() -> ArgumentParser:
     parser, sections = _get_cli_parser(
         features={'read-fc', 'read-modes', 'q-e', 'map', 'btol', 'ebins',
-                  'ins-weighting', 'plotting'})
+                  'ins-weighting', 'plotting', 'scaling'})
     parser.description = (
         'Plots a 2D intensity map from the file provided. If a force '
         'constants file is provided, a band structure path is '

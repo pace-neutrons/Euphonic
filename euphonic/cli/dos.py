@@ -125,6 +125,9 @@ def main(params: Optional[List[str]] = None) -> None:
     plot_label_kwargs = _plot_label_kwargs(
         args, default_xlabel=f"Energy / {dos.x_data.units:~P}")
 
+    if args.scale is not None:
+        dos *= args.scale
+
     if args.save_json:
         dos.to_json_file(args.save_json)
     style = _compose_style(user_args=args, base=[base_style])
@@ -137,7 +140,8 @@ def get_parser() -> ArgumentParser:
     parser, _ = _get_cli_parser(features={'read-fc', 'read-modes', 'mp-grid',
                                           'plotting', 'ebins',
                                           'adaptive-broadening',
-                                          'pdos-weighting'})
+                                          'pdos-weighting',
+                                          'scaling'})
     parser.description = (
         'Plots a DOS from the file provided. If a force '
         'constants file is provided, a DOS is generated on the Monkhorst-Pack '
