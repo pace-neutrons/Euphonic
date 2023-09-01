@@ -666,6 +666,18 @@ class TestSpectrum1DCollectionMethods:
             expected_spectrum_file)
         check_spectrum1dcollection(added_spec, expected_added_spec)
 
+    def test_mul(self):
+        spec = get_spectrum1dcollection('gan_bands.json')
+
+        for i, spec1d in enumerate(spec):
+            check_spectrum1d(spec1d * 2.,
+                         (spec * 2.)[i])
+
+        check_spectrum1dcollection(spec, (spec * 2.) * 0.5)
+
+        with pytest.raises(AssertionError):
+            check_spectrum1dcollection(spec, spec * 2.)
+
     def test_copy(self):
         spec = get_spectrum1dcollection('gan_bands.json')
         spec.metadata = {'Test': 'item', 'int': 1}

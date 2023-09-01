@@ -503,6 +503,17 @@ class TestSpectrum1DMethods:
         added_spectrum = spec + other_spec
         assert added_spectrum.metadata == expected_metadata
 
+    def test_mul(self):
+        spec = get_spectrum1d('xsq_spectrum1d.json')
+
+        npt.assert_allclose(spec.y_data * 2.,
+                            (spec * 2.).y_data)
+
+        check_spectrum1d(spec, (spec * 2.) * 0.5)
+
+        with pytest.raises(AssertionError):
+            check_spectrum1d(spec, spec * 2.)
+
     def test_copy(self):
         spec = get_spectrum1d('xsq_spectrum1d.json')
 
