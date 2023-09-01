@@ -877,7 +877,7 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
         # Put all other per-spectrum metadata in line_data
         line_data = []
         for i, metadata in enumerate(all_metadata):
-            sdata = copy.copy(metadata)
+            sdata = copy.deepcopy(metadata)
             for key in combined_metadata.keys():
                 sdata.pop(key)
             line_data.append(sdata)
@@ -1431,7 +1431,7 @@ class Spectrum2D(Spectrum):
                 np.copy(self.y_data.magnitude)*ureg(self.y_data_unit),
                 z_broadened*ureg(self.z_data_unit),
                 copy.copy(self.x_tick_labels),
-                copy.copy(self.metadata))
+                copy.deepcopy(self.metadata))
         else:
             spectrum = self
 
