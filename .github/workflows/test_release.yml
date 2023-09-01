@@ -18,6 +18,8 @@ jobs:
       - uses: conda-incubator/setup-miniconda@v2
         with:
           python-version: 3.8
+          channels: conda-forge,defaults
+          channel-priority: true
       - name: Install llvm on Macos
         if: startsWith(matrix.os, 'macos')
         run: brew install llvm
