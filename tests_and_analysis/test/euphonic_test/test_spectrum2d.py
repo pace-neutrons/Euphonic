@@ -502,6 +502,16 @@ class TestSpectrum2DMethods:
         with pytest.raises(AssertionError):
             check_spectrum2d(spec, spec_copy)
 
+    def test_mult(self):
+        spec = get_spectrum2d('example_spectrum2d.json')
+
+        npt.assert_allclose(spec.z_data * 2.,
+                            (spec * 2.).z_data)
+
+        check_spectrum2d(spec, (spec * 2.) * 0.5)
+
+        with pytest.raises(AssertionError):
+            check_spectrum2d(spec, spec * 2.)
 
 class TestKinematicAngles:
 
