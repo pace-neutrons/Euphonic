@@ -59,9 +59,10 @@ class Spectrum(ABC):
         self.y_data_unit = str(value.units)
         self._y_data = value.to(self._internal_y_data_unit).magnitude
 
-    def __imul__(self, other: Real) -> None:
+    def __imul__(self: T, other: Real) -> T:
         """Scale spectral data in-place"""
         self._y_data *= other
+        return self
 
     def __mul__(self: T, other: Real) -> T:
         """Get a new spectrum with scaled data"""
@@ -1320,9 +1321,10 @@ class Spectrum2D(Spectrum):
         self.z_data_unit = str(value.units)
         self._z_data = value.to(self._internal_z_data_unit).magnitude
 
-    def __imul__(self, other: Real) -> None:
+    def __imul__(self: T, other: Real) -> T:
         """Scale spectral data in-place"""
-        self._z_data *= other
+        self.z_data = self.z_data * other
+        return self
 
     def __setattr__(self, name: str, value: Any) -> None:
         _check_unit_conversion(self, name, value,
