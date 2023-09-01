@@ -622,6 +622,10 @@ def _get_cli_parser(features: Collection[str] = {},
             '--grid-spacing', type=float, default=0.1, dest='grid_spacing',
             help=('q-point spacing of Monkhorst-Pack grid.'))
 
+    if 'scaling' in features:
+        sections['property'].add_argument(
+            '--scale', type=float, help='Intensity scale factor', default=None)
+
     if 'powder' in features:
         _sampling_choices = {'golden', 'sphere-projected-grid',
                              'spherical-polar-grid',
