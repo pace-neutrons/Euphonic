@@ -28,6 +28,8 @@ quick_calc_params = ['--npts=10', '--npts-min=10', '--q-spacing=1']
 powder_map_params = [
     [graphite_fc_file, '-w', 'dos', '--y-label=DOS', '--title=DOS TITLE',
      *quick_calc_params],
+    [graphite_fc_file, '-w', 'dos', '--y-label=DOS', '--scale=10',
+     *quick_calc_params],
     [graphite_fc_file, '--e-min=50', '-u=cm^-1', '--x-label=wavenumber',
      *quick_calc_params, '-w=coherent-dos'],
     [graphite_fc_file, '--e-min=-100', '--e-max=1000', '--ebins=100',
