@@ -23,6 +23,20 @@
     interpolation method already available for adaptive broadening of
     DOS.
 
+  - Added features to Spectrum classes
+
+    - Added ``copy()`` methods returning an independent duplicate of data
+
+    - Added ``__mul__`` and ``__imul__`` methods to Spectrum
+      classes. This allows results to be conveniently scaled with
+      infix notation ``*`` or ``*=``
+
+  - Added `--scale` parameter to ``euphonic-dos``,
+    ``euphonic-intensity-map``, ``euphonic-powder-map`` to allow
+    arbitrary scaling of results from command-line. (e.g. for
+    comparison with experiment, or changing DOS normalisation from 1
+    to 3N.)
+
 - Bug Fixes:
 
   - Changed the masking logic for kinematic constraints: instead of
