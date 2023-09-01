@@ -1,6 +1,18 @@
 `Unreleased <https://github.com/pace-neutrons/Euphonic/compare/v1.2.1...HEAD>`_
 ----------
 
+- Requirements
+
+  - Python 3.7 is no longer supported
+
+    - Minimum version of scipy increased from 1.1 to 1.10
+
+      - This requires numpy >= 1.19.5
+
+    - Minimum version of pint increased from 0.10.1 to 0.19
+
+    - Minimum version of h5py increaased form 2.8 to 2.10
+
 - Improvements
 
   - Added variable-width broadening for 1-D and 2-D spectra. An
