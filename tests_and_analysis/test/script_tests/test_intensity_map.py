@@ -30,6 +30,7 @@ graphite_fc_file = get_castep_path('graphite', 'graphite.castep_bin')
 intensity_map_output_file = get_script_test_data_path('intensity-map.json')
 intensity_map_params = [
     [graphite_fc_file],
+    [graphite_fc_file, '--scale=-0.1'],
     [graphite_fc_file, '--vmin=0', '--vmax=1e-10'],
     [graphite_fc_file, '--energy-unit=meV'],
     [graphite_fc_file, '-w', 'dos', '--ylabel=DOS', '--title=DOS TITLE'],
