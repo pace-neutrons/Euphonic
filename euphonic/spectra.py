@@ -1165,9 +1165,11 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
         new_y_data = new_y_data*ureg(self._internal_y_data_unit).to(
             self.y_data_unit)
 
-        return Spectrum1DCollection(self.x_data, new_y_data,
-                                    x_tick_labels=self.x_tick_labels,
-                                    metadata=group_metadata)
+        new_data = self.copy()
+        new_data.y_data = new_y_data
+        new_data.metadata = group_metadata
+
+        return new_data
 
     def sum(self) -> Spectrum1D:
         """
@@ -1185,9 +1187,10 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
         metadata.update(self._combine_line_metadata())
         summed_y_data = np.sum(self._y_data, axis=0)*ureg(
             self._internal_y_data_unit).to(self.y_data_unit)
-        return Spectrum1D(self.x_data, summed_y_data,
-                          x_tick_labels=self.x_tick_labels,
-                          metadata=metadata)
+        return Spectrum1D(np.copy(self.x_data),
+                          summed_y_data,
+                          x_tick_labels=copy.copy(self.x_tick_labels),
+                          metadata=copy.deepcopy(metadata))
 
     def select(self, **select_key_values: Union[
             str, int, Sequence[str], Sequence[int]]) -> T:
@@ -1731,21 +1734,15 @@ def apply_kinematic_constraints(spectrum: Spectrum2D,
                                                            float('-Inf')]
     q_bounds = q_bounds.real
 
-    new_z_data = np.copy(spectrum.z_data.magnitude)
-
     mask = np.logical_or((spectrum.get_bin_edges(bin_ax='x')[1:, np.newaxis]
                           < q_bounds[0][np.newaxis, :]),
                          (spectrum.get_bin_edges(bin_ax='x')[:-1, np.newaxis]
                           > q_bounds[-1][np.newaxis, :]))
 
-    new_z_data[mask] = float('nan')
+    new_spectrum = spectrum.copy()
+    new_spectrum._z_data[mask] = float('nan')
 
-    return Spectrum2D(
-        np.copy(spectrum.x_data.magnitude) * ureg(spectrum.x_data_unit),
-        np.copy(spectrum.y_data.magnitude) * ureg(spectrum.y_data_unit),
-        new_z_data * ureg(spectrum.z_data_unit),
-        copy.copy(spectrum.x_tick_labels),
-        copy.deepcopy(spectrum.metadata))
+    return new_spectrum
 
 
 def _get_cos_range(angle_range: Tuple[float]) -> Tuple[float]:
