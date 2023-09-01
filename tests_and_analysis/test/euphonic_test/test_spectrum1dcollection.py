@@ -482,7 +482,7 @@ class TestSpectrum1DCollectionMethods:
     # Check the same answer is obtained broadening Spectrum1DCollection,
     # and broadening each spectrum individually
     @pytest.mark.parametrize(
-        'spectrum_file, width, shape', [
+       'spectrum_file, width, shape', [
             ('methane_pdos.json', 10*ureg('1/cm'), 'lorentz'),
             ('quartz_dos_collection.json', 2*ureg('meV'), 'gauss'),
             ('quartz_dos_collection.json', 15*ureg('1/cm'), 'gauss')])
@@ -665,3 +665,31 @@ class TestSpectrum1DCollectionMethods:
         expected_added_spec = get_expected_spectrum1dcollection(
             expected_spectrum_file)
         check_spectrum1dcollection(added_spec, expected_added_spec)
+
+    def test_copy(self):
+        spec = get_spectrum1dcollection('gan_bands.json')
+        spec.metadata = {'Test': 'item', 'int': 1}
+
+        spec_copy = spec.copy()
+        # Copy should be same
+        check_spectrum1dcollection(spec, spec_copy)
+
+        # Until data is edited
+        spec_copy._y_data *= 2
+        with pytest.raises(AssertionError):
+            check_spectrum1dcollection(spec, spec_copy)
+
+        spec_copy = spec.copy()
+        spec_copy._x_data *= 2
+        with pytest.raises(AssertionError):
+            check_spectrum1dcollection(spec, spec_copy)
+
+        spec_copy = spec.copy()
+        spec_copy.x_tick_labels = [(1, 'different')]
+        with pytest.raises(AssertionError):
+            check_spectrum1dcollection(spec, spec_copy)
+
+        spec_copy = spec.copy()
+        spec_copy.metadata['Test'] = spec_copy.metadata['Test'].upper()
+        with pytest.raises(AssertionError):
+            check_spectrum1dcollection(spec, spec_copy)

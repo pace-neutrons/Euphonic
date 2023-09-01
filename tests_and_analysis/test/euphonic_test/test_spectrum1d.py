@@ -502,3 +502,30 @@ class TestSpectrum1DMethods:
         other_spec.metadata = metadata[1]
         added_spectrum = spec + other_spec
         assert added_spectrum.metadata == expected_metadata
+
+    def test_copy(self):
+        spec = get_spectrum1d('xsq_spectrum1d.json')
+
+        spec_copy = spec.copy()
+        # Copy should be same
+        check_spectrum1d(spec, spec_copy)
+
+        # Until data is edited
+        spec_copy._y_data *= 2
+        with pytest.raises(AssertionError):
+            check_spectrum1d(spec, spec_copy)
+
+        spec_copy = spec.copy()
+        spec_copy._x_data *= 2
+        with pytest.raises(AssertionError):
+            check_spectrum1d(spec, spec_copy)
+
+        spec_copy = spec.copy()
+        spec_copy.x_tick_labels = [(1, 'different')]
+        with pytest.raises(AssertionError):
+            check_spectrum1d(spec, spec_copy)
+
+        spec_copy = spec.copy()
+        spec_copy.metadata['Test'] = spec_copy.metadata['Test'].upper()
+        with pytest.raises(AssertionError):
+            check_spectrum1d(spec, spec_copy)

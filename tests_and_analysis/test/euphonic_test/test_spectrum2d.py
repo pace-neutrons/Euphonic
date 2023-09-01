@@ -475,6 +475,33 @@ class TestSpectrum2DMethods:
         with pytest.raises(ValueError):
             spec2d.get_bin_centres()
 
+    def test_copy(self):
+        spec = get_spectrum2d('example_spectrum2d.json')
+
+        spec_copy = spec.copy()
+        # Copy should be same
+        check_spectrum2d(spec, spec_copy)
+
+        # Until data is edited
+        for attr in '_x_data', '_y_data', '_z_data':
+            setattr(spec_copy, attr, getattr(spec, attr) * 2)
+
+            with pytest.raises(AssertionError):
+                check_spectrum2d(spec, spec_copy)
+
+            spec_copy = spec.copy()
+
+        spec_copy = spec.copy()
+        spec_copy.x_tick_labels = [(1, 'different')]
+        with pytest.raises(AssertionError):
+            check_spectrum2d(spec, spec_copy)
+
+        spec_copy = spec.copy()
+        spec_copy.metadata['description'] = \
+            spec_copy.metadata['description'].upper()
+        with pytest.raises(AssertionError):
+            check_spectrum2d(spec, spec_copy)
+
 
 class TestKinematicAngles:
 
