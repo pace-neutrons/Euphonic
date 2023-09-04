@@ -9,7 +9,7 @@
 
     - This requires numpy >= 1.19.5
 
-  - Minium version of matplotlib increased from 2.2.2 to 3.2.0
+  - Minimum version of matplotlib increased from 2.2.2 to 3.2.0
 
   - Minimum version of pint increased from 0.10.1 to 0.19
 
