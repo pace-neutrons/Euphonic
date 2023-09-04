@@ -146,7 +146,7 @@ def run_setup():
             'threadpoolctl>=1.0.0'
         ],
         extras_require={
-            'matplotlib': ['matplotlib>=2.2.2'],
+            'matplotlib': ['matplotlib>=3.2.0'],
             'phonopy_reader': ['h5py>=2.10.0', 'PyYAML>=3.13'],
             'brille': ['brille>=0.7.0']
         },
