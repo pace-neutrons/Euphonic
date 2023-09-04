@@ -292,11 +292,9 @@ def sample_sphere_structure_factor(
                                                           **calc_modes_args)
             dw = dw_phonons.calculate_debye_waller(temperature
                                                    )  # type: DebyeWaller
-        else:
-            if not np.isclose(dw.temperature.to('K').magnitude,
-                              temperature.to('K').magnitude):
-                raise ValueError('Temperature argument is not consistent with '
-                                 'temperature stored in DebyeWaller object.')
+        elif not np.isclose(dw.temperature, temperature):
+            raise ValueError('Temperature argument is not consistent with '
+                             'temperature stored in DebyeWaller object.')
 
     qpts_cart = _get_qpts_sphere(npts, sampling=sampling, jitter=jitter
                                  ) * mod_q
@@ -319,7 +317,7 @@ def _get_default_bins(phonons: Union[QpointPhononModes, QpointFrequencies],
                       nbins: int = 1000) -> Quantity:
     """Get a default set of energy bin edges for set of phonon modes"""
     max_energy = np.max(phonons.frequencies) * 1.05
-    return np.linspace(0, max_energy.magnitude, (nbins + 1)) * max_energy.units
+    return np.linspace(0, max_energy, (nbins + 1))
 
 
 def _qpts_cart_to_frac(qpts: Quantity,
@@ -340,9 +338,7 @@ def _qpts_cart_to_frac(qpts: Quantity,
     """
     lattice = crystal.reciprocal_cell()
 
-    return np.linalg.solve(lattice.to(ureg('1/bohr')).magnitude.T,
-                           qpts.to(ureg('1/bohr')).magnitude.T
-                           ).T
+    return np.linalg.solve(lattice.T, qpts.T).T.to('dimensionless').magnitude
 
 
 def _get_qpts_sphere(npts: int,
