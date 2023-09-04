@@ -331,8 +331,8 @@ def convert_eigenvector_phases(phonon_dict: Dict[str, np.ndarray]
 
     eigvecs = np.reshape(phonon_dict['eigenvectors'],
                          (n_qpts, n_atoms, 3, n_atoms, 3))
-    na = np.newaxis
-    rk_diff = atom_r[:, na, :] - atom_r[na, :, :]
+
+    rk_diff = atom_r[:, None, :] - atom_r[None, :, :]
     conversion = np.exp(-2j*np.pi*np.einsum('il,jkl->ijk', qpts, rk_diff))
     eigvecs = np.einsum('ijklm,ijl->ijklm', eigvecs, conversion)
     return np.reshape(eigvecs, (n_qpts, 3*n_atoms, n_atoms, 3))
@@ -750,8 +750,7 @@ def read_interpolation_data(
     ufc = summary_dict['ufc']
 
     data_dict: Dict[str, Any] = {}
-    data_dict['crystal'] = {}
-    cry_dict = data_dict['crystal']
+    cry_dict = data_dict['crystal'] = {}
     cry_dict['cell_vectors'] = summary_dict['cell_vectors']*ureg(
         ulength).to(cell_vectors_unit).magnitude
     cry_dict['cell_vectors_unit'] = cell_vectors_unit
