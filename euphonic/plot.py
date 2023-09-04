@@ -61,8 +61,7 @@ def plot_1d_to_axis(spectra: Union[Spectrum1D, Spectrum1DCollection],
             f"same as the number of lines to plot (got {len(spectra)})")
 
     # Find where there are two identical x_data points in a row
-    breakpoints = (np.where(spectra.x_data.magnitude[:-1]
-                            == spectra.x_data.magnitude[1:])[0]
+    breakpoints = (np.where(spectra.x_data[:-1] == spectra.x_data[1:])[0]
                    + 1).tolist()
     breakpoints = [0] + breakpoints + [None]
 

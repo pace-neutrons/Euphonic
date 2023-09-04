@@ -158,8 +158,7 @@ class StructureFactor(QpointFrequencies):
         sqw_map = self._bose_corrected_structure_factor(
             e_bins, calc_bose=calc_bose, temperature=temperature)
 
-        spectrum = np.average(
-            sqw_map.magnitude, axis=0, weights=weights)*sqw_map.units
+        spectrum = np.average(sqw_map, axis=0, weights=weights)
         return Spectrum1D(e_bins, spectrum)
 
     def calculate_sqw_map(self,
@@ -318,8 +317,7 @@ class StructureFactor(QpointFrequencies):
         """
         if self.temperature is not None:
             if (temperature is not None
-                    and not np.isclose(temperature.to('K').magnitude,
-                                       self.temperature.to('K').magnitude)):
+                    and not np.isclose(temperature, self.temperature)):
                 raise ValueError((
                     'Temperature provided to calculate the Bose factor '
                     '({:~P}) is not consistent with the temperature '

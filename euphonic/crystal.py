@@ -136,11 +136,10 @@ class Crystal:
         volume
             Scalar float Quantity in length**3 units. The cell volume
         """
-        vol = self._cell_volume()*ureg.bohr**3
-        return vol.to(ureg(self.cell_vectors_unit)**3)
+        return _cell_vectors_to_volume(self.cell_vectors)
 
     def _cell_volume(self) -> float:
-        return _cell_vectors_to_volume(self._cell_vectors)
+        return self.cell_volume().to('bohr^3').magnitude
 
     def get_mp_grid_spec(self,
                          spacing: Quantity = 0.1 * ureg('1/angstrom')

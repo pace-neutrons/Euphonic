@@ -76,15 +76,10 @@ def variable_width_broadening(bins: Quantity,
 
     widths = sigma_function(x)
 
-    # With newer versions of Numpy/Pint we could dispense with most of the unit
-    # and magnitude shuffling as the numpy functions are handled more cleanly.
-
     if width_lower_limit is None:
-        width_lower_limit = np.diff(bins.magnitude).max() * bins.units
+        width_lower_limit = np.diff(bins).max()
 
-    widths = np.maximum(widths.magnitude,
-                        width_lower_limit.to(widths.units).magnitude
-                        ) * widths.units
+    widths = np.maximum(widths, width_lower_limit)
 
     if isinstance(weights, np.ndarray):
         weights = weights * ureg('dimensionless')

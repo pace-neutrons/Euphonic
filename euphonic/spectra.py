@@ -143,7 +143,7 @@ class Spectrum(ABC):
 
     def _split_by_tol(self: T, btol: float = 10.0) -> List[T]:
         """Split data along x-axis at detected breakpoints"""
-        diff = np.diff(self.x_data.magnitude)
+        diff = np.diff(self.x_data)
         median = np.median(diff)
         breakpoints = np.where((diff / median) > btol)[0] + 1
         return self._split_by_indices(breakpoints)
@@ -295,18 +295,18 @@ class Spectrum(ABC):
         return sigma_bin
 
     @staticmethod
-    def _bin_edges_to_centres(bin_edges: np.ndarray) -> np.ndarray:
+    def _bin_edges_to_centres(bin_edges: Quantity) -> Quantity:
         return bin_edges[:-1] + 0.5*np.diff(bin_edges)
 
     @staticmethod
-    def _bin_centres_to_edges(bin_centres: np.ndarray) -> np.ndarray:
+    def _bin_centres_to_edges(bin_centres: Quantity) -> Quantity:
         return np.concatenate((
             [bin_centres[0]],
             (bin_centres[1:] + bin_centres[:-1])/2,
             [bin_centres[-1]]))
 
     @staticmethod
-    def _is_bin_edge(data_length, bin_length) -> bool:
+    def _is_bin_edge(data_length: int, bin_length: int) -> bool:
         """Determine if axis data are bin edges or centres"""
         if bin_length == data_length + 1:
             return True
@@ -333,8 +333,7 @@ class Spectrum(ABC):
         if self._is_bin_edge(self.y_data.shape[-1], self.x_data.shape[0]):
             return self.x_data
         else:
-            return self._bin_centres_to_edges(
-                self.x_data.magnitude)*self.x_data.units
+            return self._bin_centres_to_edges(self.x_data)
 
     def get_bin_centres(self) -> Quantity:
         """
@@ -348,8 +347,7 @@ class Spectrum(ABC):
         # Need to use -1 index for y_data so it also works for
         # Spectrum1DCollection which has y_data shape (n_spectra, bins)
         if self._is_bin_edge(self.y_data.shape[-1], self.x_data.shape[0]):
-            return self._bin_edges_to_centres(
-                self.x_data.magnitude)*self.x_data.units
+            return self._bin_edges_to_centres(self.x_data)
         else:
             return self.x_data
 
@@ -357,8 +355,7 @@ class Spectrum(ABC):
         """
         Get x-axis bin widths
         """
-        bins = self.get_bin_edges()
-        return np.diff(bins.magnitude) * bins.units
+        return np.diff(self.get_bin_edges())
 
     def assert_regular_bins(self, message: str = '',
                             rtol: float = 1e-5,
@@ -379,9 +376,9 @@ class Spectrum(ABC):
 
         """
         bin_widths = self.get_bin_widths()
-        if not np.all(np.isclose(bin_widths.magnitude,
-                                 bin_widths.magnitude[0],
-                                 rtol=rtol, atol=atol)):
+        atol_quantity = atol * bin_widths.units
+        if not np.all(np.isclose(bin_widths, bin_widths[0],
+                                 rtol=rtol, atol=atol_quantity)):
             raise AssertionError("Not all x-axis bins are the same width. "
                                  + message)
 
@@ -781,7 +778,7 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
                 for x0, x1 in ranges]
 
     def __len__(self):
-        return self.y_data.magnitude.shape[0]
+        return self.y_data.shape[0]
 
     @overload
     def __getitem__(self, item: int) -> Spectrum1D:
@@ -839,7 +836,7 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
         _type_check(spectra[0])
         x_data = spectra[0].x_data
         x_tick_labels = spectra[0].x_tick_labels
-        y_data_length = len(spectra[0].y_data.magnitude)
+        y_data_length = len(spectra[0].y_data)
         y_data_magnitude = np.empty((len(spectra), y_data_length))
         y_data_magnitude[0, :] = spectra[0].y_data.magnitude
         y_data_units = spectra[0].y_data.units
@@ -847,7 +844,7 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
         for i, spectrum in enumerate(spectra[1:]):
             _type_check(spectrum)
             assert spectrum.y_data.units == y_data_units
-            assert np.allclose(spectrum.x_data.magnitude, x_data.magnitude)
+            assert np.allclose(spectrum.x_data, x_data)
             assert spectrum.x_data.units == x_data.units
             assert spectrum.x_tick_labels == x_tick_labels
             y_data_magnitude[i + 1, :] = spectrum.y_data.magnitude
@@ -1431,12 +1428,11 @@ class Spectrum2D(Spectrum):
                                              widths_in_bin_units,
                                              shape=shape,
                                              method=method)
-            spectrum = Spectrum2D(
-                np.copy(self.x_data.magnitude)*ureg(self.x_data_unit),
-                np.copy(self.y_data.magnitude)*ureg(self.y_data_unit),
-                z_broadened*ureg(self.z_data_unit),
-                copy.copy(self.x_tick_labels),
-                copy.deepcopy(self.metadata))
+            spectrum = Spectrum2D(np.copy(self.x_data),
+                                  np.copy(self.y_data),
+                                  z_broadened*ureg(self.z_data_unit),
+                                  copy.copy(self.x_tick_labels),
+                                  copy.deepcopy(self.metadata))
         else:
             spectrum = self
 
@@ -1469,10 +1465,9 @@ class Spectrum2D(Spectrum):
         assert axis in ('x', 'y')
 
         bins = spectrum.get_bin_edges(bin_ax=axis)
-        bin_widths = np.diff(bins.magnitude) * bins.units
+        bin_widths = np.diff(bins)
 
-        if not np.all(np.isclose(bin_widths.magnitude,
-                                 bin_widths.magnitude[0])):
+        if not np.all(np.isclose(bin_widths, bin_widths[0])):
             bin_width = bin_widths.mean()
         else:
             bin_width = bin_widths[0]
@@ -1484,7 +1479,7 @@ class Spectrum2D(Spectrum):
             z_data = z_data.T
 
         # Output data: matches input units
-        z_broadened = np.empty_like(z_data.magnitude) * spectrum.z_data.units
+        z_broadened = np.empty_like(z_data) * spectrum.z_data.units
 
         for i, row in enumerate(z_data):
             z_broadened[i] = variable_width_broadening(
@@ -1501,12 +1496,11 @@ class Spectrum2D(Spectrum):
         if axis == 'x':
             z_broadened = z_broadened.T
 
-        return Spectrum2D(
-            np.copy(spectrum.x_data.magnitude) * ureg(spectrum.x_data_unit),
-            np.copy(spectrum.y_data.magnitude) * ureg(spectrum.y_data_unit),
-            z_broadened,
-            copy.copy(spectrum.x_tick_labels),
-            copy.copy(spectrum.metadata))
+        return Spectrum2D(np.copy(spectrum.x_data),
+                          np.copy(spectrum.y_data),
+                          z_broadened,
+                          copy.copy(spectrum.x_tick_labels),
+                          copy.copy(spectrum.metadata))
 
     def copy(self: T) -> T:
         """Get an independent copy of spectrum"""
@@ -1539,8 +1533,7 @@ class Spectrum2D(Spectrum):
         if self._is_bin_edge(data_ax_len, bin_data.shape[0]):
             return bin_data
         else:
-            return self._bin_centres_to_edges(bin_data.magnitude
-                                              )*bin_data.units
+            return self._bin_centres_to_edges(bin_data)
 
     def get_bin_centres(self, bin_ax: str = 'x') -> Quantity:
         """
@@ -1561,8 +1554,7 @@ class Spectrum2D(Spectrum):
         bin_data = getattr(self, f'{bin_ax}_data')
         data_ax_len = self.z_data.shape[enum[bin_ax]]
         if self._is_bin_edge(data_ax_len, bin_data.shape[0]):
-            return self._bin_edges_to_centres(
-                bin_data.magnitude)*bin_data.units
+            return self._bin_edges_to_centres(bin_data)
         else:
             return bin_data
 
@@ -1576,7 +1568,7 @@ class Spectrum2D(Spectrum):
             Axis of interest, 'x' or 'y'
         """
         bins = self.get_bin_edges(bin_ax)
-        return np.diff(bins.magnitude) * bins.units
+        return np.diff(bins)
 
     def assert_regular_bins(self, bin_ax: str = 'x',
                             message: str = '',
@@ -1601,8 +1593,7 @@ class Spectrum2D(Spectrum):
 
         """
         bin_widths = self.get_bin_widths(bin_ax)
-        if not np.all(np.isclose(bin_widths.magnitude,
-                                 bin_widths.magnitude[0],
+        if not np.all(np.isclose(bin_widths, bin_widths[0],
                                  rtol=rtol, atol=atol)):
             raise AssertionError(
                 f"Not all {bin_ax}-axis bins are the same width. " + message)
