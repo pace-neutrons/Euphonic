@@ -1099,7 +1099,7 @@ class ForceConstants:
                 recip_q0 += recip_q0_tmp
             else:
                 break
-        vol = crystal._cell_volume()
+        vol = crystal.cell_volume().to('bohr^3').magnitude
         recip_q0 *= math.pi/(vol*lambda_2)
 
         # Fill in remaining entries by symmetry
@@ -1209,7 +1209,7 @@ class ForceConstants:
                              /(gvec_phases[:, i:]*q_phases[i:]))
                 recip_dipole[i, i:] = np.einsum(
                     'ikl,ij->jkl', recip_exp, phase_exp)
-        cell_volume = crystal._cell_volume()
+        cell_volume = crystal.cell_volume().to('bohr^3').magnitude
         recip_dipole *= math.pi/(cell_volume*lambda_2)
 
         # Fill in remaining entries by symmetry
@@ -1302,7 +1302,7 @@ class ForceConstants:
         recip_cell = self.crystal.reciprocal_cell().to('1/bohr').magnitude
         q_dir_cart = np.einsum('ij,i->j', recip_cell, q_dir)
 
-        cell_volume = self.crystal._cell_volume()
+        cell_volume = self.crystal.cell_volume().to('bohr^3').magnitude
         denominator = np.einsum('ij,i,j', dielectric, q_dir_cart, q_dir_cart)
         factor = 4*math.pi/(cell_volume*denominator)
 
