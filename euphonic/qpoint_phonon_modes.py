@@ -1,5 +1,5 @@
 import math
-from typing import Dict, Optional, Union, TypeVar, Any, Type
+from typing import Dict, Literal, Optional, Union, TypeVar, Any, Type
 from collections.abc import Mapping
 
 import numpy as np
@@ -424,9 +424,9 @@ class QpointPhononModes(QpointFrequencies):
             self, dos_bins: Quantity,
             mode_widths: Optional[Quantity] = None,
             mode_widths_min: Quantity = Quantity(0.01, 'meV'),
-            adaptive_method: Optional[str] = 'reference',
+            adaptive_method: Literal['reference', 'fast'] = 'reference',
             adaptive_error: Optional[float] = 0.01,
-            adaptive_error_fit: str = 'cubic',
+            adaptive_error_fit: Literal['cheby-log', 'cubic'] = 'cubic',
             weighting: Optional[str] = None,
             cross_sections: Union[str, Dict[str, Quantity]] = 'BlueBook',
             ) -> Spectrum1DCollection:

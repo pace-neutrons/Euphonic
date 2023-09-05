@@ -1,7 +1,7 @@
 """Functions for averaging spectra in spherical q bins"""
 
 import numpy as np
-from typing import Optional, Union, Dict
+from typing import Literal, Optional, Union, Dict
 
 from euphonic import (Crystal, DebyeWaller, ForceConstants,
                       QpointFrequencies, QpointPhononModes, Spectrum1D,
@@ -10,9 +10,16 @@ from euphonic import ureg, Quantity
 from euphonic.util import mp_grid, get_reference_data
 
 
+SphericalSamplingOptions = Literal['golden',
+                                   'sphere-projected-grid',
+                                   'spherical-polar-grid',
+                                   'spherical-polar-improved',
+                                   'random-sphere']
+
+
 def sample_sphere_dos(fc: ForceConstants,
                       mod_q: Quantity,
-                      sampling: str = 'golden',
+                      sampling: SphericalSamplingOptions = 'golden',
                       npts: int = 1000, jitter: bool = False,
                       energy_bins: Quantity = None,
                       **calc_modes_args
@@ -92,7 +99,7 @@ def sample_sphere_dos(fc: ForceConstants,
 def sample_sphere_pdos(
         fc: ForceConstants,
         mod_q: Quantity,
-        sampling: str = 'golden',
+        sampling: SphericalSamplingOptions = 'golden',
         npts: int = 1000, jitter: bool = False,
         energy_bins: Quantity = None,
         weighting: Optional[str] = None,
@@ -199,7 +206,7 @@ def sample_sphere_structure_factor(
     dw: DebyeWaller = None,
     dw_spacing: Quantity = 0.025 * ureg('1/angstrom'),
     temperature: Optional[Quantity] = 273. * ureg('K'),
-    sampling: str = 'golden',
+    sampling: SphericalSamplingOptions = 'golden',
     npts: int = 1000, jitter: bool = False,
     energy_bins: Quantity = None,
     scattering_lengths: Union[str, Dict[str, Quantity]] = 'Sears1992',
@@ -342,7 +349,7 @@ def _qpts_cart_to_frac(qpts: Quantity,
 
 
 def _get_qpts_sphere(npts: int,
-                     sampling: str = 'golden',
+                     sampling: SphericalSamplingOptions = 'golden',
                      jitter: bool = False) -> np.ndarray:
     """Get q-point coordinates according to specified sampling scheme
 

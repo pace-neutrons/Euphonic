@@ -2,10 +2,12 @@ import math
 import os
 import sys
 import warnings
-from typing import Optional, Tuple, Union, TypeVar, Sequence, Dict, Any, Type
+from typing import (Literal, Optional, Tuple, Union,
+                    TypeVar, Sequence, Dict, Any, Type)
 from multiprocessing import cpu_count
 
 import numpy as np
+from pint import Quantity
 from scipy.special import erfc
 from threadpoolctl import threadpool_limits
 
@@ -19,7 +21,7 @@ from euphonic.readers import castep, phonopy
 from euphonic.util import (is_gamma, get_all_origins,
                            mode_gradients_to_widths,
                            _get_supercell_relative_idx)
-from euphonic import (ureg, Quantity, Crystal, QpointPhononModes,
+from euphonic import (ureg, Crystal, QpointPhononModes,
                       QpointFrequencies)
 
 
@@ -165,7 +167,7 @@ class ForceConstants:
             self,
             qpts: np.ndarray,
             weights: Optional[np.ndarray] = None,
-            asr: Optional[str] = None,
+            asr: Optional[Literal['realspace', 'reciprocal']] = None,
             dipole: bool = True,
             dipole_parameter: float = 1.0,
             splitting: bool = True,
@@ -190,10 +192,10 @@ class ForceConstants:
             If not given, equal weights are
             applied
         asr
-            One of {'realspace', 'reciprocal'}. Which acoustic sum rule
-            correction to apply. 'realspace' applies the correction to the
-            force constant matrix in real space. 'reciprocal' applies the
-            correction to the dynamical matrix at every q-point
+            Which acoustic sum rule correction to apply. 'realspace' applies
+            the correction to the force constant matrix in real
+            space. 'reciprocal' applies the correction to the dynamical matrix
+            at every q-point
         dipole
             Whether to calculate the dipole tail correction to the dynamical
             matrix at each q-point using the Ewald sum, if the Born
@@ -396,7 +398,7 @@ class ForceConstants:
             self,
             qpts: np.ndarray,
             weights: Optional[np.ndarray] = None,
-            asr: Optional[str] = None,
+            asr: Optional[Literal['realspace', 'reciprocal']] = None,
             dipole: bool = True,
             dipole_parameter: float = 1.0,
             splitting: bool = True,
@@ -427,7 +429,7 @@ class ForceConstants:
             self,
             qpts: np.ndarray,
             weights: Optional[np.ndarray],
-            asr: Optional[str],
+            asr: Optional[Literal['realspace', 'reciprocal']],
             dipole: bool,
             dipole_parameter: float,
             splitting: bool,

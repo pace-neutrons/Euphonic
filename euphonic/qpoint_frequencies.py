@@ -1,5 +1,5 @@
 import warnings
-from typing import Any, Dict, List, Optional, Tuple, TypeVar, Type
+from typing import Any, Dict, List, Literal, Optional, Tuple, TypeVar, Type
 
 import numpy as np
 
@@ -88,13 +88,15 @@ class QpointFrequencies:
                                ['frequencies_unit'])
         super(QpointFrequencies, self).__setattr__(name, value)
 
-    def calculate_dos(self, dos_bins: Quantity,
-                      mode_widths: Optional[Quantity] = None,
-                      mode_widths_min: Quantity = Quantity(0.01, 'meV'),
-                      adaptive_method: str = 'reference',
-                      adaptive_error: float = 0.01,
-                      adaptive_error_fit: str = 'cubic'
-                      ) -> Spectrum1D:
+    def calculate_dos(
+        self,
+        dos_bins: Quantity,
+        mode_widths: Optional[Quantity] = None,
+        mode_widths_min: Quantity = Quantity(0.01, 'meV'),
+        adaptive_method: Literal['reference', 'fast'] = 'reference',
+        adaptive_error: float = 0.01,
+        adaptive_error_fit: Literal['cheby-log', 'cubic'] = 'cubic'
+        ) -> Spectrum1D:
         """
         Calculates a density of states, in units of modes per atom per
         energy unit, such that the integrated area is equal to 3.
@@ -114,8 +116,7 @@ class QpointFrequencies:
             infinitely sharp peaks
         adaptive_method
             String. Specifies whether to use slow, reference adaptive method or
-            faster, approximate method. Allowed options are 'reference'
-            or 'fast', default is 'reference'.
+            faster, approximate method.
         adaptive_error
             Scalar float. Acceptable error for gaussian approximations
             when using the fast adaptive method, defined as the absolute
@@ -153,15 +154,17 @@ class QpointFrequencies:
                                   adaptive_error_fit=adaptive_error_fit)
         return Spectrum1D(dos_bins, dos)
 
-    def _calculate_dos(self, dos_bins: Quantity,
-                       mode_widths: Optional[Quantity] = None,
-                       mode_widths_min: Quantity = Quantity(0.01, 'meV'),
-                       mode_weights: Optional[np.ndarray] = None,
-                       adaptive_method: str = 'reference',
-                       adaptive_error: float = 0.01,
-                       adaptive_error_fit: str = 'cubic',
-                       q_idx: Optional[int] = None
-                       ) -> Quantity:
+    def _calculate_dos(
+        self,
+        dos_bins: Quantity,
+        mode_widths: Optional[Quantity] = None,
+        mode_widths_min: Quantity = Quantity(0.01, 'meV'),
+        mode_weights: Optional[np.ndarray] = None,
+        adaptive_method: Literal['reference', 'fast'] = 'reference',
+        adaptive_error: float = 0.01,
+        adaptive_error_fit: Literal['cheby-log', 'cubic'] = 'cubic',
+        q_idx: Optional[int] = None
+        ) -> Quantity:
         """
         Calculates a density of states (same arg defs as calculate_dos),
         but returns just a Quantity containing the y_data, rather
