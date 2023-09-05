@@ -1,5 +1,5 @@
 `Unreleased <https://github.com/pace-neutrons/Euphonic/compare/v1.2.1...HEAD>`_
-----------
+-------------------------------------------------------------------------------
 
 - Requirements
 
@@ -49,7 +49,7 @@
 
 
 `v1.2.1 <https://github.com/pace-neutrons/Euphonic/compare/v1.2.0...v1.2.1>`_
-------
+-----------------------------------------------------------------------------
 
 - Improvements
 
@@ -82,7 +82,7 @@
   - A deprecation in Numpy 1.25, which indirectly caused a test failure, has been addressed.
 
 `v1.2.0 <https://github.com/pace-neutrons/Euphonic/compare/v1.1.0...v1.2.0>`_
-------
+-----------------------------------------------------------------------------
 
 - Improvements:
 
@@ -105,7 +105,7 @@
     and ``--brille-npts-density`` arguments.
 
 `v1.1.0 <https://github.com/pace-neutrons/Euphonic/compare/v1.0.0...v1.1.0>`_
-----------
+-----------------------------------------------------------------------------
 
 - New features:
 
@@ -121,7 +121,7 @@
     interactions, see `#239 <https://github.com/pace-neutrons/Euphonic/issues/239>`_.
 
 `v1.0.0 <https://github.com/pace-neutrons/Euphonic/compare/v0.6.5...v1.0.0>`_
-----------
+-----------------------------------------------------------------------------
 
 - Changes:
 
@@ -163,7 +163,7 @@
     by default. To recover previous behaviour set this to ``False``.
 
 `v0.6.5 <https://github.com/pace-neutrons/Euphonic/compare/v0.6.4...v0.6.5>`_
-------
+-----------------------------------------------------------------------------
 
 - New Features:
 
@@ -212,7 +212,7 @@
     Previously this was interpreted as an astronomical unit by Pint.
 
 `v0.6.4 <https://github.com/pace-neutrons/Euphonic/compare/v0.6.3...v0.6.4>`_
-------
+-----------------------------------------------------------------------------
 
 - Improvements:
 
@@ -243,7 +243,7 @@
     which will just emit a warning.
 
 `v0.6.3 <https://github.com/pace-neutrons/Euphonic/compare/v0.6.2...v0.6.3>`_
-------
+-----------------------------------------------------------------------------
 
 - New Features:
 
@@ -273,7 +273,7 @@
     they refer to, and to match other arguments like ``vmin``, ``vmax``.
 
 `v0.6.2 <https://github.com/pace-neutrons/Euphonic/compare/v0.6.1...v0.6.2>`_
-------
+-----------------------------------------------------------------------------
 
 - Improvements:
 
@@ -289,7 +289,7 @@
     factor is not present
 
 `v0.6.1 <https://github.com/pace-neutrons/Euphonic/compare/v0.6.0...v0.6.1>`_
-------
+-----------------------------------------------------------------------------
 
 - Bug fixes:
 
@@ -302,7 +302,7 @@
     can now be correctly recovered by multiplying S(Q,w) by the energy bin width.
 
 `v0.6.0 <https://github.com/pace-neutrons/Euphonic/compare/v0.5.2...0.6.0>`_
-------
+----------------------------------------------------------------------------
 
 - Euphonic can now calculate neutron-weighted partial density of states, and
   has new ``Spectra`` features to handle PDOS data:
@@ -361,7 +361,7 @@
     ``euphonic-optimise-dipole-parameter``.
 
 `v0.5.2 <https://github.com/pace-neutrons/Euphonic/compare/v0.5.1...v0.5.2>`_
-------
+-----------------------------------------------------------------------------
 
 - Improvements:
 
@@ -386,7 +386,7 @@
     ``ebins - 1`` bins were generated
 
 `v0.5.1 <https://github.com/pace-neutrons/Euphonic/compare/v0.5.0...v0.5.1>`_
-----------
+-----------------------------------------------------------------------------
 
 - New Features:
 
@@ -417,7 +417,7 @@
     implementation: moved ``1/2`` factor and added explicit q-point weights
 
 `v0.5.0 <https://github.com/pace-neutrons/Euphonic/compare/v0.4.0...v0.5.0>`_
-----------
+-----------------------------------------------------------------------------
 
 - New Features:
 
@@ -436,7 +436,7 @@
     ``Spectrum1DCollection.from_castep_phonon_dos``
   - **Adaptive broadening** is now available for DOS, which can obtain a
     more representative DOS than standard fixed-width broadening. See
-    `the docs <https://euphonic.readthedocs.io/en/latest/dos.html#adaptive-broadening>`_
+    `the docs <https://euphonic.readthedocs.io/en/latest/dos.html#adaptive-broadening>`__
     for details
   - Adaptive broadening can be used in the ``euphonic-dos`` tool with the
     ``--adaptive`` argument
@@ -494,7 +494,7 @@
     in implementation
 
 `v0.4.0 <https://github.com/pace-neutrons/Euphonic/compare/v0.3.2...v0.4.0>`_
-----------
+-----------------------------------------------------------------------------
 
 - There have been some major changes and improvements to spectra, plotting
   and command line tools, including:
@@ -549,7 +549,7 @@
     `#108 <https://github.com/pace-neutrons/Euphonic/issues/108>`_
 
 `v0.3.2 <https://github.com/pace-neutrons/Euphonic/compare/v0.3.1...v0.3.2>`_
-----------
+-----------------------------------------------------------------------------
 
 - New Features:
 
@@ -594,7 +594,7 @@
     there is only one q-point (which is gamma) and ``splitting=True``
 
 `v0.3.1 <https://github.com/pace-neutrons/Euphonic/compare/v0.3.0...v0.3.1>`_
-----------
+-----------------------------------------------------------------------------
 
 - New Features:
 
@@ -625,7 +625,7 @@
     `#77 <https://github.com/pace-neutrons/Euphonic/issues/77>`_
 
 `v0.3.0 <https://github.com/pace-neutrons/Euphonic/compare/v0.2.2...v0.3.0>`_
-----------
+-----------------------------------------------------------------------------
 
 - Breaking Changes:
 
@@ -665,14 +665,14 @@
     in C, `#45 <https://github.com/pace-neutrons/Euphonic/issues/45>`_
 
 `v0.2.2 <https://github.com/pace-neutrons/Euphonic/compare/v0.2.1...v0.2.2>`_
-------
+-----------------------------------------------------------------------------
 
 - Bug fixes:
 
   - Add MANIFEST.in for PyPI distribution
 
 `v0.2.1 <https://github.com/pace-neutrons/Euphonic/compare/v0.2.0...v0.2.1>`_
-------
+-----------------------------------------------------------------------------
 
 - Bug fixes:
 
@@ -680,7 +680,7 @@
     file, so refactor C files to avoid this
 
 `v0.2.0 <https://github.com/pace-neutrons/Euphonic/compare/v0.1-dev3...v0.2.0>`_
-------
+--------------------------------------------------------------------------------
 
 - There are several breaking changes:
 
