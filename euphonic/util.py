@@ -292,7 +292,8 @@ def mode_gradients_to_widths(mode_gradients: Quantity, cell_vectors: Quantity
         raise ValueError(
             f'Unexpected shape for mode_gradients {modg.shape}, '
             f'expected (n_qpts, n_modes) or (n_qpts, n_modes, 3)')
-    cell_volume = (_cell_vectors_to_volume(cell_vectors)).to('bohr**3').magnitude
+    cell_volume = (_cell_vectors_to_volume(cell_vectors)
+        ).to('bohr**3').magnitude
     q_spacing = 2/(np.cbrt(len(mode_gradients)*cell_volume))
     mode_widths = q_spacing*modg
     return mode_widths*ureg('hartree').to(
@@ -436,8 +437,10 @@ def convert_fc_phases(force_constants: np.ndarray, atom_r: np.ndarray,
 
 def _cell_vectors_to_volume(cell_vectors: Quantity) -> Quantity:
     """Convert 3x3 cell vectors to volume"""
-    return np.dot(cell_vectors[0],
-                  np.cross(cell_vectors[1], cell_vectors[2]))
+    volume = np.dot(cell_vectors[0],
+                    np.cross(cell_vectors[1], cell_vectors[2]))
+    assert isinstance(volume, Quantity)
+    return volume
 
 
 def _get_unique_elems_and_idx(
