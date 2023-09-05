@@ -9,6 +9,7 @@ Python API
   Force Constants <force-constants>
   Phonon Frequencies and Eigenvectors <qpoint-phonon-modes>
   Phonon Frequencies Only <qpoint-frequencies>
+  Crystal Structure <crystal>
   Density of States <dos>
   Structure Factors <structure-factor>
   Scattering Intensities <scattering-intensities>
