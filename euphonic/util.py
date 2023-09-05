@@ -49,9 +49,7 @@ def direction_changed(qpts: np.ndarray, tolerance: float = 5e-6
     modq = np.linalg.norm(delta, axis=1)
     # Determine how much the direction has changed (dot) relative to the
     # vector sizes (modq)
-    direction_changed = (np.abs(np.abs(dot) - modq[1:]*modq[:-1]) > tolerance)
-
-    return direction_changed
+    return np.abs(np.abs(dot) - modq[1:]*modq[:-1]) > tolerance
 
 
 def is_gamma(qpt: np.ndarray) -> Union[bool, np.ndarray]:
@@ -253,10 +251,10 @@ def get_reference_data(collection: str = 'Sears1992',
 
     try:
         unit = ureg(unit_str)
-    except UndefinedUnitError:
+    except UndefinedUnitError as exc:
         raise ValueError(
             f'Units "{unit_str}" from data file "{filename}" '
-            'are not supported by the Euphonic unit register.')
+            'are not supported by the Euphonic unit register.') from exc
 
     return {key: value * unit
             for key, value in data.items()
@@ -408,9 +406,9 @@ def convert_fc_phases(force_constants: np.ndarray, atom_r: np.ndarray,
                     co_idx = j
                     break
             else:
-                raise Exception((
-                    'Couldn\'t determine cell origins for '
-                    'force constants matrix'))
+                raise ValueError(
+                    "Couldn't determine cell origins for "
+                    "force constants matrix")
         cell_origins_map[i] = co_idx
 
     if force_constants.shape[0] == force_constants.shape[1]:
@@ -713,7 +711,7 @@ def _get_supercell_relative_idx(cell_origins: np.ndarray,
             if np.all(dist_min <= 16*sys.float_info.epsilon):
                 break
         if np.any(dist_min > 16*sys.float_info.epsilon):
-            raise Exception('Couldn\'t find supercell relative index')
+            raise ValueError('Couldn\'t find supercell relative index')
     return sc_relative_index
 
 
