@@ -1,27 +1,30 @@
 """
 Functions for broadening spectra
 """
-from typing import Callable, Union
+from typing import Callable, Literal, Union
 import warnings
 
 import numpy as np
 from numpy.polynomial import Chebyshev
+from pint import Quantity
 from scipy.optimize import nnls
 from scipy.stats import norm
 from scipy.signal import convolve
 
-from euphonic import ureg, Quantity
+from euphonic import ureg
 
 
-def variable_width_broadening(bins: Quantity,
-                              x: Quantity,
-                              width_function: Callable[[Quantity], Quantity],
-                              weights: Union[np.ndarray, Quantity],
-                              width_lower_limit: Quantity = None,
-                              width_convention: str = 'fwhm',
-                              adaptive_error: float = 1e-2,
-                              shape: str = 'gauss',
-                              fit: str = 'cheby-log') -> Quantity:
+def variable_width_broadening(
+    bins: Quantity,
+    x: Quantity,
+    width_function: Callable[[Quantity], Quantity],
+    weights: Union[np.ndarray, Quantity],
+    width_lower_limit: Quantity = None,
+    width_convention: Literal['FWHM', 'STD'] = 'FWHM',
+    adaptive_error: float = 1e-2,
+    shape: Literal['gauss', 'lorentz'] = 'gauss',
+    fit: Literal['cheby-log', 'cubic'] = 'cheby-log'
+    ) -> Quantity:
     r"""Apply x-dependent Gaussian broadening to 1-D data series
 
     Typically this is an energy-dependent instrumental resolution function.
@@ -49,14 +52,14 @@ def variable_width_broadening(bins: Quantity,
         (default) the bin width will be used. To disable any lower limit, set
         to 0 or lower.
     width_convention
-        Either 'std' or 'fwhm', to indicate if polynomial function yields
-        standard deviation (sigma) or full-width half-maximum.
+        Indicate if polynomial function yields standard deviation (sigma) or
+        full-width half-maximum.
     adaptive_error
         Acceptable error for gaussian approximations, defined
         as the absolute difference between the areas of the true and
         approximate gaussians.
     shape
-        Select 'gauss' or 'lorentz' kernel.
+        Select broadening kernel function.
     fit
         Select parametrisation of kernel width spacing to adaptive_error.
         'cheby-log' is recommended: for shape 'gauss', 'cubic' is also
@@ -94,13 +97,15 @@ def variable_width_broadening(bins: Quantity,
                                          fit=fit) * weights_unit
 
 
-def width_interpolated_broadening(bins: Quantity,
-                                  x: Quantity,
-                                  widths: Quantity,
-                                  weights: np.ndarray,
-                                  adaptive_error: float,
-                                  shape: str = 'gauss',
-                                  fit: str = 'cheby-log') -> Quantity:
+def width_interpolated_broadening(
+    bins: Quantity,
+    x: Quantity,
+    widths: Quantity,
+    weights: np.ndarray,
+    adaptive_error: float,
+    shape: Literal['gauss', 'lorentz'] = 'gauss',
+    fit: Literal['cheby-log', 'cubic'] = 'cheby-log'
+    ) -> Quantity:
     """
     Uses a fast, approximate method to broaden a spectrum
     with a variable-width kernel. Exact Gaussians are calculated
@@ -126,8 +131,8 @@ def width_interpolated_broadening(bins: Quantity,
         as the absolute difference between the areas of the true and
         approximate gaussians.
     shape
-        Select 'gauss' or 'lorentz' kernel. Widths will correspond to sigma or
-        gamma parameters respectively.
+        Select kernel shape. Widths will correspond to sigma or gamma
+        parameters respectively.
     fit
         Select parametrisation of kernel width spacing to adaptive_error.
         'cheby-log' is recommended: for shape 'gauss', 'cubic' is also
@@ -154,7 +159,9 @@ def _lorentzian(x: np.ndarray, gamma: np.ndarray) -> np.ndarray:
     return gamma / (2 * np.pi * (x**2 + (gamma / 2)**2))
 
 
-def _get_spacing(error, shape='gauss', fit='cheby-log'):
+def _get_spacing(error,
+                 shape: Literal['gauss', 'lorentz'] = 'gauss',
+                 fit: Literal['cheby-log', 'cubic'] = 'cheby-log'):
     """
     Determine suitable spacing value for mode_width given accepted error level
 
@@ -193,13 +200,14 @@ def _get_spacing(error, shape='gauss', fit='cheby-log'):
                          f'"Lorentz" shapes.')
 
 
-def _width_interpolated_broadening(bins: np.ndarray,
-                                   x: np.ndarray,
-                                   widths: np.ndarray,
-                                   weights: np.ndarray,
-                                   adaptive_error: float,
-                                   shape='gauss',
-                                   fit='cheby-log') -> np.ndarray:
+def _width_interpolated_broadening(
+    bins: np.ndarray,
+    x: np.ndarray,
+    widths: np.ndarray,
+    weights: np.ndarray,
+    adaptive_error: float,
+    shape: Literal['gauss', 'lorentz'] = 'gauss',
+    fit: Literal['cheby-log', 'cubic'] = 'cheby-log') -> np.ndarray:
     """
     Broadens a spectrum using a variable-width kernel, taking the
     same arguments as `variable_width` but expects arrays with
@@ -272,7 +280,8 @@ def _width_interpolated_broadening(bins: np.ndarray,
     return spectrum
 
 
-def find_coeffs(spacing: float, shape='gauss') -> np.ndarray:
+def find_coeffs(spacing: float,
+                shape: Literal['gauss', 'lorentz'] = 'gauss') -> np.ndarray:
     """"
     Function that, for a given spacing value, gives the coefficients of the
     polynomial which describes the relationship between kernel width and the
