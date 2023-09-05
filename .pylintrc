@@ -1,0 +1,3 @@
+[TYPECHECK]
+# For some reason pylint is convinced that this particular Quantity is an ndarray
+generated-members=cell_volume.to
