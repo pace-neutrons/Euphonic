@@ -290,10 +290,11 @@ def mode_gradients_to_widths(mode_gradients: Quantity, cell_vectors: Quantity
         raise ValueError(
             f'Unexpected shape for mode_gradients {modg.shape}, '
             f'expected (n_qpts, n_modes) or (n_qpts, n_modes, 3)')
-    cell_volume = (_cell_vectors_to_volume(cell_vectors)
-        ).to('bohr**3').magnitude
-    q_spacing = 2/(np.cbrt(len(mode_gradients)*cell_volume))
-    mode_widths = q_spacing*modg
+
+    cell_volume = _cell_vectors_to_volume(cell_vectors)  # type: Quantity
+    q_spacing = 2 / (np.cbrt(len(mode_gradients)
+                     * cell_volume.to('bohr**3').magnitude))
+    mode_widths = q_spacing * modg
     return mode_widths*ureg('hartree').to(
         mode_gradients.units/cell_vectors.units)
 
