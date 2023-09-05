@@ -376,9 +376,9 @@ class Spectrum(ABC):
 
         """
         bin_widths = self.get_bin_widths()
-        atol_quantity = atol * bin_widths.units
-        if not np.all(np.isclose(bin_widths, bin_widths[0],
-                                 rtol=rtol, atol=atol_quantity)):
+        # Need to cast to magnitude to use isclose() with atol before Pint 0.21
+        if not np.all(np.isclose(bin_widths.magnitude, bin_widths.magnitude[0],
+                                 rtol=rtol, atol=atol)):
             raise AssertionError("Not all x-axis bins are the same width. "
                                  + message)
 
