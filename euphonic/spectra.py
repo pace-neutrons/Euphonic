@@ -5,15 +5,15 @@ import itertools
 import math
 import json
 from numbers import Integral, Real
-from typing import (Any, Callable, Dict, List, Optional, overload,
+from typing import (Any, Callable, Dict, List, Literal, Optional, overload,
                     Sequence, Tuple, TypeVar, Union, Type)
 import warnings
 
-from pint import DimensionalityError
+from pint import DimensionalityError, Quantity
 import numpy as np
 from scipy.ndimage import correlate1d, gaussian_filter
 
-from euphonic import ureg, Quantity, __version__
+from euphonic import ureg, __version__
 from euphonic.broadening import variable_width_broadening
 from euphonic.io import (_obj_to_json_file, _obj_from_json_file,
                          _obj_to_dict, _process_dict)
@@ -212,8 +212,9 @@ class Spectrum(ABC):
 
     @staticmethod
     def _broaden_data(data: np.ndarray, bin_centres: Sequence[np.ndarray],
-                      widths: Sequence[float], shape: str = 'gauss',
-                      method: Optional[str] = None,
+                      widths: Sequence[float],
+                      shape: Literal['gauss', 'lorentz'] = 'gauss',
+                      method: Optional[Literal['convolve']] = None,
                       ) -> np.ndarray:
         """
         Broaden data along each axis by widths, returning the broadened
@@ -565,26 +566,29 @@ class Spectrum1D(Spectrum):
 
     @overload
     def broaden(self: T, x_width: Quantity,
-                shape: str = 'gauss', method: Optional[str] = None) -> T:
+                shape: Literal['gauss', 'lorentz'] = 'gauss',
+                method: Optional[Literal['convolve']] = None
+                ) -> T:
         ...
 
     @overload
     def broaden(self: T, x_width: CallableQuantity,
-                shape: str = 'gauss', method: Optional[str] = None,
+                shape: Literal['gauss', 'lorentz'] = 'gauss',
+                method: Optional[Literal['convolve']] = None,
                 width_lower_limit: Optional[Quantity] = None,
-                width_convention: str = 'FWHM',
+                width_convention: Literal['FWHM', 'STD'] = 'FWHM',
                 width_interpolation_error: float = 0.01,
-                width_fit: str = 'cheby-log'
+                width_fit: Literal['cheby-log', 'cubic'] = 'cheby-log'
                 ) -> T:  # noqa: F811
         ...
 
-    def broaden(self: T, x_width: Union[Quantity, CallableQuantity],
-                shape: str = 'gauss',
-                method: Optional[str] = None,
-                width_lower_limit: Quantity = None,
-                width_convention: str = 'FWHM',
-                width_interpolation_error: float = 0.01,
-                width_fit: str = 'cheby-log'
+    def broaden(self: T, x_width,
+                shape='gauss',
+                method=None,
+                width_lower_limit=None,
+                width_convention='FWHM',
+                width_interpolation_error=0.01,
+                width_fit='cheby-log'
                 ) -> T:  # noqa: F811
         """
         Broaden y_data and return a new broadened spectrum object
@@ -1031,27 +1035,30 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
 
     @overload
     def broaden(self: T, x_width: Quantity,
-                shape: str = 'gauss', method: Optional[str] = None) -> T:
+                shape: Literal['gauss', 'lorentz'] = 'gauss',
+                method: Optional[Literal['convolve']] = None
+                ) -> T:
         ...
 
     @overload
     def broaden(self: T, x_width: CallableQuantity,
-                shape: str = 'gauss', method: Optional[str] = None,
-                width_lower_limit: Quantity = None,
-                width_convention: str = 'FWHM',
+                shape: Literal['gauss', 'lorentz'] = 'gauss',
+                method: Optional[Literal['convolve']] = None,
+                width_lower_limit: Optional[Quantity] = None,
+                width_convention: Literal['FWHM', 'STD'] = 'FWHM',
                 width_interpolation_error: float = 0.01,
-                width_fit: str = 'cheby-log'
+                width_fit: Literal['cheby-log', 'cubic'] = 'cheby-log'
                 ) -> T:  # noqa: F811
         ...
 
     def broaden(self: T,
-                x_width: Union[Quantity, CallableQuantity],
-                shape: str = 'gauss',
-                method: Optional[str] = None,
-                width_lower_limit: Quantity = None,
-                width_convention: str = 'FWHM',
-                width_interpolation_error: float = 0.01,
-                width_fit: str = 'cheby-log'
+                x_width,
+                shape='gauss',
+                method=None,
+                width_lower_limit=None,
+                width_convention='FWHM',
+                width_interpolation_error=0.01,
+                width_fit='cheby-log'
                 ) -> T:  # noqa: F811
         """
         Individually broaden each line in y_data, returning a new
@@ -1343,13 +1350,13 @@ class Spectrum2D(Spectrum):
     def broaden(self: T,
                 x_width: Optional[Union[Quantity, CallableQuantity]] = None,
                 y_width: Optional[Union[Quantity, CallableQuantity]] = None,
-                shape: str = 'gauss',
-                method: Optional[str] = None,
+                shape: Literal['gauss', 'lorentz'] = 'gauss',
+                method: Optional[Literal['convolve']] = None,
                 x_width_lower_limit: Quantity = None,
                 y_width_lower_limit: Quantity = None,
-                width_convention: str = 'FWHM',
+                width_convention: Literal['FWHM', 'STD'] = 'FWHM',
                 width_interpolation_error: float = 0.01,
-                width_fit: str = 'cheby-log'
+                width_fit: Literal['cheby-log', 'cubic'] = 'cheby-log'
                 ) -> T:
         """
         Broaden z_data and return a new broadened Spectrum2D object
@@ -1453,12 +1460,13 @@ class Spectrum2D(Spectrum):
     def _broaden_spectrum2d_with_function(
             spectrum: 'Spectrum2D',
             width_function: Callable[[Quantity], Quantity],
-            axis: str = 'y',
+            axis: Literal['x', 'y'] = 'y',
             width_lower_limit: Quantity = None,
-            width_convention: str = 'fwhm',
+            width_convention: Literal['FWHM', 'STD'] = 'FWHM',
             width_interpolation_error: float = 1e-2,
-            shape: str = 'gauss',
-            width_fit: str = 'cheby-log') -> 'Spectrum2D':
+            shape: Literal['gauss', 'lorentz'] = 'gauss',
+            width_fit: Literal['cheby-log', 'cubic'] = 'cheby-log'
+        ) -> 'Spectrum2D':
         """
         Apply value-dependent Gaussian broadening to one axis of Spectrum2D
         """
@@ -1510,7 +1518,7 @@ class Spectrum2D(Spectrum):
                           copy.copy(self.x_tick_labels),
                           copy.deepcopy(self.metadata))
 
-    def get_bin_edges(self, bin_ax: str = 'x') -> Quantity:
+    def get_bin_edges(self, bin_ax: Literal['x', 'y'] = 'x') -> Quantity:
         """
         Get bin edges for the axis specified by bin_ax. If the size of
         bin_ax is one element larger than z_data along that axis, bin_ax
@@ -1535,7 +1543,7 @@ class Spectrum2D(Spectrum):
         else:
             return self._bin_centres_to_edges(bin_data)
 
-    def get_bin_centres(self, bin_ax: str = 'x') -> Quantity:
+    def get_bin_centres(self, bin_ax: Literal['x', 'y'] = 'x') -> Quantity:
         """
         Get bin centres for the axis specified by bin_ax. If the size of
         bin_ax is the same size as z_data along that axis, bin_ax is
@@ -1558,7 +1566,7 @@ class Spectrum2D(Spectrum):
         else:
             return bin_data
 
-    def get_bin_widths(self, bin_ax: str = 'x') -> Quantity:
+    def get_bin_widths(self, bin_ax: Literal['x', 'y'] = 'x') -> Quantity:
         """
         Get x-bin widths along specified axis
 
@@ -1570,7 +1578,7 @@ class Spectrum2D(Spectrum):
         bins = self.get_bin_edges(bin_ax)
         return np.diff(bins)
 
-    def assert_regular_bins(self, bin_ax: str = 'x',
+    def assert_regular_bins(self, bin_ax: Literal['x', 'y'],
                             message: str = '',
                             rtol: float = 1e-5,
                             atol: float = 0.) -> None:
@@ -1759,7 +1767,9 @@ def _get_cos_range(angle_range: Tuple[float]) -> Tuple[float]:
     return max(limiting_values), min(limiting_values)
 
 
-def _distribution_1d(xbins: np.ndarray, xwidth: float, shape: str = 'lorentz'
+def _distribution_1d(xbins: np.ndarray,
+                     xwidth: float,
+                     shape: Literal['lorentz'] = 'lorentz',
                      ) -> np.ndarray:
     x = _get_dist_bins(xbins)
     if shape == 'lorentz':
