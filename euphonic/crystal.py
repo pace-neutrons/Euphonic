@@ -113,19 +113,15 @@ class Crystal:
             Shape (3, 3) float Quantity in 1/length units, the
             reciprocal lattice vectors
         """
-        cv = self._cell_vectors
+        cv = self.cell_vectors
 
         bxc = np.cross(cv[1], cv[2])
         cxa = np.cross(cv[2], cv[0])
         axb = np.cross(cv[0], cv[1])
-        vol = self._cell_volume()
+        vol = self.cell_volume()
         norm = 2*np.pi/vol
 
-        recip = np.array([norm*bxc,
-                          norm*cxa,
-                          norm*axb])*(1/ureg.bohr)
-
-        return recip.to(1/ureg(self.cell_vectors_unit))
+        return np.vstack((norm * bxc, norm * cxa, norm * axb))
 
     def cell_volume(self) -> Quantity:
         """
@@ -137,9 +133,6 @@ class Crystal:
             Scalar float Quantity in length**3 units. The cell volume
         """
         return _cell_vectors_to_volume(self.cell_vectors)
-
-    def _cell_volume(self) -> float:
-        return self.cell_volume().to('bohr^3').magnitude
 
     def get_mp_grid_spec(self,
                          spacing: Quantity = 0.1 * ureg('1/angstrom')
