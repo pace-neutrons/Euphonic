@@ -198,7 +198,7 @@ class StructureFactor(QpointFrequencies):
         StructureFactor.structure_factors is defined as the mode-resolved
         :math:`S(Q, \\omega_{\\mathbf{q}\\nu})` per atom of sample. To create
         an :math:`S(Q,\\omega)` map, it is binned in :math:`\\omega`
-        and the Bose population factor is applied [1]:
+        and the Bose population factor is applied [1]_:
 
         .. math::
 
