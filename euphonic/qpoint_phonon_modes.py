@@ -1,5 +1,5 @@
 import math
-from typing import Dict, Literal, Optional, Union, TypeVar, Any, Type
+from typing import Dict, Optional, Union, TypeVar, Any, Type
 from collections.abc import Mapping
 
 import numpy as np
