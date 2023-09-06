@@ -10,7 +10,10 @@ from euphonic.readers import castep, phonopy
 from euphonic.util import (_calc_abscissa, get_qpoint_labels)
 from euphonic import (ureg, Crystal, Quantity, Spectrum1D,
                       Spectrum1DCollection, Spectrum2D)
-from euphonic.broadening import _width_interpolated_broadening
+from euphonic.broadening import ErrorFit, _width_interpolated_broadening
+
+
+AdaptiveMethod = Literal['reference', 'fast']
 
 
 class QpointFrequencies:
@@ -93,9 +96,9 @@ class QpointFrequencies:
         dos_bins: Quantity,
         mode_widths: Optional[Quantity] = None,
         mode_widths_min: Quantity = Quantity(0.01, 'meV'),
-        adaptive_method: Literal['reference', 'fast'] = 'reference',
+        adaptive_method: AdaptiveMethod = 'reference',
         adaptive_error: float = 0.01,
-        adaptive_error_fit: Literal['cheby-log', 'cubic'] = 'cubic'
+        adaptive_error_fit: ErrorFit = 'cubic'
         ) -> Spectrum1D:
         """
         Calculates a density of states, in units of modes per atom per
@@ -160,9 +163,9 @@ class QpointFrequencies:
         mode_widths: Optional[Quantity] = None,
         mode_widths_min: Quantity = Quantity(0.01, 'meV'),
         mode_weights: Optional[np.ndarray] = None,
-        adaptive_method: Literal['reference', 'fast'] = 'reference',
+        adaptive_method: AdaptiveMethod = 'reference',
         adaptive_error: float = 0.01,
-        adaptive_error_fit: Literal['cheby-log', 'cubic'] = 'cubic',
+        adaptive_error_fit: ErrorFit = 'cubic',
         q_idx: Optional[int] = None
         ) -> Quantity:
         """

@@ -14,7 +14,7 @@ import numpy as np
 from scipy.ndimage import correlate1d, gaussian_filter
 
 from euphonic import ureg, __version__
-from euphonic.broadening import variable_width_broadening
+from euphonic.broadening import ErrorFit, variable_width_broadening
 from euphonic.io import (_obj_to_json_file, _obj_from_json_file,
                          _obj_to_dict, _process_dict)
 from euphonic.readers.castep import read_phonon_dos_data
@@ -578,7 +578,7 @@ class Spectrum1D(Spectrum):
                 width_lower_limit: Optional[Quantity] = None,
                 width_convention: Literal['FWHM', 'STD'] = 'FWHM',
                 width_interpolation_error: float = 0.01,
-                width_fit: Literal['cheby-log', 'cubic'] = 'cheby-log'
+                width_fit: ErrorFit = 'cheby-log'
                 ) -> T:  # noqa: F811
         ...
 
@@ -1047,7 +1047,7 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
                 width_lower_limit: Optional[Quantity] = None,
                 width_convention: Literal['FWHM', 'STD'] = 'FWHM',
                 width_interpolation_error: float = 0.01,
-                width_fit: Literal['cheby-log', 'cubic'] = 'cheby-log'
+                width_fit: ErrorFit = 'cheby-log'
                 ) -> T:  # noqa: F811
         ...
 
@@ -1356,7 +1356,7 @@ class Spectrum2D(Spectrum):
                 y_width_lower_limit: Quantity = None,
                 width_convention: Literal['FWHM', 'STD'] = 'FWHM',
                 width_interpolation_error: float = 0.01,
-                width_fit: Literal['cheby-log', 'cubic'] = 'cheby-log'
+                width_fit: ErrorFit = 'cheby-log'
                 ) -> T:
         """
         Broaden z_data and return a new broadened Spectrum2D object
@@ -1465,7 +1465,7 @@ class Spectrum2D(Spectrum):
             width_convention: Literal['FWHM', 'STD'] = 'FWHM',
             width_interpolation_error: float = 1e-2,
             shape: Literal['gauss', 'lorentz'] = 'gauss',
-            width_fit: Literal['cheby-log', 'cubic'] = 'cheby-log'
+            width_fit: ErrorFit = 'cheby-log'
         ) -> 'Spectrum2D':
         """
         Apply value-dependent Gaussian broadening to one axis of Spectrum2D
