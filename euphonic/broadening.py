@@ -15,6 +15,7 @@ from euphonic import ureg
 
 
 ErrorFit = Literal['cheby-log', 'cubic']
+KernelShape = Literal['gauss', 'lorentz']
 
 
 def variable_width_broadening(
@@ -25,7 +26,7 @@ def variable_width_broadening(
     width_lower_limit: Quantity = None,
     width_convention: Literal['FWHM', 'STD'] = 'FWHM',
     adaptive_error: float = 1e-2,
-    shape: Literal['gauss', 'lorentz'] = 'gauss',
+    shape: KernelShape = 'gauss',
     fit: ErrorFit = 'cheby-log'
     ) -> Quantity:
     r"""Apply x-dependent Gaussian broadening to 1-D data series
@@ -106,7 +107,7 @@ def width_interpolated_broadening(
     widths: Quantity,
     weights: np.ndarray,
     adaptive_error: float,
-    shape: Literal['gauss', 'lorentz'] = 'gauss',
+    shape: KernelShape = 'gauss',
     fit: ErrorFit = 'cheby-log'
     ) -> Quantity:
     """
@@ -163,7 +164,7 @@ def _lorentzian(x: np.ndarray, gamma: np.ndarray) -> np.ndarray:
 
 
 def _get_spacing(error,
-                 shape: Literal['gauss', 'lorentz'] = 'gauss',
+                 shape: KernelShape = 'gauss',
                  fit: ErrorFit = 'cheby-log'):
     """
     Determine suitable spacing value for mode_width given accepted error level
@@ -209,7 +210,7 @@ def _width_interpolated_broadening(
     widths: np.ndarray,
     weights: np.ndarray,
     adaptive_error: float,
-    shape: Literal['gauss', 'lorentz'] = 'gauss',
+    shape: KernelShape = 'gauss',
     fit: ErrorFit = 'cheby-log') -> np.ndarray:
     """
     Broadens a spectrum using a variable-width kernel, taking the
@@ -284,7 +285,7 @@ def _width_interpolated_broadening(
 
 
 def find_coeffs(spacing: float,
-                shape: Literal['gauss', 'lorentz'] = 'gauss') -> np.ndarray:
+                shape: KernelShape = 'gauss') -> np.ndarray:
     """"
     Function that, for a given spacing value, gives the coefficients of the
     polynomial which describes the relationship between kernel width and the
