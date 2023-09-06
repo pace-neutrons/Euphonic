@@ -1,7 +1,7 @@
 from collections import defaultdict
 import re
 import struct
-from typing import (Any, BinaryIO, Dict, List, NamedTuple,
+from typing import (Any, BinaryIO, Dict, Iterator, List, NamedTuple,
                     Optional, TextIO, Tuple, Union)
 
 import numpy as np
@@ -53,11 +53,11 @@ def read_phonon_dos_data(
         weights = np.empty((0,))
         freqs = np.empty((0, n_branches))
         mode_grads = np.empty((0, n_branches))
-        while (frequency_block := _read_frequency_block(
+        for frequency_block in _read_frequency_blocks(
                 f,
                 n_branches,
                 extra_columns=[0],
-                terminator=' END GRADIENTS\n')) is not None:
+                terminator=' END GRADIENTS\n'):
 
             qmode_grad = frequency_block.extra
 
@@ -185,9 +185,7 @@ def read_phonon_data(
         repeated_qpt_ids = defaultdict(set)
         loto_split_indices = set()
 
-        while (frequency_block := _read_frequency_block(f, n_branches)
-               ) is not None:
-
+        for frequency_block in _read_frequency_blocks(f, n_branches):
             qpt_id = frequency_block.qpt_id
 
             if prefer_non_loto and frequency_block.direction is not None:
@@ -401,6 +399,16 @@ def _read_frequency_block(
             extra[i] = np.array(
                 [float(line[freq_col + col + 1]) for line in freq_lines])
     return _FrequencyBlock(i_qpt, qpt, direction, qweight, qfreq, extra)
+
+
+def _read_frequency_blocks(*args, **kwargs) -> Iterator[_FrequencyBlock]:
+    """Iterate over frequency blocks"""
+    while True:
+        frequency_block = _read_frequency_block(*args, **kwargs)
+        if frequency_block:
+            yield frequency_block
+        else:
+            break
 
 
 def read_interpolation_data(
