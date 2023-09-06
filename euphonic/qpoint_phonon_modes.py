@@ -5,7 +5,9 @@ from collections.abc import Mapping
 import numpy as np
 
 from euphonic.validate import _check_constructor_inputs
+from euphonic.broadening import ErrorFit
 from euphonic.io import _obj_from_json_file, _obj_to_dict, _process_dict
+from euphonic.qpoint_frequencies import AdaptiveMethod
 from euphonic.readers import castep, phonopy
 from euphonic.util import (direction_changed, is_gamma, get_reference_data)
 from euphonic import (ureg, Quantity, Crystal, DebyeWaller, QpointFrequencies,
@@ -424,9 +426,9 @@ class QpointPhononModes(QpointFrequencies):
             self, dos_bins: Quantity,
             mode_widths: Optional[Quantity] = None,
             mode_widths_min: Quantity = Quantity(0.01, 'meV'),
-            adaptive_method: Literal['reference', 'fast'] = 'reference',
+            adaptive_method: AdaptiveMethod = 'reference',
             adaptive_error: Optional[float] = 0.01,
-            adaptive_error_fit: Literal['cheby-log', 'cubic'] = 'cubic',
+            adaptive_error_fit: ErrorFit = 'cubic',
             weighting: Optional[str] = None,
             cross_sections: Union[str, Dict[str, Quantity]] = 'BlueBook',
             ) -> Spectrum1DCollection:

@@ -14,6 +14,9 @@ from scipy.signal import convolve
 from euphonic import ureg
 
 
+ErrorFit = Literal['cheby-log', 'cubic']
+
+
 def variable_width_broadening(
     bins: Quantity,
     x: Quantity,
@@ -23,7 +26,7 @@ def variable_width_broadening(
     width_convention: Literal['FWHM', 'STD'] = 'FWHM',
     adaptive_error: float = 1e-2,
     shape: Literal['gauss', 'lorentz'] = 'gauss',
-    fit: Literal['cheby-log', 'cubic'] = 'cheby-log'
+    fit: ErrorFit = 'cheby-log'
     ) -> Quantity:
     r"""Apply x-dependent Gaussian broadening to 1-D data series
 
@@ -104,7 +107,7 @@ def width_interpolated_broadening(
     weights: np.ndarray,
     adaptive_error: float,
     shape: Literal['gauss', 'lorentz'] = 'gauss',
-    fit: Literal['cheby-log', 'cubic'] = 'cheby-log'
+    fit: ErrorFit = 'cheby-log'
     ) -> Quantity:
     """
     Uses a fast, approximate method to broaden a spectrum
@@ -161,7 +164,7 @@ def _lorentzian(x: np.ndarray, gamma: np.ndarray) -> np.ndarray:
 
 def _get_spacing(error,
                  shape: Literal['gauss', 'lorentz'] = 'gauss',
-                 fit: Literal['cheby-log', 'cubic'] = 'cheby-log'):
+                 fit: ErrorFit = 'cheby-log'):
     """
     Determine suitable spacing value for mode_width given accepted error level
 
@@ -207,7 +210,7 @@ def _width_interpolated_broadening(
     weights: np.ndarray,
     adaptive_error: float,
     shape: Literal['gauss', 'lorentz'] = 'gauss',
-    fit: Literal['cheby-log', 'cubic'] = 'cheby-log') -> np.ndarray:
+    fit: ErrorFit = 'cheby-log') -> np.ndarray:
     """
     Broadens a spectrum using a variable-width kernel, taking the
     same arguments as `variable_width` but expects arrays with
