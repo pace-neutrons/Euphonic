@@ -345,6 +345,7 @@ def _qpts_cart_to_frac(qpts: Quantity,
     """
     lattice = crystal.reciprocal_cell()
 
+    # Cast 'dimensionless' to ensure length units are cancelled properly
     return np.linalg.solve(lattice.T, qpts.T).T.to('dimensionless').magnitude
 
 
