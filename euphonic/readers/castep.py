@@ -405,10 +405,9 @@ def _read_frequency_blocks(*args, **kwargs) -> Iterator[_FrequencyBlock]:
     """Iterate over frequency blocks"""
     while True:
         frequency_block = _read_frequency_block(*args, **kwargs)
-        if frequency_block:
-            yield frequency_block
-        else:
+        if frequency_block is None:
             break
+        yield frequency_block
 
 
 def read_interpolation_data(
