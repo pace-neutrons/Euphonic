@@ -14,7 +14,8 @@ import numpy as np
 from scipy.ndimage import correlate1d, gaussian_filter
 
 from euphonic import ureg, __version__
-from euphonic.broadening import ErrorFit, variable_width_broadening
+from euphonic.broadening import (ErrorFit, KernelShape,
+                                 variable_width_broadening)
 from euphonic.io import (_obj_to_json_file, _obj_from_json_file,
                          _obj_to_dict, _process_dict)
 from euphonic.readers.castep import read_phonon_dos_data
@@ -213,7 +214,7 @@ class Spectrum(ABC):
     @staticmethod
     def _broaden_data(data: np.ndarray, bin_centres: Sequence[np.ndarray],
                       widths: Sequence[float],
-                      shape: Literal['gauss', 'lorentz'] = 'gauss',
+                      shape: KernelShape = 'gauss',
                       method: Optional[Literal['convolve']] = None,
                       ) -> np.ndarray:
         """
@@ -566,14 +567,14 @@ class Spectrum1D(Spectrum):
 
     @overload
     def broaden(self: T, x_width: Quantity,
-                shape: Literal['gauss', 'lorentz'] = 'gauss',
+                shape: KernelShape = 'gauss',
                 method: Optional[Literal['convolve']] = None
                 ) -> T:
         ...
 
     @overload
     def broaden(self: T, x_width: CallableQuantity,
-                shape: Literal['gauss', 'lorentz'] = 'gauss',
+                shape: KernelShape = 'gauss',
                 method: Optional[Literal['convolve']] = None,
                 width_lower_limit: Optional[Quantity] = None,
                 width_convention: Literal['FWHM', 'STD'] = 'FWHM',
@@ -1035,14 +1036,14 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
 
     @overload
     def broaden(self: T, x_width: Quantity,
-                shape: Literal['gauss', 'lorentz'] = 'gauss',
+                shape: KernelShape = 'gauss',
                 method: Optional[Literal['convolve']] = None
                 ) -> T:
         ...
 
     @overload
     def broaden(self: T, x_width: CallableQuantity,
-                shape: Literal['gauss', 'lorentz'] = 'gauss',
+                shape: KernelShape = 'gauss',
                 method: Optional[Literal['convolve']] = None,
                 width_lower_limit: Optional[Quantity] = None,
                 width_convention: Literal['FWHM', 'STD'] = 'FWHM',
@@ -1350,7 +1351,7 @@ class Spectrum2D(Spectrum):
     def broaden(self: T,
                 x_width: Optional[Union[Quantity, CallableQuantity]] = None,
                 y_width: Optional[Union[Quantity, CallableQuantity]] = None,
-                shape: Literal['gauss', 'lorentz'] = 'gauss',
+                shape: KernelShape = 'gauss',
                 method: Optional[Literal['convolve']] = None,
                 x_width_lower_limit: Quantity = None,
                 y_width_lower_limit: Quantity = None,
@@ -1464,7 +1465,7 @@ class Spectrum2D(Spectrum):
             width_lower_limit: Quantity = None,
             width_convention: Literal['FWHM', 'STD'] = 'FWHM',
             width_interpolation_error: float = 1e-2,
-            shape: Literal['gauss', 'lorentz'] = 'gauss',
+            shape: KernelShape = 'gauss',
             width_fit: ErrorFit = 'cheby-log'
         ) -> 'Spectrum2D':
         """
