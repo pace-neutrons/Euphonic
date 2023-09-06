@@ -372,7 +372,8 @@ class ForceConstants:
 
         .. math::
 
-         \\frac{d\\omega_{\\mathbf{q}\\nu}}{d\\mathbf{q}} = \\frac{1}{2\\omega_{\\mathbf{q}\\nu}}{(E^{-1}\\frac{dD}{d\\mathbf{q}}E)}
+          \\frac{d\\omega_{\\mathbf{q}\\nu}}{d\\mathbf{q}} = \\frac{1}{2\\omega_{\\mathbf{q}\\nu}}{(E^{-1}\\frac{dD}{d\\mathbf{q}}E)}
+
         :math:`\\frac{dD}{d\\mathbf{q}}` can be obtained by differentiating the Fourier equation above:
 
         .. math::
