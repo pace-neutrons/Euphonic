@@ -577,7 +577,7 @@ class Spectrum1D(Spectrum):
                 shape: KernelShape = 'gauss',
                 method: Optional[Literal['convolve']] = None,
                 width_lower_limit: Optional[Quantity] = None,
-                width_convention: Literal['FWHM', 'STD'] = 'FWHM',
+                width_convention: Literal['fwhm', 'std'] = 'fwhm',
                 width_interpolation_error: float = 0.01,
                 width_fit: ErrorFit = 'cheby-log'
                 ) -> T:  # noqa: F811
@@ -587,7 +587,7 @@ class Spectrum1D(Spectrum):
                 shape='gauss',
                 method=None,
                 width_lower_limit=None,
-                width_convention='FWHM',
+                width_convention='fwhm',
                 width_interpolation_error=0.01,
                 width_fit='cheby-log'
                 ) -> T:  # noqa: F811
@@ -613,8 +613,8 @@ class Spectrum1D(Spectrum):
             Set a lower bound to width obtained calling x_width function. By
             default, this is equal to bin width. To disable, set to -Inf.
         width_convention
-            By default ('FWHM'), x_width is interpreted as full-width
-            half-maximum. Set to 'STD' to instead define standard deviation.
+            By default ('fwhm'), x_width is interpreted as full-width
+            half-maximum. Set to 'std' to instead define standard deviation.
         width_interpolation_error
             When x_width is a callable function, variable-width broadening is
             implemented by an approximate kernel-interpolation scheme. This
@@ -1046,7 +1046,7 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
                 shape: KernelShape = 'gauss',
                 method: Optional[Literal['convolve']] = None,
                 width_lower_limit: Optional[Quantity] = None,
-                width_convention: Literal['FWHM', 'STD'] = 'FWHM',
+                width_convention: Literal['fwhm', 'std'] = 'fwhm',
                 width_interpolation_error: float = 0.01,
                 width_fit: ErrorFit = 'cheby-log'
                 ) -> T:  # noqa: F811
@@ -1057,7 +1057,7 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
                 shape='gauss',
                 method=None,
                 width_lower_limit=None,
-                width_convention='FWHM',
+                width_convention='fwhm',
                 width_interpolation_error=0.01,
                 width_fit='cheby-log'
                 ) -> T:  # noqa: F811
@@ -1084,8 +1084,8 @@ class Spectrum1DCollection(collections.abc.Sequence, Spectrum):
             Set a lower bound to width obtained calling x_width function. By
             default, this is equal to bin width. To disable, set to -Inf.
         width_convention
-            By default ('FWHM'), x_width is interpreted as full-width
-            half-maximum. Set to 'STD' to instead define standard deviation.
+            By default ('fwhm'), x_width is interpreted as full-width
+            half-maximum. Set to 'std' to instead define standard deviation.
         width_interpolation_error
             When x_width is a callable function, variable-width broadening is
             implemented by an approximate kernel-interpolation scheme. This
@@ -1355,7 +1355,7 @@ class Spectrum2D(Spectrum):
                 method: Optional[Literal['convolve']] = None,
                 x_width_lower_limit: Quantity = None,
                 y_width_lower_limit: Quantity = None,
-                width_convention: Literal['FWHM', 'STD'] = 'FWHM',
+                width_convention: Literal['fwhm', 'std'] = 'fwhm',
                 width_interpolation_error: float = 0.01,
                 width_fit: ErrorFit = 'cheby-log'
                 ) -> T:
@@ -1391,8 +1391,8 @@ class Spectrum2D(Spectrum):
             Set a lower bound to width obtained calling y_width function. By
             default, this is equal to y bin width. To disable, set to -Inf.
         width_convention
-            By default ('FWHM'), widths are interpreted as full-width
-            half-maximum. Set to 'STD' to instead define standard deviation.
+            By default ('fwhm'), widths are interpreted as full-width
+            half-maximum. Set to 'std' to instead define standard deviation.
         width_interpolation_error
             When x_width is a callable function, variable-width broadening is
             implemented by an approximate kernel-interpolation scheme. This
@@ -1463,7 +1463,7 @@ class Spectrum2D(Spectrum):
             width_function: Callable[[Quantity], Quantity],
             axis: Literal['x', 'y'] = 'y',
             width_lower_limit: Quantity = None,
-            width_convention: Literal['FWHM', 'STD'] = 'FWHM',
+            width_convention: Literal['fwhm', 'std'] = 'fwhm',
             width_interpolation_error: float = 1e-2,
             shape: KernelShape = 'gauss',
             width_fit: ErrorFit = 'cheby-log'

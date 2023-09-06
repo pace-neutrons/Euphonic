@@ -24,7 +24,7 @@ def variable_width_broadening(
     width_function: Callable[[Quantity], Quantity],
     weights: Union[np.ndarray, Quantity],
     width_lower_limit: Quantity = None,
-    width_convention: Literal['FWHM', 'STD'] = 'FWHM',
+    width_convention: Literal['fwhm', 'std'] = 'fwhm',
     adaptive_error: float = 1e-2,
     shape: KernelShape = 'gauss',
     fit: ErrorFit = 'cheby-log'
