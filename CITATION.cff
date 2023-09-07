@@ -29,9 +29,11 @@ authors:
   - family-names: "Voneshen"
     given-names: "David J."
     orcid: https://orcid.org/0000-0001-5716-7184
+  - family-names: "Wilkins"
+    given-names: "Jacob S."
 title: "Euphonic"
 doi: 10.5286/SOFTWARE/EUPHONIC
-version: 1.2.1
+version: 1.3.0
 date-released: 2023-07-19
 license: GPL-3.0-only
 repository-code: https://github.com/pace-neutrons/Euphonic
