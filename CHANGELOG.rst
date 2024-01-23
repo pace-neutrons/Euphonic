@@ -1,6 +1,13 @@
 `Unreleased <https://github.com/pace-neutrons/Euphonic/compare/v1.3.0...HEAD>`_
 -------------------------------------------------------------------------------
 
+- Maintenance
+
+  - Updated versioneer for compatibility with Python 3.12
+  - In tests, avoid checking an attribute of 3D plots which is unreliable in
+    recent matplotlib versions
+  - Update readthedocs configuration to fix documentation builds
+
 `v1.3.0 <https://github.com/pace-neutrons/Euphonic/compare/v1.2.1...v1.3.0>`_
 -----------------------------------------------------------------------------
 
