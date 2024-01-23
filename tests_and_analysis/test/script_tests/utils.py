@@ -73,6 +73,8 @@ def get_all_plot_line_data(figs: List['matplotlib.figure.Figure']
 
 
 def get_fig_label_data(fig) -> Dict[str, Union[str, List[str]]]:
+    from mpl_toolkits.mplot3d import Axes3D
+
     label_data = {'x_ticklabels': [],
                   'x_label': [],
                   'y_label': [],
@@ -96,7 +98,7 @@ def get_fig_label_data(fig) -> Dict[str, Union[str, List[str]]]:
                 label_data['z_label'].append(zlabel)
         # Collect tick labels from visible axes only,
         # we don't care about invisible axis tick labels
-        if ax.get_frame_on():
+        if isinstance(ax, Axes3D) or ax.get_frame_on():
             xticklabels = [lab.get_text() for lab in ax.get_xticklabels()]
             label_data['x_ticklabels'].append(xticklabels)
 
