@@ -58,7 +58,7 @@ jobs:
 
       - name: Build Python wheel
 
-if: matrix.os != 'ubuntu-latest'
+        if: matrix.os != 'ubuntu-latest'
         shell: bash -l {0}
         env:
           NUMPY_VERSION: ${{ matrix.numpy-version }}
