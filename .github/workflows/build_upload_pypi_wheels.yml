@@ -33,6 +33,11 @@ jobs:
             numpy-version: 1.23.2
       fail-fast: false
     runs-on: ${{ matrix.os }}
+    environment:
+      name: pypi
+      url: https://pypi.org/p/euphonic
+    permissions:
+      id-token: write
     steps:
       - uses: actions/checkout@v3
         with:
@@ -52,7 +57,8 @@ jobs:
         run: brew install llvm
 
       - name: Build Python wheel
-        if: matrix.os != 'ubuntu-latest'
+
+if: matrix.os != 'ubuntu-latest'
         shell: bash -l {0}
         env:
           NUMPY_VERSION: ${{ matrix.numpy-version }}
@@ -82,20 +88,15 @@ jobs:
         with:
             name: wheels
             path: wheelhouse/*-${{ matrix.wheelname }}*.whl
+
       - name: Upload source dist to PyPI
         if: github.event_name == 'release' && matrix.os == 'windows-latest' && matrix.python-version == '3.11'
-        shell: bash -l {0}
-        env:
-          TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
-          TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
-        run: |
-          python -m twine upload dist/*.tar.gz
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+            packages-dir: dist/
+
       - name: Upload wheel to PyPI
         if: github.event_name == 'release'
-        shell: bash -l {0}
-        env:
-          TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
-          TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
-          WHEEL_NAME: ${{ matrix.wheelname }}
-        run: |
-          python -m twine upload wheelhouse/*-${WHEEL_NAME}*.whl
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+            packages-dir: wheelhouse/
