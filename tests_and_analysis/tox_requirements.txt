@@ -1,5 +1,5 @@
 mock
-pytest
+pytest~=7.0
 coverage
 pytest-mock
 pytest-lazy-fixture
