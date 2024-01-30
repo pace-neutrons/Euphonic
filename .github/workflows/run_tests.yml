@@ -21,8 +21,8 @@ jobs:
       fail-fast: false
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v3
-      - uses: conda-incubator/setup-miniconda@v2
+      - uses: actions/checkout@v4
+      - uses: conda-incubator/setup-miniconda@v3
         with:
           python-version: 3.8
           channels: conda-forge,defaults
@@ -47,7 +47,7 @@ jobs:
         run: python -m tox
       - name: Upload test results
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: Unit test results ${{ matrix.os }}
           path: tests_and_analysis/test/reports/junit_report*.xml
@@ -66,8 +66,8 @@ jobs:
     runs-on: ubuntu-latest
     if: success() || failure()
     steps:
-      - uses: actions/checkout@v3
-      - uses: conda-incubator/setup-miniconda@v2
+      - uses: actions/checkout@v4
+      - uses: conda-incubator/setup-miniconda@v3
         with:
           python-version: 3.8
           channels: conda-forge,defaults
@@ -85,7 +85,7 @@ jobs:
         run: sphinx-build -c source -b doctest source .
       - name: Upload docstest results
         if: success() || failure()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: Doctest results
           path: doc/output.txt
