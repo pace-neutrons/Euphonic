@@ -33,14 +33,12 @@ jobs:
             numpy-version: 1.23.2
       fail-fast: false
     runs-on: ${{ matrix.os }}
-    permissions:
-      id-token: write
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0 # Ensure tags are fetched for versioning
       - name: Setup Python ${{ matrix.python-version }} with Conda
-        uses: conda-incubator/setup-miniconda@v2
+        uses: conda-incubator/setup-miniconda@v3
         with:
           python-version: ${{ matrix.python-version }}
           channels: conda-forge,defaults
@@ -81,19 +79,20 @@ jobs:
           python setup.py sdist
 
       - name: Upload source dist as build artifact
-        if:  matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11' # && github.event_name == 'release'
-        uses: actions/upload-artifact@v3
+        if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11' && github.event_name == 'release'
+        uses: actions/upload-artifact@v4
         with:
-            name: python source distribution
+            name: python-source-distribution
             path: dist
 
       - name: Upload wheels as build artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
-            name: binary wheels
+            name: wheel-${{ matrix.wheelname }}-${{ matrix.python-version }}
             path: wheelhouse/*-${{ matrix.wheelname }}*.whl
 
   publish:
+    if: github.event_name == 'release'
     needs: build
     name: Upload release to PyPI
     runs-on: ubuntu-latest
@@ -103,21 +102,19 @@ jobs:
     permissions:
       id-token: write
     steps:
-      - name: Download source package to Ubuntu environment
-        uses: actions/download-artifact@v4
+      - name: Checkout
+        uses: actions/checkout@v4
         with:
-          name: python source distribution
-          path: dist/
+          fetch-depth: 0  # This is possibly unnecessary?
 
-      - name: Download binary artifacts to Ubuntu environment
+      - name: Download artifacts to Ubuntu environment
         uses: actions/download-artifact@v4
         with:
-          name: binary wheels
           path: dist/
+          merge-multiple: true
 
       - name: List Files
         run: ls -R
 
       - name: Upload wheels to PyPI
-        # if: github.event_name == 'release'
         uses: pypa/gh-action-pypi-publish@release/v1
