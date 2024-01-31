@@ -36,6 +36,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          ref: v1.3.1
           fetch-depth: 0 # Ensure tags are fetched for versioning
       - name: Setup Python ${{ matrix.python-version }} with Conda
         uses: conda-incubator/setup-miniconda@v3
@@ -79,20 +80,21 @@ jobs:
           python setup.py sdist
 
       - name: Upload source dist as build artifact
-        if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11' && github.event_name == 'release'
+        if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.11' # && github.event_name == 'release'
         uses: actions/upload-artifact@v4
         with:
             name: python-source-distribution
             path: dist
 
       - name: Upload wheels as build artifacts
+        if: matrix.os == 'windows-latest' || (matrix.os == 'macos-latest' && matrix.python-version != '3.10')
         uses: actions/upload-artifact@v4
         with:
             name: wheel-${{ matrix.wheelname }}-${{ matrix.python-version }}
             path: wheelhouse/*-${{ matrix.wheelname }}*.whl
 
   publish:
-    if: github.event_name == 'release'
+    # if: github.event_name == 'release'
     needs: build
     name: Upload release to PyPI
     runs-on: ubuntu-latest
@@ -105,6 +107,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
+          ref: v1.3.1
           fetch-depth: 0  # This is possibly unnecessary?
 
       - name: Download artifacts to Ubuntu environment
