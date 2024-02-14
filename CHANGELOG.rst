@@ -5,6 +5,12 @@
   - Fixed an error loading QpointPhononModes from JSON when there is a
     single q-point in the data
 
+- Maintenance
+
+  - Compatibility fix for spglib 2.4 update: a new sanity-check in
+    spglib raises TypeError when using empty unit cell and this needs
+    handling when looking for high-symmetry labels
+
 
 -------------------------------------------------------------------------------
 
