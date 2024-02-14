@@ -570,7 +570,10 @@ def _recip_space_labels(qpts: np.ndarray,
             sym_label_to_coords = seekpath.get_path(cell)["point_coords"]
         except (SymmetryDetectionError, TypeError) as err:
             if isinstance(err, TypeError):
+                # There is a particular TypeError we expect to see when the
+                # unit cell is empty; make sure we do not have some other error
                 assert "positions has to be" in str(err)
+                assert len(cell[1]) == 0
             warnings.warn(('Could not determine cell symmetry, using generic '
                            'q-point labels'), stacklevel=2)
             sym_label_to_coords = _generic_qpt_labels()
