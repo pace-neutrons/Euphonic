@@ -469,10 +469,9 @@ def read_interpolation_data(
                     np.reshape(_read_entry(f, float_type),
                                (n_cells_in_sc, 3*n_atoms, 3*n_atoms)),
                     axes=[0, 2, 1]))
-                try:
-                    cell_origins = np.reshape(
-                        _read_entry(f, int_type), (n_cells_in_sc, 3))
-                except ValueError:
+
+                cell_origins = _read_entry(f, int_type)
+                if isinstance(cell_origins, int):
                     raise ValueError('Old castep file detected: '
                         'Euphonic only supports post-Castep 17.1 files. '
                         'Please rerun the calculation with a newer version '
@@ -480,6 +479,9 @@ def read_interpolation_data(
                         '.castep file with a single line with the '
                         '"continuation: <old.castep_bin>" keyword and '
                         'use the new output .castep_bin file in Euphonic.')
+
+                cell_origins = np.reshape(cell_origins, (n_cells_in_sc, 3))
+
                 _ = _read_entry(f, int_type)  # FC row not used
             elif header == b'BORN_CHGS':
                 born = np.reshape(
