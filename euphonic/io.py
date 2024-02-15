@@ -38,7 +38,7 @@ def _from_json_dict(dictionary: Dict[str, Any],
                 dictionary[key] = [tuple(x) for x in val]
             elif key in type_dict and type_dict[key] == np.complex128:
                 dictionary[key] = np.array(
-                    val, dtype=np.float64).view(np.complex128).squeeze()
+                    val, dtype=np.float64).view(np.complex128).squeeze(axis=-1)
             else:
                 dictionary[key] = np.array(val)
         elif isinstance(val, dict):
