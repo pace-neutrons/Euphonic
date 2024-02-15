@@ -1,0 +1,71 @@
+cff-version: 1.2.0
+message: "If you have used Euphonic in your research, please cite both the Euphonic software itself, and the article from preferred-citation"
+abstract: "Euphonic is a Python package for efficient simulation of phonon bandstructures, density of states and inelastic neutron scattering intensities from force constants"
+authors:
+  - family-names: "Fair"
+    given-names: "Rebecca L."
+    orcid: https://orcid.org/0000-0002-0926-2942
+  - family-names: "Farmer"
+    given-names: "Jessica L."
+  - family-names: "Jackson"
+    given-names: "Adam J."
+    orcid: https://orcid.org/0000-0001-5272-6530
+  - family-names: "King"
+    given-names: "James C."
+  - family-names: "Le"
+    given-names: "Manh D."
+    orcid: https://orcid.org/0000-0003-3012-6053
+  - family-names: "Perring"
+    given-names: "Toby G."
+    orcid: https://orcid.org/0000-0001-5756-6433
+  - family-names: "Pettitt"
+    given-names: "Connor"
+  - family-names: "Refson"
+    given-names: "Keith"
+    orcid: https://orcid.org/0000-0002-8715-5835
+  - family-names: "Tucker"
+    given-names: "Gregory S."
+    orcid: https://orcid.org/0000-0002-2787-8054
+  - family-names: "Voneshen"
+    given-names: "David J."
+    orcid: https://orcid.org/0000-0001-5716-7184
+title: "Euphonic"
+doi: 10.5286/SOFTWARE/EUPHONIC
+version: 1.1.0
+date-released: 2022-11-10
+license: GPL-3.0-only
+repository-code: https://github.com/pace-neutrons/Euphonic
+url: https://euphonic.readthedocs.io
+keywords:
+  - "Python"
+  - "physics"
+  - "phonons"
+  - "inelastic neutron scattering"
+  - "CASTEP"
+  - "Phonopy"
+preferred-citation:
+  authors:
+    - family-names: "Fair"
+      given-names: "Rebecca L."
+      orcid: https://orcid.org/0000-0002-0926-2942
+    - family-names: "Jackson"
+      given-names: "Adam J."
+      orcid: https://orcid.org/0000-0001-5272-6530
+    - family-names: "Voneshen"
+      given-names: "David J."
+      orcid: https://orcid.org/0000-0001-5716-7184
+    - family-names: "Jochym"
+      given-names: "Dominik B."
+      orcid: https://orcid.org/0000-0002-1413-4179
+    - family-names: "Le"
+      given-names: "Manh D."
+      orcid: https://orcid.org/0000-0003-3012-6053
+    - family-names: "Refson"
+      given-names: "Keith"
+      orcid: https://orcid.org/0000-0002-8715-5835
+    - family-names: "Perring"
+      given-names: "Toby G."
+      orcid: https://orcid.org/0000-0001-5756-6433
+  doi: 10.1107/S1600576722009256
+  title: "Euphonic: inelastic neutron scattering simulations from force constants and visualization tools for phonon properties"
+  type: article

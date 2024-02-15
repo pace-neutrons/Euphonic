@@ -1,5 +1,5 @@
 import math
-from typing import Dict, Optional, Union, TypeVar, Any, Type
+from typing import Dict, Optional, Union, TypeVar, Any, Type, List
 from collections.abc import Mapping
 
 import numpy as np
@@ -9,7 +9,7 @@ from euphonic.broadening import ErrorFit
 from euphonic.io import _obj_from_json_file, _obj_to_dict, _process_dict
 from euphonic.qpoint_frequencies import AdaptiveMethod
 from euphonic.readers import castep, phonopy
-from euphonic.util import (direction_changed, is_gamma, get_reference_data)
+from euphonic.util import (direction_changed, is_gamma, get_reference_data, get_all_origins)
 from euphonic import (ureg, Quantity, Crystal, DebyeWaller, QpointFrequencies,
                       StructureFactor, Spectrum1DCollection)
 
@@ -602,6 +602,88 @@ class QpointPhononModes(QpointFrequencies):
 
         return Spectrum1DCollection(
             dos_bins, all_dos_y_data, metadata=metadata)
+    
+    def calculate_displacement(self, qpt_index: int, mode: Union[int, np.ndarray], disp_amplitude: np.complex128, supercell: np.ndarray,) -> Crystal:
+        """
+        Determine the displacement of each atom in the supercell
+        according to the eigenmode with wavevector :math:`\\mathbf{Q}`
+        and index :math:`\\nu`. According to [1]_ displacement of atom
+        indexed :math:`\\kappa` is:
+
+        .. math::
+
+            \\mathbf{u}(\\kappa,\\mathbf{q},\\nu) = 
+                A
+                \\frac{1}{\\sqrt{M_\\kappa}}
+                \\mathbf{e}_{\\mathbf{q}\\nu\\kappa}
+                \\exp\\left( i\\mathbf{Q}{\\cdot}\\mathbf{r}_{\\kappa} \\right)
+                
+
+                
+
+        Where A is the displacement amplitude, :math:`M_{\\kappa}` is the atom mass,
+        :math:`\\mathbf{e}_{\\mathbf{q}\\nu\\kappa}` is the displacement 
+        of atom :math:`\\kappa` according to the eigenvector of phonon
+        with wavevector :math:`\\mathbf{q}` and band index :math:`\\nu`.
+
+        .. [1] M.T. Dove, Structure and Dynamics, Oxford University Press, Oxford, 2003, pp. 211-212.
+
+
+        Parameters
+        ----------
+        qpt_index
+            Index of the Q vector.
+        mode
+            Index of the mode, or array of amplitudes for each mode.
+            Providing an array allows mixing degenerated modes.
+        disp_amplitude
+            Parameter controlling the amplitude of displacement `A`.
+            Can be complex, the imaginary part will denote phase shift.
+        supercell 
+            Shape (3) integer that defines supercell on which 
+            all atoms will be displaced. Non integers are cast to int.
+            It is an extension of the primitive cell, as in
+            :math:`new_cell = diag(supercell) @ self.crystal.cell_vectors`.
+            
+        Returns
+        -------
+        displaced_structure
+            `Crystal` class, with the original `cell_vectors`
+            and list of displaced atoms within the supercell.      
+
+        """
+
+        # Needed to transform cartesian to crystal coordinates
+        xyz2wyckoff = np.linalg.inv(self.crystal.cell_vectors.magnitude)
+
+        # Handle the mode parameter
+        if isinstance(mode, int):
+            eigenvector = self.eigenvectors[qpt_index, mode]
+        elif isinstance(mode, np.ndarray):
+            if not mode.shape == (self.crystal.n_atoms*3, ):
+                raise ValueError(f'Shape of the mode incorrect. Should be={(self.crystal.n_atoms*3, )}, is={mode.shape}')
+            eigenvector = np.tensordot(self.eigenvectors[qpt_index], mode, axes=([0,0]))
+
+        # Prepare the dataholders for the displaced structures
+        disp_atom_r, disp_atom_type, disp_atom_mass = [], [], []
+        for ev, atom_r, atom_type, atom_mass in zip(eigenvector, self.crystal.atom_r, self.crystal.atom_type, self.crystal.atom_mass):
+            for cell_origin in get_all_origins(supercell):
+                # M. Dove [1] formula
+                u = 1/np.sqrt(atom_mass.magnitude) * ev * disp_amplitude * np.exp(2j*np.pi*np.dot(self.qpts[qpt_index], atom_r+cell_origin))
+                # ev is in Cartesian coordinates, to add to r they need to be transformed to crystal coordinates
+                u = np.einsum('ji,j->i', xyz2wyckoff, u)
+
+                disp_atom_r.append(atom_r + cell_origin + np.real(u))
+                disp_atom_type.append(atom_type)
+                disp_atom_mass.append(atom_mass.magnitude)
+
+        return Crystal(
+            cell_vectors = self.crystal.cell_vectors,
+            atom_r = np.array(disp_atom_r),
+            atom_type = np.array(disp_atom_type),
+            atom_mass = np.array(disp_atom_mass)*ureg(self.crystal.atom_mass_unit)
+        )
+
 
     def to_dict(self) -> Dict[str, Any]:
         """

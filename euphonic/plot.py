@@ -1,4 +1,4 @@
-from typing import Optional, Sequence, Tuple, Union
+from typing import Optional, Sequence, Tuple, Union, Dict
 
 try:
     import matplotlib.pyplot as plt
@@ -17,6 +17,7 @@ import numpy as np
 
 from euphonic import Quantity
 from euphonic.spectra import Spectrum1D, Spectrum1DCollection, Spectrum2D
+from euphonic.crystal import Crystal
 
 def plot_1d_to_axis(spectra: Union[Spectrum1D, Spectrum1DCollection],
                     ax: Axes, labels: Optional[Sequence[str]] = None,
@@ -243,6 +244,77 @@ def plot_2d_to_axis(spectrum: Spectrum2D, ax: Axes,
     _set_x_tick_labels(ax, spectrum.x_tick_labels, spectrum.x_data)
 
     return image
+
+def plot_crystal(crystal: Crystal,
+                    atom_styles: Optional[Dict[str, str]] = None,
+                    bbox: Optional[Dict[str, float]] = None
+                    ) -> Figure:
+    """
+    Plot Crystal object on 3D-axes.
+
+    Parameters
+    ----------
+    crystal
+        `Crystal` class containing crystal structure.
+    atom_styles
+        Dictionary of atom names and the specifications how to
+        plot them. Keys should follow the specification of the
+        `matplotlib.pyplot.scatter` function, which is used for plotting.
+    bbox
+        Dictionary with keys {'xmin', 'xmax', 'ymin', 'ymax', 'zmin', 'zmax'}.
+        Only atoms with fractional coordinates within this box will be plot.
+
+    Returns
+    -------
+    fig : matplotlib.figure.Figure
+        The Figure instance.
+
+    """
+    fig = plt.figure()
+    ax = fig.add_subplot(projection='3d')
+    ax.grid(visible=None)
+    ax.set_proj_type('ortho')
+
+    plot_crystal_to_axis(crystal=crystal, ax=ax,
+                    atom_styles=atom_styles, bbox=bbox)
+    
+    return fig
+    
+
+def plot_crystal_to_axis(crystal: Crystal, ax: Axes,
+                    atom_styles: Optional[Dict[str, str]] = None,
+                    bbox: Optional[Dict[str, float]] = None
+                    ):
+    """
+    Plot Crystal object to 3D-axes.
+
+    Parameters
+    ----------
+    crystal
+        `Crystal` class containing crystal structure.
+    ax
+        Matplotlib axes to which image will be drawn.
+    atom_styles
+        Dictionary of atom names and the specifications how to
+        plot them. Keys should follow the specification of the
+        `matplotlib.pyplot.scatter` function, which is used for plotting.
+    bbox
+        Dictionary with keys {'xmin', 'xmax', 'ymin', 'ymax', 'zmin', 'zmax'}.
+        Only atoms with fractional coordinates within this box will be plot.
+
+    """
+
+    for at_type in np.unique(crystal.atom_type):
+        id = np.where(crystal.atom_type == at_type)
+        x, y, z = np.einsum('ji,kj->ik', crystal.cell_vectors.magnitude, crystal.atom_r[id])
+        
+        if bbox:
+            id_box = (x>bbox['xmin']) & (x<bbox['xmax']) & \
+                     (y>bbox['ymin']) & (y<bbox['ymax']) & \
+                     (z>bbox['zmin']) & (z<bbox['zmax'])
+            x, y, z = x[id_box], y[id_box], z[id_box]
+
+        ax.scatter(x, y, z, **atom_styles[at_type])
 
 
 def plot_2d(spectra: Union[Spectrum2D, Sequence[Spectrum2D]],
