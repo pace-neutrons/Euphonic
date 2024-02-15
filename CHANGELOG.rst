@@ -1,4 +1,11 @@
 `Unreleased <https://github.com/pace-neutrons/Euphonic/compare/v1.3.1...HEAD>`_
+
+- Bug fixes
+
+  - Fixed an error loading QpointPhononModes from JSON when there is a
+    single q-point in the data
+
+
 -------------------------------------------------------------------------------
 
 `v1.3.1 <https://github.com/pace-neutrons/Euphonic/compare/v1.3.0...v1.3.1>`_
