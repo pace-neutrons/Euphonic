@@ -382,6 +382,8 @@ class TestQpointPhononModesSerialisation:
 
     @pytest.mark.parametrize('qpt_ph_modes', [
         get_qpt_ph_modes('quartz'),
+        get_qpt_ph_modes_from_json('quartz',
+                                   'quartz_single_qpoint_phonon_modes.json'),
         get_qpt_ph_modes('Si2-sc-skew'),
         get_qpt_ph_modes('NaCl')])
     def test_serialise_to_json_file(self, qpt_ph_modes, tmpdir):
