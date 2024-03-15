@@ -6,7 +6,7 @@ from collections import OrderedDict
 import numpy as np
 import spglib
 
-from euphonic.util import _cell_vectors_to_volume, _get_unique_elems_and_idx
+from euphonic.util import _cell_vectors_to_volume, _get_unique_elems_and_idx, get_all_origins
 from euphonic.validate import _check_constructor_inputs, _check_unit_conversion
 from euphonic.io import (_obj_to_json_file, _obj_from_json_file,
                          _obj_to_dict, _process_dict)
@@ -141,6 +141,106 @@ class Crystal:
 
     def _cell_volume(self) -> float:
         return _cell_vectors_to_volume(self._cell_vectors)
+    
+    def calculate_displacement(self, mode: np.ndarray, wavevector: np.ndarray, supercell: np.ndarray) -> 'Crystal':
+        """
+        Calculate the displacement of each atom in the supercell
+        according to the displacement vector and wavevector.
+
+        Parameters
+        ----------
+        disp_vector
+            Shape (crystal.n_atoms, 3) float ndarray. May represent the
+            eigenvector of the dynamical matrix, or a weighted sum
+            of eigenvectors.
+        wavevector
+            Shape (3) float array. Wavevector of vibration.
+        supercell 
+            Shape (3) int array that defines supercell on which 
+            all atoms will be displaced. Non integers are cast to int.
+            It is an extension of the primitive cell, as in
+            :math:`new_cell = diag(supercell) @ self.crystal.cell_vectors`.
+            
+        Returns
+        -------
+        displaced_structure
+            `Crystal` object, with the original `cell_vectors`
+            and list of displaced atoms within the supercell.      
+
+            
+        Notes
+        -----
+
+        According to [1]_  displacement :math:`\\mathbf{u}` of an atom indexed :math:`\\kappa`
+        under the eigenvector of a mode with index :math:`\\nu` and wavevector :math:`\\mathbf{q}` is:
+
+        .. math::
+
+            \\mathbf{u}(\\kappa,\\mathbf{q},\\nu) = 
+                \\frac{1}{\\sqrt{M_\\kappa}}
+                \\mathbf{e}_{\\mathbf{q}\\nu\\kappa}
+                \\exp\\left( 2 \\pi i\\mathbf{q}{\\cdot}\\mathbf{r}_{\\kappa} \\right)
+                
+
+            
+        Where :math:`M_{\\kappa}` is the atom mass,
+        :math:`\\mathbf{e}_{\\mathbf{q}\\nu\\kappa}` is the eigenvector
+        of the dynamical matrix.
+
+        In this implementation the :math:`\\nu` index is ignored and the displacement
+        is determined based on the entries of the `disp_vector` parameter
+        that replaces :math:`\\mathbf{e}_{\\mathbf{q}\\nu\\kappa}`.
+
+
+        See 
+
+        .. [1] M.T. Dove, Structure and Dynamics, Oxford University Press, Oxford, 2003, pp. 211-212.
+        """
+        # Handle the mode parameter
+        try:
+            assert mode.shape == (self.n_atoms, 3)
+        except AssertionError:
+            raise ValueError(f'Shape of the mode vector incorrect. Should be: {(self.n_atoms, 3)}, is: {mode.shape}')
+        
+        # Crystal has to be extended on the supercell
+        # to accommodate displaced atoms.
+        # All arrays have to be extended accordingly.
+
+        # Origins 
+        origins = get_all_origins(supercell)
+        disp_origins = np.tile(origins, (len(self.atom_r), 1))
+
+        # Atom types
+        disp_atom_type = np.repeat(self.atom_type, len(origins))
+
+        # Masses on extended cell and mass factor for displacement
+        disp_atom_mass = np.repeat(self.atom_mass.magnitude, len(origins))
+        disp_mass_factor = 1/np.sqrt(disp_atom_mass)
+
+        # Non-displaced atom positions in extended cell
+        disp_atom_r0 = np.repeat(self.atom_r, len(origins), axis=0) + disp_origins
+
+        # Set up eigenvector on extended cell
+        evector = np.repeat(mode, len(origins), axis=0)
+
+        # Phase factor on extended cell
+        QdotR = np.einsum('i,ji->j', wavevector, disp_atom_r0)
+        phase_factor = np.exp(2j*np.pi * QdotR)
+
+        # Determine displacement and cast to crystal coordinates
+        # according to the master formula from [1]
+        u_xyz = np.einsum('i,i,ij->ij', disp_mass_factor, phase_factor, evector)
+        xyz2wyckoff = self.reciprocal_cell().magnitude/(2*np.pi)
+        u_uvw = np.einsum('ij,kj->ki', xyz2wyckoff, u_xyz)
+
+        disp_atom_r = disp_atom_r0 + np.real(u_uvw)
+
+        return Crystal(
+            cell_vectors = self.cell_vectors,
+            atom_r = np.array(disp_atom_r),
+            atom_type = np.array(disp_atom_type),
+            atom_mass = np.array(disp_atom_mass)*ureg(self.atom_mass_unit)
+        )
 
     def get_mp_grid_spec(self,
                          spacing: Quantity = 0.1 * ureg('1/angstrom')
