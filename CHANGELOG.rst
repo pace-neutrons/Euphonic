@@ -1,9 +1,20 @@
 `Unreleased <https://github.com/pace-neutrons/Euphonic/compare/v1.3.1...HEAD>`_
 
+- Requirements
+
+  - ``packaging`` library added to dependencies.
+
 - Bug fixes
 
   - Fixed an error loading QpointPhononModes from JSON when there is a
     single q-point in the data
+
+- Improvements
+
+  - When loading ``.castep_bin`` files, explicitly check the CASTEP
+    version number and give a useful error message if this is < 17.1.
+    (These files are missing information about the unit cell origins,
+    and would previously cause an error with an unhelpful message.)
 
 - Maintenance
 
