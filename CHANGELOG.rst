@@ -22,6 +22,9 @@
     spglib raises TypeError when using empty unit cell and this needs
     handling when looking for high-symmetry labels
 
+  - Compatibility fix for Numpy 2.0 update: avoid some
+    broadcasting issues with array shape returned by ``np.unique``
+
 
 -------------------------------------------------------------------------------
 
