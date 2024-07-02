@@ -25,6 +25,7 @@
   - Compatibility fix for Numpy 2.0 update: avoid some
     broadcasting issues with array shape returned by ``np.unique``
 
+  - Update reference to scipy.integrate.simpson
 
 -------------------------------------------------------------------------------
 
