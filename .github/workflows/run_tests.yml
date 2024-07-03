@@ -29,7 +29,9 @@ jobs:
           channel-priority: true
       - name: Install llvm on Macos
         if: startsWith(matrix.os, 'macos')
-        run: brew install llvm
+        run: |
+          brew install llvm@14
+          echo "CC=gcc-14" >> $GITHUB_ENV
       - name: Update pip and install dependencies
         shell: bash -l {0}
         run: |
