@@ -31,7 +31,11 @@ jobs:
         if: startsWith(matrix.os, 'macos')
         run: |
           brew install llvm@14
-          echo "CC=gcc-14" >> $GITHUB_ENV
+          echo "CC=gcc-14" >> "$GITHUB_ENV"
+      - name: check if CC was set
+        shell: bash -l {0}
+        run: |
+          echo "Value of CC: $CC"
       - name: Update pip and install dependencies
         shell: bash -l {0}
         run: |
