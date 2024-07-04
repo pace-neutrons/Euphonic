@@ -17,7 +17,7 @@ jobs:
        (github.event_name == 'pull_request' && !contains(github.event.pull_request.labels.*.name, 'no_ci'))
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        os: [ubuntu-latest, windows-latest, macos-12]
       fail-fast: false
     runs-on: ${{ matrix.os }}
     steps:
@@ -30,14 +30,7 @@ jobs:
       - name: Install llvm on Macos
         if: startsWith(matrix.os, 'macos')
         run: |
-          brew install llvm@14
-          echo "CC=gcc-12" >> "$GITHUB_ENV"
-          echo "CXX=g++-12" >> "$GITHUB_ENV"
-      - name: check if CC was set
-        shell: bash -l {0}
-        run: |
-          echo "Value of CC: $CC"
-          echo "Value of CXX: $XX"
+          brew install llvm
       - name: Update pip and install dependencies
         shell: bash -l {0}
         run: |
