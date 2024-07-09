@@ -62,7 +62,7 @@ def get_c_extension():
         else:
             link_args = ['-fopenmp']
 
-        compile_args = ['-fopenmp']            
+        compile_args = ['-fopenmp']
 
     else:
         # Linux - assume gcc if CC not set

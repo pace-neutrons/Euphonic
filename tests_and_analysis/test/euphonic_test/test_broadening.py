@@ -3,7 +3,7 @@ import numpy as np
 from numpy.polynomial import Polynomial
 from numpy.random import RandomState
 import numpy.testing as npt
-from scipy.integrate import simps
+from scipy.integrate import simpson
 from scipy.ndimage import gaussian_filter
 
 from euphonic.broadening import (find_coeffs,
@@ -74,10 +74,10 @@ def test_area_unchanged_for_broadened_dos(material, qpt_freqs_json,
                                 fit='cheby-log')
     ebins_centres = ebins.magnitude[:-1] + 0.5*np.diff(ebins.magnitude)
     assert dos.y_data.units == 1/ebins.units
-    dos_area = simps(dos.y_data.magnitude, ebins_centres)
+    dos_area = simpson(dos.y_data.magnitude, x=ebins_centres)
     assert variable_width_broaden.units == 1/ebins.units
-    adaptively_broadened_dos_area = simps(variable_width_broaden.magnitude,
-                                          ebins_centres)
+    adaptively_broadened_dos_area = simpson(
+        variable_width_broaden.magnitude, x=ebins_centres)
     assert adaptively_broadened_dos_area == pytest.approx(dos_area, rel=0.01)
 
 

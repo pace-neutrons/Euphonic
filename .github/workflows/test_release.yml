@@ -10,7 +10,7 @@ jobs:
   test:
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        os: [ubuntu-latest, windows-latest, macos-12]
       fail-fast: false
     runs-on: ${{ matrix.os }}
     steps:
@@ -22,7 +22,8 @@ jobs:
           channel-priority: true
       - name: Install llvm on Macos
         if: startsWith(matrix.os, 'macos')
-        run: brew install llvm
+        run: |
+          brew install llvm
       - name: Update pip and install dependencies
         shell: bash -l {0}
         run: |
