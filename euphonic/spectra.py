@@ -565,8 +565,9 @@ class Spectrum1D(Spectrum):
             metadata['species'] = element
         metadata['label'] = element
 
-        return cls(data['dos_bins']*ureg(data['dos_bins_unit']),
-                   data['dos'][element]*ureg(data['dos_unit']),
+        return cls(ureg.Quantity(data["dos_bins"],
+                                 units=data["dos_bins_unit"]),
+                   ureg.Quantity(data["dos"][element], units=data["dos_unit"]),
                    metadata=metadata)
 
     @overload
@@ -645,7 +646,8 @@ class Spectrum1D(Spectrum):
                 self.y_data.magnitude,
                 [self.get_bin_centres().magnitude],
                 [x_width.to(self.x_data_unit).magnitude],
-                shape=shape, method=method) * ureg(self.y_data_unit)
+                shape=shape, method=method)
+            y_broadened = ureg.Quantity(y_broadened, units=self.y_data_unit)
 
         elif isinstance(x_width, Callable):
             self.assert_regular_bins(message=(
@@ -754,9 +756,10 @@ class SpectrumCollectionMixin(ABC):
         metadata = copy.deepcopy(self.metadata)
         metadata.pop('line_data', None)
         metadata.update(self._tidy_metadata())
-        summed_s_data = np.sum(self._get_raw_spectrum_data(), axis=0
-                               ) * ureg(self._get_internal_spectrum_data_unit()
-                                        ).to(self._get_spectrum_data_unit())
+        summed_s_data = ureg.Quantity(
+            np.sum(self._get_raw_spectrum_data(), axis=0),
+            units=self._get_internal_spectrum_data_unit()
+        ).to(self._get_spectrum_data_unit())
         return Spectrum1D(
             **self._get_bin_kwargs(),
             **{self._spectrum_data_name(): summed_s_data},
@@ -970,8 +973,10 @@ class SpectrumCollectionMixin(ABC):
             group_i_metadata = self._tidy_metadata(idxs)
             group_metadata['line_data'][i] = group_i_metadata
             new_s_data[i] = np.sum(self._get_raw_spectrum_data()[idxs], axis=0)
-        new_s_data = new_s_data*ureg(self._get_internal_spectrum_data_unit()).to(
-            self._get_spectrum_data_unit())
+
+        new_s_data = ureg.Quantity(new_s_data,
+                                   units=self._get_internal_spectrum_data_unit()
+                                   ).to(self._get_spectrum_data_unit())
 
         new_data = self.copy()
         new_data._set_spectrum_data(new_s_data)
@@ -1253,8 +1258,8 @@ class Spectrum1DCollection(SpectrumCollectionMixin,
                 metadata['line_data'][i]['species'] = species
             metadata['line_data'][i]['label'] = species
         return Spectrum1DCollection(
-            data['dos_bins']*ureg(data['dos_bins_unit']),
-            y_data*ureg(data['dos_unit']),
+            ureg.Quantity(data['dos_bins'], units=data['dos_bins_unit']),
+            ureg.Quantity(y_data, units=data['dos_unit']),
             metadata=metadata)
 
     @overload
@@ -1340,7 +1345,7 @@ class Spectrum1DCollection(SpectrumCollectionMixin,
                     method=method)
 
             new_spectrum = self.copy()
-            new_spectrum.y_data = y_broadened * ureg(self.y_data_unit)
+            new_spectrum.y_data = ureg.Quantity(y_broadened, units=self.y_data_unit)
             return new_spectrum
 
         elif isinstance(x_width, Callable):
@@ -1552,7 +1557,7 @@ class Spectrum2D(Spectrum):
                                              method=method)
             spectrum = Spectrum2D(np.copy(self.x_data),
                                   np.copy(self.y_data),
-                                  z_broadened*ureg(self.z_data_unit),
+                                  ureg.Quantity(z_broadened, units=self.z_data_unit),
                                   copy.copy(self.x_tick_labels),
                                   copy.deepcopy(self.metadata))
         else:
