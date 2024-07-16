@@ -1,7 +1,7 @@
 name: Build and upload PyPI wheels for ARM Mac
 
 on:
-  workflow_dispatch:
+  push:
 
 jobs:
   build:
@@ -22,6 +22,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          ref: v1.3.2
           fetch-depth: 0 # Ensure tags are fetched for versioning
       - name: Setup Python ${{ matrix.python-version }} with Conda
         uses: conda-incubator/setup-miniconda@v3
