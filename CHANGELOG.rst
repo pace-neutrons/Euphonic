@@ -28,11 +28,7 @@
   - Update reference to scipy.integrate.simpson (scipy.integrate.simps
     is deprecated)
 
-  - Mac tests and builds are running against "macos-12" github runner
-    instead of "macos-latest", in order to test properly against
-    Brille. This should be restored to "macos-latest" when Brille
-    build system is updated and gives consistent results with
-    win/linux.
+  - Filter out spglib deprecation warnings caused by SeeK-path.
 
 -------------------------------------------------------------------------------
 

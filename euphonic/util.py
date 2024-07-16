@@ -157,6 +157,7 @@ def get_qpoint_labels(qpts: np.ndarray,
         Tick labels and the q-point indices that they apply to
     """
     xlabels, qpts_with_labels = _recip_space_labels(qpts, cell=cell)
+
     for i, label in enumerate(xlabels):
         if label == 'GAMMA':
             xlabels[i] = r'$\Gamma$'
@@ -567,7 +568,12 @@ def _recip_space_labels(qpts: np.ndarray,
         sym_label_to_coords = _generic_qpt_labels()
     else:
         try:
-            sym_label_to_coords = seekpath.get_path(cell)["point_coords"]
+            with warnings.catch_warnings():
+                # SeeK-path is raising spglib 2.5.0 deprecation warnings, we
+                # don't care to see those for now
+                warnings.simplefilter("ignore", category=DeprecationWarning)
+                sym_label_to_coords = seekpath.get_path(cell)["point_coords"]
+
         except (SymmetryDetectionError, TypeError) as err:
             if isinstance(err, TypeError):
                 # There is a particular TypeError we expect to see when the
