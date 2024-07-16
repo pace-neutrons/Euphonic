@@ -1,4 +1,8 @@
-`Unreleased <https://github.com/pace-neutrons/Euphonic/compare/v1.3.1...HEAD>`_
+`Unreleased <https://github.com/pace-neutrons/Euphonic/compare/v1.3.2...HEAD>`_
+-------------------------------------------------------------------------------
+
+`v1.3.2 <https://github.com/pace-neutrons/Euphonic/compare/v1.3.1...v1.3.2>`_
+-----------------------------------------------------------------------------
 
 - Requirements
 
@@ -30,7 +34,6 @@
 
   - Filter out spglib deprecation warnings caused by SeeK-path.
 
--------------------------------------------------------------------------------
 
 `v1.3.1 <https://github.com/pace-neutrons/Euphonic/compare/v1.3.0...v1.3.1>`_
 -----------------------------------------------------------------------------
