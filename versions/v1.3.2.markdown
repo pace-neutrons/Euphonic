@@ -1,0 +1,63 @@
+---
+layout: version
+schemadotorg:
+  '@context': https://schema.org
+  '@type': SoftwareSourceCode
+  author:
+  - '@id': https://orcid.org/0000-0002-0926-2942
+    '@type': Person
+    familyName: Fair
+    givenName: Rebecca L.
+  - '@type': Person
+    familyName: Farmer
+    givenName: Jessica L.
+  - '@id': https://orcid.org/0000-0001-5272-6530
+    '@type': Person
+    familyName: Jackson
+    givenName: Adam J.
+  - '@type': Person
+    familyName: King
+    givenName: James C.
+  - '@id': https://orcid.org/0000-0003-3012-6053
+    '@type': Person
+    familyName: Le
+    givenName: Manh D.
+  - '@id': https://orcid.org/0000-0001-5756-6433
+    '@type': Person
+    familyName: Perring
+    givenName: Toby G.
+  - '@type': Person
+    familyName: Pettitt
+    givenName: Connor
+  - '@id': https://orcid.org/0000-0002-8715-5835
+    '@type': Person
+    familyName: Refson
+    givenName: Keith
+  - '@id': https://orcid.org/0000-0002-2787-8054
+    '@type': Person
+    familyName: Tucker
+    givenName: Gregory S.
+  - '@id': https://orcid.org/0000-0001-5716-7184
+    '@type': Person
+    familyName: Voneshen
+    givenName: David J.
+  - '@type': Person
+    familyName: Wilkins
+    givenName: Jacob S.
+  codeRepository: https://github.com/pace-neutrons/Euphonic
+  datePublished: '2024-01-30'
+  description: Euphonic is a Python package for efficient simulation of phonon bandstructures,
+    density of states and inelastic neutron scattering intensities from force constants
+  identifier: https://doi.org/10.5286/SOFTWARE/EUPHONIC/1.3.2
+  keywords:
+  - Python
+  - physics
+  - phonons
+  - inelastic neutron scattering
+  - CASTEP
+  - Phonopy
+  license: https://spdx.org/licenses/GPL-3.0-only
+  name: Euphonic
+  url: https://euphonic.readthedocs.io/en/v1.3.2
+  version: 1.3.1
+---
