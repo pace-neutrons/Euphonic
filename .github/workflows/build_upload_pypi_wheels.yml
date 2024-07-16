@@ -9,12 +9,12 @@ jobs:
   build:
     strategy:
       matrix:
-        os: [windows-latest, macos-latest, ubuntu-latest]
+        os: [windows-latest, macos-13, ubuntu-latest]
         python-version: ['3.8', '3.9', '3.10', '3.11']
         include:
           - os: windows-latest
             wheelname: win
-          - os: macos-latest
+          - os: macos-13
             wheelname: macos
           - os: ubuntu-latest
             wheelname: manylinux
