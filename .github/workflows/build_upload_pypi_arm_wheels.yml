@@ -1,7 +1,7 @@
 name: Build and upload PyPI wheels for ARM Mac
 
 on:
-  push:
+  workflow_dispatch:
 
 jobs:
   build:
