@@ -111,7 +111,7 @@ def read_phonon_dos_data(
     _, idx = np.unique(atom_type, return_index=True)
     unique_types = atom_type[np.sort(idx)]
     for i, species in enumerate(unique_types):
-        dos_dict[species] = dos_data[:, i + 2]/dos_conv
+        dos_dict[str(species)] = dos_data[:, i + 2]/dos_conv
 
     return data_dict
 
