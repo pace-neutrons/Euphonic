@@ -147,7 +147,7 @@ def run_setup():
         ],
         extras_require={
             'matplotlib': ['matplotlib>=3.8.0'],
-            'phonopy_reader': ['h5py>=3.6.0', 'PyYAML>=3.13'],
+            'phonopy_reader': ['h5py>=3.6.0', 'PyYAML>=6.0'],
             'brille': ['brille>=0.7.0']
         },
         entry_points={'console_scripts': [
