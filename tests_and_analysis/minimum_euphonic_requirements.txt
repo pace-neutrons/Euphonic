@@ -5,5 +5,5 @@ seekpath==1.1.0
 pint==0.22
 matplotlib==3.8
 h5py==3.6
-PyYAML==3.13
+PyYAML==6.0
 threadpoolctl==1.0.0
