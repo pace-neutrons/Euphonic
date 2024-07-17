@@ -1,9 +1,10 @@
+from importlib.resources import files
+
 from . import _version
 __version__ = _version.get_versions()['version']
 
 import pint
 from pint import UnitRegistry
-from importlib_resources import files
 
 # Create ureg here so it is only created once
 ureg = UnitRegistry()
