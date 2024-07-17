@@ -1,5 +1,6 @@
 from collections import OrderedDict
 from functools import reduce
+from importlib.resources import files
 import itertools
 import json
 import math
@@ -11,7 +12,6 @@ import warnings
 import numpy as np
 import seekpath
 from seekpath.hpkot import SymmetryDetectionError
-from importlib_resources import files
 from pint import UndefinedUnitError
 
 from euphonic import ureg, Quantity

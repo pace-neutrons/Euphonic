@@ -12,7 +12,7 @@ or it can be read programatically as follows:
 
   import yaml
   import euphonic
-  from importlib_resources import files
+  from importlib.resources import files
 
   with open(files(euphonic) / 'CITATION.cff') as fp:
       citation_data = yaml.safe_load(fp)
