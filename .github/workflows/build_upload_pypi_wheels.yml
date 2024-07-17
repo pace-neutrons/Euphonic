@@ -19,10 +19,10 @@ jobs:
           - os: ubuntu-latest
             wheelname: manylinux
           # Build wheels against the lowest compatible Numpy version
-          - python-version: 3.10
+          - python-version: '3.10'
             manylinux-version-tag: cp310
             numpy-version: 1.21.3
-          - python-version: 3.11
+          - python-version: '3.11'
             manylinux-version-tag: cp311
             numpy-version: 1.23.2
       fail-fast: false
