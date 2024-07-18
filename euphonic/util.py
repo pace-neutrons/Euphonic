@@ -1,4 +1,3 @@
-from collections import OrderedDict
 from functools import reduce
 from importlib.resources import files
 import itertools
@@ -445,15 +444,14 @@ def _cell_vectors_to_volume(cell_vectors: Quantity) -> Quantity:
 
 def _get_unique_elems_and_idx(
         all_elems: Sequence[tuple[int | str, ...]]
-        ) -> 'OrderedDict[tuple[int | str, ...], np.ndarray]':
+        ) -> dict[tuple[int | str, ...], np.ndarray]:
     """
     Returns an ordered dictionary mapping the unique sequences of
     elements to their indices
     """
-    # Abuse OrderedDict to get ordered set
-    unique_elems = OrderedDict(
-        zip(all_elems, itertools.cycle([None]))).keys()
-    return OrderedDict((
+    # Abuse dict keys to get an "ordered set" of elems for iteration
+    unique_elems = dict(zip(all_elems, itertools.cycle([None]))).keys()
+    return dict((
         elem,
         np.asarray([i for i, other_elem in enumerate(all_elems)
                     if elem == other_elem])
