@@ -2,7 +2,6 @@ import argparse
 import sys
 import os
 import time
-from typing import Tuple, List, Union
 
 import pytest
 import coverage
@@ -14,7 +13,7 @@ def main():
     (do_report_coverage, do_report_tests, tests,
      markers_to_run) = _get_parsed_args(test_dir)
 
-    pytest_options: List[str] = _build_pytest_options(
+    pytest_options: list[str] = _build_pytest_options(
         reports_dir, do_report_tests, tests, markers_to_run)
 
     test_exit_code: int = run_tests(
@@ -24,7 +23,7 @@ def main():
     sys.exit(test_exit_code)
 
 
-def _get_test_and_reports_dir() -> Tuple[str, str]:
+def _get_test_and_reports_dir() -> tuple[str, str]:
     """
     Get the directory that holds the tests and the directory to write
     reports to. If the directory to write reports to isn't present, it
@@ -44,7 +43,7 @@ def _get_test_and_reports_dir() -> Tuple[str, str]:
     return test_dir, reports_dir
 
 
-def _get_parsed_args(test_dir: str) -> Tuple[bool, bool, str, str]:
+def _get_parsed_args(test_dir: str) -> tuple[bool, bool, str, str]:
     """
     Get the arguments parsed to this script and return some formatted
     variables.
@@ -81,7 +80,7 @@ def _get_parsed_args(test_dir: str) -> Tuple[bool, bool, str, str]:
 
 
 def _build_pytest_options(reports_dir: str, do_report_tests: bool,
-                          tests: str, markers: str) -> List[str]:
+                          tests: str, markers: str) -> list[str]:
     """
     Build the options for pytest to use.
 
@@ -93,16 +92,16 @@ def _build_pytest_options(reports_dir: str, do_report_tests: bool,
         Whether to write the test reports to junit xml or not.
     tests : str
         The tests to run e.g. script_tests or test_bands_data.py
-    markers : Union[str, None]
+    markers : str|None
         The markers for pytest tests to run e.g. "unit" or "unit or
         integration"
 
     Returns
     -------
-    List[str]
+    list[str]
         A list of options to run pytest with.
     """
-    options: List[str] = [tests]
+    options: list[str] = [tests]
     # Add reporting of test results
     if do_report_tests:
         # We may have multiple reports, so get a unique filename
@@ -116,14 +115,14 @@ def _build_pytest_options(reports_dir: str, do_report_tests: bool,
     return options
 
 
-def run_tests(pytest_options: List[str], do_report_coverage: bool,
+def run_tests(pytest_options: list[str], do_report_coverage: bool,
               reports_dir: str, test_dir: str) -> int:
     """
     Run the tests and record coverage if selected.
 
     Parameters
     ----------
-    pytest_options : List[str]
+    pytest_options : list[str]
         The options to pass to pytest
     do_report_coverage : bool
         If true report coverage to coverage*.xml
@@ -143,7 +142,7 @@ def run_tests(pytest_options: List[str], do_report_coverage: bool,
     pytest_options = ['--import-mode=append'] + pytest_options
 
     # Start recording coverage if requested
-    cov: Union[coverage.Coverage, None] = None
+    cov: coverage.Coverage | None = None
     if do_report_coverage:
         coveragerc_filepath: str = os.path.join(test_dir, ".coveragerc")
         cov = coverage.Coverage(config_file=coveragerc_filepath)

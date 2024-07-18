@@ -6,7 +6,7 @@ import json
 import math
 import os.path
 import sys
-from typing import Dict, Sequence, Union, Tuple, Optional, List
+from typing import Sequence, Optional
 import warnings
 
 import numpy as np
@@ -52,7 +52,7 @@ def direction_changed(qpts: np.ndarray, tolerance: float = 5e-6
     return np.abs(np.abs(dot) - modq[1:]*modq[:-1]) > tolerance
 
 
-def is_gamma(qpt: np.ndarray) -> Union[bool, np.ndarray]:
+def is_gamma(qpt: np.ndarray) -> bool | np.ndarray:
     """
     Determines whether the given point(s) are gamma points
 
@@ -73,7 +73,7 @@ def is_gamma(qpt: np.ndarray) -> Union[bool, np.ndarray]:
     return isgamma
 
 
-def mp_grid(grid: Tuple[int, int, int]) -> np.ndarray:
+def mp_grid(grid: tuple[int, int, int]) -> np.ndarray:
     """
     Returns the q-points on a MxNxL Monkhorst-Pack grid specified by
     grid
@@ -101,8 +101,8 @@ def mp_grid(grid: Tuple[int, int, int]) -> np.ndarray:
     return np.column_stack((qh, qk, ql))
 
 
-def get_all_origins(max_xyz: Tuple[int, int, int],
-                    min_xyz: Tuple[int, int, int] = (0, 0, 0),
+def get_all_origins(max_xyz: tuple[int, int, int],
+                    min_xyz: tuple[int, int, int] = (0, 0, 0),
                     step: int = 1) -> np.ndarray:
     """
     Given the max/min number of cells in each direction, get a list of
@@ -133,10 +133,10 @@ def get_all_origins(max_xyz: Tuple[int, int, int],
 
 
 def get_qpoint_labels(qpts: np.ndarray,
-                      cell: Optional[Tuple[List[List[float]],
-                                           List[List[float]],
-                                           List[int]]] = None
-                      ) -> List[Tuple[int, str]]:
+                      cell: Optional[tuple[list[list[float]],
+                                           list[list[float]],
+                                           list[int]]] = None
+                      ) -> list[tuple[int, str]]:
     """
     Gets q-point labels (e.g. GAMMA, X, L) for the q-points at which the
     path through reciprocal space changes direction, or where a point
@@ -170,7 +170,7 @@ def get_qpoint_labels(qpts: np.ndarray,
 
 def get_reference_data(collection: str = 'Sears1992',
                        physical_property: str = 'coherent_scattering_length'
-                       ) -> Dict[str, Quantity]:
+                       ) -> dict[str, Quantity]:
     """
     Get physical data as a dict of (possibly-complex) floats from reference
     data.
@@ -204,7 +204,7 @@ def get_reference_data(collection: str = 'Sears1992',
 
     Returns
     -------
-    Dict[str, Quantity]
+    dict[str, Quantity]
         Requested data as a dict with string keys and (possibly-complex)
         float Quantity values. String or None items of the original data file
         will be omitted.
@@ -304,7 +304,7 @@ def convert_fc_phases(force_constants: np.ndarray, atom_r: np.ndarray,
                       sc_atom_r: np.ndarray, uc_to_sc_atom_idx: np.ndarray,
                       sc_to_uc_atom_idx: np.ndarray, sc_matrix: np.ndarray,
                       cell_origins_tol: float = 1e-5
-                      ) -> Tuple[np.ndarray, np.ndarray]:
+                      ) -> tuple[np.ndarray, np.ndarray]:
     """
     Convert from a force constants matrix which uses the atom
     coordinates as r in the e^-iq.r phase (Phonopy-like), to a
@@ -390,7 +390,7 @@ def convert_fc_phases(force_constants: np.ndarray, atom_r: np.ndarray,
     # atom 0, so the same cell origins can be used for all atoms
     cell_origins_map = np.zeros((n_atoms_sc), dtype=np.int32)
     # Get origins of adjacent supercells in prim cell frac coords
-    sc_origins =  get_all_origins((2,2,2), min_xyz=(-1,-1,-1))
+    sc_origins = get_all_origins((2, 2, 2), min_xyz=(-1, -1, -1))
     sc_origins_pcell = np.einsum('ij,jk->ik', sc_origins, sc_matrix)
     for i in range(n_atoms_sc):
         co_idx = np.where(
@@ -429,7 +429,7 @@ def convert_fc_phases(force_constants: np.ndarray, atom_r: np.ndarray,
         sc_relative_idx = _get_supercell_relative_idx(cell_origins, sc_matrix)
         fc_converted[i, sc_relative_idx[cell_idx]] = fc_tmp
 
-    fc_converted =  np.reshape(np.transpose(
+    fc_converted = np.reshape(np.transpose(
         fc_converted,
         axes=[1, 0, 3, 2, 4]), (n_cells, 3*n_atoms_uc, 3*n_atoms_uc))
     return fc_converted, cell_origins
@@ -444,8 +444,8 @@ def _cell_vectors_to_volume(cell_vectors: Quantity) -> Quantity:
 
 
 def _get_unique_elems_and_idx(
-        all_elems: Sequence[Tuple[Union[int, str], ...]]
-        ) -> 'OrderedDict[Tuple[Union[int, str], ...], np.ndarray]':
+        all_elems: Sequence[tuple[int | str, ...]]
+        ) -> 'OrderedDict[tuple[int | str, ...], np.ndarray]':
     """
     Returns an ordered dictionary mapping the unique sequences of
     elements to their indices
@@ -461,7 +461,7 @@ def _get_unique_elems_and_idx(
 
 
 def _calc_abscissa(reciprocal_cell: Quantity, qpts: np.ndarray
-                       ) -> Quantity:
+                   ) -> Quantity:
     """
     Calculates the distance between q-points (e.g. to use as a plot
     x-coordinate)
@@ -519,10 +519,10 @@ def _calc_abscissa(reciprocal_cell: Quantity, qpts: np.ndarray
 
 
 def _recip_space_labels(qpts: np.ndarray,
-                        cell: Optional[Tuple[List[List[float]],
-                                             List[List[float]],
-                                             List[int]]]
-                        ) -> Tuple[np.ndarray, np.ndarray]:
+                        cell: Optional[tuple[list[list[float]],
+                                             list[list[float]],
+                                             list[int]]]
+                        ) -> tuple[np.ndarray, np.ndarray]:
     """
     Gets q-points point labels (e.g. GAMMA, X, L) for the q-points at
     which the path through reciprocal space changes direction or where a
@@ -592,7 +592,7 @@ def _recip_space_labels(qpts: np.ndarray,
     return labels, qpts_with_labels
 
 
-def _generic_qpt_labels() -> Dict[str, Tuple[float, float, float]]:
+def _generic_qpt_labels() -> dict[str, tuple[float, float, float]]:
     """
     Returns a dictionary relating fractional q-point label strings to
     their coordinates e.g. '1/4 1/2 1/4' = [0.25, 0.5, 0.25]. Used for
@@ -612,7 +612,7 @@ def _generic_qpt_labels() -> Dict[str, Tuple[float, float, float]]:
 
 
 def _get_qpt_label(qpt: np.ndarray,
-                   point_labels: Dict[str, Tuple[float, float, float]]
+                   point_labels: dict[str, tuple[float, float, float]]
                    ) -> str:
     """
     Gets a label for a particular q-point, based on the high symmetry
