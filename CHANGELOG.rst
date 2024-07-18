@@ -1,6 +1,33 @@
 `Unreleased <https://github.com/pace-neutrons/Euphonic/compare/v1.3.2...HEAD>`_
 -------------------------------------------------------------------------------
 
+- Requirements
+
+  - Python 3.8, 3.9 is no longer supported
+
+  - Python 3.12 is supported
+
+  - Python 3.10+ requires numpy >= 1.21.3
+
+  - importlib_resources backport is no longer required
+
+  - Some other dependency requirements have been increased because
+    older versions are difficult to test against Python 3.10:
+
+    - Minimum version of matplotlib increased from 3.2 to 3.8
+
+    - Minimum version of Pint increased from 0.19 to 0.22
+
+    - Minimum version of PyYAML increased from 3.13 to 6.0
+
+    - Minimum version of h5py increaased form 2.10 to 3.6
+
+- Big fixes
+
+  - Metadata strings from Castep-imported PDOS data are now converted
+    from numpy strings to native Python strings.
+
+
 `v1.3.2 <https://github.com/pace-neutrons/Euphonic/compare/v1.3.1...v1.3.2>`_
 -----------------------------------------------------------------------------
 
