@@ -1,4 +1,4 @@
-numpy==1.24.0
+numpy==1.24.4
 scipy==1.10.0
 spglib==1.9.4.2
 seekpath==1.1.0
