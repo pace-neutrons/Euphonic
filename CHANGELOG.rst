@@ -7,12 +7,12 @@
 
   - Python 3.12 is supported
 
-  - Python 3.10+ requires numpy >= 1.21.3
-
   - importlib_resources backport is no longer required
 
-  - Some other dependency requirements have been increased because
-    older versions are difficult to test against Python 3.10:
+  - Some other dependency requirements have been increased in order
+    to simplify maintenance and testing:
+
+    - Minimum version of numpy increased from 1.19.3 to 1.24.0
 
     - Minimum version of matplotlib increased from 3.2 to 3.8
 

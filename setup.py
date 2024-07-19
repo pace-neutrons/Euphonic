@@ -139,7 +139,8 @@ def run_setup():
         include_package_data=True,
         install_requires=[
             'packaging',
-            'scipy>=1.10',  # requires numpy >= 1.19.5; py3.10 requires 1.21.3
+            'numpy>=1.24.0',
+            'scipy>=1.10',
             'seekpath>=1.1.0',
             'spglib>=1.9.4',
             'pint>=0.22',
