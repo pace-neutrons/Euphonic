@@ -315,7 +315,7 @@ class TestSpectrum2DMethods:
             check_spectrum2d(spectrum, expected_spectrum)
 
     @pytest.mark.parametrize(
-        'args, spectrum2d_file, broadened_spectrum2d_file, expectation', [
+        'args, spectrum2d_file, broadened_spectrum2d_file, context', [
             (({'x_width': 0.1*ureg('1/angstrom'), 'method': 'convolve'}),
              'quartz_bandstructure_sqw.json',
              'quartz_bandstructure_0.1ang_xbroaden_sqw.json',
@@ -369,10 +369,10 @@ class TestSpectrum2DMethods:
               does_not_raise())),
                              ])
     def test_broaden(self, args, spectrum2d_file, broadened_spectrum2d_file,
-                     expectation):
+                     context):
         spec2d = get_spectrum2d(spectrum2d_file)
         expected_broadened_spec2d = get_spectrum2d(broadened_spectrum2d_file)
-        with expectation:
+        with context:
             broadened_spec2d = spec2d.broaden(**args)
         check_spectrum2d(broadened_spec2d, expected_broadened_spec2d)
 
