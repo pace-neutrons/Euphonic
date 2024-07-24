@@ -148,7 +148,7 @@ def get_ax_image_data(ax: 'matplotlib.axes.Axes'
     data['cmap'] = im.cmap.name
     data['extent'] = [float(x) for x in im.get_extent()]
     data['size'] = [int(x) for x in im.get_size()]
-    data['data_1'] = list(map(float, data_slice_1))
-    data['data_2'] = list(map(float, data_slice_2))
+    data['data_1'] = list(map(float, data_slice_1.filled(np.nan)))
+    data['data_2'] = list(map(float, data_slice_2.filled(np.nan)))
 
     return data

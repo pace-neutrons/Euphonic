@@ -9,9 +9,14 @@ import numpy.testing as npt
 from euphonic import ureg
 from euphonic.spectra import Spectrum1D
 from tests_and_analysis.test.utils import (
-    get_data_path, get_castep_path, check_unit_conversion,
-    check_json_metadata, check_property_setters, get_spectrum_from_text,
-    check_spectrum_text_header)
+    check_unit_conversion,
+    check_spectrum_text_header,
+    check_json_metadata,
+    check_property_setters,
+    does_not_raise,
+    get_castep_path,
+    get_data_path,
+    get_spectrum_from_text)
 
 
 class ExpectedSpectrum1D:
@@ -367,26 +372,33 @@ class TestSpectrum1DMethods:
             spec1d.split(**args)
 
     @pytest.mark.parametrize(
-        'args, spectrum1d_file, broadened_spectrum1d_file', [
+        'args, spectrum1d_file, broadened_spectrum1d_file, context', [
         ((1*ureg('meV'), {}),
         'methane_pdos_index_1.json',
-        'methane_pdos_index_1_1meV_gauss_broaden.json'),
+         'methane_pdos_index_1_1meV_gauss_broaden.json',
+         does_not_raise()),
         ((1*ureg('meV'), {}),
         'quartz_666_dos.json',
-        'quartz_666_1meV_gauss_broaden_dos.json'),
+         'quartz_666_1meV_gauss_broaden_dos.json',
+         does_not_raise()),
         ((1*ureg('meV'), {'shape':'gauss'}),
-        'quartz_666_dos.json',
-        'quartz_666_1meV_gauss_broaden_dos.json'),
+         'quartz_666_dos.json',
+         'quartz_666_1meV_gauss_broaden_dos.json',
+         does_not_raise()),
         ((1*ureg('meV'), {'shape': 'lorentz'}),
-        'quartz_666_dos.json',
-        'quartz_666_1meV_lorentz_broaden_dos.json'),
+         'quartz_666_dos.json',
+         'quartz_666_1meV_lorentz_broaden_dos.json',
+         does_not_raise()),
         ((1*ureg('meV'), {'method': 'convolve'}),
          'toy_quartz_cropped_uneven_dos.json',
-         'toy_quartz_cropped_uneven_broaden_dos.json')])
-    def test_broaden(self, args, spectrum1d_file, broadened_spectrum1d_file):
+         'toy_quartz_cropped_uneven_broaden_dos.json',
+         pytest.warns(UserWarning, match="x_data bin widths are not equal"))])
+    def test_broaden(
+            self, args, spectrum1d_file, broadened_spectrum1d_file, context):
         spec1d = get_spectrum1d(spectrum1d_file)
         expected_broadened_spec1d = get_spectrum1d(broadened_spectrum1d_file)
-        broadened_spec1d = spec1d.broaden(args[0], **args[1])
+        with context:
+            broadened_spec1d = spec1d.broaden(args[0], **args[1])
         check_spectrum1d(broadened_spec1d, expected_broadened_spec1d)
 
     def test_broaden_invalid_shape_raises_value_error(self):
@@ -403,11 +415,6 @@ class TestSpectrum1DMethods:
         spec1d = get_spectrum1d('toy_quartz_cropped_uneven_dos.json')
         with pytest.raises(ValueError):
             spec1d.broaden(1*ureg('meV'))
-
-    def test_broaden_uneven_bins_and_explicit_convolve_warns(self):
-        spec1d = get_spectrum1d('toy_quartz_cropped_uneven_dos.json')
-        with pytest.warns(UserWarning):
-            spec1d.broaden(1*ureg('meV'), method='convolve')
 
     def test_variable_broadening_consistent(self):
         """Check variable broadening is consistent with fixed-width method"""
@@ -506,8 +513,8 @@ class TestSpectrum1DMethods:
     def test_mul(self):
         spec = get_spectrum1d('xsq_spectrum1d.json')
 
-        npt.assert_allclose(spec.y_data * 2.,
-                            (spec * 2.).y_data)
+        npt.assert_allclose(spec.y_data.magnitude * 2.,
+                            (spec * 2.).y_data.magnitude)
 
         check_spectrum1d(spec, (spec * 2.) * 0.5)
 

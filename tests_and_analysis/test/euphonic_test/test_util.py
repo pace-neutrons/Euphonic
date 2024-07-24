@@ -1,3 +1,5 @@
+"""Unit tests for euphonic.util"""
+
 import json
 import os
 import sys
@@ -9,7 +11,7 @@ import numpy.testing as npt
 from euphonic import ureg
 from euphonic.util import (direction_changed, mp_grid, get_qpoint_labels,
                            mode_gradients_to_widths, convert_fc_phases)
-from tests_and_analysis.test.utils import get_data_path
+from tests_and_analysis.test.utils import does_not_raise, get_data_path
 from tests_and_analysis.test.euphonic_test.test_crystal import get_crystal
 from tests_and_analysis.test.euphonic_test.test_force_constants import (
     get_fc_path, get_fc)
@@ -42,30 +44,42 @@ class TestMPGrid:
 
 class TestGetQptLabels:
 
-    @pytest.mark.parametrize('qpts, kwargs, expected_labels', [
-        (np.array([[0.5, 0.5, 0.5], [0.0, 0.0, 0.5]]),
-         {'cell': get_crystal('quartz').to_spglib_cell()},
-         [(0, ''), (1, 'A')]),
-        (np.array([[0.5, 0.5, 0.5], [0.4, 0.4, 0.5], [0.3, 0.3, 0.5],
-                   [0.2, 0.2, 0.5], [0.1, 0.1, 0.5], [0.0, 0.0, 0.5]]),
-         {'cell': get_crystal('quartz').to_spglib_cell()},
-         [(0, ''), (5, 'A')]),
-        (np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 0.1], [0.0, 0.0, 0.2],
-                   [0.0, 0.0, 0.3], [0.0, 0.0, 0.4], [0.0, 0.0, 0.5],
-                   [0.125, 0.25, 0.5], [0.25, 0.5, 0.5], [0.375, 0.75, 0.5]]),
-         {},
-         [(0, '0 0 0'), (5, '0 0 1/2'), (8, '3/8 3/4 1/2')]),
-        (np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 0.1], [0.0, 0.0, 0.2],
-                   [0.0, 0.0, 0.3], [0.0, 0.0, 0.4], [0.0, 0.0, 0.5],
-                   [0.125, 0.25, 0.5], [0.25, 0.5, 0.5], [0.375, 0.75, 0.5]]),
-         {'cell': get_crystal('quartz_cv_only').to_spglib_cell()},
-         [(0, '0 0 0'), (5, '0 0 1/2'), (8, '3/8 3/4 1/2')]),
-        (np.array([[0.0, 0., 0.], [0.25, 0., 0.], [0.25, 0., 0.], [0.3, 0., 0.],
-                   [0.5, 0., 0.], [0.5, 0.1, 0.], [0.5, 0.25, 0.]]),
-         {},
-         [(0, '0 0 0'), (1, '1/4 0 0'), (4, '1/2 0 0'), (6, '1/2 1/4 0')])])
-    def test_get_qpt_labels(self, qpts, kwargs, expected_labels):
-        labels = get_qpoint_labels(qpts, **kwargs)
+    @pytest.mark.parametrize(
+        'qpts, kwargs, expected_labels, context',
+        [(np.array([[0.5, 0.5, 0.5], [0.0, 0.0, 0.5]]),
+          {'cell': get_crystal('quartz').to_spglib_cell()},
+          [(0, ''), (1, 'A')],
+          does_not_raise()),
+         (np.array([[0.5, 0.5, 0.5], [0.4, 0.4, 0.5], [0.3, 0.3, 0.5],
+                    [0.2, 0.2, 0.5], [0.1, 0.1, 0.5], [0.0, 0.0, 0.5]]),
+          {'cell': get_crystal('quartz').to_spglib_cell()},
+          [(0, ''), (5, 'A')],
+          does_not_raise()),
+         (np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 0.1], [0.0, 0.0, 0.2],
+                    [0.0, 0.0, 0.3], [0.0, 0.0, 0.4], [0.0, 0.0, 0.5],
+                    [0.125, 0.25, 0.5], [0.25, 0.5, 0.5], [0.375, 0.75, 0.5]]),
+          {},
+          [(0, '0 0 0'), (5, '0 0 1/2'), (8, '3/8 3/4 1/2')],
+          does_not_raise()),
+         (np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 0.1], [0.0, 0.0, 0.2],
+                    [0.0, 0.0, 0.3], [0.0, 0.0, 0.4], [0.0, 0.0, 0.5],
+                    [0.125, 0.25, 0.5], [0.25, 0.5, 0.5], [0.375, 0.75, 0.5]]),
+          {'cell': get_crystal('quartz_cv_only').to_spglib_cell()},
+          [(0, '0 0 0'), (5, '0 0 1/2'), (8, '3/8 3/4 1/2')],
+          pytest.warns(
+              UserWarning,
+              match="Could not determine cell symmetry, using generic q-point labels")),
+         (np.array([[0.0, 0., 0.], [0.25, 0., 0.], [0.25, 0., 0.],
+                    [0.3, 0., 0.], [0.5, 0., 0.], [0.5, 0.1, 0.],
+                    [0.5, 0.25, 0.]]),
+          {},
+          [(0, '0 0 0'), (1, '1/4 0 0'), (4, '1/2 0 0'), (6, '1/2 1/4 0')],
+          does_not_raise())])
+    def test_get_qpt_labels(
+            self, qpts, kwargs, expected_labels, context):
+        with context:
+            labels = get_qpoint_labels(qpts, **kwargs)
+
         assert labels == expected_labels
 
 

@@ -1,3 +1,4 @@
+import dataclasses
 from multiprocessing import cpu_count
 from typing import Union, Optional, Dict, Any, Type, TypeVar
 
@@ -185,6 +186,11 @@ class BrilleInterpolator:
         cell = crystal.to_spglib_cell()
 
         dataset = spg.get_symmetry_dataset(cell)
+        # Spglib 2.5 introduced dataclass structures:
+        # convert back to dict for now
+        if dataclasses.is_dataclass(dataset):
+            dataset = dataclasses.asdict(dataset)
+
         rotations = dataset['rotations']  # in fractional
         translations = dataset['translations']  # in fractional
 

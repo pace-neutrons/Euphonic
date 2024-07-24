@@ -88,7 +88,6 @@ class TestRegression:
             self, powder_map_args, keys_to_omit=['x_ticklabels']):
         euphonic.cli.powder_map.main(powder_map_args)
 
-        matplotlib.pyplot.gcf().tight_layout()  # Force tick labels to be set
         image_data = get_current_plot_image_data()
 
         with open(powder_map_output_file, 'r') as expected_data_file:
