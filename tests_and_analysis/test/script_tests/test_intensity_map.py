@@ -38,9 +38,6 @@ intensity_map_params = [
     [graphite_fc_file, '--e-min=-100', '--e-max=1000', '--ebins=100',
      '--energy-unit=cm^-1'],
     [graphite_fc_file, '--energy-broadening=2e-3', '-u=eV'],
-    [graphite_fc_file, '--q-spacing=0.05', '--length-unit=bohr',
-     '--q-broadening=0.1'],
-    [graphite_fc_file, '--qb=0.01', '--eb=1.5', '--shape=lorentz'],
     [graphite_fc_file, '--asr'],
     [graphite_fc_file, '--asr=realspace'],
     [quartz_json_file],
@@ -49,6 +46,11 @@ intensity_map_params = [
     [quartz_no_evec_json_file],
     [graphite_fc_file, '--weighting=coherent', '--cmap=bone'],
     [graphite_fc_file, '--weighting=coherent', '--temperature=800']]
+broadening_warning_expected_params = [
+    [graphite_fc_file, '--q-spacing=0.05', '--length-unit=bohr',
+     '--q-broadening=0.1'],
+    [graphite_fc_file, '--qb=0.01', '--eb=1.5', '--shape=lorentz'],
+]
 
 
 class TestRegression:
@@ -93,6 +95,13 @@ class TestRegression:
     def test_intensity_map_image_data(
             self, inject_mocks, intensity_map_args):
         self.run_intensity_map_and_test_result(intensity_map_args)
+
+    @pytest.mark.parametrize('intensity_map_args',
+                             broadening_warning_expected_params)
+    def test_intensity_map_image_data_width_warning(
+            self, inject_mocks, intensity_map_args):
+        with pytest.warns(UserWarning, match="x_data bin widths are not equal"):
+            self.run_intensity_map_and_test_result(intensity_map_args)
 
     @pytest.mark.parametrize('intensity_map_args', [
         [quartz_json_file, '--save-to'],
@@ -169,7 +178,7 @@ def test_regenerate_intensity_map_data(_):
     except FileNotFoundError:
         json_data = {}
 
-    for intensity_map_param in intensity_map_params:
+    for intensity_map_param in intensity_map_params + broadening_warning_expected_params:
         # Generate current figure for us to retrieve with gcf
         euphonic.cli.intensity_map.main(intensity_map_param)
 
