@@ -17,8 +17,7 @@ jobs:
        (github.event_name == 'pull_request' && !contains(github.event.pull_request.labels.*.name, 'no_ci'))
     strategy:
       matrix:
-        # os: [ubuntu-latest, windows-latest, macos-latest]
-        os: [ubuntu-latest]
+        os: [ubuntu-latest, windows-latest, macos-latest]
       fail-fast: false
     runs-on: ${{ matrix.os }}
     steps:

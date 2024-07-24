@@ -20,7 +20,9 @@
 
     - Minimum version of PyYAML increased from 3.13 to 6.0
 
-    - Minimum version of h5py increaased form 2.10 to 3.6
+    - Minimum version of h5py increaased from 2.10 to 3.6
+
+    - Minimum version of threadpoolctl increased from 1.0 to 3.0.
 
 - Big fixes
 

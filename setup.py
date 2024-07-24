@@ -144,7 +144,7 @@ def run_setup():
             'seekpath>=1.1.0',
             'spglib>=1.9.4',
             'pint>=0.22',
-            'threadpoolctl>=1.0.0'
+            'threadpoolctl>=3.0.0'
         ],
         extras_require={
             'matplotlib': ['matplotlib>=3.8.0'],
