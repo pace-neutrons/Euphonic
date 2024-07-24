@@ -1,4 +1,4 @@
-numpy==1.21.3
+numpy==1.24.0
 scipy==1.10.0
 spglib==1.9.4.2
 seekpath==1.1.0
@@ -6,4 +6,4 @@ pint==0.22
 matplotlib==3.8
 h5py==3.6
 PyYAML==6.0
-threadpoolctl==1.0.0
+threadpoolctl==3.0.0

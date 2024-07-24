@@ -9,22 +9,23 @@ jobs:
   build:
     strategy:
       matrix:
-        os: [windows-latest, macos-13, ubuntu-latest]
-        python-version: ['3.10', '3.11']
+        os: [windows-latest, macos-13, macos-latest, ubuntu-latest]
+        python-version: ['3.10', '3.11', '3.12']
         include:
           - os: windows-latest
             wheelname: win
           - os: macos-13
-            wheelname: macos
+            wheelname: macos-intel
+          - os: macos-latest
+            wheelname: macos-arm
           - os: ubuntu-latest
             wheelname: manylinux
-          # Build wheels against the lowest compatible Numpy version
           - python-version: '3.10'
             manylinux-version-tag: cp310
-            numpy-version: 1.21.3
           - python-version: '3.11'
             manylinux-version-tag: cp311
-            numpy-version: 1.23.2
+          - python-version: '3.11'
+            manylinux-version-tag: cp311
       fail-fast: false
     runs-on: ${{ matrix.os }}
     steps:
@@ -50,7 +51,7 @@ jobs:
         if: matrix.os != 'ubuntu-latest'
         shell: bash -l {0}
         env:
-          NUMPY_VERSION: ${{ matrix.numpy-version }}
+          NUMPY_VERSION: 2.0
         run: |
           # Build against lowest required Numpy version
           python -m pip install numpy==${NUMPY_VERSION}
@@ -61,7 +62,7 @@ jobs:
         uses: pypa/cibuildwheel@v2.12.0
         env:
           CIBW_BUILD: ${{ matrix.manylinux-version-tag}}-manylinux*
-          CIBW_BEFORE_BUILD: python -mpip install numpy==${{ matrix.numpy-version }}
+          CIBW_BEFORE_BUILD: python -mpip install numpy==2.0
           CIBW_ARCHS: x86_64
         with:
           output-dir: wheelhouse

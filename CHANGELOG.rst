@@ -7,12 +7,12 @@
 
   - Python 3.12 is supported
 
-  - Python 3.10+ requires numpy >= 1.21.3
-
   - importlib_resources backport is no longer required
 
-  - Some other dependency requirements have been increased because
-    older versions are difficult to test against Python 3.10:
+  - Some other dependency requirements have been increased in order
+    to simplify maintenance and testing:
+
+    - Minimum version of numpy increased from 1.19.3 to 1.24.0
 
     - Minimum version of matplotlib increased from 3.2 to 3.8
 
@@ -20,7 +20,9 @@
 
     - Minimum version of PyYAML increased from 3.13 to 6.0
 
-    - Minimum version of h5py increaased form 2.10 to 3.6
+    - Minimum version of h5py increaased from 2.10 to 3.6
+
+    - Minimum version of threadpoolctl increased from 1.0 to 3.0.
 
 - Big fixes
 
