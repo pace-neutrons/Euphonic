@@ -8,8 +8,12 @@ import numpy.testing as npt
 from euphonic import ureg
 from euphonic.spectra import Spectrum2D, apply_kinematic_constraints
 from tests_and_analysis.test.utils import (
-    get_data_path, check_unit_conversion, check_json_metadata,
-    check_property_setters)
+    check_unit_conversion,
+    check_json_metadata,
+    check_property_setters,
+    does_not_raise,
+    get_data_path,
+)
 
 
 class ExpectedSpectrum2D:
@@ -311,29 +315,40 @@ class TestSpectrum2DMethods:
             check_spectrum2d(spectrum, expected_spectrum)
 
     @pytest.mark.parametrize(
-        'args, spectrum2d_file, broadened_spectrum2d_file', [
+        'args, spectrum2d_file, broadened_spectrum2d_file, expectation', [
             (({'x_width': 0.1*ureg('1/angstrom'), 'method': 'convolve'}),
              'quartz_bandstructure_sqw.json',
-             'quartz_bandstructure_0.1ang_xbroaden_sqw.json'),
+             'quartz_bandstructure_0.1ang_xbroaden_sqw.json',
+             pytest.warns(UserWarning,
+                           match="x_data bin widths are not equal")),
             (({'y_width': 2*ureg('meV')}),
              'quartz_bandstructure_sqw.json',
-             'quartz_bandstructure_2meV_ybroaden_sqw.json'),
+             'quartz_bandstructure_2meV_ybroaden_sqw.json',
+             does_not_raise()),
             (({'x_width': 0.1*ureg('1/angstrom'), 'y_width': 2*ureg('meV'),
                'method': 'convolve'}),
              'quartz_bandstructure_sqw.json',
-             'quartz_bandstructure_2meV_0.1ang_xybroaden_sqw.json'),
+             'quartz_bandstructure_2meV_0.1ang_xybroaden_sqw.json',
+             pytest.warns(UserWarning,
+                           match="x_data bin widths are not equal")),
             (({'x_width': 0.1*ureg('1/angstrom'), 'y_width': 2*ureg('meV'),
                 'shape': 'lorentz', 'method': 'convolve'}),
              'quartz_bandstructure_sqw.json',
-             'quartz_bandstructure_xybroaden_lorentz_sqw.json'),
+             'quartz_bandstructure_xybroaden_lorentz_sqw.json',
+             pytest.warns(UserWarning,
+                           match="x_data bin widths are not equal")),
             (({'x_width': 0.2*ureg('1/angstrom'), 'y_width': 1.5*ureg('meV'),
                'shape': 'gauss'}),
              'lzo_57L_bragg_sqw.json',
-             'lzo_57L_1.5meV_0.1ang_gauss_sqw.json'),
+             'lzo_57L_1.5meV_0.1ang_gauss_sqw.json',
+             pytest.warns(UserWarning,
+                          match="Not all x-axis bins are the same width")),
             (({'x_width': 0.2*ureg('1/angstrom'), 'y_width': 1.5*ureg('meV'),
                'shape': 'lorentz'}),
              'lzo_57L_bragg_sqw.json',
-             'lzo_57L_1.5meV_0.1ang_lorentz_sqw.json'),
+             'lzo_57L_1.5meV_0.1ang_lorentz_sqw.json',
+             pytest.warns(UserWarning,
+                          match="Not all x-axis bins are the same width")),
             (({'x_width': (lambda x: np.polyval([0.2, -0.5],
                                                 x.to('1/nm').magnitude
                                                 ) * ureg('1/nm')),
@@ -341,7 +356,8 @@ class TestSpectrum2DMethods:
                                                 y.to('J').magnitude
                                                 ) * ureg('J')),
                'width_fit': 'cubic'},
-              'synthetic_x.json', 'synthetic_x_poly_broadened.json')),
+              'synthetic_x.json', 'synthetic_x_poly_broadened.json',
+              does_not_raise())),
             (({'x_width': (lambda x: np.polyval([0.2, -0.5],
                                                 x.to('1/nm').magnitude
                                                 ) * ureg('1/nm')),
@@ -349,18 +365,21 @@ class TestSpectrum2DMethods:
                                                 y.to('J').magnitude
                                                 ) * ureg('J')),
                'width_fit': 'cheby-log'},
-              'synthetic_x.json', 'synthetic_x_poly_broadened_cheby.json')),
+              'synthetic_x.json', 'synthetic_x_poly_broadened_cheby.json',
+              does_not_raise())),
                              ])
-    def test_broaden(self, args, spectrum2d_file, broadened_spectrum2d_file):
+    def test_broaden(self, args, spectrum2d_file, broadened_spectrum2d_file,
+                     expectation):
         spec2d = get_spectrum2d(spectrum2d_file)
         expected_broadened_spec2d = get_spectrum2d(broadened_spectrum2d_file)
-        broadened_spec2d = spec2d.broaden(**args)
+        with expectation:
+            broadened_spec2d = spec2d.broaden(**args)
         check_spectrum2d(broadened_spec2d, expected_broadened_spec2d)
 
     def test_broaden_invalid_shape_raises_value_error(self):
         spec2d = get_spectrum2d('quartz_bandstructure_sqw.json')
-        with pytest.raises(ValueError):
-            spec2d.broaden(x_width=1*ureg('meV'), shape='unknown')
+        with pytest.raises(ValueError), pytest.warns(UserWarning):
+                spec2d.broaden(x_width=1*ureg('meV'), shape='unknown')
 
     def test_broaden_uneven_bins_deprecation_raises_value_error(self):
         spec2d = get_spectrum2d('La2Zr2O7_cut_sqw_uneven_bins.json')
@@ -478,8 +497,8 @@ class TestSpectrum2DMethods:
     def test_mul(self):
         spec = get_spectrum2d('example_spectrum2d.json')
 
-        npt.assert_allclose(spec.z_data * 2.,
-                            (spec * 2.).z_data)
+        npt.assert_allclose(spec.z_data.magnitude * 2.,
+                            (spec * 2.).z_data.magnitude)
 
         check_spectrum2d(spec, (spec * 2.) * 0.5)
 

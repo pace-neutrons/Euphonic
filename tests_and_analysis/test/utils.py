@@ -1,3 +1,4 @@
+from contextlib import contextmanager
 import os
 import json
 from typing import Optional, Tuple
@@ -348,3 +349,16 @@ def check_spectrum_text_header(text_filename):
             if idx > 0 and line[0] != '#':  # Ensure at least 1 y_data line
                 break
             assert f'# Column {idx + 2}: y_data[{idx}] {{' in line
+
+
+@contextmanager
+def does_not_raise():
+    """Dummy context manager
+
+    Use this instead of pytest.raises() or pytest.warns() as part of an
+    "expectation" parameter for tests that sometimes raise a warning/exception.
+
+    See https://docs.pytest.org/en/4.6.x/example/parametrize.html#parametrizing-conditional-raising
+
+    """
+    yield
