@@ -21,7 +21,7 @@ from tests_and_analysis.test.euphonic_test.test_spectrum1dcollection import (
 from tests_and_analysis.test.euphonic_test.test_spectrum2d import (
     get_expected_spectrum2d, check_spectrum2d)
 from tests_and_analysis.test.utils import (
-    get_data_path, get_castep_path, get_phonopy_path,
+    does_not_raise, get_data_path, get_castep_path, get_phonopy_path,
     check_frequencies_at_qpts, check_unit_conversion,
     check_json_metadata, check_property_setters, get_mode_widths)
 
@@ -555,22 +555,30 @@ class TestQpointFrequenciesCalculateDos:
 
 class TestQpointFrequenciesCalculateDosMap:
     @pytest.mark.parametrize(
-        'material, qpt_freqs_json, ebins, expected_dos_map_json', [
+        'material, qpt_freqs_json, ebins, expected_dos_map_json, context', [
             ('quartz', 'quartz_bandstructure_cv_only_qpoint_frequencies.json',
              np.arange(0, 155, 0.6)*ureg('meV'),
-             'quartz_bandstructure_dos_map.json'),
+             'quartz_bandstructure_dos_map.json',
+             pytest.warns(
+                 UserWarning,
+                 match=("Could not determine cell symmetry, using generic q-point labels"))),
             ('quartz', 'quartz_bandstructure_cv_only_qpoint_frequencies.json',
              np.concatenate((np.arange(0, 100, 0.3),
                              np.arange(100, 155, 0.6)))*ureg('meV'),
-             'quartz_bandstructure_dos_map_uneven_bins.json'),
+             'quartz_bandstructure_dos_map_uneven_bins.json',
+             pytest.warns(
+                 UserWarning,
+                 match=("Could not determine cell symmetry, using generic q-point labels"))),
             ('NaCl', 'NaCl_band_yaml_from_phonopy_qpoint_frequencies.json',
              np.arange(0, 300, 5)*ureg('1/cm'),
-             'NaCl_band_yaml_dos_map.json')
+             'NaCl_band_yaml_dos_map.json',
+             does_not_raise())
         ])
     def test_calculate_dos_map(
-            self, material, qpt_freqs_json, ebins, expected_dos_map_json):
+            self, material, qpt_freqs_json, ebins, expected_dos_map_json, context):
         qpt_freqs = get_qpt_freqs(material, qpt_freqs_json)
-        dos_map = qpt_freqs.calculate_dos_map(ebins)
+        with context:
+            dos_map = qpt_freqs.calculate_dos_map(ebins)
         expected_dos_map = get_expected_spectrum2d(
             expected_dos_map_json)
         check_spectrum2d(dos_map, expected_dos_map)
@@ -618,18 +626,23 @@ class TestQpointFrequenciesCalculateDosMap:
 class TestQpointFrequenciesGetDispersion:
 
     @pytest.mark.parametrize(
-        'material, qpt_freqs_json, expected_dispersion_json', [
+        'material, qpt_freqs_json, expected_dispersion_json, context', [
             ('quartz', 'quartz_bandstructure_qpoint_frequencies.json',
-             'quartz_bandstructure_dispersion.json'),
+             'quartz_bandstructure_dispersion.json',
+             does_not_raise()),
             ('quartz', 'quartz_bandstructure_cv_only_qpoint_frequencies.json',
-             'quartz_bandstructure_cv_only_dispersion.json'),
+             'quartz_bandstructure_cv_only_dispersion.json',
+             pytest.warns(UserWarning,
+                          match="Could not determine cell symmetry, using generic q-point labels")),
             ('NaCl', 'NaCl_band_yaml_from_phonopy_qpoint_frequencies.json',
-             'NaCl_band_yaml_dispersion.json')
+             'NaCl_band_yaml_dispersion.json',
+             does_not_raise())
         ])
     def test_get_dispersion(
-            self, material, qpt_freqs_json, expected_dispersion_json):
-        qpt_freqs = get_qpt_freqs(material, qpt_freqs_json)
-        disp = qpt_freqs.get_dispersion()
+            self, material, qpt_freqs_json, expected_dispersion_json, context):
+        with context:
+            qpt_freqs = get_qpt_freqs(material, qpt_freqs_json)
+            disp = qpt_freqs.get_dispersion()
         expected_disp = get_expected_spectrum1dcollection(
             expected_dispersion_json)
         check_spectrum1dcollection(disp, expected_disp)
