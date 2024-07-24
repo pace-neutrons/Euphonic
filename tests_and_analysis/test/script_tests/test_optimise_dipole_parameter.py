@@ -1,3 +1,4 @@
+from contextlib import ExitStack
 import os
 import math
 # Required for mocking
@@ -26,8 +27,6 @@ class TestRegression:
     @staticmethod
     def call_cli(fc_file: str, args: list[Any], warning: Optional[str]) -> None:
         """Call optimise-dipole-parameter, checking for warning if appropriate"""
-        from contextlib import ExitStack
-
         with ExitStack() as stack:
             if warning is not None:
                 stack.enter_context(pytest.warns(UserWarning, match=warning))

@@ -1,3 +1,4 @@
+from contextlib import ExitStack
 import json
 import os
 import sys
@@ -42,30 +43,43 @@ class TestMPGrid:
 
 class TestGetQptLabels:
 
-    @pytest.mark.parametrize('qpts, kwargs, expected_labels', [
-        (np.array([[0.5, 0.5, 0.5], [0.0, 0.0, 0.5]]),
-         {'cell': get_crystal('quartz').to_spglib_cell()},
-         [(0, ''), (1, 'A')]),
-        (np.array([[0.5, 0.5, 0.5], [0.4, 0.4, 0.5], [0.3, 0.3, 0.5],
-                   [0.2, 0.2, 0.5], [0.1, 0.1, 0.5], [0.0, 0.0, 0.5]]),
-         {'cell': get_crystal('quartz').to_spglib_cell()},
-         [(0, ''), (5, 'A')]),
-        (np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 0.1], [0.0, 0.0, 0.2],
-                   [0.0, 0.0, 0.3], [0.0, 0.0, 0.4], [0.0, 0.0, 0.5],
-                   [0.125, 0.25, 0.5], [0.25, 0.5, 0.5], [0.375, 0.75, 0.5]]),
-         {},
-         [(0, '0 0 0'), (5, '0 0 1/2'), (8, '3/8 3/4 1/2')]),
-        (np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 0.1], [0.0, 0.0, 0.2],
-                   [0.0, 0.0, 0.3], [0.0, 0.0, 0.4], [0.0, 0.0, 0.5],
-                   [0.125, 0.25, 0.5], [0.25, 0.5, 0.5], [0.375, 0.75, 0.5]]),
-         {'cell': get_crystal('quartz_cv_only').to_spglib_cell()},
-         [(0, '0 0 0'), (5, '0 0 1/2'), (8, '3/8 3/4 1/2')]),
-        (np.array([[0.0, 0., 0.], [0.25, 0., 0.], [0.25, 0., 0.], [0.3, 0., 0.],
-                   [0.5, 0., 0.], [0.5, 0.1, 0.], [0.5, 0.25, 0.]]),
-         {},
-         [(0, '0 0 0'), (1, '1/4 0 0'), (4, '1/2 0 0'), (6, '1/2 1/4 0')])])
-    def test_get_qpt_labels(self, qpts, kwargs, expected_labels):
-        labels = get_qpoint_labels(qpts, **kwargs)
+    @pytest.mark.parametrize(
+        'qpts, kwargs, expected_labels, expected_warning',
+        [(np.array([[0.5, 0.5, 0.5], [0.0, 0.0, 0.5]]),
+          {'cell': get_crystal('quartz').to_spglib_cell()},
+          [(0, ''), (1, 'A')],
+          None),
+         (np.array([[0.5, 0.5, 0.5], [0.4, 0.4, 0.5], [0.3, 0.3, 0.5],
+                    [0.2, 0.2, 0.5], [0.1, 0.1, 0.5], [0.0, 0.0, 0.5]]),
+          {'cell': get_crystal('quartz').to_spglib_cell()},
+          [(0, ''), (5, 'A')],
+          None),
+         (np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 0.1], [0.0, 0.0, 0.2],
+                    [0.0, 0.0, 0.3], [0.0, 0.0, 0.4], [0.0, 0.0, 0.5],
+                    [0.125, 0.25, 0.5], [0.25, 0.5, 0.5], [0.375, 0.75, 0.5]]),
+          {},
+          [(0, '0 0 0'), (5, '0 0 1/2'), (8, '3/8 3/4 1/2')],
+          None),
+         (np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 0.1], [0.0, 0.0, 0.2],
+                    [0.0, 0.0, 0.3], [0.0, 0.0, 0.4], [0.0, 0.0, 0.5],
+                    [0.125, 0.25, 0.5], [0.25, 0.5, 0.5], [0.375, 0.75, 0.5]]),
+          {'cell': get_crystal('quartz_cv_only').to_spglib_cell()},
+          [(0, '0 0 0'), (5, '0 0 1/2'), (8, '3/8 3/4 1/2')],
+          "Could not determine cell symmetry, using generic q-point labels"),
+         (np.array([[0.0, 0., 0.], [0.25, 0., 0.], [0.25, 0., 0.],
+                    [0.3, 0., 0.], [0.5, 0., 0.], [0.5, 0.1, 0.],
+                    [0.5, 0.25, 0.]]),
+          {},
+          [(0, '0 0 0'), (1, '1/4 0 0'), (4, '1/2 0 0'), (6, '1/2 1/4 0')],
+          None)])
+    def test_get_qpt_labels(
+            self, qpts, kwargs, expected_labels, expected_warning):
+        with ExitStack() as stack:
+            if expected_warning is not None:
+                stack.enter_context(pytest.warns(UserWarning, match=expected_warning))
+
+            labels = get_qpoint_labels(qpts, **kwargs)
+
         assert labels == expected_labels
 
 
