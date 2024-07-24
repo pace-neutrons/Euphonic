@@ -7,4 +7,4 @@ matplotlib==3.8
 h5py==3.6
 PyYAML==6.0
 #threadpoolctl==1.0.0
-threadpoolctl==3.0
+threadpoolctl==2.0
