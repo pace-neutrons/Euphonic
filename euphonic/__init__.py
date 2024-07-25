@@ -8,6 +8,11 @@ from pint import UnitRegistry
 
 # Create ureg here so it is only created once
 ureg = UnitRegistry()
+
+# Add reciprocal_spectroscopy environment used for tricky conversions
+from . import data
+ureg.load_definitions(files(data) / "reciprocal_spectroscopy_definitions.txt")
+
 ureg.enable_contexts('spectroscopy')
 Quantity = ureg.Quantity
 
