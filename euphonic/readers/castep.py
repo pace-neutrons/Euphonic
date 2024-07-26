@@ -102,16 +102,16 @@ def read_phonon_dos_data(
     data_dict['dos_bins_unit'] = frequencies_unit
 
     data_dict['dos'] = {}
-    data_dict['dos_unit'] = frequencies_unit
-    # Avoid issues in converting DOS, Pint allows
-    # cm^-1 -> meV but not cm -> 1/meV
-    dos_conv = (1*ureg('1/cm').to(frequencies_unit)).magnitude
+    data_dict['dos_unit'] = f"1/{frequencies_unit}"
+    dos_conv = ureg('1 / (1/cm)').to(data_dict['dos_unit'], "reciprocal_spectroscopy")
+
     dos_dict = data_dict['dos']
-    dos_dict['Total'] = dos_data[:, 1]/dos_conv
+    dos_dict['Total'] = dos_data[:, 1] * dos_conv
+
     _, idx = np.unique(atom_type, return_index=True)
     unique_types = atom_type[np.sort(idx)]
     for i, species in enumerate(unique_types):
-        dos_dict[str(species)] = dos_data[:, i + 2]/dos_conv
+        dos_dict[str(species)] = dos_data[:, i + 2] * dos_conv
 
     return data_dict
 
