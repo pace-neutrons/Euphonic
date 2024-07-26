@@ -182,7 +182,8 @@ class TestSpectrum1DCreation:
         pytest.lazy_fixture('create_from_constructor'),
         pytest.lazy_fixture('create_from_json'),
         pytest.lazy_fixture('create_from_dict'),
-        pytest.lazy_fixture('create_from_castep_phonon_dos')])
+        pytest.lazy_fixture('create_from_castep_phonon_dos'),
+    ])
     def test_correct_object_creation(self, spec1d_creator):
         spec1d, expected_spec1d = spec1d_creator
         check_spectrum1d(spec1d, expected_spec1d)

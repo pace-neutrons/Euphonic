@@ -103,7 +103,9 @@ def read_phonon_dos_data(
 
     data_dict['dos'] = {}
     data_dict['dos_unit'] = f"1/{frequencies_unit}"
-    dos_conv = ureg('1 / (1/cm)').to(data_dict['dos_unit'], "reciprocal_spectroscopy")
+    dos_conv = ureg('1 / (1/cm)'
+                    ).to(data_dict['dos_unit'], "reciprocal_spectroscopy"
+                         ).magnitude
 
     dos_dict = data_dict['dos']
     dos_dict['Total'] = dos_data[:, 1] * dos_conv

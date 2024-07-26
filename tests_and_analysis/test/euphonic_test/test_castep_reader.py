@@ -41,12 +41,17 @@ class TestReadPhononDosData:
                     check_dict(dct[exp_key], exp_val)
                 else:
                     assert dct[exp_key] == exp_val
-        # Temporary solution until test data has been regenerated
-        # units have changed
-        expected_dos_data['dos_unit'] = 'meV'
-        dos_conv = (1*ureg('1/cm').to('meV')).magnitude
+
+        # Convert ref data from cm to 1/meV to match current behaviour
+
+        expected_dos_data['dos_unit'] = '1/meV'
+
         for key, value in expected_dos_data['dos'].items():
-            expected_dos_data['dos'][key] = [x/dos_conv for x in value]
+            expected_dos_data['dos'][key] = (ureg.Quantity(value, "cm")
+                                             .to("1 / meV", "reciprocal_spectroscopy")
+                                             .magnitude
+                                             .tolist())
+
         check_dict(dos_data, expected_dos_data)
 
 

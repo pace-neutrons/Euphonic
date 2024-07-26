@@ -82,7 +82,8 @@ def _check_unit_conversion(obj: object, attr_name: str, attr_value: Any,
     if hasattr(obj, attr_name):
         if attr_name in unit_attrs:
             try:
-                _ = ureg(getattr(obj, attr_name)).to(attr_value)
+                _ = ureg(getattr(obj, attr_name)).to(attr_value,
+                                                     "reciprocal_spectroscopy")
             except DimensionalityError:
                 raise ValueError((
                     f'"{attr_value}" is not a known dimensionally-consistent '
