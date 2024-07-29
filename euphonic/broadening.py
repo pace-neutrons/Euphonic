@@ -149,14 +149,13 @@ def width_interpolated_broadening(
         ydata
     """
 
-    conv = 1*ureg('hartree').to(bins.units)
-    return _width_interpolated_broadening(bins.to('hartree').magnitude,
-                                          x.to('hartree').magnitude,
-                                          widths.to('hartree').magnitude,
+    return _width_interpolated_broadening(bins.magnitude,
+                                          x.to(bins.units).magnitude,
+                                          widths.to(bins.units).magnitude,
                                           weights,
                                           adaptive_error,
                                           shape=shape,
-                                          fit=fit) / conv
+                                          fit=fit) / bins.units
 
 
 def _lorentzian(x: np.ndarray, gamma: np.ndarray) -> np.ndarray:
@@ -226,7 +225,7 @@ def _width_interpolated_broadening(
     # bins should be regularly spaced, check that this is the case and
     # raise a warning if not
     bin_widths = np.diff(bins)
-    if not np.all(np.isclose(bin_widths, bin_widths[0])):
+    if not np.all(np.isclose(bin_widths, bin_widths[0], atol=0.)):
         warnings.warn('Not all bin widths are equal, so broadening by '
                       'convolution will give incorrect results.',
                       stacklevel=3)
