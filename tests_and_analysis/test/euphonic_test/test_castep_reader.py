@@ -4,6 +4,7 @@ import json
 import pytest
 import numpy as np
 import numpy.testing as npt
+from toolz.dicttoolz import valmap
 
 from euphonic.io import _from_json_dict
 from euphonic.util import direction_changed, mp_grid, get_qpoint_labels
@@ -43,14 +44,15 @@ class TestReadPhononDosData:
                     assert dct[exp_key] == exp_val
 
         # Convert ref data from cm to 1/meV to match current behaviour
-
         expected_dos_data['dos_unit'] = '1/meV'
 
-        for key, value in expected_dos_data['dos'].items():
-            expected_dos_data['dos'][key] = (ureg.Quantity(value, "cm")
-                                             .to("1 / meV", "reciprocal_spectroscopy")
-                                             .magnitude
-                                             .tolist())
+        def transform(dos: list[float]) -> list[float]:
+            return (ureg.Quantity(dos, "cm")
+                    .to("1 / meV", "reciprocal_spectroscopy")
+                    .magnitude
+                    .tolist())
+
+        expected_dos_data["dos"] = valmap(transform, expected_dos_data["dos"])
 
         check_dict(dos_data, expected_dos_data)
 

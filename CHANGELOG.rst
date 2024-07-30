@@ -24,6 +24,9 @@
 
     - Minimum version of threadpoolctl increased from 1.0 to 3.0.
 
+  - `toolz <https://toolz.readthedocs.io/en/latest/index.html>`_ is
+    added to the testing (tox) requirements
+
 - Improvements
 
   - A "reciprocal_spectroscopy" Pint context is made available in the
