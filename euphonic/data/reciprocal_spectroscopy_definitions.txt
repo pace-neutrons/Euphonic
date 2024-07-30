@@ -1,0 +1,9 @@
+@context reciprocal_spectroscopy = rs
+    1 / [frequency] <-> 1 / [length]: 1 / value / speed_of_light
+    1 / [energy] -> 1 / [frequency]: planck_constant * value
+    1 / [frequency] -> 1 / [energy]: value / planck_constant
+    [length] -> 1 / [energy]: value / (planck_constant * speed_of_light)
+    1 / [energy] -> [length]: value * (planck_constant * speed_of_light)
+    1 / [length] -> [energy]: value * (planck_constant * speed_of_light)
+    [energy] -> 1 / [length]: value / (planck_constant * speed_of_light)
+@end

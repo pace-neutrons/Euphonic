@@ -195,7 +195,9 @@ def check_unit_conversion(obj: object, attr: str, unit: str) -> None:
     else:
         assert getattr(obj, attr).units == ureg(unit)
     npt.assert_allclose(getattr(obj, attr).magnitude,
-                        original_attr_value.to(unit).magnitude)
+                        (original_attr_value
+                         .to(unit, "reciprocal_spectroscopy")
+                         .magnitude))
 
 
 def check_property_setters(obj: object, attr: str, unit: str,

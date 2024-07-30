@@ -5,3 +5,4 @@ pytest-mock
 pytest-lazy-fixture
 pytest-xvfb
 python-slugify
+toolz

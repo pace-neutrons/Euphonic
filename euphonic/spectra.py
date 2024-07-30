@@ -1,3 +1,5 @@
+# pylint: disable=no-member
+
 from abc import ABC, abstractmethod
 import collections
 import copy
@@ -42,8 +44,8 @@ class Spectrum(ABC):
 
     @property
     def x_data(self) -> Quantity:
-        return self._x_data*ureg(self._internal_x_data_unit).to(
-            self.x_data_unit)
+        return ureg.Quantity(self._x_data, self._internal_x_data_unit
+                             ).to(self.x_data_unit, "reciprocal_spectroscopy")
 
     @x_data.setter
     def x_data(self, value: Quantity) -> None:
@@ -52,8 +54,8 @@ class Spectrum(ABC):
 
     @property
     def y_data(self) -> Quantity:
-        return self._y_data*ureg(self._internal_y_data_unit).to(
-            self.y_data_unit)
+        return ureg.Quantity(self._y_data, self._internal_y_data_unit).to(
+            self.y_data_unit, "reciprocal_spectroscopy")
 
     @y_data.setter
     def y_data(self, value: Quantity) -> None:
@@ -561,6 +563,7 @@ class Spectrum1D(Spectrum):
         else:
             metadata['species'] = element
         metadata['label'] = element
+
         return cls(data['dos_bins']*ureg(data['dos_bins_unit']),
                    data['dos'][element]*ureg(data['dos_unit']),
                    metadata=metadata)
@@ -1318,8 +1321,9 @@ class Spectrum2D(Spectrum):
 
     @property
     def z_data(self) -> Quantity:
-        return self._z_data*ureg(self._internal_z_data_unit).to(
-            self.z_data_unit)
+        return ureg.Quantity(
+            self._z_data, self._internal_z_data_unit
+        ).to(self.z_data_unit, "reciprocal_spectroscopy")
 
     @z_data.setter
     def z_data(self, value: Quantity) -> None:

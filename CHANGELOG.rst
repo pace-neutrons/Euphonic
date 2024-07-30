@@ -24,10 +24,33 @@
 
     - Minimum version of threadpoolctl increased from 1.0 to 3.0.
 
-- Big fixes
+  - `toolz <https://toolz.readthedocs.io/en/latest/index.html>`_ is
+    added to the testing (tox) requirements
+
+- Improvements
+
+  - A "reciprocal_spectroscopy" Pint context is made available in the
+    unit registry for tricky conversions between reciprocal
+    frequency/energy units. It is not active by default but can be
+    enabled with e.g.
+
+      (10 * ureg("1 / meV")).to("cm", "reciprocal_spectroscopy")
+
+    This can also help to avoid divide-by-zero issues when performing
+    energy <-> wavenumber conversions.
+
+- Bug fixes
 
   - Metadata strings from Castep-imported PDOS data are now converted
     from numpy strings to native Python strings.
+
+  - Spectra from CASTEP .phonon_dos files are now imported with units
+    of reciprocal energy (e.g. 1/meV)
+
+- Maintenance
+
+  - Cleared up unit-conversion-related warnings, de-cluttering the
+    expected test suite output.
 
 
 `v1.3.2 <https://github.com/pace-neutrons/Euphonic/compare/v1.3.1...v1.3.2>`_
