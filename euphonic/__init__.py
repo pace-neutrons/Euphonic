@@ -1,5 +1,6 @@
 from importlib.resources import files
 
+from . import data
 from . import _version
 __version__ = _version.get_versions()['version']
 
@@ -10,7 +11,6 @@ from pint import UnitRegistry
 ureg = UnitRegistry()
 
 # Add reciprocal_spectroscopy environment used for tricky conversions
-from . import data
 ureg.load_definitions(files(data) / "reciprocal_spectroscopy_definitions.txt")
 
 ureg.enable_contexts('spectroscopy')

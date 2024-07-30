@@ -1,3 +1,5 @@
+# pylint: disable=no-member
+
 from abc import ABC, abstractmethod
 import collections
 import copy
