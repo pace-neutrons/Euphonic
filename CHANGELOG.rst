@@ -33,6 +33,9 @@
 
       (10 * ureg("1 / meV")).to("cm", "reciprocal_spectroscopy")
 
+    This can also help to avoid divide-by-zero issues when performing
+    energy <-> wavenumber conversions.
+
 - Bug fixes
 
   - Metadata strings from Castep-imported PDOS data are now converted
@@ -40,6 +43,11 @@
 
   - Spectra from CASTEP .phonon_dos files are now imported with units
     of reciprocal energy (e.g. 1/meV)
+
+- Maintenance
+
+  - Cleared up unit-conversion-related warnings, de-cluttering the
+    expected test suite output.
 
 
 `v1.3.2 <https://github.com/pace-neutrons/Euphonic/compare/v1.3.1...v1.3.2>`_
