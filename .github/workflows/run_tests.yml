@@ -27,7 +27,6 @@ jobs:
           python-version: '3.10'
           channels: conda-forge,defaults
           channel-priority: true
-          environment-file: tests_and_analysis/ci_environment.yml
       - name: Install llvm on Macos
         if: startsWith(matrix.os, 'macos')
         run: |
@@ -74,7 +73,6 @@ jobs:
           python-version: '3.10'
           channels: conda-forge,defaults
           channel-priority: true
-          environment-file: tests_and_analysis/ci_environment.yml
       - name: Update pip and install dependencies
         shell: bash -l {0}
         run: |
