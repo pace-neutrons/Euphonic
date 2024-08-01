@@ -1,0 +1,73 @@
+[project]
+name = "Euphonic"
+description = "Euphonic calculates phonon bandstructures and inelastic neutron scattering intensities from modelling code output (e.g. CASTEP)"
+requires-python = ">=3.8"
+readme = "README.rst"
+license = {text = "GPLv3"}
+keywords = [
+    "Python",
+    "physics",
+    "phonons",
+    "inelastic neutron scattering",
+    "CASTEP",
+    "Phonopy",
+    "force constants"
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+    "Programming Language :: C",
+    "Programming Language :: Python :: 3",
+    "Topic :: Scientific/Engineering :: Physics",
+]
+dependencies = [
+    "packaging",
+    "numpy>=1.24.0",
+    "scipy>=1.10",
+    "seekpath>=1.1.0",
+    "spglib>=1.9.4",
+    "pint>=0.22",
+    "threadpoolctl>=3.0.0",
+    "toolz>=0.12.1",
+]
+dynamic = ["version"]
+
+[build-system]
+requires = ["packaging",
+            "numpy>=1.24.0",
+            "versioneer[toml]==0.29",
+            "setuptools>=61.0.0"]
+build-backend = "setuptools.build_meta"
+
+[project.urls]
+Homepage = "https://github.com/pace-neutrons/Euphonic"
+Repository = "https://github.com/pace-neutrons/Euphonic.git"
+"Bug Tracker" = "https://github.com/pace-neutrons/Euphonic/issues"
+documentation = "https://euphonic.readthedocs.io/en/stable/"
+
+[project.optional-dependencies]
+matplotlib = ["matplotlib>=3.8.0"]
+phonopy_reader = ["h5py>=3.6.0", "PyYAML>=6.0"]
+brille = ["brille>=0.7.0"]
+
+[project.scripts]
+euphonic-brille-convergence = "euphonic.cli.brille_convergence:main"
+euphonic-dispersion = "euphonic.cli.dispersion:main"
+euphonic-dos = "euphonic.cli.dos:main"
+euphonic-optimise-dipole-parameter = "euphonic.cli.optimise_dipole_parameter:main"
+euphonic-show-sampling = "euphonic.cli.show_sampling:main"
+euphonic-intensity-map = "euphonic.cli.intensity_map:main"
+euphonic-powder-map = "euphonic.cli.powder_map:main"
+
+[tool.versioneer]
+VCS = "git"
+style = "pep440"
+versionfile_source = "euphonic/_version.py"
+versionfile_build = "euphonic/_version.py"
+tag_prefix = "v"
+parentdir_prefix = "Euphonic-"
+
+[tool.setuptools.packages.find]
+include = ["euphonic*"]

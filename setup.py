@@ -1,11 +1,9 @@
 import os
-import shutil
-import warnings
 
-import versioneer
-from setuptools import setup, Extension, Distribution
+from setuptools import setup, Extension
 from setuptools.command.install import install
 
+import versioneer
 
 # As the C extension is optional, this is not detected when building
 # wheels and they are incorrectly marked as universal. Explicitly
@@ -36,7 +34,6 @@ class InstallCommand(install):
 
 
 def get_c_extension():
-    import os
     import numpy as np
     from sys import platform
     import subprocess
@@ -82,95 +79,10 @@ def get_c_extension():
     return euphonic_c_extension
 
 
-def run_setup():
+# cmdclass = versioneer.get_cmdclass()
+# cmdclass['install'] = InstallCommand
+# cmdclass['bdist_wheel'] = bdist_wheel
 
-    license_file = 'LICENSE'
-    # A list of files outside the Euphonic package directory that should
-    # be included in the installation in site-packages. They must
-    # also be added to MANIFEST.in
-    ex_install_files = [license_file,
-                        'CITATION.cff']
-    # MANIFEST.in will add any included files to the site-packages
-    # installation, but only if they are inside the package directory,
-    # so temporarily copy them there if needed
-    for ex_install_file in ex_install_files:
-        try:
-            shutil.copy(ex_install_file, 'euphonic')
-        except (PermissionError, OSError) as err:
-            warnings.warn(f'{err}', stacklevel=2)
-
-    packages = ['euphonic',
-                'euphonic.cli',
-                'euphonic.readers',
-                'euphonic.data',
-                'euphonic.styles',
-                'euphonic.writers']
-
-    with open('README.rst', 'r') as f:
-        long_description = f.read()
-
-
-    cmdclass = versioneer.get_cmdclass()
-    cmdclass['install'] = InstallCommand
-    cmdclass['bdist_wheel'] = bdist_wheel
-
-    setup(
-        name='euphonic',
-        version=versioneer.get_version(),
-        cmdclass=cmdclass,
-        classifiers=[
-            'Development Status :: 4 - Beta',
-            'Environment :: Console',
-            'Intended Audience :: Science/Research',
-            'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',
-            'Programming Language :: C',
-            'Programming Language :: Python :: 3',
-            'Topic :: Scientific/Engineering :: Physics',
-            ],
-        description=(
-            'Euphonic calculates phonon bandstructures and inelastic '
-            'neutron scattering intensities from modelling code output '
-            '(e.g. CASTEP)'),
-        license='GPLv3',
-        license_files=(license_file,),
-        long_description=long_description,
-        long_description_content_type='text/x-rst',
-        url='https://github.com/pace-neutrons/Euphonic',
-        packages=packages,
-        include_package_data=True,
-        install_requires=[
-            'packaging',
-            'numpy>=1.24.0',
-            'scipy>=1.10',
-            'seekpath>=1.1.0',
-            'spglib>=1.9.4',
-            'pint>=0.22',
-            'threadpoolctl>=3.0.0',
-            'toolz>=0.12.1',
-        ],
-        extras_require={
-            'matplotlib': ['matplotlib>=3.8.0'],
-            'phonopy_reader': ['h5py>=3.6.0', 'PyYAML>=6.0'],
-            'brille': ['brille>=0.7.0']
-        },
-        entry_points={'console_scripts': [
-            'euphonic-brille-convergence = euphonic.cli.brille_convergence:main',
-            'euphonic-dispersion = euphonic.cli.dispersion:main',
-            'euphonic-dos = euphonic.cli.dos:main',
-            'euphonic-optimise-dipole-parameter = euphonic.cli.optimise_dipole_parameter:main',
-            'euphonic-show-sampling = euphonic.cli.show_sampling:main',
-            'euphonic-intensity-map = euphonic.cli.intensity_map:main',
-            'euphonic-powder-map = euphonic.cli.powder_map:main']}
-    )
-
-    for ex_install_file in ex_install_files:
-        # Only delete file if there is another copy in the current dir
-        # (e.g. from a git clone) in a PyPI dist the only copy will be
-        # in the euphonic subdir, we don't want to delete that!
-        if os.path.isfile(ex_install_file):
-            try:
-                os.remove(os.path.join('euphonic', ex_install_file))
-            except (PermissionError, OSError, FileNotFoundError) as err:
-                warnings.warn(f'{err}', stacklevel=2)
-
-run_setup()
+# setup(
+#     cmdclass=cmdclass,
+# )
