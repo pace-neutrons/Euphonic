@@ -1,12 +1,12 @@
 [build-system]
-build-backend = 'mesonpy'
-requires = ["meson-python",
-            "packaging",
-            "numpy>=1.24.0"]
+requires = ["packaging",
+            "numpy>=1.24.0",
+            "versioneer[toml]==0.29",
+            "setuptools>=61.0.0"]
+build-backend = "setuptools.build_meta"
 
 [project]
-name = "euphonic"
-version = "1.3.3a"
+name = "Euphonic"
 description = "Euphonic calculates phonon bandstructures and inelastic neutron scattering intensities from modelling code output (e.g. CASTEP)"
 requires-python = ">=3.8"
 readme = "README.rst"
@@ -39,6 +39,7 @@ dependencies = [
     "threadpoolctl>=3.0.0",
     "toolz>=0.12.1",
 ]
+dynamic = ["version"]
 
 [project.urls]
 Homepage = "https://github.com/pace-neutrons/Euphonic"
