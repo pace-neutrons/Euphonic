@@ -771,7 +771,9 @@ class SpectrumCollectionMixin(ABC):
     # Required methods
     @classmethod
     @abstractmethod
-    def from_spectra(cls, spectra: Sequence[Spectrum]) -> Self: ...
+    def from_spectra(cls, spectra: Sequence[Spectrum]) -> Self:
+        """Construct spectrum collection from a sequence of components"""
+        ...
 
     # Mixin methods
     def __len__(self):
@@ -979,7 +981,7 @@ class SpectrumCollectionMixin(ABC):
                                    ).to(self._get_spectrum_data_unit())
 
         new_data = self.copy()
-        new_data._set_spectrum_data(new_s_data)
+        new_data._set_spectrum_data(new_s_data)  # pylint: disable=W0212
         new_data.metadata = group_metadata
 
         return new_data
