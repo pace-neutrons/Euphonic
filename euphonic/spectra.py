@@ -3,6 +3,7 @@
 from abc import ABC, abstractmethod
 import collections
 import copy
+from functools import partial
 import itertools
 import math
 import json
@@ -967,16 +968,12 @@ class SpectrumCollectionMixin(ABC):
             return tuple(enumerated_metadata[1].get(item, None)
                          for item in line_data_keys)
 
-        def indices(enumerated_values: Iterable[tuple[int, Any]]
-                    ) -> Iterator[int]:
-            return pluck(0, enumerated_values)
-
-        def sum_over_indices(indices: Iterable[int]) -> Self:
-            return self[list(indices)].sum()
+        # First element of each tuple is the index
+        indices = partial(pluck, 0)
 
         groups = groupby(get_key_items, enumerate(self.iter_metadata()))
 
-        return self.from_spectra([sum_over_indices(indices(group))
+        return self.from_spectra([self[list(indices(group))].sum()
                                   for group in groups.values()])
 
 
