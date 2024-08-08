@@ -781,7 +781,7 @@ class SpectrumCollectionMixin(ABC):
         return self._get_raw_spectrum_data().shape[0]
 
     @overload
-    def __getitem__(self, item: int) -> Spectrum1D:
+    def __getitem__(self, item: int) -> Spectrum:
         ...
 
     @overload  # noqa: F811
@@ -836,7 +836,7 @@ class SpectrumCollectionMixin(ABC):
         metadata_lines = list(self.iter_metadata())
 
         if isinstance(item, Integral):
-             return metadata_lines[item]
+            return metadata_lines[item]
         elif isinstance(item, slice):
             return self._combine_metadata(metadata_lines[item])
         elif len(item) == 1:
