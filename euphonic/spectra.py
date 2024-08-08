@@ -8,7 +8,7 @@ import itertools
 import math
 import json
 from numbers import Integral, Real
-from typing import (Any, Callable, Dict, Generator, Iterable, Iterator, List,
+from typing import (Any, Callable, Dict, Generator, Iterator, List,
                     Literal, Optional, overload, Sequence, Tuple, TypeVar,
                     Union, Type)
 from typing_extensions import Self
