@@ -8,9 +8,9 @@ import itertools
 import math
 import json
 from numbers import Integral, Real
-from typing import (Any, Callable, Dict, Generator, Iterator, List,
-                    Literal, Optional, overload, Sequence, Tuple, TypeVar,
-                    Union, Type)
+from operator import itemgetter
+from typing import (Any, Callable, Dict, Generator, List, Literal, Optional,
+                    overload, Sequence, Tuple, TypeVar, Union, Type)
 from typing_extensions import Self
 import warnings
 
@@ -780,6 +780,71 @@ class SpectrumCollectionMixin(ABC):
     def __len__(self):
         return self._get_raw_spectrum_data().shape[0]
 
+    @overload
+    def __getitem__(self, item: int) -> Spectrum1D:
+        ...
+
+    @overload  # noqa: F811
+    def __getitem__(self, item: slice) -> Self:
+        ...
+
+    @overload  # noqa: F811
+    def __getitem__(self, item: Union[Sequence[int], np.ndarray]) -> Self:
+        ...
+
+    def __getitem__(
+            self, item: Union[Integral, slice, Sequence[Integral], np.ndarray]
+    ):  # noqa: F811
+        self._validate_item(item)
+        init_kwargs = {
+            self._spectrum_data_name(): self._get_spectrum_data()[item, :],
+            "x_tick_labels": self.x_tick_labels,
+            "metadata": self._get_item_metadata(item)
+                       } | self._get_bin_kwargs()
+
+        if isinstance(item, Integral):
+            return self._item_type(**init_kwargs)
+
+        return type(self)(**init_kwargs)
+
+    def _validate_item(self, item: Integral | slice | Sequence[Integral] | np.ndarray
+                       ) -> None:
+        """Raise Error if index has inappropriate typing/range"""
+        if isinstance(item, Integral):
+            return
+        if isinstance(item, slice):
+            if (item.stop is not None) and (item.stop >= len(self)):
+                raise IndexError(f'index "{item.stop}" out of range')
+            return
+        
+        if not all([isinstance(i, Integral) for i in item]):
+            raise TypeError(
+                f'Index "{item}" should be an integer, slice '
+                f'or sequence of ints')
+
+    @overload
+    def _get_item_metadata(self, item: Integral) -> OneLineData:
+        """Get a single metadata item with no line_data"""
+        
+    @overload
+    def _get_item_metadata(self, item: slice | Sequence[Integral] | np.ndarray
+                           ) -> Metadata:  # noqa: F811
+        """Get a metadata collection (may include line_data)"""
+
+    def _get_item_metadata(self, item):  # noqa: F811
+        """Produce appropriate metadata for __getitem__"""
+        metadata_lines = list(self.iter_metadata())
+
+        if isinstance(item, Integral):
+             return metadata_lines[item]
+        elif isinstance(item, slice):
+            return self._combine_metadata(metadata_lines[item])
+        elif len(item) == 1:
+            return metadata_lines[item[0]]
+        else:
+            return self._combine_metadata(
+                list(itemgetter(*item)(metadata_lines)))
+
     def copy(self) -> Self:
         """Get an independent copy of spectrum"""
         return self._item_type.copy(self)
@@ -803,11 +868,11 @@ class SpectrumCollectionMixin(ABC):
         """Iterate over metadata dicts of individual spectra from collection"""
         common_metadata = dict(
             (key, self.metadata[key])
-            for key in self.metadata.keys() - set("line_data"))
+            for key in set(self.metadata.keys()) - {"line_data",})
 
         line_data = self.metadata.get("line_data")
         if line_data is None:
-            line_data = itertools.repeat({}, len(self._z_data))
+            line_data = itertools.repeat({}, len(self._get_raw_spectrum_data()))
 
         for one_line_data in line_data:
             yield common_metadata | one_line_data
@@ -1047,49 +1112,6 @@ class Spectrum1DCollection(SpectrumCollectionMixin,
                                                            x0, x1),
                            metadata=self.metadata)
                 for x0, x1 in ranges]
-
-    @overload
-    def __getitem__(self, item: int) -> Spectrum1D:
-        ...
-
-    @overload  # noqa: F811
-    def __getitem__(self, item: slice) -> Self:
-        ...
-
-    @overload  # noqa: F811
-    def __getitem__(self, item: Union[Sequence[int], np.ndarray]) -> Self:
-        ...
-
-    def __getitem__(self, item: Union[int, slice, Sequence[int], np.ndarray]
-                    ):  # noqa: F811
-        new_metadata = copy.deepcopy(self.metadata)
-        line_metadata = new_metadata.pop('line_data',
-                                         [{} for _ in self._y_data])
-        if isinstance(item, Integral):
-            new_metadata.update(line_metadata[item])
-            return Spectrum1D(self.x_data,
-                              self.y_data[item, :],
-                              x_tick_labels=self.x_tick_labels,
-                              metadata=new_metadata)
-
-        if isinstance(item, slice):
-            if (item.stop is not None) and (item.stop >= len(self)):
-                raise IndexError(f'index "{item.stop}" out of range')
-            new_metadata.update(self._combine_metadata(line_metadata[item]))
-        else:
-            try:
-                item = list(item)
-                if not all([isinstance(i, Integral) for i in item]):
-                    raise TypeError
-            except TypeError:
-                raise TypeError(f'Index "{item}" should be an integer, slice '
-                                f'or sequence of ints')
-            new_metadata.update(self._combine_metadata(
-                [line_metadata[i] for i in item]))
-        return type(self)(self.x_data,
-                          self.y_data[item, :],
-                          x_tick_labels=self.x_tick_labels,
-                          metadata=new_metadata)
 
     @classmethod
     def from_spectra(cls: Type[T], spectra: Sequence[Spectrum1D]) -> T:
