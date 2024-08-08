@@ -7,6 +7,7 @@ import itertools
 import math
 import json
 from numbers import Integral, Real
+from toolz.itertoolz import groupby, pluck
 from typing import (Any, Callable, Dict, Generator, List, Literal, Optional, overload,
                     Sequence, Tuple, TypeVar, Union, Type)
 from typing_extensions import Self
@@ -955,36 +956,16 @@ class SpectrumCollectionMixin(ABC):
             metadata in 'line_data' not common across all spectra in a
             group will be discarded
         """
-        # Remove line_data_keys that are not found in top level of metadata:
-        # these will not be useful for grouping
-        keys = [key for key in line_data_keys if key not in self.metadata]
+        get_key_items = lambda enumerated_metadata: tuple(
+            enumerated_metadata[1].get(item, None) for item in line_data_keys)
 
-        # If there are no keys left, sum everything as one big group and return
-        if not keys:
-            return self.from_spectra([self.sum()])
+        groups = groupby(get_key_items, enumerate(self.iter_metadata()))
 
-        grouping_dict = _get_unique_elems_and_idx(
-            self._get_line_data_vals(*line_data_keys))
+        indices = lambda enumerated_values: pluck(0, enumerated_values)
+        sum_over_indices = lambda indices: self[list(indices)].sum()
 
-        new_s_data = np.zeros((len(grouping_dict),
-                               *self._get_raw_spectrum_data().shape[1:]))
-        group_metadata = copy.deepcopy(self.metadata)
-        group_metadata['line_data'] = [{}]*len(grouping_dict)
-        for i, idxs in enumerate(grouping_dict.values()):
-            # Look for any common key/values in grouped metadata
-            group_i_metadata = self._tidy_metadata(idxs)
-            group_metadata['line_data'][i] = group_i_metadata
-            new_s_data[i] = np.sum(self._get_raw_spectrum_data()[idxs], axis=0)
-
-        new_s_data = ureg.Quantity(new_s_data,
-                                   units=self._get_internal_spectrum_data_unit()
-                                   ).to(self._get_spectrum_data_unit())
-
-        new_data = self.copy()
-        new_data._set_spectrum_data(new_s_data)  # pylint: disable=W0212
-        new_data.metadata = group_metadata
-
-        return new_data
+        return self.from_spectra([sum_over_indices(indices(group))
+                                  for group in groups.values()])
 
 
 class Spectrum1DCollection(SpectrumCollectionMixin,
