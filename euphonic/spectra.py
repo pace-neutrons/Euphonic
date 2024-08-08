@@ -8,8 +8,9 @@ import math
 import json
 from numbers import Integral, Real
 from toolz.itertoolz import groupby, pluck
-from typing import (Any, Callable, Dict, Generator, List, Literal, Optional, overload,
-                    Sequence, Tuple, TypeVar, Union, Type)
+from typing import (Any, Callable, Dict, Generator, Iterable, Iterator, List,
+                    Literal, Optional, overload, Sequence, Tuple, TypeVar,
+                    Union, Type)
 from typing_extensions import Self
 import warnings
 
@@ -23,7 +24,6 @@ from euphonic.broadening import (ErrorFit, KernelShape,
 from euphonic.io import (_obj_to_json_file, _obj_from_json_file,
                          _obj_to_dict, _process_dict)
 from euphonic.readers.castep import read_phonon_dos_data
-from euphonic.util import _get_unique_elems_and_idx
 from euphonic.validate import _check_constructor_inputs, _check_unit_conversion
 
 
@@ -768,7 +768,6 @@ class SpectrumCollectionMixin(ABC):
             metadata=metadata
         )
 
-
     # Required methods
     @classmethod
     @abstractmethod
@@ -851,7 +850,8 @@ class SpectrumCollectionMixin(ABC):
 
         # Collect indices that match each combination of values
         selected_indices = []
-        for value_combination in itertools.product(*select_key_values.values()):
+        for value_combination in itertools.product(*select_key_values.values()
+                                                   ):
             selection = dict(zip(select_key_values.keys(), value_combination))
             selected_indices.extend(self._select_indices(**selection))
 
@@ -956,13 +956,25 @@ class SpectrumCollectionMixin(ABC):
             metadata in 'line_data' not common across all spectra in a
             group will be discarded
         """
-        get_key_items = lambda enumerated_metadata: tuple(
-            enumerated_metadata[1].get(item, None) for item in line_data_keys)
+        def get_key_items(enumerated_metadata: tuple[int, OneLineData]
+                          ) -> tuple[str | int, ...]:
+            """Get sort keys from an item of enumerated input to groupby
+
+            e.g. with line_data_keys=("a", "b")
+
+              (0, {"a": 4, "d": 5}) --> (4, None)
+            """
+            return tuple(enumerated_metadata[1].get(item, None)
+                         for item in line_data_keys)
+
+        def indices(enumerated_values: Iterable[tuple[int, Any]]
+                    ) -> Iterator[int]:
+            return pluck(0, enumerated_values)
+
+        def sum_over_indices(indices: Iterable[int]) -> Self:
+            return self[list(indices)].sum()
 
         groups = groupby(get_key_items, enumerate(self.iter_metadata()))
-
-        indices = lambda enumerated_values: pluck(0, enumerated_values)
-        sum_over_indices = lambda indices: self[list(indices)].sum()
 
         return self.from_spectra([sum_over_indices(indices(group))
                                   for group in groups.values()])
