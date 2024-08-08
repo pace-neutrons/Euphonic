@@ -1009,7 +1009,6 @@ class SpectrumCollectionMixin(ABC):
         return self.from_spectra([self[list(indices(group))].sum()
                                   for group in groups.values()])
 
-
     def to_dict(self) -> Dict[str, Any]:
         """
         Convert to a dictionary consistent with from_dict()
@@ -1027,28 +1026,7 @@ class SpectrumCollectionMixin(ABC):
 
     @classmethod
     def from_dict(cls: Self, d: dict) -> Self:
-        """
-        Convert a dictionary to a Spectrum Collection object
-
-        Parameters
-        ----------
-        d : dict
-            A dictionary with the following keys/values:
-
-            - 'x_data': (n_x_data,) or (n_x_data + 1,) float ndarray
-            - 'x_data_unit': str
-            - 'y_data': (n_x_data,) float ndarray
-            - 'y_data_unit': str
-
-            There are also the following optional keys:
-
-            - 'x_tick_labels': list of (int, string) tuples
-            - 'metadata': dict
-
-        Returns
-        -------
-        spectrum_collection
-        """
+        """Initialise a Spectrum Collection object from dict"""
         data_keys = list(f"{dim}_data" for dim in cls._bin_axes)
         data_keys.append(cls._spectrum_data_name())
 
@@ -1357,6 +1335,31 @@ class Spectrum1DCollection(SpectrumCollectionMixin,
         else:
             raise TypeError("x_width must be a Quantity or Callable")
 
+    @classmethod
+    def from_dict(cls: Self, d: dict) -> Self:
+        """
+        Convert a dictionary to a Spectrum Collection object
+
+        Parameters
+        ----------
+        d : dict
+            A dictionary with the following keys/values:
+
+            - 'x_data': (n_x_data,) or (n_x_data + 1,) float ndarray
+            - 'x_data_unit': str
+            - 'y_data': (n_x_data,) float ndarray
+            - 'y_data_unit': str
+
+            There are also the following optional keys:
+
+            - 'x_tick_labels': list of (int, string) tuples
+            - 'metadata': dict
+
+        Returns
+        -------
+        spectrum_collection
+        """
+        return super().from_dict(d)
 
 class Spectrum2D(Spectrum):
     """
