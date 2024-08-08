@@ -892,48 +892,15 @@ class SpectrumCollectionMixin(ABC):
 
         return combined_metadata
 
-    def _tidy_metadata(self, indices: Optional[Sequence[int]] = None
-            ) -> Metadata:
+    def _tidy_metadata(self) -> Metadata:
         """
         For a metadata dictionary, combines all common key/value
         pairs in 'line_data' and puts them in a top-level dictionary.
-        If indices is supplied, only those indices in 'line_data' are
-        combined. Unmatching key/value pairs are discarded
         """
         line_data = self.metadata.get("line_data", [{}] * len(self))
-        if indices is not None:
-            line_data = [line_data[idx] for idx in indices]
         combined_line_data = self._combine_metadata(line_data)
         combined_line_data.pop("line_data", None)
         return combined_line_data
-
-    def _get_line_data_vals(self, *line_data_keys: str) -> np.ndarray:
-        """
-        Get value of the key(s) for each element in
-        metadata['line_data']. Returns a 1D array of tuples, where each
-        tuple contains the value(s) for each key in line_data_keys, for
-        a single element in metadata['line_data']. This allows easy
-        grouping/selecting by specific keys
-
-        For example, if we have a Spectrum1DCollection with the following
-        metadata:
-            {'desc': 'Quartz', 'line_data': [
-                {'inst': 'LET', 'sample': 0, 'index': 1},
-                {'inst': 'MAPS', 'sample': 1, 'index': 2},
-                {'inst': 'MARI', 'sample': 1, 'index': 1},
-            ]}
-        Then:
-            _get_line_data_vals('inst', 'sample') = [('LET', 0),
-                                                     ('MAPS', 1),
-                                                     ('MARI', 1)]
-
-        Raises a KeyError if 'line_data' or the key doesn't exist
-        """
-        line_data = self.metadata['line_data']
-        line_data_vals = np.empty(len(line_data), dtype=object)
-        for i, data in enumerate(line_data):
-            line_data_vals[i] = tuple([data[key] for key in line_data_keys])
-        return line_data_vals
 
     def group_by(self, *line_data_keys: str) -> Self:
         """
