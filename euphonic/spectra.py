@@ -816,7 +816,7 @@ class SpectrumCollectionMixin(ABC):
             if (item.stop is not None) and (item.stop >= len(self)):
                 raise IndexError(f'index "{item.stop}" out of range')
             return
-        
+
         if not all([isinstance(i, Integral) for i in item]):
             raise TypeError(
                 f'Index "{item}" should be an integer, slice '
@@ -837,13 +837,12 @@ class SpectrumCollectionMixin(ABC):
 
         if isinstance(item, Integral):
             return metadata_lines[item]
-        elif isinstance(item, slice):
+        if isinstance(item, slice):
             return self._combine_metadata(metadata_lines[item])
-        elif len(item) == 1:
+        if len(item) == 1:
             return metadata_lines[item[0]]
-        else:
-            return self._combine_metadata(
-                list(itemgetter(*item)(metadata_lines)))
+        return self._combine_metadata(
+            list(itemgetter(*item)(metadata_lines)))
 
     def copy(self) -> Self:
         """Get an independent copy of spectrum"""
