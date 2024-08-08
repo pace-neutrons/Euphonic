@@ -710,11 +710,13 @@ class SpectrumCollectionMixin(ABC):
     _item_type = Spectrum1D
 
     # Define some private methods which wrap this information into useful forms
-    def _spectrum_data_name(self) -> str:
-        return f"{self._spectrum_axis}_data"
+    @classmethod
+    def _spectrum_data_name(cls) -> str:
+        return f"{cls._spectrum_axis}_data"
 
-    def _spectrum_raw_data_name(self) -> str:
-        return f"_{self._spectrum_axis}_data"
+    @classmethod
+    def _spectrum_raw_data_name(cls) -> str:
+        return f"_{cls._spectrum_axis}_data"
 
     def _get_spectrum_data(self) -> Quantity:
         return getattr(self, self._spectrum_data_name())
@@ -825,7 +827,7 @@ class SpectrumCollectionMixin(ABC):
     @overload
     def _get_item_metadata(self, item: Integral) -> OneLineData:
         """Get a single metadata item with no line_data"""
-        
+
     @overload
     def _get_item_metadata(self, item: slice | Sequence[Integral] | np.ndarray
                            ) -> Metadata:  # noqa: F811
@@ -1008,6 +1010,58 @@ class SpectrumCollectionMixin(ABC):
                                   for group in groups.values()])
 
 
+    def to_dict(self) -> Dict[str, Any]:
+        """
+        Convert to a dictionary consistent with from_dict()
+
+        Returns
+        -------
+        dict
+        """
+        attrs = [*self._get_bin_kwargs().keys(),
+                 self._spectrum_data_name(),
+                 'x_tick_labels',
+                 'metadata']
+
+        return _obj_to_dict(self, attrs)
+
+    @classmethod
+    def from_dict(cls: Self, d: dict) -> Self:
+        """
+        Convert a dictionary to a Spectrum Collection object
+
+        Parameters
+        ----------
+        d : dict
+            A dictionary with the following keys/values:
+
+            - 'x_data': (n_x_data,) or (n_x_data + 1,) float ndarray
+            - 'x_data_unit': str
+            - 'y_data': (n_x_data,) float ndarray
+            - 'y_data_unit': str
+
+            There are also the following optional keys:
+
+            - 'x_tick_labels': list of (int, string) tuples
+            - 'metadata': dict
+
+        Returns
+        -------
+        spectrum_collection
+        """
+        data_keys = list(f"{dim}_data" for dim in cls._bin_axes)
+        data_keys.append(cls._spectrum_data_name())
+
+        d = _process_dict(d,
+                          quantities=data_keys,
+                          optional=['x_tick_labels', 'metadata'])
+
+        data_args = [d[key] for key in data_keys]
+        return cls(*data_args,
+                   x_tick_labels=d['x_tick_labels'],
+                   metadata=d['metadata'])
+
+
 class Spectrum1DCollection(SpectrumCollectionMixin,
                            Spectrum,
                            collections.abc.Sequence):
@@ -1143,17 +1197,6 @@ class Spectrum1DCollection(SpectrumCollectionMixin,
         return cls(x_data, y_data, x_tick_labels=x_tick_labels,
                    metadata=metadata)
 
-    def to_dict(self) -> Dict[str, Any]:
-        """
-        Convert to a dictionary consistent with from_dict()
-
-        Returns
-        -------
-        dict
-        """
-        return _obj_to_dict(self, ['x_data', 'y_data', 'x_tick_labels',
-                                   'metadata'])
-
     def to_text_file(self, filename: str,
                      fmt: Optional[Union[str, Sequence[str]]] = None) -> None:
         """
@@ -1186,35 +1229,6 @@ class Spectrum1DCollection(SpectrumCollectionMixin,
         if fmt is not None:
             kwargs['fmt'] = fmt
         np.savetxt(filename, out_data, **kwargs)
-
-    @classmethod
-    def from_dict(cls: Type[T], d) -> T:
-        """
-        Convert a dictionary to a Spectrum1DCollection object
-
-        Parameters
-        ----------
-        d : dict
-            A dictionary with the following keys/values:
-
-            - 'x_data': (n_x_data,) or (n_x_data + 1,) float ndarray
-            - 'x_data_unit': str
-            - 'y_data': (n_x_data,) float ndarray
-            - 'y_data_unit': str
-
-            There are also the following optional keys:
-
-            - 'x_tick_labels': list of (int, string) tuples
-            - 'metadata': dict
-
-        Returns
-        -------
-        spectrum_collection
-        """
-        d = _process_dict(d, quantities=['x_data', 'y_data'],
-                          optional=['x_tick_labels', 'metadata'])
-        return cls(d['x_data'], d['y_data'], x_tick_labels=d['x_tick_labels'],
-                   metadata=d['metadata'])
 
     @classmethod
     def from_castep_phonon_dos(cls: Type[T], filename: str) -> T:
