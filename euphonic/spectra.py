@@ -7,7 +7,6 @@ import itertools
 import math
 import json
 from numbers import Integral, Real
-from toolz.itertoolz import groupby, pluck
 from typing import (Any, Callable, Dict, Generator, Iterable, Iterator, List,
                     Literal, Optional, overload, Sequence, Tuple, TypeVar,
                     Union, Type)
@@ -17,6 +16,7 @@ import warnings
 from pint import DimensionalityError, Quantity
 import numpy as np
 from scipy.ndimage import correlate1d, gaussian_filter
+from toolz.itertoolz import groupby, pluck
 
 from euphonic import ureg, __version__
 from euphonic.broadening import (ErrorFit, KernelShape,
