@@ -1391,7 +1391,7 @@ class Spectrum2D(Spectrum):
     def __init__(self, x_data: Quantity, y_data: Quantity,
                  z_data: Quantity,
                  x_tick_labels: Optional[Sequence[Tuple[int, str]]] = None,
-                 metadata: Optional[Dict[str, Union[int, str]]] = None
+                 metadata: Optional[Metadata] = None
                  ) -> None:
         """
         Parameters
@@ -1767,6 +1767,95 @@ class Spectrum2D(Spectrum):
                    x_tick_labels=d['x_tick_labels'],
                    metadata=d['metadata'])
 
+
+class Spectrum2DCollection(SpectrumCollectionMixin,
+                           Spectrum,
+                           collections.abc.Sequence):
+    """A collection of Spectrum2D with common x_data, y_data and x_tick_labels
+
+    Intended for convenient storage of contributions to spectral maps such as
+    S(Q,w). This object can be indexed or iterated to obtain individual
+    Spectrum2D.
+
+    Attributes
+    ----------
+    x_data
+        Shape (n_x_data,) or (n_x_data + 1,) float Quantity. The x_data
+        points (if size == (n_x_data,)) or x_data bin edges (if size
+        == (n_x_data + 1,))
+    y_data
+        Shape (n_y_data,) or (n_y_data + 1,) float Quantity. The y_data
+        points (if size == (n_y_data,)) or y_data bin edges (if size
+        == (n_y_data + 1,))
+    z_data
+        Shape (n_entries, n_x_data, n_y_data) float Quantity. The spectral data
+        in x and y, indexed over components
+    x_tick_labels
+        Sequence[Tuple[int, str]] or None. Special tick labels e.g. for
+        high-symmetry points. The int refers to the index in x_data the
+        label should be applied to
+    metadata
+        Dict[str, Union[int, str, LineData]] or None. Contains metadata
+        about the spectra. Keys should be strings and values should be
+        strings or integers.
+        There are some functional keys:
+
+          - 'line_data' : LineData
+                          This is a Sequence[Dict[str, Union[int, str]],
+                          it contains metadata for each spectrum in
+                          the collection, and must be of length
+                          n_entries
+    """
+
+    # Private attributes used by SpectrumCollectionMixin
+    _spectrum_axis = "z"
+    _item_type = Spectrum2D
+
+    def __init__(
+            self, x_data: Quantity, y_data: Quantity, z_data: Quantity,
+            x_tick_labels: Optional[Sequence[Tuple[int, str]]] = None,
+            metadata: Optional[Metadata] = None
+    ) -> None:
+        _check_constructor_inputs(
+            [z_data, x_tick_labels, metadata],
+            [Quantity, [list, type(None)], [dict, type(None)]],
+            [(-1, -1, -1), (), ()],
+            ['z_data', 'x_tick_labels', 'metadata'])
+        nx = z_data.shape[1]
+        ny = z_data.shape[2]
+        _check_constructor_inputs(
+            [x_data, y_data],
+            [Quantity, Quantity],
+            [[(nx,), (nx + 1,)], [(ny,), (ny + 1,)]],
+            ['x_data', 'y_data'])
+
+        self._set_data(x_data, 'x')
+        self._set_data(y_data, 'y')
+        self.x_tick_labels = x_tick_labels
+        self._set_data(z_data, 'z')
+        if metadata and 'line_data' in metadata.keys():
+            if len(metadata['line_data']) != len(z_data):
+                raise ValueError(
+                    f'z_data contains {len(z_data)} spectra, but '
+                    f'metadata["line_data"] contains '
+                    f'{len(metadata["line_data"])} entries')
+        self.metadata = {} if metadata is None else metadata
+
+    def _split_by_indices(self, indices: Sequence[int] | np.ndarray
+                          ) -> List[Self]:
+        """Split data along x axis at given indices"""
+        ranges = self._ranges_from_indices(indices)
+        return [type(self)(self.x_data[x0:x1],
+                           self.y_data,
+                           self.z_data[:, x0:x1, :],
+                           x_tick_labels=self._cut_x_ticks(
+                               self.x_tick_labels, x0, x1),
+                           metadata=self.metadata)
+                for x0, x1 in ranges]
+
+    @classmethod
+    def from_spectra(cls, spectra: Sequence[Spectrum2D]) -> Self:
+        raise NotImplementedError()
 
 def apply_kinematic_constraints(spectrum: Spectrum2D,
                                 e_i: Quantity = None,
