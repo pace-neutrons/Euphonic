@@ -1808,6 +1808,7 @@ class Spectrum2DCollection(SpectrumCollectionMixin,
     """
 
     # Private attributes used by SpectrumCollectionMixin
+    _bin_axes = ("x", "y")
     _spectrum_axis = "z"
     _item_type = Spectrum2D
 
@@ -1855,7 +1856,48 @@ class Spectrum2DCollection(SpectrumCollectionMixin,
 
     @classmethod
     def from_spectra(cls, spectra: Sequence[Spectrum2D]) -> Self:
-        raise NotImplementedError()
+        if len(spectra) < 1:
+            raise IndexError("At least one spectrum is needed for collection")
+
+        def _type_check(spectrum):
+            if not isinstance(spectrum, Spectrum2D):
+                raise TypeError(
+                    "from_spectra() requires a sequence of Spectrum2D")
+
+        _type_check(spectra[0])
+        bins_data = {
+            f"{ax}_data": getattr(spectra[0], f"{ax}_data")
+            for ax in cls._bin_axes
+        }
+        x_tick_labels = spectra[0].x_tick_labels
+
+        spectrum_0_data = getattr(spectra[0], f"{cls._spectrum_axis}_data")
+        spectrum_data_shape = spectrum_0_data.shape
+        spectrum_data_magnitude = np.empty((len(spectra), *spectrum_data_shape))
+        spectrum_data_magnitude[0, :, :] = spectrum_0_data.magnitude
+        spectrum_data_units = spectrum_0_data.units
+
+        for i, spectrum in enumerate(spectra[1:]):
+            _type_check(spectrum)
+            spectrum_i_data = getattr(spectrum, f"_{cls._spectrum_axis}_data")
+            spectrum_i_data_units = getattr(spectrum, f"{cls._spectrum_axis}_data_unit")
+            assert (spectrum_i_data_units == spectrum_data_units)
+
+            for key, ref_bins in bins_data.items():
+                item_bins = getattr(spectrum, key)
+                assert np.allclose(item_bins.magnitude, ref_bins.magnitude)
+                assert item_bins.units == ref_bins.units
+
+            assert spectrum.x_tick_labels == x_tick_labels
+            spectrum_data_magnitude[i + 1, :, :] = spectrum_i_data
+
+        metadata = cls._combine_metadata([spec.metadata for spec in spectra])
+        spectrum_data = Quantity(spectrum_data_magnitude, spectrum_data_units)
+        return cls(**bins_data,
+                   **{f"{cls._spectrum_axis}_data": spectrum_data},
+                   x_tick_labels=x_tick_labels,
+                   metadata=metadata)
+
 
 def apply_kinematic_constraints(spectrum: Spectrum2D,
                                 e_i: Quantity = None,
