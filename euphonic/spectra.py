@@ -746,6 +746,18 @@ class SpectrumCollectionMixin(ABC):
         return {f"{axis}_data": getattr(self, f"{axis}_data")
                 for axis in self._bin_axes}
 
+    @classmethod
+    def _get_item_data(cls, item: Spectrum) -> Quantity:
+        return getattr(item, f"{cls._spectrum_axis}_data")
+
+    @classmethod
+    def _get_item_raw_data(cls, item: Spectrum) -> np.ndarray:
+        return getattr(item, f"_{cls._spectrum_axis}_data")
+
+    @classmethod
+    def _get_item_data_unit(cls, item: Spectrum) -> str:
+        return getattr(item, f"{cls._spectrum_axis}_data_unit")
+
     def sum(self) -> Spectrum:
         """
         Sum collection to a single spectrum
@@ -1871,16 +1883,17 @@ class Spectrum2DCollection(SpectrumCollectionMixin,
         }
         x_tick_labels = spectra[0].x_tick_labels
 
-        spectrum_0_data = getattr(spectra[0], f"{cls._spectrum_axis}_data")
+        spectrum_0_data = cls._get_item_data(spectra[0])
         spectrum_data_shape = spectrum_0_data.shape
-        spectrum_data_magnitude = np.empty((len(spectra), *spectrum_data_shape))
+        spectrum_data_magnitude = np.empty(
+            (len(spectra), *spectrum_data_shape))
         spectrum_data_magnitude[0, :, :] = spectrum_0_data.magnitude
         spectrum_data_units = spectrum_0_data.units
 
         for i, spectrum in enumerate(spectra[1:]):
             _type_check(spectrum)
-            spectrum_i_data = getattr(spectrum, f"_{cls._spectrum_axis}_data")
-            spectrum_i_data_units = getattr(spectrum, f"{cls._spectrum_axis}_data_unit")
+            spectrum_i_raw_data = cls._get_item_raw_data(spectrum)
+            spectrum_i_data_units = cls._get_item_data_unit(spectrum)
             assert (spectrum_i_data_units == spectrum_data_units)
 
             for key, ref_bins in bins_data.items():
@@ -1889,7 +1902,7 @@ class Spectrum2DCollection(SpectrumCollectionMixin,
                 assert item_bins.units == ref_bins.units
 
             assert spectrum.x_tick_labels == x_tick_labels
-            spectrum_data_magnitude[i + 1, :, :] = spectrum_i_data
+            spectrum_data_magnitude[i + 1, :, :] = spectrum_i_raw_data
 
         metadata = cls._combine_metadata([spec.metadata for spec in spectra])
         spectrum_data = Quantity(spectrum_data_magnitude, spectrum_data_units)
