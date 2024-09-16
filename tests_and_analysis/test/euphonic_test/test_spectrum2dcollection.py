@@ -6,14 +6,12 @@ import pytest
 from euphonic import Quantity, ureg
 from euphonic.spectra import OneLineData, Spectrum2D, Spectrum2DCollection
 
-# def check_spectrum2d(actual_spectrum2d, expected_spectrum2d, equal_nan=False,
-#                      z_atol=np.finfo(np.float64).eps):
-
 
 def rand_spectrum2d(seed: int = 1,
                     x_bins: Optional[Quantity] = None,
                     y_bins: Optional[Quantity] = None,
                     metadata: Optional[OneLineData] = None) -> Spectrum2D:
+    """Generate a Spectrum2D with random axis lengths, ranges, and metadata"""
     rng = np.random.default_rng(seed=seed)
 
     if x_bins is None:
@@ -38,6 +36,7 @@ def rand_spectrum2d(seed: int = 1,
 
 class TestSpectrum2DCollectionCreation:
     def test_init_from_numbers(self):
+        """Construct Spectrum2DCollection with __init__()"""
         N_X = 10
         N_Y = 20
         N_Z = 5
@@ -58,6 +57,7 @@ class TestSpectrum2DCollectionCreation:
         assert spectrum
 
     def test_init_from_spectra(self):
+        """Construct collection from a series of Spectrum2D"""
         spec_2d = rand_spectrum2d(seed=1)
         spec_2d_consistent = rand_spectrum2d().copy()
         spec_2d_consistent._z_data *= 2
