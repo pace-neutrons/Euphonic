@@ -776,7 +776,7 @@ class SpectrumCollectionMixin(ABC):
             np.sum(self._get_raw_spectrum_data(), axis=0),
             units=self._get_internal_spectrum_data_unit()
         ).to(self._get_spectrum_data_unit())
-        return Spectrum1D(
+        return self._item_type(
             **self._get_bin_kwargs(),
             **{self._spectrum_data_name(): summed_s_data},
             x_tick_labels=copy.copy(self.x_tick_labels),
