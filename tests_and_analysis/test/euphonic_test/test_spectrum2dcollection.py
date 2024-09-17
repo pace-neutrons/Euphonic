@@ -1,3 +1,8 @@
+"""Unit tests for Spectrum2DCollection"""
+
+# Stop the linter from complaining when pytest fixtures are used idiomatically
+# pylint: disable=redefined-outer-name
+
 from typing import Optional
 
 import numpy as np
@@ -11,37 +16,44 @@ from .test_spectrum2d import check_spectrum2d, get_spectrum2d
 
 
 def get_spectrum2dcollection_path(*subpaths):
+    """Get Spectrum2DCollection reference data path"""
     return get_data_path('spectrum2dcollection', *subpaths)
 
 
 def get_spectrum2dcollection(json_filename):
+    """Get Spectrum2DCollection reference data object"""
     return Spectrum2DCollection.from_json_file(
         get_spectrum2dcollection_path(json_filename))
 
 
 @pytest.fixture
-def quartz_fuzzy_collection():
+def quartz_fuzzy_collection() -> Spectrum2DCollection:
+    """Coarsely sampled quartz bands in a few directions"""
     return get_spectrum2dcollection("quartz_fuzzy_map.json")
 
 
 @pytest.fixture
-def quartz_fuzzy_items():
+def quartz_fuzzy_items() -> list[Spectrum2D]:
+    """Individual spectra corresponding to quartz_fuzzy_collection"""
     return [get_spectrum2d(f"quartz_fuzzy_map_{i}.json") for i in range(3)]
 
 @pytest.fixture
-def inconsistent_x_item():
+def inconsistent_x_item() -> Spectrum2D:
+    """Spectrum with different x values"""
     item = get_spectrum2d("quartz_fuzzy_map_0.json")
     item._x_data *= 2.
     return item
 
 @pytest.fixture
 def inconsistent_x_units_item():
+    """Spectrum with different x units"""
     item = get_spectrum2d("quartz_fuzzy_map_0.json")
     item.x_data_unit = "1/bohr"
     return item
 
 @pytest.fixture
 def inconsistent_x_length_item():
+    """Spectrum with different number of x values"""
     item = get_spectrum2d("quartz_fuzzy_map_0.json")
     item.x_data = item.x_data[:-2]
     item.z_data = item.z_data[:-2, :]
@@ -49,6 +61,7 @@ def inconsistent_x_length_item():
 
 @pytest.fixture
 def inconsistent_y_item():
+    """Spectrum with different y values"""
     item = get_spectrum2d("quartz_fuzzy_map_0.json")
     item.y_data = item.y_data * 2.
     return item
@@ -81,20 +94,21 @@ def rand_spectrum2d(seed: int = 1,
 
 
 class TestSpectrum2DCollectionCreation:
+    """Unit tests for Spectrum2DCollection constructors"""
     def test_init_from_numbers(self):
         """Construct Spectrum2DCollection with __init__()"""
-        N_X = 10
-        N_Y = 20
-        N_Z = 5
+        n_x = 10
+        n_y = 20
+        n_z = 5
 
-        x_data = ureg.Quantity(np.linspace(0, 100, N_X), "1 / angstrom")
-        y_data = ureg.Quantity(np.linspace(0, 2000, N_Y), "meV")
-        z_data = ureg.Quantity(np.random.random((N_Z, N_X, N_Y)), "1 / meV")
+        x_data = ureg.Quantity(np.linspace(0, 100, n_x), "1 / angstrom")
+        y_data = ureg.Quantity(np.linspace(0, 2000, n_y), "meV")
+        z_data = ureg.Quantity(np.random.random((n_z, n_x, n_y)), "1 / meV")
 
         metadata = {"flavour": "chocolate",
-                    "line_data": [{"index": i} for i in range(N_Z)]}
+                    "line_data": [{"index": i} for i in range(n_z)]}
 
-        x_tick_labels = [(0, "Start"), (N_X - 1, "END")]
+        x_tick_labels = [(0, "Start"), (n_x - 1, "END")]
 
         spectrum = Spectrum2DCollection(
             x_data, y_data, z_data,
@@ -124,6 +138,7 @@ class TestSpectrum2DCollectionCreation:
         else:
             assert ref_collection.metadata == collection.metadata
 
+    # pylint: disable=R0913  #  These fixtures are "too many arguments"
     def test_from_bad_spectra(
             self,
             quartz_fuzzy_items,
@@ -152,6 +167,9 @@ class TestSpectrum2DCollectionCreation:
             Spectrum2DCollection.from_spectra(
                 quartz_fuzzy_items + [inconsistent_y_item]
             )
+
+class TestSpectrum2DCollectionFunctionality:
+    """Unit test indexing and methods of Spectrum2DCollection"""
 
     def test_indexing(self, quartz_fuzzy_collection, quartz_fuzzy_items):
         """Check indexing an element, slice and iteration
