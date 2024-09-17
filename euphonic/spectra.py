@@ -1866,6 +1866,17 @@ class Spectrum2DCollection(SpectrumCollectionMixin,
                            metadata=self.metadata)
                 for x0, x1 in ranges]
 
+    @property
+    def z_data(self) -> Quantity:
+        return ureg.Quantity(
+            self._z_data, self._internal_z_data_unit
+        ).to(self.z_data_unit, "reciprocal_spectroscopy")
+
+    @z_data.setter
+    def z_data(self, value: Quantity) -> None:
+        self.z_data_unit = str(value.units)
+        self._z_data = value.to(self._internal_z_data_unit).magnitude
+
     @classmethod
     def from_spectra(cls, spectra: Sequence[Spectrum2D]) -> Self:
         if len(spectra) < 1:
