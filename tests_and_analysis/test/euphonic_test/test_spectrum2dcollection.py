@@ -43,14 +43,14 @@ def inconsistent_x_units_item():
 @pytest.fixture
 def inconsistent_x_length_item():
     item = get_spectrum2d("quartz_fuzzy_map_0.json")
-    item._x_data = item._x_data[:-2]
-    item._z_data = item._z_data[:-2, :]
+    item.x_data = item.x_data[:-2]
+    item.z_data = item.z_data[:-2, :]
     return item
 
 @pytest.fixture
 def inconsistent_y_item():
     item = get_spectrum2d("quartz_fuzzy_map_0.json")
-    item._y_data *= 2.
+    item.y_data = item.y_data * 2.
     return item
 
 def rand_spectrum2d(seed: int = 1,
@@ -103,7 +103,9 @@ class TestSpectrum2DCollectionCreation:
         for attr, data in [("x_data", x_data),
                            ("y_data", y_data),
                            ("z_data", z_data)]:
-            np.testing.assert_allclose(getattr(spectrum, attr), data)
+            assert getattr(spectrum, attr).units == data.units
+            np.testing.assert_allclose(getattr(spectrum, attr).magnitude,
+                                       data.magnitude)
 
         assert spectrum.metadata == metadata
 
@@ -115,7 +117,7 @@ class TestSpectrum2DCollectionCreation:
         for attr in ("x_data", "y_data", "z_data"):
             new, ref = getattr(collection, attr), getattr(ref_collection, attr)
             assert new.units == ref.units
-            np.testing.assert_allclose(new, ref)
+            np.testing.assert_allclose(new.magnitude, ref.magnitude)
 
         if ref_collection.metadata is None:
             assert collection.metadata is None
@@ -186,7 +188,8 @@ class TestSpectrum2DCollectionCreation:
 
         extended = quartz_fuzzy_collection + quartz_fuzzy_collection
         assert len(extended) == 2 * len(quartz_fuzzy_collection)
-        np.testing.assert_allclose(extended.sum().z_data, total.z_data * 2)
+        np.testing.assert_allclose(extended.sum().z_data.magnitude,
+                                   total.z_data.magnitude * 2)
 
         selection = quartz_fuzzy_collection.select(direction=2, common="yes")
         ref_item_2 = get_spectrum2d("quartz_fuzzy_map_2.json")
