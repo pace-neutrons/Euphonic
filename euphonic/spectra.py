@@ -1952,7 +1952,7 @@ class Spectrum2DCollection(SpectrumCollectionMixin,
             _type_check(spectrum)
             spectrum_i_raw_data = cls._get_item_raw_data(spectrum)
             spectrum_i_data_units = cls._get_item_data_unit(spectrum)
-            assert (spectrum_i_data_units == spectrum_data_units)
+            assert spectrum_i_data_units == spectrum_data_units
 
             for key, ref_bins in bins_data.items():
                 item_bins = getattr(spectrum, key)
