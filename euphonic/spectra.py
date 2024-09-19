@@ -823,7 +823,14 @@ class SpectrumCollectionMixin(ABC):
 
     def _validate_item(self, item: Integral | slice | Sequence[Integral] | np.ndarray
                        ) -> None:
-        """Raise Error if index has inappropriate typing/range"""
+        """Raise Error if index has inappropriate typing/ranges
+
+        Raises:
+            IndexError: Slice is not compatible with size of collection
+
+            TypeError: item specification does not have acceptable type; e.g.
+                a sequence of float or bool was provided when ints are needed.
+        """
         if isinstance(item, Integral):
             return
         if isinstance(item, slice):
@@ -891,6 +898,28 @@ class SpectrumCollectionMixin(ABC):
             yield common_metadata | one_line_data
 
     def _select_indices(self, **select_key_values) -> list[int]:
+        """Get indices of items that match metadata query
+
+        The target key-value pairs are a subset of the matching data, e.g.
+
+        self._select_indices(species="Na", weight="coherent")
+
+        will match metadata rows
+
+        {"species": "Na", "weight": "coherent"}
+
+        and
+
+        {"species": "Na", "weight": "coherent", "mass": "22.9898"}
+
+        but not
+
+        {"species": "Na"}
+
+        or
+
+        {"species": "K", "weight": "coherent"}
+        """
         required_metadata = select_key_values.items()
         indices = [i for i, row in enumerate(self.iter_metadata())
                    if required_metadata <= row.items()]
