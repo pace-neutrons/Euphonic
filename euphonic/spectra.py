@@ -831,7 +831,7 @@ class SpectrumCollectionMixin(ABC):
                 raise IndexError(f'index "{item.stop}" out of range')
             return
 
-        if not all([isinstance(i, Integral) for i in item]):
+        if not all(isinstance(i, Integral) for i in item):
             raise TypeError(
                 f'Index "{item}" should be an integer, slice '
                 f'or sequence of ints')
@@ -879,9 +879,9 @@ class SpectrumCollectionMixin(ABC):
 
     def iter_metadata(self) -> Generator[OneLineData, None, None]:
         """Iterate over metadata dicts of individual spectra from collection"""
-        common_metadata = dict(
-            (key, self.metadata[key])
-            for key in set(self.metadata.keys()) - {"line_data",})
+        common_metadata = {
+            key: self.metadata[key]
+            for key in set(self.metadata.keys()) - {"line_data",}}
 
         line_data = self.metadata.get("line_data")
         if line_data is None:
@@ -1039,7 +1039,7 @@ class SpectrumCollectionMixin(ABC):
     @classmethod
     def from_dict(cls: Self, d: dict) -> Self:
         """Initialise a Spectrum Collection object from dict"""
-        data_keys = list(f"{dim}_data" for dim in cls._bin_axes)
+        data_keys = [f"{dim}_data" for dim in cls._bin_axes]
         data_keys.append(cls._spectrum_data_name())
 
         d = _process_dict(d,
@@ -1852,7 +1852,7 @@ class Spectrum2DCollection(SpectrumCollectionMixin,
                     f'z_data contains {len(z_data)} spectra, but '
                     f'metadata["line_data"] contains '
                     f'{len(metadata["line_data"])} entries')
-        self.metadata = {} if metadata is None else metadata
+        self.metadata = metadata if metadata is not None else {}
 
     def _split_by_indices(self, indices: Sequence[int] | np.ndarray
                           ) -> List[Self]:
