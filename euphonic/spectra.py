@@ -3,7 +3,7 @@
 from abc import ABC, abstractmethod
 import collections
 import copy
-from functools import partial
+from functools import partial, reduce
 import itertools
 import math
 import json
@@ -17,6 +17,7 @@ import warnings
 from pint import DimensionalityError, Quantity
 import numpy as np
 from scipy.ndimage import correlate1d, gaussian_filter
+from toolz.dicttoolz import valmap
 from toolz.itertoolz import groupby, pluck
 
 from euphonic import ureg, __version__
@@ -955,10 +956,12 @@ class SpectrumCollectionMixin(ABC):
             If no matching spectra are found
         """
         # Convert all items to sequences of possibilities
-        select_key_values = dict(
-            (key, (value,)) if isinstance(value, (int, str)) else (key, value)
-            for key, value in select_key_values.items()
-        )
+        def ensure_sequence(value: int | str | Sequence[int | str]
+                            ) -> Sequence[int | str]:
+            return (value,) if isinstance(value, (int, str)) else value
+
+        select_key_values = valmap(ensure_sequence, select_key_values)
+
 
         # Collect indices that match each combination of values
         selected_indices = []
@@ -989,8 +992,8 @@ class SpectrumCollectionMixin(ABC):
 
         # Combine all common key/value pairs into new dict
         combined_metadata = dict(
-            set(all_metadata[0].items()).intersection(
-                *[metadata.items() for metadata in all_metadata[1:]]))
+            reduce(set.intersection,
+                   (set(metadata.items()) for metadata in all_metadata)))
 
         # Put all other per-spectrum metadata in line_data
         line_data = [
@@ -1867,8 +1870,8 @@ class Spectrum2DCollection(SpectrumCollectionMixin,
             [Quantity, [list, type(None)], [dict, type(None)]],
             [(-1, -1, -1), (), ()],
             ['z_data', 'x_tick_labels', 'metadata'])
-        nx = z_data.shape[1]
-        ny = z_data.shape[2]
+        # First axis corresponds to spectra in collection
+        _, nx, ny = z_data.shape
         _check_constructor_inputs(
             [x_data, y_data],
             [Quantity, Quantity],
