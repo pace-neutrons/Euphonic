@@ -893,7 +893,7 @@ class SpectrumCollectionMixin(ABC):
         """Iterate over metadata dicts of individual spectra from collection"""
         common_metadata = {
             key: self.metadata[key]
-            for key in set(self.metadata.keys()) - {"line_data",}}
+            for key in self.metadata if key != "line_data"}
 
         line_data = self.metadata.get("line_data")
         if line_data is None:
