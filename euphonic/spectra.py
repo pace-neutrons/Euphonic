@@ -1016,6 +1016,25 @@ class SpectrumCollectionMixin(ABC):
         combined_line_data.pop("line_data", None)
         return combined_line_data
 
+    def _check_metadata(self) -> None:
+        """Check self.metadata['line_data'] is consistent with collection size
+
+        Raises
+        ------
+        ValueError
+            Metadata contains 'line_data' of incorrect length
+
+        """
+        if 'line_data' in self.metadata:
+            collection_size = len(self._get_raw_spectrum_data())
+            n_lines = len(self.metadata['line_data'])
+
+            if n_lines != collection_size:
+                raise ValueError(
+                    f'{self._spectrum_data_name()} contains {collection_size} '
+                    f'spectra, but metadata["line_data"] contains '
+                    f'{n_lines} entries')
+
     def group_by(self, *line_data_keys: str) -> Self:
         """
         Group and sum elements of spectral data according to the values
@@ -1171,13 +1190,9 @@ class Spectrum1DCollection(SpectrumCollectionMixin,
         self._set_data(x_data, 'x')
         self._set_data(y_data, 'y')
         self.x_tick_labels = x_tick_labels
-        if metadata and 'line_data' in metadata.keys():
-            if len(metadata['line_data']) != len(y_data):
-                raise ValueError(
-                    f'y_data contains {len(y_data)} spectra, but '
-                    f'metadata["line_data"] contains '
-                    f'{len(metadata["line_data"])} entries')
-        self.metadata = {} if metadata is None else metadata
+
+        self.metadata = metadata if metadata is not None else {}
+        self._check_metadata()
 
     def _split_by_indices(self,
                           indices: Union[Sequence[int], np.ndarray]
@@ -1882,13 +1897,9 @@ class Spectrum2DCollection(SpectrumCollectionMixin,
         self._set_data(y_data, 'y')
         self.x_tick_labels = x_tick_labels
         self._set_data(z_data, 'z')
-        if metadata and 'line_data' in metadata.keys():
-            if len(metadata['line_data']) != len(z_data):
-                raise ValueError(
-                    f'z_data contains {len(z_data)} spectra, but '
-                    f'metadata["line_data"] contains '
-                    f'{len(metadata["line_data"])} entries')
+
         self.metadata = metadata if metadata is not None else {}
+        self._check_metadata()
 
     def _split_by_indices(self, indices: Sequence[int] | np.ndarray
                           ) -> List[Self]:
