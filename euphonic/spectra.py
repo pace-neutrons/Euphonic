@@ -825,11 +825,15 @@ class SpectrumCollectionMixin(ABC):
                        ) -> None:
         """Raise Error if index has inappropriate typing/ranges
 
-        Raises:
-            IndexError: Slice is not compatible with size of collection
+        Raises
+        ------
+        IndexError
+            Slice is not compatible with size of collection
 
-            TypeError: item specification does not have acceptable type; e.g.
-                a sequence of float or bool was provided when ints are needed.
+        TypeError
+            item specification does not have acceptable type; e.g. a sequence
+            of float or bool was provided when ints are needed.
+
         """
         if isinstance(item, Integral):
             return
