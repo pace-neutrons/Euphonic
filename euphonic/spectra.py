@@ -865,10 +865,8 @@ class SpectrumCollectionMixin(ABC):
             return metadata_lines[item]
         if isinstance(item, slice):
             return self._combine_metadata(metadata_lines[item])
-        if len(item) == 1:
-            return metadata_lines[item[0]]
-        return self._combine_metadata(
-            list(itemgetter(*item)(metadata_lines)))
+        # Item must be some kind of integer sequence
+        return self._combine_metadata([metadata_lines[i] for i in item])
 
     def copy(self) -> Self:
         """Get an independent copy of spectrum"""
