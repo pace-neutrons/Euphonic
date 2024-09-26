@@ -623,7 +623,9 @@ class TestSpectrum1DCollectionMethods:
              [3, 5]),
             ('La2Zr2O7_666_coh_incoh_species_append_pdos.json',
              {'weighting': 'incoherent', 'species': 'O'},
-             [3])
+             [3]),
+            ('methane_pdos.json',
+             {'desc': 'Methane PDOS', 'label': 'H3'}, [2]),
             ])
     def test_select_same_as_indexing(self, spectrum_file, select_kwargs,
                                      expected_indices):
