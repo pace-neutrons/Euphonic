@@ -8,6 +8,7 @@ import itertools
 import math
 import json
 from numbers import Integral, Real
+from operator import contains
 from typing import (Any, Callable, Dict, Generator, List, Literal, Optional,
                     overload, Sequence, Tuple, TypeVar, Union, Type)
 from typing_extensions import Self
@@ -17,6 +18,7 @@ from pint import DimensionalityError, Quantity
 import numpy as np
 from scipy.ndimage import correlate1d, gaussian_filter
 from toolz.dicttoolz import keyfilter, valmap
+from toolz.functoolz import complement
 from toolz.itertoolz import groupby, pluck
 
 from euphonic import ureg, __version__
@@ -888,8 +890,9 @@ class SpectrumCollectionMixin(ABC):
 
     def iter_metadata(self) -> Generator[OneLineData, None, None]:
         """Iterate over metadata dicts of individual spectra from collection"""
-        common_metadata = keyfilter(lambda key: key != "line_data",
-                                    self.metadata)
+        common_metadata = {key: value for key, value in self.metadata.items()
+                           if key != "line_data"}
+
 
         line_data = self.metadata.get("line_data")
         if line_data is None:
@@ -986,14 +989,14 @@ class SpectrumCollectionMixin(ABC):
         for metadata in all_metadata:
             assert 'line_data' not in metadata.keys()
 
-        # Combine all common key/value pairs into new dict
+        # Combine key-value pairs common to *all* metadata lines into new dict
         common_metadata = dict(
             reduce(set.intersection,
                    (set(metadata.items()) for metadata in all_metadata)))
 
         # Put all other per-spectrum metadata in line_data
-        line_data = [keyfilter(lambda key: key not in common_metadata,
-                               one_line_data)
+        is_common = partial(contains, common_metadata)
+        line_data = [keyfilter(complement(is_common), one_line_data)
                      for one_line_data in all_metadata]
 
         if any(line_data):
