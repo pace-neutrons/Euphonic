@@ -987,7 +987,7 @@ class SpectrumCollectionMixin(ABC):
         # This is for combining multiple separate spectrum metadata,
         # they shouldn't have line_data
         for metadata in all_metadata:
-            assert 'line_data' not in metadata.keys()
+            assert 'line_data' not in metadata
 
         # Combine key-value pairs common to *all* metadata lines into new dict
         common_metadata = dict(
