@@ -9,6 +9,9 @@
 
   - importlib_resources backport is no longer required
 
+  - `toolz <https://toolz.readthedocs.io/en/latest/index.html>`_ is
+    a new requirement
+
   - Some other dependency requirements have been increased in order
     to simplify maintenance and testing:
 
@@ -24,8 +27,6 @@
 
     - Minimum version of threadpoolctl increased from 1.0 to 3.0.
 
-  - `toolz <https://toolz.readthedocs.io/en/latest/index.html>`_ is
-    added to the testing (tox) requirements
 
 - Improvements
 
@@ -39,6 +40,13 @@
     This can also help to avoid divide-by-zero issues when performing
     energy <-> wavenumber conversions.
 
+  - A Spectrum2DCollection class has been added to euphonic.spectra,
+    which shares many features with Spectrum1DCollection
+
+    - In particular, the ``iter_metadata`` method is recommended when
+      one needs to iterate over the collection metadata without
+      copying the spectral data to new objects.
+
 - Bug fixes
 
   - Metadata strings from Castep-imported PDOS data are now converted
@@ -51,6 +59,10 @@
 
   - Cleared up unit-conversion-related warnings, de-cluttering the
     expected test suite output.
+
+  - The Spectrum1DCollection class was significantly refactored to
+    support addition of Spectrum2DCollection and improve
+    maintainability.
 
 
 `v1.3.2 <https://github.com/pace-neutrons/Euphonic/compare/v1.3.1...v1.3.2>`_
