@@ -1,5 +1,6 @@
+import json
 import math
-from typing import Dict, Optional, Union, TypeVar, Any, Type
+from typing import Any, Dict, Optional, Union, Type, TypedDict, TypeVar
 from collections.abc import Mapping
 
 import numpy as np
@@ -12,6 +13,34 @@ from euphonic.readers import castep, phonopy
 from euphonic.util import (direction_changed, is_gamma, get_reference_data)
 from euphonic import (ureg, Quantity, Crystal, DebyeWaller, QpointFrequencies,
                       StructureFactor, Spectrum1DCollection)
+
+
+complex_pair = tuple[float, float]
+
+
+class PhononWebsiteData(TypedDict):
+    """Data container for export to phonon visualisation website
+
+    Specification: https://henriquemiranda.github.io/phononwebsite/index.html
+
+    line_breaks are currently not implemented
+
+    """
+
+    name: str
+    natoms: int
+    lattice: list[list[float]]
+    atom_types: list[str]
+    atom_numbers: list[int]
+    formula: str
+    repetitions: list[int]
+    atom_pos_car: list[list[float]]
+    atom_pos_red: list[list[float]]
+    highsym_qpts: list[tuple[int, str]]
+    qpoints: list[list[float]]
+    distances: list[float]  # Cumulative distance from first q-point
+    eigenvalues: list[float]  # in cm-1
+    vectors: list[list[list[tuple[complex_pair, complex_pair, complex_pair]]]]
 
 
 class QpointPhononModes(QpointFrequencies):
@@ -716,3 +745,87 @@ class QpointPhononModes(QpointFrequencies):
             path=path, phonon_name=phonon_name, phonon_format=phonon_format,
             summary_name=summary_name)
         return cls.from_dict(data)
+
+    def write_phonon_website_json(self,
+                                  output_file: str = 'phonons.json',
+                                  name: str = 'Euphonic export') -> None:
+        """Dump to .json for use with phonon website visualiser
+
+        Use with javascript application at
+        https://henriquemiranda.github.io/phononwebsite
+
+        Parameters
+        ----------
+        output_file
+            Path to output file
+        name
+            Set "name" metadata
+
+        """
+
+        with open(output_file, 'w') as fd:
+            json.dump(self._to_phonon_website_dict(name=name), fd)
+
+    @staticmethod
+    def _crystal_website_data(crystal: Crystal) -> dict[str, Any]:
+        elements = [
+            '_', 'H', 'He', 'Li', 'Be', 'B', 'C', 'N', 'O', 'F', 'Ne', 'Na',
+            'Mg', 'Al', 'Si', 'P', 'S', 'Cl', 'Ar', 'K', 'Ca', 'Sc', 'Ti', 'V',
+            'Cr', 'Mn', 'Fe', 'Co', 'Ni', 'Cu', 'Zn', 'Ga', 'Ge', 'As', 'Se',
+            'Br', 'Kr', 'Rb', 'Sr', 'Y', 'Zr', 'Nb', 'Mo', 'Tc', 'Ru', 'Rh',
+            'Pd', 'Ag', 'Cd', 'In', 'Sn', 'Sb', 'Te', 'I', 'Xe', 'Cs', 'Ba',
+            'La', 'Ce', 'Pr', 'Nd', 'Pm', 'Sm', 'Eu', 'Gd', 'Tb', 'Dy', 'Ho',
+            'Er', 'Tm', 'Yb', 'Lu', 'Hf', 'Ta', 'W', 'Re', 'Os', 'Ir', 'Pt',
+            'Au', 'Hg', 'Tl', 'Pb', 'Bi', 'Po', 'At', 'Rn', 'Fr', 'Ra', 'Ac',
+            'Th', 'Pa', 'U', 'Np', 'Pu', 'Am', 'Cm', 'Bk', 'Cf', 'Es', 'Fm',
+            'Md', 'No', 'Lr', 'Rf', 'Db', 'Sg', 'Bh', 'Hs', 'Mt', 'Ds', 'Rg',
+            'Cn', 'Nh', 'Fl', 'Mc', 'Lv', 'Ts', 'Og']
+
+        def get_z(symbol: str) -> int:
+            try:
+                return elements.index(symbol)
+            except ValueError:  # Symbol not found
+                return 0
+
+        def symbols_to_formula(symbols: list[str]) -> str:
+            from toolz.recipes import countby
+            from toolz.functoolz import identity
+
+            symbol_counts = countby(identity, symbols)
+            return "".join(f"{symbol}{count}"
+                           for symbol, count in symbol_counts.items())
+
+        return dict(
+            natoms = len(crystal.atom_type),
+            lattice = crystal.cell_vectors.to("angstrom").magnitude.tolist(),
+            atom_types = crystal.atom_type.tolist(),
+            atom_numbers = list(map(get_z, crystal.atom_type)),
+            formula = symbols_to_formula(crystal.atom_type),
+            atom_pos_red = crystal.atom_r.tolist(),
+            atom_pos_car = (crystal.atom_r @ crystal.cell_vectors).to("angstrom").magnitude.tolist()
+        )
+
+    def _to_phonon_website_dict(self,
+                                name: str = 'Euphonic export',
+                                repetitions: tuple[int, int, int] = (2, 2, 2),
+                                ) -> PhononWebsiteData:
+        from euphonic.util import _calc_abscissa, get_qpoint_labels
+
+        abscissa = _calc_abscissa(self.crystal.reciprocal_cell(), self.qpts)
+        x_tick_labels = get_qpoint_labels(self.qpts,
+                                          cell=self.crystal.to_spglib_cell())
+
+        dat = PhononWebsiteData(
+            name=name,
+            **self._crystal_website_data(self.crystal),
+            highsym_qpts=x_tick_labels,
+            distances=abscissa.magnitude.tolist(),
+            qpoints=self.qpts.tolist(),
+            eigenvalues=self.frequencies.to("1/cm").magnitude.tolist(),
+            vectors=self.eigenvectors.view(float).reshape(*self.eigenvectors.shape[:-1], 3, 2).tolist(),
+            repetitions=repetitions,
+        )
+
+        print(dat)
+
+        return(dat)

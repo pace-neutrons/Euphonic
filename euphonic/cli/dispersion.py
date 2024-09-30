@@ -15,7 +15,9 @@ from .utils import (load_data_from_file, get_args, _bands_from_force_constants,
 def main(params: Optional[List[str]] = None) -> None:
     args = get_args(get_parser(), params)
 
-    frequencies_only = not args.reorder  # Need eigenvectors to reorder
+    # Need eigenvectors to reorder bands or write website JSON
+    frequencies_only = args.save_web_json is None and not args.reorder
+
     data = load_data_from_file(args.filename, verbose=True,
                                frequencies_only=frequencies_only)
     if not frequencies_only and type(data) is QpointFrequencies:
@@ -39,6 +41,9 @@ def main(params: Optional[List[str]] = None) -> None:
     if args.reorder:
         bands.reorder_frequencies()
 
+    if args.save_web_json is not None:
+        bands.write_phonon_website_json(output_file=args.save_web_json)
+
     spectrum = bands.get_dispersion()
 
     plot_label_kwargs = _plot_label_kwargs(
@@ -54,6 +59,7 @@ def main(params: Optional[List[str]] = None) -> None:
 
     if args.save_json:
         spectrum.to_json_file(args.save_json)
+
     with matplotlib.style.context(style):
         _ = plot_1d(spectra,
                     ymin=args.e_min,
@@ -63,7 +69,7 @@ def main(params: Optional[List[str]] = None) -> None:
 
 
 def get_parser() -> ArgumentParser:
-    parser, _ = _get_cli_parser(features={'read-fc', 'read-modes', 'plotting',
+    parser, groups = _get_cli_parser(features={'read-fc', 'read-modes', 'plotting',
                                           'q-e', 'btol'})
     parser.description = (
         'Plots a band structure from the file provided. If a force '
@@ -77,4 +83,11 @@ def get_parser() -> ArgumentParser:
         action='store_true',
         help=('Try to determine branch crossings from eigenvectors and'
               ' rearrange frequencies accordingly'))
+    groups["plotting"].add_argument(
+        '--save-web-json',
+        dest='save_web_json',
+        default=None,
+        help='Write JSON file for use with phonon website',
+    )
+
     return parser
