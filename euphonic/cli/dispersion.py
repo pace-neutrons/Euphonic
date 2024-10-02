@@ -35,14 +35,16 @@ def main(params: Optional[List[str]] = None) -> None:
         split_args = {'btol': args.btol}
         x_tick_labels = None
 
+    if args.save_web_json is not None:
+        bands.write_phonon_website_json(output_file=args.save_web_json,
+                                        x_tick_labels=x_tick_labels)
+
+
     bands.frequencies_unit = args.energy_unit
 
     print("Mapping modes to 1D band-structure")
     if args.reorder:
         bands.reorder_frequencies()
-
-    if args.save_web_json is not None:
-        bands.write_phonon_website_json(output_file=args.save_web_json)
 
     spectrum = bands.get_dispersion()
 
