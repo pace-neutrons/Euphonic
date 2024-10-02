@@ -41,6 +41,7 @@ class PhononWebsiteData(TypedDict):
     distances: list[float]  # Cumulative distance from first q-point
     eigenvalues: list[float]  # in cm-1
     vectors: list[list[list[tuple[complex_pair, complex_pair, complex_pair]]]]
+    line_breaks: list[tuple[int, int]]
 
 
 class QpointPhononModes(QpointFrequencies):
@@ -805,15 +806,63 @@ class QpointPhononModes(QpointFrequencies):
             atom_pos_car = (crystal.atom_r @ crystal.cell_vectors).to("angstrom").magnitude.tolist()
         )
 
+    @staticmethod
+    def _repeated_qpt_indices(qpts: np.ndarray) -> np.ndarray:
+        """Get an int array of locations of q-points that appear twice in data
+
+        Phonon website does not correctly display repeated points, so we need
+        to remove one. Unfortunately that means LO-TO splitting will not be
+        displayed correctly.
+
+        """
+        return np.where(np.logical_not(np.any(np.diff(qpts, axis=0), axis=1)))
+
+    @staticmethod
+    def _remove_breaks(distances: np.ndarray, btol: float = 10.) -> list[int]:
+        """Collapse large breaks in cumulative-distance array
+
+        These correspond to discontinuous regions of the x-axis: in euphonic
+        plotting this is usually handled by splitting the spectrum and plotting
+        to new axes, but Phonon Website does not handle this.
+
+        Data is modified in-place
+
+        A list of identified breakpoints is returned
+
+        """
+        diff = np.diff(distances)
+        median = np.median(diff)
+        breakpoints = np.where((diff / median) > btol)[0] + 1
+
+        for breakpoint in reversed(breakpoints):
+            distances[breakpoint:] -= (distances[breakpoint] - distances[breakpoint - 1])
+
+        return breakpoints.tolist()
+
     def _to_phonon_website_dict(self,
                                 name: str = 'Euphonic export',
                                 repetitions: tuple[int, int, int] = (2, 2, 2),
                                 ) -> PhononWebsiteData:
+        from itertools import pairwise
         from euphonic.util import _calc_abscissa, get_qpoint_labels
 
-        abscissa = _calc_abscissa(self.crystal.reciprocal_cell(), self.qpts)
-        x_tick_labels = get_qpoint_labels(self.qpts,
+        duplicates = self._repeated_qpt_indices(self.qpts)
+        qpts = np.delete(self.qpts, duplicates, axis=0)
+        eigenvectors = np.delete(self.eigenvectors, duplicates, axis=0)
+
+        abscissa = _calc_abscissa(self.crystal.reciprocal_cell(), qpts)
+        breakpoints = self._remove_breaks(abscissa)
+
+        breakpoints = [-1] + breakpoints + [len(abscissa)]
+        line_breaks = [(start + 1, end) for start, end in pairwise(breakpoints)]
+        print(line_breaks)
+
+        x_tick_labels = get_qpoint_labels(qpts,
                                           cell=self.crystal.to_spglib_cell())
+        x_tick_labels = [(key + 1, value) for key, value in x_tick_labels]
+        print(x_tick_labels)
+        print(len(qpts))
+        print(qpts[273:278])
 
         dat = PhononWebsiteData(
             name=name,
@@ -822,10 +871,9 @@ class QpointPhononModes(QpointFrequencies):
             distances=abscissa.magnitude.tolist(),
             qpoints=self.qpts.tolist(),
             eigenvalues=self.frequencies.to("1/cm").magnitude.tolist(),
-            vectors=self.eigenvectors.view(float).reshape(*self.eigenvectors.shape[:-1], 3, 2).tolist(),
+            vectors=eigenvectors.view(float).reshape(*eigenvectors.shape[:-1], 3, 2).tolist(),
             repetitions=repetitions,
+            line_breaks=line_breaks
         )
 
-        print(dat)
-
-        return(dat)
+        return dat
