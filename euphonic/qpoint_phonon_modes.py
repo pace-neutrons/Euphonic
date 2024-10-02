@@ -747,9 +747,13 @@ class QpointPhononModes(QpointFrequencies):
             summary_name=summary_name)
         return cls.from_dict(data)
 
-    def write_phonon_website_json(self,
-                                  output_file: str = 'phonons.json',
-                                  name: str = 'Euphonic export') -> None:
+    def write_phonon_website_json(
+        self,
+        output_file: str = "phonons.json",
+        name: str = "Euphonic export",
+        x_tick_labels: list[tuple[int, str]] | None = None,
+    ) -> None:
+
         """Dump to .json for use with phonon website visualiser
 
         Use with javascript application at
@@ -761,11 +765,15 @@ class QpointPhononModes(QpointFrequencies):
             Path to output file
         name
             Set "name" metadata
+        x_tick_labels
+            index and label for high symmetry labels (if known)
 
         """
 
         with open(output_file, 'w') as fd:
-            json.dump(self._to_phonon_website_dict(name=name), fd)
+            json.dump(self._to_phonon_website_dict(name=name,
+                                                   x_tick_labels=x_tick_labels),
+                      fd)
 
     @staticmethod
     def _crystal_website_data(crystal: Crystal) -> dict[str, Any]:
@@ -807,17 +815,6 @@ class QpointPhononModes(QpointFrequencies):
         )
 
     @staticmethod
-    def _repeated_qpt_indices(qpts: np.ndarray) -> np.ndarray:
-        """Get an int array of locations of q-points that appear twice in data
-
-        Phonon website does not correctly display repeated points, so we need
-        to remove one. Unfortunately that means LO-TO splitting will not be
-        displayed correctly.
-
-        """
-        return np.where(np.logical_not(np.any(np.diff(qpts, axis=0), axis=1)))
-
-    @staticmethod
     def _remove_breaks(distances: np.ndarray, btol: float = 10.) -> list[int]:
         """Collapse large breaks in cumulative-distance array
 
@@ -832,37 +829,77 @@ class QpointPhononModes(QpointFrequencies):
         """
         diff = np.diff(distances)
         median = np.median(diff)
-        breakpoints = np.where((diff / median) > btol)[0] + 1
+        breakpoints = np.where((diff / median) > btol)[0]
 
         for breakpoint in reversed(breakpoints):
-            distances[breakpoint:] -= (distances[breakpoint] - distances[breakpoint - 1])
+            distances[breakpoint:] -= (distances[breakpoint + 1] - distances[breakpoint])
 
         return breakpoints.tolist()
+
+    @staticmethod
+    def _expand_duplicates(distances: np.ndarray, pad_fraction = 3) -> list[int]:
+        diff = np.diff(distances)
+        pad = np.median(diff) * pad_fraction
+
+        duplicates = np.where(diff == 0.)[0] + 1
+        for duplicate in reversed(duplicates):
+            distances[duplicate:] += (distances[duplicate - 1] - distances[duplicate] + pad)
+        return duplicates.tolist()
+
+    @staticmethod
+    def _combine_neighbouring_labels(x_tick_labels: list[tuple[int, str]]
+                                     ) -> list[tuple[int, str]]:
+        """Merge neighbouring labels in x_tick_label list
+
+        If labels are the same, only keep one.
+
+        If labels are different, join with |
+
+        e.g.::
+
+          [(1, "X"), (2, "X"), (4, "A"), (7, "Y"), (8, "Z")]
+
+          -->
+
+          [(1, "X"), (4, "A"), (7, "Y|Z")]
+
+        """
+        labels = dict(x_tick_labels)
+
+        for index in sorted(labels):
+            if index - 1 in labels:
+                if labels.get(index - 1) != labels.get(index):
+                    labels[index - 1] = f"{labels[index - 1]}|{labels[index]}"
+                del labels[index]
+        return list(sorted(labels.items()))
 
     def _to_phonon_website_dict(self,
                                 name: str = 'Euphonic export',
                                 repetitions: tuple[int, int, int] = (2, 2, 2),
+                                x_tick_labels: list[tuple[int, str]] | None = None,
                                 ) -> PhononWebsiteData:
         from itertools import pairwise
         from euphonic.util import _calc_abscissa, get_qpoint_labels
 
-        duplicates = self._repeated_qpt_indices(self.qpts)
-        qpts = np.delete(self.qpts, duplicates, axis=0)
-        eigenvectors = np.delete(self.eigenvectors, duplicates, axis=0)
+        qpts = self.qpts
+        eigenvectors = self.eigenvectors
 
         abscissa = _calc_abscissa(self.crystal.reciprocal_cell(), qpts)
+
+        duplicates = self._expand_duplicates(abscissa)
         breakpoints = self._remove_breaks(abscissa)
 
-        breakpoints = [-1] + breakpoints + [len(abscissa)]
+        breakpoints = sorted(set([-1] + duplicates + breakpoints + [len(abscissa)]))
         line_breaks = [(start + 1, end) for start, end in pairwise(breakpoints)]
-        print(line_breaks)
 
-        x_tick_labels = get_qpoint_labels(qpts,
-                                          cell=self.crystal.to_spglib_cell())
-        x_tick_labels = [(key + 1, value) for key, value in x_tick_labels]
+        if x_tick_labels is None:
+            x_tick_labels = get_qpoint_labels(qpts,
+                                              cell=self.crystal.to_spglib_cell())
+
+        x_tick_labels = [(int(key) + 1, str(value)) for key, value in x_tick_labels]
+        x_tick_labels = self._combine_neighbouring_labels(x_tick_labels)
+
         print(x_tick_labels)
-        print(len(qpts))
-        print(qpts[273:278])
 
         dat = PhononWebsiteData(
             name=name,
