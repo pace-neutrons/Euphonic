@@ -797,12 +797,11 @@ class QpointPhononModes(QpointFrequencies):
                 return 0
 
         def symbols_to_formula(symbols: list[str]) -> str:
-            from toolz.recipes import countby
-            from toolz.functoolz import identity
+            from collections import Counter
+            symbol_counts = Counter(symbols)
 
-            symbol_counts = countby(identity, symbols)
-            return "".join(f"{symbol}{count}"
-                           for symbol, count in symbol_counts.items())
+            return "".join(f"{symbol}{symbol_counts[symbol]}"
+                           for symbol in sorted(symbol_counts))
 
         return dict(
             natoms = len(crystal.atom_type),
