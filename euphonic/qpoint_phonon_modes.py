@@ -831,12 +831,12 @@ class QpointPhononModes(QpointFrequencies):
         breakpoints = np.where((diff / median) > btol)[0]
 
         for breakpoint in reversed(breakpoints):
-            distances[breakpoint:] -= (distances[breakpoint + 1] - distances[breakpoint])
+            distances[breakpoint + 1:] -= (distances[breakpoint + 1] - distances[breakpoint])
 
         return breakpoints.tolist()
 
     @staticmethod
-    def _expand_duplicates(distances: np.ndarray, pad_fraction = 3) -> list[int]:
+    def _expand_duplicates(distances: np.ndarray, pad_fraction = 0.001) -> list[int]:
         diff = np.diff(distances)
         pad = np.median(diff) * pad_fraction
 
@@ -897,8 +897,6 @@ class QpointPhononModes(QpointFrequencies):
 
         x_tick_labels = [(int(key) + 1, str(value)) for key, value in x_tick_labels]
         x_tick_labels = self._combine_neighbouring_labels(x_tick_labels)
-
-        print(x_tick_labels)
 
         dat = PhononWebsiteData(
             name=name,
