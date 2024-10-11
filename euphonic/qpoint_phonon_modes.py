@@ -898,6 +898,9 @@ class QpointPhononModes(QpointFrequencies):
         x_tick_labels = [(int(key) + 1, str(value)) for key, value in x_tick_labels]
         x_tick_labels = self._combine_neighbouring_labels(x_tick_labels)
 
+        vectors = eigenvectors / np.sqrt(self.crystal.atom_mass)[None, None, :, None]
+        vectors = vectors.view(float).reshape(*eigenvectors.shape[:-1], 3, 2)
+
         dat = PhononWebsiteData(
             name=name,
             **self._crystal_website_data(self.crystal),
@@ -905,7 +908,7 @@ class QpointPhononModes(QpointFrequencies):
             distances=abscissa.magnitude.tolist(),
             qpoints=self.qpts.tolist(),
             eigenvalues=self.frequencies.to("1/cm").magnitude.tolist(),
-            vectors=eigenvectors.view(float).reshape(*eigenvectors.shape[:-1], 3, 2).tolist(),
+            vectors=vectors.tolist(),
             repetitions=repetitions,
             line_breaks=line_breaks
         )
