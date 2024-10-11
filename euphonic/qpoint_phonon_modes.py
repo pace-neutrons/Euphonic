@@ -888,8 +888,8 @@ class QpointPhononModes(QpointFrequencies):
         duplicates = self._expand_duplicates(abscissa)
         breakpoints = self._remove_breaks(abscissa)
 
-        breakpoints = sorted(set([-1] + duplicates + breakpoints + [len(abscissa)]))
-        line_breaks = [(start + 1, end) for start, end in pairwise(breakpoints)]
+        breakpoints = sorted(set([-1] + duplicates + breakpoints + [len(abscissa) - 1]))
+        line_breaks = [(start + 1, end + 1) for start, end in pairwise(breakpoints)]
 
         if x_tick_labels is None:
             x_tick_labels = get_qpoint_labels(qpts,
