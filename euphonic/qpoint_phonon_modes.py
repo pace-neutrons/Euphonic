@@ -828,10 +828,10 @@ class QpointPhononModes(QpointFrequencies):
         """
         diff = np.diff(distances)
         median = np.median(diff)
-        breakpoints = np.where((diff / median) > btol)[0]
+        breakpoints = np.where((diff / median) > btol)[0] + 1
 
         for breakpoint in reversed(breakpoints):
-            distances[breakpoint + 1:] -= (distances[breakpoint + 1] - distances[breakpoint])
+            distances[breakpoint:] -= (distances[breakpoint] - distances[breakpoint - 1])
 
         return breakpoints.tolist()
 
@@ -888,8 +888,8 @@ class QpointPhononModes(QpointFrequencies):
         duplicates = self._expand_duplicates(abscissa)
         breakpoints = self._remove_breaks(abscissa)
 
-        breakpoints = sorted(set([-1] + duplicates + breakpoints + [len(abscissa) - 1]))
-        line_breaks = [(start + 1, end + 1) for start, end in pairwise(breakpoints)]
+        breakpoints = sorted(set([0] + duplicates + breakpoints + [len(abscissa)]))
+        line_breaks = [(start, end) for start, end in pairwise(breakpoints)]
 
         if x_tick_labels is None:
             x_tick_labels = get_qpoint_labels(qpts,
