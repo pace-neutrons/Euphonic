@@ -934,3 +934,9 @@ def _compose_style(
 
     style.append(explicit_args)
     return style
+
+def _get_title(filename: str, title: str = '') -> str:
+    """Get a plot title: either user-provided string, or from filename"""
+    if title:
+        return title
+    return pathlib.Path(filename).stem

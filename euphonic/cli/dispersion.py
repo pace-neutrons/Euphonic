@@ -5,10 +5,12 @@ import matplotlib.style
 
 from euphonic.plot import plot_1d
 from euphonic.styles import base_style
+from euphonic.writers.phonon_website import write_phonon_website_json
 from euphonic import Spectrum1D, ForceConstants, QpointFrequencies
 from .utils import (load_data_from_file, get_args, _bands_from_force_constants,
                     _compose_style,
                     _get_q_distance, matplotlib_save_or_show, _get_cli_parser,
+                    _get_title,
                     _calc_modes_kwargs, _plot_label_kwargs)
 
 
@@ -36,9 +38,10 @@ def main(params: Optional[List[str]] = None) -> None:
         x_tick_labels = None
 
     if args.save_web_json is not None:
-        bands.write_phonon_website_json(output_file=args.save_web_json,
-                                        x_tick_labels=x_tick_labels)
-
+        write_phonon_website_json(modes=bands,
+                                  name=_get_title(args.filename, args.title),
+                                  output_file=args.save_web_json,
+                                  x_tick_labels=x_tick_labels)
 
     bands.frequencies_unit = args.energy_unit
 
