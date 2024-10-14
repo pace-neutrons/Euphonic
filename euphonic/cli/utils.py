@@ -671,7 +671,7 @@ def _get_cli_parser(features: Collection[str] = {},
         section.add_argument(
             '-s', '--save-to', dest='save_to', default=None,
             help='Save resulting plot to a file with this name')
-        section.add_argument('--title', type=str, default='',
+        section.add_argument('--title', type=str, default=None,
                              help='Plot title')
         section.add_argument('--x-label', '--xlabel', type=str, default=None,
                              dest='xlabel', help='Plot x-axis label')
@@ -935,8 +935,6 @@ def _compose_style(
     style.append(explicit_args)
     return style
 
-def _get_title(filename: str, title: str = '') -> str:
+def _get_title(filename: str, title: str | None = None) -> str:
     """Get a plot title: either user-provided string, or from filename"""
-    if title:
-        return title
-    return pathlib.Path(filename).stem
+    return pathlib.Path(filename).stem if title is None else title
