@@ -103,7 +103,8 @@ def run_setup():
                 'euphonic.cli',
                 'euphonic.readers',
                 'euphonic.data',
-                'euphonic.styles']
+                'euphonic.styles',
+                'euphonic.writers']
 
     with open('README.rst', 'r') as f:
         long_description = f.read()
