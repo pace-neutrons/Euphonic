@@ -163,13 +163,15 @@ def _combine_neighbouring_labels(x_tick_labels: XTickLabels) -> XTickLabels:
     """
     labels = dict(x_tick_labels)
 
-    for index in sorted(labels):
-        if index - 1 in labels:
-            if labels.get(index - 1) != labels.get(index):
-                # Neighbouring labels are different: merge second into first
-                labels[index - 1] = f"{labels[index - 1]}|{labels[index]}"
-            # Remove second label of pair
-            del labels[index]
+    for (index, next_index) in pairwise(sorted(labels)):
+
+        if index + 1 == next_index:  # Labels are neighbours
+
+            if labels[index] != labels[next_index]:  # Combine differing labels
+                labels[next_index] = f"{labels[index]}|{labels[next_index]}"
+
+            del labels[index]  # Drop redundant label
+
     return sorted(labels.items())
 
 
