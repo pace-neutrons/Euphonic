@@ -132,14 +132,16 @@ def _remove_breaks(distances: np.ndarray, btol: float = 10.) -> list[int]:
     return breakpoints.tolist()
 
 
-def _expand_duplicates(
-        distances: np.ndarray, pad_fraction: float = 0.001) -> list[int]:
-    diff = np.diff(distances)
-    pad = np.median(diff) * pad_fraction
+def _find_duplicates(distances: np.ndarray) -> list[int]:
+    """Identify breakpoints where a q-point is repeated in list
 
+    Return the higher index of two points: this works more nicely with phonon
+    website interpretation of line break points.
+    """
+
+    diff = np.diff(distances)
     duplicates = np.where(diff == 0.)[0] + 1
-    for duplicate in reversed(duplicates):
-        distances[duplicate:] += diff[duplicate - 1] + pad
+
     return duplicates.tolist()
 
 
@@ -179,7 +181,7 @@ def _modes_to_phonon_website_dict(modes: QpointPhononModes,
 
     abscissa = _calc_abscissa(modes.crystal.reciprocal_cell(), qpts)
 
-    duplicates = _expand_duplicates(abscissa)
+    duplicates = _find_duplicates(abscissa)
     breakpoints = _remove_breaks(abscissa)
 
     breakpoints = sorted(set([0] + duplicates + breakpoints + [len(abscissa)]))
