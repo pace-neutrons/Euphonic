@@ -166,13 +166,15 @@ def _combine_neighbouring_labels(x_tick_labels: XTickLabels) -> XTickLabels:
     for index in sorted(labels):
         if index - 1 in labels:
             if labels.get(index - 1) != labels.get(index):
+                # Neighbouring labels are different: merge second into first
                 labels[index - 1] = f"{labels[index - 1]}|{labels[index]}"
+            # Remove second label of pair
             del labels[index]
     return sorted(labels.items())
 
 
 def _modes_to_phonon_website_dict(modes: QpointPhononModes,
-                                  name: str = 'Euphonic export',
+                                  name: str | None = None,
                                   repetitions: tuple[int, int, int] = (2, 2, 2),
                                   x_tick_labels: XTickLabels | None = None,
                                   ) -> PhononWebsiteData:
