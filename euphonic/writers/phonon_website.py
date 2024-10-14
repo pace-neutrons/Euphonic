@@ -139,8 +139,7 @@ def _expand_duplicates(
 
     duplicates = np.where(diff == 0.)[0] + 1
     for duplicate in reversed(duplicates):
-        distances[duplicate:] += (
-            distances[duplicate - 1] - distances[duplicate] + pad)
+        distances[duplicate:] += diff[duplicate - 1] + pad
     return duplicates.tolist()
 
 
