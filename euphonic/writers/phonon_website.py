@@ -168,7 +168,7 @@ def _combine_neighbouring_labels(x_tick_labels: XTickLabels) -> XTickLabels:
             if labels.get(index - 1) != labels.get(index):
                 labels[index - 1] = f"{labels[index - 1]}|{labels[index]}"
             del labels[index]
-    return list(sorted(labels.items()))
+    return sorted(labels.items())
 
 
 def _modes_to_phonon_website_dict(modes: QpointPhononModes,
