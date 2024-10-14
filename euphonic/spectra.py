@@ -31,6 +31,7 @@ from euphonic.validate import _check_constructor_inputs, _check_unit_conversion
 
 
 CallableQuantity = Callable[[Quantity], Quantity]
+XTickLabels = list[tuple[int, str]]
 
 
 class Spectrum(ABC):
@@ -84,11 +85,11 @@ class Spectrum(ABC):
         ...
 
     @property
-    def x_tick_labels(self) -> List[Tuple[int, str]]:
+    def x_tick_labels(self) -> XTickLabels:
         return self._x_tick_labels
 
     @x_tick_labels.setter
-    def x_tick_labels(self, value: Sequence[Tuple[int, str]]) -> None:
+    def x_tick_labels(self, value: XTickLabels) -> None:
         err_msg = ('x_tick_labels should be of type '
                    'Sequence[Tuple[int, str]] e.g. '
                    '[(0, "label1"), (5, "label2")]')
@@ -171,10 +172,9 @@ class Spectrum(ABC):
         return ranges
 
     @staticmethod
-    def _cut_x_ticks(x_tick_labels: Union[Sequence[Tuple[int, str]], None],
+    def _cut_x_ticks(x_tick_labels: XTickLabels | None,
                      x0: int,
-                     x1: Union[int, None]) -> Union[List[Tuple[int, str]],
-                                                    None]:
+                     x1: int | None) -> XTickLabels | None:
         """Crop and shift x labels to new x range"""
         if x_tick_labels is None:
             return None
@@ -419,7 +419,7 @@ class Spectrum1D(Spectrum):
     T = TypeVar('T', bound='Spectrum1D')
 
     def __init__(self, x_data: Quantity, y_data: Quantity,
-                 x_tick_labels: Optional[Sequence[Tuple[int, str]]] = None,
+                 x_tick_labels: Optional[XTickLabels] = None,
                  metadata: Optional[Dict[str, Union[int, str]]] = None
                  ) -> None:
         """
@@ -1147,7 +1147,7 @@ class Spectrum1DCollection(SpectrumCollectionMixin,
 
     def __init__(
             self, x_data: Quantity, y_data: Quantity,
-            x_tick_labels: Optional[Sequence[Tuple[int, str]]] = None,
+            x_tick_labels: Optional[XTickLabels] = None,
             metadata: Optional[Dict[str, Union[str, int, LineData]]] = None
     ) -> None:
         """
@@ -1451,7 +1451,7 @@ class Spectrum2D(Spectrum):
 
     def __init__(self, x_data: Quantity, y_data: Quantity,
                  z_data: Quantity,
-                 x_tick_labels: Optional[Sequence[Tuple[int, str]]] = None,
+                 x_tick_labels: Optional[XTickLabels] = None,
                  metadata: Optional[Metadata] = None
                  ) -> None:
         """
@@ -1875,7 +1875,7 @@ class Spectrum2DCollection(SpectrumCollectionMixin,
 
     def __init__(
             self, x_data: Quantity, y_data: Quantity, z_data: Quantity,
-            x_tick_labels: Optional[Sequence[Tuple[int, str]]] = None,
+            x_tick_labels: Optional[XTickLabels] = None,
             metadata: Optional[Metadata] = None
     ) -> None:
         _check_constructor_inputs(
