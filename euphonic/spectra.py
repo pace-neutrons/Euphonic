@@ -86,6 +86,7 @@ class Spectrum(ABC):
 
     @property
     def x_tick_labels(self) -> XTickLabels:
+        """x-axis tick labels (e.g. high-symmetry point locations)"""
         return self._x_tick_labels
 
     @x_tick_labels.setter
