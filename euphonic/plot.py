@@ -99,7 +99,7 @@ def plot_1d(spectra: Union[Spectrum1D,
                            Spectrum1DCollection,
                            Sequence[Spectrum1D],
                            Sequence[Spectrum1DCollection]],
-            title: str = '',
+            title: str | None = None,
             xlabel: str = '',
             ylabel: str = '',
             ymin: Optional[float] = None,
@@ -191,7 +191,7 @@ def plot_1d(spectra: Union[Spectrum1D,
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
 
-    fig.suptitle(title)
+    fig.suptitle('' if title is None else title)
     return fig
 
 
@@ -249,7 +249,7 @@ def plot_2d(spectra: Union[Spectrum2D, Sequence[Spectrum2D]],
             vmin: Optional[float] = None,
             vmax: Optional[float] = None,
             cmap: Optional[Union[str, Colormap]] = None,
-            title: str = '',
+            title: str | None = None,
             xlabel: str = '',
             ylabel: str = '') -> Figure:
     """
@@ -319,7 +319,7 @@ def plot_2d(spectra: Union[Spectrum2D, Sequence[Spectrum2D]],
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
 
-    fig.suptitle(title)
+    fig.suptitle('' if title is None else title)
 
     return fig
 

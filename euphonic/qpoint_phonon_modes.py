@@ -1,5 +1,7 @@
+"""Data container (with methods) for phonon frequencies and eigenvectors"""
+
 import math
-from typing import Dict, Optional, Union, TypeVar, Any, Type
+from typing import Any, Dict, Optional, Union, Type, TypeVar
 from collections.abc import Mapping
 
 import numpy as np

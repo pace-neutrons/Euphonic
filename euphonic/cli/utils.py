@@ -15,7 +15,6 @@ from euphonic import (Crystal, DebyeWaller, ForceConstants, QpointFrequencies,
                       QpointPhononModes, Spectrum1D, Spectrum1DCollection,
                       Quantity, ureg)
 import euphonic.util
-Unit = ureg.Unit
 
 
 def _load_euphonic_json(filename: Union[str, os.PathLike],
@@ -671,7 +670,7 @@ def _get_cli_parser(features: Collection[str] = {},
         section.add_argument(
             '-s', '--save-to', dest='save_to', default=None,
             help='Save resulting plot to a file with this name')
-        section.add_argument('--title', type=str, default='',
+        section.add_argument('--title', type=str, default=None,
                              help='Plot title')
         section.add_argument('--x-label', '--xlabel', type=str, default=None,
                              dest='xlabel', help='Plot x-axis label')
@@ -934,3 +933,8 @@ def _compose_style(
 
     style.append(explicit_args)
     return style
+
+
+def _get_title(filename: str, title: str | None = None) -> str:
+    """Get a plot title: either user-provided string, or from filename"""
+    return title if title is not None else pathlib.Path(filename).stem
