@@ -937,4 +937,4 @@ def _compose_style(
 
 def _get_title(filename: str, title: str | None = None) -> str:
     """Get a plot title: either user-provided string, or from filename"""
-    return pathlib.Path(filename).stem if title is None else title
+    return title if title is not None else pathlib.Path(filename).stem 
