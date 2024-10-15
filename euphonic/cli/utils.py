@@ -15,7 +15,6 @@ from euphonic import (Crystal, DebyeWaller, ForceConstants, QpointFrequencies,
                       QpointPhononModes, Spectrum1D, Spectrum1DCollection,
                       Quantity, ureg)
 import euphonic.util
-Unit = ureg.Unit
 
 
 def _load_euphonic_json(filename: Union[str, os.PathLike],
@@ -935,6 +934,7 @@ def _compose_style(
     style.append(explicit_args)
     return style
 
+
 def _get_title(filename: str, title: str | None = None) -> str:
     """Get a plot title: either user-provided string, or from filename"""
-    return title if title is not None else pathlib.Path(filename).stem 
+    return title if title is not None else pathlib.Path(filename).stem

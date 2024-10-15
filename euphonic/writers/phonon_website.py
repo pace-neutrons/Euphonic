@@ -68,7 +68,7 @@ def write_phonon_website_json(
 
     """
 
-    with open(output_file, 'w') as fd:
+    with open(output_file, 'w', encoding='utf-8') as fd:
         json.dump(_modes_to_phonon_website_dict(modes=modes,
                                                 name=name,
                                                 x_tick_labels=x_tick_labels),
@@ -129,8 +129,8 @@ def _remove_breaks(distances: np.ndarray, btol: float = 10.) -> list[int]:
     median = np.median(diff)
     breakpoints = np.where((diff / median) > btol)[0] + 1
 
-    for breakpoint in reversed(breakpoints):
-        distances[breakpoint:] -= diff[breakpoint - 1]
+    for line_break in reversed(breakpoints):
+        distances[line_break:] -= diff[line_break - 1]
 
     return breakpoints.tolist()
 
