@@ -178,11 +178,13 @@ def _combine_neighbouring_labels(x_tick_labels: XTickLabels) -> XTickLabels:
     return sorted(labels.items())
 
 
-def _modes_to_phonon_website_dict(modes: QpointPhononModes,
-                                  name: str | None = None,
-                                  repetitions: tuple[int, int, int] = (2, 2, 2),
-                                  x_tick_labels: XTickLabels | None = None,
-                                  ) -> PhononWebsiteData:
+def _modes_to_phonon_website_dict(
+    modes: QpointPhononModes,
+    name: str | None = None,
+    repetitions: tuple[int, int, int] = (2, 2, 2),
+    x_tick_labels: XTickLabels | None = None,
+) -> PhononWebsiteData:
+
     qpts = modes.qpts
     eigenvectors = modes.eigenvectors
 
@@ -204,6 +206,7 @@ def _modes_to_phonon_website_dict(modes: QpointPhononModes,
 
     mass_weights = 1 / np.sqrt(modes.crystal.atom_mass)
     vectors = eigenvectors * mass_weights[None, None, :, None]
+    # Convert complex numbers to a final axis over (real, imag)
     vectors = vectors.view(float).reshape(*eigenvectors.shape[:-1], 3, 2)
 
     dat = PhononWebsiteData(
