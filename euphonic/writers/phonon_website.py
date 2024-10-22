@@ -161,7 +161,7 @@ def _combine_neighbouring_labels(x_tick_labels: XTickLabels) -> XTickLabels:
 
       -->
 
-      [(1, "X"), (4, "A"), (7, "Y|Z")]
+      [(2, "X"), (4, "A"), (8, "Y|Z")]
 
     """
     labels = dict(x_tick_labels)
@@ -184,6 +184,7 @@ def _modes_to_phonon_website_dict(
     repetitions: tuple[int, int, int] = (2, 2, 2),
     x_tick_labels: XTickLabels | None = None,
 ) -> PhononWebsiteData:
+    """Convert QpointPhononModes to dict of phonon-website-friendly data"""
 
     qpts = modes.qpts
     eigenvectors = modes.eigenvectors
