@@ -128,7 +128,10 @@ class TestRegression:
 
     @pytest.mark.parametrize('dispersion_args', [
         [quartz_json_file, '--save-web-json']])
-    def test_plot_save_to_web_json(self, inject_mocks, tmpdir, dispersion_args):
+    def test_plot_save_to_web_json(
+            self, inject_mocks, tmpdir, dispersion_args):
+        """Write a phonon website JSON file"""
+        # pylint: disable=unused-argument
         output_file = str(tmpdir.join('phonon.json'))
         euphonic.cli.dispersion.main(dispersion_args + [output_file])
 
