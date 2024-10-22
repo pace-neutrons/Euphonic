@@ -52,10 +52,12 @@ def modes_data(
 
 def test_phonon_website_writer(
         modes_data: tuple[
-            QpointPhononModes, WritePhononWebsiteKwargs, PhononWebsiteData]
+            QpointPhononModes, WritePhononWebsiteKwargs, PhononWebsiteData],
+        tmp_path
 ) -> None:
     """Test QpointPhononModes -> phonon website JSON matches reference"""
     modes, kwargs, ref_data = modes_data
+    kwargs["output_file"] = tmp_path / kwargs["output_file"]
 
     write_phonon_website_json(modes, **kwargs)
 
