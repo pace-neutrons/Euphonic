@@ -11,10 +11,10 @@ def main():
     test_dir, reports_dir = _get_test_and_reports_dir()
 
     (do_report_coverage, do_report_tests, tests,
-     markers_to_run) = _get_parsed_args(test_dir)
+     markers_to_run, parallel) = _get_parsed_args(test_dir)
 
     pytest_options: list[str] = _build_pytest_options(
-        reports_dir, do_report_tests, tests, markers_to_run)
+        reports_dir, do_report_tests, tests, markers_to_run, parallel)
 
     test_exit_code: int = run_tests(
         pytest_options, do_report_coverage, reports_dir, test_dir)
@@ -60,6 +60,8 @@ def _get_parsed_args(test_dir: str) -> tuple[bool, bool, str, str]:
     str
         Only run the specified markers e.g. "unit" or "unit or
         integration"
+    bool
+        Distribute tests over multiple workers with pytest-xdist
     """
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -74,13 +76,18 @@ def _get_parsed_args(test_dir: str) -> tuple[bool, bool, str, str]:
         "-m", action="store", dest="markers_to_run",
         help=("Limit the test runs to only the specified markers e.g."
               "e.g. \"unit\" or \"unit or integration\""), default="")
+    parser.add_argument(
+        "--parallel", action="store_true",
+        help=("Distribute tests over parallel tasks with xdist")
+    )
     args_parsed = parser.parse_args()
     return (args_parsed.cov, args_parsed.report, args_parsed.test_file,
-            args_parsed.markers_to_run)
+            args_parsed.markers_to_run, args_parsed.parallel)
 
 
 def _build_pytest_options(reports_dir: str, do_report_tests: bool,
-                          tests: str, markers: str) -> list[str]:
+                          tests: str, markers: str, parallel: bool
+                          ) -> list[str]:
     """
     Build the options for pytest to use.
 
@@ -95,6 +102,8 @@ def _build_pytest_options(reports_dir: str, do_report_tests: bool,
     markers : str|None
         The markers for pytest tests to run e.g. "unit" or "unit or
         integration"
+    parallel : bool
+        Whether to use pytest-xdist to run tests over multiple workers
 
     Returns
     -------
@@ -112,6 +121,11 @@ def _build_pytest_options(reports_dir: str, do_report_tests: bool,
         options.append(f"--junitxml={junit_xml_filepath}")
     # Only run the specified markers
     options.append(f"-m={markers}")
+
+    if parallel:
+        options.append("-n=auto")
+        options.append("--dist=worksteal")
+
     return options
 
 

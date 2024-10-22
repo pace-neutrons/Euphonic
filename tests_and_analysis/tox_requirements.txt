@@ -3,6 +3,7 @@ pytest~=7.0
 coverage
 pytest-mock
 pytest-lazy-fixture
+pytest-xdist
 pytest-xvfb
 python-slugify
 toolz
