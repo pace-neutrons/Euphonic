@@ -47,6 +47,14 @@
       one needs to iterate over the collection metadata without
       copying the spectral data to new objects.
 
+  - A ``euphonic.writers.phonon_website`` module has been added with a
+    function to export QpointPhononModes to appropriate JSON for use
+    with the phonon visualisation website
+    http://henriquemiranda.github.io/phononwebsite/
+
+    From the command-line, this can be accessed with a
+    ``--save-web-json`` argument to the ``euphonic-dispersion`` tool.
+
 - Bug fixes
 
   - Metadata strings from Castep-imported PDOS data are now converted
