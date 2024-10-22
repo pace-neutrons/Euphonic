@@ -59,6 +59,8 @@ def write_phonon_website_json(
 
     Parameters
     ----------
+    modes
+        Phonon frequencies and eigenvectors along q-point path
     output_file
         Path to output file
     name

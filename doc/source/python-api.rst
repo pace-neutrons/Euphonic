@@ -20,3 +20,4 @@ Python API
   sampling
   utils
   Interpolation with Brille <brille-interpolator>
+  writers
