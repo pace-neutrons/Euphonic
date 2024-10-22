@@ -113,18 +113,27 @@ def _build_pytest_options(reports_dir: str, do_report_tests: bool,
     options: list[str] = [tests]
     # Add reporting of test results
     if do_report_tests:
+        options.append("--cov=euphonic")
+        options.append("--cov-append")
+
         # We may have multiple reports, so get a unique filename
         filename_prefix = "junit_report"
         filenum = int(time.time())
+
         junit_xml_filepath = os.path.join(
             reports_dir, f"{filename_prefix}_{filenum}.xml")
         options.append(f"--junitxml={junit_xml_filepath}")
+
+        cov_xml_filepath = os.path.join(
+            reports_dir, f"coverage_{filenum}.xml")
+        options.append(f"--cov-report=xml:{cov_xml_filepath}")
+
     # Only run the specified markers
     options.append(f"-m={markers}")
 
     if parallel:
         options.append("-n=auto")
-        options.append("--dist=worksteal")
+        options.append("--dist=load")
 
     return options
 
@@ -155,24 +164,10 @@ def run_tests(pytest_options: list[str], do_report_coverage: bool,
     # than the local version
     pytest_options = ['--import-mode=append'] + pytest_options
 
-    # Start recording coverage if requested
-    cov: coverage.Coverage | None = None
-    if do_report_coverage:
-        coveragerc_filepath: str = os.path.join(test_dir, ".coveragerc")
-        cov = coverage.Coverage(config_file=coveragerc_filepath)
-        cov.start()
-
     # Run tests and get the resulting exit code
     # 0 is success, 1-5 are different forms of failure (see pytest docs
     # for details)
     test_exit_code = pytest.main(pytest_options)
-
-    # Report coverage if requested
-    if do_report_coverage and cov is not None:
-        cov.stop()
-        coverage_xml_filepath = os.path.join(
-            reports_dir, f"coverage_{int(time.time())}.xml")
-        cov.xml_report(outfile=coverage_xml_filepath)
 
     return test_exit_code
 

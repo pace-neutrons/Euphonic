@@ -1,6 +1,6 @@
 mock
 pytest~=7.0
-coverage
+pytest-cov
 pytest-mock
 pytest-lazy-fixture
 pytest-xdist
