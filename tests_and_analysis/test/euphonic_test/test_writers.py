@@ -1,3 +1,8 @@
+"""Unit tests for writers to external file formats"""
+
+# Stop the linter from complaining when pytest fixtures are used idiomatically
+# pylint: disable=redefined-outer-name
+
 import json
 from pathlib import Path
 from typing import TypedDict
@@ -9,17 +14,23 @@ import pytest
 from euphonic.qpoint_phonon_modes import QpointPhononModes
 from euphonic.spectra import XTickLabels
 from euphonic.writers.phonon_website import (
-    PhononWebsiteData, write_phonon_website_json)
+    PhononWebsiteData,
+    write_phonon_website_json,
+    _remove_breaks,
+    _find_duplicates,
+    _combine_neighbouring_labels,
+)
 from tests_and_analysis.test.utils import get_data_path
 
 
 class WritePhononWebsiteKwargs(TypedDict):
+    """Type annotation for kwargs to write_phonon_website_json"""
     output_file: str | Path
     name: str
     x_tick_labels: XTickLabels | None
 
 
-@pytest.fixture
+@pytest.fixture()
 def modes_data(
 ) -> tuple[QpointPhononModes, WritePhononWebsiteKwargs, PhononWebsiteData]:
     """Get modes and reference website data for writer test"""
@@ -43,6 +54,7 @@ def test_phonon_website_writer(
         modes_data: tuple[
             QpointPhononModes, WritePhononWebsiteKwargs, PhononWebsiteData]
 ) -> None:
+    """Test QpointPhononModes -> phonon website JSON matches reference"""
     modes, kwargs, ref_data = modes_data
 
     write_phonon_website_json(modes, **kwargs)
@@ -54,12 +66,11 @@ def test_phonon_website_writer(
 
 
 class TestPhononWebsiteWriterInternals:
+    """Test some private functions used for constructing Phonon Website JSON"""
+
     def test_remove_breaks(self) -> None:
         """Test internal _remove_breaks method"""
-        from euphonic.writers.phonon_website import _remove_breaks
-
         distances = np.array([0.1, 0.2, 0.3, 4.3, 4.4, 8.4, 8.5])
-
         breakpoints = _remove_breaks(distances)
 
         assert breakpoints == [3, 5]
@@ -74,9 +85,6 @@ class TestPhononWebsiteWriterInternals:
         update this test.
 
         """
-
-        from euphonic.writers.phonon_website import _find_duplicates
-
         distances = np.array([0.0, 0.0, 0.1, 0.4, 0.4, 0.5, 0.6, 0.6, 0.6])
         duplicates = _find_duplicates(distances)
 
@@ -96,7 +104,5 @@ class TestPhononWebsiteWriterInternals:
     def test_combine_neighbouring_labels(
             self, x_tick_labels: XTickLabels, expected: XTickLabels) -> None:
         """Test internal _combine_neighbouring_labels method"""
-        from euphonic.writers.phonon_website import (
-            _combine_neighbouring_labels)
 
         assert _combine_neighbouring_labels(x_tick_labels) == expected
