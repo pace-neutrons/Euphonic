@@ -127,6 +127,20 @@ class TestRegression:
         assert isinstance(spec, Spectrum1DCollection)
 
     @pytest.mark.parametrize('dispersion_args', [
+        [quartz_json_file, '--save-web-json']])
+    def test_plot_save_to_web_json(self, inject_mocks, tmpdir, dispersion_args):
+        output_file = str(tmpdir.join('phonon.json'))
+        euphonic.cli.dispersion.main(dispersion_args + [output_file])
+
+        with open(output_file, "r", encoding="utf-8") as fd:
+            dat = json.load(fd)
+
+        # Reloaded JSON doesn't quite match the PhononWebsiteData type because
+        # tuples are converted to int; just make sure _some_ of the data is
+        # here so CLI writes the correct file. Unit tests check correctness.
+        assert "line_breaks" in dat
+
+    @pytest.mark.parametrize('dispersion_args', [
         [quartz_no_evec_json_file, '--reorder']])
     def test_no_evecs_with_reorder_raises_type_error(self, dispersion_args):
         with pytest.raises(TypeError):
