@@ -42,13 +42,17 @@ jobs:
           TOX_SKIP_ENV: '.*?(py311).*?'
           TOX_PARALLEL_NO_SPINNER: 1
         shell: bash -l {0}
-        run: python -m tox --parallel
+        run: |
+          python -m tox --notest
+          python -m tox --parallel
       - name: Run tests, workflow dispatch so test all Python versions
         if: github.event_name == 'workflow_dispatch'
         env:
           TOX_PARALLEL_NO_SPINNER: 1
         shell: bash -l {0}
-        run: python -m tox --parallel
+        run: |
+          python -m tox --notest
+          python -m tox --parallel
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v4
