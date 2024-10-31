@@ -1,8 +1,7 @@
 from importlib.resources import files
 
 from . import data
-from . import _version
-__version__ = _version.get_versions()['version']
+__version__ = '1.3.3a'
 
 import pint
 from pint import UnitRegistry
