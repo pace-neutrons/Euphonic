@@ -1,4 +1,7 @@
-project('euphonic', 'c', meson_version: '>=1.1')
+project('euphonic',
+        'c',
+        version: run_command('python', '-c', 'import versioneer;print(versioneer.get_version())').stdout().strip(),
+        meson_version: '>=1.1')
 
 build = get_option('python_only') ? disabler() : []
 
@@ -9,68 +12,30 @@ openmp = dependency('openmp', required: false, language: 'c')
 py = import('python').find_installation(pure: false)
 py_dep = py.dependency()
 
-py.install_sources(
-    'euphonic/__init__.py',
-    'euphonic/brille.py',
-    'euphonic/broadening.py',
-    'euphonic/crystal.py',
-    'euphonic/debye_waller.py',
-    'euphonic/force_constants.py',
-    'euphonic/io.py',
-    'euphonic/plot.py',
-    'euphonic/powder.py',
-    'euphonic/qpoint_frequencies.py',
-    'euphonic/qpoint_phonon_modes.py',
-    'euphonic/sampling.py',
-    'euphonic/spectra.py',
-    'euphonic/structure_factor.py',
-    'euphonic/util.py',
-    'euphonic/validate.py',
-    'CITATION.cff',
-    'LICENSE',
-    subdir : 'euphonic',
-)
+py_src = {
+  'euphonic': ['__init__.py', 'brille.py', 'broadening.py',
+               'crystal.py', 'debye_waller.py', 'force_constants.py',
+               'io.py', 'plot.py', 'powder.py', 'qpoint_frequencies.py',
+               'qpoint_phonon_modes.py', 'sampling.py', 'spectra.py',
+               'structure_factor.py', 'util.py', 'validate.py'],
+  'euphonic/cli': ['__init__.py', 'brille_convergence.py',
+                   'dispersion.py', 'dos.py', 'intensity_map.py',
+                   'optimise_dipole_parameter.py', 'powder_map.py',
+                   'show_sampling.py', 'utils.py'],
+  'euphonic/data': ['__init__.py', 'bluebook.json', 'sears-1992.json',
+                    'reciprocal_spectroscopy_definitions.txt'],
+  'euphonic/readers': ['__init__.py', 'castep.py', 'phonopy.py'],
+  'euphonic/styles': ['__init__.py', 'base.mplstyle', 'intensity_widget.mplstyle'],
+  'euphonic/writers': ['__init__.py', 'phonon_website.py'],
+}
 
-py.install_sources(
-    'euphonic/cli/__init__.py',
-    'euphonic/cli/brille_convergence.py',
-    'euphonic/cli/dispersion.py',
-    'euphonic/cli/dos.py',
-    'euphonic/cli/intensity_map.py',
-    'euphonic/cli/optimise_dipole_parameter.py',
-    'euphonic/cli/powder_map.py',
-    'euphonic/cli/show_sampling.py',
-    'euphonic/cli/utils.py',
-    subdir : 'euphonic/cli',
-)
-
-py.install_sources(
-    'euphonic/data/__init__.py',
-    'euphonic/data/bluebook.json',
-    'euphonic/data/reciprocal_spectroscopy_definitions.txt',
-    'euphonic/data/sears-1992.json',
-    subdir : 'euphonic/data',
-)
-
-py.install_sources(
-    'euphonic/readers/__init__.py',
-    'euphonic/readers/castep.py',
-    'euphonic/readers/phonopy.py',
-    subdir : 'euphonic/readers',
-)
-
-py.install_sources(
-    'euphonic/styles/__init__.py',
-    'euphonic/styles/base.mplstyle',
-    'euphonic/styles/intensity_widget.mplstyle',
-    subdir : 'euphonic/styles',
-)
-
-py.install_sources(
-    'euphonic/writers/__init__.py',
-    'euphonic/writers/phonon_website.py',
-    subdir : 'euphonic/writers',
-)
+foreach folder, sources : py_src
+  inc = []
+  foreach source : sources
+    inc += folder / source
+  endforeach
+  py.install_sources(inc, subdir : folder)
+endforeach
 
 np = dependency('numpy', required: false)
 
