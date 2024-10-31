@@ -40,7 +40,7 @@ py.install_sources(
     'euphonic/cli/optimise_dipole_parameter.py',
     'euphonic/cli/powder_map.py',
     'euphonic/cli/show_sampling.py',
-    'euphonic/cli/utils.py',    
+    'euphonic/cli/utils.py',
     subdir : 'euphonic/cli',
 )
 
