@@ -36,6 +36,7 @@ foreach folder, sources : py_src
   endforeach
   py.install_sources(inc, subdir : folder)
 endforeach
+py.install_sources('CITATION.cff', 'LICENSE', subdir : 'euphonic')
 
 np = dependency('numpy', required: false)
 
