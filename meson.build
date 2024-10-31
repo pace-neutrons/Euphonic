@@ -26,6 +26,8 @@ py.install_sources(
     'euphonic/structure_factor.py',
     'euphonic/util.py',
     'euphonic/validate.py',
+    'CITATION.cff',
+    'LICENSE',
     subdir : 'euphonic',
 )
 
