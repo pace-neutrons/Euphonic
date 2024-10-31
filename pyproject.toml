@@ -2,11 +2,11 @@
 build-backend = 'mesonpy'
 requires = ["meson-python",
             "packaging",
-            "numpy>=1.24.0",
-            "versioneer[toml]==0.29"]
+            "numpy>=1.24.0"]
 
 [project]
-name = "Euphonic"
+name = "euphonic"
+version = "1.3.3a"
 description = "Euphonic calculates phonon bandstructures and inelastic neutron scattering intensities from modelling code output (e.g. CASTEP)"
 requires-python = ">=3.8"
 readme = "README.rst"
@@ -39,7 +39,6 @@ dependencies = [
     "threadpoolctl>=3.0.0",
     "toolz>=0.12.1",
 ]
-dynamic = ["version"]
 
 [project.urls]
 Homepage = "https://github.com/pace-neutrons/Euphonic"
@@ -60,11 +59,3 @@ euphonic-optimise-dipole-parameter = "euphonic.cli.optimise_dipole_parameter:mai
 euphonic-show-sampling = "euphonic.cli.show_sampling:main"
 euphonic-intensity-map = "euphonic.cli.intensity_map:main"
 euphonic-powder-map = "euphonic.cli.powder_map:main"
-
-[tool.versioneer]
-VCS = "git"
-style = "pep440"
-versionfile_source = "euphonic/_version.py"
-versionfile_build = "euphonic/_version.py"
-tag_prefix = "v"
-parentdir_prefix = "Euphonic-"
