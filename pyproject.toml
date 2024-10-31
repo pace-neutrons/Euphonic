@@ -1,3 +1,10 @@
+[build-system]
+build-backend = 'mesonpy'
+requires = ["meson-python",
+            "packaging",
+            "numpy>=1.24.0",
+            "versioneer[toml]==0.29"]
+
 [project]
 name = "Euphonic"
 description = "Euphonic calculates phonon bandstructures and inelastic neutron scattering intensities from modelling code output (e.g. CASTEP)"
@@ -34,13 +41,6 @@ dependencies = [
 ]
 dynamic = ["version"]
 
-[build-system]
-requires = ["packaging",
-            "numpy>=1.24.0",
-            "versioneer[toml]==0.29",
-            "setuptools>=61.0.0"]
-build-backend = "setuptools.build_meta"
-
 [project.urls]
 Homepage = "https://github.com/pace-neutrons/Euphonic"
 Repository = "https://github.com/pace-neutrons/Euphonic.git"
@@ -68,6 +68,3 @@ versionfile_source = "euphonic/_version.py"
 versionfile_build = "euphonic/_version.py"
 tag_prefix = "v"
 parentdir_prefix = "Euphonic-"
-
-[tool.setuptools.packages.find]
-include = ["euphonic*"]
