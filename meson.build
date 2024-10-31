@@ -82,4 +82,5 @@ py.extension_module(
   src,
   dependencies: [build, py_dep, np, openmp],
   install: true,
+  subdir: 'euphonic',
 )
