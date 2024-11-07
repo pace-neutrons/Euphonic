@@ -1,7 +1,7 @@
 project('euphonic',
         'c',
         version: run_command('python', 'build_utils/version.py', check: true).stdout().strip(),
-        meson_version: '>=1.6')  # AppleClang with OpenMP
+        meson_version: '>=1.6')
 
 build = get_option('python_only') ? disabler() : []
 
@@ -30,14 +30,14 @@ foreach folder, sources : py_src
   foreach source : sources
     inc += folder / source
   endforeach
-  py.install_sources(inc, subdir : folder)
+  py.install_sources(inc, subdir: folder)
 endforeach
 
 version = configure_file(input: 'build_utils/version.py.in',
                          output: 'version.py',
                          configuration: {'VERSION': meson.project_version()})
 
-py.install_sources(version, 'CITATION.cff', 'LICENSE', subdir : 'euphonic')
+py.install_sources(version, 'CITATION.cff', 'LICENSE', subdir: 'euphonic')
 
 src = ['c/_euphonic.c', 'c/dyn_mat.c', 'c/util.c', 'c/py_util.c', 'c/load_libs.c']
 
@@ -55,5 +55,4 @@ py.extension_module(
   dependencies: [build, py_dep, np, openmp],
   install: true,
   subdir: 'euphonic',
-  override_options: {'default_library': 'shared'},
 )

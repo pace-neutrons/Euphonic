@@ -31,6 +31,15 @@ jobs:
         if: startsWith(matrix.os, 'macos')
         run: |
           brew install llvm
+          echo CC="/opt/homebrew/opt/llvm/bin/clang" >> $GITHUB_ENV
+          echo LDFLAGS="-L/opt/homebrew/opt/llvm/lib $LDFLAGS" >> $GITHUB_ENV
+          echo CPPFLAGS="-I/opt/homebrew/opt/llvm/include $CPPFLAGS" >> $GITHUB_ENV
+      - name: Setup MSVC env on Windows
+        if: startsWith(matrix.os, 'windows')
+        shell: bash
+        run: |
+          echo "CC=C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Tools\MSVC\14.41.34120\bin\HostX64\x64\cl.exe" >> $GITHUB_ENV
+          echo "CC_LD=C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Tools\MSVC\14.41.34120\bin\HostX64\x64\link.exe" >> $GITHUB_ENV
       - name: Update pip and install dependencies
         shell: bash -l {0}
         run: |

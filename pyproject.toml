@@ -6,6 +6,9 @@ requires = ["meson-python",
             "packaging",
             "numpy>=1.24.0"]
 
+[tool.meson-python.args]
+setup = ['--vsenv']
+
 [project]
 name = "Euphonic"
 description = "Euphonic calculates phonon bandstructures and inelastic neutron scattering intensities from modelling code output (e.g. CASTEP)"
