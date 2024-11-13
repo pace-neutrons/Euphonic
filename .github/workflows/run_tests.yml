@@ -27,13 +27,20 @@ jobs:
           python-version: '3.10'
           channels: conda-forge,defaults
           channel-priority: true
-      - name: Install llvm on Macos
-        if: startsWith(matrix.os, 'macos')
+      - name: Install llvm on Macos (ARM)
+        if: matrix.os == 'macos-latest'
         run: |
           brew install llvm
           echo CC="${HOMEBREW_PREFIX}/opt/llvm/bin/clang" >> $GITHUB_ENV
           echo LDFLAGS="-L${HOMEBREW_PREFIX}/opt/llvm/lib $LDFLAGS" >> $GITHUB_ENV
           echo CPPFLAGS="-I${HOMEBREW_PREFIX}/opt/llvm/include $CPPFLAGS" >> $GITHUB_ENV
+      - name: Install llvm on Macos (Intel)
+        if: matrix.os == 'macos-13'
+        run: |
+          brew install llvm
+          echo CC="/usr/local/opt/llvm/bin/clang" >> $GITHUB_ENV
+          echo LDFLAGS="-L/usr/local/opt/llvm/lib $LDFLAGS" >> $GITHUB_ENV
+          echo CPPFLAGS="-I/usr/local/opt/llvm/include $CPPFLAGS" >> $GITHUB_ENV          
       - name: Setup MSVC env on Windows
         if: startsWith(matrix.os, 'windows')
         shell: bash
