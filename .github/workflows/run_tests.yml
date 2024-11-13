@@ -17,9 +17,16 @@ jobs:
        (github.event_name == 'pull_request' && !contains(github.event.pull_request.labels.*.name, 'no_ci'))
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest, macos-13]
+        os:
+          - name: ubuntu-latest
+          - name: windows-latest
+            msvc_bin: 'C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Tools\MSVC\14.41.34120\bin\HostX64\x64'
+          - name: macos-latest
+            llvm: /opt/homebrew/opt/llvm
+          - name: macos-13
+            llvm: /usr/local/opt/llvm
       fail-fast: false
-    runs-on: ${{ matrix.os }}
+    runs-on: ${{ matrix.os.name }}
     steps:
       - uses: actions/checkout@v4
       - uses: conda-incubator/setup-miniconda@v3
@@ -27,26 +34,20 @@ jobs:
           python-version: '3.10'
           channels: conda-forge,defaults
           channel-priority: true
-      - name: Install llvm on Macos (ARM)
-        if: matrix.os == 'macos-latest'
+      - name: Install llvm on MacOS
+        if: startsWith(matrix.os.name, 'macos')
         run: |
           brew install llvm
-          echo CC="${HOMEBREW_PREFIX}/opt/llvm/bin/clang" >> $GITHUB_ENV
-          echo LDFLAGS="-L${HOMEBREW_PREFIX}/opt/llvm/lib $LDFLAGS" >> $GITHUB_ENV
-          echo CPPFLAGS="-I${HOMEBREW_PREFIX}/opt/llvm/include $CPPFLAGS" >> $GITHUB_ENV
-      - name: Install llvm on Macos (Intel)
-        if: matrix.os == 'macos-13'
-        run: |
-          brew install llvm
-          echo CC="/usr/local/opt/llvm/bin/clang" >> $GITHUB_ENV
-          echo LDFLAGS="-L/usr/local/opt/llvm/lib $LDFLAGS" >> $GITHUB_ENV
-          echo CPPFLAGS="-I/usr/local/opt/llvm/include $CPPFLAGS" >> $GITHUB_ENV          
+          echo CC="${{ matrix.os.llvm }}/bin/clang" >> $GITHUB_ENV
+          echo LDFLAGS="-L${{ matrix.os.llvm }}/lib $LDFLAGS" >> $GITHUB_ENV
+          echo CPPFLAGS="-I${{ matrix.os.llvm }}/include $CPPFLAGS" >> $GITHUB_ENV
+
       - name: Setup MSVC env on Windows
-        if: startsWith(matrix.os, 'windows')
+        if: startsWith(matrix.os.name, 'windows')
         shell: bash
         run: |
-          echo "CC=C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Tools\MSVC\14.41.34120\bin\HostX64\x64\cl.exe" >> $GITHUB_ENV
-          echo "CC_LD=C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Tools\MSVC\14.41.34120\bin\HostX64\x64\link.exe" >> $GITHUB_ENV
+          echo "CC=${{ matrix.os.msvc_bin }}\cl.exe" >> $GITHUB_ENV
+          echo "CC_LD=${{ matrix.os.msvc_bin }}\link.exe" >> $GITHUB_ENV
       - name: Update pip and install dependencies
         shell: bash -l {0}
         run: |
@@ -66,16 +67,16 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: Unit test results ${{ matrix.os }}
+          name: Unit test results ${{ matrix.os.name }}
           path: tests_and_analysis/test/reports/junit_report*.xml
       - name: Publish Codacy coverage
         uses: codacy/codacy-coverage-reporter-action@v1
-        if: startsWith(matrix.os, 'ubuntu')
+        if: startsWith(matrix.os.name, 'ubuntu')
         with:
           project-token: ${{ secrets.CODACY_PROJECT_TOKEN }}
           coverage-reports: tests_and_analysis/test/reports/coverage*.xml
       - uses: codecov/codecov-action@v3
-        if: startsWith(matrix.os, 'ubuntu')
+        if: startsWith(matrix.os.name, 'ubuntu')
         with:
           files: tests_and_analysis/test/reports/coverage*.xml
 
