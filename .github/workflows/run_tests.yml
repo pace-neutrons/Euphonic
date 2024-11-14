@@ -30,26 +30,25 @@ jobs:
           channels: conda-forge,defaults
           channel-priority: true
 
-      - name: set HOMEBREW_PREFIX on Intel MacOS
-        if: matrix.os == 'macos-13'
-        run: |
-          echo HOMEBREW_PREFIX="/usr/local" >> $GITHUB_ENV
-
       - name: Install llvm on MacOS
         if: startsWith(matrix.os, 'macos')
+        env:
+          # Homebrew location is different on Intel Mac
+          LLVM_DIR: ${{ (matrix.os == 'macos-13') && '/usr/local/opt/llvm' || '/opt/homebrew/opt/llvm' }}
         run: |
           brew install llvm
-          echo CC="${HOMEBREW_PREFIX}/opt/llvm/bin/clang" >> $GITHUB_ENV
-          echo LDFLAGS="-L${HOMEBREW_PREFIX}/opt/llvm/lib $LDFLAGS" >> $GITHUB_ENV
-          echo CPPFLAGS="-I${HOMEBREW_PREFIX}/opt/llvm/include $CPPFLAGS" >> $GITHUB_ENV
+          echo CC="${LLVM_DIR}/bin/clang" >> $GITHUB_ENV
+          echo LDFLAGS="-L${LLVM_DIR}/lib $LDFLAGS" >> $GITHUB_ENV
+          echo CPPFLAGS="-I${LLVM_DIR}/include $CPPFLAGS" >> $GITHUB_ENV
 
       - name: Setup MSVC env on Windows
         if: startsWith(matrix.os, 'windows')
+        env:
+          MSVC_BIN: 'C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Tools\MSVC\14.41.34120\bin\HostX64\x64'        
         shell: bash
         run: |
-          MSVC_BIN='C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Tools\MSVC\14.41.34120\bin\HostX64\x64'
           echo "CC=${MSVC_BIN}\cl.exe" >> $GITHUB_ENV
-          echo "CC_LD=${MSCV_BIN}\link.exe" >> $GITHUB_ENV
+          echo "CC_LD=${MSVC_BIN}\link.exe" >> $GITHUB_ENV
       - name: Update pip and install dependencies
         shell: bash -l {0}
         run: |
