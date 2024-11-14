@@ -32,6 +32,7 @@ jobs:
 
       - name: Install llvm on MacOS
         if: startsWith(matrix.os, 'macos')
+        shell: bash -l {0}
         env:
           # Homebrew location is different on Intel Mac
           LLVM_DIR: ${{ (matrix.os == 'macos-13') && '/usr/local/opt/llvm' || '/opt/homebrew/opt/llvm' }}
@@ -43,9 +44,9 @@ jobs:
 
       - name: Setup MSVC env on Windows
         if: startsWith(matrix.os, 'windows')
+        shell: bash -l {0}
         env:
-          MSVC_BIN: 'C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Tools\MSVC\14.41.34120\bin\HostX64\x64'        
-        shell: bash
+          MSVC_BIN: 'C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Tools\MSVC\14.41.34120\bin\HostX64\x64'
         run: |
           echo "CC=${MSVC_BIN}\cl.exe" >> $GITHUB_ENV
           echo "CC_LD=${MSVC_BIN}\link.exe" >> $GITHUB_ENV
