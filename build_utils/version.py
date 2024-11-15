@@ -14,8 +14,8 @@ for gitcmd in gits:
             version += f"+{dirty[0]}.{dirty[1]}{'.dirty' if len(dirty) > 2 else ''}"
         break
 
-    except (OSError, subprocess.CalledProcessError):
-        continue
+    except (OSError, subprocess.CalledProcessError) as err:
+        print(f"Tried {gitcmd}, returned: {err}", file=sys.stderr)
 else:  # Can't use git
     version_file = Path(__file__).parent.parent / "euphonic" / "version.py"
     version = version_file.read_text().split("=")[1].strip('"\n ')

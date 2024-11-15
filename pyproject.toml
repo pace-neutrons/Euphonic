@@ -55,6 +55,7 @@ documentation = "https://euphonic.readthedocs.io/en/stable/"
 matplotlib = ["matplotlib>=3.8.0"]
 phonopy_reader = ["h5py>=3.6.0", "PyYAML>=6.0"]
 brille = ["brille>=0.7.0"]
+test = ["mock", "pytest~=7.0", "coverage", "pytest-mock", "pytest-lazy-fixture", "pytest-xvfb"]
 
 [project.scripts]
 euphonic-brille-convergence = "euphonic.cli.brille_convergence:main"

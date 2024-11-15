@@ -1,7 +1,8 @@
 project('euphonic',
         'c',
         version: run_command('python', 'build_utils/version.py', check: true).stdout().strip(),
-        meson_version: '>=1.6')
+        meson_version: '>=1.6',
+       )
 
 build = get_option('python_only') ? disabler() : []
 
