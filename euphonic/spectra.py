@@ -789,8 +789,16 @@ class SpectrumCollectionMixin(ABC):
     # Required methods
     @classmethod
     @abstractmethod
-    def from_spectra(cls, spectra: Sequence[Spectrum]) -> Self:
-        """Construct spectrum collection from a sequence of components"""
+    def from_spectra(
+            cls, spectra: Sequence[Spectrum], unsafe: bool = False
+    ) -> Self:
+        """Construct spectrum collection from a sequence of components
+
+        If 'unsafe', some consistency checks may be skipped to improve
+        performance; this should only be used when e.g. combining data iterated
+        by another Spectrum collection
+
+        """
         ...
 
     # Mixin methods
@@ -1206,17 +1214,37 @@ class Spectrum1DCollection(SpectrumCollectionMixin,
                            metadata=self.metadata)
                 for x0, x1 in ranges]
 
+    @staticmethod
+    def _from_spectra_type_check(spectrum) -> None:
+        if not isinstance(spectrum, Spectrum1D):
+            raise TypeError(
+                "from_spectra() requires a sequence of Spectrum1D")
+
+    @staticmethod
+    def _from_spectra_data_check(spectrum, x_data, y_data_units, x_tick_labels
+                             ) -> None:
+        if (spectrum.y_data.units != y_data_units
+                or spectrum.x_data.units != x_data.units):
+            raise ValueError("Spectrum units in sequence are inconsistent")
+        if not np.allclose(spectrum.x_data, x_data):
+            raise ValueError("x_data in sequence are inconsistent")
+        if spectrum.x_tick_labels != x_tick_labels:
+            raise ValueError("x_tick_labels in sequence are inconsistent")
+
     @classmethod
-    def from_spectra(cls: Type[T], spectra: Sequence[Spectrum1D]) -> T:
+    def from_spectra(
+            cls: Self, spectra: Sequence[Spectrum1D], unsafe: bool = False
+    ) -> Self:
+        """Combine Spectrum1D to produce a new collection
+
+        x_bins and x_tick_labels must be consistent (in magnitude and units)
+        across the input spectra. If 'unsafe', this will not be checked.
+
+        """
         if len(spectra) < 1:
             raise IndexError("At least one spectrum is needed for collection")
 
-        def _type_check(spectrum):
-            if not isinstance(spectrum, Spectrum1D):
-                raise TypeError(
-                    "from_spectra() requires a sequence of Spectrum1D")
-
-        _type_check(spectra[0])
+        cls._from_spectra_type_check(spectra[0])
         x_data = spectra[0].x_data
         x_tick_labels = spectra[0].x_tick_labels
         y_data_length = len(spectra[0].y_data)
@@ -1225,11 +1253,11 @@ class Spectrum1DCollection(SpectrumCollectionMixin,
         y_data_units = spectra[0].y_data.units
 
         for i, spectrum in enumerate(spectra[1:]):
-            _type_check(spectrum)
-            assert spectrum.y_data.units == y_data_units
-            assert np.allclose(spectrum.x_data, x_data)
-            assert spectrum.x_data.units == x_data.units
-            assert spectrum.x_tick_labels == x_tick_labels
+            if not unsafe:
+                cls._from_spectra_type_check(spectrum)
+                cls._from_spectra_data_check(
+                    spectrum, x_data, y_data_units, x_tick_labels)
+
             y_data_magnitude[i + 1, :] = spectrum.y_data.magnitude
 
         metadata = cls._combine_metadata([spec.metadata for spec in spectra])

@@ -225,6 +225,36 @@ class TestSpectrum1DCollectionCreation:
         check_spectrum1dcollection(spectrum, expected_spectrum)
 
     @pytest.mark.parametrize(
+        'input_spectra, expected_error',
+        [
+            (['NotASpectrum', get_spectrum1d(f'gan_bands_index_2.json')],
+             TypeError),
+            ([get_spectrum1d(f'gan_bands_index_2.json'), 'NotASpectrum'],
+             TypeError),
+            ([get_spectrum1d(f'gan_bands_index_2.json'),
+              get_spectrum1d(f'methane_pdos_index_1.json')],
+             ValueError)
+        ]
+    )
+    def test_create_from_bad_sequence(self, input_spectra, expected_error):
+        with pytest.raises(expected_error):
+            Spectrum1DCollection.from_spectra(input_spectra)
+
+    def test_unsafe_from_sequence(self):
+        """Ensure that unsafe from_spectra doesn't check units"""
+
+        spec1 = get_spectrum1d(f'gan_bands_index_2.json')
+        spec2 = get_spectrum1d(f'gan_bands_index_3.json')
+
+        spec1.x_data_unit = '1/angstrom'
+        spec2.x_data_unit = '1/mm'
+
+        with pytest.raises(ValueError):
+            Spectrum1DCollection.from_spectra([spec1, spec2])
+
+        Spectrum1DCollection.from_spectra([spec1, spec2], unsafe=True)
+
+    @pytest.mark.parametrize(
         'input_metadata, expected_metadata',
         [([{},
            {'label': 'H3'},
