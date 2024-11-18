@@ -790,7 +790,7 @@ class SpectrumCollectionMixin(ABC):
     @classmethod
     @abstractmethod
     def from_spectra(
-            cls, spectra: Sequence[Spectrum], unsafe: bool = False
+            cls, spectra: Sequence[Spectrum], *, unsafe: bool = False
     ) -> Self:
         """Construct spectrum collection from a sequence of components
 
@@ -1233,7 +1233,7 @@ class Spectrum1DCollection(SpectrumCollectionMixin,
 
     @classmethod
     def from_spectra(
-            cls: Self, spectra: Sequence[Spectrum1D], unsafe: bool = False
+            cls: Self, spectra: Sequence[Spectrum1D], *, unsafe: bool = False
     ) -> Self:
         """Combine Spectrum1D to produce a new collection
 
