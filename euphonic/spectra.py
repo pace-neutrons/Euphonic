@@ -2007,7 +2007,7 @@ class Spectrum2DCollection(SpectrumCollectionMixin,
         spectrum_data_magnitude[0, :, :] = spectrum_0_data.magnitude
         spectrum_data_units = spectrum_0_data.units
 
-        for i, spectrum in enumerate(spectra[1:]):
+        for i, spectrum in enumerate(spectra[1:], start=1):
             spectrum_i_raw_data = cls._get_item_raw_data(spectrum)
             spectrum_i_data_units = cls._get_item_data_unit(spectrum)
 
@@ -2018,7 +2018,7 @@ class Spectrum2DCollection(SpectrumCollectionMixin,
                     x_tick_labels, spectrum.x_tick_labels)
                 cls._from_spectra_bins_check(bins_data, spectrum)
 
-            spectrum_data_magnitude[i + 1, :, :] = spectrum_i_raw_data
+            spectrum_data_magnitude[i, :, :] = spectrum_i_raw_data
 
         metadata = cls._combine_metadata([spec.metadata for spec in spectra])
         spectrum_data = ureg.Quantity(spectrum_data_magnitude,
