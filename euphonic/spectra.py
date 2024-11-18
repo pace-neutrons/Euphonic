@@ -1212,7 +1212,7 @@ class Spectrum1DCollection(SpectrumCollectionMixin,
             self, item: Integral
     ):
         """Index a new spectrum item without any safety checks"""
-        spectrum = self.__new__(type(self))
+        spectrum = self._item_type.__new__(self._item_type)
 
         for axis in self._bin_axes:
             setattr(spectrum, f"_{axis}_data",
