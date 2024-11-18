@@ -47,6 +47,12 @@
       one needs to iterate over the collection metadata without
       copying the spectral data to new objects.
 
+  - Both Spectrum1DCollection and Spectrum2DCollection have a
+    ``.from_spectra()`` constructor with an "unsafe" option which
+    bypasses some consistency checks on the component data. This
+    should only be used when confident that these will be consistent,
+    such as when iterating over an existing collection.
+
   - A ``euphonic.writers.phonon_website`` module has been added with a
     function to export QpointPhononModes to appropriate JSON for use
     with the phonon visualisation website
