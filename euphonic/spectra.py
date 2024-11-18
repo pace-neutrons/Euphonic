@@ -1957,7 +1957,7 @@ class Spectrum2DCollection(SpectrumCollectionMixin,
             x_tick_labels, spectrum_i_x_tick_labels
     ) -> None:
         """Check spectrum data units and x_tick_labels are consistent"""
-        if (spectrum_0_data_units != spectrum_i_data_units):
+        if spectrum_0_data_units != spectrum_i_data_units:
             raise ValueError("Spectrum units in sequence are inconsistent")
         if x_tick_labels != spectrum_i_x_tick_labels:
             raise ValueError("x_tick_labels in sequence are inconsistent")
