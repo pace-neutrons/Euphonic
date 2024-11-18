@@ -148,12 +148,12 @@ class TestSpectrum2DCollectionCreation:
             inconsistent_y_item):
         """Spectrum2DCollection.from_spectra with inconsistent input"""
 
-        with pytest.raises(AssertionError):
+        with pytest.raises(ValueError):
             Spectrum2DCollection.from_spectra(
                 quartz_fuzzy_items + [inconsistent_x_item]
             )
 
-        with pytest.raises(AssertionError):
+        with pytest.raises(ValueError):
             Spectrum2DCollection.from_spectra(
                 quartz_fuzzy_items + [inconsistent_x_units_item]
             )
@@ -163,7 +163,7 @@ class TestSpectrum2DCollectionCreation:
                 quartz_fuzzy_items + [inconsistent_x_length_item]
             )
 
-        with pytest.raises(AssertionError):
+        with pytest.raises(ValueError):
             Spectrum2DCollection.from_spectra(
                 quartz_fuzzy_items + [inconsistent_y_item]
             )
