@@ -1261,7 +1261,7 @@ class Spectrum1DCollection(SpectrumCollectionMixin,
             y_data_magnitude[i + 1, :] = spectrum.y_data.magnitude
 
         metadata = cls._combine_metadata([spec.metadata for spec in spectra])
-        y_data = Quantity(y_data_magnitude, y_data_units)
+        y_data = ureg.Quantity(y_data_magnitude, y_data_units)
         return cls(x_data, y_data, x_tick_labels=x_tick_labels,
                    metadata=metadata)
 
@@ -2021,7 +2021,8 @@ class Spectrum2DCollection(SpectrumCollectionMixin,
             spectrum_data_magnitude[i + 1, :, :] = spectrum_i_raw_data
 
         metadata = cls._combine_metadata([spec.metadata for spec in spectra])
-        spectrum_data = Quantity(spectrum_data_magnitude, spectrum_data_units)
+        spectrum_data = ureg.Quantity(spectrum_data_magnitude,
+                                      spectrum_data_units)
         return cls(**bins_data,
                    **{f"{cls._spectrum_axis}_data": spectrum_data},
                    x_tick_labels=x_tick_labels,
