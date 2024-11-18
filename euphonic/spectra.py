@@ -761,6 +761,7 @@ class SpectrumCollectionMixin(ABC):
     def _get_item_data_unit(cls, item: Spectrum) -> str:
         return getattr(item, f"{cls._spectrum_axis}_data_unit")
 
+
     def sum(self) -> Spectrum:
         """
         Sum collection to a single spectrum
@@ -1206,6 +1207,32 @@ class Spectrum1DCollection(SpectrumCollectionMixin,
 
         self.metadata = metadata if metadata is not None else {}
         self._check_metadata()
+
+    def _get_item_unsafe(
+            self, item: Integral
+    ):
+        """Index a new spectrum item without any safety checks"""
+        spectrum = self.__new__(type(self))
+
+        for axis in self._bin_axes:
+            setattr(spectrum, f"_{axis}_data",
+                    getattr(self, f"_{axis}_data").copy())
+            setattr(spectrum, f"_internal_{axis}_data_unit",
+                    getattr(self,f"_internal_{axis}_data_unit"))
+            setattr(spectrum, f"{axis}_data_unit",
+                    getattr(self, f"{axis}_data_unit"))
+
+        setattr(spectrum, self._spectrum_raw_data_name(),
+                self._get_raw_spectrum_data()[item].copy())
+        setattr(spectrum, f"_internal_{self._spectrum_data_name()}_unit",
+                self._get_internal_spectrum_data_unit())
+        setattr(spectrum, f"{self._spectrum_data_name()}_unit",
+                self._get_spectrum_data_unit())
+
+        spectrum.x_tick_labels = self.x_tick_labels
+        spectrum.metadata = self._get_item_metadata(item)
+
+        return spectrum
 
     def _split_by_indices(self,
                           indices: Union[Sequence[int], np.ndarray]
