@@ -1981,7 +1981,7 @@ class Spectrum2DCollection(SpectrumCollectionMixin,
 
     @classmethod
     def from_spectra(
-            cls, spectra: Sequence[Spectrum2D], unsafe: bool = False
+            cls, spectra: Sequence[Spectrum2D], *, unsafe: bool = False
     ) -> Self:
         """Combine Spectrum2D to produce a new collection
 
