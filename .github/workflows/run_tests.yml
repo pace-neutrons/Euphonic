@@ -24,12 +24,12 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
-      - uses: conda-incubator/setup-miniconda@v3
+      - uses: actions/setup-python@v5
         with:
-          python-version: '3.10'
-          channels: conda-forge,defaults
-          channel-priority: true
-
+          python-version: |
+              3.10
+              3.11
+              3.12
       - name: Install llvm on MacOS
         if: startsWith(matrix.os, 'macos')
         shell: bash -l {0}
@@ -101,11 +101,9 @@ jobs:
     if: success() || failure()
     steps:
       - uses: actions/checkout@v4
-      - uses: conda-incubator/setup-miniconda@v3
+      - uses: actions/setup-python@v5
         with:
-          python-version: '3.10'
-          channels: conda-forge,defaults
-          channel-priority: true
+          python-version: 3.10
       - name: Update pip and install dependencies
         shell: bash -l {0}
         run: |

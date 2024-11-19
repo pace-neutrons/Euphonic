@@ -36,12 +36,10 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0 # Ensure tags are fetched for versioning
-      - name: Setup Python ${{ matrix.python-version }} with Conda
-        uses: conda-incubator/setup-miniconda@v3
+      - name: Setup Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-          channels: conda-forge,defaults
-          channel-priority: true
 
       - name: Install llvm on Macos
         if: startsWith(matrix.os, 'macos')
