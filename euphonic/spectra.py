@@ -718,20 +718,20 @@ class SpectrumCollectionMixin(ABC):
         return f"{cls._spectrum_axis}_data"
 
     @classmethod
-    def _spectrum_raw_data_name(cls) -> str:
+    def _raw_spectrum_data_name(cls) -> str:
         return f"_{cls._spectrum_axis}_data"
 
     def _get_spectrum_data(self) -> Quantity:
         return getattr(self, self._spectrum_data_name())
 
     def _get_raw_spectrum_data(self) -> np.ndarray:
-        return getattr(self, self._spectrum_raw_data_name())
+        return getattr(self, self._raw_spectrum_data_name())
 
     def _set_spectrum_data(self, data: Quantity) -> None:
         setattr(self, self._spectrum_data_name(), data)
 
     def _set_raw_spectrum_data(self, data: np.ndarray) -> None:
-        setattr(self, self._spectrum_raw_data_name(), data)
+        setattr(self, self._raw_spectrum_data_name(), data)
 
     def _get_spectrum_data_unit(self) -> str:
         return getattr(self, f"{self._spectrum_data_name()}_unit")
@@ -849,8 +849,9 @@ class SpectrumCollectionMixin(ABC):
                 name = prop.format(axis)
                 setattr(spectrum, name, copy.copy(getattr(self, name)))
 
-        setattr(spectrum, self._spectrum_raw_data_name(),
+        setattr(spectrum, self._raw_spectrum_data_name(),
                 self._get_raw_spectrum_data()[item, :].copy())
+
         setattr(spectrum, f"_internal_{self._spectrum_data_name()}_unit",
                 self._get_internal_spectrum_data_unit())
         setattr(spectrum, f"{self._spectrum_data_name()}_unit",
