@@ -53,6 +53,11 @@
     should only be used when confident that these will be consistent,
     such as when iterating over an existing collection.
 
+  - Performance optimisations have been made to the "item getter" for
+    Spectrum1DCollection (and Spectrum2DCollection); it should now be
+    significantly faster to access and iterate over the contained
+    spectra.
+
   - A ``euphonic.writers.phonon_website`` module has been added with a
     function to export QpointPhononModes to appropriate JSON for use
     with the phonon visualisation website

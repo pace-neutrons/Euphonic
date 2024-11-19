@@ -718,20 +718,20 @@ class SpectrumCollectionMixin(ABC):
         return f"{cls._spectrum_axis}_data"
 
     @classmethod
-    def _spectrum_raw_data_name(cls) -> str:
+    def _raw_spectrum_data_name(cls) -> str:
         return f"_{cls._spectrum_axis}_data"
 
     def _get_spectrum_data(self) -> Quantity:
         return getattr(self, self._spectrum_data_name())
 
     def _get_raw_spectrum_data(self) -> np.ndarray:
-        return getattr(self, self._spectrum_raw_data_name())
+        return getattr(self, self._raw_spectrum_data_name())
 
     def _set_spectrum_data(self, data: Quantity) -> None:
         setattr(self, self._spectrum_data_name(), data)
 
     def _set_raw_spectrum_data(self, data: np.ndarray) -> None:
-        setattr(self, self._spectrum_raw_data_name(), data)
+        setattr(self, self._raw_spectrum_data_name(), data)
 
     def _get_spectrum_data_unit(self) -> str:
         return getattr(self, f"{self._spectrum_data_name()}_unit")
@@ -739,15 +739,9 @@ class SpectrumCollectionMixin(ABC):
     def _get_internal_spectrum_data_unit(self) -> str:
         return getattr(self, f"_internal_{self._spectrum_data_name()}_unit")
 
-    def _get_bin_kwargs(self) -> Dict[str, Quantity]:
-        """Get constructor args for bin axes from current data
-
-        e.g. for Spectrum2DCollection this is
-
-            {"x_data": self.x_data, "y_data": self.y_data}
-        """
-        return {f"{axis}_data": getattr(self, f"{axis}_data")
-                for axis in self._bin_axes}
+    @property
+    def _bin_axis_names(self) -> list[str]:
+        return [f"{axis}_data" for axis in self._bin_axes]
 
     @classmethod
     def _get_item_data(cls, item: Spectrum) -> Quantity:
@@ -779,8 +773,12 @@ class SpectrumCollectionMixin(ABC):
             np.sum(self._get_raw_spectrum_data(), axis=0),
             units=self._get_internal_spectrum_data_unit()
         ).to(self._get_spectrum_data_unit())
+
+        bin_kwargs = {axis_name: getattr(self, axis_name)
+                      for axis_name in self._bin_axis_names}
+
         return self._item_type(
-            **self._get_bin_kwargs(),
+            **bin_kwargs,
             **{self._spectrum_data_name(): summed_s_data},
             x_tick_labels=copy.copy(self.x_tick_labels),
             metadata=metadata
@@ -821,16 +819,43 @@ class SpectrumCollectionMixin(ABC):
             self, item: Union[Integral, slice, Sequence[Integral], np.ndarray]
     ):  # noqa: F811
         self._validate_item(item)
-        init_kwargs = {
-            self._spectrum_data_name(): self._get_spectrum_data()[item, :],
-            "x_tick_labels": self.x_tick_labels,
-            "metadata": self._get_item_metadata(item)
-                       } | self._get_bin_kwargs()
 
         if isinstance(item, Integral):
-            return self._item_type(**init_kwargs)
+            spectrum = self._item_type.__new__(self._item_type)
+        else:
+            # Pylint miscounts arguments when we call this staticmethod
+            spectrum = self.__new__(type(self))  # pylint: disable=E1120
 
-        return type(self)(**init_kwargs)
+        self._set_item_data(spectrum, item)
+
+        spectrum.x_tick_labels = self.x_tick_labels
+        spectrum.metadata = self._get_item_metadata(item)
+
+        return spectrum
+
+    def _set_item_data(
+            self,
+            spectrum: Spectrum,
+            item: Union[Integral, slice, Sequence[Integral], np.ndarray]
+    ) -> None:
+        """Write axis and spectrum data from self to Spectrum
+
+        This is intended to set attributes on a 'bare' Spectrum created with
+        __new__() from the parent SpectrumCollection.
+        """
+
+        for axis in self._bin_axes:
+            for prop in ("_{}_data", "_internal_{}_data_unit", "{}_data_unit"):
+                name = prop.format(axis)
+                setattr(spectrum, name, copy.copy(getattr(self, name)))
+
+        setattr(spectrum, self._raw_spectrum_data_name(),
+                self._get_raw_spectrum_data()[item, :].copy())
+
+        setattr(spectrum, f"_internal_{self._spectrum_data_name()}_unit",
+                self._get_internal_spectrum_data_unit())
+        setattr(spectrum, f"{self._spectrum_data_name()}_unit",
+                self._get_spectrum_data_unit())
 
     def _validate_item(self, item: Integral | slice | Sequence[Integral] | np.ndarray
                        ) -> None:
@@ -902,7 +927,6 @@ class SpectrumCollectionMixin(ABC):
         common_metadata = {key: value for key, value in self.metadata.items()
                            if key != "line_data"}
 
-
         line_data = self.metadata.get("line_data")
         if line_data is None:
             line_data = itertools.repeat({}, len(self._get_raw_spectrum_data()))
@@ -969,7 +993,6 @@ class SpectrumCollectionMixin(ABC):
             return (value,) if isinstance(value, (int, str)) else value
 
         select_key_values = valmap(ensure_sequence, select_key_values)
-
 
         # Collect indices that match each combination of values
         selected_indices = []
@@ -1091,7 +1114,7 @@ class SpectrumCollectionMixin(ABC):
         -------
         dict
         """
-        attrs = [*self._get_bin_kwargs().keys(),
+        attrs = [*self._bin_axis_names,
                  self._spectrum_data_name(),
                  'x_tick_labels',
                  'metadata']
@@ -1450,6 +1473,7 @@ class Spectrum1DCollection(SpectrumCollectionMixin,
         spectrum_collection
         """
         return super().from_dict(d)
+
 
 class Spectrum2D(Spectrum):
     """
