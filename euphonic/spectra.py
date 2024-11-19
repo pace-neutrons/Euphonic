@@ -837,7 +837,11 @@ class SpectrumCollectionMixin(ABC):
             spectrum: Spectrum,
             item: Union[Integral, slice, Sequence[Integral], np.ndarray]
     ) -> None:
-        """Write axis and spectrum data to a new Spectrum"""
+        """Write axis and spectrum data from self to Spectrum
+
+        This is intended to set attributes on a 'bare' Spectrum created with
+        __new__() from the parent SpectrumCollection.
+        """
 
         for axis in self._bin_axes:
             setattr(spectrum, f"_{axis}_data",
