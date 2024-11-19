@@ -823,7 +823,7 @@ class SpectrumCollectionMixin(ABC):
         if isinstance(item, Integral):
             spectrum = self._item_type.__new__(self._item_type)
         else:
-            spectrum = self.__new__(type(self))
+            spectrum = type(self).__new__(type(self))
 
         self._set_item_data(spectrum, item)
 
