@@ -845,12 +845,9 @@ class SpectrumCollectionMixin(ABC):
         """
 
         for axis in self._bin_axes:
-            setattr(spectrum, f"_{axis}_data",
-                    getattr(self, f"_{axis}_data").copy())
-            setattr(spectrum, f"_internal_{axis}_data_unit",
-                    getattr(self, f"_internal_{axis}_data_unit"))
-            setattr(spectrum, f"{axis}_data_unit",
-                    getattr(self, f"{axis}_data_unit"))
+            for prop in ("_{}_data", "_internal_{}_data_unit", "{}_data_unit"):
+                name = prop.format(axis)
+                setattr(spectrum, name, copy.copy(getattr(self, name)))
 
         setattr(spectrum, self._spectrum_raw_data_name(),
                 self._get_raw_spectrum_data()[item, :].copy())
