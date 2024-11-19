@@ -823,7 +823,8 @@ class SpectrumCollectionMixin(ABC):
         if isinstance(item, Integral):
             spectrum = self._item_type.__new__(self._item_type)
         else:
-            spectrum = type(self).__new__(type(self))
+            # Pylint miscounts arguments when we call this staticmethod
+            spectrum = self.__new__(type(self))  # pylint: disable=E1120
 
         self._set_item_data(spectrum, item)
 
