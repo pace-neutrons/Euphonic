@@ -755,7 +755,6 @@ class SpectrumCollectionMixin(ABC):
     def _get_item_data_unit(cls, item: Spectrum) -> str:
         return getattr(item, f"{cls._spectrum_axis}_data_unit")
 
-
     def sum(self) -> Spectrum:
         """
         Sum collection to a single spectrum
@@ -844,7 +843,7 @@ class SpectrumCollectionMixin(ABC):
             setattr(spectrum, f"_{axis}_data",
                     getattr(self, f"_{axis}_data").copy())
             setattr(spectrum, f"_internal_{axis}_data_unit",
-                    getattr(self,f"_internal_{axis}_data_unit"))
+                    getattr(self, f"_internal_{axis}_data_unit"))
             setattr(spectrum, f"{axis}_data_unit",
                     getattr(self, f"{axis}_data_unit"))
 
@@ -854,8 +853,6 @@ class SpectrumCollectionMixin(ABC):
                 self._get_internal_spectrum_data_unit())
         setattr(spectrum, f"{self._spectrum_data_name()}_unit",
                 self._get_spectrum_data_unit())
-
-
 
     def _validate_item(self, item: Integral | slice | Sequence[Integral] | np.ndarray
                        ) -> None:
@@ -927,7 +924,6 @@ class SpectrumCollectionMixin(ABC):
         common_metadata = {key: value for key, value in self.metadata.items()
                            if key != "line_data"}
 
-
         line_data = self.metadata.get("line_data")
         if line_data is None:
             line_data = itertools.repeat({}, len(self._get_raw_spectrum_data()))
@@ -994,7 +990,6 @@ class SpectrumCollectionMixin(ABC):
             return (value,) if isinstance(value, (int, str)) else value
 
         select_key_values = valmap(ensure_sequence, select_key_values)
-
 
         # Collect indices that match each combination of values
         selected_indices = []
@@ -1475,6 +1470,7 @@ class Spectrum1DCollection(SpectrumCollectionMixin,
         spectrum_collection
         """
         return super().from_dict(d)
+
 
 class Spectrum2D(Spectrum):
     """
