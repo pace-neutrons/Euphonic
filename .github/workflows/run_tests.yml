@@ -22,11 +22,9 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
-      - uses: conda-incubator/setup-miniconda@v3
+      - uses: actions/setup-python@v5
         with:
           python-version: '3.10'
-          channels: conda-forge,defaults
-          channel-priority: true
       - name: Install llvm on Macos
         if: startsWith(matrix.os, 'macos')
         run: |
