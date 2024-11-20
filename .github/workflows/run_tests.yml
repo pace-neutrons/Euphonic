@@ -42,25 +42,43 @@ jobs:
           echo LDFLAGS="-L${LLVM_DIR}/lib $LDFLAGS" >> $GITHUB_ENV
           echo CPPFLAGS="-I${LLVM_DIR}/include $CPPFLAGS" >> $GITHUB_ENV
 
-      - name: Setup MSVC env on Windows
-        if: startsWith(matrix.os, 'windows')
-        uses: bus1/cabuild/action/msdevshell@v1
-        with:
-          architecture: x64
-
-      - name: Set Windows compiler environment variables
+      - name: Explore MSVC env before setup
         if: startsWith(matrix.os, 'windows')
         shell: bash -l {0}
-        run: |
-          echo "Getting full path to cl.exe:"
-          CL_EXE=$(where cl | head -n 1)
-          echo found cl.exe "$CL_EXE"
-          echo "CC=$CL_EXE" >> $GITHUB_ENV
+        run:
+          #   MSVC_BIN: 'C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Tools\MSVC\14.41.34120\bin\HostX64\x64'
 
-          echo "Getting path to link.exe in same dir"
-          LINK_EXE=$(dirname "$CL_EXE")\\link.exe
-          echo "$LINK_EXE"
-          echo "CC_LD=$LINK_EXE" >> $GITHUB_ENV
+          #   echo "CC=${MSVC_BIN}\cl.exe" >> $GITHUB_ENV
+          #   echo "CC_LD=${MSVC_BIN}\link.exe" >> $GITHUB_ENV
+
+          ls 'C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Tools\MSVC\'
+
+          MSVC_BIN=$(ls 'C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Tools\MSVC\' | head -n 1)\\bin\\HostX64\\x64
+          echo $MSVC_BIN
+          echo "CC=$MSVC_BIN\\cl.exe" >> $GITHUB_ENV
+          echo "CC_LD=$MSVC_BIN\\link.exe" >> $GITHUB_ENV
+
+          echo $GITHUB_ENV
+
+      # - name: Setup MSVC env on Windows
+      #   if: startsWith(matrix.os, 'windows')
+      #   uses: bus1/cabuild/action/msdevshell@v1
+      #   with:
+      #     architecture: x64
+
+      # - name: Set Windows compiler environment variables
+      #   if: startsWith(matrix.os, 'windows')
+      #   shell: bash -l {0}
+      #   run: |
+      #     echo "Getting full path to cl.exe:"
+      #     CL_EXE=$(where cl | head -n 1)
+      #     echo found cl.exe "$CL_EXE"
+      #     echo "CC=$CL_EXE" >> $GITHUB_ENV
+
+      #     echo "Getting path to link.exe in same dir"
+      #     LINK_EXE=$(dirname "$CL_EXE")\\link.exe
+      #     echo "$LINK_EXE"
+      #     echo "CC_LD=$LINK_EXE" >> $GITHUB_ENV
 
       - name: Update pip and install dependencies
         shell: bash -l {0}
