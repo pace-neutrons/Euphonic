@@ -63,9 +63,12 @@ jobs:
         run: |
           MSVC_BIN="$VCToolsInstallDir\bin\Hostx64\x64"
           echo "Setting MSVC_BIN env. Directory contents:"
-          ls $MSVC_BIN
+          ls "$MSVC_BIN"
           echo "CC=$MSVC_BIN\cl.exe" >> $GITHUB_ENV
           echo "CC_LD=$MSVC_BIN\link.exe" >> $GITHUB_ENV
+          echo "What would Windows find without the full paths?"
+          where cl
+          where link
 
       - name: Update Python pip, build, wheel, and twine
         shell: bash -l {0}
