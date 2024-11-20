@@ -52,24 +52,24 @@ jobs:
           echo CC="${LLVM_DIR}/bin/clang" >> $GITHUB_ENV
           echo LDFLAGS="-L${LLVM_DIR}/lib $LDFLAGS" >> $GITHUB_ENV
           echo CPPFLAGS="-I${LLVM_DIR}/include $CPPFLAGS" >> $GITHUB_ENV
-      - name: Setup MSVC env on Windows
-        if: startsWith(matrix.os, 'windows')
-        uses: bus1/cabuild/action/msdevshell@v1
-        with:
-          architecture: x64
-      - name: Set Windows compiler environment variables
+
+      - name: Windows - find MSVC and set environment variables
         if: startsWith(matrix.os, 'windows')
         shell: bash -l {0}
+        env:
+          MSVC_PREFIX: 'C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Tools\MSVC'
         run: |
-          echo "Getting full path to cl.exe:"
-          CL_EXE=$(where cl | head -n 1)
-          echo found cl.exe "$CL_EXE"
-          echo "CC=$CL_EXE" >> $GITHUB_ENV
+          echo "Available MSVC installations:"
+          ls "$MSVC_PREFIX"
 
-          echo "Getting path to link.exe in same dir"
-          LINK_EXE=$(dirname "$CL_EXE")\\link.exe
-          echo "$LINK_EXE"
-          echo "CC_LD=$LINK_EXE" >> $GITHUB_ENV
+          MSVC_BIN=$(ls "$MSVC_PREFIX" | tail -n 1)\\bin\\HostX64\\x64
+          CC="$MSVC_PREFIX\\$MSVC_BIN\\cl.exe"
+          echo "CC: $CC"
+          echo "CC=$CC" >> $GITHUB_ENV
+
+          CC_LD="$MSVC_PREFIX\\$MSVC_BIN\\link.exe"
+          echo "CC_LD: $CC_LD"
+          echo "CC_LD=$CC_LD" >> $GITHUB_ENV
 
       - name: Update Python pip, build, wheel, and twine
         shell: bash -l {0}

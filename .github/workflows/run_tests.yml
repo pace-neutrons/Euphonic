@@ -46,7 +46,7 @@ jobs:
         if: startsWith(matrix.os, 'windows')
         shell: bash -l {0}
         env:
-          MSVC_PREFIX: 'C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Tools\MSVC\'
+          MSVC_PREFIX: 'C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Tools\MSVC'
         run: |
           echo "Available MSVC installations:"
           ls "$MSVC_PREFIX"
