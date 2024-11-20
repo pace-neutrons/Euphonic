@@ -57,10 +57,14 @@ jobs:
         uses: bus1/cabuild/action/msdevshell@v1
         with:
           architecture: x64
-      - shell: bash -l {0}
+      - name: Set MSVC related env variables
+        if: startsWith(matrix.os, 'windows')
+        shell: bash -l {0}
         env:
           MSVC_BIN: 'C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Tools\MSVC\14.41.34120\bin\HostX64\x64'
         run: |
+          echo "Setting MSVC_BIN env. Directory contents:"
+          ls $MSVC_BIN
           echo "CC=msvc" >> $GITHUB_ENV
           echo "CC_LD=link" >> $GITHUB_ENV
 
