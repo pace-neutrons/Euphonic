@@ -57,18 +57,19 @@ jobs:
         uses: bus1/cabuild/action/msdevshell@v1
         with:
           architecture: x64
-      - name: Set MSVC related env variables
+      - name: Set Windows compiler environment variables
         if: startsWith(matrix.os, 'windows')
         shell: bash -l {0}
         run: |
-          MSVC_BIN="$VCToolsInstallDir\bin\Hostx64\x64"
-          echo "Setting MSVC_BIN env. Directory contents:"
-          ls "$MSVC_BIN"
-          echo "CC=$MSVC_BIN\cl.exe" >> $GITHUB_ENV
-          echo "CC_LD=$MSVC_BIN\link.exe" >> $GITHUB_ENV
-          echo "What would Windows find without the full paths?"
-          where cl
-          where link
+          echo "Getting full path to cl.exe:"
+          CL_EXE=$(where cl | head -n 1)
+          echo found cl.exe "$CL_EXE"
+          echo "CC=$CL_EXE" >> $GITHUB_ENV
+
+          echo "Getting path to link.exe in same dir"
+          LINK_EXE=$(dirname "$CL_EXE")\\link.exe
+          echo "$LINK_EXE"
+          echo "CC_LD=$LINK_EXE" >> $GITHUB_ENV
 
       - name: Update Python pip, build, wheel, and twine
         shell: bash -l {0}
