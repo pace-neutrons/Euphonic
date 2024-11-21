@@ -6,7 +6,9 @@ project('euphonic',
 
 build = get_option('python_only') ? disabler() : []
 
+fs = import('fs')
 py = import('python').find_installation(pure: false)
+
 py_dep = py.dependency()
 
 py_src = {
@@ -34,10 +36,13 @@ foreach folder, sources : py_src
   py.install_sources(inc, subdir: folder)
 endforeach
 
+version_script = files('./build_utils/version.py')
+meson.add_dist_script('python', version_script, '--dist')
+
+# If building from sdist not under git so will be read from last version
 version = configure_file(input: 'build_utils/version.py.in',
                          output: 'version.py',
                          configuration: {'VERSION': meson.project_version()})
-
 py.install_sources(version, 'CITATION.cff', 'LICENSE', subdir: 'euphonic')
 
 src = ['c/_euphonic.c', 'c/dyn_mat.c', 'c/util.c', 'c/py_util.c', 'c/load_libs.c']
