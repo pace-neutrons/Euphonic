@@ -89,8 +89,8 @@ jobs:
 
           CIBW_REPAIR_WHEEL_COMMAND_MACOS: ""
 
-          CIBW_TEST_EXTRAS: "test,brille,phonopy_reader,matplotlib"
-          CIBW_TEST_COMMAND: "python {package}/tests_and_analysis/test/run_tests.py"
+          CIBW_TEST_EXTRAS: "test,brille,phonopy-reader,matplotlib"
+          CIBW_TEST_COMMAND: python {package}/tests_and_analysis/test/run_tests.py
 
         with:
           output-dir: wheelhouse
@@ -169,7 +169,7 @@ jobs:
 
       - name: Install from sdist
         shell: bash -l {0}
-        run: python -m pip install $(find dist -name 'euphonic-*.tar.gz')[matplotlib,phonopy_reader,brille,test]
+        run: python -m pip install $(find dist -name 'euphonic-*.tar.gz')[matplotlib,phonopy-reader,brille,test]
 
       - name: Checkout repository (for tests and test data)
         uses: actions/checkout@v4

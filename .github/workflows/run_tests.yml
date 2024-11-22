@@ -115,7 +115,7 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install -r tests_and_analysis/ci_requirements.txt
           python -m pip install -r doc/requirements.txt
-          python -m pip install .[matplotlib,phonopy_reader,brille]
+          python -m pip install .[matplotlib,phonopy-reader,brille]
       - name: Run Sphinx doctests
         working-directory: ./doc
         shell: bash -l {0}
