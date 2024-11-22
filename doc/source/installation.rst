@@ -106,8 +106,8 @@ the same pip commands as above.
 
 **Linux**
 
-You should have a version of ``gcc`` on your path (currently tested with
-``4.8.5``). If ``gcc`` can be found the Euphonic extension will be
+You should have a C-compatible compiler on your path (currently tested with
+``gcc``). If a C compiler with OpenMP can be found, the Euphonic extension will be
 automatically installed when using the same pip commands as above.
 
 **Mac OSX**
@@ -119,6 +119,12 @@ before running pip install run:
 
   brew install llvm
 
+.. note::
+
+  You may need to add the llvm-clang compiler to your path or export
+  the variables recommended by ``brew`` to ensure that the llvm-clang compiler
+  is chosen ahead of the native Apple compiler (which does not support OpenMP).
+
 Installing Euphonic without the C extension
 ===========================================
 
@@ -127,10 +133,4 @@ install the Python parts only with:
 
 .. code-block:: bash
 
-  pip install --install-option="--python-only" euphonic
-
-Note that using this option disables the use of wheels which, if they haven't
-been installed already, actually makes installing other packages such as Numpy
-more difficult. The easiest way around this is running the usual install
-command first (which will install all the dependencies), then running again
-with the ``--install-option="--python-only"`` option.
+  pip install -Csetup-args="-Dpython_only=true" euphonic
