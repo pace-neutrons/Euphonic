@@ -8,7 +8,7 @@ Provides 3 means of updating:
 
 - python version.py --dump
 
-  Update version in `euponic/version.py`
+  Update version in `euphonic/version.py`
 
 - python version.py --dist
 
