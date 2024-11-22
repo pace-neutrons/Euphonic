@@ -1,0 +1,67 @@
+[build-system]
+build-backend = 'mesonpy'
+requires = ["meson-python",
+            "meson>=1.6",
+            "ninja",
+            "packaging",
+            "numpy>=1.24.0"]
+
+[tool.meson-python.args]
+setup = ['--vsenv']
+
+[project]
+name = "Euphonic"
+description = "Euphonic calculates phonon bandstructures and inelastic neutron scattering intensities from modelling code output (e.g. CASTEP)"
+requires-python = ">=3.10"
+readme = "README.rst"
+license = {text = "GPLv3"}
+keywords = [
+    "Python",
+    "physics",
+    "phonons",
+    "inelastic neutron scattering",
+    "CASTEP",
+    "Phonopy",
+    "force constants"
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+    "Programming Language :: C",
+    "Programming Language :: Python :: 3",
+    "Topic :: Scientific/Engineering :: Physics",
+]
+dependencies = [
+    "packaging",
+    "numpy>=1.24.0",
+    "scipy>=1.10",
+    "seekpath>=1.1.0",
+    "spglib>=1.9.4",
+    "pint>=0.22",
+    "threadpoolctl>=3.0.0",
+    "toolz>=0.12.1",
+]
+dynamic = ["version"]
+
+[project.urls]
+Homepage = "https://github.com/pace-neutrons/Euphonic"
+Repository = "https://github.com/pace-neutrons/Euphonic.git"
+"Bug Tracker" = "https://github.com/pace-neutrons/Euphonic/issues"
+documentation = "https://euphonic.readthedocs.io/en/stable/"
+
+[project.optional-dependencies]
+matplotlib = ["matplotlib>=3.8.0"]
+phonopy_reader = ["h5py>=3.6.0", "PyYAML>=6.0"]
+brille = ["brille>=0.7.0"]
+test = ["mock", "pytest~=7.0", "coverage", "pytest-mock", "pytest-lazy-fixture", "pytest-xvfb"]
+
+[project.scripts]
+euphonic-brille-convergence = "euphonic.cli.brille_convergence:main"
+euphonic-dispersion = "euphonic.cli.dispersion:main"
+euphonic-dos = "euphonic.cli.dos:main"
+euphonic-optimise-dipole-parameter = "euphonic.cli.optimise_dipole_parameter:main"
+euphonic-show-sampling = "euphonic.cli.show_sampling:main"
+euphonic-intensity-map = "euphonic.cli.intensity_map:main"
+euphonic-powder-map = "euphonic.cli.powder_map:main"

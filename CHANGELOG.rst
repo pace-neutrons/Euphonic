@@ -83,6 +83,9 @@
     support addition of Spectrum2DCollection and improve
     maintainability.
 
+  - Entire build system rework, migrating to ``pyproject.toml`` form
+    with ``meson-python``, ``cibuildwheel`` and removing
+    ``versioneer`` to simplify future development and maintenance.
 
 `v1.3.2 <https://github.com/pace-neutrons/Euphonic/compare/v1.3.1...v1.3.2>`_
 -----------------------------------------------------------------------------
@@ -619,7 +622,7 @@
   - Default Monkhorst-Pack meshes (i.e. [6, 6, 6] in ``euphonic-dos``
     and [20, 20, 20] in ``sample_sphere_structure_factor()``) have
     been replaced by default grid-spacing values.
-  
+
   - The scaling of density of states has changed, due to a change
     in implementation
 

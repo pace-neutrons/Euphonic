@@ -33,7 +33,7 @@ jobs:
         shell: bash -l {0}
         env:
           EUPHONIC_VERSION: ${{ github.event.inputs.version }}
-        run: python -m tox -c release_tox.ini
+        run: python -m tox -c build_utils/release_tox.ini
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v4
@@ -54,4 +54,3 @@ jobs:
         uses: EnricoMi/publish-unit-test-result-action@v2
         with:
           junit_files: artifacts/**/junit_report*.xml
-
