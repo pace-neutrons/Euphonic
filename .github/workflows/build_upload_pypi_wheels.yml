@@ -85,7 +85,7 @@ jobs:
 
           CIBW_REPAIR_WHEEL_COMMAND_MACOS: ""
 
-          CIBW_TEST_EXTRAS: "test,brille,phonopy_reader,matplotlib"
+          CIBW_TEST_EXTRAS: "test,brille,phonopy-reader,matplotlib"
           CIBW_TEST_COMMAND: python {package}/tests_and_analysis/test/run_tests.py
 
         with:
