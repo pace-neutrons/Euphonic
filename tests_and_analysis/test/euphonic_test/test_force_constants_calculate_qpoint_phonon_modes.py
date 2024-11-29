@@ -301,7 +301,7 @@ class TestForceConstantsCalculateQPointPhononModesWithoutCExtensionInstalled:
             fc.calculate_qpoint_phonon_modes(get_test_qpts(), use_c=False)
         assert len(warn_record) == 0
 
-
+@pytest.mark.c_extension
 class TestForceConstantsCalculateQPointPhononModesWithCExtensionInstalled:
 
     @pytest.fixture
