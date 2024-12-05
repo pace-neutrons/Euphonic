@@ -23,7 +23,7 @@ def release_github(test=True):
     with open('CITATION.cff') as f:
         citation = yaml.safe_load(f)
 
-    euphonic_ver = 'v' + __version__
+    euphonic_ver = __version__
     version_dict = {}
     version_dict['CHANGELOG.rst'] = re.findall(r'\n`(v\d+\.\d+\.\S+)\s',
                                                changelog)[0]
