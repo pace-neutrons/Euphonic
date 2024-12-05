@@ -1,5 +1,11 @@
-`Unreleased <https://github.com/pace-neutrons/Euphonic/compare/v1.3.2...HEAD>`_
+`Unreleased <https://github.com/pace-neutrons/Euphonic/compare/v1.4.0...HEAD>`_
 -------------------------------------------------------------------------------
+
+`v1.4.0 <https://github.com/pace-neutrons/Euphonic/compare/v1.3.2...v1.4.0>`_
+-----------------------------------------------------------------------------
+
+This release includes some significant modernisation and maintenance,
+as well as new features and performance enhancements.
 
 - Requirements
 
