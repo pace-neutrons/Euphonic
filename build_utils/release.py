@@ -25,7 +25,7 @@ def release_github(test=True):
 
     euphonic_ver = 'v' + __version__
     version_dict = {}
-    version_dict['CHANGELOG.rst'] = re.findall('\n`(v\d+\.\d+\.\S+)\s',
+    version_dict['CHANGELOG.rst'] = re.findall(r'\n`(v\d+\.\d+\.\S+)\s',
                                                changelog)[0]
     version_dict['CITATION.cff'] = 'v' + citation['version']
     for ver_name, ver in version_dict.items():
@@ -35,7 +35,7 @@ def release_github(test=True):
                 f'euphonic.__version__: {euphonic_ver} {ver_name}: '
                 f'{ver}'))
 
-    desc = re.search('`v\d+\.\d+\.\S+.*?^-+\n(.*?)^`v', changelog,
+    desc = re.search(r'`v\d+\.\d+\.\S+.*?^-+\n(.*?)^`v', changelog,
                      re.DOTALL | re.MULTILINE).groups()[0].strip()
     payload = {
         "tag_name": euphonic_ver,
