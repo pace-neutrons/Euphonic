@@ -39,12 +39,13 @@ version_file = Path(__file__).parent.parent / "euphonic" / "version.py"
 
 for gitcmd in gits:
     try:
+        print(f"Trying {gitcmd} ...", file=sys.stderr)
         proc = subprocess.run([gitcmd, "describe", "--tags", "--dirty"],
                               capture_output=True, check=True, text=True)
     except subprocess.CalledProcessError as err:
         print(f"Tried {gitcmd}, returned: {err}", file=sys.stderr)
         print(f"Stdout: '{err.stdout.strip()}'", file=sys.stderr)
-        print(f"Stdout: '{err.stderr.strip()}'", file=sys.stderr)
+        print(f"Stderr: '{err.stderr.strip()}'", file=sys.stderr)
         continue
 
     version, *dirty = proc.stdout.strip().split("-")
@@ -53,6 +54,7 @@ for gitcmd in gits:
     break
 
 else:  # Can't use git
+    print(f"All git implementations failed, reading version file", file=sys.stderr)
     version = version_file.read_text().split("=")[1].strip('"\n ')
 
 match COMMAND:
