@@ -1,6 +1,6 @@
 project('euphonic',
         'c',
-        version: run_command('python', 'build_utils/version.py', check: true).stdout().strip(),
+        version: run_command('python', files('build_utils/version.py'), check: true).stdout().strip(),
         meson_version: '>=1.6',
        )
 
