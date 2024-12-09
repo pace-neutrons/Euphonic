@@ -39,10 +39,6 @@ jobs:
     name: Install on Windows
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0 # Ensure tags are fetched for versioning
-
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
@@ -76,15 +72,17 @@ jobs:
           pwd
           ls -R
 
-      - name: Update pip and install test requirements
+      - name: Update pip
         shell: bash -l {0}
         run: |
           python -m pip install --upgrade pip
-          python -m pip install -r tests_and_analysis/tox_requirements.txt
 
       - name: Install from sdist
         shell: bash -l {0}
-        run: python -m pip install $(find dist -name 'euphonic-*.tar.gz')[matplotlib,phonopy_reader,brille]
+        run: python -m pip install $(find dist -name 'euphonic-*.tar.gz')[matplotlib,phonopy_reader,brille,test]
+
+      - name: Checkout repository (for tests and test data)
+        uses: actions/checkout@v4
 
       - name: run tests
         shell: bash -l {0}
