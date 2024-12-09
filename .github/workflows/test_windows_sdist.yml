@@ -70,7 +70,9 @@ jobs:
           merge-multiple: true
 
       - name: List Files
-        run: ls -R
+        run: |
+          pwd
+          ls -R
 
       - name: Update pip
         shell: bash -l {0}
@@ -79,4 +81,4 @@ jobs:
 
       - name: Install from sdist
         shell: bash -l {0}
-        run: python -m pip install euphonic-*.tar.gz
+        run: python -m pip install $(find . -name 'euphonic-*.tar.gz')
