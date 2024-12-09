@@ -42,7 +42,11 @@ for gitcmd in gits:
         print(f"Trying {gitcmd} ...", file=sys.stderr)
         proc = subprocess.run([gitcmd, "describe", "--tags", "--dirty"],
                               capture_output=True, check=True, text=True)
-    except subprocess.CalledProcessError as err:
+    except FileNotFoundError as err:
+        print(f"Tried {gitcmd}, File Not Found", file=sys.stderr)
+        continue
+
+    except (subprocess.CalledProcessError) as err:
         print(f"Tried {gitcmd}, returned: {err}", file=sys.stderr)
         print(f"Stdout: '{err.stdout.strip()}'", file=sys.stderr)
         print(f"Stderr: '{err.stderr.strip()}'", file=sys.stderr)
