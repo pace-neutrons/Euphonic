@@ -1,9 +1,10 @@
 name: Build and upload PyPI wheels and source dist
 
 on:
-  release:
-    types: [published]
-  workflow_dispatch:
+  # release:
+  #   types: [published]
+  # workflow_dispatch:
+  pull_request:
 
 jobs:
   build-sdist:
@@ -55,21 +56,22 @@ jobs:
       fail-fast: false
     runs-on: ${{ matrix.os }}
     steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Ensure tags are fetched for versioning
+
       - name: Download sdist
         uses: actions/download-artifact@v4
         with:
+          name: python-source-distribution
           path: dist/
 
-      - name: Rename dowloaded sdist
+      - name: Rename downloaded sdist
         shell: bash -l {0}
         run: |
           ls -R dist
           mv $(find dist/ -name 'euphonic*.tar.gz') dist/euphonic.tar.gz
           ls -R dist
-
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0 # Ensure tags are fetched for versioning
 
       - name: Setup Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5
