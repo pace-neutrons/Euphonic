@@ -78,6 +78,11 @@ jobs:
       #     mv $(find dist/ -name 'euphonic*.tar.gz') dist/euphonic.tar.gz
       #     ls -R dist
 
+      - name: Get sdist filename
+        shell: bash -l {0}
+        run: |
+          echo EUPHONIC_SDIST="$(find dist/ -name 'euphonic*.tar.gz')" >> $GITHUB_ENV
+
       - name: Setup Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5
         with:
@@ -133,7 +138,7 @@ jobs:
 
         with:
           output-dir: wheelhouse
-          package-dir: "dist/python-source-distribution/euphonic*.tar.gz"
+          package-dir: ${{ env.EUPHONIC_SDIST }}
 
       - name: Upload wheels as build artifacts
         uses: actions/upload-artifact@v4
