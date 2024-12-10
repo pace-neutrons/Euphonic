@@ -1,6 +1,16 @@
 `Unreleased <https://github.com/pace-neutrons/Euphonic/compare/v1.4.0...HEAD>`_
 -------------------------------------------------------------------------------
 
+- Bug fixes
+
+  - Fixed a bug in the version numbering mechanism affecting source
+    builds on Windows and environments where Git is unavailable
+
+- Maintenance
+
+  - Source builds automatically tested on Windows as part of
+    build/deployment process
+
 `v1.4.0 <https://github.com/pace-neutrons/Euphonic/compare/v1.3.2...v1.4.0>`_
 -----------------------------------------------------------------------------
 
