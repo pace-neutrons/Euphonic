@@ -58,8 +58,8 @@ jobs:
     steps:
       - name: Checkout project (for test files)
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0 # Ensure tags are fetched for versioning
+        # with:
+        #   fetch-depth: 0 # Ensure tags are fetched for versioning
 
       - name: Delete source (to ensure we are using sdist only)
         shell: bash -l {0}
@@ -71,12 +71,12 @@ jobs:
           name: python-source-distribution
           path: dist/
 
-      - name: Rename downloaded sdist
-        shell: bash -l {0}
-        run: |
-          ls -R dist
-          mv $(find dist/ -name 'euphonic*.tar.gz') dist/euphonic.tar.gz
-          ls -R dist
+      # - name: Rename downloaded sdist
+      #   shell: bash -l {0}
+      #   run: |
+      #     ls -R dist
+      #     mv $(find dist/ -name 'euphonic*.tar.gz') dist/euphonic.tar.gz
+      #     ls -R dist
 
       - name: Setup Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5
@@ -133,7 +133,7 @@ jobs:
 
         with:
           output-dir: wheelhouse
-          package-dir: "dist/euphonic.tar.gz"
+          package-dir: "dist/python-source-distribution/euphonic*.tar.gz"
 
       - name: Upload wheels as build artifacts
         uses: actions/upload-artifact@v4
@@ -223,7 +223,7 @@ jobs:
           merge-multiple: true
 
       - name: List Files
-        run: ls -R
+        run: ls -R dist/
 
       # - name: Upload wheels to PyPI
       #   uses: pypa/gh-action-pypi-publish@release/v1
