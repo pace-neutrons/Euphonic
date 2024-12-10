@@ -126,7 +126,7 @@ jobs:
           CIBW_REPAIR_WHEEL_COMMAND_MACOS: ""
 
           CIBW_TEST_EXTRAS: "test,brille,phonopy_reader,matplotlib"
-          CIBW_TEST_COMMAND: python {project}/euphonic_from_git/tests_and_analysis/test/run_tests.py
+          CIBW_TEST_COMMAND: "python {package}../../euphonic_from_git/tests_and_analysis/test/run_tests.py"
 
         with:
           output-dir: wheelhouse
