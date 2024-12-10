@@ -198,7 +198,7 @@ jobs:
   publish:
     if: github.event_name == 'release'
     needs: [build-wheels,test-sdist]
-    name: Upload release to PyPI (dry-run)
+    name: Upload release to PyPI
     runs-on: ubuntu-latest
     environment:
       name: pypi
