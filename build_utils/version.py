@@ -58,7 +58,7 @@ for gitcmd in gits:
     break
 
 else:  # Can't use git
-    print(f"All git implementations failed, reading version file", file=sys.stderr)
+    print("All git implementations failed, reading version file", file=sys.stderr)
     version = version_file.read_text().split("=")[1].strip('"\n ')
 
 match COMMAND:
