@@ -1,2 +1,3 @@
-# Added by versioneer
-euphonic/_version.py export-subst
+.github/** export-ignore
+tests_and_analysis/** export-ignore
+tox.ini export-ignore

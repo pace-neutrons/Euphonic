@@ -6,29 +6,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  build-sdist:
-    name: Build sdist
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0 # Ensure tags are fetched for versioning
-
-      - name: Create source distribution
-        shell: bash -l {0}
-        run: |
-          pipx run build --sdist .
-
-      - name: Upload source dist as build artifact
-        uses: actions/upload-artifact@v4
-        with:
-            name: python-source-distribution
-            path: dist/
-            if-no-files-found: error
-
   build-wheels:
-    needs: build-sdist
     strategy:
       matrix:
         os: [windows-latest, macos-13, macos-latest, ubuntu-latest]
@@ -57,21 +35,6 @@ jobs:
     steps:
       - name: Checkout project (for test files)
         uses: actions/checkout@v4
-
-      - name: Delete source (to ensure we are using sdist only)
-        shell: bash -l {0}
-        run: rm -rf euphonic
-
-      - name: Download sdist
-        uses: actions/download-artifact@v4
-        with:
-          name: python-source-distribution
-          path: dist/
-
-      - name: Get sdist filename
-        shell: bash -l {0}
-        run: |
-          echo EUPHONIC_SDIST="$(find dist/ -name 'euphonic*.tar.gz')" >> $GITHUB_ENV
 
       - name: Setup Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5
@@ -113,7 +76,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip build wheel twine
 
-      - name: Build wheels from sdist
+      - name: Build wheels from git checkout
         uses: pypa/cibuildwheel@v2.21.3
         env:
           CIBW_BUILD_FRONTEND: build
@@ -124,17 +87,37 @@ jobs:
           CIBW_REPAIR_WHEEL_COMMAND_MACOS: ""
 
           CIBW_TEST_EXTRAS: "test,brille,phonopy_reader,matplotlib"
-          CIBW_TEST_COMMAND: python {package}/tests_and_analysis/test/run_tests.py
+          CIBW_TEST_COMMAND: "python {package}/tests_and_analysis/test/run_tests.py"
 
         with:
           output-dir: wheelhouse
-          package-dir: ${{ env.EUPHONIC_SDIST }}
 
       - name: Upload wheels as build artifacts
         uses: actions/upload-artifact@v4
         with:
             name: wheel-${{ matrix.wheelname }}-${{ matrix.python-version }}-${{ matrix.cibw_archs }}
             path: wheelhouse/*-${{ matrix.wheelname }}*_${{ matrix.cibw_archs }}.whl
+            if-no-files-found: error
+
+  build-sdist:
+    name: Build sdist
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Ensure tags are fetched for versioning
+
+      - name: Create source distribution
+        shell: bash -l {0}
+        run: |
+          pipx run build --sdist .
+
+      - name: Upload source dist as build artifact
+        uses: actions/upload-artifact@v4
+        with:
+            name: python-source-distribution
+            path: dist/
             if-no-files-found: error
 
   test-sdist:
@@ -193,7 +176,6 @@ jobs:
       - name: run tests
         shell: bash -l {0}
         run: python tests_and_analysis/test/run_tests.py --report
-
 
   publish:
     if: github.event_name == 'release'
