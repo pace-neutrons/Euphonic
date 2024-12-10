@@ -5,8 +5,8 @@ on:
       - '**master**'
       - '**_run_ci**'
       - '**release**'
-  # pull_request:
-  #   types: [opened, reopened, labeled, synchronize]
+  pull_request:
+    types: [opened, reopened, labeled, synchronize]
   workflow_dispatch:
 
 jobs:

@@ -1,10 +1,9 @@
 name: Build and upload PyPI wheels and source dist
 
 on:
-  # release:
-  #   types: [published]
-  # workflow_dispatch:
-  pull_request:
+  release:
+    types: [published]
+  workflow_dispatch:
 
 jobs:
   build-sdist:
@@ -58,8 +57,6 @@ jobs:
     steps:
       - name: Checkout project (for test files)
         uses: actions/checkout@v4
-        # with:
-        #   fetch-depth: 0 # Ensure tags are fetched for versioning
 
       - name: Delete source (to ensure we are using sdist only)
         shell: bash -l {0}
@@ -70,13 +67,6 @@ jobs:
         with:
           name: python-source-distribution
           path: dist/
-
-      # - name: Rename downloaded sdist
-      #   shell: bash -l {0}
-      #   run: |
-      #     ls -R dist
-      #     mv $(find dist/ -name 'euphonic*.tar.gz') dist/euphonic.tar.gz
-      #     ls -R dist
 
       - name: Get sdist filename
         shell: bash -l {0}
@@ -206,7 +196,7 @@ jobs:
 
 
   publish:
-    # if: github.event_name == 'release'
+    if: github.event_name == 'release'
     needs: [build-wheels,test-sdist]
     name: Upload release to PyPI (dry-run)
     runs-on: ubuntu-latest
@@ -230,5 +220,5 @@ jobs:
       - name: List Files
         run: ls -R dist/
 
-      # - name: Upload wheels to PyPI
-      #   uses: pypa/gh-action-pypi-publish@release/v1
+      - name: Upload wheels to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
