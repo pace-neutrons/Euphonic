@@ -56,9 +56,14 @@ jobs:
       fail-fast: false
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout project (for test files)
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0 # Ensure tags are fetched for versioning
+
+      - name: Delete source (to ensure we are using sdist only)
+        shell: bash -l {0}
+        run: rm -rf euphonic
 
       - name: Download sdist
         uses: actions/download-artifact@v4
@@ -186,15 +191,19 @@ jobs:
       - name: Checkout repository (for tests and test data)
         uses: actions/checkout@v4
 
+      - name: Delete source (to ensure we are testing INSTALLED version)
+        shell: bash -l {0}
+        run: rm -rf euphonic
+
       - name: run tests
         shell: bash -l {0}
         run: python tests_and_analysis/test/run_tests.py --report
 
 
   publish:
-    if: github.event_name == 'release'
+    # if: github.event_name == 'release'
     needs: [build-wheels,test-sdist]
-    name: Upload release to PyPI
+    name: Upload release to PyPI (dry-run)
     runs-on: ubuntu-latest
     environment:
       name: pypi
@@ -216,5 +225,5 @@ jobs:
       - name: List Files
         run: ls -R
 
-      - name: Upload wheels to PyPI
-        uses: pypa/gh-action-pypi-publish@release/v1
+      # - name: Upload wheels to PyPI
+      #   uses: pypa/gh-action-pypi-publish@release/v1
