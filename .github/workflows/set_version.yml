@@ -46,7 +46,13 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add euphonic/version.py CITATION.cff
-          git commit -m "Set version number"
+
+          if git diff --cached --quiet
+          then
+            echo "No files were changed, skipping commit"
+          else
+            git commit -m "Set version number"          
+          fi
 
       - name: "Tag new commit"
         shell: bash -l {0}
