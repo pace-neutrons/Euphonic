@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       ref:
-        description: "Target branch, tag or SHA"
+        description: "Target branch"
         required: true
         type: string
       version:
@@ -13,7 +13,7 @@ on:
         type: string
 
 jobs:
-  show-branch:
+  set-version:
     runs-on: ubuntu-latest
 
     steps:
@@ -29,12 +29,39 @@ jobs:
           fetch-tags: true
           fetch-depth: 0
 
-      - name: "Tag locally"
+      - name: "Update version.py"
+        shell: bash -l {0}
+        run: |
+          echo "__version__ = \"${{ inputs.version }}\"" > euphonic/version.py
+          cat euphonic/version.py
+
+      - name: "Update CITATION.cff"
+        shell: bash -l {0}
+        run: |
+          sed -i "s/^version:\ .*/version: ${{ inputs.version }}/" CITATION.cff
+          sed -i "s/^date-released:\ .*/date-released: $(date -I)/" CITATION.cff
+
+      - name: "Create commit"
+        run: |
+          git add euphonic/version.py CITATION.cff
+          git commit -m "Set version number"
+
+      - name: "Tag new commit"
         shell: bash -l {0}
         run: |
           git tag ${{ inputs.version }}
 
       - name: "Show updated log"
+        run: |
+          git log --pretty=oneline --abbrev-commit --decorate | head -n 5
+          git diff HEAD^
+
+      - name: "Push commit to branch"
         shell: bash -l {0}
         run: |
-          git log --pretty=oneline --abbrev-commit --decorate | head
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          # Verify that ref is a branch (as opposed to a tag or hash)
+          git show-ref --verify "refs/heads/${{ inputs.ref }}"
+
+          git push origin ${{ inputs.ref }}
