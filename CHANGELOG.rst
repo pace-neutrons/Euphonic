@@ -3,8 +3,11 @@
 
 - Bug fixes
 
-  - Fixed a bug in the version numbering mechanism affecting source
-    builds on Windows and environments where Git is unavailable
+  - Fixed a bug in the version numbering mechanism affecting builds from sdist
+    on Windows and environments where Git is unavailable
+
+  - Reduce size of sdist, removing docs and tests from
+    archive. (Restoring similar size to pre-v1.4.0 releases.)
 
 - Maintenance
 
