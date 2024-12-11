@@ -1,3 +1,4 @@
 .github/** export-ignore
+doc/** export-ignore
 tests_and_analysis/** export-ignore
 tox.ini export-ignore
