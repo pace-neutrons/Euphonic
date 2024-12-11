@@ -1,0 +1,40 @@
+name: "Write version number and tag"
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "Target branch, tag or SHA"
+        required: true
+        type: string
+      version:
+        description: "New version number"
+        required: true
+        type: string
+
+jobs:
+  show-branch:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Show input parameters
+        shell: bash -l {0}
+        run: |
+          echo "${{ inputs.ref }}"
+          echo "${{ inputs.version }}"
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+          fetch-tags: true
+          fetch-depth: 0
+
+      - name: "Tag locally"
+        shell: bash -l {0}
+        run: |
+          git tag ${{ inputs.version }}
+
+      - name: "Show updated log"
+        shell: bash -l {0}
+        run: |
+          git log --pretty=oneline --abbrev-commit --decorate | head
