@@ -1,6 +1,19 @@
 `Unreleased <https://github.com/pace-neutrons/Euphonic/compare/v1.4.0...HEAD>`_
 -------------------------------------------------------------------------------
 
+- Bug fixes
+
+  - Fixed a bug in the version numbering mechanism affecting builds from sdist
+    on Windows and environments where Git is unavailable
+
+  - Reduce size of sdist, removing docs and tests from
+    archive. (Restoring similar size to pre-v1.4.0 releases.)
+
+- Maintenance
+
+  - Source builds automatically tested on Windows as part of
+    build/deployment process
+
 `v1.4.0 <https://github.com/pace-neutrons/Euphonic/compare/v1.3.2...v1.4.0>`_
 -----------------------------------------------------------------------------
 
