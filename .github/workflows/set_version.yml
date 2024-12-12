@@ -39,13 +39,13 @@ jobs:
       - name: "Update version.py"
         shell: bash -l {0}
         run: |
-          echo "__version__ = \"${{ inputs.version }}\"" > euphonic/version.py
+          echo "__version__ = \"${VERSION_STRING}\"" > euphonic/version.py
           cat euphonic/version.py
 
       - name: "Update CITATION.cff"
         shell: bash -l {0}
         run: |
-          sed -i "s/^version:\ .*/version: ${{ inputs.version }}/" CITATION.cff
+          sed -i "s/^version:\ .*/version: ${VERSION_STRING}/" CITATION.cff
           sed -i "s/^date-released:\ .*/date-released: $(date -I)/" CITATION.cff
 
       - name: "Create commit"
@@ -64,7 +64,7 @@ jobs:
       - name: "Tag new commit"
         shell: bash -l {0}
         run: |
-          git tag ${{ inputs.version }}
+          git tag $VERSION_STRING
 
       - name: "Show updated log"
         run: |
@@ -78,4 +78,4 @@ jobs:
           git show-ref --verify "refs/heads/${{ inputs.ref }}"
 
           git push origin ${{ inputs.ref }}
-          git push origin tag ${{ inputs.version }}
+          git push origin tag $VERSION_STRING
