@@ -59,6 +59,6 @@ schemadotorg:
   license: https://spdx.org/licenses/GPL-3.0-only
   name: Euphonic
   url: https://euphonic.readthedocs.io/en/latest
-  version: v1.4.0.post1
+  version: 1.4.0.post1
 ---
 # Euphonic - Latest
