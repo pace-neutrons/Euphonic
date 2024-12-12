@@ -1,5 +1,15 @@
-`Unreleased <https://github.com/pace-neutrons/Euphonic/compare/v1.4.0...HEAD>`_
--------------------------------------------------------------------------------
+`Unreleased <https://github.com/pace-neutrons/Euphonic/compare/v1.4.0.post1...HEAD>`_
+-------------------------------------------------------------------------------------
+
+
+`v1.4.0.post1 <https://github.com/pace-neutrons/Euphonic/compare/v1.4.0...v1.4.0.post1>`_
+-----------------------------------------------------------------------------------------
+
+This post-release makes some changes to the source-distribution build process:
+- A bug is fixed in the version-numbering script; this particularly affected Windows
+- A copies of the unit tests and documentation were mistakenly included
+  in tarballs, making them excessively large. This is no longer present.
+
 
 - Bug fixes
 
