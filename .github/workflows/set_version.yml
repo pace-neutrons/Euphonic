@@ -61,10 +61,15 @@ jobs:
             git commit -m "Set version number"          
           fi
 
-      - name: "Tag new commit"
+      - name: "Tag commit"
         shell: bash -l {0}
         run: |
-          git tag $VERSION_STRING
+          if test $(git describe --tags --exact-match) = $VERSION_STRING
+          then
+            echo "The correct tag is already on this commit"
+          else
+            git tag $VERSION_STRING
+          fi
 
       - name: "Show updated log"
         run: |
