@@ -23,11 +23,13 @@ jobs:
           import os
           from packaging.version import Version
 
-          version_string = 'v' + str(Version("${{ inputs.version }}"))
+          version_number = str(Version("${{ inputs.version }}"))
+          version_string = 'v' + version_number
 
           print(f"Normalised version string: {version_string}")
 
           with open(os.environ["GITHUB_ENV"], "a") as github_env:
+              print(f"VERSION_NUMBER={version_number}", file=github_env)
               print(f"VERSION_STRING={version_string}", file=github_env)
 
       - uses: actions/checkout@v4
@@ -45,7 +47,7 @@ jobs:
       - name: "Update CITATION.cff"
         shell: bash -l {0}
         run: |
-          sed -i "s/^version:\ .*/version: ${VERSION_STRING}/" CITATION.cff
+          sed -i "s/^version:\ .*/version: ${VERSION_NUMBER}/" CITATION.cff
           sed -i "s/^date-released:\ .*/date-released: $(date -I)/" CITATION.cff
 
       - name: "Create commit"
