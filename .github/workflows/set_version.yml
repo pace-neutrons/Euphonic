@@ -17,11 +17,18 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Show input parameters
-        shell: bash -l {0}
-        run: |
-          echo "${{ inputs.ref }}"
-          echo "${{ inputs.version }}"
+      - name: Validate and normalise version number
+        shell: python
+        run : |
+          import os
+          from packaging.version import Version
+
+          version_string = 'v' + str(Version("${{ inputs.version }}"))
+
+          print(f"Normalised version string: {version_string}")
+
+          with open(os.environ["GITHUB_ENV"], "a") as github_env:
+              print(f"VERSION_STRING={version_string}", file=github_env)
 
       - uses: actions/checkout@v4
         with:
