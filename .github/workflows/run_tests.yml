@@ -87,14 +87,14 @@ jobs:
           TOX_SKIP_ENV: '.*?(py311).*?'
           TOX_PARALLEL_NO_SPINNER: 1
         shell: bash -l {0}
-        run: uvx tox==3.28.0 --parallel
+        run: uvx tox@3.28.0 --parallel
 
       - name: Run tests, workflow dispatch so test all Python versions
         if: github.event_name == 'workflow_dispatch'
         env:
           TOX_PARALLEL_NO_SPINNER: 1
         shell: bash -l {0}
-        run: uvx tox==3.28.0 --parallel
+        run: uvx tox@3.28.0 --parallel
 
       - name: Upload test results
         if: always()
