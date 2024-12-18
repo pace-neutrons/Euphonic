@@ -31,23 +31,20 @@ jobs:
       MIN_MAX_PYTHON_VERSIONS: |
         3.10
         3.12
-      REMAINING_PYTHON_VERSIONS: |
+      ALL_PYTHON_VERSIONS: |
+        3.10
         3.11
+        3.12
+      TOX_SKIP_ENV: ${{ inputs.all-python-versions && '' || '.*?(py311).*?' }}
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0 # Ensure tags are fetched for versioning
           fetch-tags: true
-      - name: Setup min/max supported Python versions
+      - name: Setup Python
         uses: actions/setup-python@v5
         with:
-          python-version: ${{ env.MIN_MAX_PYTHON_VERSIONS }}
-
-      - name: Setup remaining supported Python versions
-        uses: actions/setup-python@v5
-        if: inputs.all-python-versions
-        with:
-          python-version: ${{ env.REMAINING_PYTHON_VERSIONS }}
+          python-version: ${{ inputs.all-python-versions && env.ALL_PYTHON_VERSIONS || env.MIN_MAX_PYTHON_VERSIONS}}
 
       - name: Install llvm on MacOS
         if: startsWith( inputs.os , 'macos' )
@@ -86,8 +83,6 @@ jobs:
           python -m pip install -r tests_and_analysis/ci_requirements.txt
 
       - name: Run tests
-        env:
-          TOX_SKIP_ENV: ${{ inputs.all-python-versions && '' || '.*?(py311).*?' }}
         shell: bash -l {0}
         run: python -m tox run-parallel
 
