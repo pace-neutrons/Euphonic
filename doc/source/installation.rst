@@ -14,14 +14,14 @@ Euphonic has optional 'extensions' which require extra dependencies for certain 
 They are listed below
 
 * **matplotlib** - required for plotting
-* **phonopy_reader** - required for reading Phonopy files
+* **phonopy-reader** - required for reading Phonopy files
 * **brille** - required for performing linear interpolation with the Brille library
 
 To install euphonic with all the dependencies run:
 
 .. code-block:: bash
 
-  pip install euphonic[matplotlib,phonopy_reader,brille]
+  pip install euphonic[matplotlib,phonopy-reader,brille]
 
 The dependencies can also be installed individually:
 
@@ -69,7 +69,7 @@ To install with all dependencies use:
 
 .. code-block:: bash
 
-  pip install .[matplotlib,phonopy_reader,brille]
+  pip install .[matplotlib,phonopy-reader,brille]
 
 If you don't require the extra dependencies, just use:
 
