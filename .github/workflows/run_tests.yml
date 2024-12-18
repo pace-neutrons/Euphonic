@@ -20,17 +20,17 @@ jobs:
         config:
         - os: ubuntu-latest
           if: always()
-          python-versions: ${{((github.event_name == 'workflow_dispatch') && ['3.10', '3.11', '3.12'] || ['3.10', '3.12'])}}
+          python-versions: ${{((github.event_name == 'workflow_dispatch') && '[''3.10'', ''3.11'', ''3.12'']' || '[''3.10'', ''3.12'']')}}
           tox-skip-env: ${{((github.event_name == 'workflow_dispatch') && '' || '.*?(py311).*?')}}
           coverage: true
         - os: windows-latest
           if: always()
-          python-versions: ${{((github.event_name == 'workflow_dispatch') && ['3.10', '3.11', '3.12'] || ['3.10', '3.12'])}}
+          python-versions: ${{((github.event_name == 'workflow_dispatch') && '[''3.10'', ''3.11'', ''3.12'']' || '[''3.10'', ''3.12'']')}}
           tox-skip-env: ${{((github.event_name == 'workflow_dispatch') && '' || '.*?(py311).*?')}}
           coverage: false
         - os: macos-latest
           if: always()
-          python-versions: ${{((github.event_name == 'workflow_dispatch') && ['3.10', '3.11', '3.12'] || ['3.10', '3.12'])}}
+          python-versions: ${{((github.event_name == 'workflow_dispatch') && '[''3.10'', ''3.11'', ''3.12'']' || '[''3.10'', ''3.12'']')}}
           tox-skip-env: ${{((github.event_name == 'workflow_dispatch') && '' || '.*?(py311).*?')}}
           coverage: false
         - os: macos-13
