@@ -25,7 +25,8 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Delete source (to be sure we are testing Conda package!)
-        run: rm -rf euphonic
+        shell: bash -el {0}
+        run: rm -r euphonic
 
       - uses: conda-incubator/setup-miniconda@v3
         with:
