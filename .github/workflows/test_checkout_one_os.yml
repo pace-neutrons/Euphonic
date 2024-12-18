@@ -35,7 +35,7 @@ jobs:
         3.10
         3.11
         3.12
-      TOX_SKIP_ENV: ${{ inputs.all-python-versions && '' || '.*?(py311).*?' }}
+      TOX_SKIP_ENV: ${{ inputs.all-python-versions && 'no-match' || '.*?(py311).*?' }}
     steps:
       - uses: actions/checkout@v4
         with:
