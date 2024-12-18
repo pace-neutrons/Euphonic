@@ -1,0 +1,19 @@
+name: Run release tests from PyPI and Conda-forge
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'The Euphonic release version to test e.g. 0.6.1'
+        required: true
+
+jobs:
+  pypi:
+    uses: ./.github/workflows/test_release_pypi.yml
+    with:
+      version: ${{ inputs.version }}
+
+  conda-forge:
+    uses: ./.github/workflows/test_release_conda.yml
+    with:
+      version: ${{ inputs.version }}

@@ -1,5 +1,11 @@
 name: test-release
 on:
+  workflow_call:
+    inputs:
+      version:
+        description: 'The Euphonic release version to test e.g. 0.6.1'
+        required: true
+
   workflow_dispatch:
     inputs:
       version:
