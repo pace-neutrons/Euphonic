@@ -34,7 +34,7 @@ jobs:
           tox-skip-env: ${{((github.event_name == 'workflow_dispatch') && '' || '.*?(py311).*?')}}
           coverage: false
         - os: macos-13
-          if: ${{((github.event_name == 'workflow_dispatch')
+          if: ${{ github.event_name == 'workflow_dispatch' }}
           python-versions:  ['3.10', '3.11', '3.12']
           tox-skip-env: ''
           coverage: false
