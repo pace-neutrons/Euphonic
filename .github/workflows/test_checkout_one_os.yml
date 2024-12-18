@@ -1,6 +1,5 @@
 name: Run tests from source on one platform
-# Logic based on https://stackoverflow.com/a/73953210
-on:
+on:  # Logic based on https://stackoverflow.com/a/73953210
   workflow_call:
     inputs:
       if:
@@ -20,7 +19,6 @@ on:
       tox-skip-env:
         description: 'Regex for skipped tests'
         required: false
-        # default: '.*?(py311).*?'
         default: ''
         type: string
       coverage:
