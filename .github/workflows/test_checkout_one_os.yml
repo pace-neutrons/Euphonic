@@ -49,7 +49,7 @@ jobs:
             3.12
 
       - name: Install llvm on MacOS
-        if: startsWith(${{ inputs.os }}, 'macos')
+        if: ${{ startsWith( inputs.os , 'macos' ) }}
         shell: bash -l {0}
         env:
           # Homebrew location is different on Intel Mac
@@ -61,7 +61,7 @@ jobs:
           echo CPPFLAGS="-I${LLVM_DIR}/include $CPPFLAGS" >> $GITHUB_ENV
 
       - name: Windows - find MSVC and set environment variables
-        if: startsWith(${{ inputs.os }}, 'windows')
+        if: ${{ startsWith( inputs.os , 'windows' ) }}
         shell: bash -l {0}
         env:
           MSVC_PREFIX: 'C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Tools\MSVC'
