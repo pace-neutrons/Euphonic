@@ -17,16 +17,16 @@ on:
         required: false
         default: '[''3.10'', ''3.11'', ''3.12'']'
         type: string
-    #   tox-skip-env:
-    #     description: 'Regex for skipped tests'
-    #     required: false
-    #     default: ''
-    #     type: string
-    #   coverage:
-    #     description: 'Publish coverage'
-    #     required: false
-    #     default: false
-    #     type: boolean
+      tox-skip-env:
+        description: 'Regex for skipped tests'
+        required: false
+        default: ''
+        type: string
+      coverage:
+        description: 'Publish coverage'
+        required: false
+        default: false
+        type: boolean
 
 jobs:
   test:
