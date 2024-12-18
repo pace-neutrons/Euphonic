@@ -1,0 +1,13 @@
+name: conda-release-test
+channels:
+  - conda-forge
+dependencies:
+  - pytest=7.*
+  - coverage
+  - pytest-mock
+  - pytest-lazy-fixture
+  - pytest-xvfb
+  - python-slugify
+  - matplotlib-base
+  - pyyaml
+  - h5py
