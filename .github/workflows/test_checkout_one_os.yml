@@ -1,5 +1,5 @@
 name: Run tests from source on one platform
-on:  # Logic based on https://stackoverflow.com/a/73953210
+on:
   workflow_call:
     inputs:
       if:
