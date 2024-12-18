@@ -20,23 +20,19 @@ jobs:
         config:
         - os: ubuntu-latest
           if: true
-          python-versions: ${{(github.event_name == 'workflow_dispatch') && '3.10%0A3.11%0A3.12' || '3.10%0A3.12'}}
-          tox-skip-env: ${{((github.event_name == 'workflow_dispatch') && '' || '.*?(py311).*?')}}
+          all-python-versions: ${{(github.event_name == 'workflow_dispatch')}}
           coverage: true
         - os: windows-latest
           if: true
-          python-versions: ${{(github.event_name == 'workflow_dispatch') && '3.10%0A3.11%0A3.12' || '3.10%0A3.12'}}
-          tox-skip-env: ${{((github.event_name == 'workflow_dispatch') && '' || '.*?(py311).*?')}}
+          all-python-versions: ${{(github.event_name == 'workflow_dispatch')}}
           coverage: false
         - os: macos-latest
           if: true
-          python-versions: ${{ (github.event_name == 'workflow_dispatch') && '3.10%0A3.11%0A3.12' || '3.10%0A3.12' }}
-          tox-skip-env: ${{((github.event_name == 'workflow_dispatch') && '' || '.*?(py311).*?')}}
+          all-python-versions: ${{(github.event_name == 'workflow_dispatch')}}
           coverage: false
         - os: macos-13
           if: ${{ github.event_name == 'workflow_dispatch' }}
-          python-versions:  ['3.10', '3.11', '3.12']
-          tox-skip-env: ''
+          all-python-versions: true
           coverage: false
 
       fail-fast: false
@@ -45,8 +41,7 @@ jobs:
     with:
       if: ${{ matrix.config.if }}
       os: ${{ matrix.config.os }}
-      python-versions: ${{ matrix.config.python-versions }}
-      tox-skip-env: ${{ matrix.config.tox-skip-env }}
+      all-python-versions: ${{ matrix.config.all-python-versions }}
       coverage: ${{ matrix.config.coverage }}
 
   test-docs:

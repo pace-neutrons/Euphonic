@@ -12,16 +12,11 @@ on:
         required: false
         default: ubuntu-latest
         type: string
-      python-versions:
-        description: 'Python versions'
+      all-python-versions:
+        description: 'Test all Python versions'
         required: false
-        default: '[''3.10'', ''3.11'', ''3.12'']'
-        type: string
-      tox-skip-env:
-        description: 'Regex for skipped tests'
-        required: false
-        default: ''
-        type: string
+        default: false
+        type: boolean
       coverage:
         description: 'Publish coverage'
         required: false
@@ -37,9 +32,22 @@ jobs:
         with:
           fetch-depth: 0 # Ensure tags are fetched for versioning
           fetch-tags: true
-      - uses: actions/setup-python@v5
+      - name: Setup all supported Python versions
+        uses: actions/setup-python@v5
+        if: ${{ inputs.all-python-versions }}
         with:
-          python-version: ${{ inputs.python-versions }}
+          python-version: |
+            3.10
+            3.11
+            3.12
+      - name: Setup min/max Python versions
+        uses: actions/setup-python@v5
+        if: ${{ ! inputs.all-python-versions }}
+        with:
+          python-version: |
+            3.10
+            3.12
+
       - name: Install llvm on MacOS
         if: startsWith(${{ inputs.os }}, 'macos')
         shell: bash -l {0}
@@ -78,7 +86,7 @@ jobs:
 
       - name: Run tests
         env:
-          TOX_SKIP_ENV: ${{ inputs.tox-skip-env }}
+          TOX_SKIP_ENV: ${{ inputs.all-python-versions && '' || '.*?(py311).*?' }}
         shell: bash -l {0}
         run: python -m tox run-parallel
 
