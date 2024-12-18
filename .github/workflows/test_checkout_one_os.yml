@@ -2,11 +2,11 @@ name: Run tests from source on one platform
 on:
   workflow_call:
     inputs:
-    #   if:
-    #     description: 'Run this job'
-    #     required: false
-    #     default: true
-    #     type: boolean
+      if:
+        description: 'Run this job'
+        required: false
+        default: true
+        type: boolean
       os:
         description: 'Target platform'
         required: false
