@@ -27,6 +27,12 @@ jobs:
   test:
     if: inputs.if
     runs-on: ${{ inputs.os }}
+    env:
+      MIN_MAX_PYTHON_VERSIONS: |
+        3.10
+        3.12
+      REMAINING_PYTHON_VERSIONS: |
+        3.11
     steps:
       - uses: actions/checkout@v4
         with:
@@ -35,15 +41,13 @@ jobs:
       - name: Setup min/max supported Python versions
         uses: actions/setup-python@v5
         with:
-          python-version: |
-            3.10
-            3.12
+          python-version: ${{ env.MIN_MAX_PYTHON_VERSIONS }}
 
       - name: Setup remaining supported Python versions
         uses: actions/setup-python@v5
         if: inputs.all-python-versions
         with:
-          python-version: '3.11'
+          python-version: ${{ env.REMAINING_PYTHON_VERSIONS }}
 
       - name: Install llvm on MacOS
         if: startsWith( inputs.os , 'macos' )
