@@ -15,7 +15,7 @@ on:
       python-versions:
         description: 'Python versions'
         required: false
-        default: ['3.10', '3.11', '3.12']
+        default: '[''3.10'', ''3.11'', ''3.12'']'
     #   tox-skip-env:
     #     description: 'Regex for skipped tests'
     #     required: false
