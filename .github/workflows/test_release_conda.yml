@@ -27,7 +27,7 @@ jobs:
       - name: Delete source (to be sure we are testing Conda package!)
         run: rm -rf euphonic
 
-      - uses: actions/setup-miniconda@v3
+      - uses: conda-incubator/setup-miniconda@v3
         with:
           python-version: ${{ matrix.python-version }}
 
