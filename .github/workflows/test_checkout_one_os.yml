@@ -1,17 +1,17 @@
 name: Run tests from source on one platform
 on:
   workflow_call:
-    # inputs:
+    inputs:
     #   if:
     #     description: 'Run this job'
     #     required: false
     #     default: true
     #     type: boolean
-    #   os:
-    #     description: 'Target platform'
-    #     required: false
-    #     default: ubuntu-latest
-    #     type: string
+      os:
+        description: 'Target platform'
+        required: false
+        default: ubuntu-latest
+        type: string
     #   python-versions:
     #     description: 'Python versions'
     #     required: false
