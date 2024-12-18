@@ -47,7 +47,7 @@ jobs:
       os: ${{ matrix.config.os }}
       python-versions: ${{ matrix.config.python-versions }}
       tox-skip-env: ${{ matrix.config.tox-skip-env }}
-      coverage: ${{ matrix.config.converage }}
+      coverage: ${{ matrix.config.coverage }}
 
   test-docs:
     runs-on: ubuntu-latest
