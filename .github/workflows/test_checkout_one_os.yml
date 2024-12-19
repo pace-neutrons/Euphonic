@@ -25,7 +25,7 @@ on:
 
 jobs:
   test:
-    if: ! inputs.skip
+    if: ${{ ! inputs.skip }}
     runs-on: ${{ inputs.os }}
     env:
       MIN_MAX_PYTHON_VERSIONS: |
