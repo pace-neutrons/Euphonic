@@ -2,10 +2,10 @@ name: Run tests from source on one platform
 on:
   workflow_call:
     inputs:
-      if:
-        description: 'Run this job'
+      skip:
+        description: 'Skip this job'
         required: false
-        default: true
+        default: false
         type: boolean
       os:
         description: 'Target platform'
@@ -25,7 +25,7 @@ on:
 
 jobs:
   test:
-    if: inputs.if
+    if: ! inputs.skip
     runs-on: ${{ inputs.os }}
     env:
       MIN_MAX_PYTHON_VERSIONS: |

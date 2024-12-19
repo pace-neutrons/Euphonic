@@ -19,19 +19,19 @@ jobs:
       matrix:
         config:
         - os: ubuntu-latest
-          if: true
+          skip: false
           all-python-versions: ${{(github.event_name == 'workflow_dispatch')}}
           coverage: true
         - os: windows-latest
-          if: true
+          skip: false
           all-python-versions: ${{(github.event_name == 'workflow_dispatch')}}
           coverage: false
         - os: macos-latest
-          if: true
+          skip: false
           all-python-versions: ${{(github.event_name == 'workflow_dispatch')}}
           coverage: false
         - os: macos-13
-          if: ${{ github.event_name == 'workflow_dispatch' }}
+          skip: ${{ github.event_name != 'workflow_dispatch' }}
           all-python-versions: true
           coverage: false
 
@@ -39,8 +39,8 @@ jobs:
 
     uses: ./.github/workflows/test_checkout_one_os.yml
     with:
-      if: ${{ matrix.config.if }}
       os: ${{ matrix.config.os }}
+      skip: ${{ matrix.config.skip }}
       all-python-versions: ${{ matrix.config.all-python-versions }}
       coverage: ${{ matrix.config.coverage }}
     secrets: inherit
