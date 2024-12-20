@@ -91,5 +91,5 @@ jobs:
       - name: Publish PyPI test results
         uses: EnricoMi/publish-unit-test-result-action@v2
         with:
-          junit_files: artifacts/**/junit_report*.xml
+          junit_files: artifacts/PyPi**/junit_report*.xml
           check_name: PyPI test results

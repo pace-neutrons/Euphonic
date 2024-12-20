@@ -65,5 +65,5 @@ jobs:
       - name: Publish Conda test results
         uses: EnricoMi/publish-unit-test-result-action@v2
         with:
-          junit_files: artifacts/**/junit_report*.xml
+          junit_files: artifacts/Conda***/junit_report*.xml
           check_name: Conda-forge test results
