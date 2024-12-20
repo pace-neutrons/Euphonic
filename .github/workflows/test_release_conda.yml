@@ -1,0 +1,69 @@
+name: Test Conda-forge release
+on:
+  workflow_call:
+    inputs:
+      version:
+        description: 'The Euphonic release version to test e.g. 0.6.1'
+        required: true
+        type: string
+
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'The Euphonic release version to test e.g. 0.6.1'
+        required: true
+        type: string
+
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest, macos-13]
+        python-version: ['3.10', '3.11', '3.12']
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Delete source (to be sure we are testing Conda package!)
+        shell: bash -el {0}
+        run: rm -r euphonic
+
+      - uses: conda-incubator/setup-miniconda@v3
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install euphonic and dependencies from Conda-forge
+        shell: bash -el {0}
+        env:
+          EUPHONIC_VERSION: ${{ inputs.version }}
+
+        run: |
+          conda env update --file build_utils/conda_release_test_requirements.yml
+          conda install -c conda-forge euphonic=$EUPHONIC_VERSION
+
+      - name: Run tests
+        shell: bash -el {0}
+        run: python tests_and_analysis/test/run_tests.py --report -m "not brille"
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Conda-forge unit test results ${{ matrix.os }} ${{ matrix.python-version }}
+          path: tests_and_analysis/test/reports/junit_report*.xml
+
+  publish-conda-test-results:
+    needs: test
+    runs-on: ubuntu-latest
+    if: success() || failure()
+    steps:
+      - name: Download Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+      - name: Publish Conda test results
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        with:
+          junit_files: artifacts/Conda***/junit_report*.xml
+          check_name: Conda-forge test results
