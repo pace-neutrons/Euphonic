@@ -12,14 +12,15 @@ on:
       version:
         description: 'The Euphonic release version to test e.g. 0.6.1'
         required: true
+        type: string
 
 jobs:
   test:
     strategy:
+      fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest, macos-13]
         python-version: ['3.10', '3.11', '3.12']
-      fail-fast: false
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
