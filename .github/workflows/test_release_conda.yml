@@ -52,7 +52,7 @@ jobs:
           name: Conda-forge unit test results ${{ matrix.os }} ${{ matrix.python-version }}
           path: tests_and_analysis/test/reports/junit_report*.xml
 
-  publish-test-results:
+  publish-conda-test-results:
     needs: test
     runs-on: ubuntu-latest
     if: success() || failure()
@@ -61,8 +61,8 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           path: artifacts
-      - name: Publish test results
+      - name: Publish Conda test results
         uses: EnricoMi/publish-unit-test-result-action@v2
         with:
           junit_files: artifacts/**/junit_report*.xml
-          check_name: PyPI test results
+          check_name: Conda-forge test results

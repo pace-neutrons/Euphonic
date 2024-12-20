@@ -78,7 +78,7 @@ jobs:
           name: PyPI unit test results ${{ matrix.os }}
           path: tests_and_analysis/test/reports/junit_report*.xml
 
-  publish-test-results:
+  publish-pypi-test-results:
     needs: test
     runs-on: ubuntu-latest
     if: success() || failure()
@@ -87,7 +87,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           path: artifacts
-      - name: Publish test results
+      - name: Publish PyPI test results
         uses: EnricoMi/publish-unit-test-result-action@v2
         with:
           junit_files: artifacts/**/junit_report*.xml
