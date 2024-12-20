@@ -75,7 +75,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: Unit test results ${{ matrix.os }}
+          name: PyPI unit test results ${{ matrix.os }}
           path: tests_and_analysis/test/reports/junit_report*.xml
 
   publish-test-results:
@@ -91,3 +91,4 @@ jobs:
         uses: EnricoMi/publish-unit-test-result-action@v2
         with:
           junit_files: artifacts/**/junit_report*.xml
+          check_name: PyPI test results
