@@ -100,7 +100,9 @@ jobs:
           project-token: ${{ secrets.codacy_project_token }}
           coverage-reports: tests_and_analysis/test/reports/coverage*.xml
 
-      - uses: codecov/codecov-action@v3
+      - uses: codecov/codecov-action@v4
         if: inputs.coverage
         with:
           files: tests_and_analysis/test/reports/coverage*.xml
+          token: ${{ secrets.CODECOV_TOKEN }}
+          fail_ci_if_error: true
