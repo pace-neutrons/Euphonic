@@ -382,7 +382,11 @@ class TestSpectrum1DMethods:
         'quartz_666_dos.json',
          'quartz_666_1meV_gauss_broaden_dos.json',
          does_not_raise()),
-        ((1*ureg('meV'), {'shape':'gauss'}),
+        ((1*ureg('meV'), {'shape': 'gauss', 'width_convention': 'fwhm'}),
+         'quartz_666_dos.json',
+         'quartz_666_1meV_gauss_broaden_dos.json',
+         does_not_raise()),
+        ((1*ureg('meV'), {'shape': 'gauss', 'width_convention': 'std'}),
          'quartz_666_dos.json',
          'quartz_666_1meV_gauss_broaden_dos.json',
          does_not_raise()),
@@ -390,6 +394,13 @@ class TestSpectrum1DMethods:
          'quartz_666_dos.json',
          'quartz_666_1meV_lorentz_broaden_dos.json',
          does_not_raise()),
+        ((1*ureg('meV'), {'shape': 'lorentz', 'width_convention': 'std'}),
+         'quartz_666_dos.json',
+         'quartz_666_1meV_lorentz_broaden_dos.json',
+        pytest.raises(
+             ValueError,
+             match='Lorentzian function width must be specified as FWHM')
+         ),
         ((1*ureg('meV'), {'method': 'convolve'}),
          'toy_quartz_cropped_uneven_dos.json',
          'toy_quartz_cropped_uneven_broaden_dos.json',
@@ -400,7 +411,7 @@ class TestSpectrum1DMethods:
         expected_broadened_spec1d = get_spectrum1d(broadened_spectrum1d_file)
         with context:
             broadened_spec1d = spec1d.broaden(args[0], **args[1])
-        check_spectrum1d(broadened_spec1d, expected_broadened_spec1d)
+            check_spectrum1d(broadened_spec1d, expected_broadened_spec1d)
 
     def test_broaden_invalid_shape_raises_value_error(self):
         spec1d = get_spectrum1d('quartz_666_dos.json')
