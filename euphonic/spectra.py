@@ -224,6 +224,7 @@ class Spectrum(ABC):
                       widths: Sequence[float],
                       shape: KernelShape = 'gauss',
                       method: Optional[Literal['convolve']] = None,
+                      width_convention: Literal['fwhm', 'std'] = 'fwhm',
                       ) -> np.ndarray:
         """
         Broaden data along each axis by widths, returning the broadened
@@ -268,9 +269,13 @@ class Spectrum(ABC):
                 if width is None:
                     sigmas.append(0.0)
                 else:
-                    sigmas.append(Spectrum._gfwhm_to_sigma(width, bin_data))
+                    sigmas.append(Spectrum._gaussian_width_to_bin_sigma(
+                        width, bin_data, width_convention=width_convention))
             data_broadened = gaussian_filter(data, sigmas, mode='constant')
         elif shape == 'lorentz':
+            if width_convention != 'fwhm':
+                raise ValueError(
+                    "Lorentzian function width must be specified as FWHM")
             data_broadened = data
             for ax, (width, bin_data) in enumerate(zip(widths, bin_centres)):
                 if width is not None:
@@ -282,24 +287,38 @@ class Spectrum(ABC):
         return data_broadened
 
     @staticmethod
-    def _gfwhm_to_sigma(fwhm: float, ax_bin_centres: np.ndarray) -> float:
+    def _gaussian_width_to_bin_sigma(
+            width: float,
+            ax_bin_centres: np.ndarray,
+            width_convention: Literal['fwhm', 'std']
+    ) -> float:
         """
         Convert a Gaussian FWHM to sigma in units of the mean ax bin size
 
         Parameters
         ----------
-        fwhm
-            The Gaussian broadening FWHM
+        width
+            The Gaussian broadening width parameter FWHM
         ax_bin_centres
             Shape (n_bins,) float np.ndarray.
             The bin centres along the axis the broadening is applied to
+        width_convention
+            Specify width as full-width-half-maximum 'fwhm' or standard
+            deviation 'std'
 
         Returns
         -------
         sigma
             Sigma in units of mean ax bin size
         """
-        sigma = fwhm/(2*math.sqrt(2*math.log(2)))
+        match width_convention:
+            case 'fwhm':
+                sigma = width / (2 * math.sqrt(2 * math.log(2)))
+            case 'std':
+                sigma = width
+            case _:
+                raise ValueError("Width convention must be 'std' or 'fwhm'")
+
         mean_bin_size = np.mean(np.diff(ax_bin_centres))
         sigma_bin = sigma/mean_bin_size
         return sigma_bin
@@ -578,7 +597,8 @@ class Spectrum1D(Spectrum):
     @overload
     def broaden(self: T, x_width: Quantity,
                 shape: KernelShape = 'gauss',
-                method: Optional[Literal['convolve']] = None
+                method: Optional[Literal['convolve']] = None,
+                width_convention: Literal['fwhm', 'std'] = 'fwhm',
                 ) -> T:
         ...
 
@@ -651,7 +671,7 @@ class Spectrum1D(Spectrum):
                 self.y_data.magnitude,
                 [self.get_bin_centres().magnitude],
                 [x_width.to(self.x_data_unit).magnitude],
-                shape=shape, method=method)
+                shape=shape, method=method, width_convention=width_convention)
             y_broadened = ureg.Quantity(y_broadened, units=self.y_data_unit)
 
         elif isinstance(x_width, Callable):
@@ -1427,7 +1447,7 @@ class Spectrum1DCollection(SpectrumCollectionMixin,
             for i, yi in enumerate(self.y_data.magnitude):
                 y_broadened[i] = self._broaden_data(
                     yi, x_centres, x_width_calc, shape=shape,
-                    method=method)
+                    method=method, width_convention=width_convention)
 
             new_spectrum = self.copy()
             new_spectrum.y_data = ureg.Quantity(y_broadened, units=self.y_data_unit)
@@ -1665,7 +1685,8 @@ class Spectrum2D(Spectrum):
                                              bin_centres,
                                              widths_in_bin_units,
                                              shape=shape,
-                                             method=method)
+                                             method=method,
+                                             width_convention=width_convention)
             spectrum = Spectrum2D(np.copy(self.x_data),
                                   np.copy(self.y_data),
                                   ureg.Quantity(z_broadened, units=self.z_data_unit),
