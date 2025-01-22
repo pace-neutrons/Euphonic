@@ -18,6 +18,11 @@ ErrorFit = Literal['cheby-log', 'cubic']
 KernelShape = Literal['gauss', 'lorentz']
 
 
+# Conversion factor from Gaussian standard deviation to FWHM
+SIGMA_TO_FWHM = np.sqrt(8 * np.log(2))
+FWHM_TO_SIGMA = 1 / SIGMA_TO_FWHM
+
+
 def variable_width_broadening(
     bins: Quantity,
     x: Quantity,
@@ -71,8 +76,7 @@ def variable_width_broadening(
     """
 
     if width_convention.lower() == 'fwhm' and shape == 'gauss':
-        sigma_function = (lambda x: width_function(x)
-                          / np.sqrt(8 * np.log(2)))
+        sigma_function = (lambda x: width_function(x) * FWHM_TO_SIGMA)
     elif width_convention.lower() == 'std' and shape == 'lorentz':
         raise ValueError('Standard deviation unavailable for Lorentzian '
                          'function: please use FWHM.')

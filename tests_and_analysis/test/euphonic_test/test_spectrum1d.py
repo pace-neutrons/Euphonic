@@ -1,4 +1,3 @@
-import os
 import json
 
 import pytest
@@ -382,14 +381,31 @@ class TestSpectrum1DMethods:
         'quartz_666_dos.json',
          'quartz_666_1meV_gauss_broaden_dos.json',
          does_not_raise()),
-        ((1*ureg('meV'), {'shape':'gauss'}),
+        ((1*ureg('meV'), {'shape': 'gauss', 'width_convention': 'fwhm'}),
          'quartz_666_dos.json',
          'quartz_666_1meV_gauss_broaden_dos.json',
+         does_not_raise()),
+        ((1*ureg('meV'), {'shape': 'gauss', 'width_convention': 'hwhm'}),
+         'quartz_666_dos.json',
+         'quartz_666_1meV_gauss_broaden_dos.json',
+         pytest.raises(
+             ValueError,
+             match="Width convention must be 'std' or 'fwhm'")),
+        ((1*ureg('meV'), {'shape': 'gauss', 'width_convention': 'std'}),
+         'quartz_666_dos.json',
+         'quartz_666_1meV_std_gauss_broaden_dos.json',
          does_not_raise()),
         ((1*ureg('meV'), {'shape': 'lorentz'}),
          'quartz_666_dos.json',
          'quartz_666_1meV_lorentz_broaden_dos.json',
          does_not_raise()),
+        ((1*ureg('meV'), {'shape': 'lorentz', 'width_convention': 'std'}),
+         'quartz_666_dos.json',
+         'quartz_666_1meV_lorentz_broaden_dos.json',
+        pytest.raises(
+             ValueError,
+             match='Lorentzian function width must be specified as FWHM')
+         ),
         ((1*ureg('meV'), {'method': 'convolve'}),
          'toy_quartz_cropped_uneven_dos.json',
          'toy_quartz_cropped_uneven_broaden_dos.json',
@@ -400,7 +416,7 @@ class TestSpectrum1DMethods:
         expected_broadened_spec1d = get_spectrum1d(broadened_spectrum1d_file)
         with context:
             broadened_spec1d = spec1d.broaden(args[0], **args[1])
-        check_spectrum1d(broadened_spec1d, expected_broadened_spec1d)
+            check_spectrum1d(broadened_spec1d, expected_broadened_spec1d)
 
     def test_broaden_invalid_shape_raises_value_error(self):
         spec1d = get_spectrum1d('quartz_666_dos.json')
@@ -433,6 +449,8 @@ class TestSpectrum1DMethods:
             return poly(x.to(fwhm.units).magnitude) * fwhm.units
 
         fixed_broad = spec1d.broaden(fwhm)
+        fixed_broad_sigma = spec1d.broaden(sigma, width_convention='std')
+
         variable_broad_sigma = spec1d.broaden(
             sigma_function, width_convention='std',
             width_interpolation_error=1e-3)
@@ -440,8 +458,10 @@ class TestSpectrum1DMethods:
             fwhm_function, width_convention='FWHM',
             width_interpolation_error=1e-3)
 
+        check_spectrum1d(fixed_broad, fixed_broad_sigma)
         check_spectrum1d(variable_broad_sigma, variable_broad_fwhm)
         check_spectrum1d(variable_broad_sigma, fixed_broad, y_atol=1e-4)
+        check_spectrum1d(variable_broad_sigma, fixed_broad_sigma, y_atol=1e-4)
 
     @pytest.mark.parametrize(
         'spectrum1d_file, expected_bin_edges', [

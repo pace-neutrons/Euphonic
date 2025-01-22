@@ -4,7 +4,8 @@ from abc import ABC, abstractmethod
 import collections
 import copy
 from functools import partial, reduce
-import itertools
+from itertools import product, repeat, starmap
+
 import math
 import json
 from numbers import Integral, Real
@@ -22,7 +23,7 @@ from toolz.functoolz import complement
 from toolz.itertoolz import groupby, pluck
 
 from euphonic import ureg, __version__
-from euphonic.broadening import (ErrorFit, KernelShape,
+from euphonic.broadening import (ErrorFit, FWHM_TO_SIGMA, KernelShape,
                                  variable_width_broadening)
 from euphonic.io import (_obj_to_json_file, _obj_from_json_file,
                          _obj_to_dict, _process_dict)
@@ -219,11 +220,15 @@ class Spectrum(ABC):
                 raise ValueError("Cannot set both indices and btol")
             return self._split_by_indices(indices)
 
-    @staticmethod
-    def _broaden_data(data: np.ndarray, bin_centres: Sequence[np.ndarray],
+    @classmethod
+    def _broaden_data(cls,
+                      data: np.ndarray,
+                      bin_centres: Sequence[np.ndarray],
                       widths: Sequence[float],
                       shape: KernelShape = 'gauss',
+                      *,
                       method: Optional[Literal['convolve']] = None,
+                      width_convention: Literal['fwhm', 'std'] = 'fwhm',
                       ) -> np.ndarray:
         """
         Broaden data along each axis by widths, returning the broadened
@@ -263,14 +268,15 @@ class Spectrum(ABC):
                     warnings.warn(msg, stacklevel=3)
 
         if shape == 'gauss':
-            sigmas = []
-            for width, bin_data in zip(widths, bin_centres):
-                if width is None:
-                    sigmas.append(0.0)
-                else:
-                    sigmas.append(Spectrum._gfwhm_to_sigma(width, bin_data))
+            width_to_bin = partial(cls._gaussian_width_to_bin_sigma,
+                                   width_convention=width_convention)
+            sigmas = list(starmap(width_to_bin, zip(widths, bin_centres)))
             data_broadened = gaussian_filter(data, sigmas, mode='constant')
+
         elif shape == 'lorentz':
+            if width_convention != 'fwhm':
+                raise ValueError(
+                    "Lorentzian function width must be specified as FWHM")
             data_broadened = data
             for ax, (width, bin_data) in enumerate(zip(widths, bin_centres)):
                 if width is not None:
@@ -278,30 +284,46 @@ class Spectrum(ABC):
                     data_broadened = correlate1d(data_broadened, broadening,
                                                  mode='constant',
                                                  axis=ax)
-
         return data_broadened
 
     @staticmethod
-    def _gfwhm_to_sigma(fwhm: float, ax_bin_centres: np.ndarray) -> float:
+    def _gaussian_width_to_bin_sigma(
+        width: float | None,
+        ax_bin_centres: np.ndarray,
+        width_convention: Literal['fwhm', 'std']
+    ) -> float:
         """
         Convert a Gaussian FWHM to sigma in units of the mean ax bin size
 
         Parameters
         ----------
-        fwhm
-            The Gaussian broadening FWHM
+        width
+            The Gaussian broadening width parameter FWHM or sigma (STD)
         ax_bin_centres
             Shape (n_bins,) float np.ndarray.
             The bin centres along the axis the broadening is applied to
+        width_convention
+            Specify width as full-width-half-maximum 'fwhm' or standard
+            deviation 'std'
 
         Returns
         -------
         sigma
             Sigma in units of mean ax bin size
         """
-        sigma = fwhm/(2*math.sqrt(2*math.log(2)))
+        if width is None:
+            return 0.
+
+        match width_convention:
+            case 'fwhm':
+                sigma = width * FWHM_TO_SIGMA
+            case 'std':
+                sigma = width
+            case _:
+                raise ValueError("Width convention must be 'std' or 'fwhm'")
+
         mean_bin_size = np.mean(np.diff(ax_bin_centres))
-        sigma_bin = sigma/mean_bin_size
+        sigma_bin = sigma / mean_bin_size
         return sigma_bin
 
     @staticmethod
@@ -578,7 +600,8 @@ class Spectrum1D(Spectrum):
     @overload
     def broaden(self: T, x_width: Quantity,
                 shape: KernelShape = 'gauss',
-                method: Optional[Literal['convolve']] = None
+                method: Optional[Literal['convolve']] = None,
+                width_convention: Literal['fwhm', 'std'] = 'fwhm',
                 ) -> T:
         ...
 
@@ -651,7 +674,7 @@ class Spectrum1D(Spectrum):
                 self.y_data.magnitude,
                 [self.get_bin_centres().magnitude],
                 [x_width.to(self.x_data_unit).magnitude],
-                shape=shape, method=method)
+                shape=shape, method=method, width_convention=width_convention)
             y_broadened = ureg.Quantity(y_broadened, units=self.y_data_unit)
 
         elif isinstance(x_width, Callable):
@@ -929,7 +952,7 @@ class SpectrumCollectionMixin(ABC):
 
         line_data = self.metadata.get("line_data")
         if line_data is None:
-            line_data = itertools.repeat({}, len(self._get_raw_spectrum_data()))
+            line_data = repeat({}, len(self._get_raw_spectrum_data()))
 
         for one_line_data in line_data:
             yield common_metadata | one_line_data
@@ -996,8 +1019,7 @@ class SpectrumCollectionMixin(ABC):
 
         # Collect indices that match each combination of values
         selected_indices = []
-        for value_combination in itertools.product(*select_key_values.values()
-                                                   ):
+        for value_combination in product(*select_key_values.values()):
             selection = dict(zip(select_key_values.keys(), value_combination))
             selected_indices.extend(self._select_indices(**selection))
 
@@ -1427,7 +1449,7 @@ class Spectrum1DCollection(SpectrumCollectionMixin,
             for i, yi in enumerate(self.y_data.magnitude):
                 y_broadened[i] = self._broaden_data(
                     yi, x_centres, x_width_calc, shape=shape,
-                    method=method)
+                    method=method, width_convention=width_convention)
 
             new_spectrum = self.copy()
             new_spectrum.y_data = ureg.Quantity(y_broadened, units=self.y_data_unit)
@@ -1665,7 +1687,8 @@ class Spectrum2D(Spectrum):
                                              bin_centres,
                                              widths_in_bin_units,
                                              shape=shape,
-                                             method=method)
+                                             method=method,
+                                             width_convention=width_convention)
             spectrum = Spectrum2D(np.copy(self.x_data),
                                   np.copy(self.y_data),
                                   ureg.Quantity(z_broadened, units=self.z_data_unit),
