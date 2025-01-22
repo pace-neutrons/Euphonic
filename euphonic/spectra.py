@@ -22,7 +22,7 @@ from toolz.functoolz import complement
 from toolz.itertoolz import groupby, pluck
 
 from euphonic import ureg, __version__
-from euphonic.broadening import (ErrorFit, KernelShape,
+from euphonic.broadening import (ErrorFit, FWHM_TO_SIGMA, KernelShape,
                                  variable_width_broadening)
 from euphonic.io import (_obj_to_json_file, _obj_from_json_file,
                          _obj_to_dict, _process_dict)
@@ -313,7 +313,7 @@ class Spectrum(ABC):
         """
         match width_convention:
             case 'fwhm':
-                sigma = width / (2 * math.sqrt(2 * math.log(2)))
+                sigma = width * FWHM_TO_SIGMA
             case 'std':
                 sigma = width
             case _:
