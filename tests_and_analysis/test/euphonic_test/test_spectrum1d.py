@@ -444,6 +444,8 @@ class TestSpectrum1DMethods:
             return poly(x.to(fwhm.units).magnitude) * fwhm.units
 
         fixed_broad = spec1d.broaden(fwhm)
+        fixed_broad_sigma = spec1d.broaden(sigma, width_convention='std')
+
         variable_broad_sigma = spec1d.broaden(
             sigma_function, width_convention='std',
             width_interpolation_error=1e-3)
@@ -451,8 +453,10 @@ class TestSpectrum1DMethods:
             fwhm_function, width_convention='FWHM',
             width_interpolation_error=1e-3)
 
+        check_spectrum1d(fixed_broad, fixed_broad_sigma)
         check_spectrum1d(variable_broad_sigma, variable_broad_fwhm)
         check_spectrum1d(variable_broad_sigma, fixed_broad, y_atol=1e-4)
+        check_spectrum1d(variable_broad_sigma, fixed_broad_sigma, y_atol=1e-4)
 
     @pytest.mark.parametrize(
         'spectrum1d_file, expected_bin_edges', [
