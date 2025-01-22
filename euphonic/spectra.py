@@ -283,14 +283,13 @@ class Spectrum(ABC):
                     data_broadened = correlate1d(data_broadened, broadening,
                                                  mode='constant',
                                                  axis=ax)
-
         return data_broadened
 
     @staticmethod
     def _gaussian_width_to_bin_sigma(
-            width: float,
-            ax_bin_centres: np.ndarray,
-            width_convention: Literal['fwhm', 'std']
+        width: float,
+        ax_bin_centres: np.ndarray,
+        width_convention: Literal['fwhm', 'std']
     ) -> float:
         """
         Convert a Gaussian FWHM to sigma in units of the mean ax bin size
@@ -298,7 +297,7 @@ class Spectrum(ABC):
         Parameters
         ----------
         width
-            The Gaussian broadening width parameter FWHM
+            The Gaussian broadening width parameter FWHM or sigma (STD)
         ax_bin_centres
             Shape (n_bins,) float np.ndarray.
             The bin centres along the axis the broadening is applied to
@@ -320,7 +319,7 @@ class Spectrum(ABC):
                 raise ValueError("Width convention must be 'std' or 'fwhm'")
 
         mean_bin_size = np.mean(np.diff(ax_bin_centres))
-        sigma_bin = sigma/mean_bin_size
+        sigma_bin = sigma / mean_bin_size
         return sigma_bin
 
     @staticmethod
