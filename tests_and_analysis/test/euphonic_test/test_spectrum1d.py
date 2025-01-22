@@ -386,6 +386,12 @@ class TestSpectrum1DMethods:
          'quartz_666_dos.json',
          'quartz_666_1meV_gauss_broaden_dos.json',
          does_not_raise()),
+        ((1*ureg('meV'), {'shape': 'gauss', 'width_convention': 'hwhm'}),
+         'quartz_666_dos.json',
+         'quartz_666_1meV_gauss_broaden_dos.json',
+         pytest.raises(
+             ValueError,
+             match="Width convention must be 'std' or 'fwhm'")),
         ((1*ureg('meV'), {'shape': 'gauss', 'width_convention': 'std'}),
          'quartz_666_dos.json',
          'quartz_666_1meV_std_gauss_broaden_dos.json',
