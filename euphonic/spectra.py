@@ -223,6 +223,7 @@ class Spectrum(ABC):
     def _broaden_data(data: np.ndarray, bin_centres: Sequence[np.ndarray],
                       widths: Sequence[float],
                       shape: KernelShape = 'gauss',
+                      *,
                       method: Optional[Literal['convolve']] = None,
                       width_convention: Literal['fwhm', 'std'] = 'fwhm',
                       ) -> np.ndarray:
