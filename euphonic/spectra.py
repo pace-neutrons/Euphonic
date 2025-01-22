@@ -4,7 +4,8 @@ from abc import ABC, abstractmethod
 import collections
 import copy
 from functools import partial, reduce
-import itertools
+from itertools import product, repeat, starmap
+
 import math
 import json
 from numbers import Integral, Real
@@ -219,8 +220,10 @@ class Spectrum(ABC):
                 raise ValueError("Cannot set both indices and btol")
             return self._split_by_indices(indices)
 
-    @staticmethod
-    def _broaden_data(data: np.ndarray, bin_centres: Sequence[np.ndarray],
+    @classmethod
+    def _broaden_data(cls,
+                      data: np.ndarray,
+                      bin_centres: Sequence[np.ndarray],
                       widths: Sequence[float],
                       shape: KernelShape = 'gauss',
                       *,
@@ -265,14 +268,11 @@ class Spectrum(ABC):
                     warnings.warn(msg, stacklevel=3)
 
         if shape == 'gauss':
-            sigmas = []
-            for width, bin_data in zip(widths, bin_centres):
-                if width is None:
-                    sigmas.append(0.0)
-                else:
-                    sigmas.append(Spectrum._gaussian_width_to_bin_sigma(
-                        width, bin_data, width_convention=width_convention))
+            width_to_bin = partial(cls._gaussian_width_to_bin_sigma,
+                                   width_convention=width_convention)
+            sigmas = list(starmap(width_to_bin, zip(widths, bin_centres)))
             data_broadened = gaussian_filter(data, sigmas, mode='constant')
+
         elif shape == 'lorentz':
             if width_convention != 'fwhm':
                 raise ValueError(
@@ -288,7 +288,7 @@ class Spectrum(ABC):
 
     @staticmethod
     def _gaussian_width_to_bin_sigma(
-        width: float,
+        width: float | None,
         ax_bin_centres: np.ndarray,
         width_convention: Literal['fwhm', 'std']
     ) -> float:
@@ -311,6 +311,9 @@ class Spectrum(ABC):
         sigma
             Sigma in units of mean ax bin size
         """
+        if width is None:
+            return 0.
+
         match width_convention:
             case 'fwhm':
                 sigma = width * FWHM_TO_SIGMA
@@ -949,7 +952,7 @@ class SpectrumCollectionMixin(ABC):
 
         line_data = self.metadata.get("line_data")
         if line_data is None:
-            line_data = itertools.repeat({}, len(self._get_raw_spectrum_data()))
+            line_data = repeat({}, len(self._get_raw_spectrum_data()))
 
         for one_line_data in line_data:
             yield common_metadata | one_line_data
@@ -1016,8 +1019,7 @@ class SpectrumCollectionMixin(ABC):
 
         # Collect indices that match each combination of values
         selected_indices = []
-        for value_combination in itertools.product(*select_key_values.values()
-                                                   ):
+        for value_combination in product(*select_key_values.values()):
             selection = dict(zip(select_key_values.keys(), value_combination))
             selected_indices.extend(self._select_indices(**selection))
 
