@@ -66,6 +66,20 @@ def inconsistent_y_item():
     item.y_data = item.y_data * 2.
     return item
 
+@pytest.fixture
+def inconsistent_z_units_item():
+    """Spectrum with different z units"""
+    item = get_spectrum2d("quartz_fuzzy_map_0.json")
+    item.z_data_unit = ureg("1 / eV")
+    return item
+
+@pytest.fixture
+def inconsistent_x_tick_labels_item():
+    """Spectrum with different x-tick labels"""
+    item = get_spectrum2d("quartz_fuzzy_map_0.json")
+    item.x_tick_labels = [(0, "$\\Gamma$"), (9, "X")]
+    return item
+
 def rand_spectrum2d(seed: int = 1,
                     x_bins: Optional[Quantity] = None,
                     y_bins: Optional[Quantity] = None,
@@ -138,35 +152,28 @@ class TestSpectrum2DCollectionCreation:
         else:
             assert ref_collection.metadata == collection.metadata
 
-    # pylint: disable=R0913  #  These fixtures are "too many arguments"
+    @pytest.mark.parametrize(
+        "bad_item_name, message",
+        [
+            ("inconsistent_x_item", ""),
+            ("inconsistent_x_length_item", ""),
+            ("inconsistent_x_units_item", ""),
+            ("inconsistent_y_item", ""),
+            (
+                "inconsistent_z_units_item",
+                "Spectrum units in sequence are inconsistent",
+            ),
+            ("inconsistent_x_tick_labels_item", ""),
+        ],
+    )
     def test_from_bad_spectra(
-            self,
-            quartz_fuzzy_items,
-            inconsistent_x_item,
-            inconsistent_x_length_item,
-            inconsistent_x_units_item,
-            inconsistent_y_item):
+        self, bad_item_name, message, quartz_fuzzy_items, request
+    ):
         """Spectrum2DCollection.from_spectra with inconsistent input"""
 
-        with pytest.raises(ValueError):
-            Spectrum2DCollection.from_spectra(
-                quartz_fuzzy_items + [inconsistent_x_item]
-            )
-
-        with pytest.raises(ValueError):
-            Spectrum2DCollection.from_spectra(
-                quartz_fuzzy_items + [inconsistent_x_units_item]
-            )
-
-        with pytest.raises(ValueError):
-            Spectrum2DCollection.from_spectra(
-                quartz_fuzzy_items + [inconsistent_x_length_item]
-            )
-
-        with pytest.raises(ValueError):
-            Spectrum2DCollection.from_spectra(
-                quartz_fuzzy_items + [inconsistent_y_item]
-            )
+        bad_item = request.getfixturevalue(bad_item_name)
+        with pytest.raises(ValueError, match=message):
+            Spectrum2DCollection.from_spectra(quartz_fuzzy_items + [bad_item])
 
     # pylint: disable=R0913  #  These fixtures are "too many arguments"
     def test_from_bad_spectra_usafe(
@@ -195,7 +202,6 @@ class TestSpectrum2DCollectionCreation:
                 unsafe=True
             )
 
-
         Spectrum2DCollection.from_spectra(
             quartz_fuzzy_items + [inconsistent_y_item],
             unsafe=True
@@ -204,6 +210,19 @@ class TestSpectrum2DCollectionCreation:
 
 class TestSpectrum2DCollectionFunctionality:
     """Unit test indexing and methods of Spectrum2DCollection"""
+
+    def test_data_access(self, quartz_fuzzy_collection):
+        initial_data = quartz_fuzzy_collection.z_data
+        incremented = quartz_fuzzy_collection.z_data + 1 * ureg("1 / meV")
+
+        quartz_fuzzy_collection.z_data = incremented
+
+        np.testing.assert_allclose(incremented, quartz_fuzzy_collection.z_data)
+
+        # z_data access returns a copy: initial array should not have changed
+        with pytest.raises(AssertionError):
+            np.testing.assert_allclose(initial_data,
+                                       quartz_fuzzy_collection.z_data)
 
     def test_indexing(self, quartz_fuzzy_collection, quartz_fuzzy_items):
         """Check indexing an element, slice and iteration
