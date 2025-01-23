@@ -15,7 +15,7 @@ py_src = {
   'euphonic': ['__init__.py', 'brille.py', 'broadening.py',
                'crystal.py', 'debye_waller.py', 'force_constants.py',
                'io.py', 'plot.py', 'powder.py', 'qpoint_frequencies.py',
-               'qpoint_phonon_modes.py', 'sampling.py', 'spectra.py',
+               'qpoint_phonon_modes.py', 'sampling.py',
                'structure_factor.py', 'util.py', 'validate.py'],
   'euphonic/cli': ['__init__.py', 'brille_convergence.py',
                    'dispersion.py', 'dos.py', 'intensity_map.py',
@@ -24,6 +24,7 @@ py_src = {
   'euphonic/data': ['__init__.py', 'bluebook.json', 'sears-1992.json',
                     'reciprocal_spectroscopy_definitions.txt'],
   'euphonic/readers': ['__init__.py', 'castep.py', 'phonopy.py'],
+  'euphonic/spectra': ['__init__.py', 'base.py', 'collections.py'],
   'euphonic/styles': ['__init__.py', 'base.mplstyle', 'intensity_widget.mplstyle'],
   'euphonic/writers': ['__init__.py', 'phonon_website.py'],
 }
