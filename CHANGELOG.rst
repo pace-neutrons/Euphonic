@@ -1,6 +1,11 @@
 `Unreleased <https://github.com/pace-neutrons/Euphonic/compare/v1.4.0.post1...HEAD>`_
 -------------------------------------------------------------------------------------
 
+- The euphonic.spectra module has been broken up into a subpackage
+  with the single-spectrum classes defined in euphonic.spectra.base
+  and the collections in euphonic.spectra.collections. This is not a
+  breaking change: the public classes, functions and type annotations
+  remain importable from euphonic.spectra.
 
 `v1.4.0.post1 <https://github.com/pace-neutrons/Euphonic/compare/v1.4.0...v1.4.0.post1>`_
 -----------------------------------------------------------------------------------------
