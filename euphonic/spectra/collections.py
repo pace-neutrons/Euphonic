@@ -156,16 +156,13 @@ class SpectrumCollectionMixin(ABC):
         return self._get_raw_spectrum_data().shape[0]
 
     @overload
-    def __getitem__(self, item: int) -> Spectrum:
-        ...
+    def __getitem__(self, item: int) -> Spectrum: ...
 
     @overload  # noqa: F811
-    def __getitem__(self, item: slice) -> Self:
-        ...
+    def __getitem__(self, item: slice) -> Self: ...
 
     @overload  # noqa: F811
-    def __getitem__(self, item: Union[Sequence[int], np.ndarray]) -> Self:
-        ...
+    def __getitem__(self, item: Union[Sequence[int], np.ndarray]) -> Self: ...
 
     def __getitem__(
             self, item: Union[Integral, slice, Sequence[Integral], np.ndarray]
@@ -703,8 +700,7 @@ class Spectrum1DCollection(SpectrumCollectionMixin,
     def broaden(self: T, x_width: Quantity,
                 shape: KernelShape = 'gauss',
                 method: Optional[Literal['convolve']] = None
-                ) -> T:
-        ...
+                ) -> T: ...
 
     @overload
     def broaden(self: T, x_width: CallableQuantity,
@@ -714,8 +710,7 @@ class Spectrum1DCollection(SpectrumCollectionMixin,
                 width_convention: Literal['fwhm', 'std'] = 'fwhm',
                 width_interpolation_error: float = 0.01,
                 width_fit: ErrorFit = 'cheby-log'
-                ) -> T:  # noqa: F811
-        ...
+                ) -> T: ...  # noqa: F811
 
     def broaden(self: T,
                 x_width,

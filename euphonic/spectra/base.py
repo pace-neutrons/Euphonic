@@ -601,8 +601,7 @@ class Spectrum1D(Spectrum):
                 shape: KernelShape = 'gauss',
                 method: Optional[Literal['convolve']] = None,
                 width_convention: Literal['fwhm', 'std'] = 'fwhm',
-                ) -> T:
-        ...
+                ) -> T: ...
 
     @overload
     def broaden(self: T, x_width: CallableQuantity,
@@ -612,8 +611,7 @@ class Spectrum1D(Spectrum):
                 width_convention: Literal['fwhm', 'std'] = 'fwhm',
                 width_interpolation_error: float = 0.01,
                 width_fit: ErrorFit = 'cheby-log'
-                ) -> T:  # noqa: F811
-        ...
+                ) -> T: ...  # noqa: F811
 
     def broaden(self: T, x_width,
                 shape='gauss',
@@ -1036,7 +1034,7 @@ class Spectrum2D(Spectrum):
         bins = self.get_bin_edges(bin_ax)
         return np.diff(bins)
 
-    def assert_regular_bins( # pylint: disable=arguments-renamed
+    def assert_regular_bins(  # pylint: disable=arguments-renamed
             self,
             bin_ax: Literal['x', 'y'],
             message: str = '',
