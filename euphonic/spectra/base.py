@@ -4,7 +4,6 @@
 from abc import ABC, abstractmethod
 import copy
 from functools import partial
-from itertools import starmap
 
 import math
 from numbers import Integral, Real
@@ -265,7 +264,7 @@ class Spectrum(ABC):
         if shape == 'gauss':
             width_to_bin = partial(cls._gaussian_width_to_bin_sigma,
                                    width_convention=width_convention)
-            sigmas = list(starmap(width_to_bin, zip(widths, bin_centres)))
+            sigmas = list(map(width_to_bin, widths, bin_centres))
             data_broadened = gaussian_filter(data, sigmas, mode='constant')
 
         elif shape == 'lorentz':
