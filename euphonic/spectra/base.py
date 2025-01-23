@@ -380,11 +380,14 @@ class Spectrum(ABC):
         return np.diff(self.get_bin_edges())
 
     def assert_regular_bins(self,
-                            *,
                             message: str = '',
                             rtol: float = 1e-5,
                             atol: float = 0.) -> None:
         """Raise AssertionError if x-axis bins are not evenly spaced.
+
+        Note that the positional arguments are different from
+        Spectrum2D.assert_regular_bins: it is strongly recommended to only use
+        keyword arguments with this method.
 
         Parameters
         ----------
@@ -872,7 +875,7 @@ class Spectrum2D(Spectrum):
 
         if isinstance(x_width, Quantity):
             try:
-                self.assert_regular_bins('x', message=(
+                self.assert_regular_bins(bin_ax='x', message=(
                     'Broadening by convolution may give incorrect results.'))
             except AssertionError as e:
                 warnings.warn(str(e), UserWarning)
@@ -1033,12 +1036,18 @@ class Spectrum2D(Spectrum):
         bins = self.get_bin_edges(bin_ax)
         return np.diff(bins)
 
-    def assert_regular_bins(self,
-                            bin_ax: Literal['x', 'y'],
-                            message: str = '',
-                            rtol: float = 1e-5,
-                            atol: float = 0.) -> None:
+    def assert_regular_bins( # pylint: disable=arguments-renamed
+            self,
+            bin_ax: Literal['x', 'y'],
+            message: str = '',
+            rtol: float = 1e-5,
+            atol: float = 0.
+    ) -> None:
         """Raise AssertionError if x-axis bins are not evenly spaced.
+
+        Note that the positional arguments are different from
+        Spectrum1D.assert_regular_bins: it is strongly recommended to only use
+        keyword arguments with this method.
 
         Parameters
         ----------
