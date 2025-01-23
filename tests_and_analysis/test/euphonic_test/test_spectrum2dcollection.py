@@ -176,7 +176,7 @@ class TestSpectrum2DCollectionCreation:
             Spectrum2DCollection.from_spectra(quartz_fuzzy_items + [bad_item])
 
     # pylint: disable=R0913  #  These fixtures are "too many arguments"
-    def test_from_bad_spectra_usafe(
+    def test_from_bad_spectra_unsafe(
             self,
             quartz_fuzzy_items,
             inconsistent_x_item,
