@@ -1052,6 +1052,9 @@ class Spectrum2D(Spectrum):
         bin_ax
             Axis of interest, 'x' or 'y'
 
+        message
+            Text appended to ValueError for more informative output.
+
         rtol
             Relative tolerance for 'close enough' values
 

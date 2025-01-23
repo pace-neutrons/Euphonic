@@ -212,6 +212,7 @@ class TestSpectrum2DCollectionFunctionality:
     """Unit test indexing and methods of Spectrum2DCollection"""
 
     def test_data_access(self, quartz_fuzzy_collection):
+        """Check z_data can be modified and re-read"""
         initial_data = quartz_fuzzy_collection.z_data
         incremented = quartz_fuzzy_collection.z_data + 1 * ureg("1 / meV")
 
