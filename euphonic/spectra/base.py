@@ -1,3 +1,4 @@
+"""Classes for spectral data"""
 # pylint: disable=no-member
 
 from abc import ABC, abstractmethod
@@ -31,6 +32,7 @@ OneSpectrumMetadata = Dict[str, Union[str, int]]
 
 
 class Spectrum(ABC):
+    """Base class for a spectral data: do not use directly"""
     T = TypeVar('T', bound='Spectrum')
 
     def __setattr__(self, name: str, value: Any) -> None:
@@ -46,6 +48,7 @@ class Spectrum(ABC):
 
     @property
     def x_data(self) -> Quantity:
+        """x-axis data with units"""
         return ureg.Quantity(self._x_data, self._internal_x_data_unit
                              ).to(self.x_data_unit, "reciprocal_spectroscopy")
 
@@ -56,6 +59,7 @@ class Spectrum(ABC):
 
     @property
     def y_data(self) -> Quantity:
+        """y-axis data with units"""
         return ureg.Quantity(self._y_data, self._internal_y_data_unit).to(
             self.y_data_unit, "reciprocal_spectroscopy")
 
@@ -78,7 +82,6 @@ class Spectrum(ABC):
     @abstractmethod
     def copy(self: T) -> T:
         """Get an independent copy of spectrum"""
-        ...
 
     @property
     def x_tick_labels(self) -> XTickLabels:
@@ -108,13 +111,11 @@ class Spectrum(ABC):
     @abstractmethod
     def to_dict(self) -> Dict[str, Any]:
         """Write to dict using euphonic.io._obj_to_dict"""
-        ...
 
     @classmethod
     @abstractmethod
     def from_dict(cls: Type[T], d: Dict[str, Any]) -> T:
         """Initialise a Spectrum object from dictionary"""
-        ...
 
     def to_json_file(self, filename: str) -> None:
         """
@@ -145,7 +146,6 @@ class Spectrum(ABC):
     def _split_by_indices(self: T, indices: Union[Sequence[int], np.ndarray]
                           ) -> List[T]:
         """Split data along x axis at given indices"""
-        ...
 
     def _split_by_tol(self: T, btol: float = 10.0) -> List[T]:
         """Split data along x-axis at detected breakpoints"""
@@ -175,9 +175,9 @@ class Spectrum(ABC):
         """Crop and shift x labels to new x range"""
         if x_tick_labels is None:
             return None
-        else:
-            return [(int(x - x0), label) for (x, label) in x_tick_labels
-                    if (x >= x0) and ((x1 is None) or (x < x1))]
+
+        return [(int(x - x0), label) for (x, label) in x_tick_labels
+                if (x >= x0) and ((x1 is None) or (x < x1))]
 
     def split(self: T, indices: Union[Sequence[int], np.ndarray] = None,
               btol: float = None) -> List[T]:
@@ -210,10 +210,10 @@ class Spectrum(ABC):
             if btol is None:
                 btol = 10.0
             return self._split_by_tol(btol=btol)
-        else:
-            if btol is not None:
-                raise ValueError("Cannot set both indices and btol")
-            return self._split_by_indices(indices)
+
+        if btol is not None:
+            raise ValueError("Cannot set both indices and btol")
+        return self._split_by_indices(indices)
 
     @classmethod
     def _broaden_data(cls,
@@ -259,8 +259,8 @@ class Spectrum(ABC):
                     raise ValueError(
                         msg + ' If you still want to broaden by convolution '
                         'please explicitly use the method="convolve" option.')
-                else:
-                    warnings.warn(msg, stacklevel=3)
+
+                warnings.warn(msg, stacklevel=3)
 
         if shape == 'gauss':
             width_to_bin = partial(cls._gaussian_width_to_bin_sigma,
@@ -337,12 +337,11 @@ class Spectrum(ABC):
         """Determine if axis data are bin edges or centres"""
         if bin_length == data_length + 1:
             return True
-        elif bin_length == data_length:
+        if bin_length == data_length:
             return False
-        else:
-            raise ValueError((
-                f'Unexpected data axis length {data_length} '
-                f'for bin axis length {bin_length}'))
+        raise ValueError((
+            f'Unexpected data axis length {data_length} '
+            f'for bin axis length {bin_length}'))
 
     def get_bin_edges(self) -> Quantity:
         """
@@ -359,8 +358,7 @@ class Spectrum(ABC):
         # Spectrum1DCollection which has y_data shape (n_spectra, bins)
         if self._is_bin_edge(self.y_data.shape[-1], self.x_data.shape[0]):
             return self.x_data
-        else:
-            return self._bin_centres_to_edges(self.x_data)
+        return self._bin_centres_to_edges(self.x_data)
 
     def get_bin_centres(self) -> Quantity:
         """
@@ -375,8 +373,7 @@ class Spectrum(ABC):
         # Spectrum1DCollection which has y_data shape (n_spectra, bins)
         if self._is_bin_edge(self.y_data.shape[-1], self.x_data.shape[0]):
             return self._bin_edges_to_centres(self.x_data)
-        else:
-            return self.x_data
+        return self.x_data
 
     def get_bin_widths(self) -> Quantity:
         """
@@ -384,7 +381,9 @@ class Spectrum(ABC):
         """
         return np.diff(self.get_bin_edges())
 
-    def assert_regular_bins(self, message: str = '',
+    def assert_regular_bins(self,
+                            *,
+                            message: str = '',
                             rtol: float = 1e-5,
                             atol: float = 0.) -> None:
         """Raise AssertionError if x-axis bins are not evenly spaced.
@@ -483,6 +482,7 @@ class Spectrum1D(Spectrum):
         Any metadata key/value pairs that are common to both
         spectra are retained, any others are discarded
         """
+        # pylint: disable=import-outside-toplevel
         from .collections import Spectrum1DCollection
         spec_col = Spectrum1DCollection.from_spectra([self, other])
         return spec_col.sum()
@@ -534,6 +534,7 @@ class Spectrum1D(Spectrum):
             A format specifier or sequence of specifiers (one for each
             column), to be passed to numpy.savetxt
         """
+        # pylint: disable=import-outside-toplevel
         from .collections import Spectrum1DCollection
         spec = Spectrum1DCollection.from_spectra([self])
         spec.to_text_file(filename, fmt)
@@ -769,6 +770,7 @@ class Spectrum2D(Spectrum):
 
     @property
     def z_data(self) -> Quantity:
+        """z-axis data with units"""
         return ureg.Quantity(
             self._z_data, self._internal_z_data_unit
         ).to(self.z_data_unit, "reciprocal_spectroscopy")
@@ -786,7 +788,7 @@ class Spectrum2D(Spectrum):
     def __setattr__(self, name: str, value: Any) -> None:
         _check_unit_conversion(self, name, value,
                                ['z_data_unit'])
-        super(Spectrum2D, self).__setattr__(name, value)
+        super().__setattr__(name, value)
 
     def _split_by_indices(self,
                           indices: Union[Sequence[int], np.ndarray]
@@ -889,11 +891,14 @@ class Spectrum2D(Spectrum):
                                              shape=shape,
                                              method=method,
                                              width_convention=width_convention)
-            spectrum = Spectrum2D(np.copy(self.x_data),
-                                  np.copy(self.y_data),
-                                  ureg.Quantity(z_broadened, units=self.z_data_unit),
-                                  copy.copy(self.x_tick_labels),
-                                  copy.deepcopy(self.metadata))
+            spectrum = Spectrum2D(
+                np.copy(self.x_data),
+                np.copy(self.y_data),
+                ureg.Quantity(z_broadened, units=self.z_data_unit),
+                copy.copy(self.x_tick_labels),
+                copy.deepcopy(self.metadata),
+            )
+
         else:
             spectrum = self
 
@@ -920,7 +925,7 @@ class Spectrum2D(Spectrum):
             width_interpolation_error: float = 1e-2,
             shape: KernelShape = 'gauss',
             width_fit: ErrorFit = 'cheby-log'
-        ) -> 'Spectrum2D':
+    ) -> 'Spectrum2D':
         """
         Apply value-dependent Gaussian broadening to one axis of Spectrum2D
         """
@@ -994,8 +999,7 @@ class Spectrum2D(Spectrum):
         data_ax_len = self.z_data.shape[enum[bin_ax]]
         if self._is_bin_edge(data_ax_len, bin_data.shape[0]):
             return bin_data
-        else:
-            return self._bin_centres_to_edges(bin_data)
+        return self._bin_centres_to_edges(bin_data)
 
     def get_bin_centres(self, bin_ax: Literal['x', 'y'] = 'x') -> Quantity:
         """
@@ -1017,8 +1021,7 @@ class Spectrum2D(Spectrum):
         data_ax_len = self.z_data.shape[enum[bin_ax]]
         if self._is_bin_edge(data_ax_len, bin_data.shape[0]):
             return self._bin_edges_to_centres(bin_data)
-        else:
-            return bin_data
+        return bin_data
 
     def get_bin_widths(self, bin_ax: Literal['x', 'y'] = 'x') -> Quantity:
         """
@@ -1032,7 +1035,8 @@ class Spectrum2D(Spectrum):
         bins = self.get_bin_edges(bin_ax)
         return np.diff(bins)
 
-    def assert_regular_bins(self, bin_ax: Literal['x', 'y'],
+    def assert_regular_bins(self,
+                            bin_ax: Literal['x', 'y'],
                             message: str = '',
                             rtol: float = 1e-5,
                             atol: float = 0.) -> None:
@@ -1042,9 +1046,6 @@ class Spectrum2D(Spectrum):
         ----------
         bin_ax
             Axis of interest, 'x' or 'y'
-
-        message
-            Text appended to ValueError for more informative output.
 
         rtol
             Relative tolerance for 'close enough' values
@@ -1161,14 +1162,14 @@ def apply_kinematic_constraints(spectrum: Spectrum2D,
     if e_i is None:
         # Indirect geometry: final energy is fixed, incident energy unlimited
         e_f = e_f.to('meV')
-        e_i = (spectrum.get_bin_centres(bin_ax='y').to('meV') + e_f)
+        e_i = spectrum.get_bin_centres(bin_ax='y').to('meV') + e_f
     elif e_f is None:
         # Direct geometry: incident energy is fixed, max energy transfer = e_i
         e_i = e_i.to('meV')
         e_f = e_i - spectrum.get_bin_centres(bin_ax='y').to('meV')
 
-    k2_i = (e_i / momentum2_to_energy)
-    k2_f = (e_f / momentum2_to_energy)
+    k2_i = e_i / momentum2_to_energy
+    k2_f = e_f / momentum2_to_energy
 
     cos_values = np.asarray(
         _get_cos_range(np.asarray(angle_range) * np.pi / 180.))

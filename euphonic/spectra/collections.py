@@ -1,3 +1,4 @@
+"""Spectrum Collection classes"""
 # pylint: disable=no-member
 
 from abc import ABC, abstractmethod
@@ -149,7 +150,6 @@ class SpectrumCollectionMixin(ABC):
         by another Spectrum collection
 
         """
-        ...
 
     # Mixin methods
     def __len__(self):
@@ -685,10 +685,11 @@ class Spectrum1DCollection(SpectrumCollectionMixin,
         """
         data = read_phonon_dos_data(filename)
         n_spectra = len(data['dos'].keys())
+        dos_size = len(next(iter(data['dos'].values())))
+        y_data = np.zeros((n_spectra, dos_size))
         metadata = {'line_data': [{} for x in range(n_spectra)]}
+
         for i, (species, dos_data) in enumerate(data['dos'].items()):
-            if i == 0:
-                y_data = np.zeros((n_spectra, len(dos_data)))
             y_data[i] = dos_data
             if species != 'Total':
                 metadata['line_data'][i]['species'] = species
@@ -784,7 +785,7 @@ class Spectrum1DCollection(SpectrumCollectionMixin,
             new_spectrum.y_data = ureg.Quantity(y_broadened, units=self.y_data_unit)
             return new_spectrum
 
-        elif isinstance(x_width, Callable):
+        if isinstance(x_width, Callable):
             return type(self).from_spectra([
                 spectrum.broaden(
                     x_width=x_width,
@@ -796,8 +797,7 @@ class Spectrum1DCollection(SpectrumCollectionMixin,
                     width_fit=width_fit)
                 for spectrum in self])
 
-        else:
-            raise TypeError("x_width must be a Quantity or Callable")
+        raise TypeError("x_width must be a Quantity or Callable")
 
     @classmethod
     def from_dict(cls: Self, d: dict) -> Self:
@@ -910,6 +910,7 @@ class Spectrum2DCollection(SpectrumCollectionMixin,
 
     @property
     def z_data(self) -> Quantity:
+        """intensity data"""
         return ureg.Quantity(
             self._z_data, self._internal_z_data_unit
         ).to(self.z_data_unit, "reciprocal_spectroscopy")
