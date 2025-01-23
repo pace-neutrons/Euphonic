@@ -242,24 +242,23 @@ class Spectrum(ABC):
         # We only want to check for unequal bins if using a method that
         # is not correct for unequal bins (currently this is the only
         # option but leave the 'if' anyway for future implementations)
-        if method in ('convolve', None):
-            axes = ['x_data', 'y_data']
-            unequal_bin_axes = []
-            for ax, (width, bin_data) in enumerate(zip(widths, bin_centres)):
-                if width is not None:
-                    bin_widths = np.diff(bin_data)
-                    if not np.all(np.isclose(bin_widths, bin_widths[0])):
-                        unequal_bin_axes += [axes[ax]]
-            if len(unequal_bin_axes) > 0:
-                msg = (f'{" and ".join(unequal_bin_axes)} bin widths are '
-                       f'not equal, so broadening by convolution may give '
-                       f'incorrect results.')
-                if method is None:
-                    raise ValueError(
-                        msg + ' If you still want to broaden by convolution '
-                        'please explicitly use the method="convolve" option.')
+        axes = ['x_data', 'y_data']
+        unequal_bin_axes = []
+        for ax, (width, bin_data) in enumerate(zip(widths, bin_centres)):
+            if width is not None:
+                bin_widths = np.diff(bin_data)
+                if not np.all(np.isclose(bin_widths, bin_widths[0])):
+                    unequal_bin_axes += [axes[ax]]
+        if len(unequal_bin_axes) > 0:
+            msg = (f'{" and ".join(unequal_bin_axes)} bin widths are '
+                   f'not equal, so broadening by convolution may give '
+                   f'incorrect results.')
+            if method is None:
+                raise ValueError(
+                    msg + ' If you still want to broaden by convolution '
+                    'please explicitly use the method="convolve" option.')
 
-                warnings.warn(msg, stacklevel=3)
+            warnings.warn(msg, stacklevel=3)
 
         if shape == 'gauss':
             width_to_bin = partial(cls._gaussian_width_to_bin_sigma,
