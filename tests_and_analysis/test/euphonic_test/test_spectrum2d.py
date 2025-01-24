@@ -543,7 +543,7 @@ class TestKinematicAngles:
          ((-2.25 * np.pi, -2.5 * np.pi), (np.sqrt(2) / 2, 0))
          ])
     def test_cos_range(self, angle_range, expected):
-        from euphonic.spectra import _get_cos_range
+        from euphonic.spectra.base import _get_cos_range
         cos_limits = _get_cos_range(angle_range)
         assert cos_limits == pytest.approx(expected)
 
