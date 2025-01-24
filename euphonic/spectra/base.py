@@ -171,12 +171,15 @@ class Spectrum(ABC):
     def _cut_x_ticks(x_tick_labels: XTickLabels | None,
                      x0: int,
                      x1: int | None) -> XTickLabels | None:
-        """Crop and shift x labels to new x range"""
+        """Crop x labels to new x range, shifting indices accordingly"""
         if x_tick_labels is None:
             return None
 
-        return [(int(x - x0), label) for (x, label) in x_tick_labels
-                if (x >= x0) and ((x1 is None) or (x < x1))]
+        if x1 is None:
+            x1 = float('inf')
+
+        return [(int(x - x0), label)
+                for (x, label) in x_tick_labels if x0 <= x < x1]
 
     def split(self: T, indices: Union[Sequence[int], np.ndarray] = None,
               btol: float = None) -> List[T]:
