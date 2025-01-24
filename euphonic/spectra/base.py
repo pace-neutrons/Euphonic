@@ -337,9 +337,9 @@ class Spectrum(ABC):
             return True
         if bin_length == data_length:
             return False
-        raise ValueError((
+        raise ValueError(
             f'Unexpected data axis length {data_length} '
-            f'for bin axis length {bin_length}'))
+            f'for bin axis length {bin_length}')
 
     def get_bin_edges(self) -> Quantity:
         """
