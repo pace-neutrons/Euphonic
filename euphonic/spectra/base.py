@@ -327,11 +327,25 @@ class Spectrum(ABC):
         return bin_edges[:-1] + 0.5*np.diff(bin_edges)
 
     @staticmethod
-    def _bin_centres_to_edges(bin_centres: Quantity) -> Quantity:
-        return np.concatenate((
-            [bin_centres[0]],
-            (bin_centres[1:] + bin_centres[:-1])/2,
-            [bin_centres[-1]]))
+    def _bin_centres_to_edges(
+            bin_centres: Quantity,
+            restrict_range: bool = True
+    ) -> Quantity:
+        if restrict_range:
+            return np.concatenate((
+                [bin_centres[0]],
+                (bin_centres[1:] + bin_centres[:-1])/2,
+                [bin_centres[-1]],
+            )
+        )
+
+        half_diff = np.diff(bin_centres) * 0.5
+        return np.concatenate(
+            (
+                [bin_centres[0] - half_diff[0]],
+                bin_centres[:-1] + half_diff,
+                [bin_centres[-1] + half_diff[-1]],
+            ))
 
     @staticmethod
     def _is_bin_edge(data_length: int, bin_length: int) -> bool:
@@ -344,22 +358,29 @@ class Spectrum(ABC):
             f'Unexpected data axis length {data_length} '
             f'for bin axis length {bin_length}')
 
-    def get_bin_edges(self) -> Quantity:
+    def get_bin_edges(self, restrict_range=True) -> Quantity:
         """
         Get x-axis bin edges. If the size of x_data is one element larger
         than y_data, x_data is assumed to contain bin edges, but if x_data
         is the same size, x_data is assumed to contain bin centres and
-        a conversion is made. In the conversion, the bin edges will
-        not go outside the existing data bounds so the first and last
-        bins may be half-size. In addition, each bin edge is assumed
-        to be halfway between each bin centre, which may not be an
-        accurate assumption in the case of differently sized bins.
+        a conversion is made.
+
+        In this case, bin edges are assumed to be halfway between bin centres.
+
+        Parameters
+        ----------
+        restrict_range
+            If True (default), the bin edges will not go outside the existing
+            data bounds so the first and last bins may be half-size. This may
+            be desirable for plotting.  Otherwise, the outer bin edges will
+            extend from the initial data range, following the average bin size.
         """
         # Need to use -1 index for y_data so it also works for
         # Spectrum1DCollection which has y_data shape (n_spectra, bins)
         if self._is_bin_edge(self.y_data.shape[-1], self.x_data.shape[0]):
             return self.x_data
-        return self._bin_centres_to_edges(self.x_data)
+        return self._bin_centres_to_edges(
+            self.x_data, restrict_range=restrict_range)
 
     def get_bin_centres(self) -> Quantity:
         """
@@ -979,29 +1000,37 @@ class Spectrum2D(Spectrum):
                           copy.copy(self.x_tick_labels),
                           copy.deepcopy(self.metadata))
 
-    def get_bin_edges(self, bin_ax: Literal['x', 'y'] = 'x') -> Quantity:
+    def get_bin_edges(
+            self,
+            bin_ax: Literal['x', 'y'] = 'x',
+            restrict_range: bool = True
+    ) -> Quantity:
         """
-        Get bin edges for the axis specified by bin_ax. If the size of
-        bin_ax is one element larger than z_data along that axis, bin_ax
-        is assumed to contain bin edges, but if bin_ax is the same size,
-        bin_ax is assumed to contain bin centres and a conversion is made.
-        In the conversion, the bin edges will not go outside the existing
-        data bounds so the first and last bins may be half-size. In addition,
-        each bin edge is assumed to be halfway between each bin centre,
-        which may not be an accurate assumption in the case of differently
-        sized bins.
+        Get bin edges for the axis specified by bin_ax. If the size of bin_ax
+        is one element larger than z_data along that axis, bin_ax is assumed to
+        contain bin edges. If bin_they are the same size, bin_ax is assumed to
+        contain bin centres and a conversion is made.
+
+        In this case, bin edges are assumed to be halfway between bin centres.
 
         Parameters
         ----------
         bin_ax
             The axis to get the bin edges for, 'x' or 'y'
+
+        restrict_range
+            If True (default), the bin edges will not go outside the existing
+            data bounds so the first and last bins may be half-size. This may
+            be desirable for plotting.  Otherwise, the outer bin edges will
+            extend from the initial data range, following the average bin size.
         """
         enum = {'x': 0, 'y': 1}
         bin_data = getattr(self, f'{bin_ax}_data')
         data_ax_len = self.z_data.shape[enum[bin_ax]]
         if self._is_bin_edge(data_ax_len, bin_data.shape[0]):
             return bin_data
-        return self._bin_centres_to_edges(bin_data)
+        return self._bin_centres_to_edges(
+            bin_data, restrict_range=restrict_range)
 
     def get_bin_centres(self, bin_ax: Literal['x', 'y'] = 'x') -> Quantity:
         """

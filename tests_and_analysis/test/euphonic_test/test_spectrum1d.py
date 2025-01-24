@@ -464,16 +464,23 @@ class TestSpectrum1DMethods:
         check_spectrum1d(variable_broad_sigma, fixed_broad_sigma, y_atol=1e-4)
 
     @pytest.mark.parametrize(
-        'spectrum1d_file, expected_bin_edges', [
+        'spectrum1d_file, expected_bin_edges, kwargs', [
             ('xsq_spectrum1d.json',
              np.array([0.5, 1., 2., 3., 4., 5., 6.25, 8., 10., 12., 14., 16.5,
-                       20., 24., 26.])*ureg('1/angstrom')),
+                       20., 24., 26.]) * ureg('1/angstrom'),
+             {'restrict_range': True}),
+            ('xsq_spectrum1d.json',
+             np.array([0., 1., 2., 3., 4., 5., 6.25, 8., 10., 12., 14., 16.5,
+                       20., 24., 28.]) * ureg('1/angstrom'),
+             {'restrict_range': False}),
             ('xsq_bin_edges_spectrum1d.json',
              np.array([0., 1., 2., 3., 4., 5., 6., 8., 10., 12., 14., 16., 20.,
-                       24., 28.])*ureg('1/angstrom'))])
-    def test_get_bin_edges(self, spectrum1d_file, expected_bin_edges):
+                       24., 28.]) * ureg('1/angstrom'),
+             {'restrict_range': True})
+        ])
+    def test_get_bin_edges(self, spectrum1d_file, expected_bin_edges, kwargs):
         spec1d = get_spectrum1d(spectrum1d_file)
-        bin_edges = spec1d.get_bin_edges()
+        bin_edges = spec1d.get_bin_edges(**kwargs)
         assert bin_edges.units == expected_bin_edges.units
         npt.assert_allclose(bin_edges.magnitude, expected_bin_edges.magnitude)
 
