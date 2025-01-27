@@ -434,6 +434,11 @@ class TestSpectrum1DMethods:
         with pytest.raises(ValueError):
             spec1d.broaden(1*ureg('meV'))
 
+            with pytest.raises(ValueError,
+                               match="Broadening with convolution requires"):
+                spec1d.broaden(
+                    lambda energy: np.ones_like(energy) * ureg('meV'))
+
     def test_variable_broadening_consistent(self):
         """Check variable broadening is consistent with fixed-width method"""
         spec1d = get_spectrum1d('quartz_666_dos.json')
