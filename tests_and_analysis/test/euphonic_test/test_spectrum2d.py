@@ -1,5 +1,6 @@
 import json
 
+from pint import Quantity
 import pytest
 import numpy as np
 from numpy.polynomial import Polynomial
@@ -493,6 +494,26 @@ class TestSpectrum2DMethods:
         spec2d._z_data = spec2d._z_data[:3, :5]
         with pytest.raises(ValueError):
             spec2d.get_bin_centres()
+
+    def test_broaden_consistent_across_bin_definition(self):
+        """Check broadening results are the same for both bin conventions"""
+        spec2d_edges = get_spectrum2d('quartz_bandstructure_sqw.json')
+
+        spec2d_centred = Spectrum2D(spec2d_edges.x_data,
+                                    spec2d_edges.get_bin_centres(bin_ax='y'),
+                                    spec2d_edges.z_data)
+
+        # Check we really are using both conventions here
+        assert len(spec2d_edges.y_data) == len(spec2d_centred.y_data) + 1
+
+        fixed_sigma = 1. * ureg("meV")
+        npt.assert_allclose(spec2d_edges.broaden(y_width=fixed_sigma).z_data,
+                            spec2d_centred.broaden(y_width=fixed_sigma).z_data)
+
+        def sigma_func(energy: Quantity) -> Quantity:
+            return np.ones_like(energy) * ureg("meV")
+        npt.assert_allclose(spec2d_edges.broaden(y_width=sigma_func).z_data,
+                            spec2d_centred.broaden(y_width=sigma_func).z_data)
 
     def test_mul(self):
         spec = get_spectrum2d('example_spectrum2d.json')
