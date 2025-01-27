@@ -397,16 +397,29 @@ class Spectrum(ABC):
             return self._bin_edges_to_centres(self.x_data)
         return self.x_data
 
-    def get_bin_widths(self) -> Quantity:
+    def get_bin_widths(self, restrict_range: bool = True) -> Quantity:
         """
         Get x-axis bin widths
+
+        Parameters
+        ----------
+        restrict_range
+            If True, bin edges will be clamped to the input data range; if
+            False, they may be extrapolated beyond the initial range of bin
+            centres.
+
+            False is usually preferable, this default behaviour is for backward
+            compatibility and will be removed in a future version.
+
         """
-        return np.diff(self.get_bin_edges())
+        return np.diff(self.get_bin_edges(restrict_range=restrict_range))
 
     def assert_regular_bins(self,
                             message: str = '',
                             rtol: float = 1e-5,
-                            atol: float = 0.) -> None:
+                            atol: float = 0.,
+                            restrict_range: bool = True,
+                            ) -> None:
         """Raise AssertionError if x-axis bins are not evenly spaced.
 
         Note that the positional arguments are different from
@@ -425,8 +438,16 @@ class Spectrum(ABC):
             Absolute tolerance for 'close enough' values. Note this is a bare
             float and follows the stored units of the bins.
 
+        restrict_range
+            If True, bin edges will be clamped to the input data range; if
+            False, they may be extrapolated beyond the initial range of bin
+            centres.
+
+            You should use the value which is consistent with calls to
+            get_bin_widths() or get_bin_edges().
+
         """
-        bin_widths = self.get_bin_widths()
+        bin_widths = self.get_bin_widths(restrict_range=restrict_range)
         # Need to cast to magnitude to use isclose() with atol before Pint 0.21
         if not np.all(np.isclose(bin_widths.magnitude, bin_widths.magnitude[0],
                                  rtol=rtol, atol=atol)):
@@ -699,14 +720,18 @@ class Spectrum1D(Spectrum):
             y_broadened = ureg.Quantity(y_broadened, units=self.y_data_unit)
 
         elif isinstance(x_width, Callable):
-            self.assert_regular_bins(message=(
-                'Broadening with convolution requires a regular sampling grid.'
-            ))
+            self.assert_regular_bins(
+                message=(
+                    "Broadening with convolution requires a "
+                    "regular sampling grid."
+                ),
+                restrict_range=False,
+            )
             y_broadened = variable_width_broadening(
-                self.get_bin_edges(),
+                self.get_bin_edges(restrict_range=False),
                 self.get_bin_centres(),
                 x_width,
-                (self.y_data * self.get_bin_widths()[0]),
+                (self.y_data * self.get_bin_widths(restrict_range=False)[0]),
                 width_lower_limit=width_lower_limit,
                 width_convention=width_convention,
                 adaptive_error=width_interpolation_error,

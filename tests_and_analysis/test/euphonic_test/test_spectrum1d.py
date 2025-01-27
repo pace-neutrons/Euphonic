@@ -1,5 +1,6 @@
 import json
 
+from pint import Quantity
 import pytest
 import numpy as np
 from numpy.polynomial import Polynomial
@@ -462,6 +463,25 @@ class TestSpectrum1DMethods:
         check_spectrum1d(variable_broad_sigma, variable_broad_fwhm)
         check_spectrum1d(variable_broad_sigma, fixed_broad, y_atol=1e-4)
         check_spectrum1d(variable_broad_sigma, fixed_broad_sigma, y_atol=1e-4)
+
+    def test_broaden_consistent_across_bin_definition(self):
+        """Check broadening results are the same for both bin conventions"""
+        spec1d_edges = get_spectrum1d('quartz_666_dos.json')
+
+        spec1d_centred = Spectrum1D(spec1d_edges.get_bin_centres(),
+                                    spec1d_edges.y_data)
+
+        # Check we really are using both conventions here
+        assert len(spec1d_edges.x_data) != len(spec1d_centred.x_data)
+
+        fixed_sigma = 1. * ureg("meV")
+        npt.assert_allclose(spec1d_edges.broaden(x_width=fixed_sigma).y_data,
+                            spec1d_centred.broaden(x_width=fixed_sigma).y_data)
+
+        def sigma_func(energy: Quantity) -> Quantity:
+            return np.ones_like(energy) * ureg("meV")
+        npt.assert_allclose(spec1d_edges.broaden(x_width=sigma_func).y_data,
+                            spec1d_centred.broaden(x_width=sigma_func).y_data)
 
     @pytest.mark.parametrize(
         'spectrum1d_file, expected_bin_edges, kwargs', [
