@@ -357,7 +357,7 @@ class Spectrum(ABC):
             f'Unexpected data axis length {data_length} '
             f'for bin axis length {bin_length}')
 
-    def get_bin_edges(self, restrict_range: bool = True) -> Quantity:
+    def get_bin_edges(self, *, restrict_range: bool = True) -> Quantity:
         """
         Get x-axis bin edges. If the size of x_data is one element larger
         than y_data, x_data is assumed to contain bin edges, but if x_data
@@ -396,7 +396,7 @@ class Spectrum(ABC):
             return self._bin_edges_to_centres(self.x_data)
         return self.x_data
 
-    def get_bin_widths(self, restrict_range: bool = True) -> Quantity:
+    def get_bin_widths(self, *, restrict_range: bool = True) -> Quantity:
         """
         Get x-axis bin widths
 
@@ -1027,6 +1027,7 @@ class Spectrum2D(Spectrum):
     def get_bin_edges(
             self,
             bin_ax: Literal['x', 'y'] = 'x',
+            *,
             restrict_range: bool = True
     ) -> Quantity:
         """
@@ -1081,6 +1082,7 @@ class Spectrum2D(Spectrum):
     def get_bin_widths(
             self,
             bin_ax: Literal['x', 'y'] = 'x',
+            *,
             restrict_range: bool = True,
     ) -> Quantity:
         """
