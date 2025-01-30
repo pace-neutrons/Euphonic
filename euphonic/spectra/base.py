@@ -372,7 +372,7 @@ class Spectrum(ABC):
             If True (default), the bin edges will not go outside the existing
             data bounds so the first and last bins may be half-size. This may
             be desirable for plotting.  Otherwise, the outer bin edges will
-            extend from the initial data range, following the average bin size.
+            extend from the initial data range.
         """
         # Need to use -1 index for y_data so it also works for
         # Spectrum1DCollection which has y_data shape (n_spectra, bins)
@@ -1047,7 +1047,7 @@ class Spectrum2D(Spectrum):
             If True (default), the bin edges will not go outside the existing
             data bounds so the first and last bins may be half-size. This may
             be desirable for plotting.  Otherwise, the outer bin edges will
-            extend from the initial data range, following the average bin size.
+            extend from the initial data range.
         """
         enum = {'x': 0, 'y': 1}
         bin_data = getattr(self, f'{bin_ax}_data')
