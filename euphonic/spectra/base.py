@@ -327,11 +327,24 @@ class Spectrum(ABC):
         return bin_edges[:-1] + 0.5*np.diff(bin_edges)
 
     @staticmethod
-    def _bin_centres_to_edges(bin_centres: Quantity) -> Quantity:
-        return np.concatenate((
-            [bin_centres[0]],
-            (bin_centres[1:] + bin_centres[:-1])/2,
-            [bin_centres[-1]]))
+    def _bin_centres_to_edges(
+            bin_centres: Quantity,
+            restrict_range: bool = True
+    ) -> Quantity:
+        if restrict_range:
+            return np.concatenate((
+                [bin_centres[0]],
+                (bin_centres[1:] + bin_centres[:-1])/2,
+                [bin_centres[-1]],
+            ))
+
+        half_diff = np.diff(bin_centres) * 0.5
+        return np.concatenate(
+            (
+                [bin_centres[0] - half_diff[0]],
+                bin_centres[:-1] + half_diff,
+                [bin_centres[-1] + half_diff[-1]],
+            ))
 
     @staticmethod
     def _is_bin_edge(data_length: int, bin_length: int) -> bool:
@@ -344,22 +357,29 @@ class Spectrum(ABC):
             f'Unexpected data axis length {data_length} '
             f'for bin axis length {bin_length}')
 
-    def get_bin_edges(self) -> Quantity:
+    def get_bin_edges(self, *, restrict_range: bool = True) -> Quantity:
         """
         Get x-axis bin edges. If the size of x_data is one element larger
         than y_data, x_data is assumed to contain bin edges, but if x_data
         is the same size, x_data is assumed to contain bin centres and
-        a conversion is made. In the conversion, the bin edges will
-        not go outside the existing data bounds so the first and last
-        bins may be half-size. In addition, each bin edge is assumed
-        to be halfway between each bin centre, which may not be an
-        accurate assumption in the case of differently sized bins.
+        a conversion is made.
+
+        In this case, bin edges are assumed to be halfway between bin centres.
+
+        Parameters
+        ----------
+        restrict_range
+            If True (default), the bin edges will not go outside the existing
+            data bounds so the first and last bins may be half-size. This may
+            be desirable for plotting.  Otherwise, the outer bin edges will
+            extend from the initial data range.
         """
         # Need to use -1 index for y_data so it also works for
         # Spectrum1DCollection which has y_data shape (n_spectra, bins)
         if self._is_bin_edge(self.y_data.shape[-1], self.x_data.shape[0]):
             return self.x_data
-        return self._bin_centres_to_edges(self.x_data)
+        return self._bin_centres_to_edges(
+            self.x_data, restrict_range=restrict_range)
 
     def get_bin_centres(self) -> Quantity:
         """
@@ -376,16 +396,29 @@ class Spectrum(ABC):
             return self._bin_edges_to_centres(self.x_data)
         return self.x_data
 
-    def get_bin_widths(self) -> Quantity:
+    def get_bin_widths(self, *, restrict_range: bool = True) -> Quantity:
         """
         Get x-axis bin widths
+
+        Parameters
+        ----------
+        restrict_range
+            If True, bin edges will be clamped to the input data range; if
+            False, they may be extrapolated beyond the initial range of bin
+            centres.
+
+            False is usually preferable, this default behaviour is for backward
+            compatibility and will be removed in a future version.
+
         """
-        return np.diff(self.get_bin_edges())
+        return np.diff(self.get_bin_edges(restrict_range=restrict_range))
 
     def assert_regular_bins(self,
                             message: str = '',
                             rtol: float = 1e-5,
-                            atol: float = 0.) -> None:
+                            atol: float = 0.,
+                            restrict_range: bool = True,
+                            ) -> None:
         """Raise AssertionError if x-axis bins are not evenly spaced.
 
         Note that the positional arguments are different from
@@ -404,8 +437,16 @@ class Spectrum(ABC):
             Absolute tolerance for 'close enough' values. Note this is a bare
             float and follows the stored units of the bins.
 
+        restrict_range
+            If True, bin edges will be clamped to the input data range; if
+            False, they may be extrapolated beyond the initial range of bin
+            centres.
+
+            You should use the value which is consistent with calls to
+            get_bin_widths() or get_bin_edges().
+
         """
-        bin_widths = self.get_bin_widths()
+        bin_widths = self.get_bin_widths(restrict_range=restrict_range)
         # Need to cast to magnitude to use isclose() with atol before Pint 0.21
         if not np.all(np.isclose(bin_widths.magnitude, bin_widths.magnitude[0],
                                  rtol=rtol, atol=atol)):
@@ -678,14 +719,18 @@ class Spectrum1D(Spectrum):
             y_broadened = ureg.Quantity(y_broadened, units=self.y_data_unit)
 
         elif isinstance(x_width, Callable):
-            self.assert_regular_bins(message=(
-                'Broadening with convolution requires a regular sampling grid.'
-            ))
+            self.assert_regular_bins(
+                message=(
+                    "Broadening with convolution requires a "
+                    "regular sampling grid."
+                ),
+                restrict_range=False,
+            )
             y_broadened = variable_width_broadening(
-                self.get_bin_edges(),
+                self.get_bin_edges(restrict_range=False),
                 self.get_bin_centres(),
                 x_width,
-                (self.y_data * self.get_bin_widths()[0]),
+                (self.y_data * self.get_bin_widths(restrict_range=False)[0]),
                 width_lower_limit=width_lower_limit,
                 width_convention=width_convention,
                 adaptive_error=width_interpolation_error,
@@ -933,8 +978,8 @@ class Spectrum2D(Spectrum):
         """
         assert axis in ('x', 'y')
 
-        bins = spectrum.get_bin_edges(bin_ax=axis)
-        bin_widths = np.diff(bins)
+        bins = spectrum.get_bin_edges(bin_ax=axis, restrict_range=False)
+        bin_widths = spectrum.get_bin_widths(bin_ax=axis, restrict_range=False)
 
         if not np.all(np.isclose(bin_widths, bin_widths[0])):
             bin_width = bin_widths.mean()
@@ -979,29 +1024,38 @@ class Spectrum2D(Spectrum):
                           copy.copy(self.x_tick_labels),
                           copy.deepcopy(self.metadata))
 
-    def get_bin_edges(self, bin_ax: Literal['x', 'y'] = 'x') -> Quantity:
+    def get_bin_edges(
+            self,
+            bin_ax: Literal['x', 'y'] = 'x',
+            *,
+            restrict_range: bool = True
+    ) -> Quantity:
         """
-        Get bin edges for the axis specified by bin_ax. If the size of
-        bin_ax is one element larger than z_data along that axis, bin_ax
-        is assumed to contain bin edges, but if bin_ax is the same size,
-        bin_ax is assumed to contain bin centres and a conversion is made.
-        In the conversion, the bin edges will not go outside the existing
-        data bounds so the first and last bins may be half-size. In addition,
-        each bin edge is assumed to be halfway between each bin centre,
-        which may not be an accurate assumption in the case of differently
-        sized bins.
+        Get bin edges for the axis specified by bin_ax. If the size of bin_ax
+        is one element larger than z_data along that axis, bin_ax is assumed to
+        contain bin edges. If they are the same size, bin_ax is assumed to
+        contain bin centres and a conversion is made.
+
+        In this case, bin edges are assumed to be halfway between bin centres.
 
         Parameters
         ----------
         bin_ax
             The axis to get the bin edges for, 'x' or 'y'
+
+        restrict_range
+            If True (default), the bin edges will not go outside the existing
+            data bounds so the first and last bins may be half-size. This may
+            be desirable for plotting.  Otherwise, the outer bin edges will
+            extend from the initial data range.
         """
         enum = {'x': 0, 'y': 1}
         bin_data = getattr(self, f'{bin_ax}_data')
         data_ax_len = self.z_data.shape[enum[bin_ax]]
         if self._is_bin_edge(data_ax_len, bin_data.shape[0]):
             return bin_data
-        return self._bin_centres_to_edges(bin_data)
+        return self._bin_centres_to_edges(
+            bin_data, restrict_range=restrict_range)
 
     def get_bin_centres(self, bin_ax: Literal['x', 'y'] = 'x') -> Quantity:
         """
@@ -1025,7 +1079,12 @@ class Spectrum2D(Spectrum):
             return self._bin_edges_to_centres(bin_data)
         return bin_data
 
-    def get_bin_widths(self, bin_ax: Literal['x', 'y'] = 'x') -> Quantity:
+    def get_bin_widths(
+            self,
+            bin_ax: Literal['x', 'y'] = 'x',
+            *,
+            restrict_range: bool = True,
+    ) -> Quantity:
         """
         Get x-bin widths along specified axis
 
@@ -1033,8 +1092,16 @@ class Spectrum2D(Spectrum):
         ----------
         bin_ax
             Axis of interest, 'x' or 'y'
+
+        restrict_range
+            If True, bin edges will be clamped to the input data range; if
+            False, they may be extrapolated beyond the initial range of bin
+            centres.
+
+            False is usually preferable, this default behaviour is for backward
+            compatibility and will be removed in a future version.
         """
-        bins = self.get_bin_edges(bin_ax)
+        bins = self.get_bin_edges(bin_ax, restrict_range=restrict_range)
         return np.diff(bins)
 
     def assert_regular_bins(  # pylint: disable=arguments-renamed
@@ -1042,7 +1109,8 @@ class Spectrum2D(Spectrum):
             bin_ax: Literal['x', 'y'],
             message: str = '',
             rtol: float = 1e-5,
-            atol: float = 0.
+            atol: float = 0.,
+            restrict_range: bool = True,
     ) -> None:
         """Raise AssertionError if x-axis bins are not evenly spaced.
 
@@ -1065,8 +1133,15 @@ class Spectrum2D(Spectrum):
             Absolute tolerance for 'close enough' values. Note this is a bare
             float and follows the stored units of the bins.
 
+        restrict_range
+            If True, bin edges will be clamped to the input data range; if
+            False, they may be extrapolated beyond the initial range of bin
+            centres.
+
+            You should use the value which is consistent with calls to
+            get_bin_widths() or get_bin_edges().
         """
-        bin_widths = self.get_bin_widths(bin_ax)
+        bin_widths = self.get_bin_widths(bin_ax, restrict_range=restrict_range)
         if not np.all(np.isclose(bin_widths, bin_widths[0],
                                  rtol=rtol, atol=atol)):
             raise AssertionError(
