@@ -1033,7 +1033,7 @@ class Spectrum2D(Spectrum):
         """
         Get bin edges for the axis specified by bin_ax. If the size of bin_ax
         is one element larger than z_data along that axis, bin_ax is assumed to
-        contain bin edges. If bin_they are the same size, bin_ax is assumed to
+        contain bin edges. If they are the same size, bin_ax is assumed to
         contain bin centres and a conversion is made.
 
         In this case, bin edges are assumed to be halfway between bin centres.
