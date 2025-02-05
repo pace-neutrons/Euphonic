@@ -491,9 +491,20 @@ def read_interpolation_data(
             elif header == b'BORN_CHGS':
                 born = np.reshape(
                     _read_entry(f, float_type), (n_atoms, 3, 3))
+
+                if castep_version > Version("25.1"):
+                    # Extra field marks if born charges were read from BORN
+                    _ = _read_entry(f)
+
+
             elif header == b'DIELECTRIC':
+                entry = _read_entry(f, float_type)
                 dielectric = np.transpose(np.reshape(
-                    _read_entry(f, float_type), (3, 3)))
+                    entry, (3, 3)))
+
+                if castep_version > Version("25.1"):
+                    # Extra field marks if dielectric tensor was read from BORN
+                    _ = _read_entry(f)
 
     data_dict: Dict[str, Any] = {}
     cry_dict = data_dict['crystal'] = {}
@@ -528,6 +539,7 @@ def read_interpolation_data(
         data_dict['dielectric'] = dielectric*ureg(
             'e**2/(hartree*bohr)').to(dielectric_unit).magnitude
         data_dict['dielectric_unit'] = dielectric_unit
+
     except UnboundLocalError:
         pass
 
