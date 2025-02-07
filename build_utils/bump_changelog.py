@@ -8,6 +8,7 @@ from argparse import ArgumentParser
 from dataclasses import dataclass
 from itertools import batched
 from pathlib import Path
+from packaging.version import Version
 import re
 from typing import NamedTuple
 
@@ -33,19 +34,36 @@ def parse_changelog(changelog_file: Path) -> list[Block]:
     """
 
     with open(changelog_file) as fd:
-        split_text = re.split(r"`(\S+) <\S+/compare/(\S+)\.\.\.\S+>`_\n-+",
-                              fd.read())
+        split_text = re.split(r"`(\S+) <\S+/compare/(\S+)\.\.\.\S+>`_\n-+", fd.read())
 
     # First item is always empty?
     split_text = split_text[1:]
 
-    blocks = [Block(*block_data)
-              for block_data in batched(split_text, n=3)]
+    blocks = [Block(*block_data) for block_data in batched(split_text, n=3)]
 
     for block in blocks:
         block.content = block.content.strip()
 
     return blocks
+
+
+def bump_version(blocks: list[Block], tag: str) -> None:
+    """Create or update a new or existing block with content from "Unreleased" """
+
+    all_tags = [block.tag for block in blocks]
+
+    if all_tags[0] != "Unreleased":
+        raise ValueError("CHANGELOG should always begin with Unreleased")
+
+    if all_tags[1] != tag:
+        # This version is not in the CHANGELOG yet
+        previous_tag = all_tags[1]
+        blocks.insert(1, Block(tag, previous_tag, ""))
+
+    blocks[1].content = "\n\n".join(
+        [txt for txt in (blocks[0].content, blocks[1].content) if txt]
+    )
+    blocks[0].content = ""
 
 
 def tag_to_header(tag: str, previous_tag: str) -> str:
@@ -56,7 +74,8 @@ def tag_to_header(tag: str, previous_tag: str) -> str:
 
 def to_text(blocks: list[Block]) -> str:
     return "\n\n".join(
-        tag_to_header(block.tag, block.previous_tag) + "\n\n" + block.content
+        tag_to_header(block.tag, block.previous_tag)
+        + (f"\n\n{block.content}" if block.content else "")
         for block in blocks
     )
 
@@ -69,10 +88,12 @@ def get_parser() -> ArgumentParser:
 
     return parser
 
+
 if __name__ == "__main__":
     args = get_parser().parse_args()
 
     blocks = parse_changelog(args.filename)
+    bump_version(blocks, args.tag)
 
     if args.replace:
         with open(args.filename, "w") as fd:

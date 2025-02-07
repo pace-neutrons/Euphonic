@@ -186,7 +186,6 @@ as well as new features and performance enhancements.
 
   - Filter out spglib deprecation warnings caused by SeeK-path.
 
-
 `v1.3.1 <https://github.com/pace-neutrons/Euphonic/compare/v1.3.0...v1.3.1>`_
 -----------------------------------------------------------------------------
 
@@ -245,7 +244,6 @@ as well as new features and performance enhancements.
     Q-bin mid-point, unmask bins if _any_ part of energy range is
     accessible at this Q value. This gives much more intuitive
     behaviour, especially for narrow angle ranges.
-
 
 `v1.2.1 <https://github.com/pace-neutrons/Euphonic/compare/v1.2.0...v1.2.1>`_
 -----------------------------------------------------------------------------
@@ -500,8 +498,8 @@ as well as new features and performance enhancements.
     S(Q,w) will be scaled by 2.72e4/0.1 = 2.72e5. The original structure factors
     can now be correctly recovered by multiplying S(Q,w) by the energy bin width.
 
-`v0.6.0 <https://github.com/pace-neutrons/Euphonic/compare/v0.5.2...0.6.0>`_
-----------------------------------------------------------------------------
+`v0.6.0 <https://github.com/pace-neutrons/Euphonic/compare/v0.5.2...v0.6.0>`_
+-----------------------------------------------------------------------------
 
 - Euphonic can now calculate neutron-weighted partial density of states, and
   has new ``Spectra`` features to handle PDOS data:
