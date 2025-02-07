@@ -1,0 +1,15 @@
+name: "Create a release"
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "Target branch"
+        required: true
+        type: string
+      version:
+        description: "New version number"
+        required: true
+        type: string
+      push:
+        description: "Push commit, tag and release"
