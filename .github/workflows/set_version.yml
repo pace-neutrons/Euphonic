@@ -17,6 +17,22 @@ on:
         type: boolean
         default: false
 
+  workflow_call:
+    inputs:
+      ref:
+        description: "Target branch"
+        required: true
+        type: string
+      version:
+        description: "New version number"
+        required: true
+        type: string
+      push:
+        description: "Push commit to branch"
+        type: boolean
+        default: false
+        required: false
+
 jobs:
   set-version:
     runs-on: ubuntu-latest
