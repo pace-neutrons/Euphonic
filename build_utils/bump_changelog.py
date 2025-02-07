@@ -8,15 +8,15 @@ from argparse import ArgumentParser
 from dataclasses import dataclass
 from itertools import batched
 from pathlib import Path
-from packaging.version import Version
 import re
-from typing import NamedTuple
+
 
 REPOSITORY_ADDRESS = "https://github.com/pace-neutrons/Euphonic"
 
 
 @dataclass
 class Block:
+    """CHANGELOG data corresponding to a single release"""
     tag: str
     previous_tag: str
     content: str
@@ -67,12 +67,14 @@ def bump_version(blocks: list[Block], tag: str) -> None:
 
 
 def tag_to_header(tag: str, previous_tag: str) -> str:
+    """Produce header including github diff link"""
     compare_tag = "HEAD" if tag == "Unreleased" else tag
     header = f"`{tag} <{REPOSITORY_ADDRESS}/compare/{previous_tag}...{compare_tag}>`_"
     return header + "\n" + len(header) * "-"
 
 
 def to_text(blocks: list[Block]) -> str:
+    """Dump blocks to single multiline string"""
     return "\n\n".join(
         tag_to_header(block.tag, block.previous_tag)
         + (f"\n\n{block.content}" if block.content else "")
