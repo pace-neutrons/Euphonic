@@ -21,8 +21,9 @@ on:
     inputs:
       ref:
         description: "Target branch"
-        required: true
+        required: false
         type: string
+        default: ""
       version:
         description: "New version number"
         required: true
@@ -53,7 +54,10 @@ jobs:
               print(f"VERSION_NUMBER={version_number}", file=github_env)
               print(f"VERSION_STRING={version_string}", file=github_env)
 
+      # From a workflow call we might already have working copy; in that
+      # case inputs.ref should be an empty string. Otherwise, checkout.
       - uses: actions/checkout@v4
+        if: ${{ inputs.ref }}
         with:
           ref: ${{ inputs.ref }}
           fetch-tags: true
