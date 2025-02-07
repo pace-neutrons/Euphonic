@@ -11,6 +11,11 @@ on:
         description: "New version number"
         required: true
         type: string
+      push:
+        description: "Push commit to branch"
+        required: true
+        type: boolean
+        default: false
 
 jobs:
   set-version:
@@ -79,6 +84,7 @@ jobs:
           git diff HEAD^
 
       - name: "Push commit to branch"
+        if: ${{ inputs.push }}
         shell: bash -l {0}
         run: |
           # Verify that ref is a branch (as opposed to a tag or hash)
