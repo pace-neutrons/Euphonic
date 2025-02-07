@@ -75,11 +75,15 @@ jobs:
           sed -i "s/^version:\ .*/version: ${VERSION_NUMBER}/" CITATION.cff
           sed -i "s/^date-released:\ .*/date-released: $(date -I)/" CITATION.cff
 
+      - name: "Update CHANGELOG.rst"
+        shell: bash -l {0}
+        run: python build_utils/bump_changelog.py --replace CHANGELOG.rst ${VERSION_NUMBER}
+
       - name: "Create commit"
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add euphonic/version.py CITATION.cff
+          git add euphonic/version.py CITATION.cff CHANGELOG.rst
 
           if git diff --cached --quiet
           then
