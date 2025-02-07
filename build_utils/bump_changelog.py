@@ -6,10 +6,10 @@ Unreleased changes will be moved into a section for the new version number
 """
 from argparse import ArgumentParser
 from dataclasses import dataclass
-from itertools import batched
 from pathlib import Path
 import re
 
+from toolz.itertoolz import partition
 
 REPOSITORY_ADDRESS = "https://github.com/pace-neutrons/Euphonic"
 
@@ -33,13 +33,14 @@ def parse_changelog(changelog_file: Path) -> list[Block]:
     except for 'Unreleased' which compares with HEAD
     """
 
-    with open(changelog_file) as fd:
+    with open(changelog_file, "rt", encoding="utf8") as fd:
         split_text = re.split(r"`(\S+) <\S+/compare/(\S+)\.\.\.\S+>`_\n-+", fd.read())
 
     # First item is always empty?
     split_text = split_text[1:]
 
-    blocks = [Block(*block_data) for block_data in batched(split_text, n=3)]
+    # From Python 3.12 can replace partition with itertools.batched
+    blocks = [Block(*block_data) for block_data in partition(3, split_text)]
 
     for block in blocks:
         block.content = block.content.strip()
@@ -83,6 +84,7 @@ def to_text(blocks: list[Block]) -> str:
 
 
 def get_parser() -> ArgumentParser:
+    """Use argparse to get user input"""
     parser = ArgumentParser()
     parser.add_argument("filename", type=Path, help="Input CHANGELOG.rst file")
     parser.add_argument("tag", type=str, help="Tag for new/updated version")
@@ -91,15 +93,20 @@ def get_parser() -> ArgumentParser:
     return parser
 
 
-if __name__ == "__main__":
+def main() -> None:
+    """Entrypoint"""
     args = get_parser().parse_args()
 
     blocks = parse_changelog(args.filename)
     bump_version(blocks, args.tag)
 
     if args.replace:
-        with open(args.filename, "w") as fd:
+        with open(args.filename, "w", encoding="utf8") as fd:
             print(to_text(blocks), file=fd)
 
     else:
         print(to_text(blocks))
+
+
+if __name__ == "__main__":
+    main()
