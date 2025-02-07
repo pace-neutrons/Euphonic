@@ -64,7 +64,10 @@ def bump_version(blocks: list[Block], tag: str) -> None:
     blocks[1].content = "\n\n".join(
         [txt for txt in (blocks[0].content, blocks[1].content) if txt]
     )
+
+    # Update "Unreleased" section
     blocks[0].content = ""
+    blocks[0].previous_tag = tag
 
 
 def tag_to_header(tag: str, previous_tag: str) -> str:
