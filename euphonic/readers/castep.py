@@ -496,7 +496,6 @@ def read_interpolation_data(
                     # Extra field marks if born charges were read from BORN
                     _ = _read_entry(f)
 
-
             elif header == b'DIELECTRIC':
                 entry = _read_entry(f, float_type)
                 dielectric = np.transpose(np.reshape(
