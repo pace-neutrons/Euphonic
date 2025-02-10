@@ -1,11 +1,29 @@
 `Unreleased <https://github.com/pace-neutrons/Euphonic/compare/v1.4.0.post1...HEAD>`_
 -------------------------------------------------------------------------------------
 
-- The euphonic.spectra module has been broken up into a subpackage
-  with the single-spectrum classes defined in euphonic.spectra.base
-  and the collections in euphonic.spectra.collections. This is not a
-  breaking change: the public classes, functions and type annotations
-  remain importable from euphonic.spectra.
+- Bug fixes
+
+  - CASTEP 25.1 allows Born effective charges to be calculated by
+    Berry Phase methods without a corresponding dielectric tensor. In
+    such cases, no long-range term can be subtracted from the Force
+    Constants (or reconstructed).  Euphonic uses the presence of Born
+    effective charges to indicate such a subtraction; to prevent
+    ill-defined cases, ForceConstants now sets both Born charges and
+    dielectric tensor to None if only one was provided.
+
+- Maintenance
+
+  - The euphonic.spectra module has been broken up into a subpackage
+    with the single-spectrum classes defined in euphonic.spectra.base
+    and the collections in euphonic.spectra.collections. This is not a
+    breaking change: the public classes, functions and type annotations
+    remain importable from euphonic.spectra.
+
+  - CASTEP 25.1 includes an extra field in .castep_bin files,
+    indicating whether Born effective charges were read from an
+    external file. For clarity and safety, this field is now
+    explicitly read by the Euphonic .castep_bin parser, but remains unused.
+
 
 - Bug fixes
 

@@ -108,16 +108,16 @@ class ForceConstants:
         self.cell_origins = cell_origins
         self.n_cells_in_sc = n_sc
 
-        if born is not None:
+        if born is not None and dielectric is not None:
             self._born = born.to(ureg.e).magnitude
             self.born_unit = str(born.units)
             self._dielectric = dielectric.to(ureg(
                 'e**2/(bohr*hartree)')).magnitude
             self.dielectric_unit = str(dielectric.units)
         else:
-            self._born = born
+            self._born = None
             self.born_unit = str(ureg.e)
-            self._dielectric = dielectric
+            self._dielectric = None
             self.dielectric_unit = str(ureg((
                 'e**2/(bohr*hartree)')))
 
@@ -473,7 +473,7 @@ class ForceConstants:
             [weights], [[np.ndarray, type(None)]], [(len(qpts),)], ['weights'])
 
         # Set default splitting params
-        if self.born is None:
+        if self.born is None or self.dielectric is None:
             dipole = False
         if not dipole:
             splitting = False

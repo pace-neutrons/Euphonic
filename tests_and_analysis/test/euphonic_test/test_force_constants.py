@@ -1,5 +1,6 @@
 import json
 import os
+from pathlib import Path
 
 import pytest
 import numpy as np
@@ -178,9 +179,25 @@ class TestForceConstantsCreation:
         ('LZO', 'La2Zr2O7.castep_bin'),
         ('graphite', 'graphite.castep_bin'),
         ('Si2-sc-skew', 'Si2-sc-skew.castep_bin'),
-        ('quartz', 'quartz.castep_bin')])
+        ('quartz', 'quartz.castep_bin'),
+    ])
     def test_create_from_castep(self, material, castep_bin_file):
         expected_fc = get_expected_fc(material)
+        castep_filepath = get_castep_path(material, castep_bin_file)
+        fc = ForceConstants.from_castep(castep_filepath)
+        check_force_constants(fc, expected_fc)
+
+    @pytest.mark.parametrize(
+        'material, castep_bin_file',
+        [
+            ('ZnS', 'zns-25-loadborn.castep_bin'),
+            ('ZnS', 'zns-25-born-only.castep_bin'),            
+        ],
+    )
+    def test_create_from_castep25(self, material, castep_bin_file):
+        expected_fc = ForceConstants.from_json_file(
+            get_json_file(Path(castep_bin_file).stem)
+        )
         castep_filepath = get_castep_path(material, castep_bin_file)
         fc = ForceConstants.from_castep(castep_filepath)
         check_force_constants(fc, expected_fc)
