@@ -54,12 +54,6 @@ jobs:
           ref: ${{ inputs.ref }}
           # fetch-depth: 1
 
-      - name: Git log, preview CHANGELOG
-        shell: bash -l {0}
-        run: |
-          git log | head -n 50
-          head CHANGELOG.rst
-
       - uses: actions/setup-python@v5
         with:
           python-version: "3.10"
@@ -71,6 +65,8 @@ jobs:
           python -m pip install .
 
       - name: Check version consistency, generate Github release page
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run : |
           python build_utils/release.py --github ${{ inputs.push && '--notest' || '' }}
 

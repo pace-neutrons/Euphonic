@@ -3,6 +3,7 @@ import json
 import os
 import re
 
+from packaging.version import Version
 import requests
 import yaml
 
@@ -48,7 +49,7 @@ def release_github(test=True):
         "name": euphonic_ver,
         "body": desc,
         "draft": False,
-        "prerelease": False
+        "prerelease": Version(euphonic_ver).is_prerelease
     }
     if test:
         print(payload)
