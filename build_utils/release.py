@@ -25,10 +25,6 @@ def release_github(test=True):
     with open('CITATION.cff', "rt", encoding="utf8") as f:
         citation = yaml.safe_load(f)
 
-    print(changelog)
-
-    print([tag for tag in re.findall(r'\n`(v\d+\.\d+\.\S+)\s', changelog)])
-
     euphonic_ver = __version__
     version_dict = {}
     version_dict['CHANGELOG.rst'] = re.findall(r'\n`(v\d+\.\d+\.\S+)\s',

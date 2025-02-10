@@ -26,25 +26,24 @@ jobs:
       version: ${{ inputs.version }}
       push: true
 
-  # build-sdist:
-  #   needs: prepare
-  #   name: Build and test sdist
-  #   uses: ./.github/workflows/build_sdist.yml
-  #   with:
-  #     ref: ${{ inputs.ref }}
+  build-sdist:
+    needs: prepare
+    name: Build and test sdist
+    uses: ./.github/workflows/build_sdist.yml
+    with:
+      ref: ${{ inputs.ref }}
 
-  # build-wheels:
-  #   name: Build and test wheels
-  #   needs: prepare
+  build-wheels:
+    name: Build and test wheels
+    needs: prepare
 
-  #   uses: ./.github/workflows/build_wheels.yml
-  #   with:
-  #     ref: ${{ inputs.ref }}
+    uses: ./.github/workflows/build_wheels.yml
+    with:
+      ref: ${{ inputs.ref }}
 
   release:
     name: Github release
-    # needs: [build-wheels,build-sdist]
-    needs: prepare
+    needs: [build-wheels,build-sdist]
     runs-on: ubuntu-latest
 
     steps:
@@ -52,7 +51,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: ${{ inputs.ref }}
-          # fetch-depth: 1
+          fetch-depth: 1
 
       - uses: actions/setup-python@v5
         with:
