@@ -84,7 +84,7 @@ jobs:
 
       - name: "Update CHANGELOG.rst"
         shell: bash -l {0}
-        run: python build_utils/bump_changelog.py --replace CHANGELOG.rst ${VERSION_NUMBER}
+        run: python build_utils/bump_changelog.py --replace CHANGELOG.rst ${VERSION_STRING}
 
       - name: "Create commit"
         run: |
