@@ -12,4 +12,79 @@ on:
         required: true
         type: string
       push:
-        description: "Push commit, tag and release"
+        description: "Make release and push to PyPI"
+        required: true
+        type: boolean
+        default: false
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Bump version number, push changes and tag
+        uses: ./.github/workflows/set_version.yml
+        with:
+          ref: ${{ inputs.ref }}
+          version: ${{ inputs.version }}
+          push: true
+
+  build-wheels:
+    needs: prepare
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Build and test wheels
+        uses: ./.github/workflows/build_wheels.yml
+        with:
+          ref: ${{ inputs.ref }}
+
+  build-sdist:
+    needs: prepare
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Build and test sdist
+        uses: ./.github/workflows/build_sdist.yml
+        with:
+          ref: ${{ inputs.ref }}
+
+  release:
+    if: ${{ inputs.push }}
+    needs: [build-wheels,build-sdist]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Do nothing
+        shell: python
+        run : |
+          raise NotImplemented()
+
+  publish:
+    if: ${{ inputs.push }}
+    needs: release
+    name: Upload release to PyPI
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/p/euphonic
+    permissions:
+      id-token: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+          fetch-depth: 0  # This is possibly unnecessary?
+
+      - name: Download artifacts to Ubuntu environment
+        uses: actions/download-artifact@v4
+        with:
+          path: dist/
+          merge-multiple: true
+
+      - name: List Files
+        run: ls -R dist/
+
+      # - name: Upload wheels to PyPI
+      #   uses: pypa/gh-action-pypi-publish@release/v1
