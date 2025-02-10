@@ -1,5 +1,6 @@
 import json
 
+from pint import Quantity
 import pytest
 import numpy as np
 from numpy.polynomial import Polynomial
@@ -433,6 +434,11 @@ class TestSpectrum1DMethods:
         with pytest.raises(ValueError):
             spec1d.broaden(1*ureg('meV'))
 
+            with pytest.raises(ValueError,
+                               match="Broadening with convolution requires"):
+                spec1d.broaden(
+                    lambda energy: np.ones_like(energy) * ureg('meV'))
+
     def test_variable_broadening_consistent(self):
         """Check variable broadening is consistent with fixed-width method"""
         spec1d = get_spectrum1d('quartz_666_dos.json')
@@ -463,17 +469,43 @@ class TestSpectrum1DMethods:
         check_spectrum1d(variable_broad_sigma, fixed_broad, y_atol=1e-4)
         check_spectrum1d(variable_broad_sigma, fixed_broad_sigma, y_atol=1e-4)
 
+    def test_broaden_consistent_across_bin_definition(self):
+        """Check broadening results are the same for both bin conventions"""
+        spec1d_edges = get_spectrum1d('quartz_666_dos.json')
+
+        spec1d_centred = Spectrum1D(spec1d_edges.get_bin_centres(),
+                                    spec1d_edges.y_data)
+
+        # Check we really are using both conventions here
+        assert len(spec1d_edges.x_data) != len(spec1d_centred.x_data)
+
+        fixed_sigma = 1. * ureg("meV")
+        npt.assert_allclose(spec1d_edges.broaden(x_width=fixed_sigma).y_data,
+                            spec1d_centred.broaden(x_width=fixed_sigma).y_data)
+
+        def sigma_func(energy: Quantity) -> Quantity:
+            return np.ones_like(energy) * ureg("meV")
+        npt.assert_allclose(spec1d_edges.broaden(x_width=sigma_func).y_data,
+                            spec1d_centred.broaden(x_width=sigma_func).y_data)
+
     @pytest.mark.parametrize(
-        'spectrum1d_file, expected_bin_edges', [
+        'spectrum1d_file, expected_bin_edges, kwargs', [
             ('xsq_spectrum1d.json',
              np.array([0.5, 1., 2., 3., 4., 5., 6.25, 8., 10., 12., 14., 16.5,
-                       20., 24., 26.])*ureg('1/angstrom')),
+                       20., 24., 26.]) * ureg('1/angstrom'),
+             {'restrict_range': True}),
+            ('xsq_spectrum1d.json',
+             np.array([0., 1., 2., 3., 4., 5., 6.25, 8., 10., 12., 14., 16.5,
+                       20., 24., 28.]) * ureg('1/angstrom'),
+             {'restrict_range': False}),
             ('xsq_bin_edges_spectrum1d.json',
              np.array([0., 1., 2., 3., 4., 5., 6., 8., 10., 12., 14., 16., 20.,
-                       24., 28.])*ureg('1/angstrom'))])
-    def test_get_bin_edges(self, spectrum1d_file, expected_bin_edges):
+                       24., 28.]) * ureg('1/angstrom'),
+             {'restrict_range': True})
+        ])
+    def test_get_bin_edges(self, spectrum1d_file, expected_bin_edges, kwargs):
         spec1d = get_spectrum1d(spectrum1d_file)
-        bin_edges = spec1d.get_bin_edges()
+        bin_edges = spec1d.get_bin_edges(**kwargs)
         assert bin_edges.units == expected_bin_edges.units
         npt.assert_allclose(bin_edges.magnitude, expected_bin_edges.magnitude)
 
