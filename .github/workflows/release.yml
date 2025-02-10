@@ -26,18 +26,18 @@ jobs:
       version: ${{ inputs.version }}
       push: true
 
+  build-sdist:
+    needs: prepare
+    name: Build and test sdist
+    uses: ./.github/workflows/build_sdist.yml
+    with:
+      ref: ${{ inputs.ref }}
+
   build-wheels:
     name: Build and test wheels
     needs: prepare
 
     uses: ./.github/workflows/build_wheels.yml
-    with:
-      ref: ${{ inputs.ref }}
-
-  build-sdist:
-    needs: prepare
-    name: Build and test sdist
-    uses: ./.github/workflows/build_sdist.yml
     with:
       ref: ${{ inputs.ref }}
 
