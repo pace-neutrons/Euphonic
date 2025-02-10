@@ -19,52 +19,27 @@ on:
 
 jobs:
   prepare:
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ inputs.ref }}
-          fetch-depth: 1
-
-      - name: Bump version number, push changes and tag
-        uses: ./.github/workflows/set_version.yml
-        with:
-          ref: ""
-          version: ${{ inputs.version }}
-          push: true
+    name: Bump version number
+    uses: ./.github/workflows/set_version.yml
+    with:
+      ref: ${{ inputs.ref }}
+      version: ${{ inputs.version }}
+      push: true
 
   build-wheels:
+    name: Build and test wheels
     needs: prepare
-    runs-on: ubuntu-latest
 
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ inputs.ref }}
-
-      - name: Build and test wheels
-        uses: ./.github/workflows/build_wheels.yml
-        with:
-          ref: ${{ inputs.ref }}
+    uses: ./.github/workflows/build_wheels.yml
+    with:
+      ref: ${{ inputs.ref }}
 
   build-sdist:
     needs: prepare
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ inputs.ref }}
-          fetch-depth: 1
-
-      - name: Build and test sdist
-        uses: ./.github/workflows/build_sdist.yml
-        with:
-          ref: ${{ inputs.ref }}
+    name: Build and test sdist
+    uses: ./.github/workflows/build_sdist.yml
+    with:
+      ref: ${{ inputs.ref }}
 
   release:
     if: ${{ inputs.push }}
