@@ -42,15 +42,20 @@ jobs:
       ref: ${{ inputs.ref }}
 
   release:
-    if: ${{ inputs.push }}
+    name: Github release
     needs: [build-wheels,build-sdist]
     runs-on: ubuntu-latest
 
     steps:
-      - name: Do nothing
-        shell: python
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+          fetch-depth: 1
+
+      - name:
         run : |
-          raise NotImplemented()
+          python build_utils/release.py --github ${{ inputs.push && '--notest' || '' }}
 
   publish:
     if: ${{ inputs.push }}

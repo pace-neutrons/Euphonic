@@ -47,6 +47,11 @@ def release_github(test=True):
     }
     if test:
         print(payload)
+
+        if "GITHUB_TOKEN" in os.environ:
+            print("Found GITHUB_TOKEN")
+        else:
+            print("No GITHUB_TOKEN set")
     else:
         response = requests.post(
             'https://api.github.com/repos/pace-neutrons/euphonic/releases',
