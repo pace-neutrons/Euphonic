@@ -22,10 +22,16 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+          fetch-depth: 1
+
       - name: Bump version number, push changes and tag
         uses: ./.github/workflows/set_version.yml
         with:
-          ref: ${{ inputs.ref }}
+          ref: ""
           version: ${{ inputs.version }}
           push: true
 
@@ -34,6 +40,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+
       - name: Build and test wheels
         uses: ./.github/workflows/build_wheels.yml
         with:
@@ -44,6 +55,12 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+          fetch-depth: 1
+
       - name: Build and test sdist
         uses: ./.github/workflows/build_sdist.yml
         with:
