@@ -22,6 +22,22 @@ class Block:
     previous_tag: str
     content: str
 
+    @staticmethod
+    def tag_to_header(tag: str, previous_tag: str) -> str:
+        """Produce header including github diff link"""
+        compare_tag = "HEAD" if tag == "Unreleased" else tag
+        header = LINK_STRING.format(tag=tag,
+                                    previous_tag=previous_tag,
+                                    compare_tag=compare_tag)
+        return header + "\n" + len(header) * "-"
+
+    def __str__(self) -> str:
+        txt = self.tag_to_header(self.tag, self.previous_tag)
+        if self.content:
+            txt += f"\n\n{self.content}"
+
+        return txt
+
 
 def parse_changelog(changelog_file: Path) -> list[Block]:
     """Read all sections from changelog file
@@ -35,13 +51,13 @@ def parse_changelog(changelog_file: Path) -> list[Block]:
     """
 
     with open(changelog_file, "rt", encoding="utf8") as fd:
-        split_text = re.split(LINK_STRING
-                                  .replace('.', r'\.')
-                                  .format(tag=r"(\S+)",
-                                          previous_tag=r"(\S+)",
-                                          compare_tag=r"\S+"
-                                          ) + r"\n-+",
-                              fd.read())
+        split_text = re.split(
+            LINK_STRING.replace(".", r"\.").format(
+                tag=r"(\S+)", previous_tag=r"(\S+)", compare_tag=r"\S+"
+            )
+            + r"\n-+",
+            fd.read(),
+        )
 
     # First item is always empty?
     split_text = split_text[1:]
@@ -77,20 +93,9 @@ def bump_version(blocks: list[Block], tag: str) -> None:
     blocks[0].previous_tag = tag
 
 
-def tag_to_header(tag: str, previous_tag: str) -> str:
-    """Produce header including github diff link"""
-    compare_tag = "HEAD" if tag == "Unreleased" else tag
-    header = LINK_STRING.format(tag=tag, previous_tag=previous_tag, compare_tag=compare_tag)
-    return header + "\n" + len(header) * "-"
-
-
 def to_text(blocks: list[Block]) -> str:
     """Dump blocks to single multiline string"""
-    return "\n\n".join(
-        tag_to_header(block.tag, block.previous_tag)
-        + (f"\n\n{block.content}" if block.content else "")
-        for block in blocks
-    )
+    return "\n\n".join(map(str, blocks))
 
 
 def get_parser() -> ArgumentParser:
