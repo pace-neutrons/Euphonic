@@ -12,6 +12,7 @@ import re
 from toolz.itertoolz import partition
 
 REPOSITORY_ADDRESS = "https://github.com/pace-neutrons/Euphonic"
+LINK_STRING = "`{tag} <" + REPOSITORY_ADDRESS + "/compare/{previous_tag}...{compare_tag}>`_"
 
 
 @dataclass
@@ -34,7 +35,13 @@ def parse_changelog(changelog_file: Path) -> list[Block]:
     """
 
     with open(changelog_file, "rt", encoding="utf8") as fd:
-        split_text = re.split(r"`(\S+) <\S+/compare/(\S+)\.\.\.\S+>`_\n-+", fd.read())
+        split_text = re.split(LINK_STRING
+                                  .replace('.', r'\.')
+                                  .format(tag=r"(\S+)",
+                                          previous_tag=r"(\S+)",
+                                          compare_tag=r"\S+"
+                                          ) + r"\n-+",
+                              fd.read())
 
     # First item is always empty?
     split_text = split_text[1:]
@@ -73,7 +80,7 @@ def bump_version(blocks: list[Block], tag: str) -> None:
 def tag_to_header(tag: str, previous_tag: str) -> str:
     """Produce header including github diff link"""
     compare_tag = "HEAD" if tag == "Unreleased" else tag
-    header = f"`{tag} <{REPOSITORY_ADDRESS}/compare/{previous_tag}...{compare_tag}>`_"
+    header = LINK_STRING.format(tag=tag, previous_tag=previous_tag, compare_tag=compare_tag)
     return header + "\n" + len(header) * "-"
 
 
