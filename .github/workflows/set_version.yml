@@ -11,13 +11,49 @@ on:
         description: "New version number"
         required: true
         type: string
+      push:
+        description: "Push commit to branch"
+        required: true
+        type: boolean
+        default: false
+
+  workflow_call:
+    inputs:
+      ref:
+        description: "Target branch"
+        required: false
+        type: string
+        default: ""
+      version:
+        description: "New version number"
+        required: true
+        type: string
+      push:
+        description: "Push commit to branch"
+        type: boolean
+        default: false
+        required: false
+    outputs:
+      tag:
+        description: "Normalised version tag"
+        value: ${{ jobs.set_version.outputs.tag }}
 
 jobs:
-  set-version:
+  set_version:
     runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.normalise.outputs.VERSION_STRING }}
 
     steps:
+      - uses: actions/setup-python@v5
+        with:
+            python-version: '3.10'
+
+      - name: Install dependencies
+        run: python -m pip install toolz packaging
+
       - name: Validate and normalise version number
+        id: normalise
         shell: python
         run : |
           import os
@@ -28,11 +64,15 @@ jobs:
 
           print(f"Normalised version string: {version_string}")
 
-          with open(os.environ["GITHUB_ENV"], "a") as github_env:
-              print(f"VERSION_NUMBER={version_number}", file=github_env)
-              print(f"VERSION_STRING={version_string}", file=github_env)
+          for github_target in "GITHUB_ENV", "GITHUB_OUTPUT":
+              with open(os.environ[github_target], "a") as target:
+                  print(f"VERSION_NUMBER={version_number}", file=target)
+                  print(f"VERSION_STRING={version_string}", file=target)
 
+      # From a workflow call we might already have working copy; in that
+      # case inputs.ref should be an empty string. Otherwise, checkout.
       - uses: actions/checkout@v4
+        if: ${{ inputs.ref }}
         with:
           ref: ${{ inputs.ref }}
           fetch-tags: true
@@ -50,11 +90,15 @@ jobs:
           sed -i "s/^version:\ .*/version: ${VERSION_NUMBER}/" CITATION.cff
           sed -i "s/^date-released:\ .*/date-released: $(date -I)/" CITATION.cff
 
+      - name: "Update CHANGELOG.rst"
+        shell: bash -l {0}
+        run: python build_utils/bump_changelog.py --replace CHANGELOG.rst ${VERSION_STRING}
+
       - name: "Create commit"
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add euphonic/version.py CITATION.cff
+          git add euphonic/version.py CITATION.cff CHANGELOG.rst
 
           if git diff --cached --quiet
           then
@@ -79,6 +123,7 @@ jobs:
           git diff HEAD^
 
       - name: "Push commit to branch"
+        if: ${{ inputs.push }}
         shell: bash -l {0}
         run: |
           # Verify that ref is a branch (as opposed to a tag or hash)

@@ -1,0 +1,96 @@
+name: Build and test sdist
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "Target branch / tag / commit"
+        required: true
+        type: string
+  workflow_call:
+    inputs:
+      ref:
+        description: "Target branch / tag / commit"
+        required: true
+        type: string
+
+jobs:
+  build-sdist:
+    name: Build sdist
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Create source distribution
+        shell: bash -l {0}
+        run: |
+          pipx run build --sdist .
+
+      - name: Upload source dist as build artifact
+        uses: actions/upload-artifact@v4
+        with:
+            name: python-source-distribution
+            path: dist/
+            if-no-files-found: error
+
+  test-sdist:
+    needs: build-sdist
+    name: Test build from sdist on Windows
+    runs-on: windows-latest
+    steps:
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.11
+
+      - name: Find MSVC and set environment variables
+        shell: bash -l {0}
+        env:
+          MSVC_PREFIX: 'C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Tools\MSVC'
+        run: |
+          echo "Available MSVC installations:"
+          ls "$MSVC_PREFIX"
+
+          MSVC_BIN=$(ls "$MSVC_PREFIX" | tail -n 1)\\bin\\HostX64\\x64
+          CC="$MSVC_PREFIX\\$MSVC_BIN\\cl.exe"
+          echo "CC: $CC"
+          echo "CC=$CC" >> $GITHUB_ENV
+
+          CC_LD="$MSVC_PREFIX\\$MSVC_BIN\\link.exe"
+          echo "CC_LD: $CC_LD"
+          echo "CC_LD=$CC_LD" >> $GITHUB_ENV
+
+      - name: Download sdist
+        uses: actions/download-artifact@v4
+        with:
+          path: dist/
+          merge-multiple: true
+
+      - name: List downloaded sdist
+        run: |
+          ls -R dist/
+
+      - name: Update pip
+        shell: bash -l {0}
+        run: |
+          python -m pip install --upgrade pip
+
+      - name: Install from sdist
+        shell: bash -l {0}
+        run: python -m pip install $(find dist -name 'euphonic-*.tar.gz')[matplotlib,phonopy-reader,brille,test]
+
+      - name: Checkout repository (for tests and test data)
+        uses: actions/checkout@v4
+
+      - name: Delete source (to ensure we are testing INSTALLED version)
+        shell: bash -l {0}
+        run: rm -rf euphonic
+
+      - name: run tests
+        shell: bash -l {0}
+        run: python tests_and_analysis/test/run_tests.py --report
