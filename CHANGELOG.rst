@@ -11,6 +11,18 @@
     ill-defined cases, ForceConstants now sets both Born charges and
     dielectric tensor to None if only one was provided.
 
+  - An optional parameter is provided to change how bin edges are
+    obtained from bin centres: previously the bin edges were constrained
+    to the initial data range, but this can lead to incorrect scaling
+    when performing broadening. Variable-width broadening schemes are
+    now allowed to extrapolate the bin edges in order to get the correct
+    width scaling.
+
+    Outside of broadening, the default behaviour is unchanged in order
+    to maintain backward compatibility. This is likely to be changed
+    in the next "major version" (i.e. API-breaking release) of
+    Euphonic.
+
 - Maintenance
 
   - The euphonic.spectra module has been broken up into a subpackage
@@ -24,20 +36,9 @@
     external file. For clarity and safety, this field is now
     explicitly read by the Euphonic .castep_bin parser, but remains unused.
 
-
-- Bug fixes
-
-  - An optional parameter is provided to change how bin edges are
-    obtained from bin centres: previously the bin edges were constrained
-    to the initial data range, but this can lead to incorrect scaling
-    when performing broadening. Variable-width broadening schemes are
-    now allowed to extrapolate the bin edges in order to get the correct
-    width scaling.
-
-    Outside of broadening, the default behaviour is unchanged in order
-    to maintain backward compatibility. This is likely to be changed
-    in the next "major version" (i.e. API-breaking release) of
-    Euphonic.
+  - The release process has been reworked to reduce manual steps: a
+    top-level "release" action will now sequence most of the
+    steps. (Post-release testing is still separate.)
 
 `v1.4.0.post1 <https://github.com/pace-neutrons/Euphonic/compare/v1.4.0...v1.4.0.post1>`_
 -----------------------------------------------------------------------------------------
