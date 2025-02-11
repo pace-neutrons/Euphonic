@@ -5,8 +5,14 @@ on:
       - master
     paths:
       - 'CITATION.cff'
-  release:
-    types: [published]
+
+  workflow_call:
+    inputs:
+      ref:
+        description: "Target: 'latest' or tag"
+        required: true
+        type: string
+        default: latest
 
 jobs:
   update-landing-page:
@@ -26,9 +32,9 @@ jobs:
       - name: Set env var based on (master) push trigger
         if: github.event_name == 'push'
         run: echo "PAGE_TYPE=latest" >> $GITHUB_ENV
-      - name: Set env var based on release
-        if: github.event_name == 'release'
-        run: echo "PAGE_TYPE=${{ github.event.release.name }}" >> $GITHUB_ENV
+      - name: Set env var based on workflow call
+        if: github.event_name == 'workflow_call'
+        run: echo "PAGE_TYPE=${{ inputs.ref }}" >> $GITHUB_ENV
       - name: Create landing page
         run: python write_doi_landing_page.py ${{ env.PAGE_TYPE }}
       - uses: EndBug/add-and-commit@v9

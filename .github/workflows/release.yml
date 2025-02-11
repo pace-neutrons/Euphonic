@@ -26,6 +26,14 @@ jobs:
       version: ${{ inputs.version }}
       push: true
 
+  show_tag:
+    needs: prepare
+    runs-on: ubuntu-latest
+    steps:
+      - shell: bash -l {0}
+        run: |
+          echo NORMALISED TAG: ${{ needs.prepare.outputs.tag }}
+
   build-sdist:
     needs: prepare
     name: Build and test sdist
@@ -97,3 +105,11 @@ jobs:
 
       # - name: Upload wheels to PyPI
       #   uses: pypa/gh-action-pypi-publish@release/v1
+
+  landing_page:
+    needs: [prepare,release]
+    if: ${{ inputs.push }}
+    name: Create landing page
+    uses: ./.github/workflows/create-landing-page.yml
+    with:
+      ref: ${{ needs.prepare.outputs.tag }}
