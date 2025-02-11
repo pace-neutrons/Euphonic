@@ -26,14 +26,6 @@ jobs:
       version: ${{ inputs.version }}
       push: true
 
-  show_tag:
-    needs: prepare
-    runs-on: ubuntu-latest
-    steps:
-      - shell: bash -l {0}
-        run: |
-          echo NORMALISED TAG: ${{ needs.prepare.outputs.tag }}
-
   build-sdist:
     needs: prepare
     name: Build and test sdist
@@ -103,8 +95,8 @@ jobs:
       - name: List Files
         run: ls -R dist/
 
-      # - name: Upload wheels to PyPI
-      #   uses: pypa/gh-action-pypi-publish@release/v1
+      - name: Upload wheels to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
 
   landing_page:
     needs: [prepare,release]
