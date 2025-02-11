@@ -40,7 +40,7 @@ def parse_changelog(changelog_file: Path) -> list[Block]:
     split_text = split_text[1:]
 
     # From Python 3.12 can replace partition with itertools.batched
-    blocks = [Block(*block_data) for block_data in partition(3, split_text)]
+    blocks = [Block(tag, prev_tag, content) for tag, prev_tag, content in partition(3, split_text)]
 
     for block in blocks:
         block.content = block.content.strip()
@@ -62,7 +62,7 @@ def bump_version(blocks: list[Block], tag: str) -> None:
         blocks.insert(1, Block(tag, previous_tag, ""))
 
     blocks[1].content = "\n\n".join(
-        [txt for txt in (blocks[0].content, blocks[1].content) if txt]
+        txt for txt in (blocks[0].content, blocks[1].content) if txt
     )
 
     # Update "Unreleased" section
