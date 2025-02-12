@@ -9,6 +9,7 @@ from dataclasses import dataclass
 from pathlib import Path
 import re
 
+from packaging.version import Version
 from toolz.itertoolz import partition
 
 REPOSITORY_ADDRESS = "https://github.com/pace-neutrons/Euphonic"
@@ -108,9 +109,14 @@ def get_parser() -> ArgumentParser:
     return parser
 
 
+
 def main() -> None:
     """Entrypoint"""
     args = get_parser().parse_args()
+
+    if Version(args.tag).is_prerelease:
+        print("New version is a pre-release, leave CHANGELOG alone.")
+        return None
 
     blocks = parse_changelog(args.filename)
     bump_version(blocks, args.tag)

@@ -26,9 +26,12 @@ def release_github(test=True):
         citation = yaml.safe_load(f)
 
     euphonic_ver = __version__
+    is_prerelease = Version(euphonic_ver).is_prerelease
+
     version_dict = {}
-    version_dict['CHANGELOG.rst'] = re.findall(r'\n`(v\d+\.\d+\.\S+)\s',
-                                               changelog)[0]
+    if not is_prerelease:
+        version_dict['CHANGELOG.rst'] = re.findall(r'\n`(v\d+\.\d+\.\S+)\s',
+                                                   changelog)[0]
     version_dict['CITATION.cff'] = 'v' + citation['version']
     for ver_name, ver in version_dict.items():
         if euphonic_ver != ver:
@@ -37,15 +40,21 @@ def release_github(test=True):
                 f'euphonic.__version__: {euphonic_ver} {ver_name}: '
                 f'{ver}'))
 
-    desc = re.search(r'`v\d+\.\d+\.\S+.*?^-+\n(.*?)^`v', changelog,
+    if is_prerelease:
+        BODY_RE = r'`Unreleased.*?^-+\n(.*?)^`v'
+    else:
+        BODY_RE = r'`v\d+\.\d+\.\S+.*?^-+\n(.*?)^`v'
+
+    desc = re.search(BODY_RE, changelog,
                      re.DOTALL | re.MULTILINE).groups()[0].strip()
+
     payload = {
         "tag_name": euphonic_ver,
         "target_commitish": "master",
         "name": euphonic_ver,
         "body": desc,
         "draft": False,
-        "prerelease": Version(euphonic_ver).is_prerelease
+        "prerelease": is_prerelease
     }
     if test:
         print(payload)
