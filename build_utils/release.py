@@ -40,8 +40,14 @@ def release_github(test=True):
                 f'euphonic.__version__: {euphonic_ver} {ver_name}: '
                 f'{ver}'))
 
-    desc = re.search(r'`v\d+\.\d+\.\S+.*?^-+\n(.*?)^`v', changelog,
+    if is_prerelease:
+        BODY_RE = r'`Unreleased.*?^-+\n(.*?)^`v'
+    else:
+        BODY_RE = r'`v\d+\.\d+\.\S+.*?^-+\n(.*?)^`v'
+
+    desc = re.search(BODY_RE, changelog,
                      re.DOTALL | re.MULTILINE).groups()[0].strip()
+
     payload = {
         "tag_name": euphonic_ver,
         "target_commitish": "master",
