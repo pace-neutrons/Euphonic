@@ -33,7 +33,7 @@ authors:
     given-names: "Jacob S."
 title: "Euphonic"
 doi: 10.5286/SOFTWARE/EUPHONIC
-version: 1.4.1rc2
+version: 1.4.1rc1
 date-released: 2025-02-12
 license: GPL-3.0-only
 repository-code: https://github.com/pace-neutrons/Euphonic
