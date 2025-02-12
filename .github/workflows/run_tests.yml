@@ -20,18 +20,18 @@ jobs:
         config:
         - os: ubuntu-latest
           skip: false
-          all-python-versions: ${{(github.event_name == 'workflow_dispatch')}}
+          all-python-versions: ${{(github.event_name != 'pull_request')}}
           coverage: true
         - os: windows-latest
           skip: false
-          all-python-versions: ${{(github.event_name == 'workflow_dispatch')}}
+          all-python-versions: ${{(github.event_name != 'pull_request')}}
           coverage: false
         - os: macos-latest
           skip: false
-          all-python-versions: ${{(github.event_name == 'workflow_dispatch')}}
+          all-python-versions: ${{(github.event_name != 'pull_request')}}
           coverage: false
         - os: macos-13
-          skip: ${{ github.event_name != 'workflow_dispatch' }}
+          skip: ${{ github.event_name == 'pull_request' }}
           all-python-versions: true
           coverage: false
 
