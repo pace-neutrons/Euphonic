@@ -1,6 +1,12 @@
 `Unreleased <https://github.com/pace-neutrons/Euphonic/compare/v1.4.1...HEAD>`_
 -------------------------------------------------------------------------------
 
+- Bug fixes
+
+  - Make Spectrum directly accessible from euphonic.spectra. (This was
+    accidentally lost in a refactor, affecting downstream that uses
+    Spectrum as a type annotation.)
+
 `v1.4.1 <https://github.com/pace-neutrons/Euphonic/compare/v1.4.0.post1...v1.4.1>`_
 -----------------------------------------------------------------------------------
 
