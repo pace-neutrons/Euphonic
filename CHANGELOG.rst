@@ -1,6 +1,16 @@
 `Unreleased <https://github.com/pace-neutrons/Euphonic/compare/v1.4.2...HEAD>`_
 -------------------------------------------------------------------------------
 
+- Bug fixes
+
+  - Fix tox version number in Pyproject.toml; installation with [ci]
+    "extra" was broken.
+
+- Maintenance
+
+  - Avoid incompatible-pointer-types in C compilation; this is an
+    error in GCC14 and warning in older versions.
+
 `v1.4.2 <https://github.com/pace-neutrons/Euphonic/compare/v1.4.1...v1.4.2>`_
 -----------------------------------------------------------------------------
 
