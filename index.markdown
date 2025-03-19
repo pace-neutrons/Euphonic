@@ -45,7 +45,7 @@ schemadotorg:
     familyName: Wilkins
     givenName: Jacob S.
   codeRepository: https://github.com/pace-neutrons/Euphonic
-  datePublished: '2025-02-13'
+  datePublished: '2025-02-21'
   description: Euphonic is a Python package for efficient simulation of phonon bandstructures,
     density of states and inelastic neutron scattering intensities from force constants
   identifier: https://doi.org/10.5286/SOFTWARE/EUPHONIC
@@ -59,6 +59,6 @@ schemadotorg:
   license: https://spdx.org/licenses/GPL-3.0-only
   name: Euphonic
   url: https://euphonic.readthedocs.io/en/latest
-  version: 1.4.1
+  version: 1.4.2
 ---
 # Euphonic - Latest
