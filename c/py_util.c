@@ -8,7 +8,7 @@ int val_from_pydict(PyDictObject *dict, const char *key, PyObject **result) {
 /* Given a PyDictObject and key, retrieve get the address of the value associated
  * with that key, and alter the pointer pointed to by result to point to that
  * address */
-    PyObject *tmp = PyDict_GetItemString(dict, key);
+    PyObject *tmp = PyDict_GetItemString((PyObject*)dict, key);
     if (!tmp) {
         printf("Couldn't retrieve %s from dict\n", key);
         return 1;

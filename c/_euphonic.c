@@ -126,27 +126,27 @@ static PyObject *calculate_phonons(PyObject *self, PyObject *args) {
 
     // Get rest of vars from ForceConstants object
     if (attr_from_pyobj(py_idata, "crystal", &py_crystal) ||
-        attr_from_pyobj(py_idata, "_n_sc_images", &py_n_sc_ims) ||
-        attr_from_pyobj(py_idata, "_sc_image_i", &py_sc_im_idx) ||
-        attr_from_pyobj(py_idata, "cell_origins", &py_cell_ogs)) {
+        attr_from_pyobj(py_idata, "_n_sc_images", (PyObject**)&py_n_sc_ims) ||
+        attr_from_pyobj(py_idata, "_sc_image_i", (PyObject**)&py_sc_im_idx) ||
+        attr_from_pyobj(py_idata, "cell_origins", (PyObject**)&py_cell_ogs)) {
             PyErr_Format(PyExc_RuntimeError,
                          "Failed to read attributes from object\n");
             return NULL;
     }
     if (dipole) {
-        if (attr_from_pyobj(py_idata, "_dipole_init_data", &py_dipole_init_data)) {
+      if (attr_from_pyobj(py_idata, "_dipole_init_data", (PyObject**)&py_dipole_init_data)) {
                 PyErr_Format(PyExc_RuntimeError,
                              "Failed to read dipole init data from object\n");
                 return NULL;
         }
-        if (attr_from_pyobj(py_idata, "_born", &py_born) ||
-            attr_from_pyobj(py_idata, "_dielectric", &py_dielectric) ||
+      if (attr_from_pyobj(py_idata, "_born", (PyObject**)&py_born) ||
+          attr_from_pyobj(py_idata, "_dielectric", (PyObject**)&py_dielectric) ||
             double_from_pydict(py_dipole_init_data, "lambda", &lambda) ||
-            val_from_pydict(py_dipole_init_data, "H_ab", &py_H_ab) ||
-            val_from_pydict(py_dipole_init_data, "cells", &py_dipole_cells) ||
-            val_from_pydict(py_dipole_init_data, "gvec_phases", &py_gvec_phases) ||
-            val_from_pydict(py_dipole_init_data, "gvecs_cart", &py_gvecs_cart) ||
-            val_from_pydict(py_dipole_init_data, "dipole_q0", &py_dipole_q0)) {
+          val_from_pydict(py_dipole_init_data, "H_ab", (PyObject**)&py_H_ab) ||
+          val_from_pydict(py_dipole_init_data, "cells", (PyObject**)&py_dipole_cells) ||
+          val_from_pydict(py_dipole_init_data, "gvec_phases", (PyObject**)&py_gvec_phases) ||
+          val_from_pydict(py_dipole_init_data, "gvecs_cart", (PyObject**)&py_gvecs_cart) ||
+          val_from_pydict(py_dipole_init_data, "dipole_q0", (PyObject**)&py_dipole_q0)) {
                 PyErr_Format(PyExc_RuntimeError,
                              "Failed to read dipole attributes from object\n");
                 return NULL;
@@ -154,7 +154,7 @@ static PyObject *calculate_phonons(PyObject *self, PyObject *args) {
     }
     // Get vars from Crystal object
     if (int_from_pyobj(py_crystal, "n_atoms", &n_atoms) ||
-        attr_from_pyobj(py_crystal, "atom_r", &py_atom_r)) {
+        attr_from_pyobj(py_crystal, "atom_r", (PyObject**)&py_atom_r)) {
             PyErr_Format(PyExc_RuntimeError,
                          "Failed to read attributes from Crystal object\n");
             return NULL;
