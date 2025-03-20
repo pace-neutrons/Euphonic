@@ -22,7 +22,10 @@ def main(params: Optional[List[str]] = None) -> None:
 
     data = load_data_from_file(args.filename, verbose=True,
                                frequencies_only=frequencies_only)
+<<<<<<< HEAD
 
+=======
+>>>>>>> 8fb59a7 (Fix type-checking logic)
     if not frequencies_only and not isinstance(
             data, (ForceConstants, QpointPhononModes)):
         raise TypeError(
