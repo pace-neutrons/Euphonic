@@ -76,7 +76,7 @@ class TestReadPhononData:
         with open(get_data_path('readers', expected_data_file), 'r') as fp:
             expected_data = _from_json_dict(
                 json.loads(fp.read()),
-                type_dict={'eigenvectors': np.complex128})                
+                type_dict={'eigenvectors': np.complex128})
 
         crystal = ExpectedCrystal(data.pop('crystal'))
         expected_crystal = ExpectedCrystal(

@@ -191,7 +191,7 @@ class TestForceConstantsCreation:
         'material, castep_bin_file',
         [
             ('ZnS', 'zns-25-loadborn.castep_bin'),
-            ('ZnS', 'zns-25-born-only.castep_bin'),            
+            ('ZnS', 'zns-25-born-only.castep_bin'),
         ],
     )
     def test_create_from_castep25(self, material, castep_bin_file):
