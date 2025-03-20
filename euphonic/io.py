@@ -86,8 +86,6 @@ def _process_dict(dictionary: Dict[str, Any],
     'quantities' to Quantity objects, and if any 'optional' keys are
     missing, set them to None
     """
-    quantities = [] if quantities is None else quantities
-    optional = [] if optional is None else optional
 
     dictionary = copy.deepcopy(dictionary)
     for okey in optional:

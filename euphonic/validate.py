@@ -123,7 +123,6 @@ def _ensure_contiguous_attrs(obj: object, required_attrs: List[str],
         will not throw an error. e.g. Depending on the material
         ForceConstants objects may or may not have 'born' defined
     """
-    opt_attrs = [] if opt_attrs is None else opt_attrs
 
     for attr_name in required_attrs:
         attr = getattr(obj, attr_name)
