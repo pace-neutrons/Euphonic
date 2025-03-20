@@ -439,7 +439,7 @@ def _brille_calc_modes_kwargs(args: Namespace) -> Dict[str, Any]:
         # Nothing specified, allow defaults
         return dict()
 
-    return dict(useparallel=(args.n_threads > 1), threads=args.n_threads)
+    return {"useparallel": args.n_threads > 1, "threads": args.n_threads}
 
 
 def _get_cli_parser(features: Collection[str] = {},

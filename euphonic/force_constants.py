@@ -934,7 +934,7 @@ class ForceConstants:
             ij_phases.repeat(3, axis=2).repeat(3, axis=1))
         dyn_mat = np.sum(full_dyn_mat, axis=0)
 
-        if len(all_origins_cart) == 0:
+        if not all_origins_cart:
             return dyn_mat, None
 
         all_phases = np.einsum('ijkl,i->ijkl',
