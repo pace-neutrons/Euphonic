@@ -79,8 +79,8 @@ def _obj_to_dict(obj: T, attrs: Sequence[str]) -> Dict[str, Any]:
 
 
 def _process_dict(dictionary: Dict[str, Any],
-                  quantities: Sequence[str]|None = None,
-                  optional: Sequence[str]|None = None) -> Dict[str, Any]:
+                  quantities: Sequence[str] = (),
+                  optional: Sequence[str] = ()) -> Dict[str, Any]:
     """
     Process an input dictionary for creating objects. Convert keys in
     'quantities' to Quantity objects, and if any 'optional' keys are
