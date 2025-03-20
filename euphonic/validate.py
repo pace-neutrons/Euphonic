@@ -104,7 +104,7 @@ def _replace_dim(expected_shape: Tuple[int, ...],
 
 
 def _ensure_contiguous_attrs(obj: object, required_attrs: List[str],
-                             opt_attrs: Sequence[str] = (,)) -> None:
+                             opt_attrs: Sequence[str] = tuple()) -> None:
     """
     Make sure all listed attributes of obj are C Contiguous and of the
     correct type (int32, float64, complex128). This should only be used
