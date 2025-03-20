@@ -97,10 +97,10 @@ def _replace_dim(expected_shape: Tuple[int, ...],
     idx = np.where(np.array(expected_shape) == -1)[0]
     if len(idx) == 0 or len(expected_shape) != len(obj_shape):
         return expected_shape
-    else:
-        expected_shape_replaced = np.array(expected_shape)
-        expected_shape_replaced[idx] = np.array(obj_shape)[idx]
-        return tuple(expected_shape_replaced)
+
+    expected_shape_replaced = np.array(expected_shape)
+    expected_shape_replaced[idx] = np.array(obj_shape)[idx]
+    return tuple(expected_shape_replaced)
 
 
 def _ensure_contiguous_attrs(obj: object, required_attrs: List[str],
@@ -175,8 +175,8 @@ def _get_dtype(arr: np.ndarray) -> Optional[Type]:
     """
     if np.issubdtype(arr.dtype, np.integer):
         return np.int32
-    elif np.issubdtype(arr.dtype, np.floating):
+    if np.issubdtype(arr.dtype, np.floating):
         return np.float64
-    elif np.issubdtype(arr.dtype, np.complexfloating):
+    if np.issubdtype(arr.dtype, np.complexfloating):
         return np.complex128
     return None
