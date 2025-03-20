@@ -1,3 +1,4 @@
+from collections.abc import Sequence
 from typing import List, Any, Union, Type, Tuple, Optional
 
 import numpy as np
