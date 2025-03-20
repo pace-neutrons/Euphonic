@@ -200,7 +200,7 @@ def _get_spacing(error,
         safe_domain = [-4, -1.]
 
     log_error = np.log10(error)
-    if safe_domain[0] > log_error > safe_domain[1]:
+    if not safe_domain[0] < log_error < safe_domain[1]:
         raise ValueError("Target error is out of fit range; value must lie"
                          f" in range {np.power(10, safe_domain)}.")
     return cheby(log_error)
