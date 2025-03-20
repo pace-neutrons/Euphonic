@@ -1,4 +1,3 @@
-import os
 import json
 
 import pytest
@@ -7,7 +6,6 @@ import numpy.testing as npt
 from toolz.dicttoolz import valmap
 
 from euphonic.io import _from_json_dict
-from euphonic.util import direction_changed, mp_grid, get_qpoint_labels
 from euphonic.readers.castep import read_phonon_data, read_phonon_dos_data
 from tests_and_analysis.test.utils import get_data_path, get_castep_path
 from .test_crystal import ExpectedCrystal, check_crystal

@@ -16,7 +16,7 @@ from tests_and_analysis.test.euphonic_test.test_qpoint_frequencies\
     import get_qpt_freqs
 from ..utils import get_mode_widths
 from tests_and_analysis.test.euphonic_test.test_spectrum1d\
-import check_spectrum1d, get_expected_spectrum1d, get_spectrum1d
+import get_expected_spectrum1d
 
 
 def test_variable_close_to_exact():

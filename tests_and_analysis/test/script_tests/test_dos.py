@@ -4,7 +4,6 @@ import sys
 from unittest.mock import patch
 
 import pytest
-import numpy as np
 import numpy.testing as npt
 
 from euphonic import Spectrum1D

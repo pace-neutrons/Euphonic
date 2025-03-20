@@ -2,10 +2,9 @@ from argparse import ArgumentParser
 from typing import List, Optional
 
 import matplotlib.style
-import numpy as np
 
 import euphonic
-from euphonic import ureg, Spectrum2D, QpointFrequencies, ForceConstants
+from euphonic import ureg, QpointFrequencies, ForceConstants
 import euphonic.plot
 from euphonic.util import get_qpoint_labels
 from euphonic.styles import base_style

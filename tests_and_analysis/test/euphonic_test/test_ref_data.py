@@ -1,7 +1,6 @@
 import json
 
 import pytest
-from pint import UndefinedUnitError
 
 from euphonic import ureg
 from euphonic.util import get_reference_data

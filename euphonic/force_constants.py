@@ -1,6 +1,5 @@
 import math
 import os
-import sys
 import warnings
 from typing import (Literal, Optional, Tuple, Union,
                     TypeVar, Sequence, Dict, Any, Type)
@@ -19,7 +18,6 @@ from euphonic.io import (_obj_to_json_file, _obj_from_json_file,
                          _obj_to_dict, _process_dict)
 from euphonic.readers import castep, phonopy
 from euphonic.util import (is_gamma, get_all_origins,
-                           mode_gradients_to_widths,
                            _get_supercell_relative_idx)
 from euphonic import (ureg, Crystal, QpointPhononModes,
                       QpointFrequencies)

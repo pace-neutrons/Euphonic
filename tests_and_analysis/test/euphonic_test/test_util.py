@@ -1,7 +1,6 @@
 """Unit tests for euphonic.util"""
 
 import json
-import os
 import sys
 
 import pytest

@@ -8,7 +8,7 @@ import numpy.testing as npt
 
 from euphonic import Spectrum1DCollection
 from tests_and_analysis.test.utils import (
-    get_data_path, get_castep_path, get_phonopy_path)
+    get_data_path, get_phonopy_path)
 from tests_and_analysis.test.script_tests.utils import (
     get_script_test_data_path, get_plot_line_data, args_to_key)
 

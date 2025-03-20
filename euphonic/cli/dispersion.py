@@ -58,7 +58,7 @@ def main(params: Optional[List[str]] = None) -> None:
     if x_tick_labels:
         spectrum.x_tick_labels = x_tick_labels
 
-    spectra = spectrum.split(**split_args)  # type: List[Spectrum1D]
+    spectra: list[Spectrum1D] = spectrum.split(**split_args)
 
     style = _compose_style(user_args=args,
                            base=[base_style])
