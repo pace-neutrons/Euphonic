@@ -21,6 +21,7 @@ from tests_and_analysis.test.euphonic_test.test_force_constants import (
 
 class TestForceConstantsCalculateQPointPhononModes:
 
+    @staticmethod
     def get_lzo_fc():
         return ForceConstants.from_castep(
             get_castep_path('LZO', 'La2Zr2O7.castep_bin'))
@@ -35,6 +36,7 @@ class TestForceConstantsCalculateQPointPhononModes:
          [get_test_qpts(), {'asr': 'reciprocal'}],
          'LZO_reciprocal_qpoint_phonon_modes.json')]
 
+    @staticmethod
     def get_si2_fc():
         return ForceConstants.from_castep(
             get_castep_path('Si2-sc-skew', 'Si2-sc-skew.castep_bin'))
@@ -49,6 +51,7 @@ class TestForceConstantsCalculateQPointPhononModes:
          [get_test_qpts(), {'asr': 'reciprocal'}],
          'Si2-sc-skew_reciprocal_qpoint_phonon_modes.json')]
 
+    @staticmethod
     def get_quartz_fc():
         return ForceConstants.from_castep(
             get_castep_path('quartz', 'quartz.castep_bin'))
