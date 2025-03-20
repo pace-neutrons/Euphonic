@@ -3,8 +3,8 @@ import warnings
 
 import numpy as np
 import numpy.testing as npt
-import pytest
 from pint import DimensionalityError
+import pytest
 
 from euphonic import Crystal, StructureFactor, ureg
 from tests_and_analysis.test.euphonic_test.test_crystal import (

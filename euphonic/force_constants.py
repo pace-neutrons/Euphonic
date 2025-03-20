@@ -1,7 +1,6 @@
 import math
-import os
-import warnings
 from multiprocessing import cpu_count
+import os
 from typing import (
     Any,
     Dict,
@@ -13,6 +12,7 @@ from typing import (
     TypeVar,
     Union,
 )
+import warnings
 
 import numpy as np
 from pint import Quantity

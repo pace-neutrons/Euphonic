@@ -1,11 +1,11 @@
 from typing import Optional, Sequence, Tuple, Union
 
 try:
-    import matplotlib.pyplot as plt
     from matplotlib.axes import Axes
     from matplotlib.colors import Colormap, Normalize
     from matplotlib.figure import Figure
     from matplotlib.image import NonUniformImage
+    import matplotlib.pyplot as plt
 
 except ModuleNotFoundError as err:
     raise ModuleNotFoundError(

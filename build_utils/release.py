@@ -3,9 +3,9 @@ import json
 import os
 import re
 
+from packaging.version import Version
 import requests
 import yaml
-from packaging.version import Version
 
 from euphonic import __version__
 

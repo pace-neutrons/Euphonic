@@ -1,7 +1,7 @@
 import json
+from multiprocessing import cpu_count
 import os
 import warnings
-from multiprocessing import cpu_count
 
 import numpy as np
 import numpy.testing as npt

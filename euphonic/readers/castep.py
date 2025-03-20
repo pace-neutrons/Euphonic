@@ -1,6 +1,6 @@
+from collections import defaultdict
 import re
 import struct
-from collections import defaultdict
 from typing import (
     Any,
     BinaryIO,

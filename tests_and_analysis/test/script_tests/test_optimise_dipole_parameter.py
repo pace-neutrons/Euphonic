@@ -6,8 +6,8 @@ from typing import Any, Optional
 import numpy as np
 import pytest
 
-import euphonic.cli.optimise_dipole_parameter
 from euphonic import ForceConstants
+import euphonic.cli.optimise_dipole_parameter
 from euphonic.cli.optimise_dipole_parameter import (
     calculate_optimum_dipole_parameter,
 )

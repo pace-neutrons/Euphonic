@@ -8,8 +8,8 @@ from pathlib import Path
 from typing import TypedDict
 
 import numpy as np
-import pytest
 from numpy.testing import assert_allclose
+import pytest
 
 from euphonic.qpoint_phonon_modes import QpointPhononModes
 from euphonic.spectra import XTickLabels

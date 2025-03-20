@@ -1,5 +1,5 @@
-import warnings
 from typing import Any, Dict, Optional, Type, TypeVar
+import warnings
 
 import numpy as np
 

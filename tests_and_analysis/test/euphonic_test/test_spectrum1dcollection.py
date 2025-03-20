@@ -1,8 +1,8 @@
 import json
 
 import numpy as np
-import pytest
 from numpy.testing import assert_allclose
+import pytest
 
 from euphonic import ureg
 from euphonic.spectra import Spectrum1DCollection

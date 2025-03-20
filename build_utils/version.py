@@ -16,9 +16,9 @@ Provides 3 means of updating:
 """
 
 import os
+from pathlib import Path
 import subprocess
 import sys
-from pathlib import Path
 
 if new_dir := os.getenv("MESON_SOURCE_ROOT"):
     os.chdir(new_dir)

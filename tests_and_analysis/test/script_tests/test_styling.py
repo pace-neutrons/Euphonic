@@ -1,7 +1,7 @@
 from argparse import Namespace
 
-import pytest
 from numpy.testing import assert_allclose
+import pytest
 
 from euphonic.cli.utils import _compose_style
 from tests_and_analysis.test.utils import get_castep_path

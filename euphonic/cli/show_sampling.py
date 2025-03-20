@@ -3,8 +3,8 @@ from argparse import ArgumentParser
 from typing import List, Optional
 
 import matplotlib.pyplot as plt
-import numpy as np
 from mpl_toolkits.mplot3d import Axes3D  # noqa: F401
+import numpy as np
 
 import euphonic.sampling
 

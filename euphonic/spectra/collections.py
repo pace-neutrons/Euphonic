@@ -1,12 +1,12 @@
 """Spectrum Collection classes"""
 # pylint: disable=no-member
 
+from abc import ABC, abstractmethod
 import collections
 import copy
-import json
-from abc import ABC, abstractmethod
 from functools import partial, reduce
 from itertools import product, repeat
+import json
 from numbers import Integral
 from operator import contains
 from typing import (

@@ -2,8 +2,8 @@ import json
 
 import numpy as np
 import numpy.testing as npt
-import pytest
 from pint import DimensionalityError
+import pytest
 
 from euphonic import Crystal, DebyeWaller, ureg
 from tests_and_analysis.test.euphonic_test.test_crystal import (

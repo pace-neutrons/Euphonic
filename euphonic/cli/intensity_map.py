@@ -4,8 +4,8 @@ from typing import List, Optional
 import matplotlib.style
 
 import euphonic
-import euphonic.plot
 from euphonic import ForceConstants, QpointFrequencies, ureg
+import euphonic.plot
 from euphonic.styles import base_style
 from euphonic.util import get_qpoint_labels
 

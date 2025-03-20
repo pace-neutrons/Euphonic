@@ -1,11 +1,10 @@
 """Classes for spectral data"""
 # pylint: disable=no-member
 
-import copy
-import math
-import warnings
 from abc import ABC, abstractmethod
+import copy
 from functools import partial
+import math
 from numbers import Integral, Real
 from typing import (
     Any,
@@ -21,6 +20,7 @@ from typing import (
     Union,
     overload,
 )
+import warnings
 
 import numpy as np
 from pint import DimensionalityError, Quantity

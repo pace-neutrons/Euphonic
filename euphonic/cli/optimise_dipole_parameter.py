@@ -7,10 +7,10 @@ performing the Ewald sum for polar materials) to determine the optimal
 value
 """
 
-import time
-import warnings
 from argparse import ArgumentParser
+import time
 from typing import List, Optional, Tuple
+import warnings
 
 import numpy as np
 

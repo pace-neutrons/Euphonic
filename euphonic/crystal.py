@@ -1,5 +1,5 @@
-import inspect
 from collections import OrderedDict
+import inspect
 from math import ceil
 from typing import Any, Dict, List, Tuple, Type, TypeVar
 

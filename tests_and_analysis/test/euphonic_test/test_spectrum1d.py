@@ -1,10 +1,10 @@
 import json
 
 import numpy as np
-import numpy.testing as npt
-import pytest
 from numpy.polynomial import Polynomial
+import numpy.testing as npt
 from pint import Quantity
+import pytest
 
 from euphonic import ureg
 from euphonic.spectra import Spectrum1D

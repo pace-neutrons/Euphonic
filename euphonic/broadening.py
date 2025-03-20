@@ -1,8 +1,8 @@
 """
 Functions for broadening spectra
 """
-import warnings
 from typing import Callable, Literal, Union
+import warnings
 
 import numpy as np
 from numpy.polynomial import Chebyshev

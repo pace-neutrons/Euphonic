@@ -1,7 +1,3 @@
-import json
-import os
-import pathlib
-import warnings
 from argparse import (
     Action,
     ArgumentDefaultsHelpFormatter,
@@ -9,6 +5,9 @@ from argparse import (
     Namespace,
     _ArgumentGroup,
 )
+import json
+import os
+import pathlib
 from typing import (
     Any,
     Collection,
@@ -19,12 +18,12 @@ from typing import (
     Tuple,
     Union,
 )
+import warnings
 
 import numpy as np
-import seekpath
 from pint import UndefinedUnitError
+import seekpath
 
-import euphonic.util
 from euphonic import (
     Crystal,
     DebyeWaller,
@@ -36,6 +35,7 @@ from euphonic import (
     Spectrum1DCollection,
     ureg,
 )
+import euphonic.util
 
 
 def _load_euphonic_json(filename: Union[str, os.PathLike],

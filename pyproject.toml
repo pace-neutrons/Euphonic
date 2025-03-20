@@ -78,8 +78,12 @@ explicit-preview-rules = true
 select = [
        "I",       # isort
        "F401",    # unused-import
+       # "F821",    # undefined-name
        "W291",    # trailing-whitespace
        "W293",    # blank-line-with-whitespace
        "B006",    # mutable-argument-default
        "PLR0203", # no-staticmethod-decorator
 ]
+
+[tool.ruff.lint.isort]
+force-sort-within-sections = true

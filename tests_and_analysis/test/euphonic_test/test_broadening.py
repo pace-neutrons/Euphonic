@@ -1,8 +1,8 @@
 import numpy as np
-import numpy.testing as npt
-import pytest
 from numpy.polynomial import Polynomial
 from numpy.random import RandomState
+import numpy.testing as npt
+import pytest
 from scipy.integrate import simpson
 from scipy.ndimage import gaussian_filter
 

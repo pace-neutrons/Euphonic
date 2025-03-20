@@ -1,13 +1,13 @@
 # -*- coding: UTF-8 -*-
-import itertools
 from argparse import SUPPRESS, ArgumentParser, Namespace
+import itertools
 from pathlib import Path
 from typing import List, Optional, Sequence, Tuple
 
-import matplotlib.pyplot as plt
-import numpy as np
 from matplotlib.axes import Axes
 from matplotlib.lines import Line2D
+import matplotlib.pyplot as plt
+import numpy as np
 
 from euphonic import ForceConstants, Spectrum1D, ureg
 from euphonic.brille import BrilleInterpolator

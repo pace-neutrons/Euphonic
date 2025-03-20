@@ -1,12 +1,12 @@
 import copy
 import json
-import warnings
 from unittest.mock import patch
+import warnings
 
 import numpy as np
 import numpy.testing as npt
-import pytest
 from pint import DimensionalityError
+import pytest
 
 from euphonic import Crystal, QpointFrequencies, Spectrum1D, ureg
 from euphonic.readers.phonopy import ImportPhonopyReaderError

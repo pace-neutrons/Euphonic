@@ -3,9 +3,9 @@
 - https://henriquemiranda.github.io/phononwebsite/index.html
 """
 
-import json
 from collections import Counter
 from itertools import pairwise
+import json
 from pathlib import Path
 from typing import Any, TypedDict
 

@@ -7,8 +7,6 @@ import numpy as np
 from numpy.polynomial import Polynomial
 from pint import Unit
 
-import euphonic.plot
-import euphonic.util
 from euphonic import ForceConstants, Quantity, ureg
 from euphonic.cli.utils import (
     _arrange_pdos_groups,
@@ -25,6 +23,7 @@ from euphonic.cli.utils import (
     load_data_from_file,
     matplotlib_save_or_show,
 )
+import euphonic.plot
 from euphonic.powder import (
     sample_sphere_dos,
     sample_sphere_pdos,
@@ -32,6 +31,7 @@ from euphonic.powder import (
 )
 from euphonic.spectra import apply_kinematic_constraints
 from euphonic.styles import base_style, intensity_widget_style
+import euphonic.util
 
 # Dummy tqdm function if tqdm progress bars unavailable
 try:
