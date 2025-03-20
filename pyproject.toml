@@ -67,3 +67,17 @@ euphonic-optimise-dipole-parameter = "euphonic.cli.optimise_dipole_parameter:mai
 euphonic-show-sampling = "euphonic.cli.show_sampling:main"
 euphonic-intensity-map = "euphonic.cli.intensity_map:main"
 euphonic-powder-map = "euphonic.cli.powder_map:main"
+
+[tool.ruff]
+line-length = 79
+target-version = "py310"
+
+[tool.ruff.lint]
+preview = true
+explicit-preview-rules = true
+select = [
+       "W291", # trailing-whitespace
+       "W293", # blank-line-with-whitespace
+       "B006", # mutable-argument-default
+       "PLR0203", # no-staticmethod-decorator
+]
