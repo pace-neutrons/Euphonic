@@ -9,7 +9,16 @@ from argparse import (
     Namespace,
     _ArgumentGroup,
 )
-from typing import Any, Collection, Dict, List, Optional, Sequence, Tuple, Union
+from typing import (
+    Any,
+    Collection,
+    Dict,
+    List,
+    Optional,
+    Sequence,
+    Tuple,
+    Union,
+)
 
 import numpy as np
 import seekpath

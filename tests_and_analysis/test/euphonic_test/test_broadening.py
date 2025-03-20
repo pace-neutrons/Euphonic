@@ -12,8 +12,12 @@ from euphonic.broadening import (
     variable_width_broadening,
     width_interpolated_broadening,
 )
-from tests_and_analysis.test.euphonic_test.test_force_constants import get_fc_path
-from tests_and_analysis.test.euphonic_test.test_qpoint_frequencies import get_qpt_freqs
+from tests_and_analysis.test.euphonic_test.test_force_constants import (
+    get_fc_path,
+)
+from tests_and_analysis.test.euphonic_test.test_qpoint_frequencies import (
+    get_qpt_freqs,
+)
 from tests_and_analysis.test.euphonic_test.test_spectrum1d import (
     get_expected_spectrum1d,
 )

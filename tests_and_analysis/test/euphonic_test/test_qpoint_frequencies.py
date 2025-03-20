@@ -14,7 +14,9 @@ from tests_and_analysis.test.euphonic_test.test_crystal import (
     ExpectedCrystal,
     check_crystal,
 )
-from tests_and_analysis.test.euphonic_test.test_force_constants import get_fc_path
+from tests_and_analysis.test.euphonic_test.test_force_constants import (
+    get_fc_path,
+)
 from tests_and_analysis.test.euphonic_test.test_spectrum1d import (
     check_spectrum1d,
     get_expected_spectrum1d,

@@ -37,7 +37,13 @@ from euphonic.io import _obj_to_dict, _process_dict
 from euphonic.readers.castep import read_phonon_dos_data
 from euphonic.validate import _check_constructor_inputs
 
-from .base import CallableQuantity, Spectrum, Spectrum1D, Spectrum2D, XTickLabels
+from .base import (
+    CallableQuantity,
+    Spectrum,
+    Spectrum1D,
+    Spectrum2D,
+    XTickLabels,
+)
 from .base import OneSpectrumMetadata as OneLineData
 
 LineData = Sequence[OneLineData]

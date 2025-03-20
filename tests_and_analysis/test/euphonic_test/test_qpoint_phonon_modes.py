@@ -17,7 +17,9 @@ from tests_and_analysis.test.euphonic_test.test_debye_waller import (
     check_debye_waller,
     get_expected_dw,
 )
-from tests_and_analysis.test.euphonic_test.test_force_constants import get_fc_path
+from tests_and_analysis.test.euphonic_test.test_force_constants import (
+    get_fc_path,
+)
 from tests_and_analysis.test.euphonic_test.test_qpoint_frequencies import (
     check_qpt_freqs,
     get_expected_qpt_freqs,

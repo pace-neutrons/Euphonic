@@ -1,6 +1,5 @@
 from importlib.resources import files
 
-import pint
 from pint import UnitRegistry
 
 from . import data
@@ -22,3 +21,18 @@ from .qpoint_frequencies import QpointFrequencies
 from .qpoint_phonon_modes import QpointPhononModes
 from .spectra import Spectrum1D, Spectrum1DCollection, Spectrum2D
 from .structure_factor import StructureFactor
+
+__all__ = [
+    __version__,
+    ureg,
+    Crystal,
+    DebyeWaller,
+    ForceConstants,
+    QpointFrequencies,
+    QpointPhononModes,
+    Quantity,
+    Spectrum1D,
+    Spectrum1DCollection,
+    Spectrum2D,
+    StructureFactor,
+]

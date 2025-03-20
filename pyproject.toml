@@ -76,8 +76,10 @@ target-version = "py310"
 preview = true
 explicit-preview-rules = true
 select = [
-       "W291", # trailing-whitespace
-       "W293", # blank-line-with-whitespace
-       "B006", # mutable-argument-default
+       "I",       # isort
+       "F401",    # unused-import
+       "W291",    # trailing-whitespace
+       "W293",    # blank-line-with-whitespace
+       "B006",    # mutable-argument-default
        "PLR0203", # no-staticmethod-decorator
 ]

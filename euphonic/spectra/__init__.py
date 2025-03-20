@@ -15,14 +15,15 @@ from .collections import (
 )
 
 __all__ = [
+    "apply_kinematic_constraints",
+    "CallableQuantity",
+    "LineData",
+    "Metadata",
+    "OneLineData",
+    "Spectrum",
     "Spectrum1D",
     "Spectrum2D",
     "Spectrum1DCollection",
     "Spectrum2DCollection",
-    "apply_kinematic_constraints",
-    "CallableQuantity",
     "XTickLabels",
-    "OneLineData",
-    "LineData",
-    "Metadata",
 ]

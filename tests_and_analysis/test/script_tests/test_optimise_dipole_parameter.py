@@ -8,7 +8,9 @@ import pytest
 
 import euphonic.cli.optimise_dipole_parameter
 from euphonic import ForceConstants
-from euphonic.cli.optimise_dipole_parameter import calculate_optimum_dipole_parameter
+from euphonic.cli.optimise_dipole_parameter import (
+    calculate_optimum_dipole_parameter,
+)
 from tests_and_analysis.test.utils import get_castep_path, get_phonopy_path
 
 quartz_castep_bin = get_castep_path("quartz", "quartz.castep_bin")

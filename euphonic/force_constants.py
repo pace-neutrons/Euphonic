@@ -2,7 +2,17 @@ import math
 import os
 import warnings
 from multiprocessing import cpu_count
-from typing import Any, Dict, Literal, Optional, Sequence, Tuple, Type, TypeVar, Union
+from typing import (
+    Any,
+    Dict,
+    Literal,
+    Optional,
+    Sequence,
+    Tuple,
+    Type,
+    TypeVar,
+    Union,
+)
 
 import numpy as np
 from pint import Quantity
@@ -20,7 +30,11 @@ from euphonic.io import (
 from euphonic.qpoint_frequencies import QpointFrequencies
 from euphonic.qpoint_phonon_modes import QpointPhononModes
 from euphonic.readers import castep, phonopy
-from euphonic.util import _get_supercell_relative_idx, get_all_origins, is_gamma
+from euphonic.util import (
+    _get_supercell_relative_idx,
+    get_all_origins,
+    is_gamma,
+)
 from euphonic.validate import (
     _check_constructor_inputs,
     _check_unit_conversion,

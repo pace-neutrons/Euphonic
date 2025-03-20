@@ -14,7 +14,13 @@ except ModuleNotFoundError as err:
         'optional Brille dependency, try:\n\npip install '
         'euphonic[brille]\n') from err
 
-from euphonic import Crystal, ForceConstants, QpointFrequencies, QpointPhononModes, ureg
+from euphonic import (
+    Crystal,
+    ForceConstants,
+    QpointFrequencies,
+    QpointPhononModes,
+    ureg,
+)
 from euphonic.validate import _check_constructor_inputs
 
 
