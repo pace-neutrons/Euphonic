@@ -6,7 +6,7 @@ import matplotlib.style
 from euphonic.plot import plot_1d
 from euphonic.styles import base_style
 from euphonic.writers.phonon_website import write_phonon_website_json
-from euphonic import Spectrum1D, ForceConstants, QpointFrequencies
+from euphonic import Spectrum1D, ForceConstants, QpointPhononModes
 from .utils import (load_data_from_file, get_args, _bands_from_force_constants,
                     _compose_style,
                     _get_q_distance, matplotlib_save_or_show, _get_cli_parser,
@@ -22,7 +22,8 @@ def main(params: Optional[List[str]] = None) -> None:
 
     data = load_data_from_file(args.filename, verbose=True,
                                frequencies_only=frequencies_only)
-    if not frequencies_only and type(data) is QpointFrequencies:
+    if not frequencies_only and not isinstance(
+            data, (ForceConstants, QpointPhononModes)):
         raise TypeError(
             'Eigenvectors are required to use "--reorder" option')
 

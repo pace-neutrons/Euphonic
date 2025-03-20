@@ -24,7 +24,7 @@ def main(params: Optional[List[str]] = None) -> None:
     frequencies_only = (args.weighting != 'coherent')
     data = load_data_from_file(args.filename, verbose=True,
                                frequencies_only=frequencies_only)
-    if not frequencies_only and type(data) is QpointFrequencies:
+    if not frequencies_only and isinstance(data, QpointFrequencies):
         raise TypeError('Eigenvectors are required to use '
                         '"--weighting coherent" option')
     if args.weighting.lower() == 'coherent' and args.temperature is not None:

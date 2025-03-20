@@ -26,12 +26,14 @@ def _to_json_dict(dictionary: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def _from_json_dict(dictionary: Dict[str, Any],
-                    type_dict: Dict[str, Type[Any]] = {}) -> Dict[str, Any]:
+                    type_dict: Dict[str, Type[Any]] | None = None) -> Dict[str, Any]:
     """
     For a dictionary read from a JSON file, convert all list key values
     to that specified in type_dict. If not specified in type_dict, just
     uses the default conversion provided by np.array(list)
     """
+    type_dict = {} if type_dict is None else type_dict
+
     for key, val in dictionary.items():
         if isinstance(val, list):
             if key in type_dict and type_dict[key] == tuple:
@@ -76,13 +78,15 @@ def _obj_to_dict(obj: T, attrs: Sequence[str]) -> Dict[str, Any]:
     return dout
 
 
-def _process_dict(dictionary: Dict[str, Any], quantities: Sequence[str] = [],
-                  optional: Sequence[str] = []) -> Dict[str, Any]:
+def _process_dict(dictionary: Dict[str, Any],
+                  quantities: Sequence[str] = (),
+                  optional: Sequence[str] = ()) -> Dict[str, Any]:
     """
     Process an input dictionary for creating objects. Convert keys in
     'quantities' to Quantity objects, and if any 'optional' keys are
     missing, set them to None
     """
+
     dictionary = copy.deepcopy(dictionary)
     for okey in optional:
         if not okey in dictionary.keys():
@@ -109,10 +113,12 @@ def _obj_to_json_file(obj: T, filename: str) -> None:
 
 
 def _obj_from_json_file(cls: Type[T], filename: str,
-                        type_dict: Dict[str, Type[Any]] = {}) -> T:
+                        type_dict: Dict[str, Type[Any]]|None = None) -> T:
     """
     Generic function for reading from a JSON file to a Euphonic object
     """
+    type_dict = {} if type_dict is None else type_dict
+
     with open(filename, 'r') as f:
         obj_dict = json.loads(f.read())
     obj_dict = _from_json_dict(obj_dict, type_dict)

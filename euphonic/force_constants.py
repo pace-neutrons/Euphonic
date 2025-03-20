@@ -509,7 +509,7 @@ class ForceConstants:
             reduced_qpts, qpts_i = np.unique(norm_qpts, return_inverse=True,
                                              axis=0)
             qpts_i = qpts_i.flatten()
-            
+
             n_rqpts = len(reduced_qpts)
             # Special handling of gamma points - don't reduce gamma
             # points if LO-TO splitting

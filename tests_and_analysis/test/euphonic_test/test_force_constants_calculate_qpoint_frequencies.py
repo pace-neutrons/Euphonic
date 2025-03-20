@@ -16,6 +16,7 @@ from tests_and_analysis.test.euphonic_test.test_force_constants import (
 
 class TestForceConstantsCalculateQPointFrequencies:
 
+    @staticmethod
     def get_lzo_fc():
         return ForceConstants.from_castep(
             get_castep_path('LZO', 'La2Zr2O7.castep_bin'))
@@ -27,6 +28,7 @@ class TestForceConstantsCalculateQPointFrequencies:
          [get_test_qpts(), {'asr': 'realspace'}],
          'LZO_realspace_qpoint_frequencies.json')]
 
+    @staticmethod
     def get_quartz_fc():
         return ForceConstants.from_castep(
             get_castep_path('quartz', 'quartz.castep_bin'))

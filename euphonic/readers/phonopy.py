@@ -698,7 +698,7 @@ def read_interpolation_data(
     summary_dict = _extract_summary(summary_pathname, fc_extract=True)
 
     # Only read force constants if it's not in summary file
-    if not 'force_constants' in summary_dict:
+    if 'force_constants' not in summary_dict:
         hdf5_exts = ['hdf5', 'hd5', 'h5']
         if fc_format is None:
             fc_format = os.path.splitext(fc_name)[1].strip('.')

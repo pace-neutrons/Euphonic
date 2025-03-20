@@ -317,7 +317,7 @@ def get_spectrum_from_text(text_filename, is_collection=True):
             line = fp.readline()  # 'Column i + 2: y_data[i]...' line
             line_data = json.loads(line[line.index('{'):])
             if line_data:
-                if not 'line_data' in metadata:
+                if 'line_data' not in metadata:
                     metadata['line_data'] = [
                         {} for i in range(len(y_data[0]))]
                 metadata['line_data'][idx] = line_data

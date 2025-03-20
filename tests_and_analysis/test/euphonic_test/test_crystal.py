@@ -383,7 +383,7 @@ class TestCrystalMethods:
         (get_crystal('LZO'), lzo_spglib_cell)])
     def test_to_spglib_cell(self, crystal, expected_spglib_cell):
         spglib_cell = crystal.to_spglib_cell()
-        assert type(spglib_cell) is tuple
+        assert isinstance(spglib_cell, tuple)
         npt.assert_allclose(spglib_cell[0], expected_spglib_cell[0],
                             atol=np.finfo(np.float64).eps)
         npt.assert_allclose(spglib_cell[1], expected_spglib_cell[1],

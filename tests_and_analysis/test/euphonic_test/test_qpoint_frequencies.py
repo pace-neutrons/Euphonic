@@ -583,6 +583,7 @@ class TestQpointFrequenciesCalculateDosMap:
             expected_dos_map_json)
         check_spectrum2d(dos_map, expected_dos_map)
 
+    @staticmethod
     def get_test_nacl_mode_widths():
         mode_widths = np.ones((23, 24))
         mode_widths[:, :5] = 2.

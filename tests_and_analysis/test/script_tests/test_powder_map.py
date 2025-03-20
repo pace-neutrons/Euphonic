@@ -47,7 +47,7 @@ powder_map_params = [
     [graphite_fc_file, '--asr', *quick_calc_params],
     [graphite_fc_file, '--asr=realspace', '--dipole-parameter=0.75',
      *quick_calc_params],
-    [graphite_fc_file, '--e-i=15', '--ebins=50', *quick_calc_params],    
+    [graphite_fc_file, '--e-i=15', '--ebins=50', *quick_calc_params],
     [graphite_fc_file, '--e-i=15', '--e-max=20', '--ebins=50',
      *quick_calc_params],
     [graphite_fc_file, '--e-f=15', '--ebins=50', '--q-max=16',
@@ -85,7 +85,7 @@ class TestRegression:
         matplotlib.pyplot.close('all')
 
     def run_powder_map_and_test_result(
-            self, powder_map_args, keys_to_omit=['x_ticklabels']):
+            self, powder_map_args, keys_to_omit=('x_ticklabels',)):
         euphonic.cli.powder_map.main(powder_map_args)
 
         image_data = get_current_plot_image_data()

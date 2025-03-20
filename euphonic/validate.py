@@ -1,3 +1,4 @@
+from collections.abc import Sequence
 from typing import List, Any, Union, Type, Tuple, Optional
 
 import numpy as np
@@ -103,7 +104,7 @@ def _replace_dim(expected_shape: Tuple[int, ...],
 
 
 def _ensure_contiguous_attrs(obj: object, required_attrs: List[str],
-                             opt_attrs: List[str] = []) -> None:
+                             opt_attrs: Sequence[str] = ()) -> None:
     """
     Make sure all listed attributes of obj are C Contiguous and of the
     correct type (int32, float64, complex128). This should only be used
@@ -122,6 +123,7 @@ def _ensure_contiguous_attrs(obj: object, required_attrs: List[str],
         will not throw an error. e.g. Depending on the material
         ForceConstants objects may or may not have 'born' defined
     """
+
     for attr_name in required_attrs:
         attr = getattr(obj, attr_name)
         attr = attr.astype(_get_dtype(attr), order='C', copy=False)
