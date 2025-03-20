@@ -54,16 +54,14 @@ class ExpectedStructureFactor:
         # file, assign equal weights, simulating expected behaviour
         if 'weights' in self.data:
             return np.array(self.data['weights'])
-        else:
-            return np.full(len(self.qpts), 1/len(self.qpts))
+        return np.full(len(self.qpts), 1/len(self.qpts))
 
     @property
     def temperature(self):
         if 'temperature' in self.data.keys():
             return np.array(self.data['temperature'])*ureg(
                 self.data['temperature_unit'])
-        else:
-            return None
+        return None
 
     def to_dict(self):
         d = {

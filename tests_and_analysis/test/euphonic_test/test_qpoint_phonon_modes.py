@@ -58,8 +58,7 @@ class ExpectedQpointPhononModes:
         # file, assign equal weights, simulating expected behaviour
         if 'weights' in self.data:
             return np.array(self.data['weights'])
-        else:
-            return np.full(len(self.qpts), 1/len(self.qpts))
+        return np.full(len(self.qpts), 1/len(self.qpts))
 
     def to_dict(self):
         d = {

@@ -30,8 +30,7 @@ class ExpectedCrystal:
     def atom_r(self) -> np.array:
         if self.n_atoms == 0 and len(self.data['atom_r']) == 0:
             return np.zeros((0, 3), dtype=np.float64)
-        else:
-            return np.array(self.data['atom_r'])
+        return np.array(self.data['atom_r'])
 
     @property
     def atom_type(self) -> np.array:
