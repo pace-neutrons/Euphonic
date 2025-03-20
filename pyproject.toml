@@ -76,12 +76,11 @@ target-version = "py310"
 preview = true
 explicit-preview-rules = true
 select = [
-       "RET505", # superfluous-else-return
-       "RET506", # superfluous-else-raise
+       # "RET505", # superfluous-else-return
+       # "RET506", # superfluous-else-raise
        "W291", # trailing-whitespace
        "W293", # blank-line-with-whitespace
        "B006", # mutable-argument-default
        "PLR0203", # no-staticmethod-decorator
        "PLR5501", # collapsible-else-if
-       
 ]
