@@ -177,33 +177,32 @@ def _get_spacing(error,
     if fit == 'cubic' and shape == 'gauss':
         return np.polyval([612.7, -122.7, 15.40, 1.0831], error)
 
-    elif fit == 'cheby-log':
-        if shape == 'lorentz':
-            cheby = Chebyshev(
-                [1.26039672, 0.39900457, 0.20392176, 0.08602507,
-                 0.03337662, 0.00878684, 0.00619626],
-                window=[1., 1.],
-                domain=[-4.99146317, -1.34655197])
-            safe_domain = [-4, -1.35]
-
-        else:  # gauss
-            cheby = Chebyshev(
-                [1.25885858, 0.39803148, 0.20311735, 0.08654827,
-                 0.03447873, 0.00894006, 0.00715706],
-                window=[-1., 1.],
-                domain=[-4.64180022, -1.00029948])
-            safe_domain = [-4, -1.]
-
-        log_error = np.log10(error)
-        if log_error < safe_domain[0] or log_error > safe_domain[1]:
-            raise ValueError("Target error is out of fit range; value must lie"
-                             f" in range {np.power(10, safe_domain)}.")
-        return cheby(log_error)
-
-    else:
+    if fit != 'cheby-log':
         raise ValueError(f'Fit "{fit}" is not available for shape "{shape}". '
                          f'The "cheby-log" fit is recommended for "gauss" and '
                          f'"Lorentz" shapes.')
+
+    if shape == 'lorentz':
+        cheby = Chebyshev(
+            [1.26039672, 0.39900457, 0.20392176, 0.08602507,
+             0.03337662, 0.00878684, 0.00619626],
+            window=[1., 1.],
+            domain=[-4.99146317, -1.34655197])
+        safe_domain = [-4, -1.35]
+
+    else:  # gauss
+        cheby = Chebyshev(
+            [1.25885858, 0.39803148, 0.20311735, 0.08654827,
+             0.03447873, 0.00894006, 0.00715706],
+            window=[-1., 1.],
+            domain=[-4.64180022, -1.00029948])
+        safe_domain = [-4, -1.]
+
+    log_error = np.log10(error)
+    if not safe_domain[0] < log_error < safe_domain[1]:
+        raise ValueError("Target error is out of fit range; value must lie"
+                         f" in range {np.power(10, safe_domain)}.")
+    return cheby(log_error)
 
 
 def _width_interpolated_broadening(

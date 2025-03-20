@@ -154,8 +154,7 @@ class ForceConstants:
     def born(self) -> Union[Quantity, None]:
         if self._born is not None:
             return self._born*ureg('e').to(self.born_unit)
-        else:
-            return None
+        return None
 
     @born.setter
     def born(self, value: Quantity) -> None:
@@ -167,8 +166,7 @@ class ForceConstants:
         if self._dielectric is not None:
             return self._dielectric*ureg((
                 'e**2/(bohr*hartree)')).to(self.dielectric_unit)
-        else:
-            return None
+        return None
 
     @dielectric.setter
     def dielectric(self, value: Quantity) -> None:
@@ -410,8 +408,7 @@ class ForceConstants:
             self.crystal, qpts, freqs, evecs, weights=weights)
         if return_mode_gradients:
             return qpt_ph_modes, grads
-        else:
-            return qpt_ph_modes
+        return qpt_ph_modes
 
     def calculate_qpoint_frequencies(
             self,
@@ -441,8 +438,7 @@ class ForceConstants:
             self.crystal, qpts, freqs, weights=weights)
         if return_mode_gradients:
             return qpt_freqs, grads
-        else:
-            return qpt_freqs
+        return qpt_freqs
 
     def _calculate_phonons_at_qpts(
             self,
@@ -870,8 +866,7 @@ class ForceConstants:
                                  evecs_sq_view,
                                  dmat_grad)/(2*evals[:, np.newaxis])
             return evals, evecs, mode_grads_xyz
-        else:
-            return evals, evecs, None
+        return evals, evecs, None
 
     def _calculate_dyn_mat(
             self,
@@ -956,17 +951,19 @@ class ForceConstants:
         full_dyn_mat = fc_img_weighted*(
             ij_phases.repeat(3, axis=2).repeat(3, axis=1))
         dyn_mat = np.sum(full_dyn_mat, axis=0)
-        if len(all_origins_cart) > 0:
-            all_phases = np.einsum('ijkl,i->ijkl',
-                                   sc_phases[sc_image_i], cell_phases)
-            r_vec_sum = 1j*np.einsum('ijkl,ijklm->ijkm',
-                                     all_phases, all_origins_cart)
-            dmat_gradient = fc_img_weighted[..., ax]*(r_vec_sum.repeat(
-                3, axis=2).repeat(3, axis=1))
-            dmat_gradient = np.sum(dmat_gradient, axis=0)
-            return dyn_mat, dmat_gradient
-        else:
+
+        if all_origins_cart.size == 0:
             return dyn_mat, None
+
+        all_phases = np.einsum('ijkl,i->ijkl',
+                               sc_phases[sc_image_i], cell_phases)
+        r_vec_sum = 1j*np.einsum('ijkl,ijklm->ijkm',
+                                 all_phases, all_origins_cart)
+        dmat_gradient = fc_img_weighted[..., ax]*(r_vec_sum.repeat(
+            3, axis=2).repeat(3, axis=1))
+        dmat_gradient = np.sum(dmat_gradient, axis=0)
+        return dyn_mat, dmat_gradient
+
 
     @staticmethod
     def _dipole_correction_init(crystal: Crystal,

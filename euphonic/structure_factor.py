@@ -106,8 +106,7 @@ class StructureFactor(QpointFrequencies):
             # See https://pint.readthedocs.io/en/latest/nonmult.html
             return Quantity(self._temperature,
                             ureg('K')).to(self.temperature_unit)
-        else:
-            return None
+        return None
 
     @temperature.setter
     def temperature(self, value: Quantity) -> None:

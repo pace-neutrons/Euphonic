@@ -681,13 +681,12 @@ def _read_entry(file_obj: BinaryIO, dtype: str = ''
                 data = data.astype(np.int32)
             elif 'f' in dtype:
                 data = data.astype(np.float64)
+        elif 'i' in dtype:
+            data = struct.unpack('>i', file_obj.read(begin))[0]
+        elif 'f' in dtype:
+            data = struct.unpack('>d', file_obj.read(begin))[0]
         else:
-            if 'i' in dtype:
-                data = struct.unpack('>i', file_obj.read(begin))[0]
-            elif 'f' in dtype:
-                data = struct.unpack('>d', file_obj.read(begin))[0]
-            else:
-                data = file_obj.read(begin)
+            data = file_obj.read(begin)
     else:
         data = file_obj.read(begin)
     end = record_mark_read(file_obj)

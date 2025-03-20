@@ -37,10 +37,9 @@ def get_brille_grid(grid_file):
     filepath = get_data_path('brille_grid', grid_file)
     if 'trellis' in grid_file:
         return BZTrellisQdc.from_file(filepath)
-    elif 'mesh' in grid_file:
+    if 'mesh' in grid_file:
         return BZMeshQdc.from_file(filepath)
-    else:
-        return BZNestQdc.from_file(filepath)
+    return BZNestQdc.from_file(filepath)
 
 
 def test_import_without_brille_raises_err(

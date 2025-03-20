@@ -83,7 +83,12 @@ select = [
        "W293",    # blank-line-with-whitespace
        "B006",    # mutable-argument-default
        "PLR0203", # no-staticmethod-decorator
+       "PLR5501", # collapsible-else-if
+       "RET505",  # superfluous-else-return
+       "RET506",  # superfluous-else-raise
 ]
 
 [tool.ruff.lint.isort]
 force-sort-within-sections = true
+
+

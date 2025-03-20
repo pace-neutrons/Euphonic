@@ -275,7 +275,7 @@ class Crystal:
                                     f'{symm["translations"][op_idx]}')
                         if len(equiv_idx_op) == 0:
                             raise RuntimeError(f'No equivalent atom found {err_info}')
-                        elif len(equiv_idx_op) > 1:
+                        if len(equiv_idx_op) > 1:
                             raise RuntimeError(f'Multiple equivalent atoms found {err_info}')
                 equiv_atoms[:, i] = idx[equiv_idx[1]]
 
