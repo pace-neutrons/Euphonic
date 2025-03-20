@@ -364,20 +364,23 @@ def _get_qpts_sphere(npts: int,
                                    spherical_polar_improved,
                                    random_sphere)
 
-    if sampling == 'golden':
-        return np.asarray(list(golden_sphere(npts, jitter=jitter)))
-    if sampling == 'sphere-projected-grid':
-        n_cols = _check_gridpts(npts)
-        return np.asarray(list(sphere_from_square_grid(n_cols * 2, n_cols,
-                                                       jitter=jitter)))
-    if sampling == 'spherical-polar-grid':
-        n_cols = _check_gridpts(npts)
-        return np.asarray(list(spherical_polar_grid(n_cols * 2, n_cols,
-                                                    jitter=jitter)))
-    if sampling == 'spherical-polar-improved':
-        return np.asarray(list(spherical_polar_improved(npts, jitter=jitter)))
-    if sampling == 'random-sphere':
-        return np.asarray(list(random_sphere(npts)))
+    match sampling:
+        case 'golden':
+            return np.asarray(list(golden_sphere(npts, jitter=jitter)))
+
+        case 'sphere-projected-grid':
+            n_cols = _check_gridpts(npts)
+            return np.asarray(list(sphere_from_square_grid(n_cols * 2, n_cols,
+                                                           jitter=jitter)))
+        case 'spherical-polar-grid':
+            n_cols = _check_gridpts(npts)
+            return np.asarray(list(spherical_polar_grid(n_cols * 2, n_cols,
+                                                        jitter=jitter)))
+        case 'spherical-polar-improved':
+            return np.asarray(
+                list(spherical_polar_improved(npts, jitter=jitter)))
+        case 'random-sphere':
+            return np.asarray(list(random_sphere(npts)))
 
     raise ValueError(f'Sampling method "{sampling}" is unknown.')
 
