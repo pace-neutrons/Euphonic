@@ -544,7 +544,7 @@ def _get_cli_parser(features: Collection[str] = {},
                   'data: "realspace" applies the correction to the force '
                   'constant matrix in real space. "reciprocal" applies '
                   'the correction to the dynamical matrix at each q-point.'))
-        if not 'dipole-parameter-optimisation' in features:
+        if 'dipole-parameter-optimisation' not in features:
             sections['interpolation'].add_argument(
                 '--dipole-parameter', type=float, default=1.0,
                 dest='dipole_parameter',
@@ -574,7 +574,7 @@ def _get_cli_parser(features: Collection[str] = {},
     ins_desc = ('coherent inelastic neutron scattering')
     if 'pdos-weighting' in features:
         # Currently do not support multiple PDOS for 2D plots
-        if not 'q-e' in features:
+        if 'q-e' not in features:
             sections['property'].add_argument(
                 '--pdos', type=str, action='store', nargs='*',
                 help=('Plot PDOS. With --pdos, per-species PDOS will be plotted '
@@ -697,7 +697,7 @@ def _get_cli_parser(features: Collection[str] = {},
                              default='cm', dest='figsize_unit',
                              help='Unit of length for --figsize')
 
-    if ('plotting' in features) and not ('map' in features):
+    if ('plotting' in features) and 'map' not in features:
         section = sections['plotting']
         section.add_argument('--line-width', '--linewidth', type=float,
                              default=None, dest='linewidth',
