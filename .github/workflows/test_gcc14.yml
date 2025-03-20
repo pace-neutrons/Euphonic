@@ -1,7 +1,14 @@
-name: Run tests from source with GCC-14
+name: run-tests-gcc-14
+run-name: Run tests from source with GCC-14
 on:
   pull_request:
     types: [opened, reopened, labeled, synchronize]
+
+# Most euphonic tests/builds use Clang, but users might have GCC.
+# New GCC versions often promote bad practices from warnings to errors,
+# so a GCC update can unexpectedly break things.
+# It would be neat to somehow ensure automatically that we are using a
+# very recent GCC. Otherwise, this workflow will need updating occasionally.
 
 jobs:
   test:
@@ -32,14 +39,14 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install -r tests_and_analysis/ci_requirements.txt
 
-      - name: Try installing Euphonic
+      - name: Install Euphonic (verbosely)
         shell: bash -l {0}
         run: |
           python -m pip install -v .
 
       - name: Run tests
         shell: bash -l {0}
-        run: python -m tox run-parallel
+        run: python -m tox -e py312
 
       - name: Upload test results
         if: always()
