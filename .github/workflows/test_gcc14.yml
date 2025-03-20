@@ -1,8 +1,7 @@
 name: run-tests-gcc-14
 run-name: Run tests from source with GCC-14
 on:
-  pull_request:
-    types: [opened, reopened, labeled, synchronize]
+  workflow_call:
 
 # Most euphonic tests/builds use Clang, but users might have GCC.
 # New GCC versions often promote bad practices from warnings to errors,
