@@ -5,7 +5,7 @@ import matplotlib.style
 from numpy import sqrt
 from numpy.polynomial import Polynomial
 
-from euphonic import ForceConstants, ureg
+from euphonic import ForceConstants, QpointPhononModes, ureg
 from euphonic.plot import plot_1d
 from euphonic.styles import base_style
 from euphonic.util import mode_gradients_to_widths, mp_grid

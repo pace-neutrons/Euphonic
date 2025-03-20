@@ -3,7 +3,7 @@ from typing import List, Optional
 
 import matplotlib.style
 
-from euphonic import ForceConstants, Spectrum1D
+from euphonic import ForceConstants, QpointPhononModes, Spectrum1D
 from euphonic.plot import plot_1d
 from euphonic.styles import base_style
 from euphonic.writers.phonon_website import write_phonon_website_json
