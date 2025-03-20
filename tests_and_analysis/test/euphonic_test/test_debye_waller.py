@@ -2,15 +2,21 @@ import json
 
 import numpy as np
 import numpy.testing as npt
-from pint import DimensionalityError
 import pytest
+from pint import DimensionalityError
 
-from euphonic import ureg, Crystal, DebyeWaller
+from euphonic import Crystal, DebyeWaller, ureg
 from tests_and_analysis.test.euphonic_test.test_crystal import (
-    ExpectedCrystal, get_crystal, check_crystal)
+    ExpectedCrystal,
+    check_crystal,
+    get_crystal,
+)
 from tests_and_analysis.test.utils import (
-    get_data_path, check_unit_conversion, check_json_metadata,
-    check_property_setters)
+    check_json_metadata,
+    check_property_setters,
+    check_unit_conversion,
+    get_data_path,
+)
 
 
 class ExpectedDebyeWaller:

@@ -1,6 +1,6 @@
-import pytest
 import numpy as np
 import numpy.testing as npt
+import pytest
 
 from euphonic import ureg
 from euphonic.spectra import Spectrum1D, Spectrum1DCollection
@@ -41,6 +41,7 @@ def axes_with_line_and_legend(axes):
 def test_missing_matplotlib(mocker):
     from builtins import __import__ as builtins_import
     from importlib import reload
+
     import euphonic.plot
 
     def mocked_import(name, *args, **kwargs):

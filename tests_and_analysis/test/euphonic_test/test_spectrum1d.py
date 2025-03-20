@@ -1,22 +1,23 @@
 import json
 
-from pint import Quantity
-import pytest
 import numpy as np
-from numpy.polynomial import Polynomial
 import numpy.testing as npt
+import pytest
+from numpy.polynomial import Polynomial
+from pint import Quantity
 
 from euphonic import ureg
 from euphonic.spectra import Spectrum1D
 from tests_and_analysis.test.utils import (
-    check_unit_conversion,
-    check_spectrum_text_header,
     check_json_metadata,
     check_property_setters,
+    check_spectrum_text_header,
+    check_unit_conversion,
     does_not_raise,
     get_castep_path,
     get_data_path,
-    get_spectrum_from_text)
+    get_spectrum_from_text,
+)
 
 
 class ExpectedSpectrum1D:

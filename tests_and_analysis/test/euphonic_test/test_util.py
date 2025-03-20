@@ -3,17 +3,24 @@
 import json
 import sys
 
-import pytest
 import numpy as np
 import numpy.testing as npt
+import pytest
 
 from euphonic import ureg
-from euphonic.util import (direction_changed, mp_grid, get_qpoint_labels,
-                           mode_gradients_to_widths, convert_fc_phases)
-from tests_and_analysis.test.utils import does_not_raise, get_data_path
+from euphonic.util import (
+    convert_fc_phases,
+    direction_changed,
+    get_qpoint_labels,
+    mode_gradients_to_widths,
+    mp_grid,
+)
 from tests_and_analysis.test.euphonic_test.test_crystal import get_crystal
 from tests_and_analysis.test.euphonic_test.test_force_constants import (
-    get_fc_path, get_fc)
+    get_fc,
+    get_fc_path,
+)
+from tests_and_analysis.test.utils import does_not_raise, get_data_path
 
 
 class TestDirectionChanged:

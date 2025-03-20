@@ -1,12 +1,12 @@
-from contextlib import contextmanager
-import os
 import json
+import os
+from contextlib import contextmanager
 from typing import Optional, Tuple
 
 import numpy as np
 import numpy.testing as npt
 
-from euphonic import ureg, __version__, Spectrum1D, Spectrum1DCollection
+from euphonic import Spectrum1D, Spectrum1DCollection, __version__, ureg
 
 
 def get_data_path(*subpaths: Tuple[str]) -> str:

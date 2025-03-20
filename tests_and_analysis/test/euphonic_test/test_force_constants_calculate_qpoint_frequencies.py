@@ -1,17 +1,24 @@
 import json
 
-import pytest
 import numpy as np
 import numpy.testing as npt
+import pytest
 
 from euphonic import ForceConstants, ureg
 from euphonic.util import mp_grid
-from tests_and_analysis.test.utils import (
-    get_castep_path, get_test_qpts, sum_at_degenerate_modes)
-from tests_and_analysis.test.euphonic_test.test_qpoint_frequencies import (
-    check_qpt_freqs, get_expected_qpt_freqs)
 from tests_and_analysis.test.euphonic_test.test_force_constants import (
-    get_fc, get_fc_path)
+    get_fc,
+    get_fc_path,
+)
+from tests_and_analysis.test.euphonic_test.test_qpoint_frequencies import (
+    check_qpt_freqs,
+    get_expected_qpt_freqs,
+)
+from tests_and_analysis.test.utils import (
+    get_castep_path,
+    get_test_qpts,
+    sum_at_degenerate_modes,
+)
 
 
 class TestForceConstantsCalculateQPointFrequencies:

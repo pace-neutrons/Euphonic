@@ -1,17 +1,25 @@
 import json
 from pathlib import Path
 
-import pytest
 import numpy as np
 import numpy.testing as npt
+import pytest
 
-from euphonic import ForceConstants, Crystal, ureg
+from euphonic import Crystal, ForceConstants, ureg
 from euphonic.readers.phonopy import ImportPhonopyReaderError
 from tests_and_analysis.test.euphonic_test.test_crystal import (
-    get_crystal, ExpectedCrystal, check_crystal)
+    ExpectedCrystal,
+    check_crystal,
+    get_crystal,
+)
 from tests_and_analysis.test.utils import (
-    get_data_path, get_castep_path, get_phonopy_path, check_unit_conversion,
-    check_json_metadata, check_property_setters)
+    check_json_metadata,
+    check_property_setters,
+    check_unit_conversion,
+    get_castep_path,
+    get_data_path,
+    get_phonopy_path,
+)
 
 
 class ExpectedForceConstants:

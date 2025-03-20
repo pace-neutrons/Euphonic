@@ -1,11 +1,21 @@
-from collections import defaultdict
-from packaging.version import Version
 import re
 import struct
-from typing import (Any, BinaryIO, Dict, Iterator, List, NamedTuple,
-                    Optional, TextIO, Tuple, Union)
+from collections import defaultdict
+from typing import (
+    Any,
+    BinaryIO,
+    Dict,
+    Iterator,
+    List,
+    NamedTuple,
+    Optional,
+    TextIO,
+    Tuple,
+    Union,
+)
 
 import numpy as np
+from packaging.version import Version
 
 from euphonic import ureg
 

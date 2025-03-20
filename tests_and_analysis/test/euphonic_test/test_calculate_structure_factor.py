@@ -1,17 +1,22 @@
 import json
 
-import pytest
 import numpy.testing as npt
+import pytest
 
-from euphonic import ureg, ForceConstants, QpointPhononModes, StructureFactor
-from tests_and_analysis.test.utils import (get_castep_path, get_phonopy_path,
-    get_test_qpts)
+from euphonic import ForceConstants, QpointPhononModes, StructureFactor, ureg
+from tests_and_analysis.test.euphonic_test.test_debye_waller import get_dw
 from tests_and_analysis.test.euphonic_test.test_qpoint_phonon_modes import (
-    get_qpt_ph_modes)
-from tests_and_analysis.test.euphonic_test.test_debye_waller import (
-    get_dw)
+    get_qpt_ph_modes,
+)
 from tests_and_analysis.test.euphonic_test.test_structure_factor import (
-    check_structure_factor, get_sf_path)
+    check_structure_factor,
+    get_sf_path,
+)
+from tests_and_analysis.test.utils import (
+    get_castep_path,
+    get_phonopy_path,
+    get_test_qpts,
+)
 
 
 def get_quartz_fc():

@@ -7,16 +7,15 @@ performing the Ewald sum for polar materials) to determine the optimal
 value
 """
 
-from argparse import ArgumentParser
 import time
-from typing import List, Tuple, Optional
 import warnings
+from argparse import ArgumentParser
+from typing import List, Optional, Tuple
 
 import numpy as np
 
 from euphonic import ForceConstants
-from euphonic.cli.utils import (_get_cli_parser, get_args,
-                                load_data_from_file)
+from euphonic.cli.utils import _get_cli_parser, get_args, load_data_from_file
 
 
 def main(params: Optional[List[str]] = None) -> None:

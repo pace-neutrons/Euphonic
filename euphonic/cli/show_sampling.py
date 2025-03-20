@@ -3,9 +3,11 @@ from argparse import ArgumentParser
 from typing import List, Optional
 
 import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D  # noqa: F401
 import numpy as np
+from mpl_toolkits.mplot3d import Axes3D  # noqa: F401
+
 import euphonic.sampling
+
 from .utils import get_args, matplotlib_save_or_show
 
 choices_2d = {'golden-square', 'regular-square', 'recurrence-square'}

@@ -1,20 +1,20 @@
-from functools import reduce
-from importlib.resources import files
 import itertools
 import json
 import math
 import os.path
 import sys
-from typing import Sequence, Optional
 import warnings
+from functools import reduce
+from importlib.resources import files
+from typing import Optional, Sequence
 
 import numpy as np
 import seekpath
-from seekpath.hpkot import SymmetryDetectionError
 from pint import UndefinedUnitError
+from seekpath.hpkot import SymmetryDetectionError
 
-from euphonic import ureg, Quantity
 import euphonic.data
+from euphonic import Quantity, ureg
 
 
 def direction_changed(qpts: np.ndarray, tolerance: float = 5e-6

@@ -1,14 +1,21 @@
 """Functions for averaging spectra in spherical q bins"""
 
+from typing import Dict, Literal, Optional, Union
+
 import numpy as np
-from typing import Literal, Optional, Union, Dict
 
-from euphonic import (Crystal, DebyeWaller, ForceConstants,
-                      QpointFrequencies, QpointPhononModes, Spectrum1D,
-                      Spectrum1DCollection)
-from euphonic import ureg, Quantity
-from euphonic.util import mp_grid, get_reference_data
-
+from euphonic import (
+    Crystal,
+    DebyeWaller,
+    ForceConstants,
+    QpointFrequencies,
+    QpointPhononModes,
+    Quantity,
+    Spectrum1D,
+    Spectrum1DCollection,
+    ureg,
+)
+from euphonic.util import get_reference_data, mp_grid
 
 SphericalSamplingOptions = Literal['golden',
                                    'sphere-projected-grid',
@@ -359,10 +366,13 @@ def _get_qpts_sphere(npts: int,
     float Quantity.
     """
 
-    from euphonic.sampling import (golden_sphere, sphere_from_square_grid,
-                                   spherical_polar_grid,
-                                   spherical_polar_improved,
-                                   random_sphere)
+    from euphonic.sampling import (
+        golden_sphere,
+        random_sphere,
+        sphere_from_square_grid,
+        spherical_polar_grid,
+        spherical_polar_improved,
+    )
 
     if sampling == 'golden':
         return np.asarray(list(golden_sphere(npts, jitter=jitter)))

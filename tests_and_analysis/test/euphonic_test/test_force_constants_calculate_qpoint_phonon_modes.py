@@ -1,22 +1,31 @@
-import os
 import json
+import os
 import warnings
 from multiprocessing import cpu_count
 
-import pytest
 import numpy as np
 import numpy.testing as npt
+import pytest
 
 import euphonic
-from euphonic import ureg, ForceConstants
-from euphonic.util import mp_grid
+from euphonic import ForceConstants, ureg
 from euphonic.force_constants import ImportCError
-from tests_and_analysis.test.utils import (
-    get_phonopy_path, get_castep_path, get_test_qpts, sum_at_degenerate_modes)
-from tests_and_analysis.test.euphonic_test.test_qpoint_phonon_modes import (
-    ExpectedQpointPhononModes, check_qpt_ph_modes, get_qpt_ph_modes_path)
+from euphonic.util import mp_grid
 from tests_and_analysis.test.euphonic_test.test_force_constants import (
-    get_fc, get_fc_path)
+    get_fc,
+    get_fc_path,
+)
+from tests_and_analysis.test.euphonic_test.test_qpoint_phonon_modes import (
+    ExpectedQpointPhononModes,
+    check_qpt_ph_modes,
+    get_qpt_ph_modes_path,
+)
+from tests_and_analysis.test.utils import (
+    get_castep_path,
+    get_phonopy_path,
+    get_test_qpts,
+    sum_at_degenerate_modes,
+)
 
 
 class TestForceConstantsCalculateQPointPhononModes:

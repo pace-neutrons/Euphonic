@@ -10,8 +10,8 @@ import pytest
 
 from euphonic import Quantity, ureg
 from euphonic.spectra import OneLineData, Spectrum2D, Spectrum2DCollection
-
 from tests_and_analysis.test.utils import get_data_path
+
 from .test_spectrum2d import check_spectrum2d, get_spectrum2d
 
 

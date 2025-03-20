@@ -3,15 +3,22 @@ from typing import List, Optional
 
 import matplotlib.style
 
+from euphonic import ForceConstants, QpointFrequencies, Spectrum1D
 from euphonic.plot import plot_1d
 from euphonic.styles import base_style
 from euphonic.writers.phonon_website import write_phonon_website_json
-from euphonic import Spectrum1D, ForceConstants, QpointPhononModes
-from .utils import (load_data_from_file, get_args, _bands_from_force_constants,
-                    _compose_style,
-                    _get_q_distance, matplotlib_save_or_show, _get_cli_parser,
-                    _get_title,
-                    _calc_modes_kwargs, _plot_label_kwargs)
+from .utils import (
+    _bands_from_force_constants,
+    _calc_modes_kwargs,
+    _compose_style,
+    _get_cli_parser,
+    _get_q_distance,
+    _get_title,
+    _plot_label_kwargs,
+    get_args,
+    load_data_from_file,
+    matplotlib_save_or_show,
+)
 
 
 def main(params: Optional[List[str]] = None) -> None:

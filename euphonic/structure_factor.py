@@ -1,12 +1,13 @@
-from typing import Optional, TypeVar, Dict, Any, Type
 import warnings
+from typing import Any, Dict, Optional, Type, TypeVar
 
 import numpy as np
 
-from euphonic.validate import _check_constructor_inputs, _check_unit_conversion
+from euphonic import Crystal, Quantity, ureg
 from euphonic.io import _obj_to_dict, _process_dict
-from euphonic import (ureg, Quantity, Crystal, QpointFrequencies, Spectrum1D,
-                      Spectrum2D)
+from euphonic.qpoint_frequencies import QpointFrequencies
+from euphonic.spectra import Spectrum1D, Spectrum2D
+from euphonic.validate import _check_constructor_inputs, _check_unit_conversion
 
 
 class NoTemperatureError(Exception):

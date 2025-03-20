@@ -2,10 +2,14 @@ import numpy as np
 import numpy.testing as npt
 import pytest
 
-from euphonic import ureg, Crystal
-from euphonic.powder import (_get_default_bins, _get_qpts_sphere,
-                             _qpts_cart_to_frac,
-                             sample_sphere_dos, sample_sphere_structure_factor)
+from euphonic import Crystal, ureg
+from euphonic.powder import (
+    _get_default_bins,
+    _get_qpts_sphere,
+    _qpts_cart_to_frac,
+    sample_sphere_dos,
+    sample_sphere_structure_factor,
+)
 
 sampling_functions = {
     'golden': 'euphonic.sampling.golden_sphere',

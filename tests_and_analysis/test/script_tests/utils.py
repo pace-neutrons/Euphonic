@@ -1,8 +1,9 @@
 import os
 from copy import copy
-from typing import Dict, List, Union, Tuple, Optional, Any
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import numpy as np
+
 # Required for mocking
 try:
     import matplotlib.pyplot

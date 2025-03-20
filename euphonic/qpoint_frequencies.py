@@ -1,17 +1,24 @@
 import warnings
-from typing import Any, Dict, List, Literal, Optional, Tuple, TypeVar, Type
+from typing import Any, Dict, List, Literal, Optional, Tuple, Type, TypeVar
 
 import numpy as np
 
-from euphonic.validate import _check_constructor_inputs, _check_unit_conversion
-from euphonic.io import (_obj_to_json_file, _obj_from_json_file,
-                         _obj_to_dict, _process_dict)
-from euphonic.readers import castep, phonopy
-from euphonic.util import (_calc_abscissa, get_qpoint_labels)
-from euphonic import (ureg, Crystal, Quantity, Spectrum1D,
-                      Spectrum1DCollection, Spectrum2D)
+from euphonic import (
+    Crystal,
+    Quantity,
+    ureg,
+)
 from euphonic.broadening import ErrorFit, _width_interpolated_broadening
-
+from euphonic.io import (
+    _obj_from_json_file,
+    _obj_to_dict,
+    _obj_to_json_file,
+    _process_dict,
+)
+from euphonic.readers import castep, phonopy
+from euphonic.spectra import Spectrum1D, Spectrum1DCollection, Spectrum2D
+from euphonic.util import _calc_abscissa, get_qpoint_labels
+from euphonic.validate import _check_constructor_inputs, _check_unit_conversion
 
 AdaptiveMethod = Literal['reference', 'fast']
 

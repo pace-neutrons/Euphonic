@@ -84,6 +84,7 @@ rst_prolog = """
 # CITATION.cff in the correct place etc.)
 import os
 import sys
+
 sys.path.append(os.path.abspath('../..'))
 
 # Global setup, import required modules and initialise fnames

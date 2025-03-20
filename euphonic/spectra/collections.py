@@ -1,35 +1,44 @@
 """Spectrum Collection classes"""
 # pylint: disable=no-member
 
-from abc import ABC, abstractmethod
 import collections
 import copy
+import json
+from abc import ABC, abstractmethod
 from functools import partial, reduce
 from itertools import product, repeat
-
-import json
 from numbers import Integral
 from operator import contains
-from typing import (Any, Callable, Dict, Generator, List, Literal, Optional,
-                    overload, Sequence, TypeVar, Union, Type)
-from typing_extensions import Self
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    Generator,
+    List,
+    Literal,
+    Optional,
+    Sequence,
+    Type,
+    TypeVar,
+    Union,
+    overload,
+)
 
-from pint import Quantity
 import numpy as np
+from pint import Quantity
 from toolz.dicttoolz import keyfilter, valmap
 from toolz.functoolz import complement
 from toolz.itertoolz import groupby, pluck
+from typing_extensions import Self
 
-from euphonic import ureg, __version__
+from euphonic import __version__, ureg
 from euphonic.broadening import ErrorFit, KernelShape
 from euphonic.io import _obj_to_dict, _process_dict
 from euphonic.readers.castep import read_phonon_dos_data
 from euphonic.validate import _check_constructor_inputs
 
-from .base import Spectrum, Spectrum1D, Spectrum2D
-from .base import CallableQuantity, XTickLabels
+from .base import CallableQuantity, Spectrum, Spectrum1D, Spectrum2D, XTickLabels
 from .base import OneSpectrumMetadata as OneLineData
-
 
 LineData = Sequence[OneLineData]
 Metadata = Dict[str, Union[str, int, LineData]]

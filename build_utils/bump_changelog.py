@@ -4,10 +4,10 @@
 
 Unreleased changes will be moved into a section for the new version number
 """
+import re
 from argparse import ArgumentParser
 from dataclasses import dataclass
 from pathlib import Path
-import re
 
 from packaging.version import Version
 from toolz.itertoolz import partition

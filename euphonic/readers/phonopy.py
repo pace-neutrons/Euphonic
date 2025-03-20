@@ -1,7 +1,7 @@
 import os
 import re
 import warnings
-from typing import Optional, Dict, Any, Union, Tuple, TextIO, List
+from typing import Any, Dict, List, Optional, TextIO, Tuple, Union
 
 import numpy as np
 

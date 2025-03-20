@@ -1,9 +1,8 @@
 import math
 import os
 import warnings
-from typing import (Literal, Optional, Tuple, Union,
-                    TypeVar, Sequence, Dict, Any, Type)
 from multiprocessing import cpu_count
+from typing import Any, Dict, Literal, Optional, Sequence, Tuple, Type, TypeVar, Union
 
 import numpy as np
 from pint import Quantity
@@ -11,16 +10,23 @@ from scipy.special import erfc
 from threadpoolctl import threadpool_limits
 
 import euphonic
-from euphonic.validate import (
-    _check_constructor_inputs, _check_unit_conversion,
-    _ensure_contiguous_args, _ensure_contiguous_attrs)
-from euphonic.io import (_obj_to_json_file, _obj_from_json_file,
-                         _obj_to_dict, _process_dict)
+from euphonic import Crystal, ureg
+from euphonic.io import (
+    _obj_from_json_file,
+    _obj_to_dict,
+    _obj_to_json_file,
+    _process_dict,
+)
+from euphonic.qpoint_frequencies import QpointFrequencies
+from euphonic.qpoint_phonon_modes import QpointPhononModes
 from euphonic.readers import castep, phonopy
-from euphonic.util import (is_gamma, get_all_origins,
-                           _get_supercell_relative_idx)
-from euphonic import (ureg, Crystal, QpointPhononModes,
-                      QpointFrequencies)
+from euphonic.util import _get_supercell_relative_idx, get_all_origins, is_gamma
+from euphonic.validate import (
+    _check_constructor_inputs,
+    _check_unit_conversion,
+    _ensure_contiguous_args,
+    _ensure_contiguous_attrs,
+)
 
 
 class ImportCError(Exception):

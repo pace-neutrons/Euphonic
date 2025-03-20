@@ -4,7 +4,6 @@ import pytest
 from numpy.testing import assert_allclose
 
 from euphonic.cli.utils import _compose_style
-
 from tests_and_analysis.test.utils import get_castep_path
 
 pytestmark = pytest.mark.matplotlib
@@ -12,6 +11,7 @@ pytestmark = pytest.mark.matplotlib
 # deselected if Matplotlib is not installed
 try:
     import matplotlib.pyplot
+
     import euphonic.cli.dos
 except ModuleNotFoundError:
     pass

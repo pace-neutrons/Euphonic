@@ -1,29 +1,43 @@
 import copy
 import json
 import warnings
-
 from unittest.mock import patch
-import pytest
+
 import numpy as np
 import numpy.testing as npt
+import pytest
 from pint import DimensionalityError
 
-from euphonic import ureg, Crystal, QpointFrequencies, Spectrum1D
+from euphonic import Crystal, QpointFrequencies, Spectrum1D, ureg
 from euphonic.readers.phonopy import ImportPhonopyReaderError
 from tests_and_analysis.test.euphonic_test.test_crystal import (
-    ExpectedCrystal, check_crystal)
-from tests_and_analysis.test.euphonic_test.test_force_constants import (
-    get_fc_path)
+    ExpectedCrystal,
+    check_crystal,
+)
+from tests_and_analysis.test.euphonic_test.test_force_constants import get_fc_path
 from tests_and_analysis.test.euphonic_test.test_spectrum1d import (
-    get_expected_spectrum1d, check_spectrum1d)
+    check_spectrum1d,
+    get_expected_spectrum1d,
+)
 from tests_and_analysis.test.euphonic_test.test_spectrum1dcollection import (
-    get_expected_spectrum1dcollection, check_spectrum1dcollection)
+    check_spectrum1dcollection,
+    get_expected_spectrum1dcollection,
+)
 from tests_and_analysis.test.euphonic_test.test_spectrum2d import (
-    get_expected_spectrum2d, check_spectrum2d)
+    check_spectrum2d,
+    get_expected_spectrum2d,
+)
 from tests_and_analysis.test.utils import (
-    does_not_raise, get_data_path, get_castep_path, get_phonopy_path,
-    check_frequencies_at_qpts, check_unit_conversion,
-    check_json_metadata, check_property_setters, get_mode_widths)
+    check_frequencies_at_qpts,
+    check_json_metadata,
+    check_property_setters,
+    check_unit_conversion,
+    does_not_raise,
+    get_castep_path,
+    get_data_path,
+    get_mode_widths,
+    get_phonopy_path,
+)
 
 
 class ExpectedQpointFrequencies:

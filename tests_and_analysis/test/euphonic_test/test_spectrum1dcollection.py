@@ -1,18 +1,25 @@
 import json
 
 import numpy as np
-from numpy.testing import assert_allclose
 import pytest
+from numpy.testing import assert_allclose
 
 from euphonic import ureg
 from euphonic.spectra import Spectrum1DCollection
-from tests_and_analysis.test.utils import (
-    get_data_path, get_castep_path, get_spectrum_from_text,
-    check_spectrum_text_header)
 from tests_and_analysis.test.euphonic_test.test_spectrum1d import (
-    get_spectrum1d, get_expected_spectrum1d,
-    check_spectrum1d, check_unit_conversion,
-    check_property_setters)
+    check_property_setters,
+    check_spectrum1d,
+    check_unit_conversion,
+    get_expected_spectrum1d,
+    get_spectrum1d,
+)
+from tests_and_analysis.test.utils import (
+    check_spectrum_text_header,
+    get_castep_path,
+    get_data_path,
+    get_spectrum_from_text,
+)
+
 
 class ExpectedSpectrum1DCollection:
     def __init__(self, spectrum_json_file: str):
