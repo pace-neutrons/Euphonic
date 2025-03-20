@@ -268,7 +268,7 @@ def spherical_polar_improved(npts: int,
         Yield points in Cartesian coordinates. If False, instead yield
         points in spherical coordinates.
 
-    jitter 
+    jitter
         Randomly displace each point within its own "cell" of the
         irregular grid
 

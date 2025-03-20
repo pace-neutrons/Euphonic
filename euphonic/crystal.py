@@ -77,7 +77,7 @@ class Crystal:
 
         self.cell_vectors_unit = str(cell_vectors.units)
         self.atom_mass_unit = str(atom_mass.units)
-                
+
     @property
     def cell_vectors(self) -> Quantity:
         return self._cell_vectors*ureg('bohr').to(

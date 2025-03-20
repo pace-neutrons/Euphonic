@@ -85,7 +85,7 @@ class TestRegression:
         matplotlib.pyplot.close('all')
 
     def run_powder_map_and_test_result(
-            self, powder_map_args, keys_to_omit=['x_ticklabels']):
+            self, powder_map_args, keys_to_omit=('x_ticklabels',)):
         euphonic.cli.powder_map.main(powder_map_args)
 
         image_data = get_current_plot_image_data()
