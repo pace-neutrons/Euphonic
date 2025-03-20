@@ -26,13 +26,12 @@ def _load_euphonic_json(filename: Union[str, os.PathLike],
 
     if 'force_constants' in data:
         return ForceConstants.from_json_file(filename)
-    elif 'frequencies' in data:
+    if 'frequencies' in data:
         if 'eigenvectors' in data and not frequencies_only:
             return QpointPhononModes.from_json_file(filename)
-        else:
-            return QpointFrequencies.from_json_file(filename)
-    else:
-        raise ValueError("Could not identify Euphonic data in JSON file.")
+        return QpointFrequencies.from_json_file(filename)
+
+    raise ValueError("Could not identify Euphonic data in JSON file.")
 
 
 def _load_phonopy_file(filename: Union[str, os.PathLike],
@@ -439,12 +438,12 @@ def _brille_calc_modes_kwargs(args: Namespace) -> Dict[str, Any]:
     if args.n_threads is None:
         # Nothing specified, allow defaults
         return dict()
+
+    if args.n_threads > 1:
+        parallel = True
     else:
-        if args.n_threads > 1:
-            parallel = True
-        else:
-            parallel = False
-        return dict(useparallel=parallel, threads=args.n_threads)
+        parallel = False
+    return dict(useparallel=parallel, threads=args.n_threads)
 
 
 def _get_cli_parser(features: Collection[str] = {},
