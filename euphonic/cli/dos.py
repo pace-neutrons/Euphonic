@@ -5,7 +5,7 @@ import matplotlib.style
 from numpy import sqrt
 from numpy.polynomial import Polynomial
 
-from euphonic import ureg, ForceConstants, QpointFrequencies
+from euphonic import ureg, ForceConstants, QpointPhononModes
 from euphonic.util import mp_grid, mode_gradients_to_widths
 from euphonic.plot import plot_1d
 from euphonic.styles import base_style
@@ -24,7 +24,8 @@ def main(params: Optional[List[str]] = None) -> None:
     data = load_data_from_file(args.filename, verbose=True,
                                frequencies_only=frequencies_only)
 
-    if not frequencies_only and isinstance(data, QpointFrequencies):
+    if not frequencies_only and not isinstance(
+            data, (QpointPhononModes, ForceConstants)):
         raise TypeError('Eigenvectors are required to use "--pdos" or '
                         'any "--weighting" option other than plain DOS')
     if args.adaptive:
