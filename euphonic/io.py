@@ -26,7 +26,7 @@ def _to_json_dict(dictionary: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def _from_json_dict(dictionary: Dict[str, Any],
-                    type_dict: Dict[str, Type[Any]]|None = None) -> Dict[str, Any]:
+                    type_dict: Dict[str, Type[Any]] | None = None) -> Dict[str, Any]:
     """
     For a dictionary read from a JSON file, convert all list key values
     to that specified in type_dict. If not specified in type_dict, just
