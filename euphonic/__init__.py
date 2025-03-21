@@ -6,10 +6,9 @@ from .qpoint_phonon_modes import QpointPhononModes
 from .spectra import Spectrum1D, Spectrum1DCollection, Spectrum2D
 from .structure_factor import StructureFactor
 from .ureg import Quantity, ureg
-from .version import __version__
+from .version import __version__  # noqa: F401
 
 __all__ = [
-    "__version__",
     "ureg",
     "Crystal",
     "DebyeWaller",
