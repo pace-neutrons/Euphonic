@@ -16,7 +16,7 @@ py_src = {
                'crystal.py', 'debye_waller.py', 'force_constants.py',
                'io.py', 'plot.py', 'powder.py', 'qpoint_frequencies.py',
                'qpoint_phonon_modes.py', 'sampling.py',
-               'structure_factor.py', 'util.py', 'validate.py'],
+               'structure_factor.py', 'ureg.py', 'util.py', 'validate.py'],
   'euphonic/cli': ['__init__.py', 'brille_convergence.py',
                    'dispersion.py', 'dos.py', 'intensity_map.py',
                    'optimise_dipole_parameter.py', 'powder_map.py',

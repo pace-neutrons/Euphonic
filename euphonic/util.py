@@ -5,16 +5,16 @@ import json
 import math
 import os.path
 import sys
-from typing import Sequence, Optional
+from typing import Optional, Sequence
 import warnings
 
 import numpy as np
+from pint import UndefinedUnitError
 import seekpath
 from seekpath.hpkot import SymmetryDetectionError
-from pint import UndefinedUnitError
 
-from euphonic import ureg, Quantity
 import euphonic.data
+from euphonic.ureg import Quantity, ureg
 
 
 def direction_changed(qpts: np.ndarray, tolerance: float = 5e-6

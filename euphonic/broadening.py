@@ -8,11 +8,10 @@ import numpy as np
 from numpy.polynomial import Chebyshev
 from pint import Quantity
 from scipy.optimize import nnls
-from scipy.stats import norm
 from scipy.signal import convolve
+from scipy.stats import norm
 
-from euphonic import ureg
-
+from euphonic.ureg import ureg
 
 ErrorFit = Literal['cheby-log', 'cubic']
 KernelShape = Literal['gauss', 'lorentz']

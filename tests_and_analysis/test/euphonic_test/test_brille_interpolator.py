@@ -1,26 +1,33 @@
 from multiprocessing import cpu_count
 
-import pytest
 import numpy as np
+import pytest
 
 from euphonic import ForceConstants, QpointPhononModes, ureg
-from tests_and_analysis.test.utils import get_data_path, get_test_qpts
-from tests_and_analysis.test.euphonic_test.test_force_constants import (
-    get_fc)
-from tests_and_analysis.test.euphonic_test.test_qpoint_phonon_modes import (
-    get_qpt_ph_modes_from_json)
-from tests_and_analysis.test.euphonic_test.test_qpoint_frequencies import (
-    get_qpt_freqs, check_qpt_freqs)
 from tests_and_analysis.test.euphonic_test.test_crystal import (
-    get_crystal, check_crystal)
+    check_crystal,
+    get_crystal,
+)
+from tests_and_analysis.test.euphonic_test.test_force_constants import get_fc
+from tests_and_analysis.test.euphonic_test.test_qpoint_frequencies import (
+    check_qpt_freqs,
+    get_qpt_freqs,
+)
+from tests_and_analysis.test.euphonic_test.test_qpoint_phonon_modes import (
+    get_qpt_ph_modes_from_json,
+)
 from tests_and_analysis.test.euphonic_test.test_spectrum1d import (
-    get_spectrum1d, check_spectrum1d)
+    check_spectrum1d,
+    get_spectrum1d,
+)
+from tests_and_analysis.test.utils import get_data_path, get_test_qpts
 
 # Allow tests with brille marker to be collected and
 # deselected if brille isn't installed
 pytestmark = pytest.mark.brille
 try:
-    from brille import BZTrellisQdc, BZMeshQdc, BZNestQdc
+    from brille import BZMeshQdc, BZNestQdc, BZTrellisQdc
+
     from euphonic.brille import BrilleInterpolator
 except ModuleNotFoundError:
     pass
@@ -40,6 +47,7 @@ def test_import_without_brille_raises_err(
     # Mock import of brille to raise ModuleNotFoundError
     import builtins
     from importlib import reload
+
     import euphonic.brille
     real_import = builtins.__import__
     def mocked_import(name, *args, **kwargs):

@@ -1,20 +1,28 @@
-import os
 import json
+import os
 from unittest.mock import patch
 
-import pytest
 import numpy.testing as npt
+import pytest
 
 from euphonic import Spectrum2D
-from tests_and_analysis.test.utils import get_data_path, get_castep_path, get_phonopy_path
 from tests_and_analysis.test.script_tests.utils import (
-    get_script_test_data_path, get_current_plot_image_data, args_to_key)
+    args_to_key,
+    get_current_plot_image_data,
+    get_script_test_data_path,
+)
+from tests_and_analysis.test.utils import (
+    get_castep_path,
+    get_data_path,
+    get_phonopy_path,
+)
 
 pytestmark = pytest.mark.matplotlib
 # Allow tests with matplotlib marker to be collected and
 # deselected if Matplotlib is not installed
 try:
     import matplotlib.pyplot
+
     import euphonic.cli.powder_map
 except ModuleNotFoundError:
     pass

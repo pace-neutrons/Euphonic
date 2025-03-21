@@ -1,19 +1,22 @@
 """Data container (with methods) for phonon frequencies and eigenvectors"""
 
-import math
-from typing import Any, Dict, Optional, Union, Type, TypeVar
 from collections.abc import Mapping
+import math
+from typing import Any, Dict, Optional, Type, TypeVar, Union
 
 import numpy as np
 
-from euphonic.validate import _check_constructor_inputs
 from euphonic.broadening import ErrorFit
+from euphonic.crystal import Crystal
+from euphonic.debye_waller import DebyeWaller
 from euphonic.io import _obj_from_json_file, _obj_to_dict, _process_dict
-from euphonic.qpoint_frequencies import AdaptiveMethod
+from euphonic.qpoint_frequencies import AdaptiveMethod, QpointFrequencies
 from euphonic.readers import castep, phonopy
-from euphonic.util import (direction_changed, is_gamma, get_reference_data)
-from euphonic import (ureg, Quantity, Crystal, DebyeWaller, QpointFrequencies,
-                      StructureFactor, Spectrum1DCollection)
+from euphonic.spectra import Spectrum1DCollection
+from euphonic.structure_factor import StructureFactor
+from euphonic.ureg import Quantity, ureg
+from euphonic.util import direction_changed, get_reference_data, is_gamma
+from euphonic.validate import _check_constructor_inputs
 
 
 class QpointPhononModes(QpointFrequencies):

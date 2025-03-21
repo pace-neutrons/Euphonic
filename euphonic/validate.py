@@ -1,10 +1,10 @@
 from collections.abc import Sequence
-from typing import List, Any, Union, Type, Tuple, Optional
+from typing import Any, List, Optional, Tuple, Type, Union
 
 import numpy as np
 from pint import DimensionalityError
 
-from euphonic import ureg
+from euphonic.ureg import ureg
 
 
 def _check_constructor_inputs(

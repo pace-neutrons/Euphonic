@@ -2,19 +2,26 @@ from argparse import ArgumentParser
 from typing import List, Optional
 
 import matplotlib.style
-import numpy as np
 
 import euphonic
-from euphonic import ureg, Spectrum2D, QpointFrequencies, ForceConstants
+from euphonic import ForceConstants, QpointFrequencies, ureg
 import euphonic.plot
-from euphonic.util import get_qpoint_labels
 from euphonic.styles import base_style
-from .utils import (_bands_from_force_constants, _calc_modes_kwargs,
-                    _compose_style, _plot_label_kwargs,
-                    get_args, _get_debye_waller,
-                    _get_energy_bins, _get_q_distance,
-                    _get_cli_parser, load_data_from_file,
-                    matplotlib_save_or_show)
+from euphonic.util import get_qpoint_labels
+
+from .utils import (
+    _bands_from_force_constants,
+    _calc_modes_kwargs,
+    _compose_style,
+    _get_cli_parser,
+    _get_debye_waller,
+    _get_energy_bins,
+    _get_q_distance,
+    _plot_label_kwargs,
+    get_args,
+    load_data_from_file,
+    matplotlib_save_or_show,
+)
 
 
 def main(params: Optional[List[str]] = None) -> None:

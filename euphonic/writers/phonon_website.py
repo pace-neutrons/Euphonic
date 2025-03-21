@@ -16,7 +16,6 @@ from euphonic.qpoint_phonon_modes import QpointPhononModes
 from euphonic.spectra import XTickLabels
 from euphonic.util import _calc_abscissa, get_qpoint_labels
 
-
 ComplexPair = tuple[float, float]
 
 

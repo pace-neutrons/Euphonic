@@ -3,23 +3,28 @@ import os
 import sys
 from unittest.mock import patch
 
-import pytest
-import numpy as np
 import numpy.testing as npt
+import pytest
 
 from euphonic import Spectrum1D
-from tests_and_analysis.test.utils import (
-    get_data_path, get_castep_path, get_phonopy_path)
-from tests_and_analysis.test.script_tests.utils import (
-    get_script_test_data_path, get_plot_line_data,
-    args_to_key)
 from euphonic.cli.utils import _get_pdos_weighting
+from tests_and_analysis.test.script_tests.utils import (
+    args_to_key,
+    get_plot_line_data,
+    get_script_test_data_path,
+)
+from tests_and_analysis.test.utils import (
+    get_castep_path,
+    get_data_path,
+    get_phonopy_path,
+)
 
 pytestmark = pytest.mark.matplotlib
 # Allow tests with matplotlib marker to be collected and
 # deselected if Matplotlib is not installed
 try:
     import matplotlib.pyplot
+
     import euphonic.cli.dos
 except ModuleNotFoundError:
     pass

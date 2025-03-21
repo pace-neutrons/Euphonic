@@ -7,18 +7,28 @@ import numpy as np
 from numpy.polynomial import Polynomial
 from pint import Unit
 
-
-from euphonic import ureg, ForceConstants, Quantity
-from euphonic.cli.utils import (_calc_modes_kwargs, _brille_calc_modes_kwargs,
-                                _compose_style, _get_cli_parser,
-                                _get_debye_waller, _get_energy_bins,
-                                _get_q_distance, _get_pdos_weighting,
-                                _arrange_pdos_groups, _plot_label_kwargs)
-from euphonic.cli.utils import (load_data_from_file, get_args,
-                                matplotlib_save_or_show)
+from euphonic import ForceConstants, Quantity, ureg
+from euphonic.cli.utils import (
+    _arrange_pdos_groups,
+    _brille_calc_modes_kwargs,
+    _calc_modes_kwargs,
+    _compose_style,
+    _get_cli_parser,
+    _get_debye_waller,
+    _get_energy_bins,
+    _get_pdos_weighting,
+    _get_q_distance,
+    _plot_label_kwargs,
+    get_args,
+    load_data_from_file,
+    matplotlib_save_or_show,
+)
 import euphonic.plot
-from euphonic.powder import (sample_sphere_dos, sample_sphere_pdos,
-                             sample_sphere_structure_factor)
+from euphonic.powder import (
+    sample_sphere_dos,
+    sample_sphere_pdos,
+    sample_sphere_structure_factor,
+)
 from euphonic.spectra import apply_kinematic_constraints
 from euphonic.styles import base_style, intensity_widget_style
 import euphonic.util

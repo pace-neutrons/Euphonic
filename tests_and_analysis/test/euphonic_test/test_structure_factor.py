@@ -1,5 +1,4 @@
 import json
-import os
 import warnings
 
 import numpy as np
@@ -7,21 +6,37 @@ import numpy.testing as npt
 from pint import DimensionalityError
 import pytest
 
-from euphonic import ureg, Crystal, StructureFactor
+from euphonic import Crystal, StructureFactor, ureg
 from tests_and_analysis.test.euphonic_test.test_crystal import (
-    ExpectedCrystal, get_crystal, check_crystal)
+    ExpectedCrystal,
+    check_crystal,
+    get_crystal,
+)
 from tests_and_analysis.test.euphonic_test.test_qpoint_frequencies import (
-    get_expected_qpt_freqs, check_qpt_freqs)
-from tests_and_analysis.test.euphonic_test.test_spectrum2d import (
-    get_expected_spectrum2d, check_spectrum2d)
+    check_qpt_freqs,
+    get_expected_qpt_freqs,
+)
 from tests_and_analysis.test.euphonic_test.test_spectrum1d import (
-    get_expected_spectrum1d, check_spectrum1d)
+    check_spectrum1d,
+    get_expected_spectrum1d,
+)
 from tests_and_analysis.test.euphonic_test.test_spectrum1dcollection import (
-    get_expected_spectrum1dcollection, check_spectrum1dcollection)
+    check_spectrum1dcollection,
+    get_expected_spectrum1dcollection,
+)
+from tests_and_analysis.test.euphonic_test.test_spectrum2d import (
+    check_spectrum2d,
+    get_expected_spectrum2d,
+)
 from tests_and_analysis.test.utils import (
-    get_data_path, check_frequencies_at_qpts, check_structure_factors_at_qpts,
-    check_unit_conversion, check_json_metadata, check_property_setters,
-    sum_at_degenerate_modes)
+    check_frequencies_at_qpts,
+    check_json_metadata,
+    check_property_setters,
+    check_structure_factors_at_qpts,
+    check_unit_conversion,
+    get_data_path,
+    sum_at_degenerate_modes,
+)
 
 
 class ExpectedStructureFactor:

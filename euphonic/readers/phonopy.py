@@ -1,11 +1,11 @@
 import os
 import re
+from typing import Any, Dict, List, Optional, TextIO, Tuple, Union
 import warnings
-from typing import Optional, Dict, Any, Union, Tuple, TextIO, Sequence, List
 
 import numpy as np
 
-from euphonic import ureg
+from euphonic.ureg import ureg
 from euphonic.util import convert_fc_phases
 
 

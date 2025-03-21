@@ -1,19 +1,40 @@
-from argparse import (ArgumentParser, _ArgumentGroup, Namespace,
-                      ArgumentDefaultsHelpFormatter, Action)
+from argparse import (
+    Action,
+    ArgumentDefaultsHelpFormatter,
+    ArgumentParser,
+    Namespace,
+    _ArgumentGroup,
+)
 import json
 import os
 import pathlib
+from typing import (
+    Any,
+    Collection,
+    Dict,
+    List,
+    Optional,
+    Sequence,
+    Tuple,
+    Union,
+)
 import warnings
-from typing import (Any, Collection, Dict, List,
-                    Sequence, Tuple, Union, Optional)
 
 import numpy as np
 from pint import UndefinedUnitError
 import seekpath
 
-from euphonic import (Crystal, DebyeWaller, ForceConstants, QpointFrequencies,
-                      QpointPhononModes, Spectrum1D, Spectrum1DCollection,
-                      Quantity, ureg)
+from euphonic import (
+    Crystal,
+    DebyeWaller,
+    ForceConstants,
+    QpointFrequencies,
+    QpointPhononModes,
+    Quantity,
+    Spectrum1D,
+    Spectrum1DCollection,
+    ureg,
+)
 import euphonic.util
 
 

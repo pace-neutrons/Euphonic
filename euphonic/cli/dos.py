@@ -5,15 +5,24 @@ import matplotlib.style
 from numpy import sqrt
 from numpy.polynomial import Polynomial
 
-from euphonic import ureg, ForceConstants, QpointPhononModes
-from euphonic.util import mp_grid, mode_gradients_to_widths
+from euphonic import ForceConstants, QpointPhononModes, ureg
 from euphonic.plot import plot_1d
 from euphonic.styles import base_style
-from .utils import (load_data_from_file, get_args, matplotlib_save_or_show,
-                    _calc_modes_kwargs, _compose_style,
-                    _get_cli_parser, _get_energy_bins,
-                    _grid_spec_from_args, _get_pdos_weighting,
-                    _arrange_pdos_groups, _plot_label_kwargs)
+from euphonic.util import mode_gradients_to_widths, mp_grid
+
+from .utils import (
+    _arrange_pdos_groups,
+    _calc_modes_kwargs,
+    _compose_style,
+    _get_cli_parser,
+    _get_energy_bins,
+    _get_pdos_weighting,
+    _grid_spec_from_args,
+    _plot_label_kwargs,
+    get_args,
+    load_data_from_file,
+    matplotlib_save_or_show,
+)
 
 
 def main(params: Optional[List[str]] = None) -> None:

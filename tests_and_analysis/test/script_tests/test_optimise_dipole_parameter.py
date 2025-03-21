@@ -1,21 +1,17 @@
 from contextlib import ExitStack
-import os
-import math
-# Required for mocking
-from random import random
-import time
-from typing import Any, Optional
-from unittest.mock import Mock
 
-import pytest
-import numpy.testing as npt
+# Required for mocking
+from typing import Any, Optional
+
 import numpy as np
+import pytest
 
 from euphonic import ForceConstants
-from euphonic.cli.optimise_dipole_parameter import calculate_optimum_dipole_parameter
-from tests_and_analysis.test.utils import get_castep_path, get_phonopy_path
 import euphonic.cli.optimise_dipole_parameter
-
+from euphonic.cli.optimise_dipole_parameter import (
+    calculate_optimum_dipole_parameter,
+)
+from tests_and_analysis.test.utils import get_castep_path, get_phonopy_path
 
 quartz_castep_bin = get_castep_path("quartz", "quartz.castep_bin")
 lzo_castep_bin = get_castep_path("LZO", "La2Zr2O7.castep_bin")

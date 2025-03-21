@@ -11,6 +11,10 @@
   - Avoid incompatible-pointer-types in C compilation; this is an
     error in GCC14 and warning in older versions.
 
+  - Moved unit register definition to new "ureg" module. This is to defend against
+    internal import loops: users remain welcome to access things via
+    ``from euphonic import ureg, Quantity``.
+
 `v1.4.2 <https://github.com/pace-neutrons/Euphonic/compare/v1.4.1...v1.4.2>`_
 -----------------------------------------------------------------------------
 

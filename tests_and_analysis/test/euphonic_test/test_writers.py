@@ -15,10 +15,10 @@ from euphonic.qpoint_phonon_modes import QpointPhononModes
 from euphonic.spectra import XTickLabels
 from euphonic.writers.phonon_website import (
     PhononWebsiteData,
-    write_phonon_website_json,
-    _remove_breaks,
-    _find_duplicates,
     _combine_neighbouring_labels,
+    _find_duplicates,
+    _remove_breaks,
+    write_phonon_website_json,
 )
 from tests_and_analysis.test.utils import get_data_path
 

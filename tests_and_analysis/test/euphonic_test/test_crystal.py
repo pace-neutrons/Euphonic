@@ -1,15 +1,17 @@
 import json
-import os
 
 import numpy as np
 import numpy.testing as npt
-import pytest
 from pint import DimensionalityError
+import pytest
 
-from euphonic import ureg, Quantity, Crystal
+from euphonic import Crystal, Quantity, ureg
 from tests_and_analysis.test.utils import (
-    get_data_path, check_unit_conversion, check_property_setters,
-    check_json_metadata)
+    check_json_metadata,
+    check_property_setters,
+    check_unit_conversion,
+    get_data_path,
+)
 
 
 class ExpectedCrystal:

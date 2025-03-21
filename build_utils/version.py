@@ -15,10 +15,10 @@ Provides 3 means of updating:
   Update versions in both `euphonic/version.py` and in meson sdist build directory.
 """
 
+import os
 from pathlib import Path
 import subprocess
 import sys
-import os
 
 if new_dir := os.getenv("MESON_SOURCE_ROOT"):
     os.chdir(new_dir)

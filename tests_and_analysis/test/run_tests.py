@@ -1,10 +1,10 @@
 import argparse
-import sys
 import os
+import sys
 import time
 
-import pytest
 import coverage
+import pytest
 
 
 def main():

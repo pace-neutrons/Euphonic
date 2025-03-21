@@ -1,19 +1,29 @@
-from .base import Spectrum, Spectrum1D, Spectrum2D, apply_kinematic_constraints
-from .collections import Spectrum1DCollection, Spectrum2DCollection
-
-from .base import CallableQuantity, XTickLabels
-from .collections import OneLineData, LineData, Metadata
-
+from .base import (
+    CallableQuantity,
+    Spectrum,
+    Spectrum1D,
+    Spectrum2D,
+    XTickLabels,
+    apply_kinematic_constraints,
+)
+from .collections import (
+    LineData,
+    Metadata,
+    OneLineData,
+    Spectrum1DCollection,
+    Spectrum2DCollection,
+)
 
 __all__ = [
+    "apply_kinematic_constraints",
+    "CallableQuantity",
+    "LineData",
+    "Metadata",
+    "OneLineData",
+    "Spectrum",
     "Spectrum1D",
     "Spectrum2D",
     "Spectrum1DCollection",
     "Spectrum2DCollection",
-    "apply_kinematic_constraints",
-    "CallableQuantity",
     "XTickLabels",
-    "OneLineData",
-    "LineData",
-    "Metadata",
 ]

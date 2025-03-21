@@ -4,25 +4,43 @@
 from abc import ABC, abstractmethod
 import copy
 from functools import partial
-
 import math
 from numbers import Integral, Real
-from typing import (Any, Callable, Dict, List, Literal, Optional,
-                    overload, Sequence, Tuple, TypeVar, Union, Type)
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    List,
+    Literal,
+    Optional,
+    Sequence,
+    Tuple,
+    Type,
+    TypeVar,
+    Union,
+    overload,
+)
 import warnings
 
-from pint import DimensionalityError, Quantity
 import numpy as np
+from pint import DimensionalityError, Quantity
 from scipy.ndimage import correlate1d, gaussian_filter
 
-from euphonic import ureg
-from euphonic.broadening import (ErrorFit, FWHM_TO_SIGMA, KernelShape,
-                                 variable_width_broadening)
-from euphonic.io import (_obj_to_json_file, _obj_from_json_file,
-                         _obj_to_dict, _process_dict)
+from euphonic.broadening import (
+    FWHM_TO_SIGMA,
+    ErrorFit,
+    KernelShape,
+    variable_width_broadening,
+)
+from euphonic.io import (
+    _obj_from_json_file,
+    _obj_to_dict,
+    _obj_to_json_file,
+    _process_dict,
+)
 from euphonic.readers.castep import read_phonon_dos_data
+from euphonic.ureg import ureg
 from euphonic.validate import _check_constructor_inputs, _check_unit_conversion
-
 
 CallableQuantity = Callable[[Quantity], Quantity]
 XTickLabels = list[tuple[int, str]]

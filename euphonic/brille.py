@@ -1,9 +1,10 @@
 import dataclasses
 from multiprocessing import cpu_count
-from typing import Union, Optional, Dict, Any, Type, TypeVar
+from typing import Any, Dict, Optional, Type, TypeVar, Union
 
-import spglib as spg
 import numpy as np
+import spglib as spg
+
 try:
     import brille as br
 except ModuleNotFoundError as err:
@@ -13,9 +14,15 @@ except ModuleNotFoundError as err:
         'optional Brille dependency, try:\n\npip install '
         'euphonic[brille]\n') from err
 
+from euphonic import (
+    Crystal,
+    ForceConstants,
+    QpointFrequencies,
+    QpointPhononModes,
+    ureg,
+)
 from euphonic.validate import _check_constructor_inputs
-from euphonic import (ureg, QpointPhononModes, QpointFrequencies,
-                      ForceConstants, Crystal)
+
 
 class BrilleInterpolator:
     """

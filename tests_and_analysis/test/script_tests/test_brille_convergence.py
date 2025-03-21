@@ -1,15 +1,18 @@
-import sys
 import json
+import sys
 from unittest.mock import patch
 
-import pytest
-import numpy.testing as npt
 import numpy as np
+import numpy.testing as npt
+import pytest
 
-from tests_and_analysis.test.utils import get_castep_path, get_phonopy_path
 from tests_and_analysis.test.script_tests.utils import (
-    get_script_test_data_path, get_all_plot_line_data, get_all_figs,
-    args_to_key)
+    args_to_key,
+    get_all_figs,
+    get_all_plot_line_data,
+    get_script_test_data_path,
+)
+from tests_and_analysis.test.utils import get_castep_path, get_phonopy_path
 
 pytestmark = [pytest.mark.multiple_extras, pytest.mark.brille,
               pytest.mark.matplotlib]
@@ -18,6 +21,7 @@ pytestmark = [pytest.mark.multiple_extras, pytest.mark.brille,
 # either is not installed
 try:
     import matplotlib.pyplot
+
     import euphonic.cli.brille_convergence
 except ModuleNotFoundError:
     pass

@@ -1,10 +1,15 @@
 import inspect
-from typing import TypeVar, Dict, Any, Type
+from typing import Any, Dict, Type, TypeVar
 
+from euphonic.crystal import Crystal
+from euphonic.io import (
+    _obj_from_json_file,
+    _obj_to_dict,
+    _obj_to_json_file,
+    _process_dict,
+)
+from euphonic.ureg import Quantity, ureg
 from euphonic.validate import _check_constructor_inputs, _check_unit_conversion
-from euphonic.io import (_obj_to_json_file, _obj_from_json_file,
-                         _obj_to_dict, _process_dict)
-from euphonic import ureg, Quantity, Crystal
 
 
 class DebyeWaller:

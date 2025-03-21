@@ -1,20 +1,23 @@
 # -*- coding: UTF-8 -*-
-from argparse import ArgumentParser, Namespace, SUPPRESS
+from argparse import SUPPRESS, ArgumentParser, Namespace
 import itertools
 from pathlib import Path
-from typing import List, Tuple, Optional, Sequence
+from typing import List, Optional, Sequence, Tuple
 
-import matplotlib.pyplot as plt
-import numpy as np
 from matplotlib.axes import Axes
 from matplotlib.lines import Line2D
+import matplotlib.pyplot as plt
+import numpy as np
 
 from euphonic import ForceConstants, Spectrum1D, ureg
 from euphonic.brille import BrilleInterpolator
-from euphonic.cli.utils import (_get_cli_parser, get_args,
-                                _brille_calc_modes_kwargs,
-                                load_data_from_file,
-                                _get_energy_bins)
+from euphonic.cli.utils import (
+    _brille_calc_modes_kwargs,
+    _get_cli_parser,
+    _get_energy_bins,
+    get_args,
+    load_data_from_file,
+)
 from euphonic.sampling import recurrence_sequence
 
 
