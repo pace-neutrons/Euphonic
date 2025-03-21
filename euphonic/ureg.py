@@ -1,11 +1,25 @@
+"""A consistent Pint unit registry for Euphonic Quantity objects.
+
+They can also be imported directly 'from euphonic import Quantity, ureg';
+this module exists to avoid import loops between the core modules of Euphonic.
+
+This registry has the 'spectroscopy' context enabled by default to facilitate
+conversion between energy and wavenumber. During tricky conversions between
+reciprocals of energy and wavenumber, try enabling the
+'reciprocal_spectroscopy' ('rs') context.
+
+>>> y = 1. * ureg("1/meV")
+>>> y.to("1/ (1/cm)", "rs")
+<Quantity(0.123984198, 'centimeter')>
+
+"""
+
 from importlib.resources import files
 
 from pint import UnitRegistry
 
 from . import data
 
-# Central unit registry for all things Euphonic;
-# this is also exported to euphonic.__init__
 ureg = UnitRegistry()
 
 # Add reciprocal_spectroscopy environment used for tricky conversions
