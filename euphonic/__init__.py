@@ -23,16 +23,16 @@ from .spectra import Spectrum1D, Spectrum1DCollection, Spectrum2D
 from .structure_factor import StructureFactor
 
 __all__ = [
-    __version__,
-    ureg,
-    Crystal,
-    DebyeWaller,
-    ForceConstants,
-    QpointFrequencies,
-    QpointPhononModes,
-    Quantity,
-    Spectrum1D,
-    Spectrum1DCollection,
-    Spectrum2D,
-    StructureFactor,
+    "__version__",
+    "ureg",
+    "Crystal",
+    "DebyeWaller",
+    "ForceConstants",
+    "QpointFrequencies",
+    "QpointPhononModes",
+    "Quantity",
+    "Spectrum1D",
+    "Spectrum1DCollection",
+    "Spectrum2D",
+    "StructureFactor",
 ]
