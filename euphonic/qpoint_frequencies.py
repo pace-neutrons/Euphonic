@@ -3,12 +3,8 @@ import warnings
 
 import numpy as np
 
-from euphonic import (
-    Crystal,
-    Quantity,
-    ureg,
-)
 from euphonic.broadening import ErrorFit, _width_interpolated_broadening
+from euphonic.crystal import Crystal
 from euphonic.io import (
     _obj_from_json_file,
     _obj_to_dict,
@@ -17,6 +13,7 @@ from euphonic.io import (
 )
 from euphonic.readers import castep, phonopy
 from euphonic.spectra import Spectrum1D, Spectrum1DCollection, Spectrum2D
+from euphonic.ureg import Quantity, ureg
 from euphonic.util import _calc_abscissa, get_qpoint_labels
 from euphonic.validate import _check_constructor_inputs, _check_unit_conversion
 

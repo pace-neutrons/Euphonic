@@ -31,11 +31,12 @@ from toolz.functoolz import complement
 from toolz.itertoolz import groupby, pluck
 from typing_extensions import Self
 
-from euphonic import __version__, ureg
 from euphonic.broadening import ErrorFit, KernelShape
 from euphonic.io import _obj_to_dict, _process_dict
 from euphonic.readers.castep import read_phonon_dos_data
+from euphonic.ureg import ureg
 from euphonic.validate import _check_constructor_inputs
+from euphonic.version import __version__
 
 from .base import (
     CallableQuantity,

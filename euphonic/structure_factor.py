@@ -3,10 +3,11 @@ import warnings
 
 import numpy as np
 
-from euphonic import Crystal, Quantity, ureg
+from euphonic.crystal import Crystal
 from euphonic.io import _obj_to_dict, _process_dict
 from euphonic.qpoint_frequencies import QpointFrequencies
 from euphonic.spectra import Spectrum1D, Spectrum2D
+from euphonic.ureg import Quantity, ureg
 from euphonic.validate import _check_constructor_inputs, _check_unit_conversion
 
 

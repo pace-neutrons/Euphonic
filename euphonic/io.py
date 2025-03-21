@@ -5,9 +5,11 @@ from typing import Any, Dict, Sequence, Type, TypeVar
 
 import numpy as np
 
-from euphonic import Quantity, __version__, ureg
+from euphonic.ureg import Quantity, ureg
+from euphonic.version import __version__
 
 T = TypeVar('T')
+
 
 def _to_json_dict(dictionary: Dict[str, Any]) -> Dict[str, Any]:
     """

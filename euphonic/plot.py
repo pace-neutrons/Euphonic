@@ -15,8 +15,8 @@ except ModuleNotFoundError as err:
 
 import numpy as np
 
-from euphonic import Quantity
 from euphonic.spectra import Spectrum1D, Spectrum1DCollection, Spectrum2D
+from euphonic.ureg import Quantity
 
 
 def plot_1d_to_axis(spectra: Union[Spectrum1D, Spectrum1DCollection],

@@ -6,13 +6,13 @@ from typing import Any, Dict, List, Tuple, Type, TypeVar
 import numpy as np
 import spglib
 
-from euphonic import Quantity, ureg
 from euphonic.io import (
     _obj_from_json_file,
     _obj_to_dict,
     _obj_to_json_file,
     _process_dict,
 )
+from euphonic.ureg import Quantity, ureg
 from euphonic.util import _cell_vectors_to_volume, _get_unique_elems_and_idx
 from euphonic.validate import _check_constructor_inputs, _check_unit_conversion
 

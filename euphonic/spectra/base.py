@@ -26,7 +26,6 @@ import numpy as np
 from pint import DimensionalityError, Quantity
 from scipy.ndimage import correlate1d, gaussian_filter
 
-from euphonic import ureg
 from euphonic.broadening import (
     FWHM_TO_SIGMA,
     ErrorFit,
@@ -40,6 +39,7 @@ from euphonic.io import (
     _process_dict,
 )
 from euphonic.readers.castep import read_phonon_dos_data
+from euphonic.ureg import ureg
 from euphonic.validate import _check_constructor_inputs, _check_unit_conversion
 
 CallableQuantity = Callable[[Quantity], Quantity]

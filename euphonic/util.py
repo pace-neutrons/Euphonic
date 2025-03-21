@@ -13,8 +13,8 @@ from pint import UndefinedUnitError
 import seekpath
 from seekpath.hpkot import SymmetryDetectionError
 
-from euphonic import Quantity, ureg
 import euphonic.data
+from euphonic.ureg import Quantity, ureg
 
 
 def direction_changed(qpts: np.ndarray, tolerance: float = 5e-6

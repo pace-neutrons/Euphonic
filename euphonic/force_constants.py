@@ -19,8 +19,7 @@ from pint import Quantity
 from scipy.special import erfc
 from threadpoolctl import threadpool_limits
 
-import euphonic
-from euphonic import Crystal, ureg
+from euphonic.crystal import Crystal
 from euphonic.io import (
     _obj_from_json_file,
     _obj_to_dict,
@@ -30,6 +29,7 @@ from euphonic.io import (
 from euphonic.qpoint_frequencies import QpointFrequencies
 from euphonic.qpoint_phonon_modes import QpointPhononModes
 from euphonic.readers import castep, phonopy
+from euphonic.ureg import ureg
 from euphonic.util import (
     _get_supercell_relative_idx,
     get_all_origins,
@@ -640,7 +640,7 @@ class ForceConstants:
         else:
             rmode_gradients = np.zeros((0, 3*n_atoms, 3), dtype=np.complex128)
 
-        euphonic_path = os.path.dirname(euphonic.__file__)
+        euphonic_path = os.path.dirname(__file__)
         cext_err_msg = (f'Euphonic\'s C extension couldn\'t be imported '
                         f'from {euphonic_path}, it may not have been '
                         f'installed.')

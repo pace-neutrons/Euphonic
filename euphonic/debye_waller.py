@@ -1,13 +1,14 @@
 import inspect
 from typing import Any, Dict, Type, TypeVar
 
-from euphonic import Crystal, Quantity, ureg
+from euphonic.crystal import Crystal
 from euphonic.io import (
     _obj_from_json_file,
     _obj_to_dict,
     _obj_to_json_file,
     _process_dict,
 )
+from euphonic.ureg import Quantity, ureg
 from euphonic.validate import _check_constructor_inputs, _check_unit_conversion
 
 

@@ -5,7 +5,7 @@ import warnings
 
 import numpy as np
 
-from euphonic import ureg
+from euphonic.ureg import ureg
 from euphonic.util import convert_fc_phases
 
 

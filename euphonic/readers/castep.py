@@ -17,7 +17,7 @@ from typing import (
 import numpy as np
 from packaging.version import Version
 
-from euphonic import ureg
+from euphonic.ureg import ureg
 
 
 def read_phonon_dos_data(
