@@ -43,6 +43,8 @@ from euphonic.validate import (
 )
 
 
+class NotEnoughAcousticModesError(Exception): ...
+
 class ImportCError(Exception):
     pass
 
@@ -1410,7 +1412,7 @@ class ForceConstants:
 
         try:
             ac_i, evals, evecs = self._find_acoustic_modes(sq_fc)
-        except Exception:
+        except NotEnoughAcousticModesError:
             warnings.warn((
                 '\nError correcting for acoustic sum rule, could not '
                 'find 3 acoustic modes.\nReturning uncorrected FC '
@@ -1423,10 +1425,9 @@ class ForceConstants:
             sq_fc -= (fc_tol + evals[ac])*np.einsum(
                 'i,j->ij', evecs[:, ac], evecs[:, ac])
 
-        fc = np.reshape(sq_fc[:, :3*n_atoms],
+        return np.reshape(sq_fc[:, :3*n_atoms],
                         (n_cells_in_sc, 3*n_atoms, 3*n_atoms))
 
-        return fc
 
     def _enforce_reciprocal_asr(self, dyn_mat_gamma: np.ndarray
             ) -> np.ndarray:
@@ -1456,7 +1457,7 @@ class ForceConstants:
         try:
             ac_i, g_evals, g_evecs = self._find_acoustic_modes(
                 dyn_mat_gamma)
-        except Exception:
+        except NotEnoughAcousticModesError:
             warnings.warn(('\nError correcting for acoustic sum rule, '
                            'could not find 3 acoustic modes.\nNot '
                            'correcting dynamical matrix'), stacklevel=3)
@@ -1507,8 +1508,9 @@ class ForceConstants:
         sensitivity = 0.5
         sc_mass = 1.0*n_atoms
         # Check number of acoustic modes
-        if np.sum(c_of_m_disp_sq > sensitivity*sc_mass) < 3:
-            raise Exception('Could not find 3 acoustic modes')
+        if np.sum(c_of_m_disp_sq > sensitivity * sc_mass) < 3:
+            raise NotEnoughAcousticModesError(
+                'Could not find 3 acoustic modes') from None
         # Find idx of acoustic modes (3 largest c of m displacements)
         ac_i = np.argsort(c_of_m_disp_sq)[-3:]
 
@@ -1684,11 +1686,10 @@ class ForceConstants:
         -------
         dict
         """
-        dout = _obj_to_dict(self, ['crystal', 'force_constants',
+        return _obj_to_dict(self, ['crystal', 'force_constants',
                                    'n_cells_in_sc', 'sc_matrix',
                                    'cell_origins', 'born',
                                    'dielectric'])
-        return dout
 
     def to_json_file(self, filename: str) -> None:
         """

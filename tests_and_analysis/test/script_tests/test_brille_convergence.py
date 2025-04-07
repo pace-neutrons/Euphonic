@@ -20,7 +20,7 @@ pytestmark = [pytest.mark.multiple_extras, pytest.mark.brille,
 # these markers to be collected and deselected if
 # either is not installed
 try:
-    import matplotlib.pyplot
+    import matplotlib.pyplot  # noqa: ICN001
 
     import euphonic.cli.brille_convergence
 except ModuleNotFoundError:
@@ -42,8 +42,8 @@ class TestRegression:
 
     @pytest.fixture
     def inject_mocks(self, mocker):
-        # Prevent calls to show so we can get the current figure using
-        # gcf()
+        # Prevent calls to show so we can get the current figure
+        # using gcf()
         mocker.patch('matplotlib.pyplot.show')
         mocker.resetall()
 

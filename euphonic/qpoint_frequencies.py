@@ -337,9 +337,8 @@ class QpointFrequencies:
         Convert to a dictionary. See QpointFrequencies.from_dict for
         details on keys/values
         """
-        dout = _obj_to_dict(self, ['crystal', 'n_qpts', 'qpts', 'frequencies',
+        return _obj_to_dict(self, ['crystal', 'n_qpts', 'qpts', 'frequencies',
                                    'weights'])
-        return dout
 
     def to_json_file(self, filename: str) -> None:
         """

@@ -238,8 +238,7 @@ def _get_energy_bins(
     if emin >= emax:
         raise ValueError("Maximum energy should be greater than minimum. "
                          "Check --e-min and --e-max arguments.")
-    ebins = np.linspace(emin, emax, n_ebins) * modes.frequencies.units
-    return ebins
+    return np.linspace(emin, emax, n_ebins) * modes.frequencies.units
 
 
 def _get_tick_labels(bandpath: dict) -> List[Tuple[int, str]]:

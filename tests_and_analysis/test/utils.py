@@ -98,9 +98,7 @@ def get_test_qpts(qpts_option: Optional[str] = 'default') -> np.ndarray:
 def get_mode_widths(fc_path):
     with open(os.path.join(fc_path), 'r') as fp:
         modw_dict = json.load(fp)
-    mode_widths = modw_dict['mode_widths']*ureg(
-        modw_dict['mode_widths_unit'])
-    return mode_widths
+    return modw_dict['mode_widths'] * ureg(modw_dict['mode_widths_unit'])
 
 def check_frequencies_at_qpts(qpts, freqs, expected_freqs, atol, rtol,
                               gamma_atol=None):

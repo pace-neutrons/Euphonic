@@ -337,8 +337,7 @@ class Spectrum(ABC):
                 raise ValueError("Width convention must be 'std' or 'fwhm'")
 
         mean_bin_size = np.mean(np.diff(ax_bin_centres))
-        sigma_bin = sigma / mean_bin_size
-        return sigma_bin
+        return sigma / mean_bin_size
 
     @staticmethod
     def _bin_edges_to_centres(bin_edges: Quantity) -> Quantity:

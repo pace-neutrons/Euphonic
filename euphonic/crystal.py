@@ -182,10 +182,9 @@ class Crystal:
             atomic species
         """
         _, unique_atoms = np.unique(self.atom_type, return_inverse=True)
-        cell = (self.cell_vectors.magnitude.tolist(),
+        return (self.cell_vectors.magnitude.tolist(),
                 self.atom_r.tolist(),
                 unique_atoms.tolist())
-        return cell
 
     def get_species_idx(self) -> 'OrderedDict[str, np.ndarray]':
         """
@@ -290,9 +289,8 @@ class Crystal:
         -------
         dict
         """
-        dout = _obj_to_dict(self, ['cell_vectors', 'n_atoms', 'atom_r',
+        return _obj_to_dict(self, ['cell_vectors', 'n_atoms', 'atom_r',
                                    'atom_type', 'atom_mass'])
-        return dout
 
     def to_json_file(self, filename: str) -> None:
         """

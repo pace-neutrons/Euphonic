@@ -11,7 +11,7 @@ from ..script_tests.utils import get_ax_image_data
 # deselected if Matplotlib is not installed
 pytestmark = pytest.mark.matplotlib
 try:
-    import matplotlib
+    import matplotlib  # noqa: ICN001
     matplotlib.use('Agg')
     import matplotlib.pyplot as plt
 
@@ -29,8 +29,7 @@ def figure():
 
 @pytest.fixture
 def axes(figure):
-    ax = figure.add_subplot(1, 1, 1)
-    return ax
+    return figure.add_subplot(1, 1, 1)
 
 @pytest.fixture
 def axes_with_line_and_legend(axes):

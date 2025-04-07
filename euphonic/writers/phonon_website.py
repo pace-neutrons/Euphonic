@@ -211,7 +211,7 @@ def _modes_to_phonon_website_dict(
     # Convert complex numbers to a final axis over (real, imag)
     vectors = vectors.view(float).reshape(*eigenvectors.shape[:-1], 3, 2)
 
-    dat = PhononWebsiteData(
+    return PhononWebsiteData(
         name=name,
         **_crystal_website_data(modes.crystal),
         highsym_qpts=x_tick_labels,
@@ -223,4 +223,3 @@ def _modes_to_phonon_website_dict(
         line_breaks=line_breaks
     )
 
-    return dat

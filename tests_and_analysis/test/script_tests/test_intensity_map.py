@@ -17,7 +17,7 @@ pytestmark = pytest.mark.matplotlib
 # Allow tests with matplotlib marker to be collected and
 # deselected if Matplotlib is not installed
 try:
-    import matplotlib.pyplot
+    import matplotlib.pyplot  # noqa: ICN001
 
     import euphonic.cli.intensity_map
 except ModuleNotFoundError:
@@ -61,8 +61,8 @@ class TestRegression:
 
     @pytest.fixture
     def inject_mocks(self, mocker):
-        # Prevent calls to show so we can get the current figure using
-        # gcf()
+        # Prevent calls to show so we can get the current figure
+        # using gcf()
         mocker.patch('matplotlib.pyplot.show')
         mocker.resetall()
 

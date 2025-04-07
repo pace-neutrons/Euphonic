@@ -344,10 +344,9 @@ class StructureFactor(QpointFrequencies):
         Convert to a dictionary. See StructureFactor.from_dict for
         details on keys/values
         """
-        dout = _obj_to_dict(self, ['crystal', 'n_qpts', 'qpts', 'frequencies',
+        return _obj_to_dict(self, ['crystal', 'n_qpts', 'qpts', 'frequencies',
                                    'structure_factors', 'weights',
                                    'temperature'])
-        return dout
 
     def to_qpoint_frequencies(self) -> QpointFrequencies:
         """

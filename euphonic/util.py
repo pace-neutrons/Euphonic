@@ -67,10 +67,7 @@ def is_gamma(qpt: np.ndarray) -> bool | np.ndarray:
         are gamma points. Returns a scalar if only 1 q-point is
         provided
     """
-    tol = 1e-15
-    isgamma = np.sum(np.absolute(qpt - np.rint(qpt)), axis=-1) < tol
-    return isgamma
-
+    return np.isclose(qpt, np.rint(qpt), atol=1e-15).all(axis=-1)
 
 def mp_grid(grid: tuple[int, int, int]) -> np.ndarray:
     """

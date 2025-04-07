@@ -96,8 +96,7 @@ class DebyeWaller:
         -------
         dict
         """
-        dout = _obj_to_dict(self, ['crystal', 'debye_waller', 'temperature'])
-        return dout
+        return _obj_to_dict(self, ['crystal', 'debye_waller', 'temperature'])
 
     def to_json_file(self, filename: str) -> None:
         """

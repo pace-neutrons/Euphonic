@@ -14,7 +14,7 @@
 # -- Project information -----------------------------------------------------
 
 project = 'Euphonic'
-copyright = '2020, Rebecca Fair'
+copyright = '2020, Rebecca Fair'  # noqa: A001
 author = 'Rebecca Fair'
 
 

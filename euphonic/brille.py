@@ -66,6 +66,10 @@ class BrilleInterpolator:
         self._grid = grid
         self.crystal = crystal
 
+    def get_grid(self) -> br.BZTrellisQdc | br.BZMeshQdc | br.BZNestQdc:
+        """Get the Brille grid object."""
+        return self._grid
+
     def calculate_qpoint_phonon_modes(self, qpts: np.ndarray, **kwargs
                                       ) -> QpointPhononModes:
         """

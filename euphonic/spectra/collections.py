@@ -323,9 +323,8 @@ class SpectrumCollectionMixin(ABC):
         {"species": "K", "weight": "coherent"}
         """
         required_metadata = select_key_values.items()
-        indices = [i for i, row in enumerate(self.iter_metadata())
+        return [i for i, row in enumerate(self.iter_metadata())
                    if required_metadata <= row.items()]
-        return indices
 
     def select(self, **select_key_values: Union[
             str, int, Sequence[str], Sequence[int]]) -> Self:

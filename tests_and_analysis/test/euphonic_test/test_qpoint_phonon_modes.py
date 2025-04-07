@@ -79,14 +79,13 @@ class ExpectedQpointPhononModes:
         return np.full(len(self.qpts), 1/len(self.qpts))
 
     def to_dict(self):
-        d = {
+        return {
             'crystal': self.crystal.to_dict(),
             'qpts': self.qpts,
             'frequencies': self.frequencies.magnitude,
             'frequencies_unit': str(self.frequencies.units),
             'eigenvectors': self.eigenvectors,
             'weights': self.weights}
-        return d
 
     def to_constructor_args(self, crystal=None, qpts=None, frequencies=None,
                             eigenvectors=None, weights=None):
@@ -380,11 +379,13 @@ class TestQpointPhononModesCreation:
         import builtins
         real_import = builtins.__import__
 
-        def mocked_import(name, globals, locals, fromlist, level):
+        def mocked_import(
+                name, globals, locals, fromlist, level):  # noqa: A002
             if name == 'yaml':
                 if fromlist is not None and fromlist[0] == 'CSafeLoader':
                     raise ImportError
             return real_import(name, globals, locals, fromlist, level)
+
         mocker.patch('builtins.__import__', side_effect=mocked_import)
 
         phonopy_args['path'] = get_phonopy_path(material, subdir)

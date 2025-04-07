@@ -324,5 +324,4 @@ def find_coeffs(spacing: float,
         res = nnls(ref_kernels, actual_kernel)[0]
         lower_mix[i] = res[0]
 
-    coeffs = np.polyfit(width_values, lower_mix, 3)
-    return coeffs
+    return np.polyfit(width_values, lower_mix, 3)
