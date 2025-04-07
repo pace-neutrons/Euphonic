@@ -86,6 +86,11 @@ select = [
        # "FBT",   # flake8-boolean-trap: don't use positional boolean arguments. Fixable, but API-breaking.
        # "B",     # flake8-bugbear: Fixable but a bit involved
        "A",       # flake8-builtins
+       # "COM",   # flake8-commas: Fixable but a big diff
+       # "C4",    # flake8-comprehensions: Good stuff, worth its own PR
+       "T10",     # flake8-debugger
+       # "EM",      # flake8-errmsg: Big diff, worth its own PR
+       "EXE",     # flake8-executable
        "F401",    # unused-import
        # "F821",    # undefined-name   # This is useful for missing imports, but currently catches a few other things
        "W291",    # trailing-whitespace
@@ -97,7 +102,8 @@ select = [
        "RET506",  # superfluous-else-raise
 ]
 ignore = [
-       "S101",  # Use of except
+       "S101",    # Use of except
+       "CPY001",  # Missing copyright notice at top of every file. Not for us.
        ]
 task-tags = ["Note"]  # Avoid false positives for ERA001 on lines like "# Note: CODE-LIKE-THINGS"
 
