@@ -43,6 +43,8 @@ from euphonic.validate import (
 )
 
 
+class NotEnoughAcousticModesError(UserError): ...
+
 class ImportCError(Exception):
     pass
 
@@ -1410,7 +1412,7 @@ class ForceConstants:
 
         try:
             ac_i, evals, evecs = self._find_acoustic_modes(sq_fc)
-        except Exception:
+        except NotEnoughAcousticModesError:
             warnings.warn((
                 '\nError correcting for acoustic sum rule, could not '
                 'find 3 acoustic modes.\nReturning uncorrected FC '
@@ -1456,7 +1458,7 @@ class ForceConstants:
         try:
             ac_i, g_evals, g_evecs = self._find_acoustic_modes(
                 dyn_mat_gamma)
-        except Exception:
+        except NotEnoughAcousticModesError:
             warnings.warn(('\nError correcting for acoustic sum rule, '
                            'could not find 3 acoustic modes.\nNot '
                            'correcting dynamical matrix'), stacklevel=3)
@@ -1507,8 +1509,9 @@ class ForceConstants:
         sensitivity = 0.5
         sc_mass = 1.0*n_atoms
         # Check number of acoustic modes
-        if np.sum(c_of_m_disp_sq > sensitivity*sc_mass) < 3:
-            raise Exception('Could not find 3 acoustic modes')
+        if np.sum(c_of_m_disp_sq > sensitivity * sc_mass) < 3:
+            raise NotEnoughAcousticModesError(
+                'Could not find 3 acoustic modes') from None
         # Find idx of acoustic modes (3 largest c of m displacements)
         ac_i = np.argsort(c_of_m_disp_sq)[-3:]
 
