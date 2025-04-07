@@ -40,8 +40,9 @@ version_file = Path(__file__).parent.parent / "euphonic" / "version.py"
 for gitcmd in gits:
     try:
         print(f"Trying {gitcmd} ...", file=sys.stderr)
-        proc = subprocess.run([gitcmd, "describe", "--tags", "--dirty"],
-                              capture_output=True, check=True, text=True)
+        proc = subprocess.run([gitcmd, "describe", "--tags", "--dirty"],  # noqa: S603
+                              capture_output=True, check=True, text=True
+                              )
     except FileNotFoundError as err:
         print(f"Tried {gitcmd}, File Not Found", file=sys.stderr)
         continue

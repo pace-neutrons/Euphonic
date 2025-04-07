@@ -9,6 +9,8 @@ import yaml
 
 from euphonic import __version__
 
+POST_TIMEOUT = 5.  # 5s timeout; otherwise failed request can hang
+
 
 def main():
     parser = get_parser()
@@ -67,7 +69,8 @@ def release_github(test=True):
         response = requests.post(
             'https://api.github.com/repos/pace-neutrons/euphonic/releases',
             data=json.dumps(payload),
-            headers={"Authorization": "token " + os.environ["GITHUB_TOKEN"]})
+            headers={"Authorization": "token " + os.environ["GITHUB_TOKEN"]},
+            timeout=POST_TIMEOUT)
         print(response.text)
 
 
