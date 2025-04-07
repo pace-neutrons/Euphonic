@@ -380,11 +380,13 @@ class TestQpointPhononModesCreation:
         import builtins
         real_import = builtins.__import__
 
-        def mocked_import(name, globals, locals, fromlist, level):
+        def mocked_import(
+                name, globals, locals, fromlist, level):  # noqa: A002
             if name == 'yaml':
                 if fromlist is not None and fromlist[0] == 'CSafeLoader':
                     raise ImportError
             return real_import(name, globals, locals, fromlist, level)
+
         mocker.patch('builtins.__import__', side_effect=mocked_import)
 
         phonopy_args['path'] = get_phonopy_path(material, subdir)
