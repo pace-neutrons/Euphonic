@@ -6,7 +6,7 @@ import numpy as np
 
 # Required for mocking
 try:
-    import matplotlib.pyplot
+    import matplotlib.pyplot  # noqa: ICN001
 except ModuleNotFoundError:
     pass
 
@@ -22,8 +22,7 @@ def args_to_key(cl_args: List[str]) -> str:
     if os.path.isfile(cl_args[0]):
         cl_args[0] = ' '.join([os.path.split(os.path.dirname(cl_args[0]))[1],
                                os.path.split(cl_args[0])[1]])
-    key = ' '.join(cl_args)
-    return key
+    return ' '.join(cl_args)
 
 
 def get_script_test_data_path(*subpaths: Tuple[str]) -> str:
@@ -44,13 +43,8 @@ def get_plot_line_data(fig: Optional['matplotlib.figure.Figure'] = None
     data['xy_data'] = []
     for ax in fig.axes:
         if '3D' in type(ax).__name__:
-            try:
-                data['xy_data'].append([np.array(line.get_data_3d()).tolist()
-                                        for line in ax.lines])
-            except AttributeError:
-                # get_data_3d not available until matplotlib 3.1
-                data['xy_data'].append([np.array(line._verts3d).tolist()
-                                        for line in ax.lines])
+            data['xy_data'].append([np.array(line.get_data_3d()).tolist()
+                                    for line in ax.lines])
         else:
             data['xy_data'].append([line.get_xydata().T.tolist()
                                     for line in ax.lines])

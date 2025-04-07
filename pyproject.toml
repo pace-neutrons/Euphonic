@@ -71,6 +71,7 @@ euphonic-powder-map = "euphonic.cli.powder_map:main"
 [tool.ruff]
 line-length = 79
 target-version = "py310"
+extend-exclude = ["doc/source/conf.py"]
 
 [tool.ruff.lint]
 preview = true

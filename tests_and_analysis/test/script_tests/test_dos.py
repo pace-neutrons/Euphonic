@@ -23,7 +23,7 @@ pytestmark = pytest.mark.matplotlib
 # Allow tests with matplotlib marker to be collected and
 # deselected if Matplotlib is not installed
 try:
-    import matplotlib.pyplot
+    import matplotlib.pyplot  # noqa: ICN001
 
     import euphonic.cli.dos
 except ModuleNotFoundError:
