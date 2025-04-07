@@ -208,10 +208,10 @@ def _get_q_distance(length_unit_string: str, q_distance: float) -> Quantity:
     """
     try:
         length_units = ureg(length_unit_string)
-    except UndefinedUnitError:
+    except UndefinedUnitError as err:
         raise ValueError("Length unit not known. Euphonic uses Pint for units."
                          " Try 'angstrom' or 'bohr'. Metric prefixes "
-                         "are also allowed, e.g 'nm'.")
+                         "are also allowed, e.g 'nm'.") from err
     recip_length_units = 1 / length_units
     return q_distance * recip_length_units
 
@@ -258,7 +258,7 @@ def _get_tick_labels(bandpath: dict) -> List[Tuple[int, str]]:
         if label == 'GAMMA':
             labels[i] = r'$\Gamma$'
 
-    return list(zip(label_indices, labels))
+    return list(zip(label_indices, labels, strict=True))
 
 
 def _get_break_points(bandpath: dict) -> List[int]:
@@ -503,7 +503,8 @@ def _get_cli_parser(features: Collection[str] = {},
                         module=__name__)
                     warnings.warn(
                         deprecation_text(self.dest, recommended_arg),
-                        DeprecationWarning)
+                        DeprecationWarning,
+                        stacklevel=2)
                     setattr(args, recommended_arg, values)
         return DeprecatedArgAction
 

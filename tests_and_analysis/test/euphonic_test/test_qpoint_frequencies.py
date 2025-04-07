@@ -41,6 +41,8 @@ from tests_and_analysis.test.utils import (
     get_phonopy_path,
 )
 
+FLOAT64_EPS = np.finfo(np.float64).eps
+
 
 class ExpectedQpointFrequencies:
 
@@ -113,7 +115,7 @@ def get_expected_qpt_freqs(material, json_file):
 
 def check_qpt_freqs(
         qpoint_frequencies, expected_qpoint_frequencies,
-        frequencies_atol=np.finfo(np.float64).eps,
+        frequencies_atol=FLOAT64_EPS,
         frequencies_rtol=1e-7,
         acoustic_gamma_atol=None):
     check_crystal(qpoint_frequencies.crystal,
@@ -122,7 +124,7 @@ def check_qpt_freqs(
     npt.assert_allclose(
         qpoint_frequencies.qpts,
         expected_qpoint_frequencies.qpts,
-        atol=np.finfo(np.float64).eps)
+        atol=FLOAT64_EPS)
 
     assert (qpoint_frequencies.frequencies.units
             == expected_qpoint_frequencies.frequencies.units)
@@ -138,7 +140,7 @@ def check_qpt_freqs(
     npt.assert_allclose(
         qpoint_frequencies.weights,
         expected_qpoint_frequencies.weights,
-        atol=np.finfo(np.float64).eps)
+        atol=FLOAT64_EPS)
 
 
 class TestQpointFrequenciesCreation:

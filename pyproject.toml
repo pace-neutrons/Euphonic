@@ -85,7 +85,7 @@ select = [
        "S",       # Security (flake8-bandit)
        "BLE",     # flake8-blind-except
        # "FBT",   # flake8-boolean-trap: don't use positional boolean arguments. Fixable, but API-breaking.
-       # "B",     # flake8-bugbear: Fixable but a bit involved
+       "B",     # flake8-bugbear: Fixable but a bit involved
        "A",       # flake8-builtins
        # "COM",   # flake8-commas: Fixable but a big diff
        # "C4",    # flake8-comprehensions: Good stuff, worth its own PR
@@ -124,8 +124,12 @@ ignore = [
        ]
 task-tags = ["Note"]  # Avoid false positives for ERA001 on lines like "# Note: CODE-LIKE-THINGS"
 
-[tool.ruff.lint.isort]
-force-sort-within-sections = true
+[tool.ruff.lint.flake8-bugbear]
+# Allow default arguments like, e.g., `width: Quantity = Quantity(0.01, 'meV')`.
+extend-immutable-calls = ["euphonic.Quantity", "euphonic.ureg.Quantity"]
 
 [tool.ruff.lint.flake8-quotes]
 inline-quotes = "single"
+
+[tool.ruff.lint.isort]
+force-sort-within-sections = true

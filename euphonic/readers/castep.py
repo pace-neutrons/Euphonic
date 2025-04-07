@@ -240,7 +240,7 @@ def read_phonon_data(
             idx += 1
 
     # Multiple qpts with same CASTEP q-pt index: correct weights
-    for qpt_id, indices in repeated_qpt_ids.items():
+    for _qpt_id, indices in repeated_qpt_ids.items():
         if (prefer_non_loto
             and (intersection := indices & loto_split_indices)
             and len(indices) > len(intersection)):
@@ -539,7 +539,8 @@ def read_interpolation_data(
         raise RuntimeError((
             f'Force constants matrix could not be found in {filename}. '
             f'\nEnsure PHONON_WRITE_FORCE_CONSTANTS: true and a '
-            f'PHONON_FINE_METHOD has been chosen when running CASTEP'))
+            f'PHONON_FINE_METHOD has been chosen when running CASTEP')
+                           ) from None
 
     # Set entries relating to dipoles
     try:

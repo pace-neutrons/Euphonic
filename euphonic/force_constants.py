@@ -660,7 +660,7 @@ class ForceConstants:
                         + ' Falling back to pure Python calculation.'),
                         stacklevel=3)
                 else:
-                    raise ImportCError(cext_err_msg)
+                    raise ImportCError(cext_err_msg) from None
 
         if use_c_status is True:
             if n_threads is None:
@@ -738,14 +738,14 @@ class ForceConstants:
             n_idx = len(idx[0])
             if n_idx > 0:
                 n_print = n_idx if n_idx < 5 else 5
-                warnings.warn(
-                    f'Unexpected values for mode gradients at {n_idx}/{rmode_gradients.size} '
-                    f'indices {[x for x in zip(*idx)][:n_print]}..., '
-                    f'expected near-zero imaginary elements, got values of '
-                    f'{rmode_gradients.imag[idx][:n_print]}..., compared to a '
-                    f'max real value of {max_real}. Data may have been lost '
-                    f'when casting to real mode gradients',
-                    stacklevel=3)
+                warnings.warn(f"""
+Unexpected values for mode gradients at {n_idx}/{rmode_gradients.size} indices
+{[x for x in zip(*idx, strict=False)][:n_print]} ..., expected near-zero
+imaginary elements, got values of {rmode_gradients.imag[idx][:n_print]}...,
+compared to a max real value of {max_real}. Data may have been lost when
+casting to real mode gradients.
+                """,
+                stacklevel=3)
             mode_gradients = rmode_gradients.real[qpts_i]*ureg(
                 'hartree*bohr').to(
                     f'meV*{str(self.crystal.cell_vectors.units)}')

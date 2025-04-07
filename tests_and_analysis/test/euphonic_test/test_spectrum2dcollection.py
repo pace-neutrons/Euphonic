@@ -240,7 +240,9 @@ class TestSpectrum2DCollectionFunctionality:
         assert isinstance(item_1_to_end, Spectrum2DCollection)
         assert item_1_to_end != quartz_fuzzy_collection
 
-        for item, ref in zip(item_1_to_end, quartz_fuzzy_items[1:]):
+        for item, ref in zip(
+            item_1_to_end, quartz_fuzzy_items[1:], strict=True
+        ):
             assert isinstance(item, Spectrum2D)
             check_spectrum2d(item, ref)
 

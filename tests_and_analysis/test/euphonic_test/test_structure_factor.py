@@ -38,6 +38,8 @@ from tests_and_analysis.test.utils import (
     sum_at_degenerate_modes,
 )
 
+FLOAT64_EPS = np.finfo(np.float64).eps
+
 
 class ExpectedStructureFactor:
 
@@ -132,10 +134,10 @@ def get_expected_sf(material, json_file):
 
 def check_structure_factor(
         sf, expected_sf,
-        freq_atol=np.finfo(np.float64).eps,
+        freq_atol=FLOAT64_EPS,
         freq_rtol=1e-7,
         freq_gamma_atol=None,
-        sf_atol=np.finfo(np.float64).eps,
+        sf_atol=FLOAT64_EPS,
         sf_rtol=1e-7,
         sf_gamma_atol=None,
         sum_sf=True):

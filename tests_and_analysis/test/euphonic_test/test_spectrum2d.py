@@ -16,6 +16,7 @@ from tests_and_analysis.test.utils import (
     get_data_path,
 )
 
+FLOAT64_EPS =  np.finfo(np.float64).eps
 
 class ExpectedSpectrum2D:
     def __init__(self, spectrum2d_json_file: str):
@@ -96,8 +97,10 @@ def get_expected_spectrum2d(json_filename):
     return ExpectedSpectrum2D(get_spectrum2d_path(json_filename))
 
 
-def check_spectrum2d(actual_spectrum2d, expected_spectrum2d, equal_nan=False,
-                     z_atol=np.finfo(np.float64).eps):
+def check_spectrum2d(actual_spectrum2d,
+                     expected_spectrum2d,
+                     equal_nan=False,
+                     z_atol=FLOAT64_EPS):
 
     assert (actual_spectrum2d.x_data.units
             == expected_spectrum2d.x_data.units)
@@ -309,7 +312,8 @@ class TestSpectrum2DMethods:
     def test_split(self, args, spectrum2d_file, split_spectrum_files):
         spec2d = get_spectrum2d(spectrum2d_file)
         split_spec2d = spec2d.split(**args)
-        for spectrum, expected_file in zip(split_spec2d, split_spectrum_files):
+        for spectrum, expected_file in zip(
+                split_spec2d, split_spectrum_files, strict=True):
             expected_spectrum = get_spectrum2d(expected_file)
             check_spectrum2d(spectrum, expected_spectrum)
 

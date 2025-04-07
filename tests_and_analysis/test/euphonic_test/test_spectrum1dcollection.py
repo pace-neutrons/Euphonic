@@ -490,7 +490,8 @@ class TestSpectrum1DCollectionMethods:
               for i in range(2)])])
     def test_split(self, spectrum, split_kwargs, expected_spectra):
         spectra = spectrum.split(**split_kwargs)
-        for split, expected_split in zip(spectra, expected_spectra):
+        for split, expected_split in zip(
+                spectra, expected_spectra, strict=True):
             check_spectrum1dcollection(split, expected_split)
 
     @pytest.mark.parametrize(
@@ -571,7 +572,8 @@ class TestSpectrum1DCollectionMethods:
                                   for spectrum in spectra]
         collection_broadened = spectra.broaden(width_function)
 
-        for spec1, spec2 in zip(individually_broadened, collection_broadened):
+        for spec1, spec2 in zip(
+                individually_broadened, collection_broadened, strict=True):
             check_spectrum1d(spec1, spec2)
 
     @pytest.mark.parametrize(

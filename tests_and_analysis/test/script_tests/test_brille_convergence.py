@@ -1,3 +1,4 @@
+from itertools import repeat
 import json
 import sys
 from unittest.mock import patch
@@ -62,12 +63,13 @@ class TestRegression:
                 args_to_key(brille_conv_args)]
 
         for expected_plot_data, plot_data in zip(expected_all_plot_data,
-                                                 all_plot_data):
+                                                 all_plot_data,
+                                                 strict=True):
             for key, expected_val in expected_plot_data.items():
                 if key == 'xy_data':
                     # Float values for small statistics hard to check
                     # Just test shape
-                    for i in range(len(expected_val)):
+                    for _ in repeat(None, len(expected_val)):
                         assert np.array(expected_val[0]).shape \
                                == np.array(plot_data[key][0]).shape
                 elif key != 'x_ticklabels':

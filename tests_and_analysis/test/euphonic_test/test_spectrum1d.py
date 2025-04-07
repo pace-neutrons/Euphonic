@@ -360,7 +360,8 @@ class TestSpectrum1DMethods:
     def test_split(self, args, spectrum1d_file, split_spectrum_files):
         spec1d = get_spectrum1d(spectrum1d_file)
         split_spec1d = spec1d.split(**args)
-        for spectrum, expected_file in zip(split_spec1d, split_spectrum_files):
+        for spectrum, expected_file in zip(
+                split_spec1d, split_spectrum_files, strict=True):
             check_spectrum1d(spectrum, get_spectrum1d(expected_file))
 
     @pytest.mark.parametrize(

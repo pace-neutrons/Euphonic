@@ -21,6 +21,8 @@ from tests_and_analysis.test.utils import (
     get_phonopy_path,
 )
 
+FLOAT64_EPS = np.finfo(np.float64).eps
+
 
 class ExpectedForceConstants:
 
@@ -126,7 +128,7 @@ def get_fc(material):
 
 def check_force_constants(
         actual_force_constants, expected_force_constants,
-        fc_atol=np.finfo(np.float64).eps):
+        fc_atol=FLOAT64_EPS):
     check_crystal(actual_force_constants.crystal,
                   expected_force_constants.crystal)
 
@@ -147,7 +149,7 @@ def check_force_constants(
         npt.assert_allclose(
             actual_force_constants.born.magnitude,
             expected_force_constants.born.magnitude,
-            atol=np.finfo(np.float64).eps)
+            atol=FLOAT64_EPS)
         assert (actual_force_constants.born.units
                 == expected_force_constants.born.units)
 
@@ -166,7 +168,6 @@ def check_force_constants(
         atol=fc_atol)
     assert (actual_force_constants.force_constants.units
             == expected_force_constants.force_constants.units)
-
 
 
 class TestForceConstantsCreation:

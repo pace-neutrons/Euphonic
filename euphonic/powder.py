@@ -13,7 +13,6 @@ from euphonic import (
     Quantity,
     Spectrum1D,
     Spectrum1DCollection,
-    ureg,
 )
 from euphonic.util import get_reference_data, mp_grid
 
@@ -211,8 +210,8 @@ def sample_sphere_structure_factor(
     fc: ForceConstants,
     mod_q: Quantity,
     dw: DebyeWaller = None,
-    dw_spacing: Quantity = 0.025 * ureg('1/angstrom'),
-    temperature: Optional[Quantity] = 273. * ureg('K'),
+    dw_spacing: Quantity = Quantity(0.025, '1/angstrom'),
+    temperature: Optional[Quantity] = Quantity(273., 'K'),
     sampling: SphericalSamplingOptions = 'golden',
     npts: int = 1000, jitter: bool = False,
     energy_bins: Quantity = None,

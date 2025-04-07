@@ -161,7 +161,7 @@ def get_qpoint_labels(qpts: np.ndarray,
         xlabels = [str(x) for x in np.around(
             qpts[qpts_with_labels, :], decimals=2)]
     qpts_with_labels = [int(x) for x in qpts_with_labels.tolist()]
-    return list(zip(qpts_with_labels, xlabels))
+    return list(zip(qpts_with_labels, xlabels, strict=True))
 
 
 def get_reference_data(collection: str = 'Sears1992',

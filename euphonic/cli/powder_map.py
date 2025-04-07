@@ -87,9 +87,9 @@ def get_parser() -> ArgumentParser:
 
 
 def _get_broaden_kwargs(q_broadening: Optional[Sequence[float]] = None,
-                        q_unit: Unit = ureg('1/angstrom').units,
+                        q_unit: Unit = ureg('1/angstrom').units,  # noqa: B008
                         energy_broadening: Optional[Sequence[float]] = None,
-                        energy_unit: Unit = ureg('meV').units,
+                        energy_unit: Unit = ureg('meV').units,  # noqa: B008
                         ) -> Dict[str, Union[Quantity, Callable, None]]:
     """Collect suitable width arguments for 2D broaden() method
 
