@@ -43,7 +43,7 @@ from euphonic.validate import (
 )
 
 
-class NotEnoughAcousticModesError(UserError): ...
+class NotEnoughAcousticModesError(Exception): ...
 
 class ImportCError(Exception):
     pass
