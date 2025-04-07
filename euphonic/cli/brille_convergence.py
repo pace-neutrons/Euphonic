@@ -128,8 +128,8 @@ def check_brille_settings(
                 energy_broadening*ebins.units, shape=shape)
 
         # Create plot labels
-        actual_brille_npts = len(brille_fc._grid.rlu)
-        bz_vol = brille_fc._grid.BrillouinZone.ir_polyhedron.volume
+        actual_brille_npts = len(brille_fc.get_grid().rlu)
+        bz_vol = brille_fc.get_grid().BrillouinZone.ir_polyhedron.volume
         actual_brille_density = int(actual_brille_npts/bz_vol)
         label = f'{actual_brille_npts} ({actual_brille_density})'
 
