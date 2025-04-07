@@ -77,6 +77,7 @@ preview = true
 explicit-preview-rules = true
 select = [
        "I",       # isort
+       "ERA001",  # Eradicate commented-out code
        "F401",    # unused-import
        # "F821",    # undefined-name   # This is useful for missing imports, but currently catches a few other things
        "W291",    # trailing-whitespace
@@ -87,6 +88,7 @@ select = [
        "RET505",  # superfluous-else-return
        "RET506",  # superfluous-else-raise
 ]
+task-tags = ["Note"]  # Avoid false positives for ERA001 on lines like "# Note: CODE-LIKE-THINGS"
 
 [tool.ruff.lint.isort]
 force-sort-within-sections = true
