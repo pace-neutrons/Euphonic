@@ -99,12 +99,11 @@ def rand_spectrum2d(seed: int = 1,
                     "value": rng.random(),
                     "tag": "common"}
 
-    spectrum = Spectrum2D(x_data=x_bins,
+    return Spectrum2D(x_data=x_bins,
                           y_data=y_bins,
                           z_data=rng.random([len(x_bins) - 1, len(y_bins) - 1]
                                             ) * ureg("millibarn / meV"),
                           metadata=metadata)
-    return spectrum
 
 
 class TestSpectrum2DCollectionCreation:

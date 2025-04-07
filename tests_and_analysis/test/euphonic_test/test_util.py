@@ -92,9 +92,8 @@ class TestGetQptLabels:
 def get_modg(mode_gradients_file):
     with open(get_fc_path(mode_gradients_file), 'r') as fp:
         modg_dict = json.load(fp)
-    modg = modg_dict['mode_gradients']*ureg(
+    return modg_dict['mode_gradients']*ureg(
         modg_dict['mode_gradients_unit'])
-    return modg
 
 
 def get_modg_norm(mode_gradients_file):

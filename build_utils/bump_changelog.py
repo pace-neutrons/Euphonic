@@ -116,7 +116,7 @@ def main() -> None:
 
     if Version(args.tag).is_prerelease:
         print("New version is a pre-release, leave CHANGELOG alone.")
-        return None
+        return
 
     blocks = parse_changelog(args.filename)
     bump_version(blocks, args.tag)

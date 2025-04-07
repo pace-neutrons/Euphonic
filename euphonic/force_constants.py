@@ -1425,10 +1425,9 @@ class ForceConstants:
             sq_fc -= (fc_tol + evals[ac])*np.einsum(
                 'i,j->ij', evecs[:, ac], evecs[:, ac])
 
-        fc = np.reshape(sq_fc[:, :3*n_atoms],
+        return np.reshape(sq_fc[:, :3*n_atoms],
                         (n_cells_in_sc, 3*n_atoms, 3*n_atoms))
 
-        return fc
 
     def _enforce_reciprocal_asr(self, dyn_mat_gamma: np.ndarray
             ) -> np.ndarray:
@@ -1687,11 +1686,10 @@ class ForceConstants:
         -------
         dict
         """
-        dout = _obj_to_dict(self, ['crystal', 'force_constants',
+        return _obj_to_dict(self, ['crystal', 'force_constants',
                                    'n_cells_in_sc', 'sc_matrix',
                                    'cell_origins', 'born',
                                    'dielectric'])
-        return dout
 
     def to_json_file(self, filename: str) -> None:
         """

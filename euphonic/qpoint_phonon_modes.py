@@ -613,9 +613,8 @@ class QpointPhononModes(QpointFrequencies):
         Convert to a dictionary. See QpointPhononModes.from_dict for
         details on keys/values
         """
-        dout = _obj_to_dict(self, ['crystal', 'n_qpts', 'qpts', 'frequencies',
+        return _obj_to_dict(self, ['crystal', 'n_qpts', 'qpts', 'frequencies',
                                    'eigenvectors', 'weights'])
-        return dout
 
     def to_qpoint_frequencies(self) -> QpointFrequencies:
         """

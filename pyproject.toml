@@ -105,7 +105,7 @@ select = [
        # "PT",      # flake8-pytest-style : good stuff, worth its own PR
        # "Q",       # flake8-quotes : 50-60 fixes if we prefer single. Fine, but do it in a new PR.
        "RSE",     # flake8-raise
-       # "RET",     # flake8-return
+       "RET",     # flake8-return
        # "SLF",     # flake8-self
        "F401",    # unused-import
        # "F821",    # undefined-name   # This is useful for missing imports, but currently catches a few other things

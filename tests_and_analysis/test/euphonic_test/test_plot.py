@@ -29,8 +29,7 @@ def figure():
 
 @pytest.fixture
 def axes(figure):
-    ax = figure.add_subplot(1, 1, 1)
-    return ax
+    return figure.add_subplot(1, 1, 1)
 
 @pytest.fixture
 def axes_with_line_and_legend(axes):

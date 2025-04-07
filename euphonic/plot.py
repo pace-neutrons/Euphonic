@@ -94,6 +94,7 @@ def plot_1d_to_axis(spectra: Union[Spectrum1D, Spectrum1DCollection],
                 right=max(spectra.x_data.magnitude))
 
     _set_x_tick_labels(ax, spectra.x_tick_labels, spectra.x_data)
+    return None
 
 
 def plot_1d(spectra: Union[Spectrum1D,
@@ -361,6 +362,5 @@ def _get_gridspec_kw(spectra: Sequence[Union[Spectrum1D,
     subplot_widths = [max(spectrum.x_data.magnitude)
                       - min(spectrum.x_data.magnitude)
                       for spectrum in spectra]
-    gridspec_kw = dict(width_ratios=[w / subplot_widths[0]
+    return dict(width_ratios=[w / subplot_widths[0]
                                      for w in subplot_widths])
-    return gridspec_kw

@@ -40,13 +40,12 @@ class ExpectedDebyeWaller:
             self.data['temperature_unit'])
 
     def to_dict(self):
-        d = {
+        return {
             'crystal': self.crystal.to_dict(),
             'debye_waller': self.debye_waller.magnitude,
             'debye_waller_unit': str(self.debye_waller.units),
             'temperature': self.temperature.magnitude,
             'temperature_unit': str(self.temperature.units)}
-        return d
 
     def to_constructor_args(self, crystal=None, debye_waller=None,
                             temperature=None):

@@ -68,8 +68,7 @@ def is_gamma(qpt: np.ndarray) -> bool | np.ndarray:
         provided
     """
     tol = 1e-15
-    isgamma = np.sum(np.absolute(qpt - np.rint(qpt)), axis=-1) < tol
-    return isgamma
+    return np.sum(np.absolute(qpt - np.rint(qpt)), axis=-1) < tol
 
 
 def mp_grid(grid: tuple[int, int, int]) -> np.ndarray:

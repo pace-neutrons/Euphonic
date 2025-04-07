@@ -79,14 +79,13 @@ class ExpectedQpointPhononModes:
         return np.full(len(self.qpts), 1/len(self.qpts))
 
     def to_dict(self):
-        d = {
+        return {
             'crystal': self.crystal.to_dict(),
             'qpts': self.qpts,
             'frequencies': self.frequencies.magnitude,
             'frequencies_unit': str(self.frequencies.units),
             'eigenvectors': self.eigenvectors,
             'weights': self.weights}
-        return d
 
     def to_constructor_args(self, crystal=None, qpts=None, frequencies=None,
                             eigenvectors=None, weights=None):
