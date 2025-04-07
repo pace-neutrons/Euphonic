@@ -1,3 +1,4 @@
+#! /usr/bin/env python
 """Script to compute version from git tags.
 
 Provides 3 means of updating:

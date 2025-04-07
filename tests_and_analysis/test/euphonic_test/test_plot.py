@@ -11,7 +11,7 @@ from ..script_tests.utils import get_ax_image_data
 # deselected if Matplotlib is not installed
 pytestmark = pytest.mark.matplotlib
 try:
-    import matplotlib
+    import matplotlib  # noqa: ICN001
     matplotlib.use('Agg')
     import matplotlib.pyplot as plt
 
