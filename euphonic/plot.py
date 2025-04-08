@@ -17,6 +17,7 @@ import numpy as np
 
 from euphonic.spectra import Spectrum1D, Spectrum1DCollection, Spectrum2D
 from euphonic.ureg import Quantity
+from euphonic.util import zips
 
 
 def plot_1d_to_axis(spectra: Union[Spectrum1D, Spectrum1DCollection],
@@ -69,9 +70,9 @@ def plot_1d_to_axis(spectra: Union[Spectrum1D, Spectrum1DCollection],
     if labels is None:
         labels = [spec.metadata.get('label', None) for spec in spectra]
 
-    for label, spectrum in zip(labels, spectra, strict=True):
+    for label, spectrum in zips(labels, spectra):
         # Plot each line in segments
-        for x0, x1 in zip(breakpoints[:-1], breakpoints[1:], strict=True):
+        for x0, x1 in zips(breakpoints[:-1], breakpoints[1:]):
             # Keep colour consistent across segments
             if x0 == 0:
                 color = None
@@ -177,8 +178,7 @@ def plot_1d(spectra: Union[Spectrum1D,
     fig, subplots = plt.subplots(1, len(spectra), sharey=True,
                                  gridspec_kw=gridspec_kw, squeeze=False)
 
-    for i, (spectrum, ax) in enumerate(zip(
-            spectra, subplots.flatten(), strict=True)):
+    for i, (spectrum, ax) in enumerate(zips(spectra, subplots.flatten())):
         plot_1d_to_axis(spectrum, ax, labels, **line_kwargs)
         # To avoid an ugly empty legend, only use if there are labels to plot
         if i == 0:
@@ -304,8 +304,7 @@ def plot_2d(spectra: Union[Spectrum2D, Sequence[Spectrum2D]],
         dimensionless_data = spectrum.z_data.to(intensity_unit).magnitude
         assert isinstance(dimensionless_data, np.ndarray)
         return np.nanmin(dimensionless_data), np.nanmax(dimensionless_data)
-    min_z_list, max_z_list = zip(
-        *map(_get_minmax_intensity, spectra), strict=True)
+    min_z_list, max_z_list = zips(*map(_get_minmax_intensity, spectra))
     if vmin is None:
         vmin = min(min_z_list)
     if vmax is None:
@@ -313,7 +312,7 @@ def plot_2d(spectra: Union[Spectrum2D, Sequence[Spectrum2D]],
 
     norm = Normalize(vmin=vmin, vmax=vmax)
 
-    for spectrum, ax in zip(spectra, axes.flatten(), strict=True):
+    for spectrum, ax in zips(spectra, axes.flatten()):
         plot_2d_to_axis(spectrum, ax, cmap=cmap, norm=norm)
 
     # Add an invisible large axis for common labels
@@ -332,7 +331,7 @@ def _set_x_tick_labels(ax: Axes,
                        x_tick_labels: Optional[Sequence[Tuple[int, str]]],
                        x_data: Quantity) -> None:
     if x_tick_labels is not None:
-        locs, labels = [list(x) for x in zip(*x_tick_labels, strict=True)]
+        locs, labels = [list(x) for x in zips(*x_tick_labels)]
         x_values = x_data.magnitude  # type: np.ndarray
         ax.set_xticks(x_values[locs])
 

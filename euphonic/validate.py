@@ -41,8 +41,7 @@ def _check_constructor_inputs(
     ValueError
         If an array shape don't match the expected shape
     """
-    for obj, typ, shape, name in zip(
-            objs, types, shapes, names, strict=True):
+    for obj, typ, shape, name in zip(objs, types, shapes, names, strict=True):
         if not isinstance(typ, list):
             typ = [typ]
         if not any(isinstance(obj, t) for t in typ):

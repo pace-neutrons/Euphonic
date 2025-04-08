@@ -40,6 +40,7 @@ from euphonic.io import (
 )
 from euphonic.readers.castep import read_phonon_dos_data
 from euphonic.ureg import ureg
+from euphonic.util import zips
 from euphonic.validate import _check_constructor_inputs, _check_unit_conversion
 
 CallableQuantity = Callable[[Quantity], Quantity]
@@ -265,8 +266,7 @@ class Spectrum(ABC):
         # option but leave the 'if' anyway for future implementations)
         axes = ['x_data', 'y_data']
         unequal_bin_axes = []
-        for ax, (width, bin_data) in enumerate(zip(
-                widths, bin_centres, strict=True)):
+        for ax, (width, bin_data) in enumerate(zips(widths, bin_centres)):
             if width is not None:
                 bin_widths = np.diff(bin_data)
                 if not np.all(np.isclose(bin_widths, bin_widths[0])):
@@ -293,8 +293,7 @@ class Spectrum(ABC):
                 raise ValueError(
                     "Lorentzian function width must be specified as FWHM")
             data_broadened = data
-            for ax, (width, bin_data) in enumerate(zip(
-                    widths, bin_centres, strict=True)):
+            for ax, (width, bin_data) in enumerate(zips(widths, bin_centres)):
                 if width is not None:
                     broadening = _distribution_1d(bin_data, width)
                     data_broadened = correlate1d(data_broadened, broadening,
