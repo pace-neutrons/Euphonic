@@ -361,7 +361,8 @@ class SpectrumCollectionMixin(ABC):
         # Collect indices that match each combination of values
         selected_indices = []
         for value_combination in product(*select_key_values.values()):
-            selection = dict(zip(select_key_values.keys(), value_combination))
+            selection = dict(
+                zip(select_key_values.keys(), value_combination, strict=True))
             selected_indices.extend(self._select_indices(**selection))
 
         if not selected_indices:

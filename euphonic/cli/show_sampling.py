@@ -7,6 +7,7 @@ from mpl_toolkits.mplot3d import Axes3D  # noqa: F401
 import numpy as np
 
 import euphonic.sampling
+from euphonic.util import zips
 
 from .utils import get_args, matplotlib_save_or_show
 
@@ -40,7 +41,7 @@ def main(params: Optional[List[str]] = None) -> None:
         ax = fig.add_subplot(111, projection='3d')
 
     if args.sampling == 'golden-square':
-        ax.scatter(*zip(*euphonic.sampling.golden_square(args.npts,
+        ax.scatter(*zips(*euphonic.sampling.golden_square(args.npts,
                                                          jitter=args.jitter)),
                    marker='o')
     elif args.sampling == 'regular-square':
@@ -50,18 +51,19 @@ def main(params: Optional[List[str]] = None) -> None:
         if npts != args.npts:
             print("Requested npts ∉ {x^2, x ∈ Z, x > 1}; "
                   f"rounding up to {npts}.")
-        ax.scatter(*zip(*euphonic.sampling.regular_square(n_rows, n_rows,
+        ax.scatter(*zips(*euphonic.sampling.regular_square(n_rows, n_rows,
                                                           jitter=args.jitter)),
                    marker='o')
 
     elif args.sampling == 'golden-sphere':
-        ax.scatter(*zip(*euphonic.sampling.golden_sphere(args.npts,
+        ax.scatter(*zips(*euphonic.sampling.golden_sphere(args.npts,
                                                          jitter=args.jitter)),
                    marker='x')
 
     elif args.sampling == 'recurrence-square':
-        ax.scatter(*zip(*euphonic.sampling.recurrence_sequence(args.npts,
-                                                               order=2)))
+        ax.scatter(*zips(*euphonic.sampling.recurrence_sequence(args.npts,
+                                                               order=2)),
+                   )
 
     elif args.sampling == 'spherical-polar-grid':
         n_theta = int(np.ceil(np.sqrt(args.npts / 2)))
@@ -71,9 +73,8 @@ def main(params: Optional[List[str]] = None) -> None:
             print("Requested npts ∉ {2x^2, x ∈ Z, x > 1}; "
                   f"rounding up to {npts}.")
 
-        ax.scatter(*zip(
-            *euphonic.sampling.spherical_polar_grid(n_theta * 2, n_theta,
-                                                    jitter=args.jitter)),
+        ax.scatter(*zips(*euphonic.sampling.spherical_polar_grid(
+            n_theta * 2, n_theta, jitter=args.jitter)),
                    marker='x')
 
     elif args.sampling == 'sphere-from-square-grid':
@@ -84,25 +85,29 @@ def main(params: Optional[List[str]] = None) -> None:
             print("Requested npts ∉ {2x^2, x ∈ Z, x > 1}; "
                   f"rounding up to {npts}.")
 
-        ax.scatter(*zip(
-            *euphonic.sampling.sphere_from_square_grid(n_theta * 2, n_theta,
-                                                       jitter=args.jitter)),
-                   marker='x')
+        ax.scatter(*zips(*euphonic.sampling.sphere_from_square_grid(
+                n_theta * 2, n_theta, jitter=args.jitter)),
+            marker='x')
 
-    elif args.sampling == 'spherical-polar-improved':
+    elif args.sampling == "spherical-polar-improved":
         ax.scatter(
-            *zip(*euphonic.sampling.spherical_polar_improved(
+            *zips(*euphonic.sampling.spherical_polar_improved(
                 args.npts, jitter=args.jitter)),
-            marker='x')
-    elif args.sampling == 'random-sphere':
-        ax.scatter(
-            *zip(*euphonic.sampling.random_sphere(args.npts)),
-            marker='x')
+            marker="x",
+        )
 
-    elif args.sampling == 'recurrence-cube':
-        ax.scatter(*zip(*euphonic.sampling.recurrence_sequence(args.npts,
-                                                               order=3)),
-                   marker='x')
+    elif args.sampling == "random-sphere":
+        ax.scatter(
+            *zips(*euphonic.sampling.random_sphere(args.npts)),
+            marker="x"
+        )
+
+    elif args.sampling == "recurrence-cube":
+        ax.scatter(
+            *zips(
+                *euphonic.sampling.recurrence_sequence(args.npts, order=3)),
+            marker="x",
+        )
 
     else:
         raise ValueError("Sampling type f{args.sampling} is not implemented.")

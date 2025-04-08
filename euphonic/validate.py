@@ -41,7 +41,7 @@ def _check_constructor_inputs(
     ValueError
         If an array shape don't match the expected shape
     """
-    for obj, typ, shape, name in zip(objs, types, shapes, names):
+    for obj, typ, shape, name in zip(objs, types, shapes, names, strict=True):
         if not isinstance(typ, list):
             typ = [typ]
         if not any(isinstance(obj, t) for t in typ):
@@ -85,10 +85,10 @@ def _check_unit_conversion(obj: object, attr_name: str, attr_value: Any,
             try:
                 ureg(getattr(obj, attr_name)).ito(attr_value,
                                                   "reciprocal_spectroscopy")
-            except DimensionalityError:
+            except DimensionalityError as err:
                 raise ValueError((
                     f'"{attr_value}" is not a known dimensionally-consistent '
-                    f'unit for "{attr_name}"'))
+                    f'unit for "{attr_name}"')) from err
 
 
 def _replace_dim(expected_shape: Tuple[int, ...],

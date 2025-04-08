@@ -303,7 +303,7 @@ def spherical_polar_improved(npts: int,
     counts, _ = np.histogram(np.linspace(0, theta_circumferences.sum(), npts),
                              bins=bin_edges, density=False)
 
-    for row_theta, count in zip(theta_sequence, counts):
+    for row_theta, count in zip(theta_sequence, counts, strict=True):
         phi_sequence = np.linspace(-np.pi, np.pi, count + 1)[:-1]
         phi_spacing = phi_sequence[1] - phi_sequence[0]
         for phi in phi_sequence:

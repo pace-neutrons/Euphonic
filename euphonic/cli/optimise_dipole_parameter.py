@@ -83,7 +83,8 @@ def calculate_optimum_dipole_parameter(
     # per-qpt timings for any material
     if fc.born is None:
         warnings.warn('Born charges not found for this material - '
-                      'changing dipole_parameter will have no effect.')
+                      'changing dipole_parameter will have no effect.',
+                      stacklevel=1)
     sfmt = '{:20s}'
     tfmt = '{: 3.2f}'
     dparamfmt = '{: 2.2f}'

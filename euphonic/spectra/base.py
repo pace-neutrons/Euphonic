@@ -40,6 +40,7 @@ from euphonic.io import (
 )
 from euphonic.readers.castep import read_phonon_dos_data
 from euphonic.ureg import ureg
+from euphonic.util import zips
 from euphonic.validate import _check_constructor_inputs, _check_unit_conversion
 
 CallableQuantity = Callable[[Quantity], Quantity]
@@ -265,7 +266,7 @@ class Spectrum(ABC):
         # option but leave the 'if' anyway for future implementations)
         axes = ['x_data', 'y_data']
         unequal_bin_axes = []
-        for ax, (width, bin_data) in enumerate(zip(widths, bin_centres)):
+        for ax, (width, bin_data) in enumerate(zips(widths, bin_centres)):
             if width is not None:
                 bin_widths = np.diff(bin_data)
                 if not np.all(np.isclose(bin_widths, bin_widths[0])):
@@ -292,7 +293,7 @@ class Spectrum(ABC):
                 raise ValueError(
                     "Lorentzian function width must be specified as FWHM")
             data_broadened = data
-            for ax, (width, bin_data) in enumerate(zip(widths, bin_centres)):
+            for ax, (width, bin_data) in enumerate(zips(widths, bin_centres)):
                 if width is not None:
                     broadening = _distribution_1d(bin_data, width)
                     data_broadened = correlate1d(data_broadened, broadening,
@@ -941,7 +942,7 @@ class Spectrum2D(Spectrum):
                 self.assert_regular_bins(bin_ax='x', message=(
                     'Broadening by convolution may give incorrect results.'))
             except AssertionError as e:
-                warnings.warn(str(e), UserWarning)
+                warnings.warn(str(e), UserWarning, stacklevel=1)
             widths_in_bin_units[0] = x_width.to(self.x_data_unit).magnitude
         if isinstance(y_width, Quantity):
             widths_in_bin_units[1] = y_width.to(self.y_data_unit).magnitude

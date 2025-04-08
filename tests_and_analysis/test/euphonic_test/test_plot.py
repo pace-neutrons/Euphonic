@@ -93,12 +93,13 @@ class TestPlot1DCore:
         plot_1d_to_axis(Spectrum1D(*spectrum_args, **spectrum_kwargs), axes)
 
         assert len(expected_data) == len(axes.lines)
-        for line, expected in zip(axes.lines, expected_data):
+        for line, expected in zip(
+                axes.lines, expected_data, strict=True):
 
             npt.assert_allclose(line.get_xdata(), expected[0])
             npt.assert_allclose(line.get_ydata(), expected[1])
 
-        tick_locs, tick_labels = zip(*expected_ticks)
+        tick_locs, tick_labels = zip(*expected_ticks, strict=True)
         npt.assert_allclose(axes.get_xticks(), tick_locs)
         assert [label.get_text() for label in axes.get_xticklabels()
                 ] == list(tick_labels)
@@ -125,7 +126,8 @@ class TestPlot1DCore:
     def test_plot_collection(self, spectrum_args, expected_data, axes):
         plot_1d_to_axis(Spectrum1DCollection(*spectrum_args), axes)
         assert len(expected_data) == len(axes.lines)
-        for line, expected in zip(axes.lines, expected_data):
+        for line, expected in zip(
+                axes.lines, expected_data, strict=True):
 
             npt.assert_allclose(line.get_xdata(), expected[0])
             npt.assert_allclose(line.get_ydata(), expected[1])
@@ -283,7 +285,8 @@ class TestPlot1D:
         if expected_labels is None:
             assert legend == None
         else:
-            for text, label in zip(legend.get_texts(), expected_labels):
+            for text, label in zip(
+                    legend.get_texts(), expected_labels, strict=True):
                 assert text.get_text() == label
         # Ensure legend only on first subplot
         for ax in fig.axes[1:]:
@@ -426,12 +429,13 @@ def test_set_x_tick_labels(axes, labels, rotate):
     else:
         angle = 0.
 
-    label_x_indices, label_values = zip(*labels)
+    label_x_indices, label_values = zip(*labels, strict=True)
     plotted_labels = axes.get_xticklabels()
     plotted_positions = axes.get_xticks()
 
     for x_index, x, text, plotted_label in zip(
-            label_x_indices, plotted_positions, label_values, plotted_labels):
+            label_x_indices, plotted_positions, label_values, plotted_labels,
+            strict=True):
 
         assert plotted_label.get_text() == text
         assert x == pytest.approx(x_data.magnitude[x_index])

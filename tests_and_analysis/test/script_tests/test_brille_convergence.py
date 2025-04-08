@@ -62,14 +62,17 @@ class TestRegression:
                 args_to_key(brille_conv_args)]
 
         for expected_plot_data, plot_data in zip(expected_all_plot_data,
-                                                 all_plot_data):
+                                                 all_plot_data,
+                                                 strict=True):
             for key, expected_val in expected_plot_data.items():
                 if key == 'xy_data':
                     # Float values for small statistics hard to check
                     # Just test shape
-                    for i in range(len(expected_val)):
-                        assert np.array(expected_val[0]).shape \
-                               == np.array(plot_data[key][0]).shape
+                    for expected_item, plot_item in zip(
+                            expected_val, plot_data[key], strict=True):
+                        assert (np.array(expected_item).shape
+                                == np.array(plot_item).shape)
+
                 elif key != 'x_ticklabels':
                     # Check titles and ax labels
                     # Don't care about tick labels

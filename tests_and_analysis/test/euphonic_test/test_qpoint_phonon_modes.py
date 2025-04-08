@@ -43,6 +43,8 @@ from tests_and_analysis.test.utils import (
     get_phonopy_path,
 )
 
+FLOAT64_EPS = np.finfo(np.float64).eps
+
 
 class ExpectedQpointPhononModes:
 
@@ -133,7 +135,7 @@ def get_qpt_ph_modes(material):
 
 def check_qpt_ph_modes(
         qpoint_phonon_modes, expected_qpoint_phonon_modes,
-        frequencies_atol=np.finfo(np.float64).eps,
+        frequencies_atol=FLOAT64_EPS,
         frequencies_rtol=1e-7,
         acoustic_gamma_atol=None,
         check_evecs=False):

@@ -1,4 +1,4 @@
-from functools import reduce
+from functools import partial, reduce
 from importlib.resources import files
 import itertools
 import json
@@ -15,6 +15,8 @@ from seekpath.hpkot import SymmetryDetectionError
 
 import euphonic.data
 from euphonic.ureg import Quantity, ureg
+
+zips = partial(zip, strict=True)
 
 
 def direction_changed(qpts: np.ndarray, tolerance: float = 5e-6
@@ -161,7 +163,7 @@ def get_qpoint_labels(qpts: np.ndarray,
         xlabels = [str(x) for x in np.around(
             qpts[qpts_with_labels, :], decimals=2)]
     qpts_with_labels = [int(x) for x in qpts_with_labels.tolist()]
-    return list(zip(qpts_with_labels, xlabels))
+    return list(zips(qpts_with_labels, xlabels))
 
 
 def get_reference_data(collection: str = 'Sears1992',

@@ -149,8 +149,8 @@ class QpointPhononModes(QpointFrequencies):
                 dot_mat = np.reshape(dots, (n_branches, n_branches))
 
                 # Find greatest dot product
-                for j in range(n_branches):
-                    max_i = (np.argmax(dot_mat))
+                for _ in range(n_branches):
+                    max_i = np.argmax(dot_mat)
                     # Modes are dot_mat rows
                     mode = int(max_i/n_branches)
                     # Prev q-pt modes are columns
@@ -567,7 +567,7 @@ class QpointPhononModes(QpointFrequencies):
             if len(cross_sections_data) == 2:
                 cs2 = [cross_sections_data[1][x]
                         for x in self.crystal.atom_type]
-                cs = [sum(x) for x in zip(cs, cs2)]
+                cs = [sum(x) for x in zip(cs, cs2, strict=True)]
             # Account for cross sections in different, or invalid, units
             ex_units = '[length]**2'
             if not cs[0].check(ex_units):

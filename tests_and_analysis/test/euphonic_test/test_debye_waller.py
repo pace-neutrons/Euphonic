@@ -18,6 +18,8 @@ from tests_and_analysis.test.utils import (
     get_data_path,
 )
 
+FLOAT64_EPS = np.finfo(np.float64).eps
+
 
 class ExpectedDebyeWaller:
 
@@ -73,7 +75,7 @@ def get_expected_dw(material, json_file):
 
 def check_debye_waller(
         debye_waller, expected_debye_waller,
-        dw_atol=np.finfo(np.float64).eps,
+        dw_atol=FLOAT64_EPS,
         dw_rtol=1e-7):
     check_crystal(debye_waller.crystal,
                   expected_debye_waller.crystal)
