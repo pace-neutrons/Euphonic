@@ -735,12 +735,11 @@ class ForceConstants:
             max_real = np.amax(np.absolute(rmode_gradients.real))
             idx = np.where(
                 rmode_gradients.imag/max_real > 1e-10)
-            n_idx = len(idx[0])
-            if n_idx > 0:
+            if (n_idx := len(idx[0])) > 0:
                 n_print = n_idx if n_idx < 5 else 5
                 warnings.warn(f"""
 Unexpected values for mode gradients at {n_idx}/{rmode_gradients.size} indices
-{[x for x in zip(*idx, strict=False)][:n_print]} ..., expected near-zero
+{list(zip(*idx, strict=True))[:n_print]} ..., expected near-zero
 imaginary elements, got values of {rmode_gradients.imag[idx][:n_print]}...,
 compared to a max real value of {max_real}. Data may have been lost when
 casting to real mode gradients.
