@@ -151,7 +151,7 @@ class QpointPhononModes(QpointFrequencies):
 
                 # Find greatest dot product
                 for _ in repeat(None, n_branches):
-                    max_i = (np.argmax(dot_mat))
+                    max_i = np.argmax(dot_mat)
                     # Modes are dot_mat rows
                     mode = int(max_i/n_branches)
                     # Prev q-pt modes are columns
