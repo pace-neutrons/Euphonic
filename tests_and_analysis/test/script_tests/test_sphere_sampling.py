@@ -35,7 +35,8 @@ sphere_sampling_params =  [
     ['15', 'spherical-polar-improved'],
     ['15', 'spherical-polar-improved', '--jitter'],
     ['10', 'random-sphere'],
-    ['10', 'random-sphere', '--jitter']]
+    ['10', 'random-sphere', '--jitter'],
+    ['6', 'recurrence-cube']]
 
 
 class TestRegression:
