@@ -26,6 +26,7 @@ sphere_sampling_params =  [
     ['27', 'golden-square'],
     ['8', 'regular-square'],
     ['9', 'regular-square'],
+    ['8', 'recurrence-square'],
     ['10', 'golden-sphere'],
     ['10', 'golden-sphere', '--jitter'],
     ['15', 'spherical-polar-grid'],
@@ -36,7 +37,8 @@ sphere_sampling_params =  [
     ['15', 'spherical-polar-improved', '--jitter'],
     ['10', 'random-sphere'],
     ['10', 'random-sphere', '--jitter'],
-    ['6', 'recurrence-cube']]
+    ['6', 'recurrence-cube'],
+]
 
 
 class TestRegression:
