@@ -1,5 +1,4 @@
 from argparse import (
-    Action,
     ArgumentDefaultsHelpFormatter,
     ArgumentParser,
     Namespace,
@@ -489,25 +488,6 @@ def _get_cli_parser(features: Collection[str] = {},
         options to be added
 
     """
-    def deprecation_text(deprecated_arg: str, new_arg: str):
-        return (f'--{deprecated_arg} is deprecated, '
-                f'please use --{new_arg} instead')
-    def deprecated_arg(recommended_arg: str):
-        class DeprecatedArgAction(Action):
-            def __call__(self, parser, args, values, option_string=None):
-                # Need to filter to raise warnings from CL tools
-                # Warnings not in __main__ are ignored by default
-                with warnings.catch_warnings():
-                    warnings.filterwarnings(
-                        'default', category=DeprecationWarning,
-                        module=__name__)
-                    warnings.warn(
-                        deprecation_text(self.dest, recommended_arg),
-                        DeprecationWarning,
-                        stacklevel=2)
-                    setattr(args, recommended_arg, values)
-        return DeprecatedArgAction
-
     _pdos_choices = ('coherent-dos', 'incoherent-dos',
                      'coherent-plus-incoherent-dos')
     _ins_choices = ('coherent',)
