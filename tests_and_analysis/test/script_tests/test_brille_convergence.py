@@ -1,4 +1,3 @@
-from itertools import repeat
 import json
 import sys
 from unittest.mock import patch
@@ -69,9 +68,11 @@ class TestRegression:
                 if key == 'xy_data':
                     # Float values for small statistics hard to check
                     # Just test shape
-                    for _ in repeat(None, len(expected_val)):
-                        assert np.array(expected_val[0]).shape \
-                               == np.array(plot_data[key][0]).shape
+                    for expected_item, plot_item in zip(
+                            expected_val, plot_data[key], strict=True):
+                        assert (np.array(expected_item).shape
+                                == np.array(plot_item).shape)
+
                 elif key != 'x_ticklabels':
                     # Check titles and ax labels
                     # Don't care about tick labels

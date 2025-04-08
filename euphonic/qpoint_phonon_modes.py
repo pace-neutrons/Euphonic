@@ -1,7 +1,6 @@
 """Data container (with methods) for phonon frequencies and eigenvectors"""
 
 from collections.abc import Mapping
-from itertools import repeat
 import math
 from typing import Any, Dict, Optional, Type, TypeVar, Union
 
@@ -150,7 +149,7 @@ class QpointPhononModes(QpointFrequencies):
                 dot_mat = np.reshape(dots, (n_branches, n_branches))
 
                 # Find greatest dot product
-                for _ in repeat(None, n_branches):
+                for _ in range(n_branches):
                     max_i = np.argmax(dot_mat)
                     # Modes are dot_mat rows
                     mode = int(max_i/n_branches)
