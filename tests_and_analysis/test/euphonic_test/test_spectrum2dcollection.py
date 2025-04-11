@@ -246,6 +246,36 @@ class TestSpectrum2DCollectionFunctionality:
             assert isinstance(item, Spectrum2D)
             check_spectrum2d(item, ref)
 
+    def test_bin_methods(self, quartz_fuzzy_collection):
+        """Check access to x and y bins"""
+
+        assert (
+            len(quartz_fuzzy_collection.get_bin_edges("x"))
+            == quartz_fuzzy_collection.z_data.shape[1] + 1
+        )
+        assert (
+            len(quartz_fuzzy_collection.get_bin_edges("y"))
+            == quartz_fuzzy_collection.z_data.shape[2] + 1
+        )
+        assert (
+            len(quartz_fuzzy_collection.get_bin_centres("x"))
+            == quartz_fuzzy_collection.z_data.shape[1]
+        )
+        assert (
+            len(quartz_fuzzy_collection.get_bin_centres("y"))
+            == quartz_fuzzy_collection.z_data.shape[2]
+        )
+
+        np.testing.assert_allclose(
+            quartz_fuzzy_collection.get_bin_centres("x"),
+            np.linspace(0, 1, 10) * ureg("1 / angstrom")
+        )
+
+        np.testing.assert_allclose(
+            quartz_fuzzy_collection.get_bin_edges("y"),
+            np.linspace(0, 100, 20) * ureg("1 / angstrom")
+        )
+
     def test_collection_methods(self, quartz_fuzzy_collection):
         """Check methods from SpectrumCollectionMixin
 

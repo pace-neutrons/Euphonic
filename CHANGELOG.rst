@@ -1,6 +1,12 @@
 `Unreleased <https://github.com/pace-neutrons/Euphonic/compare/v1.4.2...HEAD>`_
 -------------------------------------------------------------------------------
 
+- Features
+
+  - Add methods get_bin_edges, get_bin_centers to
+    Spectrum2DCollection, making interface consistent with other
+    Spectrum classes.
+
 - Bug fixes
 
   - Fix tox version number in Pyproject.toml; installation with [ci]
