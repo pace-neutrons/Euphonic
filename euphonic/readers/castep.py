@@ -243,7 +243,7 @@ def read_phonon_data(
             idx += 1
 
     # Multiple qpts with same CASTEP q-pt index: correct weights
-    for _qpt_id, indices in repeated_qpt_ids.items():
+    for indices in repeated_qpt_ids.values():
         if (prefer_non_loto
             and (intersection := indices & loto_split_indices)
             and len(indices) > len(intersection)):

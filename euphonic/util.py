@@ -495,10 +495,10 @@ def _calc_abscissa(reciprocal_cell: Quantity, qpts: np.ndarray
     # If delta is more than the tolerance, but delta_rem is less than
     # the tolerance, the q-points differ by G so are equivalent and the
     # distance shouldn't be calculated
-    TOL = 0.001
+    tol = 0.001
     calc_modq = np.logical_not(np.logical_and(
-        np.sum(np.abs(delta), axis=1) > TOL,
-        delta_rem < TOL))
+        np.sum(np.abs(delta), axis=1) > tol,
+        delta_rem < tol))
 
     # Multiply each delta by the recip lattice to get delta in Cartesian
     deltaq = np.einsum('ji,kj->ki', recip, delta)
@@ -645,21 +645,24 @@ def _get_qpt_label(qpt: np.ndarray,
 
     # Check for matching symmetry point coordinates (roll q-point
     # coordinates if no match is found)
-    TOL = 1e-6
+    atol = 1e-6
     matching_label_index = np.where((np.isclose(
-        label_coords, qpt_norm, atol=TOL)).all(axis=1))[0]
+        label_coords, qpt_norm, atol=atol)).all(axis=1))[0]
     if matching_label_index.size == 0:
         matching_label_index = np.where((np.isclose(
-            label_coords, np.roll(qpt_norm, 1), atol=TOL)).all(axis=1))[0]
+            label_coords, np.roll(qpt_norm, 1), atol=atol)).all(axis=1))[0]
     if matching_label_index.size == 0:
         matching_label_index = np.where((np.isclose(
-            label_coords, np.roll(qpt_norm, 2), atol=TOL)).all(axis=1))[0]
+            label_coords, np.roll(qpt_norm, 2), atol=atol)).all(axis=1))[0]
 
     label = ''
     if matching_label_index.size > 0:
         label = labels[matching_label_index[0]]
 
     return label
+
+
+CHUNK_SIZE = 100
 
 
 def _get_supercell_relative_idx(cell_origins: np.ndarray,
@@ -702,11 +705,10 @@ def _get_supercell_relative_idx(cell_origins: np.ndarray,
         # equivalent
         # Do calculation in chunks, so loop can be broken if all
         # equivalent vectors have been found
-        N = 100
         dist_min = np.full((n_cells), sys.float_info.max)
-        for i in range(int((n_cells - 1)/N) + 1):
-            ci = i*N
-            cf = min((i + 1)*N, n_cells)
+        for i in range(int((n_cells - 1) / CHUNK_SIZE) + 1):
+            ci = i * CHUNK_SIZE
+            cf = min((i + 1) * CHUNK_SIZE, n_cells)
             dist = (inter_cell_vectors[:, ax, :]
                     - cell_origins_sc[ax, ci:cf, :])
             dist_frac = dist - np.rint(dist)

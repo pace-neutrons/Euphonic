@@ -44,11 +44,11 @@ def release_github(test=True):
                 f'{ver}'))
 
     if is_prerelease:
-        BODY_RE = r'`Unreleased.*?^-+\n(.*?)^`v'
+        body_re = r'`Unreleased.*?^-+\n(.*?)^`v'
     else:
-        BODY_RE = r'`v\d+\.\d+\.\S+.*?^-+\n(.*?)^`v'
+        body_re = r'`v\d+\.\d+\.\S+.*?^-+\n(.*?)^`v'
 
-    desc = re.search(BODY_RE, changelog,
+    desc = re.search(body_re, changelog,
                      re.DOTALL | re.MULTILINE).groups()[0].strip()
 
     payload = {
