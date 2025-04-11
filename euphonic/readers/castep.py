@@ -100,13 +100,16 @@ def read_phonon_dos_data(
     data_dict['frequencies'] = ((freqs*(1/ureg.cm)).to(
         frequencies_unit)).magnitude
     data_dict['frequencies_unit'] = frequencies_unit
-    # Pint conversion 'angstrom*(1/cm)' to 'angstrom*(meV)' doesn't
-    # work so convert separately
-    mode_grads = mode_grads*ureg('angstrom').to(cell_vectors_unit).magnitude
-    data_dict['mode_gradients'] = mode_grads*ureg('1/cm').to(
-            frequencies_unit).magnitude
-    data_dict['mode_gradients_unit'] = (frequencies_unit + '*'
-                                        + cell_vectors_unit)
+    # Pint conversion 'angstrom * (1/cm)' to 'angstrom * (meV)' doesn't
+    # work so convert to meV first then go to specified units
+    mode_grads = (mode_grads * ureg("angstrom")
+                  ).to(cell_vectors_unit).magnitude
+    data_dict["mode_gradients"] = (
+        ((mode_grads * ureg("1/cm")).to("meV") * ureg("angstrom"))
+        .to(mode_gradients_unit)
+        .magnitude
+    )
+    data_dict['mode_gradients_unit'] = mode_gradients_unit
     data_dict['dos_bins'] = dos_data[:, 0]*ureg('1/cm').to(
             frequencies_unit).magnitude
     data_dict['dos_bins_unit'] = frequencies_unit

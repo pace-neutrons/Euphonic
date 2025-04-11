@@ -4,8 +4,7 @@ import pytest
 
 from euphonic import ureg
 from euphonic.spectra import Spectrum1D, Spectrum1DCollection
-
-from ..script_tests.utils import get_ax_image_data
+from tests_and_analysis.test.script_tests.utils import get_ax_image_data
 
 # Allow tests with matplotlib marker to be collected and
 # deselected if Matplotlib is not installed

@@ -10,7 +10,7 @@ try:
 except ModuleNotFoundError:
     pass
 
-from ..utils import get_data_path
+from tests_and_analysis.test.utils import get_data_path
 
 
 def args_to_key(cl_args: List[str]) -> str:
