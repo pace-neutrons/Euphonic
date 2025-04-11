@@ -1,4 +1,4 @@
-# -*- coding: UTF-8 -*-
+# -*- coding: utf-8 -*-
 from argparse import ArgumentParser
 from typing import List, Optional
 

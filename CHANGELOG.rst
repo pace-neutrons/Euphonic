@@ -11,6 +11,10 @@
 
   - Fix tox version number in Pyproject.toml; installation with [ci]
     "extra" was broken.
+  - Fix the *mode_gradients_unit* argument to
+    ``euphonic.readers.castep.read_phonon_dos_data``; this was
+    returning consistent data/units but ignoring the preference
+    expressed in that argument.
 
 - Maintenance
 

@@ -1,4 +1,4 @@
-# -*- coding: UTF-8 -*-
+# -*- coding: utf-8 -*-
 from argparse import SUPPRESS, ArgumentParser, Namespace
 import itertools
 from pathlib import Path
@@ -30,7 +30,7 @@ def main(params: Optional[List[str]] = None) -> None:
 def check_brille_settings(
         filename: str,
         npts: int = 500,
-        use_brille: bool = True,
+        use_brille: bool = True,  # noqa: ARG001  # Removal scheduled for v2
         brille_grid_type: str = 'trellis',
         brille_npts: int = 5000,
         brille_npts_density: Optional[int] = None,
