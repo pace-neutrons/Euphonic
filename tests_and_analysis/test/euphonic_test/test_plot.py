@@ -306,7 +306,7 @@ class TestPlot1D:
 
     def test_plot_with_incorrect_labels_raises_valueerror(self, band_segments):
         with pytest.raises(ValueError):
-            fig = plot_1d(band_segments, labels=['Band A', 'Band B'])
+             plot_1d(band_segments, labels=['Band A', 'Band B'])
 
     @pytest.mark.parametrize('spec, kwargs', [
         (Spectrum1D(*spec1d_args), {'ls': '.-'}),

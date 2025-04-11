@@ -230,31 +230,31 @@ class TestSpectrum1DCollectionCreation:
 
     bad_sequences = [
         [
-            ["NotASpectrum", get_spectrum1d(f"gan_bands_index_2.json")],
+            ["NotASpectrum", get_spectrum1d("gan_bands_index_2.json")],
             TypeError,
         ],
         [
-            [get_spectrum1d(f"gan_bands_index_2.json"), "NotASpectrum"],
+            [get_spectrum1d("gan_bands_index_2.json"), "NotASpectrum"],
             TypeError,
         ],
         [
             [
-                get_spectrum1d(f"gan_bands_index_2.json"),
-                get_spectrum1d(f"methane_pdos_index_1.json"),
+                get_spectrum1d("gan_bands_index_2.json"),
+                get_spectrum1d("methane_pdos_index_1.json"),
             ],
             ValueError,
         ],
         [
             [
-                get_spectrum1d(f"gan_bands_index_2.json"),
-                get_spectrum1d(f"gan_bands_index_3.json"),
+                get_spectrum1d("gan_bands_index_2.json"),
+                get_spectrum1d("gan_bands_index_3.json"),
             ],
             ValueError,
         ],
         [
             [
-                get_spectrum1d(f"gan_bands_index_2.json"),
-                get_spectrum1d(f"gan_bands_index_3.json"),
+                get_spectrum1d("gan_bands_index_2.json"),
+                get_spectrum1d("gan_bands_index_3.json"),
             ],
             ValueError,
         ],
@@ -274,8 +274,8 @@ class TestSpectrum1DCollectionCreation:
     def test_unsafe_from_sequence(self):
         """Ensure that unsafe from_spectra doesn't check units"""
 
-        spec1 = get_spectrum1d(f'gan_bands_index_2.json')
-        spec2 = get_spectrum1d(f'gan_bands_index_3.json')
+        spec1 = get_spectrum1d('gan_bands_index_2.json')
+        spec2 = get_spectrum1d('gan_bands_index_3.json')
 
         spec1.x_data_unit = '1/angstrom'
         spec2.x_data_unit = '1/mm'

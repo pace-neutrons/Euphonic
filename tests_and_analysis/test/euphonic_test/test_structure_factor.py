@@ -436,7 +436,7 @@ class TestStructureFactorCalculateSqwMap:
         sf = get_sf('CaHgO2', 'CaHgO2_300K_fc_structure_factor.json')
         ebins = np.array([0, 50, 100, 150, 200, 250, 300])*ureg('1/cm')
         with warnings.catch_warnings(record=True) as warn_record:
-            sqw = sf.calculate_sqw_map(ebins)
+             sf.calculate_sqw_map(ebins)
         assert len(warn_record) == 0
 
     @pytest.mark.parametrize(
@@ -507,5 +507,5 @@ class TestStructureFactorCalculateDos:
             'quartz', 'quartz_666_300K_structure_factor.json')
         ebins = np.arange(0, 1300, 4)*ureg('1/cm')
         with warnings.catch_warnings(record=True) as warn_record:
-            dos = sf.calculate_dos(ebins)
+             sf.calculate_dos(ebins)
         assert len(warn_record) == 0
