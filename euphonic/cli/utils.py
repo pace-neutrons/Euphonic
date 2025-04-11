@@ -564,10 +564,6 @@ def _get_cli_parser(features: Collection[str] = {},
             help=('Number of parallel processes for computing phonon modes. '
                   '(Only applies when using C extension.)'))
 
-    pdos_desc = ('coherent neutron-weighted DOS, incoherent '
-                 'neutron-weighted DOS or total (coherent + incoherent) '
-                 'neutron-weighted DOS')
-    ins_desc = ('coherent inelastic neutron scattering')
     if 'pdos-weighting' in features:
         # Currently do not support multiple PDOS for 2D plots
         if 'q-e' not in features:
