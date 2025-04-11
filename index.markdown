@@ -41,7 +41,8 @@ schemadotorg:
     '@type': Person
     familyName: Voneshen
     givenName: David J.
-  - '@type': Person
+  - '@id': https://orcid.org/0009-0004-9147-3475
+    '@type': Person
     familyName: Wilkins
     givenName: Jacob S.
   codeRepository: https://github.com/pace-neutrons/Euphonic
