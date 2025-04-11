@@ -15,6 +15,16 @@
     internal import loops: users remain welcome to access things via
     ``from euphonic import ureg, Quantity``.
 
+  - Introduced ruff-based linting with a (fair-sized) subset of rules enabled.
+
+    - This cleanup may have introduced some small improvements to error and
+      warning messages.
+
+    - The executable bits on some files have changed, for better
+      consistency and to express more clearly how they are used.
+
+  - Improved test coverage, removed some unused code
+
 `v1.4.2 <https://github.com/pace-neutrons/Euphonic/compare/v1.4.1...v1.4.2>`_
 -----------------------------------------------------------------------------
 
