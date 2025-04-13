@@ -261,21 +261,21 @@ def _width_interpolated_broadening(
 
     spectrum = np.zeros(len(bins)-1)
 
+    upper_weights_prev = np.array([], dtype=float)
+    x_prev = np.array([], dtype=float)
+
     for i in range(1, len(width_samples)+1):
         masked_block = (kernels_idx == i)
         width_factors = widths[masked_block]/width_samples[i-1]
         lower_mix = np.polyval(lower_coeffs, width_factors)
         lower_weights = lower_mix * weights[masked_block]
 
-        if i == 1:
-            hist, _ = np.histogram(x[masked_block], bins=bins,
-                                   weights=lower_weights/bin_width)
-        else:
-            mixing_weights = np.concatenate((upper_weights_prev,
-                                             lower_weights))
-            hist_x = np.concatenate((x_prev, x[masked_block]))
-            hist, _ = np.histogram(hist_x, bins=bins,
-                                   weights=mixing_weights/bin_width)
+        mixing_weights = np.concatenate((upper_weights_prev,
+                                         lower_weights))
+        hist_x = np.concatenate((x_prev, x[masked_block]))
+
+        hist, _ = np.histogram(hist_x, bins=bins,
+                               weights=mixing_weights/bin_width)
 
         x_prev = x[masked_block]
         upper_weights_prev = weights[masked_block] - lower_weights
