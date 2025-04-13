@@ -164,7 +164,8 @@ class TestRegression:
         # checking here that the correct arguments have been passed
         # through
         class MockError(Exception):
-            pass
+            """Throw exception to stop working on Brille interpolator"""
+
         mock = mocker.patch.object(BrilleInterpolator, 'from_force_constants',
                                    side_effect=MockError())
         try:
