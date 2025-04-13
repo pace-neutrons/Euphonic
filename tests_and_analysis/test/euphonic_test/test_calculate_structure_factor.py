@@ -175,8 +175,8 @@ class TestCalculateStructureFactorFromQpointPhononModes:
     def test_incompatible_debye_waller_raises_valueerror(
             self, qpt_ph_modes, dw_material, dw_file):
         with pytest.raises(ValueError):
-             qpt_ph_modes.calculate_structure_factor(
-                 dw=get_dw(dw_material, dw_file))
+            qpt_ph_modes.calculate_structure_factor(
+                dw=get_dw(dw_material, dw_file))
 
 
 class TestCalculateStructureFactorUsingReferenceData:
