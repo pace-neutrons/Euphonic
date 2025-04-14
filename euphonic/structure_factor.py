@@ -1,4 +1,4 @@
-from typing import Any, Dict, Optional, Type, TypeVar
+from typing import Any, Dict, NoReturn, Optional, Type, TypeVar
 import warnings
 
 import numpy as np
@@ -387,11 +387,11 @@ class StructureFactor(QpointFrequencies):
                    d['temperature'])
 
     @classmethod
-    def from_castep(cls: Type[T]) -> None:  # type: ignore
+    def from_castep(cls: Type[T]) -> NoReturn:
         ''
         raise AttributeError
 
     @classmethod
-    def from_phonopy(cls: Type[T]) -> None:  # type: ignore
+    def from_phonopy(cls: Type[T]) -> NoReturn:
         ''
         raise AttributeError

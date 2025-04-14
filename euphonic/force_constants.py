@@ -736,7 +736,7 @@ class ForceConstants:
             idx = np.where(
                 rmode_gradients.imag/max_real > 1e-10)
             if (n_idx := len(idx[0])) > 0:
-                n_print = n_idx if n_idx < 5 else 5
+                n_print = min(5, n_idx)
                 warnings.warn(f"""
 Unexpected values for mode gradients at {n_idx}/{rmode_gradients.size} indices
 {list(zip(*idx, strict=True))[:n_print]} ..., expected near-zero

@@ -250,16 +250,16 @@ def read_phonon_data(
             # Repeated q-point has both split and un-split variations;
             # set weights of split points to zero
             if len(indices) - len(intersection) == 1:
-                indices = np.asarray(list(intersection), dtype=int)
-                weights[indices] = 0
+                zero_indices = np.asarray(list(intersection), dtype = int)
+                weights[zero_indices] = 0
             else:
                 raise ValueError(
                     "Found multiple non-split blocks for q-point {qpt_id},"
                     " cannot determine which to use.")
 
         elif average_repeat_points:
-            indices = np.asarray(list(indices), dtype=int)
-            weights[indices] /= indices.size
+            np_indices = np.asarray(list(indices), dtype=int)
+            weights[np_indices] /= np_indices.size
 
     data_dict: Dict[str, Any] = {}
     data_dict['crystal'] = {}

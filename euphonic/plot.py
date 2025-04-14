@@ -83,7 +83,7 @@ def plot_1d_to_axis(spectra: Union[Spectrum1D, Spectrum1DCollection],
                 color = None
             else:
                 # Only add legend label to the first segment
-                label = None
+                label = None  # noqa: PLW2901 (redefined-loop-name)
                 color = p[-1].get_color()
             # Allow user kwargs to take priority
             plot_kwargs = {**{'color': color, 'label': label}, **mplargs}
