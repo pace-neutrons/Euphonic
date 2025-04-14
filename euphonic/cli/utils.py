@@ -770,8 +770,8 @@ def _get_cli_parser(features: Collection[str] = {},
                 choices=('gauss', 'lorentz'),
                 help='The broadening shape')
         else:
-            ValueError('"adaptive-broadening" cannot be applied without '
-                       '"ebins"')
+            raise ValueError('"adaptive-broadening" cannot be applied without '
+                             '"ebins"')
 
     if {'q-e', 'mp-grid'}.intersection(features):
         sections['q'].add_argument(

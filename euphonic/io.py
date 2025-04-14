@@ -19,8 +19,8 @@ def _to_json_dict(dictionary: Dict[str, Any]) -> Dict[str, Any]:
     for key, val in dictionary.items():
         if isinstance(val, np.ndarray):
             if val.dtype == np.complex128:
-                val = val.view(np.float64).reshape(val.shape + (2,))
-            dictionary[key] = val.tolist()
+                complex_pair = val.view(np.float64).reshape(val.shape + (2,))
+            dictionary[key] = complex_pair.tolist()
         elif isinstance(val, dict):
             if key != 'metadata':
                 dictionary[key] = _to_json_dict(val)

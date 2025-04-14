@@ -126,9 +126,11 @@ select = [
        # "D",     # 2000 errors, code sprint material?
        "F",
        # "F821",    # undefined-name : This is useful for missing imports, but currently catches a few other things
+       "PLC",
+       "PLE",
+       #"PLR",
+       "PLW",
        "PGH",     # pygrep-hooks
-       "W291",    # trailing-whitespace
-       "W293",    # blank-line-with-whitespace
        "B006",    # mutable-argument-default
        "PLR0203", # no-staticmethod-decorator
        "PLR5501", # collapsible-else-if
@@ -140,6 +142,7 @@ ignore = [
        "CPY001",  # Missing copyright notice at top of every file. Not for us.
        "T20",     # flake8-print forbids use of print and pprint.
        "PERF203", # No try-except in loop. Micro-optimisation, not relevant for Py 3.11+
+       "PLE1300", # Pint introduces format character P, ruff doesn't recognise it
        ]
 task-tags = ["Note"]  # Avoid false positives for ERA001 on lines like "# Note: CODE-LIKE-THINGS"
 

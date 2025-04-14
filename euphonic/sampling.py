@@ -229,7 +229,7 @@ def spherical_polar_grid(n_phi: int, n_theta: int,
         if jitter:
             displacement = ((np.random.random(2) - 0.5)
                             * [phi_spacing, theta_spacing])
-            phi, theta = [phi, theta] + displacement
+            phi, theta = [phi, theta] + displacement  # noqa: PLW2901
 
         if cartesian:
             yield _spherical_polar_to_cartesian(phi, theta)
@@ -310,7 +310,7 @@ def spherical_polar_improved(npts: int,
             if jitter:
                 displacement = (np.random.random(2) - 0.5) * [phi_spacing,
                                                               theta_spacing]
-                phi, theta = [phi, row_theta] + displacement
+                phi, theta = [phi, row_theta] + displacement  # noqa: PLW2901
             else:
                 theta = row_theta
 
