@@ -1043,6 +1043,7 @@ casting to real mode gradients.
         # minimise size of stored H_ab)
         n_elems = np.sum(range(1, n_atoms + 1))
         H_ab = np.zeros((0, n_elems, 3, 3))
+
         cells = np.zeros((0, 3))
         atom_r_cart = np.einsum('ij,jk->ik', atom_r, cell_vectors)
         atom_r_e = np.einsum('ij,jk->ik', atom_r_cart, inv_dielectric)
@@ -1051,7 +1052,7 @@ casting to real mode gradients.
             cells_cart = np.einsum('ij,jk->ik', cells_tmp, cell_vectors)
             cells_e = np.einsum(
                 'ij,jk->ik', cells_cart, inv_dielectric)
-            H_ab_tmp = np.zeros((len(cells_tmp), n_elems, 3, 3))
+            H_ab_tmp = np.zeros((len(cells_tmp), n_elems, 3, 3))  # noqa: N806
             for i in range(n_atoms):
                 idx = np.sum(range(n_atoms - i, n_atoms), dtype=np.int32)
                 for j in range(i, n_atoms):

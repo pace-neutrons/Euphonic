@@ -330,11 +330,11 @@ class StructureFactor(QpointFrequencies):
                 'When calculating the Bose factor, no temperature was '
                 'provided, and no temperature could be found in '
                 'StructureFactor')
-        kB = (1*ureg.k).to('E_h/K').magnitude
+        k_B = (1*ureg.k).to('E_h/K').magnitude
         temp = temperature.to('K').magnitude
         bose = np.zeros(self._frequencies.shape)
         if temperature > 0:
-            bose = 1/(np.exp(np.absolute(self._frequencies)/(kB*temp)) - 1)
+            bose = 1/(np.exp(np.absolute(self._frequencies)/(k_B*temp)) - 1)
         else:
             bose = 0
         return bose

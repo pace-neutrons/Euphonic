@@ -143,14 +143,15 @@ class TestRegression:
         # Stop execution once from_fc has been called - we're only
         # checking here that the correct arguments have been passed
         # through
-        class MockException(Exception):
-            pass
+        class MockError(Exception):
+            """Throw exception to stop working on Brille interpolator"""
+
         mock = mocker.patch.object(BrilleInterpolator, 'from_force_constants',
-                                   side_effect=MockException())
+                                   side_effect=MockError())
         try:
             euphonic.cli.brille_convergence.main(
                 [graphite_fc_file] + brille_conv_args)
-        except MockException:
+        except MockError:
             pass
         default_interp_kwargs =  {'asr': None, 'dipole_parameter': 1.0,
                                   'n_threads': None, 'use_c': None}

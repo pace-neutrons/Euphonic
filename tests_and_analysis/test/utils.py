@@ -241,7 +241,7 @@ def check_json_metadata(json_file: str, class_name: str) -> None:
     assert data['__euphonic_version__'] == __version__
 
 
-def sum_at_degenerate_modes(values_to_sum, frequencies, TOL=0.05):
+def sum_at_degenerate_modes(values_to_sum, frequencies, tol=0.05):
     """
     For degenerate frequency modes, eigenvectors are an arbitrary
     admixture, so derived quantities (e.g. structure factors) can
@@ -268,8 +268,8 @@ def sum_at_degenerate_modes(values_to_sum, frequencies, TOL=0.05):
         value_sum = np.expand_dims(value_sum, -1)
         values_to_sum = np.expand_dims(values_to_sum, -1)
     for i in range(len(frequencies)):
-        diff = np.append(TOL + 1, np.diff(frequencies[i]))
-        unique_index = np.where(diff > TOL)[0]
+        diff = np.append(tol + 1, np.diff(frequencies[i]))
+        unique_index = np.where(diff > tol)[0]
         x = np.zeros(len(frequencies[0]), dtype=np.int32)
         x[unique_index] = 1
         unique_modes = np.cumsum(x) - 1

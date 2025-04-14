@@ -4,8 +4,7 @@ import pytest
 
 from euphonic import ureg
 from euphonic.spectra import Spectrum1D, Spectrum1DCollection
-
-from ..script_tests.utils import get_ax_image_data
+from tests_and_analysis.test.script_tests.utils import get_ax_image_data
 
 # Allow tests with matplotlib marker to be collected and
 # deselected if Matplotlib is not installed
@@ -307,7 +306,7 @@ class TestPlot1D:
 
     def test_plot_with_incorrect_labels_raises_valueerror(self, band_segments):
         with pytest.raises(ValueError):
-            fig = plot_1d(band_segments, labels=['Band A', 'Band B'])
+            plot_1d(band_segments, labels=['Band A', 'Band B'])
 
     @pytest.mark.parametrize('spec, kwargs', [
         (Spectrum1D(*spec1d_args), {'ls': '.-'}),

@@ -10,7 +10,7 @@ try:
 except ModuleNotFoundError:
     pass
 
-from ..utils import get_data_path
+from tests_and_analysis.test.utils import get_data_path
 
 
 def args_to_key(cl_args: List[str]) -> str:
@@ -52,19 +52,14 @@ def get_plot_line_data(fig: Optional['matplotlib.figure.Figure'] = None
 
 
 def get_all_figs() -> List['matplotlib.figure.Figure']:
-    all_figs = []
     fignums = matplotlib.pyplot.get_fignums()
-    for fignum in fignums:
-        all_figs.append(matplotlib.pyplot.figure(fignum))
-    return all_figs
+    return [matplotlib.pyplot.figure(fignum) for fignum in fignums]
+
 
 
 def get_all_plot_line_data(figs: List['matplotlib.figure.Figure']
                            ) -> List[Dict[str, Any]]:
-    data = []
-    for fig in figs:
-        data.append(get_plot_line_data(fig))
-    return data
+    return [get_plot_line_data(fig) for fig in figs]
 
 
 def get_fig_label_data(fig) -> Dict[str, Union[str, List[str]]]:

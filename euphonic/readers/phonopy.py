@@ -710,9 +710,8 @@ def read_interpolation_data(
         n_atoms = summary_dict['n_atoms']
         n_cells = int(len(summary_dict['sc_atom_r'])/n_atoms)
         if fc_format == 'phonopy':
-            with open(fc_pathname, 'r') as fc_file:
-                summary_dict['force_constants'] = _extract_force_constants(
-                    fc_pathname, n_atoms, n_cells, summary_pathname)
+            summary_dict['force_constants'] = _extract_force_constants(
+                fc_pathname, n_atoms, n_cells, summary_pathname)
         elif fc_format in 'hdf5':
             summary_dict['force_constants'] =  _extract_force_constants_hdf5(
                 fc_pathname, n_atoms, n_cells, summary_pathname)

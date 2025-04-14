@@ -1,4 +1,5 @@
-from typing import Optional, Sequence, Tuple, Union
+from itertools import pairwise
+from typing import TYPE_CHECKING, Optional, Sequence, Tuple, Union
 
 try:
     from matplotlib.axes import Axes
@@ -18,6 +19,9 @@ import numpy as np
 from euphonic.spectra import Spectrum1D, Spectrum1DCollection, Spectrum2D
 from euphonic.ureg import Quantity
 from euphonic.util import zips
+
+if TYPE_CHECKING:
+    from matplotlib.lines import Line2D
 
 
 def plot_1d_to_axis(spectra: Union[Spectrum1D, Spectrum1DCollection],
@@ -71,10 +75,11 @@ def plot_1d_to_axis(spectra: Union[Spectrum1D, Spectrum1DCollection],
         labels = [spec.metadata.get('label', None) for spec in spectra]
 
     for label, spectrum in zips(labels, spectra):
+        p: list[Line2D] | None = None
         # Plot each line in segments
-        for x0, x1 in zips(breakpoints[:-1], breakpoints[1:]):
+        for x0, x1 in pairwise(breakpoints):
             # Keep colour consistent across segments
-            if x0 == 0:
+            if p is None:  # i.e. on first iteration
                 color = None
             else:
                 # Only add legend label to the first segment

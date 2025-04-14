@@ -77,7 +77,6 @@ extend-exclude = ["doc/source/conf.py"]
 preview = true
 explicit-preview-rules = true
 select = [
-       "I",       # isort
        "ERA001",  # Eradicate commented-out code
        "YTT",     # Flake8-2020
        # "ANN",   # Full type annotation, not realistic right now
@@ -107,7 +106,25 @@ select = [
        "RSE",     # flake8-raise
        "RET",     # flake8-return
        # "SLF",     # flake8-self : would be good to take a closer look at some of this private attribute access
+       # "SIM",   # flake8-simplify : good stuff, worth its own PR
+       "SLOT",    # flake8-slots
+       "TID",     # flake8-tidy-imports
+       "TD",      # flake8-todos
+       "TC",      # flake8-type-checking
+       "ARG",     # flake8-unused-arguments
+       # "PTH",     # flake8-use-pathlib : would love to but maybe easier with API breaks
+       "FLY",     # flynt
+       "I",       # isort
+       # "C90",     # mccabe : code complexity check. Worth a look but non-trivial
+       # "NPY",   # NumPy-specific rules : good stuff, worth its own PR
+       "N",       # pep8-naming
+       "PERF",    # Perflint
        "F401",    # unused-import
+       # "E",     # pycodestyle error: this is a lot of stuff
+       "W",       # pycodestyle warning
+       "DOC",     # pydoclint
+       # "D",     # 2000 errors, code sprint material?
+       "F",
        # "F821",    # undefined-name : This is useful for missing imports, but currently catches a few other things
        "W291",    # trailing-whitespace
        "W293",    # blank-line-with-whitespace
@@ -121,6 +138,7 @@ ignore = [
        "S101",    # Use of except
        "CPY001",  # Missing copyright notice at top of every file. Not for us.
        "T20",     # flake8-print forbids use of print and pprint.
+       "PERF203", # No try-except in loop. Micro-optimisation, not relevant for Py 3.11+
        ]
 task-tags = ["Note"]  # Avoid false positives for ERA001 on lines like "# Note: CODE-LIKE-THINGS"
 
@@ -133,3 +151,9 @@ inline-quotes = "single"
 
 [tool.ruff.lint.isort]
 force-sort-within-sections = true
+
+[tool.ruff.lint.pep8-naming]
+extend-ignore-names = ["k_B", "H_ab"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests_and_analysis/test/**/*" = ["ARG"]  # pytest fixtures can look like unused arguments
