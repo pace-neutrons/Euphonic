@@ -126,6 +126,7 @@ select = [
        # "D",     # 2000 errors, code sprint material?
        "F",
        # "F821",    # undefined-name : This is useful for missing imports, but currently catches a few other things
+       "PGH",     # pygrep-hooks
        "W291",    # trailing-whitespace
        "W293",    # blank-line-with-whitespace
        "B006",    # mutable-argument-default
