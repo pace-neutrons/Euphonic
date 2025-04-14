@@ -125,17 +125,15 @@ select = [
        "DOC",     # pydoclint
        # "D",     # 2000 errors, code sprint material?
        "F",
-       # "F821",    # undefined-name : This is useful for missing imports, but currently catches a few other things
+       "PGH",     # pygrep-hooks
        "PLC",
        "PLE",
-       #"PLR",
-       "PLW",
-       "PGH",     # pygrep-hooks
-       "B006",    # mutable-argument-default
+       # "PLR",   # pylint refactor; 71 errors, own PR needed
        "PLR0203", # no-staticmethod-decorator
        "PLR5501", # collapsible-else-if
-       "RET505",  # superfluous-else-return
-       "RET506",  # superfluous-else-raise
+       "PLW",
+       # "UP",    # pyupgrade; lots of type hints to update
+       "FURB",
 ]
 ignore = [
        "S101",    # Use of except
