@@ -126,14 +126,16 @@ select = [
        # "D",     # 2000 errors, code sprint material?
        "F",
        "PGH",     # pygrep-hooks
-       "PLC",
-       "PLE",
+       "PLC",     # pylint convention
+       "PLE",     # pylint error
        # "PLR",   # pylint refactor; 71 errors, own PR needed
        "PLR0203", # no-staticmethod-decorator
        "PLR5501", # collapsible-else-if
-       "PLW",
+       "PLW",     # pylint warning
        # "UP",    # pyupgrade; lots of type hints to update
-       "FURB",
+       "FURB",    # refurb
+       # "RUF",   # Very reasonable changes but a few of them
+       # "TRY",   # tryceratops : quite a bit (maybe unnecessary) change in approach
 ]
 ignore = [
        "S101",    # Use of except
