@@ -8,11 +8,7 @@ from collections.abc import Collection, Sequence
 import json
 import os
 import pathlib
-from typing import (
-    Any,
-    Optional,
-    Union,
-)
+from typing import Any, Optional
 import warnings
 
 import numpy as np
@@ -869,7 +865,7 @@ def _get_cli_parser(features: Collection[str] = {},
     return parser, sections
 
 
-MplStyle = Union[str, dict[str, str]]
+MplStyle = str | dict[str, str]
 
 
 def _compose_style(
