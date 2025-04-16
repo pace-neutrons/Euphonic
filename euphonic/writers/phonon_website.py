@@ -195,7 +195,7 @@ def _modes_to_phonon_website_dict(
     duplicates = _find_duplicates(abscissa)
     breakpoints = _remove_breaks(abscissa)
 
-    breakpoints = sorted(set([0] + duplicates + breakpoints + [len(abscissa)]))
+    breakpoints = sorted(set([0, *duplicates, *breakpoints, len(abscissa)]))
     line_breaks = list(pairwise(breakpoints))
 
     if x_tick_labels is None:
