@@ -41,7 +41,7 @@ def jitter(request):
                            (8, 4), {'jitter': None}),
                           (13, 'spherical-polar-improved',
                            (13,), {'jitter': None}),
-                          (7, 'random-sphere', (7,), dict())]
+                          (7, 'random-sphere', (7,), {})]
                          )
 def test_get_qpts_sphere(mocker, random_qpts_array, jitter,
                          npts, sampling, sampling_args, sampling_kwargs):
@@ -172,25 +172,29 @@ class TestSphereSampledProperties:
                                            temperature=(100. * ureg('K')))
 
     @pytest.mark.parametrize('options',
-                             [dict(mod_q=1.2 * ureg('1 / angstrom'),
-                                   npts=400, jitter=True,
-                                   sampling='golden',
-                                   energy_bins=_energy_bins,
-                                   scattering_lengths='Sears1992',
-                                   dw=None),
-                              dict(mod_q=1.2 * ureg('1 / angstrom'),
-                                   npts=200, temperature=100. * ureg('K'),
-                                   sampling='golden', jitter=False,
-                                   energy_bins=_energy_bins,
-                                   scattering_lengths='Sears1992',
-                                   dw=None),
-                              dict(mod_q=2.3 * ureg('1 / angstrom'),
-                                   npts=1000, jitter=False,
-                                   sampling='spherical-polar-improved',
-                                   energy_bins=None,
-                                   scattering_lengths=_scattering_lengths,
-                                   dw='mock_dw')
-                               ])
+                             [{'mod_q': 1.2 * ureg('1 / angstrom'),
+                               'npts': 400,
+                               'jitter': True,
+                               'sampling': 'golden',
+                               'energy_bins': _energy_bins,
+                               'scattering_lengths': 'Sears1992',
+                               'dw': None},
+                              {'mod_q': 1.2 * ureg('1 / angstrom'),
+                               'npts': 200,
+                               'temperature': 100. * ureg('K'),
+                               'sampling': 'golden',
+                               'jitter': False,
+                               'energy_bins': _energy_bins,
+                               'scattering_lengths': 'Sears1992',
+                               'dw': None},
+                              {'mod_q': 2.3 * ureg('1 / angstrom'),
+                               'npts': 1000,
+                               'jitter': False,
+                               'sampling': 'spherical-polar-improved',
+                               'energy_bins': None,
+                               'scattering_lengths': _scattering_lengths,
+                               'dw': 'mock_dw'}
+                              ])
     def test_sample_sphere_structure_factor(self, mocker, mock_crystal,
                                             mock_fc, mock_qpm,
                                             mock_s, mock_dw, random_qpts_array,

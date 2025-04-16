@@ -365,5 +365,5 @@ def _get_gridspec_kw(spectra: Sequence[Spectrum1D | Spectrum1DCollection]):
     subplot_widths = [max(spectrum.x_data.magnitude)
                       - min(spectrum.x_data.magnitude)
                       for spectrum in spectra]
-    return dict(width_ratios=[w / subplot_widths[0]
-                                     for w in subplot_widths])
+    return {'width_ratios': [w / subplot_widths[0]
+                                     for w in subplot_widths]}

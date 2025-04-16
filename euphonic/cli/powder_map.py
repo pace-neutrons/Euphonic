@@ -121,7 +121,7 @@ def _get_broaden_kwargs(q_broadening: Optional[Sequence[float]] = None,
     else:
         energy_width = None
 
-    return dict(x_width=q_width, y_width=energy_width)
+    return {'x_width': q_width, 'y_width': energy_width}
 
 
 def main(params: Optional[list[str]] = None) -> None:
