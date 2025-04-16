@@ -118,7 +118,7 @@ class StructureFactor(QpointFrequencies):
         _check_unit_conversion(self, name, value,
                                ['frequencies_unit', 'structure_factors_unit',
                                 'temperature_unit'])
-        super(StructureFactor, self).__setattr__(name, value)
+        super().__setattr__(name, value)
 
     def calculate_1d_average(self,
                              e_bins: Quantity,

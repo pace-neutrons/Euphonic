@@ -106,7 +106,7 @@ class Crystal:
     def __setattr__(self, name: str, value: Any) -> None:
         _check_unit_conversion(self, name, value,
                                ['cell_vectors_unit', 'atom_mass_unit'])
-        super(Crystal, self).__setattr__(name, value)
+        super().__setattr__(name, value)
 
     def reciprocal_cell(self) -> Quantity:
         """

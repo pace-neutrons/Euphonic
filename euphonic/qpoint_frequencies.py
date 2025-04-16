@@ -93,7 +93,7 @@ class QpointFrequencies:
     def __setattr__(self, name: str, value: Any) -> None:
         _check_unit_conversion(self, name, value,
                                ['frequencies_unit'])
-        super(QpointFrequencies, self).__setattr__(name, value)
+        super().__setattr__(name, value)
 
     def calculate_dos(
         self,

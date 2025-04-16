@@ -85,7 +85,7 @@ class DebyeWaller:
     def __setattr__(self, name: str, value: Any) -> None:
         _check_unit_conversion(self, name, value,
                                ['debye_waller_unit', 'temperature_unit'])
-        super(DebyeWaller, self).__setattr__(name, value)
+        super().__setattr__(name, value)
 
     def to_dict(self) -> dict[str, Any]:
         """

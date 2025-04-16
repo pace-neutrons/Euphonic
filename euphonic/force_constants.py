@@ -175,7 +175,7 @@ class ForceConstants:
         _check_unit_conversion(self, name, value,
                                ['force_constants_unit', 'born_unit',
                                 'dielectric_unit'])
-        super(ForceConstants, self).__setattr__(name, value)
+        super().__setattr__(name, value)
 
     def calculate_qpoint_phonon_modes(
             self,
