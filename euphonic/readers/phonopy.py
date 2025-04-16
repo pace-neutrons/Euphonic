@@ -81,7 +81,7 @@ def _extract_phonon_data_yaml(filename: str,
         phonon_data = yaml.load(yaml_file, Loader=SafeLoader)
 
     data_dict = {}
-    phonons = [phon for phon in phonon_data['phonon']]
+    phonons = list(phonon_data['phonon'])
     bands_data_each_qpt = [bands_data['band'] for bands_data in phonons]
 
     data_dict['qpts'] = np.array([phon['q-position'] for phon in phonons])

@@ -451,11 +451,11 @@ def _get_unique_elems_and_idx(
     """
     # Abuse dict keys to get an "ordered set" of elems for iteration
     unique_elems = dict(zip(all_elems, itertools.cycle([None]))).keys()
-    return dict((
-        elem,
-        np.asarray([i for i, other_elem in enumerate(all_elems)
-                    if elem == other_elem])
-        ) for elem in unique_elems)
+    return {
+        elem: np.asarray([i for i, other_elem in enumerate(all_elems)
+                          if elem == other_elem])
+        for elem in unique_elems
+    }
 
 
 def _calc_abscissa(reciprocal_cell: Quantity, qpts: np.ndarray

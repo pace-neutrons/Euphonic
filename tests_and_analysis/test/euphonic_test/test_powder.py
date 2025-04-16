@@ -235,7 +235,7 @@ class TestSphereSampledProperties:
 
         # Check structure factor args were as expected
         assert (mock_qpm.calculate_structure_factor.call_args
-                == (tuple(), {'scattering_lengths': self._scattering_lengths,
+                == ((), {'scattering_lengths': self._scattering_lengths,
                               'dw': mock_dw}))
 
         # Check auto grid was used if temperature given

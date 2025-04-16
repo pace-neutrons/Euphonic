@@ -87,7 +87,7 @@ select = [
        "B",     # flake8-bugbear: Fixable but a bit involved
        "A",       # flake8-builtins
        # "COM",   # flake8-commas: Fixable but a big diff
-       # "C4",    # flake8-comprehensions: Good stuff, worth its own PR
+       "C4",    # flake8-comprehensions: Good stuff, worth its own PR
        "T10",     # flake8-debugger
        # "EM",      # flake8-errmsg: Big diff, worth its own PR
        "EXE",     # flake8-executable
@@ -139,6 +139,7 @@ select = [
 ]
 ignore = [
        "S101",    # Use of except
+       "C408",    # Use of dict() instead of literal. Sometimes it's easier to read.
        "CPY001",  # Missing copyright notice at top of every file. Not for us.
        "T20",     # flake8-print forbids use of print and pprint.
        "PERF203", # No try-except in loop. Micro-optimisation, not relevant for Py 3.11+

@@ -85,7 +85,7 @@ class TestRegression:
             expected_line_data = json.load(f)[args_to_key(dispersion_args)]
         # Increase tolerance if asr present - can give slightly
         # different results with different libs
-        if any(['--asr' in arg for arg in dispersion_args]):
+        if any('--asr' in arg for arg in dispersion_args):
             atol = 5e-6
         else:
             atol = sys.float_info.epsilon
