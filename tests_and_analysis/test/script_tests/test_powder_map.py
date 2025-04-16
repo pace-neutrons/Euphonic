@@ -170,7 +170,7 @@ class TestRegression:
                                    side_effect=MockError())
         try:
             euphonic.cli.powder_map.main(
-                [graphite_fc_file] + powder_map_args + quick_calc_params)
+                [graphite_fc_file, *powder_map_args, *quick_calc_params])
         except MockError:
             pass
         default_interp_kwargs =  {'asr': None, 'dipole_parameter': 1.0,
@@ -191,16 +191,16 @@ class TestRegression:
         [nacl_prim_fc_file, '-s']])
     def test_plot_save_to_file(self, inject_mocks, tmpdir, powder_map_args):
         output_file = str(tmpdir.join('test.png'))
-        euphonic.cli.powder_map.main(powder_map_args + [output_file]
-                                     + quick_calc_params)
+        euphonic.cli.powder_map.main(
+            [*powder_map_args, output_file, *quick_calc_params])
         assert os.path.exists(output_file)
 
     @pytest.mark.parametrize('powder_map_args', [
         [graphite_fc_file, '--save-json']])
     def test_plot_save_to_json(self, inject_mocks, tmpdir, powder_map_args):
         output_file = str(tmpdir.join('test.json'))
-        euphonic.cli.powder_map.main(powder_map_args + [output_file]
-                                     + quick_calc_params)
+        euphonic.cli.powder_map.main(
+            [*powder_map_args, output_file, *quick_calc_params])
         spec = Spectrum2D.from_json_file(output_file)
         assert isinstance(spec, Spectrum2D)
 

@@ -173,7 +173,7 @@ class TestSpectrum2DCollectionCreation:
 
         bad_item = request.getfixturevalue(bad_item_name)
         with pytest.raises(ValueError, match=message):
-            Spectrum2DCollection.from_spectra(quartz_fuzzy_items + [bad_item])
+            Spectrum2DCollection.from_spectra([*quartz_fuzzy_items, bad_item])
 
     # pylint: disable=R0913  #  These fixtures are "too many arguments"
     def test_from_bad_spectra_unsafe(
@@ -186,24 +186,24 @@ class TestSpectrum2DCollectionCreation:
         """Spectrum2DCollection.from_spectra, unsafe with inconsistent input"""
 
         Spectrum2DCollection.from_spectra(
-            quartz_fuzzy_items + [inconsistent_x_item],
+            [*quartz_fuzzy_items, inconsistent_x_item],
             unsafe=True
         )
 
         Spectrum2DCollection.from_spectra(
-            quartz_fuzzy_items + [inconsistent_x_units_item],
+            [*quartz_fuzzy_items, inconsistent_x_units_item],
             unsafe=True
         )
 
         # Inconsistent length will still cause trouble but should fall to numpy
         with pytest.raises(ValueError, match="could not broadcast input"):
             Spectrum2DCollection.from_spectra(
-                quartz_fuzzy_items + [inconsistent_x_length_item],
+                [*quartz_fuzzy_items, inconsistent_x_length_item],
                 unsafe=True
             )
 
         Spectrum2DCollection.from_spectra(
-            quartz_fuzzy_items + [inconsistent_y_item],
+            [*quartz_fuzzy_items, inconsistent_y_item],
             unsafe=True
         )
 

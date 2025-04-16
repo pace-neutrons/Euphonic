@@ -177,7 +177,7 @@ class Spectrum(ABC):
             if len(indices) > 1:
                 ranges = ranges + [(indices[i], indices[i+1])
                                    for i in range(len(indices) - 1)]
-            ranges = ranges + [(indices[-1], None)]
+            ranges = [*ranges, (indices[-1], None)]
         return ranges
 
     @staticmethod
@@ -195,7 +195,7 @@ class Spectrum(ABC):
                 for (x, label) in x_tick_labels if x0 <= x < x1]
 
     def split(self: T, indices: Sequence[int] | np.ndarray = None,
-              btol: float = None) -> list[T]:
+              btol: float | None = None) -> list[T]:
         """Split to multiple spectra
 
         Data may be split by index. Alternatively, x-axis data may be

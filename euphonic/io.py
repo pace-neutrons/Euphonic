@@ -21,7 +21,7 @@ def _to_json_dict(dictionary: dict[str, Any]) -> dict[str, Any]:
         if isinstance(val, np.ndarray):
             if val.dtype == np.complex128:
                 val = val.view(np.float64                   # noqa: PLW2901
-                               ).reshape(val.shape + (2,))
+                               ).reshape([*val.shape, 2])
             dictionary[key] = val.tolist()
         elif isinstance(val, dict):
             if key != 'metadata':

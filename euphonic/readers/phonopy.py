@@ -373,7 +373,7 @@ def _extract_force_constants(fc_pathname: str, n_atoms: int, n_cells: int,
         fc = np.genfromtxt(fc_pathname, skip_header=1,
                            max_rows=4*(n_atoms*n_cells)**2, usecols=(0,1,2),
                            invalid_raise=False)
-    return fc.reshape(fc_dims + [3, 3])
+    return fc.reshape([*fc_dims, 3, 3])
 
 
 def _extract_force_constants_hdf5(

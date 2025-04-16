@@ -257,7 +257,7 @@ class BrilleInterpolator:
 
         n_atoms = crystal.n_atoms
         frequencies = np.reshape(phonons._frequencies,
-                                 phonons._frequencies.shape + (1,))
+                                 [*phonons._frequencies.shape, 1])
         freq_el = (1,)
         freq_weight = (1., 0., 0.)
         evecs = np.reshape(phonons.eigenvectors,
