@@ -1,6 +1,7 @@
 from argparse import ArgumentParser
+from collections.abc import Callable, Sequence
 from math import ceil
-from typing import Callable, Dict, List, Optional, Sequence, Union
+from typing import Optional
 
 import matplotlib.style
 import numpy as np
@@ -90,7 +91,7 @@ def _get_broaden_kwargs(q_broadening: Optional[Sequence[float]] = None,
                         q_unit: Unit = ureg('1/angstrom').units,  # noqa: B008
                         energy_broadening: Optional[Sequence[float]] = None,
                         energy_unit: Unit = ureg('meV').units,  # noqa: B008
-                        ) -> Dict[str, Union[Quantity, Callable, None]]:
+                        ) -> dict[str, Quantity | Callable | None]:
     """Collect suitable width arguments for 2D broaden() method
 
     Internal Euphonic methods take a Quantity or a callable returning Quantity:
@@ -123,7 +124,7 @@ def _get_broaden_kwargs(q_broadening: Optional[Sequence[float]] = None,
     return dict(x_width=q_width, y_width=energy_width)
 
 
-def main(params: Optional[List[str]] = None) -> None:
+def main(params: Optional[list[str]] = None) -> None:
     args = get_args(get_parser(), params)
     calc_modes_kwargs = _calc_modes_kwargs(args)
 

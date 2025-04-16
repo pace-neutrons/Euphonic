@@ -1,5 +1,5 @@
+from collections.abc import Iterator
 from functools import partial
-from typing import Iterator
 
 import numpy as np
 import pytest

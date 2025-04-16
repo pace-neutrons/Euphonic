@@ -423,7 +423,7 @@ class TestCrystalMethods:
             self, crystal, kwargs, expected_res_file):
         rot, trans, equiv_atoms = crystal.get_symmetry_equivalent_atoms(
             **kwargs)
-        with open(get_crystal_path(expected_res_file), 'r') as fp:
+        with open(get_crystal_path(expected_res_file)) as fp:
             res = json.load(fp)
         exp_rot = np.array(res['rotations'])
         exp_trans = np.array(res['translations'])

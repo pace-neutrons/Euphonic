@@ -57,7 +57,7 @@ class TestRegression:
         figs = get_all_figs()
         all_plot_data = get_all_plot_line_data(figs)
 
-        with open(brille_conv_output_file, 'r') as expected_data_file:
+        with open(brille_conv_output_file) as expected_data_file:
             expected_all_plot_data = json.load(expected_data_file)[
                 args_to_key(brille_conv_args)]
 
@@ -170,7 +170,7 @@ def test_regenerate_brille_conv_data(_):
     # Read from existing file first to allow option of only replacing for
     # certain test cases or keys
     try:
-        with open(brille_conv_output_file, 'r') as json_file:
+        with open(brille_conv_output_file) as json_file:
             json_data = json.load(json_file)
     except FileNotFoundError:
         json_data = {}

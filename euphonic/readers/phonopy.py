@@ -1,6 +1,6 @@
 import os
 import re
-from typing import Any, Dict, List, Optional, TextIO, Tuple, Union
+from typing import Any, Optional, TextIO
 import warnings
 
 import numpy as np
@@ -44,7 +44,7 @@ def _convert_weights(weights: np.ndarray) -> np.ndarray:
 
 def _extract_phonon_data_yaml(filename: str,
                               read_eigenvectors: bool = True
-                              ) -> Dict[str, np.ndarray]:
+                              ) -> dict[str, np.ndarray]:
     """
     From a mesh/band/qpoint.yaml file, extract the relevant information
     as a dict of Numpy arrays. No unit conversion is done at this point,
@@ -77,7 +77,7 @@ def _extract_phonon_data_yaml(filename: str,
     except ModuleNotFoundError as e:
         raise ImportPhonopyReaderError from e
 
-    with open(filename, 'r') as yaml_file:
+    with open(filename) as yaml_file:
         phonon_data = yaml.load(yaml_file, Loader=SafeLoader)
 
     data_dict = {}
@@ -120,7 +120,7 @@ def _extract_phonon_data_yaml(filename: str,
 
 def _extract_phonon_data_hdf5(filename: str,
                               read_eigenvectors: bool = True
-                              ) -> Dict[str, np.ndarray]:
+                              ) -> dict[str, np.ndarray]:
     """
     From a mesh/band/qpoint.hdf5 file, extract the relevant information
     as a dict of Numpy arrays. No unit conversion is done at this point,
@@ -194,7 +194,7 @@ def read_phonon_data(
         atom_mass_unit: str = 'amu',
         frequencies_unit: str = 'meV',
         read_eigenvectors: bool = True
-        ) -> Dict[str, Union[int, str, np.ndarray]]:
+        ) -> dict[str, int | str | np.ndarray]:
     """
     Reads precalculated phonon mode data from a Phonopy
     mesh/band/qpoints.yaml/hdf5 file and returns it in a dictionary.
@@ -255,13 +255,13 @@ def read_phonon_data(
         phonon_dict = _extract_phonon_data_yaml(
             phonon_pathname, read_eigenvectors=read_eigenvectors)
     else:
-        raise ValueError((f'File format {phonon_format} of {phonon_name}'
-                          f' is not recognised'))
+        raise ValueError(f'File format {phonon_format} of {phonon_name}'
+                          f' is not recognised')
 
     if read_eigenvectors and not 'eigenvectors' in phonon_dict:
-        raise RuntimeError((f'Eigenvectors couldn\'t be found in '
+        raise RuntimeError(f'Eigenvectors couldn\'t be found in '
                             f'{phonon_pathname}, ensure --eigvecs was '
-                            f'set when running Phonopy'))
+                            f'set when running Phonopy')
 
     # Since units are not explicitly defined in
     # mesh/band/qpoints.yaml/hdf5 assume:
@@ -283,12 +283,12 @@ def read_phonon_data(
         umass = summary_dict['umass']
         # Check phonon_file and summary_file are commensurate
         if 3*len(phonon_dict['atom_r']) != len(phonon_dict['frequencies'][0]):
-            raise ValueError((
+            raise ValueError(
                 f'Phonon file {phonon_pathname} not commensurate '
                 f'with summary file {summary_pathname}. Please '
-                'check contents'))
+                'check contents')
 
-    data_dict: Dict[str, Any] = {}
+    data_dict: dict[str, Any] = {}
     data_dict['crystal'] = {}
     cry_dict = data_dict['crystal']
     cry_dict['n_atoms'] = len(phonon_dict['atom_r'])
@@ -314,7 +314,7 @@ def read_phonon_data(
     return data_dict
 
 
-def convert_eigenvector_phases(phonon_dict: Dict[str, np.ndarray]
+def convert_eigenvector_phases(phonon_dict: dict[str, np.ndarray]
                                ) -> np.ndarray:
     """
     When interpolating the force constants matrix, Euphonic uses a phase
@@ -361,7 +361,7 @@ def _extract_force_constants(fc_pathname: str, n_atoms: int, n_cells: int,
         (n_atoms*n_cells, n_atoms*n_cells, 3, 3) float ndarray. The
         force constants in Phonopy convention
     """
-    with open(fc_pathname, 'r') as f:
+    with open(fc_pathname) as f:
         fc_dims =  [int(dim) for dim in f.readline().split()]
     # single shape specifier implies full format
     if len(fc_dims) == 1:
@@ -391,7 +391,7 @@ def _extract_force_constants_hdf5(
     return fc
 
 
-def _check_fc_shape(fc_shape: Tuple[int, int], n_atoms: int,
+def _check_fc_shape(fc_shape: tuple[int, int], n_atoms: int,
                     n_cells: int, fc_filename: str,
                     summary_filename: str) -> None:
     """
@@ -399,14 +399,14 @@ def _check_fc_shape(fc_shape: Tuple[int, int], n_atoms: int,
     """
     if (not ((fc_shape[0] == n_atoms or fc_shape[0] == n_cells*n_atoms) and
              fc_shape[1] == n_cells*n_atoms)):
-        raise ValueError((
+        raise ValueError(
             f'Force constants matrix with shape {fc_shape} read from '
             f'{fc_filename} is not compatible with crystal read from '
             f'{summary_filename} which has {n_atoms} atoms in the cell,'
-            f' and {n_cells} cells in the supercell'))
+            f' and {n_cells} cells in the supercell')
 
 
-def _extract_born(born_file_obj: TextIO) -> Dict[str, Union[float, np.ndarray]]:
+def _extract_born(born_file_obj: TextIO) -> dict[str, float | np.ndarray]:
     """
     Parse and convert dielectric tensor and born effective
     charge from BORN file
@@ -422,7 +422,7 @@ def _extract_born(born_file_obj: TextIO) -> Dict[str, Union[float, np.ndarray]]:
         Dict containing dielectric tensor and born effective charge
     """
     born_lines_str = born_file_obj.readlines()
-    born_lines: List[List[float]] = []
+    born_lines: list[list[float]] = []
     for line in born_lines_str:
         # Ignore comments
         if line.startswith('#'):
@@ -430,7 +430,7 @@ def _extract_born(born_file_obj: TextIO) -> Dict[str, Union[float, np.ndarray]]:
         else:
             born_lines.append([float(x) for x in line.split()])
 
-    born_dict: Dict[str, Union[float, np.ndarray]] = {}
+    born_dict: dict[str, float | np.ndarray] = {}
 
     idx0 = 0
     if len(born_lines[0]) == 1:
@@ -451,7 +451,7 @@ def _extract_born(born_file_obj: TextIO) -> Dict[str, Union[float, np.ndarray]]:
 
 
 def _extract_summary(filename: str, fc_extract: bool = False
-                     ) -> Dict[str, Union[str, int, np.ndarray]]:
+                     ) -> dict[str, str | int | np.ndarray]:
     """
     Read phonopy.yaml for summary data produced during the Phonopy
     post-process
@@ -481,7 +481,7 @@ def _extract_summary(filename: str, fc_extract: bool = False
     except ModuleNotFoundError as e:
         raise ImportPhonopyReaderError from e
 
-    with open(filename, 'r') as summary_file:
+    with open(filename) as summary_file:
         summary_object = yaml.load(summary_file, Loader=SafeLoader)
     (cell_vectors, n_atoms, atom_r, atom_mass,
      atom_type, _) = _extract_crystal_data(summary_object['primitive_cell'])
@@ -581,8 +581,8 @@ def _extract_summary(filename: str, fc_extract: bool = False
     return summary_dict
 
 
-def _extract_crystal_data(crystal: Dict[str, Any]
-                          ) -> Tuple[np.ndarray, int, np.ndarray,
+def _extract_crystal_data(crystal: dict[str, Any]
+                          ) -> tuple[np.ndarray, int, np.ndarray,
                                      np.ndarray, np.ndarray, np.ndarray]:
     """
     Gets relevant data from a section of phonopy.yaml
@@ -644,7 +644,7 @@ def read_interpolation_data(
         atom_mass_unit: str = 'amu',
         force_constants_unit: str = 'hartree/bohr**2',
         born_unit: str = 'e',
-        dielectric_unit: str = '(e**2)/(bohr*hartree)') -> Dict[str, Any]:
+        dielectric_unit: str = '(e**2)/(bohr*hartree)') -> dict[str, Any]:
     """
     Reads data from the phonopy summary file (default phonopy.yaml) and
     optionally born and force constants files. Only attempts to read
@@ -705,8 +705,8 @@ def read_interpolation_data(
             if fc_format not in hdf5_exts:
                 fc_format = 'phonopy'
         fc_pathname = os.path.join(path, fc_name)
-        print((f'Force constants not found in {summary_pathname}, '
-               f'attempting to read from {fc_pathname}'))
+        print(f'Force constants not found in {summary_pathname}, '
+               f'attempting to read from {fc_pathname}')
         n_atoms = summary_dict['n_atoms']
         n_cells = int(len(summary_dict['sc_atom_r'])/n_atoms)
         if fc_format == 'phonopy':
@@ -716,9 +716,9 @@ def read_interpolation_data(
             summary_dict['force_constants'] =  _extract_force_constants_hdf5(
                 fc_pathname, n_atoms, n_cells, summary_pathname)
         else:
-            raise ValueError((
+            raise ValueError(
                 f'Force constants file format "{fc_format}" of '
-                f'"{fc_name}" is not recognised'))
+                f'"{fc_name}" is not recognised')
 
     # Only read born/dielectric if they're not in summary file and the
     # user has specified a Born file
@@ -726,9 +726,9 @@ def read_interpolation_data(
     if (born_name is not None and
             len(dipole_keys & summary_dict.keys()) != len(dipole_keys)):
         born_pathname = os.path.join(path, born_name)
-        print((f'Born, dielectric not found in {summary_pathname}, '
-               f'attempting to read from {born_pathname}'))
-        with open(born_pathname, 'r') as born_file:
+        print(f'Born, dielectric not found in {summary_pathname}, '
+               f'attempting to read from {born_pathname}')
+        with open(born_pathname) as born_file:
             born_dict = _extract_born(born_file)
         # Let BORN file take priority, but merge because the 'nac_factor'
         # key may not always be present in BORN
@@ -748,7 +748,7 @@ def read_interpolation_data(
     umass = summary_dict['umass']
     ufc = summary_dict['ufc']
 
-    data_dict: Dict[str, Any] = {}
+    data_dict: dict[str, Any] = {}
     cry_dict = data_dict['crystal'] = {}
     cry_dict['cell_vectors'] = summary_dict['cell_vectors']*ureg(
         ulength).to(cell_vectors_unit).magnitude

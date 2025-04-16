@@ -4,19 +4,11 @@ from argparse import (
     Namespace,
     _ArgumentGroup,
 )
+from collections.abc import Collection, Sequence
 import json
 import os
 import pathlib
-from typing import (
-    Any,
-    Collection,
-    Dict,
-    List,
-    Optional,
-    Sequence,
-    Tuple,
-    Union,
-)
+from typing import Any, Optional
 import warnings
 
 import numpy as np
@@ -37,11 +29,10 @@ from euphonic import (
 import euphonic.util
 
 
-def _load_euphonic_json(filename: Union[str, os.PathLike],
+def _load_euphonic_json(filename: str | os.PathLike,
                         frequencies_only: bool = False
-                        ) -> Union[QpointPhononModes, QpointFrequencies,
-                                   ForceConstants]:
-    with open(filename, 'r') as f:
+                        ) -> QpointPhononModes | QpointFrequencies | ForceConstants:
+    with open(filename) as f:
         data = json.load(f)
 
     if 'force_constants' in data:
@@ -54,10 +45,9 @@ def _load_euphonic_json(filename: Union[str, os.PathLike],
     raise ValueError("Could not identify Euphonic data in JSON file.")
 
 
-def _load_phonopy_file(filename: Union[str, os.PathLike],
+def _load_phonopy_file(filename: str | os.PathLike,
                        frequencies_only: bool = False
-                       ) -> Union[QpointPhononModes, QpointFrequencies,
-                                  ForceConstants]:
+                       ) -> QpointPhononModes | QpointFrequencies | ForceConstants:
     path = pathlib.Path(filename)
     loaded_data = None
     if not frequencies_only:
@@ -80,7 +70,7 @@ def _load_phonopy_file(filename: Union[str, os.PathLike],
             pass
 
     if loaded_data is None:
-        phonopy_kwargs: Dict[str, Union[str, os.PathLike]] = {}
+        phonopy_kwargs: dict[str, str | os.PathLike] = {}
         phonopy_kwargs['path'] = path.parent
         if (path.parent / 'BORN').is_file():
             phonopy_kwargs['born_name'] = 'BORN'
@@ -107,11 +97,10 @@ def _load_phonopy_file(filename: Union[str, os.PathLike],
     return loaded_data
 
 
-def load_data_from_file(filename: Union[str, os.PathLike],
+def load_data_from_file(filename: str | os.PathLike,
                         frequencies_only: bool = False,
                         verbose: bool = False
-                        ) -> Union[QpointPhononModes, QpointFrequencies,
-                                   ForceConstants]:
+                        ) -> QpointPhononModes | QpointFrequencies | ForceConstants:
     """
     Load phonon mode or force constants data from file
 
@@ -157,7 +146,7 @@ def load_data_from_file(filename: Union[str, os.PathLike],
     return data
 
 
-def get_args(parser: ArgumentParser, params: Optional[List[str]] = None
+def get_args(parser: ArgumentParser, params: Optional[list[str]] = None
              ) -> Namespace:
     """
     Get the arguments from the parser. params should only be none when
@@ -216,7 +205,7 @@ def _get_q_distance(length_unit_string: str, q_distance: float) -> Quantity:
 
 
 def _get_energy_bins(
-        modes: Union[QpointPhononModes, QpointFrequencies],
+        modes: QpointPhononModes | QpointFrequencies,
         n_ebins: int, emin: Optional[float] = None,
         emax: Optional[float] = None,
         headroom: float = 1.05) -> Quantity:
@@ -240,7 +229,7 @@ def _get_energy_bins(
     return np.linspace(emin, emax, n_ebins) * modes.frequencies.units
 
 
-def _get_tick_labels(bandpath: dict) -> List[Tuple[int, str]]:
+def _get_tick_labels(bandpath: dict) -> list[tuple[int, str]]:
     """Convert x-axis labels from seekpath format to euphonic format
 
     i.e.::
@@ -260,7 +249,7 @@ def _get_tick_labels(bandpath: dict) -> List[Tuple[int, str]]:
     return list(zip(label_indices, labels, strict=True))
 
 
-def _get_break_points(bandpath: dict) -> List[int]:
+def _get_break_points(bandpath: dict) -> list[int]:
     """Get information about band path labels and break points
 
     Parameters
@@ -316,8 +305,8 @@ def _insert_gamma(bandpath: dict) -> None:
     bandpath['explicit_segments'] = None
 
 
-XTickLabels = List[Tuple[int, str]]
-SplitArgs = Dict[str, Any]
+XTickLabels = list[tuple[int, str]]
+SplitArgs = dict[str, Any]
 
 
 def _bands_from_force_constants(data: ForceConstants,
@@ -325,8 +314,7 @@ def _bands_from_force_constants(data: ForceConstants,
                                 insert_gamma: bool = True,
                                 frequencies_only: bool = False,
                                 **calc_modes_kwargs
-                                ) -> Tuple[Union[QpointPhononModes,
-                                                 QpointFrequencies],
+                                ) -> tuple[QpointPhononModes | QpointFrequencies,
                                            XTickLabels, SplitArgs]:
     structure = data.crystal.to_spglib_cell()
     with warnings.catch_warnings():
@@ -363,7 +351,7 @@ def _bands_from_force_constants(data: ForceConstants,
 def _grid_spec_from_args(crystal: Crystal,
                            grid: Optional[Sequence[int]] = None,
                            grid_spacing: Quantity = 0.1 * ureg('1/angstrom')
-                           ) -> Tuple[int, int, int]:
+                           ) -> tuple[int, int, int]:
     """Get Monkorst-Pack mesh divisions from user arguments"""
     if grid:
         grid_spec = tuple(grid)
@@ -407,7 +395,7 @@ def _get_pdos_weighting(cl_arg_weighting: str) -> Optional[str]:
 
 def _arrange_pdos_groups(pdos: Spectrum1DCollection,
                          cl_arg_pdos: Sequence[str]
-                         ) -> Union[Spectrum1D, Spectrum1DCollection]:
+                         ) -> Spectrum1D | Spectrum1DCollection:
     """
     Convert PDOS returned by calculate_pdos to PDOS/DOS
     wanted as CL output according to --pdos
@@ -428,7 +416,7 @@ def _arrange_pdos_groups(pdos: Spectrum1DCollection,
 
 
 def _plot_label_kwargs(args: Namespace, default_xlabel: str = '',
-                       default_ylabel: str = '') -> Dict[str, str]:
+                       default_ylabel: str = '') -> dict[str, str]:
     """Collect title/label arguments that can be passed to plot_nd
     """
     plot_kwargs = dict(title=args.title,
@@ -441,7 +429,7 @@ def _plot_label_kwargs(args: Namespace, default_xlabel: str = '',
     return plot_kwargs
 
 
-def _calc_modes_kwargs(args: Namespace) -> Dict[str, Any]:
+def _calc_modes_kwargs(args: Namespace) -> dict[str, Any]:
     """
     Collect arguments that can be passed to
     ForceConstants.calculate_qpoint_phonon_modes()
@@ -449,7 +437,7 @@ def _calc_modes_kwargs(args: Namespace) -> Dict[str, Any]:
     return dict(asr=args.asr, dipole_parameter=args.dipole_parameter,
                 use_c=args.use_c, n_threads=args.n_threads)
 
-def _brille_calc_modes_kwargs(args: Namespace) -> Dict[str, Any]:
+def _brille_calc_modes_kwargs(args: Namespace) -> dict[str, Any]:
     """
     Collect arguments that can be passed to
     BrilleInterpolator.calculate_qpoint_phonon_modes()
@@ -463,8 +451,8 @@ def _brille_calc_modes_kwargs(args: Namespace) -> Dict[str, Any]:
 
 def _get_cli_parser(features: Collection[str] = {},
                     conflict_handler: str = 'error'
-                    ) -> Tuple[ArgumentParser,
-                               Dict[str, _ArgumentGroup]]:
+                    ) -> tuple[ArgumentParser,
+                               dict[str, _ArgumentGroup]]:
     """Instantiate an ArgumentParser with appropriate argument groups
 
     Parameters
@@ -877,12 +865,12 @@ def _get_cli_parser(features: Collection[str] = {},
     return parser, sections
 
 
-MplStyle = Union[str, Dict[str, str]]
+MplStyle = str | dict[str, str]
 
 
 def _compose_style(
-        *, user_args: Namespace, base: Optional[List[MplStyle]]
-        ) -> List[MplStyle]:
+        *, user_args: Namespace, base: Optional[list[MplStyle]]
+        ) -> list[MplStyle]:
     """Combine user-specified style options with default stylesheets
 
     Args:

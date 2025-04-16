@@ -1,7 +1,8 @@
 """
 Functions for broadening spectra
 """
-from typing import Callable, Literal, Union
+from collections.abc import Callable
+from typing import Literal
 import warnings
 
 import numpy as np
@@ -26,7 +27,7 @@ def variable_width_broadening(
     bins: Quantity,
     x: Quantity,
     width_function: Callable[[Quantity], Quantity],
-    weights: Union[np.ndarray, Quantity],
+    weights: np.ndarray | Quantity,
     width_lower_limit: Quantity = None,
     width_convention: Literal['fwhm', 'std'] = 'fwhm',
     adaptive_error: float = 1e-2,

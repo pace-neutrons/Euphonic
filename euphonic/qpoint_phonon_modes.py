@@ -2,7 +2,7 @@
 
 from collections.abc import Mapping
 import math
-from typing import Any, Dict, Optional, Type, TypeVar, Union
+from typing import Any, Optional, TypeVar
 
 import numpy as np
 
@@ -172,7 +172,7 @@ class QpointPhononModes(QpointFrequencies):
 
     def calculate_structure_factor(
         self,
-        scattering_lengths: Union[str, Dict[str, Quantity]] = 'Sears1992',
+        scattering_lengths: str | dict[str, Quantity] = 'Sears1992',
         dw: Optional[DebyeWaller] = None,
         ) -> StructureFactor:
         """
@@ -250,9 +250,9 @@ class QpointPhononModes(QpointFrequencies):
         elif isinstance(scattering_lengths, dict):
             scattering_length_data = scattering_lengths
         else:
-            raise TypeError((
+            raise TypeError(
                 f'Unexpected type for scattering_lengths, should be str '
-                f'or dict, got {type(scattering_lengths)}'))
+                f'or dict, got {type(scattering_lengths)}')
 
         sl = [scattering_length_data[x].to('bohr').magnitude
               for x in self.crystal.atom_type]
@@ -279,10 +279,10 @@ class QpointPhononModes(QpointFrequencies):
         if dw:
             temperature = dw.temperature
             if dw.crystal.n_atoms != self.crystal.n_atoms:
-                raise ValueError((
+                raise ValueError(
                     'The DebyeWaller object used as dw is not '
                     'compatible with the QPointPhononModes object (they'
-                    ' have a different number of atoms)'))
+                    ' have a different number of atoms)')
             dw_factor = np.exp(-np.einsum('jkl,ik,il->ij',
                                           dw._debye_waller, Q, Q))
             exp_factor *= dw_factor
@@ -435,7 +435,7 @@ class QpointPhononModes(QpointFrequencies):
             adaptive_error: Optional[float] = 0.01,
             adaptive_error_fit: ErrorFit = 'cubic',
             weighting: Optional[str] = None,
-            cross_sections: Union[str, Dict[str, Quantity]] = 'BlueBook',
+            cross_sections: str | dict[str, Quantity] = 'BlueBook',
             ) -> Spectrum1DCollection:
         """
         Calculates partial density of states for each atom in the unit
@@ -571,9 +571,9 @@ class QpointPhononModes(QpointFrequencies):
             # Account for cross sections in different, or invalid, units
             ex_units = '[length]**2'
             if not cs[0].check(ex_units):
-                raise ValueError((
+                raise ValueError(
                     f'Unexpected dimensionality in cross_sections units, '
-                    f'expected {ex_units}, got {str(cs[0].dimensionality)}'))
+                    f'expected {ex_units}, got {str(cs[0].dimensionality)}')
             cs = [x.to('mbarn') for x in cs]
         else:
             cs = None
@@ -608,7 +608,7 @@ class QpointPhononModes(QpointFrequencies):
         return Spectrum1DCollection(
             dos_bins, all_dos_y_data, metadata=metadata)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """
         Convert to a dictionary. See QpointPhononModes.from_dict for
         details on keys/values
@@ -624,7 +624,7 @@ class QpointPhononModes(QpointFrequencies):
             self.crystal, self.qpts, self.frequencies, self.weights)
 
     @classmethod
-    def from_dict(cls: Type[T], d: Dict[str, Any]) -> T:
+    def from_dict(cls: type[T], d: dict[str, Any]) -> T:
         """
         Convert a dictionary to a QpointPhononModes object
 
@@ -649,7 +649,7 @@ class QpointPhononModes(QpointFrequencies):
                    d['eigenvectors'], d['weights'])
 
     @classmethod
-    def from_json_file(cls: Type[T], filename: str) -> T:
+    def from_json_file(cls: type[T], filename: str) -> T:
         """
         Read from a JSON file. See QpointPhononModes.from_dict for
         required fields
@@ -663,7 +663,7 @@ class QpointPhononModes(QpointFrequencies):
                                    type_dict={'eigenvectors': np.complex128})
 
     @classmethod
-    def from_castep(cls: Type[T], filename: str,
+    def from_castep(cls: type[T], filename: str,
                     average_repeat_points: bool = True,
                     prefer_non_loto: bool = False) -> T:
         """
@@ -692,7 +692,7 @@ class QpointPhononModes(QpointFrequencies):
         return cls.from_dict(data)
 
     @classmethod
-    def from_phonopy(cls: Type[T], path: str = '.',
+    def from_phonopy(cls: type[T], path: str = '.',
                      phonon_name: str = 'band.yaml',
                      phonon_format: Optional[str] = None,
                      summary_name: str = 'phonopy.yaml') -> T:

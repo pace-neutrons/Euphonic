@@ -81,7 +81,7 @@ class TestRegression:
         # and avoid regenerating data after refactoring
         line_data['xy_data'] = line_data['xy_data'][0]
 
-        with open(disp_output_file, 'r') as f:
+        with open(disp_output_file) as f:
             expected_line_data = json.load(f)[args_to_key(dispersion_args)]
         # Increase tolerance if asr present - can give slightly
         # different results with different libs
@@ -138,7 +138,7 @@ class TestRegression:
         output_file = str(tmpdir.join('phonon.json'))
         euphonic.cli.dispersion.main(dispersion_args + [output_file])
 
-        with open(output_file, "r", encoding="utf-8") as fd:
+        with open(output_file, encoding="utf-8") as fd:
             dat = json.load(fd)
 
         # Reloaded JSON doesn't quite match the PhononWebsiteData type because
@@ -166,7 +166,7 @@ def test_regenerate_disp_data(_):
     # Read from existing file first to allow option of only replacing for
     # certain test cases or keys
     try:
-        with open(disp_output_file, 'r') as json_file:
+        with open(disp_output_file) as json_file:
             json_data = json.load(json_file)
     except FileNotFoundError:
         json_data = {}

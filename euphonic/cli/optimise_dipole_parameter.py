@@ -9,7 +9,7 @@ value
 
 from argparse import ArgumentParser
 import time
-from typing import List, Optional, Tuple
+from typing import Optional
 import warnings
 
 import numpy as np
@@ -18,7 +18,7 @@ from euphonic import ForceConstants
 from euphonic.cli.utils import _get_cli_parser, get_args, load_data_from_file
 
 
-def main(params: Optional[List[str]] = None) -> None:
+def main(params: Optional[list[str]] = None) -> None:
     args = get_args(get_parser(), params)
     params = vars(args)
     params.update({'print_to_terminal': True})
@@ -33,7 +33,7 @@ def calculate_optimum_dipole_parameter(
         n: int = 500,
         print_to_terminal: bool = False,
         **calc_modes_kwargs
-        ) -> Tuple[float, float, float, np.ndarray, np.ndarray, np.ndarray]:
+        ) -> tuple[float, float, float, np.ndarray, np.ndarray, np.ndarray]:
     """
     Calculate the optimum dipole_parameter and other dipole_parameters
     from the filename castep_bin file

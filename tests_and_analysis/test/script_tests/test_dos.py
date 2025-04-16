@@ -81,7 +81,7 @@ class TestRegression:
         # and avoid regenerating data after refactoring
         line_data['xy_data'] = line_data['xy_data'][0]
 
-        with open(dos_output_file, 'r') as f:
+        with open(dos_output_file) as f:
             expected_line_data = json.load(f)[args_to_key(dos_args)]
         for key, expected_val in expected_line_data.items():
             # We don't care about the details of tick labels for DOS
@@ -151,7 +151,7 @@ def test_regenerate_dos_data(_):
     # Read from existing file first to allow option of only replacing for
     # certain test cases or keys
     try:
-        with open(dos_output_file, 'r') as json_file:
+        with open(dos_output_file) as json_file:
             json_data = json.load(json_file)
     except FileNotFoundError:
         json_data = {}

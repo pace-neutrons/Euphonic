@@ -119,7 +119,7 @@ class TestForceConstantsCalculateQPointFrequencies:
             func_kwargs['n_threads'] = n_threads
         qpt_freqs, modg = fc.calculate_qpoint_frequencies(
             all_args[0], **func_kwargs)
-        with open(get_fc_path(expected_modg_file), 'r') as fp:
+        with open(get_fc_path(expected_modg_file)) as fp:
             modg_dict = json.load(fp)
         expected_modg = modg_dict['mode_gradients']*ureg(
                 modg_dict['mode_gradients_unit'])

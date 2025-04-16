@@ -1,7 +1,7 @@
 from collections import OrderedDict
 import inspect
 from math import ceil
-from typing import Any, Dict, List, Tuple, Type, TypeVar
+from typing import Any, TypeVar
 
 import numpy as np
 import spglib
@@ -106,7 +106,7 @@ class Crystal:
     def __setattr__(self, name: str, value: Any) -> None:
         _check_unit_conversion(self, name, value,
                                ['cell_vectors_unit', 'atom_mass_unit'])
-        super(Crystal, self).__setattr__(name, value)
+        super().__setattr__(name, value)
 
     def reciprocal_cell(self) -> Quantity:
         """
@@ -141,7 +141,7 @@ class Crystal:
 
     def get_mp_grid_spec(self,
                          spacing: Quantity = 0.1 * ureg('1/angstrom')
-                         ) -> Tuple[int, int, int]:
+                         ) -> tuple[int, int, int]:
         """
         Get suggested divisions for Monkhorst-Pack grid
 
@@ -167,9 +167,9 @@ class Crystal:
         # math.ceil is better than np.ceil because it returns ints
         return tuple([ceil(x) for x in grid_spec])
 
-    def to_spglib_cell(self) -> Tuple[List[List[float]],
-                                      List[List[float]],
-                                      List[int]]:
+    def to_spglib_cell(self) -> tuple[list[list[float]],
+                                      list[list[float]],
+                                      list[int]]:
         """
         Convert to a 'cell' as defined by spglib
 
@@ -205,7 +205,7 @@ class Crystal:
 
     def get_symmetry_equivalent_atoms(
             self, tol: Quantity = Quantity(1e-5, 'angstrom')
-            ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+            ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         """
         Returns the rotational and translational symmetry operations
         as obtained by spglib.get_symmetry, and also the equivalent
@@ -280,7 +280,7 @@ class Crystal:
 
         return symm['rotations'], symm['translations'], equiv_atoms
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """
         Convert to a dictionary. See Crystal.from_dict for details on
         keys/values
@@ -305,7 +305,7 @@ class Crystal:
         _obj_to_json_file(self, filename)
 
     @classmethod
-    def from_dict(cls: Type[T], d: Dict[str, Any]) -> T:
+    def from_dict(cls: type[T], d: dict[str, Any]) -> T:
         """
         Convert a dictionary to a Crystal object
 
@@ -330,7 +330,7 @@ class Crystal:
                    d['atom_mass'])
 
     @classmethod
-    def from_json_file(cls: Type[T], filename: str) -> T:
+    def from_json_file(cls: type[T], filename: str) -> T:
         """
         Read from a JSON file. See Crystal.from_dict for required fields
 
@@ -346,7 +346,7 @@ class Crystal:
         return _obj_from_json_file(cls, filename)
 
     @classmethod
-    def from_cell_vectors(cls: Type[T], cell_vectors: Quantity) -> T:
+    def from_cell_vectors(cls: type[T], cell_vectors: Quantity) -> T:
         """
         Create a Crystal object from just cell vectors, containing no
         detailed structure information (atomic positions, species,

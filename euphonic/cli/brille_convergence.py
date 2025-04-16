@@ -1,8 +1,8 @@
-# -*- coding: utf-8 -*-
 from argparse import SUPPRESS, ArgumentParser, Namespace
+from collections.abc import Sequence
 import itertools
 from pathlib import Path
-from typing import List, Optional, Sequence, Tuple
+from typing import Optional
 
 from matplotlib.axes import Axes
 from matplotlib.lines import Line2D
@@ -21,7 +21,7 @@ from euphonic.cli.utils import (
 from euphonic.sampling import recurrence_sequence
 
 
-def main(params: Optional[List[str]] = None) -> None:
+def main(params: Optional[list[str]] = None) -> None:
     args = get_args(get_parser(), params)
     params = vars(args)
     check_brille_settings(**params)
@@ -176,7 +176,7 @@ def check_brille_settings(
 
 def create_intensity_plot(sqw1d: Spectrum1D, title: str,
                           frequency_label: str, residual_label: str,
-                          ) -> Tuple[Tuple[Axes, Axes], Line2D]:
+                          ) -> tuple[tuple[Axes, Axes], Line2D]:
     fig, axes = plt.subplots(nrows=2, sharex=True)
     axes[1].set_xlabel(frequency_label)
     axes[1].set_ylabel(residual_label + f'{sqw1d.y_data.units:~P}')
@@ -189,7 +189,7 @@ def create_intensity_plot(sqw1d: Spectrum1D, title: str,
     return axes, handle
 
 
-def plot_to_intensity_axes(axes: Tuple[Axes, Axes], sqw1d: Spectrum1D,
+def plot_to_intensity_axes(axes: tuple[Axes, Axes], sqw1d: Spectrum1D,
                            brille_sqw1d: Spectrum1D, label: str) -> Line2D:
     eps = (brille_sqw1d.y_data - sqw1d.y_data).magnitude
     ebins_plot = sqw1d.get_bin_centres().magnitude
@@ -199,7 +199,7 @@ def plot_to_intensity_axes(axes: Tuple[Axes, Axes], sqw1d: Spectrum1D,
     return handle
 
 
-def add_intensity_legend(axes: Tuple[Axes, Axes], euphonic_handle: Line2D,
+def add_intensity_legend(axes: tuple[Axes, Axes], euphonic_handle: Line2D,
                          brille_handles: Sequence[Line2D], title: str
                          ) -> None:
     euph_legend = axes[0].legend(handles=[euphonic_handle], loc='upper left')

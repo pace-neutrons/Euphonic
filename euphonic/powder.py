@@ -1,6 +1,6 @@
 """Functions for averaging spectra in spherical q bins"""
 
-from typing import Dict, Literal, Optional, Union
+from typing import Literal, Optional
 
 import numpy as np
 
@@ -109,7 +109,7 @@ def sample_sphere_pdos(
         npts: int = 1000, jitter: bool = False,
         energy_bins: Quantity = None,
         weighting: Optional[str] = None,
-        cross_sections: Union[str, Dict[str, Quantity]] = 'BlueBook',
+        cross_sections: str | dict[str, Quantity] = 'BlueBook',
         **calc_modes_args
         ) -> Spectrum1DCollection:
     """
@@ -215,7 +215,7 @@ def sample_sphere_structure_factor(
     sampling: SphericalSamplingOptions = 'golden',
     npts: int = 1000, jitter: bool = False,
     energy_bins: Quantity = None,
-    scattering_lengths: Union[str, Dict[str, Quantity]] = 'Sears1992',
+    scattering_lengths: str | dict[str, Quantity] = 'Sears1992',
     **calc_modes_args
     ) -> Spectrum1D:
     """Sample structure factor, averaging over a sphere of constant |q|
@@ -326,7 +326,7 @@ def sample_sphere_structure_factor(
     return s.calculate_1d_average(energy_bins)
 
 
-def _get_default_bins(phonons: Union[QpointPhononModes, QpointFrequencies],
+def _get_default_bins(phonons: QpointPhononModes | QpointFrequencies,
                       nbins: int = 1000) -> Quantity:
     """Get a default set of energy bin edges for set of phonon modes"""
     max_energy = np.max(phonons.frequencies) * 1.05
