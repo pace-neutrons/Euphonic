@@ -741,7 +741,7 @@ casting to real mode gradients.
                 stacklevel=3)
             mode_gradients = rmode_gradients.real[qpts_i]*ureg(
                 'hartree*bohr').to(
-                    f'meV*{str(self.crystal.cell_vectors.units)}')
+                    f'meV*{self.crystal.cell_vectors.units!s}')
         return qpts, freqs, weights, eigenvectors, mode_gradients
 
     def _calculate_phonons_at_q(

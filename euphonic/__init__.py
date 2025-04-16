@@ -9,7 +9,6 @@ from .ureg import Quantity, ureg
 from .version import __version__  # noqa: F401
 
 __all__ = [
-    "ureg",
     "Crystal",
     "DebyeWaller",
     "ForceConstants",
@@ -20,4 +19,5 @@ __all__ = [
     "Spectrum1DCollection",
     "Spectrum2D",
     "StructureFactor",
+    "ureg",
 ]

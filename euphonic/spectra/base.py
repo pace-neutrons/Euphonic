@@ -667,7 +667,7 @@ class Spectrum1D(Spectrum):
                 width_convention: Literal['fwhm', 'std'] = 'fwhm',
                 width_interpolation_error: float = 0.01,
                 width_fit: ErrorFit = 'cheby-log'
-                ) -> T: ...  # noqa: F811
+                ) -> T: ...
 
     def broaden(self: T, x_width,
                 shape='gauss',
@@ -676,7 +676,7 @@ class Spectrum1D(Spectrum):
                 width_convention='fwhm',
                 width_interpolation_error=0.01,
                 width_fit='cheby-log'
-                ) -> T:  # noqa: F811
+                ) -> T:
         """
         Broaden y_data and return a new broadened spectrum object
 

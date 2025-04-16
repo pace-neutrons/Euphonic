@@ -26,4 +26,4 @@ ureg.load_definitions(files(data) / "reciprocal_spectroscopy_definitions.txt")
 ureg.enable_contexts('spectroscopy')
 Quantity = ureg.Quantity
 
-__all__ = ["ureg", "Quantity"]
+__all__ = ["Quantity", "ureg"]

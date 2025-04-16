@@ -134,7 +134,7 @@ select = [
        "PLW",     # pylint warning
        "UP",      # pyupgrade
        "FURB",    # refurb
-       # "RUF",   # Very reasonable changes but a few of them
+       "RUF",   # Very reasonable changes but a few of them
        # "TRY",   # tryceratops : quite a bit (maybe unnecessary) change in approach
 ]
 ignore = [
