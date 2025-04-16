@@ -1,6 +1,6 @@
 from copy import copy
 import os
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Optional
 
 import numpy as np
 
@@ -13,7 +13,7 @@ except ModuleNotFoundError:
 from tests_and_analysis.test.utils import get_data_path
 
 
-def args_to_key(cl_args: List[str]) -> str:
+def args_to_key(cl_args: list[str]) -> str:
     """
     From CL tool arguments, return the key that should be used to store
     its testing output
@@ -25,7 +25,7 @@ def args_to_key(cl_args: List[str]) -> str:
     return ' '.join(cl_args)
 
 
-def get_script_test_data_path(*subpaths: Tuple[str]) -> str:
+def get_script_test_data_path(*subpaths: tuple[str]) -> str:
     """
     Returns
     -------
@@ -36,7 +36,7 @@ def get_script_test_data_path(*subpaths: Tuple[str]) -> str:
 
 
 def get_plot_line_data(fig: Optional['matplotlib.figure.Figure'] = None
-                       ) -> Dict[str, Any]:
+                       ) -> dict[str, Any]:
     if fig is None:
         fig = matplotlib.pyplot.gcf()
     data = get_fig_label_data(fig)
@@ -51,18 +51,18 @@ def get_plot_line_data(fig: Optional['matplotlib.figure.Figure'] = None
     return data
 
 
-def get_all_figs() -> List['matplotlib.figure.Figure']:
+def get_all_figs() -> list['matplotlib.figure.Figure']:
     fignums = matplotlib.pyplot.get_fignums()
     return [matplotlib.pyplot.figure(fignum) for fignum in fignums]
 
 
 
-def get_all_plot_line_data(figs: List['matplotlib.figure.Figure']
-                           ) -> List[Dict[str, Any]]:
+def get_all_plot_line_data(figs: list['matplotlib.figure.Figure']
+                           ) -> list[dict[str, Any]]:
     return [get_plot_line_data(fig) for fig in figs]
 
 
-def get_fig_label_data(fig) -> Dict[str, Union[str, List[str]]]:
+def get_fig_label_data(fig) -> dict[str, str | list[str]]:
     from mpl_toolkits.mplot3d import Axes3D
 
     label_data = {'x_ticklabels': [],
@@ -95,7 +95,7 @@ def get_fig_label_data(fig) -> Dict[str, Union[str, List[str]]]:
     return label_data
 
 
-def get_current_plot_offsets() -> List[List[float]]:
+def get_current_plot_offsets() -> list[list[float]]:
     """
     Get the positions (offsets) from an active matplotlib scatter plot
 
@@ -110,8 +110,8 @@ def get_current_plot_offsets() -> List[List[float]]:
     return matplotlib.pyplot.gca().collections[0].get_offsets().data.tolist()
 
 
-def get_current_plot_image_data() -> Dict[str,
-                                          Union[str, List[float], List[int]]]:
+def get_current_plot_image_data() -> dict[str,
+                                          str | list[float] | list[int]]:
     fig = matplotlib.pyplot.gcf()
     for ax in fig.axes:
         if len(ax.get_images()) == 1:
@@ -126,7 +126,7 @@ def get_current_plot_image_data() -> Dict[str,
 
 
 def get_ax_image_data(ax: 'matplotlib.axes.Axes'
-                      ) -> Dict[str, Union[str, List[float], List[int]]]:
+                      ) -> dict[str, str | list[float] | list[int]]:
     im = ax.get_images()[0]
     # Convert negative zero to positive zero
     im_data = im.get_array()

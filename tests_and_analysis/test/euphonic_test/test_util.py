@@ -90,7 +90,7 @@ class TestGetQptLabels:
 
 
 def get_modg(mode_gradients_file):
-    with open(get_fc_path(mode_gradients_file), 'r') as fp:
+    with open(get_fc_path(mode_gradients_file)) as fp:
         modg_dict = json.load(fp)
     return modg_dict['mode_gradients']*ureg(
         modg_dict['mode_gradients_unit'])
@@ -120,7 +120,7 @@ class TestModeGradientsToWidths:
     def test_mode_gradients_to_widths(self, mode_grads, cell_vecs,
                                       expected_mode_widths_file):
         mode_widths = mode_gradients_to_widths(mode_grads, cell_vecs)
-        with open(get_fc_path(expected_mode_widths_file), 'r') as fp:
+        with open(get_fc_path(expected_mode_widths_file)) as fp:
             modw_dict = json.load(fp)
         expected_mode_widths = modw_dict['mode_widths']*ureg(
             modw_dict['mode_widths_unit'])
@@ -130,7 +130,7 @@ class TestModeGradientsToWidths:
 
 
 def get_data_from_json(filename):
-    with open(get_fc_path(filename), 'r') as fp:
+    with open(get_fc_path(filename)) as fp:
         data = json.load(fp)
     fc = np.array(data['force_constants'])*ureg(data['force_constants_unit'])
     atom_r = np.array(data['atom_r'])

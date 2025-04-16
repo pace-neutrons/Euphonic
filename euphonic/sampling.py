@@ -3,8 +3,8 @@
 These are implemented in a generic way for application in euphonic.powder
 """
 
+from collections.abc import Iterator
 from itertools import product
-from typing import Iterator, Tuple
 
 import numpy as np
 from scipy.optimize import fmin
@@ -16,7 +16,7 @@ _golden_ratio = (1 + np.sqrt(5)) / 2
 
 
 def golden_square(npts: int, offset: bool = True, jitter: bool = False
-                  ) -> Iterator[Tuple[float, float]]:
+                  ) -> Iterator[tuple[float, float]]:
     """Yield a series of well-distributed points in 2-D unit square
 
     These are obtained by the golden ratio method
@@ -61,7 +61,7 @@ def golden_square(npts: int, offset: bool = True, jitter: bool = False
 
 def regular_square(n_rows: int, n_cols: int,
                    offset: bool = True, jitter: bool = False
-                   ) -> Iterator[Tuple[float, float]]:
+                   ) -> Iterator[tuple[float, float]]:
     """Yield a regular grid of (x, y) points in 2-D unit square
 
     Parameters
@@ -109,7 +109,7 @@ def _spherical_polar_to_cartesian(phi, theta):
             np.cos(theta))
 
 
-def _square_to_spherical_polar(x: float, y: float) -> Tuple[float, float]:
+def _square_to_spherical_polar(x: float, y: float) -> tuple[float, float]:
     """Map from Cartesian square to spherical polar (phi, theta)"""
     theta = np.arccos(2 * x - 1)
     phi = 2 * np.pi * y
@@ -117,7 +117,7 @@ def _square_to_spherical_polar(x: float, y: float) -> Tuple[float, float]:
 
 
 def golden_sphere(npts: int, cartesian: bool = True, jitter: bool = False,
-                  ) -> Iterator[Tuple[float, float, float]]:
+                  ) -> Iterator[tuple[float, float, float]]:
     """Yield a series of 3D points on unit sphere surface
 
     These resemble spherical Fibonacci point sets, using the golden
@@ -156,7 +156,7 @@ def golden_sphere(npts: int, cartesian: bool = True, jitter: bool = False,
 
 def sphere_from_square_grid(n_rows: int, n_cols: int,
                             cartesian: bool = True, jitter: bool = False
-                            ) -> Iterator[Tuple[float, float, float]]:
+                            ) -> Iterator[tuple[float, float, float]]:
     """Yield a series of 3D points on a unit sphere surface
 
     The points are projected from a uniform 2-D grid
@@ -191,7 +191,7 @@ def sphere_from_square_grid(n_rows: int, n_cols: int,
 
 def spherical_polar_grid(n_phi: int, n_theta: int,
                          cartesian: bool = True, jitter: bool = False,
-                         ) -> Iterator[Tuple[float, float, float]]:
+                         ) -> Iterator[tuple[float, float, float]]:
     """Yield a series of 3D points on a unit sphere surface
 
     The points form a grid in spherical coordinates
@@ -243,7 +243,7 @@ def spherical_polar_grid(n_phi: int, n_theta: int,
 
 def spherical_polar_improved(npts: int,
                              cartesian: bool = True, jitter: bool = False,
-                             ) -> Iterator[Tuple[float, float, float]]:
+                             ) -> Iterator[tuple[float, float, float]]:
     """Yield a series of 3D points on a unit sphere surface
 
     The points form rings of common theta in polar coordinates. However,
@@ -327,7 +327,7 @@ def spherical_polar_improved(npts: int,
 
 
 def random_sphere(npts, cartesian: bool = True
-                  ) -> Iterator[Tuple[float, float, float]]:
+                  ) -> Iterator[tuple[float, float, float]]:
     """Yield a series of 3D points on a unit sphere surface
 
     Points are distributed randomly in polar coordinates: phi is

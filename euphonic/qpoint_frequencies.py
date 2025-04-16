@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Literal, Optional, Tuple, Type, TypeVar
+from typing import Any, Literal, Optional, TypeVar
 import warnings
 
 import numpy as np
@@ -313,7 +313,7 @@ class QpointFrequencies:
                                     x_tick_labels=x_tick_labels)
 
     def _get_qpt_axis_and_labels(
-            self) -> Tuple[Quantity, List[Tuple[int, str]]]:
+            self) -> tuple[Quantity, list[tuple[int, str]]]:
         """
         Converts the qpts stored in this object an array of
         scalar distances and applies appropriate symmetry labels
@@ -332,7 +332,7 @@ class QpointFrequencies:
             self.qpts, cell=self.crystal.to_spglib_cell())
         return abscissa, x_tick_labels
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """
         Convert to a dictionary. See QpointFrequencies.from_dict for
         details on keys/values
@@ -353,7 +353,7 @@ class QpointFrequencies:
         _obj_to_json_file(self, filename)
 
     @classmethod
-    def from_dict(cls: Type[T], d: Dict[str, Any]) -> T:
+    def from_dict(cls: type[T], d: dict[str, Any]) -> T:
         """
         Convert a dictionary to a QpointFrequencies object
 
@@ -377,7 +377,7 @@ class QpointFrequencies:
                    d['weights'])
 
     @classmethod
-    def from_json_file(cls: Type[T], filename: str) -> T:
+    def from_json_file(cls: type[T], filename: str) -> T:
         """
         Read from a JSON file. See from_dict for
         required fields
@@ -390,7 +390,7 @@ class QpointFrequencies:
         return _obj_from_json_file(cls, filename)
 
     @classmethod
-    def from_castep(cls: Type[T], filename: str,
+    def from_castep(cls: type[T], filename: str,
                     average_repeat_points: bool = True,
                     prefer_non_loto: bool = False) -> T:
         """
@@ -420,7 +420,7 @@ class QpointFrequencies:
         return cls.from_dict(data)
 
     @classmethod
-    def from_phonopy(cls: Type[T], path: str = '.',
+    def from_phonopy(cls: type[T], path: str = '.',
                      phonon_name: str = 'band.yaml',
                      phonon_format: Optional[str] = None,
                      summary_name: str = 'phonopy.yaml') -> T:

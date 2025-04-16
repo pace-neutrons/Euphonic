@@ -23,9 +23,9 @@ def main():
 
 
 def release_github(test=True):
-    with open('CHANGELOG.rst', "rt", encoding="utf8") as f:
+    with open('CHANGELOG.rst', encoding="utf8") as f:
         changelog = f.read()
-    with open('CITATION.cff', "rt", encoding="utf8") as f:
+    with open('CITATION.cff', encoding="utf8") as f:
         citation = yaml.safe_load(f)
 
     euphonic_ver = __version__
@@ -38,10 +38,10 @@ def release_github(test=True):
     version_dict['CITATION.cff'] = 'v' + citation['version']
     for ver_name, ver in version_dict.items():
         if euphonic_ver != ver:
-            raise ValueError((
+            raise ValueError(
                 f'euphonic.__version__/{ver_name} version mismatch! '
                 f'euphonic.__version__: {euphonic_ver} {ver_name}: '
-                f'{ver}'))
+                f'{ver}')
 
     if is_prerelease:
         body_re = r'`Unreleased.*?^-+\n(.*?)^`v'

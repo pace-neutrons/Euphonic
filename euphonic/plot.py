@@ -1,5 +1,6 @@
+from collections.abc import Sequence
 from itertools import pairwise
-from typing import TYPE_CHECKING, Optional, Sequence, Tuple, Union
+from typing import TYPE_CHECKING, Optional
 
 try:
     from matplotlib.axes import Axes
@@ -24,7 +25,7 @@ if TYPE_CHECKING:
     from matplotlib.lines import Line2D
 
 
-def plot_1d_to_axis(spectra: Union[Spectrum1D, Spectrum1DCollection],
+def plot_1d_to_axis(spectra: Spectrum1D | Spectrum1DCollection,
                     ax: Axes, labels: Optional[Sequence[str]] = None,
                     **mplargs) -> None:
     """Plot a (collection of) 1D spectrum lines to matplotlib axis
@@ -103,10 +104,7 @@ def plot_1d_to_axis(spectra: Union[Spectrum1D, Spectrum1DCollection],
     return None
 
 
-def plot_1d(spectra: Union[Spectrum1D,
-                           Spectrum1DCollection,
-                           Sequence[Spectrum1D],
-                           Sequence[Spectrum1DCollection]],
+def plot_1d(spectra: Spectrum1D | Spectrum1DCollection | Sequence[Spectrum1D] | Sequence[Spectrum1DCollection],
             title: str | None = None,
             xlabel: str = '',
             ylabel: str = '',
@@ -204,7 +202,7 @@ def plot_1d(spectra: Union[Spectrum1D,
 
 
 def plot_2d_to_axis(spectrum: Spectrum2D, ax: Axes,
-                    cmap: Union[str, Colormap, None] = None,
+                    cmap: str | Colormap | None = None,
                     interpolation: str = 'nearest',
                     norm: Optional[Normalize] = None,
                     ) -> NonUniformImage:
@@ -253,10 +251,10 @@ def plot_2d_to_axis(spectrum: Spectrum2D, ax: Axes,
     return image
 
 
-def plot_2d(spectra: Union[Spectrum2D, Sequence[Spectrum2D]],
+def plot_2d(spectra: Spectrum2D | Sequence[Spectrum2D],
             vmin: Optional[float] = None,
             vmax: Optional[float] = None,
-            cmap: Optional[Union[str, Colormap]] = None,
+            cmap: Optional[str | Colormap] = None,
             title: str | None = None,
             xlabel: str = '',
             ylabel: str = '') -> Figure:
@@ -305,7 +303,7 @@ def plot_2d(spectra: Union[Spectrum2D, Sequence[Spectrum2D]],
 
     intensity_unit = spectra[0].z_data.units
 
-    def _get_minmax_intensity(spectrum: Spectrum2D) -> Tuple[float, float]:
+    def _get_minmax_intensity(spectrum: Spectrum2D) -> tuple[float, float]:
         dimensionless_data = spectrum.z_data.to(intensity_unit).magnitude
         assert isinstance(dimensionless_data, np.ndarray)
         return np.nanmin(dimensionless_data), np.nanmax(dimensionless_data)
@@ -333,7 +331,7 @@ def plot_2d(spectra: Union[Spectrum2D, Sequence[Spectrum2D]],
 
 
 def _set_x_tick_labels(ax: Axes,
-                       x_tick_labels: Optional[Sequence[Tuple[int, str]]],
+                       x_tick_labels: Optional[Sequence[tuple[int, str]]],
                        x_data: Quantity) -> None:
     if x_tick_labels is not None:
         locs, labels = [list(x) for x in zips(*x_tick_labels)]
@@ -347,8 +345,7 @@ def _set_x_tick_labels(ax: Axes,
             ax.set_xticklabels(labels)
 
 
-def _get_gridspec_kw(spectra: Sequence[Union[Spectrum1D,
-                                             Spectrum1DCollection]]):
+def _get_gridspec_kw(spectra: Sequence[Spectrum1D | Spectrum1DCollection]):
     """
     Creates a dictionary of gridspec_kw to be passed to
     matplotlib.pyplot.subplots

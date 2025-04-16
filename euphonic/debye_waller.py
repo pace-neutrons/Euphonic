@@ -1,5 +1,5 @@
 import inspect
-from typing import Any, Dict, Type, TypeVar
+from typing import Any, TypeVar
 
 from euphonic.crystal import Crystal
 from euphonic.io import (
@@ -87,7 +87,7 @@ class DebyeWaller:
                                ['debye_waller_unit', 'temperature_unit'])
         super(DebyeWaller, self).__setattr__(name, value)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """
         Convert to a dictionary. See DebyeWaller.from_dict for details
         on keys/values
@@ -111,7 +111,7 @@ class DebyeWaller:
         _obj_to_json_file(self, filename)
 
     @classmethod
-    def from_dict(cls: Type[T], d: Dict[str, Any]) -> T:
+    def from_dict(cls: type[T], d: dict[str, Any]) -> T:
         """
         Convert a dictionary to a DebyeWaller object
 
@@ -136,7 +136,7 @@ class DebyeWaller:
         return cls(crystal, d['debye_waller'], d['temperature'])
 
     @classmethod
-    def from_json_file(cls: Type[T], filename: str) -> T:
+    def from_json_file(cls: type[T], filename: str) -> T:
         """
         Read from a JSON file. See DebyeWaller.from_dict for required
         fields

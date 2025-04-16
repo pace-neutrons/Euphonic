@@ -1,4 +1,4 @@
-from typing import Any, Dict, NoReturn, Optional, Type, TypeVar
+from typing import Any, NoReturn, Optional, TypeVar
 import warnings
 
 import numpy as np
@@ -319,11 +319,10 @@ class StructureFactor(QpointFrequencies):
         if self.temperature is not None:
             if (temperature is not None
                     and not np.isclose(temperature, self.temperature)):
-                raise ValueError((
+                raise ValueError(
                     'Temperature provided to calculate the Bose factor '
-                    '({:~P}) is not consistent with the temperature '
-                    'stored in StructureFactor ({:~P})'.format(
-                        temperature, self.temperature)))
+                    f'({temperature:~P}) is not consistent with the temperature '
+                    f'stored in StructureFactor ({self.temperature:~P})')
             temperature = self.temperature
         if temperature is None:
             raise NoTemperatureError(
@@ -339,7 +338,7 @@ class StructureFactor(QpointFrequencies):
             bose = 0
         return bose
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """
         Convert to a dictionary. See StructureFactor.from_dict for
         details on keys/values
@@ -356,7 +355,7 @@ class StructureFactor(QpointFrequencies):
             self.crystal, self.qpts, self.frequencies, self.weights)
 
     @classmethod
-    def from_dict(cls: Type[T], d: Dict[str, Any]) -> T:
+    def from_dict(cls: type[T], d: dict[str, Any]) -> T:
         """
         Convert a dictionary to a StructureFactor object
 
@@ -387,11 +386,11 @@ class StructureFactor(QpointFrequencies):
                    d['temperature'])
 
     @classmethod
-    def from_castep(cls: Type[T]) -> NoReturn:
+    def from_castep(cls: type[T]) -> NoReturn:
         ''
         raise AttributeError
 
     @classmethod
-    def from_phonopy(cls: Type[T]) -> NoReturn:
+    def from_phonopy(cls: type[T]) -> NoReturn:
         ''
         raise AttributeError

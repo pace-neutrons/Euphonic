@@ -2,22 +2,16 @@
 # pylint: disable=no-member
 
 from abc import ABC, abstractmethod
+from collections.abc import Callable, Sequence
 import copy
 from functools import partial
 import math
 from numbers import Integral, Real
 from typing import (
     Any,
-    Callable,
-    Dict,
-    List,
     Literal,
     Optional,
-    Sequence,
-    Tuple,
-    Type,
     TypeVar,
-    Union,
     overload,
 )
 import warnings
@@ -46,7 +40,7 @@ from euphonic.validate import _check_constructor_inputs, _check_unit_conversion
 CallableQuantity = Callable[[Quantity], Quantity]
 XTickLabels = list[tuple[int, str]]
 
-OneSpectrumMetadata = Dict[str, Union[str, int]]
+OneSpectrumMetadata = dict[str, str | int]
 
 
 class Spectrum(ABC):
@@ -127,12 +121,12 @@ class Spectrum(ABC):
         self._x_tick_labels = value
 
     @abstractmethod
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Write to dict using euphonic.io._obj_to_dict"""
 
     @classmethod
     @abstractmethod
-    def from_dict(cls: Type[T], d: Dict[str, Any]) -> T:
+    def from_dict(cls: type[T], d: dict[str, Any]) -> T:
         """Initialise a Spectrum object from dictionary"""
 
     def to_json_file(self, filename: str) -> None:
@@ -148,7 +142,7 @@ class Spectrum(ABC):
         _obj_to_json_file(self, filename)
 
     @classmethod
-    def from_json_file(cls: Type[T], filename: str) -> T:
+    def from_json_file(cls: type[T], filename: str) -> T:
         """
         Read from a JSON file. See from_dict for required fields
 
@@ -161,11 +155,11 @@ class Spectrum(ABC):
         return _obj_from_json_file(cls, filename, type_dict)
 
     @abstractmethod
-    def _split_by_indices(self: T, indices: Union[Sequence[int], np.ndarray]
-                          ) -> List[T]:
+    def _split_by_indices(self: T, indices: Sequence[int] | np.ndarray
+                          ) -> list[T]:
         """Split data along x axis at given indices"""
 
-    def _split_by_tol(self: T, btol: float = 10.0) -> List[T]:
+    def _split_by_tol(self: T, btol: float = 10.0) -> list[T]:
         """Split data along x-axis at detected breakpoints"""
         diff = np.diff(self.x_data)
         median = np.median(diff)
@@ -173,8 +167,8 @@ class Spectrum(ABC):
         return self._split_by_indices(breakpoints)
 
     @staticmethod
-    def _ranges_from_indices(indices: Union[Sequence[int], np.ndarray]
-                             ) -> List[Tuple[int, Optional[int]]]:
+    def _ranges_from_indices(indices: Sequence[int] | np.ndarray
+                             ) -> list[tuple[int, Optional[int]]]:
         """Convert a series of breakpoints to a series of slice ranges"""
         if len(indices) == 0:
             ranges = [(0, None)]
@@ -200,8 +194,8 @@ class Spectrum(ABC):
         return [(int(x - x0), label)
                 for (x, label) in x_tick_labels if x0 <= x < x1]
 
-    def split(self: T, indices: Union[Sequence[int], np.ndarray] = None,
-              btol: float = None) -> List[T]:
+    def split(self: T, indices: Sequence[int] | np.ndarray = None,
+              btol: float = None) -> list[T]:
         """Split to multiple spectra
 
         Data may be split by index. Alternatively, x-axis data may be
@@ -500,7 +494,7 @@ class Spectrum1D(Spectrum):
 
     def __init__(self, x_data: Quantity, y_data: Quantity,
                  x_tick_labels: Optional[XTickLabels] = None,
-                 metadata: Optional[Dict[str, Union[int, str]]] = None
+                 metadata: Optional[dict[str, int | str]] = None
                  ) -> None:
         """
         Parameters
@@ -551,8 +545,8 @@ class Spectrum1D(Spectrum):
         return spec_col.sum()
 
     def _split_by_indices(self: T,
-                          indices: Union[Sequence[int], np.ndarray]
-                          ) -> List[T]:
+                          indices: Sequence[int] | np.ndarray
+                          ) -> list[T]:
         """Split data along x-axis at given indices"""
         ranges = self._ranges_from_indices(indices)
 
@@ -569,7 +563,7 @@ class Spectrum1D(Spectrum):
                           x_tick_labels=copy.copy(self.x_tick_labels),
                           metadata=copy.deepcopy(self.metadata))
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """
         Convert to a dictionary. See Spectrum1D.from_dict for details on
         keys/values
@@ -582,7 +576,7 @@ class Spectrum1D(Spectrum):
                                    'metadata'])
 
     def to_text_file(self, filename: str,
-                     fmt: Optional[Union[str, Sequence[str]]] = None) -> None:
+                     fmt: Optional[str | Sequence[str]] = None) -> None:
         """
         Write to a text file. The header contains metadata and unit
         information, the first column contains x_data and the second
@@ -603,7 +597,7 @@ class Spectrum1D(Spectrum):
         spec.to_text_file(filename, fmt)
 
     @classmethod
-    def from_dict(cls: Type[T], d: Dict[str, Any]) -> T:
+    def from_dict(cls: type[T], d: dict[str, Any]) -> T:
         """
         Convert a dictionary to a Spectrum1D object
 
@@ -632,7 +626,7 @@ class Spectrum1D(Spectrum):
                    metadata=d['metadata'])
 
     @classmethod
-    def from_castep_phonon_dos(cls: Type[T], filename: str,
+    def from_castep_phonon_dos(cls: type[T], filename: str,
                                element: Optional[str] = None) -> T:
         """
         Reads DOS from a CASTEP .phonon_dos file
@@ -856,8 +850,8 @@ class Spectrum2D(Spectrum):
         super().__setattr__(name, value)
 
     def _split_by_indices(self,
-                          indices: Union[Sequence[int], np.ndarray]
-                          ) -> List[T]:
+                          indices: Sequence[int] | np.ndarray
+                          ) -> list[T]:
         """Split data along x-axis at given indices"""
         ranges = self._ranges_from_indices(indices)
         return [type(self)(self.x_data[x0:x1], self.y_data,
@@ -868,8 +862,8 @@ class Spectrum2D(Spectrum):
                 for x0, x1 in ranges]
 
     def broaden(self: T,
-                x_width: Optional[Union[Quantity, CallableQuantity]] = None,
-                y_width: Optional[Union[Quantity, CallableQuantity]] = None,
+                x_width: Optional[Quantity | CallableQuantity] = None,
+                y_width: Optional[Quantity | CallableQuantity] = None,
                 shape: KernelShape = 'gauss',
                 method: Optional[Literal['convolve']] = None,
                 x_width_lower_limit: Quantity = None,
@@ -1165,7 +1159,7 @@ class Spectrum2D(Spectrum):
             raise AssertionError(
                 f"Not all {bin_ax}-axis bins are the same width. " + message)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """
         Convert to a dictionary. See Spectrum2D.from_dict for details on
         keys/values
@@ -1178,7 +1172,7 @@ class Spectrum2D(Spectrum):
                                    'x_tick_labels', 'metadata'])
 
     @classmethod
-    def from_dict(cls: Type[T], d: Dict[str, Any]) -> T:
+    def from_dict(cls: type[T], d: dict[str, Any]) -> T:
         """
         Convert a dictionary to a Spectrum2D object
 
@@ -1213,7 +1207,7 @@ class Spectrum2D(Spectrum):
 def apply_kinematic_constraints(spectrum: Spectrum2D,
                                 e_i: Quantity = None,
                                 e_f: Quantity = None,
-                                angle_range: Tuple[float] = (0, 180.)
+                                angle_range: tuple[float] = (0, 180.)
                                 ) -> Spectrum2D:
     """
     Set events to NaN which violate energy/momentum limits:
@@ -1305,7 +1299,7 @@ def apply_kinematic_constraints(spectrum: Spectrum2D,
     return new_spectrum
 
 
-def _get_cos_range(angle_range: Tuple[float]) -> Tuple[float]:
+def _get_cos_range(angle_range: tuple[float]) -> tuple[float]:
     """
     Get max and min of cosine function over angle range
 

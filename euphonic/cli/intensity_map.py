@@ -1,5 +1,5 @@
 from argparse import ArgumentParser
-from typing import List, Optional
+from typing import Optional
 
 import matplotlib.style
 
@@ -24,7 +24,7 @@ from .utils import (
 )
 
 
-def main(params: Optional[List[str]] = None) -> None:
+def main(params: Optional[list[str]] = None) -> None:
     args = get_args(get_parser(), params)
     calc_modes_kwargs = _calc_modes_kwargs(args)
 

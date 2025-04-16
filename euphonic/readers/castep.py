@@ -1,17 +1,13 @@
 from collections import defaultdict
+from collections.abc import Iterator
 import re
 import struct
 from typing import (
     Any,
     BinaryIO,
-    Dict,
-    Iterator,
-    List,
     NamedTuple,
     Optional,
     TextIO,
-    Tuple,
-    Union,
 )
 
 import numpy as np
@@ -25,7 +21,7 @@ def read_phonon_dos_data(
         cell_vectors_unit: str = 'angstrom',
         atom_mass_unit: str = 'amu',
         frequencies_unit: str = 'meV',
-        mode_gradients_unit: str = 'meV*angstrom') -> Dict[str, Any]:
+        mode_gradients_unit: str = 'meV*angstrom') -> dict[str, Any]:
     """
     Reads data from a .phonon_dos file and returns it in a dictionary
 
@@ -49,7 +45,7 @@ def read_phonon_dos_data(
         'frequencies_unit', 'mode_gradients', 'mode_gradients_unit',
         'dos_bins', 'dos_bins_unit', 'dos', 'pdos'
     """
-    with open(filename, 'r') as f:
+    with open(filename) as f:
 
         f.readline()  # Skip BEGIN header
         n_atoms = int(f.readline().split()[-1])
@@ -83,7 +79,7 @@ def read_phonon_dos_data(
 
         dos_data = np.loadtxt(f, max_rows=n_bins)
 
-    data_dict: Dict[str, Any] = {}
+    data_dict: dict[str, Any] = {}
     cry_dict = data_dict['crystal'] = {}
     cry_dict['n_atoms'] = n_atoms
     cry_dict['cell_vectors'] = (cell_vectors*ureg('angstrom').to(
@@ -139,7 +135,7 @@ def read_phonon_data(
         read_eigenvectors: bool = True,
         average_repeat_points: bool = True,
         prefer_non_loto: bool = False
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
     """
     Reads data from a .phonon file and returns it in a dictionary
 
@@ -178,7 +174,7 @@ def read_phonon_data(
         If read_eigenvectors is True, there will also be an
         'eigenvectors' key
     """
-    with open(filename, 'r') as f:
+    with open(filename) as f:
 
         f.readline()  # Skip BEGIN header
         n_atoms = int(f.readline().split()[-1])
@@ -218,10 +214,10 @@ def read_phonon_data(
             if read_eigenvectors:
                 evec_lines = np.array([x.split()[2:] for x in evec_lines],
                                       dtype=np.float64)
-                lines_i = np.column_stack((
+                lines_i = np.column_stack(
                     [evec_lines[:, 0] + evec_lines[:, 1]*1j,
                      evec_lines[:, 2] + evec_lines[:, 3]*1j,
-                     evec_lines[:, 4] + evec_lines[:, 5]*1j]))
+                     evec_lines[:, 4] + evec_lines[:, 5]*1j])
                 qeigenvec = np.zeros((n_branches, n_atoms, 3),
                                      dtype=np.complex128)
                 for i in range(n_branches):
@@ -261,7 +257,7 @@ def read_phonon_data(
             np_indices = np.asarray(list(indices), dtype=int)
             weights[np_indices] /= np_indices.size
 
-    data_dict: Dict[str, Any] = {}
+    data_dict: dict[str, Any] = {}
     data_dict['crystal'] = {}
     cry_dict = data_dict['crystal']
     cry_dict['n_atoms'] = n_atoms
@@ -286,7 +282,7 @@ def read_phonon_data(
 
 def _read_crystal_info(
         f: TextIO, n_atoms: int
-        ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+        ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """
     Reads the header crystal information from a CASTEP text file, from
     'Unit cell vectors' to 'END header'
@@ -343,9 +339,9 @@ class _FrequencyBlock(NamedTuple):
 def _read_frequency_block(
     f: TextIO,
     n_branches: int,
-    extra_columns: Optional[List] = None,
+    extra_columns: Optional[list] = None,
     terminator: str = ''
-        ) -> Union[_FrequencyBlock, None]:
+        ) -> _FrequencyBlock | None:
     """
     For a single q-point reads the q-point, weight, frequencies
     and optionally any extra columns
@@ -432,7 +428,7 @@ def read_interpolation_data(
         atom_mass_unit: str = 'amu',
         force_constants_unit: str = 'hartree/bohr**2',
         born_unit: str = 'e',
-        dielectric_unit: str = '(e**2)/(bohr*hartree)') -> Dict[str, Any]:
+        dielectric_unit: str = '(e**2)/(bohr*hartree)') -> dict[str, Any]:
     """
     Reads data from a .castep_bin or .check file and returns it in a
     dictionary
@@ -518,7 +514,7 @@ def read_interpolation_data(
                     # Extra field marks if dielectric tensor was read from BORN
                     _ = _read_entry(f)
 
-    data_dict: Dict[str, Any] = {}
+    data_dict: dict[str, Any] = {}
     cry_dict = data_dict['crystal'] = {}
     cry_dict['n_atoms'] = n_atoms
     cry_dict['cell_vectors'] = cell_vectors*ureg(
@@ -539,10 +535,10 @@ def read_interpolation_data(
         data_dict['sc_matrix'] = sc_matrix
         data_dict['cell_origins'] = cell_origins
     except NameError:
-        raise RuntimeError((
+        raise RuntimeError(
             f'Force constants matrix could not be found in {filename}. '
             f'\nEnsure PHONON_WRITE_FORCE_CONSTANTS: true and a '
-            f'PHONON_FINE_METHOD has been chosen when running CASTEP')
+            f'PHONON_FINE_METHOD has been chosen when running CASTEP'
                            ) from None
 
     # Set entries relating to dipoles
@@ -560,7 +556,7 @@ def read_interpolation_data(
 
 
 def _read_cell(file_obj: BinaryIO, int_type: str, float_type: str
-               ) -> Tuple[int, np.ndarray, np.ndarray,
+               ) -> tuple[int, np.ndarray, np.ndarray,
                           np.ndarray, np.ndarray]:
     """
     Read cell data from a .castep_bin or .check file
@@ -645,7 +641,7 @@ def _read_cell(file_obj: BinaryIO, int_type: str, float_type: str
 
 
 def _read_entry(file_obj: BinaryIO, dtype: str = ''
-                ) -> Union[str, int, float, np.ndarray]:
+                ) -> str | int | float | np.ndarray:
     """
     Read a record from a Fortran binary file, including the beginning
     and end record markers and return the data inbetween
@@ -695,7 +691,7 @@ def _read_entry(file_obj: BinaryIO, dtype: str = ''
         data = file_obj.read(begin)
     end = record_mark_read(file_obj)
     if begin != end:
-        raise IOError("""Problem reading binary file: beginning and end
+        raise OSError("""Problem reading binary file: beginning and end
                          record markers do not match""")
 
     return data

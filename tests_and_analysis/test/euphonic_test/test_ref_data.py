@@ -35,7 +35,7 @@ class TestReferenceData:
     @staticmethod
     def _dump_data(data, tmpdir, filename):
         filename = tmpdir.join(filename)
-        with open(filename, 'wt') as fd:
+        with open(filename, 'w') as fd:
             json.dump(data, fd)
         return str(filename)
 

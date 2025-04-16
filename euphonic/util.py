@@ -1,3 +1,4 @@
+from collections.abc import Sequence
 from functools import partial, reduce
 from importlib.resources import files
 import itertools
@@ -5,7 +6,7 @@ import json
 import math
 import os.path
 import sys
-from typing import Optional, Sequence
+from typing import Optional
 import warnings
 
 import numpy as np

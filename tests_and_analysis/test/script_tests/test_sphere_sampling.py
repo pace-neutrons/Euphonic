@@ -69,7 +69,7 @@ class TestRegression:
         # For 3D plots, this will be a 2D projected position of visible points
         offsets = get_current_plot_offsets()
 
-        with open(sphere_sampling_output_file, 'r') as sampling_json_file:
+        with open(sphere_sampling_output_file) as sampling_json_file:
             expected_offsets = json.load(
                 sampling_json_file)[" ".join(sampling_params)]
 

@@ -1,5 +1,5 @@
 from collections.abc import Sequence
-from typing import Any, List, Optional, Tuple, Type, Union
+from typing import Any, Optional
 
 import numpy as np
 from pint import DimensionalityError
@@ -8,10 +8,10 @@ from euphonic.ureg import ureg
 
 
 def _check_constructor_inputs(
-        objs: List[object],
-        types: List[Union[Type, List[Type]]],
-        shapes: List[Union[Tuple[int, ...], List[Tuple[int, ...]]]],
-        names: List[str]) -> None:
+        objs: list[object],
+        types: list[type | list[type]],
+        shapes: list[tuple[int, ...] | list[tuple[int, ...]]],
+        names: list[str]) -> None:
     """
     Make sure all the inputs are all the expected type, and if they are
     an array, the correct shape
@@ -45,19 +45,19 @@ def _check_constructor_inputs(
         if not isinstance(typ, list):
             typ = [typ]  # noqa: PLW2901 redefined-loop-name
         if not any(isinstance(obj, t) for t in typ):
-            raise TypeError((f'The type of {name} {type(obj)} doesn\'t '
-                             f'match the expected type(s) {typ}'))
+            raise TypeError(f'The type of {name} {type(obj)} doesn\'t '
+                             f'match the expected type(s) {typ}')
         if hasattr(obj, 'shape') and shape:
             if not isinstance(shape, list):
                 shape = [shape]  # noqa: PLW2901 (redefined-loop-name)
             if not any(obj.shape == _replace_dim(s, obj.shape) for s in shape):
-                raise ValueError((
+                raise ValueError(
                     f'The shape of {name} {obj.shape} doesn\'t match '
-                    f'the expected shape(s) {shape}'))
+                    f'the expected shape(s) {shape}')
 
 
 def _check_unit_conversion(obj: object, attr_name: str, attr_value: Any,
-                           unit_attrs: List[str]) -> None:
+                           unit_attrs: list[str]) -> None:
     """
     If setting an attribute on an object that relates to the units of a
     Quantity (e.g. 'frequencies_unit' in QpointPhononModes) check that
@@ -86,13 +86,13 @@ def _check_unit_conversion(obj: object, attr_name: str, attr_value: Any,
                 ureg(getattr(obj, attr_name)).ito(attr_value,
                                                   "reciprocal_spectroscopy")
             except DimensionalityError as err:
-                raise ValueError((
+                raise ValueError(
                     f'"{attr_value}" is not a known dimensionally-consistent '
-                    f'unit for "{attr_name}"')) from err
+                    f'unit for "{attr_name}"') from err
 
 
-def _replace_dim(expected_shape: Tuple[int, ...],
-                 obj_shape: Tuple[int, ...]) -> Tuple[int, ...]:
+def _replace_dim(expected_shape: tuple[int, ...],
+                 obj_shape: tuple[int, ...]) -> tuple[int, ...]:
     # Allow -1 dimensions to be any size
     idx = np.where(np.array(expected_shape) == -1)[0]
     if len(idx) == 0 or len(expected_shape) != len(obj_shape):
@@ -103,7 +103,7 @@ def _replace_dim(expected_shape: Tuple[int, ...],
     return tuple(expected_shape_replaced)
 
 
-def _ensure_contiguous_attrs(obj: object, required_attrs: List[str],
+def _ensure_contiguous_attrs(obj: object, required_attrs: list[str],
                              opt_attrs: Sequence[str] = ()) -> None:
     """
     Make sure all listed attributes of obj are C Contiguous and of the
@@ -138,7 +138,7 @@ def _ensure_contiguous_attrs(obj: object, required_attrs: List[str],
             pass
 
 
-def _ensure_contiguous_args(*args: np.ndarray) -> Tuple[np.ndarray, ...]:
+def _ensure_contiguous_args(*args: np.ndarray) -> tuple[np.ndarray, ...]:
     """
     Make sure all arguments are C Contiguous and of the correct type
     (int32, float64, complex128). This should only be used internally,
@@ -159,7 +159,7 @@ def _ensure_contiguous_args(*args: np.ndarray) -> Tuple[np.ndarray, ...]:
                  for arg in args)
 
 
-def _get_dtype(arr: np.ndarray) -> Optional[Type]:
+def _get_dtype(arr: np.ndarray) -> Optional[type]:
     """
     Get the Numpy dtype that should be used for the input array
 

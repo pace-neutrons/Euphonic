@@ -76,7 +76,7 @@ class TestRegression:
 
         image_data = get_current_plot_image_data()
 
-        with open(intensity_map_output_file, 'r') as expected_data_file:
+        with open(intensity_map_output_file) as expected_data_file:
             expected_image_data = json.load(expected_data_file)[
                 args_to_key(intensity_map_args)]
 
@@ -177,7 +177,7 @@ def test_regenerate_intensity_map_data(_):
     # Read from existing file first to allow option of only replacing for
     # certain test cases or keys
     try:
-        with open(intensity_map_output_file, 'r') as json_file:
+        with open(intensity_map_output_file) as json_file:
             json_data = json.load(json_file)
     except FileNotFoundError:
         json_data = {}

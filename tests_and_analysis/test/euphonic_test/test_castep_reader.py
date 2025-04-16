@@ -25,7 +25,7 @@ class TestReadPhononDosData:
     def test_read_data(self, material, phonon_dos_file, expected_data_file):
         dos_data = read_phonon_dos_data(
             get_castep_path(material, phonon_dos_file))
-        with open(get_data_path('readers', expected_data_file), 'r') as fp:
+        with open(get_data_path('readers', expected_data_file)) as fp:
             expected_dos_data = json.loads(fp.read())
 
         dos_crystal = ExpectedCrystal(dos_data.pop('crystal'))
@@ -72,7 +72,7 @@ class TestReadPhononData:
             get_castep_path(material, phonon_file),
             **kwargs)
 
-        with open(get_data_path('readers', expected_data_file), 'r') as fp:
+        with open(get_data_path('readers', expected_data_file)) as fp:
             expected_data = _from_json_dict(
                 json.loads(fp.read()),
                 type_dict={'eigenvectors': np.complex128})

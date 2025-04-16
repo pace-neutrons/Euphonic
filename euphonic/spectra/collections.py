@@ -3,6 +3,7 @@
 
 from abc import ABC, abstractmethod
 import collections
+from collections.abc import Callable, Generator, Sequence
 import copy
 from functools import partial, reduce
 from itertools import product, repeat
@@ -11,16 +12,9 @@ from numbers import Integral
 from operator import contains
 from typing import (
     Any,
-    Callable,
-    Dict,
-    Generator,
-    List,
     Literal,
     Optional,
-    Sequence,
-    Type,
     TypeVar,
-    Union,
     overload,
 )
 
@@ -48,7 +42,7 @@ from .base import (
 from .base import OneSpectrumMetadata as OneLineData
 
 LineData = Sequence[OneLineData]
-Metadata = Dict[str, Union[str, int, LineData]]
+Metadata = dict[str, str | int | LineData]
 
 
 class SpectrumCollectionMixin(ABC):
@@ -178,10 +172,10 @@ class SpectrumCollectionMixin(ABC):
     def __getitem__(self, item: slice) -> Self: ...
 
     @overload  # noqa: F811
-    def __getitem__(self, item: Union[Sequence[int], np.ndarray]) -> Self: ...
+    def __getitem__(self, item: Sequence[int] | np.ndarray) -> Self: ...
 
     def __getitem__(
-            self, item: Union[Integral, slice, Sequence[Integral], np.ndarray]
+            self, item: Integral | slice | Sequence[Integral] | np.ndarray
     ):  # noqa: F811
         self._validate_item(item)
 
@@ -201,7 +195,7 @@ class SpectrumCollectionMixin(ABC):
     def _set_item_data(
             self,
             spectrum: Spectrum,
-            item: Union[Integral, slice, Sequence[Integral], np.ndarray]
+            item: Integral | slice | Sequence[Integral] | np.ndarray
     ) -> None:
         """Write axis and spectrum data from self to Spectrum
 
@@ -326,8 +320,7 @@ class SpectrumCollectionMixin(ABC):
         return [i for i, row in enumerate(self.iter_metadata())
                    if required_metadata <= row.items()]
 
-    def select(self, **select_key_values: Union[
-            str, int, Sequence[str], Sequence[int]]) -> Self:
+    def select(self, **select_key_values: str | int | Sequence[str] | Sequence[int]) -> Self:
         """
         Select spectra by their keys and values in metadata['line_data']
 
@@ -470,7 +463,7 @@ class SpectrumCollectionMixin(ABC):
         return self.from_spectra([self[list(indices(group))].sum()
                                   for group in groups.values()])
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """
         Convert to a dictionary consistent with from_dict()
 
@@ -550,7 +543,7 @@ class Spectrum1DCollection(SpectrumCollectionMixin,
     def __init__(
             self, x_data: Quantity, y_data: Quantity,
             x_tick_labels: Optional[XTickLabels] = None,
-            metadata: Optional[Dict[str, Union[str, int, LineData]]] = None
+            metadata: Optional[dict[str, str | int | LineData]] = None
     ) -> None:
         """
         Parameters
@@ -595,8 +588,8 @@ class Spectrum1DCollection(SpectrumCollectionMixin,
         self._check_metadata()
 
     def _split_by_indices(self,
-                          indices: Union[Sequence[int], np.ndarray]
-                          ) -> List[Self]:
+                          indices: Sequence[int] | np.ndarray
+                          ) -> list[Self]:
         """Split data along x-axis at given indices"""
 
         ranges = self._ranges_from_indices(indices)
@@ -653,7 +646,7 @@ class Spectrum1DCollection(SpectrumCollectionMixin,
                    metadata=metadata)
 
     def to_text_file(self, filename: str,
-                     fmt: Optional[Union[str, Sequence[str]]] = None) -> None:
+                     fmt: Optional[str | Sequence[str]] = None) -> None:
         """
         Write to a text file. The header contains metadata and unit
         information, the first column is x_data and each subsequent
@@ -686,7 +679,7 @@ class Spectrum1DCollection(SpectrumCollectionMixin,
         np.savetxt(filename, out_data, **kwargs)
 
     @classmethod
-    def from_castep_phonon_dos(cls: Type[T], filename: str) -> T:
+    def from_castep_phonon_dos(cls: type[T], filename: str) -> T:
         """
         Reads total DOS and per-element PDOS from a CASTEP
         .phonon_dos file
@@ -908,7 +901,7 @@ class Spectrum2DCollection(SpectrumCollectionMixin,
         self._check_metadata()
 
     def _split_by_indices(self, indices: Sequence[int] | np.ndarray
-                          ) -> List[Self]:
+                          ) -> list[Self]:
         """Split data along x axis at given indices"""
         ranges = self._ranges_from_indices(indices)
         return [type(self)(self.x_data[x0:x1],

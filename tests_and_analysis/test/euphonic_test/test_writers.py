@@ -40,7 +40,7 @@ def modes_data(
 
     ref_filename = get_data_path(
         'writers', 'NaCl_minimal_modes_web_defaults.json')
-    with open(ref_filename, 'r', encoding='utf8') as fd:
+    with open(ref_filename, encoding='utf8') as fd:
         ref_data = json.load(fd)
 
     kwargs = {'output_file': 'phonons.json',
@@ -61,7 +61,7 @@ def test_phonon_website_writer(
 
     write_phonon_website_json(modes, **kwargs)
 
-    with open(kwargs['output_file'], 'r', encoding='utf8') as fd:
+    with open(kwargs['output_file'], encoding='utf8') as fd:
         output = json.load(fd)
 
     assert output == pytest.approx(ref_data)
