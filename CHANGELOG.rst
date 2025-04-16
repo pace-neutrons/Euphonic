@@ -1,6 +1,12 @@
 `Unreleased <https://github.com/pace-neutrons/Euphonic/compare/v1.4.3...HEAD>`_
 -------------------------------------------------------------------------------
 
+- Maintenance
+
+  - Numpy random number generators have been updated to use a Generator from
+    ``np.random.default_rng``
+
+
 `v1.4.3 <https://github.com/pace-neutrons/Euphonic/compare/v1.4.2...v1.4.3>`_
 -----------------------------------------------------------------------------
 
