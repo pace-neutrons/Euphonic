@@ -116,7 +116,7 @@ select = [
        "FLY",     # flynt
        "I",       # isort
        # "C90",     # mccabe : code complexity check. Worth a look but non-trivial
-       # "NPY",   # NumPy-specific rules : good stuff, worth its own PR
+       "NPY",   # NumPy-specific rules : good stuff, worth its own PR
        "N",       # pep8-naming
        "PERF",    # Perflint
        "F401",    # unused-import

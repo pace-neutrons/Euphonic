@@ -41,6 +41,7 @@ def golden_square(npts: int, offset: bool = True, jitter: bool = False
 
         Sequence of (x, y) pairs in range 0-1
     """
+    rng = np.random.default_rng()
 
     if offset:
         x_offset = 1 / (2 * npts)
@@ -49,7 +50,7 @@ def golden_square(npts: int, offset: bool = True, jitter: bool = False
 
     for i in range(npts):
         if jitter:
-            displacement = (np.random.random(2) - 0.5) / np.sqrt(npts)
+            displacement = (rng.random(2) - 0.5) / np.sqrt(npts)
             delta_x, delta_y = displacement
         else:
             delta_x, delta_y = (0, 0)
@@ -80,6 +81,7 @@ def regular_square(n_rows: int, n_cols: int,
     Iterator[tuple[float, float]]
         sequence of (x, y) pairs in range 0-1
     """
+    rng = np.random.default_rng()
 
     x_spacing, y_spacing = (1 / n_cols), (1 / n_rows)
     x_sequence = np.arange(n_cols) * x_spacing
@@ -92,7 +94,7 @@ def regular_square(n_rows: int, n_cols: int,
 
     for x, y in product(x_sequence, y_sequence):
         if jitter:
-            displacement = (np.random.random(2) - 0.5) * [x_spacing, y_spacing]
+            displacement = (rng.random(2) - 0.5) * [x_spacing, y_spacing]
             delta_x, delta_y = displacement
         else:
             delta_x, delta_y = 0, 0
@@ -217,6 +219,8 @@ def spherical_polar_grid(n_phi: int, n_theta: int,
         Sequence of (x, y, z) coordinates (if cartesian=True) or
         (r, phi, theta) spherical coordinates.
     """
+    rng = np.random.default_rng()
+
     phi_sequence = np.linspace(-np.pi, np.pi, n_phi + 1)[:-1]
     phi_spacing = phi_sequence[1] - phi_sequence[0]
 
@@ -227,7 +231,7 @@ def spherical_polar_grid(n_phi: int, n_theta: int,
 
     for phi, theta in product(phi_sequence, theta_sequence):
         if jitter:
-            displacement = ((np.random.random(2) - 0.5)
+            displacement = ((rng.random(2) - 0.5)
                             * [phi_spacing, theta_spacing])
             phi, theta = [phi, theta] + displacement  # noqa: PLW2901
 
@@ -287,6 +291,8 @@ def spherical_polar_improved(npts: int,
     if npts < 6:
         raise ValueError("This sampling scheme has a minimum of 6 points")
 
+    rng = np.random.default_rng()
+
     # round from the solution of
     # for neighbouring points
     n_theta = int(np.sqrt(np.pi / 4 * npts))
@@ -308,7 +314,7 @@ def spherical_polar_improved(npts: int,
         phi_spacing = phi_sequence[1] - phi_sequence[0]
         for phi in phi_sequence:
             if jitter:
-                displacement = (np.random.random(2) - 0.5) * [phi_spacing,
+                displacement = (rng.random(2) - 0.5) * [phi_spacing,
                                                               theta_spacing]
                 phi, theta = [phi, row_theta] + displacement  # noqa: PLW2901
             else:
@@ -346,8 +352,9 @@ def random_sphere(npts, cartesian: bool = True
         Sequence of (x, y, z) coordinates (if cartesian=True) or
         (r, phi, theta) spherical coordinates.
         """
+    rng = np.random.default_rng()
 
-    points = np.random.random((npts, 2))
+    points = rng.random((npts, 2))
 
     for x, y in points:
         phi, theta = _square_to_spherical_polar(x, y)

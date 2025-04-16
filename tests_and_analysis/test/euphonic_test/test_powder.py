@@ -21,7 +21,8 @@ sampling_functions = {
 
 @pytest.fixture
 def random_qpts_array():
-    return np.random.random((4, 3))
+    rng = np.random.default_rng()
+    return rng.random((4, 3))
 
 
 @pytest.fixture(params=[True, False])

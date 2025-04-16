@@ -8,7 +8,7 @@ import euphonic.sampling
 
 def check_sampling(func, params, ref_results, seed=None):
     if seed is not None:
-        np.random.seed(seed)
+        np.random.seed(seed)  # noqa: NPY002
     points_iter = func(**params)
     assert isinstance(points_iter, Iterator)
     assert np.allclose(list(points_iter), ref_results)

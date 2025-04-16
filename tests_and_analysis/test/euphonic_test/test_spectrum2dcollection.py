@@ -116,7 +116,8 @@ class TestSpectrum2DCollectionCreation:
 
         x_data = ureg.Quantity(np.linspace(0, 100, n_x), "1 / angstrom")
         y_data = ureg.Quantity(np.linspace(0, 2000, n_y), "meV")
-        z_data = ureg.Quantity(np.random.random((n_z, n_x, n_y)), "1 / meV")
+        rng = np.random.default_rng()
+        z_data = ureg.Quantity(rng.random((n_z, n_x, n_y)), "1 / meV")
 
         metadata = {"flavour": "chocolate",
                     "line_data": [{"index": i} for i in range(n_z)]}
