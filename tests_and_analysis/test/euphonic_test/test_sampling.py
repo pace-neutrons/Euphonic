@@ -30,7 +30,7 @@ class TestSquareSampling:
                             ({'npts': 3, 'offset': False, 'jitter': True},
                              [[0.0281824896325298, 0.12423963860186140],
                               [0.3926637961711317, 0.64394730653524050],
-                              [0.6225887445136473, 0.32029998295200524]])
+                              [0.6225887445136473, 0.32029998295200524]]),
                             ]
 
     @pytest.mark.parametrize('params, ref_results', gold_square_ref_data)
@@ -54,7 +54,7 @@ class TestSquareSampling:
                            ({'n_rows': 1, 'n_cols': 2,
                              'offset': False, 'jitter': True},
                             [[0.024406751963662376, 0.21518936637241948],
-                             [0.551381688035822, 0.044883182996896864]])
+                             [0.551381688035822, 0.044883182996896864]]),
                            ]
 
     @pytest.mark.parametrize('params, ref_results', reg_square_ref_data)

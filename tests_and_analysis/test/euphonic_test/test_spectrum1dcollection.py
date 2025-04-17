@@ -222,7 +222,7 @@ class TestSpectrum1DCollectionCreation:
            for i in range(1, 4)],
           get_spectrum1dcollection('methane_pdos_index_1_4.json')),
          ([get_spectrum1d('xsq_spectrum1d.json')],
-          get_spectrum1dcollection('xsq_from_single_spectrum1d.json'))
+          get_spectrum1dcollection('xsq_from_single_spectrum1d.json')),
          ])
     def test_create_from_sequence(self, input_spectra, expected_spectrum):
         spectrum = Spectrum1DCollection.from_spectra(input_spectra)
@@ -265,7 +265,7 @@ class TestSpectrum1DCollectionCreation:
     bad_sequences[4][0][1].x_tick_labels = [(0, "$\\Gamma$"), (54, "X")]
 
     @pytest.mark.parametrize(
-        'input_spectra, expected_error', bad_sequences
+        'input_spectra, expected_error', bad_sequences,
     )
     def test_create_from_bad_sequence(self, input_spectra, expected_error):
         with pytest.raises(expected_error):
@@ -289,26 +289,26 @@ class TestSpectrum1DCollectionCreation:
         'input_metadata, expected_metadata',
         [([{},
            {'label': 'H3'},
-           {'Another key': 'Anything'}
+           {'Another key': 'Anything'},
           ],
-          {'line_data': [{}, {'label': 'H3'}, {'Another key': 'Anything'}]}
+          {'line_data': [{}, {'label': 'H3'}, {'Another key': 'Anything'}]},
          ),
          ([{'desc': 'PDOS H2', 'common_key_value': 3},
            {'desc': 'PDOS H3', 'label': 'H3', 'common_key_value': 3},
-           {'desc': 'PDOS', 'common_key_value': 3}
+           {'desc': 'PDOS', 'common_key_value': 3},
           ],
           {'common_key_value': 3, 'line_data': [
                {'desc': 'PDOS H2'},
                {'desc': 'PDOS H3', 'label': 'H3'},
-               {'desc': 'PDOS'}]}
+               {'desc': 'PDOS'}]},
          ),
          ([{'desc': 'methane PDOS'}, {}, {}],
           {'line_data': [{'desc': 'methane PDOS'}, {}, {}]}),
          ([{'desc': 'methane PDOS'},
            {'desc': 'methane PDOS'},
-           {'desc': 'methane PDOS'}
+           {'desc': 'methane PDOS'},
           ],
-          {'desc': 'methane PDOS'}
+          {'desc': 'methane PDOS'},
          )])
     def test_create_methane_pdos_from_sequence_metadata_handling(
             self, input_metadata, expected_metadata):
@@ -460,7 +460,7 @@ class TestSpectrum1DCollectionIndexAccess:
         [(get_spectrum1dcollection('gan_bands.json'), np.arange(2, 5),
           get_expected_spectrum1dcollection('gan_bands_index_2_5.json')),
          (get_spectrum1dcollection('gan_bands.json'), [2, 3, 4],
-          get_expected_spectrum1dcollection('gan_bands_index_2_5.json'))
+          get_expected_spectrum1dcollection('gan_bands_index_2_5.json')),
          ])
     def test_index_sequence(self, spectrum, index, expected_spectrum):
         extracted_spectrum = spectrum[index]
@@ -578,7 +578,7 @@ class TestSpectrum1DCollectionMethods:
 
     @pytest.mark.parametrize(
         'spectrum_file, summed_spectrum_file', [
-            ('quartz_666_pdos.json', 'quartz_666_dos.json')
+            ('quartz_666_pdos.json', 'quartz_666_dos.json'),
         ])
     def test_sum(self, spectrum_file, summed_spectrum_file):
         spec_col = get_spectrum1dcollection(spectrum_file)
@@ -591,7 +591,7 @@ class TestSpectrum1DCollectionMethods:
             ('La2Zr2O7_666_incoh_pdos.json', ('species',),
              'La2Zr2O7_666_incoh_species_pdos.json'),
             ('La2Zr2O7_666_coh_pdos.json', ('species',),
-             'La2Zr2O7_666_coh_species_pdos.json')
+             'La2Zr2O7_666_coh_species_pdos.json'),
             ])
     def test_group_by(self, spectrum_file, group_by_args,
                       grouped_spectrum_file):
@@ -637,7 +637,7 @@ class TestSpectrum1DCollectionMethods:
               'line_data': [
                   {'index': 10},
                   {'sample': 2, 'index': 5},
-                  {'sample': 0, 'inst': 'TOSCA', 'index': 7}]})
+                  {'sample': 0, 'inst': 'TOSCA', 'index': 7}]}),
             ])
     def test_group_by_fake_metadata(
             self, spectrum_file, metadata, group_by_args, expected_metadata):
@@ -669,7 +669,7 @@ class TestSpectrum1DCollectionMethods:
              'methane_pdos_index_1_4.json'),
             ('La2Zr2O7_666_coh_incoh_species_append_pdos.json',
              {'weighting': 'coherent'},
-             'La2Zr2O7_666_coh_species_pdos.json')
+             'La2Zr2O7_666_coh_species_pdos.json'),
             ])
     def test_select(self, spectrum_file, select_kwargs,
                     selected_spectrum_file):
@@ -726,7 +726,7 @@ class TestSpectrum1DCollectionMethods:
         'spectrum_file, other_spectrum_file, expected_spectrum_file', [
             ('La2Zr2O7_666_coh_species_pdos.json',
              'La2Zr2O7_666_incoh_species_pdos.json',
-             'La2Zr2O7_666_coh_incoh_species_append_pdos.json')
+             'La2Zr2O7_666_coh_incoh_species_append_pdos.json'),
             ])
     def test_add(self, spectrum_file, other_spectrum_file,
                  expected_spectrum_file):

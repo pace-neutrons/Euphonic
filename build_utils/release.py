@@ -57,7 +57,7 @@ def release_github(test=True):
         "name": euphonic_ver,
         "body": desc,
         "draft": False,
-        "prerelease": is_prerelease
+        "prerelease": is_prerelease,
     }
     if test:
         print(payload)

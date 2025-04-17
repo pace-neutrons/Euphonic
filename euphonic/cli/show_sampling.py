@@ -98,7 +98,7 @@ def main(params: Optional[list[str]] = None) -> None:
     elif args.sampling == "random-sphere":
         ax.scatter(
             *zips(*euphonic.sampling.random_sphere(args.npts)),
-            marker="x"
+            marker="x",
         )
 
     elif args.sampling == "recurrence-cube":

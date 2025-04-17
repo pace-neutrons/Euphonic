@@ -54,7 +54,7 @@ def parse_changelog(changelog_file: Path) -> list[Block]:
     with changelog_file.open(encoding="utf8") as fd:
         split_text = re.split(
             LINK_STRING.replace(".", r"\.").format(
-                tag=r"(\S+)", previous_tag=r"(\S+)", compare_tag=r"\S+"
+                tag=r"(\S+)", previous_tag=r"(\S+)", compare_tag=r"\S+",
             )
             + r"\n-+",
             fd.read(),

@@ -102,7 +102,7 @@ class QpointFrequencies:
         mode_widths_min: Quantity = Quantity(0.01, 'meV'),
         adaptive_method: AdaptiveMethod = 'reference',
         adaptive_error: float = 0.01,
-        adaptive_error_fit: ErrorFit = 'cubic'
+        adaptive_error_fit: ErrorFit = 'cubic',
         ) -> Spectrum1D:
         """
         Calculates a density of states, in units of modes per atom per
@@ -170,7 +170,7 @@ class QpointFrequencies:
         adaptive_method: AdaptiveMethod = 'reference',
         adaptive_error: float = 0.01,
         adaptive_error_fit: ErrorFit = 'cubic',
-        q_idx: Optional[int] = None
+        q_idx: Optional[int] = None,
         ) -> Quantity:
         """
         Calculates a density of states (same arg defs as calculate_dos),
@@ -254,7 +254,7 @@ class QpointFrequencies:
 
     def calculate_dos_map(self, dos_bins: Quantity,
                           mode_widths: Optional[Quantity] = None,
-                          mode_widths_min: Quantity = Quantity(0.01, 'meV')
+                          mode_widths_min: Quantity = Quantity(0.01, 'meV'),
                           ) -> Spectrum2D:
         """
         Produces a bandstructure-like plot, using the DOS at each q-point

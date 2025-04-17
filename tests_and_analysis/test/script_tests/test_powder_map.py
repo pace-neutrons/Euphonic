@@ -155,7 +155,7 @@ class TestRegression:
         (['--use-brille', '--brille-grid-type', 'mesh', '--use-c',
           '--n-threads', '2'],
           {'grid_type': 'mesh', 'interpolation_kwargs': {'use_c': True,
-                                                         'n_threads': 2}})
+                                                         'n_threads': 2}}),
     ])
     def test_brille_interpolator_from_force_constants_kwargs_passed(
             self, inject_mocks, mocker, powder_map_args, expected_kwargs):

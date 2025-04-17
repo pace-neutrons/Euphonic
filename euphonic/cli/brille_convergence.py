@@ -41,7 +41,7 @@ def check_brille_settings(
         e_max: Optional[float] = None,
         energy_unit: str = 'meV',
         shape: str = 'gauss',
-        **calc_modes_kwargs
+        **calc_modes_kwargs,
         ) -> None:
 
     fc = load_data_from_file(filename)
@@ -200,7 +200,7 @@ def plot_to_intensity_axes(axes: tuple[Axes, Axes], sqw1d: Spectrum1D,
 
 
 def add_intensity_legend(axes: tuple[Axes, Axes], euphonic_handle: Line2D,
-                         brille_handles: Sequence[Line2D], title: str
+                         brille_handles: Sequence[Line2D], title: str,
                          ) -> None:
     euph_legend = axes[0].legend(handles=[euphonic_handle], loc='upper left')
     axes[0].add_artist(euph_legend)

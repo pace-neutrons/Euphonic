@@ -101,7 +101,7 @@ def rand_spectrum2d(seed: int = 1,
 
     return Spectrum2D(x_data=x_bins,
                           y_data=y_bins,
-                          z_data=rng.random([len(x_bins) - 1, len(y_bins) - 1]
+                          z_data=rng.random([len(x_bins) - 1, len(y_bins) - 1],
                                             ) * ureg("millibarn / meV"),
                           metadata=metadata)
 
@@ -167,7 +167,7 @@ class TestSpectrum2DCollectionCreation:
         ],
     )
     def test_from_bad_spectra(
-        self, bad_item_name, message, quartz_fuzzy_items, request
+        self, bad_item_name, message, quartz_fuzzy_items, request,
     ):
         """Spectrum2DCollection.from_spectra with inconsistent input"""
 
@@ -187,24 +187,24 @@ class TestSpectrum2DCollectionCreation:
 
         Spectrum2DCollection.from_spectra(
             [*quartz_fuzzy_items, inconsistent_x_item],
-            unsafe=True
+            unsafe=True,
         )
 
         Spectrum2DCollection.from_spectra(
             [*quartz_fuzzy_items, inconsistent_x_units_item],
-            unsafe=True
+            unsafe=True,
         )
 
         # Inconsistent length will still cause trouble but should fall to numpy
         with pytest.raises(ValueError, match="could not broadcast input"):
             Spectrum2DCollection.from_spectra(
                 [*quartz_fuzzy_items, inconsistent_x_length_item],
-                unsafe=True
+                unsafe=True,
             )
 
         Spectrum2DCollection.from_spectra(
             [*quartz_fuzzy_items, inconsistent_y_item],
-            unsafe=True
+            unsafe=True,
         )
 
 
@@ -242,7 +242,7 @@ class TestSpectrum2DCollectionFunctionality:
         assert item_1_to_end != quartz_fuzzy_collection
 
         for item, ref in zip(
-            item_1_to_end, quartz_fuzzy_items[1:], strict=True
+            item_1_to_end, quartz_fuzzy_items[1:], strict=True,
         ):
             assert isinstance(item, Spectrum2D)
             check_spectrum2d(item, ref)
@@ -269,12 +269,12 @@ class TestSpectrum2DCollectionFunctionality:
 
         np.testing.assert_allclose(
             quartz_fuzzy_collection.get_bin_centres("x"),
-            np.linspace(0, 1, 10) * ureg("1 / angstrom")
+            np.linspace(0, 1, 10) * ureg("1 / angstrom"),
         )
 
         np.testing.assert_allclose(
             quartz_fuzzy_collection.get_bin_edges("y"),
-            np.linspace(0, 100, 20) * ureg("1 / angstrom")
+            np.linspace(0, 100, 20) * ureg("1 / angstrom"),
         )
 
     def test_collection_methods(self, quartz_fuzzy_collection):

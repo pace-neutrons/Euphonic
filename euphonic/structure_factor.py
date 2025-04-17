@@ -124,7 +124,7 @@ class StructureFactor(QpointFrequencies):
                              e_bins: Quantity,
                              calc_bose: bool = True,
                              temperature: Optional[Quantity] = None,
-                             weights: Optional[np.ndarray] = None
+                             weights: Optional[np.ndarray] = None,
                              ) -> Spectrum1D:
         """Bin structure factor in energy, flattening q to produce 1D spectrum
 
@@ -165,7 +165,7 @@ class StructureFactor(QpointFrequencies):
     def calculate_sqw_map(self,
                           e_bins: Quantity,
                           calc_bose: bool = True,
-                          temperature: Optional[Quantity] = None
+                          temperature: Optional[Quantity] = None,
                           ) -> Spectrum2D:
         """
         Bin the structure factor in energy and apply the Bose population
@@ -224,7 +224,7 @@ class StructureFactor(QpointFrequencies):
 
     def _bose_corrected_structure_factor(self, e_bins: Quantity,
                                          calc_bose: bool = True,
-                                         temperature: Optional[Quantity] = None
+                                         temperature: Optional[Quantity] = None,
                                          ) -> Quantity:
         """Bin structure factor in energy, return (Bose-populated) array
 
@@ -289,7 +289,7 @@ class StructureFactor(QpointFrequencies):
 
         return sqw_map*sf_conv/e_conv
 
-    def _bose_factor(self, temperature: Optional[Quantity] = None
+    def _bose_factor(self, temperature: Optional[Quantity] = None,
                      ) -> np.ndarray:
         """
         Calculate the Bose factor for the frequencies stored in

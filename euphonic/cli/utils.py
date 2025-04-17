@@ -30,7 +30,7 @@ import euphonic.util
 
 
 def _load_euphonic_json(filename: str | os.PathLike,
-                        frequencies_only: bool = False
+                        frequencies_only: bool = False,
                         ) -> QpointPhononModes | QpointFrequencies | ForceConstants:
     with open(filename) as f:
         data = json.load(f)
@@ -46,7 +46,7 @@ def _load_euphonic_json(filename: str | os.PathLike,
 
 
 def _load_phonopy_file(filename: str | os.PathLike,
-                       frequencies_only: bool = False
+                       frequencies_only: bool = False,
                        ) -> QpointPhononModes | QpointFrequencies | ForceConstants:
     path = pathlib.Path(filename)
     loaded_data = None
@@ -99,7 +99,7 @@ def _load_phonopy_file(filename: str | os.PathLike,
 
 def load_data_from_file(filename: str | os.PathLike,
                         frequencies_only: bool = False,
-                        verbose: bool = False
+                        verbose: bool = False,
                         ) -> QpointPhononModes | QpointFrequencies | ForceConstants:
     """
     Load phonon mode or force constants data from file
@@ -146,7 +146,7 @@ def load_data_from_file(filename: str | os.PathLike,
     return data
 
 
-def get_args(parser: ArgumentParser, params: Optional[list[str]] = None
+def get_args(parser: ArgumentParser, params: Optional[list[str]] = None,
              ) -> Namespace:
     """
     Get the arguments from the parser. params should only be none when
@@ -286,7 +286,7 @@ def _insert_gamma(bandpath: dict) -> None:
     This enables LO-TO splitting to be included
     """
     import numpy as np
-    gamma_indices = np.where(np.array(bandpath['explicit_kpoints_labels'][1:-1]
+    gamma_indices = np.where(np.array(bandpath['explicit_kpoints_labels'][1:-1],
                                       ) == 'GAMMA')[0] + 1
 
     rel_kpts = bandpath['explicit_kpoints_rel'].tolist()
@@ -313,7 +313,7 @@ def _bands_from_force_constants(data: ForceConstants,
                                 q_distance: Quantity,
                                 insert_gamma: bool = True,
                                 frequencies_only: bool = False,
-                                **calc_modes_kwargs
+                                **calc_modes_kwargs,
                                 ) -> tuple[QpointPhononModes | QpointFrequencies,
                                            XTickLabels, SplitArgs]:
     structure = data.crystal.to_spglib_cell()
@@ -350,7 +350,7 @@ def _bands_from_force_constants(data: ForceConstants,
 
 def _grid_spec_from_args(crystal: Crystal,
                            grid: Optional[Sequence[int]] = None,
-                           grid_spacing: Quantity = 0.1 * ureg('1/angstrom')
+                           grid_spacing: Quantity = 0.1 * ureg('1/angstrom'),
                            ) -> tuple[int, int, int]:
     """Get Monkorst-Pack mesh divisions from user arguments"""
     if grid:
@@ -364,7 +364,7 @@ def _get_debye_waller(temperature: Quantity,
                       fc: ForceConstants,
                       grid: Optional[Sequence[int]] = None,
                       grid_spacing: Quantity = 0.1 * ureg('1/angstrom'),
-                      **calc_modes_kwargs
+                      **calc_modes_kwargs,
                       ) -> DebyeWaller:
     """Generate Debye-Waller data from force constants and grid specification
     """
@@ -394,7 +394,7 @@ def _get_pdos_weighting(cl_arg_weighting: str) -> Optional[str]:
 
 
 def _arrange_pdos_groups(pdos: Spectrum1DCollection,
-                         cl_arg_pdos: Sequence[str]
+                         cl_arg_pdos: Sequence[str],
                          ) -> Spectrum1D | Spectrum1DCollection:
     """
     Convert PDOS returned by calculate_pdos to PDOS/DOS
@@ -450,7 +450,7 @@ def _brille_calc_modes_kwargs(args: Namespace) -> dict[str, Any]:
 
 
 def _get_cli_parser(features: Collection[str] = {},
-                    conflict_handler: str = 'error'
+                    conflict_handler: str = 'error',
                     ) -> tuple[ArgumentParser,
                                dict[str, _ArgumentGroup]]:
     """Instantiate an ArgumentParser with appropriate argument groups
@@ -496,7 +496,7 @@ def _get_cli_parser(features: Collection[str] = {},
                     ('plotting', 'Plotting arguments'),
                     ('performance', 'Performance-related arguments'),
                     ('brille', 'Brille interpolation related arguments. '
-                               'Only applicable if Brille has been installed.')
+                               'Only applicable if Brille has been installed.'),
                     ]
 
     sections = {label: parser.add_argument_group(doc)
@@ -726,7 +726,7 @@ def _get_cli_parser(features: Collection[str] = {},
                 section.add_argument(
                     '--adaptive-scale', type=float, default=None,
                     dest='adaptive_scale',
-                    help='Scale factor applied to adaptive broadening width'
+                    help='Scale factor applied to adaptive broadening width',
                     )
                 section.add_argument(
                     '--adaptive-fit', type=str, choices=['cubic', 'cheby-log'],
@@ -736,7 +736,7 @@ def _get_cli_parser(features: Collection[str] = {},
                           'default retained for backward-compatibility. This '
                           'only applies when adaptive broadening is used; if '
                           'variable-width instrument broadening is used alone '
-                          'then "cheby-log" will be used.' )
+                          'then "cheby-log" will be used.' ),
                     )
                 section.add_argument(
                     '--instrument-broadening', type=float, nargs='+',
@@ -841,25 +841,25 @@ def _get_cli_parser(features: Collection[str] = {},
             type=int,
             help=('The number of times to loop over q-points. A higher '
                   'value will get a more reliable timing, but will take '
-                  'longer')
+                  'longer'),
         )
         parser.add_argument(
             '--dipole-parameter-min', '--min',
             default=0.25,
             type=float,
-            help='The minimum value of dipole_parameter to test'
+            help='The minimum value of dipole_parameter to test',
         )
         parser.add_argument(
             '--dipole-parameter-max', '--max',
             default=1.5,
             type=float,
-            help='The maximum value of dipole_parameter to test'
+            help='The maximum value of dipole_parameter to test',
         )
         parser.add_argument(
             '--dipole-parameter-step', '--step',
             default=0.25,
             type=float,
-            help='The difference between each dipole_parameter to test'
+            help='The difference between each dipole_parameter to test',
         )
 
     return parser, sections
@@ -869,7 +869,7 @@ MplStyle = str | dict[str, str]
 
 
 def _compose_style(
-        *, user_args: Namespace, base: Optional[list[MplStyle]]
+        *, user_args: Namespace, base: Optional[list[MplStyle]],
         ) -> list[MplStyle]:
     """Combine user-specified style options with default stylesheets
 

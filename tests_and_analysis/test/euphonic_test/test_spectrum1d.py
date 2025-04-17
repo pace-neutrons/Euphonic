@@ -405,7 +405,7 @@ class TestSpectrum1DMethods:
          'quartz_666_1meV_lorentz_broaden_dos.json',
         pytest.raises(
              ValueError,
-             match='Lorentzian function width must be specified as FWHM')
+             match='Lorentzian function width must be specified as FWHM'),
          ),
         ((1*ureg('meV'), {'method': 'convolve'}),
          'toy_quartz_cropped_uneven_dos.json',
@@ -501,7 +501,7 @@ class TestSpectrum1DMethods:
             ('xsq_bin_edges_spectrum1d.json',
              np.array([0., 1., 2., 3., 4., 5., 6., 8., 10., 12., 14., 16., 20.,
                        24., 28.]) * ureg('1/angstrom'),
-             {'restrict_range': True})
+             {'restrict_range': True}),
         ])
     def test_get_bin_edges(self, spectrum1d_file, expected_bin_edges, kwargs):
         spec1d = get_spectrum1d(spectrum1d_file)

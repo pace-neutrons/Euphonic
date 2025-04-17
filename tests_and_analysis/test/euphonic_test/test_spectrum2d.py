@@ -353,19 +353,19 @@ class TestSpectrum2DMethods:
              pytest.warns(UserWarning,
                           match="Not all x-axis bins are the same width")),
             (({'x_width': (lambda x: np.polyval([0.2, -0.5],
-                                                x.to('1/nm').magnitude
+                                                x.to('1/nm').magnitude,
                                                 ) * ureg('1/nm')),
                'y_width': (lambda y: np.polyval([0., -0.4, 3.],
-                                                y.to('J').magnitude
+                                                y.to('J').magnitude,
                                                 ) * ureg('J')),
                'width_fit': 'cubic'},
               'synthetic_x.json', 'synthetic_x_poly_broadened.json',
               does_not_raise())),
             (({'x_width': (lambda x: np.polyval([0.2, -0.5],
-                                                x.to('1/nm').magnitude
+                                                x.to('1/nm').magnitude,
                                                 ) * ureg('1/nm')),
                'y_width': (lambda y: np.polyval([0., -0.4, 3.],
-                                                y.to('J').magnitude
+                                                y.to('J').magnitude,
                                                 ) * ureg('J')),
                'width_fit': 'cheby-log'},
               'synthetic_x.json', 'synthetic_x_poly_broadened_cheby.json',
@@ -392,7 +392,7 @@ class TestSpectrum2DMethods:
     @pytest.mark.parametrize('unequal_bin_json, unequal_axes', [
         ('La2Zr2O7_cut_sqw_uneven_bins.json', ['y_data']),
         ('quartz_bandstructure_dos_map.json', ['x_data']),
-        ('quartz_bandstructure_dos_map_uneven_bins.json', ['x_data', 'y_data'])
+        ('quartz_bandstructure_dos_map_uneven_bins.json', ['x_data', 'y_data']),
         ])
     def test_broaden_uneven_bins_and_explicit_convolve_warns(
             self, unequal_bin_json, unequal_axes):
@@ -425,7 +425,7 @@ class TestSpectrum2DMethods:
 
         # Force regular x bins so x-broadening is allowed
         spectrum.x_data = np.linspace(
-            1, 10,len(spectrum.get_bin_edges())
+            1, 10,len(spectrum.get_bin_edges()),
         ) * spectrum.get_bin_edges().units
         fixed_broad_x = spectrum.broaden(x_width=fwhm)
         variable_broad_x = spectrum.broaden(
@@ -478,7 +478,7 @@ class TestSpectrum2DMethods:
                             expected_bin_centres.magnitude)
 
     @pytest.mark.parametrize(
-        'bin_ax', ['x', 'y']
+        'bin_ax', ['x', 'y'],
     )
     def test_get_bin_edges_with_invalid_data_shape_raises_value_error(
             self, bin_ax):
@@ -488,7 +488,7 @@ class TestSpectrum2DMethods:
             spec2d.get_bin_centres()
 
     @pytest.mark.parametrize(
-        'bin_ax', ['x', 'y']
+        'bin_ax', ['x', 'y'],
     )
     def test_get_bin_centres_with_invalid_data_shape_raises_value_error(
             self, bin_ax):
@@ -563,7 +563,7 @@ class TestKinematicAngles:
         [((0, np.pi / 2), (1, 0)),
          ((np.pi / 2, 0), (1, 0)),
          ((0, 1.4 * np.pi), (1, -1)),
-         ((-2.25 * np.pi, -2.5 * np.pi), (np.sqrt(2) / 2, 0))
+         ((-2.25 * np.pi, -2.5 * np.pi), (np.sqrt(2) / 2, 0)),
          ])
     def test_cos_range(self, angle_range, expected):
         from euphonic.spectra.base import _get_cos_range
@@ -589,7 +589,7 @@ class TestKinematicConstraints:
           'NaCl_constrained_ef_32_cm_angle_45_135.json'),
          ({'e_f': 32 * ureg('1/cm'), 'angle_range': (-135., -45.)},
           'NaCl_band_yaml_dos_map.json',
-          'NaCl_constrained_ef_32_cm_angle_45_135.json')
+          'NaCl_constrained_ef_32_cm_angle_45_135.json'),
          ])
     def test_kinematic_constraints(self, kwargs,
                                    spectrum2d_file, constrained_file):
