@@ -150,7 +150,7 @@ class TestRegression:
                                    side_effect=MockError())
         try:
             euphonic.cli.brille_convergence.main(
-                [graphite_fc_file] + brille_conv_args)
+                [graphite_fc_file, *brille_conv_args])
         except MockError:
             pass
         default_interp_kwargs =  {'asr': None, 'dipole_parameter': 1.0,

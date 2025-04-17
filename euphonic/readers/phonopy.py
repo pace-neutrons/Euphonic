@@ -81,7 +81,7 @@ def _extract_phonon_data_yaml(filename: str,
         phonon_data = yaml.load(yaml_file, Loader=SafeLoader)
 
     data_dict = {}
-    phonons = [phon for phon in phonon_data['phonon']]
+    phonons = list(phonon_data['phonon'])
     bands_data_each_qpt = [bands_data['band'] for bands_data in phonons]
 
     data_dict['qpts'] = np.array([phon['q-position'] for phon in phonons])
@@ -373,7 +373,7 @@ def _extract_force_constants(fc_pathname: str, n_atoms: int, n_cells: int,
         fc = np.genfromtxt(fc_pathname, skip_header=1,
                            max_rows=4*(n_atoms*n_cells)**2, usecols=(0,1,2),
                            invalid_raise=False)
-    return fc.reshape(fc_dims + [3, 3])
+    return fc.reshape([*fc_dims, 3, 3])
 
 
 def _extract_force_constants_hdf5(

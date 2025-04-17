@@ -573,7 +573,7 @@ class QpointPhononModes(QpointFrequencies):
             if not cs[0].check(ex_units):
                 raise ValueError(
                     f'Unexpected dimensionality in cross_sections units, '
-                    f'expected {ex_units}, got {str(cs[0].dimensionality)}')
+                    f'expected {ex_units}, got {cs[0].dimensionality!s}')
             cs = [x.to('mbarn') for x in cs]
         else:
             cs = None

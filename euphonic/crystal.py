@@ -165,7 +165,7 @@ class Crystal:
         grid_spec = np.linalg.norm(lattice.magnitude, axis=1
                                    ) / spacing.magnitude
         # math.ceil is better than np.ceil because it returns ints
-        return tuple([ceil(x) for x in grid_spec])
+        return tuple(ceil(x) for x in grid_spec)
 
     def to_spglib_cell(self) -> tuple[list[list[float]],
                                       list[list[float]],
@@ -198,7 +198,7 @@ class Crystal:
             in the same order as they appear in atom_type
         """
         species_dict = _get_unique_elems_and_idx(
-            [tuple([at]) for at in self.atom_type])
+            [(at,) for at in self.atom_type])
         # Convert tuples back to string
         return OrderedDict([(str(key[0]), value)
                             for key, value in species_dict.items()])

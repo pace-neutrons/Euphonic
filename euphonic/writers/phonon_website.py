@@ -102,16 +102,16 @@ def _crystal_website_data(crystal: Crystal) -> dict[str, Any]:
         return "".join(f"{symbol}{symbol_counts[symbol]}"
                        for symbol in sorted(symbol_counts))
 
-    return dict(
-        natoms=len(crystal.atom_type),
-        lattice=crystal.cell_vectors.to("angstrom").magnitude.tolist(),
-        atom_types=crystal.atom_type.tolist(),
-        atom_numbers=list(map(get_z, crystal.atom_type)),
-        formula=symbols_to_formula(crystal.atom_type),
-        atom_pos_red=crystal.atom_r.tolist(),
-        atom_pos_car=(crystal.atom_r @ crystal.cell_vectors
+    return {
+        "natoms": len(crystal.atom_type),
+        "lattice": crystal.cell_vectors.to("angstrom").magnitude.tolist(),
+        "atom_types": crystal.atom_type.tolist(),
+        "atom_numbers": list(map(get_z, crystal.atom_type)),
+        "formula": symbols_to_formula(crystal.atom_type),
+        "atom_pos_red": crystal.atom_r.tolist(),
+        "atom_pos_car": (crystal.atom_r @ crystal.cell_vectors
                       ).to("angstrom").magnitude.tolist()
-    )
+    }
 
 
 def _remove_breaks(distances: np.ndarray, btol: float = 10.) -> list[int]:
@@ -195,7 +195,7 @@ def _modes_to_phonon_website_dict(
     duplicates = _find_duplicates(abscissa)
     breakpoints = _remove_breaks(abscissa)
 
-    breakpoints = sorted(set([0] + duplicates + breakpoints + [len(abscissa)]))
+    breakpoints = sorted({0, *duplicates, *breakpoints, len(abscissa)})
     line_breaks = list(pairwise(breakpoints))
 
     if x_tick_labels is None:

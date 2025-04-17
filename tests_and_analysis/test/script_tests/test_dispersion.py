@@ -85,7 +85,7 @@ class TestRegression:
             expected_line_data = json.load(f)[args_to_key(dispersion_args)]
         # Increase tolerance if asr present - can give slightly
         # different results with different libs
-        if any(['--asr' in arg for arg in dispersion_args]):
+        if any('--asr' in arg for arg in dispersion_args):
             atol = 5e-6
         else:
             atol = sys.float_info.epsilon
@@ -117,7 +117,7 @@ class TestRegression:
         [quartz_json_file, '-s']])
     def test_plot_save_to_file(self, inject_mocks, tmpdir, dispersion_args):
         output_file = str(tmpdir.join('test.png'))
-        euphonic.cli.dispersion.main(dispersion_args + [output_file])
+        euphonic.cli.dispersion.main([*dispersion_args, output_file])
         assert os.path.exists(output_file)
 
     @pytest.mark.parametrize('dispersion_args', [
@@ -125,7 +125,7 @@ class TestRegression:
         [lzo_fc_file, '--save-json']])
     def test_plot_save_to_json(self, inject_mocks, tmpdir, dispersion_args):
         output_file = str(tmpdir.join('test.json'))
-        euphonic.cli.dispersion.main(dispersion_args + [output_file])
+        euphonic.cli.dispersion.main([*dispersion_args, output_file])
         spec = Spectrum1DCollection.from_json_file(output_file)
         assert isinstance(spec, Spectrum1DCollection)
 
@@ -136,7 +136,7 @@ class TestRegression:
         """Write a phonon website JSON file"""
         # pylint: disable=unused-argument
         output_file = str(tmpdir.join('phonon.json'))
-        euphonic.cli.dispersion.main(dispersion_args + [output_file])
+        euphonic.cli.dispersion.main([*dispersion_args, output_file])
 
         with open(output_file, encoding="utf-8") as fd:
             dat = json.load(fd)

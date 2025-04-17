@@ -168,15 +168,15 @@ class SpectrumCollectionMixin(ABC):
     @overload
     def __getitem__(self, item: int) -> Spectrum: ...
 
-    @overload  # noqa: F811
+    @overload
     def __getitem__(self, item: slice) -> Self: ...
 
-    @overload  # noqa: F811
+    @overload
     def __getitem__(self, item: Sequence[int] | np.ndarray) -> Self: ...
 
     def __getitem__(
             self, item: Integral | slice | Sequence[Integral] | np.ndarray
-    ):  # noqa: F811
+    ):
         self._validate_item(item)
 
         if isinstance(item, Integral):
@@ -248,10 +248,10 @@ class SpectrumCollectionMixin(ABC):
 
     @overload
     def _get_item_metadata(self, item: slice | Sequence[Integral] | np.ndarray
-                           ) -> Metadata:  # noqa: F811
+                           ) -> Metadata:
         """Get a metadata collection (may include line_data)"""
 
-    def _get_item_metadata(self, item):  # noqa: F811
+    def _get_item_metadata(self, item):
         """Produce appropriate metadata for __getitem__"""
         metadata_lines = list(self.iter_metadata())
 
@@ -719,7 +719,7 @@ class Spectrum1DCollection(SpectrumCollectionMixin,
                 width_convention: Literal['fwhm', 'std'] = 'fwhm',
                 width_interpolation_error: float = 0.01,
                 width_fit: ErrorFit = 'cheby-log'
-                ) -> T: ...  # noqa: F811
+                ) -> T: ...
 
     def broaden(self: T,
                 x_width,
@@ -729,7 +729,7 @@ class Spectrum1DCollection(SpectrumCollectionMixin,
                 width_convention='fwhm',
                 width_interpolation_error=0.01,
                 width_fit='cheby-log'
-                ) -> T:  # noqa: F811
+                ) -> T:
         """
         Individually broaden each line in y_data, returning a new
         Spectrum1DCollection

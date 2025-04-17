@@ -112,14 +112,14 @@ class TestRegression:
         [quartz_json_file, '-s']])
     def test_plot_save_to_file(self, inject_mocks, tmpdir, intensity_map_args):
         output_file = str(tmpdir.join('test.png'))
-        euphonic.cli.intensity_map.main(intensity_map_args + [output_file])
+        euphonic.cli.intensity_map.main([*intensity_map_args, output_file])
         assert os.path.exists(output_file)
 
     @pytest.mark.parametrize('intensity_map_args', [
         [quartz_json_file, '--save-json']])
     def test_plot_save_to_json(self, inject_mocks, tmpdir, intensity_map_args):
         output_file = str(tmpdir.join('test.json'))
-        euphonic.cli.intensity_map.main(intensity_map_args + [output_file])
+        euphonic.cli.intensity_map.main([*intensity_map_args, output_file])
         spec = Spectrum2D.from_json_file(output_file)
         assert isinstance(spec, Spectrum2D)
 

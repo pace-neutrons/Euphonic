@@ -172,7 +172,7 @@ def get_args(parser: ArgumentParser, params: Optional[list[str]] = None
     return args
 
 
-def matplotlib_save_or_show(save_filename: str = None) -> None:
+def matplotlib_save_or_show(save_filename: str | None = None) -> None:
     """
     Save or show the current matplotlib plot.
     Show if save_filename is not None which by default it is.
@@ -411,7 +411,7 @@ def _arrange_pdos_groups(pdos: Spectrum1DCollection,
             pdos = pdos.select(species=cl_arg_pdos)
             dos = pdos
         else:
-            dos = Spectrum1DCollection.from_spectra([dos] + [*pdos])
+            dos = Spectrum1DCollection.from_spectra([dos, *pdos])
     return dos
 
 
@@ -419,9 +419,9 @@ def _plot_label_kwargs(args: Namespace, default_xlabel: str = '',
                        default_ylabel: str = '') -> dict[str, str]:
     """Collect title/label arguments that can be passed to plot_nd
     """
-    plot_kwargs = dict(title=args.title,
-                       xlabel=default_xlabel,
-                       ylabel=default_ylabel)
+    plot_kwargs = {'title': args.title,
+                   'xlabel': default_xlabel,
+                   'ylabel': default_ylabel}
     if args.ylabel is not None:
         plot_kwargs['ylabel'] = args.ylabel
     if args.xlabel is not None:
@@ -434,8 +434,8 @@ def _calc_modes_kwargs(args: Namespace) -> dict[str, Any]:
     Collect arguments that can be passed to
     ForceConstants.calculate_qpoint_phonon_modes()
     """
-    return dict(asr=args.asr, dipole_parameter=args.dipole_parameter,
-                use_c=args.use_c, n_threads=args.n_threads)
+    return {'asr': args.asr, 'dipole_parameter': args.dipole_parameter,
+            'use_c': args.use_c, 'n_threads': args.n_threads}
 
 def _brille_calc_modes_kwargs(args: Namespace) -> dict[str, Any]:
     """
@@ -444,7 +444,7 @@ def _brille_calc_modes_kwargs(args: Namespace) -> dict[str, Any]:
     """
     if args.n_threads is None:
         # Nothing specified, allow defaults
-        return dict()
+        return {}
 
     return {"useparallel": args.n_threads > 1, "threads": args.n_threads}
 
