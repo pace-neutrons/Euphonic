@@ -35,7 +35,7 @@ def get_script_test_data_path(*subpaths: tuple[str]) -> str:
     return get_data_path('script_data', *subpaths)
 
 
-def get_plot_line_data(fig: Optional['matplotlib.figure.Figure'] = None
+def get_plot_line_data(fig: Optional['matplotlib.figure.Figure'] = None,
                        ) -> dict[str, Any]:
     if fig is None:
         fig = matplotlib.pyplot.gcf()
@@ -57,7 +57,7 @@ def get_all_figs() -> list['matplotlib.figure.Figure']:
 
 
 
-def get_all_plot_line_data(figs: list['matplotlib.figure.Figure']
+def get_all_plot_line_data(figs: list['matplotlib.figure.Figure'],
                            ) -> list[dict[str, Any]]:
     return [get_plot_line_data(fig) for fig in figs]
 
@@ -125,7 +125,7 @@ def get_current_plot_image_data() -> dict[str,
     return data
 
 
-def get_ax_image_data(ax: 'matplotlib.axes.Axes'
+def get_ax_image_data(ax: 'matplotlib.axes.Axes',
                       ) -> dict[str, str | list[float] | list[int]]:
     im = ax.get_images()[0]
     # Convert negative zero to positive zero

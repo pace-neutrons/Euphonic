@@ -134,7 +134,7 @@ class SpectrumCollectionMixin(ABC):
         metadata.update(self._tidy_metadata())
         summed_s_data = ureg.Quantity(
             np.sum(self._get_raw_spectrum_data(), axis=0),
-            units=self._get_internal_spectrum_data_unit()
+            units=self._get_internal_spectrum_data_unit(),
         ).to(self._get_spectrum_data_unit())
 
         bin_kwargs = {axis_name: getattr(self, axis_name)
@@ -144,14 +144,14 @@ class SpectrumCollectionMixin(ABC):
             **bin_kwargs,
             **{self._spectrum_data_name(): summed_s_data},
             x_tick_labels=copy.copy(self.x_tick_labels),
-            metadata=metadata
+            metadata=metadata,
         )
 
     # Required methods
     @classmethod
     @abstractmethod
     def from_spectra(
-            cls, spectra: Sequence[Spectrum], *, unsafe: bool = False
+            cls, spectra: Sequence[Spectrum], *, unsafe: bool = False,
     ) -> Self:
         """Construct spectrum collection from a sequence of components
 
@@ -175,7 +175,7 @@ class SpectrumCollectionMixin(ABC):
     def __getitem__(self, item: Sequence[int] | np.ndarray) -> Self: ...
 
     def __getitem__(
-            self, item: Integral | slice | Sequence[Integral] | np.ndarray
+            self, item: Integral | slice | Sequence[Integral] | np.ndarray,
     ):
         self._validate_item(item)
 
@@ -195,7 +195,7 @@ class SpectrumCollectionMixin(ABC):
     def _set_item_data(
             self,
             spectrum: Spectrum,
-            item: Integral | slice | Sequence[Integral] | np.ndarray
+            item: Integral | slice | Sequence[Integral] | np.ndarray,
     ) -> None:
         """Write axis and spectrum data from self to Spectrum
 
@@ -216,7 +216,7 @@ class SpectrumCollectionMixin(ABC):
         setattr(spectrum, f"{self._spectrum_data_name()}_unit",
                 self._get_spectrum_data_unit())
 
-    def _validate_item(self, item: Integral | slice | Sequence[Integral] | np.ndarray
+    def _validate_item(self, item: Integral | slice | Sequence[Integral] | np.ndarray,
                        ) -> None:
         """Raise Error if index has inappropriate typing/ranges
 
@@ -247,7 +247,7 @@ class SpectrumCollectionMixin(ABC):
         """Get a single metadata item with no line_data"""
 
     @overload
-    def _get_item_metadata(self, item: slice | Sequence[Integral] | np.ndarray
+    def _get_item_metadata(self, item: slice | Sequence[Integral] | np.ndarray,
                            ) -> Metadata:
         """Get a metadata collection (may include line_data)"""
 
@@ -345,7 +345,7 @@ class SpectrumCollectionMixin(ABC):
             If no matching spectra are found
         """
         # Convert all items to sequences of possibilities
-        def ensure_sequence(value: int | str | Sequence[int | str]
+        def ensure_sequence(value: int | str | Sequence[int | str],
                             ) -> Sequence[int | str]:
             return (value,) if isinstance(value, (int, str)) else value
 
@@ -444,7 +444,7 @@ class SpectrumCollectionMixin(ABC):
             metadata in 'line_data' not common across all spectra in a
             group will be discarded
         """
-        def get_key_items(enumerated_metadata: tuple[int, OneLineData]
+        def get_key_items(enumerated_metadata: tuple[int, OneLineData],
                           ) -> tuple[str | int, ...]:
             """Get sort keys from an item of enumerated input to groupby
 
@@ -543,7 +543,7 @@ class Spectrum1DCollection(SpectrumCollectionMixin,
     def __init__(
             self, x_data: Quantity, y_data: Quantity,
             x_tick_labels: Optional[XTickLabels] = None,
-            metadata: Optional[dict[str, str | int | LineData]] = None
+            metadata: Optional[dict[str, str | int | LineData]] = None,
     ) -> None:
         """
         Parameters
@@ -588,7 +588,7 @@ class Spectrum1DCollection(SpectrumCollectionMixin,
         self._check_metadata()
 
     def _split_by_indices(self,
-                          indices: Sequence[int] | np.ndarray
+                          indices: Sequence[int] | np.ndarray,
                           ) -> list[Self]:
         """Split data along x-axis at given indices"""
 
@@ -601,7 +601,7 @@ class Spectrum1DCollection(SpectrumCollectionMixin,
                 for x0, x1 in ranges]
 
     @staticmethod
-    def _from_spectra_data_check(spectrum, x_data, y_data_units, x_tick_labels
+    def _from_spectra_data_check(spectrum, x_data, y_data_units, x_tick_labels,
                                  ) -> None:
         if (spectrum.y_data.units != y_data_units
                 or spectrum.x_data.units != x_data.units):
@@ -613,7 +613,7 @@ class Spectrum1DCollection(SpectrumCollectionMixin,
 
     @classmethod
     def from_spectra(
-            cls: Self, spectra: Sequence[Spectrum1D], *, unsafe: bool = False
+            cls: Self, spectra: Sequence[Spectrum1D], *, unsafe: bool = False,
     ) -> Self:
         """Combine Spectrum1D to produce a new collection
 
@@ -708,7 +708,7 @@ class Spectrum1DCollection(SpectrumCollectionMixin,
     @overload
     def broaden(self: T, x_width: Quantity,
                 shape: KernelShape = 'gauss',
-                method: Optional[Literal['convolve']] = None
+                method: Optional[Literal['convolve']] = None,
                 ) -> T: ...
 
     @overload
@@ -718,7 +718,7 @@ class Spectrum1DCollection(SpectrumCollectionMixin,
                 width_lower_limit: Optional[Quantity] = None,
                 width_convention: Literal['fwhm', 'std'] = 'fwhm',
                 width_interpolation_error: float = 0.01,
-                width_fit: ErrorFit = 'cheby-log'
+                width_fit: ErrorFit = 'cheby-log',
                 ) -> T: ...
 
     def broaden(self: T,
@@ -728,7 +728,7 @@ class Spectrum1DCollection(SpectrumCollectionMixin,
                 width_lower_limit=None,
                 width_convention='fwhm',
                 width_interpolation_error=0.01,
-                width_fit='cheby-log'
+                width_fit='cheby-log',
                 ) -> T:
         """
         Individually broaden each line in y_data, returning a new
@@ -877,7 +877,7 @@ class Spectrum2DCollection(SpectrumCollectionMixin,
     def __init__(
             self, x_data: Quantity, y_data: Quantity, z_data: Quantity,
             x_tick_labels: Optional[XTickLabels] = None,
-            metadata: Optional[Metadata] = None
+            metadata: Optional[Metadata] = None,
     ) -> None:
         _check_constructor_inputs(
             [z_data, x_tick_labels, metadata],
@@ -900,7 +900,7 @@ class Spectrum2DCollection(SpectrumCollectionMixin,
         self.metadata = metadata if metadata is not None else {}
         self._check_metadata()
 
-    def _split_by_indices(self, indices: Sequence[int] | np.ndarray
+    def _split_by_indices(self, indices: Sequence[int] | np.ndarray,
                           ) -> list[Self]:
         """Split data along x axis at given indices"""
         ranges = self._ranges_from_indices(indices)
@@ -916,7 +916,7 @@ class Spectrum2DCollection(SpectrumCollectionMixin,
     def z_data(self) -> Quantity:
         """intensity data"""
         return ureg.Quantity(
-            self._z_data, self._internal_z_data_unit
+            self._z_data, self._internal_z_data_unit,
         ).to(self.z_data_unit, "reciprocal_spectroscopy")
 
     @z_data.setter
@@ -927,7 +927,7 @@ class Spectrum2DCollection(SpectrumCollectionMixin,
     @staticmethod
     def _from_spectra_data_check(
             spectrum_0_data_units, spectrum_i_data_units,
-            x_tick_labels, spectrum_i_x_tick_labels
+            x_tick_labels, spectrum_i_x_tick_labels,
     ) -> None:
         """Check spectrum data units and x_tick_labels are consistent"""
         if spectrum_0_data_units != spectrum_i_data_units:
@@ -954,7 +954,7 @@ class Spectrum2DCollection(SpectrumCollectionMixin,
 
     @classmethod
     def from_spectra(
-            cls, spectra: Sequence[Spectrum2D], *, unsafe: bool = False
+            cls, spectra: Sequence[Spectrum2D], *, unsafe: bool = False,
     ) -> Self:
         """Combine Spectrum2D to produce a new collection
 
@@ -1005,7 +1005,7 @@ class Spectrum2DCollection(SpectrumCollectionMixin,
             self,
             bin_ax: Literal["x", "y"] = "x",
             *,
-            restrict_range: bool = True
+            restrict_range: bool = True,
     ) -> Quantity:
         """
         Get bin edges for the axis specified by bin_ax. If the size of bin_ax

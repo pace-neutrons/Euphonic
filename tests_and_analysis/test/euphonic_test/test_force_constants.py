@@ -202,7 +202,7 @@ class TestForceConstantsCreation:
     )
     def test_create_from_castep25(self, material, castep_bin_file):
         expected_fc = ForceConstants.from_json_file(
-            get_json_file(Path(castep_bin_file).stem)
+            get_json_file(Path(castep_bin_file).stem),
         )
         castep_filepath = get_castep_path(material, castep_bin_file)
         fc = ForceConstants.from_castep(castep_filepath)

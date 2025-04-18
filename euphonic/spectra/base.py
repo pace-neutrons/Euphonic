@@ -61,7 +61,7 @@ class Spectrum(ABC):
     @property
     def x_data(self) -> Quantity:
         """x-axis data with units"""
-        return ureg.Quantity(self._x_data, self._internal_x_data_unit
+        return ureg.Quantity(self._x_data, self._internal_x_data_unit,
                              ).to(self.x_data_unit, "reciprocal_spectroscopy")
 
     @x_data.setter
@@ -155,7 +155,7 @@ class Spectrum(ABC):
         return _obj_from_json_file(cls, filename, type_dict)
 
     @abstractmethod
-    def _split_by_indices(self: T, indices: Sequence[int] | np.ndarray
+    def _split_by_indices(self: T, indices: Sequence[int] | np.ndarray,
                           ) -> list[T]:
         """Split data along x axis at given indices"""
 
@@ -167,7 +167,7 @@ class Spectrum(ABC):
         return self._split_by_indices(breakpoints)
 
     @staticmethod
-    def _ranges_from_indices(indices: Sequence[int] | np.ndarray
+    def _ranges_from_indices(indices: Sequence[int] | np.ndarray,
                              ) -> list[tuple[int, Optional[int]]]:
         """Convert a series of breakpoints to a series of slice ranges"""
         if len(indices) == 0:
@@ -299,7 +299,7 @@ class Spectrum(ABC):
     def _gaussian_width_to_bin_sigma(
         width: float | None,
         ax_bin_centres: np.ndarray,
-        width_convention: Literal['fwhm', 'std']
+        width_convention: Literal['fwhm', 'std'],
     ) -> float:
         """
         Convert a Gaussian FWHM to sigma in units of the mean ax bin size
@@ -341,7 +341,7 @@ class Spectrum(ABC):
     @staticmethod
     def _bin_centres_to_edges(
             bin_centres: Quantity,
-            restrict_range: bool = True
+            restrict_range: bool = True,
     ) -> Quantity:
         if restrict_range:
             return np.concatenate((
@@ -494,7 +494,7 @@ class Spectrum1D(Spectrum):
 
     def __init__(self, x_data: Quantity, y_data: Quantity,
                  x_tick_labels: Optional[XTickLabels] = None,
-                 metadata: Optional[dict[str, int | str]] = None
+                 metadata: Optional[dict[str, int | str]] = None,
                  ) -> None:
         """
         Parameters
@@ -545,7 +545,7 @@ class Spectrum1D(Spectrum):
         return spec_col.sum()
 
     def _split_by_indices(self: T,
-                          indices: Sequence[int] | np.ndarray
+                          indices: Sequence[int] | np.ndarray,
                           ) -> list[T]:
         """Split data along x-axis at given indices"""
         ranges = self._ranges_from_indices(indices)
@@ -666,7 +666,7 @@ class Spectrum1D(Spectrum):
                 width_lower_limit: Optional[Quantity] = None,
                 width_convention: Literal['fwhm', 'std'] = 'fwhm',
                 width_interpolation_error: float = 0.01,
-                width_fit: ErrorFit = 'cheby-log'
+                width_fit: ErrorFit = 'cheby-log',
                 ) -> T: ...
 
     def broaden(self: T, x_width,
@@ -675,7 +675,7 @@ class Spectrum1D(Spectrum):
                 width_lower_limit=None,
                 width_convention='fwhm',
                 width_interpolation_error=0.01,
-                width_fit='cheby-log'
+                width_fit='cheby-log',
                 ) -> T:
         """
         Broaden y_data and return a new broadened spectrum object
@@ -747,7 +747,7 @@ class Spectrum1D(Spectrum):
                 width_convention=width_convention,
                 adaptive_error=width_interpolation_error,
                 shape=shape,
-                fit=width_fit
+                fit=width_fit,
             )
         else:
             raise TypeError("x_width must be a Quantity or Callable")
@@ -787,7 +787,7 @@ class Spectrum2D(Spectrum):
     def __init__(self, x_data: Quantity, y_data: Quantity,
                  z_data: Quantity,
                  x_tick_labels: Optional[XTickLabels] = None,
-                 metadata: Optional[OneSpectrumMetadata] = None
+                 metadata: Optional[OneSpectrumMetadata] = None,
                  ) -> None:
         """
         Parameters
@@ -831,7 +831,7 @@ class Spectrum2D(Spectrum):
     def z_data(self) -> Quantity:
         """z-axis data with units"""
         return ureg.Quantity(
-            self._z_data, self._internal_z_data_unit
+            self._z_data, self._internal_z_data_unit,
         ).to(self.z_data_unit, "reciprocal_spectroscopy")
 
     @z_data.setter
@@ -850,7 +850,7 @@ class Spectrum2D(Spectrum):
         super().__setattr__(name, value)
 
     def _split_by_indices(self,
-                          indices: Sequence[int] | np.ndarray
+                          indices: Sequence[int] | np.ndarray,
                           ) -> list[T]:
         """Split data along x-axis at given indices"""
         ranges = self._ranges_from_indices(indices)
@@ -870,7 +870,7 @@ class Spectrum2D(Spectrum):
                 y_width_lower_limit: Quantity = None,
                 width_convention: Literal['fwhm', 'std'] = 'fwhm',
                 width_interpolation_error: float = 0.01,
-                width_fit: ErrorFit = 'cheby-log'
+                width_fit: ErrorFit = 'cheby-log',
                 ) -> T:
         """
         Broaden z_data and return a new broadened Spectrum2D object
@@ -983,7 +983,7 @@ class Spectrum2D(Spectrum):
             width_convention: Literal['fwhm', 'std'] = 'fwhm',
             width_interpolation_error: float = 1e-2,
             shape: KernelShape = 'gauss',
-            width_fit: ErrorFit = 'cheby-log'
+            width_fit: ErrorFit = 'cheby-log',
     ) -> 'Spectrum2D':
         """
         Apply value-dependent Gaussian broadening to one axis of Spectrum2D
@@ -1040,7 +1040,7 @@ class Spectrum2D(Spectrum):
             self,
             bin_ax: Literal['x', 'y'] = 'x',
             *,
-            restrict_range: bool = True
+            restrict_range: bool = True,
     ) -> Quantity:
         """
         Get bin edges for the axis specified by bin_ax. If the size of bin_ax
@@ -1207,7 +1207,7 @@ class Spectrum2D(Spectrum):
 def apply_kinematic_constraints(spectrum: Spectrum2D,
                                 e_i: Quantity = None,
                                 e_f: Quantity = None,
-                                angle_range: tuple[float] = (0, 180.)
+                                angle_range: tuple[float] = (0, 180.),
                                 ) -> Spectrum2D:
     """
     Set events to NaN which violate energy/momentum limits:
@@ -1240,13 +1240,13 @@ def apply_kinematic_constraints(spectrum: Spectrum2D,
         (1 * spectrum.x_data.units).to('1/angstrom')
     except DimensionalityError as error:
         raise ValueError(
-            "x_data needs to have wavevector units (i.e. 1/length)"
+            "x_data needs to have wavevector units (i.e. 1/length)",
             ) from error
     try:
         (1 * spectrum.y_data.units).to('eV', 'spectroscopy')
     except DimensionalityError as error:
         raise ValueError(
-            "y_data needs to have energy (or wavenumber) units"
+            "y_data needs to have energy (or wavenumber) units",
             ) from error
 
     momentum2_to_energy = 0.5 * (ureg('hbar^2 / neutron_mass')
@@ -1282,7 +1282,7 @@ def apply_kinematic_constraints(spectrum: Spectrum2D,
                        - 2 * cos_values[:, np.newaxis]
                            * np.sqrt(k2_i.magnitude * k2_f.magnitude,
                                      dtype=complex)
-                           * (k2_i.units * k2_f.units)**0.5
+                           * (k2_i.units * k2_f.units)**0.5,
                        )
     q_bounds.magnitude.T[np.any(q_bounds.imag, axis=0)] = [float('Inf'),
                                                            float('-Inf')]

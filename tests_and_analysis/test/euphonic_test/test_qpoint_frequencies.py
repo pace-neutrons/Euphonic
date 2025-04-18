@@ -269,12 +269,12 @@ class TestQpointFrequenciesCreation:
          ValueError),
         ('frequencies',
          get_expected_qpt_freqs(
-             'quartz', 'quartz_666_qpoint_frequencies.json'
+             'quartz', 'quartz_666_qpoint_frequencies.json',
          ).frequencies.magnitude,
          TypeError),
         ('frequencies',
          get_expected_qpt_freqs(
-             'quartz', 'quartz_666_qpoint_frequencies.json'
+             'quartz', 'quartz_666_qpoint_frequencies.json',
          ).frequencies.magnitude*ureg('kg'),
          DimensionalityError),
         ('weights',
@@ -415,7 +415,7 @@ class TestQpointFrequenciesSetters:
         ('quartz', 'quartz_reciprocal_qpoint_frequencies.json',
          'frequencies', '1/cm', 2.),
         ('quartz', 'quartz_reciprocal_qpoint_frequencies.json',
-         'frequencies', 'meV', 3.)
+         'frequencies', 'meV', 3.),
         ])
     def test_setter_correct_units(self, material, json_file, attr,
                                   unit, scale):
@@ -454,7 +454,7 @@ class TestQpointFrequenciesCalculateDos:
             ('quartz', 'toy_quartz_qpoint_frequencies.json',
              'toy_quartz_cropped_uneven_hartree_dos.json',
              np.concatenate((np.arange(5, 21, 2),
-                             np.arange(21, 30)))*ureg('meV').to('hartree'))
+                             np.arange(21, 30)))*ureg('meV').to('hartree')),
         ])
     def test_calculate_dos(
             self, material, qpt_freqs_json, expected_dos_json, ebins):
@@ -589,7 +589,7 @@ class TestQpointFrequenciesCalculateDosMap:
             ('NaCl', 'NaCl_band_yaml_from_phonopy_qpoint_frequencies.json',
              np.arange(0, 300, 5)*ureg('1/cm'),
              'NaCl_band_yaml_dos_map.json',
-             does_not_raise())
+             does_not_raise()),
         ])
     def test_calculate_dos_map(
             self, material, qpt_freqs_json, ebins, expected_dos_map_json, context):
@@ -619,7 +619,7 @@ class TestQpointFrequenciesCalculateDosMap:
              np.arange(0, 250, 4)*ureg('1/cm'),
              {'mode_widths': get_test_nacl_mode_widths(),
               'mode_widths_min': 1.1*ureg('meV')},
-             [0, 15])
+             [0, 15]),
         ])
     def test_calculate_dos_map_gives_same_result_as_dos_at_single_qpt(
             self, material, qpt_freqs_json, ebins, dos_kwargs, qpts_to_test):
@@ -654,7 +654,7 @@ class TestQpointFrequenciesGetDispersion:
                           match="Could not determine cell symmetry, using generic q-point labels")),
             ('NaCl', 'NaCl_band_yaml_from_phonopy_qpoint_frequencies.json',
              'NaCl_band_yaml_dispersion.json',
-             does_not_raise())
+             does_not_raise()),
         ])
     def test_get_dispersion(
             self, material, qpt_freqs_json, expected_dispersion_json, context):

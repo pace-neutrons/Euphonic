@@ -103,7 +103,7 @@ def _get_broaden_kwargs(q_broadening: Optional[Sequence[float]] = None,
         q_poly = Polynomial(q_broadening)
 
         def q_width(x):
-            return q_poly(x.to(q_unit).magnitude
+            return q_poly(x.to(q_unit).magnitude,
                           ) * q_unit
     elif q_broadening:
         q_width = q_broadening[0] * q_unit
@@ -114,7 +114,7 @@ def _get_broaden_kwargs(q_broadening: Optional[Sequence[float]] = None,
         energy_poly = Polynomial(energy_broadening)
 
         def energy_width(x):
-            return energy_poly(x.to(energy_unit).magnitude
+            return energy_poly(x.to(energy_unit).magnitude,
                                ) * ureg(energy_unit)
     elif energy_broadening:
         energy_width = energy_broadening[0] * ureg(energy_unit)

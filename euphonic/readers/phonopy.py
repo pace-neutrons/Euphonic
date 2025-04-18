@@ -43,7 +43,7 @@ def _convert_weights(weights: np.ndarray) -> np.ndarray:
 
 
 def _extract_phonon_data_yaml(filename: str,
-                              read_eigenvectors: bool = True
+                              read_eigenvectors: bool = True,
                               ) -> dict[str, np.ndarray]:
     """
     From a mesh/band/qpoint.yaml file, extract the relevant information
@@ -119,7 +119,7 @@ def _extract_phonon_data_yaml(filename: str,
 
 
 def _extract_phonon_data_hdf5(filename: str,
-                              read_eigenvectors: bool = True
+                              read_eigenvectors: bool = True,
                               ) -> dict[str, np.ndarray]:
     """
     From a mesh/band/qpoint.hdf5 file, extract the relevant information
@@ -178,7 +178,7 @@ def _extract_phonon_data_hdf5(filename: str,
                 # transpose to handle this
                 data_dict['eigenvectors'] = hdf5_file[
                     'eigenvector'][()].reshape(
-                        -1, *hdf5_file['eigenvector'][()].shape[-2:]
+                        -1, *hdf5_file['eigenvector'][()].shape[-2:],
                         ).transpose([0,2,1])
             except KeyError:
                 pass
@@ -193,7 +193,7 @@ def read_phonon_data(
         cell_vectors_unit: str = 'angstrom',
         atom_mass_unit: str = 'amu',
         frequencies_unit: str = 'meV',
-        read_eigenvectors: bool = True
+        read_eigenvectors: bool = True,
         ) -> dict[str, int | str | np.ndarray]:
     """
     Reads precalculated phonon mode data from a Phonopy
@@ -314,7 +314,7 @@ def read_phonon_data(
     return data_dict
 
 
-def convert_eigenvector_phases(phonon_dict: dict[str, np.ndarray]
+def convert_eigenvector_phases(phonon_dict: dict[str, np.ndarray],
                                ) -> np.ndarray:
     """
     When interpolating the force constants matrix, Euphonic uses a phase
@@ -450,7 +450,7 @@ def _extract_born(born_file_obj: TextIO) -> dict[str, float | np.ndarray]:
     return born_dict
 
 
-def _extract_summary(filename: str, fc_extract: bool = False
+def _extract_summary(filename: str, fc_extract: bool = False,
                      ) -> dict[str, str | int | np.ndarray]:
     """
     Read phonopy.yaml for summary data produced during the Phonopy
@@ -581,7 +581,7 @@ def _extract_summary(filename: str, fc_extract: bool = False
     return summary_dict
 
 
-def _extract_crystal_data(crystal: dict[str, Any]
+def _extract_crystal_data(crystal: dict[str, Any],
                           ) -> tuple[np.ndarray, int, np.ndarray,
                                      np.ndarray, np.ndarray, np.ndarray]:
     """

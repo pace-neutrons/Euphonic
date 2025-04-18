@@ -15,7 +15,7 @@ _golden_ratio = (1 + np.sqrt(5)) / 2
 #  and method development; clarity is prioritised over numerical efficiency
 
 
-def golden_square(npts: int, offset: bool = True, jitter: bool = False
+def golden_square(npts: int, offset: bool = True, jitter: bool = False,
                   ) -> Iterator[tuple[float, float]]:
     """Yield a series of well-distributed points in 2-D unit square
 
@@ -60,7 +60,7 @@ def golden_square(npts: int, offset: bool = True, jitter: bool = False
 
 
 def regular_square(n_rows: int, n_cols: int,
-                   offset: bool = True, jitter: bool = False
+                   offset: bool = True, jitter: bool = False,
                    ) -> Iterator[tuple[float, float]]:
     """Yield a regular grid of (x, y) points in 2-D unit square
 
@@ -155,7 +155,7 @@ def golden_sphere(npts: int, cartesian: bool = True, jitter: bool = False,
 
 
 def sphere_from_square_grid(n_rows: int, n_cols: int,
-                            cartesian: bool = True, jitter: bool = False
+                            cartesian: bool = True, jitter: bool = False,
                             ) -> Iterator[tuple[float, float, float]]:
     """Yield a series of 3D points on a unit sphere surface
 
@@ -326,7 +326,7 @@ def spherical_polar_improved(npts: int,
                 yield (1, phi, theta)
 
 
-def random_sphere(npts, cartesian: bool = True
+def random_sphere(npts, cartesian: bool = True,
                   ) -> Iterator[tuple[float, float, float]]:
     """Yield a series of 3D points on a unit sphere surface
 

@@ -43,7 +43,7 @@ class TestRegression:
               '--dipole-parameter-min=0.1', '--dipole-parameter-max=0.4',
               '--dipole-parameter-step=0.1'], 15, np.linspace(0.1, 0.4, 4),
              {'asr': 'reciprocal', 'use_c': False},
-             "Born charges not found for this material")
+             "Born charges not found for this material"),
         ])
     def test_calc_qpt_phonon_modes_called_with_correct_args(
             self, mocker, fc_file, opt_dipole_par_args, expected_n_qpts,

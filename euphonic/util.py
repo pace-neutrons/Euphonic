@@ -20,7 +20,7 @@ from euphonic.ureg import Quantity, ureg
 zips = partial(zip, strict=True)
 
 
-def direction_changed(qpts: np.ndarray, tolerance: float = 5e-6
+def direction_changed(qpts: np.ndarray, tolerance: float = 5e-6,
                       ) -> np.ndarray:
     """
     Determines whether the q-direction has changed between each pair of
@@ -134,7 +134,7 @@ def get_all_origins(max_xyz: tuple[int, int, int],
 def get_qpoint_labels(qpts: np.ndarray,
                       cell: Optional[tuple[list[list[float]],
                                            list[list[float]],
-                                           list[int]]] = None
+                                           list[int]]] = None,
                       ) -> list[tuple[int, str]]:
     """
     Gets q-point labels (e.g. GAMMA, X, L) for the q-points at which the
@@ -168,7 +168,7 @@ def get_qpoint_labels(qpts: np.ndarray,
 
 
 def get_reference_data(collection: str = 'Sears1992',
-                       physical_property: str = 'coherent_scattering_length'
+                       physical_property: str = 'coherent_scattering_length',
                        ) -> dict[str, Quantity]:
     """
     Get physical data as a dict of (possibly-complex) floats from reference
@@ -261,7 +261,7 @@ def get_reference_data(collection: str = 'Sears1992',
             if isinstance(value, (float, complex))}
 
 
-def mode_gradients_to_widths(mode_gradients: Quantity, cell_vectors: Quantity
+def mode_gradients_to_widths(mode_gradients: Quantity, cell_vectors: Quantity,
                              ) -> Quantity:
     """
     Converts either scalar or vector mode gradients (units
@@ -302,7 +302,7 @@ def mode_gradients_to_widths(mode_gradients: Quantity, cell_vectors: Quantity
 def convert_fc_phases(force_constants: np.ndarray, atom_r: np.ndarray,
                       sc_atom_r: np.ndarray, uc_to_sc_atom_idx: np.ndarray,
                       sc_to_uc_atom_idx: np.ndarray, sc_matrix: np.ndarray,
-                      cell_origins_tol: float = 1e-5
+                      cell_origins_tol: float = 1e-5,
                       ) -> tuple[np.ndarray, np.ndarray]:
     """
     Convert from a force constants matrix which uses the atom
@@ -443,7 +443,7 @@ def _cell_vectors_to_volume(cell_vectors: Quantity) -> Quantity:
 
 
 def _get_unique_elems_and_idx(
-        all_elems: Sequence[tuple[int | str, ...]]
+        all_elems: Sequence[tuple[int | str, ...]],
         ) -> dict[tuple[int | str, ...], np.ndarray]:
     """
     Returns an ordered dictionary mapping the unique sequences of
@@ -458,7 +458,7 @@ def _get_unique_elems_and_idx(
     }
 
 
-def _calc_abscissa(reciprocal_cell: Quantity, qpts: np.ndarray
+def _calc_abscissa(reciprocal_cell: Quantity, qpts: np.ndarray,
                    ) -> Quantity:
     """
     Calculates the distance between q-points (e.g. to use as a plot
@@ -519,7 +519,7 @@ def _calc_abscissa(reciprocal_cell: Quantity, qpts: np.ndarray
 def _recip_space_labels(qpts: np.ndarray,
                         cell: Optional[tuple[list[list[float]],
                                              list[list[float]],
-                                             list[int]]]
+                                             list[int]]],
                         ) -> tuple[np.ndarray, np.ndarray]:
     """
     Gets q-points point labels (e.g. GAMMA, X, L) for the q-points at
@@ -556,8 +556,8 @@ def _recip_space_labels(qpts: np.ndarray,
             reduce(np.logical_or,
                    (direction_changed(qpts),
                     is_gamma(qpts[1:-1]),
-                    np.all(qpts[2:] == qpts[1:-1], axis=1)
-                    )
+                    np.all(qpts[2:] == qpts[1:-1], axis=1),
+                    ),
                    ),
             [True]))
     qpts_with_labels = np.where(qpt_has_label)[0]
@@ -610,7 +610,7 @@ def _generic_qpt_labels() -> dict[str, tuple[float, float, float]]:
 
 
 def _get_qpt_label(qpt: np.ndarray,
-                   point_labels: dict[str, tuple[float, float, float]]
+                   point_labels: dict[str, tuple[float, float, float]],
                    ) -> str:
     """
     Gets a label for a particular q-point, based on the high symmetry

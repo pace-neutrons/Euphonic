@@ -189,7 +189,7 @@ class ForceConstants:
             reduce_qpts: bool = True,
             use_c: Optional[bool] = None,
             n_threads: Optional[int] = None,
-            return_mode_gradients: bool = False
+            return_mode_gradients: bool = False,
             ) -> QpointPhononModes | tuple[QpointPhononModes, Quantity]:
         """
         Calculate phonon frequencies and eigenvectors at specified
@@ -529,7 +529,7 @@ class ForceConstants:
                 # so each gamma can have its own splitting
                 qpts_i[gamma_i[1:]] = range(n_rqpts, n_rqpts + n_gamma - 1)
                 reduced_qpts = np.append(reduced_qpts,
-                                         np.tile(np.array([0., 0., 0., ]),
+                                         np.tile(np.array([0., 0., 0. ]),
                                                  (n_gamma - 1, 1)),
                                          axis=0)
                 n_rqpts = len(reduced_qpts)
@@ -756,7 +756,7 @@ casting to real mode gradients.
             dyn_mat_weighting: np.ndarray,
             recip_asr_correction: np.ndarray,
             dipole: bool,
-            q_dir: Optional[np.ndarray] = None
+            q_dir: Optional[np.ndarray] = None,
             ) -> tuple[np.ndarray, np.ndarray, np.ndarray | None]:
         """
         Given a q-point and some precalculated q-independent values,
@@ -964,7 +964,7 @@ casting to real mode gradients.
     def _dipole_correction_init(crystal: Crystal,
                                 born: np.ndarray,
                                 dielectric: np.ndarray,
-                                dipole_parameter: float = 1.0
+                                dipole_parameter: float = 1.0,
                                 ) -> dict[str, float | np.ndarray]:
         """
         Calculate the q-independent parts of the long range correction
@@ -1149,7 +1149,7 @@ casting to real mode gradients.
     def _calculate_dipole_correction(
             q: np.ndarray, crystal: Crystal, born: np.ndarray,
             dielectric: np.ndarray,
-            dipole_init_data: dict[str, float | np.ndarray]
+            dipole_init_data: dict[str, float | np.ndarray],
             ) -> np.ndarray:
         """
         Calculate the long range correction to the dynamical matrix
@@ -1423,7 +1423,7 @@ casting to real mode gradients.
                         (n_cells_in_sc, 3*n_atoms, 3*n_atoms))
 
 
-    def _enforce_reciprocal_asr(self, dyn_mat_gamma: np.ndarray
+    def _enforce_reciprocal_asr(self, dyn_mat_gamma: np.ndarray,
             ) -> np.ndarray:
         """
         Calculate the correction to the dynamical matrix that would have
@@ -1466,7 +1466,7 @@ casting to real mode gradients.
 
         return recip_asr_correction
 
-    def _find_acoustic_modes(self, dyn_mat: np.ndarray
+    def _find_acoustic_modes(self, dyn_mat: np.ndarray,
             ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         """
         Find the acoustic modes from a dynamical matrix, they should
@@ -1642,7 +1642,7 @@ casting to real mode gradients.
                     dist_wsp = np.absolute(np.sum(dists*wsp, axis=-1))
                     if n == 0:
                         nc_idx, nj_idx = np.where(
-                            dist_wsp <= (0.5*cutoff_scale + 0.001)
+                            dist_wsp <= (0.5*cutoff_scale + 0.001),
                         )
                         # Reindex dists to remove elements where the ion
                         # is > halfway to WS point for efficiency
@@ -1651,7 +1651,7 @@ casting to real mode gradients.
                         # After first reindex, dists is now 1D so need
                         # to reindex like this instead
                         idx = np.where(
-                            dist_wsp <= (0.5*cutoff_scale + 0.001)
+                            dist_wsp <= (0.5*cutoff_scale + 0.001),
                         )[0]
                         nc_idx = nc_idx[idx]
                         nj_idx = nj_idx[idx]

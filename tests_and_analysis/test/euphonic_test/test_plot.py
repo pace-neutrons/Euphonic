@@ -62,7 +62,7 @@ class TestPlot1DCore:
         matplotlib.pyplot.close('all')
 
     @pytest.mark.parametrize('spectra, expected_error',
-                             [('wrong_type', TypeError), ])
+                             [('wrong_type', TypeError) ])
     def test_1d_core_errors(self, spectra, expected_error, axes):
         with pytest.raises(expected_error):
             plot_1d_to_axis(spectra, axes)
@@ -85,7 +85,7 @@ class TestPlot1DCore:
           {'x_tick_labels': [(1, 'B'), (2, 'B'), (3, 'C')]},
           ([[0., 1.], [2., 3.]], [[1., 2.], [2., 4.]]),
           #  Note that duplicated points get plotted twice. Weird but harmless.
-          [(1., 'B'), (1., 'B'), (2., 'C')]
+          [(1., 'B'), (1., 'B'), (2., 'C')],
           )])
     def test_plot_single_spectrum(self, spectrum_args, spectrum_kwargs,
                                   expected_data, expected_ticks, axes):
@@ -120,7 +120,7 @@ class TestPlot1DCore:
          # Case 2: Two lines with split points
          (spec1dcol_split_args,
           ([[0., 1.], [2., 3.]], [[1., 2.], [2., 4.]],
-           [[0., 1.], [5., 4.]], [[1., 2.], [3., 2.]]))
+           [[0., 1.], [5., 4.]], [[1., 2.], [3., 2.]])),
            ])
     def test_plot_collection(self, spectrum_args, expected_data, axes):
         plot_1d_to_axis(Spectrum1DCollection(*spectrum_args), axes)
@@ -189,7 +189,7 @@ class TestPlot1DCore:
 
     @pytest.mark.parametrize('kwargs', [
         ({'ls': '--'}),
-        ({'color': 'r', 'ms': '+'})
+        ({'color': 'r', 'ms': '+'}),
     ])
     def test_extra_plot_kwargs(self, mocker, axes, kwargs):
         mock = mocker.patch('matplotlib.axes.Axes.plot',
@@ -244,7 +244,7 @@ class TestPlot1D:
                                             {'label': 'Line B'},
                                             {'label': 'Line C'}]}),
          ['Line D', 'Line E'],
-         {})
+         {}),
          ])
     def test_plot_single(self, mocker, spectrum, labels, kwargs):
         core = self.mock_core(mocker)
@@ -313,7 +313,7 @@ class TestPlot1D:
         (Spectrum1D(*spec1d_args), {'ms': '*', 'color': 'g'}),
         (Spectrum1DCollection(*spec1dcol_args), {'ms': '*', 'color': 'g'}),
         (Spectrum1DCollection(*spec1dcol_args),
-         {'label': 'Line A', 'color': 'k'})
+         {'label': 'Line A', 'color': 'k'}),
     ])
     def test_plot_kwargs(self, mocker, spec, kwargs):
         mock = mocker.patch('matplotlib.axes.Axes.plot',

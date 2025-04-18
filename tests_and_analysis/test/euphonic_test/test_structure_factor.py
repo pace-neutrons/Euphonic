@@ -381,7 +381,7 @@ class TestStructureFactorSetters:
         ('quartz', 'quartz_0K_structure_factor.json',
          'structure_factors', 'mbarn', 3.),
         ('quartz', 'quartz_0K_structure_factor.json',
-         'temperature', 'K', 2.)
+         'temperature', 'K', 2.),
         ])
     def test_setter_correct_units(self, material, json_file, attr,
                                   unit, scale):
@@ -479,7 +479,7 @@ class TestStructureFactorGetDispersion:
             ('quartz', 'quartz_bandstructure_structure_factor.json',
              'quartz_bandstructure_dispersion.json'),
             ('LZO', 'La2Zr2O7_cut_structure_factor.json',
-             'LZO_cut_dispersion.json')
+             'LZO_cut_dispersion.json'),
         ])
     def test_get_dispersion(
             self, material, sf_json, expected_dispersion_json):

@@ -127,7 +127,7 @@ class TestDebyeWallerCreation:
     @pytest.mark.parametrize('dw_creator', [
         pytest.lazy_fixture('create_from_constructor'),
         pytest.lazy_fixture('create_from_json_file'),
-        pytest.lazy_fixture('create_from_dict')
+        pytest.lazy_fixture('create_from_dict'),
     ])
     def test_create(self, dw_creator):
         dw, expected_dw = dw_creator
@@ -185,7 +185,7 @@ class TestDebyeWallerSerialisation:
     @pytest.fixture(params=[
         ('quartz', 'quartz_666_0K_debye_waller.json'),
         ('Si2-sc-skew', 'Si2-sc-skew_666_300K_debye_waller.json'),
-        ('CaHgO2', 'CaHgO2_666_300K_debye_waller.json')
+        ('CaHgO2', 'CaHgO2_666_300K_debye_waller.json'),
     ])
     def serialise_to_dict(self, request):
         material, json_file = request.param
@@ -233,7 +233,7 @@ class TestDebyeWallerSetters:
         ('CaHgO2', 'CaHgO2_666_300K_debye_waller.json',
          'debye_waller', 'mbarn', 3.),
         ('CaHgO2', 'CaHgO2_666_300K_debye_waller.json',
-         'temperature', 'K', 2.)
+         'temperature', 'K', 2.),
         ])
     def test_setter_correct_units(self, material, json_file, attr,
                                   unit, scale):

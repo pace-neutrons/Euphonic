@@ -53,7 +53,7 @@ def modes_data(
 def test_phonon_website_writer(
         modes_data: tuple[
             QpointPhononModes, WritePhononWebsiteKwargs, PhononWebsiteData],
-        tmp_path
+        tmp_path,
 ) -> None:
     """Test QpointPhononModes -> phonon website JSON matches reference"""
     modes, kwargs, ref_data = modes_data
@@ -101,7 +101,7 @@ class TestPhononWebsiteWriterInternals:
          [(1, r"$\Gamma$"), (5, r"X")]),
         # 3-way merge:
         ([(1, "X"), (2, "Y"), (3, "Z"), (5, "OK")],
-         [(3, "X|Y|Z"), (5, "OK")])
+         [(3, "X|Y|Z"), (5, "OK")]),
         ])
     def test_combine_neighbouring_labels(
             self, x_tick_labels: XTickLabels, expected: XTickLabels) -> None:

@@ -110,7 +110,7 @@ def _crystal_website_data(crystal: Crystal) -> dict[str, Any]:
         "formula": symbols_to_formula(crystal.atom_type),
         "atom_pos_red": crystal.atom_r.tolist(),
         "atom_pos_car": (crystal.atom_r @ crystal.cell_vectors
-                      ).to("angstrom").magnitude.tolist()
+                      ).to("angstrom").magnitude.tolist(),
     }
 
 
@@ -220,6 +220,6 @@ def _modes_to_phonon_website_dict(
         eigenvalues=modes.frequencies.to("1/cm").magnitude.tolist(),
         vectors=vectors.tolist(),
         repetitions=repetitions,
-        line_breaks=line_breaks
+        line_breaks=line_breaks,
     )
 

@@ -88,7 +88,7 @@ def main(params: Optional[list[str]] = None) -> None:
                 mode_widths = sqrt(
                     mode_widths**2
                     + (energy_broadening_poly(modes.frequencies
-                                              .to(args.energy_unit).magnitude
+                                              .to(args.energy_unit).magnitude,
                                               ) * ureg(args.energy_unit))**2)
         else:
             modes = data.calculate_qpoint_phonon_modes(
@@ -118,7 +118,7 @@ def main(params: Optional[list[str]] = None) -> None:
     elif (args.inst_broadening and len(energy_broadening_poly) > 1):
         # Variable-width Gaussian broadening
         def energy_broadening_func(x):
-            return energy_broadening_poly(x.to(args.energy_unit).magnitude
+            return energy_broadening_poly(x.to(args.energy_unit).magnitude,
                                           ) * ureg(args.energy_unit)
 
         dos = dos.broaden(x_width=energy_broadening_func,

@@ -115,7 +115,7 @@ class TestModeGradientsToWidths:
          'lzo_222_full_mode_widths.json'),
         (get_modg_norm('lzo_222_full_mode_gradients.json'),
          get_crystal('LZO').cell_vectors,
-         'lzo_222_full_mode_widths.json')
+         'lzo_222_full_mode_widths.json'),
         ])
     def test_mode_gradients_to_widths(self, mode_grads, cell_vecs,
                                       expected_mode_widths_file):

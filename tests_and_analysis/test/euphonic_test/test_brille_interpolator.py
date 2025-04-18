@@ -78,7 +78,7 @@ class TestBrilleInterpolatorCreation:
          'lzo_trellis_10.hdf5'),
         ('quartz', {'grid_npts': 10,
                     'grid_type': 'mesh'},
-         'quartz_mesh_10.hdf5')
+         'quartz_mesh_10.hdf5'),
         ])
     def test_create_from_force_constants(
             self, material, kwargs, expected_grid_file):
@@ -133,7 +133,7 @@ class TestBrilleInterpolatorCreation:
               'interpolation_kwargs': {'insert_gamma': True}}),
             ({'interpolation_kwargs': {'reduce_qpts': True,
                                        'dipole_parameter': 0.5,
-                                       'n_threads': 2}})
+                                       'n_threads': 2}}),
         ])
     def test_from_force_constants_correct_interpolation_kwargs_passed(
             self, mocker, kwargs):
@@ -185,7 +185,7 @@ class TestBrilleInterpolatorCalculateQpointPhononModes:
     @pytest.mark.parametrize(
         'material, from_fc_kwargs, emax, expected_sf1d_file', [
             ('LZO', {'grid_npts': 100}, 100,
-             'La2Zr2O7_trellis_100_sf_1d_average.json')
+             'La2Zr2O7_trellis_100_sf_1d_average.json'),
         ])
     def test_calculate_qpoint_phonon_modes(
             self, material, from_fc_kwargs, emax, expected_sf1d_file):

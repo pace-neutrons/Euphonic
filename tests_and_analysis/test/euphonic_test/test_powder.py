@@ -41,7 +41,7 @@ def jitter(request):
                            (8, 4), {'jitter': None}),
                           (13, 'spherical-polar-improved',
                            (13,), {'jitter': None}),
-                          (7, 'random-sphere', (7,), {})]
+                          (7, 'random-sphere', (7,), {})],
                          )
 def test_get_qpts_sphere(mocker, random_qpts_array, jitter,
                          npts, sampling, sampling_args, sampling_kwargs):
@@ -193,7 +193,7 @@ class TestSphereSampledProperties:
                                'sampling': 'spherical-polar-improved',
                                'energy_bins': None,
                                'scattering_lengths': _scattering_lengths,
-                               'dw': 'mock_dw'}
+                               'dw': 'mock_dw'},
                               ])
     def test_sample_sphere_structure_factor(self, mocker, mock_crystal,
                                             mock_fc, mock_qpm,
@@ -267,7 +267,7 @@ class TestQpointConversion:
         [[0., 0., 0.5], [1, 1, 0.1], [-1, 2., 0.0]]])
     def nontrivial_crystal(self, request):
         """Some arbitrary non-diagonal lattices"""
-        return Crystal(np.asarray(request.param, dtype=float
+        return Crystal(np.asarray(request.param, dtype=float,
                                   ) * ureg('angstrom'),
                        np.array([[0., 0., 0.]]),
                        np.array(['Si']), np.array([28.055]) * ureg('amu'))
@@ -283,7 +283,7 @@ class TestQpointConversion:
     @staticmethod
     def test_qpts_cart_to_frac_trivial(trivial_crystal, trivial_qpts):
         """Check internal method for q-point conversion with trivial example"""
-        cart_qpts = np.asarray(trivial_qpts['cart'], dtype=float
+        cart_qpts = np.asarray(trivial_qpts['cart'], dtype=float,
                                ) * ureg('1 / angstrom')
         frac_qpts = np.asarray(trivial_qpts['frac'], dtype=float)
         calc_frac_qpts = _qpts_cart_to_frac(cart_qpts, trivial_crystal)
@@ -295,7 +295,7 @@ class TestQpointConversion:
                                          nontrivial_crystal):
         frac_qpts = random_qpts_array
         cart_qpts = frac_qpts.dot(nontrivial_crystal.reciprocal_cell()
-                                  .to('1 / angstrom').magnitude
+                                  .to('1 / angstrom').magnitude,
                                   ) * ureg('1 / angstrom')
         calc_frac_qpts = _qpts_cart_to_frac(cart_qpts, nontrivial_crystal)
 

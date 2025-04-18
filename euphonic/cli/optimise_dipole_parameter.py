@@ -32,7 +32,7 @@ def calculate_optimum_dipole_parameter(
         dipole_parameter_step: float = 0.25,
         n: int = 500,
         print_to_terminal: bool = False,
-        **calc_modes_kwargs
+        **calc_modes_kwargs,
         ) -> tuple[float, float, float, np.ndarray, np.ndarray, np.ndarray]:
     """
     Calculate the optimum dipole_parameter and other dipole_parameters

@@ -135,7 +135,7 @@ class TestRegression:
           '--n-threads', '2', '--asr', 'realspace'],
           {'grid_type': 'mesh', 'interpolation_kwargs': {'asr': 'realspace',
                                                          'use_c': True,
-                                                         'n_threads': 2}})
+                                                         'n_threads': 2}}),
     ])
     def test_brille_interpolator_from_force_constants_kwargs_passed(
             self, inject_mocks, mocker, brille_conv_args, expected_kwargs):

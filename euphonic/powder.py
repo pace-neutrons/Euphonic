@@ -28,7 +28,7 @@ def sample_sphere_dos(fc: ForceConstants,
                       sampling: SphericalSamplingOptions = 'golden',
                       npts: int = 1000, jitter: bool = False,
                       energy_bins: Quantity = None,
-                      **calc_modes_args
+                      **calc_modes_args,
                       ) -> Spectrum1D:
     """
     Calculate phonon DOS with QpointFrequencies.calculate_dos,
@@ -89,11 +89,11 @@ def sample_sphere_dos(fc: ForceConstants,
 
     """
 
-    qpts_cart = _get_qpts_sphere(npts, sampling=sampling, jitter=jitter
+    qpts_cart = _get_qpts_sphere(npts, sampling=sampling, jitter=jitter,
                                  ) * mod_q
     qpts_frac = _qpts_cart_to_frac(qpts_cart, fc.crystal)
 
-    phonons = fc.calculate_qpoint_frequencies(qpts_frac, **calc_modes_args
+    phonons = fc.calculate_qpoint_frequencies(qpts_frac, **calc_modes_args,
                                               )  # type: QpointFrequencies
 
     if energy_bins is None:
@@ -110,7 +110,7 @@ def sample_sphere_pdos(
         energy_bins: Quantity = None,
         weighting: Optional[str] = None,
         cross_sections: str | dict[str, Quantity] = 'BlueBook',
-        **calc_modes_args
+        **calc_modes_args,
         ) -> Spectrum1DCollection:
     """
     Calculate phonon PDOS with QpointPhononModes.calculate_pdos,
@@ -194,7 +194,7 @@ def sample_sphere_pdos(
     Spectrum1DCollection
 
     """
-    qpts_cart = _get_qpts_sphere(npts, sampling=sampling, jitter=jitter
+    qpts_cart = _get_qpts_sphere(npts, sampling=sampling, jitter=jitter,
                                  ) * mod_q
     qpts_frac = _qpts_cart_to_frac(qpts_cart, fc.crystal)
     phonons = fc.calculate_qpoint_phonon_modes(qpts_frac, **calc_modes_args)
@@ -216,7 +216,7 @@ def sample_sphere_structure_factor(
     npts: int = 1000, jitter: bool = False,
     energy_bins: Quantity = None,
     scattering_lengths: str | dict[str, Quantity] = 'Sears1992',
-    **calc_modes_args
+    **calc_modes_args,
     ) -> Spectrum1D:
     """Sample structure factor, averaging over a sphere of constant |q|
 
@@ -303,18 +303,18 @@ def sample_sphere_structure_factor(
             dw_qpts = mp_grid(fc.crystal.get_mp_grid_spec(dw_spacing))
             dw_phonons = fc.calculate_qpoint_phonon_modes(dw_qpts,
                                                           **calc_modes_args)
-            dw = dw_phonons.calculate_debye_waller(temperature
+            dw = dw_phonons.calculate_debye_waller(temperature,
                                                    )  # type: DebyeWaller
         elif not np.isclose(dw.temperature, temperature):
             raise ValueError('Temperature argument is not consistent with '
                              'temperature stored in DebyeWaller object.')
 
-    qpts_cart = _get_qpts_sphere(npts, sampling=sampling, jitter=jitter
+    qpts_cart = _get_qpts_sphere(npts, sampling=sampling, jitter=jitter,
                                  ) * mod_q
 
     qpts_frac = _qpts_cart_to_frac(qpts_cart, fc.crystal)
 
-    phonons = fc.calculate_qpoint_phonon_modes(qpts_frac, **calc_modes_args
+    phonons = fc.calculate_qpoint_phonon_modes(qpts_frac, **calc_modes_args,
                                                )  # type: QpointPhononModes
 
     if energy_bins is None:

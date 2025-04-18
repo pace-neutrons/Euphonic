@@ -141,7 +141,7 @@ class TestCrystalCreation:
         (get_json_file('quartz_cv_only'),
          get_expected_crystal('quartz_cv_only')),
         (get_json_file('LZO'),
-         get_expected_crystal('LZO'))
+         get_expected_crystal('LZO')),
     ])
     def create_from_json_file(self, request):
         filename, expected_crystal = request.param
@@ -160,7 +160,7 @@ class TestCrystalCreation:
         pytest.lazy_fixture('create_from_constructor'),
         pytest.lazy_fixture('create_from_json_file'),
         pytest.lazy_fixture('create_from_dict'),
-        pytest.lazy_fixture('create_from_cell_vectors')
+        pytest.lazy_fixture('create_from_cell_vectors'),
     ])
     def test_create(self, crystal_creator):
         crystal, expected_crystal = crystal_creator
@@ -231,7 +231,7 @@ class TestCrystalSerialisation:
         (get_crystal('quartz_cv_only'),
          get_expected_crystal('quartz_cv_only')),
         (get_crystal('LZO'),
-         get_expected_crystal('LZO'))
+         get_expected_crystal('LZO')),
     ])
     def serialise_to_dict(self, request):
         crystal, expected_crystal = request.param
@@ -294,24 +294,24 @@ class TestCrystalMethods:
     quartz_reciprocal_cell = np.array([
         [1.29487418, -0.74759597, 0.],
         [1.29487418, 0.74759597, 0.],
-        [0., 0., 1.17436043]
+        [0., 0., 1.17436043],
     ])*ureg('1/angstrom')
 
     lzo_reciprocal_cell = np.array([
         [8.28488599e-01, 0.00000000e+00, -5.85829906e-01],
         [-2.01146673e-33, 8.28488599e-01, 5.85829906e-01],
-        [2.01146673e-33, -8.28488599e-01, 5.85829906e-01]
+        [2.01146673e-33, -8.28488599e-01, 5.85829906e-01],
     ])*ureg('1/angstrom')
 
     @pytest.mark.parametrize('crystal,expected_recip', [
         (get_crystal('quartz'), quartz_reciprocal_cell),
-        (get_crystal('LZO'), lzo_reciprocal_cell)
+        (get_crystal('LZO'), lzo_reciprocal_cell),
     ])
     def test_reciprocal_cell(self, crystal, expected_recip):
         recip = crystal.reciprocal_cell()
         npt.assert_allclose(
             recip.to('1/angstrom').magnitude,
-            expected_recip.to('1/angstrom').magnitude
+            expected_recip.to('1/angstrom').magnitude,
         )
 
     quartz_cell_volume = 109.09721804482547*ureg('angstrom**3')
@@ -320,13 +320,13 @@ class TestCrystalMethods:
 
     @pytest.mark.parametrize('crystal,expected_vol', [
         (get_crystal('quartz'), quartz_cell_volume),
-        (get_crystal('LZO'), lzo_cell_volume)
+        (get_crystal('LZO'), lzo_cell_volume),
     ])
     def test_cell_volume(self, crystal, expected_vol):
         vol = crystal.cell_volume()
         npt.assert_allclose(
             vol.to('angstrom**3').magnitude,
-            expected_vol.to('angstrom**3').magnitude
+            expected_vol.to('angstrom**3').magnitude,
         )
 
     quartz_spglib_cell = ([[2.426176, -4.20226, 0.000000],
@@ -407,7 +407,7 @@ class TestCrystalMethods:
          {'O': np.arange(6), 'Si': np.arange(6, 9)}),
         (get_crystal('LZO'),
          {'O': np.arange(14), 'Zr': np.arange(14, 18),
-          'La': np.arange(18, 22)})
+          'La': np.arange(18, 22)}),
         ])
     def test_get_species_idx(self, crystal, expected_spec_idx):
         spec_idx = crystal.get_species_idx()
@@ -417,7 +417,7 @@ class TestCrystalMethods:
 
     @pytest.mark.parametrize('crystal, kwargs, expected_res_file', [
         (get_crystal('quartz'), {}, 'quartz_equiv_atoms.json'),
-        (get_crystal('LZO'), {}, 'lzo_equiv_atoms.json')
+        (get_crystal('LZO'), {}, 'lzo_equiv_atoms.json'),
         ])
     def test_get_symmetry_equivalent_atoms(
             self, crystal, kwargs, expected_res_file):
@@ -451,7 +451,7 @@ class TestCrystalMethods:
 
     @pytest.mark.parametrize('crystal, kwargs, expected_symprec', [
         (get_crystal('LZO'), {'tol': 1e-12*ureg('angstrom')}, 1e-12),
-        (get_crystal('LZO'), {'tol': 1.8897261246e-12*ureg('bohr')}, 1e-12)
+        (get_crystal('LZO'), {'tol': 1.8897261246e-12*ureg('bohr')}, 1e-12),
         ])
     def test_get_symmetry_equivalent_atoms_with_tol(
             self, mocker, crystal, kwargs, expected_symprec):

@@ -140,7 +140,7 @@ class Crystal:
         return _cell_vectors_to_volume(self.cell_vectors)
 
     def get_mp_grid_spec(self,
-                         spacing: Quantity = 0.1 * ureg('1/angstrom')
+                         spacing: Quantity = 0.1 * ureg('1/angstrom'),
                          ) -> tuple[int, int, int]:
         """
         Get suggested divisions for Monkhorst-Pack grid
@@ -162,7 +162,7 @@ class Crystal:
 
         recip_length_unit = spacing.units
         lattice = self.reciprocal_cell().to(recip_length_unit)
-        grid_spec = np.linalg.norm(lattice.magnitude, axis=1
+        grid_spec = np.linalg.norm(lattice.magnitude, axis=1,
                                    ) / spacing.magnitude
         # math.ceil is better than np.ceil because it returns ints
         return tuple(ceil(x) for x in grid_spec)
@@ -204,7 +204,7 @@ class Crystal:
                             for key, value in species_dict.items()])
 
     def get_symmetry_equivalent_atoms(
-            self, tol: Quantity = Quantity(1e-5, 'angstrom')
+            self, tol: Quantity = Quantity(1e-5, 'angstrom'),
             ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         """
         Returns the rotational and translational symmetry operations

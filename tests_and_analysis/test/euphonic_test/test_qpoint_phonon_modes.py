@@ -464,7 +464,7 @@ class TestQpointPhononModesSetters:
 
     @pytest.mark.parametrize('material, attr, unit, scale', [
         ('quartz', 'frequencies', '1/cm', 2.),
-        ('quartz', 'frequencies', 'meV', 3.)
+        ('quartz', 'frequencies', 'meV', 3.),
         ])
     def test_setter_correct_units(self, material, attr, unit, scale):
         qpt_ph_modes = get_qpt_ph_modes(material)
@@ -536,7 +536,7 @@ class TestQpointPhononModesCalculateDebyeWaller:
         'material, qpt_ph_modes_file, expected_dw_json, temperature, kwargs', [
             ('CaHgO2', 'CaHgO2-666-grid.yaml',
                 'CaHgO2_666_300K_debye_waller.json', 300,
-                {'symmetrise': False})
+                {'symmetrise': False}),
         ])
     def test_calculate_debye_waller_from_phonopy(
             self, material, qpt_ph_modes_file,
@@ -568,7 +568,7 @@ class TestQpointPhononModesCalculateDos:
     @pytest.mark.parametrize(
         'material, qpt_ph_modes_file, expected_dos_json, ebins', [
             ('CaHgO2', 'CaHgO2-666-grid.yaml',
-             'CaHgO2_666_dos.json', np.arange(0, 95, 0.4)*ureg('meV'))
+             'CaHgO2_666_dos.json', np.arange(0, 95, 0.4)*ureg('meV')),
         ])
     def test_calculate_dos_from_phonopy(
             self, material, qpt_ph_modes_file,
@@ -669,7 +669,7 @@ class TestQpointPhononModesCalculatePdos:
              np.arange(0, 100, 0.8)*ureg('meV'), {'weighting': 'coherent'}),
             ('LZO', 'La2Zr2O7-666-grid.phonon', 'La2Zr2O7_666_incoh_pdos.json',
              np.arange(0, 100, 0.8)*ureg('meV'),
-             {'weighting': 'incoherent'})
+             {'weighting': 'incoherent'}),
         ])
     def test_calculate_pdos(
             self, material, qpt_ph_modes_file, expected_pdos_json, ebins,
@@ -729,7 +729,7 @@ class TestQpointPhononModesCalculatePdos:
              'quartz_554_full_mode_widths.json',
              'quartz_554_full_adaptive_dos_fast.json',
              np.arange(0, 155, 0.1)*ureg('meV'),
-             {'adaptive_method': 'fast'})
+             {'adaptive_method': 'fast'}),
         ])
     def test_total_dos_from_pdos_same_as_calculate_dos_with_mode_widths(
             self, material, qpt_ph_modes_json, mode_widths_json,
@@ -772,7 +772,7 @@ class TestQpointPhononModesGetDispersion:
             ('quartz', 'quartz_bandstructure_qpoint_phonon_modes.json',
              'quartz_bandstructure_dispersion.json'),
             ('NaCl', 'NaCl_band_yaml_from_phonopy_qpoint_phonon_modes.json',
-             'NaCl_band_yaml_dispersion.json')
+             'NaCl_band_yaml_dispersion.json'),
         ])
     def test_get_dispersion(
             self, material, qpt_ph_modes_json, expected_dispersion_json):

@@ -42,7 +42,7 @@ for gitcmd in gits:
     try:
         print(f"Trying {gitcmd} ...", file=sys.stderr)
         proc = subprocess.run([gitcmd, "describe", "--tags", "--dirty"],  # noqa: S603
-                              capture_output=True, check=True, text=True
+                              capture_output=True, check=True, text=True,
                               )
     except FileNotFoundError:
         print(f"Tried {gitcmd}, File Not Found", file=sys.stderr)

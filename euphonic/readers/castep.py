@@ -112,8 +112,8 @@ def read_phonon_dos_data(
 
     data_dict['dos'] = {}
     data_dict['dos_unit'] = f"1/{frequencies_unit}"
-    dos_conv = ureg('1 / (1/cm)'
-                    ).to(data_dict['dos_unit'], "reciprocal_spectroscopy"
+    dos_conv = ureg('1 / (1/cm)',
+                    ).to(data_dict['dos_unit'], "reciprocal_spectroscopy",
                          ).magnitude
 
     dos_dict = data_dict['dos']
@@ -134,7 +134,7 @@ def read_phonon_data(
         frequencies_unit: str = 'meV',
         read_eigenvectors: bool = True,
         average_repeat_points: bool = True,
-        prefer_non_loto: bool = False
+        prefer_non_loto: bool = False,
     ) -> dict[str, Any]:
     """
     Reads data from a .phonon file and returns it in a dictionary
@@ -281,7 +281,7 @@ def read_phonon_data(
 
 
 def _read_crystal_info(
-        f: TextIO, n_atoms: int
+        f: TextIO, n_atoms: int,
         ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """
     Reads the header crystal information from a CASTEP text file, from
@@ -340,7 +340,7 @@ def _read_frequency_block(
     f: TextIO,
     n_branches: int,
     extra_columns: Optional[list] = None,
-    terminator: str = ''
+    terminator: str = '',
         ) -> _FrequencyBlock | None:
     """
     For a single q-point reads the q-point, weight, frequencies
@@ -538,7 +538,7 @@ def read_interpolation_data(
         raise RuntimeError(
             f'Force constants matrix could not be found in {filename}. '
             f'\nEnsure PHONON_WRITE_FORCE_CONSTANTS: true and a '
-            f'PHONON_FINE_METHOD has been chosen when running CASTEP'
+            f'PHONON_FINE_METHOD has been chosen when running CASTEP',
                            ) from None
 
     # Set entries relating to dipoles
@@ -555,7 +555,7 @@ def read_interpolation_data(
     return data_dict
 
 
-def _read_cell(file_obj: BinaryIO, int_type: str, float_type: str
+def _read_cell(file_obj: BinaryIO, int_type: str, float_type: str,
                ) -> tuple[int, np.ndarray, np.ndarray,
                           np.ndarray, np.ndarray]:
     """
@@ -640,7 +640,7 @@ def _read_cell(file_obj: BinaryIO, int_type: str, float_type: str
     return n_atoms, cell_vectors, atom_r, atom_mass, atom_type
 
 
-def _read_entry(file_obj: BinaryIO, dtype: str = ''
+def _read_entry(file_obj: BinaryIO, dtype: str = '',
                 ) -> str | int | float | np.ndarray:
     """
     Read a record from a Fortran binary file, including the beginning

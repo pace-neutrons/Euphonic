@@ -32,7 +32,7 @@ def variable_width_broadening(
     width_convention: Literal['fwhm', 'std'] = 'fwhm',
     adaptive_error: float = 1e-2,
     shape: KernelShape = 'gauss',
-    fit: ErrorFit = 'cheby-log'
+    fit: ErrorFit = 'cheby-log',
     ) -> Quantity:
     r"""Apply x-dependent Gaussian broadening to 1-D data series
 
@@ -112,7 +112,7 @@ def width_interpolated_broadening(
     weights: np.ndarray,
     adaptive_error: float,
     shape: KernelShape = 'gauss',
-    fit: ErrorFit = 'cheby-log'
+    fit: ErrorFit = 'cheby-log',
     ) -> Quantity:
     """
     Uses a fast, approximate method to broaden a spectrum
@@ -246,10 +246,10 @@ def _width_interpolated_broadening(
         x_values = np.arange(-int(len(bins)/2), int(len(bins)/2)+1)*bin_width
 
     if shape == 'gauss':
-        kernels = norm.pdf(x_values, scale=width_samples[:, np.newaxis]
+        kernels = norm.pdf(x_values, scale=width_samples[:, np.newaxis],
                            ) * bin_width
     elif shape == 'lorentz':
-        kernels = _lorentzian(x_values, gamma=width_samples[:, np.newaxis]
+        kernels = _lorentzian(x_values, gamma=width_samples[:, np.newaxis],
                               ) * bin_width
 
     kernels_idx = np.searchsorted(width_samples, widths, side="right")

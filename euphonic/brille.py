@@ -69,7 +69,7 @@ class BrilleInterpolator:
         """Get the Brille grid object."""
         return self._grid
 
-    def calculate_qpoint_phonon_modes(self, qpts: np.ndarray, **kwargs
+    def calculate_qpoint_phonon_modes(self, qpts: np.ndarray, **kwargs,
                                       ) -> QpointPhononModes:
         """
         Calculate phonon frequencies and eigenvectors at specified
@@ -96,7 +96,7 @@ class BrilleInterpolator:
         return QpointPhononModes(
             self.crystal, qpts, vals, vecs)
 
-    def calculate_qpoint_frequencies(self, qpts: np.ndarray, **kwargs
+    def calculate_qpoint_frequencies(self, qpts: np.ndarray, **kwargs,
                                       ) -> QpointFrequencies:
         """
         Calculate phonon frequencies at specified
