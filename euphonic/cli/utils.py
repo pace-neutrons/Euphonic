@@ -875,7 +875,7 @@ def _compose_style(
     [base style(s), user style(s), CLI arguments]
     """
 
-    style = [] if user_args.no_base_style or base is None else base
+    style = base if not user_args.no_base_style and base is not None else []
 
     if user_args.style:
         style += user_args.style
