@@ -99,7 +99,7 @@ select = [
        "LOG",     # flake8-logging
        "G",       # flake8-logging-format
        "INP",     # flake8-no-pep420
-       # "PIE",     # flake8-pie
+       "PIE",     # flake8-pie
        # "PYI",     # flake8-pyi
        # "PT",      # flake8-pytest-style : good stuff, worth its own PR
        # "Q",       # flake8-quotes : 50-60 fixes if we prefer single. Fine, but do it in a new PR.

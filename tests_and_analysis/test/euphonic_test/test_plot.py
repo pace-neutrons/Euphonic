@@ -198,7 +198,7 @@ class TestPlot1DCore:
                           np.array([2., 3., 2.])*ureg('angstrom^-2'))
         plot_1d_to_axis(spec, axes, **kwargs)
 
-        expected_kwargs = {**{'color': None, 'label': None}, **kwargs}
+        expected_kwargs = {'color': None, 'label': None, **kwargs}
         assert mock.call_args[1] == expected_kwargs
 
 class TestPlot1D:
@@ -320,7 +320,7 @@ class TestPlot1D:
                             return_value=None)
         plot_1d(spec, **kwargs)
 
-        expected_kwargs = {**{'color': None, 'label': None}, **kwargs}
+        expected_kwargs = {'color': None, 'label': None, **kwargs}
         for mock_call_args in mock.call_args_list:
             assert mock_call_args[1] == expected_kwargs
 
