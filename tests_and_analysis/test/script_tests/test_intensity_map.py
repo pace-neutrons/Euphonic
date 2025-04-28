@@ -132,7 +132,7 @@ class TestRegression:
         [quartz_no_evec_json_file, '--weighting', 'coherent']])
     def test_qpoint_frequencies_incompatible_args_raises_type_error(
             self, intensity_map_args):
-        with pytest.raises(TypeError):
+        with pytest.raises(TypeError, match="Eigenvectors are required"):
             euphonic.cli.intensity_map.main(intensity_map_args)
 
     @pytest.mark.parametrize('intensity_map_args', [
@@ -140,7 +140,7 @@ class TestRegression:
          '--temperature', '300']])
     def test_qpoint_modes_debyewaller_raises_type_error(
             self, intensity_map_args):
-        with pytest.raises(TypeError):
+        with pytest.raises(TypeError, match="Force constants data"):
             euphonic.cli.intensity_map.main(intensity_map_args)
 
     @pytest.mark.parametrize('intensity_map_args', [
