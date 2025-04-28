@@ -34,11 +34,13 @@ def main(params: Optional[list[str]] = None) -> None:
     if not frequencies_only and isinstance(data, QpointFrequencies):
         raise TypeError('Eigenvectors are required to use '
                         '"--weighting coherent" option')
-    if args.weighting.lower() == 'coherent' and args.temperature is not None:
-        if not isinstance(data, ForceConstants):
-            raise TypeError('Force constants data is required to generate '
-                            'the Debye-Waller factor. Leave "--temperature" '
-                            'unset if plotting precalculated phonon modes.')
+    if (args.weighting.lower() == 'coherent'
+        and args.temperature is not None
+        and not isinstance(data, ForceConstants)
+    ):
+        raise TypeError('Force constants data is required to generate '
+                        'the Debye-Waller factor. Leave "--temperature" '
+                        'unset if plotting precalculated phonon modes.')
 
     q_spacing = _get_q_distance(args.length_unit, args.q_spacing)
     recip_length_unit = q_spacing.units

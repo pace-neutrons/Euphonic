@@ -163,7 +163,7 @@ def get_args(parser: ArgumentParser, params: Optional[list[str]] = None,
     args
         Arguments object for use e.g. args.unit
     """
-    # TODO: default arg to parse_args is None anyway, can remove this function
+    # TODO(ajjackson): default arg to parse_args is None anyway, can remove this function
     return parser.parse_args() if params is None else parser.parse_args(params)
 
 

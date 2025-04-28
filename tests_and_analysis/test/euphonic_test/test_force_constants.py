@@ -392,8 +392,9 @@ class TestForceConstantsCreation:
         real_import = builtins.__import__
         def mocked_import(
                 name, globals, locals, fromlist, level):  # noqa: A002
-            if name == 'yaml':
-                if fromlist is not None and fromlist[0] == 'CSafeLoader':
+            if (name == 'yaml'
+                and fromlist is not None
+                and fromlist[0] == 'CSafeLoader'):
                     raise ImportError
             return real_import(name, globals, locals, fromlist, level)
         mocker.patch('builtins.__import__', side_effect=mocked_import)
