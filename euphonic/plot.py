@@ -87,7 +87,7 @@ def plot_1d_to_axis(spectra: Spectrum1D | Spectrum1DCollection,
                 label = None  # noqa: PLW2901 (redefined-loop-name)
                 color = p[-1].get_color()
             # Allow user kwargs to take priority
-            plot_kwargs = {**{'color': color, 'label': label}, **mplargs}
+            plot_kwargs = {'color': color, 'label': label, **mplargs}
             p = ax.plot(spectrum.get_bin_centres().magnitude[x0:x1],
                         spectrum.y_data.magnitude[x0:x1],
                         **plot_kwargs)

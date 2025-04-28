@@ -623,12 +623,10 @@ class ForceConstants:
 
 
         rfreqs = np.zeros((n_rqpts, 3*n_atoms))
-        if return_eigenvectors:
-            n_reigenvecs = n_rqpts
-        else:
-            # Create dummy zero-length eigenvectors so this can be
-            # detected in C and eigenvectors won't be saved
-            n_reigenvecs = 0
+
+        n_reigenvecs = n_rqpts if return_eigenvectors else 0
+        # Dummy zero-length eigenvectors can be detected in C,
+        # in which case eigenvectors won't be saved
 
         if return_mode_gradients:
             rmode_gradients = np.zeros((n_rqpts, 3*n_atoms, 3),
@@ -719,10 +717,7 @@ class ForceConstants:
                     rmode_gradients[qi] = grads
 
         freqs = rfreqs[qpts_i]*ureg('hartree').to('meV')
-        if return_eigenvectors:
-            eigenvectors = reigenvecs[qpts_i]
-        else:
-            eigenvectors = None
+        eigenvectors = reigenvecs[qpts_i] if return_eigenvectors else None
 
         mode_gradients = None
         if return_mode_gradients:

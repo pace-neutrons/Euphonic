@@ -1,6 +1,12 @@
 `Unreleased <https://github.com/pace-neutrons/Euphonic/compare/v1.4.3...HEAD>`_
 -------------------------------------------------------------------------------
 
+- Bug fixes
+
+  - euphonic-intensity-map incorrectly rejecting files with phonon
+    mode data for coherent scattering calculations. (Introduced in
+    v1.4.3.)
+
 - Maintenance
 
   - Numpy random number generators have been updated to use a Generator from

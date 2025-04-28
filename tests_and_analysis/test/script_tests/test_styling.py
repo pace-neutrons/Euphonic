@@ -1,4 +1,5 @@
 from argparse import Namespace
+from contextlib import suppress
 
 from numpy.testing import assert_allclose
 import pytest
@@ -9,12 +10,10 @@ from tests_and_analysis.test.utils import get_castep_path
 pytestmark = pytest.mark.matplotlib
 # Allow tests with matplotlib marker to be collected and
 # deselected if Matplotlib is not installed
-try:
+with suppress(ModuleNotFoundError):
     import matplotlib.pyplot  # noqa: ICN001
 
     import euphonic.cli.dos
-except ModuleNotFoundError:
-    pass
 
 compose_style_cases = [
     ({'user_args': Namespace(unused=1, no_base_style=False, style=None),

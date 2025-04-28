@@ -1,3 +1,4 @@
+from contextlib import suppress
 import os
 import re
 from typing import Any, Optional, TextIO
@@ -91,21 +92,17 @@ def _extract_phonon_data_yaml(filename: str,
     if read_eigenvectors:
         # Eigenvectors may not be present if users haven't set
         # --eigvecs when running Phonopy - deal with this later
-        try:
+        with suppress(KeyError):
             data_dict['eigenvectors'] = np.squeeze(np.array(
                 [[band_data['eigenvector'] for band_data in bands_data]
                  for bands_data in bands_data_each_qpt]).view(np.complex128))
-        except KeyError:
-            pass
 
     # Weights only present in mesh
-    try:
+    with suppress(KeyError):
         data_dict['weights'] = np.array([phon['weight'] for phon in phonons])
-    except KeyError:
-        pass
 
     # Crystal information only appears to be present in mesh/band
-    try:
+    with suppress(KeyError):
         data_dict['cell_vectors'] = np.array(phonon_data['lattice'])
         data_dict['atom_r'] = np.array(
             [atom['coordinates'] for atom in phonon_data['points']])
@@ -113,8 +110,7 @@ def _extract_phonon_data_yaml(filename: str,
             [atom['mass'] for atom in phonon_data['points']])
         data_dict['atom_type'] = np.array(
             [atom['symbol'] for atom in phonon_data['points']])
-    except KeyError:
-        pass
+
     return data_dict
 
 
@@ -156,15 +152,13 @@ def _extract_phonon_data_hdf5(filename: str,
             if read_eigenvectors:
                 # Eigenvectors may not be present if users haven't set
                 # --eigvecs when running Phonopy - deal with this later
-                try:
+                with suppress(KeyError):
                     data_dict['eigenvectors'] = hdf5_file['eigenvector'][()]
-                except KeyError:
-                    pass
+
             # Only mesh.hdf5 has weights
-            try:
+            with suppress(KeyError):
                 data_dict['weights'] = hdf5_file['weight'][()]
-            except KeyError:
-                pass
+
         # Is a band.hdf5 file - q-points are stored in 'path' and need
         # special treatment
         else:
@@ -172,7 +166,7 @@ def _extract_phonon_data_hdf5(filename: str,
                 -1, hdf5_file['path'][()].shape[-1])
             data_dict['frequencies'] = hdf5_file['frequency'][()].reshape(
                 -1, hdf5_file['frequency'][()].shape[-1])
-            try:
+            with suppress(KeyError):
                 # The last 2 dimensions of eigenvectors in bands.hdf5 are for
                 # some reason transposed compared to mesh/qpoints.hdf5, so also
                 # transpose to handle this
@@ -180,8 +174,6 @@ def _extract_phonon_data_hdf5(filename: str,
                     'eigenvector'][()].reshape(
                         -1, *hdf5_file['eigenvector'][()].shape[-2:],
                         ).transpose([0,2,1])
-            except KeyError:
-                pass
 
     return data_dict
 
@@ -771,7 +763,7 @@ def read_interpolation_data(
     data_dict['sc_matrix'] = summary_dict['sc_matrix']
     data_dict['cell_origins'] = cell_origins
 
-    try:
+    with suppress(KeyError):
         data_dict['born'] = summary_dict['born']*ureg(
             'e').to(born_unit).magnitude
         data_dict['born_unit'] = born_unit
@@ -788,7 +780,5 @@ def read_interpolation_data(
             summary_dict['dielectric']/summary_dict['nac_factor']
             *phonopy_dielectric_unit.to(dielectric_unit).magnitude)
         data_dict['dielectric_unit'] = dielectric_unit
-    except KeyError:
-        pass
 
     return data_dict

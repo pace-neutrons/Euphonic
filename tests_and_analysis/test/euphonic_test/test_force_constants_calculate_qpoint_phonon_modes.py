@@ -1,3 +1,4 @@
+from contextlib import suppress
 import json
 from multiprocessing import cpu_count
 import os
@@ -102,7 +103,7 @@ class TestForceConstantsCalculateQPointPhononModes:
         # Only give gamma-acoustic modes special treatment if the acoustic
         # sum rule has been applied
         tol_kwargs = {}
-        if 'asr' in func_kwargs.keys():
+        if 'asr' in func_kwargs:
             tol_kwargs['acoustic_gamma_atol'] = 0.55
         # Use larger tolerances with reciprocal ASR - formalism works
         # only at gamma but is applied to all q, so problem is less
@@ -354,10 +355,9 @@ class TestForceConstantsCalculateQPointPhononModesWithCExtensionInstalled:
     def test_cext_called_with_n_threads_default_and_no_env_var(
             self, mocked_cext):
         n_threads = cpu_count()
-        try:
+        with suppress(KeyError):
             os.environ.pop('EUPHONIC_NUM_THREADS')
-        except KeyError:
-            pass
+
         fc = get_fc('quartz')
         fc.calculate_qpoint_phonon_modes(get_test_qpts())
         assert mocked_cext.call_args[0][-1] == n_threads

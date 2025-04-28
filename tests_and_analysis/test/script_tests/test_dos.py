@@ -1,3 +1,4 @@
+from contextlib import suppress
 import json
 import os
 import sys
@@ -22,12 +23,11 @@ from tests_and_analysis.test.utils import (
 pytestmark = pytest.mark.matplotlib
 # Allow tests with matplotlib marker to be collected and
 # deselected if Matplotlib is not installed
-try:
+
+with suppress(ModuleNotFoundError):
     import matplotlib.pyplot  # noqa: ICN001
 
     import euphonic.cli.dos
-except ModuleNotFoundError:
-    pass
 
 nah_phonon_file = get_castep_path('NaH', 'NaH.phonon')
 nacl_no_evec_yaml_file = get_phonopy_path('NaCl', 'mesh', 'mesh_no_evec.yaml')

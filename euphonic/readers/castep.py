@@ -192,12 +192,12 @@ def read_phonon_data(
 
         # Need to loop through file using while rather than number of
         # q-points as points are duplicated on LO-TO splitting
-        idx = 0
         previous_qpt_id = -1
         repeated_qpt_ids = defaultdict(set)
         loto_split_indices = set()
 
-        for frequency_block in _read_frequency_blocks(f, n_branches):
+        for idx, frequency_block in enumerate(
+                _read_frequency_blocks(f, n_branches)):
             qpt_id = frequency_block.qpt_id
 
             if prefer_non_loto and frequency_block.direction is not None:
@@ -236,7 +236,6 @@ def read_phonon_data(
                 weights = np.concatenate((weights, [frequency_block.weight]))
                 if read_eigenvectors:
                     eigenvecs = np.concatenate((eigenvecs, [qeigenvec]))
-            idx += 1
 
     # Multiple qpts with same CASTEP q-pt index: correct weights
     for indices in repeated_qpt_ids.values():

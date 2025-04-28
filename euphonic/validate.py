@@ -80,15 +80,14 @@ def _check_unit_conversion(obj: object, attr_name: str, attr_value: Any,
     ValueError
         If the unit conversion is not valid
     """
-    if hasattr(obj, attr_name):
-        if attr_name in unit_attrs:
-            try:
-                ureg(getattr(obj, attr_name)).ito(attr_value,
-                                                  "reciprocal_spectroscopy")
-            except DimensionalityError as err:
-                raise ValueError(
-                    f'"{attr_value}" is not a known dimensionally-consistent '
-                    f'unit for "{attr_name}"') from err
+    if hasattr(obj, attr_name) and attr_name in unit_attrs:
+        try:
+            ureg(getattr(obj, attr_name)).ito(attr_value,
+                                              "reciprocal_spectroscopy")
+        except DimensionalityError as err:
+            raise ValueError(
+                f'"{attr_value}" is not a known dimensionally-consistent '
+                f'unit for "{attr_name}"') from err
 
 
 def _replace_dim(expected_shape: tuple[int, ...],

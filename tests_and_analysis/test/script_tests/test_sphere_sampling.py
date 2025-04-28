@@ -1,3 +1,4 @@
+from contextlib import suppress
 from functools import partial
 import json
 import sys
@@ -15,12 +16,10 @@ from tests_and_analysis.test.script_tests.utils import (
 pytestmark = pytest.mark.matplotlib
 # Allow tests with matplotlib marker to be collected and
 # deselected if Matplotlib is not installed
-try:
+with suppress(ModuleNotFoundError):
     import matplotlib.pyplot  # noqa: ICN001
 
     import euphonic.cli.show_sampling
-except ModuleNotFoundError:
-    pass
 
 sphere_sampling_output_file = get_script_test_data_path("sphere_sampling.json")
 sphere_sampling_params =  [

@@ -1,3 +1,4 @@
+from contextlib import suppress
 import json
 import os
 import sys
@@ -17,12 +18,13 @@ from tests_and_analysis.test.utils import get_data_path, get_phonopy_path
 pytestmark = pytest.mark.matplotlib
 # Allow tests with matplotlib marker to be collected and
 # deselected if Matplotlib is not installed
-try:
+
+# Required for mocking
+with suppress(ModuleNotFoundError):
     import matplotlib.pyplot  # noqa: ICN001
 
     import euphonic.cli.dispersion
-except ModuleNotFoundError:
-    pass
+
 
 cahgo2_fc_file = get_phonopy_path('CaHgO2', 'mp-7041-20180417.yaml')
 lzo_fc_file = get_data_path('force_constants', 'LZO_force_constants.json')

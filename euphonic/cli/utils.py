@@ -5,6 +5,7 @@ from argparse import (
     _ArgumentGroup,
 )
 from collections.abc import Collection, Sequence
+from contextlib import suppress
 import json
 import os
 import pathlib
@@ -51,23 +52,20 @@ def _load_phonopy_file(filename: str | os.PathLike,
     path = pathlib.Path(filename)
     loaded_data = None
     if not frequencies_only:
-        try:
-            loaded_data = QpointPhononModes.from_phonopy(
-                path=path.parent, phonon_name=path.name)
-        except (KeyError, RuntimeError):
+        with suppress(KeyError, RuntimeError):
             # KeyError will be raised if it is actually a force
             # constants file, RuntimeError will be raised if
             # it only contains q-point frequencies (no eigenvectors)
-            pass
+
+            loaded_data = QpointPhononModes.from_phonopy(
+                path=path.parent, phonon_name=path.name)
 
     # Try to read QpointFrequencies if loading QpointPhononModes has
     # failed, or has been specifically requested with frequencies_only
     if frequencies_only or loaded_data is None:
-        try:
+        with suppress(KeyError):
             loaded_data = QpointFrequencies.from_phonopy(
                 path=path.parent, phonon_name=path.name)
-        except KeyError:
-            pass
 
     if loaded_data is None:
         phonopy_kwargs: dict[str, str | os.PathLike] = {}
@@ -149,7 +147,7 @@ def load_data_from_file(filename: str | os.PathLike,
 def get_args(parser: ArgumentParser, params: Optional[list[str]] = None,
              ) -> Namespace:
     """
-    Get the arguments from the parser. params should only be none when
+    Get the arguments from the parser. `params` should only be `None` when
     running from command line.
 
     Parameters
@@ -165,11 +163,7 @@ def get_args(parser: ArgumentParser, params: Optional[list[str]] = None,
     args
         Arguments object for use e.g. args.unit
     """
-    if params is None:
-        args = parser.parse_args()
-    else:
-        args = parser.parse_args(params)
-    return args
+    return parser.parse_args(args=params)
 
 
 def matplotlib_save_or_show(save_filename: str | None = None) -> None:
@@ -774,10 +768,7 @@ def _get_cli_parser(features: Collection[str] = {},
             help=('Target distance between q-point samples in 1/LENGTH_UNIT'))
 
     if {'q-e', 'map'}.issubset(features):
-        if 'powder' in features:
-            qb_nargs = '+'
-        else:
-            qb_nargs = 1
+        qb_nargs = '+' if 'powder' in features else 1
 
         qb_help = ('FWHM of broadening on q axis in 1/LENGTH_UNIT '
                    '(no broadening if unspecified).')
@@ -884,10 +875,7 @@ def _compose_style(
     [base style(s), user style(s), CLI arguments]
     """
 
-    if user_args.no_base_style or base is None:
-        style = []
-    else:
-        style = base
+    style = base if not user_args.no_base_style and base is not None else []
 
     if user_args.style:
         style += user_args.style

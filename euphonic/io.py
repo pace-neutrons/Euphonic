@@ -47,10 +47,9 @@ def _from_json_dict(dictionary: dict[str, Any],
                     val, dtype=np.float64).view(np.complex128).squeeze(axis=-1)
             else:
                 dictionary[key] = np.array(val)
-        elif isinstance(val, dict):
-            if key != 'metadata':
-                dictionary[key] = _from_json_dict(
-                    val, type_dict)
+        elif isinstance(val, dict) and key != 'metadata':
+            dictionary[key] = _from_json_dict(
+                val, type_dict)
     return dictionary
 
 
@@ -93,8 +92,7 @@ def _process_dict(dictionary: dict[str, Any],
 
     dictionary = copy.deepcopy(dictionary)
     for okey in optional:
-        if not okey in dictionary.keys():
-            dictionary[okey] = None
+        dictionary.setdefault(okey, None)
 
     for qkey in quantities:
         val = dictionary.pop(qkey)

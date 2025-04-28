@@ -383,8 +383,9 @@ class TestQpointPhononModesCreation:
 
         def mocked_import(
                 name, globals, locals, fromlist, level):  # noqa: A002
-            if name == 'yaml':
-                if fromlist is not None and fromlist[0] == 'CSafeLoader':
+            if (name == 'yaml'
+                and fromlist is not None
+                and fromlist[0] == 'CSafeLoader'):
                     raise ImportError
             return real_import(name, globals, locals, fromlist, level)
 
