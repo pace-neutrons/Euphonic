@@ -37,10 +37,9 @@ def main(params: Optional[list[str]] = None) -> None:
             data, (QpointPhononModes, ForceConstants)):
         raise TypeError('Eigenvectors are required to use "--pdos" or '
                         'any "--weighting" option other than plain DOS')
-    if args.adaptive:
-        if not isinstance(data, ForceConstants):
-            raise TypeError(
-                'Force constants are required to use --adaptive option')
+    if args.adaptive and not isinstance(data, ForceConstants):
+        raise TypeError(
+            'Force constants are required to use --adaptive option')
 
     if (args.energy_broadening
             and args.adaptive

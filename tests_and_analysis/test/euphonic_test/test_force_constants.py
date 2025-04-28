@@ -44,7 +44,7 @@ class ExpectedForceConstants:
 
     @property
     def born(self):
-        if 'born' in self.data.keys():
+        if 'born' in self.data:
             return np.array(self.data['born'])*ureg(
                 self.data['born_unit'])
         return None
@@ -56,7 +56,7 @@ class ExpectedForceConstants:
 
     @property
     def dielectric(self):
-        if 'dielectric' in self.data.keys():
+        if 'dielectric' in self.data:
             return np.array(self.data['dielectric'])*ureg(
                 self.data['dielectric_unit'])
         return None

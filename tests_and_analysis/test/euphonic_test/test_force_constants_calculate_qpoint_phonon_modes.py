@@ -103,7 +103,7 @@ class TestForceConstantsCalculateQPointPhononModes:
         # Only give gamma-acoustic modes special treatment if the acoustic
         # sum rule has been applied
         tol_kwargs = {}
-        if 'asr' in func_kwargs.keys():
+        if 'asr' in func_kwargs:
             tol_kwargs['acoustic_gamma_atol'] = 0.55
         # Use larger tolerances with reciprocal ASR - formalism works
         # only at gamma but is applied to all q, so problem is less

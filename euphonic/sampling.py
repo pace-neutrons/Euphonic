@@ -43,10 +43,7 @@ def golden_square(npts: int, offset: bool = True, jitter: bool = False,
     """
     rng = np.random.default_rng()
 
-    if offset:
-        x_offset = 1 / (2 * npts)
-    else:
-        x_offset = 0
+    x_offset = 1 / (2 * npts) if offset else 0
 
     for i in range(npts):
         if jitter:

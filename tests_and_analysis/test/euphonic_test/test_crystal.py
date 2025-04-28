@@ -412,7 +412,7 @@ class TestCrystalMethods:
     def test_get_species_idx(self, crystal, expected_spec_idx):
         spec_idx = crystal.get_species_idx()
         assert spec_idx.keys() == expected_spec_idx.keys()
-        for key in expected_spec_idx.keys():
+        for key in expected_spec_idx:
             npt.assert_equal(spec_idx[key], expected_spec_idx[key])
 
     @pytest.mark.parametrize('crystal, kwargs, expected_res_file', [

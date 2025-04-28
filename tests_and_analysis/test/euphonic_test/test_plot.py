@@ -423,10 +423,7 @@ def test_set_x_tick_labels(axes, labels, rotate):
 
     _set_x_tick_labels(axes, labels, x_data)
 
-    if rotate:
-        angle = 90.
-    else:
-        angle = 0.
+    angle = 90.0 if rotate else 0.0
 
     label_x_indices, label_values = zip(*labels, strict=True)
     plotted_labels = axes.get_xticklabels()

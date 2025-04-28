@@ -40,13 +40,13 @@ class ExpectedSpectrum2D:
 
     @property
     def x_tick_labels(self):
-        if 'x_tick_labels' in self.data.keys():
+        if 'x_tick_labels' in self.data:
             return [tuple(x) for x in self.data['x_tick_labels']]
         return None
 
     @property
     def metadata(self):
-        if 'metadata' in self.data.keys():
+        if 'metadata' in self.data:
             return self.data['metadata']
         return {}
 

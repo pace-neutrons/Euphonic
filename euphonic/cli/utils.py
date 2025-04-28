@@ -163,11 +163,8 @@ def get_args(parser: ArgumentParser, params: Optional[list[str]] = None,
     args
         Arguments object for use e.g. args.unit
     """
-    if params is None:
-        args = parser.parse_args()
-    else:
-        args = parser.parse_args(params)
-    return args
+    # TODO: default arg to parse_args is None anyway, can remove this function
+    return parser.parse_args() if params is None else parser.parse_args(params)
 
 
 def matplotlib_save_or_show(save_filename: str | None = None) -> None:
@@ -772,10 +769,7 @@ def _get_cli_parser(features: Collection[str] = {},
             help=('Target distance between q-point samples in 1/LENGTH_UNIT'))
 
     if {'q-e', 'map'}.issubset(features):
-        if 'powder' in features:
-            qb_nargs = '+'
-        else:
-            qb_nargs = 1
+        qb_nargs = '+' if 'powder' in features else 1
 
         qb_help = ('FWHM of broadening on q axis in 1/LENGTH_UNIT '
                    '(no broadening if unspecified).')
@@ -882,10 +876,7 @@ def _compose_style(
     [base style(s), user style(s), CLI arguments]
     """
 
-    if user_args.no_base_style or base is None:
-        style = []
-    else:
-        style = base
+    style = [] if user_args.no_base_style or base is None else base
 
     if user_args.style:
         style += user_args.style

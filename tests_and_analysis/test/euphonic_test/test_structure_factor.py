@@ -75,7 +75,7 @@ class ExpectedStructureFactor:
 
     @property
     def temperature(self):
-        if 'temperature' in self.data.keys():
+        if 'temperature' in self.data:
             return np.array(self.data['temperature'])*ureg(
                 self.data['temperature_unit'])
         return None

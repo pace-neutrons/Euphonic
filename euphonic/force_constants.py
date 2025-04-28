@@ -719,10 +719,7 @@ class ForceConstants:
                     rmode_gradients[qi] = grads
 
         freqs = rfreqs[qpts_i]*ureg('hartree').to('meV')
-        if return_eigenvectors:
-            eigenvectors = reigenvecs[qpts_i]
-        else:
-            eigenvectors = None
+        eigenvectors = reigenvecs[qpts_i] if return_eigenvectors else None
 
         mode_gradients = None
         if return_mode_gradients:

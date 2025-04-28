@@ -632,7 +632,7 @@ class TestQpointFrequenciesCalculateDosMap:
                 qpt_freqs.frequencies[qpt].reshape(1, -1),
                 np.array([qpt_freqs.weights[qpt]]))
             dos_kwargs_single_qpt = copy.copy(dos_kwargs)
-            if 'mode_widths' in dos_kwargs.keys():
+            if 'mode_widths' in dos_kwargs:
                 dos_kwargs_single_qpt['mode_widths'] = dos_kwargs[
                     'mode_widths'][qpt].reshape(1, -1)
             dos_single_qpt = qpt_freqs_single_qpt.calculate_dos(
