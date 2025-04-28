@@ -147,7 +147,7 @@ def load_data_from_file(filename: str | os.PathLike,
 def get_args(parser: ArgumentParser, params: Optional[list[str]] = None,
              ) -> Namespace:
     """
-    Get the arguments from the parser. params should only be none when
+    Get the arguments from the parser. `params` should only be `None` when
     running from command line.
 
     Parameters

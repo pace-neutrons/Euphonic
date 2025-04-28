@@ -37,7 +37,8 @@ class ExpectedSpectrum1D:
 
     @property
     def x_tick_labels(self):
-        return list(map(tuple, self.data['x_tick_labels'])) if 'x_tick_labels' in self.data else None
+        return (list(map(tuple, self.data['x_tick_labels']))
+                if 'x_tick_labels' in self.data else None)
 
     @property
     def metadata(self):
