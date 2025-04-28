@@ -1,3 +1,4 @@
+from contextlib import suppress
 import json
 import os
 from unittest.mock import patch
@@ -16,12 +17,10 @@ from tests_and_analysis.test.utils import get_castep_path, get_data_path
 pytestmark = pytest.mark.matplotlib
 # Allow tests with matplotlib marker to be collected and
 # deselected if Matplotlib is not installed
-try:
+with suppress(ModuleNotFoundError):
     import matplotlib.pyplot  # noqa: ICN001
 
     import euphonic.cli.intensity_map
-except ModuleNotFoundError:
-    pass
 
 quartz_json_file = get_data_path(
     'qpoint_phonon_modes', 'quartz',

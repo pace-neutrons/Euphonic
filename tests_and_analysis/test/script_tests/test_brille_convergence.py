@@ -1,3 +1,4 @@
+from contextlib import suppress
 import json
 import sys
 from unittest.mock import patch
@@ -19,12 +20,12 @@ pytestmark = [pytest.mark.multiple_extras, pytest.mark.brille,
 # These tests require both Brille and Matplotlib, allow tests with
 # these markers to be collected and deselected if
 # either is not installed
-try:
+
+# Required for mocking
+with suppress(ModuleNotFoundError):
     import matplotlib.pyplot  # noqa: ICN001
 
     import euphonic.cli.brille_convergence
-except ModuleNotFoundError:
-    pass
 
 graphite_fc_file = get_castep_path('graphite', 'graphite.castep_bin')
 nacl_prim_fc_file = get_phonopy_path('NaCl_prim', 'phonopy_nacl.yaml')
@@ -148,11 +149,10 @@ class TestRegression:
 
         mock = mocker.patch.object(BrilleInterpolator, 'from_force_constants',
                                    side_effect=MockError())
-        try:
+        with suppress(MockError):
             euphonic.cli.brille_convergence.main(
                 [graphite_fc_file, *brille_conv_args])
-        except MockError:
-            pass
+
         default_interp_kwargs =  {'asr': None, 'dipole_parameter': 1.0,
                                   'n_threads': None, 'use_c': None}
         default_kwargs = {'grid_type': 'trellis', 'grid_npts': 5000}

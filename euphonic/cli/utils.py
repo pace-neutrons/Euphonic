@@ -5,6 +5,7 @@ from argparse import (
     _ArgumentGroup,
 )
 from collections.abc import Collection, Sequence
+from contextlib import suppress
 import json
 import os
 import pathlib
@@ -51,23 +52,20 @@ def _load_phonopy_file(filename: str | os.PathLike,
     path = pathlib.Path(filename)
     loaded_data = None
     if not frequencies_only:
-        try:
-            loaded_data = QpointPhononModes.from_phonopy(
-                path=path.parent, phonon_name=path.name)
-        except (KeyError, RuntimeError):
+        with suppress(KeyError, RuntimeError):
             # KeyError will be raised if it is actually a force
             # constants file, RuntimeError will be raised if
             # it only contains q-point frequencies (no eigenvectors)
-            pass
+
+            loaded_data = QpointPhononModes.from_phonopy(
+                path=path.parent, phonon_name=path.name)
 
     # Try to read QpointFrequencies if loading QpointPhononModes has
     # failed, or has been specifically requested with frequencies_only
     if frequencies_only or loaded_data is None:
-        try:
+        with suppress(KeyError):
             loaded_data = QpointFrequencies.from_phonopy(
                 path=path.parent, phonon_name=path.name)
-        except KeyError:
-            pass
 
     if loaded_data is None:
         phonopy_kwargs: dict[str, str | os.PathLike] = {}

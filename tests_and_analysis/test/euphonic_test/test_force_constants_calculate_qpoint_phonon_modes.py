@@ -1,3 +1,4 @@
+from contextlib import suppress
 import json
 from multiprocessing import cpu_count
 import os
@@ -354,10 +355,9 @@ class TestForceConstantsCalculateQPointPhononModesWithCExtensionInstalled:
     def test_cext_called_with_n_threads_default_and_no_env_var(
             self, mocked_cext):
         n_threads = cpu_count()
-        try:
+        with suppress(KeyError):
             os.environ.pop('EUPHONIC_NUM_THREADS')
-        except KeyError:
-            pass
+
         fc = get_fc('quartz')
         fc.calculate_qpoint_phonon_modes(get_test_qpts())
         assert mocked_cext.call_args[0][-1] == n_threads

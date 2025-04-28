@@ -1,3 +1,4 @@
+from contextlib import suppress
 from copy import copy
 import os
 from typing import Any, Optional
@@ -5,10 +6,8 @@ from typing import Any, Optional
 import numpy as np
 
 # Required for mocking
-try:
+with suppress(ModuleNotFoundError):
     import matplotlib.pyplot  # noqa: ICN001
-except ModuleNotFoundError:
-    pass
 
 from tests_and_analysis.test.utils import get_data_path
 
