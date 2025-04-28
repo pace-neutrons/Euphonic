@@ -92,8 +92,7 @@ def _process_dict(dictionary: dict[str, Any],
 
     dictionary = copy.deepcopy(dictionary)
     for okey in optional:
-        if not okey in dictionary:
-            dictionary[okey] = None
+        dictionary.setdefault(okey, None)
 
     for qkey in quantities:
         val = dictionary.pop(qkey)
