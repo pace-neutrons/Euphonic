@@ -4,7 +4,7 @@ from typing import Optional
 import matplotlib.style
 
 import euphonic
-from euphonic import ForceConstants, QpointFrequencies, ureg
+from euphonic import ForceConstants, QpointPhononModes, ureg
 import euphonic.plot
 from euphonic.styles import base_style
 from euphonic.util import get_qpoint_labels
@@ -31,7 +31,9 @@ def main(params: Optional[list[str]] = None) -> None:
     frequencies_only = (args.weighting != 'coherent')
     data = load_data_from_file(args.filename, verbose=True,
                                frequencies_only=frequencies_only)
-    if not frequencies_only and isinstance(data, QpointFrequencies):
+    if (not frequencies_only
+        and not isinstance(data, (QpointPhononModes, ForceConstants))
+    ):
         raise TypeError('Eigenvectors are required to use '
                         '"--weighting coherent" option')
     if (args.weighting.lower() == 'coherent'
