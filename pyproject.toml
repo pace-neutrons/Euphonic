@@ -164,3 +164,4 @@ extend-ignore-names = ["k_B", "H_ab"]
     "ARG",    # pytest fixtures can look like unused arguments
     "RUF012", # declaring sample data inside test classes is tidy
     ]
+"euphonic/version.py" = ["Q000"]  # Source build prefers double quotes here
