@@ -227,31 +227,31 @@ class TestSpectrum1DCollectionCreation:
 
     bad_sequences = [
         [
-            ["NotASpectrum", get_spectrum1d("gan_bands_index_2.json")],
+            ['NotASpectrum', get_spectrum1d('gan_bands_index_2.json')],
             TypeError,
         ],
         [
-            [get_spectrum1d("gan_bands_index_2.json"), "NotASpectrum"],
+            [get_spectrum1d('gan_bands_index_2.json'), 'NotASpectrum'],
             TypeError,
         ],
         [
             [
-                get_spectrum1d("gan_bands_index_2.json"),
-                get_spectrum1d("methane_pdos_index_1.json"),
+                get_spectrum1d('gan_bands_index_2.json'),
+                get_spectrum1d('methane_pdos_index_1.json'),
             ],
             ValueError,
         ],
         [
             [
-                get_spectrum1d("gan_bands_index_2.json"),
-                get_spectrum1d("gan_bands_index_3.json"),
+                get_spectrum1d('gan_bands_index_2.json'),
+                get_spectrum1d('gan_bands_index_3.json'),
             ],
             ValueError,
         ],
         [
             [
-                get_spectrum1d("gan_bands_index_2.json"),
-                get_spectrum1d("gan_bands_index_3.json"),
+                get_spectrum1d('gan_bands_index_2.json'),
+                get_spectrum1d('gan_bands_index_3.json'),
             ],
             ValueError,
         ],
@@ -259,7 +259,7 @@ class TestSpectrum1DCollectionCreation:
     # Item 3: Make x_data inconsistent
     bad_sequences[3][0][1].x_data = bad_sequences[3][0][0].x_data * 2.
     # Item 4: Make x_tick_labels inconsistent
-    bad_sequences[4][0][1].x_tick_labels = [(0, "$\\Gamma$"), (54, "X")]
+    bad_sequences[4][0][1].x_tick_labels = [(0, '$\\Gamma$'), (54, 'X')]
 
     @pytest.mark.parametrize(
         'input_spectra, expected_error', bad_sequences,
@@ -556,7 +556,7 @@ class TestSpectrum1DCollectionMethods:
     def test_broaden_bad_width(self):
         spec_col = get_spectrum1dcollection('methane_pdos.json')
         with pytest.raises(TypeError,
-                           match="x_width must be a Quantity or Callable"):
+                           match='x_width must be a Quantity or Callable'):
             spec_col.broaden(x_width=4)
 
     def test_variable_broadening(self):

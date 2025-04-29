@@ -48,8 +48,8 @@ def main(params: Optional[list[str]] = None) -> None:
         npts = n_rows**2
 
         if npts != args.npts:
-            print("Requested npts ∉ {x^2, x ∈ Z, x > 1}; "
-                  f"rounding up to {npts}.")
+            print('Requested npts ∉ {x^2, x ∈ Z, x > 1}; '
+                  f'rounding up to {npts}.')
         ax.scatter(*zips(*euphonic.sampling.regular_square(n_rows, n_rows,
                                                           jitter=args.jitter)),
                    marker='o')
@@ -69,8 +69,8 @@ def main(params: Optional[list[str]] = None) -> None:
         npts = n_theta**2 * 2
 
         if npts != args.npts:
-            print("Requested npts ∉ {2x^2, x ∈ Z, x > 1}; "
-                  f"rounding up to {npts}.")
+            print('Requested npts ∉ {2x^2, x ∈ Z, x > 1}; '
+                  f'rounding up to {npts}.')
 
         ax.scatter(*zips(*euphonic.sampling.spherical_polar_grid(
             n_theta * 2, n_theta, jitter=args.jitter)),
@@ -81,34 +81,34 @@ def main(params: Optional[list[str]] = None) -> None:
         npts = n_theta**2 * 2
 
         if npts != args.npts:
-            print("Requested npts ∉ {2x^2, x ∈ Z, x > 1}; "
-                  f"rounding up to {npts}.")
+            print('Requested npts ∉ {2x^2, x ∈ Z, x > 1}; '
+                  f'rounding up to {npts}.')
 
         ax.scatter(*zips(*euphonic.sampling.sphere_from_square_grid(
                 n_theta * 2, n_theta, jitter=args.jitter)),
             marker='x')
 
-    elif args.sampling == "spherical-polar-improved":
+    elif args.sampling == 'spherical-polar-improved':
         ax.scatter(
             *zips(*euphonic.sampling.spherical_polar_improved(
                 args.npts, jitter=args.jitter)),
-            marker="x",
+            marker='x',
         )
 
-    elif args.sampling == "random-sphere":
+    elif args.sampling == 'random-sphere':
         ax.scatter(
             *zips(*euphonic.sampling.random_sphere(args.npts)),
-            marker="x",
+            marker='x',
         )
 
-    elif args.sampling == "recurrence-cube":
+    elif args.sampling == 'recurrence-cube':
         ax.scatter(
             *zips(
                 *euphonic.sampling.recurrence_sequence(args.npts, order=3)),
-            marker="x",
+            marker='x',
         )
 
     else:
-        raise ValueError("Sampling type f{args.sampling} is not implemented.")
+        raise ValueError('Sampling type f{args.sampling} is not implemented.')
 
     matplotlib_save_or_show(save_filename=args.save_plot)

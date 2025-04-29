@@ -320,7 +320,7 @@ class TestSpectrum2DMethods:
              'quartz_bandstructure_sqw.json',
              'quartz_bandstructure_0.1ang_xbroaden_sqw.json',
              pytest.warns(UserWarning,
-                           match="x_data bin widths are not equal")),
+                           match='x_data bin widths are not equal')),
             (({'y_width': 2*ureg('meV')}),
              'quartz_bandstructure_sqw.json',
              'quartz_bandstructure_2meV_ybroaden_sqw.json',
@@ -330,25 +330,25 @@ class TestSpectrum2DMethods:
              'quartz_bandstructure_sqw.json',
              'quartz_bandstructure_2meV_0.1ang_xybroaden_sqw.json',
              pytest.warns(UserWarning,
-                           match="x_data bin widths are not equal")),
+                           match='x_data bin widths are not equal')),
             (({'x_width': 0.1*ureg('1/angstrom'), 'y_width': 2*ureg('meV'),
                 'shape': 'lorentz', 'method': 'convolve'}),
              'quartz_bandstructure_sqw.json',
              'quartz_bandstructure_xybroaden_lorentz_sqw.json',
              pytest.warns(UserWarning,
-                           match="x_data bin widths are not equal")),
+                           match='x_data bin widths are not equal')),
             (({'x_width': 0.2*ureg('1/angstrom'), 'y_width': 1.5*ureg('meV'),
                'shape': 'gauss'}),
              'lzo_57L_bragg_sqw.json',
              'lzo_57L_1.5meV_0.1ang_gauss_sqw.json',
              pytest.warns(UserWarning,
-                          match="Not all x-axis bins are the same width")),
+                          match='Not all x-axis bins are the same width')),
             (({'x_width': 0.2*ureg('1/angstrom'), 'y_width': 1.5*ureg('meV'),
                'shape': 'lorentz'}),
              'lzo_57L_bragg_sqw.json',
              'lzo_57L_1.5meV_0.1ang_lorentz_sqw.json',
              pytest.warns(UserWarning,
-                          match="Not all x-axis bins are the same width")),
+                          match='Not all x-axis bins are the same width')),
             (({'x_width': (lambda x: np.polyval([0.2, -0.5],
                                                 x.to('1/nm').magnitude,
                                                 ) * ureg('1/nm')),
@@ -505,12 +505,12 @@ class TestSpectrum2DMethods:
         # Check we really are using both conventions here
         assert len(spec2d_edges.y_data) == len(spec2d_centred.y_data) + 1
 
-        fixed_sigma = 1. * ureg("meV")
+        fixed_sigma = 1. * ureg('meV')
         npt.assert_allclose(spec2d_edges.broaden(y_width=fixed_sigma).z_data,
                             spec2d_centred.broaden(y_width=fixed_sigma).z_data)
 
         def sigma_func(energy: Quantity) -> Quantity:
-            return np.ones_like(energy) * ureg("meV")
+            return np.ones_like(energy) * ureg('meV')
         npt.assert_allclose(spec2d_edges.broaden(y_width=sigma_func).z_data,
                             spec2d_centred.broaden(y_width=sigma_func).z_data)
 

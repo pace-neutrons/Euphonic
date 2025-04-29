@@ -635,7 +635,7 @@ class ForceConstants:
             rmode_gradients = np.zeros((0, 3*n_atoms, 3), dtype=np.complex128)
 
         euphonic_path = os.path.dirname(__file__)
-        cext_err_msg = (f'Euphonic\'s C extension couldn\'t be imported '
+        cext_err_msg = (f"Euphonic's C extension couldn't be imported "
                         f'from {euphonic_path}, it may not have been '
                         f'installed.')
 

@@ -37,7 +37,7 @@ def main(params: Optional[list[str]] = None) -> None:
             'Eigenvectors are required to use "--reorder" option')
 
     if isinstance(data, ForceConstants):
-        print("Getting band path...")
+        print('Getting band path...')
         q_distance = _get_q_distance(args.length_unit, args.q_spacing)
         (bands, x_tick_labels, split_args) = _bands_from_force_constants(
             data, q_distance=q_distance, frequencies_only=frequencies_only,
@@ -55,14 +55,14 @@ def main(params: Optional[list[str]] = None) -> None:
 
     bands.frequencies_unit = args.energy_unit
 
-    print("Mapping modes to 1D band-structure")
+    print('Mapping modes to 1D band-structure')
     if args.reorder:
         bands.reorder_frequencies()
 
     spectrum = bands.get_dispersion()
 
     plot_label_kwargs = _plot_label_kwargs(
-        args, default_ylabel=f"Energy / {spectrum.y_data.units:~P}")
+        args, default_ylabel=f'Energy / {spectrum.y_data.units:~P}')
 
     if x_tick_labels:
         spectrum.x_tick_labels = x_tick_labels
@@ -98,7 +98,7 @@ def get_parser() -> ArgumentParser:
         action='store_true',
         help=('Try to determine branch crossings from eigenvectors and'
               ' rearrange frequencies accordingly'))
-    groups["plotting"].add_argument(
+    groups['plotting'].add_argument(
         '--save-web-json',
         dest='save_web_json',
         default=None,

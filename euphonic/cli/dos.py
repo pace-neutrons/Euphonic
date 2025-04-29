@@ -68,8 +68,8 @@ def main(params: Optional[list[str]] = None) -> None:
         grid_spec = _grid_spec_from_args(data.crystal, grid=args.grid,
                                          grid_spacing=(args.grid_spacing
                                                        * recip_length_unit))
-        print("Calculating phonon modes "
-              "on {} q-point grid...".format(
+        print('Calculating phonon modes '
+              'on {} q-point grid...'.format(
                   ' x '.join([str(x) for x in grid_spec])))
         if args.adaptive:
             cmkwargs = _calc_modes_kwargs(args)
@@ -99,15 +99,15 @@ def main(params: Optional[list[str]] = None) -> None:
     ebins = _get_energy_bins(
         modes, args.ebins + 1, emin=args.e_min, emax=args.e_max)
 
-    kwargs = {"mode_widths": mode_widths,
-              "adaptive_method": args.adaptive_method,
-              "adaptive_error": args.adaptive_error,
-              "adaptive_error_fit": args.adaptive_fit}
+    kwargs = {'mode_widths': mode_widths,
+              'adaptive_method': args.adaptive_method,
+              'adaptive_error': args.adaptive_error,
+              'adaptive_error_fit': args.adaptive_fit}
 
     if args.weighting == 'dos' and args.pdos is None:
         dos = modes.calculate_dos(ebins, **kwargs)
     else:
-        kwargs["weighting"] = _get_pdos_weighting(args.weighting)
+        kwargs['weighting'] = _get_pdos_weighting(args.weighting)
         pdos = modes.calculate_pdos(ebins, **kwargs)
         dos = _arrange_pdos_groups(pdos, args.pdos)
 
@@ -132,7 +132,7 @@ def main(params: Optional[list[str]] = None) -> None:
                           shape=args.shape)
 
     plot_label_kwargs = _plot_label_kwargs(
-        args, default_xlabel=f"Energy / {dos.x_data.units:~P}")
+        args, default_xlabel=f'Energy / {dos.x_data.units:~P}')
 
     if args.scale is not None:
         dos *= args.scale

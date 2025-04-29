@@ -43,7 +43,7 @@ def _load_euphonic_json(filename: str | os.PathLike,
             return QpointPhononModes.from_json_file(filename)
         return QpointFrequencies.from_json_file(filename)
 
-    raise ValueError("Could not identify Euphonic data in JSON file.")
+    raise ValueError('Could not identify Euphonic data in JSON file.')
 
 
 def _load_phonopy_file(filename: str | os.PathLike,
@@ -78,8 +78,8 @@ def _load_phonopy_file(filename: str | os.PathLike,
                 phonopy_kwargs['summary_name'] = 'phonopy.yaml'
                 phonopy_kwargs['fc_name'] = path.name
             else:
-                raise ValueError("Phonopy force_constants.hdf5 file "
-                                 "must be accompanied by phonopy.yaml")
+                raise ValueError('Phonopy force_constants.hdf5 file '
+                                 'must be accompanied by phonopy.yaml')
         elif path.suffix == '.yaml':
             phonopy_kwargs['summary_name'] = path.name
             # Assume this is a (renamed?) phonopy.yaml file
@@ -90,7 +90,7 @@ def _load_phonopy_file(filename: str | os.PathLike,
         loaded_data = ForceConstants.from_phonopy(**phonopy_kwargs)
 
     if loaded_data is None:
-        raise ValueError("Could not identify data in Phonopy file.")
+        raise ValueError('Could not identify data in Phonopy file.')
 
     return loaded_data
 
@@ -218,8 +218,8 @@ def _get_energy_bins(
     if emax is None:
         emax = np.max(modes.frequencies.magnitude) * headroom
     if emin >= emax:
-        raise ValueError("Maximum energy should be greater than minimum. "
-                         "Check --e-min and --e-max arguments.")
+        raise ValueError('Maximum energy should be greater than minimum. '
+                         'Check --e-min and --e-max arguments.')
     return np.linspace(emin, emax, n_ebins) * modes.frequencies.units
 
 
@@ -233,8 +233,8 @@ def _get_tick_labels(bandpath: dict) -> list[tuple[int, str]]:
         [(0, 'L'), (3, 'X'), (5, '$\\Gamma$')]
     """
 
-    label_indices = np.where(bandpath["explicit_kpoints_labels"])[0]
-    labels = [bandpath["explicit_kpoints_labels"][i] for i in label_indices]
+    label_indices = np.where(bandpath['explicit_kpoints_labels'])[0]
+    labels = [bandpath['explicit_kpoints_labels'][i] for i in label_indices]
 
     for i, label in enumerate(labels):
         if label == 'GAMMA':
@@ -258,7 +258,7 @@ def _get_break_points(bandpath: dict) -> list[int]:
     """
     # Find break points between continuous spectra: wherever there are two
     # adjacent labels
-    labels = np.array(bandpath["explicit_kpoints_labels"])
+    labels = np.array(bandpath['explicit_kpoints_labels'])
 
     special_point_bools = np.fromiter(
         map(bool, labels), dtype=bool)
@@ -314,7 +314,7 @@ def _bands_from_force_constants(data: ForceConstants,
     with warnings.catch_warnings():
         # SeeK-path is raising spglib 2.5.0 deprecation warnings, we
         # don't care to see those for now
-        warnings.simplefilter("ignore", category=DeprecationWarning)
+        warnings.simplefilter('ignore', category=DeprecationWarning)
         bandpath = seekpath.get_explicit_k_path(
             structure,
             reference_distance=q_distance.to('1 / angstrom').magnitude)
@@ -326,10 +326,10 @@ def _bands_from_force_constants(data: ForceConstants,
     split_args = {'indices': _get_break_points(bandpath)}
 
     print(
-        "Computing phonon modes: {n_modes} modes across {n_qpts} q-points"
+        'Computing phonon modes: {n_modes} modes across {n_qpts} q-points'
         .format(n_modes=(data.crystal.n_atoms * 3),
-                n_qpts=len(bandpath["explicit_kpoints_rel"])))
-    qpts = bandpath["explicit_kpoints_rel"]
+                n_qpts=len(bandpath['explicit_kpoints_rel'])))
+    qpts = bandpath['explicit_kpoints_rel']
 
     if frequencies_only:
         modes = data.calculate_qpoint_frequencies(qpts,
@@ -364,7 +364,7 @@ def _get_debye_waller(temperature: Quantity,
     """
     mp_grid_spec = _grid_spec_from_args(fc.crystal, grid=grid,
                                         grid_spacing=grid_spacing)
-    print("Calculating Debye-Waller factor on {} q-point grid"
+    print('Calculating Debye-Waller factor on {} q-point grid'
           .format(' x '.join(map(str, mp_grid_spec))))
     dw_phonons = fc.calculate_qpoint_phonon_modes(
         euphonic.util.mp_grid(mp_grid_spec),
@@ -440,7 +440,7 @@ def _brille_calc_modes_kwargs(args: Namespace) -> dict[str, Any]:
         # Nothing specified, allow defaults
         return {}
 
-    return {"useparallel": args.n_threads > 1, "threads": args.n_threads}
+    return {'useparallel': args.n_threads > 1, 'threads': args.n_threads}
 
 
 def _get_cli_parser(features: Collection[str] = {},
@@ -659,7 +659,7 @@ def _get_cli_parser(features: Collection[str] = {},
         section.add_argument('--font', type=str, default=None,
                              help=('Select text font. (This has to be a name '
                                    'known to Matplotlib. font-family will be '
-                                   'set to sans-serif; it doesn\'t matter if)'
+                                   "set to sans-serif; it doesn't matter if)"
                                    'the font is actually sans-serif.'))
         section.add_argument('--font-size', '--fontsize', type=float,
                              default=None, dest='fontsize',

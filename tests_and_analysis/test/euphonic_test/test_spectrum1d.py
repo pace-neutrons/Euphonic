@@ -407,7 +407,7 @@ class TestSpectrum1DMethods:
         ((1*ureg('meV'), {'method': 'convolve'}),
          'toy_quartz_cropped_uneven_dos.json',
          'toy_quartz_cropped_uneven_broaden_dos.json',
-         pytest.warns(UserWarning, match="x_data bin widths are not equal"))])
+         pytest.warns(UserWarning, match='x_data bin widths are not equal'))])
     def test_broaden(
             self, args, spectrum1d_file, broadened_spectrum1d_file, context):
         spec1d = get_spectrum1d(spectrum1d_file)
@@ -432,7 +432,7 @@ class TestSpectrum1DMethods:
             spec1d.broaden(1*ureg('meV'))
 
             with pytest.raises(ValueError,
-                               match="Broadening with convolution requires"):
+                               match='Broadening with convolution requires'):
                 spec1d.broaden(
                     lambda energy: np.ones_like(energy) * ureg('meV'))
 
@@ -476,12 +476,12 @@ class TestSpectrum1DMethods:
         # Check we really are using both conventions here
         assert len(spec1d_edges.x_data) != len(spec1d_centred.x_data)
 
-        fixed_sigma = 1. * ureg("meV")
+        fixed_sigma = 1. * ureg('meV')
         npt.assert_allclose(spec1d_edges.broaden(x_width=fixed_sigma).y_data,
                             spec1d_centred.broaden(x_width=fixed_sigma).y_data)
 
         def sigma_func(energy: Quantity) -> Quantity:
-            return np.ones_like(energy) * ureg("meV")
+            return np.ones_like(energy) * ureg('meV')
         npt.assert_allclose(spec1d_edges.broaden(x_width=sigma_func).y_data,
                             spec1d_centred.broaden(x_width=sigma_func).y_data)
 

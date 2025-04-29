@@ -9,7 +9,7 @@ import euphonic.sampling
 
 @pytest.fixture
 def fix_np_rng(monkeypatch):
-        monkeypatch.setattr(np.random, "default_rng",
+        monkeypatch.setattr(np.random, 'default_rng',
                             partial(np.random.RandomState, seed=0))
 
 def check_sampling(func, params, ref_results):

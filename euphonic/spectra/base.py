@@ -62,7 +62,7 @@ class Spectrum(ABC):
     def x_data(self) -> Quantity:
         """x-axis data with units"""
         return ureg.Quantity(self._x_data, self._internal_x_data_unit,
-                             ).to(self.x_data_unit, "reciprocal_spectroscopy")
+                             ).to(self.x_data_unit, 'reciprocal_spectroscopy')
 
     @x_data.setter
     def x_data(self, value: Quantity) -> None:
@@ -73,7 +73,7 @@ class Spectrum(ABC):
     def y_data(self) -> Quantity:
         """y-axis data with units"""
         return ureg.Quantity(self._y_data, self._internal_y_data_unit).to(
-            self.y_data_unit, "reciprocal_spectroscopy")
+            self.y_data_unit, 'reciprocal_spectroscopy')
 
     @y_data.setter
     def y_data(self, value: Quantity) -> None:
@@ -227,7 +227,7 @@ class Spectrum(ABC):
             return self._split_by_tol(btol=btol)
 
         if btol is not None:
-            raise ValueError("Cannot set both indices and btol")
+            raise ValueError('Cannot set both indices and btol')
         return self._split_by_indices(indices)
 
     @classmethod
@@ -285,7 +285,7 @@ class Spectrum(ABC):
         elif shape == 'lorentz':
             if width_convention != 'fwhm':
                 raise ValueError(
-                    "Lorentzian function width must be specified as FWHM")
+                    'Lorentzian function width must be specified as FWHM')
             data_broadened = data
             for ax, (width, bin_data) in enumerate(zips(widths, bin_centres)):
                 if width is not None:
@@ -462,7 +462,7 @@ class Spectrum(ABC):
         # Need to cast to magnitude to use isclose() with atol before Pint 0.21
         if not np.all(np.isclose(bin_widths.magnitude, bin_widths.magnitude[0],
                                  rtol=rtol, atol=atol)):
-            raise AssertionError("Not all x-axis bins are the same width. "
+            raise AssertionError('Not all x-axis bins are the same width. '
                                  + message)
 
 
@@ -647,9 +647,9 @@ class Spectrum1D(Spectrum):
             metadata['species'] = element
         metadata['label'] = element
 
-        return cls(ureg.Quantity(data["dos_bins"],
-                                 units=data["dos_bins_unit"]),
-                   ureg.Quantity(data["dos"][element], units=data["dos_unit"]),
+        return cls(ureg.Quantity(data['dos_bins'],
+                                 units=data['dos_bins_unit']),
+                   ureg.Quantity(data['dos'][element], units=data['dos_unit']),
                    metadata=metadata)
 
     @overload
@@ -733,8 +733,8 @@ class Spectrum1D(Spectrum):
         elif isinstance(x_width, Callable):
             self.assert_regular_bins(
                 message=(
-                    "Broadening with convolution requires a "
-                    "regular sampling grid."
+                    'Broadening with convolution requires a '
+                    'regular sampling grid.'
                 ),
                 restrict_range=False,
             )
@@ -750,7 +750,7 @@ class Spectrum1D(Spectrum):
                 fit=width_fit,
             )
         else:
-            raise TypeError("x_width must be a Quantity or Callable")
+            raise TypeError('x_width must be a Quantity or Callable')
 
         new_spectrum = self.copy()
         new_spectrum.y_data = y_broadened
@@ -832,7 +832,7 @@ class Spectrum2D(Spectrum):
         """z-axis data with units"""
         return ureg.Quantity(
             self._z_data, self._internal_z_data_unit,
-        ).to(self.z_data_unit, "reciprocal_spectroscopy")
+        ).to(self.z_data_unit, 'reciprocal_spectroscopy')
 
     @z_data.setter
     def z_data(self, value: Quantity) -> None:
@@ -1157,7 +1157,7 @@ class Spectrum2D(Spectrum):
         if not np.all(np.isclose(bin_widths, bin_widths[0],
                                  rtol=rtol, atol=atol)):
             raise AssertionError(
-                f"Not all {bin_ax}-axis bins are the same width. " + message)
+                f'Not all {bin_ax}-axis bins are the same width. ' + message)
 
     def to_dict(self) -> dict[str, Any]:
         """
@@ -1240,22 +1240,22 @@ def apply_kinematic_constraints(spectrum: Spectrum2D,
         (1 * spectrum.x_data.units).to('1/angstrom')
     except DimensionalityError as error:
         raise ValueError(
-            "x_data needs to have wavevector units (i.e. 1/length)",
+            'x_data needs to have wavevector units (i.e. 1/length)',
             ) from error
     try:
         (1 * spectrum.y_data.units).to('eV', 'spectroscopy')
     except DimensionalityError as error:
         raise ValueError(
-            "y_data needs to have energy (or wavenumber) units",
+            'y_data needs to have energy (or wavenumber) units',
             ) from error
 
     momentum2_to_energy = 0.5 * (ureg('hbar^2 / neutron_mass')
                                  .to('meV angstrom^2'))
 
     if (e_i is None) == (e_f is None):
-        raise ValueError("Exactly one of e_i and e_f should be set. "
-                         "(The other value will be derived from energy "
-                         "transfer).")
+        raise ValueError('Exactly one of e_i and e_f should be set. '
+                         '(The other value will be derived from energy '
+                         'transfer).')
 
     if e_i is None:
         # Indirect geometry: final energy is fixed, incident energy unlimited

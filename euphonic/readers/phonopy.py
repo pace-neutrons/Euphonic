@@ -18,7 +18,7 @@ class ImportPhonopyReaderError(ModuleNotFoundError):
         self.message = (
             '\n\nCannot import yaml, h5py to read Phonopy files, maybe '
             'they are not installed. To install the optional '
-            'dependencies for Euphonic\'s Phonopy reader, try:\n\n'
+            "dependencies for Euphonic's Phonopy reader, try:\n\n"
             'pip install euphonic[phonopy-reader]\n')
 
     def __str__(self):
@@ -251,7 +251,7 @@ def read_phonon_data(
                           f' is not recognised')
 
     if read_eigenvectors and not 'eigenvectors' in phonon_dict:
-        raise RuntimeError(f'Eigenvectors couldn\'t be found in '
+        raise RuntimeError(f"Eigenvectors couldn't be found in "
                             f'{phonon_pathname}, ensure --eigvecs was '
                             f'set when running Phonopy')
 
@@ -361,7 +361,7 @@ def _extract_force_constants(fc_pathname: str, n_atoms: int, n_cells: int,
     _check_fc_shape(fc_dims, n_atoms, n_cells, fc_pathname, summary_name)
 
     with warnings.catch_warnings():
-        warnings.simplefilter("ignore")
+        warnings.simplefilter('ignore')
         fc = np.genfromtxt(fc_pathname, skip_header=1,
                            max_rows=4*(n_atoms*n_cells)**2, usecols=(0,1,2),
                            invalid_raise=False)

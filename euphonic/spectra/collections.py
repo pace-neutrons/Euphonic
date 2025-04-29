@@ -71,18 +71,18 @@ class SpectrumCollectionMixin(ABC):
     # purposes of splitting, indexing, etc.
     # Python doesn't support abstract class attributes so we define a default
     # value, ensuring _something_ was set.
-    _bin_axes = ("x",)
-    _spectrum_axis = "y"
+    _bin_axes = ('x',)
+    _spectrum_axis = 'y'
     _item_type = Spectrum1D
 
     # Define some private methods which wrap this information into useful forms
     @classmethod
     def _spectrum_data_name(cls) -> str:
-        return f"{cls._spectrum_axis}_data"
+        return f'{cls._spectrum_axis}_data'
 
     @classmethod
     def _raw_spectrum_data_name(cls) -> str:
-        return f"_{cls._spectrum_axis}_data"
+        return f'_{cls._spectrum_axis}_data'
 
     def _get_spectrum_data(self) -> Quantity:
         return getattr(self, self._spectrum_data_name())
@@ -97,26 +97,26 @@ class SpectrumCollectionMixin(ABC):
         setattr(self, self._raw_spectrum_data_name(), data)
 
     def _get_spectrum_data_unit(self) -> str:
-        return getattr(self, f"{self._spectrum_data_name()}_unit")
+        return getattr(self, f'{self._spectrum_data_name()}_unit')
 
     def _get_internal_spectrum_data_unit(self) -> str:
-        return getattr(self, f"_internal_{self._spectrum_data_name()}_unit")
+        return getattr(self, f'_internal_{self._spectrum_data_name()}_unit')
 
     @property
     def _bin_axis_names(self) -> list[str]:
-        return [f"{axis}_data" for axis in self._bin_axes]
+        return [f'{axis}_data' for axis in self._bin_axes]
 
     @classmethod
     def _get_item_data(cls, item: Spectrum) -> Quantity:
-        return getattr(item, f"{cls._spectrum_axis}_data")
+        return getattr(item, f'{cls._spectrum_axis}_data')
 
     @classmethod
     def _get_item_raw_data(cls, item: Spectrum) -> np.ndarray:
-        return getattr(item, f"_{cls._spectrum_axis}_data")
+        return getattr(item, f'_{cls._spectrum_axis}_data')
 
     @classmethod
     def _get_item_data_unit(cls, item: Spectrum) -> str:
-        return getattr(item, f"{cls._spectrum_axis}_data_unit")
+        return getattr(item, f'{cls._spectrum_axis}_data_unit')
 
     def sum(self) -> Spectrum:
         """
@@ -204,16 +204,16 @@ class SpectrumCollectionMixin(ABC):
         """
 
         for axis in self._bin_axes:
-            for prop in ("_{}_data", "_internal_{}_data_unit", "{}_data_unit"):
+            for prop in ('_{}_data', '_internal_{}_data_unit', '{}_data_unit'):
                 name = prop.format(axis)
                 setattr(spectrum, name, copy.copy(getattr(self, name)))
 
         setattr(spectrum, self._raw_spectrum_data_name(),
                 self._get_raw_spectrum_data()[item, :].copy())
 
-        setattr(spectrum, f"_internal_{self._spectrum_data_name()}_unit",
+        setattr(spectrum, f'_internal_{self._spectrum_data_name()}_unit',
                 self._get_internal_spectrum_data_unit())
-        setattr(spectrum, f"{self._spectrum_data_name()}_unit",
+        setattr(spectrum, f'{self._spectrum_data_name()}_unit',
                 self._get_spectrum_data_unit())
 
     def _validate_item(self, item: Integral | slice | Sequence[Integral] | np.ndarray,
@@ -284,9 +284,9 @@ class SpectrumCollectionMixin(ABC):
     def iter_metadata(self) -> Generator[OneLineData, None, None]:
         """Iterate over metadata dicts of individual spectra from collection"""
         common_metadata = {key: value for key, value in self.metadata.items()
-                           if key != "line_data"}
+                           if key != 'line_data'}
 
-        line_data = self.metadata.get("line_data")
+        line_data = self.metadata.get('line_data')
         if line_data is None:
             line_data = repeat({}, len(self._get_raw_spectrum_data()))
 
@@ -398,9 +398,9 @@ class SpectrumCollectionMixin(ABC):
         For a metadata dictionary, combines all common key/value
         pairs in 'line_data' and puts them in a top-level dictionary.
         """
-        line_data = self.metadata.get("line_data", [{}] * len(self))
+        line_data = self.metadata.get('line_data', [{}] * len(self))
         combined_line_data = self._combine_metadata(line_data)
-        combined_line_data.pop("line_data", None)
+        combined_line_data.pop('line_data', None)
         return combined_line_data
 
     def _check_metadata(self) -> None:
@@ -481,7 +481,7 @@ class SpectrumCollectionMixin(ABC):
     @classmethod
     def from_dict(cls: Self, d: dict) -> Self:
         """Initialise a Spectrum Collection object from dict"""
-        data_keys = [f"{dim}_data" for dim in cls._bin_axes]
+        data_keys = [f'{dim}_data' for dim in cls._bin_axes]
         data_keys.append(cls._spectrum_data_name())
 
         d = _process_dict(d,
@@ -497,7 +497,7 @@ class SpectrumCollectionMixin(ABC):
     def _item_type_check(cls, spectrum) -> None:
         if not isinstance(spectrum, cls._item_type):
             raise TypeError(
-                f"Item is not of type {cls._item_type.__name__}.")
+                f'Item is not of type {cls._item_type.__name__}.')
 
 
 class Spectrum1DCollection(SpectrumCollectionMixin,
@@ -537,7 +537,7 @@ class Spectrum1DCollection(SpectrumCollectionMixin,
     T = TypeVar('T', bound='Spectrum1DCollection')
 
     # Private attributes used by SpectrumCollectionMixin
-    _spectrum_axis = "y"
+    _spectrum_axis = 'y'
     _item_type = Spectrum1D
 
     def __init__(
@@ -605,11 +605,11 @@ class Spectrum1DCollection(SpectrumCollectionMixin,
                                  ) -> None:
         if (spectrum.y_data.units != y_data_units
                 or spectrum.x_data.units != x_data.units):
-            raise ValueError("Spectrum units in sequence are inconsistent")
+            raise ValueError('Spectrum units in sequence are inconsistent')
         if not np.allclose(spectrum.x_data, x_data):
-            raise ValueError("x_data in sequence are inconsistent")
+            raise ValueError('x_data in sequence are inconsistent')
         if spectrum.x_tick_labels != x_tick_labels:
-            raise ValueError("x_tick_labels in sequence are inconsistent")
+            raise ValueError('x_tick_labels in sequence are inconsistent')
 
     @classmethod
     def from_spectra(
@@ -622,7 +622,7 @@ class Spectrum1DCollection(SpectrumCollectionMixin,
 
         """
         if len(spectra) < 1:
-            raise IndexError("At least one spectrum is needed for collection")
+            raise IndexError('At least one spectrum is needed for collection')
 
         cls._item_type_check(spectra[0])
         x_data = spectra[0].x_data
@@ -801,7 +801,7 @@ class Spectrum1DCollection(SpectrumCollectionMixin,
                     width_fit=width_fit)
                 for spectrum in self])
 
-        raise TypeError("x_width must be a Quantity or Callable")
+        raise TypeError('x_width must be a Quantity or Callable')
 
     @classmethod
     def from_dict(cls: Self, d: dict) -> Self:
@@ -870,8 +870,8 @@ class Spectrum2DCollection(SpectrumCollectionMixin,
     """
 
     # Private attributes used by SpectrumCollectionMixin
-    _bin_axes = ("x", "y")
-    _spectrum_axis = "z"
+    _bin_axes = ('x', 'y')
+    _spectrum_axis = 'z'
     _item_type = Spectrum2D
 
     def __init__(
@@ -917,7 +917,7 @@ class Spectrum2DCollection(SpectrumCollectionMixin,
         """intensity data"""
         return ureg.Quantity(
             self._z_data, self._internal_z_data_unit,
-        ).to(self.z_data_unit, "reciprocal_spectroscopy")
+        ).to(self.z_data_unit, 'reciprocal_spectroscopy')
 
     @z_data.setter
     def z_data(self, value: Quantity) -> None:
@@ -931,9 +931,9 @@ class Spectrum2DCollection(SpectrumCollectionMixin,
     ) -> None:
         """Check spectrum data units and x_tick_labels are consistent"""
         if spectrum_0_data_units != spectrum_i_data_units:
-            raise ValueError("Spectrum units in sequence are inconsistent")
+            raise ValueError('Spectrum units in sequence are inconsistent')
         if x_tick_labels != spectrum_i_x_tick_labels:
-            raise ValueError("x_tick_labels in sequence are inconsistent")
+            raise ValueError('x_tick_labels in sequence are inconsistent')
 
     @staticmethod
     def _from_spectra_bins_check(ref_bins_data: dict[str, Quantity],
@@ -948,9 +948,9 @@ class Spectrum2DCollection(SpectrumCollectionMixin,
         for key, ref_bins in ref_bins_data.items():
             item_bins = getattr(spectrum, key)
             if not np.allclose(item_bins.magnitude, ref_bins.magnitude):
-                raise ValueError("Bins in sequence are inconsistent")
+                raise ValueError('Bins in sequence are inconsistent')
             if item_bins.units != ref_bins.units:
-                raise ValueError("Bin units in sequence are inconsistent")
+                raise ValueError('Bin units in sequence are inconsistent')
 
     @classmethod
     def from_spectra(
@@ -964,11 +964,11 @@ class Spectrum2DCollection(SpectrumCollectionMixin,
         """
 
         if len(spectra) < 1:
-            raise IndexError("At least one spectrum is needed for collection")
+            raise IndexError('At least one spectrum is needed for collection')
 
         cls._item_type_check(spectra[0])
         bins_data = {
-            f"{ax}_data": getattr(spectra[0], f"{ax}_data")
+            f'{ax}_data': getattr(spectra[0], f'{ax}_data')
             for ax in cls._bin_axes
         }
         x_tick_labels = spectra[0].x_tick_labels
@@ -997,13 +997,13 @@ class Spectrum2DCollection(SpectrumCollectionMixin,
         spectrum_data = ureg.Quantity(spectrum_data_magnitude,
                                       spectrum_data_units)
         return cls(**bins_data,
-                   **{f"{cls._spectrum_axis}_data": spectrum_data},
+                   **{f'{cls._spectrum_axis}_data': spectrum_data},
                    x_tick_labels=x_tick_labels,
                    metadata=metadata)
 
     def get_bin_edges(
             self,
-            bin_ax: Literal["x", "y"] = "x",
+            bin_ax: Literal['x', 'y'] = 'x',
             *,
             restrict_range: bool = True,
     ) -> Quantity:
@@ -1026,14 +1026,14 @@ class Spectrum2DCollection(SpectrumCollectionMixin,
             be desirable for plotting.  Otherwise, the outer bin edges will
             extend from the initial data range.
         """
-        enum = {"series": 0, "x": 1, "y": 2}
-        bin_data = getattr(self, f"{bin_ax}_data")
+        enum = {'series': 0, 'x': 1, 'y': 2}
+        bin_data = getattr(self, f'{bin_ax}_data')
         data_ax_len = self.z_data.shape[enum[bin_ax]]
         if self._is_bin_edge(data_ax_len, bin_data.shape[0]):
             return bin_data
         return self._bin_centres_to_edges(bin_data, restrict_range=restrict_range)
 
-    def get_bin_centres(self, bin_ax: Literal["x", "y"] = "x") -> Quantity:
+    def get_bin_centres(self, bin_ax: Literal['x', 'y'] = 'x') -> Quantity:
         """
         Get bin centres for the axis specified by bin_ax. If the size of
         bin_ax is the same size as z_data along that axis, bin_ax is
@@ -1048,8 +1048,8 @@ class Spectrum2DCollection(SpectrumCollectionMixin,
         bin_ax
             The axis to get the bin centres for, 'x' or 'y'
         """
-        enum = {"series": 0, "x": 1, "y": 2}
-        bin_data = getattr(self, f"{bin_ax}_data")
+        enum = {'series': 0, 'x': 1, 'y': 2}
+        bin_data = getattr(self, f'{bin_ax}_data')
         data_ax_len = self.z_data.shape[enum[bin_ax]]
         if self._is_bin_edge(data_ax_len, bin_data.shape[0]):
             return self._bin_edges_to_centres(bin_data)

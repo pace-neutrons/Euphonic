@@ -60,9 +60,9 @@ def get_parser() -> ArgumentParser:
         'sizes (i.e. radial distances).')
 
     sections['q'].add_argument('--q-min', type=float, default=0., dest='q_min',
-                               help="Minimum |q| in 1/LENGTH_UNIT")
+                               help='Minimum |q| in 1/LENGTH_UNIT')
     sections['q'].add_argument('--q-max', type=float, default=3., dest='q_max',
-                               help="Maximum |q| in 1/LENGTH_UNIT")
+                               help='Maximum |q| in 1/LENGTH_UNIT')
     sections['plotting'].add_argument('--no-widgets', action='store_true',
                                       dest='disable_widgets', default=False,
                                       help=("Don't use Matplotlib widgets to "
@@ -74,16 +74,16 @@ def get_parser() -> ArgumentParser:
 
     e_lims.add_argument('--e-incident', '--e-i', dest='e_i',
                         type=float, default=None,
-                        help="Incident energy for direct-geometry constraints")
+                        help='Incident energy for direct-geometry constraints')
     e_lims.add_argument('--e-final', '--e-f', dest='e_f',
                         type=float, default=None,
-                        help="Final energy for indirect-geometry constraints")
+                        help='Final energy for indirect-geometry constraints')
     kinematic.add_argument(
         '--angle-range', nargs=2, type=float, dest='angle_range',
         default=[0., 180.],
-        help=("Range of scattering angles (2θ) in degrees. These lower/upper "
-              "bounds are used with incident/final energy to determine "
-              "accessible (|q|, ω) region."))
+        help=('Range of scattering angles (2θ) in degrees. These lower/upper '
+              'bounds are used with incident/final energy to determine '
+              'accessible (|q|, ω) region.'))
     return parser
 
 
@@ -149,7 +149,7 @@ def main(params: Optional[list[str]] = None) -> None:
             interpolation_kwargs=calc_modes_kwargs)
         calc_modes_kwargs = _brille_calc_modes_kwargs(args)
 
-    print("Setting up dimensions...")
+    print('Setting up dimensions...')
     q_min = _get_q_distance(args.length_unit, args.q_min)
     q_max = _get_q_distance(args.length_unit, args.q_max)
     recip_length_unit = q_min.units
@@ -187,7 +187,7 @@ def main(params: Optional[list[str]] = None) -> None:
             temperature = None
             dw = None
 
-    print(f"Sampling {n_q_bins} |q| shells between {q_min:~P} and {q_max:~P}")
+    print(f'Sampling {n_q_bins} |q| shells between {q_min:~P} and {q_max:~P}')
 
     z_data = np.empty((n_q_bins, len(energy_bins) - 1))
 
@@ -227,7 +227,7 @@ def main(params: Optional[list[str]] = None) -> None:
 
         z_data[q_index, :] = spectrum_1d.y_data.magnitude
 
-    print(f"Final npts: {npts}")
+    print(f'Final npts: {npts}')
 
     spectrum = euphonic.Spectrum2D(q_bin_edges, energy_bins,
                                    z_data * spectrum_1d.y_data.units)
@@ -241,7 +241,7 @@ def main(params: Optional[list[str]] = None) -> None:
                                   energy_unit=args.energy_unit))
 
     if not (args.e_i is None and args.e_f is None):
-        print("Applying kinematic constraints")
+        print('Applying kinematic constraints')
         energy_unit = args.energy_unit
         e_i = args.e_i * ureg(energy_unit) if (args.e_i is not None) else None
         e_f = args.e_f * ureg(energy_unit) if (args.e_f is not None) else None
@@ -251,11 +251,11 @@ def main(params: Optional[list[str]] = None) -> None:
     if args.scale is not None:
         spectrum *= args.scale
 
-    print(f"Plotting figure: max intensity "
-          f"{np.nanmax(spectrum.z_data.magnitude) * spectrum.z_data.units:~P}")
+    print(f'Plotting figure: max intensity '
+          f'{np.nanmax(spectrum.z_data.magnitude) * spectrum.z_data.units:~P}')
     plot_label_kwargs = _plot_label_kwargs(
-        args, default_xlabel=f"|q| / {q_min.units:~P}",
-        default_ylabel=f"Energy / {spectrum.y_data.units:~P}")
+        args, default_xlabel=f'|q| / {q_min.units:~P}',
+        default_ylabel=f'Energy / {spectrum.y_data.units:~P}')
 
     if args.save_json:
         spectrum.to_json_file(args.save_json)

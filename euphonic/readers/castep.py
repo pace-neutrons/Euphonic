@@ -98,10 +98,10 @@ def read_phonon_dos_data(
     data_dict['frequencies_unit'] = frequencies_unit
     # Pint conversion 'angstrom * (1/cm)' to 'angstrom * (meV)' doesn't
     # work so convert to meV first then go to specified units
-    mode_grads = (mode_grads * ureg("angstrom")
+    mode_grads = (mode_grads * ureg('angstrom')
                   ).to(cell_vectors_unit).magnitude
-    data_dict["mode_gradients"] = (
-        ((mode_grads * ureg("1/cm")).to("meV") * ureg("angstrom"))
+    data_dict['mode_gradients'] = (
+        ((mode_grads * ureg('1/cm')).to('meV') * ureg('angstrom'))
         .to(mode_gradients_unit)
         .magnitude
     )
@@ -111,9 +111,9 @@ def read_phonon_dos_data(
     data_dict['dos_bins_unit'] = frequencies_unit
 
     data_dict['dos'] = {}
-    data_dict['dos_unit'] = f"1/{frequencies_unit}"
+    data_dict['dos_unit'] = f'1/{frequencies_unit}'
     dos_conv = ureg('1 / (1/cm)',
-                    ).to(data_dict['dos_unit'], "reciprocal_spectroscopy",
+                    ).to(data_dict['dos_unit'], 'reciprocal_spectroscopy',
                          ).magnitude
 
     dos_dict = data_dict['dos']
@@ -249,8 +249,8 @@ def read_phonon_data(
                 weights[zero_indices] = 0
             else:
                 raise ValueError(
-                    "Found multiple non-split blocks for q-point {qpt_id},"
-                    " cannot determine which to use.")
+                    'Found multiple non-split blocks for q-point {qpt_id},'
+                    ' cannot determine which to use.')
 
         elif average_repeat_points:
             np_indices = np.asarray(list(indices), dtype=int)
@@ -464,7 +464,7 @@ def read_interpolation_data(
         while (header := _read_entry(f).strip()) != b'END':
             if header == b'BEGIN_PARAMETERS_DUMP':
                 castep_version: Version = Version(_read_entry(f).decode().strip())
-                if castep_version < Version("17.1"):
+                if castep_version < Version('17.1'):
                     raise ValueError('Old castep file detected: '
                         'Euphonic only supports post-Castep 17.1 files. '
                         'Please rerun the calculation with a newer version '
@@ -500,7 +500,7 @@ def read_interpolation_data(
                 born = np.reshape(
                     _read_entry(f, float_type), (n_atoms, 3, 3))
 
-                if castep_version > Version("25.1"):
+                if castep_version > Version('25.1'):
                     # Extra field marks if born charges were read from BORN
                     _ = _read_entry(f)
 
@@ -509,7 +509,7 @@ def read_interpolation_data(
                 dielectric = np.transpose(np.reshape(
                     entry, (3, 3)))
 
-                if castep_version > Version("25.1"):
+                if castep_version > Version('25.1'):
                     # Extra field marks if dielectric tensor was read from BORN
                     _ = _read_entry(f)
 

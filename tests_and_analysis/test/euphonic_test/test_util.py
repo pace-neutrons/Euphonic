@@ -74,7 +74,7 @@ class TestGetQptLabels:
           [(0, '0 0 0'), (5, '0 0 1/2'), (8, '3/8 3/4 1/2')],
           pytest.warns(
               UserWarning,
-              match="Could not determine cell symmetry, using generic q-point labels")),
+              match='Could not determine cell symmetry, using generic q-point labels')),
          (np.array([[0.0, 0., 0.], [0.25, 0., 0.], [0.25, 0., 0.],
                     [0.3, 0., 0.], [0.5, 0., 0.], [0.5, 0.1, 0.],
                     [0.5, 0.25, 0.]]),

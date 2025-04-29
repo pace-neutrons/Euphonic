@@ -46,8 +46,8 @@ class PhononWebsiteData(TypedDict):
 
 def write_phonon_website_json(
     modes: QpointPhononModes,
-    output_file: str | Path = "phonons.json",
-    name: str = "Euphonic export",
+    output_file: str | Path = 'phonons.json',
+    name: str = 'Euphonic export',
     x_tick_labels: XTickLabels | None = None,
 ) -> None:
 
@@ -99,18 +99,18 @@ def _crystal_website_data(crystal: Crystal) -> dict[str, Any]:
     def symbols_to_formula(symbols: list[str]) -> str:
         symbol_counts = Counter(symbols)
 
-        return "".join(f"{symbol}{symbol_counts[symbol]}"
+        return ''.join(f'{symbol}{symbol_counts[symbol]}'
                        for symbol in sorted(symbol_counts))
 
     return {
-        "natoms": len(crystal.atom_type),
-        "lattice": crystal.cell_vectors.to("angstrom").magnitude.tolist(),
-        "atom_types": crystal.atom_type.tolist(),
-        "atom_numbers": list(map(get_z, crystal.atom_type)),
-        "formula": symbols_to_formula(crystal.atom_type),
-        "atom_pos_red": crystal.atom_r.tolist(),
-        "atom_pos_car": (crystal.atom_r @ crystal.cell_vectors
-                      ).to("angstrom").magnitude.tolist(),
+        'natoms': len(crystal.atom_type),
+        'lattice': crystal.cell_vectors.to('angstrom').magnitude.tolist(),
+        'atom_types': crystal.atom_type.tolist(),
+        'atom_numbers': list(map(get_z, crystal.atom_type)),
+        'formula': symbols_to_formula(crystal.atom_type),
+        'atom_pos_red': crystal.atom_r.tolist(),
+        'atom_pos_car': (crystal.atom_r @ crystal.cell_vectors
+                      ).to('angstrom').magnitude.tolist(),
     }
 
 
@@ -172,7 +172,7 @@ def _combine_neighbouring_labels(x_tick_labels: XTickLabels) -> XTickLabels:
         if index + 1 == next_index:  # Labels are neighbours
 
             if labels[index] != labels[next_index]:  # Combine differing labels
-                labels[next_index] = f"{labels[index]}|{labels[next_index]}"
+                labels[next_index] = f'{labels[index]}|{labels[next_index]}'
 
             del labels[index]  # Drop redundant label
 
@@ -217,7 +217,7 @@ def _modes_to_phonon_website_dict(
         highsym_qpts=x_tick_labels,
         distances=abscissa.magnitude.tolist(),
         qpoints=modes.qpts.tolist(),
-        eigenvalues=modes.frequencies.to("1/cm").magnitude.tolist(),
+        eigenvalues=modes.frequencies.to('1/cm').magnitude.tolist(),
         vectors=vectors.tolist(),
         repetitions=repetitions,
         line_breaks=line_breaks,
