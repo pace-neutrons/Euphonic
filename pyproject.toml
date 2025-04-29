@@ -102,7 +102,7 @@ select = [
        "PIE",     # flake8-pie
        # "PYI",     # flake8-pyi : requires typing_extensions or python3.11
        # "PT",      # flake8-pytest-style : good stuff, worth its own PR
-       # "Q",       # flake8-quotes : 50-60 fixes if we prefer single. Fine, but do it in a new PR.
+       "Q",       # flake8-quotes
        "RSE",     # flake8-raise
        "RET",     # flake8-return
        # "SLF",     # flake8-self : would be good to take a closer look at some of this private attribute access

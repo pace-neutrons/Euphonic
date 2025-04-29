@@ -13,9 +13,9 @@ from euphonic.cli.optimise_dipole_parameter import (
 )
 from tests_and_analysis.test.utils import get_castep_path, get_phonopy_path
 
-quartz_castep_bin = get_castep_path("quartz", "quartz.castep_bin")
-lzo_castep_bin = get_castep_path("LZO", "La2Zr2O7.castep_bin")
-nacl_default_yaml = get_phonopy_path("NaCl_default", "phonopy.yaml")
+quartz_castep_bin = get_castep_path('quartz', 'quartz.castep_bin')
+lzo_castep_bin = get_castep_path('LZO', 'La2Zr2O7.castep_bin')
+nacl_default_yaml = get_phonopy_path('NaCl_default', 'phonopy.yaml')
 quick_calc_params = ['-n=10', '--min=0.5', '--max=0.5']
 
 
@@ -43,7 +43,7 @@ class TestRegression:
               '--dipole-parameter-min=0.1', '--dipole-parameter-max=0.4',
               '--dipole-parameter-step=0.1'], 15, np.linspace(0.1, 0.4, 4),
              {'asr': 'reciprocal', 'use_c': False},
-             "Born charges not found for this material"),
+             'Born charges not found for this material'),
         ])
     def test_calc_qpt_phonon_modes_called_with_correct_args(
             self, mocker, fc_file, opt_dipole_par_args, expected_n_qpts,
@@ -97,7 +97,7 @@ class TestRegression:
     def test_qpoint_modes_raises_type_error(self):
         with pytest.raises(TypeError):
             euphonic.cli.optimise_dipole_parameter.main([
-                get_castep_path("quartz", "quartz-666-grid.phonon")])
+                get_castep_path('quartz', 'quartz-666-grid.phonon')])
 
     def test_optimal_has_lowest_time_per_qpt(self):
         (opt_param, _, opt_t, all_params,

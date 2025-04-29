@@ -57,7 +57,7 @@ def test_import_without_brille_raises_err(
     mocker.patch('builtins.__import__', side_effect=mocked_import)
     with pytest.raises(ModuleNotFoundError) as mnf_error:
         reload(euphonic.brille)
-    assert "Cannot import Brille" in mnf_error.value.args[0]
+    assert 'Cannot import Brille' in mnf_error.value.args[0]
 
 
 class TestBrilleInterpolatorCreation:

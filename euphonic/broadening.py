@@ -201,8 +201,8 @@ def _get_spacing(error,
 
     log_error = np.log10(error)
     if not safe_domain[0] < log_error < safe_domain[1]:
-        raise ValueError("Target error is out of fit range; value must lie"
-                         f" in range {np.power(10, safe_domain)}.")
+        raise ValueError('Target error is out of fit range; value must lie'
+                         f' in range {np.power(10, safe_domain)}.')
     return cheby(log_error)
 
 
@@ -252,7 +252,7 @@ def _width_interpolated_broadening(
         kernels = _lorentzian(x_values, gamma=width_samples[:, np.newaxis],
                               ) * bin_width
 
-    kernels_idx = np.searchsorted(width_samples, widths, side="right")
+    kernels_idx = np.searchsorted(width_samples, widths, side='right')
 
     if len(kernels) == 1:
         # Only one kernel to consider, use 100% in all cases
@@ -281,7 +281,7 @@ def _width_interpolated_broadening(
         x_prev = x[masked_block]
         upper_weights_prev = weights[masked_block] - lower_weights
 
-        spectrum += convolve(hist, kernels[i-1], mode="same", method="fft")
+        spectrum += convolve(hist, kernels[i-1], mode='same', method='fft')
 
     return spectrum
 

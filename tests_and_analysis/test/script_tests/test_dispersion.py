@@ -140,13 +140,13 @@ class TestRegression:
         output_file = str(tmpdir.join('phonon.json'))
         euphonic.cli.dispersion.main([*dispersion_args, output_file])
 
-        with open(output_file, encoding="utf-8") as fd:
+        with open(output_file, encoding='utf-8') as fd:
             dat = json.load(fd)
 
         # Reloaded JSON doesn't quite match the PhononWebsiteData type because
         # tuples are converted to int; just make sure _some_ of the data is
         # here so CLI writes the correct file. Unit tests check correctness.
-        assert "line_breaks" in dat
+        assert 'line_breaks' in dat
 
     @pytest.mark.parametrize('dispersion_args', [
         [quartz_no_evec_json_file, '--reorder']])

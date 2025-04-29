@@ -116,7 +116,7 @@ def get_current_plot_image_data() -> dict[str,
         if len(ax.get_images()) == 1:
             break
     else:
-        raise Exception("Could not find axes with a single image")
+        raise Exception('Could not find axes with a single image')
 
     data = get_fig_label_data(fig)
     data.update(get_ax_image_data(ax))

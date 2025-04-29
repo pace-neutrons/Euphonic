@@ -136,6 +136,6 @@ def get_parser() -> ArgumentParser:
     parser.description=(
         'Run and time an interpolation calculation for a small number of '
         'q-points for different values of dipole_parameter to determine '
-        'dipole_parameter\'s optimum value for this material')
+        "dipole_parameter's optimum value for this material")
 
     return parser

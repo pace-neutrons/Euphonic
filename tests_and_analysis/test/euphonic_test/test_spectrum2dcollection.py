@@ -29,32 +29,32 @@ def get_spectrum2dcollection(json_filename):
 @pytest.fixture
 def quartz_fuzzy_collection() -> Spectrum2DCollection:
     """Coarsely sampled quartz bands in a few directions"""
-    return get_spectrum2dcollection("quartz_fuzzy_map.json")
+    return get_spectrum2dcollection('quartz_fuzzy_map.json')
 
 
 @pytest.fixture
 def quartz_fuzzy_items() -> list[Spectrum2D]:
     """Individual spectra corresponding to quartz_fuzzy_collection"""
-    return [get_spectrum2d(f"quartz_fuzzy_map_{i}.json") for i in range(3)]
+    return [get_spectrum2d(f'quartz_fuzzy_map_{i}.json') for i in range(3)]
 
 @pytest.fixture
 def inconsistent_x_item() -> Spectrum2D:
     """Spectrum with different x values"""
-    item = get_spectrum2d("quartz_fuzzy_map_0.json")
+    item = get_spectrum2d('quartz_fuzzy_map_0.json')
     item._x_data *= 2.
     return item
 
 @pytest.fixture
 def inconsistent_x_units_item():
     """Spectrum with different x units"""
-    item = get_spectrum2d("quartz_fuzzy_map_0.json")
-    item.x_data_unit = "1/bohr"
+    item = get_spectrum2d('quartz_fuzzy_map_0.json')
+    item.x_data_unit = '1/bohr'
     return item
 
 @pytest.fixture
 def inconsistent_x_length_item():
     """Spectrum with different number of x values"""
-    item = get_spectrum2d("quartz_fuzzy_map_0.json")
+    item = get_spectrum2d('quartz_fuzzy_map_0.json')
     item.x_data = item.x_data[:-2]
     item.z_data = item.z_data[:-2, :]
     return item
@@ -62,22 +62,22 @@ def inconsistent_x_length_item():
 @pytest.fixture
 def inconsistent_y_item():
     """Spectrum with different y values"""
-    item = get_spectrum2d("quartz_fuzzy_map_0.json")
+    item = get_spectrum2d('quartz_fuzzy_map_0.json')
     item.y_data = item.y_data * 2.
     return item
 
 @pytest.fixture
 def inconsistent_z_units_item():
     """Spectrum with different z units"""
-    item = get_spectrum2d("quartz_fuzzy_map_0.json")
-    item.z_data_unit = ureg("1 / eV")
+    item = get_spectrum2d('quartz_fuzzy_map_0.json')
+    item.z_data_unit = ureg('1 / eV')
     return item
 
 @pytest.fixture
 def inconsistent_x_tick_labels_item():
     """Spectrum with different x-tick labels"""
-    item = get_spectrum2d("quartz_fuzzy_map_0.json")
-    item.x_tick_labels = [(0, "$\\Gamma$"), (9, "X")]
+    item = get_spectrum2d('quartz_fuzzy_map_0.json')
+    item.x_tick_labels = [(0, '$\\Gamma$'), (9, 'X')]
     return item
 
 def rand_spectrum2d(seed: int = 1,
@@ -90,19 +90,19 @@ def rand_spectrum2d(seed: int = 1,
     if x_bins is None:
         x_bins = np.linspace(*sorted([rng.random(), rng.random()]),
                              rng.integers(3, 10),
-                             ) * ureg("1 / angstrom")
+                             ) * ureg('1 / angstrom')
     if y_bins is None:
         y_bins = np.linspace(*sorted([rng.random(), rng.random()]),
-                             rng.integers(3, 10)) * ureg("meV")
+                             rng.integers(3, 10)) * ureg('meV')
     if metadata is None:
-        metadata = {"index": rng.integers(10),
-                    "value": rng.random(),
-                    "tag": "common"}
+        metadata = {'index': rng.integers(10),
+                    'value': rng.random(),
+                    'tag': 'common'}
 
     return Spectrum2D(x_data=x_bins,
                           y_data=y_bins,
                           z_data=rng.random([len(x_bins) - 1, len(y_bins) - 1],
-                                            ) * ureg("millibarn / meV"),
+                                            ) * ureg('millibarn / meV'),
                           metadata=metadata)
 
 
@@ -114,23 +114,23 @@ class TestSpectrum2DCollectionCreation:
         n_y = 20
         n_z = 5
 
-        x_data = ureg.Quantity(np.linspace(0, 100, n_x), "1 / angstrom")
-        y_data = ureg.Quantity(np.linspace(0, 2000, n_y), "meV")
+        x_data = ureg.Quantity(np.linspace(0, 100, n_x), '1 / angstrom')
+        y_data = ureg.Quantity(np.linspace(0, 2000, n_y), 'meV')
         rng = np.random.default_rng()
-        z_data = ureg.Quantity(rng.random((n_z, n_x, n_y)), "1 / meV")
+        z_data = ureg.Quantity(rng.random((n_z, n_x, n_y)), '1 / meV')
 
-        metadata = {"flavour": "chocolate",
-                    "line_data": [{"index": i} for i in range(n_z)]}
+        metadata = {'flavour': 'chocolate',
+                    'line_data': [{'index': i} for i in range(n_z)]}
 
-        x_tick_labels = [(0, "Start"), (n_x - 1, "END")]
+        x_tick_labels = [(0, 'Start'), (n_x - 1, 'END')]
 
         spectrum = Spectrum2DCollection(
             x_data, y_data, z_data,
             x_tick_labels=x_tick_labels, metadata=metadata)
 
-        for attr, data in [("x_data", x_data),
-                           ("y_data", y_data),
-                           ("z_data", z_data)]:
+        for attr, data in [('x_data', x_data),
+                           ('y_data', y_data),
+                           ('z_data', z_data)]:
             assert getattr(spectrum, attr).units == data.units
             np.testing.assert_allclose(getattr(spectrum, attr).magnitude,
                                        data.magnitude)
@@ -142,7 +142,7 @@ class TestSpectrum2DCollectionCreation:
         collection = Spectrum2DCollection.from_spectra(quartz_fuzzy_items)
         ref_collection = quartz_fuzzy_collection
 
-        for attr in ("x_data", "y_data", "z_data"):
+        for attr in ('x_data', 'y_data', 'z_data'):
             new, ref = getattr(collection, attr), getattr(ref_collection, attr)
             assert new.units == ref.units
             np.testing.assert_allclose(new.magnitude, ref.magnitude)
@@ -153,17 +153,17 @@ class TestSpectrum2DCollectionCreation:
             assert ref_collection.metadata == collection.metadata
 
     @pytest.mark.parametrize(
-        "bad_item_name, message",
+        'bad_item_name, message',
         [
-            ("inconsistent_x_item", ""),
-            ("inconsistent_x_length_item", ""),
-            ("inconsistent_x_units_item", ""),
-            ("inconsistent_y_item", ""),
+            ('inconsistent_x_item', ''),
+            ('inconsistent_x_length_item', ''),
+            ('inconsistent_x_units_item', ''),
+            ('inconsistent_y_item', ''),
             (
-                "inconsistent_z_units_item",
-                "Spectrum units in sequence are inconsistent",
+                'inconsistent_z_units_item',
+                'Spectrum units in sequence are inconsistent',
             ),
-            ("inconsistent_x_tick_labels_item", ""),
+            ('inconsistent_x_tick_labels_item', ''),
         ],
     )
     def test_from_bad_spectra(
@@ -196,7 +196,7 @@ class TestSpectrum2DCollectionCreation:
         )
 
         # Inconsistent length will still cause trouble but should fall to numpy
-        with pytest.raises(ValueError, match="could not broadcast input"):
+        with pytest.raises(ValueError, match='could not broadcast input'):
             Spectrum2DCollection.from_spectra(
                 [*quartz_fuzzy_items, inconsistent_x_length_item],
                 unsafe=True,
@@ -214,7 +214,7 @@ class TestSpectrum2DCollectionFunctionality:
     def test_data_access(self, quartz_fuzzy_collection):
         """Check z_data can be modified and re-read"""
         initial_data = quartz_fuzzy_collection.z_data
-        incremented = quartz_fuzzy_collection.z_data + 1 * ureg("1 / meV")
+        incremented = quartz_fuzzy_collection.z_data + 1 * ureg('1 / meV')
 
         quartz_fuzzy_collection.z_data = incremented
 
@@ -251,30 +251,30 @@ class TestSpectrum2DCollectionFunctionality:
         """Check access to x and y bins"""
 
         assert (
-            len(quartz_fuzzy_collection.get_bin_edges("x"))
+            len(quartz_fuzzy_collection.get_bin_edges('x'))
             == quartz_fuzzy_collection.z_data.shape[1] + 1
         )
         assert (
-            len(quartz_fuzzy_collection.get_bin_edges("y"))
+            len(quartz_fuzzy_collection.get_bin_edges('y'))
             == quartz_fuzzy_collection.z_data.shape[2] + 1
         )
         assert (
-            len(quartz_fuzzy_collection.get_bin_centres("x"))
+            len(quartz_fuzzy_collection.get_bin_centres('x'))
             == quartz_fuzzy_collection.z_data.shape[1]
         )
         assert (
-            len(quartz_fuzzy_collection.get_bin_centres("y"))
+            len(quartz_fuzzy_collection.get_bin_centres('y'))
             == quartz_fuzzy_collection.z_data.shape[2]
         )
 
         np.testing.assert_allclose(
-            quartz_fuzzy_collection.get_bin_centres("x"),
-            np.linspace(0, 1, 10) * ureg("1 / angstrom"),
+            quartz_fuzzy_collection.get_bin_centres('x'),
+            np.linspace(0, 1, 10) * ureg('1 / angstrom'),
         )
 
         np.testing.assert_allclose(
-            quartz_fuzzy_collection.get_bin_edges("y"),
-            np.linspace(0, 100, 20) * ureg("1 / angstrom"),
+            quartz_fuzzy_collection.get_bin_edges('y'),
+            np.linspace(0, 100, 20) * ureg('1 / angstrom'),
         )
 
     def test_collection_methods(self, quartz_fuzzy_collection):
@@ -295,6 +295,6 @@ class TestSpectrum2DCollectionFunctionality:
         np.testing.assert_allclose(extended.sum().z_data.magnitude,
                                    total.z_data.magnitude * 2)
 
-        selection = quartz_fuzzy_collection.select(direction=2, common="yes")
-        ref_item_2 = get_spectrum2d("quartz_fuzzy_map_2.json")
+        selection = quartz_fuzzy_collection.select(direction=2, common='yes')
+        ref_item_2 = get_spectrum2d('quartz_fuzzy_map_2.json')
         check_spectrum2d(selection.sum(), ref_item_2)

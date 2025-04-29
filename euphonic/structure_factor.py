@@ -387,10 +387,10 @@ class StructureFactor(QpointFrequencies):
 
     @classmethod
     def from_castep(cls: type[T]) -> NoReturn:
-        ''
+        ""
         raise AttributeError
 
     @classmethod
     def from_phonopy(cls: type[T]) -> NoReturn:
-        ''
+        ""
         raise AttributeError

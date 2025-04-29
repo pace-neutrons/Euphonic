@@ -12,7 +12,7 @@ try:
 except ModuleNotFoundError as err:
     raise ModuleNotFoundError(
         'Cannot import Matplotlib for plotting (maybe Matplotlib is '
-        'not installed?). To install Euphonic\'s optional Matplotlib '
+        "not installed?). To install Euphonic's optional Matplotlib "
         'dependency, try:\n\npip install euphonic[matplotlib]\n') from err
 
 import numpy as np
@@ -57,15 +57,15 @@ def plot_1d_to_axis(spectra: Spectrum1D | Spectrum1DCollection,
     try:
         assert isinstance(spectra, Spectrum1DCollection)
     except AssertionError:
-        raise TypeError("spectra should be a Spectrum1D or "
-                        "Spectrum1DCollection") from None
+        raise TypeError('spectra should be a Spectrum1D or '
+                        'Spectrum1DCollection') from None
 
     if isinstance(labels, str):
         labels = [labels]
     if labels is not None and len(labels) != len(spectra):
         raise ValueError(
-            f"The length of labels (got {len(labels)}) should be the "
-            f"same as the number of lines to plot (got {len(spectra)})")
+            f'The length of labels (got {len(labels)}) should be the '
+            f'same as the number of lines to plot (got {len(spectra)})')
 
     # Find where there are two identical x_data points in a row
     breakpoints = (np.where(spectra.x_data[:-1] == spectra.x_data[1:])[0]
@@ -171,11 +171,11 @@ def plot_1d(spectra: Spectrum1D | Spectrum1DCollection | Sequence[Spectrum1D] | 
         # Check units are consistent
         for spectrum in spectra[1:]:
             if spectrum.x_data_unit != spectra[0].x_data_unit:
-                raise ValueError("Something went wrong: x data units are not "
-                                 "consistent between spectrum subplots.")
+                raise ValueError('Something went wrong: x data units are not '
+                                 'consistent between spectrum subplots.')
             if spectrum.y_data_unit != spectra[0].y_data_unit:
-                raise ValueError("Something went wrong: y data units are not "
-                                 "consistent between spectrum subplots.")
+                raise ValueError('Something went wrong: y data units are not '
+                                 'consistent between spectrum subplots.')
 
     gridspec_kw = _get_gridspec_kw(spectra)
     fig, subplots = plt.subplots(1, len(spectra), sharey=True,
@@ -193,7 +193,7 @@ def plot_1d(spectra: Spectrum1D | Spectrum1DCollection | Sequence[Spectrum1D] | 
     # Add an invisible large axis for common labels
     ax = fig.add_subplot(111, frameon=False)
     ax.grid(False)
-    ax.tick_params(labelcolor="none", bottom=False, left=False)
+    ax.tick_params(labelcolor='none', bottom=False, left=False)
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
 
@@ -321,7 +321,7 @@ def plot_2d(spectra: Spectrum2D | Sequence[Spectrum2D],
     # Add an invisible large axis for common labels
     ax = fig.add_subplot(111, frameon=False)
     ax.grid(False)
-    ax.tick_params(labelcolor="none", bottom=False, left=False)
+    ax.tick_params(labelcolor='none', bottom=False, left=False)
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
 

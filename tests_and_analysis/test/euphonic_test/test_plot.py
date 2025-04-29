@@ -51,7 +51,7 @@ def test_missing_matplotlib(mocker):
     with pytest.raises(ModuleNotFoundError) as mnf_error:
         reload(euphonic.plot)
 
-    assert ("Cannot import Matplotlib for plotting"
+    assert ('Cannot import Matplotlib for plotting'
             in mnf_error.value.args[0])
 
 

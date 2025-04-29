@@ -46,12 +46,12 @@ class TestReadPhononDosData:
         expected_dos_data['dos_unit'] = '1/meV'
 
         def transform(dos: list[float]) -> list[float]:
-            return (ureg.Quantity(dos, "cm")
-                    .to("1 / meV", "reciprocal_spectroscopy")
+            return (ureg.Quantity(dos, 'cm')
+                    .to('1 / meV', 'reciprocal_spectroscopy')
                     .magnitude
                     .tolist())
 
-        expected_dos_data["dos"] = valmap(transform, expected_dos_data["dos"])
+        expected_dos_data['dos'] = valmap(transform, expected_dos_data['dos'])
 
         check_dict(dos_data, expected_dos_data)
 

@@ -57,7 +57,7 @@ def test_phonon_website_writer(
 ) -> None:
     """Test QpointPhononModes -> phonon website JSON matches reference"""
     modes, kwargs, ref_data = modes_data
-    kwargs["output_file"] = tmp_path / kwargs["output_file"]
+    kwargs['output_file'] = tmp_path / kwargs['output_file']
 
     write_phonon_website_json(modes, **kwargs)
 
@@ -94,14 +94,14 @@ class TestPhononWebsiteWriterInternals:
 
     @pytest.mark.parametrize('x_tick_labels,expected', [
         # Normal case:
-        ([(1, "X"), (2, "X"), (4, "A"), (7, "Y"), (8, "Z")],
-         [(2, "X"), (4, "A"), (8, "Y|Z")]),
+        ([(1, 'X'), (2, 'X'), (4, 'A'), (7, 'Y'), (8, 'Z')],
+         [(2, 'X'), (4, 'A'), (8, 'Y|Z')]),
         # Do-nothing case:
-        ([(1, r"$\Gamma$"), (5, r"X")],
-         [(1, r"$\Gamma$"), (5, r"X")]),
+        ([(1, r'$\Gamma$'), (5, r'X')],
+         [(1, r'$\Gamma$'), (5, r'X')]),
         # 3-way merge:
-        ([(1, "X"), (2, "Y"), (3, "Z"), (5, "OK")],
-         [(3, "X|Y|Z"), (5, "OK")]),
+        ([(1, 'X'), (2, 'Y'), (3, 'Z'), (5, 'OK')],
+         [(3, 'X|Y|Z'), (5, 'OK')]),
         ])
     def test_combine_neighbouring_labels(
             self, x_tick_labels: XTickLabels, expected: XTickLabels) -> None:

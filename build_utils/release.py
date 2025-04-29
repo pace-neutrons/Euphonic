@@ -23,9 +23,9 @@ def main():
 
 
 def release_github(test=True):
-    with open('CHANGELOG.rst', encoding="utf8") as f:
+    with open('CHANGELOG.rst', encoding='utf8') as f:
         changelog = f.read()
-    with open('CITATION.cff', encoding="utf8") as f:
+    with open('CITATION.cff', encoding='utf8') as f:
         citation = yaml.safe_load(f)
 
     euphonic_ver = __version__
@@ -52,25 +52,25 @@ def release_github(test=True):
                      re.DOTALL | re.MULTILINE).groups()[0].strip()
 
     payload = {
-        "tag_name": euphonic_ver,
-        "target_commitish": "master",
-        "name": euphonic_ver,
-        "body": desc,
-        "draft": False,
-        "prerelease": is_prerelease,
+        'tag_name': euphonic_ver,
+        'target_commitish': 'master',
+        'name': euphonic_ver,
+        'body': desc,
+        'draft': False,
+        'prerelease': is_prerelease,
     }
     if test:
         print(payload)
 
-        if "GITHUB_TOKEN" in os.environ:
-            print("Found GITHUB_TOKEN")
+        if 'GITHUB_TOKEN' in os.environ:
+            print('Found GITHUB_TOKEN')
         else:
-            print("No GITHUB_TOKEN set")
+            print('No GITHUB_TOKEN set')
     else:
         response = requests.post(
             'https://api.github.com/repos/pace-neutrons/euphonic/releases',
             data=json.dumps(payload),
-            headers={"Authorization": "token " + os.environ["GITHUB_TOKEN"]},
+            headers={'Authorization': 'token ' + os.environ['GITHUB_TOKEN']},
             timeout=POST_TIMEOUT)
         print(response.text)
 

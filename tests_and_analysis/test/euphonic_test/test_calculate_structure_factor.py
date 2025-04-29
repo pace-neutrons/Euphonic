@@ -187,12 +187,12 @@ class TestCalculateStructureFactorUsingReferenceData:
     @pytest.fixture
     def fake_quartz_data(self):
         return {
-            "description": "fake data for testing",
-            "physical_property": {"coherent_scattering_length":
-                                  {"__units__": "fm",
-                                   "Si": {"__complex__": True,
-                                          "real": 4.0, "imag": -0.70},
-                                   "O": 5.803}}}
+            'description': 'fake data for testing',
+            'physical_property': {'coherent_scattering_length':
+                                  {'__units__': 'fm',
+                                   'Si': {'__complex__': True,
+                                          'real': 4.0, 'imag': -0.70},
+                                   'O': 5.803}}}
 
     @staticmethod
     def _dump_data(data, tmpdir, filename):

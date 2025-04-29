@@ -399,6 +399,6 @@ def _check_gridpts(npts: int) -> int:
     n_cols = int(np.ceil(np.sqrt(npts / 2)))
     actual_npts = n_cols**2 * 2
     if actual_npts != npts:
-        print("Requested npts ∉ {2x^2, x ∈ Z, x > 1}; "
-              f"rounding up to {npts}.")
+        print('Requested npts ∉ {2x^2, x ∈ Z, x > 1}; '
+              f'rounding up to {npts}.')
     return n_cols

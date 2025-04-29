@@ -10,7 +10,7 @@ try:
 except ModuleNotFoundError as err:
     raise ModuleNotFoundError(
         'Cannot import Brille for use with BrilleInterpolator '
-        '(maybe Brille is not installed?). To install Euphonic\'s '
+        "(maybe Brille is not installed?). To install Euphonic's "
         'optional Brille dependency, try:\n\npip install '
         'euphonic[brille]\n') from err
 

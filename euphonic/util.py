@@ -242,7 +242,7 @@ def get_reference_data(collection: str = 'Sears1992',
         raise ValueError(
             f'No such collection "{collection}" with property '
             f'"{physical_property}". Available properties for this collection'
-            ': ' + ', '.join(list(file_data["physical_property"].keys())))
+            ': ' + ', '.join(list(file_data['physical_property'].keys())))
 
     unit_str = data.get('__units__')
     if unit_str is None:
@@ -569,14 +569,14 @@ def _recip_space_labels(qpts: np.ndarray,
             with warnings.catch_warnings():
                 # SeeK-path is raising spglib 2.5.0 deprecation warnings, we
                 # don't care to see those for now
-                warnings.simplefilter("ignore", category=DeprecationWarning)
-                sym_label_to_coords = seekpath.get_path(cell)["point_coords"]
+                warnings.simplefilter('ignore', category=DeprecationWarning)
+                sym_label_to_coords = seekpath.get_path(cell)['point_coords']
 
         except (SymmetryDetectionError, TypeError) as err:
             if isinstance(err, TypeError):
                 # There is a particular TypeError we expect to see when the
                 # unit cell is empty; make sure we do not have some other error
-                assert "positions has to be" in str(err)
+                assert 'positions has to be' in str(err)
                 assert len(cell[1]) == 0
             warnings.warn(('Could not determine cell symmetry, using generic '
                            'q-point labels'), stacklevel=2)
@@ -723,7 +723,7 @@ def _get_supercell_relative_idx(cell_origins: np.ndarray,
             if np.all(dist_min <= 16*sys.float_info.epsilon):
                 break
         if np.any(dist_min > 16*sys.float_info.epsilon):
-            raise ValueError('Couldn\'t find supercell relative index')
+            raise ValueError("Couldn't find supercell relative index")
     return sc_relative_index
 
 

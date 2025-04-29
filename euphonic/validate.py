@@ -45,14 +45,14 @@ def _check_constructor_inputs(
         if not isinstance(typ, list):
             typ = [typ]  # noqa: PLW2901 redefined-loop-name
         if not any(isinstance(obj, t) for t in typ):
-            raise TypeError(f'The type of {name} {type(obj)} doesn\'t '
+            raise TypeError(f"The type of {name} {type(obj)} doesn't "
                              f'match the expected type(s) {typ}')
         if hasattr(obj, 'shape') and shape:
             if not isinstance(shape, list):
                 shape = [shape]  # noqa: PLW2901 (redefined-loop-name)
             if not any(obj.shape == _replace_dim(s, obj.shape) for s in shape):
                 raise ValueError(
-                    f'The shape of {name} {obj.shape} doesn\'t match '
+                    f"The shape of {name} {obj.shape} doesn't match "
                     f'the expected shape(s) {shape}')
 
 
@@ -83,7 +83,7 @@ def _check_unit_conversion(obj: object, attr_name: str, attr_value: Any,
     if hasattr(obj, attr_name) and attr_name in unit_attrs:
         try:
             ureg(getattr(obj, attr_name)).ito(attr_value,
-                                              "reciprocal_spectroscopy")
+                                              'reciprocal_spectroscopy')
         except DimensionalityError as err:
             raise ValueError(
                 f'"{attr_value}" is not a known dimensionally-consistent '
