@@ -6,6 +6,7 @@ import json
 import math
 import os.path
 import sys
+import textwrap
 from typing import Optional
 import warnings
 
@@ -18,6 +19,26 @@ import euphonic.data
 from euphonic.ureg import Quantity, ureg
 
 zips = partial(zip, strict=True)
+
+
+def dedent_and_fill(text: str) -> str:
+    """Clean up indented multiline string for display to user.
+
+    - Remove indentation
+    - Wrap to default textwrap line width (70 characters)
+
+    Parameters
+    ----------
+    text
+        Multiline string with convenient linebreaks for source code display
+
+    Returns
+    -------
+    text
+        String for display to user via print() or Exception handling
+    """
+
+    return textwrap.fill(textwrap.dedent(text))
 
 
 def direction_changed(qpts: np.ndarray, tolerance: float = 5e-6,
@@ -228,33 +249,42 @@ def get_reference_data(collection: str = 'Sears1992',
         with open(filename) as fd:
             file_data = json.load(fd, object_hook=custom_decode)
     else:
-        raise ValueError(
-            f'No data files known for collection "{collection}". '
-            f'Available collections: '
-            + ', '.join(list(_reference_data_files)))
+        msg = dedent_and_fill(f"""
+            No data files known for collection "{collection}".
+            Available collections:
+            """ + ', '.join(list(_reference_data_files)),
+        )
+        raise ValueError(msg)
 
     if 'physical_property' not in file_data:
-        raise AttributeError('Data file does not contain required key '
-                             '"physical_property".')
+        msg = 'Data file does not contain required key "physical_property".'
+        raise AttributeError(msg)
 
     data = file_data['physical_property'].get(physical_property)
     if data is None:
-        raise ValueError(
-            f'No such collection "{collection}" with property '
-            f'"{physical_property}". Available properties for this collection'
-            ': ' + ', '.join(list(file_data['physical_property'].keys())))
+        msg =  dedent_and_fill(f"""\
+            No such collection "{collection}" with property
+            "{physical_property}". Available properties for this collection:
+            """ + ', '.join(list(file_data['physical_property'].keys())),
+            )
+        raise ValueError(msg)
 
     unit_str = data.get('__units__')
     if unit_str is None:
-        raise ValueError(f'Reference data file "{filename}" does not '
-                         'specify dimensions with "__units__" metadata.')
+        msg = (
+            f'Reference data file "{filename}" does not '
+            'specify dimensions with "__units__" metadata.'
+        )
+        raise ValueError(msg)
 
     try:
         unit = ureg(unit_str)
     except UndefinedUnitError as exc:
-        raise ValueError(
+        msg = (
             f'Units "{unit_str}" from data file "{filename}" '
-            'are not supported by the Euphonic unit register.') from exc
+            'are not supported by the Euphonic unit register.'
+        )
+        raise ValueError(msg) from exc
 
     return {key: value * unit
             for key, value in data.items()
@@ -287,9 +317,11 @@ def mode_gradients_to_widths(mode_gradients: Quantity, cell_vectors: Quantity,
     if modg.ndim == 3 and modg.shape[2] == 3:
         modg = np.linalg.norm(modg, axis=2)
     elif modg.ndim != 2:
-        raise ValueError(
+        msg = (
             f'Unexpected shape for mode_gradients {modg.shape}, '
-            f'expected (n_qpts, n_modes) or (n_qpts, n_modes, 3)')
+            f'expected (n_qpts, n_modes) or (n_qpts, n_modes, 3)'
+        )
+        raise ValueError(msg)
 
     cell_volume = _cell_vectors_to_volume(cell_vectors)  # type: Quantity
     q_spacing = 2 / (np.cbrt(len(mode_gradients)
@@ -359,21 +391,26 @@ def convert_fc_phases(force_constants: np.ndarray, atom_r: np.ndarray,
     n_atoms_uc = len(uc_to_sc_atom_idx)
     n_cells = int(np.rint(np.absolute(np.linalg.det(sc_matrix))))
     if n_atoms_sc/n_atoms_uc - n_cells != 0:
-        raise ValueError(
-            f'Inconsistent numbers of cells in the supercell, unit '
-            f'cell has {n_atoms_uc} atoms, and supercell has '
-            f'{n_atoms_sc} atoms, but sc_matrix determinant suggests '
-            f'there should be {n_cells} cells in the supercell')
+        msg = dedent_and_fill(f"""\
+            Inconsistent numbers of cells in the supercell, unit cell has
+            {n_atoms_uc} atoms, and supercell has {n_atoms_sc} atoms, but
+            sc_matrix determinant suggests there should be {n_cells} cells in
+            the supercell
+            """,
+        )
+        raise ValueError(msg)
     # Get cell origins for all atoms
     cell_origins_per_atom = sc_atom_r - atom_r[sc_to_uc_atom_idx]
     non_int = np.where(
         np.abs(cell_origins_per_atom
                - np.rint(cell_origins_per_atom)) > cell_origins_tol)[0]
     if len(non_int) > 0:
-        raise RuntimeError(
-            f'Non-integer cell origins for atom(s) '
-            f'{", ".join(np.unique(non_int).astype(str))}, '
-            f'check coordinates and indices are correct')
+        msg = dedent_and_fill(f"""\
+            Non-integer cell origins for atom(s)
+            {", ".join(np.unique(non_int).astype(str))},
+            check coordinates and indices are correct""",
+        )
+        raise RuntimeError(msg)
     cell_origins_per_atom = np.rint(cell_origins_per_atom).astype(np.int32)
     # Recenter cell origins onto those for atom 0 in unit cell 0
     cell_origins_per_atom -= cell_origins_per_atom[uc_to_sc_atom_idx[0]]
@@ -407,9 +444,10 @@ def convert_fc_phases(force_constants: np.ndarray, atom_r: np.ndarray,
                     co_idx = j
                     break
             else:
-                raise ValueError(
-                    "Couldn't determine cell origins for "
-                    "force constants matrix")
+                msg = dedent_and_fill("""\
+                    Couldn't determine cell origins for force constants matrix
+                    """)
+                raise ValueError(msg)
         cell_origins_map[i] = co_idx
 
     if force_constants.shape[0] == force_constants.shape[1]:
@@ -723,7 +761,8 @@ def _get_supercell_relative_idx(cell_origins: np.ndarray,
             if np.all(dist_min <= 16*sys.float_info.epsilon):
                 break
         if np.any(dist_min > 16*sys.float_info.epsilon):
-            raise ValueError("Couldn't find supercell relative index")
+            msg = "Couldn't find supercell relative index"
+            raise ValueError(msg)
     return sc_relative_index
 
 

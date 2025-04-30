@@ -33,8 +33,9 @@ def main(params: Optional[list[str]] = None) -> None:
 
     if not frequencies_only and not isinstance(
             data, (ForceConstants, QpointPhononModes)):
+        msg = 'Eigenvectors are required to use "--reorder" option'
         raise TypeError(
-            'Eigenvectors are required to use "--reorder" option')
+            msg)
 
     if isinstance(data, ForceConstants):
         print('Getting band path...')

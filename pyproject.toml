@@ -89,7 +89,7 @@ select = [
        "COM",     # flake8-commas
        "C4",      # flake8-comprehensions: Good stuff, worth its own PR
        "T10",     # flake8-debugger
-       # "EM",      # flake8-errmsg: Big diff, worth its own PR
+       "EM",      # flake8-errmsg: Big diff, worth its own PR
        "EXE",     # flake8-executable
        "FIX",     # leftover FIXME, TODO etc. (flake8-fixme)
        "FA",      # flake8-future-annotations
