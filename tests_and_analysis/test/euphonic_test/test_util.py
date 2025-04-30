@@ -10,6 +10,7 @@ import pytest
 from euphonic import ureg
 from euphonic.util import (
     convert_fc_phases,
+    dedent_and_fill,
     direction_changed,
     get_qpoint_labels,
     mode_gradients_to_widths,
@@ -21,6 +22,22 @@ from tests_and_analysis.test.euphonic_test.test_force_constants import (
     get_fc_path,
 )
 from tests_and_analysis.test.utils import does_not_raise, get_data_path
+
+
+class TestTextTools:
+
+    @pytest.mark.parametrize(
+        'text, expected', [
+            ('One short line', 'One short line'),
+            ('Multi\nshort\nlines', 'Multi short lines'),
+            ('    Multi\n    indented\n    lines', 'Multi indented lines'),
+            ('  Two\n  indented\n\n  paragraphs',
+             'Two indented\n\nparagraphs'),
+            ('x' * 141, (('x' * 70) + '\n' + ('x' * 70) + '\nx')),
+        ],
+    )
+    def test_dedent_and_fill(self, text, expected):
+        assert dedent_and_fill(text) == expected
 
 
 class TestDirectionChanged:

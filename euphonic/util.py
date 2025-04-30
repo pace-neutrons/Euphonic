@@ -25,7 +25,8 @@ def dedent_and_fill(text: str) -> str:
     """Clean up indented multiline string for display to user.
 
     - Remove indentation
-    - Wrap to default textwrap line width (70 characters)
+    - Preserve any paragraph breaks (i.e. "\n\n")
+    - Wrap other newlines to default textwrap line width (70 characters)
 
     Parameters
     ----------
@@ -38,7 +39,10 @@ def dedent_and_fill(text: str) -> str:
         String for display to user via print() or Exception handling
     """
 
-    return textwrap.fill(textwrap.dedent(text))
+    text = textwrap.dedent(text)
+    paragraphs = text.split('\n\n')
+
+    return '\n\n'.join(textwrap.fill(paragraph) for paragraph in paragraphs)
 
 
 def direction_changed(qpts: np.ndarray, tolerance: float = 5e-6,
