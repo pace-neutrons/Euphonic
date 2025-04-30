@@ -11,14 +11,14 @@ try:
     import matplotlib.pyplot as plt
 
 except ModuleNotFoundError as err:
-    msg = dedent("""\
+    err_msg = dedent("""\
         Cannot import Matplotlib for plotting (maybe Matplotlib is
         not installed?). To install Euphonic's optional Matplotlib
         dependency, try:
 
             pip install euphonic[matplotlib]
     """)
-    raise ModuleNotFoundError(msg) from err
+    raise ModuleNotFoundError(err_msg) from err
 
 import numpy as np
 
