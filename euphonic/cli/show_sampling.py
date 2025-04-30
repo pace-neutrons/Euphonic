@@ -109,6 +109,7 @@ def main(params: Optional[list[str]] = None) -> None:
         )
 
     else:
-        raise ValueError('Sampling type f{args.sampling} is not implemented.')
+        msg = 'Sampling type f{args.sampling} is not implemented.'
+        raise ValueError(msg)
 
     matplotlib_save_or_show(save_filename=args.save_plot)
