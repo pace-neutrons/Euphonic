@@ -29,6 +29,7 @@ from euphonic.broadening import ErrorFit, KernelShape
 from euphonic.io import _obj_to_dict, _process_dict
 from euphonic.readers.castep import read_phonon_dos_data
 from euphonic.ureg import ureg
+from euphonic.util import dedent_and_fill
 from euphonic.validate import _check_constructor_inputs
 from euphonic.version import __version__
 
@@ -234,13 +235,16 @@ class SpectrumCollectionMixin(ABC):
             return
         if isinstance(item, slice):
             if (item.stop is not None) and (item.stop >= len(self)):
-                raise IndexError(f'index "{item.stop}" out of range')
+                msg = f'index "{item.stop}" out of range'
+                raise IndexError(msg)
             return
 
         if not all(isinstance(i, Integral) for i in item):
-            raise TypeError(
+            msg = (
                 f'Index "{item}" should be an integer, slice '
-                f'or sequence of ints')
+                f'or sequence of ints'
+            )
+            raise TypeError(msg)
 
     @overload
     def _get_item_metadata(self, item: Integral) -> OneLineData:
@@ -359,8 +363,11 @@ class SpectrumCollectionMixin(ABC):
             selected_indices.extend(self._select_indices(**selection))
 
         if not selected_indices:
-            raise ValueError(f'No spectra found with matching metadata '
-                             f'for {select_key_values}')
+            msg = (
+                f'No spectra found with matching metadata '
+                f'for {select_key_values}'
+            )
+            raise ValueError(msg)
 
         return self[selected_indices]
 
@@ -417,10 +424,12 @@ class SpectrumCollectionMixin(ABC):
             n_lines = len(self.metadata['line_data'])
 
             if n_lines != collection_size:
-                raise ValueError(
-                    f'{self._spectrum_data_name()} contains {collection_size} '
-                    f'spectra, but metadata["line_data"] contains '
-                    f'{n_lines} entries')
+                msg = dedent_and_fill(f"""\
+                    {self._spectrum_data_name()} contains {collection_size}
+                    spectra, but metadata["line_data"] contains {n_lines}
+                    entries
+                """)
+                raise ValueError(msg)
 
     def group_by(self, *line_data_keys: str) -> Self:
         """
@@ -496,8 +505,8 @@ class SpectrumCollectionMixin(ABC):
     @classmethod
     def _item_type_check(cls, spectrum) -> None:
         if not isinstance(spectrum, cls._item_type):
-            raise TypeError(
-                f'Item is not of type {cls._item_type.__name__}.')
+            msg = f'Item is not of type {cls._item_type.__name__}.'
+            raise TypeError(msg)
 
 
 class Spectrum1DCollection(SpectrumCollectionMixin,
@@ -605,11 +614,14 @@ class Spectrum1DCollection(SpectrumCollectionMixin,
                                  ) -> None:
         if (spectrum.y_data.units != y_data_units
                 or spectrum.x_data.units != x_data.units):
-            raise ValueError('Spectrum units in sequence are inconsistent')
+            msg = 'Spectrum units in sequence are inconsistent'
+            raise ValueError(msg)
         if not np.allclose(spectrum.x_data, x_data):
-            raise ValueError('x_data in sequence are inconsistent')
+            msg = 'x_data in sequence are inconsistent'
+            raise ValueError(msg)
         if spectrum.x_tick_labels != x_tick_labels:
-            raise ValueError('x_tick_labels in sequence are inconsistent')
+            msg = 'x_tick_labels in sequence are inconsistent'
+            raise ValueError(msg)
 
     @classmethod
     def from_spectra(
@@ -622,7 +634,8 @@ class Spectrum1DCollection(SpectrumCollectionMixin,
 
         """
         if len(spectra) < 1:
-            raise IndexError('At least one spectrum is needed for collection')
+            msg = 'At least one spectrum is needed for collection'
+            raise IndexError(msg)
 
         cls._item_type_check(spectra[0])
         x_data = spectra[0].x_data
@@ -801,7 +814,8 @@ class Spectrum1DCollection(SpectrumCollectionMixin,
                     width_fit=width_fit)
                 for spectrum in self])
 
-        raise TypeError('x_width must be a Quantity or Callable')
+        msg = 'x_width must be a Quantity or Callable'
+        raise TypeError(msg)
 
     @classmethod
     def from_dict(cls: Self, d: dict) -> Self:
@@ -931,9 +945,11 @@ class Spectrum2DCollection(SpectrumCollectionMixin,
     ) -> None:
         """Check spectrum data units and x_tick_labels are consistent"""
         if spectrum_0_data_units != spectrum_i_data_units:
-            raise ValueError('Spectrum units in sequence are inconsistent')
+            msg = 'Spectrum units in sequence are inconsistent'
+            raise ValueError(msg)
         if x_tick_labels != spectrum_i_x_tick_labels:
-            raise ValueError('x_tick_labels in sequence are inconsistent')
+            msg = 'x_tick_labels in sequence are inconsistent'
+            raise ValueError(msg)
 
     @staticmethod
     def _from_spectra_bins_check(ref_bins_data: dict[str, Quantity],
@@ -948,9 +964,11 @@ class Spectrum2DCollection(SpectrumCollectionMixin,
         for key, ref_bins in ref_bins_data.items():
             item_bins = getattr(spectrum, key)
             if not np.allclose(item_bins.magnitude, ref_bins.magnitude):
-                raise ValueError('Bins in sequence are inconsistent')
+                msg = 'Bins in sequence are inconsistent'
+                raise ValueError(msg)
             if item_bins.units != ref_bins.units:
-                raise ValueError('Bin units in sequence are inconsistent')
+                msg = 'Bin units in sequence are inconsistent'
+                raise ValueError(msg)
 
     @classmethod
     def from_spectra(
@@ -964,7 +982,8 @@ class Spectrum2DCollection(SpectrumCollectionMixin,
         """
 
         if len(spectra) < 1:
-            raise IndexError('At least one spectrum is needed for collection')
+            msg = 'At least one spectrum is needed for collection'
+            raise IndexError(msg)
 
         cls._item_type_check(spectra[0])
         bins_data = {
