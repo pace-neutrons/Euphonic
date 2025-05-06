@@ -212,7 +212,7 @@ def _get_energy_bins(
         emax: Optional[float] = None,
         headroom: float = 1.05) -> Quantity:
     """
-    Gets recommeded energy bins, in same units as modes.frequencies.
+    Gets recommended energy bins, in same units as modes.frequencies.
     emin and emax are assumed to be in the same units as
     modes.frequencies, if not provided the min/max values of
     modes.frequencies are used to find the bin limits
