@@ -74,6 +74,27 @@ def test_variable_close_to_exact(example):
 
 
 @pytest.mark.parametrize(
+    'width_convention, fit, adaptive_error, message',
+    [('STD', 'cheby-log', 0.001, 'Standard deviation unavailable'),
+     ('UNIMPLEMENTED', 'cheby-log', 0.001, 'must be "std" or "fwhm"'),
+     ('FWHM', 'UNIMPLEMENTED', 0.001, 'Fit "UNIMPLEMENTED" is not available'),
+     ('FWHM', 'cheby-log', 0.00001, 'Target error is out of fit range'),
+     ])
+def test_variable_width_broadening_errors(example, width_convention, fit, adaptive_error, message):
+
+    with pytest.raises(ValueError, match=message):
+        variable_width_broadening(
+            bins=example.bins,
+            x=example.x,
+            width_function=(lambda x: x),
+            width_convention=width_convention,
+            weights=example.y.magnitude,
+            shape='lorentz',
+            fit=fit,
+            adaptive_error=adaptive_error)
+
+
+@pytest.mark.parametrize(
         ('material, qpt_freqs_json, mode_widths_json, ebins'), [
             ('quartz', 'quartz_554_full_qpoint_frequencies.json',
              'quartz_554_full_mode_widths.json',
