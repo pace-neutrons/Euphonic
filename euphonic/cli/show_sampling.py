@@ -95,12 +95,6 @@ def main(params: Optional[list[str]] = None) -> None:
             marker='x',
         )
 
-    elif args.sampling == 'random-sphere':
-        ax.scatter(
-            *zips(*euphonic.sampling.random_sphere(args.npts)),
-            marker='x',
-        )
-
     elif args.sampling == 'recurrence-cube':
         ax.scatter(
             *zips(
@@ -108,8 +102,10 @@ def main(params: Optional[list[str]] = None) -> None:
             marker='x',
         )
 
-    else:
-        msg = 'Sampling type f{args.sampling} is not implemented.'
-        raise ValueError(msg)
+    else:  # random-sphere
+        ax.scatter(
+            *zips(*euphonic.sampling.random_sphere(args.npts)),
+            marker='x',
+        )
 
     matplotlib_save_or_show(save_filename=args.save_plot)
