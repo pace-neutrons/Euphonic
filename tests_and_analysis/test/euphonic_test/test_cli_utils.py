@@ -20,13 +20,16 @@ def test_get_q_distance():
     with pytest.raises(ValueError, match='Length unit not known'):
         _get_q_distance('elephant', 4)
 
-def test_load_phonopy_errors(tmp_path):
+
+@pytest.mark.phonopy_reader
+def test_load_phonopy_errors():
     fc_file = get_data_path(
         'phonopy_files', 'CaHgO2', 'full_force_constants.hdf5')
 
     with pytest.raises(
             ValueError, match='must be accompanied by phonopy.yaml'):
         _load_phonopy_file(fc_file)
+
 
 def test_get_energy_bins_error():
     with pytest.raises(
