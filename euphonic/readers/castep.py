@@ -74,9 +74,6 @@ def read_phonon_dos_data(
             freqs = np.concatenate((freqs, [frequency_block.frequencies]))
             mode_grads = np.concatenate((mode_grads, [qmode_grad.squeeze()]))
         line = f.readline()
-        if 'BEGIN DOS' not in line:
-            msg = f'Expected "BEGIN DOS" in {filename}, got {line}'
-            raise RuntimeError(msg)
 
         dos_data = np.loadtxt(f, max_rows=n_bins)
 
