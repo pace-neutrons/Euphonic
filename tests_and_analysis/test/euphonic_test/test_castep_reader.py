@@ -92,3 +92,14 @@ class TestReadPhononData:
                     assert dct[exp_key] == exp_val
 
         check_dict(data, expected_data)
+
+    def test_read_ambiguous_duplicate(self):
+        """Check error message if there are duplicate non-directional points
+
+        This is probably an artificial scenario, but we raise an error as it
+        would otherwise be silently incorrect behaviour.
+        """
+        with pytest.raises(
+                ValueError, match='Found multiple non-split blocks'):
+            read_phonon_data(get_castep_path('ZnS', 'loto_duplicate.phonon'),
+                             prefer_non_loto=True)
