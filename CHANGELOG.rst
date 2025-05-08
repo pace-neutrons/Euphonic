@@ -1,6 +1,10 @@
 `Unreleased <https://github.com/pace-neutrons/Euphonic/compare/v1.4.3...HEAD>`_
 -------------------------------------------------------------------------------
 
+- Requirements
+
+  - The minimum required version of spglib is increased to 2.1.0
+
 - Bug fixes
 
   - euphonic-intensity-map incorrectly rejecting files with phonon
