@@ -93,10 +93,6 @@ def _load_phonopy_file(filename: str | os.PathLike,
                 phonopy_kwargs['fc_name'] = 'FORCE_CONSTANTS'
         loaded_data = ForceConstants.from_phonopy(**phonopy_kwargs)
 
-    if loaded_data is None:
-        msg = 'Could not identify data in Phonopy file.'
-        raise ValueError(msg)
-
     return loaded_data
 
 
