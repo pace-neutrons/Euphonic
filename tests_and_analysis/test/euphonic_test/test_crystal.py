@@ -466,3 +466,9 @@ class TestCrystalMethods:
         npt.assert_equal(rot.shape, (4, 3, 3))
         npt.assert_equal(trans.shape, (4, 3))
         npt.assert_equal(equiv_atoms.shape, (4, 22))
+
+    def test_get_symmetry_equivalent_atoms_errors(self):
+        crystal = get_crystal('LZO')
+        with pytest.raises(RuntimeError,
+                           match='spglib.get_symmetry returned None'):
+            crystal.get_symmetry_equivalent_atoms(tol=(1e-16*ureg('angstrom')))
