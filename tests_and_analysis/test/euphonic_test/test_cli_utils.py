@@ -7,6 +7,7 @@ from euphonic.cli.utils import (
     _get_energy_bins,
     _get_q_distance,
     _load_phonopy_file,
+    load_data_from_file,
 )
 from euphonic.ureg import Quantity
 from tests_and_analysis.test.utils import get_data_path
@@ -36,3 +37,8 @@ def test_get_energy_bins_error():
             ValueError,
             match='Maximum energy should be greater than minimum.'):
         _get_energy_bins(modes=None, n_ebins=0, emin=1, emax=0)
+
+def test_load_data_extension_error():
+    with pytest.raises(
+            ValueError, match='File format was not recognised.'):
+        load_data_from_file('nonexistent.wrong_suffix')
