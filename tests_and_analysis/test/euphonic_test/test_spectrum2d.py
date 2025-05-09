@@ -617,3 +617,22 @@ class TestKinematicConstraints:
 
         with pytest.raises(expected):
             apply_kinematic_constraints(spec2d, **kwargs)
+
+    def test_kinematic_constraints_invalid_dimensions(self):
+        kwargs = {'e_i': 300 * ureg('1/cm')}
+        spec2d = get_spectrum2d('NaCl_band_yaml_dos_map.json')
+
+        bad_spec2d = Spectrum2D(spec2d.x_data.magnitude * ureg('barn'),
+                                spec2d.y_data,
+                                spec2d.z_data)
+        with pytest.raises(
+                ValueError, match='x_data needs to have wavevector units'):
+            apply_kinematic_constraints(bad_spec2d, **kwargs)
+
+        bad_spec2d = Spectrum2D(spec2d.x_data,
+                                spec2d.y_data.magnitude * ureg('barn'),
+                                spec2d.z_data)
+        with pytest.raises(
+                ValueError,
+                match='y_data needs to have energy \(or wavenumber\) units'):
+            apply_kinematic_constraints(bad_spec2d, **kwargs)
