@@ -325,6 +325,10 @@ class TestSpectrum2DMethods:
              'quartz_bandstructure_sqw.json',
              'quartz_bandstructure_2meV_ybroaden_sqw.json',
              does_not_raise()),
+            (({'y_width': 2*ureg('meV'), 'shape': 'lorentz'}),
+             'quartz_bandstructure_sqw.json',
+             'quartz_bandstructure_2meV_lorentz_ybroaden_sqw.json',
+             does_not_raise()),
             (({'x_width': 0.1*ureg('1/angstrom'), 'y_width': 2*ureg('meV'),
                'method': 'convolve'}),
              'quartz_bandstructure_sqw.json',
@@ -613,3 +617,22 @@ class TestKinematicConstraints:
 
         with pytest.raises(expected):
             apply_kinematic_constraints(spec2d, **kwargs)
+
+    def test_kinematic_constraints_invalid_dimensions(self):
+        kwargs = {'e_i': 300 * ureg('1/cm')}
+        spec2d = get_spectrum2d('NaCl_band_yaml_dos_map.json')
+
+        bad_spec2d = Spectrum2D(spec2d.x_data.magnitude * ureg('barn'),
+                                spec2d.y_data,
+                                spec2d.z_data)
+        with pytest.raises(
+                ValueError, match='x_data needs to have wavevector units'):
+            apply_kinematic_constraints(bad_spec2d, **kwargs)
+
+        bad_spec2d = Spectrum2D(spec2d.x_data,
+                                spec2d.y_data.magnitude * ureg('barn'),
+                                spec2d.z_data)
+        with pytest.raises(
+                ValueError,
+                match=r'y_data needs to have energy \(or wavenumber\) units'):
+            apply_kinematic_constraints(bad_spec2d, **kwargs)

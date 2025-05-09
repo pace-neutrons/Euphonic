@@ -30,6 +30,7 @@ with suppress(ModuleNotFoundError):
 graphite_fc_file = get_castep_path('graphite', 'graphite.castep_bin')
 nacl_prim_fc_file = get_phonopy_path('NaCl_prim', 'phonopy_nacl.yaml')
 brille_conv_output_file = get_script_test_data_path('brille-convergence.json')
+quartz_phonon_file = get_castep_path('quartz', 'quartz_split_qpts.phonon')
 
 quick_calc_params = ['--npts=3', '--brille-npts=10']
 brille_conv_params = [
@@ -51,6 +52,10 @@ class TestRegression:
     def teardown_method(self):
         # Ensure figures are closed
         matplotlib.pyplot.close('all')
+
+    def test_no_fc_error(self):
+        with pytest.raises(TypeError, match='Force constants are required'):
+            euphonic.cli.brille_convergence.main([quartz_phonon_file])
 
     def run_brille_conv_and_test_result(self, brille_conv_args):
         atol = sys.float_info.epsilon

@@ -1498,8 +1498,8 @@ casting to real mode gradients.
         sc_mass = 1.0*n_atoms
         # Check number of acoustic modes
         if np.sum(c_of_m_disp_sq > sensitivity * sc_mass) < 3:
-            raise NotEnoughAcousticModesError(
-                'Could not find 3 acoustic modes') from None
+            msg = 'Could not find 3 acoustic modes'
+            raise NotEnoughAcousticModesError(msg) from None
         # Find idx of acoustic modes (3 largest c of m displacements)
         ac_i = np.argsort(c_of_m_disp_sq)[-3:]
 

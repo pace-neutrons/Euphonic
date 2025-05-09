@@ -191,9 +191,11 @@ class QpointFrequencies:
 
         adaptive_method_options = ['reference', 'fast']
         if adaptive_method not in adaptive_method_options:
-            raise ValueError(f'Invalid value for adaptive_method, '
-                             f'got {adaptive_method}, should be one '
-                             f'of {adaptive_method_options}')
+            msg = (
+                f'Invalid value for adaptive_method, got {adaptive_method}, '
+                f'should be one of {adaptive_method_options}'
+            )
+            raise ValueError(msg)
 
         if q_idx is None:
             freqs = self._frequencies

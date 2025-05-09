@@ -250,9 +250,11 @@ class QpointPhononModes(QpointFrequencies):
         elif isinstance(scattering_lengths, dict):
             scattering_length_data = scattering_lengths
         else:
-            raise TypeError(
+            msg = (
                 f'Unexpected type for scattering_lengths, should be str '
-                f'or dict, got {type(scattering_lengths)}')
+                f'or dict, got {type(scattering_lengths)}'
+            )
+            raise TypeError(msg)
 
         sl = [scattering_length_data[x].to('bohr').magnitude
               for x in self.crystal.atom_type]
@@ -279,10 +281,12 @@ class QpointPhononModes(QpointFrequencies):
         if dw:
             temperature = dw.temperature
             if dw.crystal.n_atoms != self.crystal.n_atoms:
-                raise ValueError(
+                msg = (
                     'The DebyeWaller object used as dw is not '
                     'compatible with the QPointPhononModes object (they'
-                    ' have a different number of atoms)')
+                    ' have a different number of atoms)'
+                )
+                raise ValueError(msg)
             dw_factor = np.exp(-np.einsum('jkl,ik,il->ij',
                                           dw._debye_waller, Q, Q))
             exp_factor *= dw_factor
@@ -541,9 +545,11 @@ class QpointPhononModes(QpointFrequencies):
         weighting_opts = [None, 'coherent', 'incoherent',
                           'coherent-plus-incoherent']
         if weighting not in weighting_opts:
-            raise ValueError(f'Invalid value for weighting, got '
-                             f'{weighting}, should be one of '
-                             f'{weighting_opts}')
+            msg = (
+                f'Invalid value for weighting, got {weighting}, should be one '
+                f'of {weighting_opts}'
+            )
+            raise ValueError(msg)
 
         cross_sections_data = None
         if isinstance(cross_sections, str):
@@ -559,8 +565,11 @@ class QpointPhononModes(QpointFrequencies):
         elif isinstance(cross_sections, Mapping):
             cross_sections_data = [cross_sections]
         else:
-            raise TypeError(f'Unexpected type for cross_sections, expected '
-                            f'str or dict, got {type(cross_sections)}')
+            msg = (
+                f'Unexpected type for cross_sections, expected '
+                f'str or dict, got {type(cross_sections)}'
+            )
+            raise TypeError(msg)
 
         if cross_sections_data is not None:
             cs = [cross_sections_data[0][x] for x in self.crystal.atom_type]
@@ -571,9 +580,11 @@ class QpointPhononModes(QpointFrequencies):
             # Account for cross sections in different, or invalid, units
             ex_units = '[length]**2'
             if not cs[0].check(ex_units):
-                raise ValueError(
+                msg = (
                     f'Unexpected dimensionality in cross_sections units, '
-                    f'expected {ex_units}, got {cs[0].dimensionality!s}')
+                    f'expected {ex_units}, got {cs[0].dimensionality!s}'
+                )
+                raise ValueError(msg)
             cs = [x.to('mbarn') for x in cs]
         else:
             cs = None

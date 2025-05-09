@@ -306,8 +306,11 @@ def sample_sphere_structure_factor(
             dw = dw_phonons.calculate_debye_waller(temperature,
                                                    )  # type: DebyeWaller
         elif not np.isclose(dw.temperature, temperature):
-            raise ValueError('Temperature argument is not consistent with '
-                             'temperature stored in DebyeWaller object.')
+            msg = (
+                'Temperature argument is not consistent with '
+                'temperature stored in DebyeWaller object.'
+            )
+            raise ValueError(msg)
 
     qpts_cart = _get_qpts_sphere(npts, sampling=sampling, jitter=jitter,
                                  ) * mod_q
@@ -391,7 +394,8 @@ def _get_qpts_sphere(npts: int,
         case 'random-sphere':
             return np.asarray(list(random_sphere(npts)))
 
-    raise ValueError(f'Sampling method "{sampling}" is unknown.')
+    msg = f'Sampling method "{sampling}" is unknown.'
+    raise ValueError(msg)
 
 
 def _check_gridpts(npts: int) -> int:

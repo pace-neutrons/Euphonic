@@ -8,6 +8,7 @@ import pytest
 
 from euphonic import ureg
 from euphonic.spectra import Spectrum1D
+from euphonic.spectra.base import _distribution_1d
 from tests_and_analysis.test.utils import (
     check_json_metadata,
     check_property_setters,
@@ -597,3 +598,10 @@ class TestSpectrum1DMethods:
         spec_copy.metadata['Test'] = spec_copy.metadata['Test'].upper()
         with pytest.raises(AssertionError):
             check_spectrum1d(spec, spec_copy)
+
+class TestBasePrivateFunctions:
+    def test_distribution_1d_error(self):
+        with pytest.raises(ValueError, match="Expected shape: 'lorentz'"):
+            _distribution_1d(xbins=np.array([0., 1., 2.]),
+                             xwidth=4.,
+                             shape='non-implemented-shape')

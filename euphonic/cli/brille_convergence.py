@@ -46,8 +46,11 @@ def check_brille_settings(
 
     fc = load_data_from_file(filename)
     if not isinstance(fc, ForceConstants):
-        raise TypeError('Force constants are required to use the '
-                        'euphonic-check-brille-settings tool')
+        msg = (
+            'Force constants are required to use the '
+            'euphonic-check-brille-settings tool'
+        )
+        raise TypeError(msg)
 
     brille_calc_modes_kwargs = _brille_calc_modes_kwargs(
         Namespace(**calc_modes_kwargs))

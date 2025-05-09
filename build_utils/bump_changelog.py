@@ -78,7 +78,8 @@ def bump_version(blocks: list[Block], tag: str) -> None:
     all_tags = [block.tag for block in blocks]
 
     if all_tags[0] != 'Unreleased':
-        raise ValueError('CHANGELOG should always begin with Unreleased')
+        msg = 'CHANGELOG should always begin with Unreleased'
+        raise ValueError(msg)
 
     if all_tags[1] != tag:
         # This version is not in the CHANGELOG yet

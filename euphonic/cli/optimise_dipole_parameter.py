@@ -1,4 +1,3 @@
-# -*- coding: UTF-8 -*-
 """
 Run and time the Ewald sum part of an interpolation calculation for a
 small number of q-points for different values of dipole_parameter (this
@@ -76,8 +75,11 @@ def calculate_optimum_dipole_parameter(
 
     fc = load_data_from_file(filename)
     if not isinstance(fc, ForceConstants):
-        raise TypeError('Force constants are required to use the '
-                        'euphonic-optimise-dipole-parameter tool')
+        msg = (
+            'Force constants are required to use the '
+            'euphonic-optimise-dipole-parameter tool'
+        )
+        raise TypeError(msg)
     # Only warn rather than error - although not designed for it
     # this script could still be useful for getting approximate
     # per-qpt timings for any material
