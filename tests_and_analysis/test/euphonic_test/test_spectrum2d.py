@@ -634,5 +634,5 @@ class TestKinematicConstraints:
                                 spec2d.z_data)
         with pytest.raises(
                 ValueError,
-                match='y_data needs to have energy \(or wavenumber\) units'):
+                match=r'y_data needs to have energy \(or wavenumber\) units'):
             apply_kinematic_constraints(bad_spec2d, **kwargs)
