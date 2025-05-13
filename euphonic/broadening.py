@@ -184,7 +184,7 @@ def _get_spacing(error,
         return np.polyval([612.7, -122.7, 15.40, 1.0831], error)
 
     if fit != 'cheby-log':
-        msg = dedent_and_fill(f"""\
+        msg = dedent_and_fill(f"""
             Fit "{fit}" is not available for shape "{shape}". The "cheby-log"
             fit is recommended for "gauss" and "Lorentz" shapes.'
             """)

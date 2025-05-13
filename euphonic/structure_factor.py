@@ -320,14 +320,14 @@ class StructureFactor(QpointFrequencies):
         if self.temperature is not None:
             if (temperature is not None
                     and not np.isclose(temperature, self.temperature)):
-                msg = dedent_and_fill(f"""\
+                msg = dedent_and_fill(f"""
                     Temperature provided to calculate the Bose factor
                     ({temperature:~P}) is not consistent with the temperature
                     stored in StructureFactor ({self.temperature:~P})""")
                 raise ValueError(msg)
             temperature = self.temperature
         if temperature is None:
-            msg = dedent_and_fill("""\
+            msg = dedent_and_fill("""
                 When calculating the Bose factor, no temperature was
                 provided, and no temperature could be found in StructureFactor
                 """)

@@ -24,6 +24,7 @@ zips = partial(zip, strict=True)
 def dedent_and_fill(text: str) -> str:
     """Clean up indented multiline string for display to user.
 
+    - Remove leading/trailing newline (So ''' can be placed freely.)
     - Remove indentation
     - Preserve any paragraph breaks (i.e. "\n\n")
     - Wrap other newlines to default textwrap line width (70 characters)
@@ -266,7 +267,7 @@ def get_reference_data(collection: str = 'Sears1992',
 
     data = file_data['physical_property'].get(physical_property)
     if data is None:
-        msg =  dedent_and_fill(f"""\
+        msg =  dedent_and_fill(f"""
             No such collection "{collection}" with property
             "{physical_property}". Available properties for this collection:
             """ + ', '.join(file_data['physical_property']),
@@ -395,7 +396,7 @@ def convert_fc_phases(force_constants: np.ndarray, atom_r: np.ndarray,
     n_atoms_uc = len(uc_to_sc_atom_idx)
     n_cells = int(np.rint(np.absolute(np.linalg.det(sc_matrix))))
     if n_atoms_sc/n_atoms_uc - n_cells != 0:
-        msg = dedent_and_fill(f"""\
+        msg = dedent_and_fill(f"""
             Inconsistent numbers of cells in the supercell, unit cell has
             {n_atoms_uc} atoms, and supercell has {n_atoms_sc} atoms, but
             sc_matrix determinant suggests there should be {n_cells} cells in
@@ -409,7 +410,7 @@ def convert_fc_phases(force_constants: np.ndarray, atom_r: np.ndarray,
         np.abs(cell_origins_per_atom
                - np.rint(cell_origins_per_atom)) > cell_origins_tol)[0]
     if len(non_int) > 0:
-        msg = dedent_and_fill(f"""\
+        msg = dedent_and_fill(f"""
             Non-integer cell origins for atom(s)
             {", ".join(np.unique(non_int).astype(str))},
             check coordinates and indices are correct""",
@@ -448,7 +449,7 @@ def convert_fc_phases(force_constants: np.ndarray, atom_r: np.ndarray,
                     co_idx = j
                     break
             else:
-                msg = dedent_and_fill("""\
+                msg = dedent_and_fill("""
                     Couldn't determine cell origins for force constants matrix
                     """)
                 raise ValueError(msg)

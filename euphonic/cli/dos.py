@@ -48,7 +48,7 @@ def main(params: Optional[list[str]] = None) -> None:
             and args.adaptive
             and len(args.energy_broadening) == 1):
         if args.adaptive_scale is not None:
-            msg = dedent_and_fill("""\
+            msg = dedent_and_fill("""
                 Adaptive scale factor was specified twice; use either
                 --adaptive-scale or --energy-broadening.  To add a fixed width
                 to adaptive broadening, use --instrument-broadening.""")

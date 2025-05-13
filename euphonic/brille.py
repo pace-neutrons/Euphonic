@@ -9,7 +9,7 @@ import spglib as spg
 try:
     import brille as br
 except ModuleNotFoundError as err:
-    err_msg = textwrap.dedent("""\
+    err_msg = textwrap.dedent("""
         Cannot import Brille for use with BrilleInterpolator
         (maybe Brille is not installed?). To install Euphonic's
         optional Brille dependency, try:

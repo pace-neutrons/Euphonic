@@ -465,7 +465,7 @@ def read_interpolation_data(
             if header == b'BEGIN_PARAMETERS_DUMP':
                 castep_version: Version = Version(_read_entry(f).decode().strip())
                 if castep_version < Version('17.1'):
-                    msg = dedent_and_fill("""\
+                    msg = dedent_and_fill("""
                         Old castep file detected:
                         Euphonic only supports post-Castep 17.1 files.
                         Please rerun the calculation with a newer version
@@ -536,7 +536,7 @@ def read_interpolation_data(
         data_dict['sc_matrix'] = sc_matrix
         data_dict['cell_origins'] = cell_origins
     except NameError:
-        msg = dedent_and_fill(f"""\
+        msg = dedent_and_fill(f"""
             Force constants matrix could not be found in {filename}.
 
 

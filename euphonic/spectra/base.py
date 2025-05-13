@@ -274,7 +274,7 @@ class Spectrum(ABC):
                 if not np.all(np.isclose(bin_widths, bin_widths[0])):
                     unequal_bin_axes += [axes[ax]]
         if len(unequal_bin_axes) > 0:
-            msg = dedent_and_fill(f"""\
+            msg = dedent_and_fill(f"""
             {" and ".join(unequal_bin_axes)} bin widths are not equal, so
             broadening by convolution may give incorrect results.
             """)
@@ -1264,7 +1264,7 @@ def apply_kinematic_constraints(spectrum: Spectrum2D,
                                  .to('meV angstrom^2'))
 
     if (e_i is None) == (e_f is None):
-        msg = dedent_and_fill("""\
+        msg = dedent_and_fill("""
             Exactly one of e_i and e_f should be set.
             (The other value will be derived from energy transfer).
             """)

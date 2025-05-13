@@ -424,7 +424,7 @@ class SpectrumCollectionMixin(ABC):
             n_lines = len(self.metadata['line_data'])
 
             if n_lines != collection_size:
-                msg = dedent_and_fill(f"""\
+                msg = dedent_and_fill(f"""
                     {self._spectrum_data_name()} contains {collection_size}
                     spectra, but metadata["line_data"] contains {n_lines}
                     entries

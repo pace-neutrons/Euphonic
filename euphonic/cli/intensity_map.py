@@ -40,7 +40,7 @@ def main(params: Optional[list[str]] = None) -> None:
         and args.temperature is not None
         and not isinstance(data, ForceConstants)
     ):
-        msg = dedent_and_fill("""\
+        msg = dedent_and_fill("""
             Force constants data is required to generate the Debye-Waller
             factor. Leave "--temperature" unset if plotting precalculated
             phonon modes.""")

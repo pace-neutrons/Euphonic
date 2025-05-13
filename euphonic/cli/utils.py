@@ -133,7 +133,7 @@ def load_data_from_file(filename: str | os.PathLike,
     elif path.suffix in phonopy_suffixes:
         data = _load_phonopy_file(path, frequencies_only)
     else:
-        msg = euphonic.util.dedent_and_fill(f"""\
+        msg = euphonic.util.dedent_and_fill(f"""
             File format was not recognised. CASTEP force constants data for
             import should have extension from {castep_fc_suffixes}, CASTEP
             phonon mode data for import should have extension

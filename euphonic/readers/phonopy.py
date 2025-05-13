@@ -396,7 +396,7 @@ def _check_fc_shape(fc_shape: tuple[int, int], n_atoms: int,
     """
     if (not ((fc_shape[0] == n_atoms or fc_shape[0] == n_cells*n_atoms) and
              fc_shape[1] == n_cells*n_atoms)):
-        msg = dedent_and_fill(f"""\
+        msg = dedent_and_fill(f"""
             Force constants matrix with shape {fc_shape} read from
             {fc_filename} is not compatible with crystal read from
             {summary_filename} which has {n_atoms} atoms in the cell, and
@@ -738,7 +738,7 @@ def read_interpolation_data(
     # 'dielectric' are written to phonopy.yaml, but if NAC = .FALSE.
     # 'nac_factor' will not be written. In this case raise error.
     if ('born' in summary_dict and 'nac_factor' not in summary_dict):
-        msg = dedent_and_fill(f"""\
+        msg = dedent_and_fill(f"""
             nac_unit_conversion_factor could not be found in {summary_pathname}
             or the BORN file (if given), so units of the dielectric tensor
             cannot be determined.

@@ -19,7 +19,7 @@ try:
     import matplotlib.pyplot as plt
 
 except ModuleNotFoundError as err:
-    err_msg = dedent_and_fill("""\
+    err_msg = dedent_and_fill("""
         Cannot import Matplotlib for plotting (maybe Matplotlib is
         not installed?). To install Euphonic's optional Matplotlib
         dependency, try:
