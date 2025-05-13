@@ -1264,11 +1264,10 @@ def apply_kinematic_constraints(spectrum: Spectrum2D,
                                  .to('meV angstrom^2'))
 
     if (e_i is None) == (e_f is None):
-        msg = (
-            'Exactly one of e_i and e_f should be set. '
-                         '(The other value will be derived from energy '
-                         'transfer).'
-        )
+        msg = dedent_and_fill("""\
+            Exactly one of e_i and e_f should be set.
+            (The other value will be derived from energy transfer).
+            """)
         raise ValueError(msg)
 
     if e_i is None:

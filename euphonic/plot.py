@@ -1,7 +1,15 @@
 from collections.abc import Sequence
 from itertools import pairwise
-from textwrap import dedent
 from typing import TYPE_CHECKING, Optional
+
+import numpy as np
+
+from euphonic.spectra import Spectrum1D, Spectrum1DCollection, Spectrum2D
+from euphonic.ureg import Quantity
+from euphonic.util import dedent_and_fill, zips
+
+if TYPE_CHECKING:
+    from matplotlib.lines import Line2D
 
 try:
     from matplotlib.axes import Axes
@@ -11,7 +19,7 @@ try:
     import matplotlib.pyplot as plt
 
 except ModuleNotFoundError as err:
-    err_msg = dedent("""\
+    err_msg = dedent_and_fill("""\
         Cannot import Matplotlib for plotting (maybe Matplotlib is
         not installed?). To install Euphonic's optional Matplotlib
         dependency, try:
@@ -19,15 +27,6 @@ except ModuleNotFoundError as err:
             pip install euphonic[matplotlib]
     """)
     raise ModuleNotFoundError(err_msg) from err
-
-import numpy as np
-
-from euphonic.spectra import Spectrum1D, Spectrum1DCollection, Spectrum2D
-from euphonic.ureg import Quantity
-from euphonic.util import zips
-
-if TYPE_CHECKING:
-    from matplotlib.lines import Line2D
 
 
 def plot_1d_to_axis(spectra: Spectrum1D | Spectrum1DCollection,
