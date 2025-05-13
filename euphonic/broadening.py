@@ -13,6 +13,7 @@ from scipy.signal import convolve
 from scipy.stats import norm
 
 from euphonic.ureg import ureg
+from euphonic.util import dedent_and_fill
 
 ErrorFit = Literal['cheby-log', 'cubic']
 KernelShape = Literal['gauss', 'lorentz']
@@ -78,12 +79,16 @@ def variable_width_broadening(
     if width_convention.lower() == 'fwhm' and shape == 'gauss':
         sigma_function = (lambda x: width_function(x) * FWHM_TO_SIGMA)
     elif width_convention.lower() == 'std' and shape == 'lorentz':
-        raise ValueError('Standard deviation unavailable for Lorentzian '
-                         'function: please use FWHM.')
+        msg = (
+            'Standard deviation unavailable for Lorentzian '
+            'function: please use FWHM.'
+        )
+        raise ValueError(msg)
     elif width_convention.lower() in ('std', 'fwhm'):
         sigma_function = width_function
     else:
-        raise ValueError('width_convention must be "std" or "fwhm".')
+        msg = 'width_convention must be "std" or "fwhm".'
+        raise ValueError(msg)
 
     widths = sigma_function(x)
 
@@ -179,9 +184,11 @@ def _get_spacing(error,
         return np.polyval([612.7, -122.7, 15.40, 1.0831], error)
 
     if fit != 'cheby-log':
-        raise ValueError(f'Fit "{fit}" is not available for shape "{shape}". '
-                         f'The "cheby-log" fit is recommended for "gauss" and '
-                         f'"Lorentz" shapes.')
+        msg = dedent_and_fill(f"""
+            Fit "{fit}" is not available for shape "{shape}". The "cheby-log"
+            fit is recommended for "gauss" and "Lorentz" shapes.'
+            """)
+        raise ValueError(msg)
 
     if shape == 'lorentz':
         cheby = Chebyshev(
@@ -201,8 +208,11 @@ def _get_spacing(error,
 
     log_error = np.log10(error)
     if not safe_domain[0] < log_error < safe_domain[1]:
-        raise ValueError('Target error is out of fit range; value must lie'
-                         f' in range {np.power(10, safe_domain)}.')
+        msg = (
+            'Target error is out of fit range; value must lie '
+            f'in range {np.power(10, safe_domain)}.'
+        )
+        raise ValueError(msg)
     return cheby(log_error)
 
 

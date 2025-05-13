@@ -14,6 +14,7 @@ import numpy as np
 from packaging.version import Version
 
 from euphonic.ureg import ureg
+from euphonic.util import dedent_and_fill
 
 
 def read_phonon_dos_data(
@@ -72,10 +73,7 @@ def read_phonon_dos_data(
             weights = np.concatenate((weights, [frequency_block.weight]))
             freqs = np.concatenate((freqs, [frequency_block.frequencies]))
             mode_grads = np.concatenate((mode_grads, [qmode_grad.squeeze()]))
-        line = f.readline()
-        if 'BEGIN DOS' not in line:
-            raise RuntimeError(
-                f'Expected "BEGIN DOS" in {filename}, got {line}')
+        f.readline()  # Skip line
 
         dos_data = np.loadtxt(f, max_rows=n_bins)
 
@@ -248,9 +246,11 @@ def read_phonon_data(
                 zero_indices = np.asarray(list(intersection), dtype = int)
                 weights[zero_indices] = 0
             else:
-                raise ValueError(
+                msg = (
                     'Found multiple non-split blocks for q-point {qpt_id},'
-                    ' cannot determine which to use.')
+                    ' cannot determine which to use.'
+                )
+                raise ValueError(msg)
 
         elif average_repeat_points:
             np_indices = np.asarray(list(indices), dtype=int)
@@ -465,13 +465,15 @@ def read_interpolation_data(
             if header == b'BEGIN_PARAMETERS_DUMP':
                 castep_version: Version = Version(_read_entry(f).decode().strip())
                 if castep_version < Version('17.1'):
-                    raise ValueError('Old castep file detected: '
-                        'Euphonic only supports post-Castep 17.1 files. '
-                        'Please rerun the calculation with a newer version '
-                        'of Castep with the original .cell file and a '
-                        '.castep file with a single line with the '
-                        '"continuation: <old.castep_bin>" keyword and '
-                        'use the new output .castep_bin file in Euphonic.')
+                    msg = dedent_and_fill("""
+                        Old castep file detected:
+                        Euphonic only supports post-Castep 17.1 files.
+                        Please rerun the calculation with a newer version
+                        of Castep with the original .cell file and a
+                        .castep file with a single line with the
+                        "continuation: <old.castep_bin>" keyword and
+                        use the new output .castep_bin file in Euphonic.""")
+                    raise ValueError(msg)
 
             if header == b'BEGIN_UNIT_CELL':
                 # CASTEP writes the cell twice: the first is the
@@ -534,11 +536,14 @@ def read_interpolation_data(
         data_dict['sc_matrix'] = sc_matrix
         data_dict['cell_origins'] = cell_origins
     except NameError:
-        raise RuntimeError(
-            f'Force constants matrix could not be found in {filename}. '
-            f'\nEnsure PHONON_WRITE_FORCE_CONSTANTS: true and a '
-            f'PHONON_FINE_METHOD has been chosen when running CASTEP',
-                           ) from None
+        msg = dedent_and_fill(f"""
+            Force constants matrix could not be found in {filename}.
+
+
+            Ensure PHONON_WRITE_FORCE_CONSTANTS: true and a PHONON_FINE_METHOD
+            has been chosen when running CASTEP
+            """)
+        raise RuntimeError(msg) from None
 
     # Set entries relating to dipoles
     try:
@@ -666,8 +671,8 @@ def _read_entry(file_obj: BinaryIO, dtype: str = '',
         # Read 4 byte Fortran record marker
         rawdata = file_obj.read(4)
         if rawdata == b'':
-            raise EOFError(
-                'Problem reading binary file: unexpected EOF reached')
+            msg = 'Problem reading binary file: unexpected EOF reached'
+            raise EOFError(msg)
         return struct.unpack('>i', rawdata)[0]
 
     begin = record_mark_read(file_obj)
@@ -690,7 +695,8 @@ def _read_entry(file_obj: BinaryIO, dtype: str = '',
         data = file_obj.read(begin)
     end = record_mark_read(file_obj)
     if begin != end:
-        raise OSError("""Problem reading binary file: beginning and end
-                         record markers do not match""")
+        msg = ('Problem reading binary file: beginning and end record markers '
+               'do not match')
+        raise OSError(msg)
 
     return data

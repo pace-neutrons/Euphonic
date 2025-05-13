@@ -34,7 +34,7 @@ from euphonic.io import (
 )
 from euphonic.readers.castep import read_phonon_dos_data
 from euphonic.ureg import ureg
-from euphonic.util import zips
+from euphonic.util import dedent_and_fill, zips
 from euphonic.validate import _check_constructor_inputs, _check_unit_conversion
 
 CallableQuantity = Callable[[Quantity], Quantity]
@@ -102,9 +102,10 @@ class Spectrum(ABC):
 
     @x_tick_labels.setter
     def x_tick_labels(self, value: XTickLabels) -> None:
-        err_msg = ('x_tick_labels should be of type '
-                   'Sequence[Tuple[int, str]] e.g. '
-                   '[(0, "label1"), (5, "label2")]')
+        err_msg = (
+            'x_tick_labels should be of type Sequence[Tuple[int, str]] e.g. '
+            '[(0, "label1"), (5, "label2")]'
+        )
         if value is not None:
             if isinstance(value, Sequence):
                 for elem in value:
@@ -227,14 +228,15 @@ class Spectrum(ABC):
             return self._split_by_tol(btol=btol)
 
         if btol is not None:
-            raise ValueError('Cannot set both indices and btol')
+            msg = 'Cannot set both indices and btol'
+            raise ValueError(msg)
         return self._split_by_indices(indices)
 
     @classmethod
     def _broaden_data(cls,
                       data: np.ndarray,
                       bin_centres: Sequence[np.ndarray],
-                      widths: Sequence[float],
+                      widths: Sequence[float|None],
                       shape: KernelShape = 'gauss',
                       *,
                       method: Optional[Literal['convolve']] = None,
@@ -248,12 +250,18 @@ class Spectrum(ABC):
         """
         shape_opts = ('gauss', 'lorentz')
         if shape not in shape_opts:
-            raise ValueError(f'Invalid value for shape, got {shape}, '
-                             f'should be one of {shape_opts}')
+            msg = (
+                f'Invalid value for shape, got {shape}, '
+                f'should be one of {shape_opts}'
+            )
+            raise ValueError(msg)
         method_opts = ('convolve', None)
         if method not in method_opts:
-            raise ValueError(f'Invalid value for method, got {method}, '
-                             f'should be one of {method_opts}')
+            msg = (
+                f'Invalid value for method, got {method}, '
+                f'should be one of {method_opts}'
+            )
+            raise ValueError(msg)
 
         # We only want to check for unequal bins if using a method that
         # is not correct for unequal bins (currently this is the only
@@ -266,9 +274,10 @@ class Spectrum(ABC):
                 if not np.all(np.isclose(bin_widths, bin_widths[0])):
                     unequal_bin_axes += [axes[ax]]
         if len(unequal_bin_axes) > 0:
-            msg = (f'{" and ".join(unequal_bin_axes)} bin widths are '
-                   f'not equal, so broadening by convolution may give '
-                   f'incorrect results.')
+            msg = dedent_and_fill(f"""
+            {" and ".join(unequal_bin_axes)} bin widths are not equal, so
+            broadening by convolution may give incorrect results.
+            """)
             if method is None:
                 raise ValueError(
                     msg + ' If you still want to broaden by convolution '
@@ -284,8 +293,8 @@ class Spectrum(ABC):
 
         elif shape == 'lorentz':
             if width_convention != 'fwhm':
-                raise ValueError(
-                    'Lorentzian function width must be specified as FWHM')
+                msg = 'Lorentzian function width must be specified as FWHM'
+                raise ValueError(msg)
             data_broadened = data
             for ax, (width, bin_data) in enumerate(zips(widths, bin_centres)):
                 if width is not None:
@@ -329,7 +338,8 @@ class Spectrum(ABC):
             case 'std':
                 sigma = width
             case _:
-                raise ValueError("Width convention must be 'std' or 'fwhm'")
+                msg = "Width convention must be 'std' or 'fwhm'"
+                raise ValueError(msg)
 
         mean_bin_size = np.mean(np.diff(ax_bin_centres))
         return sigma / mean_bin_size
@@ -365,9 +375,11 @@ class Spectrum(ABC):
             return True
         if bin_length == data_length:
             return False
-        raise ValueError(
+        msg = (
             f'Unexpected data axis length {data_length} '
-            f'for bin axis length {bin_length}')
+            f'for bin axis length {bin_length}'
+        )
+        raise ValueError(msg)
 
     def get_bin_edges(self, *, restrict_range: bool = True) -> Quantity:
         """
@@ -750,7 +762,8 @@ class Spectrum1D(Spectrum):
                 fit=width_fit,
             )
         else:
-            raise TypeError('x_width must be a Quantity or Callable')
+            msg = 'x_width must be a Quantity or Callable'
+            raise TypeError(msg)
 
         new_spectrum = self.copy()
         new_spectrum.y_data = y_broadened
@@ -1239,23 +1252,23 @@ def apply_kinematic_constraints(spectrum: Spectrum2D,
     try:
         (1 * spectrum.x_data.units).to('1/angstrom')
     except DimensionalityError as error:
-        raise ValueError(
-            'x_data needs to have wavevector units (i.e. 1/length)',
-            ) from error
+        msg = 'x_data needs to have wavevector units (i.e. 1/length)'
+        raise ValueError(msg) from error
     try:
         (1 * spectrum.y_data.units).to('eV', 'spectroscopy')
     except DimensionalityError as error:
-        raise ValueError(
-            'y_data needs to have energy (or wavenumber) units',
-            ) from error
+        msg = 'y_data needs to have energy (or wavenumber) units'
+        raise ValueError(msg) from error
 
     momentum2_to_energy = 0.5 * (ureg('hbar^2 / neutron_mass')
                                  .to('meV angstrom^2'))
 
     if (e_i is None) == (e_f is None):
-        raise ValueError('Exactly one of e_i and e_f should be set. '
-                         '(The other value will be derived from energy '
-                         'transfer).')
+        msg = dedent_and_fill("""
+            Exactly one of e_i and e_f should be set.
+            (The other value will be derived from energy transfer).
+            """)
+        raise ValueError(msg)
 
     if e_i is None:
         # Indirect geometry: final energy is fixed, incident energy unlimited
@@ -1325,13 +1338,12 @@ def _distribution_1d(xbins: np.ndarray,
                      shape: Literal['lorentz'] = 'lorentz',
                      ) -> np.ndarray:
     x = _get_dist_bins(xbins)
-    if shape == 'lorentz':
-        dist = _lorentzian(x, xwidth)
-        dist = dist / np.sum(dist)  # Naively normalise
-    else:
-        raise ValueError("Expected shape: 'lorentz'")
+    if shape != 'lorentz':
+        msg = "Expected shape: 'lorentz'"
+        raise ValueError(msg)
 
-    return dist
+    dist = _lorentzian(x, xwidth)
+    return dist / np.sum(dist)  # Naively normalise
 
 
 def _get_dist_bins(bins: np.ndarray) -> np.ndarray:

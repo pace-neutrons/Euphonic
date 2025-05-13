@@ -286,7 +286,8 @@ def spherical_polar_improved(npts: int,
         If the number of points is not supported by this method
         """
     if npts < 6:
-        raise ValueError('This sampling scheme has a minimum of 6 points')
+        msg = 'This sampling scheme has a minimum of 6 points'
+        raise ValueError(msg)
 
     rng = np.random.default_rng()
 

@@ -15,6 +15,7 @@
 
   - Numpy random number generators have been updated to use a Generator from
     ``np.random.default_rng``
+  - Improved test coverage of error states
 
 
 `v1.4.3 <https://github.com/pace-neutrons/Euphonic/compare/v1.4.2...v1.4.3>`_

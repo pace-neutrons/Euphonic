@@ -244,8 +244,11 @@ class Crystal:
         # For some reason this can't always be reproduced
         symm = spglib.get_symmetry(self.to_spglib_cell(), symprec=symprec)
         if symm is None:
-            raise RuntimeError(f'spglib.get_symmetry returned None with '
-                               f'symprec={symprec}. Try increasing tol')
+            msg = (
+                f'spglib.get_symmetry returned None with '
+                f'symprec={symprec}. Try increasing tol'
+            )
+            raise RuntimeError(msg)
         n_ops = len(symm['rotations'])
         equiv_atoms = np.full((n_ops, self.n_atoms), -1, dtype=np.int32)
         atom_r_symm = (np.einsum('ijk,lk->ilj', symm['rotations'], self.atom_r)
@@ -273,9 +276,11 @@ class Crystal:
                                     f'{symm["rotations"][op_idx]} translation '
                                     f'{symm["translations"][op_idx]}')
                         if len(equiv_idx_op) == 0:
-                            raise RuntimeError(f'No equivalent atom found {err_info}')
+                            msg = f'No equivalent atom found {err_info}'
+                            raise RuntimeError(msg)
                         if len(equiv_idx_op) > 1:
-                            raise RuntimeError(f'Multiple equivalent atoms found {err_info}')
+                            msg = f'Multiple equivalent atoms found {err_info}'
+                            raise RuntimeError(msg)
                 equiv_atoms[:, i] = idx[equiv_idx[1]]
 
         return symm['rotations'], symm['translations'], equiv_atoms

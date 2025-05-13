@@ -38,10 +38,11 @@ def release_github(test=True):
     version_dict['CITATION.cff'] = 'v' + citation['version']
     for ver_name, ver in version_dict.items():
         if euphonic_ver != ver:
-            raise ValueError(
+            msg = (
                 f'euphonic.__version__/{ver_name} version mismatch! '
-                f'euphonic.__version__: {euphonic_ver} {ver_name}: '
-                f'{ver}')
+                f'euphonic.__version__: {euphonic_ver} {ver_name}: {ver}'
+            )
+            raise ValueError(msg)
 
     if is_prerelease:
         body_re = r'`Unreleased.*?^-+\n(.*?)^`v'

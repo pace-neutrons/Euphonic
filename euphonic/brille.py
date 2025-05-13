@@ -1,5 +1,6 @@
 import dataclasses
 from multiprocessing import cpu_count
+import textwrap
 from typing import Any, Optional, TypeVar
 
 import numpy as np
@@ -8,11 +9,14 @@ import spglib as spg
 try:
     import brille as br
 except ModuleNotFoundError as err:
-    raise ModuleNotFoundError(
-        'Cannot import Brille for use with BrilleInterpolator '
-        "(maybe Brille is not installed?). To install Euphonic's "
-        'optional Brille dependency, try:\n\npip install '
-        'euphonic[brille]\n') from err
+    err_msg = textwrap.dedent("""
+        Cannot import Brille for use with BrilleInterpolator
+        (maybe Brille is not installed?). To install Euphonic's
+        optional Brille dependency, try:
+
+            pip install euphonic[brille]
+        """)
+    raise ModuleNotFoundError(err_msg) from err
 
 from euphonic import (
     Crystal,
@@ -190,7 +194,8 @@ class BrilleInterpolator:
         """
         grid_type_opts = ('trellis', 'mesh', 'nest')
         if grid_type not in grid_type_opts:
-            raise ValueError(f'Grid type "{grid_type}" not recognised')
+            msg = f'Grid type "{grid_type}" not recognised'
+            raise ValueError(msg)
 
         crystal = force_constants.crystal
         cell = crystal.to_spglib_cell()

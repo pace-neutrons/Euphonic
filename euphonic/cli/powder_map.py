@@ -134,11 +134,17 @@ def main(params: Optional[list[str]] = None) -> None:
 
     fc = load_data_from_file(args.filename, verbose=True)
     if not isinstance(fc, ForceConstants):
-        raise TypeError('Force constants are required to use the '
-                        'euphonic-powder-map tool')
+        msg = (
+            'Force constants are required to use the '
+            'euphonic-powder-map tool'
+        )
+        raise TypeError(msg)
     if args.pdos is not None and args.weighting == 'coherent':
-        raise ValueError('"--pdos" is only compatible with '
-                         '"--weighting" options that include dos')
+        msg = (
+            '"--pdos" is only compatible with '
+            '"--weighting" options that include dos'
+        )
+        raise ValueError(msg)
 
     if args.use_brille:
         from euphonic.brille import BrilleInterpolator

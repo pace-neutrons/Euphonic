@@ -4,6 +4,7 @@ import numpy as np
 import numpy.testing as npt
 from pint import DimensionalityError
 import pytest
+import spglib
 
 from euphonic import Crystal, Quantity, ureg
 from tests_and_analysis.test.utils import (
@@ -457,7 +458,6 @@ class TestCrystalMethods:
             self, mocker, crystal, kwargs, expected_symprec):
         # Ensure tol gets passed correctly to spglib - we don't care about
         # the details of what spglib does
-        import spglib
         mock = mocker.patch('spglib.get_symmetry', wraps=spglib.get_symmetry)
         rot, trans, equiv_atoms = crystal.get_symmetry_equivalent_atoms(
             **kwargs)
@@ -466,3 +466,12 @@ class TestCrystalMethods:
         npt.assert_equal(rot.shape, (4, 3, 3))
         npt.assert_equal(trans.shape, (4, 3))
         npt.assert_equal(equiv_atoms.shape, (4, 22))
+
+    def test_get_symmetry_equivalent_atoms_errors(self, mocker):
+        mocker.patch('spglib.get_symmetry',
+                     wraps=spglib.get_symmetry,
+                     return_value=None)
+        crystal = get_crystal('LZO')
+        with pytest.raises(RuntimeError,
+                           match='spglib.get_symmetry returned None'):
+            crystal.get_symmetry_equivalent_atoms()

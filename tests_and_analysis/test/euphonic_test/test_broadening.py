@@ -1,3 +1,5 @@
+from dataclasses import dataclass
+
 import numpy as np
 from numpy.polynomial import Polynomial
 from numpy.random import RandomState
@@ -6,7 +8,7 @@ import pytest
 from scipy.integrate import simpson
 from scipy.ndimage import gaussian_filter
 
-from euphonic import ureg
+from euphonic import Quantity, ureg
 from euphonic.broadening import (
     find_coeffs,
     variable_width_broadening,
@@ -24,35 +26,72 @@ from tests_and_analysis.test.euphonic_test.test_spectrum1d import (
 from tests_and_analysis.test.utils import get_mode_widths
 
 
-def test_variable_close_to_exact():
-    """Check variable-width broadening agrees with exact for trivial case"""
+@dataclass
+class ExampleData:
+    bins: Quantity
+    x: Quantity
+    y: Quantity
+
+    def __post_init__(self) -> None:
+        self.bin_width = self.bins[1] - self.bins[0]
+
+@pytest.fixture
+def example() -> ExampleData:
     rng = RandomState(123)
 
-    bins = np.linspace(0, 100, 200)
-    bin_width = bins[1] - bins[0]
+    bins = np.linspace(0, 100, 200) * ureg('meV')
     x = (bins[1:] + bins[:-1]) / 2
-    y = np.zeros_like(x)
-    y[rng.randint(0, len(x), 20)] = rng.rand(20)
 
-    sigma = 2.
-    exact = gaussian_filter(y, (sigma / bin_width), mode='constant')
+    y = np.zeros_like(x) * ureg('1/meV')
+    y[rng.randint(0, len(x), 20)] = rng.rand(20) * ureg('1/meV')
+
+    return ExampleData(bins, x, y)
+
+
+def test_variable_close_to_exact(example):
+    """Check variable-width broadening agrees with exact for trivial case"""
+
+    sigma = 2. * ureg('meV')
+    exact = gaussian_filter(example.y.magnitude,
+                            (sigma / example.bin_width).to('dimensionless').magnitude,
+                            mode='constant')
 
     def width_function(x):
-        poly = Polynomial([sigma, 0., 0.])
+        poly = Polynomial([sigma.to('meV').magnitude, 0., 0.])
         return poly(x.to('meV').magnitude) * ureg('meV')
 
     poly_broadened = variable_width_broadening(
-        bins=(bins * ureg('meV')),
-        x=(x * ureg('meV')),
+        bins=example.bins,
+        x=example.x,
         width_function=width_function,
         width_convention='STD',
-        weights=(y * bin_width),  # Convert from spectrum heights to counts
+        weights=(example.y * example.bin_width).to('dimensionless').magnitude,  # Convert from spectrum heights to counts
         adaptive_error=2e-4,
         fit='cheby-log')
 
-
     npt.assert_allclose(exact, poly_broadened.to('1/meV').magnitude,
                         atol=1e-4)
+
+
+@pytest.mark.parametrize(
+    'width_convention, fit, adaptive_error, message',
+    [('STD', 'cheby-log', 0.001, 'Standard deviation unavailable'),
+     ('UNIMPLEMENTED', 'cheby-log', 0.001, 'must be "std" or "fwhm"'),
+     ('FWHM', 'UNIMPLEMENTED', 0.001, 'Fit "UNIMPLEMENTED" is not available'),
+     ('FWHM', 'cheby-log', 0.00001, 'Target error is out of fit range'),
+     ])
+def test_variable_width_broadening_errors(example, width_convention, fit, adaptive_error, message):
+
+    with pytest.raises(ValueError, match=message):
+        variable_width_broadening(
+            bins=example.bins,
+            x=example.x,
+            width_function=(lambda x: x),
+            width_convention=width_convention,
+            weights=example.y.magnitude,
+            shape='lorentz',
+            fit=fit,
+            adaptive_error=adaptive_error)
 
 
 @pytest.mark.parametrize(

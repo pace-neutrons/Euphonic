@@ -45,15 +45,20 @@ def _check_constructor_inputs(
         if not isinstance(typ, list):
             typ = [typ]  # noqa: PLW2901 redefined-loop-name
         if not any(isinstance(obj, t) for t in typ):
-            raise TypeError(f"The type of {name} {type(obj)} doesn't "
-                             f'match the expected type(s) {typ}')
+            msg = (
+                f"The type of {name} {type(obj)} doesn't "
+                f'match the expected type(s) {typ}'
+            )
+            raise TypeError(msg)
         if hasattr(obj, 'shape') and shape:
             if not isinstance(shape, list):
                 shape = [shape]  # noqa: PLW2901 (redefined-loop-name)
             if not any(obj.shape == _replace_dim(s, obj.shape) for s in shape):
-                raise ValueError(
+                msg = (
                     f"The shape of {name} {obj.shape} doesn't match "
-                    f'the expected shape(s) {shape}')
+                    f'the expected shape(s) {shape}'
+                )
+                raise ValueError(msg)
 
 
 def _check_unit_conversion(obj: object, attr_name: str, attr_value: Any,
@@ -85,9 +90,11 @@ def _check_unit_conversion(obj: object, attr_name: str, attr_value: Any,
             ureg(getattr(obj, attr_name)).ito(attr_value,
                                               'reciprocal_spectroscopy')
         except DimensionalityError as err:
-            raise ValueError(
+            msg = (
                 f'"{attr_value}" is not a known dimensionally-consistent '
-                f'unit for "{attr_name}"') from err
+                f'unit for "{attr_name}"'
+            )
+            raise ValueError(msg) from err
 
 
 def _replace_dim(expected_shape: tuple[int, ...],

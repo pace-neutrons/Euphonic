@@ -178,6 +178,11 @@ class TestCalculateStructureFactorFromQpointPhononModes:
             qpt_ph_modes.calculate_structure_factor(
                 dw=get_dw(dw_material, dw_file))
 
+    def test_bad_scattering_length(self):
+        modes = get_quartz_qpt_ph_modes()
+        with pytest.raises(TypeError, match='Unexpected type'):
+            modes.calculate_structure_factor(scattering_lengths=1.)
+
 
 class TestCalculateStructureFactorUsingReferenceData:
     @pytest.fixture
