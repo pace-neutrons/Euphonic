@@ -39,7 +39,7 @@ def dedent_and_fill(text: str) -> str:
         String for display to user via print() or Exception handling
     """
 
-    text = textwrap.dedent(text)
+    text = textwrap.dedent(text.strip('\n'))
     paragraphs = text.split('\n\n')
 
     return '\n\n'.join(textwrap.fill(paragraph) for paragraph in paragraphs)
@@ -255,8 +255,8 @@ def get_reference_data(collection: str = 'Sears1992',
     else:
         msg = dedent_and_fill(f"""
             No data files known for collection "{collection}".
-            Available collections:
-            """ + ', '.join(list(_reference_data_files)),
+            Available collections: {', '.join(_reference_data_files)}
+            """
         )
         raise ValueError(msg)
 
@@ -269,7 +269,7 @@ def get_reference_data(collection: str = 'Sears1992',
         msg =  dedent_and_fill(f"""\
             No such collection "{collection}" with property
             "{physical_property}". Available properties for this collection:
-            """ + ', '.join(list(file_data['physical_property'].keys())),
+            """ + ', '.join(file_data['physical_property']),
             )
         raise ValueError(msg)
 
