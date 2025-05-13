@@ -256,7 +256,7 @@ def get_reference_data(collection: str = 'Sears1992',
         msg = dedent_and_fill(f"""
             No data files known for collection "{collection}".
             Available collections: {', '.join(_reference_data_files)}
-            """
+            """,
         )
         raise ValueError(msg)
 
