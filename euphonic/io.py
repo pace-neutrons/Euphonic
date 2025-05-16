@@ -19,7 +19,7 @@ def _to_json_dict(dictionary: dict[str, Any]) -> dict[str, Any]:
     """
     for key, val in dictionary.items():
         if isinstance(val, np.ndarray):
-            if val.dtype == np.complex128:
+            if val.dtype is np.complex128:
                 val = val.view(np.float64,                   # noqa: PLW2901
                                ).reshape([*val.shape, 2])
             dictionary[key] = val.tolist()
@@ -43,7 +43,7 @@ def _from_json_dict(dictionary: dict[str, Any],
         if isinstance(val, list):
             if key in type_dict and type_dict[key] is tuple:
                 dictionary[key] = [tuple(x) for x in val]
-            elif key in type_dict and type_dict[key] == np.complex128:
+            elif key in type_dict and type_dict[key] is np.complex128:
                 dictionary[key] = np.array(
                     val, dtype=np.float64).view(np.complex128).squeeze(axis=-1)
             else:
