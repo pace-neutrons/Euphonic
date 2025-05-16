@@ -1,6 +1,13 @@
 `Unreleased <https://github.com/pace-neutrons/Euphonic/compare/v1.4.4...HEAD>`_
 -------------------------------------------------------------------------------
 
+- Maintenance
+
+  - Pytest configuration has been moved from
+    tests_and_analysis/test/pytest.ini to the main
+    pyproject.toml. This means it is more likely to be picked up
+    automatically when running tests outside of the CI workflows.
+
 `v1.4.4 <https://github.com/pace-neutrons/Euphonic/compare/v1.4.3...v1.4.4>`_
 -----------------------------------------------------------------------------
 
