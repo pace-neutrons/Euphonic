@@ -16,6 +16,12 @@ import numpy as np
 from euphonic import ForceConstants
 from euphonic.cli.utils import _get_cli_parser, get_args, load_data_from_file
 
+# Formatting string for timing output TEXT: VALUE UNITS
+TIMING_TEMPLATE = '{:20s}: {:3.2f} {:s}\n'
+
+# Formatting string for dipole parameter output TEXT VALUE
+DPARAM_TEMPLATE = '{:s} {:2.2f}'
+
 
 def main(params: Optional[list[str]] = None) -> None:
     args = get_args(get_parser(), params)
@@ -87,13 +93,11 @@ def calculate_optimum_dipole_parameter(
         warnings.warn('Born charges not found for this material - '
                       'changing dipole_parameter will have no effect.',
                       stacklevel=1)
-    sfmt = '{:20s}'
-    tfmt = '{: 3.2f}'
-    dparamfmt = '{: 2.2f}'
+
     for i, dipole_parameter in enumerate(dipole_parameters):
         if print_to_terminal:
-            print(('Results for dipole_parameter ' + dparamfmt).format(
-                dipole_parameter))
+            print(DPARAM_TEMPLATE.format(
+                'Results for dipole_parameter ', dipole_parameter))
 
         # Time Ewald sum initialisation
         start = time.time()
@@ -103,8 +107,8 @@ def calculate_optimum_dipole_parameter(
         end = time.time()
         t_init[i] = end - start
         if print_to_terminal:
-            print((sfmt + ': ' + tfmt + ' s').format(
-                'Initialisation Time', t_init[i]))
+            print(TIMING_TEMPLATE.format(
+                'Initialisation Time', t_init[i], 's'))
 
         # Time per qpt
         qpts = np.full((n, 3), 0.5)
@@ -117,17 +121,18 @@ def calculate_optimum_dipole_parameter(
         end = time.time()
         t_per_qpt[i] = (end - start)/n
         if print_to_terminal:
-            print((sfmt + ': ' + tfmt + ' ms\n').format(
-                'Time/qpt', t_per_qpt[i]*1000))
+            print(TIMING_TEMPLATE.format(
+                'Time/qpt', t_per_qpt[i]*1000, 'ms'))
+
     opt = np.argmin(t_per_qpt)
     if print_to_terminal:
         print('******************************')
-        print(('Suggested optimum dipole_parameter is ' + dparamfmt).format(
-            dipole_parameters[opt]))
-        print((sfmt + ': ' + tfmt + ' s').format(
-            'Initialisation Time', t_init[opt]))
-        print((sfmt + ': ' + tfmt + ' ms\n').format(
-            'Time/qpt', t_per_qpt[opt]*1000))
+        print(DPARAM_TEMPLATE.format(
+            'Suggested optimum dipole_parameter is ', dipole_parameters[opt]))
+        print(TIMING_TEMPLATE.format(
+            'Initialisation Time', t_init[opt], 's'))
+        print(TIMING_TEMPLATE.format(
+            'Time/qpt', t_per_qpt[opt]*1000, 'ms'))
 
     return (dipole_parameters[opt], t_init[opt], t_per_qpt[opt],
             dipole_parameters, t_init, t_per_qpt)
