@@ -68,6 +68,15 @@ euphonic-show-sampling = "euphonic.cli.show_sampling:main"
 euphonic-intensity-map = "euphonic.cli.intensity_map:main"
 euphonic-powder-map = "euphonic.cli.powder_map:main"
 
+[tool.pytest.ini_options]
+markers = [
+    "brille: test requires 'brille' extra",
+    "c_extension: test requires C extension to be available",
+    "matplotlib: test requires 'matplotlib' extra",
+    "multiple_extras: test requires multiple extras to be installed",
+    "phonopy_reader: test requires 'phonopy-reader' extra",
+]
+
 [tool.ruff]
 line-length = 79
 target-version = "py310"
