@@ -157,7 +157,7 @@ class TestRegression:
     def test_pdos_raises_causes_exit(self, intensity_map_args):
         with pytest.raises(SystemExit) as err:
             euphonic.cli.intensity_map.main(intensity_map_args)
-        assert err.type == SystemExit
+        assert err.type is SystemExit
         assert err.value.code == 2
 
     @pytest.mark.parametrize('intensity_map_args', [
@@ -166,7 +166,7 @@ class TestRegression:
         # Argparse should call sys.exit on invalid choices
         with pytest.raises(SystemExit) as err:
             euphonic.cli.intensity_map.main(intensity_map_args)
-        assert err.type == SystemExit
+        assert err.type is SystemExit
         assert err.value.code == 2
 
 

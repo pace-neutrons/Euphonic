@@ -282,14 +282,14 @@ class TestPlot1D:
 
         legend = fig.axes[0].get_legend()
         if expected_labels is None:
-            assert legend == None
+            assert legend is None
         else:
             for text, label in zip(
                     legend.get_texts(), expected_labels, strict=True):
                 assert text.get_text() == label
         # Ensure legend only on first subplot
         for ax in fig.axes[1:]:
-            assert ax.get_legend() == None
+            assert ax.get_legend() is None
 
         if 'xlabel' in kwargs:
             assert fig.axes[-1].get_xlabel() == kwargs['xlabel']

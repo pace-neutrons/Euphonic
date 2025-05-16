@@ -252,7 +252,7 @@ def read_phonon_data(
         )
         raise ValueError(msg)
 
-    if read_eigenvectors and not 'eigenvectors' in phonon_dict:
+    if read_eigenvectors and 'eigenvectors' not in phonon_dict:
         msg = (
             f"Eigenvectors couldn't be found in {phonon_pathname}, ensure "
             f'--eigvecs was set when running Phonopy'

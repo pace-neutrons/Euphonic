@@ -129,7 +129,7 @@ select = [
        "N",       # pep8-naming
        "PERF",    # Perflint
        "F401",    # unused-import
-       # "E",     # pycodestyle error: this is a lot of stuff
+       "E",       # pycodestyle error
        "W",       # pycodestyle warning
        "DOC",     # pydoclint
        # "D",     # 2000 errors, code sprint material?
@@ -169,8 +169,11 @@ force-sort-within-sections = true
 extend-ignore-names = ["k_B", "H_ab"]
 
 [tool.ruff.lint.per-file-ignores]
+"build_utils/*" = ["E501"]  # Long lines
 "tests_and_analysis/test/**/*" = [
     "ARG",    # pytest fixtures can look like unused arguments
     "RUF012", # declaring sample data inside test classes is tidy
+    "E501",   # long lines seem more common with verbose test names
     ]
+
 "euphonic/version.py" = ["Q000"]  # Source build prefers double quotes here

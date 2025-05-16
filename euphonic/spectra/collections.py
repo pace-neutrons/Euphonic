@@ -217,8 +217,9 @@ class SpectrumCollectionMixin(ABC):
         setattr(spectrum, f'{self._spectrum_data_name()}_unit',
                 self._get_spectrum_data_unit())
 
-    def _validate_item(self, item: Integral | slice | Sequence[Integral] | np.ndarray,
-                       ) -> None:
+    def _validate_item(
+            self, item: Integral | slice | Sequence[Integral] | np.ndarray,
+    ) -> None:
         """Raise Error if index has inappropriate typing/ranges
 
         Raises
@@ -324,7 +325,10 @@ class SpectrumCollectionMixin(ABC):
         return [i for i, row in enumerate(self.iter_metadata())
                    if required_metadata <= row.items()]
 
-    def select(self, **select_key_values: str | int | Sequence[str] | Sequence[int]) -> Self:
+    def select(
+            self,
+            **select_key_values: str | int | Sequence[str] | Sequence[int],
+    ) -> Self:
         """
         Select spectra by their keys and values in metadata['line_data']
 
@@ -799,7 +803,8 @@ class Spectrum1DCollection(SpectrumCollectionMixin,
                     method=method, width_convention=width_convention)
 
             new_spectrum = self.copy()
-            new_spectrum.y_data = ureg.Quantity(y_broadened, units=self.y_data_unit)
+            new_spectrum.y_data = ureg.Quantity(
+                y_broadened, units=self.y_data_unit)
             return new_spectrum
 
         if isinstance(x_width, Callable):
@@ -1050,7 +1055,8 @@ class Spectrum2DCollection(SpectrumCollectionMixin,
         data_ax_len = self.z_data.shape[enum[bin_ax]]
         if self._is_bin_edge(data_ax_len, bin_data.shape[0]):
             return bin_data
-        return self._bin_centres_to_edges(bin_data, restrict_range=restrict_range)
+        return self._bin_centres_to_edges(
+            bin_data, restrict_range=restrict_range)
 
     def get_bin_centres(self, bin_ax: Literal['x', 'y'] = 'x') -> Quantity:
         """

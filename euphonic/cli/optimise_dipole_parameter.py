@@ -124,7 +124,8 @@ def calculate_optimum_dipole_parameter(
         print('******************************')
         print(('Suggested optimum dipole_parameter is ' + dparamfmt).format(
             dipole_parameters[opt]))
-        print((sfmt + ': ' + tfmt + ' s').format('Initialisation Time', t_init[opt]))
+        print((sfmt + ': ' + tfmt + ' s').format(
+            'Initialisation Time', t_init[opt]))
         print((sfmt + ': ' + tfmt + ' ms\n').format(
             'Time/qpt', t_per_qpt[opt]*1000))
 

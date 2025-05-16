@@ -85,8 +85,8 @@ def main(params: Optional[list[str]] = None) -> None:
 
 
 def get_parser() -> ArgumentParser:
-    parser, groups = _get_cli_parser(features={'read-fc', 'read-modes', 'plotting',
-                                          'q-e', 'btol'})
+    parser, groups = _get_cli_parser(
+        features={'read-fc', 'read-modes', 'plotting', 'q-e', 'btol'})
     parser.description = (
         'Plots a band structure from the file provided. If a force '
         'constants file is provided, a band structure path is '
