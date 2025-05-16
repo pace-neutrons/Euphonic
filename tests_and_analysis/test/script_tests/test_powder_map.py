@@ -224,7 +224,7 @@ class TestRegression:
         # Argparse should call sys.exit on invalid choices
         with pytest.raises(SystemExit) as err:
             euphonic.cli.powder_map.main(powder_map_args)
-        assert err.type == SystemExit
+        assert err.type is SystemExit
         assert err.value.code == 2
 
     @pytest.mark.brille
@@ -236,7 +236,7 @@ class TestRegression:
         # Argparse should call sys.exit on invalid choices
         with pytest.raises(SystemExit) as err:
             euphonic.cli.powder_map.main(powder_map_args)
-        assert err.type == SystemExit
+        assert err.type is SystemExit
         assert err.value.code == 2
 
     @pytest.mark.phonopy_reader
@@ -255,7 +255,7 @@ class TestRegression:
     def test_no_pdos_args_raises_causes_exit(self, powder_map_args):
         with pytest.raises(SystemExit) as err:
             euphonic.cli.powder_map.main(powder_map_args)
-        assert err.type == SystemExit
+        assert err.type is SystemExit
         assert err.value.code == 2
 
     @pytest.mark.phonopy_reader
@@ -265,7 +265,7 @@ class TestRegression:
     def test_multiple_pdos_args_raises_causes_exit(self, powder_map_args):
         with pytest.raises(SystemExit) as err:
             euphonic.cli.powder_map.main(powder_map_args)
-        assert err.type == SystemExit
+        assert err.type is SystemExit
         assert err.value.code == 2
 
 

@@ -396,7 +396,7 @@ class ForceConstants:
           \\sum_{l}\\Phi_{\\alpha\\alpha^\\prime}^{\\kappa\\kappa^\\prime}\\exp\\left(-i\\mathbf{q}\\cdot \\mathbf{R}_l\\right)
 
         .. [3] J. R. Yates, X. Wang, D. Vanderbilt and I. Souza, Phys. Rev. B, 2007, 75, 195121
-        """
+        """  # noqa: E501
         qpts, freqs, weights, evecs, grads = self._calculate_phonons_at_qpts(
             qpts, weights, asr, dipole, dipole_parameter, splitting,
             insert_gamma, reduce_qpts, use_c, n_threads,
@@ -1057,7 +1057,8 @@ casting to real mode gradients.
                     # Calculate H_ab
                     exp_term = 2*np.exp(-norms_2)/(sqrt_pi*norms_2)
                     erfc_term = erfc(norms)/(norms*norms_2)
-                    f1 = lambda_2*(3*erfc_term/norms_2 + exp_term*(3/norms_2 + 2))
+                    f1 = lambda_2 * (3 * erfc_term / norms_2
+                                     + exp_term * (3 / norms_2 + 2))
                     f2 = erfc_term + exp_term
                     deltas_ab = np.einsum('ij,ik->ijk', deltas, deltas)
                     H_ab_tmp[:, idx + j] = (
@@ -1703,7 +1704,9 @@ casting to real mode gradients.
             A dictionary with the following keys/values:
 
             - 'crystal': dict, see Crystal.from_dict
-            - 'force_constants': (n_cells_in_sc, 3*crystal.n_atoms, 3*crystal.n_atoms) float ndarray
+            - 'force_constants':
+              (n_cells_in_sc, 3*crystal.n_atoms, 3*crystal.n_atoms)
+              float ndarray
             - 'force_constants_unit': str
             - 'sc_matrix': (3,3) int ndarray
             - 'cell_origins': (n_cells_in_sc, 3) int ndarray

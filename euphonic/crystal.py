@@ -264,7 +264,8 @@ class Crystal:
                 diff_frac = (atom_r_symm_i[:, np.newaxis, :]
                              - self.atom_r[np.newaxis, idx, :])
                 diff_frac -= np.floor(diff_frac + 0.5)
-                diff_cart = np.einsum('ijk,kl->ijl', diff_frac, self._cell_vectors)
+                diff_cart = np.einsum(
+                    'ijk,kl->ijl', diff_frac, self._cell_vectors)
                 diff_r = np.linalg.norm(diff_cart, axis=2)
                 equiv_idx = np.where(diff_r < tol_calc)
                 # There should be one matching atom per symm op

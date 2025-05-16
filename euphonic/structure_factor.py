@@ -216,17 +216,19 @@ class StructureFactor(QpointFrequencies):
 
         .. [1] M.T. Dove, Structure and Dynamics, Oxford University Press,
                Oxford, 2003, 225-226
-        """
+        """  # noqa: E501
         sqw_map = self._bose_corrected_structure_factor(
             e_bins, calc_bose=calc_bose, temperature=temperature)
         x_data, x_tick_labels = self._get_qpt_axis_and_labels()
         return Spectrum2D(x_data, e_bins, sqw_map,
                           x_tick_labels=x_tick_labels)
 
-    def _bose_corrected_structure_factor(self, e_bins: Quantity,
-                                         calc_bose: bool = True,
-                                         temperature: Optional[Quantity] = None,
-                                         ) -> Quantity:
+    def _bose_corrected_structure_factor(
+            self,
+            e_bins: Quantity,
+            calc_bose: bool = True,
+            temperature: Optional[Quantity] = None,
+    ) -> Quantity:
         """Bin structure factor in energy, return (Bose-populated) array
 
         Parameters

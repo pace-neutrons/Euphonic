@@ -242,7 +242,7 @@ class QpointPhononModes(QpointFrequencies):
 
         .. [1] M.T. Dove, Structure and Dynamics, Oxford University Press, Oxford, 2003, 225-226
 
-        """
+        """  # noqa: E501
         if isinstance(scattering_lengths, str):
             scattering_length_data = get_reference_data(
                 collection=scattering_lengths,
@@ -374,7 +374,7 @@ class QpointPhononModes(QpointFrequencies):
         symmetry-reduced, all weights will be equal).
 
         .. [2] G.L. Squires, Introduction to the Theory of Thermal Neutron Scattering, Dover Publications, New York, 1996, 34-37
-        """
+        """  # noqa: E501
 
         # Convert units
         k_B = (1 * ureg.k).to('hartree/K').magnitude
@@ -541,7 +541,7 @@ class QpointPhononModes(QpointFrequencies):
         :math:`\\kappa`, so the neutron-weighted PDOS is returned in
         units of area per unit energy.
 
-        """
+        """  # noqa: E501
         weighting_opts = [None, 'coherent', 'incoherent',
                           'coherent-plus-incoherent']
         if weighting not in weighting_opts:
@@ -653,7 +653,7 @@ class QpointPhononModes(QpointFrequencies):
             There are also the following optional keys:
 
             - 'weights': (n_qpts,) float ndarray
-        """
+        """  # noqa: E501
         crystal = Crystal.from_dict(d['crystal'])
         d = _process_dict(d, quantities=['frequencies'], optional=['weights'])
         return cls(crystal, d['qpts'], d['frequencies'],

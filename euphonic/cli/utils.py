@@ -27,12 +27,12 @@ from euphonic import (
     Spectrum1DCollection,
     ureg,
 )
-import euphonic.util
+from euphonic.util import dedent_and_fill, mp_grid
 
 
 def _load_euphonic_json(filename: str | os.PathLike,
                         frequencies_only: bool = False,
-                        ) -> QpointPhononModes | QpointFrequencies | ForceConstants:
+) -> QpointPhononModes | QpointFrequencies | ForceConstants:
     with open(filename) as f:
         data = json.load(f)
 
@@ -49,7 +49,7 @@ def _load_euphonic_json(filename: str | os.PathLike,
 
 def _load_phonopy_file(filename: str | os.PathLike,
                        frequencies_only: bool = False,
-                       ) -> QpointPhononModes | QpointFrequencies | ForceConstants:
+) -> QpointPhononModes | QpointFrequencies | ForceConstants:
     path = pathlib.Path(filename)
     loaded_data = None
     if not frequencies_only:
@@ -99,7 +99,7 @@ def _load_phonopy_file(filename: str | os.PathLike,
 def load_data_from_file(filename: str | os.PathLike,
                         frequencies_only: bool = False,
                         verbose: bool = False,
-                        ) -> QpointPhononModes | QpointFrequencies | ForceConstants:
+) -> QpointPhononModes | QpointFrequencies | ForceConstants:
     """
     Load phonon mode or force constants data from file
 
@@ -133,7 +133,7 @@ def load_data_from_file(filename: str | os.PathLike,
     elif path.suffix in phonopy_suffixes:
         data = _load_phonopy_file(path, frequencies_only)
     else:
-        msg = euphonic.util.dedent_and_fill(f"""
+        msg = dedent_and_fill(f"""
             File format was not recognised. CASTEP force constants data for
             import should have extension from {castep_fc_suffixes}, CASTEP
             phonon mode data for import should have extension
@@ -287,8 +287,9 @@ def _insert_gamma(bandpath: dict) -> None:
     This enables LO-TO splitting to be included
     """
     import numpy as np
-    gamma_indices = np.where(np.array(bandpath['explicit_kpoints_labels'][1:-1],
-                                      ) == 'GAMMA')[0] + 1
+    gamma_indices = np.where(
+        np.array(bandpath['explicit_kpoints_labels'][1:-1]) == 'GAMMA',
+    )[0] + 1
 
     rel_kpts = bandpath['explicit_kpoints_rel'].tolist()
     labels = bandpath['explicit_kpoints_labels']
@@ -315,8 +316,7 @@ def _bands_from_force_constants(data: ForceConstants,
                                 insert_gamma: bool = True,
                                 frequencies_only: bool = False,
                                 **calc_modes_kwargs,
-                                ) -> tuple[QpointPhononModes | QpointFrequencies,
-                                           XTickLabels, SplitArgs]:
+) -> tuple[QpointPhononModes | QpointFrequencies, XTickLabels, SplitArgs]:
     structure = data.crystal.to_spglib_cell()
     with warnings.catch_warnings():
         # SeeK-path is raising spglib 2.5.0 deprecation warnings, we
@@ -374,8 +374,7 @@ def _get_debye_waller(temperature: Quantity,
     print('Calculating Debye-Waller factor on {} q-point grid'
           .format(' x '.join(map(str, mp_grid_spec))))
     dw_phonons = fc.calculate_qpoint_phonon_modes(
-        euphonic.util.mp_grid(mp_grid_spec),
-        **calc_modes_kwargs)
+        mp_grid(mp_grid_spec), **calc_modes_kwargs)
     return dw_phonons.calculate_debye_waller(temperature)
 
 
@@ -497,8 +496,9 @@ def _get_cli_parser(features: Collection[str] = {},
                     ('property', 'Property-calculation arguments'),
                     ('plotting', 'Plotting arguments'),
                     ('performance', 'Performance-related arguments'),
-                    ('brille', 'Brille interpolation related arguments. '
-                               'Only applicable if Brille has been installed.'),
+                    ('brille',
+                     'Brille interpolation related arguments. '
+                     'Only applicable if Brille has been installed.'),
                     ]
 
     sections = {label: parser.add_argument_group(doc)
@@ -560,9 +560,10 @@ def _get_cli_parser(features: Collection[str] = {},
         if 'q-e' not in features:
             sections['property'].add_argument(
                 '--pdos', type=str, action='store', nargs='*',
-                help=('Plot PDOS. With --pdos, per-species PDOS will be plotted '
-                      'alongside total DOS. A subset of species can also be '
-                      'selected by adding more arguments e.g. --pdos Si O'))
+                help=(dedent_and_fill("""
+                    Plot PDOS. With --pdos, per-species PDOS will be plotted
+                    alongside total DOS. A subset of species can also be
+                    selected by adding more arguments e.g. --pdos Si O""")))
         else:
             sections['property'].add_argument(
                 '--pdos', type=str, action='store', nargs=1,

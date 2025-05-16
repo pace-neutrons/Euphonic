@@ -421,6 +421,20 @@ def _read_frequency_blocks(*args, **kwargs) -> Iterator[_FrequencyBlock]:
         yield frequency_block
 
 
+def _read_castep_version(f: BinaryIO) -> Version:
+    """Read next line and return CASTEP version; raise error if incompatible"""
+    castep_version = Version(_read_entry(f).decode().strip())
+    if castep_version < Version('17.1'):
+        msg = dedent_and_fill("""
+            Old castep file detected: Euphonic only supports post-Castep 17.1
+            files.  Please rerun the calculation with a newer version of Castep
+            with the original .cell file and a .castep file with a single line
+            with the "continuation: <old.castep_bin>" keyword and use the new
+            output .castep_bin file in Euphonic.""")
+        raise ValueError(msg)
+    return castep_version
+
+
 def read_interpolation_data(
         filename: str,
         cell_vectors_unit: str = 'angstrom',
@@ -463,17 +477,7 @@ def read_interpolation_data(
         first_cell_read = True
         while (header := _read_entry(f).strip()) != b'END':
             if header == b'BEGIN_PARAMETERS_DUMP':
-                castep_version: Version = Version(_read_entry(f).decode().strip())
-                if castep_version < Version('17.1'):
-                    msg = dedent_and_fill("""
-                        Old castep file detected:
-                        Euphonic only supports post-Castep 17.1 files.
-                        Please rerun the calculation with a newer version
-                        of Castep with the original .cell file and a
-                        .castep file with a single line with the
-                        "continuation: <old.castep_bin>" keyword and
-                        use the new output .castep_bin file in Euphonic.""")
-                    raise ValueError(msg)
+                castep_version: Version = _read_castep_version(f)
 
             if header == b'BEGIN_UNIT_CELL':
                 # CASTEP writes the cell twice: the first is the

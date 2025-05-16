@@ -110,7 +110,12 @@ def plot_1d_to_axis(spectra: Spectrum1D | Spectrum1DCollection,
     return None
 
 
-def plot_1d(spectra: Spectrum1D | Spectrum1DCollection | Sequence[Spectrum1D] | Sequence[Spectrum1DCollection],
+OneDSpectrumOrSpectra = (Spectrum1D
+                         | Spectrum1DCollection
+                         | Sequence[Spectrum1D]
+                         | Sequence[Spectrum1DCollection])
+
+def plot_1d(spectra: OneDSpectrumOrSpectra,
             title: str | None = None,
             xlabel: str = '',
             ylabel: str = '',
