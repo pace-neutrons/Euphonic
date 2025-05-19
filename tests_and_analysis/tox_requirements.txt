@@ -6,4 +6,4 @@ pytest-lazy-fixture
 pytest-xvfb
 python-slugify
 wheel==0.43
-setuptools==71.1.0
+setuptools==78.1.1
