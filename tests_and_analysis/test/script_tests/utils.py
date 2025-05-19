@@ -117,7 +117,7 @@ def get_current_plot_image_data() -> dict[str,
             break
     else:
         msg = 'Could not find axes with a single image'
-        raise Exception(msg)
+        raise ValueError(msg)
 
     data = get_fig_label_data(fig)
     data.update(get_ax_image_data(ax))
