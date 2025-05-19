@@ -77,7 +77,8 @@ def variable_width_broadening(
     """
 
     if width_convention.lower() == 'fwhm' and shape == 'gauss':
-        sigma_function = (lambda x: width_function(x) * FWHM_TO_SIGMA)
+        def sigma_function(x: Quantity) -> Quantity:
+            return width_function(x) * FWHM_TO_SIGMA
     elif width_convention.lower() == 'std' and shape == 'lorentz':
         msg = (
             'Standard deviation unavailable for Lorentzian '
