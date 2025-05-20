@@ -1,5 +1,5 @@
 numpy>=1.21.3
-setuptools==71.1.0
+setuptools==78.1.1
 sphinx==5.3.0
 sphinx-argparse==0.3.2
 sphinx-autodoc-typehints==1.19.5
