@@ -8,7 +8,8 @@ from collections.abc import Collection, Sequence
 from contextlib import suppress
 import json
 import os
-import pathlib
+from pathlib import Path
+import re
 from typing import Any, Optional
 import warnings
 
@@ -50,7 +51,7 @@ def _load_euphonic_json(filename: str | os.PathLike,
 def _load_phonopy_file(filename: str | os.PathLike,
                        frequencies_only: bool = False,
 ) -> QpointPhononModes | QpointFrequencies | ForceConstants:
-    path = pathlib.Path(filename)
+    path = Path(filename)
     loaded_data = None
     if not frequencies_only:
         with suppress(KeyError, RuntimeError):
@@ -84,16 +85,36 @@ def _load_phonopy_file(filename: str | os.PathLike,
                     'must be accompanied by phonopy.yaml'
                 )
                 raise ValueError(msg)
-        elif path.suffix == '.yaml':
+        elif path.suffix in ('.yaml', '.yml'):
             phonopy_kwargs['summary_name'] = path.name
             # Assume this is a (renamed?) phonopy.yaml file
-            if (path.parent / 'force_constants.hdf5').is_file():
+            if (janus_fc := _janus_fc_filename(path)).is_file():
+                phonopy_kwargs['fc_name'] = janus_fc.name
+            elif (path.parent / 'force_constants.hdf5').is_file():
                 phonopy_kwargs['fc_name'] = 'force_constants.hdf5'
             else:
                 phonopy_kwargs['fc_name'] = 'FORCE_CONSTANTS'
         loaded_data = ForceConstants.from_phonopy(**phonopy_kwargs)
 
     return loaded_data
+
+
+def _janus_fc_filename(phonopy_file: Path) -> Path:
+    """Get corresponding force_constants filename following Janus convention
+
+    If the filename follows the pattern "seedname-phonopy.yml" this will be
+    "seedname-force_constants.hdf5" in the same directory.
+
+    Otherwise, return Path(''). This represents current directory, so will fail
+    an .is_file() check.
+    """
+
+    re_match = re.match(r'(?P<seedname>\w+)-phonopy\.(?P<ext>ya?ml)',
+                        phonopy_file.name)
+    if re_match:
+        seedname = re_match.group('seedname')
+        return Path(phonopy_file.parent / f'{seedname}-force_constants.hdf5')
+    return Path('')
 
 
 def load_data_from_file(filename: str | os.PathLike,
@@ -118,9 +139,9 @@ def load_data_from_file(filename: str | os.PathLike,
     """
     castep_qpm_suffixes = ('.phonon',)
     castep_fc_suffixes = ('.castep_bin', '.check')
-    phonopy_suffixes = ('.hdf5', '.yaml')
+    phonopy_suffixes = ('.hdf5', '.yaml', '.yml')
 
-    path = pathlib.Path(filename)
+    path = Path(filename)
     if path.suffix in castep_qpm_suffixes:
         if frequencies_only:
             data = QpointFrequencies.from_castep(path)
@@ -915,4 +936,4 @@ def _compose_style(
 
 def _get_title(filename: str, title: str | None = None) -> str:
     """Get a plot title: either user-provided string, or from filename"""
-    return title if title is not None else pathlib.Path(filename).stem
+    return title if title is not None else Path(filename).stem
