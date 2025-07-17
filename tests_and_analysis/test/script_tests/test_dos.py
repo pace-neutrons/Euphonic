@@ -32,6 +32,7 @@ with suppress(ModuleNotFoundError):
 nah_phonon_file = get_castep_path('NaH', 'NaH.phonon')
 nacl_no_evec_yaml_file = get_phonopy_path('NaCl', 'mesh', 'mesh_no_evec.yaml')
 quartz_fc_file = get_castep_path('quartz', 'quartz.castep_bin')
+ge_janus_file = get_phonopy_path('Ge', 'Ge-phonopy.yml')
 dos_output_file = get_script_test_data_path('dos.json')
 dos_params = [
     [nah_phonon_file],
@@ -57,7 +58,9 @@ dos_params = [
     [quartz_fc_file, '--grid', '5', '5', '4', '--adaptive',
      '--adaptive-method=fast'],
     [quartz_fc_file, '--grid', '5', '5', '4', '--adaptive',
-     '--adaptive-method=fast', '--adaptive-error=0.05']]
+     '--adaptive-method=fast', '--adaptive-error=0.05'],
+    [ge_janus_file],
+]
 dos_params_from_phonopy = [[nacl_no_evec_yaml_file]]
 
 class TestRegression:
