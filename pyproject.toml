@@ -93,14 +93,14 @@ select = [
        "S",       # Security (flake8-bandit)
        "BLE",     # flake8-blind-except
        # "FBT",   # flake8-boolean-trap: don't use positional boolean arguments. Fixable, but API-breaking.
-       "B",       # flake8-bugbear: Fixable but a bit involved
+       "B",       # flake8-bugbear
        "A",       # flake8-builtins
        "COM",     # flake8-commas
-       "C4",      # flake8-comprehensions: Good stuff, worth its own PR
+       "C4",      # flake8-comprehensions
        "T10",     # flake8-debugger
        "EM",      # flake8-errmsg
        "EXE",     # flake8-executable
-       "FIX",     # leftover FIXME, TODO etc. (flake8-fixme)
+       "FIX",     # flake8-fixme (leftover FIXME, TODO etc.)
        "FA",      # flake8-future-annotations
        "INT",     # flake8-gettext
        "ISC",     # flake8-implicit-str-concat
