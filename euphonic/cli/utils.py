@@ -109,7 +109,7 @@ def _janus_fc_filename(phonopy_file: Path) -> Path:
     an .is_file() check.
     """
 
-    re_match = re.match(r'(?P<seedname>\w+)-phonopy\.(?P<ext>ya?ml)',
+    re_match = re.match(r'(?P<seedname>.+)-phonopy\.(?P<ext>ya?ml)',
                         phonopy_file.name)
     if re_match:
         seedname = re_match.group('seedname')
