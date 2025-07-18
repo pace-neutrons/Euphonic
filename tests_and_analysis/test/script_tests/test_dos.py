@@ -59,7 +59,7 @@ dos_params = [
      '--adaptive-method=fast'],
     [quartz_fc_file, '--grid', '5', '5', '4', '--adaptive',
      '--adaptive-method=fast', '--adaptive-error=0.05'],
-    [ge_janus_file],
+    [ge_janus_file, '--grid', '2', '2', '2'],
 ]
 dos_params_from_phonopy = [[nacl_no_evec_yaml_file]]
 
