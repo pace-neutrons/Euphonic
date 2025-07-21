@@ -1,6 +1,11 @@
 `Unreleased <https://github.com/pace-neutrons/Euphonic/compare/v1.4.4...HEAD>`_
 -------------------------------------------------------------------------------
 
+- Features
+
+  - CLI tools will now accept phonopy data produced by janus-core, with
+    filenames in the form "{label}-phonopy.yml" and "{label}-force_constants.hdf5".
+
 - Maintenance
 
   - Pytest configuration has been moved from
