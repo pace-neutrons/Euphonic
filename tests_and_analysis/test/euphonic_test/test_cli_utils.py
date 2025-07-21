@@ -1,5 +1,6 @@
 """Additional tests of euphonic.cli.utils internals"""
 
+from pathlib import Path
 
 import pytest
 
@@ -55,3 +56,35 @@ def test_load_data_extension_error():
     with pytest.raises(
             ValueError, match='File format was not recognised.'):
         load_data_from_file('nonexistent.wrong_suffix')
+
+
+@pytest.fixture
+def mocked_fc_from_phonopy(mocker):
+    from euphonic.cli.utils import ForceConstants
+
+    mocked_method = mocker.patch.object(ForceConstants, 'from_phonopy')
+    mocked_method.return_value = None
+
+    return mocked_method
+
+
+def test_find_force_constants(mocked_fc_from_phonopy):
+    """Check that force_constants.hdf5 is found automatically
+
+    Rather than add a whole script test case, here we use mocking to check a
+    particular internal method path
+    """
+    from euphonic.cli.utils import _load_phonopy_file
+
+    phonopy_file = get_data_path(
+        'phonopy_files', 'NaCl', 'phonopy_nofc.yaml',
+    )
+
+    assert _load_phonopy_file(phonopy_file) is None
+
+    assert mocked_fc_from_phonopy.call_args[1] == {
+        'path': Path(phonopy_file).parent,
+        'summary_name': 'phonopy_nofc.yaml',
+        'fc_name': 'force_constants.hdf5',
+    }
+
