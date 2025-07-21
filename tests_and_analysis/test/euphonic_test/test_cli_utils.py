@@ -68,6 +68,7 @@ def mocked_fc_from_phonopy(mocker):
     return mocked_method
 
 
+@pytest.mark.phonopy_reader
 def test_find_force_constants(mocked_fc_from_phonopy):
     """Check that force_constants.hdf5 is found automatically
 
