@@ -166,7 +166,7 @@ inline-quotes = "single"
 force-sort-within-sections = true
 
 [tool.ruff.lint.pep8-naming]
-extend-ignore-names = ["k_B", "H_ab"]
+extend-ignore-names = ["k_B", "H_ab", "Q"]
 
 [tool.ruff.lint.per-file-ignores]
 "build_utils/*" = ["E501"]  # Long lines

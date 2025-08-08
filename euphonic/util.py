@@ -432,7 +432,7 @@ def convert_fc_phases(force_constants: np.ndarray, atom_r: np.ndarray,
     cell_origins_map = np.zeros((n_atoms_sc), dtype=np.int32)
     # Get origins of adjacent supercells in prim cell frac coords
     sc_origins = get_all_origins((2, 2, 2), min_xyz=(-1, -1, -1))
-    sc_origins_pcell = np.einsum('ij,jk->ik', sc_origins, sc_matrix)
+    sc_origins_pcell = sc_origins @ sc_matrix
     for i in range(n_atoms_sc):
         co_idx = np.where(
             (cell_origins_per_atom[i] == cell_origins).all(axis=1))[0]
@@ -733,7 +733,6 @@ def _get_supercell_relative_idx(cell_origins: np.ndarray,
         equivalent vector in cell_origins
     """
     n_cells = len(cell_origins)
-    ax = np.newaxis
 
     # Get cell origins in supercell fractional coordinates
     inv_sc_matrix = np.linalg.inv(np.transpose(sc_matrix))
@@ -753,8 +752,8 @@ def _get_supercell_relative_idx(cell_origins: np.ndarray,
         for i in range(int((n_cells - 1) / CHUNK_SIZE) + 1):
             ci = i * CHUNK_SIZE
             cf = min((i + 1) * CHUNK_SIZE, n_cells)
-            dist = (inter_cell_vectors[:, ax, :]
-                    - cell_origins_sc[ax, ci:cf, :])
+            dist = (inter_cell_vectors[:, np.newaxis, :]
+                    - cell_origins_sc[np.newaxis, ci:cf, :])
             dist_frac = dist - np.rint(dist)
             dist_frac_sum = np.sum(np.abs(dist_frac), axis=2)
             scri_current = np.argmin(dist_frac_sum, axis=1)

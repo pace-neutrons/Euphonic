@@ -530,7 +530,7 @@ def _extract_summary(filename: str, fc_extract: bool = False,
         _, _, satom_r, _, _, sc_idx_in_pc = _extract_crystal_data(
             summary_object['supercell'])
         # Coords of supercell atoms in frac coords of the prim cell
-        satom_r_pcell = np.einsum('ij,jk->ik', satom_r, p_to_sc_matrix)
+        satom_r_pcell = satom_r @ p_to_sc_matrix
         # Determine mapping from atoms in the supercell to the prim cell
         # Note: -1 to get 0-indexed instead of 1-indexed values
         pc_to_sc_atom_idx, sc_to_pc_atom_idx = np.unique(
