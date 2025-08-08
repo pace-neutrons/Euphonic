@@ -1785,8 +1785,8 @@ casting to real mode gradients.
         # First create Crystal and Born charges for supercell
         sc_atom_r = (np.repeat(cell_origins, n_atoms, axis=0)
                      + np.tile(crystal.atom_r, (n_cells, 1)))
-        sc_to_u_matrix = np.linalg.inv(sc_matrix.transpose())
-        sc_atom_r_scell = sc_atom_r @ sc_to_u_matrix.transpose()
+        sc_to_u_matrix = np.linalg.inv(sc_matrix)
+        sc_atom_r_scell = sc_atom_r @ sc_to_u_matrix
         sc_vecs = sc_matrix @ crystal._cell_vectors
         sc_mass = np.tile(crystal._atom_mass, n_cells)
         sc_crystal = Crystal(sc_vecs*ureg('bohr'), sc_atom_r_scell,
