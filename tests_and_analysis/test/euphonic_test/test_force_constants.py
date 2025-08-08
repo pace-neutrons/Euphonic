@@ -222,7 +222,8 @@ class TestForceConstantsCreation:
         check_force_constants(fc, expected_fc)
 
     @pytest.mark.parametrize('total_fc_with_dipole_json, expected_fc_json',
-                             [('NaCl_total_with_dipole', 'NaCl')])
+                             [('NaCl_total_with_dipole', 'NaCl'),
+                              ('MgO_dipole_unsubtracted', 'MgO_dipole_subtracted')])
     def test_create_from_total_fc_with_dipole(
             self, total_fc_with_dipole_json, expected_fc_json):
         expected_fc = get_expected_fc(expected_fc_json)
