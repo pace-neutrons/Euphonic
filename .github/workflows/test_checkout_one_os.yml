@@ -30,11 +30,13 @@ jobs:
     env:
       MIN_MAX_PYTHON_VERSIONS: |
         3.10
-        3.12
+        3.13
       ALL_PYTHON_VERSIONS: |
         3.10
         3.11
         3.12
+        3.13
+        3.14
       TOX_SKIP_ENV: ${{ inputs.all-python-versions && 'no-match' || '.*?(py311).*?' }}
     steps:
       - uses: actions/checkout@v4
@@ -45,6 +47,7 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: ${{ inputs.all-python-versions && env.ALL_PYTHON_VERSIONS || env.MIN_MAX_PYTHON_VERSIONS}}
+          allow-prereleases: true
 
       - name: Install llvm on MacOS
         if: startsWith( inputs.os , 'macos' )
