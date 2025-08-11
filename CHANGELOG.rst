@@ -1,6 +1,13 @@
 `Unreleased <https://github.com/pace-neutrons/Euphonic/compare/v1.4.5...HEAD>`_
 -------------------------------------------------------------------------------
 
+- Requirements
+
+  - Python 3.13 is supported
+
+- Maintenance
+  - Started testing with Python 3.14
+
 `v1.4.5 <https://github.com/pace-neutrons/Euphonic/compare/v1.4.4...v1.4.5>`_
 -----------------------------------------------------------------------------
 
