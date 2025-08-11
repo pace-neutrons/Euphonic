@@ -4,6 +4,7 @@ import numpy as np
 import numpy.testing as npt
 from pint import DimensionalityError
 import pytest
+from pytest_lazy_fixtures import lf as lazy_fixture
 import spglib
 
 from euphonic import Crystal, Quantity, ureg
@@ -158,10 +159,10 @@ class TestCrystalCreation:
         return Crystal.from_cell_vectors(cell_vectors), expected_crystal
 
     @pytest.mark.parametrize('crystal_creator', [
-        pytest.lazy_fixture('create_from_constructor'),
-        pytest.lazy_fixture('create_from_json_file'),
-        pytest.lazy_fixture('create_from_dict'),
-        pytest.lazy_fixture('create_from_cell_vectors'),
+        lazy_fixture('create_from_constructor'),
+        lazy_fixture('create_from_json_file'),
+        lazy_fixture('create_from_dict'),
+        lazy_fixture('create_from_cell_vectors'),
     ])
     def test_create(self, crystal_creator):
         crystal, expected_crystal = crystal_creator

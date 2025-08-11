@@ -4,6 +4,7 @@ import numpy as np
 import numpy.testing as npt
 from pint import DimensionalityError
 import pytest
+from pytest_lazy_fixtures import lf as lazy_fixture
 
 from euphonic import Crystal, DebyeWaller, ureg
 from tests_and_analysis.test.euphonic_test.test_crystal import (
@@ -125,9 +126,9 @@ class TestDebyeWallerCreation:
         return dw, expected_dw
 
     @pytest.mark.parametrize('dw_creator', [
-        pytest.lazy_fixture('create_from_constructor'),
-        pytest.lazy_fixture('create_from_json_file'),
-        pytest.lazy_fixture('create_from_dict'),
+        lazy_fixture('create_from_constructor'),
+        lazy_fixture('create_from_json_file'),
+        lazy_fixture('create_from_dict'),
     ])
     def test_create(self, dw_creator):
         dw, expected_dw = dw_creator
