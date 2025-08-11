@@ -556,8 +556,7 @@ class ForceConstants:
         # expensive phase calculations later
         sc_image_r = get_all_origins(
             np.repeat(n_sc_shells, 3) + 1, min_xyz=-np.repeat(n_sc_shells, 3))
-        sc_origins = np.einsum('ij,jk->ik', sc_image_r,
-                               self.sc_matrix).astype(np.int32)
+        sc_origins = (sc_image_r @ self.sc_matrix).astype(np.int32)
         unique_sc_origins = [[] for i in range(3)]
         unique_sc_i = np.zeros((len(sc_origins), 3), dtype=np.int32)
         unique_cell_origins = [[] for i in range(3)]
@@ -568,17 +567,15 @@ class ForceConstants:
             unique_cell_origins[i], unique_cell_i[:, i] = np.unique(
                 self.cell_origins[:, i], return_inverse=True)
         if return_mode_gradients:
-            cell_origins_cart = np.einsum('ij,jk->ik', self.cell_origins,
-                                          self.crystal._cell_vectors)
+            cell_origins_cart = self.cell_origins @ self.crystal._cell_vectors
             # Append 0. to sc_origins_cart, so that when being indexed by
             # sc_image_i to get the origins for each image, an index of -1
             # and a value of 0. can be used
             sc_origins_cart = np.zeros((len(sc_origins) + 1, 3))
-            sc_origins_cart[:len(sc_origins)] = np.einsum(
-                'ij,jk->ik', sc_origins, self.crystal._cell_vectors)
-            ax = np.newaxis
+            sc_origins_cart[:len(sc_origins)] = (
+                sc_origins @ self.crystal._cell_vectors)
             all_origins_cart = (sc_origins_cart[self._sc_image_i]
-                                + cell_origins_cart[:, ax, ax, ax, :])
+                                + cell_origins_cart[:, None, None, None, :])
         else:
             all_origins_cart = np.zeros((0, 3), dtype=np.float64)
 
@@ -936,8 +933,7 @@ casting to real mode gradients.
         sc_phase_sum = np.sum(sc_phases[sc_image_i],
                               axis=3)
 
-        ax = np.newaxis
-        ij_phases = cell_phases[:, ax, ax]*sc_phase_sum
+        ij_phases = cell_phases[:, None, None]*sc_phase_sum
         full_dyn_mat = fc_img_weighted*(
             ij_phases.repeat(3, axis=2).repeat(3, axis=1))
         dyn_mat = np.sum(full_dyn_mat, axis=0)
@@ -949,7 +945,7 @@ casting to real mode gradients.
                                sc_phases[sc_image_i], cell_phases)
         r_vec_sum = 1j*np.einsum('ijkl,ijklm->ijkm',
                                  all_phases, all_origins_cart)
-        dmat_gradient = fc_img_weighted[..., ax]*(r_vec_sum.repeat(
+        dmat_gradient = fc_img_weighted[..., None]*(r_vec_sum.repeat(
             3, axis=2).repeat(3, axis=1))
         dmat_gradient = np.sum(dmat_gradient, axis=0)
         return dyn_mat, dmat_gradient
@@ -1034,13 +1030,12 @@ casting to real mode gradients.
         H_ab = np.zeros((0, n_elems, 3, 3))
 
         cells = np.zeros((0, 3))
-        atom_r_cart = np.einsum('ij,jk->ik', atom_r, cell_vectors)
-        atom_r_e = np.einsum('ij,jk->ik', atom_r_cart, inv_dielectric)
+        atom_r_cart = atom_r @ cell_vectors
+        atom_r_e = atom_r_cart @ inv_dielectric
         for n in range(max_shells):
             cells_tmp = ForceConstants._get_shell_origins(n)
-            cells_cart = np.einsum('ij,jk->ik', cells_tmp, cell_vectors)
-            cells_e = np.einsum(
-                'ij,jk->ik', cells_cart, inv_dielectric)
+            cells_cart = cells_tmp @ cell_vectors
+            cells_e = cells_cart @ inv_dielectric
             H_ab_tmp = np.zeros((len(cells_tmp), n_elems, 3, 3))  # noqa: N806
             for i in range(n_atoms):
                 idx = np.sum(range(n_atoms - i, n_atoms), dtype=np.int32)
@@ -1085,7 +1080,7 @@ casting to real mode gradients.
         gvec_phases = np.tile([1. + 0.j], (1, n_atoms))
         for n in range(1, max_shells):
             gvecs = ForceConstants._get_shell_origins(n)
-            gvecs_cart_tmp = np.einsum('ij,jk->ik', gvecs, recip)
+            gvecs_cart_tmp = gvecs @ recip
             gvec_dot_r = np.einsum('ij,kj->ik', gvecs, atom_r)
             gvec_phases_tmp = np.exp(2j*math.pi*gvec_dot_r)
             gvecs_ab = np.einsum('ij,ik->ijk', gvecs_cart_tmp, gvecs_cart_tmp)
@@ -1593,7 +1588,6 @@ casting to real mode gradients.
         cell_origins = self.cell_origins
         n_cells_in_sc = self.n_cells_in_sc
         sc_matrix = self.sc_matrix
-        ax = np.newaxis
 
         # List of points defining Wigner-Seitz cell
         ws_frac = np.array([[0, 0, 0], [0, 0, 1], [0, 1, 0], [0, 1, 1],
@@ -1603,17 +1597,17 @@ casting to real mode gradients.
         cutoff_scale = 1.0
 
         # Calculate points of WS cell for this supercell
-        sc_vecs = np.einsum('ji,ik->jk', sc_matrix, cell_vectors)
-        ws_list = np.einsum('ij,jk->ik', ws_frac, sc_vecs)
+        sc_vecs = sc_matrix @ cell_vectors
+        ws_list = ws_frac @ sc_vecs
         inv_ws_sq = 1.0/np.sum(np.square(ws_list[1:]), axis=1)
-        ws_list_norm = ws_list[1:]*inv_ws_sq[:, ax]
+        ws_list_norm = ws_list[1:]*inv_ws_sq[:, None]
 
         # Get Cartesian coords of supercell images and ions in supercell
         sc_image_r = get_all_origins(
             np.repeat(n_sc_shells, 3) + 1, min_xyz=-np.repeat(n_sc_shells, 3))
-        sc_image_cart = np.einsum('ij,jk->ik', sc_image_r, sc_vecs)
+        sc_image_cart = sc_image_r @ sc_vecs
         sc_atom_cart = np.einsum('ijk,kl->ijl',
-                                 cell_origins[:, ax, :] + atom_r[ax, :, :],
+                                 cell_origins[:, None, :] + atom_r[None, :, :],
                                  cell_vectors)
 
         sc_image_i = np.full(

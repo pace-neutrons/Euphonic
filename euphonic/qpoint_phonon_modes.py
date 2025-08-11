@@ -270,7 +270,7 @@ class QpointPhononModes(QpointFrequencies):
         # Eigenvectors are in Cartesian so need to convert hkl to
         # Cartesian by computing dot with hkl and reciprocal lattice
         recip = self.crystal.reciprocal_cell().to('1/bohr').magnitude
-        Q = np.einsum('ij,jk->ik', self.qpts, recip)  # noqa: N806
+        Q = self.qpts @ recip
 
         # Calculate dot product of Q and eigenvectors for all branches
         # atoms and q-points
