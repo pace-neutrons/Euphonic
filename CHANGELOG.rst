@@ -1,6 +1,10 @@
 `Unreleased <https://github.com/pace-neutrons/Euphonic/compare/v1.4.4...HEAD>`_
 -------------------------------------------------------------------------------
 
+- Requirements
+
+  - Python 3.13 is supported
+
 - Features
 
   - CLI tools will now accept phonopy data produced by janus-core, with
@@ -12,6 +16,8 @@
     tests_and_analysis/test/pytest.ini to the main
     pyproject.toml. This means it is more likely to be picked up
     automatically when running tests outside of the CI workflows.
+
+  - Started testing with Python 3.14
 
 `v1.4.4 <https://github.com/pace-neutrons/Euphonic/compare/v1.4.3...v1.4.4>`_
 -----------------------------------------------------------------------------
