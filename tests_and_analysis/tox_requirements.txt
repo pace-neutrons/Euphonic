@@ -2,7 +2,7 @@ mock
 pytest==7.*
 coverage
 pytest-mock
-pytest-lazy-fixture
+pytest-lazy-fixtures
 pytest-xvfb
 python-slugify
 wheel==0.43

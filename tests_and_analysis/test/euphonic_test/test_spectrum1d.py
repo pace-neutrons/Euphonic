@@ -5,6 +5,7 @@ from numpy.polynomial import Polynomial
 import numpy.testing as npt
 from pint import Quantity
 import pytest
+from pytest_lazy_fixtures import lf as lazy_fixture
 
 from euphonic import ureg
 from euphonic.spectra import Spectrum1D
@@ -176,10 +177,10 @@ class TestSpectrum1DCreation:
         return spec1d, expected_spec1d
 
     @pytest.mark.parametrize(('spec1d_creator'), [
-        pytest.lazy_fixture('create_from_constructor'),
-        pytest.lazy_fixture('create_from_json'),
-        pytest.lazy_fixture('create_from_dict'),
-        pytest.lazy_fixture('create_from_castep_phonon_dos'),
+        lazy_fixture('create_from_constructor'),
+        lazy_fixture('create_from_json'),
+        lazy_fixture('create_from_dict'),
+        lazy_fixture('create_from_castep_phonon_dos'),
     ])
     def test_correct_object_creation(self, spec1d_creator):
         spec1d, expected_spec1d = spec1d_creator
