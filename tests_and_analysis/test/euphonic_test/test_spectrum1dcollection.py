@@ -3,6 +3,7 @@ import json
 import numpy as np
 from numpy.testing import assert_allclose
 import pytest
+from pytest_lazy_fixtures import lf as lazy_fixture
 
 from euphonic import ureg
 from euphonic.spectra import Spectrum1DCollection
@@ -164,10 +165,10 @@ class TestSpectrum1DCollectionCreation:
         return spec, expected_spec
 
     @pytest.mark.parametrize(('spectrum_creator'), [
-        pytest.lazy_fixture('create_from_constructor'),
-        pytest.lazy_fixture('create_from_json'),
-        pytest.lazy_fixture('create_from_dict'),
-        pytest.lazy_fixture('create_from_castep_phonon_dos')])
+        lazy_fixture('create_from_constructor'),
+        lazy_fixture('create_from_json'),
+        lazy_fixture('create_from_dict'),
+        lazy_fixture('create_from_castep_phonon_dos')])
     def test_correct_object_creation(self, spectrum_creator):
         spectrum, expected_spectrum = spectrum_creator
         check_spectrum1dcollection(spectrum, expected_spectrum)

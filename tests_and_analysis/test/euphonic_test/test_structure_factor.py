@@ -5,6 +5,7 @@ import numpy as np
 import numpy.testing as npt
 from pint import DimensionalityError
 import pytest
+from pytest_lazy_fixtures import lf as lazy_fixture
 
 from euphonic import Crystal, StructureFactor, ureg
 from tests_and_analysis.test.euphonic_test.test_crystal import (
@@ -234,9 +235,9 @@ class TestStructureFactorCreation:
         return sf, expected_sf
 
     @pytest.mark.parametrize('sf_creator', [
-        pytest.lazy_fixture('create_from_constructor'),
-        pytest.lazy_fixture('create_from_json_file'),
-        pytest.lazy_fixture('create_from_dict')])
+        lazy_fixture('create_from_constructor'),
+        lazy_fixture('create_from_json_file'),
+        lazy_fixture('create_from_dict')])
     def test_create(self, sf_creator):
         sf, expected_sf = sf_creator
         check_structure_factor(sf, expected_sf, sum_sf=False)
