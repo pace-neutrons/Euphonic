@@ -6,12 +6,23 @@
   - CLI tools will now accept phonopy data produced by janus-core, with
     filenames in the form "{label}-phonopy.yml" and "{label}-force_constants.hdf5".
 
+- Bug fixes
+
+  - Fixed a bug in subtraction of dipole-dipole contribution from
+    force constants with non-symmetric supercell matrix.  (This
+    affects import from Phonopy results where a) Born effective
+    charges and dielectric tensor were included; b) sc_matrix !=
+    sc_matrix.T .)
+
 - Maintenance
 
   - Pytest configuration has been moved from
     tests_and_analysis/test/pytest.ini to the main
     pyproject.toml. This means it is more likely to be picked up
     automatically when running tests outside of the CI workflows.
+
+  - Some Einstein summations have been replaced with equivalent matrix
+    multiplications; this should improve performance and legibility.
 
 `v1.4.4 <https://github.com/pace-neutrons/Euphonic/compare/v1.4.3...v1.4.4>`_
 -----------------------------------------------------------------------------
