@@ -64,7 +64,22 @@ def test_phonon_website_writer(
     with open(kwargs['output_file'], encoding='utf8') as fd:
         output = json.load(fd)
 
-    assert output == pytest.approx(ref_data)
+    assert output.keys() == ref_data.keys()
+
+    for key, value in ref_data.items():
+        if not (isinstance(value, list) and isinstance(value[0], list)):
+            # 0-D or 1-D
+            assert output[key] == pytest.approx(value)
+            continue
+
+        # 2-D array of floats: use numpy to compare
+        if isinstance(value[0][0], float):
+            assert_allclose(output[key], value)
+            continue
+
+        # Some other nested list: check row-by-row
+        for output_row, ref_row in zip(value, output[key], strict=True):
+            assert output_row == ref_row
 
 
 class TestPhononWebsiteWriterInternals:
