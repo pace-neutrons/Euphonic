@@ -27,6 +27,8 @@
   - Some Einstein summations have been replaced with equivalent matrix
     multiplications; this should improve performance and legibility.
 
+  - Fixed a unit test which used ``pytest.approx()`` incorrectly.
+
 `v1.4.4 <https://github.com/pace-neutrons/Euphonic/compare/v1.4.3...v1.4.4>`_
 -----------------------------------------------------------------------------
 
