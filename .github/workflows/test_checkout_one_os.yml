@@ -49,7 +49,7 @@ jobs:
           fetch-depth: 0 # Ensure tags are fetched for versioning
           fetch-tags: true
       - name: Setup Python
-        if: ! inputs.python-prerelease
+        if: ${{ ! inputs.python-prerelease }}
         uses: actions/setup-python@v5
         with:
           python-version: ${{ inputs.all-python-versions && env.ALL_PYTHON_VERSIONS || env.MIN_MAX_PYTHON_VERSIONS}}
