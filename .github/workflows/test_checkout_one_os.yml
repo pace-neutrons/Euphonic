@@ -111,7 +111,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: Unit test results ${{ inputs.os }}
+          name: Unit test results ${{ inputs.os }} ${{ inputs.python-prerelease && 'pre-release python' || '' }}
           path: tests_and_analysis/test/reports/junit_report*.xml
 
       - name: Publish Codacy coverage
