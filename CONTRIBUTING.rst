@@ -1,11 +1,22 @@
 Contributing
 ------------
 
-Contributions may be made to this project via Github ``Pull Request
+Code contributions may be made to this project via Github ``Pull Request
 <https://github.com/pace-neutrons/Euphonic/pulls>``_ (PR).  For
 non-trivial changes, it may be helpful to discuss the idea first by
 creating an ``Issue
 <https://github.com/pace-neutrons/Euphonic/issues>``_.
+
+Contributions are also welcome in the form of Issues for bug reports
+and feature requests, and by reviewing PRs.  If you have a great idea
+to improve the docs but are not confident in the RST syntax (see
+below), write it down in an Issue and we should be able to help turn
+it into a PR.
+
+Those who make substantial contributions to the project will be added
+to the CITATION.cff. We do not generally add authors for formatting
+changes or "one-liner" bug fixes, but if you think you have been
+overlooked please get in touch.
 
 
 Pull requests
@@ -24,12 +35,6 @@ Please ensure that:
   if the diff includes many irrelevant formatting changes.
 - An appropriate note is included in the *CHANGELOG.rst* file.
 - Any new features are explained in the documentation.
-
-PR authors will be added to the CITATION.cff for substantial
-contributions to the project. We do not generally add authors for
-formatting changes or "one-liner" bug fixes, but if you think you have
-been overlooked please get in touch.
-
 
 Releases
 ~~~~~~~~
