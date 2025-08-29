@@ -7,25 +7,41 @@ on:
   workflow_dispatch:
 
 jobs:
-
   test:
-    needs: lint
-
-  test-prerelease:
-    uses: ./.github/workflows/test_checkout_one_os.yml
-    with:
-      python-prerelease: true
-
-  publish-test-results:
-    needs: test
     runs-on: ubuntu-latest
-    if: success() || failure()
+    env:
+      PYTHON_VERSION: 3.14
+      TOX_ENV: py314
     steps:
-      - name: Download Artifacts
-        uses: actions/download-artifact@v4
+      - uses: actions/checkout@v4
         with:
-          path: artifacts
-      - name: Publish test results
-        uses: EnricoMi/publish-unit-test-result-action@v2
+          fetch-depth: 0 # Ensure tags are fetched for versioning
+          fetch-tags: true
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
         with:
-          junit_files: artifacts/**/junit_report*.xml
+          python-version: ${{ env.PYTHON_VERSION }}
+          allow-prereleases: true
+
+      - name: Install HDF5
+        shell: bash -l {0}
+        run: |
+          sudo apt install libhdf5-dev
+
+      - name: Update pip and install dependencies
+        shell: bash -l {0}
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r tests_and_analysis/ci_requirements.txt
+
+      - name: Run tests
+        shell: bash -l {0}
+        run: python -m tox -e ${{ env.TOX_ENV }}
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Unit test results ${{ inputs.os }} ${{ inputs.python-prerelease && 'pre-release python' || '' }}
+          path: tests_and_analysis/test/reports/junit_report*.xml
