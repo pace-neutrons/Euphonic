@@ -4,9 +4,14 @@
 - Requirements
 
   - Python 3.13 is supported
-  - (Testing only) migrated from *pytest-lazy-fixture* (which appears
-    to be abandoned and incompatible) to *pytest-lazy-fixtures*, an
-    active project with similar functionality.
+
+  - Test requirements
+
+    - Migrated from pytest 7 to pytest 8
+
+    - Migrated from *pytest-lazy-fixture* (which appears to be
+      unmaintained and incompatible) to *pytest-lazy-fixtures*, an
+      active project with similar functionality.
 
 - Maintenance
   - Started testing with Python 3.14
