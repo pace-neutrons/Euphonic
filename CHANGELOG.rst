@@ -1,6 +1,21 @@
 `Unreleased <https://github.com/pace-neutrons/Euphonic/compare/v1.4.5...HEAD>`_
 -------------------------------------------------------------------------------
 
+- Requirements
+
+  - Python 3.13 is supported
+
+  - Test requirements
+
+    - Migrated from pytest 7 to pytest 8
+
+    - Migrated from *pytest-lazy-fixture* (which appears to be
+      unmaintained and incompatible) to *pytest-lazy-fixtures*, an
+      active project with similar functionality.
+
+- Maintenance
+  - Started testing with Python 3.14
+
 `v1.4.5 <https://github.com/pace-neutrons/Euphonic/compare/v1.4.4...v1.4.5>`_
 -----------------------------------------------------------------------------
 

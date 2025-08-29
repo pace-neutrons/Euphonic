@@ -5,6 +5,7 @@ from numpy.polynomial import Polynomial
 import numpy.testing as npt
 from pint import Quantity
 import pytest
+from pytest_lazy_fixtures import lf as lazy_fixture
 
 from euphonic import ureg
 from euphonic.spectra import Spectrum2D, apply_kinematic_constraints
@@ -173,9 +174,9 @@ class TestSpectrum2DCreation:
         return spec2d, expected_spec2d
 
     @pytest.mark.parametrize(('spec2d_creator'), [
-        pytest.lazy_fixture('create_from_constructor'),
-        pytest.lazy_fixture('create_from_json'),
-        pytest.lazy_fixture('create_from_dict')])
+        lazy_fixture('create_from_constructor'),
+        lazy_fixture('create_from_json'),
+        lazy_fixture('create_from_dict')])
     def test_correct_object_creation(self, spec2d_creator):
         spec2d, expected_spec2d = spec2d_creator
         check_spectrum2d(spec2d, expected_spec2d)

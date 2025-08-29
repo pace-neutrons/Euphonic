@@ -1,0 +1,31 @@
+name: test-prerelease-python
+on:
+  push:
+    branches:
+      - '**master**'
+      - '**release**'
+  workflow_dispatch:
+
+jobs:
+
+  test:
+    needs: lint
+
+  test-prerelease:
+    uses: ./.github/workflows/test_checkout_one_os.yml
+    with:
+      python-prerelease: true
+
+  publish-test-results:
+    needs: test
+    runs-on: ubuntu-latest
+    if: success() || failure()
+    steps:
+      - name: Download Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+      - name: Publish test results
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        with:
+          junit_files: artifacts/**/junit_report*.xml

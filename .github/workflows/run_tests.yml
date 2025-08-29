@@ -54,6 +54,13 @@ jobs:
       coverage: ${{ matrix.config.coverage }}
     secrets: inherit
 
+  test-prerelease:
+    needs: lint
+    if: github.event_name != 'pull_request'
+    uses: ./.github/workflows/test_checkout_one_os.yml
+    with:
+      python-prerelease: true
+
   test-gcc14:
     needs: lint
     uses: ./.github/workflows/test_gcc14.yml

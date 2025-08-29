@@ -13,7 +13,12 @@ on:
         default: ubuntu-latest
         type: string
       all-python-versions:
-        description: 'Test all Python versions'
+        description: 'Test all supported Python versions'
+        required: false
+        default: false
+        type: boolean
+      python-prerelease:
+        description: 'Test Python prerelease version'
         required: false
         default: false
         type: boolean
@@ -30,11 +35,13 @@ jobs:
     env:
       MIN_MAX_PYTHON_VERSIONS: |
         3.10
-        3.12
+        3.13
       ALL_PYTHON_VERSIONS: |
         3.10
         3.11
         3.12
+        3.13
+      PYTHON_PRERELEASE: 3.14
       TOX_SKIP_ENV: ${{ inputs.all-python-versions && 'no-match' || '.*?(py311).*?' }}
     steps:
       - uses: actions/checkout@v4
@@ -42,9 +49,23 @@ jobs:
           fetch-depth: 0 # Ensure tags are fetched for versioning
           fetch-tags: true
       - name: Setup Python
+        if: ${{ ! inputs.python-prerelease }}
         uses: actions/setup-python@v5
         with:
           python-version: ${{ inputs.all-python-versions && env.ALL_PYTHON_VERSIONS || env.MIN_MAX_PYTHON_VERSIONS}}
+
+      - name: Setup pre-release Python
+        if: inputs.python-prerelease
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_PRERELEASE }}
+          allow-prereleases: true
+
+      - name: Install HDF5 on Ubuntu
+        if: startsWith( inputs.os, 'ubuntu') && inputs.python-prerelease
+        shell: bash -l {0}
+        run: |
+          sudo apt install libhdf5-dev
 
       - name: Install llvm on MacOS
         if: startsWith( inputs.os , 'macos' )
@@ -90,7 +111,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: Unit test results ${{ inputs.os }}
+          name: Unit test results ${{ inputs.os }} ${{ inputs.python-prerelease && 'pre-release python' || '' }}
           path: tests_and_analysis/test/reports/junit_report*.xml
 
       - name: Publish Codacy coverage

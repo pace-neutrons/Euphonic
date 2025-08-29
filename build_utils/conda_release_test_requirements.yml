@@ -1,10 +1,10 @@
 channels:
   - conda-forge
 dependencies:
-  - pytest=7.*
+  - pytest=8.*
   - coverage
   - pytest-mock
-  - pytest-lazy-fixture
+  - pytest-lazy-fixtures
   - pytest-xvfb
   - python-slugify
   - matplotlib-base
