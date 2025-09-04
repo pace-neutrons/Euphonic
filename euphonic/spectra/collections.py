@@ -231,12 +231,7 @@ class SpectrumCollectionMixin(ABC):
             of float or bool was provided when ints are needed.
 
         """
-        if isinstance(item, Integral):
-            return
-        if isinstance(item, slice):
-            if (item.stop is not None) and (item.stop >= len(self)):
-                msg = f'index "{item.stop}" out of range'
-                raise IndexError(msg)
+        if isinstance(item, (Integral, slice)):
             return
 
         if not all(isinstance(i, Integral) for i in item):
