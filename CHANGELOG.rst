@@ -1,6 +1,19 @@
 `Unreleased <https://github.com/pace-neutrons/Euphonic/compare/v1.4.5...HEAD>`_
 -------------------------------------------------------------------------------
 
+- Features
+
+  - Spectrum1DCollection and Spectrum2DCollection can be indexed with
+    slices where the stop value exceeds the collection
+    length. (e.g. if a collection of 5 spectra is indexed with [3:10]
+    it will return a collection with the spectra at indices 3 and 4.)
+    This is consistent with the behaviour of Python lists and numpy
+    arrays.
+
+    Previously this would raise an IndexError. Technically it is a
+    **breaking change** as somebody's code could depend on this
+    IndexError. At this stage it seems an acceptable risk.
+
 - Requirements
 
   - Python 3.13 is supported
