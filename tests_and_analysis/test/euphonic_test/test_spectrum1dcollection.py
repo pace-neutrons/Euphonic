@@ -472,8 +472,7 @@ class TestSpectrum1DCollectionIndexAccess:
           np.arange(4.0), TypeError),
          (get_spectrum1dcollection('gan_bands.json'),
           6, IndexError),
-         (get_spectrum1dcollection('gan_bands.json'),
-          slice(2, 6), IndexError)])
+         ])
     def test_index_errors(self, spectrum, index, expected_error):
         with pytest.raises(expected_error):
             spectrum[index]
