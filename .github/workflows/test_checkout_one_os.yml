@@ -52,7 +52,7 @@ jobs:
         shell: bash -l {0}
         env:
           # Homebrew location is different on Intel Mac
-          LLVM_DIR: ${{ ( inputs.os == 'macos-13') && '/usr/local/opt/llvm' || '/opt/homebrew/opt/llvm' }}
+          LLVM_DIR: ${{ ( inputs.os == 'macos-15-intel') && '/usr/local/opt/llvm' || '/opt/homebrew/opt/llvm' }}
         run: |
           brew install llvm
           echo CC="${LLVM_DIR}/bin/clang" >> $GITHUB_ENV
