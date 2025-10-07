@@ -57,7 +57,7 @@ phonopy_reader = ["h5py>=3.6.0", "PyYAML>=6.0"]  # Deprecated, will be removed i
 phonopy-reader = ["h5py>=3.6.0", "PyYAML>=6.0"]
 brille = ["brille>=0.7.0"]
 test = ["mock", "pytest>=8.0,<9.0", "coverage", "pytest-mock", "pytest-lazy-fixtures", "pytest-xvfb", "python-slugify"]
-ci = ["tox==4.23.2"]
+ci = ["tox==4.30.3"]
 
 [project.scripts]
 euphonic-brille-convergence = "euphonic.cli.brille_convergence:main"
