@@ -19,7 +19,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest, macos-13]
+        os: [ubuntu-latest, windows-latest, macos-latest, macos-15-intel]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
@@ -36,7 +36,7 @@ jobs:
         shell: bash -l {0}
         env:
           # Homebrew location is different on Intel Mac
-          LLVM_DIR: ${{ (matrix.os == 'macos-13') && '/usr/local/opt/llvm' || '/opt/homebrew/opt/llvm' }}
+          LLVM_DIR: ${{ (matrix.os == 'macos-15-intel') && '/usr/local/opt/llvm' || '/opt/homebrew/opt/llvm' }}
         run: |
           brew install llvm
           echo CC="${LLVM_DIR}/bin/clang" >> $GITHUB_ENV
