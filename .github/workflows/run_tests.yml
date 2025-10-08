@@ -35,7 +35,7 @@ jobs:
           skip: false
           all-python-versions: ${{(github.event_name != 'pull_request')}}
           coverage: false
-        - os: macos-latest
+        - os: macos-14
           skip: false
           all-python-versions: ${{(github.event_name != 'pull_request')}}
           coverage: false
