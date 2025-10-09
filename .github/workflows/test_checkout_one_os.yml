@@ -83,6 +83,11 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install -r tests_and_analysis/ci_requirements.txt
 
+      - name: Try to install brille once - avoid cmake/conan race conditions?
+        shell: bash -l {0}
+        run: |
+          python -m pip install brille@git+https://github.com/brille/brille
+
       - name: Run tests
         shell: bash -l {0}
         run: python -m tox run-parallel -- ${{ inputs.coverage && '--cov' || '' }}
