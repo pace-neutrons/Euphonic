@@ -56,6 +56,7 @@ jobs:
         run: |
           brew install llvm
           echo CC="${LLVM_DIR}/bin/clang" >> $GITHUB_ENV
+          echo CXX="${LLVM_DIR}/bin/clang++" >> $GITHUB_ENV
           echo LDFLAGS="-L${LLVM_DIR}/lib $LDFLAGS" >> $GITHUB_ENV
           echo CPPFLAGS="-I${LLVM_DIR}/include $CPPFLAGS" >> $GITHUB_ENV
 
