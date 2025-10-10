@@ -98,9 +98,9 @@ jobs:
 
       - name: Run tests
         shell: bash -l {0}
-        env:
-          PIP_FIND_LINKS: 'file://brille-wheels'
-        run: python -m tox -v run -- ${{ inputs.coverage && '--cov' || '' }}
+        run: |
+          export PIP_FIND_LINKS=$PWD/brille-wheels/
+          python -m tox -v run -- ${{ inputs.coverage && '--cov' || '' }}
 
       - name: Upload test results
         if: always()
