@@ -80,8 +80,9 @@ jobs:
 
           # FTK1011 error may be related to overly-long paths for brille cmake build
           # See if this alternative path helps
-          mkdir $HOME/build
+          mkdir $HOME/build $HOME/temp
           echo BINARY_DIR="$HOME/build" >> $GITHUB_ENV
+          echo TEMP="$HOME/temp" >> $GITHUB_ENV
 
       - name: Update pip and install dependencies
         shell: bash -l {0}
