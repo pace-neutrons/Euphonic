@@ -83,23 +83,9 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install -r tests_and_analysis/ci_requirements.txt
 
-      - name: Build brille wheel (Windows)
-        if: startsWith( inputs.os , 'windows' )
-        shell: bash -l {0}
-        run: |
-          py --list
-          py -3.10 -m pip wheel -w brille-wheels brille@git+https://github.com/brille/brille
-
-      - name: Build brille wheel (Mac, Linux)
-        if: ${{ !( startsWith( inputs.os , 'windows' )) }}
-        shell: bash -l {0}
-        run: |
-          python3.10 -m pip wheel -w brille-wheels brille@git+https://github.com/brille/brille
-
       - name: Run tests
         shell: bash -l {0}
         run: |
-          export PIP_FIND_LINKS=$PWD/brille-wheels/
           python -m tox -v run -- ${{ inputs.coverage && '--cov' || '' }}
 
       - name: Upload test results
