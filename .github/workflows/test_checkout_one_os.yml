@@ -87,7 +87,8 @@ jobs:
         if: startsWith( inputs.os , 'windows' )
         shell: bash -l {0}
         run: |
-          python3.10.exe -m pip wheel -w brille-wheels brille@git+https://github.com/brille/brille
+          py --list
+          py -3.10 -m pip wheel -w brille-wheels brille@git+https://github.com/brille/brille
 
       - name: Build brille wheel (Mac, Linux)
         if: ${{ !( startsWith( inputs.os , 'windows' )) }}
@@ -98,8 +99,8 @@ jobs:
       - name: Run tests
         shell: bash -l {0}
         env:
-          PIP_FIND_LINKS: './brille-wheels'
-        run: python -m tox run-parallel -- ${{ inputs.coverage && '--cov' || '' }}
+          PIP_FIND_LINKS: 'file://brille-wheels'
+        run: python -m tox -v run -- ${{ inputs.coverage && '--cov' || '' }}
 
       - name: Upload test results
         if: always()
