@@ -139,7 +139,7 @@ def run_tests(pytest_options: list[str], do_report_coverage: bool,
 
     # Set import-mode to ensure the installed version is tested rather
     # than the local version
-    pytest_options = ['-vv', '--import-mode=append', *pytest_options]
+    pytest_options = ['--import-mode=append', *pytest_options]
 
     # Start recording coverage if requested
     cov: coverage.Coverage | None = None
