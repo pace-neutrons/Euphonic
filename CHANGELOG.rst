@@ -14,7 +14,13 @@
       active project with similar functionality.
 
 - Maintenance
+
   - Started testing with Python 3.14
+
+  - Disabled testing with brille on Mac; after moving to new Github
+    runners we are having some binary compatibility problems. To run
+    unit tests on Mac including brille, use the run_tests.py script
+    directly.
 
 `v1.4.5 <https://github.com/pace-neutrons/Euphonic/compare/v1.4.4...v1.4.5>`_
 -----------------------------------------------------------------------------
