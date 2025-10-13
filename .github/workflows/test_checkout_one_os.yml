@@ -85,7 +85,7 @@ jobs:
 
       - name: Run tests
         shell: bash -l {0}
-        run: python -m tox run -- ${{ inputs.coverage && '--cov' || '' }}
+        run: python -m tox run-parallel -- ${{ inputs.coverage && '--cov' || '' }}
 
       - name: Upload test results
         if: always()

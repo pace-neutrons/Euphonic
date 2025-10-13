@@ -13,6 +13,8 @@
       unmaintained and incompatible) to *pytest-lazy-fixtures*, an
       active project with similar functionality.
 
+    - The minimum required version of tox is increased to 4.30.3
+
 - Maintenance
 
   - Started testing with Python 3.14
