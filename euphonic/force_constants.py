@@ -650,7 +650,7 @@ class ForceConstants:
                 use_c_status = True
             except ImportError as err:
                 if (missing_lib := re.match(
-                        ".*Library not loaded: (.*)\n", err.msg
+                        '.*Library not loaded: (.*)\n', err.msg,
                 )):
                     err_msg = cext_no_libomp_msg.format(
                         lib=missing_lib.group(1))
