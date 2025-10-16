@@ -649,8 +649,8 @@ class ForceConstants:
                 import euphonic._euphonic as euphonic_c
                 use_c_status = True
             except ImportError as err:
-                if (missing_lib := re.match(
-                        '.*Library not loaded: (.*)\n', err.msg,
+                if err.msg is not None and (missing_lib := re.match(
+                        r'.*Library not loaded: (.*)\n', err.msg,
                 )):
                     err_msg = cext_no_libomp_msg.format(
                         lib=missing_lib.group(1))
