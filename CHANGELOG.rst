@@ -13,6 +13,11 @@
       unmaintained and incompatible) to *pytest-lazy-fixtures*, an
       active project with similar functionality.
 
+- Improvements
+
+  - Improved error message when C extension import fails due to
+    missing dynamic libraries.
+
 - Maintenance
 
   - Started testing with Python 3.14
