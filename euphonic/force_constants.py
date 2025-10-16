@@ -2,6 +2,7 @@ from collections.abc import Sequence
 import math
 from multiprocessing import cpu_count
 import os
+import re
 from typing import (
     Any,
     Literal,
@@ -635,6 +636,11 @@ class ForceConstants:
         cext_err_msg = (f"Euphonic's C extension couldn't be imported "
                         f'from {euphonic_path}, it may not have been '
                         f'installed.')
+        cext_no_libomp_msg = (
+            "Euphonic's C extension could not load a library: {lib}."
+            "It may not have been installed."
+        )
+
 
         # Check if C extension can be used and handle appropriately
         use_c_status = False
@@ -642,14 +648,22 @@ class ForceConstants:
             try:
                 import euphonic._euphonic as euphonic_c
                 use_c_status = True
-            except ImportError:
+            except ImportError as err:
+                if (missing_lib := re.match(
+                        ".*Library not loaded: (.*)\n", err.msg
+                )):
+                    err_msg = cext_no_libomp_msg.format(
+                        lib=missing_lib.group(1))
+                else:
+                    err_msg = cext_err_msg
+
                 if use_c is None:
                     warnings.warn((
-                        cext_err_msg
+                        err_msg
                         + ' Falling back to pure Python calculation.'),
                         stacklevel=3)
                 else:
-                    raise ImportCError(cext_err_msg) from None
+                    raise ImportCError(err_msg) from None
 
         if use_c_status is True:
             if n_threads is None:
