@@ -637,7 +637,7 @@ class ForceConstants:
                         f'from {euphonic_path}, it may not have been '
                         f'installed.')
         cext_no_libomp_msg = (
-            "Euphonic's C extension could not load a library: {lib}."
+            "Euphonic's C extension could not load a library: {lib}. "
             "It may not have been installed."
         )
 
@@ -650,10 +650,11 @@ class ForceConstants:
                 use_c_status = True
             except ImportError as err:
                 if err.msg is not None and (missing_lib := re.match(
-                        r'.*Library not loaded: (.*)\n', err.msg,
+                    r'.*Library not loaded: (.*)\n', err.msg, re.DOTALL,
                 )):
                     err_msg = cext_no_libomp_msg.format(
-                        lib=missing_lib.group(1))
+                        lib=missing_lib.group(1),
+                    )
                 else:
                     err_msg = cext_err_msg
 

@@ -2,6 +2,7 @@ from contextlib import suppress
 import json
 from multiprocessing import cpu_count
 import os
+from textwrap import dedent
 import warnings
 
 import numpy as np
@@ -313,6 +314,49 @@ class TestForceConstantsCalculateQPointPhononModesWithoutCExtensionInstalled:
         with warnings.catch_warnings(record=True) as warn_record:
             fc.calculate_qpoint_phonon_modes(get_test_qpts(), use_c=False)
         assert len(warn_record) == 0
+
+
+class TestForceConstantsCalculateQPointPhononModesMissingLibOMP:
+    missing_omp_err = dedent("""\
+        ImportError: dlopen(/path/to/site-packages/euphonic/_euphonic.cpython-313-darwin.so, 0x0002):
+        Library not loaded: /path/to/lib/libomp.dylib
+        Referenced from: <snip> /path/to/site-packages/euphonic/_euphonic.cpython-313-darwin.so
+        Reason: tried: '/path/to/lib/libomp.dylib' (no such file)
+        """)
+    missing_lib_text = 'could not load a library: /path/to/lib/libomp.dylib'
+
+    @pytest.fixture
+    def mocked_cext_with_lib_importerror(self, mocker):
+        # Mock import of euphonic._euphonic to raise ImportError
+        import builtins
+        real_import = builtins.__import__
+
+        def mocked_import(name, *args, **kwargs):
+            if name == 'euphonic._euphonic':
+                raise ImportError(self.missing_omp_err)
+            return real_import(name, *args, **kwargs)
+        mocker.patch('builtins.__import__', side_effect=mocked_import)
+
+    def test_with_use_c_true_raises_importcerror(
+            self, mocked_cext_with_lib_importerror):
+        fc = get_fc('quartz')
+        with pytest.raises(ImportCError, match=self.missing_lib_text):
+            fc.calculate_qpoint_phonon_modes(get_test_qpts(),
+                                             use_c=True)
+
+    def test_with_use_c_default_warns(
+            self, mocked_cext_with_lib_importerror):
+        fc = get_fc('quartz')
+        with pytest.warns(UserWarning, match=self.missing_lib_text):
+            fc.calculate_qpoint_phonon_modes(get_test_qpts())
+
+    def test_with_use_c_false_doesnt_raise_error_or_warn(
+            self, mocked_cext_with_lib_importerror):
+        fc = get_fc('quartz')
+        with warnings.catch_warnings(record=True) as warn_record:
+            fc.calculate_qpoint_phonon_modes(get_test_qpts(), use_c=False)
+        assert len(warn_record) == 0
+
 
 @pytest.mark.c_extension
 class TestForceConstantsCalculateQPointPhononModesWithCExtensionInstalled:
