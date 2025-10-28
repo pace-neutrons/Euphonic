@@ -54,12 +54,10 @@ if not np.found() # Try default
   np = declare_dependency(include_directories: np_inc)
 endif
 
-openmp = dependency('openmp', required: true, language: 'c')
-
 py.extension_module(
   '_euphonic',
   src,
-  dependencies: [build, py_dep, np, openmp],
+  dependencies: [build, py_dep, np],
   install: true,
   subdir: 'euphonic',
 )

@@ -3,7 +3,6 @@
 #define PY_ARRAY_UNIQUE_SYMBOL EUPHONIC_NPY_ARRAY_API
 #include <string.h>
 #include <stdbool.h>
-#include <omp.h>
 #include <Python.h>
 #include <numpy/arrayobject.h>
 #include "load_libs.h"
@@ -200,8 +199,6 @@ static PyObject *calculate_phonons(PyObject *self, PyObject *args) {
 
 
 
-    omp_set_num_threads(n_threads);
-    #pragma omp parallel
     {
         const bool calc_dmat_grad = (modegs_len > 0) ? true : false;
         double *corr, *dmat_per_q, *dmat_grad;
@@ -221,7 +218,6 @@ static PyObject *calculate_phonons(PyObject *self, PyObject *args) {
         } else {
             dmat_grad = NULL;
         }
-        #pragma omp for
         for (q = 0; q < n_rqpts; q++) {
             double *qpt, *dmat, *eval, *modeg;
             qpt = (rqpts + 3*q);
