@@ -14,7 +14,7 @@ import warnings
 import numpy as np
 from pint import Quantity
 from scipy.special import erfc
-from threadpoolctl import threadpool_limits
+from threadpoolctl import threadpool_info, threadpool_limits
 
 from euphonic.crystal import Crystal
 from euphonic.io import (
@@ -704,7 +704,18 @@ class ForceConstants:
                             '_cells', '_gvec_phases', '_gvecs_cart',
                             '_dipole_q0']
             _ensure_contiguous_attrs(self, attrs, opt_attrs=dipole_attrs)
+
             with threadpool_limits(limits=1):
+                if len([info for info in threadpool_info()
+                        if info['user_api'] == 'openmp']
+                       ) > 1:
+                    warnings.warn(
+                        "More than one OpenMP library has been loaded: "
+                        "limiting Euphonic to serial operation in order to "
+                        "avoid possible deadlocks."
+                    )
+                    n_threads = 1
+
                 euphonic_c.calculate_phonons(
                     self, cell_vectors, recip_vectors, reduced_qpts,
                     split_idx, q_dirs, fc_img_weighted, sc_origins,
