@@ -707,12 +707,12 @@ class ForceConstants:
 
             with threadpool_limits(limits=1):
                 if len([info for info in threadpool_info()
-                        if info['user_api'] == 'openmp']
+                        if info['user_api'] == 'openmp'],
                        ) > 1:
                     warnings.warn(
-                        "More than one OpenMP library has been loaded: "
-                        "limiting Euphonic to serial operation in order to "
-                        "avoid possible deadlocks."
+                        'More than one OpenMP library has been loaded: '
+                        'limiting Euphonic to serial operation in order to '
+                        'avoid possible deadlocks.', stacklevel=2,
                     )
                     n_threads = 1
 
