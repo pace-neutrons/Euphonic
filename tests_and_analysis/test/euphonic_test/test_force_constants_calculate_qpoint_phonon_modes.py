@@ -365,6 +365,26 @@ class TestForceConstantsCalculateQPointPhononModesWithCExtensionInstalled:
     def mocked_cext(self, mocker):
         return mocker.patch('euphonic._euphonic.calculate_phonons')
 
+    @pytest.fixture
+    def mocked_no_openmp_conflict(self, mocker):
+        """Ensure that no OpenMP version conflict is detected
+
+        (This conflict causes hangs/deadlocks, so this mock should only be used
+        alongside mocked_cext!)
+        """
+        return mocker.patch(
+            'euphonic.force_constants.threadpool_info', return_value=[],
+        )
+
+    @pytest.fixture
+    def mocked_openmp_conflict(self, mocker):
+        """Ensure that OpenMP version conflict is detected"""
+        return mocker.patch(
+            'euphonic.force_constants.threadpool_info',
+            return_value=[{'user_api': 'openmp', 'filepath': '1'},
+                          {'user_api': 'openmp', 'filepath': '2'}],
+        )
+
     def test_cext_called_with_use_c_true(self, mocked_cext):
         fc = get_fc('quartz')
         fc.calculate_qpoint_phonon_modes(get_test_qpts(), use_c=True)
@@ -383,21 +403,38 @@ class TestForceConstantsCalculateQPointPhononModesWithCExtensionInstalled:
     # The following only tests that the C extension was called with the
     # correct n_threads, rather than testing that that number of threads
     # have actually been spawned, but I can't think of a way to test that
-    def test_cext_called_with_n_threads_arg(self, mocked_cext):
+    def test_cext_called_with_n_threads_arg(
+        self, mocked_cext, mocked_no_openmp_conflict,
+    ):
         n_threads = 3
+
         fc = get_fc('quartz')
         fc.calculate_qpoint_phonon_modes(get_test_qpts(), n_threads=n_threads)
         assert mocked_cext.call_args[0][-1] == n_threads
 
-    def test_cext_called_with_n_threads_default_and_env_var(self, mocked_cext):
+    def test_cext_called_with_1_thread(
+        self, mocked_cext, mocked_openmp_conflict,
+    ):
+        """Where multiple OpenMP libs are detected, limit to 1 thread"""
+        n_threads = 3
+
+        fc = get_fc('quartz')
+        fc.calculate_qpoint_phonon_modes(get_test_qpts(), n_threads=n_threads)
+        assert mocked_cext.call_args[0][-1] == 1
+
+    def test_cext_called_with_n_threads_default_and_env_var(
+        self, mocked_cext, mocked_no_openmp_conflict,
+    ):
         n_threads = 4
+
         os.environ['EUPHONIC_NUM_THREADS'] = str(n_threads)
         fc = get_fc('quartz')
         fc.calculate_qpoint_phonon_modes(get_test_qpts())
         assert mocked_cext.call_args[0][-1] == n_threads
 
     def test_cext_called_with_n_threads_default_and_no_env_var(
-            self, mocked_cext):
+        self, mocked_cext, mocked_no_openmp_conflict,
+    ):
         n_threads = cpu_count()
         with suppress(KeyError):
             os.environ.pop('EUPHONIC_NUM_THREADS')
