@@ -97,7 +97,8 @@ class TestRegression:
             # OpenMP conflict warning is allowed, common on Mac
             if 'More than one OpenMP library' in str(warning.message):
                 continue
-            raise AssertionError("Too many warnings")
+            msg = 'Too many warnings'
+            raise AssertionError(msg)
 
     def test_qpoint_modes_raises_type_error(self):
         with pytest.raises(TypeError):
