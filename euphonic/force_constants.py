@@ -706,10 +706,9 @@ class ForceConstants:
             _ensure_contiguous_attrs(self, attrs, opt_attrs=dipole_attrs)
 
             with threadpool_limits(limits=1):
-                if len(set(
+                if len({
                         info['filepath'] for info in threadpool_info()
-                        if info['user_api'] == 'openmp',
-                )) > 1:
+                        if info['user_api'] == 'openmp'}) > 1:
                     warnings.warn(
                         'More than one OpenMP library has been loaded: '
                         'limiting Euphonic to serial operation in order to '
