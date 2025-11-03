@@ -2,7 +2,6 @@ from contextlib import suppress
 import json
 import os
 from unittest.mock import patch
-import warnings
 
 import numpy.testing as npt
 import pytest

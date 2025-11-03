@@ -367,5 +367,5 @@ def does_not_raise():
 # This is a decorator: add @ignore_multiple_openmp_warning to tests to
 # ignore the warning for multiple loaded OpenMP libraries
 ignore_openmp_warning = pytest.mark.filterwarnings(
-    "ignore:More than one OpenMP"
+    'ignore:More than one OpenMP',
 )

@@ -1,5 +1,4 @@
 from multiprocessing import cpu_count
-import warnings
 
 import numpy as np
 import pytest
@@ -26,7 +25,6 @@ from tests_and_analysis.test.utils import (
     get_test_qpts,
     ignore_openmp_warning,
 )
-
 
 # Allow tests with brille marker to be collected and
 # deselected if brille isn't installed
