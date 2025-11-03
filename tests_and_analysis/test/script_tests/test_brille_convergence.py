@@ -14,7 +14,11 @@ from tests_and_analysis.test.script_tests.utils import (
     get_all_plot_line_data,
     get_script_test_data_path,
 )
-from tests_and_analysis.test.utils import get_castep_path, get_phonopy_path
+from tests_and_analysis.test.utils import (
+    get_castep_path,
+    get_phonopy_path,
+    ignore_openmp_warning,
+)
 
 pytestmark = [pytest.mark.multiple_extras, pytest.mark.brille,
               pytest.mark.matplotlib]
@@ -39,13 +43,8 @@ brille_conv_params = [
     [nacl_prim_fc_file, *quick_calc_params, '-n=2', '--ebins=5', '--e-min=80',
      '--e-max=160', '-u=1/cm']]
 
+@ignore_openmp_warning
 class TestRegression:
-    @pytest.fixture
-    def ignore_openmp_warning(self):
-        with warnings.catch_warnings():
-            warnings.filterwarnings('ignore', 'More than one OpenMP')
-            yield
-
     @pytest.fixture
     def inject_mocks(self, mocker):
         # Prevent calls to show so we can get the current figure
@@ -137,8 +136,7 @@ class TestRegression:
                 assert all(ls == '-' for ls in linestyles)
 
     @pytest.mark.parametrize('brille_conv_args', brille_conv_params)
-    def test_brille_conv_plots(
-            self, inject_mocks, ignore_openmp_warning, brille_conv_args):
+    def test_brille_conv_plots(self, inject_mocks, brille_conv_args):
         self.run_brille_conv_and_test_result(brille_conv_args)
 
     @pytest.mark.parametrize('brille_conv_args, expected_kwargs', [
@@ -155,7 +153,6 @@ class TestRegression:
             self,
             inject_mocks,
             mocker,
-            ignore_openmp_warning,
             brille_conv_args,
             expected_kwargs):
         from euphonic.brille import BrilleInterpolator

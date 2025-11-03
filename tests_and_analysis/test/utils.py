@@ -5,6 +5,7 @@ from typing import Optional
 
 import numpy as np
 import numpy.testing as npt
+import pytest
 
 from euphonic import Spectrum1D, Spectrum1DCollection, __version__, ureg
 
@@ -361,3 +362,10 @@ def does_not_raise():
 
     """
     yield
+
+
+# This is a decorator: add @ignore_multiple_openmp_warning to tests to
+# ignore the warning for multiple loaded OpenMP libraries
+ignore_openmp_warning = pytest.mark.filterwarnings(
+    "ignore:More than one OpenMP"
+)

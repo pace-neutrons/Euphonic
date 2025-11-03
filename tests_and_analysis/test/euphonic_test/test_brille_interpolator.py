@@ -21,18 +21,16 @@ from tests_and_analysis.test.euphonic_test.test_spectrum1d import (
     check_spectrum1d,
     get_spectrum1d,
 )
-from tests_and_analysis.test.utils import get_data_path, get_test_qpts
+from tests_and_analysis.test.utils import (
+    get_data_path,
+    get_test_qpts,
+    ignore_openmp_warning,
+)
+
 
 # Allow tests with brille marker to be collected and
 # deselected if brille isn't installed
 pytestmark = pytest.mark.brille
-
-
-@pytest.fixture
-def ignore_openmp_warning():
-    with warnings.catch_warnings():
-        warnings.filterwarnings('ignore', 'More than one OpenMP')
-        yield
 
 
 def get_brille_grid(grid_file):
@@ -78,6 +76,7 @@ class TestBrilleInterpolatorCreation:
         check_crystal(crystal, bri.crystal)
         assert grid == bri._grid
 
+    @ignore_openmp_warning
     @pytest.mark.parametrize('material, kwargs, expected_grid_file', [
         ('LZO', {'grid_npts': 10,
                  'grid_type': 'trellis'},
@@ -87,7 +86,7 @@ class TestBrilleInterpolatorCreation:
          'quartz_mesh_10.hdf5'),
         ])
     def test_create_from_force_constants(
-            self, material, kwargs, expected_grid_file, ignore_openmp_warning):
+            self, material, kwargs, expected_grid_file):
         from euphonic.brille import BrilleInterpolator
 
         fc = get_fc(material)
@@ -97,6 +96,7 @@ class TestBrilleInterpolatorCreation:
         assert type(expected_grid) is type(bri._grid)
         assert expected_grid.rlu.shape == bri._grid.rlu.shape
 
+    @ignore_openmp_warning
     @pytest.mark.parametrize(
         'kwargs, expected_grid_type, expected_grid_kwargs', [
             ({'grid_npts': 10,
@@ -120,7 +120,6 @@ class TestBrilleInterpolatorCreation:
     def test_from_force_constants_correct_grid_kwargs_passed_to_brille(
             self,
             mocker,
-            ignore_openmp_warning,
             kwargs,
             expected_grid_type,
             expected_grid_kwargs,
@@ -204,6 +203,7 @@ class TestBrilleInterpolatorCreation:
             BrilleInterpolator(get_crystal('quartz'), grid)
 
 
+@ignore_openmp_warning
 class TestBrilleInterpolatorCalculateQpointPhononModes:
 
     @pytest.mark.parametrize(
@@ -217,7 +217,6 @@ class TestBrilleInterpolatorCalculateQpointPhononModes:
         from_fc_kwargs,
         emax,
         expected_sf1d_file,
-        ignore_openmp_warning,
     ):
         from euphonic.brille import BrilleInterpolator
 
@@ -237,9 +236,7 @@ class TestBrilleInterpolatorCalculateQpointPhononModes:
         expected_sf1d = get_spectrum1d(expected_sf1d_file)
         check_spectrum1d(sf1d, expected_sf1d, y_rtol=0.01, y_atol=3e-3)
 
-    def test_brille_qpoint_phonon_modes_similar_to_those_from_fc(
-        self, ignore_openmp_warning,
-    ):
+    def test_brille_qpoint_phonon_modes_similar_to_those_from_fc(self):
         from euphonic.brille import BrilleInterpolator
 
         fc = get_fc('graphite')
@@ -264,9 +261,7 @@ class TestBrilleInterpolatorCalculateQpointPhononModes:
         check_spectrum1d(sf1d_brille, sf1d_fc,
                          y_rtol=0.01, y_atol=5e-3)
 
-    def test_calculate_qpoint_phonon_modes_single_qpt(
-        self, ignore_openmp_warning,
-    ):
+    def test_calculate_qpoint_phonon_modes_single_qpt(self):
 
         from euphonic.brille import BrilleInterpolator
 
@@ -308,6 +303,7 @@ class TestBrilleInterpolatorCalculateQpointPhononModes:
             assert mock_interpolate.call_args[1] == default_kwargs
 
 
+@ignore_openmp_warning
 class TestBrilleInterpolatorCalculateQpointFrequencies:
 
     @pytest.mark.parametrize(
@@ -324,7 +320,6 @@ class TestBrilleInterpolatorCalculateQpointFrequencies:
         from_fc_kwargs,
         expected_qpf_file,
         rtol,
-        ignore_openmp_warning,
     ):
         from euphonic.brille import BrilleInterpolator
 
@@ -337,9 +332,7 @@ class TestBrilleInterpolatorCalculateQpointFrequencies:
         check_qpt_freqs(qpf, expected_qpf, frequencies_rtol=rtol,
                         frequencies_atol=0.8)
 
-    def test_brille_qpoint_frequencies_similar_to_those_from_fc(
-        self, ignore_openmp_warning,
-    ):
+    def test_brille_qpoint_frequencies_similar_to_those_from_fc(self):
         from euphonic.brille import BrilleInterpolator
 
         fc = get_fc('graphite')

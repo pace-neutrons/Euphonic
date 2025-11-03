@@ -17,6 +17,7 @@ from tests_and_analysis.test.utils import (
     get_castep_path,
     get_data_path,
     get_phonopy_path,
+    ignore_openmp_warning,
 )
 
 pytestmark = pytest.mark.matplotlib
@@ -132,18 +133,13 @@ class TestRegression:
             self, inject_mocks, powder_map_args):
         self.run_powder_map_and_test_result(powder_map_args)
 
-    @pytest.fixture
-    def ignore_openmp_warning(self):
-        with warnings.catch_warnings():
-            warnings.filterwarnings('ignore', 'More than one OpenMP')
-            yield
-
     @pytest.mark.brille
     @pytest.mark.multiple_extras
+    @ignore_openmp_warning
     @pytest.mark.parametrize(
         'powder_map_args', powder_map_params_brille)
     def test_powder_map_plot_image_with_brille(
-            self, inject_mocks, ignore_openmp_warning, powder_map_args):
+            self, inject_mocks, powder_map_args):
         # Different numerical results on different platforms
         # unless a very dense, computationally expensive grid
         # is used. Just check that the program runs and a plot
