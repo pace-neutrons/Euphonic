@@ -1,4 +1,5 @@
 from multiprocessing import cpu_count
+import warnings
 
 import numpy as np
 import pytest
@@ -25,15 +26,18 @@ from tests_and_analysis.test.utils import get_data_path, get_test_qpts
 # Allow tests with brille marker to be collected and
 # deselected if brille isn't installed
 pytestmark = pytest.mark.brille
-try:
-    from brille import BZMeshQdc, BZNestQdc, BZTrellisQdc
 
-    from euphonic.brille import BrilleInterpolator
-except ModuleNotFoundError:
-    pass
+
+@pytest.fixture
+def ignore_openmp_warning():
+    with warnings.catch_warnings():
+        warnings.filterwarnings('ignore', 'More than one OpenMP')
+        yield
 
 
 def get_brille_grid(grid_file):
+    from brille import BZMeshQdc, BZNestQdc, BZTrellisQdc
+
     filepath = get_data_path('brille_grid', grid_file)
     if 'trellis' in grid_file:
         return BZTrellisQdc.from_file(filepath)
@@ -66,6 +70,8 @@ class TestBrilleInterpolatorCreation:
         ('quartz', 'quartz_mesh_10.hdf5'),
         ('LZO', 'lzo_trellis_10.hdf5')])
     def test_create_from_constructor(self, material, grid_file):
+        from euphonic.brille import BrilleInterpolator
+
         crystal = get_crystal(material)
         grid = get_brille_grid(grid_file)
         bri = BrilleInterpolator(crystal, grid)
@@ -81,7 +87,9 @@ class TestBrilleInterpolatorCreation:
          'quartz_mesh_10.hdf5'),
         ])
     def test_create_from_force_constants(
-            self, material, kwargs, expected_grid_file):
+            self, material, kwargs, expected_grid_file, ignore_openmp_warning):
+        from euphonic.brille import BrilleInterpolator
+
         fc = get_fc(material)
         bri = BrilleInterpolator.from_force_constants(fc, **kwargs)
         expected_grid = get_brille_grid(expected_grid_file)
@@ -110,7 +118,15 @@ class TestBrilleInterpolatorCreation:
              {'node_volume_fraction': 0.00037894368,
               'always_triangulate': False})])
     def test_from_force_constants_correct_grid_kwargs_passed_to_brille(
-            self, mocker, kwargs, expected_grid_type, expected_grid_kwargs):
+            self,
+            mocker,
+            ignore_openmp_warning,
+            kwargs,
+            expected_grid_type,
+            expected_grid_kwargs,
+    ):
+        from euphonic.brille import BrilleInterpolator
+
         # Patch __init__ to avoid type checks - BZTrellisQdc is now a mock
         # object, so can't be used as the 2nd argument in isinstance checks
         mocker.patch.object(BrilleInterpolator, '__init__', return_value=None)
@@ -137,6 +153,8 @@ class TestBrilleInterpolatorCreation:
         ])
     def test_from_force_constants_correct_interpolation_kwargs_passed(
             self, mocker, kwargs):
+        from euphonic.brille import BrilleInterpolator
+
         # Patch __init__ to avoid type checks - we're mocking
         # calculate_qpoint_phonon_modes so don't care about the return value
         mocker.patch.object(BrilleInterpolator, '__init__', return_value=None)
@@ -157,6 +175,8 @@ class TestBrilleInterpolatorCreation:
         assert expected_interp_kwargs == mock_qpm.call_args[1]
 
     def test_from_fc_with_invalid_grid_type_raises_value_error(self):
+        from euphonic.brille import BrilleInterpolator
+
         with pytest.raises(ValueError):
             BrilleInterpolator.from_force_constants(
                 get_fc('quartz'), grid_type='unknown')
@@ -165,6 +185,8 @@ class TestBrilleInterpolatorCreation:
         [(get_fc('quartz'), 'lzo_trellis_10.hdf5', TypeError)])
     def test_faulty_crystal_object_creation(
             self, faulty_crystal, grid_file, expected_exception):
+        from euphonic.brille import BrilleInterpolator
+
         grid = get_brille_grid(grid_file)
         with pytest.raises(expected_exception):
             BrilleInterpolator(faulty_crystal, grid)
@@ -175,6 +197,8 @@ class TestBrilleInterpolatorCreation:
         [(ValueError, 'lzo_trellis_10.hdf5'),
          (ValueError, 'quartz_mesh_10_unfilled.hdf5')])
     def test_faulty_grid_object_creation(self, expected_exception, grid_file):
+        from euphonic.brille import BrilleInterpolator
+
         grid = get_brille_grid(grid_file)
         with pytest.raises(expected_exception):
             BrilleInterpolator(get_crystal('quartz'), grid)
@@ -188,7 +212,15 @@ class TestBrilleInterpolatorCalculateQpointPhononModes:
              'La2Zr2O7_trellis_100_sf_1d_average.json'),
         ])
     def test_calculate_qpoint_phonon_modes(
-            self, material, from_fc_kwargs, emax, expected_sf1d_file):
+        self,
+        material,
+        from_fc_kwargs,
+        emax,
+        expected_sf1d_file,
+        ignore_openmp_warning,
+    ):
+        from euphonic.brille import BrilleInterpolator
+
         fc = get_fc(material)
         bri = BrilleInterpolator.from_force_constants(fc, **from_fc_kwargs)
 
@@ -205,7 +237,11 @@ class TestBrilleInterpolatorCalculateQpointPhononModes:
         expected_sf1d = get_spectrum1d(expected_sf1d_file)
         check_spectrum1d(sf1d, expected_sf1d, y_rtol=0.01, y_atol=3e-3)
 
-    def test_brille_qpoint_phonon_modes_similar_to_those_from_fc(self):
+    def test_brille_qpoint_phonon_modes_similar_to_those_from_fc(
+        self, ignore_openmp_warning
+    ):
+        from euphonic.brille import BrilleInterpolator
+
         fc = get_fc('graphite')
         bri = BrilleInterpolator.from_force_constants(fc, grid_npts=5000)
         qpts = np.array([[-0.20, 0.55, 0.55],
@@ -228,7 +264,12 @@ class TestBrilleInterpolatorCalculateQpointPhononModes:
         check_spectrum1d(sf1d_brille, sf1d_fc,
                          y_rtol=0.01, y_atol=5e-3)
 
-    def test_calculate_qpoint_phonon_modes_single_qpt(self):
+    def test_calculate_qpoint_phonon_modes_single_qpt(
+        self, ignore_openmp_warning
+    ):
+
+        from euphonic.brille import BrilleInterpolator
+
         fc = get_fc('graphite')
         bri = BrilleInterpolator.from_force_constants(fc, grid_npts=10)
         qpm = bri.calculate_qpoint_phonon_modes(np.array([[0.5, 0.5, 0.5]]))
@@ -246,6 +287,8 @@ class TestBrilleInterpolatorCalculateQpointPhononModes:
         ])
     def test_calculate_qpoint_phonon_modes_correct_kwargs_passed(
             self, mocker, material, grid_file, kwargs):
+        from euphonic.brille import BrilleInterpolator
+
         qpts = np.ones((10, 3))
         crystal = get_crystal(material)
         grid = get_brille_grid(grid_file)
@@ -276,7 +319,15 @@ class TestBrilleInterpolatorCalculateQpointFrequencies:
              'quartz_mesh_200_qpoint_frequencies.json', 0.07),
         ])
     def test_calculate_qpoint_frequencies(
-            self, material, from_fc_kwargs, expected_qpf_file, rtol):
+        self,
+        material,
+        from_fc_kwargs,
+        expected_qpf_file,
+        rtol,
+        ignore_openmp_warning,
+    ):
+        from euphonic.brille import BrilleInterpolator
+
         fc = get_fc(material)
         bri = BrilleInterpolator.from_force_constants(fc, **from_fc_kwargs)
 
@@ -286,7 +337,11 @@ class TestBrilleInterpolatorCalculateQpointFrequencies:
         check_qpt_freqs(qpf, expected_qpf, frequencies_rtol=rtol,
                         frequencies_atol=0.8)
 
-    def test_brille_qpoint_frequencies_similar_to_those_from_fc(self):
+    def test_brille_qpoint_frequencies_similar_to_those_from_fc(
+        self, ignore_openmp_warning
+    ):
+        from euphonic.brille import BrilleInterpolator
+
         fc = get_fc('graphite')
         bri = BrilleInterpolator.from_force_constants(fc, grid_npts=100)
         qpts = np.array([[-0.2     ,  0.55    ,  0.55    ],

@@ -2,6 +2,7 @@ from contextlib import suppress
 import json
 import sys
 from unittest.mock import patch
+import warnings
 
 import numpy as np
 import numpy.testing as npt
@@ -25,8 +26,6 @@ pytestmark = [pytest.mark.multiple_extras, pytest.mark.brille,
 with suppress(ModuleNotFoundError):
     import matplotlib.pyplot  # noqa: ICN001
 
-    import euphonic.cli.brille_convergence
-
 graphite_fc_file = get_castep_path('graphite', 'graphite.castep_bin')
 nacl_prim_fc_file = get_phonopy_path('NaCl_prim', 'phonopy_nacl.yaml')
 brille_conv_output_file = get_script_test_data_path('brille-convergence.json')
@@ -41,6 +40,11 @@ brille_conv_params = [
      '--e-max=160', '-u=1/cm']]
 
 class TestRegression:
+    @pytest.fixture
+    def ignore_openmp_warning(self):
+        with warnings.catch_warnings():
+            warnings.filterwarnings('ignore', 'More than one OpenMP')
+            yield
 
     @pytest.fixture
     def inject_mocks(self, mocker):
@@ -54,10 +58,14 @@ class TestRegression:
         matplotlib.pyplot.close('all')
 
     def test_no_fc_error(self):
+        import euphonic.cli.brille_convergence
+
         with pytest.raises(TypeError, match='Force constants are required'):
             euphonic.cli.brille_convergence.main([quartz_phonon_file])
 
     def run_brille_conv_and_test_result(self, brille_conv_args):
+        import euphonic.cli.brille_convergence
+
         atol = sys.float_info.epsilon
         euphonic.cli.brille_convergence.main(brille_conv_args)
         figs = get_all_figs()
@@ -130,7 +138,7 @@ class TestRegression:
 
     @pytest.mark.parametrize('brille_conv_args', brille_conv_params)
     def test_brille_conv_plots(
-            self, inject_mocks, brille_conv_args):
+            self, inject_mocks, ignore_openmp_warning, brille_conv_args):
         self.run_brille_conv_and_test_result(brille_conv_args)
 
     @pytest.mark.parametrize('brille_conv_args, expected_kwargs', [
@@ -144,8 +152,14 @@ class TestRegression:
                                                          'n_threads': 2}}),
     ])
     def test_brille_interpolator_from_force_constants_kwargs_passed(
-            self, inject_mocks, mocker, brille_conv_args, expected_kwargs):
+            self,
+            inject_mocks,
+            mocker,
+            ignore_openmp_warning,
+            brille_conv_args,
+            expected_kwargs):
         from euphonic.brille import BrilleInterpolator
+        import euphonic.cli.brille_convergence
         # Stop execution once from_fc has been called - we're only
         # checking here that the correct arguments have been passed
         # through
@@ -172,6 +186,8 @@ class TestRegression:
 @patch('matplotlib.pyplot.show')
 @pytest.mark.skip(reason='Only run if you want to regenerate the test data')
 def test_regenerate_brille_conv_data(_):
+    import euphonic.cli.brille_convergence
+
     # Read from existing file first to allow option of only replacing for
     # certain test cases or keys
     try:

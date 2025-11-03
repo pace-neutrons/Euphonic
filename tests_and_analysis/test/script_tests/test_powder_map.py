@@ -2,6 +2,7 @@ from contextlib import suppress
 import json
 import os
 from unittest.mock import patch
+import warnings
 
 import numpy.testing as npt
 import pytest
@@ -131,16 +132,25 @@ class TestRegression:
             self, inject_mocks, powder_map_args):
         self.run_powder_map_and_test_result(powder_map_args)
 
+    @pytest.fixture
+    def ignore_openmp_warning(self):
+        with warnings.catch_warnings():
+            warnings.filterwarnings('ignore', 'More than one OpenMP')
+            yield
+
     @pytest.mark.brille
     @pytest.mark.multiple_extras
     @pytest.mark.parametrize(
         'powder_map_args', powder_map_params_brille)
     def test_powder_map_plot_image_with_brille(
-            self, inject_mocks, powder_map_args):
+            self, inject_mocks, ignore_openmp_warning, powder_map_args):
         # Different numerical results on different platforms
         # unless a very dense, computationally expensive grid
         # is used. Just check that the program runs and a plot
         # is produced, by omitting check of 'data_1', 'data_2'
+        #
+        # OpenMP conflict warning is allowed here, we check that is behaving
+        # properly in unit tests.
         self.run_powder_map_and_test_result(
             powder_map_args,
             keys_to_omit=['x_ticklabels', 'data_1', 'data_2'])
@@ -169,7 +179,8 @@ class TestRegression:
                                    side_effect=MockError())
         with suppress(MockError):
             euphonic.cli.powder_map.main(
-                [graphite_fc_file, *powder_map_args, *quick_calc_params])
+                [graphite_fc_file, *powder_map_args, *quick_calc_params],
+            )
 
         default_interp_kwargs =  {'asr': None, 'dipole_parameter': 1.0,
                                   'n_threads': None, 'use_c': None}

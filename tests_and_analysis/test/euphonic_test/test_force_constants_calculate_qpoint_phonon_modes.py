@@ -419,7 +419,9 @@ class TestForceConstantsCalculateQPointPhononModesWithCExtensionInstalled:
         n_threads = 3
 
         fc = get_fc('quartz')
-        fc.calculate_qpoint_phonon_modes(get_test_qpts(), n_threads=n_threads)
+        with pytest.warns(UserWarning, match='More than one OpenMP'):
+            fc.calculate_qpoint_phonon_modes(
+                get_test_qpts(), n_threads=n_threads)
         assert mocked_cext.call_args[0][-1] == 1
 
     def test_cext_called_with_n_threads_default_and_env_var(
