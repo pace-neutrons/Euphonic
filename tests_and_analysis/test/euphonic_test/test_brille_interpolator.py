@@ -238,7 +238,7 @@ class TestBrilleInterpolatorCalculateQpointPhononModes:
         check_spectrum1d(sf1d, expected_sf1d, y_rtol=0.01, y_atol=3e-3)
 
     def test_brille_qpoint_phonon_modes_similar_to_those_from_fc(
-        self, ignore_openmp_warning
+        self, ignore_openmp_warning,
     ):
         from euphonic.brille import BrilleInterpolator
 
@@ -265,7 +265,7 @@ class TestBrilleInterpolatorCalculateQpointPhononModes:
                          y_rtol=0.01, y_atol=5e-3)
 
     def test_calculate_qpoint_phonon_modes_single_qpt(
-        self, ignore_openmp_warning
+        self, ignore_openmp_warning,
     ):
 
         from euphonic.brille import BrilleInterpolator
@@ -338,7 +338,7 @@ class TestBrilleInterpolatorCalculateQpointFrequencies:
                         frequencies_atol=0.8)
 
     def test_brille_qpoint_frequencies_similar_to_those_from_fc(
-        self, ignore_openmp_warning
+        self, ignore_openmp_warning,
     ):
         from euphonic.brille import BrilleInterpolator
 
