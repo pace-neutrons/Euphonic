@@ -29,6 +29,7 @@ from euphonic.readers import castep, phonopy
 from euphonic.ureg import ureg
 from euphonic.util import (
     _get_supercell_relative_idx,
+    dedent_and_fill,
     get_all_origins,
     is_gamma,
 )
@@ -706,15 +707,7 @@ class ForceConstants:
             _ensure_contiguous_attrs(self, attrs, opt_attrs=dipole_attrs)
 
             with threadpool_limits(limits=1):
-                if len({
-                        info['filepath'] for info in threadpool_info()
-                        if info['user_api'] == 'openmp'}) > 1:
-                    warnings.warn(
-                        'More than one OpenMP library has been loaded: '
-                        'limiting Euphonic to serial operation in order to '
-                        'avoid possible deadlocks.', stacklevel=2,
-                    )
-                    n_threads = 1
+                n_threads = _check_openmp_conflict(n_threads)
 
                 euphonic_c.calculate_phonons(
                     self, cell_vectors, recip_vectors, reduced_qpts,
@@ -1910,3 +1903,23 @@ casting to real mode gradients.
                 fc.crystal, fc.force_constants, fc.sc_matrix, fc.cell_origins,
                 born=fc.born, dielectric=fc.dielectric)
         return fc
+
+
+def _check_openmp_conflict(n_threads: int) -> int:
+    """Get safe n_threads if multiple conflicting OpenMP have been loaded
+
+    Otherwise, return input n_threads.
+
+    This is intended to prevent hangs/segfaults when multiple OpenMP libraries
+    are active.
+    """
+    msg = dedent_and_fill("""
+        More than one OpenMP library has been loaded:  limiting Euphonic to
+        serial operation in order to avoid possible deadlocks.""",
+    )
+
+    if len({info['filepath'] for info in threadpool_info()
+            if info['user_api'] == 'openmp'}) > 1:
+        warnings.warn(msg, stacklevel=2)
+        return 1
+    return n_threads
