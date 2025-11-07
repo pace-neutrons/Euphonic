@@ -16,6 +16,7 @@ from tests_and_analysis.test.utils import (
     get_castep_path,
     get_data_path,
     get_phonopy_path,
+    ignore_openmp_warning,
 )
 
 pytestmark = pytest.mark.matplotlib
@@ -133,6 +134,7 @@ class TestRegression:
 
     @pytest.mark.brille
     @pytest.mark.multiple_extras
+    @ignore_openmp_warning
     @pytest.mark.parametrize(
         'powder_map_args', powder_map_params_brille)
     def test_powder_map_plot_image_with_brille(
@@ -141,6 +143,9 @@ class TestRegression:
         # unless a very dense, computationally expensive grid
         # is used. Just check that the program runs and a plot
         # is produced, by omitting check of 'data_1', 'data_2'
+        #
+        # OpenMP conflict warning is allowed here, we check that is behaving
+        # properly in unit tests.
         self.run_powder_map_and_test_result(
             powder_map_args,
             keys_to_omit=['x_ticklabels', 'data_1', 'data_2'])
@@ -169,7 +174,8 @@ class TestRegression:
                                    side_effect=MockError())
         with suppress(MockError):
             euphonic.cli.powder_map.main(
-                [graphite_fc_file, *powder_map_args, *quick_calc_params])
+                [graphite_fc_file, *powder_map_args, *quick_calc_params],
+            )
 
         default_interp_kwargs =  {'asr': None, 'dipole_parameter': 1.0,
                                   'n_threads': None, 'use_c': None}

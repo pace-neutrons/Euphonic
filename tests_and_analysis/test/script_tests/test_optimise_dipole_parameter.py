@@ -92,7 +92,13 @@ class TestRegression:
         # be raised
         euphonic.cli.optimise_dipole_parameter.main([
            nacl_default_yaml, *quick_calc_params])
-        assert len(recwarn) == 0
+
+        for warning in recwarn:
+            # OpenMP conflict warning is allowed, common on Mac
+            if 'More than one OpenMP library' in str(warning.message):
+                continue
+            msg = 'Too many warnings'
+            raise AssertionError(msg)
 
     def test_qpoint_modes_raises_type_error(self):
         with pytest.raises(TypeError):

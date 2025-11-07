@@ -13,6 +13,26 @@
       unmaintained and incompatible) to *pytest-lazy-fixtures*, an
       active project with similar functionality.
 
+- Bug fixes
+
+  - Added defences at runtime against OpenMP library conflicts. This
+    scenario is most commonly encounted when using PyPI wheels for
+    Euphonic and Brille on MacOS. If multiple OpenMP libraries are
+    loaded, Euphonic will raise a warning and fallback to serial
+    operation to reduce the risk of a deadlock or other unpleasant
+    interaction.
+
+    This is a known problem with OpenMP distributed in Python wheels,
+    cited as a reason to avoid use of OpenMP in SciPy. See e.g.
+    https://pypackaging-native.github.io/key-issues/native-dependencies/blas_openmp/
+
+    To get high performance of Euphonic Fourier interpolation while
+    loading another OpenMP-using library (such as brille) it may be
+    necessary for users to build the software from source. (Pip
+    install with `--no-binary` may be sufficient.) Compatibility can
+    also be ensured when programs are distributed with a beyond-python
+    package manager such as Conda or apt.
+
 - Improvements
 
   - Improved error message when C extension import fails due to
