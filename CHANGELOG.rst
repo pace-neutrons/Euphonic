@@ -40,6 +40,8 @@
 
 - Maintenance
 
+  - Bumped cibuildwheel to v3.3.0
+
   - Started testing with Python 3.15 pre-release. (Currently there are
     Numpy build problems, this is ok.)
 
