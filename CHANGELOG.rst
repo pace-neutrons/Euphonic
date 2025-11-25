@@ -3,7 +3,7 @@
 
 - Requirements
 
-  - Python 3.13 is supported
+  - Python 3.10-3.14 is supported
 
   - Test requirements
 
@@ -40,12 +40,12 @@
 
 - Maintenance
 
-  - Started testing with Python 3.14
+  - Started testing with Python 3.15 pre-release. (Currently there are
+    Numpy build problems, this is ok.)
 
-  - Disabled testing with brille on Mac; after moving to new Github
-    runners we are having some binary compatibility problems. To run
-    unit tests on Mac including brille, use the run_tests.py script
-    directly.
+  - On Mac, unit tests with and without brille are run separately. This
+    enables full OpenMP parallelism for tests that don't require
+    brille to be loaded.
 
 `v1.4.5 <https://github.com/pace-neutrons/Euphonic/compare/v1.4.4...v1.4.5>`_
 -----------------------------------------------------------------------------
