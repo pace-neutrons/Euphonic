@@ -10,8 +10,8 @@ jobs:
   test:
     runs-on: ubuntu-latest
     env:
-      PYTHON_VERSION: 3.14
-      TOX_ENV: py314
+      PYTHON_VERSION: 3.15
+      TOX_ENV: py315
     steps:
       - uses: actions/checkout@v4
         with:
