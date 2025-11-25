@@ -47,7 +47,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout project
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           ref: ${{ inputs.ref }}
           fetch-depth: 0

@@ -17,7 +17,7 @@ jobs:
         3.12
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0 # Ensure tags are fetched for versioning
           fetch-tags: true

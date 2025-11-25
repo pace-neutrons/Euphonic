@@ -20,7 +20,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           ref: ${{ inputs.ref }}
           fetch-depth: 0
@@ -85,7 +85,7 @@ jobs:
         run: python -m pip install $(find dist -name 'euphonic-*.tar.gz')[matplotlib,phonopy-reader,brille,test]
 
       - name: Checkout repository (for tests and test data)
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Delete source (to ensure we are testing INSTALLED version)
         shell: bash -l {0}

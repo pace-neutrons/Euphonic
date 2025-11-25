@@ -39,7 +39,7 @@ jobs:
         3.14
       TOX_SKIP_ENV: ${{ inputs.all-python-versions && 'no-match' || '.*?(py311|py312|py313).*?' }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0 # Ensure tags are fetched for versioning
           fetch-tags: true

@@ -71,7 +71,7 @@ jobs:
 
       # From a workflow call we might already have working copy; in that
       # case inputs.ref should be an empty string. Otherwise, checkout.
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         if: ${{ inputs.ref }}
         with:
           ref: ${{ inputs.ref }}
