@@ -422,4 +422,3 @@ Docstring
    :members:
    :inherited-members:
 
-.. _spectrum2d:

@@ -232,7 +232,7 @@ For ``Thz`` or ``cm-1`` for example the following should be done before ``get_di
 	phonons.frequency_unit = '1/cm'
 
 You can also use some Euphonic utilities to determine the symmetry of your system and choose an appropriate path around the irreducible Brillouin zone.
-An example of this is shown :ref:`here<_calculating_phonons>`.
+An example of this is shown :ref:`here <calculating_phonons>`.
 
 Neutron Weighting
 =================
