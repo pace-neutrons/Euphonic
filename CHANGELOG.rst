@@ -42,6 +42,8 @@
 
   - Bumped cibuildwheel to v3.3.0
 
+  - Bumped github action versions: actions/checkout@v6, actions/setup-python@v6
+
   - Started testing with Python 3.15 pre-release. (Currently there are
     Numpy build problems, this is ok.)
 

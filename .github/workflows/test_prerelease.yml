@@ -13,13 +13,13 @@ jobs:
       PYTHON_VERSION: 3.15
       TOX_ENV: py315
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0 # Ensure tags are fetched for versioning
           fetch-tags: true
 
       - name: Setup Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: ${{ env.PYTHON_VERSION }}
           allow-prereleases: true

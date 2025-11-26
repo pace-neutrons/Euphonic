@@ -45,7 +45,7 @@ jobs:
       tag: ${{ steps.normalise.outputs.VERSION_STRING }}
 
     steps:
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
             python-version: '3.11'
 
@@ -71,7 +71,7 @@ jobs:
 
       # From a workflow call we might already have working copy; in that
       # case inputs.ref should be an empty string. Otherwise, checkout.
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         if: ${{ inputs.ref }}
         with:
           ref: ${{ inputs.ref }}

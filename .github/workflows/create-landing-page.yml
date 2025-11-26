@@ -18,10 +18,10 @@ jobs:
   update-landing-page:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v6
         with:
           ref: gh-pages
-      - uses: actions/setup-python@v4
+      - uses: actions/setup-python@v6
         with:
           python-version: '3.11'
       - name: Update pip and install dependencies

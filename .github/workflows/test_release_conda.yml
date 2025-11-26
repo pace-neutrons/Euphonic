@@ -23,7 +23,7 @@ jobs:
         python-version: ['3.10', '3.11', '3.12']
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Delete source (to be sure we are testing Conda package!)
         shell: bash -el {0}
