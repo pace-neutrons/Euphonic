@@ -190,7 +190,9 @@
 -----------------------------------------------------------------------------------------
 
 This post-release makes some changes to the source-distribution build process:
+
 - A bug is fixed in the version-numbering script; this particularly affected Windows
+
 - A copies of the unit tests and documentation were mistakenly included
   in tarballs, making them excessively large. This is no longer present.
 

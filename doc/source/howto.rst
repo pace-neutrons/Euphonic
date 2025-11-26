@@ -1,5 +1,3 @@
-.. _units:
-
 Introduction
 ************
 
