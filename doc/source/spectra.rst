@@ -51,7 +51,7 @@ Broadening
 ----------
 
 A 1D spectrum can be broadened using
-:py:meth:`Spectrum1D.broaden <euphonic.spectra.Spectrum1D.broaden>`,
+:py:meth:`Spectrum1D.broaden <euphonic.spectra.base.Spectrum1D.broaden>`,
 which broadens along the x-axis and returns a new :ref:`Spectrum1D`
 object. It can broaden with either a Gaussian or Lorentzian and requires
 a broadening FWHM in the same type of units as ``x_data``. For example:
@@ -96,7 +96,7 @@ See :ref:`Plotting <plotting>`
 Docstring
 ---------
 
-.. autoclass:: euphonic.spectra.Spectrum1D
+.. autoclass:: euphonic.spectra.base.Spectrum1D
    :inherited-members:
    :members:
 
@@ -173,9 +173,9 @@ Broadening
 ----------
 
 A collection of 1D spectra can also be broadened using
-:py:meth:`Spectrum1DCollection.broaden <euphonic.spectra.Spectrum1DCollection.broaden>`,
+:py:meth:`Spectrum1DCollection.broaden <euphonic.spectra.collections.Spectrum1DCollection.broaden>`,
 which broadens each spectrum individually, giving the same result
-as using :py:meth:`Spectrum1D.broaden <euphonic.spectra.Spectrum1D.broaden>`
+as using :py:meth:`Spectrum1D.broaden <euphonic.spectra.base.Spectrum1D.broaden>`
 on each contained spectrum.
 
 Grouping By Metadata
@@ -183,7 +183,7 @@ Grouping By Metadata
 
 You can group and sum specific spectra from a ``Spectrum1DCollection``
 based on their metadata using
-:py:meth:`Spectrum1DCollection.group_by <euphonic.spectra.Spectrum1DCollection.group_by>`.
+:py:meth:`Spectrum1DCollection.group_by <euphonic.spectra.collections.Spectrum1DCollection.group_by>`.
 For example, if you have a collection ``spec1d_col`` containing
 8 spectra with the following metadata:
 
@@ -238,7 +238,7 @@ Selecting By Metadata
 
 You can select specific spectra from a ``Spectrum1DCollection`` based
 on their metadata using
-:py:meth:`Spectrum1DCollection.select <euphonic.spectra.Spectrum1DCollection.select>`.
+:py:meth:`Spectrum1DCollection.select <euphonic.spectra.collections.Spectrum1DCollection.select>`.
 For example, if you have a collection ``spec1d_col`` containing
 8 spectra with the following metadata:
 
@@ -280,7 +280,7 @@ Summing Spectra
 ---------------
 
 All spectra in a ``Spectrum1DCollection`` can be summed with
-:py:meth:`Spectrum1DCollection.sum <euphonic.spectra.Spectrum1DCollection.sum>`.
+:py:meth:`Spectrum1DCollection.sum <euphonic.spectra.collections.Spectrum1DCollection.sum>`.
 This produces a single ``Spectrum1D`` object.
 
 
@@ -292,7 +292,7 @@ See :ref:`Plotting <plotting>`
 Docstring
 ---------
 
-.. autoclass:: euphonic.spectra.Spectrum1DCollection
+.. autoclass:: euphonic.spectra.collections.Spectrum1DCollection
    :inherited-members:
    :members:
 
@@ -305,7 +305,7 @@ Broadening
 ----------
 
 A 2D spectrum can be broadened using
-:py:meth:`Spectrum2D.broaden <euphonic.spectra.Spectrum2D.broaden>`, which
+:py:meth:`Spectrum2D.broaden <euphonic.spectra.base.Spectrum2D.broaden>`, which
 broadens along either or both of the x/y-axes and returns a new
 :ref:`Spectrum2D` object. It can broaden with either a Gaussian or Lorentzian
 and requires a broadening FWHM in the same type of units as
@@ -348,7 +348,7 @@ needed so the kinematic limits --- the accessible :math:`(q, \omega)`
 range --- determined by the conservation laws are given solely
 by these instrument parameters.
 
-The function :py:func:`euphonic.spectra.apply_kinematic_constraints
+The function :py:func:`euphonic.spectra.base.apply_kinematic_constraints
 <euphonic.spectra.apply_kinematic_constraints>` applies these limits
 to a powder-averaged :ref:`Spectrum2D` object with appropriate dimensions
 (i.e. the x- and y-axes represent :math:`|q|` and :math:`\omega` respectively).
@@ -403,6 +403,22 @@ this will leave them unset.
 Docstring
 ---------
 
-.. autoclass:: euphonic.spectra.Spectrum2D
+.. autoclass:: euphonic.spectra.base.Spectrum2D
    :members:
    :inherited-members:
+
+
+.. _spectrum2dcollection:
+
+Spectrum2DCollection
+====================
+
+Spectrum2DCollection implements a similar broadening interface to Spectrum2D, and the same selection/grouping features as Spectrum1DCollection.
+
+Docstring
+---------
+
+.. autoclass:: euphonic.spectra.collections.Spectrum2DCollection
+   :members:
+   :inherited-members:
+

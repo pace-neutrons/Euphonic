@@ -22,12 +22,12 @@ zips = partial(zip, strict=True)
 
 
 def dedent_and_fill(text: str) -> str:
-    """Clean up indented multiline string for display to user.
+    r"""Clean up indented multiline string for display to user.
 
-    - Remove leading/trailing newline (So ''' can be placed freely.)
-    - Remove indentation
-    - Preserve any paragraph breaks (i.e. "\n\n")
-    - Wrap other newlines to default textwrap line width (70 characters)
+      - Remove leading/trailing newline (So ''' can be placed freely.)
+      - Remove indentation
+      - Preserve any paragraph breaks (i.e. ``\n\n``)
+      - Wrap other newlines to default textwrap line width (70 characters)
 
     Parameters
     ----------
