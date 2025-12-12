@@ -212,7 +212,6 @@ def main(params: Optional[list[str]] = None) -> None:
             'sampling': args.sampling,
             'jitter': args.jitter,
             'energy_bins': energy_bins,
-            'rng': _get_rng(),
         }
 
         if args.weighting == 'dos' and args.pdos is None:
