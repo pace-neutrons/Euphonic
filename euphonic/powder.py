@@ -93,8 +93,16 @@ def sample_sphere_dos(fc: ForceConstants,
 
     """
 
-    qpts_cart = _get_qpts_sphere(npts, sampling=sampling, jitter=jitter, rng=rng,
-                                 ) * mod_q
+    qpts_cart = (
+        _get_qpts_sphere(
+            npts,
+            sampling=sampling,
+            jitter=jitter,
+            rng=rng,
+        )
+        * mod_q
+    )
+
     qpts_frac = _qpts_cart_to_frac(qpts_cart, fc.crystal)
 
     phonons = fc.calculate_qpoint_frequencies(qpts_frac, **calc_modes_args,
@@ -203,8 +211,16 @@ def sample_sphere_pdos(
     Spectrum1DCollection
 
     """
-    qpts_cart = _get_qpts_sphere(npts, sampling=sampling, jitter=jitter, rng=rng,
-                                 ) * mod_q
+    qpts_cart = (
+        _get_qpts_sphere(
+            npts,
+            sampling=sampling,
+            jitter=jitter,
+            rng=rng,
+        )
+        * mod_q
+    )
+
     qpts_frac = _qpts_cart_to_frac(qpts_cart, fc.crystal)
     phonons = fc.calculate_qpoint_phonon_modes(qpts_frac, **calc_modes_args)
 
@@ -324,8 +340,15 @@ def sample_sphere_structure_factor(
             )
             raise ValueError(msg)
 
-    qpts_cart = _get_qpts_sphere(npts, sampling=sampling, jitter=jitter, rng=rng,
-                                 ) * mod_q
+    qpts_cart = (
+        _get_qpts_sphere(
+            npts,
+            sampling=sampling,
+            jitter=jitter,
+            rng=rng,
+        )
+        * mod_q
+    )
 
     qpts_frac = _qpts_cart_to_frac(qpts_cart, fc.crystal)
 
@@ -391,16 +414,36 @@ def _get_qpts_sphere(npts: int,
 
     match sampling:
         case 'golden':
-            return np.asarray(list(golden_sphere(npts, jitter=jitter, rng=rng)))
+            return np.asarray(
+                list(golden_sphere(npts, jitter=jitter, rng=rng)),
+            )
 
         case 'sphere-projected-grid':
             n_cols = _check_gridpts(npts)
-            return np.asarray(list(sphere_from_square_grid(n_cols * 2, n_cols,
-                                                           jitter=jitter, rng=rng)))
+            return np.asarray(
+                list(
+                    sphere_from_square_grid(
+                        n_cols * 2,
+                        n_cols,
+                        jitter=jitter,
+                        rng=rng,
+                    ),
+                ),
+            )
+
         case 'spherical-polar-grid':
             n_cols = _check_gridpts(npts)
-            return np.asarray(list(spherical_polar_grid(n_cols * 2, n_cols,
-                                                        jitter=jitter, rng=rng)))
+            return np.asarray(
+                list(
+                    spherical_polar_grid(
+                        n_cols * 2,
+                        n_cols,
+                        jitter=jitter,
+                        rng=rng,
+                    ),
+                ),
+            )
+
         case 'spherical-polar-improved':
             return np.asarray(
                 list(spherical_polar_improved(npts, jitter=jitter, rng=rng)))
