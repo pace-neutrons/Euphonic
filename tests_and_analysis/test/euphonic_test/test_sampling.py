@@ -1,11 +1,9 @@
 from collections.abc import Iterator
-from functools import partial
 
 import numpy as np
 import pytest
 
 import euphonic.sampling
-
 
 # @pytest.fixture
 # def fix_np_rng(monkeypatch):

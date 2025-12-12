@@ -14,7 +14,7 @@ from euphonic import (
     Spectrum1D,
     Spectrum1DCollection,
 )
-from euphonic.util import get_reference_data, mp_grid, rng, RNG
+from euphonic.util import RNG, get_reference_data, mp_grid, rng
 
 SphericalSamplingOptions = Literal['golden',
                                    'sphere-projected-grid',
@@ -324,7 +324,7 @@ def sample_sphere_structure_factor(
             )
             raise ValueError(msg)
 
-    qpts_cart = _get_qpts_sphere(npts, sampling=sampling, jitter=jitter, rng=rng
+    qpts_cart = _get_qpts_sphere(npts, sampling=sampling, jitter=jitter, rng=rng,
                                  ) * mod_q
 
     qpts_frac = _qpts_cart_to_frac(qpts_cart, fc.crystal)

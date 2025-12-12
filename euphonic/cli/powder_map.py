@@ -207,13 +207,13 @@ def main(params: Optional[list[str]] = None) -> None:
         else:
             npts = args.npts
 
-        general_kwargs = dict(
-            npts=npts,
-            sampling=args.sampling,
-            jitter=args.jitter,
-            energy_bins=energy_bins,
-            rng=_get_rng(),
-        )
+        general_kwargs = {
+            'npts': npts,
+            'sampling': args.sampling,
+            'jitter': args.jitter,
+            'energy_bins': energy_bins,
+            'rng': _get_rng(),
+        }
 
         if args.weighting == 'dos' and args.pdos is None:
             spectrum_1d = sample_sphere_dos(
