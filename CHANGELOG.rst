@@ -38,6 +38,18 @@
   - Improved error message when C extension import fails due to
     missing dynamic libraries.
 
+  - Random sampling functions (including deterministic sampling
+    functions with a random jitter option) accept a new ``rng``
+    parameter for a numpy.random Generator (generally preferred) or
+    RandomState (used for testing). This allows the user to manipulate
+    the random seed and bit generator to ensure reproducible or
+    independent calculations.
+
+  - The default argument to ``rng`` is a quasi-global Generator
+    instance in ``euphonic.util``. This avoids the computational
+    overhead of creating a new generator every time a random function
+    is called.
+
 - Maintenance
 
   - Bumped cibuildwheel to v3.3.0
