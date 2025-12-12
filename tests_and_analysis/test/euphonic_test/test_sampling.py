@@ -11,7 +11,8 @@ import euphonic.sampling
 #                             partial(np.random.RandomState, seed=0))
 
 def rng_seed_0():
-        return np.random.RandomState(seed=0)
+    """Get a fresh random generator with fixed seed"""
+    return np.random.RandomState(seed=0)
 
 
 def check_sampling(func, params, ref_results):
@@ -37,7 +38,6 @@ class TestSquareSampling:
 
     @pytest.mark.parametrize('params, ref_results', gold_square_ref_data)
     def test_golden_square(self, params, ref_results):
-
         check_sampling(euphonic.sampling.golden_square,
                        params, ref_results)
 
