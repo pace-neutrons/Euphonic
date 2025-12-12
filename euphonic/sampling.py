@@ -9,7 +9,7 @@ from itertools import product
 import numpy as np
 from scipy.optimize import fmin
 
-from euphonic.util import Generator, rng
+from euphonic.util import RNG, rng
 
 _golden_ratio = (1 + np.sqrt(5)) / 2
 
@@ -18,7 +18,7 @@ _golden_ratio = (1 + np.sqrt(5)) / 2
 
 
 def golden_square(npts: int, offset: bool = True, jitter: bool = False,
-                  rng: Generator = rng) -> Iterator[tuple[float, float]]:
+                  rng: RNG = rng) -> Iterator[tuple[float, float]]:
     """Yield a series of well-distributed points in 2-D unit square
 
     These are obtained by the golden ratio method
@@ -61,7 +61,7 @@ def golden_square(npts: int, offset: bool = True, jitter: bool = False,
 
 def regular_square(n_rows: int, n_cols: int,
                    offset: bool = True, jitter: bool = False,
-                   rng: Generator = rng,
+                   rng: RNG = rng,
                    ) -> Iterator[tuple[float, float]]:
     """Yield a regular grid of (x, y) points in 2-D unit square
 
@@ -118,7 +118,7 @@ def _square_to_spherical_polar(x: float, y: float) -> tuple[float, float]:
 
 
 def golden_sphere(npts: int, cartesian: bool = True, jitter: bool = False,
-                  rng: Generator = rng,
+                  rng: RNG = rng,
                   ) -> Iterator[tuple[float, float, float]]:
     """Yield a series of 3D points on unit sphere surface
 
@@ -161,7 +161,7 @@ def golden_sphere(npts: int, cartesian: bool = True, jitter: bool = False,
 
 def sphere_from_square_grid(n_rows: int, n_cols: int,
                             cartesian: bool = True, jitter: bool = False,
-                            rng: Generator = rng,
+                            rng: RNG = rng,
                             ) -> Iterator[tuple[float, float, float]]:
     """Yield a series of 3D points on a unit sphere surface
 
@@ -199,7 +199,7 @@ def sphere_from_square_grid(n_rows: int, n_cols: int,
 
 def spherical_polar_grid(n_phi: int, n_theta: int,
                          cartesian: bool = True, jitter: bool = False,
-                         rng: Generator = rng,
+                         rng: RNG = rng,
                          ) -> Iterator[tuple[float, float, float]]:
     """Yield a series of 3D points on a unit sphere surface
 
@@ -253,7 +253,7 @@ def spherical_polar_grid(n_phi: int, n_theta: int,
 
 def spherical_polar_improved(npts: int,
                              cartesian: bool = True, jitter: bool = False,
-                             rng: Generator = rng,
+                             rng: RNG = rng,
                              ) -> Iterator[tuple[float, float, float]]:
     """Yield a series of 3D points on a unit sphere surface
 
@@ -340,7 +340,7 @@ def spherical_polar_improved(npts: int,
                 yield (1, phi, theta)
 
 
-def random_sphere(npts, cartesian: bool = True, rng: Generator = rng,
+def random_sphere(npts, cartesian: bool = True, rng: RNG = rng,
                   ) -> Iterator[tuple[float, float, float]]:
     """Yield a series of 3D points on a unit sphere surface
 
