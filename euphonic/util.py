@@ -11,6 +11,7 @@ from typing import Optional
 import warnings
 
 import numpy as np
+from numpy.random import Generator, RandomState
 from pint import UndefinedUnitError
 import seekpath
 from seekpath.hpkot import SymmetryDetectionError
@@ -778,3 +779,8 @@ def _deprecation_warn(old_arg: str, new_arg: str, stacklevel: int = 3):
                   f'in a future release. Please use {new_arg} instead.',
                   category=DeprecationWarning,
                   stacklevel=stacklevel)
+
+
+# Quasi-global rng instance for use as default argument
+RNG = Generator | RandomState
+rng: RNG = np.random.default_rng()

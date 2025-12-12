@@ -10,6 +10,7 @@ from euphonic.powder import (
     sample_sphere_dos,
     sample_sphere_structure_factor,
 )
+from euphonic.util import rng
 
 sampling_functions = {
     'golden': 'euphonic.sampling.golden_sphere',
@@ -31,17 +32,17 @@ def jitter(request):
 
 
 @pytest.mark.parametrize('npts, sampling, sampling_args, sampling_kwargs',
-                         [(10, 'golden', (10,), {'jitter': None}),
+                         [(10, 'golden', (10,), {'jitter': None,  'rng': rng}),
                           # 31 pts rounded up to 2N^2 -> 4 cols, 8 rows
                           (31, 'sphere-projected-grid',
-                           (8, 4), {'jitter': None}),
+                           (8, 4), {'jitter': None, 'rng': rng}),
                           (32, 'sphere-projected-grid',
-                           (8, 4), {'jitter': None}),
+                           (8, 4), {'jitter': None, 'rng': rng}),
                           (31, 'spherical-polar-grid',
-                           (8, 4), {'jitter': None}),
+                           (8, 4), {'jitter': None, 'rng': rng}),
                           (13, 'spherical-polar-improved',
-                           (13,), {'jitter': None}),
-                          (7, 'random-sphere', (7,), {})],
+                           (13,), {'jitter': None, 'rng': rng}),
+                          (7, 'random-sphere', (7,), {'rng': rng})],
                          )
 def test_get_qpts_sphere(mocker, random_qpts_array, jitter,
                          npts, sampling, sampling_args, sampling_kwargs):
@@ -178,7 +179,8 @@ class TestSphereSampledProperties:
                                'sampling': 'golden',
                                'energy_bins': _energy_bins,
                                'scattering_lengths': 'Sears1992',
-                               'dw': None},
+                               'dw': None,
+                               'rng': np.random.default_rng()},
                               {'mod_q': 1.2 * ureg('1 / angstrom'),
                                'npts': 200,
                                'temperature': 100. * ureg('K'),
@@ -186,14 +188,16 @@ class TestSphereSampledProperties:
                                'jitter': False,
                                'energy_bins': _energy_bins,
                                'scattering_lengths': 'Sears1992',
-                               'dw': None},
+                               'dw': None,
+                               'rng': np.random.default_rng()},
                               {'mod_q': 2.3 * ureg('1 / angstrom'),
                                'npts': 1000,
                                'jitter': False,
                                'sampling': 'spherical-polar-improved',
                                'energy_bins': None,
                                'scattering_lengths': _scattering_lengths,
-                               'dw': 'mock_dw'},
+                               'dw': 'mock_dw',
+                               'rng': np.random.default_rng()},
                               ])
     def test_sample_sphere_structure_factor(self, mocker, mock_crystal,
                                             mock_fc, mock_qpm,
@@ -229,7 +233,8 @@ class TestSphereSampledProperties:
         # Check qpts sphere called as expected
         assert get_qpts_sphere.call_args == ((options['npts'],),
                                              {'sampling': options['sampling'],
-                                              'jitter': options['jitter']})
+                                              'jitter': options['jitter'],
+                                              'rng': options['rng']})
 
         # Check expected list of qpoints was passed to forceconstants
         # (fractional q = cart q because the lattice vectors are unit cube)

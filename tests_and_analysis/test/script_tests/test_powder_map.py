@@ -1,8 +1,10 @@
 from contextlib import suppress
+from functools import partial
 import json
 import os
 from unittest.mock import patch
 
+import numpy as np
 import numpy.testing as npt
 import pytest
 
@@ -79,8 +81,8 @@ powder_map_params_brille = [[graphite_fc_file, '--use-brille',
                              '-w', 'coherent',
                              *quick_calc_params]]
 
-class TestRegression:
 
+class TestRegression:
     @pytest.fixture
     def inject_mocks(self, mocker):
         # Prevent calls to show so we can get the current figure

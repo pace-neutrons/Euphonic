@@ -14,7 +14,7 @@ from euphonic import (
     Spectrum1D,
     Spectrum1DCollection,
 )
-from euphonic.util import get_reference_data, mp_grid
+from euphonic.util import get_reference_data, mp_grid, rng, RNG
 
 SphericalSamplingOptions = Literal['golden',
                                    'sphere-projected-grid',
@@ -26,8 +26,10 @@ SphericalSamplingOptions = Literal['golden',
 def sample_sphere_dos(fc: ForceConstants,
                       mod_q: Quantity,
                       sampling: SphericalSamplingOptions = 'golden',
-                      npts: int = 1000, jitter: bool = False,
+                      npts: int = 1000,
+                      jitter: bool = False,
                       energy_bins: Quantity = None,
+                      rng: RNG = rng,
                       **calc_modes_args,
                       ) -> Spectrum1D:
     """
@@ -79,6 +81,8 @@ def sample_sphere_dos(fc: ForceConstants,
     energy_bins
         Preferred energy bin edges. If not provided, will setup
         1000 bins (1001 bin edges) from 0 to 1.05 * [max energy]
+    rng
+        Numpy random Generator for random sampling and jitter
     **calc_modes_args
         other keyword arguments (e.g. 'use_c') will be passed to
         ForceConstants.calculate_qpoint_phonon_modes()
@@ -89,7 +93,7 @@ def sample_sphere_dos(fc: ForceConstants,
 
     """
 
-    qpts_cart = _get_qpts_sphere(npts, sampling=sampling, jitter=jitter,
+    qpts_cart = _get_qpts_sphere(npts, sampling=sampling, jitter=jitter, rng=rng,
                                  ) * mod_q
     qpts_frac = _qpts_cart_to_frac(qpts_cart, fc.crystal)
 
@@ -106,10 +110,12 @@ def sample_sphere_pdos(
         fc: ForceConstants,
         mod_q: Quantity,
         sampling: SphericalSamplingOptions = 'golden',
-        npts: int = 1000, jitter: bool = False,
+        npts: int = 1000,
+        jitter: bool = False,
         energy_bins: Quantity = None,
         weighting: Optional[str] = None,
         cross_sections: str | dict[str, Quantity] = 'BlueBook',
+        rng: RNG = rng,
         **calc_modes_args,
         ) -> Spectrum1DCollection:
     """
@@ -185,6 +191,9 @@ def sample_sphere_pdos(
         appropriate units, e.g::
 
             {'La': 8.0*ureg('barn'), 'Zr': 9.5*ureg('barn')}
+    rng
+        Numpy random Generator for random sampling and jitter
+
     **calc_modes_args
         other keyword arguments (e.g. 'use_c') will be passed to
         ForceConstants.calculate_qpoint_phonon_modes()
@@ -194,7 +203,7 @@ def sample_sphere_pdos(
     Spectrum1DCollection
 
     """
-    qpts_cart = _get_qpts_sphere(npts, sampling=sampling, jitter=jitter,
+    qpts_cart = _get_qpts_sphere(npts, sampling=sampling, jitter=jitter, rng=rng,
                                  ) * mod_q
     qpts_frac = _qpts_cart_to_frac(qpts_cart, fc.crystal)
     phonons = fc.calculate_qpoint_phonon_modes(qpts_frac, **calc_modes_args)
@@ -216,6 +225,7 @@ def sample_sphere_structure_factor(
     npts: int = 1000, jitter: bool = False,
     energy_bins: Quantity = None,
     scattering_lengths: str | dict[str, Quantity] = 'Sears1992',
+    rng: RNG = rng,
     **calc_modes_args,
     ) -> Spectrum1D:
     """Sample structure factor, averaging over a sphere of constant |q|
@@ -283,6 +293,8 @@ def sample_sphere_structure_factor(
         string is provided, this selects coherent scattering lengths
         from reference data by setting the 'label' argument of the
         euphonic.util.get_reference_data() function.
+    rng
+        Numpy random Generator for random sampling and jitter
     **calc_modes_args
         other keyword arguments (e.g. 'use_c') will be passed to
         ForceConstants.calculate_qpoint_phonon_modes()
@@ -312,7 +324,7 @@ def sample_sphere_structure_factor(
             )
             raise ValueError(msg)
 
-    qpts_cart = _get_qpts_sphere(npts, sampling=sampling, jitter=jitter,
+    qpts_cart = _get_qpts_sphere(npts, sampling=sampling, jitter=jitter, rng=rng
                                  ) * mod_q
 
     qpts_frac = _qpts_cart_to_frac(qpts_cart, fc.crystal)
@@ -360,7 +372,8 @@ def _qpts_cart_to_frac(qpts: Quantity,
 
 def _get_qpts_sphere(npts: int,
                      sampling: SphericalSamplingOptions = 'golden',
-                     jitter: bool = False) -> np.ndarray:
+                     jitter: bool = False,
+                     rng: RNG = rng) -> np.ndarray:
     """Get q-point coordinates according to specified sampling scheme
 
     Note that the return value is dimensionless; the sphere radius is
@@ -378,21 +391,21 @@ def _get_qpts_sphere(npts: int,
 
     match sampling:
         case 'golden':
-            return np.asarray(list(golden_sphere(npts, jitter=jitter)))
+            return np.asarray(list(golden_sphere(npts, jitter=jitter, rng=rng)))
 
         case 'sphere-projected-grid':
             n_cols = _check_gridpts(npts)
             return np.asarray(list(sphere_from_square_grid(n_cols * 2, n_cols,
-                                                           jitter=jitter)))
+                                                           jitter=jitter, rng=rng)))
         case 'spherical-polar-grid':
             n_cols = _check_gridpts(npts)
             return np.asarray(list(spherical_polar_grid(n_cols * 2, n_cols,
-                                                        jitter=jitter)))
+                                                        jitter=jitter, rng=rng)))
         case 'spherical-polar-improved':
             return np.asarray(
-                list(spherical_polar_improved(npts, jitter=jitter)))
+                list(spherical_polar_improved(npts, jitter=jitter, rng=rng)))
         case 'random-sphere':
-            return np.asarray(list(random_sphere(npts)))
+            return np.asarray(list(random_sphere(npts, rng=rng)))
 
     msg = f'Sampling method "{sampling}" is unknown.'
     raise ValueError(msg)

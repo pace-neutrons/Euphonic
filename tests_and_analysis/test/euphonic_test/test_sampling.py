@@ -7,10 +7,14 @@ import pytest
 import euphonic.sampling
 
 
-@pytest.fixture
-def fix_np_rng(monkeypatch):
-        monkeypatch.setattr(np.random, 'default_rng',
-                            partial(np.random.RandomState, seed=0))
+# @pytest.fixture
+# def fix_np_rng(monkeypatch):
+#         monkeypatch.setattr(np.random, 'default_rng',
+#                             partial(np.random.RandomState, seed=0))
+
+def rng_seed_0():
+        return np.random.RandomState(seed=0)
+
 
 def check_sampling(func, params, ref_results):
     points_iter = func(**params)
@@ -27,14 +31,14 @@ class TestSquareSampling:
                              [[0.1666666666666666, 0],
                               [0.5, 0.61803398874989480],
                               [0.8333333333333333, 0.23606797749978958]]),
-                            ({'npts': 3, 'offset': False, 'jitter': True},
+                            ({'npts': 3, 'offset': False, 'jitter': True, 'rng': rng_seed_0()},
                              [[0.0281824896325298, 0.12423963860186140],
                               [0.3926637961711317, 0.64394730653524050],
                               [0.6225887445136473, 0.32029998295200524]]),
                             ]
 
     @pytest.mark.parametrize('params, ref_results', gold_square_ref_data)
-    def test_golden_square(self, params, ref_results, fix_np_rng):
+    def test_golden_square(self, params, ref_results):
 
         check_sampling(euphonic.sampling.golden_square,
                        params, ref_results)
@@ -52,13 +56,13 @@ class TestSquareSampling:
                              [0.625, 0.25], [0.625, 0.75],
                              [0.875, 0.25], [0.875, 0.75]]),
                            ({'n_rows': 1, 'n_cols': 2,
-                             'offset': False, 'jitter': True},
+                             'offset': False, 'jitter': True, 'rng': rng_seed_0()},
                             [[0.024406751963662376, 0.21518936637241948],
                              [0.551381688035822, 0.044883182996896864]]),
                            ]
 
     @pytest.mark.parametrize('params, ref_results', reg_square_ref_data)
-    def test_regular_square(self, params, ref_results, fix_np_rng):
+    def test_regular_square(self, params, ref_results):
         check_sampling(euphonic.sampling.regular_square, params, ref_results)
 
 
@@ -112,14 +116,14 @@ class TestSphereSampling:
                            [0.7071067811865475, 0.0, 0.7071067811865476],
                            [0.7071067811865476, 0.0, -0.7071067811865475]]),
                          ({'n_phi': 2, 'n_theta': 2,
-                           'cartesian': True, 'jitter': True},
+                           'cartesian': True, 'jitter': True, 'rng': rng_seed_0()},
                           [[-0.8910033774558734, -0.1377185459691061, 0.4326044191387571],
                            [-0.6216723147673089, -0.2079773711885614, -0.7551615364445884],
                            [0.8249424691200341, -0.20174213857267537, 0.5279867727190379],
                            [0.16594308161020008, -0.03296086943464723, -0.9855843316286145]])]
 
     @pytest.mark.parametrize('params, ref_results', polar_grid_ref)
-    def test_spherical_polar_grid(self, params, ref_results, fix_np_rng):
+    def test_spherical_polar_grid(self, params, ref_results):
         check_sampling(
             euphonic.sampling.spherical_polar_grid, params, ref_results)
 
@@ -141,7 +145,7 @@ class TestSphereSampling:
                              -0.7071067811865475],
                             [0.353553390593274, 0.6123724356957945,
                              -0.7071067811865475]]),
-                          ({'npts': 6, 'cartesian': True, 'jitter': True},
+                          ({'npts': 6, 'cartesian': True, 'jitter': True, 'rng': rng_seed_0()},
                            [(-0.8968762869872088, -0.09201272945444275, 0.4326044191387571),
                             (0.5085411851719293, -0.5582605208227438, 0.6555387508566128),
                             (0.5363093035525994, 0.6584848508178914, 0.5279867727190379),
@@ -150,7 +154,7 @@ class TestSphereSampling:
                             (-0.058850836096272056, 0.6717223047726856, -0.7384617284339393)])]
 
     @pytest.mark.parametrize('params, ref_results', polar_improved_ref)
-    def test_spherical_polar_improved(self, params, ref_results, fix_np_rng):
+    def test_spherical_polar_improved(self, params, ref_results):
         check_sampling(euphonic.sampling.spherical_polar_improved,
                        params, ref_results)
 
@@ -158,15 +162,15 @@ class TestSphereSampling:
         with pytest.raises(ValueError):
             next(euphonic.sampling.spherical_polar_improved(5))
 
-    random_sphere_ref = [({'npts': 2, 'cartesian': False},
+    random_sphere_ref = [({'npts': 2, 'cartesian': False, 'rng': rng_seed_0()},
                           [[1, 4.493667318642264, 1.4730135689716053],
                            [1, 3.4236020095353483, 1.3637944071036738]]),
-                         ({'npts': 2, 'cartesian': True},
+                         ({'npts': 2, 'cartesian': True, 'rng': rng_seed_0()},
                           [[-0.2159454115343286, -0.9715125045899397,
                             0.0976270078546495],
                            [-0.9399930037152809, -0.2723451984518093,
                             0.20552675214328772]])]
 
     @pytest.mark.parametrize('params, ref_results', random_sphere_ref)
-    def test_random_sphere(self, params, ref_results, fix_np_rng):
+    def test_random_sphere(self, params, ref_results):
         check_sampling(euphonic.sampling.random_sphere, params, ref_results)
