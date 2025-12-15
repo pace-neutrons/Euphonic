@@ -16,6 +16,11 @@ choices_3d = {'golden-sphere', 'sphere-from-square-grid',
               'random-sphere', 'recurrence-cube'}
 
 
+def _get_rng() -> euphonic.util.RNG:
+    # A convenient hook for monkey-patching in different generators
+    return euphonic.util.rng
+
+
 def get_parser() -> ArgumentParser:
     parser = ArgumentParser()
     parser.add_argument('npts', type=int)
@@ -41,7 +46,8 @@ def main(params: Optional[list[str]] = None) -> None:
 
     if args.sampling == 'golden-square':
         ax.scatter(*zips(*euphonic.sampling.golden_square(args.npts,
-                                                         jitter=args.jitter)),
+                                                          jitter=args.jitter,
+                                                          rng=_get_rng())),
                    marker='o')
     elif args.sampling == 'regular-square':
         n_rows = int(np.ceil(np.sqrt(args.npts)))
@@ -51,17 +57,19 @@ def main(params: Optional[list[str]] = None) -> None:
             print('Requested npts ∉ {x^2, x ∈ Z, x > 1}; '
                   f'rounding up to {npts}.')
         ax.scatter(*zips(*euphonic.sampling.regular_square(n_rows, n_rows,
-                                                          jitter=args.jitter)),
+                                                           jitter=args.jitter,
+                                                           rng=_get_rng())),
                    marker='o')
 
     elif args.sampling == 'golden-sphere':
         ax.scatter(*zips(*euphonic.sampling.golden_sphere(args.npts,
-                                                         jitter=args.jitter)),
+                                                          jitter=args.jitter,
+                                                          rng=_get_rng())),
                    marker='x')
 
     elif args.sampling == 'recurrence-square':
         ax.scatter(*zips(*euphonic.sampling.recurrence_sequence(args.npts,
-                                                               order=2)),
+                                                                order=2)),
                    )
 
     elif args.sampling == 'spherical-polar-grid':
@@ -73,7 +81,7 @@ def main(params: Optional[list[str]] = None) -> None:
                   f'rounding up to {npts}.')
 
         ax.scatter(*zips(*euphonic.sampling.spherical_polar_grid(
-            n_theta * 2, n_theta, jitter=args.jitter)),
+            n_theta * 2, n_theta, jitter=args.jitter, rng=_get_rng())),
                    marker='x')
 
     elif args.sampling == 'sphere-from-square-grid':
@@ -85,13 +93,13 @@ def main(params: Optional[list[str]] = None) -> None:
                   f'rounding up to {npts}.')
 
         ax.scatter(*zips(*euphonic.sampling.sphere_from_square_grid(
-                n_theta * 2, n_theta, jitter=args.jitter)),
+                n_theta * 2, n_theta, jitter=args.jitter, rng=_get_rng())),
             marker='x')
 
     elif args.sampling == 'spherical-polar-improved':
         ax.scatter(
             *zips(*euphonic.sampling.spherical_polar_improved(
-                args.npts, jitter=args.jitter)),
+                args.npts, jitter=args.jitter, rng=_get_rng())),
             marker='x',
         )
 
@@ -104,7 +112,7 @@ def main(params: Optional[list[str]] = None) -> None:
 
     else:  # random-sphere
         ax.scatter(
-            *zips(*euphonic.sampling.random_sphere(args.npts)),
+            *zips(*euphonic.sampling.random_sphere(args.npts, rng=_get_rng())),
             marker='x',
         )
 

@@ -42,9 +42,9 @@ sphere_sampling_params =  [
 
 
 @pytest.fixture
-def fix_np_rng(monkeypatch):
-        monkeypatch.setattr(np.random, 'default_rng',
-                            partial(np.random.RandomState, seed=0))
+def fix_rng(monkeypatch):
+    monkeypatch.setattr(euphonic.cli.show_sampling, '_get_rng',
+                        partial(np.random.RandomState, seed=0))
 
 
 class TestRegression:
@@ -62,7 +62,7 @@ class TestRegression:
 
     @pytest.mark.parametrize('sampling_params', sphere_sampling_params)
     def test_plots_produce_expected_xydata(
-            self, inject_mocks, sampling_params, fix_np_rng):
+            self, inject_mocks, sampling_params, fix_rng):
         euphonic.cli.show_sampling.main(sampling_params)
 
         # For 3D plots, this will be a 2D projected position of visible points
@@ -78,7 +78,7 @@ class TestRegression:
 
 @patch('matplotlib.pyplot.show')
 @pytest.mark.skip(reason='Only run if you want to regenerate the test data')
-def test_regenerate_sphere_sampling_data(_, fix_np_rng):
+def test_regenerate_sphere_sampling_data(_, fix_rng):
 
     json_data = {}
 

@@ -9,6 +9,8 @@ from itertools import product
 import numpy as np
 from scipy.optimize import fmin
 
+from euphonic.util import RNG, rng
+
 _golden_ratio = (1 + np.sqrt(5)) / 2
 
 #  Keep in mind that at this stage the implementations are intended for testing
@@ -16,7 +18,7 @@ _golden_ratio = (1 + np.sqrt(5)) / 2
 
 
 def golden_square(npts: int, offset: bool = True, jitter: bool = False,
-                  ) -> Iterator[tuple[float, float]]:
+                  rng: RNG = rng) -> Iterator[tuple[float, float]]:
     """Yield a series of well-distributed points in 2-D unit square
 
     These are obtained by the golden ratio method
@@ -35,14 +37,15 @@ def golden_square(npts: int, offset: bool = True, jitter: bool = False,
     jitter
         Randomly displace points by a distance of up to 1/(2 sqrt(N))
 
+    rng
+        Numpy random Generator instance for jitter
+
     Returns
     -------
     Iterator[Tuple[float, float]
 
         Sequence of (x, y) pairs in range 0-1
     """
-    rng = np.random.default_rng()
-
     x_offset = 1 / (2 * npts) if offset else 0
 
     for i in range(npts):
@@ -58,6 +61,7 @@ def golden_square(npts: int, offset: bool = True, jitter: bool = False,
 
 def regular_square(n_rows: int, n_cols: int,
                    offset: bool = True, jitter: bool = False,
+                   rng: RNG = rng,
                    ) -> Iterator[tuple[float, float]]:
     """Yield a regular grid of (x, y) points in 2-D unit square
 
@@ -72,14 +76,14 @@ def regular_square(n_rows: int, n_cols: int,
         offset points to avoid origin
     jitter
         randomly displace each point within its "cell"
+    rng
+        Numpy Generator instance for jitter
 
     Returns
     -------
     Iterator[tuple[float, float]]
         sequence of (x, y) pairs in range 0-1
     """
-    rng = np.random.default_rng()
-
     x_spacing, y_spacing = (1 / n_cols), (1 / n_rows)
     x_sequence = np.arange(n_cols) * x_spacing
     y_sequence = np.arange(n_rows) * y_spacing
@@ -114,6 +118,7 @@ def _square_to_spherical_polar(x: float, y: float) -> tuple[float, float]:
 
 
 def golden_sphere(npts: int, cartesian: bool = True, jitter: bool = False,
+                  rng: RNG = rng,
                   ) -> Iterator[tuple[float, float, float]]:
     """Yield a series of 3D points on unit sphere surface
 
@@ -135,6 +140,9 @@ def golden_sphere(npts: int, cartesian: bool = True, jitter: bool = False,
     jitter
         Randomly displace points about their positions on surface
 
+    rng
+        Numpy random Generator instance for jitter
+
     Returns
     -------
     Iterator[Tuple[float, float, float]]
@@ -142,7 +150,7 @@ def golden_sphere(npts: int, cartesian: bool = True, jitter: bool = False,
         Sequence of (x, y, z) coordinates (if cartesian=True) or
         (r, phi, theta) spherical coordinates.
     """
-    for x, y in golden_square(npts, jitter=jitter):
+    for x, y in golden_square(npts, jitter=jitter, rng=rng):
         phi, theta = _square_to_spherical_polar(x, y)
 
         if cartesian:
@@ -153,6 +161,7 @@ def golden_sphere(npts: int, cartesian: bool = True, jitter: bool = False,
 
 def sphere_from_square_grid(n_rows: int, n_cols: int,
                             cartesian: bool = True, jitter: bool = False,
+                            rng: RNG = rng,
                             ) -> Iterator[tuple[float, float, float]]:
     """Yield a series of 3D points on a unit sphere surface
 
@@ -169,6 +178,8 @@ def sphere_from_square_grid(n_rows: int, n_cols: int,
         in spherical coordinates.
     jitter
         Randomly displace each point within its own "cell" of the grid
+    rng
+        Numpy random Generator instance for jitter
 
     Returns
     -------
@@ -177,7 +188,7 @@ def sphere_from_square_grid(n_rows: int, n_cols: int,
         Sequence of (x, y, z) coordinates (if cartesian=True) or
         (r, phi, theta) spherical coordinates.
     """
-    for x, y in regular_square(n_rows, n_cols, jitter=jitter):
+    for x, y in regular_square(n_rows, n_cols, jitter=jitter, rng=rng):
         phi, theta = _square_to_spherical_polar(x, y)
 
         if cartesian:
@@ -188,6 +199,7 @@ def sphere_from_square_grid(n_rows: int, n_cols: int,
 
 def spherical_polar_grid(n_phi: int, n_theta: int,
                          cartesian: bool = True, jitter: bool = False,
+                         rng: RNG = rng,
                          ) -> Iterator[tuple[float, float, float]]:
     """Yield a series of 3D points on a unit sphere surface
 
@@ -209,6 +221,9 @@ def spherical_polar_grid(n_phi: int, n_theta: int,
     jitter
         Randomly displace each point within its own "cell" of the grid
 
+    rng
+        Numpy random Generator instance for jitter
+
     Returns
     -------
     Iterator[Tuple[float, float, float]]
@@ -216,8 +231,6 @@ def spherical_polar_grid(n_phi: int, n_theta: int,
         Sequence of (x, y, z) coordinates (if cartesian=True) or
         (r, phi, theta) spherical coordinates.
     """
-    rng = np.random.default_rng()
-
     phi_sequence = np.linspace(-np.pi, np.pi, n_phi + 1)[:-1]
     phi_spacing = phi_sequence[1] - phi_sequence[0]
 
@@ -240,6 +253,7 @@ def spherical_polar_grid(n_phi: int, n_theta: int,
 
 def spherical_polar_improved(npts: int,
                              cartesian: bool = True, jitter: bool = False,
+                             rng: RNG = rng,
                              ) -> Iterator[tuple[float, float, float]]:
     """Yield a series of 3D points on a unit sphere surface
 
@@ -273,6 +287,10 @@ def spherical_polar_improved(npts: int,
         Randomly displace each point within its own "cell" of the
         irregular grid
 
+    rng
+        Numpy Generator instance for jitter
+
+
     Returns
     -------
     Iterator[Tuple[float, float, float]]
@@ -288,8 +306,6 @@ def spherical_polar_improved(npts: int,
     if npts < 6:
         msg = 'This sampling scheme has a minimum of 6 points'
         raise ValueError(msg)
-
-    rng = np.random.default_rng()
 
     # round from the solution of
     # for neighbouring points
@@ -324,7 +340,7 @@ def spherical_polar_improved(npts: int,
                 yield (1, phi, theta)
 
 
-def random_sphere(npts, cartesian: bool = True,
+def random_sphere(npts, cartesian: bool = True, rng: RNG = rng,
                   ) -> Iterator[tuple[float, float, float]]:
     """Yield a series of 3D points on a unit sphere surface
 
@@ -343,6 +359,9 @@ def random_sphere(npts, cartesian: bool = True,
         Yield points in Cartesian coordinates. If False, instead yield
         points in spherical coordinates.
 
+    rng
+        Numpy random Generator instance for jitter
+
     Returns
     -------
     Iterator[Tuple[float, float, float]]
@@ -350,8 +369,6 @@ def random_sphere(npts, cartesian: bool = True,
         Sequence of (x, y, z) coordinates (if cartesian=True) or
         (r, phi, theta) spherical coordinates.
         """
-    rng = np.random.default_rng()
-
     points = rng.random((npts, 2))
 
     for x, y in points:

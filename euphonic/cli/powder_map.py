@@ -207,18 +207,21 @@ def main(params: Optional[list[str]] = None) -> None:
         else:
             npts = args.npts
 
+        general_kwargs = {
+            'npts': npts,
+            'sampling': args.sampling,
+            'jitter': args.jitter,
+            'energy_bins': energy_bins,
+        }
+
         if args.weighting == 'dos' and args.pdos is None:
             spectrum_1d = sample_sphere_dos(
-                fc, q,
-                npts=npts, sampling=args.sampling, jitter=args.jitter,
-                energy_bins=energy_bins,
-                **calc_modes_kwargs)
+                fc, q, **general_kwargs, **calc_modes_kwargs)
         elif 'dos' in args.weighting:
             spectrum_1d_col = sample_sphere_pdos(
                     fc, q,
-                    npts=npts, sampling=args.sampling, jitter=args.jitter,
-                    energy_bins=energy_bins,
                     weighting=_get_pdos_weighting(args.weighting),
+                    **general_kwargs,
                     **calc_modes_kwargs)
             spectrum_1d = _arrange_pdos_groups(spectrum_1d_col, args.pdos)
         elif args.weighting == 'coherent':
@@ -226,9 +229,7 @@ def main(params: Optional[list[str]] = None) -> None:
                 fc, q,
                 dw=dw,
                 temperature=temperature,
-                sampling=args.sampling, jitter=args.jitter,
-                npts=npts,
-                energy_bins=energy_bins,
+                **general_kwargs,
                 **calc_modes_kwargs)
 
         z_data[q_index, :] = spectrum_1d.y_data.magnitude
