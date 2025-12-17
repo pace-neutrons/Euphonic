@@ -112,6 +112,9 @@ def _build_pytest_options(reports_dir: str, do_report_tests: bool,
         options.append(f'--junitxml={junit_xml_filepath}')
     # Only run the specified markers
     options.append(f'-m={markers}')
+
+    # Run in parallel
+    options.append('-n=auto')
     return options
 
 
