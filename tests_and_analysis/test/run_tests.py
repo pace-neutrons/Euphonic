@@ -140,28 +140,26 @@ def run_tests(pytest_options: list[str], do_report_coverage: bool,
      (see pytest docs for further details).
     """
 
+    from uuid import uuid4
+
     # Set import-mode to ensure the installed version is tested rather
     # than the local version
     pytest_options = ['--import-mode=append', *pytest_options]
 
     # Start recording coverage if requested
-    cov: coverage.Coverage | None = None
     if do_report_coverage:
         coveragerc_filepath: str = os.path.join(test_dir, '.coveragerc')
-        cov = coverage.Coverage(config_file=coveragerc_filepath)
-        cov.start()
+
+        pytest_options = [
+            '--cov',
+            f'--cov-report=xml:{reports_dir}/coverage_{uuid4()}.xml',
+            f'--cov-config={coveragerc_filepath}', *pytest_options
+        ]
 
     # Run tests and get the resulting exit code
     # 0 is success, 1-5 are different forms of failure (see pytest docs
     # for details)
     test_exit_code = pytest.main(pytest_options)
-
-    # Report coverage if requested
-    if do_report_coverage and cov is not None:
-        cov.stop()
-        coverage_xml_filepath = os.path.join(
-            reports_dir, f'coverage_{int(time.time())}.xml')
-        cov.xml_report(outfile=coverage_xml_filepath)
 
     return test_exit_code
 
