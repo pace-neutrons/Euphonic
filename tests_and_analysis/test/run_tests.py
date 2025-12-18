@@ -2,8 +2,8 @@ import argparse
 import os
 import sys
 import time
+from uuid import uuid4
 
-import coverage
 import pytest
 
 
@@ -139,9 +139,6 @@ def run_tests(pytest_options: list[str], do_report_coverage: bool,
     A test exit code. 0 is success, 1 to 5 are all errors
      (see pytest docs for further details).
     """
-
-    from uuid import uuid4
-
     # Set import-mode to ensure the installed version is tested rather
     # than the local version
     pytest_options = ['--import-mode=append', *pytest_options]
@@ -153,15 +150,14 @@ def run_tests(pytest_options: list[str], do_report_coverage: bool,
         pytest_options = [
             '--cov',
             f'--cov-report=xml:{reports_dir}/coverage_{uuid4()}.xml',
-            f'--cov-config={coveragerc_filepath}', *pytest_options
+            f'--cov-config={coveragerc_filepath}',
+            *pytest_options,
         ]
 
     # Run tests and get the resulting exit code
     # 0 is success, 1-5 are different forms of failure (see pytest docs
     # for details)
-    test_exit_code = pytest.main(pytest_options)
-
-    return test_exit_code
+    return pytest.main(pytest_options)
 
 
 if __name__ == '__main__':
