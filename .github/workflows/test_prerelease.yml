@@ -37,7 +37,7 @@ jobs:
 
       - name: Run tests
         shell: bash -l {0}
-        run: python -m tox -e ${{ env.TOX_ENV }}
+        run: python -m tox -e ${{ env.TOX_ENV }} -- --parallel
 
       - name: Upload test results
         if: always()

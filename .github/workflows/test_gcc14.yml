@@ -45,7 +45,7 @@ jobs:
 
       - name: Run tests
         shell: bash -l {0}
-        run: python -m tox -e py312
+        run: python -m tox -e py312 -- --parallel
 
       - name: Upload test results
         if: always()

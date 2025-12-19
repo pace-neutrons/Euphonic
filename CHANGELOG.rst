@@ -1,6 +1,21 @@
 `Unreleased <https://github.com/pace-neutrons/Euphonic/compare/v1.5.0...HEAD>`_
 -------------------------------------------------------------------------------
 
+- Requirements
+
+  - Test requirements
+
+    - Added *pytest-xdist* and *pytest-cov* requirements for parallel
+      testing at pytest level.
+
+- Maintenance
+
+  - Reworked CI strategy from parallelism over tox environments to
+    parallelism over unit tests. This addresses OpenMP conflicts
+    between simultaneous test environments, and gives a large speedup
+    when testing a single Python version. (i.e. typical local testing
+    scenario before pushing to CI.)
+
 `v1.5.0 <https://github.com/pace-neutrons/Euphonic/compare/v1.4.5...v1.5.0>`_
 -----------------------------------------------------------------------------
 
