@@ -1,6 +1,21 @@
 `Unreleased <https://github.com/pace-neutrons/Euphonic/compare/v1.5.0...HEAD>`_
 -------------------------------------------------------------------------------
 
+- Requirements
+
+  - Test requirements
+
+    - Added *pytest-xdist* and *pytest-cov* requirements for parallel
+      testing at pytest level.
+
+- Maintenance
+
+  - Reworked CI strategy from parallelism over tox environments to
+    parallelism over unit tests. This addresses OpenMP conflicts
+    between simultaneous test environments, and gives a large speedup
+    when testing a single Python version. (i.e. typical local testing
+    scenario before pushing to CI.)
+
 `v1.5.0 <https://github.com/pace-neutrons/Euphonic/compare/v1.4.5...v1.5.0>`_
 -----------------------------------------------------------------------------
 
@@ -15,9 +30,6 @@
     - Migrated from *pytest-lazy-fixture* (which appears to be
       unmaintained and incompatible) to *pytest-lazy-fixtures*, an
       active project with similar functionality.
-
-    - Added *pytest-xdist* and *pytest-cov* requirements for parallel
-      testing at pytest level.
 
 - Bug fixes
 
@@ -68,12 +80,6 @@
   - On Mac, unit tests with and without brille are run separately. This
     enables full OpenMP parallelism for tests that don't require
     brille to be loaded.
-
-  - Reworked CI strategy from parallelism over tox environments to
-    parallelism over unit tests. This addresses OpenMP conflicts
-    between simultaneous test environments, and gives a large speedup
-    when testing a single Python version. (i.e. typical local testing
-    scenario before pushing to CI.)
 
 `v1.4.5 <https://github.com/pace-neutrons/Euphonic/compare/v1.4.4...v1.4.5>`_
 -----------------------------------------------------------------------------
