@@ -971,17 +971,13 @@ class Spectrum2D(Spectrum):
             bin_centres = [self.get_bin_centres(ax).magnitude
                            for ax in ['x', 'y']]
 
-            try:
-                z_broadened = self._broaden_data(
-                    self.z_data.magnitude,
-                    bin_centres,
-                    widths_in_bin_units,
-                    shape=shape,
-                    method=method,
-                    width_convention=width_convention)
-            except WidthTypeError as err:
-                msg = f'{x_width=}, {y_width=}'
-                raise WidthTypeError(msg) from err
+            z_broadened = self._broaden_data(
+                self.z_data.magnitude,
+                bin_centres,
+                widths_in_bin_units,
+                shape=shape,
+                method=method,
+                width_convention=width_convention)
 
             spectrum = Spectrum2D(
                 np.copy(self.x_data),

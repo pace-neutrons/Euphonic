@@ -356,8 +356,7 @@ class TestForceConstantsCalculateQPointPhononModesMissingLibOMP:
         with warnings.catch_warnings(record=True) as warn_record:
             fc.calculate_qpoint_phonon_modes(get_test_qpts(), use_c=False)
 
-        if len(warn_record) > 0:
-            assert len(warn_record) == 0
+        assert len(warn_record) == 0
 
 
 @pytest.mark.c_extension

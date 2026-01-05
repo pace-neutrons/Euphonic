@@ -2,6 +2,7 @@ from contextlib import suppress
 import json
 import os
 from unittest.mock import patch
+import warnings
 
 import numpy.testing as npt
 import pytest
@@ -104,8 +105,6 @@ class TestRegression:
     def test_intensity_map_image_data_width_warning(
             self, inject_mocks, intensity_map_args):
         with pytest.warns(UserWarning, match='x_data bin widths are not equal'):
-
-            import warnings
             with warnings.catch_warnings():
                 warnings.simplefilter('error', category=DeprecationWarning)
                 self.run_intensity_map_and_test_result(intensity_map_args)
