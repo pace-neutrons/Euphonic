@@ -747,8 +747,6 @@ class Spectrum1D(Spectrum):
             If method is None and bins are not of equal size
         """
         if isinstance(x_width, Quantity):
-            x_width = _make_scalar_quantity(x_width)
-
             y_broadened = self._broaden_data(
                 self.y_data.magnitude,
                 [self.get_bin_centres().magnitude],
@@ -959,8 +957,6 @@ class Spectrum2D(Spectrum):
         widths_in_bin_units = [None]*2
 
         if isinstance(x_width, Quantity):
-            x_width = _make_scalar_quantity(x_width)
-
             try:
                 self.assert_regular_bins(bin_ax='x', message=(
                     'Broadening by convolution may give incorrect results.'))
@@ -969,8 +965,6 @@ class Spectrum2D(Spectrum):
             widths_in_bin_units[0] = x_width.to(self.x_data_unit).magnitude
 
         if isinstance(y_width, Quantity):
-            y_width = _make_scalar_quantity(y_width)
-
             widths_in_bin_units[1] = y_width.to(self.y_data_unit).magnitude
 
         if any(widths_in_bin_units):
@@ -1384,11 +1378,3 @@ def _get_dist_bins(bins: np.ndarray) -> np.ndarray:
 
 def _lorentzian(x: np.ndarray, gamma: float) -> np.ndarray:
     return gamma/(2*math.pi*(np.square(x) + (gamma/2)**2))
-
-
-def _make_scalar_quantity(width: Quantity) -> Quantity:
-    if width.ndim > 0:
-        msg = 'Width passed to broaden() should be scalar or function'
-        raise IndexError(
-            msg)
-    return width
