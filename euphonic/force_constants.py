@@ -604,7 +604,11 @@ class ForceConstants:
         n_sc_images_repeat = (
             self._n_sc_images.repeat(3, axis=2).repeat(3, axis=1))
         fc_img_weighted = np.divide(
-            force_constants, n_sc_images_repeat, where=n_sc_images_repeat != 0)
+            force_constants,
+            n_sc_images_repeat,
+            where=n_sc_images_repeat != 0,
+            out=None,
+        )
 
         recip_asr_correction = np.array([], dtype=np.complex128)
         if asr == 'reciprocal':

@@ -24,6 +24,14 @@ from euphonic.sampling import recurrence_sequence
 def main(params: Optional[list[str]] = None) -> None:
     args = get_args(get_parser(), params)
     params = vars(args)
+
+    if params['energy_broadening'] is not None:
+        if len(params['energy_broadening']) > 1:
+            msg = ('This script only allows a fixed-width broadening '
+                   '(i.e. --energy-broadening should be a single value)')
+            raise ValueError(msg)
+        params['energy_broadening'] = params['energy_broadening'][0]
+
     check_brille_settings(**params)
 
 
@@ -63,8 +71,11 @@ def check_brille_settings(
     sf = modes.calculate_structure_factor()
     ebins = _get_energy_bins(modes, ebins + 1, emin=e_min, emax=e_max)
     sqw_avg = sf.calculate_1d_average(ebins)
+
     if energy_broadening is not None:
-        sqw_avg = sqw_avg.broaden(energy_broadening*ebins.units, shape=shape)
+        sqw_avg = sqw_avg.broaden(
+            energy_broadening * ebins.units,
+            shape=shape)
 
     # Set up axis labels
     frequency_label = f'Frequency / {modes.frequencies.units:~P}'

@@ -43,6 +43,9 @@ XTickLabels = list[tuple[int, str]]
 OneSpectrumMetadata = dict[str, str | int]
 
 
+class WidthTypeError(TypeError): ...
+
+
 class Spectrum(ABC):
     """Base class for a spectral data: do not use directly"""
     T = TypeVar('T', bound='Spectrum')
@@ -248,6 +251,14 @@ class Spectrum(ABC):
         widths should match the number of dimensions in data.
         bin_centres and widths are assumed to be in the same units
         """
+        for width in widths:
+            if not isinstance(width, (Real, type(None))):
+                msg = ('Inappropriate type found, widths for _broaden_data '
+                       'must be Real (e.g. float) or None. Instead we have: ['
+                       + ', '.join(str(type(width)) for width in widths)
+                       + '].')
+                raise WidthTypeError(msg)
+
         shape_opts = ('gauss', 'lorentz')
         if shape not in shape_opts:
             msg = (
@@ -289,7 +300,11 @@ class Spectrum(ABC):
             width_to_bin = partial(cls._gaussian_width_to_bin_sigma,
                                    width_convention=width_convention)
             sigmas = list(map(width_to_bin, widths, bin_centres))
-            data_broadened = gaussian_filter(data, sigmas, mode='constant')
+
+            try:
+                data_broadened = gaussian_filter(data, sigmas, mode='constant')
+            except TypeError:
+                raise Exception(widths, sigmas)
 
         elif shape == 'lorentz':
             if width_convention != 'fwhm':
@@ -735,6 +750,8 @@ class Spectrum1D(Spectrum):
             If method is None and bins are not of equal size
         """
         if isinstance(x_width, Quantity):
+            x_width = _make_scalar_quantity(x_width)
+
             y_broadened = self._broaden_data(
                 self.y_data.magnitude,
                 [self.get_bin_centres().magnitude],
@@ -945,24 +962,35 @@ class Spectrum2D(Spectrum):
         widths_in_bin_units = [None]*2
 
         if isinstance(x_width, Quantity):
+            x_width = _make_scalar_quantity(x_width)
+
             try:
                 self.assert_regular_bins(bin_ax='x', message=(
                     'Broadening by convolution may give incorrect results.'))
             except AssertionError as e:
                 warnings.warn(str(e), UserWarning, stacklevel=1)
             widths_in_bin_units[0] = x_width.to(self.x_data_unit).magnitude
+
         if isinstance(y_width, Quantity):
+            y_width = _make_scalar_quantity(y_width)
+
             widths_in_bin_units[1] = y_width.to(self.y_data_unit).magnitude
 
         if any(widths_in_bin_units):
             bin_centres = [self.get_bin_centres(ax).magnitude
                            for ax in ['x', 'y']]
-            z_broadened = self._broaden_data(self.z_data.magnitude,
-                                             bin_centres,
-                                             widths_in_bin_units,
-                                             shape=shape,
-                                             method=method,
-                                             width_convention=width_convention)
+
+            try:
+                z_broadened = self._broaden_data(
+                    self.z_data.magnitude,
+                    bin_centres,
+                    widths_in_bin_units,
+                    shape=shape,
+                    method=method,
+                    width_convention=width_convention)
+            except WidthTypeError as err:
+                raise WidthTypeError(f'{x_width=}, {y_width=}') from err
+
             spectrum = Spectrum2D(
                 np.copy(self.x_data),
                 np.copy(self.y_data),
@@ -1358,3 +1386,10 @@ def _get_dist_bins(bins: np.ndarray) -> np.ndarray:
 
 def _lorentzian(x: np.ndarray, gamma: float) -> np.ndarray:
     return gamma/(2*math.pi*(np.square(x) + (gamma/2)**2))
+
+
+def _make_scalar_quantity(width: Quantity) -> Quantity:
+    if width.ndim > 0:
+        raise IndexError(
+            "Width passed to broaden() should be scalar or function")
+    return width

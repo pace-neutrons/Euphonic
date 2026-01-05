@@ -85,7 +85,7 @@ def main(params: Optional[list[str]] = None) -> None:
 
     if args.q_broadening or args.energy_broadening:
         spectrum = spectrum.broaden(
-            x_width=(args.q_broadening * recip_length_unit
+            x_width=(args.q_broadening[0] * recip_length_unit
                      if args.q_broadening else None),
             y_width=(args.energy_broadening[0] * ebins.units
                      if args.energy_broadening else None),
