@@ -3,6 +3,8 @@
 
 - Requirements
 
+  - Pinned Numpy upper bound to 2.3.5 while addressing compatibility issues with 2.4.0
+
   - Test requirements
 
     - Added *pytest-xdist* and *pytest-cov* requirements for parallel
