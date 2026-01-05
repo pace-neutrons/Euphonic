@@ -19,6 +19,12 @@ from seekpath.hpkot import SymmetryDetectionError
 import euphonic.data
 from euphonic.ureg import Quantity, ureg
 
+try:
+    from spglib.error import SpglibError
+    cell_sym_error_types = (SymmetryDetectionError, TypeError, SpglibError)
+except ImportError:
+    cell_sym_error_types = (SymmetryDetectionError, TypeError)
+
 zips = partial(zip, strict=True)
 
 
@@ -616,7 +622,7 @@ def _recip_space_labels(qpts: np.ndarray,
                 warnings.simplefilter('ignore', category=DeprecationWarning)
                 sym_label_to_coords = seekpath.get_path(cell)['point_coords']
 
-        except (SymmetryDetectionError, TypeError) as err:
+        except cell_sym_error_types as err:
             if isinstance(err, TypeError):
                 # There is a particular TypeError we expect to see when the
                 # unit cell is empty; make sure we do not have some other error
