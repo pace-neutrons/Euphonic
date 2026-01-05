@@ -989,7 +989,8 @@ class Spectrum2D(Spectrum):
                     method=method,
                     width_convention=width_convention)
             except WidthTypeError as err:
-                raise WidthTypeError(f'{x_width=}, {y_width=}') from err
+                msg = f'{x_width=}, {y_width=}'
+                raise WidthTypeError(msg) from err
 
             spectrum = Spectrum2D(
                 np.copy(self.x_data),
@@ -1390,6 +1391,7 @@ def _lorentzian(x: np.ndarray, gamma: float) -> np.ndarray:
 
 def _make_scalar_quantity(width: Quantity) -> Quantity:
     if width.ndim > 0:
+        msg = 'Width passed to broaden() should be scalar or function'
         raise IndexError(
-            "Width passed to broaden() should be scalar or function")
+            msg)
     return width

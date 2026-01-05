@@ -107,7 +107,7 @@ class TestRegression:
 
             import warnings
             with warnings.catch_warnings():
-                warnings.simplefilter("error", category=DeprecationWarning)
+                warnings.simplefilter('error', category=DeprecationWarning)
                 self.run_intensity_map_and_test_result(intensity_map_args)
 
     @pytest.mark.parametrize('intensity_map_args', [
