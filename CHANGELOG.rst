@@ -3,7 +3,8 @@
 
 - Requirements
 
-  - Pinned Numpy upper bound to 2.3.5 while addressing compatibility issues with 2.4.0
+  - Pinned Numpy upper bound to (inclusive) 2.3.5 while addressing compatibility issues with 2.4.0
+  - Pinned spglib upper bound to (non-inclusive) 2.7.0 while addressing compatibility issues.
 
   - Test requirements
 
