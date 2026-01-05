@@ -18,6 +18,16 @@ to the CITATION.cff. We do not generally add authors for formatting
 changes or "one-liner" bug fixes, but if you think you have been
 overlooked please get in touch.
 
+Testing
+~~~~~~~
+
+Euphonic uses ``pytest`` with ``tox`` for unit testing in multiple
+isolated Python environments. Within the tox environments, the
+entrypoint to run unit tests is the
+*tests_and_analysis/test/run_tests.py* script. This accepts arguments;
+e.g. to run ``tox`` for available Python versions with parallel
+pytest, use ``tox -- --parallel``.
+This can save a lot of time on modern multi-core machines!
 
 Pull requests
 ~~~~~~~~~~~~~

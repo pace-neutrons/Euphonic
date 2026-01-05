@@ -56,7 +56,7 @@ matplotlib = ["matplotlib>=3.8.0"]
 phonopy_reader = ["h5py>=3.6.0", "PyYAML>=6.0"]  # Deprecated, will be removed in future versions.
 phonopy-reader = ["h5py>=3.6.0", "PyYAML>=6.0"]
 brille = ["brille>=0.7.0"]
-test = ["mock", "pytest>=8.0,<9.0", "coverage", "pytest-mock", "pytest-lazy-fixtures", "pytest-xvfb", "python-slugify"]
+test = ["mock", "pytest>=8.0,<9.0", "pytest-cov", "pytest-mock", "pytest-lazy-fixtures", "pytest-xdist", "pytest-xvfb", "python-slugify"]
 ci = ["tox==4.30.3"]
 
 [project.scripts]

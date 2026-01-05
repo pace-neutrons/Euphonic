@@ -1,23 +1,27 @@
-import argparse
+from argparse import ArgumentParser, Namespace
 import os
 import sys
 import time
+from uuid import uuid4
 
-import coverage
 import pytest
 
 
 def main():
     test_dir, reports_dir = _get_test_and_reports_dir()
 
-    (do_report_coverage, do_report_tests, tests,
-     markers_to_run) = _get_parsed_args(test_dir)
+    args = _get_parsed_args(test_dir)
 
     pytest_options: list[str] = _build_pytest_options(
-        reports_dir, do_report_tests, tests, markers_to_run)
+        reports_dir=reports_dir,
+        do_report_tests=args.report,
+        tests=args.test_file,
+        markers=args.markers_to_run,
+        parallel=args.parallel,
+    )
 
     test_exit_code: int = run_tests(
-        pytest_options, do_report_coverage, reports_dir, test_dir)
+        pytest_options, args.cov, reports_dir, test_dir)
 
     # Exit with a failure code if there are any errors or failures
     sys.exit(test_exit_code)
@@ -42,26 +46,16 @@ def _get_test_and_reports_dir() -> tuple[str, str]:
         os.mkdir(reports_dir)
     return test_dir, reports_dir
 
-
-def _get_parsed_args(test_dir: str) -> tuple[bool, bool, str, str]:
+def _get_parsed_args(test_dir: str) -> Namespace:
     """
-    Get the arguments parsed to this script and return some formatted
-    variables.
+    Get the arguments parsed to this script.
 
-    Returns
-    -------
-    bool
-        If true report coverage as coverage.xml in the reports directory
-    bool
-        If true report test unit results as junit xmls in the reports
-        directory
-    str
-        The location of the test files or file to run e.g. script_tests
-    str
-        Only run the specified markers e.g. "unit" or "unit or
-        integration"
+    Parameters
+    ----------
+
+    test_dir: test directory (for default test file search)
     """
-    parser = argparse.ArgumentParser()
+    parser = ArgumentParser()
     parser.add_argument(
         '--cov', action='store_true',
         help='If present report coverage in a coverage*.xml file in reports')
@@ -74,13 +68,21 @@ def _get_parsed_args(test_dir: str) -> tuple[bool, bool, str, str]:
         '-m', action='store', dest='markers_to_run',
         help=('Limit the test runs to only the specified markers e.g.'
               'e.g. "unit" or "unit or integration"'), default='')
-    args_parsed = parser.parse_args()
-    return (args_parsed.cov, args_parsed.report, args_parsed.test_file,
-            args_parsed.markers_to_run)
+    parser.add_argument(
+        '--parallel', action='store_true',
+        help='Use pytest-xdist for parallel testing',
+    )
+    return parser.parse_args()
 
 
-def _build_pytest_options(reports_dir: str, do_report_tests: bool,
-                          tests: str, markers: str) -> list[str]:
+def _build_pytest_options(
+        *,
+        reports_dir: str,
+        do_report_tests: bool,
+        tests: str,
+        markers: str,
+        parallel: bool,
+) -> list[str]:
     """
     Build the options for pytest to use.
 
@@ -112,6 +114,9 @@ def _build_pytest_options(reports_dir: str, do_report_tests: bool,
         options.append(f'--junitxml={junit_xml_filepath}')
     # Only run the specified markers
     options.append(f'-m={markers}')
+
+    if parallel:
+        options.append('--numprocesses=auto')
     return options
 
 
@@ -136,31 +141,25 @@ def run_tests(pytest_options: list[str], do_report_coverage: bool,
     A test exit code. 0 is success, 1 to 5 are all errors
      (see pytest docs for further details).
     """
-
     # Set import-mode to ensure the installed version is tested rather
     # than the local version
     pytest_options = ['--import-mode=append', *pytest_options]
 
     # Start recording coverage if requested
-    cov: coverage.Coverage | None = None
     if do_report_coverage:
         coveragerc_filepath: str = os.path.join(test_dir, '.coveragerc')
-        cov = coverage.Coverage(config_file=coveragerc_filepath)
-        cov.start()
+
+        pytest_options = [
+            '--cov',
+            f'--cov-report=xml:{reports_dir}/coverage_{uuid4()}.xml',
+            f'--cov-config={coveragerc_filepath}',
+            *pytest_options,
+        ]
 
     # Run tests and get the resulting exit code
     # 0 is success, 1-5 are different forms of failure (see pytest docs
     # for details)
-    test_exit_code = pytest.main(pytest_options)
-
-    # Report coverage if requested
-    if do_report_coverage and cov is not None:
-        cov.stop()
-        coverage_xml_filepath = os.path.join(
-            reports_dir, f'coverage_{int(time.time())}.xml')
-        cov.xml_report(outfile=coverage_xml_filepath)
-
-    return test_exit_code
+    return pytest.main(pytest_options)
 
 
 if __name__ == '__main__':
