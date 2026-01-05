@@ -11,6 +11,17 @@
     - Added *pytest-xdist* and *pytest-cov* requirements for parallel
       testing at pytest level.
 
+- Bug fixes
+
+  - Fix typing of calls to Spectrum.broaden() by brille_convergence
+    and intensity_map command-line tools.
+
+- Compatibility fixes
+
+  - Fixed handling of new SpglibError class for expected errors from spglib 2.7.0
+  - Include required arguments to np.divide call, avoiding deprecation
+    warning which would trigger test failure.
+
 - Maintenance
 
   - Reworked CI strategy from parallelism over tox environments to
