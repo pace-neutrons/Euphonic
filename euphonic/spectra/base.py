@@ -301,10 +301,7 @@ class Spectrum(ABC):
                                    width_convention=width_convention)
             sigmas = list(map(width_to_bin, widths, bin_centres))
 
-            try:
-                data_broadened = gaussian_filter(data, sigmas, mode='constant')
-            except TypeError:
-                raise Exception(widths, sigmas)
+            data_broadened = gaussian_filter(data, sigmas, mode='constant')
 
         elif shape == 'lorentz':
             if width_convention != 'fwhm':
