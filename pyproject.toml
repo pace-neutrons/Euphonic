@@ -35,7 +35,7 @@ classifiers = [
 ]
 dependencies = [
     "packaging",
-    "numpy>=1.24.0",
+    "numpy>=1.24.0,<=2.3.5",
     "scipy>=1.10",
     "seekpath>=1.1.0",
     "spglib>=2.1.0",
