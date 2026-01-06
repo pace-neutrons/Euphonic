@@ -27,6 +27,8 @@
     when testing a single Python version. (i.e. typical local testing
     scenario before pushing to CI.)
 
+  - Stopped testing every master push against Python 3.15
+
 `v1.5.0 <https://github.com/pace-neutrons/Euphonic/compare/v1.4.5...v1.5.0>`_
 -----------------------------------------------------------------------------
 

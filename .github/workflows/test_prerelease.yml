@@ -1,9 +1,5 @@
 name: test-prerelease-python
 on:
-  push:
-    branches:
-      - '**master**'
-      - '**release**'
   workflow_dispatch:
 
 jobs:
