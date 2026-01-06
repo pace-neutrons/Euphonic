@@ -637,9 +637,9 @@ def _recip_space_labels(qpts: np.ndarray,
             sym_label_to_coords = _generic_qpt_labels()
 
     # Get labels for each q-point
-    labels = np.array([])
-    for qpt in qpts[qpts_with_labels]:
-        labels = np.append(labels, _get_qpt_label(qpt, sym_label_to_coords))
+    labels = np.fromiter(
+        (_get_qpt_label(qpt, sym_label_to_coords) for qpt in qpts[qpts_with_labels]),  # noqa: E501
+        dtype='<U32')
 
     return labels, qpts_with_labels
 
