@@ -251,13 +251,15 @@ class Spectrum(ABC):
         widths should match the number of dimensions in data.
         bin_centres and widths are assumed to be in the same units
         """
-        for width in widths:
-            if not isinstance(width, (Real, type(None))):
-                msg = ('Inappropriate type found, widths for _broaden_data '
-                       'must be Real (e.g. float) or None. Instead we have: ['
-                       + ', '.join(str(type(width)) for width in widths)
-                       + '].')
-                raise WidthTypeError(msg)
+        def _has_bad_type(width: Any) -> bool:
+            return width is not None and not isinstance(width, Real)
+
+        if any(map(_has_bad_type, widths)):
+            msg = ('Inappropriate type found, widths for _broaden_data '
+                   'must be Real (e.g. float) or None. Instead we have: ['
+                   + ', '.join(type(width).__name__ for width in widths)
+                   + '].')
+            raise WidthTypeError(msg)
 
         shape_opts = ('gauss', 'lorentz')
         if shape not in shape_opts:
