@@ -9,6 +9,7 @@ from pytest_lazy_fixtures import lf as lazy_fixture
 
 from euphonic import ureg
 from euphonic.spectra import Spectrum2D, apply_kinematic_constraints
+from euphonic.spectra.base import WidthTypeError
 from tests_and_analysis.test.utils import (
     check_json_metadata,
     check_property_setters,
@@ -379,12 +380,17 @@ class TestSpectrum2DMethods:
         expected_broadened_spec2d = get_spectrum2d(broadened_spectrum2d_file)
         with context:
             broadened_spec2d = spec2d.broaden(**args)
-        check_spectrum2d(broadened_spec2d, expected_broadened_spec2d)
+            check_spectrum2d(broadened_spec2d, expected_broadened_spec2d)
 
     def test_broaden_invalid_shape_raises_value_error(self):
         spec2d = get_spectrum2d('quartz_bandstructure_sqw.json')
         with pytest.raises(ValueError), pytest.warns(UserWarning):
                 spec2d.broaden(x_width=1*ureg('meV'), shape='unknown')
+
+    def test_broaden_invalid_width_raises_width_type_error(self):
+        spec2d = get_spectrum2d('quartz_bandstructure_sqw.json')
+        with pytest.raises(WidthTypeError):
+                spec2d.broaden(x_width=[1.]*ureg('meV'), shape='unknown')
 
     def test_broaden_uneven_bins_deprecation_raises_value_error(self):
         spec2d = get_spectrum2d('La2Zr2O7_cut_sqw_uneven_bins.json')

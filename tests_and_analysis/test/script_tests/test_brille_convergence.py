@@ -61,6 +61,16 @@ class TestRegression:
         with pytest.raises(TypeError, match='Force constants are required'):
             euphonic.cli.brille_convergence.main([quartz_phonon_file])
 
+    def test_multiple_broadening_error(self):
+        """This script doesn't support energy-dependent broadening"""
+        import euphonic.cli.brille_convergence
+
+        with pytest.raises(
+                ValueError, match='This script only allows a fixed-width'):
+            euphonic.cli.brille_convergence.main(
+                [graphite_fc_file, '--energy-broadening', '1.', '2.'],
+            )
+
     def run_brille_conv_and_test_result(self, brille_conv_args):
         import euphonic.cli.brille_convergence
 

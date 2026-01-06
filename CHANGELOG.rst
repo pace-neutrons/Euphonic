@@ -3,13 +3,21 @@
 
 - Requirements
 
-  - Pinned Numpy upper bound to (inclusive) 2.3.5 while addressing compatibility issues with 2.4.0
-  - Pinned spglib upper bound to (non-inclusive) 2.7.0 while addressing compatibility issues.
-
   - Test requirements
 
     - Added *pytest-xdist* and *pytest-cov* requirements for parallel
       testing at pytest level.
+
+- Bug fixes
+
+  - Fix typing of calls to Spectrum.broaden() by brille_convergence
+    and intensity_map command-line tools.
+
+- Compatibility fixes
+
+  - Fixed handling of new SpglibError class for expected errors from spglib 2.7.0
+  - Include required arguments to np.divide call, avoiding deprecation
+    warning which would trigger test failure.
 
 - Maintenance
 

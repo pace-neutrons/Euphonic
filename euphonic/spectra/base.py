@@ -43,6 +43,9 @@ XTickLabels = list[tuple[int, str]]
 OneSpectrumMetadata = dict[str, str | int]
 
 
+class WidthTypeError(TypeError): ...
+
+
 class Spectrum(ABC):
     """Base class for a spectral data: do not use directly"""
     T = TypeVar('T', bound='Spectrum')
@@ -248,6 +251,16 @@ class Spectrum(ABC):
         widths should match the number of dimensions in data.
         bin_centres and widths are assumed to be in the same units
         """
+        def _has_bad_type(width: Any) -> bool:
+            return width is not None and not isinstance(width, Real)
+
+        if any(map(_has_bad_type, widths)):
+            msg = ('Inappropriate type found, widths for _broaden_data '
+                   'must be Real (e.g. float) or None. Instead we have: ['
+                   + ', '.join(type(width).__name__ for width in widths)
+                   + '].')
+            raise WidthTypeError(msg)
+
         shape_opts = ('gauss', 'lorentz')
         if shape not in shape_opts:
             msg = (
@@ -289,6 +302,7 @@ class Spectrum(ABC):
             width_to_bin = partial(cls._gaussian_width_to_bin_sigma,
                                    width_convention=width_convention)
             sigmas = list(map(width_to_bin, widths, bin_centres))
+
             data_broadened = gaussian_filter(data, sigmas, mode='constant')
 
         elif shape == 'lorentz':
@@ -951,18 +965,22 @@ class Spectrum2D(Spectrum):
             except AssertionError as e:
                 warnings.warn(str(e), UserWarning, stacklevel=1)
             widths_in_bin_units[0] = x_width.to(self.x_data_unit).magnitude
+
         if isinstance(y_width, Quantity):
             widths_in_bin_units[1] = y_width.to(self.y_data_unit).magnitude
 
         if any(widths_in_bin_units):
             bin_centres = [self.get_bin_centres(ax).magnitude
                            for ax in ['x', 'y']]
-            z_broadened = self._broaden_data(self.z_data.magnitude,
-                                             bin_centres,
-                                             widths_in_bin_units,
-                                             shape=shape,
-                                             method=method,
-                                             width_convention=width_convention)
+
+            z_broadened = self._broaden_data(
+                self.z_data.magnitude,
+                bin_centres,
+                widths_in_bin_units,
+                shape=shape,
+                method=method,
+                width_convention=width_convention)
+
             spectrum = Spectrum2D(
                 np.copy(self.x_data),
                 np.copy(self.y_data),
