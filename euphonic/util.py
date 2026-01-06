@@ -21,9 +21,9 @@ from euphonic.ureg import Quantity, ureg
 
 try:
     from spglib.error import SpglibError
-    cell_sym_error_types = (SymmetryDetectionError, TypeError, SpglibError)
+    no_cell_error_types = (SymmetryDetectionError, SpglibError)
 except ImportError:
-    cell_sym_error_types = (SymmetryDetectionError, TypeError)
+    no_cell_error_types = (SymmetryDetectionError,)
 
 zips = partial(zip, strict=True)
 
@@ -615,6 +615,11 @@ def _recip_space_labels(qpts: np.ndarray,
     if cell is None:
         sym_label_to_coords = _generic_qpt_labels()
     else:
+        def _no_sym_fallback() -> None:
+            warnings.warn(('Could not determine cell symmetry, using generic '
+                           'q-point labels'), stacklevel=2)
+            sym_label_to_coords = _generic_qpt_labels()
+
         try:
             with warnings.catch_warnings():
                 # SeeK-path is raising spglib 2.5.0 deprecation warnings, we
@@ -622,15 +627,15 @@ def _recip_space_labels(qpts: np.ndarray,
                 warnings.simplefilter('ignore', category=DeprecationWarning)
                 sym_label_to_coords = seekpath.get_path(cell)['point_coords']
 
-        except cell_sym_error_types as err:
-            if isinstance(err, TypeError):
-                # There is a particular TypeError we expect to see when the
-                # unit cell is empty; make sure we do not have some other error
-                assert 'positions has to be' in str(err)
-                assert len(cell[1]) == 0
-            warnings.warn(('Could not determine cell symmetry, using generic '
-                           'q-point labels'), stacklevel=2)
-            sym_label_to_coords = _generic_qpt_labels()
+        except SymmetryDetectionError:
+            _no_sym_fallback()
+
+        except no_cell_error_types as err:
+            # There is a particular error we expect to see when the unit cell
+            # is empty; make sure we do not have some other error
+            assert 'positions has to be' in str(err)
+            assert len(cell[1]) == 0
+            _no_sym_fallback()
 
     # Get labels for each q-point
     labels = np.array([])
