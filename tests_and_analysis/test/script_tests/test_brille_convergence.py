@@ -68,7 +68,7 @@ class TestRegression:
         with pytest.raises(
                 ValueError, match='This script only allows a fixed-width'):
             euphonic.cli.brille_convergence.main(
-                [graphite_fc_file, '--energy-broadening', '1.', '2.']
+                [graphite_fc_file, '--energy-broadening', '1.', '2.'],
             )
 
     def run_brille_conv_and_test_result(self, brille_conv_args):
