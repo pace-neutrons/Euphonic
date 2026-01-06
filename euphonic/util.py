@@ -615,11 +615,6 @@ def _recip_space_labels(qpts: np.ndarray,
     if cell is None:
         sym_label_to_coords = _generic_qpt_labels()
     else:
-        def _no_sym_fallback() -> None:
-            warnings.warn(('Could not determine cell symmetry, using generic '
-                           'q-point labels'), stacklevel=2)
-            sym_label_to_coords = _generic_qpt_labels()
-
         try:
             with warnings.catch_warnings():
                 # SeeK-path is raising spglib 2.5.0 deprecation warnings, we
@@ -628,14 +623,18 @@ def _recip_space_labels(qpts: np.ndarray,
                 sym_label_to_coords = seekpath.get_path(cell)['point_coords']
 
         except SymmetryDetectionError:
-            _no_sym_fallback()
+            warnings.warn(('Could not determine cell symmetry, using generic '
+                           'q-point labels'), stacklevel=2)
+            sym_label_to_coords = _generic_qpt_labels()
 
         except no_cell_error_types as err:
             # There is a particular error we expect to see when the unit cell
             # is empty; make sure we do not have some other error
             assert 'positions has to be' in str(err)
             assert len(cell[1]) == 0
-            _no_sym_fallback()
+            warnings.warn(('Could not determine cell symmetry, using generic '
+                           'q-point labels'), stacklevel=2)
+            sym_label_to_coords = _generic_qpt_labels()
 
     # Get labels for each q-point
     labels = np.array([])
