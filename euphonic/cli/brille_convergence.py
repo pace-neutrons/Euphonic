@@ -25,12 +25,15 @@ def main(params: Optional[list[str]] = None) -> None:
     args = get_args(get_parser(), params)
     params = vars(args)
 
-    if params['energy_broadening'] is not None:
-        if len(params['energy_broadening']) > 1:
+    match params['energy_broadening']:
+        case int(value) | float(value) | [int(value)] | [float(value)]:
+            params['energy_broadening'] = value
+        case None:
+            pass
+        case _:
             msg = ('This script only allows a fixed-width broadening '
                    '(i.e. --energy-broadening should be a single value)')
             raise ValueError(msg)
-        params['energy_broadening'] = params['energy_broadening'][0]
 
     check_brille_settings(**params)
 
