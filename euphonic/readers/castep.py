@@ -6,7 +6,6 @@ from typing import (
     Any,
     BinaryIO,
     NamedTuple,
-    Optional,
     TextIO,
 )
 
@@ -329,16 +328,16 @@ _qpt_float_pattern = re.compile(r'-?\d+\.\d+')
 class _FrequencyBlock(NamedTuple):
     qpt_id: int
     qpt: np.ndarray
-    direction: Optional[np.ndarray]
+    direction: np.ndarray | None
     weight: float
     frequencies: np.ndarray
-    extra: Optional[np.ndarray]
+    extra: np.ndarray | None
 
 
 def _read_frequency_block(
     f: TextIO,
     n_branches: int,
-    extra_columns: Optional[list] = None,
+    extra_columns: list | None = None,
     terminator: str = '',
         ) -> _FrequencyBlock | None:
     """
@@ -391,7 +390,7 @@ def _read_frequency_block(
     qpt = np.array([float(x) for x in floats[:3]])
     qweight = float(floats[3])
 
-    direction: Optional[np.ndarray] = None
+    direction: np.ndarray | None = None
     if len(floats) >= 6:
         direction = floats[4:7]
 
@@ -399,7 +398,7 @@ def _read_frequency_block(
                   for i in range(n_branches)]
     freq_col = 1
     qfreq = np.array([float(line[freq_col]) for line in freq_lines])
-    extra: Optional[np.ndarray] = None
+    extra: np.ndarray | None = None
     if extra_columns is not None:
         if len(qpt_line.split()) > 6:
             # Indicates a split gamma point in .phonon, so there is an

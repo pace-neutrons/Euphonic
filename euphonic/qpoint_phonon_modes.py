@@ -2,7 +2,7 @@
 
 from collections.abc import Mapping
 import math
-from typing import Any, Optional, TypeVar
+from typing import Any, TypeVar
 
 import numpy as np
 
@@ -49,7 +49,7 @@ class QpointPhononModes(QpointFrequencies):
 
     def __init__(self, crystal: Crystal, qpts: np.ndarray,
                  frequencies: Quantity, eigenvectors: np.ndarray,
-                 weights: Optional[np.ndarray] = None) -> None:
+                 weights: np.ndarray | None = None) -> None:
         """
         Parameters
         ----------
@@ -173,7 +173,7 @@ class QpointPhononModes(QpointFrequencies):
     def calculate_structure_factor(
         self,
         scattering_lengths: str | dict[str, Quantity] = 'Sears1992',
-        dw: Optional[DebyeWaller] = None,
+        dw: DebyeWaller | None = None,
         ) -> StructureFactor:
         """
         Calculate the one phonon inelastic scattering for neutrons at
@@ -433,12 +433,12 @@ class QpointPhononModes(QpointFrequencies):
 
     def calculate_pdos(
             self, dos_bins: Quantity,
-            mode_widths: Optional[Quantity] = None,
+            mode_widths: Quantity | None = None,
             mode_widths_min: Quantity = Quantity(0.01, 'meV'),
             adaptive_method: AdaptiveMethod = 'reference',
-            adaptive_error: Optional[float] = 0.01,
+            adaptive_error: float | None = 0.01,
             adaptive_error_fit: ErrorFit = 'cubic',
-            weighting: Optional[str] = None,
+            weighting: str | None = None,
             cross_sections: str | dict[str, Quantity] = 'BlueBook',
             ) -> Spectrum1DCollection:
         """
@@ -705,7 +705,7 @@ class QpointPhononModes(QpointFrequencies):
     @classmethod
     def from_phonopy(cls: type[T], path: str = '.',
                      phonon_name: str = 'band.yaml',
-                     phonon_format: Optional[str] = None,
+                     phonon_format: str | None = None,
                      summary_name: str = 'phonopy.yaml') -> T:
         """
         Reads precalculated phonon mode data from a Phonopy

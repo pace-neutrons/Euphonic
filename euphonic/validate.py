@@ -1,5 +1,5 @@
 from collections.abc import Sequence
-from typing import Any, Optional
+from typing import Any
 
 import numpy as np
 from pint import DimensionalityError
@@ -165,7 +165,7 @@ def _ensure_contiguous_args(*args: np.ndarray) -> tuple[np.ndarray, ...]:
                  for arg in args)
 
 
-def _get_dtype(arr: np.ndarray) -> Optional[type]:
+def _get_dtype(arr: np.ndarray) -> type | None:
     """
     Get the Numpy dtype that should be used for the input array
 

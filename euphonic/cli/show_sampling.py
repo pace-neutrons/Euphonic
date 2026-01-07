@@ -1,5 +1,4 @@
 from argparse import ArgumentParser
-from typing import Optional
 
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D  # noqa: F401
@@ -34,7 +33,7 @@ def get_parser() -> ArgumentParser:
     return parser
 
 
-def main(params: Optional[list[str]] = None) -> None:
+def main(params: list[str] | None = None) -> None:
     parser = get_parser()
     args = get_args(parser, params)
 

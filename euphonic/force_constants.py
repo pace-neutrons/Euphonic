@@ -6,7 +6,6 @@ import re
 from typing import (
     Any,
     Literal,
-    Optional,
     TypeVar,
 )
 import warnings
@@ -81,8 +80,8 @@ class ForceConstants:
 
     def __init__(self, crystal: Crystal, force_constants: Quantity,
                  sc_matrix: np.ndarray, cell_origins: np.ndarray,
-                 born: Optional[Quantity] = None,
-                 dielectric: Optional[Quantity] = None) -> None:
+                 born: Quantity | None = None,
+                 dielectric: Quantity | None = None) -> None:
         """
         Parameters
         ----------
@@ -182,15 +181,15 @@ class ForceConstants:
     def calculate_qpoint_phonon_modes(
             self,
             qpts: np.ndarray,
-            weights: Optional[np.ndarray] = None,
-            asr: Optional[Literal['realspace', 'reciprocal']] = None,
+            weights: np.ndarray | None = None,
+            asr: Literal['realspace', 'reciprocal'] | None = None,
             dipole: bool = True,
             dipole_parameter: float = 1.0,
             splitting: bool = True,
             insert_gamma: bool = False,
             reduce_qpts: bool = True,
-            use_c: Optional[bool] = None,
-            n_threads: Optional[int] = None,
+            use_c: bool | None = None,
+            n_threads: int | None = None,
             return_mode_gradients: bool = False,
             ) -> QpointPhononModes | tuple[QpointPhononModes, Quantity]:
         """
@@ -412,15 +411,15 @@ class ForceConstants:
     def calculate_qpoint_frequencies(
             self,
             qpts: np.ndarray,
-            weights: Optional[np.ndarray] = None,
-            asr: Optional[Literal['realspace', 'reciprocal']] = None,
+            weights: np.ndarray | None = None,
+            asr: Literal['realspace', 'reciprocal'] | None = None,
             dipole: bool = True,
             dipole_parameter: float = 1.0,
             splitting: bool = True,
             insert_gamma: bool = False,
             reduce_qpts: bool = True,
-            use_c: Optional[bool] = None,
-            n_threads: Optional[int] = None,
+            use_c: bool | None = None,
+            n_threads: int | None = None,
             return_mode_gradients: bool = False,
             ) -> QpointFrequencies | tuple[QpointFrequencies, Quantity]:
         """
@@ -441,19 +440,19 @@ class ForceConstants:
     def _calculate_phonons_at_qpts(
             self,
             qpts: np.ndarray,
-            weights: Optional[np.ndarray],
-            asr: Optional[Literal['realspace', 'reciprocal']],
+            weights: np.ndarray | None,
+            asr: Literal['realspace', 'reciprocal'] | None,
             dipole: bool,
             dipole_parameter: float,
             splitting: bool,
             insert_gamma: bool,
             reduce_qpts: bool,
-            use_c: Optional[bool],
-            n_threads: Optional[int],
+            use_c: bool | None,
+            n_threads: int | None,
             return_mode_gradients: bool,
             return_eigenvectors: bool) -> tuple[
-                np.ndarray, Quantity, Optional[np.ndarray],
-                Optional[np.ndarray], Optional[Quantity]]:
+                np.ndarray, Quantity, np.ndarray | None,
+                np.ndarray | None, Quantity] | None:
         """
         Calculates phonon frequencies, and optionally eigenvectors and
         phonon frequency gradients. See calculate_qpoint_phonon_modes
@@ -771,7 +770,7 @@ casting to real mode gradients.
             dyn_mat_weighting: np.ndarray,
             recip_asr_correction: np.ndarray,
             dipole: bool,
-            q_dir: Optional[np.ndarray] = None,
+            q_dir: np.ndarray | None = None,
             ) -> tuple[np.ndarray, np.ndarray, np.ndarray | None]:
         """
         Given a q-point and some precalculated q-independent values,
@@ -887,7 +886,7 @@ casting to real mode gradients.
             unique_cell_origins: Sequence[Sequence[int]],
             unique_cell_i: np.ndarray,
             all_origins_cart: np.ndarray) -> tuple[np.ndarray,
-                                                   Optional[np.ndarray]]:
+                                                   np.ndarray] | None:
         """
         Calculate the non mass weighted dynamical matrix at a specified
         q-point from the image weighted force constants matrix and the
@@ -1864,9 +1863,9 @@ casting to real mode gradients.
     def from_phonopy(cls: type[T],
                      path: str = '.',
                      summary_name: str = 'phonopy.yaml',
-                     born_name: Optional[str] = None,
+                     born_name: str | None = None,
                      fc_name: str = 'FORCE_CONSTANTS',
-                     fc_format: Optional[str] = None) -> T:
+                     fc_format: str | None = None) -> T:
         """
         Reads data from the phonopy summary file (default phonopy.yaml)
         and optionally born and force constants files. Only attempts to

@@ -1,6 +1,6 @@
 from collections.abc import Sequence
 from itertools import pairwise
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 import numpy as np
 
@@ -30,7 +30,7 @@ except ModuleNotFoundError as err:
 
 
 def plot_1d_to_axis(spectra: Spectrum1D | Spectrum1DCollection,
-                    ax: Axes, labels: Optional[Sequence[str]] = None,
+                    ax: Axes, labels: Sequence[str] | None = None,
                     **mplargs) -> None:
     """Plot a (collection of) 1D spectrum lines to matplotlib axis
 
@@ -119,9 +119,9 @@ def plot_1d(spectra: OneDSpectrumOrSpectra,
             title: str | None = None,
             xlabel: str = '',
             ylabel: str = '',
-            ymin: Optional[float] = None,
-            ymax: Optional[float] = None,
-            labels: Optional[Sequence[str]] = None,
+            ymin: float | None = None,
+            ymax: float | None = None,
+            labels: Sequence[str] | None = None,
             **line_kwargs) -> Figure:
     """
     Creates a Matplotlib figure for a Spectrum1D object, or multiple
@@ -221,7 +221,7 @@ def plot_1d(spectra: OneDSpectrumOrSpectra,
 def plot_2d_to_axis(spectrum: Spectrum2D, ax: Axes,
                     cmap: str | Colormap | None = None,
                     interpolation: str = 'nearest',
-                    norm: Optional[Normalize] = None,
+                    norm: Normalize | None = None,
                     ) -> NonUniformImage:
     """Plot Spectrum2D object to Axes
 
@@ -269,9 +269,9 @@ def plot_2d_to_axis(spectrum: Spectrum2D, ax: Axes,
 
 
 def plot_2d(spectra: Spectrum2D | Sequence[Spectrum2D],
-            vmin: Optional[float] = None,
-            vmax: Optional[float] = None,
-            cmap: Optional[str | Colormap] = None,
+            vmin: float | None = None,
+            vmax: float | None = None,
+            cmap: str | Colormap | None = None,
             title: str | None = None,
             xlabel: str = '',
             ylabel: str = '') -> Figure:
@@ -348,7 +348,7 @@ def plot_2d(spectra: Spectrum2D | Sequence[Spectrum2D],
 
 
 def _set_x_tick_labels(ax: Axes,
-                       x_tick_labels: Optional[Sequence[tuple[int, str]]],
+                       x_tick_labels: Sequence[tuple[int, str]] | None,
                        x_data: Quantity) -> None:
     if x_tick_labels is not None:
         locs, labels = [list(x) for x in zips(*x_tick_labels)]

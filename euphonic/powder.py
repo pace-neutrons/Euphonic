@@ -1,6 +1,6 @@
 """Functions for averaging spectra in spherical q bins"""
 
-from typing import Literal, Optional
+from typing import Literal
 
 import numpy as np
 
@@ -121,7 +121,7 @@ def sample_sphere_pdos(
         npts: int = 1000,
         jitter: bool = False,
         energy_bins: Quantity = None,
-        weighting: Optional[str] = None,
+        weighting: str | None = None,
         cross_sections: str | dict[str, Quantity] = 'BlueBook',
         rng: RNG = rng,
         **calc_modes_args,
@@ -236,7 +236,7 @@ def sample_sphere_structure_factor(
     mod_q: Quantity,
     dw: DebyeWaller = None,
     dw_spacing: Quantity = Quantity(0.025, '1/angstrom'),
-    temperature: Optional[Quantity] = Quantity(273., 'K'),
+    temperature: Quantity | None = Quantity(273., 'K'),
     sampling: SphericalSamplingOptions = 'golden',
     npts: int = 1000, jitter: bool = False,
     energy_bins: Quantity = None,

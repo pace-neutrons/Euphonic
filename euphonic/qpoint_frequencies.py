@@ -1,4 +1,4 @@
-from typing import Any, Literal, Optional, TypeVar
+from typing import Any, Literal, TypeVar
 import warnings
 
 import numpy as np
@@ -43,7 +43,7 @@ class QpointFrequencies:
 
     def __init__(self, crystal: Crystal, qpts: np.ndarray,
                  frequencies: Quantity,
-                 weights: Optional[np.ndarray] = None) -> None:
+                 weights: np.ndarray | None = None) -> None:
         """
         Parameters
         ----------
@@ -98,7 +98,7 @@ class QpointFrequencies:
     def calculate_dos(
         self,
         dos_bins: Quantity,
-        mode_widths: Optional[Quantity] = None,
+        mode_widths: Quantity | None = None,
         mode_widths_min: Quantity = Quantity(0.01, 'meV'),
         adaptive_method: AdaptiveMethod = 'reference',
         adaptive_error: float = 0.01,
@@ -164,13 +164,13 @@ class QpointFrequencies:
     def _calculate_dos(
         self,
         dos_bins: Quantity,
-        mode_widths: Optional[Quantity] = None,
+        mode_widths: Quantity | None = None,
         mode_widths_min: Quantity = Quantity(0.01, 'meV'),
-        mode_weights: Optional[np.ndarray] = None,
+        mode_weights: np.ndarray | None = None,
         adaptive_method: AdaptiveMethod = 'reference',
         adaptive_error: float = 0.01,
         adaptive_error_fit: ErrorFit = 'cubic',
-        q_idx: Optional[int] = None,
+        q_idx: int | None = None,
         ) -> Quantity:
         """
         Calculates a density of states (same arg defs as calculate_dos),
@@ -255,7 +255,7 @@ class QpointFrequencies:
         return dos/conv
 
     def calculate_dos_map(self, dos_bins: Quantity,
-                          mode_widths: Optional[Quantity] = None,
+                          mode_widths: Quantity | None = None,
                           mode_widths_min: Quantity = Quantity(0.01, 'meV'),
                           ) -> Spectrum2D:
         """
@@ -424,7 +424,7 @@ class QpointFrequencies:
     @classmethod
     def from_phonopy(cls: type[T], path: str = '.',
                      phonon_name: str = 'band.yaml',
-                     phonon_format: Optional[str] = None,
+                     phonon_format: str | None = None,
                      summary_name: str = 'phonopy.yaml') -> T:
         """
         Reads precalculated phonon mode data from a Phonopy

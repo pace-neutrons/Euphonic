@@ -10,7 +10,7 @@ import json
 import os
 from pathlib import Path
 import re
-from typing import Any, Optional
+from typing import Any
 import warnings
 
 import numpy as np
@@ -167,7 +167,7 @@ def load_data_from_file(filename: str | os.PathLike,
     return data
 
 
-def get_args(parser: ArgumentParser, params: Optional[list[str]] = None,
+def get_args(parser: ArgumentParser, params: list[str] | None = None,
              ) -> Namespace:
     """
     Get the arguments from the parser. `params` should only be `None` when
@@ -225,8 +225,8 @@ def _get_q_distance(length_unit_string: str, q_distance: float) -> Quantity:
 
 def _get_energy_bins(
         modes: QpointPhononModes | QpointFrequencies,
-        n_ebins: int, emin: Optional[float] = None,
-        emax: Optional[float] = None,
+        n_ebins: int, emin: float | None = None,
+        emax: float | None = None,
         headroom: float = 1.05) -> Quantity:
     """
     Gets recommended energy bins, in same units as modes.frequencies.
@@ -371,7 +371,7 @@ def _bands_from_force_constants(data: ForceConstants,
 
 
 def _grid_spec_from_args(crystal: Crystal,
-                           grid: Optional[Sequence[int]] = None,
+                           grid: Sequence[int] | None = None,
                            grid_spacing: Quantity = 0.1 * ureg('1/angstrom'),
                            ) -> tuple[int, int, int]:
     """Get Monkorst-Pack mesh divisions from user arguments"""
@@ -384,7 +384,7 @@ def _grid_spec_from_args(crystal: Crystal,
 
 def _get_debye_waller(temperature: Quantity,
                       fc: ForceConstants,
-                      grid: Optional[Sequence[int]] = None,
+                      grid: Sequence[int] | None = None,
                       grid_spacing: Quantity = 0.1 * ureg('1/angstrom'),
                       **calc_modes_kwargs,
                       ) -> DebyeWaller:
@@ -399,7 +399,7 @@ def _get_debye_waller(temperature: Quantity,
     return dw_phonons.calculate_debye_waller(temperature)
 
 
-def _get_pdos_weighting(cl_arg_weighting: str) -> Optional[str]:
+def _get_pdos_weighting(cl_arg_weighting: str) -> str | None:
     """
     Convert CL --weighting to weighting for calculate_pdos
     e.g. --weighting coherent-dos to weighting=coherent
@@ -891,7 +891,7 @@ MplStyle = str | dict[str, str]
 
 
 def _compose_style(
-        *, user_args: Namespace, base: Optional[list[MplStyle]],
+        *, user_args: Namespace, base: list[MplStyle] | None,
         ) -> list[MplStyle]:
     """Combine user-specified style options with default stylesheets
 

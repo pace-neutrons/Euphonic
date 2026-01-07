@@ -1,7 +1,7 @@
 from contextlib import suppress
 import os
 import re
-from typing import Any, Optional, TextIO
+from typing import Any, TextIO
 import warnings
 
 import numpy as np
@@ -180,7 +180,7 @@ def _extract_phonon_data_hdf5(filename: str,
 def read_phonon_data(
         path: str = '.',
         phonon_name: str = 'band.yaml',
-        phonon_format: Optional[str] = None,
+        phonon_format: str | None = None,
         summary_name: str = 'phonopy.yaml',
         cell_vectors_unit: str = 'angstrom',
         atom_mass_unit: str = 'amu',
@@ -635,9 +635,9 @@ def _extract_crystal_data(crystal: dict[str, Any],
 def read_interpolation_data(
         path: str = '.',
         summary_name: str = 'phonopy.yaml',
-        born_name: Optional[str] = None,
+        born_name: str | None = None,
         fc_name: str = 'FORCE_CONSTANTS',
-        fc_format: Optional[str] = None,
+        fc_format: str | None = None,
         cell_vectors_unit: str = 'angstrom',
         atom_mass_unit: str = 'amu',
         force_constants_unit: str = 'hartree/bohr**2',
