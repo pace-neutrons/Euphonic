@@ -1,5 +1,4 @@
 from contextlib import suppress
-import os
 from pathlib import Path
 import re
 from typing import Any, TextIO
@@ -236,18 +235,18 @@ def read_phonon_data(
         'eigenvectors' key
     """
     basepath = Path(path)
-    phonon_pathname = basepath / phonon_name
-    summary_pathname = basepath / summary_name
+    phonon_path = basepath / phonon_name
+    summary_path = basepath / summary_name
 
     if phonon_format is None:
         phonon_format = Path(phonon_name).suffix.strip('.')
 
     if phonon_format in HDF5_EXTS:
         phonon_dict = _extract_phonon_data_hdf5(
-            phonon_pathname, read_eigenvectors=read_eigenvectors)
+            phonon_path, read_eigenvectors=read_eigenvectors)
     elif phonon_format in YAML_EXTS:
         phonon_dict = _extract_phonon_data_yaml(
-            phonon_pathname, read_eigenvectors=read_eigenvectors)
+            phonon_path, read_eigenvectors=read_eigenvectors)
     else:
         msg = (
             f'File format {phonon_format} of {phonon_name} is not recognised'
@@ -256,7 +255,7 @@ def read_phonon_data(
 
     if read_eigenvectors and 'eigenvectors' not in phonon_dict:
         msg = (
-            f"Eigenvectors couldn't be found in {phonon_pathname}, ensure "
+            f"Eigenvectors couldn't be found in {phonon_path}, ensure "
             f'--eigvecs was set when running Phonopy'
         )
         raise RuntimeError(msg)
@@ -271,7 +270,7 @@ def read_phonon_data(
     # Check if crystal structure has been read from phonon_file, if not
     # get structure from summary_file
     if len(crystal_keys & phonon_dict.keys()) != len(crystal_keys):
-        summary_dict = _extract_summary(summary_pathname)
+        summary_dict = _extract_summary(summary_path)
         phonon_dict['cell_vectors'] = summary_dict['cell_vectors']
         phonon_dict['atom_r'] = summary_dict['atom_r']
         phonon_dict['atom_mass'] = summary_dict['atom_mass']
@@ -282,8 +281,8 @@ def read_phonon_data(
         # Check phonon_file and summary_file are commensurate
         if 3*len(phonon_dict['atom_r']) != len(phonon_dict['frequencies'][0]):
             msg = (
-                f'Phonon file {phonon_pathname} not commensurate with summary '
-                f'file {summary_pathname}. Please check contents'
+                f'Phonon file {phonon_path} not commensurate with summary '
+                f'file {summary_path}. Please check contents'
             )
             raise ValueError(msg)
 
@@ -337,14 +336,14 @@ def convert_eigenvector_phases(phonon_dict: dict[str, np.ndarray],
     return np.reshape(eigvecs, (n_qpts, 3*n_atoms, n_atoms, 3))
 
 
-def _extract_force_constants(fc_pathname: Path, n_atoms: int, n_cells: int,
+def _extract_force_constants(fc_path: Path, n_atoms: int, n_cells: int,
                              summary_name: Path) -> np.ndarray:
     """
     Reads force constants from a Phonopy FORCE_CONSTANTS file
 
     Parameters
     ----------
-    fc_pathname
+    fc_path
         The FORCE_CONSTANTS file to read from
     n_atoms
         Number of atoms in the unit cell
@@ -360,16 +359,16 @@ def _extract_force_constants(fc_pathname: Path, n_atoms: int, n_cells: int,
         (n_atoms*n_cells, n_atoms*n_cells, 3, 3) float ndarray. The
         force constants in Phonopy convention
     """
-    with open(fc_pathname) as f:
+    with open(fc_path) as f:
         fc_dims =  [int(dim) for dim in f.readline().split()]
     # single shape specifier implies full format
     if len(fc_dims) == 1:
         fc_dims.append(fc_dims[0])
-    _check_fc_shape(fc_dims, n_atoms, n_cells, fc_pathname, summary_name)
+    _check_fc_shape(fc_dims, n_atoms, n_cells, fc_path, summary_name)
 
     with warnings.catch_warnings():
         warnings.simplefilter('ignore')
-        fc = np.genfromtxt(fc_pathname, skip_header=1,
+        fc = np.genfromtxt(fc_path, skip_header=1,
                            max_rows=4*(n_atoms*n_cells)**2, usecols=(0,1,2),
                            invalid_raise=False)
     return fc.reshape([*fc_dims, 3, 3])
@@ -696,8 +695,8 @@ def read_interpolation_data(
     """
     basepath = Path(path)
     fc_path = Path(fc_name)
-    summary_pathname = basepath / summary_name
-    summary_dict = _extract_summary(summary_pathname, fc_extract=True)
+    summary_path = basepath / summary_name
+    summary_dict = _extract_summary(summary_path, fc_extract=True)
 
     # Only read force constants if it's not in summary file
     if 'force_constants' not in summary_dict:
@@ -708,20 +707,20 @@ def read_interpolation_data(
             if fc_format not in HDF5_EXTS:
                 fc_format = 'phonopy'
 
-        fc_pathname = basepath / fc_name
+        fc_path = basepath / fc_name
 
-        print(f'Force constants not found in {summary_pathname}, '
-               f'attempting to read from {fc_pathname}')
+        print(f'Force constants not found in {summary_path}, '
+               f'attempting to read from {fc_path}')
 
         n_atoms = summary_dict['n_atoms']
         n_cells = int(len(summary_dict['sc_atom_r'])/n_atoms)
 
         if fc_format == 'phonopy':
             summary_dict['force_constants'] = _extract_force_constants(
-                fc_pathname, n_atoms, n_cells, summary_pathname)
+                fc_path, n_atoms, n_cells, summary_path)
         elif fc_format in 'hdf5':
             summary_dict['force_constants'] =  _extract_force_constants_hdf5(
-                fc_pathname, n_atoms, n_cells, summary_pathname)
+                fc_path, n_atoms, n_cells, summary_path)
         else:
             msg = (
                 f'Force constants file format "{fc_format}" of '
@@ -734,10 +733,10 @@ def read_interpolation_data(
     dipole_keys = ['born', 'dielectric', 'nac_factor']
     if (born_name is not None and
             len(dipole_keys & summary_dict.keys()) != len(dipole_keys)):
-        born_pathname = basepath / born_name
-        print(f'Born, dielectric not found in {summary_pathname}, '
-               f'attempting to read from {born_pathname}')
-        with open(born_pathname) as born_file:
+        born_path = basepath / born_name
+        print(f'Born, dielectric not found in {summary_path}, '
+               f'attempting to read from {born_path}')
+        with open(born_path) as born_file:
             born_dict = _extract_born(born_file)
         # Let BORN file take priority, but merge because the 'nac_factor'
         # key may not always be present in BORN
@@ -749,7 +748,7 @@ def read_interpolation_data(
     # 'nac_factor' will not be written. In this case raise error.
     if ('born' in summary_dict and 'nac_factor' not in summary_dict):
         msg = dedent_and_fill(f"""
-            nac_unit_conversion_factor could not be found in {summary_pathname}
+            nac_unit_conversion_factor could not be found in {summary_path}
             or the BORN file (if given), so units of the dielectric tensor
             cannot be determined.
             """)

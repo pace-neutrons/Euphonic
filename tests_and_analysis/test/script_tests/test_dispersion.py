@@ -1,6 +1,5 @@
 from contextlib import suppress
 import json
-import os
 import sys
 from unittest.mock import patch
 

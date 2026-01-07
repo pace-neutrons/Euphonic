@@ -1862,10 +1862,10 @@ casting to real mode gradients.
 
     @classmethod
     def from_phonopy(cls: type[T],
-                     path: str = '.',
-                     summary_name: str = 'phonopy.yaml',
+                     path: Path | str = '.',
+                     summary_name: Path | str = 'phonopy.yaml',
                      born_name: str | None = None,
-                     fc_name: str = 'FORCE_CONSTANTS',
+                     fc_name: Path | str = 'FORCE_CONSTANTS',
                      fc_format: str | None = None) -> T:
         """
         Reads data from the phonopy summary file (default phonopy.yaml)
