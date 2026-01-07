@@ -200,8 +200,8 @@ class TestCalculateStructureFactorUsingReferenceData:
                                    'O': 5.803}}}
 
     @staticmethod
-    def _dump_data(data, tmpdir, filename):
-        filename = tmpdir.join(filename)
+    def _dump_data(data, tmp_path, filename):
+        filename = tmp_path / filename
         with open(filename, 'w') as fd:
             json.dump(data, fd)
         return str(filename)
@@ -218,10 +218,10 @@ class TestCalculateStructureFactorUsingReferenceData:
                             sf_named.structure_factors.to(aa2).magnitude)
 
     def test_structure_factor_with_file_ref(self, quartz_modes,
-                                            tmpdir, fake_quartz_data):
+                                            tmp_path, fake_quartz_data):
         fm = ureg('fm')
 
-        filename = self._dump_data(fake_quartz_data, tmpdir, 'fake_data')
+        filename = self._dump_data(fake_quartz_data, tmp_path, 'fake_data')
 
         sf_direct = quartz_modes.calculate_structure_factor(
             scattering_lengths={'Si': complex(4., -0.7)*fm, 'O': 5.803*fm})

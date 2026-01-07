@@ -110,16 +110,16 @@ class TestRegression:
     @pytest.mark.parametrize('dos_args', [
         [nah_phonon_file, '--save-to'],
         [nah_phonon_file, '-s']])
-    def test_plot_save_to_file(self, inject_mocks, tmpdir, dos_args):
-        output_file = str(tmpdir.join('test.png'))
-        euphonic.cli.dos.main([*dos_args, output_file])
-        assert os.path.exists(output_file)
+    def test_plot_save_to_file(self, inject_mocks, tmp_path, dos_args):
+        output_file = tmp_path / 'test.png'
+        euphonic.cli.dos.main([*dos_args, str(output_file)])
+        assert output_file.exists()
 
     @pytest.mark.parametrize('dos_args', [
         [nah_phonon_file, '--save-json']])
-    def test_plot_save_to_json(self, inject_mocks, tmpdir, dos_args):
-        output_file = str(tmpdir.join('test.json'))
-        euphonic.cli.dos.main([*dos_args, output_file])
+    def test_plot_save_to_json(self, inject_mocks, tmp_path, dos_args):
+        output_file = tmp_path / 'test.json'
+        euphonic.cli.dos.main([*dos_args, str(output_file)])
         spec = Spectrum1D.from_json_file(output_file)
         assert isinstance(spec, Spectrum1D)
 

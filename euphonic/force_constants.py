@@ -2,6 +2,7 @@ from collections.abc import Sequence
 import math
 from multiprocessing import cpu_count
 import os
+from pathlib import Path
 import re
 from typing import (
     Any,
@@ -636,7 +637,7 @@ class ForceConstants:
         else:
             rmode_gradients = np.zeros((0, 3*n_atoms, 3), dtype=np.complex128)
 
-        euphonic_path = os.path.dirname(__file__)
+        euphonic_path = Path(__file__).parent
         cext_err_msg = (f"Euphonic's C extension couldn't be imported "
                         f'from {euphonic_path}, it may not have been '
                         f'installed.')
@@ -1697,7 +1698,7 @@ casting to real mode gradients.
                                    'cell_origins', 'born',
                                    'dielectric'])
 
-    def to_json_file(self, filename: str) -> None:
+    def to_json_file(self, filename: Path | str) -> None:
         """
         Write to a JSON file. JSON fields are equivalent to
         ForceConstants.from_dict keys
@@ -1826,7 +1827,7 @@ casting to real mode gradients.
                    born=born, dielectric=dielectric)
 
     @classmethod
-    def from_json_file(cls: type[T], filename: str) -> T:
+    def from_json_file(cls: type[T], filename: Path | str) -> T:
         """
         Read from a JSON file. See ForceConstants.from_dict for required
         fields
@@ -1843,7 +1844,7 @@ casting to real mode gradients.
         return _obj_from_json_file(cls, filename)
 
     @classmethod
-    def from_castep(cls: type[T], filename: str) -> T:
+    def from_castep(cls: type[T], filename: Path | str) -> T:
         """
         Reads from a .castep_bin or .check file
 

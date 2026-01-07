@@ -33,8 +33,8 @@ class TestReferenceData:
         assert data['Cl'].magnitude == pytest.approx(11.5257)
 
     @staticmethod
-    def _dump_data(data, tmpdir, filename):
-        filename = tmpdir.join(filename)
+    def _dump_data(data, tmp_path, filename):
+        filename = tmp_path / filename
         with open(filename, 'w') as fd:
             json.dump(data, fd)
         return str(filename)
@@ -47,9 +47,9 @@ class TestReferenceData:
                  'weight': {'cat': 4., 'dog': 20., '__units__': 'kilogram'}}}
 
     @pytest.mark.parametrize('physical_property', ['size', 'weight'])
-    def test_custom_file(self, tmpdir, animal_data, physical_property):
+    def test_custom_file(self, tmp_path, animal_data, physical_property):
 
-        filename = self._dump_data(animal_data, tmpdir, 'good_data.json')
+        filename = self._dump_data(animal_data, tmp_path, 'good_data.json')
 
         loaded_data = get_reference_data(collection=filename,
                                          physical_property=physical_property)
@@ -61,45 +61,45 @@ class TestReferenceData:
             assert (loaded_data[animal].units
                     == animal_properties[physical_property]['__units__'])
 
-    def test_custom_file_no_units(self, tmpdir):
+    def test_custom_file_no_units(self, tmp_path):
         test_data_no_units = {'physical_property':
                               {'some_property': {'H': 1}}}
-        filename = self._dump_data(test_data_no_units, tmpdir,
+        filename = self._dump_data(test_data_no_units, tmp_path,
                                    'data_no_units.json')
 
         with pytest.raises(ValueError):
             get_reference_data(collection=filename,
                                physical_property='some_property')
 
-    def test_custom_file_unknown_units(self, tmpdir):
+    def test_custom_file_unknown_units(self, tmp_path):
         test_data_unknown_units = {
             'physical_property': {
                 'some_property': {'H': 1, '__units__': 'nonsense'}}}
-        filename = self._dump_data(test_data_unknown_units, tmpdir,
+        filename = self._dump_data(test_data_unknown_units, tmp_path,
                                    'data_unknown_units.json')
 
         with pytest.raises(ValueError):
             get_reference_data(collection=filename,
                                physical_property='some_property')
 
-    def test_custom_file_wrong_property(self, tmpdir):
+    def test_custom_file_wrong_property(self, tmp_path):
         test_data_wrong_property = {
             'physical_property': {
                 'size': {'cat': 1, '__units__': 'meter'},
                 'weight': {'cat': 4, '__units__': 'kg'}}}
-        filename = self._dump_data(test_data_wrong_property, tmpdir,
+        filename = self._dump_data(test_data_wrong_property, tmp_path,
                                    'data_with_size_and_weight.json')
 
         with pytest.raises(ValueError):
             get_reference_data(collection=filename,
                                physical_property='wrong_property')
 
-    def test_custom_file_no_physical_property(self, tmpdir):
+    def test_custom_file_no_physical_property(self, tmp_path):
         test_data_no_physical_property = {
             'not_physical_property': {
                 'size': {'cat': 1, '__units__': 'meter'},
                 'weight': {'cat': 4, '__units__': 'kg'}}}
-        filename = self._dump_data(test_data_no_physical_property, tmpdir,
+        filename = self._dump_data(test_data_no_physical_property, tmp_path,
                                    'no_physical_property_data.json')
 
         with pytest.raises(AttributeError):

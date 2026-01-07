@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from contextlib import suppress
 from copy import copy
-import os
+from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 import numpy as np
@@ -23,13 +23,13 @@ def args_to_key(cl_args: list[str]) -> str:
     its testing output
     """
     cl_args = copy(cl_args)
-    if os.path.isfile(cl_args[0]):
-        cl_args[0] = ' '.join([os.path.split(os.path.dirname(cl_args[0]))[1],
-                               os.path.split(cl_args[0])[1]])
+    temp = Path(cl_args[0])
+    if temp.is_file():
+        cl_args[0] = f'{temp.parent.name} {temp.name}'
     return ' '.join(cl_args)
 
 
-def get_script_test_data_path(*subpaths: tuple[str]) -> str:
+def get_script_test_data_path(*subpaths: str) -> Path:
     """
     Returns
     -------

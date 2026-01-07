@@ -4,7 +4,7 @@ from importlib.resources import files
 import itertools
 import json
 import math
-import os.path
+from pathlib import Path
 import sys
 import textwrap
 import warnings
@@ -255,8 +255,7 @@ def get_reference_data(collection: str = 'Sears1992',
         with open(files(euphonic.data) / filename) as fd:
             file_data = json.load(fd, object_hook=custom_decode)
 
-    elif os.path.isfile(collection):
-        filename = collection
+    elif (filename := Path(collection)).is_file():
         with open(filename) as fd:
             file_data = json.load(fd, object_hook=custom_decode)
     else:

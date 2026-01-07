@@ -407,8 +407,8 @@ class TestQpointPhononModesSerialisation:
                                    'quartz_single_qpoint_phonon_modes.json'),
         get_qpt_ph_modes('Si2-sc-skew'),
         get_qpt_ph_modes('NaCl')])
-    def test_serialise_to_json_file(self, qpt_ph_modes, tmpdir):
-        output_file = str(tmpdir.join('tmp.test'))
+    def test_serialise_to_json_file(self, qpt_ph_modes, tmp_path):
+        output_file = tmp_path / 'tmp.test'
         qpt_ph_modes.to_json_file(output_file)
         check_json_metadata(output_file, 'QpointPhononModes')
         deserialised_qpt_ph_modes = QpointPhononModes.from_json_file(

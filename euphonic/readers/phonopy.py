@@ -1,5 +1,6 @@
 from contextlib import suppress
 import os
+from pathlib import Path
 import re
 from typing import Any, TextIO
 import warnings
@@ -9,6 +10,8 @@ import numpy as np
 from euphonic.ureg import ureg
 from euphonic.util import convert_fc_phases, dedent_and_fill
 
+HDF5_EXTS = {'hdf5', 'hd5', 'h5'}
+YAML_EXTS = {'yaml', 'yml', 'yl'}
 
 # h5py can't be called from Matlab, so import as late as possible to
 # minimise impact. Do the same with yaml for consistency
@@ -43,7 +46,7 @@ def _convert_weights(weights: np.ndarray) -> np.ndarray:
     return weights/total_weight
 
 
-def _extract_phonon_data_yaml(filename: str,
+def _extract_phonon_data_yaml(filename: Path,
                               read_eigenvectors: bool = True,
                               ) -> dict[str, np.ndarray]:
     """
@@ -114,7 +117,7 @@ def _extract_phonon_data_yaml(filename: str,
     return data_dict
 
 
-def _extract_phonon_data_hdf5(filename: str,
+def _extract_phonon_data_hdf5(filename: Path,
                               read_eigenvectors: bool = True,
                               ) -> dict[str, np.ndarray]:
     """
@@ -178,10 +181,10 @@ def _extract_phonon_data_hdf5(filename: str,
     return data_dict
 
 def read_phonon_data(
-        path: str = '.',
-        phonon_name: str = 'band.yaml',
+        path: Path | str = '.',
+        phonon_name: Path | str = 'band.yaml',
         phonon_format: str | None = None,
-        summary_name: str = 'phonopy.yaml',
+        summary_name: Path | str = 'phonopy.yaml',
         cell_vectors_unit: str = 'angstrom',
         atom_mass_unit: str = 'amu',
         frequencies_unit: str = 'meV',
@@ -232,18 +235,17 @@ def read_phonon_data(
         If read_eigenvectors is True, there will also be an
         'eigenvectors' key
     """
-    phonon_pathname = os.path.join(path, phonon_name)
-    summary_pathname = os.path.join(path, summary_name)
+    basepath = Path(path)
+    phonon_pathname = basepath / phonon_name
+    summary_pathname = basepath / summary_name
 
-    hdf5_exts = ['hdf5', 'hd5', 'h5']
-    yaml_exts = ['yaml', 'yml', 'yl']
     if phonon_format is None:
-        phonon_format = os.path.splitext(phonon_name)[1].strip('.')
+        phonon_format = Path(phonon_name).suffix.strip('.')
 
-    if phonon_format in hdf5_exts:
+    if phonon_format in HDF5_EXTS:
         phonon_dict = _extract_phonon_data_hdf5(
             phonon_pathname, read_eigenvectors=read_eigenvectors)
-    elif phonon_format in yaml_exts:
+    elif phonon_format in YAML_EXTS:
         phonon_dict = _extract_phonon_data_yaml(
             phonon_pathname, read_eigenvectors=read_eigenvectors)
     else:
@@ -335,8 +337,8 @@ def convert_eigenvector_phases(phonon_dict: dict[str, np.ndarray],
     return np.reshape(eigvecs, (n_qpts, 3*n_atoms, n_atoms, 3))
 
 
-def _extract_force_constants(fc_pathname: str, n_atoms: int, n_cells: int,
-                             summary_name: str) -> np.ndarray:
+def _extract_force_constants(fc_pathname: Path, n_atoms: int, n_cells: int,
+                             summary_name: Path) -> np.ndarray:
     """
     Reads force constants from a Phonopy FORCE_CONSTANTS file
 
@@ -374,7 +376,7 @@ def _extract_force_constants(fc_pathname: str, n_atoms: int, n_cells: int,
 
 
 def _extract_force_constants_hdf5(
-        filename: str, n_atoms: int, n_cells: int, summary_name: str,
+        filename: Path, n_atoms: int, n_cells: int, summary_name: Path,
         ) -> np.ndarray:
     try:
         import h5py
@@ -389,8 +391,8 @@ def _extract_force_constants_hdf5(
 
 
 def _check_fc_shape(fc_shape: tuple[int, int], n_atoms: int,
-                    n_cells: int, fc_filename: str,
-                    summary_filename: str) -> None:
+                    n_cells: int, fc_filename: Path,
+                    summary_filename: Path) -> None:
     """
     Check if force constants has the correct shape
     """
@@ -448,7 +450,7 @@ def _extract_born(born_file_obj: TextIO) -> dict[str, float | np.ndarray]:
     return born_dict
 
 
-def _extract_summary(filename: str, fc_extract: bool = False,
+def _extract_summary(filename: Path, fc_extract: bool = False,
                      ) -> dict[str, str | int | np.ndarray]:
     """
     Read phonopy.yaml for summary data produced during the Phonopy
@@ -633,10 +635,10 @@ def _extract_crystal_data(crystal: dict[str, Any],
 
 
 def read_interpolation_data(
-        path: str = '.',
-        summary_name: str = 'phonopy.yaml',
-        born_name: str | None = None,
-        fc_name: str = 'FORCE_CONSTANTS',
+        path: Path | str = '.',
+        summary_name: Path | str = 'phonopy.yaml',
+        born_name: Path | str | None = None,
+        fc_name: Path | str = 'FORCE_CONSTANTS',
         fc_format: str | None = None,
         cell_vectors_unit: str = 'angstrom',
         atom_mass_unit: str = 'amu',
@@ -692,21 +694,28 @@ def read_interpolation_data(
         'born_unit', 'dielectric' and 'dielectric_unit' if they are
         present in phonopy.yaml
     """
-    summary_pathname = os.path.join(path, summary_name)
+    basepath = Path(path)
+    fc_path = Path(fc_name)
+    summary_pathname = basepath / summary_name
     summary_dict = _extract_summary(summary_pathname, fc_extract=True)
 
     # Only read force constants if it's not in summary file
     if 'force_constants' not in summary_dict:
-        hdf5_exts = ['hdf5', 'hd5', 'h5']
+
         if fc_format is None:
-            fc_format = os.path.splitext(fc_name)[1].strip('.')
-            if fc_format not in hdf5_exts:
+            fc_format = fc_path.suffix.strip('.')
+
+            if fc_format not in HDF5_EXTS:
                 fc_format = 'phonopy'
-        fc_pathname = os.path.join(path, fc_name)
+
+        fc_pathname = basepath / fc_name
+
         print(f'Force constants not found in {summary_pathname}, '
                f'attempting to read from {fc_pathname}')
+
         n_atoms = summary_dict['n_atoms']
         n_cells = int(len(summary_dict['sc_atom_r'])/n_atoms)
+
         if fc_format == 'phonopy':
             summary_dict['force_constants'] = _extract_force_constants(
                 fc_pathname, n_atoms, n_cells, summary_pathname)
@@ -725,7 +734,7 @@ def read_interpolation_data(
     dipole_keys = ['born', 'dielectric', 'nac_factor']
     if (born_name is not None and
             len(dipole_keys & summary_dict.keys()) != len(dipole_keys)):
-        born_pathname = os.path.join(path, born_name)
+        born_pathname = basepath / born_name
         print(f'Born, dielectric not found in {summary_pathname}, '
                f'attempting to read from {born_pathname}')
         with open(born_pathname) as born_file:
@@ -733,6 +742,7 @@ def read_interpolation_data(
         # Let BORN file take priority, but merge because the 'nac_factor'
         # key may not always be present in BORN
         summary_dict.update(born_dict)
+
     # Check if born key is present, then factor is also present. It
     # may not always be e.g. you can run Phonopy so that 'born',
     # 'dielectric' are written to phonopy.yaml, but if NAC = .FALSE.

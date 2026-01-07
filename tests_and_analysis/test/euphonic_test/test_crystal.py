@@ -217,9 +217,9 @@ class TestCrystalSerialisation:
         get_crystal('quartz'),
         get_crystal('quartz_cv_only'),
         get_crystal('LZO')])
-    def test_serialise_to_json_file(self, crystal, tmpdir):
+    def test_serialise_to_json_file(self, crystal, tmp_path):
         # Serialise
-        output_file = str(tmpdir.join('tmp.test'))
+        output_file = tmp_path / 'tmp.test'
         crystal.to_json_file(output_file)
         # Test file metadata
         check_json_metadata(output_file, 'Crystal')

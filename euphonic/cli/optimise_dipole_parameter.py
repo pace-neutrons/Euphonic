@@ -7,6 +7,7 @@ value
 """
 
 from argparse import ArgumentParser
+from pathlib import Path
 import time
 import warnings
 
@@ -30,7 +31,7 @@ def main(params: list[str] | None = None) -> None:
 
 
 def calculate_optimum_dipole_parameter(
-        filename: str,
+        filename: Path | str,
         dipole_parameter_min: float = 0.25,
         dipole_parameter_max: float = 1.5,
         dipole_parameter_step: float = 0.25,
@@ -44,7 +45,7 @@ def calculate_optimum_dipole_parameter(
 
     Parameters
     ----------
-    filename : str
+    filename
         The filename to read from
     dipole_parameter_min
         The minimum value of dipole_parameter to test

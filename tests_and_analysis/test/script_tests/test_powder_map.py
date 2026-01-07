@@ -1,6 +1,6 @@
 from contextlib import suppress
 import json
-import os
+from pathlib import Path
 from unittest.mock import patch
 
 import numpy.testing as npt
@@ -29,8 +29,7 @@ with suppress(ModuleNotFoundError):
 
 graphite_fc_file = get_castep_path('graphite', 'graphite.castep_bin')
 nacl_prim_fc_file = get_phonopy_path('NaCl_prim', 'phonopy_nacl.yaml')
-powder_map_output_file = os.path.join(get_script_test_data_path(),
-                                      'powder-map.json')
+powder_map_output_file = str(Path(get_script_test_data_path()) / 'powder-map.json')
 
 quick_calc_params = ['--npts=10', '--npts-min=10', '--q-spacing=1']
 powder_map_params = [
@@ -193,23 +192,23 @@ class TestRegression:
     @pytest.mark.parametrize('powder_map_args', [
         [nacl_prim_fc_file, '--save-to'],
         [nacl_prim_fc_file, '-s']])
-    def test_plot_save_to_file(self, inject_mocks, tmpdir, powder_map_args):
-        output_file = str(tmpdir.join('test.png'))
+    def test_plot_save_to_file(self, inject_mocks, tmp_path, powder_map_args):
+        output_file = tmp_path / 'test.png'
         euphonic.cli.powder_map.main(
-            [*powder_map_args, output_file, *quick_calc_params])
-        assert os.path.exists(output_file)
+            [*powder_map_args, str(output_file), *quick_calc_params])
+        assert output_file.exists()
 
     @pytest.mark.parametrize('powder_map_args', [
         [graphite_fc_file, '--save-json']])
-    def test_plot_save_to_json(self, inject_mocks, tmpdir, powder_map_args):
-        output_file = str(tmpdir.join('test.json'))
+    def test_plot_save_to_json(self, inject_mocks, tmp_path, powder_map_args):
+        output_file = tmp_path / 'test.json'
         euphonic.cli.powder_map.main(
-            [*powder_map_args, output_file, *quick_calc_params])
+            [*powder_map_args, str(output_file), *quick_calc_params])
         spec = Spectrum2D.from_json_file(output_file)
         assert isinstance(spec, Spectrum2D)
 
     @pytest.mark.parametrize('powder_map_args', [
-        [os.path.join(get_data_path(), 'util', 'qgrid_444.txt')]])
+        [get_data_path('util', 'qgrid_444.txt')]])
     def test_invalid_file_raises_value_error(self, powder_map_args):
         with pytest.raises(ValueError):
             euphonic.cli.powder_map.main(powder_map_args)

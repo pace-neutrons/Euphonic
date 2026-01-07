@@ -121,7 +121,7 @@ select = [
        "TD",      # flake8-todos
        "TC",      # flake8-type-checking
        "ARG",     # flake8-unused-arguments
-       # "PTH",     # flake8-use-pathlib : would love to but maybe easier with API breaks
+       "PTH",     # flake8-use-pathlib : would love to but maybe easier with API breaks
        "FLY",     # flynt
        "I",       # isort
        # "C90",     # mccabe : code complexity check. Worth a look but non-trivial
@@ -152,6 +152,7 @@ ignore = [
        "T20",     # flake8-print forbids use of print and pprint.
        "PERF203", # No try-except in loop. Micro-optimisation, not relevant for Py 3.11+
        "PLE1300", # Pint introduces format character P, ruff doesn't recognise it
+       "PTH123",  # Replace with Path.open()
        ]
 task-tags = ["Note"]  # Avoid false positives for ERA001 on lines like "# Note: CODE-LIKE-THINGS"
 

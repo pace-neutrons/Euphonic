@@ -117,28 +117,28 @@ class TestRegression:
     @pytest.mark.parametrize('dispersion_args', [
         [quartz_json_file, '--save-to'],
         [quartz_json_file, '-s']])
-    def test_plot_save_to_file(self, inject_mocks, tmpdir, dispersion_args):
-        output_file = str(tmpdir.join('test.png'))
-        euphonic.cli.dispersion.main([*dispersion_args, output_file])
-        assert os.path.exists(output_file)
+    def test_plot_save_to_file(self, inject_mocks, tmp_path, dispersion_args):
+        output_file = tmp_path / 'test.png'
+        euphonic.cli.dispersion.main([*dispersion_args, str(output_file)])
+        assert output_file.exists()
 
     @pytest.mark.parametrize('dispersion_args', [
         [quartz_json_file, '--save-json'],
         [lzo_fc_file, '--save-json']])
-    def test_plot_save_to_json(self, inject_mocks, tmpdir, dispersion_args):
-        output_file = str(tmpdir.join('test.json'))
-        euphonic.cli.dispersion.main([*dispersion_args, output_file])
+    def test_plot_save_to_json(self, inject_mocks, tmp_path, dispersion_args):
+        output_file = tmp_path / 'test.json'
+        euphonic.cli.dispersion.main([*dispersion_args, str(output_file)])
         spec = Spectrum1DCollection.from_json_file(output_file)
         assert isinstance(spec, Spectrum1DCollection)
 
     @pytest.mark.parametrize('dispersion_args', [
         [quartz_json_file, '--save-web-json']])
     def test_plot_save_to_web_json(
-            self, inject_mocks, tmpdir, dispersion_args):
+            self, inject_mocks, tmp_path, dispersion_args):
         """Write a phonon website JSON file"""
         # pylint: disable=unused-argument
-        output_file = str(tmpdir.join('phonon.json'))
-        euphonic.cli.dispersion.main([*dispersion_args, output_file])
+        output_file = tmp_path / 'phonon.json'
+        euphonic.cli.dispersion.main([*dispersion_args, str(output_file)])
 
         with open(output_file, encoding='utf-8') as fd:
             dat = json.load(fd)

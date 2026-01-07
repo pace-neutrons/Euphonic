@@ -1,6 +1,6 @@
 from contextlib import contextmanager
 import json
-import os
+from pathlib import Path
 
 import numpy as np
 import numpy.testing as npt
@@ -9,7 +9,7 @@ import pytest
 from euphonic import Spectrum1D, Spectrum1DCollection, __version__, ureg
 
 
-def get_data_path(*subpaths: tuple[str]) -> str:
+def get_data_path(*subpaths: Path | str) -> str:
     """
     Get the path to test data file or directory
 
@@ -17,11 +17,10 @@ def get_data_path(*subpaths: tuple[str]) -> str:
     -------
     str: The path to test data file or directory
     """
-    return os.path.join(os.path.abspath(os.path.dirname(__file__)),
-                        'data', *subpaths)
+    return str(Path(__file__).parent.joinpath('data', *subpaths))
 
 
-def get_phonopy_path(*subpaths: tuple[str]) -> str:
+def get_phonopy_path(*subpaths: Path | str) -> str:
     """
     Get the path to a Phonopy data file or directory
 
@@ -32,7 +31,7 @@ def get_phonopy_path(*subpaths: tuple[str]) -> str:
     return get_data_path('phonopy_files', *subpaths)
 
 
-def get_castep_path(*subpaths: tuple[str]) -> str:
+def get_castep_path(*subpaths: Path | str) -> str:
     """
     Get the path to a CASTEP data file or directory
 
@@ -95,8 +94,8 @@ def get_test_qpts(qpts_option: str | None = 'default') -> np.ndarray:
         [2.00, 2.00, 0.5],
         [1.75, 0.50, 2.50]])
 
-def get_mode_widths(fc_path):
-    with open(os.path.join(fc_path)) as fp:
+def get_mode_widths(fc_path: Path | str):
+    with Path(fc_path).open() as fp:
         modw_dict = json.load(fp)
     return modw_dict['mode_widths'] * ureg(modw_dict['mode_widths_unit'])
 
@@ -221,7 +220,7 @@ def check_property_setters(obj: object, attr: str, unit: str,
     npt.assert_allclose(set_attr.magnitude, new_attr.magnitude)
 
 
-def check_json_metadata(json_file: str, class_name: str) -> None:
+def check_json_metadata(json_file: Path | str, class_name: str) -> None:
     """
     Utility function to check that .json file metadata has been output
     correctly
@@ -279,7 +278,7 @@ def sum_at_degenerate_modes(values_to_sum, frequencies, tol=0.05):
     return value_sum.squeeze()
 
 
-def get_spectrum_from_text(text_filename, is_collection=True):
+def get_spectrum_from_text(text_filename: Path | str, is_collection: bool = True):
     """
     Reads a Spectrum1DCollection or Spectrum1D from a text file,
     for testing to_text_file method. The text file
@@ -329,7 +328,7 @@ def get_spectrum_from_text(text_filename, is_collection=True):
                metadata=metadata)
 
 
-def check_spectrum_text_header(text_filename):
+def check_spectrum_text_header(text_filename: Path | str):
     """
     Checks parts of the header that aren't required to
     create a spectrum object, but are important for human

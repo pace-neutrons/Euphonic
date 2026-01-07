@@ -1,7 +1,7 @@
 from collections.abc import Sequence
 import copy
 import json
-import os
+from pathlib import Path
 from typing import Any, TypeVar
 
 import numpy as np
@@ -103,7 +103,7 @@ def _process_dict(dictionary: dict[str, Any],
     return dictionary
 
 
-def _obj_to_json_file(obj: T, filename: str) -> None:
+def _obj_to_json_file(obj: T, filename: Path | str) -> None:
     """
     Generic function for writing to a JSON file from a Euphonic object
     """
@@ -112,10 +112,10 @@ def _obj_to_json_file(obj: T, filename: str) -> None:
     dout['__euphonic_version__'] = __version__
     with open(filename, 'w') as f:
         json.dump(dout, f, indent=4, sort_keys=True)
-    print(f'Written to {os.path.realpath(f.name)}')
+    print(f'Written to {Path(f.name).resolve()}')
 
 
-def _obj_from_json_file(cls: type[T], filename: str,
+def _obj_from_json_file(cls: type[T], filename: Path | str,
                         type_dict: dict[str, type[Any]]|None = None) -> T:
     """
     Generic function for reading from a JSON file to a Euphonic object
