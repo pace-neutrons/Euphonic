@@ -1,7 +1,6 @@
 from contextlib import contextmanager
 import json
 import os
-from typing import Optional
 
 import numpy as np
 import numpy.testing as npt
@@ -44,7 +43,7 @@ def get_castep_path(*subpaths: tuple[str]) -> str:
     return get_data_path('castep_files', *subpaths)
 
 
-def get_test_qpts(qpts_option: Optional[str] = 'default') -> np.ndarray:
+def get_test_qpts(qpts_option: str | None = 'default') -> np.ndarray:
     """
     Returns 'standard' sets of qpoints for testing
 

@@ -7,7 +7,6 @@ import math
 import os.path
 import sys
 import textwrap
-from typing import Optional
 import warnings
 
 import numpy as np
@@ -165,9 +164,9 @@ def get_all_origins(max_xyz: tuple[int, int, int],
 
 
 def get_qpoint_labels(qpts: np.ndarray,
-                      cell: Optional[tuple[list[list[float]],
-                                           list[list[float]],
-                                           list[int]]] = None,
+                      cell: tuple[list[list[float]],
+                                  list[list[float]],
+                                  list[int]] | None = None,
                       ) -> list[tuple[int, str]]:
     """
     Gets q-point labels (e.g. GAMMA, X, L) for the q-points at which the
@@ -567,9 +566,9 @@ def _calc_abscissa(reciprocal_cell: Quantity, qpts: np.ndarray,
 
 
 def _recip_space_labels(qpts: np.ndarray,
-                        cell: Optional[tuple[list[list[float]],
-                                             list[list[float]],
-                                             list[int]]],
+                        cell: tuple[list[list[float]],
+                                    list[list[float]],
+                                    list[int]] | None,
                         ) -> tuple[np.ndarray, np.ndarray]:
     """
     Gets q-points point labels (e.g. GAMMA, X, L) for the q-points at

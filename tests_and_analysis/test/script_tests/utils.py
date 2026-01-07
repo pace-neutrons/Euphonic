@@ -1,7 +1,9 @@
+from __future__ import annotations
+
 from contextlib import suppress
 from copy import copy
 import os
-from typing import Any, Optional
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 
@@ -11,6 +13,9 @@ with suppress(ModuleNotFoundError):
 
 from tests_and_analysis.test.utils import get_data_path
 
+if TYPE_CHECKING:
+    from matplotlib.axes import Axes
+    from matplotlib.figure import Figure
 
 def args_to_key(cl_args: list[str]) -> str:
     """
@@ -34,8 +39,7 @@ def get_script_test_data_path(*subpaths: tuple[str]) -> str:
     return get_data_path('script_data', *subpaths)
 
 
-def get_plot_line_data(fig: Optional['matplotlib.figure.Figure'] = None,
-                       ) -> dict[str, Any]:
+def get_plot_line_data(fig: Figure | None = None) -> dict[str, Any]:
     if fig is None:
         fig = matplotlib.pyplot.gcf()
     data = get_fig_label_data(fig)
@@ -50,14 +54,13 @@ def get_plot_line_data(fig: Optional['matplotlib.figure.Figure'] = None,
     return data
 
 
-def get_all_figs() -> list['matplotlib.figure.Figure']:
+def get_all_figs() -> list[Figure]:
     fignums = matplotlib.pyplot.get_fignums()
     return [matplotlib.pyplot.figure(fignum) for fignum in fignums]
 
 
 
-def get_all_plot_line_data(figs: list['matplotlib.figure.Figure'],
-                           ) -> list[dict[str, Any]]:
+def get_all_plot_line_data(figs: list[Figure]) -> list[dict[str, Any]]:
     return [get_plot_line_data(fig) for fig in figs]
 
 
@@ -125,8 +128,7 @@ def get_current_plot_image_data() -> dict[str,
     return data
 
 
-def get_ax_image_data(ax: 'matplotlib.axes.Axes',
-                      ) -> dict[str, str | list[float] | list[int]]:
+def get_ax_image_data(ax: Axes) -> dict[str, str | list[float] | list[int]]:
     im = ax.get_images()[0]
     # Convert negative zero to positive zero
     im_data = im.get_array()

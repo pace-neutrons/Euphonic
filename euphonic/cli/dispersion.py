@@ -1,5 +1,4 @@
 from argparse import ArgumentParser
-from typing import Optional
 
 import matplotlib.style
 
@@ -22,7 +21,7 @@ from .utils import (
 )
 
 
-def main(params: Optional[list[str]] = None) -> None:
+def main(params: list[str] | None = None) -> None:
     args = get_args(get_parser(), params)
 
     # Need eigenvectors to reorder bands or write website JSON

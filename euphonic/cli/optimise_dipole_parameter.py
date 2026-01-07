@@ -8,7 +8,6 @@ value
 
 from argparse import ArgumentParser
 import time
-from typing import Optional
 import warnings
 
 import numpy as np
@@ -23,7 +22,7 @@ TIMING_TEMPLATE = '{:20s}: {:3.2f} {:s}\n'
 DPARAM_TEMPLATE = '{:s} {:2.2f}'
 
 
-def main(params: Optional[list[str]] = None) -> None:
+def main(params: list[str] | None = None) -> None:
     args = get_args(get_parser(), params)
     params = vars(args)
     params.update({'print_to_terminal': True})

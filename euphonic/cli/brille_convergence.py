@@ -2,7 +2,6 @@ from argparse import SUPPRESS, ArgumentParser, Namespace
 from collections.abc import Sequence
 import itertools
 from pathlib import Path
-from typing import Optional
 
 from matplotlib.axes import Axes
 from matplotlib.lines import Line2D
@@ -21,7 +20,7 @@ from euphonic.cli.utils import (
 from euphonic.sampling import recurrence_sequence
 
 
-def main(params: Optional[list[str]] = None) -> None:
+def main(params: list[str] | None = None) -> None:
     args = get_args(get_parser(), params)
     params = vars(args)
 
@@ -44,12 +43,12 @@ def check_brille_settings(
         use_brille: bool = True,  # noqa: ARG001  # Removal scheduled for v2
         brille_grid_type: str = 'trellis',
         brille_npts: int = 5000,
-        brille_npts_density: Optional[int] = None,
+        brille_npts_density: int | None = None,
         n: int = 0,
-        energy_broadening: Optional[float] = None,
+        energy_broadening: float | None = None,
         ebins: int = 500,
-        e_min: Optional[float] = None,
-        e_max: Optional[float] = None,
+        e_min: float | None = None,
+        e_max: float | None = None,
         energy_unit: str = 'meV',
         shape: str = 'gauss',
         **calc_modes_kwargs,

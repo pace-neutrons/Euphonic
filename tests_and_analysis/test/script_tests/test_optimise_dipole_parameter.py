@@ -1,7 +1,7 @@
 from contextlib import ExitStack
 
 # Required for mocking
-from typing import Any, Optional
+from typing import Any
 
 import numpy as np
 import pytest
@@ -21,7 +21,7 @@ quick_calc_params = ['-n=10', '--min=0.5', '--max=0.5']
 
 class TestRegression:
     @staticmethod
-    def call_cli(fc_file: str, args: list[Any], warning: Optional[str]) -> None:
+    def call_cli(fc_file: str, args: list[Any], warning: str | None) -> None:
         """Call optimise-dipole-parameter, checking for warning if appropriate"""
         with ExitStack() as stack:
             if warning is not None:

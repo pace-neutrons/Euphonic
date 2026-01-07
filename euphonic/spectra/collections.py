@@ -13,7 +13,6 @@ from operator import contains
 from typing import (
     Any,
     Literal,
-    Optional,
     TypeVar,
     overload,
 )
@@ -555,8 +554,8 @@ class Spectrum1DCollection(SpectrumCollectionMixin,
 
     def __init__(
             self, x_data: Quantity, y_data: Quantity,
-            x_tick_labels: Optional[XTickLabels] = None,
-            metadata: Optional[dict[str, str | int | LineData]] = None,
+            x_tick_labels: XTickLabels | None = None,
+            metadata: dict[str, str | int | LineData] | None = None,
     ) -> None:
         """
         Parameters
@@ -663,7 +662,7 @@ class Spectrum1DCollection(SpectrumCollectionMixin,
                    metadata=metadata)
 
     def to_text_file(self, filename: str,
-                     fmt: Optional[str | Sequence[str]] = None) -> None:
+                     fmt: str | Sequence[str] | None = None) -> None:
         """
         Write to a text file. The header contains metadata and unit
         information, the first column is x_data and each subsequent
@@ -725,14 +724,14 @@ class Spectrum1DCollection(SpectrumCollectionMixin,
     @overload
     def broaden(self: T, x_width: Quantity,
                 shape: KernelShape = 'gauss',
-                method: Optional[Literal['convolve']] = None,
+                method: Literal['convolve'] | None = None,
                 ) -> T: ...
 
     @overload
     def broaden(self: T, x_width: CallableQuantity,
                 shape: KernelShape = 'gauss',
-                method: Optional[Literal['convolve']] = None,
-                width_lower_limit: Optional[Quantity] = None,
+                method: Literal['convolve'] | None = None,
+                width_lower_limit: Quantity | None = None,
                 width_convention: Literal['fwhm', 'std'] = 'fwhm',
                 width_interpolation_error: float = 0.01,
                 width_fit: ErrorFit = 'cheby-log',
@@ -895,8 +894,8 @@ class Spectrum2DCollection(SpectrumCollectionMixin,
 
     def __init__(
             self, x_data: Quantity, y_data: Quantity, z_data: Quantity,
-            x_tick_labels: Optional[XTickLabels] = None,
-            metadata: Optional[Metadata] = None,
+            x_tick_labels: XTickLabels | None = None,
+            metadata: Metadata | None = None,
     ) -> None:
         _check_constructor_inputs(
             [z_data, x_tick_labels, metadata],

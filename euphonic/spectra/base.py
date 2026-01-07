@@ -10,7 +10,6 @@ from numbers import Integral, Real
 from typing import (
     Any,
     Literal,
-    Optional,
     TypeVar,
     overload,
 )
@@ -172,7 +171,7 @@ class Spectrum(ABC):
 
     @staticmethod
     def _ranges_from_indices(indices: Sequence[int] | np.ndarray,
-                             ) -> list[tuple[int, Optional[int]]]:
+                             ) -> list[tuple[int, int]] | None:
         """Convert a series of breakpoints to a series of slice ranges"""
         if len(indices) == 0:
             ranges = [(0, None)]
@@ -242,7 +241,7 @@ class Spectrum(ABC):
                       widths: Sequence[float|None],
                       shape: KernelShape = 'gauss',
                       *,
-                      method: Optional[Literal['convolve']] = None,
+                      method: Literal['convolve'] | None = None,
                       width_convention: Literal['fwhm', 'std'] = 'fwhm',
                       ) -> np.ndarray:
         """
@@ -519,8 +518,8 @@ class Spectrum1D(Spectrum):
     T = TypeVar('T', bound='Spectrum1D')
 
     def __init__(self, x_data: Quantity, y_data: Quantity,
-                 x_tick_labels: Optional[XTickLabels] = None,
-                 metadata: Optional[dict[str, int | str]] = None,
+                 x_tick_labels: XTickLabels | None = None,
+                 metadata: dict[str, int | str] | None = None,
                  ) -> None:
         """
         Parameters
@@ -602,7 +601,7 @@ class Spectrum1D(Spectrum):
                                    'metadata'])
 
     def to_text_file(self, filename: str,
-                     fmt: Optional[str | Sequence[str]] = None) -> None:
+                     fmt: str | Sequence[str] | None = None) -> None:
         """
         Write to a text file. The header contains metadata and unit
         information, the first column contains x_data and the second
@@ -653,7 +652,7 @@ class Spectrum1D(Spectrum):
 
     @classmethod
     def from_castep_phonon_dos(cls: type[T], filename: str,
-                               element: Optional[str] = None) -> T:
+                               element: str | None = None) -> T:
         """
         Reads DOS from a CASTEP .phonon_dos file
 
@@ -681,15 +680,15 @@ class Spectrum1D(Spectrum):
     @overload
     def broaden(self: T, x_width: Quantity,
                 shape: KernelShape = 'gauss',
-                method: Optional[Literal['convolve']] = None,
+                method: Literal['convolve'] | None = None,
                 width_convention: Literal['fwhm', 'std'] = 'fwhm',
                 ) -> T: ...
 
     @overload
     def broaden(self: T, x_width: CallableQuantity,
                 shape: KernelShape = 'gauss',
-                method: Optional[Literal['convolve']] = None,
-                width_lower_limit: Optional[Quantity] = None,
+                method: Literal['convolve'] | None = None,
+                width_lower_limit: Quantity | None = None,
                 width_convention: Literal['fwhm', 'std'] = 'fwhm',
                 width_interpolation_error: float = 0.01,
                 width_fit: ErrorFit = 'cheby-log',
@@ -813,8 +812,8 @@ class Spectrum2D(Spectrum):
 
     def __init__(self, x_data: Quantity, y_data: Quantity,
                  z_data: Quantity,
-                 x_tick_labels: Optional[XTickLabels] = None,
-                 metadata: Optional[OneSpectrumMetadata] = None,
+                 x_tick_labels: XTickLabels | None = None,
+                 metadata: OneSpectrumMetadata | None = None,
                  ) -> None:
         """
         Parameters
@@ -889,10 +888,10 @@ class Spectrum2D(Spectrum):
                 for x0, x1 in ranges]
 
     def broaden(self: T,
-                x_width: Optional[Quantity | CallableQuantity] = None,
-                y_width: Optional[Quantity | CallableQuantity] = None,
+                x_width: Quantity | CallableQuantity | None = None,
+                y_width: Quantity | CallableQuantity | None = None,
                 shape: KernelShape = 'gauss',
-                method: Optional[Literal['convolve']] = None,
+                method: Literal['convolve'] | None = None,
                 x_width_lower_limit: Quantity = None,
                 y_width_lower_limit: Quantity = None,
                 width_convention: Literal['fwhm', 'std'] = 'fwhm',

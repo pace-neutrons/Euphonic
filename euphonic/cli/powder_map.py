@@ -1,7 +1,6 @@
 from argparse import ArgumentParser
 from collections.abc import Callable, Sequence
 from math import ceil
-from typing import Optional
 
 import matplotlib.style
 import numpy as np
@@ -87,9 +86,9 @@ def get_parser() -> ArgumentParser:
     return parser
 
 
-def _get_broaden_kwargs(q_broadening: Optional[Sequence[float]] = None,
+def _get_broaden_kwargs(q_broadening: Sequence[float] | None = None,
                         q_unit: Unit = ureg('1/angstrom').units,  # noqa: B008
-                        energy_broadening: Optional[Sequence[float]] = None,
+                        energy_broadening: Sequence[float] | None = None,
                         energy_unit: Unit = ureg('meV').units,  # noqa: B008
                         ) -> dict[str, Quantity | Callable | None]:
     """Collect suitable width arguments for 2D broaden() method
@@ -124,7 +123,7 @@ def _get_broaden_kwargs(q_broadening: Optional[Sequence[float]] = None,
     return {'x_width': q_width, 'y_width': energy_width}
 
 
-def main(params: Optional[list[str]] = None) -> None:
+def main(params: list[str] | None = None) -> None:
     args = get_args(get_parser(), params)
     calc_modes_kwargs = _calc_modes_kwargs(args)
 

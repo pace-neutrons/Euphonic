@@ -3,8 +3,6 @@
 # Stop the linter from complaining when pytest fixtures are used idiomatically
 # pylint: disable=redefined-outer-name
 
-from typing import Optional
-
 import numpy as np
 import pytest
 
@@ -81,9 +79,9 @@ def inconsistent_x_tick_labels_item():
     return item
 
 def rand_spectrum2d(seed: int = 1,
-                    x_bins: Optional[Quantity] = None,
-                    y_bins: Optional[Quantity] = None,
-                    metadata: Optional[OneLineData] = None) -> Spectrum2D:
+                    x_bins: Quantity | None = None,
+                    y_bins: Quantity | None = None,
+                    metadata: OneLineData | None = None) -> Spectrum2D:
     """Generate a Spectrum2D with random axis lengths, ranges, and metadata"""
     rng = np.random.default_rng(seed=seed)
 

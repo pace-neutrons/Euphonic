@@ -1,5 +1,4 @@
 from argparse import ArgumentParser
-from typing import Optional
 
 import matplotlib.style
 from numpy import sqrt
@@ -25,7 +24,7 @@ from .utils import (
 )
 
 
-def main(params: Optional[list[str]] = None) -> None:
+def main(params: list[str] | None = None) -> None:
     parser = get_parser()
     args = get_args(parser, params)
 

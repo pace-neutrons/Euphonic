@@ -1,7 +1,7 @@
 import dataclasses
 from multiprocessing import cpu_count
 import textwrap
-from typing import Any, Optional, TypeVar
+from typing import Any, TypeVar
 
 import numpy as np
 import spglib as spg
@@ -145,9 +145,9 @@ class BrilleInterpolator:
     def from_force_constants(
             cls: type[T], force_constants: ForceConstants,
             grid_type: str = 'trellis', grid_npts: int = 1000,
-            grid_density: Optional[int] = None,
-            grid_kwargs: Optional[dict[str, Any]] = None,
-            interpolation_kwargs: Optional[dict[str, Any]] = None) -> T:
+            grid_density: int | None = None,
+            grid_kwargs: dict[str, Any] | None = None,
+            interpolation_kwargs: dict[str, Any] | None = None) -> T:
         """
         Generates a grid over the irreducible Brillouin Zone to be
         used for linear interpolation with Brille, with properties
