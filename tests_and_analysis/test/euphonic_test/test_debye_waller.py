@@ -176,8 +176,8 @@ class TestDebyeWallerSerialisation:
         get_dw('quartz', 'quartz_666_0K_debye_waller.json'),
         get_dw('Si2-sc-skew', 'Si2-sc-skew_666_300K_debye_waller.json'),
         get_dw('CaHgO2', 'CaHgO2_666_300K_debye_waller.json')])
-    def test_serialise_to_json_file(self, dw, tmpdir):
-        output_file = str(tmpdir.join('tmp.test'))
+    def test_serialise_to_json_file(self, dw, tmp_path):
+        output_file = tmp_path / 'tmp.test'
         dw.to_json_file(output_file)
         check_json_metadata(output_file, 'DebyeWaller')
         deserialised_dw = DebyeWaller.from_json_file(output_file)
@@ -252,4 +252,3 @@ class TestDebyeWallerSetters:
         new_attr = getattr(dw, attr).magnitude*ureg(unit)
         with pytest.raises(err):
             setattr(dw, attr, new_attr)
-

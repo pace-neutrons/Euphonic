@@ -1,6 +1,5 @@
 from contextlib import suppress
 import json
-import os
 from unittest.mock import patch
 
 import numpy.testing as npt
@@ -109,16 +108,16 @@ class TestRegression:
     @pytest.mark.parametrize('intensity_map_args', [
         [quartz_json_file, '--save-to'],
         [quartz_json_file, '-s']])
-    def test_plot_save_to_file(self, inject_mocks, tmpdir, intensity_map_args):
-        output_file = str(tmpdir.join('test.png'))
-        euphonic.cli.intensity_map.main([*intensity_map_args, output_file])
-        assert os.path.exists(output_file)
+    def test_plot_save_to_file(self, inject_mocks, tmp_path, intensity_map_args):
+        output_file = tmp_path / 'test.png'
+        euphonic.cli.intensity_map.main([*intensity_map_args, str(output_file)])
+        assert output_file.exists()
 
     @pytest.mark.parametrize('intensity_map_args', [
         [quartz_json_file, '--save-json']])
-    def test_plot_save_to_json(self, inject_mocks, tmpdir, intensity_map_args):
-        output_file = str(tmpdir.join('test.json'))
-        euphonic.cli.intensity_map.main([*intensity_map_args, output_file])
+    def test_plot_save_to_json(self, inject_mocks, tmp_path, intensity_map_args):
+        output_file = tmp_path / 'test.json'
+        euphonic.cli.intensity_map.main([*intensity_map_args, str(output_file)])
         spec = Spectrum2D.from_json_file(output_file)
         assert isinstance(spec, Spectrum2D)
 

@@ -237,10 +237,10 @@ class TestSpectrum1DSerialisation:
     @pytest.mark.parametrize('in_json, out_json', [
         ('quartz_666_dos.json', 'quartz_666_dos_from_text.json'),
         ('methane_pdos_index_1.json', 'methane_pdos_index_1.json')])
-    def test_serialise_to_text_file(self, in_json, out_json, tmpdir):
+    def test_serialise_to_text_file(self, in_json, out_json, tmp_path):
         spec1d = get_spectrum1d(in_json)
         # Serialise
-        output_file = str(tmpdir.join('tmp.test'))
+        output_file = tmp_path / 'tmp.test'
         spec1d.to_text_file(output_file)
         # Deserialise
         deserialised_spec1d = get_spectrum_from_text(
@@ -253,8 +253,8 @@ class TestSpectrum1DSerialisation:
         get_spectrum1d('quartz_666_dos.json'),
         get_spectrum1d('xsq_spectrum1d.json'),
         get_spectrum1d('xsq_bin_edges_spectrum1d.json')])
-    def test_serialise_to_json_file(self, spec1d, tmpdir):
-        output_file = str(tmpdir.join('tmp.test'))
+    def test_serialise_to_json_file(self, spec1d, tmp_path):
+        output_file = tmp_path / 'tmp.test'
         spec1d.to_json_file(output_file)
         check_json_metadata(output_file, 'Spectrum1D')
         deserialised_spec1d = Spectrum1D.from_json_file(output_file)

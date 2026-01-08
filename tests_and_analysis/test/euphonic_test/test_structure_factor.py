@@ -304,8 +304,8 @@ class TestStructureFactorSerialisation:
     @pytest.mark.parametrize('sf', [
         get_sf('quartz', 'quartz_0K_structure_factor.json'),
         get_sf('CaHgO2', 'CaHgO2_300K_structure_factor.json')])
-    def test_serialise_to_json_file(self, sf, tmpdir):
-        output_file = str(tmpdir.join('tmp.test'))
+    def test_serialise_to_json_file(self, sf, tmp_path):
+        output_file = tmp_path / 'tmp.test'
         sf.to_json_file(output_file)
         check_json_metadata(output_file, 'StructureFactor')
         deserialised_sf = StructureFactor.from_json_file(output_file)

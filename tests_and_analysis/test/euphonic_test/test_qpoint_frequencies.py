@@ -362,8 +362,8 @@ class TestQpointFrequenciesSerialisation:
     @pytest.mark.parametrize('qpt_freqs', [
         get_qpt_freqs('quartz', 'quartz_666_qpoint_frequencies.json'),
         get_qpt_freqs('quartz', 'quartz_666_cv_only_qpoint_frequencies.json')])
-    def test_serialise_to_json_file(self, qpt_freqs, tmpdir):
-        output_file = str(tmpdir.join('tmp.test'))
+    def test_serialise_to_json_file(self, qpt_freqs, tmp_path):
+        output_file = tmp_path / 'tmp.test'
         qpt_freqs.to_json_file(output_file)
         check_json_metadata(output_file, 'QpointFrequencies')
         deserialised_qpt_freqs = QpointFrequencies.from_json_file(

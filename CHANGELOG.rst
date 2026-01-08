@@ -19,6 +19,12 @@
   - Include required arguments to np.divide call, avoiding deprecation
     warning which would trigger test failure.
 
+- Improvements
+
+  - Extended ``pathlib.Path`` support and annotations throughout the code. Removing
+    references to ``os.path`` where no longer relevant.
+
+
 - Maintenance
 
   - Reworked CI strategy from parallelism over tox environments to
@@ -26,6 +32,8 @@
     between simultaneous test environments, and gives a large speedup
     when testing a single Python version. (i.e. typical local testing
     scenario before pushing to CI.)
+
+  - Replace ``tmpdir`` in tests with ``tmp_path`` and use ``Path`` handling.
 
   - Stopped testing every master push against Python 3.15
 

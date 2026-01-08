@@ -1,5 +1,6 @@
 from collections import defaultdict
 from collections.abc import Iterator
+from pathlib import Path
 import re
 import struct
 from typing import (
@@ -17,7 +18,7 @@ from euphonic.util import dedent_and_fill
 
 
 def read_phonon_dos_data(
-        filename: str,
+        filename: Path | str,
         cell_vectors_unit: str = 'angstrom',
         atom_mass_unit: str = 'amu',
         frequencies_unit: str = 'meV',
@@ -125,7 +126,7 @@ def read_phonon_dos_data(
 
 
 def read_phonon_data(
-        filename: str,
+        filename: Path | str,
         cell_vectors_unit: str = 'angstrom',
         atom_mass_unit: str = 'amu',
         frequencies_unit: str = 'meV',
@@ -435,7 +436,7 @@ def _read_castep_version(f: BinaryIO) -> Version:
 
 
 def read_interpolation_data(
-        filename: str,
+        filename: Path | str,
         cell_vectors_unit: str = 'angstrom',
         atom_mass_unit: str = 'amu',
         force_constants_unit: str = 'hartree/bohr**2',

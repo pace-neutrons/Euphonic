@@ -1,5 +1,5 @@
 from argparse import ArgumentParser, Namespace
-import os
+from pathlib import Path
 import sys
 import time
 from uuid import uuid4
@@ -27,7 +27,7 @@ def main():
     sys.exit(test_exit_code)
 
 
-def _get_test_and_reports_dir() -> tuple[str, str]:
+def _get_test_and_reports_dir() -> tuple[Path, Path]:
     """
     Get the directory that holds the tests and the directory to write
     reports to. If the directory to write reports to isn't present, it
@@ -40,13 +40,12 @@ def _get_test_and_reports_dir() -> tuple[str, str]:
     str
         The directory to write reports to
     """
-    test_dir: str = os.path.dirname(os.path.abspath(__file__))
-    reports_dir: str = os.path.join(test_dir, 'reports')
-    if not os.path.exists(reports_dir):
-        os.mkdir(reports_dir)
+    test_dir: Path = Path(__file__).resolve().parent
+    reports_dir: Path = test_dir / 'reports'
+    reports_dir.mkdir(exist_ok=True)
     return test_dir, reports_dir
 
-def _get_parsed_args(test_dir: str) -> Namespace:
+def _get_parsed_args(test_dir: Path) -> Namespace:
     """
     Get the arguments parsed to this script.
 
@@ -77,7 +76,7 @@ def _get_parsed_args(test_dir: str) -> Namespace:
 
 def _build_pytest_options(
         *,
-        reports_dir: str,
+        reports_dir: Path,
         do_report_tests: bool,
         tests: str,
         markers: str,
@@ -109,8 +108,7 @@ def _build_pytest_options(
         # We may have multiple reports, so get a unique filename
         filename_prefix = 'junit_report'
         filenum = int(time.time())
-        junit_xml_filepath = os.path.join(
-            reports_dir, f'{filename_prefix}_{filenum}.xml')
+        junit_xml_filepath = reports_dir / f'{filename_prefix}_{filenum}.xml'
         options.append(f'--junitxml={junit_xml_filepath}')
     # Only run the specified markers
     options.append(f'-m={markers}')
@@ -121,7 +119,7 @@ def _build_pytest_options(
 
 
 def run_tests(pytest_options: list[str], do_report_coverage: bool,
-              reports_dir: str, test_dir: str) -> int:
+              reports_dir: Path, test_dir: Path) -> int:
     """
     Run the tests and record coverage if selected.
 
@@ -147,7 +145,7 @@ def run_tests(pytest_options: list[str], do_report_coverage: bool,
 
     # Start recording coverage if requested
     if do_report_coverage:
-        coveragerc_filepath: str = os.path.join(test_dir, '.coveragerc')
+        coveragerc_filepath: Path = test_dir / '.coveragerc'
 
         pytest_options = [
             '--cov',

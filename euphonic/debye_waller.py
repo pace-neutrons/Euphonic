@@ -1,4 +1,5 @@
 import inspect
+from pathlib import Path
 from typing import Any, TypeVar
 
 from euphonic.crystal import Crystal
@@ -98,7 +99,7 @@ class DebyeWaller:
         """
         return _obj_to_dict(self, ['crystal', 'debye_waller', 'temperature'])
 
-    def to_json_file(self, filename: str) -> None:
+    def to_json_file(self, filename: Path | str) -> None:
         """
         Write to a JSON file. JSON fields are equivalent to
         DebyeWaller.from_dict keys
@@ -136,7 +137,7 @@ class DebyeWaller:
         return cls(crystal, d['debye_waller'], d['temperature'])
 
     @classmethod
-    def from_json_file(cls: type[T], filename: str) -> T:
+    def from_json_file(cls: type[T], filename: Path | str) -> T:
         """
         Read from a JSON file. See DebyeWaller.from_dict for required
         fields

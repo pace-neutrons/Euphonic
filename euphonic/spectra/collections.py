@@ -1,6 +1,5 @@
 """Spectrum Collection classes"""
 # pylint: disable=no-member
-
 from abc import ABC, abstractmethod
 import collections
 from collections.abc import Callable, Generator, Sequence
@@ -10,6 +9,7 @@ from itertools import product, repeat
 import json
 from numbers import Integral
 from operator import contains
+from pathlib import Path
 from typing import (
     Any,
     Literal,
@@ -661,7 +661,7 @@ class Spectrum1DCollection(SpectrumCollectionMixin,
         return cls(x_data, y_data, x_tick_labels=x_tick_labels,
                    metadata=metadata)
 
-    def to_text_file(self, filename: str,
+    def to_text_file(self, filename: Path | str,
                      fmt: str | Sequence[str] | None = None) -> None:
         """
         Write to a text file. The header contains metadata and unit
@@ -695,7 +695,7 @@ class Spectrum1DCollection(SpectrumCollectionMixin,
         np.savetxt(filename, out_data, **kwargs)
 
     @classmethod
-    def from_castep_phonon_dos(cls: type[T], filename: str) -> T:
+    def from_castep_phonon_dos(cls: type[T], filename: Path | str) -> T:
         """
         Reads total DOS and per-element PDOS from a CASTEP
         .phonon_dos file

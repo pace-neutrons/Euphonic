@@ -1,6 +1,7 @@
 from collections import OrderedDict
 import inspect
 from math import ceil
+from pathlib import Path
 from typing import Any, TypeVar
 
 import numpy as np
@@ -298,7 +299,7 @@ class Crystal:
         return _obj_to_dict(self, ['cell_vectors', 'n_atoms', 'atom_r',
                                    'atom_type', 'atom_mass'])
 
-    def to_json_file(self, filename: str) -> None:
+    def to_json_file(self, filename: Path | str) -> None:
         """
         Write to a JSON file. JSON fields are equivalent to
         Crystal.from_dict keys
@@ -336,7 +337,7 @@ class Crystal:
                    d['atom_mass'])
 
     @classmethod
-    def from_json_file(cls: type[T], filename: str) -> T:
+    def from_json_file(cls: type[T], filename: Path | str) -> T:
         """
         Read from a JSON file. See Crystal.from_dict for required fields
 

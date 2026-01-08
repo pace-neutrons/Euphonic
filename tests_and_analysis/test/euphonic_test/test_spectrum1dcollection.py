@@ -344,10 +344,10 @@ class TestSpectrum1DCollectionSerialisation:
         ('gan_bands.json', 'gan_bands_from_text_file.json', {}),
         ('methane_pdos.json', 'methane_pdos_from_text_file_fmt.json',
          {'fmt': ['%.4f'] + ['%.2f']*5})])
-    def test_serialise_to_text_file(self, in_json, out_json, kwargs, tmpdir):
+    def test_serialise_to_text_file(self, in_json, out_json, kwargs, tmp_path):
         spectrum = get_spectrum1dcollection(in_json)
         # Serialise
-        output_file = str(tmpdir.join('tmp.test'))
+        output_file = tmp_path / 'tmp.test'
         spectrum.to_text_file(output_file, **kwargs)
         # Deserialise
         deserialised_spectrum = get_spectrum_from_text(
@@ -360,9 +360,9 @@ class TestSpectrum1DCollectionSerialisation:
     @pytest.mark.parametrize('spectrum', [
         get_spectrum1dcollection('gan_bands.json'),
         get_spectrum1dcollection('methane_pdos.json')])
-    def test_serialise_to_json_file(self, spectrum, tmpdir):
+    def test_serialise_to_json_file(self, spectrum, tmp_path):
         # Serialise
-        output_file = str(tmpdir.join('tmp.test'))
+        output_file = tmp_path / 'tmp.test'
         spectrum.to_json_file(output_file)
         # Deserialise
         deserialised_spectrum = (Spectrum1DCollection

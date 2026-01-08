@@ -105,8 +105,7 @@ def _janus_fc_filename(phonopy_file: Path) -> Path:
     If the filename follows the pattern "seedname-phonopy.yml" this will be
     "seedname-force_constants.hdf5" in the same directory.
 
-    Otherwise, return Path(''). This represents current directory, so will fail
-    an .is_file() check.
+    Otherwise, return Path.cwd(), which will fail an .is_file() check.
     """
 
     re_match = re.match(r'(?P<seedname>.+)-phonopy\.(?P<ext>ya?ml)',
@@ -114,7 +113,7 @@ def _janus_fc_filename(phonopy_file: Path) -> Path:
     if re_match:
         seedname = re_match.group('seedname')
         return Path(phonopy_file.parent / f'{seedname}-force_constants.hdf5')
-    return Path('')
+    return Path.cwd()
 
 
 def load_data_from_file(filename: str | os.PathLike,
@@ -189,7 +188,7 @@ def get_args(parser: ArgumentParser, params: list[str] | None = None,
     return parser.parse_args(args=params)
 
 
-def matplotlib_save_or_show(save_filename: str | None = None) -> None:
+def matplotlib_save_or_show(save_filename: Path | str | None = None) -> None:
     """
     Save or show the current matplotlib plot.
     Show if save_filename is not None which by default it is.
@@ -202,7 +201,7 @@ def matplotlib_save_or_show(save_filename: str | None = None) -> None:
     import matplotlib.pyplot as plt
     if save_filename is not None:
         plt.savefig(save_filename)
-        print(f'Saved plot to {os.path.realpath(save_filename)}')
+        print(f'Saved plot to {Path(save_filename).resolve()}')
     else:
         plt.show()
 

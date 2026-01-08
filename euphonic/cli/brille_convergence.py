@@ -38,7 +38,7 @@ def main(params: list[str] | None = None) -> None:
 
 
 def check_brille_settings(
-        filename: str,
+        filename: Path | str,
         npts: int = 500,
         use_brille: bool = True,  # noqa: ARG001  # Removal scheduled for v2
         brille_grid_type: str = 'trellis',

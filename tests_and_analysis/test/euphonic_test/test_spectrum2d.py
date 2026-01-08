@@ -229,8 +229,8 @@ class TestSpectrum2DSerialisation:
         get_spectrum2d('example_spectrum2d.json'),
         get_spectrum2d('example_xbin_edges_spectrum2d.json'),
         get_spectrum2d('example_xybin_edges_spectrum2d.json')])
-    def test_serialise_to_json_file(self, spec2d, tmpdir):
-        output_file = str(tmpdir.join('tmp.test'))
+    def test_serialise_to_json_file(self, spec2d, tmp_path):
+        output_file = tmp_path / 'tmp.test'
         spec2d.to_json_file(output_file)
         check_json_metadata(output_file, 'Spectrum2D')
         deserialised_spec2d = Spectrum2D.from_json_file(output_file)

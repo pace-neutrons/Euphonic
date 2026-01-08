@@ -1,3 +1,4 @@
+from pathlib import Path
 from typing import Any, Literal, TypeVar
 import warnings
 
@@ -342,7 +343,7 @@ class QpointFrequencies:
         return _obj_to_dict(self, ['crystal', 'n_qpts', 'qpts', 'frequencies',
                                    'weights'])
 
-    def to_json_file(self, filename: str) -> None:
+    def to_json_file(self, filename: Path | str) -> None:
         """
         Write to a JSON file. JSON fields are equivalent to
         from_dict keys
@@ -379,7 +380,7 @@ class QpointFrequencies:
                    d['weights'])
 
     @classmethod
-    def from_json_file(cls: type[T], filename: str) -> T:
+    def from_json_file(cls: type[T], filename: Path | str) -> T:
         """
         Read from a JSON file. See from_dict for
         required fields
@@ -392,7 +393,7 @@ class QpointFrequencies:
         return _obj_from_json_file(cls, filename)
 
     @classmethod
-    def from_castep(cls: type[T], filename: str,
+    def from_castep(cls: type[T], filename: Path | str,
                     average_repeat_points: bool = True,
                     prefer_non_loto: bool = False) -> T:
         """
@@ -422,10 +423,10 @@ class QpointFrequencies:
         return cls.from_dict(data)
 
     @classmethod
-    def from_phonopy(cls: type[T], path: str = '.',
-                     phonon_name: str = 'band.yaml',
+    def from_phonopy(cls: type[T], path: Path | str = '.',
+                     phonon_name: Path | str = 'band.yaml',
                      phonon_format: str | None = None,
-                     summary_name: str = 'phonopy.yaml') -> T:
+                     summary_name: Path | str = 'phonopy.yaml') -> T:
         """
         Reads precalculated phonon mode data from a Phonopy
         mesh/band/qpoints.yaml/hdf5 file. May also read from

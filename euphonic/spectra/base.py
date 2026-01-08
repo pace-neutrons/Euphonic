@@ -7,6 +7,7 @@ import copy
 from functools import partial
 import math
 from numbers import Integral, Real
+from pathlib import Path
 from typing import (
     Any,
     Literal,
@@ -132,7 +133,7 @@ class Spectrum(ABC):
     def from_dict(cls: type[T], d: dict[str, Any]) -> T:
         """Initialise a Spectrum object from dictionary"""
 
-    def to_json_file(self, filename: str) -> None:
+    def to_json_file(self, filename: Path | str) -> None:
         """
         Write to a JSON file. JSON fields are equivalent to
         from_dict keys
@@ -145,7 +146,7 @@ class Spectrum(ABC):
         _obj_to_json_file(self, filename)
 
     @classmethod
-    def from_json_file(cls: type[T], filename: str) -> T:
+    def from_json_file(cls: type[T], filename: Path | str) -> T:
         """
         Read from a JSON file. See from_dict for required fields
 
@@ -600,7 +601,7 @@ class Spectrum1D(Spectrum):
         return _obj_to_dict(self, ['x_data', 'y_data', 'x_tick_labels',
                                    'metadata'])
 
-    def to_text_file(self, filename: str,
+    def to_text_file(self, filename: Path | str,
                      fmt: str | Sequence[str] | None = None) -> None:
         """
         Write to a text file. The header contains metadata and unit
@@ -651,7 +652,7 @@ class Spectrum1D(Spectrum):
                    metadata=d['metadata'])
 
     @classmethod
-    def from_castep_phonon_dos(cls: type[T], filename: str,
+    def from_castep_phonon_dos(cls: type[T], filename: Path | str,
                                element: str | None = None) -> T:
         """
         Reads DOS from a CASTEP .phonon_dos file

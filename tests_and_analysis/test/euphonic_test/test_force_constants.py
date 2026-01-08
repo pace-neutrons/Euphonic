@@ -412,8 +412,8 @@ class TestForceConstantsSerialisation:
         get_fc('quartz'),
         get_fc('LZO'),
         get_fc('NaCl')])
-    def test_serialise_to_json_file(self, fc, tmpdir):
-        output_file = str(tmpdir.join('tmp.test'))
+    def test_serialise_to_json_file(self, fc, tmp_path):
+        output_file = tmp_path / 'tmp.test'
         fc.to_json_file(output_file)
         check_json_metadata(output_file, 'ForceConstants')
         deserialised_fc = ForceConstants.from_json_file(output_file)
