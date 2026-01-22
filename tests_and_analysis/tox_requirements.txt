@@ -6,5 +6,5 @@ pytest-lazy-fixtures
 pytest-xdist
 pytest-xvfb
 python-slugify
-wheel==0.43
+wheel==0.46.2
 setuptools==78.1.1
