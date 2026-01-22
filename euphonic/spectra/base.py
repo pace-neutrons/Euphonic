@@ -95,8 +95,16 @@ class Spectrum(ABC):
         return new_spec
 
     @abstractmethod
+    def __copy__(self: T) -> T:
+        """Get an independent copy of spectrum."""
+
+    @abstractmethod
+    def __deepcopy__(self: T, memo: dict) -> T:
+        """Get a completely independent copy of spectrum."""
+
     def copy(self: T) -> T:
-        """Get an independent copy of spectrum"""
+        """Get an independent copy of spectrum."""
+        return self.__copy__()
 
     @property
     def x_tick_labels(self) -> XTickLabels:
@@ -582,12 +590,21 @@ class Spectrum1D(Spectrum):
                            metadata=self.metadata)
                 for x0, x1 in ranges]
 
-    def copy(self: T) -> T:
+    def __copy__(self: T) -> T:
         """Get an independent copy of spectrum"""
         return type(self)(np.copy(self.x_data),
                           np.copy(self.y_data),
                           x_tick_labels=copy.copy(self.x_tick_labels),
                           metadata=copy.deepcopy(self.metadata))
+
+    def __deepcopy__(self: T, memo: dict) -> T:
+        """Get a completely independent copy of spectrum"""
+        return type(self)(np.copy(self.x_data),
+                          np.copy(self.y_data),
+                          x_tick_labels=copy.deepcopy(
+                              self.x_tick_labels, memo),
+                          metadata=copy.deepcopy(self.metadata, memo))
+
 
     def to_dict(self) -> dict[str, Any]:
         """
@@ -1059,13 +1076,21 @@ class Spectrum2D(Spectrum):
                           copy.copy(spectrum.x_tick_labels),
                           copy.copy(spectrum.metadata))
 
-    def copy(self: T) -> T:
+    def __copy__(self: T) -> T:
         """Get an independent copy of spectrum"""
         return type(self)(np.copy(self.x_data),
                           np.copy(self.y_data),
                           np.copy(self.z_data),
                           copy.copy(self.x_tick_labels),
                           copy.deepcopy(self.metadata))
+
+    def __deepcopy__(self: T, memo: dict) -> T:
+        """Get an independent copy of spectrum"""
+        return type(self)(np.copy(self.x_data),
+                          np.copy(self.y_data),
+                          np.copy(self.z_data),
+                          copy.deepcopy(self.x_tick_labels, memo),
+                          copy.deepcopy(self.metadata, memo))
 
     def get_bin_edges(
             self,

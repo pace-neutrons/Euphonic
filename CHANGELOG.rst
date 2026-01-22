@@ -24,6 +24,7 @@
   - Extended ``pathlib.Path`` support and annotations throughout the code. Removing
     references to ``os.path`` where no longer relevant.
 
+  - Rework ``Spectrum*.copy()`` to meet Python `copy <https://docs.python.org/3/library/copy.html>`__ specifications.
 
 - Maintenance
 

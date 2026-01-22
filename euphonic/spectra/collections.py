@@ -266,9 +266,16 @@ class SpectrumCollectionMixin(ABC):
         # Item must be some kind of integer sequence
         return self._combine_metadata([metadata_lines[i] for i in item])
 
+    def __copy__(self) -> Self:
+        return type(self).from_spectra(list(self))
+
+    def __deepcopy__(self, memo: dict) -> Self:
+        return type(self).from_spectra([copy.deepcopy(spectrum, memo)
+                                        for spectrum in self])
+
     def copy(self) -> Self:
         """Get an independent copy of spectrum"""
-        return self._item_type.copy(self)
+        return self.__copy__()
 
     def __add__(self, other: Self) -> Self:
         """
