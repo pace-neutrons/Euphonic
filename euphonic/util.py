@@ -20,9 +20,9 @@ from euphonic.ureg import Quantity, ureg
 
 try:
     from spglib.error import SpglibError
-    no_cell_error_types = (SymmetryDetectionError, SpglibError)
+    no_cell_error_types = (SymmetryDetectionError, SpglibError, TypeError)
 except ImportError:
-    no_cell_error_types = (SymmetryDetectionError,)
+    no_cell_error_types = (SymmetryDetectionError, TypeError)
 
 zips = partial(zip, strict=True)
 
@@ -627,8 +627,15 @@ def _recip_space_labels(qpts: np.ndarray,
 
         except no_cell_error_types as err:
             # There is a particular error we expect to see when the unit cell
-            # is empty; make sure we do not have some other error
-            assert 'positions has to be' in str(err)
+            # is empty; make sure we do not have some other error.
+            #
+            # The NoneType error seems to be a bug in seekpath 2.2, see
+            # https://github.com/giovannipizzi/seekpath/pull/118
+            assert (
+                "positions has to be" in str(err)
+                or
+                "argument after ** must be a mapping, not NoneType" in str(err)
+            )
             assert len(cell[1]) == 0
             warnings.warn(('Could not determine cell symmetry, using generic '
                            'q-point labels'), stacklevel=2)
