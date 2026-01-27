@@ -632,9 +632,9 @@ def _recip_space_labels(qpts: np.ndarray,
             # The NoneType error seems to be a bug in seekpath 2.2, see
             # https://github.com/giovannipizzi/seekpath/pull/118
             assert (
-                "positions has to be" in str(err)
+                'positions has to be' in str(err)
                 or
-                "argument after ** must be a mapping, not NoneType" in str(err)
+                'argument after ** must be a mapping, not NoneType' in str(err)
             )
             assert len(cell[1]) == 0
             warnings.warn(('Could not determine cell symmetry, using generic '
