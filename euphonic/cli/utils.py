@@ -338,13 +338,9 @@ def _bands_from_force_constants(data: ForceConstants,
                                 **calc_modes_kwargs,
 ) -> tuple[QpointPhononModes | QpointFrequencies, XTickLabels, SplitArgs]:
     structure = data.crystal.to_spglib_cell()
-    with warnings.catch_warnings():
-        # SeeK-path is raising spglib 2.5.0 deprecation warnings, we
-        # don't care to see those for now
-        warnings.simplefilter('ignore', category=DeprecationWarning)
-        bandpath = seekpath.get_explicit_k_path(
-            structure,
-            reference_distance=q_distance.to('1 / angstrom').magnitude)
+    bandpath = seekpath.get_explicit_k_path(
+        structure,
+        reference_distance=q_distance.to('1 / angstrom').magnitude)
 
     if insert_gamma:
         _insert_gamma(bandpath)

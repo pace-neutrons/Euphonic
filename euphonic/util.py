@@ -614,11 +614,7 @@ def _recip_space_labels(qpts: np.ndarray,
         sym_label_to_coords = _generic_qpt_labels()
     else:
         try:
-            with warnings.catch_warnings():
-                # SeeK-path is raising spglib 2.5.0 deprecation warnings, we
-                # don't care to see those for now
-                warnings.simplefilter('ignore', category=DeprecationWarning)
-                sym_label_to_coords = seekpath.get_path(cell)['point_coords']
+            sym_label_to_coords = seekpath.get_path(cell)['point_coords']
 
         except SymmetryDetectionError:
             warnings.warn(('Could not determine cell symmetry, using generic '
