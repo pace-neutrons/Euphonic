@@ -578,7 +578,7 @@ def spglib_new_errors():
     original_value = os.environ.get('SPGLIB_OLD_ERROR_HANDLING', None)
 
     try:
-        os.environ['SPGLIB_OLD_ERROR_HANDLING'] = "false"
+        os.environ['SPGLIB_OLD_ERROR_HANDLING'] = 'false'
         yield
 
     finally:
