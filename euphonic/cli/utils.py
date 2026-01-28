@@ -338,7 +338,7 @@ def _bands_from_force_constants(data: ForceConstants,
 ) -> tuple[QpointPhononModes | QpointFrequencies, XTickLabels, SplitArgs]:
     structure = data.crystal.to_spglib_cell()
     with spglib_new_errors():
-        bandpath = seekpath.get_explicit_k_path(
+        bandpath = seekpath.get_explicit_k_path_orig_cell(
             structure,
             reference_distance=q_distance.to('1 / angstrom').magnitude)
 
