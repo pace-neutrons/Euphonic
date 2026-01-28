@@ -1,9 +1,11 @@
 from collections.abc import Sequence
+from contextlib import contextmanager
 from functools import partial, reduce
 from importlib.resources import files
 import itertools
 import json
 import math
+import os
 from pathlib import Path
 import sys
 import textwrap
@@ -564,6 +566,28 @@ def _calc_abscissa(reciprocal_cell: Quantity, qpts: np.ndarray,
     return abscissa*ureg('1/bohr').to(reciprocal_cell.units)
 
 
+@contextmanager
+def spglib_new_errors():
+    """Opt-in to new spglib error system if available
+
+    This also suppresses a pesky deprecation warning, spglib 2.7 REQUIRES
+    that OLD_ERROR_HANDLING is set one way or the other. That isn't a
+    very nice thing for our downstream users to deal with, so we
+    transparently tweak it for as little time as possible.
+    """
+    original_value = os.environ.get('SPGLIB_OLD_ERROR_HANDLING', None)
+
+    try:
+        os.environ['SPGLIB_OLD_ERROR_HANDLING'] = "false"
+        yield
+
+    finally:
+        if original_value is None:
+            del os.environ['SPGLIB_OLD_ERROR_HANDLING']
+        else:
+            os.environ['SPGLIB_OLD_ERROR_HANDLING'] = original_value
+
+
 def _recip_space_labels(qpts: np.ndarray,
                         cell: tuple[list[list[float]],
                                     list[list[float]],
@@ -614,7 +638,8 @@ def _recip_space_labels(qpts: np.ndarray,
         sym_label_to_coords = _generic_qpt_labels()
     else:
         try:
-            sym_label_to_coords = seekpath.get_path(cell)['point_coords']
+            with spglib_new_errors():
+                sym_label_to_coords = seekpath.get_path(cell)['point_coords']
 
         except SymmetryDetectionError:
             warnings.warn(('Could not determine cell symmetry, using generic '

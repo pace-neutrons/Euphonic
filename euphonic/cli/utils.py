@@ -28,7 +28,7 @@ from euphonic import (
     Spectrum1DCollection,
     ureg,
 )
-from euphonic.util import dedent_and_fill, mp_grid
+from euphonic.util import dedent_and_fill, mp_grid, spglib_new_errors
 
 
 def _load_euphonic_json(filename: str | os.PathLike,
@@ -338,9 +338,10 @@ def _bands_from_force_constants(data: ForceConstants,
                                 **calc_modes_kwargs,
 ) -> tuple[QpointPhononModes | QpointFrequencies, XTickLabels, SplitArgs]:
     structure = data.crystal.to_spglib_cell()
-    bandpath = seekpath.get_explicit_k_path(
-        structure,
-        reference_distance=q_distance.to('1 / angstrom').magnitude)
+    with spglib_new_errors():
+        bandpath = seekpath.get_explicit_k_path(
+            structure,
+            reference_distance=q_distance.to('1 / angstrom').magnitude)
 
     if insert_gamma:
         _insert_gamma(bandpath)
