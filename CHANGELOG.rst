@@ -3,6 +3,11 @@
 
 - Requirements
 
+  - Increased minimum version of SeeK-path to 2.2.0
+
+    - Recent updates provide improved compatibility with recent spglib versions
+      and allow q-point paths to be generated in the input cell orientation.
+
   - Security
 
     - Bumped *wheel* requirement for docs and testing to 0.46.2. (`CVE-2026-24049 <https://www.cve.org/CVERecord?id=CVE-2026-24049>`_)
