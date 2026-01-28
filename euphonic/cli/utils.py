@@ -6,6 +6,7 @@ from argparse import (
 )
 from collections.abc import Collection, Sequence
 from contextlib import suppress
+from fractions import Fraction
 import json
 import os
 from pathlib import Path
@@ -330,6 +331,23 @@ XTickLabels = list[tuple[int, str]]
 SplitArgs = dict[str, Any]
 
 
+def _convert_labels_to_fractions(bandpath: dict, limit: int = 32) -> None:
+    """Replace high-symmetry labels in seekpath data with simple fractions
+
+    bandpath:
+        dict from seekpath.get_explicit_k_path_orig_cell
+
+    limit:
+        maximum numerator value for float rounded to fraction
+    """
+    for i, (label, qpt) in enumerate(zip(bandpath['explicit_kpoints_labels'],
+                                         bandpath['explicit_kpoints_rel'])):
+        if label:
+            qpt_label = ' '.join([str(Fraction(x).limit_denominator(limit))
+                            for x in qpt])
+            bandpath['explicit_kpoints_labels'][i] = qpt_label
+
+
 def _bands_from_force_constants(data: ForceConstants,
                                 q_distance: Quantity,
                                 insert_gamma: bool = True,
@@ -344,6 +362,11 @@ def _bands_from_force_constants(data: ForceConstants,
 
     if insert_gamma:
         _insert_gamma(bandpath)
+
+    # If input structure was not primitive, the high-symmetry points are not
+    # really meaningful. Indicate this by converting to numerical form.
+    if bandpath.get('is_supercell'):
+        _convert_labels_to_fractions(bandpath, limit=32)
 
     x_tick_labels = _get_tick_labels(bandpath)
     split_args = {'indices': _get_break_points(bandpath)}

@@ -639,9 +639,13 @@ def _recip_space_labels(qpts: np.ndarray,
     else:
         try:
             with spglib_new_errors():
-                sym_label_to_coords = (
-                    seekpath.get_path_orig_cell(cell)['point_coords']
+                path_data = (
+                    seekpath.get_path_orig_cell(cell)
                 )
+                if path_data.get('is_supercell'):
+                    sym_label_to_coords = _generic_qpt_labels()
+                else:
+                    sym_label_to_coords = path_data['point_coords']
 
         except SymmetryDetectionError:
             warnings.warn(('Could not determine cell symmetry, using generic '
