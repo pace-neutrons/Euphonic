@@ -22,6 +22,17 @@
   - Fix typing of calls to Spectrum.broaden() by brille_convergence
     and intensity_map command-line tools.
 
+  - Band structures paths could be generated with incorrect
+    correspondence of q-points to symmetry labels if the input cell
+    was transformation of reference primitive cell. (e.g. different
+    order of lattive vectors). This is now fixed by using features of
+    SeeK-path 2.1+.
+
+  - Band structure paths would be inappropriately generated and
+    labelled if the input cell was a supercell of the primitive cell.
+    This scenario now emits a warning (from Seek-path) and the tick
+    labels will not use the traditional high-symmetry labels.
+
 - Compatibility fixes
 
   - Fixed handling of new SpglibError class for expected errors from spglib 2.7.0
