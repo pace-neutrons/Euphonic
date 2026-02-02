@@ -1,7 +1,7 @@
 numpy==1.24.0
 scipy==1.10.0
 spglib==2.1.0
-seekpath==2.2.0
+seekpath==2.2.1
 pint==0.22
 matplotlib==3.8
 h5py==3.7

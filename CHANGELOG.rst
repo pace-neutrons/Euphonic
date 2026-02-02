@@ -3,7 +3,7 @@
 
 - Requirements
 
-  - Increased minimum version of SeeK-path to 2.2.0
+  - Increased minimum version of SeeK-path to 2.2.1
 
     - Recent updates provide improved compatibility with recent spglib versions
       and allow q-point paths to be generated in the input cell orientation.
