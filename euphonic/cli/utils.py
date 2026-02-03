@@ -4,14 +4,14 @@ from argparse import (
     Namespace,
     _ArgumentGroup,
 )
-from collections.abc import Collection, Sequence
+from collections.abc import Collection, Iterable, Sequence
 from contextlib import suppress
 from fractions import Fraction
 import json
 import os
 from pathlib import Path
 import re
-from typing import Any
+from typing import Any, TypedDict
 
 import numpy as np
 from pint import UndefinedUnitError
@@ -331,7 +331,16 @@ XTickLabels = list[tuple[int, str]]
 SplitArgs = dict[str, Any]
 
 
-def _convert_labels_to_fractions(bandpath: dict, limit: int = 32) -> None:
+# Dictionary returned by seekpath.get_explicit_k_path_orig_cell
+# Not a complete specification, but these are the parts we care about.
+class BandpathDict(TypedDict, total=False):
+    explicit_kpoints_labels: Sequence[str]
+    explicit_kpoints_rel: Iterable[float]
+    is_supercell: bool
+
+
+def _convert_labels_to_fractions(
+        bandpath: BandpathDict, *, limit: int = 32) -> None:
     """Replace high-symmetry labels in seekpath data with simple fractions
 
     bandpath:
