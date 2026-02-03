@@ -645,7 +645,8 @@ class TestQpointPhononModesCalculateDos:
         ebins = np.arange(0, 1300, 4)*ureg('1/cm')
         with warnings.catch_warnings(record=True) as warn_record:
             qpt_ph_modes.calculate_dos(ebins)
-        assert len(warn_record) == 0
+
+        assert not warn_record
 
 
 class TestQpointPhononModesCalculatePdos:

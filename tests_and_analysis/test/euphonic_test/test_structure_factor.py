@@ -438,7 +438,7 @@ class TestStructureFactorCalculateSqwMap:
         ebins = np.array([0, 50, 100, 150, 200, 250, 300])*ureg('1/cm')
         with warnings.catch_warnings(record=True) as warn_record:
              sf.calculate_sqw_map(ebins)
-        if len(warn_record) > 0:
+        if warn_record:
             raise AssertionError([record.message for record in warn_record])
 
     @pytest.mark.parametrize(
@@ -510,4 +510,4 @@ class TestStructureFactorCalculateDos:
         ebins = np.arange(0, 1300, 4)*ureg('1/cm')
         with warnings.catch_warnings(record=True) as warn_record:
              sf.calculate_dos(ebins)
-        assert len(warn_record) == 0
+        assert not warn_record
