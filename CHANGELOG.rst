@@ -3,6 +3,11 @@
 
 - Requirements
 
+  - Increased minimum version of SeeK-path to 2.2.1
+
+    - Recent updates provide improved compatibility with recent spglib versions
+      and allow q-point paths to be generated in the input cell orientation.
+
   - Security
 
     - Bumped *wheel* requirement for docs and testing to 0.46.2. (`CVE-2026-24049 <https://www.cve.org/CVERecord?id=CVE-2026-24049>`_)
@@ -16,6 +21,17 @@
 
   - Fix typing of calls to Spectrum.broaden() by brille_convergence
     and intensity_map command-line tools.
+
+  - Band structures paths could be generated with incorrect
+    correspondence of q-points to symmetry labels if the input cell
+    was transformation of reference primitive cell. (e.g. different
+    order of lattive vectors). This is now fixed by using features of
+    SeeK-path 2.1+.
+
+  - Band structure paths would be inappropriately generated and
+    labelled if the input cell was a supercell of the primitive cell.
+    This scenario now emits a warning (from Seek-path) and the tick
+    labels will not use the traditional high-symmetry labels.
 
 - Compatibility fixes
 

@@ -549,7 +549,7 @@ class TestQpointFrequenciesCalculateDos:
         ebins = np.arange(0, 1300, 4)*ureg('1/cm')
         with warnings.catch_warnings(record=True) as warn_record:
             qpt_freqs.calculate_dos(ebins)
-        assert len(warn_record) == 0
+        assert not warn_record
 
     def test_incorrect_adaptive_method_error(self):
         qpt_freqs = get_qpt_freqs(

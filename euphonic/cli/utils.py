@@ -4,14 +4,14 @@ from argparse import (
     Namespace,
     _ArgumentGroup,
 )
-from collections.abc import Collection, Sequence
+from collections.abc import Collection, Iterable, Sequence
 from contextlib import suppress
+from fractions import Fraction
 import json
 import os
 from pathlib import Path
 import re
-from typing import Any
-import warnings
+from typing import Any, TypedDict
 
 import numpy as np
 from pint import UndefinedUnitError
@@ -28,7 +28,7 @@ from euphonic import (
     Spectrum1DCollection,
     ureg,
 )
-from euphonic.util import dedent_and_fill, mp_grid
+from euphonic.util import dedent_and_fill, mp_grid, spglib_new_errors
 
 
 def _load_euphonic_json(filename: str | os.PathLike,
@@ -331,6 +331,33 @@ XTickLabels = list[tuple[int, str]]
 SplitArgs = dict[str, Any]
 
 
+# Dictionary returned by seekpath.get_explicit_k_path_orig_cell
+# Not a complete specification, but these are the parts we care about.
+class BandpathDict(TypedDict, total=False):
+    explicit_kpoints_labels: Sequence[str]
+    explicit_kpoints_rel: Iterable[float]
+    is_supercell: bool
+
+
+def _convert_labels_to_fractions(
+        bandpath: BandpathDict, *, limit: int = 32) -> None:
+    """Replace high-symmetry labels in seekpath data with simple fractions
+
+    bandpath:
+        dict from seekpath.get_explicit_k_path_orig_cell
+
+    limit:
+        maximum numerator value for float rounded to fraction
+    """
+    for i, (label, qpt) in enumerate(zip(bandpath['explicit_kpoints_labels'],
+                                         bandpath['explicit_kpoints_rel'],
+                                         strict=True)):
+        if label:
+            qpt_label = ' '.join(str(Fraction(x).limit_denominator(limit))
+                            for x in qpt)
+            bandpath['explicit_kpoints_labels'][i] = qpt_label
+
+
 def _bands_from_force_constants(data: ForceConstants,
                                 q_distance: Quantity,
                                 insert_gamma: bool = True,
@@ -338,16 +365,18 @@ def _bands_from_force_constants(data: ForceConstants,
                                 **calc_modes_kwargs,
 ) -> tuple[QpointPhononModes | QpointFrequencies, XTickLabels, SplitArgs]:
     structure = data.crystal.to_spglib_cell()
-    with warnings.catch_warnings():
-        # SeeK-path is raising spglib 2.5.0 deprecation warnings, we
-        # don't care to see those for now
-        warnings.simplefilter('ignore', category=DeprecationWarning)
-        bandpath = seekpath.get_explicit_k_path(
+    with spglib_new_errors():
+        bandpath = seekpath.get_explicit_k_path_orig_cell(
             structure,
             reference_distance=q_distance.to('1 / angstrom').magnitude)
 
     if insert_gamma:
         _insert_gamma(bandpath)
+
+    # If input structure was not primitive, the high-symmetry points are not
+    # really meaningful. Indicate this by converting to numerical form.
+    if bandpath.get('is_supercell'):
+        _convert_labels_to_fractions(bandpath, limit=32)
 
     x_tick_labels = _get_tick_labels(bandpath)
     split_args = {'indices': _get_break_points(bandpath)}

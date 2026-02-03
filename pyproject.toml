@@ -37,7 +37,7 @@ dependencies = [
     "packaging",
     "numpy>=1.24.0",
     "scipy>=1.10",
-    "seekpath>=1.1.0",
+    "seekpath>=2.2.1,<3",
     "spglib>=2.1.0",
     "pint>=0.22",
     "threadpoolctl>=3.0.0",

@@ -1,9 +1,11 @@
 from collections.abc import Sequence
+from contextlib import contextmanager
 from functools import partial, reduce
 from importlib.resources import files
 import itertools
 import json
 import math
+import os
 from pathlib import Path
 import sys
 import textwrap
@@ -196,7 +198,9 @@ def get_qpoint_labels(qpts: np.ndarray,
         xlabels = [str(x) for x in np.around(
             qpts[qpts_with_labels, :], decimals=2)]
     qpts_with_labels = [int(x) for x in qpts_with_labels.tolist()]
-    return list(zips(qpts_with_labels, xlabels))
+    return list(zips(qpts_with_labels,
+                     map(str, xlabels)),  # Ensure python str (not numpy)
+                )
 
 
 def get_reference_data(collection: str = 'Sears1992',
@@ -564,6 +568,28 @@ def _calc_abscissa(reciprocal_cell: Quantity, qpts: np.ndarray,
     return abscissa*ureg('1/bohr').to(reciprocal_cell.units)
 
 
+@contextmanager
+def spglib_new_errors():
+    """Opt-in to new spglib error system if available
+
+    This also suppresses a pesky deprecation warning, spglib 2.7 REQUIRES
+    that OLD_ERROR_HANDLING is set one way or the other. That isn't a
+    very nice thing for our downstream users to deal with, so we
+    transparently tweak it for as little time as possible.
+    """
+    original_value = os.environ.get('SPGLIB_OLD_ERROR_HANDLING', None)
+
+    try:
+        os.environ['SPGLIB_OLD_ERROR_HANDLING'] = 'false'
+        yield
+
+    finally:
+        if original_value is None:
+            del os.environ['SPGLIB_OLD_ERROR_HANDLING']
+        else:
+            os.environ['SPGLIB_OLD_ERROR_HANDLING'] = original_value
+
+
 def _recip_space_labels(qpts: np.ndarray,
                         cell: tuple[list[list[float]],
                                     list[list[float]],
@@ -614,11 +640,14 @@ def _recip_space_labels(qpts: np.ndarray,
         sym_label_to_coords = _generic_qpt_labels()
     else:
         try:
-            with warnings.catch_warnings():
-                # SeeK-path is raising spglib 2.5.0 deprecation warnings, we
-                # don't care to see those for now
-                warnings.simplefilter('ignore', category=DeprecationWarning)
-                sym_label_to_coords = seekpath.get_path(cell)['point_coords']
+            with spglib_new_errors():
+                path_data = (
+                    seekpath.get_path_orig_cell(cell)
+                )
+                if path_data.get('is_supercell'):
+                    sym_label_to_coords = _generic_qpt_labels()
+                else:
+                    sym_label_to_coords = path_data['point_coords']
 
         except SymmetryDetectionError:
             warnings.warn(('Could not determine cell symmetry, using generic '
@@ -627,7 +656,10 @@ def _recip_space_labels(qpts: np.ndarray,
 
         except no_cell_error_types as err:
             # There is a particular error we expect to see when the unit cell
-            # is empty; make sure we do not have some other error
+            # is empty; make sure we do not have some other error.
+            #
+            # The NoneType error seems to be a bug in seekpath 2.2, see
+            # https://github.com/giovannipizzi/seekpath/pull/118
             assert 'positions has to be' in str(err)
             assert len(cell[1]) == 0
             warnings.warn(('Could not determine cell symmetry, using generic '
