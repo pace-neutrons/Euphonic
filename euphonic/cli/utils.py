@@ -353,8 +353,8 @@ def _convert_labels_to_fractions(
                                          bandpath['explicit_kpoints_rel'],
                                          strict=True)):
         if label:
-            qpt_label = ' '.join([str(Fraction(x).limit_denominator(limit))
-                            for x in qpt])
+            qpt_label = ' '.join(str(Fraction(x).limit_denominator(limit))
+                            for x in qpt)
             bandpath['explicit_kpoints_labels'][i] = qpt_label
 
 
