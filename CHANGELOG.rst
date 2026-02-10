@@ -1,5 +1,8 @@
-`Unreleased <https://github.com/pace-neutrons/Euphonic/compare/v1.5.1...HEAD>`_
+`Unreleased <https://github.com/pace-neutrons/Euphonic/compare/v1.6.0...HEAD>`_
 -------------------------------------------------------------------------------
+
+`v1.6.0 <https://github.com/pace-neutrons/Euphonic/compare/v1.5.1...v1.6.0>`_
+-----------------------------------------------------------------------------
 
 - Requirements
 
@@ -36,7 +39,6 @@
 - Maintenance
 
   - Replace ``tmpdir`` in tests with ``tmp_path`` and use ``Path`` handling.
-
 
 `v1.5.1 <https://github.com/pace-neutrons/Euphonic/compare/v1.5.0...v1.5.1>`_
 -----------------------------------------------------------------------------
