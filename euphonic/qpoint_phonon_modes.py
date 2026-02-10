@@ -11,7 +11,11 @@ from typing_extensions import Self
 from euphonic.crystal import Crystal
 from euphonic.debye_waller import DebyeWaller
 from euphonic.io import _obj_from_json_file, _obj_to_dict, _process_dict
-from euphonic.qpoint_frequencies import AdaptiveMethod, QpointFrequencies
+from euphonic.qpoint_frequencies import (
+    FREQ_CHECK,
+    AdaptiveMethod,
+    QpointFrequencies,
+)
 from euphonic.readers import castep, phonopy
 from euphonic.spectra import Spectrum1DCollection
 from euphonic.structure_factor import StructureFactor
@@ -23,7 +27,9 @@ from euphonic.util import (
     get_reference_data,
     is_gamma,
 )
-from euphonic.validate import _check_constructor_inputs
+from euphonic.validate import InputCheck, _check_constructor_inputs
+
+EIG_CHECK = InputCheck(..., (np.ndarray,), {(-1,)}, 'eigenvectors')
 
 
 class QpointPhononModes(QpointFrequencies):
@@ -83,9 +89,9 @@ class QpointPhononModes(QpointFrequencies):
         # Check freqs axis 1 shape here - QpointFrequencies doesn't
         # enforce that the number of modes = 3*(number of atoms)
         _check_constructor_inputs(
-            (frequencies, Quantity, (n_qpts, 3*n_at), 'frequencies'),
-            (eigenvectors, np.ndarray,
-             (n_qpts, 3*n_at, n_at, 3), 'eigenvectors'),
+            FREQ_CHECK._replace(value=frequencies, shape={(n_qpts, 3*n_at)}),
+            EIG_CHECK._replace(value=eigenvectors,
+                               shape={(n_qpts, 3*n_at, n_at, 3)}),
         )
         self.eigenvectors = eigenvectors
 
