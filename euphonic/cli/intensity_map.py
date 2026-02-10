@@ -2,7 +2,6 @@ from argparse import ArgumentParser
 
 import matplotlib.style
 
-import euphonic
 from euphonic import ForceConstants, QpointPhononModes, ureg
 import euphonic.plot
 from euphonic.styles import base_style
