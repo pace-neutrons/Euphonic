@@ -35,6 +35,7 @@
     **breaking change** as somebody's code could depend on this
     IndexError. At this stage it seems an acceptable risk.
 
+
 - Other changes
 
   - Error messages have been overhauled and now follow a consistent format::
