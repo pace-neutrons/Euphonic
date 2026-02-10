@@ -1,4 +1,4 @@
-`Unreleased <https://github.com/pace-neutrons/Euphonic/compare/v1.5.0...HEAD>`_
+`Unreleased <https://github.com/pace-neutrons/Euphonic/compare/v1.5.1...HEAD>`_
 -------------------------------------------------------------------------------
 
 - Requirements
@@ -11,16 +11,9 @@
   - Security
 
     - Bumped *wheel* requirement for docs and testing to 0.46.2. (`CVE-2026-24049 <https://www.cve.org/CVERecord?id=CVE-2026-24049>`_)
-
-  - Test requirements
-
-    - Added *pytest-xdist* and *pytest-cov* requirements for parallel
-      testing at pytest level.
+  
 
 - Bug fixes
-
-  - Fix typing of calls to Spectrum.broaden() by brille_convergence
-    and intensity_map command-line tools.
 
   - Band structures paths could be generated with incorrect
     correspondence of q-points to symmetry labels if the input cell
@@ -33,12 +26,6 @@
     This scenario now emits a warning (from Seek-path) and the tick
     labels will not use the traditional high-symmetry labels.
 
-- Compatibility fixes
-
-  - Fixed handling of new SpglibError class for expected errors from spglib 2.7.0
-  - Include required arguments to np.divide call, avoiding deprecation
-    warning which would trigger test failure.
-
 - Improvements
 
   - Extended ``pathlib.Path`` support and annotations throughout the code. Removing
@@ -48,13 +35,37 @@
 
 - Maintenance
 
+  - Replace ``tmpdir`` in tests with ``tmp_path`` and use ``Path`` handling.
+
+
+`v1.5.1 <https://github.com/pace-neutrons/Euphonic/compare/v1.5.0...v1.5.1>`_
+-----------------------------------------------------------------------------
+
+- Requirements
+
+  - Test requirements
+
+    - Added *pytest-xdist* and *pytest-cov* requirements for parallel
+      testing at pytest level.
+
+- Bug fixes
+
+  - Fix typing of calls to Spectrum.broaden() by brille_convergence
+    and intensity_map command-line tools.
+
+- Compatibility fixes
+
+  - Fixed handling of new SpglibError class for expected errors from spglib 2.7.0
+  - Include required arguments to np.divide call, avoiding deprecation
+    warning which would trigger test failure.
+
+- Maintenance
+
   - Reworked CI strategy from parallelism over tox environments to
     parallelism over unit tests. This addresses OpenMP conflicts
     between simultaneous test environments, and gives a large speedup
     when testing a single Python version. (i.e. typical local testing
     scenario before pushing to CI.)
-
-  - Replace ``tmpdir`` in tests with ``tmp_path`` and use ``Path`` handling.
 
   - Stopped testing every master push against Python 3.15
 
