@@ -31,6 +31,9 @@
     methods and euphonic-dos; "cubic" parametrisation is removed and
     superior "cheby-log" fit always used.
 
+  - ``validate._check_constructor_inputs`` reworked to use a sequence
+    of ``validate.InputCheck``  ``NamedTuple`` classes as arguments.
+
 - Features
 
   - Spectrum1DCollection and Spectrum2DCollection can be indexed with

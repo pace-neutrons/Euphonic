@@ -28,7 +28,7 @@ from euphonic import (
     ureg,
 )
 from euphonic.util import comma_join, format_error
-from euphonic.validate import _check_constructor_inputs
+from euphonic.validate import InputCheck, _check_constructor_inputs
 
 
 class BrilleInterpolator:
@@ -56,17 +56,18 @@ class BrilleInterpolator:
             Brille documentation for details.
         """
         _check_constructor_inputs(
-            (crystal, Crystal, (), 'crystal'),
-            (grid, [br.BZTrellisQdc, br.BZMeshQdc, br.BZNestQdc], (), 'grid'),
+            InputCheck(crystal, (Crystal,), {}, 'crystal'),
+            InputCheck(grid, (br.BZTrellisQdc, br.BZMeshQdc, br.BZNestQdc),
+                       {}, 'grid'),
         )
         # Check grid has been filled and vals/vecs are the correct shape
         n_atoms = crystal.n_atoms
         n_qpts = len(grid.rlu)
         _check_constructor_inputs(
-            (grid.values, np.ndarray,
-             (n_qpts, 3*n_atoms, 1), 'grid.values'),
-            (grid.vectors, np.ndarray,
-             (n_qpts, 3*n_atoms, 3*n_atoms), 'grid.vectors'),
+            InputCheck(grid.values, (np.ndarray,),
+                       {(n_qpts, 3*n_atoms, 1)}, 'grid.values'),
+            InputCheck(grid.vectors, (np.ndarray,),
+                       {(n_qpts, 3*n_atoms, 3*n_atoms)}, 'grid.vectors'),
         )
 
         self._grid = grid
