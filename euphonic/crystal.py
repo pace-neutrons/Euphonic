@@ -19,7 +19,11 @@ from euphonic.util import (
     _get_unique_elems_and_idx,
     format_error,
 )
-from euphonic.validate import _check_constructor_inputs, _check_unit_conversion
+from euphonic.validate import (
+    InputCheck,
+    _check_constructor_inputs,
+    _check_unit_conversion,
+)
 
 
 class Crystal:
@@ -75,10 +79,10 @@ class Crystal:
             atom_type = np.array([], dtype='<U32')
 
         _check_constructor_inputs(
-            (cell_vectors, Quantity, (3, 3), 'cell_vectors'),
-            (atom_r, np.ndarray, (n_atoms, 3), 'atom_r'),
-            (atom_type, np.ndarray, (n_atoms,), 'atom_type'),
-            (atom_mass, Quantity, (n_atoms,), 'atom_mass'),
+            InputCheck(cell_vectors, (Quantity,), {(3, 3)}, 'cell_vectors'),
+            InputCheck(atom_r, (np.ndarray,), {(n_atoms, 3)}, 'atom_r'),
+            InputCheck(atom_type, (np.ndarray,), {(n_atoms,)}, 'atom_type'),
+            InputCheck(atom_mass, (Quantity,), {(n_atoms,)}, 'atom_mass'),
         )
         self._cell_vectors = cell_vectors.to(ureg.bohr).magnitude
         self.n_atoms = n_atoms

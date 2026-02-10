@@ -4,6 +4,7 @@ from multiprocessing import cpu_count
 import os
 from pathlib import Path
 import re
+from types import NoneType
 from typing import (
     Any,
     Literal,
@@ -35,6 +36,7 @@ from euphonic.util import (
     is_gamma,
 )
 from euphonic.validate import (
+    InputCheck,
     _check_constructor_inputs,
     _check_unit_conversion,
     _ensure_contiguous_args,
@@ -108,18 +110,21 @@ class ForceConstants:
         """
         # Check independent inputs first
         _check_constructor_inputs(
-            (crystal, Crystal, (), 'crystal'),
-            (sc_matrix, np.ndarray, (3, 3), 'sc_matrix'),
+            InputCheck(crystal, (Crystal,), {}, 'crystal'),
+            InputCheck(sc_matrix, (np.ndarray,), {(3, 3)}, 'sc_matrix'),
         )
         n_at = crystal.n_atoms
         n_sc = int(np.rint(np.absolute(np.linalg.det(sc_matrix))))
         # Now check other derived input shapes
         _check_constructor_inputs(
-            (force_constants, Quantity,
-             (n_sc, 3*n_at, 3*n_at), 'force_constants'),
-            (cell_origins, np.ndarray, (n_sc, 3), 'cell_origins'),
-            (born, [Quantity, type(None)],  (n_at, 3, 3), 'born'),
-            (dielectric, [Quantity, type(None)], (3, 3), 'dielectric'),
+            InputCheck(force_constants, (Quantity,),
+                       {(n_sc, 3*n_at, 3*n_at)}, 'force_constants'),
+            InputCheck(cell_origins, (np.ndarray,),
+                       {(n_sc, 3)}, 'cell_origins'),
+            InputCheck(born, (Quantity, NoneType),
+                       {(n_at, 3, 3)}, 'born'),
+            InputCheck(dielectric, (Quantity, NoneType),
+                       {(3, 3)}, 'dielectric'),
         )
         self.crystal = crystal
         self._force_constants = force_constants.to(
@@ -485,7 +490,8 @@ class ForceConstants:
         # Check weights is of appropriate type and shape, to avoid doing all
         # the interpolation only for it to fail creating QpointPhononModes
         _check_constructor_inputs(
-            (weights, [np.ndarray, type(None)], (len(qpts),), 'weights'),
+            InputCheck(weights, (np.ndarray, NoneType),
+                       {(len(qpts),)}, 'weights'),
         )
 
         # Set default splitting params
