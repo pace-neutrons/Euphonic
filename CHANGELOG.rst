@@ -1,22 +1,6 @@
 `Unreleased <https://github.com/pace-neutrons/Euphonic/compare/v1.6.1...HEAD>`_
 -------------------------------------------------------------------------------
 
-- API changes
-
-  - Public functions in ``euphonic.powder`` now use mandatory keyword arguments
-    - This will break code that depends on these arguments being in a specific order
-
-  - The various Spectrum classes have an ``assert_regular_bins``
-    method. It is now forbidden to use positional arguments and in the
-    2D cases ``bin_ax`` has a default value of "y". This makes the API
-    safer and more formally correct.
-
-  - Unused argument ``use_brille`` is removed from
-    ``euphonic.cli.brille_convergence.check_brille_settings``.
-
-  - ``get_args()`` function removed from ``euphonic.cli.utils``; this
-    was previously simplified to a one-liner so brings no DRY benefit.
-
 - Features
 
   - Spectrum1DCollection and Spectrum2DCollection can be indexed with
@@ -30,18 +14,7 @@
     **breaking change** as somebody's code could depend on this
     IndexError. At this stage it seems an acceptable risk.
 
-- Other changes
-
-  - Error messages have been overhauled and now follow a consistent format::
-
-      summary
-
-      [reason]
-
-      fix
-
-`v1.6.1 <https://github.com/pace-neutrons/Euphonic/compare/v1.6.0...v1.6.1>`_
------------------------------------------------------------------------------
+`v1.6.0 <https://github.com/pace-neutrons/Euphonic/compare/v1.5.1...v1.6.0>`_
 
 - Requirements
 
