@@ -114,7 +114,8 @@ jobs:
         shell: bash -l {0}
         run: |
           dotnet tool install --global dotnet-reportgenerator-globaltool --version 5.5.1
-          reportgenerator -reports:tests_and_analysis/test/reports/coverage-combined.xml -targetdir:tests_and_analysis/test/reports/html -reporttypes:Html_Dark
+          reportgenerator -reports:tests_and_analysis/test/reports/coverage-combined.xml -targetdir:tests_and_analysis/test/reports/html -reporttypes:Html_Dark,markdown
+          cat tests_and_analysis/test/reports/html/Summary.md >> $GITHUB_STEP_SUMMARY
 
       - name: Upload coverage HTML
         if: inputs.coverage
@@ -122,3 +123,4 @@ jobs:
         with:
           name: Coverage HTML (${{ inputs.os }})
           path: tests_and_analysis/test/reports/html
+          include-hidden-files: true
