@@ -1,6 +1,11 @@
 `Unreleased <https://github.com/pace-neutrons/Euphonic/compare/v1.6.0...HEAD>`_
 -------------------------------------------------------------------------------
 
+- API changes
+
+  - Public functions in ``euphonic.powder`` now use mandatory keyword arguments
+    - This will break code that depends on these arguments being in a specific order
+
 - Features
 
   - Spectrum1DCollection and Spectrum2DCollection can be indexed with
