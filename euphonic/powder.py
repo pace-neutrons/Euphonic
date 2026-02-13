@@ -325,8 +325,6 @@ def sample_sphere_structure_factor(
     """
 
     if isinstance(scattering_lengths, str):
-        scattering_lengths = get_reference_data(
-            physical_property='coherent_scattering_length',
         scattering_lengths: dict = get_reference_data(
             physical_property='coherent_scattering_length',
             collection=scattering_lengths)
@@ -336,8 +334,7 @@ def sample_sphere_structure_factor(
             dw_qpts = mp_grid(fc.crystal.get_mp_grid_spec(dw_spacing))
             dw_phonons = fc.calculate_qpoint_phonon_modes(dw_qpts,
                                                           **calc_modes_args)
-            dw = dw_phonons.calculate_debye_waller(temperature,
-dw: DebyeWaller = dw_phonons.calculate_debye_waller(temperature)
+            dw: DebyeWaller = dw_phonons.calculate_debye_waller(temperature)
         elif not np.isclose(dw.temperature, temperature):
             msg = (
                 'Temperature argument is not consistent with '
