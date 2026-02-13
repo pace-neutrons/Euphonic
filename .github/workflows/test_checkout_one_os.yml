@@ -134,5 +134,5 @@ jobs:
         if: inputs.coverage
         uses: actions/upload-artifact@v4
         with:
-          name: Coverage XML (${{ inputs.os }})
+          name: Coverage HTML (${{ inputs.os }})
           path: tests_and_analysis/test/reports/*.html
