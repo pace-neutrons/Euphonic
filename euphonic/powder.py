@@ -25,11 +25,12 @@ SphericalSamplingOptions = Literal['golden',
 
 def sample_sphere_dos(fc: ForceConstants,
                       mod_q: Quantity,
+                      *,
                       sampling: SphericalSamplingOptions = 'golden',
                       npts: int = 1000,
                       jitter: bool = False,
-                      energy_bins: Quantity = None,
                       rng: RNG = rng,
+                      energy_bins: Quantity = None,
                       **calc_modes_args,
                       ) -> Spectrum1D:
     """
@@ -78,11 +79,11 @@ def sample_sphere_dos(fc: ForceConstants,
     jitter
         For non-random sampling schemes, apply an additional random
         displacement to each point.
+    rng
+        Numpy random Generator for random sampling and jitter
     energy_bins
         Preferred energy bin edges. If not provided, will setup
         1000 bins (1001 bin edges) from 0 to 1.05 * [max energy]
-    rng
-        Numpy random Generator for random sampling and jitter
     **calc_modes_args
         other keyword arguments (e.g. 'use_c') will be passed to
         ForceConstants.calculate_qpoint_phonon_modes()
@@ -117,13 +118,14 @@ def sample_sphere_dos(fc: ForceConstants,
 def sample_sphere_pdos(
         fc: ForceConstants,
         mod_q: Quantity,
+        *,
         sampling: SphericalSamplingOptions = 'golden',
         npts: int = 1000,
         jitter: bool = False,
+        rng: RNG = rng,
         energy_bins: Quantity = None,
         weighting: str | None = None,
         cross_sections: str | dict[str, Quantity] = 'BlueBook',
-        rng: RNG = rng,
         **calc_modes_args,
         ) -> Spectrum1DCollection:
     """
@@ -172,6 +174,8 @@ def sample_sphere_pdos(
     jitter
         For non-random sampling schemes, apply an additional random
         displacement to each point.
+    rng
+        Numpy random Generator for random sampling and jitter
     energy_bins
         Preferred energy bin edges. If not provided, will setup
         1000 bins (1001 bin edges) from 0 to 1.05 * [max energy]
@@ -199,9 +203,6 @@ def sample_sphere_pdos(
         appropriate units, e.g::
 
             {'La': 8.0*ureg('barn'), 'Zr': 9.5*ureg('barn')}
-    rng
-        Numpy random Generator for random sampling and jitter
-
     **calc_modes_args
         other keyword arguments (e.g. 'use_c') will be passed to
         ForceConstants.calculate_qpoint_phonon_modes()
@@ -234,14 +235,16 @@ def sample_sphere_pdos(
 def sample_sphere_structure_factor(
     fc: ForceConstants,
     mod_q: Quantity,
+    *,
     dw: DebyeWaller = None,
     dw_spacing: Quantity = Quantity(0.025, '1/angstrom'),
     temperature: Quantity | None = Quantity(273., 'K'),
     sampling: SphericalSamplingOptions = 'golden',
-    npts: int = 1000, jitter: bool = False,
+    npts: int = 1000,
+    jitter: bool = False,
+    rng: RNG = rng,
     energy_bins: Quantity = None,
     scattering_lengths: str | dict[str, Quantity] = 'Sears1992',
-    rng: RNG = rng,
     **calc_modes_args,
     ) -> Spectrum1D:
     """Sample structure factor, averaging over a sphere of constant |q|
@@ -301,6 +304,8 @@ def sample_sphere_structure_factor(
     jitter
         For non-random sampling schemes, apply an additional random
         displacement to each point.
+    rng
+        Numpy random Generator for random sampling and jitter
     energy_bins
         Preferred energy bin edges. If not provided, will setup 1000
         bins (1001 bin edges) from 0 to 1.05 * [max energy]
@@ -309,8 +314,6 @@ def sample_sphere_structure_factor(
         string is provided, this selects coherent scattering lengths
         from reference data by setting the 'label' argument of the
         euphonic.util.get_reference_data() function.
-    rng
-        Numpy random Generator for random sampling and jitter
     **calc_modes_args
         other keyword arguments (e.g. 'use_c') will be passed to
         ForceConstants.calculate_qpoint_phonon_modes()
