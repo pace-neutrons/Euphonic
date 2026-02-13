@@ -354,8 +354,8 @@ def sample_sphere_structure_factor(
 
     qpts_frac = _qpts_cart_to_frac(qpts_cart, fc.crystal)
 
-    phonons = fc.calculate_qpoint_phonon_modes(qpts_frac, **calc_modes_args,
-                                               )  # type: QpointPhononModes
+    phonons: QpointPhononModes = fc.calculate_qpoint_phonon_modes(
+        qpts_frac, **calc_modes_args)
 
     if energy_bins is None:
         energy_bins = _get_default_bins(phonons)
