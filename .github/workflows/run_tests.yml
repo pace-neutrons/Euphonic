@@ -107,9 +107,15 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           path: artifacts
+
+      - name: list directories
+        shell: bash -l {0}
+        run: |
+          ls *
+
       - name: Get Coverage
         uses: orgoro/coverage@v3.2
-        continue-on-error: true
+        continue-on-error: false
         with:
-          coverageFile: artifacts/**/coverage-combined.xml
+          coverageFile: coverage-combined.xml
           token: ${{ secrets.GITHUB_TOKEN }}
