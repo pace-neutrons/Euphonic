@@ -108,3 +108,31 @@ jobs:
           files: tests_and_analysis/test/reports/coverage*.xml
           token: ${{ secrets.CODECOV_TOKEN }}
           fail_ci_if_error: true
+
+      - name: Merge coverage reports
+        if: inputs.coverage
+        shell: bash -l {0}
+        run: |
+          dotnet tool install -g dotnet-coverage
+          dotnet coverage merge --reports "tests_and_analysis/test/reports/coverage*.xml" -f cobertura -o "tests_and_analysis/test/reports/coverage-combined.xml"
+
+      - name: Upload coverage XML
+        if: inputs.coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: Coverage XML (${{ inputs.os }})
+          path: tests_and_analysis/test/reports/coverage-combined.xml
+
+      - name: Create coverage HTML
+        if: inputs.coverage
+        shell: bash -l {0}
+        run: |
+          dotnet tool install --global dotnet-reportgenerator-globaltool --version 5.5.1
+          dotnet reportgenerator -reports:tests_and_analysis/test/reports/coverage-combined.xml -targetdir:tests_and_analysis/test/reports/ -reporttypes:Html_Dark
+
+      - name: Upload coverage HTML
+        if: inputs.coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: Coverage XML (${{ inputs.os }})
+          path: tests_and_analysis/test/reports/*.html
