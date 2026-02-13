@@ -9,9 +9,10 @@
 
   - Explicitly include typing-extensions dependency.
 
-- Maintenance
+- API changes
 
-  - Ensure ``build_utils/version.py`` works for uncommitted changes to tagged HEADs.
+  - Public functions in ``euphonic.powder`` now use mandatory keyword arguments
+    - This will break code that depends on these arguments being in a specific order
 
 - Features
 
@@ -25,6 +26,10 @@
     Previously this would raise an IndexError. Technically it is a
     **breaking change** as somebody's code could depend on this
     IndexError. At this stage it seems an acceptable risk.
+
+- Maintenance
+
+  - Ensure ``build_utils/version.py`` works for uncommitted changes to tagged HEADs.
 
 `v1.6.1 <https://github.com/pace-neutrons/Euphonic/compare/v1.6.0...v1.6.1>`_
 -----------------------------------------------------------------------------
