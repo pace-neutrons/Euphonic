@@ -128,7 +128,7 @@ jobs:
         shell: bash -l {0}
         run: |
           dotnet tool install --global dotnet-reportgenerator-globaltool --version 5.5.1
-          dotnet reportgenerator -reports:tests_and_analysis/test/reports/coverage-combined.xml -targetdir:tests_and_analysis/test/reports/ -reporttypes:Html_Dark
+          reportgenerator -reports:tests_and_analysis/test/reports/coverage-combined.xml -targetdir:tests_and_analysis/test/reports/ -reporttypes:Html_Dark
 
       - name: Upload coverage HTML
         if: inputs.coverage
