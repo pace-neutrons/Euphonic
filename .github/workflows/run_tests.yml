@@ -97,4 +97,19 @@ jobs:
       - name: Publish test results
         uses: EnricoMi/publish-unit-test-result-action@v2
         with:
-          junit_files: artifacts/**/junit_report*.xml
+          files: artifacts/**/junit_report*.xml
+
+  publish-coverage:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+      - name: Get Coverage
+        uses: orgoro/coverage@v3.2
+        continue-on-error: true
+        with:
+          coverageFile: artifacts/**/coverage-combined.xml
+          token: ${{ secrets.GITHUB_TOKEN }}
