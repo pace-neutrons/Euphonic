@@ -30,7 +30,7 @@ def sample_sphere_dos(fc: ForceConstants,
                       npts: int = 1000,
                       jitter: bool = False,
                       rng: RNG = rng,
-                      energy_bins: Quantity = None,
+                      energy_bins: Quantity | None = None,
                       **calc_modes_args,
                       ) -> Spectrum1D:
     """
@@ -123,7 +123,7 @@ def sample_sphere_pdos(
         npts: int = 1000,
         jitter: bool = False,
         rng: RNG = rng,
-        energy_bins: Quantity = None,
+        energy_bins: Quantity | None = None,
         weighting: str | None = None,
         cross_sections: str | dict[str, Quantity] = 'BlueBook',
         **calc_modes_args,
@@ -335,7 +335,7 @@ def sample_sphere_structure_factor(
             dw_phonons = fc.calculate_qpoint_phonon_modes(dw_qpts,
                                                           **calc_modes_args)
             dw = dw_phonons.calculate_debye_waller(temperature,
-                                                   )  # type: DebyeWaller
+dw: DebyeWaller = dw_phonons.calculate_debye_waller(temperature)
         elif not np.isclose(dw.temperature, temperature):
             msg = (
                 'Temperature argument is not consistent with '
