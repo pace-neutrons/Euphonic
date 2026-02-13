@@ -327,7 +327,9 @@ def sample_sphere_structure_factor(
     if isinstance(scattering_lengths, str):
         scattering_lengths = get_reference_data(
             physical_property='coherent_scattering_length',
-            collection=scattering_lengths)  # type: dict
+        scattering_lengths: dict = get_reference_data(
+            physical_property='coherent_scattering_length',
+            collection=scattering_lengths)
 
     if temperature is not None:
         if (dw is None):
