@@ -106,16 +106,18 @@ jobs:
       - name: Download Artifacts
         uses: actions/download-artifact@v4
         with:
-          path: 'artifacts/Coverage XML (ubuntu-latest)'
+          path: artifacts
+          name: 'Coverage XML (ubuntu-latest)'
 
       - name: list directories
         shell: bash -l {0}
         run: |
+          ls
           ls *
 
       - name: Get Coverage
         uses: orgoro/coverage@v3.2
         continue-on-error: false
         with:
-          coverageFile: coverage-combined.xml
+          coverageFile: 'artifacts/coverage-combined.xml'
           token: ${{ secrets.GITHUB_TOKEN }}
