@@ -109,13 +109,15 @@ jobs:
           name: Coverage XML (${{ inputs.os }})
           path: tests_and_analysis/test/reports/coverage-combined.xml
 
-      - name: Create coverage HTML
+      - name: Create coverage outputs
         if: inputs.coverage
         shell: bash -l {0}
         run: |
           dotnet tool install --global dotnet-reportgenerator-globaltool --version 5.5.1
-          reportgenerator -reports:tests_and_analysis/test/reports/coverage-combined.xml -targetdir:tests_and_analysis/test/reports/html -reporttypes:Html_Dark,markdown
-          cat tests_and_analysis/test/reports/html/Summary.md >> $GITHUB_STEP_SUMMARY
+          reportgenerator -reports:tests_and_analysis/test/reports/coverage-combined.xml -targetdir:tests_and_analysis/test/reports/html -reporttypes:Html_Dark
+          reportgenerator -reports:tests_and_analysis/test/reports/coverage-combined.xml -targetdir:tests_and_analysis/test/reports -reporttypes:MarkdownSummaryGithub,Badges
+          cat tests_and_analysis/test/reports/Summary.md >> $GITHUB_STEP_SUMMARY
+          ls tests_and_analysis/test/reports
 
       - name: Upload coverage HTML
         if: inputs.coverage

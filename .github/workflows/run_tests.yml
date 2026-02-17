@@ -106,7 +106,7 @@ jobs:
       - name: Download Artifacts
         uses: actions/download-artifact@v4
         with:
-          path: artifacts
+          path: 'artifacts/Coverage XML (ubuntu-latest)'
 
       - name: list directories
         shell: bash -l {0}
