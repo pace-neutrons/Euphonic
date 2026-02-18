@@ -8,6 +8,12 @@ on:
   pull_request:
     types: [opened, reopened, labeled, synchronize]
   workflow_dispatch:
+    inputs:
+      push_coverage_badge:
+        description: 'Push coverage badge (even if not running on master)'
+        required: true
+        type: boolean
+        default: false
 
 jobs:
   lint:
@@ -125,6 +131,7 @@ jobs:
   publish-coverage-badge:
     needs: test
     runs-on: ubuntu-latest
+    if: ${{(github.event_name == 'push' && github.ref == 'refs/heads/master') || (github.event_name == 'workflow_dispatch' && inputs.push_coverage_badge)}}
     steps:
       - uses: actions/checkout@v6
         with:
