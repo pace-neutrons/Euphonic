@@ -155,5 +155,4 @@ jobs:
       - name: "Push commit to branch"
         shell: bash -l {0}
         run: |
-          # Verify that ref is a branch (as opposed to a tag or hash)
           git push origin badges

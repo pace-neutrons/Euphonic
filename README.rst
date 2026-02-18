@@ -2,7 +2,7 @@
 Euphonic
 ========
 
-|PyPI Version| |Conda Version| |Documentation Status| |Tests| |License| |DOI|
+|PyPI Version| |Conda Version| |Documentation Status| |Tests| |Coverage| |License| |DOI|
 
 .. |PyPI Version| image:: https://img.shields.io/pypi/v/euphonic
    :target: https://pypi.org/project/euphonic/
@@ -19,6 +19,9 @@ Euphonic
 .. |Tests| image:: https://github.com/pace-neutrons/Euphonic/actions/workflows/run_tests.yml/badge.svg
    :target: https://github.com/pace-neutrons/Euphonic/actions/workflows/run_tests.yml
    :alt: Tests
+
+.. |Coverage| image:: https://raw.githubusercontent.com/pace-neutrons/Euphonic/refs/heads/badges/badge.svg
+   :target: https://github.com/pace-neutrons/Euphonic/actions/workflows/run_tests.yml                      :alt: Coverage   
 
 .. |License| image:: https://img.shields.io/pypi/l/euphonic
    :target: https://github.com/pace-neutrons/Euphonic/blob/master/LICENSE
