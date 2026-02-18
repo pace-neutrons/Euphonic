@@ -108,9 +108,7 @@ jobs:
         run: |
           dotnet tool install --global dotnet-reportgenerator-globaltool --version 5.5.1
           reportgenerator -reports:tests_and_analysis/test/reports/coverage-combined.xml -targetdir:tests_and_analysis/test/reports/html -reporttypes:Html_Dark
-          reportgenerator -reports:tests_and_analysis/test/reports/coverage-combined.xml -targetdir:tests_and_analysis/test/reports -reporttypes:MarkdownSummaryGithub,Badges
-          cat tests_and_analysis/test/reports/SummaryGithub.md >> $GITHUB_STEP_SUMMARY
-          ls tests_and_analysis/test/reports
+          reportgenerator -reports:tests_and_analysis/test/reports/coverage-combined.xml -targetdir:tests_and_analysis/test/reports -reporttypes:Badges
 
       - name: Upload coverage XML
         if: inputs.coverage
