@@ -115,12 +115,6 @@ jobs:
           path: artifacts
           name: 'Coverage XML (ubuntu-latest)'
 
-      - name: list directories
-        shell: bash -l {0}
-        run: |
-          ls
-          ls *
-
       - name: Get Coverage
         uses: orgoro/coverage@v3.2
         continue-on-error: false
@@ -146,7 +140,6 @@ jobs:
 
       - name: "Create commit"
         run: |
-          ls artifacts
           mv artifacts/badge_shieldsio_linecoverage_lightgrey.svg badge.svg
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
