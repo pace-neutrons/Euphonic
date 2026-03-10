@@ -8,6 +8,12 @@ on:
   pull_request:
     types: [opened, reopened, labeled, synchronize]
   workflow_dispatch:
+    inputs:
+      push_coverage_badge:
+        description: 'Push coverage badge (even if not running on master)'
+        required: true
+        type: boolean
+        default: false
 
 jobs:
   lint:
@@ -97,4 +103,42 @@ jobs:
       - name: Publish test results
         uses: EnricoMi/publish-unit-test-result-action@v2
         with:
-          junit_files: artifacts/**/junit_report*.xml
+          files: artifacts/**/junit_report*.xml
+
+  publish-coverage:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          name: 'Coverage XML (ubuntu-latest)'
+
+      - name: Get Coverage
+        uses: orgoro/coverage@v3.2
+        continue-on-error: false
+        with:
+          coverageFile: 'artifacts/coverage-combined.xml'
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+  publish-coverage-badge:
+    needs: test
+    runs-on: ubuntu-latest
+    if: ${{(github.event_name == 'push' && github.ref == 'refs/heads/master') || (github.event_name == 'workflow_dispatch' && inputs.push_coverage_badge)}}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: badges
+          fetch-depth: 0
+
+      - name: Download Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: .
+          name: 'Coverage Badge (ubuntu-latest)'
+
+      - uses: EndBug/add-and-commit@v9
+        with:
+          add: 'badge_shieldsio_linecoverage_lightgrey.svg'
+          message: 'Update coverage badge'
