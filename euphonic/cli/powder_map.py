@@ -31,7 +31,7 @@ from euphonic.powder import (
 )
 from euphonic.spectra import apply_kinematic_constraints
 from euphonic.styles import base_style, intensity_widget_style
-import euphonic.util
+from euphonic.util import format_error
 
 # Dummy tqdm function if tqdm progress bars unavailable
 try:
@@ -133,15 +133,20 @@ def main(params: list[str] | None = None) -> None:
 
     fc = load_data_from_file(args.filename, verbose=True)
     if not isinstance(fc, ForceConstants):
-        msg = (
-            'Force constants are required to use the '
-            'euphonic-powder-map tool'
+        msg = format_error(
+            ('Force constants are required to '
+             'use the euphonic-powder-map tool.'),
+            fix='Use a data file containing force constants.',
         )
         raise TypeError(msg)
     if args.pdos is not None and args.weighting == 'coherent':
-        msg = (
+        msg = format_error(
+            'Incompatible options specified.',
+            reason=(
             '"--pdos" is only compatible with '
             '"--weighting" options that include dos'
+            ),
+            fix='Use the "coherent" weighting scheme.',
         )
         raise ValueError(msg)
 

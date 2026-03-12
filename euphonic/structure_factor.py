@@ -8,7 +8,7 @@ from euphonic.io import _obj_to_dict, _process_dict
 from euphonic.qpoint_frequencies import QpointFrequencies
 from euphonic.spectra import Spectrum1D, Spectrum2D
 from euphonic.ureg import Quantity, ureg
-from euphonic.util import dedent_and_fill
+from euphonic.util import format_error
 from euphonic.validate import _check_constructor_inputs, _check_unit_conversion
 
 
@@ -322,17 +322,25 @@ class StructureFactor(QpointFrequencies):
         if self.temperature is not None:
             if (temperature is not None
                     and not np.isclose(temperature, self.temperature)):
-                msg = dedent_and_fill(f"""
+                msg = format_error(
+                    'Inconsistent temperature.',
+                    reason=f"""
                     Temperature provided to calculate the Bose factor
                     ({temperature:~P}) is not consistent with the temperature
-                    stored in StructureFactor ({self.temperature:~P})""")
+                    stored in StructureFactor ({self.temperature:~P})""",
+                    fix=('Do not provide temperature or ensure '
+                         'temperatures are consistent.'))
                 raise ValueError(msg)
             temperature = self.temperature
         if temperature is None:
-            msg = dedent_and_fill("""
+            msg = format_error(
+                'No temperature provided.',
+                reason="""
                 When calculating the Bose factor, no temperature was
                 provided, and no temperature could be found in StructureFactor
-                """)
+                """,
+                fix='Ensure temperature is present or in StructureFactor',
+            )
             raise NoTemperatureError(msg)
         k_B = (1*ureg.k).to('E_h/K').magnitude
         temp = temperature.to('K').magnitude

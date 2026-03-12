@@ -1,4 +1,4 @@
-from collections.abc import Sequence
+from collections.abc import Iterable, Sequence
 from contextlib import contextmanager
 from functools import partial, reduce
 from importlib.resources import files
@@ -9,6 +9,7 @@ import os
 from pathlib import Path
 import sys
 import textwrap
+from typing import Any
 import warnings
 
 import numpy as np
@@ -28,6 +29,20 @@ except ImportError:
 
 zips = partial(zip, strict=True)
 
+def comma_join(x: Iterable[Any], /):
+    """Shorthand to join objects as strings with commas.
+
+    Parameters
+    ----------
+    x : Sequence[Any]
+        Entities to join.
+
+    Examples
+    --------
+    >>> comma_join((None, "a", 1))
+    'None, a, 1'
+    """
+    return ', '.join(map(str, x))
 
 def dedent_and_fill(text: str) -> str:
     r"""Clean up indented multiline string for display to user.
@@ -53,6 +68,26 @@ def dedent_and_fill(text: str) -> str:
 
     return '\n\n'.join(textwrap.fill(paragraph) for paragraph in paragraphs)
 
+
+def format_error(summary: str, *, reason: str = '', fix: str) -> str:
+    """Format errors to standard form.
+
+    Parameters
+    ----------
+    summary : str
+        Summary of what went wrong, should not exceed 80 characters.
+    reason : str, optional
+        Extended summary detailing the cause of the issue.
+    fix : str
+        Suggested remedy for issue.
+
+    Returns
+    -------
+    str
+        Formatted error message.
+    """
+
+    return dedent_and_fill('\n\n'.join(filter(None, (summary, reason, fix))))
 
 def direction_changed(qpts: np.ndarray, tolerance: float = 5e-6,
                       ) -> np.ndarray:
@@ -263,40 +298,43 @@ def get_reference_data(collection: str = 'Sears1992',
         with open(filename) as fd:
             file_data = json.load(fd, object_hook=custom_decode)
     else:
-        msg = dedent_and_fill(f"""
-            No data files known for collection "{collection}".
-            Available collections: {', '.join(_reference_data_files)}
-            """,
+        msg = format_error(
+            f'No data files known for collection "{collection}".',
+            fix=f'Available collections: {comma_join(_reference_data_files)}.',
         )
         raise ValueError(msg)
 
     if 'physical_property' not in file_data:
-        msg = 'Data file does not contain required key "physical_property".'
+        msg = format_error(
+            'Data file does not contain required key "physical_property".',
+            fix='Ensure file is formatted correctly.',
+        )
         raise AttributeError(msg)
 
     data = file_data['physical_property'].get(physical_property)
     if data is None:
-        msg =  dedent_and_fill(f"""
-            No such collection "{collection}" with property
-            "{physical_property}". Available properties for this collection:
-            """ + ', '.join(file_data['physical_property']),
+        msg =  format_error(
+            (f'No such collection "{collection}" '
+             f'with property "{physical_property}".'),
+            fix=('Available properties for this collection:'
+                 f'{comma_join(file_data["physical_property"])}.'),
             )
         raise ValueError(msg)
 
     unit_str = data.get('__units__')
     if unit_str is None:
-        msg = (
-            f'Reference data file "{filename}" does not '
-            'specify dimensions with "__units__" metadata.'
+        msg = format_error(
+            f'No units in file ({filename}).',
+            fix='Ensure file specifies dimensions with "__units__" metadata.',
         )
         raise ValueError(msg)
 
     try:
         unit = ureg(unit_str)
     except UndefinedUnitError as exc:
-        msg = (
-            f'Units "{unit_str}" from data file "{filename}" '
-            'are not supported by the Euphonic unit register.'
+        msg = format_error(
+            f'Unsupported units ({unit_str}) from data file "{filename}".',
+            fix='Ensure units are supported by Euphonic unit register.',
         )
         raise ValueError(msg) from exc
 
@@ -331,9 +369,9 @@ def mode_gradients_to_widths(mode_gradients: Quantity, cell_vectors: Quantity,
     if modg.ndim == 3 and modg.shape[2] == 3:
         modg = np.linalg.norm(modg, axis=2)
     elif modg.ndim != 2:
-        msg = (
-            f'Unexpected shape for mode_gradients {modg.shape}, '
-            f'expected (n_qpts, n_modes) or (n_qpts, n_modes, 3)'
+        msg = format_error(
+            f'Unexpected shape for mode_gradients ({modg.shape}).',
+            fix='Shape should be (n_qpts, n_modes) or (n_qpts, n_modes, 3).',
         )
         raise ValueError(msg)
 
@@ -405,12 +443,12 @@ def convert_fc_phases(force_constants: np.ndarray, atom_r: np.ndarray,
     n_atoms_uc = len(uc_to_sc_atom_idx)
     n_cells = int(np.rint(np.absolute(np.linalg.det(sc_matrix))))
     if n_atoms_sc/n_atoms_uc - n_cells != 0:
-        msg = dedent_and_fill(f"""
-            Inconsistent numbers of cells in the supercell, unit cell has
-            {n_atoms_uc} atoms, and supercell has {n_atoms_sc} atoms, but
-            sc_matrix determinant suggests there should be {n_cells} cells in
-            the supercell
-            """,
+        msg = format_error(
+            'Inconsistent numbers of cells in the supercell.',
+            reason=(f'Unit cell has {n_atoms_uc} atoms, '
+                    f'and supercell has {n_atoms_sc} atoms'),
+            fix=('sc_matrix determinant suggests there should '
+                 f'be {n_cells} cells in the supercell'),
         )
         raise ValueError(msg)
     # Get cell origins for all atoms
@@ -419,10 +457,10 @@ def convert_fc_phases(force_constants: np.ndarray, atom_r: np.ndarray,
         np.abs(cell_origins_per_atom
                - np.rint(cell_origins_per_atom)) > cell_origins_tol)[0]
     if len(non_int) > 0:
-        msg = dedent_and_fill(f"""
-            Non-integer cell origins for atom(s)
-            {", ".join(np.unique(non_int).astype(str))},
-            check coordinates and indices are correct""",
+        msg = format_error(
+            ('Non-integer cell origins for atom(s) '
+             f'({comma_join(np.unique(non_int).astype(str))}).'),
+            fix='Check coordinates and indices are correct.',
         )
         raise RuntimeError(msg)
     cell_origins_per_atom = np.rint(cell_origins_per_atom).astype(np.int32)
@@ -458,9 +496,11 @@ def convert_fc_phases(force_constants: np.ndarray, atom_r: np.ndarray,
                     co_idx = j
                     break
             else:
-                msg = dedent_and_fill("""
-                    Couldn't determine cell origins for force constants matrix
-                    """)
+                msg = format_error(
+                    ("Couldn't determine cell origins "
+                     "for force constants matrix."),
+                    fix='Ensure supercell origins are valid.',
+                )
                 raise ValueError(msg)
         cell_origins_map[i] = co_idx
 
@@ -806,7 +846,10 @@ def _get_supercell_relative_idx(cell_origins: np.ndarray,
             if np.all(dist_min <= 16*sys.float_info.epsilon):
                 break
         if np.any(dist_min > 16*sys.float_info.epsilon):
-            msg = "Couldn't find supercell relative index"
+            msg = format_error(
+                "Couldn't find supercell relative index.",
+                fix='Supercell may not be equivalent.',
+            )
             raise ValueError(msg)
     return sc_relative_index
 

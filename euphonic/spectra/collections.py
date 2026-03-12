@@ -28,7 +28,7 @@ from euphonic.broadening import ErrorFit, KernelShape
 from euphonic.io import _obj_to_dict, _process_dict
 from euphonic.readers.castep import read_phonon_dos_data
 from euphonic.ureg import ureg
-from euphonic.util import dedent_and_fill
+from euphonic.util import format_error
 from euphonic.validate import _check_constructor_inputs
 from euphonic.version import __version__
 
@@ -235,9 +235,9 @@ class SpectrumCollectionMixin(ABC):
             return
 
         if not all(isinstance(i, Integral) for i in item):
-            msg = (
-                f'Index "{item}" should be an integer, slice '
-                f'or sequence of ints'
+            msg = format_error(
+                f'Invalid type ({item}).',
+                fix='Index must be an integer, slice or sequence of ints.',
             )
             raise TypeError(msg)
 
@@ -368,9 +368,13 @@ class SpectrumCollectionMixin(ABC):
             selected_indices.extend(self._select_indices(**selection))
 
         if not selected_indices:
-            msg = (
-                f'No spectra found with matching metadata '
-                f'for {select_key_values}'
+            msg = format_error(
+                'Metadata not found.',
+                reason=(
+                    f'No spectra found with matching metadata '
+                    f'for {select_key_values}.'
+                ),
+                fix='Try different selection keys or ensure metadata exist.',
             )
             raise ValueError(msg)
 
@@ -429,11 +433,14 @@ class SpectrumCollectionMixin(ABC):
             n_lines = len(self.metadata['line_data'])
 
             if n_lines != collection_size:
-                msg = dedent_and_fill(f"""
+                msg = format_error(
+                    'Data mismatch.',
+                    reason=f"""
                     {self._spectrum_data_name()} contains {collection_size}
                     spectra, but metadata["line_data"] contains {n_lines}
                     entries
-                """)
+                    """,
+                    fix='Ensure metadata match spectra')
                 raise ValueError(msg)
 
     def group_by(self, *line_data_keys: str) -> Self:
@@ -510,7 +517,10 @@ class SpectrumCollectionMixin(ABC):
     @classmethod
     def _item_type_check(cls, spectrum) -> None:
         if not isinstance(spectrum, cls._item_type):
-            msg = f'Item is not of type {cls._item_type.__name__}.'
+            msg = format_error(
+                f'Invalid type ({type(spectrum).__name__}).',
+                fix='Item must be of type {cls._item_type.__name__}.',
+            )
             raise TypeError(msg)
 
 
@@ -619,13 +629,26 @@ class Spectrum1DCollection(SpectrumCollectionMixin,
                                  ) -> None:
         if (spectrum.y_data.units != y_data_units
                 or spectrum.x_data.units != x_data.units):
-            msg = 'Spectrum units in sequence are inconsistent'
+            msg = format_error(
+                'Inconsistent units.',
+                reason=f"""
+                x_data units ({spectrum.x_data.units} & {x_data.units}) or
+                y_data units ({spectrum.y_data.units} & {y_data_units})
+                don't match.
+                """,
+                fix='Ensure units match')
             raise ValueError(msg)
         if not np.allclose(spectrum.x_data, x_data):
-            msg = 'x_data in sequence are inconsistent'
+            msg = format_error(
+                'Inconsistent x_data',
+                fix='Spectrum x_data must equal x_data',
+            )
             raise ValueError(msg)
         if spectrum.x_tick_labels != x_tick_labels:
-            msg = 'x_tick_labels in sequence are inconsistent'
+            msg = format_error(
+                'Inconsistent x_tick_labels',
+                fix='Ensure tick labels match',
+            )
             raise ValueError(msg)
 
     @classmethod
@@ -820,7 +843,10 @@ class Spectrum1DCollection(SpectrumCollectionMixin,
                     width_fit=width_fit)
                 for spectrum in self])
 
-        msg = 'x_width must be a Quantity or Callable'
+        msg = format_error(
+            f'Invalid type ({type(x_width).__name__}).',
+            fix='x_width must be a Quantity or Callable',
+        )
         raise TypeError(msg)
 
     @classmethod
@@ -951,10 +977,18 @@ class Spectrum2DCollection(SpectrumCollectionMixin,
     ) -> None:
         """Check spectrum data units and x_tick_labels are consistent"""
         if spectrum_0_data_units != spectrum_i_data_units:
-            msg = 'Spectrum units in sequence are inconsistent'
+            msg = format_error(
+                'Inconsistent units',
+                reason='Spectrum units in sequence are inconsistent',
+                fix='Ensure units are consistent',
+            )
             raise ValueError(msg)
         if x_tick_labels != spectrum_i_x_tick_labels:
-            msg = 'x_tick_labels in sequence are inconsistent'
+            msg = format_error(
+                'Inconsistent x_tick_labels',
+                reason='x_tick_labels units in sequence are inconsistent',
+                fix='Ensure x_tick_labels are consistent',
+            )
             raise ValueError(msg)
 
     @staticmethod
@@ -970,10 +1004,18 @@ class Spectrum2DCollection(SpectrumCollectionMixin,
         for key, ref_bins in ref_bins_data.items():
             item_bins = getattr(spectrum, key)
             if not np.allclose(item_bins.magnitude, ref_bins.magnitude):
-                msg = 'Bins in sequence are inconsistent'
+                msg = format_error(
+                    'Inconsistent bins.',
+                    reason='Bins in sequence are inconsistent.',
+                    fix='Ensure bins are consistent.',
+                )
                 raise ValueError(msg)
             if item_bins.units != ref_bins.units:
-                msg = 'Bin units in sequence are inconsistent'
+                msg = format_error(
+                    'Inconsistent bin units.',
+                    reason='Bins units in sequence are inconsistent.',
+                    fix='Ensure bins units are consistent.',
+                )
                 raise ValueError(msg)
 
     @classmethod
@@ -988,7 +1030,10 @@ class Spectrum2DCollection(SpectrumCollectionMixin,
         """
 
         if len(spectra) < 1:
-            msg = 'At least one spectrum is needed for collection'
+            msg = format_error(
+                'No spectra provided.',
+                fix='Must have at least one spectrum for collection.',
+            )
             raise IndexError(msg)
 
         cls._item_type_check(spectra[0])

@@ -28,7 +28,12 @@ from euphonic import (
     Spectrum1DCollection,
     ureg,
 )
-from euphonic.util import dedent_and_fill, mp_grid, spglib_new_errors
+from euphonic.util import (
+    dedent_and_fill,
+    format_error,
+    mp_grid,
+    spglib_new_errors,
+)
 
 
 def _load_euphonic_json(filename: str | os.PathLike,
@@ -44,7 +49,10 @@ def _load_euphonic_json(filename: str | os.PathLike,
             return QpointPhononModes.from_json_file(filename)
         return QpointFrequencies.from_json_file(filename)
 
-    msg = 'Could not identify Euphonic data in JSON file.'
+    msg = format_error(
+        f'Could not identify Euphonic data in JSON file ({filename}).',
+        fix='Ensure JSON file contains "force_constants" or "frequencies".',
+    )
     raise ValueError(msg)
 
 
@@ -80,9 +88,13 @@ def _load_phonopy_file(filename: str | os.PathLike,
                 phonopy_kwargs['summary_name'] = 'phonopy.yaml'
                 phonopy_kwargs['fc_name'] = path.name
             else:
-                msg = (
-                    'Phonopy force_constants.hdf5 file '
-                    'must be accompanied by phonopy.yaml'
+                msg = format_error(
+                    'Missing phonopy.yaml.',
+                    reason = (
+                        'Phonopy force_constants.hdf5 file '
+                        'must be accompanied by phonopy.yaml'
+                    ),
+                    fix='Ensure phonopy.yaml provided.',
                 )
                 raise ValueError(msg)
         elif path.suffix in ('.yaml', '.yml'):
@@ -153,13 +165,17 @@ def load_data_from_file(filename: str | os.PathLike,
     elif path.suffix in phonopy_suffixes:
         data = _load_phonopy_file(path, frequencies_only)
     else:
-        msg = dedent_and_fill(f"""
-            File format was not recognised. CASTEP force constants data for
+        msg = format_error(
+            f'File format ({path.suffix}) not recognised.',
+            reason=f"""\
+            CASTEP force constants data for
             import should have extension from {castep_fc_suffixes}, CASTEP
             phonon mode data for import should have extension
             '{castep_qpm_suffixes}', data from Phonopy should have extension
             from {phonopy_suffixes}, data from Euphonic should have extension
-            '.json'.""")
+            '.json'.""",
+            fix='Ensure file format in known formats.',
+        )
         raise ValueError(msg)
     if verbose:
         print(f'{data.__class__.__name__} data was loaded')
@@ -213,9 +229,11 @@ def _get_q_distance(length_unit_string: str, q_distance: float) -> Quantity:
     try:
         length_units = ureg(length_unit_string)
     except UndefinedUnitError as err:
-        msg = (
-            'Length unit not known. Euphonic uses Pint for units. Try '
-            "'angstrom' or 'bohr'. Metric prefixes are also allowed, e.g 'nm'."
+        msg = format_error(
+            'Length unit not known',
+            reason='Euphonic uses Pint for units.',
+            fix=("Try 'angstrom' or 'bohr'. "
+                 "Metric prefixes are also allowed, e.g 'nm'."),
         )
         raise ValueError(msg) from err
     recip_length_units = 1 / length_units
@@ -242,9 +260,9 @@ def _get_energy_bins(
     if emax is None:
         emax = np.max(modes.frequencies.magnitude) * headroom
     if emin >= emax:
-        msg = (
-            'Maximum energy should be greater than minimum. '
-            'Check --e-min and --e-max arguments.'
+        msg = format_error(
+            'Maximum energy should be greater than minimum.',
+            fix='Check --e-min and --e-max arguments.',
         )
         raise ValueError(msg)
     return np.linspace(emin, emax, n_ebins) * modes.frequencies.units
@@ -437,7 +455,10 @@ def _get_pdos_weighting(cl_arg_weighting: str) -> str | None:
     else:
         idx = cl_arg_weighting.rfind('-')
         if idx == -1:
-            msg = f'Unexpected weighting "{cl_arg_weighting}"'
+            msg = format_error(
+                f'Unexpected weighting "{cl_arg_weighting}"',
+                fix='Check weighting arg. Should be e.g. "coherent-dos".',
+            )
             raise ValueError(msg)
         pdos_weighting = cl_arg_weighting[:idx]
     return pdos_weighting
@@ -568,7 +589,11 @@ def _get_cli_parser(features: Collection[str] = {},
                 'Accepted formats: .yaml, force_constants.hdf5 (Phonopy); '
                 '.castep_bin, .check (Castep); .json (Euphonic).')
         else:
-            msg = 'No band-data-only tools have been defined.'
+            msg = format_error(
+                'Invalid option requested.',
+                reason='No band-data-only tools have been defined.',
+                fix='Use format with force constants.',
+            )
             raise ValueError(msg)
         sections['file'].add_argument('filename', type=str, help=filename_doc)
 
@@ -811,7 +836,11 @@ def _get_cli_parser(features: Collection[str] = {},
                 choices=('gauss', 'lorentz'),
                 help='The broadening shape')
         else:
-            msg = '"adaptive-broadening" cannot be applied without "ebins"'
+            msg = format_error(
+                'Missing "ebins" argument.',
+                reason='"adaptive-broadening" cannot be used without "ebins".',
+                fix='Specify ebins.',
+            )
             raise ValueError(msg)
 
     if {'q-e', 'mp-grid'}.intersection(features):

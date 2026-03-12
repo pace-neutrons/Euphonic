@@ -6,7 +6,7 @@ import numpy as np
 
 from euphonic.spectra import Spectrum1D, Spectrum1DCollection, Spectrum2D
 from euphonic.ureg import Quantity
-from euphonic.util import dedent_and_fill, zips
+from euphonic.util import format_error, zips
 
 if TYPE_CHECKING:
     from matplotlib.lines import Line2D
@@ -19,13 +19,16 @@ try:
     import matplotlib.pyplot as plt
 
 except ModuleNotFoundError as err:
-    err_msg = dedent_and_fill("""
-        Cannot import Matplotlib for plotting (maybe Matplotlib is
-        not installed?). To install Euphonic's optional Matplotlib
+    err_msg = format_error(
+        'Cannot import matplotlib for plotting.',
+        reason='Maybe matplotlib is not installed.',
+        fix="""
+        To install Euphonic's optional Matplotlib
         dependency, try:
 
             pip install euphonic[matplotlib]
-    """)
+        """,
+    )
     raise ModuleNotFoundError(err_msg) from err
 
 
@@ -61,15 +64,20 @@ def plot_1d_to_axis(spectra: Spectrum1D | Spectrum1DCollection,
     try:
         assert isinstance(spectra, Spectrum1DCollection)
     except AssertionError:
-        msg = 'spectra should be a Spectrum1D or Spectrum1DCollection'
+        msg = format_error(
+            f'Invalid type for spectra ({type(spectra).__name__}).',
+            reason='spectra should be a Spectrum1D or Spectrum1DCollection.',
+            fix='Ensure spectrum of correct type.',
+        )
         raise TypeError(msg) from None
 
     if isinstance(labels, str):
         labels = [labels]
     if labels is not None and len(labels) != len(spectra):
-        msg = (
-            f'The length of labels (got {len(labels)}) should be the '
-            f'same as the number of lines to plot (got {len(spectra)})'
+        msg = format_error(
+            (f'Mismatched length for labels ({len(labels)}) '
+             f'and spectra ({len(spectra)}).'),
+            fix='Ensure one label per spectrum.',
         )
         raise ValueError(msg)
 
@@ -181,18 +189,20 @@ def plot_1d(spectra: OneDSpectrumOrSpectra,
     else:
         # Check units are consistent
         for spectrum in spectra[1:]:
+            invalid = ''
             if spectrum.x_data_unit != spectra[0].x_data_unit:
-                msg = (
-                    'Something went wrong: x data units are not '
-                    'consistent between spectrum subplots.'
-                )
-                raise ValueError(msg)
+                invalid += 'x'
             if spectrum.y_data_unit != spectra[0].y_data_unit:
-                msg = (
-                    'Something went wrong: y data units are not '
-                    'consistent between spectrum subplots.'
+                invalid += 'y'
+            if invalid:
+                msg = format_error(
+                    'Inconsistent units.',
+                    reason=(f'{invalid} data units are not consistent '
+                            'between spectrum subplots.'),
+                    fix='Ensure units are the same for each spectrum',
                 )
                 raise ValueError(msg)
+
 
     gridspec_kw = _get_gridspec_kw(spectra)
     fig, subplots = plt.subplots(1, len(spectra), sharey=True,

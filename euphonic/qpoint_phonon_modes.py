@@ -16,7 +16,13 @@ from euphonic.readers import castep, phonopy
 from euphonic.spectra import Spectrum1DCollection
 from euphonic.structure_factor import StructureFactor
 from euphonic.ureg import Quantity, ureg
-from euphonic.util import direction_changed, get_reference_data, is_gamma
+from euphonic.util import (
+    comma_join,
+    direction_changed,
+    format_error,
+    get_reference_data,
+    is_gamma,
+)
 from euphonic.validate import _check_constructor_inputs
 
 
@@ -251,9 +257,10 @@ class QpointPhononModes(QpointFrequencies):
         elif isinstance(scattering_lengths, dict):
             scattering_length_data = scattering_lengths
         else:
-            msg = (
-                f'Unexpected type for scattering_lengths, should be str '
-                f'or dict, got {type(scattering_lengths)}'
+            msg = format_error(
+                'Unexpected type for scattering_lengths '
+                f'({type(scattering_lengths).__name__}).',
+                fix='scattering_lengths should be str or dict.',
             )
             raise TypeError(msg)
 
@@ -282,10 +289,13 @@ class QpointPhononModes(QpointFrequencies):
         if dw:
             temperature = dw.temperature
             if dw.crystal.n_atoms != self.crystal.n_atoms:
-                msg = (
-                    'The DebyeWaller object used as dw is not '
-                    'compatible with the QPointPhononModes object (they'
-                    ' have a different number of atoms)'
+                msg = format_error(
+                    'Incompatible types (mismatched atom counts).',
+                    reason=(
+                        'The DebyeWaller object used as dw is not '
+                        'compatible with the QPointPhononModes object (they'
+                        ' have a different number of atoms)'),
+                    fix='Ensure atom counts match',
                 )
                 raise ValueError(msg)
             dw_factor = np.exp(-np.einsum('jkl,ik,il->ij',
@@ -546,9 +556,10 @@ class QpointPhononModes(QpointFrequencies):
         weighting_opts = [None, 'coherent', 'incoherent',
                           'coherent-plus-incoherent']
         if weighting not in weighting_opts:
-            msg = (
-                f'Invalid value for weighting, got {weighting}, should be one '
-                f'of {weighting_opts}'
+            msg = format_error(
+                f'Invalid weighting ({weighting}).',
+                fix=('weighting should be one of '
+                     f'{comma_join(weighting_opts)}.'),
             )
             raise ValueError(msg)
 
@@ -566,9 +577,10 @@ class QpointPhononModes(QpointFrequencies):
         elif isinstance(cross_sections, Mapping):
             cross_sections_data = [cross_sections]
         else:
-            msg = (
-                f'Unexpected type for cross_sections, expected '
-                f'str or dict, got {type(cross_sections)}'
+            msg = format_error(
+                'Invalid type for cross_sections '
+                f'({type(cross_sections).__name__}).',
+                fix='cross_sections should be str or dict.',
             )
             raise TypeError(msg)
 
@@ -581,10 +593,11 @@ class QpointPhononModes(QpointFrequencies):
             # Account for cross sections in different, or invalid, units
             ex_units = '[length]**2'
             if not cs[0].check(ex_units):
-                msg = (
-                    f'Unexpected dimensionality in cross_sections units, '
-                    f'expected {ex_units}, got {cs[0].dimensionality!s}'
-                )
+                msg = format_error(
+                    'Unexpected dimensions in cross_sections units '
+                    f'({cs[0].dimensionality}).',
+                    fix=f'cross_sections should have units of {ex_units}.',
+                    )
                 raise ValueError(msg)
             cs = [x.to('mbarn') for x in cs]
         else:
