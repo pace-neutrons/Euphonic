@@ -142,11 +142,10 @@ def main(params: list[str] | None = None) -> None:
     if args.pdos is not None and args.weighting == 'coherent':
         msg = format_error(
             'Incompatible options specified.',
-            reason=(
-            '"--pdos" is only compatible with '
-            '"--weighting" options that include dos'
-            ),
-            fix='Use the "coherent" weighting scheme.',
+            reason=('Coherent scattering cannot be decomposed '
+                    'to linear single-atom contributions.'),
+            fix=('Use --pdos with another weighting scheme, '
+                 'or use "coherent" weighting without --pdos.'),
         )
         raise ValueError(msg)
 

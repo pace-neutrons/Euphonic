@@ -67,7 +67,7 @@ def plot_1d_to_axis(spectra: Spectrum1D | Spectrum1DCollection,
         msg = format_error(
             f'Invalid type for spectra ({type(spectra).__name__}).',
             reason='spectra should be a Spectrum1D or Spectrum1DCollection.',
-            fix='Ensure spectrum of correct type.',
+            fix='Ensure spectrum is a Spectrum1D or Spectrum1DCollection.',
         )
         raise TypeError(msg) from None
 
@@ -197,7 +197,8 @@ def plot_1d(spectra: OneDSpectrumOrSpectra,
             if invalid:
                 msg = format_error(
                     'Inconsistent units.',
-                    reason=(f'{invalid} data units are not consistent '
+                    reason=(f'{" and ".join(invalid)} data units '
+                            'are not consistent '
                             'between spectrum subplots.'),
                     fix='Ensure units are the same for each spectrum',
                 )

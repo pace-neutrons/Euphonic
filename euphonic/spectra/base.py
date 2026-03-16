@@ -498,7 +498,7 @@ class Spectrum(ABC):
         Parameters
         ----------
         message
-            Text appended to ValueError for more informative output.
+            Text included in ValueError for more informative output.
 
         rtol
             Relative tolerance for 'close enough' values
@@ -523,7 +523,7 @@ class Spectrum(ABC):
             msg = format_error(
                 'Invalid bin widths.',
                 reason='Not all x-axis bins are the same width. ' + message,
-                fix='All bin widths must be the same')
+                fix='Ensure x_data has regular spacing.')
             raise AssertionError(msg)
 
 
@@ -1243,7 +1243,7 @@ class Spectrum2D(Spectrum):
                 'Invalid bin widths.',
                 reason=(f'Not all {bin_ax}-axis bins are the same width. ' +
                         message),
-                fix='All bin widths must be the same')
+                fix=f'Ensure {bin_ax}_data has regular spacing.')
             raise AssertionError(msg)
 
     def to_dict(self) -> dict[str, Any]:

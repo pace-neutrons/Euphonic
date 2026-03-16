@@ -327,8 +327,8 @@ class StructureFactor(QpointFrequencies):
                     reason=f"""
                     Temperature provided to calculate the Bose factor
                     ({temperature:~P}) is not consistent with the temperature
-                    stored in StructureFactor ({self.temperature:~P})""",
-                    fix=('Do not provide temperature or ensure '
+                    stored in StructureFactor ({self.temperature:~P}).""",
+                    fix=('Do not provide temperature, or ensure '
                          'temperatures are consistent.'))
                 raise ValueError(msg)
             temperature = self.temperature
@@ -337,9 +337,10 @@ class StructureFactor(QpointFrequencies):
                 'No temperature provided.',
                 reason="""
                 When calculating the Bose factor, no temperature was
-                provided, and no temperature could be found in StructureFactor
+                provided, and no temperature could be found in StructureFactor.
                 """,
-                fix='Ensure temperature is present or in StructureFactor',
+                fix=('Ensure temperature is '
+                     'provided as argument or in StructureFactor.'),
             )
             raise NoTemperatureError(msg)
         k_B = (1*ureg.k).to('E_h/K').magnitude

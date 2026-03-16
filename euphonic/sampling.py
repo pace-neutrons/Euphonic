@@ -307,7 +307,7 @@ def spherical_polar_improved(npts: int,
         msg = format_error(
             'Too few sampling points.',
             reason='This sampling scheme has a minimum of 6 points.',
-            fix='Use more sampling points.',
+            fix='Increase npts.',
         )
         raise ValueError(msg)
 

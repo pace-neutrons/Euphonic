@@ -293,9 +293,8 @@ class QpointPhononModes(QpointFrequencies):
                     'Incompatible types (mismatched atom counts).',
                     reason=(
                         'The DebyeWaller object used as dw is not '
-                        'compatible with the QPointPhononModes object (they'
-                        ' have a different number of atoms)'),
-                    fix='Ensure atom counts match',
+                        'compatible with the QPointPhononModes object.'),
+                    fix='Ensure both objects have the same number of atoms.',
                 )
                 raise ValueError(msg)
             dw_factor = np.exp(-np.einsum('jkl,ik,il->ij',

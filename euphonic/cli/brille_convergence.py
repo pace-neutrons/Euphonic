@@ -33,7 +33,7 @@ def main(params: list[str] | None = None) -> None:
         case _:
             msg = format_error(
                 'This script only allows a fixed-width broadening.',
-                fix='--energy-broadening should be a single value',
+                fix='--energy-broadening should be a single value.',
             )
             raise ValueError(msg)
 

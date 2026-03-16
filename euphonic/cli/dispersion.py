@@ -36,7 +36,8 @@ def main(params: list[str] | None = None) -> None:
 
         msg = format_error(
             'Eigenvectors are required to use "--reorder" option.',
-            fix='Use a data file which contains eigenvectors.',
+            fix=('Use a data file which contains '
+                 'eigenvectors or force constants.'),
         )
         raise TypeError(msg)
 

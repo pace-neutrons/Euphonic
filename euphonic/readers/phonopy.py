@@ -250,7 +250,7 @@ def read_phonon_data(
     else:
         msg = format_error(
             f'Unrecognised format ({phonon_format}) for {phonon_name}.',
-            fix=f'Valid formats are: {", ".join((*HDF5_EXTS, *YAML_EXTS))}',
+            fix=f'Valid formats are: {comma_join((*HDF5_EXTS, *YAML_EXTS))}',
         )
         raise ValueError(msg)
 
@@ -286,7 +286,7 @@ def read_phonon_data(
                 reason=(
                     f'Phonon file {phonon_path} not commensurate '
                     f'with summary file {summary_path}.'),
-                fix='Check contents of files match.',
+                fix='Ensure input files are consistent.',
             )
             raise ValueError(msg)
 
@@ -408,7 +408,7 @@ def _check_fc_shape(fc_shape: tuple[int, int], n_atoms: int,
             {fc_filename} is not compatible with crystal read from
             {summary_filename} which has {n_atoms} atoms in the cell, and
             {n_cells} cells in the supercell""",
-            fix='Ensure force constants generated from correct files.')
+            fix='Ensure input files are consistent.')
         raise ValueError(msg)
 
 

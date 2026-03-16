@@ -35,19 +35,21 @@ def main(params: list[str] | None = None) -> None:
     if not frequencies_only and not isinstance(
             data, (QpointPhononModes, ForceConstants)):
         msg = format_error(
-            'No eigenvectors found.',
+            'No eigenvectors found',
             reason=(
             'Eigenvectors are required to use "--pdos" or '
             'any "--weighting" option other than plain DOS'
             ),
-            fix='Use a data file which contains eigenvectors.',
+            fix=('Use a data file which contains '
+                 'eigenvectors or force constants.'),
         )
         raise TypeError(msg)
     if args.adaptive and not isinstance(data, ForceConstants):
         msg = format_error(
             'No force constants found.',
-            reason='Force constants are required to use --adaptive option.',
-            fix='Use a data file which contains force constants.',
+            reason=('The --adaptive option requires '
+                    'mode gradients to be calculated.'),
+            fix='Use a data file that contains force constants.',
         )
         raise TypeError(msg)
 

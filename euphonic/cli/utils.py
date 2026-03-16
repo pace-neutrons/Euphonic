@@ -92,7 +92,8 @@ def _load_phonopy_file(filename: str | os.PathLike,
                     'Missing phonopy.yaml.',
                     reason = (
                         'Phonopy force_constants.hdf5 file '
-                        'must be accompanied by phonopy.yaml'
+                        'must be accompanied by information '
+                        'about atomic masses, supercell, etc.'
                     ),
                     fix='Ensure phonopy.yaml provided.',
                 )
@@ -457,7 +458,7 @@ def _get_pdos_weighting(cl_arg_weighting: str) -> str | None:
         if idx == -1:
             msg = format_error(
                 f'Unexpected weighting "{cl_arg_weighting}"',
-                fix='Check weighting arg. Should be e.g. "coherent-dos".',
+                fix='Check weighting argument. Should be e.g. "coherent-dos".',
             )
             raise ValueError(msg)
         pdos_weighting = cl_arg_weighting[:idx]
@@ -592,7 +593,7 @@ def _get_cli_parser(features: Collection[str] = {},
             msg = format_error(
                 'Invalid option requested.',
                 reason='No band-data-only tools have been defined.',
-                fix='Use format with force constants.',
+                fix='Check the requested features are correct.',
             )
             raise ValueError(msg)
         sections['file'].add_argument('filename', type=str, help=filename_doc)
@@ -839,7 +840,7 @@ def _get_cli_parser(features: Collection[str] = {},
             msg = format_error(
                 'Missing "ebins" argument.',
                 reason='"adaptive-broadening" cannot be used without "ebins".',
-                fix='Specify ebins.',
+                fix='Include "ebins" in features.',
             )
             raise ValueError(msg)
 

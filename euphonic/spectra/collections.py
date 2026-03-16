@@ -438,9 +438,9 @@ class SpectrumCollectionMixin(ABC):
                     reason=f"""
                     {self._spectrum_data_name()} contains {collection_size}
                     spectra, but metadata["line_data"] contains {n_lines}
-                    entries
+                    entries.
                     """,
-                    fix='Ensure metadata match spectra')
+                    fix='Ensure metadata["line_data"] has correct length.')
                 raise ValueError(msg)
 
     def group_by(self, *line_data_keys: str) -> Self:
@@ -978,16 +978,18 @@ class Spectrum2DCollection(SpectrumCollectionMixin,
         """Check spectrum data units and x_tick_labels are consistent"""
         if spectrum_0_data_units != spectrum_i_data_units:
             msg = format_error(
-                'Inconsistent units',
-                reason='Spectrum units in sequence are inconsistent',
-                fix='Ensure units are consistent',
+                'Inconsistent units.',
+                reason='Spectrum units in sequence are inconsistent.',
+                fix=('Ensure Spectrum units are consistent '
+                     'for all sequence items.'),
             )
             raise ValueError(msg)
         if x_tick_labels != spectrum_i_x_tick_labels:
             msg = format_error(
-                'Inconsistent x_tick_labels',
-                reason='x_tick_labels units in sequence are inconsistent',
-                fix='Ensure x_tick_labels are consistent',
+                'Inconsistent x_tick_labels.',
+                reason='x_tick_labels units in sequence are inconsistent.',
+                fix=('Ensure x_tick_labels are consistent '
+                     'for all sequence items.'),
             )
             raise ValueError(msg)
 
@@ -1007,14 +1009,16 @@ class Spectrum2DCollection(SpectrumCollectionMixin,
                 msg = format_error(
                     'Inconsistent bins.',
                     reason='Bins in sequence are inconsistent.',
-                    fix='Ensure bins are consistent.',
+                    fix=('Ensure bins are consistent '
+                         'for all sequence items.'),
                 )
                 raise ValueError(msg)
             if item_bins.units != ref_bins.units:
                 msg = format_error(
                     'Inconsistent bin units.',
                     reason='Bins units in sequence are inconsistent.',
-                    fix='Ensure bins units are consistent.',
+                    fix=('Ensure bins units are consistent '
+                         'for all sequence items.'),
                 )
                 raise ValueError(msg)
 

@@ -1519,8 +1519,8 @@ casting to real mode gradients.
         # Check number of acoustic modes
         if np.sum(c_of_m_disp_sq > sensitivity * sc_mass) < 3:
             msg = format_error(
-                'Could not find 3 acoustic modes',
-                fix='',
+                'Could not find 3 acoustic modes.',
+                fix='Check convergence of phonon calculations.',
             )
             raise NotEnoughAcousticModesError(msg) from None
         # Find idx of acoustic modes (3 largest c of m displacements)

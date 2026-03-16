@@ -465,8 +465,8 @@ def _get_qpts_sphere(npts: int,
 
     msg = format_error(
         f'Unknown sampling method ({sampling}).',
-        fix=('Valid sampling methods are: ' +
-             comma_join(get_args(SphericalSamplingOptions)) + '.'),
+        fix=('Valid sampling methods are: '
+             f'{comma_join(get_args(SphericalSamplingOptions))}.'),
     )
     raise ValueError(msg)
 

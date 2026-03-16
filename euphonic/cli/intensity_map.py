@@ -35,7 +35,7 @@ def main(params: list[str] | None = None) -> None:
     ):
         msg = format_error(
             'Eigenvectors are required to use "--weighting coherent" option.',
-            fix='Use a data file containing eigenvectors.',
+            fix='Use a data file containing eigenvectors or force constants.',
         )
         raise TypeError(msg)
     if (args.weighting.lower() == 'coherent'

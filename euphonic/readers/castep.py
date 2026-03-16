@@ -251,7 +251,8 @@ def read_phonon_data(
                     reason=(
                         'Found multiple non-split blocks for q-point,'
                         ' cannot determine which to use.'),
-                    fix='Ensure q-point splitting is unique.',
+                    fix=(f'Check q-point {qpt_id} for duplication '
+                         'or add splitting directions.'),
                 )
                 raise ValueError(msg)
 
