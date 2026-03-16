@@ -199,7 +199,8 @@ class BrilleInterpolator:
         if grid_type not in grid_type_opts:
             msg = format_error(
                 f'Grid type "{grid_type}" not recognised.',
-                fix=f'Acceptable grid types are: {comma_join(grid_type_opts)}.',
+                fix=('Acceptable grid types are:'
+                     f' {comma_join(grid_type_opts)}.'),
             )
             raise ValueError(msg)
 
