@@ -168,7 +168,7 @@ def load_data_from_file(filename: str | os.PathLike,
     else:
         msg = format_error(
             f'File format ({path.suffix}) not recognised.',
-            reason=f"""\
+            reason=f"""
             CASTEP force constants data for
             import should have extension from {castep_fc_suffixes}, CASTEP
             phonon mode data for import should have extension

@@ -39,6 +39,7 @@ def comma_join(x: Iterable[Any], /):
 
     Examples
     --------
+    >>> from euphonic.util import comma_join
     >>> comma_join((None, "a", 1))
     'None, a, 1'
     """
@@ -86,8 +87,9 @@ def format_error(summary: str, *, reason: str = '', fix: str) -> str:
     str
         Formatted error message.
     """
-
-    return dedent_and_fill('\n\n'.join(filter(None, (summary, reason, fix))))
+    return '\n\n'.join(
+        map(dedent_and_fill,
+            filter(None, (summary, reason, fix))))
 
 def direction_changed(qpts: np.ndarray, tolerance: float = 5e-6,
                       ) -> np.ndarray:

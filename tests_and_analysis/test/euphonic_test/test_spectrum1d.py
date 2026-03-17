@@ -602,7 +602,7 @@ class TestSpectrum1DMethods:
 
 class TestBasePrivateFunctions:
     def test_distribution_1d_error(self):
-        with pytest.raises(ValueError, match="Expected shape: 'lorentz'"):
+        with pytest.raises(ValueError, match='Shape must be "lorentz"'):
             _distribution_1d(xbins=np.array([0., 1., 2.]),
                              xwidth=4.,
                              shape='non-implemented-shape')
