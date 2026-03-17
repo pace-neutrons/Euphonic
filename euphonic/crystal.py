@@ -14,7 +14,11 @@ from euphonic.io import (
     _process_dict,
 )
 from euphonic.ureg import Quantity, ureg
-from euphonic.util import _cell_vectors_to_volume, _get_unique_elems_and_idx
+from euphonic.util import (
+    _cell_vectors_to_volume,
+    _get_unique_elems_and_idx,
+    format_error,
+)
 from euphonic.validate import _check_constructor_inputs, _check_unit_conversion
 
 
@@ -245,9 +249,10 @@ class Crystal:
         # For some reason this can't always be reproduced
         symm = spglib.get_symmetry(self.to_spglib_cell(), symprec=symprec)
         if symm is None:
-            msg = (
-                f'spglib.get_symmetry returned None with '
-                f'symprec={symprec}. Try increasing tol'
+            msg = format_error(
+                'spglib.get_symmetry unable to determine symmetry.',
+                reason=f'Tolerance ({symprec}) may be too low.',
+                fix='Try increasing tol.',
             )
             raise RuntimeError(msg)
         n_ops = len(symm['rotations'])
@@ -277,11 +282,16 @@ class Crystal:
                                     f'symmetry op {op_idx}. Rotation '
                                     f'{symm["rotations"][op_idx]} translation '
                                     f'{symm["translations"][op_idx]}')
-                        if len(equiv_idx_op) == 0:
-                            msg = f'No equivalent atom found {err_info}'
-                            raise RuntimeError(msg)
-                        if len(equiv_idx_op) > 1:
-                            msg = f'Multiple equivalent atoms found {err_info}'
+                        if len(equiv_idx_op) != 1:
+                            typ = ('No'
+                                   if len(equiv_idx_op) == 0 else
+                                   'Multiple')
+                            msg = format_error(
+                                f'{typ} equivalent atoms.',
+                                reason=(f'{typ} equivalent atoms found '
+                                        f'{err_info}.'),
+                                fix='Check structure or tighten tolerance.',
+                            )
                             raise RuntimeError(msg)
                 equiv_atoms[:, i] = idx[equiv_idx[1]]
 

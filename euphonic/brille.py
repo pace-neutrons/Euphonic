@@ -10,9 +10,11 @@ try:
     import brille as br
 except ModuleNotFoundError as err:
     err_msg = textwrap.dedent("""
-        Cannot import Brille for use with BrilleInterpolator
-        (maybe Brille is not installed?). To install Euphonic's
-        optional Brille dependency, try:
+        Cannot import Brille for use with BrilleInterpolator.
+
+        This may be because Brille is not installed.
+
+        To install Euphonic's optional Brille dependency, try:
 
             pip install euphonic[brille]
         """)
@@ -25,6 +27,7 @@ from euphonic import (
     QpointPhononModes,
     ureg,
 )
+from euphonic.util import comma_join, format_error
 from euphonic.validate import _check_constructor_inputs
 
 
@@ -194,7 +197,11 @@ class BrilleInterpolator:
         """
         grid_type_opts = ('trellis', 'mesh', 'nest')
         if grid_type not in grid_type_opts:
-            msg = f'Grid type "{grid_type}" not recognised'
+            msg = format_error(
+                f'Grid type "{grid_type}" not recognised.',
+                fix=('Acceptable grid types are:'
+                     f' {comma_join(grid_type_opts)}.'),
+            )
             raise ValueError(msg)
 
         crystal = force_constants.crystal

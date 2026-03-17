@@ -15,7 +15,12 @@ from euphonic.io import (
 from euphonic.readers import castep, phonopy
 from euphonic.spectra import Spectrum1D, Spectrum1DCollection, Spectrum2D
 from euphonic.ureg import Quantity, ureg
-from euphonic.util import _calc_abscissa, get_qpoint_labels
+from euphonic.util import (
+    _calc_abscissa,
+    comma_join,
+    format_error,
+    get_qpoint_labels,
+)
 from euphonic.validate import _check_constructor_inputs, _check_unit_conversion
 
 AdaptiveMethod = Literal['reference', 'fast']
@@ -192,9 +197,10 @@ class QpointFrequencies:
 
         adaptive_method_options = ['reference', 'fast']
         if adaptive_method not in adaptive_method_options:
-            msg = (
-                f'Invalid value for adaptive_method, got {adaptive_method}, '
-                f'should be one of {adaptive_method_options}'
+            msg = format_error(
+                f'Invalid value for adaptive_method ({adaptive_method}).',
+                fix=('adaptive_method should be one of: '
+                     f'{comma_join(adaptive_method_options)}.'),
             )
             raise ValueError(msg)
 

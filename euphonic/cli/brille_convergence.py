@@ -18,6 +18,7 @@ from euphonic.cli.utils import (
     load_data_from_file,
 )
 from euphonic.sampling import recurrence_sequence
+from euphonic.util import format_error
 
 
 def main(params: list[str] | None = None) -> None:
@@ -30,8 +31,10 @@ def main(params: list[str] | None = None) -> None:
         case None:
             pass
         case _:
-            msg = ('This script only allows a fixed-width broadening '
-                   '(i.e. --energy-broadening should be a single value)')
+            msg = format_error(
+                'This script only allows a fixed-width broadening.',
+                fix='--energy-broadening should be a single value.',
+            )
             raise ValueError(msg)
 
     check_brille_settings(**params)
@@ -56,9 +59,10 @@ def check_brille_settings(
 
     fc = load_data_from_file(filename)
     if not isinstance(fc, ForceConstants):
-        msg = (
-            'Force constants are required to use the '
-            'euphonic-check-brille-settings tool'
+        msg = format_error(
+            ('Force constants are required to use the '
+             'euphonic-check-brille-settings tool'),
+            fix='Use a data file with force constants available.',
         )
         raise TypeError(msg)
 

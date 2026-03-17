@@ -5,6 +5,7 @@ import matplotlib.style
 from euphonic import ForceConstants, QpointPhononModes, Spectrum1D
 from euphonic.plot import plot_1d
 from euphonic.styles import base_style
+from euphonic.util import format_error
 from euphonic.writers.phonon_website import write_phonon_website_json
 
 from .utils import (
@@ -32,9 +33,13 @@ def main(params: list[str] | None = None) -> None:
 
     if not frequencies_only and not isinstance(
             data, (ForceConstants, QpointPhononModes)):
-        msg = 'Eigenvectors are required to use "--reorder" option'
-        raise TypeError(
-            msg)
+
+        msg = format_error(
+            'Eigenvectors are required to use "--reorder" option.',
+            fix=('Use a data file which contains '
+                 'eigenvectors or force constants.'),
+        )
+        raise TypeError(msg)
 
     if isinstance(data, ForceConstants):
         print('Getting band path...')

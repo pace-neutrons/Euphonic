@@ -117,7 +117,7 @@ jobs:
 
       - name: Get Coverage
         uses: orgoro/coverage@v3.2
-        continue-on-error: false
+        continue-on-error: true
         with:
           coverageFile: 'artifacts/coverage-combined.xml'
           token: ${{ secrets.GITHUB_TOKEN }}

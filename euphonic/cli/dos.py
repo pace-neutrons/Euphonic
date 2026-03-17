@@ -7,7 +7,7 @@ from numpy.polynomial import Polynomial
 from euphonic import ForceConstants, QpointPhononModes, ureg
 from euphonic.plot import plot_1d
 from euphonic.styles import base_style
-from euphonic.util import dedent_and_fill, mode_gradients_to_widths, mp_grid
+from euphonic.util import format_error, mode_gradients_to_widths, mp_grid
 
 from .utils import (
     _arrange_pdos_groups,
@@ -34,31 +34,46 @@ def main(params: list[str] | None = None) -> None:
 
     if not frequencies_only and not isinstance(
             data, (QpointPhononModes, ForceConstants)):
-        msg = (
+        msg = format_error(
+            'No eigenvectors found',
+            reason=(
             'Eigenvectors are required to use "--pdos" or '
             'any "--weighting" option other than plain DOS'
+            ),
+            fix=('Use a data file which contains '
+                 'eigenvectors or force constants.'),
         )
         raise TypeError(msg)
     if args.adaptive and not isinstance(data, ForceConstants):
-        msg = 'Force constants are required to use --adaptive option'
+        msg = format_error(
+            'No force constants found.',
+            reason=('The --adaptive option requires '
+                    'mode gradients to be calculated.'),
+            fix='Use a data file that contains force constants.',
+        )
         raise TypeError(msg)
 
     if (args.energy_broadening
             and args.adaptive
             and len(args.energy_broadening) == 1):
         if args.adaptive_scale is not None:
-            msg = dedent_and_fill("""
-                Adaptive scale factor was specified twice; use either
-                --adaptive-scale or --energy-broadening.  To add a fixed width
-                to adaptive broadening, use --instrument-broadening.""")
+            msg = format_error(
+                'Adaptive scale factor was specified twice.',
+                fix="""
+                Use either --adaptive-scale or --energy-broadening.
+
+                To add a fixed width to adaptive broadening,
+                use --instrument-broadening.""",
+            )
             raise ValueError(msg)
         args.adaptive_scale = args.energy_broadening[0]
 
     elif args.energy_broadening:
         if args.inst_broadening is not None:
-            msg = (
-                'Broadening width was specified twice; use either'
-                '--instrument-broadening or --energy-broadening.'
+            msg = format_error(
+                'Broadening width was specified twice.',
+                fix=('Use either --instrument-broadening '
+                     'or --energy-broadening.'),
             )
             raise ValueError(msg)
         args.inst_broadening = args.energy_broadening

@@ -13,7 +13,7 @@ from scipy.signal import convolve
 from scipy.stats import norm
 
 from euphonic.ureg import ureg
-from euphonic.util import dedent_and_fill
+from euphonic.util import format_error
 
 ErrorFit = Literal['cheby-log', 'cubic']
 KernelShape = Literal['gauss', 'lorentz']
@@ -80,15 +80,18 @@ def variable_width_broadening(
         def sigma_function(x: Quantity) -> Quantity:
             return width_function(x) * FWHM_TO_SIGMA
     elif width_convention.lower() == 'std' and shape == 'lorentz':
-        msg = (
-            'Standard deviation unavailable for Lorentzian '
-            'function: please use FWHM.'
+        msg = format_error(
+            'Standard deviation unavailable.',
+            fix='For Lorentzian function: please use FWHM.',
         )
         raise ValueError(msg)
     elif width_convention.lower() in ('std', 'fwhm'):
         sigma_function = width_function
     else:
-        msg = 'width_convention must be "std" or "fwhm".'
+        msg = format_error(
+            f'Invalid width convention: {width_convention}.',
+            fix='`width_convention` must be "std" or "fwhm".',
+        )
         raise ValueError(msg)
 
     widths = sigma_function(x)
@@ -185,10 +188,11 @@ def _get_spacing(error,
         return np.polyval([612.7, -122.7, 15.40, 1.0831], error)
 
     if fit != 'cheby-log':
-        msg = dedent_and_fill(f"""
-            Fit "{fit}" is not available for shape "{shape}". The "cheby-log"
-            fit is recommended for "gauss" and "Lorentz" shapes.'
-            """)
+        msg = format_error(
+            f'Fit "{fit}" is not available for shape "{shape}".',
+            fix=('The "cheby-log" fit is recommended for'
+                 '"gauss" and "Lorentz" shapes.'),
+            )
         raise ValueError(msg)
 
     if shape == 'lorentz':
@@ -209,9 +213,9 @@ def _get_spacing(error,
 
     log_error = np.log10(error)
     if not safe_domain[0] < log_error < safe_domain[1]:
-        msg = (
-            'Target error is out of fit range; value must lie '
-            f'in range {np.power(10, safe_domain)}.'
+        msg = format_error(
+            f'Target error ({error}) is out of fit range.',
+            fix=f'Value must lie in range {np.power(10, safe_domain)}.',
         )
         raise ValueError(msg)
     return cheby(log_error)

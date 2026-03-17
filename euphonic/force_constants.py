@@ -30,6 +30,7 @@ from euphonic.ureg import ureg
 from euphonic.util import (
     _get_supercell_relative_idx,
     dedent_and_fill,
+    format_error,
     get_all_origins,
     is_gamma,
 )
@@ -1517,7 +1518,10 @@ casting to real mode gradients.
         sc_mass = 1.0*n_atoms
         # Check number of acoustic modes
         if np.sum(c_of_m_disp_sq > sensitivity * sc_mass) < 3:
-            msg = 'Could not find 3 acoustic modes'
+            msg = format_error(
+                'Could not find 3 acoustic modes.',
+                fix='Check convergence of phonon calculations.',
+            )
             raise NotEnoughAcousticModesError(msg) from None
         # Find idx of acoustic modes (3 largest c of m displacements)
         ac_i = np.argsort(c_of_m_disp_sq)[-3:]
