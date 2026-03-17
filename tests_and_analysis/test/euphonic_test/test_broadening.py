@@ -78,7 +78,7 @@ def test_variable_close_to_exact(example):
     [('STD', 'cheby-log', 0.001, 'Standard deviation unavailable'),
      ('UNIMPLEMENTED', 'cheby-log', 0.001, 'must be "std" or "fwhm"'),
      ('FWHM', 'UNIMPLEMENTED', 0.001, 'Fit "UNIMPLEMENTED" is not available'),
-     ('FWHM', 'cheby-log', 0.00001, 'Target error is out of fit range'),
+     ('FWHM', 'cheby-log', 0.00001, r'Target error \([^)]+\) is out of fit range'),
      ])
 def test_variable_width_broadening_errors(example, width_convention, fit, adaptive_error, message):
 

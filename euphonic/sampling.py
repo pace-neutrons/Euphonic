@@ -9,7 +9,7 @@ from itertools import product
 import numpy as np
 from scipy.optimize import fmin
 
-from euphonic.util import RNG, rng
+from euphonic.util import RNG, format_error, rng
 
 _golden_ratio = (1 + np.sqrt(5)) / 2
 
@@ -304,7 +304,11 @@ def spherical_polar_improved(npts: int,
         If the number of points is not supported by this method
         """
     if npts < 6:
-        msg = 'This sampling scheme has a minimum of 6 points'
+        msg = format_error(
+            'Too few sampling points.',
+            reason='This sampling scheme has a minimum of 6 points.',
+            fix='Increase npts.',
+        )
         raise ValueError(msg)
 
     # round from the solution of

@@ -15,6 +15,7 @@ import numpy as np
 
 from euphonic import ForceConstants
 from euphonic.cli.utils import _get_cli_parser, get_args, load_data_from_file
+from euphonic.util import format_error
 
 # Formatting string for timing output TEXT: VALUE UNITS
 TIMING_TEMPLATE = '{:20s}: {:3.2f} {:s}\n'
@@ -81,9 +82,12 @@ def calculate_optimum_dipole_parameter(
 
     fc = load_data_from_file(filename)
     if not isinstance(fc, ForceConstants):
-        msg = (
-            'Force constants are required to use the '
-            'euphonic-optimise-dipole-parameter tool'
+        msg = format_error(
+            (
+                'Force constants are required to use the '
+                'euphonic-optimise-dipole-parameter tool'
+            ),
+            fix='Use a data file containing force constants',
         )
         raise TypeError(msg)
     # Only warn rather than error - although not designed for it
