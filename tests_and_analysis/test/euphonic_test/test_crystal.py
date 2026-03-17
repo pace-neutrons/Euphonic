@@ -474,5 +474,5 @@ class TestCrystalMethods:
                      return_value=None)
         crystal = get_crystal('LZO')
         with pytest.raises(RuntimeError,
-                           match='spglib.get_symmetry returned None'):
+                           match=r'spglib\.get_symmetry unable to determine symmetry\.'):
             crystal.get_symmetry_equivalent_atoms()

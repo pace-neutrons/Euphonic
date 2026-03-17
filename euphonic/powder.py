@@ -1,6 +1,6 @@
 """Functions for averaging spectra in spherical q bins"""
 
-from typing import Literal
+from typing import Literal, get_args
 
 import numpy as np
 
@@ -14,7 +14,14 @@ from euphonic import (
     Spectrum1D,
     Spectrum1DCollection,
 )
-from euphonic.util import RNG, get_reference_data, mp_grid, rng
+from euphonic.util import (
+    RNG,
+    comma_join,
+    format_error,
+    get_reference_data,
+    mp_grid,
+    rng,
+)
 
 SphericalSamplingOptions = Literal['golden',
                                    'sphere-projected-grid',
@@ -336,9 +343,13 @@ def sample_sphere_structure_factor(
                                                           **calc_modes_args)
             dw: DebyeWaller = dw_phonons.calculate_debye_waller(temperature)
         elif not np.isclose(dw.temperature, temperature):
-            msg = (
-                'Temperature argument is not consistent with '
-                'temperature stored in DebyeWaller object.'
+            msg = format_error(
+                'Inconsistent temperature.',
+                reason=(
+                    'Temperature argument is not consistent with '
+                    'temperature stored in DebyeWaller object.'
+                ),
+                fix='Ensure consistency between values.',
             )
             raise ValueError(msg)
 
@@ -452,7 +463,11 @@ def _get_qpts_sphere(npts: int,
         case 'random-sphere':
             return np.asarray(list(random_sphere(npts, rng=rng)))
 
-    msg = f'Sampling method "{sampling}" is unknown.'
+    msg = format_error(
+        f'Unknown sampling method ({sampling}).',
+        fix=('Valid sampling methods are: '
+             f'{comma_join(get_args(SphericalSamplingOptions))}.'),
+    )
     raise ValueError(msg)
 
 
