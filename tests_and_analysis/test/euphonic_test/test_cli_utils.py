@@ -17,19 +17,19 @@ from tests_and_analysis.test.utils import get_data_path
 
 def test_get_cli_parser_error():
     with pytest.raises(
-            ValueError, match='No band-data-only tools have been defined.'):
+            ValueError, match=r'No band-data-only tools have been defined\.'):
         _get_cli_parser(features={'read-modes'})
 
     with pytest.raises(
             ValueError,
-            match='"adaptive-broadening" cannot be applied without "ebins"'):
+            match='"adaptive-broadening" cannot be used without "ebins"'):
         _get_cli_parser(features={'adaptive-broadening'})
 
 
 def test_get_energy_bins_error():
     with pytest.raises(
             ValueError,
-            match='Maximum energy should be greater than minimum.'):
+            match=r'Maximum energy should be greater than minimum\.'):
         _get_energy_bins(modes=None, n_ebins=0, emin=1, emax=0)
 
 
@@ -48,13 +48,13 @@ def test_load_phonopy_errors():
         'phonopy_files', 'CaHgO2', 'full_force_constants.hdf5')
 
     with pytest.raises(
-            ValueError, match='must be accompanied by phonopy.yaml'):
+            ValueError, match=r'Missing phonopy\.yaml\.'):
         _load_phonopy_file(fc_file)
 
 
 def test_load_data_extension_error():
     with pytest.raises(
-            ValueError, match='File format was not recognised.'):
+            ValueError, match=r'Ensure file format in known formats\.'):
         load_data_from_file('nonexistent.wrong_suffix')
 
 
@@ -88,4 +88,3 @@ def test_find_force_constants(mocked_fc_from_phonopy):
         'summary_name': 'phonopy_nofc.yaml',
         'fc_name': 'force_constants.hdf5',
     }
-
