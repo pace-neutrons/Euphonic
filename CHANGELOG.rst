@@ -27,6 +27,16 @@
     **breaking change** as somebody's code could depend on this
     IndexError. At this stage it seems an acceptable risk.
 
+- Other changes
+
+  - Error messages have been overhauled and now follow a consistent format::
+
+      summary
+
+      [reason]
+
+      fix
+
 `v1.6.0 <https://github.com/pace-neutrons/Euphonic/compare/v1.5.1...v1.6.0>`_
 
 - Requirements
