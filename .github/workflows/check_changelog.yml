@@ -14,4 +14,4 @@ jobs:
           fetch-depth: 0
       - name: Get changes
         run: |
-          ! git diff --exit-code "${GITHUB_BASE_REF}" -- CHANGELOG.rst
+          ! git diff --exit-code "origin/${GITHUB_BASE_REF}" -- CHANGELOG.rst
