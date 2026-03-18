@@ -1,0 +1,17 @@
+name: Changelog updated
+
+on:
+  pull_request:
+    types: [opened, reopened, labeled, synchronize]
+
+jobs:
+  check_log:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - name: Get changes
+        run: |
+          ! git diff --exit-code -- "${GITHUB_BASE_REF}" "${GITHUB_HEAD_REF}" CHANGELOG.rst
