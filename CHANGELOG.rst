@@ -11,6 +11,9 @@
     2D cases ``bin_ax`` has a default value of "y". This makes the API
     safer and more formally correct.
 
+  - Unused argument ``use_brille`` is removed from
+    ``euphonic.cli.brille_convergence.check_brille_settings``.
+
 - Features
 
   - Spectrum1DCollection and Spectrum2DCollection can be indexed with
