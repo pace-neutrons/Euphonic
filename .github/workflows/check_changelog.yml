@@ -17,7 +17,7 @@ jobs:
           set +e  # Don't immediately fail when bash sees exit 1
           git diff --exit-code "origin/${GITHUB_BASE_REF}" -- CHANGELOG.rst
           if [ $? -eq 1 ]; then
-              return 0
+              exit 0
           fi
           # git-diff did not return 1; either no changes or another error encountered
-          return 1
+          exit 1
