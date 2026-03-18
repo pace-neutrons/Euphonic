@@ -14,4 +14,10 @@ jobs:
           fetch-depth: 0
       - name: Get changes
         run: |
-          ! git diff --exit-code -- "${GITHUB_BASE_REF}" "${GITHUB_HEAD_REF}" CHANGELOG.rst
+          set +e  # Don't immediately fail when bash sees exit 1
+          git diff --exit-code "origin/${GITHUB_BASE_REF}" -- CHANGELOG.rst
+          if [ $? -eq 1 ]; then
+              exit 0
+          fi
+          # git-diff did not return 1; either no changes or another error encountered
+          exit 1
