@@ -14,7 +14,7 @@
   - Security
 
     - Bumped *wheel* requirement for docs and testing to 0.46.2. (`CVE-2026-24049 <https://www.cve.org/CVERecord?id=CVE-2026-24049>`_)
-  
+
 
 - Bug fixes
 
