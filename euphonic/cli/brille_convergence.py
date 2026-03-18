@@ -25,6 +25,8 @@ def main(params: list[str] | None = None) -> None:
     args = get_args(get_parser(), params)
     params = vars(args)
 
+    del params['use_brille']  # This tool _always_ uses brille
+
     match params['energy_broadening']:
         case int(value) | float(value) | [int(value)] | [float(value)]:
             params['energy_broadening'] = value
@@ -43,7 +45,6 @@ def main(params: list[str] | None = None) -> None:
 def check_brille_settings(
         filename: Path | str,
         npts: int = 500,
-        use_brille: bool = True,  # noqa: ARG001  # Removal scheduled for v2
         brille_grid_type: str = 'trellis',
         brille_npts: int = 5000,
         brille_npts_density: int | None = None,
