@@ -6,6 +6,11 @@
   - Public functions in ``euphonic.powder`` now use mandatory keyword arguments
     - This will break code that depends on these arguments being in a specific order
 
+  - The various Spectrum classes have an ``assert_regular_bins``
+    method. It is now forbidden to use positional arguments and in the
+    2D cases ``bin_ax`` has a default value of "y". This makes the API
+    safer and more formally correct.
+
 - Features
 
   - Spectrum1DCollection and Spectrum2DCollection can be indexed with
