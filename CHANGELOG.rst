@@ -1,5 +1,3 @@
-This is definitely a change the changelog needs.
-
 `Unreleased <https://github.com/pace-neutrons/Euphonic/compare/v1.6.0...HEAD>`_
 -------------------------------------------------------------------------------
 
