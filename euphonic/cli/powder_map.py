@@ -19,7 +19,6 @@ from euphonic.cli.utils import (
     _get_pdos_weighting,
     _get_q_distance,
     _plot_label_kwargs,
-    get_args,
     load_data_from_file,
     matplotlib_save_or_show,
 )
@@ -124,7 +123,7 @@ def _get_broaden_kwargs(q_broadening: Sequence[float] | None = None,
 
 
 def main(params: list[str] | None = None) -> None:
-    args = get_args(get_parser(), params)
+    args = get_parser().parse_args(args=params)
     calc_modes_kwargs = _calc_modes_kwargs(args)
 
     # Make sure we get an error if accessing NPTS inappropriately

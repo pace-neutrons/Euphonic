@@ -14,6 +14,9 @@
   - Unused argument ``use_brille`` is removed from
     ``euphonic.cli.brille_convergence.check_brille_settings``.
 
+  - ``get_args()`` function removed from ``euphonic.cli.utils``; this
+    was previously simplified to a one-liner so brings no DRY benefit.
+
 - Features
 
   - Spectrum1DCollection and Spectrum2DCollection can be indexed with

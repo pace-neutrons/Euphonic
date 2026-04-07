@@ -18,15 +18,13 @@ from .utils import (
     _get_pdos_weighting,
     _grid_spec_from_args,
     _plot_label_kwargs,
-    get_args,
     load_data_from_file,
     matplotlib_save_or_show,
 )
 
 
 def main(params: list[str] | None = None) -> None:
-    parser = get_parser()
-    args = get_args(parser, params)
+    args = get_parser().parse_args(args=params)
 
     frequencies_only = (args.weighting == 'dos' and args.pdos is None)
     data = load_data_from_file(args.filename, verbose=True,

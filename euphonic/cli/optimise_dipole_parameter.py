@@ -14,7 +14,7 @@ import warnings
 import numpy as np
 
 from euphonic import ForceConstants
-from euphonic.cli.utils import _get_cli_parser, get_args, load_data_from_file
+from euphonic.cli.utils import _get_cli_parser, load_data_from_file
 from euphonic.util import format_error
 
 # Formatting string for timing output TEXT: VALUE UNITS
@@ -25,7 +25,7 @@ DPARAM_TEMPLATE = '{:s} {:2.2f}'
 
 
 def main(params: list[str] | None = None) -> None:
-    args = get_args(get_parser(), params)
+    args = get_parser().parse_args(args=params)
     params = vars(args)
     params.update({'print_to_terminal': True})
     calculate_optimum_dipole_parameter(**params)
