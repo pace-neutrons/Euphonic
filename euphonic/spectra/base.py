@@ -22,7 +22,6 @@ from scipy.ndimage import correlate1d, gaussian_filter
 
 from euphonic.broadening import (
     FWHM_TO_SIGMA,
-    ErrorFit,
     KernelShape,
     variable_width_broadening,
 )
@@ -737,7 +736,6 @@ class Spectrum1D(Spectrum):
                 width_lower_limit: Quantity | None = None,
                 width_convention: Literal['fwhm', 'std'] = 'fwhm',
                 width_interpolation_error: float = 0.01,
-                width_fit: ErrorFit = 'cheby-log',
                 ) -> T: ...
 
     def broaden(self: T, x_width,
@@ -746,7 +744,6 @@ class Spectrum1D(Spectrum):
                 width_lower_limit=None,
                 width_convention='fwhm',
                 width_interpolation_error=0.01,
-                width_fit='cheby-log',
                 ) -> T:
         """
         Broaden y_data and return a new broadened spectrum object
@@ -776,10 +773,6 @@ class Spectrum1D(Spectrum):
             When x_width is a callable function, variable-width broadening is
             implemented by an approximate kernel-interpolation scheme. This
             parameter determines the target error of the kernel approximations.
-        width_fit
-            Select parametrisation of kernel width spacing to
-            width_interpolation_error.  'cheby-log' is recommended: for shape
-            'gauss', 'cubic' is also available.
 
         Returns
         -------
@@ -818,7 +811,6 @@ class Spectrum1D(Spectrum):
                 width_convention=width_convention,
                 adaptive_error=width_interpolation_error,
                 shape=shape,
-                fit=width_fit,
             )
         else:
             msg = 'x_width must be a Quantity or Callable'
@@ -942,7 +934,6 @@ class Spectrum2D(Spectrum):
                 y_width_lower_limit: Quantity = None,
                 width_convention: Literal['fwhm', 'std'] = 'fwhm',
                 width_interpolation_error: float = 0.01,
-                width_fit: ErrorFit = 'cheby-log',
                 ) -> T:
         """
         Broaden z_data and return a new broadened Spectrum2D object
@@ -982,10 +973,6 @@ class Spectrum2D(Spectrum):
             When x_width is a callable function, variable-width broadening is
             implemented by an approximate kernel-interpolation scheme. This
             parameter determines the target error of the kernel approximations.
-        width_fit
-            Select parametrisation of kernel width spacing to
-            width_interpolation_error. 'cheby-log' is recommended: for shape
-            'gauss', 'cubic' is also available.
 
         Returns
         -------
@@ -1046,7 +1033,7 @@ class Spectrum2D(Spectrum):
                     width_convention=width_convention,
                     width_interpolation_error=width_interpolation_error,
                     shape=shape,
-                    width_fit=width_fit)
+                )
 
         return spectrum
 
@@ -1059,7 +1046,6 @@ class Spectrum2D(Spectrum):
             width_convention: Literal['fwhm', 'std'] = 'fwhm',
             width_interpolation_error: float = 1e-2,
             shape: KernelShape = 'gauss',
-            width_fit: ErrorFit = 'cheby-log',
     ) -> 'Spectrum2D':
         """
         Apply value-dependent Gaussian broadening to one axis of Spectrum2D
@@ -1093,7 +1079,7 @@ class Spectrum2D(Spectrum):
                 width_convention=width_convention,
                 adaptive_error=width_interpolation_error,
                 shape=shape,
-                fit=width_fit)
+            )
 
         if axis == 'x':
             z_broadened = z_broadened.T

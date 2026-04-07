@@ -808,16 +808,6 @@ def _get_cli_parser(features: Collection[str] = {},
                     help='Scale factor applied to adaptive broadening width',
                     )
                 section.add_argument(
-                    '--adaptive-fit', type=str, choices=['cubic', 'cheby-log'],
-                    default='cubic', dest='adaptive_fit',
-                    help=('Select parametrisation for fast adaptive broadening'
-                          '. "cheby-log" is generally recommended, "cubic" is '
-                          'default retained for backward-compatibility. This '
-                          'only applies when adaptive broadening is used; if '
-                          'variable-width instrument broadening is used alone '
-                          'then "cheby-log" will be used.' ),
-                    )
-                section.add_argument(
                     '--instrument-broadening', type=float, nargs='+',
                     default=None, dest='inst_broadening', help=ib_help)
 

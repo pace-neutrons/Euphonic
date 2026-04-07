@@ -15,7 +15,6 @@ from scipy.stats import norm
 from euphonic.ureg import ureg
 from euphonic.util import format_error
 
-ErrorFit = Literal['cheby-log', 'cubic']
 KernelShape = Literal['gauss', 'lorentz']
 
 
@@ -33,7 +32,6 @@ def variable_width_broadening(
     width_convention: Literal['fwhm', 'std'] = 'fwhm',
     adaptive_error: float = 1e-2,
     shape: KernelShape = 'gauss',
-    fit: ErrorFit = 'cheby-log',
     ) -> Quantity:
     r"""Apply x-dependent Gaussian broadening to 1-D data series
 
@@ -70,10 +68,6 @@ def variable_width_broadening(
         approximate gaussians.
     shape
         Select broadening kernel function.
-    fit
-        Select parametrisation of kernel width spacing to adaptive_error.
-        'cheby-log' is recommended: for shape 'gauss', 'cubic' is also
-        available.
     """
 
     if width_convention.lower() == 'fwhm' and shape == 'gauss':
@@ -110,8 +104,7 @@ def variable_width_broadening(
     return width_interpolated_broadening(bins, x, widths,
                                          weights.magnitude,
                                          adaptive_error=adaptive_error,
-                                         shape=shape,
-                                         fit=fit) * weights_unit
+                                         shape=shape) * weights_unit
 
 
 def width_interpolated_broadening(
@@ -121,7 +114,6 @@ def width_interpolated_broadening(
     weights: np.ndarray,
     adaptive_error: float,
     shape: KernelShape = 'gauss',
-    fit: ErrorFit = 'cheby-log',
     ) -> Quantity:
     """
     Uses a fast, approximate method to broaden a spectrum
@@ -150,10 +142,6 @@ def width_interpolated_broadening(
     shape
         Select kernel shape. Widths will correspond to sigma or gamma
         parameters respectively.
-    fit
-        Select parametrisation of kernel width spacing to adaptive_error.
-        'cheby-log' is recommended: for shape 'gauss', 'cubic' is also
-        available.
 
     Returns
     -------
@@ -167,8 +155,7 @@ def width_interpolated_broadening(
                                           widths.to(bins.units).magnitude,
                                           weights,
                                           adaptive_error,
-                                          shape=shape,
-                                          fit=fit) / bins.units
+                                          shape=shape) / bins.units
 
 
 def _lorentzian(x: np.ndarray, gamma: np.ndarray) -> np.ndarray:
@@ -176,25 +163,12 @@ def _lorentzian(x: np.ndarray, gamma: np.ndarray) -> np.ndarray:
 
 
 def _get_spacing(error,
-                 shape: KernelShape = 'gauss',
-                 fit: ErrorFit = 'cheby-log'):
+                 shape: KernelShape = 'gauss'):
     """
     Determine suitable spacing value for mode_width given accepted error level
 
     Coefficients have been fitted to plots of error vs spacing value
     """
-
-    if fit == 'cubic' and shape == 'gauss':
-        return np.polyval([612.7, -122.7, 15.40, 1.0831], error)
-
-    if fit != 'cheby-log':
-        msg = format_error(
-            f'Fit "{fit}" is not available for shape "{shape}".',
-            fix=('The "cheby-log" fit is recommended for'
-                 '"gauss" and "Lorentz" shapes.'),
-            )
-        raise ValueError(msg)
-
     if shape == 'lorentz':
         cheby = Chebyshev(
             [1.26039672, 0.39900457, 0.20392176, 0.08602507,
@@ -228,7 +202,7 @@ def _width_interpolated_broadening(
     weights: np.ndarray,
     adaptive_error: float,
     shape: KernelShape = 'gauss',
-    fit: ErrorFit = 'cheby-log') -> np.ndarray:
+) -> np.ndarray:
     """
     Broadens a spectrum using a variable-width kernel, taking the
     same arguments as `variable_width` but expects arrays with
@@ -238,7 +212,7 @@ def _width_interpolated_broadening(
     x = np.ravel(x)
     widths = np.ravel(widths)
     weights = np.ravel(weights)
-    spacing = _get_spacing(adaptive_error, shape=shape, fit=fit)
+    spacing = _get_spacing(adaptive_error, shape=shape)
 
     # bins should be regularly spaced, check that this is the case and
     # raise a warning if not

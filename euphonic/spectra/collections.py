@@ -24,7 +24,7 @@ from toolz.functoolz import complement
 from toolz.itertoolz import groupby, pluck
 from typing_extensions import Self
 
-from euphonic.broadening import ErrorFit, KernelShape
+from euphonic.broadening import KernelShape
 from euphonic.io import _obj_to_dict, _process_dict
 from euphonic.readers.castep import read_phonon_dos_data
 from euphonic.ureg import ureg
@@ -759,7 +759,6 @@ class Spectrum1DCollection(SpectrumCollectionMixin,
                 width_lower_limit: Quantity | None = None,
                 width_convention: Literal['fwhm', 'std'] = 'fwhm',
                 width_interpolation_error: float = 0.01,
-                width_fit: ErrorFit = 'cheby-log',
                 ) -> T: ...
 
     def broaden(self: T,
@@ -769,7 +768,6 @@ class Spectrum1DCollection(SpectrumCollectionMixin,
                 width_lower_limit=None,
                 width_convention='fwhm',
                 width_interpolation_error=0.01,
-                width_fit='cheby-log',
                 ) -> T:
         """
         Individually broaden each line in y_data, returning a new
@@ -800,10 +798,6 @@ class Spectrum1DCollection(SpectrumCollectionMixin,
             When x_width is a callable function, variable-width broadening is
             implemented by an approximate kernel-interpolation scheme. This
             parameter determines the target error of the kernel approximations.
-        width_fit
-            Select parametrisation of kernel width spacing to
-            width_interpolation_error. 'cheby-log' is recommended: for shape
-            'gauss', 'cubic' is also available.
 
         Returns
         -------
@@ -840,7 +834,7 @@ class Spectrum1DCollection(SpectrumCollectionMixin,
                     width_lower_limit=width_lower_limit,
                     width_convention=width_convention,
                     width_interpolation_error=width_interpolation_error,
-                    width_fit=width_fit)
+                )
                 for spectrum in self])
 
         msg = format_error(
