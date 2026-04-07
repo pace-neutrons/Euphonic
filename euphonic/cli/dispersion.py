@@ -16,14 +16,13 @@ from .utils import (
     _get_q_distance,
     _get_title,
     _plot_label_kwargs,
-    get_args,
     load_data_from_file,
     matplotlib_save_or_show,
 )
 
 
 def main(params: list[str] | None = None) -> None:
-    args = get_args(get_parser(), params)
+    args = get_parser().parse_args(args=params)
 
     # Need eigenvectors to reorder bands or write website JSON
     frequencies_only = args.save_web_json is None and not args.reorder
