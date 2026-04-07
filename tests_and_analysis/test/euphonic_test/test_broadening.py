@@ -143,9 +143,8 @@ def test_lower_bound_widths_broadened(material, qpt_freqs_json,
     mode_widths = get_mode_widths(get_fc_path(mode_widths_json))
     weights = np.ones(qpt_freqs.frequencies.shape) * \
         np.full(qpt_freqs.n_qpts, 1/qpt_freqs.n_qpts)[:, np.newaxis]
-    dos = width_interpolated_broadening(ebins, qpt_freqs.frequencies,
-                                        mode_widths, weights, 0.01,
-                                        fit='cubic')
+    dos = width_interpolated_broadening(
+        ebins, qpt_freqs.frequencies, mode_widths, weights, 0.01)
     expected_dos = get_expected_spectrum1d(expected_dos_json)
     npt.assert_allclose(expected_dos.y_data.magnitude, dos.magnitude)
 
@@ -160,9 +159,8 @@ def test_uneven_bin_width_raises_warning():
     ebins = np.concatenate((np.arange(0, 100, 0.1),
                             np.arange(100, 155, 0.2)))*ureg('meV')
     with pytest.warns(UserWarning):
-        width_interpolated_broadening(ebins, qpt_freqs.frequencies,
-                                      mode_widths, weights, 0.01,
-                                      fit='cubic')
+        width_interpolated_broadening(
+            ebins, qpt_freqs.frequencies, mode_widths, weights, 0.01)
 
 
 @pytest.mark.parametrize(
