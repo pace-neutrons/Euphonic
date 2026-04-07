@@ -124,12 +124,13 @@ def test_area_unchanged_for_broadened_dos(material, qpt_freqs_json,
 
 
 @pytest.mark.parametrize(
-    ('material, qpt_freqs_json, mode_widths_json,expected_dos_json, ebins'),
-    ['quartz',
-     'toy_quartz_qpoint_frequencies.json',
-     'toy_quartz_mode_widths.json',
-     'toy_quartz_adaptive_dos.json',
-     np.arange(0, 40, 0.1)*ureg('meV')],
+    ('material, qpt_freqs_json, mode_widths_json, expected_dos_json, ebins'),
+    [('quartz',
+      'toy_quartz_qpoint_frequencies.json',
+      'toy_quartz_mode_widths.json',
+      'toy_quartz_adaptive_dos.json',
+      np.arange(0, 40, 0.1)*ureg('meV')),
+     ],
 )
 def test_lower_bound_widths_broadened(material, qpt_freqs_json,
                                       mode_widths_json,
