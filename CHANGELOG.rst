@@ -14,6 +14,10 @@
   - Unused argument ``use_brille`` is removed from
     ``euphonic.cli.brille_convergence.check_brille_settings``.
 
+  - "Adaptive fit" parameter is removed from spectrum broaden()
+    methods and euphonic-dos; "cubic" parametrisation is removed and
+    superior "cheby-log" fit always used.
+
 - Features
 
   - Spectrum1DCollection and Spectrum2DCollection can be indexed with
