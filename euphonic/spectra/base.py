@@ -22,7 +22,6 @@ from scipy.ndimage import correlate1d, gaussian_filter
 
 from euphonic.broadening import (
     FWHM_TO_SIGMA,
-    ErrorFit,
     KernelShape,
     variable_width_broadening,
 )
