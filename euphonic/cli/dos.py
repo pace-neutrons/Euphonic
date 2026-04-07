@@ -121,8 +121,7 @@ def main(params: list[str] | None = None) -> None:
 
     kwargs = {'mode_widths': mode_widths,
               'adaptive_method': args.adaptive_method,
-              'adaptive_error': args.adaptive_error,
-              'adaptive_error_fit': args.adaptive_fit}
+              'adaptive_error': args.adaptive_error}
 
     if args.weighting == 'dos' and args.pdos is None:
         dos = modes.calculate_dos(ebins, **kwargs)
@@ -143,8 +142,7 @@ def main(params: list[str] | None = None) -> None:
         dos = dos.broaden(x_width=energy_broadening_func,
                           shape=args.shape,
                           method='convolve',
-                          width_interpolation_error=args.adaptive_error,
-                          width_fit='cheby-log')
+                          width_interpolation_error=args.adaptive_error)
 
     elif args.inst_broadening:
         # Fixed-width broadening
