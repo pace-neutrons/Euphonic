@@ -183,28 +183,6 @@ def load_data_from_file(filename: str | os.PathLike,
     return data
 
 
-def get_args(parser: ArgumentParser, params: list[str] | None = None,
-             ) -> Namespace:
-    """
-    Get the arguments from the parser. `params` should only be `None` when
-    running from command line.
-
-    Parameters
-    ----------
-    parser
-        The parser to get the arguments from
-    params
-        The parameters to get arguments from, if None,
-         then parse_args gets them from command line args
-
-    Returns
-    -------
-    args
-        Arguments object for use e.g. args.unit
-    """
-    return parser.parse_args(args=params)
-
-
 def matplotlib_save_or_show(save_filename: Path | str | None = None) -> None:
     """
     Save or show the current matplotlib plot.

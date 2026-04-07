@@ -17,14 +17,13 @@ from .utils import (
     _get_energy_bins,
     _get_q_distance,
     _plot_label_kwargs,
-    get_args,
     load_data_from_file,
     matplotlib_save_or_show,
 )
 
 
 def main(params: list[str] | None = None) -> None:
-    args = get_args(get_parser(), params)
+    args = get_parser().parse_args(args=params)
     calc_modes_kwargs = _calc_modes_kwargs(args)
 
     frequencies_only = (args.weighting != 'coherent')
