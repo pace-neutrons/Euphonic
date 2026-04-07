@@ -7,7 +7,7 @@ import numpy as np
 import euphonic.sampling
 from euphonic.util import zips
 
-from .utils import get_args, matplotlib_save_or_show
+from .utils import matplotlib_save_or_show
 
 choices_2d = {'golden-square', 'regular-square', 'recurrence-square'}
 choices_3d = {'golden-sphere', 'sphere-from-square-grid',
@@ -34,8 +34,7 @@ def get_parser() -> ArgumentParser:
 
 
 def main(params: list[str] | None = None) -> None:
-    parser = get_parser()
-    args = get_args(parser, params)
+    args = get_parser().parse_args(args=params)
 
     if args.sampling in choices_2d:
         fig, ax = plt.subplots()

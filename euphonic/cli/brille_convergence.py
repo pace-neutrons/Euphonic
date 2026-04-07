@@ -14,7 +14,6 @@ from euphonic.cli.utils import (
     _brille_calc_modes_kwargs,
     _get_cli_parser,
     _get_energy_bins,
-    get_args,
     load_data_from_file,
 )
 from euphonic.sampling import recurrence_sequence
@@ -22,7 +21,7 @@ from euphonic.util import format_error
 
 
 def main(params: list[str] | None = None) -> None:
-    args = get_args(get_parser(), params)
+    args = get_parser().parse_args(args=params)
     params = vars(args)
 
     del params['use_brille']  # This tool _always_ uses brille
