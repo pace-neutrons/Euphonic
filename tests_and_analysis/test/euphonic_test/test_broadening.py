@@ -67,20 +67,19 @@ def test_variable_close_to_exact(example):
         width_convention='STD',
         weights=(example.y * example.bin_width).to('dimensionless').magnitude,  # Convert from spectrum heights to counts
         adaptive_error=2e-4,
-        fit='cheby-log')
+    )
 
     npt.assert_allclose(exact, poly_broadened.to('1/meV').magnitude,
                         atol=1e-4)
 
 
 @pytest.mark.parametrize(
-    'width_convention, fit, adaptive_error, message',
-    [('STD', 'cheby-log', 0.001, 'Standard deviation unavailable'),
-     ('UNIMPLEMENTED', 'cheby-log', 0.001, 'must be "std" or "fwhm"'),
-     ('FWHM', 'UNIMPLEMENTED', 0.001, 'Fit "UNIMPLEMENTED" is not available'),
-     ('FWHM', 'cheby-log', 0.00001, r'Target error \([^)]+\) is out of fit range'),
+    'width_convention, adaptive_error, message',
+    [('STD', 0.001, 'Standard deviation unavailable'),
+     ('UNIMPLEMENTED', 0.001, 'must be "std" or "fwhm"'),
+     ('FWHM', 0.00001, r'Target error \([^)]+\) is out of fit range'),
      ])
-def test_variable_width_broadening_errors(example, width_convention, fit, adaptive_error, message):
+def test_variable_width_broadening_errors(example, width_convention, adaptive_error, message):
 
     with pytest.raises(ValueError, match=message):
         variable_width_broadening(
@@ -90,7 +89,6 @@ def test_variable_width_broadening_errors(example, width_convention, fit, adapti
             width_convention=width_convention,
             weights=example.y.magnitude,
             shape='lorentz',
-            fit=fit,
             adaptive_error=adaptive_error)
 
 
@@ -111,11 +109,11 @@ def test_area_unchanged_for_broadened_dos(material, qpt_freqs_json,
     weights = np.full(qpt_freqs.frequencies.shape,
                       1/(qpt_freqs.n_qpts*qpt_freqs.crystal.n_atoms))
     variable_width_broaden = width_interpolated_broadening(
-                                ebins,
-                                qpt_freqs.frequencies,
-                                mode_widths, weights,
-                                0.01,
-                                fit='cheby-log')
+        ebins,
+        qpt_freqs.frequencies,
+        mode_widths, weights,
+        0.01,
+    )
     ebins_centres = ebins.magnitude[:-1] + 0.5*np.diff(ebins.magnitude)
     assert dos.y_data.units == 1/ebins.units
     dos_area = simpson(dos.y_data.magnitude, x=ebins_centres)
@@ -126,12 +124,13 @@ def test_area_unchanged_for_broadened_dos(material, qpt_freqs_json,
 
 
 @pytest.mark.parametrize(
-        ('material, qpt_freqs_json, mode_widths_json,'
-         'expected_dos_json, ebins'), [
-            ('quartz', 'toy_quartz_qpoint_frequencies.json',
-             'toy_quartz_mode_widths.json',
-             'toy_quartz_adaptive_dos.json',
-             np.arange(0, 40, 0.1)*ureg('meV'))])
+    ('material, qpt_freqs_json, mode_widths_json,' 'expected_dos_json, ebins'),
+    ['quartz',
+     'toy_quartz_qpoint_frequencies.json',
+     'toy_quartz_mode_widths.json',
+     'toy_quartz_adaptive_dos.json',
+     np.arange(0, 40, 0.1)*ureg('meV')]
+)
 def test_lower_bound_widths_broadened(material, qpt_freqs_json,
                                       mode_widths_json,
                                       expected_dos_json, ebins):
