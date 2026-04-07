@@ -201,7 +201,7 @@ def _width_interpolated_broadening(
     widths: np.ndarray,
     weights: np.ndarray,
     adaptive_error: float,
-    shape: KernelShape = 'gauss'
+    shape: KernelShape = 'gauss',
 ) -> np.ndarray:
     """
     Broadens a spectrum using a variable-width kernel, taking the
