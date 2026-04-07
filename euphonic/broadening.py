@@ -15,7 +15,7 @@ from scipy.stats import norm
 from euphonic.ureg import ureg
 from euphonic.util import format_error
 
-ErrorFit = Literal['cheby-log', 'cubic']
+ErrorFit = Literal['cheby-log']
 KernelShape = Literal['gauss', 'lorentz']
 
 
@@ -72,8 +72,7 @@ def variable_width_broadening(
         Select broadening kernel function.
     fit
         Select parametrisation of kernel width spacing to adaptive_error.
-        'cheby-log' is recommended: for shape 'gauss', 'cubic' is also
-        available.
+        Currently, 'cheby-log' is only available parametrisation.
     """
 
     if width_convention.lower() == 'fwhm' and shape == 'gauss':
@@ -152,8 +151,7 @@ def width_interpolated_broadening(
         parameters respectively.
     fit
         Select parametrisation of kernel width spacing to adaptive_error.
-        'cheby-log' is recommended: for shape 'gauss', 'cubic' is also
-        available.
+        Currently, 'cheby-log' is only available parametrisation.
 
     Returns
     -------
@@ -183,14 +181,10 @@ def _get_spacing(error,
 
     Coefficients have been fitted to plots of error vs spacing value
     """
-
-    if fit == 'cubic' and shape == 'gauss':
-        return np.polyval([612.7, -122.7, 15.40, 1.0831], error)
-
     if fit != 'cheby-log':
         msg = format_error(
             f'Fit "{fit}" is not available for shape "{shape}".',
-            fix=('The "cheby-log" fit is recommended for'
+            fix=('The "cheby-log" fit is recommended for '
                  '"gauss" and "Lorentz" shapes.'),
             )
         raise ValueError(msg)
