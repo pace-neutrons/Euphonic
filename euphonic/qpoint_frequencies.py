@@ -4,7 +4,7 @@ import warnings
 
 import numpy as np
 
-from euphonic.broadening import ErrorFit, _width_interpolated_broadening
+from euphonic.broadening import _width_interpolated_broadening
 from euphonic.crystal import Crystal
 from euphonic.io import (
     _obj_from_json_file,
@@ -108,7 +108,6 @@ class QpointFrequencies:
         mode_widths_min: Quantity = Quantity(0.01, 'meV'),
         adaptive_method: AdaptiveMethod = 'reference',
         adaptive_error: float = 0.01,
-        adaptive_error_fit: ErrorFit = 'cubic',
         ) -> Spectrum1D:
         """
         Calculates a density of states, in units of modes per atom per
@@ -134,10 +133,6 @@ class QpointFrequencies:
             Scalar float. Acceptable error for gaussian approximations
             when using the fast adaptive method, defined as the absolute
             difference between the areas of the true and approximate gaussians
-        adaptive_error_fit
-            Select parametrisation of kernel width spacing to adaptive_error.
-            'cheby-log' is recommended: for backward-compatibilty, 'cubic' is
-            the default.
 
         Returns
         -------
@@ -163,8 +158,7 @@ class QpointFrequencies:
         dos = self._calculate_dos(dos_bins, mode_widths=mode_widths,
                                   mode_widths_min=mode_widths_min,
                                   adaptive_method=adaptive_method,
-                                  adaptive_error=adaptive_error,
-                                  adaptive_error_fit=adaptive_error_fit)
+                                  adaptive_error=adaptive_error)
         return Spectrum1D(dos_bins, dos)
 
     def _calculate_dos(
@@ -175,7 +169,6 @@ class QpointFrequencies:
         mode_weights: np.ndarray | None = None,
         adaptive_method: AdaptiveMethod = 'reference',
         adaptive_error: float = 0.01,
-        adaptive_error_fit: ErrorFit = 'cubic',
         q_idx: int | None = None,
         ) -> Quantity:
         """
@@ -241,8 +234,7 @@ class QpointFrequencies:
                 dos = _width_interpolated_broadening(dos_bins_calc,
                                                      freqs, mode_widths,
                                                      combined_weights,
-                                                     adaptive_error,
-                                                     fit=adaptive_error_fit)
+                                                     adaptive_error)
         else:
             bin_idx = np.digitize(freqs, dos_bins_calc)
             # Create DOS with extra bin either side, for any points
