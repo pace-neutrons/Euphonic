@@ -35,6 +35,10 @@
     should not break API in practice, but e.g. Quantity can no longer
     be imported from ``euphonic.cli.utils``.
 
+  - "Adaptive fit" parameter is removed from spectrum broaden()
+    methods and euphonic-dos; "cubic" parametrisation is removed and
+    superior "cheby-log" fit always used.
+
 - Features
 
   - Spectrum1DCollection and Spectrum2DCollection can be indexed with
