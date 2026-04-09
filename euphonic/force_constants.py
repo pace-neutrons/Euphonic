@@ -108,17 +108,19 @@ class ForceConstants:
         """
         # Check independent inputs first
         _check_constructor_inputs(
-            [crystal, sc_matrix], [Crystal, np.ndarray], [(), (3, 3)],
-            ['crystal', 'sc_matrix'])
+            (crystal, Crystal, (), 'crystal'),
+            (sc_matrix, np.ndarray, (3, 3), 'sc_matrix'),
+        )
         n_at = crystal.n_atoms
         n_sc = int(np.rint(np.absolute(np.linalg.det(sc_matrix))))
         # Now check other derived input shapes
         _check_constructor_inputs(
-            [force_constants, cell_origins, born, dielectric],
-            [Quantity, np.ndarray, [Quantity, type(None)],
-                [Quantity, type(None)]],
-            [(n_sc, 3*n_at, 3*n_at), (n_sc, 3), (n_at, 3, 3), (3, 3)],
-            ['force_constants', 'cell_origins', 'born', 'dielectric'])
+            (force_constants, Quantity,
+             (n_sc, 3*n_at, 3*n_at), 'force_constants'),
+            (cell_origins, np.ndarray, (n_sc, 3), 'cell_origins'),
+            (born, [Quantity, type(None)],  (n_at, 3, 3), 'born'),
+            (dielectric, [Quantity, type(None)], (3, 3), 'dielectric'),
+        )
         self.crystal = crystal
         self._force_constants = force_constants.to(
             'hartree/bohr**2').magnitude
@@ -483,7 +485,8 @@ class ForceConstants:
         # Check weights is of appropriate type and shape, to avoid doing all
         # the interpolation only for it to fail creating QpointPhononModes
         _check_constructor_inputs(
-            [weights], [[np.ndarray, type(None)]], [(len(qpts),)], ['weights'])
+            (weights, [np.ndarray, type(None)], (len(qpts),), 'weights'),
+        )
 
         # Set default splitting params
         if self.born is None or self.dielectric is None:

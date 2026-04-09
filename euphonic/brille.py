@@ -56,18 +56,18 @@ class BrilleInterpolator:
             Brille documentation for details.
         """
         _check_constructor_inputs(
-            [crystal, grid],
-            [Crystal, [br.BZTrellisQdc, br.BZMeshQdc, br.BZNestQdc]],
-            [(), ()],
-            ['crystal', 'grid'])
+            (crystal, Crystal, (), 'crystal'),
+            (grid, [br.BZTrellisQdc, br.BZMeshQdc, br.BZNestQdc], (), 'grid'),
+        )
         # Check grid has been filled and vals/vecs are the correct shape
         n_atoms = crystal.n_atoms
         n_qpts = len(grid.rlu)
         _check_constructor_inputs(
-            [grid.values, grid.vectors],
-            [np.ndarray, np.ndarray],
-            [(n_qpts, 3*n_atoms, 1), (n_qpts, 3*n_atoms, 3*n_atoms)],
-            ['grid.values', 'grid.vectors'])
+            (grid.values, np.ndarray,
+             (n_qpts, 3*n_atoms, 1), 'grid.values'),
+            (grid.vectors, np.ndarray,
+             (n_qpts, 3*n_atoms, 3*n_atoms), 'grid.vectors'),
+        )
 
         self._grid = grid
         self.crystal = crystal

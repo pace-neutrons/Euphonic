@@ -595,14 +595,13 @@ class Spectrum1DCollection(SpectrumCollectionMixin,
         """
 
         _check_constructor_inputs(
-            [y_data, x_tick_labels, metadata],
-            [Quantity, [list, type(None)], [dict, type(None)]],
-            [(-1, -1), (), ()],
-            ['y_data', 'x_tick_labels', 'metadata'])
+            (y_data, Quantity, (-1, -1), 'y_data'),
+            (x_tick_labels, [list, type(None)], (), 'x_tick_labels'),
+            (metadata, [dict, type(None)], (), 'metadata'),
+        )
         ny = len(y_data[0])
         _check_constructor_inputs(
-            [x_data], [Quantity],
-            [[(ny,), (ny+1,)]], ['x_data'])
+            (x_data, Quantity, [(ny,), (ny+1,)], 'x_data'))
 
         self._set_data(x_data, 'x')
         self._set_data(y_data, 'y')
@@ -926,17 +925,16 @@ class Spectrum2DCollection(SpectrumCollectionMixin,
             metadata: Metadata | None = None,
     ) -> None:
         _check_constructor_inputs(
-            [z_data, x_tick_labels, metadata],
-            [Quantity, [list, type(None)], [dict, type(None)]],
-            [(-1, -1, -1), (), ()],
-            ['z_data', 'x_tick_labels', 'metadata'])
+            (z_data, Quantity, (-1, -1, -1), 'z_data'),
+            (x_tick_labels, [list, type(None)], (), 'x_tick_labels'),
+            (metadata, [dict, type(None)], (), 'metadata'),
+        )
         # First axis corresponds to spectra in collection
         _, nx, ny = z_data.shape
         _check_constructor_inputs(
-            [x_data, y_data],
-            [Quantity, Quantity],
-            [[(nx,), (nx + 1,)], [(ny,), (ny + 1,)]],
-            ['x_data', 'y_data'])
+            (x_data, Quantity, [(nx,), (nx + 1,)], 'x_data'),
+            (y_data, Quantity, [(ny,), (ny + 1,)], 'y_data'),
+        )
 
         self._set_data(x_data, 'x')
         self._set_data(y_data, 'y')
