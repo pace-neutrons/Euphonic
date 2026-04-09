@@ -65,17 +65,17 @@ class QpointFrequencies:
             If None, equal weights are assumed
         """
         _check_constructor_inputs(
-            [crystal, qpts], [Crystal, np.ndarray], [(), (-1, 3)],
-            ['crystal', 'qpts'])
+            (crystal, Crystal, (), 'crystal'),
+            (qpts, np.ndarray, (-1, 3), 'qpts'),
+        )
         n_qpts = len(qpts)
         # Unlike QpointPhononModes and StructureFactor, don't test the
         # frequencies shape against number of atoms in the crystal, as
         # we may only have the cell vectors
         _check_constructor_inputs(
-            [frequencies, weights],
-            [Quantity, [np.ndarray, type(None)]],
-            [(n_qpts, -1), (n_qpts,)],
-            ['frequencies', 'weights'])
+            (frequencies, Quantity, (n_qpts, -1), 'frequencies'),
+            (weights, [np.ndarray, type(None)], (n_qpts,), 'weights'),
+        )
         self.crystal = crystal
         self.qpts = qpts
         self.n_qpts = n_qpts
