@@ -74,6 +74,9 @@ a bugfix which might affect users.
 
 `v1.6.0 <https://github.com/pace-neutrons/Euphonic/compare/v1.5.1...v1.6.0>`_
 
+  - ``_check_constructor_inputs`` refactored to list arguments as sequence of
+    tuples for each input.
+
 - Requirements
 
   - Increased minimum version of SeeK-path to 2.2.1
