@@ -77,10 +77,11 @@ class StructureFactor(QpointFrequencies):
         # Check freqs axis 1 shape here - QpointFrequencies doesn't
         # enforce that the number of modes = 3*(number of atoms)
         _check_constructor_inputs(
-            [frequencies, structure_factors, temperature],
-            [Quantity, Quantity, [Quantity, type(None)]],
-            [(n_qpts, 3*n_at), (n_qpts, 3*n_at), ()],
-            ['frequencies', 'structure_factors', 'temperature'])
+            (frequencies, Quantity, (n_qpts, 3*n_at), 'frequencies'),
+            (structure_factors, Quantity,
+             (n_qpts, 3*n_at), 'structure_factors'),
+            (temperature, [Quantity, type(None)], (), 'temperature'),
+        )
         self._structure_factors = structure_factors.to(
             ureg.bohr**2).magnitude
         self.structure_factors_unit = str(structure_factors.units)

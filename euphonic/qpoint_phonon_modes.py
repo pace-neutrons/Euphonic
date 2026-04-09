@@ -84,10 +84,10 @@ class QpointPhononModes(QpointFrequencies):
         # Check freqs axis 1 shape here - QpointFrequencies doesn't
         # enforce that the number of modes = 3*(number of atoms)
         _check_constructor_inputs(
-            [frequencies, eigenvectors],
-            [Quantity, np.ndarray],
-            [(n_qpts, 3*n_at), (n_qpts, 3*n_at, n_at, 3)],
-            ['frequencies', 'eigenvectors'])
+            (frequencies, Quantity, (n_qpts, 3*n_at), 'frequencies'),
+            (eigenvectors, np.ndarray,
+             (n_qpts, 3*n_at, n_at, 3), 'eigenvectors'),
+        )
         self.eigenvectors = eigenvectors
 
     def reorder_frequencies(self,
