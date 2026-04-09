@@ -9,10 +9,13 @@ from euphonic.util import comma_join, format_error
 
 
 def _check_constructor_inputs(
-        objs: list[object],
-        types: list[type | list[type]],
-        shapes: list[tuple[int, ...] | list[tuple[int, ...]]],
-        names: list[str]) -> None:
+    *details: tuple[
+        object,
+        type | list[type | None],
+        tuple[int, ...] | list[tuple[int, ...]],
+        str,
+    ],
+) -> None:
     """
     Make sure all the inputs are all the expected type, and if they are
     an array, the correct shape
@@ -24,14 +27,14 @@ def _check_constructor_inputs(
     types
         The expected class of each input. If multiple types are
         accepted, the expected class can be a list of types. e.g.
-        types=[[list, np.ndarray], int]
+        types=[list, np.ndarray]
     shapes
         The expected shape of each object (if the object has a shape
         attribute). If the shape of some dimensions don't matter,
         provide -1 for those dimensions, or if none of the dimensions
         matter, provide an empty tuple (). If multiple shapes are
         accepted, the expected shapes can be a list of tuples. e.g.
-        shapes=[[(n, 3), (n + 1, 3)], (3,)]
+        shapes=[(n, 3), (n + 1, 3)]
     names
         The name of each input variable
 
@@ -42,7 +45,7 @@ def _check_constructor_inputs(
     ValueError
         If an array shape don't match the expected shape
     """
-    for obj, typ, shape, name in zip(objs, types, shapes, names, strict=True):
+    for obj, typ, shape, name in details:
         if not isinstance(typ, list):
             typ = [typ]  # noqa: PLW2901 redefined-loop-name
         if not any(isinstance(obj, t) for t in typ):

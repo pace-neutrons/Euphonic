@@ -1,5 +1,4 @@
 from collections import OrderedDict
-import inspect
 from math import ceil
 from pathlib import Path
 from typing import Any, TypeVar
@@ -75,10 +74,11 @@ class Crystal:
             atom_type = np.array([], dtype='<U32')
 
         _check_constructor_inputs(
-            [cell_vectors, atom_r, atom_type, atom_mass],
-            [Quantity, np.ndarray, np.ndarray, Quantity],
-            [(3, 3), (n_atoms, 3), (n_atoms,), (n_atoms,)],
-            inspect.getfullargspec(self.__init__)[0][1:])
+            (cell_vectors, Quantity, (3, 3), 'cell_vectors'),
+            (atom_r, np.ndarray, (n_atoms, 3), 'atom_r'),
+            (atom_type, np.ndarray, (n_atoms,), 'atom_type'),
+            (atom_mass, Quantity, (n_atoms,), 'atom_mass'),
+        )
         self._cell_vectors = cell_vectors.to(ureg.bohr).magnitude
         self.n_atoms = n_atoms
         self.atom_r = atom_r
