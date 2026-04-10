@@ -37,7 +37,7 @@ def sample_sphere_dos(fc: ForceConstants,
                       npts: int = 1000,
                       jitter: bool = False,
                       rng: RNG = rng,
-                      energy_bins: Quantity = None,
+                      energy_bins: Quantity | None = None,
                       **calc_modes_args,
                       ) -> Spectrum1D:
     """
@@ -130,7 +130,7 @@ def sample_sphere_pdos(
         npts: int = 1000,
         jitter: bool = False,
         rng: RNG = rng,
-        energy_bins: Quantity = None,
+        energy_bins: Quantity | None = None,
         weighting: str | None = None,
         cross_sections: str | dict[str, Quantity] = 'BlueBook',
         **calc_modes_args,

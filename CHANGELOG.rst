@@ -6,6 +6,22 @@
   - Public functions in ``euphonic.powder`` now use mandatory keyword arguments
     - This will break code that depends on these arguments being in a specific order
 
+  - The various Spectrum classes have an ``assert_regular_bins``
+    method. It is now forbidden to use positional arguments and in the
+    2D cases ``bin_ax`` has a default value of "y". This makes the API
+    safer and more formally correct.
+
+  - Unused argument ``use_brille`` is removed from
+    ``euphonic.cli.brille_convergence.check_brille_settings``.
+
+  - ``get_args()`` function removed from ``euphonic.cli.utils``; this
+    was previously simplified to a one-liner so brings no DRY benefit.
+
+  - Some public functions in ``Crystal`` (``reciprocal_lattice``,
+    ``cell_volume``) are now ``@cached_property`` and don't need ``()``.
+    The cache will be cleared on setting ``cell_vectors`` so direct changes
+    to the ``_cell_vectors`` attribute may cause desynchronisation.
+
 - Features
 
   - Spectrum1DCollection and Spectrum2DCollection can be indexed with
@@ -29,7 +45,17 @@
 
       fix
 
+`v1.6.1 <https://github.com/pace-neutrons/Euphonic/compare/v1.6.0...v1.6.1>`_
+-----------------------------------------------------------------------------
+
+- Requirements
+
+  - Security
+
+    - Bumped *pytest* requirement for testing to 9.0.3. (`CVE-2025-71176 <https://www.cve.org/CVERecord?id=CVE-2025-71176>`_)
+
 `v1.6.0 <https://github.com/pace-neutrons/Euphonic/compare/v1.5.1...v1.6.0>`_
+-----------------------------------------------------------------------------
 
   - ``_check_constructor_inputs`` refactored to list arguments as sequence of
     tuples for each input.

@@ -1,3 +1,4 @@
+from types import NoneType
 from typing import Any, NoReturn, TypeVar
 import warnings
 
@@ -9,7 +10,11 @@ from euphonic.qpoint_frequencies import QpointFrequencies
 from euphonic.spectra import Spectrum1D, Spectrum2D
 from euphonic.ureg import Quantity, ureg
 from euphonic.util import format_error
-from euphonic.validate import _check_constructor_inputs, _check_unit_conversion
+from euphonic.validate import (
+    InputCheck,
+    _check_constructor_inputs,
+    _check_unit_conversion,
+)
 
 
 class NoTemperatureError(Exception):
@@ -77,10 +82,12 @@ class StructureFactor(QpointFrequencies):
         # Check freqs axis 1 shape here - QpointFrequencies doesn't
         # enforce that the number of modes = 3*(number of atoms)
         _check_constructor_inputs(
-            (frequencies, Quantity, (n_qpts, 3*n_at), 'frequencies'),
-            (structure_factors, Quantity,
-             (n_qpts, 3*n_at), 'structure_factors'),
-            (temperature, [Quantity, type(None)], (), 'temperature'),
+            InputCheck(frequencies, (Quantity,),
+                       {(n_qpts, 3*n_at)}, 'frequencies'),
+            InputCheck(structure_factors, (Quantity,),
+                       {(n_qpts, 3*n_at)}, 'structure_factors'),
+            InputCheck(temperature, (Quantity, NoneType),
+                       {}, 'temperature'),
         )
         self._structure_factors = structure_factors.to(
             ureg.bohr**2).magnitude

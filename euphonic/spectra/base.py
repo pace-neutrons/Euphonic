@@ -8,6 +8,7 @@ from functools import partial
 import math
 from numbers import Integral, Real
 from pathlib import Path
+from types import NoneType
 from typing import (
     Any,
     Literal,
@@ -35,12 +36,19 @@ from euphonic.io import (
 from euphonic.readers.castep import read_phonon_dos_data
 from euphonic.ureg import ureg
 from euphonic.util import comma_join, dedent_and_fill, format_error, zips
-from euphonic.validate import _check_constructor_inputs, _check_unit_conversion
+from euphonic.validate import (
+    InputCheck,
+    _check_constructor_inputs,
+    _check_unit_conversion,
+)
 
 CallableQuantity = Callable[[Quantity], Quantity]
 XTickLabels = list[tuple[int, str]]
 
 OneSpectrumMetadata = dict[str, str | int]
+
+X_TICK_CHECK = InputCheck(..., (list, NoneType), {}, 'x_tick_labels')
+METADATA_CHECK = InputCheck(..., (dict, NoneType), {}, 'metadata')
 
 
 class WidthTypeError(TypeError): ...
@@ -578,13 +586,13 @@ class Spectrum1D(Spectrum):
               - 'label' : str. This is used label lines on a 1D plot
         """
         _check_constructor_inputs(
-            (y_data, Quantity, (-1,), 'y_data'),
-            (x_tick_labels, [list, type(None)], (), 'x_tick_labels'),
-            (metadata, [dict, type(None)], (), 'metadata'),
+            InputCheck(y_data, (Quantity,), {(-1,)}, 'y_data'),
+            X_TICK_CHECK._replace(value=x_tick_labels),
+            METADATA_CHECK._replace(value=metadata),
         )
         ny = len(y_data)
         _check_constructor_inputs(
-            (x_data, Quantity, [(ny,), (ny+1,)], 'x_data'),
+            InputCheck(x_data, (Quantity,), {(ny,), (ny+1,)}, 'x_data'),
         )
         self._set_data(x_data, 'x')
         self._set_data(y_data, 'y')
@@ -882,15 +890,15 @@ class Spectrum2D(Spectrum):
             strings and values should be strings or integers.
         """
         _check_constructor_inputs(
-            (z_data, Quantity, (-1, -1), 'z_data'),
-            (x_tick_labels, [list, type(None)], (), 'x_tick_labels'),
-            (metadata, [dict, type(None)], (), 'metadata'),
+            InputCheck(z_data, (Quantity,), {(-1, -1)}, 'z_data'),
+            X_TICK_CHECK._replace(value=x_tick_labels),
+            METADATA_CHECK._replace(value=metadata),
         )
         nx = z_data.shape[0]
         ny = z_data.shape[1]
         _check_constructor_inputs(
-            (x_data, Quantity, [(nx,), (nx + 1,)], 'x_data'),
-            (y_data, Quantity, [(ny,), (ny + 1,)], 'y_data'),
+            InputCheck(x_data, (Quantity,), {(nx,), (nx + 1,)}, 'x_data'),
+            InputCheck(y_data, (Quantity,), {(ny,), (ny + 1,)}, 'y_data'),
         )
         self._set_data(x_data, 'x')
         self._set_data(y_data, 'y')

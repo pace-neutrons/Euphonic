@@ -1,5 +1,5 @@
-from collections.abc import Sequence
-from typing import Any
+from collections.abc import Iterable, Sequence
+from typing import Any, NamedTuple
 
 import numpy as np
 from pint import DimensionalityError
@@ -8,13 +8,30 @@ from euphonic.ureg import ureg
 from euphonic.util import comma_join, format_error
 
 
+class InputCheck(NamedTuple):
+    """Data structure for checking inputs."""
+
+    #: The object to check.
+    value: object
+
+    #: The expected class of the input. If multiple types are
+    #: accepted, the expected class can be a list of types. e.g.
+    #: types=(list, np.ndarray).
+    typ: tuple[type, ...]
+
+    #: The expected shape of the object (if the object has a shape
+    #: attribute). If the shape of some dimensions don't matter,
+    #: provide -1 for those dimensions, or if none of the dimensions
+    #: matter, provide an empty tuple (). If multiple shapes are
+    #: accepted, the expected shapes can be a list of tuples. e.g.
+    #: shape=[(n, 3), (n + 1, 3)].
+    shape: Iterable[tuple[int, ...]]
+
+    #: The name of the input variable.
+    name: str
+
 def _check_constructor_inputs(
-    *details: tuple[
-        object,
-        type | list[type | None],
-        tuple[int, ...] | list[tuple[int, ...]],
-        str,
-    ],
+    *details: InputCheck,
 ) -> None:
     """
     Make sure all the inputs are all the expected type, and if they are
@@ -22,21 +39,8 @@ def _check_constructor_inputs(
 
     Parameters
     ----------
-    objs
-        The objects to check
-    types
-        The expected class of each input. If multiple types are
-        accepted, the expected class can be a list of types. e.g.
-        types=[list, np.ndarray]
-    shapes
-        The expected shape of each object (if the object has a shape
-        attribute). If the shape of some dimensions don't matter,
-        provide -1 for those dimensions, or if none of the dimensions
-        matter, provide an empty tuple (). If multiple shapes are
-        accepted, the expected shapes can be a list of tuples. e.g.
-        shapes=[(n, 3), (n + 1, 3)]
-    names
-        The name of each input variable
+    *details
+        Details of each constructor input.
 
     Raises
     ------
@@ -46,9 +50,7 @@ def _check_constructor_inputs(
         If an array shape don't match the expected shape
     """
     for obj, typ, shape, name in details:
-        if not isinstance(typ, list):
-            typ = [typ]  # noqa: PLW2901 redefined-loop-name
-        if not any(isinstance(obj, t) for t in typ):
+        if not isinstance(obj, typ):
             msg = format_error(
                 f'Invalid type for {name} ({type(obj).__name__}).',
                 fix=(f'Ensure {name} is cast to a correct type. '
@@ -56,10 +58,9 @@ def _check_constructor_inputs(
                      f'{comma_join(t.__name__ for t in typ)}.'),
             )
             raise TypeError(msg)
-        if hasattr(obj, 'shape') and shape:
-            if not isinstance(shape, list):
-                shape = [shape]  # noqa: PLW2901 (redefined-loop-name)
-            if not any(obj.shape == _replace_dim(s, obj.shape) for s in shape):
+
+        if (hasattr(obj, 'shape') and shape and
+            not any(obj.shape == _replace_dim(s, obj.shape) for s in shape)):
                 msg = format_error(
                     f'Invalid shape for {name} ({obj.shape}).',
                     fix=f'Expected shape is {shape}',
