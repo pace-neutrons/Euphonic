@@ -315,7 +315,7 @@ class QpointFrequencies:
         dispersion
             A sequence of mode bands with a common x-axis
         """
-        abscissa = _calc_abscissa(self.crystal.reciprocal_cell(), self.qpts)
+        abscissa = _calc_abscissa(self.crystal.reciprocal_cell, self.qpts)
         x_tick_labels = get_qpoint_labels(self.qpts,
                                           cell=self.crystal.to_spglib_cell())
         return Spectrum1DCollection(abscissa, self.frequencies.T,
@@ -335,7 +335,7 @@ class QpointFrequencies:
         x_tick_labels
             The tick labels
         """
-        abscissa = _calc_abscissa(self.crystal.reciprocal_cell(), self.qpts)
+        abscissa = _calc_abscissa(self.crystal.reciprocal_cell, self.qpts)
         # Calculate q-space ticks and labels
         x_tick_labels = get_qpoint_labels(
             self.qpts, cell=self.crystal.to_spglib_cell())

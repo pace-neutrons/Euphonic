@@ -1,4 +1,5 @@
 from collections import OrderedDict
+from functools import cached_property
 from math import ceil
 from pathlib import Path
 from typing import Any, TypeVar
@@ -97,6 +98,10 @@ class Crystal:
     def cell_vectors(self, value: Quantity) -> None:
         self.cell_vectors_unit = str(value.units)
         self._cell_vectors = value.to('bohr').magnitude
+        if hasattr(self, 'cell_volume'):
+            del self.cell_volume
+        if hasattr(self, 'reciprocal_cell'):
+            del self.reciprocal_cell
 
     @property
     def atom_mass(self) -> Quantity:
@@ -113,6 +118,7 @@ class Crystal:
                                ['cell_vectors_unit', 'atom_mass_unit'])
         super().__setattr__(name, value)
 
+    @cached_property
     def reciprocal_cell(self) -> Quantity:
         """
         Calculates the reciprocal lattice vectors
@@ -128,11 +134,12 @@ class Crystal:
         bxc = np.cross(cv[1], cv[2])
         cxa = np.cross(cv[2], cv[0])
         axb = np.cross(cv[0], cv[1])
-        vol = self.cell_volume()
+        vol = self.cell_volume
         norm = 2*np.pi/vol
 
         return np.vstack((norm * bxc, norm * cxa, norm * axb))
 
+    @cached_property
     def cell_volume(self) -> Quantity:
         """
         Calculates the cell volume
@@ -166,7 +173,7 @@ class Crystal:
         """
 
         recip_length_unit = spacing.units
-        lattice = self.reciprocal_cell().to(recip_length_unit)
+        lattice = self.reciprocal_cell.to(recip_length_unit)
         grid_spec = np.linalg.norm(lattice.magnitude, axis=1,
                                    ) / spacing.magnitude
         # math.ceil is better than np.ceil because it returns ints

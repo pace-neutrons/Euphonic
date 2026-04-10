@@ -37,7 +37,7 @@ def sample_sphere_dos(fc: ForceConstants,
                       npts: int = 1000,
                       jitter: bool = False,
                       rng: RNG = rng,
-                      energy_bins: Quantity = None,
+                      energy_bins: Quantity | None = None,
                       **calc_modes_args,
                       ) -> Spectrum1D:
     """
@@ -400,7 +400,7 @@ def _qpts_cart_to_frac(qpts: Quantity,
     np.ndarray
         Dimensionless array of q-points in fractional coordinates
     """
-    lattice = crystal.reciprocal_cell()
+    lattice = crystal.reciprocal_cell
 
     # Cast 'dimensionless' to ensure length units are cancelled properly
     return np.linalg.solve(lattice.T, qpts.T).T.to('dimensionless').magnitude
