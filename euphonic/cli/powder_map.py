@@ -1,4 +1,4 @@
-from argparse import ArgumentParser
+from argparse import ArgumentParser, Namespace
 from collections.abc import Callable, Sequence
 from math import ceil
 
@@ -122,22 +122,11 @@ def _get_broaden_kwargs(q_broadening: Sequence[float] | None = None,
     return {'x_width': q_width, 'y_width': energy_width}
 
 
-def main(params: list[str] | None = None) -> None:
-    args = get_parser().parse_args(args=params)
-    calc_modes_kwargs = _calc_modes_kwargs(args)
-
+def _validate_args(args: Namespace) -> None:
     # Make sure we get an error if accessing NPTS inappropriately
     if args.npts_density is not None:
         args.npts = None
 
-    fc = load_data_from_file(args.filename, verbose=True)
-    if not isinstance(fc, ForceConstants):
-        msg = format_error(
-            ('Force constants are required to '
-             'use the euphonic-powder-map tool.'),
-            fix='Use a data file containing force constants.',
-        )
-        raise TypeError(msg)
     if args.pdos is not None and args.weighting == 'coherent':
         msg = format_error(
             'Incompatible options specified.',
@@ -147,6 +136,28 @@ def main(params: list[str] | None = None) -> None:
                  'or use "coherent" weighting without --pdos.'),
         )
         raise ValueError(msg)
+
+
+def _get_e_max(args: Namespace) -> float:
+    if args.e_i is not None and args.e_max is None:
+        return args.e_i
+    return args.e_max
+
+
+def main(params: list[str] | None = None) -> None:
+    args = get_parser().parse_args(args=params)
+    calc_modes_kwargs = _calc_modes_kwargs(args)
+
+    _validate_args(args)
+
+    fc = load_data_from_file(args.filename, verbose=True)
+    if not isinstance(fc, ForceConstants):
+        msg = format_error(
+            ('Force constants are required to '
+             'use the euphonic-powder-map tool.'),
+            fix='Use a data file containing force constants.',
+        )
+        raise TypeError(msg)
 
     if args.use_brille:
         from euphonic.brille import BrilleInterpolator
@@ -173,27 +184,21 @@ def main(params: list[str] | None = None) -> None:
         np.array([[0., 0., 0.5]]), **calc_modes_kwargs)
     modes.frequencies_unit = args.energy_unit
 
-    if args.e_i is not None and args.e_max is None:
-        emax = args.e_i
-    else:
-        emax = args.e_max
-
     energy_bins = _get_energy_bins(
-        modes, args.ebins + 1, emin=args.e_min, emax=emax,
+        modes, args.ebins + 1, emin=args.e_min, emax=_get_e_max(args),
         headroom=1.2)  # Generous headroom as we only checked one q-point
 
-    if args.weighting in ('coherent',):
+    if args.weighting in ('coherent',) and args.temperature is not None:
         # Compute Debye-Waller factor once for re-use at each mod(q)
         # (If temperature is not set, this will be None.)
-        if args.temperature is not None:
-            temperature = args.temperature * ureg('K')
-            dw = _get_debye_waller(temperature, fc, grid=args.grid,
-                                   grid_spacing=(args.grid_spacing
-                                                 * recip_length_unit),
-                                   **calc_modes_kwargs)
-        else:
-            temperature = None
-            dw = None
+        temperature = args.temperature * ureg('K')
+        dw = _get_debye_waller(temperature, fc, grid=args.grid,
+                               grid_spacing=(args.grid_spacing
+                                             * recip_length_unit),
+                               **calc_modes_kwargs)
+    else:
+        temperature = None
+        dw = None
 
     print(f'Sampling {n_q_bins} |q| shells between {q_min:~P} and {q_max:~P}')
 
