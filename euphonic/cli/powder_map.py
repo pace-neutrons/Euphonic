@@ -154,36 +154,38 @@ def _get_spectrum_calculator(
 ) -> Callable[[Quantity, int], Spectrum1D]:
     """Get the appropriate Spectrum1D calculator for loop over Q"""
 
-    if cli_args.weighting == 'dos' and cli_args.pdos is None:
-        def calc_spectrum(q: Quantity, npts: int) -> Spectrum1D:
-            return sample_sphere_dos(
-                fc, q, npts=npts, **kwargs)
-
-    elif 'dos' in cli_args.weighting:
-        def calc_spectrum(q: Quantity, npts: int) -> Spectrum1D:
-            spectrum_1d_col = sample_sphere_pdos(
+    match cli_args.weighting, cli_args.pdos:
+        case 'coherent', _:
+            def calc_spectrum(q: Quantity, npts: int) -> Spectrum1D:
+                return sample_sphere_structure_factor(
                     fc,
                     q,
                     npts=npts,
-                    weighting=_get_pdos_weighting(cli_args.weighting),
+                    dw=dw,
+                    temperature=temperature,
                     **kwargs)
-            return _arrange_pdos_groups(spectrum_1d_col, cli_args.pdos)
+            return calc_spectrum
 
-    elif cli_args.weighting == 'coherent':
-        def calc_spectrum(q: Quantity, npts: int) -> Spectrum1D:
-            return sample_sphere_structure_factor(
-                fc,
-                q,
-                npts=npts,
-                dw=dw,
-                temperature=temperature,
-                **kwargs)
+        case 'dos', None:
+            def calc_spectrum(q: Quantity, npts: int) -> Spectrum1D:
+                return sample_sphere_dos(
+                    fc, q, npts=npts, **kwargs)
+            return calc_spectrum
 
-    else:
-        msg = f'Cannot interpret weighting "{cli_args.weighting}".'
-        raise ValueError(msg)
+        case weighting, pdos if 'dos' in weighting:
+            def calc_spectrum(q: Quantity, npts: int) -> Spectrum1D:
+                spectrum_1d_col = sample_sphere_pdos(
+                        fc,
+                        q,
+                        npts=npts,
+                        weighting=_get_pdos_weighting(weighting),
+                        **kwargs)
+                return _arrange_pdos_groups(spectrum_1d_col, pdos)
+            return calc_spectrum
 
-    return calc_spectrum
+        case _, __:
+            msg = f'Cannot interpret weighting "{cli_args.weighting}".'
+            raise ValueError(msg)
 
 
 def main(params: list[str] | None = None) -> None:
