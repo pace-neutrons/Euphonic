@@ -1,13 +1,14 @@
 from argparse import ArgumentParser, Namespace
 from collections.abc import Callable, Sequence
 from math import ceil
+from typing import Any
 
 import matplotlib.style
 import numpy as np
 from numpy.polynomial import Polynomial
 from pint import Unit
 
-from euphonic import ForceConstants, Quantity, ureg
+from euphonic import DebyeWaller, ForceConstants, Quantity, ureg
 from euphonic.cli.utils import (
     _arrange_pdos_groups,
     _brille_calc_modes_kwargs,
@@ -28,7 +29,7 @@ from euphonic.powder import (
     sample_sphere_pdos,
     sample_sphere_structure_factor,
 )
-from euphonic.spectra import apply_kinematic_constraints
+from euphonic.spectra import Spectrum1D, apply_kinematic_constraints
 from euphonic.styles import base_style, intensity_widget_style
 from euphonic.util import format_error
 
@@ -144,6 +145,47 @@ def _get_e_max(args: Namespace) -> float:
     return args.e_max
 
 
+def _get_spectrum_calculator(
+    fc: ForceConstants,
+    cli_args: Namespace,
+    temperature: Quantity | None,
+    dw: DebyeWaller | None,
+    **kwargs: dict[str, Any],
+) -> Callable[[Quantity, int], Spectrum1D]:
+    """Get the appropriate Spectrum1D calculator for loop over Q"""
+
+    if cli_args.weighting == 'dos' and cli_args.pdos is None:
+        def calc_spectrum(q: Quantity, npts: int) -> Spectrum1D:
+            return sample_sphere_dos(
+                fc, q, npts=npts, **kwargs)
+
+    elif 'dos' in cli_args.weighting:
+        def calc_spectrum(q: Quantity, npts: int) -> Spectrum1D:
+            spectrum_1d_col = sample_sphere_pdos(
+                    fc,
+                    q,
+                    npts=npts,
+                    weighting=_get_pdos_weighting(cli_args.weighting),
+                    **kwargs)
+            return _arrange_pdos_groups(spectrum_1d_col, cli_args.pdos)
+
+    elif cli_args.weighting == 'coherent':
+        def calc_spectrum(q: Quantity, npts: int) -> Spectrum1D:
+            return sample_sphere_structure_factor(
+                fc,
+                q,
+                npts=npts,
+                dw=dw,
+                temperature=temperature,
+                **kwargs)
+
+    else:
+        msg = f'Cannot interpret weighting "{cli_args.weighting}".'
+        raise ValueError(msg)
+
+    return calc_spectrum
+
+
 def main(params: list[str] | None = None) -> None:
     args = get_parser().parse_args(args=params)
     calc_modes_kwargs = _calc_modes_kwargs(args)
@@ -204,6 +246,15 @@ def main(params: list[str] | None = None) -> None:
 
     z_data = np.empty((n_q_bins, len(energy_bins) - 1))
 
+    general_kwargs = {
+        'sampling': args.sampling,
+        'jitter': args.jitter,
+        'energy_bins': energy_bins,
+    }
+
+    calc_spectrum = _get_spectrum_calculator(
+        fc, args, temperature, dw, **general_kwargs, **calc_modes_kwargs)
+
     for q_index in tqdm(range(n_q_bins)):
         q = q_bin_centers[q_index]
 
@@ -214,30 +265,7 @@ def main(params: list[str] | None = None) -> None:
         else:
             npts = args.npts
 
-        general_kwargs = {
-            'npts': npts,
-            'sampling': args.sampling,
-            'jitter': args.jitter,
-            'energy_bins': energy_bins,
-        }
-
-        if args.weighting == 'dos' and args.pdos is None:
-            spectrum_1d = sample_sphere_dos(
-                fc, q, **general_kwargs, **calc_modes_kwargs)
-        elif 'dos' in args.weighting:
-            spectrum_1d_col = sample_sphere_pdos(
-                    fc, q,
-                    weighting=_get_pdos_weighting(args.weighting),
-                    **general_kwargs,
-                    **calc_modes_kwargs)
-            spectrum_1d = _arrange_pdos_groups(spectrum_1d_col, args.pdos)
-        elif args.weighting == 'coherent':
-            spectrum_1d = sample_sphere_structure_factor(
-                fc, q,
-                dw=dw,
-                temperature=temperature,
-                **general_kwargs,
-                **calc_modes_kwargs)
+        spectrum_1d = calc_spectrum(q, npts)
 
         z_data[q_index, :] = spectrum_1d.y_data.magnitude
 
