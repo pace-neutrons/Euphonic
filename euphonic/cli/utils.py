@@ -499,7 +499,7 @@ def _brille_calc_modes_kwargs(args: Namespace) -> dict[str, Any]:
     return {'useparallel': args.n_threads > 1, 'threads': args.n_threads}
 
 
-def _get_cli_parser(features: Collection[str] = {},
+def _get_cli_parser(features: Collection[str] = {},  # noqa: C901
                     conflict_handler: str = 'error',
                     ) -> tuple[ArgumentParser,
                                dict[str, _ArgumentGroup]]:
