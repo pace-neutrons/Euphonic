@@ -441,7 +441,7 @@ class ForceConstants:
             return qpt_freqs, grads
         return qpt_freqs
 
-    def _calculate_phonons_at_qpts(
+    def _calculate_phonons_at_qpts(  # noqa: C901
             self,
             qpts: np.ndarray,
             weights: np.ndarray | None,
