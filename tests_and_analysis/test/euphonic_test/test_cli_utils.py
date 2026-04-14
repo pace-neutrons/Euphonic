@@ -8,9 +8,9 @@ from euphonic.cli.utils import (
     _get_cli_parser,
     _get_energy_bins,
     _get_q_distance,
-    _load_phonopy_file,
     load_data_from_file,
 )
+from euphonic.cli.utils._loaders import _load_phonopy_file
 from euphonic.ureg import Quantity
 from tests_and_analysis.test.utils import get_data_path
 
@@ -75,8 +75,6 @@ def test_find_force_constants(mocked_fc_from_phonopy):
     Rather than add a whole script test case, here we use mocking to check a
     particular internal method path
     """
-    from euphonic.cli.utils import _load_phonopy_file
-
     phonopy_file = get_data_path(
         'phonopy_files', 'NaCl', 'phonopy_nofc.yaml',
     )
