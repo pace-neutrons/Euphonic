@@ -1,5 +1,5 @@
 mock
-pytest==7.*
+pytest>=9.0.3,<10.0
 coverage
 pytest-mock
 pytest-lazy-fixtures
