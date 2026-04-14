@@ -1,3 +1,5 @@
+"""Get sensible bins/grids from minimal user input"""
+
 from collections.abc import Sequence
 
 import numpy as np
