@@ -20,7 +20,10 @@ py_src = {
   'euphonic/cli': ['__init__.py', 'brille_convergence.py',
                    'dispersion.py', 'dos.py', 'intensity_map.py',
                    'optimise_dipole_parameter.py', 'powder_map.py',
-                   'show_sampling.py', 'utils.py'],
+                   'show_sampling.py'],
+  'euphonic/cli/utils': [
+      '__init__.py', '_band_structure.py', '_cli_parser.py', '_grids.py', '_loaders.py', '_pdos.py'
+  ],
   'euphonic/data': ['__init__.py', 'bluebook.json', 'sears-1992.json',
                     'reciprocal_spectroscopy_definitions.txt'],
   'euphonic/readers': ['__init__.py', 'castep.py', 'phonopy.py'],
