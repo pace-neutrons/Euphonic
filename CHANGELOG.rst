@@ -22,6 +22,11 @@
     The cache will be cleared on setting ``cell_vectors`` so direct changes
     to the ``_cell_vectors`` attribute may cause desynchronisation.
 
+  - ``euphonic.cli.utils`` has been broken up into submodules. All the
+    appropriate functions are re-exported to ``__all__`` so this
+    should not break API in practice, but e.g. Quantity can no longer
+    be imported from ``euphonic.cli.utils``.
+
 - Features
 
   - Spectrum1DCollection and Spectrum2DCollection can be indexed with
