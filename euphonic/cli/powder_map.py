@@ -183,7 +183,7 @@ def _get_spectrum_calculator(
                 return _arrange_pdos_groups(spectrum_1d_col, pdos)
             return calc_spectrum
 
-        case _, __:
+        case _:
             msg = f'Cannot interpret weighting "{cli_args.weighting}".'
             raise ValueError(msg)
 
