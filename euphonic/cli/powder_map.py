@@ -140,7 +140,7 @@ def _validate_args(args: Namespace) -> None:
 
 
 def _get_e_max(args: Namespace) -> float:
-    if args.e_i is not None and args.e_max is None:
+    if args.e_max is None:
         return args.e_i
     return args.e_max
 
