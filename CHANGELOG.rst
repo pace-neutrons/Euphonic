@@ -50,6 +50,7 @@
     - Bumped *pytest* requirement for testing to 9.0.3. (`CVE-2025-71176 <https://www.cve.org/CVERecord?id=CVE-2025-71176>`_)
 
 `v1.6.0 <https://github.com/pace-neutrons/Euphonic/compare/v1.5.1...v1.6.0>`_
+-----------------------------------------------------------------------------
 
   - ``_check_constructor_inputs`` refactored to list arguments as sequence of
     tuples for each input.
