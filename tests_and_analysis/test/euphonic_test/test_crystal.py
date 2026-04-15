@@ -278,7 +278,8 @@ class TestCrystalSetters:
             current_value[1] = current_value[0]
 
         # Writing to attribute: no setter available
-        with pytest.raises(AttributeError, match='has no setter'):
+        with pytest.raises(AttributeError,
+                           match="(can't set attribute)|(no setter)"):
             setattr(crystal, attr, current_value[::-1])
 
     @pytest.mark.parametrize('material, attr', [
@@ -291,7 +292,8 @@ class TestCrystalSetters:
         current_value = getattr(crystal, attr)
 
         # Writing to attribute: no setter available
-        with pytest.raises(AttributeError, match='has no setter'):
+        with pytest.raises(AttributeError,
+                           match="(can't set attribute)|(no setter)"):
             setattr(crystal, attr, current_value)
 
 
