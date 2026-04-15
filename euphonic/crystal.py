@@ -86,14 +86,22 @@ class Crystal:
         self.atom_type = atom_type
         self._atom_mass = atom_mass.to(ureg.m_e).magnitude
 
-        self.cell_vectors_unit = str(cell_vectors.units)
-        self.atom_mass_unit = str(atom_mass.units)
+        self._cell_vectors_unit = str(cell_vectors.units)
+        self._atom_mass_unit = str(atom_mass.units)
 
         # Set underlying arrays to read-only to defend during slice access
         for array_attribute in (
             self.atom_r, self.atom_type, self._cell_vectors, self._atom_mass,
         ):
             array_attribute.setflags(write=False)
+
+    @property
+    def cell_vectors_unit(self) -> str:
+        return self._cell_vectors_unit
+
+    @property
+    def atom_mass_unit(self) -> str:
+        return self._atom_mass_unit
 
     @property
     def n_atoms(self) -> int:
