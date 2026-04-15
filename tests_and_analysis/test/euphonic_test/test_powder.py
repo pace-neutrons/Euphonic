@@ -127,12 +127,12 @@ class TestSphereSampledProperties:
     @pytest.fixture
     def mock_crystal(self, mocker):
         crystal = mocker.MagicMock()
+        crystal.reciprocal_cell = (np.array([[1, 0, 0],
+                                            [0, 1, 0],
+                                            [0, 0, 1]])
+                                   * ureg('1 / angstrom'))
         crystal.configure_mock(
-            **{'reciprocal_cell.return_value': np.array([[1, 0, 0],
-                                                         [0, 1, 0],
-                                                         [0, 0, 1]])
-               * ureg('1 / angstrom'),
-               'get_mp_grid_spec.return_value': (2, 2, 2)})
+            **{'get_mp_grid_spec.return_value': (2, 2, 2)})
         return crystal
 
     @pytest.fixture
@@ -299,7 +299,7 @@ class TestQpointConversion:
     def test_qpts_cart_to_frac_roundtrip(random_qpts_array,
                                          nontrivial_crystal):
         frac_qpts = random_qpts_array
-        cart_qpts = frac_qpts.dot(nontrivial_crystal.reciprocal_cell()
+        cart_qpts = frac_qpts.dot(nontrivial_crystal.reciprocal_cell
                                   .to('1 / angstrom').magnitude,
                                   ) * ureg('1 / angstrom')
         calc_frac_qpts = _qpts_cart_to_frac(cart_qpts, nontrivial_crystal)
