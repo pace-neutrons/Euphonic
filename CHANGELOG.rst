@@ -17,6 +17,11 @@
   - ``get_args()`` function removed from ``euphonic.cli.utils``; this
     was previously simplified to a one-liner so brings no DRY benefit.
 
+  - Some public functions in ``Crystal`` (``reciprocal_lattice``,
+    ``cell_volume``) are now ``@cached_property`` and don't need ``()``.
+    The cache will be cleared on setting ``cell_vectors`` so direct changes
+    to the ``_cell_vectors`` attribute may cause desynchronisation.
+
 - Features
 
   - Spectrum1DCollection and Spectrum2DCollection can be indexed with

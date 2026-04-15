@@ -691,7 +691,7 @@ class ForceConstants:
             reigenvecs = np.zeros((n_reigenvecs, 3*n_atoms, n_atoms, 3),
                                   dtype=np.complex128)
             cell_vectors = self.crystal._cell_vectors
-            recip_vectors = self.crystal.reciprocal_cell().to(
+            recip_vectors = self.crystal.reciprocal_cell.to(
                 '1/bohr').magnitude
             # Get conj transpose - the dynamical matrix calculated in C
             # is passed to Fortran libs so uses Fortran ordering, make
@@ -1030,7 +1030,7 @@ casting to real mode gradients.
                 q=0
         """
         cell_vectors = crystal._cell_vectors
-        recip = crystal.reciprocal_cell().to('1/bohr').magnitude
+        recip = crystal.reciprocal_cell.to('1/bohr').magnitude
         n_atoms = crystal.n_atoms
         atom_r = crystal.atom_r
         inv_dielectric = np.linalg.inv(dielectric)
@@ -1131,7 +1131,7 @@ casting to real mode gradients.
                 recip_q0 += recip_q0_tmp
             else:
                 break
-        vol = crystal.cell_volume().to('bohr^3').magnitude
+        vol = crystal.cell_volume.to('bohr^3').magnitude
         recip_q0 *= math.pi/(vol*lambda_2)
 
         # Fill in remaining entries by symmetry
@@ -1198,7 +1198,7 @@ casting to real mode gradients.
             Shape (3*n_atoms, 3*n_atoms) complex ndarray. The
             correction to the dynamical matrix.
         """
-        recip = crystal.reciprocal_cell().to('1/bohr').magnitude
+        recip = crystal.reciprocal_cell.to('1/bohr').magnitude
         n_atoms = crystal.n_atoms
         atom_r = crystal.atom_r
         upper_lambda = dipole_init_data['lambda']
@@ -1241,7 +1241,7 @@ casting to real mode gradients.
                              /(gvec_phases[:, i:]*q_phases[i:]))
                 recip_dipole[i, i:] = np.einsum(
                     'ikl,ij->jkl', recip_exp, phase_exp)
-        cell_volume = crystal.cell_volume().to('bohr^3').magnitude
+        cell_volume = crystal.cell_volume.to('bohr^3').magnitude
         recip_dipole *= math.pi/(cell_volume*lambda_2)
 
         # Fill in remaining entries by symmetry
@@ -1331,10 +1331,10 @@ casting to real mode gradients.
         if is_gamma(q_dir):
             return na_corr
 
-        recip_cell = self.crystal.reciprocal_cell().to('1/bohr').magnitude
+        recip_cell = self.crystal.reciprocal_cell.to('1/bohr').magnitude
         q_dir_cart = np.einsum('ij,i->j', recip_cell, q_dir)
 
-        cell_volume = self.crystal.cell_volume().to('bohr^3').magnitude
+        cell_volume = self.crystal.cell_volume.to('bohr^3').magnitude
         denominator = np.einsum('ij,i,j', dielectric, q_dir_cart, q_dir_cart)
         factor = 4*math.pi/(cell_volume*denominator)
 
