@@ -248,27 +248,53 @@ class TestCrystalSerialisation:
 
 
 class TestCrystalSetters:
+    """Crystal is immutable, there should not be any working setters"""
 
-    @pytest.mark.parametrize('material, attr, unit, scale', [
-        ('quartz', 'cell_vectors', 'bohr', 2.),
-        ('quartz', 'cell_vectors', 'angstrom', 3.),
-        ('quartz', 'atom_mass', 'kg', 2.),
-        ('quartz', 'atom_mass', 'm_e', 0.5),
+    @pytest.mark.parametrize('material, attr', [
+        ('quartz', 'cell_vectors'),
+        ('quartz', 'atom_mass'),
+        ('quartz', 'reciprocal_cell'),
+        ('quartz', 'cell_volume'),
         ])
-    def test_setter_correct_units(self, material, attr,
-                                  unit, scale):
+    def test_setters_cached_array_properties(self, material, attr):
         crystal = get_crystal(material)
-        check_property_setters(crystal, attr, unit, scale)
+        current_value = getattr(crystal, attr)
+        with pytest.raises(AttributeError, match="Make a new Crystal"):
+            setattr(crystal, attr, current_value * 2.)
 
-    @pytest.mark.parametrize('material, attr, unit, err', [
-        ('quartz', 'cell_vectors', 'kg', ValueError),
-        ('quartz', 'atom_mass', 'bohr', ValueError)])
-    def test_incorrect_unit_conversion(self, material, attr,
-                                       unit, err):
+        # Writing to slice/element: numpy error
+        if hasattr(current_value, '__item__'):
+            with pytest.raises(ValueError, match="read-only"):
+                current_value[1] = current_value[0]
+
+    @pytest.mark.parametrize('material, attr', [
+        ('quartz', 'atom_r'),
+        ('quartz', 'atom_type'),
+        ])
+    def test_setter_array_properties(self, material, attr):
         crystal = get_crystal(material)
-        new_attr = getattr(crystal, attr).magnitude*ureg(unit)
-        #with pytest.raises(err):
-        setattr(crystal, attr, new_attr)
+        current_value = getattr(crystal, attr)
+
+        # Writing to slice/element: numpy error
+        with pytest.raises(ValueError, match="read-only"):
+            current_value[1] = current_value[0]
+
+        # Writing to attribute: no setter available
+        with pytest.raises(AttributeError, match="has no setter"):
+            setattr(crystal, attr, current_value[::-1])
+
+    @pytest.mark.parametrize('material, attr', [
+        ('quartz', 'cell_vectors_unit'),
+        ('quartz', 'atom_mass_unit'),
+        ('quartz', 'n_atoms'),
+        ])
+    def test_setter_other_properties(self, material, attr):
+        crystal = get_crystal(material)
+        current_value = getattr(crystal, attr)
+
+        # Writing to attribute: no setter available
+        with pytest.raises(AttributeError, match="has no setter"):
+            setattr(crystal, attr, current_value)
 
 
 class TestCrystalMethods:

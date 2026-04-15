@@ -22,6 +22,23 @@ from euphonic.util import (
 from euphonic.validate import _check_constructor_inputs
 
 
+class read_only_cached_property(cached_property):
+    def __set__(self, instance, value):
+        if hasattr(self, '__replace__'):
+            fix = ('You can make a modified copy of this '
+                   'object with copy.replace().')
+        else:
+            fix = (f'Make a new {instance.__class__.__name__} with '
+                   'the required values.')
+
+        msg = format_error(
+            f'{instance.__class__.__name__} property '
+            f'"{self.attrname}" is read-only.',
+            fix=fix
+        )
+        raise AttributeError(msg)
+
+
 class Crystal:
     """
     Stores lattice and atom information
@@ -82,8 +99,8 @@ class Crystal:
         )
         self._cell_vectors = cell_vectors.to(ureg.bohr).magnitude
         self._n_atoms = n_atoms
-        self.atom_r = atom_r
-        self.atom_type = atom_type
+        self._atom_r = atom_r
+        self._atom_type = atom_type
         self._atom_mass = atom_mass.to(ureg.m_e).magnitude
 
         self._cell_vectors_unit = str(cell_vectors.units)
@@ -94,6 +111,14 @@ class Crystal:
             self.atom_r, self.atom_type, self._cell_vectors, self._atom_mass,
         ):
             array_attribute.setflags(write=False)
+
+    @property
+    def atom_r(self) -> np.ndarray:
+        return self._atom_r
+
+    @property
+    def atom_type(self) -> np.ndarray:
+        return self._atom_type
 
     @property
     def cell_vectors_unit(self) -> str:
@@ -107,15 +132,19 @@ class Crystal:
     def n_atoms(self) -> int:
         return self._n_atoms
 
-    @cached_property
+    @read_only_cached_property
     def cell_vectors(self) -> Quantity:
-        return Quantity(self._cell_vectors, 'bohr').to(self.cell_vectors_unit)
+        result = Quantity(self._cell_vectors, 'bohr').to(self.cell_vectors_unit)
+        result.setflags(write=False)
+        return result
 
-    @cached_property
+    @read_only_cached_property
     def atom_mass(self) -> Quantity:
-        return Quantity(self._atom_mass, 'm_e').to(self.atom_mass_unit)
+        result = Quantity(self._atom_mass, 'm_e').to(self.atom_mass_unit)
+        result.setflags(write=False)
+        return result
 
-    @cached_property
+    @read_only_cached_property
     def reciprocal_cell(self) -> Quantity:
         """
         Calculates the reciprocal lattice vectors
@@ -134,9 +163,11 @@ class Crystal:
         vol = self.cell_volume
         norm = 2*np.pi/vol
 
-        return np.vstack((norm * bxc, norm * cxa, norm * axb))
+        result = np.vstack((norm * bxc, norm * cxa, norm * axb))
+        result.setflags(write=False)
+        return result
 
-    @cached_property
+    @read_only_cached_property
     def cell_volume(self) -> Quantity:
         """
         Calculates the cell volume
