@@ -34,7 +34,9 @@ def read_only_array(f):
         return result
     return wrapper
 
-class read_only_cached_property(cached_property):
+
+class read_only_cached_property(cached_property):  # noqa: N801
+    """Modified functools.cached_property to disallow __set__"""
     def __set__(self, instance, value):
         if hasattr(self, '__replace__'):
             fix = ('You can make a modified copy of this '
@@ -46,7 +48,7 @@ class read_only_cached_property(cached_property):
         msg = format_error(
             f'{instance.__class__.__name__} property '
             f'"{self.attrname}" is read-only.',
-            fix=fix
+            fix=fix,
         )
         raise AttributeError(msg)
 

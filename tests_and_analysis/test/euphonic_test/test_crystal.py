@@ -10,8 +10,6 @@ import spglib
 from euphonic import Crystal, Quantity, ureg
 from tests_and_analysis.test.utils import (
     check_json_metadata,
-    check_property_setters,
-    check_unit_conversion,
     get_data_path,
 )
 
@@ -259,12 +257,12 @@ class TestCrystalSetters:
     def test_setters_cached_array_properties(self, material, attr):
         crystal = get_crystal(material)
         current_value = getattr(crystal, attr)
-        with pytest.raises(AttributeError, match="Make a new Crystal"):
+        with pytest.raises(AttributeError, match='Make a new Crystal'):
             setattr(crystal, attr, current_value * 2.)
 
         # Writing to slice/element: numpy error
         if hasattr(current_value, '__item__'):
-            with pytest.raises(ValueError, match="read-only"):
+            with pytest.raises(ValueError, match='read-only'):
                 current_value[1] = current_value[0]
 
     @pytest.mark.parametrize('material, attr', [
@@ -276,11 +274,11 @@ class TestCrystalSetters:
         current_value = getattr(crystal, attr)
 
         # Writing to slice/element: numpy error
-        with pytest.raises(ValueError, match="read-only"):
+        with pytest.raises(ValueError, match='read-only'):
             current_value[1] = current_value[0]
 
         # Writing to attribute: no setter available
-        with pytest.raises(AttributeError, match="has no setter"):
+        with pytest.raises(AttributeError, match='has no setter'):
             setattr(crystal, attr, current_value[::-1])
 
     @pytest.mark.parametrize('material, attr', [
@@ -293,7 +291,7 @@ class TestCrystalSetters:
         current_value = getattr(crystal, attr)
 
         # Writing to attribute: no setter available
-        with pytest.raises(AttributeError, match="has no setter"):
+        with pytest.raises(AttributeError, match='has no setter'):
             setattr(crystal, attr, current_value)
 
 
