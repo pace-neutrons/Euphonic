@@ -190,7 +190,7 @@ def _modes_to_phonon_website_dict(
     qpts = modes.qpts
     eigenvectors = modes.eigenvectors
 
-    abscissa = _calc_abscissa(modes.crystal.reciprocal_cell(), qpts)
+    abscissa = _calc_abscissa(modes.crystal.reciprocal_cell, qpts)
 
     duplicates = _find_duplicates(abscissa)
     breakpoints = _remove_breaks(abscissa)
@@ -222,4 +222,3 @@ def _modes_to_phonon_website_dict(
         repetitions=repetitions,
         line_breaks=line_breaks,
     )
-
