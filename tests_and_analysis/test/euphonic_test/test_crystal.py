@@ -207,7 +207,7 @@ class TestCrystalCreation:
 
     def test_faulty_creation(self, inject_faulty_elements):
         faulty_args, expected_exception = inject_faulty_elements
-        with pytest.raises(expected_exception):
+        with pytest.raises(expected_exception, match=None):
             Crystal(*faulty_args)
 
 
