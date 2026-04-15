@@ -19,8 +19,11 @@
 
   - Some public functions in ``Crystal`` (``reciprocal_lattice``,
     ``cell_volume``) are now ``@cached_property`` and don't need ``()``.
-    The cache will be cleared on setting ``cell_vectors`` so direct changes
-    to the ``_cell_vectors`` attribute may cause desynchronisation.
+
+  - ``Crystal`` is now treated as immutable and this is enforced as
+    far as reasonably practical. Unit conversion should be performed
+    directly on the read-only properties, and new copies of the object
+    constructed as needed.
 
 - Features
 
