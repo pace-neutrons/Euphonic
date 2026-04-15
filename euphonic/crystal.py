@@ -1,5 +1,5 @@
 from collections import OrderedDict
-from functools import cached_property
+from functools import cached_property, wraps
 from math import ceil
 from pathlib import Path
 from typing import Any, TypeVar
@@ -21,6 +21,18 @@ from euphonic.util import (
 )
 from euphonic.validate import _check_constructor_inputs
 
+
+def read_only_array(f):
+    """Call .setflags(write=False) on return value of decorated function
+
+    This ensures a numpy array isn't accidentally modified by accessing slices
+    """
+    @wraps(f)
+    def wrapper(*args, **kwds):
+        result = f(*args, **kwds)
+        result.setflags(write=False)
+        return result
+    return wrapper
 
 class read_only_cached_property(cached_property):
     def __set__(self, instance, value):
@@ -106,17 +118,13 @@ class Crystal:
         self._cell_vectors_unit = str(cell_vectors.units)
         self._atom_mass_unit = str(atom_mass.units)
 
-        # Set underlying arrays to read-only to defend during slice access
-        for array_attribute in (
-            self.atom_r, self.atom_type, self._cell_vectors, self._atom_mass,
-        ):
-            array_attribute.setflags(write=False)
-
     @property
+    @read_only_array
     def atom_r(self) -> np.ndarray:
         return self._atom_r
 
     @property
+    @read_only_array
     def atom_type(self) -> np.ndarray:
         return self._atom_type
 
@@ -133,18 +141,17 @@ class Crystal:
         return self._n_atoms
 
     @read_only_cached_property
+    @read_only_array
     def cell_vectors(self) -> Quantity:
-        result = Quantity(self._cell_vectors, 'bohr').to(self.cell_vectors_unit)
-        result.setflags(write=False)
-        return result
+        return Quantity(self._cell_vectors, 'bohr').to(self.cell_vectors_unit)
 
     @read_only_cached_property
+    @read_only_array
     def atom_mass(self) -> Quantity:
-        result = Quantity(self._atom_mass, 'm_e').to(self.atom_mass_unit)
-        result.setflags(write=False)
-        return result
+        return Quantity(self._atom_mass, 'm_e').to(self.atom_mass_unit)
 
     @read_only_cached_property
+    @read_only_array
     def reciprocal_cell(self) -> Quantity:
         """
         Calculates the reciprocal lattice vectors
@@ -163,9 +170,7 @@ class Crystal:
         vol = self.cell_volume
         norm = 2*np.pi/vol
 
-        result = np.vstack((norm * bxc, norm * cxa, norm * axb))
-        result.setflags(write=False)
-        return result
+        return np.vstack((norm * bxc, norm * cxa, norm * axb))
 
     @read_only_cached_property
     def cell_volume(self) -> Quantity:
