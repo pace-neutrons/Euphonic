@@ -19,7 +19,7 @@ from euphonic.util import (
     _get_unique_elems_and_idx,
     format_error,
 )
-from euphonic.validate import _check_constructor_inputs, _check_unit_conversion
+from euphonic.validate import _check_constructor_inputs
 
 
 class Crystal:
@@ -81,7 +81,7 @@ class Crystal:
             (atom_mass, Quantity, (n_atoms,), 'atom_mass'),
         )
         self._cell_vectors = cell_vectors.to(ureg.bohr).magnitude
-        self.n_atoms = n_atoms
+        self._n_atoms = n_atoms
         self.atom_r = atom_r
         self.atom_type = atom_type
         self._atom_mass = atom_mass.to(ureg.m_e).magnitude
@@ -89,34 +89,23 @@ class Crystal:
         self.cell_vectors_unit = str(cell_vectors.units)
         self.atom_mass_unit = str(atom_mass.units)
 
+        # Set underlying arrays to read-only to defend during slice access
+        for array_attribute in (
+            self.atom_r, self.atom_type, self._cell_vectors, self._atom_mass,
+        ):
+            array_attribute.setflags(write=False)
+
     @property
+    def n_atoms(self) -> int:
+        return self._n_atoms
+
+    @cached_property
     def cell_vectors(self) -> Quantity:
-        return self._cell_vectors*ureg('bohr').to(
-            self.cell_vectors_unit)
+        return Quantity(self._cell_vectors, 'bohr').to(self.cell_vectors_unit)
 
-    @cell_vectors.setter
-    def cell_vectors(self, value: Quantity) -> None:
-        self.cell_vectors_unit = str(value.units)
-        self._cell_vectors = value.to('bohr').magnitude
-        if hasattr(self, 'cell_volume'):
-            del self.cell_volume
-        if hasattr(self, 'reciprocal_cell'):
-            del self.reciprocal_cell
-
-    @property
+    @cached_property
     def atom_mass(self) -> Quantity:
-        return self._atom_mass*ureg('m_e').to(
-            self.atom_mass_unit)
-
-    @atom_mass.setter
-    def atom_mass(self, value: Quantity) -> None:
-        self.atom_mass_unit = str(value.units)
-        self._atom_mass = value.to('m_e').magnitude
-
-    def __setattr__(self, name: str, value: Any) -> None:
-        _check_unit_conversion(self, name, value,
-                               ['cell_vectors_unit', 'atom_mass_unit'])
-        super().__setattr__(name, value)
+        return Quantity(self._atom_mass, 'm_e').to(self.atom_mass_unit)
 
     @cached_property
     def reciprocal_cell(self) -> Quantity:
