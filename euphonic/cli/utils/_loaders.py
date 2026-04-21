@@ -21,16 +21,18 @@ def _load_euphonic_json(filename: str | os.PathLike,
         data = json.load(f)
 
     match data:
-        case {'force_constants': fc}:
+        case {'force_constants': _}:
             return ForceConstants.from_json_file(filename)
-        case {'frequencies': freq, 'eigenvectors': eig} if not frequencies_only:
+        case {'frequencies': _, 'eigenvectors': _} if not frequencies_only:
             return QpointPhononModes.from_json_file(filename)
-        case {'frequencies': freq}:
+        case {'frequencies': _}:
             return QpointFrequencies.from_json_file(filename)
         case _:
              msg = format_error(
-                 f'Could not identify Euphonic data in JSON file ({filename}).',
-                 fix='Ensure JSON file contains "force_constants" or "frequencies".',
+                 'Could not identify Euphonic data in '
+                 f'JSON file ({filename}).',
+                 fix=('Ensure JSON file contains "force_constants" '
+                      'or "frequencies".'),
              )
              raise ValueError(msg)
 
@@ -100,7 +102,8 @@ def _janus_fc_filename(phonopy_file: Path) -> Path:
     Otherwise, return Path.cwd(), which will fail an .is_file() check.
     """
 
-    if re_match := re.match(r'(?P<seedname>.+)-phonopy\.(?P<ext>ya?ml)', phonopy_file.name):
+    if re_match := re.match(
+            r'(?P<seedname>.+)-phonopy\.(?P<ext>ya?ml)', phonopy_file.name):
         seedname = re_match.group('seedname')
         return Path(phonopy_file.parent / f'{seedname}-force_constants.hdf5')
     return Path.cwd()
