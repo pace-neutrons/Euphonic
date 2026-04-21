@@ -60,7 +60,7 @@ def test_load_data_extension_error():
 
 @pytest.fixture
 def mocked_fc_from_phonopy(mocker):
-    from euphonic.cli.utils import ForceConstants
+    from euphonic.cli.utils._loaders import ForceConstants
 
     mocked_method = mocker.patch.object(ForceConstants, 'from_phonopy')
     mocked_method.return_value = None
