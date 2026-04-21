@@ -38,7 +38,7 @@ def _get_pdos_weighting(cl_arg_weighting: str) -> str | None:
     """
     if cl_arg_weighting == 'dos':
         return None
-    
+
     idx = cl_arg_weighting.rfind('-')
     if idx == -1:
         msg = format_error(
@@ -46,5 +46,5 @@ def _get_pdos_weighting(cl_arg_weighting: str) -> str | None:
             fix='Check weighting argument. Should be e.g. "coherent-dos".',
        )
         raise ValueError(msg)
-        
+
     return cl_arg_weighting[:idx]

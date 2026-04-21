@@ -28,7 +28,7 @@ def _get_tick_labels(bandpath: dict) -> list[tuple[int, str]]:
         [(0, 'L'), (3, 'X'), (5, '$\\Gamma$')]
     """
     label_indices = np.where(bandpath['explicit_kpoints_labels'])[0]
-    labels = ("$\Gamma$" if label == "GAMMA" else label
+    labels = (r'$\Gamma$' if label == 'GAMMA' else label
               for label in
               np.take(bandpath['explicit_kpoints_labels'], label_indices))
     return list(zip(label_indices, labels, strict=True))
@@ -62,7 +62,7 @@ def _get_break_points(bandpath: dict) -> list[int]:
     adjacent_different_labels = (labels[:-1] != labels[1:])
 
     break_points = np.where(
-        adjacent_non_empty_labels & adjacent_different_labels
+        adjacent_non_empty_labels & adjacent_different_labels,
     )[0]
     return (break_points + 1).tolist()
 
