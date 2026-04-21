@@ -64,12 +64,11 @@ def _get_energy_bins(
 
 
 def _grid_spec_from_args(crystal: Crystal,
-                           grid: Sequence[int] | None = None,
+                           grid: list[int] | None = None,
                            grid_spacing: Quantity = 0.1 * ureg('1/angstrom'),
                            ) -> tuple[int, int, int]:
     """Get Monkorst-Pack mesh divisions from user arguments"""
     if grid:
-        grid_spec = tuple(grid)
-    else:
-        grid_spec = crystal.get_mp_grid_spec(spacing=grid_spacing)
-    return grid_spec
+        return tuple(grid)
+
+    return crystal.get_mp_grid_spec(spacing=grid_spacing)
