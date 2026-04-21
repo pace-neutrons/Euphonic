@@ -20,18 +20,19 @@ def _load_euphonic_json(filename: str | os.PathLike,
     with open(filename) as f:
         data = json.load(f)
 
-    if 'force_constants' in data:
-        return ForceConstants.from_json_file(filename)
-    if 'frequencies' in data:
-        if 'eigenvectors' in data and not frequencies_only:
+    match data:
+        case {'force_constants': fc}:
+            return ForceConstants.from_json_file(filename)
+        case {'frequencies': freq, 'eigenvectors': eig} if not frequencies_only:
             return QpointPhononModes.from_json_file(filename)
-        return QpointFrequencies.from_json_file(filename)
-
-    msg = format_error(
-        f'Could not identify Euphonic data in JSON file ({filename}).',
-        fix='Ensure JSON file contains "force_constants" or "frequencies".',
-    )
-    raise ValueError(msg)
+        case {'frequencies': freq}:
+            return QpointFrequencies.from_json_file(filename)
+        case _:
+             msg = format_error(
+                 f'Could not identify Euphonic data in JSON file ({filename}).',
+                 fix='Ensure JSON file contains "force_constants" or "frequencies".',
+             )
+             raise ValueError(msg)
 
 
 def _load_phonopy_file(filename: str | os.PathLike,
@@ -81,7 +82,7 @@ def _load_phonopy_file(filename: str | os.PathLike,
             # Assume this is a (renamed?) phonopy.yaml file
             if (janus_fc := _janus_fc_filename(path)).is_file():
                 phonopy_kwargs['fc_name'] = janus_fc.name
-            elif (path.parent / 'force_constants.hdf5').is_file():
+            elif path.with_name('force_constants.hdf5').is_file():
                 phonopy_kwargs['fc_name'] = 'force_constants.hdf5'
             else:
                 phonopy_kwargs['fc_name'] = 'FORCE_CONSTANTS'
@@ -99,9 +100,7 @@ def _janus_fc_filename(phonopy_file: Path) -> Path:
     Otherwise, return Path.cwd(), which will fail an .is_file() check.
     """
 
-    re_match = re.match(r'(?P<seedname>.+)-phonopy\.(?P<ext>ya?ml)',
-                        phonopy_file.name)
-    if re_match:
+    if re_match := re.match(r'(?P<seedname>.+)-phonopy\.(?P<ext>ya?ml)', phonopy_file.name):
         seedname = re_match.group('seedname')
         return Path(phonopy_file.parent / f'{seedname}-force_constants.hdf5')
     return Path.cwd()
