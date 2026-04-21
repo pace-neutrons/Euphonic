@@ -37,14 +37,14 @@ def _get_pdos_weighting(cl_arg_weighting: str) -> str | None:
     e.g. --weighting coherent-dos to weighting=coherent
     """
     if cl_arg_weighting == 'dos':
-        pdos_weighting = None
-    else:
-        idx = cl_arg_weighting.rfind('-')
-        if idx == -1:
-            msg = format_error(
-                f'Unexpected weighting "{cl_arg_weighting}"',
-                fix='Check weighting argument. Should be e.g. "coherent-dos".',
-            )
-            raise ValueError(msg)
-        pdos_weighting = cl_arg_weighting[:idx]
-    return pdos_weighting
+        return None
+    
+    idx = cl_arg_weighting.rfind('-')
+    if idx == -1:
+        msg = format_error(
+            f'Unexpected weighting "{cl_arg_weighting}"',
+            fix='Check weighting argument. Should be e.g. "coherent-dos".',
+       )
+        raise ValueError(msg)
+        
+    return cl_arg_weighting[:idx]
