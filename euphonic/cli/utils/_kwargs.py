@@ -9,12 +9,8 @@ def _plot_label_kwargs(args: Namespace, default_xlabel: str = '',
     """Collect title/label arguments that can be passed to plot_nd
     """
     plot_kwargs = {'title': args.title,
-                   'xlabel': default_xlabel,
-                   'ylabel': default_ylabel}
-    if args.ylabel is not None:
-        plot_kwargs['ylabel'] = args.ylabel
-    if args.xlabel is not None:
-        plot_kwargs['xlabel'] = args.xlabel
+                   'xlabel': getattr(args, 'xlabel', None) or default_xlabel,
+                   'ylabel': getattr(args, 'ylabel', None) or default_ylabel}
     return plot_kwargs
 
 
