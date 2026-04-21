@@ -1,4 +1,5 @@
 from pathlib import Path
+from types import NoneType
 from typing import Any, Literal, TypeVar
 import warnings
 
@@ -21,7 +22,11 @@ from euphonic.util import (
     format_error,
     get_qpoint_labels,
 )
-from euphonic.validate import _check_constructor_inputs, _check_unit_conversion
+from euphonic.validate import (
+    InputCheck,
+    _check_constructor_inputs,
+    _check_unit_conversion,
+)
 
 AdaptiveMethod = Literal['reference', 'fast']
 
@@ -65,16 +70,18 @@ class QpointFrequencies:
             If None, equal weights are assumed
         """
         _check_constructor_inputs(
-            (crystal, Crystal, (), 'crystal'),
-            (qpts, np.ndarray, (-1, 3), 'qpts'),
+            InputCheck(crystal, (Crystal,), {}, 'crystal'),
+            InputCheck(qpts, (np.ndarray,), {(-1, 3)}, 'qpts'),
         )
         n_qpts = len(qpts)
         # Unlike QpointPhononModes and StructureFactor, don't test the
         # frequencies shape against number of atoms in the crystal, as
         # we may only have the cell vectors
         _check_constructor_inputs(
-            (frequencies, Quantity, (n_qpts, -1), 'frequencies'),
-            (weights, [np.ndarray, type(None)], (n_qpts,), 'weights'),
+            InputCheck(frequencies, (Quantity,),
+                       {(n_qpts, -1)}, 'frequencies'),
+            InputCheck(weights, (np.ndarray, NoneType),
+                       {(n_qpts,)}, 'weights'),
         )
         self.crystal = crystal
         self.qpts = qpts

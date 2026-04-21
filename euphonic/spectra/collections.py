@@ -10,6 +10,7 @@ import json
 from numbers import Integral
 from operator import contains
 from pathlib import Path
+from types import NoneType
 from typing import (
     Any,
     Literal,
@@ -29,7 +30,7 @@ from euphonic.io import _obj_to_dict, _process_dict
 from euphonic.readers.castep import read_phonon_dos_data
 from euphonic.ureg import ureg
 from euphonic.util import format_error
-from euphonic.validate import _check_constructor_inputs
+from euphonic.validate import InputCheck, _check_constructor_inputs
 from euphonic.version import __version__
 
 from .base import (
@@ -43,6 +44,11 @@ from .base import OneSpectrumMetadata as OneLineData
 
 LineData = Sequence[OneLineData]
 Metadata = dict[str, str | int | LineData]
+
+X_TICK_CHECK = InputCheck(..., (list, NoneType),
+                          {}, 'x_tick_labels')
+METADATA_CHECK = InputCheck(..., (dict, NoneType),
+                            {}, 'metadata')
 
 
 class SpectrumCollectionMixin(ABC):
@@ -595,13 +601,13 @@ class Spectrum1DCollection(SpectrumCollectionMixin,
         """
 
         _check_constructor_inputs(
-            (y_data, Quantity, (-1, -1), 'y_data'),
-            (x_tick_labels, [list, type(None)], (), 'x_tick_labels'),
-            (metadata, [dict, type(None)], (), 'metadata'),
+            InputCheck(y_data, (Quantity,), {(-1, -1)}, 'y_data'),
+            X_TICK_CHECK._replace(value=x_tick_labels),
+            METADATA_CHECK._replace(value=metadata),
         )
         ny = len(y_data[0])
         _check_constructor_inputs(
-            (x_data, Quantity, [(ny,), (ny+1,)], 'x_data'))
+            InputCheck(x_data, (Quantity,), {(ny,), (ny+1,)}, 'x_data'))
 
         self._set_data(x_data, 'x')
         self._set_data(y_data, 'y')
@@ -925,15 +931,15 @@ class Spectrum2DCollection(SpectrumCollectionMixin,
             metadata: Metadata | None = None,
     ) -> None:
         _check_constructor_inputs(
-            (z_data, Quantity, (-1, -1, -1), 'z_data'),
-            (x_tick_labels, [list, type(None)], (), 'x_tick_labels'),
-            (metadata, [dict, type(None)], (), 'metadata'),
+            InputCheck(z_data, (Quantity,), {(-1, -1, -1)}, 'z_data'),
+            X_TICK_CHECK._replace(value=x_tick_labels),
+            METADATA_CHECK._replace(value=metadata),
         )
         # First axis corresponds to spectra in collection
         _, nx, ny = z_data.shape
         _check_constructor_inputs(
-            (x_data, Quantity, [(nx,), (nx + 1,)], 'x_data'),
-            (y_data, Quantity, [(ny,), (ny + 1,)], 'y_data'),
+            InputCheck(x_data, (Quantity,), {(nx,), (nx + 1,)}, 'x_data'),
+            InputCheck(y_data, (Quantity,), {(ny,), (ny + 1,)}, 'y_data'),
         )
 
         self._set_data(x_data, 'x')

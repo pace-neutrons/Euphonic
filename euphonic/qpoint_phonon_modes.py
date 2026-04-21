@@ -23,7 +23,10 @@ from euphonic.util import (
     get_reference_data,
     is_gamma,
 )
-from euphonic.validate import _check_constructor_inputs
+from euphonic.validate import InputCheck, _check_constructor_inputs
+
+FREQ_CHECK = InputCheck(..., (Quantity,), {(-1,)}, 'frequencies')
+EIG_CHECK = InputCheck(..., (np.ndarray,), {(-1,)}, 'eigenvectors')
 
 
 class QpointPhononModes(QpointFrequencies):
@@ -84,9 +87,9 @@ class QpointPhononModes(QpointFrequencies):
         # Check freqs axis 1 shape here - QpointFrequencies doesn't
         # enforce that the number of modes = 3*(number of atoms)
         _check_constructor_inputs(
-            (frequencies, Quantity, (n_qpts, 3*n_at), 'frequencies'),
-            (eigenvectors, np.ndarray,
-             (n_qpts, 3*n_at, n_at, 3), 'eigenvectors'),
+            FREQ_CHECK._replace(value=frequencies, shape={(n_qpts, 3*n_at)}),
+            EIG_CHECK._replace(value=eigenvectors,
+                               shape={(n_qpts, 3*n_at, n_at, 3)}),
         )
         self.eigenvectors = eigenvectors
 
