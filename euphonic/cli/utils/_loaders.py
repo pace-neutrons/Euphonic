@@ -61,11 +61,11 @@ def _load_phonopy_file(filename: str | os.PathLike,
     if loaded_data is None:
         phonopy_kwargs: dict[str, str | os.PathLike] = {}
         phonopy_kwargs['path'] = path.parent
-        if (path.parent / 'BORN').is_file():
+        if path.with_name('BORN').is_file():
             phonopy_kwargs['born_name'] = 'BORN'
         # Set summary_name and fc_name depending on input file
         if path.suffix == '.hdf5':
-            if (path.parent / 'phonopy.yaml').is_file():
+            if path.with_name('phonopy.yaml').is_file():
                 phonopy_kwargs['summary_name'] = 'phonopy.yaml'
                 phonopy_kwargs['fc_name'] = path.name
             else:
@@ -105,7 +105,7 @@ def _janus_fc_filename(phonopy_file: Path) -> Path:
     if re_match := re.match(
             r'(?P<seedname>.+)-phonopy\.(?P<ext>ya?ml)', phonopy_file.name):
         seedname = re_match.group('seedname')
-        return Path(phonopy_file.parent / f'{seedname}-force_constants.hdf5')
+        return phonopy_file.with_name(f'{seedname}-force_constants.hdf5')
     return Path.cwd()
 
 
