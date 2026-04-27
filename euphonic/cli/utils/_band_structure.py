@@ -99,10 +99,11 @@ SplitArgs = dict[str, Any]
 
 
 class BandpathDict(TypedDict, total=False):
-   """Dictionary returned by seekpath.get_explicit_k_path_orig_cell.
+    """Dictionary returned by seekpath.get_explicit_k_path_orig_cell.
 
-    Not a complete specification, but these are the parts we care about."""
-    
+    Not a complete specification, but these are the parts we care about.
+    """
+
     explicit_kpoints_labels: Sequence[str]
     explicit_kpoints_rel: Iterable[float]
     is_supercell: bool
