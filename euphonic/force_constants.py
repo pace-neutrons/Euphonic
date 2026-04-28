@@ -30,6 +30,7 @@ from euphonic.ureg import ureg
 from euphonic.util import (
     _get_supercell_relative_idx,
     dedent_and_fill,
+    format_error,
     get_all_origins,
     is_gamma,
 )
@@ -107,17 +108,19 @@ class ForceConstants:
         """
         # Check independent inputs first
         _check_constructor_inputs(
-            [crystal, sc_matrix], [Crystal, np.ndarray], [(), (3, 3)],
-            ['crystal', 'sc_matrix'])
+            (crystal, Crystal, (), 'crystal'),
+            (sc_matrix, np.ndarray, (3, 3), 'sc_matrix'),
+        )
         n_at = crystal.n_atoms
         n_sc = int(np.rint(np.absolute(np.linalg.det(sc_matrix))))
         # Now check other derived input shapes
         _check_constructor_inputs(
-            [force_constants, cell_origins, born, dielectric],
-            [Quantity, np.ndarray, [Quantity, type(None)],
-                [Quantity, type(None)]],
-            [(n_sc, 3*n_at, 3*n_at), (n_sc, 3), (n_at, 3, 3), (3, 3)],
-            ['force_constants', 'cell_origins', 'born', 'dielectric'])
+            (force_constants, Quantity,
+             (n_sc, 3*n_at, 3*n_at), 'force_constants'),
+            (cell_origins, np.ndarray, (n_sc, 3), 'cell_origins'),
+            (born, [Quantity, type(None)],  (n_at, 3, 3), 'born'),
+            (dielectric, [Quantity, type(None)], (3, 3), 'dielectric'),
+        )
         self.crystal = crystal
         self._force_constants = force_constants.to(
             'hartree/bohr**2').magnitude
@@ -438,7 +441,7 @@ class ForceConstants:
             return qpt_freqs, grads
         return qpt_freqs
 
-    def _calculate_phonons_at_qpts(
+    def _calculate_phonons_at_qpts(  # noqa: C901
             self,
             qpts: np.ndarray,
             weights: np.ndarray | None,
@@ -482,7 +485,8 @@ class ForceConstants:
         # Check weights is of appropriate type and shape, to avoid doing all
         # the interpolation only for it to fail creating QpointPhononModes
         _check_constructor_inputs(
-            [weights], [[np.ndarray, type(None)]], [(len(qpts),)], ['weights'])
+            (weights, [np.ndarray, type(None)], (len(qpts),), 'weights'),
+        )
 
         # Set default splitting params
         if self.born is None or self.dielectric is None:
@@ -687,7 +691,7 @@ class ForceConstants:
             reigenvecs = np.zeros((n_reigenvecs, 3*n_atoms, n_atoms, 3),
                                   dtype=np.complex128)
             cell_vectors = self.crystal._cell_vectors
-            recip_vectors = self.crystal.reciprocal_cell().to(
+            recip_vectors = self.crystal.reciprocal_cell.to(
                 '1/bohr').magnitude
             # Get conj transpose - the dynamical matrix calculated in C
             # is passed to Fortran libs so uses Fortran ordering, make
@@ -1026,7 +1030,7 @@ casting to real mode gradients.
                 q=0
         """
         cell_vectors = crystal._cell_vectors
-        recip = crystal.reciprocal_cell().to('1/bohr').magnitude
+        recip = crystal.reciprocal_cell.to('1/bohr').magnitude
         n_atoms = crystal.n_atoms
         atom_r = crystal.atom_r
         inv_dielectric = np.linalg.inv(dielectric)
@@ -1127,7 +1131,7 @@ casting to real mode gradients.
                 recip_q0 += recip_q0_tmp
             else:
                 break
-        vol = crystal.cell_volume().to('bohr^3').magnitude
+        vol = crystal.cell_volume.to('bohr^3').magnitude
         recip_q0 *= math.pi/(vol*lambda_2)
 
         # Fill in remaining entries by symmetry
@@ -1194,7 +1198,7 @@ casting to real mode gradients.
             Shape (3*n_atoms, 3*n_atoms) complex ndarray. The
             correction to the dynamical matrix.
         """
-        recip = crystal.reciprocal_cell().to('1/bohr').magnitude
+        recip = crystal.reciprocal_cell.to('1/bohr').magnitude
         n_atoms = crystal.n_atoms
         atom_r = crystal.atom_r
         upper_lambda = dipole_init_data['lambda']
@@ -1237,7 +1241,7 @@ casting to real mode gradients.
                              /(gvec_phases[:, i:]*q_phases[i:]))
                 recip_dipole[i, i:] = np.einsum(
                     'ikl,ij->jkl', recip_exp, phase_exp)
-        cell_volume = crystal.cell_volume().to('bohr^3').magnitude
+        cell_volume = crystal.cell_volume.to('bohr^3').magnitude
         recip_dipole *= math.pi/(cell_volume*lambda_2)
 
         # Fill in remaining entries by symmetry
@@ -1327,10 +1331,10 @@ casting to real mode gradients.
         if is_gamma(q_dir):
             return na_corr
 
-        recip_cell = self.crystal.reciprocal_cell().to('1/bohr').magnitude
+        recip_cell = self.crystal.reciprocal_cell.to('1/bohr').magnitude
         q_dir_cart = np.einsum('ij,i->j', recip_cell, q_dir)
 
-        cell_volume = self.crystal.cell_volume().to('bohr^3').magnitude
+        cell_volume = self.crystal.cell_volume.to('bohr^3').magnitude
         denominator = np.einsum('ij,i,j', dielectric, q_dir_cart, q_dir_cart)
         factor = 4*math.pi/(cell_volume*denominator)
 
@@ -1517,7 +1521,10 @@ casting to real mode gradients.
         sc_mass = 1.0*n_atoms
         # Check number of acoustic modes
         if np.sum(c_of_m_disp_sq > sensitivity * sc_mass) < 3:
-            msg = 'Could not find 3 acoustic modes'
+            msg = format_error(
+                'Could not find 3 acoustic modes.',
+                fix='Check convergence of phonon calculations.',
+            )
             raise NotEnoughAcousticModesError(msg) from None
         # Find idx of acoustic modes (3 largest c of m displacements)
         ac_i = np.argsort(c_of_m_disp_sq)[-3:]

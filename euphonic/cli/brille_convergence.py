@@ -14,15 +14,17 @@ from euphonic.cli.utils import (
     _brille_calc_modes_kwargs,
     _get_cli_parser,
     _get_energy_bins,
-    get_args,
     load_data_from_file,
 )
 from euphonic.sampling import recurrence_sequence
+from euphonic.util import format_error
 
 
 def main(params: list[str] | None = None) -> None:
-    args = get_args(get_parser(), params)
+    args = get_parser().parse_args(args=params)
     params = vars(args)
+
+    del params['use_brille']  # This tool _always_ uses brille
 
     match params['energy_broadening']:
         case int(value) | float(value) | [int(value)] | [float(value)]:
@@ -30,8 +32,10 @@ def main(params: list[str] | None = None) -> None:
         case None:
             pass
         case _:
-            msg = ('This script only allows a fixed-width broadening '
-                   '(i.e. --energy-broadening should be a single value)')
+            msg = format_error(
+                'This script only allows a fixed-width broadening.',
+                fix='--energy-broadening should be a single value.',
+            )
             raise ValueError(msg)
 
     check_brille_settings(**params)
@@ -40,7 +44,6 @@ def main(params: list[str] | None = None) -> None:
 def check_brille_settings(
         filename: Path | str,
         npts: int = 500,
-        use_brille: bool = True,  # noqa: ARG001  # Removal scheduled for v2
         brille_grid_type: str = 'trellis',
         brille_npts: int = 5000,
         brille_npts_density: int | None = None,
@@ -56,9 +59,10 @@ def check_brille_settings(
 
     fc = load_data_from_file(filename)
     if not isinstance(fc, ForceConstants):
-        msg = (
-            'Force constants are required to use the '
-            'euphonic-check-brille-settings tool'
+        msg = format_error(
+            ('Force constants are required to use the '
+             'euphonic-check-brille-settings tool'),
+            fix='Use a data file with force constants available.',
         )
         raise TypeError(msg)
 

@@ -8,28 +8,28 @@ from euphonic.cli.utils import (
     _get_cli_parser,
     _get_energy_bins,
     _get_q_distance,
-    _load_phonopy_file,
     load_data_from_file,
 )
+from euphonic.cli.utils._loaders import _load_phonopy_file
 from euphonic.ureg import Quantity
 from tests_and_analysis.test.utils import get_data_path
 
 
 def test_get_cli_parser_error():
     with pytest.raises(
-            ValueError, match='No band-data-only tools have been defined.'):
+            ValueError, match=r'No band-data-only tools have been defined\.'):
         _get_cli_parser(features={'read-modes'})
 
     with pytest.raises(
             ValueError,
-            match='"adaptive-broadening" cannot be applied without "ebins"'):
+            match='"adaptive-broadening" cannot be used without "ebins"'):
         _get_cli_parser(features={'adaptive-broadening'})
 
 
 def test_get_energy_bins_error():
     with pytest.raises(
             ValueError,
-            match='Maximum energy should be greater than minimum.'):
+            match=r'Maximum energy should be greater than minimum\.'):
         _get_energy_bins(modes=None, n_ebins=0, emin=1, emax=0)
 
 
@@ -48,19 +48,19 @@ def test_load_phonopy_errors():
         'phonopy_files', 'CaHgO2', 'full_force_constants.hdf5')
 
     with pytest.raises(
-            ValueError, match='must be accompanied by phonopy.yaml'):
+            ValueError, match=r'Missing phonopy\.yaml\.'):
         _load_phonopy_file(fc_file)
 
 
 def test_load_data_extension_error():
     with pytest.raises(
-            ValueError, match='File format was not recognised.'):
+            ValueError, match=r'Ensure file format in known formats\.'):
         load_data_from_file('nonexistent.wrong_suffix')
 
 
 @pytest.fixture
 def mocked_fc_from_phonopy(mocker):
-    from euphonic.cli.utils import ForceConstants
+    from euphonic.cli.utils._loaders import ForceConstants
 
     mocked_method = mocker.patch.object(ForceConstants, 'from_phonopy')
     mocked_method.return_value = None
@@ -75,8 +75,6 @@ def test_find_force_constants(mocked_fc_from_phonopy):
     Rather than add a whole script test case, here we use mocking to check a
     particular internal method path
     """
-    from euphonic.cli.utils import _load_phonopy_file
-
     phonopy_file = get_data_path(
         'phonopy_files', 'NaCl', 'phonopy_nofc.yaml',
     )
@@ -88,4 +86,3 @@ def test_find_force_constants(mocked_fc_from_phonopy):
         'summary_name': 'phonopy_nofc.yaml',
         'fc_name': 'force_constants.hdf5',
     }
-

@@ -139,7 +139,8 @@ class TestRegression:
          '--temperature', '300']])
     def test_qpoint_modes_debyewaller_raises_type_error(
             self, intensity_map_args):
-        with pytest.raises(TypeError, match='Force constants data'):
+        with pytest.raises(TypeError,
+                           match='Force constants required to generate the Debye-Waller factor'):
             euphonic.cli.intensity_map.main(intensity_map_args)
 
     @pytest.mark.parametrize('intensity_map_args', [

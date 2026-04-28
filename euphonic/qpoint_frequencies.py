@@ -15,7 +15,12 @@ from euphonic.io import (
 from euphonic.readers import castep, phonopy
 from euphonic.spectra import Spectrum1D, Spectrum1DCollection, Spectrum2D
 from euphonic.ureg import Quantity, ureg
-from euphonic.util import _calc_abscissa, get_qpoint_labels
+from euphonic.util import (
+    _calc_abscissa,
+    comma_join,
+    format_error,
+    get_qpoint_labels,
+)
 from euphonic.validate import _check_constructor_inputs, _check_unit_conversion
 
 AdaptiveMethod = Literal['reference', 'fast']
@@ -60,17 +65,17 @@ class QpointFrequencies:
             If None, equal weights are assumed
         """
         _check_constructor_inputs(
-            [crystal, qpts], [Crystal, np.ndarray], [(), (-1, 3)],
-            ['crystal', 'qpts'])
+            (crystal, Crystal, (), 'crystal'),
+            (qpts, np.ndarray, (-1, 3), 'qpts'),
+        )
         n_qpts = len(qpts)
         # Unlike QpointPhononModes and StructureFactor, don't test the
         # frequencies shape against number of atoms in the crystal, as
         # we may only have the cell vectors
         _check_constructor_inputs(
-            [frequencies, weights],
-            [Quantity, [np.ndarray, type(None)]],
-            [(n_qpts, -1), (n_qpts,)],
-            ['frequencies', 'weights'])
+            (frequencies, Quantity, (n_qpts, -1), 'frequencies'),
+            (weights, [np.ndarray, type(None)], (n_qpts,), 'weights'),
+        )
         self.crystal = crystal
         self.qpts = qpts
         self.n_qpts = n_qpts
@@ -192,9 +197,10 @@ class QpointFrequencies:
 
         adaptive_method_options = ['reference', 'fast']
         if adaptive_method not in adaptive_method_options:
-            msg = (
-                f'Invalid value for adaptive_method, got {adaptive_method}, '
-                f'should be one of {adaptive_method_options}'
+            msg = format_error(
+                f'Invalid value for adaptive_method ({adaptive_method}).',
+                fix=('adaptive_method should be one of: '
+                     f'{comma_join(adaptive_method_options)}.'),
             )
             raise ValueError(msg)
 
@@ -309,7 +315,7 @@ class QpointFrequencies:
         dispersion
             A sequence of mode bands with a common x-axis
         """
-        abscissa = _calc_abscissa(self.crystal.reciprocal_cell(), self.qpts)
+        abscissa = _calc_abscissa(self.crystal.reciprocal_cell, self.qpts)
         x_tick_labels = get_qpoint_labels(self.qpts,
                                           cell=self.crystal.to_spglib_cell())
         return Spectrum1DCollection(abscissa, self.frequencies.T,
@@ -329,7 +335,7 @@ class QpointFrequencies:
         x_tick_labels
             The tick labels
         """
-        abscissa = _calc_abscissa(self.crystal.reciprocal_cell(), self.qpts)
+        abscissa = _calc_abscissa(self.crystal.reciprocal_cell, self.qpts)
         # Calculate q-space ticks and labels
         x_tick_labels = get_qpoint_labels(
             self.qpts, cell=self.crystal.to_spglib_cell())

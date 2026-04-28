@@ -1,5 +1,5 @@
 from collections import OrderedDict
-import inspect
+from functools import cached_property
 from math import ceil
 from pathlib import Path
 from typing import Any, TypeVar
@@ -14,7 +14,11 @@ from euphonic.io import (
     _process_dict,
 )
 from euphonic.ureg import Quantity, ureg
-from euphonic.util import _cell_vectors_to_volume, _get_unique_elems_and_idx
+from euphonic.util import (
+    _cell_vectors_to_volume,
+    _get_unique_elems_and_idx,
+    format_error,
+)
 from euphonic.validate import _check_constructor_inputs, _check_unit_conversion
 
 
@@ -71,10 +75,11 @@ class Crystal:
             atom_type = np.array([], dtype='<U32')
 
         _check_constructor_inputs(
-            [cell_vectors, atom_r, atom_type, atom_mass],
-            [Quantity, np.ndarray, np.ndarray, Quantity],
-            [(3, 3), (n_atoms, 3), (n_atoms,), (n_atoms,)],
-            inspect.getfullargspec(self.__init__)[0][1:])
+            (cell_vectors, Quantity, (3, 3), 'cell_vectors'),
+            (atom_r, np.ndarray, (n_atoms, 3), 'atom_r'),
+            (atom_type, np.ndarray, (n_atoms,), 'atom_type'),
+            (atom_mass, Quantity, (n_atoms,), 'atom_mass'),
+        )
         self._cell_vectors = cell_vectors.to(ureg.bohr).magnitude
         self.n_atoms = n_atoms
         self.atom_r = atom_r
@@ -93,6 +98,10 @@ class Crystal:
     def cell_vectors(self, value: Quantity) -> None:
         self.cell_vectors_unit = str(value.units)
         self._cell_vectors = value.to('bohr').magnitude
+        if hasattr(self, 'cell_volume'):
+            del self.cell_volume
+        if hasattr(self, 'reciprocal_cell'):
+            del self.reciprocal_cell
 
     @property
     def atom_mass(self) -> Quantity:
@@ -109,6 +118,7 @@ class Crystal:
                                ['cell_vectors_unit', 'atom_mass_unit'])
         super().__setattr__(name, value)
 
+    @cached_property
     def reciprocal_cell(self) -> Quantity:
         """
         Calculates the reciprocal lattice vectors
@@ -124,11 +134,12 @@ class Crystal:
         bxc = np.cross(cv[1], cv[2])
         cxa = np.cross(cv[2], cv[0])
         axb = np.cross(cv[0], cv[1])
-        vol = self.cell_volume()
+        vol = self.cell_volume
         norm = 2*np.pi/vol
 
         return np.vstack((norm * bxc, norm * cxa, norm * axb))
 
+    @cached_property
     def cell_volume(self) -> Quantity:
         """
         Calculates the cell volume
@@ -162,7 +173,7 @@ class Crystal:
         """
 
         recip_length_unit = spacing.units
-        lattice = self.reciprocal_cell().to(recip_length_unit)
+        lattice = self.reciprocal_cell.to(recip_length_unit)
         grid_spec = np.linalg.norm(lattice.magnitude, axis=1,
                                    ) / spacing.magnitude
         # math.ceil is better than np.ceil because it returns ints
@@ -245,9 +256,10 @@ class Crystal:
         # For some reason this can't always be reproduced
         symm = spglib.get_symmetry(self.to_spglib_cell(), symprec=symprec)
         if symm is None:
-            msg = (
-                f'spglib.get_symmetry returned None with '
-                f'symprec={symprec}. Try increasing tol'
+            msg = format_error(
+                'spglib.get_symmetry unable to determine symmetry.',
+                reason=f'Tolerance ({symprec}) may be too low.',
+                fix='Try increasing tol.',
             )
             raise RuntimeError(msg)
         n_ops = len(symm['rotations'])
@@ -277,11 +289,16 @@ class Crystal:
                                     f'symmetry op {op_idx}. Rotation '
                                     f'{symm["rotations"][op_idx]} translation '
                                     f'{symm["translations"][op_idx]}')
-                        if len(equiv_idx_op) == 0:
-                            msg = f'No equivalent atom found {err_info}'
-                            raise RuntimeError(msg)
-                        if len(equiv_idx_op) > 1:
-                            msg = f'Multiple equivalent atoms found {err_info}'
+                        if len(equiv_idx_op) != 1:
+                            typ = ('No'
+                                   if len(equiv_idx_op) == 0 else
+                                   'Multiple')
+                            msg = format_error(
+                                f'{typ} equivalent atoms.',
+                                reason=(f'{typ} equivalent atoms found '
+                                        f'{err_info}.'),
+                                fix='Check structure or tighten tolerance.',
+                            )
                             raise RuntimeError(msg)
                 equiv_atoms[:, i] = idx[equiv_idx[1]]
 

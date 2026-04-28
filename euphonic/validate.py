@@ -5,13 +5,17 @@ import numpy as np
 from pint import DimensionalityError
 
 from euphonic.ureg import ureg
+from euphonic.util import comma_join, format_error
 
 
 def _check_constructor_inputs(
-        objs: list[object],
-        types: list[type | list[type]],
-        shapes: list[tuple[int, ...] | list[tuple[int, ...]]],
-        names: list[str]) -> None:
+    *details: tuple[
+        object,
+        type | list[type | None],
+        tuple[int, ...] | list[tuple[int, ...]],
+        str,
+    ],
+) -> None:
     """
     Make sure all the inputs are all the expected type, and if they are
     an array, the correct shape
@@ -23,14 +27,14 @@ def _check_constructor_inputs(
     types
         The expected class of each input. If multiple types are
         accepted, the expected class can be a list of types. e.g.
-        types=[[list, np.ndarray], int]
+        types=[list, np.ndarray]
     shapes
         The expected shape of each object (if the object has a shape
         attribute). If the shape of some dimensions don't matter,
         provide -1 for those dimensions, or if none of the dimensions
         matter, provide an empty tuple (). If multiple shapes are
         accepted, the expected shapes can be a list of tuples. e.g.
-        shapes=[[(n, 3), (n + 1, 3)], (3,)]
+        shapes=[(n, 3), (n + 1, 3)]
     names
         The name of each input variable
 
@@ -41,22 +45,24 @@ def _check_constructor_inputs(
     ValueError
         If an array shape don't match the expected shape
     """
-    for obj, typ, shape, name in zip(objs, types, shapes, names, strict=True):
+    for obj, typ, shape, name in details:
         if not isinstance(typ, list):
             typ = [typ]  # noqa: PLW2901 redefined-loop-name
         if not any(isinstance(obj, t) for t in typ):
-            msg = (
-                f"The type of {name} {type(obj)} doesn't "
-                f'match the expected type(s) {typ}'
+            msg = format_error(
+                f'Invalid type for {name} ({type(obj).__name__}).',
+                fix=(f'Ensure {name} is cast to a correct type. '
+                     'Valid types are: '
+                     f'{comma_join(t.__name__ for t in typ)}.'),
             )
             raise TypeError(msg)
         if hasattr(obj, 'shape') and shape:
             if not isinstance(shape, list):
                 shape = [shape]  # noqa: PLW2901 (redefined-loop-name)
             if not any(obj.shape == _replace_dim(s, obj.shape) for s in shape):
-                msg = (
-                    f"The shape of {name} {obj.shape} doesn't match "
-                    f'the expected shape(s) {shape}'
+                msg = format_error(
+                    f'Invalid shape for {name} ({obj.shape}).',
+                    fix=f'Expected shape is {shape}',
                 )
                 raise ValueError(msg)
 
@@ -90,9 +96,9 @@ def _check_unit_conversion(obj: object, attr_name: str, attr_value: Any,
             ureg(getattr(obj, attr_name)).ito(attr_value,
                                               'reciprocal_spectroscopy')
         except DimensionalityError as err:
-            msg = (
-                f'"{attr_value}" is not a known dimensionally-consistent '
-                f'unit for "{attr_name}"'
+            msg = format_error(
+                f'Unknown unit type for {attr_name} ({attr_value}).',
+                fix='Check unit dimensions are valid.',
             )
             raise ValueError(msg) from err
 

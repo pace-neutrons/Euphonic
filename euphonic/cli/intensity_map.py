@@ -2,11 +2,10 @@ from argparse import ArgumentParser
 
 import matplotlib.style
 
-import euphonic
 from euphonic import ForceConstants, QpointPhononModes, ureg
 import euphonic.plot
 from euphonic.styles import base_style
-from euphonic.util import dedent_and_fill, get_qpoint_labels
+from euphonic.util import format_error, get_qpoint_labels
 
 from .utils import (
     _bands_from_force_constants,
@@ -17,14 +16,13 @@ from .utils import (
     _get_energy_bins,
     _get_q_distance,
     _plot_label_kwargs,
-    get_args,
     load_data_from_file,
     matplotlib_save_or_show,
 )
 
 
 def main(params: list[str] | None = None) -> None:
-    args = get_args(get_parser(), params)
+    args = get_parser().parse_args(args=params)
     calc_modes_kwargs = _calc_modes_kwargs(args)
 
     frequencies_only = (args.weighting != 'coherent')
@@ -33,16 +31,23 @@ def main(params: list[str] | None = None) -> None:
     if (not frequencies_only
         and not isinstance(data, (QpointPhononModes, ForceConstants))
     ):
-        msg = 'Eigenvectors are required to use "--weighting coherent" option'
+        msg = format_error(
+            'Eigenvectors are required to use "--weighting coherent" option.',
+            fix='Use a data file containing eigenvectors or force constants.',
+        )
         raise TypeError(msg)
     if (args.weighting.lower() == 'coherent'
         and args.temperature is not None
         and not isinstance(data, ForceConstants)
     ):
-        msg = dedent_and_fill("""
-            Force constants data is required to generate the Debye-Waller
-            factor. Leave "--temperature" unset if plotting precalculated
-            phonon modes.""")
+        msg = format_error(
+            'Force constants required to generate the Debye-Waller factor.',
+            fix="""
+            Use a data file containing force constants.
+
+            Leave "--temperature" unset if plotting precalculated phonon modes.
+            """,
+        )
         raise TypeError(msg)
 
     q_spacing = _get_q_distance(args.length_unit, args.q_spacing)

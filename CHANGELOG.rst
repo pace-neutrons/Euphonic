@@ -1,6 +1,55 @@
 `Unreleased <https://github.com/pace-neutrons/Euphonic/compare/v1.6.1...HEAD>`_
 -------------------------------------------------------------------------------
 
+- API changes
+
+  - Public functions in ``euphonic.powder`` now use mandatory keyword arguments
+    - This will break code that depends on these arguments being in a specific order
+
+  - The various Spectrum classes have an ``assert_regular_bins``
+    method. It is now forbidden to use positional arguments and in the
+    2D cases ``bin_ax`` has a default value of "y". This makes the API
+    safer and more formally correct.
+
+  - Unused argument ``use_brille`` is removed from
+    ``euphonic.cli.brille_convergence.check_brille_settings``.
+
+  - ``get_args()`` function removed from ``euphonic.cli.utils``; this
+    was previously simplified to a one-liner so brings no DRY benefit.
+
+  - Some public functions in ``Crystal`` (``reciprocal_lattice``,
+    ``cell_volume``) are now ``@cached_property`` and don't need ``()``.
+    The cache will be cleared on setting ``cell_vectors`` so direct changes
+    to the ``_cell_vectors`` attribute may cause desynchronisation.
+
+  - ``euphonic.cli.utils`` has been broken up into submodules. All the
+    appropriate functions are re-exported to ``__all__`` so this
+    should not break API in practice, but e.g. Quantity can no longer
+    be imported from ``euphonic.cli.utils``.
+
+- Features
+
+  - Spectrum1DCollection and Spectrum2DCollection can be indexed with
+    slices where the stop value exceeds the collection
+    length. (e.g. if a collection of 5 spectra is indexed with [3:10]
+    it will return a collection with the spectra at indices 3 and 4.)
+    This is consistent with the behaviour of Python lists and numpy
+    arrays.
+
+    Previously this would raise an IndexError. Technically it is a
+    **breaking change** as somebody's code could depend on this
+    IndexError. At this stage it seems an acceptable risk.
+
+- Other changes
+
+  - Error messages have been overhauled and now follow a consistent format::
+
+      summary
+
+      [reason]
+
+      fix
+
 `v1.6.1 <https://github.com/pace-neutrons/Euphonic/compare/v1.6.0...v1.6.1>`_
 -----------------------------------------------------------------------------
 
@@ -12,6 +61,9 @@
 
 `v1.6.0 <https://github.com/pace-neutrons/Euphonic/compare/v1.5.1...v1.6.0>`_
 -----------------------------------------------------------------------------
+
+  - ``_check_constructor_inputs`` refactored to list arguments as sequence of
+    tuples for each input.
 
 - Requirements
 

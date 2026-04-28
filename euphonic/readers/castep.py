@@ -14,7 +14,7 @@ import numpy as np
 from packaging.version import Version
 
 from euphonic.ureg import ureg
-from euphonic.util import dedent_and_fill
+from euphonic.util import format_error
 
 
 def read_phonon_dos_data(
@@ -246,9 +246,13 @@ def read_phonon_data(
                 zero_indices = np.asarray(list(intersection), dtype = int)
                 weights[zero_indices] = 0
             else:
-                msg = (
-                    'Found multiple non-split blocks for q-point {qpt_id},'
-                    ' cannot determine which to use.'
+                msg = format_error(
+                    f'Cannot determine blocks for q-point ({qpt_id}).',
+                    reason=(
+                        'Found multiple non-split blocks for q-point,'
+                        ' cannot determine which to use.'),
+                    fix=(f'Check q-point {qpt_id} for duplication '
+                         'or add splitting directions.'),
                 )
                 raise ValueError(msg)
 
@@ -425,9 +429,14 @@ def _read_castep_version(f: BinaryIO) -> Version:
     """Read next line and return CASTEP version; raise error if incompatible"""
     castep_version = Version(_read_entry(f).decode().strip())
     if castep_version < Version('17.1'):
-        msg = dedent_and_fill("""
-            Old castep file detected: Euphonic only supports post-Castep 17.1
-            files.  Please rerun the calculation with a newer version of Castep
+        msg = format_error(
+            'Invalid castep version.',
+            reason="""
+            Old castep file detected:
+            Euphonic only supports post-Castep 17.1
+            files.""",
+                fix="""
+            Rerun the calculation with a newer version of Castep
             with the original .cell file and a .castep file with a single line
             with the "continuation: <old.castep_bin>" keyword and use the new
             output .castep_bin file in Euphonic.""")
@@ -540,13 +549,13 @@ def read_interpolation_data(
         data_dict['sc_matrix'] = sc_matrix
         data_dict['cell_origins'] = cell_origins
     except NameError:
-        msg = dedent_and_fill(f"""
-            Force constants matrix could not be found in {filename}.
-
-
-            Ensure PHONON_WRITE_FORCE_CONSTANTS: true and a PHONON_FINE_METHOD
-            has been chosen when running CASTEP
-            """)
+        msg = format_error(
+            f'Invalid file ({filename}).',
+            reason='Force constants matrix could not be found',
+            fix=(
+                'Ensure PHONON_WRITE_FORCE_CONSTANTS: true and '
+                'a PHONON_FINE_METHOD has been chosen when running CASTEP'),
+        )
         raise RuntimeError(msg) from None
 
     # Set entries relating to dipoles
@@ -675,7 +684,11 @@ def _read_entry(file_obj: BinaryIO, dtype: str = '',
         # Read 4 byte Fortran record marker
         rawdata = file_obj.read(4)
         if rawdata == b'':
-            msg = 'Problem reading binary file: unexpected EOF reached'
+            msg = format_error(
+                f'Issue reading binary file ({file_obj.name}).',
+                reason='Unexpected EOF reached.',
+                fix='Ensure file is valid.',
+            )
             raise EOFError(msg)
         return struct.unpack('>i', rawdata)[0]
 
@@ -699,8 +712,11 @@ def _read_entry(file_obj: BinaryIO, dtype: str = '',
         data = file_obj.read(begin)
     end = record_mark_read(file_obj)
     if begin != end:
-        msg = ('Problem reading binary file: beginning and end record markers '
-               'do not match')
+        msg = format_error(
+            f'Issue reading binary file ({file_obj.name}).',
+            reason='Beginning and end record markers do not match.',
+            fix='Ensure file is valid.',
+        )
         raise OSError(msg)
 
     return data

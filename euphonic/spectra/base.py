@@ -34,7 +34,7 @@ from euphonic.io import (
 )
 from euphonic.readers.castep import read_phonon_dos_data
 from euphonic.ureg import ureg
-from euphonic.util import dedent_and_fill, zips
+from euphonic.util import comma_join, dedent_and_fill, format_error, zips
 from euphonic.validate import _check_constructor_inputs, _check_unit_conversion
 
 CallableQuantity = Callable[[Quantity], Quantity]
@@ -113,23 +113,29 @@ class Spectrum(ABC):
 
     @x_tick_labels.setter
     def x_tick_labels(self, value: XTickLabels) -> None:
-        err_msg = (
-            'x_tick_labels should be of type Sequence[Tuple[int, str]] e.g. '
-            '[(0, "label1"), (5, "label2")]'
+        err_msg = format_error(
+            'Invalid tick label type',
+            fix=(
+                'x_tick_labels should be of type Sequence[Tuple[int, str]], '
+                'e.g. [(0, "label1"), (5, "label2")]'),
         )
+
         if value is not None:
-            if isinstance(value, Sequence):
-                for elem in value:
-                    if not (isinstance(elem, tuple)
-                            and len(elem) == 2
-                            and isinstance(elem[0], Integral)
-                            and isinstance(elem[1], str)):
-                        raise TypeError(err_msg)
-                # Ensure indices in x_tick_labels are plain ints as
-                # np.int64/32 etc. are not JSON serializable
-                value = [(int(idx), label) for idx, label in value]
-            else:
+            if not isinstance(value, Sequence):
                 raise TypeError(err_msg)
+
+            for elem in value:
+                match elem:
+                    case (Integral(), str()):
+                        pass
+                    case _:
+                        raise TypeError(err_msg)
+
+            # Ensure indices in x_tick_labels are plain ints as
+            # np.int64/32 etc. are not JSON serializable
+            value = [(int(idx), label) for idx, label in value]
+
+
         self._x_tick_labels = value
 
     @abstractmethod
@@ -239,7 +245,11 @@ class Spectrum(ABC):
             return self._split_by_tol(btol=btol)
 
         if btol is not None:
-            msg = 'Cannot set both indices and btol'
+            msg = format_error(
+                'Invalid arguments.',
+                reason='Cannot set both indices and btol',
+                fix='Choose one of indices and btol.',
+            )
             raise ValueError(msg)
         return self._split_by_indices(indices)
 
@@ -263,24 +273,28 @@ class Spectrum(ABC):
             return width is not None and not isinstance(width, Real)
 
         if any(map(_has_bad_type, widths)):
-            msg = ('Inappropriate type found, widths for _broaden_data '
-                   'must be Real (e.g. float) or None. Instead we have: ['
-                   + ', '.join(type(width).__name__ for width in widths)
-                   + '].')
+            msg = format_error(
+                'Invalid widths for _broaden_data.',
+                reason=(
+                    'Widths must be Real or None, instead we have: ['
+                    + comma_join(type(width).__name__ for width in widths)
+                    + '].'),
+                fix='Ensure widths are valid.',
+            )
             raise WidthTypeError(msg)
 
         shape_opts = ('gauss', 'lorentz')
         if shape not in shape_opts:
-            msg = (
-                f'Invalid value for shape, got {shape}, '
-                f'should be one of {shape_opts}'
+            msg = format_error(
+                f'Invalid value for shape ({shape}).',
+                fix=f'shape should be one of: {comma_join(shape_opts)}.',
             )
             raise ValueError(msg)
         method_opts = ('convolve', None)
         if method not in method_opts:
-            msg = (
-                f'Invalid value for method, got {method}, '
-                f'should be one of {method_opts}'
+            msg = format_error(
+                f'Invalid value for method ({method}).',
+                fix=f'method should be one of {comma_join(method_opts)}.',
             )
             raise ValueError(msg)
 
@@ -300,9 +314,12 @@ class Spectrum(ABC):
             broadening by convolution may give incorrect results.
             """)
             if method is None:
-                raise ValueError(
-                    msg + ' If you still want to broaden by convolution '
-                    'please explicitly use the method="convolve" option.')
+                msg = format_error(
+                    'Unequal bin widths.',
+                    reason=msg,
+                    fix='Explicitly use the method="convolve" option.',
+                )
+                raise ValueError(msg)
 
             warnings.warn(msg, stacklevel=3)
 
@@ -315,7 +332,10 @@ class Spectrum(ABC):
 
         elif shape == 'lorentz':
             if width_convention != 'fwhm':
-                msg = 'Lorentzian function width must be specified as FWHM'
+                msg = format_error(
+                    f'Invalid width convention ({width_convention}).',
+                    fix='Lorentzian function width must be specified as FWHM.',
+                )
                 raise ValueError(msg)
             data_broadened = data
             for ax, (width, bin_data) in enumerate(zips(widths, bin_centres)):
@@ -360,7 +380,10 @@ class Spectrum(ABC):
             case 'std':
                 sigma = width
             case _:
-                msg = "Width convention must be 'std' or 'fwhm'"
+                msg = format_error(
+                    'Invalid width convention.',
+                    fix="Width convention must be 'std' or 'fwhm'",
+                )
                 raise ValueError(msg)
 
         mean_bin_size = np.mean(np.diff(ax_bin_centres))
@@ -397,9 +420,10 @@ class Spectrum(ABC):
             return True
         if bin_length == data_length:
             return False
-        msg = (
+        msg = format_error(
             f'Unexpected data axis length {data_length} '
-            f'for bin axis length {bin_length}'
+            f'for bin axis length {bin_length}',
+            fix=f'bin_lengths must be {data_length} or {data_length + 1}',
         )
         raise ValueError(msg)
 
@@ -460,6 +484,7 @@ class Spectrum(ABC):
         return np.diff(self.get_bin_edges(restrict_range=restrict_range))
 
     def assert_regular_bins(self,
+                            *,
                             message: str = '',
                             rtol: float = 1e-5,
                             atol: float = 0.,
@@ -474,7 +499,7 @@ class Spectrum(ABC):
         Parameters
         ----------
         message
-            Text appended to ValueError for more informative output.
+            Text included in ValueError for more informative output.
 
         rtol
             Relative tolerance for 'close enough' values
@@ -496,8 +521,11 @@ class Spectrum(ABC):
         # Need to cast to magnitude to use isclose() with atol before Pint 0.21
         if not np.all(np.isclose(bin_widths.magnitude, bin_widths.magnitude[0],
                                  rtol=rtol, atol=atol)):
-            raise AssertionError('Not all x-axis bins are the same width. '
-                                 + message)
+            msg = format_error(
+                'Invalid bin widths.',
+                reason='Not all x-axis bins are the same width. ' + message,
+                fix='Ensure x_data has regular spacing.')
+            raise AssertionError(msg)
 
 
 class Spectrum1D(Spectrum):
@@ -550,14 +578,14 @@ class Spectrum1D(Spectrum):
               - 'label' : str. This is used label lines on a 1D plot
         """
         _check_constructor_inputs(
-            [y_data, x_tick_labels, metadata],
-            [Quantity, [list, type(None)], [dict, type(None)]],
-            [(-1,), (), ()],
-            ['y_data', 'x_tick_labels', 'metadata'])
+            (y_data, Quantity, (-1,), 'y_data'),
+            (x_tick_labels, [list, type(None)], (), 'x_tick_labels'),
+            (metadata, [dict, type(None)], (), 'metadata'),
+        )
         ny = len(y_data)
         _check_constructor_inputs(
-            [x_data], [Quantity],
-            [[(ny,), (ny+1,)]], ['x_data'])
+            (x_data, Quantity, [(ny,), (ny+1,)], 'x_data'),
+        )
         self._set_data(x_data, 'x')
         self._set_data(y_data, 'y')
         self.x_tick_labels = x_tick_labels
@@ -854,17 +882,16 @@ class Spectrum2D(Spectrum):
             strings and values should be strings or integers.
         """
         _check_constructor_inputs(
-            [z_data, x_tick_labels, metadata],
-            [Quantity, [list, type(None)], [dict, type(None)]],
-            [(-1, -1), (), ()],
-            ['z_data', 'x_tick_labels', 'metadata'])
+            (z_data, Quantity, (-1, -1), 'z_data'),
+            (x_tick_labels, [list, type(None)], (), 'x_tick_labels'),
+            (metadata, [dict, type(None)], (), 'metadata'),
+        )
         nx = z_data.shape[0]
         ny = z_data.shape[1]
         _check_constructor_inputs(
-            [x_data, y_data],
-            [Quantity, Quantity],
-            [[(nx,), (nx + 1,)], [(ny,), (ny + 1,)]],
-            ['x_data', 'y_data'])
+            (x_data, Quantity, [(nx,), (nx + 1,)], 'x_data'),
+            (y_data, Quantity, [(ny,), (ny + 1,)], 'y_data'),
+        )
         self._set_data(x_data, 'x')
         self._set_data(y_data, 'y')
         self.x_tick_labels = x_tick_labels
@@ -1172,19 +1199,16 @@ class Spectrum2D(Spectrum):
         bins = self.get_bin_edges(bin_ax, restrict_range=restrict_range)
         return np.diff(bins)
 
-    def assert_regular_bins(  # pylint: disable=arguments-renamed
+    def assert_regular_bins(
             self,
-            bin_ax: Literal['x', 'y'],
+            *,
+            bin_ax: Literal['x', 'y'] = 'y',
             message: str = '',
             rtol: float = 1e-5,
             atol: float = 0.,
             restrict_range: bool = True,
     ) -> None:
-        """Raise AssertionError if x-axis bins are not evenly spaced.
-
-        Note that the positional arguments are different from
-        Spectrum1D.assert_regular_bins: it is strongly recommended to only use
-        keyword arguments with this method.
+        """Raise AssertionError if bins are not evenly spaced.
 
         Parameters
         ----------
@@ -1212,8 +1236,12 @@ class Spectrum2D(Spectrum):
         bin_widths = self.get_bin_widths(bin_ax, restrict_range=restrict_range)
         if not np.all(np.isclose(bin_widths, bin_widths[0],
                                  rtol=rtol, atol=atol)):
-            raise AssertionError(
-                f'Not all {bin_ax}-axis bins are the same width. ' + message)
+            msg = format_error(
+                'Invalid bin widths.',
+                reason=(f'Not all {bin_ax}-axis bins are the same width. ' +
+                        message),
+                fix=f'Ensure {bin_ax}_data has regular spacing.')
+            raise AssertionError(msg)
 
     def to_dict(self) -> dict[str, Any]:
         """
@@ -1295,22 +1323,31 @@ def apply_kinematic_constraints(spectrum: Spectrum2D,
     try:
         (1 * spectrum.x_data.units).to('1/angstrom')
     except DimensionalityError as error:
+        msg = format_error(
+            f'Invalid x_data units ({spectrum.x_data.units}).',
+            fix='x_data needs to have wavevector units (i.e. 1/length)',
+        )
         msg = 'x_data needs to have wavevector units (i.e. 1/length)'
         raise ValueError(msg) from error
     try:
         (1 * spectrum.y_data.units).to('eV', 'spectroscopy')
     except DimensionalityError as error:
-        msg = 'y_data needs to have energy (or wavenumber) units'
+        msg = format_error(
+            f'Invalid y_data units ({spectrum.y_data.units}).',
+            fix='y_data needs to have energy (or wavenumber) units',
+        )
         raise ValueError(msg) from error
 
     momentum2_to_energy = 0.5 * (ureg('hbar^2 / neutron_mass')
                                  .to('meV angstrom^2'))
 
     if (e_i is None) == (e_f is None):
-        msg = dedent_and_fill("""
-            Exactly one of e_i and e_f should be set.
-            (The other value will be derived from energy transfer).
-            """)
+        msg = format_error(
+            'Invalid arguments.',
+            fix=(
+                'Exactly one of e_i and e_f should be set. '
+                '(The other value will be derived from energy transfer).'),
+        )
         raise ValueError(msg)
 
     if e_i is None:
@@ -1382,7 +1419,10 @@ def _distribution_1d(xbins: np.ndarray,
                      ) -> np.ndarray:
     x = _get_dist_bins(xbins)
     if shape != 'lorentz':
-        msg = "Expected shape: 'lorentz'"
+        msg = format_error(
+            f'Invalid shape ({shape}).',
+            fix='Shape must be "lorentz"',
+        )
         raise ValueError(msg)
 
     dist = _lorentzian(x, xwidth)
