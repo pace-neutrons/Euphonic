@@ -41,7 +41,7 @@ version_file = Path(__file__).parent.parent / 'euphonic' / 'version.py'
 for gitcmd in gits:
     try:
         print(f'Trying {gitcmd} ...', file=sys.stderr)
-        proc = subprocess.run([gitcmd, 'describe', '--tags', '--dirty'],  # noqa: S603
+        proc = subprocess.run([gitcmd, 'describe', '--tags', '--dirty', '--long'],  # noqa: S603
                               capture_output=True, check=True, text=True,
                               )
     except FileNotFoundError:
@@ -55,8 +55,14 @@ for gitcmd in gits:
         continue
 
     version, *dirty = proc.stdout.strip().split('-')
-    if dirty:
-        version += f"+{dirty[0]}.{dirty[1]}{'.dirty' if len(dirty) > 2 and COMMAND != 'dump' else ''}"
+    match dirty:
+        case ('0', _):
+            pass
+        case (commits, hash):
+            version += f'+{commits}.{hash}'
+        case (commits, hash, 'dirty'):
+            version += f'+{commits}.{hash}.dirty'
+
     break
 
 else:  # Can't use git
