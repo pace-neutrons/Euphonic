@@ -45,6 +45,13 @@ dependencies = [
 ]
 dynamic = ["version"]
 
+[dependency-groups]
+test = ["mock", "pytest>=9.0.3,<10.0", "pytest-cov", "pytest-mock", "pytest-lazy-fixtures", "pytest-xdist", "pytest-xvfb", "python-slugify"]
+dev = [
+    {include-group = "test"},
+    "ruff>0.15",
+]
+
 [project.urls]
 Homepage = "https://github.com/pace-neutrons/Euphonic"
 Repository = "https://github.com/pace-neutrons/Euphonic.git"
@@ -178,3 +185,6 @@ extend-ignore-names = ["k_B", "H_ab", "Q"]
     ]
 
 "euphonic/version.py" = ["Q000"]  # Source build prefers double quotes here
+
+[tool.uv.extra-build-dependencies]
+euphonic = ["meson_python", "numpy", "ninja"]
