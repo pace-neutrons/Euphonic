@@ -756,6 +756,7 @@ class TestQpointPhononModesCalculatePdos:
         with pytest.raises(TypeError):
             qpt_ph_modes.calculate_pdos(
                 np.arange(0, 155, 0.5)*ureg('meV'),
+                weighting='coherent',
                 cross_sections=[4.29, 2.78])
 
     def test_cross_sections_wrong_units_raises_value_error(self):

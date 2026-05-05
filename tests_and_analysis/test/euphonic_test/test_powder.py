@@ -88,13 +88,6 @@ class TestSphereSampledProperties:
         return mocker.patch('euphonic.powder._get_default_bins',
                             return_value=return_bins)
 
-    # This function is imported from euphonic.util, but needs to be patched
-    # within the euphonic.powder namespace
-    @staticmethod
-    def mock_get_reference_data(mocker, return_scattering_lengths):
-        return mocker.patch('euphonic.powder.get_reference_data',
-                            return_value=return_scattering_lengths)
-
     @pytest.fixture
     def mock_s(self, mocker):
         s = mocker.MagicMock()
@@ -144,9 +137,8 @@ class TestSphereSampledProperties:
                'crystal': mock_crystal})
         return fc
 
-    # Some sample return values
+    # Sample return values
     _energy_bins = np.linspace(1., 10., 5)
-    _scattering_lengths = {'Si': 4. * ureg('fm')}
 
     @pytest.mark.parametrize('energy_bins', [_energy_bins, None])
     def test_sample_sphere_dos(self,
@@ -195,7 +187,7 @@ class TestSphereSampledProperties:
                                'jitter': False,
                                'sampling': 'spherical-polar-improved',
                                'energy_bins': None,
-                               'scattering_lengths': _scattering_lengths,
+                               'scattering_lengths': {'Si': 4. * ureg('fm')},
                                'dw': 'mock_dw',
                                'rng': np.random.default_rng()},
                               ])
@@ -209,26 +201,15 @@ class TestSphereSampledProperties:
 
         # Fixed return values for dummy functions
         return_bins = self._energy_bins
-        return_scattering_lengths = self._scattering_lengths
 
         # Dummy out functions called by sample_sphere_structure_factor
         # that are tested elsewhere
         self.mock_get_default_bins(mocker, return_bins)
         get_qpts_sphere = self.mock_get_qpts_sphere(mocker, random_qpts_array)
-        get_ref_data = self.mock_get_reference_data(mocker,
-                                                    return_scattering_lengths)
 
         assert (sample_sphere_structure_factor(
             mock_fc, **options)
             == 'calculate_1d_average_return_value')
-
-        # Check scattering lengths were looked up as expected
-        if isinstance(options['scattering_lengths'], str):
-            assert get_ref_data.call_args == (
-                (), {'physical_property': 'coherent_scattering_length',
-                     'collection': 'Sears1992'})
-        else:
-            assert isinstance(options['scattering_lengths'], dict)
 
         # Check qpts sphere called as expected
         assert get_qpts_sphere.call_args == ((options['npts'],),
@@ -244,8 +225,8 @@ class TestSphereSampledProperties:
 
         # Check structure factor args were as expected
         assert (mock_qpm.calculate_structure_factor.call_args
-                == ((), {'scattering_lengths': self._scattering_lengths,
-                              'dw': mock_dw}))
+                == ((), {'scattering_lengths': options['scattering_lengths'],
+                         'dw': mock_dw}))
 
         # Check auto grid was used if temperature given
         if options.get('temperature') is not None:

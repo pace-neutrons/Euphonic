@@ -208,8 +208,13 @@ extend-ignore-names = ["k_B", "H_ab", "Q"]
     "RUF012", # declaring sample data inside test classes is tidy
     "E501",   # long lines seem more common with verbose test names
     ]
+"euphonic/data/isotopes.py" = ["COM812"]  # Conflicts with ruff format
 
 "euphonic/version.py" = ["Q000"]  # Source build prefers double quotes here
+
+[tool.ruff.format]
+# Prefer single quotes over double quotes.
+quote-style = "single"
 
 [tool.uv]
 conflicts = [
