@@ -2,7 +2,7 @@ from collections.abc import Sequence
 import copy
 import json
 from pathlib import Path
-from typing import Any, TypeVar, Protocol
+from typing import Any, Protocol, TypeVar
 
 import numpy as np
 

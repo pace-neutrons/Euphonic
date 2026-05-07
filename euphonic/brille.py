@@ -262,8 +262,10 @@ class BrilleInterpolator:
             interpolation_kwargs = {}
         interpolation_kwargs['insert_gamma'] = False
         interpolation_kwargs['reduce_qpts'] = False
-        phonons: QpointPhononModes = force_constants.calculate_qpoint_phonon_modes(
-            grid.rlu, **interpolation_kwargs)
+        phonons: QpointPhononModes = (
+            force_constants.calculate_qpoint_phonon_modes(
+                grid.rlu, **interpolation_kwargs)
+        )
 
         n_atoms = crystal.n_atoms
         frequencies = np.reshape(phonons._frequencies,

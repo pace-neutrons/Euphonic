@@ -2,7 +2,7 @@ from collections import OrderedDict
 import inspect
 from math import ceil
 from pathlib import Path
-from typing import Any, TypeVar
+from typing import Any
 
 import numpy as np
 import spglib

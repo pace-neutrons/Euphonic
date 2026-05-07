@@ -105,8 +105,8 @@ def sample_sphere_dos(fc: ForceConstants,
 
     qpts_frac = _qpts_cart_to_frac(qpts_cart, fc.crystal)
 
-    phonons: QpointFrequencies = fc.calculate_qpoint_frequencies(qpts_frac, **calc_modes_args,
-                                              )
+    phonons: QpointFrequencies = fc.calculate_qpoint_frequencies(qpts_frac,
+                                                                 **calc_modes_args)
 
     if energy_bins is None:
         energy_bins = _get_default_bins(phonons)
@@ -222,7 +222,8 @@ def sample_sphere_pdos(
     )
 
     qpts_frac = _qpts_cart_to_frac(qpts_cart, fc.crystal)
-    phonons: QpointPhononModes = fc.calculate_qpoint_phonon_modes(qpts_frac, **calc_modes_args)
+    phonons: QpointPhononModes = fc.calculate_qpoint_phonon_modes(qpts_frac,
+                                                                  **calc_modes_args)
 
     if energy_bins is None:
         energy_bins = _get_default_bins(phonons)
@@ -329,8 +330,8 @@ def sample_sphere_structure_factor(
     if temperature is not None:
         if (dw is None):
             dw_qpts = mp_grid(fc.crystal.get_mp_grid_spec(dw_spacing))
-            dw_phonons: QpointPhononModes = fc.calculate_qpoint_phonon_modes(dw_qpts,
-                                                          **calc_modes_args)
+            dw_phonons: QpointPhononModes = fc.calculate_qpoint_phonon_modes(
+                dw_qpts, **calc_modes_args)
             dw = dw_phonons.calculate_debye_waller(temperature,
                                                    )
         elif not np.isclose(dw.temperature, temperature):
@@ -352,8 +353,8 @@ def sample_sphere_structure_factor(
 
     qpts_frac = _qpts_cart_to_frac(qpts_cart, fc.crystal)
 
-    phonons: QpointPhononModes = fc.calculate_qpoint_phonon_modes(qpts_frac, **calc_modes_args,
-                                               )
+    phonons: QpointPhononModes = fc.calculate_qpoint_phonon_modes(
+        qpts_frac, **calc_modes_args)
 
     if energy_bins is None:
         energy_bins = _get_default_bins(phonons)
