@@ -2,6 +2,8 @@ import inspect
 from pathlib import Path
 from typing import Any, TypeVar
 
+from typing_extensions import Self
+
 from euphonic.crystal import Crystal
 from euphonic.io import (
     _obj_from_json_file,
@@ -31,7 +33,6 @@ class DebyeWaller:
         Scalar float Quantity. The temperature the Debye-Waller
         exponent was calculated at
     """
-    T = TypeVar('T', bound='DebyeWaller')
 
     def __init__(self, crystal: Crystal, debye_waller: Quantity,
                  temperature: Quantity) -> None:
@@ -112,7 +113,7 @@ class DebyeWaller:
         _obj_to_json_file(self, filename)
 
     @classmethod
-    def from_dict(cls: type[T], d: dict[str, Any]) -> T:
+    def from_dict(cls, d: dict[str, Any]) -> Self:
         """
         Convert a dictionary to a DebyeWaller object
 
@@ -137,7 +138,7 @@ class DebyeWaller:
         return cls(crystal, d['debye_waller'], d['temperature'])
 
     @classmethod
-    def from_json_file(cls: type[T], filename: Path | str) -> T:
+    def from_json_file(cls, filename: Path | str) -> Self:
         """
         Read from a JSON file. See DebyeWaller.from_dict for required
         fields

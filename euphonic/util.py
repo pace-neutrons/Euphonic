@@ -88,7 +88,7 @@ def direction_changed(qpts: np.ndarray, tolerance: float = 5e-6,
     return np.abs(np.abs(dot) - modq[1:]*modq[:-1]) > tolerance
 
 
-def is_gamma(qpt: np.ndarray) -> bool | np.ndarray:
+def is_gamma(qpt: np.ndarray) -> np.bool_ | np.ndarray:
     """
     Determines whether the given point(s) are gamma points
 

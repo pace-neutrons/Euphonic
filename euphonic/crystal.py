@@ -6,6 +6,7 @@ from typing import Any, TypeVar
 
 import numpy as np
 import spglib
+from typing_extensions import Self
 
 from euphonic.io import (
     _obj_from_json_file,
@@ -39,7 +40,6 @@ class Crystal:
         Shape (n_atoms,) float Quantity in mass units. The mass of each
         atom in the unit cell
     """
-    T = TypeVar('T', bound='Crystal')
 
     def __init__(self, cell_vectors: Quantity, atom_r: np.ndarray,
                  atom_type: np.ndarray, atom_mass: Quantity) -> None:
@@ -312,7 +312,7 @@ class Crystal:
         _obj_to_json_file(self, filename)
 
     @classmethod
-    def from_dict(cls: type[T], d: dict[str, Any]) -> T:
+    def from_dict(cls, d: dict[str, Any]) -> Self:
         """
         Convert a dictionary to a Crystal object
 
@@ -337,7 +337,7 @@ class Crystal:
                    d['atom_mass'])
 
     @classmethod
-    def from_json_file(cls: type[T], filename: Path | str) -> T:
+    def from_json_file(cls, filename: Path | str) -> Self:
         """
         Read from a JSON file. See Crystal.from_dict for required fields
 
@@ -353,7 +353,7 @@ class Crystal:
         return _obj_from_json_file(cls, filename)
 
     @classmethod
-    def from_cell_vectors(cls: type[T], cell_vectors: Quantity) -> T:
+    def from_cell_vectors(cls, cell_vectors: Quantity) -> Self:
         """
         Create a Crystal object from just cell vectors, containing no
         detailed structure information (atomic positions, species,

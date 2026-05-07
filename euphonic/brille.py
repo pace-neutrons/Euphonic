@@ -1,10 +1,11 @@
 import dataclasses
 from multiprocessing import cpu_count
 import textwrap
-from typing import Any, TypeVar
+from typing import Any
 
 import numpy as np
 import spglib as spg
+from typing_extensions import Self
 
 try:
     import brille as br
@@ -38,7 +39,6 @@ class BrilleInterpolator:
     crystal : Crystal
         Lattice and atom information
     """
-    T = TypeVar('T', bound='BrilleInterpolator')
 
     def __init__(self, crystal: Crystal,
                  grid: br.BZTrellisQdc | br.BZMeshQdc | br.BZNestQdc) -> None:
@@ -143,11 +143,11 @@ class BrilleInterpolator:
 
     @classmethod
     def from_force_constants(
-            cls: type[T], force_constants: ForceConstants,
+            cls, force_constants: ForceConstants,
             grid_type: str = 'trellis', grid_npts: int = 1000,
             grid_density: int | None = None,
             grid_kwargs: dict[str, Any] | None = None,
-            interpolation_kwargs: dict[str, Any] | None = None) -> T:
+            interpolation_kwargs: dict[str, Any] | None = None) -> Self:
         """
         Generates a grid over the irreducible Brillouin Zone to be
         used for linear interpolation with Brille, with properties
