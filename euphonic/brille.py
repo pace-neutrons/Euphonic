@@ -201,6 +201,11 @@ class BrilleInterpolator:
         cell = crystal.to_spglib_cell()
 
         dataset = spg.get_symmetry_dataset(cell)
+
+        if dataset is None:
+            msg = 'Symmetry not found'
+            raise ValueError(msg)
+
         # Spglib 2.5 introduced dataclass structures:
         # convert back to dict for now
         if dataclasses.is_dataclass(dataset):
@@ -257,7 +262,7 @@ class BrilleInterpolator:
             interpolation_kwargs = {}
         interpolation_kwargs['insert_gamma'] = False
         interpolation_kwargs['reduce_qpts'] = False
-        phonons = force_constants.calculate_qpoint_phonon_modes(
+        phonons: QpointPhononModes = force_constants.calculate_qpoint_phonon_modes(
             grid.rlu, **interpolation_kwargs)
 
         n_atoms = crystal.n_atoms

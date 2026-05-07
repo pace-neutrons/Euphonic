@@ -338,9 +338,9 @@ class StructureFactor(QpointFrequencies):
         temp = temperature.to('K').magnitude
         bose = np.zeros(self._frequencies.shape)
         if temperature > 0:
-            bose = 1/(np.exp(np.absolute(self._frequencies)/(k_B*temp)) - 1)
+            bose[:] = 1/(np.exp(np.absolute(self._frequencies)/(k_B*temp)) - 1)
         else:
-            bose = 0
+            bose[:] = 0
         return bose
 
     def to_dict(self) -> dict[str, Any]:

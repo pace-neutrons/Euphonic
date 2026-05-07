@@ -2,7 +2,7 @@ from collections.abc import Sequence
 import copy
 import json
 from pathlib import Path
-from typing import Any, TypeVar
+from typing import Any, TypeVar, Protocol
 
 import numpy as np
 
@@ -10,6 +10,12 @@ from euphonic.ureg import Quantity, ureg
 from euphonic.version import __version__
 
 T = TypeVar('T')
+
+class Dictable(Protocol):
+    def to_dict(self) -> dict: ...
+
+    @classmethod
+    def from_dict(cls: type[T], dictionary: dict) -> T: ...
 
 
 def _to_json_dict(dictionary: dict[str, Any]) -> dict[str, Any]:
@@ -103,7 +109,7 @@ def _process_dict(dictionary: dict[str, Any],
     return dictionary
 
 
-def _obj_to_json_file(obj: T, filename: Path | str) -> None:
+def _obj_to_json_file(obj: Dictable, filename: Path | str) -> None:
     """
     Generic function for writing to a JSON file from a Euphonic object
     """
@@ -115,7 +121,7 @@ def _obj_to_json_file(obj: T, filename: Path | str) -> None:
     print(f'Written to {Path(f.name).resolve()}')
 
 
-def _obj_from_json_file(cls: type[T], filename: Path | str,
+def _obj_from_json_file(cls: type[Dictable], filename: Path | str,
                         type_dict: dict[str, type[Any]]|None = None) -> T:
     """
     Generic function for reading from a JSON file to a Euphonic object

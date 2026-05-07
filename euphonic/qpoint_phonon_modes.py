@@ -437,7 +437,7 @@ class QpointPhononModes(QpointFrequencies):
             mode_widths: Quantity | None = None,
             mode_widths_min: Quantity = Quantity(0.01, 'meV'),
             adaptive_method: AdaptiveMethod = 'reference',
-            adaptive_error: float | None = 0.01,
+            adaptive_error: float = 0.01,
             adaptive_error_fit: ErrorFit = 'cubic',
             weighting: str | None = None,
             cross_sections: str | dict[str, Quantity] = 'BlueBook',
