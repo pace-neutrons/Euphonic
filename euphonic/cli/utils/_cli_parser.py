@@ -2,6 +2,7 @@ from argparse import (
     Action,
     ArgumentDefaultsHelpFormatter,
     ArgumentParser,
+    SUPPRESS,
     _ArgumentGroup,
 )
 from collections.abc import Collection
@@ -16,7 +17,9 @@ class InstrumentBroadening(Action):
     """Custom action for --instrument-broadening alias"""
 
     def __call__(self, parser, namespace, values, option_string=None):
-        print("Deprecated alias for --energy-broadening.")
+        print('Using --instrument-broadening: this is a deprecated alias '
+              'for --energy-broadening.')
+
         setattr(namespace, self.dest, values)
 
 
@@ -275,6 +278,7 @@ def _get_cli_parser(features: Collection[str] = {},  # noqa: C901
                              type=str, default='meV', help='Energy units')
 
     if {'ebins', 'adaptive-broadening'}.intersection(features):
+
         if 'ebins' in features:
             section = sections['energy']
             section.add_argument('--ebins', type=int, default=200,
@@ -287,6 +291,16 @@ def _get_cli_parser(features: Collection[str] = {},  # noqa: C901
                 'evaluated in ENERGY_UNIT base, e.g. --energy-broadening'
                 ' 1. 0.01 1e-6 --energy-unit meV will apply FWHM of '
                 '(1. + 0.01 (energy / meV) + 1e-6 (energy / meV)^2) meV.')
+
+            eb_group = section.add_mutually_exclusive_group()
+            eb_group.add_argument(
+                '--energy-broadening', '--eb', type=float, default=None,
+                nargs='+', dest='energy_broadening', help=eb_help)
+
+            section.add_argument(
+                '--shape', type=str, nargs='?', default='gauss',
+                choices=('gauss', 'lorentz'),
+                help='The broadening shape')
 
             if 'adaptive-broadening' in features:
                 section.add_argument(
@@ -310,24 +324,16 @@ def _get_cli_parser(features: Collection[str] = {},  # noqa: C901
                     dest='adaptive_scale',
                     help='Scale factor applied to adaptive broadening width',
                     )
-                section.add_argument(
+                eb_group.add_argument(
                     '--instrument-broadening',
                     type=float,
                     nargs='+',
                     default=None,
                     dest='energy_broadening',
                     action=InstrumentBroadening,
-                    help=('Deprecated: use --energy-broadening.'),
+                    help=SUPPRESS,
                 )
 
-            section.add_argument(
-                '--energy-broadening', '--eb', type=float, default=None,
-                nargs='+', dest='energy_broadening', help=eb_help)
-
-            section.add_argument(
-                '--shape', type=str, nargs='?', default='gauss',
-                choices=('gauss', 'lorentz'),
-                help='The broadening shape')
         else:
             msg = format_error(
                 'Missing "ebins" argument.',
