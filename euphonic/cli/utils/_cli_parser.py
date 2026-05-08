@@ -306,7 +306,7 @@ def _get_cli_parser(features: Collection[str] = {},  # noqa: C901
                     help=('Maximum absolute error for gaussian approximations '
                           'when using the fast adaptive broadening method'))
                 section.add_argument(
-                    '--adaptive-scale', type=float, default=None,
+                    '--adaptive-scale', type=float, default=1.0,
                     dest='adaptive_scale',
                     help='Scale factor applied to adaptive broadening width',
                     )
