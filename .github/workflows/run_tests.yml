@@ -108,6 +108,7 @@ jobs:
   publish-coverage:
     needs: test
     runs-on: ubuntu-latest
+    if: github.event.pull_request.head.repo.full_name == github.repository
     steps:
       - name: Download Artifacts
         uses: actions/download-artifact@v4
