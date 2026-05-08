@@ -1,8 +1,8 @@
 from argparse import (
+    SUPPRESS,
     Action,
     ArgumentDefaultsHelpFormatter,
     ArgumentParser,
-    SUPPRESS,
     _ArgumentGroup,
 )
 from collections.abc import Collection
@@ -16,7 +16,9 @@ from euphonic.util import (
 class InstrumentBroadening(Action):
     """Custom action for --instrument-broadening alias"""
 
-    def __call__(self, parser, namespace, values, option_string=None):
+    def __call__(
+        self, parser, namespace, values, option_string=None,  # noqa: ARG002
+    ):
         print('Using --instrument-broadening: this is a deprecated alias '
               'for --energy-broadening.')
 
