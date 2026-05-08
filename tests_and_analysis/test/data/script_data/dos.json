@@ -3772,7 +3772,7 @@
         ],
         "y_label": []
     },
-    "quartz quartz.castep_bin --grid 5 5 4 --adaptive --eb 2": {
+    "quartz quartz.castep_bin --grid 5 5 4 --adaptive --adaptive-scale 2": {
         "x_ticklabels": [
             [
                 "0",
