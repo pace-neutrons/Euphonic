@@ -1,4 +1,5 @@
 from argparse import (
+    Action,
     ArgumentDefaultsHelpFormatter,
     ArgumentParser,
     _ArgumentGroup,
@@ -9,6 +10,14 @@ from euphonic.util import (
     dedent_and_fill,
     format_error,
 )
+
+
+class InstrumentBroadening(Action):
+    """Custom action for --instrument-broadening alias"""
+
+    def __call__(self, parser, namespace, values, option_string=None):
+        print("Deprecated alias for --energy-broadening.")
+        setattr(namespace, self.dest, values)
 
 
 def _get_cli_parser(features: Collection[str] = {},  # noqa: C901
@@ -267,7 +276,7 @@ def _get_cli_parser(features: Collection[str] = {},  # noqa: C901
             section.add_argument('--ebins', type=int, default=200,
                                  help='Number of energy bins')
 
-            ib_help = (
+            eb_help = (
                 'The FWHM of broadening on energy axis in ENERGY_UNIT (no '
                 'broadening if unspecified). If multiple values are provided, '
                 'these will be interpreted as polynomial coefficients to be '
@@ -298,16 +307,15 @@ def _get_cli_parser(features: Collection[str] = {},  # noqa: C901
                     help='Scale factor applied to adaptive broadening width',
                     )
                 section.add_argument(
-                    '--instrument-broadening', type=float, nargs='+',
-                    default=None, dest='inst_broadening', help=ib_help)
+                    '--instrument-broadening',
+                    type=float,
+                    nargs='+',
+                    default=None,
+                    dest='energy_broadening',
+                    action=InstrumentBroadening,
+                    help=('Deprecated: use --energy-broadening.'),
+                )
 
-                eb_help = (
-                    'If using adaptive broadening and a single (i.e. scalar) '
-                    'value is provided, this is an alias for --adaptive-scale.'
-                    ' Otherwise, this is an alias for --instrument-broadening.'
-                    )
-            else:
-                eb_help = ib_help
             section.add_argument(
                 '--energy-broadening', '--eb', type=float, default=None,
                 nargs='+', dest='energy_broadening', help=eb_help)
