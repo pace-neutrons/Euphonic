@@ -15,6 +15,7 @@ from euphonic.util import (
 
 class InstrumentBroadening(Action):
     """Custom action for --instrument-broadening alias"""
+    # From Python 3.13 consider replacing with "deprecated" feature in argparse
 
     def __call__(
         self, parser, namespace, values, option_string=None,  # noqa: ARG002
