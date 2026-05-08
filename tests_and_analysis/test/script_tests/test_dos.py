@@ -146,25 +146,15 @@ class TestRegression:
         with pytest.raises(ValueError):
             _get_pdos_weighting('coherentdos')
 
-    def test_adaptive_scale_twice_raises_valueerror(self, inject_mocks):
-        with pytest.raises(ValueError,
-                           match='Adaptive scale factor was specified twice'):
-            euphonic.cli.dos.main([
-                quartz_fc_file,
-                '--energy-broadening=1',
-                '--adaptive',
-                '--adaptive-scale=2.',
-            ])
-
-    def test_broadening_twice_raises_valueerror(self, inject_mocks):
-        with pytest.raises(ValueError,
-                           match='Broadening width was specified twice'):
+    def test_broadening_twice_exit_error(self, inject_mocks, capsys):
+        with pytest.raises(SystemExit):
             euphonic.cli.dos.main([
                 quartz_fc_file,
                 '--energy-broadening=1',
                 '--instrument-broadening=2',
             ])
-
+        out, err = capsys.readouterr()
+        assert 'not allowed with argument' in err
 
 @patch('matplotlib.pyplot.show')
 @pytest.mark.skip(reason='Only run if you want to regenerate the test data')
