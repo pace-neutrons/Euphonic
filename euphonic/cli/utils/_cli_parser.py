@@ -55,6 +55,10 @@ def _get_cli_parser(features: Collection[str] = {},  # noqa: C901
         formatter_class=ArgumentDefaultsHelpFormatter,
         conflict_handler=conflict_handler)
 
+    # From 3.14 this improves feedback for mistyped commands.
+    # When lower versions are dropped, this can be included as __init__ param.
+    parser.suggest_on_error = True
+
     # Set up groups; these are only displayed if used, so simplest to
     # instantiate them all now and guarantee consistent order/presence
     # regardless of control logic
