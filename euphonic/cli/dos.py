@@ -51,33 +51,8 @@ def main(params: list[str] | None = None) -> None:
         )
         raise TypeError(msg)
 
-    if (args.energy_broadening
-            and args.adaptive
-            and len(args.energy_broadening) == 1):
-        if args.adaptive_scale is not None:
-            msg = format_error(
-                'Adaptive scale factor was specified twice.',
-                fix="""
-                Use either --adaptive-scale or --energy-broadening.
-
-                To add a fixed width to adaptive broadening,
-                use --instrument-broadening.""",
-            )
-            raise ValueError(msg)
-        args.adaptive_scale = args.energy_broadening[0]
-
-    elif args.energy_broadening:
-        if args.inst_broadening is not None:
-            msg = format_error(
-                'Broadening width was specified twice.',
-                fix=('Use either --instrument-broadening '
-                     'or --energy-broadening.'),
-            )
-            raise ValueError(msg)
-        args.inst_broadening = args.energy_broadening
-
-    if args.inst_broadening:
-        energy_broadening_poly = Polynomial(args.inst_broadening)
+    if args.energy_broadening:
+        energy_broadening_poly = Polynomial(args.energy_broadening)
 
     mode_widths = None
     if isinstance(data, ForceConstants):
@@ -94,11 +69,11 @@ def main(params: list[str] | None = None) -> None:
             cmkwargs['return_mode_gradients'] = True
             modes, mode_grads = data.calculate_qpoint_phonon_modes(
                 mp_grid(grid_spec), **cmkwargs)
-            mode_widths = mode_gradients_to_widths(mode_grads,
-                                                   modes.crystal.cell_vectors)
-            if args.adaptive_scale:
-                mode_widths *= args.adaptive_scale
-            if args.inst_broadening and args.shape == 'gauss':
+            mode_widths = mode_gradients_to_widths(
+                mode_grads, modes.crystal.cell_vectors
+            ) * args.adaptive_scale
+
+            if args.energy_broadening and args.shape == 'gauss':
                 # Combine instrumental broadening and adaptive sample
                 # broadening: the convolution of a Gaussian with a Gaussian is
                 # a Gaussian with sigma = sqrt(sigma1^2 + sigma2^2)
@@ -113,6 +88,7 @@ def main(params: list[str] | None = None) -> None:
 
     else:
         modes = data
+
     modes.frequencies_unit = args.energy_unit
     ebins = _get_energy_bins(
         modes, args.ebins + 1, emin=args.e_min, emax=args.e_max)
@@ -128,10 +104,10 @@ def main(params: list[str] | None = None) -> None:
         pdos = modes.calculate_pdos(ebins, **kwargs)
         dos = _arrange_pdos_groups(pdos, args.pdos)
 
-    if args.inst_broadening and args.shape == 'gauss' and args.adaptive:
+    if args.energy_broadening and args.shape == 'gauss' and args.adaptive:
         pass  # Gaussian broadening included with adaptive sampling
 
-    elif (args.inst_broadening and len(energy_broadening_poly) > 1):
+    elif (args.energy_broadening and len(energy_broadening_poly) > 1):
         # Variable-width Gaussian broadening
         def energy_broadening_func(x):
             return energy_broadening_poly(x.to(args.energy_unit).magnitude,
@@ -142,7 +118,7 @@ def main(params: list[str] | None = None) -> None:
                           method='convolve',
                           width_interpolation_error=args.adaptive_error)
 
-    elif args.inst_broadening:
+    elif args.energy_broadening:
         # Fixed-width broadening
         dos = dos.broaden(energy_broadening_poly.coef[0] * ebins.units,
                           shape=args.shape)
