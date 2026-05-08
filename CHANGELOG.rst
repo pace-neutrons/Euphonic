@@ -3,6 +3,8 @@
 
 - Requirements
 
+  - Migrate dev dependencies to dependency groups.
+
   - Explicitly include typing-extensions dependency.
 
 - Maintenance
