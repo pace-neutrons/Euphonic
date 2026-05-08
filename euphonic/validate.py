@@ -9,25 +9,31 @@ from euphonic.util import comma_join, format_error
 
 
 class InputCheck(NamedTuple):
-    """Data structure for checking inputs."""
+    """
+    Data structure for checking inputs.
 
-    #: The object to check.
+    Attributes
+    ----------
+    value : object
+        The object to check
+    typ : tuple[type, ...]
+        The expected class of the input. If multiple types are
+        accepted, the expected class can be a tuple of types. e.g.
+        types=(list, np.ndarray).
+    shape : Iterable[tuple[int, ...]]
+        The expected shape of the object (if the object has a shape
+        attribute). If the shape of some dimensions don't matter,
+        provide -1 for those dimensions, or if none of the dimensions
+        matter, provide an empty tuple (). If multiple shapes are
+        accepted, the expected shapes can be a set of tuples. e.g.
+        shape={(n, 3), (n + 1, 3)}.
+    name : str
+        The name of the input variable.
+    """
+
     value: object
-
-    #: The expected class of the input. If multiple types are
-    #: accepted, the expected class can be a tuple of types. e.g.
-    #: types=(list, np.ndarray).
     typ: tuple[type, ...]
-
-    #: The expected shape of the object (if the object has a shape
-    #: attribute). If the shape of some dimensions don't matter,
-    #: provide -1 for those dimensions, or if none of the dimensions
-    #: matter, provide an empty tuple (). If multiple shapes are
-    #: accepted, the expected shapes can be a set of tuples. e.g.
-    #: shape={(n, 3), (n + 1, 3)}.
     shape: Iterable[tuple[int, ...]]
-
-    #: The name of the input variable.
     name: str
 
 def _check_constructor_inputs(
