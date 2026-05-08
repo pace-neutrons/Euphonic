@@ -1,5 +1,11 @@
 `Unreleased <https://github.com/pace-neutrons/Euphonic/compare/v1.6.1...HEAD>`_
 -------------------------------------------------------------------------------
+- CLI changes
+
+  - The ``--instrument-broadening`` parameter of ``euphonic-dos`` is
+    deprecated and hidden.  The old ``--energy-broadening`` parameter
+    is now functionally the same; i.e. it can no longer set the
+    adaptive broadening width and ``--adaptive-scale`` must be used for that purpose.
 
 - Requirements
 
