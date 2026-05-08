@@ -52,13 +52,36 @@ Repository = "https://github.com/pace-neutrons/Euphonic.git"
 "Bug Tracker" = "https://github.com/pace-neutrons/Euphonic/issues"
 documentation = "https://euphonic.readthedocs.io/en/stable/"
 
+[dependency-groups]
+min_reqs = ["numpy==1.24.0", "scipy==1.10.0", "spglib==2.1.0", "seekpath==2.2.1",
+       "pint==0.22", "matplotlib==3.8", "h5py==3.6", "PyYAML==6.0",
+       "threadpoolctl==3.0.0", "toolz==0.12.1"]
+min_reqs_mac = ["numpy==1.24.0", "scipy==1.10.0", "spglib==2.1.0", "seekpath==2.2.1",
+           "pint==0.22", "matplotlib==3.8", "h5py==3.7", "PyYAML==6.0",
+           "threadpoolctl==3.0.0", "toolz==0.12.1"]
+test = ["mock", "pytest>=9.0.3,<10.0", "pytest-cov", "pytest-mock", "pytest-lazy-fixtures", "pytest-xdist", "pytest-xvfb", "python-slugify"]
+ci = ["tox==4.30.3"]
+docs = [
+    "numpy==2.2.6",
+    "pytest==9.0.3",
+    "setuptools==78.1.1",
+    "sphinx~=5.3.0",
+    "sphinx-autodoc-typehints==1.19.5",
+    "sphinx-argparse==0.3.2",
+    "sphinx-rtd-theme==1.1.1",
+    "wheel==0.46.2",
+]
+dev = [
+    {include-group = "test"},
+    {include-group = "ci"},
+    {include-group = "docs"},
+]
+
 [project.optional-dependencies]
 matplotlib = ["matplotlib>=3.8.0"]
 phonopy_reader = ["h5py>=3.6.0", "PyYAML>=6.0"]  # Deprecated, will be removed in future versions.
 phonopy-reader = ["h5py>=3.6.0", "PyYAML>=6.0"]
 brille = ["brille>=0.7.0"]
-test = ["mock", "pytest>=9.0.3,<10.0", "pytest-cov", "pytest-mock", "pytest-lazy-fixtures", "pytest-xdist", "pytest-xvfb", "python-slugify"]
-ci = ["tox==4.30.3"]
 
 [project.scripts]
 euphonic-brille-convergence = "euphonic.cli.brille_convergence:main"
