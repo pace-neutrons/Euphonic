@@ -70,7 +70,7 @@ def main(params: list[str] | None = None) -> None:
             modes, mode_grads = data.calculate_qpoint_phonon_modes(
                 mp_grid(grid_spec), **cmkwargs)
             mode_widths = mode_gradients_to_widths(
-                mode_grads, modes.crystal.cell_vectors
+                mode_grads, modes.crystal.cell_vectors,
             ) * args.adaptive_scale
 
             if args.energy_broadening and args.shape == 'gauss':
