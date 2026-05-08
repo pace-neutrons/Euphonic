@@ -53,7 +53,7 @@ dos_params = [
     [quartz_fc_file, '--grid', '5', '5', '4'],
     [quartz_fc_file, '--grid', '5', '5', '4', '--adaptive', '--pdos'],
     [quartz_fc_file, '--grid', '5', '5', '4', '--adaptive'],
-    [quartz_fc_file, '--grid', '5', '5', '4', '--adaptive', '--eb', '2'],
+    [quartz_fc_file, '--grid', '5', '5', '4', '--adaptive', '--adaptive-scale', '2'],
     [quartz_fc_file, '--grid', '5', '5', '4', '--adaptive',
      '--adaptive-method=fast'],
     [quartz_fc_file, '--grid', '5', '5', '4', '--adaptive',
