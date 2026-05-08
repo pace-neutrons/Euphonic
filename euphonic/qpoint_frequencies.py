@@ -1,8 +1,9 @@
 from pathlib import Path
-from typing import Any, Literal, TypeVar
+from typing import Any, Literal
 import warnings
 
 import numpy as np
+from typing_extensions import Self
 
 from euphonic.broadening import ErrorFit, _width_interpolated_broadening
 from euphonic.crystal import Crystal
@@ -40,7 +41,6 @@ class QpointFrequencies:
     weights
         Shape (n_qpts,) float ndarray. The weight for each q-point
     """
-    T = TypeVar('T', bound='QpointFrequencies')
 
     def __init__(self, crystal: Crystal, qpts: np.ndarray,
                  frequencies: Quantity,
@@ -356,7 +356,7 @@ class QpointFrequencies:
         _obj_to_json_file(self, filename)
 
     @classmethod
-    def from_dict(cls: type[T], d: dict[str, Any]) -> T:
+    def from_dict(cls, d: dict[str, Any]) -> Self:
         """
         Convert a dictionary to a QpointFrequencies object
 
@@ -380,7 +380,7 @@ class QpointFrequencies:
                    d['weights'])
 
     @classmethod
-    def from_json_file(cls: type[T], filename: Path | str) -> T:
+    def from_json_file(cls, filename: Path | str) -> Self:
         """
         Read from a JSON file. See from_dict for
         required fields
@@ -393,9 +393,9 @@ class QpointFrequencies:
         return _obj_from_json_file(cls, filename)
 
     @classmethod
-    def from_castep(cls: type[T], filename: Path | str,
+    def from_castep(cls, filename: Path | str,
                     average_repeat_points: bool = True,
-                    prefer_non_loto: bool = False) -> T:
+                    prefer_non_loto: bool = False) -> Self:
         """
         Reads precalculated phonon mode data from a CASTEP .phonon file
 
@@ -423,10 +423,10 @@ class QpointFrequencies:
         return cls.from_dict(data)
 
     @classmethod
-    def from_phonopy(cls: type[T], path: Path | str = '.',
+    def from_phonopy(cls, path: Path | str = '.',
                      phonon_name: Path | str = 'band.yaml',
                      phonon_format: str | None = None,
-                     summary_name: Path | str = 'phonopy.yaml') -> T:
+                     summary_name: Path | str = 'phonopy.yaml') -> Self:
         """
         Reads precalculated phonon mode data from a Phonopy
         mesh/band/qpoints.yaml/hdf5 file. May also read from

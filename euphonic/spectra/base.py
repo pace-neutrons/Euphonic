@@ -11,7 +11,6 @@ from pathlib import Path
 from typing import (
     Any,
     Literal,
-    TypeVar,
     overload,
 )
 import warnings
@@ -19,6 +18,7 @@ import warnings
 import numpy as np
 from pint import DimensionalityError, Quantity
 from scipy.ndimage import correlate1d, gaussian_filter
+from typing_extensions import Self
 
 from euphonic.broadening import (
     FWHM_TO_SIGMA,
@@ -48,7 +48,6 @@ class WidthTypeError(TypeError): ...
 
 class Spectrum(ABC):
     """Base class for a spectral data: do not use directly"""
-    T = TypeVar('T', bound='Spectrum')
 
     def __setattr__(self, name: str, value: Any) -> None:
         _check_unit_conversion(self, name, value,
@@ -83,26 +82,26 @@ class Spectrum(ABC):
         self.y_data_unit = str(value.units)
         self._y_data = value.to(self._internal_y_data_unit).magnitude
 
-    def __imul__(self: T, other: Real) -> T:
+    def __imul__(self, other: Real) -> Self:
         """Scale spectral data in-place"""
         self._y_data *= other
         return self
 
-    def __mul__(self: T, other: Real) -> T:
+    def __mul__(self, other: Real) -> Self:
         """Get a new spectrum with scaled data"""
         new_spec = self.copy()
         new_spec *= other
         return new_spec
 
     @abstractmethod
-    def __copy__(self: T) -> T:
+    def __copy__(self) -> Self:
         """Get an independent copy of spectrum."""
 
     @abstractmethod
-    def __deepcopy__(self: T, memo: dict) -> T:
+    def __deepcopy__(self, memo: dict) -> Self:
         """Get a completely independent copy of spectrum."""
 
-    def copy(self: T) -> T:
+    def copy(self) -> Self:
         """Get an independent copy of spectrum."""
         return self.__copy__()
 
@@ -138,7 +137,7 @@ class Spectrum(ABC):
 
     @classmethod
     @abstractmethod
-    def from_dict(cls: type[T], d: dict[str, Any]) -> T:
+    def from_dict(cls, d: dict[str, Any]) -> Self:
         """Initialise a Spectrum object from dictionary"""
 
     def to_json_file(self, filename: Path | str) -> None:
@@ -154,7 +153,7 @@ class Spectrum(ABC):
         _obj_to_json_file(self, filename)
 
     @classmethod
-    def from_json_file(cls: type[T], filename: Path | str) -> T:
+    def from_json_file(cls, filename: Path | str) -> Self:
         """
         Read from a JSON file. See from_dict for required fields
 
@@ -167,11 +166,11 @@ class Spectrum(ABC):
         return _obj_from_json_file(cls, filename, type_dict)
 
     @abstractmethod
-    def _split_by_indices(self: T, indices: Sequence[int] | np.ndarray,
-                          ) -> list[T]:
+    def _split_by_indices(self, indices: Sequence[int] | np.ndarray,
+                          ) -> list[Self]:
         """Split data along x axis at given indices"""
 
-    def _split_by_tol(self: T, btol: float = 10.0) -> list[T]:
+    def _split_by_tol(self, btol: float = 10.0) -> list[Self]:
         """Split data along x-axis at detected breakpoints"""
         diff = np.diff(self.x_data)
         median = np.median(diff)
@@ -180,7 +179,7 @@ class Spectrum(ABC):
 
     @staticmethod
     def _ranges_from_indices(indices: Sequence[int] | np.ndarray,
-                             ) -> list[tuple[int, int]] | None:
+                             ) -> list[tuple[int, int | None]] | None:
         """Convert a series of breakpoints to a series of slice ranges"""
         if len(indices) == 0:
             ranges = [(0, None)]
@@ -206,8 +205,8 @@ class Spectrum(ABC):
         return [(int(x - x0), label)
                 for (x, label) in x_tick_labels if x0 <= x < x1]
 
-    def split(self: T, indices: Sequence[int] | np.ndarray = None,
-              btol: float | None = None) -> list[T]:
+    def split(self, indices: Sequence[int] | np.ndarray | None = None,
+              btol: float | None = None) -> list[Self]:
         """Split to multiple spectra
 
         Data may be split by index. Alternatively, x-axis data may be
@@ -524,7 +523,6 @@ class Spectrum1D(Spectrum):
 
           - 'label' : str. This is used label lines on a 1D plot
     """
-    T = TypeVar('T', bound='Spectrum1D')
 
     def __init__(self, x_data: Quantity, y_data: Quantity,
                  x_tick_labels: XTickLabels | None = None,
@@ -578,9 +576,9 @@ class Spectrum1D(Spectrum):
         spec_col = Spectrum1DCollection.from_spectra([self, other])
         return spec_col.sum()
 
-    def _split_by_indices(self: T,
+    def _split_by_indices(self,
                           indices: Sequence[int] | np.ndarray,
-                          ) -> list[T]:
+                          ) -> list[Self]:
         """Split data along x-axis at given indices"""
         ranges = self._ranges_from_indices(indices)
 
@@ -590,14 +588,14 @@ class Spectrum1D(Spectrum):
                            metadata=self.metadata)
                 for x0, x1 in ranges]
 
-    def __copy__(self: T) -> T:
+    def __copy__(self) -> Self:
         """Get an independent copy of spectrum"""
         return type(self)(np.copy(self.x_data),
                           np.copy(self.y_data),
                           x_tick_labels=copy.copy(self.x_tick_labels),
                           metadata=copy.deepcopy(self.metadata))
 
-    def __deepcopy__(self: T, memo: dict) -> T:
+    def __deepcopy__(self, memo: dict) -> Self:
         """Get a completely independent copy of spectrum"""
         return type(self)(np.copy(self.x_data),
                           np.copy(self.y_data),
@@ -640,7 +638,7 @@ class Spectrum1D(Spectrum):
         spec.to_text_file(filename, fmt)
 
     @classmethod
-    def from_dict(cls: type[T], d: dict[str, Any]) -> T:
+    def from_dict(cls, d: dict[str, Any]) -> Self:
         """
         Convert a dictionary to a Spectrum1D object
 
@@ -669,8 +667,8 @@ class Spectrum1D(Spectrum):
                    metadata=d['metadata'])
 
     @classmethod
-    def from_castep_phonon_dos(cls: type[T], filename: Path | str,
-                               element: str | None = None) -> T:
+    def from_castep_phonon_dos(cls, filename: Path | str,
+                               element: str | None = None) -> Self:
         """
         Reads DOS from a CASTEP .phonon_dos file
 
@@ -696,30 +694,30 @@ class Spectrum1D(Spectrum):
                    metadata=metadata)
 
     @overload
-    def broaden(self: T, x_width: Quantity,
+    def broaden(self, x_width: Quantity,
                 shape: KernelShape = 'gauss',
                 method: Literal['convolve'] | None = None,
                 width_convention: Literal['fwhm', 'std'] = 'fwhm',
-                ) -> T: ...
+                ) -> Self: ...
 
     @overload
-    def broaden(self: T, x_width: CallableQuantity,
+    def broaden(self, x_width: CallableQuantity,
                 shape: KernelShape = 'gauss',
                 method: Literal['convolve'] | None = None,
                 width_lower_limit: Quantity | None = None,
                 width_convention: Literal['fwhm', 'std'] = 'fwhm',
                 width_interpolation_error: float = 0.01,
                 width_fit: ErrorFit = 'cheby-log',
-                ) -> T: ...
+                ) -> Self: ...
 
-    def broaden(self: T, x_width,
+    def broaden(self, x_width,
                 shape='gauss',
                 method=None,
                 width_lower_limit=None,
                 width_convention='fwhm',
                 width_interpolation_error=0.01,
                 width_fit='cheby-log',
-                ) -> T:
+                ) -> Self:
         """
         Broaden y_data and return a new broadened spectrum object
 
@@ -826,7 +824,6 @@ class Spectrum2D(Spectrum):
         spectrum. Keys should be strings and values should be strings
         or integers
     """
-    T = TypeVar('T', bound='Spectrum2D')
 
     def __init__(self, x_data: Quantity, y_data: Quantity,
                  z_data: Quantity,
@@ -883,7 +880,7 @@ class Spectrum2D(Spectrum):
         self.z_data_unit = str(value.units)
         self._z_data = value.to(self._internal_z_data_unit).magnitude
 
-    def __imul__(self: T, other: Real) -> T:
+    def __imul__(self, other: Real) -> Self:
         """Scale spectral data in-place"""
         self.z_data = self.z_data * other
         return self
@@ -895,7 +892,7 @@ class Spectrum2D(Spectrum):
 
     def _split_by_indices(self,
                           indices: Sequence[int] | np.ndarray,
-                          ) -> list[T]:
+                          ) -> list[Self]:
         """Split data along x-axis at given indices"""
         ranges = self._ranges_from_indices(indices)
         return [type(self)(self.x_data[x0:x1], self.y_data,
@@ -905,17 +902,17 @@ class Spectrum2D(Spectrum):
                            metadata=self.metadata)
                 for x0, x1 in ranges]
 
-    def broaden(self: T,
+    def broaden(self,
                 x_width: Quantity | CallableQuantity | None = None,
                 y_width: Quantity | CallableQuantity | None = None,
                 shape: KernelShape = 'gauss',
                 method: Literal['convolve'] | None = None,
-                x_width_lower_limit: Quantity = None,
-                y_width_lower_limit: Quantity = None,
+                x_width_lower_limit: Quantity | None = None,
+                y_width_lower_limit: Quantity | None = None,
                 width_convention: Literal['fwhm', 'std'] = 'fwhm',
                 width_interpolation_error: float = 0.01,
                 width_fit: ErrorFit = 'cheby-log',
-                ) -> T:
+                ) -> Self:
         """
         Broaden z_data and return a new broadened Spectrum2D object
 
@@ -1027,7 +1024,7 @@ class Spectrum2D(Spectrum):
             spectrum: 'Spectrum2D',
             width_function: Callable[[Quantity], Quantity],
             axis: Literal['x', 'y'] = 'y',
-            width_lower_limit: Quantity = None,
+            width_lower_limit: Quantity | None = None,
             width_convention: Literal['fwhm', 'std'] = 'fwhm',
             width_interpolation_error: float = 1e-2,
             shape: KernelShape = 'gauss',
@@ -1076,7 +1073,7 @@ class Spectrum2D(Spectrum):
                           copy.copy(spectrum.x_tick_labels),
                           copy.copy(spectrum.metadata))
 
-    def __copy__(self: T) -> T:
+    def __copy__(self) -> Self:
         """Get an independent copy of spectrum"""
         return type(self)(np.copy(self.x_data),
                           np.copy(self.y_data),
@@ -1084,7 +1081,7 @@ class Spectrum2D(Spectrum):
                           copy.copy(self.x_tick_labels),
                           copy.deepcopy(self.metadata))
 
-    def __deepcopy__(self: T, memo: dict) -> T:
+    def __deepcopy__(self, memo: dict) -> Self:
         """Get an independent copy of spectrum"""
         return type(self)(np.copy(self.x_data),
                           np.copy(self.y_data),
@@ -1228,7 +1225,7 @@ class Spectrum2D(Spectrum):
                                    'x_tick_labels', 'metadata'])
 
     @classmethod
-    def from_dict(cls: type[T], d: dict[str, Any]) -> T:
+    def from_dict(cls, d: dict[str, Any]) -> Self:
         """
         Convert a dictionary to a Spectrum2D object
 
@@ -1261,9 +1258,9 @@ class Spectrum2D(Spectrum):
 
 
 def apply_kinematic_constraints(spectrum: Spectrum2D,
-                                e_i: Quantity = None,
-                                e_f: Quantity = None,
-                                angle_range: tuple[float] = (0, 180.),
+                                e_i: Quantity | None = None,
+                                e_f: Quantity | None = None,
+                                angle_range: tuple[float, float] = (0, 180.),
                                 ) -> Spectrum2D:
     """
     Set events to NaN which violate energy/momentum limits:
@@ -1355,7 +1352,7 @@ def apply_kinematic_constraints(spectrum: Spectrum2D,
     return new_spectrum
 
 
-def _get_cos_range(angle_range: tuple[float]) -> tuple[float]:
+def _get_cos_range(angle_range: tuple[float, ...]) -> tuple[float, float]:
     """
     Get max and min of cosine function over angle range
 

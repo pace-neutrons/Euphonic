@@ -29,7 +29,7 @@ def variable_width_broadening(
     x: Quantity,
     width_function: Callable[[Quantity], Quantity],
     weights: np.ndarray | Quantity,
-    width_lower_limit: Quantity = None,
+    width_lower_limit: Quantity | None = None,
     width_convention: Literal['fwhm', 'std'] = 'fwhm',
     adaptive_error: float = 1e-2,
     shape: KernelShape = 'gauss',

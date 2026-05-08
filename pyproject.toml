@@ -42,6 +42,7 @@ dependencies = [
     "pint>=0.22",
     "threadpoolctl>=3.0.0",
     "toolz>=0.12.1",
+    "typing_extensions~=4.0"
 ]
 dynamic = ["version"]
 

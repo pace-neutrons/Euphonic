@@ -13,7 +13,6 @@ from pathlib import Path
 from typing import (
     Any,
     Literal,
-    TypeVar,
     overload,
 )
 
@@ -464,7 +463,7 @@ class SpectrumCollectionMixin(ABC):
             group will be discarded
         """
         def get_key_items(enumerated_metadata: tuple[int, OneLineData],
-                          ) -> tuple[str | int, ...]:
+                          ) -> tuple[str | int | None, ...]:
             """Get sort keys from an item of enumerated input to groupby
 
             e.g. with line_data_keys=("a", "b")
@@ -498,7 +497,7 @@ class SpectrumCollectionMixin(ABC):
         return _obj_to_dict(self, attrs)
 
     @classmethod
-    def from_dict(cls: Self, d: dict) -> Self:
+    def from_dict(cls, d: dict) -> Self:
         """Initialise a Spectrum Collection object from dict"""
         data_keys = [f'{dim}_data' for dim in cls._bin_axes]
         data_keys.append(cls._spectrum_data_name())
@@ -553,7 +552,6 @@ class Spectrum1DCollection(SpectrumCollectionMixin,
                           the collection, and must be of length
                           n_entries
     """
-    T = TypeVar('T', bound='Spectrum1DCollection')
 
     # Private attributes used by SpectrumCollectionMixin
     _spectrum_axis = 'y'
@@ -635,7 +633,7 @@ class Spectrum1DCollection(SpectrumCollectionMixin,
 
     @classmethod
     def from_spectra(
-            cls: Self, spectra: Sequence[Spectrum1D], *, unsafe: bool = False,
+            cls, spectra: Sequence[Spectrum1D], *, unsafe: bool = False,
     ) -> Self:
         """Combine Spectrum1D to produce a new collection
 
@@ -702,7 +700,7 @@ class Spectrum1DCollection(SpectrumCollectionMixin,
         np.savetxt(filename, out_data, **kwargs)
 
     @classmethod
-    def from_castep_phonon_dos(cls: type[T], filename: Path | str) -> T:
+    def from_castep_phonon_dos(cls, filename: Path | str) -> Self:
         """
         Reads total DOS and per-element PDOS from a CASTEP
         .phonon_dos file
@@ -729,22 +727,22 @@ class Spectrum1DCollection(SpectrumCollectionMixin,
             metadata=metadata)
 
     @overload
-    def broaden(self: T, x_width: Quantity,
+    def broaden(self, x_width: Quantity,
                 shape: KernelShape = 'gauss',
                 method: Literal['convolve'] | None = None,
-                ) -> T: ...
+                ) -> Self: ...
 
     @overload
-    def broaden(self: T, x_width: CallableQuantity,
+    def broaden(self, x_width: CallableQuantity,
                 shape: KernelShape = 'gauss',
                 method: Literal['convolve'] | None = None,
                 width_lower_limit: Quantity | None = None,
                 width_convention: Literal['fwhm', 'std'] = 'fwhm',
                 width_interpolation_error: float = 0.01,
                 width_fit: ErrorFit = 'cheby-log',
-                ) -> T: ...
+                ) -> Self: ...
 
-    def broaden(self: T,
+    def broaden(self,
                 x_width,
                 shape='gauss',
                 method=None,
@@ -752,7 +750,7 @@ class Spectrum1DCollection(SpectrumCollectionMixin,
                 width_convention='fwhm',
                 width_interpolation_error=0.01,
                 width_fit='cheby-log',
-                ) -> T:
+                ) -> Self:
         """
         Individually broaden each line in y_data, returning a new
         Spectrum1DCollection
@@ -829,7 +827,7 @@ class Spectrum1DCollection(SpectrumCollectionMixin,
         raise TypeError(msg)
 
     @classmethod
-    def from_dict(cls: Self, d: dict) -> Self:
+    def from_dict(cls, d: dict) -> Self:
         """
         Convert a dictionary to a Spectrum Collection object
 
