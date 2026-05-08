@@ -1,6 +1,10 @@
 `Unreleased <https://github.com/pace-neutrons/Euphonic/compare/v1.6.1...HEAD>`_
 -------------------------------------------------------------------------------
 
+- Requirements
+
+  - Explicitly include typing-extensions dependency.
+
 - Maintenance
 
   - Ensure ``build_utils/version.py`` works for uncommitted changes to tagged HEADs.
