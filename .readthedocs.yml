@@ -17,14 +17,4 @@ build:
   jobs:
     install:
       - pip install --upgrade pip
-      - pip install --group 'docs'
-
-# Optionally set the version of Python and requirements required to build your docs
-python:
-   install:
-      - method: pip
-        path: .
-        extra_requirements:
-           - matplotlib
-           - phonopy-reader
-           - brille
+      - pip install --group 'docs' ".[matplotlib,phonopy-reader,brille]"
