@@ -69,14 +69,12 @@ min_reqs = [
 test = ["mock", "pytest>=9.0.3,<10.0", "pytest-cov", "pytest-mock", "pytest-lazy-fixtures", "pytest-xdist", "pytest-xvfb", "python-slugify"]
 ci = ["tox==4.30.3"]
 docs = [
-    "numpy==2.2.6",
-    "pytest==9.0.3",
-    "setuptools==78.1.1",
-    "sphinx~=5.3.0",
-    "sphinx-autodoc-typehints==1.19.5",
-    "sphinx-argparse==0.3.2",
-    "sphinx-rtd-theme==1.1.1",
-    "wheel==0.46.2",
+ "numpy==2.2.6",
+ "setuptools==82.0.1",
+ "sphinx~=8.1.0",
+ "sphinx-argparse==0.5.2",
+ "sphinx-rtd-theme==3.1.0",
+ "wheel==0.47.0",
 ]
 dev = [
     {include-group = "test"},

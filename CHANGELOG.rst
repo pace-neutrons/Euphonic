@@ -7,6 +7,9 @@
     This decouples them from the actual package and changes their installation process
     from e.g. `pip install .[test]` to `pip install --group test`.
 
+  - Update docs dependencies and drop ``sphinx_autodoc_typehints`` in favour of
+    native ``sphinx>8`` type-hint processing.
+
   - Explicitly include typing-extensions dependency.
 
 - Maintenance
