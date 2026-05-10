@@ -12,7 +12,9 @@ from operator import contains
 from pathlib import Path
 from typing import (
     Any,
+    Generic,
     Literal,
+    TypeVar,
     overload,
 )
 
@@ -44,9 +46,9 @@ from .base import OneSpectrumMetadata as OneLineData
 
 LineData = Sequence[OneLineData]
 Metadata = dict[str, str | int | LineData]
+Spec = TypeVar('Spec', bound=Spectrum)
 
-
-class SpectrumCollectionMixin(ABC):
+class SpectrumCollectionMixin(ABC, Generic[Spec]):
     """Help a collection of spectra work with "line_data" metadata file
 
     This is a Mixin to be inherited by Spectrum collection classes
@@ -74,7 +76,8 @@ class SpectrumCollectionMixin(ABC):
     # value, ensuring _something_ was set.
     _bin_axes = ('x',)
     _spectrum_axis = 'y'
-    _item_type = Spectrum1D
+    _item_type: type[Spec]
+    metadata: Metadata
 
     # Define some private methods which wrap this information into useful forms
     @classmethod
@@ -108,18 +111,18 @@ class SpectrumCollectionMixin(ABC):
         return [f'{axis}_data' for axis in self._bin_axes]
 
     @classmethod
-    def _get_item_data(cls, item: Spectrum) -> Quantity:
+    def _get_item_data(cls, item: Spec) -> Quantity:
         return getattr(item, f'{cls._spectrum_axis}_data')
 
     @classmethod
-    def _get_item_raw_data(cls, item: Spectrum) -> np.ndarray:
+    def _get_item_raw_data(cls, item: Spec) -> np.ndarray:
         return getattr(item, f'_{cls._spectrum_axis}_data')
 
     @classmethod
-    def _get_item_data_unit(cls, item: Spectrum) -> str:
+    def _get_item_data_unit(cls, item: Spec) -> str:
         return getattr(item, f'{cls._spectrum_axis}_data_unit')
 
-    def sum(self) -> Spectrum:
+    def sum(self) -> Spec:
         """
         Sum collection to a single spectrum
 
@@ -152,7 +155,7 @@ class SpectrumCollectionMixin(ABC):
     @classmethod
     @abstractmethod
     def from_spectra(
-            cls, spectra: Sequence[Spectrum], *, unsafe: bool = False,
+            cls, spectra: Sequence[Spec], *, unsafe: bool = False,
     ) -> Self:
         """Construct spectrum collection from a sequence of components
 
@@ -167,7 +170,7 @@ class SpectrumCollectionMixin(ABC):
         return self._get_raw_spectrum_data().shape[0]
 
     @overload
-    def __getitem__(self, item: int) -> Spectrum: ...
+    def __getitem__(self, item: int) -> Spec: ...
 
     @overload
     def __getitem__(self, item: slice) -> Self: ...
@@ -195,7 +198,7 @@ class SpectrumCollectionMixin(ABC):
 
     def _set_item_data(
             self,
-            spectrum: Spectrum,
+            spectrum: Spec,
             item: Integral | slice | Sequence[Integral] | np.ndarray,
     ) -> None:
         """Write axis and spectrum data from self to Spectrum
@@ -275,8 +278,8 @@ class SpectrumCollectionMixin(ABC):
 
     def __add__(self, other: Self) -> Self:
         """
-        Appends the y_data of 2 Spectrum1DCollection objects,
-        creating a single Spectrum1DCollection that contains
+        Appends the y_data of 2 SpectrumNDCollection objects,
+        creating a single SpectrumNDCollection that contains
         the spectra from both objects. The two objects must
         have equal x_data axes, and their y_data must
         have compatible units and the same number of y_data
@@ -347,7 +350,7 @@ class SpectrumCollectionMixin(ABC):
         Returns
         -------
         selected_spectra
-           A Spectrum1DCollection containing the selected spectra
+           A SpectrumNDCollection containing the selected spectra
 
         Raises
         ------
@@ -462,7 +465,7 @@ class SpectrumCollectionMixin(ABC):
         Returns
         -------
         grouped_spectrum
-            A new Spectrum1DCollection with one line for each group. Any
+            A new SpectrumNDCollection with one line for each group. Any
             metadata in 'line_data' not common across all spectra in a
             group will be discarded
         """
@@ -525,7 +528,7 @@ class SpectrumCollectionMixin(ABC):
             raise TypeError(msg)
 
 
-class Spectrum1DCollection(SpectrumCollectionMixin,
+class Spectrum1DCollection(SpectrumCollectionMixin[Spectrum1D],
                            Spectrum,
                            collections.abc.Sequence):
     """A collection of Spectrum1D with common x_data and x_tick_labels
@@ -869,7 +872,7 @@ class Spectrum1DCollection(SpectrumCollectionMixin,
         return super().from_dict(d)
 
 
-class Spectrum2DCollection(SpectrumCollectionMixin,
+class Spectrum2DCollection(SpectrumCollectionMixin[Spectrum2D],
                            Spectrum,
                            collections.abc.Sequence):
     """A collection of Spectrum2D with common x_data, y_data and x_tick_labels
