@@ -55,7 +55,7 @@
 
 - Improvements
 
-  - Fix several typing issues with SpectrumNDCollection.
+  - Fix several typing issues with Spectrum collections.
 
 - Other changes
 
