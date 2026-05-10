@@ -7,7 +7,6 @@ import re
 from typing import (
     Any,
     Literal,
-    TypeVar,
 )
 import warnings
 
@@ -15,6 +14,7 @@ import numpy as np
 from pint import Quantity
 from scipy.special import erfc
 from threadpoolctl import threadpool_info, threadpool_limits
+from typing_extensions import Self
 
 from euphonic.crystal import Crystal
 from euphonic.io import (
@@ -77,7 +77,6 @@ class ForceConstants:
         Shape (3, 3) float Quantity in charge**2/(length*energy) units
         or None. The dielectric permittivity tensor
     """
-    T = TypeVar('T', bound='ForceConstants')
 
     def __init__(self, crystal: Crystal, force_constants: Quantity,
                  sc_matrix: np.ndarray, cell_origins: np.ndarray,
@@ -1711,7 +1710,7 @@ casting to real mode gradients.
         _obj_to_json_file(self, filename)
 
     @classmethod
-    def from_dict(cls: type[T], d: dict[str, Any]) -> T:
+    def from_dict(cls, d: dict[str, Any]) -> Self:
         """
         Convert a dictionary to a ForceConstants object
 
@@ -1748,9 +1747,9 @@ casting to real mode gradients.
 
     @classmethod
     def from_total_fc_with_dipole(
-            cls: type[T], crystal: Crystal, force_constants: Quantity,
+            cls, crystal: Crystal, force_constants: Quantity,
             sc_matrix: np.ndarray, cell_origins: np.ndarray, born: Quantity,
-            dielectric: Quantity) -> T:
+            dielectric: Quantity) -> Self:
         """
         Subtracts a dipole term from the input force constants matrix
         to convert the 'total' force constants matrix containing both
@@ -1827,7 +1826,7 @@ casting to real mode gradients.
                    born=born, dielectric=dielectric)
 
     @classmethod
-    def from_json_file(cls: type[T], filename: Path | str) -> T:
+    def from_json_file(cls, filename: Path | str) -> Self:
         """
         Read from a JSON file. See ForceConstants.from_dict for required
         fields
@@ -1844,7 +1843,7 @@ casting to real mode gradients.
         return _obj_from_json_file(cls, filename)
 
     @classmethod
-    def from_castep(cls: type[T], filename: Path | str) -> T:
+    def from_castep(cls, filename: Path | str) -> Self:
         """
         Reads from a .castep_bin or .check file
 
@@ -1861,12 +1860,12 @@ casting to real mode gradients.
         return cls.from_dict(data)
 
     @classmethod
-    def from_phonopy(cls: type[T],
+    def from_phonopy(cls,
                      path: Path | str = '.',
                      summary_name: Path | str = 'phonopy.yaml',
                      born_name: str | None = None,
                      fc_name: Path | str = 'FORCE_CONSTANTS',
-                     fc_format: str | None = None) -> T:
+                     fc_format: str | None = None) -> Self:
         """
         Reads data from the phonopy summary file (default phonopy.yaml)
         and optionally born and force constants files. Only attempts to

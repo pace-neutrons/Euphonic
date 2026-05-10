@@ -1,10 +1,11 @@
 import dataclasses
 from multiprocessing import cpu_count
 import textwrap
-from typing import Any, TypeVar
+from typing import Any
 
 import numpy as np
 import spglib as spg
+from typing_extensions import Self
 
 try:
     import brille as br
@@ -38,7 +39,6 @@ class BrilleInterpolator:
     crystal : Crystal
         Lattice and atom information
     """
-    T = TypeVar('T', bound='BrilleInterpolator')
 
     def __init__(self, crystal: Crystal,
                  grid: br.BZTrellisQdc | br.BZMeshQdc | br.BZNestQdc) -> None:
@@ -143,11 +143,11 @@ class BrilleInterpolator:
 
     @classmethod
     def from_force_constants(
-            cls: type[T], force_constants: ForceConstants,
+            cls, force_constants: ForceConstants,
             grid_type: str = 'trellis', grid_npts: int = 1000,
             grid_density: int | None = None,
             grid_kwargs: dict[str, Any] | None = None,
-            interpolation_kwargs: dict[str, Any] | None = None) -> T:
+            interpolation_kwargs: dict[str, Any] | None = None) -> Self:
         """
         Generates a grid over the irreducible Brillouin Zone to be
         used for linear interpolation with Brille, with properties
@@ -201,6 +201,11 @@ class BrilleInterpolator:
         cell = crystal.to_spglib_cell()
 
         dataset = spg.get_symmetry_dataset(cell)
+
+        if dataset is None:
+            msg = 'Symmetry not found'
+            raise ValueError(msg)
+
         # Spglib 2.5 introduced dataclass structures:
         # convert back to dict for now
         if dataclasses.is_dataclass(dataset):
@@ -257,8 +262,10 @@ class BrilleInterpolator:
             interpolation_kwargs = {}
         interpolation_kwargs['insert_gamma'] = False
         interpolation_kwargs['reduce_qpts'] = False
-        phonons = force_constants.calculate_qpoint_phonon_modes(
-            grid.rlu, **interpolation_kwargs)
+        phonons: QpointPhononModes = (
+            force_constants.calculate_qpoint_phonon_modes(
+                grid.rlu, **interpolation_kwargs)
+        )
 
         n_atoms = crystal.n_atoms
         frequencies = np.reshape(phonons._frequencies,

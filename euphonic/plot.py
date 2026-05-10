@@ -1,6 +1,6 @@
 from collections.abc import Sequence
 from itertools import pairwise
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, TypeAlias
 
 import numpy as np
 
@@ -110,7 +110,7 @@ def plot_1d_to_axis(spectra: Spectrum1D | Spectrum1DCollection,
     return None
 
 
-OneDSpectrumOrSpectra = (Spectrum1D
+OneDSpectrumOrSpectra: TypeAlias = (Spectrum1D
                          | Spectrum1DCollection
                          | Sequence[Spectrum1D]
                          | Sequence[Spectrum1DCollection])

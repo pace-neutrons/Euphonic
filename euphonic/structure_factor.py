@@ -1,7 +1,8 @@
-from typing import Any, NoReturn, TypeVar
+from typing import Any, NoReturn
 import warnings
 
 import numpy as np
+from typing_extensions import Self
 
 from euphonic.crystal import Crystal
 from euphonic.io import _obj_to_dict, _process_dict
@@ -42,7 +43,6 @@ class StructureFactor(QpointFrequencies):
         population factor). None if no temperature-dependent effects
         have been applied
     """
-    T = TypeVar('T', bound='StructureFactor')
 
     def __init__(self, crystal: Crystal, qpts: np.ndarray,
                  frequencies: Quantity, structure_factors: Quantity,
@@ -338,9 +338,9 @@ class StructureFactor(QpointFrequencies):
         temp = temperature.to('K').magnitude
         bose = np.zeros(self._frequencies.shape)
         if temperature > 0:
-            bose = 1/(np.exp(np.absolute(self._frequencies)/(k_B*temp)) - 1)
+            bose[:] = 1/(np.exp(np.absolute(self._frequencies)/(k_B*temp)) - 1)
         else:
-            bose = 0
+            bose[:] = 0
         return bose
 
     def to_dict(self) -> dict[str, Any]:
@@ -360,7 +360,7 @@ class StructureFactor(QpointFrequencies):
             self.crystal, self.qpts, self.frequencies, self.weights)
 
     @classmethod
-    def from_dict(cls: type[T], d: dict[str, Any]) -> T:
+    def from_dict(cls, d: dict[str, Any]) -> Self:
         """
         Convert a dictionary to a StructureFactor object
 
@@ -391,11 +391,11 @@ class StructureFactor(QpointFrequencies):
                    d['temperature'])
 
     @classmethod
-    def from_castep(cls: type[T]) -> NoReturn:
+    def from_castep(cls) -> NoReturn:
         ""
         raise AttributeError
 
     @classmethod
-    def from_phonopy(cls: type[T]) -> NoReturn:
+    def from_phonopy(cls) -> NoReturn:
         ""
         raise AttributeError
