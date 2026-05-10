@@ -278,8 +278,8 @@ class SpectrumCollectionMixin(ABC, Generic[Spec]):
 
     def __add__(self, other: Self) -> Self:
         """
-        Appends the y_data of 2 SpectrumNDCollection objects,
-        creating a single SpectrumNDCollection that contains
+        Appends the y_data of 2 spectrum collection objects,
+        creating a single spectrum collection that contains
         the spectra from both objects. The two objects must
         have equal x_data axes, and their y_data must
         have compatible units and the same number of y_data
@@ -350,7 +350,7 @@ class SpectrumCollectionMixin(ABC, Generic[Spec]):
         Returns
         -------
         selected_spectra
-           A SpectrumNDCollection containing the selected spectra
+           A spectrum collection containing the selected spectra
 
         Raises
         ------
@@ -465,7 +465,7 @@ class SpectrumCollectionMixin(ABC, Generic[Spec]):
         Returns
         -------
         grouped_spectrum
-            A new SpectrumNDCollection with one line for each group. Any
+            A new spectrum collection with one line for each group. Any
             metadata in 'line_data' not common across all spectra in a
             group will be discarded
         """
