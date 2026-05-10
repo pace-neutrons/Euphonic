@@ -3,7 +3,9 @@
 
 - Requirements
 
-  - Migrate dev dependencies to dependency groups.
+  - Migrate dev dependencies from "optional dependencies" to `dependency groups <https://packaging.python.org/en/latest/specifications/dependency-groups/>`__. 
+    This decouples them from the actual package and changes their installation process
+    from e.g. `pip install .[test]` to `pip install --group test`.
 
   - Explicitly include typing-extensions dependency.
 
