@@ -9,7 +9,7 @@
 
 - Requirements
 
-  - Migrate dev dependencies from "optional dependencies" to `dependency groups <https://packaging.python.org/en/latest/specifications/dependency-groups/>`__. 
+  - Migrate dev dependencies from "optional dependencies" to `dependency groups <https://packaging.python.org/en/latest/specifications/dependency-groups/>`__.
     This decouples them from the actual package and changes their installation process
     from e.g. `pip install .[test]` to `pip install --group test`.
 
@@ -78,6 +78,8 @@
 - Maintenance
 
   - Ensure ``build_utils/version.py`` works for uncommitted changes to tagged HEADs.
+
+  - Extend use of Python 3.10 ``match``\ es over ``if`` where relevant.
 
 `v1.6.1 <https://github.com/pace-neutrons/Euphonic/compare/v1.6.0...v1.6.1>`_
 -----------------------------------------------------------------------------
