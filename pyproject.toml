@@ -81,7 +81,6 @@ docs = [
 dev = [
     {include-group = "test"},
     {include-group = "ci"},
-    {include-group = "docs"},
 ]
 
 [project.optional-dependencies]
