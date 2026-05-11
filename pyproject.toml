@@ -177,6 +177,7 @@ select = [
 ]
 ignore = [
        "S101",    # Use of except
+       "COM812",  # Trailing comma, conflicts with ruff format
        "CPY001",  # Missing copyright notice at top of every file. Not for us.
        "T20",     # flake8-print forbids use of print and pprint.
        "PERF203", # No try-except in loop. Micro-optimisation, not relevant for Py 3.11+
@@ -208,7 +209,6 @@ extend-ignore-names = ["k_B", "H_ab", "Q"]
     "RUF012", # declaring sample data inside test classes is tidy
     "E501",   # long lines seem more common with verbose test names
     ]
-"euphonic/data/isotopes.py" = ["COM812"]  # Conflicts with ruff format
 
 "euphonic/version.py" = ["Q000"]  # Source build prefers double quotes here
 

@@ -176,7 +176,7 @@ class LegacyJsonData(AtomTypeDictData):
 
         if key not in self._data:
             msg = format_error(
-                f'Property {key!r} not found in "{self._collection}"',
+                f'Property {key!r} not found in {self._collection!r}',
                 fix=(f'Available keys: {comma_join(self._data.keys())}.'),
             )
             raise KeyError(msg)
