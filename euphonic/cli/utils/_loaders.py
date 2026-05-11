@@ -4,6 +4,8 @@ import os
 from pathlib import Path
 import re
 
+from typing_extensions import assert_never  # 3.11+
+
 from euphonic import (
     ForceConstants,
     QpointFrequencies,
@@ -58,39 +60,57 @@ def _load_phonopy_file(filename: str | os.PathLike,
             loaded_data = QpointFrequencies.from_phonopy(
                 path=path.parent, phonon_name=path.name)
 
-    if loaded_data is None:
-        phonopy_kwargs: dict[str, str | os.PathLike] = {}
-        phonopy_kwargs['path'] = path.parent
-        if path.with_name('BORN').is_file():
-            phonopy_kwargs['born_name'] = 'BORN'
-        # Set summary_name and fc_name depending on input file
-        if path.suffix == '.hdf5':
-            if path.with_name('phonopy.yaml').is_file():
-                phonopy_kwargs['summary_name'] = 'phonopy.yaml'
-                phonopy_kwargs['fc_name'] = path.name
-            else:
-                msg = format_error(
-                    'Missing phonopy.yaml.',
-                    reason = (
-                        'Phonopy force_constants.hdf5 file '
-                        'must be accompanied by information '
-                        'about atomic masses, supercell, etc.'
-                    ),
-                    fix='Ensure phonopy.yaml provided.',
-                )
-                raise ValueError(msg)
-        elif path.suffix in ('.yaml', '.yml'):
-            phonopy_kwargs['summary_name'] = path.name
-            # Assume this is a (renamed?) phonopy.yaml file
-            if (janus_fc := _janus_fc_filename(path)).is_file():
-                phonopy_kwargs['fc_name'] = janus_fc.name
-            elif path.with_name('force_constants.hdf5').is_file():
-                phonopy_kwargs['fc_name'] = 'force_constants.hdf5'
-            else:
-                phonopy_kwargs['fc_name'] = 'FORCE_CONSTANTS'
-        loaded_data = ForceConstants.from_phonopy(**phonopy_kwargs)
+    if loaded_data is not None:
+        return loaded_data
 
-    return loaded_data
+    phonopy_kwargs: dict[str, str | os.PathLike] = {}
+    phonopy_kwargs['path'] = path.parent
+    if path.with_name('BORN').is_file():
+        phonopy_kwargs['born_name'] = 'BORN'
+
+    # Set summary_name and fc_name depending on input file
+    match path.suffix:
+        case '.hdf5' if path.with_name('phonopy.yaml').is_file():
+            phonopy_kwargs.update(
+                summary_name='phonopy.yaml',
+                fc_name=path.name,
+            )
+
+        case '.hdf5':
+            msg = format_error(
+                'Missing phonopy.yaml.',
+                reason = (
+                    'Phonopy force_constants.hdf5 file '
+                    'must be accompanied by information '
+                    'about atomic masses, supercell, etc.'
+                ),
+                fix='Ensure phonopy.yaml provided.',
+            )
+            raise ValueError(msg)
+
+        case '.yaml' | '.yml' if _janus_fc_filename(path).is_file():
+            phonopy_kwargs.update(
+                summary_name=path.name,
+                fc_name=_janus_fc_filename(path).name,
+            )
+
+        case '.yaml' | '.yml' if path.with_name(
+            'force_constants.hdf5').is_file():
+            phonopy_kwargs.update(
+                summary_name=path.name,
+                fc_name='force_constants.hdf5',
+            )
+
+        case '.yaml' | '.yml':
+            phonopy_kwargs.update(
+                summary_name=path.name,
+                fc_name='FORCE_CONSTANTS',
+            )
+
+        case _:
+            assert_never(path.suffix)
+
+    return ForceConstants.from_phonopy(**phonopy_kwargs)
 
 
 def _janus_fc_filename(phonopy_file: Path) -> Path:
@@ -134,30 +154,33 @@ def load_data_from_file(filename: str | os.PathLike,
     phonopy_suffixes = ('.hdf5', '.yaml', '.yml')
 
     path = Path(filename)
-    if path.suffix in castep_qpm_suffixes:
-        if frequencies_only:
+
+    match path.suffix:
+        case '.phonon' if frequencies_only:
             data = QpointFrequencies.from_castep(path)
-        else:
+        case '.phonon':
             data = QpointPhononModes.from_castep(path)
-    elif path.suffix in castep_fc_suffixes:
-        data = ForceConstants.from_castep(path)
-    elif path.suffix == '.json':
-        data = _load_euphonic_json(path, frequencies_only)
-    elif path.suffix in phonopy_suffixes:
-        data = _load_phonopy_file(path, frequencies_only)
-    else:
-        msg = format_error(
-            f'File format ({path.suffix}) not recognised.',
-            reason=f"""
-            CASTEP force constants data for
-            import should have extension from {castep_fc_suffixes}, CASTEP
-            phonon mode data for import should have extension
-            '{castep_qpm_suffixes}', data from Phonopy should have extension
-            from {phonopy_suffixes}, data from Euphonic should have extension
-            '.json'.""",
-            fix='Ensure file format in known formats.',
-        )
-        raise ValueError(msg)
+        case '.castep_bin' | '.check':
+            data = ForceConstants.from_castep(path)
+        case '.json':
+            data = _load_euphonic_json(path, frequencies_only)
+        case '.hdf5' | '.yaml' | '.yml':
+            data = _load_phonopy_file(path, frequencies_only)
+        case _:
+            msg = format_error(
+                 f'File format ({path.suffix}) not recognised.',
+                 reason=f"""
+                 CASTEP force constants data for
+                 import should have extension from {castep_fc_suffixes}, CASTEP
+                 phonon mode data for import should have extension
+                 '{castep_qpm_suffixes}', data from Phonopy should have
+                 extension from {phonopy_suffixes},
+                 data from Euphonic should have extension '.json'.""",
+                 fix='Ensure file format in known formats.',
+            )
+            raise ValueError(msg)
+
     if verbose:
         print(f'{data.__class__.__name__} data was loaded')
+
     return data
