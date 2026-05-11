@@ -102,9 +102,15 @@ class AtomTypeDictData(ArrayFromValuesMixin, IsotopeData):
         mass: float,  # noqa: ARG002
         key: str,
     ) -> Quantity:
+        from euphonic.util import comma_join, format_error
+
         if key not in self._data:
-            msg = f'Property "{key}" not found in dict'
+            msg = format_error(
+                f'Property {key!r} not found in dict.',
+                fix=(f'Available keys: {comma_join(self._data.keys())}.'),
+            )
             raise KeyError(msg)
+
         return self._data[key][symbol]
 
 
@@ -159,7 +165,6 @@ class LegacyJsonData(AtomTypeDictData):
     Only the atom_type attribute is used to select data from the structure:
     this is not very robust in case of isotopic substitutions.
     """
-
     def __init__(self, collection: str):
         self._collection = collection
 
@@ -167,8 +172,13 @@ class LegacyJsonData(AtomTypeDictData):
         super().__init__(data)
 
     def get_array(self, structure: Structure, key: str) -> Quantity:
+        from euphonic.util import comma_join, format_error
+
         if key not in self._data:
-            msg = f'Property "{key}" not found in "{self._collection}"'
+            msg = format_error(
+                f'Property {key!r} not found in "{self._collection}"',
+                fix=(f'Available keys: {comma_join(self._data.keys())}.'),
+            )
             raise KeyError(msg)
         return super().get_array(structure, key)
 
