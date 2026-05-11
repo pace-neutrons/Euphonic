@@ -767,7 +767,7 @@ class Spectrum1D(Spectrum):
                 width_lower_limit: Quantity | None = None,
                 width_convention: Literal['fwhm', 'std'] = 'fwhm',
                 width_interpolation_error: float = 0.01,
-                ) -> Self: ...
+                ) -> T: ...
 
     def broaden(self, x_width,
                 shape='gauss',
@@ -775,7 +775,7 @@ class Spectrum1D(Spectrum):
                 width_lower_limit=None,
                 width_convention='fwhm',
                 width_interpolation_error=0.01,
-                ) -> Self:
+                ) -> T:
         """
         Broaden y_data and return a new broadened spectrum object
 
@@ -969,7 +969,7 @@ class Spectrum2D(Spectrum):
                 y_width_lower_limit: Quantity | None = None,
                 width_convention: Literal['fwhm', 'std'] = 'fwhm',
                 width_interpolation_error: float = 0.01,
-                ) -> Self:
+                ) -> T:
         """
         Broaden z_data and return a new broadened Spectrum2D object
 

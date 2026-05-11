@@ -310,3 +310,41 @@ class TestSpectrum2DCollectionFunctionality:
         spec1 = deepcopy(quartz_fuzzy_collection)
         spec2.metadata = {'different': 'metadata'}
         assert spec1 != spec2
+
+
+class TestEmptyCollection:
+
+    @pytest.fixture
+    def empty_spectrum(self) -> Spectrum2DCollection:
+        return Spectrum2DCollection.from_spectra([])
+
+    @pytest.fixture
+    def real_spectrum(self) -> Spectrum2DCollection:
+        return get_spectrum2dcollection('quartz_fuzzy_map.json')
+
+    def test_create_empty_init(self):
+        x_data = ureg.Quantity(np.empty((0,)))
+        y_data = ureg.Quantity(np.empty((0,)))
+        z_data = ureg.Quantity(np.empty((0,0,0)))
+        spec = Spectrum2DCollection(x_data, y_data, z_data, [], {})
+        assert len(spec) == 0
+
+    def test_create_empty_from_spectra(self):
+        assert len(Spectrum2DCollection.from_spectra([])) == 0
+
+    def test_create_from_empty_slice(self, real_spectrum):
+        empty = real_spectrum[()]
+        assert len(empty) == 0
+
+    def test_empty_sum(self, empty_spectrum):
+        spec: Spectrum2D = empty_spectrum.sum()
+
+        assert len(spec.x_data) == 0
+
+    def test_add_empty(self, empty_spectrum):
+        assert len(empty_spectrum + empty_spectrum) == 0
+
+    def test_add_non_empty(self, empty_spectrum, real_spectrum):
+        spec = empty_spectrum + real_spectrum
+        assert len(spec) == len(real_spectrum)
+        assert np.all(spec.x_data == real_spectrum.x_data)

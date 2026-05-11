@@ -1,5 +1,6 @@
 import copy
 import json
+from typing import TYPE_CHECKING
 
 import numpy as np
 from numpy.testing import assert_allclose
@@ -7,6 +8,7 @@ import pytest
 from pytest_lazy_fixtures import lf as lazy_fixture
 
 from euphonic import ureg
+from euphonic.spectra.base import Spectrum1D
 from euphonic.spectra import Spectrum1DCollection
 from tests_and_analysis.test.euphonic_test.test_spectrum1d import (
     check_property_setters,
@@ -22,6 +24,8 @@ from tests_and_analysis.test.utils import (
     get_spectrum_from_text,
 )
 
+if TYPE_CHECKING:
+    from euphonic.spectra.base import Spectrum1D
 
 class ExpectedSpectrum1DCollection:
     def __init__(self, spectrum_json_file: str):
@@ -82,12 +86,12 @@ def get_spectrum_path(*subpaths):
     return get_data_path('spectrum1dcollection', *subpaths)
 
 
-def get_spectrum1dcollection(json_filename):
+def get_spectrum1dcollection(json_filename) -> Spectrum1DCollection:
     return Spectrum1DCollection.from_json_file(
         get_spectrum_path(json_filename))
 
 
-def get_expected_spectrum1dcollection(json_filename):
+def get_expected_spectrum1dcollection(json_filename) -> ExpectedSpectrum1DCollection:
     return ExpectedSpectrum1DCollection(get_spectrum_path(json_filename))
 
 
@@ -324,7 +328,7 @@ class TestSpectrum1DCollectionCreation:
 
     @pytest.mark.parametrize(
         'input_spectra, expected_error',
-        [([], IndexError),
+        [
          ([get_spectrum1dcollection('gan_bands.json')], TypeError),
          ([f'gan_bands_index_{i}.json' for i in range(2, 5)], TypeError)])
     def test_faulty_create_from_sequence(self, input_spectra, expected_error):
@@ -811,3 +815,41 @@ class TestSpectrum1DCollectionMethods:
         spec1 = get_spectrum1dcollection('gan_bands.json')
         spec2.metadata = {'different': 'metadata'}
         assert spec1 != spec2
+            check_spectrum1dcollection(spec, spec_copy)
+
+
+class TestEmptyCollection:
+
+    @pytest.fixture
+    def empty_spectrum(self) -> Spectrum1DCollection:
+        return Spectrum1DCollection.from_spectra([])
+
+    @pytest.fixture
+    def real_spectrum(self) -> Spectrum1DCollection:
+        return get_spectrum1dcollection('gan_bands.json')
+
+    def test_create_empty_init(self):
+        x_data = ureg.Quantity(np.empty((0,)))
+        y_data = ureg.Quantity(np.empty((0,0)))
+        spec = Spectrum1DCollection(x_data, y_data, [], {})
+        assert len(spec) == 0
+
+    def test_create_empty_from_spectra(self):
+        assert len(Spectrum1DCollection.from_spectra([])) == 0
+
+    def test_create_from_empty_slice(self, real_spectrum):
+        empty = real_spectrum[()]
+        assert len(empty) == 0
+
+    def test_empty_sum(self, empty_spectrum):
+        spec: Spectrum1D = empty_spectrum.sum()
+
+        assert len(spec.x_data) == 0
+
+    def test_add_empty(self, empty_spectrum):
+        assert len(empty_spectrum + empty_spectrum) == 0
+
+    def test_add_non_empty(self, empty_spectrum, real_spectrum):
+        spec = empty_spectrum + real_spectrum
+        assert len(spec) == len(real_spectrum)
+        assert np.all(spec.x_data == real_spectrum.x_data)

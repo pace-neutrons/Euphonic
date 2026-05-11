@@ -1,5 +1,5 @@
 from types import NoneType
-from typing import Any, NoReturn
+from typing import Any, NoReturn, TypeVar
 import warnings
 
 import numpy as np

@@ -65,6 +65,8 @@
     This is consistent with the behaviour of Python lists and numpy
     arrays.
 
+    These slices can also be 0-size.
+
     Previously this would raise an IndexError. Technically it is a
     **breaking change** as somebody's code could depend on this
     IndexError. At this stage it seems an acceptable risk.

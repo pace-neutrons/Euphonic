@@ -1,6 +1,6 @@
 from pathlib import Path
 from types import NoneType
-from typing import Any, Literal
+from typing import Any, Literal, TypeVar
 import warnings
 
 import numpy as np

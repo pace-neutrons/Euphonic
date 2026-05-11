@@ -401,8 +401,11 @@ class SpectrumCollectionMixin(ABC, Generic[Spec]):
 
         # Combine key-value pairs common to *all* metadata lines into new dict
         common_metadata = dict(
-            reduce(set.intersection,
-                   (set(metadata.items()) for metadata in all_metadata)))
+            reduce(
+                set.intersection,
+                (set(metadata.items()) for metadata in all_metadata),
+                set(),
+            ))
 
         # Put all other per-spectrum metadata in line_data
         is_common = partial(contains, common_metadata)
@@ -603,7 +606,7 @@ class Spectrum1DCollection(SpectrumCollectionMixin[Spectrum1D],
             X_TICK_CHECK._replace(value=x_tick_labels),
             METADATA_CHECK._replace(value=metadata),
         )
-        ny = len(y_data[0])
+        ny = y_data.shape[1]
         _check_constructor_inputs(
             InputCheck(x_data, (Quantity,), {(ny,), (ny+1,)}, 'x_data'))
 
@@ -665,8 +668,9 @@ class Spectrum1DCollection(SpectrumCollectionMixin[Spectrum1D],
 
         """
         if len(spectra) < 1:
-            msg = 'At least one spectrum is needed for collection'
-            raise IndexError(msg)
+            x_data = ureg.Quantity(np.empty((0,)))
+            y_data = ureg.Quantity(np.empty((0,0)))
+            return cls(x_data, y_data, [], {})
 
         cls._item_type_check(spectra[0])
         x_data = spectra[0].x_data
@@ -762,7 +766,7 @@ class Spectrum1DCollection(SpectrumCollectionMixin[Spectrum1D],
                 width_lower_limit: Quantity | None = None,
                 width_convention: Literal['fwhm', 'std'] = 'fwhm',
                 width_interpolation_error: float = 0.01,
-                ) -> Self: ...
+                ) -> T: ...
 
     def broaden(self,
                 x_width,
@@ -771,7 +775,7 @@ class Spectrum1DCollection(SpectrumCollectionMixin[Spectrum1D],
                 width_lower_limit=None,
                 width_convention='fwhm',
                 width_interpolation_error=0.01,
-                ) -> Self:
+                ) -> T:
         """
         Individually broaden each line in y_data, returning a new
         Spectrum1DCollection
@@ -1030,11 +1034,10 @@ class Spectrum2DCollection(SpectrumCollectionMixin[Spectrum2D],
         """
 
         if len(spectra) < 1:
-            msg = format_error(
-                'No spectra provided.',
-                fix='Must have at least one spectrum for collection.',
-            )
-            raise IndexError(msg)
+            x_data = ureg.Quantity(np.empty((0,)))
+            y_data = ureg.Quantity(np.empty((0,)))
+            z_data = ureg.Quantity(np.empty((0,0,0)))
+            return cls(x_data, y_data, z_data, [], {})
 
         cls._item_type_check(spectra[0])
         bins_data = {
