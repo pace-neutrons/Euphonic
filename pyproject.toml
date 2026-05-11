@@ -44,7 +44,8 @@ dependencies = [
     "toolz>=0.12.1",
     "typing_extensions~=4.0"
 ]
-dynamic = ["version"]
+#dynamic = ["version"]
+version = "2.20.0"
 
 [project.urls]
 Homepage = "https://github.com/pace-neutrons/Euphonic"
