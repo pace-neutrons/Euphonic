@@ -29,7 +29,7 @@ from euphonic.util import (
     format_error,
     is_gamma,
 )
-from euphonic.validate import _check_constructor_inputs, InputCheck
+from euphonic.validate import InputCheck, _check_constructor_inputs
 
 EIG_CHECK = InputCheck(..., (np.ndarray,), {(-1,)}, 'eigenvectors')
 
