@@ -8,7 +8,6 @@ import pytest
 from pytest_lazy_fixtures import lf as lazy_fixture
 
 from euphonic import ureg
-from euphonic.spectra.base import Spectrum1D
 from euphonic.spectra import Spectrum1DCollection
 from tests_and_analysis.test.euphonic_test.test_spectrum1d import (
     check_property_setters,
@@ -714,16 +713,6 @@ class TestSpectrum1DCollectionMethods:
         spec_col.metadata = metadata
         spec_col.select(**select_kwargs)
 
-    @pytest.mark.parametrize('spectrum_file, metadata, select_kwargs',
-            [('quartz_666_pdos.json', fake_metadata,
-             {'inst': ['LET', 'TOSCA'], 'index': [4, 6]})])
-    def test_select_with_no_matches_raises_value_error(
-            self, spectrum_file, metadata, select_kwargs):
-        spec_col = get_spectrum1dcollection(spectrum_file)
-        spec_col.metadata = metadata
-        with pytest.raises(ValueError):
-            spec_col.select(**select_kwargs)
-
     @pytest.mark.parametrize(
         'spectrum_file, other_spectrum_file, expected_spectrum_file', [
             ('La2Zr2O7_666_coh_species_pdos.json',
@@ -819,37 +808,73 @@ class TestSpectrum1DCollectionMethods:
 
 
 class TestEmptyCollection:
-
     @pytest.fixture
     def empty_spectrum(self) -> Spectrum1DCollection:
-        return Spectrum1DCollection.from_spectra([])
+        return Spectrum1DCollection.from_spectra(
+            [],
+            _x_bins=ureg.Quantity(np.empty((10,))),
+        )
 
     @pytest.fixture
     def real_spectrum(self) -> Spectrum1DCollection:
         return get_spectrum1dcollection('gan_bands.json')
 
+    @pytest.fixture
+    def empty_sized(self, real_spectrum) -> Spectrum1DCollection:
+        return real_spectrum[()]
+
     def test_create_empty_init(self):
-        x_data = ureg.Quantity(np.empty((0,)))
-        y_data = ureg.Quantity(np.empty((0,0)))
+        x_data = ureg.Quantity(np.empty((10,)))
+        y_data = ureg.Quantity(np.empty((0, 10)))
         spec = Spectrum1DCollection(x_data, y_data, [], {})
-        assert len(spec) == 0
+        assert not spec
 
     def test_create_empty_from_spectra(self):
-        assert len(Spectrum1DCollection.from_spectra([])) == 0
+        fake_bins = ureg.Quantity(np.linspace(0, 10, 10))
+        spec = Spectrum1DCollection.from_spectra([], _x_bins=fake_bins)
+        assert not spec
 
     def test_create_from_empty_slice(self, real_spectrum):
-        empty = real_spectrum[()]
-        assert len(empty) == 0
+        spec = real_spectrum[()]
+        assert not spec
 
-    def test_empty_sum(self, empty_spectrum):
-        spec: Spectrum1D = empty_spectrum.sum()
+    def test_create_from_empty_select(self, real_spectrum):
+        spec = real_spectrum.select(species='felis')
+        assert not spec
 
-        assert len(spec.x_data) == 0
+    def test_empty_no_metadata(self, real_spectrum):
+        real_spectrum.metadata = {'hello': 3}
+        assert real_spectrum[()].metadata == {}
 
     def test_add_empty(self, empty_spectrum):
         assert len(empty_spectrum + empty_spectrum) == 0
 
-    def test_add_non_empty(self, empty_spectrum, real_spectrum):
-        spec = empty_spectrum + real_spectrum
+    def test_add_non_empty(self, empty_sized, real_spectrum):
+        spec = empty_sized + real_spectrum
         assert len(spec) == len(real_spectrum)
         assert np.all(spec.x_data == real_spectrum.x_data)
+
+    def test_empty_sum(self, empty_spectrum):
+        spec: Spectrum1D = empty_spectrum.sum()
+
+        assert len(spec.x_data) == len(empty_spectrum.x_data)
+        assert np.allclose(spec.y_data, 0.0)
+
+    def test_empty_bool(self, empty_spectrum, real_spectrum):
+        assert real_spectrum
+        assert not empty_spectrum
+
+    def test_empty_broaden(self, empty_spectrum):
+        check_spectrum1dcollection(
+            empty_spectrum.broaden(ureg.Quantity(1.0)),
+            empty_spectrum,
+        )
+
+    def test_empty_group_by(self, empty_spectrum):
+        check_spectrum1dcollection(
+            empty_spectrum.group_by(),
+            empty_spectrum,
+        )
+
+    def test_empty_iter_metadata(self, empty_spectrum):
+        assert list(empty_spectrum.iter_metadata()) == []

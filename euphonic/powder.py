@@ -244,7 +244,7 @@ def sample_sphere_structure_factor(
     fc: ForceConstants,
     mod_q: Quantity,
     *,
-    dw: DebyeWaller = None,
+    dw: DebyeWaller | None = None,
     dw_spacing: Quantity = Quantity(0.025, '1/angstrom'),
     temperature: Quantity | None = Quantity(273., 'K'),
     sampling: SphericalSamplingOptions = 'golden',
@@ -340,9 +340,10 @@ def sample_sphere_structure_factor(
     if temperature is not None:
         if (dw is None):
             dw_qpts = mp_grid(fc.crystal.get_mp_grid_spec(dw_spacing))
-            dw_phonons = fc.calculate_qpoint_phonon_modes(dw_qpts,
-                                                          **calc_modes_args)
+            dw_phonons: QpointPhononModes = fc.calculate_qpoint_phonon_modes(
+                dw_qpts, **calc_modes_args)
             dw: DebyeWaller = dw_phonons.calculate_debye_waller(temperature)
+
         elif not np.isclose(dw.temperature, temperature):
             msg = format_error(
                 'Inconsistent temperature.',
