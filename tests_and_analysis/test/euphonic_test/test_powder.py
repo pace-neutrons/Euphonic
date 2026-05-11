@@ -224,9 +224,15 @@ class TestSphereSampledProperties:
             mock_fc.calculate_qpoint_phonon_modes.call_args[0][0])
 
         # Check structure factor args were as expected
-        assert (mock_qpm.calculate_structure_factor.call_args
-                == ((), {'scattering_lengths': options['scattering_lengths'],
-                         'dw': mock_dw}))
+        call_args = mock_qpm.calculate_structure_factor.call_args
+        assert call_args[0] == ()
+        assert call_args[1].keys() == {'scattering_lengths', 'dw'}
+        assert call_args[1]['dw'] == mock_dw
+
+        if isinstance(options['scattering_lengths'], str):
+            assert call_args[1]['scattering_lengths']['Ag'] == 5.922 * ureg('fermi')
+        else:
+            assert call_args[1]['scattering_lengths'] == options['scattering_lengths']
 
         # Check auto grid was used if temperature given
         if options.get('temperature') is not None:
