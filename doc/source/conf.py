@@ -27,9 +27,9 @@ extensions = [
         'sphinx.ext.autodoc',
         'sphinx.ext.napoleon',
         'sphinxarg.ext',
-        'sphinx_autodoc_typehints',
         'sphinx.ext.doctest'
 ]
+
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -56,6 +56,7 @@ html_static_path = ['_static']
 
 # Autodoc settings
 autodoc_member_order = 'bysource'
+autodoc_typehints = 'description'
 add_module_names = False
 
 # Napoleon docstring style settings

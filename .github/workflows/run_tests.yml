@@ -77,7 +77,7 @@ jobs:
         shell: bash -l {0}
         run: |
           python -m pip install --upgrade pip
-          python -m pip install --group ci --group docs
+          python -m pip install --group ci --group docs --group test
           python -m pip install .[matplotlib,phonopy-reader,brille]
       - name: Run Sphinx doctests
         working-directory: ./doc
