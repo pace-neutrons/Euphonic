@@ -67,6 +67,10 @@
 
       fix
 
+- Maintenance
+
+  - Extend use of Python 3.10 ``match``\ es over ``if`` where relevant.
+
 `v1.6.2 <https://github.com/pace-neutrons/Euphonic/compare/v1.6.1...v1.6.2>`_
 -----------------------------------------------------------------------------
 
@@ -77,7 +81,7 @@ a bugfix which might affect users.
 
 - Requirements
 
-  - Migrate dev dependencies from "optional dependencies" to `dependency groups <https://packaging.python.org/en/latest/specifications/dependency-groups/>`__. 
+  - Migrate dev dependencies from "optional dependencies" to `dependency groups <https://packaging.python.org/en/latest/specifications/dependency-groups/>`__.
     This decouples them from the actual package and changes their installation process
     from e.g. `pip install .[test]` to `pip install --group test`.
 
