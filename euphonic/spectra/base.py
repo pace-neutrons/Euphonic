@@ -624,11 +624,15 @@ class Spectrum1D(Spectrum):
                 for x0, x1 in ranges]
 
     def __copy__(self) -> Self:
-        """Get an independent copy of spectrum"""
-        return type(self)(np.copy(self.x_data),
-                          np.copy(self.y_data),
+        """Get a shallow copy of spectrum
+
+        Note that this is a a 'shallow' copy with the same underlying data:
+        if you intend to mutate them, deepcopy is a better choice.
+        """
+        return type(self)(self.x_data,
+                          self.y_data,
                           x_tick_labels=copy.copy(self.x_tick_labels),
-                          metadata=copy.deepcopy(self.metadata))
+                          metadata=copy.copy(self.metadata))
 
     def __deepcopy__(self, memo: dict) -> Self:
         """Get a completely independent copy of spectrum"""
@@ -1095,15 +1099,19 @@ class Spectrum2D(Spectrum):
                           copy.copy(spectrum.metadata))
 
     def __copy__(self) -> Self:
-        """Get an independent copy of spectrum"""
-        return type(self)(np.copy(self.x_data),
-                          np.copy(self.y_data),
-                          np.copy(self.z_data),
+        """Get a shallow copy of spectrum
+
+        Note that this is a a 'shallow' copy with the same underlying data:
+        if you intend to mutate them, deepcopy is a better choice.
+        """
+        return type(self)(self.x_data,
+                          self.y_data,
+                          self.z_data,
                           copy.copy(self.x_tick_labels),
-                          copy.deepcopy(self.metadata))
+                          copy.copy(self.metadata))
 
     def __deepcopy__(self, memo: dict) -> Self:
-        """Get an independent copy of spectrum"""
+        """Get an fully-independent copy of spectrum"""
         return type(self)(np.copy(self.x_data),
                           np.copy(self.y_data),
                           np.copy(self.z_data),
