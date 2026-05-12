@@ -48,6 +48,11 @@
   - ``validate._check_constructor_inputs`` reworked to use a sequence
     of ``validate.InputCheck``  ``NamedTuple`` classes as arguments.
 
+  - The ``.copy()`` method has been removed from Spectrum classes; use
+    ``copy.copy()`` or ``copy.deepcopy()`` from the standard library instead.
+    Note that ``copy.deepcopy()`` is closer to the legacy behaviour and carries
+    much less risk of unintended side-effects.
+
 - Features
 
   - Spectrum1DCollection and Spectrum2DCollection can be indexed with
