@@ -529,9 +529,9 @@ class TestSpectrum2DMethods:
             check_spectrum2d(spec, spec * 2.)
 
     def test_copy(self):
-        spec = get_spectrum2d('example_spectrum2d.json')
-
+        spec = get_spectrum2d('quartz_fuzzy_map_1.json')
         spec_copy = copy.copy(spec)
+
         # Copy should be same
         check_spectrum2d(spec, spec_copy)
 
@@ -543,6 +543,15 @@ class TestSpectrum2DMethods:
 
             spec_copy = copy.copy(spec)
 
+        spec_copy = copy.copy(spec)
+        spec_copy.x_tick_labels[1] = (1, 'different')
+        check_spectrum2d(spec, spec_copy)
+
+        spec_copy = copy.copy(spec)
+        spec_copy.metadata['common'] = \
+            spec_copy.metadata['common'].upper()
+        check_spectrum2d(spec, spec_copy)
+
         # But not if attr is replaced entirely
         for attr in '_x_data', '_y_data', '_z_data':
             setattr(spec_copy, attr, getattr(spec, attr) * 2)
@@ -552,20 +561,17 @@ class TestSpectrum2DMethods:
 
             spec_copy = copy.copy(spec)
 
+        spec_copy.x_tick_labels = [(1, 'different')]
+        with pytest.raises(AssertionError):
+            check_spectrum2d(spec, spec_copy)
 
-        # spec_copy = copy.deepcopy(spec)
-        # spec_copy.x_tick_labels = [(1, 'different')]
-        # with pytest.raises(AssertionError):
-        #     check_spectrum2d(spec, spec_copy)
-
-        # spec_copy = copy.deepcopy(spec)
-        # spec_copy.metadata['description'] = \
-        #     spec_copy.metadata['description'].upper()
-        # with pytest.raises(AssertionError):
-        #     check_spectrum2d(spec, spec_copy)
+        spec_copy = copy.copy(spec)
+        spec_copy.metadata = {'new': 'metadata'}
+        with pytest.raises(AssertionError):
+            check_spectrum2d(spec, spec_copy)
 
     def test_deepcopy(self):
-        spec = get_spectrum2d('example_spectrum2d.json')
+        spec = get_spectrum2d('quartz_fuzzy_map_1.json')
 
         spec_copy = copy.deepcopy(spec)
         # Copy should be same
@@ -581,13 +587,13 @@ class TestSpectrum2DMethods:
             spec_copy = copy.deepcopy(spec)
 
         spec_copy = copy.deepcopy(spec)
-        spec_copy.x_tick_labels = [(1, 'different')]
+        spec_copy.x_tick_labels[1] = (1, 'different')
         with pytest.raises(AssertionError):
             check_spectrum2d(spec, spec_copy)
 
         spec_copy = copy.deepcopy(spec)
-        spec_copy.metadata['description'] = \
-            spec_copy.metadata['description'].upper()
+        spec_copy.metadata['common'] = \
+            spec_copy.metadata['common'].upper()
         with pytest.raises(AssertionError):
             check_spectrum2d(spec, spec_copy)
 
