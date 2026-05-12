@@ -266,15 +266,12 @@ class SpectrumCollectionMixin(ABC, Generic[Spec]):
         return self._combine_metadata([metadata_lines[i] for i in item])
 
     def __copy__(self) -> Self:
-        return type(self).from_spectra(list(self), unsafe=True)
+        # Borrow implementation from child tyoe: the data fields are the same
+        return self._item_type.__copy__(self)
 
     def __deepcopy__(self, memo: dict) -> Self:
         return type(self).from_spectra([copy.deepcopy(spectrum, memo)
                                         for spectrum in self], unsafe=True)
-
-    def copy(self) -> Self:
-        """Get an independent copy of spectrum"""
-        return self.__copy__()
 
     def __add__(self, other: Self) -> Self:
         """
@@ -822,7 +819,7 @@ class Spectrum1DCollection(SpectrumCollectionMixin[Spectrum1D],
                     yi, x_centres, x_width_calc, shape=shape,
                     method=method, width_convention=width_convention)
 
-            new_spectrum = self.copy()
+            new_spectrum = copy.deepcopy(self)
             new_spectrum.y_data = ureg.Quantity(
                 y_broadened, units=self.y_data_unit)
             return new_spectrum

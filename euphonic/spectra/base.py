@@ -108,10 +108,6 @@ class Spectrum(ABC):
     def __deepcopy__(self, memo: dict) -> Self:
         """Get a completely independent copy of spectrum."""
 
-    def copy(self) -> Self:
-        """Get an independent copy of spectrum."""
-        return self.__copy__()
-
     @property
     def x_tick_labels(self) -> XTickLabels:
         """x-axis tick labels (e.g. high-symmetry point locations)"""
@@ -1393,7 +1389,7 @@ def apply_kinematic_constraints(spectrum: Spectrum2D,
                          (spectrum.get_bin_edges(bin_ax='x')[:-1, np.newaxis]
                           > q_bounds[-1][np.newaxis, :]))
 
-    new_spectrum = spectrum.copy()
+    new_spectrum = copy.deepcopy(spectrum)
     new_spectrum._z_data[mask] = float('nan')
 
     return new_spectrum
