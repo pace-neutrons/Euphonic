@@ -7,7 +7,9 @@ import pytest
 from euphonic.data.isotopes import (
     AtomTypeDictData,
     AtomTypeShallowDictData,
+    IsotopeData,
     LegacyJsonData,
+    Structure,
 )
 from euphonic.ureg import Quantity
 
@@ -122,3 +124,21 @@ def test_legacy_json_data(structure, bad_structure) -> None:
 
     with pytest.raises(KeyError):
         isotope_data.get_array(bad_structure, 'coherent_scattering_length')
+
+
+def test_protocol_get_value() -> None:
+    """get_value implemented on protocol but not used in dict-based classes"""
+    dummy = 'dummy'
+
+    class TestIsotopeData(IsotopeData):
+        def get_item(self, symbol: str, mass: float) -> dict[str, Quantity]:
+            assert symbol == dummy
+
+            return {'key1': Quantity(1.0, 'barn'), 'key2': Quantity(2.0, 'kg')}
+
+        def get_array(self, structure: Structure, key: str) -> Quantity:
+            raise NotImplementedError
+
+    isotope_data = TestIsotopeData()
+
+    assert isotope_data.get_value(dummy, 0.0, 'key2') == Quantity(2.0, 'kg')
