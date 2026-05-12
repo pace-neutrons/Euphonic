@@ -1,3 +1,4 @@
+import copy
 import json
 
 import numpy as np
@@ -574,31 +575,56 @@ class TestSpectrum1DMethods:
             check_spectrum1d(spec, spec * 2.)
 
     def test_copy(self):
+        """Check copy.copy() (i.e. spectrum.__copy__()) """
         spec = get_spectrum1d('xsq_spectrum1d.json')
 
-        spec_copy = spec.copy()
+        spec_copy = copy.copy(spec)
         # Copy should be same
         check_spectrum1d(spec, spec_copy)
 
-        # Until data is edited
+        # Even after data is edited
         spec_copy._y_data *= 2
-        with pytest.raises(AssertionError):
-            check_spectrum1d(spec, spec_copy)
+        check_spectrum1d(spec, spec_copy)
 
-        spec_copy = spec.copy()
+        spec_copy = copy.copy(spec)
         spec_copy._x_data *= 2
-        with pytest.raises(AssertionError):
-            check_spectrum1d(spec, spec_copy)
+        check_spectrum1d(spec, spec_copy)
 
-        spec_copy = spec.copy()
-        spec_copy.x_tick_labels = [(1, 'different')]
-        with pytest.raises(AssertionError):
-            check_spectrum1d(spec, spec_copy)
+        spec_copy = copy.copy(spec)
+        spec_copy.x_tick_labels[0] = (1, 'different')
+        check_spectrum1d(spec, spec_copy)
 
-        spec_copy = spec.copy()
+        spec_copy = copy.copy(spec)
         spec_copy.metadata['Test'] = spec_copy.metadata['Test'].upper()
+        check_spectrum1d(spec, spec_copy)
+
+    def test_deepcopy(self):
+        """Check copy.deepcopy() (i.e. spectrum.__deepcopy__())"""
+        spec = get_spectrum1d('xsq_spectrum1d.json')
+
+        spec_deepcopy = copy.deepcopy(spec)
+        # Deepcopy should be same
+        check_spectrum1d(spec, spec_deepcopy)
+
+        # Until data is edited
+        spec_deepcopy._y_data *= 2
         with pytest.raises(AssertionError):
-            check_spectrum1d(spec, spec_copy)
+            check_spectrum1d(spec, spec_deepcopy)
+
+        spec_deepcopy = copy.deepcopy(spec)
+        spec_deepcopy._x_data *= 2
+        with pytest.raises(AssertionError):
+            check_spectrum1d(spec, spec_deepcopy)
+
+        spec_deepcopy = copy.deepcopy(spec)
+        spec_deepcopy.x_tick_labels[0] = (1, 'different')
+        with pytest.raises(AssertionError):
+            check_spectrum1d(spec, spec_deepcopy)
+
+        spec_deepcopy = copy.deepcopy(spec)
+        spec_deepcopy.metadata['Test'] = spec_deepcopy.metadata['Test'].upper()
+        with pytest.raises(AssertionError):
+            check_spectrum1d(spec, spec_deepcopy)
 
 class TestBasePrivateFunctions:
     def test_distribution_1d_error(self):

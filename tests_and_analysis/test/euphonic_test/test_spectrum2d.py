@@ -1,3 +1,4 @@
+import copy
 import json
 
 import numpy as np
@@ -530,7 +531,43 @@ class TestSpectrum2DMethods:
     def test_copy(self):
         spec = get_spectrum2d('example_spectrum2d.json')
 
-        spec_copy = spec.copy()
+        spec_copy = copy.copy(spec)
+        # Copy should be same
+        check_spectrum2d(spec, spec_copy)
+
+        # Even after data is edited in-place
+        for attr in 'x_data', 'y_data', 'z_data':
+            getattr(spec_copy, attr)[:] *= 2
+
+            check_spectrum2d(spec, spec_copy)
+
+            spec_copy = copy.copy(spec)
+
+        # But not if attr is replaced entirely
+        for attr in '_x_data', '_y_data', '_z_data':
+            setattr(spec_copy, attr, getattr(spec, attr) * 2)
+
+            with pytest.raises(AssertionError):
+                check_spectrum2d(spec, spec_copy)
+
+            spec_copy = copy.copy(spec)
+
+
+        # spec_copy = copy.deepcopy(spec)
+        # spec_copy.x_tick_labels = [(1, 'different')]
+        # with pytest.raises(AssertionError):
+        #     check_spectrum2d(spec, spec_copy)
+
+        # spec_copy = copy.deepcopy(spec)
+        # spec_copy.metadata['description'] = \
+        #     spec_copy.metadata['description'].upper()
+        # with pytest.raises(AssertionError):
+        #     check_spectrum2d(spec, spec_copy)
+
+    def test_deepcopy(self):
+        spec = get_spectrum2d('example_spectrum2d.json')
+
+        spec_copy = copy.deepcopy(spec)
         # Copy should be same
         check_spectrum2d(spec, spec_copy)
 
@@ -541,14 +578,14 @@ class TestSpectrum2DMethods:
             with pytest.raises(AssertionError):
                 check_spectrum2d(spec, spec_copy)
 
-            spec_copy = spec.copy()
+            spec_copy = copy.deepcopy(spec)
 
-        spec_copy = spec.copy()
+        spec_copy = copy.deepcopy(spec)
         spec_copy.x_tick_labels = [(1, 'different')]
         with pytest.raises(AssertionError):
             check_spectrum2d(spec, spec_copy)
 
-        spec_copy = spec.copy()
+        spec_copy = copy.deepcopy(spec)
         spec_copy.metadata['description'] = \
             spec_copy.metadata['description'].upper()
         with pytest.raises(AssertionError):
