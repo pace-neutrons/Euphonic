@@ -636,8 +636,8 @@ class Spectrum1D(Spectrum):
 
     def __deepcopy__(self, memo: dict) -> Self:
         """Get a completely independent copy of spectrum"""
-        return type(self)(np.copy(self.x_data),
-                          np.copy(self.y_data),
+        return type(self)(self.x_data,
+                          self.y_data,
                           x_tick_labels=copy.deepcopy(
                               self.x_tick_labels, memo),
                           metadata=copy.deepcopy(self.metadata, memo))
@@ -1022,8 +1022,8 @@ class Spectrum2D(Spectrum):
                 width_convention=width_convention)
 
             spectrum = Spectrum2D(
-                np.copy(self.x_data),
-                np.copy(self.y_data),
+                self.x_data,
+                self.y_data,
                 ureg.Quantity(z_broadened, units=self.z_data_unit),
                 copy.copy(self.x_tick_labels),
                 copy.deepcopy(self.metadata),
@@ -1092,11 +1092,11 @@ class Spectrum2D(Spectrum):
         if axis == 'x':
             z_broadened = z_broadened.T
 
-        return Spectrum2D(np.copy(spectrum.x_data),
-                          np.copy(spectrum.y_data),
+        return Spectrum2D(spectrum.x_data,
+                          spectrum.y_data,
                           z_broadened,
-                          copy.copy(spectrum.x_tick_labels),
-                          copy.copy(spectrum.metadata))
+                          copy.deepcopy(spectrum.x_tick_labels),
+                          copy.deepcopy(spectrum.metadata))
 
     def __copy__(self) -> Self:
         """Get a shallow copy of spectrum
@@ -1116,9 +1116,9 @@ class Spectrum2D(Spectrum):
 
     def __deepcopy__(self, memo: dict) -> Self:
         """Get an fully-independent copy of spectrum"""
-        return type(self)(np.copy(self.x_data),
-                          np.copy(self.y_data),
-                          np.copy(self.z_data),
+        return type(self)(self.x_data,
+                          self.y_data,
+                          self.z_data,
                           copy.deepcopy(self.x_tick_labels, memo),
                           copy.deepcopy(self.metadata, memo))
 
