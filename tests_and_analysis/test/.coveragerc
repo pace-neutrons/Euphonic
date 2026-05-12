@@ -3,6 +3,7 @@ branch = True
 source = euphonic
 concurrency = multiprocessing
 parallel = true
+relative_files = true
 
 [report]
 exclude_lines =
