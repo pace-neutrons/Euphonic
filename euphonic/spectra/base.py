@@ -1115,7 +1115,7 @@ class Spectrum2D(Spectrum):
         return new
 
     def __deepcopy__(self, memo: dict) -> Self:
-        """Get an fully-independent copy of spectrum"""
+        """Get a completely independent copy of spectrum"""
         return type(self)(self.x_data,
                           self.y_data,
                           self.z_data,

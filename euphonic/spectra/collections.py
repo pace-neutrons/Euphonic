@@ -266,7 +266,7 @@ class SpectrumCollectionMixin(ABC, Generic[Spec]):
         return self._combine_metadata([metadata_lines[i] for i in item])
 
     def __copy__(self) -> Self:
-        # Borrow implementation from child tyoe: the data fields are the same
+        # Borrow implementation from child type: the data fields are the same
         return self._item_type.__copy__(self)
 
     def __deepcopy__(self, memo: dict) -> Self:
