@@ -734,9 +734,9 @@ def _validate_weighting(weighting: str | None):
         None, 'coherent', 'incoherent', 'coherent-plus-incoherent',
     )
     if weighting not in weighting_opts:
-        msg = (
-            f'Invalid value for weighting, got {weighting}, should be one '
-            f'of {weighting_opts}'
+        msg = format_error(
+            f'Invalid value for weighting, got {weighting!r}.',
+            fix=f'Use one of {weighting_opts!r}'
         )
         raise ValueError(msg)
 
