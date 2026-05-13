@@ -62,12 +62,16 @@ class ArrayFromValuesMixin:
         # Quantity.from_list chokes on mixed float/complex items;
         # instead create bare numpy array of appropriate type then add units.
 
-        is_complex = any(isinstance(item.magnitude, complex) for item in items)
+        dtype = (
+            complex 
+            if any(isinstance(item.magnitude, complex) for item in items) 
+            else float
+        )
         units = items[0].units
 
         magnitude = np.fromiter(
             (item.to(units).magnitude for item in items),
-            dtype=(complex if is_complex else float),
+            dtype=dtype,
         )
         return Quantity(magnitude, units)
 
@@ -122,7 +126,7 @@ class AtomTypeShallowDictData(ArrayFromValuesMixin, IsotopeData):
 
           { atom_type_1: value_1, atom_type_2: value_2, ...}
 
-        As this data only contains a single property, the usual *key* will be
+        As these data only contains a single property, the usual *key* will be
         ignored. This is intended for convenient user input of weights at the
         time they are used, and not for development of a longer-term reusable
         dataset.
