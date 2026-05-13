@@ -268,19 +268,19 @@ def _get_all_dicts_from_json(
         return dct
 
     if filename := _reference_data_files.get(collection):
-
-        with open(files(euphonic.data) / filename) as fd:
-            file_data = json.load(fd, object_hook=custom_decode)
-
-    elif (filename := Path(collection)).is_file():
-        with open(filename) as fd:
-            file_data = json.load(fd, object_hook=custom_decode)
+        file_path = files(euphonic.data) / filename
     else:
+        file_path = Path(collection)
+
+    if not file_path.is_file():
         msg = format_error(
             f'No data files known for collection "{collection}".',
             fix=f'Available collections: {comma_join(_reference_data_files)}.',
         )
         raise ValueError(msg)
+
+    with file_path.open() as fd:
+        file_data = json.load(fd, object_hook=custom_decode)
 
     if 'physical_property' not in file_data:
         msg = format_error(
