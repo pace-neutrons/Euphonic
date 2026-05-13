@@ -2,7 +2,7 @@
 
 import math
 from pathlib import Path
-from typing import Any
+from typing import Any, TypeAlias
 
 import numpy as np
 from typing_extensions import Self
@@ -32,6 +32,9 @@ from euphonic.util import (
 from euphonic.validate import InputCheck, _check_constructor_inputs
 
 EIG_CHECK = InputCheck(..., (np.ndarray,), {(-1,)}, 'eigenvectors')
+
+IsotopeDataset: TypeAlias = IsotopeData | str | dict[str, Quantity]
+
 
 class QpointPhononModes(QpointFrequencies):
     """
@@ -185,8 +188,7 @@ class QpointPhononModes(QpointFrequencies):
 
     def calculate_structure_factor(
         self,
-        scattering_lengths: (
-            IsotopeData | str | dict[str, Quantity]) = 'Sears1992',
+        scattering_lengths: IsotopeDataset = 'Sears1992',
         dw: DebyeWaller | None = None,
         ) -> StructureFactor:
         """
@@ -449,7 +451,7 @@ class QpointPhononModes(QpointFrequencies):
         adaptive_method: AdaptiveMethod = 'reference',
         adaptive_error: float = 0.01,
         weighting: str | None = None,
-        cross_sections: IsotopeData | str | dict[str, Quantity] = 'BlueBook',
+        cross_sections: IsotopeDataset = 'BlueBook',
     ) -> Spectrum1DCollection:
         """
         Calculates partial density of states for each atom in the unit
@@ -707,9 +709,7 @@ class QpointPhononModes(QpointFrequencies):
         return cls.from_dict(data)
 
 
-def _get_isotope_data(
-        scattering_lengths: IsotopeData | str | dict[str, Quantity],
-) -> IsotopeData:
+def _get_isotope_data(scattering_lengths: IsotopeDataset) -> IsotopeData:
     """Get dataset with coherent_scattering_length for coherent S(q, ω)"""
     match scattering_lengths:
         case str():
@@ -743,7 +743,7 @@ def _validate_weighting(weighting: str | None):
 def _get_cross_sections(
     crystal: Crystal,
     weighting: str | None,
-    cross_sections: IsotopeData | str | dict[str, Quantity],
+    cross_sections: IsotopeDataset,
 ) -> Quantity | None:
     """Get weighting dataset for PDOS"""
 

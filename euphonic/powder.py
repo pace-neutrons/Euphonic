@@ -14,7 +14,7 @@ from euphonic import (
     Spectrum1D,
     Spectrum1DCollection,
 )
-from euphonic.data.isotopes import IsotopeData
+from euphonic.qpoint_phonon_modes import IsotopeDataset
 from euphonic.util import (
     RNG,
     comma_join,
@@ -133,7 +133,7 @@ def sample_sphere_pdos(
     rng: RNG = rng,
     energy_bins: Quantity | None = None,
     weighting: str | None = None,
-    cross_sections: IsotopeData | str | dict[str, Quantity] = 'BlueBook',
+    cross_sections: IsotopeDataset = 'BlueBook',
     **calc_modes_args,
 ) -> Spectrum1DCollection:
     """
@@ -254,7 +254,7 @@ def sample_sphere_structure_factor(
     jitter: bool = False,
     rng: RNG = rng,
     energy_bins: Quantity = None,
-    scattering_lengths: IsotopeData | str | dict[str, Quantity] = 'Sears1992',
+    scattering_lengths: IsotopeDataset = 'Sears1992',
     **calc_modes_args,
     ) -> Spectrum1D:
     """Sample structure factor, averaging over a sphere of constant |q|
