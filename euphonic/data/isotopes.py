@@ -63,8 +63,8 @@ class ArrayFromValuesMixin:
         # instead create bare numpy array of appropriate type then add units.
 
         dtype = (
-            complex 
-            if any(isinstance(item.magnitude, complex) for item in items) 
+            complex
+            if any(isinstance(item.magnitude, complex) for item in items)
             else float
         )
         units = items[0].units
