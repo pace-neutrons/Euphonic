@@ -77,6 +77,7 @@ class SpectrumCollectionMixin(ABC, Generic[Spec]):
     _bin_axes = ('x',)
     _spectrum_axis = 'y'
     _item_type: type[Spec]
+    metadata: Metadata
 
     # Define some private methods which wrap this information into useful forms
     @property
