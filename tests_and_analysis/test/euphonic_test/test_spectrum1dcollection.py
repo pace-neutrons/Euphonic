@@ -327,7 +327,7 @@ class TestSpectrum1DCollectionCreation:
 
     @pytest.mark.parametrize(
         'input_spectra, expected_error',
-        [
+        [([], ValueError),
          ([get_spectrum1dcollection('gan_bands.json')], TypeError),
          ([f'gan_bands_index_{i}.json' for i in range(2, 5)], TypeError)])
     def test_faulty_create_from_sequence(self, input_spectra, expected_error):
@@ -804,7 +804,6 @@ class TestSpectrum1DCollectionMethods:
         spec1 = get_spectrum1dcollection('gan_bands.json')
         spec2.metadata = {'different': 'metadata'}
         assert spec1 != spec2
-            check_spectrum1dcollection(spec, spec_copy)
 
 
 class TestEmptyCollection:

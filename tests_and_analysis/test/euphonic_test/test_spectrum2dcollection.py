@@ -314,7 +314,7 @@ class TestSpectrum2DCollectionFunctionality:
 class TestEmptyCollection:
     @pytest.fixture
     def empty_spectrum(self) -> Spectrum2DCollection:
-        return Spectrum2DCollection.from_spectra(
+        return Spectrum2DCollection._from_spectra(
             [],
             _x_bins=ureg.Quantity(np.empty((10,))),
             _y_bins=ureg.Quantity(np.empty((10,))),

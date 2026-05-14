@@ -77,6 +77,7 @@ class SpectrumCollectionMixin(ABC, Generic[Spec]):
     _bin_axes = ('x',)
     _spectrum_axis = 'y'
     _item_type: type[Spec]
+    metadata: Metadata
 
     # Define some private methods which wrap this information into useful forms
     @property
@@ -182,6 +183,14 @@ class SpectrumCollectionMixin(ABC, Generic[Spec]):
         by another Spectrum collection
 
         """
+        if len(spectra) < 1:
+            msg = format_error(
+                'No spectra provided.',
+                fix=(f'{cls.__name__}.from_spectra '
+                     'requires at least one spectrum.'),
+            )
+            raise ValueError(msg)
+
         return cls._from_spectra(spectra, unsafe=unsafe)
 
     @classmethod
@@ -404,23 +413,20 @@ class SpectrumCollectionMixin(ABC, Generic[Spec]):
         key, which is a list of metadata dicts for each element in
         all_metadata
         """
+        if not all_metadata:  # Empty metadata
+            return {}
+
         # This is for combining multiple separate spectrum metadata,
         # they shouldn't have line_data
         for metadata in all_metadata:
             assert 'line_data' not in metadata
 
         # Combine key-value pairs common to *all* metadata lines into new dict
-        try:
-            common_metadata: Metadata = dict(
-                reduce(
-                    set.intersection,
-                    (set(metadata.items()) for metadata in all_metadata),
-                ))
-        except TypeError as err:
-            if 'empty iterable' in err.args[0]:
-                common_metadata = {}
-            else:
-                raise
+        common_metadata: Metadata = dict(
+            reduce(
+                set.intersection,
+                (set(metadata.items()) for metadata in all_metadata),
+            ))
 
         # Put all other per-spectrum metadata in line_data
         is_common = partial(contains, common_metadata)
