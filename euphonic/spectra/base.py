@@ -11,6 +11,7 @@ from pathlib import Path
 from types import NoneType
 from typing import (
     Any,
+    ClassVar,
     Literal,
     overload,
 )
@@ -100,13 +101,43 @@ class Spectrum(ABC):
         new_spec *= other
         return new_spec
 
+    @property
     @abstractmethod
+    def _core_attrs(self) -> set[str]:
+        """Attribute names of underlying data; used for __copy__ and __eq__"""
+
     def __copy__(self) -> Self:
-        """Get an independent copy of spectrum."""
+        """Get a shallow copy of spectrum
+
+        Note that this is a a 'shallow' copy with the same underlying data:
+        if you intend to mutate them, deepcopy is a better choice.
+        """
+        new = self.__new__(type(self))
+        for attr in self._core_attrs:
+            setattr(new, attr, getattr(self, attr))
+
+        return new
 
     @abstractmethod
     def __deepcopy__(self, memo: dict) -> Self:
         """Get a completely independent copy of spectrum."""
+
+    @staticmethod
+    def _eq(own_value: Any, other_value: Any) -> bool:
+        """Equality check for individual attribute"""
+        if isinstance(own_value, np.ndarray):
+            return np.array_equal(own_value, other_value)
+        return own_value == other_value
+
+    def __eq__(self, other: Any) -> bool:
+        if not isinstance(other, type(self)):
+            return False
+        if self._core_attrs != other._core_attrs:
+            return False
+        return all(
+            self._eq(getattr(self, attr), getattr(other, attr))
+            for attr in self._core_attrs
+        )
 
     @property
     def x_tick_labels(self) -> XTickLabels:
@@ -554,6 +585,11 @@ class Spectrum1D(Spectrum):
 
           - 'label' : str. This is used label lines on a 1D plot
     """
+    _core_attrs: ClassVar[set[str]] = {
+        '_x_data', '_internal_x_data_unit', 'x_data_unit',
+        '_y_data', '_internal_y_data_unit', 'y_data_unit',
+        '_x_tick_labels', 'metadata',
+    }
 
     def __init__(self, x_data: Quantity, y_data: Quantity,
                  x_tick_labels: XTickLabels | None = None,
@@ -618,21 +654,6 @@ class Spectrum1D(Spectrum):
                                                            x0, x1),
                            metadata=self.metadata)
                 for x0, x1 in ranges]
-
-    def __copy__(self) -> Self:
-        """Get a shallow copy of spectrum
-
-        Note that this is a a 'shallow' copy with the same underlying data:
-        if you intend to mutate them, deepcopy is a better choice.
-        """
-        new = self.__new__(type(self))
-        for attr in ('_x_data', '_internal_x_data_unit', 'x_data_unit',
-                     '_y_data', '_internal_y_data_unit', 'y_data_unit',
-                     '_x_tick_labels', 'metadata',
-                     ):
-            setattr(new, attr, getattr(self, attr))
-
-        return new
 
     def __deepcopy__(self, memo: dict) -> Self:
         """Get a completely independent copy of spectrum"""
@@ -856,6 +877,12 @@ class Spectrum2D(Spectrum):
         spectrum. Keys should be strings and values should be strings
         or integers
     """
+    _core_attrs: ClassVar[set[str]] = {
+        '_x_data', '_internal_x_data_unit', 'x_data_unit',
+        '_y_data', '_internal_y_data_unit', 'y_data_unit',
+        '_z_data', '_internal_z_data_unit', 'z_data_unit',
+        '_x_tick_labels', 'metadata',
+    }
 
     def __init__(self, x_data: Quantity, y_data: Quantity,
                  z_data: Quantity,
@@ -1097,22 +1124,6 @@ class Spectrum2D(Spectrum):
                           z_broadened,
                           copy.deepcopy(spectrum.x_tick_labels),
                           copy.deepcopy(spectrum.metadata))
-
-    def __copy__(self) -> Self:
-        """Get a shallow copy of spectrum
-
-        Note that this is a a 'shallow' copy with the same underlying data:
-        if you intend to mutate them, deepcopy is a better choice.
-        """
-        new = self.__new__(type(self))
-        for attr in ('_x_data', '_internal_x_data_unit', 'x_data_unit',
-                     '_y_data', '_internal_y_data_unit', 'y_data_unit',
-                     '_z_data', '_internal_z_data_unit', 'z_data_unit',
-                     '_x_tick_labels', 'metadata',
-                     ):
-            setattr(new, attr, getattr(self, attr))
-
-        return new
 
     def __deepcopy__(self, memo: dict) -> Self:
         """Get a completely independent copy of spectrum"""

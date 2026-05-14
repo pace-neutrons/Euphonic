@@ -77,9 +77,17 @@ class SpectrumCollectionMixin(ABC, Generic[Spec]):
     _bin_axes = ('x',)
     _spectrum_axis = 'y'
     _item_type: type[Spec]
-    metadata: Metadata
 
     # Define some private methods which wrap this information into useful forms
+    @property
+    def _core_attrs(self):
+        """Additional items are implemented as an extra axis on spectrum array:
+
+        this means current implementations have the same _core_attrs as the
+        spectrum type they contain.
+        """
+        return self._item_type._core_attrs
+
     @classmethod
     def _spectrum_data_name(cls) -> str:
         return f'{cls._spectrum_axis}_data'
@@ -264,10 +272,6 @@ class SpectrumCollectionMixin(ABC, Generic[Spec]):
             return self._combine_metadata(metadata_lines[item])
         # Item must be some kind of integer sequence
         return self._combine_metadata([metadata_lines[i] for i in item])
-
-    def __copy__(self) -> Self:
-        # Borrow implementation from child type: the data fields are the same
-        return self._item_type.__copy__(self)
 
     def __deepcopy__(self, memo: dict) -> Self:
         return type(self).from_spectra([copy.deepcopy(spectrum, memo)
