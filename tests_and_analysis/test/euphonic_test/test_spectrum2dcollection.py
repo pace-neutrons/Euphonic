@@ -310,3 +310,75 @@ class TestSpectrum2DCollectionFunctionality:
         spec1 = deepcopy(quartz_fuzzy_collection)
         spec2.metadata = {'different': 'metadata'}
         assert spec1 != spec2
+
+class TestEmptyCollection:
+    @pytest.fixture
+    def empty_spectrum(self) -> Spectrum2DCollection:
+        return Spectrum2DCollection._from_spectra(
+            [],
+            _x_bins=ureg.Quantity(np.empty((10,))),
+            _y_bins=ureg.Quantity(np.empty((10,))),
+        )
+
+    @pytest.fixture
+    def real_spectrum(self) -> Spectrum2DCollection:
+        return get_spectrum2dcollection('quartz_fuzzy_map.json')
+
+    @pytest.fixture
+    def empty_sized(self, real_spectrum) -> Spectrum2DCollection:
+        return real_spectrum[()]
+
+    def test_create_empty_init(self):
+        x_data = ureg.Quantity(np.empty((10,)))
+        y_data = ureg.Quantity(np.empty((15,)))
+        z_data = ureg.Quantity(np.empty((0, 10, 15)))
+        spec = Spectrum2DCollection(x_data, y_data, z_data, [], {})
+        assert len(spec) == 0
+
+    def test_create_empty_from_spectra(self):
+        fake_bins = ureg.Quantity(np.linspace(0, 10, 10))
+        spec = Spectrum2DCollection._from_spectra(
+            [], _x_bins=fake_bins, _y_bins=fake_bins,
+        )
+        assert len(spec) == 0
+
+    def test_create_from_empty_select(self, real_spectrum):
+        spec = real_spectrum.select(species='felis')
+        assert not spec
+
+    def test_create_from_empty_slice(self, real_spectrum):
+        empty = real_spectrum[()]
+        assert len(empty) == 0
+
+    def test_add_empty(self, empty_spectrum):
+        assert len(empty_spectrum + empty_spectrum) == 0
+
+    def test_add_non_empty(self, empty_sized, real_spectrum):
+        spec = empty_sized + real_spectrum
+        assert len(spec) == len(real_spectrum)
+        assert np.allclose(spec.x_data, real_spectrum.x_data)
+
+    def test_empty_sum(self, empty_spectrum):
+        spec: Spectrum2D = empty_spectrum.sum()
+
+        assert np.allclose(spec.x_data, empty_spectrum.x_data)
+        assert np.allclose(spec.y_data, empty_spectrum.y_data)
+        assert np.allclose(spec.z_data, 0.0)
+
+    def test_empty_bool(self, empty_spectrum, real_spectrum):
+        assert real_spectrum
+        assert not empty_spectrum
+
+    def test_empty_group_by(self, empty_spectrum):
+        grp = empty_spectrum.group_by()
+        assert grp.metadata == empty_spectrum.metadata
+        assert np.allclose(grp.x_data, empty_spectrum.x_data)
+        assert np.allclose(grp.y_data, empty_spectrum.y_data)
+        assert np.allclose(grp.z_data, empty_spectrum.z_data)
+
+    def test_empty_iter_metadata(self, empty_spectrum):
+        assert list(empty_spectrum.iter_metadata()) == []
+
+    def test_empty_select(self, empty_spectrum):
+        spec = empty_spectrum.select(species='felis')
+        assert not spec
