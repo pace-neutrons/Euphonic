@@ -574,6 +574,19 @@ class TestSpectrum1DMethods:
         with pytest.raises(AssertionError):
             check_spectrum1d(spec, spec * 2.)
 
+    def test_compare_equal(self):
+        spec1 = get_spectrum1d('xsq_spectrum1d.json')
+        spec2 = get_spectrum1d('xsq_spectrum1d.json')
+
+        assert spec1 == spec2
+
+        spec1.x_data *= 2
+        assert spec1 != spec2
+
+        spec1 = get_spectrum1d('xsq_spectrum1d.json')
+        spec2.metadata = {'different': 'metadata'}
+        assert spec1 != spec2
+
     def test_copy(self):
         """Check copy.copy() (i.e. spectrum.__copy__()) """
         spec = get_spectrum1d('xsq_spectrum1d.json')
