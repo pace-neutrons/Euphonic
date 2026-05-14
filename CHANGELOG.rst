@@ -55,6 +55,9 @@
 
 - Features
 
+  - Spectrum classes now implement ``__eq__`` and can be compared with
+    ``==``.
+
   - Spectrum1DCollection and Spectrum2DCollection can be indexed with
     slices where the stop value exceeds the collection
     length. (e.g. if a collection of 5 spectra is indexed with [3:10]
