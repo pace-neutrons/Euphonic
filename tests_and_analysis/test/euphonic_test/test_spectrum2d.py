@@ -528,6 +528,19 @@ class TestSpectrum2DMethods:
         with pytest.raises(AssertionError):
             check_spectrum2d(spec, spec * 2.)
 
+    def test_compare_equal(self):
+        spec1 = get_spectrum2d('example_spectrum2d.json')
+        spec2 = get_spectrum2d('example_spectrum2d.json')
+
+        assert spec1 == spec2
+
+        spec1.z_data *= 2
+        assert spec1 != spec2
+
+        spec1 = get_spectrum2d('example_spectrum2d.json')
+        spec2.metadata = {'different': 'metadata'}
+        assert spec1 != spec2
+
     def test_copy(self):
         spec = get_spectrum2d('quartz_fuzzy_map_1.json')
         spec_copy = copy.copy(spec)

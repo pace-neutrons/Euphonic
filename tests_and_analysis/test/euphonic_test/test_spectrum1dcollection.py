@@ -798,3 +798,16 @@ class TestSpectrum1DCollectionMethods:
         spec_deepcopy.metadata['Test'] = spec_deepcopy.metadata['Test'].upper()
         with pytest.raises(AssertionError):
             check_spectrum1dcollection(spec, spec_deepcopy)
+
+    def test_compare_equal(self):
+        spec1 = get_spectrum1dcollection('gan_bands.json')
+        spec2 = get_spectrum1dcollection('gan_bands.json')
+
+        assert spec1 == spec2
+
+        spec1.y_data *= 2
+        assert spec1 != spec2
+
+        spec1 = get_spectrum1dcollection('gan_bands.json')
+        spec2.metadata = {'different': 'metadata'}
+        assert spec1 != spec2
