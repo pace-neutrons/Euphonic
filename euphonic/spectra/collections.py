@@ -1,5 +1,4 @@
 """Spectrum Collection classes"""
-# pylint: disable=no-member
 from abc import ABC, abstractmethod
 import collections
 from collections.abc import Callable, Generator, Sequence
@@ -14,6 +13,7 @@ from typing import (
     Any,
     Generic,
     Literal,
+    TypedDict,
     TypeVar,
     overload,
 )
@@ -77,6 +77,7 @@ class SpectrumCollectionMixin(ABC, Generic[Spec]):
     _bin_axes = ('x',)
     _spectrum_axis = 'y'
     _item_type: type[Spec]
+    metadata: Metadata
 
     # Define some private methods which wrap this information into useful forms
     @property
@@ -130,6 +131,14 @@ class SpectrumCollectionMixin(ABC, Generic[Spec]):
     def _get_item_data_unit(cls, item: Spec) -> str:
         return getattr(item, f'{cls._spectrum_axis}_data_unit')
 
+    ## 3.15+ frozendict
+    class _BinDict(TypedDict):
+        _x_bins: Quantity
+
+    @property
+    @abstractmethod
+    def _bin_data(self) -> _BinDict: ...
+
     def sum(self) -> Spec:
         """
         Sum collection to a single spectrum
@@ -161,9 +170,11 @@ class SpectrumCollectionMixin(ABC, Generic[Spec]):
 
     # Required methods
     @classmethod
-    @abstractmethod
     def from_spectra(
-            cls, spectra: Sequence[Spec], *, unsafe: bool = False,
+            cls,
+            spectra: Sequence[Spec],
+            *,
+            unsafe: bool = False,
     ) -> Self:
         """Construct spectrum collection from a sequence of components
 
@@ -172,6 +183,25 @@ class SpectrumCollectionMixin(ABC, Generic[Spec]):
         by another Spectrum collection
 
         """
+        if len(spectra) < 1:
+            msg = format_error(
+                'No spectra provided.',
+                fix=(f'{cls.__name__}.from_spectra '
+                     'requires at least one spectrum.'),
+            )
+            raise ValueError(msg)
+
+        return cls._from_spectra(spectra, unsafe=unsafe)
+
+    @classmethod
+    @abstractmethod
+    def _from_spectra(
+            cls,
+            spectra: Sequence[Spec],
+            *,
+            _x_bins: Quantity | None = None,
+            unsafe: bool = False,
+    ) -> Self: ...
 
     # Mixin methods
     def __len__(self):
@@ -194,8 +224,7 @@ class SpectrumCollectionMixin(ABC, Generic[Spec]):
         if isinstance(item, Integral):
             spectrum = self._item_type.__new__(self._item_type)
         else:
-            # Pylint miscounts arguments when we call this staticmethod
-            spectrum = self.__new__(type(self))  # pylint: disable=E1120
+            spectrum = self.__new__(type(self))
 
         self._set_item_data(spectrum, item)
 
@@ -274,8 +303,9 @@ class SpectrumCollectionMixin(ABC, Generic[Spec]):
         return self._combine_metadata([metadata_lines[i] for i in item])
 
     def __deepcopy__(self, memo: dict) -> Self:
-        return type(self).from_spectra([copy.deepcopy(spectrum, memo)
-                                        for spectrum in self], unsafe=True)
+        return type(self)._from_spectra([copy.deepcopy(spectrum, memo)
+                                        for spectrum in self],
+                                        unsafe=True, **self._bin_data)
 
     def __add__(self, other: Self) -> Self:
         """
@@ -290,7 +320,7 @@ class SpectrumCollectionMixin(ABC, Generic[Spec]):
         spectra are retained in the top level dictionary, any
         others are put in the individual 'line_data' entries
         """
-        return type(self).from_spectra([*self, *other])
+        return type(self)._from_spectra([*self, *other], **self._bin_data)
 
     def iter_metadata(self) -> Generator[OneLineData, None, None]:
         """Iterate over metadata dicts of individual spectra from collection"""
@@ -372,17 +402,6 @@ class SpectrumCollectionMixin(ABC, Generic[Spec]):
                 zip(select_key_values.keys(), value_combination, strict=True))
             selected_indices.extend(self._select_indices(**selection))
 
-        if not selected_indices:
-            msg = format_error(
-                'Metadata not found.',
-                reason=(
-                    f'No spectra found with matching metadata '
-                    f'for {select_key_values}.'
-                ),
-                fix='Try different selection keys or ensure metadata exist.',
-            )
-            raise ValueError(msg)
-
         return self[selected_indices]
 
     @staticmethod
@@ -394,15 +413,20 @@ class SpectrumCollectionMixin(ABC, Generic[Spec]):
         key, which is a list of metadata dicts for each element in
         all_metadata
         """
+        if not all_metadata:  # Empty metadata
+            return {}
+
         # This is for combining multiple separate spectrum metadata,
         # they shouldn't have line_data
         for metadata in all_metadata:
             assert 'line_data' not in metadata
 
         # Combine key-value pairs common to *all* metadata lines into new dict
-        common_metadata = dict(
-            reduce(set.intersection,
-                   (set(metadata.items()) for metadata in all_metadata)))
+        common_metadata: Metadata = dict(
+            reduce(
+                set.intersection,
+                (set(metadata.items()) for metadata in all_metadata),
+            ))
 
         # Put all other per-spectrum metadata in line_data
         is_common = partial(contains, common_metadata)
@@ -486,8 +510,9 @@ class SpectrumCollectionMixin(ABC, Generic[Spec]):
 
         groups = groupby(get_key_items, enumerate(self.iter_metadata()))
 
-        return self.from_spectra([self[list(indices(group))].sum()
-                                  for group in groups.values()])
+        return self._from_spectra([self[list(indices(group))].sum()
+                                   for group in groups.values()],
+                                  **self._bin_data)
 
     def to_dict(self) -> dict[str, Any]:
         """
@@ -603,7 +628,7 @@ class Spectrum1DCollection(SpectrumCollectionMixin[Spectrum1D],
             X_TICK_CHECK._replace(value=x_tick_labels),
             METADATA_CHECK._replace(value=metadata),
         )
-        ny = len(y_data[0])
+        ny = y_data.shape[1]
         _check_constructor_inputs(
             InputCheck(x_data, (Quantity,), {(ny,), (ny+1,)}, 'x_data'))
 
@@ -626,6 +651,13 @@ class Spectrum1DCollection(SpectrumCollectionMixin[Spectrum1D],
                                                            x0, x1),
                            metadata=self.metadata)
                 for x0, x1 in ranges]
+
+    class _BinDict(TypedDict):
+        _x_bins: Quantity
+
+    @property
+    def _bin_data(self) -> _BinDict:
+        return {'_x_bins': self.x_data}
 
     @staticmethod
     def _from_spectra_data_check(spectrum, x_data, y_data_units, x_tick_labels,
@@ -655,8 +687,12 @@ class Spectrum1DCollection(SpectrumCollectionMixin[Spectrum1D],
             raise ValueError(msg)
 
     @classmethod
-    def from_spectra(
-            cls, spectra: Sequence[Spectrum1D], *, unsafe: bool = False,
+    def _from_spectra(
+            cls,
+            spectra: Sequence[Spectrum1D],
+            *,
+            _x_bins: Quantity | None = None,
+            unsafe: bool = False,
     ) -> Self:
         """Combine Spectrum1D to produce a new collection
 
@@ -665,8 +701,17 @@ class Spectrum1DCollection(SpectrumCollectionMixin[Spectrum1D],
 
         """
         if len(spectra) < 1:
-            msg = 'At least one spectrum is needed for collection'
-            raise IndexError(msg)
+            if _x_bins is None:
+                msg = format_error(
+                    'Inconsistent x_data.',
+                    reason=('Cannot create empty Spectrum1DCollection without '
+                            'providing _x_bins'),
+                    fix='Provide _x_bins.',
+                )
+                raise ValueError(msg)
+
+            y_data = ureg.Quantity(np.empty((0, len(_x_bins))))
+            return cls(_x_bins, y_data, [], {})
 
         cls._item_type_check(spectra[0])
         x_data = spectra[0].x_data
@@ -829,16 +874,20 @@ class Spectrum1DCollection(SpectrumCollectionMixin[Spectrum1D],
             return new_spectrum
 
         if isinstance(x_width, Callable):
-            return type(self).from_spectra([
-                spectrum.broaden(
-                    x_width=x_width,
-                    shape=shape,
-                    method=method,
-                    width_lower_limit=width_lower_limit,
-                    width_convention=width_convention,
-                    width_interpolation_error=width_interpolation_error,
-                )
-                for spectrum in self])
+            return type(self)._from_spectra(
+                [
+                    spectrum.broaden(
+                        x_width=x_width,
+                        shape=shape,
+                        method=method,
+                        width_lower_limit=width_lower_limit,
+                        width_convention=width_convention,
+                        width_interpolation_error=width_interpolation_error,
+                    )
+                    for spectrum in self
+                ],
+                **self._bin_data,
+            )
 
         msg = format_error(
             f'Invalid type ({type(x_width).__name__}).',
@@ -954,6 +1003,14 @@ class Spectrum2DCollection(SpectrumCollectionMixin[Spectrum2D],
                            metadata=self.metadata)
                 for x0, x1 in ranges]
 
+    class _BinDict(TypedDict):
+        _x_bins: Quantity
+        _y_bins: Quantity
+
+    @property
+    def _bin_data(self) -> _BinDict:
+        return {'_x_bins': self.x_data, '_y_bins': self.y_data}
+
     @property
     def z_data(self) -> Quantity:
         """intensity data"""
@@ -1019,8 +1076,13 @@ class Spectrum2DCollection(SpectrumCollectionMixin[Spectrum2D],
                 raise ValueError(msg)
 
     @classmethod
-    def from_spectra(
-            cls, spectra: Sequence[Spectrum2D], *, unsafe: bool = False,
+    def _from_spectra(
+            cls,
+            spectra: Sequence[Spectrum2D],
+            *,
+            unsafe: bool = False,
+            _x_bins: Quantity | None = None,
+            _y_bins: Quantity | None = None,
     ) -> Self:
         """Combine Spectrum2D to produce a new collection
 
@@ -1030,11 +1092,26 @@ class Spectrum2DCollection(SpectrumCollectionMixin[Spectrum2D],
         """
 
         if len(spectra) < 1:
-            msg = format_error(
-                'No spectra provided.',
-                fix='Must have at least one spectrum for collection.',
-            )
-            raise IndexError(msg)
+            if _x_bins is None:
+                msg = format_error(
+                    'Inconsistent x_data.',
+                    reason=('Cannot create empty Spectrum2DCollection without'
+                            'providing _x_bins.'),
+                    fix='Provide _x_bins.',
+                )
+                raise ValueError(msg)
+
+            if _y_bins is None:
+                msg = format_error(
+                    'Inconsistent y_data.',
+                    reason=('Cannot create empty Spectrum2DCollection without'
+                            'providing _y_bins.'),
+                    fix='Provide _y_bins.',
+                )
+                raise ValueError(msg)
+
+            z_data = ureg.Quantity(np.empty((0, len(_x_bins), len(_y_bins))))
+            return cls(_x_bins, _y_bins, z_data, [], {})
 
         cls._item_type_check(spectra[0])
         bins_data = {
