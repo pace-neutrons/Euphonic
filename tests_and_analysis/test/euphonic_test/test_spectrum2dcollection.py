@@ -2,6 +2,7 @@
 
 # Stop the linter from complaining when pytest fixtures are used idiomatically
 # pylint: disable=redefined-outer-name
+from copy import deepcopy
 
 import numpy as np
 import pytest
@@ -296,3 +297,16 @@ class TestSpectrum2DCollectionFunctionality:
         selection = quartz_fuzzy_collection.select(direction=2, common='yes')
         ref_item_2 = get_spectrum2d('quartz_fuzzy_map_2.json')
         check_spectrum2d(selection.sum(), ref_item_2)
+
+    def test_compare_equal(self, quartz_fuzzy_collection):
+        spec1 = deepcopy(quartz_fuzzy_collection)
+        spec2 = deepcopy(quartz_fuzzy_collection)
+
+        assert spec1 == spec2
+
+        spec1.z_data *= 2
+        assert spec1 != spec2
+
+        spec1 = deepcopy(quartz_fuzzy_collection)
+        spec2.metadata = {'different': 'metadata'}
+        assert spec1 != spec2
