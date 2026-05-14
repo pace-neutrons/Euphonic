@@ -11,6 +11,7 @@ from pathlib import Path
 from types import NoneType
 from typing import (
     Any,
+    ClassVar,
     Literal,
     overload,
 )
@@ -96,21 +97,47 @@ class Spectrum(ABC):
 
     def __mul__(self, other: Real) -> Self:
         """Get a new spectrum with scaled data"""
-        new_spec = self.copy()
+        new_spec = copy.deepcopy(self)
         new_spec *= other
         return new_spec
 
+    @property
     @abstractmethod
+    def _core_attrs(self) -> set[str]:
+        """Attribute names of underlying data; used for __copy__ and __eq__"""
+
     def __copy__(self) -> Self:
-        """Get an independent copy of spectrum."""
+        """Get a shallow copy of spectrum
+
+        Note that this is a a 'shallow' copy with the same underlying data:
+        if you intend to mutate them, deepcopy is a better choice.
+        """
+        new = self.__new__(type(self))
+        for attr in self._core_attrs:
+            setattr(new, attr, getattr(self, attr))
+
+        return new
 
     @abstractmethod
     def __deepcopy__(self, memo: dict) -> Self:
         """Get a completely independent copy of spectrum."""
 
-    def copy(self) -> Self:
-        """Get an independent copy of spectrum."""
-        return self.__copy__()
+    @staticmethod
+    def _eq(own_value: Any, other_value: Any) -> bool:
+        """Equality check for individual attribute"""
+        if isinstance(own_value, np.ndarray):
+            return np.array_equal(own_value, other_value)
+        return own_value == other_value
+
+    def __eq__(self, other: Any) -> bool:
+        if not isinstance(other, type(self)):
+            return False
+        if self._core_attrs != other._core_attrs:
+            return False
+        return all(
+            self._eq(getattr(self, attr), getattr(other, attr))
+            for attr in self._core_attrs
+        )
 
     @property
     def x_tick_labels(self) -> XTickLabels:
@@ -558,6 +585,11 @@ class Spectrum1D(Spectrum):
 
           - 'label' : str. This is used label lines on a 1D plot
     """
+    _core_attrs: ClassVar[set[str]] = {
+        '_x_data', '_internal_x_data_unit', 'x_data_unit',
+        '_y_data', '_internal_y_data_unit', 'y_data_unit',
+        '_x_tick_labels', 'metadata',
+    }
 
     def __init__(self, x_data: Quantity, y_data: Quantity,
                  x_tick_labels: XTickLabels | None = None,
@@ -623,17 +655,10 @@ class Spectrum1D(Spectrum):
                            metadata=self.metadata)
                 for x0, x1 in ranges]
 
-    def __copy__(self) -> Self:
-        """Get an independent copy of spectrum"""
-        return type(self)(np.copy(self.x_data),
-                          np.copy(self.y_data),
-                          x_tick_labels=copy.copy(self.x_tick_labels),
-                          metadata=copy.deepcopy(self.metadata))
-
     def __deepcopy__(self, memo: dict) -> Self:
         """Get a completely independent copy of spectrum"""
-        return type(self)(np.copy(self.x_data),
-                          np.copy(self.y_data),
+        return type(self)(self.x_data,
+                          self.y_data,
                           x_tick_labels=copy.deepcopy(
                               self.x_tick_labels, memo),
                           metadata=copy.deepcopy(self.metadata, memo))
@@ -822,7 +847,7 @@ class Spectrum1D(Spectrum):
             msg = 'x_width must be a Quantity or Callable'
             raise TypeError(msg)
 
-        new_spectrum = self.copy()
+        new_spectrum = copy.deepcopy(self)
         new_spectrum.y_data = y_broadened
         return new_spectrum
 
@@ -852,6 +877,12 @@ class Spectrum2D(Spectrum):
         spectrum. Keys should be strings and values should be strings
         or integers
     """
+    _core_attrs: ClassVar[set[str]] = {
+        '_x_data', '_internal_x_data_unit', 'x_data_unit',
+        '_y_data', '_internal_y_data_unit', 'y_data_unit',
+        '_z_data', '_internal_z_data_unit', 'z_data_unit',
+        '_x_tick_labels', 'metadata',
+    }
 
     def __init__(self, x_data: Quantity, y_data: Quantity,
                  z_data: Quantity,
@@ -1018,8 +1049,8 @@ class Spectrum2D(Spectrum):
                 width_convention=width_convention)
 
             spectrum = Spectrum2D(
-                np.copy(self.x_data),
-                np.copy(self.y_data),
+                self.x_data,
+                self.y_data,
                 ureg.Quantity(z_broadened, units=self.z_data_unit),
                 copy.copy(self.x_tick_labels),
                 copy.deepcopy(self.metadata),
@@ -1088,25 +1119,17 @@ class Spectrum2D(Spectrum):
         if axis == 'x':
             z_broadened = z_broadened.T
 
-        return Spectrum2D(np.copy(spectrum.x_data),
-                          np.copy(spectrum.y_data),
+        return Spectrum2D(spectrum.x_data,
+                          spectrum.y_data,
                           z_broadened,
-                          copy.copy(spectrum.x_tick_labels),
-                          copy.copy(spectrum.metadata))
-
-    def __copy__(self) -> Self:
-        """Get an independent copy of spectrum"""
-        return type(self)(np.copy(self.x_data),
-                          np.copy(self.y_data),
-                          np.copy(self.z_data),
-                          copy.copy(self.x_tick_labels),
-                          copy.deepcopy(self.metadata))
+                          copy.deepcopy(spectrum.x_tick_labels),
+                          copy.deepcopy(spectrum.metadata))
 
     def __deepcopy__(self, memo: dict) -> Self:
-        """Get an independent copy of spectrum"""
-        return type(self)(np.copy(self.x_data),
-                          np.copy(self.y_data),
-                          np.copy(self.z_data),
+        """Get a completely independent copy of spectrum"""
+        return type(self)(self.x_data,
+                          self.y_data,
+                          self.z_data,
                           copy.deepcopy(self.x_tick_labels, memo),
                           copy.deepcopy(self.metadata, memo))
 
@@ -1377,7 +1400,7 @@ def apply_kinematic_constraints(spectrum: Spectrum2D,
                          (spectrum.get_bin_edges(bin_ax='x')[:-1, np.newaxis]
                           > q_bounds[-1][np.newaxis, :]))
 
-    new_spectrum = spectrum.copy()
+    new_spectrum = copy.deepcopy(spectrum)
     new_spectrum._z_data[mask] = float('nan')
 
     return new_spectrum

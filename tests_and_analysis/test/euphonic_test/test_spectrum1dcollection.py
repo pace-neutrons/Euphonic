@@ -1,3 +1,4 @@
+import copy
 import json
 
 import numpy as np
@@ -750,26 +751,63 @@ class TestSpectrum1DCollectionMethods:
         spec = get_spectrum1dcollection('gan_bands.json')
         spec.metadata = {'Test': 'item', 'int': 1}
 
-        spec_copy = spec.copy()
+        spec_copy = copy.copy(spec)
         # Copy should be same
         check_spectrum1dcollection(spec, spec_copy)
 
-        # Until data is edited
-        spec_copy._y_data *= 2
-        with pytest.raises(AssertionError):
-            check_spectrum1dcollection(spec, spec_copy)
+        # Even after data is mutated in-place
+        spec_copy._y_data[:] *= 2
+        check_spectrum1dcollection(spec, spec_copy)
 
-        spec_copy = spec.copy()
-        spec_copy._x_data *= 2
-        with pytest.raises(AssertionError):
-            check_spectrum1dcollection(spec, spec_copy)
+        spec_copy = copy.copy(spec)
+        spec_copy._x_data[:] *= 2
+        check_spectrum1dcollection(spec, spec_copy)
 
-        spec_copy = spec.copy()
-        spec_copy.x_tick_labels = [(1, 'different')]
-        with pytest.raises(AssertionError):
-            check_spectrum1dcollection(spec, spec_copy)
+        spec_copy = copy.copy(spec)
+        spec_copy.x_tick_labels[0] = (1, 'different')
+        check_spectrum1dcollection(spec, spec_copy)
 
-        spec_copy = spec.copy()
+        spec_copy = copy.copy(spec)
         spec_copy.metadata['Test'] = spec_copy.metadata['Test'].upper()
+        check_spectrum1dcollection(spec, spec_copy)
+
+    def test_deepcopy(self):
+        spec = get_spectrum1dcollection('gan_bands.json')
+        spec.metadata = {'Test': 'item', 'int': 1}
+
+        spec_deepcopy = copy.deepcopy(spec)
+        # Copy should be same
+        check_spectrum1dcollection(spec, spec_deepcopy)
+
+        # Until data is edited
+        spec_deepcopy._y_data[:] *= 2
         with pytest.raises(AssertionError):
-            check_spectrum1dcollection(spec, spec_copy)
+            check_spectrum1dcollection(spec, spec_deepcopy)
+
+        spec_deepcopy = copy.deepcopy(spec)
+        spec_deepcopy._x_data[:] *= 2
+        with pytest.raises(AssertionError):
+            check_spectrum1dcollection(spec, spec_deepcopy)
+
+        spec_deepcopy = copy.deepcopy(spec)
+        spec_deepcopy.x_tick_labels = [(1, 'different')]
+        with pytest.raises(AssertionError):
+            check_spectrum1dcollection(spec, spec_deepcopy)
+
+        spec_deepcopy = copy.deepcopy(spec)
+        spec_deepcopy.metadata['Test'] = spec_deepcopy.metadata['Test'].upper()
+        with pytest.raises(AssertionError):
+            check_spectrum1dcollection(spec, spec_deepcopy)
+
+    def test_compare_equal(self):
+        spec1 = get_spectrum1dcollection('gan_bands.json')
+        spec2 = get_spectrum1dcollection('gan_bands.json')
+
+        assert spec1 == spec2
+
+        spec1.y_data *= 2
+        assert spec1 != spec2
+
+        spec1 = get_spectrum1dcollection('gan_bands.json')
+        spec2.metadata = {'different': 'metadata'}
+        assert spec1 != spec2
