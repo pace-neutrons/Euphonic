@@ -13,6 +13,7 @@ from typing import (
     Any,
     Generic,
     Literal,
+    TypedDict,
     TypeVar,
     overload,
 )
@@ -129,9 +130,13 @@ class SpectrumCollectionMixin(ABC, Generic[Spec]):
     def _get_item_data_unit(cls, item: Spec) -> str:
         return getattr(item, f'{cls._spectrum_axis}_data_unit')
 
+    ## 3.15+ frozendict
+    class _BinDict(TypedDict):
+        _x_bins: Quantity
+
     @property
     @abstractmethod
-    def _bin_data(self) -> dict[str, Quantity]: ...
+    def _bin_data(self) -> _BinDict: ...
 
     def sum(self) -> Spec:
         """
@@ -164,12 +169,10 @@ class SpectrumCollectionMixin(ABC, Generic[Spec]):
 
     # Required methods
     @classmethod
-    @abstractmethod
     def from_spectra(
             cls,
             spectra: Sequence[Spec],
             *,
-            _x_bins: Quantity | None = None,
             unsafe: bool = False,
     ) -> Self:
         """Construct spectrum collection from a sequence of components
@@ -179,6 +182,17 @@ class SpectrumCollectionMixin(ABC, Generic[Spec]):
         by another Spectrum collection
 
         """
+        return cls._from_spectra(spectra, unsafe=unsafe)
+
+    @classmethod
+    @abstractmethod
+    def _from_spectra(
+            cls,
+            spectra: Sequence[Spec],
+            *,
+            _x_bins: Quantity | None = None,
+            unsafe: bool = False,
+    ) -> Self: ...
 
     # Mixin methods
     def __len__(self):
@@ -280,9 +294,9 @@ class SpectrumCollectionMixin(ABC, Generic[Spec]):
         return self._combine_metadata([metadata_lines[i] for i in item])
 
     def __deepcopy__(self, memo: dict) -> Self:
-        return type(self).from_spectra([copy.deepcopy(spectrum, memo)
+        return type(self)._from_spectra([copy.deepcopy(spectrum, memo)
                                         for spectrum in self],
-                                       unsafe=True, **self._bin_data)
+                                        unsafe=True, **self._bin_data)
 
     def __add__(self, other: Self) -> Self:
         """
@@ -297,7 +311,7 @@ class SpectrumCollectionMixin(ABC, Generic[Spec]):
         spectra are retained in the top level dictionary, any
         others are put in the individual 'line_data' entries
         """
-        return type(self).from_spectra([*self, *other], **self._bin_data)
+        return type(self)._from_spectra([*self, *other], **self._bin_data)
 
     def iter_metadata(self) -> Generator[OneLineData, None, None]:
         """Iterate over metadata dicts of individual spectra from collection"""
@@ -490,9 +504,9 @@ class SpectrumCollectionMixin(ABC, Generic[Spec]):
 
         groups = groupby(get_key_items, enumerate(self.iter_metadata()))
 
-        return self.from_spectra([self[list(indices(group))].sum()
-                                  for group in groups.values()],
-                                 **self._bin_data)
+        return self._from_spectra([self[list(indices(group))].sum()
+                                   for group in groups.values()],
+                                  **self._bin_data)
 
     def to_dict(self) -> dict[str, Any]:
         """
@@ -632,8 +646,11 @@ class Spectrum1DCollection(SpectrumCollectionMixin[Spectrum1D],
                            metadata=self.metadata)
                 for x0, x1 in ranges]
 
+    class _BinDict(TypedDict):
+        _x_bins: Quantity
+
     @property
-    def _bin_data(self) -> dict[str, Quantity]:
+    def _bin_data(self) -> _BinDict:
         return {'_x_bins': self.x_data}
 
     @staticmethod
@@ -664,7 +681,7 @@ class Spectrum1DCollection(SpectrumCollectionMixin[Spectrum1D],
             raise ValueError(msg)
 
     @classmethod
-    def from_spectra(
+    def _from_spectra(
             cls,
             spectra: Sequence[Spectrum1D],
             *,
@@ -851,7 +868,7 @@ class Spectrum1DCollection(SpectrumCollectionMixin[Spectrum1D],
             return new_spectrum
 
         if isinstance(x_width, Callable):
-            return type(self).from_spectra(
+            return type(self)._from_spectra(
                 [
                     spectrum.broaden(
                         x_width=x_width,
@@ -980,8 +997,12 @@ class Spectrum2DCollection(SpectrumCollectionMixin[Spectrum2D],
                            metadata=self.metadata)
                 for x0, x1 in ranges]
 
+    class _BinDict(TypedDict):
+        _x_bins: Quantity
+        _y_bins: Quantity
+
     @property
-    def _bin_data(self) -> dict[str, Quantity]:
+    def _bin_data(self) -> _BinDict:
         return {'_x_bins': self.x_data, '_y_bins': self.y_data}
 
     @property
@@ -1049,7 +1070,7 @@ class Spectrum2DCollection(SpectrumCollectionMixin[Spectrum2D],
                 raise ValueError(msg)
 
     @classmethod
-    def from_spectra(
+    def _from_spectra(
             cls,
             spectra: Sequence[Spectrum2D],
             *,

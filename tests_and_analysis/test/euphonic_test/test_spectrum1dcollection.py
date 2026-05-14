@@ -810,7 +810,7 @@ class TestSpectrum1DCollectionMethods:
 class TestEmptyCollection:
     @pytest.fixture
     def empty_spectrum(self) -> Spectrum1DCollection:
-        return Spectrum1DCollection.from_spectra(
+        return Spectrum1DCollection._from_spectra(
             [],
             _x_bins=ureg.Quantity(np.empty((10,))),
         )
@@ -831,7 +831,7 @@ class TestEmptyCollection:
 
     def test_create_empty_from_spectra(self):
         fake_bins = ureg.Quantity(np.linspace(0, 10, 10))
-        spec = Spectrum1DCollection.from_spectra([], _x_bins=fake_bins)
+        spec = Spectrum1DCollection._from_spectra([], _x_bins=fake_bins)
         assert not spec
 
     def test_create_from_empty_slice(self, real_spectrum):
@@ -878,3 +878,7 @@ class TestEmptyCollection:
 
     def test_empty_iter_metadata(self, empty_spectrum):
         assert list(empty_spectrum.iter_metadata()) == []
+
+    def test_empty_select(self, empty_spectrum):
+        spec = empty_spectrum.select(species='felis')
+        assert not spec

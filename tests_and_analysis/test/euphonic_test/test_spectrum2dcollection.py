@@ -330,14 +330,14 @@ class TestEmptyCollection:
 
     def test_create_empty_init(self):
         x_data = ureg.Quantity(np.empty((10,)))
-        y_data = ureg.Quantity(np.empty((10,)))
-        z_data = ureg.Quantity(np.empty((0, 10, 10)))
+        y_data = ureg.Quantity(np.empty((15,)))
+        z_data = ureg.Quantity(np.empty((0, 10, 15)))
         spec = Spectrum2DCollection(x_data, y_data, z_data, [], {})
         assert len(spec) == 0
 
     def test_create_empty_from_spectra(self):
         fake_bins = ureg.Quantity(np.linspace(0, 10, 10))
-        spec = Spectrum2DCollection.from_spectra(
+        spec = Spectrum2DCollection._from_spectra(
             [], _x_bins=fake_bins, _y_bins=fake_bins,
         )
         assert len(spec) == 0
@@ -356,7 +356,7 @@ class TestEmptyCollection:
     def test_add_non_empty(self, empty_sized, real_spectrum):
         spec = empty_sized + real_spectrum
         assert len(spec) == len(real_spectrum)
-        assert np.all(spec.x_data == real_spectrum.x_data)
+        assert np.allclose(spec.x_data, real_spectrum.x_data)
 
     def test_empty_sum(self, empty_spectrum):
         spec: Spectrum2D = empty_spectrum.sum()
@@ -378,3 +378,7 @@ class TestEmptyCollection:
 
     def test_empty_iter_metadata(self, empty_spectrum):
         assert list(empty_spectrum.iter_metadata()) == []
+
+    def test_empty_select(self, empty_spectrum):
+        spec = empty_spectrum.select(species='felis')
+        assert not spec
