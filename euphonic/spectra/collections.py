@@ -77,9 +77,17 @@ class SpectrumCollectionMixin(ABC, Generic[Spec]):
     _bin_axes = ('x',)
     _spectrum_axis = 'y'
     _item_type: type[Spec]
-    metadata: Metadata
 
     # Define some private methods which wrap this information into useful forms
+    @property
+    def _core_attrs(self):
+        """Additional items are implemented as an extra axis on spectrum array:
+
+        this means current implementations have the same _core_attrs as the
+        spectrum type they contain.
+        """
+        return self._item_type._core_attrs
+
     @classmethod
     def _spectrum_data_name(cls) -> str:
         return f'{cls._spectrum_axis}_data'
@@ -265,16 +273,9 @@ class SpectrumCollectionMixin(ABC, Generic[Spec]):
         # Item must be some kind of integer sequence
         return self._combine_metadata([metadata_lines[i] for i in item])
 
-    def __copy__(self) -> Self:
-        return type(self).from_spectra(list(self), unsafe=True)
-
     def __deepcopy__(self, memo: dict) -> Self:
         return type(self).from_spectra([copy.deepcopy(spectrum, memo)
                                         for spectrum in self], unsafe=True)
-
-    def copy(self) -> Self:
-        """Get an independent copy of spectrum"""
-        return self.__copy__()
 
     def __add__(self, other: Self) -> Self:
         """
@@ -822,7 +823,7 @@ class Spectrum1DCollection(SpectrumCollectionMixin[Spectrum1D],
                     yi, x_centres, x_width_calc, shape=shape,
                     method=method, width_convention=width_convention)
 
-            new_spectrum = self.copy()
+            new_spectrum = copy.deepcopy(self)
             new_spectrum.y_data = ureg.Quantity(
                 y_broadened, units=self.y_data_unit)
             return new_spectrum
