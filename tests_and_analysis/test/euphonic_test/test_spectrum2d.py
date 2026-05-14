@@ -19,6 +19,8 @@ from tests_and_analysis.test.utils import (
     get_data_path,
 )
 
+from .test_spectrum1d import get_spectrum1d
+
 FLOAT64_EPS =  np.finfo(np.float64).eps
 
 class ExpectedSpectrum2D:
@@ -540,6 +542,10 @@ class TestSpectrum2DMethods:
         spec1 = get_spectrum2d('example_spectrum2d.json')
         spec2.metadata = {'different': 'metadata'}
         assert spec1 != spec2
+
+        spec_1d = get_spectrum1d('xsq_spectrum1d.json')
+        assert spec1 != spec_1d
+        assert spec_1d != spec1
 
     def test_copy(self):
         spec = get_spectrum2d('quartz_fuzzy_map_1.json')
