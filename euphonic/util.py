@@ -1,12 +1,9 @@
 from collections.abc import Iterable, Sequence
 from contextlib import contextmanager
 from functools import partial, reduce
-from importlib.resources import files
 import itertools
-import json
 import math
 import os
-from pathlib import Path
 import sys
 import textwrap
 from typing import Any
@@ -14,11 +11,10 @@ import warnings
 
 import numpy as np
 from numpy.random import Generator, RandomState
-from pint import UndefinedUnitError
 import seekpath
 from seekpath.hpkot import SymmetryDetectionError
 
-import euphonic.data
+from euphonic.data.isotopes import get_reference_data  # noqa: F401
 from euphonic.ureg import Quantity, ureg
 
 try:
@@ -238,112 +234,6 @@ def get_qpoint_labels(qpts: np.ndarray,
     return list(zips(qpts_with_labels,
                      map(str, xlabels)),  # Ensure python str (not numpy)
                 )
-
-
-def get_reference_data(collection: str = 'Sears1992',
-                       physical_property: str = 'coherent_scattering_length',
-                       ) -> dict[str, Quantity]:
-    """
-    Get physical data as a dict of (possibly-complex) floats from reference
-    data.
-
-    Each "collection" refers to a JSON file which may contain any set of
-    properties, indexed by physical_property.
-
-    Properties are stored in JSON files, encoding a single dictionary with the
-    structure::
-
-      {"metadata1": "metadata1 text", "metadata2": ...,
-       "physical_properties": {"property1": {"__units__": "unit_str",
-                                             "H": H_property1_value,
-                                             "He": He_property1_value,
-                                             "Li": {"__complex__": true,
-                                                    "real": Li_property1_real,
-                                                    "imag": Li_property1_imag},
-                                             "Nh": None,
-                                             ...},
-                               "property2": ...}}
-
-    Parameters
-    ----------
-    collection
-        Identifier of data file; this may be an inbuilt data set ("Sears1992"
-        or "BlueBook") or a path to a JSON file (e.g. "./my_custom_data.json").
-
-    physical_property
-        The name of the property for which data should be extracted. This must
-        match an entry of "physical_properties" in the data file.
-
-    Returns
-    -------
-    dict[str, Quantity]
-        Requested data as a dict with string keys and (possibly-complex)
-        float Quantity values. String or None items of the original data file
-        will be omitted.
-
-    """
-
-    _reference_data_files = {'Sears1992': 'sears-1992.json',
-                             'BlueBook': 'bluebook.json'}
-
-    def custom_decode(dct):
-        if '__complex__' in dct:
-            return complex(dct['real'], dct['imag'])
-        return dct
-
-    if collection in _reference_data_files:
-        filename = _reference_data_files[collection]
-        with open(files(euphonic.data) / filename) as fd:
-            file_data = json.load(fd, object_hook=custom_decode)
-
-    elif (filename := Path(collection)).is_file():
-        with open(filename) as fd:
-            file_data = json.load(fd, object_hook=custom_decode)
-    else:
-        msg = format_error(
-            f'No data files known for collection "{collection}".',
-            fix=f'Available collections: {comma_join(_reference_data_files)}.',
-        )
-        raise ValueError(msg)
-
-    if 'physical_property' not in file_data:
-        msg = format_error(
-            'Data file does not contain required key "physical_property".',
-            fix='Ensure file is formatted correctly.',
-        )
-        raise AttributeError(msg)
-
-    data = file_data['physical_property'].get(physical_property)
-    if data is None:
-        msg =  format_error(
-            (f'No such collection "{collection}" '
-             f'with property "{physical_property}".'),
-            fix=('Available properties for this collection:'
-                 f'{comma_join(file_data["physical_property"])}.'),
-            )
-        raise ValueError(msg)
-
-    unit_str = data.get('__units__')
-    if unit_str is None:
-        msg = format_error(
-            f'No units in file ({filename}).',
-            fix='Ensure file specifies dimensions with "__units__" metadata.',
-        )
-        raise ValueError(msg)
-
-    try:
-        unit = ureg(unit_str)
-    except UndefinedUnitError as exc:
-        msg = format_error(
-            f'Unsupported units ({unit_str}) from data file "{filename}".',
-            fix='Ensure units are supported by Euphonic unit register.',
-        )
-        raise ValueError(msg) from exc
-
-    return {key: value * unit
-            for key, value in data.items()
-            if isinstance(value, (float, complex))}
-
 
 def mode_gradients_to_widths(mode_gradients: Quantity, cell_vectors: Quantity,
                              ) -> Quantity:
