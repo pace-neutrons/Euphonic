@@ -77,6 +77,23 @@
 
       fix
 
+- Improvements
+
+  - A new API has been created for isotope data. The IsotopeData
+    protocol promises a method .get_property(Structure, key) which
+    will return per-atom values; typically these are neutron cross-sections.
+
+    This will be used in future to implement a more sophisticated lookup based on isotope masses; currently lookups are based entirely on ``atom_type``.
+
+    Currently this is backward-compatible and datasets may still be
+    specified as a string or provided as a dict; these methods are likely to be
+    deprecated as the system matures.
+
+- Deprecations
+
+  - ``euphonic.util.get_reference_data`` is deprecated and will be
+    removed in Euphonic 2.0. Please use ``IsotopeData.get_property`` instead.
+
 - Maintenance
 
   - Extend use of Python 3.10 ``match``\ es over ``if`` where relevant.

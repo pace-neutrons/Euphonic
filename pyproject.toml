@@ -175,6 +175,7 @@ select = [
 ]
 ignore = [
        "S101",    # Use of except
+       "COM812",  # Trailing comma, conflicts with ruff format
        "CPY001",  # Missing copyright notice at top of every file. Not for us.
        "T20",     # flake8-print forbids use of print and pprint.
        "PERF203", # No try-except in loop. Micro-optimisation, not relevant for Py 3.11+
@@ -208,6 +209,10 @@ extend-ignore-names = ["k_B", "H_ab", "Q"]
     ]
 
 "euphonic/version.py" = ["Q000"]  # Source build prefers double quotes here
+
+[tool.ruff.format]
+# Prefer single quotes over double quotes.
+quote-style = "single"
 
 [tool.uv]
 conflicts = [
