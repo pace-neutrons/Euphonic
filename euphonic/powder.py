@@ -14,6 +14,7 @@ from euphonic import (
     Spectrum1D,
     Spectrum1DCollection,
 )
+from euphonic.qpoint_phonon_modes import IsotopeDataset
 from euphonic.util import (
     RNG,
     comma_join,
@@ -123,18 +124,18 @@ def sample_sphere_dos(fc: ForceConstants,
 
 
 def sample_sphere_pdos(
-        fc: ForceConstants,
-        mod_q: Quantity,
-        *,
-        sampling: SphericalSamplingOptions = 'golden',
-        npts: int = 1000,
-        jitter: bool = False,
-        rng: RNG = rng,
-        energy_bins: Quantity | None = None,
-        weighting: str | None = None,
-        cross_sections: str | dict[str, Quantity] = 'BlueBook',
-        **calc_modes_args,
-        ) -> Spectrum1DCollection:
+    fc: ForceConstants,
+    mod_q: Quantity,
+    *,
+    sampling: SphericalSamplingOptions = 'golden',
+    npts: int = 1000,
+    jitter: bool = False,
+    rng: RNG = rng,
+    energy_bins: Quantity | None = None,
+    weighting: str | None = None,
+    cross_sections: IsotopeDataset = 'BlueBook',
+    **calc_modes_args,
+) -> Spectrum1DCollection:
     """
     Calculate phonon PDOS with QpointPhononModes.calculate_pdos,
     sampling over a sphere of constant |q|
@@ -192,16 +193,17 @@ def sample_sphere_pdos(
         either the coherent, incoherent, or sum of coherent and
         incoherent neutron scattering cross-sections.
     cross_sections
-        A dataset of cross-sections for each element in the structure,
-        it can be a string specifying a dataset, or a dictionary
-        explicitly giving the cross-sections for each element.
+        A dataset of cross-sections for each element in the structure:
+        this can be a string specifying a dataset, a dictionary
+        explicitly giving the cross-sections for each element, or an
+        IsotopeData object (which would ultimately be constructed from the
+        other inputs.)
 
-        If cross_sections is a string, it is passed to the ``collection``
-        argument of :obj:`euphonic.util.get_reference_data()`. This
-        collection must contain the 'coherent_cross_section' or
-        'incoherent_cross_section' physical property, depending on
-        the ``weighting`` argument. If ``weighting`` is None, this
-        string argument is not used.
+        If cross_sections is a string, it identifies a legacy JSON data
+        collection. This file must contain the 'coherent_cross_section'
+        or 'incoherent_cross_section' physical property, depending on the
+        ``weighting`` argument. If ``weighting`` is None, this string argument
+        is not used.
 
         If cross sections is a dictionary, the ``weighting`` argument is
         ignored, and these cross-sections are used directly to calculate
@@ -252,7 +254,7 @@ def sample_sphere_structure_factor(
     jitter: bool = False,
     rng: RNG = rng,
     energy_bins: Quantity = None,
-    scattering_lengths: str | dict[str, Quantity] = 'Sears1992',
+    scattering_lengths: IsotopeDataset = 'Sears1992',
     **calc_modes_args,
     ) -> Spectrum1D:
     """Sample structure factor, averaging over a sphere of constant |q|
@@ -318,10 +320,12 @@ def sample_sphere_structure_factor(
         Preferred energy bin edges. If not provided, will setup 1000
         bins (1001 bin edges) from 0 to 1.05 * [max energy]
     scattering_lengths
-        Dict of neutron scattering lengths labelled by element. If a
+        Reference data for coherent scattering length. This may be a
+        dict of neutron scattering lengths labelled by element. If a
         string is provided, this selects coherent scattering lengths
-        from reference data by setting the 'label' argument of the
-        euphonic.util.get_reference_data() function.
+        from legacy JSON reference data. Either of these options will construct
+        an IsotopeData object, which can also be used directly and will be
+        accessed with the "coherent_scattering_length" key.
     **calc_modes_args
         other keyword arguments (e.g. 'use_c') will be passed to
         ForceConstants.calculate_qpoint_phonon_modes()

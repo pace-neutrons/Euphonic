@@ -1,14 +1,18 @@
 """Data container (with methods) for phonon frequencies and eigenvectors"""
 
-from collections.abc import Mapping
 import math
 from pathlib import Path
-from typing import Any
+from typing import Any, TypeAlias
 
 import numpy as np
 from typing_extensions import Self
 
 from euphonic.crystal import Crystal
+from euphonic.data.isotopes import (
+    AtomTypeShallowDictData,
+    IsotopeData,
+    LegacyJsonData,
+)
 from euphonic.debye_waller import DebyeWaller
 from euphonic.io import _obj_from_json_file, _obj_to_dict, _process_dict
 from euphonic.qpoint_frequencies import (
@@ -21,15 +25,15 @@ from euphonic.spectra import Spectrum1DCollection
 from euphonic.structure_factor import StructureFactor
 from euphonic.ureg import Quantity, ureg
 from euphonic.util import (
-    comma_join,
     direction_changed,
     format_error,
-    get_reference_data,
     is_gamma,
 )
 from euphonic.validate import InputCheck, _check_constructor_inputs
 
 EIG_CHECK = InputCheck(..., (np.ndarray,), {(-1,)}, 'eigenvectors')
+
+IsotopeDataset: TypeAlias = IsotopeData | str | dict[str, Quantity]
 
 
 class QpointPhononModes(QpointFrequencies):
@@ -184,7 +188,7 @@ class QpointPhononModes(QpointFrequencies):
 
     def calculate_structure_factor(
         self,
-        scattering_lengths: str | dict[str, Quantity] = 'Sears1992',
+        scattering_lengths: IsotopeDataset = 'Sears1992',
         dw: DebyeWaller | None = None,
         ) -> StructureFactor:
         """
@@ -195,21 +199,25 @@ class QpointPhononModes(QpointFrequencies):
         ----------
         scattering_lengths
             Dataset of coherent scattering length for each
-            element in the structure. This may be provided in 3 ways:
+            element in the structure. This may be provided in 4 ways:
 
-            - A string naming an appropriate data collection packaged with
-              Euphonic (including the default value 'Sears1992'). This will be
-              passed to the ``collection`` argument of
-              :obj:`euphonic.util.get_reference_data()`.
-
-            - A string filename for a user's customised data file in the same
-              format as those packaged with Euphonic.
+            - An object implementing the IsotopeData interface from
+              euphonic.data.isotopes.
 
             - An explicit dictionary of float Quantity, giving spin- and
               isotope-averaged coherent scattering length for each element in
               the structure, e.g.::
 
                 {'O': 5.803*ureg('fm'), 'Zn': 5.680*ureg('fm')}
+
+            - A string naming an appropriate data collection packaged with
+              Euphonic (including the default value 'Sears1992').
+
+            - A string filename for a user's customised data file in the same
+              format as those packaged with Euphonic.
+
+            The last two options are deprecated in favour of an improved
+            built-in dataset and the IsotopeData interface.
 
         dw
             Data for thermal motion effects. Typically this is computed over a
@@ -255,25 +263,14 @@ class QpointPhononModes(QpointFrequencies):
         .. [1] M.T. Dove, Structure and Dynamics, Oxford University Press, Oxford, 2003, 225-226
 
         """  # noqa: E501
-        if isinstance(scattering_lengths, str):
-            scattering_length_data = get_reference_data(
-                collection=scattering_lengths,
-                physical_property='coherent_scattering_length')
-        elif isinstance(scattering_lengths, dict):
-            scattering_length_data = scattering_lengths
-        else:
-            msg = format_error(
-                'Unexpected type for scattering_lengths '
-                f'({type(scattering_lengths).__name__}).',
-                fix='scattering_lengths should be str or dict.',
-            )
-            raise TypeError(msg)
 
-        sl = [scattering_length_data[x].to('bohr').magnitude
-              for x in self.crystal.atom_type]
+        isotope_data = _get_isotope_data(scattering_lengths)
+        sl = isotope_data.get_array(
+            self.crystal, 'coherent_scattering_length',
+        ).to('bohr').magnitude
 
         # Calculate normalisation factor
-        norm_factor = sl/np.sqrt(self.crystal._atom_mass)
+        norm_factor = sl / np.sqrt(self.crystal._atom_mass)
 
         # Calculate the exp factor for all atoms and qpts. atom_r is in
         # fractional coords, so Qdotr = 2pi*qh*rx + 2pi*qk*ry...
@@ -447,14 +444,15 @@ class QpointPhononModes(QpointFrequencies):
         return DebyeWaller(self.crystal, dw, temperature)
 
     def calculate_pdos(
-            self, dos_bins: Quantity,
-            mode_widths: Quantity | None = None,
-            mode_widths_min: Quantity = Quantity(0.01, 'meV'),
-            adaptive_method: AdaptiveMethod = 'reference',
-            adaptive_error: float = 0.01,
-            weighting: str | None = None,
-            cross_sections: str | dict[str, Quantity] = 'BlueBook',
-            ) -> Spectrum1DCollection:
+        self,
+        dos_bins: Quantity,
+        mode_widths: Quantity | None = None,
+        mode_widths_min: Quantity = Quantity(0.01, 'meV'),
+        adaptive_method: AdaptiveMethod = 'reference',
+        adaptive_error: float = 0.01,
+        weighting: str | None = None,
+        cross_sections: IsotopeDataset = 'BlueBook',
+    ) -> Spectrum1DCollection:
         """
         Calculates partial density of states for each atom in the unit
         cell
@@ -486,16 +484,17 @@ class QpointPhononModes(QpointFrequencies):
             either the coherent, incoherent, or sum of coherent and
             incoherent neutron scattering cross-sections.
         cross_sections
-            A dataset of cross-sections for each element in the structure,
-            it can be a string specifying a dataset, or a dictionary
-            explicitly giving the cross-sections for each element.
+            A dataset of cross-sections for each element in the structure:
+            this may be an object implementing the
+            euphonic.data.isotopes.IsotopeData protocol, a string specifying a
+            dataset, or a dictionary explicitly giving the cross-sections for
+            each element.
 
-            If cross_sections is a string, it is passed to the ``collection``
-            argument of :obj:`euphonic.util.get_reference_data()`. This
-            collection must contain the 'coherent_cross_section' or
-            'incoherent_cross_section' physical property, depending on
-            the ``weighting`` argument. If ``weighting`` is None, this
-            string argument is not used.
+            If cross_sections is a string, it identifies a built-in or external
+            JSON file with reference data. This collection must contain the
+            'coherent_cross_section' or 'incoherent_cross_section' physical
+            property, depending on the ``weighting`` argument. If ``weighting``
+            is None, this string argument is not used.
 
             If cross sections is a dictionary, the ``weighting`` argument is
             ignored, and these cross-sections are used directly to calculate
@@ -552,44 +551,10 @@ class QpointPhononModes(QpointFrequencies):
         units of area per unit energy.
 
         """  # noqa: E501
-        weighting_opts = [None, 'coherent', 'incoherent',
-                          'coherent-plus-incoherent']
-        if weighting not in weighting_opts:
-            msg = format_error(
-                f'Invalid weighting ({weighting}).',
-                fix=('weighting should be one of '
-                     f'{comma_join(weighting_opts)}.'),
-            )
-            raise ValueError(msg)
 
-        cross_sections_data = None
-        if isinstance(cross_sections, str):
-            if weighting is not None:
-                if weighting == 'coherent-plus-incoherent':
-                    weights = ['coherent', 'incoherent']
-                else:
-                    weights = [weighting]
-                cross_sections_data = [get_reference_data(
-                    collection=cross_sections,
-                    physical_property=f'{weight}_cross_section')
-                                       for weight in weights]
-        elif isinstance(cross_sections, Mapping):
-            cross_sections_data = [cross_sections]
-        else:
-            msg = format_error(
-                'Invalid type for cross_sections '
-                f'({type(cross_sections).__name__}).',
-                fix='cross_sections should be str or dict.',
-            )
-            raise TypeError(msg)
+        cs = _get_cross_sections(self.crystal, weighting, cross_sections)
 
-        if cross_sections_data is not None:
-            cs = [cross_sections_data[0][x] for x in self.crystal.atom_type]
-            if len(cross_sections_data) == 2:
-                cs2 = [cross_sections_data[1][x]
-                        for x in self.crystal.atom_type]
-                cs = [sum(x) for x in zip(cs, cs2, strict=True)]
-            # Account for cross sections in different, or invalid, units
+        if cs is not None:
             ex_units = '[length]**2'
             if not cs[0].check(ex_units):
                 msg = format_error(
@@ -598,9 +563,8 @@ class QpointPhononModes(QpointFrequencies):
                     fix=f'cross_sections should have units of {ex_units}.',
                     )
                 raise ValueError(msg)
-            cs = [x.to('mbarn') for x in cs]
-        else:
-            cs = None
+
+            cs = cs.to('mbarn')
 
         evec_weights = np.real(np.einsum('ijkl,ijkl->ijk',
                                          self.eigenvectors,
@@ -743,3 +707,77 @@ class QpointPhononModes(QpointFrequencies):
             path=path, phonon_name=phonon_name, phonon_format=phonon_format,
             summary_name=summary_name)
         return cls.from_dict(data)
+
+
+def _get_isotope_data(scattering_lengths: IsotopeDataset) -> IsotopeData:
+    """Get dataset with coherent_scattering_length for coherent S(q, ω)"""
+    match scattering_lengths:
+        case str():
+            return LegacyJsonData(scattering_lengths)
+
+        case dict():
+            return AtomTypeShallowDictData(scattering_lengths)
+
+        case _ if hasattr(scattering_lengths, 'get_array'):
+            return scattering_lengths
+
+        case _:
+            msg = format_error(
+                'Unexpected type for scattering_lengths '
+                f'({type(scattering_lengths).__name__}).',
+                fix='scattering_lengths should be str or dict.',
+            )
+            raise TypeError(msg)
+
+def _validate_weighting(weighting: str | None):
+    weighting_opts = (
+        None, 'coherent', 'incoherent', 'coherent-plus-incoherent',
+    )
+    if weighting not in weighting_opts:
+        msg = format_error(
+            f'Invalid value for weighting, got {weighting!r}.',
+            fix=f'Use one of {weighting_opts!r}'
+        )
+        raise ValueError(msg)
+
+def _get_cross_sections(
+    crystal: Crystal,
+    weighting: str | None,
+    cross_sections: IsotopeDataset,
+) -> Quantity | None:
+    """Get weighting dataset for PDOS"""
+
+    _validate_weighting(weighting)
+
+    match weighting, cross_sections:
+        case _, dict():
+            isotope_data = AtomTypeShallowDictData(cross_sections)
+            return isotope_data.get_array(crystal, '')
+
+        case None, _:
+            return None
+
+        case str(), _ if hasattr(cross_sections, 'get_array'):
+            return cross_sections.get_array(crystal, weighting)
+
+        case 'coherent-plus-incoherent', str():
+            isotope_data = LegacyJsonData(cross_sections)
+            return (
+                isotope_data.get_array(crystal, 'incoherent_cross_section')
+                + isotope_data.get_array(crystal, 'coherent_cross_section')
+            )
+
+        case 'coherent' | 'incoherent', str():
+            isotope_data = LegacyJsonData(cross_sections)
+            return isotope_data.get_array(
+                crystal, f'{weighting}_cross_section')
+
+        case _:
+            msg = format_error(
+                'Could not interpret the combination of '
+                f'weighting "{weighting}" and '
+                f'cross_sections "{cross_sections}" for PDOS weighting.',
+                fix=('If cross_sections is not a custom dict, weighting should'
+                     'be one of None, "coherent", "incoherent", '
+                     '"coherent-plus-incoherent".'))
+            raise TypeError(msg)
