@@ -26,7 +26,7 @@ py_src = {
       '_grids.py', '_kwargs.py', '_loaders.py', '_pdos.py', '_plotting.py'
   ],
   'euphonic/data': ['__init__.py', 'isotopes.py', 'bluebook.json', 'sears-1992.json',
-                    'reciprocal_spectroscopy_definitions.txt'],
+                    'sears-1992.csv', 'reciprocal_spectroscopy_definitions.txt'],
   'euphonic/readers': ['__init__.py', 'castep.py', 'phonopy.py'],
   'euphonic/spectra': ['__init__.py', 'base.py', 'collections.py'],
   'euphonic/styles': ['__init__.py', 'base.mplstyle', 'intensity_widget.mplstyle'],

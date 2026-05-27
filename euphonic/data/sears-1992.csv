@@ -1,4 +1,5 @@
 symbol,z_number,a_number,mass (amu),spin,abundance (%),half_life (year),coherent_scattering_length (fm),incoherent_scattering_length (fm),coherent_cross_section (barn),incoherent_cross_section (barn),scattering_cross_section (barn),absorption_cross_section (barn)
+str,int,int,float,str,float,float,complex,complex,float,float,float,float
 H,1,,1.007975,,,,(-3.739+0j),,1.7568,80.26,82.02,0.3326
 H,1,1,1.007825031898,1/2(+),99.985,,(-3.7406+0j),(25.274+0j),1.7583,80.27,82.03,0.3326
 H,1,2,2.014101777844,1(+),0.015,,(6.671+0j),(4.04+0j),5.592,2.05,7.64,0.000519
