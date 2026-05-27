@@ -20,22 +20,22 @@ def _compare_quantity(a: Quantity, b: Quantity) -> None:
 
 
 @dataclass
-class TestStructure:
+class SomeStructure:
     atom_type: np.ndarray
     atom_mass: Quantity
 
 
 @pytest.fixture
-def structure() -> TestStructure:
-    return TestStructure(
+def structure() -> SomeStructure:
+    return SomeStructure(
         atom_type=np.array(['Na', 'Cl']),
         atom_mass=Quantity([22.99, 35.45], 'amu'),
     )
 
 
 @pytest.fixture
-def bad_structure() -> TestStructure:
-    return TestStructure(
+def bad_structure() -> SomeStructure:
+    return SomeStructure(
         atom_type=np.array(['X', 'M']),
         atom_mass=Quantity([-1.0, 200.0], 'amu'),
     )
