@@ -13,6 +13,7 @@ from toolz.dicttoolz import valfilter
 
 import euphonic.data
 from euphonic.ureg import Quantity, ureg
+from euphonic.util import comma_join, format_error, zips
 
 
 class Structure(Protocol):
@@ -110,7 +111,6 @@ class AtomTypeDictData(ArrayFromValuesMixin, IsotopeData):
         mass: float,  # noqa: ARG002
         key: str,
     ) -> Quantity:
-        from euphonic.util import comma_join, format_error
 
         if key not in self._data:
             msg = format_error(
@@ -181,8 +181,6 @@ class LegacyJsonData(AtomTypeDictData):
         super().__init__(data)
 
     def get_array(self, structure: Structure, key: str) -> Quantity:
-        from euphonic.util import comma_join, format_error
-
         if key not in self._data:
             msg = format_error(
                 f'Property {key!r} not found in {self._collection!r}',
@@ -233,8 +231,6 @@ class CsvData(IsotopeData):
         self._units: dict[str, ureg.Unit] = {}
 
     def _get_nearest_row(self, symbol: str, mass: float) -> np.recarray:
-        from euphonic.util import format_error
-
         table, _ = self._table_and_units
 
         symbol_rows = table[table['symbol'] == symbol]
@@ -253,8 +249,6 @@ class CsvData(IsotopeData):
         return symbol_rows[np.argmin(np.abs(symbol_rows['mass'] - mass))]
 
     def _validate_raw_value(self, row: np.recarray, key: str) -> None:
-        from euphonic.util import format_error
-
         if isnan(raw_value := row[key]):
             if row.a_number == 0:
                 summary = (
@@ -283,8 +277,6 @@ class CsvData(IsotopeData):
             raise TypeError(msg)
 
     def get_value(self, symbol: str, mass: float, key: str) -> Quantity:
-        from euphonic.util import format_error
-
         table, units = self._table_and_units
         if key not in table.dtype.names:
             msg = format_error(
@@ -300,8 +292,6 @@ class CsvData(IsotopeData):
         return self._apply_unit(row[key], unit)
 
     def get_array(self, structure: Structure, key: str) -> Quantity:
-        from euphonic.util import zips
-
         targets = list(zips(structure.atom_type, structure.atom_mass))
 
         # WIP
@@ -313,8 +303,6 @@ class CsvData(IsotopeData):
 
     def get_item(self, symbol: str, mass: float) -> dict[str, Quantity]:
         """Get available data for specified species"""
-        from euphonic.util import format_error, zips
-
         table, units = self._table_and_units
 
         symbol_rows = table[table['symbol'] == symbol]
@@ -360,8 +348,6 @@ class CsvData(IsotopeData):
 
     @staticmethod
     def _split_unit(col_header: str) -> tuple[str, str | None]:
-        from euphonic.util import format_error
-
         if match := re.match(
             r"""(.+?)      # Mandatory NAME; any characters, non-greedy
                                #
@@ -392,8 +378,6 @@ class CsvData(IsotopeData):
     def _check_valid_types(
         types_line: list[str], types_map: dict[str, type]
     ) -> None:
-        from euphonic.util import format_error
-
         if unknown_types := set(types_line) - set(types_map):
             msg = format_error(
                 'Not all types from second line of CSV were recognised.',
@@ -441,8 +425,6 @@ class CsvData(IsotopeData):
 
     @cached_property
     def _unit_map(self) -> dict[str, ureg.Unit]:
-        from euphonic.util import zips
-
         def is_not_none(a: Any) -> bool:
             """In operator from Python 3.14"""
             return a is not None
@@ -453,8 +435,6 @@ class CsvData(IsotopeData):
 
     @cached_property
     def _table_and_units(self) -> tuple[np.recarray, list[ureg.Unit | None]]:
-        from euphonic.util import zips
-
         types_map = {
             'int': int,
             'float': float,
@@ -492,3 +472,66 @@ class CsvData(IsotopeData):
 
 
 sears_1992 = CsvData(files(euphonic.data) / 'sears-1992.csv', {})
+
+def _get_all_dicts_from_json(
+    collection: str = 'Sears1992',
+) -> dict[str, dict[str, Quantity]]:
+    _reference_data_files = {
+        'Sears1992': 'sears-1992.json',
+        'BlueBook': 'bluebook.json',
+    }
+
+    def custom_decode(dct):
+        if '__complex__' in dct:
+            return complex(dct['real'], dct['imag'])
+        return dct
+
+    if filename := _reference_data_files.get(collection):
+        file_path = files(euphonic.data) / filename
+    else:
+        file_path = Path(collection)
+
+    if not file_path.is_file():
+        msg = format_error(
+            f'No data files known for collection "{collection}".',
+            fix=f'Available collections: {comma_join(_reference_data_files)}.',
+        )
+        raise ValueError(msg)
+
+    with file_path.open() as fd:
+        file_data = json.load(fd, object_hook=custom_decode)
+
+    if 'physical_property' not in file_data:
+        msg = format_error(
+            'Data file does not contain required key "physical_property".',
+            fix='Ensure file is formatted correctly.',
+        )
+        raise AttributeError(msg)
+
+    result: dict[str[dict[str, Quantity]]] = {}
+    for physical_property, data in file_data['physical_property'].items():
+        unit_str = data.get('__units__')
+
+        no_units_msg = format_error(
+            f'No units in file ({filename}).',
+            fix='Ensure file specifies dimensions with "__units__" metadata.',
+        )
+        if unit_str is None:
+            raise ValueError(no_units_msg)
+
+        try:
+            unit = ureg(unit_str)
+        except UndefinedUnitError as exc:
+            msg = format_error(
+                f'Unsupported units ({unit_str}) from data file "{filename}".',
+                fix='Ensure units are supported by Euphonic unit register.',
+            )
+            raise ValueError(msg) from exc
+
+        result[physical_property] = {
+            key: Quantity(value, unit)
+            for key, value in data.items()
+            if isinstance(value, (float, complex))
+        }
+
+    return result
