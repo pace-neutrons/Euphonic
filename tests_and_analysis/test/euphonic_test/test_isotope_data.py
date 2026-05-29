@@ -229,3 +229,9 @@ class TestSears1992CSV:
         assert sears_1992.get_value(
             'Hg', mass=200.7, key='coherent_scattering_length'
              ) == Quantity(12.692+0j, 'fermi')
+
+    def test_get_array(self, structure) -> None:
+        _compare_quantity(sears_1992.get_array(
+            structure, 'scattering_cross_section'),
+                          Quantity([3.28, 16.8], 'barn')
+                )

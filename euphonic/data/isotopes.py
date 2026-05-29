@@ -228,12 +228,9 @@ class CsvData(IsotopeData):
         """
         self._csv_file = csv_file
         self._property_map = property_map
-        self._units: dict[str, ureg.Unit] = {}
 
     def _get_nearest_row(self, symbol: str, mass: float) -> np.recarray:
-        table, _ = self._table_and_units
-
-        symbol_rows = table[table['symbol'] == symbol]
+        symbol_rows = self._table[self._table['symbol'] == symbol]
         if len(symbol_rows) < 1:
             if ':' in symbol:  # Variant notation e.g. H:D; try the stem as el
                 return self.get_item(
@@ -276,6 +273,9 @@ class CsvData(IsotopeData):
             )
             raise TypeError(msg)
 
+    def _get_unit(self, key: str) -> ureg.Unit | None:
+        return self._units[self._table.dtype.names.index(key)]
+
     def get_value(self, symbol: str, mass: float, key: str) -> Quantity:
         table, units = self._table_and_units
         if key not in table.dtype.names:
@@ -284,22 +284,33 @@ class CsvData(IsotopeData):
                 fix='Ensure key corresponds to a column in the table.',
             )
             raise AttributeError(msg)
-        unit = units[table.dtype.names.index(key)]
 
         row = self._get_nearest_row(symbol, mass)
         self._validate_raw_value(row, key)
 
-        return self._apply_unit(row[key], unit)
+        return self._apply_unit(row[key], self._get_unit(key))
 
     def get_array(self, structure: Structure, key: str) -> Quantity:
-        targets = list(zips(structure.atom_type, structure.atom_mass))
+        targets = list(
+            zips(structure.atom_type, structure.atom_mass.to('amu').magnitude)
+        )
 
-        # WIP
-        _ = {
-            (symbol, mass): self.get_value(symbol, mass, key)
+        value_table = {
+            (symbol, mass): self.get_value(symbol, mass, key).magnitude
             for (symbol, mass) in targets
         }
-        return NotImplemented
+
+        result_raw = np.empty_like(
+            structure.atom_mass,
+            dtype=type(  # int, real or complex
+                next(iter(value_table.values()))
+            ),
+        )
+
+        for i, target in enumerate(targets):
+            result_raw[i] = value_table[target]
+
+        return self._apply_unit(result_raw, self._get_unit(key))
 
     def get_item(self, symbol: str, mass: float) -> dict[str, Quantity]:
         """Get available data for specified species"""
@@ -335,7 +346,7 @@ class CsvData(IsotopeData):
 
     @staticmethod
     def _apply_unit(
-        value: int | float | complex | str, unit: ureg.Unit | None
+        value: int | float | complex | np.ndarray | str, unit: ureg.Unit | None
     ) -> Quantity | str:
         """Apply unit to number or make Dimensionless"""
         match value, unit:
@@ -423,6 +434,10 @@ class CsvData(IsotopeData):
     def _table(self) -> np.recarray:
         return self._table_and_units[0]
 
+    @property
+    def _units(self) -> list[ureg.Unit | None]:
+        return self._table_and_units[1]
+
     @cached_property
     def _unit_map(self) -> dict[str, ureg.Unit]:
         def is_not_none(a: Any) -> bool:
@@ -472,6 +487,7 @@ class CsvData(IsotopeData):
 
 
 sears_1992 = CsvData(files(euphonic.data) / 'sears-1992.csv', {})
+
 
 def _get_all_dicts_from_json(
     collection: str = 'Sears1992',
