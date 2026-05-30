@@ -1,4 +1,5 @@
 from abc import abstractmethod
+from collections.abc import Collection
 from functools import cached_property
 from importlib.resources import files
 import json
@@ -14,6 +15,17 @@ from toolz.dicttoolz import valfilter
 import euphonic.data
 from euphonic.ureg import Quantity, ureg
 from euphonic.util import comma_join, format_error, zips
+
+
+def _validate_key(
+    key: str, *, valid_keys: Collection[str], location: str
+) -> None:
+    if key not in valid_keys:
+        msg = format_error(
+            f'Property {key!r} not found in {location!r}.',
+            fix=(f'Available keys: {comma_join(valid_keys)}.'),
+        )
+        raise KeyError(msg)
 
 
 class Structure(Protocol):
@@ -37,7 +49,9 @@ class IsotopeData(Protocol):
 
     def get_value(self, symbol: str, mass: float, key: str) -> Quantity:
         """Get a property value for specified species"""
-        return self.get_item(symbol, mass)[key]
+        item = self.get_item(symbol, mass)
+        _validate_key(key, valid_keys=item.keys(), location='data')
+        return item[key]
 
     @abstractmethod
     def get_item(self, symbol: str, mass: float) -> dict[str, Quantity]:
@@ -112,13 +126,7 @@ class AtomTypeDictData(ArrayFromValuesMixin, IsotopeData):
         key: str,
     ) -> Quantity:
 
-        if key not in self._data:
-            msg = format_error(
-                f'Property {key!r} not found in dict.',
-                fix=(f'Available keys: {comma_join(self._data.keys())}.'),
-            )
-            raise KeyError(msg)
-
+        _validate_key(key, valid_keys=self._data.keys(), location='dict')
         return self._data[key][symbol]
 
 
@@ -181,12 +189,9 @@ class LegacyJsonData(AtomTypeDictData):
         super().__init__(data)
 
     def get_array(self, structure: Structure, key: str) -> Quantity:
-        if key not in self._data:
-            msg = format_error(
-                f'Property {key!r} not found in {self._collection!r}',
-                fix=(f'Available keys: {comma_join(self._data.keys())}.'),
-            )
-            raise KeyError(msg)
+        _validate_key(
+            key, valid_keys=self._data.keys(), location=self._collection
+        )
         return super().get_array(structure, key)
 
 
@@ -229,7 +234,7 @@ class CsvData(IsotopeData):
         self._csv_file = csv_file
         self._property_map = property_map
 
-    def _get_nearest_row(self, symbol: str, mass: float) -> np.recarray:
+    def _get_symbol_rows(self, symbol: str) -> np.recarray:
         symbol_rows = self._table[self._table['symbol'] == symbol]
         if len(symbol_rows) < 1:
             if ':' in symbol:  # Variant notation e.g. H:D; try the stem as el
@@ -242,7 +247,10 @@ class CsvData(IsotopeData):
                 fix='Ensure symbol corresponds to an element in the table.',
             )
             raise ValueError(msg)
+        return symbol_rows
 
+    def _get_nearest_row(self, symbol: str, mass: float) -> np.recarray:
+        symbol_rows = self._get_symbol_rows(symbol)
         return symbol_rows[np.argmin(np.abs(symbol_rows['mass'] - mass))]
 
     def _validate_raw_value(self, row: np.recarray, key: str) -> None:
@@ -277,13 +285,9 @@ class CsvData(IsotopeData):
         return self._units[self._table.dtype.names.index(key)]
 
     def get_value(self, symbol: str, mass: float, key: str) -> Quantity:
-        table, units = self._table_and_units
-        if key not in table.dtype.names:
-            msg = format_error(
-                f'No data found for {key!r} in {self._csv_file}.',
-                fix='Ensure key corresponds to a column in the table.',
-            )
-            raise AttributeError(msg)
+        _validate_key(
+            key, valid_keys=self._table.dtype.names, location=self._csv_file
+        )
 
         row = self._get_nearest_row(symbol, mass)
         self._validate_raw_value(row, key)
@@ -316,22 +320,7 @@ class CsvData(IsotopeData):
         """Get available data for specified species"""
         table, units = self._table_and_units
 
-        symbol_rows = table[table['symbol'] == symbol]
-        if len(symbol_rows) < 1:
-            if ':' in symbol:  # Variant notation e.g. H:D; try the stem as el
-                return self.get_item(
-                    self, symbol=(symbol.split(':', maxsplit=1)[0])
-                )
-
-            msg = format_error(
-                f'No data found for {symbol!r} in {self._csv_file}.',
-                fix='Ensure symbol corresponds to an element in the table.',
-            )
-            raise ValueError(msg)
-
-        nearest_row = symbol_rows[
-            np.argmin(np.abs(symbol_rows['mass'] - mass))
-        ]
+        nearest_row = self._get_nearest_row(symbol, mass)
 
         values = (
             self._apply_unit(item, unit)
