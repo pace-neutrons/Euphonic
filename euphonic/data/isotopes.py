@@ -22,8 +22,8 @@ def _validate_key(
 ) -> None:
     if key not in valid_keys:
         msg = format_error(
-            f'Property {key!r} not found in {location!r}.',
-            fix=(f'Available keys: {comma_join(valid_keys)}.'),
+            f'Property {key!r} not found in {location}.',
+            fix=f'Available keys: {comma_join(valid_keys)}.',
         )
         raise KeyError(msg)
 
@@ -190,7 +190,7 @@ class LegacyJsonData(AtomTypeDictData):
 
     def get_array(self, structure: Structure, key: str) -> Quantity:
         _validate_key(
-            key, valid_keys=self._data.keys(), location=self._collection
+            key, valid_keys=self._data.keys(), location=repr(self._collection)
         )
         return super().get_array(structure, key)
 
