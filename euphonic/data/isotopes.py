@@ -6,15 +6,17 @@ import json
 from math import isnan
 from pathlib import Path
 import re
-from typing import Any, Protocol
+from typing import Protocol
 
 import numpy as np
 from pint import UndefinedUnitError
-from toolz.dicttoolz import valfilter
 
 import euphonic.data
 from euphonic.ureg import Quantity, ureg
 from euphonic.util import comma_join, format_error, zips
+
+
+class NotQuantityError(TypeError): ...
 
 
 def _validate_key(
@@ -254,7 +256,17 @@ class CsvData(IsotopeData):
         return symbol_rows[np.argmin(np.abs(symbol_rows['mass'] - mass))]
 
     def _validate_raw_value(self, row: np.recarray, key: str) -> None:
-        if isnan(raw_value := row[key]):
+        if isinstance(raw_value := row[key], str):
+            msg = format_error(
+                'This method cannot return str values.',
+                fix=(
+                    'Choose another property, or read '
+                    f'{self._csv_file} by other means.'
+                ),
+            )
+            raise NotQuantityError(msg)
+
+        if isnan(raw_value):
             if row.a_number == 0:
                 summary = (
                     f'Isotopic mixture {row.symbol} has '
@@ -270,16 +282,6 @@ class CsvData(IsotopeData):
                 fix='Ensure key corresponds to a column in the table.',
             )
             raise ValueError(msg)
-
-        if isinstance(raw_value, str):
-            msg = format_error(
-                'This method cannot return str values.',
-                fix=(
-                    'Choose another property, or read '
-                    f'{self._csv_file} by other means.'
-                ),
-            )
-            raise TypeError(msg)
 
     def _get_unit(self, key: str) -> ureg.Unit | None:
         return self._units[self._table.dtype.names.index(key)]
@@ -428,23 +430,8 @@ class CsvData(IsotopeData):
         return self._table_and_units[1]
 
     @cached_property
-    def _unit_map(self) -> dict[str, ureg.Unit]:
-        def is_not_none(a: Any) -> bool:
-            """In operator from Python 3.14"""
-            return a is not None
-
-        table, units = self._table_and_units
-        unit_map = dict(zips(table.dtype.names, units))
-        return valfilter(is_not_none, unit_map)
-
-    @cached_property
     def _table_and_units(self) -> tuple[np.recarray, list[ureg.Unit | None]]:
-        types_map = {
-            'int': int,
-            'float': float,
-            'complex': complex,
-            'str': str,
-        }
+        types_map = {t.name: t for t in (int, float, complex, str)}
 
         # Map of CSV columns to rename: inverse of user-provided map
         name_map = {value: key for key, value in self._property_map}

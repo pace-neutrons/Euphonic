@@ -10,6 +10,7 @@ from euphonic.data.isotopes import (
     AtomTypeShallowDictData,
     IsotopeData,
     LegacyJsonData,
+    NotQuantityError,
     Structure,
     sears_1992,
 )
@@ -181,8 +182,7 @@ class TestSears1992CSV:
         assert None in units
         assert ureg.Unit('fermi') in units
 
-        assert sears_1992._unit_map['mass'] == ureg.Unit('amu')
-        assert 'spin' not in sears_1992._unit_map
+        assert sears_1992._get_unit('mass') == ureg.Unit('amu')
 
     def test_get_item(self) -> None:
         # Monisotopic element
@@ -229,6 +229,9 @@ class TestSears1992CSV:
         assert sears_1992.get_value(
             'Hg', mass=200.7, key='coherent_scattering_length'
              ) == Quantity(12.692+0j, 'fermi')
+
+        with pytest.raises(NotQuantityError):
+            sears_1992.get_value('Hg', mass=200.7, key='spin')
 
     def test_get_array(self, structure) -> None:
         _compare_quantity(sears_1992.get_array(
