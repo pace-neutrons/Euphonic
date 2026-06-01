@@ -13,6 +13,7 @@ from typing import Any, ClassVar, Protocol
 
 import numpy as np
 from pint import UndefinedUnitError
+from toolz.dicttoolz import valfilter
 from typing_extensions import Self
 
 import euphonic.data
@@ -23,7 +24,7 @@ from euphonic.util import comma_join, format_error, zips
 class NotQuantityError(TypeError): ...
 
 
-class MissingValueError(AttributeError): ...
+class MissingValueError(KeyError): ...
 
 
 def _validate_key(
@@ -386,34 +387,6 @@ class CsvData(IsotopeData):
         symbol_rows = self._get_symbol_rows(symbol)
         return symbol_rows[np.argmin(np.abs(symbol_rows['mass'] - mass))]
 
-    def _validate_raw_value(self, row: np.recarray, key: str) -> None:
-        if isinstance(raw_value := row[key], str):
-            msg = format_error(
-                'This method cannot return str values.',
-                fix=(
-                    'Choose another property, or read '
-                    f'{self._csv_file} by other means.'
-                ),
-            )
-            raise NotQuantityError(msg)
-
-        if isnan(raw_value):
-            if self._is_missing(row.a_number):
-                summary = (
-                    f'Isotopic mixture {row.symbol} has '
-                    f'invalid value for {key!r}'
-                )
-            else:
-                summary = (
-                    f'Isotope {row.symbol}-{row.a_number} has invalid value '
-                    f'for {key!r}'
-                )
-            msg = format_error(
-                summary,
-                fix='Ensure key corresponds to a column in the table.',
-            )
-            raise ValueError(msg)
-
     def get_value(self, symbol: str, mass: float, key: str) -> Quantity:
         """Get specific column data for specified species
 
@@ -430,23 +403,54 @@ class CsvData(IsotopeData):
         key:
             property name e.g. 'coherent_cross_section'
         """
+        item = self._get_item(symbol, mass)
 
-        _validate_key(
-            key, valid_keys=self._table.dtype.names, location=self._csv_file
-        )
-
-        row = self._get_nearest_row(symbol, mass)
-        self._validate_raw_value(row, key)
-
-        if self._is_missing(row[key]):
+        if key not in item:
             msg = format_error(
-                f'Value is missing for {key} in row {symbol}{row["a_number"]}',
+                f'Column {key} was not found in data.',
+                fix=(
+                    'Check key is spelled correctly and present '
+                    f'in {self._csv_file} for a numerical data type.'
+                ),
+            )
+            raise KeyError(msg)
+        value = item[key]
+
+        if isinstance(value, str):
+            msg = format_error(
+                'This method cannot return str values.',
+                fix=(
+                    'Choose another property, or read '
+                    f'{self._csv_file} by other means.'
+                ),
+            )
+            raise NotQuantityError(msg)
+
+        if self._is_missing(value.magnitude):
+            msg = format_error(
+                f'Value is missing for {key} in row '
+                f'{symbol}{item["a_number"]}',
                 fix='Check isotope is correct, or use another data source.',
             )
             raise MissingValueError(msg)
 
-        col_info = self._column_headers[key]
-        return col_info._apply_unit(row[key])
+        if isnan(value.magnitude):
+            if self._is_missing(item['a_number'].magnitude):
+                summary = (
+                    f'Isotopic mixture {symbol} has invalid value for {key!r}'
+                )
+            else:
+                summary = (
+                    f'Isotope {symbol}-{item["a_number"]} has invalid value '
+                    f'for {key!r}'
+                )
+            msg = format_error(
+                summary,
+                fix='Check isotope is correct, or use another data source.',
+            )
+            raise ValueError(msg)
+
+        return value
 
     def get_array(self, structure: Structure, key: str) -> Quantity:
         targets = list(
@@ -477,16 +481,27 @@ class CsvData(IsotopeData):
         This may include invalid (NaN) values, but *missing* values will be
         omitted from the dict.
         """
+        item = self._get_item(symbol, mass)
+
+        def _allowed_value(value: str | Quantity) -> bool:
+            return not (
+                isinstance(value, str) or self._is_missing(value.magnitude)
+            )
+
+        return valfilter(_allowed_value, item)
+
+    def _get_item(self, symbol: str, mass: float) -> dict[str, Quantity]:
+        """Get available data for specified species
+
+        This may include invalid (NaN) values and missing values
+        (represented by sentry values from CsvData.MISSING).
+        """
         nearest_row = self._get_nearest_row(symbol, mass)
 
         values = (
             (col_info.name, col_info._apply_unit(item))
             for col_info, item in zips(
                 self._column_headers.values(), nearest_row
-            )
-            if (
-                col_info.dtype in (int, float, complex)
-                and not self._is_missing(item)
             )
         )
 
