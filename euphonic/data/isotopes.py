@@ -6,6 +6,7 @@ from functools import cached_property, partial
 from importlib.resources import files
 import json
 from math import isnan
+from numbers import Integral, Real, Complex
 from pathlib import Path
 import re
 from typing import Any, Protocol
@@ -20,7 +21,7 @@ from euphonic.util import comma_join, format_error, zips
 
 
 class NotQuantityError(TypeError): ...
-
+class MissingValueError(AttributeError): ...
 
 def _validate_key(
     key: str, *, valid_keys: Collection[str], location: str
@@ -282,30 +283,12 @@ class CsvColumnInfo:
                 )
                 raise TypeError(msg)
             case x, None:
-                return x * ureg.Unit('dimensionless')
+                return Quantity(x ,'dimensionless')
             case x, unit:
-                return x * unit
+                return Quantity(value, unit)
 
 
 class CsvData(IsotopeData):
-    # Define sentinel values
-
-    MISSING = {
-        int: -(2**31),
-        float: float('-Inf'),
-        complex: complex(float('-Inf'), float('-Inf')),
-    }
-
-    INVALID_FLOAT = float('NaN')
-
-    @classmethod
-    def _is_missing(cls, value: Any) -> bool:
-        """Check if value is None or matches the sentinel of its type
-
-        Empty strings are not considered empty
-        """
-        return value == cls.MISSING.get(type(value))
-
     def __init__(self, csv_file: Path, property_map: dict[str, str]) -> None:
         """Isotope data collection from Sears-like CSV table
 
@@ -328,6 +311,9 @@ class CsvData(IsotopeData):
         Internally, this implementation creates a numpy "record array" and
         queries the data with numpy comparison/indexing features.
 
+        Numpy-friendly sentinel values are used for missing data; these are
+        stored in th MISSING attribute.
+
         Parameters
         ----------
 
@@ -344,6 +330,33 @@ class CsvData(IsotopeData):
         self._csv_file = csv_file
         self._property_map = property_map
         self._column_headers: dict[str, CsvColumnInfo]
+
+    MISSING = {
+        int: -(2**31),
+        float: float('-Inf'),
+        complex: complex(float('-Inf'), float('-Inf')),
+    }
+    INVALID_FLOAT = float('NaN')
+
+    @classmethod
+    def _is_missing(cls, value: Any) -> bool:
+        """Check if value is None or matches the sentinel of its type
+
+        Empty strings are not considered empty
+        """
+        # Numpy classes may need mapping back to their native equivalent
+        match value:
+            case Integral():
+                dtype = int
+            case Real():
+                dtype = float
+            case Complex():
+                dtype = complex
+            case _:
+                dtype = type(value)
+
+        return value == cls.MISSING.get(dtype)
+
 
     def _get_symbol_rows(self, symbol: str) -> np.recarray:
         symbol_rows = self._table[self._table['symbol'] == symbol]
@@ -400,12 +413,12 @@ class CsvData(IsotopeData):
         row = self._get_nearest_row(symbol, mass)
         self._validate_raw_value(row, key)
 
-        if _is_missing(row[key]):
+        if self._is_missing(row[key]):
             msg = format_error(
                 f'Value is missing for {key} in row {symbol}{row["a_number"]}',
                 fix='Check isotope is correct, or use another data source.',
                 )
-            raise AttributeError(msg)
+            raise MissingValueError(msg)
 
         col_info = self._column_headers[key]
         return col_info._apply_unit(row[key])
@@ -442,7 +455,7 @@ class CsvData(IsotopeData):
             for col_info, item in zips(
                 self._column_headers.values(), nearest_row
             )
-            if col_info.dtype in (int, float, complex)
+            if (col_info.dtype in (int, float, complex))
         )
 
         return dict(values)
@@ -460,17 +473,14 @@ class CsvData(IsotopeData):
             item_type = str if item_type is object else item_type
 
             match item, item_type:
-                case '', builtins.int:
-                    return cls.MISSING_INT
-                case '', builtins.float:
-                    return cls.MISSING_FLOAT
-                case '', builtins.complex:
-                    return cls.MISSING_COMPLEX
+                case '', builtins.int | builtins.float | builtins.complex:
+                    return cls.MISSING[item_type]
 
                 case value, builtins.float if not value or bad_float.match(
                     value
                 ):
                     return cls.INVALID_FLOAT
+
                 case value, builtins.complex if not value or bad_complex.match(
                     value
                 ):

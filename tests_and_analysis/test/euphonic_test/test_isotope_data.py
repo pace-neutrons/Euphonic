@@ -10,6 +10,7 @@ from euphonic.data.isotopes import (
     AtomTypeShallowDictData,
     IsotopeData,
     LegacyJsonData,
+    MissingValueError,
     NotQuantityError,
     Structure,
     sears_1992,
@@ -150,14 +151,18 @@ def test_protocol_get_value() -> None:
 def _assert_equal_quantity_dict(
     item_1: dict[str, Quantity], item_2: dict[str, Quantity]
 ) -> None:
-    assert item_1.keys() == item_2.keys()
+    try:
 
-    for key, value in item_1.items():
-        if isnan(value.magnitude):
-            assert isnan(item_2[key].magnitude)
-        else:
-            assert value == item_2[key]
+        assert item_1.keys() == item_2.keys()
 
+        for key, value in item_1.items():
+            if isnan(value.magnitude):
+                assert isnan(item_2[key].magnitude)
+            else:
+                assert value == item_2[key]
+
+    except AssertionError as err:
+        raise AssertionError(item_1, item_2) from err
 
 class TestSears1992CSV:
     def test_internals(self) -> None:
@@ -195,7 +200,7 @@ class TestSears1992CSV:
                 'a_number': Quantity(197, 'dimensionless'),
                 'mass': Quantity(196.966570103, 'amu'),
                 'abundance': Quantity(100.0, 'percent'),
-                'half_life': Quantity(float('nan'), 'year'),
+                'half_life': Quantity(float('-inf'), 'year'),
                 'coherent_scattering_length': Quantity(7.63 + 0j, 'fermi'),
                 'incoherent_scattering_length': Quantity(-1.84 + 0j, 'fermi'),
                 'coherent_cross_section': Quantity(7.32, 'barn'),
@@ -207,17 +212,18 @@ class TestSears1992CSV:
 
         # Isotopic mixture
         # Hg,80,,200.592,,,,(12.692+0j),,20.24,6.6,26.8,372.3
+
         _assert_equal_quantity_dict(
             sears_1992.get_item('Hg', mass=200.7),
             {
                 'z_number': Quantity(80, 'dimensionless'),
-                'a_number': Quantity(0, 'dimensionless'),
+                'a_number': Quantity(-2**31, 'dimensionless'),
                 'mass': Quantity(200.592, 'amu'),
-                'abundance': Quantity(float('nan'), 'percent'),
-                'half_life': Quantity(float('nan'), 'year'),
+                'abundance': Quantity(float('-inf'), 'percent'),
+                'half_life': Quantity(float('-inf'), 'year'),
                 'coherent_scattering_length': Quantity(12.692 + 0j, 'fermi'),
                 'incoherent_scattering_length': Quantity(
-                    float('nan'), 'fermi'
+                    complex(float('-inf'), float('-inf')), 'fermi'
                 ),
                 'coherent_cross_section': Quantity(20.24, 'barn'),
                 'incoherent_cross_section': Quantity(6.6, 'barn'),
@@ -233,6 +239,9 @@ class TestSears1992CSV:
 
         with pytest.raises(NotQuantityError):
             sears_1992.get_value('Hg', mass=200.7, key='spin')
+
+        with pytest.raises(MissingValueError):
+            sears_1992.get_value('Hg', mass=200.7, key='half_life')
 
     def test_get_array(self, structure) -> None:
         _compare_quantity(sears_1992.get_array(
