@@ -555,7 +555,7 @@ class CsvData(IsotopeData):
         # Map of CSV columns to rename: inverse of user-provided map
         name_map = {value: key for key, value in self._property_map.items()}
 
-        with self._csv_file.open('rt') as fd:
+        with self._csv_file.open('rt', encoding='utf-8') as fd:
             col_names = next(fd).strip().split(',')
             col_types = next(fd).strip().split(',')
             records = fd.readlines()
