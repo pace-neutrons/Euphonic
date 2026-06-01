@@ -161,7 +161,7 @@ def _assert_equal_quantity_dict(
 
 class TestSears1992CSV:
     def test_internals(self) -> None:
-        table, units = sears_1992._table_and_units
+        table = sears_1992._table
 
         assert table.dtype == [
             ('symbol', object),
@@ -179,10 +179,11 @@ class TestSears1992CSV:
             ('absorption_cross_section', '<f8'),
         ]
 
-        assert None in units
-        assert ureg.Unit('fermi') in units
-
-        assert sears_1992._get_unit('mass') == ureg.Unit('amu')
+        column_headers = sears_1992._column_headers
+        all_units = {col_info.unit for col_info in column_headers.values()}
+        assert None in all_units
+        assert ureg.Unit('fermi') in all_units
+        assert sears_1992._column_headers['mass'].unit == ureg.Unit('amu')
 
     def test_get_item(self) -> None:
         # Monisotopic element

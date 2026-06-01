@@ -1,15 +1,18 @@
 from abc import abstractmethod
+import builtins
 from collections.abc import Collection
-from functools import cached_property
+from dataclasses import dataclass
+from functools import cached_property, partial
 from importlib.resources import files
 import json
 from math import isnan
 from pathlib import Path
 import re
-from typing import Protocol
+from typing import Any, Protocol
 
 import numpy as np
 from pint import UndefinedUnitError
+from typing_extensions import Self
 
 import euphonic.data
 from euphonic.ureg import Quantity, ureg
@@ -197,7 +200,112 @@ class LegacyJsonData(AtomTypeDictData):
         return super().get_array(structure, key)
 
 
+@dataclass
+class CsvColumnInfo:
+    name: str
+    dtype: type
+    unit: ureg.Unit | None
+
+    @classmethod
+    def from_raw(
+        cls, raw_name: str, raw_dtype: str, name_map: dict[str, str]
+    ) -> Self:
+        """Convert items from zipped CSV headers
+
+        Parameters
+        ----------
+
+        raw_name:
+          e.g. 'b_inc (fermi)'
+
+        raw_dtype:
+          e.g. 'complex'
+
+        name_map:
+          mapping from CSV column header names (without unit) and names used in
+          resulting data objects. Empty dict {} is an acceptable value; missing
+          items will not be changed.
+
+          Note that this is the inverse of the CsvData ``property_map``.
+
+          e.g. {'b_inc': 'incoherent_scattering_length'}
+
+        """
+        name, unit = cls._split_unit(raw_name)
+        name = name_map.get(name, name)
+
+        dtype = getattr(builtins, raw_dtype)
+
+        if unit is None:
+            return cls(name, dtype, None)
+        return cls(name, dtype, ureg.Unit(unit))
+
+    @staticmethod
+    def _split_unit(col_header: str) -> tuple[str, str | None]:
+        if match := re.match(
+            r"""(.+?)      # Mandatory NAME; any characters, non-greedy
+                               #
+                   \s*         # Any amount of whitespace between NAME and UNIT
+                               #
+                   (           # Begin unit group
+                               #
+                   \(.+\)    # At least one character surrounded by parens
+                               #
+                   )?$         # Optional group must complete the input string;
+                               # this ensures whole line is used despite
+                               # non-greedy NAME.  Otherwise we can get
+                               # 'NAME (UNIT)' -> ('N', None)
+                """,
+            col_header,
+            re.VERBOSE,
+        ):
+            name, unit = match.groups()
+            return name.strip(), unit.strip() if unit else None
+
+        msg = format_error(
+            f'Could not interpret column header {col_header!r}.',
+            fix='Format should be "name (unit)" or "name".',
+        )
+        raise ValueError(msg)
+
+    def _apply_unit(
+        self, value: int | float | complex | np.ndarray | str
+    ) -> Quantity | str:
+        """Apply unit to number or make Dimensionless"""
+        match value, self.unit:
+            case str(s), None:
+                return s
+            case str(), _:
+                msg = format_error(
+                    'Cannot apply units to a string.',
+                    fix='Check header format in CSV data.',
+                )
+                raise TypeError(msg)
+            case x, None:
+                return x * ureg.Unit('dimensionless')
+            case x, unit:
+                return x * unit
+
+
 class CsvData(IsotopeData):
+    # Define sentinel values
+
+    MISSING = {
+        int: -(2**31),
+        float: float('-Inf'),
+        complex: complex(float('-Inf'), float('-Inf')),
+    }
+
+    INVALID_FLOAT = float('NaN')
+
+    @classmethod
+    def _is_missing(cls, value: Any) -> bool:
+        """Check if value is None or matches the sentinel of its type
+
+        Empty strings are not considered empty
+        """
+        return value == cls.MISSING.get(type(value))
+
     def __init__(self, csv_file: Path, property_map: dict[str, str]) -> None:
         """Isotope data collection from Sears-like CSV table
 
@@ -235,6 +343,7 @@ class CsvData(IsotopeData):
         """
         self._csv_file = csv_file
         self._property_map = property_map
+        self._column_headers: dict[str, CsvColumnInfo]
 
     def _get_symbol_rows(self, symbol: str) -> np.recarray:
         symbol_rows = self._table[self._table['symbol'] == symbol]
@@ -267,7 +376,7 @@ class CsvData(IsotopeData):
             raise NotQuantityError(msg)
 
         if isnan(raw_value):
-            if row.a_number == 0:
+            if self._is_missing(row.a_number):
                 summary = (
                     f'Isotopic mixture {row.symbol} has '
                     f'invalid value for {key!r}'
@@ -283,9 +392,6 @@ class CsvData(IsotopeData):
             )
             raise ValueError(msg)
 
-    def _get_unit(self, key: str) -> ureg.Unit | None:
-        return self._units[self._table.dtype.names.index(key)]
-
     def get_value(self, symbol: str, mass: float, key: str) -> Quantity:
         _validate_key(
             key, valid_keys=self._table.dtype.names, location=self._csv_file
@@ -294,7 +400,15 @@ class CsvData(IsotopeData):
         row = self._get_nearest_row(symbol, mass)
         self._validate_raw_value(row, key)
 
-        return self._apply_unit(row[key], self._get_unit(key))
+        if _is_missing(row[key]):
+            msg = format_error(
+                f'Value is missing for {key} in row {symbol}{row["a_number"]}',
+                fix='Check isotope is correct, or use another data source.',
+                )
+            raise AttributeError(msg)
+
+        col_info = self._column_headers[key]
+        return col_info._apply_unit(row[key])
 
     def get_array(self, structure: Structure, key: str) -> Quantity:
         targets = list(
@@ -316,83 +430,25 @@ class CsvData(IsotopeData):
         for i, target in enumerate(targets):
             result_raw[i] = value_table[target]
 
-        return self._apply_unit(result_raw, self._get_unit(key))
+        col_info = self._column_headers[key]
+        return col_info._apply_unit(result_raw)
 
     def get_item(self, symbol: str, mass: float) -> dict[str, Quantity]:
         """Get available data for specified species"""
-        table, units = self._table_and_units
-
         nearest_row = self._get_nearest_row(symbol, mass)
 
         values = (
-            self._apply_unit(item, unit)
-            for item, unit in zips(nearest_row, units)
-        )
-
-        return {
-            key: val
-            for (key, val) in zips(table.dtype.names, values)
-            if val is not None
-        }
-
-    @staticmethod
-    def _apply_unit(
-        value: int | float | complex | np.ndarray | str, unit: ureg.Unit | None
-    ) -> Quantity | str:
-        """Apply unit to number or make Dimensionless"""
-        match value, unit:
-            case str(), _:
-                return None
-            case _, None:
-                return value * ureg.Unit('dimensionless')
-            case _:
-                return value * unit
-
-    @staticmethod
-    def _split_unit(col_header: str) -> tuple[str, str | None]:
-        if match := re.match(
-            r"""(.+?)      # Mandatory NAME; any characters, non-greedy
-                               #
-                   \s*         # Any amount of whitespace between NAME and UNIT
-                               #
-                   (           # Begin unit group
-                               #
-                   \(.+\)    # At least one character surrounded by parens
-                               #
-                   )?$         # Optional group must complete the input string;
-                               # this ensures whole line is used despite
-                               # non-greedy NAME.  Otherwise we can get
-                               # 'NAME (UNIT)' -> ('N', None)
-                """,
-            col_header,
-            re.VERBOSE,
-        ):
-            name, unit = match.groups()
-            return name.strip(), unit.strip() if unit else None
-
-        msg = format_error(
-            f'Could not interpret column header {col_header!r}.',
-            fix='Format should be "name (unit)" or "name".',
-        )
-        raise ValueError(msg)
-
-    @staticmethod
-    def _check_valid_types(
-        types_line: list[str], types_map: dict[str, type]
-    ) -> None:
-        if unknown_types := set(types_line) - set(types_map):
-            msg = format_error(
-                'Not all types from second line of CSV were recognised.',
-                reason=f'Could not interpret types {unknown_types}.',
-                fix=(
-                    'Second line of CSV should contain comma-separated '
-                    '"int", "complex" and "str"'
-                ),
+            (col_info.name, col_info._apply_unit(item))
+            for col_info, item in zips(
+                self._column_headers.values(), nearest_row
             )
-            raise ValueError(msg)
+            if col_info.dtype in (int, float, complex)
+        )
 
-    @staticmethod
-    def _normalise_record(line: str, types: list[type]) -> tuple:
+        return dict(values)
+
+    @classmethod
+    def _normalise_record(cls, line: str, types: list[type]) -> tuple:
         record = line.strip().split(',')
 
         # We can't deal with uncertain values, these should become NaN
@@ -400,19 +456,25 @@ class CsvData(IsotopeData):
         bad_float = re.compile(r'[±<>].*$')
 
         def _cast(item: str, item_type: type) -> int | float | complex | str:
-            import builtins
+            # str stored as object(pointer) but should still be cast to str
+            item_type = str if item_type is object else item_type
 
             match item, item_type:
                 case '', builtins.int:
-                    return 0
+                    return cls.MISSING_INT
+                case '', builtins.float:
+                    return cls.MISSING_FLOAT
+                case '', builtins.complex:
+                    return cls.MISSING_COMPLEX
+
                 case value, builtins.float if not value or bad_float.match(
                     value
                 ):
-                    return float('NaN')
+                    return cls.INVALID_FLOAT
                 case value, builtins.complex if not value or bad_complex.match(
                     value
                 ):
-                    return complex(float('NaN'), float('NaN'))
+                    return complex(cls.INVALID_FLOAT, cls.INVALID_FLOAT)
                 case _:
                     try:
                         return item_type(item)
@@ -423,43 +485,52 @@ class CsvData(IsotopeData):
 
     @property
     def _table(self) -> np.recarray:
-        return self._table_and_units[0]
+        return self._table_and_headers[0]
 
     @property
-    def _units(self) -> list[ureg.Unit | None]:
-        return self._table_and_units[1]
+    def _column_headers(self) -> dict[str, CsvColumnInfo]:
+        return self._table_and_headers[1]
 
     @cached_property
-    def _table_and_units(self) -> tuple[np.recarray, list[ureg.Unit | None]]:
-        types_map = {t.name: t for t in (int, float, complex, str)}
-
+    def _table_and_headers(
+        self,
+    ) -> tuple[np.recarray, dict[str, CsvColumnInfo]]:
         # Map of CSV columns to rename: inverse of user-provided map
         name_map = {value: key for key, value in self._property_map}
 
         with self._csv_file.open('rt') as fd:
             col_names = next(fd).strip().split(',')
-            types_line = next(fd).strip().split(',')
+            col_types = next(fd).strip().split(',')
+            records = fd.readlines()
 
-            self._check_valid_types(types_line, types_map)
-            types = [types_map[t] for t in types_line]
+        # Column header info is stored on class for later use
+        build_info = partial(CsvColumnInfo.from_raw, name_map=name_map)
+        column_headers = {
+            col_info.name: col_info
+            for col_info in map(build_info, col_names, col_types)
+        }
 
-            col_names, col_units = zips(*map(self._split_unit, col_names))
+        # Use cleaned-up names for recarray columns
+        col_names = (col_info.name for col_info in column_headers.values())
 
-            col_names = [name_map.get(name, name) for name in col_names]
+        # Store strings as pointers in recarray to avoid truncation
+        record_types = [
+            (object if col_info.dtype is str else col_info.dtype)
+            for col_info in column_headers.values()
+        ]
 
-            records = [self._normalise_record(record, types) for record in fd]
+        # Handle some missing/invalid data scenarios
+        records = [
+            self._normalise_record(record, record_types) for record in records
+        ]
 
-            # Store strings a pointers to avoid truncation
-            types = [(object if t is str else t) for t in types]
-
-            table = np.rec.fromrecords(
+        return (
+            np.rec.fromrecords(
                 records,
-                dtype=list(zips(col_names, types)),
-            )
-
-        units = [ureg.Unit(unit) if unit else None for unit in col_units]
-
-        return table, units
+                dtype=list(zips(col_names, record_types)),
+            ),
+            column_headers,
+        )
 
 
 sears_1992 = CsvData(files(euphonic.data) / 'sears-1992.csv', {})
