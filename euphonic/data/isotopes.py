@@ -6,10 +6,10 @@ from functools import cached_property, partial
 from importlib.resources import files
 import json
 from math import isnan
-from numbers import Integral, Real, Complex
+from numbers import Complex, Integral, Real
 from pathlib import Path
 import re
-from typing import Any, Protocol
+from typing import Any, ClassVar, Protocol
 
 import numpy as np
 from pint import UndefinedUnitError
@@ -331,7 +331,7 @@ class CsvData(IsotopeData):
         self._property_map = property_map
         self._column_headers: dict[str, CsvColumnInfo]
 
-    MISSING = {
+    MISSING: ClassVar[dict[str, Any]] = {
         int: -(2**31),
         float: float('-Inf'),
         complex: complex(float('-Inf'), float('-Inf')),

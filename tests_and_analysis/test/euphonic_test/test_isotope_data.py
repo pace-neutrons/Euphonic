@@ -62,7 +62,7 @@ def test_atom_type_dict_data(structure) -> None:
     with pytest.raises(KeyError):
         isotope_data.get_item('K', 0.0)
 
-    with pytest.raises(KeyError, match="Property 'key2' not found in dict."):
+    with pytest.raises(KeyError, match=r"Property 'key2' not found in dict."):
         isotope_data.get_value('Na', 0.0, 'key2')
 
     with pytest.raises(KeyError):
