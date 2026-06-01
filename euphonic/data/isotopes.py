@@ -21,7 +21,10 @@ from euphonic.util import comma_join, format_error, zips
 
 
 class NotQuantityError(TypeError): ...
+
+
 class MissingValueError(AttributeError): ...
+
 
 def _validate_key(
     key: str, *, valid_keys: Collection[str], location: str
@@ -283,7 +286,7 @@ class CsvColumnInfo:
                 )
                 raise TypeError(msg)
             case x, None:
-                return Quantity(x ,'dimensionless')
+                return Quantity(x, 'dimensionless')
             case x, unit:
                 return Quantity(value, unit)
 
@@ -307,6 +310,10 @@ class CsvData(IsotopeData):
         treated as isotopes, including all three properties.  Elements without
         a standard isotopic mixture (such as Tc) should be expressed as a set
         of isotopes.
+
+        Symbols are permitted to include comments/variations after a colon
+        character, e.g. {symbol='H:2', mass=2.0} might conveniently indicate
+        a deuterium nucleus.
 
         Internally, this implementation creates a numpy "record array" and
         queries the data with numpy comparison/indexing features.
@@ -357,14 +364,11 @@ class CsvData(IsotopeData):
 
         return value == cls.MISSING.get(dtype)
 
-
     def _get_symbol_rows(self, symbol: str) -> np.recarray:
         symbol_rows = self._table[self._table['symbol'] == symbol]
         if len(symbol_rows) < 1:
             if ':' in symbol:  # Variant notation e.g. H:D; try the stem as el
-                return self.get_item(
-                    self, symbol=(symbol.split(':', maxsplit=1)[0])
-                )
+                return self._get_symbol_rows(symbol.split(':', maxsplit=1)[0])
 
             msg = format_error(
                 f'No data found for {symbol!r} in {self._csv_file}.',
@@ -406,6 +410,22 @@ class CsvData(IsotopeData):
             raise ValueError(msg)
 
     def get_value(self, symbol: str, mass: float, key: str) -> Quantity:
+        """Get specific column data for specified species
+
+        This will be validated, raising errors if the data is missing or
+        otherwise unusable.
+
+        Parameters
+        ----------
+        symbol:
+            element symbol e.g. 'Hg'
+        mass:
+            mass in a.m.u. e.g. 200.6. This is used to identify the isotope or
+            standard isotope mixture (i.e. row) from reference data table.
+        key:
+            property name e.g. 'coherent_cross_section'
+        """
+
         _validate_key(
             key, valid_keys=self._table.dtype.names, location=self._csv_file
         )
@@ -417,7 +437,7 @@ class CsvData(IsotopeData):
             msg = format_error(
                 f'Value is missing for {key} in row {symbol}{row["a_number"]}',
                 fix='Check isotope is correct, or use another data source.',
-                )
+            )
             raise MissingValueError(msg)
 
         col_info = self._column_headers[key]
@@ -447,7 +467,11 @@ class CsvData(IsotopeData):
         return col_info._apply_unit(result_raw)
 
     def get_item(self, symbol: str, mass: float) -> dict[str, Quantity]:
-        """Get available data for specified species"""
+        """Get available data for specified species
+
+        This may include invalid (NaN) values, but *missing* values will be
+        omitted from the dict.
+        """
         nearest_row = self._get_nearest_row(symbol, mass)
 
         values = (

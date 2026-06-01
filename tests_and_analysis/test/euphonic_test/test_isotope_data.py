@@ -152,7 +152,6 @@ def _assert_equal_quantity_dict(
     item_1: dict[str, Quantity], item_2: dict[str, Quantity]
 ) -> None:
     try:
-
         assert item_1.keys() == item_2.keys()
 
         for key, value in item_1.items():
@@ -163,6 +162,7 @@ def _assert_equal_quantity_dict(
 
     except AssertionError as err:
         raise AssertionError(item_1, item_2) from err
+
 
 class TestSears1992CSV:
     def test_internals(self) -> None:
@@ -217,7 +217,7 @@ class TestSears1992CSV:
             sears_1992.get_item('Hg', mass=200.7),
             {
                 'z_number': Quantity(80, 'dimensionless'),
-                'a_number': Quantity(-2**31, 'dimensionless'),
+                'a_number': Quantity(-(2**31), 'dimensionless'),
                 'mass': Quantity(200.592, 'amu'),
                 'abundance': Quantity(float('-inf'), 'percent'),
                 'half_life': Quantity(float('-inf'), 'year'),
@@ -232,10 +232,19 @@ class TestSears1992CSV:
             },
         )
 
+        _assert_equal_quantity_dict(
+            sears_1992.get_item('Hg', mass=200.7),
+            sears_1992.get_item('Hg:mod', mass=200.7),
+        )
+
     def test_get_value(self) -> None:
         assert sears_1992.get_value(
             'Hg', mass=200.7, key='coherent_scattering_length'
-             ) == Quantity(12.692+0j, 'fermi')
+        ) == Quantity(12.692 + 0j, 'fermi')
+
+        assert sears_1992.get_value(
+            'Hg:mod', mass=200.7, key='coherent_scattering_length'
+        ) == Quantity(12.692 + 0j, 'fermi')
 
         with pytest.raises(NotQuantityError):
             sears_1992.get_value('Hg', mass=200.7, key='spin')
@@ -244,7 +253,13 @@ class TestSears1992CSV:
             sears_1992.get_value('Hg', mass=200.7, key='half_life')
 
     def test_get_array(self, structure) -> None:
-        _compare_quantity(sears_1992.get_array(
-            structure, 'scattering_cross_section'),
-                          Quantity([3.28, 16.8], 'barn')
-                )
+        _compare_quantity(
+            sears_1992.get_array(structure, 'scattering_cross_section'),
+            Quantity([3.28, 16.8], 'barn'),
+        )
+
+        structure.atom_type[1] += ':mod'
+        _compare_quantity(
+            sears_1992.get_array(structure, 'scattering_cross_section'),
+            Quantity([3.28, 16.8], 'barn'),
+        )
