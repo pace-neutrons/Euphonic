@@ -200,7 +200,6 @@ class TestSears1992CSV:
                 'a_number': Quantity(197, 'dimensionless'),
                 'mass': Quantity(196.966570103, 'amu'),
                 'abundance': Quantity(100.0, 'percent'),
-                'half_life': Quantity(float('-inf'), 'year'),
                 'coherent_scattering_length': Quantity(7.63 + 0j, 'fermi'),
                 'incoherent_scattering_length': Quantity(-1.84 + 0j, 'fermi'),
                 'coherent_cross_section': Quantity(7.32, 'barn'),
@@ -217,14 +216,8 @@ class TestSears1992CSV:
             sears_1992.get_item('Hg', mass=200.7),
             {
                 'z_number': Quantity(80, 'dimensionless'),
-                'a_number': Quantity(-(2**31), 'dimensionless'),
                 'mass': Quantity(200.592, 'amu'),
-                'abundance': Quantity(float('-inf'), 'percent'),
-                'half_life': Quantity(float('-inf'), 'year'),
                 'coherent_scattering_length': Quantity(12.692 + 0j, 'fermi'),
-                'incoherent_scattering_length': Quantity(
-                    complex(float('-inf'), float('-inf')), 'fermi'
-                ),
                 'coherent_cross_section': Quantity(20.24, 'barn'),
                 'incoherent_cross_section': Quantity(6.6, 'barn'),
                 'scattering_cross_section': Quantity(26.8, 'barn'),

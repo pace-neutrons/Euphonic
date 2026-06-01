@@ -246,6 +246,12 @@ class CsvColumnInfo:
 
     @staticmethod
     def _split_unit(col_header: str) -> tuple[str, str | None]:
+        """Split unit from column name if present
+
+        e.g.::
+            'name  '       -> 'name', None
+            'name (unit)'  -> 'name', '(unit)'
+        """
         if match := re.match(
             r"""(.+?)      # Mandatory NAME; any characters, non-greedy
                                #
@@ -336,7 +342,6 @@ class CsvData(IsotopeData):
         """
         self._csv_file = csv_file
         self._property_map = property_map
-        self._column_headers: dict[str, CsvColumnInfo]
 
     MISSING: ClassVar[dict[str, Any]] = {
         int: -(2**31),
@@ -479,7 +484,10 @@ class CsvData(IsotopeData):
             for col_info, item in zips(
                 self._column_headers.values(), nearest_row
             )
-            if (col_info.dtype in (int, float, complex))
+            if (
+                col_info.dtype in (int, float, complex)
+                and not self._is_missing(item)
+            )
         )
 
         return dict(values)
@@ -530,7 +538,7 @@ class CsvData(IsotopeData):
         self,
     ) -> tuple[np.recarray, dict[str, CsvColumnInfo]]:
         # Map of CSV columns to rename: inverse of user-provided map
-        name_map = {value: key for key, value in self._property_map}
+        name_map = {value: key for key, value in self._property_map.items()}
 
         with self._csv_file.open('rt') as fd:
             col_names = next(fd).strip().split(',')
