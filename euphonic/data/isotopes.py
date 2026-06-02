@@ -333,17 +333,20 @@ class CsvData(IsotopeData):
         queries the data with numpy comparison/indexing features.
 
         Numpy-friendly sentinel values are used for missing data; these are
-        stored in th MISSING attribute.
+        stored in the MISSING attribute.
 
         Parameters
         ----------
 
-        csv_file: reference data set, such as sears-1992.csv
-        property_columns: mapping of property names to column headers in CSV.
+        csv_file:
+            reference data set, such as sears-1992.csv
+        property_columns:
+            mapping of property names to column headers in CSV.
             The property names *must* include symbol, mass and a_number; these
             are used to select and organise the data.
 
-        property_map: mapping of keys used to access data to column names in
+        property_map:
+            mapping of keys used to access data to column names in
             original CSV table. e.g. {"coherent_scattering_length": "b_c"} By
             default the original column names are used (with units stripped),
             so {} is an acceptable value given the right CSV headers.
