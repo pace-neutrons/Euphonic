@@ -14,6 +14,7 @@ from typing import Any, ClassVar, Protocol
 import numpy as np
 from pint import UndefinedUnitError
 from toolz.dicttoolz import valfilter
+from toolz.itertoolz import first
 from typing_extensions import Self
 
 import euphonic.data
@@ -503,7 +504,7 @@ class CsvData(IsotopeData):
         result_raw = np.empty_like(
             structure.atom_mass,
             dtype=type(  # int, real or complex
-                next(iter(value_table.values()))
+                first(value_table.values())
             ),
         )
 
