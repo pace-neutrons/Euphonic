@@ -411,18 +411,24 @@ class CsvData(IsotopeData):
         symbol_rows = self._get_symbol_rows(symbol)
         nearest = symbol_rows[np.argmin(np.abs(symbol_rows['mass'] - mass))]
 
-        if np.abs(nearest['mass'] - mass) > self.MASS_MATCH_THRESHOLD:
+        if not np.isclose(
+            nearest['mass'], mass, atol=self.MASS_MATCH_THRESHOLD
+        ):
             msg = format_error(
                 f'Could not find a satisfactory match in {self._csv_file} '
                 f'for {symbol} with mass {mass}: best match was '
                 f'{self._format_row_name(nearest)} with mass {mass}.',
-                fix=('Correct input symbol and mass '
-                     'or use a different data source.')
-                )
+                fix=(
+                    'Correct input symbol and mass '
+                    'or use a different data source.'
+                ),
+            )
             raise NoMatchingIsotopeError(msg)
 
-        print(f'Found reference data for {self._format_row_name(nearest)} '
-              f'to match input symbol {symbol} with mass {mass}.')
+        print(
+            f'Found reference data for {self._format_row_name(nearest)} '
+            f'to match input symbol {symbol} with mass {mass}.'
+        )
 
         return nearest
 
