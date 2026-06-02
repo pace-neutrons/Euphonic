@@ -76,7 +76,8 @@ def get_reference_data(
                 f'with property {physical_property!r}.'
             ),
             fix=(
-                f'Available properties for this collection: {comma_join(data)}.'
+                'Available properties for this collection:'
+                f' {comma_join(data)}.'
             ),
         )
         raise ValueError(msg)
