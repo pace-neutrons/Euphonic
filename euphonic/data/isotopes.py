@@ -403,7 +403,7 @@ class CsvData(IsotopeData):
 
     @classmethod
     def _format_row_name(cls, row: np.record) -> str:
-        if row.a_number == cls.MISSING[int]:
+        if cls._is_missing(row.a_number):
             return f'{row.symbol}'
         return f'{row.symbol}-{row.a_number}'
 
