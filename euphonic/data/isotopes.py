@@ -253,24 +253,31 @@ class CsvColumnInfo:
             'name  '       -> 'name', None
             'name (unit)'  -> 'name', '(unit)'
         """
+
         if match := re.match(
-            r"""(.+?)      # Mandatory NAME; any characters, non-greedy
-                               #
-                   \s*         # Any amount of whitespace between NAME and UNIT
-                               #
-                   (           # Begin unit group
-                               #
-                   \(.+\)    # At least one character surrounded by parens
-                               #
-                   )?$         # Optional group must complete the input string;
-                               # this ensures whole line is used despite
-                               # non-greedy NAME.  Otherwise we can get
-                               # 'NAME (UNIT)' -> ('N', None)
+            r"""
+                (?P<name>\w+?)  # Mandatory NAME; any characters, non-greedy
+                                #
+                \s*             # Any amount of whitespace
+                                #
+                (?:             # Begin non-capturing (UNIT) group
+                                #
+                   \(           # literal (
+                                #
+                   (?P<unit>.+) # capture anything between parens as UNIT
+                                #
+                                #
+                   \)           # literal )
+                                #
+                )?$             # Optional group must complete the input
+                                # string; this ensures whole line is used
+                                # despite non-greedy NAME.  Otherwise we can
+                                # get 'NAME (UNIT)' -> ('N', None)
                 """,
             col_header,
             re.VERBOSE,
         ):
-            name, unit = match.groups()
+            name, unit = match.group('name', 'unit')
             return name.strip(), unit.strip() if unit else None
 
         msg = format_error(
