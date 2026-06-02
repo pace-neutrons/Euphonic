@@ -553,12 +553,12 @@ class CsvData(IsotopeData):
 
         return dict(values)
 
+    # We can't deal with uncertain values, these should become NaN
+    _bad_complex = re.compile(r'\(?[±<>].*$')
+    _bad_float = re.compile(r'[±<>].*$')
+
     @classmethod
     def _normalise_record(cls, record: list[str], types: list[type]) -> tuple:
-
-        # We can't deal with uncertain values, these should become NaN
-        bad_complex = re.compile(r'\(?[±<>].*$')
-        bad_float = re.compile(r'[±<>].*$')
 
         def _cast(item: str, item_type: type) -> int | float | complex | str:
             # str stored as object(pointer) but should still be cast to str
@@ -568,13 +568,13 @@ class CsvData(IsotopeData):
                 case '', builtins.int | builtins.float | builtins.complex:
                     return cls.MISSING[item_type]
 
-                case value, builtins.float if not value or bad_float.match(
-                    value
+                case value, builtins.float if (
+                    not value or cls._bad_float.match(value)
                 ):
                     return cls.INVALID_FLOAT
 
-                case value, builtins.complex if not value or bad_complex.match(
-                    value
+                case value, builtins.complex if (
+                    not value or cls._bad_complex.match(value)
                 ):
                     return complex(cls.INVALID_FLOAT, cls.INVALID_FLOAT)
                 case _:
