@@ -1,4 +1,3 @@
-# ruff: noqa: PLC0415
 """This private module contains the implementation of get_reference_data
 
 That function is publicly available to import from euphonic.util, but is
@@ -77,7 +76,7 @@ def get_reference_data(
                 f'with property {physical_property!r}.'
             ),
             fix=(
-                f'Available properties for this collection:{comma_join(data)}.'
+                f'Available properties for this collection: {comma_join(data)}.'
             ),
         )
         raise ValueError(msg)
