@@ -1,6 +1,7 @@
 from abc import abstractmethod
 import builtins
 from collections.abc import Collection
+import csv
 from dataclasses import dataclass
 from functools import cached_property, partial
 from importlib.resources import files
@@ -553,8 +554,7 @@ class CsvData(IsotopeData):
         return dict(values)
 
     @classmethod
-    def _normalise_record(cls, line: str, types: list[type]) -> tuple:
-        record = line.strip().split(',')
+    def _normalise_record(cls, record: list[str], types: list[type]) -> tuple:
 
         # We can't deal with uncertain values, these should become NaN
         bad_complex = re.compile(r'\(?[±<>].*$')
@@ -601,9 +601,10 @@ class CsvData(IsotopeData):
         name_map = {value: key for key, value in self._property_map.items()}
 
         with self._csv_file.open('rt', encoding='utf-8') as fd:
-            col_names = next(fd).strip().split(',')
-            col_types = next(fd).strip().split(',')
-            records = fd.readlines()
+            reader = csv.reader(fd)
+            col_names = next(reader)
+            col_types = next(reader)
+            records = list(reader)
 
         # Column header info is stored on class for later use
         build_info = partial(CsvColumnInfo.from_raw, name_map=name_map)
