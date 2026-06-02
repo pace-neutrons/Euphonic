@@ -260,23 +260,23 @@ class CsvColumnInfo:
 
         if match := re.match(
             r"""
-                (?P<name>\w+?)  # Mandatory NAME; any characters, non-greedy
-                                #
-                \s*             # Any amount of whitespace
-                                #
-                (?:             # Begin non-capturing (UNIT) group
-                                #
-                   \(           # literal (
-                                #
-                   (?P<unit>.+) # capture anything between parens as UNIT
-                                #
-                                #
-                   \)           # literal )
-                                #
-                )?$             # Optional group must complete the input
-                                # string; this ensures whole line is used
-                                # despite non-greedy NAME.  Otherwise we can
-                                # get 'NAME (UNIT)' -> ('N', None)
+              (?P<name>\w+?)  # Mandatory NAME; any word characters, non-greedy
+                              #
+              \s*             # Any amount of whitespace
+                              #
+              (?:             # Begin non-capturing (UNIT) group
+                              #
+                 \(           # literal (
+                              #
+                 (?P<unit>.+) # capture anything between parens as UNIT
+                              #
+                              #
+                 \)           # literal )
+                              #
+              )?$             # Optional group must complete the input
+                              # string; this ensures whole line is used
+                              # despite non-greedy NAME.  Otherwise we can
+                              # get 'NAME (UNIT)' -> ('N', None)
                 """,
             col_header,
             re.VERBOSE,
