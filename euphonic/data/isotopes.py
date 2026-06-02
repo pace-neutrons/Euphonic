@@ -27,6 +27,9 @@ class NotQuantityError(TypeError): ...
 class MissingValueError(KeyError): ...
 
 
+class NoMatchingIsotopeError(KeyError): ...
+
+
 def _validate_key(
     key: str, *, valid_keys: Collection[str], location: str
 ) -> None:
@@ -335,6 +338,9 @@ class CsvData(IsotopeData):
         Numpy-friendly sentinel values are used for missing data; these are
         stored in the MISSING attribute.
 
+        The MASS_MATCH_THRESHOLD attribute sets the tolerance for mismatch
+        between input masses and matched data rows.
+
         Parameters
         ----------
 
@@ -360,6 +366,7 @@ class CsvData(IsotopeData):
         complex: complex(float('-Inf'), float('-Inf')),
     }
     INVALID_FLOAT = float('NaN')
+    MASS_MATCH_THRESHOLD = 0.3
 
     @classmethod
     def _is_missing(cls, value: Any) -> bool:
@@ -393,9 +400,30 @@ class CsvData(IsotopeData):
             raise ValueError(msg)
         return symbol_rows
 
+    @classmethod
+    def _format_row_name(cls, row: np.record) -> str:
+        if row.a_number == cls.MISSING[int]:
+            return f'{row.symbol}'
+        return f'{row.symbol}-{row.a_number}'
+
     def _get_nearest_row(self, symbol: str, mass: float) -> np.recarray:
         symbol_rows = self._get_symbol_rows(symbol)
-        return symbol_rows[np.argmin(np.abs(symbol_rows['mass'] - mass))]
+        nearest = symbol_rows[np.argmin(np.abs(symbol_rows['mass'] - mass))]
+
+        if np.abs(nearest['mass'] - mass) > self.MASS_MATCH_THRESHOLD:
+            msg = format_error(
+                f'Could not find a satisfactory match in {self._csv_file} '
+                f'for {symbol} with mass {mass}: best match was '
+                f'{self._format_row_name(nearest)} with mass {mass}.',
+                fix=('Correct input symbol and mass '
+                     'or use a different data source.')
+                )
+            raise NoMatchingIsotopeError(msg)
+
+        print(f'Found reference data for {self._format_row_name(nearest)} '
+              f'to match input symbol {symbol} with mass {mass}.')
+
+        return nearest
 
     def get_value(self, symbol: str, mass: float, key: str) -> Quantity:
         """Get specific column data for specified species

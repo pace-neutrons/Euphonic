@@ -11,6 +11,7 @@ from euphonic.data.isotopes import (
     IsotopeData,
     LegacyJsonData,
     MissingValueError,
+    NoMatchingIsotopeError,
     NotQuantityError,
     Structure,
     sears_1992,
@@ -229,6 +230,9 @@ class TestSears1992CSV:
             sears_1992.get_item('Hg', mass=200.7),
             sears_1992.get_item('Hg:mod', mass=200.7),
         )
+
+        with pytest.raises(NoMatchingIsotopeError):
+            sears_1992.get_item('H', mass=1.5)
 
     def test_get_value(self) -> None:
         assert sears_1992.get_value(
