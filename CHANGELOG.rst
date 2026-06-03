@@ -87,7 +87,7 @@
     created. This now supports more data columns (i.e. it can be used
     for both incoherent and coherent scattering lengths and cross
     sections) and has a full set of isotopes (as per 1992 data, anyway).
-    The correct isotope or mixture selected automatically using
+    The correct isotope or mixture is selected automatically using
     element symbols and mass data from Crystal.
 
 - Other changes
