@@ -12,6 +12,7 @@ from euphonic.data.isotopes import (
     AtomTypeShallowDictData,
     IsotopeData,
     LegacyJsonData,
+    sears_1992,
 )
 from euphonic.debye_waller import DebyeWaller
 from euphonic.io import _obj_from_json_file, _obj_to_dict, _process_dict
@@ -756,6 +757,12 @@ def _get_cross_sections(
 
         case None, _:
             return None
+
+        case 'coherent-plus-incoherent', 'Sears1992':
+            return sears_1992.get_array(crystal, 'scattering_cross_section')
+
+        case str(), 'Sears1992':
+            return sears_1992.get_array(crystal, weighting)
 
         case str(), _ if hasattr(cross_sections, 'get_array'):
             return cross_sections.get_array(crystal, weighting)
