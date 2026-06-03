@@ -15,13 +15,7 @@ from euphonic import (
     Spectrum1DCollection,
 )
 from euphonic.qpoint_phonon_modes import IsotopeDataset
-from euphonic.sampling import (
-        golden_sphere,
-        random_sphere,
-        sphere_from_square_grid,
-        spherical_polar_grid,
-        spherical_polar_improved,
-)
+import euphonic.sampling
 from euphonic.util import (
     RNG,
     comma_join,
@@ -426,14 +420,15 @@ def _get_qpts_sphere(npts: int,
     match sampling:
         case 'golden':
             return np.asarray(
-                list(golden_sphere(npts, jitter=jitter, rng=rng)),
+                list(euphonic.sampling.golden_sphere(
+                    npts, jitter=jitter, rng=rng)),
             )
 
         case 'sphere-projected-grid':
             n_cols = _check_gridpts(npts)
             return np.asarray(
                 list(
-                    sphere_from_square_grid(
+                    euphonic.sampling.sphere_from_square_grid(
                         n_cols * 2,
                         n_cols,
                         jitter=jitter,
@@ -446,7 +441,7 @@ def _get_qpts_sphere(npts: int,
             n_cols = _check_gridpts(npts)
             return np.asarray(
                 list(
-                    spherical_polar_grid(
+                    euphonic.sampling.spherical_polar_grid(
                         n_cols * 2,
                         n_cols,
                         jitter=jitter,
@@ -457,9 +452,12 @@ def _get_qpts_sphere(npts: int,
 
         case 'spherical-polar-improved':
             return np.asarray(
-                list(spherical_polar_improved(npts, jitter=jitter, rng=rng)))
+                list(
+                    euphonic.sampling.spherical_polar_improved(
+                        npts, jitter=jitter, rng=rng)))
         case 'random-sphere':
-            return np.asarray(list(random_sphere(npts, rng=rng)))
+            return np.asarray(
+                list(euphonic.sampling.random_sphere(npts, rng=rng)))
 
     msg = format_error(
         f'Unknown sampling method ({sampling}).',
