@@ -15,11 +15,17 @@ from euphonic import (
     Spectrum1DCollection,
 )
 from euphonic.qpoint_phonon_modes import IsotopeDataset
+from euphonic.sampling import (
+        golden_sphere,
+        random_sphere,
+        sphere_from_square_grid,
+        spherical_polar_grid,
+        spherical_polar_improved,
+)
 from euphonic.util import (
     RNG,
     comma_join,
     format_error,
-    get_reference_data,
     mp_grid,
     rng,
 )
@@ -417,15 +423,6 @@ def _get_qpts_sphere(npts: int,
     unity.  To obtain Cartesian coordinates with units, multiply by a
     float Quantity.
     """
-
-    from euphonic.sampling import (
-        golden_sphere,
-        random_sphere,
-        sphere_from_square_grid,
-        spherical_polar_grid,
-        spherical_polar_improved,
-    )
-
     match sampling:
         case 'golden':
             return np.asarray(
