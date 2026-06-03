@@ -133,9 +133,11 @@ def test_legacy_json_data(structure, bad_structure) -> None:
     with pytest.raises(KeyError):
         isotope_data.get_array(bad_structure, 'coherent_scattering_length')
 
+
 def test_legacy_json_data_from_file() -> None:
     isotope_data = LegacyJsonData(
-        str(files(euphonic.data) / 'sears-1992.json'))
+        str(files(euphonic.data) / 'sears-1992.json')
+    )
 
     assert isotope_data.get_item('Na', 0.0) == {
         'coherent_scattering_length': Quantity(3.63, 'fm'),
@@ -149,12 +151,12 @@ def test_legacy_json_bad_file(tmp_path):
     bad_file = tmp_path / 'bad.json'
     with bad_file.open('wt') as fd:
         fd.write('{}\n')
-            
+
     with pytest.raises(
         AttributeError,
-        match='Data file does not contain required key "physical_property".',
+        match=r'Data file does not contain required key "physical_property"\.',
     ):
-        isotope_data = LegacyJsonData(str(bad_file))
+        LegacyJsonData(str(bad_file))
 
     with bad_file.open('wt') as fd:
         fd.write('{"physical_property": {"a": {"Ag": 4.4}}}\n')
@@ -163,7 +165,7 @@ def test_legacy_json_bad_file(tmp_path):
         ValueError,
         match=r'No units in file \(bad.json\)',
     ):
-        isotope_data = LegacyJsonData(str(bad_file))
+        LegacyJsonData(str(bad_file))
 
     with bad_file.open('wt') as fd:
         fd.write("""\
@@ -174,8 +176,7 @@ def test_legacy_json_bad_file(tmp_path):
         ValueError,
         match=r'Unsupported units \(woof\) from data file "bad.json".',
     ):
-        isotope_data = LegacyJsonData(str(bad_file))
-
+        LegacyJsonData(str(bad_file))
 
 
 def test_protocol_get_value() -> None:
@@ -300,14 +301,18 @@ class TestSears1992CSV:
             sears_1992.get_value('Hg', mass=200.7, key='half_life')
 
         with pytest.raises(KeyError, match='No data found'):
-            sears_1992.get_value('X', mass=1., key='coherent_cross_section')
+            sears_1992.get_value('X', mass=1.0, key='coherent_cross_section')
 
         with pytest.raises(KeyError, match="Column 'dog' was not found"):
             sears_1992.get_value('Hg', mass=200.7, key='dog')
 
         # Scattering length of unknown sign: not usable
-        with pytest.raises(ValueError, match='Isotope Ne-21 has invalid value'):
-            sears_1992.get_value('Ne', mass=20.99, key='incoherent_scattering_length')
+        with pytest.raises(
+            ValueError, match='Isotope Ne-21 has invalid value'
+        ):
+            sears_1992.get_value(
+                'Ne', mass=20.99, key='incoherent_scattering_length'
+            )
 
     def test_get_array(self, structure) -> None:
         _compare_quantity(
@@ -340,6 +345,7 @@ str,int,float,complex
 Ne,,20.99,±3.0+2j
 """
 
+
 class TestCsvData:
     def test_bad_unit(self, tmp_path):
         bad_file = tmp_path / 'bad.csv'
@@ -359,7 +365,7 @@ class TestCsvData:
 
         isotope_data = CsvData(bad_file, {})
         with pytest.raises(
-            TypeError, match='Cannot apply units to a string.'
+            TypeError, match=r'Cannot apply units to a string\.'
         ):
             isotope_data.get_item('H', mass=1.0)
 
