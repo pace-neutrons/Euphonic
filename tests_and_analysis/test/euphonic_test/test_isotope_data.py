@@ -349,7 +349,7 @@ Ne,,20.99,±3.0+2j
 class TestCsvData:
     def test_bad_unit(self, tmp_path):
         bad_file = tmp_path / 'bad.csv'
-        with bad_file.open('wt') as fd:
+        with bad_file.open('wt', encoding='utf-8') as fd:
             print(BAD_UNIT_CSV, file=fd)
 
         isotope_data = CsvData(bad_file, {})
@@ -360,7 +360,7 @@ class TestCsvData:
 
     def test_str_unit(self, tmp_path):
         bad_file = tmp_path / 'bad.csv'
-        with bad_file.open('wt') as fd:
+        with bad_file.open('wt', encoding='utf-8') as fd:
             print(STR_UNIT_CSV, file=fd)
 
         isotope_data = CsvData(bad_file, {})
@@ -371,7 +371,7 @@ class TestCsvData:
 
     def test_unknown_sign(self, tmp_path):
         bad_file = tmp_path / 'bad.csv'
-        with bad_file.open('wt') as fd:
+        with bad_file.open('wt', encoding='utf-8') as fd:
             print(UNKNOWN_SIGN_ELEMENT_CSV, file=fd)
 
         isotope_data = CsvData(bad_file, {})
