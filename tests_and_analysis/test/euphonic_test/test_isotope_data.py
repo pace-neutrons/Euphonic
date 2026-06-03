@@ -1,13 +1,16 @@
 from dataclasses import dataclass
+from importlib.resources import files
 from math import isnan
 
 import numpy as np
 from numpy.testing import assert_allclose
 import pytest
 
+import euphonic.data
 from euphonic.data.isotopes import (
     AtomTypeDictData,
     AtomTypeShallowDictData,
+    CsvData,
     IsotopeData,
     LegacyJsonData,
     MissingValueError,
@@ -130,6 +133,50 @@ def test_legacy_json_data(structure, bad_structure) -> None:
     with pytest.raises(KeyError):
         isotope_data.get_array(bad_structure, 'coherent_scattering_length')
 
+def test_legacy_json_data_from_file() -> None:
+    isotope_data = LegacyJsonData(
+        str(files(euphonic.data) / 'sears-1992.json'))
+
+    assert isotope_data.get_item('Na', 0.0) == {
+        'coherent_scattering_length': Quantity(3.63, 'fm'),
+    }
+
+    with pytest.raises(ValueError, match='No data files known'):
+        isotope_data = LegacyJsonData('no-such-file.json')
+
+
+def test_legacy_json_bad_file(tmp_path):
+    bad_file = tmp_path / 'bad.json'
+    with bad_file.open('wt') as fd:
+        fd.write('{}\n')
+            
+    with pytest.raises(
+        AttributeError,
+        match='Data file does not contain required key "physical_property".',
+    ):
+        isotope_data = LegacyJsonData(str(bad_file))
+
+    with bad_file.open('wt') as fd:
+        fd.write('{"physical_property": {"a": {"Ag": 4.4}}}\n')
+
+    with pytest.raises(
+        ValueError,
+        match=r'No units in file \(bad.json\)',
+    ):
+        isotope_data = LegacyJsonData(str(bad_file))
+
+    with bad_file.open('wt') as fd:
+        fd.write("""\
+            {"physical_property": {"dog": {"__units__": "woof",
+                                           "Ag": 4.4}}}
+            """)
+    with pytest.raises(
+        ValueError,
+        match=r'Unsupported units \(woof\) from data file "bad.json".',
+    ):
+        isotope_data = LegacyJsonData(str(bad_file))
+
+
 
 def test_protocol_get_value() -> None:
     """get_value implemented on protocol but not used in dict-based classes"""
@@ -249,6 +296,19 @@ class TestSears1992CSV:
         with pytest.raises(MissingValueError):
             sears_1992.get_value('Hg', mass=200.7, key='half_life')
 
+        with pytest.raises(MissingValueError):
+            sears_1992.get_value('Hg', mass=200.7, key='half_life')
+
+        with pytest.raises(KeyError, match='No data found'):
+            sears_1992.get_value('X', mass=1., key='coherent_cross_section')
+
+        with pytest.raises(KeyError, match="Column 'dog' was not found"):
+            sears_1992.get_value('Hg', mass=200.7, key='dog')
+
+        # Scattering length of unknown sign: not usable
+        with pytest.raises(ValueError, match='Isotope Ne-21 has invalid value'):
+            sears_1992.get_value('Ne', mass=20.99, key='incoherent_scattering_length')
+
     def test_get_array(self, structure) -> None:
         _compare_quantity(
             sears_1992.get_array(structure, 'scattering_cross_section'),
@@ -260,3 +320,57 @@ class TestSears1992CSV:
             sears_1992.get_array(structure, 'scattering_cross_section'),
             Quantity([3.28, 16.8], 'barn'),
         )
+
+
+BAD_UNIT_CSV = """\
+symbol,a_number,mass (a.m.u.),dog ((,b_length (fermi)
+str,int,float,float,complex
+H,1,1.01,2.0,3.0+2j
+"""
+
+STR_UNIT_CSV = """\
+symbol,a_number,mass (a.m.u.),dog (m),b_length (fermi)
+str,int,float,str,complex
+H,1,1.01,2.0,3.0+2j
+"""
+
+UNKNOWN_SIGN_ELEMENT_CSV = """\
+symbol,a_number,mass (a.m.u.),b_length (fermi)
+str,int,float,complex
+Ne,,20.99,±3.0+2j
+"""
+
+class TestCsvData:
+    def test_bad_unit(self, tmp_path):
+        bad_file = tmp_path / 'bad.csv'
+        with bad_file.open('wt') as fd:
+            print(BAD_UNIT_CSV, file=fd)
+
+        isotope_data = CsvData(bad_file, {})
+        with pytest.raises(
+            ValueError, match='Could not interpret column header'
+        ):
+            isotope_data.get_item('H', mass=1.0)
+
+    def test_str_unit(self, tmp_path):
+        bad_file = tmp_path / 'bad.csv'
+        with bad_file.open('wt') as fd:
+            print(STR_UNIT_CSV, file=fd)
+
+        isotope_data = CsvData(bad_file, {})
+        with pytest.raises(
+            TypeError, match='Cannot apply units to a string.'
+        ):
+            isotope_data.get_item('H', mass=1.0)
+
+    def test_unknown_sign(self, tmp_path):
+        bad_file = tmp_path / 'bad.csv'
+        with bad_file.open('wt') as fd:
+            print(UNKNOWN_SIGN_ELEMENT_CSV, file=fd)
+
+        isotope_data = CsvData(bad_file, {})
+
+        with pytest.raises(
+            ValueError, match='Isotopic mixture Ne has invalid value'
+        ):
+            isotope_data.get_value('Ne', 20.99, 'b_length')

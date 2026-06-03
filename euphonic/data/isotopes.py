@@ -399,7 +399,7 @@ class CsvData(IsotopeData):
                 f'No data found for {symbol!r} in {self._csv_file}.',
                 fix='Ensure symbol corresponds to an element in the table.',
             )
-            raise ValueError(msg)
+            raise KeyError(msg)
         return symbol_rows
 
     @classmethod
@@ -453,7 +453,7 @@ class CsvData(IsotopeData):
 
         if key not in item:
             msg = format_error(
-                f'Column {key} was not found in data.',
+                f'Column {key!r} was not found in data.',
                 fix=(
                     'Check key is spelled correctly and present '
                     f'in {self._csv_file} for a numerical data type.'
@@ -487,8 +487,8 @@ class CsvData(IsotopeData):
                 )
             else:
                 summary = (
-                    f'Isotope {symbol}-{item["a_number"]} has invalid value '
-                    f'for {key!r}'
+                    f'Isotope {symbol}-{item["a_number"].magnitude} has '
+                    f'invalid value for {key!r}'
                 )
             msg = format_error(
                 summary,
@@ -604,7 +604,7 @@ class CsvData(IsotopeData):
             reader = csv.reader(fd)
             col_names = next(reader)
             col_types = next(reader)
-            records = list(reader)
+            records = list(filter(None, reader))
 
         # Column header info is stored on class for later use
         build_info = partial(CsvColumnInfo.from_raw, name_map=name_map)
@@ -679,7 +679,7 @@ def _get_all_dicts_from_json(
         unit_str = data.get('__units__')
 
         no_units_msg = format_error(
-            f'No units in file ({filename}).',
+            f'No units in file ({file_path.name}).',
             fix='Ensure file specifies dimensions with "__units__" metadata.',
         )
         if unit_str is None:
@@ -689,7 +689,8 @@ def _get_all_dicts_from_json(
             unit = ureg(unit_str)
         except UndefinedUnitError as exc:
             msg = format_error(
-                f'Unsupported units ({unit_str}) from data file "{filename}".',
+                f'Unsupported units ({unit_str}) from data file '
+                f'"{file_path.name}".',
                 fix='Ensure units are supported by Euphonic unit register.',
             )
             raise ValueError(msg) from exc
