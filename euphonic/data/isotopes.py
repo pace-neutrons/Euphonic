@@ -525,6 +525,12 @@ class CsvData(IsotopeData):
         col_info = self._column_headers[key]
         return col_info._apply_unit(result_raw)
 
+    @classmethod
+    def _allowed_value(cls, value: str | Quantity) -> bool:
+        return not (
+            isinstance(value, str) or cls._is_missing(value.magnitude)
+        )
+
     def get_item(self, symbol: str, mass: float) -> dict[str, Quantity]:
         """Get available data for specified species
 
@@ -532,13 +538,7 @@ class CsvData(IsotopeData):
         omitted from the dict.
         """
         item = self._get_item(symbol, mass)
-
-        def _allowed_value(value: str | Quantity) -> bool:
-            return not (
-                isinstance(value, str) or self._is_missing(value.magnitude)
-            )
-
-        return valfilter(_allowed_value, item)
+        return valfilter(self._allowed_value, item)
 
     def _get_item(self, symbol: str, mass: float) -> dict[str, Quantity]:
         """Get available data for specified species
