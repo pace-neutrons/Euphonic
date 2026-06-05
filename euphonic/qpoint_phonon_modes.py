@@ -8,14 +8,14 @@ import numpy as np
 from typing_extensions import Self
 
 from euphonic.crystal import Crystal
+from euphonic.debye_waller import DebyeWaller
+from euphonic.io import _obj_from_json_file, _obj_to_dict, _process_dict
 from euphonic.isotopes import (
     AtomTypeShallowDictData,
     IsotopeData,
     LegacyJsonData,
     sears_1992,
 )
-from euphonic.debye_waller import DebyeWaller
-from euphonic.io import _obj_from_json_file, _obj_to_dict, _process_dict
 from euphonic.qpoint_frequencies import (
     FREQ_CHECK,
     AdaptiveMethod,

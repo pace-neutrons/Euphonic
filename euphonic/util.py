@@ -762,4 +762,4 @@ rng: RNG = np.random.default_rng()
 
 # Import last to put this in the namespace without creating import loop.
 # It will be removed in Euphonic v3.
-from euphonic.isotopes._legacy import get_reference_data  # noqa: F401
+from euphonic.isotopes._legacy import get_reference_data  # noqa: F401,E402
