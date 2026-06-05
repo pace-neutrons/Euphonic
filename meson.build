@@ -24,7 +24,7 @@ py_src = {
   'euphonic/cli/utils': [
       '__init__.py', '_band_structure.py', '_cli_parser.py', '_dw.py',
       '_grids.py', '_kwargs.py', '_loaders.py', '_pdos.py', '_plotting.py'],
-  'euphonic/isotopes': ['__init__.py', '_legacy.py'],
+  'euphonic/isotopes': ['__init__.py', '_core.py', '_csv.py', '_legacy.py'],
   'euphonic/isotopes/data': ['__init__.py', 'bluebook.json', 'sears-1992.json', 'sears-1992.csv'],
   'euphonic/readers': ['__init__.py', 'castep.py', 'phonopy.py'],
   'euphonic/spectra': ['__init__.py', 'base.py', 'collections.py'],
