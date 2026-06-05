@@ -18,8 +18,11 @@
 - API changes
 
   - Public functions in ``euphonic.broadening``, ``euphonic.powder``,
-    ``euphonic.plot`` now use some mandatory keyword arguments
-    - This will break code that depends on these arguments being in a specific order
+    ``euphonic.plot``, ``euphonic.sampling`` now use some mandatory keyword arguments
+    - This will break code that depends on these arguments being in a
+      specific order rather than calling them by name
+    - The most "obvious" arguments can still be accessed by position
+      for concise "standard" function calls.
 
   - Methods of ``QpointFrequencies``, ``QpointPhononModes`` and
     ``ForceConstants`` now use mandatory keyword arguments for many
