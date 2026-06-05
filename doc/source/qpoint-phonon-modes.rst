@@ -64,7 +64,7 @@ See :ref:`Force Constants <force-constants>`
 Reordering frequencies
 ----------------------
 
-The stored frequencies can be reordered by comparing eigenvectors using 
+The stored frequencies can be reordered by comparing eigenvectors using
 :py:meth:`QpointPhononModes.reorder_frequencies <euphonic.qpoint_phonon_modes.QpointPhononModes.reorder_frequencies>`.
 This means that the same mode will have the same index across different
 q-points, so will be plotted as the same colour in a dispersion plot,
@@ -153,7 +153,10 @@ structure factor with Debye-Waller:
   # StructureFactor object is returned
   fm = ureg('fm')
   scattering_lengths = {'Si': 4.1491*fm, 'O': 5.803*fm}
-  sf = phonons.calculate_structure_factor(scattering_lengths, dw=dw)
+  sf = phonons.calculate_structure_factor(
+      scattering_lengths=scattering_lengths, dw=dw
+  )
+
 
 Calculating The Debye-Waller Exponent
 -------------------------------------
@@ -228,5 +231,3 @@ Docstring
    :members:
    :inherited-members:
    :exclude-members: frequencies
-
-
