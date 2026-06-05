@@ -426,7 +426,7 @@ class QpointFrequencies:
             takes priority over average_repeat_points.
         """
         data = castep.read_phonon_data(
-            filename,            
+            filename,
             read_eigenvectors=False,
             average_repeat_points=average_repeat_points,
             prefer_non_loto=prefer_non_loto)
