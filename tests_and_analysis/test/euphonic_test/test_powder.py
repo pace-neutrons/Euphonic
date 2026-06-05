@@ -230,7 +230,7 @@ class TestSphereSampledProperties:
         assert call_args[1]['dw'] == mock_dw
 
         if isinstance(options['scattering_lengths'], str):
-            assert call_args[1]['scattering_lengths']['Ag'] == 5.922 * ureg('fermi')
+            assert call_args[1]['scattering_lengths'] == 'Sears1992'
         else:
             assert call_args[1]['scattering_lengths'] == options['scattering_lengths']
 

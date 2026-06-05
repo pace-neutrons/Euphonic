@@ -75,6 +75,21 @@
 
   - Fix several typing issues with Spectrum collections.
 
+  - A new API has been created for isotope data. The IsotopeData
+    protocol promises a method .get_property(Structure, key) which
+    will return per-atom values; typically these are neutron cross-sections.
+
+    Currently this is backward-compatible and datasets may still be
+    specified as a string or provided as a dict; these methods are likely to be
+    deprecated as the system matures.
+
+    A new implementation of the Sears1992 dataset has been
+    created. This now supports more data columns (i.e. it can be used
+    for both incoherent and coherent scattering lengths and cross
+    sections) and has a full set of isotopes (as per 1992 data, anyway).
+    The correct isotope or mixture is selected automatically using
+    element symbols and mass data from Crystal.
+
 - Other changes
 
   - Error messages have been overhauled and now follow a consistent format::
@@ -84,18 +99,6 @@
       [reason]
 
       fix
-
-- Improvements
-
-  - A new API has been created for isotope data. The IsotopeData
-    protocol promises a method .get_property(Structure, key) which
-    will return per-atom values; typically these are neutron cross-sections.
-
-    This will be used in future to implement a more sophisticated lookup based on isotope masses; currently lookups are based entirely on ``atom_type``.
-
-    Currently this is backward-compatible and datasets may still be
-    specified as a string or provided as a dict; these methods are likely to be
-    deprecated as the system matures.
 
 - Deprecations
 
