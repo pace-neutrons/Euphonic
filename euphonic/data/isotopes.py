@@ -548,14 +548,12 @@ class CsvData(IsotopeData):
         """
         nearest_row = self._get_nearest_row(symbol, mass)
 
-        values = (
-            (col_info.name, col_info._apply_unit(item))
+        return {
+            col_info.name: col_info._apply_unit(item)
             for col_info, item in zips(
                 self._column_headers.values(), nearest_row
             )
-        )
-
-        return dict(values)
+        }
 
     @classmethod
     def _normalise_record(cls, record: list[str], types: list[type]) -> tuple:
