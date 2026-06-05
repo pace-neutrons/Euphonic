@@ -204,6 +204,7 @@ class LegacyJsonData(AtomTypeDictData):
         super().__init__(data)
 
     def get_array(self, structure: Structure, key: str) -> Quantity:
+        """Get a Quantity array of property corresponding to structure"""
         _validate_key(
             key, valid_keys=self._data.keys(), location=repr(self._collection)
         )
@@ -226,19 +227,19 @@ class CsvColumnInfo:
         ----------
 
         raw_name:
-          e.g. 'b_inc (fermi)'
+            e.g. 'b_inc (fermi)'
 
         raw_dtype:
-          e.g. 'complex'
+            e.g. 'complex'
 
         name_map:
-          mapping from CSV column header names (without unit) and names used in
-          resulting data objects. Empty dict {} is an acceptable value; missing
-          items will not be changed.
+            mapping from CSV column header names (without unit) and names used
+            in resulting data objects. Empty dict {} is an acceptable value;
+            missing items will not be changed.
 
-          Note that this is the inverse of the CsvData ``property_map``.
+            Note that this is the inverse of the CsvData ``property_map``.
 
-          e.g. {'b_inc': 'incoherent_scattering_length'}
+            e.g. {'b_inc': 'incoherent_scattering_length'}
 
         """
         name, unit = cls._split_unit(raw_name)
@@ -259,9 +260,9 @@ class CsvColumnInfo:
             'name (unit)'  -> 'name', '(unit)'
         """
 
-        if match := re.match(
+        if match := re.fullmatch(
             r"""
-              (?P<name>\w+?)  # Mandatory NAME; any word characters, non-greedy
+              (?P<name>\w+)  # Mandatory NAME; any word characters
                               #
               \s*             # Any amount of whitespace
                               #
@@ -274,11 +275,8 @@ class CsvColumnInfo:
                               #
                  \)           # literal )
                               #
-              )?$             # Optional group must complete the input
-                              # string; this ensures whole line is used
-                              # despite non-greedy NAME.  Otherwise we can
-                              # get 'NAME (UNIT)' -> ('N', None)
-                """,
+              )?              # end optional group
+            """,
             col_header,
             re.VERBOSE,
         ):
@@ -367,8 +365,13 @@ class CsvData(IsotopeData):
         float: float('-Inf'),
         complex: complex(float('-Inf'), float('-Inf')),
     }
-    INVALID_FLOAT = float('NaN')
-    MASS_MATCH_THRESHOLD = 0.3
+    INVALID_FLOAT: ClassVar[float] = float('NaN')
+    MASS_MATCH_THRESHOLD: ClassVar[float] = 0.3
+
+    # Regular expressions: identify uncertain values which should become NaN
+    _bad_complex = re.compile(r'\(?[±<>].*$')
+    _bad_float = re.compile(r'[±<>].*$')
+
 
     @classmethod
     def _is_missing(cls, value: Any) -> bool:
@@ -499,6 +502,7 @@ class CsvData(IsotopeData):
         return value
 
     def get_array(self, structure: Structure, key: str) -> Quantity:
+        """Get a Quantity array of property corresponding to structure"""
         targets = list(
             zips(structure.atom_type, structure.atom_mass.to('amu').magnitude)
         )
@@ -552,10 +556,6 @@ class CsvData(IsotopeData):
         )
 
         return dict(values)
-
-    # We can't deal with uncertain values, these should become NaN
-    _bad_complex = re.compile(r'\(?[±<>].*$')
-    _bad_float = re.compile(r'[±<>].*$')
 
     @classmethod
     def _normalise_record(cls, record: list[str], types: list[type]) -> tuple:
