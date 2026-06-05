@@ -14,7 +14,7 @@ from numpy.random import Generator, RandomState
 import seekpath
 from seekpath.hpkot import SymmetryDetectionError
 
-from euphonic.data.isotopes import get_reference_data  # noqa: F401
+from euphonic.data._legacy import get_reference_data  # noqa: F401
 from euphonic.ureg import Quantity, ureg
 
 try:
