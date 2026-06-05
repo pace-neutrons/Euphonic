@@ -4,7 +4,7 @@ That function is publicly available to import from euphonic.util, but is
 deprecated and will be removed in a future version of Euphonic.
 
 The code is kept in its own file to simplify implementation-sharing with
-euphonic.data.isotopes while avoiding import loops with euphonic.util.
+euphonic.isotopes while avoiding import loops with euphonic.util.
 
 """
 
@@ -56,7 +56,7 @@ def get_reference_data(
     """
 
     # Avoid import loop; the problem will go away when this function is removed
-    from euphonic.data.isotopes import _get_all_dicts_from_json
+    from euphonic.isotopes import _get_all_dicts_from_json
     from euphonic.util import (
         _deprecation_warn,
         comma_join,

@@ -18,9 +18,10 @@ from toolz.dicttoolz import valfilter
 from toolz.itertoolz import first
 from typing_extensions import Self
 
-import euphonic.data
 from euphonic.ureg import Quantity, ureg
 from euphonic.util import comma_join, format_error, zips
+
+from . import data as isotope_data
 
 
 class NotQuantityError(TypeError): ...
@@ -634,7 +635,7 @@ class CsvData(IsotopeData):
         )
 
 
-sears_1992 = CsvData(files(euphonic.data) / 'sears-1992.csv', {})
+sears_1992 = CsvData(files(isotope_data) / 'sears-1992.csv', {})
 
 
 def _get_all_dicts_from_json(
@@ -651,7 +652,7 @@ def _get_all_dicts_from_json(
         return dct
 
     if filename := _reference_data_files.get(collection):
-        file_path = files(euphonic.data) / filename
+        file_path = files(isotope_data) / filename
     else:
         file_path = Path(collection)
 

@@ -18,11 +18,13 @@ from importlib.resources import files
 
 from pint import UnitRegistry
 
-from . import data
+from . import data as ureg_data
 
 ureg = UnitRegistry()
 
-ureg.load_definitions(files(data) / 'reciprocal_spectroscopy_definitions.txt')
+ureg.load_definitions(
+    files(ureg_data) / 'reciprocal_spectroscopy_definitions.txt'
+)
 ureg.enable_contexts('spectroscopy')
 Quantity = ureg.Quantity
 

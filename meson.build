@@ -16,22 +16,22 @@ py_src = {
                'crystal.py', 'debye_waller.py', 'force_constants.py',
                'io.py', 'plot.py', 'powder.py', 'qpoint_frequencies.py',
                'qpoint_phonon_modes.py', 'sampling.py',
-               'structure_factor.py', 'ureg.py', 'util.py', 'validate.py'],
+               'structure_factor.py', 'util.py', 'validate.py'],
   'euphonic/cli': ['__init__.py', 'brille_convergence.py',
                    'dispersion.py', 'dos.py', 'intensity_map.py',
                    'optimise_dipole_parameter.py', 'powder_map.py',
                    'show_sampling.py'],
   'euphonic/cli/utils': [
       '__init__.py', '_band_structure.py', '_cli_parser.py', '_dw.py',
-      '_grids.py', '_kwargs.py', '_loaders.py', '_pdos.py', '_plotting.py'
-  ],
-  'euphonic/data': ['__init__.py', '_legacy.py', 'isotopes.py',
-                    'bluebook.json', 'sears-1992.json', 'sears-1992.csv',
-                    'reciprocal_spectroscopy_definitions.txt'],
+      '_grids.py', '_kwargs.py', '_loaders.py', '_pdos.py', '_plotting.py'],
+  'euphonic/isotopes': ['__init__.py', '_legacy.py'],
+  'euphonic/isotopes/data': ['__init__.py', 'bluebook.json', 'sears-1992.json', 'sears-1992.csv'],
   'euphonic/readers': ['__init__.py', 'castep.py', 'phonopy.py'],
   'euphonic/spectra': ['__init__.py', 'base.py', 'collections.py'],
   'euphonic/styles': ['__init__.py', 'base.mplstyle', 'intensity_widget.mplstyle'],
-  'euphonic/writers': ['__init__.py', 'phonon_website.py'],
+  'euphonic/ureg': ['__init__.py'],
+  'euphonic/ureg/data': ['__init__.py', 'reciprocal_spectroscopy_definitions.txt'],
+  'euphonic/writers': ['__init__.py', 'phonon_website.py']
 }
 
 foreach folder, sources : py_src

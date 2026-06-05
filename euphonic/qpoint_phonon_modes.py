@@ -8,7 +8,7 @@ import numpy as np
 from typing_extensions import Self
 
 from euphonic.crystal import Crystal
-from euphonic.data.isotopes import (
+from euphonic.isotopes import (
     AtomTypeShallowDictData,
     IsotopeData,
     LegacyJsonData,

@@ -209,7 +209,7 @@ extend-ignore-names = ["k_B", "H_ab", "Q"]
     "RUF012", # declaring sample data inside test classes is tidy
     "E501",   # long lines seem more common with verbose test names
     ]
-"euphonic/data/_legacy.py" = ["PLC0415"]  # Imports inside functions to avoid loop
+"euphonic/isotopes/_legacy.py" = ["PLC0415"]  # Imports inside functions to avoid loop
 "euphonic/version.py" = ["Q000"]  # Source build prefers double quotes here
 
 [tool.ruff.format]
