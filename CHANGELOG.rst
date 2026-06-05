@@ -17,11 +17,13 @@
 
 - API changes
 
-  - Public functions in ``euphonic.powder`` now use mandatory keyword arguments
+  - Public functions in ``euphonic.broadening``, ``euphonic.powder``,
+    ``euphonic.plot`` now use some mandatory keyword arguments
     - This will break code that depends on these arguments being in a specific order
 
-  - Methods of ``QpointFrequencies`` and ``QpointPhononModes`` now
-    use mandatory keyword arguments for many parameters.
+  - Methods of ``QpointFrequencies``, ``QpointPhononModes`` and
+    ``ForceConstants`` now use mandatory keyword arguments for many
+    parameters.
 
   - The various Spectrum classes have an ``assert_regular_bins``
     method. It is now forbidden to use positional arguments and in the

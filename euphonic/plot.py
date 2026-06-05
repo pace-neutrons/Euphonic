@@ -33,7 +33,9 @@ except ModuleNotFoundError as err:
 
 
 def plot_1d_to_axis(spectra: Spectrum1D | Spectrum1DCollection,
-                    ax: Axes, labels: Sequence[str] | None = None,
+                    ax: Axes,
+                    *,
+                    labels: Sequence[str] | None = None,
                     **mplargs) -> None:
     """Plot a (collection of) 1D spectrum lines to matplotlib axis
 
@@ -124,6 +126,7 @@ OneDSpectrumOrSpectra: TypeAlias = (Spectrum1D
                          | Sequence[Spectrum1DCollection])
 
 def plot_1d(spectra: OneDSpectrumOrSpectra,
+            *,
             title: str | None = None,
             xlabel: str = '',
             ylabel: str = '',
@@ -210,7 +213,7 @@ def plot_1d(spectra: OneDSpectrumOrSpectra,
                                  gridspec_kw=gridspec_kw, squeeze=False)
 
     for i, (spectrum, ax) in enumerate(zips(spectra, subplots.flatten())):
-        plot_1d_to_axis(spectrum, ax, labels, **line_kwargs)
+        plot_1d_to_axis(spectrum, ax, labels=labels, **line_kwargs)
         # To avoid an ugly empty legend, only use if there are labels to plot
         if i == 0:
             leg_handles, leg_labels = ax.get_legend_handles_labels()
@@ -229,7 +232,9 @@ def plot_1d(spectra: OneDSpectrumOrSpectra,
     return fig
 
 
-def plot_2d_to_axis(spectrum: Spectrum2D, ax: Axes,
+def plot_2d_to_axis(spectrum: Spectrum2D,
+                    ax: Axes,
+                    *,
                     cmap: str | Colormap | None = None,
                     interpolation: str = 'nearest',
                     norm: Normalize | None = None,
@@ -280,6 +285,7 @@ def plot_2d_to_axis(spectrum: Spectrum2D, ax: Axes,
 
 
 def plot_2d(spectra: Spectrum2D | Sequence[Spectrum2D],
+            *,
             vmin: float | None = None,
             vmax: float | None = None,
             cmap: str | Colormap | None = None,
