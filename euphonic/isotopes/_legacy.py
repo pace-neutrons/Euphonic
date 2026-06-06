@@ -56,7 +56,7 @@ def get_reference_data(
     """
 
     # Avoid import loop; the problem will go away when this function is removed
-    from euphonic.isotopes import _get_all_dicts_from_json
+    from euphonic.isotopes._core import _get_all_dicts_from_json
     from euphonic.util import (
         _deprecation_warn,
         comma_join,
