@@ -19,10 +19,10 @@ def main():
 
     test = not args.notest
     if args.github:
-        release_github(test)
+        release_github(test=test)
 
 
-def release_github(test=True):
+def release_github(*, test=True):
     with open('CHANGELOG.rst', encoding='utf8') as f:
         changelog = f.read()
     with open('CITATION.cff', encoding='utf8') as f:

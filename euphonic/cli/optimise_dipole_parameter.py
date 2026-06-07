@@ -33,6 +33,7 @@ def main(params: list[str] | None = None) -> None:
 
 def calculate_optimum_dipole_parameter(
         filename: Path | str,
+        *,
         dipole_parameter_min: float = 0.25,
         dipole_parameter_max: float = 1.5,
         dipole_parameter_step: float = 0.25,
