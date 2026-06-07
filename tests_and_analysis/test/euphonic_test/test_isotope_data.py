@@ -6,8 +6,7 @@ import numpy as np
 from numpy.testing import assert_allclose
 import pytest
 
-import euphonic.data
-from euphonic.data.isotopes import (
+from euphonic.isotopes import (
     AtomTypeDictData,
     AtomTypeShallowDictData,
     CsvData,
@@ -19,6 +18,7 @@ from euphonic.data.isotopes import (
     Structure,
     sears_1992,
 )
+import euphonic.isotopes.data
 from euphonic.ureg import Quantity, ureg
 
 
@@ -136,7 +136,7 @@ def test_legacy_json_data(structure, bad_structure) -> None:
 
 def test_legacy_json_data_from_file() -> None:
     isotope_data = LegacyJsonData(
-        str(files(euphonic.data) / 'sears-1992.json')
+        str(files(euphonic.isotopes.data) / 'sears-1992.json')
     )
 
     assert isotope_data.get_item('Na', 0.0) == {
