@@ -101,6 +101,7 @@ class QpointPhononModes(QpointFrequencies):
         self.eigenvectors = eigenvectors
 
     def reorder_frequencies(self,
+                            *,
                             reorder_gamma: bool = True) -> None:
         """
         By doing a dot product of eigenvectors at adjacent q-points,
@@ -189,6 +190,7 @@ class QpointPhononModes(QpointFrequencies):
 
     def calculate_structure_factor(
         self,
+        *,
         scattering_lengths: IsotopeDataset = 'Sears1992',
         dw: DebyeWaller | None = None,
         ) -> StructureFactor:
@@ -318,7 +320,9 @@ class QpointPhononModes(QpointFrequencies):
             temperature=temperature)
 
     def calculate_debye_waller(
-        self, temperature: Quantity,
+        self,
+        temperature: Quantity,
+        *,
         frequency_min: Quantity = Quantity(0.01, 'meV'),
         symmetrise: bool = True) -> DebyeWaller:
         """
@@ -447,6 +451,7 @@ class QpointPhononModes(QpointFrequencies):
     def calculate_pdos(
         self,
         dos_bins: Quantity,
+        *,
         mode_widths: Quantity | None = None,
         mode_widths_min: Quantity = Quantity(0.01, 'meV'),
         adaptive_method: AdaptiveMethod = 'reference',
@@ -651,9 +656,13 @@ class QpointPhononModes(QpointFrequencies):
                                    type_dict={'eigenvectors': np.complex128})
 
     @classmethod
-    def from_castep(cls, filename: Path | str,
-                    average_repeat_points: bool = True,
-                    prefer_non_loto: bool = False) -> Self:
+    def from_castep(
+        cls,
+        filename: Path | str,
+        *,
+        average_repeat_points: bool = True,
+        prefer_non_loto: bool = False
+    ) -> Self:
         """
         Reads precalculated phonon mode data from a CASTEP .phonon file
 
@@ -680,10 +689,14 @@ class QpointPhononModes(QpointFrequencies):
         return cls.from_dict(data)
 
     @classmethod
-    def from_phonopy(cls, path: Path | str = '.',
-                     phonon_name: Path | str = 'band.yaml',
-                     phonon_format: str | None = None,
-                     summary_name: Path | str = 'phonopy.yaml') -> Self:
+    def from_phonopy(
+        cls,
+        *,
+        path: Path | str = '.',
+        phonon_name: Path | str = 'band.yaml',
+        phonon_format: str | None = None,
+        summary_name: Path | str = 'phonopy.yaml'
+    ) -> Self:
         """
         Reads precalculated phonon mode data from a Phonopy
         mesh/band/qpoints.yaml/hdf5 file. May also read from
