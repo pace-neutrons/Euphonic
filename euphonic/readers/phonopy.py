@@ -46,6 +46,7 @@ def _convert_weights(weights: np.ndarray) -> np.ndarray:
 
 
 def _extract_phonon_data_yaml(filename: Path,
+                              *,
                               read_eigenvectors: bool = True,
                               ) -> dict[str, np.ndarray]:
     """
@@ -117,6 +118,7 @@ def _extract_phonon_data_yaml(filename: Path,
 
 
 def _extract_phonon_data_hdf5(filename: Path,
+                              *,
                               read_eigenvectors: bool = True,
                               ) -> dict[str, np.ndarray]:
     """
@@ -180,6 +182,7 @@ def _extract_phonon_data_hdf5(filename: Path,
     return data_dict
 
 def read_phonon_data(
+        *,
         path: Path | str = '.',
         phonon_name: Path | str = 'band.yaml',
         phonon_format: str | None = None,
@@ -456,7 +459,9 @@ def _extract_born(born_file_obj: TextIO) -> dict[str, float | np.ndarray]:
     return born_dict
 
 
-def _extract_summary(filename: Path, fc_extract: bool = False,
+def _extract_summary(filename: Path,
+                     *,
+                     fc_extract: bool = False,
                      ) -> dict[str, str | int | np.ndarray]:
     """
     Read phonopy.yaml for summary data produced during the Phonopy

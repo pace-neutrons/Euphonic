@@ -408,6 +408,7 @@ def _qpts_cart_to_frac(qpts: Quantity,
 
 
 def _get_qpts_sphere(npts: int,
+                     *,
                      sampling: SphericalSamplingOptions = 'golden',
                      jitter: bool = False,
                      rng: RNG = rng) -> np.ndarray:
