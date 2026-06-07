@@ -41,6 +41,11 @@
     should not break API in practice, but e.g. Quantity can no longer
     be imported from ``euphonic.cli.utils``.
 
+  - The ``euphonic.data`` package has been redistributed keep data
+    files underneath their relevant module/package. Isotopic data is
+    now under ``euphonic.isotopes.data`` and unit registry
+    configuration is under ``euphonic.ureg.data``.
+
   - "Adaptive fit" parameter is removed from spectrum broaden()
     methods and euphonic-dos; "cubic" parametrisation is removed and
     superior "cheby-log" fit always used.
@@ -71,10 +76,6 @@
     **breaking change** as somebody's code could depend on this
     IndexError. At this stage it seems an acceptable risk.
 
-- Improvements
-
-  - Fix several typing issues with Spectrum collections.
-
   - A new API has been created for isotope data. The IsotopeData
     protocol promises a method .get_property(Structure, key) which
     will return per-atom values; typically these are neutron cross-sections.
@@ -91,6 +92,8 @@
     element symbols and mass data from Crystal.
 
 - Other changes
+
+  - Fix several typing issues with Spectrum collections.
 
   - Error messages have been overhauled and now follow a consistent format::
 
