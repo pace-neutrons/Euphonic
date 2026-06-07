@@ -189,6 +189,7 @@ class ForceConstants:
     def calculate_qpoint_phonon_modes(
             self,
             qpts: np.ndarray,
+            *,
             weights: np.ndarray | None = None,
             asr: Literal['realspace', 'reciprocal'] | None = None,
             dipole: bool = True,
@@ -419,6 +420,7 @@ class ForceConstants:
     def calculate_qpoint_frequencies(
             self,
             qpts: np.ndarray,
+            *,
             weights: np.ndarray | None = None,
             asr: Literal['realspace', 'reciprocal'] | None = None,
             dipole: bool = True,
@@ -1874,6 +1876,7 @@ casting to real mode gradients.
 
     @classmethod
     def from_phonopy(cls,
+                     *,
                      path: Path | str = '.',
                      summary_name: Path | str = 'phonopy.yaml',
                      born_name: str | None = None,

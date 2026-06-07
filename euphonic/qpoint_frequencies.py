@@ -4,6 +4,7 @@ from typing import Any, Literal
 import warnings
 
 import numpy as np
+from scipy.stats import norm
 from typing_extensions import Self
 
 from euphonic.broadening import _width_interpolated_broadening
@@ -110,6 +111,7 @@ class QpointFrequencies:
     def calculate_dos(
         self,
         dos_bins: Quantity,
+        *,
         mode_widths: Quantity | None = None,
         mode_widths_min: Quantity = Quantity(0.01, 'meV'),
         adaptive_method: AdaptiveMethod = 'reference',
@@ -170,6 +172,7 @@ class QpointFrequencies:
     def _calculate_dos(
         self,
         dos_bins: Quantity,
+        *,
         mode_widths: Quantity | None = None,
         mode_widths_min: Quantity = Quantity(0.01, 'meV'),
         mode_weights: np.ndarray | None = None,
@@ -226,7 +229,6 @@ class QpointFrequencies:
                                      mode_widths_min.to('hartree').magnitude)
             if adaptive_method == 'reference':
                 # adaptive broadening by summing over individual peaks
-                from scipy.stats import norm
                 dos_bins_calc = Spectrum1D._bin_edges_to_centres(dos_bins_calc)
                 dos = np.zeros(len(dos_bins_calc))
                 for q in range(len(freqs)):
@@ -259,10 +261,13 @@ class QpointFrequencies:
         conv = 1*ureg('hartree').to(dos_bins.units)
         return dos/conv
 
-    def calculate_dos_map(self, dos_bins: Quantity,
-                          mode_widths: Quantity | None = None,
-                          mode_widths_min: Quantity = Quantity(0.01, 'meV'),
-                          ) -> Spectrum2D:
+    def calculate_dos_map(
+        self,
+        dos_bins: Quantity,
+        *,
+        mode_widths: Quantity | None = None,
+        mode_widths_min: Quantity = Quantity(0.01, 'meV'),
+    ) -> Spectrum2D:
         """
         Produces a bandstructure-like plot, using the DOS at each q-point
 
@@ -397,7 +402,9 @@ class QpointFrequencies:
         return _obj_from_json_file(cls, filename)
 
     @classmethod
-    def from_castep(cls, filename: Path | str,
+    def from_castep(cls,
+                    filename: Path | str,
+                    *,
                     average_repeat_points: bool = True,
                     prefer_non_loto: bool = False) -> Self:
         """
@@ -427,7 +434,9 @@ class QpointFrequencies:
         return cls.from_dict(data)
 
     @classmethod
-    def from_phonopy(cls, path: Path | str = '.',
+    def from_phonopy(cls,
+                     *,
+                     path: Path | str = '.',
                      phonon_name: Path | str = 'band.yaml',
                      phonon_format: str | None = None,
                      summary_name: Path | str = 'phonopy.yaml') -> Self:
