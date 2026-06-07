@@ -17,8 +17,13 @@ _golden_ratio = (1 + np.sqrt(5)) / 2
 #  and method development; clarity is prioritised over numerical efficiency
 
 
-def golden_square(npts: int, offset: bool = True, jitter: bool = False,
-                  rng: RNG = rng) -> Iterator[tuple[float, float]]:
+def golden_square(
+    npts: int,
+    *,
+    offset: bool = True,
+    jitter: bool = False,
+    rng: RNG = rng
+) -> Iterator[tuple[float, float]]:
     """Yield a series of well-distributed points in 2-D unit square
 
     These are obtained by the golden ratio method
@@ -59,7 +64,7 @@ def golden_square(npts: int, offset: bool = True, jitter: bool = False,
                ((i / _golden_ratio) + delta_y) % 1)
 
 
-def regular_square(n_rows: int, n_cols: int,
+def regular_square(n_rows: int, n_cols: int, *,
                    offset: bool = True, jitter: bool = False,
                    rng: RNG = rng,
                    ) -> Iterator[tuple[float, float]]:
@@ -117,8 +122,8 @@ def _square_to_spherical_polar(x: float, y: float) -> tuple[float, float]:
     return (phi, theta)
 
 
-def golden_sphere(npts: int, cartesian: bool = True, jitter: bool = False,
-                  rng: RNG = rng,
+def golden_sphere(npts: int, *,
+                  cartesian: bool = True, jitter: bool = False, rng: RNG = rng,
                   ) -> Iterator[tuple[float, float, float]]:
     """Yield a series of 3D points on unit sphere surface
 
@@ -159,7 +164,7 @@ def golden_sphere(npts: int, cartesian: bool = True, jitter: bool = False,
             yield (1, phi, theta)
 
 
-def sphere_from_square_grid(n_rows: int, n_cols: int,
+def sphere_from_square_grid(n_rows: int, n_cols: int, *,
                             cartesian: bool = True, jitter: bool = False,
                             rng: RNG = rng,
                             ) -> Iterator[tuple[float, float, float]]:
@@ -197,7 +202,7 @@ def sphere_from_square_grid(n_rows: int, n_cols: int,
             yield (1, phi, theta)
 
 
-def spherical_polar_grid(n_phi: int, n_theta: int,
+def spherical_polar_grid(n_phi: int, n_theta: int, *,
                          cartesian: bool = True, jitter: bool = False,
                          rng: RNG = rng,
                          ) -> Iterator[tuple[float, float, float]]:
@@ -251,7 +256,7 @@ def spherical_polar_grid(n_phi: int, n_theta: int,
             yield (1, phi, theta)
 
 
-def spherical_polar_improved(npts: int,
+def spherical_polar_improved(npts: int, *,
                              cartesian: bool = True, jitter: bool = False,
                              rng: RNG = rng,
                              ) -> Iterator[tuple[float, float, float]]:
@@ -344,7 +349,7 @@ def spherical_polar_improved(npts: int,
                 yield (1, phi, theta)
 
 
-def random_sphere(npts, cartesian: bool = True, rng: RNG = rng,
+def random_sphere(npts, *, cartesian: bool = True, rng: RNG = rng,
                   ) -> Iterator[tuple[float, float, float]]:
     """Yield a series of 3D points on a unit sphere surface
 
@@ -383,7 +388,7 @@ def random_sphere(npts, cartesian: bool = True, rng: RNG = rng,
         else:
             yield (1, phi, theta)
 
-def recurrence_sequence(npts: int, order=3) -> Iterator[tuple]:
+def recurrence_sequence(npts: int, *, order=3) -> Iterator[tuple]:
     """Yield a series of well-distributed points in square or cube
 
     This implements the R_d method of Martin Roberts (2018) published at

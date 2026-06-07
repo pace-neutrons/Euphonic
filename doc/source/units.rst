@@ -55,7 +55,7 @@ a function:
 
   fm = ureg('fm')
   scattering_lengths = {'Si': 4.1491*fm, 'O': 5.803*fm}
-  sf = phonons.calculate_structure_factor(scattering_lengths)
+  sf = phonons.calculate_structure_factor(scattering_lengths=scattering_lengths)
 
 Object Attributes
 -----------------
