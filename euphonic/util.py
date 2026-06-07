@@ -14,7 +14,6 @@ from numpy.random import Generator, RandomState
 import seekpath
 from seekpath.hpkot import SymmetryDetectionError
 
-from euphonic.data._legacy import get_reference_data  # noqa: F401
 from euphonic.ureg import Quantity, ureg
 
 try:
@@ -759,3 +758,8 @@ def _deprecation_warn(old_arg: str, new_arg: str, stacklevel: int = 3):
 # Quasi-global rng instance for use as default argument
 RNG = Generator | RandomState
 rng: RNG = np.random.default_rng()
+
+
+# Import last to put this in the namespace without creating import loop.
+# It will be removed in Euphonic v3.
+from euphonic.isotopes._legacy import get_reference_data  # noqa: F401,E402
