@@ -121,7 +121,7 @@ select = [
        "ASYNC",
        "S",       # Security (flake8-bandit)
        "BLE",     # flake8-blind-except
-       "FBT",   # flake8-boolean-trap: don't use positional boolean arguments. Fixable, but API-breaking.
+       "FBT",     # flake8-boolean-trap: don't use positional boolean arguments. Fixable, but API-breaking.
        "B",       # flake8-bugbear
        "A",       # flake8-builtins
        "COM",     # flake8-commas
@@ -154,7 +154,7 @@ select = [
        "FLY",     # flynt
        "I",       # isort
        "C90",     # mccabe : code complexity metric
-       "NPY",   # NumPy-specific rules
+       "NPY",     # NumPy-specific rules
        "N",       # pep8-naming
        "PERF",    # Perflint
        "F401",    # unused-import
