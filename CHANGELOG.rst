@@ -1,5 +1,13 @@
-`Unreleased <https://github.com/pace-neutrons/Euphonic/compare/v1.6.1...HEAD>`_
+`Unreleased <https://github.com/pace-neutrons/Euphonic/compare/v1.6.2...HEAD>`_
 -------------------------------------------------------------------------------
+
+`v1.6.2 <https://github.com/pace-neutrons/Euphonic/compare/v1.6.1...v1.6.2>`_
+-----------------------------------------------------------------------------
+
+This is intended as the final release of version 1.x; it collects a
+few small changes which didn't require API breakage. Mostly they only
+affect development, but the "typing-extensions" dependency addition is
+a bugfix which might affect users.
 
 - Requirements
 
