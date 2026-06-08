@@ -110,8 +110,6 @@
 
 - Maintenance
 
-  - Ensure ``build_utils/version.py`` works for uncommitted changes to tagged HEADs.
-
   - Extend use of Python 3.10 ``match``\ es over ``if`` where relevant.
 
 `v1.6.2 <https://github.com/pace-neutrons/Euphonic/compare/v1.6.1...v1.6.2>`_
@@ -132,6 +130,10 @@ a bugfix which might affect users.
     native ``sphinx>8`` type-hint processing.
 
   - Explicitly include typing-extensions dependency.
+
+- Maintenance
+
+  - Ensure ``build_utils/version.py`` works for uncommitted changes to tagged HEADs.
 
 `v1.6.1 <https://github.com/pace-neutrons/Euphonic/compare/v1.6.0...v1.6.1>`_
 -----------------------------------------------------------------------------
