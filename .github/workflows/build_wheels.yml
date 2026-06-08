@@ -94,7 +94,7 @@ jobs:
           python -m pip install --upgrade pip build wheel twine
 
       - name: Build wheels from git checkout
-        uses: pypa/cibuildwheel@v3.3.0
+        uses: pypa/cibuildwheel@v3.4.1
         env:
           CIBW_BUILD_FRONTEND: build
           CIBW_BUILD: ${{ matrix.version-tag }}-*
@@ -103,7 +103,7 @@ jobs:
 
           CIBW_REPAIR_WHEEL_COMMAND_MACOS: ""
 
-          CIBW_TEST_GROUPS: "test"
+          CIBW_BEFORE_TEST: "pip install --upgrade pip && pip install --group test"
           CIBW_TEST_EXTRAS: "brille,phonopy-reader,matplotlib"
           CIBW_TEST_COMMAND: python {package}/tests_and_analysis/test/run_tests.py
 
