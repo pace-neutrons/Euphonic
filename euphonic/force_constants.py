@@ -447,20 +447,21 @@ class ForceConstants:
             return qpt_freqs, grads
         return qpt_freqs
 
+
     def _calculate_phonons_at_qpts(  # noqa: C901
             self,
             qpts: np.ndarray,
             weights: np.ndarray | None,
             asr: Literal['realspace', 'reciprocal'] | None,
-            dipole: bool,
+            dipole: bool,                # noqa: FBT001
             dipole_parameter: float,
-            splitting: bool,
-            insert_gamma: bool,
-            reduce_qpts: bool,
-            use_c: bool | None,
+            splitting: bool,             # noqa: FBT001
+            insert_gamma: bool,          # noqa: FBT001
+            reduce_qpts: bool,           # noqa: FBT001
+            use_c: bool | None,          # noqa: FBT001
             n_threads: int | None,
-            return_mode_gradients: bool,
-            return_eigenvectors: bool) -> tuple[
+            return_mode_gradients: bool, # noqa: FBT001
+            return_eigenvectors: bool) -> tuple[  # noqa: FBT001
                 np.ndarray, Quantity, np.ndarray | None,
                 np.ndarray | None, Quantity] | None:
         """
@@ -781,7 +782,7 @@ casting to real mode gradients.
             all_origins_cart: np.ndarray,
             dyn_mat_weighting: np.ndarray,
             recip_asr_correction: np.ndarray,
-            dipole: bool,
+            dipole: bool,  # noqa: FBT001
             q_dir: np.ndarray | None = None,
             ) -> tuple[np.ndarray, np.ndarray, np.ndarray | None]:
         """

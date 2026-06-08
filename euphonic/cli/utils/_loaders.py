@@ -17,6 +17,7 @@ from euphonic.util import (
 
 
 def _load_euphonic_json(filename: str | os.PathLike,
+                        *,
                         frequencies_only: bool = False,
 ) -> QpointPhononModes | QpointFrequencies | ForceConstants:
     with open(filename) as f:
@@ -40,6 +41,7 @@ def _load_euphonic_json(filename: str | os.PathLike,
 
 
 def _load_phonopy_file(filename: str | os.PathLike,
+                       *,
                        frequencies_only: bool = False,
 ) -> QpointPhononModes | QpointFrequencies | ForceConstants:
     path = Path(filename)
@@ -130,6 +132,7 @@ def _janus_fc_filename(phonopy_file: Path) -> Path:
 
 
 def load_data_from_file(filename: str | os.PathLike,
+                        *,
                         frequencies_only: bool = False,
                         verbose: bool = False,
 ) -> QpointPhononModes | QpointFrequencies | ForceConstants:
@@ -163,9 +166,9 @@ def load_data_from_file(filename: str | os.PathLike,
         case '.castep_bin' | '.check':
             data = ForceConstants.from_castep(path)
         case '.json':
-            data = _load_euphonic_json(path, frequencies_only)
+            data = _load_euphonic_json(path, frequencies_only=frequencies_only)
         case '.hdf5' | '.yaml' | '.yml':
-            data = _load_phonopy_file(path, frequencies_only)
+            data = _load_phonopy_file(path, frequencies_only=frequencies_only)
         case _:
             msg = format_error(
                  f'File format ({path.suffix}) not recognised.',

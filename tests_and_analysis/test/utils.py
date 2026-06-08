@@ -278,7 +278,9 @@ def sum_at_degenerate_modes(values_to_sum, frequencies, tol=0.05):
     return value_sum.squeeze()
 
 
-def get_spectrum_from_text(text_filename: Path | str, is_collection: bool = True):
+def get_spectrum_from_text(
+    text_filename: Path | str, *, is_collection: bool = True
+):
     """
     Reads a Spectrum1DCollection or Spectrum1D from a text file,
     for testing to_text_file method. The text file
