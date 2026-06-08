@@ -7,7 +7,7 @@ from numpy.polynomial import Polynomial
 from euphonic import ForceConstants, QpointPhononModes, ureg
 from euphonic.plot import plot_1d
 from euphonic.styles import base_style
-from euphonic.util import dedent_and_fill, mode_gradients_to_widths, mp_grid
+from euphonic.util import format_error, mode_gradients_to_widths, mp_grid
 
 from .utils import (
     _arrange_pdos_groups,
@@ -18,15 +18,13 @@ from .utils import (
     _get_pdos_weighting,
     _grid_spec_from_args,
     _plot_label_kwargs,
-    get_args,
     load_data_from_file,
     matplotlib_save_or_show,
 )
 
 
 def main(params: list[str] | None = None) -> None:
-    parser = get_parser()
-    args = get_args(parser, params)
+    args = get_parser().parse_args(args=params)
 
     frequencies_only = (args.weighting == 'dos' and args.pdos is None)
     data = load_data_from_file(args.filename, verbose=True,
@@ -34,37 +32,27 @@ def main(params: list[str] | None = None) -> None:
 
     if not frequencies_only and not isinstance(
             data, (QpointPhononModes, ForceConstants)):
-        msg = (
+        msg = format_error(
+            'No eigenvectors found',
+            reason=(
             'Eigenvectors are required to use "--pdos" or '
             'any "--weighting" option other than plain DOS'
+            ),
+            fix=('Use a data file which contains '
+                 'eigenvectors or force constants.'),
         )
         raise TypeError(msg)
     if args.adaptive and not isinstance(data, ForceConstants):
-        msg = 'Force constants are required to use --adaptive option'
+        msg = format_error(
+            'No force constants found.',
+            reason=('The --adaptive option requires '
+                    'mode gradients to be calculated.'),
+            fix='Use a data file that contains force constants.',
+        )
         raise TypeError(msg)
 
-    if (args.energy_broadening
-            and args.adaptive
-            and len(args.energy_broadening) == 1):
-        if args.adaptive_scale is not None:
-            msg = dedent_and_fill("""
-                Adaptive scale factor was specified twice; use either
-                --adaptive-scale or --energy-broadening.  To add a fixed width
-                to adaptive broadening, use --instrument-broadening.""")
-            raise ValueError(msg)
-        args.adaptive_scale = args.energy_broadening[0]
-
-    elif args.energy_broadening:
-        if args.inst_broadening is not None:
-            msg = (
-                'Broadening width was specified twice; use either'
-                '--instrument-broadening or --energy-broadening.'
-            )
-            raise ValueError(msg)
-        args.inst_broadening = args.energy_broadening
-
-    if args.inst_broadening:
-        energy_broadening_poly = Polynomial(args.inst_broadening)
+    if args.energy_broadening:
+        energy_broadening_poly = Polynomial(args.energy_broadening)
 
     mode_widths = None
     if isinstance(data, ForceConstants):
@@ -81,11 +69,11 @@ def main(params: list[str] | None = None) -> None:
             cmkwargs['return_mode_gradients'] = True
             modes, mode_grads = data.calculate_qpoint_phonon_modes(
                 mp_grid(grid_spec), **cmkwargs)
-            mode_widths = mode_gradients_to_widths(mode_grads,
-                                                   modes.crystal.cell_vectors)
-            if args.adaptive_scale:
-                mode_widths *= args.adaptive_scale
-            if args.inst_broadening and args.shape == 'gauss':
+            mode_widths = mode_gradients_to_widths(
+                mode_grads, modes.crystal.cell_vectors,
+            ) * args.adaptive_scale
+
+            if args.energy_broadening and args.shape == 'gauss':
                 # Combine instrumental broadening and adaptive sample
                 # broadening: the convolution of a Gaussian with a Gaussian is
                 # a Gaussian with sigma = sqrt(sigma1^2 + sigma2^2)
@@ -100,14 +88,14 @@ def main(params: list[str] | None = None) -> None:
 
     else:
         modes = data
+
     modes.frequencies_unit = args.energy_unit
     ebins = _get_energy_bins(
         modes, args.ebins + 1, emin=args.e_min, emax=args.e_max)
 
     kwargs = {'mode_widths': mode_widths,
               'adaptive_method': args.adaptive_method,
-              'adaptive_error': args.adaptive_error,
-              'adaptive_error_fit': args.adaptive_fit}
+              'adaptive_error': args.adaptive_error}
 
     if args.weighting == 'dos' and args.pdos is None:
         dos = modes.calculate_dos(ebins, **kwargs)
@@ -116,10 +104,10 @@ def main(params: list[str] | None = None) -> None:
         pdos = modes.calculate_pdos(ebins, **kwargs)
         dos = _arrange_pdos_groups(pdos, args.pdos)
 
-    if args.inst_broadening and args.shape == 'gauss' and args.adaptive:
+    if args.energy_broadening and args.shape == 'gauss' and args.adaptive:
         pass  # Gaussian broadening included with adaptive sampling
 
-    elif (args.inst_broadening and len(energy_broadening_poly) > 1):
+    elif (args.energy_broadening and len(energy_broadening_poly) > 1):
         # Variable-width Gaussian broadening
         def energy_broadening_func(x):
             return energy_broadening_poly(x.to(args.energy_unit).magnitude,
@@ -128,10 +116,9 @@ def main(params: list[str] | None = None) -> None:
         dos = dos.broaden(x_width=energy_broadening_func,
                           shape=args.shape,
                           method='convolve',
-                          width_interpolation_error=args.adaptive_error,
-                          width_fit='cheby-log')
+                          width_interpolation_error=args.adaptive_error)
 
-    elif args.inst_broadening:
+    elif args.energy_broadening:
         # Fixed-width broadening
         dos = dos.broaden(energy_broadening_poly.coef[0] * ebins.units,
                           shape=args.shape)

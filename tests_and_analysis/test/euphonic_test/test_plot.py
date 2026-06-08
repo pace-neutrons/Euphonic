@@ -51,7 +51,7 @@ def test_missing_matplotlib(mocker):
     with pytest.raises(ModuleNotFoundError) as mnf_error:
         reload(euphonic.plot)
 
-    assert ('Cannot import Matplotlib for plotting'
+    assert ('Cannot import matplotlib for plotting'
             in mnf_error.value.args[0])
 
 
@@ -253,8 +253,8 @@ class TestPlot1D:
         # Check args were as expected
         assert core.call_args[0][0] == spectrum
         assert core.call_args[0][1] in fig.axes
-        assert core.call_args[0][2] == labels
-        assert core.call_args[1] == kwargs
+        assert core.call_args[1]['labels'] == labels
+        assert core.call_args[1] == kwargs | {'labels': labels}
 
         plt.close(fig)
 

@@ -118,8 +118,11 @@ def _build_pytest_options(
     return options
 
 
-def run_tests(pytest_options: list[str], do_report_coverage: bool,
-              reports_dir: Path, test_dir: Path) -> int:
+def run_tests(
+    pytest_options: list[str],
+    do_report_coverage: bool,
+    reports_dir:Path,
+    test_dir: Path) -> int:
     """
     Run the tests and record coverage if selected.
 

@@ -9,25 +9,29 @@ from euphonic.util import get_reference_data
 class TestReferenceData:
 
     def test_bad_collection(self):
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError), pytest.warns(DeprecationWarning):
             get_reference_data(collection='not-a-real-label')
 
     def test_bad_physical_property(self):
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError), pytest.warns(DeprecationWarning):
             get_reference_data(physical_property='not-a-real-property')
 
     def test_ref_scattering_length(self):
-        data = get_reference_data(
-            collection='Sears1992',
-            physical_property='coherent_scattering_length')
+        with pytest.warns(DeprecationWarning):
+            data = get_reference_data(
+                collection='Sears1992',
+                physical_property='coherent_scattering_length')
 
         assert data['Ba'].units == ureg('fm')
         assert data['Hg'].magnitude == pytest.approx(12.692)
         assert data['Sm'].magnitude == pytest.approx(complex(0.80, -1.65))
 
     def test_ref_cross_section(self):
-        data = get_reference_data(collection='BlueBook',
-                                  physical_property='coherent_cross_section')
+        with pytest.warns(DeprecationWarning):
+            data = get_reference_data(
+                collection='BlueBook',
+                physical_property='coherent_cross_section',
+            )
 
         assert data['Ca'].units == ureg('barn')
         assert data['Cl'].magnitude == pytest.approx(11.5257)
@@ -50,9 +54,11 @@ class TestReferenceData:
     def test_custom_file(self, tmp_path, animal_data, physical_property):
 
         filename = self._dump_data(animal_data, tmp_path, 'good_data.json')
-
-        loaded_data = get_reference_data(collection=filename,
-                                         physical_property=physical_property)
+        with pytest.warns(DeprecationWarning):
+            loaded_data = get_reference_data(
+                collection=filename,
+                physical_property=physical_property,
+            )
 
         animal_properties = animal_data['physical_property']
         for animal in 'cat', 'dog':
@@ -67,7 +73,7 @@ class TestReferenceData:
         filename = self._dump_data(test_data_no_units, tmp_path,
                                    'data_no_units.json')
 
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError), pytest.warns(DeprecationWarning):
             get_reference_data(collection=filename,
                                physical_property='some_property')
 
@@ -78,7 +84,7 @@ class TestReferenceData:
         filename = self._dump_data(test_data_unknown_units, tmp_path,
                                    'data_unknown_units.json')
 
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError), pytest.warns(DeprecationWarning):
             get_reference_data(collection=filename,
                                physical_property='some_property')
 
@@ -90,7 +96,7 @@ class TestReferenceData:
         filename = self._dump_data(test_data_wrong_property, tmp_path,
                                    'data_with_size_and_weight.json')
 
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError), pytest.warns(DeprecationWarning):
             get_reference_data(collection=filename,
                                physical_property='wrong_property')
 
@@ -102,6 +108,6 @@ class TestReferenceData:
         filename = self._dump_data(test_data_no_physical_property, tmp_path,
                                    'no_physical_property_data.json')
 
-        with pytest.raises(AttributeError):
+        with pytest.raises(AttributeError), pytest.warns(DeprecationWarning):
             get_reference_data(collection=filename,
                                physical_property='size')

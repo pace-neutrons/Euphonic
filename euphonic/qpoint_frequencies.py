@@ -1,11 +1,13 @@
 from pathlib import Path
+from types import NoneType
 from typing import Any, Literal
 import warnings
 
 import numpy as np
+from scipy.stats import norm
 from typing_extensions import Self
 
-from euphonic.broadening import ErrorFit, _width_interpolated_broadening
+from euphonic.broadening import _width_interpolated_broadening
 from euphonic.crystal import Crystal
 from euphonic.io import (
     _obj_from_json_file,
@@ -16,11 +18,21 @@ from euphonic.io import (
 from euphonic.readers import castep, phonopy
 from euphonic.spectra import Spectrum1D, Spectrum1DCollection, Spectrum2D
 from euphonic.ureg import Quantity, ureg
-from euphonic.util import _calc_abscissa, get_qpoint_labels
-from euphonic.validate import _check_constructor_inputs, _check_unit_conversion
+from euphonic.util import (
+    _calc_abscissa,
+    comma_join,
+    format_error,
+    get_qpoint_labels,
+)
+from euphonic.validate import (
+    InputCheck,
+    _check_constructor_inputs,
+    _check_unit_conversion,
+)
 
 AdaptiveMethod = Literal['reference', 'fast']
-
+FREQ_CHECK = InputCheck(..., (Quantity,), {(-1,)}, 'frequencies')
+WEIGHTS_CHECK = InputCheck(..., (np.ndarray, NoneType), {(-1,)}, 'weights')
 
 class QpointFrequencies:
     """
@@ -60,17 +72,17 @@ class QpointFrequencies:
             If None, equal weights are assumed
         """
         _check_constructor_inputs(
-            [crystal, qpts], [Crystal, np.ndarray], [(), (-1, 3)],
-            ['crystal', 'qpts'])
+            InputCheck(crystal, (Crystal,), {}, 'crystal'),
+            InputCheck(qpts, (np.ndarray,), {(-1, 3)}, 'qpts'),
+        )
         n_qpts = len(qpts)
         # Unlike QpointPhononModes and StructureFactor, don't test the
         # frequencies shape against number of atoms in the crystal, as
         # we may only have the cell vectors
         _check_constructor_inputs(
-            [frequencies, weights],
-            [Quantity, [np.ndarray, type(None)]],
-            [(n_qpts, -1), (n_qpts,)],
-            ['frequencies', 'weights'])
+            FREQ_CHECK._replace(value=frequencies, shape={(n_qpts, -1)}),
+            WEIGHTS_CHECK._replace(value=weights, shape={(n_qpts,)}),
+        )
         self.crystal = crystal
         self.qpts = qpts
         self.n_qpts = n_qpts
@@ -99,11 +111,11 @@ class QpointFrequencies:
     def calculate_dos(
         self,
         dos_bins: Quantity,
+        *,
         mode_widths: Quantity | None = None,
         mode_widths_min: Quantity = Quantity(0.01, 'meV'),
         adaptive_method: AdaptiveMethod = 'reference',
         adaptive_error: float = 0.01,
-        adaptive_error_fit: ErrorFit = 'cubic',
         ) -> Spectrum1D:
         """
         Calculates a density of states, in units of modes per atom per
@@ -129,10 +141,6 @@ class QpointFrequencies:
             Scalar float. Acceptable error for gaussian approximations
             when using the fast adaptive method, defined as the absolute
             difference between the areas of the true and approximate gaussians
-        adaptive_error_fit
-            Select parametrisation of kernel width spacing to adaptive_error.
-            'cheby-log' is recommended: for backward-compatibilty, 'cubic' is
-            the default.
 
         Returns
         -------
@@ -158,19 +166,18 @@ class QpointFrequencies:
         dos = self._calculate_dos(dos_bins, mode_widths=mode_widths,
                                   mode_widths_min=mode_widths_min,
                                   adaptive_method=adaptive_method,
-                                  adaptive_error=adaptive_error,
-                                  adaptive_error_fit=adaptive_error_fit)
+                                  adaptive_error=adaptive_error)
         return Spectrum1D(dos_bins, dos)
 
     def _calculate_dos(
         self,
         dos_bins: Quantity,
+        *,
         mode_widths: Quantity | None = None,
         mode_widths_min: Quantity = Quantity(0.01, 'meV'),
         mode_weights: np.ndarray | None = None,
         adaptive_method: AdaptiveMethod = 'reference',
         adaptive_error: float = 0.01,
-        adaptive_error_fit: ErrorFit = 'cubic',
         q_idx: int | None = None,
         ) -> Quantity:
         """
@@ -192,9 +199,10 @@ class QpointFrequencies:
 
         adaptive_method_options = ['reference', 'fast']
         if adaptive_method not in adaptive_method_options:
-            msg = (
-                f'Invalid value for adaptive_method, got {adaptive_method}, '
-                f'should be one of {adaptive_method_options}'
+            msg = format_error(
+                f'Invalid value for adaptive_method ({adaptive_method}).',
+                fix=('adaptive_method should be one of: '
+                     f'{comma_join(adaptive_method_options)}.'),
             )
             raise ValueError(msg)
 
@@ -221,7 +229,6 @@ class QpointFrequencies:
                                      mode_widths_min.to('hartree').magnitude)
             if adaptive_method == 'reference':
                 # adaptive broadening by summing over individual peaks
-                from scipy.stats import norm
                 dos_bins_calc = Spectrum1D._bin_edges_to_centres(dos_bins_calc)
                 dos = np.zeros(len(dos_bins_calc))
                 for q in range(len(freqs)):
@@ -235,8 +242,7 @@ class QpointFrequencies:
                 dos = _width_interpolated_broadening(dos_bins_calc,
                                                      freqs, mode_widths,
                                                      combined_weights,
-                                                     adaptive_error,
-                                                     fit=adaptive_error_fit)
+                                                     adaptive_error)
         else:
             bin_idx = np.digitize(freqs, dos_bins_calc)
             # Create DOS with extra bin either side, for any points
@@ -255,10 +261,13 @@ class QpointFrequencies:
         conv = 1*ureg('hartree').to(dos_bins.units)
         return dos/conv
 
-    def calculate_dos_map(self, dos_bins: Quantity,
-                          mode_widths: Quantity | None = None,
-                          mode_widths_min: Quantity = Quantity(0.01, 'meV'),
-                          ) -> Spectrum2D:
+    def calculate_dos_map(
+        self,
+        dos_bins: Quantity,
+        *,
+        mode_widths: Quantity | None = None,
+        mode_widths_min: Quantity = Quantity(0.01, 'meV'),
+    ) -> Spectrum2D:
         """
         Produces a bandstructure-like plot, using the DOS at each q-point
 
@@ -309,7 +318,7 @@ class QpointFrequencies:
         dispersion
             A sequence of mode bands with a common x-axis
         """
-        abscissa = _calc_abscissa(self.crystal.reciprocal_cell(), self.qpts)
+        abscissa = _calc_abscissa(self.crystal.reciprocal_cell, self.qpts)
         x_tick_labels = get_qpoint_labels(self.qpts,
                                           cell=self.crystal.to_spglib_cell())
         return Spectrum1DCollection(abscissa, self.frequencies.T,
@@ -329,7 +338,7 @@ class QpointFrequencies:
         x_tick_labels
             The tick labels
         """
-        abscissa = _calc_abscissa(self.crystal.reciprocal_cell(), self.qpts)
+        abscissa = _calc_abscissa(self.crystal.reciprocal_cell, self.qpts)
         # Calculate q-space ticks and labels
         x_tick_labels = get_qpoint_labels(
             self.qpts, cell=self.crystal.to_spglib_cell())
@@ -393,7 +402,9 @@ class QpointFrequencies:
         return _obj_from_json_file(cls, filename)
 
     @classmethod
-    def from_castep(cls, filename: Path | str,
+    def from_castep(cls,
+                    filename: Path | str,
+                    *,
                     average_repeat_points: bool = True,
                     prefer_non_loto: bool = False) -> Self:
         """
@@ -423,7 +434,9 @@ class QpointFrequencies:
         return cls.from_dict(data)
 
     @classmethod
-    def from_phonopy(cls, path: Path | str = '.',
+    def from_phonopy(cls,
+                     *,
+                     path: Path | str = '.',
                      phonon_name: Path | str = 'band.yaml',
                      phonon_format: str | None = None,
                      summary_name: Path | str = 'phonopy.yaml') -> Self:

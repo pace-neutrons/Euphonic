@@ -11,9 +11,11 @@ try:
     import brille as br
 except ModuleNotFoundError as err:
     err_msg = textwrap.dedent("""
-        Cannot import Brille for use with BrilleInterpolator
-        (maybe Brille is not installed?). To install Euphonic's
-        optional Brille dependency, try:
+        Cannot import Brille for use with BrilleInterpolator.
+
+        This may be because Brille is not installed.
+
+        To install Euphonic's optional Brille dependency, try:
 
             pip install euphonic[brille]
         """)
@@ -26,7 +28,8 @@ from euphonic import (
     QpointPhononModes,
     ureg,
 )
-from euphonic.validate import _check_constructor_inputs
+from euphonic.util import comma_join, format_error
+from euphonic.validate import InputCheck, _check_constructor_inputs
 
 
 class BrilleInterpolator:
@@ -53,18 +56,19 @@ class BrilleInterpolator:
             Brille documentation for details.
         """
         _check_constructor_inputs(
-            [crystal, grid],
-            [Crystal, [br.BZTrellisQdc, br.BZMeshQdc, br.BZNestQdc]],
-            [(), ()],
-            ['crystal', 'grid'])
+            InputCheck(crystal, (Crystal,), {}, 'crystal'),
+            InputCheck(grid, (br.BZTrellisQdc, br.BZMeshQdc, br.BZNestQdc),
+                       {}, 'grid'),
+        )
         # Check grid has been filled and vals/vecs are the correct shape
         n_atoms = crystal.n_atoms
         n_qpts = len(grid.rlu)
         _check_constructor_inputs(
-            [grid.values, grid.vectors],
-            [np.ndarray, np.ndarray],
-            [(n_qpts, 3*n_atoms, 1), (n_qpts, 3*n_atoms, 3*n_atoms)],
-            ['grid.values', 'grid.vectors'])
+            InputCheck(grid.values, (np.ndarray,),
+                       {(n_qpts, 3*n_atoms, 1)}, 'grid.values'),
+            InputCheck(grid.vectors, (np.ndarray,),
+                       {(n_qpts, 3*n_atoms, 3*n_atoms)}, 'grid.vectors'),
+        )
 
         self._grid = grid
         self.crystal = crystal
@@ -194,7 +198,11 @@ class BrilleInterpolator:
         """
         grid_type_opts = ('trellis', 'mesh', 'nest')
         if grid_type not in grid_type_opts:
-            msg = f'Grid type "{grid_type}" not recognised'
+            msg = format_error(
+                f'Grid type "{grid_type}" not recognised.',
+                fix=('Acceptable grid types are:'
+                     f' {comma_join(grid_type_opts)}.'),
+            )
             raise ValueError(msg)
 
         crystal = force_constants.crystal

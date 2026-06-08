@@ -6,7 +6,7 @@ import numpy as np
 
 from euphonic.spectra import Spectrum1D, Spectrum1DCollection, Spectrum2D
 from euphonic.ureg import Quantity
-from euphonic.util import dedent_and_fill, zips
+from euphonic.util import format_error, zips
 
 if TYPE_CHECKING:
     from matplotlib.lines import Line2D
@@ -19,18 +19,23 @@ try:
     import matplotlib.pyplot as plt
 
 except ModuleNotFoundError as err:
-    err_msg = dedent_and_fill("""
-        Cannot import Matplotlib for plotting (maybe Matplotlib is
-        not installed?). To install Euphonic's optional Matplotlib
+    err_msg = format_error(
+        'Cannot import matplotlib for plotting.',
+        reason='Maybe matplotlib is not installed.',
+        fix="""
+        To install Euphonic's optional Matplotlib
         dependency, try:
 
             pip install euphonic[matplotlib]
-    """)
+        """,
+    )
     raise ModuleNotFoundError(err_msg) from err
 
 
 def plot_1d_to_axis(spectra: Spectrum1D | Spectrum1DCollection,
-                    ax: Axes, labels: Sequence[str] | None = None,
+                    ax: Axes,
+                    *,
+                    labels: Sequence[str] | None = None,
                     **mplargs) -> None:
     """Plot a (collection of) 1D spectrum lines to matplotlib axis
 
@@ -61,15 +66,20 @@ def plot_1d_to_axis(spectra: Spectrum1D | Spectrum1DCollection,
     try:
         assert isinstance(spectra, Spectrum1DCollection)
     except AssertionError:
-        msg = 'spectra should be a Spectrum1D or Spectrum1DCollection'
+        msg = format_error(
+            f'Invalid type for spectra ({type(spectra).__name__}).',
+            reason='spectra should be a Spectrum1D or Spectrum1DCollection.',
+            fix='Ensure spectrum is a Spectrum1D or Spectrum1DCollection.',
+        )
         raise TypeError(msg) from None
 
     if isinstance(labels, str):
         labels = [labels]
     if labels is not None and len(labels) != len(spectra):
-        msg = (
-            f'The length of labels (got {len(labels)}) should be the '
-            f'same as the number of lines to plot (got {len(spectra)})'
+        msg = format_error(
+            (f'Mismatched length for labels ({len(labels)}) '
+             f'and spectra ({len(spectra)}).'),
+            fix='Ensure one label per spectrum.',
         )
         raise ValueError(msg)
 
@@ -116,6 +126,7 @@ OneDSpectrumOrSpectra: TypeAlias = (Spectrum1D
                          | Sequence[Spectrum1DCollection])
 
 def plot_1d(spectra: OneDSpectrumOrSpectra,
+            *,
             title: str | None = None,
             xlabel: str = '',
             ylabel: str = '',
@@ -181,25 +192,28 @@ def plot_1d(spectra: OneDSpectrumOrSpectra,
     else:
         # Check units are consistent
         for spectrum in spectra[1:]:
+            invalid = ''
             if spectrum.x_data_unit != spectra[0].x_data_unit:
-                msg = (
-                    'Something went wrong: x data units are not '
-                    'consistent between spectrum subplots.'
-                )
-                raise ValueError(msg)
+                invalid += 'x'
             if spectrum.y_data_unit != spectra[0].y_data_unit:
-                msg = (
-                    'Something went wrong: y data units are not '
-                    'consistent between spectrum subplots.'
+                invalid += 'y'
+            if invalid:
+                msg = format_error(
+                    'Inconsistent units.',
+                    reason=(f'{" and ".join(invalid)} data units '
+                            'are not consistent '
+                            'between spectrum subplots.'),
+                    fix='Ensure units are the same for each spectrum',
                 )
                 raise ValueError(msg)
+
 
     gridspec_kw = _get_gridspec_kw(spectra)
     fig, subplots = plt.subplots(1, len(spectra), sharey=True,
                                  gridspec_kw=gridspec_kw, squeeze=False)
 
     for i, (spectrum, ax) in enumerate(zips(spectra, subplots.flatten())):
-        plot_1d_to_axis(spectrum, ax, labels, **line_kwargs)
+        plot_1d_to_axis(spectrum, ax, labels=labels, **line_kwargs)
         # To avoid an ugly empty legend, only use if there are labels to plot
         if i == 0:
             leg_handles, leg_labels = ax.get_legend_handles_labels()
@@ -209,7 +223,7 @@ def plot_1d(spectra: OneDSpectrumOrSpectra,
 
     # Add an invisible large axis for common labels
     ax = fig.add_subplot(111, frameon=False)
-    ax.grid(False)
+    ax.grid(visible=False)
     ax.tick_params(labelcolor='none', bottom=False, left=False)
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
@@ -218,7 +232,9 @@ def plot_1d(spectra: OneDSpectrumOrSpectra,
     return fig
 
 
-def plot_2d_to_axis(spectrum: Spectrum2D, ax: Axes,
+def plot_2d_to_axis(spectrum: Spectrum2D,
+                    ax: Axes,
+                    *,
                     cmap: str | Colormap | None = None,
                     interpolation: str = 'nearest',
                     norm: Normalize | None = None,
@@ -269,6 +285,7 @@ def plot_2d_to_axis(spectrum: Spectrum2D, ax: Axes,
 
 
 def plot_2d(spectra: Spectrum2D | Sequence[Spectrum2D],
+            *,
             vmin: float | None = None,
             vmax: float | None = None,
             cmap: str | Colormap | None = None,
@@ -337,7 +354,7 @@ def plot_2d(spectra: Spectrum2D | Sequence[Spectrum2D],
 
     # Add an invisible large axis for common labels
     ax = fig.add_subplot(111, frameon=False)
-    ax.grid(False)
+    ax.grid(visible=False)
     ax.tick_params(labelcolor='none', bottom=False, left=False)
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)

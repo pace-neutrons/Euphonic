@@ -1,4 +1,3 @@
-import inspect
 from pathlib import Path
 from typing import Any
 
@@ -12,7 +11,11 @@ from euphonic.io import (
     _process_dict,
 )
 from euphonic.ureg import Quantity, ureg
-from euphonic.validate import _check_constructor_inputs, _check_unit_conversion
+from euphonic.validate import (
+    InputCheck,
+    _check_constructor_inputs,
+    _check_unit_conversion,
+)
 
 
 class DebyeWaller:
@@ -50,13 +53,14 @@ class DebyeWaller:
             Scalar float Quantity. The temperature the Debye-Waller
             exponent was calculated at
         """
-        _check_constructor_inputs([crystal], [Crystal], [()], ['crystal'])
+        _check_constructor_inputs(InputCheck(crystal, (Crystal,),
+                                             {}, 'crystal'))
         n_atoms = crystal.n_atoms
         _check_constructor_inputs(
-            [debye_waller, temperature],
-            [Quantity, Quantity],
-            [(n_atoms, 3, 3), ()],
-            inspect.getfullargspec(self.__init__)[0][2:])
+            InputCheck(debye_waller, (Quantity,),
+                       {(n_atoms, 3, 3)}, 'debye_waller'),
+            InputCheck(temperature, (Quantity,), {}, 'temperature'),
+        )
         self.crystal = crystal
         self._debye_waller = debye_waller.to(ureg.bohr**2).magnitude
         self._temperature = temperature.to(ureg.K).magnitude

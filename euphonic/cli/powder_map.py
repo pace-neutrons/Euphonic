@@ -1,13 +1,14 @@
-from argparse import ArgumentParser
+from argparse import ArgumentParser, Namespace
 from collections.abc import Callable, Sequence
 from math import ceil
+from typing import Any
 
 import matplotlib.style
 import numpy as np
 from numpy.polynomial import Polynomial
 from pint import Unit
 
-from euphonic import ForceConstants, Quantity, ureg
+from euphonic import DebyeWaller, ForceConstants, Quantity, ureg
 from euphonic.cli.utils import (
     _arrange_pdos_groups,
     _brille_calc_modes_kwargs,
@@ -19,7 +20,6 @@ from euphonic.cli.utils import (
     _get_pdos_weighting,
     _get_q_distance,
     _plot_label_kwargs,
-    get_args,
     load_data_from_file,
     matplotlib_save_or_show,
 )
@@ -29,9 +29,9 @@ from euphonic.powder import (
     sample_sphere_pdos,
     sample_sphere_structure_factor,
 )
-from euphonic.spectra import apply_kinematic_constraints
+from euphonic.spectra import Spectrum1D, apply_kinematic_constraints
 from euphonic.styles import base_style, intensity_widget_style
-import euphonic.util
+from euphonic.util import format_error
 
 # Dummy tqdm function if tqdm progress bars unavailable
 try:
@@ -123,27 +123,85 @@ def _get_broaden_kwargs(q_broadening: Sequence[float] | None = None,
     return {'x_width': q_width, 'y_width': energy_width}
 
 
-def main(params: list[str] | None = None) -> None:
-    args = get_args(get_parser(), params)
-    calc_modes_kwargs = _calc_modes_kwargs(args)
-
+def _validate_args(args: Namespace) -> None:
     # Make sure we get an error if accessing NPTS inappropriately
     if args.npts_density is not None:
         args.npts = None
 
-    fc = load_data_from_file(args.filename, verbose=True)
-    if not isinstance(fc, ForceConstants):
-        msg = (
-            'Force constants are required to use the '
-            'euphonic-powder-map tool'
-        )
-        raise TypeError(msg)
     if args.pdos is not None and args.weighting == 'coherent':
-        msg = (
-            '"--pdos" is only compatible with '
-            '"--weighting" options that include dos'
+        msg = format_error(
+            'Incompatible options specified.',
+            reason=('Coherent scattering cannot be decomposed '
+                    'to linear single-atom contributions.'),
+            fix=('Use --pdos with another weighting scheme, '
+                 'or use "coherent" weighting without --pdos.'),
         )
         raise ValueError(msg)
+
+
+def _get_e_max(args: Namespace) -> float:
+    if args.e_max is None:
+        return args.e_i
+    return args.e_max
+
+
+def _get_spectrum_calculator(
+    fc: ForceConstants,
+    cli_args: Namespace,
+    temperature: Quantity | None,
+    dw: DebyeWaller | None,
+    **kwargs: dict[str, Any],
+) -> Callable[[Quantity, int], Spectrum1D]:
+    """Get the appropriate Spectrum1D calculator for loop over Q"""
+
+    match cli_args.weighting, cli_args.pdos:
+        case 'coherent', _:
+            def calc_spectrum(q: Quantity, npts: int) -> Spectrum1D:
+                return sample_sphere_structure_factor(
+                    fc,
+                    q,
+                    npts=npts,
+                    dw=dw,
+                    temperature=temperature,
+                    **kwargs)
+            return calc_spectrum
+
+        case 'dos', None:
+            def calc_spectrum(q: Quantity, npts: int) -> Spectrum1D:
+                return sample_sphere_dos(
+                    fc, q, npts=npts, **kwargs)
+            return calc_spectrum
+
+        case weighting, pdos if 'dos' in weighting:
+            def calc_spectrum(q: Quantity, npts: int) -> Spectrum1D:
+                spectrum_1d_col = sample_sphere_pdos(
+                        fc,
+                        q,
+                        npts=npts,
+                        weighting=_get_pdos_weighting(weighting),
+                        **kwargs)
+                return _arrange_pdos_groups(spectrum_1d_col, pdos)
+            return calc_spectrum
+
+        case _:
+            msg = f'Cannot interpret weighting "{cli_args.weighting}".'
+            raise ValueError(msg)
+
+
+def main(params: list[str] | None = None) -> None:
+    args = get_parser().parse_args(args=params)
+    calc_modes_kwargs = _calc_modes_kwargs(args)
+
+    _validate_args(args)
+
+    fc = load_data_from_file(args.filename, verbose=True)
+    if not isinstance(fc, ForceConstants):
+        msg = format_error(
+            ('Force constants are required to '
+             'use the euphonic-powder-map tool.'),
+            fix='Use a data file containing force constants.',
+        )
+        raise TypeError(msg)
 
     if args.use_brille:
         from euphonic.brille import BrilleInterpolator
@@ -170,31 +228,34 @@ def main(params: list[str] | None = None) -> None:
         np.array([[0., 0., 0.5]]), **calc_modes_kwargs)
     modes.frequencies_unit = args.energy_unit
 
-    if args.e_i is not None and args.e_max is None:
-        emax = args.e_i
-    else:
-        emax = args.e_max
-
     energy_bins = _get_energy_bins(
-        modes, args.ebins + 1, emin=args.e_min, emax=emax,
+        modes, args.ebins + 1, emin=args.e_min, emax=_get_e_max(args),
         headroom=1.2)  # Generous headroom as we only checked one q-point
 
-    if args.weighting in ('coherent',):
+    if args.weighting in ('coherent',) and args.temperature is not None:
         # Compute Debye-Waller factor once for re-use at each mod(q)
         # (If temperature is not set, this will be None.)
-        if args.temperature is not None:
-            temperature = args.temperature * ureg('K')
-            dw = _get_debye_waller(temperature, fc, grid=args.grid,
-                                   grid_spacing=(args.grid_spacing
-                                                 * recip_length_unit),
-                                   **calc_modes_kwargs)
-        else:
-            temperature = None
-            dw = None
+        temperature = args.temperature * ureg('K')
+        dw = _get_debye_waller(temperature, fc, grid=args.grid,
+                               grid_spacing=(args.grid_spacing
+                                             * recip_length_unit),
+                               **calc_modes_kwargs)
+    else:
+        temperature = None
+        dw = None
 
     print(f'Sampling {n_q_bins} |q| shells between {q_min:~P} and {q_max:~P}')
 
     z_data = np.empty((n_q_bins, len(energy_bins) - 1))
+
+    general_kwargs = {
+        'sampling': args.sampling,
+        'jitter': args.jitter,
+        'energy_bins': energy_bins,
+    }
+
+    calc_spectrum = _get_spectrum_calculator(
+        fc, args, temperature, dw, **general_kwargs, **calc_modes_kwargs)
 
     for q_index in tqdm(range(n_q_bins)):
         q = q_bin_centers[q_index]
@@ -206,30 +267,7 @@ def main(params: list[str] | None = None) -> None:
         else:
             npts = args.npts
 
-        general_kwargs = {
-            'npts': npts,
-            'sampling': args.sampling,
-            'jitter': args.jitter,
-            'energy_bins': energy_bins,
-        }
-
-        if args.weighting == 'dos' and args.pdos is None:
-            spectrum_1d = sample_sphere_dos(
-                fc, q, **general_kwargs, **calc_modes_kwargs)
-        elif 'dos' in args.weighting:
-            spectrum_1d_col = sample_sphere_pdos(
-                    fc, q,
-                    weighting=_get_pdos_weighting(args.weighting),
-                    **general_kwargs,
-                    **calc_modes_kwargs)
-            spectrum_1d = _arrange_pdos_groups(spectrum_1d_col, args.pdos)
-        elif args.weighting == 'coherent':
-            spectrum_1d = sample_sphere_structure_factor(
-                fc, q,
-                dw=dw,
-                temperature=temperature,
-                **general_kwargs,
-                **calc_modes_kwargs)
+        spectrum_1d = calc_spectrum(q, npts)
 
         z_data[q_index, :] = spectrum_1d.y_data.magnitude
 

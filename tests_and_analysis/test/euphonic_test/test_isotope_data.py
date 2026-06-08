@@ -1,0 +1,382 @@
+from dataclasses import dataclass
+from importlib.resources import files
+from math import isnan
+
+import numpy as np
+from numpy.testing import assert_allclose
+import pytest
+
+from euphonic.isotopes import (
+    AtomTypeDictData,
+    AtomTypeShallowDictData,
+    CsvData,
+    IsotopeData,
+    LegacyJsonData,
+    MissingValueError,
+    NoMatchingIsotopeError,
+    NotQuantityError,
+    Structure,
+    sears_1992,
+)
+import euphonic.isotopes.data
+from euphonic.ureg import Quantity, ureg
+
+
+def _compare_quantity(a: Quantity, b: Quantity) -> None:
+    assert a.units == b.units
+    assert_allclose(a.magnitude, b.magnitude)
+
+
+@dataclass
+class SomeStructure:
+    atom_type: np.ndarray
+    atom_mass: Quantity
+
+
+@pytest.fixture
+def structure() -> SomeStructure:
+    return SomeStructure(
+        atom_type=np.array(['Na', 'Cl']),
+        atom_mass=Quantity([22.99, 35.45], 'amu'),
+    )
+
+
+@pytest.fixture
+def bad_structure() -> SomeStructure:
+    return SomeStructure(
+        atom_type=np.array(['X', 'M']),
+        atom_mass=Quantity([-1.0, 200.0], 'amu'),
+    )
+
+
+def test_atom_type_dict_data(structure) -> None:
+    isotope_data = AtomTypeDictData(
+        {'key1': {'Na': Quantity(1.0, 'barn'), 'Cl': Quantity(2.0, 'barn')}},
+    )
+
+    assert isotope_data.get_item('Na', 0.0) == {'key1': Quantity(1.0, 'barn')}
+
+    assert isotope_data.get_value('Na', 0.0, 'key1') == Quantity(1.0, 'barn')
+
+    _compare_quantity(
+        isotope_data.get_array(structure, 'key1'),
+        Quantity([1.0, 2.0], 'barn'),
+    )
+
+    with pytest.raises(KeyError):
+        isotope_data.get_item('K', 0.0)
+
+    with pytest.raises(KeyError, match=r"Property 'key2' not found in dict."):
+        isotope_data.get_value('Na', 0.0, 'key2')
+
+    with pytest.raises(KeyError):
+        isotope_data.get_value('K', 0.0, 'key1')
+
+
+def test_atom_type_shallow_dict_data(structure) -> None:
+    isotope_data = AtomTypeShallowDictData(
+        {'Na': Quantity(1.0, 'barn'), 'Cl': Quantity(2.0, 'barn')}
+    )
+
+    assert isotope_data.get_item('Na', 0.0) == {'': Quantity(1.0, 'barn')}
+
+    assert isotope_data.get_value('Na', 0.0, 'dummy') == Quantity(1.0, 'barn')
+
+    _compare_quantity(
+        isotope_data.get_array(structure, 'dummy'),
+        Quantity([1.0, 2.0], 'barn'),
+    )
+
+    with pytest.raises(KeyError):
+        isotope_data.get_item('K', 0.0)
+
+    with pytest.raises(KeyError):
+        isotope_data.get_value('K', 0.0, 'key1')
+
+
+def test_missing_atom_type_shallow_dict_data(structure) -> None:
+    isotope_data = AtomTypeDictData(
+        {'K': Quantity(1.0, 'barn'), 'Cl': Quantity(2.0, 'barn')}
+    )
+
+    with pytest.raises(KeyError):
+        isotope_data.get_array(structure, '')
+
+
+def test_legacy_json_data(structure, bad_structure) -> None:
+    isotope_data = LegacyJsonData('Sears1992')
+
+    assert isotope_data.get_item('Na', 0.0) == {
+        'coherent_scattering_length': Quantity(3.63, 'fm'),
+    }
+
+    assert isotope_data.get_value('Na', 0.0, 'coherent_scattering_length') == (
+        Quantity(3.63, 'fm')
+    )
+
+    _compare_quantity(
+        isotope_data.get_array(structure, 'coherent_scattering_length'),
+        Quantity([3.63, 9.5770], 'fm'),
+    )
+
+    with pytest.raises(KeyError):
+        isotope_data.get_item('X', 0.0)
+
+    with pytest.raises(KeyError):
+        isotope_data.get_value('Na', 0.0, 'missing')
+
+    with pytest.raises(
+        KeyError, match="Property 'missing' not found in 'Sears1992'"
+    ):
+        isotope_data.get_array(structure, 'missing')
+
+    with pytest.raises(KeyError):
+        isotope_data.get_array(bad_structure, 'coherent_scattering_length')
+
+
+def test_legacy_json_data_from_file() -> None:
+    isotope_data = LegacyJsonData(
+        str(files(euphonic.isotopes.data) / 'sears-1992.json')
+    )
+
+    assert isotope_data.get_item('Na', 0.0) == {
+        'coherent_scattering_length': Quantity(3.63, 'fm'),
+    }
+
+    with pytest.raises(ValueError, match='No data files known'):
+        isotope_data = LegacyJsonData('no-such-file.json')
+
+
+def test_legacy_json_bad_file(tmp_path):
+    bad_file = tmp_path / 'bad.json'
+    with bad_file.open('wt') as fd:
+        fd.write('{}\n')
+
+    with pytest.raises(
+        AttributeError,
+        match=r'Data file does not contain required key "physical_property"\.',
+    ):
+        LegacyJsonData(str(bad_file))
+
+    with bad_file.open('wt') as fd:
+        fd.write('{"physical_property": {"a": {"Ag": 4.4}}}\n')
+
+    with pytest.raises(
+        ValueError,
+        match=r'No units in file \(bad.json\)',
+    ):
+        LegacyJsonData(str(bad_file))
+
+    with bad_file.open('wt') as fd:
+        fd.write("""\
+            {"physical_property": {"dog": {"__units__": "woof",
+                                           "Ag": 4.4}}}
+            """)
+    with pytest.raises(
+        ValueError,
+        match=r'Unsupported units \(woof\) from data file "bad.json".',
+    ):
+        LegacyJsonData(str(bad_file))
+
+
+def test_protocol_get_value() -> None:
+    """get_value implemented on protocol but not used in dict-based classes"""
+    dummy = 'dummy'
+
+    class TestIsotopeData(IsotopeData):
+        def get_item(self, symbol: str, mass: float) -> dict[str, Quantity]:
+            assert symbol == dummy
+
+            return {'key1': Quantity(1.0, 'barn'), 'key2': Quantity(2.0, 'kg')}
+
+        def get_array(self, structure: Structure, key: str) -> Quantity:
+            raise NotImplementedError
+
+    isotope_data = TestIsotopeData()
+
+    assert isotope_data.get_value(dummy, 0.0, 'key2') == Quantity(2.0, 'kg')
+
+
+def _assert_equal_quantity_dict(
+    item_1: dict[str, Quantity], item_2: dict[str, Quantity]
+) -> None:
+    try:
+        assert item_1.keys() == item_2.keys()
+
+        for key, value in item_1.items():
+            if isnan(value.magnitude):
+                assert isnan(item_2[key].magnitude)
+            else:
+                assert value == item_2[key]
+
+    except AssertionError as err:
+        raise AssertionError(item_1, item_2) from err
+
+
+class TestSears1992CSV:
+    def test_internals(self) -> None:
+        table = sears_1992._table
+
+        assert table.dtype == [
+            ('symbol', object),
+            ('z_number', '<i8'),
+            ('a_number', '<i8'),
+            ('mass', '<f8'),
+            ('spin', object),
+            ('abundance', '<f8'),
+            ('half_life', '<f8'),
+            ('coherent_scattering_length', '<c16'),
+            ('incoherent_scattering_length', '<c16'),
+            ('coherent_cross_section', '<f8'),
+            ('incoherent_cross_section', '<f8'),
+            ('scattering_cross_section', '<f8'),
+            ('absorption_cross_section', '<f8'),
+        ]
+
+        column_headers = sears_1992._column_headers
+        all_units = {col_info.unit for col_info in column_headers.values()}
+        assert None in all_units
+        assert ureg.Unit('fermi') in all_units
+        assert sears_1992._column_headers['mass'].unit == ureg.Unit('amu')
+
+    def test_get_item(self) -> None:
+        # Monisotopic element
+        # Au,79,197,196.966570103,3/2(+),100.0,,(7.63+0j),(-1.84+0j),7.32,0.43,7.75,98.65
+        _assert_equal_quantity_dict(
+            sears_1992.get_item('Au', mass=197.0),
+            {
+                'z_number': Quantity(79, 'dimensionless'),
+                'a_number': Quantity(197, 'dimensionless'),
+                'mass': Quantity(196.966570103, 'amu'),
+                'abundance': Quantity(100.0, 'percent'),
+                'coherent_scattering_length': Quantity(7.63 + 0j, 'fermi'),
+                'incoherent_scattering_length': Quantity(-1.84 + 0j, 'fermi'),
+                'coherent_cross_section': Quantity(7.32, 'barn'),
+                'incoherent_cross_section': Quantity(0.43, 'barn'),
+                'scattering_cross_section': Quantity(7.75, 'barn'),
+                'absorption_cross_section': Quantity(98.65, 'barn'),
+            },
+        )
+
+        # Isotopic mixture
+        # Hg,80,,200.592,,,,(12.692+0j),,20.24,6.6,26.8,372.3
+
+        _assert_equal_quantity_dict(
+            sears_1992.get_item('Hg', mass=200.7),
+            {
+                'z_number': Quantity(80, 'dimensionless'),
+                'mass': Quantity(200.592, 'amu'),
+                'coherent_scattering_length': Quantity(12.692 + 0j, 'fermi'),
+                'coherent_cross_section': Quantity(20.24, 'barn'),
+                'incoherent_cross_section': Quantity(6.6, 'barn'),
+                'scattering_cross_section': Quantity(26.8, 'barn'),
+                'absorption_cross_section': Quantity(372.3, 'barn'),
+            },
+        )
+
+        _assert_equal_quantity_dict(
+            sears_1992.get_item('Hg', mass=200.7),
+            sears_1992.get_item('Hg:mod', mass=200.7),
+        )
+
+        with pytest.raises(NoMatchingIsotopeError):
+            sears_1992.get_item('H', mass=1.5)
+
+    def test_get_value(self) -> None:
+        assert sears_1992.get_value(
+            'Hg', mass=200.7, key='coherent_scattering_length'
+        ) == Quantity(12.692 + 0j, 'fermi')
+
+        assert sears_1992.get_value(
+            'Hg:mod', mass=200.7, key='coherent_scattering_length'
+        ) == Quantity(12.692 + 0j, 'fermi')
+
+        with pytest.raises(NotQuantityError):
+            sears_1992.get_value('Hg', mass=200.7, key='spin')
+
+        with pytest.raises(MissingValueError):
+            sears_1992.get_value('Hg', mass=200.7, key='half_life')
+
+        with pytest.raises(MissingValueError):
+            sears_1992.get_value('Hg', mass=200.7, key='half_life')
+
+        with pytest.raises(KeyError, match='No data found'):
+            sears_1992.get_value('X', mass=1.0, key='coherent_cross_section')
+
+        with pytest.raises(KeyError, match="Column 'dog' was not found"):
+            sears_1992.get_value('Hg', mass=200.7, key='dog')
+
+        # Scattering length of unknown sign: not usable
+        with pytest.raises(
+            ValueError, match='Isotope Ne-21 has invalid value'
+        ):
+            sears_1992.get_value(
+                'Ne', mass=20.99, key='incoherent_scattering_length'
+            )
+
+    def test_get_array(self, structure) -> None:
+        _compare_quantity(
+            sears_1992.get_array(structure, 'scattering_cross_section'),
+            Quantity([3.28, 16.8], 'barn'),
+        )
+
+        structure.atom_type[1] += ':mod'
+        _compare_quantity(
+            sears_1992.get_array(structure, 'scattering_cross_section'),
+            Quantity([3.28, 16.8], 'barn'),
+        )
+
+
+BAD_UNIT_CSV = """\
+symbol,a_number,mass (a.m.u.),dog ((,b_length (fermi)
+str,int,float,float,complex
+H,1,1.01,2.0,3.0+2j
+"""
+
+STR_UNIT_CSV = """\
+symbol,a_number,mass (a.m.u.),dog (m),b_length (fermi)
+str,int,float,str,complex
+H,1,1.01,2.0,3.0+2j
+"""
+
+UNKNOWN_SIGN_ELEMENT_CSV = """\
+symbol,a_number,mass (a.m.u.),b_length (fermi)
+str,int,float,complex
+Ne,,20.99,±3.0+2j
+"""
+
+
+class TestCsvData:
+    def test_bad_unit(self, tmp_path):
+        bad_file = tmp_path / 'bad.csv'
+        with bad_file.open('wt', encoding='utf-8') as fd:
+            print(BAD_UNIT_CSV, file=fd)
+
+        isotope_data = CsvData(bad_file, {})
+        with pytest.raises(
+            ValueError, match='Could not interpret column header'
+        ):
+            isotope_data.get_item('H', mass=1.0)
+
+    def test_str_unit(self, tmp_path):
+        bad_file = tmp_path / 'bad.csv'
+        with bad_file.open('wt', encoding='utf-8') as fd:
+            print(STR_UNIT_CSV, file=fd)
+
+        isotope_data = CsvData(bad_file, {})
+        with pytest.raises(
+            TypeError, match=r'Cannot apply units to a string\.'
+        ):
+            isotope_data.get_item('H', mass=1.0)
+
+    def test_unknown_sign(self, tmp_path):
+        bad_file = tmp_path / 'bad.csv'
+        with bad_file.open('wt', encoding='utf-8') as fd:
+            print(UNKNOWN_SIGN_ELEMENT_CSV, file=fd)
+
+        isotope_data = CsvData(bad_file, {})
+
+        with pytest.raises(
+            ValueError, match='Isotopic mixture Ne has invalid value'
+        ):
+            isotope_data.get_value('Ne', 20.99, 'b_length')

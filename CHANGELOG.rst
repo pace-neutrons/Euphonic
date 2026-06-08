@@ -1,5 +1,118 @@
 `Unreleased <https://github.com/pace-neutrons/Euphonic/compare/v1.6.2...HEAD>`_
 -------------------------------------------------------------------------------
+- CLI changes
+
+  - The ``--instrument-broadening`` parameter of ``euphonic-dos`` is
+    deprecated and hidden.  The old ``--energy-broadening`` parameter
+    is now functionally the same; i.e. it can no longer set the
+    adaptive broadening width and ``--adaptive-scale`` must be used for that purpose.
+
+- API changes
+
+  - Many public functions and methods now use keyword-only arguments
+    where previously these were permitted to be keyword *or* positional.
+    - This will break code that depends on these arguments being in a
+      specific order rather than calling them by name
+    - The most "obvious" arguments can still be accessed by position
+      for concise "standard" function calls; the goal is not to make
+      downstream code drastically more verbose.
+    - The purpose of this is to give more flexibility to add features
+      or alias arguments while deprecating/changing their behaviour,
+      without breaking the public API between major releases.
+
+  - The various Spectrum classes have an ``assert_regular_bins``
+    method. It is now forbidden to use positional arguments and in the
+    2D cases ``bin_ax`` has a default value of "y". This makes the API
+    safer and more formally correct.
+
+  - Unused argument ``use_brille`` is removed from
+    ``euphonic.cli.brille_convergence.check_brille_settings``.
+
+  - ``get_args()`` function removed from ``euphonic.cli.utils``; this
+    was previously simplified to a one-liner so brings no DRY benefit.
+
+  - Some public functions in ``Crystal`` (``reciprocal_lattice``,
+    ``cell_volume``) are now ``@cached_property`` and don't need ``()``.
+    The cache will be cleared on setting ``cell_vectors`` so direct changes
+    to the ``_cell_vectors`` attribute may cause desynchronisation.
+
+  - ``euphonic.cli.utils`` has been broken up into submodules. All the
+    appropriate functions are re-exported to ``__all__`` so this
+    should not break API in practice, but e.g. Quantity can no longer
+    be imported from ``euphonic.cli.utils``.
+
+  - The ``euphonic.data`` package has been redistributed keep data
+    files underneath their relevant module/package. Isotopic data is
+    now under ``euphonic.isotopes.data`` and unit registry
+    configuration is under ``euphonic.ureg.data``.
+
+  - "Adaptive fit" parameter is removed from spectrum broaden()
+    methods and euphonic-dos; "cubic" parametrisation is removed and
+    superior "cheby-log" fit always used.
+
+  - ``validate._check_constructor_inputs`` reworked to use a sequence
+    of ``validate.InputCheck``  ``NamedTuple`` classes as arguments.
+
+  - The ``.copy()`` method has been removed from Spectrum classes; use
+    ``copy.copy()`` or ``copy.deepcopy()`` from the standard library instead.
+    Note that ``copy.deepcopy()`` is closer to the legacy behaviour and carries
+    much less risk of unintended side-effects.
+
+- Features
+
+  - Spectrum classes now implement ``__eq__`` and can be compared with
+    ``==``.
+
+  - Spectrum1DCollection and Spectrum2DCollection can be indexed with
+    slices where the stop value exceeds the collection
+    length. (e.g. if a collection of 5 spectra is indexed with [3:10]
+    it will return a collection with the spectra at indices 3 and 4.)
+    This is consistent with the behaviour of Python lists and numpy
+    arrays.
+
+    These slices can also be 0-size.
+
+    Previously this would raise an IndexError. Technically it is a
+    **breaking change** as somebody's code could depend on this
+    IndexError. At this stage it seems an acceptable risk.
+
+  - A new API has been created for isotope data. The IsotopeData
+    protocol promises a method .get_property(Structure, key) which
+    will return per-atom values; typically these are neutron cross-sections.
+
+    Currently this is backward-compatible and datasets may still be
+    specified as a string or provided as a dict; these methods are likely to be
+    deprecated as the system matures.
+
+    A new implementation of the Sears1992 dataset has been
+    created. This now supports more data columns (i.e. it can be used
+    for both incoherent and coherent scattering lengths and cross
+    sections) and has a full set of isotopes (as per 1992 data, anyway).
+    The correct isotope or mixture is selected automatically using
+    element symbols and mass data from Crystal.
+
+- Other changes
+
+  - Fix several typing issues with Spectrum collections.
+
+  - Error messages have been overhauled and now follow a consistent format::
+
+      summary
+
+      [reason]
+
+      fix
+
+- Deprecations
+
+  - ``euphonic.util.get_reference_data`` is deprecated and will be
+    removed in Euphonic 2.0. Please use ``IsotopeData.get_property`` instead.
+
+- Maintenance
+
+  - Ensure ``build_utils/version.py`` works for uncommitted changes to tagged HEADs.
+
+  - Extend use of Python 3.10 ``match``\ es over ``if`` where relevant.
 
 `v1.6.2 <https://github.com/pace-neutrons/Euphonic/compare/v1.6.1...v1.6.2>`_
 -----------------------------------------------------------------------------
@@ -11,7 +124,7 @@ a bugfix which might affect users.
 
 - Requirements
 
-  - Migrate dev dependencies from "optional dependencies" to `dependency groups <https://packaging.python.org/en/latest/specifications/dependency-groups/>`__. 
+  - Migrate dev dependencies from "optional dependencies" to `dependency groups <https://packaging.python.org/en/latest/specifications/dependency-groups/>`__.
     This decouples them from the actual package and changes their installation process
     from e.g. `pip install .[test]` to `pip install --group test`.
 
@@ -19,10 +132,6 @@ a bugfix which might affect users.
     native ``sphinx>8`` type-hint processing.
 
   - Explicitly include typing-extensions dependency.
-
-- Maintenance
-
-  - Ensure ``build_utils/version.py`` works for uncommitted changes to tagged HEADs.
 
 `v1.6.1 <https://github.com/pace-neutrons/Euphonic/compare/v1.6.0...v1.6.1>`_
 -----------------------------------------------------------------------------
@@ -35,6 +144,9 @@ a bugfix which might affect users.
 
 `v1.6.0 <https://github.com/pace-neutrons/Euphonic/compare/v1.5.1...v1.6.0>`_
 -----------------------------------------------------------------------------
+
+  - ``_check_constructor_inputs`` refactored to list arguments as sequence of
+    tuples for each input.
 
 - Requirements
 

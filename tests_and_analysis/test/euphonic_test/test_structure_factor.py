@@ -135,6 +135,7 @@ def get_expected_sf(material, json_file):
 
 def check_structure_factor(
         sf, expected_sf,
+        *,
         freq_atol=FLOAT64_EPS,
         freq_rtol=1e-7,
         freq_gamma_atol=None,

@@ -134,7 +134,9 @@ def get_qpt_ph_modes(material):
 
 
 def check_qpt_ph_modes(
-        qpoint_phonon_modes, expected_qpoint_phonon_modes,
+        qpoint_phonon_modes,
+        expected_qpoint_phonon_modes,
+        *,
         frequencies_atol=FLOAT64_EPS,
         frequencies_rtol=1e-7,
         acoustic_gamma_atol=None,
@@ -756,6 +758,7 @@ class TestQpointPhononModesCalculatePdos:
         with pytest.raises(TypeError):
             qpt_ph_modes.calculate_pdos(
                 np.arange(0, 155, 0.5)*ureg('meV'),
+                weighting='coherent',
                 cross_sections=[4.29, 2.78])
 
     def test_cross_sections_wrong_units_raises_value_error(self):

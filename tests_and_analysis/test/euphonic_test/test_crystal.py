@@ -310,7 +310,7 @@ class TestCrystalMethods:
         (get_crystal('LZO'), lzo_reciprocal_cell),
     ])
     def test_reciprocal_cell(self, crystal, expected_recip):
-        recip = crystal.reciprocal_cell()
+        recip = crystal.reciprocal_cell
         npt.assert_allclose(
             recip.to('1/angstrom').magnitude,
             expected_recip.to('1/angstrom').magnitude,
@@ -325,7 +325,7 @@ class TestCrystalMethods:
         (get_crystal('LZO'), lzo_cell_volume),
     ])
     def test_cell_volume(self, crystal, expected_vol):
-        vol = crystal.cell_volume()
+        vol = crystal.cell_volume
         npt.assert_allclose(
             vol.to('angstrom**3').magnitude,
             expected_vol.to('angstrom**3').magnitude,
@@ -474,5 +474,5 @@ class TestCrystalMethods:
                      return_value=None)
         crystal = get_crystal('LZO')
         with pytest.raises(RuntimeError,
-                           match='spglib.get_symmetry returned None'):
+                           match=r'spglib\.get_symmetry unable to determine symmetry\.'):
             crystal.get_symmetry_equivalent_atoms()

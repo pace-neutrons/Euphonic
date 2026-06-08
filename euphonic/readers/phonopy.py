@@ -7,7 +7,7 @@ import warnings
 import numpy as np
 
 from euphonic.ureg import ureg
-from euphonic.util import convert_fc_phases, dedent_and_fill
+from euphonic.util import comma_join, convert_fc_phases, format_error
 
 HDF5_EXTS = {'hdf5', 'hd5', 'h5'}
 YAML_EXTS = {'yaml', 'yml', 'yl'}
@@ -46,6 +46,7 @@ def _convert_weights(weights: np.ndarray) -> np.ndarray:
 
 
 def _extract_phonon_data_yaml(filename: Path,
+                              *,
                               read_eigenvectors: bool = True,
                               ) -> dict[str, np.ndarray]:
     """
@@ -117,6 +118,7 @@ def _extract_phonon_data_yaml(filename: Path,
 
 
 def _extract_phonon_data_hdf5(filename: Path,
+                              *,
                               read_eigenvectors: bool = True,
                               ) -> dict[str, np.ndarray]:
     """
@@ -180,6 +182,7 @@ def _extract_phonon_data_hdf5(filename: Path,
     return data_dict
 
 def read_phonon_data(
+        *,
         path: Path | str = '.',
         phonon_name: Path | str = 'band.yaml',
         phonon_format: str | None = None,
@@ -248,15 +251,16 @@ def read_phonon_data(
         phonon_dict = _extract_phonon_data_yaml(
             phonon_path, read_eigenvectors=read_eigenvectors)
     else:
-        msg = (
-            f'File format {phonon_format} of {phonon_name} is not recognised'
+        msg = format_error(
+            f'Unrecognised format ({phonon_format}) for {phonon_name}.',
+            fix=f'Valid formats are: {comma_join((*HDF5_EXTS, *YAML_EXTS))}',
         )
         raise ValueError(msg)
 
     if read_eigenvectors and 'eigenvectors' not in phonon_dict:
-        msg = (
-            f"Eigenvectors couldn't be found in {phonon_path}, ensure "
-            f'--eigvecs was set when running Phonopy'
+        msg = format_error(
+            f"Eigenvectors couldn't be found in {phonon_path}.",
+            fix='Ensure --eigvecs is set when running Phonopy.',
         )
         raise RuntimeError(msg)
 
@@ -280,9 +284,12 @@ def read_phonon_data(
         umass = summary_dict['umass']
         # Check phonon_file and summary_file are commensurate
         if 3*len(phonon_dict['atom_r']) != len(phonon_dict['frequencies'][0]):
-            msg = (
-                f'Phonon file {phonon_path} not commensurate with summary '
-                f'file {summary_path}. Please check contents'
+            msg = format_error(
+                "Phonopy files don't match.",
+                reason=(
+                    f'Phonon file {phonon_path} not commensurate '
+                    f'with summary file {summary_path}.'),
+                fix='Ensure input files are consistent.',
             )
             raise ValueError(msg)
 
@@ -397,11 +404,14 @@ def _check_fc_shape(fc_shape: tuple[int, int], n_atoms: int,
     """
     if (not ((fc_shape[0] == n_atoms or fc_shape[0] == n_cells*n_atoms) and
              fc_shape[1] == n_cells*n_atoms)):
-        msg = dedent_and_fill(f"""
+        msg = format_error(
+            'Incompatible force constants.',
+            reason=f"""
             Force constants matrix with shape {fc_shape} read from
             {fc_filename} is not compatible with crystal read from
             {summary_filename} which has {n_atoms} atoms in the cell, and
-            {n_cells} cells in the supercell""")
+            {n_cells} cells in the supercell""",
+            fix='Ensure input files are consistent.')
         raise ValueError(msg)
 
 
@@ -449,7 +459,9 @@ def _extract_born(born_file_obj: TextIO) -> dict[str, float | np.ndarray]:
     return born_dict
 
 
-def _extract_summary(filename: Path, fc_extract: bool = False,
+def _extract_summary(filename: Path,
+                     *,
+                     fc_extract: bool = False,
                      ) -> dict[str, str | int | np.ndarray]:
     """
     Read phonopy.yaml for summary data produced during the Phonopy
@@ -722,9 +734,11 @@ def read_interpolation_data(
             summary_dict['force_constants'] =  _extract_force_constants_hdf5(
                 fc_path, n_atoms, n_cells, summary_path)
         else:
-            msg = (
-                f'Force constants file format "{fc_format}" of '
-                f'"{fc_name}" is not recognised'
+            msg = format_error(
+                f'Unrecognised file format ({fc_format}) for {fc_name}.',
+                fix=('Provide fc_format excplicitly, as "phonopy" or "hdf5",'
+                     'or provide a file whose extension is one of '
+                     f'{comma_join(HDF5_EXTS)}.'),
             )
             raise ValueError(msg)
 
@@ -747,11 +761,14 @@ def read_interpolation_data(
     # 'dielectric' are written to phonopy.yaml, but if NAC = .FALSE.
     # 'nac_factor' will not be written. In this case raise error.
     if ('born' in summary_dict and 'nac_factor' not in summary_dict):
-        msg = dedent_and_fill(f"""
+        msg = format_error(
+            'Unknown nac factor.',
+            reason=f"""
             nac_unit_conversion_factor could not be found in {summary_path}
             or the BORN file (if given), so units of the dielectric tensor
             cannot be determined.
-            """)
+            """,
+            fix='Run phonopy with NAC = .TRUE. .')
         raise KeyError(msg)
 
     # Units from summary_file

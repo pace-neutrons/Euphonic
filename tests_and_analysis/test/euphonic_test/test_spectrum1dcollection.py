@@ -1,4 +1,6 @@
+import copy
 import json
+from typing import TYPE_CHECKING
 
 import numpy as np
 from numpy.testing import assert_allclose
@@ -21,6 +23,8 @@ from tests_and_analysis.test.utils import (
     get_spectrum_from_text,
 )
 
+if TYPE_CHECKING:
+    from euphonic.spectra.base import Spectrum1D
 
 class ExpectedSpectrum1DCollection:
     def __init__(self, spectrum_json_file: str):
@@ -81,12 +85,12 @@ def get_spectrum_path(*subpaths):
     return get_data_path('spectrum1dcollection', *subpaths)
 
 
-def get_spectrum1dcollection(json_filename):
+def get_spectrum1dcollection(json_filename) -> Spectrum1DCollection:
     return Spectrum1DCollection.from_json_file(
         get_spectrum_path(json_filename))
 
 
-def get_expected_spectrum1dcollection(json_filename):
+def get_expected_spectrum1dcollection(json_filename) -> ExpectedSpectrum1DCollection:
     return ExpectedSpectrum1DCollection(get_spectrum_path(json_filename))
 
 
@@ -323,7 +327,7 @@ class TestSpectrum1DCollectionCreation:
 
     @pytest.mark.parametrize(
         'input_spectra, expected_error',
-        [([], IndexError),
+        [([], ValueError),
          ([get_spectrum1dcollection('gan_bands.json')], TypeError),
          ([f'gan_bands_index_{i}.json' for i in range(2, 5)], TypeError)])
     def test_faulty_create_from_sequence(self, input_spectra, expected_error):
@@ -472,8 +476,7 @@ class TestSpectrum1DCollectionIndexAccess:
           np.arange(4.0), TypeError),
          (get_spectrum1dcollection('gan_bands.json'),
           6, IndexError),
-         (get_spectrum1dcollection('gan_bands.json'),
-          slice(2, 6), IndexError)])
+         ])
     def test_index_errors(self, spectrum, index, expected_error):
         with pytest.raises(expected_error):
             spectrum[index]
@@ -710,16 +713,6 @@ class TestSpectrum1DCollectionMethods:
         spec_col.metadata = metadata
         spec_col.select(**select_kwargs)
 
-    @pytest.mark.parametrize('spectrum_file, metadata, select_kwargs',
-            [('quartz_666_pdos.json', fake_metadata,
-             {'inst': ['LET', 'TOSCA'], 'index': [4, 6]})])
-    def test_select_with_no_matches_raises_value_error(
-            self, spectrum_file, metadata, select_kwargs):
-        spec_col = get_spectrum1dcollection(spectrum_file)
-        spec_col.metadata = metadata
-        with pytest.raises(ValueError):
-            spec_col.select(**select_kwargs)
-
     @pytest.mark.parametrize(
         'spectrum_file, other_spectrum_file, expected_spectrum_file', [
             ('La2Zr2O7_666_coh_species_pdos.json',
@@ -751,26 +744,140 @@ class TestSpectrum1DCollectionMethods:
         spec = get_spectrum1dcollection('gan_bands.json')
         spec.metadata = {'Test': 'item', 'int': 1}
 
-        spec_copy = spec.copy()
+        spec_copy = copy.copy(spec)
         # Copy should be same
         check_spectrum1dcollection(spec, spec_copy)
 
-        # Until data is edited
-        spec_copy._y_data *= 2
-        with pytest.raises(AssertionError):
-            check_spectrum1dcollection(spec, spec_copy)
+        # Even after data is mutated in-place
+        spec_copy._y_data[:] *= 2
+        check_spectrum1dcollection(spec, spec_copy)
 
-        spec_copy = spec.copy()
-        spec_copy._x_data *= 2
-        with pytest.raises(AssertionError):
-            check_spectrum1dcollection(spec, spec_copy)
+        spec_copy = copy.copy(spec)
+        spec_copy._x_data[:] *= 2
+        check_spectrum1dcollection(spec, spec_copy)
 
-        spec_copy = spec.copy()
-        spec_copy.x_tick_labels = [(1, 'different')]
-        with pytest.raises(AssertionError):
-            check_spectrum1dcollection(spec, spec_copy)
+        spec_copy = copy.copy(spec)
+        spec_copy.x_tick_labels[0] = (1, 'different')
+        check_spectrum1dcollection(spec, spec_copy)
 
-        spec_copy = spec.copy()
+        spec_copy = copy.copy(spec)
         spec_copy.metadata['Test'] = spec_copy.metadata['Test'].upper()
+        check_spectrum1dcollection(spec, spec_copy)
+
+    def test_deepcopy(self):
+        spec = get_spectrum1dcollection('gan_bands.json')
+        spec.metadata = {'Test': 'item', 'int': 1}
+
+        spec_deepcopy = copy.deepcopy(spec)
+        # Copy should be same
+        check_spectrum1dcollection(spec, spec_deepcopy)
+
+        # Until data is edited
+        spec_deepcopy._y_data[:] *= 2
         with pytest.raises(AssertionError):
-            check_spectrum1dcollection(spec, spec_copy)
+            check_spectrum1dcollection(spec, spec_deepcopy)
+
+        spec_deepcopy = copy.deepcopy(spec)
+        spec_deepcopy._x_data[:] *= 2
+        with pytest.raises(AssertionError):
+            check_spectrum1dcollection(spec, spec_deepcopy)
+
+        spec_deepcopy = copy.deepcopy(spec)
+        spec_deepcopy.x_tick_labels = [(1, 'different')]
+        with pytest.raises(AssertionError):
+            check_spectrum1dcollection(spec, spec_deepcopy)
+
+        spec_deepcopy = copy.deepcopy(spec)
+        spec_deepcopy.metadata['Test'] = spec_deepcopy.metadata['Test'].upper()
+        with pytest.raises(AssertionError):
+            check_spectrum1dcollection(spec, spec_deepcopy)
+
+    def test_compare_equal(self):
+        spec1 = get_spectrum1dcollection('gan_bands.json')
+        spec2 = get_spectrum1dcollection('gan_bands.json')
+
+        assert spec1 == spec2
+
+        spec1.y_data *= 2
+        assert spec1 != spec2
+
+        spec1 = get_spectrum1dcollection('gan_bands.json')
+        spec2.metadata = {'different': 'metadata'}
+        assert spec1 != spec2
+
+
+class TestEmptyCollection:
+    @pytest.fixture
+    def empty_spectrum(self) -> Spectrum1DCollection:
+        return Spectrum1DCollection._from_spectra(
+            [],
+            _x_bins=ureg.Quantity(np.empty((10,))),
+        )
+
+    @pytest.fixture
+    def real_spectrum(self) -> Spectrum1DCollection:
+        return get_spectrum1dcollection('gan_bands.json')
+
+    @pytest.fixture
+    def empty_sized(self, real_spectrum) -> Spectrum1DCollection:
+        return real_spectrum[()]
+
+    def test_create_empty_init(self):
+        x_data = ureg.Quantity(np.empty((10,)))
+        y_data = ureg.Quantity(np.empty((0, 10)))
+        spec = Spectrum1DCollection(x_data, y_data, [], {})
+        assert not spec
+
+    def test_create_empty_from_spectra(self):
+        fake_bins = ureg.Quantity(np.linspace(0, 10, 10))
+        spec = Spectrum1DCollection._from_spectra([], _x_bins=fake_bins)
+        assert not spec
+
+    def test_create_from_empty_slice(self, real_spectrum):
+        spec = real_spectrum[()]
+        assert not spec
+
+    def test_create_from_empty_select(self, real_spectrum):
+        spec = real_spectrum.select(species='felis')
+        assert not spec
+
+    def test_empty_no_metadata(self, real_spectrum):
+        real_spectrum.metadata = {'hello': 3}
+        assert real_spectrum[()].metadata == {}
+
+    def test_add_empty(self, empty_spectrum):
+        assert len(empty_spectrum + empty_spectrum) == 0
+
+    def test_add_non_empty(self, empty_sized, real_spectrum):
+        spec = empty_sized + real_spectrum
+        assert len(spec) == len(real_spectrum)
+        assert np.all(spec.x_data == real_spectrum.x_data)
+
+    def test_empty_sum(self, empty_spectrum):
+        spec: Spectrum1D = empty_spectrum.sum()
+
+        assert len(spec.x_data) == len(empty_spectrum.x_data)
+        assert np.allclose(spec.y_data, 0.0)
+
+    def test_empty_bool(self, empty_spectrum, real_spectrum):
+        assert real_spectrum
+        assert not empty_spectrum
+
+    def test_empty_broaden(self, empty_spectrum):
+        check_spectrum1dcollection(
+            empty_spectrum.broaden(ureg.Quantity(1.0)),
+            empty_spectrum,
+        )
+
+    def test_empty_group_by(self, empty_spectrum):
+        check_spectrum1dcollection(
+            empty_spectrum.group_by(),
+            empty_spectrum,
+        )
+
+    def test_empty_iter_metadata(self, empty_spectrum):
+        assert list(empty_spectrum.iter_metadata()) == []
+
+    def test_empty_select(self, empty_spectrum):
+        spec = empty_spectrum.select(species='felis')
+        assert not spec
