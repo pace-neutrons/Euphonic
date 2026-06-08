@@ -2,7 +2,7 @@
 -------------------------------------------------------------------------------
 
 `v2.0.0 <https://github.com/pace-neutrons/Euphonic/compare/v1.6.2...v2.0.0>`_
--------------------------------------------------------------------------------
+-----------------------------------------------------------------------------
 
 This release collects a number of API-breaking changes, creating a
 sustainable platform for futher development. It doesn't add a
@@ -165,7 +165,7 @@ a bugfix which might affect users.
 `v1.6.0 <https://github.com/pace-neutrons/Euphonic/compare/v1.5.1...v1.6.0>`_
 -----------------------------------------------------------------------------
 
-  - ``_check_constructor_inputs`` refactored to list arguments as sequence of
+- ``_check_constructor_inputs`` refactored to list arguments as sequence of
     tuples for each input.
 
 - Requirements
