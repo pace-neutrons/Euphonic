@@ -24,7 +24,6 @@ a bugfix which might affect users.
 
   - Ensure ``build_utils/version.py`` works for uncommitted changes to tagged HEADs.
 
-
 `v1.6.1 <https://github.com/pace-neutrons/Euphonic/compare/v1.6.0...v1.6.1>`_
 -----------------------------------------------------------------------------
 
