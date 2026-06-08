@@ -101,6 +101,7 @@ def get_expected_spectrum2d(json_filename):
 
 def check_spectrum2d(actual_spectrum2d,
                      expected_spectrum2d,
+                     *,
                      equal_nan=False,
                      z_atol=FLOAT64_EPS):
 

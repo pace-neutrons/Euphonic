@@ -127,6 +127,7 @@ def read_phonon_dos_data(
 
 def read_phonon_data(
         filename: Path | str,
+        *,
         cell_vectors_unit: str = 'angstrom',
         atom_mass_unit: str = 'amu',
         frequencies_unit: str = 'meV',

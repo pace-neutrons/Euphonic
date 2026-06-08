@@ -131,6 +131,7 @@ class StructureFactor(QpointFrequencies):
 
     def calculate_1d_average(self,
                              e_bins: Quantity,
+                             *,
                              calc_bose: bool = True,
                              temperature: Quantity | None = None,
                              weights: np.ndarray | None = None,
@@ -173,6 +174,7 @@ class StructureFactor(QpointFrequencies):
 
     def calculate_sqw_map(self,
                           e_bins: Quantity,
+                          *,
                           calc_bose: bool = True,
                           temperature: Quantity | None = None,
                           ) -> Spectrum2D:
@@ -234,6 +236,7 @@ class StructureFactor(QpointFrequencies):
     def _bose_corrected_structure_factor(
             self,
             e_bins: Quantity,
+            *,
             calc_bose: bool = True,
             temperature: Quantity | None = None,
     ) -> Quantity:

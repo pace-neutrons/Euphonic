@@ -223,7 +223,7 @@ def plot_1d(spectra: OneDSpectrumOrSpectra,
 
     # Add an invisible large axis for common labels
     ax = fig.add_subplot(111, frameon=False)
-    ax.grid(False)
+    ax.grid(visible=False)
     ax.tick_params(labelcolor='none', bottom=False, left=False)
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
@@ -354,7 +354,7 @@ def plot_2d(spectra: Spectrum2D | Sequence[Spectrum2D],
 
     # Add an invisible large axis for common labels
     ax = fig.add_subplot(111, frameon=False)
-    ax.grid(False)
+    ax.grid(visible=False)
     ax.tick_params(labelcolor='none', bottom=False, left=False)
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)

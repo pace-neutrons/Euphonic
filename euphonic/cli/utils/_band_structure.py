@@ -130,6 +130,7 @@ def _convert_labels_to_fractions(
 
 def _bands_from_force_constants(data: ForceConstants,
                                 q_distance: Quantity,
+                                *,
                                 insert_gamma: bool = True,
                                 frequencies_only: bool = False,
                                 **calc_modes_kwargs,
