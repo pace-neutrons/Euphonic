@@ -9,16 +9,16 @@
 
 - API changes
 
-  - Public functions in ``euphonic.broadening``, ``euphonic.powder``,
-    ``euphonic.plot``, ``euphonic.sampling`` now use some mandatory keyword arguments
+  - Many public functions and methods now use keyword-only arguments
+    where previously these were permitted to be keyword *or* positional.
     - This will break code that depends on these arguments being in a
       specific order rather than calling them by name
     - The most "obvious" arguments can still be accessed by position
-      for concise "standard" function calls.
-
-  - Methods of ``QpointFrequencies``, ``QpointPhononModes`` and
-    ``ForceConstants`` now use mandatory keyword arguments for many
-    parameters.
+      for concise "standard" function calls; the goal is not to make
+      downstream code drastically more verbose.
+    - The purpose of this is to give more flexibility to add features
+      or alias arguments while deprecating/changing their behaviour,
+      without breaking the public API between major releases.
 
   - The various Spectrum classes have an ``assert_regular_bins``
     method. It is now forbidden to use positional arguments and in the

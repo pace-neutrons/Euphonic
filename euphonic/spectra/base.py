@@ -429,6 +429,7 @@ class Spectrum(ABC):
     @staticmethod
     def _bin_centres_to_edges(
             bin_centres: Quantity,
+            *,
             restrict_range: bool = True,
     ) -> Quantity:
         if restrict_range:

@@ -119,7 +119,7 @@ select = [
        "ASYNC",
        "S",       # Security (flake8-bandit)
        "BLE",     # flake8-blind-except
-       # "FBT",   # flake8-boolean-trap: don't use positional boolean arguments. Fixable, but API-breaking.
+       "FBT",     # flake8-boolean-trap: don't use positional boolean arguments. Fixable, but API-breaking.
        "B",       # flake8-bugbear
        "A",       # flake8-builtins
        "COM",     # flake8-commas
@@ -152,7 +152,7 @@ select = [
        "FLY",     # flynt
        "I",       # isort
        "C90",     # mccabe : code complexity metric
-       "NPY",   # NumPy-specific rules
+       "NPY",     # NumPy-specific rules
        "N",       # pep8-naming
        "PERF",    # Perflint
        "F401",    # unused-import
@@ -207,6 +207,7 @@ extend-ignore-names = ["k_B", "H_ab", "Q"]
     "RUF012", # declaring sample data inside test classes is tidy
     "E501",   # long lines seem more common with verbose test names
     ]
+"tests_and_analysis/test/run_tests.py" = ["FBT"]  # Boolean positional arg; not public API, low risk
 "euphonic/isotopes/_legacy.py" = ["PLC0415"]  # Imports inside functions to avoid loop
 "euphonic/version.py" = ["Q000"]  # Source build prefers double quotes here
 

@@ -134,7 +134,9 @@ def get_qpt_ph_modes(material):
 
 
 def check_qpt_ph_modes(
-        qpoint_phonon_modes, expected_qpoint_phonon_modes,
+        qpoint_phonon_modes,
+        expected_qpoint_phonon_modes,
+        *,
         frequencies_atol=FLOAT64_EPS,
         frequencies_rtol=1e-7,
         acoustic_gamma_atol=None,
