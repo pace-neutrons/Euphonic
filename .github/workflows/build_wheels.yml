@@ -103,7 +103,7 @@ jobs:
 
           CIBW_REPAIR_WHEEL_COMMAND_MACOS: ""
 
-          CIBW_BEFORE_TEST: "pip install --upgrade pip && pip install --group test"
+          CIBW_BEFORE_TEST: "pip install --group test"
           CIBW_TEST_EXTRAS: "brille,phonopy-reader,matplotlib"
           CIBW_TEST_COMMAND: python {package}/tests_and_analysis/test/run_tests.py
 
