@@ -1,5 +1,24 @@
-`Unreleased <https://github.com/pace-neutrons/Euphonic/compare/v1.6.2...HEAD>`_
+`Unreleased <https://github.com/pace-neutrons/Euphonic/compare/v2.0.0...HEAD>`_
 -------------------------------------------------------------------------------
+
+`v2.0.0 <https://github.com/pace-neutrons/Euphonic/compare/v1.6.2...v2.0.0>`_
+-------------------------------------------------------------------------------
+
+This release collects a number of API-breaking changes, creating a
+sustainable platform for futher development. It doesn't add a
+*drastic* number of new features compared with recent minor releases.
+Still, we would draw particular attention to the work on isotope data,
+which includes an expanded "Sears1992" reference data set. This should
+allow proper comparison incoherent and coherent DOS weightings for
+systems including isotopic substitutions, and support work on
+incoherent structure factor calculations in the new "abinslib" library.
+
+During the v1 era Euphonic has done a decent job of "semantic
+versioning", and we intend to continue this way. It is recommended
+that once downstream code is adapted to work with Euphonic 2.0,
+Euphonic is pinned to the range 2.x,<3 (by your favourite mechanism
+and syntax).
+
 - CLI changes
 
   - The ``--instrument-broadening`` parameter of ``euphonic-dos`` is
@@ -41,22 +60,26 @@
     should not break API in practice, but e.g. Quantity can no longer
     be imported from ``euphonic.cli.utils``.
 
-  - The ``euphonic.data`` package has been redistributed keep data
+  - The ``euphonic.data`` package has been redistributed to keep data
     files underneath their relevant module/package. Isotopic data is
     now under ``euphonic.isotopes.data`` and unit registry
     configuration is under ``euphonic.ureg.data``.
 
-  - "Adaptive fit" parameter is removed from spectrum broaden()
+  - The "adaptive fit" parameter is removed from spectrum broaden()
     methods and euphonic-dos; "cubic" parametrisation is removed and
     superior "cheby-log" fit always used.
 
-  - ``validate._check_constructor_inputs`` reworked to use a sequence
+  - ``validate._check_constructor_inputs`` is reworked to use a sequence
     of ``validate.InputCheck``  ``NamedTuple`` classes as arguments.
 
   - The ``.copy()`` method has been removed from Spectrum classes; use
     ``copy.copy()`` or ``copy.deepcopy()`` from the standard library instead.
     Note that ``copy.deepcopy()`` is closer to the legacy behaviour and carries
     much less risk of unintended side-effects.
+
+  - ``euphonic.util.get_reference_data`` is deprecated and will be
+    removed in Euphonic 2.0. Please use ``IsotopeData.get_property`` instead.
+
 
 - Features
 
@@ -74,7 +97,7 @@
 
     Previously this would raise an IndexError. Technically it is a
     **breaking change** as somebody's code could depend on this
-    IndexError. At this stage it seems an acceptable risk.
+    IndexError.
 
   - A new API has been created for isotope data. The IsotopeData
     protocol promises a method .get_property(Structure, key) which
@@ -93,7 +116,7 @@
 
 - Other changes
 
-  - Fix several typing issues with Spectrum collections.
+  - Fixed several typing issues with Spectrum collections.
 
   - Error messages have been overhauled and now follow a consistent format::
 
@@ -102,11 +125,6 @@
       [reason]
 
       fix
-
-- Deprecations
-
-  - ``euphonic.util.get_reference_data`` is deprecated and will be
-    removed in Euphonic 2.0. Please use ``IsotopeData.get_property`` instead.
 
 - Maintenance
 
