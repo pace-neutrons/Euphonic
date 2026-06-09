@@ -148,12 +148,9 @@ def run_tests(
 
     # Start recording coverage if requested
     if do_report_coverage:
-        coveragerc_filepath: Path = test_dir / '.coveragerc'
-
         pytest_options = [
             '--cov',
             f'--cov-report=xml:{reports_dir}/coverage_{uuid4()}.xml',
-            f'--cov-config={coveragerc_filepath}',
             *pytest_options,
         ]
 

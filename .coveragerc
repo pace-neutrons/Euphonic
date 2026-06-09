@@ -1,0 +1,14 @@
+[run]
+branch = True
+
+[paths]
+euphonic =
+    euphonic
+    */site-packages/euphonic
+    .tox/*/site-packages/euphonic
+
+[report]
+include =
+    */euphonic/*
+exclude_lines =
+    @overload
