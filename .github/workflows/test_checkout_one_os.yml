@@ -86,7 +86,7 @@ jobs:
 
       - name: Run tests
         shell: bash -l {0}
-        run: python -m tox run -- ${{ inputs.coverage && '--cov' || '' }} --parallel
+        run: python -m tox run -- ${{ inputs.coverage && '--cov' || '' }}
 
       - name: Upload test results
         if: always()
@@ -94,6 +94,35 @@ jobs:
         with:
           name: Unit test results ${{ inputs.os }}
           path: tests_and_analysis/test/reports/junit_report*.xml
+
+      - name: Check coverage configuration
+        if: inputs.coverage
+        shell: bash -l {0}
+        run: |
+          echo "=== .coveragerc content ==="
+          cat .coveragerc
+          echo ""
+          echo "=== pytest-cov version ==="
+          python -c "import coverage; print(f'coverage: {coverage.__version__}')"
+          python -c "import pytest_cov; print(f'pytest-cov: {pytest_cov.__version__}')"
+
+      - name: List generated coverage files
+        if: inputs.coverage
+        shell: bash -l {0}
+        run: |
+          echo "=== Coverage files in reports directory ==="
+          ls -lah tests_and_analysis/test/reports/coverage*.xml 2>/dev/null || echo "No coverage XML files found"
+          echo ""
+          echo "=== All files in reports directory ==="
+          ls -lah tests_and_analysis/test/reports/ 2>/dev/null || echo "Reports directory not found"
+
+      - name: Check coverage file content
+        if: inputs.coverage
+        shell: bash -l {0}
+        run: |
+          echo "=== First few lines of coverage XML ==="
+          head -20 tests_and_analysis/test/reports/coverage_*.xml 2>/dev/null || echo "No coverage files to inspect"
+
 
       - name: Merge coverage reports
         if: inputs.coverage
