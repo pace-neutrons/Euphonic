@@ -120,6 +120,7 @@ jobs:
         continue-on-error: true
         with:
           coverageFile: 'artifacts/coverage-combined.xml'
+          sourceDir: ../..
           token: ${{ secrets.GITHUB_TOKEN }}
 
   publish-coverage-badge:

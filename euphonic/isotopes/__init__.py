@@ -33,3 +33,7 @@ __all__ = [
     'Structure',
     'sears_1992',
 ]
+
+
+def pointless_add(a: int, b: int) -> int:
+    return a + b
