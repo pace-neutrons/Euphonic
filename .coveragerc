@@ -1,5 +1,6 @@
 [run]
 branch = True
+source = euphonic
 
 [paths]
 euphonic =
