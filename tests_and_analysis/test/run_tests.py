@@ -149,7 +149,7 @@ def run_tests(
     # Start recording coverage if requested
     if do_report_coverage:
         pytest_options = [
-            '--cov=.',
+            '--cov',
             f'--cov-report=xml:{reports_dir}/coverage_{uuid4()}.xml',
             *pytest_options,
         ]

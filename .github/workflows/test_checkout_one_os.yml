@@ -103,7 +103,17 @@ jobs:
           cat .coveragerc
           echo ""
 
-      - name: List generated coverage files
+      - name: Show coverage data file
+        if: inputs.coverage
+        shell: bash -l {0}
+        run: |
+          echo "=== .coverage file in project root ==="
+          ls -lah .coverage* 2>/dev/null || echo "No .coverage files in project root"
+          echo ""
+          echo "=== .coverage file in .tox ==="
+          find .tox -name ".coverage*" 2>/dev/null || echo "No .coverage files in .tox"
+
+      - name: List generated coverage XML files
         if: inputs.coverage
         shell: bash -l {0}
         run: |
@@ -113,7 +123,7 @@ jobs:
           echo "=== All files in reports directory ==="
           ls -lah tests_and_analysis/test/reports/ 2>/dev/null || echo "Reports directory not found"
 
-      - name: Check coverage file content
+      - name: Check coverage XML file content
         if: inputs.coverage
         shell: bash -l {0}
         run: |
