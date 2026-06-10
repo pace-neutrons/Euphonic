@@ -1,4 +1,5 @@
 from argparse import ArgumentParser, Namespace
+import io
 from pathlib import Path
 import sys
 import time
@@ -194,7 +195,26 @@ def run_tests(
     # Run tests and get the resulting exit code
     # 0 is success, 1-5 are different forms of failure (see pytest docs
     # for details)
-    return pytest.main(pytest_options)
+    exit_code = pytest.main(pytest_options)
+
+    if do_report_coverage:
+        # DEBUG: Check what coverage collected
+        cov_after = coverage.Coverage()
+        print('DEBUG: After pytest - checking coverage data', flush=True)
+        try:
+            cov_after.load()
+            print('DEBUG: Coverage data loaded successfully', flush=True)
+            # Try to generate the report
+            report_output = io.StringIO()
+            cov_after.report(file=report_output)
+            print(
+                f'DEBUG: Coverage report output:\n{report_output.getvalue()}',
+                flush=True,
+            )
+        except Exception as e:  # noqa: BLE001
+            print(f'DEBUG: Error loading coverage data: {e}', flush=True)
+
+    return exit_code
 
 
 if __name__ == '__main__':
