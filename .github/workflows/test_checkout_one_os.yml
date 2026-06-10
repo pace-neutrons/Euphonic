@@ -102,9 +102,6 @@ jobs:
           echo "=== .coveragerc content ==="
           cat .coveragerc
           echo ""
-          echo "=== pytest-cov version ==="
-          python -c "import coverage; print(f'coverage: {coverage.__version__}')"
-          python -c "import pytest_cov; print(f'pytest-cov: {pytest_cov.__version__}')"
 
       - name: List generated coverage files
         if: inputs.coverage
