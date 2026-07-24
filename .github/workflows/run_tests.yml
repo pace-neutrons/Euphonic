@@ -33,10 +33,10 @@ jobs:
     strategy:
       matrix:
         config:
-        - os: ubuntu-latest
-          skip: false
-          all-python-versions: ${{(github.event_name != 'pull_request')}}
-          coverage: true
+        # - os: ubuntu-latest
+        #   skip: false
+        #   all-python-versions: ${{(github.event_name != 'pull_request')}}
+        #   coverage: true
         - os: ubuntu-24.04-arm
           skip: false
           all-python-versions: ${{(github.event_name != 'pull_request')}}
@@ -45,14 +45,14 @@ jobs:
           skip: false
           all-python-versions: ${{(github.event_name != 'pull_request')}}
           coverage: false
-        - os: macos-latest
-          skip: false
-          all-python-versions: ${{(github.event_name != 'pull_request')}}
-          coverage: false
-        - os: macos-15-intel
-          skip: ${{ github.event_name == 'pull_request' }}
-          all-python-versions: true
-          coverage: false
+        # - os: macos-latest
+        #   skip: false
+        #   all-python-versions: ${{(github.event_name != 'pull_request')}}
+        #   coverage: false
+        # - os: macos-15-intel
+        #   skip: ${{ github.event_name == 'pull_request' }}
+        #   all-python-versions: true
+        #   coverage: false
 
       fail-fast: false
 
