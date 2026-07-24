@@ -37,6 +37,10 @@ jobs:
           skip: false
           all-python-versions: ${{(github.event_name != 'pull_request')}}
           coverage: true
+        - os: ubuntu-24.04-arm
+          skip: false
+          all-python-versions: ${{(github.event_name != 'pull_request')}}
+          coverage: false
         - os: windows-latest
           skip: false
           all-python-versions: ${{(github.event_name != 'pull_request')}}
