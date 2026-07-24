@@ -344,7 +344,7 @@ int diagonalise_dyn_mat_zheevd(const int n_atoms, const double qpt[3],
     char uplo = 'L';
     int order = 3*n_atoms;
     int lda = order;
-    int lwork, lrwork, liwork = -1;
+    int lwork = -1, lrwork = -1, liwork = -1;
     double *work, *rwork;
     int *iwork;
     int info;
