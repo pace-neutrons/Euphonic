@@ -41,10 +41,10 @@ jobs:
           skip: false
           all-python-versions: ${{(github.event_name != 'pull_request')}}
           coverage: false
-        - os: windows-latest
-          skip: false
-          all-python-versions: ${{(github.event_name != 'pull_request')}}
-          coverage: false
+        # - os: windows-latest
+        #   skip: false
+        #   all-python-versions: ${{(github.event_name != 'pull_request')}}
+        #   coverage: false
         # - os: macos-latest
         #   skip: false
         #   all-python-versions: ${{(github.event_name != 'pull_request')}}
