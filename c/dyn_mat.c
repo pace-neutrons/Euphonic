@@ -344,24 +344,32 @@ int diagonalise_dyn_mat_zheevd(const int n_atoms, const double qpt[3],
     char uplo = 'L';
     int order = 3*n_atoms;
     int lda = order;
-    int lwork, lrwork, liwork = -1;
+    int lwork = -1, lrwork = -1, liwork = -1;
     double *work, *rwork;
     int *iwork;
     int info;
 
     // Query vars
-    double lworkopt, lrworkopt;
+    // NOTE: WORK is a COMPLEX*16 array in the real ZHEEVD signature, so the
+    // workspace-query result written to WORK(1) is a full 16-byte complex
+    // value (real part = optimal size, imaginary part = 0 by LAPACK
+    // convention). A bare 8-byte double here would let that write spill into
+    // adjacent stack memory (observed in practice to corrupt lrworkopt on
+    // aarch64/GCC, causing spurious ZHEEVD info=-10 failures), so use a
+    // 2-double buffer standing in for one complex element.
+    double lworkopt[2];
+    double lrworkopt;
     int liworkopt;
 
     // Workspace query
-    (*zheevdptr)(&jobz, &uplo, &order, dyn_mat, &lda, eigenvalues, &lworkopt, &lwork,
+    (*zheevdptr)(&jobz, &uplo, &order, dyn_mat, &lda, eigenvalues, lworkopt, &lwork,
         &lrworkopt, &lrwork, &liworkopt, &liwork, &info);
     if (info != 0) {
         printf("INFO: Zheevd failed querying workspace with info %i at "
                "q-point %f %f %f\n", info, qpt[0], qpt[1], qpt[2]);
         return info;
     }
-    lwork = (int)lworkopt;
+    lwork = (int)lworkopt[0];
     lrwork = (int)lrworkopt;
     liwork = liworkopt;
 
