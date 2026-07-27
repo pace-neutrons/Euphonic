@@ -26,9 +26,14 @@ from tests_and_analysis.test.utils import (
     ignore_openmp_warning,
 )
 
-# Allow tests with brille marker to be collected and
-# deselected if brille isn't installed
-pytestmark = pytest.mark.brille
+pytestmark = [
+    # Apply marker so these tests can be collected and deselected if brille
+    # isn't installed, using `-m "not brille"`.
+    pytest.mark.brille,
+    # Allow these tests to be skipped (rather than fail) if brille failed to
+    # import on an unsupported platform.
+    pytest.mark.usefixtures('brille_or_skip_if_unsupported')
+]
 
 
 def get_brille_grid(grid_file):

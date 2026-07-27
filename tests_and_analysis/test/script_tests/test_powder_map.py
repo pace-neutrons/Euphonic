@@ -137,7 +137,7 @@ class TestRegression:
     @pytest.mark.parametrize(
         'powder_map_args', powder_map_params_brille)
     def test_powder_map_plot_image_with_brille(
-            self, inject_mocks, powder_map_args):
+            self, inject_mocks, brille_or_skip_if_unsupported, powder_map_args):
         # Different numerical results on different platforms
         # unless a very dense, computationally expensive grid
         # is used. Just check that the program runs and a plot
@@ -161,7 +161,8 @@ class TestRegression:
                                                          'n_threads': 2}}),
     ])
     def test_brille_interpolator_from_force_constants_kwargs_passed(
-            self, inject_mocks, mocker, powder_map_args, expected_kwargs):
+            self, inject_mocks, mocker, brille_or_skip_if_unsupported,
+            powder_map_args, expected_kwargs):
         from euphonic.brille import BrilleInterpolator
         # Stop execution once from_fc has been called - we're only
         # checking here that the correct arguments have been passed
@@ -237,7 +238,8 @@ class TestRegression:
     @pytest.mark.multiple_extras
     @pytest.mark.parametrize('powder_map_args', [
         [nacl_prim_fc_file, '--use-brille', '--brille-grid-type', 'grid']])
-    def test_invalid_brille_grid_raises_causes_exit(self, powder_map_args):
+    def test_invalid_brille_grid_raises_causes_exit(
+            self, brille_or_skip_if_unsupported, powder_map_args):
         # Argparse should call sys.exit on invalid choices
         with pytest.raises(SystemExit) as err:
             euphonic.cli.powder_map.main(powder_map_args)
