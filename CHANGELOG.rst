@@ -1,6 +1,12 @@
 `Unreleased <https://github.com/pace-neutrons/Euphonic/compare/v2.0.0...HEAD>`_
 -------------------------------------------------------------------------------
 
+- Requirements
+
+  - Euphonic now provides PyPI wheels for Linux ARM (aarch64). Like
+    Mac, this platform has a slightly increased h5py version
+    requirement in order to access pre-built wheels.
+
 - Bug fixes
 
   - Fixed a stack-corruption bug in the C extension's ZHEEVD workspace
