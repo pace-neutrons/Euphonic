@@ -18,7 +18,7 @@ jobs:
   build-wheels:
     strategy:
       matrix:
-        os: [windows-latest, macos-15-intel, macos-latest, ubuntu-latest]
+        os: [windows-latest, macos-15-intel, macos-latest, ubuntu-latest, ubuntu-24.04-arm]
         python-version: ['3.10', '3.11', '3.12', '3.13', '3.14']
         include:
           - os: windows-latest
@@ -33,6 +33,9 @@ jobs:
           - os: ubuntu-latest
             wheelname: manylinux
             cibw_archs: "x86_64"
+          - os: ubuntu-24.04-arm
+            wheelname: manylinux
+            cibw_archs: "aarch64"
           - python-version: '3.10'
             version-tag: cp310
           - python-version: '3.11'
