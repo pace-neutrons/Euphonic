@@ -60,8 +60,9 @@ min_reqs = [
     "seekpath==2.2.1",
     "pint==0.22",
     "matplotlib==3.8",
-    "h5py==3.6; sys_platform != 'darwin'",
-    "h5py==3.7; sys_platform == 'darwin'",
+    # h5py 3.6 has no wheels for Linux ARM or macOS; use 3.7 there instead.
+    "h5py==3.6; sys_platform != 'darwin' and (sys_platform != 'linux' or platform_machine not in 'aarch64 arm64')",
+    "h5py==3.7; sys_platform == 'darwin' or (sys_platform == 'linux' and platform_machine in 'aarch64 arm64')",
     "PyYAML==6.0",
     "threadpoolctl==3.0.0",
     "toolz==0.12.1"
