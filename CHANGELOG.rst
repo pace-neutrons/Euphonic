@@ -1,6 +1,57 @@
 `Unreleased <https://github.com/pace-neutrons/Euphonic/compare/v2.0.0...HEAD>`_
 -------------------------------------------------------------------------------
 
+- Bug fixes
+
+  - Fixed a stack-corruption bug in the C extension's ZHEEVD workspace
+    query. ``WORK`` is a ``COMPLEX*16`` array in the real LAPACK
+    signature, but the query result was written into a bare 8-byte
+    ``double``; the unused imaginary half of that write could spill
+    into adjacent stack memory. On aarch64/GCC this corrupted the
+    following variable (``LRWORK``), causing ``ZHEEVD`` to reject the
+    subsequent diagonalisation call with ``info=-10`` and phonon
+    calculations to fail.
+
+  - ``LWORK``/``LRWORK`` in the same function are now properly
+    initialised to ``-1`` alongside ``LIWORK``. We are not aware of
+    this causing issues in production, but there is potential for
+    platform/compiler-dependent surprises.
+
+- Compatibility fixes
+
+  - The [brille] optional dependency group will no longer attempt to
+    install brille on Linux ARM; this platform has no pre-built wheels and 
+    currently brille doesn not build reliably from source there.
+    
+    Tests requiring brille will be skipped on Linux ARM via a new
+    ``brille_or_skip_if_unsupported`` fixture; on other platforms,
+    missing brille will still cause those tests to fail.
+
+- Maintenance
+
+  - Linux ARM (``ubuntu-24.04-arm``) has been added to the test matrix
+    in ``run_tests.yml``.
+
+  - brille and non-brille tests are now run by ``tox`` as separate
+    pytest invocations on all platforms; previously this was just done
+    for Mac. The purpose is to reduce the number of tests forced into
+    serial operation by OpenMP conflicts.
+
+  - Minimum requirements are now tested on all platforms using a
+    common ``tox`` environment specification.
+
+  - All ``tox`` environments can now pass options such as
+    ``--parallel`` as ``{posargs}`` using ``tox run --``;
+    previously this was limited to a subset.
+
+  - Simplified Windows CI workflows on Github: take advantage of
+    Meson's ``--vsenv`` handling (which is more robust than last time
+    we tried!) and avoid setting explicit environment variables.
+
+    This does require a new bit of Windows-runner wrangling in the
+    workflow: we delete the ``ccacche.exe`` from Strawberry Perl which
+    was polluting the path.
+
 `v2.0.0 <https://github.com/pace-neutrons/Euphonic/compare/v1.6.2...v2.0.0>`_
 -----------------------------------------------------------------------------
 
