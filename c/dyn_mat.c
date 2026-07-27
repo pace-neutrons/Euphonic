@@ -344,24 +344,21 @@ int diagonalise_dyn_mat_zheevd(const int n_atoms, const double qpt[3],
     char uplo = 'L';
     int order = 3*n_atoms;
     int lda = order;
-    int lwork = -1, lrwork = -1, liwork = -1;
+    int lwork, lrwork, liwork;
     double *work, *rwork;
     int *iwork;
     int info;
 
-    // Query vars
-    // NOTE: WORK is a COMPLEX*16 array in the real ZHEEVD signature, so the
-    // workspace-query result written to WORK(1) is a full 16-byte complex
-    // value (real part = optimal size, imaginary part = 0 by LAPACK
-    // convention). A bare 8-byte double here would let that write spill into
-    // adjacent stack memory (observed in practice to corrupt lrworkopt on
-    // aarch64/GCC, causing spurious ZHEEVD info=-10 failures), so use a
-    // 2-double buffer standing in for one complex element.
+    // Stand-ins for data arrays, to receive optimal sizes from ZHEEVD query.
+    // WORK is COMPLEX*16 in the real ZHEEVD signature, so its query result
+    // (written to WORK(1)) is a 16-byte complex value. double[2] stands in
+    // for a complex double here as MSVC doesn't support C's _Complex type.
     double lworkopt[2];
     double lrworkopt;
     int liworkopt;
 
-    // Workspace query
+    // Workspace query enabled by setting length(s) to -1.
+    lwork = lrwork = liwork = -1;
     (*zheevdptr)(&jobz, &uplo, &order, dyn_mat, &lda, eigenvalues, lworkopt, &lwork,
         &lrworkopt, &lrwork, &liworkopt, &liwork, &info);
     if (info != 0) {
@@ -369,6 +366,8 @@ int diagonalise_dyn_mat_zheevd(const int n_atoms, const double qpt[3],
                "q-point %f %f %f\n", info, qpt[0], qpt[1], qpt[2]);
         return info;
     }
+    // In workspace query ZHEEVD passes back the (int) optimal sizes
+    // to complex, double and int arrays; cast them back to int.
     lwork = (int)lworkopt[0];
     lrwork = (int)lrworkopt;
     liwork = liworkopt;
