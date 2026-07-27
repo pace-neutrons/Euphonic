@@ -9,19 +9,15 @@
 
 - Bug fixes
 
-  - Fixed a stack-corruption bug in the C extension's ZHEEVD workspace
-    query. ``WORK`` is a ``COMPLEX*16`` array in the real LAPACK
-    signature, but the query result was written into a bare 8-byte
-    ``double``; the unused imaginary half of that write could spill
-    into adjacent stack memory. On aarch64/GCC this corrupted the
-    following variable (``LRWORK``), causing ``ZHEEVD`` to reject the
-    subsequent diagonalisation call with ``info=-10`` and phonon
-    calculations to fail.
+  - Fixed out-of-bounds write in ZHEEVD workspace-query code, which
+    could corrupt adjacent stack variables. A C ``double`` array was
+    used to receive fortran ``COMPLEX*16``; this requires 2 elements
+    to safely contain real and imaginary parts.
 
-  - ``LWORK``/``LRWORK`` in the same function are now properly
-    initialised to ``-1`` alongside ``LIWORK``. We are not aware of
-    this causing issues in production, but there is potential for
-    platform/compiler-dependent surprises.
+  - All the int "length" values passed-by-reference to the same
+    function are now properly initialised to ``-1``; as far as we are
+    aware this didn't cause problems *yet*, but could misbehave in
+    some environment.
 
 - Compatibility fixes
 
