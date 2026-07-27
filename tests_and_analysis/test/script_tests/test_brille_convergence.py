@@ -19,11 +19,16 @@ from tests_and_analysis.test.utils import (
     ignore_openmp_warning,
 )
 
-pytestmark = [pytest.mark.multiple_extras, pytest.mark.brille,
-              pytest.mark.matplotlib]
-# These tests require both Brille and Matplotlib, allow tests with
-# these markers to be collected and deselected if
-# either is not installed
+pytestmark = [
+    # These tests require both Brille and Matplotlib, allow tests with these
+    # markers to be collected and deselected using if either is not installed.
+    pytest.mark.multiple_extras,
+    pytest.mark.brille,
+    pytest.mark.matplotlib,
+    # Allow these tests to be skipped (rather than fail) if brille failed to
+    # import on an unsupported platform.
+    pytest.mark.usefixtures('brille_or_skip_if_unsupported'),
+]
 
 # Required for mocking
 with suppress(ModuleNotFoundError):
