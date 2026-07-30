@@ -86,6 +86,15 @@ jobs:
         run: |
           python -m pip install --upgrade pip build wheel twine
 
+      - name: Troubleshooting - gather info about Euphonic version
+        shell: bash -l {0}
+        run: |
+          git rev-parse --abbrev-ref HEAD
+          git show --name-only --pretty=format:%H -s HEAD
+          git describe --tags --long --dirty || true
+          cat euphonic/version.py
+          python -c "import euphonic; print('euphonic.version =', import('euphonic').version)"
+
       - name: Build wheels from git checkout
         uses: pypa/cibuildwheel@v3.4.1
         env:
