@@ -740,7 +740,7 @@ class QpointPhononModes(QpointFrequencies):
             The unit to return the frequencies in
         """
         data = vasp.read_phonon_data(
-            filename,
+            Path(filename),
             frequencies_unit=frequencies_unit,
         )
         return cls.from_dict(data)
