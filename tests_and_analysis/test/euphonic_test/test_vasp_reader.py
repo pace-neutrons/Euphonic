@@ -5,14 +5,16 @@ import pytest
 
 from euphonic import ForceConstants, QpointFrequencies, QpointPhononModes
 from euphonic.readers.vasp import (
+    MissingPhononModesError,
     read_crystal,
     read_interpolation_data,
     read_phonon_data,
 )
-
 from tests_and_analysis.test.utils import get_data_path
 
 VASPOUT_PATH = get_data_path('vasp_files', 'vaspout_sanitized.h5')
+VASPOUT_DOS_PATH = get_data_path('vasp_files', 'vaspout_dos_sanitized.h5')
+VASPOUT_DOS_RERUN_PATH = get_data_path('vasp_files', 'vaspout_dos_rerun_sanitized.h5')
 
 
 class TestVaspReaderCrystal:
@@ -44,9 +46,11 @@ class TestVaspReaderCrystal:
             pos_group.create_dataset('position_ions', data=np.zeros((1, 3)))
             pos_group.create_dataset('number_ion_types', data=np.array([1]))
             pos_group.create_dataset('ion_types', data=np.array([b'Si']))
-            
+
             incar_group = f.create_group('original/incar')
-            incar_group.create_dataset('content', data=np.bytes_(b'POMASS = 28.0855\nISMEAR = 0'))
+            incar_group.create_dataset(
+                'content', data=np.bytes_(b'POMASS = 28.0855\nISMEAR = 0')
+            )
 
         data = read_crystal(dummy_h5)
         npt.assert_allclose(data['atom_mass'], 28.0855)
@@ -68,33 +72,42 @@ class TestVaspReaderCrystal:
 
 class TestVaspReaderPhononData:
 
-    def test_read_phonon_data(self):
-        phonon_data = read_phonon_data(VASPOUT_PATH, frequencies_unit='meV')
-        assert 'crystal' in phonon_data
-        assert phonon_data['qpts'].shape == (1, 3)
-        assert phonon_data['frequencies'].shape == (1, 48)
-        assert phonon_data['eigenvectors'].shape == (1, 48, 16, 3)
+    def test_read_phonon_data_missing_precalculated_raises_error(self):
+        with pytest.raises(MissingPhononModesError):
+            read_phonon_data(VASPOUT_PATH)
 
-        # Check Gamma-point max frequency ~ 31.561 meV (7.6314 THz)
+    def test_read_phonon_data_from_dos_vaspout(self):
+        phonon_data = read_phonon_data(VASPOUT_DOS_PATH, frequencies_unit='meV')
+        assert 'crystal' in phonon_data
+        assert phonon_data['crystal']['atom_r'].shape == (2, 3)  # Primitive cell
+        assert phonon_data['qpts'].shape == (3, 3)
+        assert phonon_data['frequencies'].shape == (3, 6)
+        assert phonon_data['eigenvectors'].shape == (3, 6, 2, 3)
+
+        # Check Gamma-point optical max frequency ~ 31.561 meV
         max_freq = np.max(phonon_data['frequencies'])
         npt.assert_allclose(max_freq, 31.561, rtol=1e-3)
 
 
 class TestQpointPhononModesFromVasp:
 
-    def test_from_vasp_modes(self):
-        modes = QpointPhononModes.from_vasp(VASPOUT_PATH)
-        assert modes.crystal.n_atoms == 16
-        assert modes.frequencies.shape == (1, 48)
-        assert modes.eigenvectors.shape == (1, 48, 16, 3)
+    def test_from_vasp_modes_missing_data_raises_error(self):
+        with pytest.raises(MissingPhononModesError):
+            QpointPhononModes.from_vasp(VASPOUT_PATH)
+
+    def test_from_vasp_modes_from_dos_file(self):
+        modes = QpointPhononModes.from_vasp(VASPOUT_DOS_PATH)
+        assert modes.crystal.n_atoms == 2  # Primitive GaAs cell
+        assert modes.frequencies.shape == (3, 6)
+        assert modes.eigenvectors.shape == (3, 6, 2, 3)
 
         max_freq = np.max(modes.frequencies.magnitude)
         npt.assert_allclose(max_freq, 31.561, rtol=1e-3)
 
-    def test_from_vasp_frequencies(self):
-        freqs = QpointFrequencies.from_vasp(VASPOUT_PATH)
-        assert freqs.crystal.n_atoms == 16
-        assert freqs.frequencies.shape == (1, 48)
+    def test_from_vasp_frequencies_from_dos_file(self):
+        freqs = QpointFrequencies.from_vasp(VASPOUT_DOS_PATH)
+        assert freqs.crystal.n_atoms == 2
+        assert freqs.frequencies.shape == (3, 6)
 
         max_freq = np.max(freqs.frequencies.magnitude)
         npt.assert_allclose(max_freq, 31.561, rtol=1e-3)
@@ -112,22 +125,48 @@ class TestForceConstantsFromVasp:
         assert 'dielectric' in data
         assert data['dielectric'].shape == (3, 3)
 
-    def test_from_vasp(self):
+    def test_from_vasp_and_fallback_calculation(self):
+        # 1. ForceConstants.from_vasp loads Hessian/force_constants
         fc = ForceConstants.from_vasp(VASPOUT_PATH)
         assert fc.crystal.n_atoms == 16
         assert fc.n_cells_in_sc == 1
         assert fc.force_constants.shape == (1, 48, 48)
-        assert fc.born is not None
-        assert fc.born.shape == (16, 3, 3)
-        assert fc.dielectric is not None
-        assert fc.dielectric.shape == (3, 3)
 
-        # Cross-validation: calculate frequencies at Gamma and compare to QpointPhononModes
+        # 2. Outer caller calculates modes explicitly from ForceConstants
         q_freqs = fc.calculate_qpoint_frequencies(np.array([[0.0, 0.0, 0.0]]))
-        modes = QpointPhononModes.from_vasp(VASPOUT_PATH)
+
+        # 3. Compare with QpointFrequencies loaded from precalculated QPOINTS interpolation file
+        dos_freqs = QpointFrequencies.from_vasp(VASPOUT_DOS_PATH)
 
         fc_freqs_meV = q_freqs.frequencies.to('meV').magnitude[0]
-        modes_freqs_meV = modes.frequencies.to('meV').magnitude[0]
+        dos_gamma_freqs_meV = dos_freqs.frequencies.to('meV').magnitude[0]
 
-        # Both should match the sorted Gamma point frequencies
-        npt.assert_allclose(np.sort(fc_freqs_meV), np.sort(modes_freqs_meV), rtol=1e-3)
+        # Max optical frequency at Gamma (31.561 meV) must match
+        npt.assert_allclose(np.max(fc_freqs_meV), np.max(dos_gamma_freqs_meV), rtol=1e-3)
+
+
+class TestVaspReaderCombined:
+
+    def test_combined_fc_and_modes(self):
+        # 1. ForceConstants reads primitive cell force constants (8, 6, 6)
+        fc = ForceConstants.from_vasp(VASPOUT_DOS_RERUN_PATH)
+        assert fc.crystal.n_atoms == 2
+        assert fc.n_cells_in_sc == 8
+        assert fc.force_constants.shape == (8, 6, 6)
+        assert fc.born is not None
+        assert fc.born.shape == (2, 3, 3)
+
+        # 2. QpointPhononModes reads primitive precalculated modes (3 qpts, 6 branches)
+        modes = QpointPhononModes.from_vasp(VASPOUT_DOS_RERUN_PATH)
+        assert modes.crystal.n_atoms == 2
+        assert modes.frequencies.shape == (3, 6)
+        assert modes.eigenvectors.shape == (3, 6, 2, 3)
+
+        # 3. Compare calculated frequencies from primitive FC vs precalculated modes
+        q_freqs = fc.calculate_qpoint_frequencies(modes.qpts)
+        npt.assert_allclose(
+            q_freqs.frequencies.to('meV').magnitude,
+            modes.frequencies.to('meV').magnitude,
+            rtol=1e-2,
+            atol=1e-2,
+        )

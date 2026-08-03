@@ -1,32 +1,10 @@
-import warnings
 from pathlib import Path
 import re
 from typing import Any
 import numpy as np
 
 from euphonic.ureg import ureg
-from euphonic.util import format_error
-
-# Standard fallback atomic masses (amu) if POTCAR is stripped/sanitized
-STANDARD_ATOMIC_MASSES: dict[str, float] = {
-    'H': 1.008, 'He': 4.0026, 'Li': 6.94, 'Be': 9.0122, 'B': 10.81,
-    'C': 12.011, 'N': 14.007, 'O': 15.999, 'F': 18.998, 'Ne': 20.180,
-    'Na': 22.990, 'Mg': 24.305, 'Al': 26.982, 'Si': 28.085, 'P': 30.974,
-    'S': 32.06, 'Cl': 35.45, 'Ar': 39.948, 'K': 39.098, 'Ca': 40.078,
-    'Sc': 44.956, 'Ti': 47.867, 'V': 50.942, 'Cr': 51.996, 'Mn': 54.938,
-    'Fe': 55.845, 'Co': 58.933, 'Ni': 58.693, 'Cu': 63.546, 'Zn': 65.38,
-    'Ga': 69.723, 'Ge': 72.630, 'As': 74.922, 'Se': 78.971, 'Br': 79.904,
-    'Kr': 83.798, 'Rb': 85.468, 'Sr': 87.62, 'Y': 88.906, 'Zr': 91.224,
-    'Nb': 92.906, 'Mo': 95.95, 'Tc': 98.0, 'Ru': 101.07, 'Rh': 102.91,
-    'Pd': 106.42, 'Ag': 107.87, 'Cd': 112.41, 'In': 114.82, 'Sn': 118.71,
-    'Sb': 121.76, 'Te': 127.60, 'I': 126.90, 'Xe': 131.29, 'Cs': 132.91,
-    'Ba': 137.33, 'La': 140.12, 'Ce': 140.12, 'Pr': 140.91, 'Nd': 144.24,
-    'Sm': 150.36, 'Eu': 151.96, 'Gd': 157.25, 'Tb': 158.93, 'Dy': 162.50,
-    'Ho': 164.93, 'Er': 167.26, 'Tm': 168.93, 'Yb': 173.05, 'Lu': 174.97,
-    'Hf': 178.49, 'Ta': 180.95, 'W': 183.84, 'Re': 186.21, 'Os': 190.23,
-    'Ir': 192.22, 'Pt': 195.08, 'Au': 196.97, 'Hg': 200.59, 'Tl': 204.38,
-    'Pb': 207.2, 'Bi': 208.98, 'Th': 232.04, 'Pa': 231.04, 'U': 238.03,
-}
+from euphonic.util import convert_fc_phases, format_error
 
 
 class ImportVaspReaderError(ModuleNotFoundError):
@@ -44,6 +22,12 @@ class ImportVaspReaderError(ModuleNotFoundError):
 
     def __str__(self):
         return self.message
+
+
+class MissingPhononModesError(KeyError):
+    """
+    Error raised when pre-calculated phonon mode/frequency data is not found in a VASP HDF5 file.
+    """
 
 
 def _open_vasp_h5(filename: Path | str):
@@ -101,6 +85,7 @@ def read_crystal(
     filename: Path | str,
     cell_vectors_unit: str = 'angstrom',
     atom_mass_unit: str = 'amu',
+    use_primitive: bool = False,
 ) -> dict[str, Any]:
     """
     Reads crystal structure information from a VASP HDF5 file.
@@ -113,6 +98,8 @@ def read_crystal(
         The unit to return the cell vectors in
     atom_mass_unit
         The unit to return the atom masses in
+    use_primitive
+        Whether to attempt reading primitive cell structure if present
 
     Returns
     -------
@@ -121,17 +108,26 @@ def read_crystal(
         'atom_type', 'atom_mass', 'atom_mass_unit'
     """
     with _open_vasp_h5(filename) as f:
-        if 'results/positions' not in f:
-            msg = format_error(
-                f'Crystal position data not found in {filename}.',
-                fix='Ensure the file contains results/positions group.',
-            )
-            raise KeyError(msg)
+        pos_group = None
+        if use_primitive:
+            if 'results/phonons/primitive' in f:
+                pos_group = f['results/phonons/primitive']
+            elif 'results/phonon/primitive' in f:
+                pos_group = f['results/phonon/primitive']
 
-        latt = f['results/positions/lattice_vectors'][()]
-        pos = f['results/positions/position_ions'][()]
-        types_count = f['results/positions/number_ion_types'][()]
-        types_raw = f['results/positions/ion_types'][()]
+        if pos_group is None:
+            if 'results/positions' not in f:
+                msg = format_error(
+                    f'Crystal position data not found in {filename}.',
+                    fix='Ensure the file contains results/positions group.',
+                )
+                raise KeyError(msg)
+            pos_group = f['results/positions']
+
+        latt = pos_group['lattice_vectors'][()]
+        pos = pos_group['position_ions'][()]
+        types_count = pos_group['number_ion_types'][()]
+        types_raw = pos_group['ion_types'][()]
 
         species_types = [
             r.decode('utf-8').strip() if isinstance(r, bytes) else str(r).strip()
@@ -174,7 +170,8 @@ def read_phonon_data(
     frequencies_unit: str = 'meV',
 ) -> dict[str, Any]:
     """
-    Reads precalculated or Gamma-point phonon mode data from a VASP HDF5 file.
+    Reads precalculated phonon mode/band data from a VASP HDF5 file.
+    Raises MissingPhononDataError if precalculated phonon data is absent.
 
     Parameters
     ----------
@@ -191,70 +188,96 @@ def read_phonon_data(
     -------
     data_dict
         A dict with keys: 'crystal', 'qpts', 'frequencies',
-        'frequencies_unit', 'eigenvectors', 'weights'
+        'frequencies_unit', 'eigenvectors' (optional), 'weights'
     """
-    crystal_dict = read_crystal(
-        filename,
-        cell_vectors_unit=cell_vectors_unit,
-        atom_mass_unit=atom_mass_unit,
-    )
-
     with _open_vasp_h5(filename) as f:
+        # Check if precalculated phonon band/q-point data exists under results/phonons or results/phonon
+        phonon_group = None
+        if 'results/phonons' in f:
+            phonon_group = f['results/phonons']
+        elif 'results/phonon' in f:
+            phonon_group = f['results/phonon']
+
+        if phonon_group is None or (
+            'frequencies' not in phonon_group and 'eigenvalues' not in phonon_group
+        ):
+            msg = format_error(
+                f'Pre-calculated phonon band/mode data not found in {filename}.',
+                fix='Use ForceConstants.from_vasp to read force constants and calculate modes explicitly.',
+            )
+            raise MissingPhononModesError(msg)
+
+        # Read crystal structure (prefer primitive cell if stored under phonons)
+        has_primitive = 'primitive' in phonon_group
+        crystal_dict = read_crystal(
+            filename,
+            cell_vectors_unit=cell_vectors_unit,
+            atom_mass_unit=atom_mass_unit,
+            use_primitive=has_primitive,
+        )
+
         n_atoms = len(crystal_dict['atom_r'])
 
-        # Check if linear response Hessian/force_constants are present
-        if 'results/linear_response/force_constants' in f or 'results/linear_response/hessian' in f:
-            fc_key = (
-                'results/linear_response/force_constants'
-                if 'results/linear_response/force_constants' in f
-                else 'results/linear_response/hessian'
-            )
-            fc = f[fc_key][()]
-
-            masses = (
-                crystal_dict['atom_mass']
-                * ureg(atom_mass_unit).to('amu').magnitude
-            )
-            mass_matrix = np.outer(np.repeat(masses, 3), np.repeat(masses, 3))
-            # VASP force constants / Hessian matrix convention is -D = FC / sqrt(m_i m_j)
-            dyn_mat = -fc / np.sqrt(mass_matrix)
-            dyn_mat = 0.5 * (dyn_mat + dyn_mat.T)
-
-            evals, evecs = np.linalg.eigh(dyn_mat)
-
-            # Conversion factor from eV/(A^2 * amu) to THz
-            eV = 1.602176634e-19
-            angstrom = 1e-10
-            amu = 1.66053906660e-27
-            factor_thz = (
-                (eV / (angstrom**2 * amu)) ** 0.5 / (2 * np.pi * 1e12)
-            )
-
-            freqs_thz = np.sign(evals) * np.sqrt(np.abs(evals)) * factor_thz
-            freqs_converted = (
-                freqs_thz * ureg('THz').to(frequencies_unit).magnitude
-            )
-
-            evecs_reshaped = (
-                evecs.T.reshape(1, 3 * n_atoms, n_atoms, 3).astype(
-                    np.complex128
-                )
-            )
-
-            return {
-                'crystal': crystal_dict,
-                'qpts': np.array([[0.0, 0.0, 0.0]]),
-                'frequencies': freqs_converted.reshape(1, -1),
-                'frequencies_unit': frequencies_unit,
-                'eigenvectors': evecs_reshaped,
-                'weights': np.array([1.0]),
-            }
-
-        msg = format_error(
-            f'Phonon data not found in {filename}.',
-            fix='Ensure the file contains results/linear_response force constants.',
+        qpts_key = (
+            'qpoint_coords'
+            if 'qpoint_coords' in phonon_group
+            else ('kpoint_coords' if 'kpoint_coords' in phonon_group else 'kpoints')
         )
-        raise KeyError(msg)
+        freq_key = (
+            'frequencies' if 'frequencies' in phonon_group else 'eigenvalues'
+        )
+
+        qpts = phonon_group[qpts_key][()]
+        freqs_raw = phonon_group[freq_key][()]
+
+        # Default VASP phonon frequency unit is THz
+        raw_unit = 'THz'
+        if (
+            'frequencies' in phonon_group
+            and 'unit' in phonon_group['frequencies'].attrs
+        ):
+            attr_val = phonon_group['frequencies'].attrs['unit']
+            raw_unit = (
+                attr_val.decode('utf-8')
+                if isinstance(attr_val, bytes)
+                else str(attr_val)
+            )
+
+        freqs_converted = (
+            freqs_raw * ureg(raw_unit).to(frequencies_unit).magnitude
+        )
+
+        res = {
+            'crystal': crystal_dict,
+            'qpts': qpts,
+            'frequencies': freqs_converted,
+            'frequencies_unit': frequencies_unit,
+        }
+
+        if 'qpoints_symmetry_weight' in phonon_group:
+            res['weights'] = phonon_group['qpoints_symmetry_weight'][()]
+        elif 'kpoint_weights' in phonon_group:
+            res['weights'] = phonon_group['kpoint_weights'][()]
+        else:
+            res['weights'] = np.ones(len(qpts)) / len(qpts)
+
+        if 'eigenvectors' in phonon_group:
+            evecs_raw = phonon_group['eigenvectors'][()]
+            if evecs_raw.ndim == 5 and evecs_raw.shape[-1] == 2:
+                evecs_complex = evecs_raw[..., 0] + 1j * evecs_raw[..., 1]
+            else:
+                evecs_complex = evecs_raw.astype(np.complex128)
+
+            if (
+                evecs_complex.ndim == 3
+                and evecs_complex.shape[1] == 3 * n_atoms
+            ):
+                evecs_complex = evecs_complex.reshape(
+                    len(qpts), 3 * n_atoms, n_atoms, 3
+                )
+            res['eigenvectors'] = evecs_complex
+
+        return res
 
 
 def read_interpolation_data(
@@ -264,6 +287,7 @@ def read_interpolation_data(
     force_constants_unit: str = 'hartree/bohr**2',
     born_unit: str = 'e',
     dielectric_unit: str = '(e**2)/(bohr*hartree)',
+    use_primitive: bool = True,
 ) -> dict[str, Any]:
     """
     Reads force constants, Born charges, dielectric tensor, and crystal
@@ -283,6 +307,9 @@ def read_interpolation_data(
         The unit to return the Born charges in
     dielectric_unit
         The unit to return the dielectric permittivity tensor in
+    use_primitive
+        Whether to attempt converting force constants to the primitive cell
+        if primitive cell structure is present in the file
 
     Returns
     -------
@@ -291,16 +318,24 @@ def read_interpolation_data(
         'sc_matrix', 'cell_origins'. Also optionally contains 'born',
         'born_unit', 'dielectric', and 'dielectric_unit' if present.
     """
-    crystal_dict = read_crystal(
-        filename,
-        cell_vectors_unit=cell_vectors_unit,
-        atom_mass_unit=atom_mass_unit,
-    )
-
     with _open_vasp_h5(filename) as f:
-        n_atoms = len(crystal_dict['atom_r'])
+        has_primitive = use_primitive and (
+            'results/phonons/primitive' in f or 'results/phonon/primitive' in f
+        )
 
-        if 'results/linear_response/force_constants' in f or 'results/linear_response/hessian' in f:
+        crystal_dict = read_crystal(
+            filename,
+            cell_vectors_unit=cell_vectors_unit,
+            atom_mass_unit=atom_mass_unit,
+            use_primitive=has_primitive,
+        )
+
+        n_atoms_uc = len(crystal_dict['atom_r'])
+
+        if (
+            'results/linear_response/force_constants' in f
+            or 'results/linear_response/hessian' in f
+        ):
             fc_key = (
                 'results/linear_response/force_constants'
                 if 'results/linear_response/force_constants' in f
@@ -308,8 +343,90 @@ def read_interpolation_data(
             )
             fc_raw = f[fc_key][()]
 
+            if has_primitive:
+                prim_group = (
+                    f['results/phonons/primitive']
+                    if 'results/phonons/primitive' in f
+                    else f['results/phonon/primitive']
+                )
+                L_p = prim_group['lattice_vectors'][()]
+                r_p = prim_group['position_ions'][()]
+                atom_r = r_p - np.floor(r_p)
+
+                pos_group = f['results/positions']
+                L_sc = pos_group['lattice_vectors'][()]
+                r_sc = pos_group['position_ions'][()]
+                n_atoms_sc = len(r_sc)
+
+                # sc_matrix = L_sc @ inv(L_p)
+                sc_matrix = np.rint(L_sc @ np.linalg.inv(L_p)).astype(int)
+
+                # Supercell atom coordinates in primitive fractional basis
+                sc_atom_r = (r_sc @ L_sc) @ np.linalg.inv(L_p)
+
+                # Map supercell atoms to primitive cell atoms
+                r_sc_pfrac = sc_atom_r
+                cell_origins_per_atom = np.floor(r_sc_pfrac + 1e-5).astype(int)
+                r_in_p = r_sc_pfrac - cell_origins_per_atom
+                r_in_p = r_in_p - np.floor(r_in_p + 1e-5)
+
+                sc_to_uc_atom_idx = np.zeros(n_atoms_sc, dtype=int)
+                for i, pos in enumerate(r_in_p):
+                    diffs = np.linalg.norm(atom_r - pos, axis=1)
+                    sc_to_uc_atom_idx[i] = np.argmin(diffs)
+
+                uc_to_sc_atom_idx = np.zeros(n_atoms_uc, dtype=int)
+                for k in range(n_atoms_uc):
+                    uc_to_sc_atom_idx[k] = np.where(sc_to_uc_atom_idx == k)[0][0]
+
+                # Convert VASP 2D force constants (n_atoms_sc*3, n_atoms_sc*3) -> (n_atoms_sc, n_atoms_sc, 3, 3)
+                fc_4d = -fc_raw.reshape(n_atoms_sc, 3, n_atoms_sc, 3).transpose(0, 2, 1, 3)
+
+                fc_converted_raw, cell_origins = convert_fc_phases(
+                    fc_4d,
+                    atom_r,
+                    sc_atom_r,
+                    uc_to_sc_atom_idx,
+                    sc_to_uc_atom_idx,
+                    sc_matrix,
+                )
+
+                fc_converted = (
+                    fc_converted_raw
+                    * ureg('eV/angstrom**2').to(force_constants_unit).magnitude
+                )
+
+                data_dict = {
+                    'crystal': crystal_dict,
+                    'force_constants': fc_converted,
+                    'force_constants_unit': force_constants_unit,
+                    'sc_matrix': sc_matrix,
+                    'cell_origins': cell_origins,
+                }
+
+                if 'results/linear_response/born_charges' in f:
+                    born_raw = f['results/linear_response/born_charges'][()]
+                    born_primitive = born_raw[uc_to_sc_atom_idx]
+                    data_dict['born'] = (
+                        born_primitive * ureg('e').to(born_unit).magnitude
+                    )
+                    data_dict['born_unit'] = born_unit
+
+                if 'results/linear_response/electron_dielectric_tensor' in f:
+                    dielectric_raw = f[
+                        'results/linear_response/electron_dielectric_tensor'
+                    ][()]
+                    data_dict['dielectric'] = (
+                        dielectric_raw
+                        * ureg('e**2/(hartree*bohr)').to(dielectric_unit).magnitude
+                    )
+                    data_dict['dielectric_unit'] = dielectric_unit
+
+                return data_dict
+
+            # Supercell as unit cell fallback
             # VASP force constants matrix is -Hessian
-            fc = -fc_raw.reshape(1, 3 * n_atoms, 3 * n_atoms)
+            fc = -fc_raw.reshape(1, 3 * n_atoms_uc, 3 * n_atoms_uc)
             fc_converted = (
                 fc * ureg('eV/angstrom**2').to(force_constants_unit).magnitude
             )
