@@ -55,6 +55,63 @@ class TestVaspReaderCrystal:
         data = read_crystal(dummy_h5)
         npt.assert_allclose(data['atom_mass'], 28.0855)
 
+    def test_read_crystal_incar_overrides_potcar(self, tmp_path):
+        dummy_h5 = tmp_path / 'dummy_vaspout_priority.h5'
+        with h5py.File(dummy_h5, 'w') as f:
+            pos_group = f.create_group('results/positions')
+            pos_group.create_dataset('lattice_vectors', data=np.eye(3))
+            pos_group.create_dataset('position_ions', data=np.zeros((1, 3)))
+            pos_group.create_dataset('number_ion_types', data=np.array([1]))
+            pos_group.create_dataset('ion_types', data=np.array([b'Si']))
+
+            potcar_group = f.create_group('input/potcar')
+            potcar_group.create_dataset('content', data=np.bytes_(b'POMASS = 10.0'))
+
+            incar_group = f.create_group('original/incar')
+            incar_group.create_dataset(
+                'content', data=np.bytes_(b'POMASS = 28.0855')
+            )
+
+        data = read_crystal(dummy_h5)
+        npt.assert_allclose(data['atom_mass'], 28.0855)
+
+    def test_read_crystal_input_incar_overrides_original_incar(self, tmp_path):
+        dummy_h5 = tmp_path / 'dummy_vaspout_input_incar.h5'
+        with h5py.File(dummy_h5, 'w') as f:
+            pos_group = f.create_group('results/positions')
+            pos_group.create_dataset('lattice_vectors', data=np.eye(3))
+            pos_group.create_dataset('position_ions', data=np.zeros((1, 3)))
+            pos_group.create_dataset('number_ion_types', data=np.array([1]))
+            pos_group.create_dataset('ion_types', data=np.array([b'Si']))
+
+            potcar_group = f.create_group('input/potcar')
+            potcar_group.create_dataset('content', data=np.bytes_(b'POMASS = 10.0'))
+
+            incar_group = f.create_group('original/incar')
+            incar_group.create_dataset('content', data=np.bytes_(b'POMASS = 20.0'))
+
+            input_incar = f.create_group('input/incar')
+            input_incar.create_dataset('POMASS', data=np.bytes_(b'30.0'))
+
+        data = read_crystal(dummy_h5)
+        npt.assert_allclose(data['atom_mass'], 30.0)
+
+    def test_read_crystal_negative_positions(self, tmp_path):
+        dummy_h5 = tmp_path / 'dummy_vaspout_neg.h5'
+        with h5py.File(dummy_h5, 'w') as f:
+            pos_group = f.create_group('results/positions')
+            pos_group.create_dataset('lattice_vectors', data=np.eye(3))
+            pos_group.create_dataset('position_ions', data=np.array([[-0.1, -0.5, -1.0], [1.1, -1e-15, 0.25]]))
+            pos_group.create_dataset('number_ion_types', data=np.array([2]))
+            pos_group.create_dataset('ion_types', data=np.array([b'Si']))
+
+            incar_group = f.create_group('original/incar')
+            incar_group.create_dataset('content', data=np.bytes_(b'POMASS = 28.0855'))
+
+        data = read_crystal(dummy_h5)
+        npt.assert_allclose(data['atom_r'][0], [0.9, 0.5, 0.0])
+        npt.assert_allclose(data['atom_r'][1], [0.1, 0.0, 0.25])
+
     def test_read_crystal_missing_pomass_raises_error(self, tmp_path):
         dummy_h5 = tmp_path / 'dummy_vaspout_empty.h5'
         with h5py.File(dummy_h5, 'w') as f:
