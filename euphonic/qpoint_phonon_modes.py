@@ -21,7 +21,7 @@ from euphonic.qpoint_frequencies import (
     AdaptiveMethod,
     QpointFrequencies,
 )
-from euphonic.readers import castep, phonopy
+from euphonic.readers import castep, phonopy, vasp
 from euphonic.spectra import Spectrum1DCollection
 from euphonic.structure_factor import StructureFactor
 from euphonic.ureg import Quantity, ureg
@@ -720,6 +720,29 @@ class QpointPhononModes(QpointFrequencies):
         data = phonopy.read_phonon_data(
             path=path, phonon_name=phonon_name, phonon_format=phonon_format,
             summary_name=summary_name)
+        return cls.from_dict(data)
+
+    @classmethod
+    def from_vasp(
+        cls,
+        filename: Path | str,
+        *,
+        frequencies_unit: str = 'meV',
+    ) -> Self:
+        """
+        Reads phonon mode data from a VASP HDF5 file (e.g. vaspout.h5)
+
+        Parameters
+        ----------
+        filename
+            The path and name of the VASP HDF5 file to read
+        frequencies_unit
+            The unit to return the frequencies in
+        """
+        data = vasp.read_phonon_data(
+            filename,
+            frequencies_unit=frequencies_unit,
+        )
         return cls.from_dict(data)
 
 
