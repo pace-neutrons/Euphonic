@@ -1,4 +1,4 @@
-from pathlib import Path
+import h5py
 import numpy as np
 import numpy.testing as npt
 import pytest
@@ -14,7 +14,9 @@ from tests_and_analysis.test.utils import get_data_path
 
 VASPOUT_PATH = get_data_path('vasp_files', 'vaspout_sanitized.h5')
 VASPOUT_DOS_PATH = get_data_path('vasp_files', 'vaspout_dos_sanitized.h5')
-VASPOUT_DOS_RERUN_PATH = get_data_path('vasp_files', 'vaspout_dos_rerun_sanitized.h5')
+VASPOUT_DOS_RERUN_PATH = get_data_path(
+    'vasp_files', 'vaspout_dos_rerun_sanitized.h5'
+)
 
 
 class TestVaspReaderCrystal:
@@ -37,8 +39,6 @@ class TestVaspReaderCrystal:
         npt.assert_allclose(crystal_data['atom_mass'][8:], 74.922)
 
     def test_read_crystal_from_incar_override(self, tmp_path):
-        import h5py
-
         dummy_h5 = tmp_path / 'dummy_vaspout_incar.h5'
         with h5py.File(dummy_h5, 'w') as f:
             pos_group = f.create_group('results/positions')
@@ -56,8 +56,6 @@ class TestVaspReaderCrystal:
         npt.assert_allclose(data['atom_mass'], 28.0855)
 
     def test_read_crystal_missing_pomass_raises_error(self, tmp_path):
-        import h5py
-
         dummy_h5 = tmp_path / 'dummy_vaspout_empty.h5'
         with h5py.File(dummy_h5, 'w') as f:
             pos_group = f.create_group('results/positions')
@@ -77,9 +75,14 @@ class TestVaspReaderPhononData:
             read_phonon_data(VASPOUT_PATH)
 
     def test_read_phonon_data_from_dos_vaspout(self):
-        phonon_data = read_phonon_data(VASPOUT_DOS_PATH, frequencies_unit='meV')
+        phonon_data = read_phonon_data(
+            VASPOUT_DOS_PATH, frequencies_unit='meV'
+        )
         assert 'crystal' in phonon_data
-        assert phonon_data['crystal']['atom_r'].shape == (2, 3)  # Primitive cell
+        assert phonon_data['crystal']['atom_r'].shape == (
+            2,
+            3,
+        )  # Primitive cell
         assert phonon_data['qpts'].shape == (3, 3)
         assert phonon_data['frequencies'].shape == (3, 6)
         assert phonon_data['eigenvectors'].shape == (3, 6, 2, 3)
@@ -138,11 +141,13 @@ class TestForceConstantsFromVasp:
         # 3. Compare with QpointFrequencies loaded from precalculated QPOINTS interpolation file
         dos_freqs = QpointFrequencies.from_vasp(VASPOUT_DOS_PATH)
 
-        fc_freqs_meV = q_freqs.frequencies.to('meV').magnitude[0]
-        dos_gamma_freqs_meV = dos_freqs.frequencies.to('meV').magnitude[0]
+        fc_freqs_mev = q_freqs.frequencies.to('meV').magnitude[0]
+        dos_gamma_freqs_mev = dos_freqs.frequencies.to('meV').magnitude[0]
 
         # Max optical frequency at Gamma (31.561 meV) must match
-        npt.assert_allclose(np.max(fc_freqs_meV), np.max(dos_gamma_freqs_meV), rtol=1e-3)
+        npt.assert_allclose(
+            np.max(fc_freqs_mev), np.max(dos_gamma_freqs_mev), rtol=1e-3
+        )
 
 
 class TestVaspReaderCombined:

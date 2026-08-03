@@ -1,6 +1,7 @@
 from pathlib import Path
 import re
 from typing import Any
+
 import numpy as np
 
 from euphonic.ureg import ureg
@@ -12,7 +13,7 @@ class ImportVaspReaderError(ModuleNotFoundError):
     Error raised when h5py is required to read VASP HDF5 files but is missing.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.message = (
             '\n\nCannot import h5py to read VASP HDF5 files, maybe '
             'it is not installed. To install the optional dependency '
@@ -20,17 +21,17 @@ class ImportVaspReaderError(ModuleNotFoundError):
             'pip install euphonic[phonopy-reader]\n'
         )
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.message
 
 
 class MissingPhononModesError(KeyError):
     """
-    Error raised when pre-calculated phonon mode/frequency data is not found in a VASP HDF5 file.
+    Error raised when precalculated phonon modes/frequencies are missing.
     """
 
 
-def _open_vasp_h5(filename: Path | str):
+def _open_vasp_h5(filename: Path | str) -> Any:
     """
     Helper function to open an HDF5 file with error handling for missing h5py.
     """
@@ -47,13 +48,17 @@ def _open_vasp_h5(filename: Path | str):
     return h5py.File(filepath, 'r')
 
 
-def _extract_pomass(f, filename: Path | str, n_species: int) -> list[float]:
+def _extract_pomass(
+    f: Any, filename: Path | str, n_species: int
+) -> list[float]:
     """
-    Extracts atomic masses (POMASS) per species from POTCAR or INCAR in the HDF5 file.
+    Extracts atomic masses (POMASS) per species from POTCAR or INCAR.
     """
     # 1. Try POTCAR content
     if 'input/potcar/content' in f:
-        content = f['input/potcar/content'][()].decode('utf-8', errors='ignore')
+        content = f['input/potcar/content'][()].decode(
+            'utf-8', errors='ignore'
+        )
         matches = re.findall(r'POMASS\s*=\s*([0-9.]+)', content)
         if len(matches) == n_species:
             return [float(m) for m in matches]
@@ -61,13 +66,17 @@ def _extract_pomass(f, filename: Path | str, n_species: int) -> list[float]:
     # 2. Try INCAR content or dataset
     incar_content = ''
     if 'original/incar/content' in f:
-        incar_content = f['original/incar/content'][()].decode('utf-8', errors='ignore')
+        incar_content = f['original/incar/content'][()].decode(
+            'utf-8', errors='ignore'
+        )
     elif 'input/incar/POMASS' in f:
         val = f['input/incar/POMASS'][()]
         incar_content = f'POMASS = {val}'
 
     if incar_content:
-        match = re.search(r'POMASS\s*=\s*([0-9.\s,]+)', incar_content, re.IGNORECASE)
+        match = re.search(
+            r'POMASS\s*=\s*([0-9.\s,]+)', incar_content, re.IGNORECASE
+        )
         if match:
             raw_vals = re.findall(r'[0-9.]+', match.group(1))
             if len(raw_vals) == n_species:
@@ -75,7 +84,7 @@ def _extract_pomass(f, filename: Path | str, n_species: int) -> list[float]:
 
     # 3. If missing from both, raise error
     msg = format_error(
-        f'Could not find atomic masses (POMASS) in input/potcar/content or INCAR in {filename}.',
+        f'Could not find atomic masses (POMASS) in {filename}.',
         fix='Ensure the file contains POMASS in POTCAR or INCAR.',
     )
     raise ValueError(msg)
@@ -83,6 +92,7 @@ def _extract_pomass(f, filename: Path | str, n_species: int) -> list[float]:
 
 def read_crystal(
     filename: Path | str,
+    *,
     cell_vectors_unit: str = 'angstrom',
     atom_mass_unit: str = 'amu',
     use_primitive: bool = False,
@@ -130,7 +140,9 @@ def read_crystal(
         types_raw = pos_group['ion_types'][()]
 
         species_types = [
-            r.decode('utf-8').strip() if isinstance(r, bytes) else str(r).strip()
+            r.decode('utf-8').strip()
+            if isinstance(r, bytes)
+            else str(r).strip()
             for r in types_raw
         ]
 
@@ -139,14 +151,13 @@ def read_crystal(
 
         atom_species = []
         atom_masses = []
-        for s, c, m in zip(species_types, types_count, masses_per_type):
+        for s, c, m in zip(
+            species_types, types_count, masses_per_type, strict=False
+        ):
             atom_species.extend([s] * int(c))
             atom_masses.extend([m] * int(c))
 
-        # Convert units if necessary (lattice vectors in VASP are in angstrom)
-        cell_vectors = (
-            latt * ureg('angstrom').to(cell_vectors_unit).magnitude
-        )
+        cell_vectors = latt * ureg('angstrom').to(cell_vectors_unit).magnitude
         atom_masses_converted = (
             np.array(atom_masses) * ureg('amu').to(atom_mass_unit).magnitude
         )
@@ -165,13 +176,13 @@ def read_crystal(
 
 def read_phonon_data(
     filename: Path | str,
+    *,
     cell_vectors_unit: str = 'angstrom',
     atom_mass_unit: str = 'amu',
     frequencies_unit: str = 'meV',
 ) -> dict[str, Any]:
     """
     Reads precalculated phonon mode/band data from a VASP HDF5 file.
-    Raises MissingPhononDataError if precalculated phonon data is absent.
 
     Parameters
     ----------
@@ -191,7 +202,6 @@ def read_phonon_data(
         'frequencies_unit', 'eigenvectors' (optional), 'weights'
     """
     with _open_vasp_h5(filename) as f:
-        # Check if precalculated phonon band/q-point data exists under results/phonons or results/phonon
         phonon_group = None
         if 'results/phonons' in f:
             phonon_group = f['results/phonons']
@@ -199,15 +209,15 @@ def read_phonon_data(
             phonon_group = f['results/phonon']
 
         if phonon_group is None or (
-            'frequencies' not in phonon_group and 'eigenvalues' not in phonon_group
+            'frequencies' not in phonon_group
+            and 'eigenvalues' not in phonon_group
         ):
             msg = format_error(
-                f'Pre-calculated phonon band/mode data not found in {filename}.',
-                fix='Use ForceConstants.from_vasp to read force constants and calculate modes explicitly.',
+                f'Pre-calculated phonon band data not found in {filename}.',
+                fix='Use ForceConstants.from_vasp to read force constants.',
             )
             raise MissingPhononModesError(msg)
 
-        # Read crystal structure (prefer primitive cell if stored under phonons)
         has_primitive = 'primitive' in phonon_group
         crystal_dict = read_crystal(
             filename,
@@ -221,7 +231,11 @@ def read_phonon_data(
         qpts_key = (
             'qpoint_coords'
             if 'qpoint_coords' in phonon_group
-            else ('kpoint_coords' if 'kpoint_coords' in phonon_group else 'kpoints')
+            else (
+                'kpoint_coords'
+                if 'kpoint_coords' in phonon_group
+                else 'kpoints'
+            )
         )
         freq_key = (
             'frequencies' if 'frequencies' in phonon_group else 'eigenvalues'
@@ -230,7 +244,6 @@ def read_phonon_data(
         qpts = phonon_group[qpts_key][()]
         freqs_raw = phonon_group[freq_key][()]
 
-        # Default VASP phonon frequency unit is THz
         raw_unit = 'THz'
         if (
             'frequencies' in phonon_group
@@ -282,6 +295,7 @@ def read_phonon_data(
 
 def read_interpolation_data(
     filename: Path | str,
+    *,
     cell_vectors_unit: str = 'angstrom',
     atom_mass_unit: str = 'amu',
     force_constants_unit: str = 'hartree/bohr**2',
@@ -349,22 +363,18 @@ def read_interpolation_data(
                     if 'results/phonons/primitive' in f
                     else f['results/phonon/primitive']
                 )
-                L_p = prim_group['lattice_vectors'][()]
+                l_p = prim_group['lattice_vectors'][()]
                 r_p = prim_group['position_ions'][()]
                 atom_r = r_p - np.floor(r_p)
 
                 pos_group = f['results/positions']
-                L_sc = pos_group['lattice_vectors'][()]
+                l_sc = pos_group['lattice_vectors'][()]
                 r_sc = pos_group['position_ions'][()]
                 n_atoms_sc = len(r_sc)
 
-                # sc_matrix = L_sc @ inv(L_p)
-                sc_matrix = np.rint(L_sc @ np.linalg.inv(L_p)).astype(int)
+                sc_matrix = np.rint(l_sc @ np.linalg.inv(l_p)).astype(int)
+                sc_atom_r = (r_sc @ l_sc) @ np.linalg.inv(l_p)
 
-                # Supercell atom coordinates in primitive fractional basis
-                sc_atom_r = (r_sc @ L_sc) @ np.linalg.inv(L_p)
-
-                # Map supercell atoms to primitive cell atoms
                 r_sc_pfrac = sc_atom_r
                 cell_origins_per_atom = np.floor(r_sc_pfrac + 1e-5).astype(int)
                 r_in_p = r_sc_pfrac - cell_origins_per_atom
@@ -377,10 +387,13 @@ def read_interpolation_data(
 
                 uc_to_sc_atom_idx = np.zeros(n_atoms_uc, dtype=int)
                 for k in range(n_atoms_uc):
-                    uc_to_sc_atom_idx[k] = np.where(sc_to_uc_atom_idx == k)[0][0]
+                    uc_to_sc_atom_idx[k] = np.where(sc_to_uc_atom_idx == k)[
+                        0
+                    ][0]
 
-                # Convert VASP 2D force constants (n_atoms_sc*3, n_atoms_sc*3) -> (n_atoms_sc, n_atoms_sc, 3, 3)
-                fc_4d = -fc_raw.reshape(n_atoms_sc, 3, n_atoms_sc, 3).transpose(0, 2, 1, 3)
+                fc_4d = -fc_raw.reshape(
+                    n_atoms_sc, 3, n_atoms_sc, 3
+                ).transpose(0, 2, 1, 3)
 
                 fc_converted_raw, cell_origins = convert_fc_phases(
                     fc_4d,
@@ -418,14 +431,15 @@ def read_interpolation_data(
                     ][()]
                     data_dict['dielectric'] = (
                         dielectric_raw
-                        * ureg('e**2/(hartree*bohr)').to(dielectric_unit).magnitude
+                        * ureg('e**2/(hartree*bohr)')
+                        .to(dielectric_unit)
+                        .magnitude
                     )
                     data_dict['dielectric_unit'] = dielectric_unit
 
                 return data_dict
 
             # Supercell as unit cell fallback
-            # VASP force constants matrix is -Hessian
             fc = -fc_raw.reshape(1, 3 * n_atoms_uc, 3 * n_atoms_uc)
             fc_converted = (
                 fc * ureg('eV/angstrom**2').to(force_constants_unit).magnitude
@@ -460,6 +474,9 @@ def read_interpolation_data(
 
         msg = format_error(
             f'Force constants not found in {filename}.',
-            fix='Ensure the file contains results/linear_response force constants.',
+            fix=(
+                'Ensure the file contains results/linear_response '
+                'force constants.'
+            ),
         )
         raise KeyError(msg)
