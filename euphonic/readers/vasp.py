@@ -56,7 +56,7 @@ def _open_vasp_h5(filename: Path | str):
 
 
 def _extract_pomass(
-    h5_file: 'h5py.File', filename: Path | str, n_species: int
+    h5_file: 'h5py.File', filename: Path, n_species: int
 ) -> list[float]:
     """
     Extracts atomic masses (POMASS) per species from input/potcar/content or
@@ -113,7 +113,7 @@ def _extract_pomass(
 
 
 def read_crystal(
-    filename: Path | str,
+    filename: Path,
     *,
     cell_vectors_unit: str = 'angstrom',
     atom_mass_unit: str = 'amu',
@@ -125,7 +125,7 @@ def read_crystal(
     Parameters
     ----------
     filename
-        Path to the VASP HDF5 output file (e.g. vaspout.h5)
+        Path to the VASP HDF5 output file
     cell_vectors_unit
         The unit to return the cell vectors in
     atom_mass_unit
@@ -199,7 +199,7 @@ def read_crystal(
 
 
 def read_phonon_data(
-    filename: Path | str,
+    filename: Path,
     *,
     cell_vectors_unit: str = 'angstrom',
     atom_mass_unit: str = 'amu',
@@ -318,7 +318,7 @@ def read_phonon_data(
 
 
 def read_interpolation_data(
-    filename: Path | str,
+    filename: Path,
     *,
     cell_vectors_unit: str = 'angstrom',
     atom_mass_unit: str = 'amu',

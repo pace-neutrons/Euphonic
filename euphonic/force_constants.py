@@ -1889,7 +1889,7 @@ casting to real mode gradients.
         -------
         forceconstants
         """
-        data = vasp.read_interpolation_data(filename)
+        data = vasp.read_interpolation_data(Path(filename))
         fc = cls.from_dict(data)
         if fc.born is not None:
             fc = cls.from_total_fc_with_dipole(
