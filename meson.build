@@ -1,15 +1,16 @@
 project('euphonic',
-        'c',
         version: run_command('python', 'build_utils/version.py', check: true).stdout().strip(),
         meson_version: '>=1.6',
        )
+
+add_languages('c', required: not get_option('python_only'))
 
 build = get_option('python_only') ? disabler() : []
 
 fs = import('fs')
 py = import('python').find_installation(pure: false)
 
-py_dep = py.dependency()
+py_dep = get_option('python_only') ? disabler() : py.dependency()
 
 py_src = {
   'euphonic': ['__init__.py', 'brille.py', 'broadening.py',
@@ -26,7 +27,7 @@ py_src = {
       '_grids.py', '_kwargs.py', '_loaders.py', '_pdos.py', '_plotting.py'],
   'euphonic/isotopes': ['__init__.py', '_core.py', '_csv.py', '_legacy.py'],
   'euphonic/isotopes/data': ['__init__.py', 'bluebook.json', 'sears-1992.json', 'sears-1992.csv'],
-  'euphonic/readers': ['__init__.py', 'castep.py', 'phonopy.py'],
+  'euphonic/readers': ['__init__.py', 'castep.py', 'phonopy.py', 'vasp.py'],
   'euphonic/spectra': ['__init__.py', 'base.py', 'collections.py'],
   'euphonic/styles': ['__init__.py', 'base.mplstyle', 'intensity_widget.mplstyle'],
   'euphonic/ureg': ['__init__.py'],
@@ -59,12 +60,14 @@ if not np.found() # Try default
   np = declare_dependency(include_directories: np_inc)
 endif
 
-openmp = dependency('openmp', required: true, language: 'c')
+if not get_option('python_only')
+  openmp = dependency('openmp', required: true, language: 'c')
 
-py.extension_module(
-  '_euphonic',
-  src,
-  dependencies: [build, py_dep, np, openmp],
-  install: true,
-  subdir: 'euphonic',
-)
+  py.extension_module(
+    '_euphonic',
+    src,
+    dependencies: [build, py_dep, np, openmp],
+    install: true,
+    subdir: 'euphonic',
+  )
+endif
