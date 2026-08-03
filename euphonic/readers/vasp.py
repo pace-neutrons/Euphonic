@@ -1,7 +1,7 @@
 from contextlib import contextmanager
 from pathlib import Path
 import re
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, TypedDict
 
 import numpy as np
 
@@ -10,6 +10,15 @@ from euphonic.util import convert_fc_phases, format_error
 
 if TYPE_CHECKING:
     import h5py
+
+
+class CrystalDict(TypedDict):
+    cell_vectors: np.ndarray
+    cell_vectors_unit: str
+    atom_r: np.ndarray
+    atom_type: np.ndarray
+    atom_mass: np.ndarray
+    atom_mass_unit: str
 
 
 class ImportVaspReaderError(ModuleNotFoundError):
@@ -37,7 +46,7 @@ class MissingPhononModesError(KeyError):
 
 
 @contextmanager
-def _open_vasp_h5(filename: Path | str):
+def _open_vasp_h5(filename: Path):
     """
     Context manager to open a VASP HDF5 file with error handling for h5py.
     """
@@ -55,9 +64,7 @@ def _open_vasp_h5(filename: Path | str):
         yield h5_file
 
 
-def _extract_pomass(
-    h5_file: 'h5py.File', filename: Path, n_species: int
-) -> list[float]:
+def _extract_pomass(h5_file: 'h5py.File', filename: Path) -> list[float]:
     """
     Extracts atomic masses (POMASS) per species from input/potcar/content or
     INCAR content datasets stored inside the VASP HDF5 file.
@@ -68,46 +75,41 @@ def _extract_pomass(
         Opened h5py.File object representing the VASP HDF5 container
     filename
         Path to the VASP HDF5 file for error reporting
-    n_species
-        Number of atomic species expected
 
     Returns
     -------
     masses_per_type
         List of float atomic masses in amu per species
     """
-    # 1. Try POTCAR content stored inside the HDF5 file
-    if 'input/potcar/content' in h5_file:
-        potcar_content = h5_file['input/potcar/content'][()].decode(
-            'utf-8', errors='ignore'
-        )
-        matches = re.findall(r'POMASS\s*=\s*([0-9.]+)', potcar_content)
-        if len(matches) == n_species:
-            return [float(mass) for mass in matches]
+    # 1. Try active input/incar/POMASS
+    if 'input/incar/POMASS' in h5_file:
+        val = h5_file['input/incar/POMASS'].asstr()[()]
+        raw_vals = re.findall(r'[0-9.]+', str(val))
+        if raw_vals:
+            return [float(mass) for mass in raw_vals]
 
-    # 2. Try INCAR content stored inside the HDF5 file
-    incar_content = ''
+    # 2. Try original/incar/content
     if 'original/incar/content' in h5_file:
-        incar_content = h5_file['original/incar/content'][()].decode(
-            'utf-8', errors='ignore'
-        )
-    elif 'input/incar/POMASS' in h5_file:
-        val = h5_file['input/incar/POMASS'][()]
-        incar_content = f'POMASS = {val}'
-
-    if incar_content:
+        incar_content = h5_file['original/incar/content'].asstr()[()]
         match = re.search(
-            r'POMASS\s*=\s*([0-9.\s,]+)', incar_content, re.IGNORECASE
+            r'POMASS\s*=\s*(?P<masses>[0-9.\s,]+)', incar_content
         )
         if match:
-            raw_vals = re.findall(r'[0-9.]+', match.group(1))
-            if len(raw_vals) == n_species:
+            raw_vals = re.findall(r'[0-9.]+', match.group('masses'))
+            if raw_vals:
                 return [float(mass) for mass in raw_vals]
 
-    # 3. If missing from both, raise error
+    # 3. Try POTCAR content stored inside the HDF5 file
+    if 'input/potcar/content' in h5_file:
+        potcar_content = h5_file['input/potcar/content'].asstr()[()]
+        matches = re.findall(r'POMASS\s*=\s*(?P<mass>[0-9.]+)', potcar_content)
+        if matches:
+            return [float(mass) for mass in matches]
+
+    # 4. If missing from all, raise error
     msg = format_error(
         f'Could not find atomic masses (POMASS) in {filename}.',
-        fix='Ensure the file contains POMASS in POTCAR or INCAR datasets.',
+        fix='Ensure the file contains POMASS in INCAR or POTCAR datasets.',
     )
     raise ValueError(msg)
 
@@ -115,10 +117,8 @@ def _extract_pomass(
 def read_crystal(
     filename: Path,
     *,
-    cell_vectors_unit: str = 'angstrom',
-    atom_mass_unit: str = 'amu',
     use_primitive: bool = False,
-) -> dict[str, Any]:
+) -> CrystalDict:
     """
     Reads crystal structure information from a VASP HDF5 file.
 
@@ -126,17 +126,13 @@ def read_crystal(
     ----------
     filename
         Path to the VASP HDF5 output file
-    cell_vectors_unit
-        The unit to return the cell vectors in
-    atom_mass_unit
-        The unit to return the atom masses in
     use_primitive
         Whether to attempt reading primitive cell structure if present
 
     Returns
     -------
     crystal_dict
-        A dict with keys: 'cell_vectors', 'cell_vectors_unit', 'atom_r',
+        A CrystalDict with keys: 'cell_vectors', 'cell_vectors_unit', 'atom_r',
         'atom_type', 'atom_mass', 'atom_mass_unit'
     """
     with _open_vasp_h5(filename) as h5_file:
@@ -159,50 +155,38 @@ def read_crystal(
         latt = pos_group['lattice_vectors'][()]
         pos = pos_group['position_ions'][()]
         types_count = pos_group['number_ion_types'][()]
-        types_raw = pos_group['ion_types'][()]
-
-        species_types = [
-            raw.decode('utf-8').strip()
-            if isinstance(raw, bytes)
-            else str(raw).strip()
-            for raw in types_raw
-        ]
+        species_types = pos_group['ion_types'].asstr()[()]
 
         # Read exact atomic mass (POMASS) from POTCAR or INCAR in HDF5 file
-        masses_per_type = _extract_pomass(
-            h5_file, filename, len(species_types)
-        )
+        masses_per_type = _extract_pomass(h5_file, filename)
 
         atom_species = []
         atom_masses = []
         for species, count, mass in zip(
-            species_types, types_count, masses_per_type, strict=False
+            species_types, types_count, masses_per_type, strict=True
         ):
             atom_species.extend([species] * int(count))
             atom_masses.extend([mass] * int(count))
 
-        cell_vectors = latt * ureg('angstrom').to(cell_vectors_unit).magnitude
-        atom_masses_converted = (
-            np.array(atom_masses) * ureg('amu').to(atom_mass_unit).magnitude
+        atom_r = pos % 1.0
+        near_boundary = np.isclose(atom_r, 1.0, atol=1e-8) | np.isclose(
+            atom_r, 0.0, atol=1e-8
         )
-
-        atom_r = pos - np.floor(pos)
+        atom_r[near_boundary] = 0.0
 
         return {
-            'cell_vectors': cell_vectors,
-            'cell_vectors_unit': cell_vectors_unit,
+            'cell_vectors': latt,
+            'cell_vectors_unit': 'angstrom',
             'atom_r': atom_r,
             'atom_type': np.array(atom_species),
-            'atom_mass': atom_masses_converted,
-            'atom_mass_unit': atom_mass_unit,
+            'atom_mass': np.array(atom_masses),
+            'atom_mass_unit': 'amu',
         }
 
 
 def read_phonon_data(
     filename: Path,
     *,
-    cell_vectors_unit: str = 'angstrom',
-    atom_mass_unit: str = 'amu',
     frequencies_unit: str = 'meV',
 ) -> dict[str, Any]:
     """
@@ -212,10 +196,6 @@ def read_phonon_data(
     ----------
     filename
         Path to the VASP HDF5 file
-    cell_vectors_unit
-        The unit to return the cell vectors in
-    atom_mass_unit
-        The unit to return the atom masses in
     frequencies_unit
         The unit to return the frequencies in
 
@@ -245,8 +225,6 @@ def read_phonon_data(
         has_primitive = 'primitive' in phonon_group
         crystal_dict = read_crystal(
             filename,
-            cell_vectors_unit=cell_vectors_unit,
-            atom_mass_unit=atom_mass_unit,
             use_primitive=has_primitive,
         )
 
@@ -273,12 +251,7 @@ def read_phonon_data(
             'frequencies' in phonon_group
             and 'unit' in phonon_group['frequencies'].attrs
         ):
-            attr_val = phonon_group['frequencies'].attrs['unit']
-            raw_unit = (
-                attr_val.decode('utf-8')
-                if isinstance(attr_val, bytes)
-                else str(attr_val)
-            )
+            raw_unit = str(phonon_group['frequencies'].attrs.asstr()['unit'])
 
         freqs_converted = (
             freqs_raw * ureg(raw_unit).to(frequencies_unit).magnitude
@@ -320,8 +293,6 @@ def read_phonon_data(
 def read_interpolation_data(
     filename: Path,
     *,
-    cell_vectors_unit: str = 'angstrom',
-    atom_mass_unit: str = 'amu',
     force_constants_unit: str = 'hartree/bohr**2',
     born_unit: str = 'e',
     dielectric_unit: str = '(e**2)/(bohr*hartree)',
@@ -335,10 +306,6 @@ def read_interpolation_data(
     ----------
     filename
         Path to the VASP HDF5 file
-    cell_vectors_unit
-        The unit to return the cell vectors in
-    atom_mass_unit
-        The unit to return the atom masses in
     force_constants_unit
         The unit to return the force constants in
     born_unit
@@ -364,8 +331,6 @@ def read_interpolation_data(
 
         crystal_dict = read_crystal(
             filename,
-            cell_vectors_unit=cell_vectors_unit,
-            atom_mass_unit=atom_mass_unit,
             use_primitive=has_primitive,
         )
 
@@ -390,7 +355,11 @@ def read_interpolation_data(
                 )
                 l_p = prim_group['lattice_vectors'][()]
                 r_p = prim_group['position_ions'][()]
-                atom_r = r_p - np.floor(r_p)
+                atom_r = r_p % 1.0
+                near_boundary = np.isclose(atom_r, 1.0, atol=1e-8) | np.isclose(
+                    atom_r, 0.0, atol=1e-8
+                )
+                atom_r[near_boundary] = 0.0
 
                 pos_group = h5_file['results/positions']
                 l_sc = pos_group['lattice_vectors'][()]
@@ -403,7 +372,11 @@ def read_interpolation_data(
                 r_sc_pfrac = sc_atom_r
                 cell_origins_per_atom = np.floor(r_sc_pfrac + 1e-5).astype(int)
                 r_in_p = r_sc_pfrac - cell_origins_per_atom
-                r_in_p = r_in_p - np.floor(r_in_p + 1e-5)
+                r_in_p = r_in_p % 1.0
+                near_b = np.isclose(r_in_p, 1.0, atol=1e-8) | np.isclose(
+                    r_in_p, 0.0, atol=1e-8
+                )
+                r_in_p[near_b] = 0.0
 
                 sc_to_uc_atom_idx = np.zeros(n_atoms_sc, dtype=int)
                 for i, pos in enumerate(r_in_p):
