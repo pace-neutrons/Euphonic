@@ -1,11 +1,15 @@
+from contextlib import contextmanager
 from pathlib import Path
 import re
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 
 from euphonic.ureg import ureg
 from euphonic.util import convert_fc_phases, format_error
+
+if TYPE_CHECKING:
+    import h5py
 
 
 class ImportVaspReaderError(ModuleNotFoundError):
@@ -14,11 +18,12 @@ class ImportVaspReaderError(ModuleNotFoundError):
     """
 
     def __init__(self) -> None:
-        self.message = (
-            '\n\nCannot import h5py to read VASP HDF5 files, maybe '
-            'it is not installed. To install the optional dependency '
-            "for Euphonic's VASP reader, try:\n\n"
-            'pip install euphonic[phonopy-reader]\n'
+        self.message = format_error(
+            'Cannot import h5py to read VASP HDF5 files.',
+            fix=(
+                'To install optional HDF5 dependencies for Euphonic, try: '
+                'pip install euphonic[phonopy-reader]'
+            ),
         )
 
     def __str__(self) -> str:
@@ -31,46 +36,63 @@ class MissingPhononModesError(KeyError):
     """
 
 
-def _open_vasp_h5(filename: Path | str) -> Any:
+@contextmanager
+def _open_vasp_h5(filename: Path | str):
     """
-    Helper function to open an HDF5 file with error handling for missing h5py.
+    Context manager to open a VASP HDF5 file with error handling for h5py.
     """
     try:
         import h5py
-    except ModuleNotFoundError as e:
-        raise ImportVaspReaderError from e
+    except ModuleNotFoundError as err:
+        raise ImportVaspReaderError from err
 
     filepath = Path(filename)
     if not filepath.exists():
         msg = format_error(f'VASP file not found at {filepath}.')
         raise FileNotFoundError(msg)
 
-    return h5py.File(filepath, 'r')
+    with h5py.File(filepath, 'r') as h5_file:
+        yield h5_file
 
 
 def _extract_pomass(
-    f: Any, filename: Path | str, n_species: int
+    h5_file: 'h5py.File', filename: Path | str, n_species: int
 ) -> list[float]:
     """
-    Extracts atomic masses (POMASS) per species from POTCAR or INCAR.
-    """
-    # 1. Try POTCAR content
-    if 'input/potcar/content' in f:
-        content = f['input/potcar/content'][()].decode(
-            'utf-8', errors='ignore'
-        )
-        matches = re.findall(r'POMASS\s*=\s*([0-9.]+)', content)
-        if len(matches) == n_species:
-            return [float(m) for m in matches]
+    Extracts atomic masses (POMASS) per species from input/potcar/content or
+    INCAR content datasets stored inside the VASP HDF5 file.
 
-    # 2. Try INCAR content or dataset
-    incar_content = ''
-    if 'original/incar/content' in f:
-        incar_content = f['original/incar/content'][()].decode(
+    Parameters
+    ----------
+    h5_file
+        Opened h5py.File object representing the VASP HDF5 container
+    filename
+        Path to the VASP HDF5 file for error reporting
+    n_species
+        Number of atomic species expected
+
+    Returns
+    -------
+    masses_per_type
+        List of float atomic masses in amu per species
+    """
+    # 1. Try POTCAR content stored inside the HDF5 file
+    if 'input/potcar/content' in h5_file:
+        potcar_content = h5_file['input/potcar/content'][()].decode(
             'utf-8', errors='ignore'
         )
-    elif 'input/incar/POMASS' in f:
-        val = f['input/incar/POMASS'][()]
+        matches = re.findall(r'POMASS\s*=\s*([0-9.]+)', potcar_content)
+        if len(matches) == n_species:
+            return [float(mass) for mass in matches]
+
+    # 2. Try INCAR content stored inside the HDF5 file
+    incar_content = ''
+    if 'original/incar/content' in h5_file:
+        incar_content = h5_file['original/incar/content'][()].decode(
+            'utf-8', errors='ignore'
+        )
+    elif 'input/incar/POMASS' in h5_file:
+        val = h5_file['input/incar/POMASS'][()]
         incar_content = f'POMASS = {val}'
 
     if incar_content:
@@ -80,12 +102,12 @@ def _extract_pomass(
         if match:
             raw_vals = re.findall(r'[0-9.]+', match.group(1))
             if len(raw_vals) == n_species:
-                return [float(m) for m in raw_vals]
+                return [float(mass) for mass in raw_vals]
 
     # 3. If missing from both, raise error
     msg = format_error(
         f'Could not find atomic masses (POMASS) in {filename}.',
-        fix='Ensure the file contains POMASS in POTCAR or INCAR.',
+        fix='Ensure the file contains POMASS in POTCAR or INCAR datasets.',
     )
     raise ValueError(msg)
 
@@ -117,22 +139,22 @@ def read_crystal(
         A dict with keys: 'cell_vectors', 'cell_vectors_unit', 'atom_r',
         'atom_type', 'atom_mass', 'atom_mass_unit'
     """
-    with _open_vasp_h5(filename) as f:
+    with _open_vasp_h5(filename) as h5_file:
         pos_group = None
         if use_primitive:
-            if 'results/phonons/primitive' in f:
-                pos_group = f['results/phonons/primitive']
-            elif 'results/phonon/primitive' in f:
-                pos_group = f['results/phonon/primitive']
+            if 'results/phonons/primitive' in h5_file:
+                pos_group = h5_file['results/phonons/primitive']
+            elif 'results/phonon/primitive' in h5_file:
+                pos_group = h5_file['results/phonon/primitive']
 
         if pos_group is None:
-            if 'results/positions' not in f:
+            if 'results/positions' not in h5_file:
                 msg = format_error(
                     f'Crystal position data not found in {filename}.',
                     fix='Ensure the file contains results/positions group.',
                 )
                 raise KeyError(msg)
-            pos_group = f['results/positions']
+            pos_group = h5_file['results/positions']
 
         latt = pos_group['lattice_vectors'][()]
         pos = pos_group['position_ions'][()]
@@ -140,22 +162,24 @@ def read_crystal(
         types_raw = pos_group['ion_types'][()]
 
         species_types = [
-            r.decode('utf-8').strip()
-            if isinstance(r, bytes)
-            else str(r).strip()
-            for r in types_raw
+            raw.decode('utf-8').strip()
+            if isinstance(raw, bytes)
+            else str(raw).strip()
+            for raw in types_raw
         ]
 
         # Read exact atomic mass (POMASS) from POTCAR or INCAR in HDF5 file
-        masses_per_type = _extract_pomass(f, filename, len(species_types))
+        masses_per_type = _extract_pomass(
+            h5_file, filename, len(species_types)
+        )
 
         atom_species = []
         atom_masses = []
-        for s, c, m in zip(
+        for species, count, mass in zip(
             species_types, types_count, masses_per_type, strict=False
         ):
-            atom_species.extend([s] * int(c))
-            atom_masses.extend([m] * int(c))
+            atom_species.extend([species] * int(count))
+            atom_masses.extend([mass] * int(count))
 
         cell_vectors = latt * ureg('angstrom').to(cell_vectors_unit).magnitude
         atom_masses_converted = (
@@ -201,12 +225,12 @@ def read_phonon_data(
         A dict with keys: 'crystal', 'qpts', 'frequencies',
         'frequencies_unit', 'eigenvectors' (optional), 'weights'
     """
-    with _open_vasp_h5(filename) as f:
+    with _open_vasp_h5(filename) as h5_file:
         phonon_group = None
-        if 'results/phonons' in f:
-            phonon_group = f['results/phonons']
-        elif 'results/phonon' in f:
-            phonon_group = f['results/phonon']
+        if 'results/phonons' in h5_file:
+            phonon_group = h5_file['results/phonons']
+        elif 'results/phonon' in h5_file:
+            phonon_group = h5_file['results/phonon']
 
         if phonon_group is None or (
             'frequencies' not in phonon_group
@@ -332,9 +356,10 @@ def read_interpolation_data(
         'sc_matrix', 'cell_origins'. Also optionally contains 'born',
         'born_unit', 'dielectric', and 'dielectric_unit' if present.
     """
-    with _open_vasp_h5(filename) as f:
+    with _open_vasp_h5(filename) as h5_file:
         has_primitive = use_primitive and (
-            'results/phonons/primitive' in f or 'results/phonon/primitive' in f
+            'results/phonons/primitive' in h5_file
+            or 'results/phonon/primitive' in h5_file
         )
 
         crystal_dict = read_crystal(
@@ -347,27 +372,27 @@ def read_interpolation_data(
         n_atoms_uc = len(crystal_dict['atom_r'])
 
         if (
-            'results/linear_response/force_constants' in f
-            or 'results/linear_response/hessian' in f
+            'results/linear_response/force_constants' in h5_file
+            or 'results/linear_response/hessian' in h5_file
         ):
             fc_key = (
                 'results/linear_response/force_constants'
-                if 'results/linear_response/force_constants' in f
+                if 'results/linear_response/force_constants' in h5_file
                 else 'results/linear_response/hessian'
             )
-            fc_raw = f[fc_key][()]
+            fc_raw = h5_file[fc_key][()]
 
             if has_primitive:
                 prim_group = (
-                    f['results/phonons/primitive']
-                    if 'results/phonons/primitive' in f
-                    else f['results/phonon/primitive']
+                    h5_file['results/phonons/primitive']
+                    if 'results/phonons/primitive' in h5_file
+                    else h5_file['results/phonon/primitive']
                 )
                 l_p = prim_group['lattice_vectors'][()]
                 r_p = prim_group['position_ions'][()]
                 atom_r = r_p - np.floor(r_p)
 
-                pos_group = f['results/positions']
+                pos_group = h5_file['results/positions']
                 l_sc = pos_group['lattice_vectors'][()]
                 r_sc = pos_group['position_ions'][()]
                 n_atoms_sc = len(r_sc)
@@ -417,16 +442,21 @@ def read_interpolation_data(
                     'cell_origins': cell_origins,
                 }
 
-                if 'results/linear_response/born_charges' in f:
-                    born_raw = f['results/linear_response/born_charges'][()]
+                if 'results/linear_response/born_charges' in h5_file:
+                    born_raw = h5_file['results/linear_response/born_charges'][
+                        ()
+                    ]
                     born_primitive = born_raw[uc_to_sc_atom_idx]
                     data_dict['born'] = (
                         born_primitive * ureg('e').to(born_unit).magnitude
                     )
                     data_dict['born_unit'] = born_unit
 
-                if 'results/linear_response/electron_dielectric_tensor' in f:
-                    dielectric_raw = f[
+                if (
+                    'results/linear_response/electron_dielectric_tensor'
+                    in h5_file
+                ):
+                    dielectric_raw = h5_file[
                         'results/linear_response/electron_dielectric_tensor'
                     ][()]
                     data_dict['dielectric'] = (
@@ -453,15 +483,15 @@ def read_interpolation_data(
                 'cell_origins': np.zeros((1, 3), dtype=int),
             }
 
-            if 'results/linear_response/born_charges' in f:
-                born_raw = f['results/linear_response/born_charges'][()]
+            if 'results/linear_response/born_charges' in h5_file:
+                born_raw = h5_file['results/linear_response/born_charges'][()]
                 data_dict['born'] = (
                     born_raw * ureg('e').to(born_unit).magnitude
                 )
                 data_dict['born_unit'] = born_unit
 
-            if 'results/linear_response/electron_dielectric_tensor' in f:
-                dielectric_raw = f[
+            if 'results/linear_response/electron_dielectric_tensor' in h5_file:
+                dielectric_raw = h5_file[
                     'results/linear_response/electron_dielectric_tensor'
                 ][()]
                 data_dict['dielectric'] = (
