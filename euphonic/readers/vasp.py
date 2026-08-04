@@ -11,6 +11,8 @@ from euphonic.util import convert_fc_phases, format_error
 if TYPE_CHECKING:
     import h5py
 
+BOUNDARY_TOLERANCE: float = 1e-12
+
 
 class CrystalDict(TypedDict):
     cell_vectors: np.ndarray
@@ -19,6 +21,15 @@ class CrystalDict(TypedDict):
     atom_type: np.ndarray
     atom_mass: np.ndarray
     atom_mass_unit: str
+
+
+class PhononDataDict(TypedDict, total=False):
+    crystal: CrystalDict
+    qpts: np.ndarray
+    frequencies: np.ndarray
+    frequencies_unit: str
+    weights: np.ndarray
+    eigenvectors: np.ndarray
 
 
 class ImportVaspReaderError(ModuleNotFoundError):
@@ -45,6 +56,25 @@ class MissingPhononModesError(KeyError):
     """
 
 
+class MissingPrimitiveCellError(KeyError):
+    """
+    Error raised when primitive cell structure is missing in VASP HDF5 file.
+    """
+
+
+def _normalize_fractional_coords(pos: np.ndarray) -> np.ndarray:
+    """
+    Normalizes fractional atomic positions to [0.0, 1.0), snapping boundary
+    values within BOUNDARY_TOLERANCE of 1.0 or 0.0 to 0.0.
+    """
+    atom_r = pos % 1.0
+    near_boundary = np.isclose(
+        atom_r, 1.0, atol=BOUNDARY_TOLERANCE
+    ) | np.isclose(atom_r, 0.0, atol=BOUNDARY_TOLERANCE)
+    atom_r[near_boundary] = 0.0
+    return atom_r
+
+
 @contextmanager
 def _open_vasp_h5(filename: Path):
     """
@@ -64,23 +94,28 @@ def _open_vasp_h5(filename: Path):
         yield h5_file
 
 
-def _extract_pomass(h5_file: 'h5py.File', filename: Path) -> list[float]:
+def _extract_pomass(h5_file: 'h5py.File') -> list[float]:
     """
-    Extracts atomic masses (POMASS) per species from input/potcar/content or
-    INCAR content datasets stored inside the VASP HDF5 file.
+    Extracts atomic masses (POMASS) per species from INCAR or POTCAR
+    content datasets stored inside the VASP HDF5 file.
 
     Parameters
     ----------
     h5_file
         Opened h5py.File object representing the VASP HDF5 container
-    filename
-        Path to the VASP HDF5 file for error reporting
 
     Returns
     -------
     masses_per_type
         List of float atomic masses in amu per species
+
+    Raises
+    ------
+    ValueError
+        If atomic masses (POMASS) cannot be found in INCAR or POTCAR datasets.
     """
+    filename = Path(h5_file.filename)
+
     # 1. Try active input/incar/POMASS
     if 'input/incar/POMASS' in h5_file:
         val = h5_file['input/incar/POMASS'].asstr()[()]
@@ -114,180 +149,173 @@ def _extract_pomass(h5_file: 'h5py.File', filename: Path) -> list[float]:
     raise ValueError(msg)
 
 
-def read_crystal(
-    filename: Path,
-    *,
-    use_primitive: bool = False,
+def _read_cell_from_group(
+    h5_file: 'h5py.File', group_path: str
 ) -> CrystalDict:
     """
-    Reads crystal structure information from a VASP HDF5 file.
+    Helper function to parse crystal structure from a specific HDF5 group.
+    """
+    filename = Path(h5_file.filename)
+    if group_path not in h5_file:
+        msg = format_error(
+            f'Crystal position data not found at {group_path} in {filename}.'
+        )
+        raise KeyError(msg)
+
+    pos_group = h5_file[group_path]
+    latt = pos_group['lattice_vectors'][()]
+    pos = pos_group['position_ions'][()]
+    species_counts = pos_group['number_ion_types'][()]
+    species_types = pos_group['ion_types'].asstr()[()]
+
+    species_masses = _extract_pomass(h5_file)
+
+    atom_type = np.repeat(species_types, species_counts)
+    atom_mass = np.repeat(species_masses, species_counts)
+
+    atom_r = _normalize_fractional_coords(pos)
+
+    return {
+        'cell_vectors': latt,
+        'cell_vectors_unit': 'angstrom',
+        'atom_r': atom_r,
+        'atom_type': atom_type,
+        'atom_mass': atom_mass,
+        'atom_mass_unit': 'amu',
+    }
+
+
+def read_cell(filename: Path) -> CrystalDict:
+    """
+    Reads calculation cell structure from results/positions in VASP HDF5 file.
 
     Parameters
     ----------
     filename
         Path to the VASP HDF5 output file
-    use_primitive
-        Whether to attempt reading primitive cell structure if present
 
     Returns
     -------
     crystal_dict
-        A CrystalDict with keys: 'cell_vectors', 'cell_vectors_unit', 'atom_r',
-        'atom_type', 'atom_mass', 'atom_mass_unit'
+        A CrystalDict for the calculation cell
+
+    Raises
+    ------
+    FileNotFoundError
+        If the file does not exist at filename.
+    ImportVaspReaderError
+        If h5py is not installed.
+    KeyError
+        If results/positions group is missing from the file.
+    ValueError
+        If atomic masses (POMASS) cannot be found in INCAR or POTCAR.
     """
     with _open_vasp_h5(filename) as h5_file:
-        pos_group = None
-        if use_primitive:
-            if 'results/phonons/primitive' in h5_file:
-                pos_group = h5_file['results/phonons/primitive']
-            elif 'results/phonon/primitive' in h5_file:
-                pos_group = h5_file['results/phonon/primitive']
-
-        if pos_group is None:
-            if 'results/positions' not in h5_file:
-                msg = format_error(
-                    f'Crystal position data not found in {filename}.',
-                    fix='Ensure the file contains results/positions group.',
-                )
-                raise KeyError(msg)
-            pos_group = h5_file['results/positions']
-
-        latt = pos_group['lattice_vectors'][()]
-        pos = pos_group['position_ions'][()]
-        types_count = pos_group['number_ion_types'][()]
-        species_types = pos_group['ion_types'].asstr()[()]
-
-        # Read exact atomic mass (POMASS) from POTCAR or INCAR in HDF5 file
-        masses_per_type = _extract_pomass(h5_file, filename)
-
-        atom_species = []
-        atom_masses = []
-        for species, count, mass in zip(
-            species_types, types_count, masses_per_type, strict=True
-        ):
-            atom_species.extend([species] * int(count))
-            atom_masses.extend([mass] * int(count))
-
-        atom_r = pos % 1.0
-        near_boundary = np.isclose(atom_r, 1.0, atol=1e-8) | np.isclose(
-            atom_r, 0.0, atol=1e-8
-        )
-        atom_r[near_boundary] = 0.0
-
-        return {
-            'cell_vectors': latt,
-            'cell_vectors_unit': 'angstrom',
-            'atom_r': atom_r,
-            'atom_type': np.array(atom_species),
-            'atom_mass': np.array(atom_masses),
-            'atom_mass_unit': 'amu',
-        }
+        return _read_cell_from_group(h5_file, 'results/positions')
 
 
-def read_phonon_data(
-    filename: Path,
-    *,
-    frequencies_unit: str = 'meV',
-) -> dict[str, Any]:
+def read_primitive_cell(filename: Path) -> CrystalDict:
     """
-    Reads precalculated phonon mode/band data from a VASP HDF5 file.
+    Reads primitive cell structure from results/phonons/primitive.
+
+    Parameters
+    ----------
+    filename
+        Path to the VASP HDF5 output file
+
+    Returns
+    -------
+    crystal_dict
+        A CrystalDict for the primitive cell
+
+    Raises
+    ------
+    MissingPrimitiveCellError
+        If primitive cell structure is not found in the file.
+    FileNotFoundError
+        If the file does not exist at filename.
+    ImportVaspReaderError
+        If h5py is not installed.
+    ValueError
+        If atomic masses (POMASS) cannot be found in INCAR or POTCAR.
+    """
+    with _open_vasp_h5(filename) as h5_file:
+        if 'results/phonons/primitive' in h5_file:
+            return _read_cell_from_group(h5_file, 'results/phonons/primitive')
+
+        msg = format_error(
+            f'Primitive cell structure not found in {filename}.',
+            fix='Ensure the file contains results/phonons/primitive data.',
+        )
+        raise MissingPrimitiveCellError(msg)
+
+
+def read_phonon_data(filename: Path) -> PhononDataDict:
+    """
+    Reads precalculated phonon mode/band data from a VASP HDF5 file in native
+    THz units.
 
     Parameters
     ----------
     filename
         Path to the VASP HDF5 file
-    frequencies_unit
-        The unit to return the frequencies in
 
     Returns
     -------
     data_dict
         A dict with keys: 'crystal', 'qpts', 'frequencies',
         'frequencies_unit', 'eigenvectors' (optional), 'weights'
+
+    Raises
+    ------
+    MissingPhononModesError
+        If precalculated phonon mode/band data is not found in the file.
+    FileNotFoundError
+        If the file does not exist at filename.
+    ImportVaspReaderError
+        If h5py is not installed.
     """
     with _open_vasp_h5(filename) as h5_file:
-        phonon_group = None
-        if 'results/phonons' in h5_file:
-            phonon_group = h5_file['results/phonons']
-        elif 'results/phonon' in h5_file:
-            phonon_group = h5_file['results/phonon']
-
-        if phonon_group is None or (
-            'frequencies' not in phonon_group
-            and 'eigenvalues' not in phonon_group
-        ):
+        if 'results/phonons/frequencies' not in h5_file:
             msg = format_error(
                 f'Pre-calculated phonon band data not found in {filename}.',
                 fix='Use ForceConstants.from_vasp to read force constants.',
             )
             raise MissingPhononModesError(msg)
 
-        has_primitive = 'primitive' in phonon_group
-        crystal_dict = read_crystal(
-            filename,
-            use_primitive=has_primitive,
-        )
+        phonon_group = h5_file['results/phonons']
+
+        try:
+            crystal_dict = read_primitive_cell(filename)
+        except MissingPrimitiveCellError:
+            crystal_dict = read_cell(filename)
 
         n_atoms = len(crystal_dict['atom_r'])
 
-        qpts_key = (
-            'qpoint_coords'
-            if 'qpoint_coords' in phonon_group
-            else (
-                'kpoint_coords'
-                if 'kpoint_coords' in phonon_group
-                else 'kpoints'
+        qpts = phonon_group['qpoint_coords'][()]
+        freqs = phonon_group['frequencies'][()]
+        weights = phonon_group['qpoints_symmetry_weight'][()]
+        evecs_raw = phonon_group['eigenvectors'][()]
+
+        expected_shape = (len(qpts), 3 * n_atoms, n_atoms, 3, 2)
+        if evecs_raw.shape != expected_shape:
+            msg = format_error(
+                f'Unexpected eigenvector array shape {evecs_raw.shape} '
+                f'in {filename} (expected {expected_shape}).',
+                fix='Ensure the file contains valid VASP 6 eigenvectors.',
             )
-        )
-        freq_key = (
-            'frequencies' if 'frequencies' in phonon_group else 'eigenvalues'
-        )
+            raise ValueError(msg)
 
-        qpts = phonon_group[qpts_key][()]
-        freqs_raw = phonon_group[freq_key][()]
+        evecs_complex = evecs_raw[..., 0] + 1j * evecs_raw[..., 1]
 
-        raw_unit = 'THz'
-        if (
-            'frequencies' in phonon_group
-            and 'unit' in phonon_group['frequencies'].attrs
-        ):
-            raw_unit = str(phonon_group['frequencies'].attrs.asstr()['unit'])
-
-        freqs_converted = (
-            freqs_raw * ureg(raw_unit).to(frequencies_unit).magnitude
-        )
-
-        res = {
+        return {
             'crystal': crystal_dict,
             'qpts': qpts,
-            'frequencies': freqs_converted,
-            'frequencies_unit': frequencies_unit,
+            'frequencies': freqs,
+            'frequencies_unit': 'THz',
+            'weights': weights,
+            'eigenvectors': evecs_complex,
         }
-
-        if 'qpoints_symmetry_weight' in phonon_group:
-            res['weights'] = phonon_group['qpoints_symmetry_weight'][()]
-        elif 'kpoint_weights' in phonon_group:
-            res['weights'] = phonon_group['kpoint_weights'][()]
-        else:
-            res['weights'] = np.ones(len(qpts)) / len(qpts)
-
-        if 'eigenvectors' in phonon_group:
-            evecs_raw = phonon_group['eigenvectors'][()]
-            if evecs_raw.ndim == 5 and evecs_raw.shape[-1] == 2:
-                evecs_complex = evecs_raw[..., 0] + 1j * evecs_raw[..., 1]
-            else:
-                evecs_complex = evecs_raw.astype(np.complex128)
-
-            if (
-                evecs_complex.ndim == 3
-                and evecs_complex.shape[1] == 3 * n_atoms
-            ):
-                evecs_complex = evecs_complex.reshape(
-                    len(qpts), 3 * n_atoms, n_atoms, 3
-                )
-            res['eigenvectors'] = evecs_complex
-
-        return res
 
 
 def read_interpolation_data(
@@ -296,7 +324,6 @@ def read_interpolation_data(
     force_constants_unit: str = 'hartree/bohr**2',
     born_unit: str = 'e',
     dielectric_unit: str = '(e**2)/(bohr*hartree)',
-    use_primitive: bool = True,
 ) -> dict[str, Any]:
     """
     Reads force constants, Born charges, dielectric tensor, and crystal
@@ -312,9 +339,6 @@ def read_interpolation_data(
         The unit to return the Born charges in
     dielectric_unit
         The unit to return the dielectric permittivity tensor in
-    use_primitive
-        Whether to attempt converting force constants to the primitive cell
-        if primitive cell structure is present in the file
 
     Returns
     -------
@@ -322,20 +346,17 @@ def read_interpolation_data(
         A dict with keys: 'crystal', 'force_constants', 'force_constants_unit',
         'sc_matrix', 'cell_origins'. Also optionally contains 'born',
         'born_unit', 'dielectric', and 'dielectric_unit' if present.
+
+    Raises
+    ------
+    KeyError
+        If results/linear_response force constants group is missing.
+    FileNotFoundError
+        If the file does not exist at filename.
+    ImportVaspReaderError
+        If h5py is not installed.
     """
     with _open_vasp_h5(filename) as h5_file:
-        has_primitive = use_primitive and (
-            'results/phonons/primitive' in h5_file
-            or 'results/phonon/primitive' in h5_file
-        )
-
-        crystal_dict = read_crystal(
-            filename,
-            use_primitive=has_primitive,
-        )
-
-        n_atoms_uc = len(crystal_dict['atom_r'])
-
         if (
             'results/linear_response/force_constants' in h5_file
             or 'results/linear_response/hessian' in h5_file
@@ -347,19 +368,20 @@ def read_interpolation_data(
             )
             fc_raw = h5_file[fc_key][()]
 
+            try:
+                crystal_dict = read_primitive_cell(filename)
+                has_primitive = True
+            except MissingPrimitiveCellError:
+                crystal_dict = read_cell(filename)
+                has_primitive = False
+
+            n_atoms_uc = len(crystal_dict['atom_r'])
+
             if has_primitive:
-                prim_group = (
-                    h5_file['results/phonons/primitive']
-                    if 'results/phonons/primitive' in h5_file
-                    else h5_file['results/phonon/primitive']
-                )
+                prim_group = h5_file['results/phonons/primitive']
                 l_p = prim_group['lattice_vectors'][()]
                 r_p = prim_group['position_ions'][()]
-                atom_r = r_p % 1.0
-                near_boundary = np.isclose(atom_r, 1.0, atol=1e-8) | np.isclose(
-                    atom_r, 0.0, atol=1e-8
-                )
-                atom_r[near_boundary] = 0.0
+                atom_r = _normalize_fractional_coords(r_p)
 
                 pos_group = h5_file['results/positions']
                 l_sc = pos_group['lattice_vectors'][()]
@@ -371,12 +393,9 @@ def read_interpolation_data(
 
                 r_sc_pfrac = sc_atom_r
                 cell_origins_per_atom = np.floor(r_sc_pfrac + 1e-5).astype(int)
-                r_in_p = r_sc_pfrac - cell_origins_per_atom
-                r_in_p = r_in_p % 1.0
-                near_b = np.isclose(r_in_p, 1.0, atol=1e-8) | np.isclose(
-                    r_in_p, 0.0, atol=1e-8
+                r_in_p = _normalize_fractional_coords(
+                    r_sc_pfrac - cell_origins_per_atom
                 )
-                r_in_p[near_b] = 0.0
 
                 sc_to_uc_atom_idx = np.zeros(n_atoms_sc, dtype=int)
                 for i, pos in enumerate(r_in_p):
