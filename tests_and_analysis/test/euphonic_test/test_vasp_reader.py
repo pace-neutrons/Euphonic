@@ -229,6 +229,12 @@ class TestForceConstantsFromVasp:
         assert 'dielectric' in data
         assert data['dielectric'].shape == (3, 3)
 
+        # Assert raw force constants dimensions (3 * n_atoms_sc, 3 * n_atoms_sc)
+        with h5py.File(FC_NO_QPTS_H5, 'r') as f:
+            fc_raw = f['results/linear_response/force_constants'][()]
+            n_atoms_sc = len(f['results/positions/position_ions'][()])
+            assert fc_raw.shape == (3 * n_atoms_sc, 3 * n_atoms_sc)
+
     def test_from_vasp_and_fallback_calculation(self):
         # 1. ForceConstants.from_vasp loads Hessian/force_constants
         fc = ForceConstants.from_vasp(FC_NO_QPTS_H5)
