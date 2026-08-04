@@ -43,6 +43,11 @@ class InterpolationDataDict(TypedDict, total=False):
     dielectric_unit: str
 
 
+class BornDict(TypedDict, total=False):
+    born_raw: np.ndarray
+    dielectric: np.ndarray
+
+
 class ImportVaspReaderError(ModuleNotFoundError):
     """
     Error raised when h5py is required to read VASP HDF5 files but is missing.
@@ -169,6 +174,14 @@ def _read_cell_from_group(
     """
     Helper function to parse crystal structure from a specific HDF5 group.
     """
+    filename = Path(h5_file.filename)
+    if group_path not in h5_file:
+        msg = format_error(
+            f'Crystal position data not found at {group_path} in {filename}.',
+            fix='Ensure the file contains valid VASP crystal datasets.',
+        )
+        raise KeyError(msg)
+
     pos_group = h5_file[group_path]
     latt = pos_group['lattice_vectors'][()]
     pos = pos_group['position_ions'][()]
@@ -365,6 +378,160 @@ def _find_fc_key(h5_file: 'h5py.File') -> str:
     raise KeyError(msg)
 
 
+def _extract_born_and_dielectric(h5_file: 'h5py.File') -> BornDict:
+    """
+    Extracts Born charges and electronic dielectric tensor from HDF5 container.
+    """
+    born_dict = {}
+    if 'results/linear_response/born_charges' in h5_file:
+        born_dict['born_raw'] = h5_file[
+            'results/linear_response/born_charges'
+        ][()]
+
+    if 'results/linear_response/electron_dielectric_tensor' in h5_file:
+        born_dict['dielectric'] = h5_file[
+            'results/linear_response/electron_dielectric_tensor'
+        ][()]
+
+    return born_dict
+
+
+def _build_supercell_data(
+    crystal_dict: CrystalDict,
+    sc_hessian: np.ndarray,
+    born_dict: BornDict,
+) -> InterpolationDataDict:
+    """
+    Builds interpolation data dictionary for supercell-as-unit-cell fallback.
+
+    Parameters
+    ----------
+    crystal_dict
+        Crystal dictionary for the supercell (treated as unit cell)
+    sc_hessian
+        Raw supercell Hessian matrix of shape
+        (3 * n_atoms, 3 * n_atoms) in eV/Angstrom^2
+    born_dict
+        Dictionary containing optional born charges and dielectric tensor
+    """
+    uc_n_atoms = len(crystal_dict['atom_r'])
+    assert sc_hessian.shape == (3 * uc_n_atoms, 3 * uc_n_atoms), (
+        f'Expected sc_hessian shape ({3 * uc_n_atoms}, {3 * uc_n_atoms}), '
+        f'got {sc_hessian.shape}'
+    )
+    fc = -sc_hessian.reshape(1, 3 * uc_n_atoms, 3 * uc_n_atoms)
+
+    result: InterpolationDataDict = {
+        'crystal': crystal_dict,
+        'force_constants': fc,
+        'force_constants_unit': 'eV/angstrom**2',
+        'sc_matrix': np.eye(3, dtype=int),
+        'cell_origins': np.zeros((1, 3), dtype=int),
+    }
+
+    if 'born_raw' in born_dict:
+        result['born'] = born_dict['born_raw']
+        result['born_unit'] = 'e'
+
+    if 'dielectric' in born_dict:
+        result['dielectric'] = born_dict['dielectric']
+        result['dielectric_unit'] = '(e**2)/(bohr*hartree)'
+
+    return result
+
+
+def _build_primitive_data(
+    h5_file: 'h5py.File',
+    crystal_dict: CrystalDict,
+    sc_hessian: np.ndarray,
+    born_dict: BornDict,
+) -> InterpolationDataDict:
+    """
+    Builds interpolation data dictionary by transforming supercell force constants
+    to primitive cell coordinates and cell origins.
+
+    Parameters
+    ----------
+    h5_file
+        Opened h5py.File object representing the VASP HDF5 container
+    crystal_dict
+        Crystal dictionary for the primitive cell
+    sc_hessian
+        Raw supercell Hessian matrix of shape
+        (3 * sc_n_atoms, 3 * sc_n_atoms) in eV/Angstrom^2
+    born_dict
+        Dictionary containing optional born charges and dielectric tensor
+    """
+    uc_n_atoms = len(crystal_dict['atom_r'])
+
+    prim_group = h5_file['results/phonons/primitive']
+    prim_lat = prim_group['lattice_vectors'][()]
+    prim_pos = prim_group['position_ions'][()]
+    atom_r = _normalize_fractional_coords(prim_pos)
+
+    pos_group = h5_file['results/positions']
+    sc_lat = pos_group['lattice_vectors'][()]
+    sc_pos = pos_group['position_ions'][()]
+    sc_n_atoms = len(sc_pos)
+
+    assert sc_hessian.shape == (3 * sc_n_atoms, 3 * sc_n_atoms), (
+        f'Expected sc_hessian shape ({3 * sc_n_atoms}, {3 * sc_n_atoms}), '
+        f'got {sc_hessian.shape}'
+    )
+
+    sc_matrix = np.rint(sc_lat @ np.linalg.inv(prim_lat)).astype(int)
+    sc_atom_r = (sc_pos @ sc_lat) @ np.linalg.inv(prim_lat)
+
+    cell_origins_per_atom = np.floor(sc_atom_r + 1e-5).astype(int)
+    r_in_p = _normalize_fractional_coords(
+        sc_atom_r - cell_origins_per_atom
+    )
+
+    # Map each supercell atom index (0 to sc_n_atoms - 1) to its
+    # equivalent primitive unit cell atom index (0 to uc_n_atoms - 1)
+    sc_to_uc_atom_idx = np.zeros(sc_n_atoms, dtype=int)
+    for i, pos in enumerate(r_in_p):
+        diffs = np.linalg.norm(atom_r - pos, axis=1)
+        sc_to_uc_atom_idx[i] = np.argmin(diffs)
+
+    # Map each primitive unit cell atom index to one corresponding
+    # supercell atom index (used for indexing Born charges)
+    uc_to_sc_atom_idx = np.zeros(uc_n_atoms, dtype=int)
+    for k in range(uc_n_atoms):
+        uc_to_sc_atom_idx[k] = np.where(sc_to_uc_atom_idx == k)[0][0]
+
+    fc_4d = -sc_hessian.reshape(sc_n_atoms, 3, sc_n_atoms, 3).transpose(
+        0, 2, 1, 3
+    )
+
+    fc_converted, cell_origins = convert_fc_phases(
+        fc_4d,
+        atom_r,
+        sc_atom_r,
+        uc_to_sc_atom_idx,
+        sc_to_uc_atom_idx,
+        sc_matrix,
+    )
+
+    result: InterpolationDataDict = {
+        'crystal': crystal_dict,
+        'force_constants': fc_converted,
+        'force_constants_unit': 'eV/angstrom**2',
+        'sc_matrix': sc_matrix,
+        'cell_origins': cell_origins,
+    }
+
+    if 'born_raw' in born_dict:
+        result['born'] = born_dict['born_raw'][uc_to_sc_atom_idx]
+        result['born_unit'] = 'e'
+
+    if 'dielectric' in born_dict:
+        result['dielectric'] = born_dict['dielectric']
+        result['dielectric_unit'] = '(e**2)/(bohr*hartree)'
+
+    return result
+
+
 def read_interpolation_data(filename: Path) -> InterpolationDataDict:
     """
     Reads force constants, Born charges, dielectric tensor, and crystal
@@ -393,105 +560,14 @@ def read_interpolation_data(filename: Path) -> InterpolationDataDict:
     """
     with _open_vasp_h5(filename) as h5_file:
         fc_key = _find_fc_key(h5_file)
-        fc_raw = h5_file[fc_key][()]
+        sc_hessian = h5_file[fc_key][()]
+        born_dict = _extract_born_and_dielectric(h5_file)
 
         try:
             crystal_dict = read_primitive_cell(filename)
-            has_primitive = True
+            return _build_primitive_data(
+                h5_file, crystal_dict, sc_hessian, born_dict
+            )
         except MissingPrimitiveCellError:
             crystal_dict = read_cell(filename)
-            has_primitive = False
-
-        n_atoms_uc = len(crystal_dict['atom_r'])
-
-        born_dict = {}
-        if 'results/linear_response/born_charges' in h5_file:
-            born_dict['born_raw'] = h5_file[
-                'results/linear_response/born_charges'
-            ][()]
-
-        if 'results/linear_response/electron_dielectric_tensor' in h5_file:
-            born_dict['dielectric'] = h5_file[
-                'results/linear_response/electron_dielectric_tensor'
-            ][()]
-
-        # Case 1: Supercell fallback when no primitive cell structure is stored
-        if not has_primitive:
-            fc = -fc_raw.reshape(1, 3 * n_atoms_uc, 3 * n_atoms_uc)
-            result = {
-                'crystal': crystal_dict,
-                'force_constants': fc,
-                'force_constants_unit': 'eV/angstrom**2',
-                'sc_matrix': np.eye(3, dtype=int),
-                'cell_origins': np.zeros((1, 3), dtype=int),
-            }
-            if 'born_raw' in born_dict:
-                result['born'] = born_dict['born_raw']
-                result['born_unit'] = 'e'
-            if 'dielectric' in born_dict:
-                result['dielectric'] = born_dict['dielectric']
-                result['dielectric_unit'] = '(e**2)/(bohr*hartree)'
-            return result
-
-        # Case 2: Primitive cell force constants phase transformation
-        prim_group = h5_file['results/phonons/primitive']
-        l_p = prim_group['lattice_vectors'][()]
-        r_p = prim_group['position_ions'][()]
-        atom_r = _normalize_fractional_coords(r_p)
-
-        pos_group = h5_file['results/positions']
-        l_sc = pos_group['lattice_vectors'][()]
-        r_sc = pos_group['position_ions'][()]
-        n_atoms_sc = len(r_sc)
-
-        sc_matrix = np.rint(l_sc @ np.linalg.inv(l_p)).astype(int)
-        sc_atom_r = (r_sc @ l_sc) @ np.linalg.inv(l_p)
-
-        cell_origins_per_atom = np.floor(sc_atom_r + 1e-5).astype(int)
-        r_in_p = _normalize_fractional_coords(
-            sc_atom_r - cell_origins_per_atom
-        )
-
-        # Map each supercell atom index (0 to n_atoms_sc - 1) to its
-        # equivalent primitive unit cell atom index (0 to n_atoms_uc - 1)
-        sc_to_uc_atom_idx = np.zeros(n_atoms_sc, dtype=int)
-        for i, pos in enumerate(r_in_p):
-            diffs = np.linalg.norm(atom_r - pos, axis=1)
-            sc_to_uc_atom_idx[i] = np.argmin(diffs)
-
-        # Map each primitive unit cell atom index to one corresponding
-        # supercell atom index (used for indexing Born charges)
-        uc_to_sc_atom_idx = np.zeros(n_atoms_uc, dtype=int)
-        for k in range(n_atoms_uc):
-            uc_to_sc_atom_idx[k] = np.where(sc_to_uc_atom_idx == k)[0][0]
-
-        fc_4d = -fc_raw.reshape(n_atoms_sc, 3, n_atoms_sc, 3).transpose(
-            0, 2, 1, 3
-        )
-
-        fc_converted, cell_origins = convert_fc_phases(
-            fc_4d,
-            atom_r,
-            sc_atom_r,
-            uc_to_sc_atom_idx,
-            sc_to_uc_atom_idx,
-            sc_matrix,
-        )
-
-        res = {
-            'crystal': crystal_dict,
-            'force_constants': fc_converted,
-            'force_constants_unit': 'eV/angstrom**2',
-            'sc_matrix': sc_matrix,
-            'cell_origins': cell_origins,
-        }
-
-        if 'born_raw' in born_dict:
-            res['born'] = born_dict['born_raw'][uc_to_sc_atom_idx]
-            res['born_unit'] = 'e'
-
-        if 'dielectric' in born_dict:
-            res['dielectric'] = born_dict['dielectric']
-            res['dielectric_unit'] = '(e**2)/(bohr*hartree)'
-
-        return res
+            return _build_supercell_data(crystal_dict, sc_hessian, born_dict)
