@@ -447,8 +447,8 @@ def _build_primitive_data(
     born_dict: BornDict,
 ) -> InterpolationDataDict:
     """
-    Builds interpolation data dictionary by transforming supercell force constants
-    to primitive cell coordinates and cell origins.
+    Builds interpolation data dictionary by transforming supercell
+    force constants to primitive cell coordinates and cell origins.
 
     Parameters
     ----------
