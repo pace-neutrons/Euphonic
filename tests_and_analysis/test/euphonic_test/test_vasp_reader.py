@@ -6,9 +6,11 @@ import pytest
 from euphonic import ForceConstants, QpointFrequencies, QpointPhononModes
 from euphonic.readers.vasp import (
     MissingPhononModesError,
-    read_crystal,
+    MissingPrimitiveCellError,
+    read_cell,
     read_interpolation_data,
     read_phonon_data,
+    read_primitive_cell,
 )
 from tests_and_analysis.test.utils import get_data_path
 
@@ -21,22 +23,22 @@ VASPOUT_DOS_RERUN_PATH = get_data_path(
 
 class TestVaspReaderCrystal:
 
-    def test_read_crystal(self):
-        crystal_data = read_crystal(VASPOUT_PATH)
-        assert crystal_data['cell_vectors_unit'] == 'angstrom'
-        assert crystal_data['cell_vectors'].shape == (3, 3)
-        assert len(crystal_data['atom_r']) == 16
-        assert len(crystal_data['atom_type']) == 16
-        assert len(crystal_data['atom_mass']) == 16
+    def test_read_cell(self):
+        cell_data = read_cell(VASPOUT_PATH)
+        assert cell_data['cell_vectors_unit'] == 'angstrom'
+        assert cell_data['cell_vectors'].shape == (3, 3)
+        assert len(cell_data['atom_r']) == 16
+        assert len(cell_data['atom_type']) == 16
+        assert len(cell_data['atom_mass']) == 16
 
         # Check Ga and As species counts
-        types = list(crystal_data['atom_type'])
+        types = list(cell_data['atom_type'])
         assert types.count('Ga') == 8
         assert types.count('As') == 8
 
         # Check atomic masses from POTCAR (Ga ~69.723, As ~74.922)
-        npt.assert_allclose(crystal_data['atom_mass'][:8], 69.723)
-        npt.assert_allclose(crystal_data['atom_mass'][8:], 74.922)
+        npt.assert_allclose(cell_data['atom_mass'][:8], 69.723)
+        npt.assert_allclose(cell_data['atom_mass'][8:], 74.922)
 
     def test_read_crystal_from_incar_override(self, tmp_path):
         dummy_h5 = tmp_path / 'dummy_vaspout_incar.h5'
@@ -52,7 +54,7 @@ class TestVaspReaderCrystal:
                 'content', data=np.bytes_(b'POMASS = 28.0855\nISMEAR = 0')
             )
 
-        data = read_crystal(dummy_h5)
+        data = read_cell(dummy_h5)
         npt.assert_allclose(data['atom_mass'], 28.0855)
 
     def test_read_crystal_incar_overrides_potcar(self, tmp_path):
@@ -72,7 +74,7 @@ class TestVaspReaderCrystal:
                 'content', data=np.bytes_(b'POMASS = 28.0855')
             )
 
-        data = read_crystal(dummy_h5)
+        data = read_cell(dummy_h5)
         npt.assert_allclose(data['atom_mass'], 28.0855)
 
     def test_read_crystal_input_incar_overrides_original_incar(self, tmp_path):
@@ -93,7 +95,7 @@ class TestVaspReaderCrystal:
             input_incar = f.create_group('input/incar')
             input_incar.create_dataset('POMASS', data=np.bytes_(b'30.0'))
 
-        data = read_crystal(dummy_h5)
+        data = read_cell(dummy_h5)
         npt.assert_allclose(data['atom_mass'], 30.0)
 
     def test_read_crystal_negative_positions(self, tmp_path):
@@ -108,9 +110,18 @@ class TestVaspReaderCrystal:
             incar_group = f.create_group('original/incar')
             incar_group.create_dataset('content', data=np.bytes_(b'POMASS = 28.0855'))
 
-        data = read_crystal(dummy_h5)
+        data = read_cell(dummy_h5)
         npt.assert_allclose(data['atom_r'][0], [0.9, 0.5, 0.0])
         npt.assert_allclose(data['atom_r'][1], [0.1, 0.0, 0.25])
+
+    def test_read_primitive_cell_from_dos_file(self):
+        prim_data = read_primitive_cell(VASPOUT_DOS_PATH)
+        assert prim_data['cell_vectors'].shape == (3, 3)
+        assert len(prim_data['atom_r']) == 2
+
+    def test_read_primitive_cell_missing_raises_error(self):
+        with pytest.raises(MissingPrimitiveCellError):
+            read_primitive_cell(VASPOUT_PATH)
 
     def test_read_crystal_missing_pomass_raises_error(self, tmp_path):
         dummy_h5 = tmp_path / 'dummy_vaspout_empty.h5'
@@ -122,7 +133,7 @@ class TestVaspReaderCrystal:
             pos_group.create_dataset('ion_types', data=np.array([b'Si']))
 
         with pytest.raises(ValueError, match='Could not find atomic masses'):
-            read_crystal(dummy_h5)
+            read_cell(dummy_h5)
 
 
 class TestVaspReaderPhononData:
@@ -132,9 +143,7 @@ class TestVaspReaderPhononData:
             read_phonon_data(VASPOUT_PATH)
 
     def test_read_phonon_data_from_dos_vaspout(self):
-        phonon_data = read_phonon_data(
-            VASPOUT_DOS_PATH, frequencies_unit='meV'
-        )
+        phonon_data = read_phonon_data(VASPOUT_DOS_PATH)
         assert 'crystal' in phonon_data
         assert phonon_data['crystal']['atom_r'].shape == (
             2,
@@ -142,11 +151,12 @@ class TestVaspReaderPhononData:
         )  # Primitive cell
         assert phonon_data['qpts'].shape == (3, 3)
         assert phonon_data['frequencies'].shape == (3, 6)
+        assert phonon_data['frequencies_unit'] == 'THz'
         assert phonon_data['eigenvectors'].shape == (3, 6, 2, 3)
 
-        # Check Gamma-point optical max frequency ~ 31.561 meV
+        # Check Gamma-point optical max frequency ~ 7.6315 THz (31.561 meV)
         max_freq = np.max(phonon_data['frequencies'])
-        npt.assert_allclose(max_freq, 31.561, rtol=1e-3)
+        npt.assert_allclose(max_freq, 7.6315, rtol=1e-3)
 
 
 class TestQpointPhononModesFromVasp:
@@ -161,16 +171,16 @@ class TestQpointPhononModesFromVasp:
         assert modes.frequencies.shape == (3, 6)
         assert modes.eigenvectors.shape == (3, 6, 2, 3)
 
-        max_freq = np.max(modes.frequencies.magnitude)
-        npt.assert_allclose(max_freq, 31.561, rtol=1e-3)
+        max_freq_mev = np.max(modes.frequencies.to('meV').magnitude)
+        npt.assert_allclose(max_freq_mev, 31.561, rtol=1e-3)
 
     def test_from_vasp_frequencies_from_dos_file(self):
         freqs = QpointFrequencies.from_vasp(VASPOUT_DOS_PATH)
         assert freqs.crystal.n_atoms == 2
         assert freqs.frequencies.shape == (3, 6)
 
-        max_freq = np.max(freqs.frequencies.magnitude)
-        npt.assert_allclose(max_freq, 31.561, rtol=1e-3)
+        max_freq_mev = np.max(freqs.frequencies.to('meV').magnitude)
+        npt.assert_allclose(max_freq_mev, 31.561, rtol=1e-3)
 
 
 class TestForceConstantsFromVasp:
