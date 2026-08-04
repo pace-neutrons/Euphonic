@@ -169,14 +169,6 @@ def _read_cell_from_group(
     """
     Helper function to parse crystal structure from a specific HDF5 group.
     """
-    filename = Path(h5_file.filename)
-    if group_path not in h5_file:
-        msg = format_error(
-            f'Crystal position data not found at {group_path} in {filename}.',
-            fix='Ensure the file contains valid VASP crystal datasets.',
-        )
-        raise KeyError(msg)
-
     pos_group = h5_file[group_path]
     latt = pos_group['lattice_vectors'][()]
     pos = pos_group['position_ions'][()]
@@ -202,7 +194,8 @@ def _read_cell_from_group(
 
 def read_cell(filename: Path) -> CrystalDict:
     """
-    Reads calculation cell structure from results/positions in VASP HDF5 file.
+    Reads calculation cell structure from results/positions or input/poscar
+    in VASP HDF5 file.
 
     Parameters
     ----------
@@ -221,12 +214,24 @@ def read_cell(filename: Path) -> CrystalDict:
     ImportVaspReaderError
         If h5py is not installed.
     KeyError
-        If results/positions group is missing from the file.
+        If results/positions and input/poscar groups are missing from the file.
     ValueError
         If atomic masses (POMASS) cannot be found in INCAR or POTCAR.
     """
     with _open_vasp_h5(filename) as h5_file:
-        return _read_cell_from_group(h5_file, 'results/positions')
+        if 'results/positions' in h5_file:
+            return _read_cell_from_group(h5_file, 'results/positions')
+        if 'input/poscar' in h5_file:
+            return _read_cell_from_group(h5_file, 'input/poscar')
+
+        msg = format_error(
+            f'Crystal position data not found in {filename}.',
+            fix=(
+                'Ensure the file contains results/positions or input/poscar '
+                'group.'
+            ),
+        )
+        raise KeyError(msg)
 
 
 def read_primitive_cell(filename: Path) -> CrystalDict:

@@ -1,4 +1,5 @@
 import builtins
+import json
 
 import h5py
 import numpy as np
@@ -15,32 +16,60 @@ from euphonic.readers.vasp import (
     read_phonon_data,
     read_primitive_cell,
 )
+from tests_and_analysis.test.euphonic_test.test_crystal import (
+    ExpectedCrystal,
+    check_crystal,
+)
 from tests_and_analysis.test.utils import get_data_path
 
-VASPOUT_PATH = get_data_path('vasp_files', 'vaspout_sanitized.h5')
-VASPOUT_DOS_PATH = get_data_path('vasp_files', 'vaspout_dos_sanitized.h5')
-VASPOUT_DOS_RERUN_PATH = get_data_path(
-    'vasp_files', 'vaspout_dos_rerun_sanitized.h5'
-)
+FC_NO_QPTS_H5 = get_data_path('vasp_files', 'vaspout_sanitized.h5')
+ONLY_QPTS_H5 = get_data_path('vasp_files', 'vaspout_dos_sanitized.h5')
+FC_AND_QPTS_H5 = get_data_path('vasp_files', 'vaspout_dos_rerun_sanitized.h5')
+
+
+def get_crystal_path(*subpaths):
+    return get_data_path('crystal', *subpaths)
 
 
 class TestVaspReaderCrystal:
-    def test_read_cell(self):
-        cell_data = read_cell(VASPOUT_PATH)
-        assert cell_data['cell_vectors_unit'] == 'angstrom'
-        assert cell_data['cell_vectors'].shape == (3, 3)
-        assert len(cell_data['atom_r']) == 16
-        assert len(cell_data['atom_type']) == 16
-        assert len(cell_data['atom_mass']) == 16
+    def test_read_cell_fc_no_qpts(self):
+        cell_dict = read_cell(FC_NO_QPTS_H5)
+        cell_data = ExpectedCrystal(
+            {**cell_dict, 'n_atoms': len(cell_dict['atom_r'])}
+        )
+        with open(get_crystal_path('crystal_vasp_fc_no_qpts.json')) as fp:
+            expected = ExpectedCrystal(json.load(fp))
+        check_crystal(cell_data, expected)
 
-        # Check Ga and As species counts
-        types = list(cell_data['atom_type'])
-        assert types.count('Ga') == 8
-        assert types.count('As') == 8
+    def test_read_primitive_cell_only_qpts(self):
+        prim_dict = read_primitive_cell(ONLY_QPTS_H5)
+        prim_data = ExpectedCrystal(
+            {**prim_dict, 'n_atoms': len(prim_dict['atom_r'])}
+        )
+        with open(get_crystal_path('crystal_vasp_only_qpts_prim.json')) as fp:
+            expected = ExpectedCrystal(json.load(fp))
+        check_crystal(prim_data, expected)
 
-        # Check atomic masses from POTCAR (Ga ~69.723, As ~74.922)
-        assert_allclose(cell_data['atom_mass'][:8], 69.723)
-        assert_allclose(cell_data['atom_mass'][8:], 74.922)
+    def test_read_combined_cells(self):
+        cell_dict = read_cell(FC_AND_QPTS_H5)
+        cell_data = ExpectedCrystal(
+            {**cell_dict, 'n_atoms': len(cell_dict['atom_r'])}
+        )
+        with open(
+            get_crystal_path('crystal_vasp_fc_and_qpts_cell.json')
+        ) as fp:
+            exp_cell = ExpectedCrystal(json.load(fp))
+        check_crystal(cell_data, exp_cell)
+
+        prim_dict = read_primitive_cell(FC_AND_QPTS_H5)
+        prim_data = ExpectedCrystal(
+            {**prim_dict, 'n_atoms': len(prim_dict['atom_r'])}
+        )
+        with open(
+            get_crystal_path('crystal_vasp_fc_and_qpts_prim.json')
+        ) as fp:
+            exp_prim = ExpectedCrystal(json.load(fp))
+        check_crystal(prim_data, exp_prim)
 
     def test_read_crystal_from_incar_override(self, tmp_path):
         dummy_h5 = tmp_path / 'dummy_vaspout_incar.h5'
@@ -127,14 +156,9 @@ class TestVaspReaderCrystal:
         assert_allclose(data['atom_r'][0], [0.9, 0.5, 0.0])
         assert_allclose(data['atom_r'][1], [0.1, 0.0, 0.25])
 
-    def test_read_primitive_cell_from_dos_file(self):
-        prim_data = read_primitive_cell(VASPOUT_DOS_PATH)
-        assert prim_data['cell_vectors'].shape == (3, 3)
-        assert len(prim_data['atom_r']) == 2
-
     def test_read_primitive_cell_missing_raises_error(self):
         with pytest.raises(MissingPrimitiveCellError):
-            read_primitive_cell(VASPOUT_PATH)
+            read_primitive_cell(FC_NO_QPTS_H5)
 
     def test_read_crystal_missing_pomass_raises_error(self, tmp_path):
         dummy_h5 = tmp_path / 'dummy_vaspout_empty.h5'
@@ -152,10 +176,10 @@ class TestVaspReaderCrystal:
 class TestVaspReaderPhononData:
     def test_read_phonon_data_missing_precalculated_raises_error(self):
         with pytest.raises(MissingPhononModesError):
-            read_phonon_data(VASPOUT_PATH)
+            read_phonon_data(FC_NO_QPTS_H5)
 
     def test_read_phonon_data_from_dos_vaspout(self):
-        phonon_data = read_phonon_data(VASPOUT_DOS_PATH)
+        phonon_data = read_phonon_data(ONLY_QPTS_H5)
         assert 'crystal' in phonon_data
         assert phonon_data['crystal']['atom_r'].shape == (
             2,
@@ -174,10 +198,10 @@ class TestVaspReaderPhononData:
 class TestQpointPhononModesFromVasp:
     def test_from_vasp_modes_missing_data_raises_error(self):
         with pytest.raises(MissingPhononModesError):
-            QpointPhononModes.from_vasp(VASPOUT_PATH)
+            QpointPhononModes.from_vasp(FC_NO_QPTS_H5)
 
     def test_from_vasp_modes_from_dos_file(self):
-        modes = QpointPhononModes.from_vasp(VASPOUT_DOS_PATH)
+        modes = QpointPhononModes.from_vasp(ONLY_QPTS_H5)
         assert modes.crystal.n_atoms == 2  # Primitive GaAs cell
         assert modes.frequencies.shape == (3, 6)
         assert modes.eigenvectors.shape == (3, 6, 2, 3)
@@ -186,7 +210,7 @@ class TestQpointPhononModesFromVasp:
         assert_allclose(max_freq_mev, 31.561, rtol=1e-3)
 
     def test_from_vasp_frequencies_from_dos_file(self):
-        freqs = QpointFrequencies.from_vasp(VASPOUT_DOS_PATH)
+        freqs = QpointFrequencies.from_vasp(ONLY_QPTS_H5)
         assert freqs.crystal.n_atoms == 2
         assert freqs.frequencies.shape == (3, 6)
 
@@ -196,7 +220,7 @@ class TestQpointPhononModesFromVasp:
 
 class TestForceConstantsFromVasp:
     def test_read_interpolation_data(self):
-        data = read_interpolation_data(VASPOUT_PATH)
+        data = read_interpolation_data(FC_NO_QPTS_H5)
         assert 'crystal' in data
         assert data['force_constants'].shape == (1, 48, 48)
         assert data['sc_matrix'].shape == (3, 3)
@@ -207,7 +231,7 @@ class TestForceConstantsFromVasp:
 
     def test_from_vasp_and_fallback_calculation(self):
         # 1. ForceConstants.from_vasp loads Hessian/force_constants
-        fc = ForceConstants.from_vasp(VASPOUT_PATH)
+        fc = ForceConstants.from_vasp(FC_NO_QPTS_H5)
         assert fc.crystal.n_atoms == 16
         assert fc.n_cells_in_sc == 1
         assert fc.force_constants.shape == (1, 48, 48)
@@ -216,7 +240,7 @@ class TestForceConstantsFromVasp:
         q_freqs = fc.calculate_qpoint_frequencies(np.array([[0.0, 0.0, 0.0]]))
 
         # 3. Compare with QpointFrequencies loaded from precalculated QPOINTS interpolation file
-        dos_freqs = QpointFrequencies.from_vasp(VASPOUT_DOS_PATH)
+        dos_freqs = QpointFrequencies.from_vasp(ONLY_QPTS_H5)
 
         fc_freqs_mev = q_freqs.frequencies.to('meV').magnitude[0]
         dos_gamma_freqs_mev = dos_freqs.frequencies.to('meV').magnitude[0]
@@ -230,7 +254,7 @@ class TestForceConstantsFromVasp:
 class TestVaspReaderCombined:
     def test_combined_fc_and_modes(self):
         # 1. ForceConstants reads primitive cell force constants (8, 6, 6)
-        fc = ForceConstants.from_vasp(VASPOUT_DOS_RERUN_PATH)
+        fc = ForceConstants.from_vasp(FC_AND_QPTS_H5)
         assert fc.crystal.n_atoms == 2
         assert fc.n_cells_in_sc == 8
         assert fc.force_constants.shape == (8, 6, 6)
@@ -238,7 +262,7 @@ class TestVaspReaderCombined:
         assert fc.born.shape == (2, 3, 3)
 
         # 2. QpointPhononModes reads primitive precalculated modes (3 qpts, 6 branches)
-        modes = QpointPhononModes.from_vasp(VASPOUT_DOS_RERUN_PATH)
+        modes = QpointPhononModes.from_vasp(FC_AND_QPTS_H5)
         assert modes.crystal.n_atoms == 2
         assert modes.frequencies.shape == (3, 6)
         assert modes.eigenvectors.shape == (3, 6, 2, 3)
@@ -255,7 +279,6 @@ class TestVaspReaderCombined:
 
 class TestVaspReaderEdgeCases:
     def test_missing_h5py_import_error(self, mocker, tmp_path):
-
         dummy_h5 = tmp_path / 'dummy.h5'
         dummy_h5.write_text('dummy')
 
@@ -304,8 +327,41 @@ class TestVaspReaderEdgeCases:
 
     def test_read_cell_missing_group_raises_key_error(self, tmp_path):
         dummy_h5 = tmp_path / 'dummy_nogroup.h5'
-        with h5py.File(dummy_h5, 'w'):
-            pass
+        with h5py.File(dummy_h5, 'w') as f:
+            potcar_group = f.create_group('input/potcar')
+            potcar_group.create_dataset(
+                'content', data=np.bytes_(b'POMASS = 28.0855')
+            )
+
+        with pytest.raises(KeyError, match='Crystal position data not found'):
+            read_cell(dummy_h5)
+
+    def test_read_cell_falls_back_to_poscar(self, tmp_path):
+        dummy_h5 = tmp_path / 'dummy_poscar.h5'
+        with h5py.File(dummy_h5, 'w') as f:
+            poscar_group = f.create_group('input/poscar')
+            poscar_group.create_dataset('lattice_vectors', data=np.eye(3))
+            poscar_group.create_dataset('position_ions', data=np.zeros((1, 3)))
+            poscar_group.create_dataset('number_ion_types', data=np.array([1]))
+            poscar_group.create_dataset(
+                'ion_types', data=np.array([b'Si'])
+            )
+
+            potcar_group = f.create_group('input/potcar')
+            potcar_group.create_dataset(
+                'content', data=np.bytes_(b'POMASS = 28.0855')
+            )
+
+        data = read_cell(dummy_h5)
+        assert data['cell_vectors'].shape == (3, 3)
+
+    def test_read_cell_no_positions_or_poscar_raises_key_error(self, tmp_path):
+        dummy_h5 = tmp_path / 'dummy_nopos.h5'
+        with h5py.File(dummy_h5, 'w') as f:
+            potcar_group = f.create_group('input/potcar')
+            potcar_group.create_dataset(
+                'content', data=np.bytes_(b'POMASS = 28.0855')
+            )
 
         with pytest.raises(KeyError, match='Crystal position data not found'):
             read_cell(dummy_h5)
