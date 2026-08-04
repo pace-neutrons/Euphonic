@@ -3,7 +3,7 @@ project('euphonic',
         meson_version: '>=1.6',
        )
 
-add_languages('c', required: not get_option('python_only'))
+add_languages('c', required: false)
 
 build = get_option('python_only') ? disabler() : []
 

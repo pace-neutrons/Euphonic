@@ -7,7 +7,7 @@ requires = ["meson-python",
             "numpy>=1.24.0"]
 
 [tool.meson-python.args]
-setup = ['--vsenv']
+setup = ['--vsenv', '-Dpython_only=false']
 
 [project]
 name = "Euphonic"
