@@ -5,7 +5,6 @@ from typing import TYPE_CHECKING, Any, TypedDict
 
 import numpy as np
 
-from euphonic.ureg import ureg
 from euphonic.util import convert_fc_phases, format_error
 
 if TYPE_CHECKING:
@@ -263,8 +262,8 @@ def read_phonon_data(filename: Path) -> PhononDataDict:
     Returns
     -------
     data_dict
-        A dict with keys: 'crystal', 'qpts', 'frequencies',
-        'frequencies_unit', 'eigenvectors' (optional), 'weights'
+        A PhononDataDict with keys: 'crystal', 'qpts', 'frequencies',
+        'frequencies_unit', 'eigenvectors', 'weights'
 
     Raises
     ------
@@ -306,7 +305,9 @@ def read_phonon_data(filename: Path) -> PhononDataDict:
             )
             raise ValueError(msg)
 
-        evecs_complex = evecs_raw[..., 0] + 1j * evecs_raw[..., 1]
+        evecs_complex = (
+            np.ascontiguousarray(evecs_raw).view(dtype=complex).squeeze(axis=-1)
+        )
 
         return {
             'crystal': crystal_dict,
@@ -318,27 +319,40 @@ def read_phonon_data(filename: Path) -> PhononDataDict:
         }
 
 
-def read_interpolation_data(
-    filename: Path,
-    *,
-    force_constants_unit: str = 'hartree/bohr**2',
-    born_unit: str = 'e',
-    dielectric_unit: str = '(e**2)/(bohr*hartree)',
-) -> dict[str, Any]:
+def _find_fc_key(h5_file: 'h5py.File') -> str:
+    """
+    Finds dataset key for force constants or Hessian matrix in HDF5 container.
+
+    Raises
+    ------
+    KeyError
+        If results/linear_response force constants group is missing.
+    """
+    if 'results/linear_response/force_constants' in h5_file:
+        return 'results/linear_response/force_constants'
+    if 'results/linear_response/hessian' in h5_file:
+        return 'results/linear_response/hessian'
+
+    filename = Path(h5_file.filename)
+    msg = format_error(
+        f'Force constants not found in {filename}.',
+        fix=(
+            'Ensure the file contains results/linear_response '
+            'force constants.'
+        ),
+    )
+    raise KeyError(msg)
+
+
+def read_interpolation_data(filename: Path) -> dict[str, Any]:
     """
     Reads force constants, Born charges, dielectric tensor, and crystal
-    structure data from a VASP HDF5 file.
+    structure data from a VASP HDF5 file in native VASP units.
 
     Parameters
     ----------
     filename
         Path to the VASP HDF5 file
-    force_constants_unit
-        The unit to return the force constants in
-    born_unit
-        The unit to return the Born charges in
-    dielectric_unit
-        The unit to return the dielectric permittivity tensor in
 
     Returns
     -------
@@ -357,148 +371,102 @@ def read_interpolation_data(
         If h5py is not installed.
     """
     with _open_vasp_h5(filename) as h5_file:
-        if (
-            'results/linear_response/force_constants' in h5_file
-            or 'results/linear_response/hessian' in h5_file
-        ):
-            fc_key = (
-                'results/linear_response/force_constants'
-                if 'results/linear_response/force_constants' in h5_file
-                else 'results/linear_response/hessian'
-            )
-            fc_raw = h5_file[fc_key][()]
+        fc_key = _find_fc_key(h5_file)
+        fc_raw = h5_file[fc_key][()]
 
-            try:
-                crystal_dict = read_primitive_cell(filename)
-                has_primitive = True
-            except MissingPrimitiveCellError:
-                crystal_dict = read_cell(filename)
-                has_primitive = False
+        try:
+            crystal_dict = read_primitive_cell(filename)
+            has_primitive = True
+        except MissingPrimitiveCellError:
+            crystal_dict = read_cell(filename)
+            has_primitive = False
 
-            n_atoms_uc = len(crystal_dict['atom_r'])
+        n_atoms_uc = len(crystal_dict['atom_r'])
 
-            if has_primitive:
-                prim_group = h5_file['results/phonons/primitive']
-                l_p = prim_group['lattice_vectors'][()]
-                r_p = prim_group['position_ions'][()]
-                atom_r = _normalize_fractional_coords(r_p)
+        born_dict = {}
+        if 'results/linear_response/born_charges' in h5_file:
+            born_dict['born_raw'] = h5_file[
+                'results/linear_response/born_charges'
+            ][()]
 
-                pos_group = h5_file['results/positions']
-                l_sc = pos_group['lattice_vectors'][()]
-                r_sc = pos_group['position_ions'][()]
-                n_atoms_sc = len(r_sc)
+        if 'results/linear_response/electron_dielectric_tensor' in h5_file:
+            born_dict['dielectric'] = h5_file[
+                'results/linear_response/electron_dielectric_tensor'
+            ][()]
 
-                sc_matrix = np.rint(l_sc @ np.linalg.inv(l_p)).astype(int)
-                sc_atom_r = (r_sc @ l_sc) @ np.linalg.inv(l_p)
-
-                r_sc_pfrac = sc_atom_r
-                cell_origins_per_atom = np.floor(r_sc_pfrac + 1e-5).astype(int)
-                r_in_p = _normalize_fractional_coords(
-                    r_sc_pfrac - cell_origins_per_atom
-                )
-
-                sc_to_uc_atom_idx = np.zeros(n_atoms_sc, dtype=int)
-                for i, pos in enumerate(r_in_p):
-                    diffs = np.linalg.norm(atom_r - pos, axis=1)
-                    sc_to_uc_atom_idx[i] = np.argmin(diffs)
-
-                uc_to_sc_atom_idx = np.zeros(n_atoms_uc, dtype=int)
-                for k in range(n_atoms_uc):
-                    uc_to_sc_atom_idx[k] = np.where(sc_to_uc_atom_idx == k)[
-                        0
-                    ][0]
-
-                fc_4d = -fc_raw.reshape(
-                    n_atoms_sc, 3, n_atoms_sc, 3
-                ).transpose(0, 2, 1, 3)
-
-                fc_converted_raw, cell_origins = convert_fc_phases(
-                    fc_4d,
-                    atom_r,
-                    sc_atom_r,
-                    uc_to_sc_atom_idx,
-                    sc_to_uc_atom_idx,
-                    sc_matrix,
-                )
-
-                fc_converted = (
-                    fc_converted_raw
-                    * ureg('eV/angstrom**2').to(force_constants_unit).magnitude
-                )
-
-                data_dict = {
-                    'crystal': crystal_dict,
-                    'force_constants': fc_converted,
-                    'force_constants_unit': force_constants_unit,
-                    'sc_matrix': sc_matrix,
-                    'cell_origins': cell_origins,
-                }
-
-                if 'results/linear_response/born_charges' in h5_file:
-                    born_raw = h5_file['results/linear_response/born_charges'][
-                        ()
-                    ]
-                    born_primitive = born_raw[uc_to_sc_atom_idx]
-                    data_dict['born'] = (
-                        born_primitive * ureg('e').to(born_unit).magnitude
-                    )
-                    data_dict['born_unit'] = born_unit
-
-                if (
-                    'results/linear_response/electron_dielectric_tensor'
-                    in h5_file
-                ):
-                    dielectric_raw = h5_file[
-                        'results/linear_response/electron_dielectric_tensor'
-                    ][()]
-                    data_dict['dielectric'] = (
-                        dielectric_raw
-                        * ureg('e**2/(hartree*bohr)')
-                        .to(dielectric_unit)
-                        .magnitude
-                    )
-                    data_dict['dielectric_unit'] = dielectric_unit
-
-                return data_dict
-
-            # Supercell as unit cell fallback
+        # Case 1: Supercell fallback when no primitive cell structure is stored
+        if not has_primitive:
             fc = -fc_raw.reshape(1, 3 * n_atoms_uc, 3 * n_atoms_uc)
-            fc_converted = (
-                fc * ureg('eV/angstrom**2').to(force_constants_unit).magnitude
-            )
-
-            data_dict = {
+            res = {
                 'crystal': crystal_dict,
-                'force_constants': fc_converted,
-                'force_constants_unit': force_constants_unit,
+                'force_constants': fc,
+                'force_constants_unit': 'eV/angstrom**2',
                 'sc_matrix': np.eye(3, dtype=int),
                 'cell_origins': np.zeros((1, 3), dtype=int),
             }
+            if 'born_raw' in born_dict:
+                res['born'] = born_dict['born_raw']
+                res['born_unit'] = 'e'
+            if 'dielectric' in born_dict:
+                res['dielectric'] = born_dict['dielectric']
+                res['dielectric_unit'] = '(e**2)/(bohr*hartree)'
+            return res
 
-            if 'results/linear_response/born_charges' in h5_file:
-                born_raw = h5_file['results/linear_response/born_charges'][()]
-                data_dict['born'] = (
-                    born_raw * ureg('e').to(born_unit).magnitude
-                )
-                data_dict['born_unit'] = born_unit
+        # Case 2: Primitive cell force constants phase transformation
+        prim_group = h5_file['results/phonons/primitive']
+        l_p = prim_group['lattice_vectors'][()]
+        r_p = prim_group['position_ions'][()]
+        atom_r = _normalize_fractional_coords(r_p)
 
-            if 'results/linear_response/electron_dielectric_tensor' in h5_file:
-                dielectric_raw = h5_file[
-                    'results/linear_response/electron_dielectric_tensor'
-                ][()]
-                data_dict['dielectric'] = (
-                    dielectric_raw
-                    * ureg('e**2/(hartree*bohr)').to(dielectric_unit).magnitude
-                )
-                data_dict['dielectric_unit'] = dielectric_unit
+        pos_group = h5_file['results/positions']
+        l_sc = pos_group['lattice_vectors'][()]
+        r_sc = pos_group['position_ions'][()]
+        n_atoms_sc = len(r_sc)
 
-            return data_dict
+        sc_matrix = np.rint(l_sc @ np.linalg.inv(l_p)).astype(int)
+        sc_atom_r = (r_sc @ l_sc) @ np.linalg.inv(l_p)
 
-        msg = format_error(
-            f'Force constants not found in {filename}.',
-            fix=(
-                'Ensure the file contains results/linear_response '
-                'force constants.'
-            ),
+        cell_origins_per_atom = np.floor(sc_atom_r + 1e-5).astype(int)
+        r_in_p = _normalize_fractional_coords(
+            sc_atom_r - cell_origins_per_atom
         )
-        raise KeyError(msg)
+
+        sc_to_uc_atom_idx = np.zeros(n_atoms_sc, dtype=int)
+        for i, pos in enumerate(r_in_p):
+            diffs = np.linalg.norm(atom_r - pos, axis=1)
+            sc_to_uc_atom_idx[i] = np.argmin(diffs)
+
+        uc_to_sc_atom_idx = np.zeros(n_atoms_uc, dtype=int)
+        for k in range(n_atoms_uc):
+            uc_to_sc_atom_idx[k] = np.where(sc_to_uc_atom_idx == k)[0][0]
+
+        fc_4d = -fc_raw.reshape(n_atoms_sc, 3, n_atoms_sc, 3).transpose(
+            0, 2, 1, 3
+        )
+
+        fc_converted, cell_origins = convert_fc_phases(
+            fc_4d,
+            atom_r,
+            sc_atom_r,
+            uc_to_sc_atom_idx,
+            sc_to_uc_atom_idx,
+            sc_matrix,
+        )
+
+        res = {
+            'crystal': crystal_dict,
+            'force_constants': fc_converted,
+            'force_constants_unit': 'eV/angstrom**2',
+            'sc_matrix': sc_matrix,
+            'cell_origins': cell_origins,
+        }
+
+        if 'born_raw' in born_dict:
+            res['born'] = born_dict['born_raw'][uc_to_sc_atom_idx]
+            res['born_unit'] = 'e'
+
+        if 'dielectric' in born_dict:
+            res['dielectric'] = born_dict['dielectric']
+            res['dielectric_unit'] = '(e**2)/(bohr*hartree)'
+
+        return res
