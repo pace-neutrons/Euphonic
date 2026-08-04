@@ -1,7 +1,7 @@
 from contextlib import contextmanager
 from pathlib import Path
 import re
-from typing import TYPE_CHECKING, Any, TypedDict
+from typing import TYPE_CHECKING, TypedDict
 
 import numpy as np
 
@@ -29,6 +29,18 @@ class PhononDataDict(TypedDict, total=False):
     frequencies_unit: str
     weights: np.ndarray
     eigenvectors: np.ndarray
+
+
+class InterpolationDataDict(TypedDict, total=False):
+    crystal: CrystalDict
+    force_constants: np.ndarray
+    force_constants_unit: str
+    sc_matrix: np.ndarray
+    cell_origins: np.ndarray
+    born: np.ndarray
+    born_unit: str
+    dielectric: np.ndarray
+    dielectric_unit: str
 
 
 class ImportVaspReaderError(ModuleNotFoundError):
@@ -80,7 +92,7 @@ def _open_vasp_h5(filename: Path):
     Context manager to open a VASP HDF5 file with error handling for h5py.
     """
     try:
-        import h5py
+        import h5py  # noqa: PLC0415
     except ModuleNotFoundError as err:
         raise ImportVaspReaderError from err
 
@@ -344,7 +356,7 @@ def _find_fc_key(h5_file: 'h5py.File') -> str:
     raise KeyError(msg)
 
 
-def read_interpolation_data(filename: Path) -> dict[str, Any]:
+def read_interpolation_data(filename: Path) -> InterpolationDataDict:
     """
     Reads force constants, Born charges, dielectric tensor, and crystal
     structure data from a VASP HDF5 file in native VASP units.
@@ -397,7 +409,7 @@ def read_interpolation_data(filename: Path) -> dict[str, Any]:
         # Case 1: Supercell fallback when no primitive cell structure is stored
         if not has_primitive:
             fc = -fc_raw.reshape(1, 3 * n_atoms_uc, 3 * n_atoms_uc)
-            res = {
+            result = {
                 'crystal': crystal_dict,
                 'force_constants': fc,
                 'force_constants_unit': 'eV/angstrom**2',
@@ -405,12 +417,12 @@ def read_interpolation_data(filename: Path) -> dict[str, Any]:
                 'cell_origins': np.zeros((1, 3), dtype=int),
             }
             if 'born_raw' in born_dict:
-                res['born'] = born_dict['born_raw']
-                res['born_unit'] = 'e'
+                result['born'] = born_dict['born_raw']
+                result['born_unit'] = 'e'
             if 'dielectric' in born_dict:
-                res['dielectric'] = born_dict['dielectric']
-                res['dielectric_unit'] = '(e**2)/(bohr*hartree)'
-            return res
+                result['dielectric'] = born_dict['dielectric']
+                result['dielectric_unit'] = '(e**2)/(bohr*hartree)'
+            return result
 
         # Case 2: Primitive cell force constants phase transformation
         prim_group = h5_file['results/phonons/primitive']
@@ -431,11 +443,15 @@ def read_interpolation_data(filename: Path) -> dict[str, Any]:
             sc_atom_r - cell_origins_per_atom
         )
 
+        # Map each supercell atom index (0 to n_atoms_sc - 1) to its
+        # equivalent primitive unit cell atom index (0 to n_atoms_uc - 1)
         sc_to_uc_atom_idx = np.zeros(n_atoms_sc, dtype=int)
         for i, pos in enumerate(r_in_p):
             diffs = np.linalg.norm(atom_r - pos, axis=1)
             sc_to_uc_atom_idx[i] = np.argmin(diffs)
 
+        # Map each primitive unit cell atom index to one corresponding
+        # supercell atom index (used for indexing Born charges)
         uc_to_sc_atom_idx = np.zeros(n_atoms_uc, dtype=int)
         for k in range(n_atoms_uc):
             uc_to_sc_atom_idx[k] = np.where(sc_to_uc_atom_idx == k)[0][0]
