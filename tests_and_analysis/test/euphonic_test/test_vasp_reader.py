@@ -1,10 +1,13 @@
+import builtins
+
 import h5py
 import numpy as np
-import numpy.testing as npt
+from numpy.testing import assert_allclose
 import pytest
 
 from euphonic import ForceConstants, QpointFrequencies, QpointPhononModes
 from euphonic.readers.vasp import (
+    ImportVaspReaderError,
     MissingPhononModesError,
     MissingPrimitiveCellError,
     read_cell,
@@ -22,7 +25,6 @@ VASPOUT_DOS_RERUN_PATH = get_data_path(
 
 
 class TestVaspReaderCrystal:
-
     def test_read_cell(self):
         cell_data = read_cell(VASPOUT_PATH)
         assert cell_data['cell_vectors_unit'] == 'angstrom'
@@ -37,8 +39,8 @@ class TestVaspReaderCrystal:
         assert types.count('As') == 8
 
         # Check atomic masses from POTCAR (Ga ~69.723, As ~74.922)
-        npt.assert_allclose(cell_data['atom_mass'][:8], 69.723)
-        npt.assert_allclose(cell_data['atom_mass'][8:], 74.922)
+        assert_allclose(cell_data['atom_mass'][:8], 69.723)
+        assert_allclose(cell_data['atom_mass'][8:], 74.922)
 
     def test_read_crystal_from_incar_override(self, tmp_path):
         dummy_h5 = tmp_path / 'dummy_vaspout_incar.h5'
@@ -55,7 +57,7 @@ class TestVaspReaderCrystal:
             )
 
         data = read_cell(dummy_h5)
-        npt.assert_allclose(data['atom_mass'], 28.0855)
+        assert_allclose(data['atom_mass'], 28.0855)
 
     def test_read_crystal_incar_overrides_potcar(self, tmp_path):
         dummy_h5 = tmp_path / 'dummy_vaspout_priority.h5'
@@ -67,7 +69,9 @@ class TestVaspReaderCrystal:
             pos_group.create_dataset('ion_types', data=np.array([b'Si']))
 
             potcar_group = f.create_group('input/potcar')
-            potcar_group.create_dataset('content', data=np.bytes_(b'POMASS = 10.0'))
+            potcar_group.create_dataset(
+                'content', data=np.bytes_(b'POMASS = 10.0')
+            )
 
             incar_group = f.create_group('original/incar')
             incar_group.create_dataset(
@@ -75,7 +79,7 @@ class TestVaspReaderCrystal:
             )
 
         data = read_cell(dummy_h5)
-        npt.assert_allclose(data['atom_mass'], 28.0855)
+        assert_allclose(data['atom_mass'], 28.0855)
 
     def test_read_crystal_input_incar_overrides_original_incar(self, tmp_path):
         dummy_h5 = tmp_path / 'dummy_vaspout_input_incar.h5'
@@ -87,32 +91,41 @@ class TestVaspReaderCrystal:
             pos_group.create_dataset('ion_types', data=np.array([b'Si']))
 
             potcar_group = f.create_group('input/potcar')
-            potcar_group.create_dataset('content', data=np.bytes_(b'POMASS = 10.0'))
+            potcar_group.create_dataset(
+                'content', data=np.bytes_(b'POMASS = 10.0')
+            )
 
             incar_group = f.create_group('original/incar')
-            incar_group.create_dataset('content', data=np.bytes_(b'POMASS = 20.0'))
+            incar_group.create_dataset(
+                'content', data=np.bytes_(b'POMASS = 20.0')
+            )
 
             input_incar = f.create_group('input/incar')
             input_incar.create_dataset('POMASS', data=np.bytes_(b'30.0'))
 
         data = read_cell(dummy_h5)
-        npt.assert_allclose(data['atom_mass'], 30.0)
+        assert_allclose(data['atom_mass'], 30.0)
 
     def test_read_crystal_negative_positions(self, tmp_path):
         dummy_h5 = tmp_path / 'dummy_vaspout_neg.h5'
         with h5py.File(dummy_h5, 'w') as f:
             pos_group = f.create_group('results/positions')
             pos_group.create_dataset('lattice_vectors', data=np.eye(3))
-            pos_group.create_dataset('position_ions', data=np.array([[-0.1, -0.5, -1.0], [1.1, -1e-15, 0.25]]))
+            pos_group.create_dataset(
+                'position_ions',
+                data=np.array([[-0.1, -0.5, -1.0], [1.1, -1e-15, 0.25]]),
+            )
             pos_group.create_dataset('number_ion_types', data=np.array([2]))
             pos_group.create_dataset('ion_types', data=np.array([b'Si']))
 
             incar_group = f.create_group('original/incar')
-            incar_group.create_dataset('content', data=np.bytes_(b'POMASS = 28.0855'))
+            incar_group.create_dataset(
+                'content', data=np.bytes_(b'POMASS = 28.0855')
+            )
 
         data = read_cell(dummy_h5)
-        npt.assert_allclose(data['atom_r'][0], [0.9, 0.5, 0.0])
-        npt.assert_allclose(data['atom_r'][1], [0.1, 0.0, 0.25])
+        assert_allclose(data['atom_r'][0], [0.9, 0.5, 0.0])
+        assert_allclose(data['atom_r'][1], [0.1, 0.0, 0.25])
 
     def test_read_primitive_cell_from_dos_file(self):
         prim_data = read_primitive_cell(VASPOUT_DOS_PATH)
@@ -137,7 +150,6 @@ class TestVaspReaderCrystal:
 
 
 class TestVaspReaderPhononData:
-
     def test_read_phonon_data_missing_precalculated_raises_error(self):
         with pytest.raises(MissingPhononModesError):
             read_phonon_data(VASPOUT_PATH)
@@ -156,11 +168,10 @@ class TestVaspReaderPhononData:
 
         # Check Gamma-point optical max frequency ~ 7.6315 THz (31.561 meV)
         max_freq = np.max(phonon_data['frequencies'])
-        npt.assert_allclose(max_freq, 7.6315, rtol=1e-3)
+        assert_allclose(max_freq, 7.6315, rtol=1e-3)
 
 
 class TestQpointPhononModesFromVasp:
-
     def test_from_vasp_modes_missing_data_raises_error(self):
         with pytest.raises(MissingPhononModesError):
             QpointPhononModes.from_vasp(VASPOUT_PATH)
@@ -172,7 +183,7 @@ class TestQpointPhononModesFromVasp:
         assert modes.eigenvectors.shape == (3, 6, 2, 3)
 
         max_freq_mev = np.max(modes.frequencies.to('meV').magnitude)
-        npt.assert_allclose(max_freq_mev, 31.561, rtol=1e-3)
+        assert_allclose(max_freq_mev, 31.561, rtol=1e-3)
 
     def test_from_vasp_frequencies_from_dos_file(self):
         freqs = QpointFrequencies.from_vasp(VASPOUT_DOS_PATH)
@@ -180,11 +191,10 @@ class TestQpointPhononModesFromVasp:
         assert freqs.frequencies.shape == (3, 6)
 
         max_freq_mev = np.max(freqs.frequencies.to('meV').magnitude)
-        npt.assert_allclose(max_freq_mev, 31.561, rtol=1e-3)
+        assert_allclose(max_freq_mev, 31.561, rtol=1e-3)
 
 
 class TestForceConstantsFromVasp:
-
     def test_read_interpolation_data(self):
         data = read_interpolation_data(VASPOUT_PATH)
         assert 'crystal' in data
@@ -212,13 +222,12 @@ class TestForceConstantsFromVasp:
         dos_gamma_freqs_mev = dos_freqs.frequencies.to('meV').magnitude[0]
 
         # Max optical frequency at Gamma (31.561 meV) must match
-        npt.assert_allclose(
+        assert_allclose(
             np.max(fc_freqs_mev), np.max(dos_gamma_freqs_mev), rtol=1e-3
         )
 
 
 class TestVaspReaderCombined:
-
     def test_combined_fc_and_modes(self):
         # 1. ForceConstants reads primitive cell force constants (8, 6, 6)
         fc = ForceConstants.from_vasp(VASPOUT_DOS_RERUN_PATH)
@@ -236,9 +245,104 @@ class TestVaspReaderCombined:
 
         # 3. Compare calculated frequencies from primitive FC vs precalculated modes
         q_freqs = fc.calculate_qpoint_frequencies(modes.qpts)
-        npt.assert_allclose(
+        assert_allclose(
             q_freqs.frequencies.to('meV').magnitude,
             modes.frequencies.to('meV').magnitude,
             rtol=1e-2,
             atol=1e-2,
         )
+
+
+class TestVaspReaderEdgeCases:
+    def test_missing_h5py_import_error(self, mocker, tmp_path):
+
+        dummy_h5 = tmp_path / 'dummy.h5'
+        dummy_h5.write_text('dummy')
+
+        real_import = builtins.__import__
+
+        def mocked_import(name, *args, **kwargs):
+            if name == 'h5py':
+                raise ModuleNotFoundError
+            return real_import(name, *args, **kwargs)
+
+        mocker.patch('builtins.__import__', side_effect=mocked_import)
+        with pytest.raises(ImportVaspReaderError) as exc_info:
+            read_cell(dummy_h5)
+        assert 'Cannot import h5py' in str(exc_info.value)
+
+    def test_unexpected_eigenvector_shape_raises_error(self, tmp_path):
+        dummy_h5 = tmp_path / 'dummy_bad_evec.h5'
+        with h5py.File(dummy_h5, 'w') as f:
+            pos_group = f.create_group('results/positions')
+            pos_group.create_dataset('lattice_vectors', data=np.eye(3))
+            pos_group.create_dataset('position_ions', data=np.zeros((1, 3)))
+            pos_group.create_dataset('number_ion_types', data=np.array([1]))
+            pos_group.create_dataset('ion_types', data=np.array([b'Si']))
+
+            potcar_group = f.create_group('input/potcar')
+            potcar_group.create_dataset(
+                'content', data=np.bytes_(b'POMASS = 28.0855')
+            )
+
+            ph_group = f.create_group('results/phonons')
+            ph_group.create_dataset('qpoint_coords', data=np.zeros((1, 3)))
+            ph_group.create_dataset('frequencies', data=np.zeros((1, 3)))
+            ph_group.create_dataset('qpoints_symmetry_weight', data=np.ones(1))
+            # Bad eigenvector shape
+            ph_group.create_dataset('eigenvectors', data=np.zeros((1, 1, 1)))
+
+        with pytest.raises(
+            ValueError, match='Unexpected eigenvector array shape'
+        ):
+            read_phonon_data(dummy_h5)
+
+    def test_read_cell_file_not_found_raises_error(self, tmp_path):
+        non_existent = tmp_path / 'non_existent.h5'
+        with pytest.raises(FileNotFoundError, match='VASP file not found'):
+            read_cell(non_existent)
+
+    def test_read_cell_missing_group_raises_key_error(self, tmp_path):
+        dummy_h5 = tmp_path / 'dummy_nogroup.h5'
+        with h5py.File(dummy_h5, 'w'):
+            pass
+
+        with pytest.raises(KeyError, match='Crystal position data not found'):
+            read_cell(dummy_h5)
+
+    def test_find_fc_key_missing_raises_key_error(self, tmp_path):
+        dummy_h5 = tmp_path / 'dummy_nofc.h5'
+        with h5py.File(dummy_h5, 'w') as f:
+            pos_group = f.create_group('results/positions')
+            pos_group.create_dataset('lattice_vectors', data=np.eye(3))
+            pos_group.create_dataset('position_ions', data=np.zeros((1, 3)))
+            pos_group.create_dataset('number_ion_types', data=np.array([1]))
+            pos_group.create_dataset('ion_types', data=np.array([b'Si']))
+
+            potcar_group = f.create_group('input/potcar')
+            potcar_group.create_dataset(
+                'content', data=np.bytes_(b'POMASS = 28.0855')
+            )
+
+        with pytest.raises(KeyError, match='Force constants not found'):
+            read_interpolation_data(dummy_h5)
+
+    def test_find_fc_key_hessian(self, tmp_path):
+        dummy_h5 = tmp_path / 'dummy_hessian.h5'
+        with h5py.File(dummy_h5, 'w') as f:
+            pos_group = f.create_group('results/positions')
+            pos_group.create_dataset('lattice_vectors', data=np.eye(3))
+            pos_group.create_dataset('position_ions', data=np.zeros((1, 3)))
+            pos_group.create_dataset('number_ion_types', data=np.array([1]))
+            pos_group.create_dataset('ion_types', data=np.array([b'Si']))
+
+            potcar_group = f.create_group('input/potcar')
+            potcar_group.create_dataset(
+                'content', data=np.bytes_(b'POMASS = 28.0855')
+            )
+
+            lin_group = f.create_group('results/linear_response')
+            lin_group.create_dataset('hessian', data=np.zeros((3, 3)))
+
+        data = read_interpolation_data(dummy_h5)
+        assert 'force_constants' in data

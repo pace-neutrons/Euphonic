@@ -93,12 +93,15 @@ def _open_vasp_h5(filename: Path):
     """
     try:
         import h5py  # noqa: PLC0415
-    except ModuleNotFoundError as err:
+    except (ModuleNotFoundError, ImportError) as err:
         raise ImportVaspReaderError from err
 
     filepath = Path(filename)
     if not filepath.exists():
-        msg = format_error(f'VASP file not found at {filepath}.')
+        msg = format_error(
+            f'VASP file not found at {filepath}.',
+            fix='Provide a valid path to an existing VASP HDF5 file.',
+        )
         raise FileNotFoundError(msg)
 
     with h5py.File(filepath, 'r') as h5_file:
@@ -169,7 +172,8 @@ def _read_cell_from_group(
     filename = Path(h5_file.filename)
     if group_path not in h5_file:
         msg = format_error(
-            f'Crystal position data not found at {group_path} in {filename}.'
+            f'Crystal position data not found at {group_path} in {filename}.',
+            fix='Ensure the file contains valid VASP crystal datasets.',
         )
         raise KeyError(msg)
 
