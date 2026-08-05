@@ -26,6 +26,8 @@ ONLY_QPTS_H5 = get_data_path('vasp_files', 'vaspout_dos_sanitized.h5')
 FC_AND_QPTS_H5 = get_data_path(
     'vasp_files', 'vaspout_dos_rerun_sanitized.h5'
 )
+# Non-diagonal supercell without Born charges (Al FCC, 32 primitive cells)
+AL_NO_BORN_H5 = get_data_path('vasp_files', 'vaspout_al_no_born.h5')
 
 
 def get_crystal_path(*subpaths):
@@ -256,7 +258,7 @@ class TestForceConstantsFromVasp:
             n_atoms_sc = len(f['results/positions/position_ions'][()])
             assert fc_raw.shape == (3 * n_atoms_sc, 3 * n_atoms_sc)
 
-    def test_from_vasp_and_fallback_calculation(self):
+    def test_fc_from_vasp_and_fallback_calculation(self):
         # 1. ForceConstants.from_vasp loads Hessian/force_constants
         fc = ForceConstants.from_vasp(FC_NO_QPTS_H5)
         assert fc.crystal.n_atoms == 16
@@ -278,6 +280,38 @@ class TestForceConstantsFromVasp:
         assert_allclose(
             np.max(fc_freqs_mev), np.max(precalc_gamma_freqs_mev), rtol=1e-3
         )
+
+    @pytest.mark.vasp_reader
+    def test_fc_from_vasp_without_born(self):
+        # Test with no Born charges/dielectric tensor
+        # Also a non-diagonal supercell: FCC primitive in cubic supercell
+        fc = ForceConstants.from_vasp(AL_NO_BORN_H5)
+
+        # Primitive cell has 1 atom (FCC)
+        assert fc.crystal.n_atoms == 1
+        # Supercell contains 32 primitive cells
+        assert fc.n_cells_in_sc == 32
+        # Force constants shape: (n_cells_in_sc, 3*n_atoms, 3*n_atoms)
+        assert fc.force_constants.shape == (32, 3, 3)
+
+        # No Born charges or dielectric tensor
+        assert fc.born is None
+        assert fc.dielectric is None
+
+    @pytest.mark.vasp_reader
+    def test_read_interpolation_data_without_born(self):
+        data = read_interpolation_data(AL_NO_BORN_H5)
+
+        assert 'crystal' in data
+        assert data['force_constants'].shape == (32, 3, 3)
+        assert data['sc_matrix'].shape == (3, 3)
+        # Non-diagonal supercell matrix for FCC primitive in cubic supercell
+        # Determinant = 32 (32 primitive cells in supercell)
+        assert_allclose(np.linalg.det(data['sc_matrix']), 32.0)
+
+        # No Born charges or dielectric tensor
+        assert 'born' not in data
+        assert 'dielectric' not in data
 
 
 @pytest.mark.vasp_reader
