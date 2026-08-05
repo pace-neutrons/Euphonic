@@ -175,7 +175,10 @@ def _extract_pomass(h5_file: 'h5py.File') -> list[float]:
     # 4. If missing from all, raise error
     msg = format_error(
         f'Could not find atomic masses (POMASS) in {filename}.',
-        fix='Ensure the file contains POMASS in INCAR or POTCAR datasets.',
+        fix=(
+            'Ensure POMASS is set in INCAR, or that POTCAR contains '
+            'POMASS data.'
+        ),
     )
     raise ValueError(msg)
 
