@@ -726,8 +726,6 @@ class QpointPhononModes(QpointFrequencies):
     def from_vasp(
         cls,
         filename: Path | str,
-        *,
-        frequencies_unit: str = 'meV',
     ) -> Self:
         """
         Reads phonon mode data from a VASP HDF5 file (e.g. vaspout.h5)
@@ -736,12 +734,8 @@ class QpointPhononModes(QpointFrequencies):
         ----------
         filename
             The path and name of the VASP HDF5 file to read
-        frequencies_unit
-            The unit to return the frequencies in
         """
         data = vasp.read_phonon_data(Path(filename))
-        if frequencies_unit != 'meV':
-            data['frequencies_unit'] = frequencies_unit
         return cls.from_dict(data)
 
 
