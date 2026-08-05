@@ -139,8 +139,14 @@ def _extract_pomass(h5_file: 'h5py.File') -> list[float]:
     if 'input/incar/POMASS' in h5_file:
         val = h5_file['input/incar/POMASS'].asstr()[()]
         raw_vals = re.findall(r'[0-9.]+', str(val))
-        if raw_vals:
-            return [float(mass) for mass in raw_vals]
+        if not raw_vals:
+            msg = format_error(
+                f'POMASS found in input/incar/POMASS but could not parse '
+                f'numeric values from: {val!r}',
+                fix='Ensure POMASS contains valid numeric values.',
+            )
+            raise ValueError(msg)
+        return [float(mass) for mass in raw_vals]
 
     # 2. Try original/incar/content
     if 'original/incar/content' in h5_file:
@@ -150,8 +156,14 @@ def _extract_pomass(h5_file: 'h5py.File') -> list[float]:
         )
         if match:
             raw_vals = re.findall(r'[0-9.]+', match.group('masses'))
-            if raw_vals:
-                return [float(mass) for mass in raw_vals]
+            if not raw_vals:
+                msg = format_error(
+                    f'POMASS found in original/incar/content but could not '
+                    f'parse numeric values from: {match.group("masses")!r}',
+                    fix='Ensure POMASS contains valid numeric values.',
+                )
+                raise ValueError(msg)
+            return [float(mass) for mass in raw_vals]
 
     # 3. Try POTCAR content stored inside the HDF5 file
     if 'input/potcar/content' in h5_file:
@@ -175,13 +187,6 @@ def _read_cell_from_group(
     Helper function to parse crystal structure from a specific HDF5 group.
     """
     filename = Path(h5_file.filename)
-    if group_path not in h5_file:
-        msg = format_error(
-            f'Crystal position data not found at {group_path} in {filename}.',
-            fix='Ensure the file contains valid VASP crystal datasets.',
-        )
-        raise KeyError(msg)
-
     pos_group = h5_file[group_path]
     latt = pos_group['lattice_vectors'][()]
     pos = pos_group['position_ions'][()]
