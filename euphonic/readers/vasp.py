@@ -189,7 +189,6 @@ def _read_cell_from_group(
     """
     Helper function to parse crystal structure from a specific HDF5 group.
     """
-    filename = Path(h5_file.filename)
     pos_group = h5_file[group_path]
     latt = pos_group['lattice_vectors'][()]
     pos = pos_group['position_ions'][()]
