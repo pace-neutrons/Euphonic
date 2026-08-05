@@ -81,7 +81,7 @@ class TestVaspReaderCell:
 
         dummy_h5 = tmp_path / 'dummy_vaspout_incar.h5'
         with h5py.File(dummy_h5, 'w') as f:
-            pos_group = f.create_group('results/positions')
+            pos_group = f.create_group('input/poscar')
             pos_group.create_dataset('lattice_vectors', data=np.eye(3))
             pos_group.create_dataset('position_ions', data=np.zeros((1, 3)))
             pos_group.create_dataset('number_ion_types', data=np.array([1]))
@@ -100,7 +100,7 @@ class TestVaspReaderCell:
 
         dummy_h5 = tmp_path / 'dummy_vaspout_priority.h5'
         with h5py.File(dummy_h5, 'w') as f:
-            pos_group = f.create_group('results/positions')
+            pos_group = f.create_group('input/poscar')
             pos_group.create_dataset('lattice_vectors', data=np.eye(3))
             pos_group.create_dataset('position_ions', data=np.zeros((1, 3)))
             pos_group.create_dataset('number_ion_types', data=np.array([1]))
@@ -124,7 +124,7 @@ class TestVaspReaderCell:
 
         dummy_h5 = tmp_path / 'dummy_vaspout_input_incar.h5'
         with h5py.File(dummy_h5, 'w') as f:
-            pos_group = f.create_group('results/positions')
+            pos_group = f.create_group('input/poscar')
             pos_group.create_dataset('lattice_vectors', data=np.eye(3))
             pos_group.create_dataset('position_ions', data=np.zeros((1, 3)))
             pos_group.create_dataset('number_ion_types', data=np.array([1]))
@@ -151,7 +151,7 @@ class TestVaspReaderCell:
 
         dummy_h5 = tmp_path / 'dummy_vaspout_neg.h5'
         with h5py.File(dummy_h5, 'w') as f:
-            pos_group = f.create_group('results/positions')
+            pos_group = f.create_group('input/poscar')
             pos_group.create_dataset('lattice_vectors', data=np.eye(3))
             pos_group.create_dataset(
                 'position_ions',
@@ -178,7 +178,7 @@ class TestVaspReaderCell:
 
         dummy_h5 = tmp_path / 'dummy_vaspout_empty.h5'
         with h5py.File(dummy_h5, 'w') as f:
-            pos_group = f.create_group('results/positions')
+            pos_group = f.create_group('input/poscar')
             pos_group.create_dataset('lattice_vectors', data=np.eye(3))
             pos_group.create_dataset('position_ions', data=np.zeros((1, 3)))
             pos_group.create_dataset('number_ion_types', data=np.array([1]))
@@ -372,7 +372,7 @@ class TestVaspReaderEdgeCases:
 
         dummy_h5 = tmp_path / 'dummy_bad_evec.h5'
         with h5py.File(dummy_h5, 'w') as f:
-            pos_group = f.create_group('results/positions')
+            pos_group = f.create_group('input/poscar')
             pos_group.create_dataset('lattice_vectors', data=np.eye(3))
             pos_group.create_dataset('position_ions', data=np.zeros((1, 3)))
             pos_group.create_dataset('number_ion_types', data=np.array([1]))
@@ -457,7 +457,7 @@ class TestVaspReaderEdgeCases:
 
         dummy_h5 = tmp_path / 'dummy_nofc.h5'
         with h5py.File(dummy_h5, 'w') as f:
-            pos_group = f.create_group('results/positions')
+            pos_group = f.create_group('input/poscar')
             pos_group.create_dataset('lattice_vectors', data=np.eye(3))
             pos_group.create_dataset('position_ions', data=np.zeros((1, 3)))
             pos_group.create_dataset('number_ion_types', data=np.array([1]))
@@ -477,7 +477,7 @@ class TestVaspReaderEdgeCases:
 
         dummy_h5 = tmp_path / 'dummy_hessian.h5'
         with h5py.File(dummy_h5, 'w') as f:
-            pos_group = f.create_group('results/positions')
+            pos_group = f.create_group('input/poscar')
             pos_group.create_dataset('lattice_vectors', data=np.eye(3))
             pos_group.create_dataset('position_ions', data=np.zeros((1, 3)))
             pos_group.create_dataset('number_ion_types', data=np.array([1]))

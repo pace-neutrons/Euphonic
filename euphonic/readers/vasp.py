@@ -214,8 +214,7 @@ def _read_cell_from_group(
 
 def read_cell(filename: Path) -> CrystalDict:
     """
-    Reads calculation cell structure from results/positions or input/poscar
-    in VASP HDF5 file.
+    Reads calculation cell structure from input/poscar in VASP HDF5 file.
 
     Parameters
     ----------
@@ -234,22 +233,17 @@ def read_cell(filename: Path) -> CrystalDict:
     ImportVaspReaderError
         If h5py is not installed.
     KeyError
-        If results/positions and input/poscar groups are missing from the file.
+        If input/poscar group is missing from the file.
     ValueError
         If atomic masses (POMASS) cannot be found in INCAR or POTCAR.
     """
     with _open_vasp_h5(filename) as h5_file:
-        if 'results/positions' in h5_file:
-            return _read_cell_from_group(h5_file, 'results/positions')
         if 'input/poscar' in h5_file:
             return _read_cell_from_group(h5_file, 'input/poscar')
 
         msg = format_error(
             f'Crystal position data not found in {filename}.',
-            fix=(
-                'Ensure the file contains results/positions or input/poscar '
-                'group.'
-            ),
+            fix='Ensure the file contains input/poscar group.',
         )
         raise KeyError(msg)
 
@@ -478,10 +472,7 @@ def _build_primitive_data(
 
     # Use input/poscar for equilibrium structure (results/positions may contain
     # displaced positions from finite-difference Hessian calculation)
-    if 'input/poscar' in h5_file:
-        pos_group = h5_file['input/poscar']
-    else:
-        pos_group = h5_file['results/positions']
+    pos_group = h5_file['input/poscar']
     sc_lat = pos_group['lattice_vectors'][()]
     sc_pos = pos_group['position_ions'][()]
     sc_n_atoms = len(sc_pos)
