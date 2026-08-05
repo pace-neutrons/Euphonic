@@ -476,7 +476,12 @@ def _build_primitive_data(
     prim_pos = prim_group['position_ions'][()]
     atom_r = _normalize_fractional_coords(prim_pos)
 
-    pos_group = h5_file['results/positions']
+    # Use input/poscar for equilibrium structure (results/positions may contain
+    # displaced positions from finite-difference Hessian calculation)
+    if 'input/poscar' in h5_file:
+        pos_group = h5_file['input/poscar']
+    else:
+        pos_group = h5_file['results/positions']
     sc_lat = pos_group['lattice_vectors'][()]
     sc_pos = pos_group['position_ions'][()]
     sc_n_atoms = len(sc_pos)
