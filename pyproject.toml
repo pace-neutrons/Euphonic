@@ -112,6 +112,7 @@ markers = [
     "matplotlib: test requires 'matplotlib' extra",
     "multiple_extras: test requires multiple extras to be installed",
     "phonopy_reader: test requires 'phonopy-reader' extra",
+    "vasp_reader: test requires 'phonopy-reader' extra",
 ]
 
 [tool.ruff]

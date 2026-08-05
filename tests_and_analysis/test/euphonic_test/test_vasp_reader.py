@@ -1,7 +1,6 @@
 import builtins
 import json
 
-import h5py
 import numpy as np
 from numpy.testing import assert_allclose
 import pytest
@@ -33,6 +32,7 @@ def get_crystal_path(*subpaths):
     return get_data_path('crystal', *subpaths)
 
 
+@pytest.mark.vasp_reader
 class TestVaspReaderCell:
 
     def test_read_cell_fc_no_qpts(self):
@@ -75,6 +75,8 @@ class TestVaspReaderCell:
         check_crystal(prim_data, exp_prim)
 
     def test_read_cell_from_incar_override(self, tmp_path):
+        import h5py
+
         dummy_h5 = tmp_path / 'dummy_vaspout_incar.h5'
         with h5py.File(dummy_h5, 'w') as f:
             pos_group = f.create_group('results/positions')
@@ -92,6 +94,8 @@ class TestVaspReaderCell:
         assert_allclose(data['atom_mass'], 28.0855)
 
     def test_read_cell_incar_overrides_potcar(self, tmp_path):
+        import h5py
+
         dummy_h5 = tmp_path / 'dummy_vaspout_priority.h5'
         with h5py.File(dummy_h5, 'w') as f:
             pos_group = f.create_group('results/positions')
@@ -114,6 +118,8 @@ class TestVaspReaderCell:
         assert_allclose(data['atom_mass'], 28.0855)
 
     def test_read_cell_input_incar_overrides_original_incar(self, tmp_path):
+        import h5py
+
         dummy_h5 = tmp_path / 'dummy_vaspout_input_incar.h5'
         with h5py.File(dummy_h5, 'w') as f:
             pos_group = f.create_group('results/positions')
@@ -139,6 +145,8 @@ class TestVaspReaderCell:
         assert_allclose(data['atom_mass'], 30.0)
 
     def test_read_cell_negative_positions(self, tmp_path):
+        import h5py
+
         dummy_h5 = tmp_path / 'dummy_vaspout_neg.h5'
         with h5py.File(dummy_h5, 'w') as f:
             pos_group = f.create_group('results/positions')
@@ -164,6 +172,8 @@ class TestVaspReaderCell:
             read_primitive_cell(FC_NO_QPTS_H5)
 
     def test_read_cell_missing_pomass_raises_error(self, tmp_path):
+        import h5py
+
         dummy_h5 = tmp_path / 'dummy_vaspout_empty.h5'
         with h5py.File(dummy_h5, 'w') as f:
             pos_group = f.create_group('results/positions')
@@ -176,6 +186,7 @@ class TestVaspReaderCell:
             read_cell(dummy_h5)
 
 
+@pytest.mark.vasp_reader
 class TestVaspReaderPhononData:
 
     def test_read_phonon_data_missing_precalculated_raises_error(self):
@@ -199,6 +210,7 @@ class TestVaspReaderPhononData:
         assert_allclose(max_freq, 7.6315, rtol=1e-3)
 
 
+@pytest.mark.vasp_reader
 class TestQpointPhononModesFromVasp:
 
     def test_from_vasp_modes_missing_data_raises_error(self):
@@ -223,9 +235,12 @@ class TestQpointPhononModesFromVasp:
         assert_allclose(max_freq_mev, 31.561, rtol=1e-3)
 
 
+@pytest.mark.vasp_reader
 class TestForceConstantsFromVasp:
 
     def test_read_interpolation_data(self):
+        import h5py
+
         data = read_interpolation_data(FC_NO_QPTS_H5)
         assert 'crystal' in data
         assert data['force_constants'].shape == (1, 48, 48)
@@ -265,6 +280,7 @@ class TestForceConstantsFromVasp:
         )
 
 
+@pytest.mark.vasp_reader
 class TestVaspReaderCombined:
 
     def test_combined_fc_and_modes(self):
@@ -293,8 +309,14 @@ class TestVaspReaderCombined:
 
 
 class TestVaspReaderEdgeCases:
+    """Tests for edge cases and error handling.
+
+    Note: test_missing_h5py_import_error does NOT have @pytest.mark.vasp_reader
+    because it tests behavior when h5py is not installed.
+    """
 
     def test_missing_h5py_import_error(self, mocker, tmp_path):
+        """Test that a helpful error is raised when h5py is not installed."""
         dummy_h5 = tmp_path / 'dummy.h5'
         dummy_h5.write_text('dummy')
 
@@ -310,7 +332,10 @@ class TestVaspReaderEdgeCases:
             read_cell(dummy_h5)
         assert 'Cannot import h5py' in str(exc_info.value)
 
+    @pytest.mark.vasp_reader
     def test_unexpected_eigenvector_shape_raises_error(self, tmp_path):
+        import h5py
+
         dummy_h5 = tmp_path / 'dummy_bad_evec.h5'
         with h5py.File(dummy_h5, 'w') as f:
             pos_group = f.create_group('results/positions')
@@ -341,7 +366,10 @@ class TestVaspReaderEdgeCases:
         with pytest.raises(FileNotFoundError, match='VASP file not found'):
             read_cell(non_existent)
 
+    @pytest.mark.vasp_reader
     def test_read_cell_missing_group_raises_key_error(self, tmp_path):
+        import h5py
+
         dummy_h5 = tmp_path / 'dummy_nogroup.h5'
         with h5py.File(dummy_h5, 'w') as f:
             potcar_group = f.create_group('input/potcar')
@@ -352,7 +380,10 @@ class TestVaspReaderEdgeCases:
         with pytest.raises(KeyError, match='Crystal position data not found'):
             read_cell(dummy_h5)
 
+    @pytest.mark.vasp_reader
     def test_read_cell_falls_back_to_poscar(self, tmp_path):
+        import h5py
+
         dummy_h5 = tmp_path / 'dummy_poscar.h5'
         with h5py.File(dummy_h5, 'w') as f:
             poscar_group = f.create_group('input/poscar')
@@ -371,7 +402,10 @@ class TestVaspReaderEdgeCases:
         data = read_cell(dummy_h5)
         assert data['cell_vectors'].shape == (3, 3)
 
+    @pytest.mark.vasp_reader
     def test_read_cell_no_positions_or_poscar_raises_key_error(self, tmp_path):
+        import h5py
+
         dummy_h5 = tmp_path / 'dummy_nopos.h5'
         with h5py.File(dummy_h5, 'w') as f:
             potcar_group = f.create_group('input/potcar')
@@ -382,7 +416,10 @@ class TestVaspReaderEdgeCases:
         with pytest.raises(KeyError, match='Crystal position data not found'):
             read_cell(dummy_h5)
 
+    @pytest.mark.vasp_reader
     def test_find_fc_key_missing_raises_key_error(self, tmp_path):
+        import h5py
+
         dummy_h5 = tmp_path / 'dummy_nofc.h5'
         with h5py.File(dummy_h5, 'w') as f:
             pos_group = f.create_group('results/positions')
@@ -399,7 +436,10 @@ class TestVaspReaderEdgeCases:
         with pytest.raises(KeyError, match='Force constants not found'):
             read_interpolation_data(dummy_h5)
 
+    @pytest.mark.vasp_reader
     def test_find_fc_key_hessian(self, tmp_path):
+        import h5py
+
         dummy_h5 = tmp_path / 'dummy_hessian.h5'
         with h5py.File(dummy_h5, 'w') as f:
             pos_group = f.create_group('results/positions')
