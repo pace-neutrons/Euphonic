@@ -361,6 +361,7 @@ class TestVaspReaderEdgeCases:
         ):
             read_phonon_data(dummy_h5)
 
+    @pytest.mark.vasp_reader
     def test_read_cell_file_not_found_raises_error(self, tmp_path):
         non_existent = tmp_path / 'non_existent.h5'
         with pytest.raises(FileNotFoundError, match='VASP file not found'):
