@@ -26,7 +26,7 @@ from euphonic.io import (
 )
 from euphonic.qpoint_frequencies import QpointFrequencies
 from euphonic.qpoint_phonon_modes import QpointPhononModes
-from euphonic.readers import castep, phonopy
+from euphonic.readers import castep, phonopy, vasp
 from euphonic.ureg import ureg
 from euphonic.util import (
     _get_supercell_relative_idx,
@@ -1874,6 +1874,28 @@ casting to real mode gradients.
         """
         data = castep.read_interpolation_data(filename)
         return cls.from_dict(data)
+
+    @classmethod
+    def from_vasp(cls, filename: Path | str) -> Self:
+        """
+        Reads force constants data from a VASP HDF5 file (e.g. vaspout.h5).
+
+        Parameters
+        ----------
+        filename
+            The path and name of the VASP HDF5 file to read
+
+        Returns
+        -------
+        forceconstants
+        """
+        data = vasp.read_interpolation_data(Path(filename))
+        fc = cls.from_dict(data)
+        if fc.born is not None:
+            fc = cls.from_total_fc_with_dipole(
+                fc.crystal, fc.force_constants, fc.sc_matrix, fc.cell_origins,
+                born=fc.born, dielectric=fc.dielectric)
+        return fc
 
     @classmethod
     def from_phonopy(cls,

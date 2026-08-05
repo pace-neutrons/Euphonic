@@ -17,11 +17,13 @@ YAML_EXTS = {'yaml', 'yml', 'yl'}
 class ImportPhonopyReaderError(ModuleNotFoundError):
 
     def __init__(self):
-        self.message = (
-            '\n\nCannot import yaml, h5py to read Phonopy files, maybe '
-            'they are not installed. To install the optional '
-            "dependencies for Euphonic's Phonopy reader, try:\n\n"
-            'pip install euphonic[phonopy-reader]\n')
+        self.message = format_error(
+            'Cannot import yaml or h5py to read Phonopy files.',
+            fix=(
+                'To install optional dependencies for Phonopy reader, try: '
+                'pip install euphonic[phonopy-reader]'
+            ),
+        )
 
     def __str__(self):
         return self.message
