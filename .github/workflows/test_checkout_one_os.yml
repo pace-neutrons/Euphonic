@@ -1,3 +1,4 @@
+# Full file content to replace .github/workflows/test_checkout_one_os.yml
 name: Run tests from source on one platform
 on:
   workflow_call:
@@ -100,11 +101,24 @@ jobs:
           reportgenerator -reports:tests_and_analysis/test/reports/coverage-combined.xml -targetdir:tests_and_analysis/test/reports/html -reporttypes:Html_Dark
           reportgenerator -reports:tests_and_analysis/test/reports/coverage-combined.xml -targetdir:tests_and_analysis/test/reports -reporttypes:Badges
 
+      - name: Produce text summary (debug)
+        if: inputs.coverage
+        shell: bash -l {0}
+        run: |
+          reportgenerator -reports:tests_and_analysis/test/reports/coverage-combined.xml -reporttypes:TextSummary -targetdir:tests_and_analysis/test/reports/summary || true
+          if [ -f tests_and_analysis/test/reports/summary/Summary.txt ]; then cat tests_and_analysis/test/reports/summary/Summary.txt; else echo 'No Summary.txt found'; fi
+
+      - name: Show coverage badge SVG (debug)
+        if: inputs.coverage
+        shell: bash -l {0}
+        run: |
+          if [ -f tests_and_analysis/test/reports/badge_shieldsio_linecoverage_lightgrey.svg ]; then sed -n '1,120p' tests_and_analysis/test/reports/badge_shieldsio_linecoverage_lightgrey.svg; else echo 'No badge SVG found'; fi
+
       - name: Upload coverage XML
         if: inputs.coverage
         uses: actions/upload-artifact@v4
         with:
-          name: Coverage XML (${{ inputs.os }})
+          name: coverage-xml-${{ inputs.os }}
           path: tests_and_analysis/test/reports/coverage-combined.xml
 
       - name: Upload coverage HTML
