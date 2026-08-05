@@ -71,7 +71,7 @@ test = ["mock", "pytest>=9.0.3,<10.0", "pytest-cov", "pytest-mock", "pytest-lazy
 ci = ["tox==4.30.3"]
 docs = [
  "numpy==2.2.6",
- "setuptools==82.0.1",
+ "setuptools==83.0.0",
  "sphinx~=8.1.0",
  "sphinx-argparse==0.5.2",
  "sphinx-rtd-theme==3.1.0",
