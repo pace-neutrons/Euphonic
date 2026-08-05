@@ -7,6 +7,11 @@
     Mac, this platform has a slightly increased h5py version
     requirement in order to access pre-built wheels.
 
+  - The setuptools build-time requirement has been increased to 83.0.0
+    due to a security advisory.
+
+    https://github.com/advisories/GHSA-h35f-9h28-mq5c
+
 - Bug fixes
 
   - Fixed out-of-bounds write in ZHEEVD workspace-query code, which
