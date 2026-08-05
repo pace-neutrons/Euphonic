@@ -6,5 +6,5 @@ parallel = true
 relative_files = true
 
 [report]
-exclude_lines =
+exclude_also =
     @overload
