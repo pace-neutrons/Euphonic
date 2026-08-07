@@ -152,7 +152,7 @@ def run_tests(
             '--cov-config=../../pyproject.toml',
             '--cov-append',
             '--cov-branch',
-            '--cov-report=',  # Don't generate any immediate reports, just raw data
+            '--cov-report=xml:reports/coverage.xml',  # Generate XML report
             *pytest_options,
         ]
 

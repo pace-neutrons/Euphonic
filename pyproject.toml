@@ -235,6 +235,8 @@ source = [
     "*/site-packages/euphonic",
     "*\\site-packages\\euphonic",
     "*/*/euphonic/.tox/*/lib/python*/site-packages/euphonic",
+    ".tox/*/lib/python*/site-packages/euphonic",
+    ".tox/*/Lib/site-packages/euphonic",
 ]
 
 [tool.coverage.report]
