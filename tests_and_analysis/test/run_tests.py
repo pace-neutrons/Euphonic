@@ -2,7 +2,6 @@ from argparse import ArgumentParser, Namespace
 from pathlib import Path
 import sys
 import time
-from uuid import uuid4
 
 import pytest
 
@@ -148,12 +147,12 @@ def run_tests(
 
     # Start recording coverage if requested
     if do_report_coverage:
-        coveragerc_filepath: Path = test_dir / '.coveragerc'
-
         pytest_options = [
-            '--cov',
-            f'--cov-report=xml:{reports_dir}/coverage_{uuid4()}.xml',
-            f'--cov-config={coveragerc_filepath}',
+            '--cov=euphonic',
+            '--cov-config=../../pyproject.toml',
+            '--cov-append',
+            '--cov-branch',
+            '--cov-report=',  # Don't generate any immediate reports, just raw data
             *pytest_options,
         ]
 

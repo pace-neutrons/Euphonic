@@ -85,34 +85,24 @@ jobs:
           name: Unit test results ${{ inputs.os }}
           path: tests_and_analysis/test/reports/junit_report*.xml
 
-      - name: Merge coverage reports
+      - name: Run coverage workflow
         if: inputs.coverage
         shell: bash -l {0}
-        run: |
-          dotnet tool install -g dotnet-coverage
-          dotnet coverage merge --reports "tests_and_analysis/test/reports/coverage*.xml" -f cobertura -o "tests_and_analysis/test/reports/coverage-combined.xml"
-
-      - name: Create coverage outputs
-        if: inputs.coverage
-        shell: bash -l {0}
-        run: |
-          dotnet tool install --global dotnet-reportgenerator-globaltool --version 5.5.1
-          reportgenerator -reports:tests_and_analysis/test/reports/coverage-combined.xml -targetdir:tests_and_analysis/test/reports/html -reporttypes:Html_Dark
-          reportgenerator -reports:tests_and_analysis/test/reports/coverage-combined.xml -targetdir:tests_and_analysis/test/reports -reporttypes:Badges
+        run: python -m tox run -e ci-ubuntu
 
       - name: Upload coverage XML
         if: inputs.coverage
         uses: actions/upload-artifact@v4
         with:
           name: Coverage XML (${{ inputs.os }})
-          path: tests_and_analysis/test/reports/coverage-combined.xml
+          path: tests_and_analysis/test/reports/coverage.xml
 
       - name: Upload coverage HTML
         if: inputs.coverage
         uses: actions/upload-artifact@v4
         with:
           name: Coverage HTML (${{ inputs.os }})
-          path: tests_and_analysis/test/reports/html
+          path: tests_and_analysis/test/reports/htmlcov
           include-hidden-files: true
 
       - name: Upload coverage Badge
@@ -120,4 +110,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: Coverage Badge (${{ inputs.os }})
-          path: tests_and_analysis/test/reports/badge_shieldsio_linecoverage_lightgrey.svg
+          path: tests_and_analysis/test/reports/coverage-badge.svg

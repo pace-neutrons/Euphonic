@@ -111,7 +111,6 @@ jobs:
   publish-coverage:
     needs: test
     runs-on: ubuntu-latest
-    if: github.event.pull_request.head.repo.full_name == github.repository
     steps:
       - name: Download Artifacts
         uses: actions/download-artifact@v4
@@ -119,12 +118,11 @@ jobs:
           path: artifacts
           name: 'Coverage XML (ubuntu-latest)'
 
-      - name: Get Coverage
-        uses: orgoro/coverage@v3.2
-        continue-on-error: true
+      - name: Post coverage comment
+        uses: py-cov-action/python-coverage-comment@v1
         with:
-          coverageFile: 'artifacts/coverage-combined.xml'
-          token: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          COVERAGE_FILE_PATH: 'artifacts/coverage.xml'
 
   publish-coverage-badge:
     needs: test

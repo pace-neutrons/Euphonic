@@ -84,7 +84,7 @@ dev = [
 
 [project.optional-dependencies]
 matplotlib = ["matplotlib>=3.8.0"]
-phonopy_reader = ["h5py>=3.6.0", "PyYAML>=6.0"]  # Deprecated, will be removed in future versions.
+# phonopy-reader extra
 phonopy-reader = ["h5py>=3.6.0", "PyYAML>=6.0"]
 # brille build on ARM-Linux is currently a bad time; skip it so tests run properly
 brille = ["brille>=0.7.0; sys_platform != 'linux' or platform_machine not in 'aarch64 arm64'"]
@@ -222,3 +222,28 @@ conflicts = [
   [{group = 'min_reqs'}, {group = 'docs'}],
   [{group = 'min_reqs'}, {group = 'dev'}],
 ]
+
+[tool.coverage.run]
+branch = true
+source = ["euphonic"]
+parallel = true
+data_file = ".coverage"
+
+[tool.coverage.paths]
+source = [
+    "euphonic",
+    "*/site-packages/euphonic",
+    "*\\site-packages\\euphonic",
+    "*/*/euphonic/.tox/*/lib/python*/site-packages/euphonic",
+]
+
+[tool.coverage.report]
+show_missing = true
+exclude_lines = [
+    "pragma: no cover",
+    "@overload",
+    "if TYPE_CHECKING:",
+]
+
+[tool.coverage.xml]
+output = "coverage.xml"
