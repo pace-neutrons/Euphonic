@@ -152,7 +152,7 @@ def run_tests(
             '--cov-config=../../pyproject.toml',
             '--cov-append',
             '--cov-branch',
-            '--cov-report=xml:reports/coverage.xml',  # Generate XML report
+            '--cov-report=term-missing',  # Show coverage in terminal with missing lines
             *pytest_options,
         ]
 
