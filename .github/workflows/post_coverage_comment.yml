@@ -1,5 +1,9 @@
-# Documented linkage: This workflow is triggered on completion of workflow "run-tests" (.github/workflows/run_tests.yml)
-name: Post Coverage Comment
+# This workflow is triggered on completion of workflow "run-tests" (.github/workflows/run_tests.yml)
+# It grabs a payload from the test run and displays it in the PR discussion.
+#
+# This 2-step approach allows us to pick up coverage information from external forks
+# without granting them direct write permissions.
+name: Post coverage as PR comment
 
 on:
   workflow_run:
