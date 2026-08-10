@@ -50,7 +50,7 @@
       ``--parallel`` as ``{posargs}`` using ``tox run --``;
       previously this was limited to a subset.
 
-  - A *py311-cov* environment is added which runs all tests with
+  - A *py314-cov* environment is added which runs all tests with
     coverage enabled and converts the raw .coverage file into an
     interoperable coverage.xml. A *coverage-badge* environment is
     added which creates an SVG badge from the XML results.
