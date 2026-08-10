@@ -111,18 +111,31 @@ jobs:
   publish-coverage:
     needs: test
     runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    permissions:
+      contents: read
+      pull-requests: read
+      checks: read
     steps:
       - uses: actions/checkout@v4
+
       - name: Download Artifacts
         uses: actions/download-artifact@v4
         with:
           path: .
           name: 'Coverage Data (ubuntu-latest)'
 
-      - name: Post coverage comment
+      - name: Generate coverage comment file
         uses: py-cov-action/python-coverage-comment-action@v3
         with:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload comment artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: python-coverage-comment-action
+          path: python-coverage-comment-action.txt
+          if-no-files-found: error
 
   publish-coverage-badge:
     needs: test
