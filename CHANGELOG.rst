@@ -36,28 +36,53 @@
 
 - Maintenance
 
-  - Linux ARM (``ubuntu-24.04-arm``) has been added to the test matrix
-    in ``run_tests.yml``.
+  - Unit-testing with ``tox``
 
-  - brille and non-brille tests are now run by ``tox`` as separate
-    pytest invocations on all platforms; previously this was just done
-    for Mac. The purpose is to reduce the number of tests forced into
-    serial operation by OpenMP conflicts.
+    - brille and non-brille tests are now run by ``tox`` as separate
+      pytest invocations on all platforms; previously this was just done
+      for Mac. The purpose is to reduce the number of tests forced into
+      serial operation by OpenMP conflicts.
 
-  - Minimum requirements are now tested on all platforms using a
-    common ``tox`` environment specification.
+    - Minimum requirements are now tested on all platforms using a
+      common ``tox`` environment specification.
 
-  - All ``tox`` environments can now pass options such as
-    ``--parallel`` as ``{posargs}`` using ``tox run --``;
-    previously this was limited to a subset.
+    - All ``tox`` environments can now pass options such as
+      ``--parallel`` as ``{posargs}`` using ``tox run --``;
+      previously this was limited to a subset.
 
-  - Simplified Windows CI workflows on Github: take advantage of
-    Meson's ``--vsenv`` handling (which is more robust than last time
-    we tried!) and avoid setting explicit environment variables.
+  - A *py311-cov* environment is added which runs all tests with
+    coverage enabled and converts the raw .coverage file into an
+    interoperable coverage.xml. A *coverage-badge* environment is
+    added which creates an SVG badge from the XML results.
 
-    This does require a new bit of Windows-runner wrangling in the
-    workflow: we delete the ``ccacche.exe`` from Strawberry Perl which
-    was polluting the path.
+  - Markers have been created for useful environment groups, included
+    a *coverage-local* marker which will run coverage with the
+    same Python version as CI and generate the badge for inspection.
+
+  - Github Actions configuration
+
+    - Linux ARM (``ubuntu-24.04-arm``) has been added to the test matrix
+      in ``run_tests.yml``.
+
+    - Simplified Windows CI workflows on Github: take advantage of
+      Meson's ``--vsenv`` handling (which is more robust than last time
+      we tried!) and avoid setting explicit environment variables.
+
+      This does require a new bit of Windows-runner wrangling in the
+      workflow: we delete the ``ccacche.exe`` from Strawberry Perl which
+      was polluting the path.
+
+    - Coverage xml files are no longer combined as a workflow step;
+      this is handled by pytest-cov while still working with the
+      .coverage file.
+
+    - Coverage badge is now created within the tox run, not as a
+      workflow step.
+
+    - Coverage reporting uses
+      ``py-cov-action/python-coverage-comment@v1`` instead of
+      ``orgoro/coverage@v3.2``; this uses a different mechanism and
+      should work better with PRs from external forks.
 
 `v2.0.0 <https://github.com/pace-neutrons/Euphonic/compare/v1.6.2...v2.0.0>`_
 -----------------------------------------------------------------------------
