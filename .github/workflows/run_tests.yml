@@ -115,14 +115,13 @@ jobs:
       - name: Download Artifacts
         uses: actions/download-artifact@v4
         with:
-          path: artifacts
-          name: 'Coverage XML (ubuntu-latest)'
+          path: .
+          name: 'Coverage Data (ubuntu-latest)'
 
       - name: Post coverage comment
-        uses: py-cov-action/python-coverage-comment@v1
+        uses: py-cov-action/python-coverage-comment-action@v3
         with:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          COVERAGE_FILE_PATH: 'artifacts/coverage.xml'
 
   publish-coverage-badge:
     needs: test
@@ -142,5 +141,5 @@ jobs:
 
       - uses: EndBug/add-and-commit@v9
         with:
-          add: 'badge_shieldsio_linecoverage_lightgrey.svg'
+          add: 'coverage-badge.svg'
           message: 'Update coverage badge'
