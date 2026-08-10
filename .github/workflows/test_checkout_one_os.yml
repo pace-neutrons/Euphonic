@@ -76,7 +76,7 @@ jobs:
 
       - name: Run tests
         shell: bash -l {0}
-        run: python -m tox run -m ${{ inputs.coverage && 'ci-coverage' || 'ci-base' }} --parallel
+        run: python -m tox run -m ${{ inputs.coverage && 'ci-coverage' || 'ci-base' }} -- --parallel
 
       - name: Upload test results
         if: always()
