@@ -1,16 +1,22 @@
-# This workflow is triggered on completion of workflow "run-tests" (.github/workflows/run_tests.yml)
-name: Post coverage as PR comment
+# Documented linkage: This workflow is triggered on completion of workflow "run-tests" (.github/workflows/run_tests.yml)
+name: Post Coverage Comment
 
 on:
   workflow_run:
     workflows: ["run-tests"]
     types:
       - completed
+  workflow_dispatch:
+    inputs:
+      pr_run_id:
+        description: 'Run ID of the run-tests workflow'
+        required: true
+        type: string
 
 jobs:
   post-comment:
     runs-on: ubuntu-latest
-    if: github.event.workflow_run.event == 'pull_request' && github.event.workflow_run.conclusion == 'success'
+    if: (github.event_name == 'workflow_dispatch') || (github.event.workflow_run.event == 'pull_request' && github.event.workflow_run.conclusion == 'success')
     permissions:
       pull-requests: write
       contents: read
@@ -20,4 +26,4 @@ jobs:
         uses: py-cov-action/python-coverage-comment-action@v3
         with:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GITHUB_PR_RUN_ID: ${{ github.event.workflow_run.id }}
+          GITHUB_PR_RUN_ID: ${{ inputs.pr_run_id || github.event.workflow_run.id }}
