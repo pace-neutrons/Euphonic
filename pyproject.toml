@@ -228,6 +228,7 @@ branch = true
 source = ["euphonic"]
 parallel = true
 data_file = ".coverage"
+relative_files = true
 
 [tool.coverage.paths]
 source = [
