@@ -18,7 +18,7 @@ class ImportPhonopyReaderError(ModuleNotFoundError):
 
     def __init__(self):
         self.message = format_error(
-            'Cannot import yaml or h5py to read Phonopy files.',
+            'Cannot import yaml and h5py to read Phonopy files.',
             fix=(
                 'To install optional dependencies for Phonopy reader, try: '
                 'pip install euphonic[phonopy-reader]'
