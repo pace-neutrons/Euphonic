@@ -482,8 +482,9 @@ def _build_primitive_data(
         f'got {sc_hessian.shape}'
     )
 
-    sc_matrix = np.rint(sc_lat @ np.linalg.inv(prim_lat)).astype(int)
-    sc_atom_r = (sc_pos @ sc_lat) @ np.linalg.inv(prim_lat)
+    exact_sc_matrix = sc_lat @ np.linalg.inv(prim_lat)
+    sc_matrix = np.rint(exact_sc_matrix).astype(int)
+    sc_atom_r = sc_pos @ exact_sc_matrix
 
     cell_origins_per_atom = np.floor(sc_atom_r + 1e-5).astype(int)
     r_in_p = _normalize_fractional_coords(
