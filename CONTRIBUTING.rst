@@ -29,6 +29,36 @@ e.g. to run ``tox`` for available Python versions with parallel
 pytest, use ``tox -- --parallel``.
 This can save a lot of time on modern multi-core machines!
 
+Coverage Testing
+~~~~~~~~~~~~~~~~
+
+Test coverage is checked automatically for Github pull requests.
+To examine coverage locally, there are two options:
+
+1. A ``tox`` marker has been created for this purpose: it creates a
+   coverage badge and cleans up temporary files, but relies on a
+   specific Python version. Run with::
+
+     tox run -m coverage-local
+
+   This will show basic coverage statistics during execution, then
+   generate a coverage badge at
+   ``tests_and_analysis/test/reports/coverage-badge.svg``.
+
+2. Run coverage with another Python environment (more flexible but
+   less clean): Use e.g. ``tox -e py314 -- --cov --parallel`` to run
+   parallel tests with coverage in Python 3.14. This will leave a hidden
+   data file at ``tests_and_analysis/test/.coverage``, which can be used
+   with the ``coverage`` python tool, e.g.::
+
+     coverage report -m --data-file=tests_and_analysis/test/.coverage
+
+   To generate XML reports for other tools, use::
+
+     coverage xml --data-file=tests_and_analysis/test/.coverage
+
+   For more options see the `documentation <https://coverage.readthedocs.io>`_.
+
 Pull requests
 ~~~~~~~~~~~~~
 
