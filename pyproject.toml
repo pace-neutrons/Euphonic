@@ -225,12 +225,6 @@ extend-ignore-names = ["k_B", "H_ab", "Q"]
 # Prefer single quotes over double quotes.
 quote-style = "single"
 
-[tool.uv]
-conflicts = [
-  [{group = 'min_reqs'}, {group = 'docs'}],
-  [{group = 'min_reqs'}, {group = 'dev'}],
-]
-
 [tool.coverage.run]
 branch = true
 source = ["euphonic"]
