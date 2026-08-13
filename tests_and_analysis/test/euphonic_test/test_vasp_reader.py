@@ -187,6 +187,55 @@ class TestVaspReaderCell:
         with pytest.raises(ValueError, match='Could not find atomic masses'):
             read_cell(dummy_h5)
 
+    def test_read_cell_input_incar_unparseable_pomass(self, tmp_path):
+        """POMASS in input/incar/POMASS exists but can't parse numeric values."""
+        import h5py
+
+        dummy_h5 = tmp_path / 'dummy_bad_input_incar_pomass.h5'
+        with h5py.File(dummy_h5, 'w') as f:
+            self._create_minimal_poscar(f)
+            f.create_dataset('input/incar/POMASS', data=np.bytes_(b'invalid'))
+
+        with pytest.raises(ValueError, match='could not parse.*numeric'):
+            read_cell(dummy_h5)
+
+    def test_read_cell_original_incar_unparseable_pomass(self, tmp_path):
+        """POMASS in original/incar/content exists but can't parse numeric values."""
+        import h5py
+
+        dummy_h5 = tmp_path / 'dummy_bad_original_incar_pomass.h5'
+        with h5py.File(dummy_h5, 'w') as f:
+            self._create_minimal_poscar(f)
+            f.create_dataset(
+                'original/incar/content', data=np.bytes_(b'POMASS = invalid')
+            )
+
+        with pytest.raises(ValueError, match='could not parse.*numeric'):
+            read_cell(dummy_h5)
+
+    def test_read_cell_potcar_no_pomass(self, tmp_path):
+        """POTCAR content exists but contains no POMASS entries."""
+        import h5py
+
+        dummy_h5 = tmp_path / 'dummy_potcar_no_pomass.h5'
+        with h5py.File(dummy_h5, 'w') as f:
+            self._create_minimal_poscar(f)
+            f.create_dataset(
+                'input/potcar/content', data=np.bytes_(b'PAW_PBE Si')
+            )
+
+        with pytest.raises(ValueError, match='Could not find atomic masses'):
+            read_cell(dummy_h5)
+
+    @staticmethod
+    def _create_minimal_poscar(h5_file):
+        """Create minimal input/poscar group required for read_cell."""
+        pos_group = h5_file.create_group('input/poscar')
+        pos_group.create_dataset('lattice_vectors', data=np.eye(3))
+        pos_group.create_dataset('position_ions', data=np.zeros((1, 3)))
+        pos_group.create_dataset('number_ion_types', data=np.array([1]))
+        pos_group.create_dataset('ion_types', data=np.array([b'Si']))
+
 
 @pytest.mark.vasp_reader
 class TestVaspReaderPhononData:
