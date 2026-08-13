@@ -85,12 +85,6 @@ jobs:
           name: Unit test results ${{ inputs.os }}
           path: tests_and_analysis/test/reports/junit_report*.xml
 
-      - name: Debug coverage files
-        if: inputs.coverage
-        run: |
-          ls -la tests_and_analysis/test
-          find . -name ".coverage*"
-
       - name: Upload coverage data
         if: inputs.coverage
         uses: actions/upload-artifact@v4
