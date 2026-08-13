@@ -36,7 +36,7 @@ jobs:
         - os: ubuntu-latest
           skip: false
           all-python-versions: ${{(github.event_name != 'pull_request')}}
-          coverage: false
+          coverage: true
         - os: ubuntu-24.04-arm
           skip: false
           all-python-versions: ${{(github.event_name != 'pull_request')}}
@@ -44,7 +44,7 @@ jobs:
         - os: windows-latest
           skip: false
           all-python-versions: ${{(github.event_name != 'pull_request')}}
-          coverage: true
+          coverage: false
         - os: macos-latest
           skip: false
           all-python-versions: ${{(github.event_name != 'pull_request')}}
@@ -123,7 +123,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           path: .
-          name: 'Coverage Data (windows-latest)'
+          name: 'Coverage Data (ubuntu-latest)'
 
       - name: Generate coverage comment file
         uses: py-cov-action/python-coverage-comment-action@v3
