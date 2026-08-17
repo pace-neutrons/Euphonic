@@ -12,6 +12,10 @@ if TYPE_CHECKING:
 
 BOUNDARY_TOLERANCE: float = 1e-12
 
+# Regex patterns for POMASS extraction
+_MASS_PATTERN = r'(?P<mass>[0-9.]+)'
+_POMASS_PATTERN = r'POMASS\s*=\s*(?P<mass>[0-9.]+)'
+
 
 class CrystalDict(TypedDict):
     cell_vectors: np.ndarray
@@ -113,6 +117,24 @@ def _open_vasp_h5(filename: Path):
         yield h5_file
 
 
+def _parse_masses(content: str, pattern: str) -> list[float]:
+    """
+    Extract numeric masses from string content using regex with 'mass' group.
+
+    Parameters
+    ----------
+    content
+        String content to search for mass values
+    pattern
+        Regex pattern with a named group 'mass'
+
+    Returns
+    -------
+        List of float mass values
+    """
+    return [float(m.group('mass')) for m in re.finditer(pattern, content)]
+
+
 def _extract_pomass(h5_file: 'h5py.File') -> list[float]:
     """
     Extracts atomic masses (POMASS) per species from INCAR or POTCAR
@@ -137,40 +159,40 @@ def _extract_pomass(h5_file: 'h5py.File') -> list[float]:
 
     # 1. Try active input/incar/POMASS
     if 'input/incar/POMASS' in h5_file:
-        val = h5_file['input/incar/POMASS'].asstr()[()]
-        raw_vals = re.findall(r'[0-9.]+', str(val))
-        if not raw_vals:
-            msg = format_error(
-                f'POMASS found in input/incar/POMASS but could not parse '
-                f'numeric values from: {val!r}',
-                fix='Ensure POMASS contains valid numeric values.',
-            )
-            raise ValueError(msg)
-        return [float(mass) for mass in raw_vals]
+        content = h5_file['input/incar/POMASS'].asstr()[()]
+        if masses := _parse_masses(content, _MASS_PATTERN):
+            return masses
+
+        msg = format_error(
+            f'POMASS found in input/incar/POMASS but could not parse '
+            f'numeric values from: {content!r}',
+            fix='Ensure POMASS contains valid numeric values.',
+        )
+        raise ValueError(msg)
+
 
     # 2. Try original/incar/content
     if 'original/incar/content' in h5_file:
-        incar_content = h5_file['original/incar/content'].asstr()[()]
-        match = re.search(
-            r'POMASS\s*=\s*(?P<masses>[0-9.\s,]+)', incar_content
-        )
-        if match:
-            raw_vals = re.findall(r'[0-9.]+', match.group('masses'))
-            if not raw_vals:
-                msg = format_error(
-                    f'POMASS found in original/incar/content but could not '
-                    f'parse numeric values from: {match.group("masses")!r}',
-                    fix='Ensure POMASS contains valid numeric values.',
-                )
-                raise ValueError(msg)
-            return [float(mass) for mass in raw_vals]
+        content = h5_file['original/incar/content'].asstr()[()]
+        if pomass := re.search(
+            r'POMASS\s*=\s*(?P<masses>[0-9.\s,]+)', content
+        ):
+            if masses := _parse_masses(pomass.group('masses'), _MASS_PATTERN):
+                return masses
 
-    # 3. Try POTCAR content stored inside the HDF5 file
+            msg = format_error(
+                f'POMASS found in original/incar/content but could not '
+                f'parse numeric values from: {pomass.group("masses")!r}',
+                fix='Ensure POMASS contains valid numeric values.',
+            )
+            raise ValueError(msg)
+
+
+    # 3. Try POTCAR content
     if 'input/potcar/content' in h5_file:
-        potcar_content = h5_file['input/potcar/content'].asstr()[()]
-        matches = re.findall(r'POMASS\s*=\s*(?P<mass>[0-9.]+)', potcar_content)
-        if matches:
-            return [float(mass) for mass in matches]
+        content = h5_file['input/potcar/content'].asstr()[()]
+        if masses := _parse_masses(content, _POMASS_PATTERN):
+            return masses
 
     # 4. If missing from all, raise error
     msg = format_error(
