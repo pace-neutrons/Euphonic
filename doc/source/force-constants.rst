@@ -184,7 +184,7 @@ charges can also be read from Phonopy plaintext or hdf5 files by specifying the
 Reading From VASP
 -------------------
 
-Euphonic supports direct import of VASP 6+ HDF5 calculation files (``vaspout.h5``) using
+Euphonic supports direct import of VASP 6 HDF5 calculation files (``vaspout.h5``) using
 :py:meth:`ForceConstants.from_vasp <euphonic.force_constants.ForceConstants.from_vasp>`.
 This extracts crystal structure, supercell force constants (Hessian), and any present Born effective charges and high-frequency dielectric tensors:
 
