@@ -8,7 +8,7 @@ File Readers
 
    The ``euphonic.readers`` subpackage is part of Euphonic's public API and provides low-level functions that extract raw Python dictionaries from calculation files.
 
-   In most standard workflows, end-users are not expected to call these functions directly. Instead, you should construct high-level Euphonic objects (:py:class:`~euphonic.force_constants.ForceConstants`, :py:class:`~euphonic.qpoint_phonon_modes.QpointPhononModes`, :py:class:`~euphonic.qpoint_frequencies.QpointFrequencies`, or :py:class:`~euphonic.crystal.Crystal`) via their respective ``.from_vasp()``, ``.from_castep()``, or ``.from_phonopy()`` classmethod constructors.
+   In most standard workflows, end-users are not expected to call these functions directly. Instead, you should construct high-level Euphonic objects (:py:class:`~euphonic.force_constants.ForceConstants`, :py:class:`~euphonic.qpoint_phonon_modes.QpointPhononModes`, or :py:class:`~euphonic.qpoint_frequencies.QpointFrequencies`) via their respective ``.from_vasp()``, ``.from_castep()``, or ``.from_phonopy()`` classmethod constructors.
 
 .. contents:: :local:
 
