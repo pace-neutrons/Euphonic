@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from contextlib import contextmanager
 from pathlib import Path
 import re
@@ -135,7 +137,7 @@ def _parse_masses(content: str, pattern: str) -> list[float]:
     return [float(m.group('mass')) for m in re.finditer(pattern, content)]
 
 
-def _extract_pomass(h5_file: 'h5py.File') -> list[float]:
+def _extract_pomass(h5_file: h5py.File) -> list[float]:
     """
     Extracts atomic masses (POMASS) per species from INCAR or POTCAR
     content datasets stored inside the VASP HDF5 file.
@@ -206,7 +208,7 @@ def _extract_pomass(h5_file: 'h5py.File') -> list[float]:
 
 
 def _read_cell_from_group(
-    h5_file: 'h5py.File', group_path: str
+    h5_file: h5py.File, group_path: str
 ) -> CrystalDict:
     """
     Helper function to parse crystal structure from a specific HDF5 group.
@@ -376,7 +378,7 @@ def read_phonon_data(filename: Path) -> PhononDataDict:
         }
 
 
-def _find_fc_key(h5_file: 'h5py.File') -> str:
+def _find_fc_key(h5_file: h5py.File) -> str:
     """
     Finds dataset key for force constants or Hessian matrix in HDF5 container.
 
@@ -401,7 +403,7 @@ def _find_fc_key(h5_file: 'h5py.File') -> str:
     raise KeyError(msg)
 
 
-def _extract_born_and_dielectric(h5_file: 'h5py.File') -> BornDict:
+def _extract_born_and_dielectric(h5_file: h5py.File) -> BornDict:
     """
     Extracts Born charges and electronic dielectric tensor from HDF5 container.
     """
@@ -464,7 +466,7 @@ def _build_supercell_data(
 
 
 def _build_primitive_data(
-    h5_file: 'h5py.File',
+    h5_file: h5py.File,
     crystal_dict: CrystalDict,
     sc_hessian: np.ndarray,
     born_dict: BornDict,
