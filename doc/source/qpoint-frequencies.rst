@@ -55,6 +55,22 @@ argument. A path can also be specified.
 
   phonons = QpointFrequencies.from_phonopy(path='NaCl', phonon_name='mesh.hdf5')
 
+
+Reading From VASP
+-------------------
+
+Precalculated phonon frequencies can also be read directly from VASP HDF5 calculation files (``vaspout.h5``) containing phonon results using
+:py:meth:`QpointFrequencies.from_vasp <euphonic.qpoint_frequencies.QpointFrequencies.from_vasp>`:
+
+.. code-block:: python
+
+  from euphonic import QpointFrequencies
+
+  phonons = QpointFrequencies.from_vasp('vaspout.h5')
+
+For more details on VASP HDF5 data extraction, see :ref:`File Readers <readers>`.
+
+
 From Force Constants
 --------------------
 
