@@ -2,7 +2,7 @@ Introduction
 ************
 
 Euphonic enables the quick simulation of phonons from a force constants matrix produced by many common simulation packages.
-By default it supports the output from CASTEP or Phonopy, but it is possible to load any other format with just a little more work.
+By default it supports the output from CASTEP, Phonopy or VASP, but it is possible to load any other format with just a little more work.
 This guide will describe how to perform many common Euphonic operations.
 It is not intended to describe every possible operation you could perform.
 We have tried to provide links to the API documentation for the most complex cases.

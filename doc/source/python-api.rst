@@ -10,6 +10,7 @@ Python API
   Phonon Frequencies and Eigenvectors <qpoint-phonon-modes>
   Phonon Frequencies Only <qpoint-frequencies>
   Crystal Structure <crystal>
+  File Readers <readers>
   Density of States <dos>
   Structure Factors <structure-factor>
   Scattering Intensities <scattering-intensities>
