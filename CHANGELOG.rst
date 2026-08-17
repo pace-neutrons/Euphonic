@@ -132,11 +132,14 @@ and syntax).
 
   - Many public functions and methods now use keyword-only arguments
     where previously these were permitted to be keyword *or* positional.
+
     - This will break code that depends on these arguments being in a
       specific order rather than calling them by name
+
     - The most "obvious" arguments can still be accessed by position
       for concise "standard" function calls; the goal is not to make
       downstream code drastically more verbose.
+
     - The purpose of this is to give more flexibility to add features
       or alias arguments while deprecating/changing their behaviour,
       without breaking the public API between major releases.
