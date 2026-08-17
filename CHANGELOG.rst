@@ -37,7 +37,13 @@
 
 - Compatibility fixes
 
-  - Removed the deprecated duplicate ``phonopy_reader`` optional dependency entry from ``pyproject.toml``, retaining canonical ``phonopy-reader``. End-users require ``pip >= 22.2`` (or ``uv``) for PEP 685 extra name normalization (allowing legacy ``euphonic[phonopy_reader]`` syntax to resolve), while developers installing PEP 735 dependency groups via ``--group`` require ``pip >= 25.0`` (or ``uv``).
+  - Removed the deprecated ``phonopy_reader`` entry from
+    ``pyproject.toml``, retaining preferred ``phonopy-reader``. This
+    duplication was treated as an error by some modern package
+    installers. ``euphonic[phonopy_reader]`` will continue to resolve
+    for end-users with ``pip >= 22.2`` (or ``uv``; anything that
+    supports PEP 685). Developers installing PEP 735 dependency groups
+    via ``--group`` already required ``pip >= 25.0``.
 
   - The [brille] optional dependency group will no longer attempt to
     install brille on Linux ARM; this platform has no pre-built wheels and 
