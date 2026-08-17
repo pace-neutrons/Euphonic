@@ -5,7 +5,7 @@ Installation
 
 .. contents:: :local:
 
-Euphonic has been tested on Python 3.10 - 3.12.
+Euphonic has been tested on Python 3.10 - 3.14.
 
 Pip
 ===
@@ -36,7 +36,7 @@ If you don't require any of the extra depencencies, just use:
   pip install euphonic
 
 .. note::
-   Installing extra dependencies requires `pip >= 22.2` (or modern packaging tools like `uv`) to support PEP 685 extra name normalization (allowing legacy extra syntax such as `phonopy_reader` to automatically resolve to `phonopy-reader`).
+   Installing extra dependencies requires `pip >= 22.2` (or modern packaging tools like `uv`) for PEP 685 extra name normalization (i.e. allowing the legacy  `phonopy_reader` to automatically resolve to `phonopy-reader`).
 
 
 Conda
