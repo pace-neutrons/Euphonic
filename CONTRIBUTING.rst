@@ -21,6 +21,9 @@ overlooked please get in touch.
 Testing
 ~~~~~~~
 
+.. note::
+   Euphonic uses PEP 735 dependency groups for developer workflows (e.g. ``[dependency-groups]`` in ``pyproject.toml``). Installing dependency groups directly via ``pip install --group <group>`` requires ``pip >= 25.0`` or modern tools like ``uv``.
+
 Euphonic uses ``pytest`` with ``tox`` for unit testing in multiple
 isolated Python environments. Within the tox environments, the
 entrypoint to run unit tests is the

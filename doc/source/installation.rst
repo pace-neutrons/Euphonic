@@ -35,6 +35,10 @@ If you don't require any of the extra depencencies, just use:
 
   pip install euphonic
 
+.. note::
+   Installing extra dependencies requires `pip >= 22.2` (or modern packaging tools like `uv`) to support PEP 685 extra name normalization (allowing legacy extra syntax such as `phonopy_reader` to automatically resolve to `phonopy-reader`).
+
+
 Conda
 =====
 
