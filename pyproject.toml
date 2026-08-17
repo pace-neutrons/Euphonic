@@ -84,7 +84,7 @@ dev = [
 
 [project.optional-dependencies]
 matplotlib = ["matplotlib>=3.8.0"]
-# phonopy_reader = ["h5py>=3.6.0", "PyYAML>=6.0"]  # Deprecated, will be removed in future versions.
+phonopy_reader = ["h5py>=3.6.0", "PyYAML>=6.0"]  # Deprecated, will be removed in future versions.
 phonopy-reader = ["h5py>=3.6.0", "PyYAML>=6.0"]
 # brille build on ARM-Linux is currently a bad time; skip it so tests run properly
 brille = ["brille>=0.7.0; sys_platform != 'linux' or platform_machine not in 'aarch64 arm64'"]
@@ -99,7 +99,6 @@ euphonic-intensity-map = "euphonic.cli.intensity_map:main"
 euphonic-powder-map = "euphonic.cli.powder_map:main"
 
 [tool.uv]
-default-groups = ["test"]
 conflicts = [
   [{group = 'min_reqs'}, {group = 'docs'}],
   [{group = 'min_reqs'}, {group = 'dev'}],
