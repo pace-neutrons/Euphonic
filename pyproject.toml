@@ -7,7 +7,7 @@ requires = ["meson-python",
             "numpy>=1.24.0"]
 
 [tool.meson-python.args]
-setup = ['--vsenv']
+setup = ['--vsenv', '-Dpython_only=false']
 
 [project]
 name = "Euphonic"
@@ -98,6 +98,12 @@ euphonic-show-sampling = "euphonic.cli.show_sampling:main"
 euphonic-intensity-map = "euphonic.cli.intensity_map:main"
 euphonic-powder-map = "euphonic.cli.powder_map:main"
 
+[tool.uv]
+conflicts = [
+  [{group = 'min_reqs'}, {group = 'docs'}],
+  [{group = 'min_reqs'}, {group = 'dev'}],
+]
+
 [tool.pytest.ini_options]
 markers = [
     "brille: test requires 'brille' extra",
@@ -105,6 +111,7 @@ markers = [
     "matplotlib: test requires 'matplotlib' extra",
     "multiple_extras: test requires multiple extras to be installed",
     "phonopy_reader: test requires 'phonopy-reader' extra",
+    "vasp_reader: test requires 'phonopy-reader' extra",
 ]
 
 [tool.ruff]
@@ -216,12 +223,6 @@ extend-ignore-names = ["k_B", "H_ab", "Q"]
 [tool.ruff.format]
 # Prefer single quotes over double quotes.
 quote-style = "single"
-
-[tool.uv]
-conflicts = [
-  [{group = 'min_reqs'}, {group = 'docs'}],
-  [{group = 'min_reqs'}, {group = 'dev'}],
-]
 
 [tool.coverage.run]
 branch = true

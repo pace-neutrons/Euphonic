@@ -24,6 +24,17 @@
     aware this didn't cause problems *yet*, but could misbehave in
     some environment.
 
+- New features
+
+  - Added VASP HDF5 input support (`vaspout.h5`) for importing force
+    constants, Born effective charges, and dielectric tensors via
+    ``ForceConstants.from_vasp``, as well as precalculated phonon mode
+    data via ``QpointPhononModes.from_vasp`` and
+    ``QpointFrequencies.from_vasp``.  When primitive cell data is
+    present, a supercell-to-primitive force constant transformation is
+    attempted: less data is available is available than the equivalent
+    phonopy scenario, which may impact reliability.
+
 - Compatibility fixes
 
   - The [brille] optional dependency group will no longer attempt to

@@ -15,7 +15,7 @@ from euphonic.io import (
     _obj_to_json_file,
     _process_dict,
 )
-from euphonic.readers import castep, phonopy
+from euphonic.readers import castep, phonopy, vasp
 from euphonic.spectra import Spectrum1D, Spectrum1DCollection, Spectrum2D
 from euphonic.ureg import Quantity, ureg
 from euphonic.util import (
@@ -463,4 +463,20 @@ class QpointFrequencies:
         data = phonopy.read_phonon_data(
             path=path, phonon_name=phonon_name, phonon_format=phonon_format,
             summary_name=summary_name, read_eigenvectors=False)
+        return cls.from_dict(data)
+
+    @classmethod
+    def from_vasp(
+        cls,
+        filename: Path | str,
+    ) -> Self:
+        """
+        Reads phonon frequency data from a VASP HDF5 file (e.g. vaspout.h5)
+
+        Parameters
+        ----------
+        filename
+            The path and name of the VASP HDF5 file to read
+        """
+        data = vasp.read_phonon_data(Path(filename))
         return cls.from_dict(data)
