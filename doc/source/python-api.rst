@@ -18,9 +18,9 @@ Python API
   Scattering Intensities <scattering-intensities>
   Debye-Waller <debye-waller>
   Spectra <spectra>
-  powder
-  plotting
-  sampling
-  utils
+  Powder Averaging <powder>
+  Plotting <plotting>
+  Sampling Tools <sampling>
+  Utilities <utils>
   Interpolation with Brille <brille-interpolator>
-  writers
+  Writing to External Formats <writers>

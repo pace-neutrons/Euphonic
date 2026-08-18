@@ -60,6 +60,8 @@
 
   - Recommend IsotopeData interface, not old *get_reference_data* function.
 
+  - Other minor improvements.
+
 - Maintenance
 
   - Unit-testing with ``tox``
