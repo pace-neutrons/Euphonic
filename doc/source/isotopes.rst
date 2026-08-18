@@ -9,7 +9,7 @@ Isotope Data
 Overview
 ========
 
-Euphonic uses isotope and reference data when calculating neutron scattering quantities, such as structure factors (:py:meth:`QpointPhononModes.calculate_structure_factor <euphonic.qpoint_phonon_modes.QpointPhononModes.calculate_structure_factor>`) or neutron-weighted partial density of states (:py:meth:`QpointPhononModes.calculate_pdos <euphonic.qpoint_phonon_modes.QpointPhononModes.calculate_pdos>`). 
+Euphonic uses isotope and reference data when calculating neutron scattering quantities, such as structure factors (:py:meth:`QpointPhononModes.calculate_structure_factor <euphonic.qpoint_phonon_modes.QpointPhononModes.calculate_structure_factor>`) or neutron-weighted partial density of states (:py:meth:`QpointPhononModes.calculate_pdos <euphonic.qpoint_phonon_modes.QpointPhononModes.calculate_pdos>`).
 
 Depending on your use case, isotope and scattering length properties can be provided in two main ways:
 
@@ -38,7 +38,7 @@ This approach is lightweight and keeps problem-specific overrides self-contained
 Using General-Purpose Datasets (``sears_1992`` & ``CsvData``)
 =============================================================
 
-For robust, general-purpose isotopic tables supporting automatic mass and scattering length lookups across all elements and isotopes, Euphonic provides :py:class:`~euphonic.isotopes._csv.CsvData`. 
+For robust, general-purpose isotopic tables supporting automatic mass and scattering length lookups across all elements and isotopes, Euphonic provides :py:class:`~euphonic.isotopes._csv.CsvData`.
 
 By default, Euphonic preloads the Sears (1992) neutron scattering length dataset as ``sears_1992``:
 
@@ -50,6 +50,12 @@ By default, Euphonic preloads the Sears (1992) neutron scattering length dataset
   si_b = sears_1992.get_array('Si', 'bound_coherent_scattering_length')
 
 You can also load custom CSV data tables containing physical properties and unit definitions using :py:class:`~euphonic.isotopes._csv.CsvData`.
+
+Custom Providers & the ``IsotopeData`` Protocol
+===============================================
+
+For advanced workflows or integration into other materials simulation packages, you can create a custom data provider by implementing a class that adheres to the :py:class:`~euphonic.isotopes.IsotopeData` protocol. Implementing classes should define the :py:meth:`~euphonic.isotopes.IsotopeData.get_item` and :py:meth:`~euphonic.isotopes.IsotopeData.get_array` methods, and can optionally inherit from :py:class:`~euphonic.isotopes.ArrayFromValuesMixin` to automatically handle array extraction across crystal structures.
+
 
 
 Module API Reference

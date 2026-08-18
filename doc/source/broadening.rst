@@ -14,12 +14,14 @@ Overview
 ========
 
 The ``euphonic.broadening`` module provides the low-level standalone convolution and interpolation algorithms used internally by Euphonic to apply Gaussian or Lorentzian broadening to 1-D and 2-D spectral data series.
+:py:func:`~euphonic.broadening.variable_width_broadening` evaluates broadening width functions (such as instrumental resolution functions varying with energy transfer)
+and passes them to :py:func:`~euphonic.broadening.width_interpolated_broadening`, which implements a fast approximate broadening scheme.
+The data is divided and convolved with multiple kernels to construct an interpolated spectrum without broadening every bin individually [Farmer2023]_.
 
-Key Capabilities
-================
+References
+==========
 
-- **Variable-Width Broadening**: :py:func:`~euphonic.broadening.variable_width_broadening` handles x-dependent broadening functions (such as instrumental resolution functions varying with energy transfer).
-- **Kernel Interpolation**: :py:func:`~euphonic.broadening.width_interpolated_broadening` and :py:func:`~euphonic.broadening.find_coeffs` accelerate calculations by evaluating broadening kernels on regularly spaced intervals and interpolating across the spectrum.
+.. [Farmer2023] J. Farmer and A. J. Jackson. *A fast approximate method for variable-width broadening of spectra*. `arXiv:2309.12135 <https://arxiv.org/abs/2309.12135>`_ (2023).
 
 Module API Reference
 ====================
