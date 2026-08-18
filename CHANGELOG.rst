@@ -53,6 +53,13 @@
     ``brille_or_skip_if_unsupported`` fixture; on other platforms,
     missing brille will still cause those tests to fail.
 
+- Documentation
+
+  - Added documentation for *readers*, *isotopes*, *broadening*
+    modules and updated related sections of existing docs.
+
+  - Recommend IsotopeData interface, not old *get_reference_data* function.
+
 - Maintenance
 
   - Unit-testing with ``tox``

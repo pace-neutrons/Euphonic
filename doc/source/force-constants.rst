@@ -167,18 +167,7 @@ changed with the ``summary_name`` keyword argument:
   fc = ForceConstants.from_phonopy(path='NaCl',
                                    summary_name='phonopy_nacl.yaml')
 
-If you are using an older version of Phonopy, the force constants and born
-charges can also be read from Phonopy plaintext or hdf5 files by specifying the
-``fc_name`` and ``born_name`` keyword arguments:
-
-.. testcode:: nacl_yaml
-
-  from euphonic import ForceConstants
-
-  fc = ForceConstants.from_phonopy(path='NaCl',
-                                   summary_name='phonopy_nacl.yaml',
-                                   fc_name='force_constants.hdf5',
-                                   born_name='BORN_nacl')
+For older Phonopy versions or separate file layouts (such as explicit ``FORCE_CONSTANTS`` or ``BORN`` files), see :ref:`File Readers <readers>`.
 
 
 Reading From VASP

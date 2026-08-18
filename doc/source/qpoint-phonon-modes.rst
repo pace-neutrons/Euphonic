@@ -119,7 +119,7 @@ be set as a dictionary mapping each atom identity to a ``pint.Quantity``
 (see :ref:`Units` for details).
 
 Alternatively, this argument may be a string referring to a data file
-with the *coherent_scattering_length* property. (See :ref:`Reference Data <ref_data>` for details.)
+with the *coherent_scattering_length* property. (See :ref:`Isotope Data <isotopes>` for details.)
 By default, :py:meth:`QpointPhononModes.calculate_structure_factor <euphonic.qpoint_phonon_modes.QpointPhononModes.calculate_structure_factor>` will use the ``"Sears1992"`` data set included in Euphonic.
 If you have a custom data file, this can be used instead.
 
