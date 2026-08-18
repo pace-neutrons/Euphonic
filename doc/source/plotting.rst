@@ -228,5 +228,6 @@ e.g.:
   fig.show()
 
 This approach is used in the Euphonic command-line tools; for more
-information see :ref:`styling`. The CLI defaults can be imitated by
-using the same style sheet ``euphonic.style.base_style``.
+information on customizing plot aesthetics and available style presets, see
+:ref:`styling`. The CLI defaults can be imitated by using the bundled
+style sheet ``euphonic.styles.base_style``.
