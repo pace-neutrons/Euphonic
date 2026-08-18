@@ -111,9 +111,11 @@ jobs:
   publish-coverage:
     needs: test
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request'
+    if: |
+      github.event_name == 'pull_request' ||
+      (github.ref == 'refs/heads/master' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch'))
     permissions:
-      contents: read
+      contents: write
       pull-requests: read
       checks: read
     steps:
@@ -126,11 +128,13 @@ jobs:
           name: 'Coverage Data (ubuntu-latest)'
 
       - name: Generate coverage comment file
+        id: coverage_comment
         uses: py-cov-action/python-coverage-comment-action@v3
         with:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload comment artifact
+        if: steps.coverage_comment.outputs.COMMENT_FILE_WRITTEN == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: python-coverage-comment-action
