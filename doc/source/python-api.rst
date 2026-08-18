@@ -11,6 +11,8 @@ Python API
   Phonon Frequencies Only <qpoint-frequencies>
   Crystal Structure <crystal>
   File Readers <readers>
+  Isotope Data <isotopes>
+  Broadening Utilities <broadening>
   Density of States <dos>
   Structure Factors <structure-factor>
   Scattering Intensities <scattering-intensities>
