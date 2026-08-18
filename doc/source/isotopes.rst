@@ -14,7 +14,7 @@ Euphonic uses isotope and reference data when calculating neutron scattering qua
 Depending on your use case, isotope and scattering length properties can be provided in two main ways:
 
 1. **Problem-Specific Dictionaries**: A simple, convenient way to define scattering lengths or atomic weights tied directly to element or atom labels in a specific calculation, without needing external files.
-2. **General-Purpose Tabular Datasets (``CsvData``)**: A robust framework for loading comprehensive property tables across the periodic table (such as the built-in ``sears_1992`` dataset).
+2. **General-Purpose Tabular Datasets (CsvData)**: A robust framework for loading comprehensive property tables across the periodic table (such as the built-in ``sears_1992`` dataset).
 
 Using Custom Dictionaries for Problem-Specific Data
 ===================================================
