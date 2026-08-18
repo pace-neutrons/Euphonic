@@ -20,9 +20,9 @@ Euphonic supports reading CASTEP calculation files (``.castep_bin``, ``.check``,
 File Structure & Records
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
-* **Binary Files (``.castep_bin``, ``.check``)**: Binary records containing unit cell vectors, ionic positions, species, force constants matrix, Born effective charges, and high-frequency dielectric tensors.
-* **Phonon Dispersion Files (``.phonon``)**: Text blocks containing q-points, phonon frequencies, and eigenvectors.
-* **Density of States Files (``.phonon_dos``)**: Text tables containing total density of states and per-element partial DOS.
+* **Binary Files (.castep_bin, .check)**: Binary records containing structure, force constants, Born effective charges, and dielectric tensors.
+* **Phonon Dispersion Files (.phonon)**: Text blocks containing q-points, phonon frequencies, and eigenvectors.
+* **Density of States Files (.phonon_dos)**: Text tables containing total density of states and per-element partial DOS.
 
 Module API Reference
 ^^^^^^^^^^^^^^^^^^^^
@@ -41,15 +41,17 @@ Euphonic supports reading Phonopy calculation files in YAML and HDF5 formats.
 File Structure & Records
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
-* **Summary Files (``phonopy.yaml``)**: Unified metadata file containing crystal structure, supercell transformation matrix, Born effective charges, and calculation parameters.
-* **Force Constant Files (``FORCE_CONSTANTS`` / ``force_constants.hdf5``)**: Standalone supercell force constant matrices.
-* **Dielectric Files (``BORN``)**: Standalone Born effective charges and dielectric tensors.
-* **Phonon Dispersion / Mesh Files (``mesh.*``, ``qpoints.*``, ``bands.*``)**: Precalculated q-points, frequencies, and eigenvectors.
+* **Summary Files (phonopy.yaml)**: Unified metadata file containing crystal structure, supercell transformation matrix, Born effective charges, and calculation parameters.
+* **Force Constant Files (FORCE_CONSTANTS / force_constants.hdf5)**: Standalone supercell force constant matrices.
+* **Dielectric Files (BORN)**: Standalone Born effective charges and dielectric tensors.
+* **Phonon Dispersion / Mesh Files (mesh.*, qpoints.*, bands.*)**: Precalculated q-points, frequencies, and eigenvectors.
 
 Separate Files & Fallback Behavior
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-When using modern Phonopy versions with ``--include-all``, a single ``phonopy.yaml`` contains all necessary data. However, for older Phonopy versions or split calculations where force constants and Born charges are stored in separate files (e.g. ``FORCE_CONSTANTS``, ``force_constants.hdf5``, or ``BORN``), Euphonic will look inside ``phonopy.yaml`` first and fall back to external files if needed:
+Using Phonopy with the ``--include-all`` parameter, all necessary data can be written to a single ``phonopy.yaml`` .
+Otherwise, force constants and Born charges might be stored in separate files (e.g. ``FORCE_CONSTANTS``, ``force_constants.hdf5``, or ``BORN``).
+Euphonic will look inside ``phonopy.yaml`` first and fall back to external files if needed:
 
 * **Python API**: Specify explicit filenames using keyword arguments such as ``fc_name='force_constants.hdf5'`` or ``born_name='BORN'`` in :py:meth:`ForceConstants.from_phonopy <euphonic.force_constants.ForceConstants.from_phonopy>`.
 * **CLI Tools**: Euphonic's command-line tools automatically detect and load accompanying ``FORCE_CONSTANTS`` or ``force_constants.hdf5`` files if they reside in the same directory as ``phonopy.yaml``.

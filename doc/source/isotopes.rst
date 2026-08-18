@@ -35,8 +35,8 @@ For quick calculations or when testing custom scattering lengths for specific at
 
 This approach is lightweight and keeps problem-specific overrides self-contained within your script.
 
-Using General-Purpose Datasets (``sears_1992`` & ``CsvData``)
-=============================================================
+General-Purpose Datasets
+========================
 
 For robust, general-purpose isotopic tables supporting automatic mass and scattering length lookups across all elements and isotopes, Euphonic provides :py:class:`~euphonic.isotopes._csv.CsvData`.
 
@@ -51,8 +51,8 @@ By default, Euphonic preloads the Sears (1992) neutron scattering length dataset
 
 You can also load custom CSV data tables containing physical properties and unit definitions using :py:class:`~euphonic.isotopes._csv.CsvData`.
 
-Custom Providers & the ``IsotopeData`` Protocol
-===============================================
+Custom Providers & the IsotopeData Protocol
+===========================================
 
 For advanced workflows or integration into other materials simulation packages, you can create a custom data provider by implementing a class that adheres to the :py:class:`~euphonic.isotopes.IsotopeData` protocol. Implementing classes should define the :py:meth:`~euphonic.isotopes.IsotopeData.get_item` and :py:meth:`~euphonic.isotopes.IsotopeData.get_array` methods, and can optionally inherit from :py:class:`~euphonic.isotopes.ArrayFromValuesMixin` to automatically handle array extraction across crystal structures.
 
