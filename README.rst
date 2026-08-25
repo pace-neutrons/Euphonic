@@ -20,8 +20,9 @@ Euphonic
    :target: https://github.com/pace-neutrons/Euphonic/actions/workflows/run_tests.yml
    :alt: Tests
 
-.. |Coverage| image:: https://raw.githubusercontent.com/pace-neutrons/Euphonic/refs/heads/badges/badge_shieldsio_linecoverage_lightgrey.svg
-   :target: https://github.com/pace-neutrons/Euphonic/actions/workflows/run_tests.yml                      :alt: Coverage   
+.. |Coverage| image:: https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/pace-neutrons/Euphonic/python-coverage-comment-action-data/endpoint.json
+   :target: https://htmlpreview.github.io/?https://github.com/pace-neutrons/Euphonic/blob/python-coverage-comment-action-data/htmlcov/index.html
+   :alt: Coverage
 
 .. |License| image:: https://img.shields.io/pypi/l/euphonic
    :target: https://github.com/pace-neutrons/Euphonic/blob/master/LICENSE

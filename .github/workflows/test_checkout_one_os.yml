@@ -107,10 +107,3 @@ jobs:
           name: Coverage HTML (${{ inputs.os }})
           path: tests_and_analysis/test/reports/htmlcov
           include-hidden-files: true
-
-      - name: Upload coverage Badge
-        if: inputs.coverage
-        uses: actions/upload-artifact@v4
-        with:
-          name: Coverage Badge (${{ inputs.os }})
-          path: tests_and_analysis/test/reports/coverage-badge.svg
