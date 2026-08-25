@@ -112,6 +112,11 @@
       ``orgoro/coverage@v3.2``; this uses a different mechanism and
       should work better with PRs from external forks.
 
+      It provides a similar "badge on branch" mechanism to the
+      existing setup, so those workflow steps are removed. The
+      coverage badge in README now links to an interactive HTML
+      report.
+
 `v2.0.0 <https://github.com/pace-neutrons/Euphonic/compare/v1.6.2...v2.0.0>`_
 -----------------------------------------------------------------------------
 
