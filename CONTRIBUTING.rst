@@ -1,11 +1,11 @@
 Contributing
 ------------
 
-Code contributions may be made to this project via Github ``Pull Request
-<https://github.com/pace-neutrons/Euphonic/pulls>``_ (PR).  For
+Code contributions may be made to this project via Github `Pull Request
+<https://github.com/pace-neutrons/Euphonic/pulls>`_ (PR).  For
 non-trivial changes, it may be helpful to discuss the idea first by
-creating an ``Issue
-<https://github.com/pace-neutrons/Euphonic/issues>``_.
+creating an `Issue
+<https://github.com/pace-neutrons/Euphonic/issues>`_.
 
 Contributions are also welcome in the form of Issues for bug reports
 and feature requests, and by reviewing PRs.  If you have a great idea
@@ -35,30 +35,41 @@ This can save a lot of time on modern multi-core machines!
 Coverage Testing
 ~~~~~~~~~~~~~~~~
 
-Test coverage is checked automatically for Github pull requests.
+Test coverage is tracked automatically in GitHub Actions: pull
+requests receive automated coverage summary comments, and automated
+test runs on ``master`` update coverage data on the
+``python-coverage-comment-action-data`` branch. This is used for the
+README badge and as a reference for pull request comparisons.
+
 To examine coverage locally, there are two options:
 
-1. A ``tox`` marker has been created for this purpose: it creates a
-   coverage badge and cleans up temporary files, but relies on a
-   specific Python version. Run with::
+1. A ``tox`` label has been created for this purpose: it runs coverage,
+   generates interactive HTML and SVG badge reports, and cleans up
+   temporary files, relying on a specific Python version. Run with::
 
      tox run -m coverage-local
 
-   This will show basic coverage statistics during execution, then
-   generate a coverage badge at
+   This will display basic coverage statistics during execution, generate
+   an interactive HTML report at
+   ``tests_and_analysis/test/reports/htmlcov/index.html``, and produce a
+   local SVG badge preview at
    ``tests_and_analysis/test/reports/coverage-badge.svg``.
 
-2. Run coverage with another Python environment (more flexible but
-   less clean): Use e.g. ``tox -e py314 -- --cov --parallel`` to run
-   parallel tests with coverage in Python 3.14. This will leave a hidden
+2. Run coverage with another Python environment: this approach is more flexible but
+   less clean. Use e.g.::
+
+     tox -e py314 -- --cov --parallel
+
+   to run parallel tests with coverage in Python 3.14. This will leave a hidden
    data file at ``tests_and_analysis/test/.coverage``, which can be used
    with the ``coverage`` python tool, e.g.::
 
      coverage report -m --data-file=tests_and_analysis/test/.coverage
 
-   To generate XML reports for other tools, use::
+   To generate HTML reports or XML for other tools, use::
 
-     coverage xml --data-file=tests_and_analysis/test/.coverage
+     coverage html --data-file=tests_and_analysis/test/.coverage -d tests_and_analysis/test/reports/htmlcov
+     coverage xml --data-file=tests_and_analysis/test/.coverage -o tests_and_analysis/test/reports/coverage.xml
 
    For more options see the `documentation <https://coverage.readthedocs.io>`_.
 
@@ -71,6 +82,7 @@ and included in the next release of Euphonic.
 Please ensure that:
 
 - Tests are passing, including ``ruff check``.
+
   - Ruff checks can be ignored with ``#noqa: R123`` if necessary
     (where R123 is the rule code) but please use this capability
     responsibly.
@@ -91,8 +103,8 @@ need to edit these as part of a PR. If you need something on
 Documentation
 ~~~~~~~~~~~~~
 
-The documentation uses ``Sphinx <https://www.sphinx-doc.org>``_ and is
-published with ``readthedocs.com <https://about.readthedocs.com>``_.
+The documentation uses `Sphinx <https://www.sphinx-doc.org>`_ and is
+published with `readthedocs.com <https://about.readthedocs.com>`_.
 The source files are under *doc/source*; if a new Python module is
 added, it is necessary to create a new docs page and add it to the
 *python-api.rst* index.
