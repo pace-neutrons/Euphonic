@@ -35,10 +35,11 @@ This can save a lot of time on modern multi-core machines!
 Coverage Testing
 ~~~~~~~~~~~~~~~~
 
-Test coverage is tracked automatically in GitHub Actions: pull requests
-receive automated coverage summary comments, and master branch runs update
-the coverage badge data on the ``python-coverage-comment-action-data``
-branch.
+Test coverage is tracked automatically in GitHub Actions: pull
+requests receive automated coverage summary comments, and automated
+test runs on ``master`` update coverage data on the
+``python-coverage-comment-action-data`` branch. This is used for the
+README badge and as a reference for pull request comparisons.
 
 To examine coverage locally, there are two options:
 
@@ -54,15 +55,18 @@ To examine coverage locally, there are two options:
    local SVG badge preview at
    ``tests_and_analysis/test/reports/coverage-badge.svg``.
 
-2. Run coverage with another Python environment (more flexible but
-   less clean): Use e.g. ``tox -e py314 -- --cov --parallel`` to run
-   parallel tests with coverage in Python 3.14. This will leave a hidden
+2. Run coverage with another Python environment: this approach is more flexible but
+   less clean. Use e.g.::
+
+     tox -e py314 -- --cov --parallel
+
+   to run parallel tests with coverage in Python 3.14. This will leave a hidden
    data file at ``tests_and_analysis/test/.coverage``, which can be used
    with the ``coverage`` python tool, e.g.::
 
      coverage report -m --data-file=tests_and_analysis/test/.coverage
 
-   To generate HTML or XML reports for other tools, use::
+   To generate HTML reports or XML for other tools, use::
 
      coverage html --data-file=tests_and_analysis/test/.coverage -d tests_and_analysis/test/reports/htmlcov
      coverage xml --data-file=tests_and_analysis/test/.coverage -o tests_and_analysis/test/reports/coverage.xml
