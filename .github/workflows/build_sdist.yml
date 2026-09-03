@@ -48,22 +48,12 @@ jobs:
         with:
           python-version: 3.11
 
-      - name: Find MSVC and set environment variables
-        shell: bash -l {0}
-        env:
-          MSVC_PREFIX: 'C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Tools\MSVC'
+      - name: Remove Strawberry ccache binary (It confuses the meson build)
+        shell: powershell
         run: |
-          echo "Available MSVC installations:"
-          ls "$MSVC_PREFIX"
-
-          MSVC_BIN=$(ls "$MSVC_PREFIX" | tail -n 1)\\bin\\HostX64\\x64
-          CC="$MSVC_PREFIX\\$MSVC_BIN\\cl.exe"
-          echo "CC: $CC"
-          echo "CC=$CC" >> $GITHUB_ENV
-
-          CC_LD="$MSVC_PREFIX\\$MSVC_BIN\\link.exe"
-          echo "CC_LD: $CC_LD"
-          echo "CC_LD=$CC_LD" >> $GITHUB_ENV
+          if (Test-Path "C:\Strawberry\c\bin\ccache.exe") {
+              Remove-Item "C:\Strawberry\c\bin\ccache.exe" -Force
+          }
 
       - name: Download sdist
         uses: actions/download-artifact@v4
