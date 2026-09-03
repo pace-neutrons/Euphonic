@@ -2,7 +2,8 @@
 -------------------------------------------------------------------------------
 
 `v2.1.0 <https://github.com/pace-neutrons/Euphonic/compare/v2.0.0...v2.1.0>`_
--------------------------------------------------------------------------------
+-----------------------------------------------------------------------------
+
 This is mostly a maintenance release, with further changes to CI coverage measurement.
 The Linux ARM platform is now supported (also required for
 podman/docker containers on ARM Mac) and in the process some issues
