@@ -1,5 +1,16 @@
-`Unreleased <https://github.com/pace-neutrons/Euphonic/compare/v2.0.0...HEAD>`_
+`Unreleased <https://github.com/pace-neutrons/Euphonic/compare/v2.1.0...HEAD>`_
 -------------------------------------------------------------------------------
+
+`v2.1.0 <https://github.com/pace-neutrons/Euphonic/compare/v2.0.0...v2.1.0>`_
+-------------------------------------------------------------------------------
+This is mostly a maintenance release, with further changes to CI coverage measurement.
+The Linux ARM platform is now supported (also required for
+podman/docker containers on ARM Mac) and in the process some issues
+were fixed in the C extension code; as far as we are aware they didn't
+cause problems on other platforms (yet).
+
+An exciting new feature for end-users is support for VASP HDF5 files;
+this is available in the Python API but not connected to CLI tools yet.
 
 - Requirements
 
@@ -20,9 +31,7 @@
     to safely contain real and imaginary parts.
 
   - All the int "length" values passed-by-reference to the same
-    function are now properly initialised to ``-1``; as far as we are
-    aware this didn't cause problems *yet*, but could misbehave in
-    some environment.
+    function are now properly initialised to ``-1``.
 
 - New features
 
