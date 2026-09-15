@@ -92,18 +92,28 @@ class TestRegression:
                                                  all_plot_data,
                                                  strict=True):
             for key, expected_val in expected_plot_data.items():
-                if key == 'xy_data':
-                    # Float values for small statistics hard to check
-                    # Just test shape
-                    for expected_item, plot_item in zip(
-                            expected_val, plot_data[key], strict=True):
-                        assert (np.array(expected_item).shape
-                                == np.array(plot_item).shape)
+                match key, plot_data.get(key):
+                    case 'xy_data', val:
+                        # Float values for small statistics hard to check
+                        # Just test shape
+                        for expected_item, plot_item in zip(
+                                expected_val, val, strict=True):
+                            assert (np.array(expected_item).shape
+                                    == np.array(plot_item).shape)
 
-                elif key != 'x_ticklabels':
-                    # Check titles and ax labels
-                    # Don't care about tick labels
-                    assert expected_val == plot_data[key]
+                    case 'x_ticklabels', _:
+                        # Don't care
+                        pass
+
+                    case _, [*vals]:
+                        # List of (presumably) strings:
+                        # watch out for pint notation change · -> ⋅
+                        assert expected_val == [
+                            val.replace('⋅', '·') for val in vals
+                            ]
+
+                    case _, val:
+                        assert expected_val == val
 
         # Check specific properties of the different figures
         # 0:  frequency residual vs frequency scatter plot
