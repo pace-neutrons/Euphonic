@@ -104,7 +104,7 @@ jobs:
           output-dir: wheelhouse
 
       - name: Upload wheels as build artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
             name: wheel-${{ matrix.wheelname }}-${{ matrix.python-version }}-${{ matrix.cibw_archs }}
             path: wheelhouse/*-${{ matrix.wheelname }}*_${{ matrix.cibw_archs }}.whl
