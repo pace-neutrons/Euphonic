@@ -105,11 +105,10 @@ class TestRegression:
                         # Don't care
                         pass
 
-                    case _, [*vals]:
-                        # List of (presumably) strings:
+                    case ('x_label' | 'y_label'), [*labels]:
                         # watch out for pint notation change · -> ⋅
                         assert expected_val == [
-                            val.replace('⋅', '·') for val in vals
+                            label.replace('⋅', '·') for label in labels
                             ]
 
                     case _, val:
