@@ -109,7 +109,7 @@ class TestRegression:
                         # watch out for pint notation change · -> ⋅
                         assert expected_val == [
                             label.replace('⋅', '·') for label in labels
-                            ]
+                        ]
 
                     case _, val:
                         assert expected_val == val
