@@ -76,7 +76,7 @@ jobs:
         run: python -m tox -c build_utils/pypi_release_tox.ini
       - name: Upload test results
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: PyPI unit test results ${{ matrix.os }}
           path: tests_and_analysis/test/reports/junit_report*.xml
@@ -87,7 +87,7 @@ jobs:
     if: success() || failure()
     steps:
       - name: Download Artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           path: artifacts
       - name: Publish PyPI test results
