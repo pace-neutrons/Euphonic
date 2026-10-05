@@ -4,6 +4,7 @@
 - Requirements
 
   - Pinned brille upper bound to < 0.9 while working out some test failures.
+  - Python 3.15 is now officially tested/supported
 
 - Compatibility
 
