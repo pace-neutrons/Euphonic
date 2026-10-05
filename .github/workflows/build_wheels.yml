@@ -19,7 +19,7 @@ jobs:
     strategy:
       matrix:
         os: [windows-latest, macos-15-intel, macos-latest, ubuntu-latest, ubuntu-24.04-arm]
-        python-version: ['3.10', '3.11', '3.12', '3.13', '3.14']
+        python-version: ['3.10', '3.11', '3.12', '3.13', '3.14', '3.15']
         include:
           - os: windows-latest
             wheelname: win
@@ -46,6 +46,8 @@ jobs:
             version-tag: cp313
           - python-version: '3.14'
             version-tag: cp314
+          - python-version: '3.15'
+            version-tag: cp315         
       fail-fast: false
     runs-on: ${{ matrix.os }}
     steps:
