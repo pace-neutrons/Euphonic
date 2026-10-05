@@ -1,6 +1,10 @@
 `Unreleased <https://github.com/pace-neutrons/Euphonic/compare/v2.1.0...HEAD>`_
 -------------------------------------------------------------------------------
 
+- Requirements
+
+  - Pinned brille upper bound to < 0.9 while working out some test failures.
+
 - Compatibility
 
   - A recent version of Pint is using slightly different unicode
