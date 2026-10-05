@@ -1,10 +1,18 @@
 `Unreleased <https://github.com/pace-neutrons/Euphonic/compare/v2.1.0...HEAD>`_
 -------------------------------------------------------------------------------
 
+- Requirements
+
+  - Pinned brille upper bound to < 0.9 while working out some test failures.
+
 - Compatibility
 
   - A recent version of Pint is using slightly different unicode
     symbols in plot labels; existing unit tests were modified to allow this.
+
+- Maintenance
+
+  - Updated Github Action versions in CI workflows
 
 `v2.1.0 <https://github.com/pace-neutrons/Euphonic/compare/v2.0.0...v2.1.0>`_
 -----------------------------------------------------------------------------
