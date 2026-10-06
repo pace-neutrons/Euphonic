@@ -153,7 +153,7 @@ class TestRegression:
                 '--energy-broadening=1',
                 '--instrument-broadening=2',
             ])
-        out, err = capsys.readouterr()
+        _, err = capsys.readouterr()
         assert 'not allowed with argument' in err
 
 @patch('matplotlib.pyplot.show')

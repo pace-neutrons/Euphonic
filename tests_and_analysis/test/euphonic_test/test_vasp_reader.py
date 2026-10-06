@@ -196,7 +196,7 @@ class TestVaspReaderCell:
             self._create_minimal_poscar(f)
             f.create_dataset('input/incar/POMASS', data=np.bytes_(b'invalid'))
 
-        with pytest.raises(ValueError, match='could not parse.*numeric'):
+        with pytest.raises(ValueError, match=r'could not parse.*numeric'):
             read_cell(dummy_h5)
 
     def test_read_cell_original_incar_unparseable_pomass(self, tmp_path):
@@ -210,7 +210,7 @@ class TestVaspReaderCell:
                 'original/incar/content', data=np.bytes_(b'POMASS = invalid')
             )
 
-        with pytest.raises(ValueError, match='could not parse.*numeric'):
+        with pytest.raises(ValueError, match=r'could not parse.*numeric'):
             read_cell(dummy_h5)
 
     def test_read_cell_potcar_no_pomass(self, tmp_path):

@@ -232,7 +232,7 @@ def main(params: list[str] | None = None) -> None:
         modes, args.ebins + 1, emin=args.e_min, emax=_get_e_max(args),
         headroom=1.2)  # Generous headroom as we only checked one q-point
 
-    if args.weighting in ('coherent',) and args.temperature is not None:
+    if args.weighting == 'coherent' and args.temperature is not None:
         # Compute Debye-Waller factor once for re-use at each mod(q)
         # (If temperature is not set, this will be None.)
         temperature = args.temperature * ureg('K')

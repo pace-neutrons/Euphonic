@@ -206,8 +206,8 @@ class TestQpointFrequenciesCreation:
           'NaCl_band_yaml_from_phonopy_qpoint_frequencies.json'),
          ('NaCl', 'band', {'summary_name': 'phonopy.yaml',
                            'phonon_name': 'band_no_evec.hdf5'},
-          'NaCl_band_no_evec_hdf5_from_'
-          'phonopy_qpoint_frequencies.json'),
+          ('NaCl_band_no_evec_hdf5_from_'
+           'phonopy_qpoint_frequencies.json')),
          ('NaCl', 'mesh', {'summary_name': 'should_not_be_read',
                            'phonon_name': 'mesh_no_evec.yaml'},
           'NaCl_mesh_yaml_from_phonopy_qpoint_frequencies.json'),

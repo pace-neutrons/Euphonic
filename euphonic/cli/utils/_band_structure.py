@@ -72,7 +72,6 @@ def _insert_gamma(bandpath: dict) -> None:
 
     This enables LO-TO splitting to be included
     """
-    import numpy as np
     gamma_indices = np.where(
         np.array(bandpath['explicit_kpoints_labels'][1:-1]) == 'GAMMA',
     )[0] + 1
