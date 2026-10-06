@@ -1,0 +1,52 @@
+name: Build h5py wheels for Python 3.15
+
+on:
+  push:
+    paths:
+      - '.github/workflows/build-h5py-wheels.yml'
+  workflow_dispatch:
+
+jobs:
+  build-wheels:
+    strategy:
+      matrix:
+        os:
+          - ubuntu-latest
+          - ubuntu-24.04-arm
+          - windows-latest
+          - macos-latest
+          - macos-15-intel
+
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Install system dependencies (Ubuntu)
+        if: startsWith(matrix.os, 'ubuntu')
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libhdf5-dev
+
+      - name: Install system dependencies (macOS)
+        if: startsWith(matrix.os, 'macos')
+        run: brew install hdf5
+
+      - name: Install system dependencies (Windows)
+        if: startsWith(matrix.os, 'windows')
+        run: choco install hdf5 -y
+
+      - name: Setup Python 3.15
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.15'
+          allow-prereleases: true
+
+      - name: Build h5py wheel
+        run: |
+          python -m pip install --upgrade pip wheel
+          pip wheel h5py -w ./dist/
+
+      - name: Upload wheel as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: h5py-wheel-${{ matrix.os }}
+          path: dist/h5py-*.whl
+          retention-days: 90
