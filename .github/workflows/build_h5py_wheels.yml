@@ -3,7 +3,7 @@ name: Build h5py wheels for Python 3.15
 on:
   push:
     paths:
-      - '.github/workflows/build-h5py-wheels.yml'
+      - '.github/workflows/build_h5py_wheels.yml'
   workflow_dispatch:
 
 jobs:
