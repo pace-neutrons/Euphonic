@@ -69,6 +69,7 @@ min_reqs = [
 ]
 test = ["mock", "pytest>=9.0.3,<10.0", "pytest-cov", "pytest-mock", "pytest-lazy-fixtures", "pytest-xdist", "pytest-xvfb", "python-slugify"]
 ci = ["tox==4.30.3"]
+lint = ["ruff~=0.16.10"]
 docs = [
  "numpy==2.2.6",
  "setuptools==83.0.0",
@@ -80,6 +81,7 @@ docs = [
 dev = [
     {include-group = "test"},
     {include-group = "ci"},
+    {include-group = "lint"},
 ]
 
 [project.optional-dependencies]
@@ -114,6 +116,7 @@ markers = [
 ]
 
 [tool.ruff]
+required-version = ">=0.16.10"
 line-length = 79
 extend-exclude = ["doc/source/conf.py"]
 
