@@ -48,6 +48,7 @@ jobs:
         uses: actions/setup-python@v6
         with:
           python-version: ${{ inputs.all-python-versions && env.ALL_PYTHON_VERSIONS || env.MIN_MAX_PYTHON_VERSIONS}}
+          allow-prereleases: true
 
       - name: Install llvm on MacOS
         if: startsWith( inputs.os , 'macos' )

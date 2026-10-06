@@ -62,6 +62,7 @@ jobs:
         uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}
+          allow-prereleases: true
 
       - name: Install llvm on Macos
         if: startsWith(matrix.os, 'macos')
