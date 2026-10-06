@@ -76,8 +76,19 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install --group ci
 
+      - name: Download pinned h5py wheel
+        shell: bash -l {0}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          mkdir -p "${{ runner.temp }}/wheels"
+          gh release download ci-dependencies --pattern "h5py*.whl" --dir "${{ runner.temp }}/wheels"
+
       - name: Run tests
         shell: bash -l {0}
+        env:
+          PIP_FIND_LINKS: ${{ runner.temp }}/wheels
+          PIP_PRE: "1"
         run: python -m tox run -m ${{ inputs.coverage && 'ci-coverage' || 'ci-base' }} -- --parallel
 
       - name: Upload test results
