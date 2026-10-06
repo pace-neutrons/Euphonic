@@ -139,6 +139,8 @@ class Spectrum(ABC):
             for attr in self._core_attrs
         )
 
+    __hash__ = None
+
     @property
     def x_tick_labels(self) -> XTickLabels:
         """x-axis tick labels (e.g. high-symmetry point locations)"""
