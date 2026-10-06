@@ -34,9 +34,9 @@ jobs:
 
           # Download and build HDF5 from source
           cd /tmp
-          wget https://github.com/HDFGroup/hdf5/releases/download/hdf5-1.14.3/hdf5-1.14.3.tar.gz
-          tar xzf hdf5-1.14.3.tar.gz
-          cd hdf5-1.14.3
+          wget https://github.com/HDFGroup/hdf5/releases/download/hdf5_1.14.6/hdf5-1.14.6.tar.gz
+          tar xzf hdf5-1.14.6.tar.gz
+          cd hdf5-1.14.6
 
           mkdir build
           cd build
@@ -60,9 +60,9 @@ jobs:
 
           # Download and build HDF5 from source
           cd /tmp
-          wget https://github.com/HDFGroup/hdf5/releases/download/hdf5-1.14.3/hdf5-1.14.3.tar.gz
-          tar xzf hdf5-1.14.3.tar.gz
-          cd hdf5-1.14.3
+          wget https://github.com/HDFGroup/hdf5/releases/download/hdf5_1.14.6/hdf5-1.14.6.tar.gz
+          tar xzf hdf5-1.14.6.tar.gz
+          cd hdf5-1.14.6
 
           mkdir build
           cd build
@@ -86,13 +86,14 @@ jobs:
           # Install CMake if not present
           choco install cmake -y
 
-          # Download HDF5 source
-          $url = "https://github.com/HDFGroup/hdf5/releases/download/hdf5-1.14.3/hdf5-1.14.3.zip"
-          $output = "C:\hdf5-src.zip"
+
+          # Download and build HDF5 source
+          $url = "https://github.com/HDFGroup/hdf5/releases/download/hdf5_1.14.6/hdf5-1.14.6.zip"
+          $output = "C:\hdf5-1.14.6.zip"  # Match the actual filename
           Invoke-WebRequest -Uri $url -OutFile $output
           Expand-Archive -Path $output -DestinationPath "C:\"
 
-          cd C:\hdf5-1.14.3
+          cd C:\hdf5-1.14.6
           mkdir build
           cd build
 
