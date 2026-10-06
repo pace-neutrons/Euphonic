@@ -1,4 +1,4 @@
-name: Build h5py wheels for Python 3.15
+name: Build static h5py wheels for Python 3.15 testing
 
 on:
   push:
@@ -10,43 +10,109 @@ jobs:
   build-wheels:
     strategy:
       matrix:
-        os:
-          - ubuntu-latest
-          - ubuntu-24.04-arm
-          - windows-latest
-          - macos-latest
-          - macos-15-intel
+        include:
+          - os: ubuntu-latest
+          - os: ubuntu-24.04-arm
+          - os: windows-latest
+          - os: macos-latest
+          - os: macos-15-intel
 
     runs-on: ${{ matrix.os }}
     steps:
-      - name: Install system dependencies (Ubuntu)
-        if: startsWith(matrix.os, 'ubuntu')
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libhdf5-dev
-
-      - name: Install system dependencies (macOS)
-        if: startsWith(matrix.os, 'macos')
-        run: brew install hdf5
-
-      - name: Install system dependencies (Windows)
-        if: startsWith(matrix.os, 'windows')
-        run: |
-          vcpkg install hdf5:x64-windows
-          echo "HDF5_DIR=C:\vcpkg\installed\x64-windows" >> $env:GITHUB_ENV
-          echo "HDF5_INCLUDE_DIR=C:\vcpkg\installed\x64-windows\include" >> $env:GITHUB_ENV
-          echo "HDF5_LIB_DIR=C:\vcpkg\installed\x64-windows\lib" >> $env:GITHUB_ENV
-
       - name: Setup Python 3.15
         uses: actions/setup-python@v6
         with:
           python-version: '3.15'
           allow-prereleases: true
 
+      - name: Build and install HDF5 statically (Ubuntu)
+        if: startsWith(matrix.os, 'ubuntu')
+        run: |
+          sudo apt-get update
+          # Install only essential build tools, not libhdf5-dev
+          sudo apt-get install -y build-essential cmake
+
+          # Download and build HDF5 from source
+          cd /tmp
+          wget https://github.com/HDFGroup/hdf5/releases/download/hdf5-1.14.3/hdf5-1.14.3.tar.gz
+          tar xzf hdf5-1.14.3.tar.gz
+          cd hdf5-1.14.3
+
+          mkdir build
+          cd build
+          cmake .. \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DBUILD_SHARED_LIBS=OFF \
+            -DCMAKE_INSTALL_PREFIX=/opt/hdf5-static
+          cmake --build . --parallel
+          sudo cmake --install .
+
+          echo "HDF5_DIR=/opt/hdf5-static" >> $GITHUB_ENV
+          echo "HDF5_INCLUDE_DIR=/opt/hdf5-static/include" >> $GITHUB_ENV
+          echo "HDF5_LIB_DIR=/opt/hdf5-static/lib" >> $GITHUB_ENV
+          echo "LD_LIBRARY_PATH=/opt/hdf5-static/lib:$LD_LIBRARY_PATH" >> $GITHUB_ENV
+
+      - name: Build and install HDF5 statically (macOS)
+        if: startsWith(matrix.os, 'macos')
+        run: |
+          # Install build tools
+          brew install cmake
+
+          # Download and build HDF5 from source
+          cd /tmp
+          wget https://github.com/HDFGroup/hdf5/releases/download/hdf5-1.14.3/hdf5-1.14.3.tar.gz
+          tar xzf hdf5-1.14.3.tar.gz
+          cd hdf5-1.14.3
+
+          mkdir build
+          cd build
+          cmake .. \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DBUILD_SHARED_LIBS=OFF \
+            -DCMAKE_INSTALL_PREFIX=/opt/hdf5-static
+          cmake --build . --parallel
+          sudo cmake --install .
+
+          echo "HDF5_DIR=/opt/hdf5-static" >> $GITHUB_ENV
+          echo "HDF5_INCLUDE_DIR=/opt/hdf5-static/include" >> $GITHUB_ENV
+          echo "HDF5_LIB_DIR=/opt/hdf5-static/lib" >> $GITHUB_ENV
+          echo "LDFLAGS=-L/opt/hdf5-static/lib" >> $GITHUB_ENV
+          echo "CPPFLAGS=-I/opt/hdf5-static/include" >> $GITHUB_ENV
+
+      - name: Build and install HDF5 statically (Windows)
+        if: startsWith(matrix.os, 'windows')
+        shell: powershell
+        run: |
+          # Install CMake if not present
+          choco install cmake -y
+
+          # Download HDF5 source
+          $url = "https://github.com/HDFGroup/hdf5/releases/download/hdf5-1.14.3/hdf5-1.14.3.zip"
+          $output = "C:\hdf5-src.zip"
+          Invoke-WebRequest -Uri $url -OutFile $output
+          Expand-Archive -Path $output -DestinationPath "C:\"
+
+          cd C:\hdf5-1.14.3
+          mkdir build
+          cd build
+
+          cmake .. `
+            -DCMAKE_BUILD_TYPE=Release `
+            -DBUILD_SHARED_LIBS=OFF `
+            -DCMAKE_INSTALL_PREFIX=C:\hdf5-static `
+            -G "Visual Studio 17 2022" -A x64
+
+          cmake --build . --config Release --parallel
+          cmake --install .
+
+          "HDF5_DIR=C:\hdf5-static" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          "HDF5_INCLUDE_DIR=C:\hdf5-static\include" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          "HDF5_LIB_DIR=C:\hdf5-static\lib" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
       - name: Build h5py wheel
         run: |
           python -m pip install --upgrade pip wheel
-          pip wheel h5py -w ./dist/
+          pip wheel h5py -w ./dist/ --no-cache-dir
 
       - name: Upload wheel as artifact
         uses: actions/upload-artifact@v4
