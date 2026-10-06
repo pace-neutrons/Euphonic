@@ -6,6 +6,8 @@ from euphonic import ureg
 from euphonic.spectra import Spectrum1D, Spectrum1DCollection
 from tests_and_analysis.test.script_tests.utils import get_ax_image_data
 
+from .test_spectrum2d import get_spectrum2d as get_ref_spectrum2d
+
 # Allow tests with matplotlib marker to be collected and
 # deselected if Matplotlib is not installed
 pytestmark = pytest.mark.matplotlib
@@ -15,7 +17,7 @@ try:
     import matplotlib.pyplot as plt
 
     import euphonic.plot
-    from euphonic.plot import plot_1d, plot_1d_to_axis
+    from euphonic.plot import _set_x_tick_labels, plot_1d, plot_1d_to_axis
 except ModuleNotFoundError:
     pass
 
@@ -337,7 +339,6 @@ class TestPlot2D:
 
     @pytest.fixture
     def spectrum(self):
-        from .test_spectrum2d import get_spectrum2d as get_ref_spectrum2d
         return get_ref_spectrum2d('quartz_bandstructure_sqw.json')
 
     @pytest.mark.parametrize('kwargs', [{'cmap': 'magma',
@@ -417,8 +418,6 @@ class TestPlot2D:
                          [([(1, 'A'), (3, 'B'), (4, 'CDEF')], False),
                           ([(0, 'A'), (3, 'THISISALONGLABEL')], True)])
 def test_set_x_tick_labels(axes, labels, rotate):
-    from euphonic.plot import _set_x_tick_labels
-
     x_data = np.array([0., 1., 2., 3., 4.]) * ureg('angstrom^-1')
 
     _set_x_tick_labels(axes, labels, x_data)

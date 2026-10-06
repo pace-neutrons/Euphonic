@@ -103,7 +103,7 @@ def _open_vasp_h5(filename: Path):
     Context manager to open a VASP HDF5 file with error handling for h5py.
     """
     try:
-        import h5py
+        import h5py  # noqa: PLC0415
     except (ModuleNotFoundError, ImportError) as err:
         raise ImportVaspReaderError from err
 

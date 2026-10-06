@@ -220,7 +220,13 @@ extend-ignore-names = ["k_B", "H_ab", "Q"]
     ]
 "tests_and_analysis/test/run_tests.py" = ["FBT"]  # Boolean positional arg; not public API, low risk
 "euphonic/isotopes/_legacy.py" = ["PLC0415"]  # Imports inside functions to avoid loop
+"euphonic/readers/phonopy.py" = ["PLC0415"]  # Optional yaml and h5py dependencies
 "euphonic/version.py" = ["Q000"]  # Source build prefers double quotes here
+"tests_and_analysis/test/conftest.py" = ["PLC0415"]  # Optional brille import in fixture
+"tests_and_analysis/test/euphonic_test/test_brille_interpolator.py" = ["PLC0415"]  # Optional brille tests
+"tests_and_analysis/test/euphonic_test/test_vasp_reader.py" = ["PLC0415"]  # Optional h5py test data setup
+"tests_and_analysis/test/script_tests/test_brille_convergence.py" = ["PLC0415"]  # Optional brille tests
+"tests_and_analysis/test/script_tests/test_powder_map.py" = ["PLC0415"]  # Optional brille interpolation
 
 [tool.ruff.format]
 # Prefer single quotes over double quotes.
