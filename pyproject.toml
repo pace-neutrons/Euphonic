@@ -227,6 +227,7 @@ extend-ignore-names = ["k_B", "H_ab", "Q"]
 "tests_and_analysis/test/euphonic_test/test_vasp_reader.py" = ["import-outside-top-level"]  # Optional h5py
 "tests_and_analysis/test/script_tests/test_brille_convergence.py" = ["import-outside-top-level"]  # Optional brille
 "tests_and_analysis/test/script_tests/test_powder_map.py" = ["import-outside-top-level"]  # Optional brille
+"tests_and_analysis/test/script_tests/test_sphere_sampling.py" = ["unused-function-argument"]  # fix_rng fixture
 
 [tool.ruff.format]
 # Prefer single quotes over double quotes.
