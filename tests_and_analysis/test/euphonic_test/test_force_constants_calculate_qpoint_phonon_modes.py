@@ -1,3 +1,4 @@
+import builtins
 from contextlib import suppress
 import json
 from multiprocessing import cpu_count
@@ -286,7 +287,6 @@ class TestForceConstantsCalculateQPointPhononModesWithoutCExtensionInstalled:
     @pytest.fixture
     def mocked_cext_with_importerror(self, mocker):
         # Mock import of euphonic._euphonic to raise ImportError
-        import builtins
         real_import = builtins.__import__
 
         def mocked_import(name, *args, **kwargs):
@@ -328,7 +328,6 @@ class TestForceConstantsCalculateQPointPhononModesMissingLibOMP:
     @pytest.fixture
     def mocked_cext_with_lib_importerror(self, mocker):
         # Mock import of euphonic._euphonic to raise ImportError
-        import builtins
         real_import = builtins.__import__
 
         def mocked_import(name, *args, **kwargs):

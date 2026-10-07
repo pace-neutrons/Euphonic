@@ -1,3 +1,6 @@
+import builtins
+from importlib import reload
+
 import numpy as np
 import numpy.testing as npt
 import pytest
@@ -39,10 +42,9 @@ def axes_with_line_and_legend(axes):
     return axes
 
 def test_missing_matplotlib(mocker):
-    from builtins import __import__ as builtins_import
-    from importlib import reload
+    import euphonic.plot  # noqa: PLC0415
 
-    import euphonic.plot
+    builtins_import = builtins.__import__
 
     def mocked_import(name, *args, **kwargs):
         if name.split('.')[0] == 'matplotlib':
