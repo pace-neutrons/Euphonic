@@ -111,7 +111,7 @@ jobs:
 
           CIBW_BEFORE_TEST: "${{ matrix.python-version == '3.15' && 'pip install --find-links {project}/wheels --pre h5py && pip install --group test' || 'pip install --group test' }}"
           CIBW_TEST_EXTRAS: "${{ matrix.python-version == '3.15' && 'phonopy-reader,matplotlib' || 'brille,phonopy-reader,matplotlib' }}"
-          CIBW_TEST_COMMAND: "${{ matrix.python-version == '3.15' && 'python {package}/tests_and_analysis/test/run_tests.py -m \"not brille\"' || 'python {package}/tests_and_analysis/test/run_tests.py' }}"
+          CIBW_TEST_COMMAND: "${{ matrix.python-version == '3.15' && 'python {package}/tests_and_analysis/test/run_tests.py -m \"not brille\"' || 'python {package}/tests_and_analysis/test/run_tests.py -m \"brille\" && python {package}/tests_and_analysis/test/run_tests.py -m \"not brille\"' }}"
 
         with:
           output-dir: wheelhouse
