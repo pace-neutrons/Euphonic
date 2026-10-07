@@ -20,13 +20,10 @@ jobs:
           python-version: ${{ env.PYTHON_VERSION }}
           allow-prereleases: true
 
-      - name: Download pinned h5py wheel
+      - name: Install HDF5
         shell: bash -l {0}
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          mkdir -p "${{ runner.temp }}/wheels"
-          gh release download ci-dependencies --pattern "h5py*.whl" --dir "${{ runner.temp }}/wheels"
+          sudo apt install libhdf5-dev
 
       - name: Update pip and install dependencies
         shell: bash -l {0}
@@ -36,9 +33,6 @@ jobs:
 
       - name: Run tests
         shell: bash -l {0}
-        env:
-          PIP_FIND_LINKS: ${{ runner.temp }}/wheels
-          PIP_PRE: "1"
         run: python -m tox -e ${{ env.TOX_ENV }} -- --parallel
 
       - name: Upload test results
