@@ -67,7 +67,7 @@
             <a id="nextFileLink" class="nav" href="z_b6aeaaf5c00e0072_show_sampling_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.16.1">coverage.py v7.16.1</a>,
-            created at 2026-10-05 16:48 +0000
+            created at 2026-10-07 13:44 +0000
         </p>
         <aside class="hidden">
             <button type="button" class="button_next_chunk" data-shortcut="j"></button>
@@ -288,7 +288,7 @@
     <p class="run"><span class="n"><a id="t204" href="#t204">204</a></span><span class="t">        <span class="key">raise</span> <span class="nam">TypeError</span><span class="op">(</span><span class="nam">msg</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t205" href="#t205">205</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t206" href="#t206">206</a></span><span class="t">    <span class="key">if</span> <span class="nam">args</span><span class="op">.</span><span class="nam">use_brille</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run"><span class="n"><a id="t207" href="#t207">207</a></span><span class="t">        <span class="key">from</span> <span class="nam">euphonic</span><span class="op">.</span><span class="nam">brille</span> <span class="key">import</span> <span class="nam">BrilleInterpolator</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t207" href="#t207">207</a></span><span class="t">        <span class="key">from</span> <span class="nam">euphonic</span><span class="op">.</span><span class="nam">brille</span> <span class="key">import</span> <span class="nam">BrilleInterpolator</span>  <span class="com"># noqa: PLC0415</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t208" href="#t208">208</a></span><span class="t">        <span class="nam">fc</span> <span class="op">=</span> <span class="nam">BrilleInterpolator</span><span class="op">.</span><span class="nam">from_force_constants</span><span class="op">(</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t209" href="#t209">209</a></span><span class="t">            <span class="nam">fc</span><span class="op">,</span> <span class="nam">grid_type</span><span class="op">=</span><span class="nam">args</span><span class="op">.</span><span class="nam">brille_grid_type</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t210" href="#t210">210</a></span><span class="t">            <span class="nam">grid_npts</span><span class="op">=</span><span class="nam">args</span><span class="op">.</span><span class="nam">brille_npts</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
@@ -316,7 +316,7 @@
     <p class="run run2"><span class="n"><a id="t232" href="#t232">232</a></span><span class="t">        <span class="nam">modes</span><span class="op">,</span> <span class="nam">args</span><span class="op">.</span><span class="nam">ebins</span> <span class="op">+</span> <span class="num">1</span><span class="op">,</span> <span class="nam">emin</span><span class="op">=</span><span class="nam">args</span><span class="op">.</span><span class="nam">e_min</span><span class="op">,</span> <span class="nam">emax</span><span class="op">=</span><span class="nam">_get_e_max</span><span class="op">(</span><span class="nam">args</span><span class="op">)</span><span class="op">,</span>&nbsp;</span><span class="r"></span></p>
     <p class="run run2"><span class="n"><a id="t233" href="#t233">233</a></span><span class="t">        <span class="nam">headroom</span><span class="op">=</span><span class="num">1.2</span><span class="op">)</span>  <span class="com"># Generous headroom as we only checked one q-point</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t234" href="#t234">234</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
-    <p class="run"><span class="n"><a id="t235" href="#t235">235</a></span><span class="t">    <span class="key">if</span> <span class="nam">args</span><span class="op">.</span><span class="nam">weighting</span> <span class="key">in</span> <span class="op">(</span><span class="str">&#x27;coherent&#x27;</span><span class="op">,</span><span class="op">)</span> <span class="key">and</span> <span class="nam">args</span><span class="op">.</span><span class="nam">temperature</span> <span class="key">is</span> <span class="key">not</span> <span class="key">None</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t235" href="#t235">235</a></span><span class="t">    <span class="key">if</span> <span class="nam">args</span><span class="op">.</span><span class="nam">weighting</span> <span class="op">==</span> <span class="str">&#x27;coherent&#x27;</span> <span class="key">and</span> <span class="nam">args</span><span class="op">.</span><span class="nam">temperature</span> <span class="key">is</span> <span class="key">not</span> <span class="key">None</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t236" href="#t236">236</a></span><span class="t">        <span class="com"># Compute Debye-Waller factor once for re-use at each mod(q)</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t237" href="#t237">237</a></span><span class="t">        <span class="com"># (If temperature is not set, this will be None.)</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t238" href="#t238">238</a></span><span class="t">        <span class="nam">temperature</span> <span class="op">=</span> <span class="nam">args</span><span class="op">.</span><span class="nam">temperature</span> <span class="op">*</span> <span class="nam">ureg</span><span class="op">(</span><span class="str">&#x27;K&#x27;</span><span class="op">)</span>&nbsp;</span><span class="r"></span></p>
@@ -401,7 +401,7 @@
     <p class="run"><span class="n"><a id="t317" href="#t317">317</a></span><span class="t">        <span class="key">if</span> <span class="nam">args</span><span class="op">.</span><span class="nam">disable_widgets</span> <span class="key">is</span> <span class="key">False</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t318" href="#t318">318</a></span><span class="t">            <span class="com"># TextBox only available from mpl 2.1.0</span>&nbsp;</span><span class="r"></span></p>
     <p class="run"><span class="n"><a id="t319" href="#t319">319</a></span><span class="t">            <span class="key">try</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
-    <p class="run"><span class="n"><a id="t320" href="#t320">320</a></span><span class="t">                <span class="key">from</span> <span class="nam">matplotlib</span><span class="op">.</span><span class="nam">widgets</span> <span class="key">import</span> <span class="nam">TextBox</span>&nbsp;</span><span class="r"></span></p>
+    <p class="run"><span class="n"><a id="t320" href="#t320">320</a></span><span class="t">                <span class="key">from</span> <span class="nam">matplotlib</span><span class="op">.</span><span class="nam">widgets</span> <span class="key">import</span> <span class="nam">TextBox</span>  <span class="com"># noqa: PLC0415</span>&nbsp;</span><span class="r"></span></p>
     <p class="mis show_mis"><span class="n"><a id="t321" href="#t321">321</a></span><span class="t">            <span class="key">except</span> <span class="nam">ImportError</span><span class="op">:</span>&nbsp;</span><span class="r"></span></p>
     <p class="mis show_mis"><span class="n"><a id="t322" href="#t322">322</a></span><span class="t">                <span class="nam">args</span><span class="op">.</span><span class="nam">disable_widgets</span> <span class="op">=</span> <span class="key">True</span>&nbsp;</span><span class="r"></span></p>
     <p class="pln"><span class="n"><a id="t323" href="#t323">323</a></span><span class="t">&nbsp;</span><span class="r"></span></p>
@@ -443,7 +443,7 @@
             <a class="nav" href="z_b6aeaaf5c00e0072_show_sampling_py.html">&#xbb; next</a>
             &nbsp; &nbsp; &nbsp;
             <a class="nav" href="https://coverage.readthedocs.io/en/7.16.1">coverage.py v7.16.1</a>,
-            created at 2026-10-05 16:48 +0000
+            created at 2026-10-07 13:44 +0000
         </p>
     </div>
 </footer>

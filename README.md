@@ -16,7 +16,7 @@
 | euphonic/cli/powder\_map.py                 |      169 |       12 |       44 |        3 |     93% |129, 186-188, 264-265, 321-322, 343-344, 347-348 |
 | euphonic/cli/show\_sampling.py              |       54 |        1 |       24 |        0 |     99% |        20 |
 | euphonic/cli/utils/\_\_init\_\_.py          |        9 |        0 |        0 |        0 |    100% |           |
-| euphonic/cli/utils/\_band\_structure.py     |       55 |        0 |       12 |        0 |    100% |           |
+| euphonic/cli/utils/\_band\_structure.py     |       54 |        0 |       12 |        0 |    100% |           |
 | euphonic/cli/utils/\_cli\_parser.py         |      126 |        0 |       56 |        0 |    100% |           |
 | euphonic/cli/utils/\_dw.py                  |        9 |        0 |        0 |        0 |    100% |           |
 | euphonic/cli/utils/\_grids.py               |       26 |        0 |        8 |        0 |    100% |           |
@@ -43,7 +43,7 @@
 | euphonic/readers/vasp.py                    |      199 |        0 |       44 |        0 |    100% |           |
 | euphonic/sampling.py                        |       90 |        0 |       40 |        0 |    100% |           |
 | euphonic/spectra/\_\_init\_\_.py            |        3 |        0 |        0 |        0 |    100% |           |
-| euphonic/spectra/base.py                    |      422 |        6 |      118 |        7 |     98% |54-\>57, 136, 366-\>380, 558-562, 848-849, 1095, 1372-\>1377 |
+| euphonic/spectra/base.py                    |      423 |        6 |      118 |        7 |     98% |54-\>57, 136, 368-\>382, 560-564, 848-849, 1095, 1372-\>1377 |
 | euphonic/spectra/collections.py             |      369 |       13 |       90 |        8 |     95% |101, 107, 110, 140-\>142, 140-\>exit, 198-\>207, 198-\>exit, 705-711, 997-998, 1070-1076, 1096-1102, 1105-1111 |
 | euphonic/structure\_factor.py               |      115 |        3 |       16 |        1 |     97% |363, 416, 421 |
 | euphonic/styles/\_\_init\_\_.py             |        3 |        0 |        0 |        0 |    100% |           |
