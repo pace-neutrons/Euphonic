@@ -13,6 +13,8 @@
 - Maintenance
 
   - Updated Github Action versions in CI workflows
+  - Updated version of ruff linter from 0.11.0 to 0.16.10, implemented
+    associated changes
 
 `v2.1.0 <https://github.com/pace-neutrons/Euphonic/compare/v2.0.0...v2.1.0>`_
 -----------------------------------------------------------------------------
