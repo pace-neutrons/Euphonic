@@ -20,7 +20,7 @@ def matplotlib_save_or_show(save_filename: Path | str | None = None) -> None:
     save_filename
         The file to save the plot in
     """
-    import matplotlib.pyplot as plt
+    import matplotlib.pyplot as plt  # noqa: PLC0415
     if save_filename is not None:
         plt.savefig(save_filename)
         print(f'Saved plot to {Path(save_filename).resolve()}')

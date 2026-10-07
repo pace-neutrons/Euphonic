@@ -434,7 +434,7 @@ class QpointPhononModes(QpointFrequencies):
         dw = dw/np.sum(weights)
         if symmetrise:
             dw_tmp = np.zeros(dw.shape)
-            (rot, trans,
+            (rot, _trans,
              eq_atoms) = self.crystal.get_symmetry_equivalent_atoms()
             cell_vec = self.crystal._cell_vectors
             recip_vec = self.crystal.reciprocal_cell.to('1/bohr').magnitude

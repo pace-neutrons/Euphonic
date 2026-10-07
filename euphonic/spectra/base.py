@@ -139,6 +139,8 @@ class Spectrum(ABC):
             for attr in self._core_attrs
         )
 
+    __hash__ = None
+
     @property
     def x_tick_labels(self) -> XTickLabels:
         """x-axis tick labels (e.g. high-symmetry point locations)"""
@@ -639,8 +641,7 @@ class Spectrum1D(Spectrum):
         Any metadata key/value pairs that are common to both
         spectra are retained, any others are discarded
         """
-        # pylint: disable=import-outside-toplevel
-        from .collections import Spectrum1DCollection
+        from .collections import Spectrum1DCollection  # noqa: PLC0415
         spec_col = Spectrum1DCollection.from_spectra([self, other])
         return spec_col.sum()
 
@@ -693,8 +694,7 @@ class Spectrum1D(Spectrum):
             A format specifier or sequence of specifiers (one for each
             column), to be passed to numpy.savetxt
         """
-        # pylint: disable=import-outside-toplevel
-        from .collections import Spectrum1DCollection
+        from .collections import Spectrum1DCollection  # noqa: PLC0415
         spec = Spectrum1DCollection.from_spectra([self])
         spec.to_text_file(filename, fmt)
 

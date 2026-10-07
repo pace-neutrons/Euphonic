@@ -1,3 +1,4 @@
+import builtins
 import copy
 import json
 from unittest.mock import patch
@@ -206,8 +207,8 @@ class TestQpointFrequenciesCreation:
           'NaCl_band_yaml_from_phonopy_qpoint_frequencies.json'),
          ('NaCl', 'band', {'summary_name': 'phonopy.yaml',
                            'phonon_name': 'band_no_evec.hdf5'},
-          'NaCl_band_no_evec_hdf5_from_'
-          'phonopy_qpoint_frequencies.json'),
+          ('NaCl_band_no_evec_hdf5_from_'
+           'phonopy_qpoint_frequencies.json')),
          ('NaCl', 'mesh', {'summary_name': 'should_not_be_read',
                            'phonon_name': 'mesh_no_evec.yaml'},
           'NaCl_mesh_yaml_from_phonopy_qpoint_frequencies.json'),
@@ -300,7 +301,6 @@ class TestQpointFrequenciesCreation:
             self, material, subdir, phonopy_args, mocker):
         phonopy_args['path'] = get_phonopy_path(material, subdir)
         # Mock import of yaml, h5py to raise ModuleNotFoundError
-        import builtins
         real_import = builtins.__import__
 
         def mocked_import(name, *args, **kwargs):
@@ -338,7 +338,6 @@ class TestQpointFrequenciesCreation:
     def test_create_from_phonopy_without_cloader_is_ok(
             self, material, subdir, phonopy_args, json_file, mocker):
         # Mock 'from yaml import CLoader as Loader' to raise ImportError
-        import builtins
         real_import = builtins.__import__
 
         def mocked_import(

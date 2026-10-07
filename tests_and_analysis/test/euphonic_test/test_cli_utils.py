@@ -10,7 +10,10 @@ from euphonic.cli.utils import (
     _get_q_distance,
     load_data_from_file,
 )
-from euphonic.cli.utils._loaders import _load_phonopy_file
+from euphonic.cli.utils._loaders import (
+    ForceConstants,
+    _load_phonopy_file,
+)
 from euphonic.ureg import Quantity
 from tests_and_analysis.test.utils import get_data_path
 
@@ -60,8 +63,6 @@ def test_load_data_extension_error():
 
 @pytest.fixture
 def mocked_fc_from_phonopy(mocker):
-    from euphonic.cli.utils._loaders import ForceConstants
-
     mocked_method = mocker.patch.object(ForceConstants, 'from_phonopy')
     mocked_method.return_value = None
 

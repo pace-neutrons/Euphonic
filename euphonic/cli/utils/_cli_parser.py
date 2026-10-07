@@ -77,8 +77,8 @@ def _get_cli_parser(features: Collection[str] = {},  # noqa: C901
                     ('plotting', 'Plotting arguments'),
                     ('performance', 'Performance-related arguments'),
                     ('brille',
-                     'Brille interpolation related arguments. '
-                     'Only applicable if Brille has been installed.'),
+                     ('Brille interpolation related arguments. '
+                      'Only applicable if Brille has been installed.')),
                     ]
 
     sections = {label: parser.add_argument_group(doc)

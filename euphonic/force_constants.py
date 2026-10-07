@@ -663,7 +663,7 @@ class ForceConstants:
         use_c_status = False
         if use_c is not False:
             try:
-                import euphonic._euphonic as euphonic_c
+                import euphonic._euphonic as euphonic_c  # noqa: PLC0415
                 use_c_status = True
             except ImportError as err:
                 if err.msg is not None and (missing_lib := re.match(

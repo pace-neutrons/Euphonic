@@ -144,7 +144,7 @@ def calculate_optimum_dipole_parameter(
 
 
 def get_parser() -> ArgumentParser:
-    parser, sections = _get_cli_parser(
+    parser, _ = _get_cli_parser(
         features={'read-fc', 'dipole-parameter-optimisation'})
     parser.description=(
         'Run and time an interpolation calculation for a small number of '

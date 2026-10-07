@@ -69,6 +69,7 @@ min_reqs = [
 ]
 test = ["mock", "pytest>=9.0.3,<10.0", "pytest-cov", "pytest-mock", "pytest-lazy-fixtures", "pytest-xdist", "pytest-xvfb", "python-slugify"]
 ci = ["tox==4.30.3"]
+lint = ["ruff~=0.16.10"]
 docs = [
  "numpy==2.2.6",
  "setuptools==83.0.0",
@@ -80,6 +81,7 @@ docs = [
 dev = [
     {include-group = "test"},
     {include-group = "ci"},
+    {include-group = "lint"},
 ]
 
 [project.optional-dependencies]
@@ -114,6 +116,7 @@ markers = [
 ]
 
 [tool.ruff]
+required-version = ">=0.16.10"
 line-length = 79
 extend-exclude = ["doc/source/conf.py"]
 
@@ -209,15 +212,22 @@ max-complexity = 20
 extend-ignore-names = ["k_B", "H_ab", "Q"]
 
 [tool.ruff.lint.per-file-ignores]
-"build_utils/*" = ["E501"]  # Long lines
+"build_utils/*" = ["line-too-long"]
 "tests_and_analysis/test/**/*" = [
-    "ARG",    # pytest fixtures can look like unused arguments
-    "RUF012", # declaring sample data inside test classes is tidy
-    "E501",   # long lines seem more common with verbose test names
+    "unused-method-argument",  # pytest fixtures
+    "mutable-class-default",  # sample data inside test classes
+    "line-too-long",  # verbose test names
     ]
-"tests_and_analysis/test/run_tests.py" = ["FBT"]  # Boolean positional arg; not public API, low risk
-"euphonic/isotopes/_legacy.py" = ["PLC0415"]  # Imports inside functions to avoid loop
-"euphonic/version.py" = ["Q000"]  # Source build prefers double quotes here
+"tests_and_analysis/test/run_tests.py" = ["boolean-type-hint-positional-argument"]  # not public API, low risk
+"euphonic/isotopes/_legacy.py" = ["import-outside-top-level"]  # Avoids import loop
+"euphonic/readers/phonopy.py" = ["import-outside-top-level"]  # Optional yaml and h5py dependencies
+"euphonic/version.py" = ["bad-quotes-inline-string"]  # Source build prefers double quotes here
+"tests_and_analysis/test/conftest.py" = ["import-outside-top-level"]  # Optional brille
+"tests_and_analysis/test/euphonic_test/test_brille_interpolator.py" = ["import-outside-top-level"]  # Optional brille
+"tests_and_analysis/test/euphonic_test/test_vasp_reader.py" = ["import-outside-top-level"]  # Optional h5py
+"tests_and_analysis/test/script_tests/test_brille_convergence.py" = ["import-outside-top-level"]  # Optional brille
+"tests_and_analysis/test/script_tests/test_powder_map.py" = ["import-outside-top-level"]  # Optional brille
+"tests_and_analysis/test/script_tests/test_sphere_sampling.py" = ["unused-function-argument"]  # fix_rng fixture
 
 [tool.ruff.format]
 # Prefer single quotes over double quotes.

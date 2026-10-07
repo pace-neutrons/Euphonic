@@ -10,7 +10,7 @@ from pytest_lazy_fixtures import lf as lazy_fixture
 
 from euphonic import ureg
 from euphonic.spectra import Spectrum2D, apply_kinematic_constraints
-from euphonic.spectra.base import WidthTypeError
+from euphonic.spectra.base import WidthTypeError, _get_cos_range
 from tests_and_analysis.test.utils import (
     check_json_metadata,
     check_property_setters,
@@ -628,7 +628,6 @@ class TestKinematicAngles:
          ((-2.25 * np.pi, -2.5 * np.pi), (np.sqrt(2) / 2, 0)),
          ])
     def test_cos_range(self, angle_range, expected):
-        from euphonic.spectra.base import _get_cos_range
         cos_limits = _get_cos_range(angle_range)
         assert cos_limits == pytest.approx(expected)
 

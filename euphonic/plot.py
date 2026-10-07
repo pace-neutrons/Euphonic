@@ -216,7 +216,7 @@ def plot_1d(spectra: OneDSpectrumOrSpectra,
         plot_1d_to_axis(spectrum, ax, labels=labels, **line_kwargs)
         # To avoid an ugly empty legend, only use if there are labels to plot
         if i == 0:
-            leg_handles, leg_labels = ax.get_legend_handles_labels()
+            _, leg_labels = ax.get_legend_handles_labels()
             if len(leg_labels) > 0:
                 ax.legend()
         ax.set_ylim(bottom=ymin, top=ymax)

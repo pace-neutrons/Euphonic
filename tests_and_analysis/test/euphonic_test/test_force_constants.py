@@ -1,3 +1,4 @@
+import builtins
 import json
 from pathlib import Path
 
@@ -341,7 +342,6 @@ class TestForceConstantsCreation:
     def test_create_from_phonopy_without_installed_modules_raises_err(
             self, phonopy_args, mocker):
         # Mock import of yaml, h5py to raise ModuleNotFoundError
-        import builtins
         real_import = builtins.__import__
         def mocked_import(name, *args, **kwargs):
             if name == 'h5py' or name == 'yaml':
@@ -389,7 +389,6 @@ class TestForceConstantsCreation:
     def test_create_from_phonopy_without_cloader_is_ok(
             self, material, phonopy_args, mocker):
         # Mock 'from yaml import CLoader as Loader' to raise ImportError
-        import builtins
         real_import = builtins.__import__
         def mocked_import(
                 name, globals, locals, fromlist, level):  # noqa: A002
