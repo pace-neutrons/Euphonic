@@ -16,6 +16,10 @@
   - Updated Github Action versions in CI workflows
   - Updated version of ruff linter from 0.11.0 to 0.16.10, implemented
     associated changes
+  - Updated test and wheel-build workflows to use nightly wheels of
+    h5py for Python 3.15; they can be removed when official version
+    hits PyPI.
+  - Updated cibuildwheel workflow from 3.4.1 to 4.3.0 to support Python 3.15
 
 `v2.1.0 <https://github.com/pace-neutrons/Euphonic/compare/v2.0.0...v2.1.0>`_
 -----------------------------------------------------------------------------
