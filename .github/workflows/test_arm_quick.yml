@@ -16,6 +16,9 @@ jobs:
         uses: actions/setup-python@v6
         with:
           python-version: |
+            3.11
+            3.12
+            3.13
             3.14
             3.15
           allow-prereleases: true
@@ -39,7 +42,7 @@ jobs:
         env:
           PIP_FIND_LINKS: ${{ runner.temp }}/wheels
           PIP_PRE: "1"
-        run: python -m tox run -e py314,py315 -- --parallel
+        run: python -m tox run -- --parallel
 
       - name: Upload test results
         if: always()
