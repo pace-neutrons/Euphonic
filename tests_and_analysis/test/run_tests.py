@@ -20,7 +20,8 @@ def main():
     )
 
     test_exit_code: int = run_tests(
-        pytest_options, args.cov, reports_dir, test_dir)
+        pytest_options, args.cov,
+    )
 
     # Exit with a failure code if there are any errors or failures
     sys.exit(test_exit_code)
@@ -44,6 +45,7 @@ def _get_test_and_reports_dir() -> tuple[Path, Path]:
     reports_dir.mkdir(exist_ok=True)
     return test_dir, reports_dir
 
+
 def _get_parsed_args(test_dir: Path) -> Namespace:
     """
     Get the arguments parsed to this script.
@@ -55,31 +57,48 @@ def _get_parsed_args(test_dir: Path) -> Namespace:
     """
     parser = ArgumentParser()
     parser.add_argument(
-        '--cov', action='store_true',
-        help='If present report coverage in a coverage*.xml file in reports')
+        '--cov',
+        action='store_true',
+        help='If present report coverage in a coverage*.xml file in reports',
+    )
     parser.add_argument(
-        '--report', action='store_true',
-        help='If present report test results to junit_report*.xml files')
-    parser.add_argument('-t', '--test-file', dest='test_file', action='store',
-                        help='The test file to run', default=test_dir)
+        '--report',
+        action='store_true',
+        help='If present report test results to junit_report*.xml files',
+    )
     parser.add_argument(
-        '-m', action='store', dest='markers_to_run',
-        help=('Limit the test runs to only the specified markers e.g.'
-              'e.g. "unit" or "unit or integration"'), default='')
+        '-t',
+        '--test-file',
+        dest='test_file',
+        action='store',
+        help='The test file to run',
+        default=test_dir,
+    )
     parser.add_argument(
-        '--parallel', action='store_true',
+        '-m',
+        action='store',
+        dest='markers_to_run',
+        help=(
+            'Limit the test runs to only the specified markers e.g.'
+            'e.g. "unit" or "unit or integration"'
+        ),
+        default='',
+    )
+    parser.add_argument(
+        '--parallel',
+        action='store_true',
         help='Use pytest-xdist for parallel testing',
     )
     return parser.parse_args()
 
 
 def _build_pytest_options(
-        *,
-        reports_dir: Path,
-        do_report_tests: bool,
-        tests: str,
-        markers: str,
-        parallel: bool,
+    *,
+    reports_dir: Path,
+    do_report_tests: bool,
+    tests: str,
+    markers: str,
+    parallel: bool,
 ) -> list[str]:
     """
     Build the options for pytest to use.
@@ -117,11 +136,7 @@ def _build_pytest_options(
     return options
 
 
-def run_tests(
-    pytest_options: list[str],
-    do_report_coverage: bool,
-    reports_dir:Path,
-    test_dir: Path) -> int:
+def run_tests(pytest_options: list[str], do_report_coverage: bool) -> int:
     """
     Run the tests and record coverage if selected.
 
@@ -131,10 +146,6 @@ def run_tests(
         The options to pass to pytest
     do_report_coverage : bool
         If true report coverage to coverage*.xml
-    reports_dir : str
-        The directory to report coverage to
-    test_dir: str
-        The directory where the tests are stored
 
     Returns
     -------
