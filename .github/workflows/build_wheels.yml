@@ -89,9 +89,19 @@ jobs:
         run: |
           python -m pip install --upgrade pip build wheel twine
 
+      - name: Download pinned h5py wheel
+        if: matrix.python-version == '3.15'
+        shell: bash -l {0}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          mkdir -p wheels
+          gh release download ci-dependencies --pattern "h5py*.whl" --dir wheels
+
       - name: Build wheels from git checkout
         uses: pypa/cibuildwheel@v3.4.1
         env:
+          CIBW_ENABLE: ${{ matrix.python-version == '3.15' && 'cpython-prerelease' || '' }}
           CIBW_BUILD_FRONTEND: build
           CIBW_BUILD: ${{ matrix.version-tag }}-*
           CIBW_ARCHS: ${{ matrix.cibw_archs }}
@@ -99,9 +109,9 @@ jobs:
 
           CIBW_REPAIR_WHEEL_COMMAND_MACOS: ""
 
-          CIBW_BEFORE_TEST: "pip install --group test"
-          CIBW_TEST_EXTRAS: "brille,phonopy-reader,matplotlib"
-          CIBW_TEST_COMMAND: python {package}/tests_and_analysis/test/run_tests.py
+          CIBW_BEFORE_TEST: "${{ matrix.python-version == '3.15' && 'pip install --find-links {project}/wheels --pre h5py && pip install --group test' || 'pip install --group test' }}"
+          CIBW_TEST_EXTRAS: "${{ matrix.python-version == '3.15' && 'phonopy-reader,matplotlib' || 'brille,phonopy-reader,matplotlib' }}"
+          CIBW_TEST_COMMAND: "${{ matrix.python-version == '3.15' && 'python {package}/tests_and_analysis/test/run_tests.py -m \"not brille\"' || 'python {package}/tests_and_analysis/test/run_tests.py' }}"
 
         with:
           output-dir: wheelhouse
