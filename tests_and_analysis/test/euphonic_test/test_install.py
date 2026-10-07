@@ -15,7 +15,7 @@ class TestInstalledFiles:
     def test_citation_cff_is_installed(self):
         # yaml dependency is optional
         try:
-            import yaml
+            import yaml  # noqa: PLC0415
         except ModuleNotFoundError:
             pytest.skip()
         with open(files(euphonic) / 'CITATION.cff') as fp:

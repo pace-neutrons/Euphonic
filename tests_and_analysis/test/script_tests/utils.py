@@ -65,7 +65,7 @@ def get_all_plot_line_data(figs: list[Figure]) -> list[dict[str, Any]]:
 
 
 def get_fig_label_data(fig) -> dict[str, str | list[str]]:
-    from mpl_toolkits.mplot3d import Axes3D
+    from mpl_toolkits.mplot3d import Axes3D  # noqa: PLC0415
 
     label_data = {'x_ticklabels': [],
                   'x_label': [],
