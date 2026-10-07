@@ -212,21 +212,21 @@ max-complexity = 20
 extend-ignore-names = ["k_B", "H_ab", "Q"]
 
 [tool.ruff.lint.per-file-ignores]
-"build_utils/*" = ["E501"]  # Long lines
+"build_utils/*" = ["line-too-long"]
 "tests_and_analysis/test/**/*" = [
-    "ARG",    # pytest fixtures can look like unused arguments
-    "RUF012", # declaring sample data inside test classes is tidy
-    "E501",   # long lines seem more common with verbose test names
+    "unused-method-argument",  # pytest fixtures
+    "mutable-class-default",  # sample data inside test classes
+    "line-too-long",  # verbose test names
     ]
-"tests_and_analysis/test/run_tests.py" = ["FBT"]  # Boolean positional arg; not public API, low risk
-"euphonic/isotopes/_legacy.py" = ["PLC0415"]  # Imports inside functions to avoid loop
-"euphonic/readers/phonopy.py" = ["PLC0415"]  # Optional yaml and h5py dependencies
-"euphonic/version.py" = ["Q000"]  # Source build prefers double quotes here
-"tests_and_analysis/test/conftest.py" = ["PLC0415"]  # Optional brille import in fixture
-"tests_and_analysis/test/euphonic_test/test_brille_interpolator.py" = ["PLC0415"]  # Optional brille tests
-"tests_and_analysis/test/euphonic_test/test_vasp_reader.py" = ["PLC0415"]  # Optional h5py test data setup
-"tests_and_analysis/test/script_tests/test_brille_convergence.py" = ["PLC0415"]  # Optional brille tests
-"tests_and_analysis/test/script_tests/test_powder_map.py" = ["PLC0415"]  # Optional brille interpolation
+"tests_and_analysis/test/run_tests.py" = ["boolean-type-hint-positional-argument"]  # not public API, low risk
+"euphonic/isotopes/_legacy.py" = ["import-outside-top-level"]  # Avoids import loop
+"euphonic/readers/phonopy.py" = ["import-outside-top-level"]  # Optional yaml and h5py dependencies
+"euphonic/version.py" = ["bad-quotes-inline-string"]  # Source build prefers double quotes here
+"tests_and_analysis/test/conftest.py" = ["import-outside-top-level"]  # Optional brille
+"tests_and_analysis/test/euphonic_test/test_brille_interpolator.py" = ["import-outside-top-level"]  # Optional brille
+"tests_and_analysis/test/euphonic_test/test_vasp_reader.py" = ["import-outside-top-level"]  # Optional h5py
+"tests_and_analysis/test/script_tests/test_brille_convergence.py" = ["import-outside-top-level"]  # Optional brille
+"tests_and_analysis/test/script_tests/test_powder_map.py" = ["import-outside-top-level"]  # Optional brille
 
 [tool.ruff.format]
 # Prefer single quotes over double quotes.
