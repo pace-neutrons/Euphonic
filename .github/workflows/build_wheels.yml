@@ -99,7 +99,7 @@ jobs:
           gh release download ci-dependencies --pattern "h5py*.whl" --dir wheels
 
       - name: Build wheels from git checkout
-        uses: pypa/cibuildwheel@v3.4.1
+        uses: pypa/cibuildwheel@v4.3.0
         env:
           CIBW_ENABLE: ${{ matrix.python-version == '3.15' && 'cpython-prerelease' || '' }}
           CIBW_BUILD_FRONTEND: build
