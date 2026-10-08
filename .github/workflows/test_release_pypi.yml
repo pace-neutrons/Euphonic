@@ -33,6 +33,7 @@ jobs:
               3.12
               3.13
               3.14
+              3.15
       - name: Install llvm on MacOS
         if: startsWith(matrix.os, 'macos')
         shell: bash -l {0}
