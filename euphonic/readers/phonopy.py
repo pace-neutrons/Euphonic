@@ -783,16 +783,18 @@ def read_interpolation_data(
     cry_dict['cell_vectors'] = summary_dict['cell_vectors']*ureg(
         ulength).to(cell_vectors_unit).magnitude
     cry_dict['cell_vectors_unit'] = cell_vectors_unit
-    # Normalise atom coordinates
-    cry_dict['atom_r'] = (summary_dict['atom_r']
-                          - np.floor(summary_dict['atom_r']))
+    # Normalise atom coordinates. The same coordinates must be used to
+    # calculate the cell origins below, as an atom at e.g. a fractional
+    # coordinate of 1.0 would otherwise be placed one cell away
+    atom_r = summary_dict['atom_r'] - np.floor(summary_dict['atom_r'])
+    cry_dict['atom_r'] = atom_r
     cry_dict['atom_type'] = summary_dict['atom_type']
     cry_dict['atom_mass'] = summary_dict['atom_mass']*ureg(
         umass).to(atom_mass_unit).magnitude
     cry_dict['atom_mass_unit'] = atom_mass_unit
 
     fc, cell_origins = convert_fc_phases(
-         summary_dict['force_constants'], summary_dict['atom_r'],
+         summary_dict['force_constants'], atom_r,
          summary_dict['sc_atom_r'], summary_dict['pc_to_sc_atom_idx'],
          summary_dict['sc_to_pc_atom_idx'], summary_dict['sc_matrix'])
     data_dict['force_constants'] = fc*ureg(

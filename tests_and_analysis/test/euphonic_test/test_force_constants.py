@@ -404,6 +404,28 @@ class TestForceConstantsCreation:
         expected_fc = get_expected_fc(material)
         check_force_constants(fc, expected_fc)
 
+    @pytest.mark.phonopy_reader
+    def test_create_from_phonopy_with_coordinate_of_one(self, tmp_path):
+        # An atom at a fractional coordinate of 1 (e.g. from wrapping a
+        # tiny negative rounding error into the cell) is equivalent to
+        # one at 0, and must give the same frequencies
+        summary = Path(get_phonopy_path('NaCl', 'phonopy_nacl.yaml'))
+        old = ('  - symbol: Na # 2\n    coordinates: [  0.000000000000000,'
+               '  0.500000000000000,  0.500000000000000 ]')
+        new = old.replace('[  0.000000000000000,', '[  1.000000000000000,')
+        text = summary.read_text()
+        assert old in text  # in both the primitive and unit cell
+        (tmp_path / summary.name).write_text(text.replace(old, new))
+        qpts = np.array([[0.02, 0.0, 0.0], [0.01, 0.02, 0.03],
+                         [0.25, 0.0, 0.1], [0.5, 0.5, 0.5]])
+        freqs = [
+            ForceConstants.from_phonopy(
+                path=path, summary_name=summary.name,
+            ).calculate_qpoint_phonon_modes(qpts).frequencies
+            for path in (summary.parent, tmp_path)]
+        npt.assert_allclose(freqs[1].to('meV').magnitude,
+                            freqs[0].to('meV').magnitude, atol=1e-8)
+
 
 class TestForceConstantsSerialisation:
 
