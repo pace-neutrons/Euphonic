@@ -516,6 +516,9 @@ def _extract_summary(filename: Path,
     divs = re.findall(r'/([^/]+)', pu['force_constants'])
     pu['force_constants'] = (pu['force_constants'].split('/')[0]
                              + '/(' + '/('.join([d+')' for d in divs]))
+    # Pint doesn't recognise . as *, but it's commonly found in Phonopy files
+    pu['force_constants'] = pu['force_constants'].replace('.', '*')
+
     for key, value in pu.items():
         pu[key] = value.replace('au', 'bohr').replace('Angstrom', 'angstrom')
 
