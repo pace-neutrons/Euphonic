@@ -39,7 +39,7 @@
 | euphonic/qpoint\_phonon\_modes.py           |      200 |        4 |       56 |        4 |     97% |752, 791, 794, 797 |
 | euphonic/readers/\_\_init\_\_.py            |        0 |        0 |        0 |        0 |    100% |           |
 | euphonic/readers/castep.py                  |      289 |        7 |      108 |        5 |     97% |260-\>240, 412, 433-444, 688-693, 716-721 |
-| euphonic/readers/phonopy.py                 |      296 |        3 |       72 |        0 |     99% |29, 391-392 |
+| euphonic/readers/phonopy.py                 |      297 |        3 |       72 |        0 |     99% |29, 391-392 |
 | euphonic/readers/vasp.py                    |      199 |        0 |       44 |        0 |    100% |           |
 | euphonic/sampling.py                        |       90 |        0 |       40 |        0 |    100% |           |
 | euphonic/spectra/\_\_init\_\_.py            |        3 |        0 |        0 |        0 |    100% |           |
@@ -54,7 +54,7 @@
 | euphonic/version.py                         |        1 |        0 |        0 |        0 |    100% |           |
 | euphonic/writers/\_\_init\_\_.py            |        0 |        0 |        0 |        0 |    100% |           |
 | euphonic/writers/phonon\_website.py         |       61 |        2 |       10 |        1 |     96% |96-97, 201-\>205 |
-| **TOTAL**                                   | **4930** |  **114** | **1398** |   **71** | **97%** |           |
+| **TOTAL**                                   | **4931** |  **114** | **1398** |   **71** | **97%** |           |
 
 
 ## Setup coverage badge
