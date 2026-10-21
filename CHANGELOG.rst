@@ -11,6 +11,13 @@
   - A recent version of Pint is using slightly different unicode
     symbols in plot labels; existing unit tests were modified to allow this.
 
+  - Since Pint 0.26.2 unrecognised characters in units are no longer
+    skipped silently. This includes ".", which sometimes appears in
+    Phonopy files or as "a.m.u." in internal reference data. To address this:
+    - internal references are updated to "amu"
+    - phonopy force-constant units now have "." converted to "*" at
+      import time
+
 - Maintenance
 
   - Updated Github Action versions in CI workflows
