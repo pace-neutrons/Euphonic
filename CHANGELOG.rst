@@ -1,17 +1,19 @@
 `Unreleased <https://github.com/pace-neutrons/Euphonic/compare/v2.1.0...HEAD>`_
 -------------------------------------------------------------------------------
 
-- Bug fixes
-
-  - Fixed ``ForceConstants.from_phonopy`` giving wrong frequencies when an
-    atom has a fractional coordinate of 1 (e.g. 0.9999999999999999 written
-    as 1.0 by Phonopy), as the cell origins were calculated from the
-    unnormalised coordinates while the crystal used the normalised ones.
-
 - Requirements
 
-  - Pinned brille upper bound to < 0.9 while working out some test failures.
+  - Pinned brille upper bound to < 0.9 while working out some test
+    failures.
   - Python 3.15 is now officially tested/supported
+
+- Bug fixes
+
+  - Fixed ``ForceConstants.from_phonopy`` giving wrong frequencies
+    when an atom has a fractional coordinate of 1
+    (e.g. 0.9999999999999999 written as 1.0 by Phonopy): while the
+    imported Crystal includes normalisation to (0 <= r < 1), cell
+    origins were still calculated from the raw coordinates.
 
 - Compatibility
 
