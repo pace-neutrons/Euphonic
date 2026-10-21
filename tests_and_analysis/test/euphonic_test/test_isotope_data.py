@@ -328,19 +328,19 @@ class TestSears1992CSV:
 
 
 BAD_UNIT_CSV = """\
-symbol,a_number,mass (a.m.u.),dog ((,b_length (fermi)
+symbol,a_number,mass (amu),dog ((,b_length (fermi)
 str,int,float,float,complex
 H,1,1.01,2.0,3.0+2j
 """
 
 STR_UNIT_CSV = """\
-symbol,a_number,mass (a.m.u.),dog (m),b_length (fermi)
+symbol,a_number,mass (amu),dog (m),b_length (fermi)
 str,int,float,str,complex
 H,1,1.01,2.0,3.0+2j
 """
 
 UNKNOWN_SIGN_ELEMENT_CSV = """\
-symbol,a_number,mass (a.m.u.),b_length (fermi)
+symbol,a_number,mass (amu),b_length (fermi)
 str,int,float,complex
 Ne,,20.99,±3.0+2j
 """
