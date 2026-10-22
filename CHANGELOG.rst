@@ -1,6 +1,10 @@
 `Unreleased <https://github.com/pace-neutrons/Euphonic/compare/v2.1.1...HEAD>`_
 -------------------------------------------------------------------------------
 
+- Maintenance
+
+  - Migrated some CI steps to "ubuntu-slim" containers.
+
 `v2.1.1 <https://github.com/pace-neutrons/Euphonic/compare/v2.1.0...v2.1.1>`_
 -----------------------------------------------------------------------------
 
