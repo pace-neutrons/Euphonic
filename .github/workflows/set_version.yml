@@ -40,7 +40,7 @@ on:
 
 jobs:
   set_version:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     outputs:
       tag: ${{ steps.normalise.outputs.VERSION_STRING }}
 
