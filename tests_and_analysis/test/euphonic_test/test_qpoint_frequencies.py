@@ -9,7 +9,14 @@ import numpy.testing as npt
 from pint import DimensionalityError
 import pytest
 
-from euphonic import Crystal, QpointFrequencies, Spectrum1D, ureg
+from euphonic import (
+    Crystal,
+    QpointFrequencies,
+    QpointPhononModes,
+    Spectrum1D,
+    StructureFactor,
+    ureg,
+)
 from euphonic.readers.phonopy import ImportPhonopyReaderError
 from tests_and_analysis.test.euphonic_test.test_crystal import (
     ExpectedCrystal,
@@ -142,6 +149,31 @@ def check_qpt_freqs(
         qpoint_frequencies.weights,
         expected_qpoint_frequencies.weights,
         atol=FLOAT64_EPS)
+
+
+@pytest.mark.parametrize('container', (
+    QpointFrequencies, QpointPhononModes, StructureFactor,
+))
+@pytest.mark.parametrize('n_qpts', [0, 2])
+def test_qpoint_count_and_default_weights(container, n_qpts):
+    crystal = Crystal(np.eye(3)*ureg.angstrom,
+                      np.zeros((1, 3)),
+                      np.array(['Si']),
+                      np.array([28.085])*ureg.amu)
+    qpts = np.zeros((n_qpts, 3))
+    frequencies = np.ones((n_qpts, 3))*ureg.meV
+    kwargs = {}
+    if container is QpointPhononModes:
+        kwargs['eigenvectors'] = np.zeros((n_qpts, 3, 1, 3), dtype=complex)
+    elif container is StructureFactor:
+        kwargs['structure_factors'] = np.zeros((n_qpts, 3))*ureg.fm**2
+
+    data = container(crystal, qpts, frequencies, **kwargs)
+
+    assert len(data) == n_qpts
+    assert bool(data) is (n_qpts > 0)
+    expected = np.array([0.5, 0.5] if n_qpts else [], dtype=float)
+    npt.assert_array_equal(data.weights, expected, strict=True)
 
 
 class TestQpointFrequenciesCreation:
