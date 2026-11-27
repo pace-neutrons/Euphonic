@@ -1,6 +1,12 @@
 `Unreleased <https://github.com/pace-neutrons/Euphonic/compare/v2.1.1...HEAD>`_
 -------------------------------------------------------------------------------
 
+- Features
+
+  - Use len() to count q-points in frequency, phonon-mode and structure-factor
+    objects. Objects with no q-points are false in Boolean contexts and can be
+    constructed without specifying weights.
+
 - Maintenance
 
   - Migrated some CI steps to "ubuntu-slim" containers.

@@ -69,7 +69,8 @@ class QpointFrequencies:
             Frequencies per q-point and mode
         weights
             Shape (n_qpts,) float ndarray. The weight for each q-point.
-            If None, equal weights are assumed
+            If None, equal weights are assumed for nonempty data.
+            An empty set of q-points has an empty weight array.
         """
         _check_constructor_inputs(
             InputCheck(crystal, (Crystal,), {}, 'crystal'),
@@ -91,8 +92,14 @@ class QpointFrequencies:
 
         if weights is not None:
             self.weights = weights
+        elif self.n_qpts == 0:
+            self.weights = np.empty(0, dtype=float)
         else:
             self.weights = np.full(self.n_qpts, 1/self.n_qpts)
+
+    def __len__(self) -> int:
+        """Return the number of q-points."""
+        return self.n_qpts
 
     @property
     def frequencies(self) -> Quantity:

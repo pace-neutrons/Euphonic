@@ -8,6 +8,10 @@ frequencies at certain q-points. This object does not contain
 eigenvectors, so allows some quantities such as a basic DOS
 or bandstructures to be calculated with lower memory requirements.
 
+Use ``len(phonons)`` to count q-points, or test ``if phonons:``
+to check whether the object contains any q-points. This also applies
+to ``QpointPhononModes`` and ``StructureFactor``.
+
 .. contents:: :local:
 
 Reading From CASTEP
